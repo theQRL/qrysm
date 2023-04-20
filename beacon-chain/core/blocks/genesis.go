@@ -32,7 +32,7 @@ func NewGenesisBlock(stateRoot []byte) *ethpb.SignedBeaconBlock {
 				Graffiti: make([]byte, 32),
 			},
 		},
-		Signature: params.BeaconConfig().EmptySignature[:],
+		Signature: params.BeaconConfig().EmptyDilithiumSignature[:],
 	}
 	return block
 }
@@ -60,7 +60,7 @@ func NewGenesisBlockForState(ctx context.Context, st state.BeaconState) (interfa
 					Graffiti: make([]byte, 32),
 				},
 			},
-			Signature: params.BeaconConfig().EmptySignature[:],
+			Signature: params.BeaconConfig().EmptyDilithiumSignature[:],
 		})
 	case *ethpb.BeaconStateAltair:
 		return blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockAltair{
@@ -80,7 +80,7 @@ func NewGenesisBlockForState(ctx context.Context, st state.BeaconState) (interfa
 					},
 				},
 			},
-			Signature: params.BeaconConfig().EmptySignature[:],
+			Signature: params.BeaconConfig().EmptyDilithiumSignature[:],
 		})
 	case *ethpb.BeaconStateBellatrix:
 		return blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockBellatrix{
@@ -111,7 +111,7 @@ func NewGenesisBlockForState(ctx context.Context, st state.BeaconState) (interfa
 					},
 				},
 			},
-			Signature: params.BeaconConfig().EmptySignature[:],
+			Signature: params.BeaconConfig().EmptyDilithiumSignature[:],
 		})
 	case *ethpb.BeaconStateCapella:
 		return blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockCapella{
@@ -143,7 +143,7 @@ func NewGenesisBlockForState(ctx context.Context, st state.BeaconState) (interfa
 					},
 				},
 			},
-			Signature: params.BeaconConfig().EmptySignature[:],
+			Signature: params.BeaconConfig().EmptyDilithiumSignature[:],
 		})
 	default:
 		return nil, ErrUnrecognizedState

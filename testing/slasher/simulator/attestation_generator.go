@@ -65,7 +65,7 @@ func (s *Simulator) generateAttestationsForSlot(
 			att := &ethpb.IndexedAttestation{
 				AttestingIndices: indices,
 				Data:             attData,
-				Signature:        params.BeaconConfig().EmptySignature[:],
+				Signature:        params.BeaconConfig().EmptyDilithiumSignature[:],
 			}
 			beaconState, err := s.srvConfig.AttestationStateFetcher.AttestationTargetState(ctx, att.Data.Target)
 			if err != nil {
@@ -151,7 +151,7 @@ func makeSlashableFromAtt(att *ethpb.IndexedAttestation, indices []uint64) *ethp
 	return &ethpb.IndexedAttestation{
 		AttestingIndices: indices,
 		Data:             attData,
-		Signature:        params.BeaconConfig().EmptySignature[:],
+		Signature:        params.BeaconConfig().EmptyDilithiumSignature[:],
 	}
 }
 
@@ -172,6 +172,6 @@ func makeDoubleVoteFromAtt(att *ethpb.IndexedAttestation, indices []uint64) *eth
 	return &ethpb.IndexedAttestation{
 		AttestingIndices: indices,
 		Data:             attData,
-		Signature:        params.BeaconConfig().EmptySignature[:],
+		Signature:        params.BeaconConfig().EmptyDilithiumSignature[:],
 	}
 }
