@@ -2,6 +2,7 @@ package stateutil
 
 import (
 	"github.com/pkg/errors"
+	"github.com/prysmaticlabs/prysm/v4/container/trie"
 	"github.com/prysmaticlabs/prysm/v4/crypto/hash/htr"
 	"github.com/prysmaticlabs/prysm/v4/encoding/ssz"
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
@@ -48,8 +49,19 @@ func merkleizePubkey(pubkey []byte) ([32]byte, error) {
 	if err != nil {
 		return [32]byte{}, err
 	}
-	outputChunk := make([][32]byte, 1)
-	htr.VectorizedSha256(chunks, outputChunk)
 
-	return outputChunk[0], nil
+	depth := ssz.Depth(uint64(len(chunks)))
+	for i := uint8(0); i < depth; i++ {
+		chunkLength := len(chunks)
+		oddChunksLen := chunkLength%2 == 1
+		if oddChunksLen {
+			chunks = append(chunks, trie.ZeroHashes[i])
+		}
+		outputLen := len(chunks) / 2
+		outputChunk := make([][32]byte, outputLen)
+		htr.VectorizedSha256(chunks, outputChunk)
+		chunks = outputChunk
+	}
+
+	return chunks[0], nil
 }
