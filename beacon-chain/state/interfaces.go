@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"github.com/prysmaticlabs/go-bitfield"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/interfaces"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
 	enginev1 "github.com/prysmaticlabs/prysm/v4/proto/engine/v1"
@@ -105,7 +104,7 @@ type ReadOnlyValidator interface {
 	ActivationEpoch() primitives.Epoch
 	WithdrawableEpoch() primitives.Epoch
 	ExitEpoch() primitives.Epoch
-	PublicKey() [fieldparams.BLSPubkeyLength]byte
+	PublicKey() [dilithium2.CryptoPublicKeyBytes]byte
 	WithdrawalCredentials() []byte
 	Slashed() bool
 	IsNil() bool

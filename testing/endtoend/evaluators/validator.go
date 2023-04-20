@@ -76,7 +76,7 @@ func validatorsAreActive(ec *types.EvaluationContext, conns ...*grpc.ClientConn)
 	exitEpochWrongCount := 0
 	withdrawEpochWrongCount := 0
 	for _, item := range validators.ValidatorList {
-		if ec.ExitedVals[bytesutil.ToBytes48(item.Validator.PublicKey)] {
+		if ec.ExitedVals[bytesutil.ToBytes2592(item.Validator.PublicKey)] {
 			continue
 		}
 		if item.Validator.EffectiveBalance < params.BeaconConfig().MaxEffectiveBalance {

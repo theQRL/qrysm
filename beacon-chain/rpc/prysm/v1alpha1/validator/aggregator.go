@@ -38,7 +38,7 @@ func (vs *Server) SubmitAggregateSelectionProof(ctx context.Context, req *ethpb.
 		return nil, status.Errorf(codes.Internal, "Could not determine head state: %v", err)
 	}
 
-	validatorIndex, exists := st.ValidatorIndexByPubkey(bytesutil.ToBytes48(req.PublicKey))
+	validatorIndex, exists := st.ValidatorIndexByPubkey(bytesutil.ToBytes2592(req.PublicKey))
 	if !exists {
 		return nil, status.Error(codes.Internal, "Could not locate validator index in DB")
 	}

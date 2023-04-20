@@ -9,6 +9,7 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/config/params"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
 	"github.com/prysmaticlabs/prysm/v4/runtime/version"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"google.golang.org/grpc"
 )
 
@@ -105,13 +106,13 @@ const (
 
 // DepositBalancer represents a type that can sum, by validator, all deposits made in E2E prior to the function call.
 type DepositBalancer interface {
-	Balances(DepositBatch) map[[48]byte]uint64
+	Balances(DepositBatch) map[[dilithium2.CryptoPublicKeyBytes]byte]uint64
 }
 
 // EvaluationContext allows for additional data to be provided to evaluators that need extra state.
 type EvaluationContext struct {
 	DepositBalancer
-	ExitedVals           map[[48]byte]bool
+	ExitedVals           map[[dilithium2.CryptoPublicKeyBytes]byte]bool
 	SeenVotes            map[primitives.Slot][]byte
 	ExpectedEth1DataVote []byte
 }
@@ -120,7 +121,7 @@ type EvaluationContext struct {
 func NewEvaluationContext(d DepositBalancer) *EvaluationContext {
 	return &EvaluationContext{
 		DepositBalancer: d,
-		ExitedVals:      make(map[[48]byte]bool),
+		ExitedVals:      make(map[[dilithium2.CryptoPublicKeyBytes]byte]bool),
 		SeenVotes:       make(map[primitives.Slot][]byte),
 	}
 }

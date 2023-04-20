@@ -93,7 +93,7 @@ func processSyncAggregate(ctx context.Context, s state.BeaconState, sync *ethpb.
 
 	earnedProposerReward := uint64(0)
 	for i := uint64(0); i < sync.SyncCommitteeBits.Len(); i++ {
-		vIdx, exists := s.ValidatorIndexByPubkey(bytesutil.ToBytes48(committeeKeys[i]))
+		vIdx, exists := s.ValidatorIndexByPubkey(bytesutil.ToBytes2592(committeeKeys[i]))
 		// Impossible scenario.
 		if !exists {
 			return nil, nil, 0, errors.New("validator public key does not exist in state")

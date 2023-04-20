@@ -43,7 +43,7 @@ func generateSyncAggregate(st state.BeaconState, privs []bls.SecretKey, parentRo
 	}
 
 	for i, p := range syncCommittee.Pubkeys {
-		idx, ok := st.ValidatorIndexByPubkey(bytesutil.ToBytes48(p))
+		idx, ok := st.ValidatorIndexByPubkey(bytesutil.ToBytes2592(p))
 		if !ok {
 			continue
 		}

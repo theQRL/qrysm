@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -58,7 +59,7 @@ func getWithdrawalMessagesFromPathFlag(c *cli.Context) ([]*apimiddleware.SignedB
 		}
 		// verify 0x from file and add if needed
 		for i, obj := range to {
-			if len(obj.Message.FromBLSPubkey) == fieldparams.BLSPubkeyLength*2 {
+			if len(obj.Message.FromBLSPubkey) == dilithium2.CryptoPublicKeyBytes*2 {
 				to[i].Message.FromBLSPubkey = fmt.Sprintf("0x%s", obj.Message.FromBLSPubkey)
 			}
 			if len(obj.Message.ToExecutionAddress) == common.AddressLength*2 {

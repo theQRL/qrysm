@@ -78,7 +78,7 @@ func (bs *Server) ListValidatorBalances(
 		if len(pubKey) == 0 {
 			continue
 		}
-		pubkeyBytes := bytesutil.ToBytes48(pubKey)
+		pubkeyBytes := bytesutil.ToBytes2592(pubKey)
 		index, ok := requestedState.ValidatorIndexByPubkey(pubkeyBytes)
 		if !ok {
 			// We continue the loop if one validator in the request is not found.
@@ -269,7 +269,7 @@ func (bs *Server) ListValidators(
 		if len(pubKey) == 0 {
 			continue
 		}
-		pubkeyBytes := bytesutil.ToBytes48(pubKey)
+		pubkeyBytes := bytesutil.ToBytes2592(pubKey)
 		index, ok := reqState.ValidatorIndexByPubkey(pubkeyBytes)
 		if !ok {
 			continue
@@ -374,10 +374,10 @@ func (bs *Server) GetValidator(
 		}
 		return headState.ValidatorAtIndex(index)
 	}
-	pk48 := bytesutil.ToBytes48(pubKey)
+	pk2592 := bytesutil.ToBytes2592(pubKey)
 	for i := primitives.ValidatorIndex(0); uint64(i) < uint64(headState.NumValidators()); i++ {
 		keyFromState := headState.PubkeyAtIndex(i)
-		if keyFromState == pk48 {
+		if keyFromState == pk2592 {
 			return headState.ValidatorAtIndex(i)
 		}
 	}
@@ -726,7 +726,7 @@ func (bs *Server) GetValidatorPerformance(
 		if len(pubKey) == 0 {
 			continue
 		}
-		pubkeyBytes := bytesutil.ToBytes48(pubKey)
+		pubkeyBytes := bytesutil.ToBytes2592(pubKey)
 		idx, ok := headState.ValidatorIndexByPubkey(pubkeyBytes)
 		if !ok {
 			// Validator index not found, track as missing.
@@ -837,7 +837,7 @@ func (bs *Server) GetIndividualVotes(
 	votes := make([]*ethpb.IndividualVotesRespond_IndividualVote, 0, len(req.Indices)+len(req.PublicKeys))
 	// Filter out assignments by public keys.
 	for _, pubKey := range req.PublicKeys {
-		index, ok := st.ValidatorIndexByPubkey(bytesutil.ToBytes48(pubKey))
+		index, ok := st.ValidatorIndexByPubkey(bytesutil.ToBytes2592(pubKey))
 		if !ok {
 			votes = append(votes, &ethpb.IndividualVotesRespond_IndividualVote{PublicKey: pubKey, ValidatorIndex: primitives.ValidatorIndex(^uint64(0))})
 			continue

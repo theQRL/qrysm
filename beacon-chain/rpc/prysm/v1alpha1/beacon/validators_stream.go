@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"io"
 	"math/big"
 	"sort"
@@ -23,7 +24,6 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/db"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/execution"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/config/params"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
@@ -195,13 +195,13 @@ func (is *infostream) handleMessage(msg *ethpb.ValidatorChangeSet) {
 func (is *infostream) handleAddValidatorKeys(reqPubKeys [][]byte) error {
 	is.pubKeysMutex.Lock()
 	// Create existence map to ensure we don't duplicate keys.
-	pubKeysMap := make(map[[fieldparams.BLSPubkeyLength]byte]bool, len(is.pubKeys))
+	pubKeysMap := make(map[[dilithium2.CryptoPublicKeyBytes]byte]bool, len(is.pubKeys))
 	for _, pubKey := range is.pubKeys {
-		pubKeysMap[bytesutil.ToBytes48(pubKey)] = true
+		pubKeysMap[bytesutil.ToBytes2592(pubKey)] = true
 	}
 	addedPubKeys := make([][]byte, 0, len(reqPubKeys))
 	for _, pubKey := range reqPubKeys {
-		if _, exists := pubKeysMap[bytesutil.ToBytes48(pubKey)]; !exists {
+		if _, exists := pubKeysMap[bytesutil.ToBytes2592(pubKey)]; !exists {
 			is.pubKeys = append(is.pubKeys, pubKey)
 			addedPubKeys = append(addedPubKeys, pubKey)
 		}
@@ -225,13 +225,13 @@ func (is *infostream) handleSetValidatorKeys(reqPubKeys [][]byte) error {
 func (is *infostream) handleRemoveValidatorKeys(reqPubKeys [][]byte) {
 	is.pubKeysMutex.Lock()
 	// Create existence map to track what we have to delete.
-	pubKeysMap := make(map[[fieldparams.BLSPubkeyLength]byte]bool, len(reqPubKeys))
+	pubKeysMap := make(map[[dilithium2.CryptoPublicKeyBytes]byte]bool, len(reqPubKeys))
 	for _, pubKey := range reqPubKeys {
-		pubKeysMap[bytesutil.ToBytes48(pubKey)] = true
+		pubKeysMap[bytesutil.ToBytes2592(pubKey)] = true
 	}
 	max := len(is.pubKeys)
 	for i := 0; i < max; i++ {
-		if _, exists := pubKeysMap[bytesutil.ToBytes48(is.pubKeys[i])]; exists {
+		if _, exists := pubKeysMap[bytesutil.ToBytes2592(is.pubKeys[i])]; exists {
 			copy(is.pubKeys[i:], is.pubKeys[i+1:])
 			is.pubKeys = is.pubKeys[:len(is.pubKeys)-1]
 			i--
@@ -277,7 +277,7 @@ func (is *infostream) generateValidatorsInfo(pubKeys [][]byte) ([]*ethpb.Validat
 
 	res := make([]*ethpb.ValidatorInfo, 0, len(pubKeys))
 	for _, pubKey := range pubKeys {
-		i, e := headState.ValidatorIndexByPubkey(bytesutil.ToBytes48(pubKey))
+		i, e := headState.ValidatorIndexByPubkey(bytesutil.ToBytes2592(pubKey))
 		if !e {
 			return nil, errors.New("could not find public key")
 		}
@@ -316,7 +316,7 @@ func (is *infostream) generateValidatorInfo(
 
 	// Index
 	var ok bool
-	info.Index, ok = headState.ValidatorIndexByPubkey(bytesutil.ToBytes48(pubKey))
+	info.Index, ok = headState.ValidatorIndexByPubkey(bytesutil.ToBytes2592(pubKey))
 	if !ok {
 		// We don't know of this validator; it's either a pending deposit or totally unknown.
 		return is.generatePendingValidatorInfo(info)
@@ -379,10 +379,10 @@ func (is *infostream) generatePendingValidatorInfo(info *ethpb.ValidatorInfo) (*
 
 func (is *infostream) calculateActivationTimeForPendingValidators(res []*ethpb.ValidatorInfo, headState state.ReadOnlyBeaconState, epoch primitives.Epoch) error {
 	// pendingValidatorsMap is map from the validator pubkey to the index in our return array
-	pendingValidatorsMap := make(map[[fieldparams.BLSPubkeyLength]byte]int)
+	pendingValidatorsMap := make(map[[dilithium2.CryptoPublicKeyBytes]byte]int)
 	for i, info := range res {
 		if info.Status == ethpb.ValidatorStatus_PENDING {
-			pendingValidatorsMap[bytesutil.ToBytes48(info.PublicKey)] = i
+			pendingValidatorsMap[bytesutil.ToBytes2592(info.PublicKey)] = i
 		}
 	}
 	if len(pendingValidatorsMap) == 0 {

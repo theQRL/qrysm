@@ -25,7 +25,7 @@ func ValidatorRootWithHasher(validator *ethpb.Validator) ([32]byte, error) {
 func ValidatorFieldRoots(validator *ethpb.Validator) ([][32]byte, error) {
 	var fieldRoots [][32]byte
 	if validator != nil {
-		pubkey := bytesutil.ToBytes48(validator.PublicKey)
+		pubkey := bytesutil.ToBytes2592(validator.PublicKey)
 		withdrawCreds := bytesutil.ToBytes32(validator.WithdrawalCredentials)
 		var effectiveBalanceBuf [32]byte
 		binary.LittleEndian.PutUint64(effectiveBalanceBuf[:8], validator.EffectiveBalance)

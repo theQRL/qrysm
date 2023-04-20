@@ -39,7 +39,7 @@ func ProcessPreGenesisDeposits(
 func ActivateValidatorWithEffectiveBalance(beaconState state.BeaconState, deposits []*ethpb.Deposit) (state.BeaconState, error) {
 	for _, d := range deposits {
 		pubkey := d.Data.PublicKey
-		index, ok := beaconState.ValidatorIndexByPubkey(bytesutil.ToBytes48(pubkey))
+		index, ok := beaconState.ValidatorIndexByPubkey(bytesutil.ToBytes2592(pubkey))
 		// In the event of the pubkey not existing, we continue processing the other
 		// deposits.
 		if !ok {
@@ -169,7 +169,7 @@ func ProcessDeposit(beaconState state.BeaconState, deposit *ethpb.Deposit, verif
 	}
 	pubKey := deposit.Data.PublicKey
 	amount := deposit.Data.Amount
-	index, ok := beaconState.ValidatorIndexByPubkey(bytesutil.ToBytes48(pubKey))
+	index, ok := beaconState.ValidatorIndexByPubkey(bytesutil.ToBytes2592(pubKey))
 	if !ok {
 		if verifySignature {
 			domain, err := signing.ComputeDomain(params.BeaconConfig().DomainDeposit, nil, nil)

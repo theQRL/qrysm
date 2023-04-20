@@ -29,6 +29,7 @@ import (
 	ethpbalpha "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	"github.com/prysmaticlabs/prysm/v4/time/slots"
 	log "github.com/sirupsen/logrus"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -88,7 +89,7 @@ func (vs *Server) GetAttesterDuties(ctx context.Context, req *ethpbv1.AttesterDu
 	duties := make([]*ethpbv1.AttesterDuty, 0, len(req.Index))
 	for _, index := range req.Index {
 		pubkey := s.PubkeyAtIndex(index)
-		var zeroPubkey [fieldparams.BLSPubkeyLength]byte
+		var zeroPubkey [dilithium2.CryptoPublicKeyBytes]byte
 		if bytes.Equal(pubkey[:], zeroPubkey[:]) {
 			return nil, status.Errorf(codes.InvalidArgument, "Invalid validator index")
 		}
@@ -265,9 +266,9 @@ func (vs *Server) GetSyncCommitteeDuties(ctx context.Context, req *ethpbv2.SyncC
 			return nil, status.Errorf(codes.Internal, "Could not get sync committee: %v", err)
 		}
 	}
-	committeePubkeys := make(map[[fieldparams.BLSPubkeyLength]byte][]uint64)
+	committeePubkeys := make(map[[dilithium2.CryptoPublicKeyBytes]byte][]uint64)
 	for j, pubkey := range committee.Pubkeys {
-		pubkey48 := bytesutil.ToBytes48(pubkey)
+		pubkey48 := bytesutil.ToBytes2592(pubkey)
 		committeePubkeys[pubkey48] = append(committeePubkeys[pubkey48], uint64(j))
 	}
 
@@ -1171,21 +1172,21 @@ func syncCommitteeDutiesLastValidEpoch(currentEpoch primitives.Epoch) primitives
 func syncCommitteeDuties(
 	valIndices []primitives.ValidatorIndex,
 	st state.BeaconState,
-	committeePubkeys map[[fieldparams.BLSPubkeyLength]byte][]uint64,
+	committeePubkeys map[[dilithium2.CryptoPublicKeyBytes]byte][]uint64,
 ) ([]*ethpbv2.SyncCommitteeDuty, error) {
 	duties := make([]*ethpbv2.SyncCommitteeDuty, 0)
 	for _, index := range valIndices {
 		duty := &ethpbv2.SyncCommitteeDuty{
 			ValidatorIndex: index,
 		}
-		valPubkey48 := st.PubkeyAtIndex(index)
-		var zeroPubkey [fieldparams.BLSPubkeyLength]byte
-		if bytes.Equal(valPubkey48[:], zeroPubkey[:]) {
+		valPubkey2592 := st.PubkeyAtIndex(index)
+		var zeroPubkey [dilithium2.CryptoPublicKeyBytes]byte
+		if bytes.Equal(valPubkey2592[:], zeroPubkey[:]) {
 			return nil, errInvalidValIndex
 		}
-		valPubkey := valPubkey48[:]
+		valPubkey := valPubkey2592[:]
 		duty.Pubkey = valPubkey
-		indices, ok := committeePubkeys[valPubkey48]
+		indices, ok := committeePubkeys[valPubkey2592]
 		if ok {
 			duty.ValidatorSyncCommitteeIndices = indices
 			duties = append(duties, duty)

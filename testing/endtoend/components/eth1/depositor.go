@@ -22,6 +22,7 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/testing/endtoend/types"
 	"github.com/prysmaticlabs/prysm/v4/testing/util"
 	log "github.com/sirupsen/logrus"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 var gweiPerEth = big.NewInt(int64(params.BeaconConfig().GweiPerEth))
@@ -112,12 +113,12 @@ func (h *DepositHistory) updateByBatch(sd *SentDeposit) {
 
 // Balances sums, by validator, all deposit amounts that were sent as part of the given batch.
 // This can be used in e2e evaluators to check that the results of deposit transactions are visible on chain.
-func (h *DepositHistory) Balances(batch types.DepositBatch) map[[48]byte]uint64 {
-	balances := make(map[[48]byte]uint64)
+func (h *DepositHistory) Balances(batch types.DepositBatch) map[[dilithium2.CryptoPublicKeyBytes]byte]uint64 {
+	balances := make(map[[dilithium2.CryptoPublicKeyBytes]byte]uint64)
 	h.RLock()
 	defer h.RUnlock()
 	for _, d := range h.byBatch[batch] {
-		k := bytesutil.ToBytes48(d.deposit.Data.PublicKey)
+		k := bytesutil.ToBytes2592(d.deposit.Data.PublicKey)
 		if _, ok := balances[k]; !ok {
 			balances[k] = d.deposit.Data.Amount
 		} else {

@@ -24,6 +24,7 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/testing/endtoend/policies"
 	e2etypes "github.com/prysmaticlabs/prysm/v4/testing/endtoend/types"
 	"github.com/prysmaticlabs/prysm/v4/testing/util"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"golang.org/x/exp/rand"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -117,7 +118,7 @@ var ValidatorsVoteWithTheMajority = e2etypes.Evaluator{
 }
 
 type mismatch struct {
-	k [48]byte
+	k [dilithium2.CryptoPublicKeyBytes]byte
 	e uint64
 	o uint64
 }
@@ -140,7 +141,7 @@ func processesDepositsInBlocks(ec *e2etypes.EvaluationContext, conns ...*grpc.Cl
 	if err != nil {
 		return errors.Wrap(err, "failed to get blocks from beacon-chain")
 	}
-	observed := make(map[[48]byte]uint64)
+	observed := make(map[[dilithium2.CryptoPublicKeyBytes]byte]uint64)
 	for _, blk := range blks.BlockContainers {
 		sb, err := blocks.BeaconBlockContainerToSignedBeaconBlock(blk)
 		if err != nil {
@@ -149,7 +150,7 @@ func processesDepositsInBlocks(ec *e2etypes.EvaluationContext, conns ...*grpc.Cl
 		b := sb.Block()
 		deposits := b.Body().Deposits()
 		for _, d := range deposits {
-			k := bytesutil.ToBytes48(d.Data.PublicKey)
+			k := bytesutil.ToBytes2592(d.Data.PublicKey)
 			v := observed[k]
 			observed[k] = v + d.Data.Amount
 		}
@@ -224,7 +225,7 @@ func activatesDepositedValidators(ec *e2etypes.EvaluationContext, conns ...*grpc
 
 	var deposits, lowBalance, wrongExit, wrongWithdraw int
 	for _, v := range validators {
-		key := bytesutil.ToBytes48(v.PublicKey)
+		key := bytesutil.ToBytes2592(v.PublicKey)
 		if _, ok := expected[key]; !ok {
 			continue
 		}
@@ -306,7 +307,7 @@ func depositedValidatorsAreActive(ec *e2etypes.EvaluationContext, conns ...*grpc
 	expected := ec.Balances(e2etypes.PostGenesisDepositBatch)
 	nexpected := len(expected)
 	for _, v := range vals {
-		key := bytesutil.ToBytes48(v.PublicKey)
+		key := bytesutil.ToBytes2592(v.PublicKey)
 		if _, ok := expected[key]; !ok {
 			continue // we aren't checking for this validator
 		}
@@ -407,7 +408,7 @@ func proposeVoluntaryExit(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientC
 		if _, err = valClient.ProposeExit(ctx, signedExit); err != nil {
 			return errors.Wrap(err, "could not propose exit")
 		}
-		pubk := bytesutil.ToBytes48(deposits[exitedIndex].Data.PublicKey)
+		pubk := bytesutil.ToBytes2592(deposits[exitedIndex].Data.PublicKey)
 		ec.ExitedVals[pubk] = true
 		return nil
 	}
@@ -422,7 +423,7 @@ func proposeVoluntaryExit(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientC
 	// Send an exit for a non-exited validator.
 	for i := 0; i < numOfExits; {
 		randIndex := primitives.ValidatorIndex(rand.Uint64() % params.BeaconConfig().MinGenesisActiveValidatorCount)
-		if ec.ExitedVals[bytesutil.ToBytes48(privKeys[randIndex].PublicKey().Marshal())] {
+		if ec.ExitedVals[bytesutil.ToBytes2592(privKeys[randIndex].PublicKey().Marshal())] {
 			continue
 		}
 		if err := sendExit(randIndex); err != nil {

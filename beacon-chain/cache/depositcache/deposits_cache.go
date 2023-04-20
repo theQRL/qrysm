@@ -14,12 +14,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/config/params"
 	"github.com/prysmaticlabs/prysm/v4/container/trie"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	"github.com/sirupsen/logrus"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"go.opencensus.io/trace"
 )
 
@@ -53,7 +53,7 @@ type DepositCache struct {
 	pendingDeposits   []*ethpb.DepositContainer
 	deposits          []*ethpb.DepositContainer
 	finalizedDeposits *FinalizedDeposits
-	depositsByKey     map[[fieldparams.BLSPubkeyLength]byte][]*ethpb.DepositContainer
+	depositsByKey     map[[dilithium2.CryptoPublicKeyBytes]byte][]*ethpb.DepositContainer
 	depositsLock      sync.RWMutex
 }
 
@@ -69,7 +69,7 @@ func New() (*DepositCache, error) {
 	return &DepositCache{
 		pendingDeposits:   []*ethpb.DepositContainer{},
 		deposits:          []*ethpb.DepositContainer{},
-		depositsByKey:     map[[fieldparams.BLSPubkeyLength]byte][]*ethpb.DepositContainer{},
+		depositsByKey:     map[[dilithium2.CryptoPublicKeyBytes]byte][]*ethpb.DepositContainer{},
 		finalizedDeposits: &FinalizedDeposits{Deposits: finalizedDepositsTrie, MerkleTrieIndex: -1},
 	}, nil
 }
@@ -103,7 +103,7 @@ func (dc *DepositCache) InsertDeposit(ctx context.Context, d *ethpb.Deposit, blo
 	dc.deposits = append(dc.deposits[:heightIdx], newDeposits...)
 	// Append the deposit to our map, in the event no deposits
 	// exist for the pubkey , it is simply added to the map.
-	pubkey := bytesutil.ToBytes48(d.Data.PublicKey)
+	pubkey := bytesutil.ToBytes2592(d.Data.PublicKey)
 	dc.depositsByKey[pubkey] = append(dc.depositsByKey[pubkey], depCtr)
 	historicalDepositsCount.Inc()
 	return nil
@@ -122,7 +122,7 @@ func (dc *DepositCache) InsertDepositContainers(ctx context.Context, ctrs []*eth
 		// Use a new value, as the reference
 		// of c changes in the next iteration.
 		newPtr := c
-		pKey := bytesutil.ToBytes48(newPtr.Deposit.Data.PublicKey)
+		pKey := bytesutil.ToBytes2592(newPtr.Deposit.Data.PublicKey)
 		dc.depositsByKey[pKey] = append(dc.depositsByKey[pKey], newPtr)
 	}
 	historicalDepositsCount.Add(float64(len(ctrs)))
@@ -249,7 +249,7 @@ func (dc *DepositCache) DepositByPubkey(ctx context.Context, pubKey []byte) (*et
 
 	var deposit *ethpb.Deposit
 	var blockNum *big.Int
-	deps, ok := dc.depositsByKey[bytesutil.ToBytes48(pubKey)]
+	deps, ok := dc.depositsByKey[bytesutil.ToBytes2592(pubKey)]
 	if !ok || len(deps) == 0 {
 		return deposit, blockNum
 	}

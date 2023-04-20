@@ -3,9 +3,9 @@ package state_native
 import (
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 var (
@@ -64,8 +64,8 @@ func (v readOnlyValidator) ExitEpoch() primitives.Epoch {
 
 // PublicKey returns the public key of the
 // read only validator.
-func (v readOnlyValidator) PublicKey() [fieldparams.BLSPubkeyLength]byte {
-	var pubkey [fieldparams.BLSPubkeyLength]byte
+func (v readOnlyValidator) PublicKey() [dilithium2.CryptoPublicKeyBytes]byte {
+	var pubkey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubkey[:], v.validator.PublicKey)
 	return pubkey
 }

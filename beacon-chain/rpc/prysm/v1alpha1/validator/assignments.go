@@ -155,7 +155,7 @@ func (vs *Server) duties(ctx context.Context, req *ethpb.DutiesRequest) (*ethpb.
 		nextAssignment := &ethpb.DutiesResponse_Duty{
 			PublicKey: pubKey,
 		}
-		idx, ok := s.ValidatorIndexByPubkey(bytesutil.ToBytes48(pubKey))
+		idx, ok := s.ValidatorIndexByPubkey(bytesutil.ToBytes2592(pubKey))
 		if ok {
 			s := assignmentStatus(s, idx)
 

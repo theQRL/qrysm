@@ -265,7 +265,7 @@ func valContainersByRequestIds(state state.BeaconState, validatorIds [][]byte) (
 			var valIndex primitives.ValidatorIndex
 			if len(validatorId) == params.BeaconConfig().BLSPubkeyLength {
 				var ok bool
-				valIndex, ok = state.ValidatorIndexByPubkey(bytesutil.ToBytes48(validatorId))
+				valIndex, ok = state.ValidatorIndexByPubkey(bytesutil.ToBytes2592(validatorId))
 				if !ok {
 					// Ignore well-formed yet unknown public keys.
 					continue
