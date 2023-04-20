@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/signing"
 	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls"
+	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium"
 	"github.com/prysmaticlabs/prysm/v4/crypto/hash"
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 )
@@ -26,7 +26,7 @@ import (
 //	- Send a transaction on the Ethereum 1.0 chain to DEPOSIT_CONTRACT_ADDRESS executing `deposit(pubkey: bytes[48], withdrawal_credentials: bytes[32], signature: bytes[96])` along with a deposit of amount Gwei.
 //
 // See: https://github.com/ethereum/consensus-specs/blob/master/specs/validator/0_beacon-chain-validator.md#submit-deposit
-func DepositInput(depositKey, withdrawalKey bls.SecretKey, amountInGwei uint64) (*ethpb.Deposit_Data, [32]byte, error) {
+func DepositInput(depositKey, withdrawalKey dilithium.DilithiumKey, amountInGwei uint64) (*ethpb.Deposit_Data, [32]byte, error) {
 	depositMessage := &ethpb.DepositMessage{
 		PublicKey:             depositKey.PublicKey().Marshal(),
 		WithdrawalCredentials: WithdrawalCredentialsHash(withdrawalKey),
@@ -74,7 +74,7 @@ func DepositInput(depositKey, withdrawalKey bls.SecretKey, amountInGwei uint64) 
 //	withdrawal_credentials[1:] == hash(withdrawal_pubkey)[1:]
 //
 // where withdrawal_credentials is of type bytes32.
-func WithdrawalCredentialsHash(withdrawalKey bls.SecretKey) []byte {
+func WithdrawalCredentialsHash(withdrawalKey dilithium.DilithiumKey) []byte {
 	h := hash.Hash(withdrawalKey.PublicKey().Marshal())
 	return append([]byte{params.BeaconConfig().BLSWithdrawalPrefixByte}, h[1:]...)[:32]
 }
@@ -82,11 +82,11 @@ func WithdrawalCredentialsHash(withdrawalKey bls.SecretKey) []byte {
 // VerifyDepositSignature verifies the correctness of Eth1 deposit BLS signature
 func VerifyDepositSignature(dd *ethpb.Deposit_Data, domain []byte) error {
 	ddCopy := ethpb.CopyDepositData(dd)
-	publicKey, err := bls.PublicKeyFromBytes(ddCopy.PublicKey)
+	publicKey, err := dilithium.PublicKeyFromBytes(ddCopy.PublicKey)
 	if err != nil {
 		return errors.Wrap(err, "could not convert bytes to public key")
 	}
-	sig, err := bls.SignatureFromBytes(ddCopy.Signature)
+	sig, err := dilithium.SignatureFromBytes(ddCopy.Signature)
 	if err != nil {
 		return errors.Wrap(err, "could not convert bytes to signature")
 	}
