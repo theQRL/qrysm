@@ -36,7 +36,7 @@ message SyncCommitteeMessage {
   uint64 validator_index = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
 
   // Signature by the validator over the block root of `slot`.
-  bytes signature = 4 [(ethereum.eth.ext.ssz_size) = "96"];
+  bytes signature = 4 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 // Aggregated sync committee object to support light client.
@@ -54,7 +54,7 @@ message SyncCommitteeContribution {
   // index in the subcommittee is present in the aggregate `signature`.
   bytes aggregation_bits = 4 [(ethereum.eth.ext.ssz_size) = "sync_committee_aggregate_bytes.size", (ethereum.eth.ext.cast_type) = "sync_committee_aggregate_bits.type"];
   // Signature by the validator(s) over the block root of `slot`.
-  bytes signature = 5 [(ethereum.eth.ext.ssz_size) = "96"];
+  bytes signature = 5 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 // Aggregated sync committee signature object with selection proof to support light client.
@@ -65,7 +65,7 @@ message ContributionAndProof {
   SyncCommitteeContribution contribution = 2;
 
   // The selection proof itself.
-  bytes selection_proof = 3 [(ethereum.eth.ext.ssz_size) = "96"];
+  bytes selection_proof = 3 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 // Signed aggregated sync committee signature object with selection proof to support light client.
@@ -73,5 +73,5 @@ message SignedContributionAndProof {
   ContributionAndProof message = 1;
 
   // Signature of the aggregator that produced `message`.
-  bytes signature = 4 [(ethereum.eth.ext.ssz_size) = "96"];
+  bytes signature = 4 [(ethereum.eth.ext.ssz_size) = "4595"];
 }

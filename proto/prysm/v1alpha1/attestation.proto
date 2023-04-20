@@ -32,7 +32,7 @@ message Attestation {
     AttestationData data = 2;
 
     // 96 byte BLS aggregate signature.
-    bytes signature = 3 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes signature = 3 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 message AggregateAttestationAndProof {
@@ -43,7 +43,7 @@ message AggregateAttestationAndProof {
     Attestation aggregate = 3;
 
     // 96 byte selection proof signed by the aggregator, which is the signature of the slot to aggregate.
-    bytes selection_proof = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes selection_proof = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 message SignedAggregateAttestationAndProof {
@@ -51,7 +51,7 @@ message SignedAggregateAttestationAndProof {
     AggregateAttestationAndProof message = 1;
 
     // 96 byte BLS aggregate signature signed by the aggregator over the message.
-    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 message AttestationData {

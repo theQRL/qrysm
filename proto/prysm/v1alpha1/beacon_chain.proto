@@ -535,7 +535,7 @@ message ValidatorBalances {
 
     message Balance {
         // Validator's 48 byte BLS public key.
-        bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48"];
+        bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "2592"];
 
         // Validator's index in the validator set.
         uint64 index = 2 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
@@ -595,7 +595,7 @@ message GetValidatorRequest {
         uint64 index = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
 
         // 48 byte validator public key.
-        bytes public_key = 2 [(ethereum.eth.ext.ssz_size) = "48"];
+        bytes public_key = 2 [(ethereum.eth.ext.ssz_size) = "2592"];
     }
 }
 
@@ -775,7 +775,7 @@ message ValidatorAssignments {
         repeated uint64 proposer_slots = 4 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
 
         // 48 byte BLS public key.
-        bytes public_key = 5 [(ethereum.eth.ext.ssz_size) = "48", deprecated = true];
+        bytes public_key = 5 [(ethereum.eth.ext.ssz_size) = "2592", deprecated = true];
 
         // Validator index in the beacon state.
         uint64 validator_index = 6 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];

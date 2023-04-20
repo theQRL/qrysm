@@ -95,7 +95,7 @@ message SignedBeaconBlock {
     BeaconBlock block = 1;
 
     // 96 byte BLS signature from the validator that produced this block.
-    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 // The unsigned version of a (HF1) beacon block. The message does not contain a validator signature.
@@ -122,7 +122,7 @@ message SignedBeaconBlockAltair {
     BeaconBlockAltair block = 1;
 
     // 96 byte BLS signature from the validator that produced this block.
-    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 // The block body of an Ethereum consensus beacon block.
@@ -251,7 +251,7 @@ message SignedVoluntaryExit {
     VoluntaryExit exit = 1;
 
     // Validator's 96 byte signature
-    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 // Eth1Data represents references to the Ethereum 1.x deposit contract.
@@ -295,7 +295,7 @@ message SignedBeaconBlockHeader {
     BeaconBlockHeader header = 1;
 
     // 96 byte BLS signature from the validator that produced this block header.
-    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 message IndexedAttestation {
@@ -304,7 +304,7 @@ message IndexedAttestation {
     AttestationData data = 2;
 
     // 96 bytes aggregate signature.
-    bytes signature = 3 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes signature = 3 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 // The sync aggregate object for the beacon chain to track sync committee votes and to
@@ -314,7 +314,7 @@ message SyncAggregate {
     bytes sync_committee_bits = 1 [(ethereum.eth.ext.ssz_size) = "sync_committee_bytes.size", (ethereum.eth.ext.cast_type) = "sync_committee_bits.type"];
 
     // BLS aggregated signature of the sync committee for the ones that voted.
-    bytes sync_committee_signature = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes sync_committee_signature = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 message SignedBeaconBlockBellatrix {
@@ -322,7 +322,7 @@ message SignedBeaconBlockBellatrix {
     BeaconBlockBellatrix block = 1;
 
     // 96 byte BLS signature from the validator that produced this block.
-    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 message BeaconBlockBellatrix {
@@ -383,7 +383,7 @@ message SignedBlindedBeaconBlockBellatrix {
     BlindedBeaconBlockBellatrix block = 1;
 
     // 96 byte BLS signature from the validator that produced this blinded block.
-    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 message BlindedBeaconBlockBellatrix {
@@ -441,7 +441,7 @@ message SignedBeaconBlockCapella {
     BeaconBlockCapella block = 1;
 
     // 96 byte BLS signature from the validator that produced this block.
-    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 message BeaconBlockCapella {
@@ -505,7 +505,7 @@ message SignedBlindedBeaconBlockCapella {
     BlindedBeaconBlockCapella block = 1;
 
     // 96 byte BLS signature from the validator that produced this blinded block.
-    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 message BlindedBeaconBlockCapella {
@@ -565,7 +565,7 @@ message ValidatorRegistrationV1 {
     bytes fee_recipient = 1 [(ethereum.eth.ext.ssz_size) = "20"];
     uint64 gas_limit = 2;
     uint64 timestamp = 3;
-    bytes pubkey = 4 [(ethereum.eth.ext.ssz_size) = "48"];
+    bytes pubkey = 4 [(ethereum.eth.ext.ssz_size) = "2592"];
 }
 
 message SignedValidatorRegistrationsV1 {
@@ -574,27 +574,27 @@ message SignedValidatorRegistrationsV1 {
 
 message SignedValidatorRegistrationV1 {
     ValidatorRegistrationV1 message = 1 ;
-    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 message BuilderBid {
     ethereum.engine.v1.ExecutionPayloadHeader header = 1;
     bytes value = 2 [(ethereum.eth.ext.ssz_size) = "32"];
-    bytes pubkey = 3 [(ethereum.eth.ext.ssz_size) = "48"];
+    bytes pubkey = 3 [(ethereum.eth.ext.ssz_size) = "2592"];
 }
 
 message SignedBuilderBid {
     BuilderBid message = 1 ;
-    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 message BuilderBidCapella {
     ethereum.engine.v1.ExecutionPayloadHeaderCapella header = 1 ;
     bytes value = 2 [(ethereum.eth.ext.ssz_size) = "32"];
-    bytes pubkey = 3 [(ethereum.eth.ext.ssz_size) = "48"];
+    bytes pubkey = 3 [(ethereum.eth.ext.ssz_size) = "2592"];
 }
 
 message SignedBuilderBidCapella {
     BuilderBidCapella message = 1 ;
-    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
 }

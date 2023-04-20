@@ -30,7 +30,7 @@ message BLSToExecutionChange {
         uint64 validator_index = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"];
         
         // The public key of the BLS address requesting the change
-        bytes from_bls_pubkey = 2 [(ethereum.eth.ext.ssz_size) = "48"];
+        bytes from_bls_pubkey = 2 [(ethereum.eth.ext.ssz_size) = "2592"];
         
         // The new execution address to be the withdrawal credentials
         bytes to_execution_address = 3 [(ethereum.eth.ext.ssz_size) = "20"];
@@ -42,7 +42,7 @@ message SignedBLSToExecutionChange {
         BLSToExecutionChange message = 1; 
 
         // The 96 byte BLS signature from the withdrawal address requesting the change
-        bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+        bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
         
