@@ -13,9 +13,9 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/async/abool"
 	"github.com/prysmaticlabs/prysm/v4/async/event"
 	"github.com/prysmaticlabs/prysm/v4/config/features"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/config/params"
 	"github.com/prysmaticlabs/prysm/v4/io/file"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -55,7 +55,7 @@ var blockedBuckets = [][]byte{
 
 // Config represents store's config object.
 type Config struct {
-	PubKeys [][fieldparams.BLSPubkeyLength]byte
+	PubKeys [][dilithium2.CryptoPublicKeyBytes]byte
 }
 
 // Store defines an implementation of the Prysm Database interface
@@ -179,7 +179,7 @@ func NewKVStore(ctx context.Context, dirPath string, config *Config) (*Store, er
 }
 
 // UpdatePublicKeysBuckets for a specified list of keys.
-func (s *Store) UpdatePublicKeysBuckets(pubKeys [][fieldparams.BLSPubkeyLength]byte) error {
+func (s *Store) UpdatePublicKeysBuckets(pubKeys [][dilithium2.CryptoPublicKeyBytes]byte) error {
 	return s.update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(historicProposalsBucket)
 		for _, pubKey := range pubKeys {

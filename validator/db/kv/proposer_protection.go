@@ -10,6 +10,7 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 	"github.com/prysmaticlabs/prysm/v4/time/slots"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 )
@@ -26,15 +27,15 @@ type Proposal struct {
 }
 
 // ProposedPublicKeys retrieves all public keys in our proposals history bucket.
-func (s *Store) ProposedPublicKeys(ctx context.Context) ([][fieldparams.BLSPubkeyLength]byte, error) {
+func (s *Store) ProposedPublicKeys(ctx context.Context) ([][dilithium2.CryptoPublicKeyBytes]byte, error) {
 	ctx, span := trace.StartSpan(ctx, "Validator.ProposedPublicKeys")
 	defer span.End()
 	var err error
-	proposedPublicKeys := make([][fieldparams.BLSPubkeyLength]byte, 0)
+	proposedPublicKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, 0)
 	err = s.view(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(historicProposalsBucket)
 		return bucket.ForEach(func(key []byte, _ []byte) error {
-			var pubKeyBytes [fieldparams.BLSPubkeyLength]byte
+			var pubKeyBytes [dilithium2.CryptoPublicKeyBytes]byte
 			copy(pubKeyBytes[:], key)
 			proposedPublicKeys = append(proposedPublicKeys, pubKeyBytes)
 			return nil
@@ -46,7 +47,7 @@ func (s *Store) ProposedPublicKeys(ctx context.Context) ([][fieldparams.BLSPubke
 // ProposalHistoryForSlot accepts a validator public key and returns the corresponding signing root as well
 // as a boolean that tells us if we have a proposal history stored at the slot. It is possible we have proposed
 // a slot but stored a nil signing root, so the boolean helps give full information.
-func (s *Store) ProposalHistoryForSlot(ctx context.Context, publicKey [fieldparams.BLSPubkeyLength]byte, slot primitives.Slot) ([32]byte, bool, error) {
+func (s *Store) ProposalHistoryForSlot(ctx context.Context, publicKey [dilithium2.CryptoPublicKeyBytes]byte, slot primitives.Slot) ([32]byte, bool, error) {
 	ctx, span := trace.StartSpan(ctx, "Validator.ProposalHistoryForSlot")
 	defer span.End()
 
@@ -71,7 +72,7 @@ func (s *Store) ProposalHistoryForSlot(ctx context.Context, publicKey [fieldpara
 }
 
 // ProposalHistoryForPubKey returns the entire proposal history for a given public key.
-func (s *Store) ProposalHistoryForPubKey(ctx context.Context, publicKey [fieldparams.BLSPubkeyLength]byte) ([]*Proposal, error) {
+func (s *Store) ProposalHistoryForPubKey(ctx context.Context, publicKey [dilithium2.CryptoPublicKeyBytes]byte) ([]*Proposal, error) {
 	ctx, span := trace.StartSpan(ctx, "Validator.ProposalHistoryForPubKey")
 	defer span.End()
 
@@ -99,7 +100,7 @@ func (s *Store) ProposalHistoryForPubKey(ctx context.Context, publicKey [fieldpa
 // SaveProposalHistoryForSlot saves the proposal history for the requested validator public key.
 // We also check if the incoming proposal slot is lower than the lowest signed proposal slot
 // for the validator and override its value on disk.
-func (s *Store) SaveProposalHistoryForSlot(ctx context.Context, pubKey [fieldparams.BLSPubkeyLength]byte, slot primitives.Slot, signingRoot []byte) error {
+func (s *Store) SaveProposalHistoryForSlot(ctx context.Context, pubKey [dilithium2.CryptoPublicKeyBytes]byte, slot primitives.Slot, signingRoot []byte) error {
 	ctx, span := trace.StartSpan(ctx, "Validator.SaveProposalHistoryForEpoch")
 	defer span.End()
 
@@ -146,7 +147,7 @@ func (s *Store) SaveProposalHistoryForSlot(ctx context.Context, pubKey [fieldpar
 
 // LowestSignedProposal returns the lowest signed proposal slot for a validator public key.
 // If no data exists, a boolean of value false is returned.
-func (s *Store) LowestSignedProposal(ctx context.Context, publicKey [fieldparams.BLSPubkeyLength]byte) (primitives.Slot, bool, error) {
+func (s *Store) LowestSignedProposal(ctx context.Context, publicKey [dilithium2.CryptoPublicKeyBytes]byte) (primitives.Slot, bool, error) {
 	ctx, span := trace.StartSpan(ctx, "Validator.LowestSignedProposal")
 	defer span.End()
 
@@ -169,7 +170,7 @@ func (s *Store) LowestSignedProposal(ctx context.Context, publicKey [fieldparams
 
 // HighestSignedProposal returns the highest signed proposal slot for a validator public key.
 // If no data exists, a boolean of value false is returned.
-func (s *Store) HighestSignedProposal(ctx context.Context, publicKey [fieldparams.BLSPubkeyLength]byte) (primitives.Slot, bool, error) {
+func (s *Store) HighestSignedProposal(ctx context.Context, publicKey [dilithium2.CryptoPublicKeyBytes]byte) (primitives.Slot, bool, error) {
 	ctx, span := trace.StartSpan(ctx, "Validator.HighestSignedProposal")
 	defer span.End()
 

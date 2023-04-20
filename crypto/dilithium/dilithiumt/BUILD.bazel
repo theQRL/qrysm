@@ -1,0 +1,20 @@
+load("@prysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "dilithium_key.go",
+        "public_key.go",
+        "signature.go",
+    ],
+    importpath = "github.com/prysmaticlabs/prysm/v4/crypto/dilithium/dilithiumt",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cache/lru:go_default_library",
+        "//crypto/bls/common:go_default_library",
+        "//crypto/rand:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
+        "@com_github_theqrl_go_qrllib//common:go_default_library",
+        "@com_github_theqrl_go_qrllib//dilithium:go_default_library",
+    ],
+)

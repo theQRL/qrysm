@@ -5,13 +5,13 @@ import (
 	"errors"
 	"time"
 
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	validatorserviceconfig "github.com/prysmaticlabs/prysm/v4/config/validator/service"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls"
+	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium"
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/prysmaticlabs/prysm/v4/validator/keymanager"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // ErrConnectionIssue represents a connection problem.
@@ -40,18 +40,18 @@ type Validator interface {
 	Done()
 	WaitForChainStart(ctx context.Context) error
 	WaitForSync(ctx context.Context) error
-	WaitForActivation(ctx context.Context, accountsChangedChan chan [][fieldparams.BLSPubkeyLength]byte) error
+	WaitForActivation(ctx context.Context, accountsChangedChan chan [][dilithium2.CryptoPublicKeyBytes]byte) error
 	CanonicalHeadSlot(ctx context.Context) (primitives.Slot, error)
 	NextSlot() <-chan primitives.Slot
 	SlotDeadline(slot primitives.Slot) time.Time
 	LogValidatorGainsAndLosses(ctx context.Context, slot primitives.Slot) error
 	UpdateDuties(ctx context.Context, slot primitives.Slot) error
-	RolesAt(ctx context.Context, slot primitives.Slot) (map[[fieldparams.BLSPubkeyLength]byte][]ValidatorRole, error) // validator pubKey -> roles
-	SubmitAttestation(ctx context.Context, slot primitives.Slot, pubKey [fieldparams.BLSPubkeyLength]byte)
-	ProposeBlock(ctx context.Context, slot primitives.Slot, pubKey [fieldparams.BLSPubkeyLength]byte)
-	SubmitAggregateAndProof(ctx context.Context, slot primitives.Slot, pubKey [fieldparams.BLSPubkeyLength]byte)
-	SubmitSyncCommitteeMessage(ctx context.Context, slot primitives.Slot, pubKey [fieldparams.BLSPubkeyLength]byte)
-	SubmitSignedContributionAndProof(ctx context.Context, slot primitives.Slot, pubKey [fieldparams.BLSPubkeyLength]byte)
+	RolesAt(ctx context.Context, slot primitives.Slot) (map[[dilithium2.CryptoPublicKeyBytes]byte][]ValidatorRole, error) // validator pubKey -> roles
+	SubmitAttestation(ctx context.Context, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte)
+	ProposeBlock(ctx context.Context, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte)
+	SubmitAggregateAndProof(ctx context.Context, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte)
+	SubmitSyncCommitteeMessage(ctx context.Context, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte)
+	SubmitSignedContributionAndProof(ctx context.Context, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte)
 	LogAttestationsSubmitted()
 	LogSyncCommitteeMessagesSubmitted()
 	UpdateDomainDataCaches(ctx context.Context, slot primitives.Slot)
@@ -59,7 +59,7 @@ type Validator interface {
 	AllValidatorsAreExited(ctx context.Context) (bool, error)
 	Keymanager() (keymanager.IKeymanager, error)
 	ReceiveBlocks(ctx context.Context, connectionErrorChannel chan<- error)
-	HandleKeyReload(ctx context.Context, currentKeys [][fieldparams.BLSPubkeyLength]byte) (bool, error)
+	HandleKeyReload(ctx context.Context, currentKeys [][dilithium2.CryptoPublicKeyBytes]byte) (bool, error)
 	CheckDoppelGanger(ctx context.Context) error
 	PushProposerSettings(ctx context.Context, km keymanager.IKeymanager, deadline time.Time) error
 	SignValidatorRegistrationRequest(ctx context.Context, signer SigningFunc, newValidatorRegistration *ethpb.ValidatorRegistrationV1) (*ethpb.SignedValidatorRegistrationV1, error)
@@ -68,4 +68,4 @@ type Validator interface {
 }
 
 // SigningFunc interface defines a type for the a function that signs a message
-type SigningFunc func(context.Context, *validatorpb.SignRequest) (bls.Signature, error)
+type SigningFunc func(context.Context, *validatorpb.SignRequest) (dilithium.Signature, error)

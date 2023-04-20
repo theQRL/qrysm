@@ -11,22 +11,23 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/prysm/v4/async/event"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls"
+	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 	validatorpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/prysmaticlabs/prysm/v4/runtime/interop"
 	"github.com/prysmaticlabs/prysm/v4/validator/accounts/iface"
 	"github.com/prysmaticlabs/prysm/v4/validator/accounts/petnames"
 	"github.com/prysmaticlabs/prysm/v4/validator/keymanager"
+	common2 "github.com/theQRL/go-qrllib/common"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 	"go.opencensus.io/trace"
 )
 
 var (
-	lock              sync.RWMutex
-	orderedPublicKeys = make([][fieldparams.BLSPubkeyLength]byte, 0)
-	secretKeysCache   = make(map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey)
+	lock               sync.RWMutex
+	orderedPublicKeys  = make([][dilithium2.CryptoPublicKeyBytes]byte, 0)
+	dilithiumKeysCache = make(map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey)
 )
 
 const (
@@ -55,8 +56,8 @@ type SetupConfig struct {
 // Defines a struct containing 1-to-1 corresponding
 // private keys and public keys for Ethereum validators.
 type accountStore struct {
-	PrivateKeys [][]byte `json:"private_keys"`
-	PublicKeys  [][]byte `json:"public_keys"`
+	Seeds      [][]byte `json:"seeds"`
+	PublicKeys [][]byte `json:"public_keys"`
 }
 
 // AccountsKeystoreRepresentation defines an internal Prysm representation
@@ -71,8 +72,8 @@ type AccountsKeystoreRepresentation struct {
 // ResetCaches for the keymanager.
 func ResetCaches() {
 	lock.Lock()
-	orderedPublicKeys = make([][fieldparams.BLSPubkeyLength]byte, 0)
-	secretKeysCache = make(map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey)
+	orderedPublicKeys = make([][dilithium2.CryptoPublicKeyBytes]byte, 0)
+	dilithiumKeysCache = make(map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey)
 	lock.Unlock()
 }
 
@@ -112,16 +113,16 @@ func NewInteropKeymanager(_ context.Context, offset, numValidatorKeys uint64) (*
 	if numValidatorKeys == 0 {
 		return k, nil
 	}
-	secretKeys, publicKeys, err := interop.DeterministicallyGenerateKeys(offset, numValidatorKeys)
+	secretKeys, publicKeys, err := interop.QDeterministicallyGenerateKeys(offset, numValidatorKeys)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not generate interop keys")
 	}
 	lock.Lock()
-	pubKeys := make([][fieldparams.BLSPubkeyLength]byte, numValidatorKeys)
+	pubKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, numValidatorKeys)
 	for i := uint64(0); i < numValidatorKeys; i++ {
-		publicKey := bytesutil.ToBytes48(publicKeys[i].Marshal())
+		publicKey := bytesutil.ToBytes2592(publicKeys[i].Marshal())
 		pubKeys[i] = publicKey
-		secretKeysCache[publicKey] = secretKeys[i]
+		dilithiumKeysCache[publicKey] = secretKeys[i]
 	}
 	orderedPublicKeys = pubKeys
 	lock.Unlock()
@@ -131,7 +132,7 @@ func NewInteropKeymanager(_ context.Context, offset, numValidatorKeys uint64) (*
 // SubscribeAccountChanges creates an event subscription for a channel
 // to listen for public key changes at runtime, such as when new validator accounts
 // are imported into the keymanager while the validator process is running.
-func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][fieldparams.BLSPubkeyLength]byte) event.Subscription {
+func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][dilithium2.CryptoPublicKeyBytes]byte) event.Subscription {
 	return km.accountsChangedFeed.Subscribe(pubKeysChan)
 }
 
@@ -140,7 +141,7 @@ func (_ *Keymanager) ValidatingAccountNames() ([]string, error) {
 	lock.RLock()
 	names := make([]string, len(orderedPublicKeys))
 	for i, pubKey := range orderedPublicKeys {
-		names[i] = petnames.DeterministicName(bytesutil.FromBytes48(pubKey), "-")
+		names[i] = petnames.DeterministicName(bytesutil.FromBytes2592(pubKey), "-")
 	}
 	lock.RUnlock()
 	return names, nil
@@ -151,61 +152,61 @@ func (_ *Keymanager) ValidatingAccountNames() ([]string, error) {
 func (km *Keymanager) initializeKeysCachesFromKeystore() error {
 	lock.Lock()
 	defer lock.Unlock()
-	count := len(km.accountsStore.PrivateKeys)
-	orderedPublicKeys = make([][fieldparams.BLSPubkeyLength]byte, count)
-	secretKeysCache = make(map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey, count)
+	count := len(km.accountsStore.Seeds)
+	orderedPublicKeys = make([][dilithium2.CryptoPublicKeyBytes]byte, count)
+	dilithiumKeysCache = make(map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey, count)
 	for i, publicKey := range km.accountsStore.PublicKeys {
-		publicKey48 := bytesutil.ToBytes48(publicKey)
-		orderedPublicKeys[i] = publicKey48
-		secretKey, err := bls.SecretKeyFromBytes(km.accountsStore.PrivateKeys[i])
+		publicKey2592 := bytesutil.ToBytes2592(publicKey)
+		orderedPublicKeys[i] = publicKey2592
+		secretKey, err := dilithium.SecretKeyFromBytes(km.accountsStore.Seeds[i])
 		if err != nil {
 			return errors.Wrap(err, "failed to initialize keys caches from account keystore")
 		}
-		secretKeysCache[publicKey48] = secretKey
+		dilithiumKeysCache[publicKey2592] = secretKey
 	}
 	return nil
 }
 
 // FetchValidatingPublicKeys fetches the list of active public keys from the local account keystores.
-func (_ *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][fieldparams.BLSPubkeyLength]byte, error) {
+func (_ *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][dilithium2.CryptoPublicKeyBytes]byte, error) {
 	ctx, span := trace.StartSpan(ctx, "keymanager.FetchValidatingPublicKeys")
 	defer span.End()
 
 	lock.RLock()
 	keys := orderedPublicKeys
-	result := make([][fieldparams.BLSPubkeyLength]byte, len(keys))
+	result := make([][dilithium2.CryptoPublicKeyBytes]byte, len(keys))
 	copy(result, keys)
 	lock.RUnlock()
 	return result, nil
 }
 
 // FetchValidatingPrivateKeys fetches the list of private keys from the secret keys cache
-func (km *Keymanager) FetchValidatingPrivateKeys(ctx context.Context) ([][32]byte, error) {
+func (km *Keymanager) FetchValidatingPrivateKeys(ctx context.Context) ([][common2.SeedSize]byte, error) {
 	lock.RLock()
 	defer lock.RUnlock()
-	privKeys := make([][32]byte, len(secretKeysCache))
+	dilithiumSeed := make([][common2.SeedSize]byte, len(dilithiumKeysCache))
 	pubKeys, err := km.FetchValidatingPublicKeys(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not retrieve public keys")
 	}
 	for i, pk := range pubKeys {
-		seckey, ok := secretKeysCache[pk]
+		seckey, ok := dilithiumKeysCache[pk]
 		if !ok {
 			return nil, errors.New("Could not fetch private key")
 		}
-		privKeys[i] = bytesutil.ToBytes32(seckey.Marshal())
+		dilithiumSeed[i] = bytesutil.ToBytes48(seckey.Marshal())
 	}
-	return privKeys, nil
+	return dilithiumSeed, nil
 }
 
 // Sign signs a message using a validator key.
-func (_ *Keymanager) Sign(ctx context.Context, req *validatorpb.SignRequest) (bls.Signature, error) {
+func (_ *Keymanager) Sign(ctx context.Context, req *validatorpb.SignRequest) (dilithium.Signature, error) {
 	publicKey := req.PublicKey
 	if publicKey == nil {
 		return nil, errors.New("nil public key in request")
 	}
 	lock.RLock()
-	secretKey, ok := secretKeysCache[bytesutil.ToBytes48(publicKey)]
+	secretKey, ok := dilithiumKeysCache[bytesutil.ToBytes2592(publicKey)]
 	lock.RUnlock()
 	if !ok {
 		return nil, errors.New("no signing key found in keys cache")
@@ -241,7 +242,7 @@ func (km *Keymanager) initializeAccountKeystore(ctx context.Context) error {
 	if err := json.Unmarshal(enc, store); err != nil {
 		return err
 	}
-	if len(store.PublicKeys) != len(store.PrivateKeys) {
+	if len(store.PublicKeys) != len(store.Seeds) {
 		return errors.New("unequal number of public keys and private keys")
 	}
 	if len(store.PublicKeys) == 0 {
@@ -258,34 +259,34 @@ func (km *Keymanager) initializeAccountKeystore(ctx context.Context) error {
 // CreateAccountsKeystore creates a new keystore holding the provided keys.
 func (km *Keymanager) CreateAccountsKeystore(
 	_ context.Context,
-	privateKeys, publicKeys [][]byte,
+	seeds, publicKeys [][]byte,
 ) (*AccountsKeystoreRepresentation, error) {
 	encryptor := keystorev4.New()
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
 	}
-	if len(privateKeys) != len(publicKeys) {
+	if len(seeds) != len(publicKeys) {
 		return nil, fmt.Errorf(
-			"number of private keys and public keys is not equal: %d != %d", len(privateKeys), len(publicKeys),
+			"number of private keys and public keys is not equal: %d != %d", len(seeds), len(publicKeys),
 		)
 	}
 	if km.accountsStore == nil {
 		km.accountsStore = &accountStore{
-			PrivateKeys: privateKeys,
-			PublicKeys:  publicKeys,
+			Seeds:      seeds,
+			PublicKeys: publicKeys,
 		}
 	} else {
 		existingPubKeys := make(map[string]bool)
 		existingPrivKeys := make(map[string]bool)
-		for i := 0; i < len(km.accountsStore.PrivateKeys); i++ {
-			existingPrivKeys[string(km.accountsStore.PrivateKeys[i])] = true
+		for i := 0; i < len(km.accountsStore.Seeds); i++ {
+			existingPrivKeys[string(km.accountsStore.Seeds[i])] = true
 			existingPubKeys[string(km.accountsStore.PublicKeys[i])] = true
 		}
 		// We append to the accounts store keys only
 		// if the private/secret key do not already exist, to prevent duplicates.
-		for i := 0; i < len(privateKeys); i++ {
-			sk := privateKeys[i]
+		for i := 0; i < len(seeds); i++ {
+			sk := seeds[i]
 			pk := publicKeys[i]
 			_, privKeyExists := existingPrivKeys[string(sk)]
 			_, pubKeyExists := existingPubKeys[string(pk)]
@@ -293,7 +294,7 @@ func (km *Keymanager) CreateAccountsKeystore(
 				continue
 			}
 			km.accountsStore.PublicKeys = append(km.accountsStore.PublicKeys, pk)
-			km.accountsStore.PrivateKeys = append(km.accountsStore.PrivateKeys, sk)
+			km.accountsStore.Seeds = append(km.accountsStore.Seeds, sk)
 		}
 	}
 	err = km.initializeKeysCachesFromKeystore()
@@ -340,9 +341,9 @@ func (km *Keymanager) ListKeymanagerAccounts(ctx context.Context, cfg keymanager
 	if err != nil {
 		return errors.Wrap(err, "could not fetch validating public keys")
 	}
-	var privateKeys [][32]byte
+	var seeds [][common2.SeedSize]byte
 	if cfg.ShowPrivateKeys {
-		privateKeys, err = km.FetchValidatingPrivateKeys(ctx)
+		seeds, err = km.FetchValidatingPrivateKeys(ctx)
 		if err != nil {
 			return errors.Wrap(err, "could not fetch private keys")
 		}
@@ -352,8 +353,8 @@ func (km *Keymanager) ListKeymanagerAccounts(ctx context.Context, cfg keymanager
 		fmt.Printf("%s | %s\n", au.BrightBlue(fmt.Sprintf("Account %d", i)).Bold(), au.BrightGreen(accountNames[i]).Bold())
 		fmt.Printf("%s %#x\n", au.BrightMagenta("[validating public key]").Bold(), pubKeys[i])
 		if cfg.ShowPrivateKeys {
-			if len(privateKeys) > i {
-				fmt.Printf("%s %#x\n", au.BrightRed("[validating private key]").Bold(), privateKeys[i])
+			if len(seeds) > i {
+				fmt.Printf("%s %#x\n", au.BrightRed("[validating seeds]").Bold(), seeds[i])
 			}
 		}
 		if !cfg.ShowDepositData {

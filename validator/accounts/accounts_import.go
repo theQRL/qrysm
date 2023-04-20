@@ -14,7 +14,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls"
+	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 	"github.com/prysmaticlabs/prysm/v4/io/file"
 	"github.com/prysmaticlabs/prysm/v4/io/prompt"
@@ -220,7 +220,7 @@ func importPrivateKeyAsAccount(ctx context.Context, wallet *wallet.Wallet, impor
 			err, "could not decode file as hex string, does the file contain a valid hex string?",
 		)
 	}
-	privKey, err := bls.SecretKeyFromBytes(privKeyBytes)
+	privKey, err := dilithium.SecretKeyFromBytes(privKeyBytes)
 	if err != nil {
 		return errors.Wrap(err, "not a valid BLS private key")
 	}
@@ -268,25 +268,25 @@ func readKeystoreFile(_ context.Context, keystoreFilePath string) (*keymanager.K
 	return keystoreFile, nil
 }
 
-func createKeystoreFromPrivateKey(privKey bls.SecretKey, walletPassword string) (*keymanager.Keystore, error) {
+func createKeystoreFromPrivateKey(dilithiumKey dilithium.DilithiumKey, walletPassword string) (*keymanager.Keystore, error) {
 	encryptor := keystorev4.New()
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
 	}
-	cryptoFields, err := encryptor.Encrypt(privKey.Marshal(), walletPassword)
+	cryptoFields, err := encryptor.Encrypt(dilithiumKey.Marshal(), walletPassword)
 	if err != nil {
 		return nil, errors.Wrapf(
 			err,
 			"could not encrypt private key with public key %#x",
-			privKey.PublicKey().Marshal(),
+			dilithiumKey.PublicKey().Marshal(),
 		)
 	}
 	return &keymanager.Keystore{
 		Crypto:  cryptoFields,
 		ID:      id.String(),
 		Version: encryptor.Version(),
-		Pubkey:  fmt.Sprintf("%x", privKey.PublicKey().Marshal()),
+		Pubkey:  fmt.Sprintf("%x", dilithiumKey.PublicKey().Marshal()),
 		Name:    encryptor.Name(),
 	}, nil
 }

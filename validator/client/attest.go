@@ -12,7 +12,6 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/async"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/signing"
 	"github.com/prysmaticlabs/prysm/v4/config/features"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/config/params"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/interfaces"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
@@ -25,6 +24,7 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/time/slots"
 	"github.com/prysmaticlabs/prysm/v4/validator/client/iface"
 	"github.com/sirupsen/logrus"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"go.opencensus.io/trace"
 )
 
@@ -32,7 +32,7 @@ import (
 // It fetches the latest beacon block head along with the latest canonical beacon state
 // information in order to sign the block and include information about the validator's
 // participation in voting on the block.
-func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot, pubKey [fieldparams.BLSPubkeyLength]byte) {
+func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte) {
 	ctx, span := trace.StartSpan(ctx, "validator.SubmitAttestation")
 	defer span.End()
 	span.AddAttributes(trace.StringAttribute("validator", fmt.Sprintf("%#x", pubKey)))
@@ -181,7 +181,7 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot,
 }
 
 // Given the validator public key, this gets the validator assignment.
-func (v *validator) duty(pubKey [fieldparams.BLSPubkeyLength]byte) (*ethpb.DutiesResponse_Duty, error) {
+func (v *validator) duty(pubKey [dilithium2.CryptoPublicKeyBytes]byte) (*ethpb.DutiesResponse_Duty, error) {
 	if v.duties == nil {
 		return nil, errors.New("no duties for validators")
 	}
@@ -196,7 +196,7 @@ func (v *validator) duty(pubKey [fieldparams.BLSPubkeyLength]byte) (*ethpb.Dutie
 }
 
 // Given validator's public key, this function returns the signature of an attestation data and its signing root.
-func (v *validator) signAtt(ctx context.Context, pubKey [fieldparams.BLSPubkeyLength]byte, data *ethpb.AttestationData, slot primitives.Slot) ([]byte, [32]byte, error) {
+func (v *validator) signAtt(ctx context.Context, pubKey [dilithium2.CryptoPublicKeyBytes]byte, data *ethpb.AttestationData, slot primitives.Slot) ([]byte, [32]byte, error) {
 	domain, root, err := v.getDomainAndSigningRoot(ctx, data)
 	if err != nil {
 		return nil, [32]byte{}, err
@@ -296,7 +296,7 @@ func (v *validator) waitOneThirdOrValidBlock(ctx context.Context, slot primitive
 	}
 }
 
-func attestationLogFields(pubKey [fieldparams.BLSPubkeyLength]byte, indexedAtt *ethpb.IndexedAttestation) logrus.Fields {
+func attestationLogFields(pubKey [dilithium2.CryptoPublicKeyBytes]byte, indexedAtt *ethpb.IndexedAttestation) logrus.Fields {
 	return logrus.Fields{
 		"attesterPublicKey": fmt.Sprintf("%#x", pubKey),
 		"attestationSlot":   indexedAtt.Data.Slot,

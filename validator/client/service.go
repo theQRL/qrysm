@@ -14,7 +14,6 @@ import (
 	grpcutil "github.com/prysmaticlabs/prysm/v4/api/grpc"
 	"github.com/prysmaticlabs/prysm/v4/async/event"
 	lruwrpr "github.com/prysmaticlabs/prysm/v4/cache/lru"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/config/params"
 	validatorserviceconfig "github.com/prysmaticlabs/prysm/v4/config/validator/service"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/interfaces"
@@ -32,6 +31,7 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/validator/keymanager"
 	"github.com/prysmaticlabs/prysm/v4/validator/keymanager/local"
 	remoteweb3signer "github.com/prysmaticlabs/prysm/v4/validator/keymanager/remote-web3signer"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -177,7 +177,7 @@ func (v *ValidatorService) Start() {
 		log.WithError(err).Error("Could not read slashable public keys from disk")
 		return
 	}
-	slashablePublicKeys := make(map[[fieldparams.BLSPubkeyLength]byte]bool)
+	slashablePublicKeys := make(map[[dilithium2.CryptoPublicKeyBytes]byte]bool)
 	for _, pubKey := range sPubKeys {
 		slashablePublicKeys[pubKey] = true
 	}
@@ -197,10 +197,10 @@ func (v *ValidatorService) Start() {
 		graffiti:                       v.graffiti,
 		logValidatorBalances:           v.logValidatorBalances,
 		emitAccountMetrics:             v.emitAccountMetrics,
-		startBalances:                  make(map[[fieldparams.BLSPubkeyLength]byte]uint64),
-		prevBalance:                    make(map[[fieldparams.BLSPubkeyLength]byte]uint64),
-		pubkeyToValidatorIndex:         make(map[[fieldparams.BLSPubkeyLength]byte]primitives.ValidatorIndex),
-		signedValidatorRegistrations:   make(map[[fieldparams.BLSPubkeyLength]byte]*ethpb.SignedValidatorRegistrationV1),
+		startBalances:                  make(map[[dilithium2.CryptoPublicKeyBytes]byte]uint64),
+		prevBalance:                    make(map[[dilithium2.CryptoPublicKeyBytes]byte]uint64),
+		pubkeyToValidatorIndex:         make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
+		signedValidatorRegistrations:   make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
 		attLogs:                        make(map[[32]byte]*attSubmitted),
 		domainDataCache:                cache,
 		aggregatedSlotCommitteeIDCache: aggregatedSlotCommitteeIDCache,

@@ -43,6 +43,7 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/validator/keymanager/local"
 	remoteweb3signer "github.com/prysmaticlabs/prysm/v4/validator/keymanager/remote-web3signer"
 	"github.com/sirupsen/logrus"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -73,14 +74,14 @@ type validator struct {
 	highestValidSlotLock               sync.Mutex
 	prevBalanceLock                    sync.RWMutex
 	slashableKeysLock                  sync.RWMutex
-	eipImportBlacklistedPublicKeys     map[[fieldparams.BLSPubkeyLength]byte]bool
+	eipImportBlacklistedPublicKeys     map[[dilithium2.CryptoPublicKeyBytes]byte]bool
 	walletInitializedFeed              *event.Feed
 	attLogs                            map[[32]byte]*attSubmitted
-	startBalances                      map[[fieldparams.BLSPubkeyLength]byte]uint64
+	startBalances                      map[[dilithium2.CryptoPublicKeyBytes]byte]uint64
 	duties                             *ethpb.DutiesResponse
-	prevBalance                        map[[fieldparams.BLSPubkeyLength]byte]uint64
-	pubkeyToValidatorIndex             map[[fieldparams.BLSPubkeyLength]byte]primitives.ValidatorIndex
-	signedValidatorRegistrations       map[[fieldparams.BLSPubkeyLength]byte]*ethpb.SignedValidatorRegistrationV1
+	prevBalance                        map[[dilithium2.CryptoPublicKeyBytes]byte]uint64
+	pubkeyToValidatorIndex             map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex
+	signedValidatorRegistrations       map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1
 	graffitiOrderedIndex               uint64
 	aggregatedSlotCommitteeIDCache     *lru.Cache
 	domainDataCache                    *ristretto.Cache
@@ -183,7 +184,7 @@ func waitForWebWalletInitialization(
 // recheckKeys checks if the validator has any keys that need to be rechecked.
 // the keymanager implements a subscription to push these updates to the validator.
 func recheckKeys(ctx context.Context, valDB vdb.Database, keyManager keymanager.IKeymanager) {
-	var validatingKeys [][fieldparams.BLSPubkeyLength]byte
+	var validatingKeys [][dilithium2.CryptoPublicKeyBytes]byte
 	var err error
 	validatingKeys, err = keyManager.FetchValidatingPublicKeys(ctx)
 	if err != nil {
@@ -207,7 +208,7 @@ func recheckValidatingKeysBucket(ctx context.Context, valDB vdb.Database, km key
 	if !ok {
 		return
 	}
-	validatingPubKeysChan := make(chan [][fieldparams.BLSPubkeyLength]byte, 1)
+	validatingPubKeysChan := make(chan [][dilithium2.CryptoPublicKeyBytes]byte, 1)
 	sub := importedKeymanager.SubscribeAccountChanges(validatingPubKeysChan)
 	defer func() {
 		sub.Unsubscribe()
@@ -518,7 +519,7 @@ func buildDuplicateError(response []*ethpb.DoppelGangerResponse_ValidatorRespons
 	duplicates := make([][]byte, 0)
 	for _, valRes := range response {
 		if valRes.DuplicateExists {
-			var copiedKey [fieldparams.BLSPubkeyLength]byte
+			var copiedKey [dilithium2.CryptoPublicKeyBytes]byte
 			copy(copiedKey[:], valRes.PublicKey)
 			duplicates = append(duplicates, copiedKey[:])
 		}
@@ -576,7 +577,7 @@ func (v *validator) UpdateDuties(ctx context.Context, slot primitives.Slot) erro
 	}
 
 	// Filter out the slashable public keys from the duties request.
-	filteredKeys := make([][fieldparams.BLSPubkeyLength]byte, 0, len(validatingKeys))
+	filteredKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, 0, len(validatingKeys))
 	v.slashableKeysLock.RLock()
 	for _, pubKey := range validatingKeys {
 		if ok := v.eipImportBlacklistedPublicKeys[pubKey]; !ok {
@@ -592,7 +593,7 @@ func (v *validator) UpdateDuties(ctx context.Context, slot primitives.Slot) erro
 
 	req := &ethpb.DutiesRequest{
 		Epoch:      primitives.Epoch(slot / params.BeaconConfig().SlotsPerEpoch),
-		PublicKeys: bytesutil.FromBytes48Array(filteredKeys),
+		PublicKeys: bytesutil.FromBytes2592Array(filteredKeys),
 	}
 
 	// If duties is nil it means we have had no prior duties and just started up.
@@ -632,7 +633,7 @@ func (v *validator) subscribeToSubnets(ctx context.Context, res *ethpb.DutiesRes
 	alreadySubscribed := make(map[[64]byte]bool)
 
 	for _, duty := range res.CurrentEpochDuties {
-		pk := bytesutil.ToBytes48(duty.PublicKey)
+		pk := bytesutil.ToBytes2592(duty.PublicKey)
 		if duty.Status == ethpb.ValidatorStatus_ACTIVE || duty.Status == ethpb.ValidatorStatus_EXITING {
 			attesterSlot := duty.AttesterSlot
 			committeeIndex := duty.CommitteeIndex
@@ -669,7 +670,7 @@ func (v *validator) subscribeToSubnets(ctx context.Context, res *ethpb.DutiesRes
 				continue
 			}
 
-			aggregator, err := v.isAggregator(ctx, duty.Committee, attesterSlot, bytesutil.ToBytes48(duty.PublicKey))
+			aggregator, err := v.isAggregator(ctx, duty.Committee, attesterSlot, bytesutil.ToBytes2592(duty.PublicKey))
 			if err != nil {
 				return errors.Wrap(err, "could not check if a validator is an aggregator")
 			}
@@ -699,8 +700,8 @@ func (v *validator) subscribeToSubnets(ctx context.Context, res *ethpb.DutiesRes
 // RolesAt slot returns the validator roles at the given slot. Returns nil if the
 // validator is known to not have a roles at the slot. Returns UNKNOWN if the
 // validator assignments are unknown. Otherwise returns a valid ValidatorRole map.
-func (v *validator) RolesAt(ctx context.Context, slot primitives.Slot) (map[[fieldparams.BLSPubkeyLength]byte][]iface.ValidatorRole, error) {
-	rolesAt := make(map[[fieldparams.BLSPubkeyLength]byte][]iface.ValidatorRole)
+func (v *validator) RolesAt(ctx context.Context, slot primitives.Slot) (map[[dilithium2.CryptoPublicKeyBytes]byte][]iface.ValidatorRole, error) {
+	rolesAt := make(map[[dilithium2.CryptoPublicKeyBytes]byte][]iface.ValidatorRole)
 	for validator, duty := range v.duties.Duties {
 		var roles []iface.ValidatorRole
 
@@ -718,7 +719,7 @@ func (v *validator) RolesAt(ctx context.Context, slot primitives.Slot) (map[[fie
 		if duty.AttesterSlot == slot {
 			roles = append(roles, iface.RoleAttester)
 
-			aggregator, err := v.isAggregator(ctx, duty.Committee, slot, bytesutil.ToBytes48(duty.PublicKey))
+			aggregator, err := v.isAggregator(ctx, duty.Committee, slot, bytesutil.ToBytes2592(duty.PublicKey))
 			if err != nil {
 				return nil, errors.Wrap(err, "could not check if a validator is an aggregator")
 			}
@@ -744,7 +745,7 @@ func (v *validator) RolesAt(ctx context.Context, slot primitives.Slot) (map[[fie
 			}
 		}
 		if inSyncCommittee {
-			aggregator, err := v.isSyncCommitteeAggregator(ctx, slot, bytesutil.ToBytes48(duty.PublicKey))
+			aggregator, err := v.isSyncCommitteeAggregator(ctx, slot, bytesutil.ToBytes2592(duty.PublicKey))
 			if err != nil {
 				return nil, errors.Wrap(err, "could not check if a validator is a sync committee aggregator")
 			}
@@ -757,7 +758,7 @@ func (v *validator) RolesAt(ctx context.Context, slot primitives.Slot) (map[[fie
 			roles = append(roles, iface.RoleUnknown)
 		}
 
-		var pubKey [fieldparams.BLSPubkeyLength]byte
+		var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(pubKey[:], duty.PublicKey)
 		rolesAt[pubKey] = roles
 	}
@@ -774,7 +775,7 @@ func (v *validator) Keymanager() (keymanager.IKeymanager, error) {
 
 // isAggregator checks if a validator is an aggregator of a given slot and committee,
 // it uses a modulo calculated by validator count in committee and samples randomness around it.
-func (v *validator) isAggregator(ctx context.Context, committee []primitives.ValidatorIndex, slot primitives.Slot, pubKey [fieldparams.BLSPubkeyLength]byte) (bool, error) {
+func (v *validator) isAggregator(ctx context.Context, committee []primitives.ValidatorIndex, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte) (bool, error) {
 	modulo := uint64(1)
 	if len(committee)/int(params.BeaconConfig().TargetAggregatorsPerCommittee) > 1 {
 		modulo = uint64(len(committee)) / params.BeaconConfig().TargetAggregatorsPerCommittee
@@ -798,7 +799,7 @@ func (v *validator) isAggregator(ctx context.Context, committee []primitives.Val
 //
 //	modulo = max(1, SYNC_COMMITTEE_SIZE // SYNC_COMMITTEE_SUBNET_COUNT // TARGET_AGGREGATORS_PER_SYNC_SUBCOMMITTEE)
 //	return bytes_to_uint64(hash(signature)[0:8]) % modulo == 0
-func (v *validator) isSyncCommitteeAggregator(ctx context.Context, slot primitives.Slot, pubKey [fieldparams.BLSPubkeyLength]byte) (bool, error) {
+func (v *validator) isSyncCommitteeAggregator(ctx context.Context, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte) (bool, error) {
 	res, err := v.validatorClient.GetSyncSubcommitteeIndex(ctx, &ethpb.SyncSubcommitteeIndexRequest{
 		PublicKey: pubKey[:],
 		Slot:      slot,
@@ -1032,7 +1033,7 @@ func (v *validator) PushProposerSettings(ctx context.Context, km keymanager.IKey
 	return nil
 }
 
-func (v *validator) buildPrepProposerReqs(ctx context.Context, pubkeys [][fieldparams.BLSPubkeyLength]byte) ([]*ethpb.PrepareBeaconProposerRequest_FeeRecipientContainer, error) {
+func (v *validator) buildPrepProposerReqs(ctx context.Context, pubkeys [][dilithium2.CryptoPublicKeyBytes]byte) ([]*ethpb.PrepareBeaconProposerRequest_FeeRecipientContainer, error) {
 	var prepareProposerReqs []*ethpb.PrepareBeaconProposerRequest_FeeRecipientContainer
 
 	for _, k := range pubkeys {
@@ -1090,7 +1091,7 @@ func (v *validator) buildPrepProposerReqs(ctx context.Context, pubkeys [][fieldp
 	return prepareProposerReqs, nil
 }
 
-func (v *validator) buildSignedRegReqs(ctx context.Context, pubkeys [][fieldparams.BLSPubkeyLength]byte, signer iface.SigningFunc) ([]*ethpb.SignedValidatorRegistrationV1, error) {
+func (v *validator) buildSignedRegReqs(ctx context.Context, pubkeys [][dilithium2.CryptoPublicKeyBytes]byte, signer iface.SigningFunc) ([]*ethpb.SignedValidatorRegistrationV1, error) {
 	var signedValRegRegs []*ethpb.SignedValidatorRegistrationV1
 
 	for i, k := range pubkeys {
@@ -1157,7 +1158,7 @@ func (v *validator) buildSignedRegReqs(ctx context.Context, pubkeys [][fieldpara
 	return signedValRegRegs, nil
 }
 
-func (v *validator) validatorIndex(ctx context.Context, pubkey [fieldparams.BLSPubkeyLength]byte) (primitives.ValidatorIndex, bool, error) {
+func (v *validator) validatorIndex(ctx context.Context, pubkey [dilithium2.CryptoPublicKeyBytes]byte) (primitives.ValidatorIndex, bool, error) {
 	resp, err := v.validatorClient.ValidatorIndex(ctx, &ethpb.ValidatorIndexRequest{PublicKey: pubkey[:]})
 	switch {
 	case status.Code(err) == codes.NotFound:

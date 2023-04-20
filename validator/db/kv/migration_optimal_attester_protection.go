@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"context"
 
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/config/params"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 	"github.com/prysmaticlabs/prysm/v4/monitoring/progress"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -225,8 +225,8 @@ func (s *Store) migrateOptimalAttesterProtectionDown(_ context.Context) error {
 	})
 }
 
-func (s *Store) extractPubKeysForMigratingDown() ([][fieldparams.BLSPubkeyLength]byte, error) {
-	pubKeys := make([][fieldparams.BLSPubkeyLength]byte, 0)
+func (s *Store) extractPubKeysForMigratingDown() ([][dilithium2.CryptoPublicKeyBytes]byte, error) {
+	pubKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, 0)
 	err := s.view(func(tx *bolt.Tx) error {
 		mb := tx.Bucket(migrationsBucket)
 		if b := mb.Get(migrationOptimalAttesterProtectionKey); b == nil {
@@ -246,7 +246,7 @@ func (s *Store) extractPubKeysForMigratingDown() ([][fieldparams.BLSPubkeyLength
 			if pkBucket == nil {
 				return nil
 			}
-			pubKeys = append(pubKeys, bytesutil.ToBytes48(pubKey))
+			pubKeys = append(pubKeys, bytesutil.ToBytes2592(pubKey))
 			return nil
 		})
 	})

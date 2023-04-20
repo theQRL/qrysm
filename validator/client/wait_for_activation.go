@@ -2,17 +2,17 @@ package client
 
 import (
 	"context"
+	"github.com/prysmaticlabs/prysm/v4/config/params"
 	"io"
 	"time"
 
 	"github.com/pkg/errors"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 	"github.com/prysmaticlabs/prysm/v4/math"
 	"github.com/prysmaticlabs/prysm/v4/monitoring/tracing"
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	"github.com/prysmaticlabs/prysm/v4/time/slots"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"go.opencensus.io/trace"
 )
 
@@ -22,10 +22,10 @@ import (
 // from the gRPC server.
 //
 // If the channel parameter is nil, WaitForActivation creates and manages its own channel.
-func (v *validator) WaitForActivation(ctx context.Context, accountsChangedChan chan [][fieldparams.BLSPubkeyLength]byte) error {
+func (v *validator) WaitForActivation(ctx context.Context, accountsChangedChan chan [][dilithium2.CryptoPublicKeyBytes]byte) error {
 	// Monitor the key manager for updates.
 	if accountsChangedChan == nil {
-		accountsChangedChan = make(chan [][fieldparams.BLSPubkeyLength]byte, 1)
+		accountsChangedChan = make(chan [][dilithium2.CryptoPublicKeyBytes]byte, 1)
 		km, err := v.Keymanager()
 		if err != nil {
 			return err
@@ -47,7 +47,7 @@ func (v *validator) WaitForActivation(ctx context.Context, accountsChangedChan c
 // the accountsChangedChan. When an event signal is received, restart the internalWaitForActivation routine.
 // 4) If the stream is reset in error, restart the routine.
 // 5) If the stream returns a response indicating one or more validators are active, exit the routine.
-func (v *validator) internalWaitForActivation(ctx context.Context, accountsChangedChan <-chan [][fieldparams.BLSPubkeyLength]byte) error {
+func (v *validator) internalWaitForActivation(ctx context.Context, accountsChangedChan <-chan [][dilithium2.CryptoPublicKeyBytes]byte) error {
 	ctx, span := trace.StartSpan(ctx, "validator.WaitForActivation")
 	defer span.End()
 
@@ -80,7 +80,7 @@ func (v *validator) internalWaitForActivation(ctx context.Context, accountsChang
 	}
 
 	req := &ethpb.ValidatorActivationRequest{
-		PublicKeys: bytesutil.FromBytes48Array(validatingKeys),
+		PublicKeys: bytesutil.FromBytes2592Array(validatingKeys),
 	}
 	stream, err := v.validatorClient.WaitForActivation(ctx, req)
 	if err != nil {
@@ -101,7 +101,7 @@ func (v *validator) internalWaitForActivation(ctx context.Context, accountsChang
 	return nil
 }
 
-func (v *validator) handleAccountsChanged(ctx context.Context, accountsChangedChan <-chan [][fieldparams.BLSPubkeyLength]byte, stream *ethpb.BeaconNodeValidator_WaitForActivationClient, span *trace.Span) error {
+func (v *validator) handleAccountsChanged(ctx context.Context, accountsChangedChan <-chan [][dilithium2.CryptoPublicKeyBytes]byte, stream *ethpb.BeaconNodeValidator_WaitForActivationClient, span *trace.Span) error {
 	for {
 		select {
 		case <-accountsChangedChan:

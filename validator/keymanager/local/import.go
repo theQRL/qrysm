@@ -9,7 +9,7 @@ import (
 
 	"github.com/k0kubun/go-ansi"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls"
+	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium"
 	ethpbservice "github.com/prysmaticlabs/prysm/v4/proto/eth/service"
 	"github.com/prysmaticlabs/prysm/v4/validator/keymanager"
 	"github.com/schollz/progressbar/v3"
@@ -126,7 +126,7 @@ func (_ *Keymanager) attemptDecryptKeystore(
 			return nil, nil, "", errors.Wrap(err, "could not decode pubkey from keystore")
 		}
 	} else {
-		privKey, err := bls.SecretKeyFromBytes(privKeyBytes)
+		privKey, err := dilithium.SecretKeyFromBytes(privKeyBytes)
 		if err != nil {
 			return nil, nil, "", errors.Wrap(err, "could not initialize private key from bytes")
 		}

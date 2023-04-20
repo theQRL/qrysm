@@ -3,6 +3,7 @@ package history
 import (
 	"encoding/hex"
 	"fmt"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"strconv"
 	"strings"
 
@@ -64,6 +65,20 @@ func PubKeyFromHex(str string) ([fieldparams.BLSPubkeyLength]byte, error) {
 	}
 	var pk [fieldparams.BLSPubkeyLength]byte
 	copy(pk[:], pubKeyBytes[:fieldparams.BLSPubkeyLength])
+	return pk, nil
+}
+
+// DilithiumPubKeyFromHex takes in a hex string, verifies its length as 48 bytes, and converts that representation.
+func DilithiumPubKeyFromHex(str string) ([dilithium2.CryptoPublicKeyBytes]byte, error) {
+	pubKeyBytes, err := hex.DecodeString(strings.TrimPrefix(str, "0x"))
+	if err != nil {
+		return [dilithium2.CryptoPublicKeyBytes]byte{}, err
+	}
+	if len(pubKeyBytes) != dilithium2.CryptoPublicKeyBytes {
+		return [dilithium2.CryptoPublicKeyBytes]byte{}, fmt.Errorf("public key is not correct, 48-byte length: %s", str)
+	}
+	var pk [dilithium2.CryptoPublicKeyBytes]byte
+	copy(pk[:], pubKeyBytes[:dilithium2.CryptoPublicKeyBytes])
 	return pk, nil
 }
 

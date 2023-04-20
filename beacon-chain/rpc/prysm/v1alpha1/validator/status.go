@@ -8,7 +8,6 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/signing"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/time"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/config/params"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
 	"github.com/prysmaticlabs/prysm/v4/contracts/deposit"
@@ -17,6 +16,7 @@ import (
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	"github.com/prysmaticlabs/prysm/v4/runtime/version"
 	"github.com/prysmaticlabs/prysm/v4/time/slots"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -65,11 +65,11 @@ func (vs *Server) MultipleValidatorStatus(
 	}
 	responseCap := len(req.PublicKeys) + len(req.Indices)
 	pubKeys := make([][]byte, 0, responseCap)
-	filtered := make(map[[fieldparams.BLSPubkeyLength]byte]bool)
-	filtered[[fieldparams.BLSPubkeyLength]byte{}] = true // Filter out keys with all zeros.
+	filtered := make(map[[dilithium2.CryptoPublicKeyBytes]byte]bool)
+	filtered[[dilithium2.CryptoPublicKeyBytes]byte{}] = true // Filter out keys with all zeros.
 	// Filter out duplicate public keys.
 	for _, pubKey := range req.PublicKeys {
-		pubkeyBytes := bytesutil.ToBytes48(pubKey)
+		pubkeyBytes := bytesutil.ToBytes2592(pubKey)
 		if !filtered[pubkeyBytes] {
 			pubKeys = append(pubKeys, pubKey)
 			filtered[pubkeyBytes] = true
@@ -185,7 +185,7 @@ func (vs *Server) CheckDoppelGanger(ctx context.Context, req *ethpb.DoppelGanger
 				})
 			continue
 		}
-		valIndex, ok := prevState.ValidatorIndexByPubkey(bytesutil.ToBytes48(v.PublicKey))
+		valIndex, ok := prevState.ValidatorIndexByPubkey(bytesutil.ToBytes2592(v.PublicKey))
 		if !ok {
 			// Ignore if validator pubkey doesn't exist.
 			continue
@@ -394,7 +394,7 @@ func statusForPubKey(headState state.ReadOnlyBeaconState, pubKey []byte) (ethpb.
 	if headState == nil || headState.IsNil() {
 		return ethpb.ValidatorStatus_UNKNOWN_STATUS, 0, errors.New("head state does not exist")
 	}
-	idx, ok := headState.ValidatorIndexByPubkey(bytesutil.ToBytes48(pubKey))
+	idx, ok := headState.ValidatorIndexByPubkey(bytesutil.ToBytes2592(pubKey))
 	if !ok || uint64(idx) >= uint64(headState.NumValidators()) {
 		return ethpb.ValidatorStatus_UNKNOWN_STATUS, 0, errPubkeyDoesNotExist
 	}

@@ -11,17 +11,17 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/prysm/v4/cmd/validator/flags"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls"
+	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 	"github.com/prysmaticlabs/prysm/v4/io/prompt"
 	"github.com/prysmaticlabs/prysm/v4/validator/accounts/petnames"
 	"github.com/prysmaticlabs/prysm/v4/validator/accounts/userprompt"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/urfave/cli/v2"
 )
 
 // selectAccounts Ask user to select accounts via an interactive user prompt.
-func selectAccounts(selectionPrompt string, pubKeys [][fieldparams.BLSPubkeyLength]byte) (filteredPubKeys []bls.PublicKey, err error) {
+func selectAccounts(selectionPrompt string, pubKeys [][dilithium2.CryptoPublicKeyBytes]byte) (filteredPubKeys []dilithium.PublicKey, err error) {
 	pubKeyStrings := make([]string, len(pubKeys))
 	for i, pk := range pubKeys {
 		name := petnames.DeterministicName(pk[:], "-")
@@ -84,9 +84,9 @@ func selectAccounts(selectionPrompt string, pubKeys [][fieldparams.BLSPubkeyLeng
 	}
 
 	// Filter the public keys based on user input.
-	filteredPubKeys = make([]bls.PublicKey, 0)
+	filteredPubKeys = make([]dilithium.PublicKey, 0)
 	for selectedIndex := range seen {
-		pk, err := bls.PublicKeyFromBytes(pubKeys[selectedIndex][:])
+		pk, err := dilithium.PublicKeyFromBytes(pubKeys[selectedIndex][:])
 		if err != nil {
 			return nil, err
 		}
@@ -100,9 +100,9 @@ func selectAccounts(selectionPrompt string, pubKeys [][fieldparams.BLSPubkeyLeng
 func FilterPublicKeysFromUserInput(
 	cliCtx *cli.Context,
 	publicKeysFlag *cli.StringFlag,
-	validatingPublicKeys [][fieldparams.BLSPubkeyLength]byte,
+	validatingPublicKeys [][dilithium2.CryptoPublicKeyBytes]byte,
 	selectionPrompt string,
-) ([]bls.PublicKey, error) {
+) ([]dilithium.PublicKey, error) {
 	if cliCtx.IsSet(publicKeysFlag.Name) {
 		pubKeyStrings := strings.Split(cliCtx.String(publicKeysFlag.Name), ",")
 		if len(pubKeyStrings) == 0 {
@@ -116,8 +116,8 @@ func FilterPublicKeysFromUserInput(
 	return selectAccounts(selectionPrompt, validatingPublicKeys)
 }
 
-func filterPublicKeys(pubKeyStrings []string) ([]bls.PublicKey, error) {
-	var filteredPubKeys []bls.PublicKey
+func filterPublicKeys(pubKeyStrings []string) ([]dilithium.PublicKey, error) {
+	var filteredPubKeys []dilithium.PublicKey
 	for _, str := range pubKeyStrings {
 		pkString := str
 		if strings.Contains(pkString, "0x") {
@@ -127,7 +127,7 @@ func filterPublicKeys(pubKeyStrings []string) ([]bls.PublicKey, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not decode string %s as hex", pkString)
 		}
-		blsPublicKey, err := bls.PublicKeyFromBytes(pubKeyBytes)
+		blsPublicKey, err := dilithium.PublicKeyFromBytes(pubKeyBytes)
 		if err != nil {
 			return nil, errors.Wrapf(err, "%#x is not a valid BLS public key", pubKeyBytes)
 		}
@@ -140,7 +140,7 @@ func filterPublicKeys(pubKeyStrings []string) ([]bls.PublicKey, error) {
 func FilterExitAccountsFromUserInput(
 	cliCtx *cli.Context,
 	r io.Reader,
-	validatingPublicKeys [][fieldparams.BLSPubkeyLength]byte,
+	validatingPublicKeys [][dilithium2.CryptoPublicKeyBytes]byte,
 	forceExit bool,
 ) (rawPubKeys [][]byte, formattedPubKeys []string, err error) {
 	if !cliCtx.IsSet(flags.ExitAllFlag.Name) {

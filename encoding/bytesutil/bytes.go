@@ -46,6 +46,22 @@ func FromBytes48Array(x [][48]byte) [][]byte {
 	return y
 }
 
+// FromBytes2592 is a convenience method for converting a fixed-size byte array
+// to a byte slice.
+func FromBytes2592(x [2592]byte) []byte {
+	return x[:]
+}
+
+// FromBytes2592Array is a convenience method for converting an array of
+// fixed-size byte arrays to an array of byte slices.
+func FromBytes2592Array(x [][2592]byte) [][]byte {
+	y := make([][]byte, len(x))
+	for i := range x {
+		y[i] = x[i][:]
+	}
+	return y
+}
+
 // Trunc truncates the byte slices to 6 bytes.
 func Trunc(x []byte) []byte {
 	if len(x) > 6 {

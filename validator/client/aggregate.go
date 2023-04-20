@@ -6,15 +6,15 @@ import (
 	"time"
 
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/signing"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/config/params"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls"
+	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium"
 	"github.com/prysmaticlabs/prysm/v4/monitoring/tracing"
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/validator-client"
 	prysmTime "github.com/prysmaticlabs/prysm/v4/time"
 	"github.com/prysmaticlabs/prysm/v4/time/slots"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -24,7 +24,7 @@ import (
 // via gRPC. Beacon node will verify the slot signature and determine if the validator is also
 // an aggregator. If yes, then beacon node will broadcast aggregated signature and
 // proof on the validator's behalf.
-func (v *validator) SubmitAggregateAndProof(ctx context.Context, slot primitives.Slot, pubKey [fieldparams.BLSPubkeyLength]byte) {
+func (v *validator) SubmitAggregateAndProof(ctx context.Context, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte) {
 	ctx, span := trace.StartSpan(ctx, "validator.SubmitAggregateAndProof")
 	defer span.End()
 
@@ -117,13 +117,13 @@ func (v *validator) SubmitAggregateAndProof(ctx context.Context, slot primitives
 }
 
 // Signs input slot with domain selection proof. This is used to create the signature for aggregator selection.
-func (v *validator) signSlotWithSelectionProof(ctx context.Context, pubKey [fieldparams.BLSPubkeyLength]byte, slot primitives.Slot) (signature []byte, err error) {
+func (v *validator) signSlotWithSelectionProof(ctx context.Context, pubKey [dilithium2.CryptoPublicKeyBytes]byte, slot primitives.Slot) (signature []byte, err error) {
 	domain, err := v.domainData(ctx, slots.ToEpoch(slot), params.BeaconConfig().DomainSelectionProof[:])
 	if err != nil {
 		return nil, err
 	}
 
-	var sig bls.Signature
+	var sig dilithium.Signature
 	sszUint := primitives.SSZUint64(slot)
 	root, err := signing.ComputeSigningRoot(&sszUint, domain.SignatureDomain)
 	if err != nil {
@@ -173,12 +173,12 @@ func (v *validator) waitToSlotTwoThirds(ctx context.Context, slot primitives.Slo
 
 // This returns the signature of validator signing over aggregate and
 // proof object.
-func (v *validator) aggregateAndProofSig(ctx context.Context, pubKey [fieldparams.BLSPubkeyLength]byte, agg *ethpb.AggregateAttestationAndProof, slot primitives.Slot) ([]byte, error) {
+func (v *validator) aggregateAndProofSig(ctx context.Context, pubKey [dilithium2.CryptoPublicKeyBytes]byte, agg *ethpb.AggregateAttestationAndProof, slot primitives.Slot) ([]byte, error) {
 	d, err := v.domainData(ctx, slots.ToEpoch(agg.Aggregate.Data.Slot), params.BeaconConfig().DomainAggregateAndProof[:])
 	if err != nil {
 		return nil, err
 	}
-	var sig bls.Signature
+	var sig dilithium.Signature
 	root, err := signing.ComputeSigningRoot(agg, d.SignatureDomain)
 	if err != nil {
 		return nil, err

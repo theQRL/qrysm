@@ -7,10 +7,10 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 	ethpbservice "github.com/prysmaticlabs/prysm/v4/proto/eth/service"
 	"github.com/sirupsen/logrus"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // DeleteKeystores takes in public keys and removes the accounts from the wallet.
@@ -20,14 +20,14 @@ func (km *Keymanager) DeleteKeystores(
 	ctx context.Context, publicKeys [][]byte,
 ) ([]*ethpbservice.DeletedKeystoreStatus, error) {
 	// Check for duplicate keys and filter them out.
-	trackedPublicKeys := make(map[[fieldparams.BLSPubkeyLength]byte]bool)
+	trackedPublicKeys := make(map[[dilithium2.CryptoPublicKeyBytes]byte]bool)
 	statuses := make([]*ethpbservice.DeletedKeystoreStatus, 0, len(publicKeys))
 	var store *AccountsKeystoreRepresentation
 	var err error
 	deletedKeys := make([][]byte, 0, len(publicKeys))
 	for _, publicKey := range publicKeys {
 		// Check if the key in the request is a duplicate.
-		if _, ok := trackedPublicKeys[bytesutil.ToBytes48(publicKey)]; ok {
+		if _, ok := trackedPublicKeys[bytesutil.ToBytes2592(publicKey)]; ok {
 			statuses = append(statuses, &ethpbservice.DeletedKeystoreStatus{
 				Status: ethpbservice.DeletedKeystoreStatus_NOT_ACTIVE,
 			})
@@ -50,16 +50,16 @@ func (km *Keymanager) DeleteKeystores(
 		}
 		deletedPublicKey := km.accountsStore.PublicKeys[index]
 		deletedKeys = append(deletedKeys, deletedPublicKey)
-		km.accountsStore.PrivateKeys = append(km.accountsStore.PrivateKeys[:index], km.accountsStore.PrivateKeys[index+1:]...)
+		km.accountsStore.Seeds = append(km.accountsStore.Seeds[:index], km.accountsStore.Seeds[index+1:]...)
 		km.accountsStore.PublicKeys = append(km.accountsStore.PublicKeys[:index], km.accountsStore.PublicKeys[index+1:]...)
-		store, err = km.CreateAccountsKeystore(ctx, km.accountsStore.PrivateKeys, km.accountsStore.PublicKeys)
+		store, err = km.CreateAccountsKeystore(ctx, km.accountsStore.Seeds, km.accountsStore.PublicKeys)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not rewrite accounts keystore")
 		}
 		statuses = append(statuses, &ethpbservice.DeletedKeystoreStatus{
 			Status: ethpbservice.DeletedKeystoreStatus_DELETED,
 		})
-		trackedPublicKeys[bytesutil.ToBytes48(publicKey)] = true
+		trackedPublicKeys[bytesutil.ToBytes2592(publicKey)] = true
 	}
 	if len(deletedKeys) == 0 {
 		return statuses, nil

@@ -65,7 +65,7 @@ service BeaconNodeValidator {
         };
     }
 
-    // DomainData fetches the current BLS signature domain version information from the
+    // DomainData fetches the current Dilithium signature domain version information from the
     // running beacon node's state. This information is used when validators sign
     // blocks and attestations appropriately based on their duty.
     rpc DomainData(DomainRequest) returns (DomainResponse) {
@@ -322,7 +322,7 @@ message SyncMessageBlockRootResponse {
 // SyncSubcommitteeIndexRequest requests sync subcommittee index given the validator public key.
 message SyncSubcommitteeIndexRequest {
     // The validator's public key.
-    bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48"];
+    bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "2592"];
     // The slot of validator's assignment.
     uint64 slot = 2 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
 }
@@ -330,8 +330,8 @@ message SyncSubcommitteeIndexRequest {
 message SyncCommitteeContributionRequest {
     // Slot for which the aggregation request applies.
     uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
-    // 48 byte public key of the validator.
-    bytes public_key = 2 [(ethereum.eth.ext.ssz_size) = "48", (ethereum.eth.ext.spec_name) = "pubkey"];
+    // 2592 byte public key of the validator.
+    bytes public_key = 2 [(ethereum.eth.ext.ssz_size) = "2592", (ethereum.eth.ext.spec_name) = "pubkey"];
     // Subnet ID of where this contribution and proof should be broadcast to.
     uint64 subnet_id = 3;
 }
@@ -377,13 +377,13 @@ message DomainResponse {
 }
 
 message ValidatorActivationRequest {
-    // A list of 48 byte validator public keys.
-    repeated bytes public_keys = 1 [(ethereum.eth.ext.ssz_size) = "?,48"];
+    // A list of 2592 byte validator public keys.
+    repeated bytes public_keys = 1 [(ethereum.eth.ext.ssz_size) = "?,2592"];
 }
 
 message ValidatorActivationResponse {
     message Status {
-        // A 48 byte validator public key.
+        // A 2592 byte validator public key.
         bytes public_key = 1;
 
         // A wrapper representing a validator's status object.
@@ -417,8 +417,8 @@ message SyncedResponse {
 }
 
 message ValidatorIndexRequest {
-    // A 48 byte validator public key.
-    bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48"];
+    // A 2592 byte validator public key.
+    bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "2592"];
 }
 
 message ValidatorIndexResponse {
@@ -427,8 +427,8 @@ message ValidatorIndexResponse {
 }
 
 message ValidatorStatusRequest {
-    // A 48 byte validator public key.
-    bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48"];
+    // A 2592 byte validator public key.
+    bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "2592"];
 }
 
 enum ValidatorStatus {
@@ -464,15 +464,15 @@ message ValidatorStatusResponse {
 }
 
 message MultipleValidatorStatusRequest {
-    // A list of 48 byte validator public keys.
-    repeated bytes public_keys = 1 [(ethereum.eth.ext.ssz_size) = "?,48"];
+    // A list of 2592 byte validator public keys.
+    repeated bytes public_keys = 1 [(ethereum.eth.ext.ssz_size) = "?,2592"];
     // A list of validator indices.
     repeated int64 indices = 2;
 }
 
 message MultipleValidatorStatusResponse {
-    // A list of 48 byte validator public keys.
-    repeated bytes public_keys = 1 [(ethereum.eth.ext.ssz_size) = "?,48"];
+    // A list of 2592 byte validator public keys.
+    repeated bytes public_keys = 1 [(ethereum.eth.ext.ssz_size) = "?,2592"];
     // A list of ValidatorStatusResponses mapped 1-to-1 with the public keys.
     repeated ValidatorStatusResponse statuses = 2;
     // A list of validator indices.
@@ -483,8 +483,8 @@ message DutiesRequest {
     // Epoch at which validators should perform their duties.
     uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
 
-    // Array of byte encoded BLS public keys.
-    repeated bytes public_keys = 2 [(ethereum.eth.ext.ssz_size) = "?,48"];
+    // Array of byte encoded Dilithium public keys.
+    repeated bytes public_keys = 2 [(ethereum.eth.ext.ssz_size) = "?,2592"];
 }
 
 message DutiesResponse {
@@ -507,8 +507,8 @@ message DutiesResponse {
         // Slots at which a validator must propose a beacon chain block.
         repeated uint64 proposer_slots = 4 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
 
-        // 48 byte BLS public key for the validator who's assigned to perform a duty.
-        bytes public_key = 5 [(ethereum.eth.ext.ssz_size) = "48"];
+        // 2592 byte Dilithium public key for the validator who's assigned to perform a duty.
+        bytes public_key = 5 [(ethereum.eth.ext.ssz_size) = "2592"];
 
         // The current status of the validator assigned to perform the duty.
         ValidatorStatus status = 6;
@@ -563,11 +563,11 @@ message AggregateSelectionRequest {
     uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
     // Committee index of the validator at the given slot.
     uint64 committee_index = 2  [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.CommitteeIndex"];
-    // 48 byte public key of the validator.
-    bytes public_key = 3 [(ethereum.eth.ext.ssz_size) = "48", (ethereum.eth.ext.spec_name) = "pubkey"];
+    // 2592 byte public key of the validator.
+    bytes public_key = 3 [(ethereum.eth.ext.ssz_size) = "2592", (ethereum.eth.ext.spec_name) = "pubkey"];
     // 96 byte signature of the validator on the slot. This is used as proof that the validator is
     // an aggregator for the given slot.
-    bytes slot_signature = 4 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes slot_signature = 4 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 message AggregateSelectionResponse {
@@ -599,8 +599,8 @@ message CommitteeSubnetsSubscribeRequest {
 
 // An Ethereum validator.
 message Validator {
-    // 48 byte BLS public key used for the validator's activities.
-    bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48", (ethereum.eth.ext.spec_name) = "pubkey"];
+    // 2592 byte Dilithium public key used for the validator's activities.
+    bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "2592", (ethereum.eth.ext.spec_name) = "pubkey"];
 
     // 32 byte hash of the withdrawal destination public key.
     bytes withdrawal_credentials = 2 [(ethereum.eth.ext.ssz_size) = "32"];
@@ -665,7 +665,7 @@ message ValidatorParticipation {
 
 // ValidatorInfo gives information about the state of a validator at a certain epoch.
 message ValidatorInfo {
-    // The validator's 48 byte BLS public key.
+    // The validator's 2592 byte Dilithium public key.
     bytes public_key = 1;
 
     // The validator's index in the beacon state.
@@ -703,8 +703,8 @@ message DoppelGangerRequest {
 
     // ValidatorRequest data type which represents a request for each validator.
     message ValidatorRequest {
-        // The validator's 48 byte BLS public key.
-        bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48", (ethereum.eth.ext.spec_name) = "pubkey"];
+        // The validator's 2592 byte Dilithium public key.
+        bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "2592", (ethereum.eth.ext.spec_name) = "pubkey"];
         // The validator's last recorded epoch to attest.
         uint64 epoch = 3 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"];
         // The validator's last recorded signed root.
@@ -716,8 +716,8 @@ message DoppelGangerRequest {
 // after it has checked for all duplicate keys in the network.
 message DoppelGangerResponse {
     message ValidatorResponse {
-        // The validator's 48 byte BLS public key.
-        bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48", (ethereum.eth.ext.spec_name) = "pubkey"];
+        // The validator's 2592 byte Dilithium public key.
+        bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "2592", (ethereum.eth.ext.spec_name) = "pubkey"];
         // Whether a duplicate of the validator exists.
         bool duplicate_exists = 2;
     }
@@ -743,7 +743,7 @@ message PrepareBeaconProposerRequest {
 }
 
 message FeeRecipientByPubKeyRequest {
-    bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "48", (ethereum.eth.ext.spec_name) = "pubkey"];
+    bytes public_key = 1 [(ethereum.eth.ext.ssz_size) = "2592", (ethereum.eth.ext.spec_name) = "pubkey"];
 }
 
 message FeeRecipientByPubKeyResponse {

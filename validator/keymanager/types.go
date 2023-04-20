@@ -6,10 +6,10 @@ import (
 	"strings"
 
 	"github.com/prysmaticlabs/prysm/v4/async/event"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls"
+	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium"
 	ethpbservice "github.com/prysmaticlabs/prysm/v4/proto/eth/service"
 	validatorpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/validator-client"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // IKeymanager defines a general keymanager interface for Prysm wallets.
@@ -30,12 +30,12 @@ type KeysFetcher interface {
 
 // PublicKeysFetcher for validating public keys.
 type PublicKeysFetcher interface {
-	FetchValidatingPublicKeys(ctx context.Context) ([][fieldparams.BLSPubkeyLength]byte, error)
+	FetchValidatingPublicKeys(ctx context.Context) ([][dilithium2.CryptoPublicKeyBytes]byte, error)
 }
 
 // Signer allows signing messages using a validator private key.
 type Signer interface {
-	Sign(context.Context, *validatorpb.SignRequest) (bls.Signature, error)
+	Sign(context.Context, *validatorpb.SignRequest) (dilithium.Signature, error)
 }
 
 // Importer can import new keystores into the keymanager.
@@ -52,22 +52,22 @@ type Deleter interface {
 
 // KeyChangeSubscriber allows subscribing to changes made to the underlying keys.
 type KeyChangeSubscriber interface {
-	SubscribeAccountChanges(pubKeysChan chan [][fieldparams.BLSPubkeyLength]byte) event.Subscription
+	SubscribeAccountChanges(pubKeysChan chan [][dilithium2.CryptoPublicKeyBytes]byte) event.Subscription
 }
 
 // KeyStoreExtractor allows keys to be extracted from the keymanager.
 type KeyStoreExtractor interface {
-	ExtractKeystores(ctx context.Context, publicKeys []bls.PublicKey, password string) ([]*Keystore, error)
+	ExtractKeystores(ctx context.Context, publicKeys []dilithium.PublicKey, password string) ([]*Keystore, error)
 }
 
 // PublicKeyAdder allows adding public keys to the keymanager.
 type PublicKeyAdder interface {
-	AddPublicKeys(ctx context.Context, publicKeys [][fieldparams.BLSPubkeyLength]byte) ([]*ethpbservice.ImportedRemoteKeysStatus, error)
+	AddPublicKeys(ctx context.Context, publicKeys [][dilithium2.CryptoPublicKeyBytes]byte) ([]*ethpbservice.ImportedRemoteKeysStatus, error)
 }
 
 // PublicKeyDeleter allows deleting public keys set in keymanager.
 type PublicKeyDeleter interface {
-	DeletePublicKeys(ctx context.Context, publicKeys [][fieldparams.BLSPubkeyLength]byte) ([]*ethpbservice.DeletedRemoteKeysStatus, error)
+	DeletePublicKeys(ctx context.Context, publicKeys [][dilithium2.CryptoPublicKeyBytes]byte) ([]*ethpbservice.DeletedRemoteKeysStatus, error)
 }
 
 type ListKeymanagerAccountConfig struct {

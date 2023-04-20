@@ -7,10 +7,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/prysm/v4/config/features"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	"github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/slashings"
 	"github.com/prysmaticlabs/prysm/v4/validator/db/kv"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"go.opencensus.io/trace"
 )
 
@@ -23,7 +23,7 @@ var failedPostAttSignExternalErr = "attempted to make slashable attestation, rej
 func (v *validator) slashableAttestationCheck(
 	ctx context.Context,
 	indexedAtt *ethpb.IndexedAttestation,
-	pubKey [fieldparams.BLSPubkeyLength]byte,
+	pubKey [dilithium2.CryptoPublicKeyBytes]byte,
 	signingRoot [32]byte,
 ) error {
 	ctx, span := trace.StartSpan(ctx, "validator.postAttSignUpdate")

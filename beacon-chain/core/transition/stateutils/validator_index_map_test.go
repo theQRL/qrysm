@@ -5,12 +5,12 @@ import (
 
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/transition/stateutils"
 	state_native "github.com/prysmaticlabs/prysm/v4/beacon-chain/state/state-native"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	"github.com/prysmaticlabs/prysm/v4/testing/assert"
 	"github.com/prysmaticlabs/prysm/v4/testing/require"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestValidatorIndexMap_OK(t *testing.T) {
@@ -28,20 +28,20 @@ func TestValidatorIndexMap_OK(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		key [fieldparams.BLSPubkeyLength]byte
+		key [dilithium2.CryptoPublicKeyBytes]byte
 		val primitives.ValidatorIndex
 		ok  bool
 	}{
 		{
-			key: bytesutil.ToBytes48([]byte("zero")),
+			key: bytesutil.ToBytes2592([]byte("zero")),
 			val: 0,
 			ok:  true,
 		}, {
-			key: bytesutil.ToBytes48([]byte("one")),
+			key: bytesutil.ToBytes2592([]byte("one")),
 			val: 1,
 			ok:  true,
 		}, {
-			key: bytesutil.ToBytes48([]byte("no")),
+			key: bytesutil.ToBytes2592([]byte("no")),
 			val: 0,
 			ok:  false,
 		},

@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // ProposerSettingsPayload is the struct representation of the JSON or YAML payload set in the validator through the CLI.
@@ -64,7 +64,7 @@ func (u *Uint64) UnmarshalYAML(unmarshal func(interface{}) error) error {
 // ProposerSettings is a Prysm internal representation of the fee recipient config on the validator client.
 // ProposerSettingsPayload maps to ProposerSettings on import through the CLI.
 type ProposerSettings struct {
-	ProposeConfig map[[fieldparams.BLSPubkeyLength]byte]*ProposerOption
+	ProposeConfig map[[dilithium2.CryptoPublicKeyBytes]byte]*ProposerOption
 	DefaultConfig *ProposerOption
 }
 

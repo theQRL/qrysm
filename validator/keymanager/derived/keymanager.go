@@ -7,13 +7,14 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/prysm/v4/async/event"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/crypto/bls"
 	ethpbservice "github.com/prysmaticlabs/prysm/v4/proto/eth/service"
 	validatorpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/prysmaticlabs/prysm/v4/validator/accounts/iface"
 	"github.com/prysmaticlabs/prysm/v4/validator/keymanager"
 	"github.com/prysmaticlabs/prysm/v4/validator/keymanager/local"
+	common2 "github.com/theQRL/go-qrllib/common"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	util "github.com/wealdtech/go-eth2-util"
 )
 
@@ -100,12 +101,12 @@ func (km *Keymanager) Sign(ctx context.Context, req *validatorpb.SignRequest) (b
 }
 
 // FetchValidatingPublicKeys fetches the list of validating public keys from the keymanager.
-func (km *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][fieldparams.BLSPubkeyLength]byte, error) {
+func (km *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][dilithium2.CryptoPublicKeyBytes]byte, error) {
 	return km.localKM.FetchValidatingPublicKeys(ctx)
 }
 
 // FetchValidatingPrivateKeys fetches the list of validating private keys from the keymanager.
-func (km *Keymanager) FetchValidatingPrivateKeys(ctx context.Context) ([][32]byte, error) {
+func (km *Keymanager) FetchValidatingPrivateKeys(ctx context.Context) ([][common2.SeedSize]byte, error) {
 	return km.localKM.FetchValidatingPrivateKeys(ctx)
 }
 
@@ -126,7 +127,7 @@ func (km *Keymanager) DeleteKeystores(
 // SubscribeAccountChanges creates an event subscription for a channel
 // to listen for public key changes at runtime, such as when new validator accounts
 // are imported into the keymanager while the validator process is running.
-func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][fieldparams.BLSPubkeyLength]byte) event.Subscription {
+func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][dilithium2.CryptoPublicKeyBytes]byte) event.Subscription {
 	return km.localKM.SubscribeAccountChanges(pubKeysChan)
 }
 
@@ -138,7 +139,7 @@ func (km *Keymanager) ListKeymanagerAccounts(ctx context.Context, cfg keymanager
 	if err != nil {
 		return errors.Wrap(err, "could not fetch validating public keys")
 	}
-	var validatingPrivateKeys [][32]byte
+	var validatingPrivateKeys [][common2.SeedSize]byte
 	if cfg.ShowPrivateKeys {
 		validatingPrivateKeys, err = km.FetchValidatingPrivateKeys(ctx)
 		if err != nil {

@@ -11,7 +11,7 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/async"
 	"github.com/prysmaticlabs/prysm/v4/config/features"
 	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls"
+	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 	"github.com/prysmaticlabs/prysm/v4/io/file"
 	"github.com/prysmaticlabs/prysm/v4/validator/keymanager"
@@ -104,12 +104,12 @@ func (km *Keymanager) reloadAccountsFromKeystore(keystore *AccountsKeystoreRepre
 	if err := json.Unmarshal(encodedAccounts, newAccountsStore); err != nil {
 		return err
 	}
-	if len(newAccountsStore.PublicKeys) != len(newAccountsStore.PrivateKeys) {
+	if len(newAccountsStore.PublicKeys) != len(newAccountsStore.Seeds) {
 		return errors.New("number of public and private keys in keystore do not match")
 	}
 	pubKeys := make([][fieldparams.BLSPubkeyLength]byte, len(newAccountsStore.PublicKeys))
-	for i := 0; i < len(newAccountsStore.PrivateKeys); i++ {
-		privKey, err := bls.SecretKeyFromBytes(newAccountsStore.PrivateKeys[i])
+	for i := 0; i < len(newAccountsStore.Seeds); i++ {
+		privKey, err := dilithium.SecretKeyFromBytes(newAccountsStore.Seeds[i])
 		if err != nil {
 			return errors.Wrap(err, "could not initialize private key")
 		}

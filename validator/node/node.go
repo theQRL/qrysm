@@ -31,7 +31,6 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/cmd"
 	"github.com/prysmaticlabs/prysm/v4/cmd/validator/flags"
 	"github.com/prysmaticlabs/prysm/v4/config/features"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/config/params"
 	validatorServiceConfig "github.com/prysmaticlabs/prysm/v4/config/validator/service"
 	"github.com/prysmaticlabs/prysm/v4/container/slice"
@@ -57,6 +56,7 @@ import (
 	validatormiddleware "github.com/prysmaticlabs/prysm/v4/validator/rpc/apimiddleware"
 	"github.com/prysmaticlabs/prysm/v4/validator/web"
 	"github.com/sirupsen/logrus"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v2"
@@ -475,13 +475,13 @@ func Web3SignerConfig(cliCtx *cli.Context) (*remoteweb3signer.SetupConfig, error
 			}
 			if len(pks) > 0 {
 				pks = slice.Unique[string](pks)
-				var validatorKeys [][48]byte
+				var validatorKeys [][dilithium2.CryptoPublicKeyBytes]byte
 				for _, key := range pks {
 					decodedKey, decodeErr := hexutil.Decode(key)
 					if decodeErr != nil {
 						return nil, errors.Wrapf(decodeErr, "could not decode public key for web3signer: %s", key)
 					}
-					validatorKeys = append(validatorKeys, bytesutil.ToBytes48(decodedKey))
+					validatorKeys = append(validatorKeys, bytesutil.ToBytes2592(decodedKey))
 				}
 				web3signerConfig.ProvidedPublicKeys = validatorKeys
 			}
@@ -562,13 +562,13 @@ func proposerSettings(cliCtx *cli.Context) (*validatorServiceConfig.ProposerSett
 	}
 
 	if fileConfig.ProposerConfig != nil {
-		vpSettings.ProposeConfig = make(map[[fieldparams.BLSPubkeyLength]byte]*validatorServiceConfig.ProposerOption)
+		vpSettings.ProposeConfig = make(map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorServiceConfig.ProposerOption)
 		for key, option := range fileConfig.ProposerConfig {
 			decodedKey, err := hexutil.Decode(key)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not decode public key %s", key)
 			}
-			if len(decodedKey) != fieldparams.BLSPubkeyLength {
+			if len(decodedKey) != dilithium2.CryptoPublicKeyBytes {
 				return nil, fmt.Errorf("%v  is not a bls public key", key)
 			}
 			if option == nil {
@@ -589,7 +589,7 @@ func proposerSettings(cliCtx *cli.Context) (*validatorServiceConfig.ProposerSett
 				}
 				option.BuilderConfig = builderConfig
 			}
-			vpSettings.ProposeConfig[bytesutil.ToBytes48(decodedKey)] = &validatorServiceConfig.ProposerOption{
+			vpSettings.ProposeConfig[bytesutil.ToBytes2592(decodedKey)] = &validatorServiceConfig.ProposerOption{
 				FeeRecipientConfig: &validatorServiceConfig.FeeRecipientConfig{
 					FeeRecipient: common.HexToAddress(option.FeeRecipient),
 				},

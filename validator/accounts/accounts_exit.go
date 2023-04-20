@@ -9,12 +9,12 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/blocks"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/config/params"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 	"github.com/prysmaticlabs/prysm/v4/validator/client"
 	"github.com/prysmaticlabs/prysm/v4/validator/client/iface"
 	"github.com/prysmaticlabs/prysm/v4/validator/keymanager"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -110,7 +110,7 @@ func PerformVoluntaryExit(
 	return rawExitedKeys, formattedExitedKeys, nil
 }
 
-func prepareAllKeys(validatingKeys [][fieldparams.BLSPubkeyLength]byte) (raw [][]byte, formatted []string) {
+func prepareAllKeys(validatingKeys [][dilithium2.CryptoPublicKeyBytes]byte) (raw [][]byte, formatted []string) {
 	raw = make([][]byte, len(validatingKeys))
 	formatted = make([]string, len(validatingKeys))
 	for i, pk := range validatingKeys {

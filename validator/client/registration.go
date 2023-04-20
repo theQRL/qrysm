@@ -73,7 +73,7 @@ func signValidatorRegistration(ctx context.Context, signer iface.SigningFunc, re
 
 // SignValidatorRegistrationRequest compares and returns either the cached validator registration request or signs a new one.
 func (v *validator) SignValidatorRegistrationRequest(ctx context.Context, signer iface.SigningFunc, newValidatorRegistration *ethpb.ValidatorRegistrationV1) (*ethpb.SignedValidatorRegistrationV1, error) {
-	signedReg, ok := v.signedValidatorRegistrations[bytesutil.ToBytes48(newValidatorRegistration.Pubkey)]
+	signedReg, ok := v.signedValidatorRegistrations[bytesutil.ToBytes2592(newValidatorRegistration.Pubkey)]
 	if ok && isValidatorRegistrationSame(signedReg.Message, newValidatorRegistration) {
 		return signedReg, nil
 	} else {
@@ -85,7 +85,7 @@ func (v *validator) SignValidatorRegistrationRequest(ctx context.Context, signer
 			Message:   newValidatorRegistration,
 			Signature: sig,
 		}
-		v.signedValidatorRegistrations[bytesutil.ToBytes48(newValidatorRegistration.Pubkey)] = newRequest
+		v.signedValidatorRegistrations[bytesutil.ToBytes2592(newValidatorRegistration.Pubkey)] = newRequest
 		return newRequest, nil
 	}
 }

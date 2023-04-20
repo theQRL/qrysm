@@ -4,16 +4,16 @@
 package stateutils
 
 import (
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // ValidatorIndexMap builds a lookup map for quickly determining the index of
 // a validator by their public key.
-func ValidatorIndexMap(validators []*ethpb.Validator) map[[fieldparams.BLSPubkeyLength]byte]primitives.ValidatorIndex {
-	m := make(map[[fieldparams.BLSPubkeyLength]byte]primitives.ValidatorIndex, len(validators))
+func ValidatorIndexMap(validators []*ethpb.Validator) map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex {
+	m := make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex, len(validators))
 	if validators == nil {
 		return m
 	}
@@ -21,7 +21,7 @@ func ValidatorIndexMap(validators []*ethpb.Validator) map[[fieldparams.BLSPubkey
 		if record == nil {
 			continue
 		}
-		key := bytesutil.ToBytes48(record.PublicKey)
+		key := bytesutil.ToBytes2592(record.PublicKey)
 		m[key] = primitives.ValidatorIndex(idx)
 	}
 	return m

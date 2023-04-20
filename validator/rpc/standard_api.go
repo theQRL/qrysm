@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/empty"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/config/params"
 	validatorServiceConfig "github.com/prysmaticlabs/prysm/v4/config/validator/service"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
@@ -19,6 +18,7 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/validator/keymanager/derived"
 	slashingprotection "github.com/prysmaticlabs/prysm/v4/validator/slashing-protection-history"
 	"github.com/prysmaticlabs/prysm/v4/validator/slashing-protection-history/format"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -216,7 +216,7 @@ func (s *Server) transformDeletedKeysStatuses(
 	}
 	if len(pubKeysInDB) > 0 {
 		for i := 0; i < len(pubKeys); i++ {
-			keyExistsInDB := pubKeysInDB[bytesutil.ToBytes48(pubKeys[i])]
+			keyExistsInDB := pubKeysInDB[bytesutil.ToBytes2592(pubKeys[i])]
 			if keyExistsInDB && statuses[i].Status == ethpbservice.DeletedKeystoreStatus_NOT_FOUND {
 				statuses[i].Status = ethpbservice.DeletedKeystoreStatus_NOT_ACTIVE
 			}
@@ -226,8 +226,8 @@ func (s *Server) transformDeletedKeysStatuses(
 }
 
 // Gets a map of all public keys in the database, useful for O(1) lookups.
-func (s *Server) publicKeysInDB(ctx context.Context) (map[[fieldparams.BLSPubkeyLength]byte]bool, error) {
-	pubKeysInDB := make(map[[fieldparams.BLSPubkeyLength]byte]bool)
+func (s *Server) publicKeysInDB(ctx context.Context) (map[[dilithium2.CryptoPublicKeyBytes]byte]bool, error) {
+	pubKeysInDB := make(map[[dilithium2.CryptoPublicKeyBytes]byte]bool)
 	attestedPublicKeys, err := s.valDB.AttestedPublicKeys(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("could not get attested public keys from DB: %v", err)
@@ -312,10 +312,10 @@ func (s *Server) ImportRemoteKeys(ctx context.Context, req *ethpbservice.ImportR
 		return &ethpbservice.ImportRemoteKeysResponse{Data: statuses}, nil
 	}
 
-	remoteKeys := make([][fieldparams.BLSPubkeyLength]byte, len(req.RemoteKeys))
+	remoteKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, len(req.RemoteKeys))
 	isUrlUsed := false
 	for i, obj := range req.RemoteKeys {
-		remoteKeys[i] = bytesutil.ToBytes48(obj.Pubkey)
+		remoteKeys[i] = bytesutil.ToBytes2592(obj.Pubkey)
 		if obj.Url != "" {
 			isUrlUsed = true
 		}
@@ -365,9 +365,9 @@ func (s *Server) DeleteRemoteKeys(ctx context.Context, req *ethpbservice.DeleteR
 		statuses := groupDeleteRemoteKeysErrors(req, "Keymanager kind cannot delete public keys for web3signer keymanager type.")
 		return &ethpbservice.DeleteRemoteKeysResponse{Data: statuses}, nil
 	}
-	remoteKeys := make([][fieldparams.BLSPubkeyLength]byte, len(req.Pubkeys))
+	remoteKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, len(req.Pubkeys))
 	for i, key := range req.Pubkeys {
-		remoteKeys[i] = bytesutil.ToBytes48(key)
+		remoteKeys[i] = bytesutil.ToBytes2592(key)
 	}
 	statuses, err := deleter.DeletePublicKeys(ctx, remoteKeys)
 	if err != nil {
@@ -404,7 +404,7 @@ func (s *Server) GetGasLimit(_ context.Context, req *ethpbservice.PubkeyRequest)
 		},
 	}
 	if s.validatorService.ProposerSettings() != nil {
-		proposerOption, found := s.validatorService.ProposerSettings().ProposeConfig[bytesutil.ToBytes48(validatorKey)]
+		proposerOption, found := s.validatorService.ProposerSettings().ProposeConfig[bytesutil.ToBytes2592(validatorKey)]
 		if found {
 			if proposerOption.BuilderConfig != nil {
 				resp.Data.GasLimit = uint64(proposerOption.BuilderConfig.GasLimit)
@@ -457,18 +457,18 @@ func (s *Server) SetGasLimit(ctx context.Context, req *ethpbservice.SetGasLimitR
 
 	if s.validatorService.ProposerSettings() == nil {
 		s.validatorService.SetProposerSettings(&validatorServiceConfig.ProposerSettings{
-			ProposeConfig: map[[fieldparams.BLSPubkeyLength]byte]*validatorServiceConfig.ProposerOption{
-				bytesutil.ToBytes48(validatorKey): &pOption,
+			ProposeConfig: map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorServiceConfig.ProposerOption{
+				bytesutil.ToBytes2592(validatorKey): &pOption,
 			},
 			DefaultConfig: nil,
 		})
 	} else if s.validatorService.ProposerSettings().ProposeConfig == nil {
 		settings := s.validatorService.ProposerSettings()
-		settings.ProposeConfig = make(map[[fieldparams.BLSPubkeyLength]byte]*validatorServiceConfig.ProposerOption)
-		settings.ProposeConfig[bytesutil.ToBytes48(validatorKey)] = &pOption
+		settings.ProposeConfig = make(map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorServiceConfig.ProposerOption)
+		settings.ProposeConfig[bytesutil.ToBytes2592(validatorKey)] = &pOption
 		s.validatorService.SetProposerSettings(settings)
 	} else {
-		proposerOption, found := s.validatorService.ProposerSettings().ProposeConfig[bytesutil.ToBytes48(validatorKey)]
+		proposerOption, found := s.validatorService.ProposerSettings().ProposeConfig[bytesutil.ToBytes2592(validatorKey)]
 
 		if found {
 			if proposerOption.BuilderConfig == nil {
@@ -477,7 +477,7 @@ func (s *Server) SetGasLimit(ctx context.Context, req *ethpbservice.SetGasLimitR
 				proposerOption.BuilderConfig.GasLimit = validatorServiceConfig.Uint64(req.GasLimit)
 			}
 		} else {
-			s.validatorService.ProposerSettings().ProposeConfig[bytesutil.ToBytes48(validatorKey)] = &pOption
+			s.validatorService.ProposerSettings().ProposeConfig[bytesutil.ToBytes2592(validatorKey)] = &pOption
 		}
 	}
 
@@ -500,7 +500,7 @@ func (s *Server) DeleteGasLimit(ctx context.Context, req *ethpbservice.DeleteGas
 
 	proposerSettings := s.validatorService.ProposerSettings()
 	if proposerSettings != nil && proposerSettings.ProposeConfig != nil {
-		proposerOption, found := proposerSettings.ProposeConfig[bytesutil.ToBytes48(validatorKey)]
+		proposerOption, found := proposerSettings.ProposeConfig[bytesutil.ToBytes2592(validatorKey)]
 		if found && proposerOption.BuilderConfig != nil {
 			// If proposerSettings has default value, use it.
 			if proposerSettings.DefaultConfig != nil && proposerSettings.DefaultConfig.BuilderConfig != nil {
@@ -543,7 +543,7 @@ func (s *Server) ListFeeRecipientByPubkey(ctx context.Context, req *ethpbservice
 
 	// If fee recipient is defined for this specific pubkey in proposer configuration, use it
 	if proposerSettings != nil && proposerSettings.ProposeConfig != nil {
-		proposerOption, found := proposerSettings.ProposeConfig[bytesutil.ToBytes48(validatorKey)]
+		proposerOption, found := proposerSettings.ProposeConfig[bytesutil.ToBytes2592(validatorKey)]
 
 		if found && proposerOption.FeeRecipientConfig != nil {
 			finalResp.Data.Ethaddress = proposerOption.FeeRecipientConfig.FeeRecipient.Bytes()
@@ -597,8 +597,8 @@ func (s *Server) SetFeeRecipientByPubkey(ctx context.Context, req *ethpbservice.
 	switch {
 	case s.validatorService.ProposerSettings() == nil:
 		s.validatorService.SetProposerSettings(&validatorServiceConfig.ProposerSettings{
-			ProposeConfig: map[[fieldparams.BLSPubkeyLength]byte]*validatorServiceConfig.ProposerOption{
-				bytesutil.ToBytes48(validatorKey): {
+			ProposeConfig: map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorServiceConfig.ProposerOption{
+				bytesutil.ToBytes2592(validatorKey): {
 					FeeRecipientConfig: &validatorServiceConfig.FeeRecipientConfig{
 						FeeRecipient: feeRecipient,
 					},
@@ -615,8 +615,8 @@ func (s *Server) SetFeeRecipientByPubkey(ctx context.Context, req *ethpbservice.
 			builderConfig = settings.DefaultConfig.BuilderConfig
 		}
 
-		settings.ProposeConfig = map[[fieldparams.BLSPubkeyLength]byte]*validatorServiceConfig.ProposerOption{
-			bytesutil.ToBytes48(validatorKey): {
+		settings.ProposeConfig = map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorServiceConfig.ProposerOption{
+			bytesutil.ToBytes2592(validatorKey): {
 				FeeRecipientConfig: &validatorServiceConfig.FeeRecipientConfig{
 					FeeRecipient: feeRecipient,
 				},
@@ -626,7 +626,7 @@ func (s *Server) SetFeeRecipientByPubkey(ctx context.Context, req *ethpbservice.
 
 		s.validatorService.SetProposerSettings(settings)
 	default:
-		proposerOption, found := s.validatorService.ProposerSettings().ProposeConfig[bytesutil.ToBytes48(validatorKey)]
+		proposerOption, found := s.validatorService.ProposerSettings().ProposeConfig[bytesutil.ToBytes2592(validatorKey)]
 
 		if found && proposerOption != nil {
 			proposerOption.FeeRecipientConfig = &validatorServiceConfig.FeeRecipientConfig{
@@ -641,7 +641,7 @@ func (s *Server) SetFeeRecipientByPubkey(ctx context.Context, req *ethpbservice.
 				builderConfig = settings.DefaultConfig.BuilderConfig
 			}
 
-			settings.ProposeConfig[bytesutil.ToBytes48(validatorKey)] = &validatorServiceConfig.ProposerOption{
+			settings.ProposeConfig[bytesutil.ToBytes2592(validatorKey)] = &validatorServiceConfig.ProposerOption{
 				FeeRecipientConfig: &validatorServiceConfig.FeeRecipientConfig{
 					FeeRecipient: feeRecipient,
 				},
@@ -673,7 +673,7 @@ func (s *Server) DeleteFeeRecipientByPubkey(ctx context.Context, req *ethpbservi
 	settings := s.validatorService.ProposerSettings()
 
 	if settings != nil && settings.ProposeConfig != nil {
-		proposerOption, found := settings.ProposeConfig[bytesutil.ToBytes48(validatorKey)]
+		proposerOption, found := settings.ProposeConfig[bytesutil.ToBytes2592(validatorKey)]
 		if found {
 			proposerOption.FeeRecipientConfig = nil
 		}
@@ -687,9 +687,9 @@ func (s *Server) DeleteFeeRecipientByPubkey(ctx context.Context, req *ethpbservi
 }
 
 func validatePublicKey(pubkey []byte) error {
-	if len(pubkey) != fieldparams.BLSPubkeyLength {
+	if len(pubkey) != dilithium2.CryptoPublicKeyBytes {
 		return status.Errorf(
-			codes.InvalidArgument, "Provided public key in path is not byte length %d and not a valid bls public key", fieldparams.BLSPubkeyLength)
+			codes.InvalidArgument, "Provided public key in path is not byte length %d and not a valid bls public key", dilithium2.CryptoPublicKeyBytes)
 	}
 	return nil
 }

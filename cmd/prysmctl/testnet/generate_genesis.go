@@ -279,7 +279,7 @@ func generateGenesis(ctx context.Context) (*ethpb.BeaconState, error) {
 		)
 	}
 	// If no JSON input is specified, we create the state deterministically from interop keys.
-	genesisState, _, err := interop.GenerateGenesisState(ctx, genesisTime, numValidators)
+	genesisState, _, err := interop.QGenerateGenesisState(ctx, genesisTime, numValidators)
 	if err != nil {
 		return nil, err
 	}

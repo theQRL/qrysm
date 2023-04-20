@@ -8,12 +8,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/prysm/v4/cmd/validator/flags"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/config/params"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 	"github.com/prysmaticlabs/prysm/v4/time/slots"
 	"github.com/prysmaticlabs/prysm/v4/validator/client/iface"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -47,7 +47,7 @@ func run(ctx context.Context, v iface.Validator) {
 		handleAssignmentError(err, headSlot)
 	}
 
-	accountsChangedChan := make(chan [][fieldparams.BLSPubkeyLength]byte, 1)
+	accountsChangedChan := make(chan [][dilithium2.CryptoPublicKeyBytes]byte, 1)
 	km, err := v.Keymanager()
 	if err != nil {
 		log.WithError(err).Fatal("Could not get keymanager")
@@ -220,11 +220,11 @@ func initializeValidatorAndGetHeadSlot(ctx context.Context, v iface.Validator) (
 	return headSlot, nil
 }
 
-func performRoles(slotCtx context.Context, allRoles map[[48]byte][]iface.ValidatorRole, v iface.Validator, slot primitives.Slot, wg *sync.WaitGroup, span *trace.Span) {
+func performRoles(slotCtx context.Context, allRoles map[[dilithium2.CryptoPublicKeyBytes]byte][]iface.ValidatorRole, v iface.Validator, slot primitives.Slot, wg *sync.WaitGroup, span *trace.Span) {
 	for pubKey, roles := range allRoles {
 		wg.Add(len(roles))
 		for _, role := range roles {
-			go func(role iface.ValidatorRole, pubKey [fieldparams.BLSPubkeyLength]byte) {
+			go func(role iface.ValidatorRole, pubKey [dilithium2.CryptoPublicKeyBytes]byte) {
 				defer wg.Done()
 				switch role {
 				case iface.RoleAttester:

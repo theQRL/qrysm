@@ -3,12 +3,13 @@ package derived
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/prysm/v4/crypto/rand"
 	"github.com/prysmaticlabs/prysm/v4/io/prompt"
+	"github.com/theQRL/go-qrllib/qrl"
 	"github.com/tyler-smith/go-bip39"
-	"github.com/tyler-smith/go-bip39/wordlists"
 )
 
 const confirmationText = "Confirm you have written down the recovery words somewhere safe (offline) [y|Y]"
@@ -96,16 +97,9 @@ func seedFromMnemonic(mnemonic, mnemonicLanguage, mnemonicPassphrase string) ([]
 
 func setBip39Lang(lang string) error {
 	var wordlist []string
+	qrlWordList := strings.Split(strings.TrimSpace(strings.Join(qrl.WordList[:], " ")), "\n")
 	allowedLanguages := map[string][]string{
-		"chinese_simplified":  wordlists.ChineseSimplified,
-		"chinese_traditional": wordlists.ChineseTraditional,
-		"czech":               wordlists.Czech,
-		"english":             wordlists.English,
-		"french":              wordlists.French,
-		"japanese":            wordlists.Japanese,
-		"korean":              wordlists.Korean,
-		"italian":             wordlists.Italian,
-		"spanish":             wordlists.Spanish,
+		"english": qrlWordList,
 	}
 
 	if wl, ok := allowedLanguages[lang]; ok {

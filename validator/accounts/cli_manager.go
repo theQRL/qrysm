@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	grpcutil "github.com/prysmaticlabs/prysm/v4/api/grpc"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls"
+	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium"
 	"github.com/prysmaticlabs/prysm/v4/validator/accounts/wallet"
 	iface "github.com/prysmaticlabs/prysm/v4/validator/client/iface"
 	nodeClientFactory "github.com/prysmaticlabs/prysm/v4/validator/client/node-client-factory"
@@ -53,7 +53,7 @@ type AccountsCLIManager struct {
 	mnemonicLanguage     string
 	backupsDir           string
 	backupsPassword      string
-	filteredPubKeys      []bls.PublicKey
+	filteredPubKeys      []dilithium.PublicKey
 	rawPubKeys           [][]byte
 	formattedPubKeys     []string
 	walletDir            string

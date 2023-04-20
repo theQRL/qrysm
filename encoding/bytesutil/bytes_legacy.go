@@ -59,3 +59,9 @@ func ToBytes96(x []byte) [96]byte {
 	copy(y[:], x)
 	return y
 }
+
+func ToBytes2592(x []byte) [2592]byte {
+	var y [2592]byte
+	copy(y[:], x)
+	return y
+}

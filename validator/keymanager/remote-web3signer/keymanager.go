@@ -12,8 +12,7 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/prysm/v4/async/event"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls"
+	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 	ethpbservice "github.com/prysmaticlabs/prysm/v4/proto/eth/service"
 	validatorpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/validator-client"
@@ -22,6 +21,7 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/validator/keymanager/remote-web3signer/internal"
 	web3signerv1 "github.com/prysmaticlabs/prysm/v4/validator/keymanager/remote-web3signer/v1"
 	log "github.com/sirupsen/logrus"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // SetupConfig includes configuration values for initializing.
@@ -39,7 +39,7 @@ type SetupConfig struct {
 	// Either URL or keylist must be set.
 	// a static list of public keys to be passed by the user to determine what accounts should sign.
 	// This will provide a layer of safety against slashing if the web3signer is shared across validators.
-	ProvidedPublicKeys [][48]byte
+	ProvidedPublicKeys [][dilithium2.CryptoPublicKeyBytes]byte
 }
 
 // Keymanager defines the web3signer keymanager.
@@ -47,7 +47,7 @@ type Keymanager struct {
 	client                internal.HttpSignerClient
 	genesisValidatorsRoot []byte
 	publicKeysURL         string
-	providedPublicKeys    [][48]byte
+	providedPublicKeys    [][dilithium2.CryptoPublicKeyBytes]byte
 	accountsChangedFeed   *event.Feed
 	validator             *validator.Validate
 	publicKeysUrlCalled   bool
@@ -76,7 +76,7 @@ func NewKeymanager(_ context.Context, cfg *SetupConfig) (*Keymanager, error) {
 // FetchValidatingPublicKeys fetches the validating public keys
 // from the remote server or from the provided keys if there are no existing public keys set
 // or provides the existing keys in the keymanager.
-func (km *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][fieldparams.BLSPubkeyLength]byte, error) {
+func (km *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][dilithium2.CryptoPublicKeyBytes]byte, error) {
 	if km.publicKeysURL != "" && !km.publicKeysUrlCalled {
 		providedPublicKeys, err := km.client.GetPublicKeys(ctx, km.publicKeysURL)
 		if err != nil {
@@ -91,7 +91,7 @@ func (km *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][fieldpa
 }
 
 // Sign signs the message by using a remote web3signer server.
-func (km *Keymanager) Sign(ctx context.Context, request *validatorpb.SignRequest) (bls.Signature, error) {
+func (km *Keymanager) Sign(ctx context.Context, request *validatorpb.SignRequest) (dilithium.Signature, error) {
 	signRequest, err := getSignRequestJson(ctx, km.validator, request, km.genesisValidatorsRoot)
 	if err != nil {
 		erroredResponsesTotal.Inc()
@@ -274,13 +274,13 @@ func getSignRequestJson(ctx context.Context, validator *validator.Validate, requ
 }
 
 // SubscribeAccountChanges returns the event subscription for changes to public keys.
-func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][fieldparams.BLSPubkeyLength]byte) event.Subscription {
+func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][dilithium2.CryptoPublicKeyBytes]byte) event.Subscription {
 	return km.accountsChangedFeed.Subscribe(pubKeysChan)
 }
 
 // ExtractKeystores is not supported for the remote-web3signer keymanager type.
 func (*Keymanager) ExtractKeystores(
-	_ context.Context, _ []bls.PublicKey, _ string,
+	_ context.Context, _ []dilithium.PublicKey, _ string,
 ) ([]*keymanager.Keystore, error) {
 	return nil, errors.New("extracting keys is not supported for a web3signer keymanager")
 }
@@ -318,7 +318,7 @@ func (km *Keymanager) ListKeymanagerAccounts(ctx context.Context, cfg keymanager
 }
 
 // DisplayRemotePublicKeys prints remote public keys to stdout.
-func DisplayRemotePublicKeys(validatingPubKeys [][48]byte) {
+func DisplayRemotePublicKeys(validatingPubKeys [][dilithium2.CryptoPublicKeyBytes]byte) {
 	au := aurora.NewAurora(true)
 	for i := 0; i < len(validatingPubKeys); i++ {
 		fmt.Println("")
@@ -332,7 +332,7 @@ func DisplayRemotePublicKeys(validatingPubKeys [][48]byte) {
 }
 
 // AddPublicKeys imports a list of public keys into the keymanager for web3signer use. Returns status with message.
-func (km *Keymanager) AddPublicKeys(ctx context.Context, pubKeys [][fieldparams.BLSPubkeyLength]byte) ([]*ethpbservice.ImportedRemoteKeysStatus, error) {
+func (km *Keymanager) AddPublicKeys(ctx context.Context, pubKeys [][dilithium2.CryptoPublicKeyBytes]byte) ([]*ethpbservice.ImportedRemoteKeysStatus, error) {
 	if ctx == nil {
 		return nil, errors.New("context is nil")
 	}
@@ -364,7 +364,7 @@ func (km *Keymanager) AddPublicKeys(ctx context.Context, pubKeys [][fieldparams.
 }
 
 // DeletePublicKeys removes a list of public keys from the keymanager for web3signer use. Returns status with message.
-func (km *Keymanager) DeletePublicKeys(ctx context.Context, pubKeys [][fieldparams.BLSPubkeyLength]byte) ([]*ethpbservice.DeletedRemoteKeysStatus, error) {
+func (km *Keymanager) DeletePublicKeys(ctx context.Context, pubKeys [][dilithium2.CryptoPublicKeyBytes]byte) ([]*ethpbservice.DeletedRemoteKeysStatus, error) {
 	if ctx == nil {
 		return nil, errors.New("context is nil")
 	}

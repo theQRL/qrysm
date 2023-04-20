@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls"
+	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 	"github.com/prysmaticlabs/prysm/v4/validator/keymanager"
 	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
@@ -16,7 +16,7 @@ import (
 // in the function input, encrypts them using the specified password,
 // and returns their respective EIP-2335 keystores.
 func (_ *Keymanager) ExtractKeystores(
-	_ context.Context, publicKeys []bls.PublicKey, password string,
+	_ context.Context, publicKeys []dilithium.PublicKey, password string,
 ) ([]*keymanager.Keystore, error) {
 	lock.Lock()
 	defer lock.Unlock()
@@ -24,7 +24,7 @@ func (_ *Keymanager) ExtractKeystores(
 	keystores := make([]*keymanager.Keystore, len(publicKeys))
 	for i, pk := range publicKeys {
 		pubKeyBytes := pk.Marshal()
-		secretKey, ok := secretKeysCache[bytesutil.ToBytes48(pubKeyBytes)]
+		secretKey, ok := dilithiumKeysCache[bytesutil.ToBytes2592(pubKeyBytes)]
 		if !ok {
 			return nil, fmt.Errorf(
 				"secret key for public key %#x not found in cache",

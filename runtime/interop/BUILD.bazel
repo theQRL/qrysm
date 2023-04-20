@@ -7,6 +7,8 @@ go_library(
         "generate_genesis_state_bellatrix.go",
         "generate_keys.go",
         "premined_genesis_state.go",
+        "qgenerate_genesis_state.go",
+        "qgenerate_keys.go",
     ],
     importpath = "github.com/prysmaticlabs/prysm/v4/runtime/interop",
     visibility = ["//visibility:public"],
@@ -18,12 +20,14 @@ go_library(
         "//config/params:go_default_library",
         "//container/trie:go_default_library",
         "//crypto/bls:go_default_library",
+        "//crypto/dilithium:go_default_library",
         "//crypto/hash:go_default_library",
         "//encoding/bytesutil:go_default_library",
         "//proto/engine/v1:go_default_library",
         "//proto/prysm/v1alpha1:go_default_library",
         "//time:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
+        "@com_github_theqrl_go_qrllib//common:go_default_library",
     ],
 )
 

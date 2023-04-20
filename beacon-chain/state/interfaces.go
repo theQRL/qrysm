@@ -12,6 +12,7 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
 	enginev1 "github.com/prysmaticlabs/prysm/v4/proto/engine/v1"
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // BeaconState has read and write access to beacon state methods.
@@ -115,8 +116,8 @@ type ReadOnlyValidators interface {
 	Validators() []*ethpb.Validator
 	ValidatorAtIndex(idx primitives.ValidatorIndex) (*ethpb.Validator, error)
 	ValidatorAtIndexReadOnly(idx primitives.ValidatorIndex) (ReadOnlyValidator, error)
-	ValidatorIndexByPubkey(key [fieldparams.BLSPubkeyLength]byte) (primitives.ValidatorIndex, bool)
-	PubkeyAtIndex(idx primitives.ValidatorIndex) [fieldparams.BLSPubkeyLength]byte
+	ValidatorIndexByPubkey(key [dilithium2.CryptoPublicKeyBytes]byte) (primitives.ValidatorIndex, bool)
+	PubkeyAtIndex(idx primitives.ValidatorIndex) [dilithium2.CryptoPublicKeyBytes]byte
 	NumValidators() int
 	ReadFromEveryValidator(f func(idx int, val ReadOnlyValidator) error) error
 }

@@ -69,6 +69,7 @@ require (
 	github.com/status-im/keycard-go v0.2.0
 	github.com/stretchr/testify v1.8.1
 	github.com/supranational/blst v0.3.8-0.20220526154634-513d2456b344
+	github.com/theQRL/go-qrllib v0.0.0-20230406170304-b7eb19c367e1
 	github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e
 	github.com/trailofbits/go-mutexasserts v0.0.0-20200708152505-19999e7d3cef
 	github.com/tyler-smith/go-bip39 v1.1.0
