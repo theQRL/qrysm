@@ -1,6 +1,7 @@
 package params
 
 import (
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"math"
 	"time"
 
@@ -183,6 +184,7 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	ValidatorPrivkeyFileName:       "/validatorprivatekey",
 	RPCSyncCheck:                   1,
 	EmptySignature:                 [96]byte{},
+	EmptyDilithiumSignature:        [dilithium2.CryptoBytes]byte{},
 	DefaultPageSize:                250,
 	MaxPeersToSync:                 15,
 	SlotsPerArchivedPoint:          2048,
