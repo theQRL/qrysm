@@ -2,6 +2,7 @@ package blocks
 
 import (
 	"fmt"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 
 	"github.com/pkg/errors"
 	field_params "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
@@ -72,7 +73,7 @@ type BeaconBlock struct {
 type SignedBeaconBlock struct {
 	version   int
 	block     *BeaconBlock
-	signature [field_params.BLSSignatureLength]byte
+	signature [dilithium2.CryptoBytes]byte
 }
 
 func ErrNotSupported(funcName string, ver int) error {

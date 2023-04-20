@@ -358,7 +358,7 @@ func initSignedBlockFromProtoPhase0(pb *eth.SignedBeaconBlock) (*SignedBeaconBlo
 	b := &SignedBeaconBlock{
 		version:   version.Phase0,
 		block:     block,
-		signature: bytesutil.ToBytes96(pb.Signature),
+		signature: bytesutil.ToBytes4595(pb.Signature),
 	}
 	return b, nil
 }
@@ -375,7 +375,7 @@ func initSignedBlockFromProtoAltair(pb *eth.SignedBeaconBlockAltair) (*SignedBea
 	b := &SignedBeaconBlock{
 		version:   version.Altair,
 		block:     block,
-		signature: bytesutil.ToBytes96(pb.Signature),
+		signature: bytesutil.ToBytes4595(pb.Signature),
 	}
 	return b, nil
 }
@@ -392,7 +392,7 @@ func initSignedBlockFromProtoBellatrix(pb *eth.SignedBeaconBlockBellatrix) (*Sig
 	b := &SignedBeaconBlock{
 		version:   version.Bellatrix,
 		block:     block,
-		signature: bytesutil.ToBytes96(pb.Signature),
+		signature: bytesutil.ToBytes4595(pb.Signature),
 	}
 	return b, nil
 }
@@ -409,7 +409,7 @@ func initSignedBlockFromProtoCapella(pb *eth.SignedBeaconBlockCapella) (*SignedB
 	b := &SignedBeaconBlock{
 		version:   version.Capella,
 		block:     block,
-		signature: bytesutil.ToBytes96(pb.Signature),
+		signature: bytesutil.ToBytes4595(pb.Signature),
 	}
 	return b, nil
 }
@@ -426,7 +426,7 @@ func initBlindedSignedBlockFromProtoBellatrix(pb *eth.SignedBlindedBeaconBlockBe
 	b := &SignedBeaconBlock{
 		version:   version.Bellatrix,
 		block:     block,
-		signature: bytesutil.ToBytes96(pb.Signature),
+		signature: bytesutil.ToBytes4595(pb.Signature),
 	}
 	return b, nil
 }
@@ -443,7 +443,7 @@ func initBlindedSignedBlockFromProtoCapella(pb *eth.SignedBlindedBeaconBlockCape
 	b := &SignedBeaconBlock{
 		version:   version.Capella,
 		block:     block,
-		signature: bytesutil.ToBytes96(pb.Signature),
+		signature: bytesutil.ToBytes4595(pb.Signature),
 	}
 	return b, nil
 }

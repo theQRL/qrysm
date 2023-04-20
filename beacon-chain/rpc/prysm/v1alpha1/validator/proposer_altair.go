@@ -12,6 +12,7 @@ import (
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	synccontribution "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/attestation/aggregation/sync_contribution"
 	"github.com/prysmaticlabs/prysm/v4/runtime/version"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"go.opencensus.io/trace"
 )
 
@@ -23,7 +24,7 @@ func (vs *Server) setSyncAggregate(ctx context.Context, blk interfaces.SignedBea
 	syncAggregate, err := vs.getSyncAggregate(ctx, blk.Block().Slot()-1, blk.Block().ParentRoot())
 	if err != nil {
 		log.WithError(err).Error("Could not get sync aggregate")
-		emptySig := [96]byte{0xC0}
+		emptySig := [dilithium2.CryptoBytes]byte{0xC0}
 		emptyAggregate := &ethpb.SyncAggregate{
 			SyncCommitteeBits:      make([]byte, params.BeaconConfig().SyncCommitteeSize),
 			SyncCommitteeSignature: emptySig[:],
@@ -93,11 +94,11 @@ func (vs *Server) getSyncAggregate(ctx context.Context, slot primitives.Slot, ro
 		syncBits = append(syncBits, b...)
 	}
 	syncSig := bls.AggregateSignatures(sigsHolder)
-	var syncSigBytes [96]byte
+	var syncSigBytes [dilithium2.CryptoBytes]byte
 	if syncSig == nil {
-		syncSigBytes = [96]byte{0xC0} // Infinity signature if itself is nil.
+		syncSigBytes = [dilithium2.CryptoBytes]byte{0xC0} // Infinity signature if itself is nil.
 	} else {
-		syncSigBytes = bytesutil.ToBytes96(syncSig.Marshal())
+		syncSigBytes = bytesutil.ToBytes4595(syncSig.Marshal())
 	}
 
 	return &ethpb.SyncAggregate{

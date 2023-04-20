@@ -13,6 +13,7 @@ import (
 	eth "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/prysmaticlabs/prysm/v4/runtime/version"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // BeaconBlockIsNil checks if any composite field of input signed beacon block is nil.
@@ -26,7 +27,7 @@ func BeaconBlockIsNil(b interfaces.ReadOnlySignedBeaconBlock) error {
 }
 
 // Signature returns the respective block signature.
-func (b *SignedBeaconBlock) Signature() [field_params.BLSSignatureLength]byte {
+func (b *SignedBeaconBlock) Signature() [dilithium2.CryptoBytes]byte {
 	return b.signature
 }
 

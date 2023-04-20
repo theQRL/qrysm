@@ -9,6 +9,7 @@ import (
 	enginev1 "github.com/prysmaticlabs/prysm/v4/proto/engine/v1"
 	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/validator-client"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -16,7 +17,7 @@ import (
 // a signed beacon block.
 type ReadOnlySignedBeaconBlock interface {
 	Block() ReadOnlyBeaconBlock
-	Signature() [field_params.BLSSignatureLength]byte
+	Signature() [dilithium2.CryptoBytes]byte
 	IsNil() bool
 	Copy() (ReadOnlySignedBeaconBlock, error)
 	Proto() (proto.Message, error)
