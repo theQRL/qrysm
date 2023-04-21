@@ -4,7 +4,7 @@ Note: The latest and most up to date documenation can be found on our [docs port
 
 Excited by our work and want to get involved in building out our sharding releases? Or maybe you haven't learned as much about the Ethereum protocol but are a savvy developer? 
 
-You can explore our [Open Issues](https://github.com/prysmaticlabs/prysm/issues) in-the works for our different releases. Feel free to fork our repo and start creating PR’s after assigning yourself to an issue of interest. We are always chatting on [Discord](https://discord.gg/CTYGPUJ) drop us a line there if you want to get more involved or have any questions on our implementation!
+You can explore our [Open Issues](https://github.com/cyyber/qrysm/issues) in-the works for our different releases. Feel free to fork our repo and start creating PR’s after assigning yourself to an issue of interest. We are always chatting on [Discord](https://discord.gg/CTYGPUJ) drop us a line there if you want to get more involved or have any questions on our implementation!
 
 ## Contribution Steps
 
@@ -12,7 +12,7 @@ You can explore our [Open Issues](https://github.com/prysmaticlabs/prysm/issues)
 
 **2. Fork the prysm repo.**
 
-Sign in to your Github account or create a new account if you do not have one already. Then navigate your browser to https://github.com/prysmaticlabs/prysm/. In the upper right hand corner of the page, click “fork”. This will create a copy of the Prysm repo in your account.
+Sign in to your Github account or create a new account if you do not have one already. Then navigate your browser to https://github.com/cyyber/qrysm/. In the upper right hand corner of the page, click “fork”. This will create a copy of the Prysm repo in your account.
 
 **3. Create a local clone of Prysm.**
 
@@ -38,7 +38,7 @@ $ git remote -v (you should see myrepo and prysm in the list of remotes)
 
 **6. Find an issue to work on.**
 
-Check out open issues at https://github.com/prysmaticlabs/prysm/issues and pick one. Leave a comment to let the development team know that you would like to work on it. Or examine the code for areas that can be improved and leave a comment to the development team to ask if they would like you to work on it.
+Check out open issues at https://github.com/cyyber/qrysm/issues and pick one. Leave a comment to let the development team know that you would like to work on it. Or examine the code for areas that can be improved and leave a comment to the development team to ask if they would like you to work on it.
 
 **7. Create a local branch with a name that clearly identifies what you will be working on.**
 
@@ -123,7 +123,7 @@ Navigate to your fork of the repo on Github. On the upper left where the current
 
 **16. Create a pull request.**
 
-Navigate your browser to https://github.com/prysmaticlabs/prysm and click on the new pull request button. In the “base” box on the left, leave the default selection “base master”, the branch that you want your changes to be applied to. In the “compare” box on the right, select feature-in-progress-branch, the branch containing the changes you want to apply. You will then be asked to answer a few questions about your pull request. After you complete the questionnaire, the pull request will appear in the list of pull requests at https://github.com/prysmaticlabs/prysm/pulls.
+Navigate your browser to https://github.com/prysmaticlabs/prysm and click on the new pull request button. In the “base” box on the left, leave the default selection “base master”, the branch that you want your changes to be applied to. In the “compare” box on the right, select feature-in-progress-branch, the branch containing the changes you want to apply. You will then be asked to answer a few questions about your pull request. After you complete the questionnaire, the pull request will appear in the list of pull requests at https://github.com/cyyber/qrysm/pulls.
 
 **17. Respond to comments by Core Contributors.**
 

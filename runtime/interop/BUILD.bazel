@@ -10,7 +10,7 @@ go_library(
         "qgenerate_genesis_state.go",
         "qgenerate_keys.go",
     ],
-    importpath = "github.com/prysmaticlabs/prysm/v4/runtime/interop",
+    importpath = "github.com/cyyber/qrysm/v4/runtime/interop",
     visibility = ["//visibility:public"],
     deps = [
         "//async:go_default_library",

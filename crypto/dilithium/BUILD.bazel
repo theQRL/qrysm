@@ -6,7 +6,7 @@ go_library(
         "dilithium.go",
         "interface.go",
     ],
-    importpath = "github.com/prysmaticlabs/prysm/v4/crypto/dilithium",
+    importpath = "github.com/cyyber/qrysm/v4/crypto/dilithium",
     visibility = ["//visibility:public"],
     deps = [
         "//crypto/bls/common:go_default_library",

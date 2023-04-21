@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-declare -a skip_coverage=("github.com/prysmaticlabs/prysm/contracts/sharding-manager-contract"
-                          "github.com/prysmaticlabs/prysm/contracts/validator-registration-contract")
+declare -a skip_coverage=("github.com/cyyber/qrysm/contracts/sharding-manager-contract"
+                          "github.com/cyyber/qrysm/contracts/validator-registration-contract")
 
 set -e
 echo "" > coverage.txt
