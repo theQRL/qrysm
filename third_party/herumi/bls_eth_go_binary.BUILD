@@ -153,7 +153,7 @@ go_library(
     copts = OPTS,
     visibility = [
         # Additional access will require security approval.
-        "@prysm//crypto/bls/herumi:__pkg__",
+        "@qrysm//crypto/bls/herumi:__pkg__",
         "@com_github_wealdtech_go_eth2_types_v2//:__pkg__",
     ],
     clinkopts = select({

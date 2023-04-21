@@ -1,4 +1,4 @@
-load("@prysm//tools/go:def.bzl", "go_test")
+load("@qrysm//tools/go:def.bzl", "go_test")
 
 # gazelle:exclude geth_deps.go
 # gazelle:exclude mainnet_e2e_test.go

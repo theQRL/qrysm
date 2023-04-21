@@ -67,7 +67,7 @@ def go_repository(name, **kwargs):
         directives = kwargs["build_directives"]
 
     directives += [
-        "gazelle:map_kind go_library go_library @prysm//tools/go:def.bzl",
+        "gazelle:map_kind go_library go_library @qrysm//tools/go:def.bzl",
     ]
     kwargs["build_directives"] = directives
     maybe(_go_repository, name, **kwargs)

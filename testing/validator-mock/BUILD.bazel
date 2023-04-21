@@ -1,4 +1,4 @@
-load("@prysm//tools/go:def.bzl", "go_library")
+load("@qrysm//tools/go:def.bzl", "go_library")
 
 package(default_testonly = True)
 

@@ -1,4 +1,4 @@
-load("@prysm//tools/go:def.bzl", "go_library")
+load("@qrysm//tools/go:def.bzl", "go_library")
 load(
     "@bazel_skylib//rules:common_settings.bzl",
     "string_flag",
@@ -14,13 +14,13 @@ string_flag(
 config_setting(
     name = "ssz_mainnet",
     flag_values = {
-        "@prysm//proto:network": "mainnet",
+        "@qrysm//proto:network": "mainnet",
     },
 )
 
 config_setting(
     name = "ssz_minimal",
     flag_values = {
-        "@prysm//proto:network": "minimal",
+        "@qrysm//proto:network": "minimal",
     },
 )

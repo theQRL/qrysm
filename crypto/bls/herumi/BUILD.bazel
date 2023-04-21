@@ -1,4 +1,4 @@
-load("@prysm//tools/go:def.bzl", "go_library")
+load("@qrysm//tools/go:def.bzl", "go_library")
 
 # gazelle:resolve go github.com/herumi/bls-eth-go-binary/bls @herumi_bls_eth_go_binary//:go_default_library
 

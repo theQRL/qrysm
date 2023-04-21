@@ -1,4 +1,4 @@
-load("@prysm//tools/go:def.bzl", "go_repository", "maybe")  # gazelle:keep
+load("@qrysm//tools/go:def.bzl", "go_repository", "maybe")  # gazelle:keep
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")  # gazelle:keep
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
@@ -957,7 +957,7 @@ def qrysm_deps():
     go_repository(
         name = "com_github_ethereum_go_ethereum",
         build_directives = [
-            "gazelle:resolve go github.com/karalabe/usb @prysm//third_party/usb:go_default_library",
+            "gazelle:resolve go github.com/karalabe/usb @qrysm//third_party/usb:go_default_library",
         ],
         importpath = "github.com/ethereum/go-ethereum",
         patch_args = ["-p1"],
@@ -4811,7 +4811,7 @@ def qrysm_deps():
         build_directives = [
             # Do not use this library directly.
             # Rather, load maxprocs from github.com/prysmaticlabs/runtime/maxprocs.
-            "gazelle:go_visibility @prysm//runtime/maxprocs:__pkg__",
+            "gazelle:go_visibility @qrysm//runtime/maxprocs:__pkg__",
         ],
         importpath = "go.uber.org/automaxprocs",
         sum = "h1:II28aZoGdaglS5vVNnspf28lnZpXScxtIozx1lAjdb0=",
