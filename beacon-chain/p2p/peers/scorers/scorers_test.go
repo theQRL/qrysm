@@ -5,8 +5,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p/peers/scorers"
-	"github.com/prysmaticlabs/prysm/v4/cmd/beacon-chain/flags"
+	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/scorers"
+	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
 	"github.com/sirupsen/logrus"
 )
 

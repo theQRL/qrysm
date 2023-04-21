@@ -5,11 +5,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	"github.com/prysmaticlabs/prysm/v4/container/slice"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/container/slice"
+	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/cyyber/qrysm/v4/testing/require"
 )
 
 func TestShuffleList_InvalidValidatorCount(t *testing.T) {

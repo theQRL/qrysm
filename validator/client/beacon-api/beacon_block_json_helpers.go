@@ -3,10 +3,10 @@ package beacon_api
 import (
 	"strconv"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/rpc/apimiddleware"
-	enginev1 "github.com/prysmaticlabs/prysm/v4/proto/engine/v1"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 )
 
 func jsonifyTransactions(transactions [][]byte) []string {

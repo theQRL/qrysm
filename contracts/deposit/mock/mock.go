@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/cyyber/qrysm/v4/contracts/deposit"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
@@ -13,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/prysmaticlabs/prysm/v4/contracts/deposit"
 )
 
 var (

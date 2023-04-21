@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/transition"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/container/trie"
-	eth "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/runtime/interop"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/transition"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/container/trie"
+	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/runtime/interop"
+	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/cyyber/qrysm/v4/testing/require"
 )
 
 func TestGenerateGenesisState(t *testing.T) {

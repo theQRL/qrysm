@@ -3,18 +3,18 @@ package blockchain
 import (
 	"context"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/altair"
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/epoch/precompute"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/altair"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/epoch/precompute"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/interfaces"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/runtime/version"
 )
 
 var (

@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/transition"
+	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/paulbellamy/ratecounter"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/transition"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/interfaces"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	"github.com/prysmaticlabs/prysm/v4/time/slots"
 	"github.com/sirupsen/logrus"
 )
 

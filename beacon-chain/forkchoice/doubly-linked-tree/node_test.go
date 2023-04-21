@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	v1 "github.com/prysmaticlabs/prysm/v4/proto/eth/v1"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	v1 "github.com/cyyber/qrysm/v4/proto/eth/v1"
+	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/cyyber/qrysm/v4/testing/require"
 )
 
 func TestNode_ApplyWeightChanges_PositiveChange(t *testing.T) {

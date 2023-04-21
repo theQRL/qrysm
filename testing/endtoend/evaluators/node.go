@@ -10,12 +10,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
+	"github.com/cyyber/qrysm/v4/testing/endtoend/policies"
+	e2etypes "github.com/cyyber/qrysm/v4/testing/endtoend/types"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	eth "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	e2e "github.com/prysmaticlabs/prysm/v4/testing/endtoend/params"
-	"github.com/prysmaticlabs/prysm/v4/testing/endtoend/policies"
-	e2etypes "github.com/prysmaticlabs/prysm/v4/testing/endtoend/types"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )

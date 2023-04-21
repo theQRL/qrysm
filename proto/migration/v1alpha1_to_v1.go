@@ -1,12 +1,12 @@
 package migration
 
 import (
+	"github.com/cyyber/qrysm/v4/beacon-chain/state"
+	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
+	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
+	ethpbv1 "github.com/cyyber/qrysm/v4/proto/eth/v1"
+	ethpbalpha "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/interfaces"
-	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
-	ethpbv1 "github.com/prysmaticlabs/prysm/v4/proto/eth/v1"
-	ethpbalpha "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/protobuf/proto"
 )
 

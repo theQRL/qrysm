@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/encoder"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/network/forks"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p/encoder"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/network/forks"
 )
 
 var _ pubsub.SubscriptionFilter = (*Service)(nil)

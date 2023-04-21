@@ -3,13 +3,13 @@ package state_native
 import (
 	"testing"
 
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	enginev1 "github.com/prysmaticlabs/prysm/v4/proto/engine/v1"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/runtime/version"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/runtime/version"
+	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/cyyber/qrysm/v4/testing/require"
 )
 
 func TestNextWithdrawalIndex(t *testing.T) {

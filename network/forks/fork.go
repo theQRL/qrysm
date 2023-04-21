@@ -7,13 +7,13 @@ import (
 	"sort"
 	"time"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/signing"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/time/slots"
 )
 
 // IsForkNextEpoch checks if an alloted fork is in the following epoch.

@@ -6,16 +6,16 @@ import (
 	"testing"
 	"time"
 
+	dbutil "github.com/cyyber/qrysm/v4/beacon-chain/db/testing"
+	mockExecution "github.com/cyyber/qrysm/v4/beacon-chain/execution/testing"
+	"github.com/cyyber/qrysm/v4/beacon-chain/execution/types"
+	contracts "github.com/cyyber/qrysm/v4/contracts/deposit"
+	"github.com/cyyber/qrysm/v4/contracts/deposit/mock"
+	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	gethTypes "github.com/ethereum/go-ethereum/core/types"
-	dbutil "github.com/prysmaticlabs/prysm/v4/beacon-chain/db/testing"
-	mockExecution "github.com/prysmaticlabs/prysm/v4/beacon-chain/execution/testing"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/execution/types"
-	contracts "github.com/prysmaticlabs/prysm/v4/contracts/deposit"
-	"github.com/prysmaticlabs/prysm/v4/contracts/deposit/mock"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
 )
 
 func setDefaultMocks(service *Service) *Service {

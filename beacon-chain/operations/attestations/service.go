@@ -7,9 +7,9 @@ import (
 	"context"
 	"time"
 
+	lruwrpr "github.com/cyyber/qrysm/v4/cache/lru"
+	"github.com/cyyber/qrysm/v4/config/params"
 	lru "github.com/hashicorp/golang-lru"
-	lruwrpr "github.com/prysmaticlabs/prysm/v4/cache/lru"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
 )
 
 var forkChoiceProcessedRootsSize = 1 << 16

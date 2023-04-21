@@ -3,11 +3,11 @@ package state_native
 import (
 	"fmt"
 
-	customtypes "github.com/prysmaticlabs/prysm/v4/beacon-chain/state/state-native/custom-types"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state/state-native/types"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state/stateutil"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
+	customtypes "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native/custom-types"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state/state-native/types"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state/stateutil"
+	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // SetLatestBlockHeader in the beacon state.

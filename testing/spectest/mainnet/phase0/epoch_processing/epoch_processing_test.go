@@ -3,7 +3,7 @@ package epoch_processing
 import (
 	"testing"
 
-	"github.com/prysmaticlabs/prysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/config/params"
 )
 
 func TestMain(m *testing.M) {

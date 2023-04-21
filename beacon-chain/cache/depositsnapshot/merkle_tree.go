@@ -1,10 +1,10 @@
 package depositsnapshot
 
 import (
+	"github.com/cyyber/qrysm/v4/container/slice"
+	"github.com/cyyber/qrysm/v4/crypto/hash"
+	"github.com/cyyber/qrysm/v4/math"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/container/slice"
-	"github.com/prysmaticlabs/prysm/v4/crypto/hash"
-	"github.com/prysmaticlabs/prysm/v4/math"
 )
 
 const (

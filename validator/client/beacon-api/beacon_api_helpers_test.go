@@ -8,13 +8,13 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/eth/helpers"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/cyyber/qrysm/v4/validator/client/beacon-api/mock"
 	"github.com/golang/mock/gomock"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/rpc/eth/helpers"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
-	"github.com/prysmaticlabs/prysm/v4/validator/client/beacon-api/mock"
 )
 
 func TestBeaconApiHelpers(t *testing.T) {

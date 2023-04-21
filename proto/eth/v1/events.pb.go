@@ -11,9 +11,9 @@ import (
 	sync "sync"
 
 	_ "github.com/golang/protobuf/protoc-gen-go/descriptor"
-	github_com_prysmaticlabs_prysm_v4_consensus_types_primitives "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	v1 "github.com/prysmaticlabs/prysm/v4/proto/engine/v1"
-	_ "github.com/prysmaticlabs/prysm/v4/proto/eth/ext"
+	github_com_prysmaticlabs_prysm_v4_consensus_types_primitives "github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	v1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
+	_ "github.com/cyyber/qrysm/v4/proto/eth/ext"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
@@ -77,7 +77,7 @@ type EventHead struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Slot                      github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Slot `protobuf:"varint,1,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"`
+	Slot                      github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Slot `protobuf:"varint,1,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
 	Block                     []byte                                                            `protobuf:"bytes,2,opt,name=block,proto3" json:"block,omitempty" ssz-size:"32"`
 	State                     []byte                                                            `protobuf:"bytes,3,opt,name=state,proto3" json:"state,omitempty" ssz-size:"32"`
 	EpochTransition           bool                                                              `protobuf:"varint,4,opt,name=epoch_transition,json=epochTransition,proto3" json:"epoch_transition,omitempty"`
@@ -172,7 +172,7 @@ type EventBlock struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Slot                github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Slot `protobuf:"varint,1,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"`
+	Slot                github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Slot `protobuf:"varint,1,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
 	Block               []byte                                                            `protobuf:"bytes,2,opt,name=block,proto3" json:"block,omitempty" ssz-size:"32"`
 	ExecutionOptimistic bool                                                              `protobuf:"varint,3,opt,name=execution_optimistic,json=executionOptimistic,proto3" json:"execution_optimistic,omitempty"`
 }
@@ -235,13 +235,13 @@ type EventChainReorg struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Slot                github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Slot  `protobuf:"varint,1,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"`
+	Slot                github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Slot  `protobuf:"varint,1,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
 	Depth               uint64                                                             `protobuf:"varint,2,opt,name=depth,proto3" json:"depth,omitempty"`
 	OldHeadBlock        []byte                                                             `protobuf:"bytes,3,opt,name=old_head_block,json=oldHeadBlock,proto3" json:"old_head_block,omitempty" ssz-size:"32"`
 	NewHeadBlock        []byte                                                             `protobuf:"bytes,4,opt,name=new_head_block,json=newHeadBlock,proto3" json:"new_head_block,omitempty" ssz-size:"32"`
 	OldHeadState        []byte                                                             `protobuf:"bytes,5,opt,name=old_head_state,json=oldHeadState,proto3" json:"old_head_state,omitempty" ssz-size:"32"`
 	NewHeadState        []byte                                                             `protobuf:"bytes,6,opt,name=new_head_state,json=newHeadState,proto3" json:"new_head_state,omitempty" ssz-size:"32"`
-	Epoch               github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,7,opt,name=epoch,proto3" json:"epoch,omitempty" cast-type:"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"`
+	Epoch               github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,7,opt,name=epoch,proto3" json:"epoch,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Epoch"`
 	ExecutionOptimistic bool                                                               `protobuf:"varint,8,opt,name=execution_optimistic,json=executionOptimistic,proto3" json:"execution_optimistic,omitempty"`
 }
 
@@ -340,7 +340,7 @@ type EventFinalizedCheckpoint struct {
 
 	Block               []byte                                                             `protobuf:"bytes,1,opt,name=block,proto3" json:"block,omitempty" ssz-size:"32"`
 	State               []byte                                                             `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty" ssz-size:"32"`
-	Epoch               github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty" cast-type:"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"`
+	Epoch               github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Epoch"`
 	ExecutionOptimistic bool                                                               `protobuf:"varint,4,opt,name=execution_optimistic,json=executionOptimistic,proto3" json:"execution_optimistic,omitempty"`
 }
 
@@ -519,11 +519,11 @@ type EventPayloadAttributeV1_BasePayloadAttribute struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ProposalSlot      github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Slot           `protobuf:"varint,3,opt,name=proposal_slot,json=proposalSlot,proto3" json:"proposal_slot,omitempty" cast-type:"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"`
+	ProposalSlot      github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Slot           `protobuf:"varint,3,opt,name=proposal_slot,json=proposalSlot,proto3" json:"proposal_slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
 	ParentBlockNumber uint64                                                                      `protobuf:"varint,4,opt,name=parent_block_number,json=parentBlockNumber,proto3" json:"parent_block_number,omitempty"`
 	ParentBlockRoot   []byte                                                                      `protobuf:"bytes,5,opt,name=parent_block_root,json=parentBlockRoot,proto3" json:"parent_block_root,omitempty" ssz-size:"32"`
 	ParentBlockHash   []byte                                                                      `protobuf:"bytes,6,opt,name=parent_block_hash,json=parentBlockHash,proto3" json:"parent_block_hash,omitempty" ssz-size:"32"`
-	ProposerIndex     github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,7,opt,name=proposer_index,json=proposerIndex,proto3" json:"proposer_index,omitempty" cast-type:"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"`
+	ProposerIndex     github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,7,opt,name=proposer_index,json=proposerIndex,proto3" json:"proposer_index,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.ValidatorIndex"`
 	PayloadAttributes *v1.PayloadAttributes                                                       `protobuf:"bytes,8,opt,name=payload_attributes,json=payloadAttributes,proto3" json:"payload_attributes,omitempty"`
 }
 
@@ -606,11 +606,11 @@ type EventPayloadAttributeV2_BasePayloadAttribute struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ProposalSlot      github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Slot           `protobuf:"varint,3,opt,name=proposal_slot,json=proposalSlot,proto3" json:"proposal_slot,omitempty" cast-type:"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"`
+	ProposalSlot      github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Slot           `protobuf:"varint,3,opt,name=proposal_slot,json=proposalSlot,proto3" json:"proposal_slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
 	ParentBlockNumber uint64                                                                      `protobuf:"varint,4,opt,name=parent_block_number,json=parentBlockNumber,proto3" json:"parent_block_number,omitempty"`
 	ParentBlockRoot   []byte                                                                      `protobuf:"bytes,5,opt,name=parent_block_root,json=parentBlockRoot,proto3" json:"parent_block_root,omitempty" ssz-size:"32"`
 	ParentBlockHash   []byte                                                                      `protobuf:"bytes,6,opt,name=parent_block_hash,json=parentBlockHash,proto3" json:"parent_block_hash,omitempty" ssz-size:"32"`
-	ProposerIndex     github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,7,opt,name=proposer_index,json=proposerIndex,proto3" json:"proposer_index,omitempty" cast-type:"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"`
+	ProposerIndex     github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,7,opt,name=proposer_index,json=proposerIndex,proto3" json:"proposer_index,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.ValidatorIndex"`
 	PayloadAttributes *v1.PayloadAttributesV2                                                     `protobuf:"bytes,8,opt,name=payload_attributes,json=payloadAttributes,proto3" json:"payload_attributes,omitempty"`
 }
 

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/db"
-	"github.com/prysmaticlabs/prysm/v4/io/file"
+	"github.com/cyyber/qrysm/v4/beacon-chain/db"
+	"github.com/cyyber/qrysm/v4/io/file"
 )
 
 // A basic tool to extract genesis.ssz from existing beaconchain.db.

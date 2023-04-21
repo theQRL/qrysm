@@ -3,8 +3,8 @@ package primitives
 import (
 	"fmt"
 
+	"github.com/cyyber/qrysm/v4/math"
 	fssz "github.com/prysmaticlabs/fastssz"
-	"github.com/prysmaticlabs/prysm/v4/math"
 )
 
 var _ fssz.HashRoot = (Slot)(0)

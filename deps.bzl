@@ -33,7 +33,7 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 ##################################################################
 #           Make sure you have read DEPENDENCIES.md!
 ##################################################################
-def prysm_deps():
+def qrysm_deps():
     go_repository(
         name = "co_honnef_go_tools",
         importpath = "honnef.co/go/tools",

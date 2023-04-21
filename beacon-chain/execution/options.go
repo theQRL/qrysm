@@ -1,13 +1,13 @@
 package execution
 
 import (
+	"github.com/cyyber/qrysm/v4/beacon-chain/cache/depositcache"
+	statefeed "github.com/cyyber/qrysm/v4/beacon-chain/core/feed/state"
+	"github.com/cyyber/qrysm/v4/beacon-chain/db"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state/stategen"
+	"github.com/cyyber/qrysm/v4/network/authorization"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/cache/depositcache"
-	statefeed "github.com/prysmaticlabs/prysm/v4/beacon-chain/core/feed/state"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/db"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state/stategen"
-	"github.com/prysmaticlabs/prysm/v4/network/authorization"
 )
 
 type Option func(s *Service) error

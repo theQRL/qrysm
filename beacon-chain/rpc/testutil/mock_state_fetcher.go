@@ -3,8 +3,8 @@ package testutil
 import (
 	"context"
 
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 )
 
 // MockFetcher is a fake implementation of statefetcher.Fetcher.

@@ -2,10 +2,10 @@ package interop
 
 import (
 	"encoding/binary"
+	"github.com/cyyber/qrysm/v4/async"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
+	"github.com/cyyber/qrysm/v4/crypto/hash"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/async"
-	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium"
-	"github.com/prysmaticlabs/prysm/v4/crypto/hash"
 	"github.com/theQRL/go-qrllib/common"
 	"sync"
 )

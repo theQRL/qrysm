@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"github.com/prysmaticlabs/prysm/v4/io/file"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
+	"github.com/cyyber/qrysm/v4/io/file"
+	"github.com/cyyber/qrysm/v4/testing/require"
 )
 
 func RetrieveFiles(name string, t *testing.T) ([]string, [][]byte) {

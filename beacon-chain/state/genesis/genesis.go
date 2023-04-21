@@ -3,11 +3,11 @@ package genesis
 import (
 	_ "embed"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/state"
+	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
+	"github.com/cyyber/qrysm/v4/config/params"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/golang/snappy"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
-	state_native "github.com/prysmaticlabs/prysm/v4/beacon-chain/state/state-native"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 )
 
 var (

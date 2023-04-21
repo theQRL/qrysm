@@ -6,11 +6,11 @@ package state
 import (
 	"context"
 
+	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/prysmaticlabs/go-bitfield"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/interfaces"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	enginev1 "github.com/prysmaticlabs/prysm/v4/proto/engine/v1"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 

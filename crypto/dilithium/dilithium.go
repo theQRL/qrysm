@@ -1,8 +1,8 @@
 package dilithium
 
 import (
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls/common"
-	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium/dilithiumt"
+	"github.com/cyyber/qrysm/v4/crypto/bls/common"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium/dilithiumt"
 )
 
 func SecretKeyFromBytes(seed []byte) (DilithiumKey, error) {

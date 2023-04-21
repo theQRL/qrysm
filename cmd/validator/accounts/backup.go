@@ -3,13 +3,13 @@ package accounts
 import (
 	"strings"
 
+	"github.com/cyyber/qrysm/v4/cmd"
+	"github.com/cyyber/qrysm/v4/cmd/validator/flags"
+	"github.com/cyyber/qrysm/v4/io/prompt"
+	"github.com/cyyber/qrysm/v4/validator/accounts"
+	"github.com/cyyber/qrysm/v4/validator/accounts/userprompt"
+	"github.com/cyyber/qrysm/v4/validator/client"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/cmd"
-	"github.com/prysmaticlabs/prysm/v4/cmd/validator/flags"
-	"github.com/prysmaticlabs/prysm/v4/io/prompt"
-	"github.com/prysmaticlabs/prysm/v4/validator/accounts"
-	"github.com/prysmaticlabs/prysm/v4/validator/accounts/userprompt"
-	"github.com/prysmaticlabs/prysm/v4/validator/client"
 	"github.com/urfave/cli/v2"
 )
 

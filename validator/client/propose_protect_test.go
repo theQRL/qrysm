@@ -4,16 +4,16 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cyyber/qrysm/v4/config/features"
+	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
+	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/golang/mock/gomock"
-	"github.com/prysmaticlabs/prysm/v4/config/features"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/blocks"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/interfaces"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
-	"github.com/prysmaticlabs/prysm/v4/testing/util"
 )
 
 func Test_slashableProposalCheck_PreventsLowerThanMinProposal(t *testing.T) {

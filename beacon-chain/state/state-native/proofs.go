@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/binary"
 
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state/fieldtrie"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state/state-native/types"
-	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
-	"github.com/prysmaticlabs/prysm/v4/runtime/version"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state/fieldtrie"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state/state-native/types"
+	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
+	"github.com/cyyber/qrysm/v4/runtime/version"
 )
 
 const (

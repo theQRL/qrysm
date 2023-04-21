@@ -1,4 +1,4 @@
-workspace(name = "prysm")
+workspace(name = "qrysm")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
@@ -38,9 +38,9 @@ load("@llvm_toolchain//:toolchains.bzl", "llvm_register_toolchains")
 
 llvm_register_toolchains()
 
-load("@prysm//tools/cross-toolchain:prysm_toolchains.bzl", "configure_prysm_toolchains")
+load("@qrysm//tools/cross-toolchain:qrysm_toolchains.bzl", "configure_qrysm_toolchains")
 
-configure_prysm_toolchains()
+configure_qrysm_toolchains()
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
@@ -338,16 +338,16 @@ filegroup(
     ],
 )
 
-load("//:deps.bzl", "prysm_deps")
+load("//:deps.bzl", "qrysm_deps")
 
-# gazelle:repository_macro deps.bzl%prysm_deps
-prysm_deps()
+# gazelle:repository_macro deps.bzl%qrysm_deps
+qrysm_deps()
 
-load("@prysm//third_party/herumi:herumi.bzl", "bls_dependencies")
+load("@qrysm//third_party/herumi:herumi.bzl", "bls_dependencies")
 
 bls_dependencies()
 
-load("@prysm//testing/endtoend:deps.bzl", "e2e_deps")
+load("@qrysm//testing/endtoend:deps.bzl", "e2e_deps")
 
 e2e_deps()
 

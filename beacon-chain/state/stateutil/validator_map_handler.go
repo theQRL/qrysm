@@ -3,9 +3,9 @@ package stateutil
 import (
 	"sync"
 
-	coreutils "github.com/prysmaticlabs/prysm/v4/beacon-chain/core/transition/stateutils"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
+	coreutils "github.com/cyyber/qrysm/v4/beacon-chain/core/transition/stateutils"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 

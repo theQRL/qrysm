@@ -9,16 +9,16 @@ import (
 	"os"
 	"time"
 
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/cache/depositcache"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/db"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/execution"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
-	state_native "github.com/prysmaticlabs/prysm/v4/beacon-chain/state/state-native"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/runtime"
-	"github.com/prysmaticlabs/prysm/v4/runtime/interop"
-	"github.com/prysmaticlabs/prysm/v4/time/slots"
+	"github.com/cyyber/qrysm/v4/beacon-chain/cache/depositcache"
+	"github.com/cyyber/qrysm/v4/beacon-chain/db"
+	"github.com/cyyber/qrysm/v4/beacon-chain/execution"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state"
+	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/runtime"
+	"github.com/cyyber/qrysm/v4/runtime/interop"
+	"github.com/cyyber/qrysm/v4/time/slots"
 )
 
 var _ runtime.Service = (*Service)(nil)

@@ -5,7 +5,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
+	"github.com/cyyber/qrysm/v4/testing/require"
 )
 
 func TestGenerateBlockHeadersForSlot_Slashing(t *testing.T) {

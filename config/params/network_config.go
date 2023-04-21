@@ -3,8 +3,8 @@ package params
 import (
 	"time"
 
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/mohae/deepcopy"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
 )
 
 // NetworkConfig defines the spec based network parameters.

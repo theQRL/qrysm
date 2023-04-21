@@ -12,13 +12,13 @@ import (
 	"syscall"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
+	"github.com/cyyber/qrysm/v4/beacon-chain/execution/testing"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/io/file"
+	"github.com/cyyber/qrysm/v4/testing/endtoend/helpers"
+	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
+	e2etypes "github.com/cyyber/qrysm/v4/testing/endtoend/types"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/execution/testing"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/io/file"
-	"github.com/prysmaticlabs/prysm/v4/testing/endtoend/helpers"
-	e2e "github.com/prysmaticlabs/prysm/v4/testing/endtoend/params"
-	e2etypes "github.com/prysmaticlabs/prysm/v4/testing/endtoend/types"
 	log "github.com/sirupsen/logrus"
 )
 

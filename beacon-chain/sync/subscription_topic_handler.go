@@ -3,8 +3,8 @@ package sync
 import (
 	"sync"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p"
 )
 
 // This is a subscription topic handler that is used to handle basic

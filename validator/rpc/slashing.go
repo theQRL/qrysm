@@ -5,10 +5,10 @@ import (
 	"context"
 	"encoding/json"
 
+	pb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	slashing "github.com/cyyber/qrysm/v4/validator/slashing-protection-history"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
-	pb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/validator-client"
-	slashing "github.com/prysmaticlabs/prysm/v4/validator/slashing-protection-history"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"

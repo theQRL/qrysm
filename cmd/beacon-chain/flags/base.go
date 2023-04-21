@@ -5,8 +5,8 @@ package flags
 import (
 	"strings"
 
-	"github.com/prysmaticlabs/prysm/v4/cmd"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/cmd"
+	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/urfave/cli/v2"
 )
 

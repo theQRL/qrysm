@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/prysmaticlabs/prysm/v4/async/event"
-	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium"
-	ethpbservice "github.com/prysmaticlabs/prysm/v4/proto/eth/service"
-	validatorpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/validator-client"
+	"github.com/cyyber/qrysm/v4/async/event"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
+	ethpbservice "github.com/cyyber/qrysm/v4/proto/eth/service"
+	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 

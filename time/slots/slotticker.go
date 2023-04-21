@@ -4,8 +4,8 @@ package slots
 import (
 	"time"
 
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	prysmTime "github.com/prysmaticlabs/prysm/v4/time"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	prysmTime "github.com/cyyber/qrysm/v4/time"
 )
 
 // The Ticker interface defines a type which can expose a

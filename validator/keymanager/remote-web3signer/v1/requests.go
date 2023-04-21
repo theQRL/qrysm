@@ -3,10 +3,10 @@ package v1
 import (
 	"fmt"
 
+	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
+	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
+	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/blocks"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/interfaces"
-	validatorpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/validator-client"
 )
 
 // GetBlockSignRequest maps the request for signing type BLOCK.

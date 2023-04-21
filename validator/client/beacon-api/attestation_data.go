@@ -5,11 +5,11 @@ import (
 	"net/url"
 	"strconv"
 
+	rpcmiddleware "github.com/cyyber/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
-	rpcmiddleware "github.com/prysmaticlabs/prysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 )
 
 func (c beaconApiValidatorClient) getAttestationData(

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"sync"
 
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 )
 
 const vIdLength = 8

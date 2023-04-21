@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/interfaces"
+	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 )
 
 // A type to represent beacon blocks and roots which have methods

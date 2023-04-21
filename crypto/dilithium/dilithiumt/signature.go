@@ -3,8 +3,8 @@ package dilithiumt
 import (
 	"fmt"
 
+	"github.com/cyyber/qrysm/v4/crypto/bls/common"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls/common"
 	"github.com/theQRL/go-qrllib/dilithium"
 )
 

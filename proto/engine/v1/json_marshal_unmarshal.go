@@ -6,14 +6,14 @@ import (
 	"reflect"
 	"strings"
 
+	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
+	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
-	"github.com/prysmaticlabs/prysm/v4/runtime/version"
 )
 
 // PayloadIDBytes defines a custom type for Payload IDs used by the engine API

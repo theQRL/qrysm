@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
+	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/k0kubun/go-ansi"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
 	"github.com/schollz/progressbar/v3"
 )
 

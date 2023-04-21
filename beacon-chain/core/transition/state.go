@@ -3,15 +3,15 @@ package transition
 import (
 	"context"
 
+	b "github.com/cyyber/qrysm/v4/beacon-chain/core/blocks"
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state"
+	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state/stateutil"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/container/trie"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
-	b "github.com/prysmaticlabs/prysm/v4/beacon-chain/core/blocks"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/helpers"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
-	state_native "github.com/prysmaticlabs/prysm/v4/beacon-chain/state/state-native"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state/stateutil"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/container/trie"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 )
 
 // GenesisBeaconState gets called when MinGenesisActiveValidatorCount count of

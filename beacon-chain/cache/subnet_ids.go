@@ -4,12 +4,12 @@ import (
 	"sync"
 	"time"
 
+	lruwrpr "github.com/cyyber/qrysm/v4/cache/lru"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/container/slice"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/patrickmn/go-cache"
-	lruwrpr "github.com/prysmaticlabs/prysm/v4/cache/lru"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	"github.com/prysmaticlabs/prysm/v4/container/slice"
 )
 
 type subnetIDs struct {

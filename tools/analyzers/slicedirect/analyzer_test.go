@@ -3,7 +3,7 @@ package slicedirect
 import (
 	"testing"
 
-	"github.com/prysmaticlabs/prysm/v4/build/bazel"
+	"github.com/cyyber/qrysm/v4/build/bazel"
 	"golang.org/x/tools/go/analysis/analysistest"
 )
 

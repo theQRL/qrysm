@@ -5,15 +5,15 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/state"
+	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
+	"github.com/cyyber/qrysm/v4/config/features"
+	"github.com/cyyber/qrysm/v4/config/params"
+	v1alpha1 "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/golang/snappy"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
-	state_native "github.com/prysmaticlabs/prysm/v4/beacon-chain/state/state-native"
-	"github.com/prysmaticlabs/prysm/v4/config/features"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	v1alpha1 "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
-	"github.com/prysmaticlabs/prysm/v4/testing/util"
 	"go.etcd.io/bbolt"
 )
 

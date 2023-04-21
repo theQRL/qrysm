@@ -12,8 +12,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
 	log "github.com/sirupsen/logrus"
 )
 

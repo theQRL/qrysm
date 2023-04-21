@@ -15,10 +15,10 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/db"
+	"github.com/cyyber/qrysm/v4/beacon-chain/db/filters"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/emicklei/dot"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/db"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/db/filters"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
 )
 
 var (

@@ -5,10 +5,10 @@ import (
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"time"
 
+	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/ethereum/go-ethereum/common"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 )
 
 // BeaconChainConfig contains constant configs for node to participate in beacon chain.

@@ -2,17 +2,17 @@ package interop
 
 import (
 	"context"
+	"github.com/cyyber/qrysm/v4/async"
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
+	coreState "github.com/cyyber/qrysm/v4/beacon-chain/core/transition"
+	statenative "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/container/trie"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
+	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/time"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/async"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/signing"
-	coreState "github.com/prysmaticlabs/prysm/v4/beacon-chain/core/transition"
-	statenative "github.com/prysmaticlabs/prysm/v4/beacon-chain/state/state-native"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/container/trie"
-	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium"
-	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/time"
 	"sync"
 )
 

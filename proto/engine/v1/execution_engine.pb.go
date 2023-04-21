@@ -10,8 +10,8 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	github_com_prysmaticlabs_prysm_v4_consensus_types_primitives "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	_ "github.com/prysmaticlabs/prysm/v4/proto/eth/ext"
+	github_com_prysmaticlabs_prysm_v4_consensus_types_primitives "github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	_ "github.com/cyyber/qrysm/v4/proto/eth/ext"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
@@ -1140,7 +1140,7 @@ type Withdrawal struct {
 	unknownFields protoimpl.UnknownFields
 
 	Index          uint64                                                                      `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
-	ValidatorIndex github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,2,opt,name=validator_index,json=validatorIndex,proto3" json:"validator_index,omitempty" cast-type:"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.ValidatorIndex"`
+	ValidatorIndex github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,2,opt,name=validator_index,json=validatorIndex,proto3" json:"validator_index,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.ValidatorIndex"`
 	Address        []byte                                                                      `protobuf:"bytes,3,opt,name=address,proto3" json:"address,omitempty" ssz-size:"20"`
 	Amount         uint64                                                                      `protobuf:"varint,4,opt,name=amount,proto3" json:"amount,omitempty"`
 }

@@ -7,14 +7,14 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/cyyber/qrysm/v4/async/abool"
+	"github.com/cyyber/qrysm/v4/async/event"
+	"github.com/cyyber/qrysm/v4/config/features"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/io/file"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	prombolt "github.com/prysmaticlabs/prombbolt"
-	"github.com/prysmaticlabs/prysm/v4/async/abool"
-	"github.com/prysmaticlabs/prysm/v4/async/event"
-	"github.com/prysmaticlabs/prysm/v4/config/features"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/io/file"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	bolt "go.etcd.io/bbolt"
 )
@@ -40,7 +40,7 @@ var (
 
 // blockedBuckets represents the buckets that we want to restrict
 // from our metrics fetching for performance reasons. For a detailed
-// summary, it can be read in https://github.com/prysmaticlabs/prysm/issues/8274.
+// summary, it can be read in https://github.com/cyyber/qrysm/issues/8274.
 var blockedBuckets = [][]byte{
 	deprecatedAttestationHistoryBucket,
 	lowestSignedSourceBucket,

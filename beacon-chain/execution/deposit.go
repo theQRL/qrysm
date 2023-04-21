@@ -3,11 +3,11 @@ package execution
 import (
 	"context"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/blocks"
+	"github.com/cyyber/qrysm/v4/config/params"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/blocks"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 )
 
 // DepositContractAddress returns the deposit contract address for the given chain.

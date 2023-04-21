@@ -4,14 +4,14 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/hash"
+	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	pb "github.com/cyyber/qrysm/v4/proto/testing"
+	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/cyyber/qrysm/v4/testing/require"
 	fuzz "github.com/google/gofuzz"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls"
-	"github.com/prysmaticlabs/prysm/v4/crypto/hash"
-	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	pb "github.com/prysmaticlabs/prysm/v4/proto/testing"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
 )
 
 func TestHash(t *testing.T) {

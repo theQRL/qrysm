@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
-	lruwrpr "github.com/prysmaticlabs/prysm/v4/cache/lru"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls/common"
+	lruwrpr "github.com/cyyber/qrysm/v4/cache/lru"
+	"github.com/cyyber/qrysm/v4/crypto/bls/common"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 

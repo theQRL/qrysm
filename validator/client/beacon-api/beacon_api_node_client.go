@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/validator/client/iface"
 	"github.com/golang/protobuf/ptypes/empty"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/validator/client/iface"
 )
 
 type beaconApiNodeClient struct {

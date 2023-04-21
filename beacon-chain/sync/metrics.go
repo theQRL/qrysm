@@ -5,14 +5,14 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/cache"
+	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
+	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/cyyber/qrysm/v4/config/params"
+	pb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/cache"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p"
-	"github.com/prysmaticlabs/prysm/v4/cmd/beacon-chain/flags"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	pb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/time/slots"
 )
 
 var (

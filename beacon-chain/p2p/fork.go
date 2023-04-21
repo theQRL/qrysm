@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/network/forks"
+	pb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	prysmTime "github.com/cyyber/qrysm/v4/time"
+	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/network/forks"
-	pb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	prysmTime "github.com/prysmaticlabs/prysm/v4/time"
-	"github.com/prysmaticlabs/prysm/v4/time/slots"
 	"github.com/sirupsen/logrus"
 )
 

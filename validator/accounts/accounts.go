@@ -1,7 +1,7 @@
 package accounts
 
 import (
-	"github.com/prysmaticlabs/prysm/v4/validator/keymanager"
+	"github.com/cyyber/qrysm/v4/validator/keymanager"
 )
 
 var (

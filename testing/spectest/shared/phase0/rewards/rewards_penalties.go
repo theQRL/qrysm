@@ -8,14 +8,14 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/epoch/precompute"
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
+	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/cyyber/qrysm/v4/testing/spectest/utils"
+	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/golang/snappy"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/epoch/precompute"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/helpers"
-	state_native "github.com/prysmaticlabs/prysm/v4/beacon-chain/state/state-native"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
-	"github.com/prysmaticlabs/prysm/v4/testing/spectest/utils"
-	"github.com/prysmaticlabs/prysm/v4/testing/util"
 )
 
 // Delta contains list of rewards and penalties.

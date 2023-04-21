@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"sync"
 
+	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
+	"github.com/cyyber/qrysm/v4/crypto/bls/common"
+	"github.com/cyyber/qrysm/v4/crypto/rand"
 	"github.com/pkg/errors"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls/common"
-	"github.com/prysmaticlabs/prysm/v4/crypto/rand"
 	blst "github.com/supranational/blst/bindings/go"
 )
 

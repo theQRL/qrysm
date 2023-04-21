@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/execution"
+	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/cyyber/qrysm/v4/io/file"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/execution"
-	"github.com/prysmaticlabs/prysm/v4/cmd/beacon-chain/flags"
-	"github.com/prysmaticlabs/prysm/v4/io/file"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )

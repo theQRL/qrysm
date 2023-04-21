@@ -6,11 +6,11 @@ import (
 	"sort"
 	"time"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/peerdata"
+	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/cyyber/qrysm/v4/crypto/rand"
+	prysmTime "github.com/cyyber/qrysm/v4/time"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p/peers/peerdata"
-	"github.com/prysmaticlabs/prysm/v4/cmd/beacon-chain/flags"
-	"github.com/prysmaticlabs/prysm/v4/crypto/rand"
-	prysmTime "github.com/prysmaticlabs/prysm/v4/time"
 )
 
 var _ Scorer = (*BlockProviderScorer)(nil)

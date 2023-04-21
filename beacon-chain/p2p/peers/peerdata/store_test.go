@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/peerdata"
+	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p/peers/peerdata"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
 )
 
 func TestStore_GetSetDelete(t *testing.T) {

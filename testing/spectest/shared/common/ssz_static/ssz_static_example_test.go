@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"testing"
 
+	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/testing/require"
+	common "github.com/cyyber/qrysm/v4/testing/spectest/shared/common/ssz_static"
 	"github.com/pkg/errors"
 	fssz "github.com/prysmaticlabs/fastssz"
-	state_native "github.com/prysmaticlabs/prysm/v4/beacon-chain/state/state-native"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
-	common "github.com/prysmaticlabs/prysm/v4/testing/spectest/shared/common/ssz_static"
 )
 
 func ExampleRunSSZStaticTests() {

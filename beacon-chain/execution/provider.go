@@ -4,8 +4,8 @@ import (
 	"encoding/base64"
 	"strings"
 
-	"github.com/prysmaticlabs/prysm/v4/network"
-	"github.com/prysmaticlabs/prysm/v4/network/authorization"
+	"github.com/cyyber/qrysm/v4/network"
+	"github.com/cyyber/qrysm/v4/network/authorization"
 )
 
 // HttpEndpoint extracts an httputils.Endpoint from the provider parameter.

@@ -3,8 +3,8 @@ package depositsnapshot
 import (
 	"crypto/sha256"
 
+	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 )
 
 var (

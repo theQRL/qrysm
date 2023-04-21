@@ -5,11 +5,11 @@ package ssz_test
 import (
 	"testing"
 
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/encoding/ssz"
+	pb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
 	fssz "github.com/prysmaticlabs/fastssz"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/encoding/ssz"
-	pb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 )
 
 func FuzzUint64Root(f *testing.F) {

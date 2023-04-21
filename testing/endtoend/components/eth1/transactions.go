@@ -11,14 +11,14 @@ import (
 
 	"github.com/MariusVanDerWijden/FuzzyVM/filler"
 	txfuzz "github.com/MariusVanDerWijden/tx-fuzz"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/crypto/rand"
+	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/crypto/rand"
-	e2e "github.com/prysmaticlabs/prysm/v4/testing/endtoend/params"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 )

@@ -1,11 +1,11 @@
 package stateutil
 
 import (
+	"github.com/cyyber/qrysm/v4/container/trie"
+	"github.com/cyyber/qrysm/v4/crypto/hash/htr"
+	"github.com/cyyber/qrysm/v4/encoding/ssz"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/container/trie"
-	"github.com/prysmaticlabs/prysm/v4/crypto/hash/htr"
-	"github.com/prysmaticlabs/prysm/v4/encoding/ssz"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 )
 
 // SyncCommitteeRoot computes the HashTreeRoot Merkleization of a committee root.

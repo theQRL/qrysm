@@ -3,24 +3,24 @@ package util
 import (
 	"context"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/altair"
+	b "github.com/cyyber/qrysm/v4/beacon-chain/core/blocks"
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state"
+	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state/stateutil"
+	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
+	"github.com/cyyber/qrysm/v4/container/trie"
+	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
+	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/runtime/interop"
+	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/altair"
-	b "github.com/prysmaticlabs/prysm/v4/beacon-chain/core/blocks"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/helpers"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
-	state_native "github.com/prysmaticlabs/prysm/v4/beacon-chain/state/state-native"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state/stateutil"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/blocks"
-	"github.com/prysmaticlabs/prysm/v4/container/trie"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls"
-	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
-	enginev1 "github.com/prysmaticlabs/prysm/v4/proto/engine/v1"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/runtime/interop"
-	"github.com/prysmaticlabs/prysm/v4/runtime/version"
 )
 
 var errUnsupportedVersion = errors.New("schema version not supported by premineGenesisConfig")
@@ -29,7 +29,7 @@ type premineGenesisConfig struct {
 	GenesisTime     uint64
 	NVals           uint64
 	PregenesisCreds uint64
-	Version         int          // as in "github.com/prysmaticlabs/prysm/v4/runtime/version"
+	Version         int          // as in "github.com/cyyber/qrysm/v4/runtime/version"
 	GB              *types.Block // geth genesis block
 }
 

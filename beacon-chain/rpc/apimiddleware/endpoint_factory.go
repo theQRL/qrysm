@@ -1,8 +1,8 @@
 package apimiddleware
 
 import (
+	"github.com/cyyber/qrysm/v4/api/gateway/apimiddleware"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/api/gateway/apimiddleware"
 )
 
 // BeaconEndpointFactory creates endpoints used for running beacon chain API calls through the API Middleware.

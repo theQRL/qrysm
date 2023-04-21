@@ -1,9 +1,9 @@
 package genesis
 
 import (
+	"github.com/cyyber/qrysm/v4/beacon-chain/node"
+	"github.com/cyyber/qrysm/v4/beacon-chain/sync/genesis"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/node"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/sync/genesis"
 	"github.com/urfave/cli/v2"
 )
 

@@ -10,13 +10,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cyyber/qrysm/v4/api/gateway/apimiddleware"
+	"github.com/cyyber/qrysm/v4/config/params"
+	ethpbv2 "github.com/cyyber/qrysm/v4/proto/eth/v2"
+	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/gogo/protobuf/types"
-	"github.com/prysmaticlabs/prysm/v4/api/gateway/apimiddleware"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	ethpbv2 "github.com/prysmaticlabs/prysm/v4/proto/eth/v2"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
-	"github.com/prysmaticlabs/prysm/v4/time/slots"
 )
 
 func TestWrapAttestationArray(t *testing.T) {

@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cyyber/qrysm/v4/api/grpc"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/api/grpc"
 )
 
 // DeserializeRequestBodyIntoContainer deserializes the request's body into an endpoint-specific struct.

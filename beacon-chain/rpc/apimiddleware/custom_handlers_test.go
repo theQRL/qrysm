@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prysmaticlabs/prysm/v4/api/gateway/apimiddleware"
-	"github.com/prysmaticlabs/prysm/v4/api/grpc"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/rpc/eth/events"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
+	"github.com/cyyber/qrysm/v4/api/gateway/apimiddleware"
+	"github.com/cyyber/qrysm/v4/api/grpc"
+	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/eth/events"
+	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/r3labs/sse"
 )
 

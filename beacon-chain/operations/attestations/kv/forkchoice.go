@@ -1,8 +1,8 @@
 package kv
 
 import (
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 )
 
 // SaveForkchoiceAttestation saves an forkchoice attestation in cache.

@@ -5,8 +5,8 @@ import (
 	"io"
 	"testing"
 
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
+	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
+	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/sirupsen/logrus"
 )
 

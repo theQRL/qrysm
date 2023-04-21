@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
+	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/testing/require"
 )
 
 func TestStore_Backup(t *testing.T) {

@@ -3,9 +3,9 @@ package sync
 import (
 	"context"
 
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/blockchain"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/transition/interop"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/blocks"
+	"github.com/cyyber/qrysm/v4/beacon-chain/blockchain"
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/transition/interop"
+	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"google.golang.org/protobuf/proto"
 )
 

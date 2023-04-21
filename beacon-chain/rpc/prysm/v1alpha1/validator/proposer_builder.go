@@ -3,10 +3,10 @@ package validator
 import (
 	"context"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/db/kv"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/db/kv"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
 	"github.com/sirupsen/logrus"
 )
 

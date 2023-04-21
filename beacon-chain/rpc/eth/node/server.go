@@ -4,11 +4,11 @@
 package node
 
 import (
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/blockchain"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/db"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/execution"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/sync"
+	"github.com/cyyber/qrysm/v4/beacon-chain/blockchain"
+	"github.com/cyyber/qrysm/v4/beacon-chain/db"
+	"github.com/cyyber/qrysm/v4/beacon-chain/execution"
+	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
+	"github.com/cyyber/qrysm/v4/beacon-chain/sync"
 	"google.golang.org/grpc"
 )
 

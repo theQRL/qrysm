@@ -5,9 +5,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/cyyber/qrysm/v4/crypto/rand"
+	"github.com/cyyber/qrysm/v4/io/prompt"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/crypto/rand"
-	"github.com/prysmaticlabs/prysm/v4/io/prompt"
 	"github.com/theQRL/go-qrllib/qrl"
 	"github.com/tyler-smith/go-bip39"
 )

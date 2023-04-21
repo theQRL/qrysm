@@ -4,12 +4,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/container/slice"
+	"github.com/cyyber/qrysm/v4/crypto/rand"
+	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/patrickmn/go-cache"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	"github.com/prysmaticlabs/prysm/v4/container/slice"
-	"github.com/prysmaticlabs/prysm/v4/crypto/rand"
-	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 )
 
 type syncSubnetIDs struct {

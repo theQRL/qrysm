@@ -1,7 +1,7 @@
 package require
 
 import (
-	"github.com/prysmaticlabs/prysm/v4/testing/assertions"
+	"github.com/cyyber/qrysm/v4/testing/assertions"
 	"github.com/sirupsen/logrus/hooks/test"
 )
 

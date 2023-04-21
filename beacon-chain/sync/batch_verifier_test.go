@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
+	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/cyyber/qrysm/v4/testing/util"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/signing"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
-	"github.com/prysmaticlabs/prysm/v4/testing/util"
 )
 
 func TestValidateWithBatchVerifier(t *testing.T) {

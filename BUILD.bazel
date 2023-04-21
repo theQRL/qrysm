@@ -6,16 +6,16 @@ load("@io_bazel_rules_go//go:def.bzl", "nogo")
 load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_versioned")
 load("@bazel_skylib//rules:common_settings.bzl", "string_setting")
 
-prefix = "github.com/prysmaticlabs/prysm"
+prefix = "github.com/cyyber/qrysm"
 
 exports_files([
     "LICENSE.md",
 ])
 
-# gazelle:prefix github.com/prysmaticlabs/prysm/v4
-# gazelle:map_kind go_library go_library @prysm//tools/go:def.bzl
-# gazelle:map_kind go_test go_test @prysm//tools/go:def.bzl
-# gazelle:map_kind go_repository go_repository @prysm//tools/go:def.bzl
+# gazelle:prefix github.com/cyyber/qrysm/v4
+# gazelle:map_kind go_library go_library @qrysm//tools/go:def.bzl
+# gazelle:map_kind go_test go_test @qrysm//tools/go:def.bzl
+# gazelle:map_kind go_repository go_repository @qrysm//tools/go:def.bzl
 # gazelle:build_tags bazel
 # gazelle:exclude tools/analyzers/**/testdata/**
 gazelle(

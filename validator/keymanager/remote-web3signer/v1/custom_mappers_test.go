@@ -4,12 +4,12 @@ import (
 	"reflect"
 	"testing"
 
+	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	v1 "github.com/cyyber/qrysm/v4/validator/keymanager/remote-web3signer/v1"
+	"github.com/cyyber/qrysm/v4/validator/keymanager/remote-web3signer/v1/mock"
 	"github.com/prysmaticlabs/go-bitfield"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	v1 "github.com/prysmaticlabs/prysm/v4/validator/keymanager/remote-web3signer/v1"
-	"github.com/prysmaticlabs/prysm/v4/validator/keymanager/remote-web3signer/v1/mock"
 )
 
 func TestMapAggregateAndProof(t *testing.T) {

@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cyyber/qrysm/v4/config/features"
+	"github.com/cyyber/qrysm/v4/encoding/ssz/detect"
+	"github.com/cyyber/qrysm/v4/monitoring/progress"
+	v1alpha1 "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/snappy"
-	"github.com/prysmaticlabs/prysm/v4/config/features"
-	"github.com/prysmaticlabs/prysm/v4/encoding/ssz/detect"
-	"github.com/prysmaticlabs/prysm/v4/monitoring/progress"
-	v1alpha1 "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	"github.com/schollz/progressbar/v3"
 	bolt "go.etcd.io/bbolt"
 )

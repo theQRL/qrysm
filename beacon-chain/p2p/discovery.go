@@ -6,6 +6,11 @@ import (
 	"net"
 	"time"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/cache"
+	"github.com/cyyber/qrysm/v4/config/params"
+	ecdsaprysm "github.com/cyyber/qrysm/v4/crypto/ecdsa"
+	"github.com/cyyber/qrysm/v4/runtime/version"
+	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/ethereum/go-ethereum/p2p/discover"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/enr"
@@ -14,11 +19,6 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/go-bitfield"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/cache"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	ecdsaprysm "github.com/prysmaticlabs/prysm/v4/crypto/ecdsa"
-	"github.com/prysmaticlabs/prysm/v4/runtime/version"
-	"github.com/prysmaticlabs/prysm/v4/time/slots"
 )
 
 // Listener defines the discovery V5 network interface that is used

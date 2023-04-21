@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
+	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/encoder"
+	"github.com/cyyber/qrysm/v4/network/forks"
+	"github.com/cyyber/qrysm/v4/testing/assert"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p/encoder"
-	"github.com/prysmaticlabs/prysm/v4/network/forks"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
 )
 
 func TestSubTopicHandler_CRUD(t *testing.T) {

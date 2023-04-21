@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/prysmaticlabs/prysm/v4/io/file"
+	"github.com/cyyber/qrysm/v4/io/file"
 )
 
 var (

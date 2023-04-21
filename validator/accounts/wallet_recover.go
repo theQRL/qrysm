@@ -4,10 +4,10 @@ import (
 	"context"
 	"strings"
 
+	"github.com/cyyber/qrysm/v4/validator/accounts/wallet"
+	"github.com/cyyber/qrysm/v4/validator/keymanager"
+	"github.com/cyyber/qrysm/v4/validator/keymanager/derived"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/validator/accounts/wallet"
-	"github.com/prysmaticlabs/prysm/v4/validator/keymanager"
-	"github.com/prysmaticlabs/prysm/v4/validator/keymanager/derived"
 )
 
 const (

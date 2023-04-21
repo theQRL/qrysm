@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"time"
 
+	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/prom2json"
-	eth "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	log "github.com/sirupsen/logrus"
 )
 

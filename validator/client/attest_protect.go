@@ -5,11 +5,11 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"github.com/cyyber/qrysm/v4/config/features"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/slashings"
+	"github.com/cyyber/qrysm/v4/validator/db/kv"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/config/features"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/slashings"
-	"github.com/prysmaticlabs/prysm/v4/validator/db/kv"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"go.opencensus.io/trace"
 )

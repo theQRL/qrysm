@@ -7,12 +7,12 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
+	"github.com/cyyber/qrysm/v4/monitoring/progress"
+	"github.com/cyyber/qrysm/v4/validator/db"
+	"github.com/cyyber/qrysm/v4/validator/slashing-protection-history/format"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
-	"github.com/prysmaticlabs/prysm/v4/monitoring/progress"
-	"github.com/prysmaticlabs/prysm/v4/validator/db"
-	"github.com/prysmaticlabs/prysm/v4/validator/slashing-protection-history/format"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
@@ -150,7 +150,7 @@ func signedAttestationsByPubKey(ctx context.Context, validatorDB db.Database, pu
 		// having a target epoch greater than the next entry in the list. If this manifests,
 		// we skip it to protect users. This check is the best trade-off we can make at
 		// the moment without creating any false positive slashable attestation exports.
-		// More information on the bug can found in https://github.com/prysmaticlabs/prysm/issues/8893.
+		// More information on the bug can found in https://github.com/cyyber/qrysm/issues/8893.
 		if i == 0 && len(history) > 1 {
 			nextEntryTargetEpoch := history[1].Target
 			if att.Target > nextEntryTargetEpoch && att.Source == 0 {

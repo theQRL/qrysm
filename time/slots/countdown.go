@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	prysmTime "github.com/prysmaticlabs/prysm/v4/time"
+	"github.com/cyyber/qrysm/v4/config/params"
+	prysmTime "github.com/cyyber/qrysm/v4/time"
 	"github.com/sirupsen/logrus"
 )
 

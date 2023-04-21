@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
+	_ "github.com/cyyber/qrysm/v4/runtime/maxprocs"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
-	_ "github.com/prysmaticlabs/prysm/v4/runtime/maxprocs"
 	"github.com/sirupsen/logrus"
 )
 

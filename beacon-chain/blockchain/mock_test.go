@@ -3,9 +3,9 @@ package blockchain
 import (
 	"testing"
 
-	testDB "github.com/prysmaticlabs/prysm/v4/beacon-chain/db/testing"
-	doublylinkedtree "github.com/prysmaticlabs/prysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state/stategen"
+	testDB "github.com/cyyber/qrysm/v4/beacon-chain/db/testing"
+	doublylinkedtree "github.com/cyyber/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state/stategen"
 )
 
 func testServiceOptsWithDB(t *testing.T) []Option {

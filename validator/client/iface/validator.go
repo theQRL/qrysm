@@ -5,12 +5,12 @@ import (
 	"errors"
 	"time"
 
-	validatorserviceconfig "github.com/prysmaticlabs/prysm/v4/config/validator/service"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	validatorpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/validator-client"
-	"github.com/prysmaticlabs/prysm/v4/validator/keymanager"
+	validatorserviceconfig "github.com/cyyber/qrysm/v4/config/validator/service"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	"github.com/cyyber/qrysm/v4/validator/keymanager"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 

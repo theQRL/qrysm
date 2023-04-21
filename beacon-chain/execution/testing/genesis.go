@@ -5,12 +5,12 @@ import (
 	"math"
 	"math/big"
 
+	clparams "github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/params"
-	clparams "github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/time/slots"
 )
 
 // defaultMinerAddress is used to send deposits and test transactions in the e2e test.

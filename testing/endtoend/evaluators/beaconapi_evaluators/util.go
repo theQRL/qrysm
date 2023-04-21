@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/prysmaticlabs/prysm/v4/testing/endtoend/params"
+	"github.com/cyyber/qrysm/v4/testing/endtoend/params"
 	log "github.com/sirupsen/logrus"
 )
 

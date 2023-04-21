@@ -8,8 +8,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/cyyber/qrysm/v4/encoding/ssz/equality"
 	"github.com/d4l3k/messagediff"
-	"github.com/prysmaticlabs/prysm/v4/encoding/ssz/equality"
 	"github.com/sirupsen/logrus/hooks/test"
 	"google.golang.org/protobuf/proto"
 )

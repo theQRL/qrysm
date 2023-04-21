@@ -5,9 +5,9 @@ import (
 	"context"
 	"sync"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
 )
 
 type nextSlotCache struct {

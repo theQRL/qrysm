@@ -1,8 +1,8 @@
 package beaconapi_evaluators
 
 import (
-	"github.com/prysmaticlabs/prysm/v4/testing/endtoend/policies"
-	e2etypes "github.com/prysmaticlabs/prysm/v4/testing/endtoend/types"
+	"github.com/cyyber/qrysm/v4/testing/endtoend/policies"
+	e2etypes "github.com/cyyber/qrysm/v4/testing/endtoend/types"
 	"google.golang.org/grpc"
 )
 

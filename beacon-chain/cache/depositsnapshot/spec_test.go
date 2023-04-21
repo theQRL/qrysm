@@ -8,10 +8,10 @@ import (
 	"testing"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
+	"github.com/cyyber/qrysm/v4/io/file"
+	eth "github.com/cyyber/qrysm/v4/proto/eth/v1"
+	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/io/file"
-	eth "github.com/prysmaticlabs/prysm/v4/proto/eth/v1"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
 	"gopkg.in/yaml.v3"
 )
 

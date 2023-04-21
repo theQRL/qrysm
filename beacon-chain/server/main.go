@@ -10,13 +10,13 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/cyyber/qrysm/v4/api/gateway"
+	beaconGateway "github.com/cyyber/qrysm/v4/beacon-chain/gateway"
+	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
+	_ "github.com/cyyber/qrysm/v4/runtime/maxprocs"
 	"github.com/gorilla/mux"
 	joonix "github.com/joonix/log"
-	"github.com/prysmaticlabs/prysm/v4/api/gateway"
-	beaconGateway "github.com/prysmaticlabs/prysm/v4/beacon-chain/gateway"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/prysmaticlabs/prysm/v4/cmd/beacon-chain/flags"
-	_ "github.com/prysmaticlabs/prysm/v4/runtime/maxprocs"
 	"github.com/sirupsen/logrus"
 )
 

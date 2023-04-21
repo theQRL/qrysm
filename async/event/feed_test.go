@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
+	"github.com/cyyber/qrysm/v4/testing/assert"
 )
 
 func TestFeedPanics(t *testing.T) {

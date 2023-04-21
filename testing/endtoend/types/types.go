@@ -6,9 +6,9 @@ import (
 	"context"
 	"os"
 
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	"github.com/prysmaticlabs/prysm/v4/runtime/version"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/runtime/version"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"google.golang.org/grpc"
 )

@@ -5,11 +5,11 @@ import (
 	"path"
 	"strings"
 
+	"github.com/cyyber/qrysm/v4/cmd"
+	"github.com/cyyber/qrysm/v4/io/file"
+	"github.com/cyyber/qrysm/v4/io/prompt"
+	"github.com/cyyber/qrysm/v4/validator/db/kv"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/cmd"
-	"github.com/prysmaticlabs/prysm/v4/io/file"
-	"github.com/prysmaticlabs/prysm/v4/io/prompt"
-	"github.com/prysmaticlabs/prysm/v4/validator/db/kv"
 	"github.com/urfave/cli/v2"
 )
 

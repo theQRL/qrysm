@@ -7,20 +7,20 @@ import (
 	"context"
 	"time"
 
+	"github.com/cyyber/qrysm/v4/async/abool"
+	"github.com/cyyber/qrysm/v4/beacon-chain/blockchain"
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/feed"
+	blockfeed "github.com/cyyber/qrysm/v4/beacon-chain/core/feed/block"
+	statefeed "github.com/cyyber/qrysm/v4/beacon-chain/core/feed/state"
+	"github.com/cyyber/qrysm/v4/beacon-chain/db"
+	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
+	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/runtime"
+	prysmTime "github.com/cyyber/qrysm/v4/time"
+	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/paulbellamy/ratecounter"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/async/abool"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/blockchain"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/feed"
-	blockfeed "github.com/prysmaticlabs/prysm/v4/beacon-chain/core/feed/block"
-	statefeed "github.com/prysmaticlabs/prysm/v4/beacon-chain/core/feed/state"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/db"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p"
-	"github.com/prysmaticlabs/prysm/v4/cmd/beacon-chain/flags"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/runtime"
-	prysmTime "github.com/prysmaticlabs/prysm/v4/time"
-	"github.com/prysmaticlabs/prysm/v4/time/slots"
 	"github.com/sirupsen/logrus"
 )
 
@@ -68,7 +68,7 @@ func NewService(ctx context.Context, cfg *Config) *Service {
 
 	// The reason why we have this goroutine in the constructor is to avoid a race condition
 	// between services' Start method and the initialization event.
-	// See https://github.com/prysmaticlabs/prysm/issues/10602 for details.
+	// See https://github.com/cyyber/qrysm/issues/10602 for details.
 	go s.waitForStateInitialization()
 
 	return s

@@ -7,14 +7,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cyyber/qrysm/v4/config/params"
+	contracts "github.com/cyyber/qrysm/v4/contracts/deposit"
+	"github.com/cyyber/qrysm/v4/io/logs"
+	"github.com/cyyber/qrysm/v4/network"
+	"github.com/cyyber/qrysm/v4/network/authorization"
 	"github.com/ethereum/go-ethereum/ethclient"
 	gethRPC "github.com/ethereum/go-ethereum/rpc"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	contracts "github.com/prysmaticlabs/prysm/v4/contracts/deposit"
-	"github.com/prysmaticlabs/prysm/v4/io/logs"
-	"github.com/prysmaticlabs/prysm/v4/network"
-	"github.com/prysmaticlabs/prysm/v4/network/authorization"
 )
 
 func (s *Service) setupExecutionClientConnections(ctx context.Context, currEndpoint network.Endpoint) error {

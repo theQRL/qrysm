@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 )
 
 var _ Ticker = (*SlotTicker)(nil)

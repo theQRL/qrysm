@@ -4,10 +4,10 @@ import (
 	"errors"
 	"path/filepath"
 
+	"github.com/cyyber/qrysm/v4/cmd"
+	"github.com/cyyber/qrysm/v4/crypto/rand"
+	"github.com/cyyber/qrysm/v4/io/file"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/prysmaticlabs/prysm/v4/cmd"
-	"github.com/prysmaticlabs/prysm/v4/crypto/rand"
-	"github.com/prysmaticlabs/prysm/v4/io/file"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )

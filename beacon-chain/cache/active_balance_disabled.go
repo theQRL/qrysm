@@ -5,8 +5,8 @@ package cache
 import (
 	"sync"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
 )
 
 // FakeBalanceCache is a fake struct with 1 LRU cache for looking up balance by epoch.

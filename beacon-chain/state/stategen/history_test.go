@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/interfaces"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/mock"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state"
+	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
+	"github.com/cyyber/qrysm/v4/consensus-types/mock"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 
+	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
 )
 
 func TestBlockForSlotFuture(t *testing.T) {

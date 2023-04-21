@@ -3,11 +3,11 @@ package stategen
 import (
 	"sync"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/state"
+	lruwrpr "github.com/cyyber/qrysm/v4/cache/lru"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
-	lruwrpr "github.com/prysmaticlabs/prysm/v4/cache/lru"
 )
 
 var (

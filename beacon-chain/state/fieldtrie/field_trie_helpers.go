@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"reflect"
 
+	customtypes "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native/custom-types"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state/state-native/types"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state/stateutil"
+	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
+	pmath "github.com/cyyber/qrysm/v4/math"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/pkg/errors"
-	customtypes "github.com/prysmaticlabs/prysm/v4/beacon-chain/state/state-native/custom-types"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state/state-native/types"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state/stateutil"
-	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
-	pmath "github.com/prysmaticlabs/prysm/v4/math"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/runtime/version"
 )
 
 // ProofFromMerkleLayers creates a proof starting at the leaf index of the state Merkle layers.

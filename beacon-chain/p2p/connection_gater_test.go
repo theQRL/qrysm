@@ -6,17 +6,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers"
+	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/peerdata"
+	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/scorers"
+	mockp2p "github.com/cyyber/qrysm/v4/beacon-chain/p2p/testing"
+	leakybucket "github.com/cyyber/qrysm/v4/container/leaky-bucket"
+	ethpb "github.com/cyyber/qrysm/v4/proto/eth/v1"
+	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p/peers"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p/peers/peerdata"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p/peers/scorers"
-	mockp2p "github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p/testing"
-	leakybucket "github.com/prysmaticlabs/prysm/v4/container/leaky-bucket"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/eth/v1"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
 )
 
 func TestPeer_AtMaxLimit(t *testing.T) {

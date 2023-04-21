@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 )
 

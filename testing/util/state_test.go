@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/testing/require"
 )
 
 func TestNewBeaconState(t *testing.T) {

@@ -12,8 +12,8 @@ import (
 
 	_ "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	empty "github.com/golang/protobuf/ptypes/empty"
-	v1 "github.com/prysmaticlabs/prysm/v4/proto/eth/v1"
-	v2 "github.com/prysmaticlabs/prysm/v4/proto/eth/v2"
+	v1 "github.com/cyyber/qrysm/v4/proto/eth/v1"
+	v2 "github.com/cyyber/qrysm/v4/proto/eth/v2"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"

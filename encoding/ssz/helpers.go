@@ -5,10 +5,10 @@ import (
 	"bytes"
 	"encoding/binary"
 
+	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/minio/sha256-simd"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/go-bitfield"
-	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
 )
 
 const bytesPerChunk = 32

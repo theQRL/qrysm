@@ -3,8 +3,8 @@ package forkchoice
 import (
 	"testing"
 
-	"github.com/prysmaticlabs/prysm/v4/runtime/version"
-	"github.com/prysmaticlabs/prysm/v4/testing/spectest/shared/common/forkchoice"
+	"github.com/cyyber/qrysm/v4/runtime/version"
+	"github.com/cyyber/qrysm/v4/testing/spectest/shared/common/forkchoice"
 )
 
 func TestMinimal_Altair_Forkchoice(t *testing.T) {

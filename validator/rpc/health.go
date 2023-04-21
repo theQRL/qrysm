@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
+	pb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/pkg/errors"
-	pb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	validatorpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1/validator-client"
-	"github.com/prysmaticlabs/prysm/v4/runtime/version"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"

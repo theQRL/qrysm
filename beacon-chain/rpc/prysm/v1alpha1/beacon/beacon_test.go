@@ -3,8 +3,8 @@ package beacon
 import (
 	"testing"
 
-	"github.com/prysmaticlabs/prysm/v4/cmd/beacon-chain/flags"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/cyyber/qrysm/v4/config/params"
 )
 
 func TestMain(m *testing.M) {

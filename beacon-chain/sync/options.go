@@ -1,19 +1,19 @@
 package sync
 
 import (
-	"github.com/prysmaticlabs/prysm/v4/async/event"
-	blockfeed "github.com/prysmaticlabs/prysm/v4/beacon-chain/core/feed/block"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/feed/operation"
-	statefeed "github.com/prysmaticlabs/prysm/v4/beacon-chain/core/feed/state"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/db"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/execution"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/operations/attestations"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/operations/blstoexec"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/operations/slashings"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/operations/synccommittee"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/operations/voluntaryexits"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state/stategen"
+	"github.com/cyyber/qrysm/v4/async/event"
+	blockfeed "github.com/cyyber/qrysm/v4/beacon-chain/core/feed/block"
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/feed/operation"
+	statefeed "github.com/cyyber/qrysm/v4/beacon-chain/core/feed/state"
+	"github.com/cyyber/qrysm/v4/beacon-chain/db"
+	"github.com/cyyber/qrysm/v4/beacon-chain/execution"
+	"github.com/cyyber/qrysm/v4/beacon-chain/operations/attestations"
+	"github.com/cyyber/qrysm/v4/beacon-chain/operations/blstoexec"
+	"github.com/cyyber/qrysm/v4/beacon-chain/operations/slashings"
+	"github.com/cyyber/qrysm/v4/beacon-chain/operations/synccommittee"
+	"github.com/cyyber/qrysm/v4/beacon-chain/operations/voluntaryexits"
+	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state/stategen"
 )
 
 type Option func(s *Service) error

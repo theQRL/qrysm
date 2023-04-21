@@ -3,13 +3,13 @@ package node
 import (
 	"fmt"
 
+	"github.com/cyyber/qrysm/v4/cmd"
+	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	tracing2 "github.com/cyyber/qrysm/v4/monitoring/tracing"
 	"github.com/ethereum/go-ethereum/common"
 	fastssz "github.com/prysmaticlabs/fastssz"
-	"github.com/prysmaticlabs/prysm/v4/cmd"
-	"github.com/prysmaticlabs/prysm/v4/cmd/beacon-chain/flags"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	tracing2 "github.com/prysmaticlabs/prysm/v4/monitoring/tracing"
 	"github.com/urfave/cli/v2"
 )
 

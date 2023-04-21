@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"math"
 
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/validator/accounts/wallet"
+	"github.com/cyyber/qrysm/v4/validator/client/iface"
+	"github.com/cyyber/qrysm/v4/validator/keymanager"
 	"github.com/pkg/errors"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
-	"github.com/prysmaticlabs/prysm/v4/validator/accounts/wallet"
-	"github.com/prysmaticlabs/prysm/v4/validator/client/iface"
-	"github.com/prysmaticlabs/prysm/v4/validator/keymanager"
 )
 
 // List pretty-prints accounts in the wallet.

@@ -1,4 +1,4 @@
-module github.com/prysmaticlabs/prysm/v4
+module github.com/cyyber/qrysm/v4
 
 go 1.19
 

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )

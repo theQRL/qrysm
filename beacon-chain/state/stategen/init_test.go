@@ -1,7 +1,7 @@
 package stategen
 
 import (
-	"github.com/prysmaticlabs/prysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/config/params"
 )
 
 func init() {

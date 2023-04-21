@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/golang/snappy"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
 )
 
 func TestSszNetworkEncoder_BufferedReader(t *testing.T) {

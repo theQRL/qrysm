@@ -10,15 +10,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/cyyber/qrysm/v4/validator/accounts"
+	"github.com/cyyber/qrysm/v4/validator/accounts/iface"
+	"github.com/cyyber/qrysm/v4/validator/accounts/wallet"
+	"github.com/cyyber/qrysm/v4/validator/keymanager"
+	"github.com/cyyber/qrysm/v4/validator/keymanager/local"
 	"github.com/google/uuid"
-	"github.com/prysmaticlabs/prysm/v4/crypto/bls"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
-	"github.com/prysmaticlabs/prysm/v4/validator/accounts"
-	"github.com/prysmaticlabs/prysm/v4/validator/accounts/iface"
-	"github.com/prysmaticlabs/prysm/v4/validator/accounts/wallet"
-	"github.com/prysmaticlabs/prysm/v4/validator/keymanager"
-	"github.com/prysmaticlabs/prysm/v4/validator/keymanager/local"
 	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 )
 

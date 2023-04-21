@@ -5,17 +5,17 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/cyyber/qrysm/v4/consensus-types/wrapper"
+	mathutil "github.com/cyyber/qrysm/v4/math"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/go-bitfield"
-	"github.com/prysmaticlabs/prysm/v4/cmd/beacon-chain/flags"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/wrapper"
-	mathutil "github.com/prysmaticlabs/prysm/v4/math"
 	"go.opencensus.io/trace"
 
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	pb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
+	"github.com/cyyber/qrysm/v4/config/params"
+	pb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 var attestationSubnetCount = params.BeaconNetworkConfig().AttestationSubnetCount

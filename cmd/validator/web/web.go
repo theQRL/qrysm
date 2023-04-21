@@ -3,11 +3,11 @@ package web
 import (
 	"fmt"
 
-	"github.com/prysmaticlabs/prysm/v4/cmd"
-	"github.com/prysmaticlabs/prysm/v4/cmd/validator/flags"
-	"github.com/prysmaticlabs/prysm/v4/config/features"
-	"github.com/prysmaticlabs/prysm/v4/runtime/tos"
-	"github.com/prysmaticlabs/prysm/v4/validator/rpc"
+	"github.com/cyyber/qrysm/v4/cmd"
+	"github.com/cyyber/qrysm/v4/cmd/validator/flags"
+	"github.com/cyyber/qrysm/v4/config/features"
+	"github.com/cyyber/qrysm/v4/runtime/tos"
+	"github.com/cyyber/qrysm/v4/validator/rpc"
 	"github.com/urfave/cli/v2"
 )
 

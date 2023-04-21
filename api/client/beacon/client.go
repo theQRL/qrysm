@@ -16,15 +16,15 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/prysmaticlabs/prysm/v4/network/forks"
-	v1 "github.com/prysmaticlabs/prysm/v4/proto/eth/v1"
+	"github.com/cyyber/qrysm/v4/network/forks"
+	v1 "github.com/cyyber/qrysm/v4/proto/eth/v1"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	log "github.com/sirupsen/logrus"
 )
 

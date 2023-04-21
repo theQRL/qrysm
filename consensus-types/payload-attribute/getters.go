@@ -1,9 +1,9 @@
 package payloadattribute
 
 import (
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/blocks"
-	enginev1 "github.com/prysmaticlabs/prysm/v4/proto/engine/v1"
-	"github.com/prysmaticlabs/prysm/v4/runtime/version"
+	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
+	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
+	"github.com/cyyber/qrysm/v4/runtime/version"
 )
 
 // Version returns the version of the payload attribute.

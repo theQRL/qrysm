@@ -3,8 +3,8 @@ package endtoend
 import (
 	"testing"
 
-	"github.com/prysmaticlabs/prysm/v4/runtime/version"
-	"github.com/prysmaticlabs/prysm/v4/testing/endtoend/types"
+	"github.com/cyyber/qrysm/v4/runtime/version"
+	"github.com/cyyber/qrysm/v4/testing/endtoend/types"
 )
 
 func TestEndToEnd_MultiScenarioRun(t *testing.T) {

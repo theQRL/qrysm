@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
+	ethpbservice "github.com/cyyber/qrysm/v4/proto/eth/service"
+	"github.com/cyyber/qrysm/v4/validator/keymanager"
 	"github.com/k0kubun/go-ansi"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/crypto/dilithium"
-	ethpbservice "github.com/prysmaticlabs/prysm/v4/proto/eth/service"
-	"github.com/prysmaticlabs/prysm/v4/validator/keymanager"
 	"github.com/schollz/progressbar/v3"
 	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 )

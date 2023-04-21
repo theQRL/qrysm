@@ -12,7 +12,7 @@ import (
 	sync "sync"
 
 	empty "github.com/golang/protobuf/ptypes/empty"
-	v1alpha1 "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
+	v1alpha1 "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"

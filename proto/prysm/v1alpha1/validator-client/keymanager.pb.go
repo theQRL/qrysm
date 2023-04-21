@@ -12,9 +12,9 @@ import (
 	sync "sync"
 
 	empty "github.com/golang/protobuf/ptypes/empty"
-	github_com_prysmaticlabs_prysm_v4_consensus_types_primitives "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	_ "github.com/prysmaticlabs/prysm/v4/proto/eth/ext"
-	v1alpha1 "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
+	github_com_prysmaticlabs_prysm_v4_consensus_types_primitives "github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	_ "github.com/cyyber/qrysm/v4/proto/eth/ext"
+	v1alpha1 "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -155,7 +155,7 @@ type SignRequest struct {
 	//	*SignRequest_BlockCapella
 	//	*SignRequest_BlindedBlockCapella
 	Object      isSignRequest_Object                                              `protobuf_oneof:"object"`
-	SigningSlot github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Slot `protobuf:"varint,6,opt,name=signing_slot,json=signingSlot,proto3" json:"signing_slot,omitempty" cast-type:"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"`
+	SigningSlot github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Slot `protobuf:"varint,6,opt,name=signing_slot,json=signingSlot,proto3" json:"signing_slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
 }
 
 func (x *SignRequest) Reset() {
@@ -351,11 +351,11 @@ type SignRequest_Exit struct {
 }
 
 type SignRequest_Slot struct {
-	Slot github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Slot `protobuf:"varint,105,opt,name=slot,proto3,oneof" cast-type:"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"`
+	Slot github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Slot `protobuf:"varint,105,opt,name=slot,proto3,oneof" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
 }
 
 type SignRequest_Epoch struct {
-	Epoch github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,106,opt,name=epoch,proto3,oneof" cast-type:"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Epoch"`
+	Epoch github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,106,opt,name=epoch,proto3,oneof" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Epoch"`
 }
 
 type SignRequest_BlockAltair struct {

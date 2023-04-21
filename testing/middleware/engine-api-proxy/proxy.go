@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cyyber/qrysm/v4/network"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/network"
 	"github.com/sirupsen/logrus"
 )
 

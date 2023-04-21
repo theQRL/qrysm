@@ -4,8 +4,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/libp2p/go-libp2p/core/network"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
 	"github.com/sirupsen/logrus"
 )
 

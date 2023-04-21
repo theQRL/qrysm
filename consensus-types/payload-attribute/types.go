@@ -1,10 +1,10 @@
 package payloadattribute
 
 import (
+	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
+	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
+	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/blocks"
-	enginev1 "github.com/prysmaticlabs/prysm/v4/proto/engine/v1"
-	"github.com/prysmaticlabs/prysm/v4/runtime/version"
 )
 
 var (

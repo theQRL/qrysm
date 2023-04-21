@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"context"
 
+	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	v1 "github.com/cyyber/qrysm/v4/proto/eth/v1"
+	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/config/params"
-	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
-	v1 "github.com/prysmaticlabs/prysm/v4/proto/eth/v1"
-	"github.com/prysmaticlabs/prysm/v4/time/slots"
 )
 
 // orphanLateBlockFirstThreshold is the number of seconds after which we

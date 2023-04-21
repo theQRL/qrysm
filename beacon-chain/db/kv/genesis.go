@@ -3,12 +3,12 @@ package kv
 import (
 	"context"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/blocks"
+	dbIface "github.com/cyyber/qrysm/v4/beacon-chain/db/iface"
+	"github.com/cyyber/qrysm/v4/beacon-chain/state"
+	"github.com/cyyber/qrysm/v4/encoding/ssz/detect"
+	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/blocks"
-	dbIface "github.com/prysmaticlabs/prysm/v4/beacon-chain/db/iface"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
-	"github.com/prysmaticlabs/prysm/v4/encoding/ssz/detect"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 )
 
 // SaveGenesisData bootstraps the beaconDB with a given genesis state.

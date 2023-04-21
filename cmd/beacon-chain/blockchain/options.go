@@ -1,10 +1,10 @@
 package blockchaincmd
 
 import (
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/blockchain"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/helpers"
-	"github.com/prysmaticlabs/prysm/v4/cmd"
-	"github.com/prysmaticlabs/prysm/v4/cmd/beacon-chain/flags"
+	"github.com/cyyber/qrysm/v4/beacon-chain/blockchain"
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
+	"github.com/cyyber/qrysm/v4/cmd"
+	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
 	"github.com/urfave/cli/v2"
 )
 

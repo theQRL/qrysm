@@ -7,13 +7,13 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers"
+	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/scorers"
+	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/cyyber/qrysm/v4/crypto/rand"
+	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/cyyber/qrysm/v4/time"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p/peers"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p/peers/scorers"
-	"github.com/prysmaticlabs/prysm/v4/cmd/beacon-chain/flags"
-	"github.com/prysmaticlabs/prysm/v4/crypto/rand"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
-	"github.com/prysmaticlabs/prysm/v4/time"
 )
 
 func TestScorers_BlockProvider_Score(t *testing.T) {

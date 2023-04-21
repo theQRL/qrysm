@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
+	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/ghodss/yaml"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
 )
 
 var json = jsoniter.Config{

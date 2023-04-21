@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
+	mock "github.com/cyyber/qrysm/v4/beacon-chain/blockchain/testing"
+	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/encoder"
+	testp2p "github.com/cyyber/qrysm/v4/beacon-chain/p2p/testing"
+	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/pkg/errors"
-	mock "github.com/prysmaticlabs/prysm/v4/beacon-chain/blockchain/testing"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p/encoder"
-	testp2p "github.com/prysmaticlabs/prysm/v4/beacon-chain/p2p/testing"
-	"github.com/prysmaticlabs/prysm/v4/testing/assert"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
 )
 
 func TestService_PublishToTopicConcurrentMapWrite(t *testing.T) {

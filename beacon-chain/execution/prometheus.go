@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/cyyber/qrysm/v4/monitoring/clientstats"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prysmaticlabs/prysm/v4/monitoring/clientstats"
 )
 
 type BeaconNodeStatsUpdater interface {

@@ -10,9 +10,9 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/cyyber/qrysm/v4/validator/keymanager/remote-web3signer/internal"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/prysmaticlabs/prysm/v4/testing/require"
-	"github.com/prysmaticlabs/prysm/v4/validator/keymanager/remote-web3signer/internal"
 	"github.com/stretchr/testify/assert"
 )
 

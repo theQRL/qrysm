@@ -8,10 +8,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/cyyber/qrysm/v4/io/file"
+	"github.com/cyyber/qrysm/v4/validator/keymanager"
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/io/file"
-	"github.com/prysmaticlabs/prysm/v4/validator/keymanager"
 )
 
 var (
