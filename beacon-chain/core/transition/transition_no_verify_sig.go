@@ -12,7 +12,7 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/monitoring/tracing"
 	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/pkg/errors"
@@ -45,7 +45,7 @@ func ExecuteStateTransitionNoVerifyAnySig(
 	ctx context.Context,
 	st state.BeaconState,
 	signed interfaces.ReadOnlySignedBeaconBlock,
-) (*bls.SignatureBatch, state.BeaconState, error) {
+) (*dilithium.SignatureBatch, state.BeaconState, error) {
 	if ctx.Err() != nil {
 		return nil, nil, ctx.Err()
 	}
@@ -162,7 +162,7 @@ func ProcessBlockNoVerifyAnySig(
 	ctx context.Context,
 	st state.BeaconState,
 	signed interfaces.ReadOnlySignedBeaconBlock,
-) (*bls.SignatureBatch, state.BeaconState, error) {
+) (*dilithium.SignatureBatch, state.BeaconState, error) {
 	ctx, span := trace.StartSpan(ctx, "core.state.ProcessBlockNoVerifyAnySig")
 	defer span.End()
 	if err := blocks.BeaconBlockIsNil(signed); err != nil {
@@ -197,7 +197,7 @@ func ProcessBlockNoVerifyAnySig(
 	}
 
 	// Merge beacon block, randao and attestations signatures into a set.
-	set := bls.NewSet()
+	set := dilithium.NewSet()
 	set.Join(bSet).Join(rSet).Join(aSet)
 
 	if blk.Version() >= version.Capella {

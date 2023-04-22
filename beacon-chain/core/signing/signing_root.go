@@ -6,7 +6,7 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
@@ -55,7 +55,7 @@ const (
 )
 
 // ComputeDomainAndSign computes the domain and signing root and sign it using the passed in private key.
-func ComputeDomainAndSign(st state.ReadOnlyBeaconState, epoch primitives.Epoch, obj fssz.HashRoot, domain [4]byte, key bls.SecretKey) ([]byte, error) {
+func ComputeDomainAndSign(st state.ReadOnlyBeaconState, epoch primitives.Epoch, obj fssz.HashRoot, domain [4]byte, key dilithium.DilithiumKey) ([]byte, error) {
 	d, err := Domain(st.Fork(), epoch, domain, st.GenesisValidatorsRoot())
 	if err != nil {
 		return nil, err
@@ -112,11 +112,11 @@ func ComputeDomainVerifySigningRoot(st state.ReadOnlyBeaconState, index primitiv
 
 // VerifySigningRoot verifies the signing root of an object given its public key, signature and domain.
 func VerifySigningRoot(obj fssz.HashRoot, pub, signature, domain []byte) error {
-	publicKey, err := bls.PublicKeyFromBytes(pub)
+	publicKey, err := dilithium.PublicKeyFromBytes(pub)
 	if err != nil {
 		return errors.Wrap(err, "could not convert bytes to public key")
 	}
-	sig, err := bls.SignatureFromBytes(signature)
+	sig, err := dilithium.SignatureFromBytes(signature)
 	if err != nil {
 		return errors.Wrap(err, "could not convert bytes to signature")
 	}
@@ -132,11 +132,11 @@ func VerifySigningRoot(obj fssz.HashRoot, pub, signature, domain []byte) error {
 
 // VerifyBlockHeaderSigningRoot verifies the signing root of a block header given its public key, signature and domain.
 func VerifyBlockHeaderSigningRoot(blkHdr *ethpb.BeaconBlockHeader, pub, signature, domain []byte) error {
-	publicKey, err := bls.PublicKeyFromBytes(pub)
+	publicKey, err := dilithium.PublicKeyFromBytes(pub)
 	if err != nil {
 		return errors.Wrap(err, "could not convert bytes to public key")
 	}
-	sig, err := bls.SignatureFromBytes(signature)
+	sig, err := dilithium.SignatureFromBytes(signature)
 	if err != nil {
 		return errors.Wrap(err, "could not convert bytes to signature")
 	}
@@ -161,7 +161,7 @@ func VerifyBlockSigningRoot(pub, signature, domain []byte, rootFunc func() ([32]
 	publicKey := set.PublicKeys[0]
 	root := set.Messages[0]
 
-	rSig, err := bls.SignatureFromBytes(sig)
+	rSig, err := dilithium.SignatureFromBytes(sig)
 	if err != nil {
 		return err
 	}
@@ -173,8 +173,8 @@ func VerifyBlockSigningRoot(pub, signature, domain []byte, rootFunc func() ([32]
 
 // BlockSignatureBatch retrieves the relevant signature, message and pubkey data from a block and collating it
 // into a signature batch object.
-func BlockSignatureBatch(pub, signature, domain []byte, rootFunc func() ([32]byte, error)) (*bls.SignatureBatch, error) {
-	publicKey, err := bls.PublicKeyFromBytes(pub)
+func BlockSignatureBatch(pub, signature, domain []byte, rootFunc func() ([32]byte, error)) (*dilithium.SignatureBatch, error) {
+	publicKey, err := dilithium.PublicKeyFromBytes(pub)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not convert bytes to public key")
 	}
@@ -184,9 +184,9 @@ func BlockSignatureBatch(pub, signature, domain []byte, rootFunc func() ([32]byt
 		return nil, errors.Wrap(err, "could not compute signing root")
 	}
 	desc := BlockSignature
-	return &bls.SignatureBatch{
+	return &dilithium.SignatureBatch{
 		Signatures:   [][]byte{signature},
-		PublicKeys:   []bls.PublicKey{publicKey},
+		PublicKeys:   []dilithium.PublicKey{publicKey},
 		Messages:     [][32]byte{root},
 		Descriptions: []string{desc},
 	}, nil

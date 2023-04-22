@@ -10,7 +10,7 @@ import (
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/network/forks"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation"
@@ -19,8 +19,8 @@ import (
 )
 
 // retrieves the signature batch from the raw data, public key,signature and domain provided.
-func signatureBatch(signedData, pub, signature, domain []byte, desc string) (*bls.SignatureBatch, error) {
-	publicKey, err := bls.PublicKeyFromBytes(pub)
+func signatureBatch(signedData, pub, signature, domain []byte, desc string) (*dilithium.SignatureBatch, error) {
+	publicKey, err := dilithium.PublicKeyFromBytes(pub)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not convert bytes to public key")
 	}
@@ -32,9 +32,9 @@ func signatureBatch(signedData, pub, signature, domain []byte, desc string) (*bl
 	if err != nil {
 		return nil, errors.Wrap(err, "could not hash container")
 	}
-	return &bls.SignatureBatch{
+	return &dilithium.SignatureBatch{
 		Signatures:   [][]byte{signature},
-		PublicKeys:   []bls.PublicKey{publicKey},
+		PublicKeys:   []dilithium.PublicKey{publicKey},
 		Messages:     [][32]byte{root},
 		Descriptions: []string{desc},
 	}, nil
@@ -53,7 +53,7 @@ func verifySignature(signedData, pub, signature, domain []byte) error {
 	sig := set.Signatures[0]
 	publicKey := set.PublicKeys[0]
 	root := set.Messages[0]
-	rSig, err := bls.SignatureFromBytes(sig)
+	rSig, err := dilithium.SignatureFromBytes(sig)
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func VerifyBlockSignatureUsingCurrentFork(beaconState state.ReadOnlyBeaconState,
 func BlockSignatureBatch(beaconState state.ReadOnlyBeaconState,
 	proposerIndex primitives.ValidatorIndex,
 	sig []byte,
-	rootFunc func() ([32]byte, error)) (*bls.SignatureBatch, error) {
+	rootFunc func() ([32]byte, error)) (*dilithium.SignatureBatch, error) {
 	currentEpoch := slots.ToEpoch(beaconState.Slot())
 	domain, err := signing.Domain(beaconState.Fork(), currentEpoch, params.BeaconConfig().DomainBeaconProposer, beaconState.GenesisValidatorsRoot())
 	if err != nil {
@@ -142,7 +142,7 @@ func RandaoSignatureBatch(
 	ctx context.Context,
 	beaconState state.ReadOnlyBeaconState,
 	reveal []byte,
-) (*bls.SignatureBatch, error) {
+) (*dilithium.SignatureBatch, error) {
 	buf, proposerPub, domain, err := randaoSigningData(ctx, beaconState)
 	if err != nil {
 		return nil, err
@@ -179,13 +179,13 @@ func createAttestationSignatureBatch(
 	beaconState state.ReadOnlyBeaconState,
 	atts []*ethpb.Attestation,
 	domain []byte,
-) (*bls.SignatureBatch, error) {
+) (*dilithium.SignatureBatch, error) {
 	if len(atts) == 0 {
 		return nil, nil
 	}
 
 	sigs := make([][]byte, len(atts))
-	pks := make([]bls.PublicKey, len(atts))
+	pks := make([]dilithium.PublicKey, len(atts))
 	msgs := make([][32]byte, len(atts))
 	descs := make([]string, len(atts))
 	for i, a := range atts {
@@ -207,7 +207,7 @@ func createAttestationSignatureBatch(
 			pubkeyAtIdx := beaconState.PubkeyAtIndex(primitives.ValidatorIndex(indices[i]))
 			pubkeys[i] = pubkeyAtIdx[:]
 		}
-		aggP, err := bls.AggregatePublicKeys(pubkeys)
+		aggP, err := dilithium.AggregatePublicKeys(pubkeys)
 		if err != nil {
 			return nil, err
 		}
@@ -221,7 +221,7 @@ func createAttestationSignatureBatch(
 
 		descs[i] = signing.AttestationSignature
 	}
-	return &bls.SignatureBatch{
+	return &dilithium.SignatureBatch{
 		Signatures:   sigs,
 		PublicKeys:   pks,
 		Messages:     msgs,
@@ -231,9 +231,9 @@ func createAttestationSignatureBatch(
 
 // AttestationSignatureBatch retrieves all the related attestation signature data such as the relevant public keys,
 // signatures and attestation signing data and collate it into a signature batch object.
-func AttestationSignatureBatch(ctx context.Context, beaconState state.ReadOnlyBeaconState, atts []*ethpb.Attestation) (*bls.SignatureBatch, error) {
+func AttestationSignatureBatch(ctx context.Context, beaconState state.ReadOnlyBeaconState, atts []*ethpb.Attestation) (*dilithium.SignatureBatch, error) {
 	if len(atts) == 0 {
-		return bls.NewSet(), nil
+		return dilithium.NewSet(), nil
 	}
 
 	fork := beaconState.Fork()
@@ -250,7 +250,7 @@ func AttestationSignatureBatch(ctx context.Context, beaconState state.ReadOnlyBe
 			postForkAtts = append(postForkAtts, a)
 		}
 	}
-	set := bls.NewSet()
+	set := dilithium.NewSet()
 
 	// Check attestations from before the fork.
 	if fork.Epoch > 0 && len(preForkAtts) > 0 { // Check to prevent underflow and there is valid attestations to create sig batch.

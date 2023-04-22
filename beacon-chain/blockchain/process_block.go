@@ -19,7 +19,7 @@ import (
 	consensusblocks "github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/cyyber/qrysm/v4/monitoring/tracing"
 	ethpbv1 "github.com/cyyber/qrysm/v4/proto/eth/v1"
@@ -348,14 +348,14 @@ func (s *Service) onBlockBatch(ctx context.Context, blks []interfaces.ReadOnlySi
 
 	jCheckpoints := make([]*ethpb.Checkpoint, len(blks))
 	fCheckpoints := make([]*ethpb.Checkpoint, len(blks))
-	sigSet := bls.NewSet()
+	sigSet := dilithium.NewSet()
 	type versionAndHeader struct {
 		version int
 		header  interfaces.ExecutionData
 	}
 	preVersionAndHeaders := make([]*versionAndHeader, len(blks))
 	postVersionAndHeaders := make([]*versionAndHeader, len(blks))
-	var set *bls.SignatureBatch
+	var set *dilithium.SignatureBatch
 	boundaries := make(map[[32]byte]state.BeaconState)
 	for i, b := range blks {
 		v, h, err := getStateVersionAndPayload(preState)

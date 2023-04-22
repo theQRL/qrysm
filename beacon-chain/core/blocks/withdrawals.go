@@ -11,7 +11,7 @@ import (
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/crypto/hash"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/cyyber/qrysm/v4/encoding/ssz"
@@ -213,14 +213,14 @@ func ProcessWithdrawals(st state.BeaconState, executionData interfaces.Execution
 func BLSChangesSignatureBatch(
 	st state.ReadOnlyBeaconState,
 	changes []*ethpb.SignedBLSToExecutionChange,
-) (*bls.SignatureBatch, error) {
+) (*dilithium.SignatureBatch, error) {
 	// Return early if no changes
 	if len(changes) == 0 {
-		return bls.NewSet(), nil
+		return dilithium.NewSet(), nil
 	}
-	batch := &bls.SignatureBatch{
+	batch := &dilithium.SignatureBatch{
 		Signatures:   make([][]byte, len(changes)),
-		PublicKeys:   make([]bls.PublicKey, len(changes)),
+		PublicKeys:   make([]dilithium.PublicKey, len(changes)),
 		Messages:     make([][32]byte, len(changes)),
 		Descriptions: make([]string, len(changes)),
 	}
@@ -231,7 +231,7 @@ func BLSChangesSignatureBatch(
 	}
 	for i, change := range changes {
 		batch.Signatures[i] = change.Signature
-		publicKey, err := bls.PublicKeyFromBytes(change.Message.FromBlsPubkey)
+		publicKey, err := dilithium.PublicKeyFromBytes(change.Message.FromBlsPubkey)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not convert bytes to public key")
 		}
