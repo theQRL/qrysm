@@ -13,7 +13,7 @@ import (
 	p2ptypes "github.com/cyyber/qrysm/v4/beacon-chain/p2p/types"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/cyyber/qrysm/v4/monitoring/tracing"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
@@ -233,7 +233,7 @@ func (s *Service) rejectInvalidSyncCommitteeSignature(m *ethpb.SyncCommitteeMess
 		}
 
 		// Ignore a malformed public key from bytes according to the p2p specification.
-		pKey, err := bls.PublicKeyFromBytes(pubKey[:])
+		pKey, err := dilithium.PublicKeyFromBytes(pubKey[:])
 		if err != nil {
 			tracing.AnnotateError(span, err)
 			return pubsub.ValidationIgnore, err
@@ -242,9 +242,9 @@ func (s *Service) rejectInvalidSyncCommitteeSignature(m *ethpb.SyncCommitteeMess
 		// Batch verify message signature before unmarshalling
 		// the signature to a G2 point if batch verification is
 		// enabled.
-		set := &bls.SignatureBatch{
+		set := &dilithium.SignatureBatch{
 			Messages:     [][32]byte{sigRoot},
-			PublicKeys:   []bls.PublicKey{pKey},
+			PublicKeys:   []dilithium.PublicKey{pKey},
 			Signatures:   [][]byte{m.Signature},
 			Descriptions: []string{signing.SyncCommitteeSignature},
 		}

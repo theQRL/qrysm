@@ -11,7 +11,7 @@ import (
 	p2ptypes "github.com/cyyber/qrysm/v4/beacon-chain/p2p/types"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/cyyber/qrysm/v4/monitoring/tracing"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
@@ -225,7 +225,7 @@ func (s *Service) rejectInvalidContributionSignature(m *ethpb.SignedContribution
 		if err != nil {
 			return pubsub.ValidationIgnore, err
 		}
-		publicKey, err := bls.PublicKeyFromBytes(pubkey[:])
+		publicKey, err := dilithium.PublicKeyFromBytes(pubkey[:])
 		if err != nil {
 			tracing.AnnotateError(span, err)
 			return pubsub.ValidationReject, err
@@ -235,9 +235,9 @@ func (s *Service) rejectInvalidContributionSignature(m *ethpb.SignedContribution
 			tracing.AnnotateError(span, err)
 			return pubsub.ValidationReject, err
 		}
-		set := &bls.SignatureBatch{
+		set := &dilithium.SignatureBatch{
 			Messages:     [][32]byte{root},
-			PublicKeys:   []bls.PublicKey{publicKey},
+			PublicKeys:   []dilithium.PublicKey{publicKey},
 			Signatures:   [][]byte{m.Signature},
 			Descriptions: []string{signing.ContributionSignature},
 		}
@@ -280,14 +280,14 @@ func (s *Service) rejectInvalidSyncAggregateSignature(m *ethpb.SignedContributio
 		}
 		// Aggregate pubkeys separately again to allow
 		// for signature sets to be created for batch verification.
-		aggKey, err := bls.AggregatePublicKeys(activeRawPubkeys)
+		aggKey, err := dilithium.AggregatePublicKeys(activeRawPubkeys)
 		if err != nil {
 			tracing.AnnotateError(span, err)
 			return pubsub.ValidationIgnore, err
 		}
-		set := &bls.SignatureBatch{
+		set := &dilithium.SignatureBatch{
 			Messages:     [][32]byte{sigRoot},
-			PublicKeys:   []bls.PublicKey{aggKey},
+			PublicKeys:   []dilithium.PublicKey{aggKey},
 			Signatures:   [][]byte{m.Message.Contribution.Signature},
 			Descriptions: []string{signing.SyncAggregateSignature},
 		}
@@ -389,7 +389,7 @@ func (s *Service) verifySyncSelectionData(ctx context.Context, m *ethpb.Contribu
 	if err != nil {
 		return err
 	}
-	publicKey, err := bls.PublicKeyFromBytes(pubkey[:])
+	publicKey, err := dilithium.PublicKeyFromBytes(pubkey[:])
 	if err != nil {
 		return err
 	}
@@ -397,9 +397,9 @@ func (s *Service) verifySyncSelectionData(ctx context.Context, m *ethpb.Contribu
 	if err != nil {
 		return err
 	}
-	set := &bls.SignatureBatch{
+	set := &dilithium.SignatureBatch{
 		Messages:     [][32]byte{root},
-		PublicKeys:   []bls.PublicKey{publicKey},
+		PublicKeys:   []dilithium.PublicKey{publicKey},
 		Signatures:   [][]byte{m.SelectionProof},
 		Descriptions: []string{signing.SyncSelectionProof},
 	}
