@@ -6,7 +6,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
@@ -57,7 +57,7 @@ func TestEncryptDecryptKey(t *testing.T) {
 	b32 := bytesutil.ToBytes32(b)
 	password := "test"
 
-	pk, err := bls.SecretKeyFromBytes(b32[:])
+	pk, err := dilithium.SecretKeyFromBytes(b32[:])
 	require.NoError(t, err)
 	key := &Key{
 		ID:        newID,

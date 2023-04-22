@@ -24,7 +24,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/io/file"
 	"github.com/pborman/uuid"
 )
@@ -48,9 +48,9 @@ const (
 type Key struct {
 	ID uuid.UUID // Version 4 "random" for unique id not derived from key data
 
-	PublicKey bls.PublicKey // Represents the public key of the user.
+	PublicKey dilithium.PublicKey // Represents the public key of the user.
 
-	SecretKey bls.SecretKey // Represents the private key of the user.
+	SecretKey dilithium.DilithiumKey // Represents the private key of the user.
 }
 
 type keyStore interface {
@@ -118,36 +118,36 @@ func (k *Key) UnmarshalJSON(j []byte) (err error) {
 		return err
 	}
 
-	k.PublicKey, err = bls.PublicKeyFromBytes(pubkey)
+	k.PublicKey, err = dilithium.PublicKeyFromBytes(pubkey)
 	if err != nil {
 		return err
 	}
-	k.SecretKey, err = bls.SecretKeyFromBytes(seckey)
+	k.SecretKey, err = dilithium.SecretKeyFromBytes(seckey)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// NewKeyFromBLS creates a new keystore Key type using a BLS private key.
-func NewKeyFromBLS(blsKey bls.SecretKey) (*Key, error) {
+// NewKeyFromDilithium creates a new keystore Key type using a Dilithium private key.
+func NewKeyFromDilithium(dilithiumKey dilithium.DilithiumKey) (*Key, error) {
 	id := uuid.NewRandom()
-	pubkey := blsKey.PublicKey()
+	pubkey := dilithiumKey.PublicKey()
 	key := &Key{
 		ID:        id,
 		PublicKey: pubkey,
-		SecretKey: blsKey,
+		SecretKey: dilithiumKey,
 	}
 	return key, nil
 }
 
 // NewKey generates a new random key.
 func NewKey() (*Key, error) {
-	secretKey, err := bls.RandKey()
+	secretKey, err := dilithium.RandKey()
 	if err != nil {
 		return nil, err
 	}
-	return NewKeyFromBLS(secretKey)
+	return NewKeyFromDilithium(secretKey)
 }
 
 func storeNewRandomKey(ks keyStore, password string) error {

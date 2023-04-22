@@ -14,7 +14,7 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/cyyber/qrysm/v4/monitoring/tracing"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
@@ -196,7 +196,7 @@ func (s *Service) validateAggregatedAtt(ctx context.Context, signed *ethpb.Signe
 		tracing.AnnotateError(span, wrappedErr)
 		return pubsub.ValidationIgnore, wrappedErr
 	}
-	set := bls.NewSet()
+	set := dilithium.NewSet()
 	set.Join(selectionSigSet).Join(aggregatorSigSet).Join(attSigSet)
 
 	return s.validateWithBatchVerifier(ctx, "aggregate", set)
@@ -262,7 +262,7 @@ func validateSelectionIndex(
 	data *ethpb.AttestationData,
 	validatorIndex primitives.ValidatorIndex,
 	proof []byte,
-) (*bls.SignatureBatch, error) {
+) (*dilithium.SignatureBatch, error) {
 	ctx, span := trace.StartSpan(ctx, "sync.validateSelectionIndex")
 	defer span.End()
 
@@ -285,7 +285,7 @@ func validateSelectionIndex(
 	if err != nil {
 		return nil, err
 	}
-	publicKey, err := bls.PublicKeyFromBytes(v.PublicKey)
+	publicKey, err := dilithium.PublicKeyFromBytes(v.PublicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -299,21 +299,21 @@ func validateSelectionIndex(
 	if err != nil {
 		return nil, err
 	}
-	return &bls.SignatureBatch{
+	return &dilithium.SignatureBatch{
 		Signatures:   [][]byte{proof},
-		PublicKeys:   []bls.PublicKey{publicKey},
+		PublicKeys:   []dilithium.PublicKey{publicKey},
 		Messages:     [][32]byte{root},
 		Descriptions: []string{signing.SelectionProof},
 	}, nil
 }
 
 // This returns aggregator signature set which can be used to batch verify.
-func aggSigSet(s state.ReadOnlyBeaconState, a *ethpb.SignedAggregateAttestationAndProof) (*bls.SignatureBatch, error) {
+func aggSigSet(s state.ReadOnlyBeaconState, a *ethpb.SignedAggregateAttestationAndProof) (*dilithium.SignatureBatch, error) {
 	v, err := s.ValidatorAtIndex(a.Message.AggregatorIndex)
 	if err != nil {
 		return nil, err
 	}
-	publicKey, err := bls.PublicKeyFromBytes(v.PublicKey)
+	publicKey, err := dilithium.PublicKeyFromBytes(v.PublicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -327,9 +327,9 @@ func aggSigSet(s state.ReadOnlyBeaconState, a *ethpb.SignedAggregateAttestationA
 	if err != nil {
 		return nil, err
 	}
-	return &bls.SignatureBatch{
+	return &dilithium.SignatureBatch{
 		Signatures:   [][]byte{a.Signature},
-		PublicKeys:   []bls.PublicKey{publicKey},
+		PublicKeys:   []dilithium.PublicKey{publicKey},
 		Messages:     [][32]byte{root},
 		Descriptions: []string{signing.AggregatorSignature},
 	}, nil

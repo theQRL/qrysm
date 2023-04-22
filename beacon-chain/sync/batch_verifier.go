@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/monitoring/tracing"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/pkg/errors"
@@ -16,7 +16,7 @@ const signatureVerificationInterval = 50 * time.Millisecond
 const verifierLimit = 50
 
 type signatureVerifier struct {
-	set     *bls.SignatureBatch
+	set     *dilithium.SignatureBatch
 	resChan chan error
 }
 
@@ -49,7 +49,7 @@ func (s *Service) verifierRoutine() {
 	}
 }
 
-func (s *Service) validateWithBatchVerifier(ctx context.Context, message string, set *bls.SignatureBatch) (pubsub.ValidationResult, error) {
+func (s *Service) validateWithBatchVerifier(ctx context.Context, message string, set *dilithium.SignatureBatch) (pubsub.ValidationResult, error) {
 	ctx, span := trace.StartSpan(ctx, "sync.validateWithBatchVerifier")
 	defer span.End()
 
@@ -104,7 +104,7 @@ func verifyBatch(verifierBatch []*signatureVerifier) {
 	}
 }
 
-func performBatchAggregation(aggSet *bls.SignatureBatch) (*bls.SignatureBatch, error) {
+func performBatchAggregation(aggSet *dilithium.SignatureBatch) (*dilithium.SignatureBatch, error) {
 	currLen := len(aggSet.Signatures)
 	num, aggSet, err := aggSet.RemoveDuplicates()
 	if err != nil {

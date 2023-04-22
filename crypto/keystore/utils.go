@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	prysmTime "github.com/cyyber/qrysm/v4/time"
 )
 
@@ -51,7 +51,7 @@ func ensureInt(x interface{}) int {
 
 // keyFileName implements the naming convention for keyfiles:
 // UTC--<created_at UTC ISO8601>-<first 8 character of address hex>
-func keyFileName(pubkey bls.PublicKey) string {
+func keyFileName(pubkey dilithium.PublicKey) string {
 	ts := prysmTime.Now().UTC()
 	return fmt.Sprintf("UTC--%s--%s", toISO8601(ts), hex.EncodeToString(pubkey.Marshal())[:8])
 }

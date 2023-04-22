@@ -2,15 +2,13 @@ package interop
 
 import (
 	"encoding/binary"
-	"math/big"
 	"sync"
 
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-
 	"github.com/cyyber/qrysm/v4/async"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/crypto/hash"
 	"github.com/pkg/errors"
+	"github.com/theQRL/go-qrllib/common"
 )
 
 const (
@@ -20,60 +18,48 @@ const (
 // DeterministicallyGenerateKeys creates BLS private keys using a fixed curve order according to
 // the algorithm specified in the Ethereum beacon chain specification interop mock start section found here:
 // https://github.com/ethereum/eth2.0-pm/blob/a085c9870f3956d6228ed2a40cd37f0c6580ecd7/interop/mocked_start/README.md
-func DeterministicallyGenerateKeys(startIndex, numKeys uint64) ([]bls.SecretKey, []bls.PublicKey, error) {
-	privKeys := make([]bls.SecretKey, numKeys)
-	pubKeys := make([]bls.PublicKey, numKeys)
+func DeterministicallyGenerateKeys(startIndex, numKeys uint64) ([]dilithium.DilithiumKey, []dilithium.PublicKey, error) {
+	dilithiumKeys := make([]dilithium.DilithiumKey, numKeys)
+	pubKeys := make([]dilithium.PublicKey, numKeys)
 	type keys struct {
-		secrets []bls.SecretKey
-		publics []bls.PublicKey
+		dilithiumKeys []dilithium.DilithiumKey
+		publics       []dilithium.PublicKey
 	}
 	// lint:ignore uintcast -- this is safe because we can reasonably expect that the number of keys is less than max int64.
 	results, err := async.Scatter(int(numKeys), func(offset int, entries int, _ *sync.RWMutex) (interface{}, error) {
-		secs, pubs, err := deterministicallyGenerateKeys(uint64(offset)+startIndex, uint64(entries))
-		return &keys{secrets: secs, publics: pubs}, err
+		dKeys, pubs, err := deterministicallyGenerateKeys(uint64(offset)+startIndex, uint64(entries))
+		return &keys{dilithiumKeys: dKeys, publics: pubs}, err
 	})
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to generate keys")
 	}
 	for _, result := range results {
 		if keysExtent, ok := result.Extent.(*keys); ok {
-			copy(privKeys[result.Offset:], keysExtent.secrets)
+			copy(dilithiumKeys[result.Offset:], keysExtent.dilithiumKeys)
 			copy(pubKeys[result.Offset:], keysExtent.publics)
 		} else {
 			return nil, nil, errors.New("extent not of expected type")
 		}
 	}
-	return privKeys, pubKeys, nil
+	return dilithiumKeys, pubKeys, nil
 }
 
-func deterministicallyGenerateKeys(startIndex, numKeys uint64) ([]bls.SecretKey, []bls.PublicKey, error) {
-	privKeys := make([]bls.SecretKey, numKeys)
-	pubKeys := make([]bls.PublicKey, numKeys)
+func deterministicallyGenerateKeys(startIndex, numKeys uint64) ([]dilithium.DilithiumKey, []dilithium.PublicKey, error) {
+	dilithiumKeys := make([]dilithium.DilithiumKey, numKeys)
+	pubKeys := make([]dilithium.PublicKey, numKeys)
 	for i := startIndex; i < startIndex+numKeys; i++ {
 		enc := make([]byte, 32)
 		binary.LittleEndian.PutUint32(enc, uint32(i))
+		// TODO: (cyyber) Hash returns 32 bytes hash, need to be replaced to get 48 bytes hash
 		h := hash.Hash(enc)
-		// Reverse byte order to big endian for use with big ints.
-		num := bytesutil.LittleEndianBytesToBigInt(h[:])
-		order := new(big.Int)
-		var ok bool
-		order, ok = order.SetString(bls.CurveOrder, 10)
-		if !ok {
-			return nil, nil, errors.New("could not set bls curve order as big int")
-		}
-		num = num.Mod(num, order)
-		numBytes := num.Bytes()
-		// pad key at the start with zero bytes to make it into a 32 byte key
-		if len(numBytes) < 32 {
-			emptyBytes := make([]byte, 32-len(numBytes))
-			numBytes = append(emptyBytes, numBytes...)
-		}
-		priv, err := bls.SecretKeyFromBytes(numBytes)
+		var seed [common.SeedSize]uint8
+		copy(seed[:], h[:])
+		d, err := dilithium.SecretKeyFromBytes(seed[:])
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "could not create bls secret key at index %d from raw bytes", i)
+			return nil, nil, err
 		}
-		privKeys[i-startIndex] = priv
-		pubKeys[i-startIndex] = priv.PublicKey()
+		dilithiumKeys[i-startIndex] = d
+		pubKeys[i-startIndex] = d.PublicKey()
 	}
-	return privKeys, pubKeys, nil
+	return dilithiumKeys, pubKeys, nil
 }

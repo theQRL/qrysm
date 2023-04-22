@@ -1,7 +1,7 @@
 package sync_contribution
 
 import (
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	v2 "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
 )
@@ -88,16 +88,16 @@ func aggregate(c1, c2 *v2.SyncCommitteeContribution) (*v2.SyncCommitteeContribut
 	if err != nil {
 		return nil, err
 	}
-	newSig, err := bls.SignatureFromBytes(newContribution.Signature)
+	newSig, err := dilithium.SignatureFromBytes(newContribution.Signature)
 	if err != nil {
 		return nil, err
 	}
-	baseSig, err := bls.SignatureFromBytes(baseContribution.Signature)
+	baseSig, err := dilithium.SignatureFromBytes(baseContribution.Signature)
 	if err != nil {
 		return nil, err
 	}
 
-	aggregatedSig := bls.AggregateSignatures([]bls.Signature{baseSig, newSig})
+	aggregatedSig := dilithium.AggregateSignatures([]dilithium.Signature{baseSig, newSig})
 	baseContribution.Signature = aggregatedSig.Marshal()
 	baseContribution.AggregationBits = newBits
 

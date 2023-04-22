@@ -49,7 +49,7 @@ func TestNewKeyFromBLS(t *testing.T) {
 	b32 := bytesutil.ToBytes32(b)
 	blskey, err := bls.SecretKeyFromBytes(b32[:])
 	require.NoError(t, err)
-	key, err := NewKeyFromBLS(blskey)
+	key, err := NewKeyFromDilithium(blskey)
 	require.NoError(t, err)
 
 	expected := blskey.Marshal()

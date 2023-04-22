@@ -32,7 +32,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/minio/sha256-simd"
 	"github.com/pborman/uuid"
 	log "github.com/sirupsen/logrus"
@@ -196,7 +196,7 @@ func DecryptKey(keyJSON []byte, password string) (*Key, error) {
 		return nil, err
 	}
 
-	secretKey, err := bls.SecretKeyFromBytes(keyBytes)
+	secretKey, err := dilithium.SecretKeyFromBytes(keyBytes)
 	if err != nil {
 		return nil, err
 	}

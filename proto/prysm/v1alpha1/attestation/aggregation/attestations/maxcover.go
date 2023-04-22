@@ -3,7 +3,7 @@ package attestations
 import (
 	"sort"
 
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
 	"github.com/pkg/errors"
@@ -124,7 +124,7 @@ func (al attList) aggregate(coverage bitfield.Bitlist) (*ethpb.Attestation, erro
 	if len(al) < 2 {
 		return nil, errors.Wrap(ErrInvalidAttestationCount, "cannot aggregate")
 	}
-	signs := make([]bls.Signature, len(al))
+	signs := make([]dilithium.Signature, len(al))
 	for i := 0; i < len(al); i++ {
 		sig, err := signatureFromBytes(al[i].Signature)
 		if err != nil {
@@ -158,7 +158,7 @@ func aggregateAttestations(atts []*ethpb.Attestation, keys []int, coverage *bitf
 	}
 
 	var data *ethpb.AttestationData
-	signs := make([]bls.Signature, 0, len(keys))
+	signs := make([]dilithium.Signature, 0, len(keys))
 	for i, idx := range keys {
 		sig, err := signatureFromBytes(atts[idx].Signature)
 		if err != nil {

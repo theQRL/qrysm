@@ -1,7 +1,7 @@
 package attestations
 
 import (
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
 	"github.com/pkg/errors"
@@ -14,8 +14,8 @@ type attList []*ethpb.Attestation
 // BLS aggregate signature aliases for testing / benchmark substitution. These methods are
 // significantly more expensive than the inner logic of AggregateAttestations so they must be
 // substituted for benchmarks which analyze AggregateAttestations.
-var aggregateSignatures = bls.AggregateSignatures
-var signatureFromBytes = bls.SignatureFromBytes
+var aggregateSignatures = dilithium.AggregateSignatures
+var signatureFromBytes = dilithium.SignatureFromBytes
 
 var _ = logrus.WithField("prefix", "aggregation.attestations")
 
@@ -73,7 +73,7 @@ func AggregatePair(a1, a2 *ethpb.Attestation) (*ethpb.Attestation, error) {
 		return nil, err
 	}
 
-	aggregatedSig := aggregateSignatures([]bls.Signature{baseSig, newSig})
+	aggregatedSig := aggregateSignatures([]dilithium.Signature{baseSig, newSig})
 	baseAtt.Signature = aggregatedSig.Marshal()
 	baseAtt.AggregationBits = newBits
 

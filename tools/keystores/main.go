@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/io/file"
 	"github.com/cyyber/qrysm/v4/io/prompt"
 	"github.com/cyyber/qrysm/v4/validator/keymanager"
@@ -182,7 +182,7 @@ func encrypt(cliCtx *cli.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "could not decode as hex string: %s", privateKeyString)
 	}
-	privKey, err := bls.SecretKeyFromBytes(bytesValue)
+	privKey, err := dilithium.SecretKeyFromBytes(bytesValue)
 	if err != nil {
 		return errors.Wrap(err, "not a valid BLS12-381 private key")
 	}
@@ -252,7 +252,7 @@ func readAndDecryptKeystore(fullPath, password string) error {
 			return errors.Wrap(err, "could not decode pubkey from keystore")
 		}
 	} else {
-		privKey, err := bls.SecretKeyFromBytes(privKeyBytes)
+		privKey, err := dilithium.SecretKeyFromBytes(privKeyBytes)
 		if err != nil {
 			return errors.Wrap(err, "could not initialize private key from bytes")
 		}

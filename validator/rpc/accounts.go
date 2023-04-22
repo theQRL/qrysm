@@ -9,7 +9,7 @@ import (
 
 	"github.com/cyyber/qrysm/v4/api/pagination"
 	"github.com/cyyber/qrysm/v4/cmd"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	pb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/cyyber/qrysm/v4/validator/accounts"
 	"github.com/cyyber/qrysm/v4/validator/accounts/petnames"
@@ -98,9 +98,9 @@ func (s *Server) BackupAccounts(
 	if err != nil {
 		return nil, err
 	}
-	pubKeys := make([]bls.PublicKey, len(req.PublicKeys))
+	pubKeys := make([]dilithium.PublicKey, len(req.PublicKeys))
 	for i, key := range req.PublicKeys {
-		pubKey, err := bls.PublicKeyFromBytes(key)
+		pubKey, err := dilithium.PublicKeyFromBytes(key)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "%#x Not a valid BLS public key: %v", key, err)
 		}

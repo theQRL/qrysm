@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/cyyber/qrysm/v4/async/event"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	ethpbservice "github.com/cyyber/qrysm/v4/proto/eth/service"
 	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/cyyber/qrysm/v4/validator/accounts/iface"
@@ -85,7 +85,7 @@ func (km *Keymanager) RecoverAccountsFromMnemonic(
 // in the function input, encrypts them using the specified password,
 // and returns their respective EIP-2335 keystores.
 func (km *Keymanager) ExtractKeystores(
-	ctx context.Context, publicKeys []bls.PublicKey, password string,
+	ctx context.Context, publicKeys []dilithium.PublicKey, password string,
 ) ([]*keymanager.Keystore, error) {
 	return km.localKM.ExtractKeystores(ctx, publicKeys, password)
 }
@@ -96,7 +96,7 @@ func (km *Keymanager) ValidatingAccountNames(_ context.Context) ([]string, error
 }
 
 // Sign signs a message using a validator key.
-func (km *Keymanager) Sign(ctx context.Context, req *validatorpb.SignRequest) (bls.Signature, error) {
+func (km *Keymanager) Sign(ctx context.Context, req *validatorpb.SignRequest) (dilithium.Signature, error) {
 	return km.localKM.Sign(ctx, req)
 }
 

@@ -12,7 +12,7 @@ import (
 	statenative "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/container/trie"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/crypto/hash"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
@@ -112,7 +112,7 @@ func generateDepositsFromData(depositDataItems []*ethpb.Deposit_Data, offset int
 }
 
 // DepositDataFromKeys generates a list of deposit data items from a set of BLS validator keys.
-func DepositDataFromKeys(privKeys []bls.SecretKey, pubKeys []bls.PublicKey) ([]*ethpb.Deposit_Data, [][]byte, error) {
+func DepositDataFromKeys(privKeys []dilithium.DilithiumKey, pubKeys []dilithium.PublicKey) ([]*ethpb.Deposit_Data, [][]byte, error) {
 	type depositData struct {
 		items []*ethpb.Deposit_Data
 		roots [][]byte
@@ -138,11 +138,11 @@ func DepositDataFromKeys(privKeys []bls.SecretKey, pubKeys []bls.PublicKey) ([]*
 }
 
 // DepositDataFromKeysWithExecCreds generates a list of deposit data items from a set of BLS validator keys.
-func DepositDataFromKeysWithExecCreds(privKeys []bls.SecretKey, pubKeys []bls.PublicKey, numOfCreds uint64) ([]*ethpb.Deposit_Data, [][]byte, error) {
+func DepositDataFromKeysWithExecCreds(privKeys []dilithium.DilithiumKey, pubKeys []dilithium.PublicKey, numOfCreds uint64) ([]*ethpb.Deposit_Data, [][]byte, error) {
 	return depositDataFromKeys(privKeys, pubKeys, numOfCreds)
 }
 
-func depositDataFromKeys(privKeys []bls.SecretKey, pubKeys []bls.PublicKey, numOfCreds uint64) ([]*ethpb.Deposit_Data, [][]byte, error) {
+func depositDataFromKeys(privKeys []dilithium.DilithiumKey, pubKeys []dilithium.PublicKey, numOfCreds uint64) ([]*ethpb.Deposit_Data, [][]byte, error) {
 	dataRoots := make([][]byte, len(privKeys))
 	depositDataItems := make([]*ethpb.Deposit_Data, len(privKeys))
 	for i := 0; i < len(privKeys); i++ {
@@ -162,7 +162,7 @@ func depositDataFromKeys(privKeys []bls.SecretKey, pubKeys []bls.PublicKey, numO
 }
 
 // Generates a deposit data item from BLS keys and signs the hash tree root of the data.
-func createDepositData(privKey bls.SecretKey, pubKey bls.PublicKey, withExecCreds bool) (*ethpb.Deposit_Data, error) {
+func createDepositData(privKey dilithium.DilithiumKey, pubKey dilithium.PublicKey, withExecCreds bool) (*ethpb.Deposit_Data, error) {
 	depositMessage := &ethpb.DepositMessage{
 		PublicKey:             pubKey.Marshal(),
 		WithdrawalCredentials: withdrawalCredentialsHash(pubKey.Marshal()),

@@ -8,7 +8,7 @@ import (
 
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/crypto/hash"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	prysmTime "github.com/cyyber/qrysm/v4/time"
@@ -73,16 +73,16 @@ func IsAggregator(committeeCount uint64, slotSig []byte) (bool, error) {
 //	def get_aggregate_signature(attestations: Sequence[Attestation]) -> BLSSignature:
 //	 signatures = [attestation.signature for attestation in attestations]
 //	 return bls.Aggregate(signatures)
-func AggregateSignature(attestations []*ethpb.Attestation) (bls.Signature, error) {
-	sigs := make([]bls.Signature, len(attestations))
+func AggregateSignature(attestations []*ethpb.Attestation) (dilithium.Signature, error) {
+	sigs := make([]dilithium.Signature, len(attestations))
 	var err error
 	for i := 0; i < len(sigs); i++ {
-		sigs[i], err = bls.SignatureFromBytes(attestations[i].Signature)
+		sigs[i], err = dilithium.SignatureFromBytes(attestations[i].Signature)
 		if err != nil {
 			return nil, err
 		}
 	}
-	return bls.AggregateSignatures(sigs), nil
+	return dilithium.AggregateSignatures(sigs), nil
 }
 
 // IsAggregated returns true if the attestation is an aggregated attestation,

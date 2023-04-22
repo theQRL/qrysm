@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/time"
 	"github.com/prysmaticlabs/go-bitfield"
@@ -86,7 +86,7 @@ func MakeAttestationsFromBitlists(bl []bitfield.Bitlist) []*ethpb.Attestation {
 				Slot:           42,
 				CommitteeIndex: 1,
 			},
-			Signature: bls.NewAggregateSignature().Marshal(),
+			Signature: dilithium.NewAggregateSignature().Marshal(),
 		}
 	}
 	return atts
@@ -100,7 +100,7 @@ func MakeSyncContributionsFromBitVector(bl []bitfield.Bitvector128) []*ethpb.Syn
 			Slot:              primitives.Slot(1),
 			SubcommitteeIndex: 2,
 			AggregationBits:   b,
-			Signature:         bls.NewAggregateSignature().Marshal(),
+			Signature:         dilithium.NewAggregateSignature().Marshal(),
 		}
 	}
 	return c

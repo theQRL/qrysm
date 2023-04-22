@@ -7,8 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpbservice "github.com/cyyber/qrysm/v4/proto/eth/service"
 	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
@@ -17,6 +16,7 @@ import (
 	"github.com/cyyber/qrysm/v4/validator/keymanager/remote-web3signer/v1/mock"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 type MockClient struct {
@@ -25,21 +25,21 @@ type MockClient struct {
 	isThrowingError bool
 }
 
-func (mc *MockClient) Sign(_ context.Context, _ string, _ internal.SignRequestJson) (bls.Signature, error) {
+func (mc *MockClient) Sign(_ context.Context, _ string, _ internal.SignRequestJson) (dilithium.Signature, error) {
 	decoded, err := hexutil.Decode(mc.Signature)
 	if err != nil {
 		return nil, err
 	}
-	return bls.SignatureFromBytes(decoded)
+	return dilithium.SignatureFromBytes(decoded)
 }
-func (mc *MockClient) GetPublicKeys(_ context.Context, _ string) ([][48]byte, error) {
-	var keys [][48]byte
+func (mc *MockClient) GetPublicKeys(_ context.Context, _ string) ([][dilithium2.CryptoPublicKeyBytes]byte, error) {
+	var keys [][dilithium2.CryptoPublicKeyBytes]byte
 	for _, pk := range mc.PublicKeys {
 		decoded, err := hex.DecodeString(strings.TrimPrefix(pk, "0x"))
 		if err != nil {
 			return nil, err
 		}
-		keys = append(keys, bytesutil.ToBytes48(decoded))
+		keys = append(keys, bytesutil.ToBytes2592(decoded))
 	}
 	if mc.isThrowingError {
 		return nil, fmt.Errorf("mock error")
@@ -70,7 +70,7 @@ func TestKeymanager_Sign(t *testing.T) {
 	if err != nil {
 		fmt.Printf("error: %v", err)
 	}
-	desiredSig, err := bls.SignatureFromBytes(desiredSigBytes)
+	desiredSig, err := dilithium.SignatureFromBytes(desiredSigBytes)
 	if err != nil {
 		fmt.Printf("error: %v", err)
 	}
@@ -80,7 +80,7 @@ func TestKeymanager_Sign(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    bls.Signature
+		want    dilithium.Signature
 		wantErr bool
 	}{
 		{
@@ -191,8 +191,8 @@ func TestKeymanager_FetchValidatingPublicKeys_HappyPath_WithKeyList(t *testing.T
 	if err != nil {
 		fmt.Printf("error: %v", err)
 	}
-	keys := [][48]byte{
-		bytesutil.ToBytes48(decodedKey),
+	keys := [][dilithium2.CryptoPublicKeyBytes]byte{
+		bytesutil.ToBytes2592(decodedKey),
 	}
 	root, err := hexutil.Decode("0x270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69")
 	if err != nil {
@@ -225,8 +225,8 @@ func TestKeymanager_FetchValidatingPublicKeys_HappyPath_WithExternalURL(t *testi
 	if err != nil {
 		fmt.Printf("error: %v", err)
 	}
-	keys := [][48]byte{
-		bytesutil.ToBytes48(decodedKey),
+	keys := [][dilithium2.CryptoPublicKeyBytes]byte{
+		bytesutil.ToBytes2592(decodedKey),
 	}
 	root, err := hexutil.Decode("0x270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69")
 	if err != nil {
@@ -293,8 +293,8 @@ func TestKeymanager_AddPublicKeys(t *testing.T) {
 	}
 	pubkey, err := hexutil.Decode("0xa2b5aaad9c6efefe7bb9b1243a043404f3362937cfb6b31833929833173f476630ea2cfeb0d9ddf15f97ca8685948820")
 	require.NoError(t, err)
-	publicKeys := [][fieldparams.BLSPubkeyLength]byte{
-		bytesutil.ToBytes48(pubkey),
+	publicKeys := [][dilithium2.CryptoPublicKeyBytes]byte{
+		bytesutil.ToBytes2592(pubkey),
 	}
 	statuses, err := km.AddPublicKeys(ctx, publicKeys)
 	require.NoError(t, err)
@@ -324,8 +324,8 @@ func TestKeymanager_DeletePublicKeys(t *testing.T) {
 	}
 	pubkey, err := hexutil.Decode("0xa2b5aaad9c6efefe7bb9b1243a043404f3362937cfb6b31833929833173f476630ea2cfeb0d9ddf15f97ca8685948820")
 	require.NoError(t, err)
-	publicKeys := [][fieldparams.BLSPubkeyLength]byte{
-		bytesutil.ToBytes48(pubkey),
+	publicKeys := [][dilithium2.CryptoPublicKeyBytes]byte{
+		bytesutil.ToBytes2592(pubkey),
 	}
 	statuses, err := km.AddPublicKeys(ctx, publicKeys)
 	require.NoError(t, err)
