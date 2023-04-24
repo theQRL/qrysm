@@ -7,6 +7,7 @@ import (
 	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	ssz "github.com/prysmaticlabs/fastssz"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -22,7 +23,7 @@ func (m SignedBeaconBlock) Block() interfaces.ReadOnlyBeaconBlock {
 	return m.BeaconBlock
 }
 
-func (SignedBeaconBlock) Signature() [field_params.BLSSignatureLength]byte {
+func (SignedBeaconBlock) Signature() [dilithium2.CryptoBytes]byte {
 	panic("implement me")
 }
 
@@ -195,7 +196,7 @@ func (BeaconBlock) Copy() (interfaces.ReadOnlyBeaconBlock, error) {
 
 type BeaconBlockBody struct{}
 
-func (BeaconBlockBody) RandaoReveal() [field_params.BLSSignatureLength]byte {
+func (BeaconBlockBody) RandaoReveal() [dilithium2.CryptoPublicKeyBytes]byte {
 	panic("implement me")
 }
 
