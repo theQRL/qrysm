@@ -4,8 +4,7 @@ import (
 	"context"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
@@ -14,6 +13,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestValidator_HandleKeyReload(t *testing.T) {
@@ -23,16 +23,16 @@ func TestValidator_HandleKeyReload(t *testing.T) {
 	t.Run("active", func(t *testing.T) {
 		hook := logTest.NewGlobal()
 
-		inactivePrivKey, err := bls.RandKey()
+		inactivePrivKey, err := dilithium.RandKey()
 		require.NoError(t, err)
-		var inactivePubKey [fieldparams.BLSPubkeyLength]byte
+		var inactivePubKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(inactivePubKey[:], inactivePrivKey.PublicKey().Marshal())
-		activePrivKey, err := bls.RandKey()
+		activePrivKey, err := dilithium.RandKey()
 		require.NoError(t, err)
-		var activePubKey [fieldparams.BLSPubkeyLength]byte
+		var activePubKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(activePubKey[:], activePrivKey.PublicKey().Marshal())
 		km := &mockKeymanager{
-			keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+			keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 				inactivePubKey: inactivePrivKey,
 			},
 		}
@@ -56,7 +56,7 @@ func TestValidator_HandleKeyReload(t *testing.T) {
 		).Return(resp, nil)
 		beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&ethpb.Validators{}, nil)
 
-		anyActive, err := v.HandleKeyReload(context.Background(), [][fieldparams.BLSPubkeyLength]byte{inactivePubKey, activePubKey})
+		anyActive, err := v.HandleKeyReload(context.Background(), [][dilithium2.CryptoPublicKeyBytes]byte{inactivePubKey, activePubKey})
 		require.NoError(t, err)
 		assert.Equal(t, true, anyActive)
 		assert.LogsContain(t, hook, "Waiting for deposit to be observed by beacon node")
@@ -66,12 +66,12 @@ func TestValidator_HandleKeyReload(t *testing.T) {
 	t.Run("no active", func(t *testing.T) {
 		hook := logTest.NewGlobal()
 
-		inactivePrivKey, err := bls.RandKey()
+		inactivePrivKey, err := dilithium.RandKey()
 		require.NoError(t, err)
-		var inactivePubKey [fieldparams.BLSPubkeyLength]byte
+		var inactivePubKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(inactivePubKey[:], inactivePrivKey.PublicKey().Marshal())
 		km := &mockKeymanager{
-			keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+			keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 				inactivePubKey: inactivePrivKey,
 			},
 		}
@@ -94,7 +94,7 @@ func TestValidator_HandleKeyReload(t *testing.T) {
 		).Return(resp, nil)
 		beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&ethpb.Validators{}, nil)
 
-		anyActive, err := v.HandleKeyReload(context.Background(), [][fieldparams.BLSPubkeyLength]byte{inactivePubKey})
+		anyActive, err := v.HandleKeyReload(context.Background(), [][dilithium2.CryptoPublicKeyBytes]byte{inactivePubKey})
 		require.NoError(t, err)
 		assert.Equal(t, false, anyActive)
 		assert.LogsContain(t, hook, "Waiting for deposit to be observed by beacon node")
@@ -102,12 +102,12 @@ func TestValidator_HandleKeyReload(t *testing.T) {
 	})
 
 	t.Run("error when getting status", func(t *testing.T) {
-		inactivePrivKey, err := bls.RandKey()
+		inactivePrivKey, err := dilithium.RandKey()
 		require.NoError(t, err)
-		var inactivePubKey [fieldparams.BLSPubkeyLength]byte
+		var inactivePubKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(inactivePubKey[:], inactivePrivKey.PublicKey().Marshal())
 		km := &mockKeymanager{
-			keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+			keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 				inactivePubKey: inactivePrivKey,
 			},
 		}
@@ -125,7 +125,7 @@ func TestValidator_HandleKeyReload(t *testing.T) {
 			},
 		).Return(nil, errors.New("error"))
 
-		_, err = v.HandleKeyReload(context.Background(), [][fieldparams.BLSPubkeyLength]byte{inactivePubKey})
+		_, err = v.HandleKeyReload(context.Background(), [][dilithium2.CryptoPublicKeyBytes]byte{inactivePubKey})
 		assert.ErrorContains(t, "error", err)
 	})
 }

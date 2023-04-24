@@ -10,7 +10,6 @@ import (
 	v "github.com/cyyber/qrysm/v4/beacon-chain/core/validators"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/crypto/bls"
@@ -20,6 +19,7 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/cyyber/qrysm/v4/time/slots"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestProcessProposerSlashings_UnmatchedHeaderSlots(t *testing.T) {
@@ -106,7 +106,7 @@ func TestProcessProposerSlashings_ValidatorNotSlashable(t *testing.T) {
 					Slot:          0,
 					BodyRoot:      []byte("foo"),
 				},
-				Signature: bytesutil.PadTo([]byte("A"), fieldparams.BLSSignatureLength),
+				Signature: bytesutil.PadTo([]byte("A"), dilithium2.CryptoBytes),
 			},
 			Header_2: &ethpb.SignedBeaconBlockHeader{
 				Header: &ethpb.BeaconBlockHeader{
@@ -114,7 +114,7 @@ func TestProcessProposerSlashings_ValidatorNotSlashable(t *testing.T) {
 					Slot:          0,
 					BodyRoot:      []byte("bar"),
 				},
-				Signature: bytesutil.PadTo([]byte("B"), fieldparams.BLSSignatureLength),
+				Signature: bytesutil.PadTo([]byte("B"), dilithium2.CryptoBytes),
 			},
 		},
 	}

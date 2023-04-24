@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/require"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestStore_Backup(t *testing.T) {
@@ -41,7 +41,7 @@ func TestStore_Backup(t *testing.T) {
 }
 
 func TestStore_NestedBackup(t *testing.T) {
-	keys := [][fieldparams.BLSPubkeyLength]byte{{'A'}, {'B'}}
+	keys := [][dilithium2.CryptoPublicKeyBytes]byte{{'A'}, {'B'}}
 	db := setupDB(t, keys)
 	ctx := context.Background()
 	root := [32]byte{1}

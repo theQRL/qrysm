@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
@@ -12,6 +11,7 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/prysmaticlabs/go-bitfield"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestAttestingIndices(t *testing.T) {
@@ -75,7 +75,7 @@ func TestIsValidAttestationIndices(t *testing.T) {
 				Data: &eth.AttestationData{
 					Target: &eth.Checkpoint{},
 				},
-				Signature: make([]byte, fieldparams.BLSSignatureLength),
+				Signature: make([]byte, dilithium2.CryptoBytes),
 			},
 			wantedErr: "nil or missing indexed attestation data",
 		},
@@ -86,7 +86,7 @@ func TestIsValidAttestationIndices(t *testing.T) {
 				Data: &eth.AttestationData{
 					Target: &eth.Checkpoint{},
 				},
-				Signature: make([]byte, fieldparams.BLSSignatureLength),
+				Signature: make([]byte, dilithium2.CryptoBytes),
 			},
 			wantedErr: "expected non-empty",
 		},
@@ -97,7 +97,7 @@ func TestIsValidAttestationIndices(t *testing.T) {
 				Data: &eth.AttestationData{
 					Target: &eth.Checkpoint{},
 				},
-				Signature: make([]byte, fieldparams.BLSSignatureLength),
+				Signature: make([]byte, dilithium2.CryptoBytes),
 			},
 			wantedErr: "indices count exceeds",
 		},
@@ -108,7 +108,7 @@ func TestIsValidAttestationIndices(t *testing.T) {
 				Data: &eth.AttestationData{
 					Target: &eth.Checkpoint{},
 				},
-				Signature: make([]byte, fieldparams.BLSSignatureLength),
+				Signature: make([]byte, dilithium2.CryptoBytes),
 			},
 			wantedErr: "not uniquely sorted",
 		},
@@ -119,7 +119,7 @@ func TestIsValidAttestationIndices(t *testing.T) {
 				Data: &eth.AttestationData{
 					Target: &eth.Checkpoint{},
 				},
-				Signature: make([]byte, fieldparams.BLSSignatureLength),
+				Signature: make([]byte, dilithium2.CryptoBytes),
 			},
 		},
 		{
@@ -129,7 +129,7 @@ func TestIsValidAttestationIndices(t *testing.T) {
 				Data: &eth.AttestationData{
 					Target: &eth.Checkpoint{},
 				},
-				Signature: make([]byte, fieldparams.BLSSignatureLength),
+				Signature: make([]byte, dilithium2.CryptoBytes),
 			},
 		},
 		{
@@ -139,7 +139,7 @@ func TestIsValidAttestationIndices(t *testing.T) {
 				Data: &eth.AttestationData{
 					Target: &eth.Checkpoint{},
 				},
-				Signature: make([]byte, fieldparams.BLSSignatureLength),
+				Signature: make([]byte, dilithium2.CryptoBytes),
 			},
 		},
 	}
@@ -176,7 +176,7 @@ func BenchmarkIsValidAttestationIndices(b *testing.B) {
 		Data: &eth.AttestationData{
 			Target: &eth.Checkpoint{},
 		},
-		Signature: make([]byte, fieldparams.BLSSignatureLength),
+		Signature: make([]byte, dilithium2.CryptoBytes),
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

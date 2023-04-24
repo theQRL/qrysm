@@ -4,16 +4,16 @@ import (
 	"context"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestProposalHistoryForSlot_InitializesNewPubKeys(t *testing.T) {
-	pubkeys := [][fieldparams.BLSPubkeyLength]byte{{30}, {25}, {20}}
+	pubkeys := [][dilithium2.CryptoPublicKeyBytes]byte{{30}, {25}, {20}}
 	db := setupDB(t, pubkeys)
 
 	for _, pub := range pubkeys {
@@ -25,8 +25,8 @@ func TestProposalHistoryForSlot_InitializesNewPubKeys(t *testing.T) {
 }
 
 func TestNewProposalHistoryForSlot_ReturnsNilIfNoHistory(t *testing.T) {
-	valPubkey := [fieldparams.BLSPubkeyLength]byte{1, 2, 3}
-	db := setupDB(t, [][fieldparams.BLSPubkeyLength]byte{})
+	valPubkey := [dilithium2.CryptoPublicKeyBytes]byte{1, 2, 3}
+	db := setupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{})
 
 	_, proposalExists, err := db.ProposalHistoryForSlot(context.Background(), valPubkey, 0)
 	require.NoError(t, err)
@@ -34,8 +34,8 @@ func TestNewProposalHistoryForSlot_ReturnsNilIfNoHistory(t *testing.T) {
 }
 
 func TestSaveProposalHistoryForSlot_OK(t *testing.T) {
-	pubkey := [fieldparams.BLSPubkeyLength]byte{3}
-	db := setupDB(t, [][fieldparams.BLSPubkeyLength]byte{pubkey})
+	pubkey := [dilithium2.CryptoPublicKeyBytes]byte{3}
+	db := setupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{pubkey})
 
 	slot := primitives.Slot(2)
 
@@ -49,8 +49,8 @@ func TestSaveProposalHistoryForSlot_OK(t *testing.T) {
 }
 
 func TestNewProposalHistoryForPubKey_ReturnsEmptyIfNoHistory(t *testing.T) {
-	valPubkey := [fieldparams.BLSPubkeyLength]byte{1, 2, 3}
-	db := setupDB(t, [][fieldparams.BLSPubkeyLength]byte{})
+	valPubkey := [dilithium2.CryptoPublicKeyBytes]byte{1, 2, 3}
+	db := setupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{})
 
 	proposalHistory, err := db.ProposalHistoryForPubKey(context.Background(), valPubkey)
 	require.NoError(t, err)
@@ -58,8 +58,8 @@ func TestNewProposalHistoryForPubKey_ReturnsEmptyIfNoHistory(t *testing.T) {
 }
 
 func TestSaveProposalHistoryForPubKey_OK(t *testing.T) {
-	pubkey := [fieldparams.BLSPubkeyLength]byte{3}
-	db := setupDB(t, [][fieldparams.BLSPubkeyLength]byte{pubkey})
+	pubkey := [dilithium2.CryptoPublicKeyBytes]byte{3}
+	db := setupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{pubkey})
 
 	slot := primitives.Slot(2)
 
@@ -80,7 +80,7 @@ func TestSaveProposalHistoryForPubKey_OK(t *testing.T) {
 }
 
 func TestSaveProposalHistoryForSlot_Overwrites(t *testing.T) {
-	pubkey := [fieldparams.BLSPubkeyLength]byte{0}
+	pubkey := [dilithium2.CryptoPublicKeyBytes]byte{0}
 	tests := []struct {
 		signingRoot []byte
 	}{
@@ -96,7 +96,7 @@ func TestSaveProposalHistoryForSlot_Overwrites(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		db := setupDB(t, [][fieldparams.BLSPubkeyLength]byte{pubkey})
+		db := setupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{pubkey})
 		err := db.SaveProposalHistoryForSlot(context.Background(), pubkey, 0, tt.signingRoot)
 		require.NoError(t, err, "Saving proposal history failed")
 		proposalHistory, err := db.ProposalHistoryForPubKey(context.Background(), pubkey)
@@ -111,7 +111,7 @@ func TestSaveProposalHistoryForSlot_Overwrites(t *testing.T) {
 func TestPruneProposalHistoryBySlot_OK(t *testing.T) {
 	slotsPerEpoch := params.BeaconConfig().SlotsPerEpoch
 	wsPeriod := params.BeaconConfig().WeakSubjectivityPeriod
-	pubKey := [fieldparams.BLSPubkeyLength]byte{0}
+	pubKey := [dilithium2.CryptoPublicKeyBytes]byte{0}
 	tests := []struct {
 		slots        []primitives.Slot
 		storedSlots  []primitives.Slot
@@ -151,7 +151,7 @@ func TestPruneProposalHistoryBySlot_OK(t *testing.T) {
 	signedRoot := bytesutil.PadTo([]byte{1}, 32)
 
 	for _, tt := range tests {
-		db := setupDB(t, [][fieldparams.BLSPubkeyLength]byte{pubKey})
+		db := setupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{pubKey})
 		for _, slot := range tt.slots {
 			err := db.SaveProposalHistoryForSlot(context.Background(), pubKey, slot, signedRoot)
 			require.NoError(t, err, "Saving proposal history failed")
@@ -189,23 +189,23 @@ func TestStore_ProposedPublicKeys(t *testing.T) {
 
 	keys, err := validatorDB.ProposedPublicKeys(ctx)
 	require.NoError(t, err)
-	assert.DeepEqual(t, make([][fieldparams.BLSPubkeyLength]byte, 0), keys)
+	assert.DeepEqual(t, make([][dilithium2.CryptoPublicKeyBytes]byte, 0), keys)
 
-	pubKey := [fieldparams.BLSPubkeyLength]byte{1}
+	pubKey := [dilithium2.CryptoPublicKeyBytes]byte{1}
 	var dummyRoot [32]byte
 	err = validatorDB.SaveProposalHistoryForSlot(ctx, pubKey, 1, dummyRoot[:])
 	require.NoError(t, err)
 
 	keys, err = validatorDB.ProposedPublicKeys(ctx)
 	require.NoError(t, err)
-	assert.DeepEqual(t, [][fieldparams.BLSPubkeyLength]byte{pubKey}, keys)
+	assert.DeepEqual(t, [][dilithium2.CryptoPublicKeyBytes]byte{pubKey}, keys)
 }
 
 func TestStore_LowestSignedProposal(t *testing.T) {
 	ctx := context.Background()
-	pubkey := [fieldparams.BLSPubkeyLength]byte{3}
+	pubkey := [dilithium2.CryptoPublicKeyBytes]byte{3}
 	var dummySigningRoot [32]byte
-	validatorDB := setupDB(t, [][fieldparams.BLSPubkeyLength]byte{pubkey})
+	validatorDB := setupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{pubkey})
 
 	_, exists, err := validatorDB.LowestSignedProposal(ctx, pubkey)
 	require.NoError(t, err)
@@ -244,9 +244,9 @@ func TestStore_LowestSignedProposal(t *testing.T) {
 
 func TestStore_HighestSignedProposal(t *testing.T) {
 	ctx := context.Background()
-	pubkey := [fieldparams.BLSPubkeyLength]byte{3}
+	pubkey := [dilithium2.CryptoPublicKeyBytes]byte{3}
 	var dummySigningRoot [32]byte
-	validatorDB := setupDB(t, [][fieldparams.BLSPubkeyLength]byte{pubkey})
+	validatorDB := setupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{pubkey})
 
 	_, exists, err := validatorDB.HighestSignedProposal(ctx, pubkey)
 	require.NoError(t, err)

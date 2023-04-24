@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	slashertypes "github.com/cyyber/qrysm/v4/beacon-chain/slasher/types"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestService_groupByValidatorChunkIndex(t *testing.T) {
@@ -443,7 +443,7 @@ func Test_validateBlockHeaderIntegrity(t *testing.T) {
 			args: args{
 				header: &ethpb.SignedBeaconBlockHeader{
 					Header:    &ethpb.BeaconBlockHeader{},
-					Signature: make([]byte, fieldparams.BLSSignatureLength+1),
+					Signature: make([]byte, dilithium2.CryptoBytes+1),
 				},
 			},
 			want: false,

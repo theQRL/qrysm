@@ -19,13 +19,13 @@ import (
 	"github.com/cyyber/qrysm/v4/cmd"
 	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
 	"github.com/cyyber/qrysm/v4/config/features"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/runtime"
 	"github.com/cyyber/qrysm/v4/runtime/interop"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/urfave/cli/v2"
 )
 
@@ -96,7 +96,7 @@ func TestNodeStart_Ok_registerDeterministicGenesisService(t *testing.T) {
 	require.NoError(t, err, "Could not generate genesis beacon state")
 	for i := uint64(1); i < 2; i++ {
 		var someRoot [32]byte
-		var someKey [fieldparams.BLSPubkeyLength]byte
+		var someKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
 		genesisState.Validators = append(genesisState.Validators, &ethpb.Validator{

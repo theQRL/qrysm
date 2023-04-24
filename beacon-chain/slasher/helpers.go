@@ -5,12 +5,12 @@ import (
 	"strconv"
 
 	slashertypes "github.com/cyyber/qrysm/v4/beacon-chain/slasher/types"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/container/slice"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/sirupsen/logrus"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // Group a list of attestations into batches by validator chunk index.
@@ -112,8 +112,8 @@ func validateBlockHeaderIntegrity(header *ethpb.SignedBeaconBlockHeader) bool {
 	// If a signed block header is malformed, we drop it.
 	if header == nil ||
 		header.Header == nil ||
-		len(header.Signature) != fieldparams.BLSSignatureLength ||
-		bytes.Equal(header.Signature, make([]byte, fieldparams.BLSSignatureLength)) {
+		len(header.Signature) != dilithium2.CryptoBytes ||
+		bytes.Equal(header.Signature, make([]byte, dilithium2.CryptoBytes)) {
 		return false
 	}
 	return true

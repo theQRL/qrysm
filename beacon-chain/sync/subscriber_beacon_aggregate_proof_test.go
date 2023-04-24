@@ -7,12 +7,12 @@ import (
 	mock "github.com/cyyber/qrysm/v4/beacon-chain/blockchain/testing"
 	"github.com/cyyber/qrysm/v4/beacon-chain/operations/attestations"
 	lruwrpr "github.com/cyyber/qrysm/v4/cache/lru"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/prysmaticlabs/go-bitfield"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestBeaconAggregateProofSubscriber_CanSaveAggregatedAttestation(t *testing.T) {
@@ -31,7 +31,7 @@ func TestBeaconAggregateProofSubscriber_CanSaveAggregatedAttestation(t *testing.
 			}),
 			AggregatorIndex: 100,
 		},
-		Signature: make([]byte, fieldparams.BLSSignatureLength),
+		Signature: make([]byte, dilithium2.CryptoBytes),
 	}
 	require.NoError(t, r.beaconAggregateProofSubscriber(context.Background(), a))
 	assert.DeepSSZEqual(t, []*ethpb.Attestation{a.Message.Aggregate}, r.cfg.attPool.AggregatedAttestations(), "Did not save aggregated attestation")
@@ -50,7 +50,7 @@ func TestBeaconAggregateProofSubscriber_CanSaveUnaggregatedAttestation(t *testin
 		Message: &ethpb.AggregateAttestationAndProof{
 			Aggregate: util.HydrateAttestation(&ethpb.Attestation{
 				AggregationBits: bitfield.Bitlist{0x03},
-				Signature:       make([]byte, fieldparams.BLSSignatureLength),
+				Signature:       make([]byte, dilithium2.CryptoBytes),
 			}),
 			AggregatorIndex: 100,
 		},

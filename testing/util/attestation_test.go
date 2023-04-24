@@ -8,13 +8,14 @@ import (
 	v1 "github.com/cyyber/qrysm/v4/proto/eth/v1"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/require"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestHydrateAttestation(t *testing.T) {
 	a := HydrateAttestation(&ethpb.Attestation{})
 	_, err := a.HashTreeRoot()
 	require.NoError(t, err)
-	require.DeepEqual(t, a.Signature, make([]byte, fieldparams.BLSSignatureLength))
+	require.DeepEqual(t, a.Signature, make([]byte, dilithium2.CryptoBytes))
 }
 
 func TestHydrateAttestationData(t *testing.T) {
@@ -30,7 +31,7 @@ func TestHydrateV1Attestation(t *testing.T) {
 	a := HydrateV1Attestation(&v1.Attestation{})
 	_, err := a.HashTreeRoot()
 	require.NoError(t, err)
-	require.DeepEqual(t, a.Signature, make([]byte, fieldparams.BLSSignatureLength))
+	require.DeepEqual(t, a.Signature, make([]byte, dilithium2.CryptoBytes))
 }
 
 func TestHydrateV1AttestationData(t *testing.T) {

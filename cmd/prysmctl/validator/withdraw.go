@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -13,12 +12,12 @@ import (
 
 	"github.com/cyyber/qrysm/v4/api/client/beacon"
 	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/urfave/cli/v2"
 	"go.opencensus.io/trace"
 )
@@ -65,7 +64,7 @@ func getWithdrawalMessagesFromPathFlag(c *cli.Context) ([]*apimiddleware.SignedB
 			if len(obj.Message.ToExecutionAddress) == common.AddressLength*2 {
 				to[i].Message.ToExecutionAddress = fmt.Sprintf("0x%s", obj.Message.ToExecutionAddress)
 			}
-			if len(obj.Signature) == fieldparams.BLSSignatureLength*2 {
+			if len(obj.Signature) == dilithium2.CryptoBytes*2 {
 				to[i].Signature = fmt.Sprintf("0x%s", obj.Signature)
 			}
 			setWithdrawalAddressJsons = append(setWithdrawalAddressJsons, &apimiddleware.SignedBLSToExecutionChangeJson{

@@ -51,6 +51,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/go-bitfield"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -2450,7 +2451,7 @@ func TestProposer_PrepareBeaconProposer(t *testing.T) {
 				request: &ethpb.PrepareBeaconProposerRequest{
 					Recipients: []*ethpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
 						{
-							FeeRecipient:   make([]byte, fieldparams.BLSPubkeyLength),
+							FeeRecipient:   make([]byte, dilithium2.CryptoPublicKeyBytes),
 							ValidatorIndex: 1,
 						},
 					},

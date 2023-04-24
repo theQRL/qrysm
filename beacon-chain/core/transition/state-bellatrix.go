@@ -15,6 +15,7 @@ import (
 	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // GenesisBeaconStateBellatrix gets called when MinGenesisActiveValidatorCount count of
@@ -200,7 +201,7 @@ func OptimizedGenesisBeaconStateBellatrix(genesisTime uint64, preState state.Bea
 		Graffiti: make([]byte, 32),
 		SyncAggregate: &ethpb.SyncAggregate{
 			SyncCommitteeBits:      make([]byte, fieldparams.SyncCommitteeLength/8),
-			SyncCommitteeSignature: make([]byte, fieldparams.BLSSignatureLength),
+			SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
 		},
 		ExecutionPayload: &enginev1.ExecutionPayload{
 			ParentHash:    make([]byte, 32),

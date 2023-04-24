@@ -25,6 +25,7 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/prysmaticlabs/go-bitfield"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestSubmitAggregateAndProof_Syncing(t *testing.T) {
@@ -401,7 +402,7 @@ func TestSubmitSignedAggregateSelectionProof_ZeroHashesSignatures(t *testing.T) 
 	aggregatorServer := &Server{}
 	req := &ethpb.SignedAggregateSubmitRequest{
 		SignedAggregateAndProof: &ethpb.SignedAggregateAttestationAndProof{
-			Signature: make([]byte, fieldparams.BLSSignatureLength),
+			Signature: make([]byte, dilithium2.CryptoBytes),
 			Message: &ethpb.AggregateAttestationAndProof{
 				Aggregate: &ethpb.Attestation{
 					Data: &ethpb.AttestationData{},
@@ -419,7 +420,7 @@ func TestSubmitSignedAggregateSelectionProof_ZeroHashesSignatures(t *testing.T) 
 				Aggregate: &ethpb.Attestation{
 					Data: &ethpb.AttestationData{},
 				},
-				SelectionProof: make([]byte, fieldparams.BLSSignatureLength),
+				SelectionProof: make([]byte, dilithium2.CryptoBytes),
 			},
 		},
 	}

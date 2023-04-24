@@ -16,6 +16,7 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/prysmaticlabs/go-bitfield"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestValidatorMap_DistinctCopy(t *testing.T) {
@@ -23,7 +24,7 @@ func TestValidatorMap_DistinctCopy(t *testing.T) {
 	vals := make([]*ethpb.Validator, 0, count)
 	for i := uint64(1); i < count; i++ {
 		var someRoot [32]byte
-		var someKey [fieldparams.BLSPubkeyLength]byte
+		var someKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
 		vals = append(vals, &ethpb.Validator{
@@ -40,9 +41,9 @@ func TestValidatorMap_DistinctCopy(t *testing.T) {
 	handler := stateutil.NewValMapHandler(vals)
 	newHandler := handler.Copy()
 	wantedPubkey := strconv.Itoa(22)
-	handler.Set(bytesutil.ToBytes48([]byte(wantedPubkey)), 27)
-	val1, _ := handler.Get(bytesutil.ToBytes48([]byte(wantedPubkey)))
-	val2, _ := newHandler.Get(bytesutil.ToBytes48([]byte(wantedPubkey)))
+	handler.Set(bytesutil.ToBytes2592([]byte(wantedPubkey)), 27)
+	val1, _ := handler.Get(bytesutil.ToBytes2592([]byte(wantedPubkey)))
+	val2, _ := newHandler.Get(bytesutil.ToBytes2592([]byte(wantedPubkey)))
 	assert.NotEqual(t, val1, val2, "Values are supposed to be unequal due to copy")
 }
 
@@ -51,7 +52,7 @@ func TestBeaconState_NoDeadlock_Phase0(t *testing.T) {
 	vals := make([]*ethpb.Validator, 0, count)
 	for i := uint64(1); i < count; i++ {
 		var someRoot [32]byte
-		var someKey [fieldparams.BLSPubkeyLength]byte
+		var someKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
 		vals = append(vals, &ethpb.Validator{
@@ -107,7 +108,7 @@ func TestBeaconState_NoDeadlock_Altair(t *testing.T) {
 	vals := make([]*ethpb.Validator, 0, count)
 	for i := uint64(1); i < count; i++ {
 		var someRoot [32]byte
-		var someKey [fieldparams.BLSPubkeyLength]byte
+		var someKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
 		vals = append(vals, &ethpb.Validator{
@@ -163,7 +164,7 @@ func TestBeaconState_NoDeadlock_Bellatrix(t *testing.T) {
 	vals := make([]*ethpb.Validator, 0, count)
 	for i := uint64(1); i < count; i++ {
 		var someRoot [32]byte
-		var someKey [fieldparams.BLSPubkeyLength]byte
+		var someKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
 		vals = append(vals, &ethpb.Validator{
@@ -219,7 +220,7 @@ func TestBeaconState_NoDeadlock_Capella(t *testing.T) {
 	vals := make([]*ethpb.Validator, 0, count)
 	for i := uint64(1); i < count; i++ {
 		var someRoot [32]byte
-		var someKey [fieldparams.BLSPubkeyLength]byte
+		var someKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
 		vals = append(vals, &ethpb.Validator{
@@ -276,7 +277,7 @@ func TestBeaconState_AppendBalanceWithTrie(t *testing.T) {
 	bals := make([]uint64, 0, count)
 	for i := uint64(1); i < count; i++ {
 		var someRoot [32]byte
-		var someKey [fieldparams.BLSPubkeyLength]byte
+		var someKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
 		vals = append(vals, &ethpb.Validator{

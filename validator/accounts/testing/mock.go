@@ -13,6 +13,7 @@ import (
 	"github.com/cyyber/qrysm/v4/validator/accounts/iface"
 	iface2 "github.com/cyyber/qrysm/v4/validator/client/iface"
 	"github.com/cyyber/qrysm/v4/validator/keymanager"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // Wallet contains an in-memory, simulated wallet implementation.
@@ -100,7 +101,7 @@ func (_ MockValidator) WaitForSync(_ context.Context) error {
 	panic("implement me")
 }
 
-func (_ MockValidator) WaitForActivation(_ context.Context, _ chan [][48]byte) error {
+func (_ MockValidator) WaitForActivation(_ context.Context, _ chan [][dilithium2.CryptoPublicKeyBytes]byte) error {
 	panic("implement me")
 }
 
@@ -124,27 +125,27 @@ func (_ MockValidator) UpdateDuties(_ context.Context, _ primitives.Slot) error 
 	panic("implement me")
 }
 
-func (_ MockValidator) RolesAt(_ context.Context, _ primitives.Slot) (map[[48]byte][]iface2.ValidatorRole, error) {
+func (_ MockValidator) RolesAt(_ context.Context, _ primitives.Slot) (map[[dilithium2.CryptoPublicKeyBytes]byte][]iface2.ValidatorRole, error) {
 	panic("implement me")
 }
 
-func (_ MockValidator) SubmitAttestation(_ context.Context, _ primitives.Slot, _ [48]byte) {
+func (_ MockValidator) SubmitAttestation(_ context.Context, _ primitives.Slot, _ [dilithium2.CryptoPublicKeyBytes]byte) {
 	panic("implement me")
 }
 
-func (_ MockValidator) ProposeBlock(_ context.Context, _ primitives.Slot, _ [48]byte) {
+func (_ MockValidator) ProposeBlock(_ context.Context, _ primitives.Slot, _ [dilithium2.CryptoPublicKeyBytes]byte) {
 	panic("implement me")
 }
 
-func (_ MockValidator) SubmitAggregateAndProof(_ context.Context, _ primitives.Slot, _ [48]byte) {
+func (_ MockValidator) SubmitAggregateAndProof(_ context.Context, _ primitives.Slot, _ [dilithium2.CryptoPublicKeyBytes]byte) {
 	panic("implement me")
 }
 
-func (_ MockValidator) SubmitSyncCommitteeMessage(_ context.Context, _ primitives.Slot, _ [48]byte) {
+func (_ MockValidator) SubmitSyncCommitteeMessage(_ context.Context, _ primitives.Slot, _ [dilithium2.CryptoPublicKeyBytes]byte) {
 	panic("implement me")
 }
 
-func (_ MockValidator) SubmitSignedContributionAndProof(_ context.Context, _ primitives.Slot, _ [48]byte) {
+func (_ MockValidator) SubmitSignedContributionAndProof(_ context.Context, _ primitives.Slot, _ [dilithium2.CryptoPublicKeyBytes]byte) {
 	panic("implement me")
 }
 
@@ -172,7 +173,7 @@ func (_ MockValidator) ReceiveBlocks(_ context.Context, _ chan<- error) {
 	panic("implement me")
 }
 
-func (_ MockValidator) HandleKeyReload(_ context.Context, _ [][48]byte) (bool, error) {
+func (_ MockValidator) HandleKeyReload(_ context.Context, _ [][dilithium2.CryptoPublicKeyBytes]byte) (bool, error) {
 	panic("implement me")
 }
 

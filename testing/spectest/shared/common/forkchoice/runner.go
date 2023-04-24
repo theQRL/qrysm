@@ -8,7 +8,6 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/transition"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
@@ -17,6 +16,7 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/spectest/utils"
 	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/golang/snappy"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func init() {
@@ -160,7 +160,7 @@ func unmarshalPhase0State(t *testing.T, raw []byte) state.BeaconState {
 func unmarshalPhase0Block(t *testing.T, raw []byte) interfaces.ReadOnlySignedBeaconBlock {
 	base := &ethpb.BeaconBlock{}
 	require.NoError(t, base.UnmarshalSSZ(raw))
-	blk, err := blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlock{Block: base, Signature: make([]byte, fieldparams.BLSSignatureLength)})
+	blk, err := blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlock{Block: base, Signature: make([]byte, dilithium2.CryptoBytes)})
 	require.NoError(t, err)
 	return blk
 }
@@ -184,7 +184,7 @@ func unmarshalAltairState(t *testing.T, raw []byte) state.BeaconState {
 func unmarshalAltairBlock(t *testing.T, raw []byte) interfaces.ReadOnlySignedBeaconBlock {
 	base := &ethpb.BeaconBlockAltair{}
 	require.NoError(t, base.UnmarshalSSZ(raw))
-	blk, err := blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockAltair{Block: base, Signature: make([]byte, fieldparams.BLSSignatureLength)})
+	blk, err := blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockAltair{Block: base, Signature: make([]byte, dilithium2.CryptoBytes)})
 	require.NoError(t, err)
 	return blk
 }
@@ -208,7 +208,7 @@ func unmarshalBellatrixState(t *testing.T, raw []byte) state.BeaconState {
 func unmarshalBellatrixBlock(t *testing.T, raw []byte) interfaces.ReadOnlySignedBeaconBlock {
 	base := &ethpb.BeaconBlockBellatrix{}
 	require.NoError(t, base.UnmarshalSSZ(raw))
-	blk, err := blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockBellatrix{Block: base, Signature: make([]byte, fieldparams.BLSSignatureLength)})
+	blk, err := blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockBellatrix{Block: base, Signature: make([]byte, dilithium2.CryptoBytes)})
 	require.NoError(t, err)
 	return blk
 }
@@ -232,7 +232,7 @@ func unmarshalCapellaState(t *testing.T, raw []byte) state.BeaconState {
 func unmarshalCapellaBlock(t *testing.T, raw []byte) interfaces.ReadOnlySignedBeaconBlock {
 	base := &ethpb.BeaconBlockCapella{}
 	require.NoError(t, base.UnmarshalSSZ(raw))
-	blk, err := blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockCapella{Block: base, Signature: make([]byte, fieldparams.BLSSignatureLength)})
+	blk, err := blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockCapella{Block: base, Signature: make([]byte, dilithium2.CryptoBytes)})
 	require.NoError(t, err)
 	return blk
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/crypto/bls"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/cyyber/qrysm/v4/testing/assert"
@@ -13,7 +12,7 @@ import (
 )
 
 func TestLocalKeymanager_ExtractKeystores(t *testing.T) {
-	secretKeysCache = make(map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey)
+	secretKeysCache = make(map[[dilithium2.CryptoBytes]byte]bls.SecretKey)
 	dr := &Keymanager{}
 	validatingKeys := make([]bls.SecretKey, 10)
 	for i := 0; i < len(validatingKeys); i++ {

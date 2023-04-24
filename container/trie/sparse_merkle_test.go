@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/container/trie"
 	contracts "github.com/cyyber/qrysm/v4/contracts/deposit/mock"
@@ -14,6 +13,7 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestCreateTrieFromProto_Validation(t *testing.T) {
@@ -96,7 +96,7 @@ func TestMarshalDepositWithProof(t *testing.T) {
 	require.Equal(t, len(proof), int(params.BeaconConfig().DepositContractTreeDepth)+1)
 	someRoot := [32]byte{1, 2, 3, 4}
 	someSig := [96]byte{1, 2, 3, 4}
-	someKey := [fieldparams.BLSPubkeyLength]byte{1, 2, 3, 4}
+	someKey := [dilithium2.CryptoPublicKeyBytes]byte{1, 2, 3, 4}
 	dep := &ethpb.Deposit{
 		Proof: proof,
 		Data: &ethpb.Deposit_Data{

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/cyyber/qrysm/v4/async/event"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	validatorserviceconfig "github.com/cyyber/qrysm/v4/config/validator/service"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
@@ -17,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func cancelledContext() context.Context {
@@ -206,7 +206,7 @@ func TestKeyReload_ActiveKey(t *testing.T) {
 	km := &mockKeymanager{}
 	v := &testutil.FakeValidator{Km: km}
 	go func() {
-		km.SimulateAccountChanges([][fieldparams.BLSPubkeyLength]byte{testutil.ActiveKey})
+		km.SimulateAccountChanges([][dilithium2.CryptoPublicKeyBytes]byte{testutil.ActiveKey})
 
 		cancel()
 	}()
@@ -222,7 +222,7 @@ func TestKeyReload_NoActiveKey(t *testing.T) {
 	km := &mockKeymanager{}
 	v := &testutil.FakeValidator{Km: km}
 	go func() {
-		km.SimulateAccountChanges(make([][fieldparams.BLSPubkeyLength]byte, 0))
+		km.SimulateAccountChanges(make([][dilithium2.CryptoPublicKeyBytes]byte, 0))
 
 		cancel()
 	}()

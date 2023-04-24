@@ -6,8 +6,7 @@ import (
 	"testing"
 	"time"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/mock"
@@ -19,6 +18,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/tyler-smith/go-bip39"
 	util "github.com/wealdtech/go-eth2-util"
 )
@@ -28,12 +28,12 @@ func TestWaitActivation_ContextCanceled(t *testing.T) {
 	defer ctrl.Finish()
 	validatorClient := validatormock.NewMockValidatorClient(ctrl)
 	beaconClient := validatormock.NewMockBeaconChainClient(ctrl)
-	privKey, err := bls.RandKey()
+	privKey, err := dilithium.RandKey()
 	require.NoError(t, err)
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], privKey.PublicKey().Marshal())
 	km := &mockKeymanager{
-		keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+		keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 			pubKey: privKey,
 		},
 	}
@@ -64,12 +64,12 @@ func TestWaitActivation_StreamSetupFails_AttemptsToReconnect(t *testing.T) {
 	defer ctrl.Finish()
 	validatorClient := validatormock.NewMockValidatorClient(ctrl)
 	beaconClient := validatormock.NewMockBeaconChainClient(ctrl)
-	privKey, err := bls.RandKey()
+	privKey, err := dilithium.RandKey()
 	require.NoError(t, err)
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], privKey.PublicKey().Marshal())
 	km := &mockKeymanager{
-		keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+		keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 			pubKey: privKey,
 		},
 	}
@@ -97,12 +97,12 @@ func TestWaitForActivation_ReceiveErrorFromStream_AttemptsReconnection(t *testin
 	defer ctrl.Finish()
 	validatorClient := validatormock.NewMockValidatorClient(ctrl)
 	beaconClient := validatormock.NewMockBeaconChainClient(ctrl)
-	privKey, err := bls.RandKey()
+	privKey, err := dilithium.RandKey()
 	require.NoError(t, err)
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], privKey.PublicKey().Marshal())
 	km := &mockKeymanager{
-		keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+		keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 			pubKey: privKey,
 		},
 	}
@@ -135,12 +135,12 @@ func TestWaitActivation_LogsActivationEpochOK(t *testing.T) {
 	defer ctrl.Finish()
 	validatorClient := validatormock.NewMockValidatorClient(ctrl)
 	beaconClient := validatormock.NewMockBeaconChainClient(ctrl)
-	privKey, err := bls.RandKey()
+	privKey, err := dilithium.RandKey()
 	require.NoError(t, err)
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], privKey.PublicKey().Marshal())
 	km := &mockKeymanager{
-		keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+		keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 			pubKey: privKey,
 		},
 	}
@@ -173,12 +173,12 @@ func TestWaitForActivation_Exiting(t *testing.T) {
 	defer ctrl.Finish()
 	validatorClient := validatormock.NewMockValidatorClient(ctrl)
 	beaconClient := validatormock.NewMockBeaconChainClient(ctrl)
-	privKey, err := bls.RandKey()
+	privKey, err := dilithium.RandKey()
 	require.NoError(t, err)
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], privKey.PublicKey().Marshal())
 	km := &mockKeymanager{
-		keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+		keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 			pubKey: privKey,
 		},
 	}
@@ -216,12 +216,12 @@ func TestWaitForActivation_RefetchKeys(t *testing.T) {
 	defer ctrl.Finish()
 	validatorClient := validatormock.NewMockValidatorClient(ctrl)
 	beaconClient := validatormock.NewMockBeaconChainClient(ctrl)
-	privKey, err := bls.RandKey()
+	privKey, err := dilithium.RandKey()
 	require.NoError(t, err)
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], privKey.PublicKey().Marshal())
 	km := &mockKeymanager{
-		keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+		keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 			pubKey: privKey,
 		},
 		fetchNoKeys: true,
@@ -244,7 +244,7 @@ func TestWaitForActivation_RefetchKeys(t *testing.T) {
 	clientStream.EXPECT().Recv().Return(
 		resp,
 		nil)
-	assert.NoError(t, v.internalWaitForActivation(context.Background(), make(chan [][fieldparams.BLSPubkeyLength]byte)), "Could not wait for activation")
+	assert.NoError(t, v.internalWaitForActivation(context.Background(), make(chan [][dilithium2.CryptoPublicKeyBytes]byte)), "Could not wait for activation")
 	assert.LogsContain(t, hook, msgNoKeysFetched)
 	assert.LogsContain(t, hook, "Validator activated")
 }
@@ -256,16 +256,16 @@ func TestWaitForActivation_AccountsChanged(t *testing.T) {
 	defer ctrl.Finish()
 
 	t.Run("Imported keymanager", func(t *testing.T) {
-		inactivePrivKey, err := bls.RandKey()
+		inactivePrivKey, err := dilithium.RandKey()
 		require.NoError(t, err)
-		var inactivePubKey [fieldparams.BLSPubkeyLength]byte
+		var inactivePubKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(inactivePubKey[:], inactivePrivKey.PublicKey().Marshal())
-		activePrivKey, err := bls.RandKey()
+		activePrivKey, err := dilithium.RandKey()
 		require.NoError(t, err)
-		var activePubKey [fieldparams.BLSPubkeyLength]byte
+		var activePubKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(activePubKey[:], activePrivKey.PublicKey().Marshal())
 		km := &mockKeymanager{
-			keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+			keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 				inactivePubKey: inactivePrivKey,
 			},
 		}
@@ -310,7 +310,7 @@ func TestWaitForActivation_AccountsChanged(t *testing.T) {
 			// We add the active key into the keymanager and simulate a key refresh.
 			time.Sleep(time.Second * 1)
 			km.keysMap[activePubKey] = activePrivKey
-			km.SimulateAccountChanges(make([][fieldparams.BLSPubkeyLength]byte, 0))
+			km.SimulateAccountChanges(make([][dilithium2.CryptoPublicKeyBytes]byte, 0))
 		}()
 
 		assert.NoError(t, v.WaitForActivation(context.Background(), nil))
@@ -323,12 +323,12 @@ func TestWaitForActivation_AccountsChanged(t *testing.T) {
 		inactivePrivKey, err :=
 			util.PrivateKeyFromSeedAndPath(seed, fmt.Sprintf(derived.ValidatingKeyDerivationPathTemplate, 0))
 		require.NoError(t, err)
-		var inactivePubKey [fieldparams.BLSPubkeyLength]byte
+		var inactivePubKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(inactivePubKey[:], inactivePrivKey.PublicKey().Marshal())
 		activePrivKey, err :=
 			util.PrivateKeyFromSeedAndPath(seed, fmt.Sprintf(derived.ValidatingKeyDerivationPathTemplate, 1))
 		require.NoError(t, err)
-		var activePubKey [fieldparams.BLSPubkeyLength]byte
+		var activePubKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(activePubKey[:], activePrivKey.PublicKey().Marshal())
 		wallet := &walletMock.Wallet{
 			Files:            make(map[string]map[string][]byte),
@@ -382,13 +382,13 @@ func TestWaitForActivation_AccountsChanged(t *testing.T) {
 			nil,
 		)
 
-		channel := make(chan [][fieldparams.BLSPubkeyLength]byte)
+		channel := make(chan [][dilithium2.CryptoPublicKeyBytes]byte)
 		go func() {
 			// We add the active key into the keymanager and simulate a key refresh.
 			time.Sleep(time.Second * 1)
 			err = km.RecoverAccountsFromMnemonic(ctx, constant.TestMnemonic, derived.DefaultMnemonicLanguage, "", 2)
 			require.NoError(t, err)
-			channel <- [][fieldparams.BLSPubkeyLength]byte{}
+			channel <- [][dilithium2.CryptoPublicKeyBytes]byte{}
 		}()
 
 		assert.NoError(t, v.internalWaitForActivation(context.Background(), channel))

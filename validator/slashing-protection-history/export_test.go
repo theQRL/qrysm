@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	dbtest "github.com/cyyber/qrysm/v4/validator/db/testing"
 	"github.com/cyyber/qrysm/v4/validator/slashing-protection-history/format"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestExportStandardProtectionJSON_EmptyGenesisRoot(t *testing.T) {
 	ctx := context.Background()
-	pubKeys := [][fieldparams.BLSPubkeyLength]byte{
+	pubKeys := [][dilithium2.CryptoPublicKeyBytes]byte{
 		{1},
 	}
 	validatorDB := dbtest.SetupDB(t, pubKeys)
@@ -30,7 +30,7 @@ func TestExportStandardProtectionJSON_EmptyGenesisRoot(t *testing.T) {
 
 func Test_getSignedAttestationsByPubKey(t *testing.T) {
 	t.Run("OK", func(t *testing.T) {
-		pubKeys := [][fieldparams.BLSPubkeyLength]byte{
+		pubKeys := [][dilithium2.CryptoPublicKeyBytes]byte{
 			{1},
 		}
 		ctx := context.Background()
@@ -73,7 +73,7 @@ func Test_getSignedAttestationsByPubKey(t *testing.T) {
 		assert.DeepEqual(t, wanted, signedAttestations)
 	})
 	t.Run("old_schema_bug_edge_case_genesis", func(t *testing.T) {
-		pubKeys := [][fieldparams.BLSPubkeyLength]byte{
+		pubKeys := [][dilithium2.CryptoPublicKeyBytes]byte{
 			{1},
 		}
 		ctx := context.Background()
@@ -115,7 +115,7 @@ func Test_getSignedAttestationsByPubKey(t *testing.T) {
 		assert.DeepEqual(t, wanted, signedAttestations)
 	})
 	t.Run("old_schema_bug_edge_case_not_genesis", func(t *testing.T) {
-		pubKeys := [][fieldparams.BLSPubkeyLength]byte{
+		pubKeys := [][dilithium2.CryptoPublicKeyBytes]byte{
 			{1},
 		}
 		ctx := context.Background()
@@ -164,7 +164,7 @@ func Test_getSignedAttestationsByPubKey(t *testing.T) {
 }
 
 func Test_getSignedBlocksByPubKey(t *testing.T) {
-	pubKeys := [][fieldparams.BLSPubkeyLength]byte{
+	pubKeys := [][dilithium2.CryptoPublicKeyBytes]byte{
 		{1},
 	}
 	ctx := context.Background()

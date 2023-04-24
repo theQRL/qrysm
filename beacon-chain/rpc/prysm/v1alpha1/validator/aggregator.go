@@ -5,12 +5,12 @@ import (
 	"context"
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/sirupsen/logrus"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -123,7 +123,7 @@ func (vs *Server) SubmitSignedAggregateSelectionProof(
 		req.SignedAggregateAndProof.Message.Aggregate == nil || req.SignedAggregateAndProof.Message.Aggregate.Data == nil {
 		return nil, status.Error(codes.InvalidArgument, "Signed aggregate request can't be nil")
 	}
-	emptySig := make([]byte, fieldparams.BLSSignatureLength)
+	emptySig := make([]byte, dilithium2.CryptoBytes)
 	if bytes.Equal(req.SignedAggregateAndProof.Signature, emptySig) ||
 		bytes.Equal(req.SignedAggregateAndProof.Message.SelectionProof, emptySig) {
 		return nil, status.Error(codes.InvalidArgument, "Signed signatures can't be zero hashes")

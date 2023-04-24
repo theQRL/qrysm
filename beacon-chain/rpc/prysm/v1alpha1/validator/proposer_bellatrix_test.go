@@ -19,7 +19,7 @@ import (
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/cyyber/qrysm/v4/encoding/ssz"
 	v1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
@@ -29,6 +29,7 @@ import (
 	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestServer_setExecutionData(t *testing.T) {
@@ -79,10 +80,10 @@ func TestServer_setExecutionData(t *testing.T) {
 		blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 		require.NoError(t, err)
 		require.NoError(t, vs.BeaconDB.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{blk.Block().ProposerIndex()},
-			[]*ethpb.ValidatorRegistrationV1{{FeeRecipient: make([]byte, fieldparams.FeeRecipientLength), Pubkey: make([]byte, fieldparams.BLSPubkeyLength)}}))
+			[]*ethpb.ValidatorRegistrationV1{{FeeRecipient: make([]byte, fieldparams.FeeRecipientLength), Pubkey: make([]byte, dilithium2.CryptoPublicKeyBytes)}}))
 		ti, err := slots.ToTime(uint64(time.Now().Unix()), 0)
 		require.NoError(t, err)
-		sk, err := bls.RandKey()
+		sk, err := dilithium.RandKey()
 		require.NoError(t, err)
 		bid := &ethpb.BuilderBidCapella{
 			Header: &v1.ExecutionPayloadHeaderCapella{
@@ -130,10 +131,10 @@ func TestServer_setExecutionData(t *testing.T) {
 		blk, err := blocks.NewSignedBeaconBlock(util.NewBlindedBeaconBlockCapella())
 		require.NoError(t, err)
 		require.NoError(t, vs.BeaconDB.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{blk.Block().ProposerIndex()},
-			[]*ethpb.ValidatorRegistrationV1{{FeeRecipient: make([]byte, fieldparams.FeeRecipientLength), Pubkey: make([]byte, fieldparams.BLSPubkeyLength)}}))
+			[]*ethpb.ValidatorRegistrationV1{{FeeRecipient: make([]byte, fieldparams.FeeRecipientLength), Pubkey: make([]byte, dilithium2.CryptoPublicKeyBytes)}}))
 		ti, err := slots.ToTime(uint64(time.Now().Unix()), 0)
 		require.NoError(t, err)
-		sk, err := bls.RandKey()
+		sk, err := dilithium.RandKey()
 		require.NoError(t, err)
 		wr, err := ssz.WithdrawalSliceRoot(withdrawals, fieldparams.MaxWithdrawalsPerPayload)
 		require.NoError(t, err)
@@ -213,7 +214,7 @@ func TestServer_getPayloadHeader(t *testing.T) {
 	ti, err := slots.ToTime(uint64(time.Now().Unix()), 0)
 	require.NoError(t, err)
 
-	sk, err := bls.RandKey()
+	sk, err := dilithium.RandKey()
 	require.NoError(t, err)
 	bid := &ethpb.BuilderBid{
 		Header: &v1.ExecutionPayloadHeader{
@@ -501,7 +502,7 @@ func TestServer_getBuilderBlock(t *testing.T) {
 }
 
 func TestServer_validateBuilderSignature(t *testing.T) {
-	sk, err := bls.RandKey()
+	sk, err := dilithium.RandKey()
 	require.NoError(t, err)
 	bid := &ethpb.BuilderBid{
 		Header: &v1.ExecutionPayloadHeader{

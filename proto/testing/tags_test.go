@@ -7,14 +7,14 @@ import (
 	"strings"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	pb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestSSZTagSize(t *testing.T) {
-	sigSize := fieldparams.BLSSignatureLength
+	sigSize := dilithium2.CryptoBytes
 	pubKeySize := 48
 	rootSize := 32
 

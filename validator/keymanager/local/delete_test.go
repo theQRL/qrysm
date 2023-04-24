@@ -7,13 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpbservice "github.com/cyyber/qrysm/v4/proto/eth/service"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	mock "github.com/cyyber/qrysm/v4/validator/accounts/testing"
 	"github.com/cyyber/qrysm/v4/validator/keymanager"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 )
 
@@ -42,8 +42,8 @@ func TestLocalKeymanager_DeleteKeystores(t *testing.T) {
 	require.Equal(t, numAccounts, len(accounts))
 
 	t.Run("keys not found", func(t *testing.T) {
-		notFoundPubKey := [fieldparams.BLSPubkeyLength]byte{1, 2, 3}
-		notFoundPubKey2 := [fieldparams.BLSPubkeyLength]byte{4, 5, 6}
+		notFoundPubKey := [dilithium2.CryptoPublicKeyBytes]byte{1, 2, 3}
+		notFoundPubKey2 := [dilithium2.CryptoPublicKeyBytes]byte{4, 5, 6}
 		statuses, err := dr.DeleteKeystores(ctx, [][]byte{notFoundPubKey[:], notFoundPubKey2[:]})
 		require.NoError(t, err)
 		require.Equal(t, 2, len(statuses))
@@ -79,7 +79,7 @@ func TestLocalKeymanager_DeleteKeystores(t *testing.T) {
 		require.NoError(t, json.Unmarshal(encodedAccounts, store))
 
 		require.Equal(t, numAccounts-1, len(store.PublicKeys))
-		require.Equal(t, numAccounts-1, len(store.PrivateKeys))
+		require.Equal(t, numAccounts-1, len(store.Seeds))
 		require.LogsContain(t, hook, fmt.Sprintf("%#x", bytesutil.Trunc(accountPubKey[:])))
 		require.LogsContain(t, hook, "Successfully deleted validator key(s)")
 	})
@@ -123,7 +123,7 @@ func TestLocalKeymanager_DeleteKeystores(t *testing.T) {
 		require.NoError(t, json.Unmarshal(encodedAccounts, store))
 
 		require.Equal(t, numAccounts-2, len(store.PublicKeys))
-		require.Equal(t, numAccounts-2, len(store.PrivateKeys))
+		require.Equal(t, numAccounts-2, len(store.Seeds))
 		require.LogsContain(t, hook, fmt.Sprintf("%#x", bytesutil.Trunc(accountPubKey[:])))
 		require.LogsContain(t, hook, "Successfully deleted validator key(s)")
 	})

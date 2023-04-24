@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/cyyber/qrysm/v4/cmd/validator/flags"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	validatorserviceconfig "github.com/cyyber/qrysm/v4/config/validator/service"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
@@ -23,6 +22,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/urfave/cli/v2"
 )
 
@@ -76,11 +76,11 @@ func TestClearDB(t *testing.T) {
 func TestWeb3SignerConfig(t *testing.T) {
 	pubkey1decoded, err := hexutil.Decode("0xa99a76ed7796f7be22d5b7e85deeb7c5677e88e511e0b337618f8c4eb61349b4bf2d153f649f7b53359fe8b94a38e44c")
 	require.NoError(t, err)
-	bytepubkey1 := bytesutil.ToBytes48(pubkey1decoded)
+	bytepubkey1 := bytesutil.ToBytes2592(pubkey1decoded)
 
 	pubkey2decoded, err := hexutil.Decode("0xb89bebc699769726a318c8e9971bd3171297c61aea4a6578a7a4f94b547dcba5bac16a89108b6b6a1fe3695d1a874a0b")
 	require.NoError(t, err)
-	bytepubkey2 := bytesutil.ToBytes48(pubkey2decoded)
+	bytepubkey2 := bytesutil.ToBytes2592(pubkey2decoded)
 
 	type args struct {
 		baseURL          string
@@ -103,7 +103,7 @@ func TestWeb3SignerConfig(t *testing.T) {
 				BaseEndpoint:          "http://localhost:8545",
 				GenesisValidatorsRoot: nil,
 				PublicKeysURL:         "",
-				ProvidedPublicKeys: [][48]byte{
+				ProvidedPublicKeys: [][dilithium2.CryptoPublicKeyBytes]byte{
 					bytepubkey1,
 					bytepubkey2,
 				},
@@ -240,8 +240,8 @@ func TestProposerSettings(t *testing.T) {
 				key1, err := hexutil.Decode("0xa057816155ad77931185101128655c0191bd0214c201ca48ed887f6c4c6adf334070efcd75140eada5ac83a92506dd7a")
 				require.NoError(t, err)
 				return &validatorserviceconfig.ProposerSettings{
-					ProposeConfig: map[[fieldparams.BLSPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
-						bytesutil.ToBytes48(key1): {
+					ProposeConfig: map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption{
+						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
 								FeeRecipient: common.HexToAddress("0xae967917c465db8578ca9024c205720b1a3651A9"),
 							},
@@ -272,8 +272,8 @@ func TestProposerSettings(t *testing.T) {
 				key2, err := hexutil.Decode("0xb057816155ad77931185101128655c0191bd0214c201ca48ed887f6c4c6adf334070efcd75140eada5ac83a92506dd7b")
 				require.NoError(t, err)
 				return &validatorserviceconfig.ProposerSettings{
-					ProposeConfig: map[[fieldparams.BLSPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
-						bytesutil.ToBytes48(key1): {
+					ProposeConfig: map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption{
+						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
 								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
 							},
@@ -282,7 +282,7 @@ func TestProposerSettings(t *testing.T) {
 								GasLimit: validatorserviceconfig.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
 							},
 						},
-						bytesutil.ToBytes48(key2): {
+						bytesutil.ToBytes2592(key2): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
 								FeeRecipient: common.HexToAddress("0x60155530FCE8a85ec7055A5F8b2bE214B3DaeFd4"),
 							},
@@ -318,8 +318,8 @@ func TestProposerSettings(t *testing.T) {
 				key1, err := hexutil.Decode("0xa057816155ad77931185101128655c0191bd0214c201ca48ed887f6c4c6adf334070efcd75140eada5ac83a92506dd7a")
 				require.NoError(t, err)
 				return &validatorserviceconfig.ProposerSettings{
-					ProposeConfig: map[[fieldparams.BLSPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
-						bytesutil.ToBytes48(key1): {
+					ProposeConfig: map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption{
+						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
 								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
 							},
@@ -347,8 +347,8 @@ func TestProposerSettings(t *testing.T) {
 				key1, err := hexutil.Decode("0xa057816155ad77931185101128655c0191bd0214c201ca48ed887f6c4c6adf334070efcd75140eada5ac83a92506dd7a")
 				require.NoError(t, err)
 				return &validatorserviceconfig.ProposerSettings{
-					ProposeConfig: map[[fieldparams.BLSPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
-						bytesutil.ToBytes48(key1): {
+					ProposeConfig: map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption{
+						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
 								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
 							},
@@ -458,8 +458,8 @@ func TestProposerSettings(t *testing.T) {
 				key1, err := hexutil.Decode("0xa057816155ad77931185101128655c0191bd0214c201ca48ed887f6c4c6adf334070efcd75140eada5ac83a92506dd7a")
 				require.NoError(t, err)
 				return &validatorserviceconfig.ProposerSettings{
-					ProposeConfig: map[[fieldparams.BLSPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
-						bytesutil.ToBytes48(key1): {
+					ProposeConfig: map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption{
+						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
 								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
 							},
@@ -487,8 +487,8 @@ func TestProposerSettings(t *testing.T) {
 				key1, err := hexutil.Decode("0xa057816155ad77931185101128655c0191bd0214c201ca48ed887f6c4c6adf334070efcd75140eada5ac83a92506dd7a")
 				require.NoError(t, err)
 				return &validatorserviceconfig.ProposerSettings{
-					ProposeConfig: map[[fieldparams.BLSPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
-						bytesutil.ToBytes48(key1): {
+					ProposeConfig: map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption{
+						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
 								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
 							},
@@ -525,8 +525,8 @@ func TestProposerSettings(t *testing.T) {
 				key1, err := hexutil.Decode("0xa057816155ad77931185101128655c0191bd0214c201ca48ed887f6c4c6adf334070efcd75140eada5ac83a92506dd7a")
 				require.NoError(t, err)
 				return &validatorserviceconfig.ProposerSettings{
-					ProposeConfig: map[[fieldparams.BLSPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
-						bytesutil.ToBytes48(key1): {
+					ProposeConfig: map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption{
+						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
 								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
 							},
@@ -562,8 +562,8 @@ func TestProposerSettings(t *testing.T) {
 				key1, err := hexutil.Decode("0xa057816155ad77931185101128655c0191bd0214c201ca48ed887f6c4c6adf334070efcd75140eada5ac83a92506dd7a")
 				require.NoError(t, err)
 				return &validatorserviceconfig.ProposerSettings{
-					ProposeConfig: map[[fieldparams.BLSPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
-						bytesutil.ToBytes48(key1): {
+					ProposeConfig: map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption{
+						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
 								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
 							},

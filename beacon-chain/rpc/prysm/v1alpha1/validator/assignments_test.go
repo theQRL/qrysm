@@ -28,11 +28,12 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/golang/mock/gomock"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // pubKey is a helper to generate a well-formed public key.
 func pubKey(i uint64) []byte {
-	pubKey := make([]byte, params.BeaconConfig().BLSPubkeyLength)
+	pubKey := make([]byte, dilithium2.CryptoSecretKeyBytes)
 	binary.LittleEndian.PutUint64(pubKey, i)
 	return pubKey
 }
@@ -135,9 +136,9 @@ func TestGetAltairDuties_SyncCommitteeOK(t *testing.T) {
 	require.NoError(t, bs.SetSlot(params.BeaconConfig().SlotsPerEpoch*primitives.Slot(params.BeaconConfig().EpochsPerSyncCommitteePeriod)-1))
 	require.NoError(t, helpers.UpdateSyncCommitteeCache(bs))
 
-	pubkeysAs48ByteType := make([][fieldparams.BLSPubkeyLength]byte, len(pubKeys))
+	pubkeysAs48ByteType := make([][dilithium2.CryptoPublicKeyBytes]byte, len(pubKeys))
 	for i, pk := range pubKeys {
-		pubkeysAs48ByteType[i] = bytesutil.ToBytes48(pk)
+		pubkeysAs48ByteType[i] = bytesutil.ToBytes2592(pk)
 	}
 
 	slot := uint64(params.BeaconConfig().SlotsPerEpoch) * uint64(params.BeaconConfig().EpochsPerSyncCommitteePeriod) * params.BeaconConfig().SecondsPerSlot
@@ -241,9 +242,9 @@ func TestGetBellatrixDuties_SyncCommitteeOK(t *testing.T) {
 	bs, err = execution.UpgradeToBellatrix(bs)
 	require.NoError(t, err)
 
-	pubkeysAs48ByteType := make([][fieldparams.BLSPubkeyLength]byte, len(pubKeys))
+	pubkeysAs48ByteType := make([][dilithium2.CryptoPublicKeyBytes]byte, len(pubKeys))
 	for i, pk := range pubKeys {
-		pubkeysAs48ByteType[i] = bytesutil.ToBytes48(pk)
+		pubkeysAs48ByteType[i] = bytesutil.ToBytes2592(pk)
 	}
 
 	slot := uint64(params.BeaconConfig().SlotsPerEpoch) * uint64(params.BeaconConfig().EpochsPerSyncCommitteePeriod) * params.BeaconConfig().SecondsPerSlot
@@ -390,10 +391,10 @@ func TestGetDuties_CurrentEpoch_ShouldNotFail(t *testing.T) {
 	genesisRoot, err := genesis.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
-	pubKeys := make([][fieldparams.BLSPubkeyLength]byte, len(deposits))
+	pubKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, len(deposits))
 	indices := make([]uint64, len(deposits))
 	for i := 0; i < len(deposits); i++ {
-		pubKeys[i] = bytesutil.ToBytes48(deposits[i].Data.PublicKey)
+		pubKeys[i] = bytesutil.ToBytes2592(deposits[i].Data.PublicKey)
 		indices[i] = uint64(i)
 	}
 
@@ -429,10 +430,10 @@ func TestGetDuties_MultipleKeys_OK(t *testing.T) {
 	genesisRoot, err := genesis.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
-	pubKeys := make([][fieldparams.BLSPubkeyLength]byte, len(deposits))
+	pubKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, len(deposits))
 	indices := make([]uint64, len(deposits))
 	for i := 0; i < len(deposits); i++ {
-		pubKeys[i] = bytesutil.ToBytes48(deposits[i].Data.PublicKey)
+		pubKeys[i] = bytesutil.ToBytes2592(deposits[i].Data.PublicKey)
 		indices[i] = uint64(i)
 	}
 
@@ -497,9 +498,9 @@ func TestStreamDuties_OK(t *testing.T) {
 		indices[i] = uint64(i)
 	}
 
-	pubkeysAs48ByteType := make([][fieldparams.BLSPubkeyLength]byte, len(pubKeys))
+	pubkeysAs48ByteType := make([][dilithium2.CryptoPublicKeyBytes]byte, len(pubKeys))
 	for i, pk := range pubKeys {
-		pubkeysAs48ByteType[i] = bytesutil.ToBytes48(pk)
+		pubkeysAs48ByteType[i] = bytesutil.ToBytes2592(pk)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -555,9 +556,9 @@ func TestStreamDuties_OK_ChainReorg(t *testing.T) {
 		indices[i] = uint64(i)
 	}
 
-	pubkeysAs48ByteType := make([][fieldparams.BLSPubkeyLength]byte, len(pubKeys))
+	pubkeysAs48ByteType := make([][dilithium2.CryptoPublicKeyBytes]byte, len(pubKeys))
 	for i, pk := range pubKeys {
-		pubkeysAs48ByteType[i] = bytesutil.ToBytes48(pk)
+		pubkeysAs48ByteType[i] = bytesutil.ToBytes2592(pk)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -654,10 +655,10 @@ func BenchmarkCommitteeAssignment(b *testing.B) {
 	genesisRoot, err := genesis.Block.HashTreeRoot()
 	require.NoError(b, err, "Could not get signing root")
 
-	pubKeys := make([][fieldparams.BLSPubkeyLength]byte, len(deposits))
+	pubKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, len(deposits))
 	indices := make([]uint64, len(deposits))
 	for i := 0; i < len(deposits); i++ {
-		pubKeys[i] = bytesutil.ToBytes48(deposits[i].Data.PublicKey)
+		pubKeys[i] = bytesutil.ToBytes2592(deposits[i].Data.PublicKey)
 		indices[i] = uint64(i)
 	}
 

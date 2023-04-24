@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	statenative "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestReadOnlyValidator_ReturnsErrorOnNil(t *testing.T) {
@@ -53,7 +53,7 @@ func TestReadOnlyValidator_ExitEpoch(t *testing.T) {
 }
 
 func TestReadOnlyValidator_PublicKey(t *testing.T) {
-	key := [fieldparams.BLSPubkeyLength]byte{0xFA, 0xCC}
+	key := [dilithium2.CryptoPublicKeyBytes]byte{0xFA, 0xCC}
 	v, err := statenative.NewValidator(&ethpb.Validator{PublicKey: key[:]})
 	require.NoError(t, err)
 	assert.Equal(t, key, v.PublicKey())

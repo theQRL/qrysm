@@ -6,14 +6,14 @@ import (
 	"strings"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	mock "github.com/cyyber/qrysm/v4/validator/accounts/testing"
 	"github.com/cyyber/qrysm/v4/validator/keymanager"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 )
 
@@ -29,14 +29,14 @@ func TestLocalKeymanager_FetchValidatingPublicKeys(t *testing.T) {
 	// First, generate accounts and their keystore.json files.
 	ctx := context.Background()
 	numAccounts := 10
-	wantedPubKeys := make([][fieldparams.BLSPubkeyLength]byte, 0)
+	wantedPubKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, 0)
 	for i := 0; i < numAccounts; i++ {
-		privKey, err := bls.RandKey()
+		privKey, err := dilithium.RandKey()
 		require.NoError(t, err)
-		pubKey := bytesutil.ToBytes48(privKey.PublicKey().Marshal())
+		pubKey := bytesutil.ToBytes2592(privKey.PublicKey().Marshal())
 		wantedPubKeys = append(wantedPubKeys, pubKey)
 		dr.accountsStore.PublicKeys = append(dr.accountsStore.PublicKeys, pubKey[:])
-		dr.accountsStore.PrivateKeys = append(dr.accountsStore.PrivateKeys, privKey.Marshal())
+		dr.accountsStore.Seeds = append(dr.accountsStore.Seeds, privKey.Marshal())
 	}
 	require.NoError(t, dr.initializeKeysCachesFromKeystore())
 	publicKeys, err := dr.FetchValidatingPublicKeys(ctx)
@@ -63,13 +63,13 @@ func TestLocalKeymanager_FetchValidatingPrivateKeys(t *testing.T) {
 	numAccounts := 10
 	wantedPrivateKeys := make([][32]byte, numAccounts)
 	for i := 0; i < numAccounts; i++ {
-		privKey, err := bls.RandKey()
+		privKey, err := dilithium.RandKey()
 		require.NoError(t, err)
 		privKeyData := privKey.Marshal()
 		pubKey := bytesutil.ToBytes48(privKey.PublicKey().Marshal())
 		wantedPrivateKeys[i] = bytesutil.ToBytes32(privKeyData)
 		dr.accountsStore.PublicKeys = append(dr.accountsStore.PublicKeys, pubKey[:])
-		dr.accountsStore.PrivateKeys = append(dr.accountsStore.PrivateKeys, privKeyData)
+		dr.accountsStore.Seeds = append(dr.accountsStore.Seeds, privKeyData)
 	}
 	require.NoError(t, dr.initializeKeysCachesFromKeystore())
 	privateKeys, err := dr.FetchValidatingPrivateKeys(ctx)
@@ -122,7 +122,7 @@ func TestLocalKeymanager_Sign(t *testing.T) {
 	require.NoError(t, err)
 	store := &accountStore{}
 	require.NoError(t, json.Unmarshal(enc, store))
-	require.Equal(t, len(store.PublicKeys), len(store.PrivateKeys))
+	require.Equal(t, len(store.PublicKeys), len(store.Seeds))
 	require.NotEqual(t, 0, len(store.PublicKeys))
 	dr.accountsStore = store
 	require.NoError(t, dr.initializeKeysCachesFromKeystore())
@@ -138,9 +138,9 @@ func TestLocalKeymanager_Sign(t *testing.T) {
 	}
 	sig, err := dr.Sign(ctx, signRequest)
 	require.NoError(t, err)
-	pubKey, err := bls.PublicKeyFromBytes(publicKeys[0][:])
+	pubKey, err := dilithium.PublicKeyFromBytes(publicKeys[0][:])
 	require.NoError(t, err)
-	wrongPubKey, err := bls.PublicKeyFromBytes(publicKeys[1][:])
+	wrongPubKey, err := dilithium.PublicKeyFromBytes(publicKeys[1][:])
 	require.NoError(t, err)
 	if !sig.Verify(pubKey, data) {
 		t.Fatalf("Expected sig to verify for pubkey %#x and data %v", pubKey.Marshal(), data)
@@ -163,7 +163,7 @@ func TestLocalKeymanager_Sign_NoPublicKeyInCache(t *testing.T) {
 	req := &validatorpb.SignRequest{
 		PublicKey: []byte("hello world"),
 	}
-	secretKeysCache = make(map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey)
+	dilithiumKeysCache = make(map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey)
 	dr := &Keymanager{}
 	_, err := dr.Sign(context.Background(), req)
 	assert.ErrorContains(t, "no signing key found in keys cache", err)

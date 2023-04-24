@@ -3,10 +3,10 @@ package cache
 import (
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestSubnetIDsCache_RoundTrip(t *testing.T) {
@@ -47,12 +47,12 @@ func TestSubnetIDsCache_PersistentCommitteeRoundtrip(t *testing.T) {
 	c := newSubnetIDs()
 
 	for i := 0; i < 20; i++ {
-		pubkey := [fieldparams.BLSPubkeyLength]byte{byte(i)}
+		pubkey := [dilithium2.CryptoPublicKeyBytes]byte{byte(i)}
 		c.AddPersistentCommittee(pubkey[:], []uint64{uint64(i)}, 0)
 	}
 
 	for i := uint64(0); i < 20; i++ {
-		pubkey := [fieldparams.BLSPubkeyLength]byte{byte(i)}
+		pubkey := [dilithium2.CryptoPublicKeyBytes]byte{byte(i)}
 
 		idxs, ok, _ := c.GetPersistentSubnets(pubkey[:])
 		if !ok {

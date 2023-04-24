@@ -36,7 +36,7 @@ import (
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/cyyber/qrysm/v4/encoding/ssz"
 	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
@@ -51,6 +51,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/go-bitfield"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -883,18 +884,18 @@ func TestProduceBlockV2(t *testing.T) {
 
 		syncCommitteeIndices, err := altair.NextSyncCommitteeIndices(context.Background(), beaconState)
 		require.NoError(t, err)
-		sigs := make([]bls.Signature, 0, len(syncCommitteeIndices))
+		sigs := make([]dilithium.Signature, 0, len(syncCommitteeIndices))
 		for i, indice := range syncCommitteeIndices {
 			if aggregationBits.BitAt(uint64(i)) {
 				b := p2pType.SSZBytes(parentRoot[:])
 				sb, err := signing.ComputeDomainAndSign(beaconState, coreTime.CurrentEpoch(beaconState), &b, params.BeaconConfig().DomainSyncCommittee, privKeys[indice])
 				require.NoError(t, err)
-				sig, err := bls.SignatureFromBytes(sb)
+				sig, err := dilithium.SignatureFromBytes(sb)
 				require.NoError(t, err)
 				sigs = append(sigs, sig)
 			}
 		}
-		aggregatedSig := bls.AggregateSignatures(sigs).Marshal()
+		aggregatedSig := dilithium.AggregateSignatures(sigs).Marshal()
 		contribution := &ethpbalpha.SyncCommitteeContribution{
 			Slot:              0,
 			BlockRoot:         parentRoot[:],
@@ -1085,18 +1086,18 @@ func TestProduceBlockV2(t *testing.T) {
 
 		syncCommitteeIndices, err := altair.NextSyncCommitteeIndices(context.Background(), beaconState)
 		require.NoError(t, err)
-		sigs := make([]bls.Signature, 0, len(syncCommitteeIndices))
+		sigs := make([]dilithium.Signature, 0, len(syncCommitteeIndices))
 		for i, indice := range syncCommitteeIndices {
 			if aggregationBits.BitAt(uint64(i)) {
 				b := p2pType.SSZBytes(parentRoot[:])
 				sb, err := signing.ComputeDomainAndSign(beaconState, coreTime.CurrentEpoch(beaconState), &b, params.BeaconConfig().DomainSyncCommittee, privKeys[indice])
 				require.NoError(t, err)
-				sig, err := bls.SignatureFromBytes(sb)
+				sig, err := dilithium.SignatureFromBytes(sb)
 				require.NoError(t, err)
 				sigs = append(sigs, sig)
 			}
 		}
-		aggregatedSig := bls.AggregateSignatures(sigs).Marshal()
+		aggregatedSig := dilithium.AggregateSignatures(sigs).Marshal()
 		contribution := &ethpbalpha.SyncCommitteeContribution{
 			Slot:              params.BeaconConfig().SlotsPerEpoch,
 			BlockRoot:         parentRoot[:],
@@ -1120,7 +1121,7 @@ func TestProduceBlockV2(t *testing.T) {
 		}
 		v1Server.V1Alpha1Server.BeaconDB = db
 		require.NoError(t, v1Alpha1Server.BeaconDB.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{348},
-			[]*ethpbalpha.ValidatorRegistrationV1{{FeeRecipient: bytesutil.PadTo([]byte{}, fieldparams.FeeRecipientLength), Pubkey: bytesutil.PadTo([]byte{}, fieldparams.BLSPubkeyLength)}}))
+			[]*ethpbalpha.ValidatorRegistrationV1{{FeeRecipient: bytesutil.PadTo([]byte{}, fieldparams.FeeRecipientLength), Pubkey: bytesutil.PadTo([]byte{}, dilithium2.CryptoPublicKeyBytes)}}))
 
 		resp, err := v1Server.ProduceBlockV2(ctx, req)
 		require.NoError(t, err)
@@ -1329,18 +1330,18 @@ func TestProduceBlockV2(t *testing.T) {
 
 		syncCommitteeIndices, err := altair.NextSyncCommitteeIndices(context.Background(), beaconState)
 		require.NoError(t, err)
-		sigs := make([]bls.Signature, 0, len(syncCommitteeIndices))
+		sigs := make([]dilithium.Signature, 0, len(syncCommitteeIndices))
 		for i, indice := range syncCommitteeIndices {
 			if aggregationBits.BitAt(uint64(i)) {
 				b := p2pType.SSZBytes(parentRoot[:])
 				sb, err := signing.ComputeDomainAndSign(beaconState, coreTime.CurrentEpoch(beaconState), &b, params.BeaconConfig().DomainSyncCommittee, privKeys[indice])
 				require.NoError(t, err)
-				sig, err := bls.SignatureFromBytes(sb)
+				sig, err := dilithium.SignatureFromBytes(sb)
 				require.NoError(t, err)
 				sigs = append(sigs, sig)
 			}
 		}
-		aggregatedSig := bls.AggregateSignatures(sigs).Marshal()
+		aggregatedSig := dilithium.AggregateSignatures(sigs).Marshal()
 		contribution := &ethpbalpha.SyncCommitteeContribution{
 			Slot:              params.BeaconConfig().SlotsPerEpoch * 2,
 			BlockRoot:         parentRoot[:],
@@ -1364,7 +1365,7 @@ func TestProduceBlockV2(t *testing.T) {
 		}
 		v1Server.V1Alpha1Server.BeaconDB = db
 		require.NoError(t, v1Alpha1Server.BeaconDB.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{348},
-			[]*ethpbalpha.ValidatorRegistrationV1{{FeeRecipient: bytesutil.PadTo([]byte{}, fieldparams.FeeRecipientLength), Pubkey: bytesutil.PadTo([]byte{}, fieldparams.BLSPubkeyLength)}}))
+			[]*ethpbalpha.ValidatorRegistrationV1{{FeeRecipient: bytesutil.PadTo([]byte{}, fieldparams.FeeRecipientLength), Pubkey: bytesutil.PadTo([]byte{}, dilithium2.CryptoPublicKeyBytes)}}))
 
 		resp, err := v1Server.ProduceBlockV2(ctx, req)
 		require.NoError(t, err)
@@ -1623,18 +1624,18 @@ func TestProduceBlockV2SSZ(t *testing.T) {
 
 		syncCommitteeIndices, err := altair.NextSyncCommitteeIndices(context.Background(), bs)
 		require.NoError(t, err)
-		sigs := make([]bls.Signature, 0, len(syncCommitteeIndices))
+		sigs := make([]dilithium.Signature, 0, len(syncCommitteeIndices))
 		for i, indice := range syncCommitteeIndices {
 			if aggregationBits.BitAt(uint64(i)) {
 				b := p2pType.SSZBytes(parentRoot[:])
 				sb, err := signing.ComputeDomainAndSign(bs, coreTime.CurrentEpoch(bs), &b, params.BeaconConfig().DomainSyncCommittee, privKeys[indice])
 				require.NoError(t, err)
-				sig, err := bls.SignatureFromBytes(sb)
+				sig, err := dilithium.SignatureFromBytes(sb)
 				require.NoError(t, err)
 				sigs = append(sigs, sig)
 			}
 		}
-		aggregatedSig := bls.AggregateSignatures(sigs).Marshal()
+		aggregatedSig := dilithium.AggregateSignatures(sigs).Marshal()
 		contribution := &ethpbalpha.SyncCommitteeContribution{
 			Slot:              0,
 			BlockRoot:         parentRoot[:],
@@ -1833,18 +1834,18 @@ func TestProduceBlockV2SSZ(t *testing.T) {
 
 		syncCommitteeIndices, err := altair.NextSyncCommitteeIndices(context.Background(), bs)
 		require.NoError(t, err)
-		sigs := make([]bls.Signature, 0, len(syncCommitteeIndices))
+		sigs := make([]dilithium.Signature, 0, len(syncCommitteeIndices))
 		for i, indice := range syncCommitteeIndices {
 			if aggregationBits.BitAt(uint64(i)) {
 				b := p2pType.SSZBytes(parentRoot[:])
 				sb, err := signing.ComputeDomainAndSign(bs, coreTime.CurrentEpoch(bs), &b, params.BeaconConfig().DomainSyncCommittee, privKeys[indice])
 				require.NoError(t, err)
-				sig, err := bls.SignatureFromBytes(sb)
+				sig, err := dilithium.SignatureFromBytes(sb)
 				require.NoError(t, err)
 				sigs = append(sigs, sig)
 			}
 		}
-		aggregatedSig := bls.AggregateSignatures(sigs).Marshal()
+		aggregatedSig := dilithium.AggregateSignatures(sigs).Marshal()
 		contribution := &ethpbalpha.SyncCommitteeContribution{
 			Slot:              params.BeaconConfig().SlotsPerEpoch,
 			BlockRoot:         parentRoot[:],
@@ -1869,7 +1870,7 @@ func TestProduceBlockV2SSZ(t *testing.T) {
 		}
 		v1Server.V1Alpha1Server.BeaconDB = db
 		require.NoError(t, v1Alpha1Server.BeaconDB.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{348},
-			[]*ethpbalpha.ValidatorRegistrationV1{{FeeRecipient: bytesutil.PadTo([]byte{}, fieldparams.FeeRecipientLength), Pubkey: bytesutil.PadTo([]byte{}, fieldparams.BLSPubkeyLength)}}))
+			[]*ethpbalpha.ValidatorRegistrationV1{{FeeRecipient: bytesutil.PadTo([]byte{}, fieldparams.FeeRecipientLength), Pubkey: bytesutil.PadTo([]byte{}, dilithium2.CryptoPublicKeyBytes)}}))
 
 		resp, err := v1Server.ProduceBlockV2SSZ(ctx, req)
 		require.NoError(t, err)
@@ -2078,18 +2079,18 @@ func TestProduceBlockV2SSZ(t *testing.T) {
 
 		syncCommitteeIndices, err := altair.NextSyncCommitteeIndices(context.Background(), bs)
 		require.NoError(t, err)
-		sigs := make([]bls.Signature, 0, len(syncCommitteeIndices))
+		sigs := make([]dilithium.Signature, 0, len(syncCommitteeIndices))
 		for i, indice := range syncCommitteeIndices {
 			if aggregationBits.BitAt(uint64(i)) {
 				b := p2pType.SSZBytes(parentRoot[:])
 				sb, err := signing.ComputeDomainAndSign(bs, coreTime.CurrentEpoch(bs), &b, params.BeaconConfig().DomainSyncCommittee, privKeys[indice])
 				require.NoError(t, err)
-				sig, err := bls.SignatureFromBytes(sb)
+				sig, err := dilithium.SignatureFromBytes(sb)
 				require.NoError(t, err)
 				sigs = append(sigs, sig)
 			}
 		}
-		aggregatedSig := bls.AggregateSignatures(sigs).Marshal()
+		aggregatedSig := dilithium.AggregateSignatures(sigs).Marshal()
 		contribution := &ethpbalpha.SyncCommitteeContribution{
 			Slot:              params.BeaconConfig().SlotsPerEpoch * 2,
 			BlockRoot:         parentRoot[:],
@@ -2114,7 +2115,7 @@ func TestProduceBlockV2SSZ(t *testing.T) {
 		}
 		v1Server.V1Alpha1Server.BeaconDB = db
 		require.NoError(t, v1Alpha1Server.BeaconDB.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{348},
-			[]*ethpbalpha.ValidatorRegistrationV1{{FeeRecipient: bytesutil.PadTo([]byte{}, fieldparams.FeeRecipientLength), Pubkey: bytesutil.PadTo([]byte{}, fieldparams.BLSPubkeyLength)}}))
+			[]*ethpbalpha.ValidatorRegistrationV1{{FeeRecipient: bytesutil.PadTo([]byte{}, fieldparams.FeeRecipientLength), Pubkey: bytesutil.PadTo([]byte{}, dilithium2.CryptoPublicKeyBytes)}}))
 
 		resp, err := v1Server.ProduceBlockV2SSZ(ctx, req)
 		require.NoError(t, err)
@@ -2416,18 +2417,18 @@ func TestProduceBlindedBlock(t *testing.T) {
 
 		syncCommitteeIndices, err := altair.NextSyncCommitteeIndices(context.Background(), beaconState)
 		require.NoError(t, err)
-		sigs := make([]bls.Signature, 0, len(syncCommitteeIndices))
+		sigs := make([]dilithium.Signature, 0, len(syncCommitteeIndices))
 		for i, indice := range syncCommitteeIndices {
 			if aggregationBits.BitAt(uint64(i)) {
 				b := p2pType.SSZBytes(parentRoot[:])
 				sb, err := signing.ComputeDomainAndSign(beaconState, coreTime.CurrentEpoch(beaconState), &b, params.BeaconConfig().DomainSyncCommittee, privKeys[indice])
 				require.NoError(t, err)
-				sig, err := bls.SignatureFromBytes(sb)
+				sig, err := dilithium.SignatureFromBytes(sb)
 				require.NoError(t, err)
 				sigs = append(sigs, sig)
 			}
 		}
-		aggregatedSig := bls.AggregateSignatures(sigs).Marshal()
+		aggregatedSig := dilithium.AggregateSignatures(sigs).Marshal()
 		contribution := &ethpbalpha.SyncCommitteeContribution{
 			Slot:              0,
 			BlockRoot:         parentRoot[:],
@@ -2521,7 +2522,7 @@ func TestProduceBlindedBlock(t *testing.T) {
 		r, err := wfb.Block().HashTreeRoot()
 		require.NoError(t, err)
 
-		sk, err := bls.RandKey()
+		sk, err := dilithium.RandKey()
 		require.NoError(t, err)
 
 		require.NoError(t, db.SaveState(ctx, beaconState, parentRoot), "Could not save genesis state")
@@ -2621,18 +2622,18 @@ func TestProduceBlindedBlock(t *testing.T) {
 
 		syncCommitteeIndices, err := altair.NextSyncCommitteeIndices(context.Background(), beaconState)
 		require.NoError(t, err)
-		sigs := make([]bls.Signature, 0, len(syncCommitteeIndices))
+		sigs := make([]dilithium.Signature, 0, len(syncCommitteeIndices))
 		for i, indice := range syncCommitteeIndices {
 			if aggregationBits.BitAt(uint64(i)) {
 				b := p2pType.SSZBytes(parentRoot[:])
 				sb, err := signing.ComputeDomainAndSign(beaconState, coreTime.CurrentEpoch(beaconState), &b, params.BeaconConfig().DomainSyncCommittee, privKeys[indice])
 				require.NoError(t, err)
-				sig, err := bls.SignatureFromBytes(sb)
+				sig, err := dilithium.SignatureFromBytes(sb)
 				require.NoError(t, err)
 				sigs = append(sigs, sig)
 			}
 		}
-		aggregatedSig := bls.AggregateSignatures(sigs).Marshal()
+		aggregatedSig := dilithium.AggregateSignatures(sigs).Marshal()
 		contribution := &ethpbalpha.SyncCommitteeContribution{
 			Slot:              params.BeaconConfig().SlotsPerEpoch,
 			BlockRoot:         parentRoot[:],
@@ -2739,7 +2740,7 @@ func TestProduceBlindedBlock(t *testing.T) {
 		r, err := wfb.Block().HashTreeRoot()
 		require.NoError(t, err)
 
-		sk, err := bls.RandKey()
+		sk, err := dilithium.RandKey()
 		require.NoError(t, err)
 		random, err := helpers.RandaoMix(beaconState, coreTime.CurrentEpoch(beaconState))
 		require.NoError(t, err)
@@ -2845,18 +2846,18 @@ func TestProduceBlindedBlock(t *testing.T) {
 
 		syncCommitteeIndices, err := altair.NextSyncCommitteeIndices(context.Background(), beaconState)
 		require.NoError(t, err)
-		sigs := make([]bls.Signature, 0, len(syncCommitteeIndices))
+		sigs := make([]dilithium.Signature, 0, len(syncCommitteeIndices))
 		for i, indice := range syncCommitteeIndices {
 			if aggregationBits.BitAt(uint64(i)) {
 				b := p2pType.SSZBytes(parentRoot[:])
 				sb, err := signing.ComputeDomainAndSign(beaconState, coreTime.CurrentEpoch(beaconState), &b, params.BeaconConfig().DomainSyncCommittee, privKeys[indice])
 				require.NoError(t, err)
-				sig, err := bls.SignatureFromBytes(sb)
+				sig, err := dilithium.SignatureFromBytes(sb)
 				require.NoError(t, err)
 				sigs = append(sigs, sig)
 			}
 		}
-		aggregatedSig := bls.AggregateSignatures(sigs).Marshal()
+		aggregatedSig := dilithium.AggregateSignatures(sigs).Marshal()
 		contribution := &ethpbalpha.SyncCommitteeContribution{
 			Slot:              params.BeaconConfig().SlotsPerEpoch * 2,
 			BlockRoot:         parentRoot[:],
@@ -3141,18 +3142,18 @@ func TestProduceBlindedBlockSSZ(t *testing.T) {
 
 		syncCommitteeIndices, err := altair.NextSyncCommitteeIndices(context.Background(), bs)
 		require.NoError(t, err)
-		sigs := make([]bls.Signature, 0, len(syncCommitteeIndices))
+		sigs := make([]dilithium.Signature, 0, len(syncCommitteeIndices))
 		for i, indice := range syncCommitteeIndices {
 			if aggregationBits.BitAt(uint64(i)) {
 				b := p2pType.SSZBytes(parentRoot[:])
 				sb, err := signing.ComputeDomainAndSign(bs, coreTime.CurrentEpoch(bs), &b, params.BeaconConfig().DomainSyncCommittee, privKeys[indice])
 				require.NoError(t, err)
-				sig, err := bls.SignatureFromBytes(sb)
+				sig, err := dilithium.SignatureFromBytes(sb)
 				require.NoError(t, err)
 				sigs = append(sigs, sig)
 			}
 		}
-		aggregatedSig := bls.AggregateSignatures(sigs).Marshal()
+		aggregatedSig := dilithium.AggregateSignatures(sigs).Marshal()
 		contribution := &ethpbalpha.SyncCommitteeContribution{
 			Slot:              0,
 			BlockRoot:         parentRoot[:],
@@ -3348,18 +3349,18 @@ func TestProduceBlindedBlockSSZ(t *testing.T) {
 
 		syncCommitteeIndices, err := altair.NextSyncCommitteeIndices(context.Background(), bs)
 		require.NoError(t, err)
-		sigs := make([]bls.Signature, 0, len(syncCommitteeIndices))
+		sigs := make([]dilithium.Signature, 0, len(syncCommitteeIndices))
 		for i, indice := range syncCommitteeIndices {
 			if aggregationBits.BitAt(uint64(i)) {
 				b := p2pType.SSZBytes(parentRoot[:])
 				sb, err := signing.ComputeDomainAndSign(bs, coreTime.CurrentEpoch(bs), &b, params.BeaconConfig().DomainSyncCommittee, privKeys[indice])
 				require.NoError(t, err)
-				sig, err := bls.SignatureFromBytes(sb)
+				sig, err := dilithium.SignatureFromBytes(sb)
 				require.NoError(t, err)
 				sigs = append(sigs, sig)
 			}
 		}
-		aggregatedSig := bls.AggregateSignatures(sigs).Marshal()
+		aggregatedSig := dilithium.AggregateSignatures(sigs).Marshal()
 		contribution := &ethpbalpha.SyncCommitteeContribution{
 			Slot:              params.BeaconConfig().SlotsPerEpoch,
 			BlockRoot:         parentRoot[:],
@@ -3590,18 +3591,18 @@ func TestProduceBlindedBlockSSZ(t *testing.T) {
 
 		syncCommitteeIndices, err := altair.NextSyncCommitteeIndices(context.Background(), bs)
 		require.NoError(t, err)
-		sigs := make([]bls.Signature, 0, len(syncCommitteeIndices))
+		sigs := make([]dilithium.Signature, 0, len(syncCommitteeIndices))
 		for i, indice := range syncCommitteeIndices {
 			if aggregationBits.BitAt(uint64(i)) {
 				b := p2pType.SSZBytes(parentRoot[:])
 				sb, err := signing.ComputeDomainAndSign(bs, coreTime.CurrentEpoch(bs), &b, params.BeaconConfig().DomainSyncCommittee, privKeys[indice])
 				require.NoError(t, err)
-				sig, err := bls.SignatureFromBytes(sb)
+				sig, err := dilithium.SignatureFromBytes(sb)
 				require.NoError(t, err)
 				sigs = append(sigs, sig)
 			}
 		}
-		aggregatedSig := bls.AggregateSignatures(sigs).Marshal()
+		aggregatedSig := dilithium.AggregateSignatures(sigs).Marshal()
 		contribution := &ethpbalpha.SyncCommitteeContribution{
 			Slot:              params.BeaconConfig().SlotsPerEpoch * 2,
 			BlockRoot:         parentRoot[:],
@@ -3626,7 +3627,7 @@ func TestProduceBlindedBlockSSZ(t *testing.T) {
 		}
 		v1Server.V1Alpha1Server.BeaconDB = db
 		require.NoError(t, v1Alpha1Server.BeaconDB.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{348},
-			[]*ethpbalpha.ValidatorRegistrationV1{{FeeRecipient: bytesutil.PadTo([]byte{}, fieldparams.FeeRecipientLength), Pubkey: bytesutil.PadTo([]byte{}, fieldparams.BLSPubkeyLength)}}))
+			[]*ethpbalpha.ValidatorRegistrationV1{{FeeRecipient: bytesutil.PadTo([]byte{}, fieldparams.FeeRecipientLength), Pubkey: bytesutil.PadTo([]byte{}, dilithium2.CryptoPublicKeyBytes)}}))
 
 		resp, err := v1Server.ProduceBlindedBlockSSZ(ctx, req)
 		require.NoError(t, err)
@@ -3841,7 +3842,7 @@ func TestProduceAttestationData(t *testing.T) {
 func TestGetAggregateAttestation(t *testing.T) {
 	ctx := context.Background()
 	root1 := bytesutil.PadTo([]byte("root1"), 32)
-	sig1 := bytesutil.PadTo([]byte("sig1"), fieldparams.BLSSignatureLength)
+	sig1 := bytesutil.PadTo([]byte("sig1"), dilithium2.CryptoBytes)
 	attSlot1 := &ethpbalpha.Attestation{
 		AggregationBits: []byte{0, 1},
 		Data: &ethpbalpha.AttestationData{
@@ -3860,7 +3861,7 @@ func TestGetAggregateAttestation(t *testing.T) {
 		Signature: sig1,
 	}
 	root21 := bytesutil.PadTo([]byte("root2_1"), 32)
-	sig21 := bytesutil.PadTo([]byte("sig2_1"), fieldparams.BLSSignatureLength)
+	sig21 := bytesutil.PadTo([]byte("sig2_1"), dilithium2.CryptoBytes)
 	attslot21 := &ethpbalpha.Attestation{
 		AggregationBits: []byte{0, 1, 1},
 		Data: &ethpbalpha.AttestationData{
@@ -3879,7 +3880,7 @@ func TestGetAggregateAttestation(t *testing.T) {
 		Signature: sig21,
 	}
 	root22 := bytesutil.PadTo([]byte("root2_2"), 32)
-	sig22 := bytesutil.PadTo([]byte("sig2_2"), fieldparams.BLSSignatureLength)
+	sig22 := bytesutil.PadTo([]byte("sig2_2"), dilithium2.CryptoBytes)
 	attslot22 := &ethpbalpha.Attestation{
 		AggregationBits: []byte{0, 1, 1, 1},
 		Data: &ethpbalpha.AttestationData{
@@ -3898,7 +3899,7 @@ func TestGetAggregateAttestation(t *testing.T) {
 		Signature: sig22,
 	}
 	root33 := bytesutil.PadTo([]byte("root3_3"), 32)
-	sig33 := bls.NewAggregateSignature().Marshal()
+	sig33 := dilithium.NewAggregateSignature().Marshal()
 
 	attslot33 := &ethpbalpha.Attestation{
 		AggregationBits: []byte{1, 0, 0, 1},
@@ -3978,7 +3979,7 @@ func TestGetAggregateAttestation(t *testing.T) {
 func TestGetAggregateAttestation_SameSlotAndRoot_ReturnMostAggregationBits(t *testing.T) {
 	ctx := context.Background()
 	root := bytesutil.PadTo([]byte("root"), 32)
-	sig := bytesutil.PadTo([]byte("sig"), fieldparams.BLSSignatureLength)
+	sig := bytesutil.PadTo([]byte("sig"), dilithium2.CryptoBytes)
 	att1 := &ethpbalpha.Attestation{
 		AggregationBits: []byte{3, 0, 0, 1},
 		Data: &ethpbalpha.AttestationData{
@@ -4345,8 +4346,8 @@ func TestSubmitAggregateAndProofs(t *testing.T) {
 	c.MaximumGossipClockDisparity = time.Hour
 	params.OverrideBeaconNetworkConfig(c)
 	root := bytesutil.PadTo([]byte("root"), 32)
-	sig := bytesutil.PadTo([]byte("sig"), fieldparams.BLSSignatureLength)
-	proof := bytesutil.PadTo([]byte("proof"), fieldparams.BLSSignatureLength)
+	sig := bytesutil.PadTo([]byte("sig"), dilithium2.CryptoBytes)
+	proof := bytesutil.PadTo([]byte("proof"), dilithium2.CryptoBytes)
 	att := &ethpbv1.Attestation{
 		AggregationBits: []byte{0, 1},
 		Data: &ethpbv1.AttestationData{
@@ -4621,7 +4622,7 @@ func TestSubmitAggregateAndProofs(t *testing.T) {
 func TestProduceSyncCommitteeContribution(t *testing.T) {
 	ctx := context.Background()
 	root := bytesutil.PadTo([]byte("root"), 32)
-	sig := bls.NewAggregateSignature().Marshal()
+	sig := dilithium.NewAggregateSignature().Marshal()
 	messsage := &ethpbalpha.SyncCommitteeMessage{
 		Slot:           0,
 		BlockRoot:      root,
@@ -4677,7 +4678,7 @@ func TestProduceSyncCommitteeContribution(t *testing.T) {
 
 func TestSubmitContributionAndProofs(t *testing.T) {
 	ctx := context.Background()
-	sig := bls.NewAggregateSignature().Marshal()
+	sig := dilithium.NewAggregateSignature().Marshal()
 	root := bytesutil.PadTo([]byte("root"), 32)
 	proof := bytesutil.PadTo([]byte("proof"), 96)
 	aggBits := bitfield.NewBitvector128()
@@ -4818,7 +4819,7 @@ func TestPrepareBeaconProposer(t *testing.T) {
 				request: &ethpbv1.PrepareBeaconProposerRequest{
 					Recipients: []*ethpbv1.PrepareBeaconProposerRequest_FeeRecipientContainer{
 						{
-							FeeRecipient:   make([]byte, fieldparams.BLSPubkeyLength),
+							FeeRecipient:   make([]byte, dilithium2.CryptoPublicKeyBytes),
 							ValidatorIndex: 1,
 						},
 					},
@@ -4955,12 +4956,12 @@ func TestServer_SubmitValidatorRegistrations(t *testing.T) {
 					Registrations: []*ethpbv1.SubmitValidatorRegistrationsRequest_SignedValidatorRegistration{
 						{
 							Message: &ethpbv1.SubmitValidatorRegistrationsRequest_ValidatorRegistration{
-								FeeRecipient: make([]byte, fieldparams.BLSPubkeyLength),
+								FeeRecipient: make([]byte, dilithium2.CryptoPublicKeyBytes),
 								GasLimit:     30000000,
 								Timestamp:    uint64(time.Now().Unix()),
-								Pubkey:       make([]byte, fieldparams.BLSPubkeyLength),
+								Pubkey:       make([]byte, dilithium2.CryptoPublicKeyBytes),
 							},
-							Signature: make([]byte, fieldparams.BLSSignatureLength),
+							Signature: make([]byte, dilithium2.CryptoBytes),
 						},
 					},
 				},

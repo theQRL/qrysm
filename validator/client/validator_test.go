@@ -13,12 +13,11 @@ import (
 
 	"github.com/cyyber/qrysm/v4/async/event"
 	"github.com/cyyber/qrysm/v4/config/features"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	validatorserviceconfig "github.com/cyyber/qrysm/v4/config/validator/service"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
 	blsmock "github.com/cyyber/qrysm/v4/crypto/bls/common/mock"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpbservice "github.com/cyyber/qrysm/v4/proto/eth/service"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
@@ -40,6 +39,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -55,13 +55,13 @@ var _ iface.Validator = (*validator)(nil)
 const cancelledCtx = "context has been canceled"
 
 func genMockKeymanager(numKeys int) *mockKeymanager {
-	km := make(map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey, numKeys)
+	km := make(map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey, numKeys)
 	for i := 0; i < numKeys; i++ {
-		k, err := bls.RandKey()
+		k, err := dilithium.RandKey()
 		if err != nil {
 			panic(err)
 		}
-		km[bytesutil.ToBytes48(k.PublicKey().Marshal())] = k
+		km[bytesutil.ToBytes2592(k.PublicKey().Marshal())] = k
 	}
 
 	return &mockKeymanager{keysMap: km}
@@ -69,15 +69,15 @@ func genMockKeymanager(numKeys int) *mockKeymanager {
 
 type mockKeymanager struct {
 	lock                sync.RWMutex
-	keysMap             map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey
+	keysMap             map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey
 	fetchNoKeys         bool
 	accountsChangedFeed *event.Feed
 }
 
-func (m *mockKeymanager) FetchValidatingPublicKeys(_ context.Context) ([][fieldparams.BLSPubkeyLength]byte, error) {
+func (m *mockKeymanager) FetchValidatingPublicKeys(_ context.Context) ([][dilithium2.CryptoPublicKeyBytes]byte, error) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
-	keys := make([][fieldparams.BLSPubkeyLength]byte, 0)
+	keys := make([][dilithium2.CryptoPublicKeyBytes]byte, 0)
 	if m.fetchNoKeys {
 		m.fetchNoKeys = false
 		return keys, nil
@@ -88,8 +88,8 @@ func (m *mockKeymanager) FetchValidatingPublicKeys(_ context.Context) ([][fieldp
 	return keys, nil
 }
 
-func (m *mockKeymanager) Sign(_ context.Context, req *validatorpb.SignRequest) (bls.Signature, error) {
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+func (m *mockKeymanager) Sign(_ context.Context, req *validatorpb.SignRequest) (dilithium.Signature, error) {
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], req.PublicKey)
 	privKey, ok := m.keysMap[pubKey]
 	if !ok {
@@ -99,19 +99,19 @@ func (m *mockKeymanager) Sign(_ context.Context, req *validatorpb.SignRequest) (
 	return sig, nil
 }
 
-func (m *mockKeymanager) SubscribeAccountChanges(pubKeysChan chan [][fieldparams.BLSPubkeyLength]byte) event.Subscription {
+func (m *mockKeymanager) SubscribeAccountChanges(pubKeysChan chan [][dilithium2.CryptoPublicKeyBytes]byte) event.Subscription {
 	if m.accountsChangedFeed == nil {
 		m.accountsChangedFeed = &event.Feed{}
 	}
 	return m.accountsChangedFeed.Subscribe(pubKeysChan)
 }
 
-func (m *mockKeymanager) SimulateAccountChanges(newKeys [][fieldparams.BLSPubkeyLength]byte) {
+func (m *mockKeymanager) SimulateAccountChanges(newKeys [][dilithium2.CryptoPublicKeyBytes]byte) {
 	m.accountsChangedFeed.Send(newKeys)
 }
 
 func (*mockKeymanager) ExtractKeystores(
-	_ context.Context, _ []bls.PublicKey, _ string,
+	_ context.Context, _ []dilithium.PublicKey, _ string,
 ) ([]*keymanager.Keystore, error) {
 	return nil, errors.New("extracting keys not supported on mock keymanager")
 }
@@ -144,7 +144,7 @@ func TestWaitForChainStart_SetsGenesisInfo(t *testing.T) {
 	defer ctrl.Finish()
 	client := validatormock.NewMockValidatorClient(ctrl)
 
-	db := dbTest.SetupDB(t, [][fieldparams.BLSPubkeyLength]byte{})
+	db := dbTest.SetupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{})
 	v := validator{
 		validatorClient: client,
 		db:              db,
@@ -190,7 +190,7 @@ func TestWaitForChainStart_SetsGenesisInfo_IncorrectSecondTry(t *testing.T) {
 	defer ctrl.Finish()
 	client := validatormock.NewMockValidatorClient(ctrl)
 
-	db := dbTest.SetupDB(t, [][fieldparams.BLSPubkeyLength]byte{})
+	db := dbTest.SetupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{})
 	v := validator{
 		validatorClient: client,
 		db:              db,
@@ -308,12 +308,12 @@ func TestWaitMultipleActivation_LogsActivationEpochOK(t *testing.T) {
 	defer ctrl.Finish()
 	validatorClient := validatormock.NewMockValidatorClient(ctrl)
 	beaconClient := validatormock.NewMockBeaconChainClient(ctrl)
-	privKey, err := bls.RandKey()
+	privKey, err := dilithium.RandKey()
 	require.NoError(t, err)
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], privKey.PublicKey().Marshal())
 	km := &mockKeymanager{
-		keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+		keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 			pubKey: privKey,
 		},
 	}
@@ -346,12 +346,12 @@ func TestWaitActivation_NotAllValidatorsActivatedOK(t *testing.T) {
 	defer ctrl.Finish()
 	validatorClient := validatormock.NewMockValidatorClient(ctrl)
 	beaconClient := validatormock.NewMockBeaconChainClient(ctrl)
-	privKey, err := bls.RandKey()
+	privKey, err := dilithium.RandKey()
 	require.NoError(t, err)
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], privKey.PublicKey().Marshal())
 	km := &mockKeymanager{
-		keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+		keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 			pubKey: privKey,
 		},
 	}
@@ -469,12 +469,12 @@ func TestUpdateDuties_ReturnsError(t *testing.T) {
 	defer ctrl.Finish()
 	client := validatormock.NewMockValidatorClient(ctrl)
 
-	privKey, err := bls.RandKey()
+	privKey, err := dilithium.RandKey()
 	require.NoError(t, err)
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], privKey.PublicKey().Marshal())
 	km := &mockKeymanager{
-		keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+		keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 			pubKey: privKey,
 		},
 	}
@@ -507,12 +507,12 @@ func TestUpdateDuties_OK(t *testing.T) {
 	client := validatormock.NewMockValidatorClient(ctrl)
 
 	slot := params.BeaconConfig().SlotsPerEpoch
-	privKey, err := bls.RandKey()
+	privKey, err := dilithium.RandKey()
 	require.NoError(t, err)
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], privKey.PublicKey().Marshal())
 	km := &mockKeymanager{
-		keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+		keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 			pubKey: privKey,
 		},
 	}
@@ -567,12 +567,12 @@ func TestUpdateDuties_OK_FilterBlacklistedPublicKeys(t *testing.T) {
 	slot := params.BeaconConfig().SlotsPerEpoch
 
 	numValidators := 10
-	keysMap := make(map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey)
-	blacklistedPublicKeys := make(map[[fieldparams.BLSPubkeyLength]byte]bool)
+	keysMap := make(map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey)
+	blacklistedPublicKeys := make(map[[dilithium2.CryptoPublicKeyBytes]byte]bool)
 	for i := 0; i < numValidators; i++ {
-		priv, err := bls.RandKey()
+		priv, err := dilithium.RandKey()
 		require.NoError(t, err)
-		var pubKey [fieldparams.BLSPubkeyLength]byte
+		var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(pubKey[:], priv.PublicKey().Marshal())
 		keysMap[pubKey] = priv
 		blacklistedPublicKeys[pubKey] = true
@@ -653,9 +653,9 @@ func TestRolesAt_OK(t *testing.T) {
 	roleMap, err := v.RolesAt(context.Background(), 1)
 	require.NoError(t, err)
 
-	assert.Equal(t, iface.RoleAttester, roleMap[bytesutil.ToBytes48(validatorKey.PublicKey().Marshal())][0])
-	assert.Equal(t, iface.RoleAggregator, roleMap[bytesutil.ToBytes48(validatorKey.PublicKey().Marshal())][1])
-	assert.Equal(t, iface.RoleSyncCommittee, roleMap[bytesutil.ToBytes48(validatorKey.PublicKey().Marshal())][2])
+	assert.Equal(t, iface.RoleAttester, roleMap[bytesutil.ToBytes2592(validatorKey.PublicKey().Marshal())][0])
+	assert.Equal(t, iface.RoleAggregator, roleMap[bytesutil.ToBytes2592(validatorKey.PublicKey().Marshal())][1])
+	assert.Equal(t, iface.RoleSyncCommittee, roleMap[bytesutil.ToBytes2592(validatorKey.PublicKey().Marshal())][2])
 
 	// Test sync committee role at epoch boundary.
 	v.duties = &ethpb.DutiesResponse{
@@ -687,7 +687,7 @@ func TestRolesAt_OK(t *testing.T) {
 
 	roleMap, err = v.RolesAt(context.Background(), params.BeaconConfig().SlotsPerEpoch-1)
 	require.NoError(t, err)
-	assert.Equal(t, iface.RoleSyncCommittee, roleMap[bytesutil.ToBytes48(validatorKey.PublicKey().Marshal())][0])
+	assert.Equal(t, iface.RoleSyncCommittee, roleMap[bytesutil.ToBytes2592(validatorKey.PublicKey().Marshal())][0])
 }
 
 func TestRolesAt_DoesNotAssignProposer_Slot0(t *testing.T) {
@@ -713,7 +713,7 @@ func TestRolesAt_DoesNotAssignProposer_Slot0(t *testing.T) {
 	roleMap, err := v.RolesAt(context.Background(), 0)
 	require.NoError(t, err)
 
-	assert.Equal(t, iface.RoleAttester, roleMap[bytesutil.ToBytes48(validatorKey.PublicKey().Marshal())][0])
+	assert.Equal(t, iface.RoleAttester, roleMap[bytesutil.ToBytes2592(validatorKey.PublicKey().Marshal())][0])
 }
 
 func TestCheckAndLogValidatorStatus_OK(t *testing.T) {
@@ -918,8 +918,8 @@ func TestAllValidatorsAreExited_CorrectRequest(t *testing.T) {
 	client := validatormock.NewMockValidatorClient(ctrl)
 
 	// Create two different public keys
-	pubKey0 := [fieldparams.BLSPubkeyLength]byte{1, 2, 3, 4}
-	pubKey1 := [fieldparams.BLSPubkeyLength]byte{6, 7, 8, 9}
+	pubKey0 := [dilithium2.CryptoPublicKeyBytes]byte{1, 2, 3, 4}
+	pubKey1 := [dilithium2.CryptoPublicKeyBytes]byte{6, 7, 8, 9}
 	// This is the request expected from AllValidatorsAreExited()
 	request := &ethpb.MultipleValidatorStatusRequest{
 		PublicKeys: [][]byte{
@@ -937,10 +937,10 @@ func TestAllValidatorsAreExited_CorrectRequest(t *testing.T) {
 		request,      // request
 	).Return(&ethpb.MultipleValidatorStatusResponse{Statuses: statuses}, nil /*err*/)
 
-	keysMap := make(map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey)
+	keysMap := make(map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey)
 	// secretKey below is just filler and is used multiple times
 	secretKeyBytes := [32]byte{1}
-	secretKey, err := bls.SecretKeyFromBytes(secretKeyBytes[:])
+	secretKey, err := dilithium.SecretKeyFromBytes(secretKeyBytes[:])
 	require.NoError(t, err)
 	keysMap[pubKey0] = secretKey
 	keysMap[pubKey1] = secretKey
@@ -1267,7 +1267,7 @@ func createAttestation(source, target primitives.Epoch) *ethpb.IndexedAttestatio
 			},
 			BeaconBlockRoot: make([]byte, 32),
 		},
-		Signature: make([]byte, fieldparams.BLSSignatureLength),
+		Signature: make([]byte, dilithium2.CryptoBytes),
 	}
 }
 
@@ -1287,7 +1287,7 @@ func TestIsSyncCommitteeAggregator_OK(t *testing.T) {
 		},
 	).Return(&ethpb.SyncSubcommitteeIndexResponse{}, nil /*err*/)
 
-	aggregator, err := v.isSyncCommitteeAggregator(context.Background(), slot, bytesutil.ToBytes48(pubKey))
+	aggregator, err := v.isSyncCommitteeAggregator(context.Background(), slot, bytesutil.ToBytes2592(pubKey))
 	require.NoError(t, err)
 	require.Equal(t, false, aggregator)
 
@@ -1308,14 +1308,14 @@ func TestIsSyncCommitteeAggregator_OK(t *testing.T) {
 		},
 	).Return(&ethpb.SyncSubcommitteeIndexResponse{Indices: []primitives.CommitteeIndex{0}}, nil /*err*/)
 
-	aggregator, err = v.isSyncCommitteeAggregator(context.Background(), slot, bytesutil.ToBytes48(pubKey))
+	aggregator, err = v.isSyncCommitteeAggregator(context.Background(), slot, bytesutil.ToBytes2592(pubKey))
 	require.NoError(t, err)
 	require.Equal(t, true, aggregator)
 }
 
 func TestValidator_WaitForKeymanagerInitialization_web3Signer(t *testing.T) {
 	ctx := context.Background()
-	db := dbTest.SetupDB(t, [][fieldparams.BLSPubkeyLength]byte{})
+	db := dbTest.SetupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{})
 	root := make([]byte, 32)
 	copy(root[2:], "a")
 	err := db.SaveGenesisValidatorsRoot(ctx, root)
@@ -1323,8 +1323,8 @@ func TestValidator_WaitForKeymanagerInitialization_web3Signer(t *testing.T) {
 	w := wallet.NewWalletForWeb3Signer()
 	decodedKey, err := hexutil.Decode("0xa2b5aaad9c6efefe7bb9b1243a043404f3362937cfb6b31833929833173f476630ea2cfeb0d9ddf15f97ca8685948820")
 	require.NoError(t, err)
-	keys := [][48]byte{
-		bytesutil.ToBytes48(decodedKey),
+	keys := [][dilithium2.CryptoPublicKeyBytes]byte{
+		bytesutil.ToBytes2592(decodedKey),
 	}
 	v := validator{
 		db:     db,
@@ -1344,7 +1344,7 @@ func TestValidator_WaitForKeymanagerInitialization_web3Signer(t *testing.T) {
 
 func TestValidator_WaitForKeymanagerInitialization_Web(t *testing.T) {
 	ctx := context.Background()
-	db := dbTest.SetupDB(t, [][fieldparams.BLSPubkeyLength]byte{})
+	db := dbTest.SetupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{})
 	root := make([]byte, 32)
 	copy(root[2:], "a")
 	err := db.SaveGenesisValidatorsRoot(ctx, root)
@@ -1374,7 +1374,7 @@ func TestValidator_WaitForKeymanagerInitialization_Web(t *testing.T) {
 
 func TestValidator_WaitForKeymanagerInitialization_Interop(t *testing.T) {
 	ctx := context.Background()
-	db := dbTest.SetupDB(t, [][fieldparams.BLSPubkeyLength]byte{})
+	db := dbTest.SetupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{})
 	root := make([]byte, 32)
 	copy(root[2:], "a")
 	err := db.SaveGenesisValidatorsRoot(ctx, root)
@@ -1397,7 +1397,7 @@ func TestValidator_WaitForKeymanagerInitialization_Interop(t *testing.T) {
 func TestValidator_PushProposerSettings(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	ctx := context.Background()
-	db := dbTest.SetupDB(t, [][fieldparams.BLSPubkeyLength]byte{})
+	db := dbTest.SetupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{})
 	client := validatormock.NewMockValidatorClient(ctrl)
 	nodeClient := validatormock.NewMockNodeClient(ctrl)
 	defaultFeeHex := "0x046Fb65722E7b2455043BFEBf6177F1D2e9738D9"
@@ -1428,8 +1428,8 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					validatorClient:              client,
 					node:                         nodeClient,
 					db:                           db,
-					pubkeyToValidatorIndex:       make(map[[fieldparams.BLSPubkeyLength]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[fieldparams.BLSPubkeyLength]byte]*ethpb.SignedValidatorRegistrationV1),
+					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					interopKeysConfig: &local.InteropKeymanagerConfig{
 						NumValidatorKeys: 2,
@@ -1438,7 +1438,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				}
 				err := v.WaitForKeymanagerInitialization(ctx)
 				require.NoError(t, err)
-				config := make(map[[fieldparams.BLSPubkeyLength]byte]*validatorserviceconfig.ProposerOption)
+				config := make(map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption)
 				km, err := v.Keymanager()
 				require.NoError(t, err)
 				keys, err := km.FetchValidatingPublicKeys(ctx)
@@ -1512,8 +1512,8 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					validatorClient:              client,
 					node:                         nodeClient,
 					db:                           db,
-					pubkeyToValidatorIndex:       make(map[[fieldparams.BLSPubkeyLength]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[fieldparams.BLSPubkeyLength]byte]*ethpb.SignedValidatorRegistrationV1),
+					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					interopKeysConfig: &local.InteropKeymanagerConfig{
 						NumValidatorKeys: 2,
@@ -1522,7 +1522,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				}
 				err := v.WaitForKeymanagerInitialization(ctx)
 				require.NoError(t, err)
-				config := make(map[[fieldparams.BLSPubkeyLength]byte]*validatorserviceconfig.ProposerOption)
+				config := make(map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption)
 				km, err := v.Keymanager()
 				require.NoError(t, err)
 				keys, err := km.FetchValidatingPublicKeys(ctx)
@@ -1592,8 +1592,8 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					validatorClient:              client,
 					node:                         nodeClient,
 					db:                           db,
-					pubkeyToValidatorIndex:       make(map[[fieldparams.BLSPubkeyLength]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[fieldparams.BLSPubkeyLength]byte]*ethpb.SignedValidatorRegistrationV1),
+					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					interopKeysConfig: &local.InteropKeymanagerConfig{
 						NumValidatorKeys: 2,
@@ -1602,7 +1602,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				}
 				err := v.WaitForKeymanagerInitialization(ctx)
 				require.NoError(t, err)
-				config := make(map[[fieldparams.BLSPubkeyLength]byte]*validatorserviceconfig.ProposerOption)
+				config := make(map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption)
 				km, err := v.Keymanager()
 				require.NoError(t, err)
 				keys, err := km.FetchValidatingPublicKeys(ctx)
@@ -1655,8 +1655,8 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					validatorClient:              client,
 					node:                         nodeClient,
 					db:                           db,
-					pubkeyToValidatorIndex:       make(map[[fieldparams.BLSPubkeyLength]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[fieldparams.BLSPubkeyLength]byte]*ethpb.SignedValidatorRegistrationV1),
+					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					interopKeysConfig: &local.InteropKeymanagerConfig{
 						NumValidatorKeys: 1,
@@ -1720,8 +1720,8 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					validatorClient:              client,
 					node:                         nodeClient,
 					db:                           db,
-					pubkeyToValidatorIndex:       make(map[[fieldparams.BLSPubkeyLength]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[fieldparams.BLSPubkeyLength]byte]*ethpb.SignedValidatorRegistrationV1),
+					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					interopKeysConfig: &local.InteropKeymanagerConfig{
 						NumValidatorKeys: 1,
@@ -1781,8 +1781,8 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					validatorClient:              client,
 					node:                         nodeClient,
 					db:                           db,
-					pubkeyToValidatorIndex:       make(map[[fieldparams.BLSPubkeyLength]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[fieldparams.BLSPubkeyLength]byte]*ethpb.SignedValidatorRegistrationV1),
+					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					interopKeysConfig: &local.InteropKeymanagerConfig{
 						NumValidatorKeys: 1,
@@ -1791,7 +1791,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				}
 				err := v.WaitForKeymanagerInitialization(ctx)
 				require.NoError(t, err)
-				config := make(map[[fieldparams.BLSPubkeyLength]byte]*validatorserviceconfig.ProposerOption)
+				config := make(map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption)
 				km, err := v.Keymanager()
 				require.NoError(t, err)
 				keys, err := km.FetchValidatingPublicKeys(ctx)
@@ -1830,8 +1830,8 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				v := validator{
 					validatorClient:              client,
 					db:                           db,
-					pubkeyToValidatorIndex:       make(map[[fieldparams.BLSPubkeyLength]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[fieldparams.BLSPubkeyLength]byte]*ethpb.SignedValidatorRegistrationV1),
+					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					interopKeysConfig: &local.InteropKeymanagerConfig{
 						NumValidatorKeys: 1,
@@ -1840,7 +1840,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				}
 				err := v.WaitForKeymanagerInitialization(ctx)
 				require.NoError(t, err)
-				config := make(map[[fieldparams.BLSPubkeyLength]byte]*validatorserviceconfig.ProposerOption)
+				config := make(map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption)
 				km, err := v.Keymanager()
 				require.NoError(t, err)
 				keys, err := km.FetchValidatingPublicKeys(ctx)
@@ -1872,8 +1872,8 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					validatorClient:              client,
 					node:                         nodeClient,
 					db:                           db,
-					pubkeyToValidatorIndex:       make(map[[fieldparams.BLSPubkeyLength]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[fieldparams.BLSPubkeyLength]byte]*ethpb.SignedValidatorRegistrationV1),
+					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					interopKeysConfig: &local.InteropKeymanagerConfig{
 						NumValidatorKeys: 1,
@@ -1882,7 +1882,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				}
 				err := v.WaitForKeymanagerInitialization(ctx)
 				require.NoError(t, err)
-				config := make(map[[fieldparams.BLSPubkeyLength]byte]*validatorserviceconfig.ProposerOption)
+				config := make(map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption)
 				km, err := v.Keymanager()
 				require.NoError(t, err)
 				keys, err := km.FetchValidatingPublicKeys(ctx)
@@ -1984,7 +1984,7 @@ func TestValidator_buildPrepProposerReqs_InvalidValidatorIndex(t *testing.T) {
 	ctx := context.Background()
 	client := validatormock.NewMockValidatorClient(ctrl)
 	v := validator{validatorClient: client}
-	pubkeys := [][fieldparams.BLSPubkeyLength]byte{{}}
+	pubkeys := [][dilithium2.CryptoPublicKeyBytes]byte{{}}
 
 	client.EXPECT().ValidatorIndex(
 		ctx,
@@ -1995,11 +1995,11 @@ func TestValidator_buildPrepProposerReqs_InvalidValidatorIndex(t *testing.T) {
 	assert.ErrorContains(t, "custom error", err)
 }
 
-func getPubkeyFromString(t *testing.T, stringPubkey string) [fieldparams.BLSPubkeyLength]byte {
+func getPubkeyFromString(t *testing.T, stringPubkey string) [dilithium2.CryptoPublicKeyBytes]byte {
 	pubkeyTemp, err := hexutil.Decode(stringPubkey)
 	require.NoError(t, err)
 
-	var pubkey [fieldparams.BLSPubkeyLength]byte
+	var pubkey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubkey[:], pubkeyTemp)
 
 	return pubkey
@@ -2058,7 +2058,7 @@ func TestValidator_buildPrepProposerReqs_WithoutDefaultConfig(t *testing.T) {
 		validatorClient: client,
 		proposerSettings: &validatorserviceconfig.ProposerSettings{
 			DefaultConfig: nil,
-			ProposeConfig: map[[48]byte]*validatorserviceconfig.ProposerOption{
+			ProposeConfig: map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption{
 				pubkey1: {
 					FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
 						FeeRecipient: feeRecipient1,
@@ -2076,13 +2076,13 @@ func TestValidator_buildPrepProposerReqs_WithoutDefaultConfig(t *testing.T) {
 				},
 			},
 		},
-		pubkeyToValidatorIndex: map[[48]byte]primitives.ValidatorIndex{
+		pubkeyToValidatorIndex: map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex{
 			pubkey1: 1,
 			pubkey4: 4,
 		},
 	}
 
-	pubkeys := [][fieldparams.BLSPubkeyLength]byte{pubkey1, pubkey2, pubkey3, pubkey4}
+	pubkeys := [][dilithium2.CryptoPublicKeyBytes]byte{pubkey1, pubkey2, pubkey3, pubkey4}
 
 	expected := []*ethpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
 		{
@@ -2149,7 +2149,7 @@ func TestValidator_buildPrepProposerReqs_WithDefaultConfig(t *testing.T) {
 					FeeRecipient: defaultFeeRecipient,
 				},
 			},
-			ProposeConfig: map[[48]byte]*validatorserviceconfig.ProposerOption{
+			ProposeConfig: map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption{
 				pubkey1: {
 					FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
 						FeeRecipient: feeRecipient1,
@@ -2167,13 +2167,13 @@ func TestValidator_buildPrepProposerReqs_WithDefaultConfig(t *testing.T) {
 				},
 			},
 		},
-		pubkeyToValidatorIndex: map[[48]byte]primitives.ValidatorIndex{
+		pubkeyToValidatorIndex: map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex{
 			pubkey1: 1,
 			pubkey4: 4,
 		},
 	}
 
-	pubkeys := [][fieldparams.BLSPubkeyLength]byte{pubkey1, pubkey2, pubkey3, pubkey4}
+	pubkeys := [][dilithium2.CryptoPublicKeyBytes]byte{pubkey1, pubkey2, pubkey3, pubkey4}
 
 	expected := []*ethpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
 		{
@@ -2221,7 +2221,7 @@ func TestValidator_buildSignedRegReqs_DefaultConfigDisabled(t *testing.T) {
 	signature.EXPECT().Marshal().Return([]byte{})
 
 	v := validator{
-		signedValidatorRegistrations: map[[48]byte]*ethpb.SignedValidatorRegistrationV1{},
+		signedValidatorRegistrations: map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1{},
 		validatorClient:              client,
 		proposerSettings: &validatorserviceconfig.ProposerSettings{
 			DefaultConfig: &validatorserviceconfig.ProposerOption{
@@ -2233,7 +2233,7 @@ func TestValidator_buildSignedRegReqs_DefaultConfigDisabled(t *testing.T) {
 					GasLimit: 9999,
 				},
 			},
-			ProposeConfig: map[[48]byte]*validatorserviceconfig.ProposerOption{
+			ProposeConfig: map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption{
 				pubkey1: {
 					FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
 						FeeRecipient: feeRecipient1,
@@ -2263,9 +2263,9 @@ func TestValidator_buildSignedRegReqs_DefaultConfigDisabled(t *testing.T) {
 		},
 	}
 
-	pubkeys := [][fieldparams.BLSPubkeyLength]byte{pubkey1, pubkey2, pubkey3}
+	pubkeys := [][dilithium2.CryptoPublicKeyBytes]byte{pubkey1, pubkey2, pubkey3}
 
-	var signer = func(_ context.Context, _ *validatorpb.SignRequest) (bls.Signature, error) {
+	var signer = func(_ context.Context, _ *validatorpb.SignRequest) (dilithium.Signature, error) {
 		return signature, nil
 	}
 
@@ -2304,7 +2304,7 @@ func TestValidator_buildSignedRegReqs_DefaultConfigEnabled(t *testing.T) {
 	signature.EXPECT().Marshal().Return([]byte{}).Times(2)
 
 	v := validator{
-		signedValidatorRegistrations: map[[48]byte]*ethpb.SignedValidatorRegistrationV1{},
+		signedValidatorRegistrations: map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1{},
 		validatorClient:              client,
 		proposerSettings: &validatorserviceconfig.ProposerSettings{
 			DefaultConfig: &validatorserviceconfig.ProposerOption{
@@ -2316,7 +2316,7 @@ func TestValidator_buildSignedRegReqs_DefaultConfigEnabled(t *testing.T) {
 					GasLimit: 9999,
 				},
 			},
-			ProposeConfig: map[[48]byte]*validatorserviceconfig.ProposerOption{
+			ProposeConfig: map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption{
 				pubkey1: {
 					FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
 						FeeRecipient: feeRecipient1,
@@ -2346,9 +2346,9 @@ func TestValidator_buildSignedRegReqs_DefaultConfigEnabled(t *testing.T) {
 		},
 	}
 
-	pubkeys := [][fieldparams.BLSPubkeyLength]byte{pubkey1, pubkey2, pubkey3}
+	pubkeys := [][dilithium2.CryptoPublicKeyBytes]byte{pubkey1, pubkey2, pubkey3}
 
-	var signer = func(_ context.Context, _ *validatorpb.SignRequest) (bls.Signature, error) {
+	var signer = func(_ context.Context, _ *validatorpb.SignRequest) (dilithium.Signature, error) {
 		return signature, nil
 	}
 
@@ -2380,7 +2380,7 @@ func TestValidator_buildSignedRegReqs_SignerOnError(t *testing.T) {
 	client := validatormock.NewMockValidatorClient(ctrl)
 
 	v := validator{
-		signedValidatorRegistrations: map[[48]byte]*ethpb.SignedValidatorRegistrationV1{},
+		signedValidatorRegistrations: map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1{},
 		validatorClient:              client,
 		proposerSettings: &validatorserviceconfig.ProposerSettings{
 			DefaultConfig: &validatorserviceconfig.ProposerOption{
@@ -2395,9 +2395,9 @@ func TestValidator_buildSignedRegReqs_SignerOnError(t *testing.T) {
 		},
 	}
 
-	pubkeys := [][fieldparams.BLSPubkeyLength]byte{pubkey1}
+	pubkeys := [][dilithium2.CryptoPublicKeyBytes]byte{pubkey1}
 
-	var signer = func(_ context.Context, _ *validatorpb.SignRequest) (bls.Signature, error) {
+	var signer = func(_ context.Context, _ *validatorpb.SignRequest) (dilithium.Signature, error) {
 		return nil, errors.New("custom error")
 	}
 

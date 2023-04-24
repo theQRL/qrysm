@@ -13,6 +13,7 @@ import (
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/pkg/errors"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // MockBuilderService to mock builder.
@@ -49,7 +50,7 @@ func (s *MockBuilderService) SubmitBlindedBlock(_ context.Context, _ interfaces.
 }
 
 // GetHeader for mocking.
-func (s *MockBuilderService) GetHeader(ctx context.Context, slot primitives.Slot, hr [32]byte, pb [48]byte) (builder.SignedBid, error) {
+func (s *MockBuilderService) GetHeader(ctx context.Context, slot primitives.Slot, hr [32]byte, pb [dilithium2.CryptoPublicKeyBytes]byte) (builder.SignedBid, error) {
 	if slots.ToEpoch(slot) >= params.BeaconConfig().CapellaForkEpoch {
 		return builder.WrappedSignedBuilderBidCapella(s.BidCapella)
 	}

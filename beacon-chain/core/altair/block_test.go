@@ -10,7 +10,6 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/time"
 	p2pType "github.com/cyyber/qrysm/v4/beacon-chain/p2p/types"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/crypto/bls"
@@ -21,6 +20,7 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/prysmaticlabs/go-bitfield"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestProcessSyncCommittee_PerfectParticipation(t *testing.T) {
@@ -180,7 +180,7 @@ func TestProcessSyncCommittee_DontPrecompute(t *testing.T) {
 	committeeKeys := committee.Pubkeys
 	committeeKeys[1] = committeeKeys[0]
 	require.NoError(t, beaconState.SetCurrentSyncCommittee(committee))
-	idx, ok := beaconState.ValidatorIndexByPubkey(bytesutil.ToBytes48(committeeKeys[0]))
+	idx, ok := beaconState.ValidatorIndexByPubkey(bytesutil.ToBytes2592(committeeKeys[0]))
 	require.Equal(t, true, ok)
 
 	syncBits := bitfield.NewBitvector512()
@@ -217,9 +217,9 @@ func TestProcessSyncCommittee_processSyncAggregate(t *testing.T) {
 
 	st, votedKeys, _, err := altair.ProcessSyncAggregateEported(context.Background(), beaconState, syncAggregate)
 	require.NoError(t, err)
-	votedMap := make(map[[fieldparams.BLSPubkeyLength]byte]bool)
+	votedMap := make(map[[dilithium2.CryptoPublicKeyBytes]byte]bool)
 	for _, key := range votedKeys {
-		votedMap[bytesutil.ToBytes48(key.Marshal())] = true
+		votedMap[bytesutil.ToBytes2592(key.Marshal())] = true
 	}
 	require.Equal(t, int(syncBits.Len()/2), len(votedKeys))
 
@@ -233,13 +233,13 @@ func TestProcessSyncCommittee_processSyncAggregate(t *testing.T) {
 
 	for i := 0; i < len(syncBits); i++ {
 		if syncBits.BitAt(uint64(i)) {
-			pk := bytesutil.ToBytes48(committeeKeys[i])
+			pk := bytesutil.ToBytes2592(committeeKeys[i])
 			require.DeepEqual(t, true, votedMap[pk])
 			idx, ok := st.ValidatorIndexByPubkey(pk)
 			require.Equal(t, true, ok)
 			require.Equal(t, uint64(32000000988), balances[idx])
 		} else {
-			pk := bytesutil.ToBytes48(committeeKeys[i])
+			pk := bytesutil.ToBytes2592(committeeKeys[i])
 			require.DeepEqual(t, false, votedMap[pk])
 			idx, ok := st.ValidatorIndexByPubkey(pk)
 			require.Equal(t, true, ok)

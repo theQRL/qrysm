@@ -15,6 +15,7 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	ssz "github.com/prysmaticlabs/fastssz"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func Test_BeaconBlockIsNil(t *testing.T) {
@@ -109,7 +110,7 @@ func Test_SignedBeaconBlock_Header(t *testing.T) {
 			stateRoot:     bytesutil.ToBytes32([]byte("stateroot")),
 			body:          bb,
 		},
-		signature: bytesutil.ToBytes96([]byte("signature")),
+		signature: bytesutil.ToBytes4595([]byte("signature")),
 	}
 	h, err := sb.Header()
 	require.NoError(t, err)
@@ -423,7 +424,7 @@ func Test_BeaconBlockBody_HashTreeRoot(t *testing.T) {
 
 func hydrateSignedBeaconBlock() *eth.SignedBeaconBlock {
 	return &eth.SignedBeaconBlock{
-		Signature: make([]byte, fieldparams.BLSSignatureLength),
+		Signature: make([]byte, dilithium2.CryptoBytes),
 		Block:     hydrateBeaconBlock(),
 	}
 }
@@ -438,7 +439,7 @@ func hydrateBeaconBlock() *eth.BeaconBlock {
 
 func hydrateBeaconBlockBody() *eth.BeaconBlockBody {
 	return &eth.BeaconBlockBody{
-		RandaoReveal: make([]byte, fieldparams.BLSSignatureLength),
+		RandaoReveal: make([]byte, dilithium2.CryptoBytes),
 		Graffiti:     make([]byte, fieldparams.RootLength),
 		Eth1Data: &eth.Eth1Data{
 			DepositRoot: make([]byte, fieldparams.RootLength),

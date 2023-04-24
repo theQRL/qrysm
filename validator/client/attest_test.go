@@ -16,7 +16,7 @@ import (
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
@@ -27,6 +27,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/prysmaticlabs/go-bitfield"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"gopkg.in/d4l3k/messagediff.v1"
 )
 
@@ -36,7 +37,7 @@ func TestRequestAttestation_ValidatorDutiesRequestFailure(t *testing.T) {
 	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{}}
 	defer finish()
 
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.SubmitAttestation(context.Background(), 30, pubKey)
 	require.LogsContain(t, hook, "Could not fetch validator assignment")
@@ -47,7 +48,7 @@ func TestAttestToBlockHead_SubmitAttestation_EmptyCommittee(t *testing.T) {
 
 	validator, _, validatorKey, finish := setup(t)
 	defer finish()
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{
 		{
@@ -89,7 +90,7 @@ func TestAttestToBlockHead_SubmitAttestation_RequestFailure(t *testing.T) {
 		gomock.AssignableToTypeOf(&ethpb.Attestation{}),
 	).Return(nil, errors.New("something went wrong"))
 
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.SubmitAttestation(context.Background(), 30, pubKey)
 	require.LogsContain(t, hook, "Could not submit attestation to beacon node")
@@ -101,7 +102,7 @@ func TestAttestToBlockHead_AttestsCorrectly(t *testing.T) {
 	hook := logTest.NewGlobal()
 	validatorIndex := primitives.ValidatorIndex(7)
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{
 		{
@@ -174,7 +175,7 @@ func TestAttestToBlockHead_BlocksDoubleAtt(t *testing.T) {
 	defer finish()
 	validatorIndex := primitives.ValidatorIndex(7)
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{
 		{
@@ -226,7 +227,7 @@ func TestAttestToBlockHead_BlocksSurroundAtt(t *testing.T) {
 	defer finish()
 	validatorIndex := primitives.ValidatorIndex(7)
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{
 		{
@@ -277,7 +278,7 @@ func TestAttestToBlockHead_BlocksSurroundedAtt(t *testing.T) {
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
 	validatorIndex := primitives.ValidatorIndex(7)
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
 	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{
@@ -331,7 +332,7 @@ func TestAttestToBlockHead_DoesNotAttestBeforeDelay(t *testing.T) {
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
 
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.genesisTime = uint64(prysmTime.Now().Unix())
 	m.validatorClient.EXPECT().GetDuties(
@@ -365,7 +366,7 @@ func TestAttestToBlockHead_DoesAttestAfterDelay(t *testing.T) {
 	validator.genesisTime = uint64(prysmTime.Now().Unix())
 	validatorIndex := primitives.ValidatorIndex(5)
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{
 		{
@@ -404,7 +405,7 @@ func TestAttestToBlockHead_CorrectBitfieldLength(t *testing.T) {
 	defer finish()
 	validatorIndex := primitives.ValidatorIndex(2)
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{
 		{
@@ -444,7 +445,7 @@ func TestSignAttestation(t *testing.T) {
 	validator, m, _, finish := setup(t)
 	defer finish()
 
-	secretKey, err := bls.SecretKeyFromBytes(bytesutil.PadTo([]byte{1}, 32))
+	secretKey, err := dilithium.SecretKeyFromBytes(bytesutil.PadTo([]byte{1}, 32))
 	require.NoError(t, err, "Failed to generate key from bytes")
 	publicKey := secretKey.PublicKey()
 	wantedFork := &ethpb.Fork{
@@ -464,10 +465,10 @@ func TestSignAttestation(t *testing.T) {
 	att.Data.Target.Epoch = 200
 	att.Data.Slot = 999
 	att.Data.BeaconBlockRoot = bytesutil.PadTo([]byte("blockRoot"), 32)
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], publicKey.Marshal())
 	km := &mockKeymanager{
-		keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+		keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 			pubKey: secretKey,
 		},
 	}

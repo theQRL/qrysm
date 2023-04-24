@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
@@ -19,6 +18,7 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/go-bitfield"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -297,7 +297,7 @@ func generateSignedBeaconBlock(
 				DepositRoot:  bytesutil.PadTo([]byte("bad deposit root"), hashLen),
 				DepositCount: 1,
 			},
-			RandaoReveal:      bytesutil.PadTo([]byte("bad randao"), fieldparams.BLSSignatureLength),
+			RandaoReveal:      bytesutil.PadTo([]byte("bad randao"), dilithium2.CryptoBytes),
 			Graffiti:          bytesutil.PadTo([]byte("teehee"), hashLen),
 			ProposerSlashings: []*eth.ProposerSlashing{},
 			AttesterSlashings: []*eth.AttesterSlashing{},

@@ -4,14 +4,14 @@ import (
 	"context"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/crypto/hash"
 	"github.com/cyyber/qrysm/v4/testing/require"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestStore_GraffitiOrderedIndex_ReadAndWrite(t *testing.T) {
 	ctx := context.Background()
-	db := setupDB(t, [][fieldparams.BLSPubkeyLength]byte{})
+	db := setupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{})
 	tests := []struct {
 		name     string
 		want     uint64

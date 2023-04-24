@@ -11,7 +11,6 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/transition"
 	"github.com/cyyber/qrysm/v4/beacon-chain/operations/synccommittee"
 	mockp2p "github.com/cyyber/qrysm/v4/beacon-chain/p2p/testing"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/crypto/bls"
@@ -19,6 +18,7 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -90,7 +90,7 @@ func TestGetSyncSubcommitteeIndex_Ok(t *testing.T) {
 			SyncCommitteeIndices: []primitives.CommitteeIndex{0},
 		},
 	}
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	// Request slot 0, should get the index 0 for validator 0.
 	res, err := server.GetSyncSubcommitteeIndex(context.Background(), &ethpb.SyncSubcommitteeIndexRequest{
 		PublicKey: pubKey[:], Slot: primitives.Slot(0),

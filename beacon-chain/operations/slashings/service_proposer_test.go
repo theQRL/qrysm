@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func proposerSlashingForValIdx(valIdx primitives.ValidatorIndex) *ethpb.ProposerSlashing {
@@ -192,7 +192,7 @@ func TestPool_InsertProposerSlashing_SigFailsVerify_ClearPool(t *testing.T) {
 		slashings[i] = sl
 	}
 	// We mess up the signature of the second slashing.
-	badSig := make([]byte, fieldparams.BLSSignatureLength)
+	badSig := make([]byte, dilithium2.CryptoBytes)
 	copy(badSig, "muahaha")
 	slashings[1].Header_1.Signature = badSig
 	p := &Pool{

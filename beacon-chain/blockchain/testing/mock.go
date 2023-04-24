@@ -5,6 +5,7 @@ package testing
 import (
 	"bytes"
 	"context"
+	"github.com/cyyber/qrysm/v4/config/params"
 	"sync"
 	"time"
 
@@ -19,8 +20,6 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/forkchoice"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
@@ -29,6 +28,7 @@ import (
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 var ErrNilState = errors.New("nil state")
@@ -39,7 +39,7 @@ type ChainService struct {
 	Optimistic                  bool
 	ValidAttestation            bool
 	ValidatorsRoot              [32]byte
-	PublicKey                   [fieldparams.BLSPubkeyLength]byte
+	PublicKey                   [dilithium2.CryptoPublicKeyBytes]byte
 	FinalizedCheckPoint         *ethpb.Checkpoint
 	CurrentJustifiedCheckPoint  *ethpb.Checkpoint
 	PreviousJustifiedCheckPoint *ethpb.Checkpoint
@@ -412,12 +412,12 @@ func (_ *ChainService) ChainHeads() ([][32]byte, []primitives.Slot) {
 }
 
 // HeadPublicKeyToValidatorIndex mocks HeadPublicKeyToValidatorIndex and always return 0 and true.
-func (_ *ChainService) HeadPublicKeyToValidatorIndex(_ [fieldparams.BLSPubkeyLength]byte) (primitives.ValidatorIndex, bool) {
+func (_ *ChainService) HeadPublicKeyToValidatorIndex(_ [dilithium2.CryptoPublicKeyBytes]byte) (primitives.ValidatorIndex, bool) {
 	return 0, true
 }
 
 // HeadValidatorIndexToPublicKey mocks HeadValidatorIndexToPublicKey and always return empty and nil.
-func (s *ChainService) HeadValidatorIndexToPublicKey(_ context.Context, _ primitives.ValidatorIndex) ([fieldparams.BLSPubkeyLength]byte, error) {
+func (s *ChainService) HeadValidatorIndexToPublicKey(_ context.Context, _ primitives.ValidatorIndex) ([dilithium2.CryptoPublicKeyBytes]byte, error) {
 	return s.PublicKey, nil
 }
 

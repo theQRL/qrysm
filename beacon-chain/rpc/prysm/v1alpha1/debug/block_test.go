@@ -10,13 +10,13 @@ import (
 	dbTest "github.com/cyyber/qrysm/v4/beacon-chain/db/testing"
 	doublylinkedtree "github.com/cyyber/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state/stategen"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/prysmaticlabs/go-bitfield"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestServer_GetBlock(t *testing.T) {
@@ -72,7 +72,7 @@ func TestServer_GetAttestationInclusionSlot(t *testing.T) {
 			Slot:            1,
 		},
 		AggregationBits: bitfield.Bitlist{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01},
-		Signature:       make([]byte, fieldparams.BLSSignatureLength),
+		Signature:       make([]byte, dilithium2.CryptoBytes),
 	}
 	b := util.NewBeaconBlock()
 	b.Block.Slot = 2

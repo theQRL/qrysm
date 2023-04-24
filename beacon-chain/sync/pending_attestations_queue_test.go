@@ -14,7 +14,6 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers"
 	p2ptest "github.com/cyyber/qrysm/v4/beacon-chain/p2p/testing"
 	lruwrpr "github.com/cyyber/qrysm/v4/cache/lru"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/crypto/bls"
@@ -29,6 +28,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/prysmaticlabs/go-bitfield"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestProcessPendingAtts_NoBlockRequestBlock(t *testing.T) {
@@ -167,7 +167,7 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 			AggregationBits: bitfield.Bitlist{0x02},
 			Data:            util.HydrateAttestationData(&ethpb.AttestationData{}),
 		},
-		SelectionProof: make([]byte, fieldparams.BLSSignatureLength),
+		SelectionProof: make([]byte, dilithium2.CryptoBytes),
 	}
 
 	b := util.NewBeaconBlock()
@@ -176,7 +176,7 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 	util.SaveBlock(t, context.Background(), r.cfg.beaconDB, b)
 	require.NoError(t, r.cfg.beaconDB.SaveState(context.Background(), s, r32))
 
-	r.blkRootToPendingAtts[r32] = []*ethpb.SignedAggregateAttestationAndProof{{Message: a, Signature: make([]byte, fieldparams.BLSSignatureLength)}}
+	r.blkRootToPendingAtts[r32] = []*ethpb.SignedAggregateAttestationAndProof{{Message: a, Signature: make([]byte, dilithium2.CryptoBytes)}}
 	require.NoError(t, r.processPendingAtts(context.Background()))
 
 	assert.Equal(t, false, p1.BroadcastCalled, "Broadcasted bad aggregate")

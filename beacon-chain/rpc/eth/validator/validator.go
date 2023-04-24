@@ -15,7 +15,6 @@ import (
 	rpchelpers "github.com/cyyber/qrysm/v4/beacon-chain/rpc/eth/helpers"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
@@ -787,7 +786,7 @@ func (vs *Server) SubmitAggregateAndProofs(ctx context.Context, req *ethpbv1.Sub
 		if agg == nil || agg.Message == nil || agg.Message.Aggregate == nil || agg.Message.Aggregate.Data == nil {
 			return nil, status.Error(codes.InvalidArgument, "Signed aggregate request can't be nil")
 		}
-		sigLen := fieldparams.BLSSignatureLength
+		sigLen := dilithium2.CryptoBytes
 		emptySig := make([]byte, sigLen)
 		if bytes.Equal(agg.Signature, emptySig) || bytes.Equal(agg.Message.SelectionProof, emptySig) || bytes.Equal(agg.Message.Aggregate.Signature, emptySig) {
 			return nil, status.Error(codes.InvalidArgument, "Signed signatures can't be zero hashes")

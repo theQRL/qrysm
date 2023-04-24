@@ -6,13 +6,13 @@ import (
 
 	v "github.com/cyyber/qrysm/v4/beacon-chain/core/validators"
 	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	fuzz "github.com/google/gofuzz"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestFuzzProcessAttestationNoVerify_10000(t *testing.T) {
@@ -55,7 +55,7 @@ func TestFuzzProcessBlockHeader_10000(t *testing.T) {
 func TestFuzzverifyDepositDataSigningRoot_10000(_ *testing.T) {
 	fuzzer := fuzz.NewWithSeed(0)
 	var ba []byte
-	var pubkey [fieldparams.BLSPubkeyLength]byte
+	var pubkey [dilithium2.CryptoPublicKeyBytes]byte
 	var sig [96]byte
 	var domain [4]byte
 	var p []byte

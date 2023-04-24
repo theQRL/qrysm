@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/runtime/interop"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestState_FieldCount(t *testing.T) {
@@ -64,7 +64,7 @@ func setupGenesisState(tb testing.TB, count uint64) *ethpb.BeaconState {
 	require.NoError(tb, err, "Could not generate genesis beacon state")
 	for i := uint64(1); i < count; i++ {
 		var someRoot [32]byte
-		var someKey [fieldparams.BLSPubkeyLength]byte
+		var someKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
 		genesisState.Validators = append(genesisState.Validators, &ethpb.Validator{

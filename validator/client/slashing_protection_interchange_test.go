@@ -9,13 +9,13 @@ import (
 	"testing"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/io/file"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
 	history "github.com/cyyber/qrysm/v4/validator/slashing-protection-history"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 type eip3076TestCase struct {
@@ -148,7 +148,7 @@ func TestEIP3076SpecTests(t *testing.T) {
 							Target:          &ethpb.Checkpoint{Epoch: target, Root: make([]byte, 32)},
 							Source:          &ethpb.Checkpoint{Epoch: source, Root: make([]byte, 32)},
 						},
-						Signature: make([]byte, fieldparams.BLSSignatureLength),
+						Signature: make([]byte, dilithium2.CryptoBytes),
 					}
 
 					var signingRoot [32]byte

@@ -5,7 +5,6 @@ import (
 	"context"
 	"time"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	validatorserviceconfig "github.com/cyyber/qrysm/v4/config/validator/service"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
@@ -13,6 +12,7 @@ import (
 	"github.com/cyyber/qrysm/v4/validator/client/iface"
 	"github.com/cyyber/qrysm/v4/validator/keymanager"
 	log "github.com/sirupsen/logrus"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 var _ iface.Validator = (*FakeValidator)(nil)
@@ -48,10 +48,10 @@ type FakeValidator struct {
 	UpdateDutiesRet                   error
 	ProposerSettingsErr               error
 	RolesAtRet                        []iface.ValidatorRole
-	Balances                          map[[fieldparams.BLSPubkeyLength]byte]uint64
-	IndexToPubkeyMap                  map[uint64][fieldparams.BLSPubkeyLength]byte
-	PubkeyToIndexMap                  map[[fieldparams.BLSPubkeyLength]byte]uint64
-	PubkeysToStatusesMap              map[[fieldparams.BLSPubkeyLength]byte]ethpb.ValidatorStatus
+	Balances                          map[[dilithium2.CryptoPublicKeyBytes]byte]uint64
+	IndexToPubkeyMap                  map[uint64][dilithium2.CryptoPublicKeyBytes]byte
+	PubkeyToIndexMap                  map[[dilithium2.CryptoPublicKeyBytes]byte]uint64
+	PubkeysToStatusesMap              map[[dilithium2.CryptoPublicKeyBytes]byte]ethpb.ValidatorStatus
 	proposerSettings                  *validatorserviceconfig.ProposerSettings
 	ProposerSettingWait               time.Duration
 	Km                                keymanager.IKeymanager
@@ -86,7 +86,7 @@ func (fv *FakeValidator) WaitForChainStart(_ context.Context) error {
 }
 
 // WaitForActivation for mocking.
-func (fv *FakeValidator) WaitForActivation(_ context.Context, accountChan chan [][fieldparams.BLSPubkeyLength]byte) error {
+func (fv *FakeValidator) WaitForActivation(_ context.Context, accountChan chan [][dilithium2.CryptoPublicKeyBytes]byte) error {
 	fv.WaitForActivationCalled++
 	if accountChan == nil {
 		return nil
@@ -158,32 +158,32 @@ func (fv *FakeValidator) ResetAttesterProtectionData() {
 }
 
 // RolesAt for mocking.
-func (fv *FakeValidator) RolesAt(_ context.Context, slot primitives.Slot) (map[[fieldparams.BLSPubkeyLength]byte][]iface.ValidatorRole, error) {
+func (fv *FakeValidator) RolesAt(_ context.Context, slot primitives.Slot) (map[[dilithium2.CryptoPublicKeyBytes]byte][]iface.ValidatorRole, error) {
 	fv.RoleAtCalled = true
 	fv.RoleAtArg1 = uint64(slot)
-	vr := make(map[[fieldparams.BLSPubkeyLength]byte][]iface.ValidatorRole)
-	vr[[fieldparams.BLSPubkeyLength]byte{1}] = fv.RolesAtRet
+	vr := make(map[[dilithium2.CryptoPublicKeyBytes]byte][]iface.ValidatorRole)
+	vr[[dilithium2.CryptoPublicKeyBytes]byte{1}] = fv.RolesAtRet
 	return vr, nil
 }
 
 // SubmitAttestation for mocking.
-func (fv *FakeValidator) SubmitAttestation(_ context.Context, slot primitives.Slot, _ [fieldparams.BLSPubkeyLength]byte) {
+func (fv *FakeValidator) SubmitAttestation(_ context.Context, slot primitives.Slot, _ [dilithium2.CryptoPublicKeyBytes]byte) {
 	fv.AttestToBlockHeadCalled = true
 	fv.AttestToBlockHeadArg1 = uint64(slot)
 }
 
 // ProposeBlock for mocking.
-func (fv *FakeValidator) ProposeBlock(_ context.Context, slot primitives.Slot, _ [fieldparams.BLSPubkeyLength]byte) {
+func (fv *FakeValidator) ProposeBlock(_ context.Context, slot primitives.Slot, _ [dilithium2.CryptoPublicKeyBytes]byte) {
 	fv.ProposeBlockCalled = true
 	fv.ProposeBlockArg1 = uint64(slot)
 }
 
 // SubmitAggregateAndProof for mocking.
-func (_ *FakeValidator) SubmitAggregateAndProof(_ context.Context, _ primitives.Slot, _ [fieldparams.BLSPubkeyLength]byte) {
+func (_ *FakeValidator) SubmitAggregateAndProof(_ context.Context, _ primitives.Slot, _ [dilithium2.CryptoPublicKeyBytes]byte) {
 }
 
 // SubmitSyncCommitteeMessage for mocking.
-func (_ *FakeValidator) SubmitSyncCommitteeMessage(_ context.Context, _ primitives.Slot, _ [fieldparams.BLSPubkeyLength]byte) {
+func (_ *FakeValidator) SubmitSyncCommitteeMessage(_ context.Context, _ primitives.Slot, _ [dilithium2.CryptoPublicKeyBytes]byte) {
 }
 
 // LogAttestationsSubmitted for mocking.
@@ -193,22 +193,22 @@ func (_ *FakeValidator) LogAttestationsSubmitted() {}
 func (_ *FakeValidator) UpdateDomainDataCaches(context.Context, primitives.Slot) {}
 
 // BalancesByPubkeys for mocking.
-func (fv *FakeValidator) BalancesByPubkeys(_ context.Context) map[[fieldparams.BLSPubkeyLength]byte]uint64 {
+func (fv *FakeValidator) BalancesByPubkeys(_ context.Context) map[[dilithium2.CryptoPublicKeyBytes]byte]uint64 {
 	return fv.Balances
 }
 
 // IndicesToPubkeys for mocking.
-func (fv *FakeValidator) IndicesToPubkeys(_ context.Context) map[uint64][fieldparams.BLSPubkeyLength]byte {
+func (fv *FakeValidator) IndicesToPubkeys(_ context.Context) map[uint64][dilithium2.CryptoPublicKeyBytes]byte {
 	return fv.IndexToPubkeyMap
 }
 
 // PubkeysToIndices for mocking.
-func (fv *FakeValidator) PubkeysToIndices(_ context.Context) map[[fieldparams.BLSPubkeyLength]byte]uint64 {
+func (fv *FakeValidator) PubkeysToIndices(_ context.Context) map[[dilithium2.CryptoPublicKeyBytes]byte]uint64 {
 	return fv.PubkeyToIndexMap
 }
 
 // PubkeysToStatuses for mocking.
-func (fv *FakeValidator) PubkeysToStatuses(_ context.Context) map[[fieldparams.BLSPubkeyLength]byte]ethpb.ValidatorStatus {
+func (fv *FakeValidator) PubkeysToStatuses(_ context.Context) map[[dilithium2.CryptoPublicKeyBytes]byte]ethpb.ValidatorStatus {
 	return fv.PubkeysToStatusesMap
 }
 
@@ -239,7 +239,7 @@ func (fv *FakeValidator) ReceiveBlocks(_ context.Context, connectionErrorChannel
 }
 
 // HandleKeyReload for mocking
-func (fv *FakeValidator) HandleKeyReload(_ context.Context, newKeys [][fieldparams.BLSPubkeyLength]byte) (anyActive bool, err error) {
+func (fv *FakeValidator) HandleKeyReload(_ context.Context, newKeys [][dilithium2.CryptoPublicKeyBytes]byte) (anyActive bool, err error) {
 	fv.HandleKeyReloadCalled = true
 	for _, key := range newKeys {
 		if bytes.Equal(key[:], ActiveKey[:]) {
@@ -250,7 +250,7 @@ func (fv *FakeValidator) HandleKeyReload(_ context.Context, newKeys [][fieldpara
 }
 
 // SubmitSignedContributionAndProof for mocking
-func (_ *FakeValidator) SubmitSignedContributionAndProof(_ context.Context, _ primitives.Slot, _ [fieldparams.BLSPubkeyLength]byte) {
+func (_ *FakeValidator) SubmitSignedContributionAndProof(_ context.Context, _ primitives.Slot, _ [dilithium2.CryptoPublicKeyBytes]byte) {
 }
 
 // HasProposerSettings for mocking

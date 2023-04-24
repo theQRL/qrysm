@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/validator/db/iface"
 	"github.com/cyyber/qrysm/v4/validator/db/kv"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // SetupDB instantiates and returns a DB instance for the validator client.
-func SetupDB(t testing.TB, pubkeys [][fieldparams.BLSPubkeyLength]byte) iface.ValidatorDB {
+func SetupDB(t testing.TB, pubkeys [][dilithium2.CryptoPublicKeyBytes]byte) iface.ValidatorDB {
 	db, err := kv.NewKVStore(context.Background(), t.TempDir(), &kv.Config{
 		PubKeys: pubkeys,
 	})

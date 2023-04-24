@@ -10,13 +10,12 @@ import (
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
 	lruwrpr "github.com/cyyber/qrysm/v4/cache/lru"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	blocktest "github.com/cyyber/qrysm/v4/consensus-types/blocks/testing"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
@@ -28,6 +27,8 @@ import (
 	"github.com/cyyber/qrysm/v4/validator/graffiti"
 	"github.com/golang/mock/gomock"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	common2 "github.com/theQRL/go-qrllib/common"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -35,46 +36,46 @@ type mocks struct {
 	validatorClient *validatormock.MockValidatorClient
 	nodeClient      *validatormock.MockNodeClient
 	slasherClient   *validatormock.MockSlasherClient
-	signfunc        func(context.Context, *validatorpb.SignRequest) (bls.Signature, error)
+	signfunc        func(context.Context, *validatorpb.SignRequest) (dilithium.Signature, error)
 }
 
 type mockSignature struct{}
 
-func (mockSignature) Verify(bls.PublicKey, []byte) bool {
+func (mockSignature) Verify(dilithium.PublicKey, []byte) bool {
 	return true
 }
-func (mockSignature) AggregateVerify([]bls.PublicKey, [][32]byte) bool {
+func (mockSignature) AggregateVerify([]dilithium.PublicKey, [][32]byte) bool {
 	return true
 }
-func (mockSignature) FastAggregateVerify([]bls.PublicKey, [32]byte) bool {
+func (mockSignature) FastAggregateVerify([]dilithium.PublicKey, [32]byte) bool {
 	return true
 }
-func (mockSignature) Eth2FastAggregateVerify([]bls.PublicKey, [32]byte) bool {
+func (mockSignature) Eth2FastAggregateVerify([]dilithium.PublicKey, [32]byte) bool {
 	return true
 }
 func (mockSignature) Marshal() []byte {
 	return make([]byte, 32)
 }
-func (m mockSignature) Copy() bls.Signature {
+func (m mockSignature) Copy() dilithium.Signature {
 	return m
 }
 
-func setup(t *testing.T) (*validator, *mocks, bls.SecretKey, func()) {
-	validatorKey, err := bls.RandKey()
+func setup(t *testing.T) (*validator, *mocks, dilithium.DilithiumKey, func()) {
+	validatorKey, err := dilithium.RandKey()
 	require.NoError(t, err)
 	return setupWithKey(t, validatorKey)
 }
 
-func setupWithKey(t *testing.T, validatorKey bls.SecretKey) (*validator, *mocks, bls.SecretKey, func()) {
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+func setupWithKey(t *testing.T, validatorKey dilithium.DilithiumKey) (*validator, *mocks, dilithium.DilithiumKey, func()) {
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
-	valDB := testing2.SetupDB(t, [][fieldparams.BLSPubkeyLength]byte{pubKey})
+	valDB := testing2.SetupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{pubKey})
 	ctrl := gomock.NewController(t)
 	m := &mocks{
 		validatorClient: validatormock.NewMockValidatorClient(ctrl),
 		nodeClient:      validatormock.NewMockNodeClient(ctrl),
 		slasherClient:   validatormock.NewMockSlasherClient(ctrl),
-		signfunc: func(ctx context.Context, req *validatorpb.SignRequest) (bls.Signature, error) {
+		signfunc: func(ctx context.Context, req *validatorpb.SignRequest) (dilithium.Signature, error) {
 			return mockSignature{}, nil
 		},
 	}
@@ -82,7 +83,7 @@ func setupWithKey(t *testing.T, validatorKey bls.SecretKey) (*validator, *mocks,
 	aggregatedSlotCommitteeIDCache := lruwrpr.New(int(params.BeaconConfig().MaxCommitteesPerSlot))
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	km := &mockKeymanager{
-		keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+		keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 			pubKey: validatorKey,
 		},
 	}
@@ -103,7 +104,7 @@ func TestProposeBlock_DoesNotProposeGenesisBlock(t *testing.T) {
 	hook := logTest.NewGlobal()
 	validator, _, validatorKey, finish := setup(t)
 	defer finish()
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.ProposeBlock(context.Background(), 0, pubKey)
 
@@ -114,7 +115,7 @@ func TestProposeBlock_DomainDataFailed(t *testing.T) {
 	hook := logTest.NewGlobal()
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 
 	m.validatorClient.EXPECT().DomainData(
@@ -130,7 +131,7 @@ func TestProposeBlock_DomainDataIsNil(t *testing.T) {
 	hook := logTest.NewGlobal()
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 
 	m.validatorClient.EXPECT().DomainData(
@@ -172,7 +173,7 @@ func TestProposeBlock_RequestBlockFailed(t *testing.T) {
 			hook := logTest.NewGlobal()
 			validator, m, validatorKey, finish := setup(t)
 			defer finish()
-			var pubKey [fieldparams.BLSPubkeyLength]byte
+			var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 			copy(pubKey[:], validatorKey.PublicKey().Marshal())
 
 			m.validatorClient.EXPECT().DomainData(
@@ -227,7 +228,7 @@ func TestProposeBlock_ProposeBlockFailed(t *testing.T) {
 			hook := logTest.NewGlobal()
 			validator, m, validatorKey, finish := setup(t)
 			defer finish()
-			var pubKey [fieldparams.BLSPubkeyLength]byte
+			var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 			copy(pubKey[:], validatorKey.PublicKey().Marshal())
 
 			m.validatorClient.EXPECT().DomainData(
@@ -325,7 +326,7 @@ func TestProposeBlock_BlocksDoubleProposal(t *testing.T) {
 			hook := logTest.NewGlobal()
 			validator, m, validatorKey, finish := setup(t)
 			defer finish()
-			var pubKey [fieldparams.BLSPubkeyLength]byte
+			var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 			copy(pubKey[:], validatorKey.PublicKey().Marshal())
 
 			var dummyRoot [32]byte
@@ -371,7 +372,7 @@ func TestProposeBlock_BlocksDoubleProposal_After54KEpochs(t *testing.T) {
 	hook := logTest.NewGlobal()
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 
 	var dummyRoot [32]byte
@@ -447,7 +448,7 @@ func TestProposeBlock_AllowsPastProposals(t *testing.T) {
 			hook := logTest.NewGlobal()
 			validator, m, validatorKey, finish := setup(t)
 			defer finish()
-			var pubKey [fieldparams.BLSPubkeyLength]byte
+			var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 			copy(pubKey[:], validatorKey.PublicKey().Marshal())
 
 			// Save a dummy proposal history at slot 0.
@@ -592,7 +593,7 @@ func testProposeBlock(t *testing.T, graffiti []byte) {
 			hook := logTest.NewGlobal()
 			validator, m, validatorKey, finish := setup(t)
 			defer finish()
-			var pubKey [fieldparams.BLSPubkeyLength]byte
+			var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 			copy(pubKey[:], validatorKey.PublicKey().Marshal())
 
 			validator.graffiti = graffiti
@@ -823,7 +824,7 @@ func TestSignBlock(t *testing.T) {
 	validator, m, _, finish := setup(t)
 	defer finish()
 
-	secretKey, err := bls.SecretKeyFromBytes(bytesutil.PadTo([]byte{1}, 32))
+	secretKey, err := dilithium.SecretKeyFromBytes(bytesutil.PadTo([]byte{1}, common2.SeedSize))
 	require.NoError(t, err, "Failed to generate key from bytes")
 	publicKey := secretKey.PublicKey()
 	proposerDomain := make([]byte, 32)
@@ -834,10 +835,10 @@ func TestSignBlock(t *testing.T) {
 	blk := util.NewBeaconBlock()
 	blk.Block.Slot = 1
 	blk.Block.ProposerIndex = 100
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], publicKey.Marshal())
 	km := &mockKeymanager{
-		keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+		keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 			pubKey: secretKey,
 		},
 	}
@@ -864,7 +865,7 @@ func TestSignAltairBlock(t *testing.T) {
 	validator, m, _, finish := setup(t)
 	defer finish()
 
-	secretKey, err := bls.SecretKeyFromBytes(bytesutil.PadTo([]byte{1}, 32))
+	secretKey, err := dilithium.SecretKeyFromBytes(bytesutil.PadTo([]byte{1}, common2.SeedSize))
 	require.NoError(t, err, "Failed to generate key from bytes")
 	publicKey := secretKey.PublicKey()
 	proposerDomain := make([]byte, 32)
@@ -875,10 +876,10 @@ func TestSignAltairBlock(t *testing.T) {
 	blk := util.NewBeaconBlockAltair()
 	blk.Block.Slot = 1
 	blk.Block.ProposerIndex = 100
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], publicKey.Marshal())
 	km := &mockKeymanager{
-		keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+		keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 			pubKey: secretKey,
 		},
 	}
@@ -900,7 +901,7 @@ func TestSignBellatrixBlock(t *testing.T) {
 	validator, m, _, finish := setup(t)
 	defer finish()
 
-	secretKey, err := bls.SecretKeyFromBytes(bytesutil.PadTo([]byte{1}, 32))
+	secretKey, err := dilithium.SecretKeyFromBytes(bytesutil.PadTo([]byte{1}, common2.SeedSize))
 	require.NoError(t, err, "Failed to generate key from bytes")
 	publicKey := secretKey.PublicKey()
 	proposerDomain := make([]byte, 32)
@@ -911,10 +912,10 @@ func TestSignBellatrixBlock(t *testing.T) {
 	blk := util.NewBeaconBlockBellatrix()
 	blk.Block.Slot = 1
 	blk.Block.ProposerIndex = 100
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], publicKey.Marshal())
 	km := &mockKeymanager{
-		keysMap: map[[fieldparams.BLSPubkeyLength]byte]bls.SecretKey{
+		keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
 			pubKey: secretKey,
 		},
 	}
@@ -937,7 +938,7 @@ func TestGetGraffiti_Ok(t *testing.T) {
 	m := &mocks{
 		validatorClient: validatormock.NewMockValidatorClient(ctrl),
 	}
-	pubKey := [fieldparams.BLSPubkeyLength]byte{'a'}
+	pubKey := [dilithium2.CryptoPublicKeyBytes]byte{'a'}
 	tests := []struct {
 		name string
 		v    *validator
@@ -1014,8 +1015,8 @@ func TestGetGraffiti_Ok(t *testing.T) {
 }
 
 func TestGetGraffitiOrdered_Ok(t *testing.T) {
-	pubKey := [fieldparams.BLSPubkeyLength]byte{'a'}
-	valDB := testing2.SetupDB(t, [][fieldparams.BLSPubkeyLength]byte{pubKey})
+	pubKey := [dilithium2.CryptoPublicKeyBytes]byte{'a'}
+	valDB := testing2.SetupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{pubKey})
 	ctrl := gomock.NewController(t)
 	m := &mocks{
 		validatorClient: validatormock.NewMockValidatorClient(ctrl),

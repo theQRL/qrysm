@@ -35,6 +35,7 @@ import (
 	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/golang/mock/gomock"
 	"github.com/prysmaticlabs/go-bitfield"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -123,7 +124,7 @@ func TestServer_ListAttestations_NoPagination(t *testing.T) {
 		blockExample := util.NewBeaconBlock()
 		blockExample.Block.Body.Attestations = []*ethpb.Attestation{
 			{
-				Signature: make([]byte, fieldparams.BLSSignatureLength),
+				Signature: make([]byte, dilithium2.CryptoBytes),
 				Data: &ethpb.AttestationData{
 					Target:          &ethpb.Checkpoint{Root: bytesutil.PadTo([]byte("root"), 32)},
 					Source:          &ethpb.Checkpoint{Root: bytesutil.PadTo([]byte("root"), 32)},
@@ -181,7 +182,7 @@ func TestServer_ListAttestations_FiltersCorrectly(t *testing.T) {
 									Slot: 3,
 								},
 								AggregationBits: bitfield.Bitlist{0b11},
-								Signature:       bytesutil.PadTo([]byte("sig"), fieldparams.BLSSignatureLength),
+								Signature:       bytesutil.PadTo([]byte("sig"), dilithium2.CryptoBytes),
 							},
 						},
 					},
@@ -206,7 +207,7 @@ func TestServer_ListAttestations_FiltersCorrectly(t *testing.T) {
 								Slot: 4 + params.BeaconConfig().SlotsPerEpoch,
 							},
 							AggregationBits: bitfield.Bitlist{0b11},
-							Signature:       bytesutil.PadTo([]byte("sig"), fieldparams.BLSSignatureLength),
+							Signature:       bytesutil.PadTo([]byte("sig"), dilithium2.CryptoBytes),
 						},
 					},
 				},
@@ -232,7 +233,7 @@ func TestServer_ListAttestations_FiltersCorrectly(t *testing.T) {
 									Slot: 4,
 								},
 								AggregationBits: bitfield.Bitlist{0b11},
-								Signature:       bytesutil.PadTo([]byte("sig"), fieldparams.BLSSignatureLength),
+								Signature:       bytesutil.PadTo([]byte("sig"), dilithium2.CryptoBytes),
 							},
 						},
 					},
@@ -387,7 +388,7 @@ func TestServer_ListAttestations_Pagination_OutOfRange(t *testing.T) {
 								Slot:            i,
 							},
 							AggregationBits: bitfield.Bitlist{0b11},
-							Signature:       make([]byte, fieldparams.BLSSignatureLength),
+							Signature:       make([]byte, dilithium2.CryptoBytes),
 						},
 					},
 				},
@@ -440,7 +441,7 @@ func TestServer_ListAttestations_Pagination_DefaultPageSize(t *testing.T) {
 					Source:          &ethpb.Checkpoint{Root: bytesutil.PadTo([]byte("root"), 32)},
 					Slot:            i,
 				},
-				Signature:       bytesutil.PadTo([]byte("root"), fieldparams.BLSSignatureLength),
+				Signature:       bytesutil.PadTo([]byte("root"), dilithium2.CryptoBytes),
 				AggregationBits: bitfield.Bitlist{0b11},
 			},
 		}
@@ -519,7 +520,7 @@ func TestServer_ListIndexedAttestations_GenesisEpoch(t *testing.T) {
 		blockExample := util.NewBeaconBlock()
 		blockExample.Block.Body.Attestations = []*ethpb.Attestation{
 			{
-				Signature: make([]byte, fieldparams.BLSSignatureLength),
+				Signature: make([]byte, dilithium2.CryptoBytes),
 				Data: &ethpb.AttestationData{
 					BeaconBlockRoot: make([]byte, fieldparams.RootLength),
 					Target: &ethpb.Checkpoint{
@@ -713,7 +714,7 @@ func TestServer_AttestationPool_Pagination_OutOfRange(t *testing.T) {
 				Target:          &ethpb.Checkpoint{Root: bytesutil.PadTo([]byte{1}, 32)},
 			},
 			AggregationBits: bitfield.Bitlist{0b1101},
-			Signature:       bytesutil.PadTo([]byte{1}, fieldparams.BLSSignatureLength),
+			Signature:       bytesutil.PadTo([]byte{1}, dilithium2.CryptoBytes),
 		},
 		{
 			Data: &ethpb.AttestationData{
@@ -723,7 +724,7 @@ func TestServer_AttestationPool_Pagination_OutOfRange(t *testing.T) {
 				Target:          &ethpb.Checkpoint{Root: bytesutil.PadTo([]byte{2}, 32)},
 			},
 			AggregationBits: bitfield.Bitlist{0b1101},
-			Signature:       bytesutil.PadTo([]byte{2}, fieldparams.BLSSignatureLength),
+			Signature:       bytesutil.PadTo([]byte{2}, dilithium2.CryptoBytes),
 		},
 		{
 			Data: &ethpb.AttestationData{
@@ -733,7 +734,7 @@ func TestServer_AttestationPool_Pagination_OutOfRange(t *testing.T) {
 				Target:          &ethpb.Checkpoint{Root: bytesutil.PadTo([]byte{3}, 32)},
 			},
 			AggregationBits: bitfield.Bitlist{0b1101},
-			Signature:       bytesutil.PadTo([]byte{3}, fieldparams.BLSSignatureLength),
+			Signature:       bytesutil.PadTo([]byte{3}, dilithium2.CryptoBytes),
 		},
 	}
 	require.NoError(t, bs.AttestationsPool.SaveAggregatedAttestations(atts))

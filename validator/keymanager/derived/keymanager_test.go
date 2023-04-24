@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/crypto/rand"
 	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	mock "github.com/cyyber/qrysm/v4/validator/accounts/testing"
 	constant "github.com/cyyber/qrysm/v4/validator/testing"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/tyler-smith/go-bip39"
 	util "github.com/wealdtech/go-eth2-util"
 )
@@ -99,11 +99,11 @@ func TestDerivedKeymanager_FetchValidatingPublicKeys(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, numAccounts, len(publicKeys))
 
-	wantedPubKeys := make([][fieldparams.BLSPubkeyLength]byte, numAccounts)
+	wantedPubKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, numAccounts)
 	for i := 0; i < numAccounts; i++ {
 		privKey, err := util.PrivateKeyFromSeedAndPath(derivedSeed, fmt.Sprintf(ValidatingKeyDerivationPathTemplate, i))
 		require.NoError(t, err)
-		var pubKey [fieldparams.BLSPubkeyLength]byte
+		var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(pubKey[:], privKey.PublicKey().Marshal())
 		wantedPubKeys[i] = pubKey
 	}
@@ -180,9 +180,9 @@ func TestDerivedKeymanager_Sign(t *testing.T) {
 	}
 	sig, err := dr.Sign(ctx, signRequest)
 	require.NoError(t, err)
-	pubKey, err := bls.PublicKeyFromBytes(pubKeys[0][:])
+	pubKey, err := dilithium.PublicKeyFromBytes(pubKeys[0][:])
 	require.NoError(t, err)
-	wrongPubKey, err := bls.PublicKeyFromBytes(pubKeys[1][:])
+	wrongPubKey, err := dilithium.PublicKeyFromBytes(pubKeys[1][:])
 	require.NoError(t, err)
 
 	// Check if the signature verifies.

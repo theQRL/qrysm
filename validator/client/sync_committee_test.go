@@ -7,7 +7,7 @@ import (
 
 	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/assert"
@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/go-bitfield"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -32,7 +33,7 @@ func TestSubmitSyncCommitteeMessage_ValidatorDutiesRequestFailure(t *testing.T) 
 		Root: bytesutil.PadTo([]byte{}, 32),
 	}, nil)
 
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.SubmitSyncCommitteeMessage(context.Background(), 1, pubKey)
 	require.LogsContain(t, hook, "Could not fetch validator assignment")
@@ -64,7 +65,7 @@ func TestSubmitSyncCommitteeMessage_BadDomainData(t *testing.T) {
 		DomainData(gomock.Any(), gomock.Any()).
 		Return(nil, errors.New("uh oh"))
 
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.SubmitSyncCommitteeMessage(context.Background(), 1, pubKey)
 	require.LogsContain(t, hook, "Could not get sync committee domain data")
@@ -104,7 +105,7 @@ func TestSubmitSyncCommitteeMessage_CouldNotSubmit(t *testing.T) {
 		gomock.AssignableToTypeOf(&ethpb.SyncCommitteeMessage{}),
 	).Return(&emptypb.Empty{}, errors.New("uh oh") /* error */)
 
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.SubmitSyncCommitteeMessage(context.Background(), 1, pubKey)
 
@@ -148,7 +149,7 @@ func TestSubmitSyncCommitteeMessage_OK(t *testing.T) {
 		generatedMsg = msg
 	}).Return(&emptypb.Empty{}, nil /* error */)
 
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.SubmitSyncCommitteeMessage(context.Background(), 1, pubKey)
 
@@ -164,7 +165,7 @@ func TestSubmitSignedContributionAndProof_ValidatorDutiesRequestFailure(t *testi
 	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{}}
 	defer finish()
 
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.SubmitSignedContributionAndProof(context.Background(), 1, pubKey)
 	require.LogsContain(t, hook, "Could not fetch validator assignment")
@@ -184,7 +185,7 @@ func TestSubmitSignedContributionAndProof_GetSyncSubcommitteeIndexFailure(t *tes
 	}}
 	defer finish()
 
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	m.validatorClient.EXPECT().GetSyncSubcommitteeIndex(
 		gomock.Any(), // ctx
@@ -212,7 +213,7 @@ func TestSubmitSignedContributionAndProof_NothingToDo(t *testing.T) {
 	}}
 	defer finish()
 
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	m.validatorClient.EXPECT().GetSyncSubcommitteeIndex(
 		gomock.Any(), // ctx
@@ -240,7 +241,7 @@ func TestSubmitSignedContributionAndProof_BadDomain(t *testing.T) {
 	}}
 	defer finish()
 
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	m.validatorClient.EXPECT().GetSyncSubcommitteeIndex(
 		gomock.Any(), // ctx
@@ -267,7 +268,7 @@ func TestSubmitSignedContributionAndProof_CouldNotGetContribution(t *testing.T) 
 	// Hardcode secret key in order to have a valid aggregator signature.
 	rawKey, err := hex.DecodeString("659e875e1b062c03f2f2a57332974d475b97df6cfc581d322e79642d39aca8fd")
 	assert.NoError(t, err)
-	validatorKey, err := bls.SecretKeyFromBytes(rawKey)
+	validatorKey, err := dilithium.SecretKeyFromBytes(rawKey)
 	assert.NoError(t, err)
 
 	validator, m, validatorKey, finish := setupWithKey(t, validatorKey)
@@ -282,7 +283,7 @@ func TestSubmitSignedContributionAndProof_CouldNotGetContribution(t *testing.T) 
 	}}
 	defer finish()
 
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	m.validatorClient.EXPECT().GetSyncSubcommitteeIndex(
 		gomock.Any(), // ctx
@@ -317,7 +318,7 @@ func TestSubmitSignedContributionAndProof_CouldNotSubmitContribution(t *testing.
 	// Hardcode secret key in order to have a valid aggregator signature.
 	rawKey, err := hex.DecodeString("659e875e1b062c03f2f2a57332974d475b97df6cfc581d322e79642d39aca8fd")
 	assert.NoError(t, err)
-	validatorKey, err := bls.SecretKeyFromBytes(rawKey)
+	validatorKey, err := dilithium.SecretKeyFromBytes(rawKey)
 	assert.NoError(t, err)
 
 	validator, m, validatorKey, finish := setupWithKey(t, validatorKey)
@@ -332,7 +333,7 @@ func TestSubmitSignedContributionAndProof_CouldNotSubmitContribution(t *testing.
 	}}
 	defer finish()
 
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	m.validatorClient.EXPECT().GetSyncSubcommitteeIndex(
 		gomock.Any(), // ctx
@@ -360,7 +361,7 @@ func TestSubmitSignedContributionAndProof_CouldNotSubmitContribution(t *testing.
 		},
 	).Return(&ethpb.SyncCommitteeContribution{
 		BlockRoot:       make([]byte, fieldparams.RootLength),
-		Signature:       make([]byte, 96),
+		Signature:       make([]byte, dilithium2.CryptoBytes),
 		AggregationBits: aggBits,
 	}, nil)
 
@@ -378,7 +379,7 @@ func TestSubmitSignedContributionAndProof_CouldNotSubmitContribution(t *testing.
 				AggregatorIndex: 7,
 				Contribution: &ethpb.SyncCommitteeContribution{
 					BlockRoot:         make([]byte, fieldparams.RootLength),
-					Signature:         make([]byte, 96),
+					Signature:         make([]byte, dilithium2.CryptoBytes),
 					AggregationBits:   bitfield.NewBitvector128(),
 					Slot:              1,
 					SubcommitteeIndex: 1,
@@ -395,7 +396,7 @@ func TestSubmitSignedContributionAndProof_Ok(t *testing.T) {
 	// Hardcode secret key in order to have a valid aggregator signature.
 	rawKey, err := hex.DecodeString("659e875e1b062c03f2f2a57332974d475b97df6cfc581d322e79642d39aca8fd")
 	assert.NoError(t, err)
-	validatorKey, err := bls.SecretKeyFromBytes(rawKey)
+	validatorKey, err := dilithium.SecretKeyFromBytes(rawKey)
 	assert.NoError(t, err)
 
 	validator, m, validatorKey, finish := setupWithKey(t, validatorKey)
@@ -410,7 +411,7 @@ func TestSubmitSignedContributionAndProof_Ok(t *testing.T) {
 	}}
 	defer finish()
 
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	m.validatorClient.EXPECT().GetSyncSubcommitteeIndex(
 		gomock.Any(), // ctx
@@ -438,7 +439,7 @@ func TestSubmitSignedContributionAndProof_Ok(t *testing.T) {
 		},
 	).Return(&ethpb.SyncCommitteeContribution{
 		BlockRoot:       make([]byte, fieldparams.RootLength),
-		Signature:       make([]byte, 96),
+		Signature:       make([]byte, dilithium2.CryptoBytes),
 		AggregationBits: aggBits,
 	}, nil)
 
@@ -456,7 +457,7 @@ func TestSubmitSignedContributionAndProof_Ok(t *testing.T) {
 				AggregatorIndex: 7,
 				Contribution: &ethpb.SyncCommitteeContribution{
 					BlockRoot:         make([]byte, 32),
-					Signature:         make([]byte, 96),
+					Signature:         make([]byte, dilithium2.CryptoBytes),
 					AggregationBits:   bitfield.NewBitvector128(),
 					Slot:              1,
 					SubcommitteeIndex: 1,

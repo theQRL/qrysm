@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	"github.com/cyyber/qrysm/v4/config/features"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/golang/mock/gomock"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func Test_slashableAttestationCheck(t *testing.T) {
@@ -21,7 +21,7 @@ func Test_slashableAttestationCheck(t *testing.T) {
 	defer reset()
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	att := &ethpb.IndexedAttestation{
 		AttestingIndices: []uint64{1, 2},
@@ -69,7 +69,7 @@ func Test_slashableAttestationCheck_UpdatesLowestSignedEpochs(t *testing.T) {
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
 	ctx := context.Background()
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	att := &ethpb.IndexedAttestation{
 		AttestingIndices: []uint64{1, 2},
@@ -143,7 +143,7 @@ func Test_slashableAttestationCheck_OK(t *testing.T) {
 		},
 	}
 	sr := [32]byte{1}
-	fakePubkey := bytesutil.ToBytes48([]byte("test"))
+	fakePubkey := bytesutil.ToBytes2592([]byte("test"))
 
 	mocks.slasherClient.EXPECT().IsSlashableAttestation(
 		gomock.Any(), // ctx
@@ -185,7 +185,7 @@ func Test_slashableAttestationCheck_GenesisEpoch(t *testing.T) {
 		att,
 	).Return(&ethpb.AttesterSlashingResponse{}, nil /*err*/)
 
-	fakePubkey := bytesutil.ToBytes48([]byte("test"))
+	fakePubkey := bytesutil.ToBytes2592([]byte("test"))
 	err := validator.slashableAttestationCheck(ctx, att, fakePubkey, [32]byte{})
 	require.NoError(t, err, "Expected allowed attestation not to throw error")
 	e, exists, err := validator.db.LowestSignedSourceEpoch(context.Background(), fakePubkey)

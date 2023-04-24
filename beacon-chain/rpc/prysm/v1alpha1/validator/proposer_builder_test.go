@@ -18,6 +18,7 @@ import (
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestServer_circuitBreakBuilder(t *testing.T) {
@@ -83,7 +84,7 @@ func TestServer_validatorRegistered(t *testing.T) {
 	require.Equal(t, false, reg)
 
 	f := bytesutil.PadTo([]byte{}, fieldparams.FeeRecipientLength)
-	p := bytesutil.PadTo([]byte{}, fieldparams.BLSPubkeyLength)
+	p := bytesutil.PadTo([]byte{}, dilithium2.CryptoPublicKeyBytes)
 	require.NoError(t, proposerServer.BeaconDB.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{0, 1},
 		[]*ethpb.ValidatorRegistrationV1{{FeeRecipient: f, Pubkey: p}, {FeeRecipient: f, Pubkey: p}}))
 
@@ -115,7 +116,7 @@ func TestServer_canUseBuilder(t *testing.T) {
 	require.Equal(t, false, reg)
 
 	f := bytesutil.PadTo([]byte{}, fieldparams.FeeRecipientLength)
-	p := bytesutil.PadTo([]byte{}, fieldparams.BLSPubkeyLength)
+	p := bytesutil.PadTo([]byte{}, dilithium2.CryptoPublicKeyBytes)
 	require.NoError(t, proposerServer.BeaconDB.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{0},
 		[]*ethpb.ValidatorRegistrationV1{{FeeRecipient: f, Pubkey: p}}))
 

@@ -16,7 +16,6 @@ import (
 	p2ptest "github.com/cyyber/qrysm/v4/beacon-chain/p2p/testing"
 	mockSync "github.com/cyyber/qrysm/v4/beacon-chain/sync/initial-sync/testing"
 	lruwrpr "github.com/cyyber/qrysm/v4/cache/lru"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/crypto/bls"
@@ -29,6 +28,7 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
 	"github.com/prysmaticlabs/go-bitfield"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestVerifyIndexInCommittee_CanVerify(t *testing.T) {
@@ -106,11 +106,11 @@ func TestValidateAggregateAndProof_NoBlock(t *testing.T) {
 	})
 
 	aggregateAndProof := &ethpb.AggregateAttestationAndProof{
-		SelectionProof:  bytesutil.PadTo([]byte{'A'}, fieldparams.BLSSignatureLength),
+		SelectionProof:  bytesutil.PadTo([]byte{'A'}, dilithium2.CryptoBytes),
 		Aggregate:       att,
 		AggregatorIndex: 0,
 	}
-	signedAggregateAndProof := &ethpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof, Signature: make([]byte, fieldparams.BLSSignatureLength)}
+	signedAggregateAndProof := &ethpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof, Signature: make([]byte, dilithium2.CryptoBytes)}
 
 	c := lruwrpr.New(10)
 	r := &Service{
@@ -169,14 +169,14 @@ func TestValidateAggregateAndProof_NotWithinSlotRange(t *testing.T) {
 			Target:          &ethpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
 		},
 		AggregationBits: aggBits,
-		Signature:       make([]byte, fieldparams.BLSSignatureLength),
+		Signature:       make([]byte, dilithium2.CryptoBytes),
 	}
 
 	aggregateAndProof := &ethpb.AggregateAttestationAndProof{
 		Aggregate:      att,
-		SelectionProof: make([]byte, fieldparams.BLSSignatureLength),
+		SelectionProof: make([]byte, dilithium2.CryptoBytes),
 	}
-	signedAggregateAndProof := &ethpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof, Signature: make([]byte, fieldparams.BLSSignatureLength)}
+	signedAggregateAndProof := &ethpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof, Signature: make([]byte, dilithium2.CryptoBytes)}
 
 	require.NoError(t, beaconState.SetGenesisTime(uint64(time.Now().Unix())))
 
@@ -253,14 +253,14 @@ func TestValidateAggregateAndProof_ExistedInPool(t *testing.T) {
 			Target:          &ethpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
 		},
 		AggregationBits: aggBits,
-		Signature:       make([]byte, fieldparams.BLSSignatureLength),
+		Signature:       make([]byte, dilithium2.CryptoBytes),
 	}
 
 	aggregateAndProof := &ethpb.AggregateAttestationAndProof{
 		Aggregate:      att,
-		SelectionProof: make([]byte, fieldparams.BLSSignatureLength),
+		SelectionProof: make([]byte, dilithium2.CryptoBytes),
 	}
-	signedAggregateAndProof := &ethpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof, Signature: make([]byte, fieldparams.BLSSignatureLength)}
+	signedAggregateAndProof := &ethpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof, Signature: make([]byte, dilithium2.CryptoBytes)}
 
 	require.NoError(t, beaconState.SetGenesisTime(uint64(time.Now().Unix())))
 	r := &Service{

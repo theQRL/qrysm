@@ -3,22 +3,22 @@ package cache
 import (
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestSyncSubnetIDsCache_Roundtrip(t *testing.T) {
 	c := newSyncSubnetIDs()
 
 	for i := 0; i < 20; i++ {
-		pubkey := [fieldparams.BLSPubkeyLength]byte{byte(i)}
+		pubkey := [dilithium2.CryptoPublicKeyBytes]byte{byte(i)}
 		c.AddSyncCommitteeSubnets(pubkey[:], 100, []uint64{uint64(i)}, 0)
 	}
 
 	for i := uint64(0); i < 20; i++ {
-		pubkey := [fieldparams.BLSPubkeyLength]byte{byte(i)}
+		pubkey := [dilithium2.CryptoPublicKeyBytes]byte{byte(i)}
 
 		idxs, _, ok, _ := c.GetSyncCommitteeSubnets(pubkey[:], 100)
 		if !ok {
@@ -35,7 +35,7 @@ func TestSyncSubnetIDsCache_ValidateCurrentEpoch(t *testing.T) {
 	c := newSyncSubnetIDs()
 
 	for i := 0; i < 20; i++ {
-		pubkey := [fieldparams.BLSPubkeyLength]byte{byte(i)}
+		pubkey := [dilithium2.CryptoPublicKeyBytes]byte{byte(i)}
 		c.AddSyncCommitteeSubnets(pubkey[:], 100, []uint64{uint64(i)}, 0)
 	}
 
@@ -43,7 +43,7 @@ func TestSyncSubnetIDsCache_ValidateCurrentEpoch(t *testing.T) {
 	assert.Equal(t, 0, len(coms))
 
 	for i := uint64(0); i < 20; i++ {
-		pubkey := [fieldparams.BLSPubkeyLength]byte{byte(i)}
+		pubkey := [dilithium2.CryptoPublicKeyBytes]byte{byte(i)}
 
 		_, jEpoch, ok, _ := c.GetSyncCommitteeSubnets(pubkey[:], 100)
 		if !ok {

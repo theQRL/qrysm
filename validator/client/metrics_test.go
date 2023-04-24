@@ -3,7 +3,6 @@ package client
 import (
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
@@ -11,22 +10,23 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/time/slots"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestUpdateLogAggregateStats(t *testing.T) {
 	v := &validator{
 		logValidatorBalances: true,
-		startBalances:        make(map[[fieldparams.BLSPubkeyLength]byte]uint64),
-		prevBalance:          make(map[[fieldparams.BLSPubkeyLength]byte]uint64),
+		startBalances:        make(map[[dilithium2.CryptoPublicKeyBytes]byte]uint64),
+		prevBalance:          make(map[[dilithium2.CryptoPublicKeyBytes]byte]uint64),
 		voteStats: voteStats{
 			startEpoch: 0, // this would otherwise have been previously set in LogValidatorGainsAndLosses()
 		},
 	}
 
-	pubKeyBytes := [][fieldparams.BLSPubkeyLength]byte{
-		bytesutil.ToBytes48([]byte("000000000000000000000000000000000000000012345678")),
-		bytesutil.ToBytes48([]byte("000000000000000000000000000000000000000099999999")),
-		bytesutil.ToBytes48([]byte("000000000000000000000000000000000000000055555555")),
+	pubKeyBytes := [][dilithium2.CryptoPublicKeyBytes]byte{
+		bytesutil.ToBytes2592([]byte("000000000000000000000000000000000000000012345678")),
+		bytesutil.ToBytes2592([]byte("000000000000000000000000000000000000000099999999")),
+		bytesutil.ToBytes2592([]byte("000000000000000000000000000000000000000055555555")),
 	}
 
 	v.startBalances[pubKeyBytes[0]] = uint64(32100000000)
@@ -36,9 +36,9 @@ func TestUpdateLogAggregateStats(t *testing.T) {
 	responses := []*ethpb.ValidatorPerformanceResponse{
 		{
 			PublicKeys: [][]byte{
-				bytesutil.FromBytes48(pubKeyBytes[0]),
-				bytesutil.FromBytes48(pubKeyBytes[1]),
-				bytesutil.FromBytes48(pubKeyBytes[2]),
+				bytesutil.FromBytes2592(pubKeyBytes[0]),
+				bytesutil.FromBytes2592(pubKeyBytes[1]),
+				bytesutil.FromBytes2592(pubKeyBytes[2]),
 			},
 			CorrectlyVotedHead:   []bool{false, true, false},
 			CorrectlyVotedSource: []bool{false, true, true},
@@ -46,9 +46,9 @@ func TestUpdateLogAggregateStats(t *testing.T) {
 		},
 		{
 			PublicKeys: [][]byte{
-				bytesutil.FromBytes48(pubKeyBytes[0]),
-				bytesutil.FromBytes48(pubKeyBytes[1]),
-				bytesutil.FromBytes48(pubKeyBytes[2]),
+				bytesutil.FromBytes2592(pubKeyBytes[0]),
+				bytesutil.FromBytes2592(pubKeyBytes[1]),
+				bytesutil.FromBytes2592(pubKeyBytes[2]),
 			},
 			CorrectlyVotedHead:   []bool{true, true, true},
 			CorrectlyVotedSource: []bool{true, true, true},
@@ -56,9 +56,9 @@ func TestUpdateLogAggregateStats(t *testing.T) {
 		},
 		{
 			PublicKeys: [][]byte{
-				bytesutil.FromBytes48(pubKeyBytes[0]),
-				bytesutil.FromBytes48(pubKeyBytes[1]),
-				bytesutil.FromBytes48(pubKeyBytes[2]),
+				bytesutil.FromBytes2592(pubKeyBytes[0]),
+				bytesutil.FromBytes2592(pubKeyBytes[1]),
+				bytesutil.FromBytes2592(pubKeyBytes[2]),
 			},
 			CorrectlyVotedHead:   []bool{true, false, true},
 			CorrectlyVotedSource: []bool{true, false, true},
@@ -90,17 +90,17 @@ func TestUpdateLogAggregateStats(t *testing.T) {
 func TestUpdateLogAltairAggregateStats(t *testing.T) {
 	v := &validator{
 		logValidatorBalances: true,
-		startBalances:        make(map[[fieldparams.BLSPubkeyLength]byte]uint64),
-		prevBalance:          make(map[[fieldparams.BLSPubkeyLength]byte]uint64),
+		startBalances:        make(map[[dilithium2.CryptoPublicKeyBytes]byte]uint64),
+		prevBalance:          make(map[[dilithium2.CryptoPublicKeyBytes]byte]uint64),
 		voteStats: voteStats{
 			startEpoch: params.BeaconConfig().AltairForkEpoch, // this would otherwise have been previously set in LogValidatorGainsAndLosses()
 		},
 	}
 
-	pubKeyBytes := [][fieldparams.BLSPubkeyLength]byte{
-		bytesutil.ToBytes48([]byte("000000000000000000000000000000000000000012345678")),
-		bytesutil.ToBytes48([]byte("000000000000000000000000000000000000000099999999")),
-		bytesutil.ToBytes48([]byte("000000000000000000000000000000000000000055555555")),
+	pubKeyBytes := [][dilithium2.CryptoPublicKeyBytes]byte{
+		bytesutil.ToBytes2592([]byte("000000000000000000000000000000000000000012345678")),
+		bytesutil.ToBytes2592([]byte("000000000000000000000000000000000000000099999999")),
+		bytesutil.ToBytes2592([]byte("000000000000000000000000000000000000000055555555")),
 	}
 
 	v.startBalances[pubKeyBytes[0]] = uint64(32100000000)
@@ -111,9 +111,9 @@ func TestUpdateLogAltairAggregateStats(t *testing.T) {
 	responses := []*ethpb.ValidatorPerformanceResponse{
 		{
 			PublicKeys: [][]byte{
-				bytesutil.FromBytes48(pubKeyBytes[0]),
-				bytesutil.FromBytes48(pubKeyBytes[1]),
-				bytesutil.FromBytes48(pubKeyBytes[2]),
+				bytesutil.FromBytes2592(pubKeyBytes[0]),
+				bytesutil.FromBytes2592(pubKeyBytes[1]),
+				bytesutil.FromBytes2592(pubKeyBytes[2]),
 			},
 			CorrectlyVotedHead:   []bool{false, true, false},
 			CorrectlyVotedSource: []bool{false, true, true},
@@ -121,9 +121,9 @@ func TestUpdateLogAltairAggregateStats(t *testing.T) {
 		},
 		{
 			PublicKeys: [][]byte{
-				bytesutil.FromBytes48(pubKeyBytes[0]),
-				bytesutil.FromBytes48(pubKeyBytes[1]),
-				bytesutil.FromBytes48(pubKeyBytes[2]),
+				bytesutil.FromBytes2592(pubKeyBytes[0]),
+				bytesutil.FromBytes2592(pubKeyBytes[1]),
+				bytesutil.FromBytes2592(pubKeyBytes[2]),
 			},
 			CorrectlyVotedHead:   []bool{true, true, true},
 			CorrectlyVotedSource: []bool{true, true, true},
@@ -131,9 +131,9 @@ func TestUpdateLogAltairAggregateStats(t *testing.T) {
 		},
 		{
 			PublicKeys: [][]byte{
-				bytesutil.FromBytes48(pubKeyBytes[0]),
-				bytesutil.FromBytes48(pubKeyBytes[1]),
-				bytesutil.FromBytes48(pubKeyBytes[2]),
+				bytesutil.FromBytes2592(pubKeyBytes[0]),
+				bytesutil.FromBytes2592(pubKeyBytes[1]),
+				bytesutil.FromBytes2592(pubKeyBytes[2]),
 			},
 			CorrectlyVotedHead:   []bool{true, false, true},
 			CorrectlyVotedSource: []bool{true, false, true},

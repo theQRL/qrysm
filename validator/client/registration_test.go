@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestSubmitValidatorRegistrations(t *testing.T) {
@@ -109,12 +110,12 @@ func TestValidator_SignValidatorRegistrationRequest(t *testing.T) {
 			},
 			validatorSetter: func(t *testing.T) *validator {
 				v := validator{
-					pubkeyToValidatorIndex:       make(map[[fieldparams.BLSPubkeyLength]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[fieldparams.BLSPubkeyLength]byte]*ethpb.SignedValidatorRegistrationV1),
+					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					genesisTime:                  0,
 				}
-				v.signedValidatorRegistrations[bytesutil.ToBytes48(validatorKey.PublicKey().Marshal())] = &ethpb.SignedValidatorRegistrationV1{
+				v.signedValidatorRegistrations[bytesutil.ToBytes2592(validatorKey.PublicKey().Marshal())] = &ethpb.SignedValidatorRegistrationV1{
 					Message: &ethpb.ValidatorRegistrationV1{
 						Pubkey:       validatorKey.PublicKey().Marshal(),
 						GasLimit:     30000000,
@@ -137,12 +138,12 @@ func TestValidator_SignValidatorRegistrationRequest(t *testing.T) {
 			},
 			validatorSetter: func(t *testing.T) *validator {
 				v := validator{
-					pubkeyToValidatorIndex:       make(map[[fieldparams.BLSPubkeyLength]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[fieldparams.BLSPubkeyLength]byte]*ethpb.SignedValidatorRegistrationV1),
+					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					genesisTime:                  0,
 				}
-				v.signedValidatorRegistrations[bytesutil.ToBytes48(validatorKey.PublicKey().Marshal())] = &ethpb.SignedValidatorRegistrationV1{
+				v.signedValidatorRegistrations[bytesutil.ToBytes2592(validatorKey.PublicKey().Marshal())] = &ethpb.SignedValidatorRegistrationV1{
 					Message: &ethpb.ValidatorRegistrationV1{
 						Pubkey:       validatorKey.PublicKey().Marshal(),
 						GasLimit:     35000000,
@@ -165,12 +166,12 @@ func TestValidator_SignValidatorRegistrationRequest(t *testing.T) {
 			},
 			validatorSetter: func(t *testing.T) *validator {
 				v := validator{
-					pubkeyToValidatorIndex:       make(map[[fieldparams.BLSPubkeyLength]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[fieldparams.BLSPubkeyLength]byte]*ethpb.SignedValidatorRegistrationV1),
+					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					genesisTime:                  0,
 				}
-				v.signedValidatorRegistrations[bytesutil.ToBytes48(validatorKey.PublicKey().Marshal())] = &ethpb.SignedValidatorRegistrationV1{
+				v.signedValidatorRegistrations[bytesutil.ToBytes2592(validatorKey.PublicKey().Marshal())] = &ethpb.SignedValidatorRegistrationV1{
 					Message: &ethpb.ValidatorRegistrationV1{
 						Pubkey:       validatorKey.PublicKey().Marshal(),
 						GasLimit:     30000000,
@@ -193,8 +194,8 @@ func TestValidator_SignValidatorRegistrationRequest(t *testing.T) {
 			},
 			validatorSetter: func(t *testing.T) *validator {
 				v := validator{
-					pubkeyToValidatorIndex:       make(map[[fieldparams.BLSPubkeyLength]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[fieldparams.BLSPubkeyLength]byte]*ethpb.SignedValidatorRegistrationV1),
+					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					genesisTime:                  0,
 				}
@@ -207,12 +208,12 @@ func TestValidator_SignValidatorRegistrationRequest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			v := tt.validatorSetter(t)
 
-			startingReq, ok := v.signedValidatorRegistrations[bytesutil.ToBytes48(tt.arg.Pubkey)]
+			startingReq, ok := v.signedValidatorRegistrations[bytesutil.ToBytes2592(tt.arg.Pubkey)]
 
 			got, err := v.SignValidatorRegistrationRequest(ctx, m.signfunc, tt.arg)
 			require.NoError(t, err)
 			if tt.isCached {
-				require.DeepEqual(t, got, v.signedValidatorRegistrations[bytesutil.ToBytes48(tt.arg.Pubkey)])
+				require.DeepEqual(t, got, v.signedValidatorRegistrations[bytesutil.ToBytes2592(tt.arg.Pubkey)])
 			} else {
 				if ok {
 					require.NotEqual(t, got.Message.Timestamp, startingReq.Message.Timestamp)
@@ -220,7 +221,7 @@ func TestValidator_SignValidatorRegistrationRequest(t *testing.T) {
 				require.Equal(t, got.Message.Timestamp, tt.arg.Timestamp)
 				require.Equal(t, got.Message.GasLimit, tt.arg.GasLimit)
 				require.Equal(t, hexutil.Encode(got.Message.FeeRecipient), hexutil.Encode(tt.arg.FeeRecipient))
-				require.DeepEqual(t, got, v.signedValidatorRegistrations[bytesutil.ToBytes48(tt.arg.Pubkey)])
+				require.DeepEqual(t, got, v.signedValidatorRegistrations[bytesutil.ToBytes2592(tt.arg.Pubkey)])
 			}
 		})
 	}

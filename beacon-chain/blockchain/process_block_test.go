@@ -29,7 +29,7 @@ import (
 	consensusblocks "github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
@@ -42,6 +42,7 @@ import (
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestStore_OnBlock(t *testing.T) {
@@ -935,7 +936,7 @@ func TestInsertFinalizedDeposits(t *testing.T) {
 	for i := uint64(0); i < uint64(4*params.BeaconConfig().SlotsPerEpoch); i++ {
 		root := []byte(strconv.Itoa(int(i)))
 		assert.NoError(t, depositCache.InsertDeposit(ctx, &ethpb.Deposit{Data: &ethpb.Deposit_Data{
-			PublicKey:             bytesutil.FromBytes48([fieldparams.BLSPubkeyLength]byte{}),
+			PublicKey:             bytesutil.FromBytes2592([dilithium2.CryptoPublicKeyBytes]byte{}),
 			WithdrawalCredentials: params.BeaconConfig().ZeroHash[:],
 			Amount:                0,
 			Signature:             zeroSig[:],
@@ -973,7 +974,7 @@ func TestInsertFinalizedDeposits_MultipleFinalizedRoutines(t *testing.T) {
 	for i := uint64(0); i < uint64(4*params.BeaconConfig().SlotsPerEpoch); i++ {
 		root := []byte(strconv.Itoa(int(i)))
 		assert.NoError(t, depositCache.InsertDeposit(ctx, &ethpb.Deposit{Data: &ethpb.Deposit_Data{
-			PublicKey:             bytesutil.FromBytes48([fieldparams.BLSPubkeyLength]byte{}),
+			PublicKey:             bytesutil.FromBytes2592([dilithium2.CryptoPublicKeyBytes]byte{}),
 			WithdrawalCredentials: params.BeaconConfig().ZeroHash[:],
 			Amount:                0,
 			Signature:             zeroSig[:],
@@ -1247,7 +1248,7 @@ func TestService_insertSlashingsToForkChoiceStore(t *testing.T) {
 	assert.NoError(t, err, "Could not get signing root of beacon block header")
 	sig0 := privKeys[0].Sign(signingRoot[:])
 	sig1 := privKeys[1].Sign(signingRoot[:])
-	aggregateSig := bls.AggregateSignatures([]bls.Signature{sig0, sig1})
+	aggregateSig := dilithium.AggregateSignatures([]dilithium.Signature{sig0, sig1})
 	att1.Signature = aggregateSig.Marshal()
 
 	att2 := util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
@@ -1257,7 +1258,7 @@ func TestService_insertSlashingsToForkChoiceStore(t *testing.T) {
 	assert.NoError(t, err, "Could not get signing root of beacon block header")
 	sig0 = privKeys[0].Sign(signingRoot[:])
 	sig1 = privKeys[1].Sign(signingRoot[:])
-	aggregateSig = bls.AggregateSignatures([]bls.Signature{sig0, sig1})
+	aggregateSig = dilithium.AggregateSignatures([]dilithium.Signature{sig0, sig1})
 	att2.Signature = aggregateSig.Marshal()
 	slashings := []*ethpb.AttesterSlashing{
 		{

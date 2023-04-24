@@ -3,13 +3,13 @@ package interfaces_test
 import (
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestBeaconBlockHeaderFromBlock(t *testing.T) {
@@ -25,7 +25,7 @@ func TestBeaconBlockHeaderFromBlock(t *testing.T) {
 				DepositRoot:  bytesutil.PadTo([]byte("deposit root"), hashLen),
 				DepositCount: 1,
 			},
-			RandaoReveal:      bytesutil.PadTo([]byte("randao"), fieldparams.BLSSignatureLength),
+			RandaoReveal:      bytesutil.PadTo([]byte("randao"), dilithium2.CryptoBytes),
 			Graffiti:          bytesutil.PadTo([]byte("teehee"), hashLen),
 			ProposerSlashings: []*eth.ProposerSlashing{},
 			AttesterSlashings: []*eth.AttesterSlashing{},
@@ -62,7 +62,7 @@ func TestBeaconBlockHeaderFromBlockInterface(t *testing.T) {
 				DepositRoot:  bytesutil.PadTo([]byte("deposit root"), hashLen),
 				DepositCount: 1,
 			},
-			RandaoReveal:      bytesutil.PadTo([]byte("randao"), fieldparams.BLSSignatureLength),
+			RandaoReveal:      bytesutil.PadTo([]byte("randao"), dilithium2.CryptoBytes),
 			Graffiti:          bytesutil.PadTo([]byte("teehee"), hashLen),
 			ProposerSlashings: []*eth.ProposerSlashing{},
 			AttesterSlashings: []*eth.AttesterSlashing{},
@@ -113,7 +113,7 @@ func TestSignedBeaconBlockHeaderFromBlock(t *testing.T) {
 				DepositRoot:  bytesutil.PadTo([]byte("deposit root"), hashLen),
 				DepositCount: 1,
 			},
-			RandaoReveal:      bytesutil.PadTo([]byte("randao"), fieldparams.BLSSignatureLength),
+			RandaoReveal:      bytesutil.PadTo([]byte("randao"), dilithium2.CryptoBytes),
 			Graffiti:          bytesutil.PadTo([]byte("teehee"), hashLen),
 			ProposerSlashings: []*eth.ProposerSlashing{},
 			AttesterSlashings: []*eth.AttesterSlashing{},
@@ -122,7 +122,7 @@ func TestSignedBeaconBlockHeaderFromBlock(t *testing.T) {
 			VoluntaryExits:    []*eth.SignedVoluntaryExit{},
 		},
 	},
-		Signature: bytesutil.PadTo([]byte("signature"), fieldparams.BLSSignatureLength),
+		Signature: bytesutil.PadTo([]byte("signature"), dilithium2.CryptoBytes),
 	}
 	bodyRoot, err := blk.Block.Body.HashTreeRoot()
 	require.NoError(t, err)
@@ -154,7 +154,7 @@ func TestSignedBeaconBlockHeaderFromBlockInterface(t *testing.T) {
 				DepositRoot:  bytesutil.PadTo([]byte("deposit root"), hashLen),
 				DepositCount: 1,
 			},
-			RandaoReveal:      bytesutil.PadTo([]byte("randao"), fieldparams.BLSSignatureLength),
+			RandaoReveal:      bytesutil.PadTo([]byte("randao"), dilithium2.CryptoBytes),
 			Graffiti:          bytesutil.PadTo([]byte("teehee"), hashLen),
 			ProposerSlashings: []*eth.ProposerSlashing{},
 			AttesterSlashings: []*eth.AttesterSlashing{},
@@ -163,7 +163,7 @@ func TestSignedBeaconBlockHeaderFromBlockInterface(t *testing.T) {
 			VoluntaryExits:    []*eth.SignedVoluntaryExit{},
 		},
 	},
-		Signature: bytesutil.PadTo([]byte("signature"), fieldparams.BLSSignatureLength),
+		Signature: bytesutil.PadTo([]byte("signature"), dilithium2.CryptoBytes),
 	}
 	bodyRoot, err := blk.Block.Body.HashTreeRoot()
 	require.NoError(t, err)
@@ -191,7 +191,7 @@ func TestSignedBeaconBlockHeaderFromBlock_NilBlockBody(t *testing.T) {
 		ParentRoot:    bytesutil.PadTo([]byte("parent root"), hashLen),
 		StateRoot:     bytesutil.PadTo([]byte("state root"), hashLen),
 	},
-		Signature: bytesutil.PadTo([]byte("signature"), fieldparams.BLSSignatureLength),
+		Signature: bytesutil.PadTo([]byte("signature"), dilithium2.CryptoBytes),
 	}
 	_, err := interfaces.SignedBeaconBlockHeaderFromBlock(blk)
 	require.ErrorContains(t, "nil block", err)

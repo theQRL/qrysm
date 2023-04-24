@@ -7,16 +7,16 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
 	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/container/trie"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestProcessDeposits_SameValidatorMultipleDepositsSameBlock(t *testing.T) {
@@ -59,9 +59,9 @@ func TestProcessDeposits_SameValidatorMultipleDepositsSameBlock(t *testing.T) {
 func TestProcessDeposits_MerkleBranchFailsVerification(t *testing.T) {
 	deposit := &ethpb.Deposit{
 		Data: &ethpb.Deposit_Data{
-			PublicKey:             bytesutil.PadTo([]byte{1, 2, 3}, fieldparams.BLSPubkeyLength),
+			PublicKey:             bytesutil.PadTo([]byte{1, 2, 3}, dilithium2.CryptoPublicKeyBytes),
 			WithdrawalCredentials: make([]byte, 32),
-			Signature:             make([]byte, fieldparams.BLSSignatureLength),
+			Signature:             make([]byte, dilithium2.CryptoBytes),
 		},
 	}
 	leaf, err := deposit.Data.HashTreeRoot()
@@ -133,14 +133,14 @@ func TestProcessDeposits_AddsNewValidatorDeposit(t *testing.T) {
 }
 
 func TestProcessDeposits_RepeatedDeposit_IncreasesValidatorBalance(t *testing.T) {
-	sk, err := bls.RandKey()
+	sk, err := dilithium.RandKey()
 	require.NoError(t, err)
 	deposit := &ethpb.Deposit{
 		Data: &ethpb.Deposit_Data{
 			PublicKey:             sk.PublicKey().Marshal(),
 			Amount:                1000,
 			WithdrawalCredentials: make([]byte, 32),
-			Signature:             make([]byte, fieldparams.BLSSignatureLength),
+			Signature:             make([]byte, dilithium2.CryptoBytes),
 		},
 	}
 	sr, err := signing.ComputeSigningRoot(deposit.Data, bytesutil.ToBytes(3, 32))
@@ -318,7 +318,7 @@ func TestPreGenesisDeposits_SkipInvalidDeposit(t *testing.T) {
 	newState, err := blocks.ProcessPreGenesisDeposits(context.Background(), beaconState, dep)
 	require.NoError(t, err, "Expected invalid block deposit to be ignored without error")
 
-	_, ok := newState.ValidatorIndexByPubkey(bytesutil.ToBytes48(dep[0].Data.PublicKey))
+	_, ok := newState.ValidatorIndexByPubkey(bytesutil.ToBytes2592(dep[0].Data.PublicKey))
 	require.Equal(t, false, ok, "bad pubkey should not exist in state")
 
 	for i := 1; i < newState.NumValidators(); i++ {
@@ -346,7 +346,7 @@ func TestPreGenesisDeposits_SkipInvalidDeposit(t *testing.T) {
 }
 
 func TestProcessDeposit_RepeatedDeposit_IncreasesValidatorBalance(t *testing.T) {
-	sk, err := bls.RandKey()
+	sk, err := dilithium.RandKey()
 	require.NoError(t, err)
 	deposit := &ethpb.Deposit{
 		Data: &ethpb.Deposit_Data{

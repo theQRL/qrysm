@@ -10,6 +10,7 @@ import (
 	v1 "github.com/cyyber/qrysm/v4/validator/keymanager/remote-web3signer/v1"
 	"github.com/cyyber/qrysm/v4/validator/keymanager/remote-web3signer/v1/mock"
 	"github.com/prysmaticlabs/go-bitfield"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestMapAggregateAndProof(t *testing.T) {
@@ -40,13 +41,13 @@ func TestMapAggregateAndProof(t *testing.T) {
 						},
 						Signature: make([]byte, 96),
 					},
-					SelectionProof: make([]byte, fieldparams.BLSSignatureLength),
+					SelectionProof: make([]byte, dilithium2.CryptoBytes),
 				},
 			},
 			want: &v1.AggregateAndProof{
 				AggregatorIndex: "0",
 				Aggregate:       mock.MockAttestation(),
-				SelectionProof:  make([]byte, fieldparams.BLSSignatureLength),
+				SelectionProof:  make([]byte, dilithium2.CryptoBytes),
 			},
 			wantErr: false,
 		},
@@ -176,7 +177,7 @@ func TestMapAttesterSlashing(t *testing.T) {
 								Root: make([]byte, fieldparams.RootLength),
 							},
 						},
-						Signature: make([]byte, fieldparams.BLSSignatureLength),
+						Signature: make([]byte, dilithium2.CryptoBytes),
 					},
 					Attestation_2: &ethpb.IndexedAttestation{
 						AttestingIndices: []uint64{0, 1, 2},
@@ -189,7 +190,7 @@ func TestMapAttesterSlashing(t *testing.T) {
 								Root: make([]byte, fieldparams.RootLength),
 							},
 						},
-						Signature: make([]byte, fieldparams.BLSSignatureLength),
+						Signature: make([]byte, dilithium2.CryptoBytes),
 					},
 				},
 			},
@@ -250,7 +251,7 @@ func TestMapBeaconBlockAltair(t *testing.T) {
 										StateRoot:     make([]byte, fieldparams.RootLength),
 										BodyRoot:      make([]byte, fieldparams.RootLength),
 									},
-									Signature: make([]byte, fieldparams.BLSSignatureLength),
+									Signature: make([]byte, dilithium2.CryptoBytes),
 								},
 								Header_2: &ethpb.SignedBeaconBlockHeader{
 									Header: &ethpb.BeaconBlockHeader{
@@ -260,7 +261,7 @@ func TestMapBeaconBlockAltair(t *testing.T) {
 										StateRoot:     make([]byte, fieldparams.RootLength),
 										BodyRoot:      make([]byte, fieldparams.RootLength),
 									},
-									Signature: make([]byte, fieldparams.BLSSignatureLength),
+									Signature: make([]byte, dilithium2.CryptoBytes),
 								},
 							},
 						},
@@ -277,7 +278,7 @@ func TestMapBeaconBlockAltair(t *testing.T) {
 											Root: make([]byte, fieldparams.RootLength),
 										},
 									},
-									Signature: make([]byte, fieldparams.BLSSignatureLength),
+									Signature: make([]byte, dilithium2.CryptoBytes),
 								},
 								Attestation_2: &ethpb.IndexedAttestation{
 									AttestingIndices: []uint64{0, 1, 2},
@@ -290,7 +291,7 @@ func TestMapBeaconBlockAltair(t *testing.T) {
 											Root: make([]byte, fieldparams.RootLength),
 										},
 									},
-									Signature: make([]byte, fieldparams.BLSSignatureLength),
+									Signature: make([]byte, dilithium2.CryptoBytes),
 								},
 							},
 						},
@@ -313,10 +314,10 @@ func TestMapBeaconBlockAltair(t *testing.T) {
 							{
 								Proof: [][]byte{[]byte("A")},
 								Data: &ethpb.Deposit_Data{
-									PublicKey:             make([]byte, fieldparams.BLSPubkeyLength),
+									PublicKey:             make([]byte, dilithium2.CryptoPublicKeyBytes),
 									WithdrawalCredentials: make([]byte, 32),
 									Amount:                0,
-									Signature:             make([]byte, fieldparams.BLSSignatureLength),
+									Signature:             make([]byte, dilithium2.CryptoBytes),
 								},
 							},
 						},
@@ -326,11 +327,11 @@ func TestMapBeaconBlockAltair(t *testing.T) {
 									Epoch:          0,
 									ValidatorIndex: 0,
 								},
-								Signature: make([]byte, fieldparams.BLSSignatureLength),
+								Signature: make([]byte, dilithium2.CryptoBytes),
 							},
 						},
 						SyncAggregate: &ethpb.SyncAggregate{
-							SyncCommitteeSignature: make([]byte, fieldparams.BLSSignatureLength),
+							SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
 							SyncCommitteeBits:      mock.MockSyncComitteeBits(),
 						},
 					},
@@ -385,7 +386,7 @@ func TestMapBeaconBlockBody(t *testing.T) {
 									StateRoot:     make([]byte, fieldparams.RootLength),
 									BodyRoot:      make([]byte, fieldparams.RootLength),
 								},
-								Signature: make([]byte, fieldparams.BLSSignatureLength),
+								Signature: make([]byte, dilithium2.CryptoBytes),
 							},
 							Header_2: &ethpb.SignedBeaconBlockHeader{
 								Header: &ethpb.BeaconBlockHeader{
@@ -395,7 +396,7 @@ func TestMapBeaconBlockBody(t *testing.T) {
 									StateRoot:     make([]byte, fieldparams.RootLength),
 									BodyRoot:      make([]byte, fieldparams.RootLength),
 								},
-								Signature: make([]byte, fieldparams.BLSSignatureLength),
+								Signature: make([]byte, dilithium2.CryptoBytes),
 							},
 						},
 					},
@@ -412,7 +413,7 @@ func TestMapBeaconBlockBody(t *testing.T) {
 										Root: make([]byte, fieldparams.RootLength),
 									},
 								},
-								Signature: make([]byte, fieldparams.BLSSignatureLength),
+								Signature: make([]byte, dilithium2.CryptoBytes),
 							},
 							Attestation_2: &ethpb.IndexedAttestation{
 								AttestingIndices: []uint64{0, 1, 2},
@@ -425,7 +426,7 @@ func TestMapBeaconBlockBody(t *testing.T) {
 										Root: make([]byte, fieldparams.RootLength),
 									},
 								},
-								Signature: make([]byte, fieldparams.BLSSignatureLength),
+								Signature: make([]byte, dilithium2.CryptoBytes),
 							},
 						},
 					},
@@ -448,10 +449,10 @@ func TestMapBeaconBlockBody(t *testing.T) {
 						{
 							Proof: [][]byte{[]byte("A")},
 							Data: &ethpb.Deposit_Data{
-								PublicKey:             make([]byte, fieldparams.BLSPubkeyLength),
+								PublicKey:             make([]byte, dilithium2.CryptoPublicKeyBytes),
 								WithdrawalCredentials: make([]byte, 32),
 								Amount:                0,
-								Signature:             make([]byte, fieldparams.BLSSignatureLength),
+								Signature:             make([]byte, dilithium2.CryptoBytes),
 							},
 						},
 					},
@@ -461,7 +462,7 @@ func TestMapBeaconBlockBody(t *testing.T) {
 								Epoch:          0,
 								ValidatorIndex: 0,
 							},
-							Signature: make([]byte, fieldparams.BLSSignatureLength),
+							Signature: make([]byte, dilithium2.CryptoBytes),
 						},
 					},
 				},
@@ -504,9 +505,9 @@ func TestMapContributionAndProof(t *testing.T) {
 						BlockRoot:         make([]byte, fieldparams.RootLength),
 						SubcommitteeIndex: 0,
 						AggregationBits:   mock.MockAggregationBits(),
-						Signature:         make([]byte, fieldparams.BLSSignatureLength),
+						Signature:         make([]byte, dilithium2.CryptoBytes),
 					},
-					SelectionProof: make([]byte, fieldparams.BLSSignatureLength),
+					SelectionProof: make([]byte, dilithium2.CryptoBytes),
 				},
 			},
 			want: mock.MockContributionAndProof(),

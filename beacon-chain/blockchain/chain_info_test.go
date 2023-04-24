@@ -11,7 +11,6 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state/stategen"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
@@ -21,6 +20,7 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -351,13 +351,13 @@ func TestService_HeadPublicKeyToValidatorIndex(t *testing.T) {
 	c := &Service{}
 	c.head = &head{state: s}
 
-	_, e := c.HeadPublicKeyToValidatorIndex([fieldparams.BLSPubkeyLength]byte{})
+	_, e := c.HeadPublicKeyToValidatorIndex([dilithium2.CryptoPublicKeyBytes]byte{})
 	require.Equal(t, false, e)
 
 	v, err := s.ValidatorAtIndex(0)
 	require.NoError(t, err)
 
-	i, e := c.HeadPublicKeyToValidatorIndex(bytesutil.ToBytes48(v.PublicKey))
+	i, e := c.HeadPublicKeyToValidatorIndex(bytesutil.ToBytes2592(v.PublicKey))
 	require.Equal(t, true, e)
 	require.Equal(t, primitives.ValidatorIndex(0), i)
 }
@@ -366,12 +366,12 @@ func TestService_HeadPublicKeyToValidatorIndexNil(t *testing.T) {
 	c := &Service{}
 	c.head = nil
 
-	idx, e := c.HeadPublicKeyToValidatorIndex([fieldparams.BLSPubkeyLength]byte{})
+	idx, e := c.HeadPublicKeyToValidatorIndex([dilithium2.CryptoPublicKeyBytes]byte{})
 	require.Equal(t, false, e)
 	require.Equal(t, primitives.ValidatorIndex(0), idx)
 
 	c.head = &head{state: nil}
-	i, e := c.HeadPublicKeyToValidatorIndex([fieldparams.BLSPubkeyLength]byte{})
+	i, e := c.HeadPublicKeyToValidatorIndex([dilithium2.CryptoPublicKeyBytes]byte{})
 	require.Equal(t, false, e)
 	require.Equal(t, primitives.ValidatorIndex(0), i)
 }
@@ -396,12 +396,12 @@ func TestService_HeadValidatorIndexToPublicKeyNil(t *testing.T) {
 
 	p, err := c.HeadValidatorIndexToPublicKey(context.Background(), 0)
 	require.NoError(t, err)
-	require.Equal(t, [fieldparams.BLSPubkeyLength]byte{}, p)
+	require.Equal(t, [dilithium2.CryptoPublicKeyBytes]byte{}, p)
 
 	c.head = &head{state: nil}
 	p, err = c.HeadValidatorIndexToPublicKey(context.Background(), 0)
 	require.NoError(t, err)
-	require.Equal(t, [fieldparams.BLSPubkeyLength]byte{}, p)
+	require.Equal(t, [dilithium2.CryptoPublicKeyBytes]byte{}, p)
 }
 
 func TestService_IsOptimistic(t *testing.T) {

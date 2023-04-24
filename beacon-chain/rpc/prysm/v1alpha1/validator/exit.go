@@ -6,8 +6,8 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/feed"
 	opfeed "github.com/cyyber/qrysm/v4/beacon-chain/core/feed/operation"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -24,7 +24,7 @@ func (vs *Server) ProposeExit(ctx context.Context, req *ethpb.SignedVoluntaryExi
 	if req.Exit == nil {
 		return nil, status.Error(codes.InvalidArgument, "voluntary exit does not exist")
 	}
-	if req.Signature == nil || len(req.Signature) != fieldparams.BLSSignatureLength {
+	if req.Signature == nil || len(req.Signature) != dilithium2.CryptoBytes {
 		return nil, status.Error(codes.InvalidArgument, "invalid signature provided")
 	}
 

@@ -9,7 +9,6 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
 	testDB "github.com/cyyber/qrysm/v4/beacon-chain/db/testing"
 	testing2 "github.com/cyyber/qrysm/v4/beacon-chain/execution/testing"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/container/trie"
@@ -20,6 +19,7 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 const pubKeyErr = "could not convert bytes to public key"
@@ -169,7 +169,7 @@ func TestProcessDeposit_InvalidSignature(t *testing.T) {
 
 	deposits, _, err := util.DeterministicDepositsAndKeys(1)
 	require.NoError(t, err)
-	var fakeSig [fieldparams.BLSSignatureLength]byte
+	var fakeSig [dilithium2.CryptoBytes]byte
 	copy(fakeSig[:], []byte{'F', 'A', 'K', 'E'})
 	deposits[0].Data.Signature = fakeSig[:]
 
@@ -252,7 +252,7 @@ func TestProcessDeposit_IncompleteDeposit(t *testing.T) {
 		Data: &ethpb.Deposit_Data{
 			Amount:                params.BeaconConfig().EffectiveBalanceIncrement, // incomplete deposit
 			WithdrawalCredentials: bytesutil.PadTo([]byte("testing"), 32),
-			Signature:             bytesutil.PadTo([]byte("test"), fieldparams.BLSSignatureLength),
+			Signature:             bytesutil.PadTo([]byte("test"), dilithium2.CryptoBytes),
 		},
 	}
 

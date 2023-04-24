@@ -21,6 +21,7 @@ import (
 	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 var errUnsupportedVersion = errors.New("schema version not supported by premineGenesisConfig")
@@ -321,7 +322,7 @@ func (s *premineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 			Graffiti: make([]byte, 32),
 			SyncAggregate: &ethpb.SyncAggregate{
 				SyncCommitteeBits:      make([]byte, fieldparams.SyncCommitteeLength/8),
-				SyncCommitteeSignature: make([]byte, fieldparams.BLSSignatureLength),
+				SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
 			},
 		}
 	case version.Bellatrix:
@@ -334,7 +335,7 @@ func (s *premineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 			Graffiti: make([]byte, 32),
 			SyncAggregate: &ethpb.SyncAggregate{
 				SyncCommitteeBits:      make([]byte, fieldparams.SyncCommitteeLength/8),
-				SyncCommitteeSignature: make([]byte, fieldparams.BLSSignatureLength),
+				SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
 			},
 			ExecutionPayload: &enginev1.ExecutionPayload{
 				ParentHash:    make([]byte, 32),

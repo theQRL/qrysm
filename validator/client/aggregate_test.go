@@ -5,10 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
@@ -18,6 +17,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/prysmaticlabs/go-bitfield"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestSubmitAggregateAndProof_GetDutiesRequestFailure(t *testing.T) {
@@ -26,7 +26,7 @@ func TestSubmitAggregateAndProof_GetDutiesRequestFailure(t *testing.T) {
 	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{}}
 	defer finish()
 
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.SubmitAggregateAndProof(context.Background(), 0, pubKey)
 
@@ -36,7 +36,7 @@ func TestSubmitAggregateAndProof_GetDutiesRequestFailure(t *testing.T) {
 func TestSubmitAggregateAndProof_SignFails(t *testing.T) {
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.duties = &ethpb.DutiesResponse{
 		Duties: []*ethpb.DutiesResponse_Duty{
@@ -75,7 +75,7 @@ func TestSubmitAggregateAndProof_SignFails(t *testing.T) {
 func TestSubmitAggregateAndProof_Ok(t *testing.T) {
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.duties = &ethpb.DutiesResponse{
 		Duties: []*ethpb.DutiesResponse_Duty{
@@ -150,7 +150,7 @@ func TestAggregateAndProofSignature_CanSignValidSignature(t *testing.T) {
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
 
-	var pubKey [fieldparams.BLSPubkeyLength]byte
+	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
@@ -166,6 +166,6 @@ func TestAggregateAndProofSignature_CanSignValidSignature(t *testing.T) {
 	}
 	sig, err := validator.aggregateAndProofSig(context.Background(), pubKey, agg, 0 /* slot */)
 	require.NoError(t, err)
-	_, err = bls.SignatureFromBytes(sig)
+	_, err = dilithium.SignatureFromBytes(sig)
 	require.NoError(t, err)
 }

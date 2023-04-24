@@ -13,7 +13,6 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/operations/voluntaryexits"
 	mockp2p "github.com/cyyber/qrysm/v4/beacon-chain/p2p/testing"
 	mockSync "github.com/cyyber/qrysm/v4/beacon-chain/sync/initial-sync/testing"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
@@ -21,6 +20,7 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestProposeExit_Notification(t *testing.T) {
@@ -137,7 +137,7 @@ func TestProposeExit_NoPanic(t *testing.T) {
 
 	_, err = server.ProposeExit(context.Background(), req)
 	require.ErrorContains(t, "invalid signature provided", err, "Expected error for no signature exists")
-	req.Signature = bytesutil.FromBytes48([fieldparams.BLSPubkeyLength]byte{})
+	req.Signature = bytesutil.FromBytes2592([dilithium2.CryptoPublicKeyBytes]byte{})
 
 	_, err = server.ProposeExit(context.Background(), req)
 	require.ErrorContains(t, "invalid signature provided", err, "Expected error for invalid signature length")

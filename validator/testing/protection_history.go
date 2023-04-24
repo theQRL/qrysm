@@ -3,7 +3,6 @@ package testing
 import (
 	"fmt"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/crypto/bls"
@@ -11,12 +10,13 @@ import (
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/cyyber/qrysm/v4/validator/db/kv"
 	"github.com/cyyber/qrysm/v4/validator/slashing-protection-history/format"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // MockSlashingProtectionJSON creates a mock, full slashing protection JSON struct
 // using attesting and proposing histories provided.
 func MockSlashingProtectionJSON(
-	publicKeys [][fieldparams.BLSPubkeyLength]byte,
+	publicKeys [][dilithium2.CryptoPublicKeyBytes]byte,
 	attestingHistories [][]*kv.AttestationRecord,
 	proposalHistories []kv.ProposalHistoryForPubkey,
 ) (*format.EIPSlashingProtectionFormat, error) {
@@ -52,7 +52,7 @@ func MockSlashingProtectionJSON(
 
 // MockAttestingAndProposalHistories given a number of validators, creates mock attesting
 // and proposing histories within WEAK_SUBJECTIVITY_PERIOD bounds.
-func MockAttestingAndProposalHistories(pubkeys [][fieldparams.BLSPubkeyLength]byte) ([][]*kv.AttestationRecord, []kv.ProposalHistoryForPubkey) {
+func MockAttestingAndProposalHistories(pubkeys [][dilithium2.CryptoPublicKeyBytes]byte) ([][]*kv.AttestationRecord, []kv.ProposalHistoryForPubkey) {
 	// deduplicate and transform them into our internal format.
 	numValidators := len(pubkeys)
 	attData := make([][]*kv.AttestationRecord, numValidators)
@@ -94,8 +94,8 @@ func MockAttestingAndProposalHistories(pubkeys [][fieldparams.BLSPubkeyLength]by
 }
 
 // CreateRandomPubKeys --
-func CreateRandomPubKeys(numValidators int) ([][fieldparams.BLSPubkeyLength]byte, error) {
-	pubKeys := make([][fieldparams.BLSPubkeyLength]byte, numValidators)
+func CreateRandomPubKeys(numValidators int) ([][dilithium2.CryptoPublicKeyBytes]byte, error) {
+	pubKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, numValidators)
 	for i := 0; i < numValidators; i++ {
 		randKey, err := bls.RandKey()
 		if err != nil {

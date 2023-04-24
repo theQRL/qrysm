@@ -3,14 +3,13 @@ package history
 import (
 	"encoding/hex"
 	"fmt"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"strconv"
 	"strings"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/k0kubun/go-ansi"
 	"github.com/schollz/progressbar/v3"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func initializeProgressBar(numItems int, msg string) *progressbar.ProgressBar {
@@ -55,16 +54,16 @@ func SlotFromString(str string) (primitives.Slot, error) {
 }
 
 // PubKeyFromHex takes in a hex string, verifies its length as 48 bytes, and converts that representation.
-func PubKeyFromHex(str string) ([fieldparams.BLSPubkeyLength]byte, error) {
+func PubKeyFromHex(str string) ([dilithium2.CryptoPublicKeyBytes]byte, error) {
 	pubKeyBytes, err := hex.DecodeString(strings.TrimPrefix(str, "0x"))
 	if err != nil {
-		return [fieldparams.BLSPubkeyLength]byte{}, err
+		return [dilithium2.CryptoPublicKeyBytes]byte{}, err
 	}
 	if len(pubKeyBytes) != 48 {
-		return [fieldparams.BLSPubkeyLength]byte{}, fmt.Errorf("public key is not correct, 48-byte length: %s", str)
+		return [dilithium2.CryptoPublicKeyBytes]byte{}, fmt.Errorf("public key is not correct, 48-byte length: %s", str)
 	}
-	var pk [fieldparams.BLSPubkeyLength]byte
-	copy(pk[:], pubKeyBytes[:fieldparams.BLSPubkeyLength])
+	var pk [dilithium2.CryptoPublicKeyBytes]byte
+	copy(pk[:], pubKeyBytes[:dilithium2.CryptoPublicKeyBytes])
 	return pk, nil
 }
 

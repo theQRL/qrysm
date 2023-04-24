@@ -8,7 +8,6 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
 	coreTime "github.com/cyyber/qrysm/v4/beacon-chain/core/time"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/crypto/bls"
@@ -18,6 +17,7 @@ import (
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/pkg/errors"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 const maxRandomByte = uint64(1<<8 - 1)
@@ -179,7 +179,7 @@ func SyncSubCommitteePubkeys(syncCommittee *ethpb.SyncCommittee, subComIdx primi
 //	modulo = max(1, SYNC_COMMITTEE_SIZE // SYNC_COMMITTEE_SUBNET_COUNT // TARGET_AGGREGATORS_PER_SYNC_SUBCOMMITTEE)
 //	return bytes_to_uint64(hash(signature)[0:8]) % modulo == 0
 func IsSyncCommitteeAggregator(sig []byte) (bool, error) {
-	if len(sig) != fieldparams.BLSSignatureLength {
+	if len(sig) != dilithium2.CryptoBytes {
 		return false, errors.New("incorrect sig length")
 	}
 

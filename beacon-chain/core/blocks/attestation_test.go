@@ -8,7 +8,6 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
 	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/crypto/bls"
@@ -21,6 +20,7 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/prysmaticlabs/go-bitfield"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestProcessAggregatedAttestation_OverlappingBits(t *testing.T) {
@@ -113,7 +113,7 @@ func TestProcessAttestationsNoVerify_OK(t *testing.T) {
 		AggregationBits: aggBits,
 	}
 
-	var zeroSig [fieldparams.BLSSignatureLength]byte
+	var zeroSig [dilithium2.CryptoBytes]byte
 	att.Signature = zeroSig[:]
 
 	err := beaconState.SetSlot(beaconState.Slot() + params.BeaconConfig().MinAttestationInclusionDelay)
@@ -144,7 +144,7 @@ func TestVerifyAttestationNoVerifySignature_OK(t *testing.T) {
 		AggregationBits: aggBits,
 	}
 
-	var zeroSig [fieldparams.BLSSignatureLength]byte
+	var zeroSig [dilithium2.CryptoBytes]byte
 	att.Signature = zeroSig[:]
 
 	err := beaconState.SetSlot(beaconState.Slot() + params.BeaconConfig().MinAttestationInclusionDelay)
@@ -172,7 +172,7 @@ func TestVerifyAttestationNoVerifySignature_BadAttIdx(t *testing.T) {
 		},
 		AggregationBits: aggBits,
 	}
-	var zeroSig [fieldparams.BLSSignatureLength]byte
+	var zeroSig [dilithium2.CryptoBytes]byte
 	att.Signature = zeroSig[:]
 	require.NoError(t, beaconState.SetSlot(beaconState.Slot()+params.BeaconConfig().MinAttestationInclusionDelay))
 	ckp := beaconState.CurrentJustifiedCheckpoint()
@@ -216,7 +216,7 @@ func TestConvertToIndexed_OK(t *testing.T) {
 		},
 	}
 
-	var sig [fieldparams.BLSSignatureLength]byte
+	var sig [dilithium2.CryptoBytes]byte
 	copy(sig[:], "signed")
 	att := util.HydrateAttestation(&ethpb.Attestation{
 		Signature: sig[:],
@@ -272,7 +272,7 @@ func TestVerifyIndexedAttestation_OK(t *testing.T) {
 				Source: &ethpb.Checkpoint{},
 			}),
 			AttestingIndices: []uint64{1},
-			Signature:        make([]byte, fieldparams.BLSSignatureLength),
+			Signature:        make([]byte, dilithium2.CryptoBytes),
 		}},
 		{attestation: &ethpb.IndexedAttestation{
 			Data: util.HydrateAttestationData(&ethpb.AttestationData{
@@ -281,7 +281,7 @@ func TestVerifyIndexedAttestation_OK(t *testing.T) {
 				},
 			}),
 			AttestingIndices: []uint64{47, 99, 101},
-			Signature:        make([]byte, fieldparams.BLSSignatureLength),
+			Signature:        make([]byte, dilithium2.CryptoBytes),
 		}},
 		{attestation: &ethpb.IndexedAttestation{
 			Data: util.HydrateAttestationData(&ethpb.AttestationData{
@@ -290,7 +290,7 @@ func TestVerifyIndexedAttestation_OK(t *testing.T) {
 				},
 			}),
 			AttestingIndices: []uint64{21, 72},
-			Signature:        make([]byte, fieldparams.BLSSignatureLength),
+			Signature:        make([]byte, dilithium2.CryptoBytes),
 		}},
 		{attestation: &ethpb.IndexedAttestation{
 			Data: util.HydrateAttestationData(&ethpb.AttestationData{
@@ -299,7 +299,7 @@ func TestVerifyIndexedAttestation_OK(t *testing.T) {
 				},
 			}),
 			AttestingIndices: []uint64{100, 121, 122},
-			Signature:        make([]byte, fieldparams.BLSSignatureLength),
+			Signature:        make([]byte, dilithium2.CryptoBytes),
 		}},
 	}
 

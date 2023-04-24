@@ -14,6 +14,7 @@ import (
 	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // NewGenesisBlock returns the canonical, genesis block for the beacon chain protocol.
@@ -24,7 +25,7 @@ func NewGenesisBlock(stateRoot []byte) *ethpb.SignedBeaconBlock {
 			ParentRoot: zeroHash,
 			StateRoot:  bytesutil.PadTo(stateRoot, 32),
 			Body: &ethpb.BeaconBlockBody{
-				RandaoReveal: make([]byte, fieldparams.BLSSignatureLength),
+				RandaoReveal: make([]byte, dilithium2.CryptoBytes),
 				Eth1Data: &ethpb.Eth1Data{
 					DepositRoot: make([]byte, 32),
 					BlockHash:   make([]byte, 32),
@@ -52,7 +53,7 @@ func NewGenesisBlockForState(ctx context.Context, st state.BeaconState) (interfa
 				ParentRoot: params.BeaconConfig().ZeroHash[:],
 				StateRoot:  root[:],
 				Body: &ethpb.BeaconBlockBody{
-					RandaoReveal: make([]byte, fieldparams.BLSSignatureLength),
+					RandaoReveal: make([]byte, dilithium2.CryptoBytes),
 					Eth1Data: &ethpb.Eth1Data{
 						DepositRoot: make([]byte, 32),
 						BlockHash:   make([]byte, 32),
@@ -68,7 +69,7 @@ func NewGenesisBlockForState(ctx context.Context, st state.BeaconState) (interfa
 				ParentRoot: params.BeaconConfig().ZeroHash[:],
 				StateRoot:  root[:],
 				Body: &ethpb.BeaconBlockBodyAltair{
-					RandaoReveal: make([]byte, fieldparams.BLSSignatureLength),
+					RandaoReveal: make([]byte, dilithium2.CryptoBytes),
 					Eth1Data: &ethpb.Eth1Data{
 						DepositRoot: make([]byte, 32),
 						BlockHash:   make([]byte, 32),
@@ -76,7 +77,7 @@ func NewGenesisBlockForState(ctx context.Context, st state.BeaconState) (interfa
 					Graffiti: make([]byte, 32),
 					SyncAggregate: &ethpb.SyncAggregate{
 						SyncCommitteeBits:      make([]byte, fieldparams.SyncCommitteeLength/8),
-						SyncCommitteeSignature: make([]byte, fieldparams.BLSSignatureLength),
+						SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
 					},
 				},
 			},
@@ -96,7 +97,7 @@ func NewGenesisBlockForState(ctx context.Context, st state.BeaconState) (interfa
 					Graffiti: make([]byte, 32),
 					SyncAggregate: &ethpb.SyncAggregate{
 						SyncCommitteeBits:      make([]byte, fieldparams.SyncCommitteeLength/8),
-						SyncCommitteeSignature: make([]byte, fieldparams.BLSSignatureLength),
+						SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
 					},
 					ExecutionPayload: &enginev1.ExecutionPayload{
 						ParentHash:    make([]byte, 32),
@@ -127,7 +128,7 @@ func NewGenesisBlockForState(ctx context.Context, st state.BeaconState) (interfa
 					Graffiti: make([]byte, 32),
 					SyncAggregate: &ethpb.SyncAggregate{
 						SyncCommitteeBits:      make([]byte, fieldparams.SyncCommitteeLength/8),
-						SyncCommitteeSignature: make([]byte, fieldparams.BLSSignatureLength),
+						SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
 					},
 					ExecutionPayload: &enginev1.ExecutionPayloadCapella{
 						ParentHash:    make([]byte, 32),

@@ -5,9 +5,9 @@ import (
 	"io"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/sirupsen/logrus"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func TestMain(m *testing.M) {
@@ -18,7 +18,7 @@ func TestMain(m *testing.M) {
 }
 
 // setupDB instantiates and returns a DB instance for the validator client.
-func setupDB(t testing.TB, pubkeys [][fieldparams.BLSPubkeyLength]byte) *Store {
+func setupDB(t testing.TB, pubkeys [][dilithium2.CryptoPublicKeyBytes]byte) *Store {
 	db, err := NewKVStore(context.Background(), t.TempDir(), &Config{
 		PubKeys: pubkeys,
 	})
