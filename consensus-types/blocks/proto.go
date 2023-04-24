@@ -576,7 +576,7 @@ func initBlockBodyFromProtoPhase0(pb *eth.BeaconBlockBody) (*BeaconBlockBody, er
 	b := &BeaconBlockBody{
 		version:           version.Phase0,
 		isBlinded:         false,
-		randaoReveal:      bytesutil.ToBytes96(pb.RandaoReveal),
+		randaoReveal:      bytesutil.ToBytes2592(pb.RandaoReveal),
 		eth1Data:          pb.Eth1Data,
 		graffiti:          bytesutil.ToBytes32(pb.Graffiti),
 		proposerSlashings: pb.ProposerSlashings,
@@ -596,7 +596,7 @@ func initBlockBodyFromProtoAltair(pb *eth.BeaconBlockBodyAltair) (*BeaconBlockBo
 	b := &BeaconBlockBody{
 		version:           version.Altair,
 		isBlinded:         false,
-		randaoReveal:      bytesutil.ToBytes96(pb.RandaoReveal),
+		randaoReveal:      bytesutil.ToBytes2592(pb.RandaoReveal),
 		eth1Data:          pb.Eth1Data,
 		graffiti:          bytesutil.ToBytes32(pb.Graffiti),
 		proposerSlashings: pb.ProposerSlashings,
@@ -622,7 +622,7 @@ func initBlockBodyFromProtoBellatrix(pb *eth.BeaconBlockBodyBellatrix) (*BeaconB
 	b := &BeaconBlockBody{
 		version:           version.Bellatrix,
 		isBlinded:         false,
-		randaoReveal:      bytesutil.ToBytes96(pb.RandaoReveal),
+		randaoReveal:      bytesutil.ToBytes2592(pb.RandaoReveal),
 		eth1Data:          pb.Eth1Data,
 		graffiti:          bytesutil.ToBytes32(pb.Graffiti),
 		proposerSlashings: pb.ProposerSlashings,
@@ -649,7 +649,7 @@ func initBlindedBlockBodyFromProtoBellatrix(pb *eth.BlindedBeaconBlockBodyBellat
 	b := &BeaconBlockBody{
 		version:                version.Bellatrix,
 		isBlinded:              true,
-		randaoReveal:           bytesutil.ToBytes96(pb.RandaoReveal),
+		randaoReveal:           bytesutil.ToBytes2592(pb.RandaoReveal),
 		eth1Data:               pb.Eth1Data,
 		graffiti:               bytesutil.ToBytes32(pb.Graffiti),
 		proposerSlashings:      pb.ProposerSlashings,
@@ -676,7 +676,7 @@ func initBlockBodyFromProtoCapella(pb *eth.BeaconBlockBodyCapella) (*BeaconBlock
 	b := &BeaconBlockBody{
 		version:               version.Capella,
 		isBlinded:             false,
-		randaoReveal:          bytesutil.ToBytes96(pb.RandaoReveal),
+		randaoReveal:          bytesutil.ToBytes2592(pb.RandaoReveal),
 		eth1Data:              pb.Eth1Data,
 		graffiti:              bytesutil.ToBytes32(pb.Graffiti),
 		proposerSlashings:     pb.ProposerSlashings,
@@ -704,7 +704,7 @@ func initBlindedBlockBodyFromProtoCapella(pb *eth.BlindedBeaconBlockBodyCapella)
 	b := &BeaconBlockBody{
 		version:                version.Capella,
 		isBlinded:              true,
-		randaoReveal:           bytesutil.ToBytes96(pb.RandaoReveal),
+		randaoReveal:           bytesutil.ToBytes2592(pb.RandaoReveal),
 		eth1Data:               pb.Eth1Data,
 		graffiti:               bytesutil.ToBytes32(pb.Graffiti),
 		proposerSlashings:      pb.ProposerSlashings,

@@ -2,7 +2,6 @@ package blocks
 
 import (
 	"fmt"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 
 	field_params "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
@@ -10,6 +9,7 @@ import (
 	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/pkg/errors"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 var (
@@ -45,7 +45,7 @@ var (
 type BeaconBlockBody struct {
 	version                int
 	isBlinded              bool
-	randaoReveal           [field_params.BLSSignatureLength]byte
+	randaoReveal           [dilithium2.CryptoPublicKeyBytes]byte
 	eth1Data               *eth.Eth1Data
 	graffiti               [field_params.RootLength]byte
 	proposerSlashings      []*eth.ProposerSlashing

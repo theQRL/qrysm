@@ -128,7 +128,7 @@ message SignedBeaconBlockAltair {
 // The block body of an Ethereum consensus beacon block.
 message BeaconBlockBody {
     // The validators RANDAO reveal 96 byte value.
-    bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "2592"];
 
     // A reference to the Ethereum 1.x chain.
     Eth1Data eth1_data = 2;
@@ -161,7 +161,7 @@ message BeaconBlockBody {
 // The new addition for  is SyncAggregate for light client support.
 message BeaconBlockBodyAltair {
     // The validators RANDAO reveal 96 byte value.
-    bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "2592"];
 
     // A reference to the Ethereum 1.x chain.
     Eth1Data eth1_data = 2;
@@ -344,7 +344,7 @@ message BeaconBlockBellatrix {
 
 message BeaconBlockBodyBellatrix {
     // The validators RANDAO reveal 96 byte value.
-    bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "2592"];
 
     // A reference to the Ethereum 1.x chain.
     Eth1Data eth1_data = 2;
@@ -405,7 +405,7 @@ message BlindedBeaconBlockBellatrix {
 
 message BlindedBeaconBlockBodyBellatrix {
     // The validators RANDAO reveal 96 byte value.
-    bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "2592"];
 
     // A reference to the Ethereum 1.x chain.
     Eth1Data eth1_data = 2;
@@ -463,7 +463,7 @@ message BeaconBlockCapella {
 
 message BeaconBlockBodyCapella {
     // The validators RANDAO reveal 96 byte value.
-    bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "2592"];
 
     // A reference to the Ethereum 1.x chain.
     Eth1Data eth1_data = 2;
@@ -527,7 +527,7 @@ message BlindedBeaconBlockCapella {
 
 message BlindedBeaconBlockBodyCapella {
     // The validators RANDAO reveal 96 byte value.
-    bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "2592"];
 
     // A reference to the Ethereum 1.x chain.
     Eth1Data eth1_data = 2;

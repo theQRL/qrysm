@@ -774,7 +774,7 @@ func (b *BeaconBlockBody) IsNil() bool {
 }
 
 // RandaoReveal returns the randao reveal from the block body.
-func (b *BeaconBlockBody) RandaoReveal() [field_params.BLSSignatureLength]byte {
+func (b *BeaconBlockBody) RandaoReveal() [dilithium2.CryptoPublicKeyBytes]byte {
 	return b.randaoReveal
 }
 
