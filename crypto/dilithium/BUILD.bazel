@@ -5,11 +5,13 @@ go_library(
     srcs = [
         "dilithium.go",
         "interface.go",
+        "signature_batch.go",
     ],
     importpath = "github.com/cyyber/qrysm/v4/crypto/dilithium",
     visibility = ["//visibility:public"],
     deps = [
         "//crypto/bls/common:go_default_library",
         "//crypto/dilithium/dilithiumt:go_default_library",
+        "@com_github_pkg_errors//:go_default_library",
     ],
 )

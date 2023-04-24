@@ -9,7 +9,7 @@ go_library(
         "//beacon-chain/core/signing:go_default_library",
         "//config/params:go_default_library",
         "//consensus-types/primitives:go_default_library",
-        "//crypto/bls:go_default_library",
+        "//crypto/dilithium:go_default_library",
         "//proto/prysm/v1alpha1:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
         "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
@@ -22,12 +22,12 @@ go_test(
     srcs = ["attestation_utils_test.go"],
     deps = [
         ":go_default_library",
-        "//config/fieldparams:go_default_library",
         "//config/params:go_default_library",
         "//consensus-types/primitives:go_default_library",
         "//proto/prysm/v1alpha1:go_default_library",
         "//testing/assert:go_default_library",
         "//testing/require:go_default_library",
         "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+        "@com_github_theqrl_go_qrllib//dilithium:go_default_library",
     ],
 )

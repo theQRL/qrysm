@@ -15,7 +15,6 @@ go_library(
         "//cmd/validator/accounts:go_default_library",
         "//cmd/validator/flags:go_default_library",
         "//config/features:go_default_library",
-        "//config/fieldparams:go_default_library",
         "//consensus-types/primitives:go_default_library",
         "//runtime/tos:go_default_library",
         "@com_github_ethereum_go_ethereum//common:go_default_library",

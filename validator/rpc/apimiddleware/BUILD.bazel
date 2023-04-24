@@ -19,8 +19,8 @@ go_test(
     srcs = ["structs_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//config/fieldparams:go_default_library",
         "//proto/eth/service:go_default_library",
         "//testing/require:go_default_library",
+        "@com_github_theqrl_go_qrllib//dilithium:go_default_library",
     ],
 )

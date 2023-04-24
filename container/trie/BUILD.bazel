@@ -27,7 +27,6 @@ go_test(
     data = glob(["testdata/**"]),
     deps = [
         ":go_default_library",
-        "//config/fieldparams:go_default_library",
         "//config/params:go_default_library",
         "//contracts/deposit/mock:go_default_library",
         "//crypto/hash:go_default_library",
@@ -37,5 +36,6 @@ go_test(
         "//testing/require:go_default_library",
         "@com_github_ethereum_go_ethereum//accounts/abi/bind:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
+        "@com_github_theqrl_go_qrllib//dilithium:go_default_library",
     ],
 )
