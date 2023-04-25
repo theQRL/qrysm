@@ -113,7 +113,7 @@ func NewInteropKeymanager(_ context.Context, offset, numValidatorKeys uint64) (*
 	if numValidatorKeys == 0 {
 		return k, nil
 	}
-	secretKeys, publicKeys, err := interop.QDeterministicallyGenerateKeys(offset, numValidatorKeys)
+	secretKeys, publicKeys, err := interop.DeterministicallyGenerateKeys(offset, numValidatorKeys)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not generate interop keys")
 	}

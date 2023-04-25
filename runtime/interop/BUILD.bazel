@@ -7,8 +7,6 @@ go_library(
         "generate_genesis_state_bellatrix.go",
         "generate_keys.go",
         "premined_genesis_state.go",
-        "qgenerate_genesis_state.go",
-        "qgenerate_keys.go",
     ],
     importpath = "github.com/cyyber/qrysm/v4/runtime/interop",
     visibility = ["//visibility:public"],
