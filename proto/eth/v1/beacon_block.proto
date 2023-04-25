@@ -56,7 +56,7 @@ message SignedBeaconBlock {
 // The block body of an Ethereum consensus beacon block.
 message BeaconBlockBody {
     // The validators RANDAO reveal 96 byte value.
-    bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "4595"];
 
     // A reference to the Ethereum 1.x chain.
     Eth1Data eth1_data = 2;

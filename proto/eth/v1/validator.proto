@@ -152,7 +152,7 @@ message ProduceBlockRequest {
     uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"];
 
     // The validators RANDAO reveal 96 byte value.
-    bytes randao_reveal = 2 [(ethereum.eth.ext.ssz_size) = "96"];
+    bytes randao_reveal = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
 
     // 32 byte field of arbitrary data. This field may contain any data and
     // is not used for anything other than a fun message.

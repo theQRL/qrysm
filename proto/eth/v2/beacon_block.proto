@@ -218,7 +218,7 @@ message BeaconBlockAltair {
 
 message BeaconBlockBodyBellatrix {
   // The validators RANDAO reveal 96 byte value.
-  bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "96"];
+  bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "4595"];
 
   // A reference to the Ethereum 1.x chain.
   v1.Eth1Data eth1_data = 2;
@@ -254,7 +254,7 @@ message BeaconBlockBodyBellatrix {
 
 message BlindedBeaconBlockBodyBellatrix {
   // The validators RANDAO reveal 96 byte value.
-  bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "96"];
+  bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "4595"];
 
   // A reference to the Ethereum 1.x chain.
   v1.Eth1Data eth1_data = 2;
@@ -290,7 +290,7 @@ message BlindedBeaconBlockBodyBellatrix {
 
 message BeaconBlockBodyCapella {
   // The validators RANDAO reveal 96 byte value.
-  bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "96"];
+  bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "4595"];
 
   // A reference to the Ethereum 1.x chain.
   v1.Eth1Data eth1_data = 2;
@@ -329,7 +329,7 @@ message BeaconBlockBodyCapella {
 
 message BlindedBeaconBlockBodyCapella {
   // The validators RANDAO reveal 96 byte value.
-  bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "96"];
+  bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "4595"];
 
   // A reference to the Ethereum 1.x chain.
   v1.Eth1Data eth1_data = 2;
@@ -368,7 +368,7 @@ message BlindedBeaconBlockBodyCapella {
 
 message BeaconBlockBodyAltair {
   // The validators RANDAO reveal 96 byte value.
-  bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "96"];
+  bytes randao_reveal = 1 [(ethereum.eth.ext.ssz_size) = "4595"];
 
   // A reference to the Ethereum 1.x chain.
   v1.Eth1Data eth1_data = 2;

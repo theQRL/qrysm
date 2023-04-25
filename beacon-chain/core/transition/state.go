@@ -2,6 +2,7 @@ package transition
 
 import (
 	"context"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 
 	b "github.com/cyyber/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
@@ -199,7 +200,7 @@ func OptimizedGenesisBeaconState(genesisTime uint64, preState state.BeaconState,
 	}
 
 	bodyRoot, err := (&ethpb.BeaconBlockBody{
-		RandaoReveal: make([]byte, 96),
+		RandaoReveal: make([]byte, dilithium2.CryptoBytes),
 		Eth1Data: &ethpb.Eth1Data{
 			DepositRoot: make([]byte, 32),
 			BlockHash:   make([]byte, 32),

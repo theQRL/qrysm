@@ -526,7 +526,7 @@ message BlockRequest {
     uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"];
 
     // Validator's 32 byte randao reveal secret of the current epoch.
-    bytes randao_reveal = 2 [(ethereum.eth.ext.ssz_size) = "48"];
+    bytes randao_reveal = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
 
     // Validator's 32 byte graffiti message for the new block.
     bytes graffiti = 3 [(ethereum.eth.ext.ssz_size) = "32"];
