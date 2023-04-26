@@ -89,7 +89,7 @@ func NewGenesisBlockForState(ctx context.Context, st state.BeaconState) (interfa
 				ParentRoot: params.BeaconConfig().ZeroHash[:],
 				StateRoot:  root[:],
 				Body: &ethpb.BeaconBlockBodyBellatrix{
-					RandaoReveal: make([]byte, 96),
+					RandaoReveal: make([]byte, dilithium2.CryptoBytes),
 					Eth1Data: &ethpb.Eth1Data{
 						DepositRoot: make([]byte, 32),
 						BlockHash:   make([]byte, 32),
@@ -120,7 +120,7 @@ func NewGenesisBlockForState(ctx context.Context, st state.BeaconState) (interfa
 				ParentRoot: params.BeaconConfig().ZeroHash[:],
 				StateRoot:  root[:],
 				Body: &ethpb.BeaconBlockBodyCapella{
-					RandaoReveal: make([]byte, 96),
+					RandaoReveal: make([]byte, dilithium2.CryptoBytes),
 					Eth1Data: &ethpb.Eth1Data{
 						DepositRoot: make([]byte, 32),
 						BlockHash:   make([]byte, 32),

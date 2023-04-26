@@ -45,7 +45,7 @@ var (
 type BeaconBlockBody struct {
 	version                int
 	isBlinded              bool
-	randaoReveal           [dilithium2.CryptoPublicKeyBytes]byte
+	randaoReveal           [dilithium2.CryptoBytes]byte
 	eth1Data               *eth.Eth1Data
 	graffiti               [field_params.RootLength]byte
 	proposerSlashings      []*eth.ProposerSlashing
