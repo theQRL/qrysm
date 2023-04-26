@@ -12,7 +12,7 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/transition"
 	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/eth/helpers"
 	"github.com/cyyber/qrysm/v4/config/features"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	ethpbv1 "github.com/cyyber/qrysm/v4/proto/eth/v1"
 	ethpbv2 "github.com/cyyber/qrysm/v4/proto/eth/v2"
 	"github.com/cyyber/qrysm/v4/proto/migration"
@@ -73,7 +73,7 @@ func (bs *Server) SubmitAttestations(ctx context.Context, req *ethpbv1.SubmitAtt
 	var attFailures []*helpers.SingleIndexedVerificationFailure
 	for i, sourceAtt := range req.Data {
 		att := migration.V1AttToV1Alpha1(sourceAtt)
-		if _, err := bls.SignatureFromBytes(att.Signature); err != nil {
+		if _, err := dilithium.SignatureFromBytes(att.Signature); err != nil {
 			attFailures = append(attFailures, &helpers.SingleIndexedVerificationFailure{
 				Index:   i,
 				Message: "Incorrect attestation signature: " + err.Error(),
