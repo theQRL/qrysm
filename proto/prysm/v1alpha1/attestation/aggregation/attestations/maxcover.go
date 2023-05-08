@@ -175,7 +175,8 @@ func aggregateAttestations(atts []*ethpb.Attestation, keys []int, coverage *bitf
 		// Append size byte, which will be unnecessary on switch to Bitlist64.
 		AggregationBits: coverage.ToBitlist(),
 		Data:            data,
-		Signature:       aggregateSignatures(signs).Marshal(),
+		//Signature:              aggregateSignatures(signs).Marshal(),
+		Signature: unaggregatedSignatures(signs),
 	}
 	return
 }

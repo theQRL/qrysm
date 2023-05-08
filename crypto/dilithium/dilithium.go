@@ -33,6 +33,10 @@ func AggregateSignatures(sigs []common.Signature) common.Signature {
 	return dilithiumt.AggregateSignatures(sigs)
 }
 
+func UnaggregatedSignatures(sigs []common.Signature) []byte {
+	return dilithiumt.UnaggregatedSignatures(sigs)
+}
+
 func AggregateCompressedSignatures(multiSigs [][]byte) (common.Signature, error) {
 	return dilithiumt.AggregateCompressedSignatures(multiSigs)
 }

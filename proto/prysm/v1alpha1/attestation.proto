@@ -32,7 +32,9 @@ message Attestation {
     AttestationData data = 2;
 
     // 96 byte BLS aggregate signature.
-    bytes signature = 3 [(ethereum.eth.ext.ssz_size) = "4595"];
+    // 4595 (signature size per signer) * 2048 (number of signers) bytes of unaggregated signatures
+    bytes signature = 3 [(ethereum.eth.ext.ssz_max) = "9410560"];
+//    bytes signature = 3 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 message AggregateAttestationAndProof {
