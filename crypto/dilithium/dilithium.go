@@ -45,7 +45,7 @@ func VerifySignature(sig []byte, msg [32]byte, pubKey common.PublicKey) (bool, e
 	return dilithiumt.VerifySignature(sig, msg, pubKey)
 }
 
-func VerifyMultipleSignatures(sigs [][]byte, msgs [][32]byte, pubKeys []common.PublicKey) (bool, error) {
+func VerifyMultipleSignatures(sigs [][]byte, msgs [][32]byte, pubKeys [][]common.PublicKey) (bool, error) {
 	return dilithiumt.VerifyMultipleSignatures(sigs, msgs, pubKeys)
 }
 

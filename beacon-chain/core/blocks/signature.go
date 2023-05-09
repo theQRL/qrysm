@@ -185,7 +185,7 @@ func createAttestationSignatureBatch(
 	}
 
 	sigs := make([][]byte, len(atts))
-	pks := make([]dilithium.PublicKey, len(atts))
+	pks := make([][]dilithium.PublicKey, len(atts))
 	msgs := make([][32]byte, len(atts))
 	descs := make([]string, len(atts))
 	for i, a := range atts {
@@ -207,11 +207,12 @@ func createAttestationSignatureBatch(
 			pubkeyAtIdx := beaconState.PubkeyAtIndex(primitives.ValidatorIndex(indices[i]))
 			pubkeys[i] = pubkeyAtIdx[:]
 		}
-		aggP, err := dilithium.AggregatePublicKeys(pubkeys)
-		if err != nil {
-			return nil, err
-		}
-		pks[i] = aggP
+		//aggP, err := dilithium.AggregatePublicKeys(pubkeys)
+		//if err != nil {
+		//	return nil, err
+		//}
+		//pks[i] = aggP
+		pks[i] = append(pks[i], pubkeys...)
 
 		root, err := signing.ComputeSigningRoot(ia.Data, domain)
 		if err != nil {

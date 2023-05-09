@@ -85,7 +85,7 @@ func VerifySignature(sig []byte, msg [32]byte, pubKey common.PublicKey) (bool, e
 }
 
 // VerifyMultipleSignatures TODO: (cyyber) make multiple parallel verification using go routine
-func VerifyMultipleSignatures(sigs [][]byte, msgs [][32]byte, pubKeys []common.PublicKey) (bool, error) {
+func VerifyMultipleSignatures(sigs [][]byte, msgs [][32]byte, pubKeys [][]common.PublicKey) (bool, error) {
 	if len(sigs) == 0 || len(pubKeys) == 0 {
 		return false, nil
 	}
@@ -97,8 +97,12 @@ func VerifyMultipleSignatures(sigs [][]byte, msgs [][32]byte, pubKeys []common.P
 	}
 
 	for i, _ := range sigs {
-		if ok, err := VerifySignature(sigs[i], msgs[i], pubKeys[i]); !ok {
-			return ok, err
+		for pubKeyIndex, pubKey := range pubKeys[i] {
+			offset := pubKeyIndex * dilithium.CryptoBytes
+			sig := sigs[i][offset : offset+dilithium.CryptoBytes]
+			if ok, err := VerifySignature(sig, msgs[i], pubKey); !ok {
+				return ok, err
+			}
 		}
 	}
 
