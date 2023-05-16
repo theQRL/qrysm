@@ -3,9 +3,9 @@ package dilithium
 import (
 	"encoding/hex"
 	"fmt"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 
 	"github.com/pkg/errors"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // AggregatedSignature represents aggregated signature produced by AggregateBatch()

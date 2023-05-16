@@ -16,6 +16,7 @@ import (
 	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation"
 	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/pkg/errors"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // retrieves the signature batch from the raw data, public key,signature and domain provided.
@@ -34,7 +35,7 @@ func signatureBatch(signedData, pub, signature, domain []byte, desc string) (*di
 	}
 	return &dilithium.SignatureBatch{
 		Signatures:   [][]byte{signature},
-		PublicKeys:   []dilithium.PublicKey{publicKey},
+		PublicKeys:   [][]dilithium.PublicKey{{publicKey}},
 		Messages:     [][32]byte{root},
 		Descriptions: []string{desc},
 	}, nil
@@ -49,16 +50,23 @@ func verifySignature(signedData, pub, signature, domain []byte) error {
 	if len(set.Signatures) != 1 {
 		return errors.Errorf("signature set contains %d signatures instead of 1", len(set.Signatures))
 	}
+	totalSigsLen := len(set.PublicKeys[0]) * dilithium2.CryptoBytes
+	if totalSigsLen != len(set.Signatures[0]) {
+		return errors.Errorf("signature set length is %d instead of %d", len(set.Signatures[0]), totalSigsLen)
+	}
 	// We assume only one signature set is returned here.
 	sig := set.Signatures[0]
-	publicKey := set.PublicKeys[0]
-	root := set.Messages[0]
-	rSig, err := dilithium.SignatureFromBytes(sig)
-	if err != nil {
-		return err
-	}
-	if !rSig.Verify(publicKey, root[:]) {
-		return signing.ErrSigFailedToVerify
+	sigOffset := 0
+	for _, publicKey := range set.PublicKeys[0] {
+		root := set.Messages[0]
+		rSig, err := dilithium.SignatureFromBytes(sig[sigOffset : sigOffset+dilithium2.CryptoBytes])
+		if err != nil {
+			return err
+		}
+		if !rSig.Verify(publicKey, root[:]) {
+			return signing.ErrSigFailedToVerify
+		}
+		sigOffset += dilithium2.CryptoBytes
 	}
 	return nil
 }
@@ -203,16 +211,16 @@ func createAttestationSignatureBatch(
 		}
 		indices := ia.AttestingIndices
 		pubkeys := make([][]byte, len(indices))
-		for i := 0; i < len(indices); i++ {
-			pubkeyAtIdx := beaconState.PubkeyAtIndex(primitives.ValidatorIndex(indices[i]))
-			pubkeys[i] = pubkeyAtIdx[:]
+		for j := 0; j < len(indices); j++ {
+			pubkeyAtIdx := beaconState.PubkeyAtIndex(primitives.ValidatorIndex(indices[j]))
+			pubkeys[j] = pubkeyAtIdx[:]
+
+			pubKey, err := dilithium.PublicKeyFromBytes(pubkeys[j])
+			if err != nil {
+				return nil, errors.Wrap(err, "could not convert bytes to public key")
+			}
+			pks[i] = append(pks[i], pubKey)
 		}
-		//aggP, err := dilithium.AggregatePublicKeys(pubkeys)
-		//if err != nil {
-		//	return nil, err
-		//}
-		//pks[i] = aggP
-		pks[i] = append(pks[i], pubkeys...)
 
 		root, err := signing.ComputeSigningRoot(ia.Data, domain)
 		if err != nil {
