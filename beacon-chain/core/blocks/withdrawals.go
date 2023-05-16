@@ -220,7 +220,7 @@ func BLSChangesSignatureBatch(
 	}
 	batch := &dilithium.SignatureBatch{
 		Signatures:   make([][]byte, len(changes)),
-		PublicKeys:   make([]dilithium.PublicKey, len(changes)),
+		PublicKeys:   make([][]dilithium.PublicKey, len(changes)),
 		Messages:     make([][32]byte, len(changes)),
 		Descriptions: make([]string, len(changes)),
 	}
@@ -235,7 +235,7 @@ func BLSChangesSignatureBatch(
 		if err != nil {
 			return nil, errors.Wrap(err, "could not convert bytes to public key")
 		}
-		batch.PublicKeys[i] = publicKey
+		batch.PublicKeys[i] = append(batch.PublicKeys[i], publicKey)
 		htr, err := signing.SigningData(change.Message.HashTreeRoot, domain)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not compute BLSToExecutionChange signing data")
