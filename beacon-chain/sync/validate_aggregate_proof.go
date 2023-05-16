@@ -301,7 +301,7 @@ func validateSelectionIndex(
 	}
 	return &dilithium.SignatureBatch{
 		Signatures:   [][]byte{proof},
-		PublicKeys:   []dilithium.PublicKey{publicKey},
+		PublicKeys:   [][]dilithium.PublicKey{{publicKey}},
 		Messages:     [][32]byte{root},
 		Descriptions: []string{signing.SelectionProof},
 	}, nil
@@ -329,7 +329,7 @@ func aggSigSet(s state.ReadOnlyBeaconState, a *ethpb.SignedAggregateAttestationA
 	}
 	return &dilithium.SignatureBatch{
 		Signatures:   [][]byte{a.Signature},
-		PublicKeys:   []dilithium.PublicKey{publicKey},
+		PublicKeys:   [][]dilithium.PublicKey{{publicKey}},
 		Messages:     [][32]byte{root},
 		Descriptions: []string{signing.AggregatorSignature},
 	}, nil

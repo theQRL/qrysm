@@ -237,7 +237,7 @@ func (s *Service) rejectInvalidContributionSignature(m *ethpb.SignedContribution
 		}
 		set := &dilithium.SignatureBatch{
 			Messages:     [][32]byte{root},
-			PublicKeys:   []dilithium.PublicKey{publicKey},
+			PublicKeys:   [][]dilithium.PublicKey{{publicKey}},
 			Signatures:   [][]byte{m.Signature},
 			Descriptions: []string{signing.ContributionSignature},
 		}
@@ -252,6 +252,7 @@ func (s *Service) rejectInvalidSyncAggregateSignature(m *ethpb.SignedContributio
 		// The aggregate signature is valid for the message `beacon_block_root` and aggregate pubkey
 		// derived from the participation info in `aggregation_bits` for the subcommittee specified by the `contribution.subcommittee_index`.
 		var activeRawPubkeys [][]byte
+		var publicKeys []dilithium.PublicKey
 		syncPubkeys, err := s.cfg.chain.HeadSyncCommitteePubKeys(ctx, m.Message.Contribution.Slot, primitives.CommitteeIndex(m.Message.Contribution.SubcommitteeIndex))
 		if err != nil {
 			return pubsub.ValidationIgnore, err
@@ -265,6 +266,11 @@ func (s *Service) rejectInvalidSyncAggregateSignature(m *ethpb.SignedContributio
 		for i, pk := range syncPubkeys {
 			if bVector.BitAt(uint64(i)) {
 				activeRawPubkeys = append(activeRawPubkeys, pk)
+				pubKey, err := dilithium.PublicKeyFromBytes(pk)
+				if err != nil {
+					return pubsub.ValidationIgnore, err
+				}
+				publicKeys = append(publicKeys, pubKey)
 			}
 		}
 		d, err := s.cfg.chain.HeadSyncCommitteeDomain(ctx, m.Message.Contribution.Slot)
@@ -278,16 +284,9 @@ func (s *Service) rejectInvalidSyncAggregateSignature(m *ethpb.SignedContributio
 			tracing.AnnotateError(span, err)
 			return pubsub.ValidationIgnore, err
 		}
-		// Aggregate pubkeys separately again to allow
-		// for signature sets to be created for batch verification.
-		aggKey, err := dilithium.AggregatePublicKeys(activeRawPubkeys)
-		if err != nil {
-			tracing.AnnotateError(span, err)
-			return pubsub.ValidationIgnore, err
-		}
 		set := &dilithium.SignatureBatch{
 			Messages:     [][32]byte{sigRoot},
-			PublicKeys:   []dilithium.PublicKey{aggKey},
+			PublicKeys:   [][]dilithium.PublicKey{publicKeys},
 			Signatures:   [][]byte{m.Message.Contribution.Signature},
 			Descriptions: []string{signing.SyncAggregateSignature},
 		}
@@ -399,7 +398,7 @@ func (s *Service) verifySyncSelectionData(ctx context.Context, m *ethpb.Contribu
 	}
 	set := &dilithium.SignatureBatch{
 		Messages:     [][32]byte{root},
-		PublicKeys:   []dilithium.PublicKey{publicKey},
+		PublicKeys:   [][]dilithium.PublicKey{{publicKey}},
 		Signatures:   [][]byte{m.SelectionProof},
 		Descriptions: []string{signing.SyncSelectionProof},
 	}

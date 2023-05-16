@@ -244,7 +244,7 @@ func (s *Service) rejectInvalidSyncCommitteeSignature(m *ethpb.SyncCommitteeMess
 		// enabled.
 		set := &dilithium.SignatureBatch{
 			Messages:     [][32]byte{sigRoot},
-			PublicKeys:   []dilithium.PublicKey{pKey},
+			PublicKeys:   [][]dilithium.PublicKey{{pKey}},
 			Signatures:   [][]byte{m.Signature},
 			Descriptions: []string{signing.SyncCommitteeSignature},
 		}
