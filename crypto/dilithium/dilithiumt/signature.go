@@ -70,8 +70,10 @@ func AggregateSignatures(sigs []common.Signature) common.Signature {
 
 func UnaggregatedSignatures(sigs []common.Signature) []byte {
 	unaggregatedSigns := make([]byte, dilithium.CryptoBytes*len(sigs))
+	offset := 0
 	for i := 0; i < len(sigs); i++ {
-		unaggregatedSigns = append(unaggregatedSigns, sigs[i].Marshal()...)
+		copy(unaggregatedSigns[offset:offset+dilithium.CryptoBytes], sigs[i].Marshal())
+		offset += dilithium.CryptoBytes
 	}
 	return unaggregatedSigns
 }
