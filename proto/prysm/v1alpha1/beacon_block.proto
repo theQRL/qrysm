@@ -303,8 +303,10 @@ message IndexedAttestation {
 
     AttestationData data = 2;
 
-    // 96 bytes aggregate signature.
-    bytes signature = 3 [(ethereum.eth.ext.ssz_size) = "4595"];
+    // 4595 (signature size per signer) * 2048 (number of signers) bytes of unaggregated signatures
+    bytes signature = 3 [(ethereum.eth.ext.ssz_size) = "9410560"];
+
+    repeated uint64 signatureValidatorIndex = 4 [(ethereum.eth.ext.ssz_max) = "2048"];
 }
 
 // The sync aggregate object for the beacon chain to track sync committee votes and to
