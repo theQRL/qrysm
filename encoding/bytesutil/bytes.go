@@ -84,6 +84,15 @@ func SafeCopyRootAtIndex(input [][]byte, idx uint64) ([]byte, error) {
 	return item, nil
 }
 
+func SafeCopyUint64Array(ary []uint64) []uint64 {
+	if ary != nil {
+		copied := make([]uint64, len(ary))
+		copy(copied, ary)
+		return copied
+	}
+	return nil
+}
+
 // SafeCopyBytes will copy and return a non-nil byte slice, otherwise it returns nil.
 func SafeCopyBytes(cp []byte) []byte {
 	if cp != nil {

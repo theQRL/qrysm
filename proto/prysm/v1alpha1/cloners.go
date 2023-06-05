@@ -50,9 +50,10 @@ func CopyAttestation(att *Attestation) *Attestation {
 		return nil
 	}
 	return &Attestation{
-		AggregationBits: bytesutil.SafeCopyBytes(att.AggregationBits),
-		Data:            CopyAttestationData(att.Data),
-		Signature:       bytesutil.SafeCopyBytes(att.Signature),
+		AggregationBits:         bytesutil.SafeCopyBytes(att.AggregationBits),
+		Data:                    CopyAttestationData(att.Data),
+		Signature:               bytesutil.SafeCopyBytes(att.Signature),
+		SignatureValidatorIndex: bytesutil.SafeCopyUint64Array(att.SignatureValidatorIndex),
 	}
 }
 

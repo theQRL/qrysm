@@ -15,6 +15,7 @@ import (
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/go-bitfield"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"go.opencensus.io/trace"
 )
 
@@ -49,10 +50,32 @@ func ConvertToIndexed(ctx context.Context, attestation *ethpb.Attestation, commi
 	sort.Slice(attIndices, func(i, j int) bool {
 		return attIndices[i] < attIndices[j]
 	})
+
+	signatureValidatorIndex := make([]uint64, len(attestation.SignatureValidatorIndex))
+	copy(signatureValidatorIndex, attestation.SignatureValidatorIndex)
+	sigsMap := make(map[uint64][]byte)
+	for i, validatorIndex := range signatureValidatorIndex {
+		offset := i * dilithium2.CryptoBytes
+		sigsMap[validatorIndex] = attestation.Signature[offset : offset+dilithium2.CryptoBytes]
+	}
+	signatures := make([]byte, 0, len(attestation.Signature))
+
+	sort.Slice(signatureValidatorIndex, func(i, j int) bool {
+		return signatureValidatorIndex[i] < signatureValidatorIndex[j]
+	})
+	for _, validatorIndex := range signatureValidatorIndex {
+		sig, ok := sigsMap[validatorIndex]
+		if !ok {
+			return nil, errors.Errorf("ConvertToIndexed unkown validatorIndex in sigMap %d", validatorIndex)
+		}
+		signatures = append(signatures, sig...)
+	}
+
 	inAtt := &ethpb.IndexedAttestation{
-		Data:             attestation.Data,
-		Signature:        attestation.Signature,
-		AttestingIndices: attIndices,
+		Data:                    attestation.Data,
+		Signature:               signatures,
+		SignatureValidatorIndex: signatureValidatorIndex,
+		AttestingIndices:        attIndices,
 	}
 	return inAtt, err
 }

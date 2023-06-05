@@ -8,6 +8,7 @@ import (
 	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/go-bitfield"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // MaxCoverAttestationAggregation relies on Maximum Coverage greedy algorithm for aggregation.
@@ -158,25 +159,49 @@ func aggregateAttestations(atts []*ethpb.Attestation, keys []int, coverage *bitf
 	}
 
 	var data *ethpb.AttestationData
-	signs := make([]dilithium.Signature, 0, len(keys))
 	for i, idx := range keys {
-		sig, err := signatureFromBytes(atts[idx].Signature)
-		if err != nil {
-			return targetIdx, err
-		}
-		signs = append(signs, sig)
 		if i == 0 {
 			data = ethpb.CopyAttestationData(atts[idx].Data)
 			targetIdx = idx
 		}
 	}
+	var attsKeys []int
+	attsMap := make(map[int][]byte)
+	sigValidatorIndexMap := make(map[int][]uint64)
+	for _, att := range atts {
+		for i, index := range att.AggregationBits.BitIndices() {
+			attsKeys = append(attsKeys, index)
+			offset := i * dilithium2.CryptoBytes
+			// Ignore if the validator index in committee already exists
+			if _, found := attsMap[index]; found {
+				continue
+			}
+			attsMap[index] = append(attsMap[index], att.Signature[offset:offset+dilithium2.CryptoBytes]...)
+			sigValidatorIndexMap[index] = append(sigValidatorIndexMap[index], att.SignatureValidatorIndex[i])
+		}
+	}
+	sort.Slice(attsKeys, func(x, y int) bool {
+		return attsKeys[x] < attsKeys[y]
+	})
+	signs := make([]dilithium.Signature, 0, len(keys))
+	signatureValidatorIndex := make([]uint64, 0, len(keys))
+	for _, key := range attsKeys {
+		sig, err := signatureFromBytes(attsMap[key])
+		if err != nil {
+			return key, err
+		}
+		signs = append(signs, sig)
+		signatureValidatorIndex = append(signatureValidatorIndex, sigValidatorIndexMap[key]...)
+	}
+
 	// Put aggregated attestation at a position of the first selected attestation.
 	atts[targetIdx] = &ethpb.Attestation{
 		// Append size byte, which will be unnecessary on switch to Bitlist64.
 		AggregationBits: coverage.ToBitlist(),
 		Data:            data,
 		//Signature:              aggregateSignatures(signs).Marshal(),
-		Signature: unaggregatedSignatures(signs),
+		Signature:               unaggregatedSignatures(signs),
+		SignatureValidatorIndex: signatureValidatorIndex,
 	}
 	return
 }

@@ -3,7 +3,6 @@ package blocks
 import (
 	"context"
 	"encoding/binary"
-
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
@@ -197,7 +196,6 @@ func createAttestationSignatureBatch(
 	msgs := make([][32]byte, len(atts))
 	descs := make([]string, len(atts))
 	for i, a := range atts {
-		sigs[i] = a.Signature
 		c, err := helpers.BeaconCommitteeFromState(ctx, beaconState, a.Data.Slot, a.Data.CommitteeIndex)
 		if err != nil {
 			return nil, err
@@ -209,6 +207,7 @@ func createAttestationSignatureBatch(
 		if err := attestation.IsValidAttestationIndices(ctx, ia); err != nil {
 			return nil, err
 		}
+		sigs[i] = ia.Signature
 		indices := ia.AttestingIndices
 		pubkeys := make([][]byte, len(indices))
 		for j := 0; j < len(indices); j++ {

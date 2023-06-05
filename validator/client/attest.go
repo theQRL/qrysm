@@ -130,9 +130,10 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot,
 	aggregationBitfield := bitfield.NewBitlist(uint64(len(duty.Committee)))
 	aggregationBitfield.SetBitAt(indexInCommittee, true)
 	attestation := &ethpb.Attestation{
-		Data:            data,
-		AggregationBits: aggregationBitfield,
-		Signature:       sig,
+		Data:                    data,
+		AggregationBits:         aggregationBitfield,
+		Signature:               sig,
+		SignatureValidatorIndex: []uint64{uint64(duty.ValidatorIndex)},
 	}
 
 	// Set the signature of the attestation and send it out to the beacon node.
