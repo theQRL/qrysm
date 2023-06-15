@@ -3284,8 +3284,8 @@ def qrysm_deps():
     go_repository(
         name = "com_github_prysmaticlabs_gohashtree",
         importpath = "github.com/prysmaticlabs/gohashtree",
-        sum = "h1:hk5ZsDQuSkyUMhTd55qB396P1+dtyIKiSwMmYE/hyEU=",
-        version = "v0.0.2-alpha",
+        sum = "h1:1EVinCWdb3Lorq7xn8DYQHf48nCcdAM3Vb18KsFlRWY=",
+        version = "v0.0.3-alpha",
     )
 
     go_repository(
