@@ -8,10 +8,11 @@ import (
 	opfeed "github.com/cyyber/qrysm/v4/beacon-chain/core/feed/operation"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -176,14 +177,14 @@ func (vs *Server) AggregatedSigAndAggregationBits(
 			}
 		}
 	}
-	aggregatedSig := make([]byte, 96)
+	aggregatedSig := make([]byte, dilithium2.CryptoBytes)
 	aggregatedSig[0] = 0xC0
 	if len(sigs) != 0 {
-		uncompressedSigs, err := bls.MultipleSignaturesFromBytes(sigs)
+		uncompressedSigs, err := dilithium.MultipleSignaturesFromBytes(sigs)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "could not decompress signatures")
 		}
-		aggregatedSig = bls.AggregateSignatures(uncompressedSigs).Marshal()
+		aggregatedSig = dilithium.UnaggregatedSignatures(uncompressedSigs)
 	}
 
 	return aggregatedSig, bits, nil
