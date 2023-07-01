@@ -1,9 +1,11 @@
 package dilithiumt
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/cyyber/qrysm/v4/crypto/bls/common"
+	dilithiumCommon "github.com/cyyber/qrysm/v4/crypto/dilithium/common"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-qrllib/dilithium"
 )
@@ -57,6 +59,9 @@ func (s *Signature) FastAggregateVerify(pubKeys []common.PublicKey, msg [32]byte
 }
 
 func (s *Signature) Eth2FastAggregateVerify(pubKeys []common.PublicKey, msg [32]byte) bool {
+	if len(pubKeys) == 0 && bytes.Equal(s.Marshal(), dilithiumCommon.InfiniteSignature[:]) {
+		return true
+	}
 	panic("Eth2FastAggregateVerify not supported for dilithium")
 }
 
@@ -69,6 +74,10 @@ func AggregateSignatures(sigs []common.Signature) common.Signature {
 }
 
 func UnaggregatedSignatures(sigs []common.Signature) []byte {
+	if len(sigs) == 0 {
+		return nil
+	}
+
 	unaggregatedSigns := make([]byte, dilithium.CryptoBytes*len(sigs))
 	offset := 0
 	for i := 0; i < len(sigs); i++ {
