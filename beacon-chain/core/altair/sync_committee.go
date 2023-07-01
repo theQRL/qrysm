@@ -10,7 +10,6 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
 	"github.com/cyyber/qrysm/v4/crypto/hash"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/cyyber/qrysm/v4/math"
@@ -65,13 +64,13 @@ func NextSyncCommittee(ctx context.Context, s state.BeaconState) (*ethpb.SyncCom
 		p := s.PubkeyAtIndex(index)
 		pubkeys[i] = p[:]
 	}
-	aggregated, err := bls.AggregatePublicKeys(pubkeys)
-	if err != nil {
-		return nil, err
-	}
+	//aggregated, err := bls.AggregatePublicKeys(pubkeys)
+	//if err != nil {
+	//	return nil, err
+	//}
 	return &ethpb.SyncCommittee{
 		Pubkeys:         pubkeys,
-		AggregatePubkey: aggregated.Marshal(),
+		AggregatePubkey: nil,
 	}, nil
 }
 
