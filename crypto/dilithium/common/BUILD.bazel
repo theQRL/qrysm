@@ -1,0 +1,9 @@
+load("@qrysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["constants.go"],
+    importpath = "github.com/cyyber/qrysm/v4/crypto/dilithium/common",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_theqrl_go_qrllib//dilithium:go_default_library"],
+)
