@@ -2,13 +2,13 @@ package altair
 
 import (
 	"context"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
 	p2pType "github.com/cyyber/qrysm/v4/beacon-chain/p2p/types"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/time/slots"
@@ -62,7 +62,7 @@ func ProcessSyncAggregate(ctx context.Context, s state.BeaconState, sync *ethpb.
 // sync aggregate messages.
 func processSyncAggregate(ctx context.Context, s state.BeaconState, sync *ethpb.SyncAggregate) (
 	state.BeaconState,
-	[]bls.PublicKey,
+	[]dilithium.PublicKey,
 	uint64,
 	error) {
 	currentSyncCommittee, err := s.CurrentSyncCommittee()
@@ -76,7 +76,7 @@ func processSyncAggregate(ctx context.Context, s state.BeaconState, sync *ethpb.
 	if sync.SyncCommitteeBits.Len() > uint64(len(committeeKeys)) {
 		return nil, nil, 0, errors.New("bits length exceeds committee length")
 	}
-	votedKeys := make([]bls.PublicKey, 0, len(committeeKeys))
+	votedKeys := make([]dilithium.PublicKey, 0, len(committeeKeys))
 
 	activeBalance, err := helpers.TotalActiveBalance(s)
 	if err != nil {
@@ -100,7 +100,7 @@ func processSyncAggregate(ctx context.Context, s state.BeaconState, sync *ethpb.
 		}
 
 		if sync.SyncCommitteeBits.BitAt(i) {
-			pubKey, err := bls.PublicKeyFromBytes(committeeKeys[i])
+			pubKey, err := dilithium.PublicKeyFromBytes(committeeKeys[i])
 			if err != nil {
 				return nil, nil, 0, err
 			}
@@ -122,7 +122,7 @@ func processSyncAggregate(ctx context.Context, s state.BeaconState, sync *ethpb.
 }
 
 // VerifySyncCommitteeSig verifies sync committee signature `syncSig` is valid with respect to public keys `syncKeys`.
-func VerifySyncCommitteeSig(s state.BeaconState, syncKeys []bls.PublicKey, syncSig []byte) error {
+func VerifySyncCommitteeSig(s state.BeaconState, syncKeys []dilithium.PublicKey, syncSig []byte) error {
 	ps := slots.PrevSlot(s.Slot())
 	d, err := signing.Domain(s.Fork(), slots.ToEpoch(ps), params.BeaconConfig().DomainSyncCommittee, s.GenesisValidatorsRoot())
 	if err != nil {
@@ -137,7 +137,7 @@ func VerifySyncCommitteeSig(s state.BeaconState, syncKeys []bls.PublicKey, syncS
 	if err != nil {
 		return err
 	}
-	sig, err := bls.SignatureFromBytes(syncSig)
+	sig, err := dilithium.SignatureFromBytes(syncSig)
 	if err != nil {
 		return err
 	}
