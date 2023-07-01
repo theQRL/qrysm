@@ -7,6 +7,7 @@ import (
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	synccontribution "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/sync_contribution"
@@ -81,7 +82,7 @@ func (vs *Server) getSyncAggregate(ctx context.Context, slot primitives.Slot, ro
 			continue
 		}
 		bitsHolder[i] = c.AggregationBits
-		sig, err := bls.SignatureFromBytes(c.Signature)
+		sig, err := dilithium.SignatureFromBytes(c.Signature)
 		if err != nil {
 			return nil, err
 		}
@@ -93,12 +94,12 @@ func (vs *Server) getSyncAggregate(ctx context.Context, slot primitives.Slot, ro
 	for _, b := range bitsHolder {
 		syncBits = append(syncBits, b...)
 	}
-	syncSig := bls.AggregateSignatures(sigsHolder)
+	syncSig := dilithium.UnaggregatedSignatures(sigsHolder)
 	var syncSigBytes [dilithium2.CryptoBytes]byte
 	if syncSig == nil {
 		syncSigBytes = [dilithium2.CryptoBytes]byte{0xC0} // Infinity signature if itself is nil.
 	} else {
-		syncSigBytes = bytesutil.ToBytes4595(syncSig.Marshal())
+		syncSigBytes = bytesutil.ToBytes4595(syncSig)
 	}
 
 	return &ethpb.SyncAggregate{
