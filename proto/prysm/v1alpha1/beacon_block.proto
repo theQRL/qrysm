@@ -316,7 +316,9 @@ message SyncAggregate {
     bytes sync_committee_bits = 1 [(ethereum.eth.ext.ssz_size) = "sync_committee_bytes.size", (ethereum.eth.ext.cast_type) = "sync_committee_bits.type"];
 
     // BLS aggregated signature of the sync committee for the ones that voted.
-    bytes sync_committee_signature = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
+//    bytes sync_committee_signature = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
+
+    bytes sync_committee_signature = 2 [(ethereum.eth.ext.ssz_max) = "9410560"];
 }
 
 message SignedBeaconBlockBellatrix {
