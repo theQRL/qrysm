@@ -2,13 +2,12 @@ package validator
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
 	"github.com/cyyber/qrysm/v4/crypto/dilithium"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	synccontribution "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/sync_contribution"
 	"github.com/cyyber/qrysm/v4/runtime/version"
@@ -27,15 +26,17 @@ func (vs *Server) setSyncAggregate(ctx context.Context, blk interfaces.SignedBea
 		log.WithError(err).Error("Could not get sync aggregate")
 		emptySig := [dilithium2.CryptoBytes]byte{0xC0}
 		emptyAggregate := &ethpb.SyncAggregate{
-			SyncCommitteeBits:      make([]byte, params.BeaconConfig().SyncCommitteeSize),
+			SyncCommitteeBits:      make([]byte, params.BeaconConfig().SyncCommitteeSize/8),
 			SyncCommitteeSignature: emptySig[:],
 		}
+		fmt.Println("1. adding sync committee Bits from here <<<<--- ", len(emptyAggregate.SyncCommitteeBits))
 		if err := blk.SetSyncAggregate(emptyAggregate); err != nil {
 			log.WithError(err).Error("Could not set sync aggregate")
 		}
 		return
 	}
 
+	fmt.Println("adding sync ommittee Bits from here <<<<--- ", len(syncAggregate.SyncCommitteeBits))
 	// Can not error. We already filter block versioning at the top. Phase 0 is impossible.
 	if err := blk.SetSyncAggregate(syncAggregate); err != nil {
 		log.WithError(err).Error("Could not set sync aggregate")
@@ -63,7 +64,7 @@ func (vs *Server) getSyncAggregate(ctx context.Context, slot primitives.Slot, ro
 	for i := uint64(0); i < params.BeaconConfig().SyncCommitteeSubnetCount; i++ {
 		bitsHolder = append(bitsHolder, ethpb.NewSyncCommitteeAggregationBits())
 	}
-	sigsHolder := make([]bls.Signature, 0, params.BeaconConfig().SyncCommitteeSize/params.BeaconConfig().SyncCommitteeSubnetCount)
+	sigsHolder := make([]dilithium.Signature, 0, params.BeaconConfig().SyncCommitteeSize/params.BeaconConfig().SyncCommitteeSubnetCount)
 
 	for i := uint64(0); i < params.BeaconConfig().SyncCommitteeSubnetCount; i++ {
 		cs := proposerContributions.filterBySubIndex(i)
@@ -77,30 +78,51 @@ func (vs *Server) getSyncAggregate(ctx context.Context, slot primitives.Slot, ro
 		if err != nil {
 			return nil, err
 		}
+		fmt.Println("!!!!!!!!!!!!!! original aggregate length ", len(aggregates))
+		fmt.Println("!!!!!!!!!!!!!! deduped aggregate length ", len(deduped))
 		c := deduped.mostProfitable()
 		if c == nil {
 			continue
 		}
 		bitsHolder[i] = c.AggregationBits
-		sig, err := dilithium.SignatureFromBytes(c.Signature)
-		if err != nil {
-			return nil, err
+		fmt.Println(">>>>>>>>> c.AggregationBits ", c.AggregationBits)
+		fmt.Println(">>>>>>>>> c.AggregationBits len ", len(c.AggregationBits))
+		fmt.Println(">>>>>>>>> c.Signature len ", len(c.Signature))
+		if len(c.Signature)%dilithium2.CryptoBytes != 0 {
+			return nil, fmt.Errorf(
+				"combined Signature length is %d is not in the multiple of %d",
+				len(c.Signature), dilithium2.CryptoBytes)
 		}
-		sigsHolder = append(sigsHolder, sig)
+		for i := 0; i < len(c.Signature)/dilithium2.CryptoBytes; i++ {
+			offset := i * dilithium2.CryptoBytes
+			signature := c.Signature[offset : offset+dilithium2.CryptoBytes]
+			sig, err := dilithium.SignatureFromBytes(signature)
+			if err != nil {
+				return nil, err
+			}
+			sigsHolder = append(sigsHolder, sig)
+		}
 	}
 
 	// Aggregate all the contribution bits and signatures.
 	var syncBits []byte
 	for _, b := range bitsHolder {
+		fmt.Println(">>>>>>>>> bitsHolder each item length ", len(b))
 		syncBits = append(syncBits, b...)
 	}
+	fmt.Println(">>>>>>>>> bitsHolder len ", len(bitsHolder))
+	fmt.Println(">>>>>>>>> syncBits len ", len(syncBits))
 	syncSig := dilithium.UnaggregatedSignatures(sigsHolder)
-	var syncSigBytes [dilithium2.CryptoBytes]byte
+	var syncSigBytes []byte
 	if syncSig == nil {
-		syncSigBytes = [dilithium2.CryptoBytes]byte{0xC0} // Infinity signature if itself is nil.
+		var infSig = [dilithium2.CryptoBytes]byte{0xC0} // Infinity signature if itself is nil.
+		syncSigBytes = infSig[:]
 	} else {
-		syncSigBytes = bytesutil.ToBytes4595(syncSig)
+		syncSigBytes = syncSig
 	}
+	fmt.Println(">>>>>>>>> 2. syncBits len ", len(syncBits))
+	fmt.Println(">>>>>>>>> syncSig len ", len(syncSig))
+	fmt.Println(">>>>>>>>> syncSigBytes len ", len(syncSigBytes))
 
 	return &ethpb.SyncAggregate{
 		SyncCommitteeBits:      syncBits,
