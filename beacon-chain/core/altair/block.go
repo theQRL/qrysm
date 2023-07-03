@@ -2,7 +2,10 @@ package altair
 
 import (
 	"context"
+	"encoding/hex"
+	"fmt"
 	"github.com/cyyber/qrysm/v4/crypto/dilithium"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
@@ -137,12 +140,33 @@ func VerifySyncCommitteeSig(s state.BeaconState, syncKeys []dilithium.PublicKey,
 	if err != nil {
 		return err
 	}
-	sig, err := dilithium.SignatureFromBytes(syncSig)
-	if err != nil {
-		return err
+	fmt.Println("sync keys length ", len(syncKeys))
+	fmt.Println("total sigs length ", len(syncSig)/dilithium2.CryptoBytes)
+	if (len(syncKeys) != 0 && len(syncSig) != 1) && (len(syncSig) != len(syncKeys)*dilithium2.CryptoBytes) {
+		return fmt.Errorf("syncSig and syncKeys length mismatch | syncSig len %d | syncKeys len %d",
+			len(syncSig), len(syncKeys))
 	}
-	if !sig.Eth2FastAggregateVerify(syncKeys, r) {
-		return errors.New("invalid sync committee signature")
+	// @@@@@@@@@ for debugging
+	for i, syncKey := range syncKeys {
+		offset := i * dilithium2.CryptoBytes
+		sig, _ := dilithium.SignatureFromBytes(syncSig[offset : offset+dilithium2.CryptoBytes])
+
+		fmt.Println("index: ", i)
+		fmt.Println("syncKey: ", hex.EncodeToString(syncKey.Marshal())[:12])
+		fmt.Println("sig: ", hex.EncodeToString(sig.Marshal())[:12])
+	}
+	// @@@@@@@@@ for debugging - ends
+
+	for i, syncKey := range syncKeys {
+		offset := i * dilithium2.CryptoBytes
+		sig, err := dilithium.SignatureFromBytes(syncSig[offset : offset+dilithium2.CryptoBytes])
+		if err != nil {
+			return err
+		}
+		if !sig.Verify(syncKey, r[:]) {
+			return fmt.Errorf("invalid sync committee signature at %d %s %s",
+				i, hex.EncodeToString(syncKey.Marshal()), hex.EncodeToString(sig.Marshal()))
+		}
 	}
 	return nil
 }

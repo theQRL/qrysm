@@ -68,9 +68,13 @@ func NextSyncCommittee(ctx context.Context, s state.BeaconState) (*ethpb.SyncCom
 	//if err != nil {
 	//	return nil, err
 	//}
+	appendedPubKeys := make([]byte, 0, len(pubkeys))
+	for _, pubKey := range pubkeys {
+		appendedPubKeys = append(appendedPubKeys, pubKey...)
+	}
 	return &ethpb.SyncCommittee{
 		Pubkeys:         pubkeys,
-		AggregatePubkey: nil,
+		AggregatePubkey: appendedPubKeys,
 	}, nil
 }
 
