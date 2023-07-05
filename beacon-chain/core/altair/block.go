@@ -140,22 +140,11 @@ func VerifySyncCommitteeSig(s state.BeaconState, syncKeys []dilithium.PublicKey,
 	if err != nil {
 		return err
 	}
-	fmt.Println("sync keys length ", len(syncKeys))
-	fmt.Println("total sigs length ", len(syncSig)/dilithium2.CryptoBytes)
+
 	if (len(syncKeys) != 0 && len(syncSig) != 1) && (len(syncSig) != len(syncKeys)*dilithium2.CryptoBytes) {
 		return fmt.Errorf("syncSig and syncKeys length mismatch | syncSig len %d | syncKeys len %d",
 			len(syncSig), len(syncKeys))
 	}
-	// @@@@@@@@@ for debugging
-	for i, syncKey := range syncKeys {
-		offset := i * dilithium2.CryptoBytes
-		sig, _ := dilithium.SignatureFromBytes(syncSig[offset : offset+dilithium2.CryptoBytes])
-
-		fmt.Println("index: ", i)
-		fmt.Println("syncKey: ", hex.EncodeToString(syncKey.Marshal())[:12])
-		fmt.Println("sig: ", hex.EncodeToString(sig.Marshal())[:12])
-	}
-	// @@@@@@@@@ for debugging - ends
 
 	for i, syncKey := range syncKeys {
 		offset := i * dilithium2.CryptoBytes

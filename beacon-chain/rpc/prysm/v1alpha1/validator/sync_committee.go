@@ -3,6 +3,7 @@ package validator
 import (
 	"bytes"
 	"context"
+	"sort"
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/feed"
 	opfeed "github.com/cyyber/qrysm/v4/beacon-chain/core/feed/operation"
@@ -160,6 +161,9 @@ func (vs *Server) AggregatedSigAndAggregationBits(
 	subCommitteeSize := params.BeaconConfig().SyncCommitteeSize / params.BeaconConfig().SyncCommitteeSubnetCount
 	sigs := make([][]byte, 0, subCommitteeSize)
 	bits := ethpb.NewSyncCommitteeAggregationBits()
+	syncCommitteeIndicesSigMap := make(map[primitives.CommitteeIndex]*ethpb.SyncCommitteeMessage)
+	appendedSyncCommitteeIndices := make([]primitives.CommitteeIndex, 0)
+
 	for _, msg := range msgs {
 		if bytes.Equal(blockRoot, msg.BlockRoot) {
 			headSyncCommitteeIndices, err := vs.HeadFetcher.HeadSyncCommitteeIndices(ctx, msg.ValidatorIndex, slot)
@@ -172,11 +176,26 @@ func (vs *Server) AggregatedSigAndAggregationBits(
 				indexMod := i % subCommitteeSize
 				if subnetIndex == subnetId && !bits.BitAt(indexMod) {
 					bits.SetBitAt(indexMod, true)
-					sigs = append(sigs, msg.Signature)
+					syncCommitteeIndicesSigMap[index] = msg
+					appendedSyncCommitteeIndices = append(appendedSyncCommitteeIndices, index)
 				}
 			}
 		}
 	}
+
+	sort.Slice(appendedSyncCommitteeIndices, func(i, j int) bool {
+		return appendedSyncCommitteeIndices[i] < appendedSyncCommitteeIndices[j]
+	})
+
+	for _, syncCommitteeIndex := range appendedSyncCommitteeIndices {
+		msg, ok := syncCommitteeIndicesSigMap[syncCommitteeIndex]
+		if !ok {
+			return []byte{}, nil, errors.Errorf("could not get sync subcommittee index %d "+
+				"in syncCommitteeIndicesSigMap", syncCommitteeIndex)
+		}
+		sigs = append(sigs, msg.Signature)
+	}
+
 	aggregatedSig := make([]byte, dilithium2.CryptoBytes)
 	aggregatedSig[0] = 0xC0
 	if len(sigs) != 0 {

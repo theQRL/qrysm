@@ -29,14 +29,12 @@ func (vs *Server) setSyncAggregate(ctx context.Context, blk interfaces.SignedBea
 			SyncCommitteeBits:      make([]byte, params.BeaconConfig().SyncCommitteeSize/8),
 			SyncCommitteeSignature: emptySig[:],
 		}
-		fmt.Println("1. adding sync committee Bits from here <<<<--- ", len(emptyAggregate.SyncCommitteeBits))
 		if err := blk.SetSyncAggregate(emptyAggregate); err != nil {
 			log.WithError(err).Error("Could not set sync aggregate")
 		}
 		return
 	}
 
-	fmt.Println("adding sync ommittee Bits from here <<<<--- ", len(syncAggregate.SyncCommitteeBits))
 	// Can not error. We already filter block versioning at the top. Phase 0 is impossible.
 	if err := blk.SetSyncAggregate(syncAggregate); err != nil {
 		log.WithError(err).Error("Could not set sync aggregate")
@@ -78,16 +76,11 @@ func (vs *Server) getSyncAggregate(ctx context.Context, slot primitives.Slot, ro
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("!!!!!!!!!!!!!! original aggregate length ", len(aggregates))
-		fmt.Println("!!!!!!!!!!!!!! deduped aggregate length ", len(deduped))
 		c := deduped.mostProfitable()
 		if c == nil {
 			continue
 		}
 		bitsHolder[i] = c.AggregationBits
-		fmt.Println(">>>>>>>>> c.AggregationBits ", c.AggregationBits)
-		fmt.Println(">>>>>>>>> c.AggregationBits len ", len(c.AggregationBits))
-		fmt.Println(">>>>>>>>> c.Signature len ", len(c.Signature))
 		if len(c.Signature)%dilithium2.CryptoBytes != 0 {
 			return nil, fmt.Errorf(
 				"combined Signature length is %d is not in the multiple of %d",
@@ -107,11 +100,8 @@ func (vs *Server) getSyncAggregate(ctx context.Context, slot primitives.Slot, ro
 	// Aggregate all the contribution bits and signatures.
 	var syncBits []byte
 	for _, b := range bitsHolder {
-		fmt.Println(">>>>>>>>> bitsHolder each item length ", len(b))
 		syncBits = append(syncBits, b...)
 	}
-	fmt.Println(">>>>>>>>> bitsHolder len ", len(bitsHolder))
-	fmt.Println(">>>>>>>>> syncBits len ", len(syncBits))
 	syncSig := dilithium.UnaggregatedSignatures(sigsHolder)
 	var syncSigBytes []byte
 	if syncSig == nil {
@@ -120,9 +110,6 @@ func (vs *Server) getSyncAggregate(ctx context.Context, slot primitives.Slot, ro
 	} else {
 		syncSigBytes = syncSig
 	}
-	fmt.Println(">>>>>>>>> 2. syncBits len ", len(syncBits))
-	fmt.Println(">>>>>>>>> syncSig len ", len(syncSig))
-	fmt.Println(">>>>>>>>> syncSigBytes len ", len(syncSigBytes))
 
 	return &ethpb.SyncAggregate{
 		SyncCommitteeBits:      syncBits,

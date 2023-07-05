@@ -1027,6 +1027,7 @@ func (vs *Server) SubmitContributionAndProofs(ctx context.Context, req *ethpbv2.
 			},
 			Signature: item.Signature,
 		}
+
 		_, err := vs.V1Alpha1Server.SubmitSignedContributionAndProof(ctx, v1alpha1Req)
 		// We simply return err because it's already of a gRPC error type.
 		if err != nil {
