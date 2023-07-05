@@ -27,7 +27,7 @@ const (
 )
 
 var mainnetNetworkConfig = &NetworkConfig{
-	GossipMaxSize:                   1 << 20,      // 1 MiB
+	GossipMaxSize:                   1 << 23,      // 8 MiB
 	GossipMaxSizeBellatrix:          10 * 1 << 20, // 10 MiB
 	MaxChunkSize:                    1 << 20,      // 1 MiB
 	MaxChunkSizeBellatrix:           10 * 1 << 20, // 10 MiB
