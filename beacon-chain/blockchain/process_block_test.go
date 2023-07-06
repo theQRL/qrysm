@@ -2154,6 +2154,7 @@ func TestOnBlock_HandleBlockAttestations(t *testing.T) {
 }
 
 func TestFillMissingBlockPayloadId_DiffSlotExitEarly(t *testing.T) {
+	logHook := logTest.NewGlobal()
 	fc := doublylinkedtree.New()
 	ctx := context.Background()
 	beaconDB := testDB.SetupDB(t)
@@ -2165,7 +2166,8 @@ func TestFillMissingBlockPayloadId_DiffSlotExitEarly(t *testing.T) {
 
 	service, err := NewService(ctx, opts...)
 	require.NoError(t, err)
-	require.NoError(t, service.fillMissingBlockPayloadId(ctx), 0)
+	service.lateBlockTasks(ctx)
+	require.LogsDoNotContain(t, logHook, "could not perform late block tasks")
 }
 
 // Helper function to simulate the block being on time or delayed for proposer

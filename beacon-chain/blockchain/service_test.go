@@ -22,6 +22,8 @@ import (
 	mockExecution "github.com/cyyber/qrysm/v4/beacon-chain/execution/testing"
 	doublylinkedtree "github.com/cyyber/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
 	"github.com/cyyber/qrysm/v4/beacon-chain/operations/attestations"
+	"github.com/cyyber/qrysm/v4/beacon-chain/operations/slashings"
+	"github.com/cyyber/qrysm/v4/beacon-chain/operations/voluntaryexits"
 	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
 	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state/stategen"
@@ -131,6 +133,8 @@ func setupBeaconChain(t *testing.T, beaconDB db.Database) *Service {
 		WithDepositCache(depositCache),
 		WithChainStartFetcher(web3Service),
 		WithAttestationPool(attestations.NewPool()),
+		WithSlashingPool(slashings.NewPool()),
+		WithExitPool(voluntaryexits.NewPool()),
 		WithP2PBroadcaster(&mockBroadcaster{}),
 		WithStateNotifier(&mockBeaconNode{}),
 		WithForkChoiceStore(fc),

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	runtimeDebug "runtime/debug"
 
 	"github.com/cyyber/qrysm/v4/cmd"
@@ -183,7 +182,6 @@ func main() {
 			log.WithError(err).Error("Cannot update data directory")
 		}
 
-		runtime.GOMAXPROCS(runtime.NumCPU())
 		if err := debug.Setup(ctx); err != nil {
 			return err
 		}

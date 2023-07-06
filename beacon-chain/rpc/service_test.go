@@ -12,6 +12,7 @@ import (
 	mockSync "github.com/cyyber/qrysm/v4/beacon-chain/sync/initial-sync/testing"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 )
@@ -35,6 +36,7 @@ func TestLifecycle_OK(t *testing.T) {
 		GenesisTimeFetcher:    chainService,
 		ExecutionChainService: &mockExecution.Chain{},
 		StateNotifier:         chainService.StateNotifier(),
+		Router:                mux.NewRouter(),
 	})
 
 	rpcService.Start()
@@ -75,6 +77,7 @@ func TestRPC_InsecureEndpoint(t *testing.T) {
 		HeadFetcher:           chainService,
 		ExecutionChainService: &mockExecution.Chain{},
 		StateNotifier:         chainService.StateNotifier(),
+		Router:                mux.NewRouter(),
 	})
 
 	rpcService.Start()

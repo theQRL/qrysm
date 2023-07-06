@@ -14,8 +14,8 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/operations/slashings"
 	"github.com/cyyber/qrysm/v4/beacon-chain/operations/voluntaryexits"
 	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
+	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/lookup"
 	v1alpha1validator "github.com/cyyber/qrysm/v4/beacon-chain/rpc/prysm/v1alpha1/validator"
-	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/statefetcher"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state/stategen"
 	"github.com/cyyber/qrysm/v4/beacon-chain/sync"
 )
@@ -34,7 +34,8 @@ type Server struct {
 	SlashingsPool                 slashings.PoolManager
 	VoluntaryExitsPool            voluntaryexits.PoolManager
 	StateGenService               stategen.StateManager
-	StateFetcher                  statefetcher.Fetcher
+	Stater                        lookup.Stater
+	Blocker                       lookup.Blocker
 	HeadFetcher                   blockchain.HeadFetcher
 	OptimisticModeFetcher         blockchain.OptimisticModeFetcher
 	V1Alpha1ValidatorServer       *v1alpha1validator.Server

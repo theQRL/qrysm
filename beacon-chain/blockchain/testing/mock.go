@@ -5,7 +5,6 @@ package testing
 import (
 	"bytes"
 	"context"
-	"github.com/cyyber/qrysm/v4/config/params"
 	"sync"
 	"time"
 
@@ -20,6 +19,7 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/forkchoice"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
+	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
@@ -586,4 +586,14 @@ func (s *ChainService) ProposerBoost() [32]byte {
 		return s.ForkChoiceStore.ProposerBoost()
 	}
 	return [32]byte{}
+}
+
+// FinalizedBlockHash mocks the same method in the chain service
+func (s *ChainService) FinalizedBlockHash() [32]byte {
+	return [32]byte{}
+}
+
+// UnrealizedJustifiedPayloadBlockHash mocks the same method in the chain service
+func (s *ChainService) UnrealizedJustifiedPayloadBlockHash() ([32]byte, error) {
+	return [32]byte{}, nil
 }

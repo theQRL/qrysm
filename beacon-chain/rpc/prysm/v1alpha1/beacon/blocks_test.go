@@ -3,6 +3,7 @@ package beacon
 import (
 	"context"
 	"fmt"
+	mockSync "github.com/cyyber/qrysm/v4/beacon-chain/sync/initial-sync/testing"
 	"strconv"
 	"testing"
 
@@ -287,6 +288,7 @@ func TestServer_StreamChainHead_OnHeadUpdated(t *testing.T) {
 			CurrentJustifiedCheckPoint:  s.CurrentJustifiedCheckpoint(),
 			PreviousJustifiedCheckPoint: s.PreviousJustifiedCheckpoint()},
 		OptimisticModeFetcher: &chainMock.ChainService{},
+		SyncChecker:           &mockSync.Sync{IsSyncing: false},
 	}
 	exitRoutine := make(chan bool)
 	ctrl := gomock.NewController(t)

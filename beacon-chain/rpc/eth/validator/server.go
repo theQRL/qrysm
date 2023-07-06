@@ -7,8 +7,8 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/operations/attestations"
 	"github.com/cyyber/qrysm/v4/beacon-chain/operations/synccommittee"
 	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
+	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/lookup"
 	v1alpha1validator "github.com/cyyber/qrysm/v4/beacon-chain/rpc/prysm/v1alpha1/validator"
-	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/statefetcher"
 	"github.com/cyyber/qrysm/v4/beacon-chain/sync"
 )
 
@@ -21,7 +21,7 @@ type Server struct {
 	AttestationsPool       attestations.Pool
 	PeerManager            p2p.PeerManager
 	Broadcaster            p2p.Broadcaster
-	StateFetcher           statefetcher.Fetcher
+	Stater                 lookup.Stater
 	OptimisticModeFetcher  blockchain.OptimisticModeFetcher
 	SyncCommitteePool      synccommittee.Pool
 	V1Alpha1Server         *v1alpha1validator.Server

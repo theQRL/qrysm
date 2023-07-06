@@ -23,7 +23,6 @@ func TestGetStateValidators_Nominal(t *testing.T) {
 		"id=0x80000e851c0f53c3246ff726d7ff7766661ca5e12a07c45c114d208d54f0f8233d4380b2e9aff759d69795d1df905526&", // active_exiting
 		"id=0x424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242&", // does not exist
 		"id=0x800015473bdc3a7f45ef8eb8abc598bc20021e55ad6e6ad1d745aaef9730dd2c28ec08bf42df18451de94dd4a6d24ec5&", // exited_slashed
-		"id=12345&", // active_ongoing
 		"status=active_ongoing&status=active_exiting&status=exited_slashed&status=exited_unslashed",
 	}, "")
 
