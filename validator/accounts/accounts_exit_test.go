@@ -1,9 +1,17 @@
 package accounts
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"path"
 	"testing"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/cyyber/qrysm/v4/build/bazel"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
+	"github.com/cyyber/qrysm/v4/io/file"
+	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -33,4 +41,27 @@ func TestPrepareAllKeys(t *testing.T) {
 	assert.DeepEqual(t, bytesutil.ToBytes2592([]byte{107, 101, 121, 50}), bytesutil.ToBytes2592(raw[1]))
 	assert.Equal(t, "0x6b6579310000", formatted[0])
 	assert.Equal(t, "0x6b6579320000", formatted[1])
+}
+
+func TestWriteSignedVoluntaryExitJSON(t *testing.T) {
+	sve := &eth.SignedVoluntaryExit{
+		Exit: &eth.VoluntaryExit{
+			Epoch:          5,
+			ValidatorIndex: 300,
+		},
+		Signature: []byte{0x01, 0x02},
+	}
+
+	output := path.Join(bazel.TestTmpDir(), "TestWriteSignedVoluntaryExitJSON")
+	require.NoError(t, writeSignedVoluntaryExitJSON(context.Background(), sve, output))
+
+	b, err := file.ReadFileAsBytes(path.Join(output, "validator-exit-300.json"))
+	require.NoError(t, err)
+
+	svej := &apimiddleware.SignedVoluntaryExitJson{}
+	require.NoError(t, json.Unmarshal(b, svej))
+
+	require.Equal(t, fmt.Sprintf("%d", sve.Exit.Epoch), svej.Exit.Epoch)
+	require.Equal(t, fmt.Sprintf("%d", sve.Exit.ValidatorIndex), svej.Exit.ValidatorIndex)
+	require.Equal(t, "0x0102", svej.Signature)
 }

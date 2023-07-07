@@ -2,10 +2,10 @@ package client
 
 import (
 	"context"
-	"github.com/cyyber/qrysm/v4/config/params"
 	"io"
 	"time"
 
+	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/cyyber/qrysm/v4/math"
 	"github.com/cyyber/qrysm/v4/monitoring/tracing"

@@ -60,6 +60,14 @@ type accountStore struct {
 	PublicKeys [][]byte `json:"public_keys"`
 }
 
+// Copy creates a deep copy of accountStore
+func (a *accountStore) Copy() *accountStore {
+	storeCopy := &accountStore{}
+	storeCopy.Seeds = bytesutil.SafeCopy2dBytes(a.Seeds)
+	storeCopy.PublicKeys = bytesutil.SafeCopy2dBytes(a.PublicKeys)
+	return storeCopy
+}
+
 // AccountsKeystoreRepresentation defines an internal Prysm representation
 // of validator accounts, encrypted according to the EIP-2334 standard.
 type AccountsKeystoreRepresentation struct {
@@ -257,55 +265,56 @@ func (km *Keymanager) initializeAccountKeystore(ctx context.Context) error {
 }
 
 // CreateAccountsKeystore creates a new keystore holding the provided keys.
-func (km *Keymanager) CreateAccountsKeystore(
+func (km *Keymanager) CreateAccountsKeystore(ctx context.Context, seeds,
+	publicKeys [][]byte) (*AccountsKeystoreRepresentation, error) {
+	if err := km.CreateOrUpdateInMemoryAccountsStore(ctx, seeds, publicKeys); err != nil {
+		return nil, err
+	}
+	return CreateAccountsKeystoreRepresentation(ctx, km.accountsStore, km.wallet.Password())
+}
+
+// SaveStoreAndReInitialize saves the store to disk and re-initializes the account keystore from file
+func (km *Keymanager) SaveStoreAndReInitialize(ctx context.Context, store *accountStore) error {
+	// Save the copy to disk
+	accountsKeystore, err := CreateAccountsKeystoreRepresentation(ctx, store, km.wallet.Password())
+	if err != nil {
+		return err
+
+	}
+	encodedAccounts, err := json.MarshalIndent(accountsKeystore, "", "\t")
+	if err != nil {
+		return err
+	}
+	if err := km.wallet.WriteFileAtPath(ctx, AccountsPath, AccountsKeystoreFileName, encodedAccounts); err != nil {
+		return err
+	}
+
+	// Reinitialize account store and cache
+	// This will update the in-memory information instead of reading from the file itself for safety concerns
+	km.accountsStore = store
+	err = km.initializeKeysCachesFromKeystore()
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize keys caches")
+	}
+	return err
+}
+
+// CreateAccountsKeystoreRepresentation is a pure function that takes an accountStore and wallet password and returns the encrypted formatted json version for local writing.
+func CreateAccountsKeystoreRepresentation(
 	_ context.Context,
-	seeds, publicKeys [][]byte,
+	store *accountStore,
+	walletPW string,
 ) (*AccountsKeystoreRepresentation, error) {
 	encryptor := keystorev4.New()
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
 	}
-	if len(seeds) != len(publicKeys) {
-		return nil, fmt.Errorf(
-			"number of private keys and public keys is not equal: %d != %d", len(seeds), len(publicKeys),
-		)
-	}
-	if km.accountsStore == nil {
-		km.accountsStore = &accountStore{
-			Seeds:      seeds,
-			PublicKeys: publicKeys,
-		}
-	} else {
-		existingPubKeys := make(map[string]bool)
-		existingPrivKeys := make(map[string]bool)
-		for i := 0; i < len(km.accountsStore.Seeds); i++ {
-			existingPrivKeys[string(km.accountsStore.Seeds[i])] = true
-			existingPubKeys[string(km.accountsStore.PublicKeys[i])] = true
-		}
-		// We append to the accounts store keys only
-		// if the private/secret key do not already exist, to prevent duplicates.
-		for i := 0; i < len(seeds); i++ {
-			sk := seeds[i]
-			pk := publicKeys[i]
-			_, privKeyExists := existingPrivKeys[string(sk)]
-			_, pubKeyExists := existingPubKeys[string(pk)]
-			if privKeyExists || pubKeyExists {
-				continue
-			}
-			km.accountsStore.PublicKeys = append(km.accountsStore.PublicKeys, pk)
-			km.accountsStore.Seeds = append(km.accountsStore.Seeds, sk)
-		}
-	}
-	err = km.initializeKeysCachesFromKeystore()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialize keys caches")
-	}
-	encodedStore, err := json.MarshalIndent(km.accountsStore, "", "\t")
+	encodedStore, err := json.MarshalIndent(store, "", "\t")
 	if err != nil {
 		return nil, err
 	}
-	cryptoFields, err := encryptor.Encrypt(encodedStore, km.wallet.Password())
+	cryptoFields, err := encryptor.Encrypt(encodedStore, walletPW)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not encrypt accounts")
 	}
@@ -315,6 +324,51 @@ func (km *Keymanager) CreateAccountsKeystore(
 		Version: encryptor.Version(),
 		Name:    encryptor.Name(),
 	}, nil
+}
+
+// CreateOrUpdateInMemoryAccountsStore will set or update the local accounts store and update the local cache.
+// This function DOES NOT save the accounts store to disk.
+func (km *Keymanager) CreateOrUpdateInMemoryAccountsStore(_ context.Context, seeds, publicKeys [][]byte) error {
+	if len(seeds) != len(publicKeys) {
+		return fmt.Errorf(
+			"number of private keys and public keys is not equal: %d != %d", len(seeds), len(publicKeys),
+		)
+	}
+	if km.accountsStore == nil {
+		km.accountsStore = &accountStore{
+			Seeds:      seeds,
+			PublicKeys: publicKeys,
+		}
+	} else {
+		updateAccountsStoreKeys(km.accountsStore, seeds, publicKeys)
+	}
+	err := km.initializeKeysCachesFromKeystore()
+	if err != nil {
+		return errors.Wrap(err, "failed to initialize keys caches")
+	}
+	return nil
+}
+
+func updateAccountsStoreKeys(store *accountStore, seeds, publicKeys [][]byte) {
+	existingPubKeys := make(map[string]bool)
+	existingPrivKeys := make(map[string]bool)
+	for i := 0; i < len(store.Seeds); i++ {
+		existingPrivKeys[string(store.Seeds[i])] = true
+		existingPubKeys[string(store.PublicKeys[i])] = true
+	}
+	// We append to the accounts store keys only
+	// if the private/secret key do not already exist, to prevent duplicates.
+	for i := 0; i < len(seeds); i++ {
+		sk := seeds[i]
+		pk := publicKeys[i]
+		_, privKeyExists := existingPrivKeys[string(sk)]
+		_, pubKeyExists := existingPubKeys[string(pk)]
+		if privKeyExists || pubKeyExists {
+			continue
+		}
+		store.PublicKeys = append(store.PublicKeys, pk)
+		store.Seeds = append(store.Seeds, sk)
+	}
 }
 
 func (km *Keymanager) ListKeymanagerAccounts(ctx context.Context, cfg keymanager.ListKeymanagerAccountConfig) error {
@@ -369,4 +423,18 @@ func (km *Keymanager) ListKeymanagerAccounts(ctx context.Context, cfg keymanager
 	}
 	fmt.Println("")
 	return nil
+}
+
+func CreatePrintoutOfKeys(keys [][]byte) string {
+	var keysStr string
+	for i, k := range keys {
+		if i == 0 {
+			keysStr += fmt.Sprintf("%#x", bytesutil.Trunc(k))
+		} else if i == len(keys)-1 {
+			keysStr += fmt.Sprintf("%#x", bytesutil.Trunc(k))
+		} else {
+			keysStr += fmt.Sprintf(",%#x", bytesutil.Trunc(k))
+		}
+	}
+	return keysStr
 }

@@ -11,10 +11,10 @@ import (
 	"syscall"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"github.com/cyyber/qrysm/v4/beacon-chain/execution/testing"
 	"github.com/cyyber/qrysm/v4/config/params"
 	contracts "github.com/cyyber/qrysm/v4/contracts/deposit"
 	"github.com/cyyber/qrysm/v4/io/file"
+	"github.com/cyyber/qrysm/v4/runtime/interop"
 	"github.com/cyyber/qrysm/v4/testing/endtoend/helpers"
 	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
 	e2etypes "github.com/cyyber/qrysm/v4/testing/endtoend/types"
@@ -88,7 +88,7 @@ func (m *Miner) initAttempt(ctx context.Context, attempt int) (*os.File, error) 
 	}
 
 	gethJsonPath := path.Join(path.Dir(binaryPath), "genesis.json")
-	gen := testing.GethTestnetGenesis(e2e.TestParams.Eth1GenesisTime, params.BeaconConfig())
+	gen := interop.GethTestnetGenesis(e2e.TestParams.Eth1GenesisTime, params.BeaconConfig())
 	log.Infof("eth1 miner genesis timestamp=%d", e2e.TestParams.Eth1GenesisTime)
 	b, err := json.Marshal(gen)
 	if err != nil {

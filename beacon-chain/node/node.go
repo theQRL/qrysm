@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/gorilla/mux"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -60,6 +59,7 @@ import (
 	"github.com/cyyber/qrysm/v4/runtime/prereqs"
 	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -233,7 +233,7 @@ func New(cliCtx *cli.Context, opts ...Option) (*BeaconNode, error) {
 		return nil, err
 	}
 
-	log.Debugln("Registering Intial Sync Service")
+	log.Debugln("Registering Initial Sync Service")
 	if err := beacon.registerInitialSyncService(); err != nil {
 		return nil, err
 	}
