@@ -1,4 +1,4 @@
-load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
+load("@prysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
@@ -14,6 +14,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//config/fieldparams:go_default_library",
+        "//consensus-types:go_default_library",
         "//consensus-types/interfaces:go_default_library",
         "//consensus-types/primitives:go_default_library",
         "//encoding/bytesutil:go_default_library",
@@ -24,7 +25,6 @@ go_library(
         "//runtime/version:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
         "@com_github_prysmaticlabs_fastssz//:go_default_library",
-        "@com_github_theqrl_go_qrllib//dilithium:go_default_library",
         "@org_golang_google_protobuf//proto:go_default_library",
     ],
 )
@@ -40,6 +40,7 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//config/fieldparams:go_default_library",
+        "//consensus-types:go_default_library",
         "//consensus-types/interfaces:go_default_library",
         "//consensus-types/primitives:go_default_library",
         "//encoding/bytesutil:go_default_library",
@@ -51,6 +52,5 @@ go_test(
         "//testing/require:go_default_library",
         "@com_github_prysmaticlabs_fastssz//:go_default_library",
         "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
-        "@com_github_theqrl_go_qrllib//dilithium:go_default_library",
     ],
 )

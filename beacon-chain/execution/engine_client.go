@@ -17,6 +17,7 @@ import (
 	payloadattribute "github.com/cyyber/qrysm/v4/consensus-types/payload-attribute"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
+	"github.com/cyyber/qrysm/v4/math"
 	pb "github.com/cyyber/qrysm/v4/proto/engine/v1"
 	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/cyyber/qrysm/v4/time/slots"
@@ -238,7 +239,8 @@ func (s *Service) GetPayload(ctx context.Context, payloadId [8]byte, slot primit
 			return nil, handleRPCError(err)
 		}
 
-		return blocks.WrappedExecutionPayloadCapella(result.Payload, big.NewInt(0).SetBytes(bytesutil.ReverseByteOrder(result.Value)))
+		v := big.NewInt(0).SetBytes(bytesutil.ReverseByteOrder(result.Value))
+		return blocks.WrappedExecutionPayloadCapella(result.Payload, math.WeiToGwei(v))
 	}
 
 	result := &pb.ExecutionPayload{}
@@ -716,7 +718,7 @@ func fullPayloadFromExecutionBlock(
 		BlockHash:     blockHash[:],
 		Transactions:  txs,
 		Withdrawals:   block.Withdrawals,
-	}, big.NewInt(0)) // We can't get the block value and don't care about the block value for this instance
+	}, 0) // We can't get the block value and don't care about the block value for this instance
 }
 
 // Handles errors received from the RPC server according to the specification.

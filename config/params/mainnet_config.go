@@ -1,12 +1,12 @@
 package params
 
 import (
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"math"
 	"time"
 
 	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // MainnetConfig returns the configuration to be used in the main network.
@@ -259,7 +259,8 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	// Mevboost circuit breaker
 	MaxBuilderConsecutiveMissedSlots: 3,
 	MaxBuilderEpochMissedSlots:       5,
-
+	// Mev validator registration duration before expiration
+	RegistrationDuration: 12 * 32 * 3 * time.Second, // defaults to 3 Epochs
 	// Execution engine timeout value
 	ExecutionEngineTimeoutValue: 8, // 8 seconds default based on: https://github.com/ethereum/execution-apis/blob/main/src/engine/specification.md#core
 }

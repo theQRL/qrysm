@@ -5,8 +5,6 @@ package rpc
 import (
 	"context"
 	"fmt"
-	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/eth/rewards"
-	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/lookup"
 	"github.com/gorilla/mux"
 	"net"
 	"sync"
@@ -30,12 +28,15 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/eth/debug"
 	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/eth/events"
 	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/eth/node"
+	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/eth/rewards"
 	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/eth/validator"
+	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/lookup"
 	beaconv1alpha1 "github.com/cyyber/qrysm/v4/beacon-chain/rpc/prysm/v1alpha1/beacon"
 	debugv1alpha1 "github.com/cyyber/qrysm/v4/beacon-chain/rpc/prysm/v1alpha1/debug"
 	nodev1alpha1 "github.com/cyyber/qrysm/v4/beacon-chain/rpc/prysm/v1alpha1/node"
 	validatorv1alpha1 "github.com/cyyber/qrysm/v4/beacon-chain/rpc/prysm/v1alpha1/validator"
 	slasherservice "github.com/cyyber/qrysm/v4/beacon-chain/slasher"
+	"github.com/cyyber/qrysm/v4/beacon-chain/startup"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state/stategen"
 	chainSync "github.com/cyyber/qrysm/v4/beacon-chain/sync"
 	"github.com/cyyber/qrysm/v4/config/features"
@@ -120,6 +121,7 @@ type Config struct {
 	OptimisticModeFetcher         blockchain.OptimisticModeFetcher
 	BlockBuilder                  builder.BlockBuilder
 	Router                        *mux.Router
+	ClockWaiter                   startup.ClockWaiter
 }
 
 // NewService instantiates a new RPC service instance that will
@@ -246,6 +248,7 @@ func (s *Service) Start() {
 		ProposerSlotIndexCache: s.cfg.ProposerIdsCache,
 		BlockBuilder:           s.cfg.BlockBuilder,
 		BLSChangesPool:         s.cfg.BLSChangesPool,
+		ClockWaiter:            s.cfg.ClockWaiter,
 	}
 	validatorServerV1 := &validator.Server{
 		HeadFetcher:            s.cfg.HeadFetcher,
@@ -261,6 +264,7 @@ func (s *Service) Start() {
 		ProposerSlotIndexCache: s.cfg.ProposerIdsCache,
 		ChainInfoFetcher:       s.cfg.ChainInfoFetcher,
 		BeaconDB:               s.cfg.BeaconDB,
+		BlockBuilder:           s.cfg.BlockBuilder,
 	}
 
 	nodeServer := &nodev1alpha1.Server{
@@ -329,6 +333,7 @@ func (s *Service) Start() {
 		Blocker:                       blocker,
 		OptimisticModeFetcher:         s.cfg.OptimisticModeFetcher,
 		HeadFetcher:                   s.cfg.HeadFetcher,
+		TimeFetcher:                   s.cfg.GenesisTimeFetcher,
 		VoluntaryExitsPool:            s.cfg.ExitPool,
 		V1Alpha1ValidatorServer:       validatorServer,
 		SyncChecker:                   s.cfg.SyncService,

@@ -173,5 +173,4 @@ func (km *Keymanager) ListKeymanagerAccounts(ctx context.Context, cfg keymanager
 		fmt.Println(" ")
 	}
 	return nil
-
 }

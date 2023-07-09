@@ -11,7 +11,6 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/builder"
 	"github.com/cyyber/qrysm/v4/beacon-chain/cache"
 	"github.com/cyyber/qrysm/v4/beacon-chain/cache/depositcache"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/feed"
 	blockfeed "github.com/cyyber/qrysm/v4/beacon-chain/core/feed/block"
 	opfeed "github.com/cyyber/qrysm/v4/beacon-chain/core/feed/operation"
 	statefeed "github.com/cyyber/qrysm/v4/beacon-chain/core/feed/state"
@@ -24,13 +23,13 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/operations/synccommittee"
 	"github.com/cyyber/qrysm/v4/beacon-chain/operations/voluntaryexits"
 	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
+	"github.com/cyyber/qrysm/v4/beacon-chain/startup"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state/stategen"
 	"github.com/cyyber/qrysm/v4/beacon-chain/sync"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/cyyber/qrysm/v4/network/forks"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -74,6 +73,7 @@ type Server struct {
 	ExecutionEngineCaller  execution.EngineCaller
 	BlockBuilder           builder.BlockBuilder
 	BLSChangesPool         blstoexec.PoolManager
+	ClockWaiter            startup.ClockWaiter
 }
 
 // WaitForActivation checks if a validator public key exists in the active validator registry of the current
@@ -170,30 +170,17 @@ func (vs *Server) WaitForChainStart(_ *emptypb.Empty, stream ethpb.BeaconNodeVal
 		return stream.Send(res)
 	}
 
-	stateChannel := make(chan *feed.Event, 1)
-	stateSub := vs.StateNotifier.StateFeed().Subscribe(stateChannel)
-	defer stateSub.Unsubscribe()
-	for {
-		select {
-		case event := <-stateChannel:
-			if event.Type == statefeed.Initialized {
-				data, ok := event.Data.(*statefeed.InitializedData)
-				if !ok {
-					return errors.New("event data is not type *statefeed.InitializedData")
-				}
-				log.WithField("starttime", data.StartTime).Debug("Received chain started event")
-				log.Debug("Sending genesis time notification to connected validator clients")
-				res := &ethpb.ChainStartResponse{
-					Started:               true,
-					GenesisTime:           uint64(data.StartTime.Unix()),
-					GenesisValidatorsRoot: data.GenesisValidatorsRoot,
-				}
-				return stream.Send(res)
-			}
-		case <-stateSub.Err():
-			return status.Error(codes.Aborted, "Subscriber closed, exiting goroutine")
-		case <-vs.Ctx.Done():
-			return status.Error(codes.Canceled, "Context canceled")
-		}
+	clock, err := vs.ClockWaiter.WaitForClock(vs.Ctx)
+	if err != nil {
+		return status.Error(codes.Canceled, "Context canceled")
 	}
+	log.WithField("starttime", clock.GenesisTime()).Debug("Received chain started event")
+	log.Debug("Sending genesis time notification to connected validator clients")
+	gvr := clock.GenesisValidatorsRoot()
+	res := &ethpb.ChainStartResponse{
+		Started:               true,
+		GenesisTime:           uint64(clock.GenesisTime().Unix()),
+		GenesisValidatorsRoot: gvr[:],
+	}
+	return stream.Send(res)
 }

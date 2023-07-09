@@ -10,21 +10,24 @@ import (
 	mock "github.com/cyyber/qrysm/v4/beacon-chain/blockchain/testing"
 	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/encoder"
 	testp2p "github.com/cyyber/qrysm/v4/beacon-chain/p2p/testing"
+	"github.com/cyyber/qrysm/v4/beacon-chain/startup"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/pkg/errors"
 )
 
 func TestService_PublishToTopicConcurrentMapWrite(t *testing.T) {
+	cs := startup.NewClockSynchronizer()
 	s, err := NewService(context.Background(), &Config{
 		StateNotifier: &mock.MockStateNotifier{},
+		ClockWaiter:   cs,
 	})
 	require.NoError(t, err)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	go s.awaitStateInitialized()
-	fd := initializeStateWithForkDigest(ctx, t, s.stateNotifier.StateFeed())
+	fd := initializeStateWithForkDigest(ctx, t, cs)
 
 	if !s.isInitialized() {
 		t.Fatal("service was not initialized")

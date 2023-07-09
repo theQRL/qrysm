@@ -2,8 +2,6 @@ package blocks
 
 import (
 	"fmt"
-	"math/big"
-
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
 	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
@@ -194,7 +192,7 @@ func BuildSignedBeaconBlockFromExecutionPayload(
 	case *enginev1.ExecutionPayload:
 		wrappedPayload, wrapErr = WrappedExecutionPayload(p)
 	case *enginev1.ExecutionPayloadCapella:
-		wrappedPayload, wrapErr = WrappedExecutionPayloadCapella(p, big.NewInt(0))
+		wrappedPayload, wrapErr = WrappedExecutionPayloadCapella(p, 0)
 	default:
 		return nil, fmt.Errorf("%T is not a type of execution payload", p)
 	}

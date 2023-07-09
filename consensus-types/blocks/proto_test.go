@@ -1,7 +1,6 @@
 package blocks
 
 import (
-	"math/big"
 	"testing"
 
 	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
@@ -10,11 +9,12 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/prysmaticlabs/go-bitfield"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 type fields struct {
 	root                     [32]byte
-	sig                      [96]byte
+	sig                      [dilithium2.CryptoBytes]byte
 	deposits                 []*eth.Deposit
 	atts                     []*eth.Attestation
 	proposerSlashings        []*eth.ProposerSlashing
@@ -1023,7 +1023,7 @@ func bodyBlindedBellatrix(t *testing.T) *BeaconBlockBody {
 
 func bodyCapella(t *testing.T) *BeaconBlockBody {
 	f := getFields()
-	p, err := WrappedExecutionPayloadCapella(f.execPayloadCapella, big.NewInt(0))
+	p, err := WrappedExecutionPayloadCapella(f.execPayloadCapella, 0)
 	require.NoError(t, err)
 	return &BeaconBlockBody{
 		version:      version.Capella,
@@ -1047,7 +1047,7 @@ func bodyCapella(t *testing.T) *BeaconBlockBody {
 
 func bodyBlindedCapella(t *testing.T) *BeaconBlockBody {
 	f := getFields()
-	ph, err := WrappedExecutionPayloadHeaderCapella(f.execPayloadHeaderCapella, big.NewInt(0))
+	ph, err := WrappedExecutionPayloadHeaderCapella(f.execPayloadHeaderCapella, 0)
 	require.NoError(t, err)
 	return &BeaconBlockBody{
 		version:      version.Capella,
@@ -1075,7 +1075,7 @@ func getFields() fields {
 	b48 := make([]byte, 48)
 	b256 := make([]byte, 256)
 	var root [32]byte
-	var sig [96]byte
+	var sig [dilithium2.CryptoBytes]byte
 	b20[0], b20[5], b20[10] = 'q', 'u', 'x'
 	b48[0], b48[5], b48[10] = 'b', 'a', 'r'
 	b256[0], b256[5], b256[10] = 'x', 'y', 'z'

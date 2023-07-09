@@ -10,6 +10,7 @@ import (
 	db "github.com/cyyber/qrysm/v4/beacon-chain/db/testing"
 	p2ptest "github.com/cyyber/qrysm/v4/beacon-chain/p2p/testing"
 	p2ptypes "github.com/cyyber/qrysm/v4/beacon-chain/p2p/types"
+	"github.com/cyyber/qrysm/v4/beacon-chain/startup"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	leakybucket "github.com/cyyber/qrysm/v4/container/leaky-bucket"
@@ -153,11 +154,13 @@ func TestSendGoodbye_SendsMessage(t *testing.T) {
 
 	// Set up a head state in the database with data we expect.
 	d := db.SetupDB(t)
+	chain := &mock.ChainService{ValidatorsRoot: [32]byte{}, Genesis: time.Now()}
 	r := &Service{
 		cfg: &config{
 			beaconDB: d,
 			p2p:      p1,
-			chain:    &mock.ChainService{ValidatorsRoot: [32]byte{}, Genesis: time.Now()},
+			chain:    chain,
+			clock:    startup.NewClock(chain.Genesis, chain.ValidatorsRoot),
 		},
 		rateLimiter: newRateLimiter(p1),
 	}
@@ -198,11 +201,13 @@ func TestSendGoodbye_DisconnectWithPeer(t *testing.T) {
 
 	// Set up a head state in the database with data we expect.
 	d := db.SetupDB(t)
+	chain := &mock.ChainService{Genesis: time.Now(), ValidatorsRoot: [32]byte{}}
 	r := &Service{
 		cfg: &config{
 			beaconDB: d,
 			p2p:      p1,
-			chain:    &mock.ChainService{Genesis: time.Now(), ValidatorsRoot: [32]byte{}},
+			chain:    chain,
+			clock:    startup.NewClock(chain.Genesis, chain.ValidatorsRoot),
 		},
 		rateLimiter: newRateLimiter(p1),
 	}

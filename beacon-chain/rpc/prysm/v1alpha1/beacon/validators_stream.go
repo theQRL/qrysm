@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"io"
 	"math/big"
 	"sort"
@@ -28,6 +27,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -284,7 +284,6 @@ func (is *infostream) generateValidatorsInfo(pubKeys [][]byte) ([]*ethpb.Validat
 		v, err := headState.ValidatorAtIndexReadOnly(i)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not retrieve validator: %v", err)
-
 		}
 		info, err := is.generateValidatorInfo(pubKey, v, headState, epoch)
 		if err != nil {

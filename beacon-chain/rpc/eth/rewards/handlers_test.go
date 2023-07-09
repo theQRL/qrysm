@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -69,12 +70,12 @@ func TestBlockRewards(t *testing.T) {
 		{
 			AggregationBits: bitfield.Bitlist{0b00000111},
 			Data:            util.HydrateAttestationData(&eth.AttestationData{}),
-			Signature:       make([]byte, fieldparams.BLSSignatureLength),
+			Signature:       make([]byte, dilithium2.CryptoBytes),
 		},
 		{
 			AggregationBits: bitfield.Bitlist{0b00000111},
 			Data:            util.HydrateAttestationData(&eth.AttestationData{}),
-			Signature:       make([]byte, fieldparams.BLSSignatureLength),
+			Signature:       make([]byte, dilithium2.CryptoBytes),
 		},
 	}
 	attData1 := util.HydrateAttestationData(&eth.AttestationData{BeaconBlockRoot: bytesutil.PadTo([]byte("root1"), 32)})

@@ -25,6 +25,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
+	"go.opencensus.io/trace"
 )
 
 var (
@@ -43,6 +44,9 @@ var (
 // This returns the execution payload of a given slot. The function has full awareness of pre and post merge.
 // The payload is computed given the respected time of merge.
 func (vs *Server) getExecutionPayload(ctx context.Context, slot primitives.Slot, vIdx primitives.ValidatorIndex, headRoot [32]byte, st state.BeaconState) (interfaces.ExecutionData, error) {
+	ctx, span := trace.StartSpan(ctx, "ProposerServer.getExecutionPayload")
+	defer span.End()
+
 	proposerID, payloadId, ok := vs.ProposerSlotIndexCache.GetProposerPayloadIDs(slot, headRoot)
 	feeRecipient := params.BeaconConfig().DefaultFeeRecipient
 	recipient, err := vs.BeaconDB.FeeRecipientByValidatorID(ctx, vIdx)
@@ -121,11 +125,7 @@ func (vs *Server) getExecutionPayload(ctx context.Context, slot primitives.Slot,
 
 	if st.Version() >= version.Altair {
 		finalizedBlockHash = vs.FinalizationFetcher.FinalizedBlockHash()
-		justifiedBlockHash, err = vs.FinalizationFetcher.UnrealizedJustifiedPayloadBlockHash()
-		if err != nil {
-			log.WithError(err).Error("Could not get unrealized justified payload block hash")
-			justifiedBlockHash = finalizedBlockHash // Don't fail block proposal if we can't get the justified block hash.
-		}
+		justifiedBlockHash = vs.FinalizationFetcher.UnrealizedJustifiedPayloadBlockHash()
 	}
 
 	f := &enginev1.ForkchoiceState{

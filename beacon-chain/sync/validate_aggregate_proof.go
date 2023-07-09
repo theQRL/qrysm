@@ -10,7 +10,6 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/feed/operation"
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/transition"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
@@ -80,7 +79,7 @@ func (s *Service) validateAggregateAndProof(ctx context.Context, pid peer.ID, ms
 	// processing tolerance.
 	if err := helpers.ValidateAttestationTime(
 		m.Message.Aggregate.Data.Slot,
-		s.cfg.chain.GenesisTime(),
+		s.cfg.clock.GenesisTime(),
 		earlyAttestationProcessingTolerance,
 	); err != nil {
 		tracing.AnnotateError(span, err)
@@ -150,20 +149,6 @@ func (s *Service) validateAggregatedAtt(ctx context.Context, signed *ethpb.Signe
 	if err != nil {
 		tracing.AnnotateError(span, err)
 		return pubsub.ValidationIgnore, err
-	}
-
-	attSlot := signed.Message.Aggregate.Data.Slot
-	// Only advance state if different epoch as the committee can only change on an epoch transition.
-	if slots.ToEpoch(attSlot) > slots.ToEpoch(bs.Slot()) {
-		startSlot, err := slots.EpochStart(slots.ToEpoch(attSlot))
-		if err != nil {
-			return pubsub.ValidationIgnore, err
-		}
-		bs, err = transition.ProcessSlots(ctx, bs, startSlot)
-		if err != nil {
-			tracing.AnnotateError(span, err)
-			return pubsub.ValidationIgnore, err
-		}
 	}
 
 	// Verify validator index is within the beacon committee.

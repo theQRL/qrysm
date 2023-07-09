@@ -6,6 +6,7 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/time"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
+	consensus_types "github.com/cyyber/qrysm/v4/consensus-types"
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
@@ -60,7 +61,7 @@ func IsExecutionBlock(body interfaces.ReadOnlyBeaconBlockBody) (bool, error) {
 	}
 	payload, err := body.Execution()
 	switch {
-	case errors.Is(err, blocks.ErrUnsupportedGetter):
+	case errors.Is(err, consensus_types.ErrUnsupportedGetter):
 		return false, nil
 	case err != nil:
 		return false, err

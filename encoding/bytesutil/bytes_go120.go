@@ -1,5 +1,5 @@
-//go:build prysmAt1.20
-// +build prysmAt1.20
+//go:build go1.20
+// +build go1.20
 
 package bytesutil
 
@@ -31,6 +31,13 @@ func ToBytes32(x []byte) [32]byte {
 // than 48 bytes.
 func ToBytes48(x []byte) [48]byte {
 	return [48]byte(PadTo(x, 48))
+}
+
+// ToBytes2592 is a convenience method for converting a byte slice to a fix
+// sized 2592 byte array. This method will truncate the input if it is larger
+// than 2592 bytes.
+func ToBytes2592(x []byte) [2592]byte {
+	return [2592]byte(PadTo(x, 2592))
 }
 
 // ToBytes64 is a convenience method for converting a byte slice to a fix

@@ -6,6 +6,7 @@ package stategen
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/db"
 	"github.com/cyyber/qrysm/v4/beacon-chain/forkchoice"
@@ -13,12 +14,15 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/sync/backfill"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/crypto/bls"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 )
 
 var defaultHotStateDBInterval primitives.Slot = 128
+
+var populatePubkeyCacheOnce sync.Once
 
 // StateManager represents a management object that handles the internal
 // logic of maintaining both hot and cold states in DB.
@@ -137,6 +141,23 @@ func (s *State) Resume(ctx context.Context, fState state.BeaconState) (state.Bea
 	}()
 
 	s.finalizedInfo = &finalizedInfo{slot: fState.Slot(), root: fRoot, state: fState.Copy()}
+	// Pre-populate the pubkey cache with the validator public keys from the finalized state.
+	// This process takes about 30 seconds on mainnet with 450,000 validators.
+	go populatePubkeyCacheOnce.Do(func() {
+		log.Debug("Populating pubkey cache")
+		start := time.Now()
+		if err := fState.ReadFromEveryValidator(func(_ int, val state.ReadOnlyValidator) error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			pub := val.PublicKey()
+			_, err := bls.PublicKeyFromBytes(pub[:])
+			return err
+		}); err != nil {
+			log.WithError(err).Error("Failed to populate pubkey cache")
+		}
+		log.WithField("duration", time.Since(start)).Debug("Done populating pubkey cache")
+	})
 
 	return fState, nil
 }

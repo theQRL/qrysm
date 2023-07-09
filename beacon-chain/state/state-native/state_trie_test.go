@@ -348,13 +348,13 @@ func TestBeaconState_HashTreeRoot(t *testing.T) {
 			assert.NoError(t, err)
 			root, err := testState.HashTreeRoot(context.Background())
 			if err == nil && tt.error != "" {
-				t.Errorf("Expected error, expected %v, recevied %v", tt.error, err)
+				t.Errorf("Expected error, expected %v, received %v", tt.error, err)
 			}
 			pbState, err := statenative.ProtobufBeaconStatePhase0(testState.ToProtoUnsafe())
 			require.NoError(t, err)
 			genericHTR, err := pbState.HashTreeRoot()
 			if err == nil && tt.error != "" {
-				t.Errorf("Expected error, expected %v, recevied %v", tt.error, err)
+				t.Errorf("Expected error, expected %v, received %v", tt.error, err)
 			}
 			assert.DeepNotEqual(t, []byte{}, root[:], "Received empty hash tree root")
 			assert.DeepEqual(t, genericHTR[:], root[:], "Expected hash tree root to match generic")
@@ -435,13 +435,13 @@ func TestBeaconState_HashTreeRoot_FieldTrie(t *testing.T) {
 			assert.NoError(t, err)
 			root, err := testState.HashTreeRoot(context.Background())
 			if err == nil && tt.error != "" {
-				t.Errorf("Expected error, expected %v, recevied %v", tt.error, err)
+				t.Errorf("Expected error, expected %v, received %v", tt.error, err)
 			}
 			pbState, err := statenative.ProtobufBeaconStatePhase0(testState.ToProtoUnsafe())
 			require.NoError(t, err)
 			genericHTR, err := pbState.HashTreeRoot()
 			if err == nil && tt.error != "" {
-				t.Errorf("Expected error, expected %v, recevied %v", tt.error, err)
+				t.Errorf("Expected error, expected %v, received %v", tt.error, err)
 			}
 			assert.DeepNotEqual(t, []byte{}, root[:], "Received empty hash tree root")
 			assert.DeepEqual(t, genericHTR[:], root[:], "Expected hash tree root to match generic")
@@ -462,7 +462,7 @@ func TestBeaconState_AppendValidator_DoesntMutateCopy(t *testing.T) {
 	val := &ethpb.Validator{Slashed: true}
 	assert.NoError(t, st0.AppendValidator(val))
 	assert.Equal(t, originalCount, st1.NumValidators(), "st1 NumValidators mutated")
-	_, ok := st1.ValidatorIndexByPubkey(bytesutil.ToBytes48(val.PublicKey))
+	_, ok := st1.ValidatorIndexByPubkey(bytesutil.ToBytes2592(val.PublicKey))
 	assert.Equal(t, false, ok, "Expected no validator index to be present in st1 for the newly inserted pubkey")
 }
 

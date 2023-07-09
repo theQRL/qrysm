@@ -12,6 +12,7 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
 	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
 	p2ptesting "github.com/cyyber/qrysm/v4/beacon-chain/p2p/testing"
+	"github.com/cyyber/qrysm/v4/beacon-chain/startup"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
@@ -81,8 +82,9 @@ func TestService_decodePubsubMessage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			chain := &mock.ChainService{ValidatorsRoot: [32]byte{}, Genesis: time.Now()}
 			s := &Service{
-				cfg: &config{p2p: p2ptesting.NewTestP2P(t), chain: &mock.ChainService{ValidatorsRoot: [32]byte{}, Genesis: time.Now()}},
+				cfg: &config{p2p: p2ptesting.NewTestP2P(t), chain: chain, clock: startup.NewClock(chain.Genesis, chain.ValidatorsRoot)},
 			}
 			if tt.topic != "" {
 				if tt.input == nil {

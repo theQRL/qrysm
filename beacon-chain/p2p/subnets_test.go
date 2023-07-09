@@ -7,10 +7,8 @@ import (
 	"testing"
 	"time"
 
-	mock "github.com/cyyber/qrysm/v4/beacon-chain/blockchain/testing"
 	"github.com/cyyber/qrysm/v4/beacon-chain/cache"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/feed"
-	statefeed "github.com/cyyber/qrysm/v4/beacon-chain/core/feed/state"
+	"github.com/cyyber/qrysm/v4/beacon-chain/startup"
 	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/wrapper"
@@ -88,15 +86,17 @@ func TestStartDiscV5_DiscoverPeersWithSubnets(t *testing.T) {
 
 	// Make one service on port 4001.
 	port = 4001
+	gs := startup.NewClockSynchronizer()
 	cfg := &Config{
 		BootstrapNodeAddr:   []string{bootNode.String()},
 		Discv5BootStrapAddr: []string{bootNode.String()},
 		MaxPeers:            30,
 		UDPPort:             uint(port),
+		ClockWaiter:         gs,
 	}
-	cfg.StateNotifier = &mock.MockStateNotifier{}
 	s, err = NewService(context.Background(), cfg)
 	require.NoError(t, err)
+
 	exitRoutine := make(chan bool)
 	go func() {
 		s.Start()
@@ -104,15 +104,8 @@ func TestStartDiscV5_DiscoverPeersWithSubnets(t *testing.T) {
 	}()
 	time.Sleep(50 * time.Millisecond)
 	// Send in a loop to ensure it is delivered (busy wait for the service to subscribe to the state feed).
-	for sent := 0; sent == 0; {
-		sent = s.stateNotifier.StateFeed().Send(&feed.Event{
-			Type: statefeed.Initialized,
-			Data: &statefeed.InitializedData{
-				StartTime:             time.Now(),
-				GenesisValidatorsRoot: make([]byte, 32),
-			},
-		})
-	}
+	var vr [32]byte
+	require.NoError(t, gs.SetClock(startup.NewClock(time.Now(), vr)))
 
 	// Wait for the nodes to have their local routing tables to be populated with the other nodes
 	time.Sleep(6 * discoveryWaitTime)

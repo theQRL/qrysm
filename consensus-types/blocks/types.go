@@ -1,13 +1,10 @@
 package blocks
 
 import (
-	"fmt"
-
 	field_params "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/pkg/errors"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
@@ -29,12 +26,8 @@ const (
 )
 
 var (
-	// ErrUnsupportedGetter is returned when a getter access is not supported for a specific beacon block version.
-	ErrUnsupportedGetter = errors.New("unsupported getter")
 	// ErrUnsupportedVersion for beacon block methods.
-	ErrUnsupportedVersion = errors.New("unsupported beacon block version")
-	// ErrNilObjectWrapped is returned in a constructor when the underlying object is nil.
-	ErrNilObjectWrapped      = errors.New("attempted to wrap nil object")
+	ErrUnsupportedVersion    = errors.New("unsupported beacon block version")
 	errNilBlock              = errors.New("received nil beacon block")
 	errNilBlockBody          = errors.New("received nil beacon block body")
 	errIncorrectBlockVersion = errors.New(incorrectBlockVersion)
@@ -74,8 +67,4 @@ type SignedBeaconBlock struct {
 	version   int
 	block     *BeaconBlock
 	signature [dilithium2.CryptoBytes]byte
-}
-
-func ErrNotSupported(funcName string, ver int) error {
-	return errors.Wrap(ErrUnsupportedGetter, fmt.Sprintf("%s is not supported for %s", funcName, version.String(ver)))
 }

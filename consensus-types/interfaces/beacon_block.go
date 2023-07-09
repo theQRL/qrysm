@@ -1,8 +1,6 @@
 package interfaces
 
 import (
-	"math/big"
-
 	field_params "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
@@ -124,5 +122,5 @@ type ExecutionData interface {
 	WithdrawalsRoot() ([]byte, error)
 	PbCapella() (*enginev1.ExecutionPayloadCapella, error)
 	PbBellatrix() (*enginev1.ExecutionPayload, error)
-	Value() (*big.Int, error)
+	ValueInGwei() (uint64, error)
 }

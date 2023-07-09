@@ -3,7 +3,6 @@ package validator
 import (
 	"context"
 	"errors"
-	"math/big"
 	"testing"
 
 	chainMock "github.com/cyyber/qrysm/v4/beacon-chain/blockchain/testing"
@@ -61,7 +60,7 @@ func TestServer_getExecutionPayload(t *testing.T) {
 	}))
 
 	capellaTransitionState, _ := util.DeterministicGenesisStateCapella(t, 1)
-	wrappedHeaderCapella, err := blocks.WrappedExecutionPayloadHeaderCapella(&pb.ExecutionPayloadHeaderCapella{BlockNumber: 1}, big.NewInt(0))
+	wrappedHeaderCapella, err := blocks.WrappedExecutionPayloadHeaderCapella(&pb.ExecutionPayloadHeaderCapella{BlockNumber: 1}, 0)
 	require.NoError(t, err)
 	require.NoError(t, capellaTransitionState.SetLatestExecutionPayloadHeader(wrappedHeaderCapella))
 	b2pbCapella := util.NewBeaconBlockCapella()

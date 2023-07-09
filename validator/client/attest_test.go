@@ -16,7 +16,6 @@ import (
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
@@ -444,10 +443,6 @@ func TestAttestToBlockHead_CorrectBitfieldLength(t *testing.T) {
 func TestSignAttestation(t *testing.T) {
 	validator, m, _, finish := setup(t)
 	defer finish()
-
-	secretKey, err := dilithium.SecretKeyFromBytes(bytesutil.PadTo([]byte{1}, 32))
-	require.NoError(t, err, "Failed to generate key from bytes")
-	publicKey := secretKey.PublicKey()
 	wantedFork := &ethpb.Fork{
 		PreviousVersion: []byte{'a', 'b', 'c', 'd'},
 		CurrentVersion:  []byte{'d', 'e', 'f', 'f'},
@@ -465,15 +460,10 @@ func TestSignAttestation(t *testing.T) {
 	att.Data.Target.Epoch = 200
 	att.Data.Slot = 999
 	att.Data.BeaconBlockRoot = bytesutil.PadTo([]byte("blockRoot"), 32)
-	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
-	copy(pubKey[:], publicKey.Marshal())
-	km := &mockKeymanager{
-		keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
-			pubKey: secretKey,
-		},
-	}
-	validator.keyManager = km
-	sig, sr, err := validator.signAtt(ctx, pubKey, att.Data, att.Data.Slot)
+
+	pk := testKeyFromBytes(t, []byte{1})
+	validator.keyManager = newMockKeymanager(t, pk)
+	sig, sr, err := validator.signAtt(ctx, pk.pub, att.Data, att.Data.Slot)
 	require.NoError(t, err, "%x,%x,%v", sig, sr, err)
 	require.Equal(t, "b6a60f8497bd328908be83634d045"+
 		"dd7a32f5e246b2c4031fc2f316983f362e36fc27fd3d6d5a2b15"+
