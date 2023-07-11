@@ -17,6 +17,7 @@ import (
 	"github.com/cyyber/qrysm/v4/config/params"
 	validatorserviceconfig "github.com/cyyber/qrysm/v4/config/validator/service"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	validatorType "github.com/cyyber/qrysm/v4/consensus-types/validator"
 	blsmock "github.com/cyyber/qrysm/v4/crypto/bls/common/mock"
 	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
@@ -1672,7 +1673,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
-							GasLimit: validatorserviceconfig.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
+							GasLimit: validatorType.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
 						},
 					},
 				})

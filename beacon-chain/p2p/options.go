@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/cyyber/qrysm/v4/config/features"
 	ecdsaprysm "github.com/cyyber/qrysm/v4/crypto/ecdsa"
 	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/muxer/mplex"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
@@ -99,6 +101,9 @@ func (s *Service) buildOptions(ip net.IP, priKey *ecdsa.PrivateKey) []libp2p.Opt
 	}
 	// Disable Ping Service.
 	options = append(options, libp2p.Ping(false))
+	if features.Get().DisableResourceManager {
+		options = append(options, libp2p.ResourceManager(&network.NullResourceManager{}))
+	}
 	return options
 }
 

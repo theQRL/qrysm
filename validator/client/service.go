@@ -2,6 +2,8 @@ package client
 
 import (
 	"context"
+	beaconChainClientFactory "github.com/cyyber/qrysm/v4/validator/client/beacon-chain-client-factory"
+	validatorClientFactory "github.com/cyyber/qrysm/v4/validator/client/validator-client-factory"
 	"strings"
 	"time"
 
@@ -14,11 +16,9 @@ import (
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/validator/accounts/wallet"
-	beaconChainClientFactory "github.com/cyyber/qrysm/v4/validator/client/beacon-chain-client-factory"
 	"github.com/cyyber/qrysm/v4/validator/client/iface"
 	nodeClientFactory "github.com/cyyber/qrysm/v4/validator/client/node-client-factory"
 	slasherClientFactory "github.com/cyyber/qrysm/v4/validator/client/slasher-client-factory"
-	validatorClientFactory "github.com/cyyber/qrysm/v4/validator/client/validator-client-factory"
 	"github.com/cyyber/qrysm/v4/validator/db"
 	"github.com/cyyber/qrysm/v4/validator/graffiti"
 	validatorHelpers "github.com/cyyber/qrysm/v4/validator/helpers"
@@ -188,10 +188,21 @@ func (v *ValidatorService) Start() {
 		return
 	}
 
+	// checks db if proposer settings exist if none is provided.
+	if v.proposerSettings == nil {
+		settings, err := v.db.ProposerSettings(v.ctx)
+		if err == nil {
+			v.proposerSettings = settings
+		}
+	}
+
+	validatorClient := validatorClientFactory.NewValidatorClient(v.conn)
+	beaconClient := beaconChainClientFactory.NewBeaconChainClient(v.conn)
+
 	valStruct := &validator{
 		db:                             v.db,
-		validatorClient:                validatorClientFactory.NewValidatorClient(v.conn),
-		beaconClient:                   beaconChainClientFactory.NewBeaconChainClient(v.conn),
+		validatorClient:                validatorClient,
+		beaconClient:                   beaconClient,
 		slashingProtectionClient:       slasherClientFactory.NewSlasherClient(v.conn),
 		node:                           nodeClientFactory.NewNodeClient(v.conn),
 		graffiti:                       v.graffiti,
@@ -218,6 +229,7 @@ func (v *ValidatorService) Start() {
 		proposerSettings:               v.proposerSettings,
 		walletInitializedChannel:       make(chan *wallet.Wallet, 1),
 	}
+
 	// To resolve a race condition at startup due to the interface
 	// nature of the abstracted block type. We initialize
 	// the inner type of the feed before hand. So that
@@ -255,17 +267,31 @@ func (v *ValidatorService) InteropKeysConfig() *local.InteropKeymanagerConfig {
 	return v.interopKeysConfig
 }
 
+// Keymanager returns the underlying keymanager in the validator
 func (v *ValidatorService) Keymanager() (keymanager.IKeymanager, error) {
 	return v.validator.Keymanager()
 }
 
+// ProposerSettings returns a deep copy of the underlying proposer settings in the validator
 func (v *ValidatorService) ProposerSettings() *validatorserviceconfig.ProposerSettings {
-	return v.validator.ProposerSettings()
+	settings := v.validator.ProposerSettings()
+	if settings != nil {
+		return settings.Clone()
+	}
+	return nil
 }
 
-func (v *ValidatorService) SetProposerSettings(settings *validatorserviceconfig.ProposerSettings) {
+// SetProposerSettings sets the proposer settings on the validator service as well as the underlying validator
+func (v *ValidatorService) SetProposerSettings(ctx context.Context, settings *validatorserviceconfig.ProposerSettings) error {
+	if v.db == nil {
+		return errors.New("db is not set")
+	}
+	if err := v.db.SaveProposerSettings(ctx, settings); err != nil {
+		return err
+	}
 	v.proposerSettings = settings
 	v.validator.SetProposerSettings(settings)
+	return nil
 }
 
 // ConstructDialOptions constructs a list of grpc dial options

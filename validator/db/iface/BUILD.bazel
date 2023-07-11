@@ -5,8 +5,9 @@ go_library(
     srcs = ["interface.go"],
     importpath = "github.com/cyyber/qrysm/v4/validator/db/iface",
     # Other packages must use github.com/cyyber/qrysm/v4/validator/db.Database alias.
-    visibility = ["//validator/db:__subpackages__"],
+    visibility = ["//validator:__subpackages__"],
     deps = [
+        "//config/validator/service:go_default_library",
         "//consensus-types/primitives:go_default_library",
         "//monitoring/backup:go_default_library",
         "//proto/prysm/v1alpha1:go_default_library",

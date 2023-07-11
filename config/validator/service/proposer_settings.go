@@ -33,7 +33,7 @@ func ToSettings(ps *validatorpb.ProposerSettingsPayload) (*ProposerSettings, err
 			if optionPayload.Builder != nil {
 				p.BuilderConfig = ToBuilderConfig(optionPayload.Builder)
 			}
-			settings.ProposeConfig[bytesutil.ToBytes48(b)] = p
+			settings.ProposeConfig[bytesutil.ToBytes2592(b)] = p
 		}
 	}
 	if ps.DefaultConfig != nil {

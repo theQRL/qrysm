@@ -13,10 +13,12 @@ import (
 	"github.com/cyyber/qrysm/v4/cmd/validator/flags"
 	"github.com/cyyber/qrysm/v4/config/params"
 	validatorserviceconfig "github.com/cyyber/qrysm/v4/config/validator/service"
+	"github.com/cyyber/qrysm/v4/consensus-types/validator"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/validator/accounts"
+	dbTest "github.com/cyyber/qrysm/v4/validator/db/testing"
 	"github.com/cyyber/qrysm/v4/validator/keymanager"
 	remoteweb3signer "github.com/cyyber/qrysm/v4/validator/keymanager/remote-web3signer"
 	"github.com/ethereum/go-ethereum/common"
@@ -279,7 +281,7 @@ func TestProposerSettings(t *testing.T) {
 							},
 							BuilderConfig: &validatorserviceconfig.BuilderConfig{
 								Enabled:  true,
-								GasLimit: validatorserviceconfig.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
+								GasLimit: validator.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
 							},
 						},
 						bytesutil.ToBytes2592(key2): {
@@ -288,7 +290,7 @@ func TestProposerSettings(t *testing.T) {
 							},
 							BuilderConfig: &validatorserviceconfig.BuilderConfig{
 								Enabled:  true,
-								GasLimit: validatorserviceconfig.Uint64(35000000),
+								GasLimit: validator.Uint64(35000000),
 							},
 						},
 					},
@@ -298,7 +300,7 @@ func TestProposerSettings(t *testing.T) {
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
-							GasLimit: validatorserviceconfig.Uint64(40000000),
+							GasLimit: validator.Uint64(40000000),
 						},
 					},
 				}
@@ -364,7 +366,7 @@ func TestProposerSettings(t *testing.T) {
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  false,
-							GasLimit: validatorserviceconfig.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
+							GasLimit: validator.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
 						},
 					},
 				}
@@ -410,7 +412,7 @@ func TestProposerSettings(t *testing.T) {
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
-							GasLimit: validatorserviceconfig.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
+							GasLimit: validator.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
 						},
 					},
 				}
@@ -494,7 +496,7 @@ func TestProposerSettings(t *testing.T) {
 							},
 							BuilderConfig: &validatorserviceconfig.BuilderConfig{
 								Enabled:  true,
-								GasLimit: validatorserviceconfig.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
+								GasLimit: validator.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
 							},
 						},
 					},
@@ -504,7 +506,7 @@ func TestProposerSettings(t *testing.T) {
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
-							GasLimit: validatorserviceconfig.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
+							GasLimit: validator.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
 						},
 					},
 				}
@@ -532,7 +534,7 @@ func TestProposerSettings(t *testing.T) {
 							},
 							BuilderConfig: &validatorserviceconfig.BuilderConfig{
 								Enabled:  true,
-								GasLimit: validatorserviceconfig.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
+								GasLimit: validator.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
 							},
 						},
 					},
@@ -542,7 +544,7 @@ func TestProposerSettings(t *testing.T) {
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
-							GasLimit: validatorserviceconfig.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
+							GasLimit: validator.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
 						},
 					},
 				}
@@ -569,7 +571,7 @@ func TestProposerSettings(t *testing.T) {
 							},
 							BuilderConfig: &validatorserviceconfig.BuilderConfig{
 								Enabled:  true,
-								GasLimit: validatorserviceconfig.Uint64(40000000),
+								GasLimit: validator.Uint64(40000000),
 							},
 						},
 					},
@@ -579,7 +581,7 @@ func TestProposerSettings(t *testing.T) {
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  false,
-							GasLimit: validatorserviceconfig.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
+							GasLimit: validator.Uint64(params.BeaconConfig().DefaultBuilderGasLimit),
 						},
 					},
 				}
@@ -677,7 +679,8 @@ func TestProposerSettings(t *testing.T) {
 				set.Bool(flags.EnableBuilderFlag.Name, true, "")
 			}
 			cliCtx := cli.NewContext(&app, set, nil)
-			got, err := proposerSettings(cliCtx)
+			validatorDB := dbTest.SetupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{})
+			got, err := proposerSettings(cliCtx, validatorDB)
 			if tt.wantErr != "" {
 				require.ErrorContains(t, tt.wantErr, err)
 				return
@@ -695,10 +698,11 @@ func TestProposerSettings(t *testing.T) {
 
 // return an error if the user is using builder settings without any default fee recipient
 func TestProposerSettings_EnableBuilder_noFeeRecipient(t *testing.T) {
+	validatorDB := dbTest.SetupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{})
 	app := cli.App{}
 	set := flag.NewFlagSet("test", 0)
 	set.Bool(flags.EnableBuilderFlag.Name, true, "")
 	cliCtx := cli.NewContext(&app, set, nil)
-	_, err := proposerSettings(cliCtx)
+	_, err := proposerSettings(cliCtx, validatorDB)
 	require.ErrorContains(t, "can only be used when a default fee recipient is present on the validator client", err)
 }

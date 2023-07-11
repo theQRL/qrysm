@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 
+	validatorServiceConfig "github.com/cyyber/qrysm/v4/config/validator/service"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/monitoring/backup"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
@@ -62,4 +63,11 @@ type ValidatorDB interface {
 	// Graffiti ordered index related methods
 	SaveGraffitiOrderedIndex(ctx context.Context, index uint64) error
 	GraffitiOrderedIndex(ctx context.Context, fileHash [32]byte) (uint64, error)
+
+	// ProposerSettings related methods
+	ProposerSettings(context.Context) (*validatorServiceConfig.ProposerSettings, error)
+	ProposerSettingsExists(ctx context.Context) (bool, error)
+	UpdateProposerSettingsDefault(context.Context, *validatorServiceConfig.ProposerOption) error
+	UpdateProposerSettingsForPubkey(context.Context, [dilithium2.CryptoPublicKeyBytes]byte, *validatorServiceConfig.ProposerOption) error
+	SaveProposerSettings(ctx context.Context, settings *validatorServiceConfig.ProposerSettings) error
 }
