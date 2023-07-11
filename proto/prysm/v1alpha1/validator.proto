@@ -770,7 +770,7 @@ message AssignValidatorToSubnetRequest {
 
 message AggregatedSigAndAggregationBitsRequest {
     repeated SyncCommitteeMessage msgs = 1;
-    uint64 slot = 2 [(ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/prysm/v4/consensus-types/primitives.Slot"];
+    uint64 slot = 2 [(ethereum.eth.ext.cast_type) = "github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"];
     uint64 subnet_id = 3;
     bytes block_root = 4 [(ethereum.eth.ext.ssz_size) = "32"];
 }
