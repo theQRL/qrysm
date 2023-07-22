@@ -2,6 +2,7 @@ package scorers
 
 import (
 	"context"
+	"github.com/cyyber/qrysm/v4/config/features"
 	"math"
 	"time"
 
@@ -137,8 +138,10 @@ func (s *Service) IsBadPeerNoLock(pid peer.ID) bool {
 	if s.scorers.peerStatusScorer.isBadPeer(pid) {
 		return true
 	}
-	if s.scorers.gossipScorer.isBadPeer(pid) {
-		return true
+	if features.Get().EnablePeerScorer {
+		if s.scorers.gossipScorer.isBadPeer(pid) {
+			return true
+		}
 	}
 	return false
 }

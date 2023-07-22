@@ -8,6 +8,7 @@ import (
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/peerdata"
 	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/cyyber/qrysm/v4/config/features"
 	"github.com/cyyber/qrysm/v4/crypto/rand"
 	prysmTime "github.com/cyyber/qrysm/v4/time"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -290,6 +291,9 @@ func (s *BlockProviderScorer) mapScoresAndPeers(
 func (s *BlockProviderScorer) FormatScorePretty(pid peer.ID) string {
 	s.store.RLock()
 	defer s.store.RUnlock()
+	if !features.Get().EnablePeerScorer {
+		return "disabled"
+	}
 	score := s.score(pid)
 	return fmt.Sprintf("[%0.1f%%, raw: %0.2f,  blocks: %d/%d]",
 		(score/s.MaxScore())*100, score, s.processedBlocks(pid), s.config.ProcessedBlocksCap)

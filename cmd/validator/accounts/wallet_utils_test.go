@@ -2,22 +2,26 @@ package accounts
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/cyyber/qrysm/v4/cmd/validator/flags"
+	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/validator/accounts"
 	"github.com/cyyber/qrysm/v4/validator/keymanager"
 	"github.com/cyyber/qrysm/v4/validator/keymanager/local"
 	"github.com/cyyber/qrysm/v4/validator/node"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/urfave/cli/v2"
 )
 
 func TestWalletWithKeymanager(t *testing.T) {
+	logHook := test.NewGlobal()
 	walletDir, passwordsDir, passwordFilePath := setupWalletAndPasswordsDir(t)
 	keysDir := filepath.Join(t.TempDir(), "keysDir")
 	require.NoError(t, os.MkdirAll(keysDir, os.ModePerm))
@@ -66,6 +70,9 @@ func TestWalletWithKeymanager(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, len(keys), 2)
 	require.Equal(t, w.KeymanagerKind(), keymanager.Local)
+	hexKeys := []string{hexutil.Encode(keys[0][:])[2:], hexutil.Encode(keys[1][:])[2:]} // imported keystores don't include the 0x in name
+
+	assert.LogsContain(t, logHook, fmt.Sprintf("Imported accounts %v,", hexKeys))
 }
 
 func TestWalletWithKeymanager_web3signer(t *testing.T) {

@@ -7,12 +7,18 @@ import (
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/scorers"
 	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/cyyber/qrysm/v4/config/features"
 	"github.com/sirupsen/logrus"
 )
 
 func TestMain(m *testing.M) {
 	logrus.SetLevel(logrus.DebugLevel)
 	logrus.SetOutput(io.Discard)
+
+	resetCfg := features.InitWithReset(&features.Flags{
+		EnablePeerScorer: true,
+	})
+	defer resetCfg()
 
 	resetFlags := flags.Get()
 	flags.Init(&flags.GlobalFlags{

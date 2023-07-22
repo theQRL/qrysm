@@ -17,6 +17,7 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/startup"
 	beaconsync "github.com/cyyber/qrysm/v4/beacon-chain/sync"
 	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/cyyber/qrysm/v4/config/features"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
@@ -54,6 +55,11 @@ type peerData struct {
 func TestMain(m *testing.M) {
 	logrus.SetLevel(logrus.DebugLevel)
 	logrus.SetOutput(io.Discard)
+
+	resetCfg := features.InitWithReset(&features.Flags{
+		EnablePeerScorer: true,
+	})
+	defer resetCfg()
 
 	resetFlags := flags.Get()
 	flags.Init(&flags.GlobalFlags{

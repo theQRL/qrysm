@@ -16,6 +16,7 @@ import (
 	doublylinkedtree "github.com/cyyber/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
 	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"
+	consensus_types "github.com/cyyber/qrysm/v4/consensus-types"
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
@@ -71,12 +72,18 @@ func TestServer_setExecutionData(t *testing.T) {
 		BeaconDB:               beaconDB,
 		ProposerSlotIndexCache: cache.NewProposerPayloadIDsCache(),
 		BlockBuilder:           &builderTest.MockBuilderService{HasConfigured: true, Cfg: &builderTest.Config{BeaconDB: beaconDB}},
+		ForkchoiceFetcher:      &blockchainTest.ChainService{},
 	}
 
 	t.Run("No builder configured. Use local block", func(t *testing.T) {
 		blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 		require.NoError(t, err)
-		require.NoError(t, vs.setExecutionData(context.Background(), blk, capellaTransitionState))
+		b := blk.Block()
+		localPayload, err := vs.getLocalPayload(ctx, b, capellaTransitionState)
+		require.NoError(t, err)
+		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex())
+		require.NoError(t, err)
+		require.NoError(t, setExecutionData(context.Background(), blk, localPayload, builderPayload))
 		e, err := blk.Block().Body().Execution()
 		require.NoError(t, err)
 		require.Equal(t, uint64(1), e.BlockNumber()) // Local block
@@ -129,7 +136,13 @@ func TestServer_setExecutionData(t *testing.T) {
 		vs.ForkchoiceFetcher.SetForkChoiceGenesisTime(uint64(time.Now().Unix()))
 		vs.TimeFetcher = chain
 		vs.HeadFetcher = chain
-		require.NoError(t, vs.setExecutionData(context.Background(), blk, capellaTransitionState))
+		b := blk.Block()
+
+		localPayload, err := vs.getLocalPayload(ctx, b, capellaTransitionState)
+		require.NoError(t, err)
+		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex())
+		require.NoError(t, err)
+		require.NoError(t, setExecutionData(context.Background(), blk, localPayload, builderPayload))
 		e, err := blk.Block().Body().Execution()
 		require.NoError(t, err)
 		require.Equal(t, uint64(1), e.BlockNumber()) // Local block because incorrect withdrawals
@@ -185,7 +198,13 @@ func TestServer_setExecutionData(t *testing.T) {
 		vs.ForkchoiceFetcher.SetForkChoiceGenesisTime(uint64(time.Now().Unix()))
 		vs.TimeFetcher = chain
 		vs.HeadFetcher = chain
-		require.NoError(t, vs.setExecutionData(context.Background(), blk, capellaTransitionState))
+
+		b := blk.Block()
+		localPayload, err := vs.getLocalPayload(ctx, b, capellaTransitionState)
+		require.NoError(t, err)
+		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex())
+		require.NoError(t, err)
+		require.NoError(t, setExecutionData(context.Background(), blk, localPayload, builderPayload))
 		e, err := blk.Block().Body().Execution()
 		require.NoError(t, err)
 		require.Equal(t, uint64(2), e.BlockNumber()) // Builder block
@@ -194,7 +213,12 @@ func TestServer_setExecutionData(t *testing.T) {
 		blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 		require.NoError(t, err)
 		vs.ExecutionEngineCaller = &powtesting.EngineClient{PayloadIDBytes: id, ExecutionPayloadCapella: &v1.ExecutionPayloadCapella{BlockNumber: 3}, BlockValue: 2}
-		require.NoError(t, vs.setExecutionData(context.Background(), blk, capellaTransitionState))
+		b := blk.Block()
+		localPayload, err := vs.getLocalPayload(ctx, b, capellaTransitionState)
+		require.NoError(t, err)
+		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex())
+		require.NoError(t, err)
+		require.NoError(t, setExecutionData(context.Background(), blk, localPayload, builderPayload))
 		e, err := blk.Block().Body().Execution()
 		require.NoError(t, err)
 		require.Equal(t, uint64(3), e.BlockNumber()) // Local block
@@ -209,7 +233,12 @@ func TestServer_setExecutionData(t *testing.T) {
 		blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 		require.NoError(t, err)
 		vs.ExecutionEngineCaller = &powtesting.EngineClient{PayloadIDBytes: id, ExecutionPayloadCapella: &v1.ExecutionPayloadCapella{BlockNumber: 3}, BlockValue: 1}
-		require.NoError(t, vs.setExecutionData(context.Background(), blk, capellaTransitionState))
+		b := blk.Block()
+		localPayload, err := vs.getLocalPayload(ctx, b, capellaTransitionState)
+		require.NoError(t, err)
+		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex())
+		require.NoError(t, err)
+		require.NoError(t, setExecutionData(context.Background(), blk, localPayload, builderPayload))
 		e, err := blk.Block().Body().Execution()
 		require.NoError(t, err)
 		require.Equal(t, uint64(3), e.BlockNumber()) // Local block
@@ -225,7 +254,12 @@ func TestServer_setExecutionData(t *testing.T) {
 			Cfg:           &builderTest.Config{BeaconDB: beaconDB},
 		}
 		vs.ExecutionEngineCaller = &powtesting.EngineClient{PayloadIDBytes: id, ExecutionPayloadCapella: &v1.ExecutionPayloadCapella{BlockNumber: 4}, BlockValue: 0}
-		require.NoError(t, vs.setExecutionData(context.Background(), blk, capellaTransitionState))
+		b := blk.Block()
+		localPayload, err := vs.getLocalPayload(ctx, b, capellaTransitionState)
+		require.NoError(t, err)
+		builderPayload, err := vs.getBuilderPayload(ctx, b.Slot(), b.ProposerIndex())
+		require.ErrorIs(t, consensus_types.ErrNilObjectWrapped, err) // Builder returns fault. Use local block
+		require.NoError(t, setExecutionData(context.Background(), blk, localPayload, builderPayload))
 		e, err := blk.Block().Body().Execution()
 		require.NoError(t, err)
 		require.Equal(t, uint64(4), e.BlockNumber()) // Local block
@@ -461,146 +495,6 @@ func TestServer_getPayloadHeader(t *testing.T) {
 					require.NoError(t, err)
 					require.DeepEqual(t, want, h)
 				}
-			}
-		})
-	}
-}
-
-func TestServer_getBuilderBlock(t *testing.T) {
-	p := emptyPayload()
-	p.GasLimit = 123
-
-	tests := []struct {
-		name        string
-		blk         interfaces.ReadOnlySignedBeaconBlock
-		mock        *builderTest.MockBuilderService
-		err         string
-		returnedBlk interfaces.ReadOnlySignedBeaconBlock
-	}{
-		{
-			name: "nil block",
-			blk:  nil,
-			err:  "signed beacon block can't be nil",
-		},
-		{
-			name: "old block version",
-			blk: func() interfaces.ReadOnlySignedBeaconBlock {
-				wb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
-				require.NoError(t, err)
-				return wb
-			}(),
-			returnedBlk: func() interfaces.ReadOnlySignedBeaconBlock {
-				wb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
-				require.NoError(t, err)
-				return wb
-			}(),
-		},
-		{
-			name: "not configured",
-			blk: func() interfaces.ReadOnlySignedBeaconBlock {
-				wb, err := blocks.NewSignedBeaconBlock(util.NewBlindedBeaconBlockBellatrix())
-				require.NoError(t, err)
-				return wb
-			}(),
-			mock: &builderTest.MockBuilderService{
-				HasConfigured: false,
-			},
-			returnedBlk: func() interfaces.ReadOnlySignedBeaconBlock {
-				wb, err := blocks.NewSignedBeaconBlock(util.NewBlindedBeaconBlockBellatrix())
-				require.NoError(t, err)
-				return wb
-			}(),
-		},
-		{
-			name: "submit blind block error",
-			blk: func() interfaces.ReadOnlySignedBeaconBlock {
-				b := util.NewBlindedBeaconBlockBellatrix()
-				b.Block.Slot = 1
-				b.Block.ProposerIndex = 2
-				wb, err := blocks.NewSignedBeaconBlock(b)
-				require.NoError(t, err)
-				return wb
-			}(),
-			mock: &builderTest.MockBuilderService{
-				Payload:               &v1.ExecutionPayload{},
-				HasConfigured:         true,
-				ErrSubmitBlindedBlock: errors.New("can't submit"),
-			},
-			err: "can't submit",
-		},
-		{
-			name: "head and payload root mismatch",
-			blk: func() interfaces.ReadOnlySignedBeaconBlock {
-				b := util.NewBlindedBeaconBlockBellatrix()
-				b.Block.Slot = 1
-				b.Block.ProposerIndex = 2
-				wb, err := blocks.NewSignedBeaconBlock(b)
-				require.NoError(t, err)
-				return wb
-			}(),
-			mock: &builderTest.MockBuilderService{
-				HasConfigured: true,
-				Payload:       p,
-			},
-			returnedBlk: func() interfaces.ReadOnlySignedBeaconBlock {
-				b := util.NewBeaconBlockBellatrix()
-				b.Block.Slot = 1
-				b.Block.ProposerIndex = 2
-				b.Block.Body.ExecutionPayload = p
-				wb, err := blocks.NewSignedBeaconBlock(b)
-				require.NoError(t, err)
-				return wb
-			}(),
-			err: "header and payload root do not match",
-		},
-		{
-			name: "can get payload",
-			blk: func() interfaces.ReadOnlySignedBeaconBlock {
-				b := util.NewBlindedBeaconBlockBellatrix()
-				b.Block.Slot = 1
-				b.Block.ProposerIndex = 2
-				txRoot, err := ssz.TransactionsRoot([][]byte{})
-				require.NoError(t, err)
-				b.Block.Body.ExecutionPayloadHeader = &v1.ExecutionPayloadHeader{
-					ParentHash:       make([]byte, fieldparams.RootLength),
-					FeeRecipient:     make([]byte, fieldparams.FeeRecipientLength),
-					StateRoot:        make([]byte, fieldparams.RootLength),
-					ReceiptsRoot:     make([]byte, fieldparams.RootLength),
-					LogsBloom:        make([]byte, fieldparams.LogsBloomLength),
-					PrevRandao:       make([]byte, fieldparams.RootLength),
-					BaseFeePerGas:    make([]byte, fieldparams.RootLength),
-					BlockHash:        make([]byte, fieldparams.RootLength),
-					TransactionsRoot: txRoot[:],
-					GasLimit:         123,
-				}
-				wb, err := blocks.NewSignedBeaconBlock(b)
-				require.NoError(t, err)
-				return wb
-			}(),
-			mock: &builderTest.MockBuilderService{
-				HasConfigured: true,
-				Payload:       p,
-			},
-			returnedBlk: func() interfaces.ReadOnlySignedBeaconBlock {
-				b := util.NewBeaconBlockBellatrix()
-				b.Block.Slot = 1
-				b.Block.ProposerIndex = 2
-				b.Block.Body.ExecutionPayload = p
-				wb, err := blocks.NewSignedBeaconBlock(b)
-				require.NoError(t, err)
-				return wb
-			}(),
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			vs := &Server{BlockBuilder: tc.mock}
-			gotBlk, err := vs.unblindBuilderBlock(context.Background(), tc.blk)
-			if tc.err != "" {
-				require.ErrorContains(t, tc.err, err)
-			} else {
-				require.NoError(t, err)
-				require.DeepEqual(t, tc.returnedBlk, gotBlk)
 			}
 		})
 	}

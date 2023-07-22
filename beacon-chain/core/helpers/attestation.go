@@ -8,11 +8,14 @@ import (
 
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/crypto/hash"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	prysmTime "github.com/cyyber/qrysm/v4/time"
 	"github.com/cyyber/qrysm/v4/time/slots"
+)
+
+var (
+	ErrTooLate = errors.New("attestation is too late")
 )
 
 // ValidateNilAttestation checks if any composite field of input attestation is nil.
@@ -64,25 +67,6 @@ func IsAggregator(committeeCount uint64, slotSig []byte) (bool, error) {
 
 	b := hash.Hash(slotSig)
 	return binary.LittleEndian.Uint64(b[:8])%modulo == 0, nil
-}
-
-// AggregateSignature returns the aggregated signature of the input attestations.
-//
-// Spec pseudocode definition:
-//
-//	def get_aggregate_signature(attestations: Sequence[Attestation]) -> BLSSignature:
-//	 signatures = [attestation.signature for attestation in attestations]
-//	 return bls.Aggregate(signatures)
-func AggregateSignature(attestations []*ethpb.Attestation) (dilithium.Signature, error) {
-	sigs := make([]dilithium.Signature, len(attestations))
-	var err error
-	for i := 0; i < len(sigs); i++ {
-		sigs[i], err = dilithium.SignatureFromBytes(attestations[i].Signature)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return dilithium.AggregateSignatures(sigs), nil
 }
 
 // IsAggregated returns true if the attestation is an aggregated attestation,
@@ -184,7 +168,7 @@ func ValidateAttestationTime(attSlot primitives.Slot, genesisTime time.Time, clo
 	)
 	if attTime.Before(lowerBounds) {
 		attReceivedTooLateCount.Inc()
-		return attError
+		return errors.Join(ErrTooLate, attError)
 	}
 	if attTime.After(upperBounds) {
 		attReceivedTooEarlyCount.Inc()

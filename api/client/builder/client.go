@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"strings"
 	"text/template"
-	"time"
 
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
@@ -37,7 +36,6 @@ const (
 var errMalformedHostname = errors.New("hostname must include port, separated by one colon, like example.com:3500")
 var errMalformedRequest = errors.New("required request data are missing")
 var errNotBlinded = errors.New("submitted block is not blinded")
-var submitBlindedBlockTimeout = 3 * time.Second
 
 // ClientOpt is a functional option for the Client type (http.Client wrapper)
 type ClientOpt func(*Client)
@@ -293,8 +291,6 @@ func (c *Client) SubmitBlindedBlock(ctx context.Context, sb interfaces.ReadOnlyS
 			return nil, errors.Wrap(err, "error encoding the SignedBlindedBeaconBlockBellatrix value body in SubmitBlindedBlock")
 		}
 
-		ctx, cancel := context.WithTimeout(ctx, submitBlindedBlockTimeout)
-		defer cancel()
 		versionOpt := func(r *http.Request) {
 			r.Header.Add("Eth-Consensus-Version", version.String(version.Bellatrix))
 		}
@@ -326,8 +322,6 @@ func (c *Client) SubmitBlindedBlock(ctx context.Context, sb interfaces.ReadOnlyS
 			return nil, errors.Wrap(err, "error encoding the SignedBlindedBeaconBlockCapella value body in SubmitBlindedBlockCapella")
 		}
 
-		ctx, cancel := context.WithTimeout(ctx, submitBlindedBlockTimeout)
-		defer cancel()
 		versionOpt := func(r *http.Request) {
 			r.Header.Add("Eth-Consensus-Version", version.String(version.Capella))
 		}

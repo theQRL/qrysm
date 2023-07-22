@@ -1,6 +1,7 @@
 package peers_test
 
 import (
+	"github.com/cyyber/qrysm/v4/config/features"
 	"io"
 	"testing"
 
@@ -11,6 +12,11 @@ import (
 func TestMain(m *testing.M) {
 	logrus.SetLevel(logrus.DebugLevel)
 	logrus.SetOutput(io.Discard)
+
+	resetCfg := features.InitWithReset(&features.Flags{
+		EnablePeerScorer: true,
+	})
+	defer resetCfg()
 
 	resetFlags := flags.Get()
 	flags.Init(&flags.GlobalFlags{

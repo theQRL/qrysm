@@ -2,6 +2,7 @@ package validator
 
 import (
 	"context"
+	"github.com/cyyber/qrysm/v4/encoding/ssz"
 	"math/big"
 	"testing"
 	"time"
@@ -548,6 +549,12 @@ func TestProposer_ProposeBlock_OK(t *testing.T) {
 				blockToPropose := util.NewBlindedBeaconBlockCapella()
 				blockToPropose.Block.Slot = 5
 				blockToPropose.Block.ParentRoot = parent[:]
+				txRoot, err := ssz.TransactionsRoot([][]byte{})
+				require.NoError(t, err)
+				withdrawalsRoot, err := ssz.WithdrawalSliceRoot([]*enginev1.Withdrawal{}, fieldparams.MaxWithdrawalsPerPayload)
+				require.NoError(t, err)
+				blockToPropose.Block.Body.ExecutionPayloadHeader.TransactionsRoot = txRoot[:]
+				blockToPropose.Block.Body.ExecutionPayloadHeader.WithdrawalsRoot = withdrawalsRoot[:]
 				blk := &ethpb.GenericSignedBeaconBlock_BlindedCapella{BlindedCapella: blockToPropose}
 				return &ethpb.GenericSignedBeaconBlock{Block: blk}
 			},
@@ -556,30 +563,19 @@ func TestProposer_ProposeBlock_OK(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := dbutil.SetupDB(t)
 			ctx := context.Background()
-
-			genesis := util.NewBeaconBlock()
-			util.SaveBlock(t, ctx, db, genesis)
 
 			numDeposits := uint64(64)
 			beaconState, _ := util.DeterministicGenesisState(t, numDeposits)
 			bsRoot, err := beaconState.HashTreeRoot(ctx)
 			require.NoError(t, err)
-			genesisRoot, err := genesis.Block.HashTreeRoot()
-			require.NoError(t, err)
-			require.NoError(t, db.SaveState(ctx, beaconState, genesisRoot), "Could not save genesis state")
 
 			c := &mock.ChainService{Root: bsRoot[:], State: beaconState}
 			proposerServer := &Server{
-				ChainStartFetcher: &mockExecution.Chain{},
-				Eth1InfoFetcher:   &mockExecution.Chain{},
-				Eth1BlockFetcher:  &mockExecution.Chain{},
-				BlockReceiver:     c,
-				HeadFetcher:       c,
-				BlockNotifier:     c.BlockNotifier(),
-				P2P:               mockp2p.NewTestP2P(t),
-				BlockBuilder:      &builderTest.MockBuilderService{HasConfigured: true, PayloadCapella: emptyPayloadCapella()},
+				BlockReceiver: c,
+				BlockNotifier: c.BlockNotifier(),
+				P2P:           mockp2p.NewTestP2P(t),
+				BlockBuilder:  &builderTest.MockBuilderService{HasConfigured: true, PayloadCapella: emptyPayloadCapella()},
 			}
 			blockToPropose := tt.block(bsRoot)
 			res, err := proposerServer.ProposeBeaconBlock(context.Background(), blockToPropose)

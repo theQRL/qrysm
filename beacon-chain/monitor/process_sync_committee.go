@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"fmt"
+	"github.com/cyyber/qrysm/v4/runtime/version"
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
@@ -27,6 +28,9 @@ func (s *Service) processSyncCommitteeContribution(contribution *ethpb.SignedCon
 // processSyncAggregate logs the event when tracked validators is a sync-committee member and its contribution has been included
 func (s *Service) processSyncAggregate(state state.BeaconState, blk interfaces.ReadOnlyBeaconBlock) {
 	if blk == nil || blk.Body() == nil {
+		return
+	}
+	if blk.Version() == version.Phase0 {
 		return
 	}
 	bits, err := blk.Body().SyncAggregate()
