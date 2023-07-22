@@ -96,6 +96,10 @@ func SafeCopyUint64Array(ary []uint64) []uint64 {
 // SafeCopyBytes will copy and return a non-nil byte slice, otherwise it returns nil.
 func SafeCopyBytes(cp []byte) []byte {
 	if cp != nil {
+		if len(cp) == 32 {
+			copied := [32]byte(cp)
+			return copied[:]
+		}
 		copied := make([]byte, len(cp))
 		copy(copied, cp)
 		return copied

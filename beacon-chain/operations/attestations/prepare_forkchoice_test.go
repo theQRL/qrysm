@@ -6,6 +6,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/cyyber/qrysm/v4/config/features"
 	"github.com/cyyber/qrysm/v4/crypto/bls"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	attaggregation "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/attestations"
@@ -17,6 +18,11 @@ import (
 )
 
 func TestBatchAttestations_Multiple(t *testing.T) {
+	resetFn := features.InitWithReset(&features.Flags{
+		AggregateParallel: true,
+	})
+	defer resetFn()
+
 	s, err := NewService(context.Background(), &Config{Pool: NewPool()})
 	require.NoError(t, err)
 

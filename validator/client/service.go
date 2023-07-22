@@ -2,8 +2,6 @@ package client
 
 import (
 	"context"
-	beaconChainClientFactory "github.com/cyyber/qrysm/v4/validator/client/beacon-chain-client-factory"
-	validatorClientFactory "github.com/cyyber/qrysm/v4/validator/client/validator-client-factory"
 	"strings"
 	"time"
 
@@ -16,9 +14,11 @@ import (
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/validator/accounts/wallet"
+	beaconChainClientFactory "github.com/cyyber/qrysm/v4/validator/client/beacon-chain-client-factory"
 	"github.com/cyyber/qrysm/v4/validator/client/iface"
 	nodeClientFactory "github.com/cyyber/qrysm/v4/validator/client/node-client-factory"
 	slasherClientFactory "github.com/cyyber/qrysm/v4/validator/client/slasher-client-factory"
+	validatorClientFactory "github.com/cyyber/qrysm/v4/validator/client/validator-client-factory"
 	"github.com/cyyber/qrysm/v4/validator/db"
 	"github.com/cyyber/qrysm/v4/validator/graffiti"
 	validatorHelpers "github.com/cyyber/qrysm/v4/validator/helpers"
@@ -188,14 +188,6 @@ func (v *ValidatorService) Start() {
 		return
 	}
 
-	// checks db if proposer settings exist if none is provided.
-	if v.proposerSettings == nil {
-		settings, err := v.db.ProposerSettings(v.ctx)
-		if err == nil {
-			v.proposerSettings = settings
-		}
-	}
-
 	validatorClient := validatorClientFactory.NewValidatorClient(v.conn)
 	beaconClient := beaconChainClientFactory.NewBeaconChainClient(v.conn)
 
@@ -283,15 +275,13 @@ func (v *ValidatorService) ProposerSettings() *validatorserviceconfig.ProposerSe
 
 // SetProposerSettings sets the proposer settings on the validator service as well as the underlying validator
 func (v *ValidatorService) SetProposerSettings(ctx context.Context, settings *validatorserviceconfig.ProposerSettings) error {
-	if v.db == nil {
-		return errors.New("db is not set")
-	}
-	if err := v.db.SaveProposerSettings(ctx, settings); err != nil {
-		return err
-	}
+	// validator service proposer settings is only used for pass through from node -> validator service -> validator.
+	// in memory use of proposer settings happens on validator.
 	v.proposerSettings = settings
-	v.validator.SetProposerSettings(settings)
-	return nil
+
+	// passes settings down to be updated in database and saved in memory.
+	// updates to validator porposer settings will be in the validator object and not validator service.
+	return v.validator.SetProposerSettings(ctx, settings)
 }
 
 // ConstructDialOptions constructs a list of grpc dial options
