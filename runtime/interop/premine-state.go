@@ -339,7 +339,7 @@ func (s *PremineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 	switch s.Version {
 	case version.Phase0:
 		body = &ethpb.BeaconBlockBody{
-			RandaoReveal: make([]byte, 96),
+			RandaoReveal: make([]byte, dilithium2.CryptoBytes),
 			Eth1Data: &ethpb.Eth1Data{
 				DepositRoot: make([]byte, 32),
 				BlockHash:   make([]byte, 32),
@@ -348,7 +348,7 @@ func (s *PremineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 		}
 	case version.Altair:
 		body = &ethpb.BeaconBlockBodyAltair{
-			RandaoReveal: make([]byte, 96),
+			RandaoReveal: make([]byte, dilithium2.CryptoBytes),
 			Eth1Data: &ethpb.Eth1Data{
 				DepositRoot: make([]byte, 32),
 				BlockHash:   make([]byte, 32),
@@ -361,7 +361,7 @@ func (s *PremineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 		}
 	case version.Bellatrix:
 		body = &ethpb.BeaconBlockBodyBellatrix{
-			RandaoReveal: make([]byte, 96),
+			RandaoReveal: make([]byte, dilithium2.CryptoBytes),
 			Eth1Data: &ethpb.Eth1Data{
 				DepositRoot: make([]byte, 32),
 				BlockHash:   make([]byte, 32),
@@ -385,7 +385,7 @@ func (s *PremineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 		}
 	case version.Capella:
 		body = &ethpb.BeaconBlockBodyCapella{
-			RandaoReveal: make([]byte, 96),
+			RandaoReveal: make([]byte, dilithium2.CryptoBytes),
 			Eth1Data: &ethpb.Eth1Data{
 				DepositRoot: make([]byte, 32),
 				BlockHash:   make([]byte, 32),

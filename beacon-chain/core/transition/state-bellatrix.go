@@ -193,7 +193,7 @@ func OptimizedGenesisBeaconStateBellatrix(genesisTime uint64, preState state.Bea
 	}
 
 	bodyRoot, err := (&ethpb.BeaconBlockBodyBellatrix{
-		RandaoReveal: make([]byte, 96),
+		RandaoReveal: make([]byte, dilithium2.CryptoBytes),
 		Eth1Data: &ethpb.Eth1Data{
 			DepositRoot: make([]byte, 32),
 			BlockHash:   make([]byte, 32),

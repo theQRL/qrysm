@@ -23,6 +23,7 @@ import (
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/go-bitfield"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // DeterministicGenesisStateAltair returns a genesis state in hard fork 1 format made using the deterministic deposits.
@@ -180,7 +181,7 @@ func buildGenesisBeaconState(genesisTime uint64, preState state.BeaconState, eth
 
 	var scBits [fieldparams.SyncAggregateSyncCommitteeBytesLength]byte
 	bodyRoot, err := (&ethpb.BeaconBlockBodyAltair{
-		RandaoReveal: make([]byte, 96),
+		RandaoReveal: make([]byte, dilithium2.CryptoBytes),
 		Eth1Data: &ethpb.Eth1Data{
 			DepositRoot: make([]byte, fieldparams.RootLength),
 			BlockHash:   make([]byte, 32),
@@ -252,7 +253,7 @@ func NewBeaconBlockAltair() *ethpb.SignedBeaconBlockAltair {
 			ParentRoot: make([]byte, fieldparams.RootLength),
 			StateRoot:  make([]byte, fieldparams.RootLength),
 			Body: &ethpb.BeaconBlockBodyAltair{
-				RandaoReveal: make([]byte, 96),
+				RandaoReveal: make([]byte, dilithium2.CryptoBytes),
 				Eth1Data: &ethpb.Eth1Data{
 					DepositRoot: make([]byte, fieldparams.RootLength),
 					BlockHash:   make([]byte, 32),
