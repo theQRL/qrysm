@@ -2,11 +2,11 @@ package scorers
 
 import (
 	"context"
-	"github.com/cyyber/qrysm/v4/config/features"
 	"math"
 	"time"
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/peerdata"
+	"github.com/cyyber/qrysm/v4/config/features"
 	"github.com/libp2p/go-libp2p/core/peer"
 )
 

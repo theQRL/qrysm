@@ -11,6 +11,7 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
 	dbtest "github.com/cyyber/qrysm/v4/beacon-chain/db/testing"
+	"github.com/cyyber/qrysm/v4/beacon-chain/execution"
 	doublylinkedtree "github.com/cyyber/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
 	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers"
 	p2ptest "github.com/cyyber/qrysm/v4/beacon-chain/p2p/testing"
@@ -196,6 +197,7 @@ func TestRegularSyncBeaconBlockSubscriber_ExecutionEngineTimesOut(t *testing.T) 
 				FinalizedCheckPoint: &ethpb.Checkpoint{
 					Epoch: 0,
 				},
+				ReceiveBlockMockErr: execution.ErrHTTPTimeout,
 			},
 			clock:    startup.NewClock(time.Unix(0, 0), [32]byte{}),
 			stateGen: stategen.New(db, fcs),

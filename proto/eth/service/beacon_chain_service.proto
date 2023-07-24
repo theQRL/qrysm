@@ -446,4 +446,3 @@ service BeaconChain {
     option (google.api.http) = {get: "/internal/eth/v1/config/deposit_contract"};
   }
 }
-

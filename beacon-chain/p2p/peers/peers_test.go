@@ -1,11 +1,11 @@
 package peers_test
 
 import (
-	"github.com/cyyber/qrysm/v4/config/features"
 	"io"
 	"testing"
 
 	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/cyyber/qrysm/v4/config/features"
 	"github.com/sirupsen/logrus"
 )
 

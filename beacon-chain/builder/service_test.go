@@ -2,7 +2,6 @@ package builder
 
 import (
 	"context"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"testing"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func Test_NewServiceWithBuilder(t *testing.T) {

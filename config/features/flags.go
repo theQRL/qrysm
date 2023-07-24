@@ -211,6 +211,7 @@ var BeaconChainFlags = append(deprecatedBeaconFlags, append(deprecatedFlags, []c
 	aggregateSecondInterval,
 	aggregateThirdInterval,
 	disableResourceManager,
+	DisableRegistrationCache,
 	aggregateParallel,
 }...)...)
 

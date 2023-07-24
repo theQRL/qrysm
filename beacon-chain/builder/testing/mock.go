@@ -2,6 +2,7 @@ package testing
 
 import (
 	"context"
+
 	"github.com/cyyber/qrysm/v4/api/client/builder"
 	"github.com/cyyber/qrysm/v4/beacon-chain/cache"
 	"github.com/cyyber/qrysm/v4/beacon-chain/db"

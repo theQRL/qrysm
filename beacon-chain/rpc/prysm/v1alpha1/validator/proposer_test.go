@@ -2,7 +2,6 @@ package validator
 
 import (
 	"context"
-	"github.com/cyyber/qrysm/v4/encoding/ssz"
 	"math/big"
 	"testing"
 	"time"
@@ -39,6 +38,7 @@ import (
 	"github.com/cyyber/qrysm/v4/container/trie"
 	"github.com/cyyber/qrysm/v4/crypto/bls"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
+	"github.com/cyyber/qrysm/v4/encoding/ssz"
 	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation"

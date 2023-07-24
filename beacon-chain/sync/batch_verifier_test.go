@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/util"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -16,23 +16,23 @@ func TestValidateWithBatchVerifier(t *testing.T) {
 	assert.NoError(t, err)
 	sig := keys[0].Sign(make([]byte, 32))
 	badSig := keys[1].Sign(make([]byte, 32))
-	validSet := &bls.SignatureBatch{
+	validSet := &dilithium.SignatureBatch{
 		Messages:     [][32]byte{{}},
-		PublicKeys:   []bls.PublicKey{keys[0].PublicKey()},
+		PublicKeys:   [][]dilithium.PublicKey{{keys[0].PublicKey()}},
 		Signatures:   [][]byte{sig.Marshal()},
 		Descriptions: []string{signing.UnknownSignature},
 	}
-	invalidSet := &bls.SignatureBatch{
+	invalidSet := &dilithium.SignatureBatch{
 		Messages:     [][32]byte{{}},
-		PublicKeys:   []bls.PublicKey{keys[0].PublicKey()},
+		PublicKeys:   [][]dilithium.PublicKey{{keys[0].PublicKey()}},
 		Signatures:   [][]byte{badSig.Marshal()},
 		Descriptions: []string{signing.UnknownSignature},
 	}
 	tests := []struct {
 		name          string
 		message       string
-		set           *bls.SignatureBatch
-		preFilledSets []*bls.SignatureBatch
+		set           *dilithium.SignatureBatch
+		preFilledSets []*dilithium.SignatureBatch
 		want          pubsub.ValidationResult
 	}{
 		{
@@ -51,14 +51,14 @@ func TestValidateWithBatchVerifier(t *testing.T) {
 			name:          "invalid set in routine with valid set",
 			message:       "random",
 			set:           validSet,
-			preFilledSets: []*bls.SignatureBatch{invalidSet},
+			preFilledSets: []*dilithium.SignatureBatch{invalidSet},
 			want:          pubsub.ValidationAccept,
 		},
 		{
 			name:          "valid set in routine with invalid set",
 			message:       "random",
 			set:           invalidSet,
-			preFilledSets: []*bls.SignatureBatch{validSet},
+			preFilledSets: []*dilithium.SignatureBatch{validSet},
 			want:          pubsub.ValidationReject,
 		},
 	}

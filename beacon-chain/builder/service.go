@@ -2,12 +2,12 @@ package builder
 
 import (
 	"context"
-	"github.com/cyyber/qrysm/v4/beacon-chain/cache"
 	"reflect"
 	"time"
 
 	"github.com/cyyber/qrysm/v4/api/client/builder"
 	"github.com/cyyber/qrysm/v4/beacon-chain/blockchain"
+	"github.com/cyyber/qrysm/v4/beacon-chain/cache"
 	"github.com/cyyber/qrysm/v4/beacon-chain/db"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"

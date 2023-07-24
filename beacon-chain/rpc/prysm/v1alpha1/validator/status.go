@@ -3,8 +3,8 @@ package validator
 import (
 	"context"
 	"errors"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
 
+	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/time"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"

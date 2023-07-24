@@ -2,7 +2,6 @@ package state_native
 
 import (
 	"fmt"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
@@ -10,6 +9,7 @@ import (
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/pkg/errors"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // ValidatorIndexOutOfRangeError represents an error scenario where a validator does not exist

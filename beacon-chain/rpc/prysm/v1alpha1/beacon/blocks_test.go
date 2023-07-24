@@ -3,7 +3,6 @@ package beacon
 import (
 	"context"
 	"fmt"
-	mockSync "github.com/cyyber/qrysm/v4/beacon-chain/sync/initial-sync/testing"
 	"strconv"
 	"testing"
 
@@ -13,6 +12,7 @@ import (
 	statefeed "github.com/cyyber/qrysm/v4/beacon-chain/core/feed/state"
 	dbTest "github.com/cyyber/qrysm/v4/beacon-chain/db/testing"
 	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
+	mockSync "github.com/cyyber/qrysm/v4/beacon-chain/sync/initial-sync/testing"
 	"github.com/cyyber/qrysm/v4/config/features"
 	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/cyyber/qrysm/v4/config/params"

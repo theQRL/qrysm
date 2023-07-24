@@ -3,7 +3,6 @@ package p2p
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"github.com/libp2p/go-libp2p/p2p/muxer/mplex"
 	"net"
 
 	"github.com/cyyber/qrysm/v4/config/features"
@@ -12,6 +11,7 @@ import (
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/p2p/muxer/mplex"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	ma "github.com/multiformats/go-multiaddr"

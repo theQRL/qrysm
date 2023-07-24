@@ -196,7 +196,7 @@ func (BeaconBlock) Copy() (interfaces.ReadOnlyBeaconBlock, error) {
 
 type BeaconBlockBody struct{}
 
-func (BeaconBlockBody) RandaoReveal() [dilithium2.CryptoPublicKeyBytes]byte {
+func (BeaconBlockBody) RandaoReveal() [dilithium2.CryptoBytes]byte {
 	panic("implement me")
 }
 

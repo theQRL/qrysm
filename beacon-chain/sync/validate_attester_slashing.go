@@ -80,7 +80,6 @@ func (s *Service) validateAttesterSlashing(ctx context.Context, pid peer.ID, msg
 
 // Returns true if the node has already received a valid attester slashing with the attesting indices.
 func (s *Service) hasSeenAttesterSlashingIndices(slashableIndices []uint64) bool {
-
 	s.seenAttesterSlashingLock.RLock()
 	defer s.seenAttesterSlashingLock.RUnlock()
 

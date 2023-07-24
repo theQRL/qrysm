@@ -2,6 +2,7 @@ package util
 
 import (
 	"context"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"sync"
 	"testing"
 
@@ -30,7 +31,7 @@ var t *trie.SparseMerkleTrie
 // account is key n and the withdrawal account is key n+1.  As such,
 // if all secret keys for n validators are required then numDeposits
 // should be n+1.
-func DeterministicDepositsAndKeys(numDeposits uint64) ([]*ethpb.Deposit, []bls.SecretKey, error) {
+func DeterministicDepositsAndKeys(numDeposits uint64) ([]*ethpb.Deposit, []dilithium.DilithiumKey, error) {
 	resetCache()
 	lock.Lock()
 	defer lock.Unlock()

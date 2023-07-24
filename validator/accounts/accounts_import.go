@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -14,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/cyyber/qrysm/v4/crypto/dilithium"
+	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/cyyber/qrysm/v4/io/file"
 	"github.com/cyyber/qrysm/v4/io/prompt"
 	ethpbservice "github.com/cyyber/qrysm/v4/proto/eth/service"

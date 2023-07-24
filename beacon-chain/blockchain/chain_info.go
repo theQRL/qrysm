@@ -3,11 +3,11 @@ package blockchain
 import (
 	"bytes"
 	"context"
-	forkchoicetypes "github.com/cyyber/qrysm/v4/beacon-chain/forkchoice/types"
 	"time"
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
 	doublylinkedtree "github.com/cyyber/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
+	forkchoicetypes "github.com/cyyber/qrysm/v4/beacon-chain/forkchoice/types"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"

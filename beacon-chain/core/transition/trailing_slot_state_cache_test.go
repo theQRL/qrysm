@@ -2,11 +2,11 @@ package transition_test
 
 import (
 	"context"
-	"github.com/cyyber/qrysm/v4/testing/assert"
 	"testing"
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/transition"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
 )

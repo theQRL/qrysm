@@ -298,6 +298,7 @@ func Test_processQueuedAttestations_MultipleChunkIndices(t *testing.T) {
 			HeadStateFetcher:        mockChain,
 			AttestationStateFetcher: mockChain,
 			SlashingPoolInserter:    &slashingsmock.PoolMock{},
+			ClockWaiter:             startup.NewClockSynchronizer(),
 		})
 	require.NoError(t, err)
 	s.genesisTime = genesisTime

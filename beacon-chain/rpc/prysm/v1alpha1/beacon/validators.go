@@ -3,7 +3,6 @@ package beacon
 import (
 	"context"
 	"fmt"
-	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/core"
 	"sort"
 	"strconv"
 
@@ -14,6 +13,7 @@ import (
 	coreTime "github.com/cyyber/qrysm/v4/beacon-chain/core/time"
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/transition"
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/validators"
+	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/core"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	"github.com/cyyber/qrysm/v4/cmd"
 	"github.com/cyyber/qrysm/v4/config/params"

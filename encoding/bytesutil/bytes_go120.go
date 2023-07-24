@@ -40,6 +40,13 @@ func ToBytes2592(x []byte) [2592]byte {
 	return [2592]byte(PadTo(x, 2592))
 }
 
+// ToBytes4595 is a convenience method for converting a byte slice to a fix
+// sized 4595 byte array. This method will truncate the input if it is larger
+// than 4595 bytes.
+func ToBytes4595(x []byte) [4595]byte {
+	return [4595]byte(PadTo(x, 4595))
+}
+
 // ToBytes64 is a convenience method for converting a byte slice to a fix
 // sized 64 byte array. This method will truncate the input if it is larger
 // than 64 bytes.

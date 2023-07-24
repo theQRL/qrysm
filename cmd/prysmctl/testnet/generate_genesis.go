@@ -273,6 +273,7 @@ func generateGenesis(ctx context.Context) (state.BeaconState, error) {
 	} else {
 		gen = interop.GethTestnetGenesis(f.GenesisTime, params.BeaconConfig())
 	}
+
 	if f.GethGenesisJsonOut != "" {
 		gbytes, err := json.MarshalIndent(gen, "", "\t")
 		if err != nil {
