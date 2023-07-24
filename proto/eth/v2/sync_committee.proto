@@ -30,8 +30,8 @@ message SubmitSyncCommitteeSignaturesRequest {
 
 // SyncCommittee serves as committees to facilitate light client syncing to beacon chain.
 message SyncCommittee {
-  repeated bytes pubkeys = 1  [(ethereum.eth.ext.ssz_size) = "sync_committee_bits.size,48"];
-  bytes aggregate_pubkey = 2 [(ethereum.eth.ext.ssz_size) = "48"];
+  repeated bytes pubkeys = 1  [(ethereum.eth.ext.ssz_size) = "sync_committee_bits.size,2592"];
+  bytes aggregate_pubkey = 2 [(ethereum.eth.ext.ssz_size) = "1327104"];
 }
 
 message SubmitPoolSyncCommitteeSignatures {
@@ -50,7 +50,7 @@ message SyncCommitteeMessage {
   uint64 validator_index = 3 [(ethereum.eth.ext.cast_type) = "github.com/cyyber/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
 
   // Signature by the validator over the block root of `slot`.
-  bytes signature = 4 [(ethereum.eth.ext.ssz_size) = "96"];
+  bytes signature = 4 [(ethereum.eth.ext.ssz_size) = "4595"];
 }
 
 message StateSyncCommitteesRequest {
