@@ -111,7 +111,7 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	MinValidatorWithdrawabilityDelay: 256,
 	ShardCommitteePeriod:             256,
 	MinEpochsToInactivityPenalty:     4,
-	Eth1FollowDistance:               2048,
+	Eth1FollowDistance:               0,
 
 	// Fork choice algorithm constants.
 	ProposerScoreBoost:              40,
