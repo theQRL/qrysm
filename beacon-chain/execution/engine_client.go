@@ -555,8 +555,10 @@ func (s *Service) ReconstructFullBlock(
 	// If the payload header has a block hash of 0x0, it means we are pre-merge and should
 	// simply return the block with an empty execution payload.
 	if bytes.Equal(header.BlockHash(), params.BeaconConfig().ZeroHash[:]) {
-		payload := buildEmptyExecutionPayload()
-		return blocks.BuildSignedBeaconBlockFromExecutionPayload(blindedBlock, payload)
+		if blindedBlock.Version() == version.Bellatrix {
+			return blocks.BuildSignedBeaconBlockFromExecutionPayload(blindedBlock, buildEmptyExecutionPayload())
+		}
+		return blocks.BuildSignedBeaconBlockFromExecutionPayload(blindedBlock, buildEmptyExecutionPayloadCapella())
 	}
 
 	executionBlockHash := common.BytesToHash(header.BlockHash())
@@ -649,7 +651,12 @@ func (s *Service) ReconstructFullBellatrixBlockBatch(
 	// For blocks that are pre-merge we simply reconstruct them via an empty
 	// execution payload.
 	for _, realIdx := range zeroExecPayloads {
-		payload := buildEmptyExecutionPayload()
+		var payload interface{}
+		if blindedBlocks[realIdx].Version() == version.Bellatrix {
+			payload = buildEmptyExecutionPayload()
+		} else {
+			payload = buildEmptyExecutionPayloadCapella()
+		}
 		fullBlock, err := blocks.BuildSignedBeaconBlockFromExecutionPayload(blindedBlocks[realIdx], payload)
 		if err != nil {
 			return nil, err
@@ -808,6 +815,21 @@ func tDStringToUint256(td string) (*uint256.Int, error) {
 
 func buildEmptyExecutionPayload() *pb.ExecutionPayload {
 	return &pb.ExecutionPayload{
+		ParentHash:    make([]byte, fieldparams.RootLength),
+		FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
+		StateRoot:     make([]byte, fieldparams.RootLength),
+		ReceiptsRoot:  make([]byte, fieldparams.RootLength),
+		LogsBloom:     make([]byte, fieldparams.LogsBloomLength),
+		PrevRandao:    make([]byte, fieldparams.RootLength),
+		BaseFeePerGas: make([]byte, fieldparams.RootLength),
+		BlockHash:     make([]byte, fieldparams.RootLength),
+		Transactions:  make([][]byte, 0),
+		ExtraData:     make([]byte, 0),
+	}
+}
+
+func buildEmptyExecutionPayloadCapella() *pb.ExecutionPayloadCapella {
+	return &pb.ExecutionPayloadCapella{
 		ParentHash:    make([]byte, fieldparams.RootLength),
 		FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 		StateRoot:     make([]byte, fieldparams.RootLength),
