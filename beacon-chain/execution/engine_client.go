@@ -555,10 +555,13 @@ func (s *Service) ReconstructFullBlock(
 	// If the payload header has a block hash of 0x0, it means we are pre-merge and should
 	// simply return the block with an empty execution payload.
 	if bytes.Equal(header.BlockHash(), params.BeaconConfig().ZeroHash[:]) {
+		var payload interface{}
 		if blindedBlock.Version() == version.Bellatrix {
-			return blocks.BuildSignedBeaconBlockFromExecutionPayload(blindedBlock, buildEmptyExecutionPayload())
+			payload = buildEmptyExecutionPayload()
+		} else {
+			payload = buildEmptyExecutionPayloadCapella()
 		}
-		return blocks.BuildSignedBeaconBlockFromExecutionPayload(blindedBlock, buildEmptyExecutionPayloadCapella())
+		return blocks.BuildSignedBeaconBlockFromExecutionPayload(blindedBlock, payload)
 	}
 
 	executionBlockHash := common.BytesToHash(header.BlockHash())
