@@ -4,11 +4,12 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-
 	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-qrllib/common"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/term"
+	"syscall"
 )
 
 var (
@@ -17,7 +18,6 @@ var (
 		NumValidators       uint64
 		Folder              string
 		ChainName           string
-		KeystorePassword    string
 		ExecutionAddress    string
 	}{}
 	log = logrus.WithField("prefix", "deposit")
@@ -38,7 +38,7 @@ var Commands = []*cli.Command{
 				Name:        "validator-start-index",
 				Usage:       "",
 				Destination: &newSeedFlags.ValidatorStartIndex,
-				Required:    true,
+				Value:       0,
 			},
 			&cli.Uint64Flag{
 				Name:        "num-validators",
@@ -50,19 +50,13 @@ var Commands = []*cli.Command{
 				Name:        "folder",
 				Usage:       "",
 				Destination: &newSeedFlags.Folder,
-				Required:    true,
+				Value:       "validators_keys",
 			},
 			&cli.StringFlag{
 				Name:        "chain-name",
 				Usage:       "",
 				Destination: &newSeedFlags.ChainName,
 				Value:       "betanet",
-			},
-			&cli.StringFlag{
-				Name:        "keystore-password",
-				Usage:       "",
-				Destination: &newSeedFlags.KeystorePassword,
-				Required:    true,
 			},
 			&cli.StringFlag{
 				Name:        "execution-address",
@@ -83,9 +77,26 @@ func cliActionNewSeed(cliCtx *cli.Context) error {
 		return fmt.Errorf("failed to generate random seed for Dilithium address: %v", err)
 	}
 
+	fmt.Println("Create a password that secures your validator keystore(s). " +
+		"You will need to re-enter this to decrypt them when you setup your Zond validators.")
+	keystorePassword, err := term.ReadPassword(syscall.Stdin)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Re-enter password ")
+	reEnterKeystorePassword, err := term.ReadPassword(syscall.Stdin)
+	if err != nil {
+		return err
+	}
+
+	if string(keystorePassword) != string(reEnterKeystorePassword) {
+		return fmt.Errorf("password mismatch")
+	}
+
 	stakingdeposit.GenerateKeys(newSeedFlags.ValidatorStartIndex,
 		newSeedFlags.NumValidators, hex.EncodeToString(seed[:]), newSeedFlags.Folder,
-		newSeedFlags.ChainName, newSeedFlags.KeystorePassword, newSeedFlags.ExecutionAddress)
+		newSeedFlags.ChainName, string(keystorePassword), newSeedFlags.ExecutionAddress)
 
 	return nil
 }
