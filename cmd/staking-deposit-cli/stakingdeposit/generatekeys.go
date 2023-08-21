@@ -23,7 +23,7 @@ func GenerateKeys(validatorStartIndex, numValidators uint64,
 		panic(fmt.Errorf("cannot find chain settings for %s", chain))
 	}
 	if _, err := os.Stat(folder); os.IsNotExist(err) {
-		err := os.MkdirAll(folder, 0664)
+		err := os.MkdirAll(folder, 0775)
 		if err != nil {
 			panic(fmt.Errorf("folder doesn't exist. reason: %v", err))
 		}
