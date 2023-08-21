@@ -7,14 +7,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/theQRL/go-qrllib/common"
-	"github.com/theQRL/go-qrllib/dilithium"
-	"golang.org/x/crypto/sha3"
 	"io"
 	"os"
 	"reflect"
 	"runtime"
+
+	"github.com/google/uuid"
+	"github.com/theQRL/go-qrllib/common"
+	"github.com/theQRL/go-qrllib/dilithium"
+	"golang.org/x/crypto/sha3"
 )
 
 type Keystore struct {

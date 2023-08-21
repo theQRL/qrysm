@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"os"
 	"reflect"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 func GenerateKeys(validatorStartIndex, numValidators uint64,

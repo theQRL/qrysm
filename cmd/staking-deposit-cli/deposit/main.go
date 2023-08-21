@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/deposit/existingseed"
-	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/deposit/newseed"
 	"os"
 
+	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/deposit/existingseed"
+	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/deposit/newseed"
 	"github.com/urfave/cli/v2"
 )
 
