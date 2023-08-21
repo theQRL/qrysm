@@ -101,13 +101,13 @@ func NewKeystoreFromFile(path string) *Keystore {
 
 func Encrypt(seed [common.SeedSize]uint8, password, path string, salt, aesIV []byte) (*Keystore, error) {
 	if salt == nil {
-		salt = make([]uint8, 256)
+		salt = make([]uint8, 32)
 		if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 			return nil, err
 		}
 	}
 	if aesIV == nil {
-		aesIV = make([]uint8, 128)
+		aesIV = make([]uint8, 16)
 		if _, err := io.ReadFull(rand.Reader, aesIV); err != nil {
 			return nil, err
 		}
