@@ -5,6 +5,7 @@ import (
 
 	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/deposit/existingseed"
 	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/deposit/newseed"
+	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
 
@@ -16,7 +17,7 @@ func main() {
 	}
 	err := app.Run(os.Args)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 
