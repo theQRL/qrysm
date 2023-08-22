@@ -22,7 +22,7 @@ type DepositData struct {
 	CLIVersion  string `json:"deposit_cli_version"`
 }
 
-func NewDatumData(c *Credential) (*DepositData, error) {
+func NewDepositData(c *Credential) (*DepositData, error) {
 	binSigningSeed := misc.StrSeedToBinSeed(c.signingSeed)
 	depositKey, err := dilithium.SecretKeyFromBytes(binSigningSeed[:])
 	if err != nil {
