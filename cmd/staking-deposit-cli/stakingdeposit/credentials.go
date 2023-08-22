@@ -30,7 +30,7 @@ func (c *Credentials) ExportKeystores(password, folder string) ([]string, error)
 func (c *Credentials) ExportDepositDataJSON(folder string) (string, error) {
 	var depositDataList []*DepositData
 	for _, credential := range c.credentials {
-		depositData, err := NewDatumData(credential)
+		depositData, err := NewDepositData(credential)
 		if err != nil {
 			return "", err
 		}
