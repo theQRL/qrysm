@@ -50,7 +50,7 @@ var Commands = []*cli.Command{
 				Name:        "folder",
 				Usage:       "",
 				Destination: &newSeedFlags.Folder,
-				Value:       "validators_keys",
+				Value:       "validator_keys",
 			},
 			&cli.StringFlag{
 				Name:        "chain-name",
