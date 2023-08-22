@@ -60,7 +60,7 @@ func VerifyDepositDataJSON(fileFolder string, credentials []*Credential) bool {
 	}
 
 	var depositDataList []*DepositData
-	if err := json.Unmarshal(data, depositDataList); err != nil {
+	if err := json.Unmarshal(data, &depositDataList); err != nil {
 		panic(fmt.Errorf("failed to unmarshal data to []*DepositData from file %s | reason %v ",
 			fileFolder, err))
 	}
