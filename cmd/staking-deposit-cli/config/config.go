@@ -3,8 +3,6 @@ package config
 import (
 	"encoding/hex"
 	"fmt"
-
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 )
 
 const BETANET = "betanet"
@@ -38,7 +36,6 @@ func GetConfig() *Config {
 				GenesisValidatorRoot: ToHex(""),
 			},
 		},
-		DomainDeposit: bytesutil.Uint32ToBytes4(0x03000000),
 	}
 	return c
 }

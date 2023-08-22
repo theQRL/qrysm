@@ -35,7 +35,7 @@ func NewDepositData(c *Credential) (*DepositData, error) {
 		return nil, err
 	}
 
-	depositData, dataRoot, err := deposit.DepositInput(depositKey, withdrawalKey, c.amount)
+	depositData, dataRoot, err := deposit.DepositInput(depositKey, withdrawalKey, c.amount, c.chainSetting.GenesisForkVersion)
 	if err != nil {
 		return nil, err
 	}

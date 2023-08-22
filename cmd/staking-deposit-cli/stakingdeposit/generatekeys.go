@@ -123,8 +123,8 @@ func validateDeposit(depositData *DepositData, credential *Credential) bool {
 	}
 	domain, err := signing.ComputeDomain(
 		params.BeaconConfig().DomainDeposit,
-		nil, /*forkVersion*/
-		nil, /*genesisValidatorsRoot*/
+		config.ToHex(depositData.ForkVersion), /*forkVersion*/
+		nil,                                   /*genesisValidatorsRoot*/
 	)
 	signingData := &ethpb.SigningData{
 		ObjectRoot: root[:],
