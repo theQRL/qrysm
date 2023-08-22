@@ -48,19 +48,29 @@ func (k *Keystore) Save(fileFolder string) error {
 }
 
 func (k *Keystore) Decrypt(password string) []byte {
-	salt, ok := k.Crypto.kdf.params["salt"]
+	salt, ok := k.Crypto.KDF.Params["salt"]
 	if !ok {
-		panic("salt not found in kdf params")
+		panic("salt not found in KDF Params")
 	}
-	decryptionKey, err := passwordToDecryptionKey(password, salt.([]byte))
+	binSalt, err := hex.DecodeString(salt.(string))
+	if err != nil {
+		panic("failed to decode salt from string to bytes")
+	}
+	decryptionKey, err := passwordToDecryptionKey(password, binSalt)
 	if err != nil {
 		panic(fmt.Errorf("passwordToDecryptionKey | reason %v", err))
 	}
 
-	checksum := CheckSumDecryptionKeyAndMessage(decryptionKey[16:32], k.Crypto.cipher.message)
-	if !reflect.DeepEqual(checksum[:], k.Crypto.checksum.message) {
+	binCipherMessage, err := hex.DecodeString(k.Crypto.Cipher.Message)
+	if err != nil {
+		panic("failed to decode message from string to bytes")
+	}
+
+	checksum := CheckSumDecryptionKeyAndMessage(decryptionKey[16:32], binCipherMessage)
+	strChecksum := hex.EncodeToString(checksum[:])
+	if !reflect.DeepEqual(strChecksum, k.Crypto.Checksum.Message) {
 		panic(fmt.Errorf("checksum check failed | expected %s | found %s",
-			checksum, k.Crypto.checksum.message))
+			strChecksum, k.Crypto.Checksum.Message))
 	}
 
 	block, err := aes.NewCipher(decryptionKey[:16])
@@ -69,21 +79,31 @@ func (k *Keystore) Decrypt(password string) []byte {
 	}
 
 	var seed [common.SeedSize]uint8
-	cipherText := make([]byte, aes.BlockSize+len(seed))
-
-	aesIV, ok := k.Crypto.kdf.params["iv"]
+	cipherText, err := hex.DecodeString(k.Crypto.Cipher.Message)
+	if err != nil {
+		panic("failed to decode cipherText from string to bytes")
+	}
+	if len(cipherText) != aes.BlockSize+len(seed) {
+		panic(fmt.Errorf("invalid cipher text length | expected length %d | actual length %d",
+			aes.BlockSize+len(seed), len(cipherText)))
+	}
+	aesIV, ok := k.Crypto.Cipher.Params["iv"]
 	if !ok {
-		panic(fmt.Errorf("aesIV not found in kdf params"))
+		panic(fmt.Errorf("aesIV not found in Cipher Params"))
+	}
+	binAESIV, err := hex.DecodeString(aesIV.(string))
+	if err != nil {
+		panic("failed to decode aesIV from string to bytes")
 	}
 
-	stream := cipher.NewCTR(block, aesIV.([]byte))
+	stream := cipher.NewCTR(block, binAESIV)
 	stream.XORKeyStream(seed[:], cipherText[aes.BlockSize:])
 
 	return seed[:]
 }
 
 func NewKeystoreFromJSON(data []uint8) *Keystore {
-	k := &Keystore{}
+	k := NewEmptyKeystore()
 	err := json.Unmarshal(data, k)
 	if err != nil {
 		panic(fmt.Errorf("failed to marshal keystore to json | reason %v", err))
@@ -97,6 +117,12 @@ func NewKeystoreFromFile(path string) *Keystore {
 		panic(fmt.Errorf("cannot read file %s | reason %v", path, err))
 	}
 	return NewKeystoreFromJSON(data)
+}
+
+func NewEmptyKeystore() *Keystore {
+	k := &Keystore{}
+	k.Crypto = NewEmptyKeystoreCrypto()
+	return k
 }
 
 func Encrypt(seed [common.SeedSize]uint8, password, path string, salt, aesIV []byte) (*Keystore, error) {
@@ -124,7 +150,6 @@ func Encrypt(seed [common.SeedSize]uint8, password, path string, salt, aesIV []b
 	}
 
 	cipherText := make([]byte, aes.BlockSize+len(seed))
-
 	stream := cipher.NewCTR(block, aesIV)
 	stream.XORKeyStream(cipherText[aes.BlockSize:], seed[:])
 
