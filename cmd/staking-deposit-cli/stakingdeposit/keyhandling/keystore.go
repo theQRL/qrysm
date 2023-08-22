@@ -19,12 +19,12 @@ import (
 )
 
 type Keystore struct {
-	Crypto      *KeystoreCrypto
-	Description string
-	PubKey      string
-	Path        string
-	UUID        string
-	Version     string
+	Crypto      *KeystoreCrypto `json:"crypto"`
+	Description string          `json:"description"`
+	PubKey      string          `json:"pubkey"`
+	Path        string          `json:"path"`
+	UUID        string          `json:"uuid"`
+	Version     uint64          `json:"version"`
 }
 
 func (k *Keystore) ToJSON() []byte {
