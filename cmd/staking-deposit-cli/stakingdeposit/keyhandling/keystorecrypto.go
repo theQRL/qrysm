@@ -23,7 +23,8 @@ func NewKeystoreCrypto(salt, aesIV, cipherText, partialDecryptionKey []uint8) *K
 
 	return &KeystoreCrypto{
 		KDF: &KeystoreModule{
-			Params: map[string]interface{}{"salt": hex.EncodeToString(salt)},
+			Function: "custom",
+			Params:   map[string]interface{}{"salt": hex.EncodeToString(salt)},
 		},
 		Cipher: &KeystoreModule{
 			Function: "aes-128-ctr",
