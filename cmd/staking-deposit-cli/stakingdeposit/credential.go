@@ -42,7 +42,7 @@ func (c *Credential) SaveSigningKeystore(password string, folder string) (string
 func (c *Credential) VerifyKeystore(keystoreFileFolder, password string) bool {
 	savedKeystore := keyhandling.NewKeystoreFromFile(keystoreFileFolder)
 	seedBytes := savedKeystore.Decrypt(password)
-	return c.signingSeed == hex.EncodeToString(seedBytes)
+	return c.signingSeed == hex.EncodeToString(seedBytes[:])
 }
 
 func NewCredential(seed string, index, amount uint64,

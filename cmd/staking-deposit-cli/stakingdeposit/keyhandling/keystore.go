@@ -47,7 +47,7 @@ func (k *Keystore) Save(fileFolder string) error {
 	return nil
 }
 
-func (k *Keystore) Decrypt(password string) []byte {
+func (k *Keystore) Decrypt(password string) [common.SeedSize]byte {
 	salt, ok := k.Crypto.KDF.Params["salt"]
 	if !ok {
 		panic("salt not found in KDF Params")
@@ -83,9 +83,9 @@ func (k *Keystore) Decrypt(password string) []byte {
 	if err != nil {
 		panic("failed to decode cipherText from string to bytes")
 	}
-	if len(cipherText) != aes.BlockSize+len(seed) {
+	if len(cipherText) != len(seed) {
 		panic(fmt.Errorf("invalid cipher text length | expected length %d | actual length %d",
-			aes.BlockSize+len(seed), len(cipherText)))
+			len(seed), len(cipherText)))
 	}
 	aesIV, ok := k.Crypto.Cipher.Params["iv"]
 	if !ok {
@@ -97,9 +97,9 @@ func (k *Keystore) Decrypt(password string) []byte {
 	}
 
 	stream := cipher.NewCTR(block, binAESIV)
-	stream.XORKeyStream(seed[:], cipherText[aes.BlockSize:])
+	stream.XORKeyStream(seed[:], cipherText[:])
 
-	return seed[:]
+	return seed
 }
 
 func NewKeystoreFromJSON(data []uint8) *Keystore {
@@ -149,9 +149,9 @@ func Encrypt(seed [common.SeedSize]uint8, password, path string, salt, aesIV []b
 		return nil, err
 	}
 
-	cipherText := make([]byte, aes.BlockSize+len(seed))
+	cipherText := make([]byte, len(seed))
 	stream := cipher.NewCTR(block, aesIV)
-	stream.XORKeyStream(cipherText[aes.BlockSize:], seed[:])
+	stream.XORKeyStream(cipherText, seed[:])
 
 	d, err := dilithium.NewDilithiumFromSeed(seed)
 	if err != nil {
