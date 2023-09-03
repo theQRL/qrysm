@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/schollz/progressbar/v3"
 	"github.com/sirupsen/logrus"
-	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
+	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
 )
 
 // ImportKeystores into the local keymanager from an external source.
@@ -33,7 +33,7 @@ func (km *Keymanager) ImportKeystores(
 	if len(passwords) != len(keystores) {
 		return nil, ErrMismatchedNumPasswords
 	}
-	decryptor := keystorev4.New()
+	enc := keystorev4.New()
 	bar := initializeProgressBar(len(keystores), "Importing accounts...")
 	keys := map[string]string{}
 	statuses := make([]*ethpbservice.ImportedKeystoreStatus, len(keystores))
@@ -48,7 +48,7 @@ func (km *Keymanager) ImportKeystores(
 	for i := 0; i < len(keystores); i++ {
 		var privKeyBytes []byte
 		var pubKeyBytes []byte
-		privKeyBytes, pubKeyBytes, _, err = km.attemptDecryptKeystore(decryptor, keystores[i], passwords[i])
+		privKeyBytes, pubKeyBytes, _, err = km.attemptDecryptKeystore(enc, keystores[i], passwords[i])
 		if err != nil {
 			statuses[i] = &ethpbservice.ImportedKeystoreStatus{
 				Status:  ethpbservice.ImportedKeystoreStatus_ERROR,
