@@ -1,0 +1,25 @@
+load("@qrysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "credential.go",
+        "credentials.go",
+        "depositdata.go",
+        "generatekeys.go",
+    ],
+    importpath = "github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//beacon-chain/core/signing:go_default_library",
+        "//cmd/staking-deposit-cli/config:go_default_library",
+        "//cmd/staking-deposit-cli/misc:go_default_library",
+        "//cmd/staking-deposit-cli/stakingdeposit/keyhandling:go_default_library",
+        "//cmd/staking-deposit-cli/stakingdeposit/keyhandling/keyderivation:go_default_library",
+        "//config/params:go_default_library",
+        "//contracts/deposit:go_default_library",
+        "//crypto/dilithium:go_default_library",
+        "//proto/prysm/v1alpha1:go_default_library",
+        "@com_github_theqrl_go_qrllib//dilithium:go_default_library",
+    ],
+)

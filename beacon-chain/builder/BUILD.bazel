@@ -42,5 +42,6 @@ go_test(
         "//proto/prysm/v1alpha1:go_default_library",
         "//testing/assert:go_default_library",
         "//testing/require:go_default_library",
+        "@com_github_theqrl_go_qrllib//dilithium:go_default_library",
     ],
 )
