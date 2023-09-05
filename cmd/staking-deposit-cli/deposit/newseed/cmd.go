@@ -4,12 +4,13 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"syscall"
+
 	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-qrllib/common"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/term"
-	"syscall"
 )
 
 var (
