@@ -58,6 +58,28 @@ func (c *Credentials) VerifyKeystores(keystoreFileFolders []string, password str
 	return true
 }
 
+func (c *Credentials) ExportDilithiumToExecutionChangeJSON(folder string, validatorIndices []uint64) (string, error) {
+	var dilithiumToExecutionChangeDataList []*DilithiumToExecutionChangeData
+	for i, credential := range c.credentials {
+		dilithiumToExecutionChangeData := credential.GetDilithiumToExecutionChangeData(validatorIndices[i])
+		dilithiumToExecutionChangeDataList = append(dilithiumToExecutionChangeDataList, dilithiumToExecutionChangeData)
+	}
+
+	fileFolder := filepath.Join(folder, fmt.Sprintf("deposit_data-%d.json", time.Now().Unix()))
+	jsonDepositDataList, err := json.Marshal(dilithiumToExecutionChangeDataList)
+	if err != nil {
+		return "", err
+	}
+
+	if runtime.GOOS == "linux" {
+		err = os.WriteFile(fileFolder, jsonDepositDataList, 0440)
+		if err != nil {
+			return "", err
+		}
+	}
+	return fileFolder, err
+}
+
 func NewCredentialsFromSeed(seed string, numKeys uint64, amounts []uint64,
 	chainSettings *config.ChainSetting, startIndex uint64, hexZondWithdrawalAddress string) (*Credentials, error) {
 	credentials := &Credentials{
