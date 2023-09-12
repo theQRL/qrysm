@@ -5,6 +5,7 @@ import (
 	"github.com/cyyber/qrysm/v4/crypto/dilithium/dilithiumt"
 )
 
+// TODO (cyyber): Rename SecretKeyFromBytes to SecretKeyFromSeed
 func SecretKeyFromBytes(seed []byte) (DilithiumKey, error) {
 	return dilithiumt.SecretKeyFromBytes(seed)
 }

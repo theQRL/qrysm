@@ -7,19 +7,19 @@ import (
 	"github.com/cyyber/qrysm/v4/crypto/bls/common"
 	dilithiumCommon "github.com/cyyber/qrysm/v4/crypto/dilithium/common"
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-qrllib/dilithium"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 )
 
 // Signature used in the BLS signature scheme.
 type Signature struct {
-	s *[dilithium.CryptoBytes]uint8
+	s *[dilithium2.CryptoBytes]uint8
 }
 
 func SignatureFromBytes(sig []byte) (common.Signature, error) {
-	if len(sig) != dilithium.CryptoBytes {
-		return nil, fmt.Errorf("signature must be %d bytes", dilithium.CryptoBytes)
+	if len(sig) != dilithium2.CryptoBytes {
+		return nil, fmt.Errorf("signature must be %d bytes", dilithium2.CryptoBytes)
 	}
-	var signature [dilithium.CryptoBytes]uint8
+	var signature [dilithium2.CryptoBytes]uint8
 	copy(signature[:], sig)
 	return &Signature{s: &signature}, nil
 }
@@ -33,13 +33,13 @@ func MultipleSignaturesFromBytes(multiSigs [][]byte) ([]common.Signature, error)
 		return nil, fmt.Errorf("0 signatures provided to the method")
 	}
 	for _, s := range multiSigs {
-		if len(s) != dilithium.CryptoBytes {
-			return nil, fmt.Errorf("signature must be %d bytes", dilithium.CryptoBytes)
+		if len(s) != dilithium2.CryptoBytes {
+			return nil, fmt.Errorf("signature must be %d bytes", dilithium2.CryptoBytes)
 		}
 	}
 	wrappedSigs := make([]common.Signature, len(multiSigs))
 	for i, signature := range multiSigs {
-		var copiedSig [dilithium.CryptoBytes]uint8
+		var copiedSig [dilithium2.CryptoBytes]uint8
 		copy(copiedSig[:], signature)
 		wrappedSigs[i] = &Signature{s: &copiedSig}
 	}
@@ -47,7 +47,7 @@ func MultipleSignaturesFromBytes(multiSigs [][]byte) ([]common.Signature, error)
 }
 
 func (s *Signature) Verify(pubKey common.PublicKey, msg []byte) bool {
-	return dilithium.Verify(msg, *s.s, pubKey.(*PublicKey).p)
+	return dilithium2.Verify(msg, *s.s, pubKey.(*PublicKey).p)
 }
 
 func (s *Signature) AggregateVerify(pubKeys []common.PublicKey, msgs [][32]byte) bool {
@@ -78,11 +78,11 @@ func UnaggregatedSignatures(sigs []common.Signature) []byte {
 		return nil
 	}
 
-	unaggregatedSigns := make([]byte, dilithium.CryptoBytes*len(sigs))
+	unaggregatedSigns := make([]byte, dilithium2.CryptoBytes*len(sigs))
 	offset := 0
 	for i := 0; i < len(sigs); i++ {
-		copy(unaggregatedSigns[offset:offset+dilithium.CryptoBytes], sigs[i].Marshal())
-		offset += dilithium.CryptoBytes
+		copy(unaggregatedSigns[offset:offset+dilithium2.CryptoBytes], sigs[i].Marshal())
+		offset += dilithium2.CryptoBytes
 	}
 	return unaggregatedSigns
 }
@@ -109,8 +109,8 @@ func VerifyMultipleSignatures(sigs [][]byte, msgs [][32]byte, pubKeys [][]common
 
 	for i, _ := range sigs {
 		for pubKeyIndex, pubKey := range pubKeys[i] {
-			offset := pubKeyIndex * dilithium.CryptoBytes
-			sig := sigs[i][offset : offset+dilithium.CryptoBytes]
+			offset := pubKeyIndex * dilithium2.CryptoBytes
+			sig := sigs[i][offset : offset+dilithium2.CryptoBytes]
 			if ok, err := VerifySignature(sig, msgs[i], pubKey); !ok {
 				return ok, err
 			}
