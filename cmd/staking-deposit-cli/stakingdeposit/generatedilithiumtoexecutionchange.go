@@ -2,6 +2,7 @@ package stakingdeposit
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -78,6 +79,12 @@ func GenerateDilithiumToExecutionChange(dilithiumExecutionChangesFolder string,
 		panic(fmt.Errorf("new credentials from mnemonic failed. reason: %v", err))
 	}
 
+	for i, credential := range credentials.credentials {
+		if !ValidateDilithiumWithdrawalCredentialsMatching(dilithiumWithdrawalCredentialsList[i], credential) {
+			panic("dilithium withdrawal credential not matching")
+		}
+	}
+
 	dtecFile, err := credentials.ExportDilithiumToExecutionChangeJSON(dilithiumExecutionChangesFolder, validatorIndices)
 	if err != nil {
 		panic(fmt.Errorf("error in ExportDilithiumToExecutionChangeJSON %v", err))
@@ -103,7 +110,7 @@ func VerifyDilithiumToExecutionChangeJSON(fileFolder string,
 	}
 
 	for i, dilithiumToExecutionChange := range dilithiumToExecutionChangeDataList {
-		if !ValidateDilithiumToExchangeChange(dilithiumToExecutionChange,
+		if !ValidateDilithiumToExecutionChange(dilithiumToExecutionChange,
 			credentials.credentials[i], inputValidatorIndices[i], inputExecutionAddress, chainSetting) {
 			return false
 		}
@@ -112,7 +119,7 @@ func VerifyDilithiumToExecutionChangeJSON(fileFolder string,
 	return true
 }
 
-func ValidateDilithiumToExchangeChange(dilithiumToExecutionChange *DilithiumToExecutionChangeData,
+func ValidateDilithiumToExecutionChange(dilithiumToExecutionChange *DilithiumToExecutionChangeData,
 	credential *Credential, inputValidatorIndex uint64, inputExecutionAddress string, chainSetting *config.ChainSetting) bool {
 	validatorIndex := dilithiumToExecutionChange.Message.ValidatorIndex
 	fromDilithiumPubkey, err := dilithium.PublicKeyFromBytes(misc.DecodeHex(dilithiumToExecutionChange.Message.FromDilithiumPubkey))
@@ -168,4 +175,10 @@ func ValidateDilithiumToExchangeChange(dilithiumToExecutionChange *DilithiumToEx
 	}
 	sizedPK := misc.ToSizedDilithiumPublicKey(credential.WithdrawalPK())
 	return dilithium2.Verify(signingRoot[:], misc.ToSizedDilithiumSignature(signature.Marshal()), &sizedPK)
+}
+
+func ValidateDilithiumWithdrawalCredentialsMatching(dilithiumWithdrawalCredential string, credential *Credential) bool {
+	binDilithiumWithdrawalCredential := misc.DecodeHex(dilithiumWithdrawalCredential[2:])
+	sha256Hash := sha256.Sum256(credential.WithdrawalPK())
+	return bytes.Equal(binDilithiumWithdrawalCredential[1:], sha256Hash[1:])
 }
