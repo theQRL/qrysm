@@ -54,13 +54,6 @@ var Commands = []*cli.Command{
 				Destination: &generateDilithiumToExecutionChangeFlags.Seed,
 				Required:    true,
 			},
-			// TODO (cyyber) : Move seed password to prompt
-			&cli.StringFlag{
-				Name:        "seed-password",
-				Usage:       "",
-				Destination: &generateDilithiumToExecutionChangeFlags.SeedPassword,
-				Required:    true,
-			},
 			&cli.Uint64Flag{
 				Name:        "validator-start-index",
 				Usage:       "",
@@ -99,6 +92,7 @@ var Commands = []*cli.Command{
 }
 
 func cliActionGenerateDilithiumToExecutionChange(cliCtx *cli.Context) error {
+	// TODO (cyyber): Add flag value validation
 	stakingdeposit.GenerateDilithiumToExecutionChange(
 		generateDilithiumToExecutionChangeFlags.DilithiumToExecutionChangesFolder,
 		generateDilithiumToExecutionChangeFlags.Chain,
