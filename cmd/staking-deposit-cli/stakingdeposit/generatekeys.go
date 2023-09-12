@@ -25,7 +25,7 @@ func GenerateKeys(validatorStartIndex, numValidators uint64,
 	if _, err := os.Stat(folder); os.IsNotExist(err) {
 		err := os.MkdirAll(folder, 0775)
 		if err != nil {
-			panic(fmt.Errorf("folder doesn't exist. reason: %v", err))
+			panic(fmt.Errorf("cannot create folder. reason: %v", err))
 		}
 	}
 
@@ -101,6 +101,18 @@ func validateDeposit(depositData *DepositData, credential *Credential) bool {
 	}
 
 	if len(withdrawalCredentials) != 32 {
+		return false
+	}
+
+	zeroBytes11 := make([]uint8, 11)
+	if reflect.DeepEqual(withdrawalCredentials[:1], params.BeaconConfig().ZondAddressWithdrawalPrefixByte) {
+		if !reflect.DeepEqual(withdrawalCredentials[1:12], zeroBytes11) {
+			return false
+		}
+		if !reflect.DeepEqual(withdrawalCredentials[12:], credential.ZondWithdrawalAddress().Bytes()) {
+			return false
+		}
+	} else {
 		return false
 	}
 
