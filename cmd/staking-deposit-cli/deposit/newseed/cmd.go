@@ -63,7 +63,7 @@ var Commands = []*cli.Command{
 				Name:        "execution-address",
 				Usage:       "",
 				Destination: &newSeedFlags.ExecutionAddress,
-				Value:       "betanet",
+				Value:       "",
 			},
 		},
 	},
