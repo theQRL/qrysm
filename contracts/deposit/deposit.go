@@ -1,5 +1,5 @@
-// Package depositutil contains useful functions for dealing
-// with Ethereum deposit inputs.
+// Package deposit contains useful functions for dealing
+// with Zond deposit inputs.
 package deposit
 
 import (
@@ -76,7 +76,7 @@ func DepositInput(depositKey, withdrawalKey dilithium.DilithiumKey, amountInGwei
 // where withdrawal_credentials is of type bytes32.
 func WithdrawalCredentialsHash(withdrawalKey dilithium.DilithiumKey) []byte {
 	h := hash.Hash(withdrawalKey.PublicKey().Marshal())
-	return append([]byte{params.BeaconConfig().BLSWithdrawalPrefixByte}, h[1:]...)[:32]
+	return append([]byte{params.BeaconConfig().DilithiumWithdrawalPrefixByte}, h[1:]...)[:32]
 }
 
 // VerifyDepositSignature verifies the correctness of Eth1 deposit BLS signature
