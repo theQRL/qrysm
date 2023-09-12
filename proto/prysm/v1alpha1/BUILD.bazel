@@ -119,6 +119,8 @@ ssz_gen_marshal(
         "Withdrawal",
         "BLSToExecutionChange",
         "SignedBLSToExecutionChange",
+        "DilithiumToExecutionChange",
+        "SignedDilithiumToExecutionChange",
         "BuilderBid",
         "BuilderBidCapella",
     ],
