@@ -96,7 +96,9 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 
 	// Initial value constants.
 	BLSWithdrawalPrefixByte:         byte(0),
+	DilithiumWithdrawalPrefixByte:   byte(0), // TODO (cyyber): Change it to 1 & check if we should add XMSSWithdrawalPrefixByte
 	ETH1AddressWithdrawalPrefixByte: byte(1),
+	ZondAddressWithdrawalPrefixByte: byte(1), // TODO (cyyber): Change it to 0
 	ZeroHash:                        [32]byte{},
 
 	// Time parameter constants.
@@ -175,6 +177,7 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	DomainApplicationMask:             bytesutil.Uint32ToBytes4(0x00000001),
 	DomainApplicationBuilder:          bytesutil.Uint32ToBytes4(0x00000001),
 	DomainBLSToExecutionChange:        bytesutil.Uint32ToBytes4(0x0A000000),
+	DomainDilithiumToExecutionChange:  bytesutil.Uint32ToBytes4(0x0A000000),
 
 	// Prysm constants.
 	GweiPerEth:                     1000000000,
