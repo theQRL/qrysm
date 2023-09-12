@@ -14,9 +14,9 @@ type Config struct {
 }
 
 type ChainSetting struct {
-	Name                 string
-	GenesisForkVersion   []byte
-	GenesisValidatorRoot []byte
+	Name                  string
+	GenesisForkVersion    []byte
+	GenesisValidatorsRoot []byte
 }
 
 func ToHex(data string) []byte {
@@ -31,9 +31,9 @@ func GetConfig() *Config {
 	c := &Config{
 		ChainSettings: map[string]*ChainSetting{
 			BETANET: {
-				Name:                 BETANET,
-				GenesisForkVersion:   ToHex("20000089"),
-				GenesisValidatorRoot: ToHex(""),
+				Name:                  BETANET,
+				GenesisForkVersion:    ToHex("20000089"),
+				GenesisValidatorsRoot: ToHex(""),
 			},
 		},
 	}
