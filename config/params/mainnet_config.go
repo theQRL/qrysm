@@ -160,7 +160,7 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	MaxDeposits:                      16,
 	MaxVoluntaryExits:                16,
 	MaxWithdrawalsPerPayload:         16,
-	MaxBlsToExecutionChanges:         16,
+	MaxDilithiumToExecutionChanges:   16,
 	MaxValidatorsPerWithdrawalsSweep: 16384,
 
 	// BLS domain values.
@@ -176,7 +176,6 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	DomainContributionAndProof:        bytesutil.Uint32ToBytes4(0x09000000),
 	DomainApplicationMask:             bytesutil.Uint32ToBytes4(0x00000001),
 	DomainApplicationBuilder:          bytesutil.Uint32ToBytes4(0x00000001),
-	DomainBLSToExecutionChange:        bytesutil.Uint32ToBytes4(0x0A000000),
 	DomainDilithiumToExecutionChange:  bytesutil.Uint32ToBytes4(0x0A000000),
 
 	// Prysm constants.

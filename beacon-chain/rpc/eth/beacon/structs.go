@@ -128,17 +128,17 @@ type BeaconBlockCapella struct {
 }
 
 type BeaconBlockBodyCapella struct {
-	RandaoReveal          string                       `json:"randao_reveal" validate:"required"`
-	Eth1Data              Eth1Data                     `json:"eth1_data" validate:"required"`
-	Graffiti              string                       `json:"graffiti" validate:"required"`
-	ProposerSlashings     []ProposerSlashing           `json:"proposer_slashings" validate:"required"`
-	AttesterSlashings     []AttesterSlashing           `json:"attester_slashings" validate:"required"`
-	Attestations          []Attestation                `json:"attestations" validate:"required"`
-	Deposits              []Deposit                    `json:"deposits" validate:"required"`
-	VoluntaryExits        []SignedVoluntaryExit        `json:"voluntary_exits" validate:"required"`
-	SyncAggregate         SyncAggregate                `json:"sync_aggregate" validate:"required"`
-	ExecutionPayload      ExecutionPayloadCapella      `json:"execution_payload" validate:"required"`
-	BlsToExecutionChanges []SignedBlsToExecutionChange `json:"bls_to_execution_changes" validate:"required"`
+	RandaoReveal                string                             `json:"randao_reveal" validate:"required"`
+	Eth1Data                    Eth1Data                           `json:"eth1_data" validate:"required"`
+	Graffiti                    string                             `json:"graffiti" validate:"required"`
+	ProposerSlashings           []ProposerSlashing                 `json:"proposer_slashings" validate:"required"`
+	AttesterSlashings           []AttesterSlashing                 `json:"attester_slashings" validate:"required"`
+	Attestations                []Attestation                      `json:"attestations" validate:"required"`
+	Deposits                    []Deposit                          `json:"deposits" validate:"required"`
+	VoluntaryExits              []SignedVoluntaryExit              `json:"voluntary_exits" validate:"required"`
+	SyncAggregate               SyncAggregate                      `json:"sync_aggregate" validate:"required"`
+	ExecutionPayload            ExecutionPayloadCapella            `json:"execution_payload" validate:"required"`
+	DilithiumToExecutionChanges []SignedDilithiumToExecutionChange `json:"dilithium_to_execution_changes" validate:"required"`
 }
 
 type SignedBlindedBeaconBlockCapella struct {
@@ -155,17 +155,17 @@ type BlindedBeaconBlockCapella struct {
 }
 
 type BlindedBeaconBlockBodyCapella struct {
-	RandaoReveal           string                        `json:"randao_reveal" validate:"required"`
-	Eth1Data               Eth1Data                      `json:"eth1_data" validate:"required"`
-	Graffiti               string                        `json:"graffiti" validate:"required"`
-	ProposerSlashings      []ProposerSlashing            `json:"proposer_slashings" validate:"required"`
-	AttesterSlashings      []AttesterSlashing            `json:"attester_slashings" validate:"required"`
-	Attestations           []Attestation                 `json:"attestations" validate:"required"`
-	Deposits               []Deposit                     `json:"deposits" validate:"required"`
-	VoluntaryExits         []SignedVoluntaryExit         `json:"voluntary_exits" validate:"required"`
-	SyncAggregate          SyncAggregate                 `json:"sync_aggregate" validate:"required"`
-	ExecutionPayloadHeader ExecutionPayloadHeaderCapella `json:"execution_payload_header" validate:"required"`
-	BlsToExecutionChanges  []SignedBlsToExecutionChange  `json:"bls_to_execution_changes" validate:"required"`
+	RandaoReveal                string                             `json:"randao_reveal" validate:"required"`
+	Eth1Data                    Eth1Data                           `json:"eth1_data" validate:"required"`
+	Graffiti                    string                             `json:"graffiti" validate:"required"`
+	ProposerSlashings           []ProposerSlashing                 `json:"proposer_slashings" validate:"required"`
+	AttesterSlashings           []AttesterSlashing                 `json:"attester_slashings" validate:"required"`
+	Attestations                []Attestation                      `json:"attestations" validate:"required"`
+	Deposits                    []Deposit                          `json:"deposits" validate:"required"`
+	VoluntaryExits              []SignedVoluntaryExit              `json:"voluntary_exits" validate:"required"`
+	SyncAggregate               SyncAggregate                      `json:"sync_aggregate" validate:"required"`
+	ExecutionPayloadHeader      ExecutionPayloadHeaderCapella      `json:"execution_payload_header" validate:"required"`
+	DilithiumToExecutionChanges []SignedDilithiumToExecutionChange `json:"dilithium_to_execution_changes" validate:"required"`
 }
 
 type Eth1Data struct {
@@ -326,15 +326,15 @@ type Withdrawal struct {
 	Amount           string `json:"amount" validate:"required"`
 }
 
-type SignedBlsToExecutionChange struct {
-	Message   BlsToExecutionChange `json:"message" validate:"required"`
-	Signature string               `json:"signature" validate:"required"`
+type SignedDilithiumToExecutionChange struct {
+	Message   DilithiumToExecutionChange `json:"message" validate:"required"`
+	Signature string                     `json:"signature" validate:"required"`
 }
 
-type BlsToExecutionChange struct {
-	ValidatorIndex     string `json:"validator_index" validate:"required"`
-	FromBlsPubkey      string `json:"from_bls_pubkey" validate:"required"`
-	ToExecutionAddress string `json:"to_execution_address" validate:"required"`
+type DilithiumToExecutionChange struct {
+	ValidatorIndex      string `json:"validator_index" validate:"required"`
+	FromDilithiumPubkey string `json:"from_dilithium_pubkey" validate:"required"`
+	ToExecutionAddress  string `json:"to_execution_address" validate:"required"`
 }
 
 func (b *SignedBeaconBlock) ToGeneric() (*eth.GenericSignedBeaconBlock, error) {
@@ -1025,7 +1025,7 @@ func (b *SignedBeaconBlockCapella) ToGeneric() (*eth.GenericSignedBeaconBlock, e
 			Amount:         amount,
 		}
 	}
-	blsChanges, err := convertBlsChanges(b.Message.Body.BlsToExecutionChanges)
+	dilithiumChanges, err := convertDilithiumChanges(b.Message.Body.DilithiumToExecutionChanges)
 	if err != nil {
 		return nil, err
 	}
@@ -1070,7 +1070,7 @@ func (b *SignedBeaconBlockCapella) ToGeneric() (*eth.GenericSignedBeaconBlock, e
 					Transactions:  txs,
 					Withdrawals:   withdrawals,
 				},
-				BlsToExecutionChanges: blsChanges,
+				DilithiumToExecutionChanges: dilithiumChanges,
 			},
 		},
 		Signature: sig,
@@ -1207,7 +1207,7 @@ func (b *SignedBlindedBeaconBlockCapella) ToGeneric() (*eth.GenericSignedBeaconB
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Message.Body.ExecutionPayloadHeader.WithdrawalsRoot")
 	}
-	blsChanges, err := convertBlsChanges(b.Message.Body.BlsToExecutionChanges)
+	dilithiumChanges, err := convertDilithiumChanges(b.Message.Body.DilithiumToExecutionChanges)
 	if err != nil {
 		return nil, err
 	}
@@ -1252,7 +1252,7 @@ func (b *SignedBlindedBeaconBlockCapella) ToGeneric() (*eth.GenericSignedBeaconB
 					TransactionsRoot: payloadTxsRoot,
 					WithdrawalsRoot:  payloadWithdrawalsRoot,
 				},
-				BlsToExecutionChanges: blsChanges,
+				DilithiumToExecutionChanges: dilithiumChanges,
 			},
 		},
 		Signature: sig,
@@ -1602,34 +1602,34 @@ func convertExits(src []SignedVoluntaryExit) ([]*eth.SignedVoluntaryExit, error)
 	return exits, nil
 }
 
-func convertBlsChanges(src []SignedBlsToExecutionChange) ([]*eth.SignedBLSToExecutionChange, error) {
+func convertDilithiumChanges(src []SignedDilithiumToExecutionChange) ([]*eth.SignedDilithiumToExecutionChange, error) {
 	if src == nil {
-		return nil, errors.New("nil b.Message.Body.BlsToExecutionChanges")
+		return nil, errors.New("nil b.Message.Body.DilithiumToExecutionChanges")
 	}
 
-	changes := make([]*eth.SignedBLSToExecutionChange, len(src))
+	changes := make([]*eth.SignedDilithiumToExecutionChange, len(src))
 	for i, ch := range src {
 		sig, err := hexutil.Decode(ch.Signature)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not decode b.Message.Body.BlsToExecutionChanges[%d].Signature", i)
+			return nil, errors.Wrapf(err, "could not decode b.Message.Body.DilithiumToExecutionChanges[%d].Signature", i)
 		}
 		index, err := strconv.ParseUint(ch.Message.ValidatorIndex, 10, 64)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not decode b.Message.Body.BlsToExecutionChanges[%d].Message.ValidatorIndex", i)
+			return nil, errors.Wrapf(err, "could not decode b.Message.Body.DilithiumToExecutionChanges[%d].Message.ValidatorIndex", i)
 		}
-		pubkey, err := hexutil.Decode(ch.Message.FromBlsPubkey)
+		pubkey, err := hexutil.Decode(ch.Message.FromDilithiumPubkey)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not decode b.Message.Body.BlsToExecutionChanges[%d].Message.FromBlsPubkey", i)
+			return nil, errors.Wrapf(err, "could not decode b.Message.Body.DilithiumToExecutionChanges[%d].Message.FromDilithiumPubkey", i)
 		}
 		address, err := hexutil.Decode(ch.Message.ToExecutionAddress)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not decode b.Message.Body.BlsToExecutionChanges[%d].Message.ToExecutionAddress", i)
+			return nil, errors.Wrapf(err, "could not decode b.Message.Body.DilithiumToExecutionChanges[%d].Message.ToExecutionAddress", i)
 		}
-		changes[i] = &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
-				ValidatorIndex:     primitives.ValidatorIndex(index),
-				FromBlsPubkey:      pubkey,
-				ToExecutionAddress: address,
+		changes[i] = &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
+				ValidatorIndex:      primitives.ValidatorIndex(index),
+				FromDilithiumPubkey: pubkey,
+				ToExecutionAddress:  address,
 			},
 			Signature: sig,
 		}

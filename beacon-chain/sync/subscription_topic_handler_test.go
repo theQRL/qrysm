@@ -60,7 +60,7 @@ func TestSubTopicHandler_CRUD(t *testing.T) {
 	h.addTopic(topic, new(pubsub.Subscription))
 	assert.Equal(t, true, h.topicExists(topic))
 
-	topic = fmt.Sprintf(p2p.BlsToExecutionChangeSubnetTopicFormat, digest) + enc.ProtocolSuffix()
+	topic = fmt.Sprintf(p2p.DilithiumToExecutionChangeSubnetTopicFormat, digest) + enc.ProtocolSuffix()
 	h.addTopic(topic, new(pubsub.Subscription))
 	assert.Equal(t, true, h.topicExists(topic))
 
@@ -95,7 +95,7 @@ func TestSubTopicHandler_CRUD(t *testing.T) {
 	h.removeTopic(topic)
 	assert.Equal(t, false, h.topicExists(topic))
 
-	topic = fmt.Sprintf(p2p.BlsToExecutionChangeSubnetTopicFormat, digest) + enc.ProtocolSuffix()
+	topic = fmt.Sprintf(p2p.DilithiumToExecutionChangeSubnetTopicFormat, digest) + enc.ProtocolSuffix()
 	h.removeTopic(topic)
 	assert.Equal(t, false, h.topicExists(topic))
 

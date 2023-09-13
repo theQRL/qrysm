@@ -1,6 +1,7 @@
 package blstoexec
 
 import (
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"testing"
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
@@ -8,7 +9,6 @@ import (
 	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
 	"github.com/cyyber/qrysm/v4/crypto/bls/common"
 	"github.com/cyyber/qrysm/v4/crypto/hash"
 	"github.com/cyyber/qrysm/v4/encoding/ssz"
@@ -17,41 +17,41 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/require"
 )
 
-func TestPendingBLSToExecChanges(t *testing.T) {
+func TestPendingDilithiumToExecChanges(t *testing.T) {
 	t.Run("empty pool", func(t *testing.T) {
 		pool := NewPool()
-		changes, err := pool.PendingBLSToExecChanges()
+		changes, err := pool.PendingDilithiumToExecChanges()
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(changes))
 	})
 	t.Run("non-empty pool", func(t *testing.T) {
 		pool := NewPool()
-		pool.InsertBLSToExecChange(&eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		pool.InsertDilithiumToExecChange(&eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: 0,
 			},
 		})
-		pool.InsertBLSToExecChange(&eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		pool.InsertDilithiumToExecChange(&eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: 1,
 			},
 		})
-		changes, err := pool.PendingBLSToExecChanges()
+		changes, err := pool.PendingDilithiumToExecChanges()
 		require.NoError(t, err)
 		assert.Equal(t, 2, len(changes))
 	})
 }
 
-func TestBLSToExecChangesForInclusion(t *testing.T) {
+func TestDilithiumToExecChangesForInclusion(t *testing.T) {
 	spb := &eth.BeaconStateCapella{
 		Fork: &eth.Fork{
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 		},
 	}
-	numValidators := 2 * params.BeaconConfig().MaxBlsToExecutionChanges
+	numValidators := 2 * params.BeaconConfig().MaxDilithiumToExecutionChanges
 	validators := make([]*eth.Validator, numValidators)
-	blsChanges := make([]*eth.BLSToExecutionChange, numValidators)
+	dilithiumChanges := make([]*eth.DilithiumToExecutionChange, numValidators)
 	spb.Balances = make([]uint64, numValidators)
 	privKeys := make([]common.SecretKey, numValidators)
 	maxEffectiveBalance := params.BeaconConfig().MaxEffectiveBalance
@@ -62,34 +62,34 @@ func TestBLSToExecChangesForInclusion(t *testing.T) {
 		v.EffectiveBalance = maxEffectiveBalance
 		v.WithdrawableEpoch = params.BeaconConfig().FarFutureEpoch
 		v.WithdrawalCredentials = make([]byte, 32)
-		priv, err := bls.RandKey()
+		priv, err := dilithium.RandKey()
 		require.NoError(t, err)
 		privKeys[i] = priv
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &eth.BLSToExecutionChange{
-			ToExecutionAddress: executionAddress,
-			ValidatorIndex:     primitives.ValidatorIndex(i),
-			FromBlsPubkey:      pubkey,
+		message := &eth.DilithiumToExecutionChange{
+			ToExecutionAddress:  executionAddress,
+			ValidatorIndex:      primitives.ValidatorIndex(i),
+			FromDilithiumPubkey: pubkey,
 		}
 
 		hashFn := ssz.NewHasherFunc(hash.CustomSHA256Hasher())
 		digest := hashFn.Hash(pubkey)
-		digest[0] = params.BeaconConfig().BLSWithdrawalPrefixByte
+		digest[0] = params.BeaconConfig().DilithiumWithdrawalPrefixByte
 		copy(v.WithdrawalCredentials, digest[:])
 		validators[i] = v
-		blsChanges[i] = message
+		dilithiumChanges[i] = message
 	}
 	spb.Validators = validators
 	st, err := state_native.InitializeFromProtoCapella(spb)
 	require.NoError(t, err)
 
-	signedChanges := make([]*eth.SignedBLSToExecutionChange, numValidators)
-	for i, message := range blsChanges {
-		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainBLSToExecutionChange, privKeys[i])
+	signedChanges := make([]*eth.SignedDilithiumToExecutionChange, numValidators)
+	for i, message := range dilithiumChanges {
+		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
 		require.NoError(t, err)
 
-		signed := &eth.SignedBLSToExecutionChange{
+		signed := &eth.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
@@ -98,86 +98,86 @@ func TestBLSToExecChangesForInclusion(t *testing.T) {
 
 	t.Run("empty pool", func(t *testing.T) {
 		pool := NewPool()
-		changes, err := pool.BLSToExecChangesForInclusion(st)
+		changes, err := pool.DilithiumToExecChangesForInclusion(st)
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(changes))
 	})
-	t.Run("Less than MaxBlsToExecutionChanges in pool", func(t *testing.T) {
+	t.Run("Less than MaxDilithiumToExecutionChanges in pool", func(t *testing.T) {
 		pool := NewPool()
-		for i := uint64(0); i < params.BeaconConfig().MaxBlsToExecutionChanges-1; i++ {
-			pool.InsertBLSToExecChange(signedChanges[i])
+		for i := uint64(0); i < params.BeaconConfig().MaxDilithiumToExecutionChanges-1; i++ {
+			pool.InsertDilithiumToExecChange(signedChanges[i])
 		}
-		changes, err := pool.BLSToExecChangesForInclusion(st)
+		changes, err := pool.DilithiumToExecChangesForInclusion(st)
 		require.NoError(t, err)
-		assert.Equal(t, int(params.BeaconConfig().MaxBlsToExecutionChanges)-1, len(changes))
+		assert.Equal(t, int(params.BeaconConfig().MaxDilithiumToExecutionChanges)-1, len(changes))
 	})
-	t.Run("MaxBlsToExecutionChanges in pool", func(t *testing.T) {
+	t.Run("MaxDilithiumToExecutionChanges in pool", func(t *testing.T) {
 		pool := NewPool()
-		for i := uint64(0); i < params.BeaconConfig().MaxBlsToExecutionChanges; i++ {
-			pool.InsertBLSToExecChange(signedChanges[i])
+		for i := uint64(0); i < params.BeaconConfig().MaxDilithiumToExecutionChanges; i++ {
+			pool.InsertDilithiumToExecChange(signedChanges[i])
 		}
-		changes, err := pool.BLSToExecChangesForInclusion(st)
+		changes, err := pool.DilithiumToExecChangesForInclusion(st)
 		require.NoError(t, err)
-		assert.Equal(t, int(params.BeaconConfig().MaxBlsToExecutionChanges), len(changes))
+		assert.Equal(t, int(params.BeaconConfig().MaxDilithiumToExecutionChanges), len(changes))
 	})
-	t.Run("more than MaxBlsToExecutionChanges in pool", func(t *testing.T) {
+	t.Run("more than MaxDilithiumToExecutionChanges in pool", func(t *testing.T) {
 		pool := NewPool()
 		for i := uint64(0); i < numValidators; i++ {
-			pool.InsertBLSToExecChange(signedChanges[i])
+			pool.InsertDilithiumToExecChange(signedChanges[i])
 		}
-		changes, err := pool.BLSToExecChangesForInclusion(st)
+		changes, err := pool.DilithiumToExecChangesForInclusion(st)
 		require.NoError(t, err)
 		// We want FIFO semantics, which means validator with index 16 shouldn't be returned
-		assert.Equal(t, int(params.BeaconConfig().MaxBlsToExecutionChanges), len(changes))
+		assert.Equal(t, int(params.BeaconConfig().MaxDilithiumToExecutionChanges), len(changes))
 		for _, ch := range changes {
 			assert.NotEqual(t, primitives.ValidatorIndex(15), ch.Message.ValidatorIndex)
 		}
 	})
 	t.Run("One Bad change", func(t *testing.T) {
 		pool := NewPool()
-		saveByte := signedChanges[1].Message.FromBlsPubkey[5]
-		signedChanges[1].Message.FromBlsPubkey[5] = 0xff
+		saveByte := signedChanges[1].Message.FromDilithiumPubkey[5]
+		signedChanges[1].Message.FromDilithiumPubkey[5] = 0xff
 		for i := uint64(0); i < numValidators; i++ {
-			pool.InsertBLSToExecChange(signedChanges[i])
+			pool.InsertDilithiumToExecChange(signedChanges[i])
 		}
-		changes, err := pool.BLSToExecChangesForInclusion(st)
+		changes, err := pool.DilithiumToExecChangesForInclusion(st)
 		require.NoError(t, err)
-		assert.Equal(t, int(params.BeaconConfig().MaxBlsToExecutionChanges), len(changes))
+		assert.Equal(t, int(params.BeaconConfig().MaxDilithiumToExecutionChanges), len(changes))
 		assert.Equal(t, primitives.ValidatorIndex(30), changes[1].Message.ValidatorIndex)
-		signedChanges[1].Message.FromBlsPubkey[5] = saveByte
+		signedChanges[1].Message.FromDilithiumPubkey[5] = saveByte
 	})
 	t.Run("One Bad Signature", func(t *testing.T) {
 		pool := NewPool()
 		copy(signedChanges[30].Signature, signedChanges[31].Signature)
 		for i := uint64(0); i < numValidators; i++ {
-			pool.InsertBLSToExecChange(signedChanges[i])
+			pool.InsertDilithiumToExecChange(signedChanges[i])
 		}
-		changes, err := pool.BLSToExecChangesForInclusion(st)
+		changes, err := pool.DilithiumToExecChangesForInclusion(st)
 		require.NoError(t, err)
-		assert.Equal(t, int(params.BeaconConfig().MaxBlsToExecutionChanges), len(changes))
+		assert.Equal(t, int(params.BeaconConfig().MaxDilithiumToExecutionChanges), len(changes))
 		assert.Equal(t, primitives.ValidatorIndex(30), changes[1].Message.ValidatorIndex)
 	})
 	t.Run("invalid change not returned", func(t *testing.T) {
 		pool := NewPool()
-		saveByte := signedChanges[1].Message.FromBlsPubkey[5]
-		signedChanges[1].Message.FromBlsPubkey[5] = 0xff
-		pool.InsertBLSToExecChange(signedChanges[1])
-		changes, err := pool.BLSToExecChangesForInclusion(st)
+		saveByte := signedChanges[1].Message.FromDilithiumPubkey[5]
+		signedChanges[1].Message.FromDilithiumPubkey[5] = 0xff
+		pool.InsertDilithiumToExecChange(signedChanges[1])
+		changes, err := pool.DilithiumToExecChangesForInclusion(st)
 		require.NoError(t, err)
 		assert.Equal(t, 0, len(changes))
-		signedChanges[1].Message.FromBlsPubkey[5] = saveByte
+		signedChanges[1].Message.FromDilithiumPubkey[5] = saveByte
 	})
 }
 
-func TestInsertBLSToExecChange(t *testing.T) {
+func TestInsertDilithiumToExecChange(t *testing.T) {
 	t.Run("empty pool", func(t *testing.T) {
 		pool := NewPool()
-		change := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		change := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(0),
 			},
 		}
-		pool.InsertBLSToExecChange(change)
+		pool.InsertDilithiumToExecChange(change)
 		require.Equal(t, 1, pool.pending.Len())
 		require.Equal(t, 1, len(pool.m))
 		n, ok := pool.m[0]
@@ -188,18 +188,18 @@ func TestInsertBLSToExecChange(t *testing.T) {
 	})
 	t.Run("item in pool", func(t *testing.T) {
 		pool := NewPool()
-		old := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		old := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(0),
 			},
 		}
-		change := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		change := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(1),
 			},
 		}
-		pool.InsertBLSToExecChange(old)
-		pool.InsertBLSToExecChange(change)
+		pool.InsertDilithiumToExecChange(old)
+		pool.InsertDilithiumToExecChange(change)
 		require.Equal(t, 2, pool.pending.Len())
 		require.Equal(t, 2, len(pool.m))
 		n, ok := pool.m[0]
@@ -215,20 +215,20 @@ func TestInsertBLSToExecChange(t *testing.T) {
 	})
 	t.Run("validator index already exists", func(t *testing.T) {
 		pool := NewPool()
-		old := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		old := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(0),
 			},
 			Signature: []byte("old"),
 		}
-		change := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		change := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(0),
 			},
 			Signature: []byte("change"),
 		}
-		pool.InsertBLSToExecChange(old)
-		pool.InsertBLSToExecChange(change)
+		pool.InsertDilithiumToExecChange(old)
+		pool.InsertDilithiumToExecChange(change)
 		assert.Equal(t, 1, pool.pending.Len())
 		require.Equal(t, 1, len(pool.m))
 		n, ok := pool.m[0]
@@ -242,11 +242,11 @@ func TestInsertBLSToExecChange(t *testing.T) {
 func TestMarkIncluded(t *testing.T) {
 	t.Run("one element in pool", func(t *testing.T) {
 		pool := NewPool()
-		change := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		change := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(0),
 			}}
-		pool.InsertBLSToExecChange(change)
+		pool.InsertDilithiumToExecChange(change)
 		pool.MarkIncluded(change)
 		assert.Equal(t, 0, pool.pending.Len())
 		_, ok := pool.m[0]
@@ -254,21 +254,21 @@ func TestMarkIncluded(t *testing.T) {
 	})
 	t.Run("first of multiple elements", func(t *testing.T) {
 		pool := NewPool()
-		first := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		first := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(0),
 			}}
-		second := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		second := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(1),
 			}}
-		third := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		third := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(2),
 			}}
-		pool.InsertBLSToExecChange(first)
-		pool.InsertBLSToExecChange(second)
-		pool.InsertBLSToExecChange(third)
+		pool.InsertDilithiumToExecChange(first)
+		pool.InsertDilithiumToExecChange(second)
+		pool.InsertDilithiumToExecChange(third)
 		pool.MarkIncluded(first)
 		require.Equal(t, 2, pool.pending.Len())
 		_, ok := pool.m[0]
@@ -276,21 +276,21 @@ func TestMarkIncluded(t *testing.T) {
 	})
 	t.Run("last of multiple elements", func(t *testing.T) {
 		pool := NewPool()
-		first := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		first := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(0),
 			}}
-		second := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		second := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(1),
 			}}
-		third := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		third := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(2),
 			}}
-		pool.InsertBLSToExecChange(first)
-		pool.InsertBLSToExecChange(second)
-		pool.InsertBLSToExecChange(third)
+		pool.InsertDilithiumToExecChange(first)
+		pool.InsertDilithiumToExecChange(second)
+		pool.InsertDilithiumToExecChange(third)
 		pool.MarkIncluded(third)
 		require.Equal(t, 2, pool.pending.Len())
 		_, ok := pool.m[2]
@@ -298,21 +298,21 @@ func TestMarkIncluded(t *testing.T) {
 	})
 	t.Run("in the middle of multiple elements", func(t *testing.T) {
 		pool := NewPool()
-		first := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		first := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(0),
 			}}
-		second := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		second := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(1),
 			}}
-		third := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		third := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(2),
 			}}
-		pool.InsertBLSToExecChange(first)
-		pool.InsertBLSToExecChange(second)
-		pool.InsertBLSToExecChange(third)
+		pool.InsertDilithiumToExecChange(first)
+		pool.InsertDilithiumToExecChange(second)
+		pool.InsertDilithiumToExecChange(third)
 		pool.MarkIncluded(second)
 		require.Equal(t, 2, pool.pending.Len())
 		_, ok := pool.m[1]
@@ -320,20 +320,20 @@ func TestMarkIncluded(t *testing.T) {
 	})
 	t.Run("not in pool", func(t *testing.T) {
 		pool := NewPool()
-		first := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		first := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(0),
 			}}
-		second := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		second := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(1),
 			}}
-		change := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		change := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(2),
 			}}
-		pool.InsertBLSToExecChange(first)
-		pool.InsertBLSToExecChange(second)
+		pool.InsertDilithiumToExecChange(first)
+		pool.InsertDilithiumToExecChange(second)
 		pool.MarkIncluded(change)
 		require.Equal(t, 2, pool.pending.Len())
 		_, ok := pool.m[0]
@@ -352,30 +352,30 @@ func TestValidatorExists(t *testing.T) {
 	})
 	t.Run("validator added to pool", func(t *testing.T) {
 		pool := NewPool()
-		change := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		change := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(0),
 			}}
-		pool.InsertBLSToExecChange(change)
+		pool.InsertDilithiumToExecChange(change)
 		assert.Equal(t, true, pool.ValidatorExists(0))
 	})
 	t.Run("multiple validators added to pool", func(t *testing.T) {
 		pool := NewPool()
-		change := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		change := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(0),
 			}}
-		pool.InsertBLSToExecChange(change)
-		change = &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		pool.InsertDilithiumToExecChange(change)
+		change = &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(10),
 			}}
-		pool.InsertBLSToExecChange(change)
-		change = &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		pool.InsertDilithiumToExecChange(change)
+		change = &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(30),
 			}}
-		pool.InsertBLSToExecChange(change)
+		pool.InsertDilithiumToExecChange(change)
 
 		assert.Equal(t, true, pool.ValidatorExists(0))
 		assert.Equal(t, true, pool.ValidatorExists(10))
@@ -383,31 +383,31 @@ func TestValidatorExists(t *testing.T) {
 	})
 	t.Run("validator added and then removed", func(t *testing.T) {
 		pool := NewPool()
-		change := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		change := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(0),
 			}}
-		pool.InsertBLSToExecChange(change)
+		pool.InsertDilithiumToExecChange(change)
 		pool.MarkIncluded(change)
 		assert.Equal(t, false, pool.ValidatorExists(0))
 	})
 	t.Run("multiple validators added to pool and removed", func(t *testing.T) {
 		pool := NewPool()
-		firstChange := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		firstChange := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(0),
 			}}
-		pool.InsertBLSToExecChange(firstChange)
-		secondChange := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		pool.InsertDilithiumToExecChange(firstChange)
+		secondChange := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(10),
 			}}
-		pool.InsertBLSToExecChange(secondChange)
-		thirdChange := &eth.SignedBLSToExecutionChange{
-			Message: &eth.BLSToExecutionChange{
+		pool.InsertDilithiumToExecChange(secondChange)
+		thirdChange := &eth.SignedDilithiumToExecutionChange{
+			Message: &eth.DilithiumToExecutionChange{
 				ValidatorIndex: primitives.ValidatorIndex(30),
 			}}
-		pool.InsertBLSToExecChange(thirdChange)
+		pool.InsertDilithiumToExecChange(thirdChange)
 
 		pool.MarkIncluded(firstChange)
 		pool.MarkIncluded(thirdChange)
@@ -420,21 +420,21 @@ func TestValidatorExists(t *testing.T) {
 
 func TestPoolCycleMap(t *testing.T) {
 	pool := NewPool()
-	firstChange := &eth.SignedBLSToExecutionChange{
-		Message: &eth.BLSToExecutionChange{
+	firstChange := &eth.SignedDilithiumToExecutionChange{
+		Message: &eth.DilithiumToExecutionChange{
 			ValidatorIndex: primitives.ValidatorIndex(0),
 		}}
-	pool.InsertBLSToExecChange(firstChange)
-	secondChange := &eth.SignedBLSToExecutionChange{
-		Message: &eth.BLSToExecutionChange{
+	pool.InsertDilithiumToExecChange(firstChange)
+	secondChange := &eth.SignedDilithiumToExecutionChange{
+		Message: &eth.DilithiumToExecutionChange{
 			ValidatorIndex: primitives.ValidatorIndex(10),
 		}}
-	pool.InsertBLSToExecChange(secondChange)
-	thirdChange := &eth.SignedBLSToExecutionChange{
-		Message: &eth.BLSToExecutionChange{
+	pool.InsertDilithiumToExecChange(secondChange)
+	thirdChange := &eth.SignedDilithiumToExecutionChange{
+		Message: &eth.DilithiumToExecutionChange{
 			ValidatorIndex: primitives.ValidatorIndex(30),
 		}}
-	pool.InsertBLSToExecChange(thirdChange)
+	pool.InsertDilithiumToExecChange(thirdChange)
 
 	pool.cycleMap()
 	require.Equal(t, true, pool.ValidatorExists(0))

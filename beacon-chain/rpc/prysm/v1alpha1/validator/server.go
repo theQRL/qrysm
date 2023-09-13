@@ -72,7 +72,7 @@ type Server struct {
 	BeaconDB               db.HeadAccessDatabase
 	ExecutionEngineCaller  execution.EngineCaller
 	BlockBuilder           builder.BlockBuilder
-	BLSChangesPool         blstoexec.PoolManager
+	DilithiumChangesPool   blstoexec.PoolManager
 	ClockWaiter            startup.ClockWaiter
 }
 

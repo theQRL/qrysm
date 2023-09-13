@@ -20,8 +20,8 @@ const (
 	// SyncCommitteeContributionReceived is sent after a sync committee contribution object has been received.
 	SyncCommitteeContributionReceived
 
-	// BLSToExecutionChangeReceived is sent after a BLS to execution change object has been received from gossip or rpc.
-	BLSToExecutionChangeReceived
+	// DilithiumToExecutionChangeReceived is sent after a Dilithium to execution change object has been received from gossip or rpc.
+	DilithiumToExecutionChangeReceived
 )
 
 // UnAggregatedAttReceivedData is the data sent with UnaggregatedAttReceived events.
@@ -48,7 +48,7 @@ type SyncCommitteeContributionReceivedData struct {
 	Contribution *ethpb.SignedContributionAndProof
 }
 
-// BLSToExecutionChangeReceivedData is the data sent with BLSToExecutionChangeReceived events.
-type BLSToExecutionChangeReceivedData struct {
-	Change *ethpb.SignedBLSToExecutionChange
+// DilithiumToExecutionChangeReceivedData is the data sent with DilithiumToExecutionChangeReceived events.
+type DilithiumToExecutionChangeReceivedData struct {
+	Change *ethpb.SignedDilithiumToExecutionChange
 }

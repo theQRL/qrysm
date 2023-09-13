@@ -131,10 +131,10 @@ func unmarshalledSSZ(t *testing.T, serializedBytes []byte, folderName string) (i
 		obj = &ethpb.PowBlock{}
 	case "Withdrawal":
 		obj = &enginev1.Withdrawal{}
-	case "BLSToExecutionChange":
-		obj = &ethpb.BLSToExecutionChange{}
-	case "SignedBLSToExecutionChange":
-		obj = &ethpb.SignedBLSToExecutionChange{}
+	case "DilithiumToExecutionChange":
+		obj = &ethpb.DilithiumToExecutionChange{}
+	case "SignedDilithiumToExecutionChange":
+		obj = &ethpb.SignedDilithiumToExecutionChange{}
 	default:
 		return nil, errors.New("type not found")
 	}

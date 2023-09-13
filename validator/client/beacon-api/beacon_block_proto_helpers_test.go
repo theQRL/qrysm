@@ -1004,27 +1004,27 @@ func TestBeaconBlockProtoHelpers_ConvertWithdrawalsToProto(t *testing.T) {
 	}
 }
 
-func TestBeaconBlockProtoHelpers_ConvertBlsToExecutionChangesToProto(t *testing.T) {
+func TestBeaconBlockProtoHelpers_ConvertDilithiumToExecutionChangesToProto(t *testing.T) {
 	testCases := []struct {
 		name                 string
-		generateInput        func() []*apimiddleware.SignedBLSToExecutionChangeJson
-		expectedResult       []*ethpb.SignedBLSToExecutionChange
+		generateInput        func() []*apimiddleware.SignedDilithiumToExecutionChangeJson
+		expectedResult       []*ethpb.SignedDilithiumToExecutionChange
 		expectedErrorMessage string
 	}{
 		{
-			name:                 "nil bls to execution change",
-			expectedErrorMessage: "bls to execution change at index `0` is nil",
-			generateInput: func() []*apimiddleware.SignedBLSToExecutionChangeJson {
-				input := generateBlsToExecutionChanges()
+			name:                 "nil dilithium to execution change",
+			expectedErrorMessage: "dilithium to execution change at index `0` is nil",
+			generateInput: func() []*apimiddleware.SignedDilithiumToExecutionChangeJson {
+				input := generateDilithiumToExecutionChanges()
 				input[0] = nil
 				return input
 			},
 		},
 		{
-			name:                 "nil bls to execution change message",
-			expectedErrorMessage: "bls to execution change message at index `0` is nil",
-			generateInput: func() []*apimiddleware.SignedBLSToExecutionChangeJson {
-				input := generateBlsToExecutionChanges()
+			name:                 "nil dilithium to execution change message",
+			expectedErrorMessage: "dilithium to execution change message at index `0` is nil",
+			generateInput: func() []*apimiddleware.SignedDilithiumToExecutionChangeJson {
+				input := generateDilithiumToExecutionChanges()
 				input[0].Message = nil
 				return input
 			},
@@ -1032,26 +1032,26 @@ func TestBeaconBlockProtoHelpers_ConvertBlsToExecutionChangesToProto(t *testing.
 		{
 			name:                 "bad validator index",
 			expectedErrorMessage: "failed to decode validator index `foo`",
-			generateInput: func() []*apimiddleware.SignedBLSToExecutionChangeJson {
-				input := generateBlsToExecutionChanges()
+			generateInput: func() []*apimiddleware.SignedDilithiumToExecutionChangeJson {
+				input := generateDilithiumToExecutionChanges()
 				input[0].Message.ValidatorIndex = "foo"
 				return input
 			},
 		},
 		{
-			name:                 "bad from bls pubkey",
-			expectedErrorMessage: "failed to decode bls pubkey `bar`",
-			generateInput: func() []*apimiddleware.SignedBLSToExecutionChangeJson {
-				input := generateBlsToExecutionChanges()
-				input[0].Message.FromBLSPubkey = "bar"
+			name:                 "bad from dilithium pubkey",
+			expectedErrorMessage: "failed to decode dilithium pubkey `bar`",
+			generateInput: func() []*apimiddleware.SignedDilithiumToExecutionChangeJson {
+				input := generateDilithiumToExecutionChanges()
+				input[0].Message.FromDilithiumPubkey = "bar"
 				return input
 			},
 		},
 		{
 			name:                 "bad to execution address",
 			expectedErrorMessage: "failed to decode execution address `foo`",
-			generateInput: func() []*apimiddleware.SignedBLSToExecutionChangeJson {
-				input := generateBlsToExecutionChanges()
+			generateInput: func() []*apimiddleware.SignedDilithiumToExecutionChangeJson {
+				input := generateDilithiumToExecutionChanges()
 				input[0].Message.ToExecutionAddress = "foo"
 				return input
 			},
@@ -1059,8 +1059,8 @@ func TestBeaconBlockProtoHelpers_ConvertBlsToExecutionChangesToProto(t *testing.
 		{
 			name:                 "bad signature",
 			expectedErrorMessage: "failed to decode signature `bar`",
-			generateInput: func() []*apimiddleware.SignedBLSToExecutionChangeJson {
-				input := generateBlsToExecutionChanges()
+			generateInput: func() []*apimiddleware.SignedDilithiumToExecutionChangeJson {
+				input := generateDilithiumToExecutionChanges()
 				input[0].Signature = "bar"
 				return input
 			},
@@ -1069,7 +1069,7 @@ func TestBeaconBlockProtoHelpers_ConvertBlsToExecutionChangesToProto(t *testing.
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			result, err := convertBlsToExecutionChangesToProto(testCase.generateInput())
+			result, err := convertDilithiumToExecutionChangesToProto(testCase.generateInput())
 
 			if testCase.expectedResult != nil {
 				require.NoError(t, err)
@@ -1367,21 +1367,21 @@ func generateWithdrawals() []*apimiddleware.WithdrawalJson {
 	}
 }
 
-func generateBlsToExecutionChanges() []*apimiddleware.SignedBLSToExecutionChangeJson {
-	return []*apimiddleware.SignedBLSToExecutionChangeJson{
+func generateDilithiumToExecutionChanges() []*apimiddleware.SignedDilithiumToExecutionChangeJson {
+	return []*apimiddleware.SignedDilithiumToExecutionChangeJson{
 		{
-			Message: &apimiddleware.BLSToExecutionChangeJson{
-				ValidatorIndex:     "1",
-				FromBLSPubkey:      hexutil.Encode([]byte{2}),
-				ToExecutionAddress: hexutil.Encode([]byte{3}),
+			Message: &apimiddleware.DilithiumToExecutionChangeJson{
+				ValidatorIndex:      "1",
+				FromDilithiumPubkey: hexutil.Encode([]byte{2}),
+				ToExecutionAddress:  hexutil.Encode([]byte{3}),
 			},
 			Signature: hexutil.Encode([]byte{4}),
 		},
 		{
-			Message: &apimiddleware.BLSToExecutionChangeJson{
-				ValidatorIndex:     "5",
-				FromBLSPubkey:      hexutil.Encode([]byte{6}),
-				ToExecutionAddress: hexutil.Encode([]byte{7}),
+			Message: &apimiddleware.DilithiumToExecutionChangeJson{
+				ValidatorIndex:      "5",
+				FromDilithiumPubkey: hexutil.Encode([]byte{6}),
+				ToExecutionAddress:  hexutil.Encode([]byte{7}),
 			},
 			Signature: hexutil.Encode([]byte{8}),
 		},

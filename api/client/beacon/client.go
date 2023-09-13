@@ -26,15 +26,15 @@ import (
 )
 
 const (
-	getSignedBlockPath       = "/eth/v2/beacon/blocks"
-	getBlockRootPath         = "/eth/v1/beacon/blocks/{{.Id}}/root"
-	getForkForStatePath      = "/eth/v1/beacon/states/{{.Id}}/fork"
-	getWeakSubjectivityPath  = "/eth/v1/beacon/weak_subjectivity"
-	getForkSchedulePath      = "/eth/v1/config/fork_schedule"
-	getConfigSpecPath        = "/eth/v1/config/spec"
-	getStatePath             = "/eth/v2/debug/beacon/states"
-	getNodeVersionPath       = "/eth/v1/node/version"
-	changeBLStoExecutionPath = "/eth/v1/beacon/pool/bls_to_execution_changes"
+	getSignedBlockPath             = "/eth/v2/beacon/blocks"
+	getBlockRootPath               = "/eth/v1/beacon/blocks/{{.Id}}/root"
+	getForkForStatePath            = "/eth/v1/beacon/states/{{.Id}}/fork"
+	getWeakSubjectivityPath        = "/eth/v1/beacon/weak_subjectivity"
+	getForkSchedulePath            = "/eth/v1/config/fork_schedule"
+	getConfigSpecPath              = "/eth/v1/config/spec"
+	getStatePath                   = "/eth/v2/debug/beacon/states"
+	getNodeVersionPath             = "/eth/v1/node/version"
+	changeDilithiumtoExecutionPath = "/eth/v1/beacon/pool/dilithium_to_execution_changes"
 )
 
 // StateOrBlockId represents the block_id / state_id parameters that several of the Eth Beacon API methods accept.
@@ -280,10 +280,10 @@ func (c *Client) GetWeakSubjectivity(ctx context.Context) (*WeakSubjectivityData
 	}, nil
 }
 
-// SubmitChangeBLStoExecution calls a beacon API endpoint to set the withdrawal addresses based on the given signed messages.
+// SubmitChangeDilithiumtoExecution calls a beacon API endpoint to set the withdrawal addresses based on the given signed messages.
 // If the API responds with something other than OK there will be failure messages associated to the corresponding request message.
-func (c *Client) SubmitChangeBLStoExecution(ctx context.Context, request []*apimiddleware.SignedBLSToExecutionChangeJson) error {
-	u := c.BaseURL().ResolveReference(&url.URL{Path: changeBLStoExecutionPath})
+func (c *Client) SubmitChangeDilithiumtoExecution(ctx context.Context, request []*apimiddleware.SignedDilithiumToExecutionChangeJson) error {
+	u := c.BaseURL().ResolveReference(&url.URL{Path: changeDilithiumtoExecutionPath})
 	body, err := json.Marshal(request)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal JSON")
@@ -319,14 +319,14 @@ func (c *Client) SubmitChangeBLStoExecution(ctx context.Context, request []*apim
 	return nil
 }
 
-// GetBLStoExecutionChanges gets all the set withdrawal messages in the node's operation pool.
+// GetDilithiumtoExecutionChanges gets all the set withdrawal messages in the node's operation pool.
 // Returns a struct representation of json response.
-func (c *Client) GetBLStoExecutionChanges(ctx context.Context) (*apimiddleware.BLSToExecutionChangesPoolResponseJson, error) {
-	body, err := c.Get(ctx, changeBLStoExecutionPath)
+func (c *Client) GetDilithiumtoExecutionChanges(ctx context.Context) (*apimiddleware.DilithiumToExecutionChangesPoolResponseJson, error) {
+	body, err := c.Get(ctx, changeDilithiumtoExecutionPath)
 	if err != nil {
 		return nil, err
 	}
-	poolResponse := &apimiddleware.BLSToExecutionChangesPoolResponseJson{}
+	poolResponse := &apimiddleware.DilithiumToExecutionChangesPoolResponseJson{}
 	err = json.Unmarshal(body, poolResponse)
 	if err != nil {
 		return nil, err

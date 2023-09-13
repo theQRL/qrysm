@@ -579,7 +579,7 @@ func submitWithdrawal(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn)
 	if err != nil {
 		return err
 	}
-	changes := make([]*v2.SignedBLSToExecutionChange, 0)
+	changes := make([]*v2.SignedDilithiumToExecutionChange, 0)
 	// Only send half the number of changes each time, to allow us to test
 	// at the fork boundary.
 	wantedChanges := numOfExits / 2
@@ -598,12 +598,12 @@ func submitWithdrawal(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn)
 		if !bytes.Equal(val.PublicKey, privKeys[idx].PublicKey().Marshal()) {
 			return errors.Errorf("pubkey is not equal, wanted %#x but received %#x", val.PublicKey, privKeys[idx].PublicKey().Marshal())
 		}
-		message := &v2.BLSToExecutionChange{
-			ValidatorIndex:     idx,
-			FromBlsPubkey:      privKeys[idx].PublicKey().Marshal(),
-			ToExecutionAddress: bytesutil.ToBytes(uint64(idx), 20),
+		message := &v2.DilithiumToExecutionChange{
+			ValidatorIndex:      idx,
+			FromDilithiumPubkey: privKeys[idx].PublicKey().Marshal(),
+			ToExecutionAddress:  bytesutil.ToBytes(uint64(idx), 20),
 		}
-		domain, err := signing.ComputeDomain(params.BeaconConfig().DomainBLSToExecutionChange, params.BeaconConfig().GenesisForkVersion, st.GenesisValidatorsRoot())
+		domain, err := signing.ComputeDomain(params.BeaconConfig().DomainDilithiumToExecutionChange, params.BeaconConfig().GenesisForkVersion, st.GenesisValidatorsRoot())
 		if err != nil {
 			return err
 		}
@@ -612,13 +612,13 @@ func submitWithdrawal(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn)
 			return err
 		}
 		signature := privKeys[idx].Sign(sigRoot[:]).Marshal()
-		change := &v2.SignedBLSToExecutionChange{
+		change := &v2.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
 		changes = append(changes, change)
 	}
-	_, err = beaconAPIClient.SubmitSignedBLSToExecutionChanges(ctx, &v2.SubmitBLSToExecutionChangesRequest{Changes: changes})
+	_, err = beaconAPIClient.SubmitSignedDilithiumToExecutionChanges(ctx, &v2.SubmitDilithiumToExecutionChangesRequest{Changes: changes})
 
 	return err
 }

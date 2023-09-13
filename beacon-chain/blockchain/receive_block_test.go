@@ -298,7 +298,7 @@ func TestCheckSaveHotStateDB_Overflow(t *testing.T) {
 	assert.LogsDoNotContain(t, hook, "Entering mode to save hot states in DB")
 }
 
-func TestHandleBlockBLSToExecutionChanges(t *testing.T) {
+func TestHandleBlockDilithiumToExecutionChanges(t *testing.T) {
 	service, tr := minimalTestService(t)
 	pool := tr.blsPool
 
@@ -309,7 +309,7 @@ func TestHandleBlockBLSToExecutionChanges(t *testing.T) {
 		}
 		blk, err := blocks.NewBeaconBlock(pbb)
 		require.NoError(t, err)
-		require.NoError(t, service.markIncludedBlockBLSToExecChanges(blk))
+		require.NoError(t, service.markIncludedBlockDilithiumToExecChanges(blk))
 	})
 
 	t.Run("Post Capella no changes", func(t *testing.T) {
@@ -319,19 +319,19 @@ func TestHandleBlockBLSToExecutionChanges(t *testing.T) {
 		}
 		blk, err := blocks.NewBeaconBlock(pbb)
 		require.NoError(t, err)
-		require.NoError(t, service.markIncludedBlockBLSToExecChanges(blk))
+		require.NoError(t, service.markIncludedBlockDilithiumToExecChanges(blk))
 	})
 
 	t.Run("Post Capella some changes", func(t *testing.T) {
 		idx := primitives.ValidatorIndex(123)
-		change := &ethpb.BLSToExecutionChange{
+		change := &ethpb.DilithiumToExecutionChange{
 			ValidatorIndex: idx,
 		}
-		signedChange := &ethpb.SignedBLSToExecutionChange{
+		signedChange := &ethpb.SignedDilithiumToExecutionChange{
 			Message: change,
 		}
 		body := &ethpb.BeaconBlockBodyCapella{
-			BlsToExecutionChanges: []*ethpb.SignedBLSToExecutionChange{signedChange},
+			DilithiumToExecutionChanges: []*ethpb.SignedDilithiumToExecutionChange{signedChange},
 		}
 		pbb := &ethpb.BeaconBlockCapella{
 			Body: body,
@@ -339,9 +339,9 @@ func TestHandleBlockBLSToExecutionChanges(t *testing.T) {
 		blk, err := blocks.NewBeaconBlock(pbb)
 		require.NoError(t, err)
 
-		pool.InsertBLSToExecChange(signedChange)
+		pool.InsertDilithiumToExecChange(signedChange)
 		require.Equal(t, true, pool.ValidatorExists(idx))
-		require.NoError(t, service.markIncludedBlockBLSToExecChanges(blk))
+		require.NoError(t, service.markIncludedBlockDilithiumToExecChanges(blk))
 		require.Equal(t, false, pool.ValidatorExists(idx))
 	})
 }

@@ -44,6 +44,6 @@ type Server struct {
 	CanonicalHistory              *stategen.CanonicalHistory
 	ExecutionPayloadReconstructor execution.ExecutionPayloadReconstructor
 	FinalizationFetcher           blockchain.FinalizationFetcher
-	BLSChangesPool                blstoexec.PoolManager
+	DilithiumChangesPool          blstoexec.PoolManager
 	ForkchoiceFetcher             blockchain.ForkchoiceFetcher
 }

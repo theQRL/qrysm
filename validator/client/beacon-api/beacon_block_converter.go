@@ -380,9 +380,9 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTCapellaBlockToProto(block *api
 		return nil, errors.Wrap(err, "failed to get withdrawals")
 	}
 
-	blsToExecutionChanges, err := convertBlsToExecutionChangesToProto(block.Body.BLSToExecutionChanges)
+	dilithiumToExecutionChanges, err := convertDilithiumToExecutionChangesToProto(block.Body.DilithiumToExecutionChanges)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get bls to execution changes")
+		return nil, errors.Wrap(err, "failed to get dilithium to execution changes")
 	}
 
 	return &ethpb.BeaconBlockCapella{
@@ -417,7 +417,7 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTCapellaBlockToProto(block *api
 				Transactions:  bellatrixBlock.Body.ExecutionPayload.Transactions,
 				Withdrawals:   withdrawals,
 			},
-			BlsToExecutionChanges: blsToExecutionChanges,
+			DilithiumToExecutionChanges: dilithiumToExecutionChanges,
 		},
 	}, nil
 }

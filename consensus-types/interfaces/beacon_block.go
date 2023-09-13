@@ -70,13 +70,13 @@ type ReadOnlyBeaconBlockBody interface {
 	HashTreeRoot() ([field_params.RootLength]byte, error)
 	Proto() (proto.Message, error)
 	Execution() (ExecutionData, error)
-	BLSToExecutionChanges() ([]*ethpb.SignedBLSToExecutionChange, error)
+	DilithiumToExecutionChanges() ([]*ethpb.SignedDilithiumToExecutionChange, error)
 }
 
 type SignedBeaconBlock interface {
 	ReadOnlySignedBeaconBlock
 	SetExecution(ExecutionData) error
-	SetBLSToExecutionChanges([]*ethpb.SignedBLSToExecutionChange) error
+	SetDilithiumToExecutionChanges([]*ethpb.SignedDilithiumToExecutionChange) error
 	SetSyncAggregate(*ethpb.SyncAggregate) error
 	SetVoluntaryExits([]*ethpb.SignedVoluntaryExit)
 	SetDeposits([]*ethpb.Deposit)

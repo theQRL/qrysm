@@ -250,20 +250,20 @@ func GenerateProtoCapellaBeaconBlock() *ethpb.BeaconBlockCapella {
 					},
 				},
 			},
-			BlsToExecutionChanges: []*ethpb.SignedBLSToExecutionChange{
+			DilithiumToExecutionChanges: []*ethpb.SignedDilithiumToExecutionChange{
 				{
-					Message: &ethpb.BLSToExecutionChange{
-						ValidatorIndex:     135,
-						FromBlsPubkey:      FillByteSlice(48, 136),
-						ToExecutionAddress: FillByteSlice(20, 137),
+					Message: &ethpb.DilithiumToExecutionChange{
+						ValidatorIndex:      135,
+						FromDilithiumPubkey: FillByteSlice(48, 136),
+						ToExecutionAddress:  FillByteSlice(20, 137),
 					},
 					Signature: FillByteSlice(96, 138),
 				},
 				{
-					Message: &ethpb.BLSToExecutionChange{
-						ValidatorIndex:     139,
-						FromBlsPubkey:      FillByteSlice(48, 140),
-						ToExecutionAddress: FillByteSlice(20, 141),
+					Message: &ethpb.DilithiumToExecutionChange{
+						ValidatorIndex:      139,
+						FromDilithiumPubkey: FillByteSlice(48, 140),
+						ToExecutionAddress:  FillByteSlice(20, 141),
 					},
 					Signature: FillByteSlice(96, 142),
 				},
@@ -515,20 +515,20 @@ func GenerateJsonCapellaBeaconBlock() *apimiddleware.BeaconBlockCapellaJson {
 					},
 				},
 			},
-			BLSToExecutionChanges: []*apimiddleware.SignedBLSToExecutionChangeJson{
+			DilithiumToExecutionChanges: []*apimiddleware.SignedDilithiumToExecutionChangeJson{
 				{
-					Message: &apimiddleware.BLSToExecutionChangeJson{
-						ValidatorIndex:     "135",
-						FromBLSPubkey:      FillEncodedByteSlice(48, 136),
-						ToExecutionAddress: FillEncodedByteSlice(20, 137),
+					Message: &apimiddleware.DilithiumToExecutionChangeJson{
+						ValidatorIndex:      "135",
+						FromDilithiumPubkey: FillEncodedByteSlice(48, 136),
+						ToExecutionAddress:  FillEncodedByteSlice(20, 137),
 					},
 					Signature: FillEncodedByteSlice(96, 138),
 				},
 				{
-					Message: &apimiddleware.BLSToExecutionChangeJson{
-						ValidatorIndex:     "139",
-						FromBLSPubkey:      FillEncodedByteSlice(48, 140),
-						ToExecutionAddress: FillEncodedByteSlice(20, 141),
+					Message: &apimiddleware.DilithiumToExecutionChangeJson{
+						ValidatorIndex:      "139",
+						FromDilithiumPubkey: FillEncodedByteSlice(48, 140),
+						ToExecutionAddress:  FillEncodedByteSlice(20, 141),
 					},
 					Signature: FillEncodedByteSlice(96, 142),
 				},

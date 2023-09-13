@@ -102,7 +102,7 @@ func TestGetSpec(t *testing.T) {
 	config.TerminalTotalDifficulty = "73"
 	config.DefaultFeeRecipient = common.HexToAddress("DefaultFeeRecipient")
 	config.MaxWithdrawalsPerPayload = 74
-	config.MaxBlsToExecutionChanges = 75
+	config.MaxDilithiumToExecutionChanges = 75
 	config.MaxValidatorsPerWithdrawalsSweep = 76
 
 	var dbp [4]byte

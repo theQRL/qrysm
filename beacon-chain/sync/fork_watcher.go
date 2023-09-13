@@ -28,8 +28,8 @@ func (s *Service) forkWatcher() {
 				log.WithError(err).Error("Unable to check for fork in the previous epoch")
 				continue
 			}
-			// Broadcast BLS changes at the Capella fork boundary
-			s.broadcastBLSChanges(currSlot)
+			// Broadcast Dilithium changes at the Capella fork boundary
+			s.broadcastDilithiumChanges(currSlot)
 
 		case <-s.ctx.Done():
 			log.Debug("Context closed, exiting goroutine")

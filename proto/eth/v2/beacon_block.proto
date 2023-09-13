@@ -323,8 +323,8 @@ message BeaconBlockBodyCapella {
   // Execution payload: the embedded execution payload of the block [Modified in Capella]
   ethereum.engine.v1.ExecutionPayloadCapella execution_payload = 10;
 
-  // BLS To Execution Changes: signed messages to change withdrawal credentials [New in Capella]
-  repeated SignedBLSToExecutionChange bls_to_execution_changes = 11 [(ethereum.eth.ext.ssz_max) = "16"];
+  // Dilithium To Execution Changes: signed messages to change withdrawal credentials [New in Capella]
+  repeated SignedDilithiumToExecutionChange dilithium_to_execution_changes = 11 [(ethereum.eth.ext.ssz_max) = "16"];
 }
 
 message BlindedBeaconBlockBodyCapella {
@@ -362,8 +362,8 @@ message BlindedBeaconBlockBodyCapella {
   // Execution payload header: the embedded execution payload of the block [Modified in Capella]
   ethereum.engine.v1.ExecutionPayloadHeaderCapella execution_payload_header = 10;
 
-  // BLS To Execution Changes: signed messages to change withdrawal credentials [New in Capella]
-  repeated SignedBLSToExecutionChange bls_to_execution_changes = 11 [(ethereum.eth.ext.ssz_max) = "16"];
+  // Dilithium To Execution Changes: signed messages to change withdrawal credentials [New in Capella]
+  repeated SignedDilithiumToExecutionChange dilithium_to_execution_changes = 11 [(ethereum.eth.ext.ssz_max) = "16"];
 }
 
 message BeaconBlockBodyAltair {

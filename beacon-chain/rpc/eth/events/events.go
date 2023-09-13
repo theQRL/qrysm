@@ -40,22 +40,22 @@ const (
 	ChainReorgTopic = "chain_reorg"
 	// SyncCommitteeContributionTopic represents a new sync committee contribution event topic.
 	SyncCommitteeContributionTopic = "contribution_and_proof"
-	// BLSToExecutionChangeTopic represents a new received BLS to execution change event topic.
-	BLSToExecutionChangeTopic = "bls_to_execution_change"
+	// DilithiumToExecutionChangeTopic represents a new received Dilithium to execution change event topic.
+	DilithiumToExecutionChangeTopic = "dilithium_to_execution_change"
 	// PayloadAttributesTopic represents a new payload attributes for execution payload building event topic.
 	PayloadAttributesTopic = "payload_attributes"
 )
 
 var casesHandled = map[string]bool{
-	HeadTopic:                      true,
-	BlockTopic:                     true,
-	AttestationTopic:               true,
-	VoluntaryExitTopic:             true,
-	FinalizedCheckpointTopic:       true,
-	ChainReorgTopic:                true,
-	SyncCommitteeContributionTopic: true,
-	BLSToExecutionChangeTopic:      true,
-	PayloadAttributesTopic:         true,
+	HeadTopic:                       true,
+	BlockTopic:                      true,
+	AttestationTopic:                true,
+	VoluntaryExitTopic:              true,
+	FinalizedCheckpointTopic:        true,
+	ChainReorgTopic:                 true,
+	SyncCommitteeContributionTopic:  true,
+	DilithiumToExecutionChangeTopic: true,
+	PayloadAttributesTopic:          true,
 }
 
 // StreamEvents allows requesting all events from a set of topics defined in the Ethereum consensus API standard.
@@ -191,16 +191,16 @@ func handleBlockOperationEvents(
 		}
 		v2Data := migration.V1Alpha1SignedContributionAndProofToV2(contributionData.Contribution)
 		return streamData(stream, SyncCommitteeContributionTopic, v2Data)
-	case operation.BLSToExecutionChangeReceived:
-		if _, ok := requestedTopics[BLSToExecutionChangeTopic]; !ok {
+	case operation.DilithiumToExecutionChangeReceived:
+		if _, ok := requestedTopics[DilithiumToExecutionChangeTopic]; !ok {
 			return nil
 		}
-		changeData, ok := event.Data.(*operation.BLSToExecutionChangeReceivedData)
+		changeData, ok := event.Data.(*operation.DilithiumToExecutionChangeReceivedData)
 		if !ok {
 			return nil
 		}
-		v2Change := migration.V1Alpha1SignedBLSToExecChangeToV2(changeData.Change)
-		return streamData(stream, BLSToExecutionChangeTopic, v2Change)
+		v2Change := migration.V1Alpha1SignedDilithiumToExecChangeToV2(changeData.Change)
+		return streamData(stream, DilithiumToExecutionChangeTopic, v2Change)
 
 	default:
 		return nil

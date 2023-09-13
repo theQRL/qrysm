@@ -26,8 +26,8 @@ const (
 	GossipAggregateAndProofMessage = "beacon_aggregate_and_proof"
 	// GossipContributionAndProofMessage is the name for the sync contribution and proof message type.
 	GossipContributionAndProofMessage = "sync_committee_contribution_and_proof"
-	// GossipBlsToExecutionChangeMessage is the name for the bls to execution change message type.
-	GossipBlsToExecutionChangeMessage = "bls_to_execution_change"
+	// GossipDilithiumToExecutionChangeMessage is the name for the dilithium to execution change message type.
+	GossipDilithiumToExecutionChangeMessage = "dilithium_to_execution_change"
 
 	// Topic Formats
 	//
@@ -47,6 +47,6 @@ const (
 	AggregateAndProofSubnetTopicFormat = GossipProtocolAndDigest + GossipAggregateAndProofMessage
 	// SyncContributionAndProofSubnetTopicFormat is the topic format for the sync aggregate and proof subnet.
 	SyncContributionAndProofSubnetTopicFormat = GossipProtocolAndDigest + GossipContributionAndProofMessage
-	// BlsToExecutionChangeSubnetTopicFormat is the topic format for the bls to execution change subnet.
-	BlsToExecutionChangeSubnetTopicFormat = GossipProtocolAndDigest + GossipBlsToExecutionChangeMessage
+	// DilithiumToExecutionChangeSubnetTopicFormat is the topic format for the dilithium to execution change subnet.
+	DilithiumToExecutionChangeSubnetTopicFormat = GossipProtocolAndDigest + GossipDilithiumToExecutionChangeMessage
 )

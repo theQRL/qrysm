@@ -172,9 +172,9 @@ func GenerateFullBlockCapella(
 		return nil, errors.Wrap(err, "could not compute beacon proposer index")
 	}
 
-	changes := make([]*ethpb.SignedBLSToExecutionChange, conf.NumBLSChanges)
-	for i := uint64(0); i < conf.NumBLSChanges; i++ {
-		changes[i], err = GenerateBLSToExecutionChange(bState, privs[i+1], primitives.ValidatorIndex(i))
+	changes := make([]*ethpb.SignedDilithiumToExecutionChange, conf.NumDilithiumChanges)
+	for i := uint64(0); i < conf.NumDilithiumChanges; i++ {
+		changes[i], err = GenerateDilithiumToExecutionChange(bState, privs[i+1], primitives.ValidatorIndex(i))
 		if err != nil {
 			return nil, err
 		}
@@ -185,17 +185,17 @@ func GenerateFullBlockCapella(
 		ParentRoot:    parentRoot[:],
 		ProposerIndex: idx,
 		Body: &ethpb.BeaconBlockBodyCapella{
-			Eth1Data:              eth1Data,
-			RandaoReveal:          reveal,
-			ProposerSlashings:     pSlashings,
-			AttesterSlashings:     aSlashings,
-			Attestations:          atts,
-			VoluntaryExits:        exits,
-			Deposits:              newDeposits,
-			Graffiti:              make([]byte, fieldparams.RootLength),
-			SyncAggregate:         newSyncAggregate,
-			ExecutionPayload:      newExecutionPayloadCapella,
-			BlsToExecutionChanges: changes,
+			Eth1Data:                    eth1Data,
+			RandaoReveal:                reveal,
+			ProposerSlashings:           pSlashings,
+			AttesterSlashings:           aSlashings,
+			Attestations:                atts,
+			VoluntaryExits:              exits,
+			Deposits:                    newDeposits,
+			Graffiti:                    make([]byte, fieldparams.RootLength),
+			SyncAggregate:               newSyncAggregate,
+			ExecutionPayload:            newExecutionPayloadCapella,
+			DilithiumToExecutionChanges: changes,
 		},
 	}
 
@@ -208,17 +208,17 @@ func GenerateFullBlockCapella(
 	return &ethpb.SignedBeaconBlockCapella{Block: block, Signature: signature.Marshal()}, nil
 }
 
-// GenerateBLSToExecutionChange generates a valid bls to exec changae for validator `val` and its private key `priv` with the given beacon state `st`.
-func GenerateBLSToExecutionChange(st state.BeaconState, priv bls.SecretKey, val primitives.ValidatorIndex) (*ethpb.SignedBLSToExecutionChange, error) {
+// GenerateDilithiumToExecutionChange generates a valid dilithium to exec changes for validator `val` and its private key `priv` with the given beacon state `st`.
+func GenerateDilithiumToExecutionChange(st state.BeaconState, priv bls.SecretKey, val primitives.ValidatorIndex) (*ethpb.SignedDilithiumToExecutionChange, error) {
 	cred := indexToHash(uint64(val))
 	pubkey := priv.PublicKey().Marshal()
-	message := &ethpb.BLSToExecutionChange{
-		ToExecutionAddress: cred[12:],
-		ValidatorIndex:     val,
-		FromBlsPubkey:      pubkey,
+	message := &ethpb.DilithiumToExecutionChange{
+		ToExecutionAddress:  cred[12:],
+		ValidatorIndex:      val,
+		FromDilithiumPubkey: pubkey,
 	}
 	c := params.BeaconConfig()
-	domain, err := signing.ComputeDomain(c.DomainBLSToExecutionChange, c.GenesisForkVersion, st.GenesisValidatorsRoot())
+	domain, err := signing.ComputeDomain(c.DomainDilithiumToExecutionChange, c.GenesisForkVersion, st.GenesisValidatorsRoot())
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +227,7 @@ func GenerateBLSToExecutionChange(st state.BeaconState, priv bls.SecretKey, val 
 		return nil, err
 	}
 	signature := priv.Sign(sr[:]).Marshal()
-	return &ethpb.SignedBLSToExecutionChange{
+	return &ethpb.SignedDilithiumToExecutionChange{
 		Message:   message,
 		Signature: signature,
 	}, nil

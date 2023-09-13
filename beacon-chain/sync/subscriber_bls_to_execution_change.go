@@ -10,17 +10,17 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func (s *Service) blsToExecutionChangeSubscriber(_ context.Context, msg proto.Message) error {
-	blsMsg, ok := msg.(*ethpb.SignedBLSToExecutionChange)
+func (s *Service) dilithiumToExecutionChangeSubscriber(_ context.Context, msg proto.Message) error {
+	blsMsg, ok := msg.(*ethpb.SignedDilithiumToExecutionChange)
 	if !ok {
-		return errors.Errorf("incorrect type of message received, wanted %T but got %T", &ethpb.SignedBLSToExecutionChange{}, msg)
+		return errors.Errorf("incorrect type of message received, wanted %T but got %T", &ethpb.SignedDilithiumToExecutionChange{}, msg)
 	}
 	s.cfg.operationNotifier.OperationFeed().Send(&feed.Event{
-		Type: opfeed.BLSToExecutionChangeReceived,
-		Data: &opfeed.BLSToExecutionChangeReceivedData{
+		Type: opfeed.DilithiumToExecutionChangeReceived,
+		Data: &opfeed.DilithiumToExecutionChangeReceivedData{
 			Change: blsMsg,
 		},
 	})
-	s.cfg.blsToExecPool.InsertBLSToExecChange(blsMsg)
+	s.cfg.blsToExecPool.InsertDilithiumToExecChange(blsMsg)
 	return nil
 }

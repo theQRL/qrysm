@@ -113,7 +113,7 @@ func (s *Service) ReceiveBlock(ctx context.Context, block interfaces.ReadOnlySig
 		go s.sendBlockAttestationsToSlasher(blockCopy, preState)
 	}
 
-	// Handle post block operations such as pruning exits and bls messages if incoming block is the head
+	// Handle post block operations such as pruning exits and dilithium messages if incoming block is the head
 	if err := s.prunePostBlockOperationPools(ctx, blockCopy, blockRoot); err != nil {
 		log.WithError(err).Error("Could not prune canonical objects from pool ")
 	}
@@ -233,9 +233,9 @@ func (s *Service) prunePostBlockOperationPools(ctx context.Context, blk interfac
 		s.cfg.ExitPool.MarkIncluded(e)
 	}
 
-	// Mark block BLS changes as seen so we don't include same ones in future blocks.
-	if err := s.markIncludedBlockBLSToExecChanges(blk.Block()); err != nil {
-		return errors.Wrap(err, "could not process BLSToExecutionChanges")
+	// Mark block Dilithium changes as seen so we don't include same ones in future blocks.
+	if err := s.markIncludedBlockDilithiumToExecChanges(blk.Block()); err != nil {
+		return errors.Wrap(err, "could not process DilithiumToExecutionChanges")
 	}
 
 	// Mark slashings as seen so we don't include same ones in future blocks.
@@ -249,16 +249,16 @@ func (s *Service) prunePostBlockOperationPools(ctx context.Context, blk interfac
 	return nil
 }
 
-func (s *Service) markIncludedBlockBLSToExecChanges(headBlock interfaces.ReadOnlyBeaconBlock) error {
+func (s *Service) markIncludedBlockDilithiumToExecChanges(headBlock interfaces.ReadOnlyBeaconBlock) error {
 	if headBlock.Version() < version.Capella {
 		return nil
 	}
-	changes, err := headBlock.Body().BLSToExecutionChanges()
+	changes, err := headBlock.Body().DilithiumToExecutionChanges()
 	if err != nil {
-		return errors.Wrap(err, "could not get BLSToExecutionChanges")
+		return errors.Wrap(err, "could not get DilithiumToExecutionChanges")
 	}
 	for _, change := range changes {
-		s.cfg.BLSToExecPool.MarkIncluded(change)
+		s.cfg.DilithiumToExecPool.MarkIncluded(change)
 	}
 	return nil
 }

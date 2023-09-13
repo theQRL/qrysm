@@ -407,7 +407,7 @@ func (s *PremineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 				Transactions:  make([][]byte, 0),
 				Withdrawals:   make([]*enginev1.Withdrawal, 0),
 			},
-			BlsToExecutionChanges: make([]*ethpb.SignedBLSToExecutionChange, 0),
+			DilithiumToExecutionChanges: make([]*ethpb.SignedDilithiumToExecutionChange, 0),
 		}
 	default:
 		return errUnsupportedVersion

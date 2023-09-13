@@ -101,10 +101,10 @@ func WithSlashingPool(p slashings.PoolManager) Option {
 	}
 }
 
-// WithBLSToExecPool to keep track of BLS to Execution address changes.
-func WithBLSToExecPool(p blstoexec.PoolManager) Option {
+// WithDilithiumToExecPool to keep track of Dilithium to Execution address changes.
+func WithDilithiumToExecPool(p blstoexec.PoolManager) Option {
 	return func(s *Service) error {
-		s.cfg.BLSToExecPool = p
+		s.cfg.DilithiumToExecPool = p
 		return nil
 	}
 }

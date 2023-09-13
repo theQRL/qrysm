@@ -19,19 +19,19 @@ import (
 
 // https://ethereum.github.io/beacon-APIs/?urls.primaryName=dev#/Beacon/submitPoolBLSToExecutionChange
 // expects posting a top-level array. We make it more proto-friendly by wrapping it in a struct.
-func wrapBLSChangesArray(
+func wrapDilithiumChangesArray(
 	endpoint *apimiddleware.Endpoint,
 	_ http.ResponseWriter,
 	req *http.Request,
 ) (apimiddleware.RunDefault, apimiddleware.ErrorJson) {
-	if _, ok := endpoint.PostRequest.(*SubmitBLSToExecutionChangesRequest); !ok {
+	if _, ok := endpoint.PostRequest.(*SubmitDilithiumToExecutionChangesRequest); !ok {
 		return true, nil
 	}
-	changes := make([]*SignedBLSToExecutionChangeJson, 0)
+	changes := make([]*SignedDilithiumToExecutionChangeJson, 0)
 	if err := json.NewDecoder(req.Body).Decode(&changes); err != nil {
 		return false, apimiddleware.InternalServerErrorWithMessage(err, "could not decode body")
 	}
-	j := &SubmitBLSToExecutionChangesRequest{Changes: changes}
+	j := &SubmitDilithiumToExecutionChangesRequest{Changes: changes}
 	b, err := json.Marshal(j)
 	if err != nil {
 		return false, apimiddleware.InternalServerErrorWithMessage(err, "could not marshal wrapped body")

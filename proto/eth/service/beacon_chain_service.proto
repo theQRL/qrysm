@@ -392,11 +392,11 @@ service BeaconChain {
     };
   }
 
-  // SubmitSignedBLSToExecutionChanges submits said object to node's pool
+  // SubmitSignedDilithiumToExecutionChanges submits said object to node's pool
   // and if passes validation node MUST broadcast it to network.
-  rpc SubmitSignedBLSToExecutionChanges(v2.SubmitBLSToExecutionChangesRequest) returns (google.protobuf.Empty) {
+  rpc SubmitSignedDilithiumToExecutionChanges(v2.SubmitDilithiumToExecutionChangesRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      post: "/internal/eth/v1/beacon/pool/bls_to_execution_changes"
+      post: "/internal/eth/v1/beacon/pool/dilithium_to_execution_changes"
       body: "*"
     };
   }
@@ -411,12 +411,12 @@ service BeaconChain {
     };
   }
 
-  // ListBLSToExecutionChanges retrieves BLS to execution changes known by the node but not necessarily incorporated into any block
+  // ListDilithiumToExecutionChanges retrieves BLS to execution changes known by the node but not necessarily incorporated into any block
   //
   // Spec: https://ethereum.github.io/beacon-APIs/?urls.primaryName=dev#/Beacon/getPoolBLSToExecutionChanges
-  rpc ListBLSToExecutionChanges(google.protobuf.Empty) returns (v2.BLSToExecutionChangesPoolResponse) {
+  rpc ListDilithiumToExecutionChanges(google.protobuf.Empty) returns (v2.DilithiumToExecutionChangesPoolResponse) {
     option (google.api.http) = {
-      get: "/internal/eth/v1/beacon/pool/bls_to_execution_changes"
+      get: "/internal/eth/v1/beacon/pool/dilithium_to_execution_changes"
     };
   }
 

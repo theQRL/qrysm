@@ -116,12 +116,12 @@ func (b *SignedBeaconBlock) SetExecution(e interfaces.ExecutionData) error {
 	return nil
 }
 
-// SetBLSToExecutionChanges sets the BLS to execution changes in the block.
+// SetDilithiumToExecutionChanges sets the Dilithium to execution changes in the block.
 // This function is not thread safe, it is only used during block creation.
-func (b *SignedBeaconBlock) SetBLSToExecutionChanges(blsToExecutionChanges []*eth.SignedBLSToExecutionChange) error {
+func (b *SignedBeaconBlock) SetDilithiumToExecutionChanges(dilithiumToExecutionChanges []*eth.SignedDilithiumToExecutionChange) error {
 	if b.version < version.Capella {
-		return consensus_types.ErrNotSupported("BLSToExecutionChanges", b.version)
+		return consensus_types.ErrNotSupported("DilithiumToExecutionChanges", b.version)
 	}
-	b.block.body.blsToExecutionChanges = blsToExecutionChanges
+	b.block.body.dilithiumToExecutionChanges = dilithiumToExecutionChanges
 	return nil
 }

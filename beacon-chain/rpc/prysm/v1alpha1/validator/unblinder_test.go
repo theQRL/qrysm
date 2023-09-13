@@ -176,20 +176,20 @@ func Test_unblindBuilderBlock(t *testing.T) {
 				b := util.NewBlindedBeaconBlockCapella()
 				b.Block.Slot = 1
 				b.Block.ProposerIndex = 2
-				b.Block.Body.BlsToExecutionChanges = []*eth.SignedBLSToExecutionChange{
+				b.Block.Body.DilithiumToExecutionChanges = []*eth.SignedDilithiumToExecutionChange{
 					{
-						Message: &eth.BLSToExecutionChange{
-							ValidatorIndex:     123,
-							FromBlsPubkey:      []byte{'a'},
-							ToExecutionAddress: []byte{'a'},
+						Message: &eth.DilithiumToExecutionChange{
+							ValidatorIndex:      123,
+							FromDilithiumPubkey: []byte{'a'},
+							ToExecutionAddress:  []byte{'a'},
 						},
 						Signature: []byte("sig123"),
 					},
 					{
-						Message: &eth.BLSToExecutionChange{
-							ValidatorIndex:     456,
-							FromBlsPubkey:      []byte{'b'},
-							ToExecutionAddress: []byte{'b'},
+						Message: &eth.DilithiumToExecutionChange{
+							ValidatorIndex:      456,
+							FromDilithiumPubkey: []byte{'b'},
+							ToExecutionAddress:  []byte{'b'},
 						},
 						Signature: []byte("sig456"),
 					},
@@ -223,20 +223,20 @@ func Test_unblindBuilderBlock(t *testing.T) {
 				b := util.NewBeaconBlockCapella()
 				b.Block.Slot = 1
 				b.Block.ProposerIndex = 2
-				b.Block.Body.BlsToExecutionChanges = []*eth.SignedBLSToExecutionChange{
+				b.Block.Body.DilithiumToExecutionChanges = []*eth.SignedDilithiumToExecutionChange{
 					{
-						Message: &eth.BLSToExecutionChange{
-							ValidatorIndex:     123,
-							FromBlsPubkey:      []byte{'a'},
-							ToExecutionAddress: []byte{'a'},
+						Message: &eth.DilithiumToExecutionChange{
+							ValidatorIndex:      123,
+							FromDilithiumPubkey: []byte{'a'},
+							ToExecutionAddress:  []byte{'a'},
 						},
 						Signature: []byte("sig123"),
 					},
 					{
-						Message: &eth.BLSToExecutionChange{
-							ValidatorIndex:     456,
-							FromBlsPubkey:      []byte{'b'},
-							ToExecutionAddress: []byte{'b'},
+						Message: &eth.DilithiumToExecutionChange{
+							ValidatorIndex:      456,
+							FromDilithiumPubkey: []byte{'b'},
+							ToExecutionAddress:  []byte{'b'},
 						},
 						Signature: []byte("sig456"),
 					},

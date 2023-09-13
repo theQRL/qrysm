@@ -373,11 +373,11 @@ func Test_BeaconBlockBody_SyncAggregate(t *testing.T) {
 	assert.DeepEqual(t, result, sa)
 }
 
-func Test_BeaconBlockBody_BLSToExecutionChanges(t *testing.T) {
-	changes := []*eth.SignedBLSToExecutionChange{{Message: &eth.BLSToExecutionChange{ToExecutionAddress: []byte("address")}}}
+func Test_BeaconBlockBody_DilithiumToExecutionChanges(t *testing.T) {
+	changes := []*eth.SignedDilithiumToExecutionChange{{Message: &eth.DilithiumToExecutionChange{ToExecutionAddress: []byte("address")}}}
 	bb := &SignedBeaconBlock{version: version.Capella, block: &BeaconBlock{body: &BeaconBlockBody{version: version.Capella}}}
-	require.NoError(t, bb.SetBLSToExecutionChanges(changes))
-	result, err := bb.Block().Body().BLSToExecutionChanges()
+	require.NoError(t, bb.SetDilithiumToExecutionChanges(changes))
+	result, err := bb.Block().Body().DilithiumToExecutionChanges()
 	require.NoError(t, err)
 	assert.DeepSSZEqual(t, result, changes)
 }

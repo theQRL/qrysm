@@ -454,17 +454,17 @@ func CopyBeaconBlockBodyCapella(body *BeaconBlockBodyCapella) *BeaconBlockBodyCa
 		return nil
 	}
 	return &BeaconBlockBodyCapella{
-		RandaoReveal:          bytesutil.SafeCopyBytes(body.RandaoReveal),
-		Eth1Data:              CopyETH1Data(body.Eth1Data),
-		Graffiti:              bytesutil.SafeCopyBytes(body.Graffiti),
-		ProposerSlashings:     CopyProposerSlashings(body.ProposerSlashings),
-		AttesterSlashings:     CopyAttesterSlashings(body.AttesterSlashings),
-		Attestations:          CopyAttestations(body.Attestations),
-		Deposits:              CopyDeposits(body.Deposits),
-		VoluntaryExits:        CopySignedVoluntaryExits(body.VoluntaryExits),
-		SyncAggregate:         CopySyncAggregate(body.SyncAggregate),
-		ExecutionPayload:      CopyExecutionPayloadCapella(body.ExecutionPayload),
-		BlsToExecutionChanges: CopyBLSToExecutionChanges(body.BlsToExecutionChanges),
+		RandaoReveal:                bytesutil.SafeCopyBytes(body.RandaoReveal),
+		Eth1Data:                    CopyETH1Data(body.Eth1Data),
+		Graffiti:                    bytesutil.SafeCopyBytes(body.Graffiti),
+		ProposerSlashings:           CopyProposerSlashings(body.ProposerSlashings),
+		AttesterSlashings:           CopyAttesterSlashings(body.AttesterSlashings),
+		Attestations:                CopyAttestations(body.Attestations),
+		Deposits:                    CopyDeposits(body.Deposits),
+		VoluntaryExits:              CopySignedVoluntaryExits(body.VoluntaryExits),
+		SyncAggregate:               CopySyncAggregate(body.SyncAggregate),
+		ExecutionPayload:            CopyExecutionPayloadCapella(body.ExecutionPayload),
+		DilithiumToExecutionChanges: CopyDilithiumToExecutionChanges(body.DilithiumToExecutionChanges),
 	}
 }
 
@@ -499,17 +499,17 @@ func CopyBlindedBeaconBlockBodyCapella(body *BlindedBeaconBlockBodyCapella) *Bli
 		return nil
 	}
 	return &BlindedBeaconBlockBodyCapella{
-		RandaoReveal:           bytesutil.SafeCopyBytes(body.RandaoReveal),
-		Eth1Data:               CopyETH1Data(body.Eth1Data),
-		Graffiti:               bytesutil.SafeCopyBytes(body.Graffiti),
-		ProposerSlashings:      CopyProposerSlashings(body.ProposerSlashings),
-		AttesterSlashings:      CopyAttesterSlashings(body.AttesterSlashings),
-		Attestations:           CopyAttestations(body.Attestations),
-		Deposits:               CopyDeposits(body.Deposits),
-		VoluntaryExits:         CopySignedVoluntaryExits(body.VoluntaryExits),
-		SyncAggregate:          CopySyncAggregate(body.SyncAggregate),
-		ExecutionPayloadHeader: CopyExecutionPayloadHeaderCapella(body.ExecutionPayloadHeader),
-		BlsToExecutionChanges:  CopyBLSToExecutionChanges(body.BlsToExecutionChanges),
+		RandaoReveal:                bytesutil.SafeCopyBytes(body.RandaoReveal),
+		Eth1Data:                    CopyETH1Data(body.Eth1Data),
+		Graffiti:                    bytesutil.SafeCopyBytes(body.Graffiti),
+		ProposerSlashings:           CopyProposerSlashings(body.ProposerSlashings),
+		AttesterSlashings:           CopyAttesterSlashings(body.AttesterSlashings),
+		Attestations:                CopyAttestations(body.Attestations),
+		Deposits:                    CopyDeposits(body.Deposits),
+		VoluntaryExits:              CopySignedVoluntaryExits(body.VoluntaryExits),
+		SyncAggregate:               CopySyncAggregate(body.SyncAggregate),
+		ExecutionPayloadHeader:      CopyExecutionPayloadHeaderCapella(body.ExecutionPayloadHeader),
+		DilithiumToExecutionChanges: CopyDilithiumToExecutionChanges(body.DilithiumToExecutionChanges),
 	}
 }
 
@@ -680,18 +680,18 @@ func CopyWithdrawal(withdrawal *enginev1.Withdrawal) *enginev1.Withdrawal {
 	}
 }
 
-func CopyBLSToExecutionChanges(changes []*SignedBLSToExecutionChange) []*SignedBLSToExecutionChange {
+func CopyDilithiumToExecutionChanges(changes []*SignedDilithiumToExecutionChange) []*SignedDilithiumToExecutionChange {
 	if changes == nil {
 		return nil
 	}
 
-	res := make([]*SignedBLSToExecutionChange, len(changes))
+	res := make([]*SignedDilithiumToExecutionChange, len(changes))
 	for i := 0; i < len(changes); i++ {
-		res[i] = &SignedBLSToExecutionChange{
-			Message: &BLSToExecutionChange{
-				ValidatorIndex:     changes[i].Message.ValidatorIndex,
-				FromBlsPubkey:      bytesutil.SafeCopyBytes(changes[i].Message.FromBlsPubkey),
-				ToExecutionAddress: bytesutil.SafeCopyBytes(changes[i].Message.ToExecutionAddress),
+		res[i] = &SignedDilithiumToExecutionChange{
+			Message: &DilithiumToExecutionChange{
+				ValidatorIndex:      changes[i].Message.ValidatorIndex,
+				FromDilithiumPubkey: bytesutil.SafeCopyBytes(changes[i].Message.FromDilithiumPubkey),
+				ToExecutionAddress:  bytesutil.SafeCopyBytes(changes[i].Message.ToExecutionAddress),
 			},
 			Signature: bytesutil.SafeCopyBytes(changes[i].Signature),
 		}

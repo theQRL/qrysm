@@ -248,7 +248,7 @@ func (BeaconBlockBody) Execution() (interfaces.ExecutionData, error) {
 	panic("implement me")
 }
 
-func (BeaconBlockBody) BLSToExecutionChanges() ([]*eth.SignedBLSToExecutionChange, error) {
+func (BeaconBlockBody) DilithiumToExecutionChanges() ([]*eth.SignedDilithiumToExecutionChange, error) {
 	panic("implement me")
 }
 
@@ -296,7 +296,7 @@ func (b *BeaconBlockBody) SetExecution(interfaces.ExecutionData) error {
 	panic("implement me")
 }
 
-func (b *BeaconBlockBody) SetBLSToExecutionChanges([]*eth.SignedBLSToExecutionChange) error {
+func (b *BeaconBlockBody) SetDilithiumToExecutionChanges([]*eth.SignedDilithiumToExecutionChange) error {
 	panic("implement me")
 }
 

@@ -11,7 +11,7 @@ import (
 	"go.opencensus.io/trace"
 )
 
-func (s *Service) validateBlsToExecutionChange(ctx context.Context, pid peer.ID, msg *pubsub.Message) (pubsub.ValidationResult, error) {
+func (s *Service) validateDilithiumToExecutionChange(ctx context.Context, pid peer.ID, msg *pubsub.Message) (pubsub.ValidationResult, error) {
 	// Validation runs on publish (not just subscriptions), so we should approve any message from
 	// ourselves.
 	if pid == s.cfg.p2p.PeerID() {
@@ -23,7 +23,7 @@ func (s *Service) validateBlsToExecutionChange(ctx context.Context, pid peer.ID,
 		return pubsub.ValidationIgnore, nil
 	}
 
-	ctx, span := trace.StartSpan(ctx, "sync.validateBlsToExecutionChange")
+	ctx, span := trace.StartSpan(ctx, "sync.validateDilithiumToExecutionChange")
 	defer span.End()
 
 	m, err := s.decodePubsubMessage(msg)
@@ -32,13 +32,13 @@ func (s *Service) validateBlsToExecutionChange(ctx context.Context, pid peer.ID,
 		return pubsub.ValidationReject, err
 	}
 
-	blsChange, ok := m.(*ethpb.SignedBLSToExecutionChange)
+	dilithiumChange, ok := m.(*ethpb.SignedDilithiumToExecutionChange)
 	if !ok {
 		return pubsub.ValidationReject, errWrongMessage
 	}
 
 	// Check that the validator hasn't submitted a previous execution change.
-	if s.cfg.blsToExecPool.ValidatorExists(blsChange.Message.ValidatorIndex) {
+	if s.cfg.dilithiumToExecPool.ValidatorExists(dilithiumChange.Message.ValidatorIndex) {
 		return pubsub.ValidationIgnore, nil
 	}
 	st, err := s.cfg.chain.HeadStateReadOnly(ctx)
@@ -46,19 +46,19 @@ func (s *Service) validateBlsToExecutionChange(ctx context.Context, pid peer.ID,
 		return pubsub.ValidationIgnore, err
 	}
 	// Validate that the execution change object is valid.
-	_, err = blocks.ValidateBLSToExecutionChange(st, blsChange)
+	_, err = blocks.ValidateDilithiumToExecutionChange(st, dilithiumChange)
 	if err != nil {
 		return pubsub.ValidationReject, err
 	}
 	// Validate the signature of the message using our batch gossip verifier.
-	sigBatch, err := blocks.BLSChangesSignatureBatch(st, []*ethpb.SignedBLSToExecutionChange{blsChange})
+	sigBatch, err := blocks.DilithiumChangesSignatureBatch(st, []*ethpb.SignedDilithiumToExecutionChange{dilithiumChange})
 	if err != nil {
 		return pubsub.ValidationReject, err
 	}
-	res, err := s.validateWithBatchVerifier(ctx, "bls to execution change", sigBatch)
+	res, err := s.validateWithBatchVerifier(ctx, "dilithium to execution change", sigBatch)
 	if res != pubsub.ValidationAccept {
 		return res, err
 	}
-	msg.ValidatorData = blsChange // Used in downstream subscriber
+	msg.ValidatorData = dilithiumChange // Used in downstream subscriber
 	return pubsub.ValidationAccept, nil
 }

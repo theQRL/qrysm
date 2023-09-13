@@ -18,21 +18,21 @@ func jsonifyTransactions(transactions [][]byte) []string {
 	return jsonTransactions
 }
 
-func jsonifyBlsToExecutionChanges(blsToExecutionChanges []*ethpb.SignedBLSToExecutionChange) []*apimiddleware.SignedBLSToExecutionChangeJson {
-	jsonBlsToExecutionChanges := make([]*apimiddleware.SignedBLSToExecutionChangeJson, len(blsToExecutionChanges))
-	for index, signedBlsToExecutionChange := range blsToExecutionChanges {
-		blsToExecutionChangeJson := &apimiddleware.BLSToExecutionChangeJson{
-			ValidatorIndex:     uint64ToString(signedBlsToExecutionChange.Message.ValidatorIndex),
-			FromBLSPubkey:      hexutil.Encode(signedBlsToExecutionChange.Message.FromBlsPubkey),
-			ToExecutionAddress: hexutil.Encode(signedBlsToExecutionChange.Message.ToExecutionAddress),
+func jsonifyDilithiumToExecutionChanges(dilithiumToExecutionChanges []*ethpb.SignedDilithiumToExecutionChange) []*apimiddleware.SignedDilithiumToExecutionChangeJson {
+	jsonDilithiumToExecutionChanges := make([]*apimiddleware.SignedDilithiumToExecutionChangeJson, len(dilithiumToExecutionChanges))
+	for index, signedDilithiumToExecutionChange := range dilithiumToExecutionChanges {
+		dilithiumToExecutionChangeJson := &apimiddleware.DilithiumToExecutionChangeJson{
+			ValidatorIndex:      uint64ToString(signedDilithiumToExecutionChange.Message.ValidatorIndex),
+			FromDilithiumPubkey: hexutil.Encode(signedDilithiumToExecutionChange.Message.FromDilithiumPubkey),
+			ToExecutionAddress:  hexutil.Encode(signedDilithiumToExecutionChange.Message.ToExecutionAddress),
 		}
-		signedJson := &apimiddleware.SignedBLSToExecutionChangeJson{
-			Message:   blsToExecutionChangeJson,
-			Signature: hexutil.Encode(signedBlsToExecutionChange.Signature),
+		signedJson := &apimiddleware.SignedDilithiumToExecutionChangeJson{
+			Message:   dilithiumToExecutionChangeJson,
+			Signature: hexutil.Encode(signedDilithiumToExecutionChange.Signature),
 		}
-		jsonBlsToExecutionChanges[index] = signedJson
+		jsonDilithiumToExecutionChanges[index] = signedJson
 	}
-	return jsonBlsToExecutionChanges
+	return jsonDilithiumToExecutionChanges
 }
 
 func jsonifyEth1Data(eth1Data *ethpb.Eth1Data) *apimiddleware.Eth1DataJson {

@@ -52,22 +52,22 @@ func (mb *mockBroadcaster) BroadcastSyncCommitteeMessage(_ context.Context, _ ui
 	return nil
 }
 
-func (mb *mockBroadcaster) BroadcastBLSChanges(_ context.Context, _ []*ethpb.SignedBLSToExecutionChange) {
+func (mb *mockBroadcaster) BroadcastDilithiumChanges(_ context.Context, _ []*ethpb.SignedDilithiumToExecutionChange) {
 }
 
 var _ p2p.Broadcaster = (*mockBroadcaster)(nil)
 
 type testServiceRequirements struct {
-	ctx     context.Context
-	db      db.Database
-	fcs     forkchoice.ForkChoicer
-	sg      *stategen.State
-	notif   statefeed.Notifier
-	cs      *startup.ClockSynchronizer
-	attPool attestations.Pool
-	attSrv  *attestations.Service
-	blsPool *blstoexec.Pool
-	dc      *depositcache.DepositCache
+	ctx           context.Context
+	db            db.Database
+	fcs           forkchoice.ForkChoicer
+	sg            *stategen.State
+	notif         statefeed.Notifier
+	cs            *startup.ClockSynchronizer
+	attPool       attestations.Pool
+	attSrv        *attestations.Service
+	dilithiumPool *blstoexec.Pool
+	dc            *depositcache.DepositCache
 }
 
 func minimalTestService(t *testing.T, opts ...Option) (*Service, *testServiceRequirements) {
@@ -81,20 +81,20 @@ func minimalTestService(t *testing.T, opts ...Option) (*Service, *testServiceReq
 	attPool := attestations.NewPool()
 	attSrv, err := attestations.NewService(ctx, &attestations.Config{Pool: attPool})
 	require.NoError(t, err)
-	blsPool := blstoexec.NewPool()
+	dilithiumPool := blstoexec.NewPool()
 	dc, err := depositcache.New()
 	require.NoError(t, err)
 	req := &testServiceRequirements{
-		ctx:     ctx,
-		db:      beaconDB,
-		fcs:     fcs,
-		sg:      sg,
-		notif:   notif,
-		cs:      cs,
-		attPool: attPool,
-		attSrv:  attSrv,
-		blsPool: blsPool,
-		dc:      dc,
+		ctx:           ctx,
+		db:            beaconDB,
+		fcs:           fcs,
+		sg:            sg,
+		notif:         notif,
+		cs:            cs,
+		attPool:       attPool,
+		attSrv:        attSrv,
+		dilithiumPool: dilithiumPool,
+		dc:            dc,
 	}
 	defOpts := []Option{WithDatabase(req.db),
 		WithStateNotifier(req.notif),
@@ -103,7 +103,7 @@ func minimalTestService(t *testing.T, opts ...Option) (*Service, *testServiceReq
 		WithClockSynchronizer(req.cs),
 		WithAttestationPool(req.attPool),
 		WithAttestationService(req.attSrv),
-		WithBLSToExecPool(req.blsPool),
+		WithDilithiumToExecPool(req.dilithiumPool),
 		WithDepositCache(dc),
 	}
 	// append the variadic opts so they override the defaults by being processed afterwards

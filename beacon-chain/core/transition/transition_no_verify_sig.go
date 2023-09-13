@@ -20,7 +20,7 @@ import (
 )
 
 // ExecuteStateTransitionNoVerifyAnySig defines the procedure for a state transition function.
-// This does not validate any BLS signatures of attestations, block proposer signature, randao signature,
+// This does not validate any Dilithium signatures of attestations, block proposer signature, randao signature,
 // it is used for performing a state transition as quickly as possible. This function also returns a signature
 // set of all signatures not verified, so that they can be stored and verified later.
 //
@@ -87,11 +87,11 @@ func ExecuteStateTransitionNoVerifyAnySig(
 }
 
 // CalculateStateRoot defines the procedure for a state transition function.
-// This does not validate any BLS signatures in a block, it is used for calculating the
+// This does not validate any Dilithium signatures in a block, it is used for calculating the
 // state root of the state for the block proposer to use.
 // This does not modify state.
 //
-// WARNING: This method does not validate any BLS signatures (i.e. calling `state_transition()` with `validate_result=False`).
+// WARNING: This method does not validate any Dilithium signatures (i.e. calling `state_transition()` with `validate_result=False`).
 // This is used for proposer to compute state root before proposing a new block, and this does not modify state.
 //
 // Spec pseudocode definition:
@@ -201,13 +201,13 @@ func ProcessBlockNoVerifyAnySig(
 	set.Join(bSet).Join(rSet).Join(aSet)
 
 	if blk.Version() >= version.Capella {
-		changes, err := signed.Block().Body().BLSToExecutionChanges()
+		changes, err := signed.Block().Body().DilithiumToExecutionChanges()
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "could not get BLSToExecutionChanges")
+			return nil, nil, errors.Wrap(err, "could not get DilithiumToExecutionChanges")
 		}
-		cSet, err := b.BLSChangesSignatureBatch(st, changes)
+		cSet, err := b.DilithiumChangesSignatureBatch(st, changes)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "could not get BLSToExecutionChanges signatures")
+			return nil, nil, errors.Wrap(err, "could not get DilithiumToExecutionChanges signatures")
 		}
 		set.Join(cSet)
 	}
@@ -383,7 +383,7 @@ func altairOperations(
 	if err != nil {
 		return nil, errors.Wrap(err, "could not process voluntary exits")
 	}
-	return b.ProcessBLSToExecutionChanges(st, signedBeaconBlock)
+	return b.ProcessDilithiumToExecutionChanges(st, signedBeaconBlock)
 }
 
 // This calls phase 0 block operations.

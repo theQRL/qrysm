@@ -106,7 +106,7 @@ type Config struct {
 	SlashingsPool                 slashings.PoolManager
 	SlashingChecker               slasherservice.SlashingChecker
 	SyncCommitteeObjectPool       synccommittee.Pool
-	BLSChangesPool                blstoexec.PoolManager
+	DilithiumChangesPool          blstoexec.PoolManager
 	SyncService                   chainSync.Checker
 	Broadcaster                   p2p.Broadcaster
 	PeersFetcher                  p2p.PeersProvider
@@ -261,7 +261,7 @@ func (s *Service) Start() {
 		BeaconDB:               s.cfg.BeaconDB,
 		ProposerSlotIndexCache: s.cfg.ProposerIdsCache,
 		BlockBuilder:           s.cfg.BlockBuilder,
-		BLSChangesPool:         s.cfg.BLSChangesPool,
+		DilithiumChangesPool:   s.cfg.DilithiumChangesPool,
 		ClockWaiter:            s.cfg.ClockWaiter,
 	}
 	validatorServerV1 := &validator.Server{
@@ -368,7 +368,7 @@ func (s *Service) Start() {
 		V1Alpha1ValidatorServer:       validatorServer,
 		SyncChecker:                   s.cfg.SyncService,
 		ExecutionPayloadReconstructor: s.cfg.ExecutionPayloadReconstructor,
-		BLSChangesPool:                s.cfg.BLSChangesPool,
+		DilithiumChangesPool:          s.cfg.DilithiumChangesPool,
 		FinalizationFetcher:           s.cfg.FinalizationFetcher,
 		ForkchoiceFetcher:             s.cfg.ForkchoiceFetcher,
 	}

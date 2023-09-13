@@ -8,26 +8,26 @@ import (
 
 // PoolMock is a fake implementation of PoolManager.
 type PoolMock struct {
-	Changes []*eth.SignedBLSToExecutionChange
+	Changes []*eth.SignedDilithiumToExecutionChange
 }
 
-// PendingBLSToExecChanges --
-func (m *PoolMock) PendingBLSToExecChanges() ([]*eth.SignedBLSToExecutionChange, error) {
+// PendingDilithiumToExecChanges --
+func (m *PoolMock) PendingDilithiumToExecChanges() ([]*eth.SignedDilithiumToExecutionChange, error) {
 	return m.Changes, nil
 }
 
-// BLSToExecChangesForInclusion --
-func (m *PoolMock) BLSToExecChangesForInclusion(_ state.ReadOnlyBeaconState) ([]*eth.SignedBLSToExecutionChange, error) {
+// DilithiumToExecChangesForInclusion --
+func (m *PoolMock) DilithiumToExecChangesForInclusion(_ state.ReadOnlyBeaconState) ([]*eth.SignedDilithiumToExecutionChange, error) {
 	return m.Changes, nil
 }
 
-// InsertBLSToExecChange --
-func (m *PoolMock) InsertBLSToExecChange(change *eth.SignedBLSToExecutionChange) {
+// InsertDilithiumToExecChange --
+func (m *PoolMock) InsertDilithiumToExecChange(change *eth.SignedDilithiumToExecutionChange) {
 	m.Changes = append(m.Changes, change)
 }
 
 // MarkIncluded --
-func (*PoolMock) MarkIncluded(_ *eth.SignedBLSToExecutionChange) {
+func (*PoolMock) MarkIncluded(_ *eth.SignedDilithiumToExecutionChange) {
 	panic("implement me")
 }
 

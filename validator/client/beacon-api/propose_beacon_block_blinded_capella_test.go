@@ -65,7 +65,7 @@ func TestProposeBeaconBlock_BlindedCapella(t *testing.T) {
 					TransactionsRoot: hexutil.Encode(blindedCapellaBlock.BlindedCapella.Block.Body.ExecutionPayloadHeader.TransactionsRoot),
 					WithdrawalsRoot:  hexutil.Encode(blindedCapellaBlock.BlindedCapella.Block.Body.ExecutionPayloadHeader.WithdrawalsRoot),
 				},
-				BLSToExecutionChanges: jsonifyBlsToExecutionChanges(blindedCapellaBlock.BlindedCapella.Block.Body.BlsToExecutionChanges),
+				DilithiumToExecutionChanges: jsonifyDilithiumToExecutionChanges(blindedCapellaBlock.BlindedCapella.Block.Body.DilithiumToExecutionChanges),
 			},
 		},
 	}
@@ -326,20 +326,20 @@ func generateSignedBlindedCapellaBlock() *ethpb.GenericSignedBeaconBlock_Blinded
 						TransactionsRoot: test_helpers.FillByteSlice(32, 125),
 						WithdrawalsRoot:  test_helpers.FillByteSlice(32, 126),
 					},
-					BlsToExecutionChanges: []*ethpb.SignedBLSToExecutionChange{
+					DilithiumToExecutionChanges: []*ethpb.SignedDilithiumToExecutionChange{
 						{
-							Message: &ethpb.BLSToExecutionChange{
-								ValidatorIndex:     127,
-								FromBlsPubkey:      test_helpers.FillByteSlice(48, 128),
-								ToExecutionAddress: test_helpers.FillByteSlice(20, 129),
+							Message: &ethpb.DilithiumToExecutionChange{
+								ValidatorIndex:      127,
+								FromDilithiumPubkey: test_helpers.FillByteSlice(48, 128),
+								ToExecutionAddress:  test_helpers.FillByteSlice(20, 129),
 							},
 							Signature: test_helpers.FillByteSlice(96, 130),
 						},
 						{
-							Message: &ethpb.BLSToExecutionChange{
-								ValidatorIndex:     131,
-								FromBlsPubkey:      test_helpers.FillByteSlice(48, 132),
-								ToExecutionAddress: test_helpers.FillByteSlice(20, 133),
+							Message: &ethpb.DilithiumToExecutionChange{
+								ValidatorIndex:      131,
+								FromDilithiumPubkey: test_helpers.FillByteSlice(48, 132),
+								ToExecutionAddress:  test_helpers.FillByteSlice(20, 133),
 							},
 							Signature: test_helpers.FillByteSlice(96, 134),
 						},

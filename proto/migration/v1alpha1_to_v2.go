@@ -450,13 +450,13 @@ func V1Alpha1BeaconBlockCapellaToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlock
 		return nil, errors.Wrapf(err, "could not calculate transactions root")
 	}
 
-	changes := make([]*ethpbv2.SignedBLSToExecutionChange, len(v1alpha1Block.Body.BlsToExecutionChanges))
-	for i, change := range v1alpha1Block.Body.BlsToExecutionChanges {
-		changes[i] = &ethpbv2.SignedBLSToExecutionChange{
-			Message: &ethpbv2.BLSToExecutionChange{
-				ValidatorIndex:     change.Message.ValidatorIndex,
-				FromBlsPubkey:      bytesutil.SafeCopyBytes(change.Message.FromBlsPubkey),
-				ToExecutionAddress: bytesutil.SafeCopyBytes(change.Message.ToExecutionAddress),
+	changes := make([]*ethpbv2.SignedDilithiumToExecutionChange, len(v1alpha1Block.Body.DilithiumToExecutionChanges))
+	for i, change := range v1alpha1Block.Body.DilithiumToExecutionChanges {
+		changes[i] = &ethpbv2.SignedDilithiumToExecutionChange{
+			Message: &ethpbv2.DilithiumToExecutionChange{
+				ValidatorIndex:      change.Message.ValidatorIndex,
+				FromDilithiumPubkey: bytesutil.SafeCopyBytes(change.Message.FromDilithiumPubkey),
+				ToExecutionAddress:  bytesutil.SafeCopyBytes(change.Message.ToExecutionAddress),
 			},
 			Signature: bytesutil.SafeCopyBytes(change.Signature),
 		}
@@ -496,7 +496,7 @@ func V1Alpha1BeaconBlockCapellaToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlock
 			TransactionsRoot: transactionsRoot[:],
 			WithdrawalsRoot:  withdrawalsRoot[:],
 		},
-		BlsToExecutionChanges: changes,
+		DilithiumToExecutionChanges: changes,
 	}
 	v2Block := &ethpbv2.BlindedBeaconBlockCapella{
 		Slot:          v1alpha1Block.Slot,
@@ -949,24 +949,24 @@ func V1Alpha1SignedContributionAndProofToV2(alphaContribution *ethpbalpha.Signed
 	return result
 }
 
-func V2SignedBLSToExecutionChangeToV1Alpha1(change *ethpbv2.SignedBLSToExecutionChange) *ethpbalpha.SignedBLSToExecutionChange {
-	return &ethpbalpha.SignedBLSToExecutionChange{
-		Message: &ethpbalpha.BLSToExecutionChange{
-			ValidatorIndex:     change.Message.ValidatorIndex,
-			FromBlsPubkey:      bytesutil.SafeCopyBytes(change.Message.FromBlsPubkey),
-			ToExecutionAddress: bytesutil.SafeCopyBytes(change.Message.ToExecutionAddress),
+func V2SignedDilithiumToExecutionChangeToV1Alpha1(change *ethpbv2.SignedDilithiumToExecutionChange) *ethpbalpha.SignedDilithiumToExecutionChange {
+	return &ethpbalpha.SignedDilithiumToExecutionChange{
+		Message: &ethpbalpha.DilithiumToExecutionChange{
+			ValidatorIndex:      change.Message.ValidatorIndex,
+			FromDilithiumPubkey: bytesutil.SafeCopyBytes(change.Message.FromDilithiumPubkey),
+			ToExecutionAddress:  bytesutil.SafeCopyBytes(change.Message.ToExecutionAddress),
 		},
 		Signature: bytesutil.SafeCopyBytes(change.Signature),
 	}
 }
 
-// V1Alpha1SignedBLSToExecChangeToV2 converts a v1alpha1 SignedBLSToExecutionChange object to its v2 equivalent.
-func V1Alpha1SignedBLSToExecChangeToV2(alphaChange *ethpbalpha.SignedBLSToExecutionChange) *ethpbv2.SignedBLSToExecutionChange {
-	result := &ethpbv2.SignedBLSToExecutionChange{
-		Message: &ethpbv2.BLSToExecutionChange{
-			ValidatorIndex:     alphaChange.Message.ValidatorIndex,
-			FromBlsPubkey:      bytesutil.SafeCopyBytes(alphaChange.Message.FromBlsPubkey),
-			ToExecutionAddress: bytesutil.SafeCopyBytes(alphaChange.Message.ToExecutionAddress),
+// V1Alpha1SignedDilithiumToExecChangeToV2 converts a v1alpha1 SignedDilithiumToExecutionChange object to its v2 equivalent.
+func V1Alpha1SignedDilithiumToExecChangeToV2(alphaChange *ethpbalpha.SignedDilithiumToExecutionChange) *ethpbv2.SignedDilithiumToExecutionChange {
+	result := &ethpbv2.SignedDilithiumToExecutionChange{
+		Message: &ethpbv2.DilithiumToExecutionChange{
+			ValidatorIndex:      alphaChange.Message.ValidatorIndex,
+			FromDilithiumPubkey: bytesutil.SafeCopyBytes(alphaChange.Message.FromDilithiumPubkey),
+			ToExecutionAddress:  bytesutil.SafeCopyBytes(alphaChange.Message.ToExecutionAddress),
 		},
 		Signature: bytesutil.SafeCopyBytes(alphaChange.Signature),
 	}

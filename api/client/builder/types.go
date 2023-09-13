@@ -977,37 +977,37 @@ func (b *BlindedBeaconBlockBodyBellatrix) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// SignedBLSToExecutionChange is a field in Beacon Block Body for capella and above.
-type SignedBLSToExecutionChange struct {
-	*eth.SignedBLSToExecutionChange
+// SignedDilithiumToExecutionChange is a field in Beacon Block Body for capella and above.
+type SignedDilithiumToExecutionChange struct {
+	*eth.SignedDilithiumToExecutionChange
 }
 
-// MarshalJSON returns a JSON byte array representation of SignedBLSToExecutionChange.
-func (ch *SignedBLSToExecutionChange) MarshalJSON() ([]byte, error) {
+// MarshalJSON returns a JSON byte array representation of SignedDilithiumToExecutionChange.
+func (ch *SignedDilithiumToExecutionChange) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Message   *BLSToExecutionChange `json:"message"`
-		Signature hexutil.Bytes         `json:"signature"`
+		Message   *DilithiumToExecutionChange `json:"message"`
+		Signature hexutil.Bytes               `json:"signature"`
 	}{
 		Signature: ch.Signature,
-		Message:   &BLSToExecutionChange{ch.Message},
+		Message:   &DilithiumToExecutionChange{ch.Message},
 	})
 }
 
-// BLSToExecutionChange is a field in SignedBLSToExecutionChange.
-type BLSToExecutionChange struct {
-	*eth.BLSToExecutionChange
+// DilithiumToExecutionChange is a field in SignedDilithiumToExecutionChange.
+type DilithiumToExecutionChange struct {
+	*eth.DilithiumToExecutionChange
 }
 
-// MarshalJSON returns a JSON byte array representation of BLSToExecutionChange.
-func (ch *BLSToExecutionChange) MarshalJSON() ([]byte, error) {
+// MarshalJSON returns a JSON byte array representation of DilithiumToExecutionChange.
+func (ch *DilithiumToExecutionChange) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		ValidatorIndex     string        `json:"validator_index"`
-		FromBlsPubkey      hexutil.Bytes `json:"from_bls_pubkey"`
-		ToExecutionAddress hexutil.Bytes `json:"to_execution_address"`
+		ValidatorIndex      string        `json:"validator_index"`
+		FromDilithiumPubkey hexutil.Bytes `json:"from_dilithium_pubkey"`
+		ToExecutionAddress  hexutil.Bytes `json:"to_execution_address"`
 	}{
-		ValidatorIndex:     fmt.Sprintf("%d", ch.ValidatorIndex),
-		FromBlsPubkey:      ch.FromBlsPubkey,
-		ToExecutionAddress: ch.ToExecutionAddress,
+		ValidatorIndex:      fmt.Sprintf("%d", ch.ValidatorIndex),
+		FromDilithiumPubkey: ch.FromDilithiumPubkey,
+		ToExecutionAddress:  ch.ToExecutionAddress,
 	})
 }
 
@@ -1076,34 +1076,34 @@ func (b *BlindedBeaconBlockBodyCapella) MarshalJSON() ([]byte, error) {
 	for i := range b.ProposerSlashings {
 		pros[i] = &ProposerSlashing{ProposerSlashing: b.ProposerSlashings[i]}
 	}
-	chs := make([]*SignedBLSToExecutionChange, len(b.BlsToExecutionChanges))
-	for i := range b.BlsToExecutionChanges {
-		chs[i] = &SignedBLSToExecutionChange{SignedBLSToExecutionChange: b.BlsToExecutionChanges[i]}
+	chs := make([]*SignedDilithiumToExecutionChange, len(b.DilithiumToExecutionChanges))
+	for i := range b.DilithiumToExecutionChanges {
+		chs[i] = &SignedDilithiumToExecutionChange{SignedDilithiumToExecutionChange: b.DilithiumToExecutionChanges[i]}
 	}
 	return json.Marshal(struct {
-		RandaoReveal           hexutil.Bytes                  `json:"randao_reveal"`
-		Eth1Data               *Eth1Data                      `json:"eth1_data"`
-		Graffiti               hexutil.Bytes                  `json:"graffiti"`
-		ProposerSlashings      []*ProposerSlashing            `json:"proposer_slashings"`
-		AttesterSlashings      []*AttesterSlashing            `json:"attester_slashings"`
-		Attestations           []*Attestation                 `json:"attestations"`
-		Deposits               []*Deposit                     `json:"deposits"`
-		VoluntaryExits         []*SignedVoluntaryExit         `json:"voluntary_exits"`
-		BLSToExecutionChanges  []*SignedBLSToExecutionChange  `json:"bls_to_execution_changes"`
-		SyncAggregate          *SyncAggregate                 `json:"sync_aggregate"`
-		ExecutionPayloadHeader *ExecutionPayloadHeaderCapella `json:"execution_payload_header"`
+		RandaoReveal                hexutil.Bytes                       `json:"randao_reveal"`
+		Eth1Data                    *Eth1Data                           `json:"eth1_data"`
+		Graffiti                    hexutil.Bytes                       `json:"graffiti"`
+		ProposerSlashings           []*ProposerSlashing                 `json:"proposer_slashings"`
+		AttesterSlashings           []*AttesterSlashing                 `json:"attester_slashings"`
+		Attestations                []*Attestation                      `json:"attestations"`
+		Deposits                    []*Deposit                          `json:"deposits"`
+		VoluntaryExits              []*SignedVoluntaryExit              `json:"voluntary_exits"`
+		DilithiumToExecutionChanges []*SignedDilithiumToExecutionChange `json:"dilithium_to_execution_changes"`
+		SyncAggregate               *SyncAggregate                      `json:"sync_aggregate"`
+		ExecutionPayloadHeader      *ExecutionPayloadHeaderCapella      `json:"execution_payload_header"`
 	}{
-		RandaoReveal:           b.RandaoReveal,
-		Eth1Data:               &Eth1Data{b.Eth1Data},
-		Graffiti:               b.Graffiti,
-		ProposerSlashings:      pros,
-		AttesterSlashings:      atsl,
-		Attestations:           atts,
-		Deposits:               deps,
-		VoluntaryExits:         sve,
-		BLSToExecutionChanges:  chs,
-		SyncAggregate:          &SyncAggregate{b.SyncAggregate},
-		ExecutionPayloadHeader: &ExecutionPayloadHeaderCapella{ExecutionPayloadHeaderCapella: b.ExecutionPayloadHeader},
+		RandaoReveal:                b.RandaoReveal,
+		Eth1Data:                    &Eth1Data{b.Eth1Data},
+		Graffiti:                    b.Graffiti,
+		ProposerSlashings:           pros,
+		AttesterSlashings:           atsl,
+		Attestations:                atts,
+		Deposits:                    deps,
+		VoluntaryExits:              sve,
+		DilithiumToExecutionChanges: chs,
+		SyncAggregate:               &SyncAggregate{b.SyncAggregate},
+		ExecutionPayloadHeader:      &ExecutionPayloadHeaderCapella{ExecutionPayloadHeaderCapella: b.ExecutionPayloadHeader},
 	})
 }
 

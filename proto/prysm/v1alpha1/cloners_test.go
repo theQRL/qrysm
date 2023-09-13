@@ -477,12 +477,12 @@ func TestCopyWithdrawal(t *testing.T) {
 	assert.NotEmpty(t, got, "Copied withdrawal has empty fields")
 }
 
-func TestCopyBLSToExecutionChanges(t *testing.T) {
-	changes := genBLSToExecutionChanges(10)
+func TestCopyDilithiumToExecutionChanges(t *testing.T) {
+	changes := genDilithiumToExecutionChanges(10)
 
-	got := v1alpha1.CopyBLSToExecutionChanges(changes)
+	got := v1alpha1.CopyDilithiumToExecutionChanges(changes)
 	if !reflect.DeepEqual(got, changes) {
-		t.Errorf("TestCopyBLSToExecutionChanges() = %v, want %v", got, changes)
+		t.Errorf("TestCopyDilithiumToExecutionChanges() = %v, want %v", got, changes)
 	}
 }
 
@@ -774,17 +774,17 @@ func genSignedBeaconBlockBellatrix() *v1alpha1.SignedBeaconBlockBellatrix {
 
 func genBeaconBlockBodyCapella() *v1alpha1.BeaconBlockBodyCapella {
 	return &v1alpha1.BeaconBlockBodyCapella{
-		RandaoReveal:          bytes(96),
-		Eth1Data:              genEth1Data(),
-		Graffiti:              bytes(32),
-		ProposerSlashings:     genProposerSlashings(5),
-		AttesterSlashings:     genAttesterSlashings(5),
-		Attestations:          genAttestations(10),
-		Deposits:              genDeposits(5),
-		VoluntaryExits:        genSignedVoluntaryExits(12),
-		SyncAggregate:         genSyncAggregate(),
-		ExecutionPayload:      genPayloadCapella(),
-		BlsToExecutionChanges: genBLSToExecutionChanges(10),
+		RandaoReveal:                bytes(96),
+		Eth1Data:                    genEth1Data(),
+		Graffiti:                    bytes(32),
+		ProposerSlashings:           genProposerSlashings(5),
+		AttesterSlashings:           genAttesterSlashings(5),
+		Attestations:                genAttestations(10),
+		Deposits:                    genDeposits(5),
+		VoluntaryExits:              genSignedVoluntaryExits(12),
+		SyncAggregate:               genSyncAggregate(),
+		ExecutionPayload:            genPayloadCapella(),
+		DilithiumToExecutionChanges: genDilithiumToExecutionChanges(10),
 	}
 }
 
@@ -807,17 +807,17 @@ func genSignedBeaconBlockCapella() *v1alpha1.SignedBeaconBlockCapella {
 
 func genBlindedBeaconBlockBodyCapella() *v1alpha1.BlindedBeaconBlockBodyCapella {
 	return &v1alpha1.BlindedBeaconBlockBodyCapella{
-		RandaoReveal:           bytes(96),
-		Eth1Data:               genEth1Data(),
-		Graffiti:               bytes(32),
-		ProposerSlashings:      genProposerSlashings(5),
-		AttesterSlashings:      genAttesterSlashings(5),
-		Attestations:           genAttestations(10),
-		Deposits:               genDeposits(5),
-		VoluntaryExits:         genSignedVoluntaryExits(12),
-		SyncAggregate:          genSyncAggregate(),
-		ExecutionPayloadHeader: genPayloadHeaderCapella(),
-		BlsToExecutionChanges:  genBLSToExecutionChanges(10),
+		RandaoReveal:                bytes(96),
+		Eth1Data:                    genEth1Data(),
+		Graffiti:                    bytes(32),
+		ProposerSlashings:           genProposerSlashings(5),
+		AttesterSlashings:           genAttesterSlashings(5),
+		Attestations:                genAttestations(10),
+		Deposits:                    genDeposits(5),
+		VoluntaryExits:              genSignedVoluntaryExits(12),
+		SyncAggregate:               genSyncAggregate(),
+		ExecutionPayloadHeader:      genPayloadHeaderCapella(),
+		DilithiumToExecutionChanges: genDilithiumToExecutionChanges(10),
 	}
 }
 
@@ -955,20 +955,20 @@ func genWithdrawal() *enginev1.Withdrawal {
 	}
 }
 
-func genBLSToExecutionChanges(num int) []*v1alpha1.SignedBLSToExecutionChange {
-	changes := make([]*v1alpha1.SignedBLSToExecutionChange, num)
+func genDilithiumToExecutionChanges(num int) []*v1alpha1.SignedDilithiumToExecutionChange {
+	changes := make([]*v1alpha1.SignedDilithiumToExecutionChange, num)
 	for i := 0; i < num; i++ {
-		changes[i] = genBLSToExecutionChange()
+		changes[i] = genDilithiumToExecutionChange()
 	}
 	return changes
 }
 
-func genBLSToExecutionChange() *v1alpha1.SignedBLSToExecutionChange {
-	return &v1alpha1.SignedBLSToExecutionChange{
-		Message: &v1alpha1.BLSToExecutionChange{
-			ValidatorIndex:     123456,
-			FromBlsPubkey:      bytes(48),
-			ToExecutionAddress: bytes(20),
+func genDilithiumToExecutionChange() *v1alpha1.SignedDilithiumToExecutionChange {
+	return &v1alpha1.SignedDilithiumToExecutionChange{
+		Message: &v1alpha1.DilithiumToExecutionChange{
+			ValidatorIndex:      123456,
+			FromDilithiumPubkey: bytes(48),
+			ToExecutionAddress:  bytes(20),
 		},
 		Signature: bytes(96),
 	}

@@ -373,7 +373,7 @@ func (s *Service) notifyNewHeadEvent(
 	return nil
 }
 
-// This saves the Attestations and BLSToExecChanges between `orphanedRoot` and the common ancestor root that is derived using `newHeadRoot`.
+// This saves the Attestations and DilithiumToExecChanges between `orphanedRoot` and the common ancestor root that is derived using `newHeadRoot`.
 // It also filters out the attestations that is one epoch older as a defense so invalid attestations don't flow into the attestation pool.
 func (s *Service) saveOrphanedOperations(ctx context.Context, orphanedRoot [32]byte, newHeadRoot [32]byte) error {
 	commonAncestorRoot, _, err := s.cfg.ForkChoiceStore.CommonAncestor(ctx, newHeadRoot, orphanedRoot)
@@ -428,12 +428,12 @@ func (s *Service) saveOrphanedOperations(ctx context.Context, orphanedRoot [32]b
 			s.cfg.ExitPool.InsertVoluntaryExit(v)
 		}
 		if orphanedBlk.Version() >= version.Capella {
-			changes, err := orphanedBlk.Block().Body().BLSToExecutionChanges()
+			changes, err := orphanedBlk.Block().Body().DilithiumToExecutionChanges()
 			if err != nil {
-				return errors.Wrap(err, "could not get BLSToExecutionChanges")
+				return errors.Wrap(err, "could not get DilithiumToExecutionChanges")
 			}
 			for _, c := range changes {
-				s.cfg.BLSToExecPool.InsertBLSToExecChange(c)
+				s.cfg.DilithiumToExecPool.InsertDilithiumToExecChange(c)
 			}
 		}
 		parentRoot := orphanedBlk.Block().ParentRoot()

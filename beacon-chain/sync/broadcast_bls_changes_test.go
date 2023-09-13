@@ -24,7 +24,7 @@ import (
 	logTest "github.com/sirupsen/logrus/hooks/test"
 )
 
-func TestBroadcastBLSChanges(t *testing.T) {
+func TestBroadcastDilithiumChanges(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	c := params.BeaconConfig()
 	c.CapellaForkEpoch = c.BellatrixForkEpoch.Add(2)
@@ -38,24 +38,24 @@ func TestBroadcastBLSChanges(t *testing.T) {
 		WithInitialSync(&mockSync.Sync{IsSyncing: false}),
 		WithChainService(chainService),
 		WithOperationNotifier(chainService.OperationNotifier()),
-		WithBlsToExecPool(blstoexec.NewPool()),
+		WithDilithiumToExecPool(blstoexec.NewPool()),
 	)
 	var emptySig [96]byte
-	s.cfg.blsToExecPool.InsertBLSToExecChange(&ethpb.SignedBLSToExecutionChange{
-		Message: &ethpb.BLSToExecutionChange{
-			ValidatorIndex:     10,
-			FromBlsPubkey:      make([]byte, 48),
-			ToExecutionAddress: make([]byte, 20),
+	s.cfg.dilithiumToExecPool.InsertDilithiumToExecChange(&ethpb.SignedDilithiumToExecutionChange{
+		Message: &ethpb.DilithiumToExecutionChange{
+			ValidatorIndex:      10,
+			FromDilithiumPubkey: make([]byte, 48),
+			ToExecutionAddress:  make([]byte, 20),
 		},
 		Signature: emptySig[:],
 	})
 
 	capellaStart, err := slots.EpochStart(params.BeaconConfig().CapellaForkEpoch)
 	require.NoError(t, err)
-	s.broadcastBLSChanges(capellaStart + 1)
+	s.broadcastDilithiumChanges(capellaStart + 1)
 }
 
-func TestRateBLSChanges(t *testing.T) {
+func TestRateDilithiumChanges(t *testing.T) {
 	logHook := logTest.NewGlobal()
 	params.SetupTestConfigCleanup(t)
 	c := params.BeaconConfig()
@@ -71,7 +71,7 @@ func TestRateBLSChanges(t *testing.T) {
 		WithInitialSync(&mockSync.Sync{IsSyncing: false}),
 		WithChainService(chainService),
 		WithOperationNotifier(chainService.OperationNotifier()),
-		WithBlsToExecPool(blstoexec.NewPool()),
+		WithDilithiumToExecPool(blstoexec.NewPool()),
 	)
 	beaconDB := testingdb.SetupDB(t)
 	s.cfg.stateGen = stategen.New(beaconDB, doublylinkedtree.New())
@@ -85,28 +85,28 @@ func TestRateBLSChanges(t *testing.T) {
 	}
 
 	for i := 0; i < 200; i++ {
-		message := &ethpb.BLSToExecutionChange{
-			ValidatorIndex:     primitives.ValidatorIndex(i),
-			FromBlsPubkey:      keys[i+1].PublicKey().Marshal(),
-			ToExecutionAddress: bytesutil.PadTo([]byte("address"), 20),
+		message := &ethpb.DilithiumToExecutionChange{
+			ValidatorIndex:      primitives.ValidatorIndex(i),
+			FromDilithiumPubkey: keys[i+1].PublicKey().Marshal(),
+			ToExecutionAddress:  bytesutil.PadTo([]byte("address"), 20),
 		}
 		epoch := params.BeaconConfig().CapellaForkEpoch + 1
-		domain, err := signing.Domain(st.Fork(), epoch, params.BeaconConfig().DomainBLSToExecutionChange, st.GenesisValidatorsRoot())
+		domain, err := signing.Domain(st.Fork(), epoch, params.BeaconConfig().DomainDilithiumToExecutionChange, st.GenesisValidatorsRoot())
 		assert.NoError(t, err)
 		htr, err := signing.SigningData(message.HashTreeRoot, domain)
 		assert.NoError(t, err)
-		signed := &ethpb.SignedBLSToExecutionChange{
+		signed := &ethpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: keys[i+1].Sign(htr[:]).Marshal(),
 		}
 
-		s.cfg.blsToExecPool.InsertBLSToExecChange(signed)
+		s.cfg.dilithiumToExecPool.InsertDilithiumToExecChange(signed)
 	}
 
 	require.Equal(t, false, p1.BroadcastCalled)
 	slot, err := slots.EpochStart(params.BeaconConfig().CapellaForkEpoch)
 	require.NoError(t, err)
-	s.broadcastBLSChanges(slot)
+	s.broadcastDilithiumChanges(slot)
 	time.Sleep(100 * time.Millisecond) // Need a sleep for the go routine to be ready
 	require.Equal(t, true, p1.BroadcastCalled)
 	require.LogsDoNotContain(t, logHook, "could not")
@@ -117,16 +117,16 @@ func TestRateBLSChanges(t *testing.T) {
 	require.LogsDoNotContain(t, logHook, "could not")
 }
 
-func TestBroadcastBLSBatch_changes_slice(t *testing.T) {
-	message := &ethpb.BLSToExecutionChange{
-		FromBlsPubkey:      make([]byte, 48),
-		ToExecutionAddress: make([]byte, 20),
+func TestBroadcastDilithiumBatch_changes_slice(t *testing.T) {
+	message := &ethpb.DilithiumToExecutionChange{
+		FromDilithiumPubkey: make([]byte, 48),
+		ToExecutionAddress:  make([]byte, 20),
 	}
-	signed := &ethpb.SignedBLSToExecutionChange{
+	signed := &ethpb.SignedDilithiumToExecutionChange{
 		Message:   message,
 		Signature: make([]byte, 96),
 	}
-	changes := make([]*ethpb.SignedBLSToExecutionChange, 200)
+	changes := make([]*ethpb.SignedDilithiumToExecutionChange, 200)
 	for i := 0; i < len(changes); i++ {
 		changes[i] = signed
 	}
@@ -140,7 +140,7 @@ func TestBroadcastBLSBatch_changes_slice(t *testing.T) {
 		WithInitialSync(&mockSync.Sync{IsSyncing: false}),
 		WithChainService(chainService),
 		WithOperationNotifier(chainService.OperationNotifier()),
-		WithBlsToExecPool(blstoexec.NewPool()),
+		WithDilithiumToExecPool(blstoexec.NewPool()),
 	)
 	beaconDB := testingdb.SetupDB(t)
 	s.cfg.stateGen = stategen.New(beaconDB, doublylinkedtree.New())
@@ -153,6 +153,6 @@ func TestBroadcastBLSBatch_changes_slice(t *testing.T) {
 		State:          st,
 	}
 
-	s.broadcastBLSBatch(s.ctx, &changes)
+	s.broadcastDilithiumBatch(s.ctx, &changes)
 	require.Equal(t, 200-128, len(changes))
 }

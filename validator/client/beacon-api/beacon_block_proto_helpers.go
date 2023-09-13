@@ -403,43 +403,43 @@ func convertWithdrawalsToProto(jsonWithdrawals []*apimiddleware.WithdrawalJson) 
 	return withdrawals, nil
 }
 
-func convertBlsToExecutionChangesToProto(jsonSignedBlsToExecutionChanges []*apimiddleware.SignedBLSToExecutionChangeJson) ([]*ethpb.SignedBLSToExecutionChange, error) {
-	signedBlsToExecutionChanges := make([]*ethpb.SignedBLSToExecutionChange, len(jsonSignedBlsToExecutionChanges))
+func convertDilithiumToExecutionChangesToProto(jsonSignedDilithiumToExecutionChanges []*apimiddleware.SignedDilithiumToExecutionChangeJson) ([]*ethpb.SignedDilithiumToExecutionChange, error) {
+	signedBlsToExecutionChanges := make([]*ethpb.SignedDilithiumToExecutionChange, len(jsonSignedDilithiumToExecutionChanges))
 
-	for index, jsonBlsToExecutionChange := range jsonSignedBlsToExecutionChanges {
-		if jsonBlsToExecutionChange == nil {
-			return nil, errors.Errorf("bls to execution change at index `%d` is nil", index)
+	for index, jsonDilithiumToExecutionChange := range jsonSignedDilithiumToExecutionChanges {
+		if jsonDilithiumToExecutionChange == nil {
+			return nil, errors.Errorf("dilithium to execution change at index `%d` is nil", index)
 		}
 
-		if jsonBlsToExecutionChange.Message == nil {
-			return nil, errors.Errorf("bls to execution change message at index `%d` is nil", index)
+		if jsonDilithiumToExecutionChange.Message == nil {
+			return nil, errors.Errorf("dilithium to execution change message at index `%d` is nil", index)
 		}
 
-		validatorIndex, err := strconv.ParseUint(jsonBlsToExecutionChange.Message.ValidatorIndex, 10, 64)
+		validatorIndex, err := strconv.ParseUint(jsonDilithiumToExecutionChange.Message.ValidatorIndex, 10, 64)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to decode validator index `%s`", jsonBlsToExecutionChange.Message.ValidatorIndex)
+			return nil, errors.Wrapf(err, "failed to decode validator index `%s`", jsonDilithiumToExecutionChange.Message.ValidatorIndex)
 		}
 
-		fromBlsPubkey, err := hexutil.Decode(jsonBlsToExecutionChange.Message.FromBLSPubkey)
+		fromDilithiumPubkey, err := hexutil.Decode(jsonDilithiumToExecutionChange.Message.FromDilithiumPubkey)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to decode bls pubkey `%s`", jsonBlsToExecutionChange.Message.FromBLSPubkey)
+			return nil, errors.Wrapf(err, "failed to decode bls pubkey `%s`", jsonDilithiumToExecutionChange.Message.FromDilithiumPubkey)
 		}
 
-		toExecutionAddress, err := hexutil.Decode(jsonBlsToExecutionChange.Message.ToExecutionAddress)
+		toExecutionAddress, err := hexutil.Decode(jsonDilithiumToExecutionChange.Message.ToExecutionAddress)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to decode execution address `%s`", jsonBlsToExecutionChange.Message.ToExecutionAddress)
+			return nil, errors.Wrapf(err, "failed to decode execution address `%s`", jsonDilithiumToExecutionChange.Message.ToExecutionAddress)
 		}
 
-		signature, err := hexutil.Decode(jsonBlsToExecutionChange.Signature)
+		signature, err := hexutil.Decode(jsonDilithiumToExecutionChange.Signature)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to decode signature `%s`", jsonBlsToExecutionChange.Signature)
+			return nil, errors.Wrapf(err, "failed to decode signature `%s`", jsonDilithiumToExecutionChange.Signature)
 		}
 
-		signedBlsToExecutionChanges[index] = &ethpb.SignedBLSToExecutionChange{
-			Message: &ethpb.BLSToExecutionChange{
-				ValidatorIndex:     primitives.ValidatorIndex(validatorIndex),
-				FromBlsPubkey:      fromBlsPubkey,
-				ToExecutionAddress: toExecutionAddress,
+		signedBlsToExecutionChanges[index] = &ethpb.SignedDilithiumToExecutionChange{
+			Message: &ethpb.DilithiumToExecutionChange{
+				ValidatorIndex:      primitives.ValidatorIndex(validatorIndex),
+				FromDilithiumPubkey: fromDilithiumPubkey,
+				ToExecutionAddress:  toExecutionAddress,
 			},
 			Signature: signature,
 		}

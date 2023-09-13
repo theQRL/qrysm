@@ -25,45 +25,45 @@ func TestBeaconBlockJsonHelpers_JsonifyTransactions(t *testing.T) {
 }
 
 func TestBeaconBlockJsonHelpers_JsonifyBlsToExecutionChanges(t *testing.T) {
-	input := []*ethpb.SignedBLSToExecutionChange{
+	input := []*ethpb.SignedDilithiumToExecutionChange{
 		{
-			Message: &ethpb.BLSToExecutionChange{
-				ValidatorIndex:     1,
-				FromBlsPubkey:      []byte{2},
-				ToExecutionAddress: []byte{3},
+			Message: &ethpb.DilithiumToExecutionChange{
+				ValidatorIndex:      1,
+				FromDilithiumPubkey: []byte{2},
+				ToExecutionAddress:  []byte{3},
 			},
 			Signature: []byte{7},
 		},
 		{
-			Message: &ethpb.BLSToExecutionChange{
-				ValidatorIndex:     4,
-				FromBlsPubkey:      []byte{5},
-				ToExecutionAddress: []byte{6},
+			Message: &ethpb.DilithiumToExecutionChange{
+				ValidatorIndex:      4,
+				FromDilithiumPubkey: []byte{5},
+				ToExecutionAddress:  []byte{6},
 			},
 			Signature: []byte{8},
 		},
 	}
 
-	expectedResult := []*apimiddleware.SignedBLSToExecutionChangeJson{
+	expectedResult := []*apimiddleware.SignedDilithiumToExecutionChangeJson{
 		{
-			Message: &apimiddleware.BLSToExecutionChangeJson{
-				ValidatorIndex:     "1",
-				FromBLSPubkey:      hexutil.Encode([]byte{2}),
-				ToExecutionAddress: hexutil.Encode([]byte{3}),
+			Message: &apimiddleware.DilithiumToExecutionChangeJson{
+				ValidatorIndex:      "1",
+				FromDilithiumPubkey: hexutil.Encode([]byte{2}),
+				ToExecutionAddress:  hexutil.Encode([]byte{3}),
 			},
 			Signature: hexutil.Encode([]byte{7}),
 		},
 		{
-			Message: &apimiddleware.BLSToExecutionChangeJson{
-				ValidatorIndex:     "4",
-				FromBLSPubkey:      hexutil.Encode([]byte{5}),
-				ToExecutionAddress: hexutil.Encode([]byte{6}),
+			Message: &apimiddleware.DilithiumToExecutionChangeJson{
+				ValidatorIndex:      "4",
+				FromDilithiumPubkey: hexutil.Encode([]byte{5}),
+				ToExecutionAddress:  hexutil.Encode([]byte{6}),
 			},
 			Signature: hexutil.Encode([]byte{8}),
 		},
 	}
 
-	result := jsonifyBlsToExecutionChanges(input)
+	result := jsonifyDilithiumToExecutionChanges(input)
 	assert.DeepEqual(t, expectedResult, result)
 }
 

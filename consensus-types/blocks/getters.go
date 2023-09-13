@@ -244,17 +244,17 @@ func (b *SignedBeaconBlock) ToBlinded() (interfaces.ReadOnlySignedBeaconBlock, e
 					ParentRoot:    b.block.parentRoot[:],
 					StateRoot:     b.block.stateRoot[:],
 					Body: &eth.BlindedBeaconBlockBodyCapella{
-						RandaoReveal:           b.block.body.randaoReveal[:],
-						Eth1Data:               b.block.body.eth1Data,
-						Graffiti:               b.block.body.graffiti[:],
-						ProposerSlashings:      b.block.body.proposerSlashings,
-						AttesterSlashings:      b.block.body.attesterSlashings,
-						Attestations:           b.block.body.attestations,
-						Deposits:               b.block.body.deposits,
-						VoluntaryExits:         b.block.body.voluntaryExits,
-						SyncAggregate:          b.block.body.syncAggregate,
-						ExecutionPayloadHeader: header,
-						BlsToExecutionChanges:  b.block.body.blsToExecutionChanges,
+						RandaoReveal:                b.block.body.randaoReveal[:],
+						Eth1Data:                    b.block.body.eth1Data,
+						Graffiti:                    b.block.body.graffiti[:],
+						ProposerSlashings:           b.block.body.proposerSlashings,
+						AttesterSlashings:           b.block.body.attesterSlashings,
+						Attestations:                b.block.body.attestations,
+						Deposits:                    b.block.body.deposits,
+						VoluntaryExits:              b.block.body.voluntaryExits,
+						SyncAggregate:               b.block.body.syncAggregate,
+						ExecutionPayloadHeader:      header,
+						DilithiumToExecutionChanges: b.block.body.dilithiumToExecutionChanges,
 					},
 				},
 				Signature: b.signature[:],
@@ -872,11 +872,11 @@ func (b *BeaconBlockBody) Execution() (interfaces.ExecutionData, error) {
 	}
 }
 
-func (b *BeaconBlockBody) BLSToExecutionChanges() ([]*eth.SignedBLSToExecutionChange, error) {
+func (b *BeaconBlockBody) DilithiumToExecutionChanges() ([]*eth.SignedDilithiumToExecutionChange, error) {
 	if b.version < version.Capella {
-		return nil, consensus_types.ErrNotSupported("BLSToExecutionChanges", b.version)
+		return nil, consensus_types.ErrNotSupported("DilithiumToExecutionChanges", b.version)
 	}
-	return b.blsToExecutionChanges, nil
+	return b.dilithiumToExecutionChanges, nil
 }
 
 // HashTreeRoot returns the ssz root of the block body.

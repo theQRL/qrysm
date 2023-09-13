@@ -26,13 +26,13 @@ func getHappyPathTestServer(file string, t *testing.T) *httptest.Server {
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == http.MethodGet {
 			fmt.Println(r.RequestURI)
-			if r.RequestURI == "/eth/v1/beacon/pool/bls_to_execution_changes" {
+			if r.RequestURI == "/eth/v1/beacon/pool/dilithium_to_execution_changes" {
 				b, err := os.ReadFile(filepath.Clean(file))
 				require.NoError(t, err)
-				var to []*apimiddleware.SignedBLSToExecutionChangeJson
+				var to []*apimiddleware.SignedDilithiumToExecutionChangeJson
 				err = json.Unmarshal(b, &to)
 				require.NoError(t, err)
-				err = json.NewEncoder(w).Encode(&apimiddleware.BLSToExecutionChangesPoolResponseJson{
+				err = json.NewEncoder(w).Encode(&apimiddleware.DilithiumToExecutionChangesPoolResponseJson{
 					Data: to,
 				})
 				require.NoError(t, err)
@@ -215,12 +215,12 @@ func TestCallWithdrawalEndpoint_Errors(t *testing.T) {
 	l, err := net.Listen("tcp", baseurl)
 	require.NoError(t, err)
 	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.RequestURI == "/eth/v1/beacon/pool/bls_to_execution_changes" {
+		if r.Method == http.MethodPost && r.RequestURI == "/eth/v1/beacon/pool/dilithium_to_execution_changes" {
 			w.WriteHeader(400)
 			w.Header().Set("Content-Type", "application/json")
 			err = json.NewEncoder(w).Encode(&apimiddleware.IndexedVerificationFailureErrorJson{
 				Failures: []*apimiddleware.SingleIndexedVerificationFailureJson{
-					{Index: 0, Message: "Could not validate SignedBLSToExecutionChange"},
+					{Index: 0, Message: "Could not validate SignedDilithiumToExecutionChange"},
 				},
 			})
 			require.NoError(t, err)
@@ -273,7 +273,7 @@ func TestCallWithdrawalEndpoint_Errors(t *testing.T) {
 	err = setWithdrawalAddresses(cliCtx)
 	require.ErrorContains(t, "did not receive 2xx response from API", err)
 
-	assert.LogsContain(t, hook, "Could not validate SignedBLSToExecutionChange")
+	assert.LogsContain(t, hook, "Could not validate SignedDilithiumToExecutionChange")
 }
 
 func TestCallWithdrawalEndpoint_ForkBeforeCapella(t *testing.T) {
@@ -322,7 +322,7 @@ func TestCallWithdrawalEndpoint_ForkBeforeCapella(t *testing.T) {
 	cliCtx := cli.NewContext(&app, set, nil)
 
 	err = setWithdrawalAddresses(cliCtx)
-	require.ErrorContains(t, "setting withdrawals using the BLStoExecutionChange endpoint is only available after the Capella/Shanghai hard fork.", err)
+	require.ErrorContains(t, "setting withdrawals using the DilithiumtoExecutionChange endpoint is only available after the Capella/Shanghai hard fork.", err)
 }
 
 func TestVerifyWithdrawal_Mutiple(t *testing.T) {
@@ -336,10 +336,10 @@ func TestVerifyWithdrawal_Mutiple(t *testing.T) {
 		if r.Method == http.MethodGet {
 			b, err := os.ReadFile(filepath.Clean(file))
 			require.NoError(t, err)
-			var to []*apimiddleware.SignedBLSToExecutionChangeJson
+			var to []*apimiddleware.SignedDilithiumToExecutionChangeJson
 			err = json.Unmarshal(b, &to)
 			require.NoError(t, err)
-			err = json.NewEncoder(w).Encode(&apimiddleware.BLSToExecutionChangesPoolResponseJson{
+			err = json.NewEncoder(w).Encode(&apimiddleware.DilithiumToExecutionChangesPoolResponseJson{
 				Data: to,
 			})
 			require.NoError(t, err)

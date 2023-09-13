@@ -483,11 +483,11 @@ func TestGetBeaconBlockConverter_CapellaError(t *testing.T) {
 			},
 		},
 		{
-			name:                 "bad bls execution changes",
-			expectedErrorMessage: "failed to get bls to execution changes",
+			name:                 "bad dilithium execution changes",
+			expectedErrorMessage: "failed to get dilithium to execution changes",
 			generateData: func() *apimiddleware.BeaconBlockCapellaJson {
 				beaconBlock := test_helpers.GenerateJsonCapellaBeaconBlock()
-				beaconBlock.Body.BLSToExecutionChanges[0] = nil
+				beaconBlock.Body.DilithiumToExecutionChanges[0] = nil
 				return beaconBlock
 			},
 		},

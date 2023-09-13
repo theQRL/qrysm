@@ -500,8 +500,8 @@ message BeaconBlockBodyCapella {
     // Execution payload from the execution chain. New in Bellatrix network upgrade.
     ethereum.engine.v1.ExecutionPayloadCapella execution_payload = 10;
 
-    // At most MAX_BLS_TO_EXECUTION_CHANGES. New in Capella network upgrade.
-    repeated SignedBLSToExecutionChange bls_to_execution_changes = 11 [(ethereum.eth.ext.ssz_max) = "16"];
+    // At most MAX_DILITHIUM_TO_EXECUTION_CHANGES. New in Capella network upgrade.
+    repeated SignedDilithiumToExecutionChange dilithium_to_execution_changes = 11 [(ethereum.eth.ext.ssz_max) = "16"];
 }
 
 message SignedBlindedBeaconBlockCapella {
@@ -561,8 +561,8 @@ message BlindedBeaconBlockBodyCapella {
     // Execution payload header from the execution chain. New in Bellatrix network upgrade to accommodate MEV interaction.
     ethereum.engine.v1.ExecutionPayloadHeaderCapella execution_payload_header = 10;
 
-    // At most MAX_BLS_TO_EXECUTION_CHANGES. New in Capella network upgrade.
-    repeated SignedBLSToExecutionChange bls_to_execution_changes = 11 [(ethereum.eth.ext.ssz_max) = "16"];
+    // At most MAX_DILITHIUM_TO_EXECUTION_CHANGES. New in Capella network upgrade.
+    repeated SignedDilithiumToExecutionChange dilithium_to_execution_changes = 11 [(ethereum.eth.ext.ssz_max) = "16"];
 }
 
 message ValidatorRegistrationV1 {

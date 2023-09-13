@@ -16,11 +16,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-func RunBLSToExecutionChangeTest(t *testing.T, config string) {
+func RunDilithiumToExecutionChangeTest(t *testing.T, config string) {
 	require.NoError(t, utils.SetConfig(t, config))
-	testFolders, testsFolderPath := utils.TestFolders(t, config, "capella", "operations/bls_to_execution_change/pyspec_tests")
+	testFolders, testsFolderPath := utils.TestFolders(t, config, "capella", "operations/dilithium_to_execution_change/pyspec_tests")
 	if len(testFolders) == 0 {
-		t.Fatalf("No test folders found for %s/%s/%s", config, "capella", "operations/bls_to_execution_change/pyspec_tests")
+		t.Fatalf("No test folders found for %s/%s/%s", config, "capella", "operations/dilithium_to_execution_change/pyspec_tests")
 	}
 	for _, folder := range testFolders {
 		t.Run(folder.Name(), func(t *testing.T) {
@@ -29,22 +29,22 @@ func RunBLSToExecutionChangeTest(t *testing.T, config string) {
 			require.NoError(t, err)
 			changeSSZ, err := snappy.Decode(nil /* dst */, changeFile)
 			require.NoError(t, err, "Failed to decompress")
-			change := &ethpb.SignedBLSToExecutionChange{}
+			change := &ethpb.SignedDilithiumToExecutionChange{}
 			require.NoError(t, change.UnmarshalSSZ(changeSSZ), "Failed to unmarshal")
 
 			body := &ethpb.BeaconBlockBodyCapella{
-				BlsToExecutionChanges: []*ethpb.SignedBLSToExecutionChange{change},
+				DilithiumToExecutionChanges: []*ethpb.SignedDilithiumToExecutionChange{change},
 			}
 			RunBlockOperationTest(t, folderPath, body, func(ctx context.Context, s state.BeaconState, b interfaces.ReadOnlySignedBeaconBlock) (state.BeaconState, error) {
-				st, err := blocks.ProcessBLSToExecutionChanges(s, b)
+				st, err := blocks.ProcessDilithiumToExecutionChanges(s, b)
 				if err != nil {
 					return nil, err
 				}
-				changes, err := b.Block().Body().BLSToExecutionChanges()
+				changes, err := b.Block().Body().DilithiumToExecutionChanges()
 				if err != nil {
 					return nil, err
 				}
-				cSet, err := blocks.BLSChangesSignatureBatch(st, changes)
+				cSet, err := blocks.DilithiumChangesSignatureBatch(st, changes)
 				if err != nil {
 					return nil, err
 				}

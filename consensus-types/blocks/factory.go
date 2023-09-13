@@ -256,7 +256,7 @@ func BuildSignedBeaconBlockFromExecutionPayload(
 			Signature: sig[:],
 		}
 	case *enginev1.ExecutionPayloadCapella:
-		blsToExecutionChanges, err := b.Body().BLSToExecutionChanges()
+		dilithiumToExecutionChanges, err := b.Body().DilithiumToExecutionChanges()
 		if err != nil {
 			return nil, err
 		}
@@ -267,17 +267,17 @@ func BuildSignedBeaconBlockFromExecutionPayload(
 				ParentRoot:    parentRoot[:],
 				StateRoot:     stateRoot[:],
 				Body: &eth.BeaconBlockBodyCapella{
-					RandaoReveal:          randaoReveal[:],
-					Eth1Data:              b.Body().Eth1Data(),
-					Graffiti:              graffiti[:],
-					ProposerSlashings:     b.Body().ProposerSlashings(),
-					AttesterSlashings:     b.Body().AttesterSlashings(),
-					Attestations:          b.Body().Attestations(),
-					Deposits:              b.Body().Deposits(),
-					VoluntaryExits:        b.Body().VoluntaryExits(),
-					SyncAggregate:         syncAgg,
-					ExecutionPayload:      p,
-					BlsToExecutionChanges: blsToExecutionChanges,
+					RandaoReveal:                randaoReveal[:],
+					Eth1Data:                    b.Body().Eth1Data(),
+					Graffiti:                    graffiti[:],
+					ProposerSlashings:           b.Body().ProposerSlashings(),
+					AttesterSlashings:           b.Body().AttesterSlashings(),
+					Attestations:                b.Body().Attestations(),
+					Deposits:                    b.Body().Deposits(),
+					VoluntaryExits:              b.Body().VoluntaryExits(),
+					SyncAggregate:               syncAgg,
+					ExecutionPayload:            p,
+					DilithiumToExecutionChanges: dilithiumToExecutionChanges,
 				},
 			},
 			Signature: sig[:],

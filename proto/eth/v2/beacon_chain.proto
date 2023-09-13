@@ -24,6 +24,6 @@ option java_outer_classname = "BeaconChainProto";
 option java_package = "org.ethereum.eth.v2";
 option php_namespace = "Ethereum\\Eth\\v2";
 
-message BLSToExecutionChangesPoolResponse {
-  repeated SignedBLSToExecutionChange data = 1;
+message DilithiumToExecutionChangesPoolResponse {
+  repeated SignedDilithiumToExecutionChange data = 1;
 }

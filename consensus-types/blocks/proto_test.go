@@ -13,19 +13,19 @@ import (
 )
 
 type fields struct {
-	root                     [32]byte
-	sig                      [dilithium2.CryptoBytes]byte
-	deposits                 []*eth.Deposit
-	atts                     []*eth.Attestation
-	proposerSlashings        []*eth.ProposerSlashing
-	attesterSlashings        []*eth.AttesterSlashing
-	voluntaryExits           []*eth.SignedVoluntaryExit
-	syncAggregate            *eth.SyncAggregate
-	execPayload              *enginev1.ExecutionPayload
-	execPayloadHeader        *enginev1.ExecutionPayloadHeader
-	execPayloadCapella       *enginev1.ExecutionPayloadCapella
-	execPayloadHeaderCapella *enginev1.ExecutionPayloadHeaderCapella
-	blsToExecutionChanges    []*eth.SignedBLSToExecutionChange
+	root                        [32]byte
+	sig                         [dilithium2.CryptoBytes]byte
+	deposits                    []*eth.Deposit
+	atts                        []*eth.Attestation
+	proposerSlashings           []*eth.ProposerSlashing
+	attesterSlashings           []*eth.AttesterSlashing
+	voluntaryExits              []*eth.SignedVoluntaryExit
+	syncAggregate               *eth.SyncAggregate
+	execPayload                 *enginev1.ExecutionPayload
+	execPayloadHeader           *enginev1.ExecutionPayloadHeader
+	execPayloadCapella          *enginev1.ExecutionPayloadCapella
+	execPayloadHeaderCapella    *enginev1.ExecutionPayloadHeaderCapella
+	dilithiumToExecutionChanges []*eth.SignedDilithiumToExecutionChange
 }
 
 func Test_SignedBeaconBlock_Proto(t *testing.T) {
@@ -902,15 +902,15 @@ func bodyPbCapella() *eth.BeaconBlockBodyCapella {
 			DepositCount: 128,
 			BlockHash:    f.root[:],
 		},
-		Graffiti:              f.root[:],
-		ProposerSlashings:     f.proposerSlashings,
-		AttesterSlashings:     f.attesterSlashings,
-		Attestations:          f.atts,
-		Deposits:              f.deposits,
-		VoluntaryExits:        f.voluntaryExits,
-		SyncAggregate:         f.syncAggregate,
-		ExecutionPayload:      f.execPayloadCapella,
-		BlsToExecutionChanges: f.blsToExecutionChanges,
+		Graffiti:                    f.root[:],
+		ProposerSlashings:           f.proposerSlashings,
+		AttesterSlashings:           f.attesterSlashings,
+		Attestations:                f.atts,
+		Deposits:                    f.deposits,
+		VoluntaryExits:              f.voluntaryExits,
+		SyncAggregate:               f.syncAggregate,
+		ExecutionPayload:            f.execPayloadCapella,
+		DilithiumToExecutionChanges: f.dilithiumToExecutionChanges,
 	}
 }
 
@@ -923,15 +923,15 @@ func bodyPbBlindedCapella() *eth.BlindedBeaconBlockBodyCapella {
 			DepositCount: 128,
 			BlockHash:    f.root[:],
 		},
-		Graffiti:               f.root[:],
-		ProposerSlashings:      f.proposerSlashings,
-		AttesterSlashings:      f.attesterSlashings,
-		Attestations:           f.atts,
-		Deposits:               f.deposits,
-		VoluntaryExits:         f.voluntaryExits,
-		SyncAggregate:          f.syncAggregate,
-		ExecutionPayloadHeader: f.execPayloadHeaderCapella,
-		BlsToExecutionChanges:  f.blsToExecutionChanges,
+		Graffiti:                    f.root[:],
+		ProposerSlashings:           f.proposerSlashings,
+		AttesterSlashings:           f.attesterSlashings,
+		Attestations:                f.atts,
+		Deposits:                    f.deposits,
+		VoluntaryExits:              f.voluntaryExits,
+		SyncAggregate:               f.syncAggregate,
+		ExecutionPayloadHeader:      f.execPayloadHeaderCapella,
+		DilithiumToExecutionChanges: f.dilithiumToExecutionChanges,
 	}
 }
 
@@ -1033,15 +1033,15 @@ func bodyCapella(t *testing.T) *BeaconBlockBody {
 			DepositCount: 128,
 			BlockHash:    f.root[:],
 		},
-		graffiti:              f.root,
-		proposerSlashings:     f.proposerSlashings,
-		attesterSlashings:     f.attesterSlashings,
-		attestations:          f.atts,
-		deposits:              f.deposits,
-		voluntaryExits:        f.voluntaryExits,
-		syncAggregate:         f.syncAggregate,
-		executionPayload:      p,
-		blsToExecutionChanges: f.blsToExecutionChanges,
+		graffiti:                    f.root,
+		proposerSlashings:           f.proposerSlashings,
+		attesterSlashings:           f.attesterSlashings,
+		attestations:                f.atts,
+		deposits:                    f.deposits,
+		voluntaryExits:              f.voluntaryExits,
+		syncAggregate:               f.syncAggregate,
+		executionPayload:            p,
+		dilithiumToExecutionChanges: f.dilithiumToExecutionChanges,
 	}
 }
 
@@ -1058,15 +1058,15 @@ func bodyBlindedCapella(t *testing.T) *BeaconBlockBody {
 			DepositCount: 128,
 			BlockHash:    f.root[:],
 		},
-		graffiti:               f.root,
-		proposerSlashings:      f.proposerSlashings,
-		attesterSlashings:      f.attesterSlashings,
-		attestations:           f.atts,
-		deposits:               f.deposits,
-		voluntaryExits:         f.voluntaryExits,
-		syncAggregate:          f.syncAggregate,
-		executionPayloadHeader: ph,
-		blsToExecutionChanges:  f.blsToExecutionChanges,
+		graffiti:                    f.root,
+		proposerSlashings:           f.proposerSlashings,
+		attesterSlashings:           f.attesterSlashings,
+		attestations:                f.atts,
+		deposits:                    f.deposits,
+		voluntaryExits:              f.voluntaryExits,
+		syncAggregate:               f.syncAggregate,
+		executionPayloadHeader:      ph,
+		dilithiumToExecutionChanges: f.dilithiumToExecutionChanges,
 	}
 }
 
@@ -1267,28 +1267,28 @@ func getFields() fields {
 		TransactionsRoot: root[:],
 		WithdrawalsRoot:  root[:],
 	}
-	blsToExecutionChanges := []*eth.SignedBLSToExecutionChange{{
-		Message: &eth.BLSToExecutionChange{
-			ValidatorIndex:     128,
-			FromBlsPubkey:      b48,
-			ToExecutionAddress: b20,
+	dilithiumToExecutionChanges := []*eth.SignedDilithiumToExecutionChange{{
+		Message: &eth.DilithiumToExecutionChange{
+			ValidatorIndex:      128,
+			FromDilithiumPubkey: b48,
+			ToExecutionAddress:  b20,
 		},
 		Signature: sig[:],
 	}}
 
 	return fields{
-		root:                     root,
-		sig:                      sig,
-		deposits:                 deposits,
-		atts:                     atts,
-		proposerSlashings:        []*eth.ProposerSlashing{proposerSlashing},
-		attesterSlashings:        []*eth.AttesterSlashing{attesterSlashing},
-		voluntaryExits:           []*eth.SignedVoluntaryExit{voluntaryExit},
-		syncAggregate:            syncAggregate,
-		execPayload:              execPayload,
-		execPayloadHeader:        execPayloadHeader,
-		execPayloadCapella:       execPayloadCapella,
-		execPayloadHeaderCapella: execPayloadHeaderCapella,
-		blsToExecutionChanges:    blsToExecutionChanges,
+		root:                        root,
+		sig:                         sig,
+		deposits:                    deposits,
+		atts:                        atts,
+		proposerSlashings:           []*eth.ProposerSlashing{proposerSlashing},
+		attesterSlashings:           []*eth.AttesterSlashing{attesterSlashing},
+		voluntaryExits:              []*eth.SignedVoluntaryExit{voluntaryExit},
+		syncAggregate:               syncAggregate,
+		execPayload:                 execPayload,
+		execPayloadHeader:           execPayloadHeader,
+		execPayloadCapella:          execPayloadCapella,
+		execPayloadHeaderCapella:    execPayloadHeaderCapella,
+		dilithiumToExecutionChanges: dilithiumToExecutionChanges,
 	}
 }

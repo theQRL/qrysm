@@ -13,8 +13,8 @@ import (
 	"github.com/cyyber/qrysm/v4/config/params"
 	consensusblocks "github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
 	"github.com/cyyber/qrysm/v4/crypto/bls/common"
+	"github.com/cyyber/qrysm/v4/crypto/dilithium"
 	"github.com/cyyber/qrysm/v4/crypto/hash"
 	"github.com/cyyber/qrysm/v4/encoding/ssz"
 	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
@@ -24,21 +24,21 @@ import (
 	"github.com/cyyber/qrysm/v4/time/slots"
 )
 
-func TestProcessBLSToExecutionChange(t *testing.T) {
+func TestProcessDilithiumToExecutionChange(t *testing.T) {
 	t.Run("happy case", func(t *testing.T) {
-		priv, err := bls.RandKey()
+		priv, err := dilithium.RandKey()
 		require.NoError(t, err)
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.BLSToExecutionChange{
-			ToExecutionAddress: []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13},
-			ValidatorIndex:     0,
-			FromBlsPubkey:      pubkey,
+		message := &ethpb.DilithiumToExecutionChange{
+			ToExecutionAddress:  []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13},
+			ValidatorIndex:      0,
+			FromDilithiumPubkey: pubkey,
 		}
 
 		hashFn := ssz.NewHasherFunc(hash.CustomSHA256Hasher())
 		digest := hashFn.Hash(pubkey)
-		digest[0] = params.BeaconConfig().BLSWithdrawalPrefixByte
+		digest[0] = params.BeaconConfig().DilithiumWithdrawalPrefixByte
 
 		registry := []*ethpb.Validator{
 			{
@@ -55,15 +55,15 @@ func TestProcessBLSToExecutionChange(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainBLSToExecutionChange, priv)
+		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, priv)
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedBLSToExecutionChange{
+		signed := &ethpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
 
-		st, err = blocks.ProcessBLSToExecutionChange(st, signed)
+		st, err = blocks.ProcessDilithiumToExecutionChange(st, signed)
 		require.NoError(t, err)
 
 		val, err := st.ValidatorAtIndex(0)
@@ -72,19 +72,19 @@ func TestProcessBLSToExecutionChange(t *testing.T) {
 		require.DeepEqual(t, message.ToExecutionAddress, val.WithdrawalCredentials[12:])
 	})
 	t.Run("happy case only validation", func(t *testing.T) {
-		priv, err := bls.RandKey()
+		priv, err := dilithium.RandKey()
 		require.NoError(t, err)
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.BLSToExecutionChange{
-			ToExecutionAddress: []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13},
-			ValidatorIndex:     0,
-			FromBlsPubkey:      pubkey,
+		message := &ethpb.DilithiumToExecutionChange{
+			ToExecutionAddress:  []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13},
+			ValidatorIndex:      0,
+			FromDilithiumPubkey: pubkey,
 		}
 
 		hashFn := ssz.NewHasherFunc(hash.CustomSHA256Hasher())
 		digest := hashFn.Hash(pubkey)
-		digest[0] = params.BeaconConfig().BLSWithdrawalPrefixByte
+		digest[0] = params.BeaconConfig().DilithiumWithdrawalPrefixByte
 
 		registry := []*ethpb.Validator{
 			{
@@ -101,32 +101,32 @@ func TestProcessBLSToExecutionChange(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainBLSToExecutionChange, priv)
+		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, priv)
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedBLSToExecutionChange{
+		signed := &ethpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
-		val, err := blocks.ValidateBLSToExecutionChange(st, signed)
+		val, err := blocks.ValidateDilithiumToExecutionChange(st, signed)
 		require.NoError(t, err)
 		require.DeepEqual(t, digest[:], val.WithdrawalCredentials)
 	})
 
 	t.Run("non-existent validator", func(t *testing.T) {
-		priv, err := bls.RandKey()
+		priv, err := dilithium.RandKey()
 		require.NoError(t, err)
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.BLSToExecutionChange{
-			ToExecutionAddress: []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13},
-			ValidatorIndex:     1,
-			FromBlsPubkey:      pubkey,
+		message := &ethpb.DilithiumToExecutionChange{
+			ToExecutionAddress:  []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13},
+			ValidatorIndex:      1,
+			FromDilithiumPubkey: pubkey,
 		}
 
 		hashFn := ssz.NewHasherFunc(hash.CustomSHA256Hasher())
 		digest := hashFn.Hash(pubkey)
-		digest[0] = params.BeaconConfig().BLSWithdrawalPrefixByte
+		digest[0] = params.BeaconConfig().DilithiumWithdrawalPrefixByte
 
 		registry := []*ethpb.Validator{
 			{
@@ -143,27 +143,27 @@ func TestProcessBLSToExecutionChange(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainBLSToExecutionChange, priv)
+		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, priv)
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedBLSToExecutionChange{
+		signed := &ethpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
 
-		_, err = blocks.ProcessBLSToExecutionChange(st, signed)
+		_, err = blocks.ProcessDilithiumToExecutionChange(st, signed)
 		require.ErrorContains(t, "out of range", err)
 	})
 
 	t.Run("signature does not verify", func(t *testing.T) {
-		priv, err := bls.RandKey()
+		priv, err := dilithium.RandKey()
 		require.NoError(t, err)
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.BLSToExecutionChange{
-			ToExecutionAddress: []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13},
-			ValidatorIndex:     0,
-			FromBlsPubkey:      pubkey,
+		message := &ethpb.DilithiumToExecutionChange{
+			ToExecutionAddress:  []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13},
+			ValidatorIndex:      0,
+			FromDilithiumPubkey: pubkey,
 		}
 
 		registry := []*ethpb.Validator{
@@ -181,31 +181,31 @@ func TestProcessBLSToExecutionChange(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainBLSToExecutionChange, priv)
+		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, priv)
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedBLSToExecutionChange{
+		signed := &ethpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
 
-		_, err = blocks.ProcessBLSToExecutionChange(st, signed)
+		_, err = blocks.ProcessDilithiumToExecutionChange(st, signed)
 		require.ErrorContains(t, "withdrawal credentials do not match", err)
 	})
 
-	t.Run("invalid BLS prefix", func(t *testing.T) {
-		priv, err := bls.RandKey()
+	t.Run("invalid Dilithium prefix", func(t *testing.T) {
+		priv, err := dilithium.RandKey()
 		require.NoError(t, err)
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.BLSToExecutionChange{
-			ToExecutionAddress: []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13},
-			ValidatorIndex:     0,
-			FromBlsPubkey:      pubkey,
+		message := &ethpb.DilithiumToExecutionChange{
+			ToExecutionAddress:  []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13},
+			ValidatorIndex:      0,
+			FromDilithiumPubkey: pubkey,
 		}
 		hashFn := ssz.NewHasherFunc(hash.CustomSHA256Hasher())
 		digest := hashFn.Hash(pubkey)
-		digest[0] = params.BeaconConfig().BLSWithdrawalPrefixByte
+		digest[0] = params.BeaconConfig().DilithiumWithdrawalPrefixByte
 
 		registry := []*ethpb.Validator{
 			{
@@ -224,16 +224,16 @@ func TestProcessBLSToExecutionChange(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainBLSToExecutionChange, priv)
+		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, priv)
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedBLSToExecutionChange{
+		signed := &ethpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
 
-		_, err = blocks.ProcessBLSToExecutionChange(st, signed)
-		require.ErrorContains(t, "withdrawal credential prefix is not a BLS prefix", err)
+		_, err = blocks.ProcessDilithiumToExecutionChange(st, signed)
+		require.ErrorContains(t, "withdrawal credential prefix is not a Dilithium prefix", err)
 
 	})
 }
@@ -1075,7 +1075,7 @@ func TestProcessWithdrawals(t *testing.T) {
 	}
 }
 
-func TestProcessBLSToExecutionChanges(t *testing.T) {
+func TestProcessDilithiumToExecutionChanges(t *testing.T) {
 	spb := &ethpb.BeaconStateCapella{
 		Fork: &ethpb.Fork{
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
@@ -1084,7 +1084,7 @@ func TestProcessBLSToExecutionChanges(t *testing.T) {
 	}
 	numValidators := 10
 	validators := make([]*ethpb.Validator, numValidators)
-	blsChanges := make([]*ethpb.BLSToExecutionChange, numValidators)
+	dilithiumChanges := make([]*ethpb.DilithiumToExecutionChange, numValidators)
 	spb.Balances = make([]uint64, numValidators)
 	privKeys := make([]common.SecretKey, numValidators)
 	maxEffectiveBalance := params.BeaconConfig().MaxEffectiveBalance
@@ -1095,34 +1095,34 @@ func TestProcessBLSToExecutionChanges(t *testing.T) {
 		v.EffectiveBalance = maxEffectiveBalance
 		v.WithdrawableEpoch = params.BeaconConfig().FarFutureEpoch
 		v.WithdrawalCredentials = make([]byte, 32)
-		priv, err := bls.RandKey()
+		priv, err := dilithium.RandKey()
 		require.NoError(t, err)
 		privKeys[i] = priv
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.BLSToExecutionChange{
-			ToExecutionAddress: executionAddress,
-			ValidatorIndex:     primitives.ValidatorIndex(i),
-			FromBlsPubkey:      pubkey,
+		message := &ethpb.DilithiumToExecutionChange{
+			ToExecutionAddress:  executionAddress,
+			ValidatorIndex:      primitives.ValidatorIndex(i),
+			FromDilithiumPubkey: pubkey,
 		}
 
 		hashFn := ssz.NewHasherFunc(hash.CustomSHA256Hasher())
 		digest := hashFn.Hash(pubkey)
-		digest[0] = params.BeaconConfig().BLSWithdrawalPrefixByte
+		digest[0] = params.BeaconConfig().DilithiumWithdrawalPrefixByte
 		copy(v.WithdrawalCredentials, digest[:])
 		validators[i] = v
-		blsChanges[i] = message
+		dilithiumChanges[i] = message
 	}
 	spb.Validators = validators
 	st, err := state_native.InitializeFromProtoCapella(spb)
 	require.NoError(t, err)
 
-	signedChanges := make([]*ethpb.SignedBLSToExecutionChange, numValidators)
-	for i, message := range blsChanges {
-		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainBLSToExecutionChange, privKeys[i])
+	signedChanges := make([]*ethpb.SignedDilithiumToExecutionChange, numValidators)
+	for i, message := range dilithiumChanges {
+		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedBLSToExecutionChange{
+		signed := &ethpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
@@ -1130,7 +1130,7 @@ func TestProcessBLSToExecutionChanges(t *testing.T) {
 	}
 
 	body := &ethpb.BeaconBlockBodyCapella{
-		BlsToExecutionChanges: signedChanges,
+		DilithiumToExecutionChanges: signedChanges,
 	}
 	bpb := &ethpb.BeaconBlockCapella{
 		Body: body,
@@ -1140,7 +1140,7 @@ func TestProcessBLSToExecutionChanges(t *testing.T) {
 	}
 	signed, err := consensusblocks.NewSignedBeaconBlock(sbpb)
 	require.NoError(t, err)
-	st, err = blocks.ProcessBLSToExecutionChanges(st, signed)
+	st, err = blocks.ProcessDilithiumToExecutionChanges(st, signed)
 	require.NoError(t, err)
 	vals := st.Validators()
 	for _, val := range vals {
@@ -1149,7 +1149,7 @@ func TestProcessBLSToExecutionChanges(t *testing.T) {
 	}
 }
 
-func TestBLSChangesSignatureBatch(t *testing.T) {
+func TestDilithiumChangesSignatureBatch(t *testing.T) {
 	spb := &ethpb.BeaconStateCapella{
 		Fork: &ethpb.Fork{
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
@@ -1158,7 +1158,7 @@ func TestBLSChangesSignatureBatch(t *testing.T) {
 	}
 	numValidators := 10
 	validators := make([]*ethpb.Validator, numValidators)
-	blsChanges := make([]*ethpb.BLSToExecutionChange, numValidators)
+	dilithiumChanges := make([]*ethpb.DilithiumToExecutionChange, numValidators)
 	spb.Balances = make([]uint64, numValidators)
 	privKeys := make([]common.SecretKey, numValidators)
 	maxEffectiveBalance := params.BeaconConfig().MaxEffectiveBalance
@@ -1169,51 +1169,51 @@ func TestBLSChangesSignatureBatch(t *testing.T) {
 		v.EffectiveBalance = maxEffectiveBalance
 		v.WithdrawableEpoch = params.BeaconConfig().FarFutureEpoch
 		v.WithdrawalCredentials = make([]byte, 32)
-		priv, err := bls.RandKey()
+		priv, err := dilithium.RandKey()
 		require.NoError(t, err)
 		privKeys[i] = priv
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.BLSToExecutionChange{
-			ToExecutionAddress: executionAddress,
-			ValidatorIndex:     primitives.ValidatorIndex(i),
-			FromBlsPubkey:      pubkey,
+		message := &ethpb.DilithiumToExecutionChange{
+			ToExecutionAddress:  executionAddress,
+			ValidatorIndex:      primitives.ValidatorIndex(i),
+			FromDilithiumPubkey: pubkey,
 		}
 
 		hashFn := ssz.NewHasherFunc(hash.CustomSHA256Hasher())
 		digest := hashFn.Hash(pubkey)
-		digest[0] = params.BeaconConfig().BLSWithdrawalPrefixByte
+		digest[0] = params.BeaconConfig().DilithiumWithdrawalPrefixByte
 		copy(v.WithdrawalCredentials, digest[:])
 		validators[i] = v
-		blsChanges[i] = message
+		dilithiumChanges[i] = message
 	}
 	spb.Validators = validators
 	st, err := state_native.InitializeFromProtoCapella(spb)
 	require.NoError(t, err)
 
-	signedChanges := make([]*ethpb.SignedBLSToExecutionChange, numValidators)
-	for i, message := range blsChanges {
-		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainBLSToExecutionChange, privKeys[i])
+	signedChanges := make([]*ethpb.SignedDilithiumToExecutionChange, numValidators)
+	for i, message := range dilithiumChanges {
+		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedBLSToExecutionChange{
+		signed := &ethpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
 		signedChanges[i] = signed
 	}
-	batch, err := blocks.BLSChangesSignatureBatch(st, signedChanges)
+	batch, err := blocks.DilithiumChangesSignatureBatch(st, signedChanges)
 	require.NoError(t, err)
 	verify, err := batch.Verify()
 	require.NoError(t, err)
 	require.Equal(t, true, verify)
 
 	// Verify a single change
-	change := migration.V1Alpha1SignedBLSToExecChangeToV2(signedChanges[0])
-	require.NoError(t, blocks.VerifyBLSChangeSignature(st, change))
+	change := migration.V1Alpha1SignedDilithiumToExecChangeToV2(signedChanges[0])
+	require.NoError(t, blocks.VerifyDilithiumChangeSignature(st, change))
 }
 
-func TestBLSChangesSignatureBatchWrongFork(t *testing.T) {
+func TestDilithiumChangesSignatureBatchWrongFork(t *testing.T) {
 	spb := &ethpb.BeaconStateCapella{
 		Fork: &ethpb.Fork{
 			CurrentVersion:  params.BeaconConfig().CapellaForkVersion,
@@ -1223,7 +1223,7 @@ func TestBLSChangesSignatureBatchWrongFork(t *testing.T) {
 	}
 	numValidators := 10
 	validators := make([]*ethpb.Validator, numValidators)
-	blsChanges := make([]*ethpb.BLSToExecutionChange, numValidators)
+	dilithiumChanges := make([]*ethpb.DilithiumToExecutionChange, numValidators)
 	spb.Balances = make([]uint64, numValidators)
 	privKeys := make([]common.SecretKey, numValidators)
 	maxEffectiveBalance := params.BeaconConfig().MaxEffectiveBalance
@@ -1234,51 +1234,51 @@ func TestBLSChangesSignatureBatchWrongFork(t *testing.T) {
 		v.EffectiveBalance = maxEffectiveBalance
 		v.WithdrawableEpoch = params.BeaconConfig().FarFutureEpoch
 		v.WithdrawalCredentials = make([]byte, 32)
-		priv, err := bls.RandKey()
+		priv, err := dilithium.RandKey()
 		require.NoError(t, err)
 		privKeys[i] = priv
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.BLSToExecutionChange{
-			ToExecutionAddress: executionAddress,
-			ValidatorIndex:     primitives.ValidatorIndex(i),
-			FromBlsPubkey:      pubkey,
+		message := &ethpb.DilithiumToExecutionChange{
+			ToExecutionAddress:  executionAddress,
+			ValidatorIndex:      primitives.ValidatorIndex(i),
+			FromDilithiumPubkey: pubkey,
 		}
 
 		hashFn := ssz.NewHasherFunc(hash.CustomSHA256Hasher())
 		digest := hashFn.Hash(pubkey)
-		digest[0] = params.BeaconConfig().BLSWithdrawalPrefixByte
+		digest[0] = params.BeaconConfig().DilithiumWithdrawalPrefixByte
 		copy(v.WithdrawalCredentials, digest[:])
 		validators[i] = v
-		blsChanges[i] = message
+		dilithiumChanges[i] = message
 	}
 	spb.Validators = validators
 	st, err := state_native.InitializeFromProtoCapella(spb)
 	require.NoError(t, err)
 
-	signedChanges := make([]*ethpb.SignedBLSToExecutionChange, numValidators)
-	for i, message := range blsChanges {
-		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainBLSToExecutionChange, privKeys[i])
+	signedChanges := make([]*ethpb.SignedDilithiumToExecutionChange, numValidators)
+	for i, message := range dilithiumChanges {
+		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedBLSToExecutionChange{
+		signed := &ethpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
 		signedChanges[i] = signed
 	}
-	batch, err := blocks.BLSChangesSignatureBatch(st, signedChanges)
+	batch, err := blocks.DilithiumChangesSignatureBatch(st, signedChanges)
 	require.NoError(t, err)
 	verify, err := batch.Verify()
 	require.NoError(t, err)
 	require.Equal(t, false, verify)
 
 	// Verify a single change
-	change := migration.V1Alpha1SignedBLSToExecChangeToV2(signedChanges[0])
-	require.ErrorIs(t, signing.ErrSigFailedToVerify, blocks.VerifyBLSChangeSignature(st, change))
+	change := migration.V1Alpha1SignedDilithiumToExecChangeToV2(signedChanges[0])
+	require.ErrorIs(t, signing.ErrSigFailedToVerify, blocks.VerifyDilithiumChangeSignature(st, change))
 }
 
-func TestBLSChangesSignatureBatchFromBellatrix(t *testing.T) {
+func TestDilithiumChangesSignatureBatchFromBellatrix(t *testing.T) {
 	cfg := params.BeaconConfig()
 	savedConfig := cfg.Copy()
 	cfg.CapellaForkEpoch = cfg.BellatrixForkEpoch.AddEpoch(2)
@@ -1293,7 +1293,7 @@ func TestBLSChangesSignatureBatchFromBellatrix(t *testing.T) {
 	}
 	numValidators := 10
 	validators := make([]*ethpb.Validator, numValidators)
-	blsChanges := make([]*ethpb.BLSToExecutionChange, numValidators)
+	dilithiumChanges := make([]*ethpb.DilithiumToExecutionChange, numValidators)
 	spb.Balances = make([]uint64, numValidators)
 	slot, err := slots.EpochStart(params.BeaconConfig().BellatrixForkEpoch)
 	require.NoError(t, err)
@@ -1308,29 +1308,29 @@ func TestBLSChangesSignatureBatchFromBellatrix(t *testing.T) {
 		v.EffectiveBalance = maxEffectiveBalance
 		v.WithdrawableEpoch = params.BeaconConfig().FarFutureEpoch
 		v.WithdrawalCredentials = make([]byte, 32)
-		priv, err := bls.RandKey()
+		priv, err := dilithium.RandKey()
 		require.NoError(t, err)
 		privKeys[i] = priv
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.BLSToExecutionChange{
-			ToExecutionAddress: executionAddress,
-			ValidatorIndex:     primitives.ValidatorIndex(i),
-			FromBlsPubkey:      pubkey,
+		message := &ethpb.DilithiumToExecutionChange{
+			ToExecutionAddress:  executionAddress,
+			ValidatorIndex:      primitives.ValidatorIndex(i),
+			FromDilithiumPubkey: pubkey,
 		}
 
 		hashFn := ssz.NewHasherFunc(hash.CustomSHA256Hasher())
 		digest := hashFn.Hash(pubkey)
-		digest[0] = params.BeaconConfig().BLSWithdrawalPrefixByte
+		digest[0] = params.BeaconConfig().DilithiumWithdrawalPrefixByte
 		copy(v.WithdrawalCredentials, digest[:])
 		validators[i] = v
-		blsChanges[i] = message
+		dilithiumChanges[i] = message
 	}
 	spb.Validators = validators
 	st, err := state_native.InitializeFromProtoBellatrix(spb)
 	require.NoError(t, err)
 
-	signedChanges := make([]*ethpb.SignedBLSToExecutionChange, numValidators)
+	signedChanges := make([]*ethpb.SignedDilithiumToExecutionChange, numValidators)
 	spc := &ethpb.BeaconStateCapella{
 		Fork: &ethpb.Fork{
 			CurrentVersion:  params.BeaconConfig().CapellaForkVersion,
@@ -1345,24 +1345,24 @@ func TestBLSChangesSignatureBatchFromBellatrix(t *testing.T) {
 	stc, err := state_native.InitializeFromProtoCapella(spc)
 	require.NoError(t, err)
 
-	for i, message := range blsChanges {
-		signature, err := signing.ComputeDomainAndSign(stc, 0, message, params.BeaconConfig().DomainBLSToExecutionChange, privKeys[i])
+	for i, message := range dilithiumChanges {
+		signature, err := signing.ComputeDomainAndSign(stc, 0, message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedBLSToExecutionChange{
+		signed := &ethpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
 		signedChanges[i] = signed
 	}
-	batch, err := blocks.BLSChangesSignatureBatch(st, signedChanges)
+	batch, err := blocks.DilithiumChangesSignatureBatch(st, signedChanges)
 	require.NoError(t, err)
 	verify, err := batch.Verify()
 	require.NoError(t, err)
 	require.Equal(t, true, verify)
 
 	// Verify a single change
-	change := migration.V1Alpha1SignedBLSToExecChangeToV2(signedChanges[0])
-	require.NoError(t, blocks.VerifyBLSChangeSignature(st, change))
+	change := migration.V1Alpha1SignedDilithiumToExecChangeToV2(signedChanges[0])
+	require.NoError(t, blocks.VerifyDilithiumChangeSignature(st, change))
 	params.OverrideBeaconConfig(savedConfig)
 }

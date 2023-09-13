@@ -40,8 +40,8 @@ func setWithdrawalAddresses(c *cli.Context) error {
 	return callWithdrawalEndpoints(ctx, beaconNodeHost, setWithdrawalAddressJsons)
 }
 
-func getWithdrawalMessagesFromPathFlag(c *cli.Context) ([]*apimiddleware.SignedBLSToExecutionChangeJson, error) {
-	setWithdrawalAddressJsons := make([]*apimiddleware.SignedBLSToExecutionChangeJson, 0)
+func getWithdrawalMessagesFromPathFlag(c *cli.Context) ([]*apimiddleware.SignedDilithiumToExecutionChangeJson, error) {
+	setWithdrawalAddressJsons := make([]*apimiddleware.SignedDilithiumToExecutionChangeJson, 0)
 	foundFilePaths, err := findWithdrawalFiles(c.String(PathFlag.Name))
 	if err != nil {
 		return setWithdrawalAddressJsons, errors.Wrap(err, "failed to find withdrawal files")
@@ -51,15 +51,15 @@ func getWithdrawalMessagesFromPathFlag(c *cli.Context) ([]*apimiddleware.SignedB
 		if err != nil {
 			return setWithdrawalAddressJsons, errors.Wrap(err, "failed to open file")
 		}
-		var to []*apimiddleware.SignedBLSToExecutionChangeJson
+		var to []*apimiddleware.SignedDilithiumToExecutionChangeJson
 		if err := json.Unmarshal(b, &to); err != nil {
 			log.Warnf("provided file: %s, is not a list of signed withdrawal messages. Error:%s", foundFilePath, err.Error())
 			continue
 		}
 		// verify 0x from file and add if needed
 		for i, obj := range to {
-			if len(obj.Message.FromBLSPubkey) == dilithium2.CryptoPublicKeyBytes*2 {
-				to[i].Message.FromBLSPubkey = fmt.Sprintf("0x%s", obj.Message.FromBLSPubkey)
+			if len(obj.Message.FromDilithiumPubkey) == dilithium2.CryptoPublicKeyBytes*2 {
+				to[i].Message.FromDilithiumPubkey = fmt.Sprintf("0x%s", obj.Message.FromDilithiumPubkey)
 			}
 			if len(obj.Message.ToExecutionAddress) == common.AddressLength*2 {
 				to[i].Message.ToExecutionAddress = fmt.Sprintf("0x%s", obj.Message.ToExecutionAddress)
@@ -67,11 +67,11 @@ func getWithdrawalMessagesFromPathFlag(c *cli.Context) ([]*apimiddleware.SignedB
 			if len(obj.Signature) == dilithium2.CryptoBytes*2 {
 				to[i].Signature = fmt.Sprintf("0x%s", obj.Signature)
 			}
-			setWithdrawalAddressJsons = append(setWithdrawalAddressJsons, &apimiddleware.SignedBLSToExecutionChangeJson{
-				Message: &apimiddleware.BLSToExecutionChangeJson{
-					ValidatorIndex:     to[i].Message.ValidatorIndex,
-					FromBLSPubkey:      to[i].Message.FromBLSPubkey,
-					ToExecutionAddress: to[i].Message.ToExecutionAddress,
+			setWithdrawalAddressJsons = append(setWithdrawalAddressJsons, &apimiddleware.SignedDilithiumToExecutionChangeJson{
+				Message: &apimiddleware.DilithiumToExecutionChangeJson{
+					ValidatorIndex:      to[i].Message.ValidatorIndex,
+					FromDilithiumPubkey: to[i].Message.FromDilithiumPubkey,
+					ToExecutionAddress:  to[i].Message.ToExecutionAddress,
 				},
 				Signature: to[i].Signature,
 			})
@@ -83,7 +83,7 @@ func getWithdrawalMessagesFromPathFlag(c *cli.Context) ([]*apimiddleware.SignedB
 	return setWithdrawalAddressJsons, nil
 }
 
-func callWithdrawalEndpoints(ctx context.Context, host string, request []*apimiddleware.SignedBLSToExecutionChangeJson) error {
+func callWithdrawalEndpoints(ctx context.Context, host string, request []*apimiddleware.SignedDilithiumToExecutionChangeJson) error {
 	client, err := beacon.NewClient(host)
 	if err != nil {
 		return err
@@ -105,9 +105,9 @@ func callWithdrawalEndpoints(ctx context.Context, host string, request []*apimid
 		return errors.New("could not convert CAPELLA_FORK_EPOCH to a number")
 	}
 	if fork.Epoch < primitives.Epoch(capellaForkEpoch) {
-		return errors.New("setting withdrawals using the BLStoExecutionChange endpoint is only available after the Capella/Shanghai hard fork.")
+		return errors.New("setting withdrawals using the DilithiumtoExecutionChange endpoint is only available after the Capella/Shanghai hard fork.")
 	}
-	err = client.SubmitChangeBLStoExecution(ctx, request)
+	err = client.SubmitChangeDilithiumtoExecution(ctx, request)
 	if err != nil && strings.Contains(err.Error(), "POST error") {
 		// just log the error, so we can check the pool for partial inclusions.
 		log.Error(err)
@@ -119,9 +119,9 @@ func callWithdrawalEndpoints(ctx context.Context, host string, request []*apimid
 	return checkIfWithdrawsAreInPool(ctx, client, request)
 }
 
-func checkIfWithdrawsAreInPool(ctx context.Context, client *beacon.Client, request []*apimiddleware.SignedBLSToExecutionChangeJson) error {
+func checkIfWithdrawsAreInPool(ctx context.Context, client *beacon.Client, request []*apimiddleware.SignedDilithiumToExecutionChangeJson) error {
 	log.Info("Verifying requested withdrawal messages known to node...")
-	poolResponse, err := client.GetBLStoExecutionChanges(ctx)
+	poolResponse, err := client.GetDilithiumtoExecutionChanges(ctx)
 	if err != nil {
 		return err
 	}

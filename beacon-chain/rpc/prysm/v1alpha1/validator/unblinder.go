@@ -117,9 +117,9 @@ func copyBlockData(src interfaces.SignedBeaconBlock, dst interfaces.SignedBeacon
 	randaoReveal := src.Block().Body().RandaoReveal()
 	graffiti := src.Block().Body().Graffiti()
 	sig := src.Signature()
-	blsToExecChanges, err := src.Block().Body().BLSToExecutionChanges()
+	dilithiumToExecChanges, err := src.Block().Body().DilithiumToExecutionChanges()
 	if err != nil && !errors.Is(err, consensus_types.ErrUnsupportedField) {
-		return errors.Wrap(err, "could not get bls to execution changes")
+		return errors.Wrap(err, "could not get dilithium to execution changes")
 	}
 
 	dst.SetSlot(src.Block().Slot())
@@ -138,8 +138,8 @@ func copyBlockData(src interfaces.SignedBeaconBlock, dst interfaces.SignedBeacon
 		return errors.Wrap(err, "could not set sync aggregate")
 	}
 	dst.SetSignature(sig[:])
-	if err = dst.SetBLSToExecutionChanges(blsToExecChanges); err != nil && !errors.Is(err, consensus_types.ErrUnsupportedField) {
-		return errors.Wrap(err, "could not set bls to execution changes")
+	if err = dst.SetDilithiumToExecutionChanges(dilithiumToExecChanges); err != nil && !errors.Is(err, consensus_types.ErrUnsupportedField) {
+		return errors.Wrap(err, "could not set dilithium to execution changes")
 	}
 
 	return nil

@@ -360,7 +360,7 @@ func TestSaveOrphanedOps(t *testing.T) {
 	require.NoError(t, err)
 
 	blkConfig := util.DefaultBlockGenConfig()
-	blkConfig.NumBLSChanges = 5
+	blkConfig.NumDilithiumChanges = 5
 	blkConfig.NumProposerSlashings = 1
 	blkConfig.NumAttesterSlashings = 1
 	blkConfig.NumVoluntaryExits = 1
@@ -410,7 +410,7 @@ func TestSaveOrphanedAtts_CanFilter(t *testing.T) {
 	ctx := context.Background()
 	beaconDB := testDB.SetupDB(t)
 	service := setupBeaconChain(t, beaconDB)
-	service.cfg.BLSToExecPool = blstoexec.NewPool()
+	service.cfg.DilithiumToExecPool = blstoexec.NewPool()
 	service.genesisTime = time.Now().Add(time.Duration(-1*int64(params.BeaconConfig().SlotsPerEpoch+2)*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second)
 
 	// Chain setup
@@ -418,21 +418,21 @@ func TestSaveOrphanedAtts_CanFilter(t *testing.T) {
 	//  \-4
 	st, keys := util.DeterministicGenesisStateCapella(t, 64)
 	blkConfig := util.DefaultBlockGenConfig()
-	blkConfig.NumBLSChanges = 5
+	blkConfig.NumDilithiumChanges = 5
 	blkG, err := util.GenerateFullBlockCapella(st, keys, blkConfig, 1)
 	assert.NoError(t, err)
 	util.SaveBlock(t, ctx, service.cfg.BeaconDB, blkG)
 	rG, err := blkG.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	blkConfig.NumBLSChanges = 10
+	blkConfig.NumDilithiumChanges = 10
 	blk1, err := util.GenerateFullBlockCapella(st, keys, blkConfig, 2)
 	assert.NoError(t, err)
 	blk1.Block.ParentRoot = rG[:]
 	r1, err := blk1.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	blkConfig.NumBLSChanges = 15
+	blkConfig.NumDilithiumChanges = 15
 	blk2, err := util.GenerateFullBlockCapella(st, keys, blkConfig, 3)
 	assert.NoError(t, err)
 	blk2.Block.ParentRoot = r1[:]
@@ -440,7 +440,7 @@ func TestSaveOrphanedAtts_CanFilter(t *testing.T) {
 	require.NoError(t, err)
 
 	blk4 := util.NewBeaconBlockCapella()
-	blkConfig.NumBLSChanges = 0
+	blkConfig.NumDilithiumChanges = 0
 	blk4.Block.Slot = 4
 	blk4.Block.ParentRoot = rG[:]
 	r4, err := blk4.Block.HashTreeRoot()
@@ -459,7 +459,7 @@ func TestSaveOrphanedAtts_CanFilter(t *testing.T) {
 
 	require.NoError(t, service.saveOrphanedOperations(ctx, r2, r4))
 	require.Equal(t, 1, service.cfg.AttPool.AggregatedAttestationCount())
-	pending, err := service.cfg.BLSToExecPool.PendingBLSToExecChanges()
+	pending, err := service.cfg.DilithiumToExecPool.PendingDilithiumToExecChanges()
 	require.NoError(t, err)
 	require.Equal(t, 15, len(pending))
 }

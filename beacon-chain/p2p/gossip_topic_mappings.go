@@ -12,15 +12,15 @@ import (
 // gossipTopicMappings represent the protocol ID to protobuf message type map for easy
 // lookup.
 var gossipTopicMappings = map[string]proto.Message{
-	BlockSubnetTopicFormat:                    &ethpb.SignedBeaconBlock{},
-	AttestationSubnetTopicFormat:              &ethpb.Attestation{},
-	ExitSubnetTopicFormat:                     &ethpb.SignedVoluntaryExit{},
-	ProposerSlashingSubnetTopicFormat:         &ethpb.ProposerSlashing{},
-	AttesterSlashingSubnetTopicFormat:         &ethpb.AttesterSlashing{},
-	AggregateAndProofSubnetTopicFormat:        &ethpb.SignedAggregateAttestationAndProof{},
-	SyncContributionAndProofSubnetTopicFormat: &ethpb.SignedContributionAndProof{},
-	SyncCommitteeSubnetTopicFormat:            &ethpb.SyncCommitteeMessage{},
-	BlsToExecutionChangeSubnetTopicFormat:     &ethpb.SignedBLSToExecutionChange{},
+	BlockSubnetTopicFormat:                      &ethpb.SignedBeaconBlock{},
+	AttestationSubnetTopicFormat:                &ethpb.Attestation{},
+	ExitSubnetTopicFormat:                       &ethpb.SignedVoluntaryExit{},
+	ProposerSlashingSubnetTopicFormat:           &ethpb.ProposerSlashing{},
+	AttesterSlashingSubnetTopicFormat:           &ethpb.AttesterSlashing{},
+	AggregateAndProofSubnetTopicFormat:          &ethpb.SignedAggregateAttestationAndProof{},
+	SyncContributionAndProofSubnetTopicFormat:   &ethpb.SignedContributionAndProof{},
+	SyncCommitteeSubnetTopicFormat:              &ethpb.SyncCommitteeMessage{},
+	DilithiumToExecutionChangeSubnetTopicFormat: &ethpb.SignedDilithiumToExecutionChange{},
 }
 
 // GossipTopicMappings is a function to return the assigned data type

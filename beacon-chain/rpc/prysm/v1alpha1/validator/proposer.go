@@ -153,8 +153,8 @@ func (vs *Server) GetBeaconBlock(ctx context.Context, req *ethpb.BlockRequest) (
 			return nil, status.Errorf(codes.Internal, "Could not set execution data: %v", err)
 		}
 
-		// Set bls to execution change. New in Capella.
-		vs.setBlsToExecData(sBlk, head)
+		// Set dilithium to execution change. New in Capella.
+		vs.setDilithiumToExecData(sBlk, head)
 	}
 
 	sr, err := vs.computeStateRoot(ctx, sBlk)
@@ -228,8 +228,8 @@ func (vs *Server) BuildBlockParallel(ctx context.Context, sBlk interfaces.Signed
 		// Set sync aggregate. New in Altair.
 		vs.setSyncAggregate(ctx, sBlk)
 
-		// Set bls to execution change. New in Capella.
-		vs.setBlsToExecData(sBlk, head)
+		// Set dilithium to execution change. New in Capella.
+		vs.setDilithiumToExecData(sBlk, head)
 	}()
 
 	localPayload, err := vs.getLocalPayload(ctx, sBlk.Block(), head)

@@ -127,9 +127,9 @@ func (s *Service) registerSubscribers(epoch primitives.Epoch, digest [4]byte) {
 	// New Gossip Topic in Capella
 	if epoch >= params.BeaconConfig().CapellaForkEpoch {
 		s.subscribe(
-			p2p.BlsToExecutionChangeSubnetTopicFormat,
-			s.validateBlsToExecutionChange,
-			s.blsToExecutionChangeSubscriber,
+			p2p.DilithiumToExecutionChangeSubnetTopicFormat,
+			s.validateDilithiumToExecutionChange,
+			s.dilithiumToExecutionChangeSubscriber,
 			digest,
 		)
 	}

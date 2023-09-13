@@ -67,9 +67,9 @@ func WithSyncCommsPool(syncCommsPool synccommittee.Pool) Option {
 	}
 }
 
-func WithBlsToExecPool(blsToExecPool blstoexec.PoolManager) Option {
+func WithDilithiumToExecPool(dilithiumToExecPool blstoexec.PoolManager) Option {
 	return func(s *Service) error {
-		s.cfg.blsToExecPool = blsToExecPool
+		s.cfg.dilithiumToExecPool = dilithiumToExecPool
 		return nil
 	}
 }

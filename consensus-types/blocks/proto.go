@@ -306,17 +306,17 @@ func (b *BeaconBlockBody) Proto() (proto.Message, error) {
 				}
 			}
 			return &eth.BlindedBeaconBlockBodyCapella{
-				RandaoReveal:           b.randaoReveal[:],
-				Eth1Data:               b.eth1Data,
-				Graffiti:               b.graffiti[:],
-				ProposerSlashings:      b.proposerSlashings,
-				AttesterSlashings:      b.attesterSlashings,
-				Attestations:           b.attestations,
-				Deposits:               b.deposits,
-				VoluntaryExits:         b.voluntaryExits,
-				SyncAggregate:          b.syncAggregate,
-				ExecutionPayloadHeader: ph,
-				BlsToExecutionChanges:  b.blsToExecutionChanges,
+				RandaoReveal:                b.randaoReveal[:],
+				Eth1Data:                    b.eth1Data,
+				Graffiti:                    b.graffiti[:],
+				ProposerSlashings:           b.proposerSlashings,
+				AttesterSlashings:           b.attesterSlashings,
+				Attestations:                b.attestations,
+				Deposits:                    b.deposits,
+				VoluntaryExits:              b.voluntaryExits,
+				SyncAggregate:               b.syncAggregate,
+				ExecutionPayloadHeader:      ph,
+				DilithiumToExecutionChanges: b.dilithiumToExecutionChanges,
 			}, nil
 		}
 		var p *enginev1.ExecutionPayloadCapella
@@ -328,17 +328,17 @@ func (b *BeaconBlockBody) Proto() (proto.Message, error) {
 			}
 		}
 		return &eth.BeaconBlockBodyCapella{
-			RandaoReveal:          b.randaoReveal[:],
-			Eth1Data:              b.eth1Data,
-			Graffiti:              b.graffiti[:],
-			ProposerSlashings:     b.proposerSlashings,
-			AttesterSlashings:     b.attesterSlashings,
-			Attestations:          b.attestations,
-			Deposits:              b.deposits,
-			VoluntaryExits:        b.voluntaryExits,
-			SyncAggregate:         b.syncAggregate,
-			ExecutionPayload:      p,
-			BlsToExecutionChanges: b.blsToExecutionChanges,
+			RandaoReveal:                b.randaoReveal[:],
+			Eth1Data:                    b.eth1Data,
+			Graffiti:                    b.graffiti[:],
+			ProposerSlashings:           b.proposerSlashings,
+			AttesterSlashings:           b.attesterSlashings,
+			Attestations:                b.attestations,
+			Deposits:                    b.deposits,
+			VoluntaryExits:              b.voluntaryExits,
+			SyncAggregate:               b.syncAggregate,
+			ExecutionPayload:            p,
+			DilithiumToExecutionChanges: b.dilithiumToExecutionChanges,
 		}, nil
 	default:
 		return nil, errors.New("unsupported beacon block body version")
@@ -673,19 +673,19 @@ func initBlockBodyFromProtoCapella(pb *eth.BeaconBlockBodyCapella) (*BeaconBlock
 		return nil, err
 	}
 	b := &BeaconBlockBody{
-		version:               version.Capella,
-		isBlinded:             false,
-		randaoReveal:          bytesutil.ToBytes4595(pb.RandaoReveal),
-		eth1Data:              pb.Eth1Data,
-		graffiti:              bytesutil.ToBytes32(pb.Graffiti),
-		proposerSlashings:     pb.ProposerSlashings,
-		attesterSlashings:     pb.AttesterSlashings,
-		attestations:          pb.Attestations,
-		deposits:              pb.Deposits,
-		voluntaryExits:        pb.VoluntaryExits,
-		syncAggregate:         pb.SyncAggregate,
-		executionPayload:      p,
-		blsToExecutionChanges: pb.BlsToExecutionChanges,
+		version:                     version.Capella,
+		isBlinded:                   false,
+		randaoReveal:                bytesutil.ToBytes4595(pb.RandaoReveal),
+		eth1Data:                    pb.Eth1Data,
+		graffiti:                    bytesutil.ToBytes32(pb.Graffiti),
+		proposerSlashings:           pb.ProposerSlashings,
+		attesterSlashings:           pb.AttesterSlashings,
+		attestations:                pb.Attestations,
+		deposits:                    pb.Deposits,
+		voluntaryExits:              pb.VoluntaryExits,
+		syncAggregate:               pb.SyncAggregate,
+		executionPayload:            p,
+		dilithiumToExecutionChanges: pb.DilithiumToExecutionChanges,
 	}
 	return b, nil
 }
@@ -701,19 +701,19 @@ func initBlindedBlockBodyFromProtoCapella(pb *eth.BlindedBeaconBlockBodyCapella)
 		return nil, err
 	}
 	b := &BeaconBlockBody{
-		version:                version.Capella,
-		isBlinded:              true,
-		randaoReveal:           bytesutil.ToBytes4595(pb.RandaoReveal),
-		eth1Data:               pb.Eth1Data,
-		graffiti:               bytesutil.ToBytes32(pb.Graffiti),
-		proposerSlashings:      pb.ProposerSlashings,
-		attesterSlashings:      pb.AttesterSlashings,
-		attestations:           pb.Attestations,
-		deposits:               pb.Deposits,
-		voluntaryExits:         pb.VoluntaryExits,
-		syncAggregate:          pb.SyncAggregate,
-		executionPayloadHeader: ph,
-		blsToExecutionChanges:  pb.BlsToExecutionChanges,
+		version:                     version.Capella,
+		isBlinded:                   true,
+		randaoReveal:                bytesutil.ToBytes4595(pb.RandaoReveal),
+		eth1Data:                    pb.Eth1Data,
+		graffiti:                    bytesutil.ToBytes32(pb.Graffiti),
+		proposerSlashings:           pb.ProposerSlashings,
+		attesterSlashings:           pb.AttesterSlashings,
+		attestations:                pb.Attestations,
+		deposits:                    pb.Deposits,
+		voluntaryExits:              pb.VoluntaryExits,
+		syncAggregate:               pb.SyncAggregate,
+		executionPayloadHeader:      ph,
+		dilithiumToExecutionChanges: pb.DilithiumToExecutionChanges,
 	}
 	return b, nil
 }

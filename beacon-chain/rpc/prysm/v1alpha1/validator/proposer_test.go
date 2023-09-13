@@ -423,12 +423,12 @@ func TestServer_GetBeaconBlock_Capella(t *testing.T) {
 	require.NoError(t, err)
 	change, err := util.GenerateBLSToExecutionChange(copiedState, privKeys[1], 0)
 	require.NoError(t, err)
-	proposerServer.BLSChangesPool.InsertBLSToExecChange(change)
+	proposerServer.DilithiumChangesPool.InsertDilithiumToExecChange(change)
 
 	got, err := proposerServer.GetBeaconBlock(ctx, req)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(got.GetCapella().Body.BlsToExecutionChanges))
-	require.DeepEqual(t, change, got.GetCapella().Body.BlsToExecutionChanges[0])
+	require.Equal(t, 1, len(got.GetCapella().Body.DilithiumToExecutionChanges))
+	require.DeepEqual(t, change, got.GetCapella().Body.DilithiumToExecutionChanges[0])
 }
 
 func TestServer_GetBeaconBlock_Optimistic(t *testing.T) {
@@ -482,7 +482,7 @@ func getProposerServer(db db.HeadAccessDatabase, headState state.BeaconState, he
 		},
 		ProposerSlotIndexCache: cache.NewProposerPayloadIDsCache(),
 		BeaconDB:               db,
-		BLSChangesPool:         blstoexec.NewPool(),
+		DilithiumChangesPool:   blstoexec.NewPool(),
 		BlockBuilder:           &builderTest.MockBuilderService{HasConfigured: true},
 	}
 }
