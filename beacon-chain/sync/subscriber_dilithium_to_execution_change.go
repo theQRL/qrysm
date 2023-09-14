@@ -21,6 +21,6 @@ func (s *Service) dilithiumToExecutionChangeSubscriber(_ context.Context, msg pr
 			Change: blsMsg,
 		},
 	})
-	s.cfg.blsToExecPool.InsertDilithiumToExecChange(blsMsg)
+	s.cfg.dilithiumToExecPool.InsertDilithiumToExecChange(blsMsg)
 	return nil
 }

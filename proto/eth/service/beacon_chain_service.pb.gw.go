@@ -14,7 +14,6 @@ import (
 	"net/http"
 
 	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/proto/eth/v1"
 	v1 "github.com/cyyber/qrysm/v4/proto/eth/v1"
 	"github.com/cyyber/qrysm/v4/proto/eth/v2"
 	"github.com/golang/protobuf/ptypes/empty"
