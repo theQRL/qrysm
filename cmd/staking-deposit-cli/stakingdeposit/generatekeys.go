@@ -1,6 +1,7 @@
 package stakingdeposit
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -76,7 +77,7 @@ func validateDeposit(depositData *DepositData, credential *Credential) bool {
 	signingSeed := misc.StrSeedToBinSeed(credential.signingSeed)
 	depositKey, err := dilithium.SecretKeyFromBytes(signingSeed[:])
 	if err != nil {
-		return false
+		panic(fmt.Errorf("failed to derive dilithium depositKey from signingSeed | reason %v", err))
 	}
 	pubKey, err := hex.DecodeString(depositData.PubKey)
 	if err != nil {
@@ -101,23 +102,30 @@ func validateDeposit(depositData *DepositData, credential *Credential) bool {
 	}
 
 	if len(withdrawalCredentials) != 32 {
-		return false
+		panic(fmt.Errorf("failed to derive dilithium depositKey from signingSeed | reason %v", err))
 	}
 
 	zeroBytes11 := make([]uint8, 11)
-	if reflect.DeepEqual(withdrawalCredentials[:1], params.BeaconConfig().ZondAddressWithdrawalPrefixByte) {
+	if reflect.DeepEqual(withdrawalCredentials[0], params.BeaconConfig().ZondAddressWithdrawalPrefixByte) {
 		if !reflect.DeepEqual(withdrawalCredentials[1:12], zeroBytes11) {
-			return false
+			panic("withdrawal credentials zero bytes not found for index 1:12")
 		}
 		if !reflect.DeepEqual(withdrawalCredentials[12:], credential.ZondWithdrawalAddress().Bytes()) {
-			return false
+			panic(fmt.Errorf("withdrawalCredentials[12:] %x mismatch with credential.ZondWithdrawalAddress %x",
+				withdrawalCredentials[12:], credential.ZondWithdrawalAddress().Bytes()))
+		}
+	} else if reflect.DeepEqual(withdrawalCredentials[0], params.BeaconConfig().DilithiumWithdrawalPrefixByte) {
+		hashWithdrawalPK := sha256.Sum256(credential.WithdrawalPK())
+		if !reflect.DeepEqual(withdrawalCredentials[1:], hashWithdrawalPK[1:]) {
+			panic(fmt.Errorf("withdrawalCredentials[1:] %x mismatch with hashWithdrawalPK[1:] %x",
+				withdrawalCredentials[1:], hashWithdrawalPK[1:]))
 		}
 	} else {
-		return false
+		panic(fmt.Errorf("invalid prefixbyte withdrawalCredentials[0] %x", withdrawalCredentials[0]))
 	}
 
 	if len(signature) != dilithium2.CryptoBytes {
-		return false
+		panic(fmt.Errorf("invalid dilitihium signature length %d", len(signature)))
 	}
 
 	if depositData.Amount > params.BeaconConfig().MaxEffectiveBalance {
