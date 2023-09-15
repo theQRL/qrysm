@@ -27,9 +27,9 @@ func GenerateDilithiumToExecutionChange(dilithiumExecutionChangesFolder string,
 	dilithiumWithdrawalCredentialsList []string,
 	executionAddress string,
 	devnetChainSetting string) {
-	fileFolder := filepath.Join(dilithiumExecutionChangesFolder, defaultDilithiumToExecutionChangesFolderName)
-	if _, err := os.Stat(fileFolder); os.IsNotExist(err) {
-		err := os.MkdirAll(fileFolder, 0775)
+	dilithiumExecutionChangesFolder = filepath.Join(dilithiumExecutionChangesFolder, defaultDilithiumToExecutionChangesFolderName)
+	if _, err := os.Stat(dilithiumExecutionChangesFolder); os.IsNotExist(err) {
+		err := os.MkdirAll(dilithiumExecutionChangesFolder, 0775)
 		if err != nil {
 			panic(fmt.Errorf("cannot create folder. reason: %v", err))
 		}
