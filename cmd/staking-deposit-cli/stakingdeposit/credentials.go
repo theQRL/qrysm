@@ -90,7 +90,7 @@ func NewCredentialsFromSeed(seed string, numKeys uint64, amounts []uint64,
 		if err != nil {
 			return nil, err
 		}
-		credentials.credentials[index] = c
+		credentials.credentials[index-startIndex] = c
 	}
 	return credentials, nil
 }
