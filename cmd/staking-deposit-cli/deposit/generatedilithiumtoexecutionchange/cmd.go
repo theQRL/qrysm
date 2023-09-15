@@ -46,7 +46,7 @@ var Commands = []*cli.Command{
 				Name:        "chain",
 				Usage:       "Name of the chain should be one of these mainnet, betanet",
 				Destination: &generateDilithiumToExecutionChangeFlags.Chain,
-				Value:       "mainnet",
+				Required:    true,
 			},
 			&cli.StringFlag{
 				Name:        "seed",
@@ -76,7 +76,7 @@ var Commands = []*cli.Command{
 				Name:        "execution-address",
 				Usage:       "",
 				Destination: &generateDilithiumToExecutionChangeFlags.ExecutionAddress,
-				Value:       "betanet",
+				Required:    true,
 			},
 			&cli.StringFlag{
 				Name:        "devnet-chain-setting",
@@ -84,9 +84,6 @@ var Commands = []*cli.Command{
 				Destination: &generateDilithiumToExecutionChangeFlags.DevnetChainSetting,
 				Value:       "",
 			},
-		},
-		Subcommands: []*cli.Command{
-			nil,
 		},
 	},
 }
