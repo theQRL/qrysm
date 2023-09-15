@@ -2,13 +2,14 @@ package stakingdeposit
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/config"
 	ethpbv2 "github.com/cyyber/qrysm/v4/proto/eth/v2"
 )
 
 type DilithiumToExecutionChangeMessage struct {
-	ValidatorIndex      uint64 `json:"validator_index"`
+	ValidatorIndex      string `json:"validator_index"`
 	FromDilithiumPubkey string `json:"from_dilithium_pubkey"`
 	ToExecutionAddress  string `json:"to_execution_address"`
 }
@@ -30,7 +31,7 @@ func NewDilithiumToExeuctionChangeData(
 	chainSetting *config.ChainSetting) *DilithiumToExecutionChangeData {
 	return &DilithiumToExecutionChangeData{
 		Message: &DilithiumToExecutionChangeMessage{
-			ValidatorIndex:      uint64(signedDilithiumToExecutionChange.Message.ValidatorIndex),
+			ValidatorIndex:      strconv.FormatUint(uint64(signedDilithiumToExecutionChange.Message.ValidatorIndex), 10),
 			FromDilithiumPubkey: fmt.Sprintf("0x%x", signedDilithiumToExecutionChange.Message.FromDilithiumPubkey),
 			ToExecutionAddress:  fmt.Sprintf("0x%x", signedDilithiumToExecutionChange.Message.ToExecutionAddress),
 		},

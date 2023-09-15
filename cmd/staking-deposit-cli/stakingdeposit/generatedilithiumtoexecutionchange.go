@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
 	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/config"
@@ -135,7 +136,11 @@ func ValidateDilithiumToExecutionChange(dilithiumToExecutionChange *DilithiumToE
 	}
 	genesisValidatorsRoot := misc.DecodeHex(dilithiumToExecutionChange.MetaData.GenesisValidatorsRoot)
 
-	if validatorIndex != inputValidatorIndex {
+	uintValidatorIndex, err := strconv.ParseUint(validatorIndex, 10, 64)
+	if err != nil {
+		panic(fmt.Errorf("failed to parse validatorIndex %s | reason %v", validatorIndex, err))
+	}
+	if uintValidatorIndex != inputValidatorIndex {
 		return false
 	}
 	if !bytes.Equal(fromDilithiumPubkey.Marshal(), credential.WithdrawalPK()) {
@@ -150,7 +155,7 @@ func ValidateDilithiumToExecutionChange(dilithiumToExecutionChange *DilithiumToE
 	}
 
 	message := &ethpbv2.DilithiumToExecutionChange{
-		ValidatorIndex:      primitives.ValidatorIndex(validatorIndex),
+		ValidatorIndex:      primitives.ValidatorIndex(uintValidatorIndex),
 		FromDilithiumPubkey: fromDilithiumPubkey.Marshal(),
 		ToExecutionAddress:  toExecutionAddress}
 	root, err := message.HashTreeRoot()
