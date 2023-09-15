@@ -1,8 +1,6 @@
 package stakingdeposit
 
 import (
-	"encoding/hex"
-
 	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/misc"
 	"github.com/cyyber/qrysm/v4/contracts/deposit"
 	"github.com/cyyber/qrysm/v4/crypto/dilithium"
@@ -52,13 +50,13 @@ func NewDepositData(c *Credential) (*DepositData, error) {
 	}
 
 	d := &DepositData{
-		PubKey:                hex.EncodeToString(depositMessage.PublicKey),
-		WithdrawalCredentials: hex.EncodeToString(depositMessage.WithdrawalCredentials),
+		PubKey:                misc.EncodeHex(depositMessage.PublicKey),
+		WithdrawalCredentials: misc.EncodeHex(depositMessage.WithdrawalCredentials),
 		Amount:                c.amount,
-		Signature:             hex.EncodeToString(depositData.Signature),
-		MessageRoot:           hex.EncodeToString(messageRoot[:]),
-		DepositDataRoot:       hex.EncodeToString(dataRoot[:]),
-		ForkVersion:           hex.EncodeToString(c.chainSetting.GenesisForkVersion),
+		Signature:             misc.EncodeHex(depositData.Signature),
+		MessageRoot:           misc.EncodeHex(messageRoot[:]),
+		DepositDataRoot:       misc.EncodeHex(dataRoot[:]),
+		ForkVersion:           misc.EncodeHex(c.chainSetting.GenesisForkVersion),
 		NetworkName:           c.chainSetting.Name,
 		CLIVersion:            "", // TODO: (cyyber) get CLI Version
 	}

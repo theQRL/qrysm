@@ -48,9 +48,9 @@ func GenerateDilithiumToExecutionChange(dilithiumExecutionChangesFolder string,
 		if !ok {
 			panic("network_name not found in devnetChainSetting passed as argument")
 		}
-		genesisForkName, ok := devnetChainSettingMap["genesis_fork_name"]
+		genesisForkVersion, ok := devnetChainSettingMap["genesis_fork_version"]
 		if !ok {
-			panic("genesis_fork_name not found in devnetChainSetting passed as argument")
+			panic("genesis_fork_version not found in devnetChainSetting passed as argument")
 		}
 		genesisValidatorRoot, ok := devnetChainSettingMap["genesis_validator_root"]
 		if !ok {
@@ -58,7 +58,7 @@ func GenerateDilithiumToExecutionChange(dilithiumExecutionChangesFolder string,
 		}
 		chainSettings = &config.ChainSetting{
 			Name:                  networkName,
-			GenesisForkVersion:    config.ToHex(genesisForkName),
+			GenesisForkVersion:    config.ToHex(genesisForkVersion),
 			GenesisValidatorsRoot: config.ToHex(genesisValidatorRoot),
 		}
 	}

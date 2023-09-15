@@ -11,22 +11,23 @@ import (
 func StrSeedToBinSeed(strSeed string) [common.SeedSize]uint8 {
 	var seed [common.SeedSize]uint8
 
-	unSizedSeed, err := hex.DecodeString(strSeed)
-	if err != nil {
-		panic("failed to decode string")
-	}
+	unSizedSeed := DecodeHex(strSeed)
 
 	copy(seed[:], unSizedSeed)
 	return seed
 }
 
 func DecodeHex(hexString string) []byte {
-	hexBytes, err := hex.DecodeString(hexString)
+	hexBytes, err := hex.DecodeString(hexString[2:])
 	if err != nil {
 		panic(fmt.Errorf("failed to decode string %s | reason %v",
 			hexString, err))
 	}
 	return hexBytes
+}
+
+func EncodeHex(hexBytes []byte) string {
+	return fmt.Sprintf("0x%x", hexBytes)
 }
 
 func ToSizedDilithiumSignature(sig []byte) [dilithium2.CryptoBytes]byte {

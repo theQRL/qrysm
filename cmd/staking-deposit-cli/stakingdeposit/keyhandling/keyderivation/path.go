@@ -1,9 +1,9 @@
 package keyderivation
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/misc"
 
 	"github.com/theQRL/go-qrllib/common"
 	"github.com/theQRL/go-qrllib/dilithium"
@@ -12,10 +12,7 @@ import (
 
 // SeedAndPathToSeed TODO: (cyyber) algorithm needs to be reviewed in future
 func SeedAndPathToSeed(strSeed, path string) (string, error) {
-	binSeed, err := hex.DecodeString(strSeed)
-	if err != nil {
-		return "", fmt.Errorf("failed to decode seed %v", err)
-	}
+	binSeed := misc.DecodeHex(strSeed)
 	if len(binSeed) != common.SeedSize {
 		return "", fmt.Errorf("invalid seed size %d", len(binSeed))
 	}
@@ -27,12 +24,12 @@ func SeedAndPathToSeed(strSeed, path string) (string, error) {
 	if _, err := h.Write(seed[:]); err != nil {
 		return "", fmt.Errorf("shake256 hash write failed %v", err)
 	}
-	if _, err = h.Write([]byte(path)); err != nil {
+	if _, err := h.Write([]byte(path)); err != nil {
 		return "", fmt.Errorf("shake256 hash write failed %v", err)
 	}
 
 	var newSeed [common.SeedSize]uint8
-	_, err = h.Read(newSeed[:])
+	_, err := h.Read(newSeed[:])
 
 	// Try generating Dilithium from seed to ensure seed validity
 	_, err = dilithium.NewDilithiumFromSeed(newSeed)
@@ -40,5 +37,5 @@ func SeedAndPathToSeed(strSeed, path string) (string, error) {
 		return "", errors.New("could not generate dilithium from mnemonic")
 	}
 
-	return hex.EncodeToString(newSeed[:]), nil
+	return misc.EncodeHex(newSeed[:]), nil
 }

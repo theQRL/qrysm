@@ -2,7 +2,8 @@ package keyhandling
 
 import (
 	"crypto/sha256"
-	"encoding/hex"
+
+	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/misc"
 )
 
 type KeystoreCrypto struct {
@@ -24,17 +25,17 @@ func NewKeystoreCrypto(salt, aesIV, cipherText, partialDecryptionKey []uint8) *K
 	return &KeystoreCrypto{
 		KDF: &KeystoreModule{
 			Function: "custom",
-			Params:   map[string]interface{}{"salt": hex.EncodeToString(salt)},
+			Params:   map[string]interface{}{"salt": misc.EncodeHex(salt)},
 		},
 		Cipher: &KeystoreModule{
 			Function: "aes-128-ctr",
-			Params:   map[string]interface{}{"iv": hex.EncodeToString(aesIV)},
-			Message:  hex.EncodeToString(cipherText),
+			Params:   map[string]interface{}{"iv": misc.EncodeHex(aesIV)},
+			Message:  misc.EncodeHex(cipherText),
 		},
 		Checksum: &KeystoreModule{
 			Function: "sha256",
 			Params:   map[string]interface{}{},
-			Message:  hex.EncodeToString(checksum[:]),
+			Message:  misc.EncodeHex(checksum[:]),
 		},
 	}
 }

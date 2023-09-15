@@ -1,7 +1,6 @@
 package stakingdeposit
 
 import (
-	"encoding/hex"
 	"fmt"
 	"path/filepath"
 	"reflect"
@@ -107,7 +106,7 @@ func (c *Credential) SaveSigningKeystore(password string, folder string) (string
 func (c *Credential) VerifyKeystore(keystoreFileFolder, password string) bool {
 	savedKeystore := keyhandling.NewKeystoreFromFile(keystoreFileFolder)
 	seedBytes := savedKeystore.Decrypt(password)
-	return c.signingSeed == hex.EncodeToString(seedBytes[:])
+	return c.signingSeed == misc.EncodeHex(seedBytes[:])
 }
 
 func (c *Credential) GetDilithiumToExecutionChange(validatorIndex uint64) *ethpbv2.SignedDilithiumToExecutionChange {
@@ -115,7 +114,7 @@ func (c *Credential) GetDilithiumToExecutionChange(validatorIndex uint64) *ethpb
 		panic("the execution address should not be empty")
 	}
 
-	binWithdrawalSeed, err := hex.DecodeString(c.withdrawalSeed)
+	binWithdrawalSeed := misc.DecodeHex(c.withdrawalSeed)
 	d, err := dilithium.SecretKeyFromBytes(binWithdrawalSeed)
 	if err != nil {
 		panic(fmt.Errorf("failed to generate secret Key from withdrawal seed %v", err))

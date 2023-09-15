@@ -2,8 +2,8 @@ package newseed
 
 import (
 	"crypto/rand"
-	"encoding/hex"
 	"fmt"
+	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/misc"
 	"syscall"
 
 	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit"
@@ -96,7 +96,7 @@ func cliActionNewSeed(cliCtx *cli.Context) error {
 	}
 
 	stakingdeposit.GenerateKeys(newSeedFlags.ValidatorStartIndex,
-		newSeedFlags.NumValidators, hex.EncodeToString(seed[:]), newSeedFlags.Folder,
+		newSeedFlags.NumValidators, misc.EncodeHex(seed[:]), newSeedFlags.Folder,
 		newSeedFlags.ChainName, string(keystorePassword), newSeedFlags.ExecutionAddress)
 
 	return nil

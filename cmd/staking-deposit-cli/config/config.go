@@ -1,8 +1,7 @@
 package config
 
 import (
-	"encoding/hex"
-	"fmt"
+	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/misc"
 )
 
 const BETANET = "betanet"
@@ -20,11 +19,7 @@ type ChainSetting struct {
 }
 
 func ToHex(data string) []byte {
-	output, err := hex.DecodeString(data)
-	if err != nil {
-		panic(fmt.Errorf("failed to decode string %s", data))
-	}
-	return output
+	return misc.DecodeHex(data)
 }
 
 func GetConfig() *Config {

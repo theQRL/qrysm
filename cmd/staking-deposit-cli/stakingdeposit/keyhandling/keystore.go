@@ -4,7 +4,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +11,7 @@ import (
 	"reflect"
 	"runtime"
 
+	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/misc"
 	"github.com/google/uuid"
 	"github.com/theQRL/go-qrllib/common"
 	"github.com/theQRL/go-qrllib/dilithium"
@@ -52,22 +52,16 @@ func (k *Keystore) Decrypt(password string) [common.SeedSize]byte {
 	if !ok {
 		panic("salt not found in KDF Params")
 	}
-	binSalt, err := hex.DecodeString(salt.(string))
-	if err != nil {
-		panic("failed to decode salt from string to bytes")
-	}
+	binSalt := misc.DecodeHex(salt.(string))
 	decryptionKey, err := passwordToDecryptionKey(password, binSalt)
 	if err != nil {
 		panic(fmt.Errorf("passwordToDecryptionKey | reason %v", err))
 	}
 
-	binCipherMessage, err := hex.DecodeString(k.Crypto.Cipher.Message)
-	if err != nil {
-		panic("failed to decode message from string to bytes")
-	}
+	binCipherMessage := misc.DecodeHex(k.Crypto.Cipher.Message)
 
 	checksum := CheckSumDecryptionKeyAndMessage(decryptionKey[16:32], binCipherMessage)
-	strChecksum := hex.EncodeToString(checksum[:])
+	strChecksum := misc.EncodeHex(checksum[:])
 	if !reflect.DeepEqual(strChecksum, k.Crypto.Checksum.Message) {
 		panic(fmt.Errorf("checksum check failed | expected %s | found %s",
 			strChecksum, k.Crypto.Checksum.Message))
@@ -79,10 +73,7 @@ func (k *Keystore) Decrypt(password string) [common.SeedSize]byte {
 	}
 
 	var seed [common.SeedSize]uint8
-	cipherText, err := hex.DecodeString(k.Crypto.Cipher.Message)
-	if err != nil {
-		panic("failed to decode cipherText from string to bytes")
-	}
+	cipherText := misc.DecodeHex(k.Crypto.Cipher.Message)
 	if len(cipherText) != len(seed) {
 		panic(fmt.Errorf("invalid cipher text length | expected length %d | actual length %d",
 			len(seed), len(cipherText)))
@@ -91,10 +82,7 @@ func (k *Keystore) Decrypt(password string) [common.SeedSize]byte {
 	if !ok {
 		panic(fmt.Errorf("aesIV not found in Cipher Params"))
 	}
-	binAESIV, err := hex.DecodeString(aesIV.(string))
-	if err != nil {
-		panic("failed to decode aesIV from string to bytes")
-	}
+	binAESIV := misc.DecodeHex(aesIV.(string))
 
 	stream := cipher.NewCTR(block, binAESIV)
 	stream.XORKeyStream(seed[:], cipherText[:])
@@ -161,7 +149,7 @@ func Encrypt(seed [common.SeedSize]uint8, password, path string, salt, aesIV []b
 	return &Keystore{
 		UUID:   uuid.New().String(),
 		Crypto: NewKeystoreCrypto(salt, aesIV, cipherText, decryptionKey[16:]),
-		PubKey: hex.EncodeToString(pk[:]),
+		PubKey: misc.EncodeHex(pk[:]),
 		Path:   path,
 	}, nil
 }

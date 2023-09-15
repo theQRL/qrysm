@@ -2,7 +2,6 @@ package stakingdeposit
 
 import (
 	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -79,20 +78,11 @@ func validateDeposit(depositData *DepositData, credential *Credential) bool {
 	if err != nil {
 		panic(fmt.Errorf("failed to derive dilithium depositKey from signingSeed | reason %v", err))
 	}
-	pubKey, err := hex.DecodeString(depositData.PubKey)
-	if err != nil {
-		panic(fmt.Errorf("failed to decode pubkey"))
-	}
+	pubKey := misc.DecodeHex(depositData.PubKey)
 
-	withdrawalCredentials, err := hex.DecodeString(depositData.WithdrawalCredentials)
-	if err != nil {
-		panic(fmt.Errorf("failed to decode withdrawalCredentials"))
-	}
+	withdrawalCredentials := misc.DecodeHex(depositData.WithdrawalCredentials)
 
-	signature, err := hex.DecodeString(depositData.Signature)
-	if err != nil {
-		panic(fmt.Errorf("failed to decode signature"))
-	}
+	signature := misc.DecodeHex(depositData.Signature)
 
 	if len(pubKey) != dilithium2.CryptoPublicKeyBytes {
 		return false
