@@ -178,7 +178,7 @@ func ValidateDilithiumToExecutionChange(dilithiumToExecutionChange *DilithiumToE
 }
 
 func ValidateDilithiumWithdrawalCredentialsMatching(dilithiumWithdrawalCredential string, credential *Credential) bool {
-	binDilithiumWithdrawalCredential := misc.DecodeHex(dilithiumWithdrawalCredential[2:])
+	binDilithiumWithdrawalCredential := misc.DecodeHex(dilithiumWithdrawalCredential)
 	sha256Hash := sha256.Sum256(credential.WithdrawalPK())
 	return bytes.Equal(binDilithiumWithdrawalCredential[1:], sha256Hash[1:])
 }
