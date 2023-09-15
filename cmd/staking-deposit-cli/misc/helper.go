@@ -18,6 +18,9 @@ func StrSeedToBinSeed(strSeed string) [common.SeedSize]uint8 {
 }
 
 func DecodeHex(hexString string) []byte {
+	if hexString[:2] != "0x" {
+		panic(fmt.Errorf("invalid hex string prefix %s", hexString[:2]))
+	}
 	hexBytes, err := hex.DecodeString(hexString[2:])
 	if err != nil {
 		panic(fmt.Errorf("failed to decode string %s | reason %v",
