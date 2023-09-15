@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/deposit/existingseed"
+	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/deposit/generatedilithiumtoexecutionchange"
 	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/deposit/newseed"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -24,4 +25,5 @@ func main() {
 func init() {
 	depositCommands = append(depositCommands, existingseed.Commands...)
 	depositCommands = append(depositCommands, newseed.Commands...)
+	depositCommands = append(depositCommands, generatedilithiumtoexecutionchange.Commands...)
 }
