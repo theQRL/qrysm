@@ -86,7 +86,7 @@ func NewCredentialsFromSeed(seed string, numKeys uint64, amounts []uint64,
 		credentials: make([]*Credential, numKeys),
 	}
 	for index := startIndex; index < startIndex+numKeys; index++ {
-		c, err := NewCredential(seed, index, amounts[index], chainSettings, hexZondWithdrawalAddress)
+		c, err := NewCredential(seed, index, amounts[index-startIndex], chainSettings, hexZondWithdrawalAddress)
 		if err != nil {
 			return nil, err
 		}
