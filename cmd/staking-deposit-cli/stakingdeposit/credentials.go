@@ -65,7 +65,7 @@ func (c *Credentials) ExportDilithiumToExecutionChangeJSON(folder string, valida
 		dilithiumToExecutionChangeDataList = append(dilithiumToExecutionChangeDataList, dilithiumToExecutionChangeData)
 	}
 
-	fileFolder := filepath.Join(folder, fmt.Sprintf("deposit_data-%d.json", time.Now().Unix()))
+	fileFolder := filepath.Join(folder, fmt.Sprintf("dilithium_to_execution_change-%d.json", time.Now().Unix()))
 	jsonDepositDataList, err := json.Marshal(dilithiumToExecutionChangeDataList)
 	if err != nil {
 		return "", err
