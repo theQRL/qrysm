@@ -8,9 +8,9 @@ import (
 )
 
 type DilithiumToExecutionChangeMessage struct {
-	ValidatorIndex      uint64
-	FromDilithiumPubkey string
-	ToExecutionAddress  string
+	ValidatorIndex      uint64 `json:"validator_index"`
+	FromDilithiumPubkey string `json:"from_dilithium_pubkey"`
+	ToExecutionAddress  string `json:"to_execution_address"`
 }
 
 type DilithiumToExecutionChangeMetaData struct {
