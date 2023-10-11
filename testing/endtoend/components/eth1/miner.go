@@ -18,12 +18,12 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/endtoend/helpers"
 	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
 	e2etypes "github.com/cyyber/qrysm/v4/testing/endtoend/types"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/accounts/abi/bind"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-zond/zondclient"
 )
 
 const (
@@ -216,7 +216,7 @@ func (m *Miner) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to ipc: %w", err)
 	}
-	web3 := ethclient.NewClient(client)
+	web3 := zondclient.NewClient(client)
 	block, err := web3.BlockByNumber(ctx, nil)
 	if err != nil {
 		return err

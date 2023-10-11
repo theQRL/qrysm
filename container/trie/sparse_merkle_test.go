@@ -12,8 +12,8 @@ import (
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-zond/accounts/abi/bind"
 )
 
 func TestCreateTrieFromProto_Validation(t *testing.T) {

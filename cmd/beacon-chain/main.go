@@ -27,10 +27,10 @@ import (
 	_ "github.com/cyyber/qrysm/v4/runtime/maxprocs"
 	"github.com/cyyber/qrysm/v4/runtime/tos"
 	"github.com/cyyber/qrysm/v4/runtime/version"
-	gethlog "github.com/ethereum/go-ethereum/log"
 	golog "github.com/ipfs/go-log/v2"
 	joonix "github.com/joonix/log"
 	"github.com/sirupsen/logrus"
+	zondlog "github.com/theQRL/go-zond/log"
 	"github.com/urfave/cli/v2"
 )
 
@@ -248,9 +248,9 @@ func startNode(ctx *cli.Context) error {
 		// libp2p specific logging.
 		golog.SetAllLoggers(golog.LevelDebug)
 		// Geth specific logging.
-		glogger := gethlog.NewGlogHandler(gethlog.StreamHandler(os.Stderr, gethlog.TerminalFormat(true)))
-		glogger.Verbosity(gethlog.LvlTrace)
-		gethlog.Root().SetHandler(glogger)
+		glogger := zondlog.NewGlogHandler(zondlog.StreamHandler(os.Stderr, zondlog.TerminalFormat(true)))
+		glogger.Verbosity(zondlog.LvlTrace)
+		zondlog.Root().SetHandler(glogger)
 	}
 
 	blockchainFlagOpts, err := blockchaincmd.FlagOptions(ctx)

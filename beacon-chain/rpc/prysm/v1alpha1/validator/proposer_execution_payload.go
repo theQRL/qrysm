@@ -20,11 +20,11 @@ import (
 	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
 	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/common"
 	"go.opencensus.io/trace"
 )
 

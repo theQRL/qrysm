@@ -6,10 +6,10 @@ import (
 	"github.com/cyyber/qrysm/v4/consensus-types/validator"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/common/hexutil"
 )
 
 // ToSettings converts struct to ProposerSettings

@@ -7,10 +7,10 @@ import (
 
 	clparams "github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-zond/core"
+	"github.com/theQRL/go-zond/params"
 )
 
 // defaultMinerAddress is used to send deposits and test transactions in the e2e test.

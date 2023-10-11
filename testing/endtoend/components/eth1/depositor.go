@@ -15,14 +15,14 @@ import (
 	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
 	"github.com/cyyber/qrysm/v4/testing/endtoend/types"
 	"github.com/cyyber/qrysm/v4/testing/util"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/common"
-	gethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-zond/accounts/abi/bind"
+	"github.com/theQRL/go-zond/accounts/keystore"
+	"github.com/theQRL/go-zond/common"
+	gethtypes "github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-zond/zondclient"
 )
 
 var gweiPerEth = big.NewInt(int64(params.BeaconConfig().GweiPerEth))
@@ -73,7 +73,7 @@ type Depositor struct {
 	// This allows other components or e2e set up code to block until its Start method has been called.
 	types.EmptyComponent
 	Key       *keystore.Key
-	Client    *ethclient.Client
+	Client    *zondclient.Client
 	ChainID   *big.Int
 	NetworkId *big.Int
 	cd        *contracts.DepositContract
@@ -201,7 +201,7 @@ func (d *Depositor) SendDeposit(dep *eth.Deposit, txo *bind.TransactOpts, batch 
 
 // txops is a little helper method that creates a TransactOpts (type encapsulating auth/meta data needed to make a tx).
 func (d *Depositor) txops(ctx context.Context) (*bind.TransactOpts, error) {
-	txo, err := bind.NewKeyedTransactorWithChainID(d.Key.PrivateKey, d.NetworkId)
+	txo, err := bind.NewKeyedTransactorWithChainID(d.Key.Dilithium, d.NetworkId)
 	if err != nil {
 		return nil, err
 	}

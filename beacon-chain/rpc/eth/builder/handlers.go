@@ -12,9 +12,9 @@ import (
 	"github.com/cyyber/qrysm/v4/network"
 	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
 	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
+	"github.com/theQRL/go-zond/common/hexutil"
 )
 
 // ExpectedWithdrawals get the withdrawals computed from the specified state, that will be included in the block that gets built on the specified state.

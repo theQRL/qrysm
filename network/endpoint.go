@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/cyyber/qrysm/v4/network/authorization"
-	gethRPC "github.com/ethereum/go-ethereum/rpc"
 	log "github.com/sirupsen/logrus"
+	zondRPC "github.com/theQRL/go-zond/rpc"
 )
 
 // Endpoint is an endpoint with authorization data.
@@ -123,21 +123,21 @@ func NewHttpClientWithSecret(secret string) *http.Client {
 	}
 }
 
-func NewExecutionRPCClient(ctx context.Context, endpoint Endpoint) (*gethRPC.Client, error) {
+func NewExecutionRPCClient(ctx context.Context, endpoint Endpoint) (*zondRPC.Client, error) {
 	// Need to handle ipc and http
-	var client *gethRPC.Client
+	var client *zondRPC.Client
 	u, err := url.Parse(endpoint.Url)
 	if err != nil {
 		return nil, err
 	}
 	switch u.Scheme {
 	case "http", "https":
-		client, err = gethRPC.DialOptions(ctx, endpoint.Url, gethRPC.WithHTTPClient(endpoint.HttpClient()))
+		client, err = zondRPC.DialOptions(ctx, endpoint.Url, zondRPC.WithHTTPClient(endpoint.HttpClient()))
 		if err != nil {
 			return nil, err
 		}
 	case "", "ipc":
-		client, err = gethRPC.DialIPC(ctx, endpoint.Url)
+		client, err = zondRPC.DialIPC(ctx, endpoint.Url)
 		if err != nil {
 			return nil, err
 		}

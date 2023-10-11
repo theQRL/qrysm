@@ -18,12 +18,12 @@ import (
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/runtime/interop"
 	"github.com/cyyber/qrysm/v4/runtime/version"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/core"
+	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-zond/zondclient"
 	"github.com/urfave/cli/v2"
 )
 
@@ -301,7 +301,7 @@ func generateGenesis(ctx context.Context) (state.BeaconState, error) {
 				"could not dial %s please make sure you are running your execution client",
 				generateGenesisStateFlags.ExecutionEndpoint)
 		}
-		client := ethclient.NewClient(conn)
+		client := zondclient.NewClient(conn)
 		header, err := client.HeaderByNumber(ctx, big.NewInt(0))
 		if err != nil {
 			return nil, errors.Wrap(err, "could not get header by number")

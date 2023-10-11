@@ -9,7 +9,7 @@ import (
 	"github.com/cyyber/qrysm/v4/cmd"
 	"github.com/cyyber/qrysm/v4/io/file"
 	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/urfave/cli/v2"
 )
 

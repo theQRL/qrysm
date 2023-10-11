@@ -8,10 +8,10 @@ import (
 	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
 	"github.com/cyyber/qrysm/v4/consensus-types/wrapper"
 	mathutil "github.com/cyyber/qrysm/v4/math"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-zond/p2p/enode"
+	"github.com/theQRL/go-zond/p2p/enr"
 	"go.opencensus.io/trace"
 
 	"github.com/cyyber/qrysm/v4/config/params"

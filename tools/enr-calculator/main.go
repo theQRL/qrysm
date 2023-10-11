@@ -10,10 +10,10 @@ import (
 	ecdsaprysm "github.com/cyyber/qrysm/v4/crypto/ecdsa"
 	"github.com/cyyber/qrysm/v4/io/file"
 	_ "github.com/cyyber/qrysm/v4/runtime/maxprocs"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/p2p/enode"
+	"github.com/theQRL/go-zond/p2p/enr"
 )
 
 var (

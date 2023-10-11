@@ -3,8 +3,8 @@ package deposit
 import (
 	"bytes"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/pkg/errors"
+	"github.com/theQRL/go-zond/accounts/abi"
 )
 
 // UnpackDepositLogData unpacks the data from a deposit log using the ABI decoder.

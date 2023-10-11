@@ -20,8 +20,6 @@ import (
 	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/metadata"
 	"github.com/cyyber/qrysm/v4/runtime"
 	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/libp2p/go-libp2p"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -31,6 +29,8 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/p2p/enode"
+	"github.com/theQRL/go-zond/p2p/enr"
 	"go.opencensus.io/trace"
 )
 

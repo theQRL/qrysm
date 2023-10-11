@@ -10,10 +10,10 @@ import (
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/cyyber/qrysm/v4/runtime/version"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/common/hexutil"
+	zondtypes "github.com/theQRL/go-zond/core/types"
 )
 
 // PayloadIDBytes defines a custom type for Payload IDs used by the engine API
@@ -25,13 +25,13 @@ func (b PayloadIDBytes) MarshalJSON() ([]byte, error) {
 	return json.Marshal(hexutil.Bytes(b[:]))
 }
 
-// ExecutionBlock is the response kind received by the eth_getBlockByHash and
-// eth_getBlockByNumber endpoints via JSON-RPC.
+// ExecutionBlock is the response kind received by the zond_getBlockByHash and
+// zomd_getBlockByNumber endpoints via JSON-RPC.
 type ExecutionBlock struct {
 	Version int
-	gethtypes.Header
+	zondtypes.Header
 	Hash            common.Hash              `json:"hash"`
-	Transactions    []*gethtypes.Transaction `json:"transactions"`
+	Transactions    []*zondtypes.Transaction `json:"transactions"`
 	TotalDifficulty string                   `json:"totalDifficulty"`
 	Withdrawals     []*Withdrawal            `json:"withdrawals"`
 }
@@ -58,7 +58,7 @@ func (e *ExecutionBlock) MarshalJSON() ([]byte, error) {
 
 func (e *ExecutionBlock) UnmarshalJSON(enc []byte) error {
 	type transactionsJson struct {
-		Transactions []*gethtypes.Transaction `json:"transactions"`
+		Transactions []*zondtypes.Transaction `json:"transactions"`
 	}
 	type withdrawalsJson struct {
 		Withdrawals []*withdrawalJSON `json:"withdrawals"`

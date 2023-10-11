@@ -10,7 +10,7 @@ import (
 	"github.com/cyyber/qrysm/v4/runtime/interop"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/theQRL/go-zond/accounts/abi/bind"
 )
 
 func TestDepositTrieRoot_OK(t *testing.T) {

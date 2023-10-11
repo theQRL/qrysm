@@ -13,8 +13,8 @@ import (
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
-	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
+	zondtypes "github.com/theQRL/go-zond/core/types"
 )
 
 func Test_validTerminalPowBlock(t *testing.T) {
@@ -113,13 +113,13 @@ func Test_validateMergeBlock(t *testing.T) {
 	b := [32]byte{'b'}
 	mergeBlockParentHash := [32]byte{'3'}
 	engine.BlockByHashMap[a] = &enginev1.ExecutionBlock{
-		Header: gethtypes.Header{
+		Header: zondtypes.Header{
 			ParentHash: b,
 		},
 		TotalDifficulty: "0x2",
 	}
 	engine.BlockByHashMap[b] = &enginev1.ExecutionBlock{
-		Header: gethtypes.Header{
+		Header: zondtypes.Header{
 			ParentHash: mergeBlockParentHash,
 		},
 		TotalDifficulty: "0x1",
@@ -155,7 +155,7 @@ func Test_getBlkParentHashAndTD(t *testing.T) {
 	p := [32]byte{'b'}
 	td := "0x1"
 	engine.BlockByHashMap[h] = &enginev1.ExecutionBlock{
-		Header: gethtypes.Header{
+		Header: zondtypes.Header{
 			ParentHash: p,
 		},
 		TotalDifficulty: td,
@@ -173,7 +173,7 @@ func Test_getBlkParentHashAndTD(t *testing.T) {
 	require.ErrorContains(t, "pow block is nil", err)
 
 	engine.BlockByHashMap[h] = &enginev1.ExecutionBlock{
-		Header: gethtypes.Header{
+		Header: zondtypes.Header{
 			ParentHash: p,
 		},
 		TotalDifficulty: "1",
@@ -182,7 +182,7 @@ func Test_getBlkParentHashAndTD(t *testing.T) {
 	require.ErrorContains(t, "could not decode merge block total difficulty: hex string without 0x prefix", err)
 
 	engine.BlockByHashMap[h] = &enginev1.ExecutionBlock{
-		Header: gethtypes.Header{
+		Header: zondtypes.Header{
 			ParentHash: p,
 		},
 		TotalDifficulty: "0XFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",

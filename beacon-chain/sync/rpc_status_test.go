@@ -30,9 +30,9 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
 	prysmTime "github.com/cyyber/qrysm/v4/time"
-	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	"github.com/theQRL/go-zond/p2p/enr"
 	"google.golang.org/protobuf/proto"
 )
 

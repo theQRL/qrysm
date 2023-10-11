@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/urfave/cli/v2"
 	bolt "go.etcd.io/bbolt"
 )

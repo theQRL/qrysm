@@ -7,13 +7,13 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/metadata"
-	"github.com/ethereum/go-ethereum/p2p/enr"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/connmgr"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
+	"github.com/theQRL/go-zond/p2p/enr"
 	"google.golang.org/protobuf/proto"
 )
 

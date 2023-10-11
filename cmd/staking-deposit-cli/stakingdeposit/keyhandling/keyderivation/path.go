@@ -3,8 +3,8 @@ package keyderivation
 import (
 	"errors"
 	"fmt"
-	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/misc"
 
+	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/misc"
 	"github.com/theQRL/go-qrllib/common"
 	"github.com/theQRL/go-qrllib/dilithium"
 	"golang.org/x/crypto/sha3"

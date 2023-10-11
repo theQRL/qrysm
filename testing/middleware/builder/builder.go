@@ -21,13 +21,13 @@ import (
 	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
 	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	types "github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/ethereum/go-ethereum/beacon/engine"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	gethTypes "github.com/ethereum/go-ethereum/core/types"
-	gethRPC "github.com/ethereum/go-ethereum/rpc"
-	"github.com/ethereum/go-ethereum/trie"
 	gMux "github.com/gorilla/mux"
+	"github.com/theQRL/go-zond/beacon/engine"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/common/hexutil"
+	zondTypes "github.com/theQRL/go-zond/core/types"
+	zondRPC "github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-zond/trie"
 
 	"github.com/cyyber/qrysm/v4/crypto/bls"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
@@ -96,7 +96,7 @@ type ExecHeaderResponseCapella struct {
 type Builder struct {
 	cfg          *config
 	address      string
-	execClient   *gethRPC.Client
+	execClient   *zondRPC.Client
 	currId       *v1.PayloadIDBytes
 	currPayload  interfaces.ExecutionData
 	mux          *gMux.Router
@@ -611,7 +611,7 @@ func modifyExecutionPayload(execPayload engine.ExecutableData, fees *big.Int) (*
 }
 
 // This modifies the provided payload to imprint the builder's extra data
-func executableDataToBlock(params engine.ExecutableData) (*gethTypes.Block, error) {
+func executableDataToBlock(params engine.ExecutableData) (*zondTypes.Block, error) {
 	txs, err := decodeTransactions(params.Transactions)
 	if err != nil {
 		return nil, err
@@ -621,17 +621,17 @@ func executableDataToBlock(params engine.ExecutableData) (*gethTypes.Block, erro
 	// Withdrawals as the json null value.
 	var withdrawalsRoot *common.Hash
 	if params.Withdrawals != nil {
-		h := gethTypes.DeriveSha(gethTypes.Withdrawals(params.Withdrawals), trie.NewStackTrie(nil))
+		h := zondTypes.DeriveSha(zondTypes.Withdrawals(params.Withdrawals), trie.NewStackTrie(nil))
 		withdrawalsRoot = &h
 	}
-	header := &gethTypes.Header{
+	header := &zondTypes.Header{
 		ParentHash:      params.ParentHash,
-		UncleHash:       gethTypes.EmptyUncleHash,
+		UncleHash:       zondTypes.EmptyUncleHash,
 		Coinbase:        params.FeeRecipient,
 		Root:            params.StateRoot,
-		TxHash:          gethTypes.DeriveSha(gethTypes.Transactions(txs), trie.NewStackTrie(nil)),
+		TxHash:          zondTypes.DeriveSha(zondTypes.Transactions(txs), trie.NewStackTrie(nil)),
 		ReceiptHash:     params.ReceiptsRoot,
-		Bloom:           gethTypes.BytesToBloom(params.LogsBloom),
+		Bloom:           zondTypes.BytesToBloom(params.LogsBloom),
 		Difficulty:      common.Big0,
 		Number:          new(big.Int).SetUint64(params.Number),
 		GasLimit:        params.GasLimit,
@@ -642,14 +642,14 @@ func executableDataToBlock(params engine.ExecutableData) (*gethTypes.Block, erro
 		MixDigest:       params.Random,
 		WithdrawalsHash: withdrawalsRoot,
 	}
-	block := gethTypes.NewBlockWithHeader(header).WithBody(txs, nil /* uncles */).WithWithdrawals(params.Withdrawals)
+	block := zondTypes.NewBlockWithHeader(header).WithBody(txs, nil /* uncles */).WithWithdrawals(params.Withdrawals)
 	return block, nil
 }
 
-func decodeTransactions(enc [][]byte) ([]*gethTypes.Transaction, error) {
-	var txs = make([]*gethTypes.Transaction, len(enc))
+func decodeTransactions(enc [][]byte) ([]*zondTypes.Transaction, error) {
+	var txs = make([]*zondTypes.Transaction, len(enc))
 	for i, encTx := range enc {
-		var tx gethTypes.Transaction
+		var tx zondTypes.Transaction
 		if err := tx.UnmarshalBinary(encTx); err != nil {
 			return nil, fmt.Errorf("invalid transaction %d: %v", i, err)
 		}

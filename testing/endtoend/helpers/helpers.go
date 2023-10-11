@@ -22,10 +22,10 @@ import (
 	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
 	e2etypes "github.com/cyyber/qrysm/v4/testing/endtoend/types"
 	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-zond/zondclient"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 )
@@ -379,10 +379,10 @@ func WaitOnNodes(ctx context.Context, nodes []e2etypes.ComponentRunner, nodesSta
 	return g.Wait()
 }
 
-func MinerRPCClient() (*ethclient.Client, error) {
+func MinerRPCClient() (*zondclient.Client, error) {
 	client, err := rpc.DialHTTP(e2e.TestParams.Eth1RPCURL(e2e.MinerComponentOffset).String())
 	if err != nil {
 		return nil, err
 	}
-	return ethclient.NewClient(client), nil
+	return zondclient.NewClient(client), nil
 }

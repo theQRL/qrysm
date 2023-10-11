@@ -13,8 +13,8 @@ import (
 	"github.com/cyyber/qrysm/v4/validator/accounts/iface"
 	"github.com/cyyber/qrysm/v4/validator/accounts/wallet"
 	remoteweb3signer "github.com/cyyber/qrysm/v4/validator/keymanager/remote-web3signer"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/common/hexutil"
 )
 
 func init() {

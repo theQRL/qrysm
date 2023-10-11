@@ -19,9 +19,9 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/theQRL/go-zond"
+	"github.com/theQRL/go-zond/common"
 )
 
 func TestProcessDepositLog_OK(t *testing.T) {

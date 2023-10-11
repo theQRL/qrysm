@@ -11,14 +11,14 @@ import (
 	ecdsaprysm "github.com/cyyber/qrysm/v4/crypto/ecdsa"
 	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/ethereum/go-ethereum/p2p/discover"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-zond/p2p/discover"
+	"github.com/theQRL/go-zond/p2p/enode"
+	"github.com/theQRL/go-zond/p2p/enr"
 )
 
 // Listener defines the discovery V5 network interface that is used

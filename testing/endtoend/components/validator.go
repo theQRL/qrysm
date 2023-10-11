@@ -23,9 +23,9 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/endtoend/helpers"
 	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
 	e2etypes "github.com/cyyber/qrysm/v4/testing/endtoend/types"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/common/hexutil"
 )
 
 const DefaultFeeRecipientAddress = "0x099FB65722e7b2455043bfebF6177f1D2E9738d9"

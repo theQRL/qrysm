@@ -19,7 +19,7 @@ import (
 	"github.com/cyyber/qrysm/v4/crypto/hash"
 	ethpbv2 "github.com/cyyber/qrysm/v4/proto/eth/v2"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/theQRL/go-zond/common"
 )
 
 type Credential struct {

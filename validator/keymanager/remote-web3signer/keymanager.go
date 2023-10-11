@@ -16,12 +16,12 @@ import (
 	"github.com/cyyber/qrysm/v4/validator/keymanager"
 	"github.com/cyyber/qrysm/v4/validator/keymanager/remote-web3signer/internal"
 	web3signerv1 "github.com/cyyber/qrysm/v4/validator/keymanager/remote-web3signer/v1"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-playground/validator/v10"
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-zond/common/hexutil"
 )
 
 // SetupConfig includes configuration values for initializing.

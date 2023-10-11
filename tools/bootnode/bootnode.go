@@ -32,17 +32,17 @@ import (
 	pb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	_ "github.com/cyyber/qrysm/v4/runtime/maxprocs"
 	"github.com/cyyber/qrysm/v4/runtime/version"
-	gcrypto "github.com/ethereum/go-ethereum/crypto"
-	gethlog "github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p/discover"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/sirupsen/logrus"
+	gcrypto "github.com/theQRL/go-zond/crypto"
+	gethlog "github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-zond/p2p/discover"
+	"github.com/theQRL/go-zond/p2p/enode"
+	"github.com/theQRL/go-zond/p2p/enr"
 )
 
 var (

@@ -8,8 +8,8 @@ import (
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	tracing2 "github.com/cyyber/qrysm/v4/monitoring/tracing"
-	"github.com/ethereum/go-ethereum/common"
 	fastssz "github.com/prysmaticlabs/fastssz"
+	"github.com/theQRL/go-zond/common"
 	"github.com/urfave/cli/v2"
 )
 

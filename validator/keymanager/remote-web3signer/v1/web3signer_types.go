@@ -3,7 +3,7 @@
 package v1
 
 import (
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/theQRL/go-zond/common/hexutil"
 )
 
 // AggregationSlotSignRequest is a request object for web3signer sign api.

@@ -34,8 +34,8 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/ethereum/go-ethereum/common"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/theQRL/go-zond/common"
 )
 
 func setupBeaconChain(t *testing.T, beaconDB db.Database) *Service {

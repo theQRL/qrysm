@@ -17,11 +17,11 @@ import (
 	"github.com/cyyber/qrysm/v4/io/file"
 	pb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/metadata"
-	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/p2p/enr"
 	"google.golang.org/protobuf/proto"
 )
 

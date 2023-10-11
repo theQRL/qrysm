@@ -3,9 +3,9 @@ package newseed
 import (
 	"crypto/rand"
 	"fmt"
-	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/misc"
 	"syscall"
 
+	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/misc"
 	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-qrllib/common"

@@ -9,9 +9,9 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/validator/client/iface"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
+	"github.com/theQRL/go-zond/common/hexutil"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

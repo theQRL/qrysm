@@ -12,10 +12,10 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
 	"github.com/cyyber/qrysm/v4/beacon-chain/state/stategen"
 	pbrpc "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	gethlog "github.com/ethereum/go-ethereum/log"
 	"github.com/golang/protobuf/ptypes/empty"
 	golog "github.com/ipfs/go-log/v2"
 	"github.com/sirupsen/logrus"
+	zondlog "github.com/theQRL/go-zond/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -56,9 +56,9 @@ func (_ *Server) SetLoggingLevel(_ context.Context, req *pbrpc.LoggingLevelReque
 		// Libp2p specific logging.
 		golog.SetAllLoggers(golog.LevelDebug)
 		// Geth specific logging.
-		glogger := gethlog.NewGlogHandler(gethlog.StreamHandler(os.Stderr, gethlog.TerminalFormat(true)))
-		glogger.Verbosity(gethlog.LvlTrace)
-		gethlog.Root().SetHandler(glogger)
+		glogger := zondlog.NewGlogHandler(zondlog.StreamHandler(os.Stderr, zondlog.TerminalFormat(true)))
+		glogger.Verbosity(zondlog.LvlTrace)
+		zondlog.Root().SetHandler(glogger)
 	}
 	return &empty.Empty{}, nil
 }

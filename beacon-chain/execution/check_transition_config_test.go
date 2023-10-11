@@ -20,11 +20,11 @@ import (
 	pb "github.com/cyyber/qrysm/v4/proto/engine/v1"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/ethereum/go-ethereum/common"
-	gethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/holiman/uint256"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/theQRL/go-zond/common"
+	zondtypes "github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-zond/rpc"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -164,14 +164,14 @@ func TestService_logTtdStatus(t *testing.T) {
 		}()
 
 		resp := &pb.ExecutionBlock{
-			Header: gethtypes.Header{
+			Header: zondtypes.Header{
 				ParentHash:  common.Hash{},
 				UncleHash:   common.Hash{},
 				Coinbase:    common.Address{},
 				Root:        common.Hash{},
 				TxHash:      common.Hash{},
 				ReceiptHash: common.Hash{},
-				Bloom:       gethtypes.Bloom{},
+				Bloom:       zondtypes.Bloom{},
 				Difficulty:  big.NewInt(1),
 				Number:      big.NewInt(2),
 				GasLimit:    3,
@@ -179,7 +179,7 @@ func TestService_logTtdStatus(t *testing.T) {
 				Time:        5,
 				Extra:       nil,
 				MixDigest:   common.Hash{},
-				Nonce:       gethtypes.BlockNonce{},
+				Nonce:       zondtypes.BlockNonce{},
 				BaseFee:     big.NewInt(6),
 			},
 			TotalDifficulty: "0x12345678",

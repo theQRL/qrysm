@@ -14,10 +14,10 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/validator/client/iface"
 	"github.com/cyyber/qrysm/v4/validator/client/testutil"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-zond/common"
 )
 
 func cancelledContext() context.Context {

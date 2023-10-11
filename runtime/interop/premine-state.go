@@ -19,9 +19,9 @@ import (
 	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/runtime/version"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-zond/core/types"
 )
 
 var errUnsupportedVersion = errors.New("schema version not supported by PremineGenesisConfig")

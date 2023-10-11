@@ -13,9 +13,9 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/require"
 	mock "github.com/cyyber/qrysm/v4/validator/accounts/testing"
 	"github.com/cyyber/qrysm/v4/validator/keymanager"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/google/uuid"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/theQRL/go-zond/common/hexutil"
 	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 )
 

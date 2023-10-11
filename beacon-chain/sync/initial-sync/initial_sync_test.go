@@ -30,10 +30,10 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/util"
 	prysmTime "github.com/cyyber/qrysm/v4/time"
 	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/p2p/enr"
 )
 
 type testCache struct {

@@ -11,9 +11,9 @@ import (
 	"github.com/cyyber/qrysm/v4/io/logs"
 	"github.com/cyyber/qrysm/v4/network"
 	"github.com/cyyber/qrysm/v4/network/authorization"
-	"github.com/ethereum/go-ethereum/ethclient"
-	gethRPC "github.com/ethereum/go-ethereum/rpc"
 	"github.com/pkg/errors"
+	zondRPC "github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-zond/zondclient"
 )
 
 func (s *Service) setupExecutionClientConnections(ctx context.Context, currEndpoint network.Endpoint) error {
@@ -22,7 +22,7 @@ func (s *Service) setupExecutionClientConnections(ctx context.Context, currEndpo
 		return errors.Wrap(err, "could not dial execution node")
 	}
 	// Attach the clients to the service struct.
-	fetcher := ethclient.NewClient(client)
+	fetcher := zondclient.NewClient(client)
 	s.rpcClient = client
 	s.httpLogger = fetcher
 
@@ -105,7 +105,7 @@ func (s *Service) retryExecutionClientConnection(ctx context.Context, err error)
 }
 
 // Initializes an RPC connection with authentication headers.
-func (s *Service) newRPCClientWithAuth(ctx context.Context, endpoint network.Endpoint) (*gethRPC.Client, error) {
+func (s *Service) newRPCClientWithAuth(ctx context.Context, endpoint network.Endpoint) (*zondRPC.Client, error) {
 	client, err := network.NewExecutionRPCClient(ctx, endpoint)
 	if err != nil {
 		return nil, err
@@ -132,7 +132,7 @@ func (s *Service) newRPCClientWithAuth(ctx context.Context, endpoint network.End
 
 // Checks the chain ID of the execution client to ensure
 // it matches local parameters of what Prysm expects.
-func ensureCorrectExecutionChain(ctx context.Context, client *ethclient.Client) error {
+func ensureCorrectExecutionChain(ctx context.Context, client *zondclient.Client) error {
 	cID, err := client.ChainID(ctx)
 	if err != nil {
 		return err

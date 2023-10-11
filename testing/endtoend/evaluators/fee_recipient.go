@@ -13,12 +13,12 @@ import (
 	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
 	"github.com/cyyber/qrysm/v4/testing/endtoend/policies"
 	"github.com/cyyber/qrysm/v4/testing/endtoend/types"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-zond/zondclient"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -150,7 +150,7 @@ func feeRecipientIsPresent(_ *types.EvaluationContext, conns ...*grpc.ClientConn
 }
 
 func checkRecipientBalance(c *rpc.Client, block, parent common.Hash, account common.Address) error {
-	web3 := ethclient.NewClient(c)
+	web3 := zondclient.NewClient(c)
 	ctx := context.Background()
 	b, err := web3.BlockByHash(ctx, block)
 	if err != nil {

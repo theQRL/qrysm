@@ -7,8 +7,8 @@ import (
 	"github.com/cyyber/qrysm/v4/network/forks"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
+	"github.com/theQRL/go-zond/common/hexutil"
 )
 
 // MapForkInfo maps the eth2.ForkInfo proto to the Web3Signer spec.

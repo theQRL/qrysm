@@ -13,11 +13,11 @@ import (
 	"github.com/cyyber/qrysm/v4/api/client/beacon"
 	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-zond/common"
 	"github.com/urfave/cli/v2"
 	"go.opencensus.io/trace"
 )

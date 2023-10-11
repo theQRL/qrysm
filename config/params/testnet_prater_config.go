@@ -1,7 +1,7 @@
 package params
 
 import (
-	eth1Params "github.com/ethereum/go-ethereum/params"
+	zond1Params "github.com/theQRL/go-zond/params"
 )
 
 // UsePraterNetworkConfig uses the Prater specific
@@ -32,8 +32,8 @@ func PraterConfig() *BeaconChainConfig {
 	cfg.ConfigName = PraterName
 	cfg.GenesisForkVersion = []byte{0x00, 0x00, 0x10, 0x20}
 	cfg.SecondsPerETH1Block = 14
-	cfg.DepositChainID = eth1Params.GoerliChainConfig.ChainID.Uint64()
-	cfg.DepositNetworkID = eth1Params.GoerliChainConfig.ChainID.Uint64()
+	cfg.DepositChainID = zond1Params.GoerliChainConfig.ChainID.Uint64()
+	cfg.DepositNetworkID = zond1Params.GoerliChainConfig.ChainID.Uint64()
 	cfg.AltairForkEpoch = 36660
 	cfg.AltairForkVersion = []byte{0x1, 0x0, 0x10, 0x20}
 	cfg.BellatrixForkEpoch = 112260

@@ -15,12 +15,12 @@ import (
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	gethTypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/pkg/errors"
+	"github.com/theQRL/go-zond/accounts/abi/bind/backends"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/common/hexutil"
+	zondTypes "github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-zond/rpc"
 )
 
 // Chain defines a properly functioning mock for the powchain service.
@@ -148,7 +148,7 @@ type RPCClient struct {
 func (*RPCClient) Close() {}
 
 func (r *RPCClient) CallContext(ctx context.Context, obj interface{}, methodName string, args ...interface{}) error {
-	if r.BlockNumMap != nil && methodName == "eth_getBlockByNumber" {
+	if r.BlockNumMap != nil && methodName == "zond_getBlockByNumber" {
 		val, ok := args[0].(string)
 		if !ok {
 			return errors.Errorf("wrong argument type provided: %T", args[0])
@@ -165,8 +165,8 @@ func (r *RPCClient) CallContext(ctx context.Context, obj interface{}, methodName
 		*assertedObj = b
 		return nil
 	}
-	if r.Backend == nil && methodName == "eth_getBlockByNumber" {
-		h := &gethTypes.Header{
+	if r.Backend == nil && methodName == "zond_getBlockByNumber" {
+		h := &zondTypes.Header{
 			Number: big.NewInt(15),
 			Time:   150,
 		}
@@ -182,7 +182,7 @@ func (r *RPCClient) CallContext(ctx context.Context, obj interface{}, methodName
 		return nil
 	}
 	switch methodName {
-	case "eth_getBlockByNumber":
+	case "zond_getBlockByNumber":
 		val, ok := args[0].(string)
 		if !ok {
 			return errors.Errorf("wrong argument type provided: %T", args[0])
@@ -208,7 +208,7 @@ func (r *RPCClient) CallContext(ctx context.Context, obj interface{}, methodName
 			Number: h.Number,
 			Time:   h.Time,
 		}
-	case "eth_getBlockByHash":
+	case "zond_getBlockByHash":
 		val, ok := args[0].(common.Hash)
 		if !ok {
 			return errors.Errorf("wrong argument type provided: %T", args[0])

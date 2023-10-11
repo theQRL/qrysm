@@ -24,14 +24,14 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	gethTypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/theQRL/go-zond"
+	"github.com/theQRL/go-zond/accounts/abi/bind/backends"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/common/hexutil"
+	zondTypes "github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-zond/rpc"
 )
 
 var _ ChainStartFetcher = (*Service)(nil)
@@ -45,16 +45,16 @@ type goodLogger struct {
 
 func (_ *goodLogger) Close() {}
 
-func (g *goodLogger) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- gethTypes.Log) (ethereum.Subscription, error) {
+func (g *goodLogger) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- zondTypes.Log) (ethereum.Subscription, error) {
 	if g.backend == nil {
 		return new(event.Feed).Subscribe(ch), nil
 	}
 	return g.backend.SubscribeFilterLogs(ctx, q, ch)
 }
 
-func (g *goodLogger) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]gethTypes.Log, error) {
+func (g *goodLogger) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]zondTypes.Log, error) {
 	if g.backend == nil {
-		logs := make([]gethTypes.Log, 3)
+		logs := make([]zondTypes.Log, 3)
 		for i := 0; i < len(logs); i++ {
 			logs[i].Address = common.Address{}
 			logs[i].Topics = make([]common.Hash, 5)
@@ -751,7 +751,7 @@ func TestService_FollowBlock(t *testing.T) {
 	followTime += 10000
 	bMap := make(map[uint64]*types.HeaderInfo)
 	for i := uint64(3000); i > 0; i-- {
-		h := &gethTypes.Header{
+		h := &zondTypes.Header{
 			Number: big.NewInt(int64(i)),
 			Time:   followTime + (i * 40),
 		}
@@ -792,7 +792,7 @@ func (s *slowRPCClient) BatchCall(b []rpc.BatchElem) error {
 		if err != nil {
 			return err
 		}
-		h := &gethTypes.Header{Number: num}
+		h := &zondTypes.Header{Number: num}
 		*e.Result.(*types.HeaderInfo) = types.HeaderInfo{Number: h.Number, Hash: h.Hash()}
 	}
 	return nil

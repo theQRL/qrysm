@@ -25,10 +25,10 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/mock"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/mock/gomock"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/proto/gateway"
 	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-zond/common/hexutil"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 

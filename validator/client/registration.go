@@ -11,8 +11,8 @@ import (
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/cyyber/qrysm/v4/validator/client/iface"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
+	"github.com/theQRL/go-zond/common/hexutil"
 	"go.opencensus.io/trace"
 )
 

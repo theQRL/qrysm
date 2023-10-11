@@ -2,7 +2,6 @@ package eth1
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"fmt"
 	"math/big"
 	mathRand "math/rand"
@@ -14,12 +13,13 @@ import (
 	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/cyyber/qrysm/v4/crypto/rand"
 	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-zond/accounts/keystore"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-zond/zondclient"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -78,7 +78,7 @@ func (t *TransactionGenerator) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			err := SendTransaction(client, mineKey.PrivateKey, f, gasPrice, mineKey.Address.String(), 100, false)
+			err := SendTransaction(client, mineKey.Dilithium, f, gasPrice, mineKey.Address.String(), 100, false)
 			if err != nil {
 				return err
 			}
@@ -91,8 +91,8 @@ func (s *TransactionGenerator) Started() <-chan struct{} {
 	return s.started
 }
 
-func SendTransaction(client *rpc.Client, key *ecdsa.PrivateKey, f *filler.Filler, gasPrice *big.Int, addr string, N uint64, al bool) error {
-	backend := ethclient.NewClient(client)
+func SendTransaction(client *rpc.Client, key *dilithium.Dilithium, f *filler.Filler, gasPrice *big.Int, addr string, N uint64, al bool) error {
+	backend := zondclient.NewClient(client)
 
 	sender := common.HexToAddress(addr)
 	chainid, err := backend.ChainID(context.Background())

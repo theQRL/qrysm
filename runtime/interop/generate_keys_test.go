@@ -9,8 +9,8 @@ import (
 	"github.com/cyyber/qrysm/v4/runtime/interop"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-yaml/yaml"
+	"github.com/theQRL/go-zond/common/hexutil"
 )
 
 type TestCase struct {

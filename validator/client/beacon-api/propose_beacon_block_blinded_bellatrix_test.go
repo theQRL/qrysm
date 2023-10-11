@@ -14,8 +14,8 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/validator/client/beacon-api/mock"
 	test_helpers "github.com/cyyber/qrysm/v4/validator/client/beacon-api/test-helpers"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/mock/gomock"
+	"github.com/theQRL/go-zond/common/hexutil"
 )
 
 func TestProposeBeaconBlock_BlindedBellatrix(t *testing.T) {

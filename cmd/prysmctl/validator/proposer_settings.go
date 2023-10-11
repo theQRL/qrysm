@@ -14,8 +14,8 @@ import (
 	"github.com/cyyber/qrysm/v4/io/file"
 	"github.com/cyyber/qrysm/v4/io/prompt"
 	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
-	"github.com/ethereum/go-ethereum/common"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/common"
 	"github.com/urfave/cli/v2"
 	"go.opencensus.io/trace"
 )

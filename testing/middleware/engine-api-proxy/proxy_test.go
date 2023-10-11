@@ -11,10 +11,10 @@ import (
 	"github.com/cyyber/qrysm/v4/crypto/rand"
 	pb "github.com/cyyber/qrysm/v4/proto/engine/v1"
 	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/rpc"
 )
 
 func TestProxy(t *testing.T) {

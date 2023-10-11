@@ -1,19 +1,18 @@
 package mock
 
 import (
-	"crypto/ecdsa"
-	"fmt"
 	"math/big"
 	"strings"
 
 	"github.com/cyyber/qrysm/v4/contracts/deposit"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-zond/accounts/abi"
+	"github.com/theQRL/go-zond/accounts/abi/bind"
+	"github.com/theQRL/go-zond/accounts/abi/bind/backends"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/core"
+	"github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-zond/pqcrypto"
 )
 
 var (
@@ -35,22 +34,18 @@ type TestAccount struct {
 // Setup creates the simulated backend with the deposit contract deployed
 func Setup() (*TestAccount, error) {
 	genesis := make(core.GenesisAlloc)
-	privKey, err := crypto.GenerateKey()
+	dilithiumKey, err := pqcrypto.GenerateDilithiumKey()
 	if err != nil {
 		return nil, err
 	}
-	pubKeyECDSA, ok := privKey.Public().(*ecdsa.PublicKey)
-	if !ok {
-		return nil, fmt.Errorf("error casting public key to ECDSA")
-	}
 
 	// strip off the 0x and the first 2 characters 04 which is always the EC prefix and is not required.
-	publicKeyBytes := crypto.FromECDSAPub(pubKeyECDSA)[4:]
-	var pubKey = make([]byte, 48)
-	copy(pubKey, publicKeyBytes)
+	publicKeyBytes := dilithiumKey.GetPK()
+	var pubKey = make([]byte, dilithium2.CryptoPublicKeyBytes)
+	copy(pubKey, publicKeyBytes[:])
 
-	addr := crypto.PubkeyToAddress(privKey.PublicKey)
-	txOpts, err := bind.NewKeyedTransactorWithChainID(privKey, big.NewInt(1337))
+	addr := dilithiumKey.GetAddress()
+	txOpts, err := bind.NewKeyedTransactorWithChainID(dilithiumKey, big.NewInt(1337))
 	if err != nil {
 		return nil, err
 	}

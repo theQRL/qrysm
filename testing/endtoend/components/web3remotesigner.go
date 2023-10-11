@@ -22,8 +22,8 @@ import (
 	"github.com/cyyber/qrysm/v4/runtime/interop"
 	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
 	e2etypes "github.com/cyyber/qrysm/v4/testing/endtoend/types"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
+	"github.com/theQRL/go-zond/common/hexutil"
 	"gopkg.in/yaml.v2"
 )
 

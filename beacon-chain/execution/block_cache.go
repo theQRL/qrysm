@@ -7,9 +7,9 @@ import (
 
 	"github.com/cyyber/qrysm/v4/beacon-chain/execution/types"
 	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/theQRL/go-zond/common"
 	"k8s.io/client-go/tools/cache"
 )
 

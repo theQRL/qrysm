@@ -18,9 +18,9 @@ import (
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
-	"github.com/ethereum/go-ethereum/common"
-	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/theQRL/go-zond/common"
+	zondtypes "github.com/theQRL/go-zond/core/types"
 )
 
 func TestServer_activationEpochNotReached(t *testing.T) {
@@ -293,14 +293,14 @@ func TestServer_getTerminalBlockHashIfExists(t *testing.T) {
 			paramsTd: "2",
 			currentPowBlock: &pb.ExecutionBlock{
 				Hash: common.BytesToHash([]byte("a")),
-				Header: gethtypes.Header{
+				Header: zondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("b")),
 				},
 				TotalDifficulty: "0x3",
 			},
 			parentPowBlock: &pb.ExecutionBlock{
 				Hash: common.BytesToHash([]byte("b")),
-				Header: gethtypes.Header{
+				Header: zondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("c")),
 				},
 				TotalDifficulty: "0x1",
@@ -313,7 +313,7 @@ func TestServer_getTerminalBlockHashIfExists(t *testing.T) {
 			paramsTd: "2",
 			currentPowBlock: &pb.ExecutionBlock{
 				Hash: common.BytesToHash([]byte("a")),
-				Header: gethtypes.Header{
+				Header: zondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("b")),
 					Time:       1,
 				},
@@ -321,7 +321,7 @@ func TestServer_getTerminalBlockHashIfExists(t *testing.T) {
 			},
 			parentPowBlock: &pb.ExecutionBlock{
 				Hash: common.BytesToHash([]byte("b")),
-				Header: gethtypes.Header{
+				Header: zondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("c")),
 				},
 				TotalDifficulty: "0x1",

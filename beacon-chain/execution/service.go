@@ -31,14 +31,14 @@ import (
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	prysmTime "github.com/cyyber/qrysm/v4/time"
 	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	gethRPC "github.com/ethereum/go-ethereum/rpc"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/accounts/abi/bind"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/common/hexutil"
+	zondRPC "github.com/theQRL/go-zond/rpc"
 )
 
 var (
@@ -99,7 +99,7 @@ type Chain interface {
 // RPCClient defines the rpc methods required to interact with the eth1 node.
 type RPCClient interface {
 	Close()
-	BatchCall(b []gethRPC.BatchElem) error
+	BatchCall(b []zondRPC.BatchElem) error
 	CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error
 }
 
@@ -107,7 +107,7 @@ type RPCClientEmpty struct {
 }
 
 func (RPCClientEmpty) Close() {}
-func (RPCClientEmpty) BatchCall([]gethRPC.BatchElem) error {
+func (RPCClientEmpty) BatchCall([]zondRPC.BatchElem) error {
 	return errors.New("rpc client is not initialized")
 }
 
@@ -413,15 +413,15 @@ func (s *Service) batchRequestHeaders(startBlock, endBlock uint64) ([]*types.Hea
 		return nil, fmt.Errorf("start block height %d cannot be > end block height %d", startBlock, endBlock)
 	}
 	requestRange := (endBlock - startBlock) + 1
-	elems := make([]gethRPC.BatchElem, 0, requestRange)
+	elems := make([]zondRPC.BatchElem, 0, requestRange)
 	headers := make([]*types.HeaderInfo, 0, requestRange)
 	if requestRange == 0 {
 		return headers, nil
 	}
 	for i := startBlock; i <= endBlock; i++ {
 		header := &types.HeaderInfo{}
-		elems = append(elems, gethRPC.BatchElem{
-			Method: "eth_getBlockByNumber",
+		elems = append(elems, zondRPC.BatchElem{
+			Method: "zond_getBlockByNumber",
 			Args:   []interface{}{hexutil.EncodeBig(big.NewInt(0).SetUint64(i)), false},
 			Result: header,
 			Error:  error(nil),

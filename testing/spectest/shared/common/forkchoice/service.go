@@ -22,9 +22,9 @@ import (
 	pb "github.com/cyyber/qrysm/v4/proto/engine/v1"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	gethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/common/hexutil"
+	zondtypes "github.com/theQRL/go-zond/core/types"
 )
 
 func startChainService(t testing.TB,
@@ -108,7 +108,7 @@ func (m *engineMock) ExecutionBlockByHash(_ context.Context, hash common.Hash, _
 	td := bytesutil.LittleEndianBytesToBigInt(b.TotalDifficulty)
 	tdHex := hexutil.EncodeBig(td)
 	return &pb.ExecutionBlock{
-		Header: gethtypes.Header{
+		Header: zondtypes.Header{
 			ParentHash: common.BytesToHash(b.ParentHash),
 		},
 		TotalDifficulty: tdHex,

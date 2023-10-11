@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/theQRL/go-zond/core/types"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/cyyber/qrysm/v4/io/file"

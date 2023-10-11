@@ -14,7 +14,6 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/scorers"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/metadata"
-	"github.com/ethereum/go-ethereum/p2p/enr"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	core "github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/control"
@@ -27,6 +26,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 	ssz "github.com/prysmaticlabs/fastssz"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/p2p/enr"
 	"google.golang.org/protobuf/proto"
 )
 

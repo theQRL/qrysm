@@ -5,7 +5,7 @@ import (
 
 	"github.com/cyyber/qrysm/v4/runtime/fdlimits"
 	"github.com/cyyber/qrysm/v4/testing/assert"
-	gethLimit "github.com/ethereum/go-ethereum/common/fdlimit"
+	gethLimit "github.com/theQRL/go-zond/common/fdlimit"
 )
 
 func TestSetMaxFdLimits(t *testing.T) {

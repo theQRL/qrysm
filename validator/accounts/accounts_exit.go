@@ -17,9 +17,9 @@ import (
 	beacon_api "github.com/cyyber/qrysm/v4/validator/client/beacon-api"
 	"github.com/cyyber/qrysm/v4/validator/client/iface"
 	"github.com/cyyber/qrysm/v4/validator/keymanager"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-zond/common/hexutil"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 

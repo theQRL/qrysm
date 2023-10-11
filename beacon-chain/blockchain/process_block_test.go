@@ -35,11 +35,11 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
 	prysmTime "github.com/cyyber/qrysm/v4/time"
-	"github.com/ethereum/go-ethereum/common"
-	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-zond/common"
+	zondtypes "github.com/theQRL/go-zond/core/types"
 )
 
 func TestStore_OnBlockBatch(t *testing.T) {
@@ -996,13 +996,13 @@ func Test_validateMergeTransitionBlock(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			e := &mockExecution.EngineClient{BlockByHashMap: map[[32]byte]*enginev1.ExecutionBlock{}}
 			e.BlockByHashMap[aHash] = &enginev1.ExecutionBlock{
-				Header: gethtypes.Header{
+				Header: zondtypes.Header{
 					ParentHash: bHash,
 				},
 				TotalDifficulty: "0x2",
 			}
 			e.BlockByHashMap[bHash] = &enginev1.ExecutionBlock{
-				Header: gethtypes.Header{
+				Header: zondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("3")),
 				},
 				TotalDifficulty: "0x1",

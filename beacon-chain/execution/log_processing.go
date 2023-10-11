@@ -20,12 +20,12 @@ import (
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond"
+	"github.com/theQRL/go-zond/accounts/abi/bind"
+	"github.com/theQRL/go-zond/common"
+	zondtypes "github.com/theQRL/go-zond/core/types"
 )
 
 var (
@@ -88,7 +88,7 @@ func (s *Service) ProcessETH1Block(ctx context.Context, blkNum *big.Int) error {
 
 // ProcessLog is the main method which handles the processing of all
 // logs from the deposit contract on the eth1 chain.
-func (s *Service) ProcessLog(ctx context.Context, depositLog gethtypes.Log) error {
+func (s *Service) ProcessLog(ctx context.Context, depositLog zondtypes.Log) error {
 	s.processingLock.RLock()
 	defer s.processingLock.RUnlock()
 	// Process logs according to their event signature.
@@ -108,7 +108,7 @@ func (s *Service) ProcessLog(ctx context.Context, depositLog gethtypes.Log) erro
 // ProcessDepositLog processes the log which had been received from
 // the eth1 chain by trying to ascertain which participant deposited
 // in the contract.
-func (s *Service) ProcessDepositLog(ctx context.Context, depositLog gethtypes.Log) error {
+func (s *Service) ProcessDepositLog(ctx context.Context, depositLog zondtypes.Log) error {
 	pubkey, withdrawalCredentials, amount, signature, merkleTreeIndex, err := contracts.UnpackDepositLogData(depositLog.Data)
 	if err != nil {
 		return errors.Wrap(err, "Could not unpack log")

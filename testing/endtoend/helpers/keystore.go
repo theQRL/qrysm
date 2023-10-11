@@ -3,8 +3,8 @@ package helpers
 import (
 	"os"
 
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/pkg/errors"
+	"github.com/theQRL/go-zond/accounts/keystore"
 )
 
 // KeyFromPath should only be used in endtoend tests. It is a simple helper to init a geth keystore.Key from a file.

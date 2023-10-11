@@ -20,9 +20,9 @@ import (
 	"github.com/cyyber/qrysm/v4/network/forks"
 	v1 "github.com/cyyber/qrysm/v4/proto/eth/v1"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/common/hexutil"
 )
 
 const (

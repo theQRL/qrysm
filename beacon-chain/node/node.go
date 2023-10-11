@@ -59,10 +59,10 @@ import (
 	"github.com/cyyber/qrysm/v4/runtime/debug"
 	"github.com/cyyber/qrysm/v4/runtime/prereqs"
 	"github.com/cyyber/qrysm/v4/runtime/version"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/common"
 	"github.com/urfave/cli/v2"
 )
 

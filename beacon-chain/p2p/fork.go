@@ -10,10 +10,10 @@ import (
 	pb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	prysmTime "github.com/cyyber/qrysm/v4/time"
 	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/p2p/enode"
+	"github.com/theQRL/go-zond/p2p/enr"
 )
 
 // ENR key used for Ethereum consensus-related fork data.

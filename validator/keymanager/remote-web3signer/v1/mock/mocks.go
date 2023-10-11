@@ -8,9 +8,9 @@ import (
 	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/cyyber/qrysm/v4/testing/util"
 	v1 "github.com/cyyber/qrysm/v4/validator/keymanager/remote-web3signer/v1"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/prysmaticlabs/go-bitfield"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-zond/common/hexutil"
 )
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

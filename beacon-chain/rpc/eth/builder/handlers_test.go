@@ -20,8 +20,8 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gorilla/mux"
+	"github.com/theQRL/go-zond/common/hexutil"
 )
 
 func TestExpectedWithdrawals_BadRequest(t *testing.T) {

@@ -1,4 +1,4 @@
-// This code was adapted from https://github.com/ethereum/go-ethereum/blob/master/cmd/geth/usage.go
+// This code was adapted from https://github.com/theQRL/go-zond/blob/master/cmd/geth/usage.go
 package main
 
 import (

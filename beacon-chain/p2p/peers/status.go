@@ -39,12 +39,12 @@ import (
 	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/metadata"
 	prysmTime "github.com/cyyber/qrysm/v4/time"
 	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr/net"
 	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-zond/p2p/enr"
 )
 
 const (

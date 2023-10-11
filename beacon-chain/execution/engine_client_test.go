@@ -24,15 +24,15 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/cyyber/qrysm/v4/testing/util"
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	gethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rpc"
-	gethRPC "github.com/ethereum/go-ethereum/rpc"
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/theQRL/go-zond"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/common/hexutil"
+	zondtypes "github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-zond/rpc"
+	zondRPC "github.com/theQRL/go-zond/rpc"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -47,7 +47,7 @@ type RPCClientBad struct {
 }
 
 func (RPCClientBad) Close() {}
-func (RPCClientBad) BatchCall([]gethRPC.BatchElem) error {
+func (RPCClientBad) BatchCall([]zondRPC.BatchElem) error {
 	return errors.New("rpc client is not initialized")
 }
 
@@ -675,13 +675,13 @@ func TestReconstructFullBellatrixBlock(t *testing.T) {
 		require.Equal(t, true, ok)
 
 		jsonPayload := make(map[string]interface{})
-		tx := gethtypes.NewTransaction(
+		tx := zondtypes.NewTransaction(
 			0,
 			common.HexToAddress("095e7baea6a6c7c4c2dfeb977efac326af552d87"),
 			big.NewInt(0), 0, big.NewInt(0),
 			nil,
 		)
-		txs := []*gethtypes.Transaction{tx}
+		txs := []*zondtypes.Transaction{tx}
 		encodedBinaryTxs := make([][]byte, 1)
 		var err error
 		encodedBinaryTxs[0], err = txs[0].MarshalBinary()
@@ -697,7 +697,7 @@ func TestReconstructFullBellatrixBlock(t *testing.T) {
 		jsonPayload["stateRoot"] = common.BytesToHash([]byte("state"))
 		jsonPayload["transactionsRoot"] = common.BytesToHash([]byte("txs"))
 		jsonPayload["receiptsRoot"] = common.BytesToHash([]byte("receipts"))
-		jsonPayload["logsBloom"] = gethtypes.BytesToBloom([]byte("bloom"))
+		jsonPayload["logsBloom"] = zondtypes.BytesToBloom([]byte("bloom"))
 		jsonPayload["gasLimit"] = hexutil.EncodeUint64(1)
 		jsonPayload["gasUsed"] = hexutil.EncodeUint64(2)
 		jsonPayload["timestamp"] = hexutil.EncodeUint64(3)
@@ -786,13 +786,13 @@ func TestReconstructFullBellatrixBlockBatch(t *testing.T) {
 		require.Equal(t, true, ok)
 
 		jsonPayload := make(map[string]interface{})
-		tx := gethtypes.NewTransaction(
+		tx := zondtypes.NewTransaction(
 			0,
 			common.HexToAddress("095e7baea6a6c7c4c2dfeb977efac326af552d87"),
 			big.NewInt(0), 0, big.NewInt(0),
 			nil,
 		)
-		txs := []*gethtypes.Transaction{tx}
+		txs := []*zondtypes.Transaction{tx}
 		encodedBinaryTxs := make([][]byte, 1)
 		var err error
 		encodedBinaryTxs[0], err = txs[0].MarshalBinary()
@@ -808,7 +808,7 @@ func TestReconstructFullBellatrixBlockBatch(t *testing.T) {
 		jsonPayload["stateRoot"] = common.BytesToHash([]byte("state"))
 		jsonPayload["transactionsRoot"] = common.BytesToHash([]byte("txs"))
 		jsonPayload["receiptsRoot"] = common.BytesToHash([]byte("receipts"))
-		jsonPayload["logsBloom"] = gethtypes.BytesToBloom([]byte("bloom"))
+		jsonPayload["logsBloom"] = zondtypes.BytesToBloom([]byte("bloom"))
 		jsonPayload["gasLimit"] = hexutil.EncodeUint64(1)
 		jsonPayload["gasUsed"] = hexutil.EncodeUint64(2)
 		jsonPayload["timestamp"] = hexutil.EncodeUint64(3)
@@ -931,7 +931,7 @@ func TestServer_getPowBlockHashAtTerminalTotalDifficulty(t *testing.T) {
 			paramsTd: "2",
 			currentPowBlock: &pb.ExecutionBlock{
 				Hash: common.BytesToHash([]byte("a")),
-				Header: gethtypes.Header{
+				Header: zondtypes.Header{
 					ParentHash: common.BytesToHash(params.BeaconConfig().ZeroHash[:]),
 				},
 				TotalDifficulty: "0x3",
@@ -942,7 +942,7 @@ func TestServer_getPowBlockHashAtTerminalTotalDifficulty(t *testing.T) {
 			paramsTd: "2",
 			currentPowBlock: &pb.ExecutionBlock{
 				Hash: common.BytesToHash([]byte("a")),
-				Header: gethtypes.Header{
+				Header: zondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("b")),
 				},
 				TotalDifficulty: "0x3",
@@ -954,14 +954,14 @@ func TestServer_getPowBlockHashAtTerminalTotalDifficulty(t *testing.T) {
 			paramsTd: "2",
 			currentPowBlock: &pb.ExecutionBlock{
 				Hash: common.BytesToHash([]byte("a")),
-				Header: gethtypes.Header{
+				Header: zondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("b")),
 				},
 				TotalDifficulty: "0x3",
 			},
 			parentPowBlock: &pb.ExecutionBlock{
 				Hash: common.BytesToHash([]byte("b")),
-				Header: gethtypes.Header{
+				Header: zondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("c")),
 				},
 				TotalDifficulty: "1",
@@ -973,14 +973,14 @@ func TestServer_getPowBlockHashAtTerminalTotalDifficulty(t *testing.T) {
 			paramsTd: "2",
 			currentPowBlock: &pb.ExecutionBlock{
 				Hash: common.BytesToHash([]byte("a")),
-				Header: gethtypes.Header{
+				Header: zondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("b")),
 				},
 				TotalDifficulty: "0x3",
 			},
 			parentPowBlock: &pb.ExecutionBlock{
 				Hash: common.BytesToHash([]byte("b")),
-				Header: gethtypes.Header{
+				Header: zondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("c")),
 				},
 				TotalDifficulty: "0x1",
@@ -993,7 +993,7 @@ func TestServer_getPowBlockHashAtTerminalTotalDifficulty(t *testing.T) {
 			paramsTd: "2",
 			currentPowBlock: &pb.ExecutionBlock{
 				Hash: common.BytesToHash([]byte("a")),
-				Header: gethtypes.Header{
+				Header: zondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("b")),
 					Time:       1,
 				},
@@ -1001,7 +1001,7 @@ func TestServer_getPowBlockHashAtTerminalTotalDifficulty(t *testing.T) {
 			},
 			parentPowBlock: &pb.ExecutionBlock{
 				Hash: common.BytesToHash([]byte("b")),
-				Header: gethtypes.Header{
+				Header: zondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("c")),
 				},
 				TotalDifficulty: "0x1",
@@ -1012,14 +1012,14 @@ func TestServer_getPowBlockHashAtTerminalTotalDifficulty(t *testing.T) {
 			paramsTd: "3",
 			currentPowBlock: &pb.ExecutionBlock{
 				Hash: common.BytesToHash([]byte("a")),
-				Header: gethtypes.Header{
+				Header: zondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("b")),
 				},
 				TotalDifficulty: "0x2",
 			},
 			parentPowBlock: &pb.ExecutionBlock{
 				Hash: common.BytesToHash([]byte("b")),
-				Header: gethtypes.Header{
+				Header: zondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("c")),
 				},
 				TotalDifficulty: "0x1",
@@ -1335,14 +1335,14 @@ func fixtures() map[string]interface{} {
 	logsBloom := bytesutil.PadTo([]byte("logs"), fieldparams.LogsBloomLength)
 	executionBlock := &pb.ExecutionBlock{
 		Version: version.Bellatrix,
-		Header: gethtypes.Header{
+		Header: zondtypes.Header{
 			ParentHash:  common.BytesToHash(parent),
 			UncleHash:   common.BytesToHash(sha3Uncles),
 			Coinbase:    common.BytesToAddress(miner),
 			Root:        common.BytesToHash(stateRoot),
 			TxHash:      common.BytesToHash(transactionsRoot),
 			ReceiptHash: common.BytesToHash(receiptsRoot),
-			Bloom:       gethtypes.BytesToBloom(logsBloom),
+			Bloom:       zondtypes.BytesToBloom(logsBloom),
 			Difficulty:  big.NewInt(1),
 			Number:      big.NewInt(2),
 			GasLimit:    3,
@@ -1350,7 +1350,7 @@ func fixtures() map[string]interface{} {
 			Time:        5,
 			Extra:       []byte("extra"),
 			MixDigest:   common.BytesToHash([]byte("mix")),
-			Nonce:       gethtypes.EncodeNonce(6),
+			Nonce:       zondtypes.EncodeNonce(6),
 			BaseFee:     big.NewInt(7),
 		},
 	}

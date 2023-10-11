@@ -7,9 +7,9 @@ import (
 
 	"github.com/cyyber/qrysm/v4/testing/endtoend/params"
 	e2etypes "github.com/cyyber/qrysm/v4/testing/endtoend/types"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/theQRL/go-zond/accounts/keystore"
+	"github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-zond/zondclient"
 )
 
 // NetworkId is the ID of the ETH1 chain.
@@ -30,7 +30,7 @@ var _ e2etypes.ComponentRunner = (*Node)(nil)
 var _ e2etypes.EngineProxy = (*Proxy)(nil)
 
 // WaitForBlocks waits for a certain amount of blocks to be mined by the ETH1 chain before returning.
-func WaitForBlocks(web3 *ethclient.Client, key *keystore.Key, blocksToWait uint64) error {
+func WaitForBlocks(web3 *zondclient.Client, key *keystore.Key, blocksToWait uint64) error {
 	nonce, err := web3.PendingNonceAt(context.Background(), key.Address)
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func WaitForBlocks(web3 *ethclient.Client, key *keystore.Key, blocksToWait uint6
 			return err
 		}
 		spamTX := types.NewTransaction(nonce, key.Address, big.NewInt(0), params.SpamTxGasLimit, gasPrice, []byte{})
-		signed, err := types.SignTx(spamTX, types.NewEIP155Signer(chainID), key.PrivateKey)
+		signed, err := types.SignTx(spamTX, types.NewEIP155Signer(chainID), key.Dilithium)
 		if err != nil {
 			return err
 		}

@@ -22,10 +22,10 @@ import (
 	dbTest "github.com/cyyber/qrysm/v4/validator/db/testing"
 	"github.com/cyyber/qrysm/v4/validator/keymanager"
 	remoteweb3signer "github.com/cyyber/qrysm/v4/validator/keymanager/remote-web3signer"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/urfave/cli/v2"
 )
 

@@ -15,17 +15,17 @@ import (
 	"time"
 
 	_ "github.com/cyyber/qrysm/v4/runtime/maxprocs"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-zond/zondclient"
 )
 
 var (
 	allWatching []*Watching
 	loadSeconds float64
 	totalLoaded int64
-	eth         *ethclient.Client
+	eth         *zondclient.Client
 )
 
 var (
@@ -93,7 +93,7 @@ type Watching struct {
 // ConnectionToGeth - Connect to remote server.
 func ConnectionToGeth(url string) error {
 	var err error
-	eth, err = ethclient.Dial(url)
+	eth, err = zondclient.Dial(url)
 	return err
 }
 

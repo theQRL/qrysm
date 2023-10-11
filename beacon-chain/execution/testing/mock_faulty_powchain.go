@@ -9,8 +9,8 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/state"
 	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
+	"github.com/theQRL/go-zond/common"
 )
 
 // FaultyExecutionChain defines an incorrectly functioning powchain service.

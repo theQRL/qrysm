@@ -12,10 +12,10 @@ import (
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
 	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/common/hexutil"
+	zondtypes "github.com/theQRL/go-zond/core/types"
 )
 
 type withdrawalJSON struct {
@@ -207,7 +207,7 @@ func TestJsonMarshalUnmarshal(t *testing.T) {
 	})
 	t.Run("execution block", func(t *testing.T) {
 		baseFeePerGas := big.NewInt(1770307273)
-		want := &gethtypes.Header{
+		want := &zondtypes.Header{
 			Number:      big.NewInt(1),
 			ParentHash:  common.BytesToHash([]byte("parent")),
 			UncleHash:   common.BytesToHash([]byte("uncle")),
@@ -215,7 +215,7 @@ func TestJsonMarshalUnmarshal(t *testing.T) {
 			Root:        common.BytesToHash([]byte("uncle")),
 			TxHash:      common.BytesToHash([]byte("txHash")),
 			ReceiptHash: common.BytesToHash([]byte("receiptHash")),
-			Bloom:       gethtypes.BytesToBloom([]byte("bloom")),
+			Bloom:       zondtypes.BytesToBloom([]byte("bloom")),
 			Difficulty:  big.NewInt(2),
 			GasLimit:    3,
 			GasUsed:     4,
@@ -223,7 +223,7 @@ func TestJsonMarshalUnmarshal(t *testing.T) {
 			BaseFee:     baseFeePerGas,
 			Extra:       []byte("extraData"),
 			MixDigest:   common.BytesToHash([]byte("mix")),
-			Nonce:       gethtypes.EncodeNonce(6),
+			Nonce:       zondtypes.EncodeNonce(6),
 		}
 		enc, err := json.Marshal(want)
 		require.NoError(t, err)
@@ -262,7 +262,7 @@ func TestJsonMarshalUnmarshal(t *testing.T) {
 	})
 	t.Run("execution block with txs as hashes", func(t *testing.T) {
 		baseFeePerGas := big.NewInt(1770307273)
-		want := &gethtypes.Header{
+		want := &zondtypes.Header{
 			Number:      big.NewInt(1),
 			ParentHash:  common.BytesToHash([]byte("parent")),
 			UncleHash:   common.BytesToHash([]byte("uncle")),
@@ -270,7 +270,7 @@ func TestJsonMarshalUnmarshal(t *testing.T) {
 			Root:        common.BytesToHash([]byte("uncle")),
 			TxHash:      common.BytesToHash([]byte("txHash")),
 			ReceiptHash: common.BytesToHash([]byte("receiptHash")),
-			Bloom:       gethtypes.BytesToBloom([]byte("bloom")),
+			Bloom:       zondtypes.BytesToBloom([]byte("bloom")),
 			Difficulty:  big.NewInt(2),
 			GasLimit:    3,
 			GasUsed:     4,
@@ -278,7 +278,7 @@ func TestJsonMarshalUnmarshal(t *testing.T) {
 			BaseFee:     baseFeePerGas,
 			Extra:       []byte("extraData"),
 			MixDigest:   common.BytesToHash([]byte("mix")),
-			Nonce:       gethtypes.EncodeNonce(6),
+			Nonce:       zondtypes.EncodeNonce(6),
 		}
 		enc, err := json.Marshal(want)
 		require.NoError(t, err)
@@ -321,7 +321,7 @@ func TestJsonMarshalUnmarshal(t *testing.T) {
 	})
 	t.Run("execution block with full transaction data", func(t *testing.T) {
 		baseFeePerGas := big.NewInt(1770307273)
-		want := &gethtypes.Header{
+		want := &zondtypes.Header{
 			Number:      big.NewInt(1),
 			ParentHash:  common.BytesToHash([]byte("parent")),
 			UncleHash:   common.BytesToHash([]byte("uncle")),
@@ -329,7 +329,7 @@ func TestJsonMarshalUnmarshal(t *testing.T) {
 			Root:        common.BytesToHash([]byte("uncle")),
 			TxHash:      common.BytesToHash([]byte("txHash")),
 			ReceiptHash: common.BytesToHash([]byte("receiptHash")),
-			Bloom:       gethtypes.BytesToBloom([]byte("bloom")),
+			Bloom:       zondtypes.BytesToBloom([]byte("bloom")),
 			Difficulty:  big.NewInt(2),
 			GasLimit:    3,
 			GasUsed:     4,
@@ -337,7 +337,7 @@ func TestJsonMarshalUnmarshal(t *testing.T) {
 			BaseFee:     baseFeePerGas,
 			Extra:       []byte("extraData"),
 			MixDigest:   common.BytesToHash([]byte("mix")),
-			Nonce:       gethtypes.EncodeNonce(6),
+			Nonce:       zondtypes.EncodeNonce(6),
 		}
 		enc, err := json.Marshal(want)
 		require.NoError(t, err)
@@ -345,7 +345,7 @@ func TestJsonMarshalUnmarshal(t *testing.T) {
 		payloadItems := make(map[string]interface{})
 		require.NoError(t, json.Unmarshal(enc, &payloadItems))
 
-		tx := gethtypes.NewTransaction(
+		tx := zondtypes.NewTransaction(
 			1,
 			common.BytesToAddress([]byte("hi")),
 			big.NewInt(0),
@@ -353,7 +353,7 @@ func TestJsonMarshalUnmarshal(t *testing.T) {
 			big.NewInt(1e6),
 			[]byte{},
 		)
-		txs := []*gethtypes.Transaction{tx}
+		txs := []*zondtypes.Transaction{tx}
 
 		blockHash := want.Hash()
 		payloadItems["hash"] = blockHash.String()
@@ -389,7 +389,7 @@ func TestJsonMarshalUnmarshal(t *testing.T) {
 	})
 	t.Run("execution block with withdrawals", func(t *testing.T) {
 		baseFeePerGas := big.NewInt(1770307273)
-		want := &gethtypes.Header{
+		want := &zondtypes.Header{
 			Number:      big.NewInt(1),
 			ParentHash:  common.BytesToHash([]byte("parent")),
 			UncleHash:   common.BytesToHash([]byte("uncle")),
@@ -397,7 +397,7 @@ func TestJsonMarshalUnmarshal(t *testing.T) {
 			Root:        common.BytesToHash([]byte("uncle")),
 			TxHash:      common.BytesToHash([]byte("txHash")),
 			ReceiptHash: common.BytesToHash([]byte("receiptHash")),
-			Bloom:       gethtypes.BytesToBloom([]byte("bloom")),
+			Bloom:       zondtypes.BytesToBloom([]byte("bloom")),
 			Difficulty:  big.NewInt(2),
 			GasLimit:    3,
 			GasUsed:     4,
@@ -405,7 +405,7 @@ func TestJsonMarshalUnmarshal(t *testing.T) {
 			BaseFee:     baseFeePerGas,
 			Extra:       []byte("extraData"),
 			MixDigest:   common.BytesToHash([]byte("mix")),
-			Nonce:       gethtypes.EncodeNonce(6),
+			Nonce:       zondtypes.EncodeNonce(6),
 		}
 		enc, err := json.Marshal(want)
 		require.NoError(t, err)

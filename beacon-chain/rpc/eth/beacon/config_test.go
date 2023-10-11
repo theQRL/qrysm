@@ -11,7 +11,7 @@ import (
 	"github.com/cyyber/qrysm/v4/network/forks"
 	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/theQRL/go-zond/common"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 

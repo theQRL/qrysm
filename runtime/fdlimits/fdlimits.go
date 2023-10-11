@@ -1,8 +1,8 @@
 package fdlimits
 
 import (
-	"github.com/ethereum/go-ethereum/common/fdlimit"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/common/fdlimit"
 )
 
 var log = logrus.WithField("prefix", "fdlimits")

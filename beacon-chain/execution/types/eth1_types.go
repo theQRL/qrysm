@@ -6,8 +6,8 @@ import (
 	"math/big"
 
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/common/hexutil"
 )
 
 // HeaderInfo specifies the block header information in the ETH 1.0 chain.

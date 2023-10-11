@@ -9,8 +9,8 @@ import (
 	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
 	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/pkg/errors"
+	"github.com/theQRL/go-zond/common/hexutil"
 )
 
 type beaconBlockConverter interface {

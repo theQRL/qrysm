@@ -8,7 +8,7 @@ import (
 	"github.com/cyyber/qrysm/v4/beacon-chain/state/stategen"
 	"github.com/cyyber/qrysm/v4/network"
 	"github.com/cyyber/qrysm/v4/network/authorization"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/theQRL/go-zond/common"
 )
 
 type Option func(s *Service) error

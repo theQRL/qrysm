@@ -21,13 +21,13 @@ import (
 	pb "github.com/cyyber/qrysm/v4/proto/engine/v1"
 	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	gethRPC "github.com/ethereum/go-ethereum/rpc"
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond"
+	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/common/hexutil"
+	zondRPC "github.com/theQRL/go-zond/rpc"
 	"go.opencensus.io/trace"
 )
 
@@ -61,9 +61,9 @@ const (
 	// ExchangeTransitionConfigurationMethod v1 request string for JSON-RPC.
 	ExchangeTransitionConfigurationMethod = "engine_exchangeTransitionConfigurationV1"
 	// ExecutionBlockByHashMethod request string for JSON-RPC.
-	ExecutionBlockByHashMethod = "eth_getBlockByHash"
+	ExecutionBlockByHashMethod = "zond_getBlockByHash"
 	// ExecutionBlockByNumberMethod request string for JSON-RPC.
-	ExecutionBlockByNumberMethod = "eth_getBlockByNumber"
+	ExecutionBlockByNumberMethod = "zond_getBlockByNumber"
 	// GetPayloadBodiesByHashV1 v1 request string for JSON-RPC.
 	GetPayloadBodiesByHashV1 = "engine_getPayloadBodiesByHashV1"
 	// GetPayloadBodiesByRangeV1 v1 request string for JSON-RPC.
@@ -409,7 +409,7 @@ func (s *Service) GetTerminalBlockHash(ctx context.Context, transitionTime uint6
 }
 
 // LatestExecutionBlock fetches the latest execution engine block by calling
-// eth_blockByNumber via JSON-RPC.
+// zond_blockByNumber via JSON-RPC.
 func (s *Service) LatestExecutionBlock(ctx context.Context) (*pb.ExecutionBlock, error) {
 	ctx, span := trace.StartSpan(ctx, "powchain.engine-api-client.LatestExecutionBlock")
 	defer span.End()
@@ -426,7 +426,7 @@ func (s *Service) LatestExecutionBlock(ctx context.Context) (*pb.ExecutionBlock,
 }
 
 // ExecutionBlockByHash fetches an execution engine block by hash by calling
-// eth_blockByHash via JSON-RPC.
+// zond_blockByHash via JSON-RPC.
 func (s *Service) ExecutionBlockByHash(ctx context.Context, hash common.Hash, withTxs bool) (*pb.ExecutionBlock, error) {
 	ctx, span := trace.StartSpan(ctx, "powchain.engine-api-client.ExecutionBlockByHash")
 	defer span.End()
@@ -436,12 +436,12 @@ func (s *Service) ExecutionBlockByHash(ctx context.Context, hash common.Hash, wi
 }
 
 // ExecutionBlocksByHashes fetches a batch of execution engine blocks by hash by calling
-// eth_blockByHash via JSON-RPC.
+// zond_blockByHash via JSON-RPC.
 func (s *Service) ExecutionBlocksByHashes(ctx context.Context, hashes []common.Hash, withTxs bool) ([]*pb.ExecutionBlock, error) {
 	_, span := trace.StartSpan(ctx, "powchain.engine-api-client.ExecutionBlocksByHashes")
 	defer span.End()
 	numOfHashes := len(hashes)
-	elems := make([]gethRPC.BatchElem, 0, numOfHashes)
+	elems := make([]zondRPC.BatchElem, 0, numOfHashes)
 	execBlks := make([]*pb.ExecutionBlock, 0, numOfHashes)
 	if numOfHashes == 0 {
 		return execBlks, nil
@@ -449,7 +449,7 @@ func (s *Service) ExecutionBlocksByHashes(ctx context.Context, hashes []common.H
 	for _, h := range hashes {
 		blk := &pb.ExecutionBlock{}
 		newH := h
-		elems = append(elems, gethRPC.BatchElem{
+		elems = append(elems, zondRPC.BatchElem{
 			Method: ExecutionBlockByHashMethod,
 			Args:   []interface{}{newH, withTxs},
 			Result: blk,
@@ -739,7 +739,7 @@ func handleRPCError(err error) error {
 	if isTimeout(err) {
 		return ErrHTTPTimeout
 	}
-	e, ok := err.(gethRPC.Error)
+	e, ok := err.(zondRPC.Error)
 	if !ok {
 		if strings.Contains(err.Error(), "401 Unauthorized") {
 			log.Error("HTTP authentication to your execution client is not working. Please ensure " +
@@ -781,7 +781,7 @@ func handleRPCError(err error) error {
 	case -32000:
 		errServerErrorCount.Inc()
 		// Only -32000 status codes are data errors in the RPC specification.
-		errWithData, ok := err.(gethRPC.DataError)
+		errWithData, ok := err.(zondRPC.DataError)
 		if !ok {
 			return errors.Wrapf(err, "got an unexpected error in JSON-RPC response")
 		}
@@ -854,11 +854,11 @@ func toBlockNumArg(number *big.Int) string {
 	if number.Cmp(pending) == 0 {
 		return "pending"
 	}
-	finalized := big.NewInt(int64(gethRPC.FinalizedBlockNumber))
+	finalized := big.NewInt(int64(zondRPC.FinalizedBlockNumber))
 	if number.Cmp(finalized) == 0 {
 		return "finalized"
 	}
-	safe := big.NewInt(int64(gethRPC.SafeBlockNumber))
+	safe := big.NewInt(int64(zondRPC.SafeBlockNumber))
 	if number.Cmp(safe) == 0 {
 		return "safe"
 	}

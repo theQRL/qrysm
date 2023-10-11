@@ -9,7 +9,7 @@ import (
 	"github.com/cyyber/qrysm/v4/testing/require"
 	v1 "github.com/cyyber/qrysm/v4/validator/keymanager/remote-web3signer/v1"
 	"github.com/cyyber/qrysm/v4/validator/keymanager/remote-web3signer/v1/mock"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/theQRL/go-zond/common/hexutil"
 )
 
 func TestGetAggregateAndProofSignRequest(t *testing.T) {

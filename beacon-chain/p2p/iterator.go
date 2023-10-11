@@ -3,7 +3,7 @@ package p2p
 import (
 	"context"
 
-	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/theQRL/go-zond/p2p/enode"
 )
 
 // filterNodes wraps an iterator such that Next only returns nodes for which
