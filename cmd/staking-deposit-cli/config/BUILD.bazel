@@ -5,4 +5,5 @@ go_library(
     srcs = ["config.go"],
     importpath = "github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/config",
     visibility = ["//visibility:public"],
+    deps = ["//cmd/staking-deposit-cli/misc:go_default_library"],
 )

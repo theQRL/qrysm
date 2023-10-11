@@ -58,10 +58,10 @@ go_test(
         "//testing/mock:go_default_library",
         "//testing/require:go_default_library",
         "//testing/util:go_default_library",
-        "@com_github_ethereum_go_ethereum//common/hexutil:go_default_library",
         "@com_github_golang_mock//gomock:go_default_library",
         "@com_github_grpc_ecosystem_grpc_gateway_v2//proto/gateway:go_default_library",
         "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+        "@com_github_theqrl_go_zond//common/hexutil:go_default_library",
         "@org_golang_google_protobuf//types/known/anypb:go_default_library",
     ],
 )
