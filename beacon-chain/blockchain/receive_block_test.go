@@ -300,7 +300,7 @@ func TestCheckSaveHotStateDB_Overflow(t *testing.T) {
 
 func TestHandleBlockDilithiumToExecutionChanges(t *testing.T) {
 	service, tr := minimalTestService(t)
-	pool := tr.blsPool
+	pool := tr.dilithiumPool
 
 	t.Run("pre Capella block", func(t *testing.T) {
 		body := &ethpb.BeaconBlockBodyBellatrix{}
