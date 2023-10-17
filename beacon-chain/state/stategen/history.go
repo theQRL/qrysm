@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/db"
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/db"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"go.opencensus.io/trace"
 )
 

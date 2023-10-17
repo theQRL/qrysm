@@ -4,15 +4,15 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/time"
-	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/runtime/version"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
+	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestHasVoted_OK(t *testing.T) {

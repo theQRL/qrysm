@@ -3,7 +3,7 @@
 package slasher
 
 import (
-	slasherservice "github.com/cyyber/qrysm/v4/beacon-chain/slasher"
+	slasherservice "github.com/theQRL/qrysm/v4/beacon-chain/slasher"
 )
 
 // Server defines a server implementation of the gRPC slasher service.

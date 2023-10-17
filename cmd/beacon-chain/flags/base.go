@@ -3,8 +3,8 @@
 package flags
 
 import (
-	"github.com/cyyber/qrysm/v4/cmd"
-	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/cmd"
+	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/urfave/cli/v2"
 )
 

@@ -3,11 +3,11 @@ package validator
 import (
 	"context"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/feed"
-	opfeed "github.com/cyyber/qrysm/v4/beacon-chain/core/feed/operation"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
+	opfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

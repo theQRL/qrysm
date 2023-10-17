@@ -4,9 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/scorers"
-	pb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
@@ -14,6 +11,9 @@ import (
 	"github.com/theQRL/go-zond/crypto"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/scorers"
+	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // MockPeersProvider implements PeersProvider for testing.

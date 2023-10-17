@@ -5,11 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/crypto/bls"
-	"github.com/cyyber/qrysm/v4/crypto/bls/common"
-	"github.com/cyyber/qrysm/v4/testing/bls/utils"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/ghodss/yaml"
+	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/bls/common"
+	"github.com/theQRL/qrysm/v4/testing/bls/utils"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestVerify(t *testing.T) {

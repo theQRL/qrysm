@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 )
 
 // RPCGoodbyeCode represents goodbye code, used in sync package.

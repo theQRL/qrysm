@@ -3,7 +3,7 @@ package epoch_processing
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/config/params"
 )
 
 func TestMain(m *testing.M) {

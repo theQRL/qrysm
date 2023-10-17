@@ -3,10 +3,10 @@ package evaluators
 import (
 	"context"
 
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/endtoend/policies"
-	"github.com/cyyber/qrysm/v4/testing/endtoend/types"
 	"github.com/pkg/errors"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )

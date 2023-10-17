@@ -4,11 +4,11 @@ import (
 	"errors"
 	"path/filepath"
 
-	"github.com/cyyber/qrysm/v4/cmd"
-	"github.com/cyyber/qrysm/v4/crypto/rand"
-	"github.com/cyyber/qrysm/v4/io/file"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/qrysm/v4/cmd"
+	"github.com/theQRL/qrysm/v4/crypto/rand"
+	"github.com/theQRL/qrysm/v4/io/file"
 	"github.com/urfave/cli/v2"
 )
 

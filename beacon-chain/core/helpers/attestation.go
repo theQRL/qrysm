@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/hash"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	prysmTime "github.com/cyyber/qrysm/v4/time"
-	"github.com/cyyber/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/crypto/hash"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	prysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 var (

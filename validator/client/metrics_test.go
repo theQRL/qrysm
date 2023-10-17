@@ -3,14 +3,14 @@ package client
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 func TestUpdateLogAggregateStats(t *testing.T) {

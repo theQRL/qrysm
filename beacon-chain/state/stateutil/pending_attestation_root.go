@@ -3,11 +3,11 @@ package stateutil
 import (
 	"encoding/binary"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/encoding/ssz"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/encoding/ssz"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // PendingAttRootWithHasher describes a method from which the hash tree root

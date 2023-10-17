@@ -1,12 +1,12 @@
 package sync
 
 import (
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/network/forks"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/network/forks"
+	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 // Is a background routine that observes for new incoming forks. Depending on the epoch

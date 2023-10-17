@@ -4,10 +4,10 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/state/state-native/types"
-	"github.com/cyyber/qrysm/v4/beacon-chain/state/stateutil"
-	pmath "github.com/cyyber/qrysm/v4/math"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
+	pmath "github.com/theQRL/qrysm/v4/math"
 )
 
 var (

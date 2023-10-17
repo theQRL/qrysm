@@ -4,8 +4,8 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 )
 
 // MockBlocker is a fake implementation of lookup.Blocker.

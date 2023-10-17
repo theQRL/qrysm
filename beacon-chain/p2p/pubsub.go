@@ -6,14 +6,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	pbrpc "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	pbrpc "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 const (

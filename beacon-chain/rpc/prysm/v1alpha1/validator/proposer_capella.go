@@ -1,10 +1,10 @@
 package validator
 
 import (
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // Sets the dilithium to exec data for a block.

@@ -8,8 +8,8 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	apimiddleware "github.com/cyyber/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	apimiddleware "github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // MockbeaconBlockConverter is a mock of beaconBlockConverter interface.

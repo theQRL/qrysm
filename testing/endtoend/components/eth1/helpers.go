@@ -5,11 +5,11 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/testing/endtoend/params"
-	e2etypes "github.com/cyyber/qrysm/v4/testing/endtoend/types"
 	"github.com/theQRL/go-zond/accounts/keystore"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/zondclient"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/params"
+	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
 )
 
 // NetworkId is the ID of the ETH1 chain.

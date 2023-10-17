@@ -24,9 +24,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cyyber/qrysm/v4/crypto/dilithium"
-	"github.com/cyyber/qrysm/v4/io/file"
 	"github.com/pborman/uuid"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	"github.com/theQRL/qrysm/v4/io/file"
 )
 
 const (

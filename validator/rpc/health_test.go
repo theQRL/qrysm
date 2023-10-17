@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	pb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/validator/client"
 	"github.com/golang/protobuf/ptypes/empty"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/validator/client"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

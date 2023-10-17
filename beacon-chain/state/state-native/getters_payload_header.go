@@ -1,11 +1,11 @@
 package state_native
 
 import (
-	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // LatestExecutionPayloadHeader of the beacon state.

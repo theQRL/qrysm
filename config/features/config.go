@@ -23,9 +23,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/cmd"
-	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/cmd"
+	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/urfave/cli/v2"
 )
 

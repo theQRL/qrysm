@@ -3,19 +3,19 @@ package blocks_test
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/time"
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	consensusblocks "github.com/cyyber/qrysm/v4/consensus-types/blocks"
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/encoding/ssz"
-	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
-	"github.com/cyyber/qrysm/v4/time/slots"
+	consensusblocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/encoding/ssz"
+	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 )
 
 func Test_IsMergeComplete(t *testing.T) {

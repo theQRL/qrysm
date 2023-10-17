@@ -6,7 +6,7 @@ package genesis
 import (
 	_ "embed"
 
-	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/config/params"
 )
 
 var (

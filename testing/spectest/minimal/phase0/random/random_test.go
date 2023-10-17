@@ -3,7 +3,7 @@ package random
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/testing/spectest/shared/phase0/sanity"
+	"github.com/theQRL/qrysm/v4/testing/spectest/shared/phase0/sanity"
 )
 
 func TestMinimal_Phase0_Random(t *testing.T) {

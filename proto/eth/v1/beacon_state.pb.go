@@ -10,8 +10,8 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	_ "github.com/cyyber/qrysm/v4/proto/eth/ext"
+	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	_ "github.com/theQRL/qrysm/v4/proto/eth/ext"
 	_ "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	github_com_prysmaticlabs_go_bitfield "github.com/prysmaticlabs/go-bitfield"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -32,7 +32,7 @@ type BeaconState struct {
 
 	GenesisTime                 uint64                                                     `protobuf:"varint,1001,opt,name=genesis_time,json=genesisTime,proto3" json:"genesis_time,omitempty"`
 	GenesisValidatorsRoot       []byte                                                     `protobuf:"bytes,1002,opt,name=genesis_validators_root,json=genesisValidatorsRoot,proto3" json:"genesis_validators_root,omitempty" ssz-size:"32"`
-	Slot                        github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,1003,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
+	Slot                        github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,1003,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"`
 	Fork                        *Fork                                                      `protobuf:"bytes,1004,opt,name=fork,proto3" json:"fork,omitempty"`
 	LatestBlockHeader           *BeaconBlockHeader                                         `protobuf:"bytes,2001,opt,name=latest_block_header,json=latestBlockHeader,proto3" json:"latest_block_header,omitempty"`
 	BlockRoots                  [][]byte                                                   `protobuf:"bytes,2002,rep,name=block_roots,json=blockRoots,proto3" json:"block_roots,omitempty" ssz-size:"8192,32"`
@@ -239,8 +239,8 @@ type PendingAttestation struct {
 
 	AggregationBits github_com_prysmaticlabs_go_bitfield.Bitlist                         `protobuf:"bytes,1,opt,name=aggregation_bits,json=aggregationBits,proto3" json:"aggregation_bits,omitempty" cast-type:"github.com/prysmaticlabs/go-bitfield.Bitlist" ssz-max:"2048"`
 	Data            *AttestationData                                                     `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
-	InclusionDelay  github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot           `protobuf:"varint,3,opt,name=inclusion_delay,json=inclusionDelay,proto3" json:"inclusion_delay,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
-	ProposerIndex   github_com_cyyber_qrysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,4,opt,name=proposer_index,json=proposerIndex,proto3" json:"proposer_index,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.ValidatorIndex"`
+	InclusionDelay  github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot           `protobuf:"varint,3,opt,name=inclusion_delay,json=inclusionDelay,proto3" json:"inclusion_delay,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"`
+	ProposerIndex   github_com_cyyber_qrysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,4,opt,name=proposer_index,json=proposerIndex,proto3" json:"proposer_index,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"`
 }
 
 func (x *PendingAttestation) Reset() {
@@ -308,9 +308,9 @@ type Committee struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Index      github_com_cyyber_qrysm_v4_consensus_types_primitives.CommitteeIndex   `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.CommitteeIndex"`
-	Slot       github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot             `protobuf:"varint,2,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
-	Validators []github_com_cyyber_qrysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,3,rep,packed,name=validators,proto3" json:"validators,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.ValidatorIndex"`
+	Index      github_com_cyyber_qrysm_v4_consensus_types_primitives.CommitteeIndex   `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.CommitteeIndex"`
+	Slot       github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot             `protobuf:"varint,2,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"`
+	Validators []github_com_cyyber_qrysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,3,rep,packed,name=validators,proto3" json:"validators,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"`
 }
 
 func (x *Committee) Reset() {
@@ -373,7 +373,7 @@ type Fork struct {
 
 	PreviousVersion []byte                                                      `protobuf:"bytes,1,opt,name=previous_version,json=previousVersion,proto3" json:"previous_version,omitempty" ssz-size:"4"`
 	CurrentVersion  []byte                                                      `protobuf:"bytes,2,opt,name=current_version,json=currentVersion,proto3" json:"current_version,omitempty" ssz-size:"4"`
-	Epoch           github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Epoch"`
+	Epoch           github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"`
 }
 
 func (x *Fork) Reset() {
@@ -482,7 +482,7 @@ type ForkChoiceHead struct {
 	unknownFields protoimpl.UnknownFields
 
 	Root []byte                                                     `protobuf:"bytes,1,opt,name=root,proto3" json:"root,omitempty" ssz-size:"32"`
-	Slot github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,2,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
+	Slot github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,2,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"`
 }
 
 func (x *ForkChoiceHead) Reset() {

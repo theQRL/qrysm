@@ -9,16 +9,16 @@ import (
 	"path"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/db/iface"
-	"github.com/cyyber/qrysm/v4/config/features"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
-	"github.com/cyyber/qrysm/v4/io/file"
 	"github.com/dgraph-io/ristretto"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	prombolt "github.com/prysmaticlabs/prombbolt"
+	"github.com/theQRL/qrysm/v4/beacon-chain/db/iface"
+	"github.com/theQRL/qrysm/v4/config/features"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	"github.com/theQRL/qrysm/v4/io/file"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -72,7 +72,7 @@ var BlockCacheSize = int64(1 << 21)
 
 // blockedBuckets represents the buckets that we want to restrict
 // from our metrics fetching for performance reasons. For a detailed
-// summary, it can be read in https://github.com/cyyber/qrysm/issues/8274.
+// summary, it can be read in https://github.com/theQRL/qrysm/issues/8274.
 var blockedBuckets = [][]byte{
 	blocksBucket,
 	stateSummaryBucket,

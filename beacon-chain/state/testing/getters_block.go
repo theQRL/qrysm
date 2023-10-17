@@ -3,11 +3,11 @@ package testing
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 type getStateWithLatestBlockHeader func(*ethpb.BeaconBlockHeader) (state.BeaconState, error)

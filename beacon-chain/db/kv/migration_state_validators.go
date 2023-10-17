@@ -5,13 +5,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cyyber/qrysm/v4/config/features"
-	"github.com/cyyber/qrysm/v4/encoding/ssz/detect"
-	"github.com/cyyber/qrysm/v4/monitoring/progress"
-	v1alpha1 "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/golang/snappy"
 	"github.com/schollz/progressbar/v3"
 	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/qrysm/v4/config/features"
+	"github.com/theQRL/qrysm/v4/encoding/ssz/detect"
+	"github.com/theQRL/qrysm/v4/monitoring/progress"
+	v1alpha1 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	bolt "go.etcd.io/bbolt"
 )
 

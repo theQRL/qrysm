@@ -4,11 +4,11 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/dilithium"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/time"
 	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/time"
 )
 
 // BitlistWithAllBitsSet creates list of bitlists with all bits set.

@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"strconv"
 
-	slashertypes "github.com/cyyber/qrysm/v4/beacon-chain/slasher/types"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/container/slice"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/sirupsen/logrus"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	slashertypes "github.com/theQRL/qrysm/v4/beacon-chain/slasher/types"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/container/slice"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // Group a list of attestations into batches by validator chunk index.

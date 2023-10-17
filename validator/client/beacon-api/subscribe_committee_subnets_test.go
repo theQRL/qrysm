@@ -8,14 +8,14 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/cyyber/qrysm/v4/validator/client/beacon-api/mock"
 	"github.com/golang/mock/gomock"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
 )
 
 const subscribeCommitteeSubnetsTestEndpoint = "/eth/v1/validator/beacon_committee_subscriptions"

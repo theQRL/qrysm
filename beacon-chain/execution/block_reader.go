@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/execution/types"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/monitoring/tracing"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/qrysm/v4/beacon-chain/execution/types"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/monitoring/tracing"
 	"go.opencensus.io/trace"
 )
 

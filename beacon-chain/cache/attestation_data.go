@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"k8s.io/client-go/tools/cache"
 )
 

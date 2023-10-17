@@ -7,13 +7,13 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/validator/client/beacon-api/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
 )
 
 const submitSignedContributionAndProofTestEndpoint = "/eth/v1/validator/contribution_and_proofs"

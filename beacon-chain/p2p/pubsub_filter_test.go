@@ -7,16 +7,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/encoder"
-	"github.com/cyyber/qrysm/v4/beacon-chain/startup"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/network/forks"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	prysmTime "github.com/cyyber/qrysm/v4/time"
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/network/forks"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	prysmTime "github.com/theQRL/qrysm/v4/time"
 )
 
 func TestService_CanSubscribe(t *testing.T) {

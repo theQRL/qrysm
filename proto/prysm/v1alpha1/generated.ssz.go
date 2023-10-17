@@ -3,8 +3,8 @@
 package eth
 
 import (
-	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	v1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
+	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	v1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	ssz "github.com/prysmaticlabs/fastssz"
 )
 

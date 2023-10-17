@@ -8,18 +8,18 @@ import (
 	"path"
 	"testing"
 
-	mock "github.com/cyyber/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/cyyber/qrysm/v4/config/params"
-	ecdsaprysm "github.com/cyyber/qrysm/v4/crypto/ecdsa"
-	"github.com/cyyber/qrysm/v4/network"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	gethCrypto "github.com/theQRL/go-zond/crypto"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
+	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/v4/config/params"
+	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
+	"github.com/theQRL/qrysm/v4/network"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestPrivateKeyLoading(t *testing.T) {

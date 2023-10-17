@@ -4,16 +4,16 @@ import (
 	"context"
 	"io"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/blockchain"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
-	p2ptypes "github.com/cyyber/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	pb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	p2ptypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 // ErrInvalidFetchedData is thrown if stream fails to provide requested blocks.

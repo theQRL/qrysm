@@ -4,13 +4,13 @@ import (
 	"strconv"
 	"testing"
 
-	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/cyyber/qrysm/v4/proto/eth/v1"
-	"github.com/cyyber/qrysm/v4/proto/migration"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
+	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/theQRL/qrysm/v4/proto/eth/v1"
+	"github.com/theQRL/qrysm/v4/proto/migration"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func Test_ValidatorStatus(t *testing.T) {

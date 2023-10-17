@@ -1,11 +1,11 @@
 package attestations
 
 import (
-	"github.com/cyyber/qrysm/v4/crypto/dilithium"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
 )
 
 // attList represents list of attestations, defined for easier en masse operations (filtering, sorting).

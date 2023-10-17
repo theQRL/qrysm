@@ -3,8 +3,8 @@ package blockchain
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestIsInvalidBlock(t *testing.T) {

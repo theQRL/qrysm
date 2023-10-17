@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/stretchr/testify/require"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 )
 
 var _ Ticker = (*SlotTicker)(nil)

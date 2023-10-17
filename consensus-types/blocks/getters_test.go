@@ -3,19 +3,19 @@ package blocks
 import (
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	bytesutil2 "github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	pb "github.com/cyyber/qrysm/v4/proto/engine/v1"
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
-	"github.com/cyyber/qrysm/v4/runtime/version"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	ssz "github.com/prysmaticlabs/fastssz"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	bytesutil2 "github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	pb "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func Test_BeaconBlockIsNil(t *testing.T) {

@@ -7,13 +7,13 @@ import (
 	"flag"
 	"net"
 
-	ecdsaprysm "github.com/cyyber/qrysm/v4/crypto/ecdsa"
-	"github.com/cyyber/qrysm/v4/io/file"
-	_ "github.com/cyyber/qrysm/v4/runtime/maxprocs"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
+	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
+	"github.com/theQRL/qrysm/v4/io/file"
+	_ "github.com/theQRL/qrysm/v4/runtime/maxprocs"
 )
 
 var (

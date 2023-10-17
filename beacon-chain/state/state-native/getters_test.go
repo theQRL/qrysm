@@ -3,9 +3,9 @@ package state_native
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	testtmpl "github.com/cyyber/qrysm/v4/beacon-chain/state/testing"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	testtmpl "github.com/theQRL/qrysm/v4/beacon-chain/state/testing"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 func TestBeaconState_SlotDataRace_Phase0(t *testing.T) {

@@ -7,9 +7,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/io/file"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/io/file"
 	"github.com/urfave/cli/v2"
 )
 

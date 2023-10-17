@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"sort"
 
-	p2pTypes "github.com/cyyber/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	p2ppb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	p2pTypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	p2ppb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 )
 

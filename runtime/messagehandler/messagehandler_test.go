@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/runtime/messagehandler"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/theQRL/qrysm/v4/runtime/messagehandler"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestSafelyHandleMessage(t *testing.T) {

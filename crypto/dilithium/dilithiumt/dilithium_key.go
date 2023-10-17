@@ -3,10 +3,10 @@ package dilithiumt
 import (
 	"fmt"
 
-	"github.com/cyyber/qrysm/v4/crypto/bls/common"
-	"github.com/cyyber/qrysm/v4/crypto/rand"
 	common2 "github.com/theQRL/go-qrllib/common"
 	"github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/crypto/bls/common"
+	"github.com/theQRL/qrysm/v4/crypto/rand"
 )
 
 type dilithiumKey struct {

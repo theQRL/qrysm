@@ -5,15 +5,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/async"
-	"github.com/cyyber/qrysm/v4/config/params"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
-	prysmTime "github.com/cyyber/qrysm/v4/time"
 	"github.com/prysmaticlabs/go-bitfield"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/async"
+	"github.com/theQRL/qrysm/v4/config/params"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
+	prysmTime "github.com/theQRL/qrysm/v4/time"
 )
 
 func TestPruneExpired_Ticker(t *testing.T) {

@@ -3,17 +3,17 @@ package blocks
 import (
 	"fmt"
 
-	field_params "github.com/cyyber/qrysm/v4/config/fieldparams"
-	consensus_types "github.com/cyyber/qrysm/v4/consensus-types"
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
-	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/pkg/errors"
 	ssz "github.com/prysmaticlabs/fastssz"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
+	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // BeaconBlockIsNil checks if any composite field of input signed beacon block is nil.

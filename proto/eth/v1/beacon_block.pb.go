@@ -10,8 +10,8 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	_ "github.com/cyyber/qrysm/v4/proto/eth/ext"
+	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	_ "github.com/theQRL/qrysm/v4/proto/eth/ext"
 	_ "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	github_com_prysmaticlabs_go_bitfield "github.com/prysmaticlabs/go-bitfield"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -30,8 +30,8 @@ type BeaconBlock struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Slot          github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot           `protobuf:"varint,1,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
-	ProposerIndex github_com_cyyber_qrysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,2,opt,name=proposer_index,json=proposerIndex,proto3" json:"proposer_index,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.ValidatorIndex"`
+	Slot          github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot           `protobuf:"varint,1,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"`
+	ProposerIndex github_com_cyyber_qrysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,2,opt,name=proposer_index,json=proposerIndex,proto3" json:"proposer_index,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"`
 	ParentRoot    []byte                                                               `protobuf:"bytes,3,opt,name=parent_root,json=parentRoot,proto3" json:"parent_root,omitempty" ssz-size:"32"`
 	StateRoot     []byte                                                               `protobuf:"bytes,4,opt,name=state_root,json=stateRoot,proto3" json:"state_root,omitempty" ssz-size:"32"`
 	Body          *BeaconBlockBody                                                     `protobuf:"bytes,5,opt,name=body,proto3" json:"body,omitempty"`
@@ -432,8 +432,8 @@ type VoluntaryExit struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Epoch          github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch          `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Epoch"`
-	ValidatorIndex github_com_cyyber_qrysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,2,opt,name=validator_index,json=validatorIndex,proto3" json:"validator_index,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.ValidatorIndex"`
+	Epoch          github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch          `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"`
+	ValidatorIndex github_com_cyyber_qrysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,2,opt,name=validator_index,json=validatorIndex,proto3" json:"validator_index,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"`
 }
 
 func (x *VoluntaryExit) Reset() {
@@ -605,8 +605,8 @@ type BeaconBlockHeader struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Slot          github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot           `protobuf:"varint,1,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
-	ProposerIndex github_com_cyyber_qrysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,2,opt,name=proposer_index,json=proposerIndex,proto3" json:"proposer_index,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.ValidatorIndex"`
+	Slot          github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot           `protobuf:"varint,1,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"`
+	ProposerIndex github_com_cyyber_qrysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,2,opt,name=proposer_index,json=proposerIndex,proto3" json:"proposer_index,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"`
 	ParentRoot    []byte                                                               `protobuf:"bytes,3,opt,name=parent_root,json=parentRoot,proto3" json:"parent_root,omitempty" ssz-size:"32"`
 	StateRoot     []byte                                                               `protobuf:"bytes,4,opt,name=state_root,json=stateRoot,proto3" json:"state_root,omitempty" ssz-size:"32"`
 	BodyRoot      []byte                                                               `protobuf:"bytes,5,opt,name=body_root,json=bodyRoot,proto3" json:"body_root,omitempty" ssz-size:"32"`

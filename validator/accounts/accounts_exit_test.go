@@ -7,15 +7,15 @@ import (
 	"path"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/cyyber/qrysm/v4/build/bazel"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/io/file"
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/sirupsen/logrus/hooks/test"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/v4/build/bazel"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/io/file"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestDisplayExitInfo(t *testing.T) {

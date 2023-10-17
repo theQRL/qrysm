@@ -6,17 +6,17 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/cyyber/qrysm/v4/async/event"
-	"github.com/cyyber/qrysm/v4/beacon-chain/blockchain"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/feed"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/feed/operation"
-	statefeed "github.com/cyyber/qrysm/v4/beacon-chain/core/feed/state"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	"github.com/cyyber/qrysm/v4/beacon-chain/state/stategen"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/async/event"
+	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
+	statefeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/state"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 // Error when the context is closed while waiting for sync.

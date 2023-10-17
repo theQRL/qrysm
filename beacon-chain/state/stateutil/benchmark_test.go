@@ -3,9 +3,9 @@ package stateutil_test
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/crypto/hash"
-	"github.com/cyyber/qrysm/v4/encoding/ssz"
-	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/crypto/hash"
+	"github.com/theQRL/qrysm/v4/encoding/ssz"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func BenchmarkMerkleize_Buffered(b *testing.B) {

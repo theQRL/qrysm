@@ -6,10 +6,10 @@ import (
 	"crypto/subtle"
 	"fmt"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/crypto/bls/common"
-	"github.com/cyyber/qrysm/v4/crypto/rand"
 	blst "github.com/supranational/blst/bindings/go"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/crypto/bls/common"
+	"github.com/theQRL/qrysm/v4/crypto/rand"
 )
 
 // bls12SecretKey used in the BLS signature scheme.

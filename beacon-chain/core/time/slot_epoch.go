@@ -1,11 +1,11 @@
 package time
 
 import (
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/runtime/version"
-	"github.com/cyyber/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 // CurrentEpoch returns the current epoch number calculated from

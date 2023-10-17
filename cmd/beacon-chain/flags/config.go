@@ -1,7 +1,7 @@
 package flags
 
 import (
-	"github.com/cyyber/qrysm/v4/cmd"
+	"github.com/theQRL/qrysm/v4/cmd"
 	"github.com/urfave/cli/v2"
 )
 

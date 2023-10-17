@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/api/client"
-	"github.com/cyyber/qrysm/v4/validator/rpc/apimiddleware"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/api/client"
+	"github.com/theQRL/qrysm/v4/validator/rpc/apimiddleware"
 )
 
 const (

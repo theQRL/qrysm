@@ -1,12 +1,12 @@
 package blocks
 
 import (
-	field_params "github.com/cyyber/qrysm/v4/config/fieldparams"
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 var (

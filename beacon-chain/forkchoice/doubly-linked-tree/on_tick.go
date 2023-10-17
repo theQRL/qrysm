@@ -3,9 +3,9 @@ package doublylinkedtree
 import (
 	"context"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 // NewSlot mimics the implementation of `on_tick` in fork choice consensus spec.

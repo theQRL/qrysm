@@ -1,8 +1,8 @@
 package slasher
 
 import (
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	ssz "github.com/prysmaticlabs/fastssz"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 )
 
 // Parameters for slashing detection.

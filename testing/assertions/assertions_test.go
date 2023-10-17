@@ -6,13 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	testpb "github.com/cyyber/qrysm/v4/proto/testing"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/assertions"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	testpb "github.com/theQRL/qrysm/v4/proto/testing"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/assertions"
+	"github.com/theQRL/qrysm/v4/testing/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

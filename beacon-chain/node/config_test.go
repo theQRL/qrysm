@@ -8,14 +8,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/cmd"
-	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/qrysm/v4/cmd"
+	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/urfave/cli/v2"
 )
 

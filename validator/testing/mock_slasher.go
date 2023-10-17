@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )

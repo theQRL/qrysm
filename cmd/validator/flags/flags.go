@@ -8,8 +8,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/io/file"
 	"github.com/urfave/cli/v2"
 )
 

@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestMeetsMinPlatformReqs(t *testing.T) {

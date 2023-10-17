@@ -4,16 +4,16 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/altair"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/time"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 func TestTranslateParticipation(t *testing.T) {

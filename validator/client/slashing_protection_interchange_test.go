@@ -9,13 +9,13 @@ import (
 	"testing"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
-	"github.com/cyyber/qrysm/v4/io/file"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
-	history "github.com/cyyber/qrysm/v4/validator/slashing-protection-history"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	"github.com/theQRL/qrysm/v4/io/file"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
+	history "github.com/theQRL/qrysm/v4/validator/slashing-protection-history"
 )
 
 type eip3076TestCase struct {

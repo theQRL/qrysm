@@ -3,14 +3,14 @@ package capella_test
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/capella"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/time"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/capella"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 func TestUpgradeToCapella(t *testing.T) {

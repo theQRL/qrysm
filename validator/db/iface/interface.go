@@ -5,12 +5,12 @@ import (
 	"context"
 	"io"
 
-	validatorServiceConfig "github.com/cyyber/qrysm/v4/config/validator/service"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/monitoring/backup"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/validator/db/kv"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	validatorServiceConfig "github.com/theQRL/qrysm/v4/config/validator/service"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/monitoring/backup"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/validator/db/kv"
 )
 
 // Ensure the kv store implements the interface.

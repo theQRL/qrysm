@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	aggtesting "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/testing"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/qrysm/v4/config/params"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	aggtesting "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/testing"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func BenchmarkProposerAtts_sortByProfitability(b *testing.B) {

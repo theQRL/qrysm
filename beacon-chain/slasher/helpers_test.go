@@ -4,13 +4,13 @@ import (
 	"reflect"
 	"testing"
 
-	slashertypes "github.com/cyyber/qrysm/v4/beacon-chain/slasher/types"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	slashertypes "github.com/theQRL/qrysm/v4/beacon-chain/slasher/types"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestService_groupByValidatorChunkIndex(t *testing.T) {

@@ -1,8 +1,8 @@
 package types
 
 import (
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // ChunkKind to differentiate what kind of span we are working

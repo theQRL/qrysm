@@ -5,15 +5,15 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/encoding/ssz/equality"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
-	aggtesting "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/testing"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/encoding/ssz/equality"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
+	aggtesting "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/testing"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestMain(m *testing.M) {

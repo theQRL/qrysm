@@ -6,11 +6,11 @@ package mock
 
 import (
 	context "context"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	apimiddleware "github.com/cyyber/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	apimiddleware "github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 )
 
 // MockstateValidatorsProvider is a mock of stateValidatorsProvider interface.

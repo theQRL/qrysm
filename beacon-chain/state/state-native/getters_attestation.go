@@ -1,8 +1,8 @@
 package state_native
 
 import (
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/runtime/version"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // PreviousEpochAttestations corresponding to blocks on the beacon chain.

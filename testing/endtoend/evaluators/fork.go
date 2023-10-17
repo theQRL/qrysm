@@ -4,15 +4,15 @@ import (
 	"context"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/runtime/version"
-	"github.com/cyyber/qrysm/v4/testing/endtoend/helpers"
-	"github.com/cyyber/qrysm/v4/testing/endtoend/policies"
-	"github.com/cyyber/qrysm/v4/testing/endtoend/types"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	"github.com/theQRL/qrysm/v4/time/slots"
 	"google.golang.org/grpc"
 )
 

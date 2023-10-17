@@ -3,8 +3,8 @@ package testutil
 import (
 	"context"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 )
 
 // MockStater is a fake implementation of lookup.Stater.

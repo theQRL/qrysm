@@ -1,11 +1,11 @@
 package gateway
 
 import (
-	"github.com/cyyber/qrysm/v4/api/gateway"
-	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
-	ethpbservice "github.com/cyyber/qrysm/v4/proto/eth/service"
-	ethpbalpha "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/theQRL/qrysm/v4/api/gateway"
+	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
+	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
+	ethpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 

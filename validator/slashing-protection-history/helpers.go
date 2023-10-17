@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/k0kubun/go-ansi"
 	"github.com/schollz/progressbar/v3"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 )
 
 func initializeProgressBar(numItems int, msg string) *progressbar.ProgressBar {

@@ -1,9 +1,9 @@
 package signing
 
 import (
-	"github.com/cyyber/qrysm/v4/config/params"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/config/params"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 var ErrNilRegistration = errors.New("nil signed registration")

@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/api/grpc"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/sirupsen/logrus/hooks/test"
+	"github.com/theQRL/qrysm/v4/api/grpc"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 type testRequestContainer struct {

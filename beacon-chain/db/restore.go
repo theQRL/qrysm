@@ -5,11 +5,11 @@ import (
 	"path"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/db/kv"
-	"github.com/cyyber/qrysm/v4/cmd"
-	"github.com/cyyber/qrysm/v4/io/file"
-	"github.com/cyyber/qrysm/v4/io/prompt"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/db/kv"
+	"github.com/theQRL/qrysm/v4/cmd"
+	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/v4/io/prompt"
 	"github.com/urfave/cli/v2"
 )
 

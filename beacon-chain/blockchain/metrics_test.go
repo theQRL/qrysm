@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 func TestReportEpochMetrics_BadHeadState(t *testing.T) {

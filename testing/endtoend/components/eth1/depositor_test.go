@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/config/params"
 
-	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestComputeDeposits(t *testing.T) {

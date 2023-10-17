@@ -3,9 +3,9 @@ package endtoend
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/runtime/version"
-	"github.com/cyyber/qrysm/v4/testing/endtoend/types"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
 )
 
 func TestEndToEnd_MultiScenarioRun_Multiclient(t *testing.T) {

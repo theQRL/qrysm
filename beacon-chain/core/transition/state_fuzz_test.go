@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	fuzz "github.com/google/gofuzz"
+	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestGenesisBeaconState_1000(t *testing.T) {

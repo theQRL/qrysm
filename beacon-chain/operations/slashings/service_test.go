@@ -3,8 +3,8 @@ package slashings
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/operations/slashings/mock"
-	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/beacon-chain/operations/slashings/mock"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 var (

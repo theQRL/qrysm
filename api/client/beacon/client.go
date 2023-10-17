@@ -13,16 +13,16 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/cyyber/qrysm/v4/api/client"
-	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/network/forks"
-	v1 "github.com/cyyber/qrysm/v4/proto/eth/v1"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/qrysm/v4/api/client"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/network/forks"
+	v1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 const (

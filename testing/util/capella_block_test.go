@@ -3,12 +3,12 @@ package util
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/time"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/crypto/hash"
-	"github.com/cyyber/qrysm/v4/encoding/ssz"
-	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/crypto/hash"
+	"github.com/theQRL/qrysm/v4/encoding/ssz"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestGenerateBLSToExecutionChange(t *testing.T) {

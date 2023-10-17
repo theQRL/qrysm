@@ -7,14 +7,14 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/validator/accounts/iface"
-	"github.com/cyyber/qrysm/v4/validator/accounts/wallet"
-	remoteweb3signer "github.com/cyyber/qrysm/v4/validator/keymanager/remote-web3signer"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
+	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
+	remoteweb3signer "github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer"
 )
 
 func init() {

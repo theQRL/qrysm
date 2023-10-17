@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/cyyber/qrysm/v4/monitoring/progress"
+	"github.com/theQRL/qrysm/v4/monitoring/progress"
 	bolt "go.etcd.io/bbolt"
 )
 

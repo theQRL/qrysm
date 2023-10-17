@@ -1,8 +1,8 @@
 package dilithium
 
 import (
-	"github.com/cyyber/qrysm/v4/crypto/bls/common"
-	"github.com/cyyber/qrysm/v4/crypto/dilithium/dilithiumt"
+	"github.com/theQRL/qrysm/v4/crypto/bls/common"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium/dilithiumt"
 )
 
 // TODO (cyyber): Rename SecretKeyFromBytes to SecretKeyFromSeed

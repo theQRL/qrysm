@@ -3,11 +3,11 @@ package attestations
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/crypto/bls"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
-	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/qrysm/v4/crypto/bls"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
+	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
 func TestAggregateAttestations_MaxCover_NewMaxCover(t *testing.T) {

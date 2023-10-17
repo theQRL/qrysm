@@ -1,8 +1,8 @@
 package existingseed
 
 import (
-	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit"
 	"github.com/urfave/cli/v2"
 )
 

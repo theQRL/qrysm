@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/runtime"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/runtime"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func init() {

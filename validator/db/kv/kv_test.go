@@ -5,9 +5,9 @@ import (
 	"io"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/sirupsen/logrus"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestMain(m *testing.M) {

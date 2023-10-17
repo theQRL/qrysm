@@ -3,7 +3,7 @@ package cache
 import (
 	"errors"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 )
 
 // ErrNotProposerIndices will be returned when a cache object is not a pointer to

@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/cyyber/qrysm/v4/config/features"
-	ecdsaprysm "github.com/cyyber/qrysm/v4/crypto/ecdsa"
-	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -16,6 +13,9 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/config/features"
+	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // MultiAddressBuilder takes in an ip address string and port to produce a go multiaddr format.

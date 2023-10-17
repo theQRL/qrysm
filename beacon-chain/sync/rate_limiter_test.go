@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
-	mockp2p "github.com/cyyber/qrysm/v4/beacon-chain/p2p/testing"
-	p2ptypes "github.com/cyyber/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	mockp2p "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
+	p2ptypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 func TestNewRateLimiter(t *testing.T) {

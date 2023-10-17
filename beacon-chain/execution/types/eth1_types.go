@@ -5,9 +5,9 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 )
 
 // HeaderInfo specifies the block header information in the ETH 1.0 chain.

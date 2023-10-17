@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	prysmTime "github.com/cyyber/qrysm/v4/time"
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	prysmTime "github.com/theQRL/qrysm/v4/time"
 )
 
 func TestCountdownToGenesis(t *testing.T) {

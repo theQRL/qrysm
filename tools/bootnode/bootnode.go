@@ -22,16 +22,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/async"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
-	"github.com/cyyber/qrysm/v4/config/params"
-	ecdsaprysm "github.com/cyyber/qrysm/v4/crypto/ecdsa"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/io/logs"
-	"github.com/cyyber/qrysm/v4/network"
-	pb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	_ "github.com/cyyber/qrysm/v4/runtime/maxprocs"
-	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -43,6 +33,16 @@ import (
 	"github.com/theQRL/go-zond/p2p/discover"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/qrysm/v4/async"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/v4/config/params"
+	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/io/logs"
+	"github.com/theQRL/qrysm/v4/network"
+	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	_ "github.com/theQRL/qrysm/v4/runtime/maxprocs"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 var (

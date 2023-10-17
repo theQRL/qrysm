@@ -1,10 +1,10 @@
 package stakingdeposit
 
 import (
-	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/misc"
-	"github.com/cyyber/qrysm/v4/contracts/deposit"
-	"github.com/cyyber/qrysm/v4/crypto/dilithium"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
+	"github.com/theQRL/qrysm/v4/contracts/deposit"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 type DepositData struct {

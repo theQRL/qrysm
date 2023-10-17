@@ -3,7 +3,7 @@ package kv
 import (
 	"context"
 
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 )

@@ -3,7 +3,7 @@ package fork
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/testing/spectest/shared/bellatrix/fork"
+	"github.com/theQRL/qrysm/v4/testing/spectest/shared/bellatrix/fork"
 )
 
 func TestMinimal_Bellatrix_UpgradeToBellatrix(t *testing.T) {

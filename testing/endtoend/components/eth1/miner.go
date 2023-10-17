@@ -11,19 +11,19 @@ import (
 	"syscall"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"github.com/cyyber/qrysm/v4/config/params"
-	contracts "github.com/cyyber/qrysm/v4/contracts/deposit"
-	"github.com/cyyber/qrysm/v4/io/file"
-	"github.com/cyyber/qrysm/v4/runtime/interop"
-	"github.com/cyyber/qrysm/v4/testing/endtoend/helpers"
-	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
-	e2etypes "github.com/cyyber/qrysm/v4/testing/endtoend/types"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/accounts/abi/bind"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/rpc"
 	"github.com/theQRL/go-zond/zondclient"
+	"github.com/theQRL/qrysm/v4/config/params"
+	contracts "github.com/theQRL/qrysm/v4/contracts/deposit"
+	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/v4/runtime/interop"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
+	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
+	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
 )
 
 const (

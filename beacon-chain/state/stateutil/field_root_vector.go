@@ -1,8 +1,8 @@
 package stateutil
 
 import (
-	"github.com/cyyber/qrysm/v4/encoding/ssz"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/encoding/ssz"
 )
 
 func ArraysRoot(input [][]byte, length uint64) ([32]byte, error) {

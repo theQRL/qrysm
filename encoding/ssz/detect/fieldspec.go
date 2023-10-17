@@ -3,8 +3,8 @@ package detect
 import (
 	"encoding/binary"
 
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 )
 
 type fieldType int

@@ -20,11 +20,11 @@ import (
 	"os"
 	"path"
 
-	"github.com/cyyber/qrysm/v4/io/file"
-	"github.com/cyyber/qrysm/v4/validator/accounts/wallet"
-	"github.com/cyyber/qrysm/v4/validator/keymanager"
-	"github.com/cyyber/qrysm/v4/validator/keymanager/derived"
-	"github.com/cyyber/qrysm/v4/validator/keymanager/local"
+	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	"github.com/theQRL/qrysm/v4/validator/keymanager/derived"
+	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
 	"github.com/tyler-smith/go-bip39"
 	util "github.com/wealdtech/go-eth2-util"
 )

@@ -5,16 +5,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/async/abool"
-	mockChain "github.com/cyyber/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
-	p2ptest "github.com/cyyber/qrysm/v4/beacon-chain/p2p/testing"
-	"github.com/cyyber/qrysm/v4/beacon-chain/startup"
-	mockSync "github.com/cyyber/qrysm/v4/beacon-chain/sync/initial-sync/testing"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/network/forks"
-	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/async/abool"
+	mockChain "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	p2ptest "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
+	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
+	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/network/forks"
+	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
 func TestService_CheckForNextEpochFork(t *testing.T) {

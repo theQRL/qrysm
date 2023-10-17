@@ -8,18 +8,18 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers"
-	mockp2p "github.com/cyyber/qrysm/v4/beacon-chain/p2p/testing"
-	"github.com/cyyber/qrysm/v4/network"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	corenet "github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	libp2ptest "github.com/libp2p/go-libp2p/p2p/host/peerstore/test"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
+	mockp2p "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
+	"github.com/theQRL/qrysm/v4/network"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 type testIdentity enode.ID

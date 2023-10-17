@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func init() {

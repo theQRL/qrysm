@@ -1,9 +1,9 @@
 package payloadattribute
 
 import (
-	consensus_types "github.com/cyyber/qrysm/v4/consensus-types"
-	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
-	"github.com/cyyber/qrysm/v4/runtime/version"
+	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
+	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // Version returns the version of the payload attribute.

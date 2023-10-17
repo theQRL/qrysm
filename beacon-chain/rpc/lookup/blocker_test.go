@@ -6,15 +6,15 @@ import (
 	"reflect"
 	"testing"
 
-	mock "github.com/cyyber/qrysm/v4/beacon-chain/blockchain/testing"
-	dbtesting "github.com/cyyber/qrysm/v4/beacon-chain/db/testing"
-	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/testutil"
-	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	ethpbalpha "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
+	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
+	dbtesting "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/testutil"
+	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	ethpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 func TestGetBlock(t *testing.T) {

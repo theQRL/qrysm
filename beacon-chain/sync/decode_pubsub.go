@@ -4,11 +4,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/pkg/errors"
 	ssz "github.com/prysmaticlabs/fastssz"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/protobuf/proto"
 )
 

@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 var errInts = errors.New("error in subscribeInts")

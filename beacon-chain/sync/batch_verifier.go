@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/crypto/dilithium"
-	"github.com/cyyber/qrysm/v4/monitoring/tracing"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	"github.com/theQRL/qrysm/v4/monitoring/tracing"
 	"go.opencensus.io/trace"
 )
 

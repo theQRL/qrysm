@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strings"
 
-	butil "github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/gorilla/mux"
+	butil "github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/wealdtech/go-bytesutil"
 )
 

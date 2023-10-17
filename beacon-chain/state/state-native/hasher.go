@@ -4,14 +4,14 @@ import (
 	"context"
 	"encoding/binary"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/state/state-native/types"
-	"github.com/cyyber/qrysm/v4/beacon-chain/state/stateutil"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/encoding/ssz"
-	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
+	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/encoding/ssz"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 	"go.opencensus.io/trace"
 )
 

@@ -3,9 +3,9 @@ package payloadattribute
 import (
 	"testing"
 
-	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
-	"github.com/cyyber/qrysm/v4/runtime/version"
-	"github.com/cyyber/qrysm/v4/testing/require"
+	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestPayloadAttributeGetters(t *testing.T) {

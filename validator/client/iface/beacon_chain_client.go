@@ -3,8 +3,8 @@ package iface
 import (
 	"context"
 
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/golang/protobuf/ptypes/empty"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 type BeaconChainClient interface {

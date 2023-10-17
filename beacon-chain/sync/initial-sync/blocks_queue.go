@@ -5,14 +5,14 @@ import (
 	"errors"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/db"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
-	beaconsync "github.com/cyyber/qrysm/v4/beacon-chain/sync"
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/beacon-chain/db"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	beaconsync "github.com/theQRL/qrysm/v4/beacon-chain/sync"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 const (

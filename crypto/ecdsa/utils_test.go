@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	gcrypto "github.com/theQRL/go-zond/crypto"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestConvertToInterfacePubkey(t *testing.T) {

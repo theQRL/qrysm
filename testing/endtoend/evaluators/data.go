@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	e2etypes "github.com/cyyber/qrysm/v4/testing/endtoend/types"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
 	"google.golang.org/grpc"
 )
 

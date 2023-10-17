@@ -9,15 +9,15 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	ethpbservice "github.com/cyyber/qrysm/v4/proto/eth/service"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/validator/accounts/iface"
-	"github.com/cyyber/qrysm/v4/validator/keymanager"
-	"github.com/cyyber/qrysm/v4/validator/keymanager/local"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
+	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
 )
 
 func TestImportAccounts_NoPassword(t *testing.T) {

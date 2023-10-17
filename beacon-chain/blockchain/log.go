@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/cyyber/qrysm/v4/config/params"
-	consensus_types "github.com/cyyber/qrysm/v4/consensus-types"
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/runtime/version"
-	prysmTime "github.com/cyyber/qrysm/v4/time"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/v4/config/params"
+	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/runtime/version"
+	prysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 var log = logrus.WithField("prefix", "blockchain")

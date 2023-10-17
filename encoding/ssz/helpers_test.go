@@ -3,10 +3,10 @@ package ssz_test
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/encoding/ssz"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/qrysm/v4/encoding/ssz"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 const merkleizingListLimitError = "merkleizing list that is too large, over limit"

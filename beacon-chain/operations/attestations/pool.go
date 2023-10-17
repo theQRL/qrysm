@@ -3,9 +3,9 @@ package attestations
 import (
 	"context"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/operations/attestations/kv"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations/kv"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // Pool defines the necessary methods for Prysm attestations pool to serve

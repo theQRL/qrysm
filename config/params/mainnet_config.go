@@ -4,9 +4,9 @@ import (
 	"math"
 	"time"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 )
 
 // MainnetConfig returns the configuration to be used in the main network.
@@ -135,8 +135,8 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	// order to vote on the correct eth1 blocks.
 	//
 	// Additional context: https://github.com/ethereum/consensus-specs/issues/2132
-	// Bug prompting this change: https://github.com/cyyber/qrysm/issues/7856
-	// Future optimization: https://github.com/cyyber/qrysm/issues/7739
+	// Bug prompting this change: https://github.com/theQRL/qrysm/issues/7856
+	// Future optimization: https://github.com/theQRL/qrysm/issues/7739
 	SecondsPerETH1Block: 14,
 
 	// State list length constants.

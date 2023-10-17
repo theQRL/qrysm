@@ -1,12 +1,12 @@
 package blocks
 
 import (
-	consensus_types "github.com/cyyber/qrysm/v4/consensus-types"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/pkg/errors"
+	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 	"google.golang.org/protobuf/proto"
 )
 

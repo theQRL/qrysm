@@ -6,11 +6,11 @@ import (
 	"sort"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	prysmTime "github.com/cyyber/qrysm/v4/time"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	prysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 const (

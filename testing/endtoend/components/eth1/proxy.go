@@ -9,13 +9,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/io/file"
-	"github.com/cyyber/qrysm/v4/testing/endtoend/helpers"
-	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
-	e2etypes "github.com/cyyber/qrysm/v4/testing/endtoend/types"
-	proxy "github.com/cyyber/qrysm/v4/testing/middleware/engine-api-proxy"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
+	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
+	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	proxy "github.com/theQRL/qrysm/v4/testing/middleware/engine-api-proxy"
 )
 
 // ProxySet represents a set of proxies for the engine-api.

@@ -1,10 +1,10 @@
 package testing
 
 import (
-	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // NewSignedBeaconBlockFromGeneric creates a signed beacon block

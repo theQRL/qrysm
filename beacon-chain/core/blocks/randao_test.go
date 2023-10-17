@@ -5,17 +5,17 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/time"
-	"github.com/cyyber/qrysm/v4/config/params"
-	consensusblocks "github.com/cyyber/qrysm/v4/consensus-types/blocks"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/v4/config/params"
+	consensusblocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 func TestProcessRandao_IncorrectProposerFailsVerification(t *testing.T) {

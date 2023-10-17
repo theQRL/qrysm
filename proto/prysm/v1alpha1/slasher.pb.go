@@ -11,8 +11,8 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	_ "github.com/cyyber/qrysm/v4/proto/eth/ext"
+	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	_ "github.com/theQRL/qrysm/v4/proto/eth/ext"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -222,8 +222,8 @@ type HighestAttestation struct {
 	unknownFields protoimpl.UnknownFields
 
 	ValidatorIndex     uint64                                                      `protobuf:"varint,1,opt,name=validator_index,json=validatorIndex,proto3" json:"validator_index,omitempty"`
-	HighestSourceEpoch github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,2,opt,name=highest_source_epoch,json=highestSourceEpoch,proto3" json:"highest_source_epoch,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Epoch"`
-	HighestTargetEpoch github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,3,opt,name=highest_target_epoch,json=highestTargetEpoch,proto3" json:"highest_target_epoch,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Epoch"`
+	HighestSourceEpoch github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,2,opt,name=highest_source_epoch,json=highestSourceEpoch,proto3" json:"highest_source_epoch,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"`
+	HighestTargetEpoch github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,3,opt,name=highest_target_epoch,json=highestTargetEpoch,proto3" json:"highest_target_epoch,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"`
 }
 
 func (x *HighestAttestation) Reset() {

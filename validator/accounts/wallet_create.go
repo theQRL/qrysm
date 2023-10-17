@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/cyyber/qrysm/v4/validator/accounts/iface"
-	"github.com/cyyber/qrysm/v4/validator/accounts/wallet"
-	"github.com/cyyber/qrysm/v4/validator/keymanager"
-	"github.com/cyyber/qrysm/v4/validator/keymanager/derived"
-	"github.com/cyyber/qrysm/v4/validator/keymanager/local"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
+	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	"github.com/theQRL/qrysm/v4/validator/keymanager/derived"
+	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
 )
 
 // WalletCreate creates wallet specified by configuration options.

@@ -1,6 +1,6 @@
 package policies
 
-import "github.com/cyyber/qrysm/v4/consensus-types/primitives"
+import "github.com/theQRL/qrysm/v4/consensus-types/primitives"
 
 // AfterNthEpoch runs for every epoch after the provided epoch.
 func AfterNthEpoch(afterEpoch primitives.Epoch) func(epoch primitives.Epoch) bool {

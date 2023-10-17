@@ -4,16 +4,16 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/altair"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
-	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/container/trie"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
+	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/container/trie"
+	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 func TestProcessDeposits_SameValidatorMultipleDepositsSameBlock(t *testing.T) {

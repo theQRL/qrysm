@@ -1,16 +1,16 @@
 package validator
 
 import (
-	"github.com/cyyber/qrysm/v4/beacon-chain/blockchain"
-	"github.com/cyyber/qrysm/v4/beacon-chain/builder"
-	"github.com/cyyber/qrysm/v4/beacon-chain/cache"
-	"github.com/cyyber/qrysm/v4/beacon-chain/db"
-	"github.com/cyyber/qrysm/v4/beacon-chain/operations/attestations"
-	"github.com/cyyber/qrysm/v4/beacon-chain/operations/synccommittee"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
-	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/lookup"
-	"github.com/cyyber/qrysm/v4/beacon-chain/sync"
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/v4/beacon-chain/builder"
+	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
+	"github.com/theQRL/qrysm/v4/beacon-chain/db"
+	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
+	"github.com/theQRL/qrysm/v4/beacon-chain/operations/synccommittee"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/lookup"
+	"github.com/theQRL/qrysm/v4/beacon-chain/sync"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // Server defines a server implementation of the gRPC Validator service,

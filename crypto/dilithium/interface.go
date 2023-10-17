@@ -1,6 +1,6 @@
 package dilithium
 
-import "github.com/cyyber/qrysm/v4/crypto/bls/common"
+import "github.com/theQRL/qrysm/v4/crypto/bls/common"
 
 // PublicKey represents a BLS public key.
 type PublicKey = common.PublicKey

@@ -13,7 +13,7 @@ import (
 	"io"
 	"net/http"
 
-	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/golang/protobuf/ptypes/empty"
 	emptypb "github.com/golang/protobuf/ptypes/empty"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"

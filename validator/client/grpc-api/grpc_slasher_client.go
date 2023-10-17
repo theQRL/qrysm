@@ -3,8 +3,8 @@ package grpc_api
 import (
 	"context"
 
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/validator/client/iface"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/validator/client/iface"
 	"google.golang.org/grpc"
 )
 

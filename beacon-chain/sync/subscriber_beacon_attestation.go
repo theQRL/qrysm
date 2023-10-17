@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/cache"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/container/slice"
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/container/slice"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/time/slots"
 	"google.golang.org/protobuf/proto"
 )
 

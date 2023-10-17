@@ -3,10 +3,10 @@ package sync
 import (
 	"context"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/feed"
-	opfeed "github.com/cyyber/qrysm/v4/beacon-chain/core/feed/operation"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
+	opfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/protobuf/proto"
 )
 

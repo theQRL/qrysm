@@ -3,9 +3,9 @@ package blocks_test
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
 func TestGenesisBlock_InitializedCorrectly(t *testing.T) {

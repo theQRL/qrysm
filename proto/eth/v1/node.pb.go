@@ -10,8 +10,8 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	_ "github.com/cyyber/qrysm/v4/proto/eth/ext"
+	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	_ "github.com/theQRL/qrysm/v4/proto/eth/ext"
 	_ "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	github_com_prysmaticlabs_go_bitfield "github.com/prysmaticlabs/go-bitfield"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -780,8 +780,8 @@ type SyncInfo struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	HeadSlot     github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,1,opt,name=head_slot,json=headSlot,proto3" json:"head_slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
-	SyncDistance github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,2,opt,name=sync_distance,json=syncDistance,proto3" json:"sync_distance,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
+	HeadSlot     github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,1,opt,name=head_slot,json=headSlot,proto3" json:"head_slot,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"`
+	SyncDistance github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,2,opt,name=sync_distance,json=syncDistance,proto3" json:"sync_distance,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"`
 	IsSyncing    bool                                                       `protobuf:"varint,3,opt,name=is_syncing,json=isSyncing,proto3" json:"is_syncing,omitempty"`
 	IsOptimistic bool                                                       `protobuf:"varint,4,opt,name=is_optimistic,json=isOptimistic,proto3" json:"is_optimistic,omitempty"`
 	ElOffline    bool                                                       `protobuf:"varint,5,opt,name=el_offline,json=elOffline,proto3" json:"el_offline,omitempty"`

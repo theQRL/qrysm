@@ -5,11 +5,11 @@ import (
 	"path"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/epoch"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/spectest/utils"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/epoch"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/spectest/utils"
 )
 
 // RunRegistryUpdatesTests executes "epoch_processing/registry_updates" tests.

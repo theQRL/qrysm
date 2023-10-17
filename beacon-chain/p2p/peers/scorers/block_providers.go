@@ -6,12 +6,12 @@ import (
 	"sort"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/peerdata"
-	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/cyyber/qrysm/v4/config/features"
-	"github.com/cyyber/qrysm/v4/crypto/rand"
-	prysmTime "github.com/cyyber/qrysm/v4/time"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
+	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/v4/config/features"
+	"github.com/theQRL/qrysm/v4/crypto/rand"
+	prysmTime "github.com/theQRL/qrysm/v4/time"
 )
 
 var _ Scorer = (*BlockProviderScorer)(nil)

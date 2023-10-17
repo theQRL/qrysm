@@ -3,9 +3,9 @@ package state_native
 import (
 	"fmt"
 
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/pkg/errors"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // ToProtoUnsafe returns the pointer value of the underlying

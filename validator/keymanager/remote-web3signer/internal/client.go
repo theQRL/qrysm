@@ -13,13 +13,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/crypto/dilithium"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/monitoring/tracing"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/monitoring/tracing"
 	"go.opencensus.io/trace"
 )
 

@@ -3,9 +3,9 @@ package state_native
 import (
 	"fmt"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	"github.com/cyyber/qrysm/v4/beacon-chain/state/state-native/types"
-	"github.com/cyyber/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // Ensure type BeaconState below implements BeaconState interface.

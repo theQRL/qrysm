@@ -12,15 +12,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/crypto/dilithium"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/io/file"
-	"github.com/cyyber/qrysm/v4/io/prompt"
-	ethpbservice "github.com/cyyber/qrysm/v4/proto/eth/service"
-	"github.com/cyyber/qrysm/v4/validator/accounts/wallet"
-	"github.com/cyyber/qrysm/v4/validator/keymanager"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/v4/io/prompt"
+	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
+	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/v4/validator/keymanager"
 	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 )
 

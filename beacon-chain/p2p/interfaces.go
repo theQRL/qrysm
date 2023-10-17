@@ -3,10 +3,6 @@ package p2p
 import (
 	"context"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/encoder"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/metadata"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/connmgr"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -14,6 +10,10 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/metadata"
 	"google.golang.org/protobuf/proto"
 )
 

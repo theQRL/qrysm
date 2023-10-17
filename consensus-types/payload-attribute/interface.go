@@ -1,7 +1,7 @@
 package payloadattribute
 
 import (
-	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
+	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 )
 
 type Attributer interface {

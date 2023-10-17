@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/testing/assert"
 	ssz "github.com/prysmaticlabs/fastssz"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
 func TestDefaultParams(t *testing.T) {

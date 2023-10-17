@@ -8,14 +8,14 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/transition"
-	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/eth/helpers"
-	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	"github.com/cyyber/qrysm/v4/network"
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/helpers"
+	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/network"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 const (

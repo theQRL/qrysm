@@ -3,11 +3,11 @@ package debug
 import (
 	"context"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/eth/helpers"
-	ethpbv1 "github.com/cyyber/qrysm/v4/proto/eth/v1"
-	ethpbv2 "github.com/cyyber/qrysm/v4/proto/eth/v2"
-	"github.com/cyyber/qrysm/v4/proto/migration"
-	"github.com/cyyber/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/helpers"
+	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
+	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
+	"github.com/theQRL/qrysm/v4/proto/migration"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

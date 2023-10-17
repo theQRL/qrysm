@@ -8,13 +8,13 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/cmd/validator/flags"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/validator/accounts/iface"
-	"github.com/cyyber/qrysm/v4/validator/accounts/wallet"
-	"github.com/cyyber/qrysm/v4/validator/keymanager"
-	"github.com/cyyber/qrysm/v4/validator/keymanager/derived"
+	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
+	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	"github.com/theQRL/qrysm/v4/validator/keymanager/derived"
 	"github.com/urfave/cli/v2"
 )
 

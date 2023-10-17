@@ -5,14 +5,14 @@ import (
 	"os"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/blocks"
-	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/cyyber/qrysm/v4/config/params"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
 	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
+	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/v4/config/params"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
 // Beaconfuzz discovered an off by one issue where an attestation could be produced which would pass
@@ -46,7 +46,7 @@ func TestProcessAttestationNoVerifySignature_BeaconFuzzIssue78(t *testing.T) {
 	require.ErrorContains(t, "committee index 1 >= committee count 1", err)
 }
 
-// Regression introduced in https://github.com/cyyber/qrysm/pull/8566.
+// Regression introduced in https://github.com/theQRL/qrysm/pull/8566.
 func TestVerifyAttestationNoVerifySignature_IncorrectSourceEpoch(t *testing.T) {
 	// Attestation with an empty signature
 

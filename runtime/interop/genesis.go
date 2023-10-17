@@ -5,12 +5,12 @@ import (
 	"math"
 	"math/big"
 
-	clparams "github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/go-zond/core"
 	"github.com/theQRL/go-zond/params"
+	clparams "github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 // defaultMinerAddress is used to send deposits and test transactions in the e2e test.

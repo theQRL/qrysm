@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/cyyber/qrysm/v4/crypto/bls/common"
-	dilithiumCommon "github.com/cyyber/qrysm/v4/crypto/dilithium/common"
 	"github.com/pkg/errors"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/crypto/bls/common"
+	dilithiumCommon "github.com/theQRL/qrysm/v4/crypto/dilithium/common"
 )
 
 // Signature used in the BLS signature scheme.

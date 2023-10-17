@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/async"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
-	p2ptypes "github.com/cyyber/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	libp2pcore "github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/async"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	p2ptypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 var backOffTime = map[primitives.SSZUint64]time.Duration{

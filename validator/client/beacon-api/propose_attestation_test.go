@@ -7,12 +7,12 @@ import (
 	"errors"
 	"testing"
 
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/validator/client/beacon-api/mock"
-	test_helpers "github.com/cyyber/qrysm/v4/validator/client/beacon-api/test-helpers"
 	"github.com/golang/mock/gomock"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
+	test_helpers "github.com/theQRL/qrysm/v4/validator/client/beacon-api/test-helpers"
 )
 
 func TestProposeAttestation(t *testing.T) {

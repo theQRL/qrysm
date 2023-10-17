@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/api/gateway/apimiddleware"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/validator/client/beacon-api/mock"
 	"github.com/golang/mock/gomock"
+	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
 )
 
 func TestProposeBeaconBlock_Error(t *testing.T) {

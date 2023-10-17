@@ -3,12 +3,12 @@ package state_native_test
 import (
 	"testing"
 
-	statenative "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	statenative "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestReadOnlyValidator_ReturnsErrorOnNil(t *testing.T) {

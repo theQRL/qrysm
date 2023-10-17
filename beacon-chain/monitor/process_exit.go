@@ -1,9 +1,9 @@
 package monitor
 
 import (
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // processExitsFromBlock logs the event when a tracked validators' exit was included in a block

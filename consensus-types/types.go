@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/cyyber/qrysm/v4/runtime/version"
 	errors2 "github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 var (

@@ -8,12 +8,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/peerdata"
-	prysmTime "github.com/cyyber/qrysm/v4/time"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
+	prysmTime "github.com/theQRL/qrysm/v4/time"
 )
 
 const (

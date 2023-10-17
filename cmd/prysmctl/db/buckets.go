@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/db/kv"
+	"github.com/theQRL/qrysm/v4/beacon-chain/db/kv"
 	"github.com/urfave/cli/v2"
 )
 

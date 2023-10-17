@@ -3,8 +3,8 @@ package customtypes
 import (
 	"fmt"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	fssz "github.com/prysmaticlabs/fastssz"
+	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 )
 
 var _ fssz.HashRoot = (BlockRoots)([fieldparams.BlockRootsLength][32]byte{})

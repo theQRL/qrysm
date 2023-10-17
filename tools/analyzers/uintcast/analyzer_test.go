@@ -3,8 +3,8 @@ package uintcast_test
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/build/bazel"
-	"github.com/cyyber/qrysm/v4/tools/analyzers/uintcast"
+	"github.com/theQRL/qrysm/v4/build/bazel"
+	"github.com/theQRL/qrysm/v4/tools/analyzers/uintcast"
 	"golang.org/x/tools/go/analysis/analysistest"
 )
 

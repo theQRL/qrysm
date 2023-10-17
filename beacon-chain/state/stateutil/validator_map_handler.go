@@ -3,10 +3,10 @@ package stateutil
 import (
 	"sync"
 
-	coreutils "github.com/cyyber/qrysm/v4/beacon-chain/core/transition/stateutils"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	coreutils "github.com/theQRL/qrysm/v4/beacon-chain/core/transition/stateutils"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // ValidatorMapHandler is a container to hold the map and a reference tracker for how many

@@ -1,11 +1,11 @@
 package blocks
 
 import (
-	consensus_types "github.com/cyyber/qrysm/v4/consensus-types"
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/runtime/version"
+	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // SetSignature sets the signature of the signed beacon block.

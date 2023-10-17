@@ -5,7 +5,7 @@ package accounts_test
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/validator/accounts"
+	"github.com/theQRL/qrysm/v4/validator/accounts"
 )
 
 func FuzzValidateMnemonic(f *testing.F) {

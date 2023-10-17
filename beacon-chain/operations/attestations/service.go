@@ -8,9 +8,9 @@ import (
 	"errors"
 	"time"
 
-	lruwrpr "github.com/cyyber/qrysm/v4/cache/lru"
-	"github.com/cyyber/qrysm/v4/config/params"
 	lru "github.com/hashicorp/golang-lru"
+	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
+	"github.com/theQRL/qrysm/v4/config/params"
 )
 
 var forkChoiceProcessedRootsSize = 1 << 16

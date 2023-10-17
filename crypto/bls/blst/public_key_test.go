@@ -7,10 +7,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/crypto/bls/blst"
-	"github.com/cyyber/qrysm/v4/crypto/bls/common"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/crypto/bls/blst"
+	"github.com/theQRL/qrysm/v4/crypto/bls/common"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestPublicKeyFromBytes(t *testing.T) {

@@ -5,13 +5,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
-	p2ptypes "github.com/cyyber/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
-	leakybucket "github.com/cyyber/qrysm/v4/container/leaky-bucket"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	p2ptypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
+	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
 	"github.com/trailofbits/go-mutexasserts"
 )
 

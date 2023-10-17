@@ -6,12 +6,12 @@ package state
 import (
 	"context"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/prysmaticlabs/go-bitfield"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // BeaconState has read and write access to beacon state methods.

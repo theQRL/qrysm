@@ -3,7 +3,7 @@ package logs
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestStreamServer_BackfillsMessages(t *testing.T) {

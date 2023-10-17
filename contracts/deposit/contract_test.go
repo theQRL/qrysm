@@ -5,13 +5,13 @@ import (
 	"encoding/binary"
 	"testing"
 
-	depositcontract "github.com/cyyber/qrysm/v4/contracts/deposit"
-	"github.com/cyyber/qrysm/v4/contracts/deposit/mock"
-	"github.com/cyyber/qrysm/v4/runtime/interop"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/theQRL/go-zond"
 	"github.com/theQRL/go-zond/common"
+	depositcontract "github.com/theQRL/qrysm/v4/contracts/deposit"
+	"github.com/theQRL/qrysm/v4/contracts/deposit/mock"
+	"github.com/theQRL/qrysm/v4/runtime/interop"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestSetupRegistrationContract_OK(t *testing.T) {

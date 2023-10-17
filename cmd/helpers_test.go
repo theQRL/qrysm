@@ -6,11 +6,11 @@ import (
 	"os/user"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/cmd/mock"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/cmd/mock"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/urfave/cli/v2"
 )
 

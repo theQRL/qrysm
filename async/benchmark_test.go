@@ -6,9 +6,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/async"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/async"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 var input [][]byte

@@ -11,7 +11,7 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	v1alpha1 "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	v1alpha1 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"

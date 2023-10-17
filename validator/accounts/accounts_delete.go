@@ -6,10 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/io/prompt"
-	ethpbservice "github.com/cyyber/qrysm/v4/proto/eth/service"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/io/prompt"
+	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
 )
 
 // Delete the accounts that the user requests to be deleted from the wallet.
@@ -59,7 +59,7 @@ func (acm *AccountsCLIManager) Delete(ctx context.Context) error {
 	log.WithField("publicKeys", allAccountStr).Warn(
 		"Attempted to delete accounts. IMPORTANT: please run `validator accounts list` to ensure " +
 			"the public keys are indeed deleted. If they are still there, please file an issue at " +
-			"https://github.com/cyyber/qrysm/issues/new")
+			"https://github.com/theQRL/qrysm/issues/new")
 	return nil
 }
 

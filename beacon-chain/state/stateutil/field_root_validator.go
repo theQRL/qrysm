@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	"github.com/cyyber/qrysm/v4/crypto/hash/htr"
-	"github.com/cyyber/qrysm/v4/encoding/ssz"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
+	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
+	"github.com/theQRL/qrysm/v4/crypto/hash/htr"
+	"github.com/theQRL/qrysm/v4/encoding/ssz"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 const (

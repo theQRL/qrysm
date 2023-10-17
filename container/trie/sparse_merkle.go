@@ -6,11 +6,11 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/cyyber/qrysm/v4/crypto/hash"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/math"
-	protodb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/crypto/hash"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/math"
+	protodb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // SparseMerkleTrie implements a sparse, general purpose Merkle trie to be used

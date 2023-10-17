@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/config/params"
 )
 
 func addLogWriter(w io.Writer) {

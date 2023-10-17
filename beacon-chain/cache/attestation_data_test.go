@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/cache"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
 	"google.golang.org/protobuf/proto"
 )
 

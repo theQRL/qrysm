@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cyyber/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/v4/io/file"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/db"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/db"
 )
 
 // Initializer describes a type that is able to obtain the checkpoint sync data (BeaconState and SignedBeaconBlock)

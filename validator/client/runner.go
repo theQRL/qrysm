@@ -6,14 +6,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/cmd/validator/flags"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/cyyber/qrysm/v4/validator/client/iface"
 	"github.com/pkg/errors"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/v4/validator/client/iface"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -252,7 +252,7 @@ func performRoles(slotCtx context.Context, allRoles map[[dilithium2.CryptoPublic
 			if err := recover(); err != nil { // catch any panic in logging
 				log.WithField("err", err).
 					Error("Panic occurred when logging validator report. This" +
-						" should never happen! Please file a report at github.com/cyyber/qrysm/issues/new")
+						" should never happen! Please file a report at github.com/theQRL/qrysm/issues/new")
 			}
 		}()
 		// Log this client performance in the previous epoch

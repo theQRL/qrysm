@@ -4,15 +4,15 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/peerdata"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/scorers"
-	p2ptypes "github.com/cyyber/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	pb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/scorers"
+	p2ptypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestScorers_PeerStatus_Score(t *testing.T) {

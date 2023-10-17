@@ -1,9 +1,9 @@
 package node
 
 import (
-	"github.com/cyyber/qrysm/v4/beacon-chain/blockchain"
-	"github.com/cyyber/qrysm/v4/beacon-chain/builder"
-	"github.com/cyyber/qrysm/v4/beacon-chain/execution"
+	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/v4/beacon-chain/builder"
+	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
 )
 
 // Option for beacon node configuration.

@@ -6,9 +6,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	fuzz "github.com/google/gofuzz"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestCommitteeKeyFuzz_OK(t *testing.T) {

@@ -3,12 +3,12 @@ package trie_test
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/container/trie"
-	"github.com/cyyber/qrysm/v4/crypto/hash"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/golang/protobuf/proto"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/container/trie"
+	"github.com/theQRL/qrysm/v4/crypto/hash"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func FuzzSparseMerkleTrie_HashTreeRoot(f *testing.F) {

@@ -6,13 +6,13 @@ import (
 	"errors"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/config/features"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/crypto/hash"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	attaggregation "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/attestations"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/qrysm/v4/config/features"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/crypto/hash"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	attaggregation "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/attestations"
+	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 )
 

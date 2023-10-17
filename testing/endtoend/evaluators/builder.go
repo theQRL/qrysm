@@ -3,13 +3,13 @@ package evaluators
 import (
 	"context"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/endtoend/helpers"
-	"github.com/cyyber/qrysm/v4/testing/endtoend/policies"
-	e2etypes "github.com/cyyber/qrysm/v4/testing/endtoend/types"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
+	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	"github.com/theQRL/qrysm/v4/time/slots"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	mathprysm "github.com/cyyber/qrysm/v4/math"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	mathprysm "github.com/theQRL/qrysm/v4/math"
 )
 
 func TestSlot_Casting(t *testing.T) {

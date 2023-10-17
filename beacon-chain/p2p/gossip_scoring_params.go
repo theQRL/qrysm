@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
-	coreTime "github.com/cyyber/qrysm/v4/beacon-chain/core/time"
-	"github.com/cyyber/qrysm/v4/config/params"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
+	coreTime "github.com/theQRL/qrysm/v4/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/v4/config/params"
 )
 
 const (

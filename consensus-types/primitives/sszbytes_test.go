@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 )
 
 func TestSSZBytes_HashTreeRoot(t *testing.T) {

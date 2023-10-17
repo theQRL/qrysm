@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestStore_GenesisValidatorsRoot_ReadAndWrite(t *testing.T) {

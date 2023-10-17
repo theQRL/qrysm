@@ -3,8 +3,8 @@ package scorers
 import (
 	"time"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/peerdata"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
 )
 
 var _ Scorer = (*BadResponsesScorer)(nil)

@@ -8,15 +8,15 @@ import (
 	"testing"
 	"time"
 
-	ecdsaprysm "github.com/cyyber/qrysm/v4/crypto/ecdsa"
-	"github.com/cyyber/qrysm/v4/network"
-	_ "github.com/cyyber/qrysm/v4/runtime/maxprocs"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/p2p/discover"
 	"github.com/theQRL/go-zond/p2p/enode"
+	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
+	"github.com/theQRL/qrysm/v4/network"
+	_ "github.com/theQRL/qrysm/v4/runtime/maxprocs"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestMain(m *testing.M) {

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
-	"github.com/cyyber/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	"github.com/theQRL/qrysm/v4/io/file"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 )

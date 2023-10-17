@@ -7,14 +7,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/time/slots"
-	"github.com/cyyber/qrysm/v4/validator/client/iface"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/v4/validator/client/iface"
 )
 
 type beaconApiBeaconChainClient struct {

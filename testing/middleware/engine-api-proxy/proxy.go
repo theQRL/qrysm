@@ -16,9 +16,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/network"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/network"
 )
 
 var (

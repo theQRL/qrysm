@@ -15,7 +15,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 // TestDataPath returns a path to an asset in the testdata directory. It knows

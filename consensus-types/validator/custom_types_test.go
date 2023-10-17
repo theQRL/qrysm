@@ -3,7 +3,7 @@ package validator
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/require"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 

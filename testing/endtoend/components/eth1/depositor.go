@@ -8,13 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	contracts "github.com/cyyber/qrysm/v4/contracts/deposit"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
-	"github.com/cyyber/qrysm/v4/testing/endtoend/types"
-	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
@@ -23,6 +16,13 @@ import (
 	"github.com/theQRL/go-zond/common"
 	gethtypes "github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/zondclient"
+	"github.com/theQRL/qrysm/v4/config/params"
+	contracts "github.com/theQRL/qrysm/v4/contracts/deposit"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 var gweiPerEth = big.NewInt(int64(params.BeaconConfig().GweiPerEth))

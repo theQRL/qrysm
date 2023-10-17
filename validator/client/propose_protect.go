@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cyyber/qrysm/v4/config/features"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/config/features"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 )
 
 var failedBlockSignLocalErr = "attempted to sign a double proposal, block rejected by local protection"

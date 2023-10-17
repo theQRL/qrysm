@@ -7,10 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/api/gateway/apimiddleware"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestSetVoluntaryExitEpoch(t *testing.T) {

@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/scorers"
-	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/scorers"
+	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
 func TestScorers_Service_Init(t *testing.T) {

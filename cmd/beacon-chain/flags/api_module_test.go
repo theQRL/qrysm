@@ -3,7 +3,7 @@ package flags
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
 func TestEnableHTTPPrysmAPI(t *testing.T) {

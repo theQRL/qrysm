@@ -1,12 +1,12 @@
 package userprompt
 
 import (
-	"github.com/cyyber/qrysm/v4/cmd/validator/flags"
-	"github.com/cyyber/qrysm/v4/io/file"
-	"github.com/cyyber/qrysm/v4/io/prompt"
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
+	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/v4/io/prompt"
 	"github.com/urfave/cli/v2"
 )
 

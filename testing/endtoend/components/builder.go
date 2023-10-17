@@ -9,13 +9,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/io/file"
-	"github.com/cyyber/qrysm/v4/testing/endtoend/helpers"
-	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
-	e2etypes "github.com/cyyber/qrysm/v4/testing/endtoend/types"
-	"github.com/cyyber/qrysm/v4/testing/middleware/builder"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
+	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
+	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	"github.com/theQRL/qrysm/v4/testing/middleware/builder"
 )
 
 // BuilderSet represents a set of builders for the validators running via a relay.

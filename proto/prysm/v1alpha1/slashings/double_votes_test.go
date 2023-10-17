@@ -3,7 +3,7 @@ package slashings
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/config/params"
 )
 
 func TestSigningRootsDiffer(t *testing.T) {

@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/network/authorization"
 	log "github.com/sirupsen/logrus"
 	zondRPC "github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/qrysm/v4/network/authorization"
 )
 
 // Endpoint is an endpoint with authorization data.

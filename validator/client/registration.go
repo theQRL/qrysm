@@ -4,15 +4,15 @@ import (
 	"context"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/builder"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
-	"github.com/cyyber/qrysm/v4/validator/client/iface"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/qrysm/v4/beacon-chain/builder"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	"github.com/theQRL/qrysm/v4/validator/client/iface"
 	"go.opencensus.io/trace"
 )
 

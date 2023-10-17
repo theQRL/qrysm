@@ -6,14 +6,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/crypto/dilithium"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	mock "github.com/cyyber/qrysm/v4/validator/accounts/testing"
-	"github.com/cyyber/qrysm/v4/validator/keymanager"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	mock "github.com/theQRL/qrysm/v4/validator/accounts/testing"
+	"github.com/theQRL/qrysm/v4/validator/keymanager"
 	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 )
 

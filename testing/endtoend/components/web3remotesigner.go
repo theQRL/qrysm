@@ -16,14 +16,14 @@ import (
 	"time"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
-	"github.com/cyyber/qrysm/v4/io/file"
-	"github.com/cyyber/qrysm/v4/runtime/interop"
-	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
-	e2etypes "github.com/cyyber/qrysm/v4/testing/endtoend/types"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/v4/runtime/interop"
+	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
+	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
 	"gopkg.in/yaml.v2"
 )
 

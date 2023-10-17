@@ -3,7 +3,7 @@ package epoch_processing
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/testing/spectest/shared/capella/epoch_processing"
+	"github.com/theQRL/qrysm/v4/testing/spectest/shared/capella/epoch_processing"
 )
 
 func TestMinimal_Capella_EpochProcessing_SlashingsReset(t *testing.T) {

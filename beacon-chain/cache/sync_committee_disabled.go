@@ -3,8 +3,8 @@
 package cache
 
 import (
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 )
 
 // FakeSyncCommitteeCache is a fake `SyncCommitteeCache` to satisfy fuzzing.

@@ -3,7 +3,7 @@ package helpers
 import (
 	"time"
 
-	prysmTime "github.com/cyyber/qrysm/v4/time"
+	prysmTime "github.com/theQRL/qrysm/v4/time"
 )
 
 // EpochTicker is a special ticker for timing epoch changes.

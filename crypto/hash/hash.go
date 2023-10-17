@@ -7,10 +7,10 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/minio/highwayhash"
 	"github.com/minio/sha256-simd"
 	fastssz "github.com/prysmaticlabs/fastssz"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"golang.org/x/crypto/sha3"
 	"google.golang.org/protobuf/proto"
 )

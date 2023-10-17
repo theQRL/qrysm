@@ -9,16 +9,16 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/validator/db/kv"
-	dbtest "github.com/cyyber/qrysm/v4/validator/db/testing"
-	"github.com/cyyber/qrysm/v4/validator/slashing-protection-history/format"
-	valtest "github.com/cyyber/qrysm/v4/validator/testing"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/validator/db/kv"
+	dbtest "github.com/theQRL/qrysm/v4/validator/db/testing"
+	"github.com/theQRL/qrysm/v4/validator/slashing-protection-history/format"
+	valtest "github.com/theQRL/qrysm/v4/validator/testing"
 )
 
 func TestStore_ImportInterchangeData_BadJSON(t *testing.T) {

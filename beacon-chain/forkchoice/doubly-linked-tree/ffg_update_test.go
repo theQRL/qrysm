@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	forkchoicetypes "github.com/cyyber/qrysm/v4/beacon-chain/forkchoice/types"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
+	forkchoicetypes "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/types"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestFFGUpdates_OneBranch(t *testing.T) {

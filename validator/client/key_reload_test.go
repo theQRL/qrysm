@@ -4,15 +4,15 @@ import (
 	"context"
 	"testing"
 
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	validatormock "github.com/cyyber/qrysm/v4/testing/validator-mock"
-	"github.com/cyyber/qrysm/v4/validator/client/testutil"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	validatormock "github.com/theQRL/qrysm/v4/testing/validator-mock"
+	"github.com/theQRL/qrysm/v4/validator/client/testutil"
 )
 
 func TestValidator_HandleKeyReload(t *testing.T) {

@@ -3,7 +3,7 @@ package synccommittee
 import (
 	"sync"
 
-	"github.com/cyyber/qrysm/v4/container/queue"
+	"github.com/theQRL/qrysm/v4/container/queue"
 )
 
 // Store defines the caches for various sync committee objects

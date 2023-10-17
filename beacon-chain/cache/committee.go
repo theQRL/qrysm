@@ -9,14 +9,14 @@ import (
 	"sync"
 	"time"
 
-	lruwrpr "github.com/cyyber/qrysm/v4/cache/lru"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/container/slice"
-	mathutil "github.com/cyyber/qrysm/v4/math"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/container/slice"
+	mathutil "github.com/theQRL/qrysm/v4/math"
 )
 
 const (

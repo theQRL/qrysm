@@ -4,11 +4,11 @@ import (
 	"encoding/binary"
 	"sync"
 
-	"github.com/cyyber/qrysm/v4/async"
-	"github.com/cyyber/qrysm/v4/crypto/dilithium"
-	"github.com/cyyber/qrysm/v4/crypto/hash"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-qrllib/common"
+	"github.com/theQRL/qrysm/v4/async"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	"github.com/theQRL/qrysm/v4/crypto/hash"
 )
 
 const (

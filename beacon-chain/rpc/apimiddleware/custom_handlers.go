@@ -12,11 +12,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/api/gateway/apimiddleware"
-	"github.com/cyyber/qrysm/v4/api/grpc"
-	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/eth/events"
-	"github.com/cyyber/qrysm/v4/runtime/version"
 	"github.com/r3labs/sse"
+	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
+	"github.com/theQRL/qrysm/v4/api/grpc"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/events"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 const (

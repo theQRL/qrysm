@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestJWTAuthTransport(t *testing.T) {

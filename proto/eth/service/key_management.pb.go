@@ -11,8 +11,8 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	_ "github.com/cyyber/qrysm/v4/proto/eth/ext"
+	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	_ "github.com/theQRL/qrysm/v4/proto/eth/ext"
 	_ "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
@@ -1250,7 +1250,7 @@ type SetVoluntaryExitRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	Pubkey []byte                                                      `protobuf:"bytes,1,opt,name=pubkey,proto3" json:"pubkey,omitempty" ssz-size:"48"`
-	Epoch  github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,2,opt,name=epoch,proto3" json:"epoch,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Epoch"`
+	Epoch  github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,2,opt,name=epoch,proto3" json:"epoch,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"`
 }
 
 func (x *SetVoluntaryExitRequest) Reset() {

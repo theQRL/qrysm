@@ -3,9 +3,9 @@ package fdlimits_test
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/runtime/fdlimits"
-	"github.com/cyyber/qrysm/v4/testing/assert"
 	gethLimit "github.com/theQRL/go-zond/common/fdlimit"
+	"github.com/theQRL/qrysm/v4/runtime/fdlimits"
+	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
 func TestSetMaxFdLimits(t *testing.T) {

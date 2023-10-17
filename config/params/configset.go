@@ -1,8 +1,8 @@
 package params
 
 import (
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
 	"github.com/pkg/errors"
+	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 )
 
 var configs *configset

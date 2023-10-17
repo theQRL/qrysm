@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/network/forks"
-	pb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	prysmTime "github.com/cyyber/qrysm/v4/time"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/network/forks"
+	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	prysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 // ENR key used for Ethereum consensus-related fork data.

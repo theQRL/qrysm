@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	mathutil "github.com/cyyber/qrysm/v4/math"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
+	mathutil "github.com/theQRL/qrysm/v4/math"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
 func TestValidatorConstants(t *testing.T) {

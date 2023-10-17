@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/cyyber/qrysm/v4/monitoring/tracing"
-	v2 "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/monitoring/tracing"
+	v2 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/proto"

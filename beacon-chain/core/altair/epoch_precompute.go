@@ -3,13 +3,13 @@ package altair
 import (
 	"context"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/epoch/precompute"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/time"
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/math"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/epoch/precompute"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/math"
 	"go.opencensus.io/trace"
 )
 

@@ -11,7 +11,7 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	_ "github.com/cyyber/qrysm/v4/proto/eth/ext"
+	_ "github.com/theQRL/qrysm/v4/proto/eth/ext"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	_ "google.golang.org/genproto/googleapis/api/annotations"

@@ -1,18 +1,18 @@
 package sync
 
 import (
-	"github.com/cyyber/qrysm/v4/beacon-chain/blockchain"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/encoder"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/interfaces"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/network/forks"
-	"github.com/cyyber/qrysm/v4/runtime/version"
 	libp2pcore "github.com/libp2p/go-libp2p/core"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/network/forks"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // chunkBlockWriter writes the given message as a chunked response to the given network

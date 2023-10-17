@@ -7,17 +7,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/transition"
-	prysmP2P "github.com/cyyber/qrysm/v4/beacon-chain/p2p"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/encoder"
-	p2ptest "github.com/cyyber/qrysm/v4/beacon-chain/p2p/testing"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
 	libp2pcore "github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
+	prysmP2P "github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
+	p2ptest "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 func init() {

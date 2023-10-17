@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"reflect"
 
-	lruwrpr "github.com/cyyber/qrysm/v4/cache/lru"
-	"github.com/cyyber/qrysm/v4/crypto/bls/common"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
+	"github.com/theQRL/qrysm/v4/crypto/bls/common"
 )
 
 var maxKeys = 1000000

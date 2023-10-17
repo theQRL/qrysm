@@ -1,15 +1,15 @@
 package migration
 
 import (
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/encoding/ssz"
-	enginev1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
-	ethpbv1 "github.com/cyyber/qrysm/v4/proto/eth/v1"
-	ethpbv2 "github.com/cyyber/qrysm/v4/proto/eth/v2"
-	ethpbalpha "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/encoding/ssz"
+	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
+	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
+	ethpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/protobuf/proto"
 )
 

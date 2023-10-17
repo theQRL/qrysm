@@ -1,19 +1,19 @@
 package sync
 
 import (
-	"github.com/cyyber/qrysm/v4/async/event"
-	blockfeed "github.com/cyyber/qrysm/v4/beacon-chain/core/feed/block"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/feed/operation"
-	"github.com/cyyber/qrysm/v4/beacon-chain/db"
-	"github.com/cyyber/qrysm/v4/beacon-chain/execution"
-	"github.com/cyyber/qrysm/v4/beacon-chain/operations/attestations"
-	"github.com/cyyber/qrysm/v4/beacon-chain/operations/blstoexec"
-	"github.com/cyyber/qrysm/v4/beacon-chain/operations/slashings"
-	"github.com/cyyber/qrysm/v4/beacon-chain/operations/synccommittee"
-	"github.com/cyyber/qrysm/v4/beacon-chain/operations/voluntaryexits"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
-	"github.com/cyyber/qrysm/v4/beacon-chain/startup"
-	"github.com/cyyber/qrysm/v4/beacon-chain/state/stategen"
+	"github.com/theQRL/qrysm/v4/async/event"
+	blockfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/block"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
+	"github.com/theQRL/qrysm/v4/beacon-chain/db"
+	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
+	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
+	"github.com/theQRL/qrysm/v4/beacon-chain/operations/blstoexec"
+	"github.com/theQRL/qrysm/v4/beacon-chain/operations/slashings"
+	"github.com/theQRL/qrysm/v4/beacon-chain/operations/synccommittee"
+	"github.com/theQRL/qrysm/v4/beacon-chain/operations/voluntaryexits"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
 )
 
 type Option func(s *Service) error

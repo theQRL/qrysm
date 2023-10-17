@@ -4,15 +4,15 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	mathutil "github.com/cyyber/qrysm/v4/math"
-	"github.com/cyyber/qrysm/v4/proto/eth/service"
-	v1 "github.com/cyyber/qrysm/v4/proto/eth/v1"
-	v2 "github.com/cyyber/qrysm/v4/proto/eth/v2"
-	"github.com/cyyber/qrysm/v4/testing/endtoend/policies"
-	"github.com/cyyber/qrysm/v4/testing/endtoend/types"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	mathutil "github.com/theQRL/qrysm/v4/math"
+	"github.com/theQRL/qrysm/v4/proto/eth/service"
+	v1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
+	v2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	"github.com/theQRL/qrysm/v4/time/slots"
 	"google.golang.org/grpc"
 )
 

@@ -4,9 +4,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/config/params"
 )
 
 var defaultReadDuration = ttfbTimeout

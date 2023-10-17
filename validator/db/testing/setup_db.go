@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/validator/db/iface"
-	"github.com/cyyber/qrysm/v4/validator/db/kv"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/validator/db/iface"
+	"github.com/theQRL/qrysm/v4/validator/db/kv"
 )
 
 // SetupDB instantiates and returns a DB instance for the validator client.

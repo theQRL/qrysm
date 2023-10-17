@@ -1,8 +1,8 @@
 package stateutil
 
 import (
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // Eth1Root computes the HashTreeRoot Merkleization of

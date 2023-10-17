@@ -7,13 +7,13 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/signing"
-	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/config"
-	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/misc"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/crypto/dilithium"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/config"
+	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 func GenerateKeys(validatorStartIndex, numValidators uint64,

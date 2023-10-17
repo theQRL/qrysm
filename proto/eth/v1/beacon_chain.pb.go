@@ -10,8 +10,8 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	_ "github.com/cyyber/qrysm/v4/proto/eth/ext"
+	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	_ "github.com/theQRL/qrysm/v4/proto/eth/ext"
 	_ "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -606,7 +606,7 @@ type ValidatorBalance struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Index   github_com_cyyber_qrysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.ValidatorIndex"`
+	Index   github_com_cyyber_qrysm_v4_consensus_types_primitives.ValidatorIndex `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"`
 	Balance uint64                                                               `protobuf:"varint,2,opt,name=balance,proto3" json:"balance,omitempty"`
 }
 
@@ -780,9 +780,9 @@ type StateCommitteesRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	StateId []byte                                                                `protobuf:"bytes,1,opt,name=state_id,json=stateId,proto3" json:"state_id,omitempty"`
-	Epoch   *github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch          `protobuf:"varint,2,opt,name=epoch,proto3,oneof" json:"epoch,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Epoch"`
-	Index   *github_com_cyyber_qrysm_v4_consensus_types_primitives.CommitteeIndex `protobuf:"varint,3,opt,name=index,proto3,oneof" json:"index,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.CommitteeIndex"`
-	Slot    *github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot           `protobuf:"varint,4,opt,name=slot,proto3,oneof" json:"slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
+	Epoch   *github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch          `protobuf:"varint,2,opt,name=epoch,proto3,oneof" json:"epoch,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"`
+	Index   *github_com_cyyber_qrysm_v4_consensus_types_primitives.CommitteeIndex `protobuf:"varint,3,opt,name=index,proto3,oneof" json:"index,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.CommitteeIndex"`
+	Slot    *github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot           `protobuf:"varint,4,opt,name=slot,proto3,oneof" json:"slot,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"`
 }
 
 func (x *StateCommitteesRequest) Reset() {
@@ -1086,7 +1086,7 @@ type BlockHeadersRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Slot       *github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,1,opt,name=slot,proto3,oneof" json:"slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
+	Slot       *github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,1,opt,name=slot,proto3,oneof" json:"slot,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"`
 	ParentRoot []byte                                                      `protobuf:"bytes,2,opt,name=parent_root,json=parentRoot,proto3,oneof" json:"parent_root,omitempty" ssz-size:"32"`
 }
 
@@ -1581,8 +1581,8 @@ type AttestationsPoolRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Slot           *github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot           `protobuf:"varint,1,opt,name=slot,proto3,oneof" json:"slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
-	CommitteeIndex *github_com_cyyber_qrysm_v4_consensus_types_primitives.CommitteeIndex `protobuf:"varint,2,opt,name=committee_index,json=committeeIndex,proto3,oneof" json:"committee_index,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.CommitteeIndex"`
+	Slot           *github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot           `protobuf:"varint,1,opt,name=slot,proto3,oneof" json:"slot,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"`
+	CommitteeIndex *github_com_cyyber_qrysm_v4_consensus_types_primitives.CommitteeIndex `protobuf:"varint,2,opt,name=committee_index,json=committeeIndex,proto3,oneof" json:"committee_index,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.CommitteeIndex"`
 }
 
 func (x *AttestationsPoolRequest) Reset() {
@@ -2274,13 +2274,13 @@ type ForkChoiceNode struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Slot                     github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot  `protobuf:"varint,1,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
+	Slot                     github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot  `protobuf:"varint,1,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"`
 	BlockRoot                []byte                                                      `protobuf:"bytes,2,opt,name=block_root,json=blockRoot,proto3" json:"block_root,omitempty" ssz-size:"32"`
 	ParentRoot               []byte                                                      `protobuf:"bytes,3,opt,name=parent_root,json=parentRoot,proto3" json:"parent_root,omitempty" ssz-size:"32"`
-	JustifiedEpoch           github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,4,opt,name=justified_epoch,json=justifiedEpoch,proto3" json:"justified_epoch,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Epoch"`
-	FinalizedEpoch           github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,5,opt,name=finalized_epoch,json=finalizedEpoch,proto3" json:"finalized_epoch,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Epoch"`
-	UnrealizedJustifiedEpoch github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,6,opt,name=unrealized_justified_epoch,json=unrealizedJustifiedEpoch,proto3" json:"unrealized_justified_epoch,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Epoch"`
-	UnrealizedFinalizedEpoch github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,7,opt,name=unrealized_finalized_epoch,json=unrealizedFinalizedEpoch,proto3" json:"unrealized_finalized_epoch,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Epoch"`
+	JustifiedEpoch           github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,4,opt,name=justified_epoch,json=justifiedEpoch,proto3" json:"justified_epoch,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"`
+	FinalizedEpoch           github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,5,opt,name=finalized_epoch,json=finalizedEpoch,proto3" json:"finalized_epoch,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"`
+	UnrealizedJustifiedEpoch github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,6,opt,name=unrealized_justified_epoch,json=unrealizedJustifiedEpoch,proto3" json:"unrealized_justified_epoch,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"`
+	UnrealizedFinalizedEpoch github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,7,opt,name=unrealized_finalized_epoch,json=unrealizedFinalizedEpoch,proto3" json:"unrealized_finalized_epoch,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"`
 	Balance                  uint64                                                      `protobuf:"varint,8,opt,name=balance,proto3" json:"balance,omitempty"`
 	Weight                   uint64                                                      `protobuf:"varint,9,opt,name=weight,proto3" json:"weight,omitempty"`
 	ExecutionOptimistic      bool                                                        `protobuf:"varint,10,opt,name=execution_optimistic,json=executionOptimistic,proto3" json:"execution_optimistic,omitempty"`

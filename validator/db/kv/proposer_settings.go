@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	validatorServiceConfig "github.com/cyyber/qrysm/v4/config/validator/service"
-	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/pkg/errors"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	validatorServiceConfig "github.com/theQRL/qrysm/v4/config/validator/service"
+	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/proto"

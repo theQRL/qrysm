@@ -10,9 +10,6 @@ import (
 
 	"github.com/MariusVanDerWijden/FuzzyVM/filler"
 	txfuzz "github.com/MariusVanDerWijden/tx-fuzz"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/crypto/rand"
-	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/accounts/keystore"
@@ -20,6 +17,9 @@ import (
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/rpc"
 	"github.com/theQRL/go-zond/zondclient"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/crypto/rand"
+	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	"golang.org/x/sync/errgroup"
 )
 

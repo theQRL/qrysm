@@ -10,7 +10,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	v1 "github.com/cyyber/qrysm/v4/proto/eth/v1"
+	v1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
 	_ "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/proto/gateway"
 	_ "google.golang.org/genproto/googleapis/api/annotations"

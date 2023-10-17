@@ -8,10 +8,10 @@ import (
 	"path"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/db/iface"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/io/file"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/db/iface"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/io/file"
 	bolt "go.etcd.io/bbolt"
 )
 

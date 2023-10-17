@@ -4,13 +4,13 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/cyyber/qrysm/v4/async/event"
-	"github.com/cyyber/qrysm/v4/beacon-chain/execution/types"
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/qrysm/v4/async/event"
+	"github.com/theQRL/qrysm/v4/beacon-chain/execution/types"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // FaultyExecutionChain defines an incorrectly functioning powchain service.

@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	p2ptest "github.com/cyyber/qrysm/v4/beacon-chain/p2p/testing"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	p2ptest "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 type rpcHandlerTest struct {

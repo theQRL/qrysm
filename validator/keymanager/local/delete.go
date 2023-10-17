@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	ethpbservice "github.com/cyyber/qrysm/v4/proto/eth/service"
 	"github.com/sirupsen/logrus"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
 )
 
 // DeleteKeystores takes in public keys and removes the accounts from the wallet.

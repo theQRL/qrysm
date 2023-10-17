@@ -5,12 +5,12 @@ import (
 	"io"
 	"sort"
 
-	"github.com/cyyber/qrysm/v4/cmd"
-	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/sync/checkpoint"
-	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/sync/genesis"
-	"github.com/cyyber/qrysm/v4/config/features"
-	"github.com/cyyber/qrysm/v4/runtime/debug"
+	"github.com/theQRL/qrysm/v4/cmd"
+	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/sync/checkpoint"
+	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/sync/genesis"
+	"github.com/theQRL/qrysm/v4/config/features"
+	"github.com/theQRL/qrysm/v4/runtime/debug"
 	"github.com/urfave/cli/v2"
 )
 

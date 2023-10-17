@@ -3,8 +3,8 @@ package doublylinkedlist
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestAppend(t *testing.T) {

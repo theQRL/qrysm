@@ -4,9 +4,9 @@ import (
 	"io"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/cyyber/qrysm/v4/config/features"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/v4/config/features"
 )
 
 func TestMain(m *testing.M) {

@@ -6,10 +6,10 @@ import (
 	"path"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/crypto/bls"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/pborman/uuid"
+	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestMarshalAndUnmarshal(t *testing.T) {

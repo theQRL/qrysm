@@ -5,9 +5,9 @@ import (
 	"sort"
 	"testing"
 
-	aggtesting "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/testing"
-	"github.com/cyyber/qrysm/v4/testing/assert"
 	"github.com/prysmaticlabs/go-bitfield"
+	aggtesting "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/testing"
+	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
 func TestMaxCover_MaxCoverCandidates_filter(t *testing.T) {

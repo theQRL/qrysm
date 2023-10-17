@@ -3,12 +3,12 @@ package attestations
 import (
 	"sort"
 
-	"github.com/cyyber/qrysm/v4/crypto/dilithium"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/go-bitfield"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
 )
 
 // MaxCoverAttestationAggregation relies on Maximum Coverage greedy algorithm for aggregation.

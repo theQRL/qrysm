@@ -6,13 +6,13 @@ import (
 	"path"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/crypto/bls"
-	"github.com/cyyber/qrysm/v4/crypto/bls/common"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/spectest/utils"
-	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/ghodss/yaml"
+	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/bls/common"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/spectest/utils"
+	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 func TestFastAggregateVerify(t *testing.T) {

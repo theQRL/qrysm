@@ -8,15 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/cmd/validator/flags"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/validator/accounts"
-	"github.com/cyyber/qrysm/v4/validator/keymanager"
-	"github.com/cyyber/qrysm/v4/validator/keymanager/local"
-	"github.com/cyyber/qrysm/v4/validator/node"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/validator/accounts"
+	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
+	"github.com/theQRL/qrysm/v4/validator/node"
 	"github.com/urfave/cli/v2"
 )
 

@@ -5,13 +5,13 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/peerdata"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/scorers"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/scorers"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestScorers_BadResponses_Score(t *testing.T) {

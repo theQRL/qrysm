@@ -5,12 +5,12 @@ import (
 	"io"
 	"sync"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/math"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/pkg/errors"
 	fastssz "github.com/prysmaticlabs/fastssz"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/math"
 )
 
 var _ NetworkEncoding = (*SszNetworkEncoder)(nil)

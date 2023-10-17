@@ -3,10 +3,10 @@ package network
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/network/authorization"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/theQRL/qrysm/v4/network/authorization"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestToHeaderValue(t *testing.T) {

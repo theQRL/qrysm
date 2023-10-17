@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	buildertesting "github.com/cyyber/qrysm/v4/api/client/builder/testing"
-	blockchainTesting "github.com/cyyber/qrysm/v4/beacon-chain/blockchain/testing"
-	dbtesting "github.com/cyyber/qrysm/v4/beacon-chain/db/testing"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	buildertesting "github.com/theQRL/qrysm/v4/api/client/builder/testing"
+	blockchainTesting "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
+	dbtesting "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func Test_NewServiceWithBuilder(t *testing.T) {

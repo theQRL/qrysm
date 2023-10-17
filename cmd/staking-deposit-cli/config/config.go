@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/misc"
+	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
 )
 
 const BETANET = "betanet"

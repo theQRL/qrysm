@@ -3,13 +3,13 @@ package validator_service_config
 import (
 	"fmt"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/validator"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/pkg/errors"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/qrysm/v4/consensus-types/validator"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 )
 
 // ToSettings converts struct to ProposerSettings

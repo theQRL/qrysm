@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/peerdata"
-	"github.com/cyyber/qrysm/v4/network"
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	corenet "github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
+	"github.com/theQRL/qrysm/v4/network"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // ListTrustedPeer retrieves data about the node's trusted peers.

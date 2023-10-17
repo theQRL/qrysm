@@ -5,9 +5,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/cyyber/qrysm/v4/crypto/bls"
-	"github.com/cyyber/qrysm/v4/runtime/interop"
-	"github.com/cyyber/qrysm/v4/tools/unencrypted-keys-gen/keygen"
+	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/runtime/interop"
+	"github.com/theQRL/qrysm/v4/tools/unencrypted-keys-gen/keygen"
 )
 
 var (

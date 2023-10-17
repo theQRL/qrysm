@@ -1,10 +1,10 @@
 package sync
 
 import (
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
 )
 
 // Specifies the fixed size context length.

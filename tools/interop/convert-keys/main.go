@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/tools/unencrypted-keys-gen/keygen"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/tools/unencrypted-keys-gen/keygen"
 	"gopkg.in/yaml.v2"
 )
 

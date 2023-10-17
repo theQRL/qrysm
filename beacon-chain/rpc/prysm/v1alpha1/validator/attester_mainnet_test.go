@@ -5,16 +5,16 @@ import (
 	"testing"
 	"time"
 
-	mock "github.com/cyyber/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/cyyber/qrysm/v4/beacon-chain/cache"
-	mockp2p "github.com/cyyber/qrysm/v4/beacon-chain/p2p/testing"
-	mockSync "github.com/cyyber/qrysm/v4/beacon-chain/sync/initial-sync/testing"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
-	"github.com/cyyber/qrysm/v4/time/slots"
+	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
+	mockp2p "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
+	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/v4/time/slots"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -25,7 +25,7 @@ func TestAttestationDataAtSlot_HandlesFarAwayJustifiedEpoch(t *testing.T) {
 	// Last justified slot = epoch start of 1500
 	// HistoricalRootsLimit = 8192
 	//
-	// More background: https://github.com/cyyber/qrysm/issues/2153
+	// More background: https://github.com/theQRL/qrysm/issues/2153
 	// This test breaks if it doesn't use mainnet config
 
 	// Ensure HistoricalRootsLimit matches scenario

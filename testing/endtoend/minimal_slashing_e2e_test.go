@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	ev "github.com/cyyber/qrysm/v4/testing/endtoend/evaluators"
-	e2eParams "github.com/cyyber/qrysm/v4/testing/endtoend/params"
-	"github.com/cyyber/qrysm/v4/testing/endtoend/types"
-	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/config/params"
+	ev "github.com/theQRL/qrysm/v4/testing/endtoend/evaluators"
+	e2eParams "github.com/theQRL/qrysm/v4/testing/endtoend/params"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestEndToEnd_Slasher_MinimalConfig(t *testing.T) {

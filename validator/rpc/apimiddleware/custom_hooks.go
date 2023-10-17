@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/cyyber/qrysm/v4/api/gateway/apimiddleware"
+	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
 )
 
 // "/eth/v1/validator/{pubkey}/voluntary_exit" POST expects epoch as a query param.

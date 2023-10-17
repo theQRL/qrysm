@@ -5,11 +5,11 @@ import (
 	"io"
 	"testing"
 
-	testDB "github.com/cyyber/qrysm/v4/beacon-chain/db/testing"
-	"github.com/cyyber/qrysm/v4/consensus-types/blocks"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/sirupsen/logrus"
+	testDB "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
+	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 func init() {

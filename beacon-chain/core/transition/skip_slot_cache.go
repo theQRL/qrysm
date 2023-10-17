@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/cache"
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	"github.com/cyyber/qrysm/v4/crypto/hash"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	"github.com/theQRL/qrysm/v4/crypto/hash"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 )
 
 // SkipSlotCache exists for the unlikely scenario that is a large gap between the head state and

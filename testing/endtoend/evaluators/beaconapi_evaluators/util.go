@@ -7,8 +7,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/cyyber/qrysm/v4/testing/endtoend/params"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/params"
 )
 
 func doMiddlewareJSONGetRequest(template string, requestPath string, beaconNodeIdx int, dst interface{}, bnType ...string) error {

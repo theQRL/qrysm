@@ -1,8 +1,8 @@
 package validator
 
 import (
-	"github.com/cyyber/qrysm/v4/beacon-chain/blockchain"
-	"github.com/cyyber/qrysm/v4/beacon-chain/sync"
+	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/v4/beacon-chain/sync"
 )
 
 // Server defines a server implementation for HTTP endpoints, providing

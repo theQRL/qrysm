@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	statenative "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/cyyber/qrysm/v4/container/trie"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/theQRL/go-zond/common/hexutil"
+	statenative "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/v4/container/trie"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 func TestBeaconStateMerkleProofs_phase0_notsupported(t *testing.T) {

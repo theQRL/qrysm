@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/testing/bls/utils"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/ghodss/yaml"
 	blst "github.com/supranational/blst/bindings/go"
+	"github.com/theQRL/qrysm/v4/testing/bls/utils"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestHashToG2(t *testing.T) {

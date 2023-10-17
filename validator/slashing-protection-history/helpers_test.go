@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 )
 
 func Test_uint64FromString(t *testing.T) {

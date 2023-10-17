@@ -6,9 +6,9 @@ import (
 	neturl "net/url"
 	"strconv"
 
-	rpcmiddleware "github.com/cyyber/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/pkg/errors"
+	rpcmiddleware "github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 )
 
 type stateValidatorsProvider interface {

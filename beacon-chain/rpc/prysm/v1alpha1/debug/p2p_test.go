@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	mockP2p "github.com/cyyber/qrysm/v4/beacon-chain/p2p/testing"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/golang/protobuf/ptypes/empty"
+	mockP2p "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestDebugServer_GetPeer(t *testing.T) {

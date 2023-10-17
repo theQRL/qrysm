@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/network/forks"
-	ethpb "github.com/cyyber/qrysm/v4/proto/eth/v1"
 	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/network/forks"
+	ethpb "github.com/theQRL/qrysm/v4/proto/eth/v1"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

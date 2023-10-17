@@ -3,10 +3,10 @@ package validator
 import (
 	"context"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/blocks"
-	v "github.com/cyyber/qrysm/v4/beacon-chain/core/validators"
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
+	v "github.com/theQRL/qrysm/v4/beacon-chain/core/validators"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 func (vs *Server) getSlashings(ctx context.Context, head state.BeaconState) ([]*ethpb.ProposerSlashing, []*ethpb.AttesterSlashing) {

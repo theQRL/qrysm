@@ -5,9 +5,9 @@ package cache
 import (
 	"sync"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"k8s.io/client-go/tools/cache"
 )
 

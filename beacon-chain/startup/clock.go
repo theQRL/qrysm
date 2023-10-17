@@ -3,8 +3,8 @@ package startup
 import (
 	"time"
 
-	types "github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/time/slots"
+	types "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 // Nower is a function that can return the current time.

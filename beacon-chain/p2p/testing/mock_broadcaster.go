@@ -3,7 +3,7 @@ package testing
 import (
 	"context"
 
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/protobuf/proto"
 )
 

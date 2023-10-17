@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	dbtest "github.com/cyyber/qrysm/v4/beacon-chain/db/testing"
-	slashertypes "github.com/cyyber/qrysm/v4/beacon-chain/slasher/types"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
+	dbtest "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
+	slashertypes "github.com/theQRL/qrysm/v4/beacon-chain/slasher/types"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestIsSlashableBlock(t *testing.T) {

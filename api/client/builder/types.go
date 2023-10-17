@@ -6,12 +6,12 @@ import (
 	"math/big"
 	"strconv"
 
-	types "github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	v1 "github.com/cyyber/qrysm/v4/proto/engine/v1"
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
+	types "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	v1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // SignedValidatorRegistration a struct for signed validator registrations.

@@ -1,10 +1,10 @@
 package db
 
 import (
-	beacondb "github.com/cyyber/qrysm/v4/beacon-chain/db"
-	"github.com/cyyber/qrysm/v4/cmd"
-	"github.com/cyyber/qrysm/v4/runtime/tos"
 	"github.com/sirupsen/logrus"
+	beacondb "github.com/theQRL/qrysm/v4/beacon-chain/db"
+	"github.com/theQRL/qrysm/v4/cmd"
+	"github.com/theQRL/qrysm/v4/runtime/tos"
 	"github.com/urfave/cli/v2"
 )
 

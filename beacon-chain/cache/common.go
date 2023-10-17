@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"github.com/cyyber/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/config/params"
 	"k8s.io/client-go/tools/cache"
 )
 

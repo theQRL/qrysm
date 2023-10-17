@@ -11,10 +11,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/testing/endtoend/helpers"
-	e2e "github.com/cyyber/qrysm/v4/testing/endtoend/params"
-	"github.com/cyyber/qrysm/v4/testing/endtoend/types"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
+	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
+	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
 )
 
 var _ types.ComponentRunner = &TracingSink{}

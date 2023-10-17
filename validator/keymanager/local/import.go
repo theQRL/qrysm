@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/crypto/dilithium"
-	ethpbservice "github.com/cyyber/qrysm/v4/proto/eth/service"
-	"github.com/cyyber/qrysm/v4/validator/keymanager"
 	"github.com/k0kubun/go-ansi"
 	"github.com/pkg/errors"
 	"github.com/schollz/progressbar/v3"
 	"github.com/sirupsen/logrus"
 	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
+	"github.com/theQRL/qrysm/v4/validator/keymanager"
 )
 
 // ImportKeystores into the local keymanager from an external source.

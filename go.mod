@@ -1,4 +1,4 @@
-module github.com/cyyber/qrysm/v4
+module github.com/theQRL/qrysm/v4
 
 go 1.20
 

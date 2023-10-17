@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/monitoring/prometheus"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/monitoring/prometheus"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 const addr = "127.0.0.1:8989"

@@ -3,9 +3,9 @@ package apimiddleware
 import (
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/api/gateway/apimiddleware"
-	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/eth/helpers"
-	ethpbv2 "github.com/cyyber/qrysm/v4/proto/eth/v2"
+	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/helpers"
+	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
 )
 
 //----------------

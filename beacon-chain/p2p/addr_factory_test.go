@@ -3,9 +3,9 @@ package p2p
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	ma "github.com/multiformats/go-multiaddr"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestRelayAddrs_OnlyFactory(t *testing.T) {

@@ -6,11 +6,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/cache"
-	"github.com/cyyber/qrysm/v4/config/params"
-	ecdsaprysm "github.com/cyyber/qrysm/v4/crypto/ecdsa"
-	"github.com/cyyber/qrysm/v4/runtime/version"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
@@ -19,6 +14,11 @@ import (
 	"github.com/theQRL/go-zond/p2p/discover"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
+	"github.com/theQRL/qrysm/v4/config/params"
+	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
+	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 // Listener defines the discovery V5 network interface that is used

@@ -11,8 +11,8 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	_ "github.com/cyyber/qrysm/v4/proto/eth/ext"
+	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	_ "github.com/theQRL/qrysm/v4/proto/eth/ext"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
@@ -84,7 +84,7 @@ type InclusionSlotRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	Id   uint64                                                     `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Slot github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,2,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
+	Slot github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,2,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"`
 }
 
 func (x *InclusionSlotRequest) Reset() {
@@ -138,7 +138,7 @@ type InclusionSlotResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Slot github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,2,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
+	Slot github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,2,opt,name=slot,proto3" json:"slot,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"`
 }
 
 func (x *InclusionSlotResponse) Reset() {
@@ -250,7 +250,7 @@ type isBeaconStateRequest_QueryFilter interface {
 }
 
 type BeaconStateRequest_Slot struct {
-	Slot github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,1,opt,name=slot,proto3,oneof" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
+	Slot github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,1,opt,name=slot,proto3,oneof" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"`
 }
 
 type BeaconStateRequest_BlockRoot struct {

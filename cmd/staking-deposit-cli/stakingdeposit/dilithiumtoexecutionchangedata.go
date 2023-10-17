@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/config"
-	ethpbv2 "github.com/cyyber/qrysm/v4/proto/eth/v2"
+	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/config"
+	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
 )
 
 type DilithiumToExecutionChangeMessage struct {

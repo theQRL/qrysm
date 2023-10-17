@@ -8,13 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/crypto/rand"
-	pb "github.com/cyyber/qrysm/v4/proto/engine/v1"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/qrysm/v4/crypto/rand"
+	pb "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestProxy(t *testing.T) {

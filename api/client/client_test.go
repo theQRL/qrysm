@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestValidHostname(t *testing.T) {

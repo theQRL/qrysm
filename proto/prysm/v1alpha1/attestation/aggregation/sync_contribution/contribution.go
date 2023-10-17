@@ -1,10 +1,10 @@
 package sync_contribution
 
 import (
-	v2 "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	v2 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
 )
 
 const (

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/config/params"
-	prysmTime "github.com/cyyber/qrysm/v4/time"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/config/params"
+	prysmTime "github.com/theQRL/qrysm/v4/time"
 )
 
 var log = logrus.WithField("prefix", "slotutil")

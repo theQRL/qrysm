@@ -3,12 +3,12 @@ package accounts
 import (
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/cmd"
-	"github.com/cyyber/qrysm/v4/cmd/validator/flags"
-	"github.com/cyyber/qrysm/v4/validator/accounts"
-	"github.com/cyyber/qrysm/v4/validator/accounts/userprompt"
-	"github.com/cyyber/qrysm/v4/validator/client"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/cmd"
+	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
+	"github.com/theQRL/qrysm/v4/validator/accounts"
+	"github.com/theQRL/qrysm/v4/validator/accounts/userprompt"
+	"github.com/theQRL/qrysm/v4/validator/client"
 	"github.com/urfave/cli/v2"
 )
 

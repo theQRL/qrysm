@@ -3,12 +3,12 @@ package accounts
 import (
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/validator/accounts"
-	"github.com/cyyber/qrysm/v4/validator/accounts/iface"
-	"github.com/cyyber/qrysm/v4/validator/accounts/wallet"
-	"github.com/cyyber/qrysm/v4/validator/keymanager"
-	remote_web3signer "github.com/cyyber/qrysm/v4/validator/keymanager/remote-web3signer"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/validator/accounts"
+	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
+	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	remote_web3signer "github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer"
 	"github.com/urfave/cli/v2"
 )
 

@@ -5,12 +5,12 @@ import (
 	"context"
 	"sync"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	types "github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	types "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 )
 
 type nextSlotCache struct {

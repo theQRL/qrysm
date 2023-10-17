@@ -1,8 +1,8 @@
 package apimiddleware
 
 import (
-	"github.com/cyyber/qrysm/v4/api/gateway/apimiddleware"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
 )
 
 // ValidatorEndpointFactory creates endpoints used for running validator API calls through the API Middleware.

@@ -3,7 +3,7 @@ package epoch_processing
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/testing/spectest/shared/phase0/epoch_processing"
+	"github.com/theQRL/qrysm/v4/testing/spectest/shared/phase0/epoch_processing"
 )
 
 func TestMinimal_Phase0_EpochProcessing_RandaoMixesReset(t *testing.T) {

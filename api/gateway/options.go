@@ -3,9 +3,9 @@ package gateway
 import (
 	"time"
 
-	"github.com/cyyber/qrysm/v4/api/gateway/apimiddleware"
 	"github.com/gorilla/mux"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
 )
 
 type Option func(g *Gateway) error

@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"time"
 
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/prom2json"
 	log "github.com/sirupsen/logrus"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 type beaconNodeScraper struct {

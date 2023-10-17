@@ -3,9 +3,9 @@ package blockchain
 import (
 	"context"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpbv1 "github.com/cyyber/qrysm/v4/proto/eth/v1"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
 )
 
 // CachedHeadRoot returns the corresponding value from Forkchoice

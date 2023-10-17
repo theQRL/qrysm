@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/config/params"
 )
 
 // StartAndEndPage takes in the requested page token, wanted page size, total page size.

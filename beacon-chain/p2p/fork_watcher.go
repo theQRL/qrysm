@@ -1,9 +1,9 @@
 package p2p
 
 import (
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/encoder"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 // A background routine which listens for new and upcoming forks and

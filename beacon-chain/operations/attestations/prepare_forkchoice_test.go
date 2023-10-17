@@ -6,14 +6,14 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/config/features"
-	"github.com/cyyber/qrysm/v4/crypto/bls"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	attaggregation "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/attestations"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/qrysm/v4/config/features"
+	"github.com/theQRL/qrysm/v4/crypto/bls"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	attaggregation "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/attestations"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
 	"google.golang.org/protobuf/proto"
 )
 

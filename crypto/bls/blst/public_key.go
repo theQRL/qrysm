@@ -5,11 +5,11 @@ package blst
 import (
 	"fmt"
 
-	lruwrpr "github.com/cyyber/qrysm/v4/cache/lru"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/crypto/bls/common"
 	"github.com/pkg/errors"
+	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
+	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/crypto/bls/common"
 )
 
 var maxKeys = 1_000_000

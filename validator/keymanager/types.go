@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/async/event"
-	"github.com/cyyber/qrysm/v4/crypto/dilithium"
-	ethpbservice "github.com/cyyber/qrysm/v4/proto/eth/service"
-	validatorpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/async/event"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
+	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 )
 
 // IKeymanager defines a general keymanager interface for Prysm wallets.

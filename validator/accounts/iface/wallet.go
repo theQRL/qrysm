@@ -3,8 +3,8 @@ package iface
 import (
 	"context"
 
-	"github.com/cyyber/qrysm/v4/validator/keymanager"
-	remoteweb3signer "github.com/cyyber/qrysm/v4/validator/keymanager/remote-web3signer"
+	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	remoteweb3signer "github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer"
 )
 
 // InitKeymanagerConfig defines configuration options for initializing a keymanager.

@@ -11,10 +11,10 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	github_com_cyyber_qrysm_v4_consensus_types_validator "github.com/cyyber/qrysm/v4/consensus-types/validator"
-	_ "github.com/cyyber/qrysm/v4/proto/eth/ext"
-	v1alpha1 "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	github_com_cyyber_qrysm_v4_consensus_types_validator "github.com/theQRL/qrysm/v4/consensus-types/validator"
+	_ "github.com/theQRL/qrysm/v4/proto/eth/ext"
+	v1alpha1 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
@@ -156,7 +156,7 @@ type SignRequest struct {
 	//	*SignRequest_BlockCapella
 	//	*SignRequest_BlindedBlockCapella
 	Object      isSignRequest_Object                                       `protobuf_oneof:"object"`
-	SigningSlot github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,6,opt,name=signing_slot,json=signingSlot,proto3" json:"signing_slot,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
+	SigningSlot github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,6,opt,name=signing_slot,json=signingSlot,proto3" json:"signing_slot,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"`
 }
 
 func (x *SignRequest) Reset() {
@@ -352,11 +352,11 @@ type SignRequest_Exit struct {
 }
 
 type SignRequest_Slot struct {
-	Slot github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,105,opt,name=slot,proto3,oneof" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Slot"`
+	Slot github_com_cyyber_qrysm_v4_consensus_types_primitives.Slot `protobuf:"varint,105,opt,name=slot,proto3,oneof" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"`
 }
 
 type SignRequest_Epoch struct {
-	Epoch github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,106,opt,name=epoch,proto3,oneof" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/primitives.Epoch"`
+	Epoch github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch `protobuf:"varint,106,opt,name=epoch,proto3,oneof" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"`
 }
 
 type SignRequest_BlockAltair struct {
@@ -541,7 +541,7 @@ type BuilderConfig struct {
 	unknownFields protoimpl.UnknownFields
 
 	Enabled  bool                                                        `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	GasLimit github_com_cyyber_qrysm_v4_consensus_types_validator.Uint64 `protobuf:"varint,2,opt,name=gas_limit,json=gasLimit,proto3" json:"gas_limit,omitempty" cast-type:"github.com/cyyber/qrysm/v4/consensus-types/validator.Uint64"`
+	GasLimit github_com_cyyber_qrysm_v4_consensus_types_validator.Uint64 `protobuf:"varint,2,opt,name=gas_limit,json=gasLimit,proto3" json:"gas_limit,omitempty" cast-type:"github.com/theQRL/qrysm/v4/consensus-types/validator.Uint64"`
 	Relays   []string                                                    `protobuf:"bytes,3,rep,name=relays,proto3" json:"relays,omitempty"`
 }
 

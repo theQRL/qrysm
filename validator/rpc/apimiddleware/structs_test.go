@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/proto/eth/service"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/proto/eth/service"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestListKeystores_JSONisEqual(t *testing.T) {

@@ -6,14 +6,14 @@ import (
 	"encoding/binary"
 	"sync"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/state"
-	lruwrpr "github.com/cyyber/qrysm/v4/cache/lru"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 )
 
 const (

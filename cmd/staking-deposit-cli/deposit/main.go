@@ -3,10 +3,10 @@ package main
 import (
 	"os"
 
-	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/deposit/existingseed"
-	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/deposit/generatedilithiumtoexecutionchange"
-	"github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/deposit/newseed"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/deposit/existingseed"
+	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/deposit/generatedilithiumtoexecutionchange"
+	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/deposit/newseed"
 	"github.com/urfave/cli/v2"
 )
 

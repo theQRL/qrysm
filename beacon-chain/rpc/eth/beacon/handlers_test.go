@@ -7,13 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	testing2 "github.com/cyyber/qrysm/v4/beacon-chain/blockchain/testing"
-	mockSync "github.com/cyyber/qrysm/v4/beacon-chain/sync/initial-sync/testing"
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	mock2 "github.com/cyyber/qrysm/v4/testing/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
+	testing2 "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
+	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	mock2 "github.com/theQRL/qrysm/v4/testing/mock"
 )
 
 func TestPublishBlockV2(t *testing.T) {

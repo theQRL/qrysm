@@ -5,9 +5,9 @@ import (
 	"sort"
 	"testing"
 
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	v2 "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
+	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
+	v2 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
 func TestProposerSyncContributions_FilterByBlockRoot(t *testing.T) {

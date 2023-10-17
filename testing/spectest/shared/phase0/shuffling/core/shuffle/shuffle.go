@@ -7,13 +7,13 @@ import (
 	"path"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/spectest/utils"
-	"github.com/cyyber/qrysm/v4/testing/util"
 	"github.com/go-yaml/yaml"
 	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/spectest/utils"
+	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 // RunShuffleTests executes "shuffling/core/shuffle" tests.

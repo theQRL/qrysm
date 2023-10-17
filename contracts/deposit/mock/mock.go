@@ -4,7 +4,6 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/contracts/deposit"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/accounts/abi"
 	"github.com/theQRL/go-zond/accounts/abi/bind"
@@ -13,6 +12,7 @@ import (
 	"github.com/theQRL/go-zond/core"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/pqcrypto"
+	"github.com/theQRL/qrysm/v4/contracts/deposit"
 )
 
 var (

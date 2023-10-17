@@ -3,7 +3,7 @@ package slasher
 import (
 	"sync"
 
-	slashertypes "github.com/cyyber/qrysm/v4/beacon-chain/slasher/types"
+	slashertypes "github.com/theQRL/qrysm/v4/beacon-chain/slasher/types"
 )
 
 // Struct for handling a thread-safe list of indexed attestation wrappers.

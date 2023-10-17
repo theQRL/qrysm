@@ -3,7 +3,7 @@ package logruswitherror
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/build/bazel"
+	"github.com/theQRL/qrysm/v4/build/bazel"
 	"golang.org/x/tools/go/analysis/analysistest"
 )
 

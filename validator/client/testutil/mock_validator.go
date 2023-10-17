@@ -5,14 +5,14 @@ import (
 	"context"
 	"time"
 
-	validatorserviceconfig "github.com/cyyber/qrysm/v4/config/validator/service"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	prysmTime "github.com/cyyber/qrysm/v4/time"
-	"github.com/cyyber/qrysm/v4/validator/client/iface"
-	"github.com/cyyber/qrysm/v4/validator/keymanager"
 	log "github.com/sirupsen/logrus"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	validatorserviceconfig "github.com/theQRL/qrysm/v4/config/validator/service"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	prysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/v4/validator/client/iface"
+	"github.com/theQRL/qrysm/v4/validator/keymanager"
 )
 
 var _ iface.Validator = (*FakeValidator)(nil)

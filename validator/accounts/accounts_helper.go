@@ -7,16 +7,16 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cyyber/qrysm/v4/cmd/validator/flags"
-	"github.com/cyyber/qrysm/v4/crypto/dilithium"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/io/prompt"
-	"github.com/cyyber/qrysm/v4/validator/accounts/petnames"
-	"github.com/cyyber/qrysm/v4/validator/accounts/userprompt"
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
 	"github.com/pkg/errors"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/io/prompt"
+	"github.com/theQRL/qrysm/v4/validator/accounts/petnames"
+	"github.com/theQRL/qrysm/v4/validator/accounts/userprompt"
 	"github.com/urfave/cli/v2"
 )
 

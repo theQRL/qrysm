@@ -3,7 +3,7 @@ package testing
 import (
 	"context"
 
-	eth "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
+	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // MockProtector mocks the protector.

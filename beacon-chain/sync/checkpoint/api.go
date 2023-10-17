@@ -3,11 +3,11 @@ package checkpoint
 import (
 	"context"
 
-	"github.com/cyyber/qrysm/v4/api/client/beacon"
-	"github.com/cyyber/qrysm/v4/beacon-chain/db"
-	"github.com/cyyber/qrysm/v4/config/params"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/api/client/beacon"
+	"github.com/theQRL/qrysm/v4/beacon-chain/db"
+	"github.com/theQRL/qrysm/v4/config/params"
 )
 
 // APIInitializer manages initializing the beacon node using checkpoint sync, retrieving the checkpoint state and root

@@ -5,11 +5,11 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/cyyber/qrysm/v4/crypto/hash"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/crypto/hash"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 

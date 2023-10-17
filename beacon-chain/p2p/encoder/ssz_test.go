@@ -8,13 +8,13 @@ import (
 	"math"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/encoder"
-	"github.com/cyyber/qrysm/v4/config/params"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	"github.com/cyyber/qrysm/v4/testing/util"
 	gogo "github.com/gogo/protobuf/proto"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/v4/config/params"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
 	"google.golang.org/protobuf/proto"
 )
 

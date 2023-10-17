@@ -5,17 +5,17 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/cache"
-	"github.com/cyyber/qrysm/v4/beacon-chain/core/time"
-	state_native "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/crypto/hash"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
+	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
+	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/crypto/hash"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestIsActiveValidator_OK(t *testing.T) {
@@ -564,7 +564,7 @@ func TestComputeProposerIndex(t *testing.T) {
 			},
 			want: 2,
 		},
-		{ // Regression test for https://github.com/cyyber/qrysm/issues/4259.
+		{ // Regression test for https://github.com/theQRL/qrysm/issues/4259.
 			name: "1_active_index",
 			args: args{
 				validators: []*ethpb.Validator{

@@ -5,9 +5,9 @@ import (
 	"regexp"
 	"testing"
 
-	prefixed "github.com/cyyber/qrysm/v4/runtime/logging/logrus-prefixed-formatter"
-	"github.com/cyyber/qrysm/v4/testing/require"
 	"github.com/pkg/errors"
+	prefixed "github.com/theQRL/qrysm/v4/runtime/logging/logrus-prefixed-formatter"
+	"github.com/theQRL/qrysm/v4/testing/require"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

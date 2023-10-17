@@ -5,9 +5,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/api/client"
-	"github.com/cyyber/qrysm/v4/api/client/beacon"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/api/client"
+	"github.com/theQRL/qrysm/v4/api/client/beacon"
 	"github.com/urfave/cli/v2"
 )
 

@@ -4,8 +4,8 @@ import (
 	"flag"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/urfave/cli/v2"
 )
 

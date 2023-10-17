@@ -9,11 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/encoder"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers"
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/scorers"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/metadata"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	core "github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/control"
@@ -27,6 +22,11 @@ import (
 	ssz "github.com/prysmaticlabs/fastssz"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/scorers"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/metadata"
 	"google.golang.org/protobuf/proto"
 )
 

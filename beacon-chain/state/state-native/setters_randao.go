@@ -1,12 +1,12 @@
 package state_native
 
 import (
-	customtypes "github.com/cyyber/qrysm/v4/beacon-chain/state/state-native/custom-types"
-	"github.com/cyyber/qrysm/v4/beacon-chain/state/state-native/types"
-	"github.com/cyyber/qrysm/v4/beacon-chain/state/stateutil"
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
 	"github.com/pkg/errors"
+	customtypes "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/custom-types"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
+	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 )
 
 // SetRandaoMixes for the beacon state. Updates the entire

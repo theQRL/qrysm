@@ -6,10 +6,10 @@ package depositsnapshot
 import (
 	"crypto/sha256"
 
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	"github.com/cyyber/qrysm/v4/math"
-	eth "github.com/cyyber/qrysm/v4/proto/eth/v1"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/math"
+	eth "github.com/theQRL/qrysm/v4/proto/eth/v1"
 )
 
 var (

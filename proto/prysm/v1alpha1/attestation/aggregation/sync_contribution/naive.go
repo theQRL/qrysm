@@ -1,9 +1,9 @@
 package sync_contribution
 
 import (
-	"github.com/cyyber/qrysm/v4/crypto/dilithium"
-	v2 "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	v2 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
 )
 
 // naiveSyncContributionAggregation aggregates naively, without any complex algorithms or optimizations.

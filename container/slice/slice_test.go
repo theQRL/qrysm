@@ -5,9 +5,9 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	"github.com/cyyber/qrysm/v4/container/slice"
-	"github.com/cyyber/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/container/slice"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestSubsetUint64(t *testing.T) {

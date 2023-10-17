@@ -3,7 +3,7 @@ package bazel_test
 import (
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/build/bazel"
+	"github.com/theQRL/qrysm/v4/build/bazel"
 )
 
 func TestBuildWithBazel(t *testing.T) {

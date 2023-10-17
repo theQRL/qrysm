@@ -6,14 +6,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/p2p/peers/scorers"
-	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/cyyber/qrysm/v4/config/params"
-	mathutil "github.com/cyyber/qrysm/v4/math"
-	prysmTime "github.com/cyyber/qrysm/v4/time"
-	"github.com/cyyber/qrysm/v4/time/slots"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/scorers"
+	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/v4/config/params"
+	mathutil "github.com/theQRL/qrysm/v4/math"
+	prysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 )
 

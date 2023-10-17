@@ -1,9 +1,9 @@
 package state_native
 
 import (
-	"github.com/cyyber/qrysm/v4/beacon-chain/state/state-native/types"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // SetCurrentSyncCommittee for the beacon state.

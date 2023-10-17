@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	fieldparams "github.com/cyyber/qrysm/v4/config/fieldparams"
-	"github.com/cyyber/qrysm/v4/config/params"
+	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
+	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/urfave/cli/v2"
 )
 

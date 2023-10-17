@@ -6,16 +6,16 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/cyyber/qrysm/v4/crypto/bls"
-	"github.com/cyyber/qrysm/v4/encoding/bytesutil"
-	ethpbservice "github.com/cyyber/qrysm/v4/proto/eth/service"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	mock "github.com/cyyber/qrysm/v4/validator/accounts/testing"
-	"github.com/cyyber/qrysm/v4/validator/keymanager"
 	"github.com/google/uuid"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	mock "github.com/theQRL/qrysm/v4/validator/accounts/testing"
+	"github.com/theQRL/qrysm/v4/validator/keymanager"
 	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 )
 

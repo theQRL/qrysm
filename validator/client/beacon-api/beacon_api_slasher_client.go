@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/validator/client/iface"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/validator/client/iface"
 )
 
 type beaconApiSlasherClient struct {

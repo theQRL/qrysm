@@ -1,13 +1,13 @@
 package db
 
-import "github.com/cyyber/qrysm/v4/beacon-chain/db/iface"
+import "github.com/theQRL/qrysm/v4/beacon-chain/db/iface"
 
 // ReadOnlyDatabase exposes Prysm's Ethereum data backend for read access only, no information about
-// head info. For head info, use github.com/cyyber/qrysm/blockchain.HeadFetcher.
+// head info. For head info, use github.com/theQRL/qrysm/blockchain.HeadFetcher.
 type ReadOnlyDatabase = iface.ReadOnlyDatabase
 
 // NoHeadAccessDatabase exposes Prysm's Ethereum data backend for read/write access, no information
-// about head info. For head info, use github.com/cyyber/qrysm/blockchain.HeadFetcher.
+// about head info. For head info, use github.com/theQRL/qrysm/blockchain.HeadFetcher.
 type NoHeadAccessDatabase = iface.NoHeadAccessDatabase
 
 // HeadAccessDatabase exposes Prysm's Ethereum backend for read/write access with information about
@@ -15,7 +15,7 @@ type NoHeadAccessDatabase = iface.NoHeadAccessDatabase
 // of truth around chain head information while this interface serves as persistent storage for the
 // head fetcher.
 //
-// See github.com/cyyber/qrysm/blockchain.HeadFetcher
+// See github.com/theQRL/qrysm/blockchain.HeadFetcher
 type HeadAccessDatabase = iface.HeadAccessDatabase
 
 // Database defines the necessary methods for Prysm's Ethereum backend which may be implemented by any

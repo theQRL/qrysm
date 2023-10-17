@@ -3,8 +3,8 @@ package helpers
 import (
 	"errors"
 
-	"github.com/cyyber/qrysm/v4/beacon-chain/rpc/lookup"
-	"github.com/cyyber/qrysm/v4/beacon-chain/state/stategen"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/lookup"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

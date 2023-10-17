@@ -14,11 +14,11 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/cyyber/qrysm/v4/runtime/maxprocs"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/zondclient"
+	_ "github.com/theQRL/qrysm/v4/runtime/maxprocs"
 )
 
 var (

@@ -3,13 +3,13 @@ package node
 import (
 	"fmt"
 
-	"github.com/cyyber/qrysm/v4/cmd"
-	"github.com/cyyber/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/cyyber/qrysm/v4/config/params"
-	"github.com/cyyber/qrysm/v4/consensus-types/primitives"
-	tracing2 "github.com/cyyber/qrysm/v4/monitoring/tracing"
 	fastssz "github.com/prysmaticlabs/fastssz"
 	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/qrysm/v4/cmd"
+	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	tracing2 "github.com/theQRL/qrysm/v4/monitoring/tracing"
 	"github.com/urfave/cli/v2"
 )
 

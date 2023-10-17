@@ -9,15 +9,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cyyber/qrysm/v4/build/bazel"
-	"github.com/cyyber/qrysm/v4/io/file"
-	ethpb "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/cyyber/qrysm/v4/testing/assert"
-	"github.com/cyyber/qrysm/v4/testing/require"
-	validatormock "github.com/cyyber/qrysm/v4/testing/validator-mock"
-	"github.com/cyyber/qrysm/v4/validator/accounts"
-	"github.com/cyyber/qrysm/v4/validator/keymanager"
 	"github.com/golang/mock/gomock"
+	"github.com/theQRL/qrysm/v4/build/bazel"
+	"github.com/theQRL/qrysm/v4/io/file"
+	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	validatormock "github.com/theQRL/qrysm/v4/testing/validator-mock"
+	"github.com/theQRL/qrysm/v4/validator/accounts"
+	"github.com/theQRL/qrysm/v4/validator/keymanager"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
