@@ -188,8 +188,8 @@ func (_ *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][dilithiu
 	return result, nil
 }
 
-// FetchValidatingPrivateKeys fetches the list of private keys from the secret keys cache
-func (km *Keymanager) FetchValidatingPrivateKeys(ctx context.Context) ([][common2.SeedSize]byte, error) {
+// FetchValidatingSeeds fetches the list of private keys from the secret keys cache
+func (km *Keymanager) FetchValidatingSeeds(ctx context.Context) ([][common2.SeedSize]byte, error) {
 	lock.RLock()
 	defer lock.RUnlock()
 	dilithiumSeed := make([][common2.SeedSize]byte, len(dilithiumKeysCache))
@@ -396,7 +396,7 @@ func (km *Keymanager) ListKeymanagerAccounts(ctx context.Context, cfg keymanager
 	}
 	var seeds [][common2.SeedSize]byte
 	if cfg.ShowPrivateKeys {
-		seeds, err = km.FetchValidatingPrivateKeys(ctx)
+		seeds, err = km.FetchValidatingSeeds(ctx)
 		if err != nil {
 			return errors.Wrap(err, "could not fetch private keys")
 		}

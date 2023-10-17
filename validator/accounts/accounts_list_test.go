@@ -268,7 +268,7 @@ func TestListAccounts_LocalKeymanager(t *testing.T) {
 	}
 
 	// Get private keys and require the correct count
-	privKeys, err := km.FetchValidatingPrivateKeys(cliCtx.Context)
+	privKeys, err := km.FetchValidatingSeeds(cliCtx.Context)
 	require.NoError(t, err)
 	require.Equal(t, numAccounts, len(pubKeys))
 
@@ -448,7 +448,7 @@ func TestListAccounts_DerivedKeymanager(t *testing.T) {
 	}
 
 	// Get validating private keys and require the correct count
-	validatingPrivKeys, err := km.FetchValidatingPrivateKeys(cliCtx.Context)
+	validatingPrivKeys, err := km.FetchValidatingSeeds(cliCtx.Context)
 	require.NoError(t, err)
 	require.Equal(t, numAccounts, len(pubKeys))
 

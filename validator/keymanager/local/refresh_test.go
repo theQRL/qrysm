@@ -26,8 +26,8 @@ func TestLocalKeymanager_reloadAccountsFromKeystore_MismatchedNumKeys(t *testing
 		wallet: wallet,
 	}
 	accountsStore := &accountStore{
-		PrivateKeys: [][]byte{[]byte("hello")},
-		PublicKeys:  [][]byte{[]byte("hi"), []byte("world")},
+		Seeds:      [][]byte{[]byte("hello")},
+		PublicKeys: [][]byte{[]byte("hi"), []byte("world")},
 	}
 	encodedStore, err := json.MarshalIndent(accountsStore, "", "\t")
 	require.NoError(t, err)
@@ -81,13 +81,13 @@ func TestLocalKeymanager_reloadAccountsFromKeystore(t *testing.T) {
 	lock.RLock()
 	defer lock.RUnlock()
 	for i, keyBytes := range privKeys {
-		privKey, ok := secretKeysCache[bytesutil.ToBytes48(pubKeys[i])]
+		privKey, ok := dilithiumKeysCache[bytesutil.ToBytes2592(pubKeys[i])]
 		require.Equal(t, true, ok)
 		require.Equal(t, bytesutil.ToBytes48(keyBytes), bytesutil.ToBytes48(privKey.Marshal()))
 	}
 
 	// Check the key was added to the global accounts store.
 	require.Equal(t, numAccounts, len(dr.accountsStore.PublicKeys))
-	require.Equal(t, numAccounts, len(dr.accountsStore.PrivateKeys))
+	require.Equal(t, numAccounts, len(dr.accountsStore.Seeds))
 	assert.DeepEqual(t, dr.accountsStore.PublicKeys[0], pubKeys[0])
 }

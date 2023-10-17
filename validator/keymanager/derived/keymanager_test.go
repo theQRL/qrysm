@@ -115,7 +115,7 @@ func TestDerivedKeymanager_FetchValidatingPublicKeys(t *testing.T) {
 	}
 }
 
-func TestDerivedKeymanager_FetchValidatingPrivateKeys(t *testing.T) {
+func TestDerivedKeymanager_FetchValidatingSeeds(t *testing.T) {
 	derivedSeed, err := seedFromMnemonic(constant.TestMnemonic, DefaultMnemonicLanguage, "")
 	require.NoError(t, err)
 	wallet := &mock.Wallet{
@@ -134,7 +134,7 @@ func TestDerivedKeymanager_FetchValidatingPrivateKeys(t *testing.T) {
 	require.NoError(t, err)
 
 	// Fetch the private keys.
-	privateKeys, err := dr.FetchValidatingPrivateKeys(ctx)
+	privateKeys, err := dr.FetchValidatingSeeds(ctx)
 	require.NoError(t, err)
 	require.Equal(t, numAccounts, len(privateKeys))
 
@@ -147,7 +147,7 @@ func TestDerivedKeymanager_FetchValidatingPrivateKeys(t *testing.T) {
 		wantedPrivKeys[i] = privKeyBytes
 	}
 
-	// FetchValidatingPrivateKeys is also used in generating the output of account list
+	// FetchValidatingSeeds is also used in generating the output of account list
 	// therefore the results must be in the same order as the order in which the accounts were derived
 	for i, key := range wantedPrivKeys {
 		assert.Equal(t, key, privateKeys[i])

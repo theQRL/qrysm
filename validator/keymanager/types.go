@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	common2 "github.com/theQRL/go-qrllib/common"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/async/event"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
@@ -24,7 +25,7 @@ type IKeymanager interface {
 
 // KeysFetcher for validating private and public keys.
 type KeysFetcher interface {
-	FetchValidatingPrivateKeys(ctx context.Context) ([][32]byte, error)
+	FetchValidatingSeeds(ctx context.Context) ([][common2.SeedSize]byte, error)
 	PublicKeysFetcher
 }
 

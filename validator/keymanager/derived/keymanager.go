@@ -105,9 +105,9 @@ func (km *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][dilithi
 	return km.localKM.FetchValidatingPublicKeys(ctx)
 }
 
-// FetchValidatingPrivateKeys fetches the list of validating private keys from the keymanager.
-func (km *Keymanager) FetchValidatingPrivateKeys(ctx context.Context) ([][common2.SeedSize]byte, error) {
-	return km.localKM.FetchValidatingPrivateKeys(ctx)
+// FetchValidatingSeeds fetches the list of validating private keys from the keymanager.
+func (km *Keymanager) FetchValidatingSeeds(ctx context.Context) ([][common2.SeedSize]byte, error) {
+	return km.localKM.FetchValidatingSeeds(ctx)
 }
 
 // ImportKeystores for a derived keymanager.
@@ -141,7 +141,7 @@ func (km *Keymanager) ListKeymanagerAccounts(ctx context.Context, cfg keymanager
 	}
 	var validatingPrivateKeys [][common2.SeedSize]byte
 	if cfg.ShowPrivateKeys {
-		validatingPrivateKeys, err = km.FetchValidatingPrivateKeys(ctx)
+		validatingPrivateKeys, err = km.FetchValidatingSeeds(ctx)
 		if err != nil {
 			return errors.Wrap(err, "could not fetch validating private keys")
 		}

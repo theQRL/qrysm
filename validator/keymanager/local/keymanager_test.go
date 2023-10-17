@@ -49,7 +49,7 @@ func TestLocalKeymanager_FetchValidatingPublicKeys(t *testing.T) {
 	}
 }
 
-func TestLocalKeymanager_FetchValidatingPrivateKeys(t *testing.T) {
+func TestLocalKeymanager_FetchValidatingSeeds(t *testing.T) {
 	wallet := &mock.Wallet{
 		Files:          make(map[string]map[string][]byte),
 		WalletPassword: password,
@@ -72,10 +72,10 @@ func TestLocalKeymanager_FetchValidatingPrivateKeys(t *testing.T) {
 		dr.accountsStore.Seeds = append(dr.accountsStore.Seeds, privKeyData)
 	}
 	require.NoError(t, dr.initializeKeysCachesFromKeystore())
-	privateKeys, err := dr.FetchValidatingPrivateKeys(ctx)
+	privateKeys, err := dr.FetchValidatingSeeds(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, numAccounts, len(privateKeys))
-	// FetchValidatingPrivateKeys is also used in generating the output of account list
+	// FetchValidatingSeeds is also used in generating the output of account list
 	// therefore the results must be in the same order as the order in which the accounts were created
 	for i, key := range wantedPrivateKeys {
 		assert.Equal(t, key, privateKeys[i])
