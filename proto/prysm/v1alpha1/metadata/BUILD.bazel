@@ -3,7 +3,7 @@ load("@qrysm//tools/go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["metadata_interfaces.go"],
-    importpath = "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/metadata",
+    importpath = "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/metadata",
     visibility = ["//visibility:public"],
     deps = [
         "//proto/prysm/v1alpha1:go_default_library",

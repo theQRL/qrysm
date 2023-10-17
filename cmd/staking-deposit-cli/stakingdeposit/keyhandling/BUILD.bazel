@@ -7,7 +7,7 @@ go_library(
         "keystorecrypto.go",
         "keystoremodule.go",
     ],
-    importpath = "github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit/keyhandling",
+    importpath = "github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit/keyhandling",
     visibility = ["//visibility:public"],
     deps = [
         "//cmd/staking-deposit-cli/misc:go_default_library",

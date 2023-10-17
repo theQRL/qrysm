@@ -6,7 +6,7 @@ go_library(
         "double_votes.go",
         "surround_votes.go",
     ],
-    importpath = "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/slashings",
+    importpath = "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/slashings",
     visibility = ["//visibility:public"],
     deps = [
         "//config/params:go_default_library",

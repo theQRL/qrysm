@@ -6,7 +6,7 @@ go_library(
         "attestations.go",
         "maxcover.go",
     ],
-    importpath = "github.com/cyyber/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/attestations",
+    importpath = "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/attestations",
     visibility = ["//visibility:public"],
     deps = [
         "//crypto/dilithium:go_default_library",

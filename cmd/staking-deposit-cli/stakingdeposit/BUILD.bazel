@@ -11,7 +11,7 @@ go_library(
         "generatedilithiumtoexecutionchange.go",
         "generatekeys.go",
     ],
-    importpath = "github.com/cyyber/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit",
+    importpath = "github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit",
     visibility = ["//visibility:public"],
     deps = [
         "//beacon-chain/core/signing:go_default_library",

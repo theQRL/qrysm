@@ -7,7 +7,7 @@ go_library(
         "heap.go",
         "leakybucket.go",
     ],
-    importpath = "github.com/cyyber/qrysm/v4/container/leaky-bucket",
+    importpath = "github.com/theQRL/qrysm/v4/container/leaky-bucket",
     visibility = ["//visibility:public"],
 )
 

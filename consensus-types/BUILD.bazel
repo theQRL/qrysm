@@ -3,7 +3,7 @@ load("@qrysm//tools/go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["types.go"],
-    importpath = "github.com/cyyber/qrysm/v4/consensus-types",
+    importpath = "github.com/theQRL/qrysm/v4/consensus-types",
     visibility = ["//visibility:public"],
     deps = [
         "//runtime/version:go_default_library",

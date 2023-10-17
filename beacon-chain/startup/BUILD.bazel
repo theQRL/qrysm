@@ -6,7 +6,7 @@ go_library(
         "clock.go",
         "synchronizer.go",
     ],
-    importpath = "github.com/cyyber/qrysm/v4/beacon-chain/startup",
+    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/startup",
     visibility = ["//visibility:public"],
     deps = [
         "//consensus-types/primitives:go_default_library",

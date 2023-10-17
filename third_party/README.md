@@ -38,10 +38,10 @@ git clone https://github.com/someteam/somerepo b && cd b
 Then, make all your changes in `b` and finally create the diff of all your changes as follows:
 ```
 cd ..
-diff -ur --exclude=".git" a b > $GOPATH/src/github.com/cyyber/qrysm/third_party/YOURPATCH.patch
+diff -ur --exclude=".git" a b > $GOPATH/src/github.com/theQRL/qrysm/third_party/YOURPATCH.patch
 ```
 
-Next, we need to tell the Bazel [WORKSPACE](https://github.com/cyyber/qrysm/blob/master/WORKSPACE) to patch the specific dependency.
+Next, we need to tell the Bazel [WORKSPACE](https://github.com/theQRL/qrysm/blob/master/WORKSPACE) to patch the specific dependency.
 Here's an example for a patch we use today for the [Ethereum APIs](https://github.com/prysmaticlabs/ethereumapis)
 dependency:
 

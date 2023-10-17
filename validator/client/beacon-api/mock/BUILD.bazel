@@ -9,7 +9,7 @@ go_library(
         "json_rest_handler_mock.go",
         "state_validators_mock.go",
     ],
-    importpath = "github.com/cyyber/qrysm/v4/validator/client/beacon-api/mock",
+    importpath = "github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock",
     visibility = ["//visibility:public"],
     deps = [
         "//api/gateway/apimiddleware:go_default_library",

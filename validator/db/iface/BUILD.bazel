@@ -3,8 +3,8 @@ load("@qrysm//tools/go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["interface.go"],
-    importpath = "github.com/cyyber/qrysm/v4/validator/db/iface",
-    # Other packages must use github.com/cyyber/qrysm/v4/validator/db.Database alias.
+    importpath = "github.com/theQRL/qrysm/v4/validator/db/iface",
+    # Other packages must use github.com/theQRL/qrysm/v4/validator/db.Database alias.
     visibility = ["//validator:__subpackages__"],
     deps = [
         "//config/validator/service:go_default_library",

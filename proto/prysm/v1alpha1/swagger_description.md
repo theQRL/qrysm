@@ -28,4 +28,4 @@ For more details on JSON mapping for other types, view the relevant section in t
 
 
 ## Contributing
-We have put all of our contribution guidelines into [CONTRIBUTING.md](https://github.com/cyyber/qrysm/blob/master/CONTRIBUTING.md)! Check it out to get started.
+We have put all of our contribution guidelines into [CONTRIBUTING.md](https://github.com/theQRL/qrysm/blob/master/CONTRIBUTING.md)! Check it out to get started.

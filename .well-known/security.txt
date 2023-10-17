@@ -7,7 +7,7 @@ Encryption: openpgp4fpr:CD08DE68C60B82D3EE2A3F7D95452A701810FEDB
 Encryption: openpgp4fpr:317D6E91058F8F3C2303BA7756313E44581297A6
 Encryption: openpgp4fpr:79C59A585E3FD3AFFA00F5C22940A6479DA7C9EC
 Preferred-Languages: en
-Canonical: https://github.com/cyyber/qrysm/tree/master/.well-known/security.txt
+Canonical: https://github.com/theQRL/qrysm/tree/master/.well-known/security.txt
 -----BEGIN PGP SIGNATURE-----
 
 iQIzBAEBCgAdFiEECuAFHWR7o8GpF69AcuM+TfGlA24FAmGOfiYACgkQcuM+TfGl

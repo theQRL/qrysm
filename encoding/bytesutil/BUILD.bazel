@@ -11,7 +11,7 @@ go_library(
         "hex.go",
         "integers.go",
     ],
-    importpath = "github.com/cyyber/qrysm/v4/encoding/bytesutil",
+    importpath = "github.com/theQRL/qrysm/v4/encoding/bytesutil",
     visibility = ["//visibility:public"],
     deps = [
         "//config/fieldparams:go_default_library",

@@ -4,7 +4,7 @@ load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["main.go"],
-    importpath = "github.com/cyyber/qrysm/v4/tools/keystores",
+    importpath = "github.com/theQRL/qrysm/v4/tools/keystores",
     visibility = ["//visibility:private"],
     deps = [
         "//crypto/dilithium:go_default_library",

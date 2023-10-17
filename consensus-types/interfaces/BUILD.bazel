@@ -6,7 +6,7 @@ go_library(
         "beacon_block.go",
         "utils.go",
     ],
-    importpath = "github.com/cyyber/qrysm/v4/consensus-types/interfaces",
+    importpath = "github.com/theQRL/qrysm/v4/consensus-types/interfaces",
     visibility = ["//visibility:public"],
     deps = [
         "//config/fieldparams:go_default_library",
