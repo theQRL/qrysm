@@ -3,10 +3,10 @@
 package eth
 
 import (
+	ssz "github.com/prysmaticlabs/fastssz"
 	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	v11 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	v1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ssz "github.com/prysmaticlabs/fastssz"
 )
 
 // MarshalSSZ ssz marshals the SignedBeaconBlockBellatrix object

@@ -1700,9 +1700,9 @@ def qrysm_deps():
     go_repository(
         name = "com_github_grpc_ecosystem_grpc_gateway_v2",
         importpath = "github.com/grpc-ecosystem/grpc-gateway/v2",
-        replace = "github.com/cyyber/grpc-gateway/v2",
-        sum = "h1:YxQn0n0DuwoUoQwgQ7cK2wBcG+Ecs5x3jsj1E5iMu8k=",
-        version = "v2.0.0-20230424233637-f3393c24e034",
+        replace = "github.com/theQRL/grpc-gateway/v2",
+        sum = "h1:e4sCvuJZ377tN7JidV2gQhZSHAn9urw5Tmsl5RNib24=",
+        version = "v2.0.0-20231017104325-b6100930ca2f",
     )
 
     go_repository(

@@ -10,11 +10,11 @@ import (
 	reflect "reflect"
 	sync "sync"
 
+	github_com_prysmaticlabs_go_bitfield "github.com/prysmaticlabs/go-bitfield"
 	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	v11 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	_ "github.com/theQRL/qrysm/v4/proto/eth/ext"
 	v1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	github_com_prysmaticlabs_go_bitfield "github.com/prysmaticlabs/go-bitfield"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
