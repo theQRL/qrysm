@@ -9,7 +9,7 @@ go_library(
         "service.go",
         "types.go",
     ],
-    importpath = "github.com/cyyber/qrysm/v4/beacon-chain/operations/slashings",
+    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/operations/slashings",
     visibility = [
         "//beacon-chain:__subpackages__",
         "//testing/endtoend:__subpackages__",

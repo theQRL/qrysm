@@ -4,7 +4,7 @@ Web3Signer is a popular remote signer tool by Consensys to allow users to store 
 client and signed without the vc knowing the private keys. Web3Signer Specs are found by
 searching `Consensys' Web3Signer API specification`
 
-issue: https://github.com/cyyber/qrysm/issues/9994
+issue: https://github.com/theQRL/qrysm/issues/9994
 
 ## Support
 

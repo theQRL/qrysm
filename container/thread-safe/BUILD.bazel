@@ -3,7 +3,7 @@ load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["map.go"],
-    importpath = "github.com/cyyber/qrysm/v4/container/thread-safe",
+    importpath = "github.com/theQRL/qrysm/v4/container/thread-safe",
     visibility = ["//visibility:public"],
 )
 

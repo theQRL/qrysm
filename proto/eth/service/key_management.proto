@@ -21,7 +21,7 @@ import "google/protobuf/empty.proto";
 import "proto/eth/ext/options.proto";
 
 option csharp_namespace = "Ethereum.Eth.Service";
-option go_package = "github.com/cyyber/qrysm/v4/proto/eth/service";
+option go_package = "github.com/theQRL/qrysm/v4/proto/eth/service";
 option java_multiple_files = true;
 option java_outer_classname = "KeyManagementServiceProto";
 option java_package = "org.ethereum.eth.service";
@@ -374,14 +374,14 @@ message DeleteGasLimitRequest {
 
 message SetVoluntaryExitRequest {
   bytes pubkey = 1 [(ethereum.eth.ext.ssz_size) = "48"];
-  uint64 epoch = 2 [(ethereum.eth.ext.cast_type) = "github.com/cyyber/qrysm/v4/consensus-types/primitives.Epoch"];
+  uint64 epoch = 2 [(ethereum.eth.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
 }
 
 message SetVoluntaryExitResponse {
   message SignedVoluntaryExit {
     message VoluntaryExit {
       uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/chyyber/qrysm/v4/consensus-types/primitives.Epoch"];
-      uint64 validator_index = 2 [(ethereum.eth.ext.cast_type) = "github.com/cyyber/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
+      uint64 validator_index = 2 [(ethereum.eth.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
     }
     VoluntaryExit message = 1;
     bytes signature = 2;

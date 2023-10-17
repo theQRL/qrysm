@@ -6,7 +6,7 @@ go_library(
         "prompt.go",
         "validate.go",
     ],
-    importpath = "github.com/cyyber/qrysm/v4/io/prompt",
+    importpath = "github.com/theQRL/qrysm/v4/io/prompt",
     visibility = ["//visibility:public"],
     deps = [
         "//io/file:go_default_library",

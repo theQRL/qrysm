@@ -12,7 +12,7 @@ go_library(
         "proxy.go",
         "transactions.go",
     ],
-    importpath = "github.com/cyyber/qrysm/v4/testing/endtoend/components/eth1",
+    importpath = "github.com/theQRL/qrysm/v4/testing/endtoend/components/eth1",
     visibility = ["//testing/endtoend:__subpackages__"],
     deps = [
         "//config/params:go_default_library",

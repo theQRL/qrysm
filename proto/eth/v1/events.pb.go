@@ -10,10 +10,10 @@ import (
 	reflect "reflect"
 	sync "sync"
 
+	_ "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	v1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	_ "github.com/theQRL/qrysm/v4/proto/eth/ext"
-	_ "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )

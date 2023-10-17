@@ -7,7 +7,7 @@
 [![Discord](https://user-images.githubusercontent.com/7288322/34471967-1df7808a-efbb-11e7-9088-ed0b04151291.png)](https://discord.gg/prysmaticlabs)
 [![GitPOAP Badge](https://public-api.gitpoap.io/v1/repo/prysmaticlabs/prysm/badge)](https://www.gitpoap.io/gh/prysmaticlabs/prysm)
 
-This is the core repository for Prysm, a [Golang](https://golang.org/) implementation of the [Ethereum Consensus](https://ethereum.org/en/eth2/) specification, developed by [Prysmatic Labs](https://prysmaticlabs.com). See the [Changelog](https://github.com/cyyber/qrysm/releases) for details of the latest releases and upcoming breaking changes.
+This is the core repository for Prysm, a [Golang](https://golang.org/) implementation of the [Ethereum Consensus](https://ethereum.org/en/eth2/) specification, developed by [Prysmatic Labs](https://prysmaticlabs.com). See the [Changelog](https://github.com/theQRL/qrysm/releases) for details of the latest releases and upcoming breaking changes.
 
 ### Getting Started
 
@@ -22,8 +22,8 @@ To participate in staking, you can join the [official eth2 launchpad](https://la
 ### Branches
 Prysm maintains two permanent branches:
 
-* [master](https://github.com/cyyber/qrysm/tree/master): This points to the latest stable release. It is ideal for most users.
-* [develop](https://github.com/cyyber/qrysm/tree/develop): This is used for development, it contains the latest PRs. Developers should base their PRs on this branch.
+* [master](https://github.com/theQRL/qrysm/tree/master): This points to the latest stable release. It is ideal for most users.
+* [develop](https://github.com/theQRL/qrysm/tree/develop): This is used for development, it contains the latest PRs. Developers should base their PRs on this branch.
 
 ### Guide
 Want to get involved? Check out our [Contribution Guide](https://docs.prylabs.network/docs/contribute/contribution-guidelines/) to learn more!

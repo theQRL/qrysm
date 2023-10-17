@@ -11,7 +11,7 @@ name = "go"
 enabled = true
 
 [analyzers.meta]
-import_paths = ["github.com/cyyber/qrysm/v4"]
+import_paths = ["github.com/theQRL/qrysm/v4"]
 
 [[analyzers]]
 name = "test-coverage"

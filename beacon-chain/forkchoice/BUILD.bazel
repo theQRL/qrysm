@@ -7,7 +7,7 @@ go_library(
         "error.go",
         "interfaces.go",
     ],
-    importpath = "github.com/cyyber/qrysm/v4/beacon-chain/forkchoice",
+    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice",
     visibility = [
         "//beacon-chain:__subpackages__",
         "//cmd:__subpackages__",

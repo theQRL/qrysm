@@ -46,6 +46,6 @@ go_library(
         "sign_test.yaml.go",
         "verify_test.yaml.go",
     ],
-    importpath = "github.com/cyyber/qrysm/v4/testing/bls",
+    importpath = "github.com/theQRL/qrysm/v4/testing/bls",
     visibility = ["//visibility:public"],
 )

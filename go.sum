@@ -1230,6 +1230,7 @@ github.com/theQRL/go-zond-types v0.0.0-20230824233758-ea0b707a1e23 h1:9ifrMzlO0V
 github.com/theQRL/go-zond-wallet-encryptor-keystore v0.0.0-20230903120454-b2565dd3a98c h1:zMTNbNZo/jNeVKS7WsV0/4TcqX3A/JL3Vx/S3Jno+Bw=
 github.com/theQRL/go-zond-wallet-encryptor-keystore v0.0.0-20230903120454-b2565dd3a98c/go.mod h1:I5bUryQPoIVh1OJ1rEsrzCiX7Z9UNThZv5Z39vhU9aE=
 github.com/theQRL/go-zond-wallet-types v0.0.0-20230825000054-1d9fefb6afe7 h1:CI58ub/yz8UnaSMu9eS3o3fFnoJqA6zShtZNbgIfRgI=
+github.com/theQRL/grpc-gateway/v2 v2.0.0-20231017104325-b6100930ca2f/go.mod h1:IOyTYjcIO0rkmnGBfJTL0NJ11exy/Tc2QEuv7hCXp24=
 github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e h1:cR8/SYRgyQCt5cNCMniB/ZScMkhI9nk8U5C7SbISXjo=
 github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e/go.mod h1:Tu4lItkATkonrYuvtVjG0/rhy15qrNGNTjPdaphtZ/8=
 github.com/tinylib/msgp v1.0.2/go.mod h1:+d+yLhGm8mzTaHzB+wgMYrodPfmZrzkirds8fDWklFE=

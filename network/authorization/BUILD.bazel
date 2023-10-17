@@ -3,6 +3,6 @@ load("@qrysm//tools/go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["authorization_method.go"],
-    importpath = "github.com/cyyber/qrysm/v4/network/authorization",
+    importpath = "github.com/theQRL/qrysm/v4/network/authorization",
     visibility = ["//visibility:public"],
 )

@@ -7,7 +7,7 @@ go_library(
         "interface.go",
         "signature_batch.go",
     ],
-    importpath = "github.com/cyyber/qrysm/v4/crypto/dilithium",
+    importpath = "github.com/theQRL/qrysm/v4/crypto/dilithium",
     visibility = ["//visibility:public"],
     deps = [
         "//crypto/bls/common:go_default_library",

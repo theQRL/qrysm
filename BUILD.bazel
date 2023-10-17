@@ -5,13 +5,13 @@ load("@io_kubernetes_build//defs:run_in_workspace.bzl", "workspace_binary")
 load("@io_bazel_rules_go//go:def.bzl", "nogo")
 load("@bazel_skylib//rules:common_settings.bzl", "string_setting")
 
-prefix = "github.com/cyyber/qrysm"
+prefix = "github.com/theQRL/qrysm"
 
 exports_files([
     "LICENSE.md",
 ])
 
-# gazelle:prefix github.com/cyyber/qrysm/v4
+# gazelle:prefix github.com/theQRL/qrysm/v4
 # gazelle:map_kind go_library go_library @qrysm//tools/go:def.bzl
 # gazelle:map_kind go_test go_test @qrysm//tools/go:def.bzl
 # gazelle:map_kind go_repository go_repository @qrysm//tools/go:def.bzl

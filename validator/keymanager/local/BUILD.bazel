@@ -12,7 +12,7 @@ go_library(
         "log.go",
         "refresh.go",
     ],
-    importpath = "github.com/cyyber/qrysm/v4/validator/keymanager/local",
+    importpath = "github.com/theQRL/qrysm/v4/validator/keymanager/local",
     visibility = [
         "//cmd/validator:__subpackages__",
         "//tools:__subpackages__",
