@@ -17,7 +17,8 @@ import (
 	emptypb "github.com/golang/protobuf/ptypes/empty"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/utilities"
-	github_com_cyyber_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	github_com_theQRL_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/proto/eth/v1"
 	v1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
 	"github.com/theQRL/qrysm/v4/proto/eth/v2"
 	"google.golang.org/grpc"
@@ -35,7 +36,7 @@ var _ status.Status
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
-var _ = github_com_cyyber_qrysm_v4_consensus_types_primitives.Epoch(0)
+var _ = github_com_theQRL_qrysm_v4_consensus_types_primitives.Epoch(0)
 var _ = emptypb.Empty{}
 var _ = empty.Empty{}
 

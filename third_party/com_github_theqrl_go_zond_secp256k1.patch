@@ -10,10 +10,10 @@ diff --color -ruN a/crypto/secp256k1/BUILD.bazel b/crypto/secp256k1/BUILD.bazel
      copts = [
 -        "-Icrypto/secp256k1/libsecp256k1",
 -        "-Icrypto/secp256k1/libsecp256k1/src",
-+        "-Iexternal/com_github_ethereum_go_ethereum/crypto/secp256k1/libsecp256k1",
-+        "-Iexternal/com_github_ethereum_go_ethereum/crypto/secp256k1/libsecp256k1/src",
++        "-Iexternal/com_github_theqrl_go_zond/crypto/secp256k1/libsecp256k1",
++        "-Iexternal/com_github_theqrl_go_zond/crypto/secp256k1/libsecp256k1/src",
      ],
-     importpath = "github.com/ethereum/go-ethereum/crypto/secp256k1",
+     importpath = "github.com/theQRL/go-zond/crypto/secp256k1",
      visibility = ["//visibility:public"],
 diff --color -ruN a/crypto/secp256k1/libsecp256k1/BUILD.bazel b/crypto/secp256k1/libsecp256k1/BUILD.bazel
 --- a/crypto/secp256k1/libsecp256k1/BUILD.bazel	1969-12-31 18:00:00.000000000 -0600

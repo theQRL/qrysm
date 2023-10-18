@@ -350,7 +350,7 @@ filegroup(
     ],
 )
 
-load("//:deps.bzl", "qrysm_deps")
+load("//:deps.bzl", "go_dependencies", "qrysm_deps")
 
 # gazelle:repository_macro deps.bzl%qrysm_deps
 qrysm_deps()
@@ -390,6 +390,9 @@ load("@com_github_atlassian_bazel_tools//gometalinter:deps.bzl", "gometalinter_d
 gometalinter_dependencies()
 
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+
+# gazelle:repository_macro deps.bzl%go_dependencies
+go_dependencies()
 
 gazelle_dependencies()
 
