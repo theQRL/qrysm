@@ -1,6 +1,6 @@
 package endtoend
 
-// This file contains the dependencies required for github.com/theQRL/go-zond/cmd/geth.
+// This file contains the dependencies required for github.com/theQRL/go-zond/cmd/gzond.
 // Having these dependencies listed here helps go mod understand that these dependencies are
 // necessary for end to end tests since we build go-ethereum binary for this test.
 import (
