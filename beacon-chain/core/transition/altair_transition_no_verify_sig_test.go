@@ -17,7 +17,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -30,7 +30,7 @@ func TestExecuteAltairStateTransitionNoVerify_FullProcess(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetCurrentSyncCommittee(syncCommittee))
 
-	eth1Data := &ethpb.Eth1Data{
+	eth1Data := &zondpb.Eth1Data{
 		DepositCount: 100,
 		DepositRoot:  bytesutil.PadTo([]byte{2}, 32),
 		BlockHash:    make([]byte, 32),
@@ -42,7 +42,7 @@ func TestExecuteAltairStateTransitionNoVerify_FullProcess(t *testing.T) {
 	bh := beaconState.LatestBlockHeader()
 	bh.Slot = beaconState.Slot()
 	require.NoError(t, beaconState.SetLatestBlockHeader(bh))
-	require.NoError(t, beaconState.SetEth1DataVotes([]*ethpb.Eth1Data{eth1Data}))
+	require.NoError(t, beaconState.SetEth1DataVotes([]*zondpb.Eth1Data{eth1Data}))
 
 	require.NoError(t, beaconState.SetSlot(beaconState.Slot()+1))
 	epoch := time.CurrentEpoch(beaconState)
@@ -69,7 +69,7 @@ func TestExecuteAltairStateTransitionNoVerify_FullProcess(t *testing.T) {
 	}
 	indices, err := altair.NextSyncCommitteeIndices(context.Background(), beaconState)
 	require.NoError(t, err)
-	h := ethpb.CopyBeaconBlockHeader(beaconState.LatestBlockHeader())
+	h := zondpb.CopyBeaconBlockHeader(beaconState.LatestBlockHeader())
 	prevStateRoot, err := beaconState.HashTreeRoot(context.Background())
 	require.NoError(t, err)
 	h.StateRoot = prevStateRoot[:]
@@ -85,7 +85,7 @@ func TestExecuteAltairStateTransitionNoVerify_FullProcess(t *testing.T) {
 		syncSigs[i] = sig
 	}
 	aggregatedSig := bls.AggregateSignatures(syncSigs).Marshal()
-	syncAggregate := &ethpb.SyncAggregate{
+	syncAggregate := &zondpb.SyncAggregate{
 		SyncCommitteeBits:      syncBits,
 		SyncCommitteeSignature: aggregatedSig,
 	}
@@ -117,7 +117,7 @@ func TestExecuteAltairStateTransitionNoVerifySignature_CouldNotVerifyStateRoot(t
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetCurrentSyncCommittee(syncCommittee))
 
-	eth1Data := &ethpb.Eth1Data{
+	eth1Data := &zondpb.Eth1Data{
 		DepositCount: 100,
 		DepositRoot:  bytesutil.PadTo([]byte{2}, 32),
 		BlockHash:    make([]byte, 32),
@@ -129,7 +129,7 @@ func TestExecuteAltairStateTransitionNoVerifySignature_CouldNotVerifyStateRoot(t
 	bh := beaconState.LatestBlockHeader()
 	bh.Slot = beaconState.Slot()
 	require.NoError(t, beaconState.SetLatestBlockHeader(bh))
-	require.NoError(t, beaconState.SetEth1DataVotes([]*ethpb.Eth1Data{eth1Data}))
+	require.NoError(t, beaconState.SetEth1DataVotes([]*zondpb.Eth1Data{eth1Data}))
 
 	require.NoError(t, beaconState.SetSlot(beaconState.Slot()+1))
 	epoch := time.CurrentEpoch(beaconState)
@@ -156,7 +156,7 @@ func TestExecuteAltairStateTransitionNoVerifySignature_CouldNotVerifyStateRoot(t
 	}
 	indices, err := altair.NextSyncCommitteeIndices(context.Background(), beaconState)
 	require.NoError(t, err)
-	h := ethpb.CopyBeaconBlockHeader(beaconState.LatestBlockHeader())
+	h := zondpb.CopyBeaconBlockHeader(beaconState.LatestBlockHeader())
 	prevStateRoot, err := beaconState.HashTreeRoot(context.Background())
 	require.NoError(t, err)
 	h.StateRoot = prevStateRoot[:]
@@ -172,7 +172,7 @@ func TestExecuteAltairStateTransitionNoVerifySignature_CouldNotVerifyStateRoot(t
 		syncSigs[i] = sig
 	}
 	aggregatedSig := bls.AggregateSignatures(syncSigs).Marshal()
-	syncAggregate := &ethpb.SyncAggregate{
+	syncAggregate := &zondpb.SyncAggregate{
 		SyncCommitteeBits:      syncBits,
 		SyncCommitteeSignature: aggregatedSig,
 	}
@@ -230,7 +230,7 @@ func TestProcessEpoch_BadBalanceAltair(t *testing.T) {
 }
 
 func createFullAltairBlockWithOperations(t *testing.T) (state.BeaconState,
-	*ethpb.SignedBeaconBlockAltair) {
+	*zondpb.SignedBeaconBlockAltair) {
 	beaconState, privKeys := util.DeterministicGenesisStateAltair(t, 32)
 	sCom, err := altair.NextSyncCommittee(context.Background(), beaconState)
 	assert.NoError(t, err)

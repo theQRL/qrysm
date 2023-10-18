@@ -6,7 +6,7 @@ import (
 
 	fuzz "github.com/google/gofuzz"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
@@ -15,9 +15,9 @@ func TestGenesisBeaconState_1000(t *testing.T) {
 	defer SkipSlotCache.Enable()
 	fuzzer := fuzz.NewWithSeed(0)
 	fuzzer.NilChance(0.1)
-	deposits := make([]*ethpb.Deposit, 300000)
+	deposits := make([]*zondpb.Deposit, 300000)
 	var genesisTime uint64
-	eth1Data := &ethpb.Eth1Data{}
+	eth1Data := &zondpb.Eth1Data{}
 	for i := 0; i < 1000; i++ {
 		fuzzer.Fuzz(&deposits)
 		fuzzer.Fuzz(&genesisTime)
@@ -38,9 +38,9 @@ func TestOptimizedGenesisBeaconState_1000(t *testing.T) {
 	fuzzer := fuzz.NewWithSeed(0)
 	fuzzer.NilChance(0.1)
 	var genesisTime uint64
-	preState, err := state_native.InitializeFromProtoUnsafePhase0(&ethpb.BeaconState{})
+	preState, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
 	require.NoError(t, err)
-	eth1Data := &ethpb.Eth1Data{}
+	eth1Data := &zondpb.Eth1Data{}
 	for i := 0; i < 1000; i++ {
 		fuzzer.Fuzz(&genesisTime)
 		fuzzer.Fuzz(eth1Data)

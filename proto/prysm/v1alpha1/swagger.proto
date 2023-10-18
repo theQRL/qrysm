@@ -16,15 +16,15 @@
 // generating the OpenAPIv2(swagger) header.
 syntax = "proto3";
 
-package ethereum.eth.v1alpha1;
+package theqrl.zond.v1alpha1;
 
 import "protoc-gen-openapiv2/options/annotations.proto";
 
-option go_package = "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1;eth";
+option go_package = "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1;zond";
 
 option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
     info: {
-        title: "Ethereum Serenity APIs";
+        title: "Zond Serenity APIs";
         version: "v1alpha1";
         license: {
             name: "Licenced under Apache 2.0";

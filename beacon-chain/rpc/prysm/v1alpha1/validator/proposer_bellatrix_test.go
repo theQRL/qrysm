@@ -28,7 +28,7 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/encoding/ssz"
 	v1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -53,7 +53,7 @@ func TestServer_setExecutionData(t *testing.T) {
 	b2rCapella, err := b2pbCapella.Block.HashTreeRoot()
 	require.NoError(t, err)
 	util.SaveBlock(t, context.Background(), beaconDB, b2pbCapella)
-	require.NoError(t, capellaTransitionState.SetFinalizedCheckpoint(&ethpb.Checkpoint{
+	require.NoError(t, capellaTransitionState.SetFinalizedCheckpoint(&zondpb.Checkpoint{
 		Root: b2rCapella[:],
 	}))
 	require.NoError(t, beaconDB.SaveFeeRecipientsByValidatorIDs(context.Background(), []primitives.ValidatorIndex{0}, []common.Address{{}}))
@@ -92,12 +92,12 @@ func TestServer_setExecutionData(t *testing.T) {
 		blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 		require.NoError(t, err)
 		require.NoError(t, vs.BeaconDB.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{blk.Block().ProposerIndex()},
-			[]*ethpb.ValidatorRegistrationV1{{FeeRecipient: make([]byte, fieldparams.FeeRecipientLength), Timestamp: uint64(time.Now().Unix()), Pubkey: make([]byte, dilithium2.CryptoPublicKeyBytes)}}))
+			[]*zondpb.ValidatorRegistrationV1{{FeeRecipient: make([]byte, fieldparams.FeeRecipientLength), Timestamp: uint64(time.Now().Unix()), Pubkey: make([]byte, dilithium2.CryptoPublicKeyBytes)}}))
 		ti, err := slots.ToTime(uint64(time.Now().Unix()), 0)
 		require.NoError(t, err)
 		sk, err := dilithium.RandKey()
 		require.NoError(t, err)
-		bid := &ethpb.BuilderBidCapella{
+		bid := &zondpb.BuilderBidCapella{
 			Header: &v1.ExecutionPayloadHeaderCapella{
 				FeeRecipient:     make([]byte, fieldparams.FeeRecipientLength),
 				StateRoot:        make([]byte, fieldparams.RootLength),
@@ -120,7 +120,7 @@ func TestServer_setExecutionData(t *testing.T) {
 		require.NoError(t, err)
 		sr, err := signing.ComputeSigningRoot(bid, domain)
 		require.NoError(t, err)
-		sBid := &ethpb.SignedBuilderBidCapella{
+		sBid := &zondpb.SignedBuilderBidCapella{
 			Message:   bid,
 			Signature: sk.Sign(sr[:]).Marshal(),
 		}
@@ -151,7 +151,7 @@ func TestServer_setExecutionData(t *testing.T) {
 		blk, err := blocks.NewSignedBeaconBlock(util.NewBlindedBeaconBlockCapella())
 		require.NoError(t, err)
 		require.NoError(t, vs.BeaconDB.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{blk.Block().ProposerIndex()},
-			[]*ethpb.ValidatorRegistrationV1{{FeeRecipient: make([]byte, fieldparams.FeeRecipientLength), Timestamp: uint64(time.Now().Unix()), Pubkey: make([]byte, dilithium2.CryptoPublicKeyBytes)}}))
+			[]*zondpb.ValidatorRegistrationV1{{FeeRecipient: make([]byte, fieldparams.FeeRecipientLength), Timestamp: uint64(time.Now().Unix()), Pubkey: make([]byte, dilithium2.CryptoPublicKeyBytes)}}))
 		ti, err := slots.ToTime(uint64(time.Now().Unix()), 0)
 		require.NoError(t, err)
 		sk, err := dilithium.RandKey()
@@ -159,7 +159,7 @@ func TestServer_setExecutionData(t *testing.T) {
 		wr, err := ssz.WithdrawalSliceRoot(withdrawals, fieldparams.MaxWithdrawalsPerPayload)
 		require.NoError(t, err)
 		builderValue := bytesutil.ReverseByteOrder(big.NewInt(1e9).Bytes())
-		bid := &ethpb.BuilderBidCapella{
+		bid := &zondpb.BuilderBidCapella{
 			Header: &v1.ExecutionPayloadHeaderCapella{
 				FeeRecipient:     make([]byte, fieldparams.FeeRecipientLength),
 				StateRoot:        make([]byte, fieldparams.RootLength),
@@ -182,7 +182,7 @@ func TestServer_setExecutionData(t *testing.T) {
 		require.NoError(t, err)
 		sr, err := signing.ComputeSigningRoot(bid, domain)
 		require.NoError(t, err)
-		sBid := &ethpb.SignedBuilderBidCapella{
+		sBid := &zondpb.SignedBuilderBidCapella{
 			Message:   bid,
 			Signature: sk.Sign(sr[:]).Marshal(),
 		}
@@ -285,7 +285,7 @@ func TestServer_getPayloadHeader(t *testing.T) {
 
 	sk, err := dilithium.RandKey()
 	require.NoError(t, err)
-	bid := &ethpb.BuilderBid{
+	bid := &zondpb.BuilderBid{
 		Header: &v1.ExecutionPayloadHeader{
 			FeeRecipient:     make([]byte, fieldparams.FeeRecipientLength),
 			StateRoot:        make([]byte, fieldparams.RootLength),
@@ -306,7 +306,7 @@ func TestServer_getPayloadHeader(t *testing.T) {
 	require.NoError(t, err)
 	sr, err := signing.ComputeSigningRoot(bid, domain)
 	require.NoError(t, err)
-	sBid := &ethpb.SignedBuilderBid{
+	sBid := &zondpb.SignedBuilderBid{
 		Message:   bid,
 		Signature: sk.Sign(sr[:]).Marshal(),
 	}
@@ -321,7 +321,7 @@ func TestServer_getPayloadHeader(t *testing.T) {
 
 	tiCapella, err := slots.ToTime(uint64(genesis.Unix()), primitives.Slot(fakeCapellaEpoch)*params.BeaconConfig().SlotsPerEpoch)
 	require.NoError(t, err)
-	bidCapella := &ethpb.BuilderBidCapella{
+	bidCapella := &zondpb.BuilderBidCapella{
 		Header: &v1.ExecutionPayloadHeaderCapella{
 			FeeRecipient:     make([]byte, fieldparams.FeeRecipientLength),
 			StateRoot:        make([]byte, fieldparams.RootLength),
@@ -340,7 +340,7 @@ func TestServer_getPayloadHeader(t *testing.T) {
 	}
 	srCapella, err := signing.ComputeSigningRoot(bidCapella, domain)
 	require.NoError(t, err)
-	sBidCapella := &ethpb.SignedBuilderBidCapella{
+	sBidCapella := &zondpb.SignedBuilderBidCapella{
 		Message:   bidCapella,
 		Signature: sk.Sign(srCapella[:]).Marshal(),
 	}
@@ -386,8 +386,8 @@ func TestServer_getPayloadHeader(t *testing.T) {
 		{
 			name: "0 bid",
 			mock: &builderTest.MockBuilderService{
-				Bid: &ethpb.SignedBuilderBid{
-					Message: &ethpb.BuilderBid{
+				Bid: &zondpb.SignedBuilderBid{
+					Message: &zondpb.BuilderBid{
 						Header: &v1.ExecutionPayloadHeader{
 							BlockNumber: 123,
 						},
@@ -407,8 +407,8 @@ func TestServer_getPayloadHeader(t *testing.T) {
 		{
 			name: "invalid tx root",
 			mock: &builderTest.MockBuilderService{
-				Bid: &ethpb.SignedBuilderBid{
-					Message: &ethpb.BuilderBid{
+				Bid: &zondpb.SignedBuilderBid{
+					Message: &zondpb.BuilderBid{
 						Value: []byte{1},
 						Header: &v1.ExecutionPayloadHeader{
 							BlockNumber:      123,
@@ -503,7 +503,7 @@ func TestServer_getPayloadHeader(t *testing.T) {
 func TestServer_validateBuilderSignature(t *testing.T) {
 	sk, err := dilithium.RandKey()
 	require.NoError(t, err)
-	bid := &ethpb.BuilderBid{
+	bid := &zondpb.BuilderBid{
 		Header: &v1.ExecutionPayloadHeader{
 			ParentHash:       make([]byte, fieldparams.RootLength),
 			FeeRecipient:     make([]byte, fieldparams.FeeRecipientLength),
@@ -524,7 +524,7 @@ func TestServer_validateBuilderSignature(t *testing.T) {
 	require.NoError(t, err)
 	sr, err := signing.ComputeSigningRoot(bid, domain)
 	require.NoError(t, err)
-	pbBid := &ethpb.SignedBuilderBid{
+	pbBid := &zondpb.SignedBuilderBid{
 		Message:   bid,
 		Signature: sk.Sign(sr[:]).Marshal(),
 	}

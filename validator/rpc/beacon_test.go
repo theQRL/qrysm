@@ -8,7 +8,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -45,19 +45,19 @@ func TestGetBeaconStatus_OK(t *testing.T) {
 	nodeClient.EXPECT().GetSyncStatus(
 		gomock.Any(), // ctx
 		gomock.Any(),
-	).Return(&ethpb.SyncStatus{Syncing: true}, nil)
+	).Return(&zondpb.SyncStatus{Syncing: true}, nil)
 	timeStamp := timestamppb.New(time.Unix(0, 0))
 	nodeClient.EXPECT().GetGenesis(
 		gomock.Any(), // ctx
 		gomock.Any(),
-	).Return(&ethpb.Genesis{
+	).Return(&zondpb.Genesis{
 		GenesisTime:            timeStamp,
 		DepositContractAddress: []byte("hello"),
 	}, nil)
 	beaconChainClient.EXPECT().GetChainHead(
 		gomock.Any(), // ctx
 		gomock.Any(),
-	).Return(&ethpb.ChainHead{
+	).Return(&zondpb.ChainHead{
 		HeadEpoch: 1,
 	}, nil)
 	srv := &Server{
@@ -73,7 +73,7 @@ func TestGetBeaconStatus_OK(t *testing.T) {
 		Syncing:                true,
 		GenesisTime:            uint64(time.Unix(0, 0).Unix()),
 		DepositContractAddress: []byte("hello"),
-		ChainHead: &ethpb.ChainHead{
+		ChainHead: &zondpb.ChainHead{
 			HeadEpoch: 1,
 		},
 	}

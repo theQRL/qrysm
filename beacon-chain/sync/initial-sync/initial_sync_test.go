@@ -28,7 +28,7 @@ import (
 	"github.com/theQRL/qrysm/v4/container/slice"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -92,7 +92,7 @@ func initializeTestServices(t *testing.T, slots []primitives.Slot, peers []*peer
 		State: st,
 		Root:  genesisRoot[:],
 		DB:    beaconDB,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 		},
 		Genesis:        time.Now(),
@@ -173,7 +173,7 @@ func connectPeer(t *testing.T, host *p2pt.TestP2P, datum *peerData, peerStatus *
 			assert.NoError(t, stream.Close())
 		}()
 
-		req := &ethpb.BeaconBlocksByRangeRequest{}
+		req := &zondpb.BeaconBlocksByRangeRequest{}
 		assert.NoError(t, p.Encoding().DecodeWithMaxLength(stream, req))
 
 		requestedBlocks := makeSequence(req.StartSlot, req.StartSlot.Add((req.Count-1)*req.Step))
@@ -191,7 +191,7 @@ func connectPeer(t *testing.T, host *p2pt.TestP2P, datum *peerData, peerStatus *
 		// Determine the correct subset of blocks to return as dictated by the test scenario.
 		ss := slice.IntersectionSlot(datum.blocks, requestedBlocks)
 
-		ret := make([]*ethpb.SignedBeaconBlock, 0)
+		ret := make([]*zondpb.SignedBeaconBlock, 0)
 		for _, slot := range ss {
 			if (slot - req.StartSlot).Mod(req.Step) != 0 {
 				continue
@@ -228,7 +228,7 @@ func connectPeer(t *testing.T, host *p2pt.TestP2P, datum *peerData, peerStatus *
 
 	peerStatus.Add(new(enr.Record), p.PeerID(), nil, network.DirOutbound)
 	peerStatus.SetConnectionState(p.PeerID(), peers.PeerConnected)
-	peerStatus.SetChainState(p.PeerID(), &ethpb.Status{
+	peerStatus.SetChainState(p.PeerID(), &zondpb.Status{
 		ForkDigest:     params.BeaconConfig().GenesisForkVersion,
 		FinalizedRoot:  []byte(fmt.Sprintf("finalized_root %d", datum.finalizedEpoch)),
 		FinalizedEpoch: datum.finalizedEpoch,
@@ -240,9 +240,9 @@ func connectPeer(t *testing.T, host *p2pt.TestP2P, datum *peerData, peerStatus *
 }
 
 // extendBlockSequence extends block chain sequentially (creating genesis block, if necessary).
-func extendBlockSequence(t *testing.T, inSeq []*ethpb.SignedBeaconBlock, size int) []*ethpb.SignedBeaconBlock {
+func extendBlockSequence(t *testing.T, inSeq []*zondpb.SignedBeaconBlock, size int) []*zondpb.SignedBeaconBlock {
 	// Start from the original sequence.
-	outSeq := make([]*ethpb.SignedBeaconBlock, len(inSeq)+size)
+	outSeq := make([]*zondpb.SignedBeaconBlock, len(inSeq)+size)
 	copy(outSeq, inSeq)
 
 	// See if genesis block needs to be created.
@@ -271,7 +271,7 @@ func extendBlockSequence(t *testing.T, inSeq []*ethpb.SignedBeaconBlock, size in
 
 // connectPeerHavingBlocks connect host with a peer having provided blocks.
 func connectPeerHavingBlocks(
-	t *testing.T, host *p2pt.TestP2P, blks []*ethpb.SignedBeaconBlock, finalizedSlot primitives.Slot,
+	t *testing.T, host *p2pt.TestP2P, blks []*zondpb.SignedBeaconBlock, finalizedSlot primitives.Slot,
 	peerStatus *peers.Status,
 ) peer.ID {
 	p := p2pt.NewTestP2P(t)
@@ -282,7 +282,7 @@ func connectPeerHavingBlocks(
 			_ = _err
 		}()
 
-		req := &ethpb.BeaconBlocksByRangeRequest{}
+		req := &zondpb.BeaconBlocksByRangeRequest{}
 		assert.NoError(t, p.Encoding().DecodeWithMaxLength(stream, req))
 
 		for i := req.StartSlot; i < req.StartSlot.Add(req.Count*req.Step); i += primitives.Slot(req.Step) {
@@ -327,7 +327,7 @@ func connectPeerHavingBlocks(
 
 	peerStatus.Add(new(enr.Record), p.PeerID(), nil, network.DirOutbound)
 	peerStatus.SetConnectionState(p.PeerID(), peers.PeerConnected)
-	peerStatus.SetChainState(p.PeerID(), &ethpb.Status{
+	peerStatus.SetChainState(p.PeerID(), &zondpb.Status{
 		ForkDigest:     params.BeaconConfig().GenesisForkVersion,
 		FinalizedRoot:  []byte(fmt.Sprintf("finalized_root %d", finalizedEpoch)),
 		FinalizedEpoch: finalizedEpoch,

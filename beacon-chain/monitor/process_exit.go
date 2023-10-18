@@ -3,7 +3,7 @@ package monitor
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // processExitsFromBlock logs the event when a tracked validators' exit was included in a block
@@ -22,7 +22,7 @@ func (s *Service) processExitsFromBlock(blk interfaces.ReadOnlyBeaconBlock) {
 }
 
 // processExit logs the event when tracked validators' exit was processed
-func (s *Service) processExit(exit *ethpb.SignedVoluntaryExit) {
+func (s *Service) processExit(exit *zondpb.SignedVoluntaryExit) {
 	idx := exit.Exit.ValidatorIndex
 	s.RLock()
 	defer s.RUnlock()

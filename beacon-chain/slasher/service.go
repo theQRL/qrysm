@@ -18,7 +18,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/sync"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -44,11 +44,11 @@ type ServiceConfig struct {
 
 // SlashingChecker is an interface for defining services that the beacon node may interact with to provide slashing data.
 type SlashingChecker interface {
-	IsSlashableBlock(ctx context.Context, proposal *ethpb.SignedBeaconBlockHeader) (*ethpb.ProposerSlashing, error)
-	IsSlashableAttestation(ctx context.Context, attestation *ethpb.IndexedAttestation) ([]*ethpb.AttesterSlashing, error)
+	IsSlashableBlock(ctx context.Context, proposal *zondpb.SignedBeaconBlockHeader) (*zondpb.ProposerSlashing, error)
+	IsSlashableAttestation(ctx context.Context, attestation *zondpb.IndexedAttestation) ([]*zondpb.AttesterSlashing, error)
 	HighestAttestations(
 		ctx context.Context, indices []primitives.ValidatorIndex,
-	) ([]*ethpb.HighestAttestation, error)
+	) ([]*zondpb.HighestAttestation, error)
 }
 
 // Service defining a slasher implementation as part of
@@ -56,8 +56,8 @@ type SlashingChecker interface {
 type Service struct {
 	params                         *Parameters
 	serviceCfg                     *ServiceConfig
-	indexedAttsChan                chan *ethpb.IndexedAttestation
-	beaconBlockHeadersChan         chan *ethpb.SignedBeaconBlockHeader
+	indexedAttsChan                chan *zondpb.IndexedAttestation
+	beaconBlockHeadersChan         chan *zondpb.SignedBeaconBlockHeader
 	attsQueue                      *attestationsQueue
 	blksQueue                      *blocksQueue
 	ctx                            context.Context
@@ -75,8 +75,8 @@ func New(ctx context.Context, srvCfg *ServiceConfig) (*Service, error) {
 	return &Service{
 		params:                         DefaultParams(),
 		serviceCfg:                     srvCfg,
-		indexedAttsChan:                make(chan *ethpb.IndexedAttestation, 1),
-		beaconBlockHeadersChan:         make(chan *ethpb.SignedBeaconBlockHeader, 1),
+		indexedAttsChan:                make(chan *zondpb.IndexedAttestation, 1),
+		beaconBlockHeadersChan:         make(chan *zondpb.SignedBeaconBlockHeader, 1),
 		attsQueue:                      newAttestationsQueue(),
 		blksQueue:                      newBlocksQueue(),
 		ctx:                            ctx,
@@ -124,8 +124,8 @@ func (s *Service) run() {
 		"Finished retrieving last epoch written per validator",
 	)
 
-	indexedAttsChan := make(chan *ethpb.IndexedAttestation, 1)
-	beaconBlockHeadersChan := make(chan *ethpb.SignedBeaconBlockHeader, 1)
+	indexedAttsChan := make(chan *zondpb.IndexedAttestation, 1)
+	beaconBlockHeadersChan := make(chan *zondpb.SignedBeaconBlockHeader, 1)
 	go s.receiveAttestations(s.ctx, indexedAttsChan)
 	go s.receiveBlocks(s.ctx, beaconBlockHeadersChan)
 

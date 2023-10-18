@@ -24,7 +24,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -41,17 +41,17 @@ func TestProcessPendingAtts_NoBlockRequestBlock(t *testing.T) {
 	assert.Equal(t, 1, len(p1.BHost.Network().Peers()), "Expected peers to be connected")
 	p1.Peers().Add(new(enr.Record), p2.PeerID(), nil, network.DirOutbound)
 	p1.Peers().SetConnectionState(p2.PeerID(), peers.PeerConnected)
-	p1.Peers().SetChainState(p2.PeerID(), &ethpb.Status{})
+	p1.Peers().SetChainState(p2.PeerID(), &zondpb.Status{})
 
-	chain := &mock.ChainService{Genesis: prysmTime.Now(), FinalizedCheckPoint: &ethpb.Checkpoint{}}
+	chain := &mock.ChainService{Genesis: prysmTime.Now(), FinalizedCheckPoint: &zondpb.Checkpoint{}}
 	r := &Service{
 		cfg:                  &config{p2p: p1, beaconDB: db, chain: chain, clock: startup.NewClock(chain.Genesis, chain.ValidatorsRoot)},
-		blkRootToPendingAtts: make(map[[32]byte][]*ethpb.SignedAggregateAttestationAndProof),
+		blkRootToPendingAtts: make(map[[32]byte][]*zondpb.SignedAggregateAttestationAndProof),
 		chainStarted:         abool.New(),
 	}
 
-	a := &ethpb.AggregateAttestationAndProof{Aggregate: &ethpb.Attestation{Data: &ethpb.AttestationData{Target: &ethpb.Checkpoint{Root: make([]byte, 32)}}}}
-	r.blkRootToPendingAtts[[32]byte{'A'}] = []*ethpb.SignedAggregateAttestationAndProof{{Message: a}}
+	a := &zondpb.AggregateAttestationAndProof{Aggregate: &zondpb.Attestation{Data: &zondpb.AttestationData{Target: &zondpb.Checkpoint{Root: make([]byte, 32)}}}}
+	r.blkRootToPendingAtts[[32]byte{'A'}] = []*zondpb.SignedAggregateAttestationAndProof{{Message: a}}
 	require.NoError(t, r.processPendingAtts(context.Background()))
 	require.LogsContain(t, hook, "Requesting block for pending attestation")
 }
@@ -71,11 +71,11 @@ func TestProcessPendingAtts_HasBlockSaveUnAggregatedAtt(t *testing.T) {
 
 	aggBits := bitfield.NewBitlist(8)
 	aggBits.SetBitAt(1, true)
-	att := &ethpb.Attestation{
-		Data: &ethpb.AttestationData{
+	att := &zondpb.Attestation{
+		Data: &zondpb.AttestationData{
 			BeaconBlockRoot: root[:],
-			Source:          &ethpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
-			Target:          &ethpb.Checkpoint{Epoch: 0, Root: root[:]},
+			Source:          &zondpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
+			Target:          &zondpb.Checkpoint{Epoch: 0, Root: root[:]},
 		},
 		AggregationBits: aggBits,
 	}
@@ -97,7 +97,7 @@ func TestProcessPendingAtts_HasBlockSaveUnAggregatedAtt(t *testing.T) {
 	sszUint := primitives.SSZUint64(att.Data.Slot)
 	sig, err := signing.ComputeDomainAndSign(beaconState, 0, &sszUint, params.BeaconConfig().DomainSelectionProof, privKeys[aggregatorIndex])
 	require.NoError(t, err)
-	aggregateAndProof := &ethpb.AggregateAttestationAndProof{
+	aggregateAndProof := &zondpb.AggregateAttestationAndProof{
 		SelectionProof:  sig,
 		Aggregate:       att,
 		AggregatorIndex: aggregatorIndex,
@@ -109,7 +109,7 @@ func TestProcessPendingAtts_HasBlockSaveUnAggregatedAtt(t *testing.T) {
 
 	chain := &mock.ChainService{Genesis: time.Now(),
 		State: beaconState,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Root:  aggregateAndProof.Aggregate.Data.BeaconBlockRoot,
 			Epoch: 0,
 		},
@@ -124,7 +124,7 @@ func TestProcessPendingAtts_HasBlockSaveUnAggregatedAtt(t *testing.T) {
 			clock:    startup.NewClock(chain.Genesis, chain.ValidatorsRoot),
 			attPool:  attestations.NewPool(),
 		},
-		blkRootToPendingAtts:             make(map[[32]byte][]*ethpb.SignedAggregateAttestationAndProof),
+		blkRootToPendingAtts:             make(map[[32]byte][]*zondpb.SignedAggregateAttestationAndProof),
 		seenUnAggregatedAttestationCache: lruwrpr.New(10),
 		signatureChan:                    make(chan *signatureVerifier, verifierLimit),
 	}
@@ -134,7 +134,7 @@ func TestProcessPendingAtts_HasBlockSaveUnAggregatedAtt(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, r.cfg.beaconDB.SaveState(context.Background(), s, root))
 
-	r.blkRootToPendingAtts[root] = []*ethpb.SignedAggregateAttestationAndProof{{Message: aggregateAndProof, Signature: aggreSig}}
+	r.blkRootToPendingAtts[root] = []*zondpb.SignedAggregateAttestationAndProof{{Message: aggregateAndProof, Signature: aggreSig}}
 	require.NoError(t, r.processPendingAtts(context.Background()))
 
 	atts, err := r.cfg.attPool.UnaggregatedAttestations()
@@ -153,7 +153,7 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 	s, _ := util.DeterministicGenesisState(t, 256)
 	chain := &mock.ChainService{
 		State:   s,
-		Genesis: prysmTime.Now(), FinalizedCheckPoint: &ethpb.Checkpoint{Root: make([]byte, 32)}}
+		Genesis: prysmTime.Now(), FinalizedCheckPoint: &zondpb.Checkpoint{Root: make([]byte, 32)}}
 	r := &Service{
 		cfg: &config{
 			p2p:      p1,
@@ -162,16 +162,16 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 			clock:    startup.NewClock(chain.Genesis, chain.ValidatorsRoot),
 			attPool:  attestations.NewPool(),
 		},
-		blkRootToPendingAtts: make(map[[32]byte][]*ethpb.SignedAggregateAttestationAndProof),
+		blkRootToPendingAtts: make(map[[32]byte][]*zondpb.SignedAggregateAttestationAndProof),
 	}
 
 	priv, err := bls.RandKey()
 	require.NoError(t, err)
-	a := &ethpb.AggregateAttestationAndProof{
-		Aggregate: &ethpb.Attestation{
+	a := &zondpb.AggregateAttestationAndProof{
+		Aggregate: &zondpb.Attestation{
 			Signature:       priv.Sign([]byte("foo")).Marshal(),
 			AggregationBits: bitfield.Bitlist{0x02},
-			Data:            util.HydrateAttestationData(&ethpb.AttestationData{}),
+			Data:            util.HydrateAttestationData(&zondpb.AttestationData{}),
 		},
 		SelectionProof: make([]byte, dilithium2.CryptoBytes),
 	}
@@ -182,7 +182,7 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 	util.SaveBlock(t, context.Background(), r.cfg.beaconDB, b)
 	require.NoError(t, r.cfg.beaconDB.SaveState(context.Background(), s, r32))
 
-	r.blkRootToPendingAtts[r32] = []*ethpb.SignedAggregateAttestationAndProof{{Message: a, Signature: make([]byte, dilithium2.CryptoBytes)}}
+	r.blkRootToPendingAtts[r32] = []*zondpb.SignedAggregateAttestationAndProof{{Message: a, Signature: make([]byte, dilithium2.CryptoBytes)}}
 	require.NoError(t, r.processPendingAtts(context.Background()))
 
 	assert.Equal(t, false, p1.BroadcastCalled, "Broadcasted bad aggregate")
@@ -195,11 +195,11 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 	_, privKeys := util.DeterministicGenesisState(t, validators)
 	aggBits := bitfield.NewBitlist(8)
 	aggBits.SetBitAt(1, true)
-	att := &ethpb.Attestation{
-		Data: &ethpb.AttestationData{
+	att := &zondpb.Attestation{
+		Data: &zondpb.AttestationData{
 			BeaconBlockRoot: r32[:],
-			Source:          &ethpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
-			Target:          &ethpb.Checkpoint{Epoch: 0, Root: r32[:]},
+			Source:          &zondpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
+			Target:          &zondpb.Checkpoint{Epoch: 0, Root: r32[:]},
 		},
 		AggregationBits: aggBits,
 	}
@@ -220,7 +220,7 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 	sszSlot := primitives.SSZUint64(att.Data.Slot)
 	sig, err := signing.ComputeDomainAndSign(s, 0, &sszSlot, params.BeaconConfig().DomainSelectionProof, privKeys[aggregatorIndex])
 	require.NoError(t, err)
-	aggregateAndProof := &ethpb.AggregateAttestationAndProof{
+	aggregateAndProof := &zondpb.AggregateAttestationAndProof{
 		SelectionProof:  sig,
 		Aggregate:       att,
 		AggregatorIndex: aggregatorIndex,
@@ -232,7 +232,7 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	chain2 := &mock.ChainService{Genesis: time.Now(),
 		State: s,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Root:  aggregateAndProof.Aggregate.Data.BeaconBlockRoot,
 			Epoch: 0,
 		}}
@@ -245,13 +245,13 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 			clock:    startup.NewClock(chain2.Genesis, chain2.ValidatorsRoot),
 			attPool:  attestations.NewPool(),
 		},
-		blkRootToPendingAtts:             make(map[[32]byte][]*ethpb.SignedAggregateAttestationAndProof),
+		blkRootToPendingAtts:             make(map[[32]byte][]*zondpb.SignedAggregateAttestationAndProof),
 		seenUnAggregatedAttestationCache: lruwrpr.New(10),
 		signatureChan:                    make(chan *signatureVerifier, verifierLimit),
 	}
 	go r.verifierRoutine()
 
-	r.blkRootToPendingAtts[r32] = []*ethpb.SignedAggregateAttestationAndProof{{Message: aggregateAndProof, Signature: aggreSig}}
+	r.blkRootToPendingAtts[r32] = []*zondpb.SignedAggregateAttestationAndProof{{Message: aggregateAndProof, Signature: aggreSig}}
 	require.NoError(t, r.processPendingAtts(context.Background()))
 
 	assert.Equal(t, true, p1.BroadcastCalled, "Could not broadcast the good aggregate")
@@ -274,11 +274,11 @@ func TestProcessPendingAtts_HasBlockSaveAggregatedAtt(t *testing.T) {
 	aggBits := bitfield.NewBitlist(validators / uint64(params.BeaconConfig().SlotsPerEpoch))
 	aggBits.SetBitAt(0, true)
 	aggBits.SetBitAt(1, true)
-	att := &ethpb.Attestation{
-		Data: &ethpb.AttestationData{
+	att := &zondpb.Attestation{
+		Data: &zondpb.AttestationData{
 			BeaconBlockRoot: root[:],
-			Source:          &ethpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
-			Target:          &ethpb.Checkpoint{Epoch: 0, Root: root[:]},
+			Source:          &zondpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
+			Target:          &zondpb.Checkpoint{Epoch: 0, Root: root[:]},
 		},
 		AggregationBits: aggBits,
 	}
@@ -303,7 +303,7 @@ func TestProcessPendingAtts_HasBlockSaveAggregatedAtt(t *testing.T) {
 	sszUint := primitives.SSZUint64(att.Data.Slot)
 	sig, err := signing.ComputeDomainAndSign(beaconState, 0, &sszUint, params.BeaconConfig().DomainSelectionProof, privKeys[aggregatorIndex])
 	require.NoError(t, err)
-	aggregateAndProof := &ethpb.AggregateAttestationAndProof{
+	aggregateAndProof := &zondpb.AggregateAttestationAndProof{
 		SelectionProof:  sig,
 		Aggregate:       att,
 		AggregatorIndex: aggregatorIndex,
@@ -316,7 +316,7 @@ func TestProcessPendingAtts_HasBlockSaveAggregatedAtt(t *testing.T) {
 	chain := &mock.ChainService{Genesis: time.Now(),
 		DB:    db,
 		State: beaconState,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Root:  aggregateAndProof.Aggregate.Data.BeaconBlockRoot,
 			Epoch: 0,
 		}}
@@ -330,7 +330,7 @@ func TestProcessPendingAtts_HasBlockSaveAggregatedAtt(t *testing.T) {
 			clock:    startup.NewClock(chain.Genesis, chain.ValidatorsRoot),
 			attPool:  attestations.NewPool(),
 		},
-		blkRootToPendingAtts:           make(map[[32]byte][]*ethpb.SignedAggregateAttestationAndProof),
+		blkRootToPendingAtts:           make(map[[32]byte][]*zondpb.SignedAggregateAttestationAndProof),
 		seenAggregatedAttestationCache: lruwrpr.New(10),
 		signatureChan:                  make(chan *signatureVerifier, verifierLimit),
 	}
@@ -339,7 +339,7 @@ func TestProcessPendingAtts_HasBlockSaveAggregatedAtt(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, r.cfg.beaconDB.SaveState(context.Background(), s, root))
 
-	r.blkRootToPendingAtts[root] = []*ethpb.SignedAggregateAttestationAndProof{{Message: aggregateAndProof, Signature: aggreSig}}
+	r.blkRootToPendingAtts[root] = []*zondpb.SignedAggregateAttestationAndProof{{Message: aggregateAndProof, Signature: aggreSig}}
 	require.NoError(t, r.processPendingAtts(context.Background()))
 
 	assert.Equal(t, 1, len(r.cfg.attPool.AggregatedAttestations()), "Did not save aggregated att")
@@ -353,7 +353,7 @@ func TestProcessPendingAtts_HasBlockSaveAggregatedAtt(t *testing.T) {
 
 func TestValidatePendingAtts_CanPruneOldAtts(t *testing.T) {
 	s := &Service{
-		blkRootToPendingAtts: make(map[[32]byte][]*ethpb.SignedAggregateAttestationAndProof),
+		blkRootToPendingAtts: make(map[[32]byte][]*zondpb.SignedAggregateAttestationAndProof),
 	}
 
 	// 100 Attestations per block root.
@@ -362,21 +362,21 @@ func TestValidatePendingAtts_CanPruneOldAtts(t *testing.T) {
 	r3 := [32]byte{'C'}
 
 	for i := primitives.Slot(0); i < 100; i++ {
-		s.savePendingAtt(&ethpb.SignedAggregateAttestationAndProof{
-			Message: &ethpb.AggregateAttestationAndProof{
+		s.savePendingAtt(&zondpb.SignedAggregateAttestationAndProof{
+			Message: &zondpb.AggregateAttestationAndProof{
 				AggregatorIndex: primitives.ValidatorIndex(i),
-				Aggregate: &ethpb.Attestation{
-					Data: &ethpb.AttestationData{Slot: i, BeaconBlockRoot: r1[:]}}}})
-		s.savePendingAtt(&ethpb.SignedAggregateAttestationAndProof{
-			Message: &ethpb.AggregateAttestationAndProof{
+				Aggregate: &zondpb.Attestation{
+					Data: &zondpb.AttestationData{Slot: i, BeaconBlockRoot: r1[:]}}}})
+		s.savePendingAtt(&zondpb.SignedAggregateAttestationAndProof{
+			Message: &zondpb.AggregateAttestationAndProof{
 				AggregatorIndex: primitives.ValidatorIndex(i*2 + i),
-				Aggregate: &ethpb.Attestation{
-					Data: &ethpb.AttestationData{Slot: i, BeaconBlockRoot: r2[:]}}}})
-		s.savePendingAtt(&ethpb.SignedAggregateAttestationAndProof{
-			Message: &ethpb.AggregateAttestationAndProof{
+				Aggregate: &zondpb.Attestation{
+					Data: &zondpb.AttestationData{Slot: i, BeaconBlockRoot: r2[:]}}}})
+		s.savePendingAtt(&zondpb.SignedAggregateAttestationAndProof{
+			Message: &zondpb.AggregateAttestationAndProof{
 				AggregatorIndex: primitives.ValidatorIndex(i*3 + i),
-				Aggregate: &ethpb.Attestation{
-					Data: &ethpb.AttestationData{Slot: i, BeaconBlockRoot: r3[:]}}}})
+				Aggregate: &zondpb.Attestation{
+					Data: &zondpb.AttestationData{Slot: i, BeaconBlockRoot: r3[:]}}}})
 	}
 
 	assert.Equal(t, 100, len(s.blkRootToPendingAtts[r1]), "Did not save pending atts")
@@ -401,26 +401,26 @@ func TestValidatePendingAtts_CanPruneOldAtts(t *testing.T) {
 
 func TestValidatePendingAtts_NoDuplicatingAggregatorIndex(t *testing.T) {
 	s := &Service{
-		blkRootToPendingAtts: make(map[[32]byte][]*ethpb.SignedAggregateAttestationAndProof),
+		blkRootToPendingAtts: make(map[[32]byte][]*zondpb.SignedAggregateAttestationAndProof),
 	}
 
 	r1 := [32]byte{'A'}
 	r2 := [32]byte{'B'}
-	s.savePendingAtt(&ethpb.SignedAggregateAttestationAndProof{
-		Message: &ethpb.AggregateAttestationAndProof{
+	s.savePendingAtt(&zondpb.SignedAggregateAttestationAndProof{
+		Message: &zondpb.AggregateAttestationAndProof{
 			AggregatorIndex: 1,
-			Aggregate: &ethpb.Attestation{
-				Data: &ethpb.AttestationData{Slot: 1, BeaconBlockRoot: r1[:]}}}})
-	s.savePendingAtt(&ethpb.SignedAggregateAttestationAndProof{
-		Message: &ethpb.AggregateAttestationAndProof{
+			Aggregate: &zondpb.Attestation{
+				Data: &zondpb.AttestationData{Slot: 1, BeaconBlockRoot: r1[:]}}}})
+	s.savePendingAtt(&zondpb.SignedAggregateAttestationAndProof{
+		Message: &zondpb.AggregateAttestationAndProof{
 			AggregatorIndex: 2,
-			Aggregate: &ethpb.Attestation{
-				Data: &ethpb.AttestationData{Slot: 2, BeaconBlockRoot: r2[:]}}}})
-	s.savePendingAtt(&ethpb.SignedAggregateAttestationAndProof{
-		Message: &ethpb.AggregateAttestationAndProof{
+			Aggregate: &zondpb.Attestation{
+				Data: &zondpb.AttestationData{Slot: 2, BeaconBlockRoot: r2[:]}}}})
+	s.savePendingAtt(&zondpb.SignedAggregateAttestationAndProof{
+		Message: &zondpb.AggregateAttestationAndProof{
 			AggregatorIndex: 2,
-			Aggregate: &ethpb.Attestation{
-				Data: &ethpb.AttestationData{Slot: 3, BeaconBlockRoot: r2[:]}}}})
+			Aggregate: &zondpb.Attestation{
+				Data: &zondpb.AttestationData{Slot: 3, BeaconBlockRoot: r2[:]}}}})
 
 	assert.Equal(t, 1, len(s.blkRootToPendingAtts[r1]), "Did not save pending atts")
 	assert.Equal(t, 1, len(s.blkRootToPendingAtts[r2]), "Did not save pending atts")
@@ -428,15 +428,15 @@ func TestValidatePendingAtts_NoDuplicatingAggregatorIndex(t *testing.T) {
 
 func TestSavePendingAtts_BeyondLimit(t *testing.T) {
 	s := &Service{
-		blkRootToPendingAtts: make(map[[32]byte][]*ethpb.SignedAggregateAttestationAndProof),
+		blkRootToPendingAtts: make(map[[32]byte][]*zondpb.SignedAggregateAttestationAndProof),
 	}
 
 	for i := 0; i < pendingAttsLimit; i++ {
-		s.savePendingAtt(&ethpb.SignedAggregateAttestationAndProof{
-			Message: &ethpb.AggregateAttestationAndProof{
+		s.savePendingAtt(&zondpb.SignedAggregateAttestationAndProof{
+			Message: &zondpb.AggregateAttestationAndProof{
 				AggregatorIndex: primitives.ValidatorIndex(i),
-				Aggregate: &ethpb.Attestation{
-					Data: &ethpb.AttestationData{Slot: 1, BeaconBlockRoot: bytesutil.Bytes32(uint64(i))}}}})
+				Aggregate: &zondpb.Attestation{
+					Data: &zondpb.AttestationData{Slot: 1, BeaconBlockRoot: bytesutil.Bytes32(uint64(i))}}}})
 	}
 	r1 := [32]byte(bytesutil.Bytes32(0))
 	r2 := [32]byte(bytesutil.Bytes32(uint64(pendingAttsLimit) - 1))
@@ -445,11 +445,11 @@ func TestSavePendingAtts_BeyondLimit(t *testing.T) {
 	assert.Equal(t, 1, len(s.blkRootToPendingAtts[r2]), "Did not save pending atts")
 
 	for i := pendingAttsLimit; i < pendingAttsLimit+20; i++ {
-		s.savePendingAtt(&ethpb.SignedAggregateAttestationAndProof{
-			Message: &ethpb.AggregateAttestationAndProof{
+		s.savePendingAtt(&zondpb.SignedAggregateAttestationAndProof{
+			Message: &zondpb.AggregateAttestationAndProof{
 				AggregatorIndex: primitives.ValidatorIndex(i),
-				Aggregate: &ethpb.Attestation{
-					Data: &ethpb.AttestationData{Slot: 1, BeaconBlockRoot: bytesutil.Bytes32(uint64(i))}}}})
+				Aggregate: &zondpb.Attestation{
+					Data: &zondpb.AttestationData{Slot: 1, BeaconBlockRoot: bytesutil.Bytes32(uint64(i))}}}})
 	}
 
 	r1 = [32]byte(bytesutil.Bytes32(uint64(pendingAttsLimit)))

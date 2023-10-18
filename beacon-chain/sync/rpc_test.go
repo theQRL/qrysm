@@ -14,7 +14,7 @@ import (
 	prysmP2P "github.com/theQRL/qrysm/v4/beacon-chain/p2p"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
 	p2ptest "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -60,7 +60,7 @@ func TestRegisterRPC_ReceivesValidMessage(t *testing.T) {
 	wg.Add(1)
 	topic := "/testing/foobar/1"
 	handler := func(ctx context.Context, msg interface{}, stream libp2pcore.Stream) error {
-		m, ok := msg.(*ethpb.Fork)
+		m, ok := msg.(*zondpb.Fork)
 		if !ok {
 			t.Error("Object is not of type *pb.TestSimpleMessage")
 		}
@@ -69,14 +69,14 @@ func TestRegisterRPC_ReceivesValidMessage(t *testing.T) {
 
 		return nil
 	}
-	prysmP2P.RPCTopicMappings[topic] = new(ethpb.Fork)
+	prysmP2P.RPCTopicMappings[topic] = new(zondpb.Fork)
 	// Cleanup Topic mappings
 	defer func() {
 		delete(prysmP2P.RPCTopicMappings, topic)
 	}()
 	r.registerRPC(topic, handler)
 
-	p2p.ReceiveRPC(topic, &ethpb.Fork{CurrentVersion: []byte("fooo"), PreviousVersion: []byte("barr")})
+	p2p.ReceiveRPC(topic, &zondpb.Fork{CurrentVersion: []byte("fooo"), PreviousVersion: []byte("barr")})
 
 	if util.WaitTimeout(&wg, time.Second) {
 		t.Fatal("Did not receive RPC in 1 second")
@@ -96,7 +96,7 @@ func TestRPC_ReceivesInvalidMessage(t *testing.T) {
 
 	topic := "/testing/foobar/1"
 	handler := func(ctx context.Context, msg interface{}, stream libp2pcore.Stream) error {
-		m, ok := msg.(*ethpb.Fork)
+		m, ok := msg.(*zondpb.Fork)
 		if !ok {
 			t.Error("Object is not of type *pb.Fork")
 		}
@@ -105,7 +105,7 @@ func TestRPC_ReceivesInvalidMessage(t *testing.T) {
 		}
 		return nil
 	}
-	prysmP2P.RPCTopicMappings[topic] = new(ethpb.Fork)
+	prysmP2P.RPCTopicMappings[topic] = new(zondpb.Fork)
 	// Cleanup Topic mappings
 	defer func() {
 		delete(prysmP2P.RPCTopicMappings, topic)

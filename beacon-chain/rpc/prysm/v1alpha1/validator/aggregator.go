@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
@@ -19,7 +19,7 @@ import (
 // SubmitAggregateSelectionProof is called by a validator when its assigned to be an aggregator.
 // The aggregator submits the selection proof to obtain the aggregated attestation
 // object to sign over.
-func (vs *Server) SubmitAggregateSelectionProof(ctx context.Context, req *ethpb.AggregateSelectionRequest) (*ethpb.AggregateSelectionResponse, error) {
+func (vs *Server) SubmitAggregateSelectionProof(ctx context.Context, req *zondpb.AggregateSelectionRequest) (*zondpb.AggregateSelectionResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "AggregatorServer.SubmitAggregateSelectionProof")
 	defer span.End()
 	span.AddAttributes(trace.Int64Attribute("slot", int64(req.Slot)))
@@ -101,20 +101,20 @@ func (vs *Server) SubmitAggregateSelectionProof(ctx context.Context, req *ethpb.
 			best = aggregatedAtt
 		}
 	}
-	a := &ethpb.AggregateAttestationAndProof{
+	a := &zondpb.AggregateAttestationAndProof{
 		Aggregate:       best,
 		SelectionProof:  req.SlotSignature,
 		AggregatorIndex: validatorIndex,
 	}
-	return &ethpb.AggregateSelectionResponse{AggregateAndProof: a}, nil
+	return &zondpb.AggregateSelectionResponse{AggregateAndProof: a}, nil
 }
 
 // SubmitSignedAggregateSelectionProof is called by a validator to broadcast a signed
 // aggregated and proof object.
 func (vs *Server) SubmitSignedAggregateSelectionProof(
 	ctx context.Context,
-	req *ethpb.SignedAggregateSubmitRequest,
-) (*ethpb.SignedAggregateSubmitResponse, error) {
+	req *zondpb.SignedAggregateSubmitRequest,
+) (*zondpb.SignedAggregateSubmitResponse, error) {
 	if req.SignedAggregateAndProof == nil || req.SignedAggregateAndProof.Message == nil ||
 		req.SignedAggregateAndProof.Message.Aggregate == nil || req.SignedAggregateAndProof.Message.Aggregate.Data == nil {
 		return nil, status.Error(codes.InvalidArgument, "Signed aggregate request can't be nil")
@@ -142,5 +142,5 @@ func (vs *Server) SubmitSignedAggregateSelectionProof(
 		"aggregatedCount": req.SignedAggregateAndProof.Message.Aggregate.AggregationBits.Count(),
 	}).Debug("Broadcasting aggregated attestation and proof")
 
-	return &ethpb.SignedAggregateSubmitResponse{}, nil
+	return &zondpb.SignedAggregateSubmitResponse{}, nil
 }

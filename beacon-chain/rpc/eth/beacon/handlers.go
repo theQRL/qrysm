@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/network"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 const (
@@ -283,7 +283,7 @@ func (bs *Server) PublishBlockV2(w http.ResponseWriter, r *http.Request) {
 	network.WriteError(w, errJson)
 }
 
-func (bs *Server) proposeBlock(ctx context.Context, w http.ResponseWriter, blk *eth.GenericSignedBeaconBlock) {
+func (bs *Server) proposeBlock(ctx context.Context, w http.ResponseWriter, blk *zond.GenericSignedBeaconBlock) {
 	_, err := bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, blk)
 	if err != nil {
 		errJson := &network.DefaultErrorJson{
@@ -301,7 +301,7 @@ func unmarshalStrict(data []byte, v interface{}) error {
 	return dec.Decode(v)
 }
 
-func (bs *Server) validateBroadcast(r *http.Request, blk *eth.GenericSignedBeaconBlock) error {
+func (bs *Server) validateBroadcast(r *http.Request, blk *zond.GenericSignedBeaconBlock) error {
 	switch r.URL.Query().Get(broadcastValidationQueryParam) {
 	case broadcastValidationConsensus:
 		b, err := blocks.NewSignedBeaconBlock(blk.Block)

@@ -10,7 +10,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -57,7 +57,7 @@ func NewAttestationCache() *AttestationCache {
 
 // Get waits for any in progress calculation to complete before returning a
 // cached response, if any.
-func (c *AttestationCache) Get(ctx context.Context, req *ethpb.AttestationDataRequest) (*ethpb.AttestationData, error) {
+func (c *AttestationCache) Get(ctx context.Context, req *zondpb.AttestationDataRequest) (*zondpb.AttestationData, error) {
 	if req == nil {
 		return nil, errors.New("nil attestation data request")
 	}
@@ -97,7 +97,7 @@ func (c *AttestationCache) Get(ctx context.Context, req *ethpb.AttestationDataRe
 
 	if exists && item != nil && item.(*attestationReqResWrapper).res != nil {
 		attestationCacheHit.Inc()
-		return ethpb.CopyAttestationData(item.(*attestationReqResWrapper).res), nil
+		return zondpb.CopyAttestationData(item.(*attestationReqResWrapper).res), nil
 	}
 	attestationCacheMiss.Inc()
 	return nil, nil
@@ -105,7 +105,7 @@ func (c *AttestationCache) Get(ctx context.Context, req *ethpb.AttestationDataRe
 
 // MarkInProgress a request so that any other similar requests will block on
 // Get until MarkNotInProgress is called.
-func (c *AttestationCache) MarkInProgress(req *ethpb.AttestationDataRequest) error {
+func (c *AttestationCache) MarkInProgress(req *zondpb.AttestationDataRequest) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	s, e := reqToKey(req)
@@ -121,7 +121,7 @@ func (c *AttestationCache) MarkInProgress(req *ethpb.AttestationDataRequest) err
 
 // MarkNotInProgress will release the lock on a given request. This should be
 // called after put.
-func (c *AttestationCache) MarkNotInProgress(req *ethpb.AttestationDataRequest) error {
+func (c *AttestationCache) MarkNotInProgress(req *zondpb.AttestationDataRequest) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	s, e := reqToKey(req)
@@ -133,7 +133,7 @@ func (c *AttestationCache) MarkNotInProgress(req *ethpb.AttestationDataRequest) 
 }
 
 // Put the response in the cache.
-func (c *AttestationCache) Put(_ context.Context, req *ethpb.AttestationDataRequest, res *ethpb.AttestationData) error {
+func (c *AttestationCache) Put(_ context.Context, req *zondpb.AttestationDataRequest, res *zondpb.AttestationData) error {
 	data := &attestationReqResWrapper{
 		req,
 		res,
@@ -161,11 +161,11 @@ func wrapperToKey(i interface{}) (string, error) {
 	return reqToKey(w.req)
 }
 
-func reqToKey(req *ethpb.AttestationDataRequest) (string, error) {
+func reqToKey(req *zondpb.AttestationDataRequest) (string, error) {
 	return fmt.Sprintf("%d", req.Slot), nil
 }
 
 type attestationReqResWrapper struct {
-	req *ethpb.AttestationDataRequest
-	res *ethpb.AttestationData
+	req *zondpb.AttestationDataRequest
+	res *zondpb.AttestationData
 }

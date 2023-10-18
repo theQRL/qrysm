@@ -6,7 +6,7 @@ import (
 	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 var (
@@ -39,17 +39,17 @@ type BeaconBlockBody struct {
 	version                     int
 	isBlinded                   bool
 	randaoReveal                [dilithium2.CryptoBytes]byte
-	eth1Data                    *eth.Eth1Data
+	eth1Data                    *zond.Eth1Data
 	graffiti                    [field_params.RootLength]byte
-	proposerSlashings           []*eth.ProposerSlashing
-	attesterSlashings           []*eth.AttesterSlashing
-	attestations                []*eth.Attestation
-	deposits                    []*eth.Deposit
-	voluntaryExits              []*eth.SignedVoluntaryExit
-	syncAggregate               *eth.SyncAggregate
+	proposerSlashings           []*zond.ProposerSlashing
+	attesterSlashings           []*zond.AttesterSlashing
+	attestations                []*zond.Attestation
+	deposits                    []*zond.Deposit
+	voluntaryExits              []*zond.SignedVoluntaryExit
+	syncAggregate               *zond.SyncAggregate
 	executionPayload            interfaces.ExecutionData
 	executionPayloadHeader      interfaces.ExecutionData
-	dilithiumToExecutionChanges []*eth.SignedDilithiumToExecutionChange
+	dilithiumToExecutionChanges []*zond.SignedDilithiumToExecutionChange
 }
 
 // BeaconBlock is the main beacon block structure. It can represent any block type.

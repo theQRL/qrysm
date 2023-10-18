@@ -20,7 +20,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
@@ -36,13 +36,13 @@ type PremineGenesisConfig struct {
 }
 
 type depositEntries struct {
-	dds   []*ethpb.Deposit_Data
+	dds   []*zondpb.Deposit_Data
 	roots [][]byte
 }
 
 type PremineGenesisOpt func(*PremineGenesisConfig)
 
-func WithDepositData(dds []*ethpb.Deposit_Data, roots [][]byte) PremineGenesisOpt {
+func WithDepositData(dds []*zondpb.Deposit_Data, roots [][]byte) PremineGenesisOpt {
 	return func(cfg *PremineGenesisConfig) {
 		cfg.depositEntries = &depositEntries{
 			dds:   dds,
@@ -92,22 +92,22 @@ func (s *PremineGenesisConfig) empty() (state.BeaconState, error) {
 	var err error
 	switch s.Version {
 	case version.Phase0:
-		e, err = state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{})
+		e, err = state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{})
 		if err != nil {
 			return nil, err
 		}
 	case version.Altair:
-		e, err = state_native.InitializeFromProtoAltair(&ethpb.BeaconStateAltair{})
+		e, err = state_native.InitializeFromProtoAltair(&zondpb.BeaconStateAltair{})
 		if err != nil {
 			return nil, err
 		}
 	case version.Bellatrix:
-		e, err = state_native.InitializeFromProtoBellatrix(&ethpb.BeaconStateBellatrix{})
+		e, err = state_native.InitializeFromProtoBellatrix(&zondpb.BeaconStateBellatrix{})
 		if err != nil {
 			return nil, err
 		}
 	case version.Capella:
-		e, err = state_native.InitializeFromProtoCapella(&ethpb.BeaconStateCapella{})
+		e, err = state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{})
 		if err != nil {
 			return nil, err
 		}
@@ -117,7 +117,7 @@ func (s *PremineGenesisConfig) empty() (state.BeaconState, error) {
 	if err = e.SetSlot(0); err != nil {
 		return nil, err
 	}
-	if err = e.SetValidators([]*ethpb.Validator{}); err != nil {
+	if err = e.SetValidators([]*zondpb.Validator{}); err != nil {
 		return nil, err
 	}
 	if err = e.SetBalances([]uint64{}); err != nil {
@@ -129,7 +129,7 @@ func (s *PremineGenesisConfig) empty() (state.BeaconState, error) {
 	if err = e.SetHistoricalRoots([][]byte{}); err != nil {
 		return nil, err
 	}
-	zcp := &ethpb.Checkpoint{
+	zcp := &zondpb.Checkpoint{
 		Epoch: 0,
 		Root:  params.BeaconConfig().ZeroHash[:],
 	}
@@ -142,14 +142,14 @@ func (s *PremineGenesisConfig) empty() (state.BeaconState, error) {
 	if err = e.SetFinalizedCheckpoint(zcp); err != nil {
 		return nil, err
 	}
-	if err = e.SetEth1DataVotes([]*ethpb.Eth1Data{}); err != nil {
+	if err = e.SetEth1DataVotes([]*zondpb.Eth1Data{}); err != nil {
 		return nil, err
 	}
 	if s.Version == version.Phase0 {
-		if err = e.SetCurrentEpochAttestations([]*ethpb.PendingAttestation{}); err != nil {
+		if err = e.SetCurrentEpochAttestations([]*zondpb.PendingAttestation{}); err != nil {
 			return nil, err
 		}
-		if err = e.SetPreviousEpochAttestations([]*ethpb.PendingAttestation{}); err != nil {
+		if err = e.SetPreviousEpochAttestations([]*zondpb.PendingAttestation{}); err != nil {
 			return nil, err
 		}
 	}
@@ -174,7 +174,7 @@ func (s *PremineGenesisConfig) processDeposits(ctx context.Context, g state.Beac
 	return nil
 }
 
-func (s *PremineGenesisConfig) deposits() ([]*ethpb.Deposit, error) {
+func (s *PremineGenesisConfig) deposits() ([]*zondpb.Deposit, error) {
 	if s.depositEntries == nil {
 		prv, pub, err := s.keys()
 		if err != nil {
@@ -216,7 +216,7 @@ func (s *PremineGenesisConfig) setEth1Data(g state.BeaconState) error {
 	if err != nil {
 		return err
 	}
-	return g.SetEth1Data(&ethpb.Eth1Data{DepositRoot: dr[:], BlockHash: s.GB.Hash().Bytes()})
+	return g.SetEth1Data(&zondpb.Eth1Data{DepositRoot: dr[:], BlockHash: s.GB.Hash().Bytes()})
 }
 
 func emptyDepositRoot() ([32]byte, error) {
@@ -290,7 +290,7 @@ func (s *PremineGenesisConfig) setFork(g state.BeaconState) error {
 	default:
 		return errUnsupportedVersion
 	}
-	fork := &ethpb.Fork{
+	fork := &zondpb.Fork{
 		PreviousVersion: pv,
 		CurrentVersion:  cv,
 		Epoch:           0,
@@ -338,36 +338,36 @@ func (s *PremineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 	var body rooter
 	switch s.Version {
 	case version.Phase0:
-		body = &ethpb.BeaconBlockBody{
+		body = &zondpb.BeaconBlockBody{
 			RandaoReveal: make([]byte, dilithium2.CryptoBytes),
-			Eth1Data: &ethpb.Eth1Data{
+			Eth1Data: &zondpb.Eth1Data{
 				DepositRoot: make([]byte, 32),
 				BlockHash:   make([]byte, 32),
 			},
 			Graffiti: make([]byte, 32),
 		}
 	case version.Altair:
-		body = &ethpb.BeaconBlockBodyAltair{
+		body = &zondpb.BeaconBlockBodyAltair{
 			RandaoReveal: make([]byte, dilithium2.CryptoBytes),
-			Eth1Data: &ethpb.Eth1Data{
+			Eth1Data: &zondpb.Eth1Data{
 				DepositRoot: make([]byte, 32),
 				BlockHash:   make([]byte, 32),
 			},
 			Graffiti: make([]byte, 32),
-			SyncAggregate: &ethpb.SyncAggregate{
+			SyncAggregate: &zondpb.SyncAggregate{
 				SyncCommitteeBits:      make([]byte, fieldparams.SyncCommitteeLength/8),
 				SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
 			},
 		}
 	case version.Bellatrix:
-		body = &ethpb.BeaconBlockBodyBellatrix{
+		body = &zondpb.BeaconBlockBodyBellatrix{
 			RandaoReveal: make([]byte, dilithium2.CryptoBytes),
-			Eth1Data: &ethpb.Eth1Data{
+			Eth1Data: &zondpb.Eth1Data{
 				DepositRoot: make([]byte, 32),
 				BlockHash:   make([]byte, 32),
 			},
 			Graffiti: make([]byte, 32),
-			SyncAggregate: &ethpb.SyncAggregate{
+			SyncAggregate: &zondpb.SyncAggregate{
 				SyncCommitteeBits:      make([]byte, fieldparams.SyncCommitteeLength/8),
 				SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
 			},
@@ -384,14 +384,14 @@ func (s *PremineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 			},
 		}
 	case version.Capella:
-		body = &ethpb.BeaconBlockBodyCapella{
+		body = &zondpb.BeaconBlockBodyCapella{
 			RandaoReveal: make([]byte, dilithium2.CryptoBytes),
-			Eth1Data: &ethpb.Eth1Data{
+			Eth1Data: &zondpb.Eth1Data{
 				DepositRoot: make([]byte, 32),
 				BlockHash:   make([]byte, 32),
 			},
 			Graffiti: make([]byte, 32),
-			SyncAggregate: &ethpb.SyncAggregate{
+			SyncAggregate: &zondpb.SyncAggregate{
 				SyncCommitteeBits:      make([]byte, fieldparams.SyncCommitteeLength/8),
 				SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
 			},
@@ -407,7 +407,7 @@ func (s *PremineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 				Transactions:  make([][]byte, 0),
 				Withdrawals:   make([]*enginev1.Withdrawal, 0),
 			},
-			DilithiumToExecutionChanges: make([]*ethpb.SignedDilithiumToExecutionChange, 0),
+			DilithiumToExecutionChanges: make([]*zondpb.SignedDilithiumToExecutionChange, 0),
 		}
 	default:
 		return errUnsupportedVersion
@@ -417,7 +417,7 @@ func (s *PremineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 	if err != nil {
 		return errors.Wrap(err, "could not hash tree root empty block body")
 	}
-	lbh := &ethpb.BeaconBlockHeader{
+	lbh := &zondpb.BeaconBlockHeader{
 		ParentRoot: params.BeaconConfig().ZeroHash[:],
 		StateRoot:  params.BeaconConfig().ZeroHash[:],
 		BodyRoot:   root[:],

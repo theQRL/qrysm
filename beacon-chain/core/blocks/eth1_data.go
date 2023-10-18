@@ -7,7 +7,7 @@ import (
 
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // ProcessEth1DataInBlock is an operation performed on each
@@ -20,7 +20,7 @@ import (
 //	 state.eth1_data_votes.append(body.eth1_data)
 //	 if state.eth1_data_votes.count(body.eth1_data) * 2 > EPOCHS_PER_ETH1_VOTING_PERIOD * SLOTS_PER_EPOCH:
 //	     state.eth1_data = body.eth1_data
-func ProcessEth1DataInBlock(_ context.Context, beaconState state.BeaconState, eth1Data *ethpb.Eth1Data) (state.BeaconState, error) {
+func ProcessEth1DataInBlock(_ context.Context, beaconState state.BeaconState, eth1Data *zondpb.Eth1Data) (state.BeaconState, error) {
 	if beaconState == nil || beaconState.IsNil() {
 		return nil, errors.New("nil state")
 	}
@@ -40,7 +40,7 @@ func ProcessEth1DataInBlock(_ context.Context, beaconState state.BeaconState, et
 }
 
 // AreEth1DataEqual checks equality between two eth1 data objects.
-func AreEth1DataEqual(a, b *ethpb.Eth1Data) bool {
+func AreEth1DataEqual(a, b *zondpb.Eth1Data) bool {
 	if a == nil && b == nil {
 		return true
 	}
@@ -56,9 +56,9 @@ func AreEth1DataEqual(a, b *ethpb.Eth1Data) bool {
 // eth1 voting period. A vote is cast by including eth1data in a block and part of state processing
 // appends eth1data to the state in the Eth1DataVotes list. Iterating through this list checks the
 // votes to see if they match the eth1data.
-func Eth1DataHasEnoughSupport(beaconState state.ReadOnlyBeaconState, data *ethpb.Eth1Data) (bool, error) {
+func Eth1DataHasEnoughSupport(beaconState state.ReadOnlyBeaconState, data *zondpb.Eth1Data) (bool, error) {
 	voteCount := uint64(0)
-	data = ethpb.CopyETH1Data(data)
+	data = zondpb.CopyETH1Data(data)
 
 	for _, vote := range beaconState.Eth1DataVotes() {
 		if AreEth1DataEqual(vote, data) {

@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
 	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -21,11 +21,11 @@ import (
 )
 
 func TestService_beaconBlockSubscriber(t *testing.T) {
-	pooledAttestations := []*ethpb.Attestation{
+	pooledAttestations := []*zondpb.Attestation{
 		// Aggregated.
-		util.HydrateAttestation(&ethpb.Attestation{AggregationBits: bitfield.Bitlist{0b00011111}}),
+		util.HydrateAttestation(&zondpb.Attestation{AggregationBits: bitfield.Bitlist{0b00011111}}),
 		// Unaggregated.
-		util.HydrateAttestation(&ethpb.Attestation{AggregationBits: bitfield.Bitlist{0b00010001}}),
+		util.HydrateAttestation(&zondpb.Attestation{AggregationBits: bitfield.Bitlist{0b00010001}}),
 	}
 
 	type args struct {
@@ -40,7 +40,7 @@ func TestService_beaconBlockSubscriber(t *testing.T) {
 		{
 			name: "invalid block does not remove attestations",
 			args: args{
-				msg: func() *ethpb.SignedBeaconBlock {
+				msg: func() *zondpb.SignedBeaconBlock {
 					b := util.NewBeaconBlock()
 					b.Block.Body.Attestations = pooledAttestations
 					return b

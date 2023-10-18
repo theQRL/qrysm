@@ -6,7 +6,7 @@ import (
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
@@ -19,23 +19,23 @@ func TestProcessExitsFromBlockTrackedIndices(t *testing.T) {
 		},
 	}
 
-	exits := []*ethpb.SignedVoluntaryExit{
+	exits := []*zondpb.SignedVoluntaryExit{
 		{
-			Exit: &ethpb.VoluntaryExit{
+			Exit: &zondpb.VoluntaryExit{
 				ValidatorIndex: 3,
 				Epoch:          1,
 			},
 		},
 		{
-			Exit: &ethpb.VoluntaryExit{
+			Exit: &zondpb.VoluntaryExit{
 				ValidatorIndex: 2,
 				Epoch:          0,
 			},
 		},
 	}
 
-	block := &ethpb.BeaconBlock{
-		Body: &ethpb.BeaconBlockBody{
+	block := &zondpb.BeaconBlock{
+		Body: &zondpb.BeaconBlockBody{
 			VoluntaryExits: exits,
 		},
 	}
@@ -55,23 +55,23 @@ func TestProcessExitsFromBlockUntrackedIndices(t *testing.T) {
 		},
 	}
 
-	exits := []*ethpb.SignedVoluntaryExit{
+	exits := []*zondpb.SignedVoluntaryExit{
 		{
-			Exit: &ethpb.VoluntaryExit{
+			Exit: &zondpb.VoluntaryExit{
 				ValidatorIndex: 3,
 				Epoch:          1,
 			},
 		},
 		{
-			Exit: &ethpb.VoluntaryExit{
+			Exit: &zondpb.VoluntaryExit{
 				ValidatorIndex: 4,
 				Epoch:          0,
 			},
 		},
 	}
 
-	block := &ethpb.BeaconBlock{
-		Body: &ethpb.BeaconBlockBody{
+	block := &zondpb.BeaconBlock{
+		Body: &zondpb.BeaconBlockBody{
 			VoluntaryExits: exits,
 		},
 	}
@@ -91,8 +91,8 @@ func TestProcessExitP2PTrackedIndices(t *testing.T) {
 		},
 	}
 
-	exit := &ethpb.SignedVoluntaryExit{
-		Exit: &ethpb.VoluntaryExit{
+	exit := &zondpb.SignedVoluntaryExit{
+		Exit: &zondpb.VoluntaryExit{
 			ValidatorIndex: 1,
 			Epoch:          1,
 		},
@@ -111,8 +111,8 @@ func TestProcessExitP2PUntrackedIndices(t *testing.T) {
 		},
 	}
 
-	exit := &ethpb.SignedVoluntaryExit{
-		Exit: &ethpb.VoluntaryExit{
+	exit := &zondpb.SignedVoluntaryExit{
+		Exit: &zondpb.VoluntaryExit{
 			ValidatorIndex: 3,
 			Epoch:          1,
 		},

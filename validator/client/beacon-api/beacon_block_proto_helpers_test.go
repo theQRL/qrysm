@@ -6,7 +6,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
@@ -15,7 +15,7 @@ func TestBeaconBlockProtoHelpers_ConvertProposerSlashingsToProto(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		generateInput        func() []*apimiddleware.ProposerSlashingJson
-		expectedResult       []*ethpb.ProposerSlashing
+		expectedResult       []*zondpb.ProposerSlashing
 		expectedErrorMessage string
 	}{
 		{
@@ -51,10 +51,10 @@ func TestBeaconBlockProtoHelpers_ConvertProposerSlashingsToProto(t *testing.T) {
 		{
 			name:          "valid",
 			generateInput: generateProposerSlashings,
-			expectedResult: []*ethpb.ProposerSlashing{
+			expectedResult: []*zondpb.ProposerSlashing{
 				{
-					Header_1: &ethpb.SignedBeaconBlockHeader{
-						Header: &ethpb.BeaconBlockHeader{
+					Header_1: &zondpb.SignedBeaconBlockHeader{
+						Header: &zondpb.BeaconBlockHeader{
 							Slot:          1,
 							ProposerIndex: 2,
 							ParentRoot:    []byte{3},
@@ -63,8 +63,8 @@ func TestBeaconBlockProtoHelpers_ConvertProposerSlashingsToProto(t *testing.T) {
 						},
 						Signature: []byte{6},
 					},
-					Header_2: &ethpb.SignedBeaconBlockHeader{
-						Header: &ethpb.BeaconBlockHeader{
+					Header_2: &zondpb.SignedBeaconBlockHeader{
+						Header: &zondpb.BeaconBlockHeader{
 							Slot:          7,
 							ProposerIndex: 8,
 							ParentRoot:    []byte{9},
@@ -75,8 +75,8 @@ func TestBeaconBlockProtoHelpers_ConvertProposerSlashingsToProto(t *testing.T) {
 					},
 				},
 				{
-					Header_1: &ethpb.SignedBeaconBlockHeader{
-						Header: &ethpb.BeaconBlockHeader{
+					Header_1: &zondpb.SignedBeaconBlockHeader{
+						Header: &zondpb.BeaconBlockHeader{
 							Slot:          13,
 							ProposerIndex: 14,
 							ParentRoot:    []byte{15},
@@ -85,8 +85,8 @@ func TestBeaconBlockProtoHelpers_ConvertProposerSlashingsToProto(t *testing.T) {
 						},
 						Signature: []byte{18},
 					},
-					Header_2: &ethpb.SignedBeaconBlockHeader{
-						Header: &ethpb.BeaconBlockHeader{
+					Header_2: &zondpb.SignedBeaconBlockHeader{
+						Header: &zondpb.BeaconBlockHeader{
 							Slot:          19,
 							ProposerIndex: 20,
 							ParentRoot:    []byte{21},
@@ -118,7 +118,7 @@ func TestBeaconBlockProtoHelpers_ConvertProposerSlashingSignedHeaderToProto(t *t
 	testCases := []struct {
 		name                 string
 		generateInput        func() *apimiddleware.SignedBeaconBlockHeaderJson
-		expectedResult       *ethpb.SignedBeaconBlockHeader
+		expectedResult       *zondpb.SignedBeaconBlockHeader
 		expectedErrorMessage string
 	}{
 		{
@@ -192,8 +192,8 @@ func TestBeaconBlockProtoHelpers_ConvertProposerSlashingSignedHeaderToProto(t *t
 		{
 			name:          "valid",
 			generateInput: generateSignedBeaconBlockHeader,
-			expectedResult: &ethpb.SignedBeaconBlockHeader{
-				Header: &ethpb.BeaconBlockHeader{
+			expectedResult: &zondpb.SignedBeaconBlockHeader{
+				Header: &zondpb.BeaconBlockHeader{
 					Slot:          1,
 					ProposerIndex: 2,
 					ParentRoot:    []byte{3},
@@ -223,7 +223,7 @@ func TestBeaconBlockProtoHelpers_ConvertAttesterSlashingsToProto(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		generateInput        func() []*apimiddleware.AttesterSlashingJson
-		expectedResult       []*ethpb.AttesterSlashing
+		expectedResult       []*zondpb.AttesterSlashing
 		expectedErrorMessage string
 	}{
 		{
@@ -259,36 +259,36 @@ func TestBeaconBlockProtoHelpers_ConvertAttesterSlashingsToProto(t *testing.T) {
 		{
 			name:          "valid",
 			generateInput: generateAttesterSlashings,
-			expectedResult: []*ethpb.AttesterSlashing{
+			expectedResult: []*zondpb.AttesterSlashing{
 				{
-					Attestation_1: &ethpb.IndexedAttestation{
+					Attestation_1: &zondpb.IndexedAttestation{
 						AttestingIndices: []uint64{1, 2},
-						Data: &ethpb.AttestationData{
+						Data: &zondpb.AttestationData{
 							Slot:            3,
 							CommitteeIndex:  4,
 							BeaconBlockRoot: []byte{5},
-							Source: &ethpb.Checkpoint{
+							Source: &zondpb.Checkpoint{
 								Epoch: 6,
 								Root:  []byte{7},
 							},
-							Target: &ethpb.Checkpoint{
+							Target: &zondpb.Checkpoint{
 								Epoch: 8,
 								Root:  []byte{9},
 							},
 						},
 						Signature: []byte{10},
 					},
-					Attestation_2: &ethpb.IndexedAttestation{
+					Attestation_2: &zondpb.IndexedAttestation{
 						AttestingIndices: []uint64{11, 12},
-						Data: &ethpb.AttestationData{
+						Data: &zondpb.AttestationData{
 							Slot:            13,
 							CommitteeIndex:  14,
 							BeaconBlockRoot: []byte{15},
-							Source: &ethpb.Checkpoint{
+							Source: &zondpb.Checkpoint{
 								Epoch: 16,
 								Root:  []byte{17},
 							},
-							Target: &ethpb.Checkpoint{
+							Target: &zondpb.Checkpoint{
 								Epoch: 18,
 								Root:  []byte{19},
 							},
@@ -297,34 +297,34 @@ func TestBeaconBlockProtoHelpers_ConvertAttesterSlashingsToProto(t *testing.T) {
 					},
 				},
 				{
-					Attestation_1: &ethpb.IndexedAttestation{
+					Attestation_1: &zondpb.IndexedAttestation{
 						AttestingIndices: []uint64{21, 22},
-						Data: &ethpb.AttestationData{
+						Data: &zondpb.AttestationData{
 							Slot:            23,
 							CommitteeIndex:  24,
 							BeaconBlockRoot: []byte{25},
-							Source: &ethpb.Checkpoint{
+							Source: &zondpb.Checkpoint{
 								Epoch: 26,
 								Root:  []byte{27},
 							},
-							Target: &ethpb.Checkpoint{
+							Target: &zondpb.Checkpoint{
 								Epoch: 28,
 								Root:  []byte{29},
 							},
 						},
 						Signature: []byte{30},
 					},
-					Attestation_2: &ethpb.IndexedAttestation{
+					Attestation_2: &zondpb.IndexedAttestation{
 						AttestingIndices: []uint64{31, 32},
-						Data: &ethpb.AttestationData{
+						Data: &zondpb.AttestationData{
 							Slot:            33,
 							CommitteeIndex:  34,
 							BeaconBlockRoot: []byte{35},
-							Source: &ethpb.Checkpoint{
+							Source: &zondpb.Checkpoint{
 								Epoch: 36,
 								Root:  []byte{37},
 							},
-							Target: &ethpb.Checkpoint{
+							Target: &zondpb.Checkpoint{
 								Epoch: 38,
 								Root:  []byte{39},
 							},
@@ -354,7 +354,7 @@ func TestBeaconBlockProtoHelpers_ConvertAttestationToProto(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		generateInput        func() *apimiddleware.IndexedAttestationJson
-		expectedResult       *ethpb.IndexedAttestation
+		expectedResult       *zondpb.IndexedAttestation
 		expectedErrorMessage string
 	}{
 		{
@@ -392,17 +392,17 @@ func TestBeaconBlockProtoHelpers_ConvertAttestationToProto(t *testing.T) {
 		{
 			name:          "valid",
 			generateInput: generateIndexedAttestation,
-			expectedResult: &ethpb.IndexedAttestation{
+			expectedResult: &zondpb.IndexedAttestation{
 				AttestingIndices: []uint64{1, 2},
-				Data: &ethpb.AttestationData{
+				Data: &zondpb.AttestationData{
 					Slot:            3,
 					CommitteeIndex:  4,
 					BeaconBlockRoot: []byte{5},
-					Source: &ethpb.Checkpoint{
+					Source: &zondpb.Checkpoint{
 						Epoch: 6,
 						Root:  []byte{7},
 					},
-					Target: &ethpb.Checkpoint{
+					Target: &zondpb.Checkpoint{
 						Epoch: 8,
 						Root:  []byte{9},
 					},
@@ -430,7 +430,7 @@ func TestBeaconBlockProtoHelpers_ConvertCheckpointToProto(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		generateInput        func() *apimiddleware.CheckpointJson
-		expectedResult       *ethpb.Checkpoint
+		expectedResult       *zondpb.Checkpoint
 		expectedErrorMessage string
 	}{
 		{
@@ -459,7 +459,7 @@ func TestBeaconBlockProtoHelpers_ConvertCheckpointToProto(t *testing.T) {
 		{
 			name:          "valid",
 			generateInput: generateCheckpoint,
-			expectedResult: &ethpb.Checkpoint{
+			expectedResult: &zondpb.Checkpoint{
 				Epoch: 1,
 				Root:  []byte{2},
 			},
@@ -484,7 +484,7 @@ func TestBeaconBlockProtoHelpers_ConvertAttestationsToProto(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		generateInput        func() []*apimiddleware.AttestationJson
-		expectedResult       []*ethpb.Attestation
+		expectedResult       []*zondpb.Attestation
 		expectedErrorMessage string
 	}{
 		{
@@ -526,18 +526,18 @@ func TestBeaconBlockProtoHelpers_ConvertAttestationsToProto(t *testing.T) {
 		{
 			name:          "valid",
 			generateInput: generateAttestations,
-			expectedResult: []*ethpb.Attestation{
+			expectedResult: []*zondpb.Attestation{
 				{
 					AggregationBits: []byte{1},
-					Data: &ethpb.AttestationData{
+					Data: &zondpb.AttestationData{
 						Slot:            2,
 						CommitteeIndex:  3,
 						BeaconBlockRoot: []byte{4},
-						Source: &ethpb.Checkpoint{
+						Source: &zondpb.Checkpoint{
 							Epoch: 5,
 							Root:  []byte{6},
 						},
-						Target: &ethpb.Checkpoint{
+						Target: &zondpb.Checkpoint{
 							Epoch: 7,
 							Root:  []byte{8},
 						},
@@ -546,15 +546,15 @@ func TestBeaconBlockProtoHelpers_ConvertAttestationsToProto(t *testing.T) {
 				},
 				{
 					AggregationBits: []byte{10},
-					Data: &ethpb.AttestationData{
+					Data: &zondpb.AttestationData{
 						Slot:            11,
 						CommitteeIndex:  12,
 						BeaconBlockRoot: []byte{13},
-						Source: &ethpb.Checkpoint{
+						Source: &zondpb.Checkpoint{
 							Epoch: 14,
 							Root:  []byte{15},
 						},
-						Target: &ethpb.Checkpoint{
+						Target: &zondpb.Checkpoint{
 							Epoch: 16,
 							Root:  []byte{17},
 						},
@@ -583,7 +583,7 @@ func TestBeaconBlockProtoHelpers_ConvertAttestationDataToProto(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		generateInput        func() *apimiddleware.AttestationDataJson
-		expectedResult       *ethpb.AttestationData
+		expectedResult       *zondpb.AttestationData
 		expectedErrorMessage string
 	}{
 		{
@@ -639,15 +639,15 @@ func TestBeaconBlockProtoHelpers_ConvertAttestationDataToProto(t *testing.T) {
 		{
 			name:          "valid",
 			generateInput: generateAttestationData,
-			expectedResult: &ethpb.AttestationData{
+			expectedResult: &zondpb.AttestationData{
 				Slot:            1,
 				CommitteeIndex:  2,
 				BeaconBlockRoot: []byte{3},
-				Source: &ethpb.Checkpoint{
+				Source: &zondpb.Checkpoint{
 					Epoch: 4,
 					Root:  []byte{5},
 				},
-				Target: &ethpb.Checkpoint{
+				Target: &zondpb.Checkpoint{
 					Epoch: 6,
 					Root:  []byte{7},
 				},
@@ -673,7 +673,7 @@ func TestBeaconBlockProtoHelpers_ConvertDepositsToProto(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		generateInput        func() []*apimiddleware.DepositJson
-		expectedResult       []*ethpb.Deposit
+		expectedResult       []*zondpb.Deposit
 		expectedErrorMessage string
 	}{
 		{
@@ -742,13 +742,13 @@ func TestBeaconBlockProtoHelpers_ConvertDepositsToProto(t *testing.T) {
 		{
 			name:          "valid",
 			generateInput: generateDeposits,
-			expectedResult: []*ethpb.Deposit{
+			expectedResult: []*zondpb.Deposit{
 				{
 					Proof: [][]byte{
 						{1},
 						{2},
 					},
-					Data: &ethpb.Deposit_Data{
+					Data: &zondpb.Deposit_Data{
 						PublicKey:             []byte{3},
 						WithdrawalCredentials: []byte{4},
 						Amount:                5,
@@ -760,7 +760,7 @@ func TestBeaconBlockProtoHelpers_ConvertDepositsToProto(t *testing.T) {
 						{7},
 						{8},
 					},
-					Data: &ethpb.Deposit_Data{
+					Data: &zondpb.Deposit_Data{
 						PublicKey:             []byte{9},
 						WithdrawalCredentials: []byte{10},
 						Amount:                11,
@@ -789,7 +789,7 @@ func TestBeaconBlockProtoHelpers_ConvertVoluntaryExitsToProto(t *testing.T) {
 	testCases := []struct {
 		name                 string
 		generateInput        func() []*apimiddleware.SignedVoluntaryExitJson
-		expectedResult       []*ethpb.SignedVoluntaryExit
+		expectedResult       []*zondpb.SignedVoluntaryExit
 		expectedErrorMessage string
 	}{
 		{
@@ -840,16 +840,16 @@ func TestBeaconBlockProtoHelpers_ConvertVoluntaryExitsToProto(t *testing.T) {
 		{
 			name:          "valid",
 			generateInput: generateSignedVoluntaryExits,
-			expectedResult: []*ethpb.SignedVoluntaryExit{
+			expectedResult: []*zondpb.SignedVoluntaryExit{
 				{
-					Exit: &ethpb.VoluntaryExit{
+					Exit: &zondpb.VoluntaryExit{
 						Epoch:          1,
 						ValidatorIndex: 2,
 					},
 					Signature: []byte{3},
 				},
 				{
-					Exit: &ethpb.VoluntaryExit{
+					Exit: &zondpb.VoluntaryExit{
 						Epoch:          4,
 						ValidatorIndex: 5,
 					},
@@ -1008,7 +1008,7 @@ func TestBeaconBlockProtoHelpers_ConvertDilithiumToExecutionChangesToProto(t *te
 	testCases := []struct {
 		name                 string
 		generateInput        func() []*apimiddleware.SignedDilithiumToExecutionChangeJson
-		expectedResult       []*ethpb.SignedDilithiumToExecutionChange
+		expectedResult       []*zondpb.SignedDilithiumToExecutionChange
 		expectedErrorMessage string
 	}{
 		{

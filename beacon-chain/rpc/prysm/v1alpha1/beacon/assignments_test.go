@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/v4/cmd"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -36,8 +36,8 @@ func TestServer_ListAssignments_CannotRequestFutureEpoch(t *testing.T) {
 	wanted := errNoEpochInfoError
 	_, err := bs.ListValidatorAssignments(
 		ctx,
-		&ethpb.ListValidatorAssignmentsRequest{
-			QueryFilter: &ethpb.ListValidatorAssignmentsRequest_Epoch{
+		&zondpb.ListValidatorAssignmentsRequest{
+			QueryFilter: &zondpb.ListValidatorAssignmentsRequest_Epoch{
 				Epoch: slots.ToEpoch(bs.GenesisTimeFetcher.CurrentSlot()) + 1,
 			},
 		},
@@ -64,15 +64,15 @@ func TestServer_ListAssignments_NoResults(t *testing.T) {
 		StateGen:           stategen.New(db, doublylinkedtree.New()),
 		ReplayerBuilder:    mockstategen.NewMockReplayerBuilder(mockstategen.WithMockState(st)),
 	}
-	wanted := &ethpb.ValidatorAssignments{
-		Assignments:   make([]*ethpb.ValidatorAssignments_CommitteeAssignment, 0),
+	wanted := &zondpb.ValidatorAssignments{
+		Assignments:   make([]*zondpb.ValidatorAssignments_CommitteeAssignment, 0),
 		TotalSize:     int32(0),
 		NextPageToken: strconv.Itoa(0),
 	}
 	res, err := bs.ListValidatorAssignments(
 		ctx,
-		&ethpb.ListValidatorAssignmentsRequest{
-			QueryFilter: &ethpb.ListValidatorAssignmentsRequest_Genesis{
+		&zondpb.ListValidatorAssignmentsRequest{
+			QueryFilter: &zondpb.ListValidatorAssignmentsRequest_Genesis{
 				Genesis: true,
 			},
 		},
@@ -88,12 +88,12 @@ func TestServer_ListAssignments_Pagination_InputOutOfRange(t *testing.T) {
 	db := dbTest.SetupDB(t)
 	ctx := context.Background()
 	count := 100
-	validators := make([]*ethpb.Validator, 0, count)
+	validators := make([]*zondpb.Validator, 0, count)
 	for i := 0; i < count; i++ {
 		pubKey := make([]byte, params.BeaconConfig().BLSPubkeyLength)
 		withdrawalCred := make([]byte, 32)
 		binary.LittleEndian.PutUint64(pubKey, uint64(i))
-		validators = append(validators, &ethpb.Validator{
+		validators = append(validators, &zondpb.Validator{
 			PublicKey:             pubKey,
 			WithdrawalCredentials: withdrawalCred,
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
@@ -118,7 +118,7 @@ func TestServer_ListAssignments_Pagination_InputOutOfRange(t *testing.T) {
 			State: s,
 		},
 		FinalizationFetcher: &mock.ChainService{
-			FinalizedCheckPoint: &ethpb.Checkpoint{
+			FinalizedCheckPoint: &zondpb.Checkpoint{
 				Epoch: 0,
 			},
 		},
@@ -128,9 +128,9 @@ func TestServer_ListAssignments_Pagination_InputOutOfRange(t *testing.T) {
 	}
 
 	wanted := fmt.Sprintf("page start %d >= list %d", 500, count)
-	_, err = bs.ListValidatorAssignments(context.Background(), &ethpb.ListValidatorAssignmentsRequest{
+	_, err = bs.ListValidatorAssignments(context.Background(), &zondpb.ListValidatorAssignmentsRequest{
 		PageToken:   strconv.Itoa(2),
-		QueryFilter: &ethpb.ListValidatorAssignmentsRequest_Genesis{Genesis: true},
+		QueryFilter: &zondpb.ListValidatorAssignmentsRequest_Genesis{Genesis: true},
 	})
 	assert.ErrorContains(t, wanted, err)
 }
@@ -140,7 +140,7 @@ func TestServer_ListAssignments_Pagination_ExceedsMaxPageSize(t *testing.T) {
 	exceedsMax := int32(cmd.Get().MaxRPCPageSize + 1)
 
 	wanted := fmt.Sprintf("Requested page size %d can not be greater than max size %d", exceedsMax, cmd.Get().MaxRPCPageSize)
-	req := &ethpb.ListValidatorAssignmentsRequest{
+	req := &zondpb.ListValidatorAssignmentsRequest{
 		PageToken: strconv.Itoa(0),
 		PageSize:  exceedsMax,
 	}
@@ -153,14 +153,14 @@ func TestServer_ListAssignments_Pagination_DefaultPageSize_NoArchive(t *testing.
 	db := dbTest.SetupDB(t)
 	ctx := context.Background()
 	count := 500
-	validators := make([]*ethpb.Validator, 0, count)
+	validators := make([]*zondpb.Validator, 0, count)
 	for i := 0; i < count; i++ {
 		pubKey := make([]byte, params.BeaconConfig().BLSPubkeyLength)
 		withdrawalCred := make([]byte, 32)
 		binary.LittleEndian.PutUint64(pubKey, uint64(i))
 		// Mark the validators with index divisible by 3 inactive.
 		if i%3 == 0 {
-			validators = append(validators, &ethpb.Validator{
+			validators = append(validators, &zondpb.Validator{
 				PublicKey:             pubKey,
 				WithdrawalCredentials: withdrawalCred,
 				ExitEpoch:             0,
@@ -168,7 +168,7 @@ func TestServer_ListAssignments_Pagination_DefaultPageSize_NoArchive(t *testing.
 				EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
 			})
 		} else {
-			validators = append(validators, &ethpb.Validator{
+			validators = append(validators, &zondpb.Validator{
 				PublicKey:             pubKey,
 				WithdrawalCredentials: withdrawalCred,
 				ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
@@ -194,7 +194,7 @@ func TestServer_ListAssignments_Pagination_DefaultPageSize_NoArchive(t *testing.
 			State: s,
 		},
 		FinalizationFetcher: &mock.ChainService{
-			FinalizedCheckPoint: &ethpb.Checkpoint{
+			FinalizedCheckPoint: &zondpb.Checkpoint{
 				Epoch: 0,
 			},
 		},
@@ -203,13 +203,13 @@ func TestServer_ListAssignments_Pagination_DefaultPageSize_NoArchive(t *testing.
 		ReplayerBuilder:    mockstategen.NewMockReplayerBuilder(mockstategen.WithMockState(s)),
 	}
 
-	res, err := bs.ListValidatorAssignments(context.Background(), &ethpb.ListValidatorAssignmentsRequest{
-		QueryFilter: &ethpb.ListValidatorAssignmentsRequest_Genesis{Genesis: true},
+	res, err := bs.ListValidatorAssignments(context.Background(), &zondpb.ListValidatorAssignmentsRequest{
+		QueryFilter: &zondpb.ListValidatorAssignmentsRequest_Genesis{Genesis: true},
 	})
 	require.NoError(t, err)
 
 	// Construct the wanted assignments.
-	var wanted []*ethpb.ValidatorAssignments_CommitteeAssignment
+	var wanted []*zondpb.ValidatorAssignments_CommitteeAssignment
 
 	activeIndices, err := helpers.ActiveValidatorIndices(ctx, s, 0)
 	require.NoError(t, err)
@@ -218,7 +218,7 @@ func TestServer_ListAssignments_Pagination_DefaultPageSize_NoArchive(t *testing.
 	for _, index := range activeIndices[0:params.BeaconConfig().DefaultPageSize] {
 		val, err := s.ValidatorAtIndex(index)
 		require.NoError(t, err)
-		wanted = append(wanted, &ethpb.ValidatorAssignments_CommitteeAssignment{
+		wanted = append(wanted, &zondpb.ValidatorAssignments_CommitteeAssignment{
 			BeaconCommittees: committeeAssignments[index].Committee,
 			CommitteeIndex:   committeeAssignments[index].CommitteeIndex,
 			AttesterSlot:     committeeAssignments[index].AttesterSlot,
@@ -236,12 +236,12 @@ func TestServer_ListAssignments_FilterPubkeysIndices_NoPagination(t *testing.T) 
 
 	ctx := context.Background()
 	count := 100
-	validators := make([]*ethpb.Validator, 0, count)
+	validators := make([]*zondpb.Validator, 0, count)
 	withdrawCreds := make([]byte, 32)
 	for i := 0; i < count; i++ {
 		pubKey := make([]byte, params.BeaconConfig().BLSPubkeyLength)
 		binary.LittleEndian.PutUint64(pubKey, uint64(i))
-		val := &ethpb.Validator{
+		val := &zondpb.Validator{
 			PublicKey:             pubKey,
 			WithdrawalCredentials: withdrawCreds,
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
@@ -261,7 +261,7 @@ func TestServer_ListAssignments_FilterPubkeysIndices_NoPagination(t *testing.T) 
 	bs := &Server{
 		BeaconDB: db,
 		FinalizationFetcher: &mock.ChainService{
-			FinalizedCheckPoint: &ethpb.Checkpoint{
+			FinalizedCheckPoint: &zondpb.Checkpoint{
 				Epoch: 0,
 			},
 		},
@@ -274,12 +274,12 @@ func TestServer_ListAssignments_FilterPubkeysIndices_NoPagination(t *testing.T) 
 	binary.LittleEndian.PutUint64(pubKey1, 1)
 	pubKey2 := make([]byte, params.BeaconConfig().BLSPubkeyLength)
 	binary.LittleEndian.PutUint64(pubKey2, 2)
-	req := &ethpb.ListValidatorAssignmentsRequest{PublicKeys: [][]byte{pubKey1, pubKey2}, Indices: []primitives.ValidatorIndex{2, 3}}
+	req := &zondpb.ListValidatorAssignmentsRequest{PublicKeys: [][]byte{pubKey1, pubKey2}, Indices: []primitives.ValidatorIndex{2, 3}}
 	res, err := bs.ListValidatorAssignments(context.Background(), req)
 	require.NoError(t, err)
 
 	// Construct the wanted assignments.
-	var wanted []*ethpb.ValidatorAssignments_CommitteeAssignment
+	var wanted []*zondpb.ValidatorAssignments_CommitteeAssignment
 
 	activeIndices, err := helpers.ActiveValidatorIndices(ctx, s, 0)
 	require.NoError(t, err)
@@ -288,7 +288,7 @@ func TestServer_ListAssignments_FilterPubkeysIndices_NoPagination(t *testing.T) 
 	for _, index := range activeIndices[1:4] {
 		val, err := s.ValidatorAtIndex(index)
 		require.NoError(t, err)
-		wanted = append(wanted, &ethpb.ValidatorAssignments_CommitteeAssignment{
+		wanted = append(wanted, &zondpb.ValidatorAssignments_CommitteeAssignment{
 			BeaconCommittees: committeeAssignments[index].Committee,
 			CommitteeIndex:   committeeAssignments[index].CommitteeIndex,
 			AttesterSlot:     committeeAssignments[index].AttesterSlot,
@@ -306,12 +306,12 @@ func TestServer_ListAssignments_CanFilterPubkeysIndices_WithPagination(t *testin
 	db := dbTest.SetupDB(t)
 	ctx := context.Background()
 	count := 100
-	validators := make([]*ethpb.Validator, 0, count)
+	validators := make([]*zondpb.Validator, 0, count)
 	withdrawCred := make([]byte, 32)
 	for i := 0; i < count; i++ {
 		pubKey := make([]byte, params.BeaconConfig().BLSPubkeyLength)
 		binary.LittleEndian.PutUint64(pubKey, uint64(i))
-		val := &ethpb.Validator{
+		val := &zondpb.Validator{
 			PublicKey:             pubKey,
 			WithdrawalCredentials: withdrawCred,
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
@@ -332,7 +332,7 @@ func TestServer_ListAssignments_CanFilterPubkeysIndices_WithPagination(t *testin
 	bs := &Server{
 		BeaconDB: db,
 		FinalizationFetcher: &mock.ChainService{
-			FinalizedCheckPoint: &ethpb.Checkpoint{
+			FinalizedCheckPoint: &zondpb.Checkpoint{
 				Epoch: 0,
 			},
 		},
@@ -342,12 +342,12 @@ func TestServer_ListAssignments_CanFilterPubkeysIndices_WithPagination(t *testin
 
 	addDefaultReplayerBuilder(bs, db)
 
-	req := &ethpb.ListValidatorAssignmentsRequest{Indices: []primitives.ValidatorIndex{1, 2, 3, 4, 5, 6}, PageSize: 2, PageToken: "1"}
+	req := &zondpb.ListValidatorAssignmentsRequest{Indices: []primitives.ValidatorIndex{1, 2, 3, 4, 5, 6}, PageSize: 2, PageToken: "1"}
 	res, err := bs.ListValidatorAssignments(context.Background(), req)
 	require.NoError(t, err)
 
 	// Construct the wanted assignments.
-	var assignments []*ethpb.ValidatorAssignments_CommitteeAssignment
+	var assignments []*zondpb.ValidatorAssignments_CommitteeAssignment
 
 	activeIndices, err := helpers.ActiveValidatorIndices(ctx, s, 0)
 	require.NoError(t, err)
@@ -356,7 +356,7 @@ func TestServer_ListAssignments_CanFilterPubkeysIndices_WithPagination(t *testin
 	for _, index := range activeIndices[3:5] {
 		val, err := s.ValidatorAtIndex(index)
 		require.NoError(t, err)
-		assignments = append(assignments, &ethpb.ValidatorAssignments_CommitteeAssignment{
+		assignments = append(assignments, &zondpb.ValidatorAssignments_CommitteeAssignment{
 			BeaconCommittees: committeeAssignments[index].Committee,
 			CommitteeIndex:   committeeAssignments[index].CommitteeIndex,
 			AttesterSlot:     committeeAssignments[index].AttesterSlot,
@@ -366,7 +366,7 @@ func TestServer_ListAssignments_CanFilterPubkeysIndices_WithPagination(t *testin
 		})
 	}
 
-	wantedRes := &ethpb.ValidatorAssignments{
+	wantedRes := &zondpb.ValidatorAssignments{
 		Assignments:   assignments,
 		TotalSize:     int32(len(req.Indices)),
 		NextPageToken: "2",
@@ -376,7 +376,7 @@ func TestServer_ListAssignments_CanFilterPubkeysIndices_WithPagination(t *testin
 
 	// Test the wrap around scenario.
 	assignments = nil
-	req = &ethpb.ListValidatorAssignmentsRequest{Indices: []primitives.ValidatorIndex{1, 2, 3, 4, 5, 6}, PageSize: 5, PageToken: "1"}
+	req = &zondpb.ListValidatorAssignmentsRequest{Indices: []primitives.ValidatorIndex{1, 2, 3, 4, 5, 6}, PageSize: 5, PageToken: "1"}
 	res, err = bs.ListValidatorAssignments(context.Background(), req)
 	require.NoError(t, err)
 	cAssignments, proposerIndexToSlots, err := helpers.CommitteeAssignments(context.Background(), s, 0)
@@ -384,7 +384,7 @@ func TestServer_ListAssignments_CanFilterPubkeysIndices_WithPagination(t *testin
 	for _, index := range activeIndices[6:7] {
 		val, err := s.ValidatorAtIndex(index)
 		require.NoError(t, err)
-		assignments = append(assignments, &ethpb.ValidatorAssignments_CommitteeAssignment{
+		assignments = append(assignments, &zondpb.ValidatorAssignments_CommitteeAssignment{
 			BeaconCommittees: cAssignments[index].Committee,
 			CommitteeIndex:   cAssignments[index].CommitteeIndex,
 			AttesterSlot:     cAssignments[index].AttesterSlot,
@@ -394,7 +394,7 @@ func TestServer_ListAssignments_CanFilterPubkeysIndices_WithPagination(t *testin
 		})
 	}
 
-	wantedRes = &ethpb.ValidatorAssignments{
+	wantedRes = &zondpb.ValidatorAssignments{
 		Assignments:   assignments,
 		TotalSize:     int32(len(req.Indices)),
 		NextPageToken: "",

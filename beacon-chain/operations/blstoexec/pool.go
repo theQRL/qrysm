@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	doublylinkedlist "github.com/theQRL/qrysm/v4/container/doubly-linked-list"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // We recycle the Dilithium changes pool to avoid the backing map growing without
@@ -30,31 +30,31 @@ var (
 // PoolManager maintains pending and seen Dilithium-to-execution-change objects.
 // This pool is used by proposers to insert Dilithium-to-execution-change objects into new blocks.
 type PoolManager interface {
-	PendingDilithiumToExecChanges() ([]*ethpb.SignedDilithiumToExecutionChange, error)
-	DilithiumToExecChangesForInclusion(beaconState state.ReadOnlyBeaconState) ([]*ethpb.SignedDilithiumToExecutionChange, error)
-	InsertDilithiumToExecChange(change *ethpb.SignedDilithiumToExecutionChange)
-	MarkIncluded(change *ethpb.SignedDilithiumToExecutionChange)
+	PendingDilithiumToExecChanges() ([]*zondpb.SignedDilithiumToExecutionChange, error)
+	DilithiumToExecChangesForInclusion(beaconState state.ReadOnlyBeaconState) ([]*zondpb.SignedDilithiumToExecutionChange, error)
+	InsertDilithiumToExecChange(change *zondpb.SignedDilithiumToExecutionChange)
+	MarkIncluded(change *zondpb.SignedDilithiumToExecutionChange)
 	ValidatorExists(idx primitives.ValidatorIndex) bool
 }
 
 // Pool is a concrete implementation of PoolManager.
 type Pool struct {
 	lock    sync.RWMutex
-	pending doublylinkedlist.List[*ethpb.SignedDilithiumToExecutionChange]
-	m       map[primitives.ValidatorIndex]*doublylinkedlist.Node[*ethpb.SignedDilithiumToExecutionChange]
+	pending doublylinkedlist.List[*zondpb.SignedDilithiumToExecutionChange]
+	m       map[primitives.ValidatorIndex]*doublylinkedlist.Node[*zondpb.SignedDilithiumToExecutionChange]
 }
 
 // NewPool returns an initialized pool.
 func NewPool() *Pool {
 	return &Pool{
-		pending: doublylinkedlist.List[*ethpb.SignedDilithiumToExecutionChange]{},
-		m:       make(map[primitives.ValidatorIndex]*doublylinkedlist.Node[*ethpb.SignedDilithiumToExecutionChange]),
+		pending: doublylinkedlist.List[*zondpb.SignedDilithiumToExecutionChange]{},
+		m:       make(map[primitives.ValidatorIndex]*doublylinkedlist.Node[*zondpb.SignedDilithiumToExecutionChange]),
 	}
 }
 
 // Copies the internal map and returns a new one.
 func (p *Pool) cycleMap() {
-	newMap := make(map[primitives.ValidatorIndex]*doublylinkedlist.Node[*ethpb.SignedDilithiumToExecutionChange])
+	newMap := make(map[primitives.ValidatorIndex]*doublylinkedlist.Node[*zondpb.SignedDilithiumToExecutionChange])
 	for k, v := range p.m {
 		newMap[k] = v
 	}
@@ -62,11 +62,11 @@ func (p *Pool) cycleMap() {
 }
 
 // PendingDilithiumToExecChanges returns all objects from the pool.
-func (p *Pool) PendingDilithiumToExecChanges() ([]*ethpb.SignedDilithiumToExecutionChange, error) {
+func (p *Pool) PendingDilithiumToExecChanges() ([]*zondpb.SignedDilithiumToExecutionChange, error) {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
 
-	result := make([]*ethpb.SignedDilithiumToExecutionChange, p.pending.Len())
+	result := make([]*zondpb.SignedDilithiumToExecutionChange, p.pending.Len())
 	node := p.pending.First()
 	var err error
 	for i := 0; node != nil; i++ {
@@ -84,11 +84,11 @@ func (p *Pool) PendingDilithiumToExecChanges() ([]*ethpb.SignedDilithiumToExecut
 
 // DilithiumToExecChangesForInclusion returns objects that are ready for inclusion.
 // This method will not return more than the block enforced MaxDilithiumToExecutionChanges.
-func (p *Pool) DilithiumToExecChangesForInclusion(st state.ReadOnlyBeaconState) ([]*ethpb.SignedDilithiumToExecutionChange, error) {
+func (p *Pool) DilithiumToExecChangesForInclusion(st state.ReadOnlyBeaconState) ([]*zondpb.SignedDilithiumToExecutionChange, error) {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
 	length := int(math.Min(float64(params.BeaconConfig().MaxDilithiumToExecutionChanges), float64(p.pending.Len())))
-	result := make([]*ethpb.SignedDilithiumToExecutionChange, 0, length)
+	result := make([]*zondpb.SignedDilithiumToExecutionChange, 0, length)
 	node := p.pending.Last()
 	for node != nil && len(result) < length {
 		change, err := node.Value()
@@ -114,7 +114,7 @@ func (p *Pool) DilithiumToExecChangesForInclusion(st state.ReadOnlyBeaconState) 
 }
 
 // InsertDilithiumToExecChange inserts an object into the pool.
-func (p *Pool) InsertDilithiumToExecChange(change *ethpb.SignedDilithiumToExecutionChange) {
+func (p *Pool) InsertDilithiumToExecChange(change *zondpb.SignedDilithiumToExecutionChange) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
@@ -131,7 +131,7 @@ func (p *Pool) InsertDilithiumToExecChange(change *ethpb.SignedDilithiumToExecut
 
 // MarkIncluded is used when an object has been included in a beacon block. Every block seen by this
 // node should call this method to include the object. This will remove the object from the pool.
-func (p *Pool) MarkIncluded(change *ethpb.SignedDilithiumToExecutionChange) {
+func (p *Pool) MarkIncluded(change *zondpb.SignedDilithiumToExecutionChange) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 

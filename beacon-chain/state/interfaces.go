@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // BeaconState has read and write access to beacon state methods.
@@ -58,10 +58,10 @@ type ReadOnlyBeaconState interface {
 	GenesisTime() uint64
 	GenesisValidatorsRoot() []byte
 	Slot() primitives.Slot
-	Fork() *ethpb.Fork
-	LatestBlockHeader() *ethpb.BeaconBlockHeader
+	Fork() *zondpb.Fork
+	LatestBlockHeader() *zondpb.BeaconBlockHeader
 	HistoricalRoots() ([][]byte, error)
-	HistoricalSummaries() ([]*ethpb.HistoricalSummary, error)
+	HistoricalSummaries() ([]*zondpb.HistoricalSummary, error)
 	Slashings() []uint64
 	FieldReferencesCount() map[string]uint64
 	MarshalSSZ() ([]byte, error)
@@ -86,13 +86,13 @@ type WriteOnlyBeaconState interface {
 	SetGenesisTime(val uint64) error
 	SetGenesisValidatorsRoot(val []byte) error
 	SetSlot(val primitives.Slot) error
-	SetFork(val *ethpb.Fork) error
-	SetLatestBlockHeader(val *ethpb.BeaconBlockHeader) error
+	SetFork(val *zondpb.Fork) error
+	SetLatestBlockHeader(val *zondpb.BeaconBlockHeader) error
 	SetHistoricalRoots(val [][]byte) error
 	SetSlashings(val []uint64) error
 	UpdateSlashingsAtIndex(idx, val uint64) error
 	AppendHistoricalRoots(root [32]byte) error
-	AppendHistoricalSummaries(*ethpb.HistoricalSummary) error
+	AppendHistoricalSummaries(*zondpb.HistoricalSummary) error
 	SetLatestExecutionPayloadHeader(payload interfaces.ExecutionData) error
 	SetNextWithdrawalIndex(i uint64) error
 	SetNextWithdrawalValidatorIndex(i primitives.ValidatorIndex) error
@@ -113,8 +113,8 @@ type ReadOnlyValidator interface {
 
 // ReadOnlyValidators defines a struct which only has read access to validators methods.
 type ReadOnlyValidators interface {
-	Validators() []*ethpb.Validator
-	ValidatorAtIndex(idx primitives.ValidatorIndex) (*ethpb.Validator, error)
+	Validators() []*zondpb.Validator
+	ValidatorAtIndex(idx primitives.ValidatorIndex) (*zondpb.Validator, error)
 	ValidatorAtIndexReadOnly(idx primitives.ValidatorIndex) (ReadOnlyValidator, error)
 	ValidatorIndexByPubkey(key [dilithium2.CryptoPublicKeyBytes]byte) (primitives.ValidatorIndex, bool)
 	PubkeyAtIndex(idx primitives.ValidatorIndex) [dilithium2.CryptoPublicKeyBytes]byte
@@ -131,11 +131,11 @@ type ReadOnlyBalances interface {
 
 // ReadOnlyCheckpoint defines a struct which only has read access to checkpoint methods.
 type ReadOnlyCheckpoint interface {
-	PreviousJustifiedCheckpoint() *ethpb.Checkpoint
-	CurrentJustifiedCheckpoint() *ethpb.Checkpoint
-	MatchCurrentJustifiedCheckpoint(c *ethpb.Checkpoint) bool
-	MatchPreviousJustifiedCheckpoint(c *ethpb.Checkpoint) bool
-	FinalizedCheckpoint() *ethpb.Checkpoint
+	PreviousJustifiedCheckpoint() *zondpb.Checkpoint
+	CurrentJustifiedCheckpoint() *zondpb.Checkpoint
+	MatchCurrentJustifiedCheckpoint(c *zondpb.Checkpoint) bool
+	MatchPreviousJustifiedCheckpoint(c *zondpb.Checkpoint) bool
+	FinalizedCheckpoint() *zondpb.Checkpoint
 	FinalizedCheckpointEpoch() primitives.Epoch
 	JustificationBits() bitfield.Bitvector4
 	UnrealizedCheckpointBalances() (uint64, uint64, uint64, error)
@@ -162,15 +162,15 @@ type ReadOnlyRandaoMixes interface {
 
 // ReadOnlyEth1Data defines a struct which only has read access to eth1 data methods.
 type ReadOnlyEth1Data interface {
-	Eth1Data() *ethpb.Eth1Data
-	Eth1DataVotes() []*ethpb.Eth1Data
+	Eth1Data() *zondpb.Eth1Data
+	Eth1DataVotes() []*zondpb.Eth1Data
 	Eth1DepositIndex() uint64
 }
 
 // ReadOnlyAttestations defines a struct which only has read access to attestations methods.
 type ReadOnlyAttestations interface {
-	PreviousEpochAttestations() ([]*ethpb.PendingAttestation, error)
-	CurrentEpochAttestations() ([]*ethpb.PendingAttestation, error)
+	PreviousEpochAttestations() ([]*zondpb.PendingAttestation, error)
+	CurrentEpochAttestations() ([]*zondpb.PendingAttestation, error)
 }
 
 // ReadOnlyWithdrawals defines a struct which only has read access to withdrawal methods.
@@ -193,8 +193,8 @@ type ReadOnlyInactivity interface {
 
 // ReadOnlySyncCommittee defines a struct which only has read access to sync committee methods.
 type ReadOnlySyncCommittee interface {
-	CurrentSyncCommittee() (*ethpb.SyncCommittee, error)
-	NextSyncCommittee() (*ethpb.SyncCommittee, error)
+	CurrentSyncCommittee() (*zondpb.SyncCommittee, error)
+	NextSyncCommittee() (*zondpb.SyncCommittee, error)
 }
 
 // WriteOnlyBlockRoots defines a struct which only has write access to block roots methods.
@@ -211,18 +211,18 @@ type WriteOnlyStateRoots interface {
 
 // WriteOnlyEth1Data defines a struct which only has write access to eth1 data methods.
 type WriteOnlyEth1Data interface {
-	SetEth1Data(val *ethpb.Eth1Data) error
-	SetEth1DataVotes(val []*ethpb.Eth1Data) error
-	AppendEth1DataVotes(val *ethpb.Eth1Data) error
+	SetEth1Data(val *zondpb.Eth1Data) error
+	SetEth1DataVotes(val []*zondpb.Eth1Data) error
+	AppendEth1DataVotes(val *zondpb.Eth1Data) error
 	SetEth1DepositIndex(val uint64) error
 }
 
 // WriteOnlyValidators defines a struct which only has write access to validators methods.
 type WriteOnlyValidators interface {
-	SetValidators(val []*ethpb.Validator) error
-	ApplyToEveryValidator(f func(idx int, val *ethpb.Validator) (bool, *ethpb.Validator, error)) error
-	UpdateValidatorAtIndex(idx primitives.ValidatorIndex, val *ethpb.Validator) error
-	AppendValidator(val *ethpb.Validator) error
+	SetValidators(val []*zondpb.Validator) error
+	ApplyToEveryValidator(f func(idx int, val *zondpb.Validator) (bool, *zondpb.Validator, error)) error
+	UpdateValidatorAtIndex(idx primitives.ValidatorIndex, val *zondpb.Validator) error
+	AppendValidator(val *zondpb.Validator) error
 }
 
 // WriteOnlyBalances defines a struct which only has write access to balances methods.
@@ -240,18 +240,18 @@ type WriteOnlyRandaoMixes interface {
 
 // WriteOnlyCheckpoint defines a struct which only has write access to check point methods.
 type WriteOnlyCheckpoint interface {
-	SetFinalizedCheckpoint(val *ethpb.Checkpoint) error
-	SetPreviousJustifiedCheckpoint(val *ethpb.Checkpoint) error
-	SetCurrentJustifiedCheckpoint(val *ethpb.Checkpoint) error
+	SetFinalizedCheckpoint(val *zondpb.Checkpoint) error
+	SetPreviousJustifiedCheckpoint(val *zondpb.Checkpoint) error
+	SetCurrentJustifiedCheckpoint(val *zondpb.Checkpoint) error
 	SetJustificationBits(val bitfield.Bitvector4) error
 }
 
 // WriteOnlyAttestations defines a struct which only has write access to attestations methods.
 type WriteOnlyAttestations interface {
-	AppendCurrentEpochAttestations(val *ethpb.PendingAttestation) error
-	AppendPreviousEpochAttestations(val *ethpb.PendingAttestation) error
-	SetPreviousEpochAttestations([]*ethpb.PendingAttestation) error
-	SetCurrentEpochAttestations([]*ethpb.PendingAttestation) error
+	AppendCurrentEpochAttestations(val *zondpb.PendingAttestation) error
+	AppendPreviousEpochAttestations(val *zondpb.PendingAttestation) error
+	SetPreviousEpochAttestations([]*zondpb.PendingAttestation) error
+	SetCurrentEpochAttestations([]*zondpb.PendingAttestation) error
 	RotateAttestations() error
 }
 
@@ -273,6 +273,6 @@ type WriteOnlyInactivity interface {
 
 // WriteOnlySyncCommittee defines a struct which only has write access to sync committee methods.
 type WriteOnlySyncCommittee interface {
-	SetCurrentSyncCommittee(val *ethpb.SyncCommittee) error
-	SetNextSyncCommittee(val *ethpb.SyncCommittee) error
+	SetCurrentSyncCommittee(val *zondpb.SyncCommittee) error
+	SetNextSyncCommittee(val *zondpb.SyncCommittee) error
 }

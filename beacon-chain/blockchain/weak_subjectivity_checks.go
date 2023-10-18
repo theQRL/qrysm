@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -28,7 +28,7 @@ type WeakSubjectivityVerifier struct {
 }
 
 // NewWeakSubjectivityVerifier validates a checkpoint, and if valid, uses it to initialize a weak subjectivity verifier.
-func NewWeakSubjectivityVerifier(wsc *ethpb.Checkpoint, db weakSubjectivityDB) (*WeakSubjectivityVerifier, error) {
+func NewWeakSubjectivityVerifier(wsc *zondpb.Checkpoint, db weakSubjectivityDB) (*WeakSubjectivityVerifier, error) {
 	if wsc == nil || len(wsc.Root) == 0 || wsc.Epoch == 0 {
 		log.Debug("--weak-subjectivity-checkpoint not provided")
 		return &WeakSubjectivityVerifier{

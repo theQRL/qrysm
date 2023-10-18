@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -18,10 +18,10 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func FakeDeposits(n uint64) []*ethpb.Eth1Data {
-	deposits := make([]*ethpb.Eth1Data, n)
+func FakeDeposits(n uint64) []*zondpb.Eth1Data {
+	deposits := make([]*zondpb.Eth1Data, n)
 	for i := uint64(0); i < n; i++ {
-		deposits[i] = &ethpb.Eth1Data{
+		deposits[i] = &zondpb.Eth1Data{
 			DepositCount: 1,
 			DepositRoot:  bytesutil.PadTo([]byte("root"), 32),
 		}
@@ -31,14 +31,14 @@ func FakeDeposits(n uint64) []*ethpb.Eth1Data {
 
 func TestEth1DataHasEnoughSupport(t *testing.T) {
 	tests := []struct {
-		stateVotes         []*ethpb.Eth1Data
-		data               *ethpb.Eth1Data
+		stateVotes         []*zondpb.Eth1Data
+		data               *zondpb.Eth1Data
 		hasSupport         bool
 		votingPeriodLength primitives.Epoch
 	}{
 		{
 			stateVotes: FakeDeposits(uint64(params.BeaconConfig().SlotsPerEpoch.Mul(4))),
-			data: &ethpb.Eth1Data{
+			data: &zondpb.Eth1Data{
 				DepositCount: 1,
 				DepositRoot:  bytesutil.PadTo([]byte("root"), 32),
 			},
@@ -46,7 +46,7 @@ func TestEth1DataHasEnoughSupport(t *testing.T) {
 			votingPeriodLength: 7,
 		}, {
 			stateVotes: FakeDeposits(uint64(params.BeaconConfig().SlotsPerEpoch.Mul(4))),
-			data: &ethpb.Eth1Data{
+			data: &zondpb.Eth1Data{
 				DepositCount: 1,
 				DepositRoot:  bytesutil.PadTo([]byte("root"), 32),
 			},
@@ -54,7 +54,7 @@ func TestEth1DataHasEnoughSupport(t *testing.T) {
 			votingPeriodLength: 8,
 		}, {
 			stateVotes: FakeDeposits(uint64(params.BeaconConfig().SlotsPerEpoch.Mul(4))),
-			data: &ethpb.Eth1Data{
+			data: &zondpb.Eth1Data{
 				DepositCount: 1,
 				DepositRoot:  bytesutil.PadTo([]byte("root"), 32),
 			},
@@ -70,7 +70,7 @@ func TestEth1DataHasEnoughSupport(t *testing.T) {
 			c.EpochsPerEth1VotingPeriod = tt.votingPeriodLength
 			params.OverrideBeaconConfig(c)
 
-			s, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+			s, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 				Eth1DataVotes: tt.stateVotes,
 			})
 			require.NoError(t, err)
@@ -91,8 +91,8 @@ func TestEth1DataHasEnoughSupport(t *testing.T) {
 
 func TestAreEth1DataEqual(t *testing.T) {
 	type args struct {
-		a *ethpb.Eth1Data
-		b *ethpb.Eth1Data
+		a *zondpb.Eth1Data
+		b *zondpb.Eth1Data
 	}
 	tests := []struct {
 		name string
@@ -111,7 +111,7 @@ func TestAreEth1DataEqual(t *testing.T) {
 			name: "false when only one is nil",
 			args: args{
 				a: nil,
-				b: &ethpb.Eth1Data{
+				b: &zondpb.Eth1Data{
 					DepositRoot:  make([]byte, 32),
 					DepositCount: 0,
 					BlockHash:    make([]byte, 32),
@@ -122,12 +122,12 @@ func TestAreEth1DataEqual(t *testing.T) {
 		{
 			name: "true when real equality",
 			args: args{
-				a: &ethpb.Eth1Data{
+				a: &zondpb.Eth1Data{
 					DepositRoot:  make([]byte, 32),
 					DepositCount: 0,
 					BlockHash:    make([]byte, 32),
 				},
-				b: &ethpb.Eth1Data{
+				b: &zondpb.Eth1Data{
 					DepositRoot:  make([]byte, 32),
 					DepositCount: 0,
 					BlockHash:    make([]byte, 32),
@@ -138,12 +138,12 @@ func TestAreEth1DataEqual(t *testing.T) {
 		{
 			name: "false is field value differs",
 			args: args{
-				a: &ethpb.Eth1Data{
+				a: &zondpb.Eth1Data{
 					DepositRoot:  make([]byte, 32),
 					DepositCount: 0,
 					BlockHash:    make([]byte, 32),
 				},
-				b: &ethpb.Eth1Data{
+				b: &zondpb.Eth1Data{
 					DepositRoot:  make([]byte, 32),
 					DepositCount: 64,
 					BlockHash:    make([]byte, 32),
@@ -160,15 +160,15 @@ func TestAreEth1DataEqual(t *testing.T) {
 }
 
 func TestProcessEth1Data_SetsCorrectly(t *testing.T) {
-	beaconState, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
-		Eth1DataVotes: []*ethpb.Eth1Data{},
+	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		Eth1DataVotes: []*zondpb.Eth1Data{},
 	})
 	require.NoError(t, err)
 
 	b := util.NewBeaconBlock()
-	b.Block = &ethpb.BeaconBlock{
-		Body: &ethpb.BeaconBlockBody{
-			Eth1Data: &ethpb.Eth1Data{
+	b.Block = &zondpb.BeaconBlock{
+		Body: &zondpb.BeaconBlockBody{
+			Eth1Data: &zondpb.Eth1Data{
 				DepositRoot: []byte{2},
 				BlockHash:   []byte{3},
 			},
@@ -186,7 +186,7 @@ func TestProcessEth1Data_SetsCorrectly(t *testing.T) {
 	if len(newETH1DataVotes) <= 1 {
 		t.Error("Expected new ETH1 data votes to have length > 1")
 	}
-	if !proto.Equal(beaconState.Eth1Data(), ethpb.CopyETH1Data(b.Block.Body.Eth1Data)) {
+	if !proto.Equal(beaconState.Eth1Data(), zondpb.CopyETH1Data(b.Block.Body.Eth1Data)) {
 		t.Errorf(
 			"Expected latest eth1 data to have been set to %v, received %v",
 			b.Block.Body.Eth1Data,

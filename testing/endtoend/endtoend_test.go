@@ -19,8 +19,8 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/io/file"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	"github.com/theQRL/qrysm/v4/proto/eth/service"
-	v1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
+	"github.com/theQRL/qrysm/v4/proto/zond/service"
+	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -29,7 +29,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/components"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/components/eth1"
@@ -131,7 +131,7 @@ func (r *testRunner) waitExtra(ctx context.Context, e primitives.Epoch, conn *gr
 	spe := uint64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))
 	dl := time.Now().Add(time.Second * time.Duration(uint64(extra)*spe))
 
-	beaconClient := eth.NewBeaconChainClient(conn)
+	beaconClient := zond.NewBeaconChainClient(conn)
 	ctx, cancel := context.WithDeadline(ctx, dl)
 	defer cancel()
 	for {
@@ -488,7 +488,7 @@ func (r *testRunner) defaultEndToEndRun() error {
 	defer closeConns()
 
 	// Calculate genesis time.
-	nodeClient := eth.NewNodeClient(conns[0])
+	nodeClient := zond.NewNodeClient(conns[0])
 	genesis, err := nodeClient.GetGenesis(context.Background(), &emptypb.Empty{})
 	require.NoError(t, err)
 	tickingStartTime := helpers.EpochTickerStartTime(genesis)
@@ -569,7 +569,7 @@ func (r *testRunner) scenarioRun() error {
 	defer closeConns()
 
 	// Calculate genesis time.
-	nodeClient := eth.NewNodeClient(conns[0])
+	nodeClient := zond.NewNodeClient(conns[0])
 	genesis, err := nodeClient.GetGenesis(context.Background(), &emptypb.Empty{})
 	require.NoError(t, err)
 	tickingStartTime := helpers.EpochTickerStartTime(genesis)

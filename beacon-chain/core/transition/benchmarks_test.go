@@ -11,7 +11,7 @@ import (
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/benchmark"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"google.golang.org/protobuf/proto"
@@ -159,7 +159,7 @@ func BenchmarkUnmarshalState_FullState(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
-			require.NoError(b, proto.Unmarshal(protoObject, &ethpb.BeaconState{}))
+			require.NoError(b, proto.Unmarshal(protoObject, &zondpb.BeaconState{}))
 		}
 	})
 
@@ -167,7 +167,7 @@ func BenchmarkUnmarshalState_FullState(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
-			sszState := &ethpb.BeaconState{}
+			sszState := &zondpb.BeaconState{}
 			require.NoError(b, sszState.UnmarshalSSZ(sszObject))
 		}
 	})

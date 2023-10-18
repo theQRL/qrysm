@@ -2,7 +2,7 @@ package synccommittee
 
 import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 var _ = Pool(&Store{})
@@ -13,12 +13,12 @@ var _ = Pool(&Store{})
 // sync aggregators.
 type Pool interface {
 	// Methods for Sync Contributions.
-	SaveSyncCommitteeContribution(contr *ethpb.SyncCommitteeContribution) error
-	SyncCommitteeContributions(slot primitives.Slot) ([]*ethpb.SyncCommitteeContribution, error)
+	SaveSyncCommitteeContribution(contr *zondpb.SyncCommitteeContribution) error
+	SyncCommitteeContributions(slot primitives.Slot) ([]*zondpb.SyncCommitteeContribution, error)
 
 	// Methods for Sync Committee Messages.
-	SaveSyncCommitteeMessage(sig *ethpb.SyncCommitteeMessage) error
-	SyncCommitteeMessages(slot primitives.Slot) ([]*ethpb.SyncCommitteeMessage, error)
+	SaveSyncCommitteeMessage(sig *zondpb.SyncCommitteeMessage) error
+	SyncCommitteeMessages(slot primitives.Slot) ([]*zondpb.SyncCommitteeMessage, error)
 }
 
 // NewPool returns the sync committee store fulfilling the pool interface.

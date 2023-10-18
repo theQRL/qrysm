@@ -34,7 +34,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -118,7 +118,7 @@ func TestCachedPreState_CanGetFromStateSummary(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, beaconDB.SaveBlock(ctx, wsb))
 
-	require.NoError(t, service.cfg.BeaconDB.SaveStateSummary(ctx, &ethpb.StateSummary{Slot: 1, Root: root[:]}))
+	require.NoError(t, service.cfg.BeaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Slot: 1, Root: root[:]}))
 	require.NoError(t, service.cfg.StateGen.SaveState(ctx, root, st))
 	require.NoError(t, service.verifyBlkPreState(ctx, wsb.Block()))
 }
@@ -141,7 +141,7 @@ func TestFillForkChoiceMissingBlocks_CanSave(t *testing.T) {
 
 	// save invalid block at slot 0 because doubly linked tree enforces that
 	// the parent of the last block inserted is the tree node.
-	fcp := &ethpb.Checkpoint{Epoch: 0, Root: service.originBlockRoot[:]}
+	fcp := &zondpb.Checkpoint{Epoch: 0, Root: service.originBlockRoot[:]}
 	r0 := bytesutil.ToBytes32(roots[0])
 	state, blkRoot, err := prepareForkchoiceState(ctx, 0, r0, service.originBlockRoot, [32]byte{}, fcp, fcp)
 	require.NoError(t, err)
@@ -184,7 +184,7 @@ func TestFillForkChoiceMissingBlocks_RootsMatch(t *testing.T) {
 
 	// save invalid block at slot 0 because doubly linked tree enforces that
 	// the parent of the last block inserted is the tree node.
-	fcp := &ethpb.Checkpoint{Epoch: 0, Root: service.originBlockRoot[:]}
+	fcp := &zondpb.Checkpoint{Epoch: 0, Root: service.originBlockRoot[:]}
 	r0 := bytesutil.ToBytes32(roots[0])
 	state, blkRoot, err := prepareForkchoiceState(ctx, 0, r0, service.originBlockRoot, [32]byte{}, fcp, fcp)
 	require.NoError(t, err)
@@ -354,7 +354,7 @@ func blockTree1(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][]byt
 	st, err := util.NewBeaconState()
 	require.NoError(t, err)
 
-	for _, b := range []*ethpb.SignedBeaconBlock{b0, b1, b3, b4, b5, b6, b7, b8} {
+	for _, b := range []*zondpb.SignedBeaconBlock{b0, b1, b3, b4, b5, b6, b7, b8} {
 		beaconBlock := util.NewBeaconBlock()
 		beaconBlock.Block.Slot = b.Block.Slot
 		beaconBlock.Block.ParentRoot = bytesutil.PadTo(b.Block.ParentRoot, 32)
@@ -415,7 +415,7 @@ func TestAncestor_HandleSkipSlot(t *testing.T) {
 	b200.Block.ParentRoot = r100[:]
 	r200, err := b200.Block.HashTreeRoot()
 	require.NoError(t, err)
-	for _, b := range []*ethpb.SignedBeaconBlock{b1, b100, b200} {
+	for _, b := range []*zondpb.SignedBeaconBlock{b1, b100, b200} {
 		beaconBlock := util.NewBeaconBlock()
 		beaconBlock.Block.Slot = b.Block.Slot
 		beaconBlock.Block.ParentRoot = bytesutil.PadTo(b.Block.ParentRoot, 32)
@@ -458,9 +458,9 @@ func TestAncestor_CanUseForkchoice(t *testing.T) {
 	b200.Block.ParentRoot = r100[:]
 	r200, err := b200.Block.HashTreeRoot()
 	require.NoError(t, err)
-	ojc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
-	ofc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
-	for _, b := range []*ethpb.SignedBeaconBlock{b1, b100, b200} {
+	ojc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ofc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	for _, b := range []*zondpb.SignedBeaconBlock{b1, b100, b200} {
 		beaconBlock := util.NewBeaconBlock()
 		beaconBlock.Block.Slot = b.Block.Slot
 		beaconBlock.Block.ParentRoot = bytesutil.PadTo(b.Block.ParentRoot, 32)
@@ -497,9 +497,9 @@ func TestAncestor_CanUseDB(t *testing.T) {
 	b200.Block.ParentRoot = r100[:]
 	r200, err := b200.Block.HashTreeRoot()
 	require.NoError(t, err)
-	ojc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
-	ofc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
-	for _, b := range []*ethpb.SignedBeaconBlock{b1, b100, b200} {
+	ojc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ofc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	for _, b := range []*zondpb.SignedBeaconBlock{b1, b100, b200} {
 		beaconBlock := util.NewBeaconBlock()
 		beaconBlock.Block.Slot = b.Block.Slot
 		beaconBlock.Block.ParentRoot = bytesutil.PadTo(b.Block.ParentRoot, 32)
@@ -705,13 +705,13 @@ func TestInsertFinalizedDeposits(t *testing.T) {
 	gs, _ := util.DeterministicGenesisState(t, 32)
 	require.NoError(t, service.saveGenesisData(ctx, gs))
 	gs = gs.Copy()
-	assert.NoError(t, gs.SetEth1Data(&ethpb.Eth1Data{DepositCount: 10}))
+	assert.NoError(t, gs.SetEth1Data(&zondpb.Eth1Data{DepositCount: 10}))
 	assert.NoError(t, gs.SetEth1DepositIndex(8))
 	assert.NoError(t, service.cfg.StateGen.SaveState(ctx, [32]byte{'m', 'o', 'c', 'k'}, gs))
 	var zeroSig [96]byte
 	for i := uint64(0); i < uint64(4*params.BeaconConfig().SlotsPerEpoch); i++ {
 		root := []byte(strconv.Itoa(int(i)))
-		assert.NoError(t, depositCache.InsertDeposit(ctx, &ethpb.Deposit{Data: &ethpb.Deposit_Data{
+		assert.NoError(t, depositCache.InsertDeposit(ctx, &zondpb.Deposit{Data: &zondpb.Deposit_Data{
 			PublicKey:             bytesutil.FromBytes2592([dilithium2.CryptoPublicKeyBytes]byte{}),
 			WithdrawalCredentials: params.BeaconConfig().ZeroHash[:],
 			Amount:                0,
@@ -734,19 +734,19 @@ func TestInsertFinalizedDeposits_PrunePendingDeposits(t *testing.T) {
 	gs, _ := util.DeterministicGenesisState(t, 32)
 	require.NoError(t, service.saveGenesisData(ctx, gs))
 	gs = gs.Copy()
-	assert.NoError(t, gs.SetEth1Data(&ethpb.Eth1Data{DepositCount: 10}))
+	assert.NoError(t, gs.SetEth1Data(&zondpb.Eth1Data{DepositCount: 10}))
 	assert.NoError(t, gs.SetEth1DepositIndex(8))
 	assert.NoError(t, service.cfg.StateGen.SaveState(ctx, [32]byte{'m', 'o', 'c', 'k'}, gs))
 	var zeroSig [96]byte
 	for i := uint64(0); i < uint64(4*params.BeaconConfig().SlotsPerEpoch); i++ {
 		root := []byte(strconv.Itoa(int(i)))
-		assert.NoError(t, depositCache.InsertDeposit(ctx, &ethpb.Deposit{Data: &ethpb.Deposit_Data{
+		assert.NoError(t, depositCache.InsertDeposit(ctx, &zondpb.Deposit{Data: &zondpb.Deposit_Data{
 			PublicKey:             bytesutil.FromBytes2592([dilithium2.CryptoPublicKeyBytes]byte{}),
 			WithdrawalCredentials: params.BeaconConfig().ZeroHash[:],
 			Amount:                0,
 			Signature:             zeroSig[:],
 		}, Proof: [][]byte{root}}, 100+i, int64(i), bytesutil.ToBytes32(root)))
-		depositCache.InsertPendingDeposit(ctx, &ethpb.Deposit{Data: &ethpb.Deposit_Data{
+		depositCache.InsertPendingDeposit(ctx, &zondpb.Deposit{Data: &zondpb.Deposit_Data{
 			PublicKey:             bytesutil.FromBytes2592([dilithium2.CryptoPublicKeyBytes]byte{}),
 			WithdrawalCredentials: params.BeaconConfig().ZeroHash[:],
 			Amount:                0,
@@ -773,17 +773,17 @@ func TestInsertFinalizedDeposits_MultipleFinalizedRoutines(t *testing.T) {
 	gs, _ := util.DeterministicGenesisState(t, 32)
 	require.NoError(t, service.saveGenesisData(ctx, gs))
 	gs = gs.Copy()
-	assert.NoError(t, gs.SetEth1Data(&ethpb.Eth1Data{DepositCount: 7}))
+	assert.NoError(t, gs.SetEth1Data(&zondpb.Eth1Data{DepositCount: 7}))
 	assert.NoError(t, gs.SetEth1DepositIndex(6))
 	assert.NoError(t, service.cfg.StateGen.SaveState(ctx, [32]byte{'m', 'o', 'c', 'k'}, gs))
 	gs2 := gs.Copy()
-	assert.NoError(t, gs2.SetEth1Data(&ethpb.Eth1Data{DepositCount: 15}))
+	assert.NoError(t, gs2.SetEth1Data(&zondpb.Eth1Data{DepositCount: 15}))
 	assert.NoError(t, gs2.SetEth1DepositIndex(13))
 	assert.NoError(t, service.cfg.StateGen.SaveState(ctx, [32]byte{'m', 'o', 'c', 'k', '2'}, gs2))
 	var zeroSig [96]byte
 	for i := uint64(0); i < uint64(4*params.BeaconConfig().SlotsPerEpoch); i++ {
 		root := []byte(strconv.Itoa(int(i)))
-		assert.NoError(t, depositCache.InsertDeposit(ctx, &ethpb.Deposit{Data: &ethpb.Deposit_Data{
+		assert.NoError(t, depositCache.InsertDeposit(ctx, &zondpb.Deposit{Data: &zondpb.Deposit_Data{
 			PublicKey:             bytesutil.FromBytes2592([dilithium2.CryptoPublicKeyBytes]byte{}),
 			WithdrawalCredentials: params.BeaconConfig().ZeroHash[:],
 			Amount:                0,
@@ -822,7 +822,7 @@ func TestRemoveBlockAttestationsInPool(t *testing.T) {
 	ctx := context.Background()
 	beaconDB := testDB.SetupDB(t)
 	service := setupBeaconChain(t, beaconDB)
-	require.NoError(t, service.cfg.BeaconDB.SaveStateSummary(ctx, &ethpb.StateSummary{Root: r[:]}))
+	require.NoError(t, service.cfg.BeaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Root: r[:]}))
 	require.NoError(t, service.cfg.BeaconDB.SaveGenesisBlockRoot(ctx, r))
 
 	atts := b.Block.Body.Attestations
@@ -1008,7 +1008,7 @@ func Test_validateMergeTransitionBlock(t *testing.T) {
 				TotalDifficulty: "0x1",
 			}
 			service.cfg.ExecutionEngineCaller = e
-			b := util.HydrateSignedBeaconBlockBellatrix(&ethpb.SignedBeaconBlockBellatrix{})
+			b := util.HydrateSignedBeaconBlockBellatrix(&zondpb.SignedBeaconBlockBellatrix{})
 			b.Block.Body.ExecutionPayload = tt.payload
 			blk, err := consensusblocks.NewSignedBeaconBlock(b)
 			require.NoError(t, err)
@@ -1027,9 +1027,9 @@ func TestService_insertSlashingsToForkChoiceStore(t *testing.T) {
 	ctx := tr.ctx
 
 	beaconState, privKeys := util.DeterministicGenesisState(t, 100)
-	att1 := util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
-		Data: &ethpb.AttestationData{
-			Source: &ethpb.Checkpoint{Epoch: 1},
+	att1 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+		Data: &zondpb.AttestationData{
+			Source: &zondpb.Checkpoint{Epoch: 1},
 		},
 		AttestingIndices: []uint64{0, 1},
 	})
@@ -1042,7 +1042,7 @@ func TestService_insertSlashingsToForkChoiceStore(t *testing.T) {
 	aggregateSig := bls.AggregateSignatures([]bls.Signature{sig0, sig1})
 	att1.Signature = aggregateSig.Marshal()
 
-	att2 := util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
+	att2 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{0, 1},
 	})
 	signingRoot, err = signing.ComputeSigningRoot(att2.Data, domain)
@@ -1051,7 +1051,7 @@ func TestService_insertSlashingsToForkChoiceStore(t *testing.T) {
 	sig1 = privKeys[1].Sign(signingRoot[:])
 	aggregateSig = bls.AggregateSignatures([]bls.Signature{sig0, sig1})
 	att2.Signature = aggregateSig.Marshal()
-	slashings := []*ethpb.AttesterSlashing{
+	slashings := []*zondpb.AttesterSlashing{
 		{
 			Attestation_1: att1,
 			Attestation_2: att2,
@@ -1098,7 +1098,7 @@ func TestOnBlock_ProcessBlocksParallel(t *testing.T) {
 
 	logHook := logTest.NewGlobal()
 	for i := 0; i < 10; i++ {
-		fc := &ethpb.Checkpoint{}
+		fc := &zondpb.Checkpoint{}
 		st, blkRoot, err := prepareForkchoiceState(ctx, 0, wsb1.Block().ParentRoot(), [32]byte{}, [32]byte{}, fc, fc)
 		require.NoError(t, err)
 		require.NoError(t, service.cfg.ForkChoiceStore.InsertNode(ctx, st, blkRoot))
@@ -1150,7 +1150,7 @@ func Test_verifyBlkFinalizedSlot_invalidBlock(t *testing.T) {
 	service, _ := minimalTestService(t)
 
 	require.NoError(t, service.cfg.ForkChoiceStore.UpdateFinalizedCheckpoint(&forkchoicetypes.Checkpoint{Epoch: 1}))
-	blk := util.HydrateBeaconBlock(&ethpb.BeaconBlock{Slot: 1})
+	blk := util.HydrateBeaconBlock(&zondpb.BeaconBlock{Slot: 1})
 	wb, err := consensusblocks.NewBeaconBlock(blk)
 	require.NoError(t, err)
 	err = service.verifyBlkFinalizedSlot(wb)

@@ -1,11 +1,11 @@
 package state_native
 
 import (
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // Eth1Data corresponding to the proof-of-work chain information stored in the beacon state.
-func (b *BeaconState) Eth1Data() *ethpb.Eth1Data {
+func (b *BeaconState) Eth1Data() *zondpb.Eth1Data {
 	if b.eth1Data == nil {
 		return nil
 	}
@@ -18,17 +18,17 @@ func (b *BeaconState) Eth1Data() *ethpb.Eth1Data {
 
 // eth1DataVal corresponding to the proof-of-work chain information stored in the beacon state.
 // This assumes that a lock is already held on BeaconState.
-func (b *BeaconState) eth1DataVal() *ethpb.Eth1Data {
+func (b *BeaconState) eth1DataVal() *zondpb.Eth1Data {
 	if b.eth1Data == nil {
 		return nil
 	}
 
-	return ethpb.CopyETH1Data(b.eth1Data)
+	return zondpb.CopyETH1Data(b.eth1Data)
 }
 
 // Eth1DataVotes corresponds to votes from Ethereum on the canonical proof-of-work chain
 // data retrieved from eth1.
-func (b *BeaconState) Eth1DataVotes() []*ethpb.Eth1Data {
+func (b *BeaconState) Eth1DataVotes() []*zondpb.Eth1Data {
 	if b.eth1DataVotes == nil {
 		return nil
 	}
@@ -42,14 +42,14 @@ func (b *BeaconState) Eth1DataVotes() []*ethpb.Eth1Data {
 // eth1DataVotesVal corresponds to votes from Ethereum on the canonical proof-of-work chain
 // data retrieved from eth1.
 // This assumes that a lock is already held on BeaconState.
-func (b *BeaconState) eth1DataVotesVal() []*ethpb.Eth1Data {
+func (b *BeaconState) eth1DataVotesVal() []*zondpb.Eth1Data {
 	if b.eth1DataVotes == nil {
 		return nil
 	}
 
-	res := make([]*ethpb.Eth1Data, len(b.eth1DataVotes))
+	res := make([]*zondpb.Eth1Data, len(b.eth1DataVotes))
 	for i := 0; i < len(res); i++ {
-		res[i] = ethpb.CopyETH1Data(b.eth1DataVotes[i])
+		res[i] = zondpb.CopyETH1Data(b.eth1DataVotes[i])
 	}
 	return res
 }

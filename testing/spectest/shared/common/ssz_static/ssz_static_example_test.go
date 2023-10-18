@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	fssz "github.com/prysmaticlabs/fastssz"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	common "github.com/theQRL/qrysm/v4/testing/spectest/shared/common/ssz_static"
 )
@@ -20,9 +20,9 @@ func ExampleRunSSZStaticTests() {
 		var obj interface{}
 		switch objectName {
 		case "Attestation":
-			obj = &ethpb.Attestation{}
+			obj = &zondpb.Attestation{}
 		case "BeaconState":
-			obj = &ethpb.BeaconState{}
+			obj = &zondpb.BeaconState{}
 		case "Eth1Block":
 			// Some types may not apply to prysm, but exist in the spec test folders. It is OK to
 			// skip these tests with a valid justification. Otherwise, the test should fail with an
@@ -47,9 +47,9 @@ func ExampleRunSSZStaticTests() {
 	// is used and you want to ensure it passes spectests.
 	customHTR := func(t *testing.T, htrs []common.HTR, object interface{}) []common.HTR {
 		switch object.(type) {
-		case *ethpb.BeaconState:
+		case *zondpb.BeaconState:
 			htrs = append(htrs, func(s interface{}) ([32]byte, error) {
-				beaconState, err := state_native.InitializeFromProtoPhase0(s.(*ethpb.BeaconState))
+				beaconState, err := state_native.InitializeFromProtoPhase0(s.(*zondpb.BeaconState))
 				require.NoError(t, err)
 				return beaconState.HashTreeRoot(context.TODO())
 			})

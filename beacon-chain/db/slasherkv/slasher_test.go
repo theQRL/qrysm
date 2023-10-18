@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
@@ -253,8 +253,8 @@ func Test_encodeDecodeProposalRecord(t *testing.T) {
 		{
 			name: "failing encode/decode",
 			blkHdr: &slashertypes.SignedBlockHeaderWrapper{
-				SignedBeaconBlockHeader: &ethpb.SignedBeaconBlockHeader{
-					Header: &ethpb.BeaconBlockHeader{},
+				SignedBeaconBlockHeader: &zondpb.SignedBeaconBlockHeader{
+					Header: &zondpb.BeaconBlockHeader{},
 				},
 			},
 			wantErr: true,
@@ -305,8 +305,8 @@ func Test_encodeDecodeAttestationRecord(t *testing.T) {
 		{
 			name: "failing encode/decode",
 			attWrapper: &slashertypes.IndexedAttestationWrapper{
-				IndexedAttestation: &ethpb.IndexedAttestation{
-					Data: &ethpb.AttestationData{},
+				IndexedAttestation: &zondpb.IndexedAttestation{
+					Data: &zondpb.AttestationData{},
 				},
 			},
 			wantErr: true,
@@ -345,7 +345,7 @@ func TestStore_HighestAttestations(t *testing.T) {
 	tests := []struct {
 		name             string
 		attestationsInDB []*slashertypes.IndexedAttestationWrapper
-		expected         []*ethpb.HighestAttestation
+		expected         []*zondpb.HighestAttestation
 		indices          []primitives.ValidatorIndex
 		wantErr          bool
 	}{
@@ -355,7 +355,7 @@ func TestStore_HighestAttestations(t *testing.T) {
 				createAttestationWrapper(0, 3, []uint64{1}, []byte{1}),
 			},
 			indices: []primitives.ValidatorIndex{1},
-			expected: []*ethpb.HighestAttestation{
+			expected: []*zondpb.HighestAttestation{
 				{
 					ValidatorIndex:     1,
 					HighestSourceEpoch: 0,
@@ -372,7 +372,7 @@ func TestStore_HighestAttestations(t *testing.T) {
 				createAttestationWrapper(5, 6, []uint64{5}, []byte{4}),
 			},
 			indices: []primitives.ValidatorIndex{2, 3, 4, 5},
-			expected: []*ethpb.HighestAttestation{
+			expected: []*zondpb.HighestAttestation{
 				{
 					ValidatorIndex:     2,
 					HighestSourceEpoch: 0,
@@ -404,7 +404,7 @@ func TestStore_HighestAttestations(t *testing.T) {
 				createAttestationWrapper(6, 7, []uint64{5}, []byte{4}),
 			},
 			indices: []primitives.ValidatorIndex{2, 3, 4, 5},
-			expected: []*ethpb.HighestAttestation{
+			expected: []*zondpb.HighestAttestation{
 				{
 					ValidatorIndex:     2,
 					HighestSourceEpoch: 4,
@@ -508,7 +508,7 @@ func BenchmarkStore_CheckDoubleBlockProposals(b *testing.B) {
 }
 
 func createProposalWrapper(t *testing.T, slot primitives.Slot, proposerIndex primitives.ValidatorIndex, signingRoot []byte) *slashertypes.SignedBlockHeaderWrapper {
-	header := &ethpb.BeaconBlockHeader{
+	header := &zondpb.BeaconBlockHeader{
 		Slot:          slot,
 		ProposerIndex: proposerIndex,
 		ParentRoot:    params.BeaconConfig().ZeroHash[:],
@@ -520,7 +520,7 @@ func createProposalWrapper(t *testing.T, slot primitives.Slot, proposerIndex pri
 		t.Fatal(err)
 	}
 	return &slashertypes.SignedBlockHeaderWrapper{
-		SignedBeaconBlockHeader: &ethpb.SignedBeaconBlockHeader{
+		SignedBeaconBlockHeader: &zondpb.SignedBeaconBlockHeader{
 			Header:    header,
 			Signature: params.BeaconConfig().EmptySignature[:],
 		},
@@ -533,19 +533,19 @@ func createAttestationWrapper(source, target primitives.Epoch, indices []uint64,
 	if signingRoot == nil {
 		signRoot = params.BeaconConfig().ZeroHash
 	}
-	data := &ethpb.AttestationData{
+	data := &zondpb.AttestationData{
 		BeaconBlockRoot: params.BeaconConfig().ZeroHash[:],
-		Source: &ethpb.Checkpoint{
+		Source: &zondpb.Checkpoint{
 			Epoch: source,
 			Root:  params.BeaconConfig().ZeroHash[:],
 		},
-		Target: &ethpb.Checkpoint{
+		Target: &zondpb.Checkpoint{
 			Epoch: target,
 			Root:  params.BeaconConfig().ZeroHash[:],
 		},
 	}
 	return &slashertypes.IndexedAttestationWrapper{
-		IndexedAttestation: &ethpb.IndexedAttestation{
+		IndexedAttestation: &zondpb.IndexedAttestation{
 			AttestingIndices: indices,
 			Data:             data,
 			Signature:        params.BeaconConfig().EmptySignature[:],

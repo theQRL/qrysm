@@ -6,12 +6,12 @@ import (
 	"testing"
 
 	mathutil "github.com/theQRL/qrysm/v4/math"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
 func TestValidatorConstants(t *testing.T) {
-	v := &ethpb.Validator{}
+	v := &zondpb.Validator{}
 	refV := reflect.ValueOf(v).Elem()
 	numFields := refV.NumField()
 	numOfValFields := 0
@@ -27,6 +27,6 @@ func TestValidatorConstants(t *testing.T) {
 	assert.Equal(t, validatorFieldRoots, numOfValFields)
 	assert.Equal(t, uint64(validatorFieldRoots), mathutil.PowerOf2(validatorTreeDepth))
 
-	_, err := ValidatorRegistryRoot([]*ethpb.Validator{v})
+	_, err := ValidatorRegistryRoot([]*zondpb.Validator{v})
 	assert.NoError(t, err)
 }

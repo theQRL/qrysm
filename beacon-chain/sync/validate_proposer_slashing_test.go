@@ -24,15 +24,15 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
-func setupValidProposerSlashing(t *testing.T) (*ethpb.ProposerSlashing, state.BeaconState) {
-	validators := make([]*ethpb.Validator, 100)
+func setupValidProposerSlashing(t *testing.T) (*zondpb.ProposerSlashing, state.BeaconState) {
+	validators := make([]*zondpb.Validator, 100)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			EffectiveBalance:  params.BeaconConfig().MaxEffectiveBalance,
 			Slashed:           false,
 			ExitEpoch:         params.BeaconConfig().FarFutureEpoch,
@@ -46,11 +46,11 @@ func setupValidProposerSlashing(t *testing.T) (*ethpb.ProposerSlashing, state.Be
 	}
 
 	currentSlot := primitives.Slot(0)
-	st, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	st, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators: validators,
 		Slot:       currentSlot,
 		Balances:   validatorBalances,
-		Fork: &ethpb.Fork{
+		Fork: &zondpb.Fork{
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			Epoch:           0,
@@ -60,7 +60,7 @@ func setupValidProposerSlashing(t *testing.T) (*ethpb.ProposerSlashing, state.Be
 
 		StateRoots:        make([][]byte, params.BeaconConfig().SlotsPerHistoricalRoot),
 		BlockRoots:        make([][]byte, params.BeaconConfig().SlotsPerHistoricalRoot),
-		LatestBlockHeader: &ethpb.BeaconBlockHeader{},
+		LatestBlockHeader: &zondpb.BeaconBlockHeader{},
 	})
 	require.NoError(t, err)
 
@@ -68,8 +68,8 @@ func setupValidProposerSlashing(t *testing.T) (*ethpb.ProposerSlashing, state.Be
 	require.NoError(t, err)
 	someRoot := [32]byte{1, 2, 3}
 	someRoot2 := [32]byte{4, 5, 6}
-	header1 := &ethpb.SignedBeaconBlockHeader{
-		Header: &ethpb.BeaconBlockHeader{
+	header1 := &zondpb.SignedBeaconBlockHeader{
+		Header: &zondpb.BeaconBlockHeader{
 			ProposerIndex: 1,
 			Slot:          0,
 			ParentRoot:    someRoot[:],
@@ -80,8 +80,8 @@ func setupValidProposerSlashing(t *testing.T) (*ethpb.ProposerSlashing, state.Be
 	header1.Signature, err = signing.ComputeDomainAndSign(st, coreTime.CurrentEpoch(st), header1.Header, params.BeaconConfig().DomainBeaconProposer, privKey)
 	require.NoError(t, err)
 
-	header2 := &ethpb.SignedBeaconBlockHeader{
-		Header: &ethpb.BeaconBlockHeader{
+	header2 := &zondpb.SignedBeaconBlockHeader{
+		Header: &zondpb.BeaconBlockHeader{
 			ProposerIndex: 1,
 			Slot:          0,
 			ParentRoot:    someRoot2[:],
@@ -92,7 +92,7 @@ func setupValidProposerSlashing(t *testing.T) (*ethpb.ProposerSlashing, state.Be
 	header2.Signature, err = signing.ComputeDomainAndSign(st, coreTime.CurrentEpoch(st), header2.Header, params.BeaconConfig().DomainBeaconProposer, privKey)
 	require.NoError(t, err)
 
-	slashing := &ethpb.ProposerSlashing{
+	slashing := &zondpb.ProposerSlashing{
 		Header_1: header1,
 		Header_2: header2,
 	}
@@ -153,7 +153,7 @@ func TestValidateProposerSlashing_ContextTimeout(t *testing.T) {
 	slashing.Header_1.Header.Slot = 100000000
 	err := st.SetJustificationBits(bitfield.Bitvector4{0x0F}) // 0b1111
 	require.NoError(t, err)
-	err = st.SetPreviousJustifiedCheckpoint(&ethpb.Checkpoint{Epoch: 0, Root: []byte{}})
+	err = st.SetPreviousJustifiedCheckpoint(&zondpb.Checkpoint{Epoch: 0, Root: []byte{}})
 	require.NoError(t, err)
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()

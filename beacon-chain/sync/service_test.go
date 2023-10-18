@@ -16,14 +16,14 @@ import (
 	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 func TestService_StatusZeroEpoch(t *testing.T) {
-	bState, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{Slot: 0})
+	bState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{Slot: 0})
 	require.NoError(t, err)
 	chain := &mockChain.ChainService{
 		Genesis: time.Now(),

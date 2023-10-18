@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/container/trie"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
@@ -37,37 +37,37 @@ func TestInsertDeposit_MaintainsSortedOrderByIndex(t *testing.T) {
 
 	insertions := []struct {
 		blkNum      uint64
-		deposit     *ethpb.Deposit
+		deposit     *zondpb.Deposit
 		index       int64
 		expectedErr string
 	}{
 		{
 			blkNum:      0,
-			deposit:     &ethpb.Deposit{Data: &ethpb.Deposit_Data{PublicKey: []byte{'A'}}},
+			deposit:     &zondpb.Deposit{Data: &zondpb.Deposit_Data{PublicKey: []byte{'A'}}},
 			index:       0,
 			expectedErr: "",
 		},
 		{
 			blkNum:      0,
-			deposit:     &ethpb.Deposit{Data: &ethpb.Deposit_Data{PublicKey: []byte{'B'}}},
+			deposit:     &zondpb.Deposit{Data: &zondpb.Deposit_Data{PublicKey: []byte{'B'}}},
 			index:       3,
 			expectedErr: "wanted deposit with index 1 to be inserted but received 3",
 		},
 		{
 			blkNum:      0,
-			deposit:     &ethpb.Deposit{Data: &ethpb.Deposit_Data{PublicKey: []byte{'C'}}},
+			deposit:     &zondpb.Deposit{Data: &zondpb.Deposit_Data{PublicKey: []byte{'C'}}},
 			index:       1,
 			expectedErr: "",
 		},
 		{
 			blkNum:      0,
-			deposit:     &ethpb.Deposit{Data: &ethpb.Deposit_Data{PublicKey: []byte{'D'}}},
+			deposit:     &zondpb.Deposit{Data: &zondpb.Deposit_Data{PublicKey: []byte{'D'}}},
 			index:       4,
 			expectedErr: "wanted deposit with index 2 to be inserted but received 4",
 		},
 		{
 			blkNum:      0,
-			deposit:     &ethpb.Deposit{Data: &ethpb.Deposit_Data{PublicKey: []byte{'E'}}},
+			deposit:     &zondpb.Deposit{Data: &zondpb.Deposit_Data{PublicKey: []byte{'E'}}},
 			index:       2,
 			expectedErr: "",
 		},
@@ -92,34 +92,34 @@ func TestAllDeposits_ReturnsAllDeposits(t *testing.T) {
 	dc, err := New()
 	require.NoError(t, err)
 
-	deposits := []*ethpb.DepositContainer{
+	deposits := []*zondpb.DepositContainer{
 		{
 			Eth1BlockHeight: 10,
-			Deposit:         &ethpb.Deposit{},
+			Deposit:         &zondpb.Deposit{},
 		},
 		{
 			Eth1BlockHeight: 10,
-			Deposit:         &ethpb.Deposit{},
+			Deposit:         &zondpb.Deposit{},
 		},
 		{
 			Eth1BlockHeight: 10,
-			Deposit:         &ethpb.Deposit{},
+			Deposit:         &zondpb.Deposit{},
 		},
 		{
 			Eth1BlockHeight: 11,
-			Deposit:         &ethpb.Deposit{},
+			Deposit:         &zondpb.Deposit{},
 		},
 		{
 			Eth1BlockHeight: 11,
-			Deposit:         &ethpb.Deposit{},
+			Deposit:         &zondpb.Deposit{},
 		},
 		{
 			Eth1BlockHeight: 12,
-			Deposit:         &ethpb.Deposit{},
+			Deposit:         &zondpb.Deposit{},
 		},
 		{
 			Eth1BlockHeight: 12,
-			Deposit:         &ethpb.Deposit{},
+			Deposit:         &zondpb.Deposit{},
 		},
 	}
 	dc.deposits = deposits
@@ -132,34 +132,34 @@ func TestAllDeposits_FiltersDepositUpToAndIncludingBlockNumber(t *testing.T) {
 	dc, err := New()
 	require.NoError(t, err)
 
-	deposits := []*ethpb.DepositContainer{
+	deposits := []*zondpb.DepositContainer{
 		{
 			Eth1BlockHeight: 10,
-			Deposit:         &ethpb.Deposit{},
+			Deposit:         &zondpb.Deposit{},
 		},
 		{
 			Eth1BlockHeight: 10,
-			Deposit:         &ethpb.Deposit{},
+			Deposit:         &zondpb.Deposit{},
 		},
 		{
 			Eth1BlockHeight: 10,
-			Deposit:         &ethpb.Deposit{},
+			Deposit:         &zondpb.Deposit{},
 		},
 		{
 			Eth1BlockHeight: 11,
-			Deposit:         &ethpb.Deposit{},
+			Deposit:         &zondpb.Deposit{},
 		},
 		{
 			Eth1BlockHeight: 11,
-			Deposit:         &ethpb.Deposit{},
+			Deposit:         &zondpb.Deposit{},
 		},
 		{
 			Eth1BlockHeight: 12,
-			Deposit:         &ethpb.Deposit{},
+			Deposit:         &zondpb.Deposit{},
 		},
 		{
 			Eth1BlockHeight: 12,
-			Deposit:         &ethpb.Deposit{},
+			Deposit:         &zondpb.Deposit{},
 		},
 	}
 	dc.deposits = deposits
@@ -173,26 +173,26 @@ func TestDepositsNumberAndRootAtHeight(t *testing.T) {
 	t.Run("requesting_last_item_works", func(t *testing.T) {
 		dc, err := New()
 		require.NoError(t, err)
-		dc.deposits = []*ethpb.DepositContainer{
+		dc.deposits = []*zondpb.DepositContainer{
 			{
 				Eth1BlockHeight: 10,
 				Index:           0,
-				Deposit:         &ethpb.Deposit{},
+				Deposit:         &zondpb.Deposit{},
 			},
 			{
 				Eth1BlockHeight: 10,
 				Index:           1,
-				Deposit:         &ethpb.Deposit{},
+				Deposit:         &zondpb.Deposit{},
 			},
 			{
 				Eth1BlockHeight: 11,
 				Index:           2,
-				Deposit:         &ethpb.Deposit{},
+				Deposit:         &zondpb.Deposit{},
 			},
 			{
 				Eth1BlockHeight: 13,
 				Index:           3,
-				Deposit:         &ethpb.Deposit{},
+				Deposit:         &zondpb.Deposit{},
 				DepositRoot:     wantedRoot,
 			},
 		}
@@ -204,11 +204,11 @@ func TestDepositsNumberAndRootAtHeight(t *testing.T) {
 		dc, err := New()
 		require.NoError(t, err)
 
-		dc.deposits = []*ethpb.DepositContainer{
+		dc.deposits = []*zondpb.DepositContainer{
 			{
 				Eth1BlockHeight: 10,
 				Index:           0,
-				Deposit:         &ethpb.Deposit{},
+				Deposit:         &zondpb.Deposit{},
 				DepositRoot:     wantedRoot,
 			},
 		}
@@ -220,22 +220,22 @@ func TestDepositsNumberAndRootAtHeight(t *testing.T) {
 		dc, err := New()
 		require.NoError(t, err)
 
-		dc.deposits = []*ethpb.DepositContainer{
+		dc.deposits = []*zondpb.DepositContainer{
 			{
 				Eth1BlockHeight: 8,
 				Index:           0,
-				Deposit:         &ethpb.Deposit{},
+				Deposit:         &zondpb.Deposit{},
 			},
 			{
 				Eth1BlockHeight: 9,
 				Index:           1,
-				Deposit:         &ethpb.Deposit{},
+				Deposit:         &zondpb.Deposit{},
 				DepositRoot:     wantedRoot,
 			},
 			{
 				Eth1BlockHeight: 11,
 				Index:           2,
-				Deposit:         &ethpb.Deposit{},
+				Deposit:         &zondpb.Deposit{},
 			},
 		}
 		n, root := dc.DepositsNumberAndRootAtHeight(context.Background(), big.NewInt(10))
@@ -246,11 +246,11 @@ func TestDepositsNumberAndRootAtHeight(t *testing.T) {
 		dc, err := New()
 		require.NoError(t, err)
 
-		dc.deposits = []*ethpb.DepositContainer{
+		dc.deposits = []*zondpb.DepositContainer{
 			{
 				Eth1BlockHeight: 8,
 				Index:           0,
-				Deposit:         &ethpb.Deposit{},
+				Deposit:         &zondpb.Deposit{},
 				DepositRoot:     wantedRoot,
 			},
 		}
@@ -262,11 +262,11 @@ func TestDepositsNumberAndRootAtHeight(t *testing.T) {
 		dc, err := New()
 		require.NoError(t, err)
 
-		dc.deposits = []*ethpb.DepositContainer{
+		dc.deposits = []*zondpb.DepositContainer{
 			{
 				Eth1BlockHeight: 8,
 				Index:           0,
-				Deposit:         &ethpb.Deposit{},
+				Deposit:         &zondpb.Deposit{},
 				DepositRoot:     wantedRoot,
 			},
 		}
@@ -278,32 +278,32 @@ func TestDepositsNumberAndRootAtHeight(t *testing.T) {
 		dc, err := New()
 		require.NoError(t, err)
 
-		dc.deposits = []*ethpb.DepositContainer{
+		dc.deposits = []*zondpb.DepositContainer{
 			{
 				Eth1BlockHeight: 8,
 				Index:           0,
-				Deposit:         &ethpb.Deposit{},
+				Deposit:         &zondpb.Deposit{},
 			},
 			{
 				Eth1BlockHeight: 8,
 				Index:           1,
-				Deposit:         &ethpb.Deposit{},
+				Deposit:         &zondpb.Deposit{},
 			},
 			{
 				Eth1BlockHeight: 9,
 				Index:           2,
-				Deposit:         &ethpb.Deposit{},
+				Deposit:         &zondpb.Deposit{},
 				DepositRoot:     wantedRoot,
 			},
 			{
 				Eth1BlockHeight: 10,
 				Index:           3,
-				Deposit:         &ethpb.Deposit{},
+				Deposit:         &zondpb.Deposit{},
 			},
 			{
 				Eth1BlockHeight: 10,
 				Index:           4,
-				Deposit:         &ethpb.Deposit{},
+				Deposit:         &zondpb.Deposit{},
 			},
 		}
 		n, root := dc.DepositsNumberAndRootAtHeight(context.Background(), big.NewInt(9))
@@ -315,11 +315,11 @@ func TestDepositsNumberAndRootAtHeight(t *testing.T) {
 func TestDepositByPubkey_ReturnsFirstMatchingDeposit(t *testing.T) {
 	dc, err := New()
 	require.NoError(t, err)
-	ctrs := []*ethpb.DepositContainer{
+	ctrs := []*zondpb.DepositContainer{
 		{
 			Eth1BlockHeight: 9,
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte("pk0"), 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -328,8 +328,8 @@ func TestDepositByPubkey_ReturnsFirstMatchingDeposit(t *testing.T) {
 		},
 		{
 			Eth1BlockHeight: 10,
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte("pk1"), 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -338,8 +338,8 @@ func TestDepositByPubkey_ReturnsFirstMatchingDeposit(t *testing.T) {
 		},
 		{
 			Eth1BlockHeight: 11,
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte("pk1"), 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -348,8 +348,8 @@ func TestDepositByPubkey_ReturnsFirstMatchingDeposit(t *testing.T) {
 		},
 		{
 			Eth1BlockHeight: 12,
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte("pk2"), 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -373,10 +373,10 @@ func TestFinalizedDeposits_DepositsCachedCorrectly(t *testing.T) {
 	dc, err := New()
 	require.NoError(t, err)
 
-	finalizedDeposits := []*ethpb.DepositContainer{
+	finalizedDeposits := []*zondpb.DepositContainer{
 		{
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{0}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -385,8 +385,8 @@ func TestFinalizedDeposits_DepositsCachedCorrectly(t *testing.T) {
 			Index: 0,
 		},
 		{
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{1}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -395,8 +395,8 @@ func TestFinalizedDeposits_DepositsCachedCorrectly(t *testing.T) {
 			Index: 1,
 		},
 		{
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{2}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -405,9 +405,9 @@ func TestFinalizedDeposits_DepositsCachedCorrectly(t *testing.T) {
 			Index: 2,
 		},
 	}
-	dc.deposits = append(finalizedDeposits, &ethpb.DepositContainer{
-		Deposit: &ethpb.Deposit{
-			Data: &ethpb.Deposit_Data{
+	dc.deposits = append(finalizedDeposits, &zondpb.DepositContainer{
+		Deposit: &zondpb.Deposit{
+			Data: &zondpb.Deposit_Data{
 				PublicKey:             bytesutil.PadTo([]byte{3}, 48),
 				WithdrawalCredentials: make([]byte, 32),
 				Signature:             make([]byte, 96),
@@ -441,10 +441,10 @@ func TestFinalizedDeposits_UtilizesPreviouslyCachedDeposits(t *testing.T) {
 	dc, err := New()
 	require.NoError(t, err)
 
-	oldFinalizedDeposits := []*ethpb.DepositContainer{
+	oldFinalizedDeposits := []*zondpb.DepositContainer{
 		{
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{0}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -453,8 +453,8 @@ func TestFinalizedDeposits_UtilizesPreviouslyCachedDeposits(t *testing.T) {
 			Index: 0,
 		},
 		{
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{1}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -463,9 +463,9 @@ func TestFinalizedDeposits_UtilizesPreviouslyCachedDeposits(t *testing.T) {
 			Index: 1,
 		},
 	}
-	newFinalizedDeposit := &ethpb.DepositContainer{
-		Deposit: &ethpb.Deposit{
-			Data: &ethpb.Deposit_Data{
+	newFinalizedDeposit := &zondpb.DepositContainer{
+		Deposit: &zondpb.Deposit{
+			Data: &zondpb.Deposit_Data{
 				PublicKey:             bytesutil.PadTo([]byte{2}, 48),
 				WithdrawalCredentials: make([]byte, 32),
 				Signature:             make([]byte, 96),
@@ -478,7 +478,7 @@ func TestFinalizedDeposits_UtilizesPreviouslyCachedDeposits(t *testing.T) {
 
 	require.NoError(t, dc.InsertFinalizedDeposits(context.Background(), 2))
 
-	dc.deposits = append(dc.deposits, []*ethpb.DepositContainer{newFinalizedDeposit}...)
+	dc.deposits = append(dc.deposits, []*zondpb.DepositContainer{newFinalizedDeposit}...)
 
 	cachedDeposits := dc.FinalizedDeposits(context.Background())
 	require.NotNil(t, cachedDeposits, "Deposits not cached")
@@ -514,10 +514,10 @@ func TestFinalizedDeposits_HandleSmallerThanExpectedDeposits(t *testing.T) {
 	dc, err := New()
 	require.NoError(t, err)
 
-	finalizedDeposits := []*ethpb.DepositContainer{
+	finalizedDeposits := []*zondpb.DepositContainer{
 		{
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{0}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -526,8 +526,8 @@ func TestFinalizedDeposits_HandleSmallerThanExpectedDeposits(t *testing.T) {
 			Index: 0,
 		},
 		{
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{1}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -536,8 +536,8 @@ func TestFinalizedDeposits_HandleSmallerThanExpectedDeposits(t *testing.T) {
 			Index: 1,
 		},
 		{
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{2}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -559,10 +559,10 @@ func TestFinalizedDeposits_HandleLowerEth1DepositIndex(t *testing.T) {
 	dc, err := New()
 	require.NoError(t, err)
 
-	finalizedDeposits := []*ethpb.DepositContainer{
+	finalizedDeposits := []*zondpb.DepositContainer{
 		{
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{0}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -571,8 +571,8 @@ func TestFinalizedDeposits_HandleLowerEth1DepositIndex(t *testing.T) {
 			Index: 0,
 		},
 		{
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{1}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -581,8 +581,8 @@ func TestFinalizedDeposits_HandleLowerEth1DepositIndex(t *testing.T) {
 			Index: 1,
 		},
 		{
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{2}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -591,8 +591,8 @@ func TestFinalizedDeposits_HandleLowerEth1DepositIndex(t *testing.T) {
 			Index: 2,
 		},
 		{
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{3}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -601,8 +601,8 @@ func TestFinalizedDeposits_HandleLowerEth1DepositIndex(t *testing.T) {
 			Index: 3,
 		},
 		{
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{4}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -611,8 +611,8 @@ func TestFinalizedDeposits_HandleLowerEth1DepositIndex(t *testing.T) {
 			Index: 4,
 		},
 		{
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{5}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -647,11 +647,11 @@ func TestNonFinalizedDeposits_ReturnsAllNonFinalizedDeposits(t *testing.T) {
 	dc, err := New()
 	require.NoError(t, err)
 
-	finalizedDeposits := []*ethpb.DepositContainer{
+	finalizedDeposits := []*zondpb.DepositContainer{
 		{
 			Eth1BlockHeight: 10,
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{0}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -661,8 +661,8 @@ func TestNonFinalizedDeposits_ReturnsAllNonFinalizedDeposits(t *testing.T) {
 		},
 		{
 			Eth1BlockHeight: 10,
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{1}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -672,10 +672,10 @@ func TestNonFinalizedDeposits_ReturnsAllNonFinalizedDeposits(t *testing.T) {
 		},
 	}
 	dc.deposits = append(finalizedDeposits,
-		&ethpb.DepositContainer{
+		&zondpb.DepositContainer{
 			Eth1BlockHeight: 10,
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{2}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -683,10 +683,10 @@ func TestNonFinalizedDeposits_ReturnsAllNonFinalizedDeposits(t *testing.T) {
 			},
 			Index: 2,
 		},
-		&ethpb.DepositContainer{
+		&zondpb.DepositContainer{
 			Eth1BlockHeight: 11,
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{3}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -704,11 +704,11 @@ func TestNonFinalizedDeposits_ReturnsNonFinalizedDepositsUpToBlockNumber(t *test
 	dc, err := New()
 	require.NoError(t, err)
 
-	finalizedDeposits := []*ethpb.DepositContainer{
+	finalizedDeposits := []*zondpb.DepositContainer{
 		{
 			Eth1BlockHeight: 10,
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{0}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -718,8 +718,8 @@ func TestNonFinalizedDeposits_ReturnsNonFinalizedDepositsUpToBlockNumber(t *test
 		},
 		{
 			Eth1BlockHeight: 10,
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{1}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -729,10 +729,10 @@ func TestNonFinalizedDeposits_ReturnsNonFinalizedDepositsUpToBlockNumber(t *test
 		},
 	}
 	dc.deposits = append(finalizedDeposits,
-		&ethpb.DepositContainer{
+		&zondpb.DepositContainer{
 			Eth1BlockHeight: 10,
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{2}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -740,10 +740,10 @@ func TestNonFinalizedDeposits_ReturnsNonFinalizedDepositsUpToBlockNumber(t *test
 			},
 			Index: 2,
 		},
-		&ethpb.DepositContainer{
+		&zondpb.DepositContainer{
 			Eth1BlockHeight: 11,
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{3}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -761,11 +761,11 @@ func TestFinalizedDeposits_ReturnsTrieCorrectly(t *testing.T) {
 	dc, err := New()
 	require.NoError(t, err)
 
-	generateCtr := func(height uint64, index int64) *ethpb.DepositContainer {
-		return &ethpb.DepositContainer{
+	generateCtr := func(height uint64, index int64) *zondpb.DepositContainer {
+		return &zondpb.DepositContainer{
 			Eth1BlockHeight: height,
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{uint8(index)}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -775,7 +775,7 @@ func TestFinalizedDeposits_ReturnsTrieCorrectly(t *testing.T) {
 		}
 	}
 
-	finalizedDeposits := []*ethpb.DepositContainer{
+	finalizedDeposits := []*zondpb.DepositContainer{
 		generateCtr(10, 0),
 		generateCtr(11, 1),
 		generateCtr(12, 2),
@@ -842,31 +842,31 @@ func TestPruneProofs_Ok(t *testing.T) {
 
 	deposits := []struct {
 		blkNum  uint64
-		deposit *ethpb.Deposit
+		deposit *zondpb.Deposit
 		index   int64
 	}{
 		{
 			blkNum: 0,
-			deposit: &ethpb.Deposit{Proof: makeDepositProof(),
-				Data: &ethpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk0"), 48)}},
+			deposit: &zondpb.Deposit{Proof: makeDepositProof(),
+				Data: &zondpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk0"), 48)}},
 			index: 0,
 		},
 		{
 			blkNum: 0,
-			deposit: &ethpb.Deposit{Proof: makeDepositProof(),
-				Data: &ethpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk1"), 48)}},
+			deposit: &zondpb.Deposit{Proof: makeDepositProof(),
+				Data: &zondpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk1"), 48)}},
 			index: 1,
 		},
 		{
 			blkNum: 0,
-			deposit: &ethpb.Deposit{Proof: makeDepositProof(),
-				Data: &ethpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk2"), 48)}},
+			deposit: &zondpb.Deposit{Proof: makeDepositProof(),
+				Data: &zondpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk2"), 48)}},
 			index: 2,
 		},
 		{
 			blkNum: 0,
-			deposit: &ethpb.Deposit{Proof: makeDepositProof(),
-				Data: &ethpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk3"), 48)}},
+			deposit: &zondpb.Deposit{Proof: makeDepositProof(),
+				Data: &zondpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk3"), 48)}},
 			index: 3,
 		},
 	}
@@ -889,29 +889,29 @@ func TestPruneProofs_SomeAlreadyPruned(t *testing.T) {
 
 	deposits := []struct {
 		blkNum  uint64
-		deposit *ethpb.Deposit
+		deposit *zondpb.Deposit
 		index   int64
 	}{
 		{
 			blkNum: 0,
-			deposit: &ethpb.Deposit{Proof: nil, Data: &ethpb.Deposit_Data{
+			deposit: &zondpb.Deposit{Proof: nil, Data: &zondpb.Deposit_Data{
 				PublicKey: bytesutil.PadTo([]byte("pk0"), 48)}},
 			index: 0,
 		},
 		{
 			blkNum: 0,
-			deposit: &ethpb.Deposit{Proof: nil, Data: &ethpb.Deposit_Data{
+			deposit: &zondpb.Deposit{Proof: nil, Data: &zondpb.Deposit_Data{
 				PublicKey: bytesutil.PadTo([]byte("pk1"), 48)}}, index: 1,
 		},
 		{
 			blkNum:  0,
-			deposit: &ethpb.Deposit{Proof: makeDepositProof(), Data: &ethpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk2"), 48)}},
+			deposit: &zondpb.Deposit{Proof: makeDepositProof(), Data: &zondpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk2"), 48)}},
 			index:   2,
 		},
 		{
 			blkNum: 0,
-			deposit: &ethpb.Deposit{Proof: makeDepositProof(),
-				Data: &ethpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk3"), 48)}},
+			deposit: &zondpb.Deposit{Proof: makeDepositProof(),
+				Data: &zondpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk3"), 48)}},
 			index: 3,
 		},
 	}
@@ -931,31 +931,31 @@ func TestPruneProofs_PruneAllWhenDepositIndexTooBig(t *testing.T) {
 
 	deposits := []struct {
 		blkNum  uint64
-		deposit *ethpb.Deposit
+		deposit *zondpb.Deposit
 		index   int64
 	}{
 		{
 			blkNum: 0,
-			deposit: &ethpb.Deposit{Proof: makeDepositProof(),
-				Data: &ethpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk0"), 48)}},
+			deposit: &zondpb.Deposit{Proof: makeDepositProof(),
+				Data: &zondpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk0"), 48)}},
 			index: 0,
 		},
 		{
 			blkNum: 0,
-			deposit: &ethpb.Deposit{Proof: makeDepositProof(),
-				Data: &ethpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk1"), 48)}},
+			deposit: &zondpb.Deposit{Proof: makeDepositProof(),
+				Data: &zondpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk1"), 48)}},
 			index: 1,
 		},
 		{
 			blkNum: 0,
-			deposit: &ethpb.Deposit{Proof: makeDepositProof(),
-				Data: &ethpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk2"), 48)}},
+			deposit: &zondpb.Deposit{Proof: makeDepositProof(),
+				Data: &zondpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk2"), 48)}},
 			index: 2,
 		},
 		{
 			blkNum: 0,
-			deposit: &ethpb.Deposit{Proof: makeDepositProof(),
-				Data: &ethpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk3"), 48)}},
+			deposit: &zondpb.Deposit{Proof: makeDepositProof(),
+				Data: &zondpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk3"), 48)}},
 			index: 3,
 		},
 	}
@@ -978,31 +978,31 @@ func TestPruneProofs_CorrectlyHandleLastIndex(t *testing.T) {
 
 	deposits := []struct {
 		blkNum  uint64
-		deposit *ethpb.Deposit
+		deposit *zondpb.Deposit
 		index   int64
 	}{
 		{
 			blkNum: 0,
-			deposit: &ethpb.Deposit{Proof: makeDepositProof(),
-				Data: &ethpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk0"), 48)}},
+			deposit: &zondpb.Deposit{Proof: makeDepositProof(),
+				Data: &zondpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk0"), 48)}},
 			index: 0,
 		},
 		{
 			blkNum: 0,
-			deposit: &ethpb.Deposit{Proof: makeDepositProof(),
-				Data: &ethpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk1"), 48)}},
+			deposit: &zondpb.Deposit{Proof: makeDepositProof(),
+				Data: &zondpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk1"), 48)}},
 			index: 1,
 		},
 		{
 			blkNum: 0,
-			deposit: &ethpb.Deposit{Proof: makeDepositProof(),
-				Data: &ethpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk2"), 48)}},
+			deposit: &zondpb.Deposit{Proof: makeDepositProof(),
+				Data: &zondpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk2"), 48)}},
 			index: 2,
 		},
 		{
 			blkNum: 0,
-			deposit: &ethpb.Deposit{Proof: makeDepositProof(),
-				Data: &ethpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk3"), 48)}},
+			deposit: &zondpb.Deposit{Proof: makeDepositProof(),
+				Data: &zondpb.Deposit_Data{PublicKey: bytesutil.PadTo([]byte("pk3"), 48)}},
 			index: 3,
 		},
 	}
@@ -1025,17 +1025,17 @@ func TestDepositMap_WorksCorrectly(t *testing.T) {
 
 	pk0 := bytesutil.PadTo([]byte("pk0"), 48)
 	dep, _ := dc.DepositByPubkey(context.Background(), pk0)
-	var nilDep *ethpb.Deposit
+	var nilDep *zondpb.Deposit
 	assert.DeepEqual(t, nilDep, dep)
 
-	dep = &ethpb.Deposit{Proof: makeDepositProof(), Data: &ethpb.Deposit_Data{PublicKey: pk0, Amount: 1000}}
+	dep = &zondpb.Deposit{Proof: makeDepositProof(), Data: &zondpb.Deposit_Data{PublicKey: pk0, Amount: 1000}}
 	assert.NoError(t, dc.InsertDeposit(context.Background(), dep, 1000, 0, [32]byte{}))
 
 	dep, _ = dc.DepositByPubkey(context.Background(), pk0)
 	assert.NotEqual(t, nilDep, dep)
 	assert.Equal(t, uint64(1000), dep.Data.Amount)
 
-	dep = &ethpb.Deposit{Proof: makeDepositProof(), Data: &ethpb.Deposit_Data{PublicKey: pk0, Amount: 10000}}
+	dep = &zondpb.Deposit{Proof: makeDepositProof(), Data: &zondpb.Deposit_Data{PublicKey: pk0, Amount: 10000}}
 	assert.NoError(t, dc.InsertDeposit(context.Background(), dep, 1000, 1, [32]byte{}))
 
 	// Make sure we have the same deposit returned over here.

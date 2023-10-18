@@ -28,8 +28,8 @@ import (
 	blsmock "github.com/theQRL/qrysm/v4/crypto/bls/common/mock"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	mock2 "github.com/theQRL/qrysm/v4/testing/mock"
@@ -172,21 +172,21 @@ func (*mockKeymanager) ListKeymanagerAccounts(
 }
 
 func (*mockKeymanager) DeleteKeystores(context.Context, [][]byte,
-) ([]*ethpbservice.DeletedKeystoreStatus, error) {
+) ([]*zondpbservice.DeletedKeystoreStatus, error) {
 	return nil, nil
 }
 
-func generateMockStatusResponse(pubkeys [][]byte) *ethpb.ValidatorActivationResponse {
-	multipleStatus := make([]*ethpb.ValidatorActivationResponse_Status, len(pubkeys))
+func generateMockStatusResponse(pubkeys [][]byte) *zondpb.ValidatorActivationResponse {
+	multipleStatus := make([]*zondpb.ValidatorActivationResponse_Status, len(pubkeys))
 	for i, key := range pubkeys {
-		multipleStatus[i] = &ethpb.ValidatorActivationResponse_Status{
+		multipleStatus[i] = &zondpb.ValidatorActivationResponse_Status{
 			PublicKey: key,
-			Status: &ethpb.ValidatorStatusResponse{
-				Status: ethpb.ValidatorStatus_UNKNOWN_STATUS,
+			Status: &zondpb.ValidatorStatusResponse{
+				Status: zondpb.ValidatorStatus_UNKNOWN_STATUS,
 			},
 		}
 	}
-	return &ethpb.ValidatorActivationResponse{Statuses: multipleStatus}
+	return &zondpb.ValidatorActivationResponse{Statuses: multipleStatus}
 }
 
 func TestWaitForChainStart_SetsGenesisInfo(t *testing.T) {
@@ -210,7 +210,7 @@ func TestWaitForChainStart_SetsGenesisInfo(t *testing.T) {
 	client.EXPECT().WaitForChainStart(
 		gomock.Any(),
 		&emptypb.Empty{},
-	).Return(&ethpb.ChainStartResponse{
+	).Return(&zondpb.ChainStartResponse{
 		Started:               true,
 		GenesisTime:           genesis,
 		GenesisValidatorsRoot: genesisValidatorsRoot[:],
@@ -227,7 +227,7 @@ func TestWaitForChainStart_SetsGenesisInfo(t *testing.T) {
 	client.EXPECT().WaitForChainStart(
 		gomock.Any(),
 		&emptypb.Empty{},
-	).Return(&ethpb.ChainStartResponse{
+	).Return(&zondpb.ChainStartResponse{
 		Started:               true,
 		GenesisTime:           genesis,
 		GenesisValidatorsRoot: genesisValidatorsRoot[:],
@@ -250,7 +250,7 @@ func TestWaitForChainStart_SetsGenesisInfo_IncorrectSecondTry(t *testing.T) {
 	client.EXPECT().WaitForChainStart(
 		gomock.Any(),
 		&emptypb.Empty{},
-	).Return(&ethpb.ChainStartResponse{
+	).Return(&zondpb.ChainStartResponse{
 		Started:               true,
 		GenesisTime:           genesis,
 		GenesisValidatorsRoot: genesisValidatorsRoot[:],
@@ -269,7 +269,7 @@ func TestWaitForChainStart_SetsGenesisInfo_IncorrectSecondTry(t *testing.T) {
 	client.EXPECT().WaitForChainStart(
 		gomock.Any(),
 		&emptypb.Empty{},
-	).Return(&ethpb.ChainStartResponse{
+	).Return(&zondpb.ChainStartResponse{
 		Started:               true,
 		GenesisTime:           genesis,
 		GenesisValidatorsRoot: genesisValidatorsRoot[:],
@@ -292,7 +292,7 @@ func TestWaitForChainStart_ContextCanceled(t *testing.T) {
 	client.EXPECT().WaitForChainStart(
 		gomock.Any(),
 		&emptypb.Empty{},
-	).Return(&ethpb.ChainStartResponse{
+	).Return(&zondpb.ChainStartResponse{
 		Started:               true,
 		GenesisTime:           genesis,
 		GenesisValidatorsRoot: genesisValidatorsRoot,
@@ -345,7 +345,7 @@ func TestCanonicalHeadSlot_OK(t *testing.T) {
 	client.EXPECT().GetChainHead(
 		gomock.Any(),
 		gomock.Any(),
-	).Return(&ethpb.ChainHead{HeadSlot: 0}, nil)
+	).Return(&zondpb.ChainHead{HeadSlot: 0}, nil)
 	headSlot, err := v.CanonicalHeadSlot(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, primitives.Slot(0), headSlot, "Mismatch slots")
@@ -367,11 +367,11 @@ func TestWaitMultipleActivation_LogsActivationEpochOK(t *testing.T) {
 	}
 
 	resp := generateMockStatusResponse([][]byte{kp.pub[:]})
-	resp.Statuses[0].Status.Status = ethpb.ValidatorStatus_ACTIVE
+	resp.Statuses[0].Status.Status = zondpb.ValidatorStatus_ACTIVE
 	clientStream := mock2.NewMockBeaconNodeValidator_WaitForActivationClient(ctrl)
 	validatorClient.EXPECT().WaitForActivation(
 		gomock.Any(),
-		&ethpb.ValidatorActivationRequest{
+		&zondpb.ValidatorActivationRequest{
 			PublicKeys: [][]byte{kp.pub[:]},
 		},
 	).Return(clientStream, nil)
@@ -379,7 +379,7 @@ func TestWaitMultipleActivation_LogsActivationEpochOK(t *testing.T) {
 		resp,
 		nil,
 	)
-	beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&ethpb.Validators{}, nil)
+	beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&zondpb.Validators{}, nil)
 	require.NoError(t, v.WaitForActivation(ctx, nil), "Could not wait for activation")
 	require.LogsContain(t, hook, "Validator activated")
 }
@@ -397,15 +397,15 @@ func TestWaitActivation_NotAllValidatorsActivatedOK(t *testing.T) {
 		beaconClient:    beaconClient,
 	}
 	resp := generateMockStatusResponse([][]byte{kp.pub[:]})
-	resp.Statuses[0].Status.Status = ethpb.ValidatorStatus_ACTIVE
+	resp.Statuses[0].Status.Status = zondpb.ValidatorStatus_ACTIVE
 	clientStream := mock2.NewMockBeaconNodeValidator_WaitForActivationClient(ctrl)
 	validatorClient.EXPECT().WaitForActivation(
 		gomock.Any(),
 		gomock.Any(),
 	).Return(clientStream, nil)
-	beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&ethpb.Validators{}, nil).Times(2)
+	beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&zondpb.Validators{}, nil).Times(2)
 	clientStream.EXPECT().Recv().Return(
-		&ethpb.ValidatorActivationResponse{},
+		&zondpb.ValidatorActivationResponse{},
 		nil,
 	)
 	clientStream.EXPECT().Recv().Return(
@@ -430,7 +430,7 @@ func TestWaitSync_ContextCanceled(t *testing.T) {
 	n.EXPECT().GetSyncStatus(
 		gomock.Any(),
 		gomock.Any(),
-	).Return(&ethpb.SyncStatus{Syncing: true}, nil)
+	).Return(&zondpb.SyncStatus{Syncing: true}, nil)
 
 	assert.ErrorContains(t, cancelledCtx, v.WaitForSync(ctx))
 }
@@ -447,7 +447,7 @@ func TestWaitSync_NotSyncing(t *testing.T) {
 	n.EXPECT().GetSyncStatus(
 		gomock.Any(),
 		gomock.Any(),
-	).Return(&ethpb.SyncStatus{Syncing: false}, nil)
+	).Return(&zondpb.SyncStatus{Syncing: false}, nil)
 
 	require.NoError(t, v.WaitForSync(context.Background()))
 }
@@ -464,12 +464,12 @@ func TestWaitSync_Syncing(t *testing.T) {
 	n.EXPECT().GetSyncStatus(
 		gomock.Any(),
 		gomock.Any(),
-	).Return(&ethpb.SyncStatus{Syncing: true}, nil)
+	).Return(&zondpb.SyncStatus{Syncing: true}, nil)
 
 	n.EXPECT().GetSyncStatus(
 		gomock.Any(),
 		gomock.Any(),
-	).Return(&ethpb.SyncStatus{Syncing: false}, nil)
+	).Return(&zondpb.SyncStatus{Syncing: false}, nil)
 
 	require.NoError(t, v.WaitForSync(context.Background()))
 }
@@ -482,8 +482,8 @@ func TestUpdateDuties_DoesNothingWhenNotEpochStart_AlreadyExistingAssignments(t 
 	slot := primitives.Slot(1)
 	v := validator{
 		validatorClient: client,
-		duties: &ethpb.DutiesResponse{
-			Duties: []*ethpb.DutiesResponse_Duty{
+		duties: &zondpb.DutiesResponse{
+			Duties: []*zondpb.DutiesResponse_Duty{
 				{
 					Committee:      []primitives.ValidatorIndex{},
 					AttesterSlot:   10,
@@ -508,8 +508,8 @@ func TestUpdateDuties_ReturnsError(t *testing.T) {
 	v := validator{
 		validatorClient: client,
 		keyManager:      newMockKeymanager(t, randKeypair(t)),
-		duties: &ethpb.DutiesResponse{
-			Duties: []*ethpb.DutiesResponse_Duty{
+		duties: &zondpb.DutiesResponse{
+			Duties: []*zondpb.DutiesResponse_Duty{
 				{
 					CommitteeIndex: 1,
 				},
@@ -525,7 +525,7 @@ func TestUpdateDuties_ReturnsError(t *testing.T) {
 	).Return(nil, expected)
 
 	assert.ErrorContains(t, expected.Error(), v.UpdateDuties(context.Background(), params.BeaconConfig().SlotsPerEpoch))
-	assert.Equal(t, (*ethpb.DutiesResponse)(nil), v.duties, "Assignments should have been cleared on failure")
+	assert.Equal(t, (*zondpb.DutiesResponse)(nil), v.duties, "Assignments should have been cleared on failure")
 }
 
 func TestUpdateDuties_OK(t *testing.T) {
@@ -534,8 +534,8 @@ func TestUpdateDuties_OK(t *testing.T) {
 	client := validatormock.NewMockValidatorClient(ctrl)
 
 	slot := params.BeaconConfig().SlotsPerEpoch
-	resp := &ethpb.DutiesResponse{
-		Duties: []*ethpb.DutiesResponse_Duty{
+	resp := &zondpb.DutiesResponse{
+		Duties: []*zondpb.DutiesResponse_Duty{
 			{
 				AttesterSlot:   params.BeaconConfig().SlotsPerEpoch,
 				ValidatorIndex: 200,
@@ -562,7 +562,7 @@ func TestUpdateDuties_OK(t *testing.T) {
 		gomock.Any(),
 		gomock.Any(),
 		gomock.Any(),
-	).DoAndReturn(func(_ context.Context, _ *ethpb.CommitteeSubnetsSubscribeRequest, _ []primitives.ValidatorIndex) (*emptypb.Empty, error) {
+	).DoAndReturn(func(_ context.Context, _ *zondpb.CommitteeSubnetsSubscribeRequest, _ []primitives.ValidatorIndex) (*emptypb.Empty, error) {
 		wg.Done()
 		return nil, nil
 	})
@@ -596,8 +596,8 @@ func TestUpdateDuties_OK_FilterBlacklistedPublicKeys(t *testing.T) {
 		eipImportBlacklistedPublicKeys: blacklistedPublicKeys,
 	}
 
-	resp := &ethpb.DutiesResponse{
-		Duties: []*ethpb.DutiesResponse_Duty{},
+	resp := &zondpb.DutiesResponse{
+		Duties: []*zondpb.DutiesResponse_Duty{},
 	}
 	client.EXPECT().GetDuties(
 		gomock.Any(),
@@ -610,7 +610,7 @@ func TestUpdateDuties_OK_FilterBlacklistedPublicKeys(t *testing.T) {
 		gomock.Any(),
 		gomock.Any(),
 		gomock.Any(),
-	).DoAndReturn(func(_ context.Context, _ *ethpb.CommitteeSubnetsSubscribeRequest, _ []primitives.ValidatorIndex) (*emptypb.Empty, error) {
+	).DoAndReturn(func(_ context.Context, _ *zondpb.CommitteeSubnetsSubscribeRequest, _ []primitives.ValidatorIndex) (*emptypb.Empty, error) {
 		wg.Done()
 		return nil, nil
 	})
@@ -630,8 +630,8 @@ func TestUpdateDuties_AllValidatorsExited(t *testing.T) {
 	client := validatormock.NewMockValidatorClient(ctrl)
 
 	slot := params.BeaconConfig().SlotsPerEpoch
-	resp := &ethpb.DutiesResponse{
-		CurrentEpochDuties: []*ethpb.DutiesResponse_Duty{
+	resp := &zondpb.DutiesResponse{
+		CurrentEpochDuties: []*zondpb.DutiesResponse_Duty{
 			{
 				AttesterSlot:   params.BeaconConfig().SlotsPerEpoch,
 				ValidatorIndex: 200,
@@ -639,7 +639,7 @@ func TestUpdateDuties_AllValidatorsExited(t *testing.T) {
 				Committee:      []primitives.ValidatorIndex{0, 1, 2, 3},
 				PublicKey:      []byte("testPubKey_1"),
 				ProposerSlots:  []primitives.Slot{params.BeaconConfig().SlotsPerEpoch + 1},
-				Status:         ethpb.ValidatorStatus_EXITED,
+				Status:         zondpb.ValidatorStatus_EXITED,
 			},
 			{
 				AttesterSlot:   params.BeaconConfig().SlotsPerEpoch,
@@ -648,7 +648,7 @@ func TestUpdateDuties_AllValidatorsExited(t *testing.T) {
 				Committee:      []primitives.ValidatorIndex{0, 1, 2, 3},
 				PublicKey:      []byte("testPubKey_2"),
 				ProposerSlots:  []primitives.Slot{params.BeaconConfig().SlotsPerEpoch + 1},
-				Status:         ethpb.ValidatorStatus_EXITED,
+				Status:         zondpb.ValidatorStatus_EXITED,
 			},
 		},
 	}
@@ -670,8 +670,8 @@ func TestRolesAt_OK(t *testing.T) {
 	v, m, validatorKey, finish := setup(t)
 	defer finish()
 
-	v.duties = &ethpb.DutiesResponse{
-		Duties: []*ethpb.DutiesResponse_Duty{
+	v.duties = &zondpb.DutiesResponse{
+		Duties: []*zondpb.DutiesResponse_Duty{
 			{
 				CommitteeIndex:  1,
 				AttesterSlot:    1,
@@ -679,7 +679,7 @@ func TestRolesAt_OK(t *testing.T) {
 				IsSyncCommittee: true,
 			},
 		},
-		NextEpochDuties: []*ethpb.DutiesResponse_Duty{
+		NextEpochDuties: []*zondpb.DutiesResponse_Duty{
 			{
 				CommitteeIndex:  1,
 				AttesterSlot:    1,
@@ -692,15 +692,15 @@ func TestRolesAt_OK(t *testing.T) {
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
-	).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 	m.validatorClient.EXPECT().GetSyncSubcommitteeIndex(
 		gomock.Any(), // ctx
-		&ethpb.SyncSubcommitteeIndexRequest{
+		&zondpb.SyncSubcommitteeIndexRequest{
 			PublicKey: validatorKey.PublicKey().Marshal(),
 			Slot:      1,
 		},
-	).Return(&ethpb.SyncSubcommitteeIndexResponse{}, nil /*err*/)
+	).Return(&zondpb.SyncSubcommitteeIndexResponse{}, nil /*err*/)
 
 	roleMap, err := v.RolesAt(context.Background(), 1)
 	require.NoError(t, err)
@@ -710,8 +710,8 @@ func TestRolesAt_OK(t *testing.T) {
 	assert.Equal(t, iface.RoleSyncCommittee, roleMap[bytesutil.ToBytes2592(validatorKey.PublicKey().Marshal())][2])
 
 	// Test sync committee role at epoch boundary.
-	v.duties = &ethpb.DutiesResponse{
-		Duties: []*ethpb.DutiesResponse_Duty{
+	v.duties = &zondpb.DutiesResponse{
+		Duties: []*zondpb.DutiesResponse_Duty{
 			{
 				CommitteeIndex:  1,
 				AttesterSlot:    1,
@@ -719,7 +719,7 @@ func TestRolesAt_OK(t *testing.T) {
 				IsSyncCommittee: false,
 			},
 		},
-		NextEpochDuties: []*ethpb.DutiesResponse_Duty{
+		NextEpochDuties: []*zondpb.DutiesResponse_Duty{
 			{
 				CommitteeIndex:  1,
 				AttesterSlot:    1,
@@ -731,11 +731,11 @@ func TestRolesAt_OK(t *testing.T) {
 
 	m.validatorClient.EXPECT().GetSyncSubcommitteeIndex(
 		gomock.Any(), // ctx
-		&ethpb.SyncSubcommitteeIndexRequest{
+		&zondpb.SyncSubcommitteeIndexRequest{
 			PublicKey: validatorKey.PublicKey().Marshal(),
 			Slot:      31,
 		},
-	).Return(&ethpb.SyncSubcommitteeIndexResponse{}, nil /*err*/)
+	).Return(&zondpb.SyncSubcommitteeIndexResponse{}, nil /*err*/)
 
 	roleMap, err = v.RolesAt(context.Background(), params.BeaconConfig().SlotsPerEpoch-1)
 	require.NoError(t, err)
@@ -746,8 +746,8 @@ func TestRolesAt_DoesNotAssignProposer_Slot0(t *testing.T) {
 	v, m, validatorKey, finish := setup(t)
 	defer finish()
 
-	v.duties = &ethpb.DutiesResponse{
-		Duties: []*ethpb.DutiesResponse_Duty{
+	v.duties = &zondpb.DutiesResponse{
+		Duties: []*zondpb.DutiesResponse_Duty{
 			{
 				CommitteeIndex: 1,
 				AttesterSlot:   0,
@@ -760,7 +760,7 @@ func TestRolesAt_DoesNotAssignProposer_Slot0(t *testing.T) {
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
-	).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 	roleMap, err := v.RolesAt(context.Background(), 0)
 	require.NoError(t, err)
@@ -783,8 +783,8 @@ func TestCheckAndLogValidatorStatus_OK(t *testing.T) {
 			status: &validatorStatus{
 				publicKey: pubKeys[0],
 				index:     nonexistentIndex,
-				status: &ethpb.ValidatorStatusResponse{
-					Status: ethpb.ValidatorStatus_UNKNOWN_STATUS,
+				status: &zondpb.ValidatorStatusResponse{
+					Status: zondpb.ValidatorStatus_UNKNOWN_STATUS,
 				},
 			},
 			log:    "Waiting for deposit to be observed by beacon node",
@@ -795,8 +795,8 @@ func TestCheckAndLogValidatorStatus_OK(t *testing.T) {
 			status: &validatorStatus{
 				publicKey: pubKeys[0],
 				index:     30,
-				status: &ethpb.ValidatorStatusResponse{
-					Status:                    ethpb.ValidatorStatus_DEPOSITED,
+				status: &zondpb.ValidatorStatusResponse{
+					Status:                    zondpb.ValidatorStatus_DEPOSITED,
 					PositionInActivationQueue: 30,
 				},
 			},
@@ -808,8 +808,8 @@ func TestCheckAndLogValidatorStatus_OK(t *testing.T) {
 			status: &validatorStatus{
 				publicKey: pubKeys[0],
 				index:     50,
-				status: &ethpb.ValidatorStatusResponse{
-					Status:                    ethpb.ValidatorStatus_PENDING,
+				status: &zondpb.ValidatorStatusResponse{
+					Status:                    zondpb.ValidatorStatus_PENDING,
 					ActivationEpoch:           params.BeaconConfig().FarFutureEpoch,
 					PositionInActivationQueue: 6,
 				},
@@ -822,8 +822,8 @@ func TestCheckAndLogValidatorStatus_OK(t *testing.T) {
 			status: &validatorStatus{
 				publicKey: pubKeys[0],
 				index:     89,
-				status: &ethpb.ValidatorStatusResponse{
-					Status:                    ethpb.ValidatorStatus_PENDING,
+				status: &zondpb.ValidatorStatusResponse{
+					Status:                    zondpb.ValidatorStatus_PENDING,
 					ActivationEpoch:           60,
 					PositionInActivationQueue: 5,
 				},
@@ -836,8 +836,8 @@ func TestCheckAndLogValidatorStatus_OK(t *testing.T) {
 			status: &validatorStatus{
 				publicKey: pubKeys[0],
 				index:     89,
-				status: &ethpb.ValidatorStatusResponse{
-					Status: ethpb.ValidatorStatus_ACTIVE,
+				status: &zondpb.ValidatorStatusResponse{
+					Status: zondpb.ValidatorStatus_ACTIVE,
 				},
 			},
 			active: true,
@@ -847,8 +847,8 @@ func TestCheckAndLogValidatorStatus_OK(t *testing.T) {
 			status: &validatorStatus{
 				publicKey: pubKeys[0],
 				index:     89,
-				status: &ethpb.ValidatorStatusResponse{
-					Status: ethpb.ValidatorStatus_EXITING,
+				status: &zondpb.ValidatorStatusResponse{
+					Status: zondpb.ValidatorStatus_EXITING,
 				},
 			},
 			active: true,
@@ -857,8 +857,8 @@ func TestCheckAndLogValidatorStatus_OK(t *testing.T) {
 			name: "EXITED",
 			status: &validatorStatus{
 				publicKey: pubKeys[0],
-				status: &ethpb.ValidatorStatusResponse{
-					Status: ethpb.ValidatorStatus_EXITED,
+				status: &zondpb.ValidatorStatusResponse{
+					Status: zondpb.ValidatorStatus_EXITED,
 				},
 			},
 			log:    "Validator exited",
@@ -873,8 +873,8 @@ func TestCheckAndLogValidatorStatus_OK(t *testing.T) {
 			client := validatormock.NewMockValidatorClient(ctrl)
 			v := validator{
 				validatorClient: client,
-				duties: &ethpb.DutiesResponse{
-					Duties: []*ethpb.DutiesResponse_Duty{
+				duties: &zondpb.DutiesResponse{
+					Duties: []*zondpb.DutiesResponse_Duty{
 						{
 							CommitteeIndex: 1,
 						},
@@ -903,12 +903,12 @@ func TestService_ReceiveBlocks_NilBlock(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	valClient.EXPECT().StreamBlocksAltair(
 		gomock.Any(),
-		&ethpb.StreamBlocksRequest{VerifiedOnly: true},
+		&zondpb.StreamBlocksRequest{VerifiedOnly: true},
 	).Return(stream, nil)
 	stream.EXPECT().Context().Return(ctx).AnyTimes()
 	stream.EXPECT().Recv().Return(
-		&ethpb.StreamBlocksResponse{Block: &ethpb.StreamBlocksResponse_Phase0Block{
-			Phase0Block: &ethpb.SignedBeaconBlock{}}},
+		&zondpb.StreamBlocksResponse{Block: &zondpb.StreamBlocksResponse_Phase0Block{
+			Phase0Block: &zondpb.SignedBeaconBlock{}}},
 		nil,
 	).Do(func() {
 		cancel()
@@ -931,14 +931,14 @@ func TestService_ReceiveBlocks_SetHighest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	client.EXPECT().StreamBlocksAltair(
 		gomock.Any(),
-		&ethpb.StreamBlocksRequest{VerifiedOnly: true},
+		&zondpb.StreamBlocksRequest{VerifiedOnly: true},
 	).Return(stream, nil)
 	stream.EXPECT().Context().Return(ctx).AnyTimes()
 	slot := primitives.Slot(100)
 	stream.EXPECT().Recv().Return(
-		&ethpb.StreamBlocksResponse{
-			Block: &ethpb.StreamBlocksResponse_Phase0Block{
-				Phase0Block: &ethpb.SignedBeaconBlock{Block: &ethpb.BeaconBlock{Slot: slot, Body: &ethpb.BeaconBlockBody{}}}},
+		&zondpb.StreamBlocksResponse{
+			Block: &zondpb.StreamBlocksResponse_Phase0Block{
+				Phase0Block: &zondpb.SignedBeaconBlock{Block: &zondpb.BeaconBlock{Slot: slot, Body: &zondpb.BeaconBlockBody{}}}},
 		},
 		nil,
 	).Do(func() {
@@ -950,13 +950,13 @@ func TestService_ReceiveBlocks_SetHighest(t *testing.T) {
 }
 
 type doppelGangerRequestMatcher struct {
-	req *ethpb.DoppelGangerRequest
+	req *zondpb.DoppelGangerRequest
 }
 
 var _ gomock.Matcher = (*doppelGangerRequestMatcher)(nil)
 
 func (m *doppelGangerRequestMatcher) Matches(x interface{}) bool {
-	r, ok := x.(*ethpb.DoppelGangerRequest)
+	r, ok := x.(*zondpb.DoppelGangerRequest)
 	if !ok {
 		panic("Invalid match type")
 	}
@@ -987,16 +987,16 @@ func TestValidator_CheckDoppelGanger(t *testing.T) {
 				keys, err := km.FetchValidatingPublicKeys(context.Background())
 				assert.NoError(t, err)
 				db := dbTest.SetupDB(t, keys)
-				req := &ethpb.DoppelGangerRequest{ValidatorRequests: []*ethpb.DoppelGangerRequest_ValidatorRequest{}}
-				resp := &ethpb.DoppelGangerRequest{ValidatorRequests: []*ethpb.DoppelGangerRequest_ValidatorRequest{}}
+				req := &zondpb.DoppelGangerRequest{ValidatorRequests: []*zondpb.DoppelGangerRequest_ValidatorRequest{}}
+				resp := &zondpb.DoppelGangerRequest{ValidatorRequests: []*zondpb.DoppelGangerRequest_ValidatorRequest{}}
 				for _, k := range keys {
 					pkey := k
 					att := createAttestation(10, 12)
 					rt, err := att.Data.HashTreeRoot()
 					assert.NoError(t, err)
 					assert.NoError(t, db.SaveAttestationForPubKey(context.Background(), pkey, rt, att))
-					resp.ValidatorRequests = append(resp.ValidatorRequests, &ethpb.DoppelGangerRequest_ValidatorRequest{PublicKey: pkey[:], Epoch: att.Data.Target.Epoch, SignedRoot: rt[:]})
-					req.ValidatorRequests = append(req.ValidatorRequests, &ethpb.DoppelGangerRequest_ValidatorRequest{PublicKey: pkey[:], Epoch: att.Data.Target.Epoch, SignedRoot: rt[:]})
+					resp.ValidatorRequests = append(resp.ValidatorRequests, &zondpb.DoppelGangerRequest_ValidatorRequest{PublicKey: pkey[:], Epoch: att.Data.Target.Epoch, SignedRoot: rt[:]})
+					req.ValidatorRequests = append(req.ValidatorRequests, &zondpb.DoppelGangerRequest_ValidatorRequest{PublicKey: pkey[:], Epoch: att.Data.Target.Epoch, SignedRoot: rt[:]})
 				}
 				v := &validator{
 					validatorClient: client,
@@ -1019,8 +1019,8 @@ func TestValidator_CheckDoppelGanger(t *testing.T) {
 				keys, err := km.FetchValidatingPublicKeys(context.Background())
 				assert.NoError(t, err)
 				db := dbTest.SetupDB(t, keys)
-				req := &ethpb.DoppelGangerRequest{ValidatorRequests: []*ethpb.DoppelGangerRequest_ValidatorRequest{}}
-				resp := &ethpb.DoppelGangerResponse{Responses: []*ethpb.DoppelGangerResponse_ValidatorResponse{}}
+				req := &zondpb.DoppelGangerRequest{ValidatorRequests: []*zondpb.DoppelGangerRequest_ValidatorRequest{}}
+				resp := &zondpb.DoppelGangerResponse{Responses: []*zondpb.DoppelGangerResponse_ValidatorResponse{}}
 				for i, k := range keys {
 					pkey := k
 					att := createAttestation(10, 12)
@@ -1028,9 +1028,9 @@ func TestValidator_CheckDoppelGanger(t *testing.T) {
 					assert.NoError(t, err)
 					assert.NoError(t, db.SaveAttestationForPubKey(context.Background(), pkey, rt, att))
 					if i%3 == 0 {
-						resp.Responses = append(resp.Responses, &ethpb.DoppelGangerResponse_ValidatorResponse{PublicKey: pkey[:], DuplicateExists: true})
+						resp.Responses = append(resp.Responses, &zondpb.DoppelGangerResponse_ValidatorResponse{PublicKey: pkey[:], DuplicateExists: true})
 					}
-					req.ValidatorRequests = append(req.ValidatorRequests, &ethpb.DoppelGangerRequest_ValidatorRequest{PublicKey: pkey[:], Epoch: att.Data.Target.Epoch, SignedRoot: rt[:]})
+					req.ValidatorRequests = append(req.ValidatorRequests, &zondpb.DoppelGangerRequest_ValidatorRequest{PublicKey: pkey[:], Epoch: att.Data.Target.Epoch, SignedRoot: rt[:]})
 				}
 				v := &validator{
 					validatorClient: client,
@@ -1053,8 +1053,8 @@ func TestValidator_CheckDoppelGanger(t *testing.T) {
 				keys, err := km.FetchValidatingPublicKeys(context.Background())
 				assert.NoError(t, err)
 				db := dbTest.SetupDB(t, keys)
-				req := &ethpb.DoppelGangerRequest{ValidatorRequests: []*ethpb.DoppelGangerRequest_ValidatorRequest{}}
-				resp := &ethpb.DoppelGangerResponse{Responses: []*ethpb.DoppelGangerResponse_ValidatorResponse{}}
+				req := &zondpb.DoppelGangerRequest{ValidatorRequests: []*zondpb.DoppelGangerRequest_ValidatorRequest{}}
+				resp := &zondpb.DoppelGangerResponse{Responses: []*zondpb.DoppelGangerResponse_ValidatorResponse{}}
 				for i, k := range keys {
 					pkey := k
 					att := createAttestation(10, 12)
@@ -1062,9 +1062,9 @@ func TestValidator_CheckDoppelGanger(t *testing.T) {
 					assert.NoError(t, err)
 					assert.NoError(t, db.SaveAttestationForPubKey(context.Background(), pkey, rt, att))
 					if i%9 == 0 {
-						resp.Responses = append(resp.Responses, &ethpb.DoppelGangerResponse_ValidatorResponse{PublicKey: pkey[:], DuplicateExists: true})
+						resp.Responses = append(resp.Responses, &zondpb.DoppelGangerResponse_ValidatorResponse{PublicKey: pkey[:], DuplicateExists: true})
 					}
-					req.ValidatorRequests = append(req.ValidatorRequests, &ethpb.DoppelGangerRequest_ValidatorRequest{PublicKey: pkey[:], Epoch: att.Data.Target.Epoch, SignedRoot: rt[:]})
+					req.ValidatorRequests = append(req.ValidatorRequests, &zondpb.DoppelGangerRequest_ValidatorRequest{PublicKey: pkey[:], Epoch: att.Data.Target.Epoch, SignedRoot: rt[:]})
 				}
 				v := &validator{
 					validatorClient: client,
@@ -1087,8 +1087,8 @@ func TestValidator_CheckDoppelGanger(t *testing.T) {
 				keys, err := km.FetchValidatingPublicKeys(context.Background())
 				assert.NoError(t, err)
 				db := dbTest.SetupDB(t, keys)
-				req := &ethpb.DoppelGangerRequest{ValidatorRequests: []*ethpb.DoppelGangerRequest_ValidatorRequest{}}
-				resp := &ethpb.DoppelGangerResponse{Responses: []*ethpb.DoppelGangerResponse_ValidatorResponse{}}
+				req := &zondpb.DoppelGangerRequest{ValidatorRequests: []*zondpb.DoppelGangerRequest_ValidatorRequest{}}
+				resp := &zondpb.DoppelGangerResponse{Responses: []*zondpb.DoppelGangerResponse_ValidatorResponse{}}
 				attLimit := 5
 				for i, k := range keys {
 					pkey := k
@@ -1098,11 +1098,11 @@ func TestValidator_CheckDoppelGanger(t *testing.T) {
 						assert.NoError(t, err)
 						assert.NoError(t, db.SaveAttestationForPubKey(context.Background(), pkey, rt, att))
 						if j == attLimit-1 {
-							req.ValidatorRequests = append(req.ValidatorRequests, &ethpb.DoppelGangerRequest_ValidatorRequest{PublicKey: pkey[:], Epoch: att.Data.Target.Epoch, SignedRoot: rt[:]})
+							req.ValidatorRequests = append(req.ValidatorRequests, &zondpb.DoppelGangerRequest_ValidatorRequest{PublicKey: pkey[:], Epoch: att.Data.Target.Epoch, SignedRoot: rt[:]})
 						}
 					}
 					if i%3 == 0 {
-						resp.Responses = append(resp.Responses, &ethpb.DoppelGangerResponse_ValidatorResponse{PublicKey: pkey[:], DuplicateExists: true})
+						resp.Responses = append(resp.Responses, &zondpb.DoppelGangerResponse_ValidatorResponse{PublicKey: pkey[:], DuplicateExists: true})
 					}
 				}
 				v := &validator{
@@ -1127,11 +1127,11 @@ func TestValidator_CheckDoppelGanger(t *testing.T) {
 				keys, err := km.FetchValidatingPublicKeys(context.Background())
 				assert.NoError(t, err)
 				db := dbTest.SetupDB(t, keys)
-				resp := &ethpb.DoppelGangerResponse{Responses: []*ethpb.DoppelGangerResponse_ValidatorResponse{}}
-				req := &ethpb.DoppelGangerRequest{ValidatorRequests: []*ethpb.DoppelGangerRequest_ValidatorRequest{}}
+				resp := &zondpb.DoppelGangerResponse{Responses: []*zondpb.DoppelGangerResponse_ValidatorResponse{}}
+				req := &zondpb.DoppelGangerRequest{ValidatorRequests: []*zondpb.DoppelGangerRequest_ValidatorRequest{}}
 				for _, k := range keys {
-					resp.Responses = append(resp.Responses, &ethpb.DoppelGangerResponse_ValidatorResponse{PublicKey: k[:], DuplicateExists: false})
-					req.ValidatorRequests = append(req.ValidatorRequests, &ethpb.DoppelGangerRequest_ValidatorRequest{PublicKey: k[:], SignedRoot: make([]byte, 32), Epoch: 0})
+					resp.Responses = append(resp.Responses, &zondpb.DoppelGangerResponse_ValidatorResponse{PublicKey: k[:], DuplicateExists: false})
+					req.ValidatorRequests = append(req.ValidatorRequests, &zondpb.DoppelGangerRequest_ValidatorRequest{PublicKey: k[:], SignedRoot: make([]byte, 32), Epoch: 0})
 				}
 				v := &validator{
 					validatorClient: client,
@@ -1190,14 +1190,14 @@ func TestValidatorAttestationsAreOrdered(t *testing.T) {
 	assert.Equal(t, r.Target, primitives.Epoch(14))
 }
 
-func createAttestation(source, target primitives.Epoch) *ethpb.IndexedAttestation {
-	return &ethpb.IndexedAttestation{
-		Data: &ethpb.AttestationData{
-			Source: &ethpb.Checkpoint{
+func createAttestation(source, target primitives.Epoch) *zondpb.IndexedAttestation {
+	return &zondpb.IndexedAttestation{
+		Data: &zondpb.AttestationData{
+			Source: &zondpb.Checkpoint{
 				Epoch: source,
 				Root:  make([]byte, 32),
 			},
-			Target: &ethpb.Checkpoint{
+			Target: &zondpb.Checkpoint{
 				Epoch: target,
 				Root:  make([]byte, 32),
 			},
@@ -1217,11 +1217,11 @@ func TestIsSyncCommitteeAggregator_OK(t *testing.T) {
 
 	m.validatorClient.EXPECT().GetSyncSubcommitteeIndex(
 		gomock.Any(), // ctx
-		&ethpb.SyncSubcommitteeIndexRequest{
+		&zondpb.SyncSubcommitteeIndexRequest{
 			PublicKey: validatorKey.PublicKey().Marshal(),
 			Slot:      1,
 		},
-	).Return(&ethpb.SyncSubcommitteeIndexResponse{}, nil /*err*/)
+	).Return(&zondpb.SyncSubcommitteeIndexResponse{}, nil /*err*/)
 
 	aggregator, err := v.isSyncCommitteeAggregator(context.Background(), slot, bytesutil.ToBytes2592(pubKey))
 	require.NoError(t, err)
@@ -1234,15 +1234,15 @@ func TestIsSyncCommitteeAggregator_OK(t *testing.T) {
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
-	).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 	m.validatorClient.EXPECT().GetSyncSubcommitteeIndex(
 		gomock.Any(), // ctx
-		&ethpb.SyncSubcommitteeIndexRequest{
+		&zondpb.SyncSubcommitteeIndexRequest{
 			PublicKey: validatorKey.PublicKey().Marshal(),
 			Slot:      1,
 		},
-	).Return(&ethpb.SyncSubcommitteeIndexResponse{Indices: []primitives.CommitteeIndex{0}}, nil /*err*/)
+	).Return(&zondpb.SyncSubcommitteeIndexResponse{Indices: []primitives.CommitteeIndex{0}}, nil /*err*/)
 
 	aggregator, err = v.isSyncCommitteeAggregator(context.Background(), slot, bytesutil.ToBytes2592(pubKey))
 	require.NoError(t, err)
@@ -1365,7 +1365,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					node:                         nodeClient,
 					db:                           db,
 					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					interopKeysConfig: &local.InteropKeymanagerConfig{
 						NumValidatorKeys: 2,
@@ -1384,12 +1384,12 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				client.EXPECT().MultipleValidatorStatus(
 					gomock.Any(),
 					gomock.Any()).Return(
-					&ethpb.MultipleValidatorStatusResponse{
-						Statuses:   []*ethpb.ValidatorStatusResponse{{Status: ethpb.ValidatorStatus_ACTIVE}, {Status: ethpb.ValidatorStatus_ACTIVE}},
+					&zondpb.MultipleValidatorStatusResponse{
+						Statuses:   []*zondpb.ValidatorStatusResponse{{Status: zondpb.ValidatorStatus_ACTIVE}, {Status: zondpb.ValidatorStatus_ACTIVE}},
 						PublicKeys: [][]byte{keys[0][:], keys[1][:]},
 					}, nil)
-				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &ethpb.PrepareBeaconProposerRequest{
-					Recipients: []*ethpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
+				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &zondpb.PrepareBeaconProposerRequest{
+					Recipients: []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
 						{FeeRecipient: common.HexToAddress("0x055Fb65722E7b2455043BFEBf6177F1D2e9738D9").Bytes(), ValidatorIndex: 1},
 						{FeeRecipient: common.HexToAddress(defaultFeeHex).Bytes(), ValidatorIndex: 2},
 					},
@@ -1447,7 +1447,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					node:                         nodeClient,
 					db:                           db,
 					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					interopKeysConfig: &local.InteropKeymanagerConfig{
 						NumValidatorKeys: 2,
@@ -1466,12 +1466,12 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				client.EXPECT().MultipleValidatorStatus(
 					gomock.Any(),
 					gomock.Any()).Return(
-					&ethpb.MultipleValidatorStatusResponse{
-						Statuses:   []*ethpb.ValidatorStatusResponse{{Status: ethpb.ValidatorStatus_ACTIVE}, {Status: ethpb.ValidatorStatus_ACTIVE}},
+					&zondpb.MultipleValidatorStatusResponse{
+						Statuses:   []*zondpb.ValidatorStatusResponse{{Status: zondpb.ValidatorStatus_ACTIVE}, {Status: zondpb.ValidatorStatus_ACTIVE}},
 						PublicKeys: [][]byte{keys[0][:], keys[1][:]},
 					}, nil)
-				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &ethpb.PrepareBeaconProposerRequest{
-					Recipients: []*ethpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
+				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &zondpb.PrepareBeaconProposerRequest{
+					Recipients: []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
 						{FeeRecipient: common.HexToAddress("0x055Fb65722E7b2455043BFEBf6177F1D2e9738D9").Bytes(), ValidatorIndex: 1},
 						{FeeRecipient: common.HexToAddress(defaultFeeHex).Bytes(), ValidatorIndex: 2},
 					},
@@ -1525,7 +1525,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					node:                         nodeClient,
 					db:                           db,
 					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					interopKeysConfig: &local.InteropKeymanagerConfig{
 						NumValidatorKeys: 2,
@@ -1544,12 +1544,12 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				client.EXPECT().MultipleValidatorStatus(
 					gomock.Any(),
 					gomock.Any()).Return(
-					&ethpb.MultipleValidatorStatusResponse{
-						Statuses:   []*ethpb.ValidatorStatusResponse{{Status: ethpb.ValidatorStatus_ACTIVE}, {Status: ethpb.ValidatorStatus_ACTIVE}},
+					&zondpb.MultipleValidatorStatusResponse{
+						Statuses:   []*zondpb.ValidatorStatusResponse{{Status: zondpb.ValidatorStatus_ACTIVE}, {Status: zondpb.ValidatorStatus_ACTIVE}},
 						PublicKeys: [][]byte{keys[0][:], keys[1][:]},
 					}, nil)
-				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &ethpb.PrepareBeaconProposerRequest{
-					Recipients: []*ethpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
+				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &zondpb.PrepareBeaconProposerRequest{
+					Recipients: []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
 						{FeeRecipient: common.HexToAddress("0x055Fb65722E7b2455043BFEBf6177F1D2e9738D9").Bytes(), ValidatorIndex: 1},
 						{FeeRecipient: common.HexToAddress(defaultFeeHex).Bytes(), ValidatorIndex: 2},
 					},
@@ -1586,7 +1586,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					node:                         nodeClient,
 					db:                           db,
 					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					interopKeysConfig: &local.InteropKeymanagerConfig{
 						NumValidatorKeys: 1,
@@ -1619,8 +1619,8 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				client.EXPECT().MultipleValidatorStatus(
 					gomock.Any(),
 					gomock.Any()).Return(
-					&ethpb.MultipleValidatorStatusResponse{
-						Statuses:   []*ethpb.ValidatorStatusResponse{{Status: ethpb.ValidatorStatus_ACTIVE}},
+					&zondpb.MultipleValidatorStatusResponse{
+						Statuses:   []*zondpb.ValidatorStatusResponse{{Status: zondpb.ValidatorStatus_ACTIVE}},
 						PublicKeys: [][]byte{keys[0][:]},
 					}, nil)
 
@@ -1628,8 +1628,8 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					gomock.Any(),
 					gomock.Any(),
 				).Return(&empty.Empty{}, nil)
-				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &ethpb.PrepareBeaconProposerRequest{
-					Recipients: []*ethpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
+				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &zondpb.PrepareBeaconProposerRequest{
+					Recipients: []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
 						{FeeRecipient: common.HexToAddress(defaultFeeHex).Bytes(), ValidatorIndex: 1},
 					},
 				}).Return(nil, nil)
@@ -1654,7 +1654,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					node:                         nodeClient,
 					db:                           db,
 					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					interopKeysConfig: &local.InteropKeymanagerConfig{
 						NumValidatorKeys: 1,
@@ -1684,16 +1684,16 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				client.EXPECT().MultipleValidatorStatus(
 					gomock.Any(),
 					gomock.Any()).Return(
-					&ethpb.MultipleValidatorStatusResponse{
-						Statuses:   []*ethpb.ValidatorStatusResponse{{Status: ethpb.ValidatorStatus_ACTIVE}},
+					&zondpb.MultipleValidatorStatusResponse{
+						Statuses:   []*zondpb.ValidatorStatusResponse{{Status: zondpb.ValidatorStatus_ACTIVE}},
 						PublicKeys: [][]byte{keys[0][:]},
 					}, nil)
 				client.EXPECT().SubmitValidatorRegistrations(
 					gomock.Any(),
 					gomock.Any(),
 				).Return(&empty.Empty{}, nil)
-				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &ethpb.PrepareBeaconProposerRequest{
-					Recipients: []*ethpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
+				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &zondpb.PrepareBeaconProposerRequest{
+					Recipients: []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
 						{FeeRecipient: common.HexToAddress(defaultFeeHex).Bytes(), ValidatorIndex: 1},
 					},
 				}).Return(nil, nil)
@@ -1718,7 +1718,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					node:                         nodeClient,
 					db:                           db,
 					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					interopKeysConfig: &local.InteropKeymanagerConfig{
 						NumValidatorKeys: 1,
@@ -1736,12 +1736,12 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				client.EXPECT().MultipleValidatorStatus(
 					gomock.Any(),
 					gomock.Any()).Return(
-					&ethpb.MultipleValidatorStatusResponse{
-						Statuses:   []*ethpb.ValidatorStatusResponse{{Status: ethpb.ValidatorStatus_ACTIVE}},
+					&zondpb.MultipleValidatorStatusResponse{
+						Statuses:   []*zondpb.ValidatorStatusResponse{{Status: zondpb.ValidatorStatus_ACTIVE}},
 						PublicKeys: [][]byte{keys[0][:]},
 					}, nil)
-				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &ethpb.PrepareBeaconProposerRequest{
-					Recipients: []*ethpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
+				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &zondpb.PrepareBeaconProposerRequest{
+					Recipients: []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
 						{FeeRecipient: common.HexToAddress("0x0").Bytes(), ValidatorIndex: 1},
 					},
 				}).Return(nil, nil)
@@ -1770,7 +1770,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					validatorClient:              client,
 					db:                           db,
 					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					interopKeysConfig: &local.InteropKeymanagerConfig{
 						NumValidatorKeys: 1,
@@ -1786,7 +1786,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				require.NoError(t, err)
 				client.EXPECT().ValidatorIndex(
 					gomock.Any(), // ctx
-					&ethpb.ValidatorIndexRequest{PublicKey: keys[0][:]},
+					&zondpb.ValidatorIndexRequest{PublicKey: keys[0][:]},
 				).Return(nil, errors.New("could not find validator index for public key"))
 				config[keys[0]] = &validatorserviceconfig.ProposerOption{
 					FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
@@ -1813,7 +1813,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					node:                         nodeClient,
 					db:                           db,
 					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					interopKeysConfig: &local.InteropKeymanagerConfig{
 						NumValidatorKeys: 1,
@@ -1831,8 +1831,8 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				client.EXPECT().MultipleValidatorStatus(
 					gomock.Any(),
 					gomock.Any()).Return(
-					&ethpb.MultipleValidatorStatusResponse{
-						Statuses:   []*ethpb.ValidatorStatusResponse{{Status: ethpb.ValidatorStatus_ACTIVE}},
+					&zondpb.MultipleValidatorStatusResponse{
+						Statuses:   []*zondpb.ValidatorStatusResponse{{Status: zondpb.ValidatorStatus_ACTIVE}},
 						PublicKeys: [][]byte{keys[0][:]},
 					}, nil)
 
@@ -1858,8 +1858,8 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					},
 				})
 				require.NoError(t, err)
-				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &ethpb.PrepareBeaconProposerRequest{
-					Recipients: []*ethpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
+				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &zondpb.PrepareBeaconProposerRequest{
+					Recipients: []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
 						{FeeRecipient: common.HexToAddress("0x0").Bytes(), ValidatorIndex: 1},
 					},
 				}).Return(nil, nil)
@@ -1964,16 +1964,16 @@ func TestValidator_buildPrepProposerReqs_WithoutDefaultConfig(t *testing.T) {
 	client := validatormock.NewMockValidatorClient(ctrl)
 	client.EXPECT().ValidatorIndex(
 		ctx,
-		&ethpb.ValidatorIndexRequest{
+		&zondpb.ValidatorIndexRequest{
 			PublicKey: pubkey2[:],
 		},
-	).Return(&ethpb.ValidatorIndexResponse{
+	).Return(&zondpb.ValidatorIndexResponse{
 		Index: 2,
 	}, nil)
 
 	client.EXPECT().ValidatorIndex(
 		ctx,
-		&ethpb.ValidatorIndexRequest{
+		&zondpb.ValidatorIndexRequest{
 			PublicKey: pubkey3[:],
 		},
 	).Return(nil, status.Error(codes.NotFound, "NOT_FOUND"))
@@ -1981,8 +1981,8 @@ func TestValidator_buildPrepProposerReqs_WithoutDefaultConfig(t *testing.T) {
 	client.EXPECT().MultipleValidatorStatus(
 		gomock.Any(),
 		gomock.Any()).Return(
-		&ethpb.MultipleValidatorStatusResponse{
-			Statuses:   []*ethpb.ValidatorStatusResponse{{Status: ethpb.ValidatorStatus_ACTIVE}, {Status: ethpb.ValidatorStatus_ACTIVE}, {Status: ethpb.ValidatorStatus_ACTIVE}},
+		&zondpb.MultipleValidatorStatusResponse{
+			Statuses:   []*zondpb.ValidatorStatusResponse{{Status: zondpb.ValidatorStatus_ACTIVE}, {Status: zondpb.ValidatorStatus_ACTIVE}, {Status: zondpb.ValidatorStatus_ACTIVE}},
 			PublicKeys: [][]byte{pubkey1[:], pubkey2[:], pubkey4[:]},
 		}, nil)
 	v := validator{
@@ -2015,7 +2015,7 @@ func TestValidator_buildPrepProposerReqs_WithoutDefaultConfig(t *testing.T) {
 
 	pubkeys := [][dilithium2.CryptoPublicKeyBytes]byte{pubkey1, pubkey2, pubkey3, pubkey4}
 
-	expected := []*ethpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
+	expected := []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
 		{
 			ValidatorIndex: 1,
 			FeeRecipient:   feeRecipient1[:],
@@ -2059,34 +2059,34 @@ func TestValidator_buildPrepProposerReqs_WithDefaultConfig(t *testing.T) {
 
 	client.EXPECT().ValidatorIndex(
 		ctx,
-		&ethpb.ValidatorIndexRequest{
+		&zondpb.ValidatorIndexRequest{
 			PublicKey: pubkey2[:],
 		},
-	).Return(&ethpb.ValidatorIndexResponse{
+	).Return(&zondpb.ValidatorIndexResponse{
 		Index: 2,
 	}, nil)
 
 	client.EXPECT().ValidatorIndex(
 		ctx,
-		&ethpb.ValidatorIndexRequest{
+		&zondpb.ValidatorIndexRequest{
 			PublicKey: pubkey3[:],
 		},
 	).Return(nil, status.Error(codes.NotFound, "NOT_FOUND"))
 
 	client.EXPECT().MultipleValidatorStatus(
 		gomock.Any(),
-		gomock.Any()).DoAndReturn(func(ctx context.Context, val *ethpb.MultipleValidatorStatusRequest) (*ethpb.MultipleValidatorStatusResponse, error) {
-		resp := &ethpb.MultipleValidatorStatusResponse{}
+		gomock.Any()).DoAndReturn(func(ctx context.Context, val *zondpb.MultipleValidatorStatusRequest) (*zondpb.MultipleValidatorStatusResponse, error) {
+		resp := &zondpb.MultipleValidatorStatusResponse{}
 		for _, k := range val.PublicKeys {
 			if bytes.Equal(k, pubkey1[:]) || bytes.Equal(k, pubkey2[:]) ||
 				bytes.Equal(k, pubkey4[:]) {
 				bytesutil.SafeCopyBytes(k)
 				resp.PublicKeys = append(resp.PublicKeys, bytesutil.SafeCopyBytes(k))
-				resp.Statuses = append(resp.Statuses, &ethpb.ValidatorStatusResponse{Status: ethpb.ValidatorStatus_ACTIVE})
+				resp.Statuses = append(resp.Statuses, &zondpb.ValidatorStatusResponse{Status: zondpb.ValidatorStatus_ACTIVE})
 				continue
 			}
 			resp.PublicKeys = append(resp.PublicKeys, bytesutil.SafeCopyBytes(k))
-			resp.Statuses = append(resp.Statuses, &ethpb.ValidatorStatusResponse{Status: ethpb.ValidatorStatus_UNKNOWN_STATUS})
+			resp.Statuses = append(resp.Statuses, &zondpb.ValidatorStatusResponse{Status: zondpb.ValidatorStatus_UNKNOWN_STATUS})
 		}
 		return resp, nil
 	})
@@ -2125,7 +2125,7 @@ func TestValidator_buildPrepProposerReqs_WithDefaultConfig(t *testing.T) {
 
 	pubkeys := [][dilithium2.CryptoPublicKeyBytes]byte{pubkey1, pubkey2, pubkey3, pubkey4}
 
-	expected := []*ethpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
+	expected := []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
 		{
 			ValidatorIndex: 1,
 			FeeRecipient:   feeRecipient1[:],
@@ -2172,7 +2172,7 @@ func TestValidator_buildSignedRegReqs_DefaultConfigDisabled(t *testing.T) {
 	signature.EXPECT().Marshal().Return([]byte{})
 
 	v := validator{
-		signedValidatorRegistrations: map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1{},
+		signedValidatorRegistrations: map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1{},
 		validatorClient:              client,
 		proposerSettings: &validatorserviceconfig.ProposerSettings{
 			DefaultConfig: &validatorserviceconfig.ProposerOption{
@@ -2258,7 +2258,7 @@ func TestValidator_buildSignedRegReqs_DefaultConfigEnabled(t *testing.T) {
 	signature.EXPECT().Marshal().Return([]byte{}).Times(2)
 
 	v := validator{
-		signedValidatorRegistrations: map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1{},
+		signedValidatorRegistrations: map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1{},
 		validatorClient:              client,
 		proposerSettings: &validatorserviceconfig.ProposerSettings{
 			DefaultConfig: &validatorserviceconfig.ProposerOption{
@@ -2337,7 +2337,7 @@ func TestValidator_buildSignedRegReqs_SignerOnError(t *testing.T) {
 	client := validatormock.NewMockValidatorClient(ctrl)
 
 	v := validator{
-		signedValidatorRegistrations: map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1{},
+		signedValidatorRegistrations: map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1{},
 		validatorClient:              client,
 		proposerSettings: &validatorserviceconfig.ProposerSettings{
 			DefaultConfig: &validatorserviceconfig.ProposerOption{

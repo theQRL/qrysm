@@ -7,7 +7,7 @@ import (
 
 	fssz "github.com/prysmaticlabs/fastssz"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	common "github.com/theQRL/qrysm/v4/testing/spectest/shared/common/ssz_static"
 )
@@ -19,9 +19,9 @@ func RunSSZStaticTests(t *testing.T, config string) {
 
 func customHtr(t *testing.T, htrs []common.HTR, object interface{}) []common.HTR {
 	switch object.(type) {
-	case *ethpb.BeaconState:
+	case *zondpb.BeaconState:
 		htrs = append(htrs, func(s interface{}) ([32]byte, error) {
-			beaconState, err := state_native.InitializeFromProtoPhase0(s.(*ethpb.BeaconState))
+			beaconState, err := state_native.InitializeFromProtoPhase0(s.(*zondpb.BeaconState))
 			require.NoError(t, err)
 			return beaconState.HashTreeRoot(context.TODO())
 		})
@@ -34,60 +34,60 @@ func unmarshalledSSZ(t *testing.T, serializedBytes []byte, objectName string) (i
 	var obj interface{}
 	switch objectName {
 	case "Attestation":
-		obj = &ethpb.Attestation{}
+		obj = &zondpb.Attestation{}
 	case "AttestationData":
-		obj = &ethpb.AttestationData{}
+		obj = &zondpb.AttestationData{}
 	case "AttesterSlashing":
-		obj = &ethpb.AttesterSlashing{}
+		obj = &zondpb.AttesterSlashing{}
 	case "AggregateAndProof":
-		obj = &ethpb.AggregateAttestationAndProof{}
+		obj = &zondpb.AggregateAttestationAndProof{}
 	case "BeaconBlock":
-		obj = &ethpb.BeaconBlock{}
+		obj = &zondpb.BeaconBlock{}
 	case "BeaconBlockBody":
-		obj = &ethpb.BeaconBlockBody{}
+		obj = &zondpb.BeaconBlockBody{}
 	case "BeaconBlockHeader":
-		obj = &ethpb.BeaconBlockHeader{}
+		obj = &zondpb.BeaconBlockHeader{}
 	case "BeaconState":
-		obj = &ethpb.BeaconState{}
+		obj = &zondpb.BeaconState{}
 	case "Checkpoint":
-		obj = &ethpb.Checkpoint{}
+		obj = &zondpb.Checkpoint{}
 	case "Deposit":
-		obj = &ethpb.Deposit{}
+		obj = &zondpb.Deposit{}
 	case "DepositMessage":
-		obj = &ethpb.DepositMessage{}
+		obj = &zondpb.DepositMessage{}
 	case "DepositData":
-		obj = &ethpb.Deposit_Data{}
+		obj = &zondpb.Deposit_Data{}
 	case "Eth1Data":
-		obj = &ethpb.Eth1Data{}
+		obj = &zondpb.Eth1Data{}
 	case "Eth1Block":
 		t.Skip("Unused type")
 		return nil, nil
 	case "Fork":
-		obj = &ethpb.Fork{}
+		obj = &zondpb.Fork{}
 	case "ForkData":
-		obj = &ethpb.ForkData{}
+		obj = &zondpb.ForkData{}
 	case "HistoricalBatch":
-		obj = &ethpb.HistoricalBatch{}
+		obj = &zondpb.HistoricalBatch{}
 	case "IndexedAttestation":
-		obj = &ethpb.IndexedAttestation{}
+		obj = &zondpb.IndexedAttestation{}
 	case "PendingAttestation":
-		obj = &ethpb.PendingAttestation{}
+		obj = &zondpb.PendingAttestation{}
 	case "ProposerSlashing":
-		obj = &ethpb.ProposerSlashing{}
+		obj = &zondpb.ProposerSlashing{}
 	case "SignedAggregateAndProof":
-		obj = &ethpb.SignedAggregateAttestationAndProof{}
+		obj = &zondpb.SignedAggregateAttestationAndProof{}
 	case "SignedBeaconBlock":
-		obj = &ethpb.SignedBeaconBlock{}
+		obj = &zondpb.SignedBeaconBlock{}
 	case "SignedBeaconBlockHeader":
-		obj = &ethpb.SignedBeaconBlockHeader{}
+		obj = &zondpb.SignedBeaconBlockHeader{}
 	case "SignedVoluntaryExit":
-		obj = &ethpb.SignedVoluntaryExit{}
+		obj = &zondpb.SignedVoluntaryExit{}
 	case "SigningData":
-		obj = &ethpb.SigningData{}
+		obj = &zondpb.SigningData{}
 	case "Validator":
-		obj = &ethpb.Validator{}
+		obj = &zondpb.Validator{}
 	case "VoluntaryExit":
-		obj = &ethpb.VoluntaryExit{}
+		obj = &zondpb.VoluntaryExit{}
 	default:
 		return nil, errors.New("type not found")
 	}

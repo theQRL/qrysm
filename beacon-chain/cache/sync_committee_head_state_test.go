@@ -7,34 +7,34 @@ import (
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestSyncCommitteeHeadState(t *testing.T) {
-	beaconState, err := state_native.InitializeFromProtoAltair(&ethpb.BeaconStateAltair{
-		Fork: &ethpb.Fork{
+	beaconState, err := state_native.InitializeFromProtoAltair(&zondpb.BeaconStateAltair{
+		Fork: &zondpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 		},
 	})
 	require.NoError(t, err)
-	phase0State, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
-		Fork: &ethpb.Fork{
+	phase0State, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		Fork: &zondpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 		},
 	})
 	require.NoError(t, err)
-	bellatrixState, err := state_native.InitializeFromProtoBellatrix(&ethpb.BeaconStateBellatrix{
-		Fork: &ethpb.Fork{
+	bellatrixState, err := state_native.InitializeFromProtoBellatrix(&zondpb.BeaconStateBellatrix{
+		Fork: &zondpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 		},
 	})
 	require.NoError(t, err)
-	capellaState, err := state_native.InitializeFromProtoCapella(&ethpb.BeaconStateCapella{
-		Fork: &ethpb.Fork{
+	capellaState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+		Fork: &zondpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 		},

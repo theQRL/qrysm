@@ -3,23 +3,23 @@ package grpc_api
 import (
 	"context"
 
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/validator/client/iface"
 	"google.golang.org/grpc"
 )
 
 type grpcSlasherClient struct {
-	slasherClient ethpb.SlasherClient
+	slasherClient zondpb.SlasherClient
 }
 
-func (c *grpcSlasherClient) IsSlashableAttestation(ctx context.Context, in *ethpb.IndexedAttestation) (*ethpb.AttesterSlashingResponse, error) {
+func (c *grpcSlasherClient) IsSlashableAttestation(ctx context.Context, in *zondpb.IndexedAttestation) (*zondpb.AttesterSlashingResponse, error) {
 	return c.slasherClient.IsSlashableAttestation(ctx, in)
 }
 
-func (c *grpcSlasherClient) IsSlashableBlock(ctx context.Context, in *ethpb.SignedBeaconBlockHeader) (*ethpb.ProposerSlashingResponse, error) {
+func (c *grpcSlasherClient) IsSlashableBlock(ctx context.Context, in *zondpb.SignedBeaconBlockHeader) (*zondpb.ProposerSlashingResponse, error) {
 	return c.slasherClient.IsSlashableBlock(ctx, in)
 }
 
 func NewSlasherClient(cc grpc.ClientConnInterface) iface.SlasherClient {
-	return &grpcSlasherClient{ethpb.NewSlasherClient(cc)}
+	return &grpcSlasherClient{zondpb.NewSlasherClient(cc)}
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -80,7 +80,7 @@ func TestStateByRootIfCachedNoCopy_HotState(t *testing.T) {
 
 	beaconState, _ := util.DeterministicGenesisState(t, 32)
 	r := [32]byte{'A'}
-	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &ethpb.StateSummary{Root: r[:]}))
+	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Root: r[:]}))
 	service.hotStateCache.put(r, beaconState)
 
 	loadedState := service.StateByRootIfCachedNoCopy(r)
@@ -121,7 +121,7 @@ func TestStateByRoot_HotStateUsingEpochBoundaryCacheNoReplay(t *testing.T) {
 	blk := util.NewBeaconBlock()
 	blkRoot, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
-	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &ethpb.StateSummary{Root: blkRoot[:]}))
+	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Root: blkRoot[:]}))
 	require.NoError(t, service.epochBoundaryStateCache.put(blkRoot, beaconState))
 	loadedState, err := service.StateByRoot(ctx, blkRoot)
 	require.NoError(t, err)
@@ -147,7 +147,7 @@ func TestStateByRoot_HotStateUsingEpochBoundaryCacheWithReplay(t *testing.T) {
 	util.SaveBlock(t, ctx, service.beaconDB, targetBlock)
 	targetRoot, err := targetBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
-	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &ethpb.StateSummary{Slot: targetSlot, Root: targetRoot[:]}))
+	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Slot: targetSlot, Root: targetRoot[:]}))
 	loadedState, err := service.StateByRoot(ctx, targetRoot)
 	require.NoError(t, err)
 	assert.Equal(t, targetSlot, loadedState.Slot(), "Did not correctly load state")
@@ -161,7 +161,7 @@ func TestStateByRoot_HotStateCached(t *testing.T) {
 
 	beaconState, _ := util.DeterministicGenesisState(t, 32)
 	r := [32]byte{'A'}
-	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &ethpb.StateSummary{Root: r[:]}))
+	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Root: r[:]}))
 	service.hotStateCache.put(r, beaconState)
 
 	loadedState, err := service.StateByRoot(ctx, r)
@@ -241,7 +241,7 @@ func TestStateByRootInitialSync_UseCache(t *testing.T) {
 
 	beaconState, _ := util.DeterministicGenesisState(t, 32)
 	r := [32]byte{'A'}
-	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &ethpb.StateSummary{Root: r[:]}))
+	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Root: r[:]}))
 	service.hotStateCache.put(r, beaconState)
 
 	loadedState, err := service.StateByRootInitialSync(ctx, r)
@@ -269,7 +269,7 @@ func TestStateByRootInitialSync_CanProcessUpTo(t *testing.T) {
 	targetRoot, err := targetBlk.Block.HashTreeRoot()
 	require.NoError(t, err)
 	util.SaveBlock(t, ctx, service.beaconDB, targetBlk)
-	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &ethpb.StateSummary{Slot: targetSlot, Root: targetRoot[:]}))
+	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Slot: targetSlot, Root: targetRoot[:]}))
 
 	loadedState, err := service.StateByRootInitialSync(ctx, targetRoot)
 	require.NoError(t, err)
@@ -303,7 +303,7 @@ func TestLoadeStateByRoot_FinalizedState(t *testing.T) {
 	util.SaveBlock(t, ctx, beaconDB, genesis)
 	gRoot, err := genesis.Block.HashTreeRoot()
 	require.NoError(t, err)
-	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &ethpb.StateSummary{Slot: 0, Root: gRoot[:]}))
+	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Slot: 0, Root: gRoot[:]}))
 
 	service.finalizedInfo.state = beaconState
 	service.finalizedInfo.slot = beaconState.Slot()
@@ -333,7 +333,7 @@ func TestLoadeStateByRoot_EpochBoundaryStateCanProcess(t *testing.T) {
 	util.SaveBlock(t, ctx, service.beaconDB, blk)
 	blkRoot, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
-	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &ethpb.StateSummary{Slot: 10, Root: blkRoot[:]}))
+	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Slot: 10, Root: blkRoot[:]}))
 
 	// This tests where hot state was not cached and needs processing.
 	loadedState, err := service.loadStateByRoot(ctx, blkRoot)
@@ -359,7 +359,7 @@ func TestLoadeStateByRoot_FromDBBoundaryCase(t *testing.T) {
 	util.SaveBlock(t, ctx, service.beaconDB, blk)
 	blkRoot, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
-	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &ethpb.StateSummary{Slot: 10, Root: blkRoot[:]}))
+	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Slot: 10, Root: blkRoot[:]}))
 
 	// This tests where hot state was not cached and needs processing.
 	loadedState, err := service.loadStateByRoot(ctx, blkRoot)

@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/monitoring/backup"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // ReadOnlyDatabase defines a struct which only has read access to database methods.
@@ -36,24 +36,24 @@ type ReadOnlyDatabase interface {
 	StateOrError(ctx context.Context, blockRoot [32]byte) (state.BeaconState, error)
 	GenesisState(ctx context.Context) (state.BeaconState, error)
 	HasState(ctx context.Context, blockRoot [32]byte) bool
-	StateSummary(ctx context.Context, blockRoot [32]byte) (*ethpb.StateSummary, error)
+	StateSummary(ctx context.Context, blockRoot [32]byte) (*zondpb.StateSummary, error)
 	HasStateSummary(ctx context.Context, blockRoot [32]byte) bool
 	HighestSlotStatesBelow(ctx context.Context, slot primitives.Slot) ([]state.ReadOnlyBeaconState, error)
 	// Checkpoint operations.
-	JustifiedCheckpoint(ctx context.Context) (*ethpb.Checkpoint, error)
-	FinalizedCheckpoint(ctx context.Context) (*ethpb.Checkpoint, error)
+	JustifiedCheckpoint(ctx context.Context) (*zondpb.Checkpoint, error)
+	FinalizedCheckpoint(ctx context.Context) (*zondpb.Checkpoint, error)
 	ArchivedPointRoot(ctx context.Context, slot primitives.Slot) [32]byte
 	HasArchivedPoint(ctx context.Context, slot primitives.Slot) bool
 	LastArchivedRoot(ctx context.Context) [32]byte
 	LastArchivedSlot(ctx context.Context) (primitives.Slot, error)
-	LastValidatedCheckpoint(ctx context.Context) (*ethpb.Checkpoint, error)
+	LastValidatedCheckpoint(ctx context.Context) (*zondpb.Checkpoint, error)
 	// Deposit contract related handlers.
 	DepositContractAddress(ctx context.Context) ([]byte, error)
 	// ExecutionChainData operations.
-	ExecutionChainData(ctx context.Context) (*ethpb.ETH1ChainData, error)
+	ExecutionChainData(ctx context.Context) (*zondpb.ETH1ChainData, error)
 	// Fee recipients operations.
 	FeeRecipientByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (common.Address, error)
-	RegistrationByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (*ethpb.ValidatorRegistrationV1, error)
+	RegistrationByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (*zondpb.ValidatorRegistrationV1, error)
 	// origin checkpoint sync support
 	OriginCheckpointBlockRoot(ctx context.Context) ([32]byte, error)
 	BackfillBlockRoot(ctx context.Context) ([32]byte, error)
@@ -73,21 +73,21 @@ type NoHeadAccessDatabase interface {
 	SaveStates(ctx context.Context, states []state.ReadOnlyBeaconState, blockRoots [][32]byte) error
 	DeleteState(ctx context.Context, blockRoot [32]byte) error
 	DeleteStates(ctx context.Context, blockRoots [][32]byte) error
-	SaveStateSummary(ctx context.Context, summary *ethpb.StateSummary) error
-	SaveStateSummaries(ctx context.Context, summaries []*ethpb.StateSummary) error
+	SaveStateSummary(ctx context.Context, summary *zondpb.StateSummary) error
+	SaveStateSummaries(ctx context.Context, summaries []*zondpb.StateSummary) error
 	// Checkpoint operations.
-	SaveJustifiedCheckpoint(ctx context.Context, checkpoint *ethpb.Checkpoint) error
-	SaveFinalizedCheckpoint(ctx context.Context, checkpoint *ethpb.Checkpoint) error
-	SaveLastValidatedCheckpoint(ctx context.Context, checkpoint *ethpb.Checkpoint) error
+	SaveJustifiedCheckpoint(ctx context.Context, checkpoint *zondpb.Checkpoint) error
+	SaveFinalizedCheckpoint(ctx context.Context, checkpoint *zondpb.Checkpoint) error
+	SaveLastValidatedCheckpoint(ctx context.Context, checkpoint *zondpb.Checkpoint) error
 	// Deposit contract related handlers.
 	SaveDepositContractAddress(ctx context.Context, addr common.Address) error
 	// SaveExecutionChainData operations.
-	SaveExecutionChainData(ctx context.Context, data *ethpb.ETH1ChainData) error
+	SaveExecutionChainData(ctx context.Context, data *zondpb.ETH1ChainData) error
 	// Run any required database migrations.
 	RunMigrations(ctx context.Context) error
 	// Fee recipients operations.
 	SaveFeeRecipientsByValidatorIDs(ctx context.Context, ids []primitives.ValidatorIndex, addrs []common.Address) error
-	SaveRegistrationsByValidatorIDs(ctx context.Context, ids []primitives.ValidatorIndex, regs []*ethpb.ValidatorRegistrationV1) error
+	SaveRegistrationsByValidatorIDs(ctx context.Context, ids []primitives.ValidatorIndex, regs []*zondpb.ValidatorRegistrationV1) error
 
 	CleanUpDirtyStates(ctx context.Context, slotsPerArchivedPoint primitives.Slot) error
 }
@@ -143,7 +143,7 @@ type SlasherDatabase interface {
 	) ([][]uint16, []bool, error)
 	CheckDoubleBlockProposals(
 		ctx context.Context, proposals []*slashertypes.SignedBlockHeaderWrapper,
-	) ([]*ethpb.ProposerSlashing, error)
+	) ([]*zondpb.ProposerSlashing, error)
 	PruneAttestationsAtEpoch(
 		ctx context.Context, maxEpoch primitives.Epoch,
 	) (numPruned uint, err error)
@@ -153,7 +153,7 @@ type SlasherDatabase interface {
 	HighestAttestations(
 		ctx context.Context,
 		indices []primitives.ValidatorIndex,
-	) ([]*ethpb.HighestAttestation, error)
+	) ([]*zondpb.HighestAttestation, error)
 	DatabasePath() string
 	ClearDB() error
 }

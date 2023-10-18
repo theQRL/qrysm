@@ -7,7 +7,7 @@ import (
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/eth/v1"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/proto/migration"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -17,76 +17,76 @@ func Test_ValidatorStatus(t *testing.T) {
 	farFutureEpoch := params.BeaconConfig().FarFutureEpoch
 
 	type args struct {
-		validator *ethpb.Validator
+		validator *zondpbv1.Validator
 		epoch     primitives.Epoch
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    ethpb.ValidatorStatus
+		want    zondpbv1.ValidatorStatus
 		wantErr bool
 	}{
 		{
 			name: "pending initialized",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch:            farFutureEpoch,
 					ActivationEligibilityEpoch: farFutureEpoch,
 				},
 				epoch: primitives.Epoch(5),
 			},
-			want: ethpb.ValidatorStatus_PENDING,
+			want: zondpbv1.ValidatorStatus_PENDING,
 		},
 		{
 			name: "pending queued",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch:            10,
 					ActivationEligibilityEpoch: 2,
 				},
 				epoch: primitives.Epoch(5),
 			},
-			want: ethpb.ValidatorStatus_PENDING,
+			want: zondpbv1.ValidatorStatus_PENDING,
 		},
 		{
 			name: "active ongoing",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch: 3,
 					ExitEpoch:       farFutureEpoch,
 				},
 				epoch: primitives.Epoch(5),
 			},
-			want: ethpb.ValidatorStatus_ACTIVE,
+			want: zondpbv1.ValidatorStatus_ACTIVE,
 		},
 		{
 			name: "active slashed",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch: 3,
 					ExitEpoch:       30,
 					Slashed:         true,
 				},
 				epoch: primitives.Epoch(5),
 			},
-			want: ethpb.ValidatorStatus_ACTIVE,
+			want: zondpbv1.ValidatorStatus_ACTIVE,
 		},
 		{
 			name: "active exiting",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch: 3,
 					ExitEpoch:       30,
 					Slashed:         false,
 				},
 				epoch: primitives.Epoch(5),
 			},
-			want: ethpb.ValidatorStatus_ACTIVE,
+			want: zondpbv1.ValidatorStatus_ACTIVE,
 		},
 		{
 			name: "exited slashed",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch:   3,
 					ExitEpoch:         30,
 					WithdrawableEpoch: 40,
@@ -94,12 +94,12 @@ func Test_ValidatorStatus(t *testing.T) {
 				},
 				epoch: primitives.Epoch(35),
 			},
-			want: ethpb.ValidatorStatus_EXITED,
+			want: zondpbv1.ValidatorStatus_EXITED,
 		},
 		{
 			name: "exited unslashed",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch:   3,
 					ExitEpoch:         30,
 					WithdrawableEpoch: 40,
@@ -107,12 +107,12 @@ func Test_ValidatorStatus(t *testing.T) {
 				},
 				epoch: primitives.Epoch(35),
 			},
-			want: ethpb.ValidatorStatus_EXITED,
+			want: zondpbv1.ValidatorStatus_EXITED,
 		},
 		{
 			name: "withdrawal possible",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch:   3,
 					ExitEpoch:         30,
 					WithdrawableEpoch: 40,
@@ -121,12 +121,12 @@ func Test_ValidatorStatus(t *testing.T) {
 				},
 				epoch: primitives.Epoch(45),
 			},
-			want: ethpb.ValidatorStatus_WITHDRAWAL,
+			want: zondpbv1.ValidatorStatus_WITHDRAWAL,
 		},
 		{
 			name: "withdrawal done",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch:   3,
 					ExitEpoch:         30,
 					WithdrawableEpoch: 40,
@@ -135,7 +135,7 @@ func Test_ValidatorStatus(t *testing.T) {
 				},
 				epoch: primitives.Epoch(45),
 			},
-			want: ethpb.ValidatorStatus_WITHDRAWAL,
+			want: zondpbv1.ValidatorStatus_WITHDRAWAL,
 		},
 	}
 	for _, tt := range tests {
@@ -155,76 +155,76 @@ func Test_ValidatorSubStatus(t *testing.T) {
 	farFutureEpoch := params.BeaconConfig().FarFutureEpoch
 
 	type args struct {
-		validator *ethpb.Validator
+		validator *zondpbv1.Validator
 		epoch     primitives.Epoch
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    ethpb.ValidatorStatus
+		want    zondpbv1.ValidatorStatus
 		wantErr bool
 	}{
 		{
 			name: "pending initialized",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch:            farFutureEpoch,
 					ActivationEligibilityEpoch: farFutureEpoch,
 				},
 				epoch: primitives.Epoch(5),
 			},
-			want: ethpb.ValidatorStatus_PENDING_INITIALIZED,
+			want: zondpbv1.ValidatorStatus_PENDING_INITIALIZED,
 		},
 		{
 			name: "pending queued",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch:            10,
 					ActivationEligibilityEpoch: 2,
 				},
 				epoch: primitives.Epoch(5),
 			},
-			want: ethpb.ValidatorStatus_PENDING_QUEUED,
+			want: zondpbv1.ValidatorStatus_PENDING_QUEUED,
 		},
 		{
 			name: "active ongoing",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch: 3,
 					ExitEpoch:       farFutureEpoch,
 				},
 				epoch: primitives.Epoch(5),
 			},
-			want: ethpb.ValidatorStatus_ACTIVE_ONGOING,
+			want: zondpbv1.ValidatorStatus_ACTIVE_ONGOING,
 		},
 		{
 			name: "active slashed",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch: 3,
 					ExitEpoch:       30,
 					Slashed:         true,
 				},
 				epoch: primitives.Epoch(5),
 			},
-			want: ethpb.ValidatorStatus_ACTIVE_SLASHED,
+			want: zondpbv1.ValidatorStatus_ACTIVE_SLASHED,
 		},
 		{
 			name: "active exiting",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch: 3,
 					ExitEpoch:       30,
 					Slashed:         false,
 				},
 				epoch: primitives.Epoch(5),
 			},
-			want: ethpb.ValidatorStatus_ACTIVE_EXITING,
+			want: zondpbv1.ValidatorStatus_ACTIVE_EXITING,
 		},
 		{
 			name: "exited slashed",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch:   3,
 					ExitEpoch:         30,
 					WithdrawableEpoch: 40,
@@ -232,12 +232,12 @@ func Test_ValidatorSubStatus(t *testing.T) {
 				},
 				epoch: primitives.Epoch(35),
 			},
-			want: ethpb.ValidatorStatus_EXITED_SLASHED,
+			want: zondpbv1.ValidatorStatus_EXITED_SLASHED,
 		},
 		{
 			name: "exited unslashed",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch:   3,
 					ExitEpoch:         30,
 					WithdrawableEpoch: 40,
@@ -245,12 +245,12 @@ func Test_ValidatorSubStatus(t *testing.T) {
 				},
 				epoch: primitives.Epoch(35),
 			},
-			want: ethpb.ValidatorStatus_EXITED_UNSLASHED,
+			want: zondpbv1.ValidatorStatus_EXITED_UNSLASHED,
 		},
 		{
 			name: "withdrawal possible",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch:   3,
 					ExitEpoch:         30,
 					WithdrawableEpoch: 40,
@@ -259,12 +259,12 @@ func Test_ValidatorSubStatus(t *testing.T) {
 				},
 				epoch: primitives.Epoch(45),
 			},
-			want: ethpb.ValidatorStatus_WITHDRAWAL_POSSIBLE,
+			want: zondpbv1.ValidatorStatus_WITHDRAWAL_POSSIBLE,
 		},
 		{
 			name: "withdrawal done",
 			args: args{
-				validator: &ethpb.Validator{
+				validator: &zondpbv1.Validator{
 					ActivationEpoch:   3,
 					ExitEpoch:         30,
 					WithdrawableEpoch: 40,
@@ -273,7 +273,7 @@ func Test_ValidatorSubStatus(t *testing.T) {
 				},
 				epoch: primitives.Epoch(45),
 			},
-			want: ethpb.ValidatorStatus_WITHDRAWAL_DONE,
+			want: zondpbv1.ValidatorStatus_WITHDRAWAL_DONE,
 		},
 	}
 	for _, tt := range tests {
@@ -295,8 +295,8 @@ func Test_ValidatorSubStatus(t *testing.T) {
 // Having a test like this allows us to use e.g. `if value < 10` for validity checks.
 func TestNumberOfStatuses(t *testing.T) {
 	lastValidEnumValue := 12
-	x := ethpb.ValidatorStatus(lastValidEnumValue)
+	x := zondpbv1.ValidatorStatus(lastValidEnumValue)
 	assert.NotEqual(t, strconv.Itoa(lastValidEnumValue), x.String())
-	x = ethpb.ValidatorStatus(lastValidEnumValue + 1)
+	x = zondpbv1.ValidatorStatus(lastValidEnumValue + 1)
 	assert.Equal(t, strconv.Itoa(lastValidEnumValue+1), x.String())
 }

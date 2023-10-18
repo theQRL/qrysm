@@ -13,19 +13,19 @@
 // limitations under the License.
 syntax = "proto3";
 
-package ethereum.eth.v1alpha1;
+package theqrl.zond.v1alpha1;
 
-import "proto/eth/ext/options.proto";
+import "proto/zond/ext/options.proto";
 import "proto/prysm/v1alpha1/beacon_block.proto";
 
 import "google/api/annotations.proto";
 
-option csharp_namespace = "Ethereum.Eth.V1alpha1";
-option go_package = "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1;eth";
+option csharp_namespace = "TheQRL.Zond.V1alpha1";
+option go_package = "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1;zond";
 option java_multiple_files = true;
 option java_outer_classname = "SlasherProto";
-option java_package = "org.ethereum.eth.v1alpha1";
-option php_namespace = "Ethereum\\Eth\\v1alpha1";
+option java_package = "org.theqrl.zond.v1alpha1";
+option php_namespace = "TheQRL\\Zond\\v1alpha1";
 
 // Slasher service API
 //
@@ -33,19 +33,19 @@ option php_namespace = "Ethereum\\Eth\\v1alpha1";
 // are slashable.
 service Slasher {
   // Returns any found attester slashings for an input indexed attestation.
-  rpc IsSlashableAttestation(ethereum.eth.v1alpha1.IndexedAttestation)
+  rpc IsSlashableAttestation(theqrl.zond.v1alpha1.IndexedAttestation)
       returns (AttesterSlashingResponse) {
     option (google.api.http) = {
-      post : "/eth/v1alpha1/slasher/attestations/slashable",
+      post : "/zond/v1alpha1/slasher/attestations/slashable",
       body : "*"
     };
   }
 
   // Returns any found proposer slashings for an input signed block header.
-  rpc IsSlashableBlock(ethereum.eth.v1alpha1.SignedBeaconBlockHeader)
+  rpc IsSlashableBlock(theqrl.zond.v1alpha1.SignedBeaconBlockHeader)
       returns (ProposerSlashingResponse) {
     option (google.api.http) = {
-      get : "/eth/v1alpha1/slasher/blocks/slashable"
+      get : "/zond/v1alpha1/slasher/blocks/slashable"
     };
   }
 
@@ -54,17 +54,17 @@ service Slasher {
   rpc HighestAttestations(HighestAttestationRequest)
       returns (HighestAttestationResponse) {
     option (google.api.http) = {
-      get : "/eth/v1alpha1/slasher/attestations/highest"
+      get : "/zond/v1alpha1/slasher/attestations/highest"
     };
   }
 }
 
 message AttesterSlashingResponse {
-  repeated ethereum.eth.v1alpha1.AttesterSlashing attester_slashings = 1;
+  repeated theqrl.zond.v1alpha1.AttesterSlashing attester_slashings = 1;
 }
 
 message ProposerSlashingResponse {
-  repeated ethereum.eth.v1alpha1.ProposerSlashing proposer_slashings = 1;
+  repeated theqrl.zond.v1alpha1.ProposerSlashing proposer_slashings = 1;
 }
 
 message HighestAttestationRequest { repeated uint64 validator_indices = 1; }
@@ -76,9 +76,9 @@ message HighestAttestationResponse {
 message HighestAttestation {
   uint64 validator_index = 1;
   uint64 highest_source_epoch = 2
-      [ (ethereum.eth.ext.cast_type) =
+      [ (theqrl.zond.ext.cast_type) =
             "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch" ];
   uint64 highest_target_epoch = 3
-      [ (ethereum.eth.ext.cast_type) =
+      [ (theqrl.zond.ext.cast_type) =
             "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch" ];
 }

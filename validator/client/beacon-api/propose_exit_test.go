@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -52,8 +52,8 @@ func TestProposeExit_Valid(t *testing.T) {
 	decodedSignature, err := hexutil.Decode(signature)
 	require.NoError(t, err)
 
-	protoSignedVoluntaryExit := &ethpb.SignedVoluntaryExit{
-		Exit: &ethpb.VoluntaryExit{
+	protoSignedVoluntaryExit := &zondpb.SignedVoluntaryExit{
+		Exit: &zondpb.VoluntaryExit{
 			Epoch:          1,
 			ValidatorIndex: 2,
 		},
@@ -77,7 +77,7 @@ func TestProposeExit_NilSignedVoluntaryExit(t *testing.T) {
 
 func TestProposeExit_NilExit(t *testing.T) {
 	validatorClient := &beaconApiValidatorClient{}
-	_, err := validatorClient.proposeExit(context.Background(), &ethpb.SignedVoluntaryExit{})
+	_, err := validatorClient.proposeExit(context.Background(), &zondpb.SignedVoluntaryExit{})
 	assert.ErrorContains(t, "exit is nil", err)
 }
 
@@ -99,8 +99,8 @@ func TestProposeExit_BadRequest(t *testing.T) {
 		errors.New("foo error"),
 	).Times(1)
 
-	protoSignedVoluntaryExit := &ethpb.SignedVoluntaryExit{
-		Exit: &ethpb.VoluntaryExit{
+	protoSignedVoluntaryExit := &zondpb.SignedVoluntaryExit{
+		Exit: &zondpb.VoluntaryExit{
 			Epoch:          1,
 			ValidatorIndex: 2,
 		},

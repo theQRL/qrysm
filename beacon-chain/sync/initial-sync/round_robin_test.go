@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/container/slice"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -296,7 +296,7 @@ func TestService_roundRobinSync(t *testing.T) {
 				State: st,
 				Root:  genesisRoot[:],
 				DB:    beaconDB,
-				FinalizedCheckPoint: &eth.Checkpoint{
+				FinalizedCheckPoint: &zond.Checkpoint{
 					Epoch: 0,
 				},
 				Genesis:        time.Now(),
@@ -340,7 +340,7 @@ func TestService_processBlock(t *testing.T) {
 			State: st,
 			Root:  genesisBlkRoot[:],
 			DB:    beaconDB,
-			FinalizedCheckPoint: &eth.Checkpoint{
+			FinalizedCheckPoint: &zond.Checkpoint{
 				Epoch: 0,
 			},
 			Genesis:        time.Now(),
@@ -408,7 +408,7 @@ func TestService_processBlockBatch(t *testing.T) {
 			State: st,
 			Root:  genesisBlkRoot[:],
 			DB:    beaconDB,
-			FinalizedCheckPoint: &eth.Checkpoint{
+			FinalizedCheckPoint: &zond.Checkpoint{
 				Epoch: 0,
 			},
 		},
@@ -541,7 +541,7 @@ func TestService_blockProviderScoring(t *testing.T) {
 		State: st,
 		Root:  genesisRoot[:],
 		DB:    beaconDB,
-		FinalizedCheckPoint: &eth.Checkpoint{
+		FinalizedCheckPoint: &zond.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		},
@@ -605,7 +605,7 @@ func TestService_syncToFinalizedEpoch(t *testing.T) {
 		State: st,
 		Root:  genesisRoot[:],
 		DB:    beaconDB,
-		FinalizedCheckPoint: &eth.Checkpoint{
+		FinalizedCheckPoint: &zond.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		},

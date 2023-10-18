@@ -10,7 +10,7 @@ import (
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/async/event"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
 	"github.com/theQRL/qrysm/v4/validator/keymanager"
@@ -113,14 +113,14 @@ func (km *Keymanager) FetchValidatingSeeds(ctx context.Context) ([][common2.Seed
 // ImportKeystores for a derived keymanager.
 func (km *Keymanager) ImportKeystores(
 	ctx context.Context, keystores []*keymanager.Keystore, passwords []string,
-) ([]*ethpbservice.ImportedKeystoreStatus, error) {
+) ([]*zondpbservice.ImportedKeystoreStatus, error) {
 	return km.localKM.ImportKeystores(ctx, keystores, passwords)
 }
 
 // DeleteKeystores for a derived keymanager.
 func (km *Keymanager) DeleteKeystores(
 	ctx context.Context, publicKeys [][]byte,
-) ([]*ethpbservice.DeletedKeystoreStatus, error) {
+) ([]*zondpbservice.DeletedKeystoreStatus, error) {
 	return km.localKM.DeleteKeystores(ctx, publicKeys)
 }
 

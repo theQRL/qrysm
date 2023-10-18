@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	v "github.com/theQRL/qrysm/v4/beacon-chain/core/validators"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
-	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 )
 
 // ValidatorAlreadyExitedMsg defines a message saying that a validator has already exited.
@@ -48,7 +48,7 @@ var ValidatorCannotExitYetMsg = "validator has not been active long enough to ex
 func ProcessVoluntaryExits(
 	ctx context.Context,
 	beaconState state.BeaconState,
-	exits []*ethpb.SignedVoluntaryExit,
+	exits []*zondpb.SignedVoluntaryExit,
 ) (state.BeaconState, error) {
 	for idx, exit := range exits {
 		if exit == nil || exit.Exit == nil {
@@ -93,8 +93,8 @@ func ProcessVoluntaryExits(
 func VerifyExitAndSignature(
 	validator state.ReadOnlyValidator,
 	currentSlot primitives.Slot,
-	fork *ethpb.Fork,
-	signed *ethpb.SignedVoluntaryExit,
+	fork *zondpb.Fork,
+	signed *zondpb.SignedVoluntaryExit,
 	genesisRoot []byte,
 ) error {
 	if signed == nil || signed.Exit == nil {
@@ -137,7 +137,7 @@ func VerifyExitAndSignature(
 //	 assert bls.Verify(validator.pubkey, signing_root, signed_voluntary_exit.signature)
 //	 # Initiate exit
 //	 initiate_validator_exit(state, voluntary_exit.validator_index)
-func verifyExitConditions(validator state.ReadOnlyValidator, currentSlot primitives.Slot, exit *ethpb.VoluntaryExit) error {
+func verifyExitConditions(validator state.ReadOnlyValidator, currentSlot primitives.Slot, exit *zondpb.VoluntaryExit) error {
 	currentEpoch := slots.ToEpoch(currentSlot)
 	// Verify the validator is active.
 	if !helpers.IsActiveValidatorUsingTrie(validator, currentEpoch) {

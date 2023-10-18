@@ -11,11 +11,11 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
-func (c *beaconApiValidatorClient) submitSyncMessage(ctx context.Context, syncMessage *ethpb.SyncCommitteeMessage) error {
+func (c *beaconApiValidatorClient) submitSyncMessage(ctx context.Context, syncMessage *zondpb.SyncCommitteeMessage) error {
 	const endpoint = "/eth/v1/beacon/pool/sync_committees"
 
 	jsonSyncCommitteeMessage := &apimiddleware.SyncCommitteeMessageJson{
@@ -37,7 +37,7 @@ func (c *beaconApiValidatorClient) submitSyncMessage(ctx context.Context, syncMe
 	return nil
 }
 
-func (c *beaconApiValidatorClient) getSyncMessageBlockRoot(ctx context.Context) (*ethpb.SyncMessageBlockRootResponse, error) {
+func (c *beaconApiValidatorClient) getSyncMessageBlockRoot(ctx context.Context) (*zondpb.SyncMessageBlockRootResponse, error) {
 	// Get head beacon block root.
 	var resp apimiddleware.BlockRootResponseJson
 	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, "/eth/v1/beacon/blocks/head/root", &resp); err != nil {
@@ -63,15 +63,15 @@ func (c *beaconApiValidatorClient) getSyncMessageBlockRoot(ctx context.Context) 
 		return nil, errors.Wrap(err, "failed to decode beacon block root")
 	}
 
-	return &ethpb.SyncMessageBlockRootResponse{
+	return &zondpb.SyncMessageBlockRootResponse{
 		Root: blockRoot,
 	}, nil
 }
 
 func (c *beaconApiValidatorClient) getSyncCommitteeContribution(
 	ctx context.Context,
-	req *ethpb.SyncCommitteeContributionRequest,
-) (*ethpb.SyncCommitteeContribution, error) {
+	req *zondpb.SyncCommitteeContributionRequest,
+) (*zondpb.SyncCommitteeContribution, error) {
 	blockRootResponse, err := c.getSyncMessageBlockRoot(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get sync message block root")
@@ -94,8 +94,8 @@ func (c *beaconApiValidatorClient) getSyncCommitteeContribution(
 	return convertSyncContributionJsonToProto(resp.Data)
 }
 
-func (c *beaconApiValidatorClient) getSyncSubcommitteeIndex(ctx context.Context, in *ethpb.SyncSubcommitteeIndexRequest) (*ethpb.SyncSubcommitteeIndexResponse, error) {
-	validatorIndexResponse, err := c.validatorIndex(ctx, &ethpb.ValidatorIndexRequest{PublicKey: in.PublicKey})
+func (c *beaconApiValidatorClient) getSyncSubcommitteeIndex(ctx context.Context, in *zondpb.SyncSubcommitteeIndexRequest) (*zondpb.SyncSubcommitteeIndexResponse, error) {
+	validatorIndexResponse, err := c.validatorIndex(ctx, &zondpb.ValidatorIndexRequest{PublicKey: in.PublicKey})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get validator index")
 	}
@@ -122,10 +122,10 @@ func (c *beaconApiValidatorClient) getSyncSubcommitteeIndex(ctx context.Context,
 		indices = append(indices, primitives.CommitteeIndex(syncCommIdx))
 	}
 
-	return &ethpb.SyncSubcommitteeIndexResponse{Indices: indices}, nil
+	return &zondpb.SyncSubcommitteeIndexResponse{Indices: indices}, nil
 }
 
-func convertSyncContributionJsonToProto(contribution *apimiddleware.SyncCommitteeContributionJson) (*ethpb.SyncCommitteeContribution, error) {
+func convertSyncContributionJsonToProto(contribution *apimiddleware.SyncCommitteeContributionJson) (*zondpb.SyncCommitteeContribution, error) {
 	if contribution == nil {
 		return nil, errors.New("sync committee contribution is nil")
 	}
@@ -155,7 +155,7 @@ func convertSyncContributionJsonToProto(contribution *apimiddleware.SyncCommitte
 		return nil, errors.Wrapf(err, "failed to decode contribution signature `%s`", contribution.Signature)
 	}
 
-	return &ethpb.SyncCommitteeContribution{
+	return &zondpb.SyncCommitteeContribution{
 		Slot:              primitives.Slot(slot),
 		BlockRoot:         blockRoot,
 		SubcommitteeIndex: subcommitteeIdx,

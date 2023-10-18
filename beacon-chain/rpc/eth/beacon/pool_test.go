@@ -28,10 +28,10 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/encoding/ssz"
-	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/proto/migration"
-	ethpbv1alpha1 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv1alpha1 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -43,102 +43,102 @@ import (
 func TestListPoolAttestations(t *testing.T) {
 	bs, err := util.NewBeaconState()
 	require.NoError(t, err)
-	att1 := &ethpbv1alpha1.Attestation{
+	att1 := &zondpbv1alpha1.Attestation{
 		AggregationBits: []byte{1, 10},
-		Data: &ethpbv1alpha1.AttestationData{
+		Data: &zondpbv1alpha1.AttestationData{
 			Slot:            1,
 			CommitteeIndex:  1,
 			BeaconBlockRoot: bytesutil.PadTo([]byte("blockroot1"), 32),
-			Source: &ethpbv1alpha1.Checkpoint{
+			Source: &zondpbv1alpha1.Checkpoint{
 				Epoch: 1,
 				Root:  bytesutil.PadTo([]byte("sourceroot1"), 32),
 			},
-			Target: &ethpbv1alpha1.Checkpoint{
+			Target: &zondpbv1alpha1.Checkpoint{
 				Epoch: 10,
 				Root:  bytesutil.PadTo([]byte("targetroot1"), 32),
 			},
 		},
 		Signature: bytesutil.PadTo([]byte("signature1"), 96),
 	}
-	att2 := &ethpbv1alpha1.Attestation{
+	att2 := &zondpbv1alpha1.Attestation{
 		AggregationBits: []byte{4, 40},
-		Data: &ethpbv1alpha1.AttestationData{
+		Data: &zondpbv1alpha1.AttestationData{
 			Slot:            4,
 			CommitteeIndex:  4,
 			BeaconBlockRoot: bytesutil.PadTo([]byte("blockroot4"), 32),
-			Source: &ethpbv1alpha1.Checkpoint{
+			Source: &zondpbv1alpha1.Checkpoint{
 				Epoch: 4,
 				Root:  bytesutil.PadTo([]byte("sourceroot4"), 32),
 			},
-			Target: &ethpbv1alpha1.Checkpoint{
+			Target: &zondpbv1alpha1.Checkpoint{
 				Epoch: 40,
 				Root:  bytesutil.PadTo([]byte("targetroot4"), 32),
 			},
 		},
 		Signature: bytesutil.PadTo([]byte("signature4"), 96),
 	}
-	att3 := &ethpbv1alpha1.Attestation{
+	att3 := &zondpbv1alpha1.Attestation{
 		AggregationBits: []byte{2, 20},
-		Data: &ethpbv1alpha1.AttestationData{
+		Data: &zondpbv1alpha1.AttestationData{
 			Slot:            2,
 			CommitteeIndex:  2,
 			BeaconBlockRoot: bytesutil.PadTo([]byte("blockroot2"), 32),
-			Source: &ethpbv1alpha1.Checkpoint{
+			Source: &zondpbv1alpha1.Checkpoint{
 				Epoch: 2,
 				Root:  bytesutil.PadTo([]byte("sourceroot2"), 32),
 			},
-			Target: &ethpbv1alpha1.Checkpoint{
+			Target: &zondpbv1alpha1.Checkpoint{
 				Epoch: 20,
 				Root:  bytesutil.PadTo([]byte("targetroot2"), 32),
 			},
 		},
 		Signature: bytesutil.PadTo([]byte("signature2"), 96),
 	}
-	att4 := &ethpbv1alpha1.Attestation{
+	att4 := &zondpbv1alpha1.Attestation{
 		AggregationBits: bitfield.NewBitlist(8),
-		Data: &ethpbv1alpha1.AttestationData{
+		Data: &zondpbv1alpha1.AttestationData{
 			Slot:            4,
 			CommitteeIndex:  4,
 			BeaconBlockRoot: bytesutil.PadTo([]byte("blockroot2"), 32),
-			Source: &ethpbv1alpha1.Checkpoint{
+			Source: &zondpbv1alpha1.Checkpoint{
 				Epoch: 2,
 				Root:  bytesutil.PadTo([]byte("sourceroot2"), 32),
 			},
-			Target: &ethpbv1alpha1.Checkpoint{
+			Target: &zondpbv1alpha1.Checkpoint{
 				Epoch: 20,
 				Root:  bytesutil.PadTo([]byte("targetroot2"), 32),
 			},
 		},
 		Signature: bytesutil.PadTo([]byte("signature2"), 96),
 	}
-	att5 := &ethpbv1alpha1.Attestation{
+	att5 := &zondpbv1alpha1.Attestation{
 		AggregationBits: bitfield.NewBitlist(8),
-		Data: &ethpbv1alpha1.AttestationData{
+		Data: &zondpbv1alpha1.AttestationData{
 			Slot:            2,
 			CommitteeIndex:  4,
 			BeaconBlockRoot: bytesutil.PadTo([]byte("blockroot1"), 32),
-			Source: &ethpbv1alpha1.Checkpoint{
+			Source: &zondpbv1alpha1.Checkpoint{
 				Epoch: 2,
 				Root:  bytesutil.PadTo([]byte("sourceroot2"), 32),
 			},
-			Target: &ethpbv1alpha1.Checkpoint{
+			Target: &zondpbv1alpha1.Checkpoint{
 				Epoch: 20,
 				Root:  bytesutil.PadTo([]byte("targetroot2"), 32),
 			},
 		},
 		Signature: bytesutil.PadTo([]byte("signature1"), 96),
 	}
-	att6 := &ethpbv1alpha1.Attestation{
+	att6 := &zondpbv1alpha1.Attestation{
 		AggregationBits: bitfield.NewBitlist(8),
-		Data: &ethpbv1alpha1.AttestationData{
+		Data: &zondpbv1alpha1.AttestationData{
 			Slot:            2,
 			CommitteeIndex:  4,
 			BeaconBlockRoot: bytesutil.PadTo([]byte("blockroot2"), 32),
-			Source: &ethpbv1alpha1.Checkpoint{
+			Source: &zondpbv1alpha1.Checkpoint{
 				Epoch: 2,
 				Root:  bytesutil.PadTo([]byte("sourceroot2"), 32),
 			},
-			Target: &ethpbv1alpha1.Checkpoint{
+			Target: &zondpbv1alpha1.Checkpoint{
 				Epoch: 20,
 				Root:  bytesutil.PadTo([]byte("targetroot2"), 32),
 			},
@@ -149,11 +149,11 @@ func TestListPoolAttestations(t *testing.T) {
 		ChainInfoFetcher: &blockchainmock.ChainService{State: bs},
 		AttestationsPool: attestations.NewPool(),
 	}
-	require.NoError(t, s.AttestationsPool.SaveAggregatedAttestations([]*ethpbv1alpha1.Attestation{att1, att2, att3}))
-	require.NoError(t, s.AttestationsPool.SaveUnaggregatedAttestations([]*ethpbv1alpha1.Attestation{att4, att5, att6}))
+	require.NoError(t, s.AttestationsPool.SaveAggregatedAttestations([]*zondpbv1alpha1.Attestation{att1, att2, att3}))
+	require.NoError(t, s.AttestationsPool.SaveUnaggregatedAttestations([]*zondpbv1alpha1.Attestation{att4, att5, att6}))
 
 	t.Run("empty request", func(t *testing.T) {
-		req := &ethpbv1.AttestationsPoolRequest{}
+		req := &zondpbv1.AttestationsPoolRequest{}
 		resp, err := s.ListPoolAttestations(context.Background(), req)
 		require.NoError(t, err)
 		require.Equal(t, 6, len(resp.Data))
@@ -161,7 +161,7 @@ func TestListPoolAttestations(t *testing.T) {
 
 	t.Run("slot request", func(t *testing.T) {
 		slot := primitives.Slot(2)
-		req := &ethpbv1.AttestationsPoolRequest{
+		req := &zondpbv1.AttestationsPoolRequest{
 			Slot: &slot,
 		}
 		resp, err := s.ListPoolAttestations(context.Background(), req)
@@ -174,7 +174,7 @@ func TestListPoolAttestations(t *testing.T) {
 
 	t.Run("index request", func(t *testing.T) {
 		index := primitives.CommitteeIndex(4)
-		req := &ethpbv1.AttestationsPoolRequest{
+		req := &zondpbv1.AttestationsPoolRequest{
 			CommitteeIndex: &index,
 		}
 		resp, err := s.ListPoolAttestations(context.Background(), req)
@@ -188,7 +188,7 @@ func TestListPoolAttestations(t *testing.T) {
 	t.Run("both slot + index request", func(t *testing.T) {
 		slot := primitives.Slot(2)
 		index := primitives.CommitteeIndex(4)
-		req := &ethpbv1.AttestationsPoolRequest{
+		req := &zondpbv1.AttestationsPoolRequest{
 			Slot:           &slot,
 			CommitteeIndex: &index,
 		}
@@ -205,35 +205,35 @@ func TestListPoolAttestations(t *testing.T) {
 func TestListPoolAttesterSlashings(t *testing.T) {
 	bs, err := util.NewBeaconState()
 	require.NoError(t, err)
-	slashing1 := &ethpbv1alpha1.AttesterSlashing{
-		Attestation_1: &ethpbv1alpha1.IndexedAttestation{
+	slashing1 := &zondpbv1alpha1.AttesterSlashing{
+		Attestation_1: &zondpbv1alpha1.IndexedAttestation{
 			AttestingIndices: []uint64{1, 10},
-			Data: &ethpbv1alpha1.AttestationData{
+			Data: &zondpbv1alpha1.AttestationData{
 				Slot:            1,
 				CommitteeIndex:  1,
 				BeaconBlockRoot: bytesutil.PadTo([]byte("blockroot1"), 32),
-				Source: &ethpbv1alpha1.Checkpoint{
+				Source: &zondpbv1alpha1.Checkpoint{
 					Epoch: 1,
 					Root:  bytesutil.PadTo([]byte("sourceroot1"), 32),
 				},
-				Target: &ethpbv1alpha1.Checkpoint{
+				Target: &zondpbv1alpha1.Checkpoint{
 					Epoch: 10,
 					Root:  bytesutil.PadTo([]byte("targetroot1"), 32),
 				},
 			},
 			Signature: bytesutil.PadTo([]byte("signature1"), 96),
 		},
-		Attestation_2: &ethpbv1alpha1.IndexedAttestation{
+		Attestation_2: &zondpbv1alpha1.IndexedAttestation{
 			AttestingIndices: []uint64{2, 20},
-			Data: &ethpbv1alpha1.AttestationData{
+			Data: &zondpbv1alpha1.AttestationData{
 				Slot:            2,
 				CommitteeIndex:  2,
 				BeaconBlockRoot: bytesutil.PadTo([]byte("blockroot2"), 32),
-				Source: &ethpbv1alpha1.Checkpoint{
+				Source: &zondpbv1alpha1.Checkpoint{
 					Epoch: 2,
 					Root:  bytesutil.PadTo([]byte("sourceroot2"), 32),
 				},
-				Target: &ethpbv1alpha1.Checkpoint{
+				Target: &zondpbv1alpha1.Checkpoint{
 					Epoch: 20,
 					Root:  bytesutil.PadTo([]byte("targetroot2"), 32),
 				},
@@ -241,35 +241,35 @@ func TestListPoolAttesterSlashings(t *testing.T) {
 			Signature: bytesutil.PadTo([]byte("signature2"), 96),
 		},
 	}
-	slashing2 := &ethpbv1alpha1.AttesterSlashing{
-		Attestation_1: &ethpbv1alpha1.IndexedAttestation{
+	slashing2 := &zondpbv1alpha1.AttesterSlashing{
+		Attestation_1: &zondpbv1alpha1.IndexedAttestation{
 			AttestingIndices: []uint64{3, 30},
-			Data: &ethpbv1alpha1.AttestationData{
+			Data: &zondpbv1alpha1.AttestationData{
 				Slot:            3,
 				CommitteeIndex:  3,
 				BeaconBlockRoot: bytesutil.PadTo([]byte("blockroot3"), 32),
-				Source: &ethpbv1alpha1.Checkpoint{
+				Source: &zondpbv1alpha1.Checkpoint{
 					Epoch: 3,
 					Root:  bytesutil.PadTo([]byte("sourceroot3"), 32),
 				},
-				Target: &ethpbv1alpha1.Checkpoint{
+				Target: &zondpbv1alpha1.Checkpoint{
 					Epoch: 30,
 					Root:  bytesutil.PadTo([]byte("targetroot3"), 32),
 				},
 			},
 			Signature: bytesutil.PadTo([]byte("signature3"), 96),
 		},
-		Attestation_2: &ethpbv1alpha1.IndexedAttestation{
+		Attestation_2: &zondpbv1alpha1.IndexedAttestation{
 			AttestingIndices: []uint64{4, 40},
-			Data: &ethpbv1alpha1.AttestationData{
+			Data: &zondpbv1alpha1.AttestationData{
 				Slot:            4,
 				CommitteeIndex:  4,
 				BeaconBlockRoot: bytesutil.PadTo([]byte("blockroot4"), 32),
-				Source: &ethpbv1alpha1.Checkpoint{
+				Source: &zondpbv1alpha1.Checkpoint{
 					Epoch: 4,
 					Root:  bytesutil.PadTo([]byte("sourceroot4"), 32),
 				},
-				Target: &ethpbv1alpha1.Checkpoint{
+				Target: &zondpbv1alpha1.Checkpoint{
 					Epoch: 40,
 					Root:  bytesutil.PadTo([]byte("targetroot4"), 32),
 				},
@@ -280,7 +280,7 @@ func TestListPoolAttesterSlashings(t *testing.T) {
 
 	s := &Server{
 		ChainInfoFetcher: &blockchainmock.ChainService{State: bs},
-		SlashingsPool:    &slashingsmock.PoolMock{PendingAttSlashings: []*ethpbv1alpha1.AttesterSlashing{slashing1, slashing2}},
+		SlashingsPool:    &slashingsmock.PoolMock{PendingAttSlashings: []*zondpbv1alpha1.AttesterSlashing{slashing1, slashing2}},
 	}
 
 	resp, err := s.ListPoolAttesterSlashings(context.Background(), &emptypb.Empty{})
@@ -293,9 +293,9 @@ func TestListPoolAttesterSlashings(t *testing.T) {
 func TestListPoolProposerSlashings(t *testing.T) {
 	bs, err := util.NewBeaconState()
 	require.NoError(t, err)
-	slashing1 := &ethpbv1alpha1.ProposerSlashing{
-		Header_1: &ethpbv1alpha1.SignedBeaconBlockHeader{
-			Header: &ethpbv1alpha1.BeaconBlockHeader{
+	slashing1 := &zondpbv1alpha1.ProposerSlashing{
+		Header_1: &zondpbv1alpha1.SignedBeaconBlockHeader{
+			Header: &zondpbv1alpha1.BeaconBlockHeader{
 				Slot:          1,
 				ProposerIndex: 1,
 				ParentRoot:    bytesutil.PadTo([]byte("parentroot1"), 32),
@@ -304,8 +304,8 @@ func TestListPoolProposerSlashings(t *testing.T) {
 			},
 			Signature: bytesutil.PadTo([]byte("signature1"), 96),
 		},
-		Header_2: &ethpbv1alpha1.SignedBeaconBlockHeader{
-			Header: &ethpbv1alpha1.BeaconBlockHeader{
+		Header_2: &zondpbv1alpha1.SignedBeaconBlockHeader{
+			Header: &zondpbv1alpha1.BeaconBlockHeader{
 				Slot:          2,
 				ProposerIndex: 2,
 				ParentRoot:    bytesutil.PadTo([]byte("parentroot2"), 32),
@@ -315,9 +315,9 @@ func TestListPoolProposerSlashings(t *testing.T) {
 			Signature: bytesutil.PadTo([]byte("signature2"), 96),
 		},
 	}
-	slashing2 := &ethpbv1alpha1.ProposerSlashing{
-		Header_1: &ethpbv1alpha1.SignedBeaconBlockHeader{
-			Header: &ethpbv1alpha1.BeaconBlockHeader{
+	slashing2 := &zondpbv1alpha1.ProposerSlashing{
+		Header_1: &zondpbv1alpha1.SignedBeaconBlockHeader{
+			Header: &zondpbv1alpha1.BeaconBlockHeader{
 				Slot:          3,
 				ProposerIndex: 3,
 				ParentRoot:    bytesutil.PadTo([]byte("parentroot3"), 32),
@@ -326,8 +326,8 @@ func TestListPoolProposerSlashings(t *testing.T) {
 			},
 			Signature: bytesutil.PadTo([]byte("signature3"), 96),
 		},
-		Header_2: &ethpbv1alpha1.SignedBeaconBlockHeader{
-			Header: &ethpbv1alpha1.BeaconBlockHeader{
+		Header_2: &zondpbv1alpha1.SignedBeaconBlockHeader{
+			Header: &zondpbv1alpha1.BeaconBlockHeader{
 				Slot:          4,
 				ProposerIndex: 4,
 				ParentRoot:    bytesutil.PadTo([]byte("parentroot4"), 32),
@@ -340,7 +340,7 @@ func TestListPoolProposerSlashings(t *testing.T) {
 
 	s := &Server{
 		ChainInfoFetcher: &blockchainmock.ChainService{State: bs},
-		SlashingsPool:    &slashingsmock.PoolMock{PendingPropSlashings: []*ethpbv1alpha1.ProposerSlashing{slashing1, slashing2}},
+		SlashingsPool:    &slashingsmock.PoolMock{PendingPropSlashings: []*zondpbv1alpha1.ProposerSlashing{slashing1, slashing2}},
 	}
 
 	resp, err := s.ListPoolProposerSlashings(context.Background(), &emptypb.Empty{})
@@ -353,15 +353,15 @@ func TestListPoolProposerSlashings(t *testing.T) {
 func TestListPoolVoluntaryExits(t *testing.T) {
 	bs, err := util.NewBeaconState()
 	require.NoError(t, err)
-	exit1 := &ethpbv1alpha1.SignedVoluntaryExit{
-		Exit: &ethpbv1alpha1.VoluntaryExit{
+	exit1 := &zondpbv1alpha1.SignedVoluntaryExit{
+		Exit: &zondpbv1alpha1.VoluntaryExit{
 			Epoch:          1,
 			ValidatorIndex: 1,
 		},
 		Signature: bytesutil.PadTo([]byte("signature1"), 96),
 	}
-	exit2 := &ethpbv1alpha1.SignedVoluntaryExit{
-		Exit: &ethpbv1alpha1.VoluntaryExit{
+	exit2 := &zondpbv1alpha1.SignedVoluntaryExit{
+		Exit: &zondpbv1alpha1.VoluntaryExit{
 			Epoch:          2,
 			ValidatorIndex: 2,
 		},
@@ -370,7 +370,7 @@ func TestListPoolVoluntaryExits(t *testing.T) {
 
 	s := &Server{
 		ChainInfoFetcher:   &blockchainmock.ChainService{State: bs},
-		VoluntaryExitsPool: &mock.PoolMock{Exits: []*ethpbv1alpha1.SignedVoluntaryExit{exit1, exit2}},
+		VoluntaryExitsPool: &mock.PoolMock{Exits: []*zondpbv1alpha1.SignedVoluntaryExit{exit1, exit2}},
 	}
 
 	resp, err := s.ListPoolVoluntaryExits(context.Background(), &emptypb.Empty{})
@@ -385,44 +385,44 @@ func TestSubmitAttesterSlashing_Ok(t *testing.T) {
 
 	_, keys, err := util.DeterministicDepositsAndKeys(1)
 	require.NoError(t, err)
-	validator := &ethpbv1alpha1.Validator{
+	validator := &zondpbv1alpha1.Validator{
 		PublicKey: keys[0].PublicKey().Marshal(),
 	}
-	bs, err := util.NewBeaconState(func(state *ethpbv1alpha1.BeaconState) error {
-		state.Validators = []*ethpbv1alpha1.Validator{validator}
+	bs, err := util.NewBeaconState(func(state *zondpbv1alpha1.BeaconState) error {
+		state.Validators = []*zondpbv1alpha1.Validator{validator}
 		return nil
 	})
 	require.NoError(t, err)
 
-	slashing := &ethpbv1.AttesterSlashing{
-		Attestation_1: &ethpbv1.IndexedAttestation{
+	slashing := &zondpbv1.AttesterSlashing{
+		Attestation_1: &zondpbv1.IndexedAttestation{
 			AttestingIndices: []uint64{0},
-			Data: &ethpbv1.AttestationData{
+			Data: &zondpbv1.AttestationData{
 				Slot:            1,
 				Index:           1,
 				BeaconBlockRoot: bytesutil.PadTo([]byte("blockroot1"), 32),
-				Source: &ethpbv1.Checkpoint{
+				Source: &zondpbv1.Checkpoint{
 					Epoch: 1,
 					Root:  bytesutil.PadTo([]byte("sourceroot1"), 32),
 				},
-				Target: &ethpbv1.Checkpoint{
+				Target: &zondpbv1.Checkpoint{
 					Epoch: 10,
 					Root:  bytesutil.PadTo([]byte("targetroot1"), 32),
 				},
 			},
 			Signature: make([]byte, 96),
 		},
-		Attestation_2: &ethpbv1.IndexedAttestation{
+		Attestation_2: &zondpbv1.IndexedAttestation{
 			AttestingIndices: []uint64{0},
-			Data: &ethpbv1.AttestationData{
+			Data: &zondpbv1.AttestationData{
 				Slot:            1,
 				Index:           1,
 				BeaconBlockRoot: bytesutil.PadTo([]byte("blockroot2"), 32),
-				Source: &ethpbv1.Checkpoint{
+				Source: &zondpbv1.Checkpoint{
 					Epoch: 1,
 					Root:  bytesutil.PadTo([]byte("sourceroot2"), 32),
 				},
-				Target: &ethpbv1.Checkpoint{
+				Target: &zondpbv1.Checkpoint{
 					Epoch: 10,
 					Root:  bytesutil.PadTo([]byte("targetroot2"), 32),
 				},
@@ -431,7 +431,7 @@ func TestSubmitAttesterSlashing_Ok(t *testing.T) {
 		},
 	}
 
-	for _, att := range []*ethpbv1.IndexedAttestation{slashing.Attestation_1, slashing.Attestation_2} {
+	for _, att := range []*zondpbv1.IndexedAttestation{slashing.Attestation_1, slashing.Attestation_2} {
 		sb, err := signing.ComputeDomainAndSign(bs, att.Data.Target.Epoch, att.Data, params.BeaconConfig().DomainBeaconAttester, keys[0])
 		require.NoError(t, err)
 		sig, err := dilithium.SignatureFromBytes(sb)
@@ -453,7 +453,7 @@ func TestSubmitAttesterSlashing_Ok(t *testing.T) {
 	assert.DeepEqual(t, migration.V1AttSlashingToV1Alpha1(slashing), pendingSlashings[0])
 	assert.Equal(t, true, broadcaster.BroadcastCalled)
 	require.Equal(t, 1, len(broadcaster.BroadcastMessages))
-	_, ok := broadcaster.BroadcastMessages[0].(*ethpbv1alpha1.AttesterSlashing)
+	_, ok := broadcaster.BroadcastMessages[0].(*zondpbv1alpha1.AttesterSlashing)
 	assert.Equal(t, true, ok)
 }
 
@@ -467,35 +467,35 @@ func TestSubmitAttesterSlashing_AcrossFork(t *testing.T) {
 
 	bs, keys := util.DeterministicGenesisState(t, 1)
 
-	slashing := &ethpbv1.AttesterSlashing{
-		Attestation_1: &ethpbv1.IndexedAttestation{
+	slashing := &zondpbv1.AttesterSlashing{
+		Attestation_1: &zondpbv1.IndexedAttestation{
 			AttestingIndices: []uint64{0},
-			Data: &ethpbv1.AttestationData{
+			Data: &zondpbv1.AttestationData{
 				Slot:            params.BeaconConfig().SlotsPerEpoch,
 				Index:           1,
 				BeaconBlockRoot: bytesutil.PadTo([]byte("blockroot1"), 32),
-				Source: &ethpbv1.Checkpoint{
+				Source: &zondpbv1.Checkpoint{
 					Epoch: 1,
 					Root:  bytesutil.PadTo([]byte("sourceroot1"), 32),
 				},
-				Target: &ethpbv1.Checkpoint{
+				Target: &zondpbv1.Checkpoint{
 					Epoch: 10,
 					Root:  bytesutil.PadTo([]byte("targetroot1"), 32),
 				},
 			},
 			Signature: make([]byte, 96),
 		},
-		Attestation_2: &ethpbv1.IndexedAttestation{
+		Attestation_2: &zondpbv1.IndexedAttestation{
 			AttestingIndices: []uint64{0},
-			Data: &ethpbv1.AttestationData{
+			Data: &zondpbv1.AttestationData{
 				Slot:            params.BeaconConfig().SlotsPerEpoch,
 				Index:           1,
 				BeaconBlockRoot: bytesutil.PadTo([]byte("blockroot2"), 32),
-				Source: &ethpbv1.Checkpoint{
+				Source: &zondpbv1.Checkpoint{
 					Epoch: 1,
 					Root:  bytesutil.PadTo([]byte("sourceroot2"), 32),
 				},
-				Target: &ethpbv1.Checkpoint{
+				Target: &zondpbv1.Checkpoint{
 					Epoch: 10,
 					Root:  bytesutil.PadTo([]byte("targetroot2"), 32),
 				},
@@ -508,7 +508,7 @@ func TestSubmitAttesterSlashing_AcrossFork(t *testing.T) {
 	newBs, err := transition.ProcessSlots(ctx, newBs, params.BeaconConfig().SlotsPerEpoch)
 	require.NoError(t, err)
 
-	for _, att := range []*ethpbv1.IndexedAttestation{slashing.Attestation_1, slashing.Attestation_2} {
+	for _, att := range []*zondpbv1.IndexedAttestation{slashing.Attestation_1, slashing.Attestation_2} {
 		sb, err := signing.ComputeDomainAndSign(newBs, att.Data.Target.Epoch, att.Data, params.BeaconConfig().DomainBeaconAttester, keys[0])
 		require.NoError(t, err)
 		sig, err := dilithium.SignatureFromBytes(sb)
@@ -530,7 +530,7 @@ func TestSubmitAttesterSlashing_AcrossFork(t *testing.T) {
 	assert.DeepEqual(t, migration.V1AttSlashingToV1Alpha1(slashing), pendingSlashings[0])
 	assert.Equal(t, true, broadcaster.BroadcastCalled)
 	require.Equal(t, 1, len(broadcaster.BroadcastMessages))
-	_, ok := broadcaster.BroadcastMessages[0].(*ethpbv1alpha1.AttesterSlashing)
+	_, ok := broadcaster.BroadcastMessages[0].(*zondpbv1alpha1.AttesterSlashing)
 	assert.Equal(t, true, ok)
 }
 
@@ -539,17 +539,17 @@ func TestSubmitAttesterSlashing_InvalidSlashing(t *testing.T) {
 	bs, err := util.NewBeaconState()
 	require.NoError(t, err)
 
-	attestation := &ethpbv1.IndexedAttestation{
+	attestation := &zondpbv1.IndexedAttestation{
 		AttestingIndices: []uint64{0},
-		Data: &ethpbv1.AttestationData{
+		Data: &zondpbv1.AttestationData{
 			Slot:            1,
 			Index:           1,
 			BeaconBlockRoot: bytesutil.PadTo([]byte("blockroot1"), 32),
-			Source: &ethpbv1.Checkpoint{
+			Source: &zondpbv1.Checkpoint{
 				Epoch: 1,
 				Root:  bytesutil.PadTo([]byte("sourceroot1"), 32),
 			},
-			Target: &ethpbv1.Checkpoint{
+			Target: &zondpbv1.Checkpoint{
 				Epoch: 10,
 				Root:  bytesutil.PadTo([]byte("targetroot1"), 32),
 			},
@@ -557,7 +557,7 @@ func TestSubmitAttesterSlashing_InvalidSlashing(t *testing.T) {
 		Signature: make([]byte, 96),
 	}
 
-	slashing := &ethpbv1.AttesterSlashing{
+	slashing := &zondpbv1.AttesterSlashing{
 		Attestation_1: attestation,
 		Attestation_2: attestation,
 	}
@@ -579,19 +579,19 @@ func TestSubmitProposerSlashing_Ok(t *testing.T) {
 
 	_, keys, err := util.DeterministicDepositsAndKeys(1)
 	require.NoError(t, err)
-	validator := &ethpbv1alpha1.Validator{
+	validator := &zondpbv1alpha1.Validator{
 		PublicKey:         keys[0].PublicKey().Marshal(),
 		WithdrawableEpoch: primitives.Epoch(1),
 	}
-	bs, err := util.NewBeaconState(func(state *ethpbv1alpha1.BeaconState) error {
-		state.Validators = []*ethpbv1alpha1.Validator{validator}
+	bs, err := util.NewBeaconState(func(state *zondpbv1alpha1.BeaconState) error {
+		state.Validators = []*zondpbv1alpha1.Validator{validator}
 		return nil
 	})
 	require.NoError(t, err)
 
-	slashing := &ethpbv1.ProposerSlashing{
-		SignedHeader_1: &ethpbv1.SignedBeaconBlockHeader{
-			Message: &ethpbv1.BeaconBlockHeader{
+	slashing := &zondpbv1.ProposerSlashing{
+		SignedHeader_1: &zondpbv1.SignedBeaconBlockHeader{
+			Message: &zondpbv1.BeaconBlockHeader{
 				Slot:          1,
 				ProposerIndex: 0,
 				ParentRoot:    bytesutil.PadTo([]byte("parentroot1"), 32),
@@ -600,8 +600,8 @@ func TestSubmitProposerSlashing_Ok(t *testing.T) {
 			},
 			Signature: make([]byte, 96),
 		},
-		SignedHeader_2: &ethpbv1.SignedBeaconBlockHeader{
-			Message: &ethpbv1.BeaconBlockHeader{
+		SignedHeader_2: &zondpbv1.SignedBeaconBlockHeader{
+			Message: &zondpbv1.BeaconBlockHeader{
 				Slot:          1,
 				ProposerIndex: 0,
 				ParentRoot:    bytesutil.PadTo([]byte("parentroot2"), 32),
@@ -612,7 +612,7 @@ func TestSubmitProposerSlashing_Ok(t *testing.T) {
 		},
 	}
 
-	for _, h := range []*ethpbv1.SignedBeaconBlockHeader{slashing.SignedHeader_1, slashing.SignedHeader_2} {
+	for _, h := range []*zondpbv1.SignedBeaconBlockHeader{slashing.SignedHeader_1, slashing.SignedHeader_2} {
 		sb, err := signing.ComputeDomainAndSign(
 			bs,
 			slots.ToEpoch(h.Message.Slot),
@@ -640,7 +640,7 @@ func TestSubmitProposerSlashing_Ok(t *testing.T) {
 	assert.DeepEqual(t, migration.V1ProposerSlashingToV1Alpha1(slashing), pendingSlashings[0])
 	assert.Equal(t, true, broadcaster.BroadcastCalled)
 	require.Equal(t, 1, len(broadcaster.BroadcastMessages))
-	_, ok := broadcaster.BroadcastMessages[0].(*ethpbv1alpha1.ProposerSlashing)
+	_, ok := broadcaster.BroadcastMessages[0].(*zondpbv1alpha1.ProposerSlashing)
 	assert.Equal(t, true, ok)
 }
 
@@ -654,9 +654,9 @@ func TestSubmitProposerSlashing_AcrossFork(t *testing.T) {
 
 	bs, keys := util.DeterministicGenesisState(t, 1)
 
-	slashing := &ethpbv1.ProposerSlashing{
-		SignedHeader_1: &ethpbv1.SignedBeaconBlockHeader{
-			Message: &ethpbv1.BeaconBlockHeader{
+	slashing := &zondpbv1.ProposerSlashing{
+		SignedHeader_1: &zondpbv1.SignedBeaconBlockHeader{
+			Message: &zondpbv1.BeaconBlockHeader{
 				Slot:          params.BeaconConfig().SlotsPerEpoch,
 				ProposerIndex: 0,
 				ParentRoot:    bytesutil.PadTo([]byte("parentroot1"), 32),
@@ -665,8 +665,8 @@ func TestSubmitProposerSlashing_AcrossFork(t *testing.T) {
 			},
 			Signature: make([]byte, 96),
 		},
-		SignedHeader_2: &ethpbv1.SignedBeaconBlockHeader{
-			Message: &ethpbv1.BeaconBlockHeader{
+		SignedHeader_2: &zondpbv1.SignedBeaconBlockHeader{
+			Message: &zondpbv1.BeaconBlockHeader{
 				Slot:          params.BeaconConfig().SlotsPerEpoch,
 				ProposerIndex: 0,
 				ParentRoot:    bytesutil.PadTo([]byte("parentroot2"), 32),
@@ -681,7 +681,7 @@ func TestSubmitProposerSlashing_AcrossFork(t *testing.T) {
 	newBs, err := transition.ProcessSlots(ctx, newBs, params.BeaconConfig().SlotsPerEpoch)
 	require.NoError(t, err)
 
-	for _, h := range []*ethpbv1.SignedBeaconBlockHeader{slashing.SignedHeader_1, slashing.SignedHeader_2} {
+	for _, h := range []*zondpbv1.SignedBeaconBlockHeader{slashing.SignedHeader_1, slashing.SignedHeader_2} {
 		sb, err := signing.ComputeDomainAndSign(
 			newBs,
 			slots.ToEpoch(h.Message.Slot),
@@ -709,7 +709,7 @@ func TestSubmitProposerSlashing_AcrossFork(t *testing.T) {
 	assert.DeepEqual(t, migration.V1ProposerSlashingToV1Alpha1(slashing), pendingSlashings[0])
 	assert.Equal(t, true, broadcaster.BroadcastCalled)
 	require.Equal(t, 1, len(broadcaster.BroadcastMessages))
-	_, ok := broadcaster.BroadcastMessages[0].(*ethpbv1alpha1.ProposerSlashing)
+	_, ok := broadcaster.BroadcastMessages[0].(*zondpbv1alpha1.ProposerSlashing)
 	assert.Equal(t, true, ok)
 }
 
@@ -718,8 +718,8 @@ func TestSubmitProposerSlashing_InvalidSlashing(t *testing.T) {
 	bs, err := util.NewBeaconState()
 	require.NoError(t, err)
 
-	header := &ethpbv1.SignedBeaconBlockHeader{
-		Message: &ethpbv1.BeaconBlockHeader{
+	header := &zondpbv1.SignedBeaconBlockHeader{
+		Message: &zondpbv1.BeaconBlockHeader{
 			Slot:          1,
 			ProposerIndex: 0,
 			ParentRoot:    bytesutil.PadTo([]byte("parentroot1"), 32),
@@ -729,7 +729,7 @@ func TestSubmitProposerSlashing_InvalidSlashing(t *testing.T) {
 		Signature: make([]byte, 96),
 	}
 
-	slashing := &ethpbv1.ProposerSlashing{
+	slashing := &zondpbv1.ProposerSlashing{
 		SignedHeader_1: header,
 		SignedHeader_2: header,
 	}
@@ -751,20 +751,20 @@ func TestSubmitVoluntaryExit_Ok(t *testing.T) {
 
 	_, keys, err := util.DeterministicDepositsAndKeys(1)
 	require.NoError(t, err)
-	validator := &ethpbv1alpha1.Validator{
+	validator := &zondpbv1alpha1.Validator{
 		ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		PublicKey: keys[0].PublicKey().Marshal(),
 	}
-	bs, err := util.NewBeaconState(func(state *ethpbv1alpha1.BeaconState) error {
-		state.Validators = []*ethpbv1alpha1.Validator{validator}
+	bs, err := util.NewBeaconState(func(state *zondpbv1alpha1.BeaconState) error {
+		state.Validators = []*zondpbv1alpha1.Validator{validator}
 		// Satisfy activity time required before exiting.
 		state.Slot = params.BeaconConfig().SlotsPerEpoch.Mul(uint64(params.BeaconConfig().ShardCommitteePeriod))
 		return nil
 	})
 	require.NoError(t, err)
 
-	exit := &ethpbv1.SignedVoluntaryExit{
-		Message: &ethpbv1.VoluntaryExit{
+	exit := &zondpbv1.SignedVoluntaryExit{
+		Message: &zondpbv1.VoluntaryExit{
 			Epoch:          0,
 			ValidatorIndex: 0,
 		},
@@ -805,8 +805,8 @@ func TestSubmitVoluntaryExit_AcrossFork(t *testing.T) {
 	// Satisfy activity time required before exiting.
 	require.NoError(t, bs.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(uint64(params.BeaconConfig().ShardCommitteePeriod))))
 
-	exit := &ethpbv1.SignedVoluntaryExit{
-		Message: &ethpbv1.VoluntaryExit{
+	exit := &zondpbv1.SignedVoluntaryExit{
+		Message: &zondpbv1.VoluntaryExit{
 			Epoch:          params.BeaconConfig().ShardCommitteePeriod + 1,
 			ValidatorIndex: 0,
 		},
@@ -839,18 +839,18 @@ func TestSubmitVoluntaryExit_InvalidValidatorIndex(t *testing.T) {
 
 	_, keys, err := util.DeterministicDepositsAndKeys(1)
 	require.NoError(t, err)
-	validator := &ethpbv1alpha1.Validator{
+	validator := &zondpbv1alpha1.Validator{
 		ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		PublicKey: keys[0].PublicKey().Marshal(),
 	}
-	bs, err := util.NewBeaconState(func(state *ethpbv1alpha1.BeaconState) error {
-		state.Validators = []*ethpbv1alpha1.Validator{validator}
+	bs, err := util.NewBeaconState(func(state *zondpbv1alpha1.BeaconState) error {
+		state.Validators = []*zondpbv1alpha1.Validator{validator}
 		return nil
 	})
 	require.NoError(t, err)
 
-	exit := &ethpbv1.SignedVoluntaryExit{
-		Message: &ethpbv1.VoluntaryExit{
+	exit := &zondpbv1.SignedVoluntaryExit{
+		Message: &zondpbv1.VoluntaryExit{
 			Epoch:          0,
 			ValidatorIndex: 99,
 		},
@@ -874,18 +874,18 @@ func TestSubmitVoluntaryExit_InvalidExit(t *testing.T) {
 
 	_, keys, err := util.DeterministicDepositsAndKeys(1)
 	require.NoError(t, err)
-	validator := &ethpbv1alpha1.Validator{
+	validator := &zondpbv1alpha1.Validator{
 		ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		PublicKey: keys[0].PublicKey().Marshal(),
 	}
-	bs, err := util.NewBeaconState(func(state *ethpbv1alpha1.BeaconState) error {
-		state.Validators = []*ethpbv1alpha1.Validator{validator}
+	bs, err := util.NewBeaconState(func(state *zondpbv1alpha1.BeaconState) error {
+		state.Validators = []*zondpbv1alpha1.Validator{validator}
 		return nil
 	})
 	require.NoError(t, err)
 
-	exit := &ethpbv1.SignedVoluntaryExit{
-		Message: &ethpbv1.VoluntaryExit{
+	exit := &zondpbv1.SignedVoluntaryExit{
+		Message: &zondpbv1.VoluntaryExit{
 			Epoch:          0,
 			ValidatorIndex: 0,
 		},
@@ -914,16 +914,16 @@ func TestServer_SubmitAttestations_Ok(t *testing.T) {
 
 	_, keys, err := util.DeterministicDepositsAndKeys(1)
 	require.NoError(t, err)
-	validators := []*ethpbv1alpha1.Validator{
+	validators := []*zondpbv1alpha1.Validator{
 		{
 			PublicKey: keys[0].PublicKey().Marshal(),
 			ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		},
 	}
-	bs, err := util.NewBeaconState(func(state *ethpbv1alpha1.BeaconState) error {
+	bs, err := util.NewBeaconState(func(state *zondpbv1alpha1.BeaconState) error {
 		state.Validators = validators
 		state.Slot = 1
-		state.PreviousJustifiedCheckpoint = &ethpbv1alpha1.Checkpoint{
+		state.PreviousJustifiedCheckpoint = &zondpbv1alpha1.Checkpoint{
 			Epoch: 0,
 			Root:  bytesutil.PadTo([]byte("sourceroot1"), 32),
 		}
@@ -933,32 +933,32 @@ func TestServer_SubmitAttestations_Ok(t *testing.T) {
 	b := bitfield.NewBitlist(1)
 	b.SetBitAt(0, true)
 
-	sourceCheckpoint := &ethpbv1.Checkpoint{
+	sourceCheckpoint := &zondpbv1.Checkpoint{
 		Epoch: 0,
 		Root:  bytesutil.PadTo([]byte("sourceroot1"), 32),
 	}
-	att1 := &ethpbv1.Attestation{
+	att1 := &zondpbv1.Attestation{
 		AggregationBits: b,
-		Data: &ethpbv1.AttestationData{
+		Data: &zondpbv1.AttestationData{
 			Slot:            0,
 			Index:           0,
 			BeaconBlockRoot: bytesutil.PadTo([]byte("beaconblockroot1"), 32),
 			Source:          sourceCheckpoint,
-			Target: &ethpbv1.Checkpoint{
+			Target: &zondpbv1.Checkpoint{
 				Epoch: 0,
 				Root:  bytesutil.PadTo([]byte("targetroot1"), 32),
 			},
 		},
 		Signature: make([]byte, 96),
 	}
-	att2 := &ethpbv1.Attestation{
+	att2 := &zondpbv1.Attestation{
 		AggregationBits: b,
-		Data: &ethpbv1.AttestationData{
+		Data: &zondpbv1.AttestationData{
 			Slot:            0,
 			Index:           0,
 			BeaconBlockRoot: bytesutil.PadTo([]byte("beaconblockroot2"), 32),
 			Source:          sourceCheckpoint,
-			Target: &ethpbv1.Checkpoint{
+			Target: &zondpbv1.Checkpoint{
 				Epoch: 0,
 				Root:  bytesutil.PadTo([]byte("targetroot2"), 32),
 			},
@@ -966,7 +966,7 @@ func TestServer_SubmitAttestations_Ok(t *testing.T) {
 		Signature: make([]byte, 96),
 	}
 
-	for _, att := range []*ethpbv1.Attestation{att1, att2} {
+	for _, att := range []*zondpbv1.Attestation{att1, att2} {
 		sb, err := signing.ComputeDomainAndSign(
 			bs,
 			slots.ToEpoch(att.Data.Slot),
@@ -990,8 +990,8 @@ func TestServer_SubmitAttestations_Ok(t *testing.T) {
 		OperationNotifier: &blockchainmock.MockOperationNotifier{},
 	}
 
-	_, err = s.SubmitAttestations(ctx, &ethpbv1.SubmitAttestationsRequest{
-		Data: []*ethpbv1.Attestation{att1, att2},
+	_, err = s.SubmitAttestations(ctx, &zondpbv1.SubmitAttestationsRequest{
+		Data: []*zondpbv1.Attestation{att1, att2},
 	})
 	require.NoError(t, err)
 	assert.Equal(t, true, broadcaster.BroadcastCalled)
@@ -1022,16 +1022,16 @@ func TestServer_SubmitAttestations_ValidAttestationSubmitted(t *testing.T) {
 
 	_, keys, err := util.DeterministicDepositsAndKeys(1)
 	require.NoError(t, err)
-	validators := []*ethpbv1alpha1.Validator{
+	validators := []*zondpbv1alpha1.Validator{
 		{
 			PublicKey: keys[0].PublicKey().Marshal(),
 			ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		},
 	}
-	bs, err := util.NewBeaconState(func(state *ethpbv1alpha1.BeaconState) error {
+	bs, err := util.NewBeaconState(func(state *zondpbv1alpha1.BeaconState) error {
 		state.Validators = validators
 		state.Slot = 1
-		state.PreviousJustifiedCheckpoint = &ethpbv1alpha1.Checkpoint{
+		state.PreviousJustifiedCheckpoint = &zondpbv1alpha1.Checkpoint{
 			Epoch: 0,
 			Root:  bytesutil.PadTo([]byte("sourceroot1"), 32),
 		}
@@ -1040,34 +1040,34 @@ func TestServer_SubmitAttestations_ValidAttestationSubmitted(t *testing.T) {
 
 	require.NoError(t, err)
 
-	sourceCheckpoint := &ethpbv1.Checkpoint{
+	sourceCheckpoint := &zondpbv1.Checkpoint{
 		Epoch: 0,
 		Root:  bytesutil.PadTo([]byte("sourceroot1"), 32),
 	}
 	b := bitfield.NewBitlist(1)
 	b.SetBitAt(0, true)
-	attValid := &ethpbv1.Attestation{
+	attValid := &zondpbv1.Attestation{
 		AggregationBits: b,
-		Data: &ethpbv1.AttestationData{
+		Data: &zondpbv1.AttestationData{
 			Slot:            0,
 			Index:           0,
 			BeaconBlockRoot: bytesutil.PadTo([]byte("beaconblockroot1"), 32),
 			Source:          sourceCheckpoint,
-			Target: &ethpbv1.Checkpoint{
+			Target: &zondpbv1.Checkpoint{
 				Epoch: 0,
 				Root:  bytesutil.PadTo([]byte("targetroot1"), 32),
 			},
 		},
 		Signature: make([]byte, 96),
 	}
-	attInvalidSignature := &ethpbv1.Attestation{
+	attInvalidSignature := &zondpbv1.Attestation{
 		AggregationBits: b,
-		Data: &ethpbv1.AttestationData{
+		Data: &zondpbv1.AttestationData{
 			Slot:            0,
 			Index:           0,
 			BeaconBlockRoot: bytesutil.PadTo([]byte("beaconblockroot2"), 32),
 			Source:          sourceCheckpoint,
-			Target: &ethpbv1.Checkpoint{
+			Target: &zondpbv1.Checkpoint{
 				Epoch: 0,
 				Root:  bytesutil.PadTo([]byte("targetroot2"), 32),
 			},
@@ -1098,8 +1098,8 @@ func TestServer_SubmitAttestations_ValidAttestationSubmitted(t *testing.T) {
 		OperationNotifier: &blockchainmock.MockOperationNotifier{},
 	}
 
-	_, err = s.SubmitAttestations(ctx, &ethpbv1.SubmitAttestationsRequest{
-		Data: []*ethpbv1.Attestation{attValid, attInvalidSignature},
+	_, err = s.SubmitAttestations(ctx, &zondpbv1.SubmitAttestationsRequest{
+		Data: []*zondpbv1.Attestation{attValid, attInvalidSignature},
 	})
 	require.ErrorContains(t, "One or more attestations failed validation", err)
 	expectedAtt, err := attValid.HashTreeRoot()
@@ -1124,16 +1124,16 @@ func TestServer_SubmitAttestations_InvalidAttestationGRPCHeader(t *testing.T) {
 
 	_, keys, err := util.DeterministicDepositsAndKeys(1)
 	require.NoError(t, err)
-	validators := []*ethpbv1alpha1.Validator{
+	validators := []*zondpbv1alpha1.Validator{
 		{
 			PublicKey: keys[0].PublicKey().Marshal(),
 			ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		},
 	}
-	bs, err := util.NewBeaconState(func(state *ethpbv1alpha1.BeaconState) error {
+	bs, err := util.NewBeaconState(func(state *zondpbv1alpha1.BeaconState) error {
 		state.Validators = validators
 		state.Slot = 1
-		state.PreviousJustifiedCheckpoint = &ethpbv1alpha1.Checkpoint{
+		state.PreviousJustifiedCheckpoint = &zondpbv1alpha1.Checkpoint{
 			Epoch: 0,
 			Root:  bytesutil.PadTo([]byte("sourceroot1"), 32),
 		}
@@ -1144,17 +1144,17 @@ func TestServer_SubmitAttestations_InvalidAttestationGRPCHeader(t *testing.T) {
 
 	b := bitfield.NewBitlist(1)
 	b.SetBitAt(0, true)
-	att := &ethpbv1.Attestation{
+	att := &zondpbv1.Attestation{
 		AggregationBits: b,
-		Data: &ethpbv1.AttestationData{
+		Data: &zondpbv1.AttestationData{
 			Slot:            0,
 			Index:           0,
 			BeaconBlockRoot: bytesutil.PadTo([]byte("beaconblockroot2"), 32),
-			Source: &ethpbv1.Checkpoint{
+			Source: &zondpbv1.Checkpoint{
 				Epoch: 0,
 				Root:  bytesutil.PadTo([]byte("sourceroot2"), 32),
 			},
-			Target: &ethpbv1.Checkpoint{
+			Target: &zondpbv1.Checkpoint{
 				Epoch: 1,
 				Root:  bytesutil.PadTo([]byte("targetroot2"), 32),
 			},
@@ -1172,8 +1172,8 @@ func TestServer_SubmitAttestations_InvalidAttestationGRPCHeader(t *testing.T) {
 		HeadFetcher:       chain,
 	}
 
-	_, err = s.SubmitAttestations(ctx, &ethpbv1.SubmitAttestationsRequest{
-		Data: []*ethpbv1.Attestation{att},
+	_, err = s.SubmitAttestations(ctx, &zondpbv1.SubmitAttestationsRequest{
+		Data: []*zondpbv1.Attestation{att},
 	})
 	require.ErrorContains(t, "One or more attestations failed validation", err)
 	sts, ok := grpc.ServerTransportStreamFromContext(ctx).(*runtime.ServerTransportStream)
@@ -1189,16 +1189,16 @@ func TestServer_SubmitAttestations_InvalidAttestationGRPCHeader(t *testing.T) {
 }
 
 func TestListDilithiumToExecutionChanges(t *testing.T) {
-	change1 := &ethpbv1alpha1.SignedDilithiumToExecutionChange{
-		Message: &ethpbv1alpha1.DilithiumToExecutionChange{
+	change1 := &zondpbv1alpha1.SignedDilithiumToExecutionChange{
+		Message: &zondpbv1alpha1.DilithiumToExecutionChange{
 			ValidatorIndex:      1,
 			FromDilithiumPubkey: bytesutil.PadTo([]byte("pubkey1"), 48),
 			ToExecutionAddress:  bytesutil.PadTo([]byte("address1"), 20),
 		},
 		Signature: bytesutil.PadTo([]byte("signature1"), 96),
 	}
-	change2 := &ethpbv1alpha1.SignedDilithiumToExecutionChange{
-		Message: &ethpbv1alpha1.DilithiumToExecutionChange{
+	change2 := &zondpbv1alpha1.SignedDilithiumToExecutionChange{
+		Message: &zondpbv1alpha1.DilithiumToExecutionChange{
 			ValidatorIndex:      2,
 			FromDilithiumPubkey: bytesutil.PadTo([]byte("pubkey2"), 48),
 			ToExecutionAddress:  bytesutil.PadTo([]byte("address2"), 20),
@@ -1207,7 +1207,7 @@ func TestListDilithiumToExecutionChanges(t *testing.T) {
 	}
 
 	s := &Server{
-		DilithiumChangesPool: &blstoexecmock.PoolMock{Changes: []*ethpbv1alpha1.SignedDilithiumToExecutionChange{change1, change2}},
+		DilithiumChangesPool: &blstoexecmock.PoolMock{Changes: []*zondpbv1alpha1.SignedDilithiumToExecutionChange{change1, change2}},
 	}
 
 	resp, err := s.ListDilithiumToExecutionChanges(context.Background(), &emptypb.Empty{})
@@ -1225,23 +1225,23 @@ func TestSubmitSignedDilithiumToExecutionChanges_Ok(t *testing.T) {
 	c.CapellaForkEpoch = c.BellatrixForkEpoch.Add(2)
 	params.OverrideBeaconConfig(c)
 
-	spb := &ethpbv1alpha1.BeaconStateCapella{
-		Fork: &ethpbv1alpha1.Fork{
+	spb := &zondpbv1alpha1.BeaconStateCapella{
+		Fork: &zondpbv1alpha1.Fork{
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			Epoch:           params.BeaconConfig().CapellaForkEpoch,
 		},
 	}
 	numValidators := 10
-	validators := make([]*ethpbv1alpha1.Validator, numValidators)
-	dilithiumChanges := make([]*ethpbv2.DilithiumToExecutionChange, numValidators)
+	validators := make([]*zondpbv1alpha1.Validator, numValidators)
+	dilithiumChanges := make([]*zondpbv2.DilithiumToExecutionChange, numValidators)
 	spb.Balances = make([]uint64, numValidators)
 	privKeys := make([]common.SecretKey, numValidators)
 	maxEffectiveBalance := params.BeaconConfig().MaxEffectiveBalance
 	executionAddress := []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13}
 
 	for i := range validators {
-		v := &ethpbv1alpha1.Validator{}
+		v := &zondpbv1alpha1.Validator{}
 		v.EffectiveBalance = maxEffectiveBalance
 		v.WithdrawableEpoch = params.BeaconConfig().FarFutureEpoch
 		v.WithdrawalCredentials = make([]byte, 32)
@@ -1250,7 +1250,7 @@ func TestSubmitSignedDilithiumToExecutionChanges_Ok(t *testing.T) {
 		privKeys[i] = priv
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpbv2.DilithiumToExecutionChange{
+		message := &zondpbv2.DilithiumToExecutionChange{
 			ToExecutionAddress:  executionAddress,
 			ValidatorIndex:      primitives.ValidatorIndex(i),
 			FromDilithiumPubkey: pubkey,
@@ -1270,12 +1270,12 @@ func TestSubmitSignedDilithiumToExecutionChanges_Ok(t *testing.T) {
 	st, err := state_native.InitializeFromProtoCapella(spb)
 	require.NoError(t, err)
 
-	signedChanges := make([]*ethpbv2.SignedDilithiumToExecutionChange, numValidators)
+	signedChanges := make([]*zondpbv2.SignedDilithiumToExecutionChange, numValidators)
 	for i, message := range dilithiumChanges {
 		signature, err := signing.ComputeDomainAndSign(st, prysmtime.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
 		require.NoError(t, err)
 
-		signed := &ethpbv2.SignedDilithiumToExecutionChange{
+		signed := &zondpbv2.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
@@ -1293,7 +1293,7 @@ func TestSubmitSignedDilithiumToExecutionChanges_Ok(t *testing.T) {
 		DilithiumChangesPool: blstoexec.NewPool(),
 	}
 
-	_, err = s.SubmitSignedDilithiumToExecutionChanges(ctx, &ethpbv2.SubmitDilithiumToExecutionChangesRequest{
+	_, err = s.SubmitSignedDilithiumToExecutionChanges(ctx, &zondpbv2.SubmitDilithiumToExecutionChangesRequest{
 		Changes: signedChanges,
 	})
 	require.NoError(t, err)
@@ -1318,23 +1318,23 @@ func TestSubmitSignedDilithiumToExecutionChanges_Bellatrix(t *testing.T) {
 	c.CapellaForkEpoch = c.BellatrixForkEpoch.Add(2)
 	params.OverrideBeaconConfig(c)
 
-	spb := &ethpbv1alpha1.BeaconStateBellatrix{
-		Fork: &ethpbv1alpha1.Fork{
+	spb := &zondpbv1alpha1.BeaconStateBellatrix{
+		Fork: &zondpbv1alpha1.Fork{
 			CurrentVersion:  params.BeaconConfig().BellatrixForkVersion,
 			PreviousVersion: params.BeaconConfig().AltairForkVersion,
 			Epoch:           params.BeaconConfig().BellatrixForkEpoch,
 		},
 	}
 	numValidators := 10
-	validators := make([]*ethpbv1alpha1.Validator, numValidators)
-	dilithiumChanges := make([]*ethpbv2.DilithiumToExecutionChange, numValidators)
+	validators := make([]*zondpbv1alpha1.Validator, numValidators)
+	dilithiumChanges := make([]*zondpbv2.DilithiumToExecutionChange, numValidators)
 	spb.Balances = make([]uint64, numValidators)
 	privKeys := make([]common.SecretKey, numValidators)
 	maxEffectiveBalance := params.BeaconConfig().MaxEffectiveBalance
 	executionAddress := []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13}
 
 	for i := range validators {
-		v := &ethpbv1alpha1.Validator{}
+		v := &zondpbv1alpha1.Validator{}
 		v.EffectiveBalance = maxEffectiveBalance
 		v.WithdrawableEpoch = params.BeaconConfig().FarFutureEpoch
 		v.WithdrawalCredentials = make([]byte, 32)
@@ -1343,7 +1343,7 @@ func TestSubmitSignedDilithiumToExecutionChanges_Bellatrix(t *testing.T) {
 		privKeys[i] = priv
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpbv2.DilithiumToExecutionChange{
+		message := &zondpbv2.DilithiumToExecutionChange{
 			ToExecutionAddress:  executionAddress,
 			ValidatorIndex:      primitives.ValidatorIndex(i),
 			FromDilithiumPubkey: pubkey,
@@ -1363,8 +1363,8 @@ func TestSubmitSignedDilithiumToExecutionChanges_Bellatrix(t *testing.T) {
 	st, err := state_native.InitializeFromProtoBellatrix(spb)
 	require.NoError(t, err)
 
-	spc := &ethpbv1alpha1.BeaconStateCapella{
-		Fork: &ethpbv1alpha1.Fork{
+	spc := &zondpbv1alpha1.BeaconStateCapella{
+		Fork: &zondpbv1alpha1.Fork{
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			Epoch:           params.BeaconConfig().CapellaForkEpoch,
@@ -1377,12 +1377,12 @@ func TestSubmitSignedDilithiumToExecutionChanges_Bellatrix(t *testing.T) {
 	stc, err := state_native.InitializeFromProtoCapella(spc)
 	require.NoError(t, err)
 
-	signedChanges := make([]*ethpbv2.SignedDilithiumToExecutionChange, numValidators)
+	signedChanges := make([]*zondpbv2.SignedDilithiumToExecutionChange, numValidators)
 	for i, message := range dilithiumChanges {
 		signature, err := signing.ComputeDomainAndSign(stc, prysmtime.CurrentEpoch(stc), message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
 		require.NoError(t, err)
 
-		signed := &ethpbv2.SignedDilithiumToExecutionChange{
+		signed := &zondpbv2.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
@@ -1400,7 +1400,7 @@ func TestSubmitSignedDilithiumToExecutionChanges_Bellatrix(t *testing.T) {
 		DilithiumChangesPool: blstoexec.NewPool(),
 	}
 
-	_, err = s.SubmitSignedDilithiumToExecutionChanges(ctx, &ethpbv2.SubmitDilithiumToExecutionChangesRequest{
+	_, err = s.SubmitSignedDilithiumToExecutionChanges(ctx, &zondpbv2.SubmitDilithiumToExecutionChangesRequest{
 		Changes: signedChanges,
 	})
 	require.NoError(t, err)
@@ -1426,23 +1426,23 @@ func TestSubmitSignedDilithiumToExecutionChanges_Failures(t *testing.T) {
 	c.CapellaForkEpoch = c.BellatrixForkEpoch.Add(2)
 	params.OverrideBeaconConfig(c)
 
-	spb := &ethpbv1alpha1.BeaconStateCapella{
-		Fork: &ethpbv1alpha1.Fork{
+	spb := &zondpbv1alpha1.BeaconStateCapella{
+		Fork: &zondpbv1alpha1.Fork{
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			Epoch:           params.BeaconConfig().CapellaForkEpoch,
 		},
 	}
 	numValidators := 10
-	validators := make([]*ethpbv1alpha1.Validator, numValidators)
-	dilithiumChanges := make([]*ethpbv2.DilithiumToExecutionChange, numValidators)
+	validators := make([]*zondpbv1alpha1.Validator, numValidators)
+	dilithiumChanges := make([]*zondpbv2.DilithiumToExecutionChange, numValidators)
 	spb.Balances = make([]uint64, numValidators)
 	privKeys := make([]common.SecretKey, numValidators)
 	maxEffectiveBalance := params.BeaconConfig().MaxEffectiveBalance
 	executionAddress := []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13}
 
 	for i := range validators {
-		v := &ethpbv1alpha1.Validator{}
+		v := &zondpbv1alpha1.Validator{}
 		v.EffectiveBalance = maxEffectiveBalance
 		v.WithdrawableEpoch = params.BeaconConfig().FarFutureEpoch
 		v.WithdrawalCredentials = make([]byte, 32)
@@ -1451,7 +1451,7 @@ func TestSubmitSignedDilithiumToExecutionChanges_Failures(t *testing.T) {
 		privKeys[i] = priv
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpbv2.DilithiumToExecutionChange{
+		message := &zondpbv2.DilithiumToExecutionChange{
 			ToExecutionAddress:  executionAddress,
 			ValidatorIndex:      primitives.ValidatorIndex(i),
 			FromDilithiumPubkey: pubkey,
@@ -1471,12 +1471,12 @@ func TestSubmitSignedDilithiumToExecutionChanges_Failures(t *testing.T) {
 	st, err := state_native.InitializeFromProtoCapella(spb)
 	require.NoError(t, err)
 
-	signedChanges := make([]*ethpbv2.SignedDilithiumToExecutionChange, numValidators)
+	signedChanges := make([]*zondpbv2.SignedDilithiumToExecutionChange, numValidators)
 	for i, message := range dilithiumChanges {
 		signature, err := signing.ComputeDomainAndSign(st, prysmtime.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
 		require.NoError(t, err)
 
-		signed := &ethpbv2.SignedDilithiumToExecutionChange{
+		signed := &zondpbv2.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
@@ -1495,7 +1495,7 @@ func TestSubmitSignedDilithiumToExecutionChanges_Failures(t *testing.T) {
 		DilithiumChangesPool: blstoexec.NewPool(),
 	}
 
-	_, err = s.SubmitSignedDilithiumToExecutionChanges(ctx, &ethpbv2.SubmitDilithiumToExecutionChangesRequest{
+	_, err = s.SubmitSignedDilithiumToExecutionChanges(ctx, &zondpbv2.SubmitDilithiumToExecutionChangesRequest{
 		Changes: signedChanges,
 	})
 	time.Sleep(10 * time.Millisecond) // Delay to allow the routine to start

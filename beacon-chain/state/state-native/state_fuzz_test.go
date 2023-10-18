@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/rand"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
@@ -33,7 +33,7 @@ func FuzzPhase0StateHashTreeRoot(f *testing.F) {
 			// Perform a XOR on the byte of the selected index.
 			stateSSZ[num] ^= diffBuffer[i+8]
 		}
-		pbState := &ethpb.BeaconState{}
+		pbState := &zondpb.BeaconState{}
 		err := pbState.UnmarshalSSZ(stateSSZ)
 		if err != nil {
 			return
@@ -55,7 +55,7 @@ func FuzzPhase0StateHashTreeRoot(f *testing.F) {
 		}
 		assert.NoError(t, err)
 		// Perform a cold HTR calculation by initializing a new state.
-		innerState, ok := stateObj.ToProtoUnsafe().(*ethpb.BeaconState)
+		innerState, ok := stateObj.ToProtoUnsafe().(*zondpb.BeaconState)
 		assert.Equal(t, true, ok, "inner state is a not a beacon state proto")
 		newState, err := native.InitializeFromProtoUnsafePhase0(innerState)
 		assert.NoError(t, err)
@@ -102,7 +102,7 @@ func FuzzAltairStateHashTreeRoot(f *testing.F) {
 			// Perform a XOR on the byte of the selected index.
 			stateSSZ[num] ^= diffBuffer[i+8]
 		}
-		pbState := &ethpb.BeaconStateAltair{}
+		pbState := &zondpb.BeaconStateAltair{}
 		err := pbState.UnmarshalSSZ(stateSSZ)
 		if err != nil {
 			return
@@ -126,7 +126,7 @@ func FuzzAltairStateHashTreeRoot(f *testing.F) {
 		}
 		assert.NoError(t, err)
 		// Perform a cold HTR calculation by initializing a new state.
-		innerState, ok := stateObj.ToProtoUnsafe().(*ethpb.BeaconStateAltair)
+		innerState, ok := stateObj.ToProtoUnsafe().(*zondpb.BeaconStateAltair)
 		assert.Equal(t, true, ok, "inner state is a not a beacon state altair proto")
 		newState, err := native.InitializeFromProtoUnsafeAltair(innerState)
 		assert.NoError(t, err)
@@ -172,7 +172,7 @@ func FuzzBellatrixStateHashTreeRoot(f *testing.F) {
 			// Perform a XOR on the byte of the selected index.
 			stateSSZ[num] ^= diffBuffer[i+8]
 		}
-		pbState := &ethpb.BeaconStateBellatrix{}
+		pbState := &zondpb.BeaconStateBellatrix{}
 		err := pbState.UnmarshalSSZ(stateSSZ)
 		if err != nil {
 			return
@@ -196,7 +196,7 @@ func FuzzBellatrixStateHashTreeRoot(f *testing.F) {
 		}
 		assert.NoError(t, err)
 		// Perform a cold HTR calculation by initializing a new state.
-		innerState, ok := stateObj.ToProtoUnsafe().(*ethpb.BeaconStateBellatrix)
+		innerState, ok := stateObj.ToProtoUnsafe().(*zondpb.BeaconStateBellatrix)
 		assert.Equal(t, true, ok, "inner state is a not a beacon state bellatrix proto")
 		newState, err := native.InitializeFromProtoUnsafeBellatrix(innerState)
 		assert.NoError(t, err)
@@ -242,7 +242,7 @@ func FuzzCapellaStateHashTreeRoot(f *testing.F) {
 			// Perform a XOR on the byte of the selected index.
 			stateSSZ[num] ^= diffBuffer[i+8]
 		}
-		pbState := &ethpb.BeaconStateCapella{}
+		pbState := &zondpb.BeaconStateCapella{}
 		err := pbState.UnmarshalSSZ(stateSSZ)
 		if err != nil {
 			return
@@ -266,7 +266,7 @@ func FuzzCapellaStateHashTreeRoot(f *testing.F) {
 		}
 		assert.NoError(t, err)
 		// Perform a cold HTR calculation by initializing a new state.
-		innerState, ok := stateObj.ToProtoUnsafe().(*ethpb.BeaconStateCapella)
+		innerState, ok := stateObj.ToProtoUnsafe().(*zondpb.BeaconStateCapella)
 		assert.Equal(t, true, ok, "inner state is a not a beacon state bellatrix proto")
 		newState, err := native.InitializeFromProtoUnsafeCapella(innerState)
 		assert.NoError(t, err)

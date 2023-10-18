@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	synccontribution "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/sync_contribution"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"go.opencensus.io/trace"
@@ -25,7 +25,7 @@ func (vs *Server) setSyncAggregate(ctx context.Context, blk interfaces.SignedBea
 	if err != nil {
 		log.WithError(err).Error("Could not get sync aggregate")
 		emptySig := [dilithium2.CryptoBytes]byte{0xC0}
-		emptyAggregate := &ethpb.SyncAggregate{
+		emptyAggregate := &zondpb.SyncAggregate{
 			SyncCommitteeBits:      make([]byte, params.BeaconConfig().SyncCommitteeSize/8),
 			SyncCommitteeSignature: emptySig[:],
 		}
@@ -43,7 +43,7 @@ func (vs *Server) setSyncAggregate(ctx context.Context, blk interfaces.SignedBea
 
 // getSyncAggregate retrieves the sync contributions from the pool to construct the sync aggregate object.
 // The contributions are filtered based on matching of the input root and slot then profitability.
-func (vs *Server) getSyncAggregate(ctx context.Context, slot primitives.Slot, root [32]byte) (*ethpb.SyncAggregate, error) {
+func (vs *Server) getSyncAggregate(ctx context.Context, slot primitives.Slot, root [32]byte) (*zondpb.SyncAggregate, error) {
 	ctx, span := trace.StartSpan(ctx, "ProposerServer.getSyncAggregate")
 	defer span.End()
 
@@ -60,7 +60,7 @@ func (vs *Server) getSyncAggregate(ctx context.Context, slot primitives.Slot, ro
 	// Each sync subcommittee is 128 bits and the sync committee is 512 bits for mainnet.
 	var bitsHolder [][]byte
 	for i := uint64(0); i < params.BeaconConfig().SyncCommitteeSubnetCount; i++ {
-		bitsHolder = append(bitsHolder, ethpb.NewSyncCommitteeAggregationBits())
+		bitsHolder = append(bitsHolder, zondpb.NewSyncCommitteeAggregationBits())
 	}
 	sigsHolder := make([]dilithium.Signature, 0, params.BeaconConfig().SyncCommitteeSize/params.BeaconConfig().SyncCommitteeSubnetCount)
 
@@ -111,7 +111,7 @@ func (vs *Server) getSyncAggregate(ctx context.Context, slot primitives.Slot, ro
 		syncSigBytes = syncSig
 	}
 
-	return &ethpb.SyncAggregate{
+	return &zondpb.SyncAggregate{
 		SyncCommitteeBits:      syncBits,
 		SyncCommitteeSignature: syncSigBytes[:],
 	}, nil

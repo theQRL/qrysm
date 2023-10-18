@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -26,16 +26,16 @@ func TestProcessProposerSlashings_UnmatchedHeaderSlots(t *testing.T) {
 
 	beaconState, _ := util.DeterministicGenesisState(t, 20)
 	currentSlot := primitives.Slot(0)
-	slashings := []*ethpb.ProposerSlashing{
+	slashings := []*zondpb.ProposerSlashing{
 		{
-			Header_1: &ethpb.SignedBeaconBlockHeader{
-				Header: &ethpb.BeaconBlockHeader{
+			Header_1: &zondpb.SignedBeaconBlockHeader{
+				Header: &zondpb.BeaconBlockHeader{
 					ProposerIndex: 1,
 					Slot:          params.BeaconConfig().SlotsPerEpoch + 1,
 				},
 			},
-			Header_2: &ethpb.SignedBeaconBlockHeader{
-				Header: &ethpb.BeaconBlockHeader{
+			Header_2: &zondpb.SignedBeaconBlockHeader{
+				Header: &zondpb.BeaconBlockHeader{
 					ProposerIndex: 1,
 					Slot:          0,
 				},
@@ -45,8 +45,8 @@ func TestProcessProposerSlashings_UnmatchedHeaderSlots(t *testing.T) {
 	require.NoError(t, beaconState.SetSlot(currentSlot))
 
 	b := util.NewBeaconBlock()
-	b.Block = &ethpb.BeaconBlock{
-		Body: &ethpb.BeaconBlockBody{
+	b.Block = &zondpb.BeaconBlock{
+		Body: &zondpb.BeaconBlockBody{
 			ProposerSlashings: slashings,
 		},
 	}
@@ -59,16 +59,16 @@ func TestProcessProposerSlashings_SameHeaders(t *testing.T) {
 
 	beaconState, _ := util.DeterministicGenesisState(t, 2)
 	currentSlot := primitives.Slot(0)
-	slashings := []*ethpb.ProposerSlashing{
+	slashings := []*zondpb.ProposerSlashing{
 		{
-			Header_1: &ethpb.SignedBeaconBlockHeader{
-				Header: &ethpb.BeaconBlockHeader{
+			Header_1: &zondpb.SignedBeaconBlockHeader{
+				Header: &zondpb.BeaconBlockHeader{
 					ProposerIndex: 1,
 					Slot:          0,
 				},
 			},
-			Header_2: &ethpb.SignedBeaconBlockHeader{
-				Header: &ethpb.BeaconBlockHeader{
+			Header_2: &zondpb.SignedBeaconBlockHeader{
+				Header: &zondpb.BeaconBlockHeader{
 					ProposerIndex: 1,
 					Slot:          0,
 				},
@@ -78,8 +78,8 @@ func TestProcessProposerSlashings_SameHeaders(t *testing.T) {
 
 	require.NoError(t, beaconState.SetSlot(currentSlot))
 	b := util.NewBeaconBlock()
-	b.Block = &ethpb.BeaconBlock{
-		Body: &ethpb.BeaconBlockBody{
+	b.Block = &zondpb.BeaconBlock{
+		Body: &zondpb.BeaconBlockBody{
 			ProposerSlashings: slashings,
 		},
 	}
@@ -89,7 +89,7 @@ func TestProcessProposerSlashings_SameHeaders(t *testing.T) {
 }
 
 func TestProcessProposerSlashings_ValidatorNotSlashable(t *testing.T) {
-	registry := []*ethpb.Validator{
+	registry := []*zondpb.Validator{
 		{
 			PublicKey:         []byte("key"),
 			Slashed:           true,
@@ -98,18 +98,18 @@ func TestProcessProposerSlashings_ValidatorNotSlashable(t *testing.T) {
 		},
 	}
 	currentSlot := primitives.Slot(0)
-	slashings := []*ethpb.ProposerSlashing{
+	slashings := []*zondpb.ProposerSlashing{
 		{
-			Header_1: &ethpb.SignedBeaconBlockHeader{
-				Header: &ethpb.BeaconBlockHeader{
+			Header_1: &zondpb.SignedBeaconBlockHeader{
+				Header: &zondpb.BeaconBlockHeader{
 					ProposerIndex: 0,
 					Slot:          0,
 					BodyRoot:      []byte("foo"),
 				},
 				Signature: bytesutil.PadTo([]byte("A"), dilithium2.CryptoBytes),
 			},
-			Header_2: &ethpb.SignedBeaconBlockHeader{
-				Header: &ethpb.BeaconBlockHeader{
+			Header_2: &zondpb.SignedBeaconBlockHeader{
+				Header: &zondpb.BeaconBlockHeader{
 					ProposerIndex: 0,
 					Slot:          0,
 					BodyRoot:      []byte("bar"),
@@ -119,14 +119,14 @@ func TestProcessProposerSlashings_ValidatorNotSlashable(t *testing.T) {
 		},
 	}
 
-	beaconState, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators: registry,
 		Slot:       currentSlot,
 	})
 	require.NoError(t, err)
 	b := util.NewBeaconBlock()
-	b.Block = &ethpb.BeaconBlock{
-		Body: &ethpb.BeaconBlockBody{
+	b.Block = &zondpb.BeaconBlock{
+		Body: &zondpb.BeaconBlockBody{
 			ProposerSlashings: slashings,
 		},
 	}
@@ -144,8 +144,8 @@ func TestProcessProposerSlashings_AppliesCorrectStatus(t *testing.T) {
 	beaconState, privKeys := util.DeterministicGenesisState(t, 100)
 	proposerIdx := primitives.ValidatorIndex(1)
 
-	header1 := &ethpb.SignedBeaconBlockHeader{
-		Header: util.HydrateBeaconHeader(&ethpb.BeaconBlockHeader{
+	header1 := &zondpb.SignedBeaconBlockHeader{
+		Header: util.HydrateBeaconHeader(&zondpb.BeaconBlockHeader{
 			ProposerIndex: proposerIdx,
 			StateRoot:     bytesutil.PadTo([]byte("A"), 32),
 		}),
@@ -154,8 +154,8 @@ func TestProcessProposerSlashings_AppliesCorrectStatus(t *testing.T) {
 	header1.Signature, err = signing.ComputeDomainAndSign(beaconState, 0, header1.Header, params.BeaconConfig().DomainBeaconProposer, privKeys[proposerIdx])
 	require.NoError(t, err)
 
-	header2 := util.HydrateSignedBeaconHeader(&ethpb.SignedBeaconBlockHeader{
-		Header: &ethpb.BeaconBlockHeader{
+	header2 := util.HydrateSignedBeaconHeader(&zondpb.SignedBeaconBlockHeader{
+		Header: &zondpb.BeaconBlockHeader{
 			ProposerIndex: proposerIdx,
 			StateRoot:     bytesutil.PadTo([]byte("B"), 32),
 		},
@@ -163,7 +163,7 @@ func TestProcessProposerSlashings_AppliesCorrectStatus(t *testing.T) {
 	header2.Signature, err = signing.ComputeDomainAndSign(beaconState, 0, header2.Header, params.BeaconConfig().DomainBeaconProposer, privKeys[proposerIdx])
 	require.NoError(t, err)
 
-	slashings := []*ethpb.ProposerSlashing{
+	slashings := []*zondpb.ProposerSlashing{
 		{
 			Header_1: header1,
 			Header_2: header2,
@@ -192,8 +192,8 @@ func TestProcessProposerSlashings_AppliesCorrectStatusAltair(t *testing.T) {
 	beaconState, privKeys := util.DeterministicGenesisStateAltair(t, 100)
 	proposerIdx := primitives.ValidatorIndex(1)
 
-	header1 := &ethpb.SignedBeaconBlockHeader{
-		Header: util.HydrateBeaconHeader(&ethpb.BeaconBlockHeader{
+	header1 := &zondpb.SignedBeaconBlockHeader{
+		Header: util.HydrateBeaconHeader(&zondpb.BeaconBlockHeader{
 			ProposerIndex: proposerIdx,
 			StateRoot:     bytesutil.PadTo([]byte("A"), 32),
 		}),
@@ -202,8 +202,8 @@ func TestProcessProposerSlashings_AppliesCorrectStatusAltair(t *testing.T) {
 	header1.Signature, err = signing.ComputeDomainAndSign(beaconState, 0, header1.Header, params.BeaconConfig().DomainBeaconProposer, privKeys[proposerIdx])
 	require.NoError(t, err)
 
-	header2 := util.HydrateSignedBeaconHeader(&ethpb.SignedBeaconBlockHeader{
-		Header: &ethpb.BeaconBlockHeader{
+	header2 := util.HydrateSignedBeaconHeader(&zondpb.SignedBeaconBlockHeader{
+		Header: &zondpb.BeaconBlockHeader{
 			ProposerIndex: proposerIdx,
 			StateRoot:     bytesutil.PadTo([]byte("B"), 32),
 		},
@@ -211,7 +211,7 @@ func TestProcessProposerSlashings_AppliesCorrectStatusAltair(t *testing.T) {
 	header2.Signature, err = signing.ComputeDomainAndSign(beaconState, 0, header2.Header, params.BeaconConfig().DomainBeaconProposer, privKeys[proposerIdx])
 	require.NoError(t, err)
 
-	slashings := []*ethpb.ProposerSlashing{
+	slashings := []*zondpb.ProposerSlashing{
 		{
 			Header_1: header1,
 			Header_2: header2,
@@ -240,8 +240,8 @@ func TestProcessProposerSlashings_AppliesCorrectStatusBellatrix(t *testing.T) {
 	beaconState, privKeys := util.DeterministicGenesisStateBellatrix(t, 100)
 	proposerIdx := primitives.ValidatorIndex(1)
 
-	header1 := &ethpb.SignedBeaconBlockHeader{
-		Header: util.HydrateBeaconHeader(&ethpb.BeaconBlockHeader{
+	header1 := &zondpb.SignedBeaconBlockHeader{
+		Header: util.HydrateBeaconHeader(&zondpb.BeaconBlockHeader{
 			ProposerIndex: proposerIdx,
 			StateRoot:     bytesutil.PadTo([]byte("A"), 32),
 		}),
@@ -250,8 +250,8 @@ func TestProcessProposerSlashings_AppliesCorrectStatusBellatrix(t *testing.T) {
 	header1.Signature, err = signing.ComputeDomainAndSign(beaconState, 0, header1.Header, params.BeaconConfig().DomainBeaconProposer, privKeys[proposerIdx])
 	require.NoError(t, err)
 
-	header2 := util.HydrateSignedBeaconHeader(&ethpb.SignedBeaconBlockHeader{
-		Header: &ethpb.BeaconBlockHeader{
+	header2 := util.HydrateSignedBeaconHeader(&zondpb.SignedBeaconBlockHeader{
+		Header: &zondpb.BeaconBlockHeader{
 			ProposerIndex: proposerIdx,
 			StateRoot:     bytesutil.PadTo([]byte("B"), 32),
 		},
@@ -259,7 +259,7 @@ func TestProcessProposerSlashings_AppliesCorrectStatusBellatrix(t *testing.T) {
 	header2.Signature, err = signing.ComputeDomainAndSign(beaconState, 0, header2.Header, params.BeaconConfig().DomainBeaconProposer, privKeys[proposerIdx])
 	require.NoError(t, err)
 
-	slashings := []*ethpb.ProposerSlashing{
+	slashings := []*zondpb.ProposerSlashing{
 		{
 			Header_1: header1,
 			Header_2: header2,
@@ -288,8 +288,8 @@ func TestProcessProposerSlashings_AppliesCorrectStatusCapella(t *testing.T) {
 	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 100)
 	proposerIdx := primitives.ValidatorIndex(1)
 
-	header1 := &ethpb.SignedBeaconBlockHeader{
-		Header: util.HydrateBeaconHeader(&ethpb.BeaconBlockHeader{
+	header1 := &zondpb.SignedBeaconBlockHeader{
+		Header: util.HydrateBeaconHeader(&zondpb.BeaconBlockHeader{
 			ProposerIndex: proposerIdx,
 			StateRoot:     bytesutil.PadTo([]byte("A"), 32),
 		}),
@@ -298,8 +298,8 @@ func TestProcessProposerSlashings_AppliesCorrectStatusCapella(t *testing.T) {
 	header1.Signature, err = signing.ComputeDomainAndSign(beaconState, 0, header1.Header, params.BeaconConfig().DomainBeaconProposer, privKeys[proposerIdx])
 	require.NoError(t, err)
 
-	header2 := util.HydrateSignedBeaconHeader(&ethpb.SignedBeaconBlockHeader{
-		Header: &ethpb.BeaconBlockHeader{
+	header2 := util.HydrateSignedBeaconHeader(&zondpb.SignedBeaconBlockHeader{
+		Header: &zondpb.BeaconBlockHeader{
 			ProposerIndex: proposerIdx,
 			StateRoot:     bytesutil.PadTo([]byte("B"), 32),
 		},
@@ -307,7 +307,7 @@ func TestProcessProposerSlashings_AppliesCorrectStatusCapella(t *testing.T) {
 	header2.Signature, err = signing.ComputeDomainAndSign(beaconState, 0, header2.Header, params.BeaconConfig().DomainBeaconProposer, privKeys[proposerIdx])
 	require.NoError(t, err)
 
-	slashings := []*ethpb.ProposerSlashing{
+	slashings := []*zondpb.ProposerSlashing{
 		{
 			Header_1: header1,
 			Header_2: header2,
@@ -333,7 +333,7 @@ func TestProcessProposerSlashings_AppliesCorrectStatusCapella(t *testing.T) {
 func TestVerifyProposerSlashing(t *testing.T) {
 	type args struct {
 		beaconState state.BeaconState
-		slashing    *ethpb.ProposerSlashing
+		slashing    *zondpb.ProposerSlashing
 	}
 
 	beaconState, sks := util.DeterministicGenesisState(t, 2)
@@ -355,15 +355,15 @@ func TestVerifyProposerSlashing(t *testing.T) {
 		{
 			name: "same header, same slot as state",
 			args: args{
-				slashing: &ethpb.ProposerSlashing{
-					Header_1: util.HydrateSignedBeaconHeader(&ethpb.SignedBeaconBlockHeader{
-						Header: &ethpb.BeaconBlockHeader{
+				slashing: &zondpb.ProposerSlashing{
+					Header_1: util.HydrateSignedBeaconHeader(&zondpb.SignedBeaconBlockHeader{
+						Header: &zondpb.BeaconBlockHeader{
 							ProposerIndex: 1,
 							Slot:          currentSlot,
 						},
 					}),
-					Header_2: util.HydrateSignedBeaconHeader(&ethpb.SignedBeaconBlockHeader{
-						Header: &ethpb.BeaconBlockHeader{
+					Header_2: util.HydrateSignedBeaconHeader(&zondpb.SignedBeaconBlockHeader{
+						Header: &zondpb.BeaconBlockHeader{
 							ProposerIndex: 1,
 							Slot:          currentSlot,
 						},
@@ -376,15 +376,15 @@ func TestVerifyProposerSlashing(t *testing.T) {
 		{ // Regression test for https://github.com/sigp/beacon-fuzz/issues/74
 			name: "same header, different signatures",
 			args: args{
-				slashing: &ethpb.ProposerSlashing{
-					Header_1: util.HydrateSignedBeaconHeader(&ethpb.SignedBeaconBlockHeader{
-						Header: &ethpb.BeaconBlockHeader{
+				slashing: &zondpb.ProposerSlashing{
+					Header_1: util.HydrateSignedBeaconHeader(&zondpb.SignedBeaconBlockHeader{
+						Header: &zondpb.BeaconBlockHeader{
 							ProposerIndex: 1,
 						},
 						Signature: sig1,
 					}),
-					Header_2: util.HydrateSignedBeaconHeader(&ethpb.SignedBeaconBlockHeader{
-						Header: &ethpb.BeaconBlockHeader{
+					Header_2: util.HydrateSignedBeaconHeader(&zondpb.SignedBeaconBlockHeader{
+						Header: &zondpb.BeaconBlockHeader{
 							ProposerIndex: 1,
 						},
 						Signature: sig2,
@@ -397,9 +397,9 @@ func TestVerifyProposerSlashing(t *testing.T) {
 		{
 			name: "slashing in future epoch",
 			args: args{
-				slashing: &ethpb.ProposerSlashing{
-					Header_1: &ethpb.SignedBeaconBlockHeader{
-						Header: &ethpb.BeaconBlockHeader{
+				slashing: &zondpb.ProposerSlashing{
+					Header_1: &zondpb.SignedBeaconBlockHeader{
+						Header: &zondpb.BeaconBlockHeader{
 							ProposerIndex: 1,
 							Slot:          65,
 							StateRoot:     bytesutil.PadTo([]byte{}, 32),
@@ -407,8 +407,8 @@ func TestVerifyProposerSlashing(t *testing.T) {
 							ParentRoot:    bytesutil.PadTo([]byte("foo"), 32),
 						},
 					},
-					Header_2: &ethpb.SignedBeaconBlockHeader{
-						Header: &ethpb.BeaconBlockHeader{
+					Header_2: &zondpb.SignedBeaconBlockHeader{
+						Header: &zondpb.BeaconBlockHeader{
 							ProposerIndex: 1,
 							Slot:          65,
 							StateRoot:     bytesutil.PadTo([]byte{}, 32),

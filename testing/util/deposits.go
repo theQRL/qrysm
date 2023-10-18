@@ -15,14 +15,14 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/interop"
 )
 
 var lock sync.Mutex
 
 // Caches
-var cachedDeposits []*ethpb.Deposit
+var cachedDeposits []*zondpb.Deposit
 var privKeys []bls.SecretKey
 var t *trie.SparseMerkleTrie
 
@@ -31,7 +31,7 @@ var t *trie.SparseMerkleTrie
 // account is key n and the withdrawal account is key n+1.  As such,
 // if all secret keys for n validators are required then numDeposits
 // should be n+1.
-func DeterministicDepositsAndKeys(numDeposits uint64) ([]*ethpb.Deposit, []dilithium.DilithiumKey, error) {
+func DeterministicDepositsAndKeys(numDeposits uint64) ([]*zondpb.Deposit, []dilithium.DilithiumKey, error) {
 	resetCache()
 	lock.Lock()
 	defer lock.Unlock()
@@ -94,7 +94,7 @@ func DeterministicDepositsAndKeys(numDeposits uint64) ([]*ethpb.Deposit, []dilit
 
 // DepositsWithBalance generates N amount of deposits with the balances taken from the passed in balances array.
 // If an empty array is passed,
-func DepositsWithBalance(balances []uint64) ([]*ethpb.Deposit, *trie.SparseMerkleTrie, error) {
+func DepositsWithBalance(balances []uint64) ([]*zondpb.Deposit, *trie.SparseMerkleTrie, error) {
 	var err error
 
 	sparseTrie, err := trie.NewTrie(params.BeaconConfig().DepositContractTreeDepth)
@@ -123,7 +123,7 @@ func DepositsWithBalance(balances []uint64) ([]*ethpb.Deposit, *trie.SparseMerkl
 		publicKeys = append(publicKeys, newPublicKeys...)
 	}
 
-	deposits := make([]*ethpb.Deposit, numDeposits)
+	deposits := make([]*zondpb.Deposit, numDeposits)
 	// Create the new deposits and add them to the trie.
 	for i := uint64(0); i < numDeposits; i++ {
 		balance := params.BeaconConfig().MaxEffectiveBalance
@@ -168,10 +168,10 @@ func signedDeposit(
 	publicKey,
 	withdrawalKey []byte,
 	balance uint64,
-) (*ethpb.Deposit, error) {
+) (*zondpb.Deposit, error) {
 	withdrawalCreds := hash.Hash(withdrawalKey)
 	withdrawalCreds[0] = params.BeaconConfig().BLSWithdrawalPrefixByte
-	depositMessage := &ethpb.DepositMessage{
+	depositMessage := &zondpb.DepositMessage{
 		PublicKey:             publicKey,
 		Amount:                balance,
 		WithdrawalCredentials: withdrawalCreds[:],
@@ -186,18 +186,18 @@ func signedDeposit(
 		return nil, errors.Wrap(err, "could not get signing root of deposit data")
 	}
 
-	sigRoot, err := (&ethpb.SigningData{ObjectRoot: root[:], Domain: domain}).HashTreeRoot()
+	sigRoot, err := (&zondpb.SigningData{ObjectRoot: root[:], Domain: domain}).HashTreeRoot()
 	if err != nil {
 		return nil, err
 	}
-	depositData := &ethpb.Deposit_Data{
+	depositData := &zondpb.Deposit_Data{
 		PublicKey:             publicKey,
 		Amount:                balance,
 		WithdrawalCredentials: withdrawalCreds[:],
 		Signature:             secretKey.Sign(sigRoot[:]).Marshal(),
 	}
 
-	deposit := &ethpb.Deposit{
+	deposit := &zondpb.Deposit{
 		Data: depositData,
 	}
 	return deposit, nil
@@ -238,7 +238,7 @@ func DepositTrieSubset(sparseTrie *trie.SparseMerkleTrie, size int) (*trie.Spars
 }
 
 // DeterministicEth1Data takes an array of deposits and returns the eth1Data made from the deposit trie.
-func DeterministicEth1Data(size int) (*ethpb.Eth1Data, error) {
+func DeterministicEth1Data(size int) (*zondpb.Eth1Data, error) {
 	depositTrie, _, err := DeterministicDepositTrie(size)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create trie")
@@ -247,7 +247,7 @@ func DeterministicEth1Data(size int) (*ethpb.Eth1Data, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to compute deposit trie root")
 	}
-	eth1Data := &ethpb.Eth1Data{
+	eth1Data := &zondpb.Eth1Data{
 		BlockHash:    root[:],
 		DepositRoot:  root[:],
 		DepositCount: uint64(size),
@@ -274,7 +274,7 @@ func DeterministicGenesisState(t testing.TB, numValidators uint64) (state.Beacon
 }
 
 // DepositTrieFromDeposits takes an array of deposits and returns the deposit trie.
-func DepositTrieFromDeposits(deposits []*ethpb.Deposit) (*trie.SparseMerkleTrie, [][32]byte, error) {
+func DepositTrieFromDeposits(deposits []*zondpb.Deposit) (*trie.SparseMerkleTrie, [][32]byte, error) {
 	encodedDeposits := make([][]byte, len(deposits))
 	roots := make([][32]byte, len(deposits))
 	for i := 0; i < len(encodedDeposits); i++ {
@@ -300,13 +300,13 @@ func resetCache() {
 	defer lock.Unlock()
 	t = nil
 	privKeys = []bls.SecretKey{}
-	cachedDeposits = []*ethpb.Deposit{}
+	cachedDeposits = []*zondpb.Deposit{}
 }
 
 // DeterministicDepositsAndKeysSameValidator returns the entered amount of deposits and secret keys
 // of the same validator. This is for negative test cases such as same deposits from same validators in a block don't
 // result in duplicated validator indices.
-func DeterministicDepositsAndKeysSameValidator(numDeposits uint64) ([]*ethpb.Deposit, []bls.SecretKey, error) {
+func DeterministicDepositsAndKeysSameValidator(numDeposits uint64) ([]*zondpb.Deposit, []bls.SecretKey, error) {
 	resetCache()
 	lock.Lock()
 	defer lock.Unlock()
@@ -336,7 +336,7 @@ func DeterministicDepositsAndKeysSameValidator(numDeposits uint64) ([]*ethpb.Dep
 			withdrawalCreds := hash.Hash(publicKeys[1].Marshal())
 			withdrawalCreds[0] = params.BeaconConfig().BLSWithdrawalPrefixByte
 
-			depositMessage := &ethpb.DepositMessage{
+			depositMessage := &zondpb.DepositMessage{
 				PublicKey:             publicKeys[1].Marshal(),
 				Amount:                params.BeaconConfig().MaxEffectiveBalance,
 				WithdrawalCredentials: withdrawalCreds[:],
@@ -350,18 +350,18 @@ func DeterministicDepositsAndKeysSameValidator(numDeposits uint64) ([]*ethpb.Dep
 			if err != nil {
 				return nil, nil, errors.Wrap(err, "could not get signing root of deposit data")
 			}
-			sigRoot, err := (&ethpb.SigningData{ObjectRoot: root[:], Domain: domain}).HashTreeRoot()
+			sigRoot, err := (&zondpb.SigningData{ObjectRoot: root[:], Domain: domain}).HashTreeRoot()
 			if err != nil {
 				return nil, nil, errors.Wrap(err, "could not get signing root of deposit data and domain")
 			}
 			// Always use the same validator to sign
-			depositData := &ethpb.Deposit_Data{
+			depositData := &zondpb.Deposit_Data{
 				PublicKey:             depositMessage.PublicKey,
 				Amount:                depositMessage.Amount,
 				WithdrawalCredentials: depositMessage.WithdrawalCredentials,
 				Signature:             secretKeys[1].Sign(sigRoot[:]).Marshal(),
 			}
-			deposit := &ethpb.Deposit{
+			deposit := &zondpb.Deposit{
 				Data: depositData,
 			}
 			cachedDeposits = append(cachedDeposits, deposit)

@@ -19,7 +19,7 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/ssz"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	"github.com/theQRL/qrysm/v4/proto/migration"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
@@ -30,7 +30,7 @@ func TestProcessDilithiumToExecutionChange(t *testing.T) {
 		require.NoError(t, err)
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.DilithiumToExecutionChange{
+		message := &zondpb.DilithiumToExecutionChange{
 			ToExecutionAddress:  []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13},
 			ValidatorIndex:      0,
 			FromDilithiumPubkey: pubkey,
@@ -40,14 +40,14 @@ func TestProcessDilithiumToExecutionChange(t *testing.T) {
 		digest := hashFn.Hash(pubkey)
 		digest[0] = params.BeaconConfig().DilithiumWithdrawalPrefixByte
 
-		registry := []*ethpb.Validator{
+		registry := []*zondpb.Validator{
 			{
 				WithdrawalCredentials: digest[:],
 			},
 		}
-		st, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+		st, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 			Validators: registry,
-			Fork: &ethpb.Fork{
+			Fork: &zondpb.Fork{
 				CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 				PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			},
@@ -58,7 +58,7 @@ func TestProcessDilithiumToExecutionChange(t *testing.T) {
 		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, priv)
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedDilithiumToExecutionChange{
+		signed := &zondpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
@@ -76,7 +76,7 @@ func TestProcessDilithiumToExecutionChange(t *testing.T) {
 		require.NoError(t, err)
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.DilithiumToExecutionChange{
+		message := &zondpb.DilithiumToExecutionChange{
 			ToExecutionAddress:  []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13},
 			ValidatorIndex:      0,
 			FromDilithiumPubkey: pubkey,
@@ -86,14 +86,14 @@ func TestProcessDilithiumToExecutionChange(t *testing.T) {
 		digest := hashFn.Hash(pubkey)
 		digest[0] = params.BeaconConfig().DilithiumWithdrawalPrefixByte
 
-		registry := []*ethpb.Validator{
+		registry := []*zondpb.Validator{
 			{
 				WithdrawalCredentials: digest[:],
 			},
 		}
-		st, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+		st, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 			Validators: registry,
-			Fork: &ethpb.Fork{
+			Fork: &zondpb.Fork{
 				CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 				PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			},
@@ -104,7 +104,7 @@ func TestProcessDilithiumToExecutionChange(t *testing.T) {
 		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, priv)
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedDilithiumToExecutionChange{
+		signed := &zondpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
@@ -118,7 +118,7 @@ func TestProcessDilithiumToExecutionChange(t *testing.T) {
 		require.NoError(t, err)
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.DilithiumToExecutionChange{
+		message := &zondpb.DilithiumToExecutionChange{
 			ToExecutionAddress:  []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13},
 			ValidatorIndex:      1,
 			FromDilithiumPubkey: pubkey,
@@ -128,14 +128,14 @@ func TestProcessDilithiumToExecutionChange(t *testing.T) {
 		digest := hashFn.Hash(pubkey)
 		digest[0] = params.BeaconConfig().DilithiumWithdrawalPrefixByte
 
-		registry := []*ethpb.Validator{
+		registry := []*zondpb.Validator{
 			{
 				WithdrawalCredentials: digest[:],
 			},
 		}
-		st, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+		st, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 			Validators: registry,
-			Fork: &ethpb.Fork{
+			Fork: &zondpb.Fork{
 				CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 				PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			},
@@ -146,7 +146,7 @@ func TestProcessDilithiumToExecutionChange(t *testing.T) {
 		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, priv)
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedDilithiumToExecutionChange{
+		signed := &zondpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
@@ -160,20 +160,20 @@ func TestProcessDilithiumToExecutionChange(t *testing.T) {
 		require.NoError(t, err)
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.DilithiumToExecutionChange{
+		message := &zondpb.DilithiumToExecutionChange{
 			ToExecutionAddress:  []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13},
 			ValidatorIndex:      0,
 			FromDilithiumPubkey: pubkey,
 		}
 
-		registry := []*ethpb.Validator{
+		registry := []*zondpb.Validator{
 			{
 				WithdrawalCredentials: params.BeaconConfig().ZeroHash[:],
 			},
 		}
-		st, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+		st, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 			Validators: registry,
-			Fork: &ethpb.Fork{
+			Fork: &zondpb.Fork{
 				CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 				PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			},
@@ -184,7 +184,7 @@ func TestProcessDilithiumToExecutionChange(t *testing.T) {
 		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, priv)
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedDilithiumToExecutionChange{
+		signed := &zondpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
@@ -198,7 +198,7 @@ func TestProcessDilithiumToExecutionChange(t *testing.T) {
 		require.NoError(t, err)
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.DilithiumToExecutionChange{
+		message := &zondpb.DilithiumToExecutionChange{
 			ToExecutionAddress:  []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13},
 			ValidatorIndex:      0,
 			FromDilithiumPubkey: pubkey,
@@ -207,16 +207,16 @@ func TestProcessDilithiumToExecutionChange(t *testing.T) {
 		digest := hashFn.Hash(pubkey)
 		digest[0] = params.BeaconConfig().DilithiumWithdrawalPrefixByte
 
-		registry := []*ethpb.Validator{
+		registry := []*zondpb.Validator{
 			{
 				WithdrawalCredentials: digest[:],
 			},
 		}
 		registry[0].WithdrawalCredentials[0] = params.BeaconConfig().ETH1AddressWithdrawalPrefixByte
 
-		st, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+		st, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 			Validators: registry,
-			Fork: &ethpb.Fork{
+			Fork: &zondpb.Fork{
 				CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 				PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			},
@@ -227,7 +227,7 @@ func TestProcessDilithiumToExecutionChange(t *testing.T) {
 		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, priv)
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedDilithiumToExecutionChange{
+		signed := &zondpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
@@ -592,11 +592,11 @@ func TestProcessBlindWithdrawals(t *testing.T) {
 		}
 	}
 
-	prepareValidators := func(st *ethpb.BeaconStateCapella, arguments args) (state.BeaconState, error) {
-		validators := make([]*ethpb.Validator, numValidators)
+	prepareValidators := func(st *zondpb.BeaconStateCapella, arguments args) (state.BeaconState, error) {
+		validators := make([]*zondpb.Validator, numValidators)
 		st.Balances = make([]uint64, numValidators)
 		for i := range validators {
-			v := &ethpb.Validator{}
+			v := &zondpb.Validator{}
 			v.EffectiveBalance = maxEffectiveBalance
 			v.WithdrawableEpoch = epochInFuture
 			v.WithdrawalCredentials = make([]byte, 32)
@@ -634,7 +634,7 @@ func TestProcessBlindWithdrawals(t *testing.T) {
 			}
 			slot, err := slots.EpochStart(currentEpoch)
 			require.NoError(t, err)
-			spb := &ethpb.BeaconStateCapella{
+			spb := &zondpb.BeaconStateCapella{
 				Slot:                         slot,
 				NextWithdrawalValidatorIndex: test.Args.NextWithdrawalValidatorIndex,
 				NextWithdrawalIndex:          test.Args.NextWithdrawalIndex,
@@ -1012,11 +1012,11 @@ func TestProcessWithdrawals(t *testing.T) {
 		}
 	}
 
-	prepareValidators := func(st *ethpb.BeaconStateCapella, arguments args) (state.BeaconState, error) {
-		validators := make([]*ethpb.Validator, numValidators)
+	prepareValidators := func(st *zondpb.BeaconStateCapella, arguments args) (state.BeaconState, error) {
+		validators := make([]*zondpb.Validator, numValidators)
 		st.Balances = make([]uint64, numValidators)
 		for i := range validators {
-			v := &ethpb.Validator{}
+			v := &zondpb.Validator{}
 			v.EffectiveBalance = maxEffectiveBalance
 			v.WithdrawableEpoch = epochInFuture
 			v.WithdrawalCredentials = make([]byte, 32)
@@ -1054,7 +1054,7 @@ func TestProcessWithdrawals(t *testing.T) {
 			}
 			slot, err := slots.EpochStart(currentEpoch)
 			require.NoError(t, err)
-			spb := &ethpb.BeaconStateCapella{
+			spb := &zondpb.BeaconStateCapella{
 				Slot:                         slot,
 				NextWithdrawalValidatorIndex: test.Args.NextWithdrawalValidatorIndex,
 				NextWithdrawalIndex:          test.Args.NextWithdrawalIndex,
@@ -1076,22 +1076,22 @@ func TestProcessWithdrawals(t *testing.T) {
 }
 
 func TestProcessDilithiumToExecutionChanges(t *testing.T) {
-	spb := &ethpb.BeaconStateCapella{
-		Fork: &ethpb.Fork{
+	spb := &zondpb.BeaconStateCapella{
+		Fork: &zondpb.Fork{
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 		},
 	}
 	numValidators := 10
-	validators := make([]*ethpb.Validator, numValidators)
-	dilithiumChanges := make([]*ethpb.DilithiumToExecutionChange, numValidators)
+	validators := make([]*zondpb.Validator, numValidators)
+	dilithiumChanges := make([]*zondpb.DilithiumToExecutionChange, numValidators)
 	spb.Balances = make([]uint64, numValidators)
 	privKeys := make([]common.SecretKey, numValidators)
 	maxEffectiveBalance := params.BeaconConfig().MaxEffectiveBalance
 	executionAddress := []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13}
 
 	for i := range validators {
-		v := &ethpb.Validator{}
+		v := &zondpb.Validator{}
 		v.EffectiveBalance = maxEffectiveBalance
 		v.WithdrawableEpoch = params.BeaconConfig().FarFutureEpoch
 		v.WithdrawalCredentials = make([]byte, 32)
@@ -1100,7 +1100,7 @@ func TestProcessDilithiumToExecutionChanges(t *testing.T) {
 		privKeys[i] = priv
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.DilithiumToExecutionChange{
+		message := &zondpb.DilithiumToExecutionChange{
 			ToExecutionAddress:  executionAddress,
 			ValidatorIndex:      primitives.ValidatorIndex(i),
 			FromDilithiumPubkey: pubkey,
@@ -1117,25 +1117,25 @@ func TestProcessDilithiumToExecutionChanges(t *testing.T) {
 	st, err := state_native.InitializeFromProtoCapella(spb)
 	require.NoError(t, err)
 
-	signedChanges := make([]*ethpb.SignedDilithiumToExecutionChange, numValidators)
+	signedChanges := make([]*zondpb.SignedDilithiumToExecutionChange, numValidators)
 	for i, message := range dilithiumChanges {
 		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedDilithiumToExecutionChange{
+		signed := &zondpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
 		signedChanges[i] = signed
 	}
 
-	body := &ethpb.BeaconBlockBodyCapella{
+	body := &zondpb.BeaconBlockBodyCapella{
 		DilithiumToExecutionChanges: signedChanges,
 	}
-	bpb := &ethpb.BeaconBlockCapella{
+	bpb := &zondpb.BeaconBlockCapella{
 		Body: body,
 	}
-	sbpb := &ethpb.SignedBeaconBlockCapella{
+	sbpb := &zondpb.SignedBeaconBlockCapella{
 		Block: bpb,
 	}
 	signed, err := consensusblocks.NewSignedBeaconBlock(sbpb)
@@ -1150,22 +1150,22 @@ func TestProcessDilithiumToExecutionChanges(t *testing.T) {
 }
 
 func TestDilithiumChangesSignatureBatch(t *testing.T) {
-	spb := &ethpb.BeaconStateCapella{
-		Fork: &ethpb.Fork{
+	spb := &zondpb.BeaconStateCapella{
+		Fork: &zondpb.Fork{
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 		},
 	}
 	numValidators := 10
-	validators := make([]*ethpb.Validator, numValidators)
-	dilithiumChanges := make([]*ethpb.DilithiumToExecutionChange, numValidators)
+	validators := make([]*zondpb.Validator, numValidators)
+	dilithiumChanges := make([]*zondpb.DilithiumToExecutionChange, numValidators)
 	spb.Balances = make([]uint64, numValidators)
 	privKeys := make([]common.SecretKey, numValidators)
 	maxEffectiveBalance := params.BeaconConfig().MaxEffectiveBalance
 	executionAddress := []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13}
 
 	for i := range validators {
-		v := &ethpb.Validator{}
+		v := &zondpb.Validator{}
 		v.EffectiveBalance = maxEffectiveBalance
 		v.WithdrawableEpoch = params.BeaconConfig().FarFutureEpoch
 		v.WithdrawalCredentials = make([]byte, 32)
@@ -1174,7 +1174,7 @@ func TestDilithiumChangesSignatureBatch(t *testing.T) {
 		privKeys[i] = priv
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.DilithiumToExecutionChange{
+		message := &zondpb.DilithiumToExecutionChange{
 			ToExecutionAddress:  executionAddress,
 			ValidatorIndex:      primitives.ValidatorIndex(i),
 			FromDilithiumPubkey: pubkey,
@@ -1191,12 +1191,12 @@ func TestDilithiumChangesSignatureBatch(t *testing.T) {
 	st, err := state_native.InitializeFromProtoCapella(spb)
 	require.NoError(t, err)
 
-	signedChanges := make([]*ethpb.SignedDilithiumToExecutionChange, numValidators)
+	signedChanges := make([]*zondpb.SignedDilithiumToExecutionChange, numValidators)
 	for i, message := range dilithiumChanges {
 		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedDilithiumToExecutionChange{
+		signed := &zondpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
@@ -1214,23 +1214,23 @@ func TestDilithiumChangesSignatureBatch(t *testing.T) {
 }
 
 func TestDilithiumChangesSignatureBatchWrongFork(t *testing.T) {
-	spb := &ethpb.BeaconStateCapella{
-		Fork: &ethpb.Fork{
+	spb := &zondpb.BeaconStateCapella{
+		Fork: &zondpb.Fork{
 			CurrentVersion:  params.BeaconConfig().CapellaForkVersion,
 			PreviousVersion: params.BeaconConfig().BellatrixForkVersion,
 			Epoch:           params.BeaconConfig().CapellaForkEpoch,
 		},
 	}
 	numValidators := 10
-	validators := make([]*ethpb.Validator, numValidators)
-	dilithiumChanges := make([]*ethpb.DilithiumToExecutionChange, numValidators)
+	validators := make([]*zondpb.Validator, numValidators)
+	dilithiumChanges := make([]*zondpb.DilithiumToExecutionChange, numValidators)
 	spb.Balances = make([]uint64, numValidators)
 	privKeys := make([]common.SecretKey, numValidators)
 	maxEffectiveBalance := params.BeaconConfig().MaxEffectiveBalance
 	executionAddress := []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13}
 
 	for i := range validators {
-		v := &ethpb.Validator{}
+		v := &zondpb.Validator{}
 		v.EffectiveBalance = maxEffectiveBalance
 		v.WithdrawableEpoch = params.BeaconConfig().FarFutureEpoch
 		v.WithdrawalCredentials = make([]byte, 32)
@@ -1239,7 +1239,7 @@ func TestDilithiumChangesSignatureBatchWrongFork(t *testing.T) {
 		privKeys[i] = priv
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.DilithiumToExecutionChange{
+		message := &zondpb.DilithiumToExecutionChange{
 			ToExecutionAddress:  executionAddress,
 			ValidatorIndex:      primitives.ValidatorIndex(i),
 			FromDilithiumPubkey: pubkey,
@@ -1256,12 +1256,12 @@ func TestDilithiumChangesSignatureBatchWrongFork(t *testing.T) {
 	st, err := state_native.InitializeFromProtoCapella(spb)
 	require.NoError(t, err)
 
-	signedChanges := make([]*ethpb.SignedDilithiumToExecutionChange, numValidators)
+	signedChanges := make([]*zondpb.SignedDilithiumToExecutionChange, numValidators)
 	for i, message := range dilithiumChanges {
 		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedDilithiumToExecutionChange{
+		signed := &zondpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
@@ -1284,16 +1284,16 @@ func TestDilithiumChangesSignatureBatchFromBellatrix(t *testing.T) {
 	cfg.CapellaForkEpoch = cfg.BellatrixForkEpoch.AddEpoch(2)
 	params.OverrideBeaconConfig(cfg)
 
-	spb := &ethpb.BeaconStateBellatrix{
-		Fork: &ethpb.Fork{
+	spb := &zondpb.BeaconStateBellatrix{
+		Fork: &zondpb.Fork{
 			CurrentVersion:  params.BeaconConfig().BellatrixForkVersion,
 			PreviousVersion: params.BeaconConfig().AltairForkVersion,
 			Epoch:           params.BeaconConfig().BellatrixForkEpoch,
 		},
 	}
 	numValidators := 10
-	validators := make([]*ethpb.Validator, numValidators)
-	dilithiumChanges := make([]*ethpb.DilithiumToExecutionChange, numValidators)
+	validators := make([]*zondpb.Validator, numValidators)
+	dilithiumChanges := make([]*zondpb.DilithiumToExecutionChange, numValidators)
 	spb.Balances = make([]uint64, numValidators)
 	slot, err := slots.EpochStart(params.BeaconConfig().BellatrixForkEpoch)
 	require.NoError(t, err)
@@ -1304,7 +1304,7 @@ func TestDilithiumChangesSignatureBatchFromBellatrix(t *testing.T) {
 	executionAddress := []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13}
 
 	for i := range validators {
-		v := &ethpb.Validator{}
+		v := &zondpb.Validator{}
 		v.EffectiveBalance = maxEffectiveBalance
 		v.WithdrawableEpoch = params.BeaconConfig().FarFutureEpoch
 		v.WithdrawalCredentials = make([]byte, 32)
@@ -1313,7 +1313,7 @@ func TestDilithiumChangesSignatureBatchFromBellatrix(t *testing.T) {
 		privKeys[i] = priv
 		pubkey := priv.PublicKey().Marshal()
 
-		message := &ethpb.DilithiumToExecutionChange{
+		message := &zondpb.DilithiumToExecutionChange{
 			ToExecutionAddress:  executionAddress,
 			ValidatorIndex:      primitives.ValidatorIndex(i),
 			FromDilithiumPubkey: pubkey,
@@ -1330,9 +1330,9 @@ func TestDilithiumChangesSignatureBatchFromBellatrix(t *testing.T) {
 	st, err := state_native.InitializeFromProtoBellatrix(spb)
 	require.NoError(t, err)
 
-	signedChanges := make([]*ethpb.SignedDilithiumToExecutionChange, numValidators)
-	spc := &ethpb.BeaconStateCapella{
-		Fork: &ethpb.Fork{
+	signedChanges := make([]*zondpb.SignedDilithiumToExecutionChange, numValidators)
+	spc := &zondpb.BeaconStateCapella{
+		Fork: &zondpb.Fork{
 			CurrentVersion:  params.BeaconConfig().CapellaForkVersion,
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			Epoch:           params.BeaconConfig().CapellaForkEpoch,
@@ -1349,7 +1349,7 @@ func TestDilithiumChangesSignatureBatchFromBellatrix(t *testing.T) {
 		signature, err := signing.ComputeDomainAndSign(stc, 0, message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
 		require.NoError(t, err)
 
-		signed := &ethpb.SignedDilithiumToExecutionChange{
+		signed := &zondpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}

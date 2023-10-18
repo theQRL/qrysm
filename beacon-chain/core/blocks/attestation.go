@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
 	"go.opencensus.io/trace"
 )
@@ -45,7 +45,7 @@ func ProcessAttestationsNoVerifySignature(
 func VerifyAttestationNoVerifySignature(
 	ctx context.Context,
 	beaconState state.ReadOnlyBeaconState,
-	att *ethpb.Attestation,
+	att *zondpb.Attestation,
 ) error {
 	ctx, span := trace.StartSpan(ctx, "core.VerifyAttestationNoVerifySignature")
 	defer span.End()
@@ -129,7 +129,7 @@ func VerifyAttestationNoVerifySignature(
 func ProcessAttestationNoVerifySignature(
 	ctx context.Context,
 	beaconState state.BeaconState,
-	att *ethpb.Attestation,
+	att *zondpb.Attestation,
 ) (state.BeaconState, error) {
 	ctx, span := trace.StartSpan(ctx, "core.ProcessAttestationNoVerifySignature")
 	defer span.End()
@@ -145,7 +145,7 @@ func ProcessAttestationNoVerifySignature(
 	if err != nil {
 		return nil, err
 	}
-	pendingAtt := &ethpb.PendingAttestation{
+	pendingAtt := &zondpb.PendingAttestation{
 		Data:            data,
 		AggregationBits: att.AggregationBits,
 		InclusionDelay:  beaconState.Slot() - s,
@@ -167,7 +167,7 @@ func ProcessAttestationNoVerifySignature(
 
 // VerifyAttestationSignature converts and attestation into an indexed attestation and verifies
 // the signature in that attestation.
-func VerifyAttestationSignature(ctx context.Context, beaconState state.ReadOnlyBeaconState, att *ethpb.Attestation) error {
+func VerifyAttestationSignature(ctx context.Context, beaconState state.ReadOnlyBeaconState, att *zondpb.Attestation) error {
 	if err := helpers.ValidateNilAttestation(att); err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func VerifyAttestationSignature(ctx context.Context, beaconState state.ReadOnlyB
 //	  domain = get_domain(state, DOMAIN_BEACON_ATTESTER, indexed_attestation.data.target.epoch)
 //	  signing_root = compute_signing_root(indexed_attestation.data, domain)
 //	  return bls.FastAggregateVerify(pubkeys, signing_root, indexed_attestation.signature)
-func VerifyIndexedAttestation(ctx context.Context, beaconState state.ReadOnlyBeaconState, indexedAtt *ethpb.IndexedAttestation) error {
+func VerifyIndexedAttestation(ctx context.Context, beaconState state.ReadOnlyBeaconState, indexedAtt *zondpb.IndexedAttestation) error {
 	ctx, span := trace.StartSpan(ctx, "core.VerifyIndexedAttestation")
 	defer span.End()
 

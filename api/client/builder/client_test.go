@@ -18,7 +18,7 @@ import (
 	types "github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	v1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
@@ -31,7 +31,7 @@ func (fn roundtrip) RoundTrip(r *http.Request) (*http.Response, error) {
 
 func TestClient_Status(t *testing.T) {
 	ctx := context.Background()
-	statusPath := "/eth/v1/builder/status"
+	statusPath := "/zond/v1/builder/status"
 	hc := &http.Client{
 		Transport: roundtrip(func(r *http.Request) (*http.Response, error) {
 			defer func() {
@@ -85,7 +85,7 @@ func TestClient_Status(t *testing.T) {
 func TestClient_RegisterValidator(t *testing.T) {
 	ctx := context.Background()
 	expectedBody := `[{"message":{"fee_recipient":"0x0000000000000000000000000000000000000000","gas_limit":"23","timestamp":"42","pubkey":"0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a"},"signature":"0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"}]`
-	expectedPath := "/eth/v1/builder/validators"
+	expectedPath := "/zond/v1/builder/validators"
 	hc := &http.Client{
 		Transport: roundtrip(func(r *http.Request) (*http.Response, error) {
 			body, err := io.ReadAll(r.Body)
@@ -107,8 +107,8 @@ func TestClient_RegisterValidator(t *testing.T) {
 		hc:      hc,
 		baseURL: &url.URL{Host: "localhost:3500", Scheme: "http"},
 	}
-	reg := &eth.SignedValidatorRegistrationV1{
-		Message: &eth.ValidatorRegistrationV1{
+	reg := &zond.SignedValidatorRegistrationV1{
+		Message: &zond.ValidatorRegistrationV1{
 			FeeRecipient: ezDecode(t, params.BeaconConfig().EthBurnAddressHex),
 			GasLimit:     23,
 			Timestamp:    42,
@@ -116,12 +116,12 @@ func TestClient_RegisterValidator(t *testing.T) {
 		},
 		Signature: ezDecode(t, "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"),
 	}
-	require.NoError(t, c.RegisterValidator(ctx, []*eth.SignedValidatorRegistrationV1{reg}))
+	require.NoError(t, c.RegisterValidator(ctx, []*zond.SignedValidatorRegistrationV1{reg}))
 }
 
 func TestClient_GetHeader(t *testing.T) {
 	ctx := context.Background()
-	expectedPath := "/eth/v1/builder/header/23/0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2/0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a"
+	expectedPath := "/zond/v1/builder/header/23/0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2/0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a"
 	var slot types.Slot = 23
 	parentHash := ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2")
 	pubkey := ezDecode(t, "0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a")
@@ -334,32 +334,32 @@ func TestSubmitBlindedBlock(t *testing.T) {
 		require.ErrorContains(t, "not a bellatrix payload", err)
 	})
 	t.Run("not blinded", func(t *testing.T) {
-		sbb, err := blocks.NewSignedBeaconBlock(&eth.SignedBeaconBlockBellatrix{Block: &eth.BeaconBlockBellatrix{Body: &eth.BeaconBlockBodyBellatrix{}}})
+		sbb, err := blocks.NewSignedBeaconBlock(&zond.SignedBeaconBlockBellatrix{Block: &zond.BeaconBlockBellatrix{Body: &zond.BeaconBlockBodyBellatrix{}}})
 		require.NoError(t, err)
 		_, err = (&Client{}).SubmitBlindedBlock(ctx, sbb)
 		require.ErrorIs(t, err, errNotBlinded)
 	})
 }
 
-func testSignedBlindedBeaconBlockBellatrix(t *testing.T) *eth.SignedBlindedBeaconBlockBellatrix {
-	return &eth.SignedBlindedBeaconBlockBellatrix{
-		Block: &eth.BlindedBeaconBlockBellatrix{
+func testSignedBlindedBeaconBlockBellatrix(t *testing.T) *zond.SignedBlindedBeaconBlockBellatrix {
+	return &zond.SignedBlindedBeaconBlockBellatrix{
+		Block: &zond.BlindedBeaconBlockBellatrix{
 			Slot:          1,
 			ProposerIndex: 1,
 			ParentRoot:    ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 			StateRoot:     ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
-			Body: &eth.BlindedBeaconBlockBodyBellatrix{
+			Body: &zond.BlindedBeaconBlockBodyBellatrix{
 				RandaoReveal: ezDecode(t, "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"),
-				Eth1Data: &eth.Eth1Data{
+				Eth1Data: &zond.Eth1Data{
 					DepositRoot:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 					DepositCount: 1,
 					BlockHash:    ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 				},
 				Graffiti: ezDecode(t, "0xdeadbeefc0ffee"),
-				ProposerSlashings: []*eth.ProposerSlashing{
+				ProposerSlashings: []*zond.ProposerSlashing{
 					{
-						Header_1: &eth.SignedBeaconBlockHeader{
-							Header: &eth.BeaconBlockHeader{
+						Header_1: &zond.SignedBeaconBlockHeader{
+							Header: &zond.BeaconBlockHeader{
 								Slot:          1,
 								ProposerIndex: 1,
 								ParentRoot:    ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
@@ -368,8 +368,8 @@ func testSignedBlindedBeaconBlockBellatrix(t *testing.T) *eth.SignedBlindedBeaco
 							},
 							Signature: ezDecode(t, "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"),
 						},
-						Header_2: &eth.SignedBeaconBlockHeader{
-							Header: &eth.BeaconBlockHeader{
+						Header_2: &zond.SignedBeaconBlockHeader{
+							Header: &zond.BeaconBlockHeader{
 								Slot:          1,
 								ProposerIndex: 1,
 								ParentRoot:    ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
@@ -380,36 +380,36 @@ func testSignedBlindedBeaconBlockBellatrix(t *testing.T) *eth.SignedBlindedBeaco
 						},
 					},
 				},
-				AttesterSlashings: []*eth.AttesterSlashing{
+				AttesterSlashings: []*zond.AttesterSlashing{
 					{
-						Attestation_1: &eth.IndexedAttestation{
+						Attestation_1: &zond.IndexedAttestation{
 							AttestingIndices: []uint64{1},
-							Data: &eth.AttestationData{
+							Data: &zond.AttestationData{
 								Slot:            1,
 								CommitteeIndex:  1,
 								BeaconBlockRoot: ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
-								Source: &eth.Checkpoint{
+								Source: &zond.Checkpoint{
 									Epoch: 1,
 									Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 								},
-								Target: &eth.Checkpoint{
+								Target: &zond.Checkpoint{
 									Epoch: 1,
 									Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 								},
 							},
 							Signature: ezDecode(t, "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"),
 						},
-						Attestation_2: &eth.IndexedAttestation{
+						Attestation_2: &zond.IndexedAttestation{
 							AttestingIndices: []uint64{1},
-							Data: &eth.AttestationData{
+							Data: &zond.AttestationData{
 								Slot:            1,
 								CommitteeIndex:  1,
 								BeaconBlockRoot: ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
-								Source: &eth.Checkpoint{
+								Source: &zond.Checkpoint{
 									Epoch: 1,
 									Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 								},
-								Target: &eth.Checkpoint{
+								Target: &zond.Checkpoint{
 									Epoch: 1,
 									Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 								},
@@ -418,18 +418,18 @@ func testSignedBlindedBeaconBlockBellatrix(t *testing.T) *eth.SignedBlindedBeaco
 						},
 					},
 				},
-				Attestations: []*eth.Attestation{
+				Attestations: []*zond.Attestation{
 					{
 						AggregationBits: bitfield.Bitlist{0x01},
-						Data: &eth.AttestationData{
+						Data: &zond.AttestationData{
 							Slot:            1,
 							CommitteeIndex:  1,
 							BeaconBlockRoot: ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
-							Source: &eth.Checkpoint{
+							Source: &zond.Checkpoint{
 								Epoch: 1,
 								Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 							},
-							Target: &eth.Checkpoint{
+							Target: &zond.Checkpoint{
 								Epoch: 1,
 								Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 							},
@@ -437,10 +437,10 @@ func testSignedBlindedBeaconBlockBellatrix(t *testing.T) *eth.SignedBlindedBeaco
 						Signature: ezDecode(t, "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"),
 					},
 				},
-				Deposits: []*eth.Deposit{
+				Deposits: []*zond.Deposit{
 					{
 						Proof: [][]byte{ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2")},
-						Data: &eth.Deposit_Data{
+						Data: &zond.Deposit_Data{
 							PublicKey:             ezDecode(t, "0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a"),
 							WithdrawalCredentials: ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 							Amount:                1,
@@ -448,16 +448,16 @@ func testSignedBlindedBeaconBlockBellatrix(t *testing.T) *eth.SignedBlindedBeaco
 						},
 					},
 				},
-				VoluntaryExits: []*eth.SignedVoluntaryExit{
+				VoluntaryExits: []*zond.SignedVoluntaryExit{
 					{
-						Exit: &eth.VoluntaryExit{
+						Exit: &zond.VoluntaryExit{
 							Epoch:          1,
 							ValidatorIndex: 1,
 						},
 						Signature: ezDecode(t, "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"),
 					},
 				},
-				SyncAggregate: &eth.SyncAggregate{
+				SyncAggregate: &zond.SyncAggregate{
 					SyncCommitteeSignature: make([]byte, 48),
 					SyncCommitteeBits:      bitfield.Bitvector512{0x01},
 				},
@@ -483,25 +483,25 @@ func testSignedBlindedBeaconBlockBellatrix(t *testing.T) *eth.SignedBlindedBeaco
 	}
 }
 
-func testSignedBlindedBeaconBlockCapella(t *testing.T) *eth.SignedBlindedBeaconBlockCapella {
-	return &eth.SignedBlindedBeaconBlockCapella{
-		Block: &eth.BlindedBeaconBlockCapella{
+func testSignedBlindedBeaconBlockCapella(t *testing.T) *zond.SignedBlindedBeaconBlockCapella {
+	return &zond.SignedBlindedBeaconBlockCapella{
+		Block: &zond.BlindedBeaconBlockCapella{
 			Slot:          1,
 			ProposerIndex: 1,
 			ParentRoot:    ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 			StateRoot:     ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
-			Body: &eth.BlindedBeaconBlockBodyCapella{
+			Body: &zond.BlindedBeaconBlockBodyCapella{
 				RandaoReveal: ezDecode(t, "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"),
-				Eth1Data: &eth.Eth1Data{
+				Eth1Data: &zond.Eth1Data{
 					DepositRoot:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 					DepositCount: 1,
 					BlockHash:    ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 				},
 				Graffiti: ezDecode(t, "0xdeadbeefc0ffee"),
-				ProposerSlashings: []*eth.ProposerSlashing{
+				ProposerSlashings: []*zond.ProposerSlashing{
 					{
-						Header_1: &eth.SignedBeaconBlockHeader{
-							Header: &eth.BeaconBlockHeader{
+						Header_1: &zond.SignedBeaconBlockHeader{
+							Header: &zond.BeaconBlockHeader{
 								Slot:          1,
 								ProposerIndex: 1,
 								ParentRoot:    ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
@@ -510,8 +510,8 @@ func testSignedBlindedBeaconBlockCapella(t *testing.T) *eth.SignedBlindedBeaconB
 							},
 							Signature: ezDecode(t, "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"),
 						},
-						Header_2: &eth.SignedBeaconBlockHeader{
-							Header: &eth.BeaconBlockHeader{
+						Header_2: &zond.SignedBeaconBlockHeader{
+							Header: &zond.BeaconBlockHeader{
 								Slot:          1,
 								ProposerIndex: 1,
 								ParentRoot:    ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
@@ -522,36 +522,36 @@ func testSignedBlindedBeaconBlockCapella(t *testing.T) *eth.SignedBlindedBeaconB
 						},
 					},
 				},
-				AttesterSlashings: []*eth.AttesterSlashing{
+				AttesterSlashings: []*zond.AttesterSlashing{
 					{
-						Attestation_1: &eth.IndexedAttestation{
+						Attestation_1: &zond.IndexedAttestation{
 							AttestingIndices: []uint64{1},
-							Data: &eth.AttestationData{
+							Data: &zond.AttestationData{
 								Slot:            1,
 								CommitteeIndex:  1,
 								BeaconBlockRoot: ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
-								Source: &eth.Checkpoint{
+								Source: &zond.Checkpoint{
 									Epoch: 1,
 									Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 								},
-								Target: &eth.Checkpoint{
+								Target: &zond.Checkpoint{
 									Epoch: 1,
 									Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 								},
 							},
 							Signature: ezDecode(t, "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"),
 						},
-						Attestation_2: &eth.IndexedAttestation{
+						Attestation_2: &zond.IndexedAttestation{
 							AttestingIndices: []uint64{1},
-							Data: &eth.AttestationData{
+							Data: &zond.AttestationData{
 								Slot:            1,
 								CommitteeIndex:  1,
 								BeaconBlockRoot: ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
-								Source: &eth.Checkpoint{
+								Source: &zond.Checkpoint{
 									Epoch: 1,
 									Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 								},
-								Target: &eth.Checkpoint{
+								Target: &zond.Checkpoint{
 									Epoch: 1,
 									Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 								},
@@ -560,18 +560,18 @@ func testSignedBlindedBeaconBlockCapella(t *testing.T) *eth.SignedBlindedBeaconB
 						},
 					},
 				},
-				Attestations: []*eth.Attestation{
+				Attestations: []*zond.Attestation{
 					{
 						AggregationBits: bitfield.Bitlist{0x01},
-						Data: &eth.AttestationData{
+						Data: &zond.AttestationData{
 							Slot:            1,
 							CommitteeIndex:  1,
 							BeaconBlockRoot: ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
-							Source: &eth.Checkpoint{
+							Source: &zond.Checkpoint{
 								Epoch: 1,
 								Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 							},
-							Target: &eth.Checkpoint{
+							Target: &zond.Checkpoint{
 								Epoch: 1,
 								Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 							},
@@ -579,10 +579,10 @@ func testSignedBlindedBeaconBlockCapella(t *testing.T) *eth.SignedBlindedBeaconB
 						Signature: ezDecode(t, "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"),
 					},
 				},
-				Deposits: []*eth.Deposit{
+				Deposits: []*zond.Deposit{
 					{
 						Proof: [][]byte{ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2")},
-						Data: &eth.Deposit_Data{
+						Data: &zond.Deposit_Data{
 							PublicKey:             ezDecode(t, "0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a"),
 							WithdrawalCredentials: ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 							Amount:                1,
@@ -590,16 +590,16 @@ func testSignedBlindedBeaconBlockCapella(t *testing.T) *eth.SignedBlindedBeaconB
 						},
 					},
 				},
-				VoluntaryExits: []*eth.SignedVoluntaryExit{
+				VoluntaryExits: []*zond.SignedVoluntaryExit{
 					{
-						Exit: &eth.VoluntaryExit{
+						Exit: &zond.VoluntaryExit{
 							Epoch:          1,
 							ValidatorIndex: 1,
 						},
 						Signature: ezDecode(t, "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"),
 					},
 				},
-				SyncAggregate: &eth.SyncAggregate{
+				SyncAggregate: &zond.SyncAggregate{
 					SyncCommitteeSignature: make([]byte, 48),
 					SyncCommitteeBits:      bitfield.Bitvector512{0x01},
 				},

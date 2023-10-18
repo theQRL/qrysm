@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -99,10 +99,10 @@ func TestRegistration_Valid(t *testing.T) {
 	decodedSignature3, err := hexutil.Decode(signature3)
 	require.NoError(t, err)
 
-	protoRegistrations := ethpb.SignedValidatorRegistrationsV1{
-		Messages: []*ethpb.SignedValidatorRegistrationV1{
+	protoRegistrations := zondpb.SignedValidatorRegistrationsV1{
+		Messages: []*zondpb.SignedValidatorRegistrationV1{
 			{
-				Message: &ethpb.ValidatorRegistrationV1{
+				Message: &zondpb.ValidatorRegistrationV1{
 					FeeRecipient: decodedFeeRecipient1,
 					GasLimit:     100,
 					Timestamp:    1000,
@@ -111,7 +111,7 @@ func TestRegistration_Valid(t *testing.T) {
 				Signature: decodedSignature1,
 			},
 			{
-				Message: &ethpb.ValidatorRegistrationV1{
+				Message: &zondpb.ValidatorRegistrationV1{
 					FeeRecipient: decodedFeeRecipient2,
 					GasLimit:     200,
 					Timestamp:    2000,
@@ -120,7 +120,7 @@ func TestRegistration_Valid(t *testing.T) {
 				Signature: decodedSignature2,
 			},
 			{
-				Message: &ethpb.ValidatorRegistrationV1{
+				Message: &zondpb.ValidatorRegistrationV1{
 					FeeRecipient: decodedFeeRecipient3,
 					GasLimit:     300,
 					Timestamp:    3000,
@@ -155,7 +155,7 @@ func TestRegistration_BadRequest(t *testing.T) {
 	).Times(1)
 
 	validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
-	_, err := validatorClient.SubmitValidatorRegistrations(context.Background(), &ethpb.SignedValidatorRegistrationsV1{})
+	_, err := validatorClient.SubmitValidatorRegistrations(context.Background(), &zondpb.SignedValidatorRegistrationsV1{})
 	assert.ErrorContains(t, "failed to send POST data to `/eth/v1/validator/register_validator` REST endpoint", err)
 	assert.ErrorContains(t, "foo error", err)
 }

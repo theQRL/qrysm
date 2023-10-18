@@ -33,7 +33,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -53,7 +53,7 @@ func TestValidateBeaconBlockPubSub_InvalidSignature(t *testing.T) {
 	bRoot, err := parentBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, db.SaveState(ctx, beaconState, bRoot))
-	require.NoError(t, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(t, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
 	copied := beaconState.Copy()
 	require.NoError(t, copied.SetSlot(1))
 	proposerIdx, err := helpers.BeaconProposerIndex(ctx, copied)
@@ -68,7 +68,7 @@ func TestValidateBeaconBlockPubSub_InvalidSignature(t *testing.T) {
 
 	stateGen := stategen.New(db, doublylinkedtree.New())
 	chainService := &mock.ChainService{Genesis: time.Unix(time.Now().Unix()-int64(params.BeaconConfig().SecondsPerSlot), 0),
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		},
@@ -174,7 +174,7 @@ func TestValidateBeaconBlockPubSub_CanRecoverStateSummary(t *testing.T) {
 	stateGen := stategen.New(db, doublylinkedtree.New())
 	chainService := &mock.ChainService{Genesis: time.Unix(time.Now().Unix()-int64(params.BeaconConfig().SecondsPerSlot), 0),
 		State: beaconState,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		},
@@ -224,7 +224,7 @@ func TestValidateBeaconBlockPubSub_IsInCache(t *testing.T) {
 	bRoot, err := parentBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, db.SaveState(ctx, beaconState, bRoot))
-	require.NoError(t, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(t, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
 	copied := beaconState.Copy()
 	require.NoError(t, copied.SetSlot(1))
 	proposerIdx, err := helpers.BeaconProposerIndex(context.Background(), copied)
@@ -239,7 +239,7 @@ func TestValidateBeaconBlockPubSub_IsInCache(t *testing.T) {
 	stateGen := stategen.New(db, doublylinkedtree.New())
 	chainService := &mock.ChainService{Genesis: time.Unix(time.Now().Unix()-int64(params.BeaconConfig().SecondsPerSlot), 0),
 		State: beaconState,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		},
@@ -291,7 +291,7 @@ func TestValidateBeaconBlockPubSub_ValidProposerSignature(t *testing.T) {
 	bRoot, err := parentBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, db.SaveState(ctx, beaconState, bRoot))
-	require.NoError(t, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(t, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
 	copied := beaconState.Copy()
 	require.NoError(t, copied.SetSlot(1))
 	proposerIdx, err := helpers.BeaconProposerIndex(ctx, copied)
@@ -306,7 +306,7 @@ func TestValidateBeaconBlockPubSub_ValidProposerSignature(t *testing.T) {
 	stateGen := stategen.New(db, doublylinkedtree.New())
 	chainService := &mock.ChainService{Genesis: time.Unix(time.Now().Unix()-int64(params.BeaconConfig().SecondsPerSlot), 0),
 		State: beaconState,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		},
@@ -357,7 +357,7 @@ func TestValidateBeaconBlockPubSub_WithLookahead(t *testing.T) {
 	bRoot, err := parentBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, db.SaveState(ctx, beaconState, bRoot))
-	require.NoError(t, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(t, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
 	copied := beaconState.Copy()
 	// The next block is only 1 epoch ahead so as to not induce a new seed.
 	blkSlot := params.BeaconConfig().SlotsPerEpoch.Mul(uint64(coreTime.NextEpoch(copied)))
@@ -377,7 +377,7 @@ func TestValidateBeaconBlockPubSub_WithLookahead(t *testing.T) {
 	chainService := &mock.ChainService{Genesis: time.Unix(time.Now().Unix()-offset, 0),
 		DB:    db,
 		State: beaconState,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 		}}
 	r := &Service{
@@ -426,7 +426,7 @@ func TestValidateBeaconBlockPubSub_AdvanceEpochsForState(t *testing.T) {
 	bRoot, err := parentBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, db.SaveState(ctx, beaconState, bRoot))
-	require.NoError(t, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(t, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
 	copied := beaconState.Copy()
 	// The next block is at least 2 epochs ahead to induce shuffling and a new seed.
 	blkSlot := params.BeaconConfig().SlotsPerEpoch * 2
@@ -446,7 +446,7 @@ func TestValidateBeaconBlockPubSub_AdvanceEpochsForState(t *testing.T) {
 	chainService := &mock.ChainService{Genesis: time.Unix(time.Now().Unix()-offset, 0),
 		DB:    db,
 		State: beaconState,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 		}}
 	r := &Service{
@@ -497,7 +497,7 @@ func TestValidateBeaconBlockPubSub_Syncing(t *testing.T) {
 	msg.Signature = sk.Sign([]byte("data")).Marshal()
 	chainService := &mock.ChainService{
 		Genesis: time.Now(),
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 		}}
 	r := &Service{
@@ -536,7 +536,7 @@ func TestValidateBeaconBlockPubSub_IgnoreAndQueueBlocksFromNearFuture(t *testing
 	bRoot, err := parentBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, db.SaveState(ctx, beaconState, bRoot))
-	require.NoError(t, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(t, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
 	copied := beaconState.Copy()
 	require.NoError(t, copied.SetSlot(1))
 	proposerIdx, err := helpers.BeaconProposerIndex(ctx, copied)
@@ -551,7 +551,7 @@ func TestValidateBeaconBlockPubSub_IgnoreAndQueueBlocksFromNearFuture(t *testing
 
 	stateGen := stategen.New(db, doublylinkedtree.New())
 	chainService := &mock.ChainService{Genesis: time.Now(),
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		}}
@@ -657,7 +657,7 @@ func TestValidateBeaconBlockPubSub_RejectBlocksFromThePast(t *testing.T) {
 	genesisTime := time.Now()
 	chainService := &mock.ChainService{
 		Genesis: time.Unix(genesisTime.Unix()-1000, 0),
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 1,
 		},
 	}
@@ -714,7 +714,7 @@ func TestValidateBeaconBlockPubSub_SeenProposerSlot(t *testing.T) {
 
 	chainService := &mock.ChainService{Genesis: time.Unix(time.Now().Unix()-int64(params.BeaconConfig().SecondsPerSlot), 0),
 		State: beaconState,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		},
@@ -764,7 +764,7 @@ func TestValidateBeaconBlockPubSub_FilterByFinalizedEpoch(t *testing.T) {
 	parentRoot, err := parent.Block.HashTreeRoot()
 	require.NoError(t, err)
 	chain := &mock.ChainService{Genesis: time.Unix(time.Now().Unix()-int64(params.BeaconConfig().SecondsPerSlot), 0),
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 1,
 		},
 		ValidatorsRoot: [32]byte{},
@@ -831,7 +831,7 @@ func TestValidateBeaconBlockPubSub_ParentNotFinalizedDescendant(t *testing.T) {
 	bRoot, err := parentBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, db.SaveState(ctx, beaconState, bRoot))
-	require.NoError(t, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(t, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
 	copied := beaconState.Copy()
 	require.NoError(t, copied.SetSlot(1))
 	proposerIdx, err := helpers.BeaconProposerIndex(ctx, copied)
@@ -848,7 +848,7 @@ func TestValidateBeaconBlockPubSub_ParentNotFinalizedDescendant(t *testing.T) {
 		Genesis:      time.Unix(time.Now().Unix()-int64(params.BeaconConfig().SecondsPerSlot), 0),
 		NotFinalized: true,
 		State:        beaconState,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		},
@@ -898,7 +898,7 @@ func TestValidateBeaconBlockPubSub_InvalidParentBlock(t *testing.T) {
 	bRoot, err := parentBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, db.SaveState(ctx, beaconState, bRoot))
-	require.NoError(t, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(t, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
 	copied := beaconState.Copy()
 	require.NoError(t, copied.SetSlot(1))
 	proposerIdx, err := helpers.BeaconProposerIndex(ctx, copied)
@@ -918,7 +918,7 @@ func TestValidateBeaconBlockPubSub_InvalidParentBlock(t *testing.T) {
 	stateGen := stategen.New(db, doublylinkedtree.New())
 	chainService := &mock.ChainService{Genesis: time.Unix(time.Now().Unix()-int64(params.BeaconConfig().SecondsPerSlot), 0),
 		State: beaconState,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 		}}
 	r := &Service{
@@ -973,7 +973,7 @@ func TestValidateBeaconBlockPubSub_InvalidParentBlock(t *testing.T) {
 	}
 	chainService = &mock.ChainService{Genesis: time.Unix(time.Now().Unix()-int64(2*params.BeaconConfig().SecondsPerSlot), 0),
 		State: beaconState,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 		}}
 	r.cfg.chain = chainService
@@ -997,7 +997,7 @@ func TestValidateBeaconBlockPubSub_RejectBlocksFromBadParent(t *testing.T) {
 	bRoot, err := parentBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, db.SaveState(ctx, beaconState, bRoot))
-	require.NoError(t, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(t, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
 
 	copied := beaconState.Copy()
 	// The next block is at least 2 epochs ahead to induce shuffling and a new seed.
@@ -1028,7 +1028,7 @@ func TestValidateBeaconBlockPubSub_RejectBlocksFromBadParent(t *testing.T) {
 	stateGen := stategen.New(db, doublylinkedtree.New())
 	chainService := &mock.ChainService{
 		Genesis: time.Unix(genesisTime.Unix()-int64(slotsSinceGenesis.Mul(perSlot)), 0),
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 		},
 	}
@@ -1108,7 +1108,7 @@ func TestValidateBeaconBlockPubSub_ValidExecutionPayload(t *testing.T) {
 	presentTime := time.Now().Unix()
 	require.NoError(t, beaconState.SetGenesisTime(uint64(presentTime)))
 	require.NoError(t, db.SaveState(ctx, beaconState, bRoot))
-	require.NoError(t, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(t, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
 	copied := beaconState.Copy()
 	require.NoError(t, copied.SetSlot(1))
 	proposerIdx, err := helpers.BeaconProposerIndex(ctx, copied)
@@ -1130,7 +1130,7 @@ func TestValidateBeaconBlockPubSub_ValidExecutionPayload(t *testing.T) {
 	stateGen := stategen.New(db, doublylinkedtree.New())
 	chainService := &mock.ChainService{Genesis: time.Unix(presentTime-int64(params.BeaconConfig().SecondsPerSlot), 0),
 		DB: db,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		}}
@@ -1179,7 +1179,7 @@ func TestValidateBeaconBlockPubSub_InvalidPayloadTimestamp(t *testing.T) {
 	bRoot, err := parentBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, db.SaveState(ctx, beaconState, bRoot))
-	require.NoError(t, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(t, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
 	copied := beaconState.Copy()
 	require.NoError(t, copied.SetSlot(1))
 	proposerIdx, err := helpers.BeaconProposerIndex(ctx, copied)
@@ -1202,7 +1202,7 @@ func TestValidateBeaconBlockPubSub_InvalidPayloadTimestamp(t *testing.T) {
 	stateGen := stategen.New(db, doublylinkedtree.New())
 	chainService := &mock.ChainService{Genesis: time.Unix(presentTime-int64(params.BeaconConfig().SecondsPerSlot), 0),
 		DB: db,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		}}
@@ -1247,7 +1247,7 @@ func Test_validateBellatrixBeaconBlock(t *testing.T) {
 	stateGen := stategen.New(db, doublylinkedtree.New())
 	presentTime := time.Now().Unix()
 	chainService := &mock.ChainService{Genesis: time.Unix(presentTime-int64(params.BeaconConfig().SecondsPerSlot), 0),
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		}}
@@ -1283,7 +1283,7 @@ func Test_validateBellatrixBeaconBlockParentValidation(t *testing.T) {
 	bRoot, err := parentBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, db.SaveState(ctx, beaconState, bRoot))
-	require.NoError(t, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(t, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
 	copied := beaconState.Copy()
 	require.NoError(t, copied.SetSlot(1))
 	proposerIdx, err := helpers.BeaconProposerIndex(ctx, copied)
@@ -1307,7 +1307,7 @@ func Test_validateBellatrixBeaconBlockParentValidation(t *testing.T) {
 
 	chainService := &mock.ChainService{Genesis: time.Unix(int64(beaconState.GenesisTime()), 0),
 		OptimisticRoots: make(map[[32]byte]bool),
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		}}
@@ -1340,7 +1340,7 @@ func Test_validateBeaconBlockProcessingWhenParentIsOptimistic(t *testing.T) {
 	bRoot, err := parentBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, db.SaveState(ctx, beaconState, bRoot))
-	require.NoError(t, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(t, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
 	copied := beaconState.Copy()
 	require.NoError(t, copied.SetSlot(1))
 	proposerIdx, err := helpers.BeaconProposerIndex(ctx, copied)
@@ -1362,7 +1362,7 @@ func Test_validateBeaconBlockProcessingWhenParentIsOptimistic(t *testing.T) {
 	chainService := &mock.ChainService{Genesis: time.Unix(int64(beaconState.GenesisTime()), 0),
 		DB:         db,
 		Optimistic: true,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		}}

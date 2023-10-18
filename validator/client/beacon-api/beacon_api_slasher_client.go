@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/validator/client/iface"
 )
 
@@ -14,7 +14,7 @@ type beaconApiSlasherClient struct {
 	jsonRestHandler jsonRestHandler
 }
 
-func (c beaconApiSlasherClient) IsSlashableAttestation(ctx context.Context, in *ethpb.IndexedAttestation) (*ethpb.AttesterSlashingResponse, error) {
+func (c beaconApiSlasherClient) IsSlashableAttestation(ctx context.Context, in *zondpb.IndexedAttestation) (*zondpb.AttesterSlashingResponse, error) {
 	if c.fallbackClient != nil {
 		return c.fallbackClient.IsSlashableAttestation(ctx, in)
 	}
@@ -23,7 +23,7 @@ func (c beaconApiSlasherClient) IsSlashableAttestation(ctx context.Context, in *
 	panic("beaconApiSlasherClient.IsSlashableAttestation is not implemented. To use a fallback client, pass a fallback client as the last argument of NewBeaconApiSlasherClientWithFallback.")
 }
 
-func (c beaconApiSlasherClient) IsSlashableBlock(ctx context.Context, in *ethpb.SignedBeaconBlockHeader) (*ethpb.ProposerSlashingResponse, error) {
+func (c beaconApiSlasherClient) IsSlashableBlock(ctx context.Context, in *zondpb.SignedBeaconBlockHeader) (*zondpb.ProposerSlashingResponse, error) {
 	if c.fallbackClient != nil {
 		return c.fallbackClient.IsSlashableBlock(ctx, in)
 	}

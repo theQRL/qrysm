@@ -10,14 +10,14 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/crypto/rand"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 func (s *Simulator) generateBlockHeadersForSlot(
 	ctx context.Context, slot primitives.Slot,
-) ([]*ethpb.SignedBeaconBlockHeader, []*ethpb.ProposerSlashing, error) {
-	blocks := make([]*ethpb.SignedBeaconBlockHeader, 0)
-	slashings := make([]*ethpb.ProposerSlashing, 0)
+) ([]*zondpb.SignedBeaconBlockHeader, []*zondpb.ProposerSlashing, error) {
+	blocks := make([]*zondpb.SignedBeaconBlockHeader, 0)
+	slashings := make([]*zondpb.ProposerSlashing, 0)
 	proposer := rand.NewGenerator().Uint64() % s.srvConfig.Params.NumValidators
 
 	var parentRoot [32]byte
@@ -25,8 +25,8 @@ func (s *Simulator) generateBlockHeadersForSlot(
 	if err != nil {
 		return nil, nil, err
 	}
-	block := &ethpb.SignedBeaconBlockHeader{
-		Header: &ethpb.BeaconBlockHeader{
+	block := &zondpb.SignedBeaconBlockHeader{
+		Header: &zondpb.BeaconBlockHeader{
 			Slot:          slot,
 			ProposerIndex: primitives.ValidatorIndex(proposer),
 			ParentRoot:    bytesutil.PadTo([]byte{}, 32),
@@ -43,8 +43,8 @@ func (s *Simulator) generateBlockHeadersForSlot(
 	blocks = append(blocks, block)
 	if rand.NewGenerator().Float64() < s.srvConfig.Params.ProposerSlashingProbab {
 		log.WithField("proposerIndex", proposer).Infof("Slashable block made")
-		slashableBlock := &ethpb.SignedBeaconBlockHeader{
-			Header: &ethpb.BeaconBlockHeader{
+		slashableBlock := &zondpb.SignedBeaconBlockHeader{
+			Header: &zondpb.BeaconBlockHeader{
 				Slot:          slot,
 				ProposerIndex: primitives.ValidatorIndex(proposer),
 				ParentRoot:    bytesutil.PadTo([]byte{}, 32),
@@ -60,7 +60,7 @@ func (s *Simulator) generateBlockHeadersForSlot(
 		slashableBlock.Signature = sig.Marshal()
 
 		blocks = append(blocks, slashableBlock)
-		slashings = append(slashings, &ethpb.ProposerSlashing{
+		slashings = append(slashings, &zondpb.ProposerSlashing{
 			Header_1: block,
 			Header_2: slashableBlock,
 		})
@@ -70,7 +70,7 @@ func (s *Simulator) generateBlockHeadersForSlot(
 
 func (s *Simulator) signBlockHeader(
 	beaconState state.BeaconState,
-	header *ethpb.SignedBeaconBlockHeader,
+	header *zondpb.SignedBeaconBlockHeader,
 ) (bls.Signature, error) {
 	domain, err := signing.Domain(
 		beaconState.Fork(),
@@ -85,7 +85,7 @@ func (s *Simulator) signBlockHeader(
 	if err != nil {
 		return nil, err
 	}
-	container := &ethpb.SigningData{
+	container := &zondpb.SigningData{
 		ObjectRoot: htr[:],
 		Domain:     domain,
 	}

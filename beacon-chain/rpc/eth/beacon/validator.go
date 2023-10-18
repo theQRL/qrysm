@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/eth/v1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/proto/migration"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
@@ -38,7 +38,7 @@ func (e *invalidValidatorIdError) Error() string {
 }
 
 // GetValidator returns a validator specified by state and id or public key along with status and balance.
-func (bs *Server) GetValidator(ctx context.Context, req *ethpb.StateValidatorRequest) (*ethpb.StateValidatorResponse, error) {
+func (bs *Server) GetValidator(ctx context.Context, req *zondpb.StateValidatorRequest) (*zondpb.StateValidatorResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.GetValidator")
 	defer span.End()
 
@@ -68,11 +68,11 @@ func (bs *Server) GetValidator(ctx context.Context, req *ethpb.StateValidatorReq
 	}
 	isFinalized := bs.FinalizationFetcher.IsFinalized(ctx, blockRoot)
 
-	return &ethpb.StateValidatorResponse{Data: valContainer[0], ExecutionOptimistic: isOptimistic, Finalized: isFinalized}, nil
+	return &zondpb.StateValidatorResponse{Data: valContainer[0], ExecutionOptimistic: isOptimistic, Finalized: isFinalized}, nil
 }
 
 // ListValidators returns filterable list of validators with their balance, status and index.
-func (bs *Server) ListValidators(ctx context.Context, req *ethpb.StateValidatorsRequest) (*ethpb.StateValidatorsResponse, error) {
+func (bs *Server) ListValidators(ctx context.Context, req *zondpb.StateValidatorsRequest) (*zondpb.StateValidatorsResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.ListValidators")
 	defer span.End()
 
@@ -99,11 +99,11 @@ func (bs *Server) ListValidators(ctx context.Context, req *ethpb.StateValidators
 
 	// Exit early if no matching validators we found or we don't want to further filter validators by status.
 	if len(valContainers) == 0 || len(req.Status) == 0 {
-		return &ethpb.StateValidatorsResponse{Data: valContainers, ExecutionOptimistic: isOptimistic, Finalized: isFinalized}, nil
+		return &zondpb.StateValidatorsResponse{Data: valContainers, ExecutionOptimistic: isOptimistic, Finalized: isFinalized}, nil
 	}
 
-	filterStatus := make(map[ethpb.ValidatorStatus]bool, len(req.Status))
-	const lastValidStatusValue = ethpb.ValidatorStatus(12)
+	filterStatus := make(map[zondpb.ValidatorStatus]bool, len(req.Status))
+	const lastValidStatusValue = zondpb.ValidatorStatus(12)
 	for _, ss := range req.Status {
 		if ss > lastValidStatusValue {
 			return nil, status.Errorf(codes.InvalidArgument, "Invalid status "+ss.String())
@@ -111,7 +111,7 @@ func (bs *Server) ListValidators(ctx context.Context, req *ethpb.StateValidators
 		filterStatus[ss] = true
 	}
 	epoch := slots.ToEpoch(st.Slot())
-	filteredVals := make([]*ethpb.ValidatorContainer, 0, len(valContainers))
+	filteredVals := make([]*zondpb.ValidatorContainer, 0, len(valContainers))
 	for _, vc := range valContainers {
 		readOnlyVal, err := statenative.NewValidator(migration.V1ValidatorToV1Alpha1(vc.Validator))
 		if err != nil {
@@ -130,11 +130,11 @@ func (bs *Server) ListValidators(ctx context.Context, req *ethpb.StateValidators
 		}
 	}
 
-	return &ethpb.StateValidatorsResponse{Data: filteredVals, ExecutionOptimistic: isOptimistic, Finalized: isFinalized}, nil
+	return &zondpb.StateValidatorsResponse{Data: filteredVals, ExecutionOptimistic: isOptimistic, Finalized: isFinalized}, nil
 }
 
 // ListValidatorBalances returns a filterable list of validator balances.
-func (bs *Server) ListValidatorBalances(ctx context.Context, req *ethpb.ValidatorBalancesRequest) (*ethpb.ValidatorBalancesResponse, error) {
+func (bs *Server) ListValidatorBalances(ctx context.Context, req *zondpb.ValidatorBalancesRequest) (*zondpb.ValidatorBalancesResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.ListValidatorBalances")
 	defer span.End()
 
@@ -147,9 +147,9 @@ func (bs *Server) ListValidatorBalances(ctx context.Context, req *ethpb.Validato
 	if err != nil {
 		return nil, handleValContainerErr(err)
 	}
-	valBalances := make([]*ethpb.ValidatorBalance, len(valContainers))
+	valBalances := make([]*zondpb.ValidatorBalance, len(valContainers))
 	for i := 0; i < len(valContainers); i++ {
-		valBalances[i] = &ethpb.ValidatorBalance{
+		valBalances[i] = &zondpb.ValidatorBalance{
 			Index:   valContainers[i].Index,
 			Balance: valContainers[i].Balance,
 		}
@@ -166,12 +166,12 @@ func (bs *Server) ListValidatorBalances(ctx context.Context, req *ethpb.Validato
 	}
 	isFinalized := bs.FinalizationFetcher.IsFinalized(ctx, blockRoot)
 
-	return &ethpb.ValidatorBalancesResponse{Data: valBalances, ExecutionOptimistic: isOptimistic, Finalized: isFinalized}, nil
+	return &zondpb.ValidatorBalancesResponse{Data: valBalances, ExecutionOptimistic: isOptimistic, Finalized: isFinalized}, nil
 }
 
 // ListCommittees retrieves the committees for the given state at the given epoch.
 // If the requested slot and index are defined, only those committees are returned.
-func (bs *Server) ListCommittees(ctx context.Context, req *ethpb.StateCommitteesRequest) (*ethpb.StateCommitteesResponse, error) {
+func (bs *Server) ListCommittees(ctx context.Context, req *zondpb.StateCommitteesRequest) (*zondpb.StateCommitteesResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.ListCommittees")
 	defer span.End()
 
@@ -198,7 +198,7 @@ func (bs *Server) ListCommittees(ctx context.Context, req *ethpb.StateCommittees
 		return nil, status.Errorf(codes.InvalidArgument, "Invalid epoch: %v", err)
 	}
 	committeesPerSlot := corehelpers.SlotCommitteeCount(activeCount)
-	committees := make([]*ethpb.Committee, 0)
+	committees := make([]*zondpb.Committee, 0)
 	for slot := startSlot; slot <= endSlot; slot++ {
 		if req.Slot != nil && slot != *req.Slot {
 			continue
@@ -211,7 +211,7 @@ func (bs *Server) ListCommittees(ctx context.Context, req *ethpb.StateCommittees
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "Could not get committee: %v", err)
 			}
-			committeeContainer := &ethpb.Committee{
+			committeeContainer := &zondpb.Committee{
 				Index:      index,
 				Slot:       slot,
 				Validators: committee,
@@ -231,18 +231,18 @@ func (bs *Server) ListCommittees(ctx context.Context, req *ethpb.StateCommittees
 	}
 	isFinalized := bs.FinalizationFetcher.IsFinalized(ctx, blockRoot)
 
-	return &ethpb.StateCommitteesResponse{Data: committees, ExecutionOptimistic: isOptimistic, Finalized: isFinalized}, nil
+	return &zondpb.StateCommitteesResponse{Data: committees, ExecutionOptimistic: isOptimistic, Finalized: isFinalized}, nil
 }
 
 // This function returns the validator object based on the passed in ID. The validator ID could be its public key,
 // or its index.
-func valContainersByRequestIds(state state.BeaconState, validatorIds [][]byte) ([]*ethpb.ValidatorContainer, error) {
+func valContainersByRequestIds(state state.BeaconState, validatorIds [][]byte) ([]*zondpb.ValidatorContainer, error) {
 	epoch := slots.ToEpoch(state.Slot())
-	var valContainers []*ethpb.ValidatorContainer
+	var valContainers []*zondpb.ValidatorContainer
 	allBalances := state.Balances()
 	if len(validatorIds) == 0 {
 		allValidators := state.Validators()
-		valContainers = make([]*ethpb.ValidatorContainer, len(allValidators))
+		valContainers = make([]*zondpb.ValidatorContainer, len(allValidators))
 		for i, validator := range allValidators {
 			readOnlyVal, err := statenative.NewValidator(validator)
 			if err != nil {
@@ -252,7 +252,7 @@ func valContainersByRequestIds(state state.BeaconState, validatorIds [][]byte) (
 			if err != nil {
 				return nil, errors.Wrap(err, "could not get validator sub status")
 			}
-			valContainers[i] = &ethpb.ValidatorContainer{
+			valContainers[i] = &zondpb.ValidatorContainer{
 				Index:     primitives.ValidatorIndex(i),
 				Balance:   allBalances[i],
 				Status:    subStatus,
@@ -260,7 +260,7 @@ func valContainersByRequestIds(state state.BeaconState, validatorIds [][]byte) (
 			}
 		}
 	} else {
-		valContainers = make([]*ethpb.ValidatorContainer, 0, len(validatorIds))
+		valContainers = make([]*zondpb.ValidatorContainer, 0, len(validatorIds))
 		for _, validatorId := range validatorIds {
 			var valIndex primitives.ValidatorIndex
 			if len(validatorId) == params.BeaconConfig().BLSPubkeyLength {
@@ -295,7 +295,7 @@ func valContainersByRequestIds(state state.BeaconState, validatorIds [][]byte) (
 			if err != nil {
 				return nil, errors.Wrap(err, "could not get validator sub status")
 			}
-			valContainers = append(valContainers, &ethpb.ValidatorContainer{
+			valContainers = append(valContainers, &zondpb.ValidatorContainer{
 				Index:     valIndex,
 				Balance:   allBalances[valIndex],
 				Status:    subStatus,

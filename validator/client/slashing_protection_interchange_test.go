@@ -12,7 +12,7 @@ import (
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/io/file"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 	history "github.com/theQRL/qrysm/v4/validator/slashing-protection-history"
@@ -142,11 +142,11 @@ func TestEIP3076SpecTests(t *testing.T) {
 					require.NoError(t, err)
 					pk, err := history.PubKeyFromHex(sa.Pubkey)
 					require.NoError(t, err)
-					ia := &ethpb.IndexedAttestation{
-						Data: &ethpb.AttestationData{
+					ia := &zondpb.IndexedAttestation{
+						Data: &zondpb.AttestationData{
 							BeaconBlockRoot: make([]byte, 32),
-							Target:          &ethpb.Checkpoint{Epoch: target, Root: make([]byte, 32)},
-							Source:          &ethpb.Checkpoint{Epoch: source, Root: make([]byte, 32)},
+							Target:          &zondpb.Checkpoint{Epoch: target, Root: make([]byte, 32)},
+							Source:          &zondpb.Checkpoint{Epoch: source, Root: make([]byte, 32)},
 						},
 						Signature: make([]byte, dilithium2.CryptoBytes),
 					}

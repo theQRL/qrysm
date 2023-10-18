@@ -12,7 +12,7 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/prom2json"
 	log "github.com/sirupsen/logrus"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 type beaconNodeScraper struct {
@@ -240,7 +240,7 @@ func populateBeaconNodeStats(pf metricMap) BeaconNodeStats {
 }
 
 func statusIsActive(statusCode int64) bool {
-	s := eth.ValidatorStatus(statusCode)
+	s := zond.ValidatorStatus(statusCode)
 	return s.String() == "ACTIVE"
 }
 

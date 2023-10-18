@@ -21,7 +21,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/mock"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -46,7 +46,7 @@ func TestServer_GetChainHead_NoGenesis(t *testing.T) {
 	require.NoError(t, err)
 	cases := []struct {
 		name       string
-		zeroSetter func(val *ethpb.Checkpoint) error
+		zeroSetter func(val *zondpb.Checkpoint) error
 	}{
 		{
 			name:       "zero-value prev justified",
@@ -61,16 +61,16 @@ func TestServer_GetChainHead_NoGenesis(t *testing.T) {
 			zeroSetter: s.SetFinalizedCheckpoint,
 		},
 	}
-	finalized := &ethpb.Checkpoint{Epoch: 1, Root: gRoot[:]}
-	prevJustified := &ethpb.Checkpoint{Epoch: 2, Root: gRoot[:]}
-	justified := &ethpb.Checkpoint{Epoch: 3, Root: gRoot[:]}
+	finalized := &zondpb.Checkpoint{Epoch: 1, Root: gRoot[:]}
+	prevJustified := &zondpb.Checkpoint{Epoch: 2, Root: gRoot[:]}
+	justified := &zondpb.Checkpoint{Epoch: 3, Root: gRoot[:]}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			require.NoError(t, s.SetPreviousJustifiedCheckpoint(prevJustified))
 			require.NoError(t, s.SetCurrentJustifiedCheckpoint(justified))
 			require.NoError(t, s.SetFinalizedCheckpoint(finalized))
-			require.NoError(t, c.zeroSetter(&ethpb.Checkpoint{Epoch: 0, Root: params.BeaconConfig().ZeroHash[:]}))
+			require.NoError(t, c.zeroSetter(&zondpb.Checkpoint{Epoch: 0, Root: params.BeaconConfig().ZeroHash[:]}))
 		})
 		wsb, err := blocks.NewSignedBeaconBlock(genBlock)
 		require.NoError(t, err)
@@ -94,9 +94,9 @@ func TestServer_GetChainHead_NoFinalizedBlock(t *testing.T) {
 	s, err := util.NewBeaconState()
 	require.NoError(t, err)
 	require.NoError(t, s.SetSlot(1))
-	require.NoError(t, s.SetPreviousJustifiedCheckpoint(&ethpb.Checkpoint{Epoch: 3, Root: bytesutil.PadTo([]byte{'A'}, fieldparams.RootLength)}))
-	require.NoError(t, s.SetCurrentJustifiedCheckpoint(&ethpb.Checkpoint{Epoch: 2, Root: bytesutil.PadTo([]byte{'B'}, fieldparams.RootLength)}))
-	require.NoError(t, s.SetFinalizedCheckpoint(&ethpb.Checkpoint{Epoch: 1, Root: bytesutil.PadTo([]byte{'C'}, fieldparams.RootLength)}))
+	require.NoError(t, s.SetPreviousJustifiedCheckpoint(&zondpb.Checkpoint{Epoch: 3, Root: bytesutil.PadTo([]byte{'A'}, fieldparams.RootLength)}))
+	require.NoError(t, s.SetCurrentJustifiedCheckpoint(&zondpb.Checkpoint{Epoch: 2, Root: bytesutil.PadTo([]byte{'B'}, fieldparams.RootLength)}))
+	require.NoError(t, s.SetFinalizedCheckpoint(&zondpb.Checkpoint{Epoch: 1, Root: bytesutil.PadTo([]byte{'C'}, fieldparams.RootLength)}))
 
 	genBlock := util.NewBeaconBlock()
 	genBlock.Block.ParentRoot = bytesutil.PadTo([]byte{'G'}, fieldparams.RootLength)
@@ -164,11 +164,11 @@ func TestServer_GetChainHead(t *testing.T) {
 	pjRoot, err := prevJustifiedBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	s, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	s, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Slot:                        1,
-		PreviousJustifiedCheckpoint: &ethpb.Checkpoint{Epoch: 3, Root: pjRoot[:]},
-		CurrentJustifiedCheckpoint:  &ethpb.Checkpoint{Epoch: 2, Root: jRoot[:]},
-		FinalizedCheckpoint:         &ethpb.Checkpoint{Epoch: 1, Root: fRoot[:]},
+		PreviousJustifiedCheckpoint: &zondpb.Checkpoint{Epoch: 3, Root: pjRoot[:]},
+		CurrentJustifiedCheckpoint:  &zondpb.Checkpoint{Epoch: 2, Root: jRoot[:]},
+		FinalizedCheckpoint:         &zondpb.Checkpoint{Epoch: 1, Root: fRoot[:]},
 	})
 	require.NoError(t, err)
 
@@ -259,11 +259,11 @@ func TestServer_StreamChainHead_OnHeadUpdated(t *testing.T) {
 	pjRoot, err := prevJustifiedBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	s, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	s, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Slot:                        1,
-		PreviousJustifiedCheckpoint: &ethpb.Checkpoint{Epoch: 3, Root: pjRoot[:]},
-		CurrentJustifiedCheckpoint:  &ethpb.Checkpoint{Epoch: 2, Root: jRoot[:]},
-		FinalizedCheckpoint:         &ethpb.Checkpoint{Epoch: 1, Root: fRoot[:]},
+		PreviousJustifiedCheckpoint: &zondpb.Checkpoint{Epoch: 3, Root: pjRoot[:]},
+		CurrentJustifiedCheckpoint:  &zondpb.Checkpoint{Epoch: 2, Root: jRoot[:]},
+		FinalizedCheckpoint:         &zondpb.Checkpoint{Epoch: 1, Root: fRoot[:]},
 	})
 	require.NoError(t, err)
 
@@ -295,7 +295,7 @@ func TestServer_StreamChainHead_OnHeadUpdated(t *testing.T) {
 	defer ctrl.Finish()
 	mockStream := mock.NewMockBeaconChain_StreamChainHeadServer(ctrl)
 	mockStream.EXPECT().Send(
-		&ethpb.ChainHead{
+		&zondpb.ChainHead{
 			HeadSlot:                   b.Block.Slot,
 			HeadEpoch:                  slots.ToEpoch(b.Block.Slot),
 			HeadBlockRoot:              hRoot[:],
@@ -347,7 +347,7 @@ func TestServer_StreamBlocksVerified_ContextCanceled(t *testing.T) {
 	mockStream := mock.NewMockBeaconChain_StreamBlocksServer(ctrl)
 	mockStream.EXPECT().Context().Return(ctx)
 	go func(tt *testing.T) {
-		assert.ErrorContains(tt, "Context canceled", server.StreamBlocks(&ethpb.StreamBlocksRequest{
+		assert.ErrorContains(tt, "Context canceled", server.StreamBlocks(&zondpb.StreamBlocksRequest{
 			VerifiedOnly: true,
 		}, mockStream))
 		<-exitRoutine
@@ -375,7 +375,7 @@ func TestServer_StreamBlocks_ContextCanceled(t *testing.T) {
 	mockStream := mock.NewMockBeaconChain_StreamBlocksServer(ctrl)
 	mockStream.EXPECT().Context().Return(ctx)
 	go func(tt *testing.T) {
-		assert.ErrorContains(tt, "Context canceled", server.StreamBlocks(&ethpb.StreamBlocksRequest{}, mockStream))
+		assert.ErrorContains(tt, "Context canceled", server.StreamBlocks(&zondpb.StreamBlocksRequest{}, mockStream))
 		<-exitRoutine
 	}(t)
 	cancel()
@@ -406,7 +406,7 @@ func TestServer_StreamBlocks_OnHeadUpdated(t *testing.T) {
 	mockStream.EXPECT().Context().Return(ctx).AnyTimes()
 
 	go func(tt *testing.T) {
-		assert.NoError(tt, server.StreamBlocks(&ethpb.StreamBlocksRequest{}, mockStream), "Could not call RPC method")
+		assert.NoError(tt, server.StreamBlocks(&zondpb.StreamBlocksRequest{}, mockStream), "Could not call RPC method")
 	}(t)
 
 	// Send in a loop to ensure it is delivered (busy wait for the service to subscribe to the state feed).
@@ -450,7 +450,7 @@ func TestServer_StreamBlocksVerified_OnHeadUpdated(t *testing.T) {
 	mockStream.EXPECT().Context().Return(ctx).AnyTimes()
 
 	go func(tt *testing.T) {
-		assert.NoError(tt, server.StreamBlocks(&ethpb.StreamBlocksRequest{
+		assert.NoError(tt, server.StreamBlocks(&zondpb.StreamBlocksRequest{
 			VerifiedOnly: true,
 		}, mockStream), "Could not call RPC method")
 	}(t)
@@ -474,13 +474,13 @@ func TestServer_ListBeaconBlocks_NoResults(t *testing.T) {
 	bs := &Server{
 		BeaconDB: db,
 	}
-	wanted := &ethpb.ListBeaconBlocksResponse{
-		BlockContainers: make([]*ethpb.BeaconBlockContainer, 0),
+	wanted := &zondpb.ListBeaconBlocksResponse{
+		BlockContainers: make([]*zondpb.BeaconBlockContainer, 0),
 		TotalSize:       int32(0),
 		NextPageToken:   strconv.Itoa(0),
 	}
-	res, err := bs.ListBeaconBlocks(ctx, &ethpb.ListBlocksRequest{
-		QueryFilter: &ethpb.ListBlocksRequest_Slot{
+	res, err := bs.ListBeaconBlocks(ctx, &zondpb.ListBlocksRequest{
+		QueryFilter: &zondpb.ListBlocksRequest_Slot{
 			Slot: 0,
 		},
 	})
@@ -488,8 +488,8 @@ func TestServer_ListBeaconBlocks_NoResults(t *testing.T) {
 	if !proto.Equal(wanted, res) {
 		t.Errorf("Wanted %v, received %v", wanted, res)
 	}
-	res, err = bs.ListBeaconBlocks(ctx, &ethpb.ListBlocksRequest{
-		QueryFilter: &ethpb.ListBlocksRequest_Slot{
+	res, err = bs.ListBeaconBlocks(ctx, &zondpb.ListBlocksRequest{
+		QueryFilter: &zondpb.ListBlocksRequest_Slot{
 			Slot: 0,
 		},
 	})
@@ -497,8 +497,8 @@ func TestServer_ListBeaconBlocks_NoResults(t *testing.T) {
 	if !proto.Equal(wanted, res) {
 		t.Errorf("Wanted %v, received %v", wanted, res)
 	}
-	res, err = bs.ListBeaconBlocks(ctx, &ethpb.ListBlocksRequest{
-		QueryFilter: &ethpb.ListBlocksRequest_Root{
+	res, err = bs.ListBeaconBlocks(ctx, &zondpb.ListBlocksRequest{
+		QueryFilter: &zondpb.ListBlocksRequest_Root{
 			Root: make([]byte, 32),
 		},
 	})
@@ -513,8 +513,8 @@ func TestServer_ListBeaconBlocks_Genesis(t *testing.T) {
 		parentRoot := [32]byte{'a'}
 		blk := util.NewBeaconBlock()
 		blk.Block.ParentRoot = parentRoot[:]
-		blkContainer := &ethpb.BeaconBlockContainer{
-			Block: &ethpb.BeaconBlockContainer_Phase0Block{Phase0Block: blk}}
+		blkContainer := &zondpb.BeaconBlockContainer{
+			Block: &zondpb.BeaconBlockContainer_Phase0Block{Phase0Block: blk}}
 		wrappedB, err := blocks.NewSignedBeaconBlock(blk)
 		assert.NoError(t, err)
 		runListBlocksGenesis(t, wrappedB, blkContainer)
@@ -525,8 +525,8 @@ func TestServer_ListBeaconBlocks_Genesis(t *testing.T) {
 		blk.Block.ParentRoot = parentRoot[:]
 		wrapped, err := blocks.NewSignedBeaconBlock(blk)
 		assert.NoError(t, err)
-		blkContainer := &ethpb.BeaconBlockContainer{
-			Block: &ethpb.BeaconBlockContainer_AltairBlock{AltairBlock: blk}}
+		blkContainer := &zondpb.BeaconBlockContainer{
+			Block: &zondpb.BeaconBlockContainer_AltairBlock{AltairBlock: blk}}
 		runListBlocksGenesis(t, wrapped, blkContainer)
 	})
 	t.Run("bellatrix block", func(t *testing.T) {
@@ -539,8 +539,8 @@ func TestServer_ListBeaconBlocks_Genesis(t *testing.T) {
 		assert.NoError(t, err)
 		blindedProto, err := blinded.PbBlindedBellatrixBlock()
 		assert.NoError(t, err)
-		blkContainer := &ethpb.BeaconBlockContainer{
-			Block: &ethpb.BeaconBlockContainer_BlindedBellatrixBlock{BlindedBellatrixBlock: blindedProto}}
+		blkContainer := &zondpb.BeaconBlockContainer{
+			Block: &zondpb.BeaconBlockContainer_BlindedBellatrixBlock{BlindedBellatrixBlock: blindedProto}}
 		runListBlocksGenesis(t, wrapped, blkContainer)
 	})
 	t.Run("capella block", func(t *testing.T) {
@@ -553,13 +553,13 @@ func TestServer_ListBeaconBlocks_Genesis(t *testing.T) {
 		assert.NoError(t, err)
 		blindedProto, err := blinded.PbBlindedCapellaBlock()
 		assert.NoError(t, err)
-		blkContainer := &ethpb.BeaconBlockContainer{
-			Block: &ethpb.BeaconBlockContainer_BlindedCapellaBlock{BlindedCapellaBlock: blindedProto}}
+		blkContainer := &zondpb.BeaconBlockContainer{
+			Block: &zondpb.BeaconBlockContainer_BlindedCapellaBlock{BlindedCapellaBlock: blindedProto}}
 		runListBlocksGenesis(t, wrapped, blkContainer)
 	})
 }
 
-func runListBlocksGenesis(t *testing.T, blk interfaces.ReadOnlySignedBeaconBlock, blkContainer *ethpb.BeaconBlockContainer) {
+func runListBlocksGenesis(t *testing.T, blk interfaces.ReadOnlySignedBeaconBlock, blkContainer *zondpb.BeaconBlockContainer) {
 	db := dbTest.SetupDB(t)
 	ctx := context.Background()
 
@@ -568,8 +568,8 @@ func runListBlocksGenesis(t *testing.T, blk interfaces.ReadOnlySignedBeaconBlock
 	}
 
 	// Should throw an error if no genesis block is found.
-	_, err := bs.ListBeaconBlocks(ctx, &ethpb.ListBlocksRequest{
-		QueryFilter: &ethpb.ListBlocksRequest_Genesis{
+	_, err := bs.ListBeaconBlocks(ctx, &zondpb.ListBlocksRequest{
+		QueryFilter: &zondpb.ListBlocksRequest_Genesis{
 			Genesis: true,
 		},
 	})
@@ -582,13 +582,13 @@ func runListBlocksGenesis(t *testing.T, blk interfaces.ReadOnlySignedBeaconBlock
 	blkContainer.BlockRoot = root[:]
 	blkContainer.Canonical = true
 
-	wanted := &ethpb.ListBeaconBlocksResponse{
-		BlockContainers: []*ethpb.BeaconBlockContainer{blkContainer},
+	wanted := &zondpb.ListBeaconBlocksResponse{
+		BlockContainers: []*zondpb.BeaconBlockContainer{blkContainer},
 		NextPageToken:   "0",
 		TotalSize:       1,
 	}
-	res, err := bs.ListBeaconBlocks(ctx, &ethpb.ListBlocksRequest{
-		QueryFilter: &ethpb.ListBlocksRequest_Genesis{
+	res, err := bs.ListBeaconBlocks(ctx, &zondpb.ListBlocksRequest{
+		QueryFilter: &zondpb.ListBlocksRequest_Genesis{
 			Genesis: true,
 		},
 	})
@@ -683,8 +683,8 @@ func runListBeaconBlocksGenesisMultiBlocks(t *testing.T, genBlock interfaces.Rea
 	require.NoError(t, db.SaveBlocks(ctx, blks))
 
 	// Should throw an error if more than one blk returned.
-	_, err = bs.ListBeaconBlocks(ctx, &ethpb.ListBlocksRequest{
-		QueryFilter: &ethpb.ListBlocksRequest_Genesis{
+	_, err = bs.ListBeaconBlocks(ctx, &zondpb.ListBlocksRequest{
+		QueryFilter: &zondpb.ListBlocksRequest_Genesis{
 			Genesis: true,
 		},
 	})
@@ -704,11 +704,11 @@ func TestServer_ListBeaconBlocks_Pagination(t *testing.T) {
 			assert.NoError(t, err)
 			return wrappedB
 		}
-		containerCreator := func(i primitives.Slot, root []byte, canonical bool) *ethpb.BeaconBlockContainer {
+		containerCreator := func(i primitives.Slot, root []byte, canonical bool) *zondpb.BeaconBlockContainer {
 			b := util.NewBeaconBlock()
 			b.Block.Slot = i
-			ctr := &ethpb.BeaconBlockContainer{
-				Block: &ethpb.BeaconBlockContainer_Phase0Block{
+			ctr := &zondpb.BeaconBlockContainer{
+				Block: &zondpb.BeaconBlockContainer_Phase0Block{
 					Phase0Block: util.HydrateSignedBeaconBlock(b)},
 				BlockRoot: root,
 				Canonical: canonical}
@@ -728,11 +728,11 @@ func TestServer_ListBeaconBlocks_Pagination(t *testing.T) {
 			assert.NoError(t, err)
 			return wrappedB
 		}
-		containerCreator := func(i primitives.Slot, root []byte, canonical bool) *ethpb.BeaconBlockContainer {
+		containerCreator := func(i primitives.Slot, root []byte, canonical bool) *zondpb.BeaconBlockContainer {
 			b := util.NewBeaconBlockAltair()
 			b.Block.Slot = i
-			ctr := &ethpb.BeaconBlockContainer{
-				Block: &ethpb.BeaconBlockContainer_AltairBlock{
+			ctr := &zondpb.BeaconBlockContainer{
+				Block: &zondpb.BeaconBlockContainer_AltairBlock{
 					AltairBlock: util.HydrateSignedBeaconBlockAltair(b)},
 				BlockRoot: root,
 				Canonical: canonical}
@@ -756,11 +756,11 @@ func TestServer_ListBeaconBlocks_Pagination(t *testing.T) {
 			assert.NoError(t, err)
 			return wrappedB
 		}
-		containerCreator := func(i primitives.Slot, root []byte, canonical bool) *ethpb.BeaconBlockContainer {
+		containerCreator := func(i primitives.Slot, root []byte, canonical bool) *zondpb.BeaconBlockContainer {
 			b := util.NewBeaconBlockBellatrix()
 			b.Block.Slot = i
-			ctr := &ethpb.BeaconBlockContainer{
-				Block: &ethpb.BeaconBlockContainer_BellatrixBlock{
+			ctr := &zondpb.BeaconBlockContainer{
+				Block: &zondpb.BeaconBlockContainer_BellatrixBlock{
 					BellatrixBlock: util.HydrateSignedBeaconBlockBellatrix(b)},
 				BlockRoot: root,
 				Canonical: canonical}
@@ -784,11 +784,11 @@ func TestServer_ListBeaconBlocks_Pagination(t *testing.T) {
 			assert.NoError(t, err)
 			return wrappedB
 		}
-		containerCreator := func(i primitives.Slot, root []byte, canonical bool) *ethpb.BeaconBlockContainer {
+		containerCreator := func(i primitives.Slot, root []byte, canonical bool) *zondpb.BeaconBlockContainer {
 			b := util.NewBeaconBlockCapella()
 			b.Block.Slot = i
-			ctr := &ethpb.BeaconBlockContainer{
-				Block: &ethpb.BeaconBlockContainer_CapellaBlock{
+			ctr := &zondpb.BeaconBlockContainer{
+				Block: &zondpb.BeaconBlockContainer_CapellaBlock{
 					CapellaBlock: util.HydrateSignedBeaconBlockCapella(b)},
 				BlockRoot: root,
 				Canonical: canonical}
@@ -801,7 +801,7 @@ func TestServer_ListBeaconBlocks_Pagination(t *testing.T) {
 }
 
 func runListBeaconBlocksPagination(t *testing.T, orphanedBlk interfaces.ReadOnlySignedBeaconBlock,
-	blockCreator func(i primitives.Slot) interfaces.ReadOnlySignedBeaconBlock, containerCreator func(i primitives.Slot, root []byte, canonical bool) *ethpb.BeaconBlockContainer) {
+	blockCreator func(i primitives.Slot) interfaces.ReadOnlySignedBeaconBlock, containerCreator func(i primitives.Slot, root []byte, canonical bool) *zondpb.BeaconBlockContainer) {
 
 	db := dbTest.SetupDB(t)
 	chain := &chainMock.ChainService{
@@ -811,7 +811,7 @@ func runListBeaconBlocksPagination(t *testing.T, orphanedBlk interfaces.ReadOnly
 
 	count := primitives.Slot(100)
 	blks := make([]interfaces.ReadOnlySignedBeaconBlock, count)
-	blkContainers := make([]*ethpb.BeaconBlockContainer, count)
+	blkContainers := make([]*zondpb.BeaconBlockContainer, count)
 	for i := primitives.Slot(0); i < count; i++ {
 		b := blockCreator(i)
 		root, err := b.Block().HashTreeRoot()
@@ -837,69 +837,69 @@ func runListBeaconBlocksPagination(t *testing.T, orphanedBlk interfaces.ReadOnly
 	require.NoError(t, err)
 
 	tests := []struct {
-		req *ethpb.ListBlocksRequest
-		res *ethpb.ListBeaconBlocksResponse
+		req *zondpb.ListBlocksRequest
+		res *zondpb.ListBeaconBlocksResponse
 	}{
-		{req: &ethpb.ListBlocksRequest{
+		{req: &zondpb.ListBlocksRequest{
 			PageToken:   strconv.Itoa(0),
-			QueryFilter: &ethpb.ListBlocksRequest_Slot{Slot: 5},
+			QueryFilter: &zondpb.ListBlocksRequest_Slot{Slot: 5},
 			PageSize:    3},
-			res: &ethpb.ListBeaconBlocksResponse{
-				BlockContainers: []*ethpb.BeaconBlockContainer{containerCreator(5, blkContainers[5].BlockRoot, blkContainers[5].Canonical)},
+			res: &zondpb.ListBeaconBlocksResponse{
+				BlockContainers: []*zondpb.BeaconBlockContainer{containerCreator(5, blkContainers[5].BlockRoot, blkContainers[5].Canonical)},
 				NextPageToken:   "",
 				TotalSize:       1,
 			},
 		},
-		{req: &ethpb.ListBlocksRequest{
+		{req: &zondpb.ListBlocksRequest{
 			PageToken:   strconv.Itoa(0),
-			QueryFilter: &ethpb.ListBlocksRequest_Root{Root: root6[:]},
+			QueryFilter: &zondpb.ListBlocksRequest_Root{Root: root6[:]},
 			PageSize:    3},
-			res: &ethpb.ListBeaconBlocksResponse{
-				BlockContainers: []*ethpb.BeaconBlockContainer{containerCreator(6, blkContainers[6].BlockRoot, blkContainers[6].Canonical)},
+			res: &zondpb.ListBeaconBlocksResponse{
+				BlockContainers: []*zondpb.BeaconBlockContainer{containerCreator(6, blkContainers[6].BlockRoot, blkContainers[6].Canonical)},
 				TotalSize:       1,
 				NextPageToken:   strconv.Itoa(0)}},
-		{req: &ethpb.ListBlocksRequest{QueryFilter: &ethpb.ListBlocksRequest_Root{Root: root6[:]}},
-			res: &ethpb.ListBeaconBlocksResponse{
-				BlockContainers: []*ethpb.BeaconBlockContainer{containerCreator(6, blkContainers[6].BlockRoot, blkContainers[6].Canonical)},
+		{req: &zondpb.ListBlocksRequest{QueryFilter: &zondpb.ListBlocksRequest_Root{Root: root6[:]}},
+			res: &zondpb.ListBeaconBlocksResponse{
+				BlockContainers: []*zondpb.BeaconBlockContainer{containerCreator(6, blkContainers[6].BlockRoot, blkContainers[6].Canonical)},
 				TotalSize:       1, NextPageToken: strconv.Itoa(0)}},
-		{req: &ethpb.ListBlocksRequest{
+		{req: &zondpb.ListBlocksRequest{
 			PageToken:   strconv.Itoa(0),
-			QueryFilter: &ethpb.ListBlocksRequest_Epoch{Epoch: 0},
+			QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: 0},
 			PageSize:    100},
-			res: &ethpb.ListBeaconBlocksResponse{
+			res: &zondpb.ListBeaconBlocksResponse{
 				BlockContainers: blkContainers[0:params.BeaconConfig().SlotsPerEpoch],
 				NextPageToken:   "",
 				TotalSize:       int32(params.BeaconConfig().SlotsPerEpoch)}},
-		{req: &ethpb.ListBlocksRequest{
+		{req: &zondpb.ListBlocksRequest{
 			PageToken:   strconv.Itoa(1),
-			QueryFilter: &ethpb.ListBlocksRequest_Epoch{Epoch: 5},
+			QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: 5},
 			PageSize:    3},
-			res: &ethpb.ListBeaconBlocksResponse{
+			res: &zondpb.ListBeaconBlocksResponse{
 				BlockContainers: blkContainers[43:46],
 				NextPageToken:   "2",
 				TotalSize:       int32(params.BeaconConfig().SlotsPerEpoch)}},
-		{req: &ethpb.ListBlocksRequest{
+		{req: &zondpb.ListBlocksRequest{
 			PageToken:   strconv.Itoa(1),
-			QueryFilter: &ethpb.ListBlocksRequest_Epoch{Epoch: 11},
+			QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: 11},
 			PageSize:    7},
-			res: &ethpb.ListBeaconBlocksResponse{
+			res: &zondpb.ListBeaconBlocksResponse{
 				BlockContainers: blkContainers[95:96],
 				NextPageToken:   "",
 				TotalSize:       int32(params.BeaconConfig().SlotsPerEpoch)}},
-		{req: &ethpb.ListBlocksRequest{
+		{req: &zondpb.ListBlocksRequest{
 			PageToken:   strconv.Itoa(0),
-			QueryFilter: &ethpb.ListBlocksRequest_Epoch{Epoch: 12},
+			QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: 12},
 			PageSize:    4},
-			res: &ethpb.ListBeaconBlocksResponse{
+			res: &zondpb.ListBeaconBlocksResponse{
 				BlockContainers: blkContainers[96:100],
 				NextPageToken:   "",
 				TotalSize:       int32(params.BeaconConfig().SlotsPerEpoch / 2)}},
-		{req: &ethpb.ListBlocksRequest{
+		{req: &zondpb.ListBlocksRequest{
 			PageToken:   strconv.Itoa(0),
-			QueryFilter: &ethpb.ListBlocksRequest_Slot{Slot: 300},
+			QueryFilter: &zondpb.ListBlocksRequest_Slot{Slot: 300},
 			PageSize:    3},
-			res: &ethpb.ListBeaconBlocksResponse{
-				BlockContainers: []*ethpb.BeaconBlockContainer{containerCreator(300, orphanedBlkRoot[:], false)},
+			res: &zondpb.ListBeaconBlocksResponse{
+				BlockContainers: []*zondpb.BeaconBlockContainer{containerCreator(300, orphanedBlkRoot[:], false)},
 				NextPageToken:   "",
 				TotalSize:       1}},
 	}

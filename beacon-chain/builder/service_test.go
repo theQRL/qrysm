@@ -10,7 +10,7 @@ import (
 	blockchainTesting "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	dbtesting "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
@@ -36,7 +36,7 @@ func Test_RegisterValidator(t *testing.T) {
 	require.NoError(t, err)
 	pubkey := bytesutil.ToBytes48([]byte("pubkey"))
 	var feeRecipient [20]byte
-	require.NoError(t, s.RegisterValidator(ctx, []*eth.SignedValidatorRegistrationV1{{Message: &eth.ValidatorRegistrationV1{Pubkey: pubkey[:], FeeRecipient: feeRecipient[:]}}}))
+	require.NoError(t, s.RegisterValidator(ctx, []*zond.SignedValidatorRegistrationV1{{Message: &zond.ValidatorRegistrationV1{Pubkey: pubkey[:], FeeRecipient: feeRecipient[:]}}}))
 	assert.Equal(t, true, builder.RegisteredVals[pubkey])
 }
 
@@ -48,8 +48,8 @@ func Test_RegisterValidator_WithCache(t *testing.T) {
 	require.NoError(t, err)
 	pubkey := bytesutil.ToBytes48([]byte("pubkey"))
 	var feeRecipient [20]byte
-	reg := &eth.ValidatorRegistrationV1{Pubkey: pubkey[:], Timestamp: uint64(time.Now().UTC().Unix()), FeeRecipient: feeRecipient[:]}
-	require.NoError(t, s.RegisterValidator(ctx, []*eth.SignedValidatorRegistrationV1{{Message: reg}}))
+	reg := &zond.ValidatorRegistrationV1{Pubkey: pubkey[:], Timestamp: uint64(time.Now().UTC().Unix()), FeeRecipient: feeRecipient[:]}
+	require.NoError(t, s.RegisterValidator(ctx, []*zond.SignedValidatorRegistrationV1{{Message: reg}}))
 	registration, err := s.registrationCache.RegistrationByIndex(0)
 	require.NoError(t, err)
 	require.DeepEqual(t, reg, registration)

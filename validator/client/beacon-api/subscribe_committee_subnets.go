@@ -9,11 +9,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
-func (c beaconApiValidatorClient) subscribeCommitteeSubnets(ctx context.Context, in *ethpb.CommitteeSubnetsSubscribeRequest, validatorIndices []primitives.ValidatorIndex) error {
+func (c beaconApiValidatorClient) subscribeCommitteeSubnets(ctx context.Context, in *zondpb.CommitteeSubnetsSubscribeRequest, validatorIndices []primitives.ValidatorIndex) error {
 	if in == nil {
 		return errors.New("committee subnets subscribe request is nil")
 	}

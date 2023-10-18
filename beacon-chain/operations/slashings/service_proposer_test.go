@@ -7,19 +7,19 @@ import (
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
-func proposerSlashingForValIdx(valIdx primitives.ValidatorIndex) *ethpb.ProposerSlashing {
-	return &ethpb.ProposerSlashing{
-		Header_1: &ethpb.SignedBeaconBlockHeader{
-			Header: &ethpb.BeaconBlockHeader{ProposerIndex: valIdx},
+func proposerSlashingForValIdx(valIdx primitives.ValidatorIndex) *zondpb.ProposerSlashing {
+	return &zondpb.ProposerSlashing{
+		Header_1: &zondpb.SignedBeaconBlockHeader{
+			Header: &zondpb.BeaconBlockHeader{ProposerIndex: valIdx},
 		},
-		Header_2: &ethpb.SignedBeaconBlockHeader{
-			Header: &ethpb.BeaconBlockHeader{ProposerIndex: valIdx},
+		Header_2: &zondpb.SignedBeaconBlockHeader{
+			Header: &zondpb.BeaconBlockHeader{ProposerIndex: valIdx},
 		},
 	}
 }
@@ -27,15 +27,15 @@ func proposerSlashingForValIdx(valIdx primitives.ValidatorIndex) *ethpb.Proposer
 func TestPool_InsertProposerSlashing(t *testing.T) {
 	type fields struct {
 		wantedErr string
-		pending   []*ethpb.ProposerSlashing
+		pending   []*zondpb.ProposerSlashing
 		included  map[primitives.ValidatorIndex]bool
 	}
 	type args struct {
-		slashings []*ethpb.ProposerSlashing
+		slashings []*zondpb.ProposerSlashing
 	}
 
 	beaconState, privKeys := util.DeterministicGenesisState(t, 64)
-	slashings := make([]*ethpb.ProposerSlashing, 20)
+	slashings := make([]*zondpb.ProposerSlashing, 20)
 	for i := 0; i < len(slashings); i++ {
 		sl, err := util.GenerateProposerSlashingForValidator(beaconState, privKeys[i], primitives.ValidatorIndex(i))
 		require.NoError(t, err)
@@ -62,12 +62,12 @@ func TestPool_InsertProposerSlashing(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   []*ethpb.ProposerSlashing
+		want   []*zondpb.ProposerSlashing
 	}{
 		{
 			name: "Empty list",
 			fields: fields{
-				pending:  make([]*ethpb.ProposerSlashing, 0),
+				pending:  make([]*zondpb.ProposerSlashing, 0),
 				included: make(map[primitives.ValidatorIndex]bool),
 			},
 			args: args{
@@ -90,19 +90,19 @@ func TestPool_InsertProposerSlashing(t *testing.T) {
 		{
 			name: "Slashing for exited validator",
 			fields: fields{
-				pending:   []*ethpb.ProposerSlashing{},
+				pending:   []*zondpb.ProposerSlashing{},
 				included:  make(map[primitives.ValidatorIndex]bool),
 				wantedErr: "is not slashable",
 			},
 			args: args{
 				slashings: slashings[2:3],
 			},
-			want: []*ethpb.ProposerSlashing{},
+			want: []*zondpb.ProposerSlashing{},
 		},
 		{
 			name: "Slashing for exiting validator",
 			fields: fields{
-				pending:  []*ethpb.ProposerSlashing{},
+				pending:  []*zondpb.ProposerSlashing{},
 				included: make(map[primitives.ValidatorIndex]bool),
 			},
 			args: args{
@@ -113,19 +113,19 @@ func TestPool_InsertProposerSlashing(t *testing.T) {
 		{
 			name: "Slashing for slashed validator",
 			fields: fields{
-				pending:   []*ethpb.ProposerSlashing{},
+				pending:   []*zondpb.ProposerSlashing{},
 				included:  make(map[primitives.ValidatorIndex]bool),
 				wantedErr: "not slashable",
 			},
 			args: args{
 				slashings: slashings[5:6],
 			},
-			want: []*ethpb.ProposerSlashing{},
+			want: []*zondpb.ProposerSlashing{},
 		},
 		{
 			name: "Already included",
 			fields: fields{
-				pending: []*ethpb.ProposerSlashing{},
+				pending: []*zondpb.ProposerSlashing{},
 				included: map[primitives.ValidatorIndex]bool{
 					1: true,
 				},
@@ -134,12 +134,12 @@ func TestPool_InsertProposerSlashing(t *testing.T) {
 			args: args{
 				slashings: slashings[1:2],
 			},
-			want: []*ethpb.ProposerSlashing{},
+			want: []*zondpb.ProposerSlashing{},
 		},
 		{
 			name: "Maintains sorted order",
 			fields: fields{
-				pending: []*ethpb.ProposerSlashing{
+				pending: []*zondpb.ProposerSlashing{
 					slashings[0],
 					slashings[2],
 				},
@@ -148,7 +148,7 @@ func TestPool_InsertProposerSlashing(t *testing.T) {
 			args: args{
 				slashings: slashings[1:2],
 			},
-			want: []*ethpb.ProposerSlashing{
+			want: []*zondpb.ProposerSlashing{
 				slashings[0],
 				slashings[1],
 				slashings[2],
@@ -185,7 +185,7 @@ func TestPool_InsertProposerSlashing_SigFailsVerify_ClearPool(t *testing.T) {
 	conf.MaxAttesterSlashings = 2
 	params.OverrideBeaconConfig(conf)
 	beaconState, privKeys := util.DeterministicGenesisState(t, 64)
-	slashings := make([]*ethpb.ProposerSlashing, 2)
+	slashings := make([]*zondpb.ProposerSlashing, 2)
 	for i := 0; i < 2; i++ {
 		sl, err := util.GenerateProposerSlashingForValidator(beaconState, privKeys[i], primitives.ValidatorIndex(i))
 		require.NoError(t, err)
@@ -196,7 +196,7 @@ func TestPool_InsertProposerSlashing_SigFailsVerify_ClearPool(t *testing.T) {
 	copy(badSig, "muahaha")
 	slashings[1].Header_1.Signature = badSig
 	p := &Pool{
-		pendingProposerSlashing: make([]*ethpb.ProposerSlashing, 0),
+		pendingProposerSlashing: make([]*zondpb.ProposerSlashing, 0),
 	}
 	// We only want a single slashing to remain.
 	require.NoError(t, p.InsertProposerSlashing(context.Background(), beaconState, slashings[0]))
@@ -207,11 +207,11 @@ func TestPool_InsertProposerSlashing_SigFailsVerify_ClearPool(t *testing.T) {
 
 func TestPool_MarkIncludedProposerSlashing(t *testing.T) {
 	type fields struct {
-		pending  []*ethpb.ProposerSlashing
+		pending  []*zondpb.ProposerSlashing
 		included map[primitives.ValidatorIndex]bool
 	}
 	type args struct {
-		slashing *ethpb.ProposerSlashing
+		slashing *zondpb.ProposerSlashing
 	}
 	tests := []struct {
 		name   string
@@ -222,7 +222,7 @@ func TestPool_MarkIncludedProposerSlashing(t *testing.T) {
 		{
 			name: "Included, does not exist in pending",
 			fields: fields{
-				pending: []*ethpb.ProposerSlashing{
+				pending: []*zondpb.ProposerSlashing{
 					proposerSlashingForValIdx(1),
 				},
 				included: make(map[primitives.ValidatorIndex]bool),
@@ -231,7 +231,7 @@ func TestPool_MarkIncludedProposerSlashing(t *testing.T) {
 				slashing: proposerSlashingForValIdx(3),
 			},
 			want: fields{
-				pending: []*ethpb.ProposerSlashing{
+				pending: []*zondpb.ProposerSlashing{
 					proposerSlashingForValIdx(1),
 				},
 				included: map[primitives.ValidatorIndex]bool{
@@ -242,7 +242,7 @@ func TestPool_MarkIncludedProposerSlashing(t *testing.T) {
 		{
 			name: "Removes from pending list",
 			fields: fields{
-				pending: []*ethpb.ProposerSlashing{
+				pending: []*zondpb.ProposerSlashing{
 					proposerSlashingForValIdx(1),
 					proposerSlashingForValIdx(2),
 					proposerSlashingForValIdx(3),
@@ -255,7 +255,7 @@ func TestPool_MarkIncludedProposerSlashing(t *testing.T) {
 				slashing: proposerSlashingForValIdx(2),
 			},
 			want: fields{
-				pending: []*ethpb.ProposerSlashing{
+				pending: []*zondpb.ProposerSlashing{
 					proposerSlashingForValIdx(1),
 					proposerSlashingForValIdx(3),
 				},
@@ -268,7 +268,7 @@ func TestPool_MarkIncludedProposerSlashing(t *testing.T) {
 		{
 			name: "Removes from pending long list",
 			fields: fields{
-				pending: []*ethpb.ProposerSlashing{
+				pending: []*zondpb.ProposerSlashing{
 					proposerSlashingForValIdx(1),
 					proposerSlashingForValIdx(2),
 					proposerSlashingForValIdx(3),
@@ -288,7 +288,7 @@ func TestPool_MarkIncludedProposerSlashing(t *testing.T) {
 				slashing: proposerSlashingForValIdx(7),
 			},
 			want: fields{
-				pending: []*ethpb.ProposerSlashing{
+				pending: []*zondpb.ProposerSlashing{
 					proposerSlashingForValIdx(1),
 					proposerSlashingForValIdx(2),
 					proposerSlashingForValIdx(3),
@@ -324,11 +324,11 @@ func TestPool_MarkIncludedProposerSlashing(t *testing.T) {
 
 func TestPool_PendingProposerSlashings(t *testing.T) {
 	type fields struct {
-		pending []*ethpb.ProposerSlashing
+		pending []*zondpb.ProposerSlashing
 		noLimit bool
 	}
 	beaconState, privKeys := util.DeterministicGenesisState(t, 64)
-	slashings := make([]*ethpb.ProposerSlashing, 20)
+	slashings := make([]*zondpb.ProposerSlashing, 20)
 	for i := 0; i < len(slashings); i++ {
 		sl, err := util.GenerateProposerSlashingForValidator(beaconState, privKeys[i], primitives.ValidatorIndex(i))
 		require.NoError(t, err)
@@ -337,14 +337,14 @@ func TestPool_PendingProposerSlashings(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		want   []*ethpb.ProposerSlashing
+		want   []*zondpb.ProposerSlashing
 	}{
 		{
 			name: "Empty list",
 			fields: fields{
-				pending: []*ethpb.ProposerSlashing{},
+				pending: []*zondpb.ProposerSlashing{},
 			},
-			want: []*ethpb.ProposerSlashing{},
+			want: []*zondpb.ProposerSlashing{},
 		},
 		{
 			name: "All",
@@ -382,7 +382,7 @@ func TestPool_PendingProposerSlashings(t *testing.T) {
 func TestPool_PendingProposerSlashings_Slashed(t *testing.T) {
 	type fields struct {
 		all     bool
-		pending []*ethpb.ProposerSlashing
+		pending []*zondpb.ProposerSlashing
 	}
 	beaconState, privKeys := util.DeterministicGenesisState(t, 64)
 	val, err := beaconState.ValidatorAtIndex(0)
@@ -393,9 +393,9 @@ func TestPool_PendingProposerSlashings_Slashed(t *testing.T) {
 	require.NoError(t, err)
 	val.Slashed = true
 	require.NoError(t, beaconState.UpdateValidatorAtIndex(5, val))
-	slashings := make([]*ethpb.ProposerSlashing, 32)
-	slashings2 := make([]*ethpb.ProposerSlashing, 32)
-	result := make([]*ethpb.ProposerSlashing, 32)
+	slashings := make([]*zondpb.ProposerSlashing, 32)
+	slashings2 := make([]*zondpb.ProposerSlashing, 32)
+	result := make([]*zondpb.ProposerSlashing, 32)
 	for i := 0; i < len(slashings); i++ {
 		sl, err := util.GenerateProposerSlashingForValidator(beaconState, privKeys[i], primitives.ValidatorIndex(i))
 		require.NoError(t, err)
@@ -407,7 +407,7 @@ func TestPool_PendingProposerSlashings_Slashed(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		want   []*ethpb.ProposerSlashing
+		want   []*zondpb.ProposerSlashing
 	}{
 		{
 			name: "removes slashed",

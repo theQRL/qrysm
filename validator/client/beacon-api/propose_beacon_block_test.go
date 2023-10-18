@@ -8,7 +8,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
 )
@@ -38,13 +38,13 @@ func TestProposeBeaconBlock_Error(t *testing.T) {
 		name             string
 		consensusVersion string
 		endpoint         string
-		block            *ethpb.GenericSignedBeaconBlock
+		block            *zondpb.GenericSignedBeaconBlock
 	}{
 		{
 			name:             "phase0",
 			consensusVersion: "phase0",
 			endpoint:         "/eth/v1/beacon/blocks",
-			block: &ethpb.GenericSignedBeaconBlock{
+			block: &zondpb.GenericSignedBeaconBlock{
 				Block: generateSignedPhase0Block(),
 			},
 		},
@@ -52,7 +52,7 @@ func TestProposeBeaconBlock_Error(t *testing.T) {
 			name:             "altair",
 			consensusVersion: "altair",
 			endpoint:         "/eth/v1/beacon/blocks",
-			block: &ethpb.GenericSignedBeaconBlock{
+			block: &zondpb.GenericSignedBeaconBlock{
 				Block: generateSignedAltairBlock(),
 			},
 		},
@@ -60,7 +60,7 @@ func TestProposeBeaconBlock_Error(t *testing.T) {
 			name:             "bellatrix",
 			consensusVersion: "bellatrix",
 			endpoint:         "/eth/v1/beacon/blocks",
-			block: &ethpb.GenericSignedBeaconBlock{
+			block: &zondpb.GenericSignedBeaconBlock{
 				Block: generateSignedBellatrixBlock(),
 			},
 		},
@@ -68,7 +68,7 @@ func TestProposeBeaconBlock_Error(t *testing.T) {
 			name:             "blinded bellatrix",
 			consensusVersion: "bellatrix",
 			endpoint:         "/eth/v1/beacon/blinded_blocks",
-			block: &ethpb.GenericSignedBeaconBlock{
+			block: &zondpb.GenericSignedBeaconBlock{
 				Block: generateSignedBlindedBellatrixBlock(),
 			},
 		},
@@ -76,7 +76,7 @@ func TestProposeBeaconBlock_Error(t *testing.T) {
 			name:             "blinded capella",
 			consensusVersion: "capella",
 			endpoint:         "/eth/v1/beacon/blinded_blocks",
-			block: &ethpb.GenericSignedBeaconBlock{
+			block: &zondpb.GenericSignedBeaconBlock{
 				Block: generateSignedBlindedCapellaBlock(),
 			},
 		},
@@ -114,6 +114,6 @@ func TestProposeBeaconBlock_Error(t *testing.T) {
 
 func TestProposeBeaconBlock_UnsupportedBlockType(t *testing.T) {
 	validatorClient := &beaconApiValidatorClient{}
-	_, err := validatorClient.proposeBeaconBlock(context.Background(), &ethpb.GenericSignedBeaconBlock{})
+	_, err := validatorClient.proposeBeaconBlock(context.Background(), &zondpb.GenericSignedBeaconBlock{})
 	assert.ErrorContains(t, "unsupported block type", err)
 }

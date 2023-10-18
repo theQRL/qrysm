@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -215,8 +215,8 @@ func TestGetBeaconBlock_Phase0Valid(t *testing.T) {
 	beaconBlock, err := validatorClient.getBeaconBlock(ctx, slot, randaoReveal, graffiti)
 	require.NoError(t, err)
 
-	expectedBeaconBlock := &ethpb.GenericBeaconBlock{
-		Block: &ethpb.GenericBeaconBlock_Phase0{
+	expectedBeaconBlock := &zondpb.GenericBeaconBlock{
+		Block: &zondpb.GenericBeaconBlock_Phase0{
 			Phase0: phase0ProtoBeaconBlock,
 		},
 	}
@@ -267,8 +267,8 @@ func TestGetBeaconBlock_AltairValid(t *testing.T) {
 	beaconBlock, err := validatorClient.getBeaconBlock(ctx, slot, randaoReveal, graffiti)
 	require.NoError(t, err)
 
-	expectedBeaconBlock := &ethpb.GenericBeaconBlock{
-		Block: &ethpb.GenericBeaconBlock_Altair{
+	expectedBeaconBlock := &zondpb.GenericBeaconBlock{
+		Block: &zondpb.GenericBeaconBlock_Altair{
 			Altair: altairProtoBeaconBlock,
 		},
 	}
@@ -319,8 +319,8 @@ func TestGetBeaconBlock_BellatrixValid(t *testing.T) {
 	beaconBlock, err := validatorClient.getBeaconBlock(ctx, slot, randaoReveal, graffiti)
 	require.NoError(t, err)
 
-	expectedBeaconBlock := &ethpb.GenericBeaconBlock{
-		Block: &ethpb.GenericBeaconBlock_Bellatrix{
+	expectedBeaconBlock := &zondpb.GenericBeaconBlock{
+		Block: &zondpb.GenericBeaconBlock_Bellatrix{
 			Bellatrix: bellatrixProtoBeaconBlock,
 		},
 	}
@@ -371,8 +371,8 @@ func TestGetBeaconBlock_CapellaValid(t *testing.T) {
 	beaconBlock, err := validatorClient.getBeaconBlock(ctx, slot, randaoReveal, graffiti)
 	require.NoError(t, err)
 
-	expectedBeaconBlock := &ethpb.GenericBeaconBlock{
-		Block: &ethpb.GenericBeaconBlock_Capella{
+	expectedBeaconBlock := &zondpb.GenericBeaconBlock{
+		Block: &zondpb.GenericBeaconBlock_Capella{
 			Capella: capellaProtoBeaconBlock,
 		},
 	}

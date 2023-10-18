@@ -4,8 +4,8 @@ import (
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/theQRL/qrysm/v4/api/gateway"
 	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
-	ethpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
+	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -21,13 +21,13 @@ func DefaultConfig(enableDebugRPCEndpoints bool, httpModules string) MuxConfig {
 	var v1AlphaPbHandler, ethPbHandler *gateway.PbMux
 	if flags.EnableHTTPPrysmAPI(httpModules) {
 		v1AlphaRegistrations := []gateway.PbHandlerRegistration{
-			ethpbalpha.RegisterNodeHandler,
-			ethpbalpha.RegisterBeaconChainHandler,
-			ethpbalpha.RegisterBeaconNodeValidatorHandler,
-			ethpbalpha.RegisterHealthHandler,
+			zondpbalpha.RegisterNodeHandler,
+			zondpbalpha.RegisterBeaconChainHandler,
+			zondpbalpha.RegisterBeaconNodeValidatorHandler,
+			zondpbalpha.RegisterHealthHandler,
 		}
 		if enableDebugRPCEndpoints {
-			v1AlphaRegistrations = append(v1AlphaRegistrations, ethpbalpha.RegisterDebugHandler)
+			v1AlphaRegistrations = append(v1AlphaRegistrations, zondpbalpha.RegisterDebugHandler)
 		}
 		v1AlphaMux := gwruntime.NewServeMux(
 			gwruntime.WithMarshalerOption(gwruntime.MIMEWildcard, &gwruntime.HTTPBodyMarshaler{
@@ -52,13 +52,13 @@ func DefaultConfig(enableDebugRPCEndpoints bool, httpModules string) MuxConfig {
 	}
 	if flags.EnableHTTPEthAPI(httpModules) {
 		ethRegistrations := []gateway.PbHandlerRegistration{
-			ethpbservice.RegisterBeaconNodeHandler,
-			ethpbservice.RegisterBeaconChainHandler,
-			ethpbservice.RegisterBeaconValidatorHandler,
-			ethpbservice.RegisterEventsHandler,
+			zondpbservice.RegisterBeaconNodeHandler,
+			zondpbservice.RegisterBeaconChainHandler,
+			zondpbservice.RegisterBeaconValidatorHandler,
+			zondpbservice.RegisterEventsHandler,
 		}
 		if enableDebugRPCEndpoints {
-			ethRegistrations = append(ethRegistrations, ethpbservice.RegisterBeaconDebugHandler)
+			ethRegistrations = append(ethRegistrations, zondpbservice.RegisterBeaconDebugHandler)
 		}
 		ethMux := gwruntime.NewServeMux(
 			gwruntime.WithMarshalerOption(gwruntime.MIMEWildcard, &gwruntime.HTTPBodyMarshaler{

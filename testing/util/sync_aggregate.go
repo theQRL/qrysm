@@ -9,15 +9,15 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
-func generateSyncAggregate(st state.BeaconState, privs []bls.SecretKey, parentRoot [32]byte) (*ethpb.SyncAggregate, error) {
+func generateSyncAggregate(st state.BeaconState, privs []bls.SecretKey, parentRoot [32]byte) (*zondpb.SyncAggregate, error) {
 	nextSlotEpoch := slots.ToEpoch(st.Slot() + 1)
 	currEpoch := slots.ToEpoch(st.Slot())
 
-	var syncCommittee *ethpb.SyncCommittee
+	var syncCommittee *zondpb.SyncCommittee
 	var err error
 	if slots.SyncCommitteePeriod(currEpoch) == slots.SyncCommitteePeriod(nextSlotEpoch) {
 		syncCommittee, err = st.CurrentSyncCommittee()
@@ -32,7 +32,7 @@ func generateSyncAggregate(st state.BeaconState, privs []bls.SecretKey, parentRo
 	}
 	sigs := make([]bls.Signature, 0, len(syncCommittee.Pubkeys))
 	var bVector []byte
-	currSize := new(ethpb.SyncAggregate).SyncCommitteeBits.Len()
+	currSize := new(zondpb.SyncAggregate).SyncCommitteeBits.Len()
 	switch currSize {
 	case 512:
 		bVector = bitfield.NewBitvector512()
@@ -66,8 +66,8 @@ func generateSyncAggregate(st state.BeaconState, privs []bls.SecretKey, parentRo
 	}
 	if len(sigs) == 0 {
 		fakeSig := [96]byte{0xC0}
-		return &ethpb.SyncAggregate{SyncCommitteeSignature: fakeSig[:], SyncCommitteeBits: bVector}, nil
+		return &zondpb.SyncAggregate{SyncCommitteeSignature: fakeSig[:], SyncCommitteeBits: bVector}, nil
 	}
 	aggSig := bls.AggregateSignatures(sigs)
-	return &ethpb.SyncAggregate{SyncCommitteeSignature: aggSig.Marshal(), SyncCommitteeBits: bVector}, nil
+	return &zondpb.SyncAggregate{SyncCommitteeSignature: aggSig.Marshal(), SyncCommitteeBits: bVector}, nil
 }

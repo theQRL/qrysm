@@ -20,7 +20,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -176,11 +176,11 @@ func TestProposeBlock_RequestBlockFailed(t *testing.T) {
 			m.validatorClient.EXPECT().DomainData(
 				gomock.Any(), // ctx
 				gomock.Any(), // epoch
-			).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+			).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 			m.validatorClient.EXPECT().GetBeaconBlock(
 				gomock.Any(), // ctx
-				gomock.AssignableToTypeOf(&ethpb.BlockRequest{}),
+				gomock.AssignableToTypeOf(&zondpb.BlockRequest{}),
 			).Return(nil /*response*/, errors.New("uh oh"))
 
 			validator.ProposeBlock(context.Background(), tt.slot, pubKey)
@@ -192,28 +192,28 @@ func TestProposeBlock_RequestBlockFailed(t *testing.T) {
 func TestProposeBlock_ProposeBlockFailed(t *testing.T) {
 	tests := []struct {
 		name  string
-		block *ethpb.GenericBeaconBlock
+		block *zondpb.GenericBeaconBlock
 	}{
 		{
 			name: "phase0",
-			block: &ethpb.GenericBeaconBlock{
-				Block: &ethpb.GenericBeaconBlock_Phase0{
+			block: &zondpb.GenericBeaconBlock{
+				Block: &zondpb.GenericBeaconBlock_Phase0{
 					Phase0: util.NewBeaconBlock().Block,
 				},
 			},
 		},
 		{
 			name: "altair",
-			block: &ethpb.GenericBeaconBlock{
-				Block: &ethpb.GenericBeaconBlock_Altair{
+			block: &zondpb.GenericBeaconBlock{
+				Block: &zondpb.GenericBeaconBlock_Altair{
 					Altair: util.NewBeaconBlockAltair().Block,
 				},
 			},
 		},
 		{
 			name: "bellatrix",
-			block: &ethpb.GenericBeaconBlock{
-				Block: &ethpb.GenericBeaconBlock_Bellatrix{
+			block: &zondpb.GenericBeaconBlock{
+				Block: &zondpb.GenericBeaconBlock_Bellatrix{
 					Bellatrix: util.NewBeaconBlockBellatrix().Block,
 				},
 			},
@@ -231,21 +231,21 @@ func TestProposeBlock_ProposeBlockFailed(t *testing.T) {
 			m.validatorClient.EXPECT().DomainData(
 				gomock.Any(), // ctx
 				gomock.Any(), // epoch
-			).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+			).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 			m.validatorClient.EXPECT().GetBeaconBlock(
 				gomock.Any(), // ctx
-				gomock.AssignableToTypeOf(&ethpb.BlockRequest{}),
+				gomock.AssignableToTypeOf(&zondpb.BlockRequest{}),
 			).Return(tt.block, nil /*err*/)
 
 			m.validatorClient.EXPECT().DomainData(
 				gomock.Any(), // ctx
 				gomock.Any(), // epoch
-			).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+			).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 			m.validatorClient.EXPECT().ProposeBeaconBlock(
 				gomock.Any(), // ctx
-				gomock.AssignableToTypeOf(&ethpb.GenericSignedBeaconBlock{}),
+				gomock.AssignableToTypeOf(&zondpb.GenericSignedBeaconBlock{}),
 			).Return(nil /*response*/, errors.New("uh oh"))
 
 			validator.ProposeBlock(context.Background(), 1, pubKey)
@@ -261,19 +261,19 @@ func TestProposeBlock_BlocksDoubleProposal(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		blocks []*ethpb.GenericBeaconBlock
+		blocks []*zondpb.GenericBeaconBlock
 	}{
 		{
 			name: "phase0",
-			blocks: func() []*ethpb.GenericBeaconBlock {
+			blocks: func() []*zondpb.GenericBeaconBlock {
 				block0, block1 := util.NewBeaconBlock(), util.NewBeaconBlock()
 				block1.Block.Body.Graffiti = blockGraffiti[:]
 
-				var blocks []*ethpb.GenericBeaconBlock
-				for _, block := range []*ethpb.SignedBeaconBlock{block0, block1} {
+				var blocks []*zondpb.GenericBeaconBlock
+				for _, block := range []*zondpb.SignedBeaconBlock{block0, block1} {
 					block.Block.Slot = slot
-					blocks = append(blocks, &ethpb.GenericBeaconBlock{
-						Block: &ethpb.GenericBeaconBlock_Phase0{
+					blocks = append(blocks, &zondpb.GenericBeaconBlock{
+						Block: &zondpb.GenericBeaconBlock_Phase0{
 							Phase0: block.Block,
 						},
 					})
@@ -283,15 +283,15 @@ func TestProposeBlock_BlocksDoubleProposal(t *testing.T) {
 		},
 		{
 			name: "altair",
-			blocks: func() []*ethpb.GenericBeaconBlock {
+			blocks: func() []*zondpb.GenericBeaconBlock {
 				block0, block1 := util.NewBeaconBlockAltair(), util.NewBeaconBlockAltair()
 				block1.Block.Body.Graffiti = blockGraffiti[:]
 
-				var blocks []*ethpb.GenericBeaconBlock
-				for _, block := range []*ethpb.SignedBeaconBlockAltair{block0, block1} {
+				var blocks []*zondpb.GenericBeaconBlock
+				for _, block := range []*zondpb.SignedBeaconBlockAltair{block0, block1} {
 					block.Block.Slot = slot
-					blocks = append(blocks, &ethpb.GenericBeaconBlock{
-						Block: &ethpb.GenericBeaconBlock_Altair{
+					blocks = append(blocks, &zondpb.GenericBeaconBlock{
+						Block: &zondpb.GenericBeaconBlock_Altair{
 							Altair: block.Block,
 						},
 					})
@@ -301,15 +301,15 @@ func TestProposeBlock_BlocksDoubleProposal(t *testing.T) {
 		},
 		{
 			name: "bellatrix",
-			blocks: func() []*ethpb.GenericBeaconBlock {
+			blocks: func() []*zondpb.GenericBeaconBlock {
 				block0, block1 := util.NewBeaconBlockBellatrix(), util.NewBeaconBlockBellatrix()
 				block1.Block.Body.Graffiti = blockGraffiti[:]
 
-				var blocks []*ethpb.GenericBeaconBlock
-				for _, block := range []*ethpb.SignedBeaconBlockBellatrix{block0, block1} {
+				var blocks []*zondpb.GenericBeaconBlock
+				for _, block := range []*zondpb.SignedBeaconBlockBellatrix{block0, block1} {
 					block.Block.Slot = slot
-					blocks = append(blocks, &ethpb.GenericBeaconBlock{
-						Block: &ethpb.GenericBeaconBlock_Bellatrix{
+					blocks = append(blocks, &zondpb.GenericBeaconBlock{
+						Block: &zondpb.GenericBeaconBlock_Bellatrix{
 							Bellatrix: block.Block,
 						},
 					})
@@ -334,27 +334,27 @@ func TestProposeBlock_BlocksDoubleProposal(t *testing.T) {
 			m.validatorClient.EXPECT().DomainData(
 				gomock.Any(), // ctx
 				gomock.Any(), // epoch
-			).Times(1).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+			).Times(1).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 			m.validatorClient.EXPECT().GetBeaconBlock(
 				gomock.Any(), // ctx
-				gomock.AssignableToTypeOf(&ethpb.BlockRequest{}),
+				gomock.AssignableToTypeOf(&zondpb.BlockRequest{}),
 			).Return(tt.blocks[0], nil /*err*/)
 
 			m.validatorClient.EXPECT().GetBeaconBlock(
 				gomock.Any(), // ctx
-				gomock.AssignableToTypeOf(&ethpb.BlockRequest{}),
+				gomock.AssignableToTypeOf(&zondpb.BlockRequest{}),
 			).Return(tt.blocks[1], nil /*err*/)
 
 			m.validatorClient.EXPECT().DomainData(
 				gomock.Any(), // ctx
 				gomock.Any(), // epoch
-			).Times(3).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+			).Times(3).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 			m.validatorClient.EXPECT().ProposeBeaconBlock(
 				gomock.Any(), // ctx
-				gomock.AssignableToTypeOf(&ethpb.GenericSignedBeaconBlock{}),
-			).Return(&ethpb.ProposeResponse{BlockRoot: make([]byte, 32)}, nil /*error*/)
+				gomock.AssignableToTypeOf(&zondpb.GenericSignedBeaconBlock{}),
+			).Return(&zondpb.ProposeResponse{BlockRoot: make([]byte, 32)}, nil /*error*/)
 
 			validator.ProposeBlock(context.Background(), slot, pubKey)
 			require.LogsDoNotContain(t, hook, failedBlockSignLocalErr)
@@ -380,16 +380,16 @@ func TestProposeBlock_BlocksDoubleProposal_After54KEpochs(t *testing.T) {
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
-	).Times(1).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	).Times(1).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 	testBlock := util.NewBeaconBlock()
 	farFuture := params.BeaconConfig().SlotsPerEpoch.Mul(uint64(params.BeaconConfig().WeakSubjectivityPeriod + 9))
 	testBlock.Block.Slot = farFuture
 	m.validatorClient.EXPECT().GetBeaconBlock(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.BlockRequest{}),
-	).Return(&ethpb.GenericBeaconBlock{
-		Block: &ethpb.GenericBeaconBlock_Phase0{
+		gomock.AssignableToTypeOf(&zondpb.BlockRequest{}),
+	).Return(&zondpb.GenericBeaconBlock{
+		Block: &zondpb.GenericBeaconBlock_Phase0{
 			Phase0: testBlock.Block,
 		},
 	}, nil /*err*/)
@@ -401,21 +401,21 @@ func TestProposeBlock_BlocksDoubleProposal_After54KEpochs(t *testing.T) {
 	secondTestBlock.Block.Body.Graffiti = blockGraffiti[:]
 	m.validatorClient.EXPECT().GetBeaconBlock(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.BlockRequest{}),
-	).Return(&ethpb.GenericBeaconBlock{
-		Block: &ethpb.GenericBeaconBlock_Phase0{
+		gomock.AssignableToTypeOf(&zondpb.BlockRequest{}),
+	).Return(&zondpb.GenericBeaconBlock{
+		Block: &zondpb.GenericBeaconBlock_Phase0{
 			Phase0: secondTestBlock.Block,
 		},
 	}, nil /*err*/)
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
-	).Times(3).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	).Times(3).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 	m.validatorClient.EXPECT().ProposeBeaconBlock(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.GenericSignedBeaconBlock{}),
-	).Return(&ethpb.ProposeResponse{BlockRoot: make([]byte, 32)}, nil /*error*/)
+		gomock.AssignableToTypeOf(&zondpb.GenericSignedBeaconBlock{}),
+	).Return(&zondpb.ProposeResponse{BlockRoot: make([]byte, 32)}, nil /*error*/)
 
 	validator.ProposeBlock(context.Background(), farFuture, pubKey)
 	require.LogsDoNotContain(t, hook, failedBlockSignLocalErr)
@@ -455,15 +455,15 @@ func TestProposeBlock_AllowsPastProposals(t *testing.T) {
 			m.validatorClient.EXPECT().DomainData(
 				gomock.Any(), // ctx
 				gomock.Any(), // epoch
-			).Times(2).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+			).Times(2).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 			blk := util.NewBeaconBlock()
 			blk.Block.Slot = slot
 			m.validatorClient.EXPECT().GetBeaconBlock(
 				gomock.Any(), // ctx
-				gomock.AssignableToTypeOf(&ethpb.BlockRequest{}),
-			).Return(&ethpb.GenericBeaconBlock{
-				Block: &ethpb.GenericBeaconBlock_Phase0{
+				gomock.AssignableToTypeOf(&zondpb.BlockRequest{}),
+			).Return(&zondpb.GenericBeaconBlock{
+				Block: &zondpb.GenericBeaconBlock_Phase0{
 					Phase0: blk.Block,
 				},
 			}, nil /*err*/)
@@ -471,12 +471,12 @@ func TestProposeBlock_AllowsPastProposals(t *testing.T) {
 			m.validatorClient.EXPECT().DomainData(
 				gomock.Any(), // ctx
 				gomock.Any(), // epoch
-			).Times(2).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+			).Times(2).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 			m.validatorClient.EXPECT().ProposeBeaconBlock(
 				gomock.Any(), // ctx
-				gomock.AssignableToTypeOf(&ethpb.GenericSignedBeaconBlock{}),
-			).Times(2).Return(&ethpb.ProposeResponse{BlockRoot: make([]byte, 32)}, nil /*error*/)
+				gomock.AssignableToTypeOf(&zondpb.GenericSignedBeaconBlock{}),
+			).Times(2).Return(&zondpb.ProposeResponse{BlockRoot: make([]byte, 32)}, nil /*error*/)
 
 			validator.ProposeBlock(context.Background(), slot, pubKey)
 			require.LogsDoNotContain(t, hook, failedBlockSignLocalErr)
@@ -485,9 +485,9 @@ func TestProposeBlock_AllowsPastProposals(t *testing.T) {
 			blk2.Block.Slot = tt.pastSlot
 			m.validatorClient.EXPECT().GetBeaconBlock(
 				gomock.Any(), // ctx
-				gomock.AssignableToTypeOf(&ethpb.BlockRequest{}),
-			).Return(&ethpb.GenericBeaconBlock{
-				Block: &ethpb.GenericBeaconBlock_Phase0{
+				gomock.AssignableToTypeOf(&zondpb.BlockRequest{}),
+			).Return(&zondpb.GenericBeaconBlock{
+				Block: &zondpb.GenericBeaconBlock_Phase0{
 					Phase0: blk2.Block,
 				},
 			}, nil /*err*/)
@@ -509,13 +509,13 @@ func TestProposeBlock_BroadcastsBlock_WithGraffiti(t *testing.T) {
 func testProposeBlock(t *testing.T, graffiti []byte) {
 	tests := []struct {
 		name  string
-		block *ethpb.GenericBeaconBlock
+		block *zondpb.GenericBeaconBlock
 	}{
 		{
 			name: "phase0",
-			block: &ethpb.GenericBeaconBlock{
-				Block: &ethpb.GenericBeaconBlock_Phase0{
-					Phase0: func() *ethpb.BeaconBlock {
+			block: &zondpb.GenericBeaconBlock{
+				Block: &zondpb.GenericBeaconBlock_Phase0{
+					Phase0: func() *zondpb.BeaconBlock {
 						blk := util.NewBeaconBlock()
 						blk.Block.Body.Graffiti = graffiti
 						return blk.Block
@@ -525,9 +525,9 @@ func testProposeBlock(t *testing.T, graffiti []byte) {
 		},
 		{
 			name: "altair",
-			block: &ethpb.GenericBeaconBlock{
-				Block: &ethpb.GenericBeaconBlock_Altair{
-					Altair: func() *ethpb.BeaconBlockAltair {
+			block: &zondpb.GenericBeaconBlock{
+				Block: &zondpb.GenericBeaconBlock_Altair{
+					Altair: func() *zondpb.BeaconBlockAltair {
 						blk := util.NewBeaconBlockAltair()
 						blk.Block.Body.Graffiti = graffiti
 						return blk.Block
@@ -537,9 +537,9 @@ func testProposeBlock(t *testing.T, graffiti []byte) {
 		},
 		{
 			name: "bellatrix",
-			block: &ethpb.GenericBeaconBlock{
-				Block: &ethpb.GenericBeaconBlock_Bellatrix{
-					Bellatrix: func() *ethpb.BeaconBlockBellatrix {
+			block: &zondpb.GenericBeaconBlock{
+				Block: &zondpb.GenericBeaconBlock_Bellatrix{
+					Bellatrix: func() *zondpb.BeaconBlockBellatrix {
 						blk := util.NewBeaconBlockBellatrix()
 						blk.Block.Body.Graffiti = graffiti
 						return blk.Block
@@ -549,9 +549,9 @@ func testProposeBlock(t *testing.T, graffiti []byte) {
 		},
 		{
 			name: "bellatrix blind block",
-			block: &ethpb.GenericBeaconBlock{
-				Block: &ethpb.GenericBeaconBlock_BlindedBellatrix{
-					BlindedBellatrix: func() *ethpb.BlindedBeaconBlockBellatrix {
+			block: &zondpb.GenericBeaconBlock{
+				Block: &zondpb.GenericBeaconBlock_BlindedBellatrix{
+					BlindedBellatrix: func() *zondpb.BlindedBeaconBlockBellatrix {
 						blk := util.NewBlindedBeaconBlockBellatrix()
 						blk.Block.Body.Graffiti = graffiti
 						return blk.Block
@@ -561,9 +561,9 @@ func testProposeBlock(t *testing.T, graffiti []byte) {
 		},
 		{
 			name: "capella",
-			block: &ethpb.GenericBeaconBlock{
-				Block: &ethpb.GenericBeaconBlock_Capella{
-					Capella: func() *ethpb.BeaconBlockCapella {
+			block: &zondpb.GenericBeaconBlock{
+				Block: &zondpb.GenericBeaconBlock_Capella{
+					Capella: func() *zondpb.BeaconBlockCapella {
 						blk := util.NewBeaconBlockCapella()
 						blk.Block.Body.Graffiti = graffiti
 						return blk.Block
@@ -573,9 +573,9 @@ func testProposeBlock(t *testing.T, graffiti []byte) {
 		},
 		{
 			name: "capella blind block",
-			block: &ethpb.GenericBeaconBlock{
-				Block: &ethpb.GenericBeaconBlock_BlindedCapella{
-					BlindedCapella: func() *ethpb.BlindedBeaconBlockCapella {
+			block: &zondpb.GenericBeaconBlock{
+				Block: &zondpb.GenericBeaconBlock_BlindedCapella{
+					BlindedCapella: func() *zondpb.BlindedBeaconBlockCapella {
 						blk := util.NewBlindedBeaconBlockCapella()
 						blk.Block.Body.Graffiti = graffiti
 						return blk.Block
@@ -598,12 +598,12 @@ func testProposeBlock(t *testing.T, graffiti []byte) {
 			m.validatorClient.EXPECT().DomainData(
 				gomock.Any(), // ctx
 				gomock.Any(), // epoch
-			).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+			).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 			m.validatorClient.EXPECT().GetBeaconBlock(
 				gomock.Any(), // ctx
-				gomock.AssignableToTypeOf(&ethpb.BlockRequest{}),
-			).DoAndReturn(func(ctx context.Context, req *ethpb.BlockRequest) (*ethpb.GenericBeaconBlock, error) {
+				gomock.AssignableToTypeOf(&zondpb.BlockRequest{}),
+			).DoAndReturn(func(ctx context.Context, req *zondpb.BlockRequest) (*zondpb.GenericBeaconBlock, error) {
 				assert.DeepEqual(t, graffiti, req.Graffiti, "Unexpected graffiti in request")
 
 				return tt.block, nil
@@ -612,18 +612,18 @@ func testProposeBlock(t *testing.T, graffiti []byte) {
 			m.validatorClient.EXPECT().DomainData(
 				gomock.Any(), // ctx
 				gomock.Any(), // epoch
-			).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+			).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 			var sentBlock interfaces.ReadOnlySignedBeaconBlock
 			var err error
 
 			m.validatorClient.EXPECT().ProposeBeaconBlock(
 				gomock.Any(), // ctx
-				gomock.AssignableToTypeOf(&ethpb.GenericSignedBeaconBlock{}),
-			).DoAndReturn(func(ctx context.Context, block *ethpb.GenericSignedBeaconBlock) (*ethpb.ProposeResponse, error) {
+				gomock.AssignableToTypeOf(&zondpb.GenericSignedBeaconBlock{}),
+			).DoAndReturn(func(ctx context.Context, block *zondpb.GenericSignedBeaconBlock) (*zondpb.ProposeResponse, error) {
 				sentBlock, err = blocktest.NewSignedBeaconBlockFromGeneric(block)
 				assert.NoError(t, err, "Unexpected error unwrapping block")
-				return &ethpb.ProposeResponse{BlockRoot: make([]byte, 32)}, nil
+				return &zondpb.ProposeResponse{BlockRoot: make([]byte, 32)}, nil
 			})
 
 			validator.ProposeBlock(context.Background(), 1, pubKey)
@@ -661,7 +661,7 @@ func TestProposeExit_DomainDataFailed(t *testing.T) {
 
 	m.validatorClient.EXPECT().
 		ValidatorIndex(gomock.Any(), gomock.Any()).
-		Return(&ethpb.ValidatorIndexResponse{Index: 1}, nil)
+		Return(&zondpb.ValidatorIndexResponse{Index: 1}, nil)
 
 	m.validatorClient.EXPECT().
 		DomainData(gomock.Any(), gomock.Any()).
@@ -686,7 +686,7 @@ func TestProposeExit_DomainDataIsNil(t *testing.T) {
 
 	m.validatorClient.EXPECT().
 		ValidatorIndex(gomock.Any(), gomock.Any()).
-		Return(&ethpb.ValidatorIndexResponse{Index: 1}, nil)
+		Return(&zondpb.ValidatorIndexResponse{Index: 1}, nil)
 
 	m.validatorClient.EXPECT().
 		DomainData(gomock.Any(), gomock.Any()).
@@ -710,14 +710,14 @@ func TestProposeBlock_ProposeExitFailed(t *testing.T) {
 
 	m.validatorClient.EXPECT().
 		ValidatorIndex(gomock.Any(), gomock.Any()).
-		Return(&ethpb.ValidatorIndexResponse{Index: 1}, nil)
+		Return(&zondpb.ValidatorIndexResponse{Index: 1}, nil)
 
 	m.validatorClient.EXPECT().
 		DomainData(gomock.Any(), gomock.Any()).
-		Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
+		Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
 
 	m.validatorClient.EXPECT().
-		ProposeExit(gomock.Any(), gomock.AssignableToTypeOf(&ethpb.SignedVoluntaryExit{})).
+		ProposeExit(gomock.Any(), gomock.AssignableToTypeOf(&zondpb.SignedVoluntaryExit{})).
 		Return(nil, errors.New("uh oh"))
 
 	err := ProposeExit(
@@ -738,15 +738,15 @@ func TestProposeExit_BroadcastsBlock(t *testing.T) {
 
 	m.validatorClient.EXPECT().
 		ValidatorIndex(gomock.Any(), gomock.Any()).
-		Return(&ethpb.ValidatorIndexResponse{Index: 1}, nil)
+		Return(&zondpb.ValidatorIndexResponse{Index: 1}, nil)
 
 	m.validatorClient.EXPECT().
 		DomainData(gomock.Any(), gomock.Any()).
-		Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
+		Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
 
 	m.validatorClient.EXPECT().
-		ProposeExit(gomock.Any(), gomock.AssignableToTypeOf(&ethpb.SignedVoluntaryExit{})).
-		Return(&ethpb.ProposeExitResponse{}, nil)
+		ProposeExit(gomock.Any(), gomock.AssignableToTypeOf(&zondpb.SignedVoluntaryExit{})).
+		Return(&zondpb.ProposeExitResponse{}, nil)
 
 	assert.NoError(t, ProposeExit(
 		context.Background(),
@@ -764,7 +764,7 @@ func TestSignBlock(t *testing.T) {
 	proposerDomain := make([]byte, 32)
 	m.validatorClient.EXPECT().
 		DomainData(gomock.Any(), gomock.Any()).
-		Return(&ethpb.DomainResponse{SignatureDomain: proposerDomain}, nil)
+		Return(&zondpb.DomainResponse{SignatureDomain: proposerDomain}, nil)
 	ctx := context.Background()
 	blk := util.NewBeaconBlock()
 	blk.Block.Slot = 1
@@ -799,7 +799,7 @@ func TestSignAltairBlock(t *testing.T) {
 	proposerDomain := make([]byte, 32)
 	m.validatorClient.EXPECT().
 		DomainData(gomock.Any(), gomock.Any()).
-		Return(&ethpb.DomainResponse{SignatureDomain: proposerDomain}, nil)
+		Return(&zondpb.DomainResponse{SignatureDomain: proposerDomain}, nil)
 	ctx := context.Background()
 	blk := util.NewBeaconBlockAltair()
 	blk.Block.Slot = 1
@@ -828,7 +828,7 @@ func TestSignBellatrixBlock(t *testing.T) {
 	proposerDomain := make([]byte, 32)
 	m.validatorClient.EXPECT().
 		DomainData(gomock.Any(), gomock.Any()).
-		Return(&ethpb.DomainResponse{SignatureDomain: proposerDomain}, nil)
+		Return(&zondpb.DomainResponse{SignatureDomain: proposerDomain}, nil)
 	ctx := context.Background()
 	blk := util.NewBeaconBlockBellatrix()
 	blk.Block.Slot = 1
@@ -925,8 +925,8 @@ func TestGetGraffiti_Ok(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if !strings.Contains(tt.name, "use default cli graffiti") {
 				m.validatorClient.EXPECT().
-					ValidatorIndex(gomock.Any(), &ethpb.ValidatorIndexRequest{PublicKey: pubKey[:]}).
-					Return(&ethpb.ValidatorIndexResponse{Index: 2}, nil)
+					ValidatorIndex(gomock.Any(), &zondpb.ValidatorIndexRequest{PublicKey: pubKey[:]}).
+					Return(&zondpb.ValidatorIndexResponse{Index: 2}, nil)
 			}
 			got, err := tt.v.getGraffiti(context.Background(), pubKey)
 			require.NoError(t, err)
@@ -943,9 +943,9 @@ func TestGetGraffitiOrdered_Ok(t *testing.T) {
 		validatorClient: validatormock.NewMockValidatorClient(ctrl),
 	}
 	m.validatorClient.EXPECT().
-		ValidatorIndex(gomock.Any(), &ethpb.ValidatorIndexRequest{PublicKey: pubKey[:]}).
+		ValidatorIndex(gomock.Any(), &zondpb.ValidatorIndexRequest{PublicKey: pubKey[:]}).
 		Times(5).
-		Return(&ethpb.ValidatorIndexResponse{Index: 2}, nil)
+		Return(&zondpb.ValidatorIndexResponse{Index: 2}, nil)
 
 	v := &validator{
 		db:              valDB,

@@ -9,7 +9,7 @@ import (
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/theQRL/qrysm/v4/config/features"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	attaggregation "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/attestations"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -31,78 +31,78 @@ func TestBatchAttestations_Multiple(t *testing.T) {
 	sig := priv.Sign([]byte("dummy_test_data"))
 	var mockRoot [32]byte
 
-	unaggregatedAtts := []*ethpb.Attestation{
-		{Data: &ethpb.AttestationData{
+	unaggregatedAtts := []*zondpb.Attestation{
+		{Data: &zondpb.AttestationData{
 			Slot:            2,
 			BeaconBlockRoot: mockRoot[:],
-			Source:          &ethpb.Checkpoint{Root: mockRoot[:]},
-			Target:          &ethpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b100100}, Signature: sig.Marshal()},
-		{Data: &ethpb.AttestationData{
+			Source:          &zondpb.Checkpoint{Root: mockRoot[:]},
+			Target:          &zondpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b100100}, Signature: sig.Marshal()},
+		{Data: &zondpb.AttestationData{
 			Slot:            1,
 			BeaconBlockRoot: mockRoot[:],
-			Source:          &ethpb.Checkpoint{Root: mockRoot[:]},
-			Target:          &ethpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b101000}, Signature: sig.Marshal()},
-		{Data: &ethpb.AttestationData{
+			Source:          &zondpb.Checkpoint{Root: mockRoot[:]},
+			Target:          &zondpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b101000}, Signature: sig.Marshal()},
+		{Data: &zondpb.AttestationData{
 			Slot:            0,
 			BeaconBlockRoot: mockRoot[:],
-			Source:          &ethpb.Checkpoint{Root: mockRoot[:]},
-			Target:          &ethpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b100010}, Signature: sig.Marshal()},
+			Source:          &zondpb.Checkpoint{Root: mockRoot[:]},
+			Target:          &zondpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b100010}, Signature: sig.Marshal()},
 	}
-	aggregatedAtts := []*ethpb.Attestation{
-		{Data: &ethpb.AttestationData{
+	aggregatedAtts := []*zondpb.Attestation{
+		{Data: &zondpb.AttestationData{
 			Slot:            2,
 			BeaconBlockRoot: mockRoot[:],
-			Source:          &ethpb.Checkpoint{Root: mockRoot[:]},
-			Target:          &ethpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b111000}, Signature: sig.Marshal()},
-		{Data: &ethpb.AttestationData{
+			Source:          &zondpb.Checkpoint{Root: mockRoot[:]},
+			Target:          &zondpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b111000}, Signature: sig.Marshal()},
+		{Data: &zondpb.AttestationData{
 			Slot:            1,
 			BeaconBlockRoot: mockRoot[:],
-			Source:          &ethpb.Checkpoint{Root: mockRoot[:]},
-			Target:          &ethpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b100011}, Signature: sig.Marshal()},
-		{Data: &ethpb.AttestationData{
+			Source:          &zondpb.Checkpoint{Root: mockRoot[:]},
+			Target:          &zondpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b100011}, Signature: sig.Marshal()},
+		{Data: &zondpb.AttestationData{
 			Slot:            0,
 			BeaconBlockRoot: mockRoot[:],
-			Source:          &ethpb.Checkpoint{Root: mockRoot[:]},
-			Target:          &ethpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b110001}, Signature: sig.Marshal()},
+			Source:          &zondpb.Checkpoint{Root: mockRoot[:]},
+			Target:          &zondpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b110001}, Signature: sig.Marshal()},
 	}
-	blockAtts := []*ethpb.Attestation{
-		{Data: &ethpb.AttestationData{
+	blockAtts := []*zondpb.Attestation{
+		{Data: &zondpb.AttestationData{
 			Slot:            2,
 			BeaconBlockRoot: mockRoot[:],
-			Source:          &ethpb.Checkpoint{Root: mockRoot[:]},
-			Target:          &ethpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b100001}, Signature: sig.Marshal()},
-		{Data: &ethpb.AttestationData{
+			Source:          &zondpb.Checkpoint{Root: mockRoot[:]},
+			Target:          &zondpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b100001}, Signature: sig.Marshal()},
+		{Data: &zondpb.AttestationData{
 			Slot:            1,
 			BeaconBlockRoot: mockRoot[:],
-			Source:          &ethpb.Checkpoint{Root: mockRoot[:]},
-			Target:          &ethpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b100100}, Signature: sig.Marshal()},
-		{Data: &ethpb.AttestationData{
+			Source:          &zondpb.Checkpoint{Root: mockRoot[:]},
+			Target:          &zondpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b100100}, Signature: sig.Marshal()},
+		{Data: &zondpb.AttestationData{
 			Slot:            0,
 			BeaconBlockRoot: mockRoot[:],
-			Source:          &ethpb.Checkpoint{Root: mockRoot[:]},
-			Target:          &ethpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b100100}, Signature: sig.Marshal()},
-		{Data: &ethpb.AttestationData{
+			Source:          &zondpb.Checkpoint{Root: mockRoot[:]},
+			Target:          &zondpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b100100}, Signature: sig.Marshal()},
+		{Data: &zondpb.AttestationData{
 			Slot:            2,
 			BeaconBlockRoot: mockRoot[:],
-			Source:          &ethpb.Checkpoint{Root: mockRoot[:]},
-			Target:          &ethpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b111000}, Signature: sig.Marshal()}, // Duplicated
-		{Data: &ethpb.AttestationData{
+			Source:          &zondpb.Checkpoint{Root: mockRoot[:]},
+			Target:          &zondpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b111000}, Signature: sig.Marshal()}, // Duplicated
+		{Data: &zondpb.AttestationData{
 			Slot:            1,
 			BeaconBlockRoot: mockRoot[:],
-			Source:          &ethpb.Checkpoint{Root: mockRoot[:]},
-			Target:          &ethpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b100011}, Signature: sig.Marshal()}, // Duplicated
+			Source:          &zondpb.Checkpoint{Root: mockRoot[:]},
+			Target:          &zondpb.Checkpoint{Root: mockRoot[:]}}, AggregationBits: bitfield.Bitlist{0b100011}, Signature: sig.Marshal()}, // Duplicated
 	}
 	require.NoError(t, s.cfg.Pool.SaveUnaggregatedAttestations(unaggregatedAtts))
 	require.NoError(t, s.cfg.Pool.SaveAggregatedAttestations(aggregatedAtts))
 	require.NoError(t, s.cfg.Pool.SaveBlockAttestations(blockAtts))
 	require.NoError(t, s.batchForkChoiceAtts(context.Background()))
 
-	wanted, err := attaggregation.Aggregate([]*ethpb.Attestation{aggregatedAtts[0], blockAtts[0]})
+	wanted, err := attaggregation.Aggregate([]*zondpb.Attestation{aggregatedAtts[0], blockAtts[0]})
 	require.NoError(t, err)
-	aggregated, err := attaggregation.Aggregate([]*ethpb.Attestation{aggregatedAtts[1], blockAtts[1]})
+	aggregated, err := attaggregation.Aggregate([]*zondpb.Attestation{aggregatedAtts[1], blockAtts[1]})
 	require.NoError(t, err)
 	wanted = append(wanted, aggregated...)
-	aggregated, err = attaggregation.Aggregate([]*ethpb.Attestation{aggregatedAtts[2], blockAtts[2]})
+	aggregated, err = attaggregation.Aggregate([]*zondpb.Attestation{aggregatedAtts[2], blockAtts[2]})
 	require.NoError(t, err)
 
 	wanted = append(wanted, aggregated...)
@@ -127,21 +127,21 @@ func TestBatchAttestations_Single(t *testing.T) {
 	require.NoError(t, err)
 	sig := priv.Sign([]byte("dummy_test_data"))
 	var mockRoot [32]byte
-	d := &ethpb.AttestationData{
+	d := &zondpb.AttestationData{
 		BeaconBlockRoot: mockRoot[:],
-		Source:          &ethpb.Checkpoint{Root: mockRoot[:]},
-		Target:          &ethpb.Checkpoint{Root: mockRoot[:]},
+		Source:          &zondpb.Checkpoint{Root: mockRoot[:]},
+		Target:          &zondpb.Checkpoint{Root: mockRoot[:]},
 	}
 
-	unaggregatedAtts := []*ethpb.Attestation{
+	unaggregatedAtts := []*zondpb.Attestation{
 		{Data: d, AggregationBits: bitfield.Bitlist{0b101000}, Signature: sig.Marshal()},
 		{Data: d, AggregationBits: bitfield.Bitlist{0b100100}, Signature: sig.Marshal()},
 	}
-	aggregatedAtts := []*ethpb.Attestation{
+	aggregatedAtts := []*zondpb.Attestation{
 		{Data: d, AggregationBits: bitfield.Bitlist{0b101100}, Signature: sig.Marshal()},
 		{Data: d, AggregationBits: bitfield.Bitlist{0b110010}, Signature: sig.Marshal()},
 	}
-	blockAtts := []*ethpb.Attestation{
+	blockAtts := []*zondpb.Attestation{
 		{Data: d, AggregationBits: bitfield.Bitlist{0b110010}, Signature: sig.Marshal()},
 		{Data: d, AggregationBits: bitfield.Bitlist{0b100010}, Signature: sig.Marshal()},
 		{Data: d, AggregationBits: bitfield.Bitlist{0b110010}, Signature: sig.Marshal()}, // Duplicated
@@ -169,13 +169,13 @@ func TestAggregateAndSaveForkChoiceAtts_Single(t *testing.T) {
 	require.NoError(t, err)
 	sig := priv.Sign([]byte("dummy_test_data"))
 	var mockRoot [32]byte
-	d := &ethpb.AttestationData{
+	d := &zondpb.AttestationData{
 		BeaconBlockRoot: mockRoot[:],
-		Source:          &ethpb.Checkpoint{Root: mockRoot[:]},
-		Target:          &ethpb.Checkpoint{Root: mockRoot[:]},
+		Source:          &zondpb.Checkpoint{Root: mockRoot[:]},
+		Target:          &zondpb.Checkpoint{Root: mockRoot[:]},
 	}
 
-	atts := []*ethpb.Attestation{
+	atts := []*zondpb.Attestation{
 		{Data: d, AggregationBits: bitfield.Bitlist{0b101}, Signature: sig.Marshal()},
 		{Data: d, AggregationBits: bitfield.Bitlist{0b110}, Signature: sig.Marshal()}}
 	require.NoError(t, s.aggregateAndSaveForkChoiceAtts(atts))
@@ -193,30 +193,30 @@ func TestAggregateAndSaveForkChoiceAtts_Multiple(t *testing.T) {
 	require.NoError(t, err)
 	sig := priv.Sign([]byte("dummy_test_data"))
 	var mockRoot [32]byte
-	d := &ethpb.AttestationData{
+	d := &zondpb.AttestationData{
 		BeaconBlockRoot: mockRoot[:],
-		Source:          &ethpb.Checkpoint{Root: mockRoot[:]},
-		Target:          &ethpb.Checkpoint{Root: mockRoot[:]},
+		Source:          &zondpb.Checkpoint{Root: mockRoot[:]},
+		Target:          &zondpb.Checkpoint{Root: mockRoot[:]},
 	}
-	d1, ok := proto.Clone(d).(*ethpb.AttestationData)
-	require.Equal(t, true, ok, "Entity is not of type *ethpb.AttestationData")
+	d1, ok := proto.Clone(d).(*zondpb.AttestationData)
+	require.Equal(t, true, ok, "Entity is not of type *zondpb.AttestationData")
 	d1.Slot = 1
-	d2, ok := proto.Clone(d).(*ethpb.AttestationData)
-	require.Equal(t, true, ok, "Entity is not of type *ethpb.AttestationData")
+	d2, ok := proto.Clone(d).(*zondpb.AttestationData)
+	require.Equal(t, true, ok, "Entity is not of type *zondpb.AttestationData")
 	d2.Slot = 2
 
-	atts1 := []*ethpb.Attestation{
+	atts1 := []*zondpb.Attestation{
 		{Data: d, AggregationBits: bitfield.Bitlist{0b101}, Signature: sig.Marshal()},
 		{Data: d, AggregationBits: bitfield.Bitlist{0b110}, Signature: sig.Marshal()},
 	}
 	require.NoError(t, s.aggregateAndSaveForkChoiceAtts(atts1))
-	atts2 := []*ethpb.Attestation{
+	atts2 := []*zondpb.Attestation{
 		{Data: d1, AggregationBits: bitfield.Bitlist{0b10110}, Signature: sig.Marshal()},
 		{Data: d1, AggregationBits: bitfield.Bitlist{0b11100}, Signature: sig.Marshal()},
 		{Data: d1, AggregationBits: bitfield.Bitlist{0b11000}, Signature: sig.Marshal()},
 	}
 	require.NoError(t, s.aggregateAndSaveForkChoiceAtts(atts2))
-	att3 := []*ethpb.Attestation{
+	att3 := []*zondpb.Attestation{
 		{Data: d2, AggregationBits: bitfield.Bitlist{0b1100}, Signature: sig.Marshal()},
 	}
 	require.NoError(t, s.aggregateAndSaveForkChoiceAtts(att3))
@@ -242,70 +242,70 @@ func TestSeenAttestations_PresentInCache(t *testing.T) {
 	s, err := NewService(context.Background(), &Config{Pool: NewPool()})
 	require.NoError(t, err)
 
-	ad1 := util.HydrateAttestationData(&ethpb.AttestationData{})
-	att1 := &ethpb.Attestation{Data: ad1, Signature: []byte{'A'}, AggregationBits: bitfield.Bitlist{0x13} /* 0b00010011 */}
+	ad1 := util.HydrateAttestationData(&zondpb.AttestationData{})
+	att1 := &zondpb.Attestation{Data: ad1, Signature: []byte{'A'}, AggregationBits: bitfield.Bitlist{0x13} /* 0b00010011 */}
 	got, err := s.seen(att1)
 	require.NoError(t, err)
 	assert.Equal(t, false, got)
 
-	att2 := &ethpb.Attestation{Data: ad1, Signature: []byte{'A'}, AggregationBits: bitfield.Bitlist{0x17} /* 0b00010111 */}
+	att2 := &zondpb.Attestation{Data: ad1, Signature: []byte{'A'}, AggregationBits: bitfield.Bitlist{0x17} /* 0b00010111 */}
 	got, err = s.seen(att2)
 	require.NoError(t, err)
 	assert.Equal(t, false, got)
 
-	att3 := &ethpb.Attestation{Data: ad1, Signature: []byte{'A'}, AggregationBits: bitfield.Bitlist{0x17} /* 0b00010111 */}
+	att3 := &zondpb.Attestation{Data: ad1, Signature: []byte{'A'}, AggregationBits: bitfield.Bitlist{0x17} /* 0b00010111 */}
 	got, err = s.seen(att3)
 	require.NoError(t, err)
 	assert.Equal(t, true, got)
 }
 
 func TestService_seen(t *testing.T) {
-	ad1 := util.HydrateAttestationData(&ethpb.AttestationData{Slot: 1})
+	ad1 := util.HydrateAttestationData(&zondpb.AttestationData{Slot: 1})
 
-	ad2 := util.HydrateAttestationData(&ethpb.AttestationData{Slot: 2})
+	ad2 := util.HydrateAttestationData(&zondpb.AttestationData{Slot: 2})
 
 	// Attestation are checked in order of this list.
 	tests := []struct {
-		att  *ethpb.Attestation
+		att  *zondpb.Attestation
 		want bool
 	}{
 		{
-			att: &ethpb.Attestation{
+			att: &zondpb.Attestation{
 				AggregationBits: bitfield.Bitlist{0b11011},
 				Data:            ad1,
 			},
 			want: false,
 		},
 		{
-			att: &ethpb.Attestation{
+			att: &zondpb.Attestation{
 				AggregationBits: bitfield.Bitlist{0b11011},
 				Data:            ad1,
 			},
 			want: true, // Exact same attestation should return true
 		},
 		{
-			att: &ethpb.Attestation{
+			att: &zondpb.Attestation{
 				AggregationBits: bitfield.Bitlist{0b10101},
 				Data:            ad1,
 			},
 			want: false, // Haven't seen the bit at index 2 yet.
 		},
 		{
-			att: &ethpb.Attestation{
+			att: &zondpb.Attestation{
 				AggregationBits: bitfield.Bitlist{0b11111},
 				Data:            ad1,
 			},
 			want: true, // We've full committee at this point.
 		},
 		{
-			att: &ethpb.Attestation{
+			att: &zondpb.Attestation{
 				AggregationBits: bitfield.Bitlist{0b11111},
 				Data:            ad2,
 			},
 			want: false, // Different root is different bitlist.
 		},
 		{
-			att: &ethpb.Attestation{
+			att: &zondpb.Attestation{
 				AggregationBits: bitfield.Bitlist{0b11111001},
 				Data:            ad1,
 			},

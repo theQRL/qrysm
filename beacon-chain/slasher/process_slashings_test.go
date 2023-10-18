@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
@@ -29,8 +29,8 @@ func TestService_processAttesterSlashings(t *testing.T) {
 
 	privKey, err := bls.RandKey()
 	require.NoError(t, err)
-	validators := make([]*ethpb.Validator, 1)
-	validators[0] = &ethpb.Validator{
+	validators := make([]*zondpb.Validator, 1)
+	validators[0] = &zondpb.Validator{
 		PublicKey:             privKey.PublicKey().Marshal(),
 		WithdrawalCredentials: make([]byte, 32),
 		EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
@@ -51,10 +51,10 @@ func TestService_processAttesterSlashings(t *testing.T) {
 		},
 	}
 
-	firstAtt := util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
+	firstAtt := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{0},
 	})
-	secondAtt := util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
+	secondAtt := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{0},
 	})
 
@@ -75,7 +75,7 @@ func TestService_processAttesterSlashings(t *testing.T) {
 		firstAtt.Signature = signature.Marshal()
 		secondAtt.Signature = make([]byte, 96)
 
-		slashings := []*ethpb.AttesterSlashing{
+		slashings := []*zondpb.AttesterSlashing{
 			{
 				Attestation_1: firstAtt,
 				Attestation_2: secondAtt,
@@ -94,7 +94,7 @@ func TestService_processAttesterSlashings(t *testing.T) {
 		firstAtt.Signature = make([]byte, 96)
 		secondAtt.Signature = signature.Marshal()
 
-		slashings := []*ethpb.AttesterSlashing{
+		slashings := []*zondpb.AttesterSlashing{
 			{
 				Attestation_1: firstAtt,
 				Attestation_2: secondAtt,
@@ -113,7 +113,7 @@ func TestService_processAttesterSlashings(t *testing.T) {
 		firstAtt.Signature = signature.Marshal()
 		secondAtt.Signature = signature.Marshal()
 
-		slashings := []*ethpb.AttesterSlashing{
+		slashings := []*zondpb.AttesterSlashing{
 			{
 				Attestation_1: firstAtt,
 				Attestation_2: secondAtt,
@@ -136,8 +136,8 @@ func TestService_processProposerSlashings(t *testing.T) {
 
 	privKey, err := bls.RandKey()
 	require.NoError(t, err)
-	validators := make([]*ethpb.Validator, 1)
-	validators[0] = &ethpb.Validator{
+	validators := make([]*zondpb.Validator, 1)
+	validators[0] = &zondpb.Validator{
 		PublicKey:             privKey.PublicKey().Marshal(),
 		WithdrawalCredentials: make([]byte, 32),
 		EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
@@ -162,15 +162,15 @@ func TestService_processProposerSlashings(t *testing.T) {
 	err = s.serviceCfg.StateGen.SaveState(ctx, parentRoot, beaconState)
 	require.NoError(t, err)
 
-	firstBlockHeader := util.HydrateSignedBeaconHeader(&ethpb.SignedBeaconBlockHeader{
-		Header: &ethpb.BeaconBlockHeader{
+	firstBlockHeader := util.HydrateSignedBeaconHeader(&zondpb.SignedBeaconBlockHeader{
+		Header: &zondpb.BeaconBlockHeader{
 			Slot:          0,
 			ProposerIndex: 0,
 			ParentRoot:    parentRoot[:],
 		},
 	})
-	secondBlockHeader := util.HydrateSignedBeaconHeader(&ethpb.SignedBeaconBlockHeader{
-		Header: &ethpb.BeaconBlockHeader{
+	secondBlockHeader := util.HydrateSignedBeaconHeader(&zondpb.SignedBeaconBlockHeader{
+		Header: &zondpb.BeaconBlockHeader{
 			Slot:          0,
 			ProposerIndex: 0,
 			ParentRoot:    parentRoot[:],
@@ -186,7 +186,7 @@ func TestService_processProposerSlashings(t *testing.T) {
 	require.NoError(t, err)
 	htr, err := firstBlockHeader.Header.HashTreeRoot()
 	require.NoError(t, err)
-	container := &ethpb.SigningData{
+	container := &zondpb.SigningData{
 		ObjectRoot: htr[:],
 		Domain:     domain,
 	}
@@ -201,7 +201,7 @@ func TestService_processProposerSlashings(t *testing.T) {
 		firstBlockHeader.Signature = signature.Marshal()
 		secondBlockHeader.Signature = make([]byte, 96)
 
-		slashings := []*ethpb.ProposerSlashing{
+		slashings := []*zondpb.ProposerSlashing{
 			{
 				Header_1: firstBlockHeader,
 				Header_2: secondBlockHeader,
@@ -220,7 +220,7 @@ func TestService_processProposerSlashings(t *testing.T) {
 		firstBlockHeader.Signature = make([]byte, 96)
 		secondBlockHeader.Signature = signature.Marshal()
 
-		slashings := []*ethpb.ProposerSlashing{
+		slashings := []*zondpb.ProposerSlashing{
 			{
 				Header_1: firstBlockHeader,
 				Header_2: secondBlockHeader,
@@ -239,7 +239,7 @@ func TestService_processProposerSlashings(t *testing.T) {
 		firstBlockHeader.Signature = signature.Marshal()
 		secondBlockHeader.Signature = signature.Marshal()
 
-		slashings := []*ethpb.ProposerSlashing{
+		slashings := []*zondpb.ProposerSlashing{
 			{
 				Header_1: firstBlockHeader,
 				Header_2: secondBlockHeader,

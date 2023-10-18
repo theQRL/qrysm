@@ -17,7 +17,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/mock"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -31,14 +31,14 @@ func TestValidatorIndex_OK(t *testing.T) {
 
 	pubKey := pubKey(1)
 
-	err = st.SetValidators([]*ethpb.Validator{{PublicKey: pubKey}})
+	err = st.SetValidators([]*zondpb.Validator{{PublicKey: pubKey}})
 	require.NoError(t, err)
 
 	Server := &Server{
 		HeadFetcher: &mockChain.ChainService{State: st},
 	}
 
-	req := &ethpb.ValidatorIndexRequest{
+	req := &zondpb.ValidatorIndexRequest{
 		PublicKey: pubKey,
 	}
 	_, err = Server.ValidatorIndex(context.Background(), req)
@@ -50,7 +50,7 @@ func TestValidatorIndex_StateEmpty(t *testing.T) {
 		HeadFetcher: &mockChain.ChainService{},
 	}
 	pubKey := pubKey(1)
-	req := &ethpb.ValidatorIndexRequest{
+	req := &zondpb.ValidatorIndexRequest{
 		PublicKey: pubKey,
 	}
 	_, err := Server.ValidatorIndex(context.Background(), req)
@@ -58,9 +58,9 @@ func TestValidatorIndex_StateEmpty(t *testing.T) {
 }
 
 func TestWaitForActivation_ContextClosed(t *testing.T) {
-	beaconState, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Slot:       0,
-		Validators: []*ethpb.Validator{},
+		Validators: []*zondpb.Validator{},
 	})
 	require.NoError(t, err)
 	block := util.NewBeaconBlock()
@@ -79,7 +79,7 @@ func TestWaitForActivation_ContextClosed(t *testing.T) {
 		DepositFetcher:    depositCache,
 		HeadFetcher:       &mockChain.ChainService{State: beaconState, Root: genesisRoot[:]},
 	}
-	req := &ethpb.ValidatorActivationRequest{
+	req := &zondpb.ValidatorActivationRequest{
 		PublicKeys: [][]byte{pubKey(1)},
 	}
 
@@ -111,9 +111,9 @@ func TestWaitForActivation_MultipleStatuses(t *testing.T) {
 	pubKey2 := priv2.PublicKey().Marshal()
 	pubKey3 := priv3.PublicKey().Marshal()
 
-	beaconState := &ethpb.BeaconState{
+	beaconState := &zondpb.BeaconState{
 		Slot: 4000,
-		Validators: []*ethpb.Validator{
+		Validators: []*zondpb.Validator{
 			{
 				PublicKey:       pubKey1,
 				ActivationEpoch: 1,
@@ -143,7 +143,7 @@ func TestWaitForActivation_MultipleStatuses(t *testing.T) {
 		ChainStartFetcher: &mockExecution.Chain{},
 		HeadFetcher:       &mockChain.ChainService{State: s, Root: genesisRoot[:]},
 	}
-	req := &ethpb.ValidatorActivationRequest{
+	req := &zondpb.ValidatorActivationRequest{
 		PublicKeys: [][]byte{pubKey1, pubKey2, pubKey3},
 	}
 	ctrl := gomock.NewController(t)
@@ -152,20 +152,20 @@ func TestWaitForActivation_MultipleStatuses(t *testing.T) {
 	mockChainStream := mock.NewMockBeaconNodeValidator_WaitForActivationServer(ctrl)
 	mockChainStream.EXPECT().Context().Return(context.Background())
 	mockChainStream.EXPECT().Send(
-		&ethpb.ValidatorActivationResponse{
-			Statuses: []*ethpb.ValidatorActivationResponse_Status{
+		&zondpb.ValidatorActivationResponse{
+			Statuses: []*zondpb.ValidatorActivationResponse_Status{
 				{
 					PublicKey: pubKey1,
-					Status: &ethpb.ValidatorStatusResponse{
-						Status:          ethpb.ValidatorStatus_ACTIVE,
+					Status: &zondpb.ValidatorStatusResponse{
+						Status:          zondpb.ValidatorStatus_ACTIVE,
 						ActivationEpoch: 1,
 					},
 					Index: 0,
 				},
 				{
 					PublicKey: pubKey2,
-					Status: &ethpb.ValidatorStatusResponse{
-						Status:                    ethpb.ValidatorStatus_PENDING,
+					Status: &zondpb.ValidatorStatusResponse{
+						Status:                    zondpb.ValidatorStatus_PENDING,
 						ActivationEpoch:           params.BeaconConfig().FarFutureEpoch,
 						PositionInActivationQueue: 1,
 					},
@@ -173,8 +173,8 @@ func TestWaitForActivation_MultipleStatuses(t *testing.T) {
 				},
 				{
 					PublicKey: pubKey3,
-					Status: &ethpb.ValidatorStatusResponse{
-						Status: ethpb.ValidatorStatus_EXITED,
+					Status: &zondpb.ValidatorStatusResponse{
+						Status: zondpb.ValidatorStatus_EXITED,
 					},
 					Index: 2,
 				},
@@ -232,7 +232,7 @@ func TestWaitForChainStart_AlreadyStarted(t *testing.T) {
 	defer ctrl.Finish()
 	mockStream := mock.NewMockBeaconNodeValidator_WaitForChainStartServer(ctrl)
 	mockStream.EXPECT().Send(
-		&ethpb.ChainStartResponse{
+		&zondpb.ChainStartResponse{
 			Started:               true,
 			GenesisTime:           uint64(time.Unix(0, 0).Unix()),
 			GenesisValidatorsRoot: genesisValidatorsRoot[:],
@@ -291,7 +291,7 @@ func TestWaitForChainStart_NotStartedThenLogFired(t *testing.T) {
 	defer ctrl.Finish()
 	mockStream := mock.NewMockBeaconNodeValidator_WaitForChainStartServer(ctrl)
 	mockStream.EXPECT().Send(
-		&ethpb.ChainStartResponse{
+		&zondpb.ChainStartResponse{
 			Started:               true,
 			GenesisTime:           uint64(time.Unix(0, 0).Unix()),
 			GenesisValidatorsRoot: genesisValidatorsRoot[:],

@@ -19,7 +19,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -410,12 +410,12 @@ func setHeadState(t *testing.T, headState state.BeaconState, publicKeys [][48]by
 	epoch := primitives.Epoch(1)
 	require.NoError(t, headState.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(uint64(epoch+1))))
 	if headState.Version() < version.Altair {
-		atts := make([]*ethpb.PendingAttestation, 3)
+		atts := make([]*zondpb.PendingAttestation, 3)
 		for i := 0; i < len(atts); i++ {
-			atts[i] = &ethpb.PendingAttestation{
-				Data: &ethpb.AttestationData{
-					Target: &ethpb.Checkpoint{Root: make([]byte, 32)},
-					Source: &ethpb.Checkpoint{Root: make([]byte, 32)},
+			atts[i] = &zondpb.PendingAttestation{
+				Data: &zondpb.AttestationData{
+					Target: &zondpb.Checkpoint{Root: make([]byte, 32)},
+					Source: &zondpb.Checkpoint{Root: make([]byte, 32)},
 				},
 				AggregationBits: bitfield.Bitlist{},
 				InclusionDelay:  1,
@@ -429,7 +429,7 @@ func setHeadState(t *testing.T, headState state.BeaconState, publicKeys [][48]by
 	balances := []uint64{defaultBal, extraBal, extraBal + params.BeaconConfig().GweiPerEth}
 	require.NoError(t, headState.SetBalances(balances))
 
-	validators := []*ethpb.Validator{
+	validators := []*zondpb.Validator{
 		{
 			PublicKey:       publicKeys[0][:],
 			ActivationEpoch: 5,

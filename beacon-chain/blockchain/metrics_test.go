@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
@@ -24,7 +24,7 @@ func TestReportEpochMetrics_BadAttestation(t *testing.T) {
 	require.NoError(t, err)
 	h, err := util.NewBeaconState()
 	require.NoError(t, err)
-	require.NoError(t, h.AppendCurrentEpochAttestations(&eth.PendingAttestation{InclusionDelay: 0}))
+	require.NoError(t, h.AppendCurrentEpochAttestations(&zond.PendingAttestation{InclusionDelay: 0}))
 	err = reportEpochMetrics(context.Background(), s, h)
 	require.ErrorContains(t, "attestation with inclusion delay of 0", err)
 }
@@ -35,7 +35,7 @@ func TestReportEpochMetrics_SlashedValidatorOutOfBound(t *testing.T) {
 	require.NoError(t, err)
 	v.Slashed = true
 	require.NoError(t, h.UpdateValidatorAtIndex(0, v))
-	require.NoError(t, h.AppendCurrentEpochAttestations(&eth.PendingAttestation{InclusionDelay: 1, Data: util.HydrateAttestationData(&eth.AttestationData{})}))
+	require.NoError(t, h.AppendCurrentEpochAttestations(&zond.PendingAttestation{InclusionDelay: 1, Data: util.HydrateAttestationData(&zond.AttestationData{})}))
 	err = reportEpochMetrics(context.Background(), h, h)
 	require.ErrorContains(t, "slot 0 out of bounds", err)
 }

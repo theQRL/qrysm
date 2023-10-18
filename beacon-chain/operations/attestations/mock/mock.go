@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // PoolMock --
 type PoolMock struct {
-	AggregatedAtts []*ethpb.Attestation
+	AggregatedAtts []*zondpb.Attestation
 }
 
 // AggregateUnaggregatedAttestations --
@@ -23,33 +23,33 @@ func (*PoolMock) AggregateUnaggregatedAttestationsBySlotIndex(_ context.Context,
 }
 
 // SaveAggregatedAttestation --
-func (*PoolMock) SaveAggregatedAttestation(_ *ethpb.Attestation) error {
+func (*PoolMock) SaveAggregatedAttestation(_ *zondpb.Attestation) error {
 	panic("implement me")
 }
 
 // SaveAggregatedAttestations --
-func (m *PoolMock) SaveAggregatedAttestations(atts []*ethpb.Attestation) error {
+func (m *PoolMock) SaveAggregatedAttestations(atts []*zondpb.Attestation) error {
 	m.AggregatedAtts = append(m.AggregatedAtts, atts...)
 	return nil
 }
 
 // AggregatedAttestations --
-func (m *PoolMock) AggregatedAttestations() []*ethpb.Attestation {
+func (m *PoolMock) AggregatedAttestations() []*zondpb.Attestation {
 	return m.AggregatedAtts
 }
 
 // AggregatedAttestationsBySlotIndex --
-func (*PoolMock) AggregatedAttestationsBySlotIndex(_ context.Context, _ primitives.Slot, _ primitives.CommitteeIndex) []*ethpb.Attestation {
+func (*PoolMock) AggregatedAttestationsBySlotIndex(_ context.Context, _ primitives.Slot, _ primitives.CommitteeIndex) []*zondpb.Attestation {
 	panic("implement me")
 }
 
 // DeleteAggregatedAttestation --
-func (*PoolMock) DeleteAggregatedAttestation(_ *ethpb.Attestation) error {
+func (*PoolMock) DeleteAggregatedAttestation(_ *zondpb.Attestation) error {
 	panic("implement me")
 }
 
 // HasAggregatedAttestation --
-func (*PoolMock) HasAggregatedAttestation(_ *ethpb.Attestation) (bool, error) {
+func (*PoolMock) HasAggregatedAttestation(_ *zondpb.Attestation) (bool, error) {
 	panic("implement me")
 }
 
@@ -59,27 +59,27 @@ func (*PoolMock) AggregatedAttestationCount() int {
 }
 
 // SaveUnaggregatedAttestation --
-func (*PoolMock) SaveUnaggregatedAttestation(_ *ethpb.Attestation) error {
+func (*PoolMock) SaveUnaggregatedAttestation(_ *zondpb.Attestation) error {
 	panic("implement me")
 }
 
 // SaveUnaggregatedAttestations --
-func (*PoolMock) SaveUnaggregatedAttestations(_ []*ethpb.Attestation) error {
+func (*PoolMock) SaveUnaggregatedAttestations(_ []*zondpb.Attestation) error {
 	panic("implement me")
 }
 
 // UnaggregatedAttestations --
-func (*PoolMock) UnaggregatedAttestations() ([]*ethpb.Attestation, error) {
+func (*PoolMock) UnaggregatedAttestations() ([]*zondpb.Attestation, error) {
 	panic("implement me")
 }
 
 // UnaggregatedAttestationsBySlotIndex --
-func (*PoolMock) UnaggregatedAttestationsBySlotIndex(_ context.Context, _ primitives.Slot, _ primitives.CommitteeIndex) []*ethpb.Attestation {
+func (*PoolMock) UnaggregatedAttestationsBySlotIndex(_ context.Context, _ primitives.Slot, _ primitives.CommitteeIndex) []*zondpb.Attestation {
 	panic("implement me")
 }
 
 // DeleteUnaggregatedAttestation --
-func (*PoolMock) DeleteUnaggregatedAttestation(_ *ethpb.Attestation) error {
+func (*PoolMock) DeleteUnaggregatedAttestation(_ *zondpb.Attestation) error {
 	panic("implement me")
 }
 
@@ -94,42 +94,42 @@ func (*PoolMock) UnaggregatedAttestationCount() int {
 }
 
 // SaveBlockAttestation --
-func (*PoolMock) SaveBlockAttestation(_ *ethpb.Attestation) error {
+func (*PoolMock) SaveBlockAttestation(_ *zondpb.Attestation) error {
 	panic("implement me")
 }
 
 // SaveBlockAttestations --
-func (*PoolMock) SaveBlockAttestations(_ []*ethpb.Attestation) error {
+func (*PoolMock) SaveBlockAttestations(_ []*zondpb.Attestation) error {
 	panic("implement me")
 }
 
 // BlockAttestations --
-func (*PoolMock) BlockAttestations() []*ethpb.Attestation {
+func (*PoolMock) BlockAttestations() []*zondpb.Attestation {
 	panic("implement me")
 }
 
 // DeleteBlockAttestation --
-func (*PoolMock) DeleteBlockAttestation(_ *ethpb.Attestation) error {
+func (*PoolMock) DeleteBlockAttestation(_ *zondpb.Attestation) error {
 	panic("implement me")
 }
 
 // SaveForkchoiceAttestation --
-func (*PoolMock) SaveForkchoiceAttestation(_ *ethpb.Attestation) error {
+func (*PoolMock) SaveForkchoiceAttestation(_ *zondpb.Attestation) error {
 	panic("implement me")
 }
 
 // SaveForkchoiceAttestations --
-func (*PoolMock) SaveForkchoiceAttestations(_ []*ethpb.Attestation) error {
+func (*PoolMock) SaveForkchoiceAttestations(_ []*zondpb.Attestation) error {
 	panic("implement me")
 }
 
 // ForkchoiceAttestations --
-func (*PoolMock) ForkchoiceAttestations() []*ethpb.Attestation {
+func (*PoolMock) ForkchoiceAttestations() []*zondpb.Attestation {
 	panic("implement me")
 }
 
 // DeleteForkchoiceAttestation --
-func (*PoolMock) DeleteForkchoiceAttestation(_ *ethpb.Attestation) error {
+func (*PoolMock) DeleteForkchoiceAttestation(_ *zondpb.Attestation) error {
 	panic("implement me")
 }
 

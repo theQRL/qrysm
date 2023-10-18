@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"google.golang.org/protobuf/proto"
 )
@@ -15,7 +15,7 @@ var _ PendingDepositsFetcher = (*DepositCache)(nil)
 
 func TestInsertPendingDeposit_OK(t *testing.T) {
 	dc := DepositCache{}
-	dc.InsertPendingDeposit(context.Background(), &ethpb.Deposit{}, 111, 100, [32]byte{})
+	dc.InsertPendingDeposit(context.Background(), &zondpb.Deposit{}, 111, 100, [32]byte{})
 
 	assert.Equal(t, 1, len(dc.pendingDeposits), "Deposit not inserted")
 }
@@ -33,15 +33,15 @@ func TestRemovePendingDeposit_OK(t *testing.T) {
 	proof1[0] = bytesutil.PadTo([]byte{'A'}, 32)
 	proof2 := makeDepositProof()
 	proof2[0] = bytesutil.PadTo([]byte{'A'}, 32)
-	data := &ethpb.Deposit_Data{
+	data := &zondpb.Deposit_Data{
 		PublicKey:             make([]byte, 48),
 		WithdrawalCredentials: make([]byte, 32),
 		Amount:                0,
 		Signature:             make([]byte, 96),
 	}
-	depToRemove := &ethpb.Deposit{Proof: proof1, Data: data}
-	otherDep := &ethpb.Deposit{Proof: proof2, Data: data}
-	db.pendingDeposits = []*ethpb.DepositContainer{
+	depToRemove := &zondpb.Deposit{Proof: proof1, Data: data}
+	otherDep := &zondpb.Deposit{Proof: proof2, Data: data}
+	db.pendingDeposits = []*zondpb.DepositContainer{
 		{Deposit: depToRemove, Index: 1},
 		{Deposit: otherDep, Index: 5},
 	}
@@ -54,7 +54,7 @@ func TestRemovePendingDeposit_OK(t *testing.T) {
 
 func TestRemovePendingDeposit_IgnoresNilDeposit(t *testing.T) {
 	dc := DepositCache{}
-	dc.pendingDeposits = []*ethpb.DepositContainer{{Deposit: &ethpb.Deposit{}}}
+	dc.pendingDeposits = []*zondpb.DepositContainer{{Deposit: &zondpb.Deposit{}}}
 	dc.RemovePendingDeposit(context.Background(), nil /*deposit*/)
 	assert.Equal(t, 1, len(dc.pendingDeposits), "Deposit unexpectedly removed")
 }
@@ -63,13 +63,13 @@ func TestPendingDeposit_RoundTrip(t *testing.T) {
 	dc := DepositCache{}
 	proof := makeDepositProof()
 	proof[0] = bytesutil.PadTo([]byte{'A'}, 32)
-	data := &ethpb.Deposit_Data{
+	data := &zondpb.Deposit_Data{
 		PublicKey:             make([]byte, 48),
 		WithdrawalCredentials: make([]byte, 32),
 		Amount:                0,
 		Signature:             make([]byte, 96),
 	}
-	dep := &ethpb.Deposit{Proof: proof, Data: data}
+	dep := &zondpb.Deposit{Proof: proof, Data: data}
 	dc.InsertPendingDeposit(context.Background(), dep, 111, 100, [32]byte{})
 	dc.RemovePendingDeposit(context.Background(), dep)
 	assert.Equal(t, 0, len(dc.pendingDeposits), "Failed to insert & delete a pending deposit")
@@ -78,14 +78,14 @@ func TestPendingDeposit_RoundTrip(t *testing.T) {
 func TestPendingDeposits_OK(t *testing.T) {
 	dc := DepositCache{}
 
-	dc.pendingDeposits = []*ethpb.DepositContainer{
-		{Eth1BlockHeight: 2, Deposit: &ethpb.Deposit{Proof: [][]byte{[]byte("A")}}},
-		{Eth1BlockHeight: 4, Deposit: &ethpb.Deposit{Proof: [][]byte{[]byte("B")}}},
-		{Eth1BlockHeight: 6, Deposit: &ethpb.Deposit{Proof: [][]byte{[]byte("c")}}},
+	dc.pendingDeposits = []*zondpb.DepositContainer{
+		{Eth1BlockHeight: 2, Deposit: &zondpb.Deposit{Proof: [][]byte{[]byte("A")}}},
+		{Eth1BlockHeight: 4, Deposit: &zondpb.Deposit{Proof: [][]byte{[]byte("B")}}},
+		{Eth1BlockHeight: 6, Deposit: &zondpb.Deposit{Proof: [][]byte{[]byte("c")}}},
 	}
 
 	deposits := dc.PendingDeposits(context.Background(), big.NewInt(4))
-	expected := []*ethpb.Deposit{
+	expected := []*zondpb.Deposit{
 		{Proof: [][]byte{[]byte("A")}},
 		{Proof: [][]byte{[]byte("B")}},
 	}
@@ -98,7 +98,7 @@ func TestPendingDeposits_OK(t *testing.T) {
 func TestPrunePendingDeposits_ZeroMerkleIndex(t *testing.T) {
 	dc := DepositCache{}
 
-	dc.pendingDeposits = []*ethpb.DepositContainer{
+	dc.pendingDeposits = []*zondpb.DepositContainer{
 		{Eth1BlockHeight: 2, Index: 2},
 		{Eth1BlockHeight: 4, Index: 4},
 		{Eth1BlockHeight: 6, Index: 6},
@@ -108,7 +108,7 @@ func TestPrunePendingDeposits_ZeroMerkleIndex(t *testing.T) {
 	}
 
 	dc.PrunePendingDeposits(context.Background(), 0)
-	expected := []*ethpb.DepositContainer{
+	expected := []*zondpb.DepositContainer{
 		{Eth1BlockHeight: 2, Index: 2},
 		{Eth1BlockHeight: 4, Index: 4},
 		{Eth1BlockHeight: 6, Index: 6},
@@ -122,7 +122,7 @@ func TestPrunePendingDeposits_ZeroMerkleIndex(t *testing.T) {
 func TestPrunePendingDeposits_OK(t *testing.T) {
 	dc := DepositCache{}
 
-	dc.pendingDeposits = []*ethpb.DepositContainer{
+	dc.pendingDeposits = []*zondpb.DepositContainer{
 		{Eth1BlockHeight: 2, Index: 2},
 		{Eth1BlockHeight: 4, Index: 4},
 		{Eth1BlockHeight: 6, Index: 6},
@@ -132,7 +132,7 @@ func TestPrunePendingDeposits_OK(t *testing.T) {
 	}
 
 	dc.PrunePendingDeposits(context.Background(), 6)
-	expected := []*ethpb.DepositContainer{
+	expected := []*zondpb.DepositContainer{
 		{Eth1BlockHeight: 6, Index: 6},
 		{Eth1BlockHeight: 8, Index: 8},
 		{Eth1BlockHeight: 10, Index: 10},
@@ -141,7 +141,7 @@ func TestPrunePendingDeposits_OK(t *testing.T) {
 
 	assert.DeepEqual(t, expected, dc.pendingDeposits)
 
-	dc.pendingDeposits = []*ethpb.DepositContainer{
+	dc.pendingDeposits = []*zondpb.DepositContainer{
 		{Eth1BlockHeight: 2, Index: 2},
 		{Eth1BlockHeight: 4, Index: 4},
 		{Eth1BlockHeight: 6, Index: 6},
@@ -151,7 +151,7 @@ func TestPrunePendingDeposits_OK(t *testing.T) {
 	}
 
 	dc.PrunePendingDeposits(context.Background(), 10)
-	expected = []*ethpb.DepositContainer{
+	expected = []*zondpb.DepositContainer{
 		{Eth1BlockHeight: 10, Index: 10},
 		{Eth1BlockHeight: 12, Index: 12},
 	}

@@ -10,7 +10,7 @@ import (
 	"github.com/golang/snappy"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 	"google.golang.org/protobuf/proto"
@@ -29,7 +29,7 @@ func RunEpochOperationTest(
 	require.NoError(t, err)
 	preBeaconStateSSZ, err := snappy.Decode(nil /* dst */, preBeaconStateFile)
 	require.NoError(t, err, "Failed to decompress")
-	preBeaconStateBase := &ethpb.BeaconState{}
+	preBeaconStateBase := &zondpb.BeaconState{}
 	if err := preBeaconStateBase.UnmarshalSSZ(preBeaconStateSSZ); err != nil {
 		t.Fatalf("Failed to unmarshal: %v", err)
 	}
@@ -53,7 +53,7 @@ func RunEpochOperationTest(
 		require.NoError(t, err)
 		postBeaconStateSSZ, err := snappy.Decode(nil /* dst */, postBeaconStateFile)
 		require.NoError(t, err, "Failed to decompress")
-		postBeaconState := &ethpb.BeaconState{}
+		postBeaconState := &zondpb.BeaconState{}
 		if err := postBeaconState.UnmarshalSSZ(postBeaconStateSSZ); err != nil {
 			t.Fatalf("Failed to unmarshal: %v", err)
 		}

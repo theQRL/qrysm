@@ -10,7 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -38,10 +38,10 @@ func (m *MockValidatorClient) EXPECT() *MockValidatorClientMockRecorder {
 }
 
 // CheckDoppelGanger mocks base method.
-func (m *MockValidatorClient) CheckDoppelGanger(arg0 context.Context, arg1 *eth.DoppelGangerRequest) (*eth.DoppelGangerResponse, error) {
+func (m *MockValidatorClient) CheckDoppelGanger(arg0 context.Context, arg1 *zond.DoppelGangerRequest) (*zond.DoppelGangerResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CheckDoppelGanger", arg0, arg1)
-	ret0, _ := ret[0].(*eth.DoppelGangerResponse)
+	ret0, _ := ret[0].(*zond.DoppelGangerResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -53,10 +53,10 @@ func (mr *MockValidatorClientMockRecorder) CheckDoppelGanger(arg0, arg1 interfac
 }
 
 // DomainData mocks base method.
-func (m *MockValidatorClient) DomainData(arg0 context.Context, arg1 *eth.DomainRequest) (*eth.DomainResponse, error) {
+func (m *MockValidatorClient) DomainData(arg0 context.Context, arg1 *zond.DomainRequest) (*zond.DomainResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DomainData", arg0, arg1)
-	ret0, _ := ret[0].(*eth.DomainResponse)
+	ret0, _ := ret[0].(*zond.DomainResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -68,10 +68,10 @@ func (mr *MockValidatorClientMockRecorder) DomainData(arg0, arg1 interface{}) *g
 }
 
 // GetAttestationData mocks base method.
-func (m *MockValidatorClient) GetAttestationData(arg0 context.Context, arg1 *eth.AttestationDataRequest) (*eth.AttestationData, error) {
+func (m *MockValidatorClient) GetAttestationData(arg0 context.Context, arg1 *zond.AttestationDataRequest) (*zond.AttestationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAttestationData", arg0, arg1)
-	ret0, _ := ret[0].(*eth.AttestationData)
+	ret0, _ := ret[0].(*zond.AttestationData)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -83,10 +83,10 @@ func (mr *MockValidatorClientMockRecorder) GetAttestationData(arg0, arg1 interfa
 }
 
 // GetBeaconBlock mocks base method.
-func (m *MockValidatorClient) GetBeaconBlock(arg0 context.Context, arg1 *eth.BlockRequest) (*eth.GenericBeaconBlock, error) {
+func (m *MockValidatorClient) GetBeaconBlock(arg0 context.Context, arg1 *zond.BlockRequest) (*zond.GenericBeaconBlock, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBeaconBlock", arg0, arg1)
-	ret0, _ := ret[0].(*eth.GenericBeaconBlock)
+	ret0, _ := ret[0].(*zond.GenericBeaconBlock)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -98,10 +98,10 @@ func (mr *MockValidatorClientMockRecorder) GetBeaconBlock(arg0, arg1 interface{}
 }
 
 // GetDuties mocks base method.
-func (m *MockValidatorClient) GetDuties(arg0 context.Context, arg1 *eth.DutiesRequest) (*eth.DutiesResponse, error) {
+func (m *MockValidatorClient) GetDuties(arg0 context.Context, arg1 *zond.DutiesRequest) (*zond.DutiesResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDuties", arg0, arg1)
-	ret0, _ := ret[0].(*eth.DutiesResponse)
+	ret0, _ := ret[0].(*zond.DutiesResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -113,10 +113,10 @@ func (mr *MockValidatorClientMockRecorder) GetDuties(arg0, arg1 interface{}) *go
 }
 
 // GetFeeRecipientByPubKey mocks base method.
-func (m *MockValidatorClient) GetFeeRecipientByPubKey(arg0 context.Context, arg1 *eth.FeeRecipientByPubKeyRequest) (*eth.FeeRecipientByPubKeyResponse, error) {
+func (m *MockValidatorClient) GetFeeRecipientByPubKey(arg0 context.Context, arg1 *zond.FeeRecipientByPubKeyRequest) (*zond.FeeRecipientByPubKeyResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetFeeRecipientByPubKey", arg0, arg1)
-	ret0, _ := ret[0].(*eth.FeeRecipientByPubKeyResponse)
+	ret0, _ := ret[0].(*zond.FeeRecipientByPubKeyResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -128,10 +128,10 @@ func (mr *MockValidatorClientMockRecorder) GetFeeRecipientByPubKey(arg0, arg1 in
 }
 
 // GetSyncCommitteeContribution mocks base method.
-func (m *MockValidatorClient) GetSyncCommitteeContribution(arg0 context.Context, arg1 *eth.SyncCommitteeContributionRequest) (*eth.SyncCommitteeContribution, error) {
+func (m *MockValidatorClient) GetSyncCommitteeContribution(arg0 context.Context, arg1 *zond.SyncCommitteeContributionRequest) (*zond.SyncCommitteeContribution, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSyncCommitteeContribution", arg0, arg1)
-	ret0, _ := ret[0].(*eth.SyncCommitteeContribution)
+	ret0, _ := ret[0].(*zond.SyncCommitteeContribution)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -143,10 +143,10 @@ func (mr *MockValidatorClientMockRecorder) GetSyncCommitteeContribution(arg0, ar
 }
 
 // GetSyncMessageBlockRoot mocks base method.
-func (m *MockValidatorClient) GetSyncMessageBlockRoot(arg0 context.Context, arg1 *emptypb.Empty) (*eth.SyncMessageBlockRootResponse, error) {
+func (m *MockValidatorClient) GetSyncMessageBlockRoot(arg0 context.Context, arg1 *emptypb.Empty) (*zond.SyncMessageBlockRootResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSyncMessageBlockRoot", arg0, arg1)
-	ret0, _ := ret[0].(*eth.SyncMessageBlockRootResponse)
+	ret0, _ := ret[0].(*zond.SyncMessageBlockRootResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -158,10 +158,10 @@ func (mr *MockValidatorClientMockRecorder) GetSyncMessageBlockRoot(arg0, arg1 in
 }
 
 // GetSyncSubcommitteeIndex mocks base method.
-func (m *MockValidatorClient) GetSyncSubcommitteeIndex(arg0 context.Context, arg1 *eth.SyncSubcommitteeIndexRequest) (*eth.SyncSubcommitteeIndexResponse, error) {
+func (m *MockValidatorClient) GetSyncSubcommitteeIndex(arg0 context.Context, arg1 *zond.SyncSubcommitteeIndexRequest) (*zond.SyncSubcommitteeIndexResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSyncSubcommitteeIndex", arg0, arg1)
-	ret0, _ := ret[0].(*eth.SyncSubcommitteeIndexResponse)
+	ret0, _ := ret[0].(*zond.SyncSubcommitteeIndexResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -173,10 +173,10 @@ func (mr *MockValidatorClientMockRecorder) GetSyncSubcommitteeIndex(arg0, arg1 i
 }
 
 // MultipleValidatorStatus mocks base method.
-func (m *MockValidatorClient) MultipleValidatorStatus(arg0 context.Context, arg1 *eth.MultipleValidatorStatusRequest) (*eth.MultipleValidatorStatusResponse, error) {
+func (m *MockValidatorClient) MultipleValidatorStatus(arg0 context.Context, arg1 *zond.MultipleValidatorStatusRequest) (*zond.MultipleValidatorStatusResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "MultipleValidatorStatus", arg0, arg1)
-	ret0, _ := ret[0].(*eth.MultipleValidatorStatusResponse)
+	ret0, _ := ret[0].(*zond.MultipleValidatorStatusResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -188,7 +188,7 @@ func (mr *MockValidatorClientMockRecorder) MultipleValidatorStatus(arg0, arg1 in
 }
 
 // PrepareBeaconProposer mocks base method.
-func (m *MockValidatorClient) PrepareBeaconProposer(arg0 context.Context, arg1 *eth.PrepareBeaconProposerRequest) (*emptypb.Empty, error) {
+func (m *MockValidatorClient) PrepareBeaconProposer(arg0 context.Context, arg1 *zond.PrepareBeaconProposerRequest) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PrepareBeaconProposer", arg0, arg1)
 	ret0, _ := ret[0].(*emptypb.Empty)
@@ -203,10 +203,10 @@ func (mr *MockValidatorClientMockRecorder) PrepareBeaconProposer(arg0, arg1 inte
 }
 
 // ProposeAttestation mocks base method.
-func (m *MockValidatorClient) ProposeAttestation(arg0 context.Context, arg1 *eth.Attestation) (*eth.AttestResponse, error) {
+func (m *MockValidatorClient) ProposeAttestation(arg0 context.Context, arg1 *zond.Attestation) (*zond.AttestResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ProposeAttestation", arg0, arg1)
-	ret0, _ := ret[0].(*eth.AttestResponse)
+	ret0, _ := ret[0].(*zond.AttestResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -218,10 +218,10 @@ func (mr *MockValidatorClientMockRecorder) ProposeAttestation(arg0, arg1 interfa
 }
 
 // ProposeBeaconBlock mocks base method.
-func (m *MockValidatorClient) ProposeBeaconBlock(arg0 context.Context, arg1 *eth.GenericSignedBeaconBlock) (*eth.ProposeResponse, error) {
+func (m *MockValidatorClient) ProposeBeaconBlock(arg0 context.Context, arg1 *zond.GenericSignedBeaconBlock) (*zond.ProposeResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ProposeBeaconBlock", arg0, arg1)
-	ret0, _ := ret[0].(*eth.ProposeResponse)
+	ret0, _ := ret[0].(*zond.ProposeResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -233,10 +233,10 @@ func (mr *MockValidatorClientMockRecorder) ProposeBeaconBlock(arg0, arg1 interfa
 }
 
 // ProposeExit mocks base method.
-func (m *MockValidatorClient) ProposeExit(arg0 context.Context, arg1 *eth.SignedVoluntaryExit) (*eth.ProposeExitResponse, error) {
+func (m *MockValidatorClient) ProposeExit(arg0 context.Context, arg1 *zond.SignedVoluntaryExit) (*zond.ProposeExitResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ProposeExit", arg0, arg1)
-	ret0, _ := ret[0].(*eth.ProposeExitResponse)
+	ret0, _ := ret[0].(*zond.ProposeExitResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -248,10 +248,10 @@ func (mr *MockValidatorClientMockRecorder) ProposeExit(arg0, arg1 interface{}) *
 }
 
 // StreamBlocksAltair mocks base method.
-func (m *MockValidatorClient) StreamBlocksAltair(arg0 context.Context, arg1 *eth.StreamBlocksRequest) (eth.BeaconNodeValidator_StreamBlocksAltairClient, error) {
+func (m *MockValidatorClient) StreamBlocksAltair(arg0 context.Context, arg1 *zond.StreamBlocksRequest) (zond.BeaconNodeValidator_StreamBlocksAltairClient, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StreamBlocksAltair", arg0, arg1)
-	ret0, _ := ret[0].(eth.BeaconNodeValidator_StreamBlocksAltairClient)
+	ret0, _ := ret[0].(zond.BeaconNodeValidator_StreamBlocksAltairClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -263,10 +263,10 @@ func (mr *MockValidatorClientMockRecorder) StreamBlocksAltair(arg0, arg1 interfa
 }
 
 // SubmitAggregateSelectionProof mocks base method.
-func (m *MockValidatorClient) SubmitAggregateSelectionProof(arg0 context.Context, arg1 *eth.AggregateSelectionRequest) (*eth.AggregateSelectionResponse, error) {
+func (m *MockValidatorClient) SubmitAggregateSelectionProof(arg0 context.Context, arg1 *zond.AggregateSelectionRequest) (*zond.AggregateSelectionResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SubmitAggregateSelectionProof", arg0, arg1)
-	ret0, _ := ret[0].(*eth.AggregateSelectionResponse)
+	ret0, _ := ret[0].(*zond.AggregateSelectionResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -278,10 +278,10 @@ func (mr *MockValidatorClientMockRecorder) SubmitAggregateSelectionProof(arg0, a
 }
 
 // SubmitSignedAggregateSelectionProof mocks base method.
-func (m *MockValidatorClient) SubmitSignedAggregateSelectionProof(arg0 context.Context, arg1 *eth.SignedAggregateSubmitRequest) (*eth.SignedAggregateSubmitResponse, error) {
+func (m *MockValidatorClient) SubmitSignedAggregateSelectionProof(arg0 context.Context, arg1 *zond.SignedAggregateSubmitRequest) (*zond.SignedAggregateSubmitResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SubmitSignedAggregateSelectionProof", arg0, arg1)
-	ret0, _ := ret[0].(*eth.SignedAggregateSubmitResponse)
+	ret0, _ := ret[0].(*zond.SignedAggregateSubmitResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -293,7 +293,7 @@ func (mr *MockValidatorClientMockRecorder) SubmitSignedAggregateSelectionProof(a
 }
 
 // SubmitSignedContributionAndProof mocks base method.
-func (m *MockValidatorClient) SubmitSignedContributionAndProof(arg0 context.Context, arg1 *eth.SignedContributionAndProof) (*emptypb.Empty, error) {
+func (m *MockValidatorClient) SubmitSignedContributionAndProof(arg0 context.Context, arg1 *zond.SignedContributionAndProof) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SubmitSignedContributionAndProof", arg0, arg1)
 	ret0, _ := ret[0].(*emptypb.Empty)
@@ -308,7 +308,7 @@ func (mr *MockValidatorClientMockRecorder) SubmitSignedContributionAndProof(arg0
 }
 
 // SubmitSyncMessage mocks base method.
-func (m *MockValidatorClient) SubmitSyncMessage(arg0 context.Context, arg1 *eth.SyncCommitteeMessage) (*emptypb.Empty, error) {
+func (m *MockValidatorClient) SubmitSyncMessage(arg0 context.Context, arg1 *zond.SyncCommitteeMessage) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SubmitSyncMessage", arg0, arg1)
 	ret0, _ := ret[0].(*emptypb.Empty)
@@ -323,7 +323,7 @@ func (mr *MockValidatorClientMockRecorder) SubmitSyncMessage(arg0, arg1 interfac
 }
 
 // SubmitValidatorRegistrations mocks base method.
-func (m *MockValidatorClient) SubmitValidatorRegistrations(arg0 context.Context, arg1 *eth.SignedValidatorRegistrationsV1) (*emptypb.Empty, error) {
+func (m *MockValidatorClient) SubmitValidatorRegistrations(arg0 context.Context, arg1 *zond.SignedValidatorRegistrationsV1) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SubmitValidatorRegistrations", arg0, arg1)
 	ret0, _ := ret[0].(*emptypb.Empty)
@@ -338,7 +338,7 @@ func (mr *MockValidatorClientMockRecorder) SubmitValidatorRegistrations(arg0, ar
 }
 
 // SubscribeCommitteeSubnets mocks base method.
-func (m *MockValidatorClient) SubscribeCommitteeSubnets(arg0 context.Context, arg1 *eth.CommitteeSubnetsSubscribeRequest, arg2 []primitives.ValidatorIndex) (*emptypb.Empty, error) {
+func (m *MockValidatorClient) SubscribeCommitteeSubnets(arg0 context.Context, arg1 *zond.CommitteeSubnetsSubscribeRequest, arg2 []primitives.ValidatorIndex) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SubscribeCommitteeSubnets", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*emptypb.Empty)
@@ -353,10 +353,10 @@ func (mr *MockValidatorClientMockRecorder) SubscribeCommitteeSubnets(arg0, arg1,
 }
 
 // ValidatorIndex mocks base method.
-func (m *MockValidatorClient) ValidatorIndex(arg0 context.Context, arg1 *eth.ValidatorIndexRequest) (*eth.ValidatorIndexResponse, error) {
+func (m *MockValidatorClient) ValidatorIndex(arg0 context.Context, arg1 *zond.ValidatorIndexRequest) (*zond.ValidatorIndexResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ValidatorIndex", arg0, arg1)
-	ret0, _ := ret[0].(*eth.ValidatorIndexResponse)
+	ret0, _ := ret[0].(*zond.ValidatorIndexResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -368,10 +368,10 @@ func (mr *MockValidatorClientMockRecorder) ValidatorIndex(arg0, arg1 interface{}
 }
 
 // ValidatorStatus mocks base method.
-func (m *MockValidatorClient) ValidatorStatus(arg0 context.Context, arg1 *eth.ValidatorStatusRequest) (*eth.ValidatorStatusResponse, error) {
+func (m *MockValidatorClient) ValidatorStatus(arg0 context.Context, arg1 *zond.ValidatorStatusRequest) (*zond.ValidatorStatusResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ValidatorStatus", arg0, arg1)
-	ret0, _ := ret[0].(*eth.ValidatorStatusResponse)
+	ret0, _ := ret[0].(*zond.ValidatorStatusResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -383,10 +383,10 @@ func (mr *MockValidatorClientMockRecorder) ValidatorStatus(arg0, arg1 interface{
 }
 
 // WaitForActivation mocks base method.
-func (m *MockValidatorClient) WaitForActivation(arg0 context.Context, arg1 *eth.ValidatorActivationRequest) (eth.BeaconNodeValidator_WaitForActivationClient, error) {
+func (m *MockValidatorClient) WaitForActivation(arg0 context.Context, arg1 *zond.ValidatorActivationRequest) (zond.BeaconNodeValidator_WaitForActivationClient, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WaitForActivation", arg0, arg1)
-	ret0, _ := ret[0].(eth.BeaconNodeValidator_WaitForActivationClient)
+	ret0, _ := ret[0].(zond.BeaconNodeValidator_WaitForActivationClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -398,10 +398,10 @@ func (mr *MockValidatorClientMockRecorder) WaitForActivation(arg0, arg1 interfac
 }
 
 // WaitForChainStart mocks base method.
-func (m *MockValidatorClient) WaitForChainStart(arg0 context.Context, arg1 *emptypb.Empty) (*eth.ChainStartResponse, error) {
+func (m *MockValidatorClient) WaitForChainStart(arg0 context.Context, arg1 *emptypb.Empty) (*zond.ChainStartResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WaitForChainStart", arg0, arg1)
-	ret0, _ := ret[0].(*eth.ChainStartResponse)
+	ret0, _ := ret[0].(*zond.ChainStartResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

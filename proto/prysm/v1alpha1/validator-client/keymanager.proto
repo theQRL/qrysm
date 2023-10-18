@@ -1,7 +1,7 @@
 syntax = "proto3";
-package ethereum.validator.accounts.v2;
+package theqrl.validator.accounts.v2;
 
-import "proto/eth/ext/options.proto";
+import "proto/zond/ext/options.proto";
 import "proto/prysm/v1alpha1/attestation.proto";
 import "proto/prysm/v1alpha1/beacon_block.proto";
 import "proto/prysm/v1alpha1/beacon_state.proto";
@@ -9,16 +9,16 @@ import "proto/prysm/v1alpha1/sync_committee.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
-option csharp_namespace = "Ethereum.Validator.Accounts.V2";
+option csharp_namespace = "TheQRL.Validator.Accounts.V2";
 option go_package = "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client;validatorpb";
 option java_multiple_files = true;
 option java_outer_classname = "KeymanagerProto";
-option java_package = "org.ethereum.validator.accounts.v2";
-option php_namespace = "Ethereum\\Validator\\Accounts\\V2";
+option java_package = "org.theqrl.validator.accounts.v2";
+option php_namespace = "TheQRL\\Validator\\Accounts\\V2";
 
 // RemoteSigner service API.
 //
-// Defines a remote-signing keymanager which manages eth2
+// Defines a remote-signing keymanager which manages zond2
 // validator accounts and can sign respective messages.
 service RemoteSigner {
     // ListPublicKeysResponse managed by a remote signer.
@@ -62,32 +62,32 @@ message SignRequest {
     // Beacon chain objects. [100-200]
     oneof object {
         // Phase0 objects.
-        ethereum.eth.v1alpha1.BeaconBlock block = 101;
-        ethereum.eth.v1alpha1.AttestationData attestation_data = 102;
-        ethereum.eth.v1alpha1.AggregateAttestationAndProof aggregate_attestation_and_proof = 103;
-        ethereum.eth.v1alpha1.VoluntaryExit exit = 104;
-        uint64 slot = 105 [(ethereum.eth.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
-        uint64 epoch = 106 [(ethereum.eth.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+        theqrl.zond.v1alpha1.BeaconBlock block = 101;
+        theqrl.zond.v1alpha1.AttestationData attestation_data = 102;
+        theqrl.zond.v1alpha1.AggregateAttestationAndProof aggregate_attestation_and_proof = 103;
+        theqrl.zond.v1alpha1.VoluntaryExit exit = 104;
+        uint64 slot = 105 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+        uint64 epoch = 106 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
 
         // Altair objects.
-        ethereum.eth.v1alpha1.BeaconBlockAltair block_altair = 107;
-        ethereum.eth.v1alpha1.SyncAggregatorSelectionData sync_aggregator_selection_data = 108;
-        ethereum.eth.v1alpha1.ContributionAndProof contribution_and_proof = 109;
+        theqrl.zond.v1alpha1.BeaconBlockAltair block_altair = 107;
+        theqrl.zond.v1alpha1.SyncAggregatorSelectionData sync_aggregator_selection_data = 108;
+        theqrl.zond.v1alpha1.ContributionAndProof contribution_and_proof = 109;
         bytes sync_message_block_root  = 110;
 
         // Bellatrix objects.
-        ethereum.eth.v1alpha1.BeaconBlockBellatrix block_bellatrix = 111;
-        ethereum.eth.v1alpha1.BlindedBeaconBlockBellatrix blinded_block_bellatrix = 112;
+        theqrl.zond.v1alpha1.BeaconBlockBellatrix block_bellatrix = 111;
+        theqrl.zond.v1alpha1.BlindedBeaconBlockBellatrix blinded_block_bellatrix = 112;
 
         // Builder objects.
-        ethereum.eth.v1alpha1.ValidatorRegistrationV1 registration = 113;
+        theqrl.zond.v1alpha1.ValidatorRegistrationV1 registration = 113;
 
         // Capella objects.
-        ethereum.eth.v1alpha1.BeaconBlockCapella block_capella = 114;
-        ethereum.eth.v1alpha1.BlindedBeaconBlockCapella blinded_block_capella = 115;
+        theqrl.zond.v1alpha1.BeaconBlockCapella block_capella = 114;
+        theqrl.zond.v1alpha1.BlindedBeaconBlockCapella blinded_block_capella = 115;
     }
     reserved 4, 5; // Reserving old, deleted fields.
-    uint64 signing_slot = 6 [(ethereum.eth.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+    uint64 signing_slot = 6 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
 }
 
 // SignResponse returned by a RemoteSigner gRPC service.
@@ -117,7 +117,7 @@ message ProposerOptionPayload {
 // BuilderConfig is a property of ProposerOptionPayload
 message BuilderConfig {
     bool enabled = 1;
-    uint64 gas_limit = 2 [(ethereum.eth.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/validator.Uint64"];
+    uint64 gas_limit = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/validator.Uint64"];
     repeated string relays = 3;
 }
 

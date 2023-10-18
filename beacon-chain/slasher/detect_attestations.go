@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	slashertypes "github.com/theQRL/qrysm/v4/beacon-chain/slasher/types"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 
@@ -17,8 +17,8 @@ import (
 // found attester slashings to the caller.
 func (s *Service) checkSlashableAttestations(
 	ctx context.Context, currentEpoch primitives.Epoch, atts []*slashertypes.IndexedAttestationWrapper,
-) ([]*ethpb.AttesterSlashing, error) {
-	slashings := make([]*ethpb.AttesterSlashing, 0)
+) ([]*zondpb.AttesterSlashing, error) {
+	slashings := make([]*zondpb.AttesterSlashing, 0)
 
 	log.Debug("Checking for double votes")
 	start := time.Now()
@@ -83,7 +83,7 @@ func (s *Service) detectAllAttesterSlashings(
 	ctx context.Context,
 	args *chunkUpdateArgs,
 	attestations []*slashertypes.IndexedAttestationWrapper,
-) ([]*ethpb.AttesterSlashing, error) {
+) ([]*zondpb.AttesterSlashing, error) {
 	// Map of updated chunks by chunk index, which will be saved at the end.
 	updatedChunks := make(map[uint64]Chunker)
 	groupedAtts := s.groupByChunkIndex(attestations)
@@ -127,7 +127,7 @@ func (s *Service) detectAllAttesterSlashings(
 		)
 	}
 
-	slashings := make([]*ethpb.AttesterSlashing, 0, len(surroundingSlashings)+len(surroundedSlashings))
+	slashings := make([]*zondpb.AttesterSlashing, 0, len(surroundingSlashings)+len(surroundedSlashings))
 	slashings = append(slashings, surroundingSlashings...)
 	slashings = append(slashings, surroundedSlashings...)
 	if err := s.saveUpdatedChunks(ctx, args, updatedChunks); err != nil {
@@ -142,12 +142,12 @@ func (s *Service) detectAllAttesterSlashings(
 // we return to the caller.
 func (s *Service) checkDoubleVotes(
 	ctx context.Context, attestations []*slashertypes.IndexedAttestationWrapper,
-) ([]*ethpb.AttesterSlashing, error) {
+) ([]*zondpb.AttesterSlashing, error) {
 	ctx, span := trace.StartSpan(ctx, "Slasher.checkDoubleVotes")
 	defer span.End()
 	// We check if there are any slashable double votes in the input list
 	// of attestations with respect to each other.
-	slashings := make([]*ethpb.AttesterSlashing, 0)
+	slashings := make([]*zondpb.AttesterSlashing, 0)
 	existingAtts := make(map[string]*slashertypes.IndexedAttestationWrapper)
 	for _, att := range attestations {
 		for _, valIdx := range att.IndexedAttestation.AttestingIndices {
@@ -159,7 +159,7 @@ func (s *Service) checkDoubleVotes(
 			}
 			if att.SigningRoot != existingAtt.SigningRoot {
 				doubleVotesTotal.Inc()
-				slashings = append(slashings, &ethpb.AttesterSlashing{
+				slashings = append(slashings, &zondpb.AttesterSlashing{
 					Attestation_1: existingAtt.IndexedAttestation,
 					Attestation_2: att.IndexedAttestation,
 				})
@@ -179,7 +179,7 @@ func (s *Service) checkDoubleVotes(
 // Check for double votes in our database given a list of incoming attestations.
 func (s *Service) checkDoubleVotesOnDisk(
 	ctx context.Context, attestations []*slashertypes.IndexedAttestationWrapper,
-) ([]*ethpb.AttesterSlashing, error) {
+) ([]*zondpb.AttesterSlashing, error) {
 	ctx, span := trace.StartSpan(ctx, "Slasher.checkDoubleVotesOnDisk")
 	defer span.End()
 	doubleVotes, err := s.serviceCfg.Database.CheckAttesterDoubleVotes(
@@ -188,10 +188,10 @@ func (s *Service) checkDoubleVotesOnDisk(
 	if err != nil {
 		return nil, errors.Wrap(err, "could not retrieve potential double votes from disk")
 	}
-	doubleVoteSlashings := make([]*ethpb.AttesterSlashing, 0)
+	doubleVoteSlashings := make([]*zondpb.AttesterSlashing, 0)
 	for _, doubleVote := range doubleVotes {
 		doubleVotesTotal.Inc()
-		doubleVoteSlashings = append(doubleVoteSlashings, &ethpb.AttesterSlashing{
+		doubleVoteSlashings = append(doubleVoteSlashings, &zondpb.AttesterSlashing{
 			Attestation_1: doubleVote.PrevAttestationWrapper.IndexedAttestation,
 			Attestation_2: doubleVote.AttestationWrapper.IndexedAttestation,
 		})
@@ -250,13 +250,13 @@ func (s *Service) updateSpans(
 	updatedChunks map[uint64]Chunker,
 	args *chunkUpdateArgs,
 	attestationsByChunkIdx map[uint64][]*slashertypes.IndexedAttestationWrapper,
-) ([]*ethpb.AttesterSlashing, error) {
+) ([]*zondpb.AttesterSlashing, error) {
 	ctx, span := trace.StartSpan(ctx, "Slasher.updateSpans")
 	defer span.End()
 
 	// Apply the attestations to the related chunks and find any
 	// slashings along the way.
-	slashings := make([]*ethpb.AttesterSlashing, 0)
+	slashings := make([]*zondpb.AttesterSlashing, 0)
 	for _, attestationBatch := range attestationsByChunkIdx {
 		for _, att := range attestationBatch {
 			for _, validatorIdx := range att.IndexedAttestation.AttestingIndices {
@@ -310,7 +310,7 @@ func (s *Service) applyAttestationForValidator(
 	validatorIndex primitives.ValidatorIndex,
 	chunksByChunkIdx map[uint64]Chunker,
 	attestation *slashertypes.IndexedAttestationWrapper,
-) (*ethpb.AttesterSlashing, error) {
+) (*zondpb.AttesterSlashing, error) {
 	ctx, span := trace.StartSpan(ctx, "Slasher.applyAttestationForValidator")
 	defer span.End()
 	sourceEpoch := attestation.IndexedAttestation.Data.Source.Epoch

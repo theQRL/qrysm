@@ -6,7 +6,7 @@ import (
 
 	"github.com/theQRL/qrysm/v4/config/features"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/util"
 	"google.golang.org/protobuf/proto"
 
@@ -99,7 +99,7 @@ func TestServer_SubmitProposerSlashing_DontBroadcast(t *testing.T) {
 
 	// We want a proposer slashing for validator with index 2 to
 	// be included in the pool.
-	wanted := &ethpb.SubmitSlashingResponse{
+	wanted := &zondpb.SubmitSlashingResponse{
 		SlashedIndices: []primitives.ValidatorIndex{2},
 	}
 	slashing, err := util.GenerateProposerSlashingForValidator(st, privs[2], primitives.ValidatorIndex(2))
@@ -150,7 +150,7 @@ func TestServer_SubmitAttesterSlashing_DontBroadcast(t *testing.T) {
 	// We want the intersection of the slashing attesting indices
 	// to be slashed, so we expect validators 2 and 3 to be in the response
 	// slashed indices.
-	wanted := &ethpb.SubmitSlashingResponse{
+	wanted := &zondpb.SubmitSlashingResponse{
 		SlashedIndices: []primitives.ValidatorIndex{2},
 	}
 	res, err := bs.SubmitAttesterSlashing(ctx, slashing)

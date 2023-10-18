@@ -13,42 +13,42 @@
 // limitations under the License.
 syntax = "proto3";
 
-package ethereum.eth.v1alpha1;
+package theqrl.zond.v1alpha1;
 
-import "proto/eth/ext/options.proto";
+import "proto/zond/ext/options.proto";
 
-option csharp_namespace = "Ethereum.Eth.v1alpha1";
-option go_package = "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1;eth";
+option csharp_namespace = "TheQRL.Zond.v1alpha1";
+option go_package = "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1;zond";
 option java_multiple_files = true;
 option java_outer_classname = "AttestationProto";
-option java_package = "org.ethereum.eth.v1alpha1";
-option php_namespace = "Ethereum\\Eth\\v1alpha1";
+option java_package = "org.theqrl.zond.v1alpha1";
+option php_namespace = "TheQRL\\Zond\\v1alpha1";
 
 message Attestation {
     // A bitfield representation of validator indices that have voted exactly
     // the same vote and have been aggregated into this attestation.
-    bytes aggregation_bits = 1 [(ethereum.eth.ext.ssz_max) = "2048", (ethereum.eth.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitlist"];
+    bytes aggregation_bits = 1 [(theqrl.zond.ext.ssz_max) = "2048", (theqrl.zond.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitlist"];
 
     AttestationData data = 2;
 
     // 4595 (signature size per signer) * 2048 (number of signers) bytes of unaggregated signatures
-    bytes signature = 3 [(ethereum.eth.ext.ssz_max) = "9410560"];
+    bytes signature = 3 [(theqrl.zond.ext.ssz_max) = "9410560"];
     // 96 byte BLS aggregate signature.
-//    bytes signature = 3 [(ethereum.eth.ext.ssz_size) = "4595"];
+//    bytes signature = 3 [(theqrl.zond.ext.ssz_size) = "4595"];
 
     // 2048 (number of signers)
-    repeated uint64 signatureValidatorIndex = 4 [(ethereum.eth.ext.ssz_max) = "2048"];
+    repeated uint64 signatureValidatorIndex = 4 [(theqrl.zond.ext.ssz_max) = "2048"];
 }
 
 message AggregateAttestationAndProof {
     // The aggregator index that submitted this aggregated attestation and proof.
-    uint64 aggregator_index = 1  [(ethereum.eth.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
+    uint64 aggregator_index = 1  [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
 
     // The aggregated attestation that was submitted.
     Attestation aggregate = 3;
 
     // 96 byte selection proof signed by the aggregator, which is the signature of the slot to aggregate.
-    bytes selection_proof = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
+    bytes selection_proof = 2 [(theqrl.zond.ext.ssz_size) = "4595"];
 }
 
 message SignedAggregateAttestationAndProof {
@@ -56,7 +56,7 @@ message SignedAggregateAttestationAndProof {
     AggregateAttestationAndProof message = 1;
 
     // 96 byte BLS aggregate signature signed by the aggregator over the message.
-    bytes signature = 2 [(ethereum.eth.ext.ssz_size) = "4595"];
+    bytes signature = 2 [(theqrl.zond.ext.ssz_size) = "4595"];
 }
 
 message AttestationData {
@@ -64,13 +64,13 @@ message AttestationData {
     // See: https://arxiv.org/pdf/1710.09437.pdf
 
     // Slot of the attestation attesting for.
-    uint64 slot = 1 [(ethereum.eth.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+    uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
 
     // The committee index that submitted this attestation.
-    uint64 committee_index = 2  [(ethereum.eth.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.CommitteeIndex"];
+    uint64 committee_index = 2  [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.CommitteeIndex"];
 
     // 32 byte root of the LMD GHOST block vote.
-    bytes beacon_block_root = 3 [(ethereum.eth.ext.ssz_size) = "32"];
+    bytes beacon_block_root = 3 [(theqrl.zond.ext.ssz_size) = "32"];
 
     // The most recent justified checkpoint in the beacon state
     Checkpoint source = 4;
@@ -84,8 +84,8 @@ message Checkpoint {
     // is to link the check points together for justification and finalization.
 
     // Epoch the checkpoint references.
-    uint64 epoch = 1 [(ethereum.eth.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+    uint64 epoch = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
 
     // Block root of the checkpoint references.
-    bytes root = 2 [(ethereum.eth.ext.ssz_size) = "32"];
+    bytes root = 2 [(theqrl.zond.ext.ssz_size) = "32"];
 }

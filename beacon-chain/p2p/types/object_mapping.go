@@ -6,7 +6,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/wrapper"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/metadata"
 )
 
@@ -35,22 +35,22 @@ func InitializeDataMaps() {
 	BlockMap = map[[4]byte]func() (interfaces.ReadOnlySignedBeaconBlock, error){
 		bytesutil.ToBytes4(params.BeaconConfig().GenesisForkVersion): func() (interfaces.ReadOnlySignedBeaconBlock, error) {
 			return blocks.NewSignedBeaconBlock(
-				&ethpb.SignedBeaconBlock{Block: &ethpb.BeaconBlock{Body: &ethpb.BeaconBlockBody{}}},
+				&zondpb.SignedBeaconBlock{Block: &zondpb.BeaconBlock{Body: &zondpb.BeaconBlockBody{}}},
 			)
 		},
 		bytesutil.ToBytes4(params.BeaconConfig().AltairForkVersion): func() (interfaces.ReadOnlySignedBeaconBlock, error) {
 			return blocks.NewSignedBeaconBlock(
-				&ethpb.SignedBeaconBlockAltair{Block: &ethpb.BeaconBlockAltair{Body: &ethpb.BeaconBlockBodyAltair{}}},
+				&zondpb.SignedBeaconBlockAltair{Block: &zondpb.BeaconBlockAltair{Body: &zondpb.BeaconBlockBodyAltair{}}},
 			)
 		},
 		bytesutil.ToBytes4(params.BeaconConfig().BellatrixForkVersion): func() (interfaces.ReadOnlySignedBeaconBlock, error) {
 			return blocks.NewSignedBeaconBlock(
-				&ethpb.SignedBeaconBlockBellatrix{Block: &ethpb.BeaconBlockBellatrix{Body: &ethpb.BeaconBlockBodyBellatrix{}}},
+				&zondpb.SignedBeaconBlockBellatrix{Block: &zondpb.BeaconBlockBellatrix{Body: &zondpb.BeaconBlockBodyBellatrix{}}},
 			)
 		},
 		bytesutil.ToBytes4(params.BeaconConfig().CapellaForkVersion): func() (interfaces.ReadOnlySignedBeaconBlock, error) {
 			return blocks.NewSignedBeaconBlock(
-				&ethpb.SignedBeaconBlockCapella{Block: &ethpb.BeaconBlockCapella{Body: &ethpb.BeaconBlockBodyCapella{}}},
+				&zondpb.SignedBeaconBlockCapella{Block: &zondpb.BeaconBlockCapella{Body: &zondpb.BeaconBlockBodyCapella{}}},
 			)
 		},
 	}
@@ -58,16 +58,16 @@ func InitializeDataMaps() {
 	// Reset our metadata map.
 	MetaDataMap = map[[4]byte]func() metadata.Metadata{
 		bytesutil.ToBytes4(params.BeaconConfig().GenesisForkVersion): func() metadata.Metadata {
-			return wrapper.WrappedMetadataV0(&ethpb.MetaDataV0{})
+			return wrapper.WrappedMetadataV0(&zondpb.MetaDataV0{})
 		},
 		bytesutil.ToBytes4(params.BeaconConfig().AltairForkVersion): func() metadata.Metadata {
-			return wrapper.WrappedMetadataV1(&ethpb.MetaDataV1{})
+			return wrapper.WrappedMetadataV1(&zondpb.MetaDataV1{})
 		},
 		bytesutil.ToBytes4(params.BeaconConfig().BellatrixForkVersion): func() metadata.Metadata {
-			return wrapper.WrappedMetadataV1(&ethpb.MetaDataV1{})
+			return wrapper.WrappedMetadataV1(&zondpb.MetaDataV1{})
 		},
 		bytesutil.ToBytes4(params.BeaconConfig().CapellaForkVersion): func() metadata.Metadata {
-			return wrapper.WrappedMetadataV1(&ethpb.MetaDataV1{})
+			return wrapper.WrappedMetadataV1(&zondpb.MetaDataV1{})
 		},
 	}
 }

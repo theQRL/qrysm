@@ -8,7 +8,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
@@ -31,7 +31,7 @@ func (e *ValidatorIndexOutOfRangeError) Error() string {
 }
 
 // Validators participating in consensus on the beacon chain.
-func (b *BeaconState) Validators() []*ethpb.Validator {
+func (b *BeaconState) Validators() []*zondpb.Validator {
 	if b.validators == nil {
 		return nil
 	}
@@ -44,18 +44,18 @@ func (b *BeaconState) Validators() []*ethpb.Validator {
 
 // validatorsVal participating in consensus on the beacon chain.
 // This assumes that a lock is already held on BeaconState.
-func (b *BeaconState) validatorsVal() []*ethpb.Validator {
+func (b *BeaconState) validatorsVal() []*zondpb.Validator {
 	if b.validators == nil {
 		return nil
 	}
 
-	res := make([]*ethpb.Validator, len(b.validators))
+	res := make([]*zondpb.Validator, len(b.validators))
 	for i := 0; i < len(res); i++ {
 		val := b.validators[i]
 		if val == nil {
 			continue
 		}
-		res[i] = ethpb.CopyValidator(val)
+		res[i] = zondpb.CopyValidator(val)
 	}
 	return res
 }
@@ -63,12 +63,12 @@ func (b *BeaconState) validatorsVal() []*ethpb.Validator {
 // references of validators participating in consensus on the beacon chain.
 // This assumes that a lock is already held on BeaconState. This does not
 // copy fully and instead just copies the reference.
-func (b *BeaconState) validatorsReferences() []*ethpb.Validator {
+func (b *BeaconState) validatorsReferences() []*zondpb.Validator {
 	if b.validators == nil {
 		return nil
 	}
 
-	res := make([]*ethpb.Validator, len(b.validators))
+	res := make([]*zondpb.Validator, len(b.validators))
 	for i := 0; i < len(res); i++ {
 		validator := b.validators[i]
 		if validator == nil {
@@ -81,9 +81,9 @@ func (b *BeaconState) validatorsReferences() []*ethpb.Validator {
 }
 
 // ValidatorAtIndex is the validator at the provided index.
-func (b *BeaconState) ValidatorAtIndex(idx primitives.ValidatorIndex) (*ethpb.Validator, error) {
+func (b *BeaconState) ValidatorAtIndex(idx primitives.ValidatorIndex) (*zondpb.Validator, error) {
 	if b.validators == nil {
-		return &ethpb.Validator{}, nil
+		return &zondpb.Validator{}, nil
 	}
 	if uint64(len(b.validators)) <= uint64(idx) {
 		e := NewValidatorIndexOutOfRangeError(idx)
@@ -94,7 +94,7 @@ func (b *BeaconState) ValidatorAtIndex(idx primitives.ValidatorIndex) (*ethpb.Va
 	defer b.lock.RUnlock()
 
 	val := b.validators[idx]
-	return ethpb.CopyValidator(val), nil
+	return zondpb.CopyValidator(val), nil
 }
 
 // ValidatorAtIndexReadOnly is the validator at the provided index. This method

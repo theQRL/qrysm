@@ -7,7 +7,7 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	dbutil "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -25,10 +25,10 @@ func TestCorrect_ActiveValidatorsCount(t *testing.T) {
 		ctx: context.Background(),
 		cfg: &Config{DB: db},
 	}
-	bState, err := util.NewBeaconState(func(state *ethpb.BeaconState) error {
-		validators := make([]*ethpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
+	bState, err := util.NewBeaconState(func(state *zondpb.BeaconState) error {
+		validators := make([]*zondpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
 		for i := 0; i < len(validators); i++ {
-			validators[i] = &ethpb.Validator{
+			validators[i] = &zondpb.Validator{
 				PublicKey:             make([]byte, 48),
 				WithdrawalCredentials: make([]byte, 32),
 				ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
@@ -45,7 +45,7 @@ func TestCorrect_ActiveValidatorsCount(t *testing.T) {
 	assert.NoError(t, err, "genesis state not retrieved")
 	assert.Equal(t, int(params.BeaconConfig().MinGenesisActiveValidatorCount), int(vals), "mainnet genesis active count isn't accurate")
 	for i := 0; i < 100; i++ {
-		require.NoError(t, bState.AppendValidator(&ethpb.Validator{
+		require.NoError(t, bState.AppendValidator(&zondpb.Validator{
 			PublicKey:             make([]byte, 48),
 			WithdrawalCredentials: make([]byte, 32),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,

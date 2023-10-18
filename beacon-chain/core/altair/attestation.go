@@ -14,7 +14,7 @@ import (
 	consensusblocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
 	"go.opencensus.io/trace"
 )
@@ -48,7 +48,7 @@ func ProcessAttestationsNoVerifySignature(
 func ProcessAttestationNoVerifySignature(
 	ctx context.Context,
 	beaconState state.BeaconState,
-	att *ethpb.Attestation,
+	att *zondpb.Attestation,
 	totalBalance uint64,
 ) (state.BeaconState, error) {
 	ctx, span := trace.StartSpan(ctx, "altair.ProcessAttestationNoVerifySignature")
@@ -267,9 +267,9 @@ func RewardProposer(ctx context.Context, beaconState state.BeaconState, proposer
 //	    participation_flag_indices.append(TIMELY_HEAD_FLAG_INDEX)
 //
 //	return participation_flag_indices
-func AttestationParticipationFlagIndices(beaconState state.BeaconState, data *ethpb.AttestationData, delay primitives.Slot) (map[uint8]bool, error) {
+func AttestationParticipationFlagIndices(beaconState state.BeaconState, data *zondpb.AttestationData, delay primitives.Slot) (map[uint8]bool, error) {
 	currEpoch := time.CurrentEpoch(beaconState)
-	var justifiedCheckpt *ethpb.Checkpoint
+	var justifiedCheckpt *zondpb.Checkpoint
 	if data.Target.Epoch == currEpoch {
 		justifiedCheckpt = beaconState.CurrentJustifiedCheckpoint()
 	} else {
@@ -312,7 +312,7 @@ func AttestationParticipationFlagIndices(beaconState state.BeaconState, data *et
 //	is_matching_source = data.source == justified_checkpoint
 //	is_matching_target = is_matching_source and data.target.root == get_block_root(state, data.target.epoch)
 //	is_matching_head = is_matching_target and data.beacon_block_root == get_block_root_at_slot(state, data.slot)
-func MatchingStatus(beaconState state.BeaconState, data *ethpb.AttestationData, cp *ethpb.Checkpoint) (matchedSrc, matchedTgt, matchedHead bool, err error) {
+func MatchingStatus(beaconState state.BeaconState, data *zondpb.AttestationData, cp *zondpb.Checkpoint) (matchedSrc, matchedTgt, matchedHead bool, err error) {
 	matchedSrc = attestation.CheckPointIsEqual(data.Source, cp)
 
 	r, err := helpers.BlockRoot(beaconState, data.Target.Epoch)

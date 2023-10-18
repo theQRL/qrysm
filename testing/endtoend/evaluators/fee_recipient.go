@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/go-zond/rpc"
 	"github.com/theQRL/go-zond/zondclient"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/interop"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/components"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
@@ -64,12 +64,12 @@ func valKeyMap() (map[string]bool, error) {
 
 func feeRecipientIsPresent(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := ethpb.NewBeaconChainClient(conn)
+	client := zondpb.NewBeaconChainClient(conn)
 	chainHead, err := client.GetChainHead(context.Background(), &emptypb.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "failed to get chain head")
 	}
-	req := &ethpb.ListBlocksRequest{QueryFilter: &ethpb.ListBlocksRequest_Epoch{Epoch: chainHead.HeadEpoch.Sub(1)}}
+	req := &zondpb.ListBlocksRequest{QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: chainHead.HeadEpoch.Sub(1)}}
 	blks, err := client.ListBeaconBlocks(context.Background(), req)
 	if err != nil {
 		return errors.Wrap(err, "failed to list blocks")
@@ -105,8 +105,8 @@ func feeRecipientIsPresent(_ *types.EvaluationContext, conns ...*grpc.ClientConn
 			}
 
 			fr := common.BytesToAddress(payload.FeeRecipient)
-			gvr := &ethpb.GetValidatorRequest{
-				QueryFilter: &ethpb.GetValidatorRequest_Index{
+			gvr := &zondpb.GetValidatorRequest{
+				QueryFilter: &zondpb.GetValidatorRequest_Index{
 					Index: ctr.GetBellatrixBlock().Block.ProposerIndex,
 				},
 			}

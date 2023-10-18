@@ -27,7 +27,7 @@ import (
 	"github.com/theQRL/qrysm/v4/contracts/deposit/mock"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/monitoring/clientstats"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -246,9 +246,9 @@ func TestStatus(t *testing.T) {
 	testCases := map[*Service]string{
 		// "status is ok" cases
 		{}: "",
-		{isRunning: true, latestEth1Data: &ethpb.LatestETH1Data{BlockTime: afterFiveMinutesAgo}}:   "",
-		{isRunning: false, latestEth1Data: &ethpb.LatestETH1Data{BlockTime: beforeFiveMinutesAgo}}: "",
-		{isRunning: false, runError: errors.New("test runError")}:                                  "",
+		{isRunning: true, latestEth1Data: &zondpb.LatestETH1Data{BlockTime: afterFiveMinutesAgo}}:   "",
+		{isRunning: false, latestEth1Data: &zondpb.LatestETH1Data{BlockTime: beforeFiveMinutesAgo}}: "",
+		{isRunning: false, runError: errors.New("test runError")}:                                   "",
 		// "status is error" cases
 		{isRunning: true, runError: errors.New("test runError")}: "test runError",
 	}
@@ -323,7 +323,7 @@ func TestLogTillGenesis_OK(t *testing.T) {
 	for i := 0; i < 30; i++ {
 		testAcc.Backend.Commit()
 	}
-	web3Service.latestEth1Data = &ethpb.LatestETH1Data{LastRequestedBlock: 0}
+	web3Service.latestEth1Data = &zondpb.LatestETH1Data{LastRequestedBlock: 0}
 	// Spin off to a separate routine
 	go web3Service.run(web3Service.ctx.Done())
 	// Wait for 2 seconds so that the
@@ -334,15 +334,15 @@ func TestLogTillGenesis_OK(t *testing.T) {
 }
 
 func TestInitDepositCache_OK(t *testing.T) {
-	ctrs := []*ethpb.DepositContainer{
-		{Index: 0, Eth1BlockHeight: 2, Deposit: &ethpb.Deposit{Proof: [][]byte{[]byte("A")}, Data: &ethpb.Deposit_Data{PublicKey: []byte{}}}},
-		{Index: 1, Eth1BlockHeight: 4, Deposit: &ethpb.Deposit{Proof: [][]byte{[]byte("B")}, Data: &ethpb.Deposit_Data{PublicKey: []byte{}}}},
-		{Index: 2, Eth1BlockHeight: 6, Deposit: &ethpb.Deposit{Proof: [][]byte{[]byte("c")}, Data: &ethpb.Deposit_Data{PublicKey: []byte{}}}},
+	ctrs := []*zondpb.DepositContainer{
+		{Index: 0, Eth1BlockHeight: 2, Deposit: &zondpb.Deposit{Proof: [][]byte{[]byte("A")}, Data: &zondpb.Deposit_Data{PublicKey: []byte{}}}},
+		{Index: 1, Eth1BlockHeight: 4, Deposit: &zondpb.Deposit{Proof: [][]byte{[]byte("B")}, Data: &zondpb.Deposit_Data{PublicKey: []byte{}}}},
+		{Index: 2, Eth1BlockHeight: 6, Deposit: &zondpb.Deposit{Proof: [][]byte{[]byte("c")}, Data: &zondpb.Deposit_Data{PublicKey: []byte{}}}},
 	}
 	gs, _ := util.DeterministicGenesisState(t, 1)
 	beaconDB := dbutil.SetupDB(t)
 	s := &Service{
-		chainStartData:  &ethpb.ChainStartData{Chainstarted: false},
+		chainStartData:  &zondpb.ChainStartData{Chainstarted: false},
 		preGenesisState: gs,
 		cfg:             &config{beaconDB: beaconDB},
 	}
@@ -365,12 +365,12 @@ func TestInitDepositCache_OK(t *testing.T) {
 }
 
 func TestInitDepositCacheWithFinalization_OK(t *testing.T) {
-	ctrs := []*ethpb.DepositContainer{
+	ctrs := []*zondpb.DepositContainer{
 		{
 			Index:           0,
 			Eth1BlockHeight: 2,
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{0}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -380,8 +380,8 @@ func TestInitDepositCacheWithFinalization_OK(t *testing.T) {
 		{
 			Index:           1,
 			Eth1BlockHeight: 4,
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{1}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -391,8 +391,8 @@ func TestInitDepositCacheWithFinalization_OK(t *testing.T) {
 		{
 			Index:           2,
 			Eth1BlockHeight: 6,
-			Deposit: &ethpb.Deposit{
-				Data: &ethpb.Deposit_Data{
+			Deposit: &zondpb.Deposit{
+				Data: &zondpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{2}, 48),
 					WithdrawalCredentials: make([]byte, 32),
 					Signature:             make([]byte, 96),
@@ -403,7 +403,7 @@ func TestInitDepositCacheWithFinalization_OK(t *testing.T) {
 	gs, _ := util.DeterministicGenesisState(t, 1)
 	beaconDB := dbutil.SetupDB(t)
 	s := &Service{
-		chainStartData:  &ethpb.ChainStartData{Chainstarted: false},
+		chainStartData:  &zondpb.ChainStartData{Chainstarted: false},
 		preGenesisState: gs,
 		cfg:             &config{beaconDB: beaconDB},
 	}
@@ -428,7 +428,7 @@ func TestInitDepositCacheWithFinalization_OK(t *testing.T) {
 	require.NoError(t, emptyState.SetEth1DepositIndex(3))
 
 	ctx := context.Background()
-	require.NoError(t, beaconDB.SaveFinalizedCheckpoint(ctx, &ethpb.Checkpoint{Epoch: slots.ToEpoch(0), Root: headRoot[:]}))
+	require.NoError(t, beaconDB.SaveFinalizedCheckpoint(ctx, &zondpb.Checkpoint{Epoch: slots.ToEpoch(0), Root: headRoot[:]}))
 	s.cfg.finalizedStateAtStartup = emptyState
 
 	s.chainStartData.Chainstarted = true
@@ -629,9 +629,9 @@ func TestService_EnsureValidPowchainData(t *testing.T) {
 
 	require.NoError(t, s1.cfg.beaconDB.SaveGenesisData(context.Background(), genState))
 
-	err = s1.cfg.beaconDB.SaveExecutionChainData(context.Background(), &ethpb.ETH1ChainData{
-		ChainstartData:    &ethpb.ChainStartData{Chainstarted: true},
-		DepositContainers: []*ethpb.DepositContainer{{Index: 1}},
+	err = s1.cfg.beaconDB.SaveExecutionChainData(context.Background(), &zondpb.ETH1ChainData{
+		ChainstartData:    &zondpb.ChainStartData{Chainstarted: true},
+		DepositContainers: []*zondpb.DepositContainer{{Index: 1}},
 	})
 	require.NoError(t, err)
 	require.NoError(t, s1.ensureValidPowchainData(context.Background()))
@@ -646,22 +646,22 @@ func TestService_EnsureValidPowchainData(t *testing.T) {
 func TestService_ValidateDepositContainers(t *testing.T) {
 	var tt = []struct {
 		name        string
-		ctrsFunc    func() []*ethpb.DepositContainer
+		ctrsFunc    func() []*zondpb.DepositContainer
 		expectedRes bool
 	}{
 		{
 			name: "zero containers",
-			ctrsFunc: func() []*ethpb.DepositContainer {
-				return make([]*ethpb.DepositContainer, 0)
+			ctrsFunc: func() []*zondpb.DepositContainer {
+				return make([]*zondpb.DepositContainer, 0)
 			},
 			expectedRes: true,
 		},
 		{
 			name: "ordered containers",
-			ctrsFunc: func() []*ethpb.DepositContainer {
-				ctrs := make([]*ethpb.DepositContainer, 0)
+			ctrsFunc: func() []*zondpb.DepositContainer {
+				ctrs := make([]*zondpb.DepositContainer, 0)
 				for i := 0; i < 10; i++ {
-					ctrs = append(ctrs, &ethpb.DepositContainer{Index: int64(i), Eth1BlockHeight: uint64(i + 10)})
+					ctrs = append(ctrs, &zondpb.DepositContainer{Index: int64(i), Eth1BlockHeight: uint64(i + 10)})
 				}
 				return ctrs
 			},
@@ -669,10 +669,10 @@ func TestService_ValidateDepositContainers(t *testing.T) {
 		},
 		{
 			name: "0th container missing",
-			ctrsFunc: func() []*ethpb.DepositContainer {
-				ctrs := make([]*ethpb.DepositContainer, 0)
+			ctrsFunc: func() []*zondpb.DepositContainer {
+				ctrs := make([]*zondpb.DepositContainer, 0)
 				for i := 1; i < 10; i++ {
-					ctrs = append(ctrs, &ethpb.DepositContainer{Index: int64(i), Eth1BlockHeight: uint64(i + 10)})
+					ctrs = append(ctrs, &zondpb.DepositContainer{Index: int64(i), Eth1BlockHeight: uint64(i + 10)})
 				}
 				return ctrs
 			},
@@ -680,13 +680,13 @@ func TestService_ValidateDepositContainers(t *testing.T) {
 		},
 		{
 			name: "skipped containers",
-			ctrsFunc: func() []*ethpb.DepositContainer {
-				ctrs := make([]*ethpb.DepositContainer, 0)
+			ctrsFunc: func() []*zondpb.DepositContainer {
+				ctrs := make([]*zondpb.DepositContainer, 0)
 				for i := 0; i < 10; i++ {
 					if i == 5 || i == 7 {
 						continue
 					}
-					ctrs = append(ctrs, &ethpb.DepositContainer{Index: int64(i), Eth1BlockHeight: uint64(i + 10)})
+					ctrs = append(ctrs, &zondpb.DepositContainer{Index: int64(i), Eth1BlockHeight: uint64(i + 10)})
 				}
 				return ctrs
 			},
@@ -765,7 +765,7 @@ func TestService_FollowBlock(t *testing.T) {
 		cfg:            &config{eth1HeaderReqLimit: 1000},
 		rpcClient:      &mockExecution.RPCClient{BlockNumMap: bMap},
 		headerCache:    newHeaderCache(),
-		latestEth1Data: &ethpb.LatestETH1Data{BlockTime: (3000 * 40) + followTime, BlockHeight: 3000},
+		latestEth1Data: &zondpb.LatestETH1Data{BlockTime: (3000 * 40) + followTime, BlockHeight: 3000},
 	}
 	h, err := s.followedBlockHeight(context.Background())
 	assert.NoError(t, err)

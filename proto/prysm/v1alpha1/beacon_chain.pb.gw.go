@@ -2,11 +2,11 @@
 // source: proto/prysm/v1alpha1/beacon_chain.proto
 
 /*
-Package eth is a reverse proxy.
+Package zond is a reverse proxy.
 
 It translates gRPC into RESTful JSON APIs.
 */
-package eth
+package zond
 
 import (
 	"context"
@@ -774,7 +774,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/ListAttestations")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/ListAttestations")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -797,7 +797,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/ListIndexedAttestations")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/ListIndexedAttestations")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -834,7 +834,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/AttestationPool")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/AttestationPool")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -857,7 +857,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/ListBeaconBlocks")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/ListBeaconBlocks")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -894,7 +894,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/GetChainHead")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/GetChainHead")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -917,7 +917,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/ListBeaconCommittees")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/ListBeaconCommittees")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -940,7 +940,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/ListValidatorBalances")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/ListValidatorBalances")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -963,7 +963,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/ListValidators")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/ListValidators")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -986,7 +986,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/GetValidator")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/GetValidator")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1009,7 +1009,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/GetValidatorActiveSetChanges")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/GetValidatorActiveSetChanges")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1032,7 +1032,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/GetValidatorQueue")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/GetValidatorQueue")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1055,7 +1055,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/GetValidatorPerformance")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/GetValidatorPerformance")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1078,7 +1078,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/ListValidatorAssignments")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/ListValidatorAssignments")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1101,7 +1101,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/GetValidatorParticipation")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/GetValidatorParticipation")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1124,7 +1124,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/GetBeaconConfig")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/GetBeaconConfig")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1154,7 +1154,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/SubmitAttesterSlashing")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/SubmitAttesterSlashing")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1177,7 +1177,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/SubmitProposerSlashing")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/SubmitProposerSlashing")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1200,7 +1200,7 @@ func RegisterBeaconChainHandlerServer(ctx context.Context, mux *runtime.ServeMux
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/GetIndividualVotes")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/GetIndividualVotes")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1262,7 +1262,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/ListAttestations")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/ListAttestations")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1282,7 +1282,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/ListIndexedAttestations")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/ListIndexedAttestations")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1302,7 +1302,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/StreamAttestations")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/StreamAttestations")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1322,7 +1322,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/StreamIndexedAttestations")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/StreamIndexedAttestations")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1342,7 +1342,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/AttestationPool")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/AttestationPool")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1362,7 +1362,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/ListBeaconBlocks")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/ListBeaconBlocks")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1382,7 +1382,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/StreamBlocks")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/StreamBlocks")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1402,7 +1402,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/StreamChainHead")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/StreamChainHead")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1422,7 +1422,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/GetChainHead")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/GetChainHead")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1442,7 +1442,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/ListBeaconCommittees")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/ListBeaconCommittees")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1462,7 +1462,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/ListValidatorBalances")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/ListValidatorBalances")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1482,7 +1482,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/ListValidators")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/ListValidators")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1502,7 +1502,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/GetValidator")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/GetValidator")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1522,7 +1522,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/GetValidatorActiveSetChanges")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/GetValidatorActiveSetChanges")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1542,7 +1542,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/GetValidatorQueue")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/GetValidatorQueue")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1562,7 +1562,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/GetValidatorPerformance")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/GetValidatorPerformance")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1582,7 +1582,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/ListValidatorAssignments")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/ListValidatorAssignments")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1602,7 +1602,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/GetValidatorParticipation")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/GetValidatorParticipation")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1622,7 +1622,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/GetBeaconConfig")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/GetBeaconConfig")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1642,7 +1642,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/StreamValidatorsInfo")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/StreamValidatorsInfo")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1662,7 +1662,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/SubmitAttesterSlashing")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/SubmitAttesterSlashing")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1682,7 +1682,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/SubmitProposerSlashing")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/SubmitProposerSlashing")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1702,7 +1702,7 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconChain/GetIndividualVotes")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconChain/GetIndividualVotes")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1722,51 +1722,51 @@ func RegisterBeaconChainHandlerClient(ctx context.Context, mux *runtime.ServeMux
 }
 
 var (
-	pattern_BeaconChain_ListAttestations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "beacon", "attestations"}, ""))
+	pattern_BeaconChain_ListAttestations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "beacon", "attestations"}, ""))
 
-	pattern_BeaconChain_ListIndexedAttestations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"eth", "v1alpha1", "beacon", "attestations", "indexed"}, ""))
+	pattern_BeaconChain_ListIndexedAttestations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"zond", "v1alpha1", "beacon", "attestations", "indexed"}, ""))
 
-	pattern_BeaconChain_StreamAttestations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"eth", "v1alpha1", "beacon", "attestations", "stream"}, ""))
+	pattern_BeaconChain_StreamAttestations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"zond", "v1alpha1", "beacon", "attestations", "stream"}, ""))
 
-	pattern_BeaconChain_StreamIndexedAttestations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 2, 5}, []string{"eth", "v1alpha1", "beacon", "attestations", "indexed", "stream"}, ""))
+	pattern_BeaconChain_StreamIndexedAttestations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 2, 5}, []string{"zond", "v1alpha1", "beacon", "attestations", "indexed", "stream"}, ""))
 
-	pattern_BeaconChain_AttestationPool_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"eth", "v1alpha1", "beacon", "attestations", "pool"}, ""))
+	pattern_BeaconChain_AttestationPool_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"zond", "v1alpha1", "beacon", "attestations", "pool"}, ""))
 
-	pattern_BeaconChain_ListBeaconBlocks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha2", "beacon", "blocks"}, ""))
+	pattern_BeaconChain_ListBeaconBlocks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha2", "beacon", "blocks"}, ""))
 
-	pattern_BeaconChain_StreamBlocks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"eth", "v1alpha1", "beacon", "blocks", "stream"}, ""))
+	pattern_BeaconChain_StreamBlocks_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"zond", "v1alpha1", "beacon", "blocks", "stream"}, ""))
 
-	pattern_BeaconChain_StreamChainHead_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"eth", "v1alpha1", "beacon", "chainhead", "stream"}, ""))
+	pattern_BeaconChain_StreamChainHead_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"zond", "v1alpha1", "beacon", "chainhead", "stream"}, ""))
 
-	pattern_BeaconChain_GetChainHead_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "beacon", "chainhead"}, ""))
+	pattern_BeaconChain_GetChainHead_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "beacon", "chainhead"}, ""))
 
-	pattern_BeaconChain_ListBeaconCommittees_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "beacon", "committees"}, ""))
+	pattern_BeaconChain_ListBeaconCommittees_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "beacon", "committees"}, ""))
 
-	pattern_BeaconChain_ListValidatorBalances_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validators", "balances"}, ""))
+	pattern_BeaconChain_ListValidatorBalances_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validators", "balances"}, ""))
 
-	pattern_BeaconChain_ListValidators_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"eth", "v1alpha1", "validators"}, ""))
+	pattern_BeaconChain_ListValidators_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"zond", "v1alpha1", "validators"}, ""))
 
-	pattern_BeaconChain_GetValidator_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"eth", "v1alpha1", "validator"}, ""))
+	pattern_BeaconChain_GetValidator_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"zond", "v1alpha1", "validator"}, ""))
 
-	pattern_BeaconChain_GetValidatorActiveSetChanges_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validators", "activesetchanges"}, ""))
+	pattern_BeaconChain_GetValidatorActiveSetChanges_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validators", "activesetchanges"}, ""))
 
-	pattern_BeaconChain_GetValidatorQueue_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validators", "queue"}, ""))
+	pattern_BeaconChain_GetValidatorQueue_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validators", "queue"}, ""))
 
-	pattern_BeaconChain_GetValidatorPerformance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validators", "performance"}, ""))
+	pattern_BeaconChain_GetValidatorPerformance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validators", "performance"}, ""))
 
-	pattern_BeaconChain_ListValidatorAssignments_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validators", "assignments"}, ""))
+	pattern_BeaconChain_ListValidatorAssignments_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validators", "assignments"}, ""))
 
-	pattern_BeaconChain_GetValidatorParticipation_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validators", "participation"}, ""))
+	pattern_BeaconChain_GetValidatorParticipation_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validators", "participation"}, ""))
 
-	pattern_BeaconChain_GetBeaconConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "beacon", "config"}, ""))
+	pattern_BeaconChain_GetBeaconConfig_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "beacon", "config"}, ""))
 
-	pattern_BeaconChain_StreamValidatorsInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 2, 5}, []string{"eth", "v1alpha1", "beacon", "validators", "info", "stream"}, ""))
+	pattern_BeaconChain_StreamValidatorsInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 2, 5}, []string{"zond", "v1alpha1", "beacon", "validators", "info", "stream"}, ""))
 
-	pattern_BeaconChain_SubmitAttesterSlashing_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 2, 5}, []string{"eth", "v1alpha1", "beacon", "slashings", "attester", "submit"}, ""))
+	pattern_BeaconChain_SubmitAttesterSlashing_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 2, 5}, []string{"zond", "v1alpha1", "beacon", "slashings", "attester", "submit"}, ""))
 
-	pattern_BeaconChain_SubmitProposerSlashing_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 2, 5}, []string{"eth", "v1alpha1", "beacon", "slashings", "proposer", "submit"}, ""))
+	pattern_BeaconChain_SubmitProposerSlashing_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4, 2, 5}, []string{"zond", "v1alpha1", "beacon", "slashings", "proposer", "submit"}, ""))
 
-	pattern_BeaconChain_GetIndividualVotes_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "beacon", "individual_votes"}, ""))
+	pattern_BeaconChain_GetIndividualVotes_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "beacon", "individual_votes"}, ""))
 )
 
 var (

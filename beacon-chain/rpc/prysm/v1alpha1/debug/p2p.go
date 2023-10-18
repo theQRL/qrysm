@@ -8,13 +8,13 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 // GetPeer returns the data known about the peer defined by the provided peer id.
-func (ds *Server) GetPeer(_ context.Context, peerReq *ethpb.PeerRequest) (*ethpb.DebugPeerResponse, error) {
+func (ds *Server) GetPeer(_ context.Context, peerReq *zondpb.PeerRequest) (*zondpb.DebugPeerResponse, error) {
 	pid, err := peer.Decode(peerReq.PeerId)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Unable to parse provided peer id: %v", err)
@@ -24,8 +24,8 @@ func (ds *Server) GetPeer(_ context.Context, peerReq *ethpb.PeerRequest) (*ethpb
 
 // ListPeers returns all peers known to the host node, regardless of if they are connected/
 // disconnected.
-func (ds *Server) ListPeers(_ context.Context, _ *empty.Empty) (*ethpb.DebugPeerResponses, error) {
-	var responses []*ethpb.DebugPeerResponse
+func (ds *Server) ListPeers(_ context.Context, _ *empty.Empty) (*zondpb.DebugPeerResponses, error) {
+	var responses []*zondpb.DebugPeerResponse
 	for _, pid := range ds.PeersFetcher.Peers().All() {
 		resp, err := ds.getPeer(pid)
 		if err != nil {
@@ -33,10 +33,10 @@ func (ds *Server) ListPeers(_ context.Context, _ *empty.Empty) (*ethpb.DebugPeer
 		}
 		responses = append(responses, resp)
 	}
-	return &ethpb.DebugPeerResponses{Responses: responses}, nil
+	return &zondpb.DebugPeerResponses{Responses: responses}, nil
 }
 
-func (ds *Server) getPeer(pid peer.ID) (*ethpb.DebugPeerResponse, error) {
+func (ds *Server) getPeer(pid peer.ID) (*zondpb.DebugPeerResponse, error) {
 	peers := ds.PeersFetcher.Peers()
 	peerStore := ds.PeerManager.Host().Peerstore()
 	addr, err := peers.Address(pid)
@@ -47,12 +47,12 @@ func (ds *Server) getPeer(pid peer.ID) (*ethpb.DebugPeerResponse, error) {
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "Requested peer does not exist: %v", err)
 	}
-	pbDirection := ethpb.PeerDirection_UNKNOWN
+	pbDirection := zondpb.PeerDirection_UNKNOWN
 	switch dir {
 	case network.DirInbound:
-		pbDirection = ethpb.PeerDirection_INBOUND
+		pbDirection = zondpb.PeerDirection_INBOUND
 	case network.DirOutbound:
-		pbDirection = ethpb.PeerDirection_OUTBOUND
+		pbDirection = zondpb.PeerDirection_OUTBOUND
 	}
 	connState, err := peers.ConnectionState(pid)
 	if err != nil {
@@ -92,7 +92,7 @@ func (ds *Server) getPeer(pid peer.ID) (*ethpb.DebugPeerResponse, error) {
 	if err != nil || !ok {
 		aVersion = ""
 	}
-	peerInfo := &ethpb.DebugPeerResponse_PeerInfo{
+	peerInfo := &zondpb.DebugPeerResponse_PeerInfo{
 		Protocols:       protocol.ConvertToStrings(protocols),
 		FaultCount:      uint64(resp),
 		ProtocolVersion: pVersion,
@@ -123,7 +123,7 @@ func (ds *Server) getPeer(pid peer.ID) (*ethpb.DebugPeerResponse, error) {
 	if err != nil {
 		// In the event chain state is non existent, we
 		// initialize with the zero value.
-		pStatus = new(ethpb.Status)
+		pStatus = new(zondpb.Status)
 	}
 	lastUpdated, err := peers.ChainStateLastUpdated(pid)
 	if err != nil {
@@ -137,7 +137,7 @@ func (ds *Server) getPeer(pid peer.ID) (*ethpb.DebugPeerResponse, error) {
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "Requested peer does not exist: %v", err)
 	}
-	scoreInfo := &ethpb.ScoreInfo{
+	scoreInfo := &zondpb.ScoreInfo{
 		OverallScore:       float32(peers.Scorers().Score(pid)),
 		ProcessedBlocks:    peers.Scorers().BlockProviderScorer().ProcessedBlocks(pid),
 		BlockProviderScore: float32(peers.Scorers().BlockProviderScorer().Score(pid)),
@@ -146,10 +146,10 @@ func (ds *Server) getPeer(pid peer.ID) (*ethpb.DebugPeerResponse, error) {
 		BehaviourPenalty:   float32(bPenalty),
 		ValidationError:    errorToString(peers.Scorers().ValidationError(pid)),
 	}
-	return &ethpb.DebugPeerResponse{
+	return &zondpb.DebugPeerResponse{
 		ListeningAddresses: stringAddrs,
 		Direction:          pbDirection,
-		ConnectionState:    ethpb.ConnectionState(connState),
+		ConnectionState:    zondpb.ConnectionState(connState),
 		PeerId:             pid.String(),
 		Enr:                enr,
 		PeerInfo:           peerInfo,

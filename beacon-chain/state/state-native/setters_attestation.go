@@ -6,7 +6,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
@@ -21,11 +21,11 @@ func (b *BeaconState) RotateAttestations() error {
 	}
 
 	b.setPreviousEpochAttestations(b.currentEpochAttestationsVal())
-	b.setCurrentEpochAttestations([]*ethpb.PendingAttestation{})
+	b.setCurrentEpochAttestations([]*zondpb.PendingAttestation{})
 	return nil
 }
 
-func (b *BeaconState) setPreviousEpochAttestations(val []*ethpb.PendingAttestation) {
+func (b *BeaconState) setPreviousEpochAttestations(val []*zondpb.PendingAttestation) {
 	b.sharedFieldReferences[types.PreviousEpochAttestations].MinusRef()
 	b.sharedFieldReferences[types.PreviousEpochAttestations] = stateutil.NewRef(1)
 
@@ -34,7 +34,7 @@ func (b *BeaconState) setPreviousEpochAttestations(val []*ethpb.PendingAttestati
 	b.rebuildTrie[types.PreviousEpochAttestations] = true
 }
 
-func (b *BeaconState) setCurrentEpochAttestations(val []*ethpb.PendingAttestation) {
+func (b *BeaconState) setCurrentEpochAttestations(val []*zondpb.PendingAttestation) {
 	b.sharedFieldReferences[types.CurrentEpochAttestations].MinusRef()
 	b.sharedFieldReferences[types.CurrentEpochAttestations] = stateutil.NewRef(1)
 
@@ -45,7 +45,7 @@ func (b *BeaconState) setCurrentEpochAttestations(val []*ethpb.PendingAttestatio
 
 // AppendCurrentEpochAttestations for the beacon state. Appends the new value
 // to the end of list.
-func (b *BeaconState) AppendCurrentEpochAttestations(val *ethpb.PendingAttestation) error {
+func (b *BeaconState) AppendCurrentEpochAttestations(val *zondpb.PendingAttestation) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
@@ -61,7 +61,7 @@ func (b *BeaconState) AppendCurrentEpochAttestations(val *ethpb.PendingAttestati
 
 	if b.sharedFieldReferences[types.CurrentEpochAttestations].Refs() > 1 {
 		// Copy elements in underlying array by reference.
-		atts = make([]*ethpb.PendingAttestation, len(b.currentEpochAttestations))
+		atts = make([]*zondpb.PendingAttestation, len(b.currentEpochAttestations))
 		copy(atts, b.currentEpochAttestations)
 		b.sharedFieldReferences[types.CurrentEpochAttestations].MinusRef()
 		b.sharedFieldReferences[types.CurrentEpochAttestations] = stateutil.NewRef(1)
@@ -75,7 +75,7 @@ func (b *BeaconState) AppendCurrentEpochAttestations(val *ethpb.PendingAttestati
 
 // AppendPreviousEpochAttestations for the beacon state. Appends the new value
 // to the end of list.
-func (b *BeaconState) AppendPreviousEpochAttestations(val *ethpb.PendingAttestation) error {
+func (b *BeaconState) AppendPreviousEpochAttestations(val *zondpb.PendingAttestation) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
@@ -90,7 +90,7 @@ func (b *BeaconState) AppendPreviousEpochAttestations(val *ethpb.PendingAttestat
 	}
 
 	if b.sharedFieldReferences[types.PreviousEpochAttestations].Refs() > 1 {
-		atts = make([]*ethpb.PendingAttestation, len(b.previousEpochAttestations))
+		atts = make([]*zondpb.PendingAttestation, len(b.previousEpochAttestations))
 		copy(atts, b.previousEpochAttestations)
 		b.sharedFieldReferences[types.PreviousEpochAttestations].MinusRef()
 		b.sharedFieldReferences[types.PreviousEpochAttestations] = stateutil.NewRef(1)
@@ -102,7 +102,7 @@ func (b *BeaconState) AppendPreviousEpochAttestations(val *ethpb.PendingAttestat
 	return nil
 }
 
-func (b *BeaconState) SetPreviousEpochAttestations(a []*ethpb.PendingAttestation) error {
+func (b *BeaconState) SetPreviousEpochAttestations(a []*zondpb.PendingAttestation) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
@@ -113,7 +113,7 @@ func (b *BeaconState) SetPreviousEpochAttestations(a []*ethpb.PendingAttestation
 	return nil
 }
 
-func (b *BeaconState) SetCurrentEpochAttestations(a []*ethpb.PendingAttestation) error {
+func (b *BeaconState) SetCurrentEpochAttestations(a []*zondpb.PendingAttestation) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 

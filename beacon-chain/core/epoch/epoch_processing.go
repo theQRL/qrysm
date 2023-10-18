@@ -19,7 +19,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/math"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 )
@@ -28,7 +28,7 @@ import (
 // by activation epoch and by index number.
 type sortableIndices struct {
 	indices    []primitives.ValidatorIndex
-	validators []*ethpb.Validator
+	validators []*zondpb.Validator
 }
 
 // Len is the number of elements in the collection.
@@ -59,7 +59,7 @@ func (s sortableIndices) Less(i, j int) bool {
 //	  Note: ``get_total_balance`` returns ``EFFECTIVE_BALANCE_INCREMENT`` Gwei minimum to avoid divisions by zero.
 //	  """
 //	  return get_total_balance(state, get_unslashed_attesting_indices(state, attestations))
-func AttestingBalance(ctx context.Context, state state.ReadOnlyBeaconState, atts []*ethpb.PendingAttestation) (uint64, error) {
+func AttestingBalance(ctx context.Context, state state.ReadOnlyBeaconState, atts []*zondpb.PendingAttestation) (uint64, error) {
 	indices, err := UnslashedAttestingIndices(ctx, state, atts)
 	if err != nil {
 		return 0, errors.Wrap(err, "could not get attesting indices")
@@ -194,7 +194,7 @@ func ProcessSlashings(state state.BeaconState, slashingMultiplier uint64) (state
 	// below equally.
 	increment := params.BeaconConfig().EffectiveBalanceIncrement
 	minSlashing := math.Min(totalSlashing*slashingMultiplier, totalBalance)
-	err = state.ApplyToEveryValidator(func(idx int, val *ethpb.Validator) (bool, *ethpb.Validator, error) {
+	err = state.ApplyToEveryValidator(func(idx int, val *zondpb.Validator) (bool, *zondpb.Validator, error) {
 		correctEpoch := (currentEpoch + exitLength/2) == val.WithdrawableEpoch
 		if val.Slashed && correctEpoch {
 			penaltyNumerator := val.EffectiveBalance / increment * minSlashing
@@ -224,7 +224,7 @@ func ProcessEth1DataReset(state state.BeaconState) (state.BeaconState, error) {
 
 	// Reset ETH1 data votes.
 	if nextEpoch%params.BeaconConfig().EpochsPerEth1VotingPeriod == 0 {
-		if err := state.SetEth1DataVotes([]*ethpb.Eth1Data{}); err != nil {
+		if err := state.SetEth1DataVotes([]*zondpb.Eth1Data{}); err != nil {
 			return nil, err
 		}
 	}
@@ -258,7 +258,7 @@ func ProcessEffectiveBalanceUpdates(state state.BeaconState) (state.BeaconState,
 	bals := state.Balances()
 
 	// Update effective balances with hysteresis.
-	validatorFunc := func(idx int, val *ethpb.Validator) (bool, *ethpb.Validator, error) {
+	validatorFunc := func(idx int, val *zondpb.Validator) (bool, *zondpb.Validator, error) {
 		if val == nil {
 			return false, nil, fmt.Errorf("validator %d is nil in state", idx)
 		}
@@ -273,7 +273,7 @@ func ProcessEffectiveBalanceUpdates(state state.BeaconState) (state.BeaconState,
 				effectiveBal = balance - balance%effBalanceInc
 			}
 			if effectiveBal != val.EffectiveBalance {
-				newVal := ethpb.CopyValidator(val)
+				newVal := zondpb.CopyValidator(val)
 				newVal.EffectiveBalance = effectiveBal
 				return true, newVal, nil
 			}
@@ -370,11 +370,11 @@ func ProcessHistoricalDataUpdate(state state.BeaconState) (state.BeaconState, er
 			if err != nil {
 				return nil, err
 			}
-			if err := state.AppendHistoricalSummaries(&ethpb.HistoricalSummary{BlockSummaryRoot: br[:], StateSummaryRoot: sr[:]}); err != nil {
+			if err := state.AppendHistoricalSummaries(&zondpb.HistoricalSummary{BlockSummaryRoot: br[:], StateSummaryRoot: sr[:]}); err != nil {
 				return nil, err
 			}
 		} else {
-			historicalBatch := &ethpb.HistoricalBatch{
+			historicalBatch := &zondpb.HistoricalBatch{
 				BlockRoots: state.BlockRoots(),
 				StateRoots: state.StateRoots(),
 			}
@@ -461,7 +461,7 @@ func ProcessFinalUpdates(state state.BeaconState) (state.BeaconState, error) {
 //	  for a in attestations:
 //	      output = output.union(get_attesting_indices(state, a.data, a.aggregation_bits))
 //	  return set(filter(lambda index: not state.validators[index].slashed, output))
-func UnslashedAttestingIndices(ctx context.Context, state state.ReadOnlyBeaconState, atts []*ethpb.PendingAttestation) ([]primitives.ValidatorIndex, error) {
+func UnslashedAttestingIndices(ctx context.Context, state state.ReadOnlyBeaconState, atts []*zondpb.PendingAttestation) ([]primitives.ValidatorIndex, error) {
 	var setIndices []primitives.ValidatorIndex
 	seen := make(map[uint64]bool)
 

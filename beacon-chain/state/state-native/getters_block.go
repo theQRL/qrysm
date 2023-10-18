@@ -3,11 +3,11 @@ package state_native
 import (
 	"fmt"
 
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // LatestBlockHeader stored within the beacon state.
-func (b *BeaconState) LatestBlockHeader() *ethpb.BeaconBlockHeader {
+func (b *BeaconState) LatestBlockHeader() *zondpb.BeaconBlockHeader {
 	if b.latestBlockHeader == nil {
 		return nil
 	}
@@ -20,12 +20,12 @@ func (b *BeaconState) LatestBlockHeader() *ethpb.BeaconBlockHeader {
 
 // latestBlockHeaderVal stored within the beacon state.
 // This assumes that a lock is already held on BeaconState.
-func (b *BeaconState) latestBlockHeaderVal() *ethpb.BeaconBlockHeader {
+func (b *BeaconState) latestBlockHeaderVal() *zondpb.BeaconBlockHeader {
 	if b.latestBlockHeader == nil {
 		return nil
 	}
 
-	hdr := &ethpb.BeaconBlockHeader{
+	hdr := &zondpb.BeaconBlockHeader{
 		Slot:          b.latestBlockHeader.Slot,
 		ProposerIndex: b.latestBlockHeader.ProposerIndex,
 	}

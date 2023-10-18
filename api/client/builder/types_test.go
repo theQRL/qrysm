@@ -15,7 +15,7 @@ import (
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/theQRL/go-zond/common/hexutil"
 	v1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
@@ -27,8 +27,8 @@ func ezDecode(t *testing.T, s string) []byte {
 }
 
 func TestSignedValidatorRegistration_MarshalJSON(t *testing.T) {
-	svr := &eth.SignedValidatorRegistrationV1{
-		Message: &eth.ValidatorRegistrationV1{
+	svr := &zond.SignedValidatorRegistrationV1{
+		Message: &zond.ValidatorRegistrationV1{
 			FeeRecipient: make([]byte, 20),
 			GasLimit:     0,
 			Timestamp:    0,
@@ -379,8 +379,8 @@ func TestExecutionHeaderResponseToProto(t *testing.T) {
 	txRoot, err := hexutil.Decode("0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2")
 	require.NoError(t, err)
 
-	expected := &eth.SignedBuilderBid{
-		Message: &eth.BuilderBid{
+	expected := &zond.SignedBuilderBid{
+		Message: &zond.BuilderBid{
 			Header: &v1.ExecutionPayloadHeader{
 				ParentHash:       parentHash,
 				FeeRecipient:     feeRecipient,
@@ -439,8 +439,8 @@ func TestExecutionHeaderResponseCapellaToProto(t *testing.T) {
 	withdrawalsRoot, err := hexutil.Decode("0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2")
 	require.NoError(t, err)
 
-	expected := &eth.SignedBuilderBidCapella{
-		Message: &eth.BuilderBidCapella{
+	expected := &zond.SignedBuilderBidCapella{
+		Message: &zond.BuilderBidCapella{
 			Header: &v1.ExecutionPayloadHeaderCapella{
 				ParentHash:       parentHash,
 				FeeRecipient:     feeRecipient,
@@ -796,8 +796,8 @@ func TestExecutionPayloadResponseCapellaToProto(t *testing.T) {
 
 }
 
-func pbEth1Data() *eth.Eth1Data {
-	return &eth.Eth1Data{
+func pbEth1Data() *zond.Eth1Data {
+	return &zond.Eth1Data{
 		DepositRoot:  make([]byte, 32),
 		DepositCount: 23,
 		BlockHash:    make([]byte, 32),
@@ -814,8 +814,8 @@ func TestEth1DataMarshal(t *testing.T) {
 	require.Equal(t, expected, string(b))
 }
 
-func pbSyncAggregate() *eth.SyncAggregate {
-	return &eth.SyncAggregate{
+func pbSyncAggregate() *zond.SyncAggregate {
+	return &zond.SyncAggregate{
 		SyncCommitteeSignature: make([]byte, 48),
 		SyncCommitteeBits:      bitfield.Bitvector512{0x01},
 	}
@@ -829,10 +829,10 @@ func TestSyncAggregate_MarshalJSON(t *testing.T) {
 	require.Equal(t, expected, string(b))
 }
 
-func pbDeposit(t *testing.T) *eth.Deposit {
-	return &eth.Deposit{
+func pbDeposit(t *testing.T) *zond.Deposit {
+	return &zond.Deposit{
 		Proof: [][]byte{ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2")},
-		Data: &eth.Deposit_Data{
+		Data: &zond.Deposit_Data{
 			PublicKey:             ezDecode(t, "0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a"),
 			WithdrawalCredentials: ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 			Amount:                1,
@@ -851,9 +851,9 @@ func TestDeposit_MarshalJSON(t *testing.T) {
 	require.Equal(t, expected, string(b))
 }
 
-func pbSignedVoluntaryExit(t *testing.T) *eth.SignedVoluntaryExit {
-	return &eth.SignedVoluntaryExit{
-		Exit: &eth.VoluntaryExit{
+func pbSignedVoluntaryExit(t *testing.T) *zond.SignedVoluntaryExit {
+	return &zond.SignedVoluntaryExit{
+		Exit: &zond.VoluntaryExit{
 			Epoch:          1,
 			ValidatorIndex: 1,
 		},
@@ -871,18 +871,18 @@ func TestVoluntaryExit(t *testing.T) {
 	require.Equal(t, expected, string(b))
 }
 
-func pbAttestation(t *testing.T) *eth.Attestation {
-	return &eth.Attestation{
+func pbAttestation(t *testing.T) *zond.Attestation {
+	return &zond.Attestation{
 		AggregationBits: bitfield.Bitlist{0x01},
-		Data: &eth.AttestationData{
+		Data: &zond.AttestationData{
 			Slot:            1,
 			CommitteeIndex:  1,
 			BeaconBlockRoot: ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
-			Source: &eth.Checkpoint{
+			Source: &zond.Checkpoint{
 				Epoch: 1,
 				Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 			},
-			Target: &eth.Checkpoint{
+			Target: &zond.Checkpoint{
 				Epoch: 1,
 				Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 			},
@@ -901,37 +901,37 @@ func TestAttestationMarshal(t *testing.T) {
 	require.Equal(t, expected, string(b))
 }
 
-func pbAttesterSlashing(t *testing.T) *eth.AttesterSlashing {
-	return &eth.AttesterSlashing{
-		Attestation_1: &eth.IndexedAttestation{
+func pbAttesterSlashing(t *testing.T) *zond.AttesterSlashing {
+	return &zond.AttesterSlashing{
+		Attestation_1: &zond.IndexedAttestation{
 			AttestingIndices: []uint64{1},
 			Signature:        ezDecode(t, "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"),
-			Data: &eth.AttestationData{
+			Data: &zond.AttestationData{
 				Slot:            1,
 				CommitteeIndex:  1,
 				BeaconBlockRoot: ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
-				Source: &eth.Checkpoint{
+				Source: &zond.Checkpoint{
 					Epoch: 1,
 					Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 				},
-				Target: &eth.Checkpoint{
+				Target: &zond.Checkpoint{
 					Epoch: 1,
 					Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 				},
 			},
 		},
-		Attestation_2: &eth.IndexedAttestation{
+		Attestation_2: &zond.IndexedAttestation{
 			AttestingIndices: []uint64{1},
 			Signature:        ezDecode(t, "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"),
-			Data: &eth.AttestationData{
+			Data: &zond.AttestationData{
 				Slot:            1,
 				CommitteeIndex:  1,
 				BeaconBlockRoot: ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
-				Source: &eth.Checkpoint{
+				Source: &zond.Checkpoint{
 					Epoch: 1,
 					Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 				},
-				Target: &eth.Checkpoint{
+				Target: &zond.Checkpoint{
 					Epoch: 1,
 					Root:  ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 				},
@@ -950,10 +950,10 @@ func TestAttesterSlashing_MarshalJSON(t *testing.T) {
 	require.Equal(t, expected, string(b))
 }
 
-func pbProposerSlashing(t *testing.T) *eth.ProposerSlashing {
-	return &eth.ProposerSlashing{
-		Header_1: &eth.SignedBeaconBlockHeader{
-			Header: &eth.BeaconBlockHeader{
+func pbProposerSlashing(t *testing.T) *zond.ProposerSlashing {
+	return &zond.ProposerSlashing{
+		Header_1: &zond.SignedBeaconBlockHeader{
+			Header: &zond.BeaconBlockHeader{
 				Slot:          1,
 				ProposerIndex: 1,
 				ParentRoot:    ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
@@ -962,8 +962,8 @@ func pbProposerSlashing(t *testing.T) *eth.ProposerSlashing {
 			},
 			Signature: ezDecode(t, "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"),
 		},
-		Header_2: &eth.SignedBeaconBlockHeader{
-			Header: &eth.BeaconBlockHeader{
+		Header_2: &zond.SignedBeaconBlockHeader{
+			Header: &zond.BeaconBlockHeader{
 				Slot:          1,
 				ProposerIndex: 1,
 				ParentRoot:    ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
@@ -1197,20 +1197,20 @@ func TestUint256UnmarshalTooBig(t *testing.T) {
 func TestMarshalBlindedBeaconBlockBodyBellatrix(t *testing.T) {
 	expected, err := os.ReadFile("testdata/blinded-block.json")
 	require.NoError(t, err)
-	b := &BlindedBeaconBlockBellatrix{BlindedBeaconBlockBellatrix: &eth.BlindedBeaconBlockBellatrix{
+	b := &BlindedBeaconBlockBellatrix{BlindedBeaconBlockBellatrix: &zond.BlindedBeaconBlockBellatrix{
 		Slot:          1,
 		ProposerIndex: 1,
 		ParentRoot:    ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 		StateRoot:     ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
-		Body: &eth.BlindedBeaconBlockBodyBellatrix{
+		Body: &zond.BlindedBeaconBlockBodyBellatrix{
 			RandaoReveal:           ezDecode(t, "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"),
 			Eth1Data:               pbEth1Data(),
 			Graffiti:               ezDecode(t, "0xdeadbeefc0ffee"),
-			ProposerSlashings:      []*eth.ProposerSlashing{pbProposerSlashing(t)},
-			AttesterSlashings:      []*eth.AttesterSlashing{pbAttesterSlashing(t)},
-			Attestations:           []*eth.Attestation{pbAttestation(t)},
-			Deposits:               []*eth.Deposit{pbDeposit(t)},
-			VoluntaryExits:         []*eth.SignedVoluntaryExit{pbSignedVoluntaryExit(t)},
+			ProposerSlashings:      []*zond.ProposerSlashing{pbProposerSlashing(t)},
+			AttesterSlashings:      []*zond.AttesterSlashing{pbAttesterSlashing(t)},
+			Attestations:           []*zond.Attestation{pbAttestation(t)},
+			Deposits:               []*zond.Deposit{pbDeposit(t)},
+			VoluntaryExits:         []*zond.SignedVoluntaryExit{pbSignedVoluntaryExit(t)},
 			SyncAggregate:          pbSyncAggregate(),
 			ExecutionPayloadHeader: pbExecutionPayloadHeader(t),
 		},
@@ -1226,20 +1226,20 @@ func TestMarshalBlindedBeaconBlockBodyBellatrix(t *testing.T) {
 func TestMarshalBlindedBeaconBlockBodyCapella(t *testing.T) {
 	expected, err := os.ReadFile("testdata/blinded-block-capella.json")
 	require.NoError(t, err)
-	b := &BlindedBeaconBlockCapella{BlindedBeaconBlockCapella: &eth.BlindedBeaconBlockCapella{
+	b := &BlindedBeaconBlockCapella{BlindedBeaconBlockCapella: &zond.BlindedBeaconBlockCapella{
 		Slot:          1,
 		ProposerIndex: 1,
 		ParentRoot:    ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
 		StateRoot:     ezDecode(t, "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"),
-		Body: &eth.BlindedBeaconBlockBodyCapella{
+		Body: &zond.BlindedBeaconBlockBodyCapella{
 			RandaoReveal:           ezDecode(t, "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"),
 			Eth1Data:               pbEth1Data(),
 			Graffiti:               ezDecode(t, "0xdeadbeefc0ffee"),
-			ProposerSlashings:      []*eth.ProposerSlashing{pbProposerSlashing(t)},
-			AttesterSlashings:      []*eth.AttesterSlashing{pbAttesterSlashing(t)},
-			Attestations:           []*eth.Attestation{pbAttestation(t)},
-			Deposits:               []*eth.Deposit{pbDeposit(t)},
-			VoluntaryExits:         []*eth.SignedVoluntaryExit{pbSignedVoluntaryExit(t)},
+			ProposerSlashings:      []*zond.ProposerSlashing{pbProposerSlashing(t)},
+			AttesterSlashings:      []*zond.AttesterSlashing{pbAttesterSlashing(t)},
+			Attestations:           []*zond.Attestation{pbAttestation(t)},
+			Deposits:               []*zond.Deposit{pbDeposit(t)},
+			VoluntaryExits:         []*zond.SignedVoluntaryExit{pbSignedVoluntaryExit(t)},
 			SyncAggregate:          pbSyncAggregate(),
 			ExecutionPayloadHeader: pbExecutionPayloadHeaderCapella(t),
 		},

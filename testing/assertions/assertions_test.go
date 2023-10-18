@@ -8,7 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	testpb "github.com/theQRL/qrysm/v4/proto/testing"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/assertions"
@@ -323,11 +323,11 @@ func TestAssert_DeepSSZEqual(t *testing.T) {
 			name: "equal structs",
 			args: args{
 				tb: &assertions.TBMock{},
-				expected: &eth.Checkpoint{
+				expected: &zond.Checkpoint{
 					Epoch: 5,
 					Root:  []byte("hi there"),
 				},
-				actual: &eth.Checkpoint{
+				actual: &zond.Checkpoint{
 					Epoch: 5,
 					Root:  []byte("hi there"),
 				},
@@ -394,11 +394,11 @@ func TestAssert_DeepNotSSZEqual(t *testing.T) {
 			name: "not equal structs",
 			args: args{
 				tb: &assertions.TBMock{},
-				expected: &eth.Checkpoint{
+				expected: &zond.Checkpoint{
 					Epoch: 5,
 					Root:  []byte("hello there"),
 				},
-				actual: &eth.Checkpoint{
+				actual: &zond.Checkpoint{
 					Epoch: 3,
 					Root:  []byte("hi there"),
 				},
@@ -600,7 +600,7 @@ func Test_NotNil(t *testing.T) {
 		obj  interface{}
 		msgs []interface{}
 	}
-	var nilBlock *eth.SignedBeaconBlock = nil
+	var nilBlock *zond.SignedBeaconBlock = nil
 	tests := []struct {
 		name        string
 		args        args

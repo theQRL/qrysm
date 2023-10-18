@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
@@ -49,10 +49,10 @@ var CapellaForkTransition = types.Evaluator{
 
 func altairForkOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := ethpb.NewBeaconNodeValidatorClient(conn)
+	client := zondpb.NewBeaconNodeValidatorClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), streamDeadline)
 	defer cancel()
-	stream, err := client.StreamBlocksAltair(ctx, &ethpb.StreamBlocksRequest{VerifiedOnly: true})
+	stream, err := client.StreamBlocksAltair(ctx, &zondpb.StreamBlocksRequest{VerifiedOnly: true})
 	if err != nil {
 		return errors.Wrap(err, "failed to get stream")
 	}
@@ -91,10 +91,10 @@ func altairForkOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) err
 
 func bellatrixForkOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := ethpb.NewBeaconNodeValidatorClient(conn)
+	client := zondpb.NewBeaconNodeValidatorClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), streamDeadline)
 	defer cancel()
-	stream, err := client.StreamBlocksAltair(ctx, &ethpb.StreamBlocksRequest{VerifiedOnly: true})
+	stream, err := client.StreamBlocksAltair(ctx, &zondpb.StreamBlocksRequest{VerifiedOnly: true})
 	if err != nil {
 		return errors.Wrap(err, "failed to get stream")
 	}
@@ -136,10 +136,10 @@ func bellatrixForkOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) 
 
 func capellaForkOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := ethpb.NewBeaconNodeValidatorClient(conn)
+	client := zondpb.NewBeaconNodeValidatorClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), streamDeadline)
 	defer cancel()
-	stream, err := client.StreamBlocksAltair(ctx, &ethpb.StreamBlocksRequest{VerifiedOnly: true})
+	stream, err := client.StreamBlocksAltair(ctx, &zondpb.StreamBlocksRequest{VerifiedOnly: true})
 	if err != nil {
 		return errors.Wrap(err, "failed to get stream")
 	}

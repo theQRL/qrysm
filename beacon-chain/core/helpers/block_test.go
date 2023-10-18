@@ -9,7 +9,7 @@ import (
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
@@ -20,7 +20,7 @@ func TestBlockRootAtSlot_CorrectBlockRoot(t *testing.T) {
 	for i := uint64(0); i < uint64(params.BeaconConfig().SlotsPerHistoricalRoot); i++ {
 		blockRoots = append(blockRoots, []byte{byte(i)})
 	}
-	s := &ethpb.BeaconState{
+	s := &zondpb.BeaconState{
 		BlockRoots: blockRoots,
 	}
 
@@ -77,7 +77,7 @@ func TestBlockRootAtSlot_OutOfBounds(t *testing.T) {
 	for i := uint64(0); i < uint64(params.BeaconConfig().SlotsPerHistoricalRoot); i++ {
 		blockRoots = append(blockRoots, []byte{byte(i)})
 	}
-	state := &ethpb.BeaconState{
+	state := &zondpb.BeaconState{
 		BlockRoots: blockRoots,
 	}
 

@@ -9,14 +9,14 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	rpcmiddleware "github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 func (c beaconApiValidatorClient) getAttestationData(
 	ctx context.Context,
 	reqSlot primitives.Slot,
 	reqCommitteeIndex primitives.CommitteeIndex,
-) (*ethpb.AttestationData, error) {
+) (*zondpb.AttestationData, error) {
 	params := url.Values{}
 	params.Add("slot", strconv.FormatUint(uint64(reqSlot), 10))
 	params.Add("committee_index", strconv.FormatUint(uint64(reqCommitteeIndex), 10))
@@ -88,15 +88,15 @@ func (c beaconApiValidatorClient) getAttestationData(
 		return nil, errors.Wrapf(err, "failed to decode attestation target root: %s", attestationData.Target.Root)
 	}
 
-	response := &ethpb.AttestationData{
+	response := &zondpb.AttestationData{
 		BeaconBlockRoot: beaconBlockRoot,
 		CommitteeIndex:  primitives.CommitteeIndex(committeeIndex),
 		Slot:            primitives.Slot(slot),
-		Source: &ethpb.Checkpoint{
+		Source: &zondpb.Checkpoint{
 			Epoch: primitives.Epoch(sourceEpoch),
 			Root:  sourceRoot,
 		},
-		Target: &ethpb.Checkpoint{
+		Target: &zondpb.Checkpoint{
 			Epoch: primitives.Epoch(targetEpoch),
 			Root:  targetRoot,
 		},

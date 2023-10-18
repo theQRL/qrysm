@@ -4,15 +4,15 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 type blockMutator struct {
-	Phase0    func(beaconBlock *eth.SignedBeaconBlock)
-	Altair    func(beaconBlock *eth.SignedBeaconBlockAltair)
-	Bellatrix func(beaconBlock *eth.SignedBeaconBlockBellatrix)
-	Capella   func(beaconBlock *eth.SignedBeaconBlockCapella)
+	Phase0    func(beaconBlock *zond.SignedBeaconBlock)
+	Altair    func(beaconBlock *zond.SignedBeaconBlockAltair)
+	Bellatrix func(beaconBlock *zond.SignedBeaconBlockBellatrix)
+	Capella   func(beaconBlock *zond.SignedBeaconBlockCapella)
 }
 
 func (m blockMutator) apply(b interfaces.SignedBeaconBlock) (interfaces.SignedBeaconBlock, error) {
@@ -53,39 +53,39 @@ func (m blockMutator) apply(b interfaces.SignedBeaconBlock) (interfaces.SignedBe
 // SetBlockStateRoot modifies the block's state root.
 func SetBlockStateRoot(b interfaces.SignedBeaconBlock, sr [32]byte) (interfaces.SignedBeaconBlock, error) {
 	return blockMutator{
-		Phase0:    func(bb *eth.SignedBeaconBlock) { bb.Block.StateRoot = sr[:] },
-		Altair:    func(bb *eth.SignedBeaconBlockAltair) { bb.Block.StateRoot = sr[:] },
-		Bellatrix: func(bb *eth.SignedBeaconBlockBellatrix) { bb.Block.StateRoot = sr[:] },
-		Capella:   func(bb *eth.SignedBeaconBlockCapella) { bb.Block.StateRoot = sr[:] },
+		Phase0:    func(bb *zond.SignedBeaconBlock) { bb.Block.StateRoot = sr[:] },
+		Altair:    func(bb *zond.SignedBeaconBlockAltair) { bb.Block.StateRoot = sr[:] },
+		Bellatrix: func(bb *zond.SignedBeaconBlockBellatrix) { bb.Block.StateRoot = sr[:] },
+		Capella:   func(bb *zond.SignedBeaconBlockCapella) { bb.Block.StateRoot = sr[:] },
 	}.apply(b)
 }
 
 // SetBlockParentRoot modifies the block's parent root.
 func SetBlockParentRoot(b interfaces.SignedBeaconBlock, pr [32]byte) (interfaces.SignedBeaconBlock, error) {
 	return blockMutator{
-		Phase0:    func(bb *eth.SignedBeaconBlock) { bb.Block.ParentRoot = pr[:] },
-		Altair:    func(bb *eth.SignedBeaconBlockAltair) { bb.Block.ParentRoot = pr[:] },
-		Bellatrix: func(bb *eth.SignedBeaconBlockBellatrix) { bb.Block.ParentRoot = pr[:] },
-		Capella:   func(bb *eth.SignedBeaconBlockCapella) { bb.Block.ParentRoot = pr[:] },
+		Phase0:    func(bb *zond.SignedBeaconBlock) { bb.Block.ParentRoot = pr[:] },
+		Altair:    func(bb *zond.SignedBeaconBlockAltair) { bb.Block.ParentRoot = pr[:] },
+		Bellatrix: func(bb *zond.SignedBeaconBlockBellatrix) { bb.Block.ParentRoot = pr[:] },
+		Capella:   func(bb *zond.SignedBeaconBlockCapella) { bb.Block.ParentRoot = pr[:] },
 	}.apply(b)
 }
 
 // SetBlockSlot modifies the block's slot.
 func SetBlockSlot(b interfaces.SignedBeaconBlock, s primitives.Slot) (interfaces.SignedBeaconBlock, error) {
 	return blockMutator{
-		Phase0:    func(bb *eth.SignedBeaconBlock) { bb.Block.Slot = s },
-		Altair:    func(bb *eth.SignedBeaconBlockAltair) { bb.Block.Slot = s },
-		Bellatrix: func(bb *eth.SignedBeaconBlockBellatrix) { bb.Block.Slot = s },
-		Capella:   func(bb *eth.SignedBeaconBlockCapella) { bb.Block.Slot = s },
+		Phase0:    func(bb *zond.SignedBeaconBlock) { bb.Block.Slot = s },
+		Altair:    func(bb *zond.SignedBeaconBlockAltair) { bb.Block.Slot = s },
+		Bellatrix: func(bb *zond.SignedBeaconBlockBellatrix) { bb.Block.Slot = s },
+		Capella:   func(bb *zond.SignedBeaconBlockCapella) { bb.Block.Slot = s },
 	}.apply(b)
 }
 
 // SetProposerIndex modifies the block's proposer index.
 func SetProposerIndex(b interfaces.SignedBeaconBlock, idx primitives.ValidatorIndex) (interfaces.SignedBeaconBlock, error) {
 	return blockMutator{
-		Phase0:    func(bb *eth.SignedBeaconBlock) { bb.Block.ProposerIndex = idx },
-		Altair:    func(bb *eth.SignedBeaconBlockAltair) { bb.Block.ProposerIndex = idx },
-		Bellatrix: func(bb *eth.SignedBeaconBlockBellatrix) { bb.Block.ProposerIndex = idx },
-		Capella:   func(bb *eth.SignedBeaconBlockCapella) { bb.Block.ProposerIndex = idx },
+		Phase0:    func(bb *zond.SignedBeaconBlock) { bb.Block.ProposerIndex = idx },
+		Altair:    func(bb *zond.SignedBeaconBlockAltair) { bb.Block.ProposerIndex = idx },
+		Bellatrix: func(bb *zond.SignedBeaconBlockBellatrix) { bb.Block.ProposerIndex = idx },
+		Capella:   func(bb *zond.SignedBeaconBlockCapella) { bb.Block.ProposerIndex = idx },
 	}.apply(b)
 }

@@ -17,9 +17,9 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/encoding/ssz/detect"
-	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
-	v2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
+	v2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
 	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
@@ -130,13 +130,13 @@ func (m mismatch) String() string {
 func processesDepositsInBlocks(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	expected := ec.Balances(e2etypes.PostGenesisDepositBatch)
 	conn := conns[0]
-	client := ethpb.NewBeaconChainClient(conn)
+	client := zondpb.NewBeaconChainClient(conn)
 	chainHead, err := client.GetChainHead(context.Background(), &emptypb.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "failed to get chain head")
 	}
 
-	req := &ethpb.ListBlocksRequest{QueryFilter: &ethpb.ListBlocksRequest_Epoch{Epoch: chainHead.HeadEpoch - 1}}
+	req := &zondpb.ListBlocksRequest{QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: chainHead.HeadEpoch - 1}}
 	blks, err := client.ListBeaconBlocks(context.Background(), req)
 	if err != nil {
 		return errors.Wrap(err, "failed to get blocks from beacon-chain")
@@ -170,7 +170,7 @@ func processesDepositsInBlocks(ec *e2etypes.EvaluationContext, conns ...*grpc.Cl
 
 func verifyGraffitiInBlocks(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := ethpb.NewBeaconChainClient(conn)
+	client := zondpb.NewBeaconChainClient(conn)
 	chainHead, err := client.GetChainHead(context.Background(), &emptypb.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "failed to get chain head")
@@ -180,7 +180,7 @@ func verifyGraffitiInBlocks(_ *e2etypes.EvaluationContext, conns ...*grpc.Client
 	if begin > 0 {
 		begin = begin.Sub(1)
 	}
-	req := &ethpb.ListBlocksRequest{QueryFilter: &ethpb.ListBlocksRequest_Epoch{Epoch: begin}}
+	req := &zondpb.ListBlocksRequest{QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: begin}}
 	blks, err := client.ListBeaconBlocks(context.Background(), req)
 	if err != nil {
 		return errors.Wrap(err, "failed to get blocks from beacon-chain")
@@ -209,7 +209,7 @@ func verifyGraffitiInBlocks(_ *e2etypes.EvaluationContext, conns ...*grpc.Client
 
 func activatesDepositedValidators(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := ethpb.NewBeaconChainClient(conn)
+	client := zondpb.NewBeaconChainClient(conn)
 
 	chainHead, err := client.GetChainHead(context.Background(), &emptypb.Empty{})
 	if err != nil {
@@ -268,11 +268,11 @@ func activatesDepositedValidators(ec *e2etypes.EvaluationContext, conns ...*grpc
 	return nil
 }
 
-func getAllValidators(c ethpb.BeaconChainClient) ([]*ethpb.Validator, error) {
-	vals := make([]*ethpb.Validator, 0)
+func getAllValidators(c zondpb.BeaconChainClient) ([]*zondpb.Validator, error) {
+	vals := make([]*zondpb.Validator, 0)
 	pageToken := "0"
 	for pageToken != "" {
-		validatorRequest := &ethpb.ListValidatorsRequest{
+		validatorRequest := &zondpb.ListValidatorsRequest{
 			PageSize:  100,
 			PageToken: pageToken,
 		}
@@ -290,7 +290,7 @@ func getAllValidators(c ethpb.BeaconChainClient) ([]*ethpb.Validator, error) {
 
 func depositedValidatorsAreActive(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := ethpb.NewBeaconChainClient(conn)
+	client := zondpb.NewBeaconChainClient(conn)
 
 	chainHead, err := client.GetChainHead(context.Background(), &emptypb.Empty{})
 	if err != nil {
@@ -342,16 +342,16 @@ func depositedValidatorsAreActive(ec *e2etypes.EvaluationContext, conns ...*grpc
 
 func proposeVoluntaryExit(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	valClient := ethpb.NewBeaconNodeValidatorClient(conn)
-	beaconClient := ethpb.NewBeaconChainClient(conn)
-	debugClient := ethpb.NewDebugClient(conn)
+	valClient := zondpb.NewBeaconNodeValidatorClient(conn)
+	beaconClient := zondpb.NewBeaconChainClient(conn)
+	debugClient := zondpb.NewDebugClient(conn)
 
 	ctx := context.Background()
 	chainHead, err := beaconClient.GetChainHead(ctx, &emptypb.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "could not get chain head")
 	}
-	stObj, err := debugClient.GetBeaconState(ctx, &ethpb.BeaconStateRequest{QueryFilter: &ethpb.BeaconStateRequest_Slot{Slot: chainHead.HeadSlot}})
+	stObj, err := debugClient.GetBeaconState(ctx, &zondpb.BeaconStateRequest{QueryFilter: &zondpb.BeaconStateRequest_Slot{Slot: chainHead.HeadSlot}})
 	if err != nil {
 		return errors.Wrap(err, "could not get state object")
 	}
@@ -383,11 +383,11 @@ func proposeVoluntaryExit(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientC
 	}
 
 	var sendExit = func(exitedIndex primitives.ValidatorIndex) error {
-		voluntaryExit := &ethpb.VoluntaryExit{
+		voluntaryExit := &zondpb.VoluntaryExit{
 			Epoch:          chainHead.HeadEpoch,
 			ValidatorIndex: exitedIndex,
 		}
-		req := &ethpb.DomainRequest{
+		req := &zondpb.DomainRequest{
 			Epoch:  chainHead.HeadEpoch,
 			Domain: params.BeaconConfig().DomainVoluntaryExit[:],
 		}
@@ -400,7 +400,7 @@ func proposeVoluntaryExit(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientC
 			return err
 		}
 		signature := privKeys[exitedIndex].Sign(signingData[:])
-		signedExit := &ethpb.SignedVoluntaryExit{
+		signedExit := &zondpb.SignedVoluntaryExit{
 			Exit:      voluntaryExit,
 			Signature: signature.Marshal(),
 		}
@@ -437,10 +437,10 @@ func proposeVoluntaryExit(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientC
 
 func validatorsHaveExited(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := ethpb.NewBeaconChainClient(conn)
+	client := zondpb.NewBeaconChainClient(conn)
 	for k := range ec.ExitedVals {
-		validatorRequest := &ethpb.GetValidatorRequest{
-			QueryFilter: &ethpb.GetValidatorRequest_PublicKey{
+		validatorRequest := &zondpb.GetValidatorRequest{
+			QueryFilter: &zondpb.GetValidatorRequest_PublicKey{
 				PublicKey: k[:],
 			},
 		}
@@ -457,7 +457,7 @@ func validatorsHaveExited(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientC
 
 func validatorsVoteWithTheMajority(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := ethpb.NewBeaconChainClient(conn)
+	client := zondpb.NewBeaconChainClient(conn)
 	chainHead, err := client.GetChainHead(context.Background(), &emptypb.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "failed to get chain head")
@@ -468,7 +468,7 @@ func validatorsVoteWithTheMajority(ec *e2etypes.EvaluationContext, conns ...*grp
 	if begin > 0 {
 		begin = begin.Sub(1)
 	}
-	req := &ethpb.ListBlocksRequest{QueryFilter: &ethpb.ListBlocksRequest_Epoch{Epoch: begin}}
+	req := &zondpb.ListBlocksRequest{QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: begin}}
 	blks, err := client.ListBeaconBlocks(context.Background(), req)
 	if err != nil {
 		return errors.Wrap(err, "failed to get blocks from beacon-chain")
@@ -479,27 +479,27 @@ func validatorsVoteWithTheMajority(ec *e2etypes.EvaluationContext, conns ...*grp
 		var slot primitives.Slot
 		var vote []byte
 		switch blk.Block.(type) {
-		case *ethpb.BeaconBlockContainer_Phase0Block:
+		case *zondpb.BeaconBlockContainer_Phase0Block:
 			b := blk.GetPhase0Block().Block
 			slot = b.Slot
 			vote = b.Body.Eth1Data.BlockHash
-		case *ethpb.BeaconBlockContainer_AltairBlock:
+		case *zondpb.BeaconBlockContainer_AltairBlock:
 			b := blk.GetAltairBlock().Block
 			slot = b.Slot
 			vote = b.Body.Eth1Data.BlockHash
-		case *ethpb.BeaconBlockContainer_BellatrixBlock:
+		case *zondpb.BeaconBlockContainer_BellatrixBlock:
 			b := blk.GetBellatrixBlock().Block
 			slot = b.Slot
 			vote = b.Body.Eth1Data.BlockHash
-		case *ethpb.BeaconBlockContainer_BlindedBellatrixBlock:
+		case *zondpb.BeaconBlockContainer_BlindedBellatrixBlock:
 			b := blk.GetBlindedBellatrixBlock().Block
 			slot = b.Slot
 			vote = b.Body.Eth1Data.BlockHash
-		case *ethpb.BeaconBlockContainer_CapellaBlock:
+		case *zondpb.BeaconBlockContainer_CapellaBlock:
 			b := blk.GetCapellaBlock().Block
 			slot = b.Slot
 			vote = b.Body.Eth1Data.BlockHash
-		case *ethpb.BeaconBlockContainer_BlindedCapellaBlock:
+		case *zondpb.BeaconBlockContainer_BlindedCapellaBlock:
 			b := blk.GetBlindedCapellaBlock().Block
 			slot = b.Slot
 			vote = b.Body.Eth1Data.BlockHash
@@ -544,16 +544,16 @@ func validatorsVoteWithTheMajority(ec *e2etypes.EvaluationContext, conns ...*grp
 
 func submitWithdrawal(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	beaconAPIClient := ethpbservice.NewBeaconChainClient(conn)
-	beaconClient := ethpb.NewBeaconChainClient(conn)
-	debugClient := ethpb.NewDebugClient(conn)
+	beaconAPIClient := zondpbservice.NewBeaconChainClient(conn)
+	beaconClient := zondpb.NewBeaconChainClient(conn)
+	debugClient := zondpb.NewDebugClient(conn)
 
 	ctx := context.Background()
 	chainHead, err := beaconClient.GetChainHead(ctx, &emptypb.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "could not get chain head")
 	}
-	stObj, err := debugClient.GetBeaconState(ctx, &ethpb.BeaconStateRequest{QueryFilter: &ethpb.BeaconStateRequest_Slot{Slot: chainHead.HeadSlot}})
+	stObj, err := debugClient.GetBeaconState(ctx, &zondpb.BeaconStateRequest{QueryFilter: &zondpb.BeaconStateRequest_Slot{Slot: chainHead.HeadSlot}})
 	if err != nil {
 		return errors.Wrap(err, "could not get state object")
 	}
@@ -625,15 +625,15 @@ func submitWithdrawal(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn)
 
 func validatorsAreWithdrawn(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	beaconClient := ethpb.NewBeaconChainClient(conn)
-	debugClient := ethpb.NewDebugClient(conn)
+	beaconClient := zondpb.NewBeaconChainClient(conn)
+	debugClient := zondpb.NewDebugClient(conn)
 
 	ctx := context.Background()
 	chainHead, err := beaconClient.GetChainHead(ctx, &emptypb.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "could not get chain head")
 	}
-	stObj, err := debugClient.GetBeaconState(ctx, &ethpb.BeaconStateRequest{QueryFilter: &ethpb.BeaconStateRequest_Slot{Slot: chainHead.HeadSlot}})
+	stObj, err := debugClient.GetBeaconState(ctx, &zondpb.BeaconStateRequest{QueryFilter: &zondpb.BeaconStateRequest_Slot{Slot: chainHead.HeadSlot}})
 	if err != nil {
 		return errors.Wrap(err, "could not get state object")
 	}

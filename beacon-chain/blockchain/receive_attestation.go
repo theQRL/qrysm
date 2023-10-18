@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 )
@@ -26,18 +26,18 @@ const reorgLateBlockCountAttestations = 2 * time.Second
 // AttestationStateFetcher allows for retrieving a beacon state corresponding to the block
 // root of an attestation's target checkpoint.
 type AttestationStateFetcher interface {
-	AttestationTargetState(ctx context.Context, target *ethpb.Checkpoint) (state.ReadOnlyBeaconState, error)
+	AttestationTargetState(ctx context.Context, target *zondpb.Checkpoint) (state.ReadOnlyBeaconState, error)
 }
 
 // AttestationReceiver interface defines the methods of chain service receive and processing new attestations.
 type AttestationReceiver interface {
 	AttestationStateFetcher
-	VerifyLmdFfgConsistency(ctx context.Context, att *ethpb.Attestation) error
+	VerifyLmdFfgConsistency(ctx context.Context, att *zondpb.Attestation) error
 	InForkchoice([32]byte) bool
 }
 
 // AttestationTargetState returns the pre state of attestation.
-func (s *Service) AttestationTargetState(ctx context.Context, target *ethpb.Checkpoint) (state.ReadOnlyBeaconState, error) {
+func (s *Service) AttestationTargetState(ctx context.Context, target *zondpb.Checkpoint) (state.ReadOnlyBeaconState, error) {
 	ss, err := slots.EpochStart(target.Epoch)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (s *Service) AttestationTargetState(ctx context.Context, target *ethpb.Chec
 }
 
 // VerifyLmdFfgConsistency verifies that attestation's LMD and FFG votes are consistency to each other.
-func (s *Service) VerifyLmdFfgConsistency(ctx context.Context, a *ethpb.Attestation) error {
+func (s *Service) VerifyLmdFfgConsistency(ctx context.Context, a *zondpb.Attestation) error {
 	targetSlot, err := slots.EpochStart(a.Data.Target.Epoch)
 	if err != nil {
 		return err
@@ -194,7 +194,7 @@ func (s *Service) processAttestations(ctx context.Context, disparity time.Durati
 //  1. Validate attestation, update validator's latest vote
 //  2. Apply fork choice to the processed attestation
 //  3. Save latest head info
-func (s *Service) receiveAttestationNoPubsub(ctx context.Context, att *ethpb.Attestation, disparity time.Duration) error {
+func (s *Service) receiveAttestationNoPubsub(ctx context.Context, att *zondpb.Attestation, disparity time.Duration) error {
 	ctx, span := trace.StartSpan(ctx, "beacon-chain.blockchain.receiveAttestationNoPubsub")
 	defer span.End()
 

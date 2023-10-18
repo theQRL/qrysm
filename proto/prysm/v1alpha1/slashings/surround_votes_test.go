@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 func TestIsSurround(t *testing.T) {
 	type args struct {
-		a *ethpb.IndexedAttestation
-		b *ethpb.IndexedAttestation
+		a *zondpb.IndexedAttestation
+		b *zondpb.IndexedAttestation
 	}
 	tests := []struct {
 		name string
@@ -83,11 +83,11 @@ func TestIsSurround(t *testing.T) {
 	}
 }
 
-func createAttestation(source, target primitives.Epoch) *ethpb.IndexedAttestation {
-	return &ethpb.IndexedAttestation{
-		Data: &ethpb.AttestationData{
-			Source: &ethpb.Checkpoint{Epoch: source},
-			Target: &ethpb.Checkpoint{Epoch: target},
+func createAttestation(source, target primitives.Epoch) *zondpb.IndexedAttestation {
+	return &zondpb.IndexedAttestation{
+		Data: &zondpb.AttestationData{
+			Source: &zondpb.Checkpoint{Epoch: source},
+			Target: &zondpb.Checkpoint{Epoch: target},
 		},
 	}
 }

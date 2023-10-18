@@ -6,7 +6,7 @@ import (
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // UpgradeToBellatrix updates inputs a generic state to return the version Bellatrix state.
@@ -39,11 +39,11 @@ func UpgradeToBellatrix(state state.BeaconState) (state.BeaconState, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &ethpb.BeaconStateBellatrix{
+	s := &zondpb.BeaconStateBellatrix{
 		GenesisTime:           state.GenesisTime(),
 		GenesisValidatorsRoot: state.GenesisValidatorsRoot(),
 		Slot:                  state.Slot(),
-		Fork: &ethpb.Fork{
+		Fork: &zondpb.Fork{
 			PreviousVersion: state.Fork().CurrentVersion,
 			CurrentVersion:  params.BeaconConfig().BellatrixForkVersion,
 			Epoch:           epoch,

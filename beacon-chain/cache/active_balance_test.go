@@ -10,7 +10,7 @@ import (
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
@@ -21,7 +21,7 @@ func TestBalanceCache_AddGetBalance(t *testing.T) {
 		binary.LittleEndian.PutUint64(b, uint64(i))
 		blockRoots[i] = b
 	}
-	raw := &ethpb.BeaconState{
+	raw := &zondpb.BeaconState{
 		BlockRoots: blockRoots,
 	}
 	st, err := state_native.InitializeFromProtoPhase0(raw)
@@ -65,7 +65,7 @@ func TestBalanceCache_BalanceKey(t *testing.T) {
 		binary.LittleEndian.PutUint64(b, uint64(i))
 		blockRoots[i] = b
 	}
-	raw := &ethpb.BeaconState{
+	raw := &zondpb.BeaconState{
 		BlockRoots: blockRoots,
 	}
 	st, err := state_native.InitializeFromProtoPhase0(raw)

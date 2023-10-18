@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 
@@ -99,12 +99,12 @@ func (s *Service) validateSyncContributionAndProof(ctx context.Context, pid peer
 }
 
 // Parse a sync contribution message from a pubsub message.
-func (s *Service) readSyncContributionMessage(msg *pubsub.Message) (*ethpb.SignedContributionAndProof, error) {
+func (s *Service) readSyncContributionMessage(msg *pubsub.Message) (*zondpb.SignedContributionAndProof, error) {
 	raw, err := s.decodePubsubMessage(msg)
 	if err != nil {
 		return nil, err
 	}
-	m, ok := raw.(*ethpb.SignedContributionAndProof)
+	m, ok := raw.(*zondpb.SignedContributionAndProof)
 	if !ok {
 		return nil, errWrongMessage
 	}
@@ -115,7 +115,7 @@ func (s *Service) readSyncContributionMessage(msg *pubsub.Message) (*ethpb.Signe
 }
 
 func rejectIncorrectSubcommitteeIndex(
-	m *ethpb.SignedContributionAndProof,
+	m *zondpb.SignedContributionAndProof,
 ) validationFn {
 	return func(ctx context.Context) (pubsub.ValidationResult, error) {
 		ctx, span := trace.StartSpan(ctx, "sync.rejectIncorrectSubcommitteeIndex")
@@ -129,7 +129,7 @@ func rejectIncorrectSubcommitteeIndex(
 	}
 }
 
-func rejectEmptyContribution(m *ethpb.SignedContributionAndProof) validationFn {
+func rejectEmptyContribution(m *zondpb.SignedContributionAndProof) validationFn {
 	return func(ctx context.Context) (pubsub.ValidationResult, error) {
 		bVector := m.Message.Contribution.AggregationBits
 		// In the event no bit is set for the
@@ -141,7 +141,7 @@ func rejectEmptyContribution(m *ethpb.SignedContributionAndProof) validationFn {
 	}
 }
 
-func (s *Service) ignoreSeenSyncContribution(m *ethpb.SignedContributionAndProof) validationFn {
+func (s *Service) ignoreSeenSyncContribution(m *zondpb.SignedContributionAndProof) validationFn {
 	return func(ctx context.Context) (pubsub.ValidationResult, error) {
 		c := m.Message.Contribution
 		seen, err := s.hasSeenSyncContributionBits(c)
@@ -159,7 +159,7 @@ func (s *Service) ignoreSeenSyncContribution(m *ethpb.SignedContributionAndProof
 	}
 }
 
-func rejectInvalidAggregator(m *ethpb.SignedContributionAndProof) validationFn {
+func rejectInvalidAggregator(m *zondpb.SignedContributionAndProof) validationFn {
 	return func(ctx context.Context) (pubsub.ValidationResult, error) {
 		// The `contribution_and_proof.selection_proof` selects the validator as an aggregator for the slot.
 		if isAggregator, err := altair.IsSyncCommitteeAggregator(m.Message.SelectionProof); err != nil || !isAggregator {
@@ -169,7 +169,7 @@ func rejectInvalidAggregator(m *ethpb.SignedContributionAndProof) validationFn {
 	}
 }
 
-func (s *Service) rejectInvalidIndexInSubCommittee(m *ethpb.SignedContributionAndProof) validationFn {
+func (s *Service) rejectInvalidIndexInSubCommittee(m *zondpb.SignedContributionAndProof) validationFn {
 	return func(ctx context.Context) (pubsub.ValidationResult, error) {
 		ctx, span := trace.StartSpan(ctx, "sync.rejectInvalidIndexInSubCommittee")
 		defer span.End()
@@ -198,7 +198,7 @@ func (s *Service) rejectInvalidIndexInSubCommittee(m *ethpb.SignedContributionAn
 	}
 }
 
-func (s *Service) rejectInvalidSelectionProof(m *ethpb.SignedContributionAndProof) validationFn {
+func (s *Service) rejectInvalidSelectionProof(m *zondpb.SignedContributionAndProof) validationFn {
 	return func(ctx context.Context) (pubsub.ValidationResult, error) {
 		ctx, span := trace.StartSpan(ctx, "sync.rejectInvalidSelectionProof")
 		defer span.End()
@@ -211,7 +211,7 @@ func (s *Service) rejectInvalidSelectionProof(m *ethpb.SignedContributionAndProo
 	}
 }
 
-func (s *Service) rejectInvalidContributionSignature(m *ethpb.SignedContributionAndProof) validationFn {
+func (s *Service) rejectInvalidContributionSignature(m *zondpb.SignedContributionAndProof) validationFn {
 	return func(ctx context.Context) (pubsub.ValidationResult, error) {
 		ctx, span := trace.StartSpan(ctx, "sync.rejectInvalidContributionSignature")
 		defer span.End()
@@ -245,7 +245,7 @@ func (s *Service) rejectInvalidContributionSignature(m *ethpb.SignedContribution
 	}
 }
 
-func (s *Service) rejectInvalidSyncAggregateSignature(m *ethpb.SignedContributionAndProof) validationFn {
+func (s *Service) rejectInvalidSyncAggregateSignature(m *zondpb.SignedContributionAndProof) validationFn {
 	return func(ctx context.Context) (pubsub.ValidationResult, error) {
 		ctx, span := trace.StartSpan(ctx, "sync.rejectInvalidSyncAggregateSignature")
 		defer span.End()
@@ -315,7 +315,7 @@ func (s *Service) setSyncContributionIndexSlotSeen(slot primitives.Slot, aggrega
 }
 
 // Set sync contribution's slot, root, committee index and bits.
-func (s *Service) setSyncContributionBits(c *ethpb.SyncCommitteeContribution) error {
+func (s *Service) setSyncContributionBits(c *zondpb.SyncCommitteeContribution) error {
 	s.syncContributionBitsOverlapLock.Lock()
 	defer s.syncContributionBitsOverlapLock.Unlock()
 	// Copying due to how pb unmarshalling is carried out, prevent mutation.
@@ -342,7 +342,7 @@ func (s *Service) setSyncContributionBits(c *ethpb.SyncCommitteeContribution) er
 }
 
 // Check sync contribution bits don't have an overlap with one's in cache.
-func (s *Service) hasSeenSyncContributionBits(c *ethpb.SyncCommitteeContribution) (bool, error) {
+func (s *Service) hasSeenSyncContributionBits(c *zondpb.SyncCommitteeContribution) (bool, error) {
 	s.syncContributionBitsOverlapLock.RLock()
 	defer s.syncContributionBitsOverlapLock.RUnlock()
 	b := append(c.BlockRoot, bytesutil.Bytes32(uint64(c.Slot))...)
@@ -364,8 +364,8 @@ func bitListOverlaps(bitLists [][]byte, b []byte) (bool, error) {
 		if bitList == nil {
 			return false, errors.New("nil bitfield")
 		}
-		bl := ethpb.ConvertToSyncContributionBitVector(bitList)
-		overlaps, err := bl.Overlaps(ethpb.ConvertToSyncContributionBitVector(b))
+		bl := zondpb.ConvertToSyncContributionBitVector(bitList)
+		overlaps, err := bl.Overlaps(zondpb.ConvertToSyncContributionBitVector(b))
 		if err != nil {
 			return false, err
 		}
@@ -378,8 +378,8 @@ func bitListOverlaps(bitLists [][]byte, b []byte) (bool, error) {
 
 // verifySyncSelectionData verifies that the provided sync contribution has a valid
 // selection proof.
-func (s *Service) verifySyncSelectionData(ctx context.Context, m *ethpb.ContributionAndProof) error {
-	selectionData := &ethpb.SyncAggregatorSelectionData{Slot: m.Contribution.Slot, SubcommitteeIndex: m.Contribution.SubcommitteeIndex}
+func (s *Service) verifySyncSelectionData(ctx context.Context, m *zondpb.ContributionAndProof) error {
+	selectionData := &zondpb.SyncAggregatorSelectionData{Slot: m.Contribution.Slot, SubcommitteeIndex: m.Contribution.SubcommitteeIndex}
 	domain, err := s.cfg.chain.HeadSyncSelectionProofDomain(ctx, m.Contribution.Slot)
 	if err != nil {
 		return err

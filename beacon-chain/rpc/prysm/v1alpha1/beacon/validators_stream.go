@@ -27,7 +27,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -48,14 +48,14 @@ type infostream struct {
 	eth1Blocktimes      *cache.Cache
 	eth1BlocktimesMutex *sync.RWMutex
 	currentEpoch        primitives.Epoch
-	stream              ethpb.BeaconChain_StreamValidatorsInfoServer
+	stream              zondpb.BeaconChain_StreamValidatorsInfoServer
 	genesisTime         uint64
 }
 
 // eth1Deposit contains information about a deposit made on the Ethereum 1 chain.
 type eth1Deposit struct {
 	block *big.Int
-	data  *ethpb.Deposit_Data
+	data  *zondpb.Deposit_Data
 }
 
 var (
@@ -94,7 +94,7 @@ var (
 // based on the epoch value in the returned validator info.
 // DEPRECATED: Streaming Validator Info is no longer supported.
 // The Beacon API /eth/v1/beacon/states/{state_id}/validators will provide validator info in unstreamed format.
-func (bs *Server) StreamValidatorsInfo(stream ethpb.BeaconChain_StreamValidatorsInfoServer) error {
+func (bs *Server) StreamValidatorsInfo(stream zondpb.BeaconChain_StreamValidatorsInfoServer) error {
 	stateChannel := make(chan *feed.Event, params.BeaconConfig().SlotsPerEpoch)
 	epochDuration := time.Duration(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot)) * time.Second
 
@@ -175,14 +175,14 @@ func (is *infostream) handleConnection() error {
 }
 
 // handleMessage handles a message from the infostream client, updating the list of keys.
-func (is *infostream) handleMessage(msg *ethpb.ValidatorChangeSet) {
+func (is *infostream) handleMessage(msg *zondpb.ValidatorChangeSet) {
 	var err error
 	switch msg.Action {
-	case ethpb.SetAction_ADD_VALIDATOR_KEYS:
+	case zondpb.SetAction_ADD_VALIDATOR_KEYS:
 		err = is.handleAddValidatorKeys(msg.PublicKeys)
-	case ethpb.SetAction_REMOVE_VALIDATOR_KEYS:
+	case zondpb.SetAction_REMOVE_VALIDATOR_KEYS:
 		is.handleRemoveValidatorKeys(msg.PublicKeys)
-	case ethpb.SetAction_SET_VALIDATOR_KEYS:
+	case zondpb.SetAction_SET_VALIDATOR_KEYS:
 		err = is.handleSetValidatorKeys(msg.PublicKeys)
 	}
 	if err != nil {
@@ -256,7 +256,7 @@ func (is *infostream) sendValidatorsInfo(pubKeys [][]byte) error {
 }
 
 // generateValidatorsInfo generates the validator info for a set of public keys.
-func (is *infostream) generateValidatorsInfo(pubKeys [][]byte) ([]*ethpb.ValidatorInfo, error) {
+func (is *infostream) generateValidatorsInfo(pubKeys [][]byte) ([]*zondpb.ValidatorInfo, error) {
 	if is.headFetcher == nil {
 		return nil, status.Error(codes.Internal, "No head fetcher")
 	}
@@ -275,7 +275,7 @@ func (is *infostream) generateValidatorsInfo(pubKeys [][]byte) ([]*ethpb.Validat
 	// We are reporting on the state at the end of the *previous* epoch.
 	epoch--
 
-	res := make([]*ethpb.ValidatorInfo, 0, len(pubKeys))
+	res := make([]*zondpb.ValidatorInfo, 0, len(pubKeys))
 	for _, pubKey := range pubKeys {
 		i, e := headState.ValidatorIndexByPubkey(bytesutil.ToBytes2592(pubKey))
 		if !e {
@@ -306,11 +306,11 @@ func (is *infostream) generateValidatorInfo(
 	validator state.ReadOnlyValidator,
 	headState state.ReadOnlyBeaconState,
 	epoch primitives.Epoch,
-) (*ethpb.ValidatorInfo, error) {
-	info := &ethpb.ValidatorInfo{
+) (*zondpb.ValidatorInfo, error) {
+	info := &zondpb.ValidatorInfo{
 		PublicKey: pubKey,
 		Epoch:     epoch,
-		Status:    ethpb.ValidatorStatus_UNKNOWN_STATUS,
+		Status:    zondpb.ValidatorStatus_UNKNOWN_STATUS,
 	}
 
 	// Index
@@ -327,9 +327,9 @@ func (is *infostream) generateValidatorInfo(
 	info.Balance = headState.Balances()[info.Index]
 
 	// Effective balance (for attesting states)
-	if info.Status == ethpb.ValidatorStatus_ACTIVE ||
-		info.Status == ethpb.ValidatorStatus_SLASHING ||
-		info.Status == ethpb.ValidatorStatus_EXITING {
+	if info.Status == zondpb.ValidatorStatus_ACTIVE ||
+		info.Status == zondpb.ValidatorStatus_SLASHING ||
+		info.Status == zondpb.ValidatorStatus_EXITING {
 		info.EffectiveBalance = validator.EffectiveBalance()
 	}
 
@@ -337,7 +337,7 @@ func (is *infostream) generateValidatorInfo(
 }
 
 // generatePendingValidatorInfo generates the validator info for a pending (or unknown) key.
-func (is *infostream) generatePendingValidatorInfo(info *ethpb.ValidatorInfo) (*ethpb.ValidatorInfo, error) {
+func (is *infostream) generatePendingValidatorInfo(info *zondpb.ValidatorInfo) (*zondpb.ValidatorInfo, error) {
 	key := string(info.PublicKey)
 	var deposit *eth1Deposit
 	is.eth1DepositsMutex.Lock()
@@ -365,7 +365,7 @@ func (is *infostream) generatePendingValidatorInfo(info *ethpb.ValidatorInfo) (*
 	}
 	is.eth1DepositsMutex.Unlock()
 	if deposit.block != nil {
-		info.Status = ethpb.ValidatorStatus_DEPOSITED
+		info.Status = zondpb.ValidatorStatus_DEPOSITED
 		if queueTimestamp, err := is.depositQueueTimestamp(deposit.block); err != nil {
 			log.WithError(err).Error("Could not obtain queue activation timestamp")
 		} else {
@@ -376,11 +376,11 @@ func (is *infostream) generatePendingValidatorInfo(info *ethpb.ValidatorInfo) (*
 	return info, nil
 }
 
-func (is *infostream) calculateActivationTimeForPendingValidators(res []*ethpb.ValidatorInfo, headState state.ReadOnlyBeaconState, epoch primitives.Epoch) error {
+func (is *infostream) calculateActivationTimeForPendingValidators(res []*zondpb.ValidatorInfo, headState state.ReadOnlyBeaconState, epoch primitives.Epoch) error {
 	// pendingValidatorsMap is map from the validator pubkey to the index in our return array
 	pendingValidatorsMap := make(map[[dilithium2.CryptoPublicKeyBytes]byte]int)
 	for i, info := range res {
-		if info.Status == ethpb.ValidatorStatus_PENDING {
+		if info.Status == zondpb.ValidatorStatus_PENDING {
 			pendingValidatorsMap[bytesutil.ToBytes2592(info.PublicKey)] = i
 		}
 	}
@@ -484,35 +484,35 @@ func (s indicesSorter) Less(i, j int) bool {
 	return s.indices[i] < s.indices[j]
 }
 
-func (is *infostream) calculateStatusAndTransition(validator state.ReadOnlyValidator, currentEpoch primitives.Epoch) (ethpb.ValidatorStatus, uint64) {
+func (is *infostream) calculateStatusAndTransition(validator state.ReadOnlyValidator, currentEpoch primitives.Epoch) (zondpb.ValidatorStatus, uint64) {
 	farFutureEpoch := params.BeaconConfig().FarFutureEpoch
 
 	if validator.IsNil() {
-		return ethpb.ValidatorStatus_UNKNOWN_STATUS, 0
+		return zondpb.ValidatorStatus_UNKNOWN_STATUS, 0
 	}
 
 	if currentEpoch < validator.ActivationEligibilityEpoch() {
 		if validator.EffectiveBalance() == 0 {
-			return ethpb.ValidatorStatus_PENDING, 0
+			return zondpb.ValidatorStatus_PENDING, 0
 		}
 		if helpers.IsEligibleForActivationQueueUsingTrie(validator) {
-			return ethpb.ValidatorStatus_DEPOSITED, is.epochToTimestamp(validator.ActivationEligibilityEpoch())
+			return zondpb.ValidatorStatus_DEPOSITED, is.epochToTimestamp(validator.ActivationEligibilityEpoch())
 		}
-		return ethpb.ValidatorStatus_DEPOSITED, 0
+		return zondpb.ValidatorStatus_DEPOSITED, 0
 	}
 	if currentEpoch < validator.ActivationEpoch() {
-		return ethpb.ValidatorStatus_PENDING, is.epochToTimestamp(validator.ActivationEpoch())
+		return zondpb.ValidatorStatus_PENDING, is.epochToTimestamp(validator.ActivationEpoch())
 	}
 	if validator.ExitEpoch() == farFutureEpoch {
-		return ethpb.ValidatorStatus_ACTIVE, 0
+		return zondpb.ValidatorStatus_ACTIVE, 0
 	}
 	if currentEpoch < validator.ExitEpoch() {
 		if validator.Slashed() {
-			return ethpb.ValidatorStatus_SLASHING, is.epochToTimestamp(validator.ExitEpoch())
+			return zondpb.ValidatorStatus_SLASHING, is.epochToTimestamp(validator.ExitEpoch())
 		}
-		return ethpb.ValidatorStatus_EXITING, is.epochToTimestamp(validator.ExitEpoch())
+		return zondpb.ValidatorStatus_EXITING, is.epochToTimestamp(validator.ExitEpoch())
 	}
-	return ethpb.ValidatorStatus_EXITED, is.epochToTimestamp(validator.WithdrawableEpoch())
+	return zondpb.ValidatorStatus_EXITED, is.epochToTimestamp(validator.WithdrawableEpoch())
 }
 
 // epochToTimestamp converts an epoch number to a timestamp.

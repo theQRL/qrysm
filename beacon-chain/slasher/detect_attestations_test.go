@@ -17,7 +17,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -199,13 +199,13 @@ func Test_processQueuedAttestations(t *testing.T) {
 
 			// Initialize validators in the state.
 			numVals := params.BeaconConfig().MinGenesisActiveValidatorCount
-			validators := make([]*ethpb.Validator, numVals)
+			validators := make([]*zondpb.Validator, numVals)
 			privKeys := make([]bls.SecretKey, numVals)
 			for i := range validators {
 				privKey, err := bls.RandKey()
 				require.NoError(t, err)
 				privKeys[i] = privKey
-				validators[i] = &ethpb.Validator{
+				validators[i] = &zondpb.Validator{
 					PublicKey:             privKey.PublicKey().Marshal(),
 					WithdrawalCredentials: make([]byte, 32),
 				}
@@ -616,7 +616,7 @@ func Test_checkDoubleVotes_SlashableInputAttestations(t *testing.T) {
 	cur1 := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{2})
 	prev2 := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{1})
 	cur2 := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{2})
-	wanted := []*ethpb.AttesterSlashing{
+	wanted := []*zondpb.AttesterSlashing{
 		{
 			Attestation_1: prev1.IndexedAttestation,
 			Attestation_2: cur1.IndexedAttestation,
@@ -656,7 +656,7 @@ func Test_checkDoubleVotes_SlashableAttestationsOnDisk(t *testing.T) {
 	cur1 := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{2})
 	prev2 := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{1})
 	cur2 := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{2})
-	wanted := []*ethpb.AttesterSlashing{
+	wanted := []*zondpb.AttesterSlashing{
 		{
 			Attestation_1: prev1.IndexedAttestation,
 			Attestation_2: cur1.IndexedAttestation,
@@ -891,13 +891,13 @@ func runAttestationsBenchmark(b *testing.B, s *Service, numAtts, numValidators u
 }
 
 func createAttestationWrapper(t testing.TB, source, target primitives.Epoch, indices []uint64, signingRoot []byte) *slashertypes.IndexedAttestationWrapper {
-	data := &ethpb.AttestationData{
+	data := &zondpb.AttestationData{
 		BeaconBlockRoot: bytesutil.PadTo(signingRoot, 32),
-		Source: &ethpb.Checkpoint{
+		Source: &zondpb.Checkpoint{
 			Epoch: source,
 			Root:  params.BeaconConfig().ZeroHash[:],
 		},
-		Target: &ethpb.Checkpoint{
+		Target: &zondpb.Checkpoint{
 			Epoch: target,
 			Root:  params.BeaconConfig().ZeroHash[:],
 		},
@@ -907,7 +907,7 @@ func createAttestationWrapper(t testing.TB, source, target primitives.Epoch, ind
 		t.Fatal(err)
 	}
 	return &slashertypes.IndexedAttestationWrapper{
-		IndexedAttestation: &ethpb.IndexedAttestation{
+		IndexedAttestation: &zondpb.IndexedAttestation{
 			AttestingIndices: indices,
 			Data:             data,
 			Signature:        params.BeaconConfig().EmptySignature[:],

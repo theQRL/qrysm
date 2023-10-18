@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/crypto/rand"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -30,7 +30,7 @@ import (
 //   - Otherwise:
 //   - Determine the vote with the highest count. Prefer the vote with the highest eth1 block height in the event of a tie.
 //   - This vote's block is the eth1 block to use for the block proposal.
-func (vs *Server) eth1DataMajorityVote(ctx context.Context, beaconState state.BeaconState) (*ethpb.Eth1Data, error) {
+func (vs *Server) eth1DataMajorityVote(ctx context.Context, beaconState state.BeaconState) (*zondpb.Eth1Data, error) {
 	ctx, cancel := context.WithTimeout(ctx, eth1dataTimeout)
 	defer cancel()
 
@@ -78,7 +78,7 @@ func (vs *Server) eth1DataMajorityVote(ctx context.Context, beaconState state.Be
 			log.WithError(err).Error("Could not get hash of last block by latest valid time")
 			return vs.randomETH1DataVote(ctx)
 		}
-		return &ethpb.Eth1Data{
+		return &zondpb.Eth1Data{
 			BlockHash:    h.Bytes(),
 			DepositCount: lastBlockDepositCount,
 			DepositRoot:  lastBlockDepositRoot[:],
@@ -96,7 +96,7 @@ func (vs *Server) slotStartTime(slot primitives.Slot) uint64 {
 func (vs *Server) canonicalEth1Data(
 	ctx context.Context,
 	beaconState state.BeaconState,
-	currentVote *ethpb.Eth1Data) (*ethpb.Eth1Data, *big.Int, error) {
+	currentVote *zondpb.Eth1Data) (*zondpb.Eth1Data, *big.Int, error) {
 	var eth1BlockHash [32]byte
 
 	// Add in current vote, to get accurate vote tally
@@ -107,7 +107,7 @@ func (vs *Server) canonicalEth1Data(
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "could not determine if current eth1data vote has enough support")
 	}
-	var canonicalEth1Data *ethpb.Eth1Data
+	var canonicalEth1Data *zondpb.Eth1Data
 	if hasSupport {
 		canonicalEth1Data = currentVote
 		eth1BlockHash = bytesutil.ToBytes32(currentVote.BlockHash)
@@ -125,7 +125,7 @@ func (vs *Server) canonicalEth1Data(
 	return canonicalEth1Data, canonicalEth1DataHeight, nil
 }
 
-func (vs *Server) mockETH1DataVote(ctx context.Context, slot primitives.Slot) (*ethpb.Eth1Data, error) {
+func (vs *Server) mockETH1DataVote(ctx context.Context, slot primitives.Slot) (*zondpb.Eth1Data, error) {
 	if !eth1DataNotification {
 		log.Warn("Beacon Node is no longer connected to an ETH1 chain, so ETH1 data votes are now mocked.")
 		eth1DataNotification = true
@@ -148,14 +148,14 @@ func (vs *Server) mockETH1DataVote(ctx context.Context, slot primitives.Slot) (*
 	enc = fastssz.MarshalUint64(enc, uint64(slots.ToEpoch(slot))+uint64(slotInVotingPeriod))
 	depRoot := hash.Hash(enc)
 	blockHash := hash.Hash(depRoot[:])
-	return &ethpb.Eth1Data{
+	return &zondpb.Eth1Data{
 		DepositRoot:  depRoot[:],
 		DepositCount: headState.Eth1DepositIndex(),
 		BlockHash:    blockHash[:],
 	}, nil
 }
 
-func (vs *Server) randomETH1DataVote(ctx context.Context) (*ethpb.Eth1Data, error) {
+func (vs *Server) randomETH1DataVote(ctx context.Context) (*zondpb.Eth1Data, error) {
 	if !eth1DataNotification {
 		log.Warn("Beacon Node is no longer connected to an ETH1 chain, so ETH1 data votes are now random.")
 		eth1DataNotification = true
@@ -170,7 +170,7 @@ func (vs *Server) randomETH1DataVote(ctx context.Context) (*ethpb.Eth1Data, erro
 	randGen := rand.NewGenerator()
 	depRoot := hash.Hash(bytesutil.Bytes32(randGen.Uint64()))
 	blockHash := hash.Hash(bytesutil.Bytes32(randGen.Uint64()))
-	return &ethpb.Eth1Data{
+	return &zondpb.Eth1Data{
 		DepositRoot:  depRoot[:],
 		DepositCount: headState.Eth1DepositIndex(),
 		BlockHash:    blockHash[:],

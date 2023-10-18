@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
@@ -19,23 +19,23 @@ import (
 func TestProcessSlashings(t *testing.T) {
 	tests := []struct {
 		name      string
-		block     *ethpb.BeaconBlock
+		block     *zondpb.BeaconBlock
 		wantedErr string
 	}{
 		{
 			name: "Proposer slashing a tracked index",
-			block: &ethpb.BeaconBlock{
-				Body: &ethpb.BeaconBlockBody{
-					ProposerSlashings: []*ethpb.ProposerSlashing{
+			block: &zondpb.BeaconBlock{
+				Body: &zondpb.BeaconBlockBody{
+					ProposerSlashings: []*zondpb.ProposerSlashing{
 						{
-							Header_1: &ethpb.SignedBeaconBlockHeader{
-								Header: &ethpb.BeaconBlockHeader{
+							Header_1: &zondpb.SignedBeaconBlockHeader{
+								Header: &zondpb.BeaconBlockHeader{
 									ProposerIndex: 2,
 									Slot:          params.BeaconConfig().SlotsPerEpoch + 1,
 								},
 							},
-							Header_2: &ethpb.SignedBeaconBlockHeader{
-								Header: &ethpb.BeaconBlockHeader{
+							Header_2: &zondpb.SignedBeaconBlockHeader{
+								Header: &zondpb.BeaconBlockHeader{
 									ProposerIndex: 2,
 									Slot:          0,
 								},
@@ -48,18 +48,18 @@ func TestProcessSlashings(t *testing.T) {
 		},
 		{
 			name: "Proposer slashing an untracked index",
-			block: &ethpb.BeaconBlock{
-				Body: &ethpb.BeaconBlockBody{
-					ProposerSlashings: []*ethpb.ProposerSlashing{
+			block: &zondpb.BeaconBlock{
+				Body: &zondpb.BeaconBlockBody{
+					ProposerSlashings: []*zondpb.ProposerSlashing{
 						{
-							Header_1: &ethpb.SignedBeaconBlockHeader{
-								Header: &ethpb.BeaconBlockHeader{
+							Header_1: &zondpb.SignedBeaconBlockHeader{
+								Header: &zondpb.BeaconBlockHeader{
 									ProposerIndex: 3,
 									Slot:          params.BeaconConfig().SlotsPerEpoch + 4,
 								},
 							},
-							Header_2: &ethpb.SignedBeaconBlockHeader{
-								Header: &ethpb.BeaconBlockHeader{
+							Header_2: &zondpb.SignedBeaconBlockHeader{
+								Header: &zondpb.BeaconBlockHeader{
 									ProposerIndex: 3,
 									Slot:          0,
 								},
@@ -72,17 +72,17 @@ func TestProcessSlashings(t *testing.T) {
 		},
 		{
 			name: "Attester slashing a tracked index",
-			block: &ethpb.BeaconBlock{
-				Body: &ethpb.BeaconBlockBody{
-					AttesterSlashings: []*ethpb.AttesterSlashing{
+			block: &zondpb.BeaconBlock{
+				Body: &zondpb.BeaconBlockBody{
+					AttesterSlashings: []*zondpb.AttesterSlashing{
 						{
-							Attestation_1: util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
-								Data: &ethpb.AttestationData{
-									Source: &ethpb.Checkpoint{Epoch: 1},
+							Attestation_1: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+								Data: &zondpb.AttestationData{
+									Source: &zondpb.Checkpoint{Epoch: 1},
 								},
 								AttestingIndices: []uint64{1, 3, 4},
 							}),
-							Attestation_2: util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
+							Attestation_2: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
 								AttestingIndices: []uint64{1, 5, 6},
 							}),
 						},
@@ -94,17 +94,17 @@ func TestProcessSlashings(t *testing.T) {
 		},
 		{
 			name: "Attester slashing untracked index",
-			block: &ethpb.BeaconBlock{
-				Body: &ethpb.BeaconBlockBody{
-					AttesterSlashings: []*ethpb.AttesterSlashing{
+			block: &zondpb.BeaconBlock{
+				Body: &zondpb.BeaconBlockBody{
+					AttesterSlashings: []*zondpb.AttesterSlashing{
 						{
-							Attestation_1: util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
-								Data: &ethpb.AttestationData{
-									Source: &ethpb.Checkpoint{Epoch: 1},
+							Attestation_1: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+								Data: &zondpb.AttestationData{
+									Source: &zondpb.Checkpoint{Epoch: 1},
 								},
 								AttestingIndices: []uint64{1, 3, 4},
 							}),
-							Attestation_2: util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
+							Attestation_2: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
 								AttestingIndices: []uint64{3, 5, 6},
 							}),
 						},
@@ -138,28 +138,28 @@ func TestProcessSlashings(t *testing.T) {
 func TestProcessProposedBlock(t *testing.T) {
 	tests := []struct {
 		name      string
-		block     *ethpb.BeaconBlock
+		block     *zondpb.BeaconBlock
 		wantedErr string
 	}{
 		{
 			name: "Block proposed by tracked validator",
-			block: &ethpb.BeaconBlock{
+			block: &zondpb.BeaconBlock{
 				Slot:          6,
 				ProposerIndex: 12,
 				ParentRoot:    bytesutil.PadTo([]byte("hello-world"), 32),
 				StateRoot:     bytesutil.PadTo([]byte("state-world"), 32),
-				Body:          &ethpb.BeaconBlockBody{},
+				Body:          &zondpb.BeaconBlockBody{},
 			},
 			wantedErr: "\"Proposed beacon block was included\" BalanceChange=100000000 BlockRoot=0x68656c6c6f2d NewBalance=32000000000 ParentRoot=0x68656c6c6f2d ProposerIndex=12 Slot=6 Version=0 prefix=monitor",
 		},
 		{
 			name: "Block proposed by untracked validator",
-			block: &ethpb.BeaconBlock{
+			block: &zondpb.BeaconBlock{
 				Slot:          6,
 				ProposerIndex: 13,
 				ParentRoot:    bytesutil.PadTo([]byte("hello-world"), 32),
 				StateRoot:     bytesutil.PadTo([]byte("state-world"), 32),
-				Body:          &ethpb.BeaconBlockBody{},
+				Body:          &zondpb.BeaconBlockBody{},
 			},
 		},
 	}

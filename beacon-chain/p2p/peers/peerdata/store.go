@@ -10,7 +10,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/theQRL/go-zond/p2p/enr"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/metadata"
 )
 
@@ -24,7 +24,7 @@ var (
 )
 
 // PeerConnectionState is the state of the connection.
-type PeerConnectionState ethpb.ConnectionState
+type PeerConnectionState zondpb.ConnectionState
 
 // StoreConfig holds peer store parameters.
 type StoreConfig struct {
@@ -54,7 +54,7 @@ type PeerData struct {
 	NextValidTime time.Time
 	// Chain related data.
 	MetaData                  metadata.Metadata
-	ChainState                *ethpb.Status
+	ChainState                *zondpb.Status
 	ChainStateLastUpdated     time.Time
 	ChainStateValidationError error
 	// Scorers internal data.
@@ -62,7 +62,7 @@ type PeerData struct {
 	ProcessedBlocks      uint64
 	BlockProviderUpdated time.Time
 	// Gossip Scoring data.
-	TopicScores      map[string]*ethpb.TopicScoreSnapshot
+	TopicScores      map[string]*zondpb.TopicScoreSnapshot
 	GossipScore      float64
 	BehaviourPenalty float64
 }

@@ -10,7 +10,7 @@ import (
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	validatorserviceconfig "github.com/theQRL/qrysm/v4/config/validator/service"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
 	iface2 "github.com/theQRL/qrysm/v4/validator/client/iface"
 	"github.com/theQRL/qrysm/v4/validator/keymanager"
@@ -199,7 +199,7 @@ func (_ *MockValidator) SetPubKeyToValidatorIndexMap(_ context.Context, _ keyman
 }
 
 // SignValidatorRegistrationRequest for mocking
-func (_ *MockValidator) SignValidatorRegistrationRequest(_ context.Context, _ iface2.SigningFunc, _ *ethpb.ValidatorRegistrationV1) (*ethpb.SignedValidatorRegistrationV1, error) {
+func (_ *MockValidator) SignValidatorRegistrationRequest(_ context.Context, _ iface2.SigningFunc, _ *zondpb.ValidatorRegistrationV1) (*zondpb.SignedValidatorRegistrationV1, error) {
 	panic("implement me")
 }
 

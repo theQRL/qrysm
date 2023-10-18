@@ -6,7 +6,7 @@ import (
 
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
@@ -20,7 +20,7 @@ func TestServer_SetSyncAggregate_EmptyCase(t *testing.T) {
 	require.NoError(t, err)
 
 	emptySig := [96]byte{0xC0}
-	want := &ethpb.SyncAggregate{
+	want := &zondpb.SyncAggregate{
 		SyncCommitteeBits:      make([]byte, params.BeaconConfig().SyncCommitteeSize/8),
 		SyncCommitteeSignature: emptySig[:],
 	}

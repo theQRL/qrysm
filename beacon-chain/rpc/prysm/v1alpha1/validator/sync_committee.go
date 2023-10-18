@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -23,7 +23,7 @@ import (
 // GetSyncMessageBlockRoot retrieves the sync committee block root of the beacon chain.
 func (vs *Server) GetSyncMessageBlockRoot(
 	ctx context.Context, _ *emptypb.Empty,
-) (*ethpb.SyncMessageBlockRootResponse, error) {
+) (*zondpb.SyncMessageBlockRootResponse, error) {
 	// An optimistic validator MUST NOT participate in sync committees
 	// (i.e., sign across the DOMAIN_SYNC_COMMITTEE, DOMAIN_SYNC_COMMITTEE_SELECTION_PROOF or DOMAIN_CONTRIBUTION_AND_PROOF domains).
 	if err := vs.optimisticStatus(ctx); err != nil {
@@ -35,14 +35,14 @@ func (vs *Server) GetSyncMessageBlockRoot(
 		return nil, status.Errorf(codes.Internal, "Could not retrieve head root: %v", err)
 	}
 
-	return &ethpb.SyncMessageBlockRootResponse{
+	return &zondpb.SyncMessageBlockRootResponse{
 		Root: r,
 	}, nil
 }
 
 // SubmitSyncMessage submits the sync committee message to the network.
 // It also saves the sync committee message into the pending pool for block inclusion.
-func (vs *Server) SubmitSyncMessage(ctx context.Context, msg *ethpb.SyncCommitteeMessage) (*emptypb.Empty, error) {
+func (vs *Server) SubmitSyncMessage(ctx context.Context, msg *zondpb.SyncCommitteeMessage) (*emptypb.Empty, error) {
 	errs, ctx := errgroup.WithContext(ctx)
 
 	headSyncCommitteeIndices, err := vs.HeadFetcher.HeadSyncCommitteeIndices(ctx, msg.ValidatorIndex, msg.Slot)
@@ -71,8 +71,8 @@ func (vs *Server) SubmitSyncMessage(ctx context.Context, msg *ethpb.SyncCommitte
 // GetSyncSubcommitteeIndex is called by a sync committee participant to get
 // its subcommittee index for sync message aggregation duty.
 func (vs *Server) GetSyncSubcommitteeIndex(
-	ctx context.Context, req *ethpb.SyncSubcommitteeIndexRequest,
-) (*ethpb.SyncSubcommitteeIndexResponse, error) {
+	ctx context.Context, req *zondpb.SyncSubcommitteeIndexRequest,
+) (*zondpb.SyncSubcommitteeIndexResponse, error) {
 	index, exists := vs.HeadFetcher.HeadPublicKeyToValidatorIndex(bytesutil.ToBytes2592(req.PublicKey))
 	if !exists {
 		return nil, errors.New("public key does not exist in state")
@@ -81,14 +81,14 @@ func (vs *Server) GetSyncSubcommitteeIndex(
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get sync subcommittee index: %v", err)
 	}
-	return &ethpb.SyncSubcommitteeIndexResponse{Indices: indices}, nil
+	return &zondpb.SyncSubcommitteeIndexResponse{Indices: indices}, nil
 }
 
 // GetSyncCommitteeContribution is called by a sync committee aggregator
 // to retrieve sync committee contribution object.
 func (vs *Server) GetSyncCommitteeContribution(
-	ctx context.Context, req *ethpb.SyncCommitteeContributionRequest,
-) (*ethpb.SyncCommitteeContribution, error) {
+	ctx context.Context, req *zondpb.SyncCommitteeContributionRequest,
+) (*zondpb.SyncCommitteeContribution, error) {
 	// An optimistic validator MUST NOT participate in sync committees
 	// (i.e., sign across the DOMAIN_SYNC_COMMITTEE, DOMAIN_SYNC_COMMITTEE_SELECTION_PROOF or DOMAIN_CONTRIBUTION_AND_PROOF domains).
 	if err := vs.optimisticStatus(ctx); err != nil {
@@ -107,7 +107,7 @@ func (vs *Server) GetSyncCommitteeContribution(
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get contribution data: %v", err)
 	}
-	contribution := &ethpb.SyncCommitteeContribution{
+	contribution := &zondpb.SyncCommitteeContribution{
 		Slot:              req.Slot,
 		BlockRoot:         headRoot,
 		SubcommitteeIndex: req.SubnetId,
@@ -121,7 +121,7 @@ func (vs *Server) GetSyncCommitteeContribution(
 // SubmitSignedContributionAndProof is called by a sync committee aggregator
 // to submit signed contribution and proof object.
 func (vs *Server) SubmitSignedContributionAndProof(
-	ctx context.Context, s *ethpb.SignedContributionAndProof,
+	ctx context.Context, s *zondpb.SignedContributionAndProof,
 ) (*emptypb.Empty, error) {
 	errs, ctx := errgroup.WithContext(ctx)
 
@@ -153,26 +153,26 @@ func (vs *Server) SubmitSignedContributionAndProof(
 // associated with a particular set of sync committee messages.
 func (vs *Server) AggregatedSigAndAggregationBits(
 	ctx context.Context,
-	req *ethpb.AggregatedSigAndAggregationBitsRequest,
-) (*ethpb.AggregatedSigAndAggregationBitsResponse, error) {
+	req *zondpb.AggregatedSigAndAggregationBitsRequest,
+) (*zondpb.AggregatedSigAndAggregationBitsResponse, error) {
 	aggregatedSig, bits, err := vs.aggregatedSigAndAggregationBits(ctx, req.Msgs, req.Slot, req.SubnetId, req.BlockRoot)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return &ethpb.AggregatedSigAndAggregationBitsResponse{AggregatedSig: aggregatedSig, Bits: bits}, nil
+	return &zondpb.AggregatedSigAndAggregationBitsResponse{AggregatedSig: aggregatedSig, Bits: bits}, nil
 }
 
 func (vs *Server) aggregatedSigAndAggregationBits(
 	ctx context.Context,
-	msgs []*ethpb.SyncCommitteeMessage,
+	msgs []*zondpb.SyncCommitteeMessage,
 	slot primitives.Slot,
 	subnetId uint64,
 	blockRoot []byte,
 ) ([]byte, []byte, error) {
 	subCommitteeSize := params.BeaconConfig().SyncCommitteeSize / params.BeaconConfig().SyncCommitteeSubnetCount
 	sigs := make([][]byte, 0, subCommitteeSize)
-	bits := ethpb.NewSyncCommitteeAggregationBits()
-	syncCommitteeIndicesSigMap := make(map[primitives.CommitteeIndex]*ethpb.SyncCommitteeMessage)
+	bits := zondpb.NewSyncCommitteeAggregationBits()
+	syncCommitteeIndicesSigMap := make(map[primitives.CommitteeIndex]*zondpb.SyncCommitteeMessage)
 	appendedSyncCommitteeIndices := make([]primitives.CommitteeIndex, 0)
 
 	for _, msg := range msgs {

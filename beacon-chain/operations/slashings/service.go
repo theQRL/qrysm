@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/container/slice"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/trailofbits/go-mutexasserts"
 	"go.opencensus.io/trace"
 )
@@ -21,7 +21,7 @@ import (
 // NewPool returns an initialized attester slashing and proposer slashing pool.
 func NewPool() *Pool {
 	return &Pool{
-		pendingProposerSlashing: make([]*ethpb.ProposerSlashing, 0),
+		pendingProposerSlashing: make([]*zondpb.ProposerSlashing, 0),
 		pendingAttesterSlashing: make([]*PendingAttesterSlashing, 0),
 		included:                make(map[primitives.ValidatorIndex]bool),
 	}
@@ -30,7 +30,7 @@ func NewPool() *Pool {
 // PendingAttesterSlashings returns attester slashings that are able to be included into a block.
 // This method will return the amount of pending attester slashings for a block transition unless parameter `noLimit` is true
 // to indicate the request is for noLimit pending items.
-func (p *Pool) PendingAttesterSlashings(ctx context.Context, state state.ReadOnlyBeaconState, noLimit bool) []*ethpb.AttesterSlashing {
+func (p *Pool) PendingAttesterSlashings(ctx context.Context, state state.ReadOnlyBeaconState, noLimit bool) []*zondpb.AttesterSlashing {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	ctx, span := trace.StartSpan(ctx, "operations.PendingAttesterSlashing")
@@ -46,7 +46,7 @@ func (p *Pool) PendingAttesterSlashings(ctx context.Context, state state.ReadOnl
 	if noLimit {
 		maxSlashings = uint64(len(p.pendingAttesterSlashing))
 	}
-	pending := make([]*ethpb.AttesterSlashing, 0, maxSlashings)
+	pending := make([]*zondpb.AttesterSlashing, 0, maxSlashings)
 	for i := 0; i < len(p.pendingAttesterSlashing); i++ {
 		if uint64(len(pending)) >= maxSlashings {
 			break
@@ -77,7 +77,7 @@ func (p *Pool) PendingAttesterSlashings(ctx context.Context, state state.ReadOnl
 // PendingProposerSlashings returns proposer slashings that are able to be included into a block.
 // This method will return the amount of pending proposer slashings for a block transition unless the `noLimit` parameter
 // is set to true to indicate the request is for noLimit pending items.
-func (p *Pool) PendingProposerSlashings(ctx context.Context, state state.ReadOnlyBeaconState, noLimit bool) []*ethpb.ProposerSlashing {
+func (p *Pool) PendingProposerSlashings(ctx context.Context, state state.ReadOnlyBeaconState, noLimit bool) []*zondpb.ProposerSlashing {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	ctx, span := trace.StartSpan(ctx, "operations.PendingProposerSlashing")
@@ -91,7 +91,7 @@ func (p *Pool) PendingProposerSlashings(ctx context.Context, state state.ReadOnl
 	if noLimit {
 		maxSlashings = uint64(len(p.pendingProposerSlashing))
 	}
-	pending := make([]*ethpb.ProposerSlashing, 0, maxSlashings)
+	pending := make([]*zondpb.ProposerSlashing, 0, maxSlashings)
 	for i := 0; i < len(p.pendingProposerSlashing); i++ {
 		if uint64(len(pending)) >= maxSlashings {
 			break
@@ -118,7 +118,7 @@ func (p *Pool) PendingProposerSlashings(ctx context.Context, state state.ReadOnl
 func (p *Pool) InsertAttesterSlashing(
 	ctx context.Context,
 	state state.ReadOnlyBeaconState,
-	slashing *ethpb.AttesterSlashing,
+	slashing *zondpb.AttesterSlashing,
 ) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
@@ -183,7 +183,7 @@ func (p *Pool) InsertAttesterSlashing(
 func (p *Pool) InsertProposerSlashing(
 	ctx context.Context,
 	state state.ReadOnlyBeaconState,
-	slashing *ethpb.ProposerSlashing,
+	slashing *zondpb.ProposerSlashing,
 ) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
@@ -229,7 +229,7 @@ func (p *Pool) InsertProposerSlashing(
 // MarkIncludedAttesterSlashing is used when an attester slashing has been included in a beacon block.
 // Every block seen by this node that contains proposer slashings should call this method to include
 // the proposer slashings.
-func (p *Pool) MarkIncludedAttesterSlashing(as *ethpb.AttesterSlashing) {
+func (p *Pool) MarkIncludedAttesterSlashing(as *zondpb.AttesterSlashing) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	slashedVal := slice.IntersectionUint64(as.Attestation_1.AttestingIndices, as.Attestation_2.AttestingIndices)
@@ -248,7 +248,7 @@ func (p *Pool) MarkIncludedAttesterSlashing(as *ethpb.AttesterSlashing) {
 // MarkIncludedProposerSlashing is used when an proposer slashing has been included in a beacon block.
 // Every block seen by this node that contains proposer slashings should call this method to include
 // the proposer slashings.
-func (p *Pool) MarkIncludedProposerSlashing(ps *ethpb.ProposerSlashing) {
+func (p *Pool) MarkIncludedProposerSlashing(ps *zondpb.ProposerSlashing) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	i := sort.Search(len(p.pendingProposerSlashing), func(i int) bool {

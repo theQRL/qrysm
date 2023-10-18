@@ -6,13 +6,13 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // SetValidators for the beacon state. Updates the entire
 // to a new value by overwriting the previous one.
-func (b *BeaconState) SetValidators(val []*ethpb.Validator) error {
+func (b *BeaconState) SetValidators(val []*zondpb.Validator) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
@@ -27,7 +27,7 @@ func (b *BeaconState) SetValidators(val []*ethpb.Validator) error {
 
 // ApplyToEveryValidator applies the provided callback function to each validator in the
 // validator registry.
-func (b *BeaconState) ApplyToEveryValidator(f func(idx int, val *ethpb.Validator) (bool, *ethpb.Validator, error)) error {
+func (b *BeaconState) ApplyToEveryValidator(f func(idx int, val *zondpb.Validator) (bool, *zondpb.Validator, error)) error {
 	b.lock.Lock()
 	v := b.validators
 	if ref := b.sharedFieldReferences[types.Validators]; ref.Refs() > 1 {
@@ -60,7 +60,7 @@ func (b *BeaconState) ApplyToEveryValidator(f func(idx int, val *ethpb.Validator
 
 // UpdateValidatorAtIndex for the beacon state. Updates the validator
 // at a specific index to a new value.
-func (b *BeaconState) UpdateValidatorAtIndex(idx primitives.ValidatorIndex, val *ethpb.Validator) error {
+func (b *BeaconState) UpdateValidatorAtIndex(idx primitives.ValidatorIndex, val *zondpb.Validator) error {
 	if uint64(len(b.validators)) <= uint64(idx) {
 		return errors.Errorf("invalid index provided %d", idx)
 	}
@@ -160,7 +160,7 @@ func (b *BeaconState) UpdateSlashingsAtIndex(idx, val uint64) error {
 
 // AppendValidator for the beacon state. Appends the new value
 // to the end of list.
-func (b *BeaconState) AppendValidator(val *ethpb.Validator) error {
+func (b *BeaconState) AppendValidator(val *zondpb.Validator) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 

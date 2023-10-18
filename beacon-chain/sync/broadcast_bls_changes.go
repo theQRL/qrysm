@@ -8,7 +8,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	types "github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/rand"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -33,7 +33,7 @@ func (s *Service) broadcastDilithiumChanges(currSlot types.Slot) {
 	}
 	source := rand.NewGenerator()
 	length := len(changes)
-	broadcastChanges := make([]*ethpb.SignedDilithiumToExecutionChange, length)
+	broadcastChanges := make([]*zondpb.SignedDilithiumToExecutionChange, length)
 	for i := 0; i < length; i++ {
 		idx := source.Intn(len(changes))
 		broadcastChanges[i] = changes[idx]
@@ -43,7 +43,7 @@ func (s *Service) broadcastDilithiumChanges(currSlot types.Slot) {
 	go s.rateDilithiumChanges(s.ctx, broadcastChanges)
 }
 
-func (s *Service) broadcastDilithiumBatch(ctx context.Context, ptr *[]*ethpb.SignedDilithiumToExecutionChange) {
+func (s *Service) broadcastDilithiumBatch(ctx context.Context, ptr *[]*zondpb.SignedDilithiumToExecutionChange) {
 	limit := broadcastDilithiumChangesRateLimit
 	if len(*ptr) < broadcastDilithiumChangesRateLimit {
 		limit = len(*ptr)
@@ -68,7 +68,7 @@ func (s *Service) broadcastDilithiumBatch(ctx context.Context, ptr *[]*ethpb.Sig
 	*ptr = (*ptr)[limit:]
 }
 
-func (s *Service) rateDilithiumChanges(ctx context.Context, changes []*ethpb.SignedDilithiumToExecutionChange) {
+func (s *Service) rateDilithiumChanges(ctx context.Context, changes []*zondpb.SignedDilithiumToExecutionChange) {
 	s.broadcastDilithiumBatch(ctx, &changes)
 	if len(changes) == 0 {
 		return

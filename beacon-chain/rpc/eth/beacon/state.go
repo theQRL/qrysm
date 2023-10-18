@@ -10,9 +10,9 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	eth2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zond2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
@@ -27,7 +27,7 @@ type stateRequest struct {
 }
 
 // GetGenesis retrieves details of the chain's genesis which can be used to identify chain.
-func (bs *Server) GetGenesis(ctx context.Context, _ *emptypb.Empty) (*ethpb.GenesisResponse, error) {
+func (bs *Server) GetGenesis(ctx context.Context, _ *emptypb.Empty) (*zondpb.GenesisResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.GetGenesis")
 	defer span.End()
 
@@ -41,8 +41,8 @@ func (bs *Server) GetGenesis(ctx context.Context, _ *emptypb.Empty) (*ethpb.Gene
 	}
 	forkVersion := params.BeaconConfig().GenesisForkVersion
 
-	return &ethpb.GenesisResponse{
-		Data: &ethpb.GenesisResponse_Genesis{
+	return &zondpb.GenesisResponse{
+		Data: &zondpb.GenesisResponse_Genesis{
 			GenesisTime: &timestamppb.Timestamp{
 				Seconds: genesisTime.Unix(),
 				Nanos:   0,
@@ -54,7 +54,7 @@ func (bs *Server) GetGenesis(ctx context.Context, _ *emptypb.Empty) (*ethpb.Gene
 }
 
 // GetStateRoot calculates HashTreeRoot for state with given 'stateId'. If stateId is root, same value will be returned.
-func (bs *Server) GetStateRoot(ctx context.Context, req *ethpb.StateRequest) (*ethpb.StateRootResponse, error) {
+func (bs *Server) GetStateRoot(ctx context.Context, req *zondpb.StateRequest) (*zondpb.StateRootResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.GetStateRoot")
 	defer span.End()
 
@@ -81,8 +81,8 @@ func (bs *Server) GetStateRoot(ctx context.Context, req *ethpb.StateRequest) (*e
 	}
 	isFinalized := bs.FinalizationFetcher.IsFinalized(ctx, blockRoot)
 
-	return &ethpb.StateRootResponse{
-		Data: &ethpb.StateRootResponse_StateRoot{
+	return &zondpb.StateRootResponse{
+		Data: &zondpb.StateRootResponse_StateRoot{
 			Root: stateRoot,
 		},
 		ExecutionOptimistic: isOptimistic,
@@ -91,7 +91,7 @@ func (bs *Server) GetStateRoot(ctx context.Context, req *ethpb.StateRequest) (*e
 }
 
 // GetStateFork returns Fork object for state with given 'stateId'.
-func (bs *Server) GetStateFork(ctx context.Context, req *ethpb.StateRequest) (*ethpb.StateForkResponse, error) {
+func (bs *Server) GetStateFork(ctx context.Context, req *zondpb.StateRequest) (*zondpb.StateForkResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.GetStateFork")
 	defer span.End()
 
@@ -110,8 +110,8 @@ func (bs *Server) GetStateFork(ctx context.Context, req *ethpb.StateRequest) (*e
 	}
 	isFinalized := bs.FinalizationFetcher.IsFinalized(ctx, blockRoot)
 
-	return &ethpb.StateForkResponse{
-		Data: &ethpb.Fork{
+	return &zondpb.StateForkResponse{
+		Data: &zondpb.Fork{
 			PreviousVersion: fork.PreviousVersion,
 			CurrentVersion:  fork.CurrentVersion,
 			Epoch:           fork.Epoch,
@@ -123,7 +123,7 @@ func (bs *Server) GetStateFork(ctx context.Context, req *ethpb.StateRequest) (*e
 
 // GetFinalityCheckpoints returns finality checkpoints for state with given 'stateId'. In case finality is
 // not yet achieved, checkpoint should return epoch 0 and ZERO_HASH as root.
-func (bs *Server) GetFinalityCheckpoints(ctx context.Context, req *ethpb.StateRequest) (*ethpb.StateFinalityCheckpointResponse, error) {
+func (bs *Server) GetFinalityCheckpoints(ctx context.Context, req *zondpb.StateRequest) (*zondpb.StateFinalityCheckpointResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.GetFinalityCheckpoints")
 	defer span.End()
 
@@ -141,8 +141,8 @@ func (bs *Server) GetFinalityCheckpoints(ctx context.Context, req *ethpb.StateRe
 	}
 	isFinalized := bs.FinalizationFetcher.IsFinalized(ctx, blockRoot)
 
-	return &ethpb.StateFinalityCheckpointResponse{
-		Data: &ethpb.StateFinalityCheckpointResponse_StateFinalityCheckpoint{
+	return &zondpb.StateFinalityCheckpointResponse{
+		Data: &zondpb.StateFinalityCheckpointResponse_StateFinalityCheckpoint{
 			PreviousJustified: checkpoint(st.PreviousJustifiedCheckpoint()),
 			CurrentJustified:  checkpoint(st.CurrentJustifiedCheckpoint()),
 			Finalized:         checkpoint(st.FinalizedCheckpoint()),
@@ -156,7 +156,7 @@ func (bs *Server) GetFinalityCheckpoints(ctx context.Context, req *ethpb.StateRe
 // If an epoch is not specified then the RANDAO mix for the state's current epoch will be returned.
 // By adjusting the state_id parameter you can query for any historic value of the RANDAO mix.
 // Ordinarily states from the same epoch will mutate the RANDAO mix for that epoch as blocks are applied.
-func (bs *Server) GetRandao(ctx context.Context, req *eth2.RandaoRequest) (*eth2.RandaoResponse, error) {
+func (bs *Server) GetRandao(ctx context.Context, req *zond2.RandaoRequest) (*zond2.RandaoResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.GetRandao")
 	defer span.End()
 
@@ -197,8 +197,8 @@ func (bs *Server) GetRandao(ctx context.Context, req *eth2.RandaoRequest) (*eth2
 	}
 	isFinalized := bs.FinalizationFetcher.IsFinalized(ctx, blockRoot)
 
-	return &eth2.RandaoResponse{
-		Data:                &eth2.RandaoResponse_Randao{Randao: randao},
+	return &zond2.RandaoResponse{
+		Data:                &zond2.RandaoResponse_Randao{Randao: randao},
 		ExecutionOptimistic: isOptimistic,
 		Finalized:           isFinalized,
 	}, nil
@@ -229,14 +229,14 @@ func (bs *Server) stateFromRequest(ctx context.Context, req *stateRequest) (stat
 	return st, nil
 }
 
-func checkpoint(sourceCheckpoint *eth.Checkpoint) *ethpb.Checkpoint {
+func checkpoint(sourceCheckpoint *zond.Checkpoint) *zondpb.Checkpoint {
 	if sourceCheckpoint != nil {
-		return &ethpb.Checkpoint{
+		return &zondpb.Checkpoint{
 			Epoch: sourceCheckpoint.Epoch,
 			Root:  sourceCheckpoint.Root,
 		}
 	}
-	return &ethpb.Checkpoint{
+	return &zondpb.Checkpoint{
 		Epoch: 0,
 		Root:  params.BeaconConfig().ZeroHash[:],
 	}

@@ -4,7 +4,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
@@ -26,11 +26,11 @@ func (b *BeaconState) LatestExecutionPayloadHeader() (interfaces.ExecutionData, 
 // latestExecutionPayloadHeaderVal of the beacon state.
 // This assumes that a lock is already held on BeaconState.
 func (b *BeaconState) latestExecutionPayloadHeaderVal() *enginev1.ExecutionPayloadHeader {
-	return ethpb.CopyExecutionPayloadHeader(b.latestExecutionPayloadHeader)
+	return zondpb.CopyExecutionPayloadHeader(b.latestExecutionPayloadHeader)
 }
 
 // latestExecutionPayloadHeaderCapellaVal of the beacon state.
 // This assumes that a lock is already held on BeaconState.
 func (b *BeaconState) latestExecutionPayloadHeaderCapellaVal() *enginev1.ExecutionPayloadHeaderCapella {
-	return ethpb.CopyExecutionPayloadHeaderCapella(b.latestExecutionPayloadHeaderCapella)
+	return zondpb.CopyExecutionPayloadHeaderCapella(b.latestExecutionPayloadHeaderCapella)
 }

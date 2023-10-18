@@ -7,13 +7,13 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
 	opfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 // ProposeExit proposes an exit for a validator.
-func (vs *Server) ProposeExit(ctx context.Context, req *ethpb.SignedVoluntaryExit) (*ethpb.ProposeExitResponse, error) {
+func (vs *Server) ProposeExit(ctx context.Context, req *zondpb.SignedVoluntaryExit) (*zondpb.ProposeExitResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "nil request")
 	}
@@ -52,7 +52,7 @@ func (vs *Server) ProposeExit(ctx context.Context, req *ethpb.SignedVoluntaryExi
 		return nil, status.Errorf(codes.Internal, "Could not get tree hash of exit: %v", err)
 	}
 
-	return &ethpb.ProposeExitResponse{
+	return &zondpb.ProposeExitResponse{
 		ExitRoot: r[:],
 	}, vs.P2P.Broadcast(ctx, req)
 }

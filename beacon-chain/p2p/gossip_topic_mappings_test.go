@@ -7,7 +7,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
@@ -39,21 +39,21 @@ func TestGossipTopicMappings_CorrectBlockType(t *testing.T) {
 
 	// Phase 0
 	pMessage := GossipTopicMappings(BlockSubnetTopicFormat, 0)
-	_, ok := pMessage.(*ethpb.SignedBeaconBlock)
+	_, ok := pMessage.(*zondpb.SignedBeaconBlock)
 	assert.Equal(t, true, ok)
 
 	// Altair Fork
 	pMessage = GossipTopicMappings(BlockSubnetTopicFormat, altairForkEpoch)
-	_, ok = pMessage.(*ethpb.SignedBeaconBlockAltair)
+	_, ok = pMessage.(*zondpb.SignedBeaconBlockAltair)
 	assert.Equal(t, true, ok)
 
 	// Bellatrix Fork
 	pMessage = GossipTopicMappings(BlockSubnetTopicFormat, BellatrixForkEpoch)
-	_, ok = pMessage.(*ethpb.SignedBeaconBlockBellatrix)
+	_, ok = pMessage.(*zondpb.SignedBeaconBlockBellatrix)
 	assert.Equal(t, true, ok)
 
 	// Capella Fork
 	pMessage = GossipTopicMappings(BlockSubnetTopicFormat, CapellaForkEpoch)
-	_, ok = pMessage.(*ethpb.SignedBeaconBlockCapella)
+	_, ok = pMessage.(*zondpb.SignedBeaconBlockCapella)
 	assert.Equal(t, true, ok)
 }

@@ -3,7 +3,7 @@ package state_native
 import (
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // SetJustificationBits for the beacon state.
@@ -17,7 +17,7 @@ func (b *BeaconState) SetJustificationBits(val bitfield.Bitvector4) error {
 }
 
 // SetPreviousJustifiedCheckpoint for the beacon state.
-func (b *BeaconState) SetPreviousJustifiedCheckpoint(val *ethpb.Checkpoint) error {
+func (b *BeaconState) SetPreviousJustifiedCheckpoint(val *zondpb.Checkpoint) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
@@ -27,7 +27,7 @@ func (b *BeaconState) SetPreviousJustifiedCheckpoint(val *ethpb.Checkpoint) erro
 }
 
 // SetCurrentJustifiedCheckpoint for the beacon state.
-func (b *BeaconState) SetCurrentJustifiedCheckpoint(val *ethpb.Checkpoint) error {
+func (b *BeaconState) SetCurrentJustifiedCheckpoint(val *zondpb.Checkpoint) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
@@ -37,7 +37,7 @@ func (b *BeaconState) SetCurrentJustifiedCheckpoint(val *ethpb.Checkpoint) error
 }
 
 // SetFinalizedCheckpoint for the beacon state.
-func (b *BeaconState) SetFinalizedCheckpoint(val *ethpb.Checkpoint) error {
+func (b *BeaconState) SetFinalizedCheckpoint(val *zondpb.Checkpoint) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 

@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time"
 )
 
@@ -28,7 +28,7 @@ var (
 
 // GenerateGenesisState deterministically given a genesis time and number of validators.
 // If a genesis time of 0 is supplied it is set to the current time.
-func GenerateGenesisState(ctx context.Context, genesisTime, numValidators uint64) (*ethpb.BeaconState, []*ethpb.Deposit, error) {
+func GenerateGenesisState(ctx context.Context, genesisTime, numValidators uint64) (*zondpb.BeaconState, []*zondpb.Deposit, error) {
 	privKeys, pubKeys, err := DeterministicallyGenerateKeys(0 /*startIndex*/, numValidators)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "could not deterministically generate keys for %d validators", numValidators)
@@ -43,8 +43,8 @@ func GenerateGenesisState(ctx context.Context, genesisTime, numValidators uint64
 // GenerateGenesisStateFromDepositData creates a genesis state given a list of
 // deposit data items and their corresponding roots.
 func GenerateGenesisStateFromDepositData(
-	ctx context.Context, genesisTime uint64, depositData []*ethpb.Deposit_Data, depositDataRoots [][]byte,
-) (*ethpb.BeaconState, []*ethpb.Deposit, error) {
+	ctx context.Context, genesisTime uint64, depositData []*zondpb.Deposit_Data, depositDataRoots [][]byte,
+) (*zondpb.BeaconState, []*zondpb.Deposit, error) {
 	t, err := trie.GenerateTrieFromItems(depositDataRoots, params.BeaconConfig().DepositContractTreeDepth)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "could not generate Merkle trie for deposit proofs")
@@ -60,7 +60,7 @@ func GenerateGenesisStateFromDepositData(
 	if genesisTime == 0 {
 		genesisTime = uint64(time.Now().Unix())
 	}
-	beaconState, err := coreState.GenesisBeaconState(ctx, deposits, genesisTime, &ethpb.Eth1Data{
+	beaconState, err := coreState.GenesisBeaconState(ctx, deposits, genesisTime, &zondpb.Eth1Data{
 		DepositRoot:  root[:],
 		DepositCount: uint64(len(deposits)),
 		BlockHash:    mockEth1BlockHash,
@@ -77,8 +77,8 @@ func GenerateGenesisStateFromDepositData(
 }
 
 // GenerateDepositsFromData a list of deposit items by creating proofs for each of them from a sparse Merkle trie.
-func GenerateDepositsFromData(depositDataItems []*ethpb.Deposit_Data, trie *trie.SparseMerkleTrie) ([]*ethpb.Deposit, error) {
-	deposits := make([]*ethpb.Deposit, len(depositDataItems))
+func GenerateDepositsFromData(depositDataItems []*zondpb.Deposit_Data, trie *trie.SparseMerkleTrie) ([]*zondpb.Deposit, error) {
+	deposits := make([]*zondpb.Deposit, len(depositDataItems))
 	results, err := async.Scatter(len(depositDataItems), func(offset int, entries int, _ *sync.RWMutex) (interface{}, error) {
 		return generateDepositsFromData(depositDataItems[offset:offset+entries], offset, trie)
 	})
@@ -86,7 +86,7 @@ func GenerateDepositsFromData(depositDataItems []*ethpb.Deposit_Data, trie *trie
 		return nil, errors.Wrap(err, "failed to generate deposits from data")
 	}
 	for _, result := range results {
-		if depositExtent, ok := result.Extent.([]*ethpb.Deposit); ok {
+		if depositExtent, ok := result.Extent.([]*zondpb.Deposit); ok {
 			copy(deposits[result.Offset:], depositExtent)
 		} else {
 			return nil, errors.New("extent not of expected type")
@@ -96,14 +96,14 @@ func GenerateDepositsFromData(depositDataItems []*ethpb.Deposit_Data, trie *trie
 }
 
 // generateDepositsFromData a list of deposit items by creating proofs for each of them from a sparse Merkle trie.
-func generateDepositsFromData(depositDataItems []*ethpb.Deposit_Data, offset int, trie *trie.SparseMerkleTrie) ([]*ethpb.Deposit, error) {
-	deposits := make([]*ethpb.Deposit, len(depositDataItems))
+func generateDepositsFromData(depositDataItems []*zondpb.Deposit_Data, offset int, trie *trie.SparseMerkleTrie) ([]*zondpb.Deposit, error) {
+	deposits := make([]*zondpb.Deposit, len(depositDataItems))
 	for i, item := range depositDataItems {
 		proof, err := trie.MerkleProof(i + offset)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not generate proof for deposit %d", i+offset)
 		}
-		deposits[i] = &ethpb.Deposit{
+		deposits[i] = &zondpb.Deposit{
 			Proof: proof,
 			Data:  item,
 		}
@@ -112,12 +112,12 @@ func generateDepositsFromData(depositDataItems []*ethpb.Deposit_Data, offset int
 }
 
 // DepositDataFromKeys generates a list of deposit data items from a set of BLS validator keys.
-func DepositDataFromKeys(privKeys []dilithium.DilithiumKey, pubKeys []dilithium.PublicKey) ([]*ethpb.Deposit_Data, [][]byte, error) {
+func DepositDataFromKeys(privKeys []dilithium.DilithiumKey, pubKeys []dilithium.PublicKey) ([]*zondpb.Deposit_Data, [][]byte, error) {
 	type depositData struct {
-		items []*ethpb.Deposit_Data
+		items []*zondpb.Deposit_Data
 		roots [][]byte
 	}
-	depositDataItems := make([]*ethpb.Deposit_Data, len(privKeys))
+	depositDataItems := make([]*zondpb.Deposit_Data, len(privKeys))
 	depositDataRoots := make([][]byte, len(privKeys))
 	results, err := async.Scatter(len(privKeys), func(offset int, entries int, _ *sync.RWMutex) (interface{}, error) {
 		items, roots, err := depositDataFromKeys(privKeys[offset:offset+entries], pubKeys[offset:offset+entries], 0)
@@ -138,13 +138,13 @@ func DepositDataFromKeys(privKeys []dilithium.DilithiumKey, pubKeys []dilithium.
 }
 
 // DepositDataFromKeysWithExecCreds generates a list of deposit data items from a set of BLS validator keys.
-func DepositDataFromKeysWithExecCreds(privKeys []dilithium.DilithiumKey, pubKeys []dilithium.PublicKey, numOfCreds uint64) ([]*ethpb.Deposit_Data, [][]byte, error) {
+func DepositDataFromKeysWithExecCreds(privKeys []dilithium.DilithiumKey, pubKeys []dilithium.PublicKey, numOfCreds uint64) ([]*zondpb.Deposit_Data, [][]byte, error) {
 	return depositDataFromKeys(privKeys, pubKeys, numOfCreds)
 }
 
-func depositDataFromKeys(privKeys []dilithium.DilithiumKey, pubKeys []dilithium.PublicKey, numOfCreds uint64) ([]*ethpb.Deposit_Data, [][]byte, error) {
+func depositDataFromKeys(privKeys []dilithium.DilithiumKey, pubKeys []dilithium.PublicKey, numOfCreds uint64) ([]*zondpb.Deposit_Data, [][]byte, error) {
 	dataRoots := make([][]byte, len(privKeys))
-	depositDataItems := make([]*ethpb.Deposit_Data, len(privKeys))
+	depositDataItems := make([]*zondpb.Deposit_Data, len(privKeys))
 	for i := 0; i < len(privKeys); i++ {
 		withCred := uint64(i) < numOfCreds
 		data, err := createDepositData(privKeys[i], pubKeys[i], withCred)
@@ -162,8 +162,8 @@ func depositDataFromKeys(privKeys []dilithium.DilithiumKey, pubKeys []dilithium.
 }
 
 // Generates a deposit data item from BLS keys and signs the hash tree root of the data.
-func createDepositData(privKey dilithium.DilithiumKey, pubKey dilithium.PublicKey, withExecCreds bool) (*ethpb.Deposit_Data, error) {
-	depositMessage := &ethpb.DepositMessage{
+func createDepositData(privKey dilithium.DilithiumKey, pubKey dilithium.PublicKey, withExecCreds bool) (*zondpb.Deposit_Data, error) {
+	depositMessage := &zondpb.DepositMessage{
 		PublicKey:             pubKey.Marshal(),
 		WithdrawalCredentials: withdrawalCredentialsHash(pubKey.Marshal()),
 		Amount:                params.BeaconConfig().MaxEffectiveBalance,
@@ -182,11 +182,11 @@ func createDepositData(privKey dilithium.DilithiumKey, pubKey dilithium.PublicKe
 	if err != nil {
 		return nil, err
 	}
-	root, err := (&ethpb.SigningData{ObjectRoot: sr[:], Domain: domain}).HashTreeRoot()
+	root, err := (&zondpb.SigningData{ObjectRoot: sr[:], Domain: domain}).HashTreeRoot()
 	if err != nil {
 		return nil, err
 	}
-	di := &ethpb.Deposit_Data{
+	di := &zondpb.Deposit_Data{
 		PublicKey:             depositMessage.PublicKey,
 		WithdrawalCredentials: depositMessage.WithdrawalCredentials,
 		Amount:                depositMessage.Amount,

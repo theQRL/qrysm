@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -37,10 +37,10 @@ func (m *MockBeaconChainClient) EXPECT() *MockBeaconChainClientMockRecorder {
 }
 
 // GetChainHead mocks base method.
-func (m *MockBeaconChainClient) GetChainHead(arg0 context.Context, arg1 *emptypb.Empty) (*eth.ChainHead, error) {
+func (m *MockBeaconChainClient) GetChainHead(arg0 context.Context, arg1 *emptypb.Empty) (*zond.ChainHead, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetChainHead", arg0, arg1)
-	ret0, _ := ret[0].(*eth.ChainHead)
+	ret0, _ := ret[0].(*zond.ChainHead)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -52,10 +52,10 @@ func (mr *MockBeaconChainClientMockRecorder) GetChainHead(arg0, arg1 interface{}
 }
 
 // GetValidatorParticipation mocks base method.
-func (m *MockBeaconChainClient) GetValidatorParticipation(arg0 context.Context, arg1 *eth.GetValidatorParticipationRequest) (*eth.ValidatorParticipationResponse, error) {
+func (m *MockBeaconChainClient) GetValidatorParticipation(arg0 context.Context, arg1 *zond.GetValidatorParticipationRequest) (*zond.ValidatorParticipationResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorParticipation", arg0, arg1)
-	ret0, _ := ret[0].(*eth.ValidatorParticipationResponse)
+	ret0, _ := ret[0].(*zond.ValidatorParticipationResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -67,10 +67,10 @@ func (mr *MockBeaconChainClientMockRecorder) GetValidatorParticipation(arg0, arg
 }
 
 // GetValidatorPerformance mocks base method.
-func (m *MockBeaconChainClient) GetValidatorPerformance(arg0 context.Context, arg1 *eth.ValidatorPerformanceRequest) (*eth.ValidatorPerformanceResponse, error) {
+func (m *MockBeaconChainClient) GetValidatorPerformance(arg0 context.Context, arg1 *zond.ValidatorPerformanceRequest) (*zond.ValidatorPerformanceResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorPerformance", arg0, arg1)
-	ret0, _ := ret[0].(*eth.ValidatorPerformanceResponse)
+	ret0, _ := ret[0].(*zond.ValidatorPerformanceResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -82,10 +82,10 @@ func (mr *MockBeaconChainClientMockRecorder) GetValidatorPerformance(arg0, arg1 
 }
 
 // GetValidatorQueue mocks base method.
-func (m *MockBeaconChainClient) GetValidatorQueue(arg0 context.Context, arg1 *emptypb.Empty) (*eth.ValidatorQueue, error) {
+func (m *MockBeaconChainClient) GetValidatorQueue(arg0 context.Context, arg1 *emptypb.Empty) (*zond.ValidatorQueue, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorQueue", arg0, arg1)
-	ret0, _ := ret[0].(*eth.ValidatorQueue)
+	ret0, _ := ret[0].(*zond.ValidatorQueue)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -97,10 +97,10 @@ func (mr *MockBeaconChainClientMockRecorder) GetValidatorQueue(arg0, arg1 interf
 }
 
 // ListValidatorBalances mocks base method.
-func (m *MockBeaconChainClient) ListValidatorBalances(arg0 context.Context, arg1 *eth.ListValidatorBalancesRequest) (*eth.ValidatorBalances, error) {
+func (m *MockBeaconChainClient) ListValidatorBalances(arg0 context.Context, arg1 *zond.ListValidatorBalancesRequest) (*zond.ValidatorBalances, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListValidatorBalances", arg0, arg1)
-	ret0, _ := ret[0].(*eth.ValidatorBalances)
+	ret0, _ := ret[0].(*zond.ValidatorBalances)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -112,10 +112,10 @@ func (mr *MockBeaconChainClientMockRecorder) ListValidatorBalances(arg0, arg1 in
 }
 
 // ListValidators mocks base method.
-func (m *MockBeaconChainClient) ListValidators(arg0 context.Context, arg1 *eth.ListValidatorsRequest) (*eth.Validators, error) {
+func (m *MockBeaconChainClient) ListValidators(arg0 context.Context, arg1 *zond.ListValidatorsRequest) (*zond.Validators, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListValidators", arg0, arg1)
-	ret0, _ := ret[0].(*eth.Validators)
+	ret0, _ := ret[0].(*zond.Validators)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

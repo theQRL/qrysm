@@ -9,7 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 
@@ -23,12 +23,12 @@ var (
 // PendingDepositsFetcher specifically outlines a struct that can retrieve deposits
 // which have not yet been included in the chain.
 type PendingDepositsFetcher interface {
-	PendingContainers(ctx context.Context, untilBlk *big.Int) []*ethpb.DepositContainer
+	PendingContainers(ctx context.Context, untilBlk *big.Int) []*zondpb.DepositContainer
 }
 
 // InsertPendingDeposit into the database. If deposit or block number are nil
 // then this method does nothing.
-func (dc *DepositCache) InsertPendingDeposit(ctx context.Context, d *ethpb.Deposit, blockNum uint64, index int64, depositRoot [32]byte) {
+func (dc *DepositCache) InsertPendingDeposit(ctx context.Context, d *zondpb.Deposit, blockNum uint64, index int64, depositRoot [32]byte) {
 	ctx, span := trace.StartSpan(ctx, "DepositsCache.InsertPendingDeposit")
 	defer span.End()
 	if d == nil {
@@ -41,7 +41,7 @@ func (dc *DepositCache) InsertPendingDeposit(ctx context.Context, d *ethpb.Depos
 	dc.depositsLock.Lock()
 	defer dc.depositsLock.Unlock()
 	dc.pendingDeposits = append(dc.pendingDeposits,
-		&ethpb.DepositContainer{Deposit: d, Eth1BlockHeight: blockNum, Index: index, DepositRoot: depositRoot[:]})
+		&zondpb.DepositContainer{Deposit: d, Eth1BlockHeight: blockNum, Index: index, DepositRoot: depositRoot[:]})
 	pendingDepositsCount.Inc()
 	span.AddAttributes(trace.Int64Attribute("count", int64(len(dc.pendingDeposits))))
 }
@@ -49,13 +49,13 @@ func (dc *DepositCache) InsertPendingDeposit(ctx context.Context, d *ethpb.Depos
 // PendingDeposits returns a list of deposits until the given block number
 // (inclusive). If no block is specified then this method returns all pending
 // deposits.
-func (dc *DepositCache) PendingDeposits(ctx context.Context, untilBlk *big.Int) []*ethpb.Deposit {
+func (dc *DepositCache) PendingDeposits(ctx context.Context, untilBlk *big.Int) []*zondpb.Deposit {
 	ctx, span := trace.StartSpan(ctx, "DepositsCache.PendingDeposits")
 	defer span.End()
 
 	depositCntrs := dc.PendingContainers(ctx, untilBlk)
 
-	deposits := make([]*ethpb.Deposit, 0, len(depositCntrs))
+	deposits := make([]*zondpb.Deposit, 0, len(depositCntrs))
 	for _, dep := range depositCntrs {
 		deposits = append(deposits, dep.Deposit)
 	}
@@ -65,13 +65,13 @@ func (dc *DepositCache) PendingDeposits(ctx context.Context, untilBlk *big.Int) 
 
 // PendingContainers returns a list of deposit containers until the given block number
 // (inclusive).
-func (dc *DepositCache) PendingContainers(ctx context.Context, untilBlk *big.Int) []*ethpb.DepositContainer {
+func (dc *DepositCache) PendingContainers(ctx context.Context, untilBlk *big.Int) []*zondpb.DepositContainer {
 	ctx, span := trace.StartSpan(ctx, "DepositsCache.PendingDeposits")
 	defer span.End()
 	dc.depositsLock.RLock()
 	defer dc.depositsLock.RUnlock()
 
-	depositCntrs := make([]*ethpb.DepositContainer, 0, len(dc.pendingDeposits))
+	depositCntrs := make([]*zondpb.DepositContainer, 0, len(dc.pendingDeposits))
 	for _, ctnr := range dc.pendingDeposits {
 		if untilBlk == nil || untilBlk.Uint64() >= ctnr.Eth1BlockHeight {
 			depositCntrs = append(depositCntrs, ctnr)
@@ -89,7 +89,7 @@ func (dc *DepositCache) PendingContainers(ctx context.Context, untilBlk *big.Int
 
 // RemovePendingDeposit from the database. The deposit is indexed by the
 // Index. This method does nothing if deposit ptr is nil.
-func (dc *DepositCache) RemovePendingDeposit(ctx context.Context, d *ethpb.Deposit) {
+func (dc *DepositCache) RemovePendingDeposit(ctx context.Context, d *zondpb.Deposit) {
 	ctx, span := trace.StartSpan(ctx, "DepositsCache.RemovePendingDeposit")
 	defer span.End()
 
@@ -139,7 +139,7 @@ func (dc *DepositCache) PrunePendingDeposits(ctx context.Context, merkleTreeInde
 	dc.depositsLock.Lock()
 	defer dc.depositsLock.Unlock()
 
-	cleanDeposits := make([]*ethpb.DepositContainer, 0, len(dc.pendingDeposits))
+	cleanDeposits := make([]*zondpb.DepositContainer, 0, len(dc.pendingDeposits))
 	for _, dp := range dc.pendingDeposits {
 		if dp.Index >= merkleTreeIndex {
 			cleanDeposits = append(cleanDeposits, dp)

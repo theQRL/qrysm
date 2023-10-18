@@ -9,10 +9,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
-func (c beaconApiValidatorClient) submitSignedContributionAndProof(ctx context.Context, in *ethpb.SignedContributionAndProof) error {
+func (c beaconApiValidatorClient) submitSignedContributionAndProof(ctx context.Context, in *zondpb.SignedContributionAndProof) error {
 	if in == nil {
 		return errors.New("signed contribution and proof is nil")
 	}

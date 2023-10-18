@@ -7,7 +7,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 
@@ -32,7 +32,7 @@ func (s *Service) validateDilithiumToExecutionChange(ctx context.Context, pid pe
 		return pubsub.ValidationReject, err
 	}
 
-	dilithiumChange, ok := m.(*ethpb.SignedDilithiumToExecutionChange)
+	dilithiumChange, ok := m.(*zondpb.SignedDilithiumToExecutionChange)
 	if !ok {
 		return pubsub.ValidationReject, errWrongMessage
 	}
@@ -51,7 +51,7 @@ func (s *Service) validateDilithiumToExecutionChange(ctx context.Context, pid pe
 		return pubsub.ValidationReject, err
 	}
 	// Validate the signature of the message using our batch gossip verifier.
-	sigBatch, err := blocks.DilithiumChangesSignatureBatch(st, []*ethpb.SignedDilithiumToExecutionChange{dilithiumChange})
+	sigBatch, err := blocks.DilithiumChangesSignatureBatch(st, []*zondpb.SignedDilithiumToExecutionChange{dilithiumChange})
 	if err != nil {
 		return pubsub.ValidationReject, err
 	}

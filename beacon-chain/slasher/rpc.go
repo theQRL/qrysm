@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 	slashertypes "github.com/theQRL/qrysm/v4/beacon-chain/slasher/types"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -15,7 +15,7 @@ import (
 // HighestAttestations committed for an input list of validator indices.
 func (s *Service) HighestAttestations(
 	ctx context.Context, validatorIndices []primitives.ValidatorIndex,
-) ([]*ethpb.HighestAttestation, error) {
+) ([]*zondpb.HighestAttestation, error) {
 	atts, err := s.serviceCfg.Database.HighestAttestations(ctx, validatorIndices)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get highest attestations from database")
@@ -26,8 +26,8 @@ func (s *Service) HighestAttestations(
 // IsSlashableBlock checks if an input block header is slashable
 // with respect to historical block proposal data.
 func (s *Service) IsSlashableBlock(
-	ctx context.Context, block *ethpb.SignedBeaconBlockHeader,
-) (*ethpb.ProposerSlashing, error) {
+	ctx context.Context, block *zondpb.SignedBeaconBlockHeader,
+) (*zondpb.ProposerSlashing, error) {
 	dataRoot, err := block.Header.HashTreeRoot()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get block header hash tree root: %v", err)
@@ -49,8 +49,8 @@ func (s *Service) IsSlashableBlock(
 // IsSlashableAttestation checks if an input indexed attestation is slashable
 // with respect to historical attestation data.
 func (s *Service) IsSlashableAttestation(
-	ctx context.Context, attestation *ethpb.IndexedAttestation,
-) ([]*ethpb.AttesterSlashing, error) {
+	ctx context.Context, attestation *zondpb.IndexedAttestation,
+) ([]*zondpb.AttesterSlashing, error) {
 	dataRoot, err := attestation.Data.HashTreeRoot()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get attestation data hash tree root: %v", err)

@@ -7,7 +7,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/v4/config/params"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
@@ -52,7 +52,7 @@ func TestUpgradeToBellatrix(t *testing.T) {
 	require.DeepSSZEqual(t, make([]uint64, numValidators), s)
 
 	f := mSt.Fork()
-	require.DeepSSZEqual(t, &ethpb.Fork{
+	require.DeepSSZEqual(t, &zondpb.Fork{
 		PreviousVersion: st.Fork().CurrentVersion,
 		CurrentVersion:  params.BeaconConfig().BellatrixForkVersion,
 		Epoch:           time.CurrentEpoch(st),

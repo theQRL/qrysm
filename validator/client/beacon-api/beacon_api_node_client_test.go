@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/helpers"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -24,7 +24,7 @@ func TestGetGenesis(t *testing.T) {
 		depositContractResponse apimiddleware.DepositContractResponseJson
 		depositContractError    error
 		queriesDepositContract  bool
-		expectedResponse        *ethpb.Genesis
+		expectedResponse        *zondpb.Genesis
 		expectedError           string
 	}{
 		{
@@ -96,7 +96,7 @@ func TestGetGenesis(t *testing.T) {
 					Address: hexutil.Encode([]byte{3}),
 				},
 			},
-			expectedResponse: &ethpb.Genesis{
+			expectedResponse: &zondpb.Genesis{
 				GenesisTime: &timestamppb.Timestamp{
 					Seconds: 654812,
 				},
@@ -160,7 +160,7 @@ func TestGetSyncStatus(t *testing.T) {
 		name                 string
 		restEndpointResponse apimiddleware.SyncingResponseJson
 		restEndpointError    error
-		expectedResponse     *ethpb.SyncStatus
+		expectedResponse     *zondpb.SyncStatus
 		expectedError        string
 	}{
 		{
@@ -180,7 +180,7 @@ func TestGetSyncStatus(t *testing.T) {
 					IsSyncing: false,
 				},
 			},
-			expectedResponse: &ethpb.SyncStatus{
+			expectedResponse: &zondpb.SyncStatus{
 				Syncing: false,
 			},
 		},
@@ -191,7 +191,7 @@ func TestGetSyncStatus(t *testing.T) {
 					IsSyncing: true,
 				},
 			},
-			expectedResponse: &ethpb.SyncStatus{
+			expectedResponse: &zondpb.SyncStatus{
 				Syncing: true,
 			},
 		},

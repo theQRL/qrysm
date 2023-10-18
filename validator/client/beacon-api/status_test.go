@@ -11,7 +11,7 @@ import (
 	rpcmiddleware "github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -54,13 +54,13 @@ func TestValidatorStatus_Nominal(t *testing.T) {
 
 	actualValidatorStatusResponse, err := validatorClient.ValidatorStatus(
 		ctx,
-		&ethpb.ValidatorStatusRequest{
+		&zondpb.ValidatorStatusRequest{
 			PublicKey: validatorPubKey,
 		},
 	)
 
-	expectedValidatorStatusResponse := ethpb.ValidatorStatusResponse{
-		Status:          ethpb.ValidatorStatus_ACTIVE,
+	expectedValidatorStatusResponse := zondpb.ValidatorStatusResponse{
+		Status:          zondpb.ValidatorStatus_ACTIVE,
 		ActivationEpoch: 56,
 	}
 
@@ -90,7 +90,7 @@ func TestValidatorStatus_Error(t *testing.T) {
 
 	_, err := validatorClient.ValidatorStatus(
 		ctx,
-		&ethpb.ValidatorStatusRequest{
+		&zondpb.ValidatorStatusRequest{
 			PublicKey: []byte{},
 		},
 	)
@@ -149,19 +149,19 @@ func TestMultipleValidatorStatus_Nominal(t *testing.T) {
 
 	validatorClient := beaconApiValidatorClient{stateValidatorsProvider: stateValidatorsProvider}
 
-	expectedValidatorStatusResponse := ethpb.MultipleValidatorStatusResponse{
+	expectedValidatorStatusResponse := zondpb.MultipleValidatorStatusResponse{
 		PublicKeys: validatorsPubKey,
 		Indices: []primitives.ValidatorIndex{
 			11111,
 			22222,
 		},
-		Statuses: []*ethpb.ValidatorStatusResponse{
+		Statuses: []*zondpb.ValidatorStatusResponse{
 			{
-				Status:          ethpb.ValidatorStatus_ACTIVE,
+				Status:          zondpb.ValidatorStatus_ACTIVE,
 				ActivationEpoch: 12,
 			},
 			{
-				Status:          ethpb.ValidatorStatus_ACTIVE,
+				Status:          zondpb.ValidatorStatus_ACTIVE,
 				ActivationEpoch: 34,
 			},
 		},
@@ -169,7 +169,7 @@ func TestMultipleValidatorStatus_Nominal(t *testing.T) {
 
 	actualValidatorStatusResponse, err := validatorClient.MultipleValidatorStatus(
 		ctx,
-		&ethpb.MultipleValidatorStatusRequest{
+		&zondpb.MultipleValidatorStatusRequest{
 			PublicKeys: validatorsPubKey,
 		},
 	)
@@ -198,7 +198,7 @@ func TestMultipleValidatorStatus_Error(t *testing.T) {
 
 	_, err := validatorClient.MultipleValidatorStatus(
 		ctx,
-		&ethpb.MultipleValidatorStatusRequest{
+		&zondpb.MultipleValidatorStatusRequest{
 			PublicKeys: [][]byte{},
 		},
 	)
@@ -346,35 +346,35 @@ func TestGetValidatorsStatusResponse_Nominal_SomeActiveValidators(t *testing.T) 
 		primitives.ValidatorIndex(^uint64(0)),
 	}
 
-	wantedValidatorsStatusResponse := []*ethpb.ValidatorStatusResponse{
+	wantedValidatorsStatusResponse := []*zondpb.ValidatorStatusResponse{
 		{
-			Status:          ethpb.ValidatorStatus_ACTIVE,
+			Status:          zondpb.ValidatorStatus_ACTIVE,
 			ActivationEpoch: 12,
 		},
 		{
-			Status:          ethpb.ValidatorStatus_EXITING,
+			Status:          zondpb.ValidatorStatus_EXITING,
 			ActivationEpoch: 34,
 		},
 		{
-			Status:          ethpb.ValidatorStatus_ACTIVE,
+			Status:          zondpb.ValidatorStatus_ACTIVE,
 			ActivationEpoch: 56,
 		},
 		{
-			Status:                    ethpb.ValidatorStatus_PENDING,
+			Status:                    zondpb.ValidatorStatus_PENDING,
 			ActivationEpoch:           params.BeaconConfig().FarFutureEpoch,
 			PositionInActivationQueue: 1000,
 		},
 		{
-			Status:                    ethpb.ValidatorStatus_PENDING,
+			Status:                    zondpb.ValidatorStatus_PENDING,
 			ActivationEpoch:           params.BeaconConfig().FarFutureEpoch,
 			PositionInActivationQueue: 11000,
 		},
 		{
-			Status:          ethpb.ValidatorStatus_UNKNOWN_STATUS,
+			Status:          zondpb.ValidatorStatus_UNKNOWN_STATUS,
 			ActivationEpoch: params.BeaconConfig().FarFutureEpoch,
 		},
 		{
-			Status:          ethpb.ValidatorStatus_UNKNOWN_STATUS,
+			Status:          zondpb.ValidatorStatus_UNKNOWN_STATUS,
 			ActivationEpoch: params.BeaconConfig().FarFutureEpoch,
 		},
 	}
@@ -434,9 +434,9 @@ func TestGetValidatorsStatusResponse_Nominal_NoActiveValidators(t *testing.T) {
 
 	wantedValidatorsPubKey := [][]byte{validatorPubKey}
 	wantedValidatorsIndex := []primitives.ValidatorIndex{40000}
-	wantedValidatorsStatusResponse := []*ethpb.ValidatorStatusResponse{
+	wantedValidatorsStatusResponse := []*zondpb.ValidatorStatusResponse{
 		{
-			Status:                    ethpb.ValidatorStatus_PENDING,
+			Status:                    zondpb.ValidatorStatus_PENDING,
 			ActivationEpoch:           params.BeaconConfig().FarFutureEpoch,
 			PositionInActivationQueue: 40000,
 		},

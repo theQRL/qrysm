@@ -12,7 +12,7 @@ import (
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/db/kv"
@@ -77,12 +77,12 @@ func TestStore_ImportInterchangeData_BadFormat_PreventsDBWrites(t *testing.T) {
 	// data to our DB, or it does not.
 	for i := 0; i < len(publicKeys); i++ {
 		for _, att := range attestingHistory[i] {
-			indexedAtt := &ethpb.IndexedAttestation{
-				Data: &ethpb.AttestationData{
-					Source: &ethpb.Checkpoint{
+			indexedAtt := &zondpb.IndexedAttestation{
+				Data: &zondpb.AttestationData{
+					Source: &zondpb.Checkpoint{
 						Epoch: att.Source,
 					},
-					Target: &ethpb.Checkpoint{
+					Target: &zondpb.Checkpoint{
 						Epoch: att.Target,
 					},
 				},
@@ -129,12 +129,12 @@ func TestStore_ImportInterchangeData_OK(t *testing.T) {
 	// verify those indeed match the originally generated mock histories.
 	for i := 0; i < len(publicKeys); i++ {
 		for _, att := range attestingHistory[i] {
-			indexedAtt := &ethpb.IndexedAttestation{
-				Data: &ethpb.AttestationData{
-					Source: &ethpb.Checkpoint{
+			indexedAtt := &zondpb.IndexedAttestation{
+				Data: &zondpb.AttestationData{
+					Source: &zondpb.Checkpoint{
 						Epoch: att.Source,
 					},
-					Target: &ethpb.Checkpoint{
+					Target: &zondpb.Checkpoint{
 						Epoch: att.Target,
 					},
 				},

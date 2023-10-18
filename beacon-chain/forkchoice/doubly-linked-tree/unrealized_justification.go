@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -58,7 +58,7 @@ func (f *ForkChoice) updateUnrealizedCheckpoints(ctx context.Context) error {
 	return nil
 }
 
-func (s *Store) pullTips(state state.BeaconState, node *Node, jc, fc *ethpb.Checkpoint) (*ethpb.Checkpoint, *ethpb.Checkpoint) {
+func (s *Store) pullTips(state state.BeaconState, node *Node, jc, fc *zondpb.Checkpoint) (*zondpb.Checkpoint, *zondpb.Checkpoint) {
 	if node.parent == nil { // Nothing to do if the parent is nil.
 		return jc, fc
 	}

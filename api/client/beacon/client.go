@@ -21,8 +21,8 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/network/forks"
-	v1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 const (
@@ -142,7 +142,7 @@ var getForkTpl = idTemplate(getForkForStatePath)
 // Block identifier can be one of: "head" (canonical head in node's view), "genesis", "finalized",
 // <slot>, <hex encoded blockRoot with 0x prefix>. Variables of type StateOrBlockId are exported by this package
 // for the named identifiers.
-func (c *Client) GetFork(ctx context.Context, stateId StateOrBlockId) (*ethpb.Fork, error) {
+func (c *Client) GetFork(ctx context.Context, stateId StateOrBlockId) (*zondpb.Fork, error) {
 	body, err := c.Get(ctx, getForkTpl(stateId))
 	if err != nil {
 		return nil, errors.Wrapf(err, "error requesting fork by state id = %s", stateId)
@@ -340,7 +340,7 @@ type forkResponse struct {
 	Epoch           string `json:"epoch"`
 }
 
-func (f *forkResponse) Fork() (*ethpb.Fork, error) {
+func (f *forkResponse) Fork() (*zondpb.Fork, error) {
 	epoch, err := strconv.ParseUint(f.Epoch, 10, 64)
 	if err != nil {
 		return nil, err
@@ -359,7 +359,7 @@ func (f *forkResponse) Fork() (*ethpb.Fork, error) {
 	if len(pSlice) != 4 {
 		return nil, fmt.Errorf("got %d byte version, expected 4 bytes. version hex=%s", len(pSlice), f.PreviousVersion)
 	}
-	return &ethpb.Fork{
+	return &zondpb.Fork{
 		CurrentVersion:  cSlice,
 		PreviousVersion: pSlice,
 		Epoch:           primitives.Epoch(epoch),

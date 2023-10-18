@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 type dutiesProvider interface {
@@ -31,8 +31,8 @@ type committeeIndexSlotPair struct {
 	slot           primitives.Slot
 }
 
-func (c beaconApiValidatorClient) getDuties(ctx context.Context, in *ethpb.DutiesRequest) (*ethpb.DutiesResponse, error) {
-	multipleValidatorStatus, err := c.multipleValidatorStatus(ctx, &ethpb.MultipleValidatorStatusRequest{PublicKeys: in.PublicKeys})
+func (c beaconApiValidatorClient) getDuties(ctx context.Context, in *zondpb.DutiesRequest) (*zondpb.DutiesResponse, error) {
+	multipleValidatorStatus, err := c.multipleValidatorStatus(ctx, &zondpb.MultipleValidatorStatusRequest{PublicKeys: in.PublicKeys})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get validator status")
 	}
@@ -50,7 +50,7 @@ func (c beaconApiValidatorClient) getDuties(ctx context.Context, in *ethpb.Dutie
 		return nil, errors.Wrapf(err, "failed to get duties for next epoch `%d`", in.Epoch+1)
 	}
 
-	return &ethpb.DutiesResponse{
+	return &zondpb.DutiesResponse{
 		Duties:             currentEpochDuties,
 		CurrentEpochDuties: currentEpochDuties,
 		NextEpochDuties:    nextEpochDuties,
@@ -60,9 +60,9 @@ func (c beaconApiValidatorClient) getDuties(ctx context.Context, in *ethpb.Dutie
 func (c beaconApiValidatorClient) getDutiesForEpoch(
 	ctx context.Context,
 	epoch primitives.Epoch,
-	multipleValidatorStatus *ethpb.MultipleValidatorStatusResponse,
+	multipleValidatorStatus *zondpb.MultipleValidatorStatusResponse,
 	fetchSyncDuties bool,
-) ([]*ethpb.DutiesResponse_Duty, error) {
+) ([]*zondpb.DutiesResponse_Duty, error) {
 	attesterDuties, err := c.dutiesProvider.GetAttesterDuties(ctx, epoch, multipleValidatorStatus.Indices)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get attester duties for epoch `%d`", epoch)
@@ -165,7 +165,7 @@ func (c beaconApiValidatorClient) getDutiesForEpoch(
 		committeeMapping[key] = validatorIndices
 	}
 
-	duties := make([]*ethpb.DutiesResponse_Duty, len(multipleValidatorStatus.Statuses))
+	duties := make([]*zondpb.DutiesResponse_Duty, len(multipleValidatorStatus.Statuses))
 	for index, validatorStatus := range multipleValidatorStatus.Statuses {
 		validatorIndex := multipleValidatorStatus.Indices[index]
 		pubkey := multipleValidatorStatus.PublicKeys[index]
@@ -183,7 +183,7 @@ func (c beaconApiValidatorClient) getDutiesForEpoch(
 			}
 		}
 
-		duties[index] = &ethpb.DutiesResponse_Duty{
+		duties[index] = &zondpb.DutiesResponse_Duty{
 			Committee:       committeeValidatorIndices,
 			CommitteeIndex:  committeeIndex,
 			AttesterSlot:    attesterSlot,

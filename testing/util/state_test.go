@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
@@ -14,7 +14,7 @@ func TestNewBeaconState(t *testing.T) {
 	require.NoError(t, err)
 	b, err := st.MarshalSSZ()
 	require.NoError(t, err)
-	got := &ethpb.BeaconState{}
+	got := &zondpb.BeaconState{}
 	require.NoError(t, got.UnmarshalSSZ(b))
 	if !reflect.DeepEqual(st.ToProtoUnsafe(), got) {
 		t.Fatal("State did not match after round trip marshal")
@@ -26,7 +26,7 @@ func TestNewBeaconStateAltair(t *testing.T) {
 	require.NoError(t, err)
 	b, err := st.MarshalSSZ()
 	require.NoError(t, err)
-	got := &ethpb.BeaconStateAltair{}
+	got := &zondpb.BeaconStateAltair{}
 	require.NoError(t, got.UnmarshalSSZ(b))
 	if !reflect.DeepEqual(st.ToProtoUnsafe(), got) {
 		t.Fatal("State did not match after round trip marshal")
@@ -38,7 +38,7 @@ func TestNewBeaconStateBellatrix(t *testing.T) {
 	require.NoError(t, err)
 	b, err := st.MarshalSSZ()
 	require.NoError(t, err)
-	got := &ethpb.BeaconStateBellatrix{}
+	got := &zondpb.BeaconStateBellatrix{}
 	require.NoError(t, got.UnmarshalSSZ(b))
 	if !reflect.DeepEqual(st.ToProtoUnsafe(), got) {
 		t.Fatal("State did not match after round trip marshal")
@@ -50,7 +50,7 @@ func TestNewBeaconStateCapella(t *testing.T) {
 	require.NoError(t, err)
 	b, err := st.MarshalSSZ()
 	require.NoError(t, err)
-	got := &ethpb.BeaconStateCapella{}
+	got := &zondpb.BeaconStateCapella{}
 	require.NoError(t, got.UnmarshalSSZ(b))
 	if !reflect.DeepEqual(st.ToProtoUnsafe(), got) {
 		t.Fatal("State did not match after round trip marshal")

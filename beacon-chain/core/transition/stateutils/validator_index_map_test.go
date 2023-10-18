@@ -3,19 +3,19 @@ package stateutils_test
 import (
 	"testing"
 
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition/stateutils"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition/stateutils"
 )
 
 func TestValidatorIndexMap_OK(t *testing.T) {
-	base := &ethpb.BeaconState{
-		Validators: []*ethpb.Validator{
+	base := &zondpb.BeaconState{
+		Validators: []*zondpb.Validator{
 			{
 				PublicKey: []byte("zero"),
 			},

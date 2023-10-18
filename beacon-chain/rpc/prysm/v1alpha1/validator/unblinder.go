@@ -10,7 +10,7 @@ import (
 	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
 	consensusblocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"google.golang.org/protobuf/proto"
 )
@@ -148,15 +148,15 @@ func copyBlockData(src interfaces.SignedBeaconBlock, dst interfaces.SignedBeacon
 func (u *unblinder) blindedProtoBlock() (proto.Message, error) {
 	switch u.b.Version() {
 	case version.Bellatrix:
-		return &ethpb.SignedBlindedBeaconBlockBellatrix{
-			Block: &ethpb.BlindedBeaconBlockBellatrix{
-				Body: &ethpb.BlindedBeaconBlockBodyBellatrix{},
+		return &zondpb.SignedBlindedBeaconBlockBellatrix{
+			Block: &zondpb.BlindedBeaconBlockBellatrix{
+				Body: &zondpb.BlindedBeaconBlockBodyBellatrix{},
 			},
 		}, nil
 	case version.Capella:
-		return &ethpb.SignedBlindedBeaconBlockCapella{
-			Block: &ethpb.BlindedBeaconBlockCapella{
-				Body: &ethpb.BlindedBeaconBlockBodyCapella{},
+		return &zondpb.SignedBlindedBeaconBlockCapella{
+			Block: &zondpb.BlindedBeaconBlockCapella{
+				Body: &zondpb.BlindedBeaconBlockBodyCapella{},
 			},
 		}, nil
 	default:
@@ -167,15 +167,15 @@ func (u *unblinder) blindedProtoBlock() (proto.Message, error) {
 func (u *unblinder) protoBlock() (proto.Message, error) {
 	switch u.b.Version() {
 	case version.Bellatrix:
-		return &ethpb.SignedBeaconBlockBellatrix{
-			Block: &ethpb.BeaconBlockBellatrix{
-				Body: &ethpb.BeaconBlockBodyBellatrix{},
+		return &zondpb.SignedBeaconBlockBellatrix{
+			Block: &zondpb.BeaconBlockBellatrix{
+				Body: &zondpb.BeaconBlockBodyBellatrix{},
 			},
 		}, nil
 	case version.Capella:
-		return &ethpb.SignedBeaconBlockCapella{
-			Block: &ethpb.BeaconBlockCapella{
-				Body: &ethpb.BeaconBlockBodyCapella{},
+		return &zondpb.SignedBeaconBlockCapella{
+			Block: &zondpb.BeaconBlockCapella{
+				Body: &zondpb.BeaconBlockBodyCapella{},
 			},
 		}, nil
 	default:

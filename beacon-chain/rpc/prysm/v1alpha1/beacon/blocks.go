@@ -17,7 +17,7 @@ import (
 	consensusblocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"google.golang.org/grpc/codes"
@@ -40,8 +40,8 @@ type blockContainer struct {
 // no blocks in their database match the filter criteria. This RPC should
 // not return NOT_FOUND. Only one filter criteria should be used.
 func (bs *Server) ListBeaconBlocks(
-	ctx context.Context, req *ethpb.ListBlocksRequest,
-) (*ethpb.ListBeaconBlocksResponse, error) {
+	ctx context.Context, req *zondpb.ListBlocksRequest,
+) (*zondpb.ListBeaconBlocksResponse, error) {
 	ctrs, numBlks, nextPageToken, err := bs.listBlocks(ctx, req)
 	if err != nil {
 		return nil, err
@@ -50,35 +50,35 @@ func (bs *Server) ListBeaconBlocks(
 	if err != nil {
 		return nil, err
 	}
-	return &ethpb.ListBeaconBlocksResponse{
+	return &zondpb.ListBeaconBlocksResponse{
 		BlockContainers: altCtrs,
 		TotalSize:       int32(numBlks),
 		NextPageToken:   nextPageToken,
 	}, nil
 }
 
-func (bs *Server) listBlocks(ctx context.Context, req *ethpb.ListBlocksRequest) ([]blockContainer, int, string, error) {
+func (bs *Server) listBlocks(ctx context.Context, req *zondpb.ListBlocksRequest) ([]blockContainer, int, string, error) {
 	if int(req.PageSize) > cmd.Get().MaxRPCPageSize {
 		return nil, 0, "", status.Errorf(codes.InvalidArgument, "Requested page size %d can not be greater than max size %d",
 			req.PageSize, cmd.Get().MaxRPCPageSize)
 	}
 
 	switch q := req.QueryFilter.(type) {
-	case *ethpb.ListBlocksRequest_Epoch:
+	case *zondpb.ListBlocksRequest_Epoch:
 		return bs.listBlocksForEpoch(ctx, req, q)
-	case *ethpb.ListBlocksRequest_Root:
+	case *zondpb.ListBlocksRequest_Root:
 		return bs.listBlocksForRoot(ctx, req, q)
-	case *ethpb.ListBlocksRequest_Slot:
+	case *zondpb.ListBlocksRequest_Slot:
 		return bs.listBlocksForSlot(ctx, req, q)
-	case *ethpb.ListBlocksRequest_Genesis:
+	case *zondpb.ListBlocksRequest_Genesis:
 		return bs.listBlocksForGenesis(ctx, req, q)
 	default:
 		return nil, 0, "", status.Errorf(codes.InvalidArgument, "Must specify a filter criteria for fetching blocks. Criteria %T not supported", q)
 	}
 }
 
-func convertFromV1Containers(ctrs []blockContainer) ([]*ethpb.BeaconBlockContainer, error) {
-	protoCtrs := make([]*ethpb.BeaconBlockContainer, len(ctrs))
+func convertFromV1Containers(ctrs []blockContainer) ([]*zondpb.BeaconBlockContainer, error) {
+	protoCtrs := make([]*zondpb.BeaconBlockContainer, len(ctrs))
 	var err error
 	for i, c := range ctrs {
 		protoCtrs[i], err = convertToBlockContainer(c.blk, c.root, c.isCanonical)
@@ -89,8 +89,8 @@ func convertFromV1Containers(ctrs []blockContainer) ([]*ethpb.BeaconBlockContain
 	return protoCtrs, nil
 }
 
-func convertToBlockContainer(blk interfaces.ReadOnlySignedBeaconBlock, root [32]byte, isCanonical bool) (*ethpb.BeaconBlockContainer, error) {
-	ctr := &ethpb.BeaconBlockContainer{
+func convertToBlockContainer(blk interfaces.ReadOnlySignedBeaconBlock, root [32]byte, isCanonical bool) (*zondpb.BeaconBlockContainer, error) {
+	ctr := &zondpb.BeaconBlockContainer{
 		BlockRoot: root[:],
 		Canonical: isCanonical,
 	}
@@ -101,26 +101,26 @@ func convertToBlockContainer(blk interfaces.ReadOnlySignedBeaconBlock, root [32]
 		if err != nil {
 			return nil, err
 		}
-		ctr.Block = &ethpb.BeaconBlockContainer_Phase0Block{Phase0Block: rBlk}
+		ctr.Block = &zondpb.BeaconBlockContainer_Phase0Block{Phase0Block: rBlk}
 	case version.Altair:
 		rBlk, err := blk.PbAltairBlock()
 		if err != nil {
 			return nil, err
 		}
-		ctr.Block = &ethpb.BeaconBlockContainer_AltairBlock{AltairBlock: rBlk}
+		ctr.Block = &zondpb.BeaconBlockContainer_AltairBlock{AltairBlock: rBlk}
 	case version.Bellatrix:
 		if blk.IsBlinded() {
 			rBlk, err := blk.PbBlindedBellatrixBlock()
 			if err != nil {
 				return nil, err
 			}
-			ctr.Block = &ethpb.BeaconBlockContainer_BlindedBellatrixBlock{BlindedBellatrixBlock: rBlk}
+			ctr.Block = &zondpb.BeaconBlockContainer_BlindedBellatrixBlock{BlindedBellatrixBlock: rBlk}
 		} else {
 			rBlk, err := blk.PbBellatrixBlock()
 			if err != nil {
 				return nil, err
 			}
-			ctr.Block = &ethpb.BeaconBlockContainer_BellatrixBlock{BellatrixBlock: rBlk}
+			ctr.Block = &zondpb.BeaconBlockContainer_BellatrixBlock{BellatrixBlock: rBlk}
 		}
 	case version.Capella:
 		if blk.IsBlinded() {
@@ -128,13 +128,13 @@ func convertToBlockContainer(blk interfaces.ReadOnlySignedBeaconBlock, root [32]
 			if err != nil {
 				return nil, err
 			}
-			ctr.Block = &ethpb.BeaconBlockContainer_BlindedCapellaBlock{BlindedCapellaBlock: rBlk}
+			ctr.Block = &zondpb.BeaconBlockContainer_BlindedCapellaBlock{BlindedCapellaBlock: rBlk}
 		} else {
 			rBlk, err := blk.PbCapellaBlock()
 			if err != nil {
 				return nil, err
 			}
-			ctr.Block = &ethpb.BeaconBlockContainer_CapellaBlock{CapellaBlock: rBlk}
+			ctr.Block = &zondpb.BeaconBlockContainer_CapellaBlock{CapellaBlock: rBlk}
 		}
 	default:
 		return nil, errors.Errorf("block type is not recognized: %d", blk.Version())
@@ -143,7 +143,7 @@ func convertToBlockContainer(blk interfaces.ReadOnlySignedBeaconBlock, root [32]
 }
 
 // listBlocksForEpoch retrieves all blocks for the provided epoch.
-func (bs *Server) listBlocksForEpoch(ctx context.Context, req *ethpb.ListBlocksRequest, q *ethpb.ListBlocksRequest_Epoch) ([]blockContainer, int, string, error) {
+func (bs *Server) listBlocksForEpoch(ctx context.Context, req *zondpb.ListBlocksRequest, q *zondpb.ListBlocksRequest_Epoch) ([]blockContainer, int, string, error) {
 	blks, _, err := bs.BeaconDB.Blocks(ctx, filters.NewFilter().SetStartEpoch(q.Epoch).SetEndEpoch(q.Epoch))
 	if err != nil {
 		return nil, 0, strconv.Itoa(0), status.Errorf(codes.Internal, "Could not get blocks: %v", err)
@@ -181,7 +181,7 @@ func (bs *Server) listBlocksForEpoch(ctx context.Context, req *ethpb.ListBlocksR
 }
 
 // listBlocksForRoot retrieves the block for the provided root.
-func (bs *Server) listBlocksForRoot(ctx context.Context, _ *ethpb.ListBlocksRequest, q *ethpb.ListBlocksRequest_Root) ([]blockContainer, int, string, error) {
+func (bs *Server) listBlocksForRoot(ctx context.Context, _ *zondpb.ListBlocksRequest, q *zondpb.ListBlocksRequest_Root) ([]blockContainer, int, string, error) {
 	blk, err := bs.BeaconDB.Block(ctx, bytesutil.ToBytes32(q.Root))
 	if err != nil {
 		return nil, 0, strconv.Itoa(0), status.Errorf(codes.Internal, "Could not retrieve block: %v", err)
@@ -205,7 +205,7 @@ func (bs *Server) listBlocksForRoot(ctx context.Context, _ *ethpb.ListBlocksRequ
 }
 
 // listBlocksForSlot retrieves all blocks for the provided slot.
-func (bs *Server) listBlocksForSlot(ctx context.Context, req *ethpb.ListBlocksRequest, q *ethpb.ListBlocksRequest_Slot) ([]blockContainer, int, string, error) {
+func (bs *Server) listBlocksForSlot(ctx context.Context, req *zondpb.ListBlocksRequest, q *zondpb.ListBlocksRequest_Slot) ([]blockContainer, int, string, error) {
 	blks, err := bs.BeaconDB.BlocksBySlot(ctx, q.Slot)
 	if err != nil {
 		return nil, 0, strconv.Itoa(0), status.Errorf(codes.Internal, "Could not retrieve blocks for slot %d: %v", q.Slot, err)
@@ -242,7 +242,7 @@ func (bs *Server) listBlocksForSlot(ctx context.Context, req *ethpb.ListBlocksRe
 }
 
 // listBlocksForGenesis retrieves the genesis block.
-func (bs *Server) listBlocksForGenesis(ctx context.Context, _ *ethpb.ListBlocksRequest, _ *ethpb.ListBlocksRequest_Genesis) ([]blockContainer, int, string, error) {
+func (bs *Server) listBlocksForGenesis(ctx context.Context, _ *zondpb.ListBlocksRequest, _ *zondpb.ListBlocksRequest_Genesis) ([]blockContainer, int, string, error) {
 	genBlk, err := bs.BeaconDB.GenesisBlock(ctx)
 	if err != nil {
 		return nil, 0, strconv.Itoa(0), status.Errorf(codes.Internal, "Could not retrieve blocks for genesis slot: %v", err)
@@ -267,13 +267,13 @@ func (bs *Server) listBlocksForGenesis(ctx context.Context, _ *ethpb.ListBlocksR
 // This includes the head block slot and root as well as information about
 // the most recent finalized and justified slots.
 // DEPRECATED: This endpoint is superseded by the /eth/v1/beacon API endpoint
-func (bs *Server) GetChainHead(ctx context.Context, _ *emptypb.Empty) (*ethpb.ChainHead, error) {
+func (bs *Server) GetChainHead(ctx context.Context, _ *emptypb.Empty) (*zondpb.ChainHead, error) {
 	return bs.chainHeadRetrieval(ctx)
 }
 
 // StreamBlocks to clients every single time a block is received by the beacon node.
 // DEPRECATED: This endpoint is superseded by the /eth/v1/events Beacon API endpoint
-func (bs *Server) StreamBlocks(req *ethpb.StreamBlocksRequest, stream ethpb.BeaconChain_StreamBlocksServer) error {
+func (bs *Server) StreamBlocks(req *zondpb.StreamBlocksRequest, stream zondpb.BeaconChain_StreamBlocksServer) error {
 	blocksChannel := make(chan *feed.Event, 1)
 	var blockSub event.Subscription
 	if req.VerifiedOnly {
@@ -345,7 +345,7 @@ func (bs *Server) StreamBlocks(req *ethpb.StreamBlocksRequest, stream ethpb.Beac
 
 // StreamChainHead to clients every single time the head block and state of the chain change.
 // DEPRECATED: This endpoint is superseded by the /eth/v1/events Beacon API endpoint
-func (bs *Server) StreamChainHead(_ *emptypb.Empty, stream ethpb.BeaconChain_StreamChainHeadServer) error {
+func (bs *Server) StreamChainHead(_ *emptypb.Empty, stream zondpb.BeaconChain_StreamChainHeadServer) error {
 	stateChannel := make(chan *feed.Event, 4)
 	stateSub := bs.StateNotifier.StateFeed().Subscribe(stateChannel)
 	defer stateSub.Unsubscribe()
@@ -379,7 +379,7 @@ func (bs *Server) StreamChainHead(_ *emptypb.Empty, stream ethpb.BeaconChain_Str
 }
 
 // Retrieve chain head information from the DB and the current beacon state.
-func (bs *Server) chainHeadRetrieval(ctx context.Context) (*ethpb.ChainHead, error) {
+func (bs *Server) chainHeadRetrieval(ctx context.Context) (*zondpb.ChainHead, error) {
 	headBlock, err := bs.HeadFetcher.HeadBlock(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Could not get head block")
@@ -397,7 +397,7 @@ func (bs *Server) chainHeadRetrieval(ctx context.Context) (*ethpb.ChainHead, err
 	}
 
 	validGenesis := false
-	validateCP := func(cp *ethpb.Checkpoint, name string) error {
+	validateCP := func(cp *zondpb.Checkpoint, name string) error {
 		if bytesutil.ToBytes32(cp.Root) == params.BeaconConfig().ZeroHash && cp.Epoch == 0 {
 			if validGenesis {
 				return nil
@@ -447,7 +447,7 @@ func (bs *Server) chainHeadRetrieval(ctx context.Context) (*ethpb.ChainHead, err
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get epoch start slot from prev justified checkpoint epoch")
 	}
-	return &ethpb.ChainHead{
+	return &zondpb.ChainHead{
 		HeadSlot:                   headBlock.Block().Slot(),
 		HeadEpoch:                  slots.ToEpoch(headBlock.Block().Slot()),
 		HeadBlockRoot:              headBlockRoot[:],

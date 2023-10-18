@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/db"
 	slashertypes "github.com/theQRL/qrysm/v4/beacon-chain/slasher/types"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // A struct encapsulating input arguments to
@@ -34,7 +34,7 @@ type Chunker interface {
 		slasherDB db.SlasherDatabase,
 		validatorIdx primitives.ValidatorIndex,
 		attestation *slashertypes.IndexedAttestationWrapper,
-	) (*ethpb.AttesterSlashing, error)
+	) (*zondpb.AttesterSlashing, error)
 	Update(
 		args *chunkUpdateArgs,
 		validatorIndex primitives.ValidatorIndex,
@@ -188,7 +188,7 @@ func (m *MinSpanChunksSlice) CheckSlashable(
 	slasherDB db.SlasherDatabase,
 	validatorIdx primitives.ValidatorIndex,
 	attestation *slashertypes.IndexedAttestationWrapper,
-) (*ethpb.AttesterSlashing, error) {
+) (*zondpb.AttesterSlashing, error) {
 	sourceEpoch := attestation.IndexedAttestation.Data.Source.Epoch
 	targetEpoch := attestation.IndexedAttestation.Data.Target.Epoch
 	minTarget, err := chunkDataAtEpoch(m.params, m.data, validatorIdx, sourceEpoch)
@@ -209,7 +209,7 @@ func (m *MinSpanChunksSlice) CheckSlashable(
 		if existingAttRecord != nil {
 			if sourceEpoch < existingAttRecord.IndexedAttestation.Data.Source.Epoch {
 				surroundingVotesTotal.Inc()
-				return &ethpb.AttesterSlashing{
+				return &zondpb.AttesterSlashing{
 					Attestation_1: attestation.IndexedAttestation,
 					Attestation_2: existingAttRecord.IndexedAttestation,
 				}, nil
@@ -235,7 +235,7 @@ func (m *MaxSpanChunksSlice) CheckSlashable(
 	slasherDB db.SlasherDatabase,
 	validatorIdx primitives.ValidatorIndex,
 	attestation *slashertypes.IndexedAttestationWrapper,
-) (*ethpb.AttesterSlashing, error) {
+) (*zondpb.AttesterSlashing, error) {
 	sourceEpoch := attestation.IndexedAttestation.Data.Source.Epoch
 	targetEpoch := attestation.IndexedAttestation.Data.Target.Epoch
 	maxTarget, err := chunkDataAtEpoch(m.params, m.data, validatorIdx, sourceEpoch)
@@ -256,7 +256,7 @@ func (m *MaxSpanChunksSlice) CheckSlashable(
 		if existingAttRecord != nil {
 			if existingAttRecord.IndexedAttestation.Data.Source.Epoch < sourceEpoch {
 				surroundedVotesTotal.Inc()
-				return &ethpb.AttesterSlashing{
+				return &zondpb.AttesterSlashing{
 					Attestation_1: existingAttRecord.IndexedAttestation,
 					Attestation_2: attestation.IndexedAttestation,
 				}, nil

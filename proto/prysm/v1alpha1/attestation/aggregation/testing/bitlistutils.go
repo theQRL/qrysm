@@ -7,7 +7,7 @@ import (
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time"
 )
 
@@ -77,12 +77,12 @@ func Bitlists64WithMultipleBitSet(t testing.TB, n, length, count uint64) []*bitf
 }
 
 // MakeAttestationsFromBitlists creates list of attestations from list of bitlist.
-func MakeAttestationsFromBitlists(bl []bitfield.Bitlist) []*ethpb.Attestation {
-	atts := make([]*ethpb.Attestation, len(bl))
+func MakeAttestationsFromBitlists(bl []bitfield.Bitlist) []*zondpb.Attestation {
+	atts := make([]*zondpb.Attestation, len(bl))
 	for i, b := range bl {
-		atts[i] = &ethpb.Attestation{
+		atts[i] = &zondpb.Attestation{
 			AggregationBits: b,
-			Data: &ethpb.AttestationData{
+			Data: &zondpb.AttestationData{
 				Slot:           42,
 				CommitteeIndex: 1,
 			},
@@ -93,10 +93,10 @@ func MakeAttestationsFromBitlists(bl []bitfield.Bitlist) []*ethpb.Attestation {
 }
 
 // MakeSyncContributionsFromBitVector creates list of sync contributions from list of bitvector.
-func MakeSyncContributionsFromBitVector(bl []bitfield.Bitvector128) []*ethpb.SyncCommitteeContribution {
-	c := make([]*ethpb.SyncCommitteeContribution, len(bl))
+func MakeSyncContributionsFromBitVector(bl []bitfield.Bitvector128) []*zondpb.SyncCommitteeContribution {
+	c := make([]*zondpb.SyncCommitteeContribution, len(bl))
 	for i, b := range bl {
-		c[i] = &ethpb.SyncCommitteeContribution{
+		c[i] = &zondpb.SyncCommitteeContribution{
 			Slot:              primitives.Slot(1),
 			SubcommitteeIndex: 2,
 			AggregationBits:   b,

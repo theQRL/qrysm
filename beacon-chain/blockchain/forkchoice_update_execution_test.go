@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
@@ -48,7 +48,7 @@ func TestService_getHeadStateAndBlock(t *testing.T) {
 	_, _, err := service.getStateAndBlock(context.Background(), [32]byte{})
 	require.ErrorContains(t, "block does not exist", err)
 
-	blk, err := blocks.NewSignedBeaconBlock(util.HydrateSignedBeaconBlock(&ethpb.SignedBeaconBlock{Signature: []byte{1}}))
+	blk, err := blocks.NewSignedBeaconBlock(util.HydrateSignedBeaconBlock(&zondpb.SignedBeaconBlock{Signature: []byte{1}}))
 	require.NoError(t, err)
 	require.NoError(t, service.cfg.BeaconDB.SaveBlock(context.Background(), blk))
 
@@ -157,8 +157,8 @@ func TestService_forkchoiceUpdateWithExecution_SameHeadRootNewProposer(t *testin
 		state: st,
 	}
 
-	ojc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
-	ofc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ojc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ofc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 	state, blkRoot, err := prepareForkchoiceState(ctx, 0, [32]byte{}, [32]byte{}, params.BeaconConfig().ZeroHash, ojc, ofc)
 	require.NoError(t, err)
 	require.NoError(t, fcs.InsertNode(ctx, state, blkRoot))
@@ -172,7 +172,7 @@ func TestService_forkchoiceUpdateWithExecution_SameHeadRootNewProposer(t *testin
 	service.cfg.ExecutionEngineCaller = &mockExecution.EngineClient{}
 	require.NoError(t, beaconDB.SaveState(ctx, st, bellatrixBlkRoot))
 	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, bellatrixBlkRoot))
-	sb, err := blocks.NewSignedBeaconBlock(util.HydrateSignedBeaconBlockBellatrix(&ethpb.SignedBeaconBlockBellatrix{}))
+	sb, err := blocks.NewSignedBeaconBlock(util.HydrateSignedBeaconBlockBellatrix(&zondpb.SignedBeaconBlockBellatrix{}))
 	require.NoError(t, err)
 	require.NoError(t, beaconDB.SaveBlock(ctx, sb))
 	r, err := sb.Block().HashTreeRoot()
@@ -196,7 +196,7 @@ func TestShouldOverrideFCU(t *testing.T) {
 	service.SetGenesisTime(time.Now().Add(-time.Duration(2*params.BeaconConfig().SecondsPerSlot) * time.Second))
 	headRoot := [32]byte{'b'}
 	parentRoot := [32]byte{'a'}
-	ojc := &ethpb.Checkpoint{}
+	ojc := &zondpb.Checkpoint{}
 	st, root, err := prepareForkchoiceState(ctx, 1, parentRoot, [32]byte{}, [32]byte{}, ojc, ojc)
 	require.NoError(t, err)
 	require.NoError(t, fcs.InsertNode(ctx, st, root))

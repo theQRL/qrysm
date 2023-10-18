@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // DeterministicGenesisStateCapella returns a genesis state in Capella format made using the deterministic deposits.
@@ -36,7 +36,7 @@ func DeterministicGenesisStateCapella(t testing.TB, numValidators uint64) (state
 }
 
 // genesisBeaconStateCapella returns the genesis beacon state.
-func genesisBeaconStateCapella(ctx context.Context, deposits []*ethpb.Deposit, genesisTime uint64, eth1Data *ethpb.Eth1Data) (state.BeaconState, error) {
+func genesisBeaconStateCapella(ctx context.Context, deposits []*zondpb.Deposit, genesisTime uint64, eth1Data *zondpb.Eth1Data) (state.BeaconState, error) {
 	st, err := emptyGenesisStateCapella()
 	if err != nil {
 		return nil, err
@@ -58,16 +58,16 @@ func genesisBeaconStateCapella(ctx context.Context, deposits []*ethpb.Deposit, g
 
 // emptyGenesisStateCapella returns an empty genesis state in Capella format.
 func emptyGenesisStateCapella() (state.BeaconState, error) {
-	st := &ethpb.BeaconStateCapella{
+	st := &zondpb.BeaconStateCapella{
 		// Misc fields.
 		Slot: 0,
-		Fork: &ethpb.Fork{
+		Fork: &zondpb.Fork{
 			PreviousVersion: params.BeaconConfig().BellatrixForkVersion,
 			CurrentVersion:  params.BeaconConfig().CapellaForkVersion,
 			Epoch:           0,
 		},
 		// Validator registry fields.
-		Validators:       []*ethpb.Validator{},
+		Validators:       []*zondpb.Validator{},
 		Balances:         []uint64{},
 		InactivityScores: []uint64{},
 
@@ -77,8 +77,8 @@ func emptyGenesisStateCapella() (state.BeaconState, error) {
 		PreviousEpochParticipation: []byte{},
 
 		// Eth1 data.
-		Eth1Data:         &ethpb.Eth1Data{},
-		Eth1DataVotes:    []*ethpb.Eth1Data{},
+		Eth1Data:         &zondpb.Eth1Data{},
+		Eth1DataVotes:    []*zondpb.Eth1Data{},
 		Eth1DepositIndex: 0,
 
 		LatestExecutionPayloadHeader: &enginev1.ExecutionPayloadHeaderCapella{},
@@ -86,7 +86,7 @@ func emptyGenesisStateCapella() (state.BeaconState, error) {
 	return state_native.InitializeFromProtoCapella(st)
 }
 
-func buildGenesisBeaconStateCapella(genesisTime uint64, preState state.BeaconState, eth1Data *ethpb.Eth1Data) (state.BeaconState, error) {
+func buildGenesisBeaconStateCapella(genesisTime uint64, preState state.BeaconState, eth1Data *zondpb.Eth1Data) (state.BeaconState, error) {
 	if eth1Data == nil {
 		return nil, errors.New("no eth1data provided for genesis state")
 	}
@@ -134,13 +134,13 @@ func buildGenesisBeaconStateCapella(genesisTime uint64, preState state.BeaconSta
 	if err != nil {
 		return nil, err
 	}
-	st := &ethpb.BeaconStateCapella{
+	st := &zondpb.BeaconStateCapella{
 		// Misc fields.
 		Slot:                  0,
 		GenesisTime:           genesisTime,
 		GenesisValidatorsRoot: genesisValidatorsRoot[:],
 
-		Fork: &ethpb.Fork{
+		Fork: &zondpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 			Epoch:           0,
@@ -157,16 +157,16 @@ func buildGenesisBeaconStateCapella(genesisTime uint64, preState state.BeaconSta
 		RandaoMixes: randaoMixes,
 
 		// Finality.
-		PreviousJustifiedCheckpoint: &ethpb.Checkpoint{
+		PreviousJustifiedCheckpoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  params.BeaconConfig().ZeroHash[:],
 		},
-		CurrentJustifiedCheckpoint: &ethpb.Checkpoint{
+		CurrentJustifiedCheckpoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  params.BeaconConfig().ZeroHash[:],
 		},
 		JustificationBits: []byte{0},
-		FinalizedCheckpoint: &ethpb.Checkpoint{
+		FinalizedCheckpoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  params.BeaconConfig().ZeroHash[:],
 		},
@@ -178,19 +178,19 @@ func buildGenesisBeaconStateCapella(genesisTime uint64, preState state.BeaconSta
 
 		// Eth1 data.
 		Eth1Data:         eth1Data,
-		Eth1DataVotes:    []*ethpb.Eth1Data{},
+		Eth1DataVotes:    []*zondpb.Eth1Data{},
 		Eth1DepositIndex: preState.Eth1DepositIndex(),
 	}
 
 	var scBits [fieldparams.SyncAggregateSyncCommitteeBytesLength]byte
-	bodyRoot, err := (&ethpb.BeaconBlockBodyCapella{
+	bodyRoot, err := (&zondpb.BeaconBlockBodyCapella{
 		RandaoReveal: make([]byte, dilithium2.CryptoBytes),
-		Eth1Data: &ethpb.Eth1Data{
+		Eth1Data: &zondpb.Eth1Data{
 			DepositRoot: make([]byte, 32),
 			BlockHash:   make([]byte, 32),
 		},
 		Graffiti: make([]byte, 32),
-		SyncAggregate: &ethpb.SyncAggregate{
+		SyncAggregate: &zondpb.SyncAggregate{
 			SyncCommitteeBits:      scBits[:],
 			SyncCommitteeSignature: make([]byte, 96),
 		},
@@ -209,7 +209,7 @@ func buildGenesisBeaconStateCapella(genesisTime uint64, preState state.BeaconSta
 		return nil, errors.Wrap(err, "could not hash tree root empty block body")
 	}
 
-	st.LatestBlockHeader = &ethpb.BeaconBlockHeader{
+	st.LatestBlockHeader = &zondpb.BeaconBlockHeader{
 		ParentRoot: zeroHash,
 		StateRoot:  zeroHash,
 		BodyRoot:   bodyRoot[:],
@@ -225,11 +225,11 @@ func buildGenesisBeaconStateCapella(genesisTime uint64, preState state.BeaconSta
 	if err != nil {
 		return nil, err
 	}
-	st.CurrentSyncCommittee = &ethpb.SyncCommittee{
+	st.CurrentSyncCommittee = &zondpb.SyncCommittee{
 		Pubkeys:         pubKeys,
 		AggregatePubkey: aggregated.Marshal(),
 	}
-	st.NextSyncCommittee = &ethpb.SyncCommittee{
+	st.NextSyncCommittee = &zondpb.SyncCommittee{
 		Pubkeys:         pubKeys,
 		AggregatePubkey: aggregated.Marshal(),
 	}

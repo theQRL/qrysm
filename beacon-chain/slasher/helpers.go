@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/container/slice"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // Group a list of attestations into batches by validator chunk index.
@@ -85,7 +85,7 @@ func (s *Service) filterAttestations(
 // the target epoch, which is a precondition for performing slashing detection.
 // This function also checks the attestation source epoch is within the history size
 // we keep track of for slashing detection.
-func validateAttestationIntegrity(att *ethpb.IndexedAttestation) bool {
+func validateAttestationIntegrity(att *zondpb.IndexedAttestation) bool {
 	// If an attestation is malformed, we drop it.
 	if att == nil ||
 		att.Data == nil ||
@@ -108,7 +108,7 @@ func validateAttestationIntegrity(att *ethpb.IndexedAttestation) bool {
 }
 
 // Validates the signed beacon block header integrity, ensuring we have no nil values.
-func validateBlockHeaderIntegrity(header *ethpb.SignedBeaconBlockHeader) bool {
+func validateBlockHeaderIntegrity(header *zondpb.SignedBeaconBlockHeader) bool {
 	// If a signed block header is malformed, we drop it.
 	if header == nil ||
 		header.Header == nil ||
@@ -119,7 +119,7 @@ func validateBlockHeaderIntegrity(header *ethpb.SignedBeaconBlockHeader) bool {
 	return true
 }
 
-func logAttesterSlashing(slashing *ethpb.AttesterSlashing) {
+func logAttesterSlashing(slashing *zondpb.AttesterSlashing) {
 	indices := slice.IntersectionUint64(slashing.Attestation_1.AttestingIndices, slashing.Attestation_2.AttestingIndices)
 	log.WithFields(logrus.Fields{
 		"validatorIndex":  indices,
@@ -130,7 +130,7 @@ func logAttesterSlashing(slashing *ethpb.AttesterSlashing) {
 	}).Info("Attester slashing detected")
 }
 
-func logProposerSlashing(slashing *ethpb.ProposerSlashing) {
+func logProposerSlashing(slashing *zondpb.ProposerSlashing) {
 	log.WithFields(logrus.Fields{
 		"validatorIndex": slashing.Header_1.Header.ProposerIndex,
 		"slot":           slashing.Header_1.Header.Slot,

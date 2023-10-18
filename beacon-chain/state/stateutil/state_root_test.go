@@ -8,7 +8,7 @@ import (
 
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/interop"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -16,7 +16,7 @@ import (
 
 func TestState_FieldCount(t *testing.T) {
 	count := params.BeaconConfig().BeaconStateFieldCount
-	typ := reflect.TypeOf(ethpb.BeaconState{})
+	typ := reflect.TypeOf(zondpb.BeaconState{})
 	numFields := 0
 	for i := 0; i < typ.NumField(); i++ {
 		if typ.Field(i).Name == "state" ||
@@ -59,7 +59,7 @@ func BenchmarkHashTreeRoot_Generic_300000(b *testing.B) {
 	}
 }
 
-func setupGenesisState(tb testing.TB, count uint64) *ethpb.BeaconState {
+func setupGenesisState(tb testing.TB, count uint64) *zondpb.BeaconState {
 	genesisState, _, err := interop.GenerateGenesisState(context.Background(), 0, 1)
 	require.NoError(tb, err, "Could not generate genesis beacon state")
 	for i := uint64(1); i < count; i++ {
@@ -67,7 +67,7 @@ func setupGenesisState(tb testing.TB, count uint64) *ethpb.BeaconState {
 		var someKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
-		genesisState.Validators = append(genesisState.Validators, &ethpb.Validator{
+		genesisState.Validators = append(genesisState.Validators, &zondpb.Validator{
 			PublicKey:                  someKey[:],
 			WithdrawalCredentials:      someRoot[:],
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,

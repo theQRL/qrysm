@@ -36,7 +36,7 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/monitoring/clientstats"
 	"github.com/theQRL/qrysm/v4/network"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	prysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
@@ -68,7 +68,7 @@ var (
 // ChainStartFetcher retrieves information pertaining to the chain start event
 // of the beacon chain for usage across various services.
 type ChainStartFetcher interface {
-	ChainStartEth1Data() *ethpb.Eth1Data
+	ChainStartEth1Data() *zondpb.Eth1Data
 	PreGenesisState() state.BeaconState
 	ClearPreGenesisData()
 }
@@ -147,10 +147,10 @@ type Service struct {
 	httpLogger              bind.ContractFilterer
 	rpcClient               RPCClient
 	headerCache             *headerCache // cache to store block hash/block height.
-	latestEth1Data          *ethpb.LatestETH1Data
+	latestEth1Data          *zondpb.LatestETH1Data
 	depositContractCaller   *contracts.DepositContractCaller
 	depositTrie             *trie.SparseMerkleTrie
-	chainStartData          *ethpb.ChainStartData
+	chainStartData          *zondpb.ChainStartData
 	lastReceivedMerkleIndex int64 // Keeps track of the last received index to prevent log spam.
 	runError                error
 	preGenesisState         state.BeaconState
@@ -178,7 +178,7 @@ func NewService(ctx context.Context, opts ...Option) (*Service, error) {
 			beaconNodeStatsUpdater: &NopBeaconNodeStatsUpdater{},
 			eth1HeaderReqLimit:     defaultEth1HeaderReqLimit,
 		},
-		latestEth1Data: &ethpb.LatestETH1Data{
+		latestEth1Data: &zondpb.LatestETH1Data{
 			BlockHeight:        0,
 			BlockTime:          0,
 			BlockHash:          []byte{},
@@ -186,9 +186,9 @@ func NewService(ctx context.Context, opts ...Option) (*Service, error) {
 		},
 		headerCache: newHeaderCache(),
 		depositTrie: depositTrie,
-		chainStartData: &ethpb.ChainStartData{
-			Eth1Data:           &ethpb.Eth1Data{},
-			ChainstartDeposits: make([]*ethpb.Deposit, 0),
+		chainStartData: &zondpb.ChainStartData{
+			Eth1Data:           &zondpb.Eth1Data{},
+			ChainstartDeposits: make([]*zondpb.Deposit, 0),
 		},
 		lastReceivedMerkleIndex: -1,
 		preGenesisState:         genState,
@@ -259,12 +259,12 @@ func (s *Service) Stop() error {
 
 // ClearPreGenesisData clears out the stored chainstart deposits and beacon state.
 func (s *Service) ClearPreGenesisData() {
-	s.chainStartData.ChainstartDeposits = []*ethpb.Deposit{}
+	s.chainStartData.ChainstartDeposits = []*zondpb.Deposit{}
 	s.preGenesisState = &native.BeaconState{}
 }
 
 // ChainStartEth1Data returns the eth1 data at chainstart.
-func (s *Service) ChainStartEth1Data() *ethpb.Eth1Data {
+func (s *Service) ChainStartEth1Data() *zondpb.Eth1Data {
 	return s.chainStartData.Eth1Data
 }
 
@@ -332,7 +332,7 @@ func (s *Service) followedBlockHeight(ctx context.Context) (uint64, error) {
 	return blk.Number.Uint64(), nil
 }
 
-func (s *Service) initDepositCaches(ctx context.Context, ctrs []*ethpb.DepositContainer) error {
+func (s *Service) initDepositCaches(ctx context.Context, ctrs []*zondpb.DepositContainer) error {
 	if len(ctrs) == 0 {
 		return nil
 	}
@@ -735,7 +735,7 @@ func (s *Service) determineEarliestVotingBlock(ctx context.Context, followBlock 
 
 // initializes our service from the provided eth1data object by initializing all the relevant
 // fields and data.
-func (s *Service) initializeEth1Data(ctx context.Context, eth1DataInDB *ethpb.ETH1ChainData) error {
+func (s *Service) initializeEth1Data(ctx context.Context, eth1DataInDB *zondpb.ETH1ChainData) error {
 	// The node has no eth1data persisted on disk, so we exit and instead
 	// request from contract logs.
 	if eth1DataInDB == nil {
@@ -764,7 +764,7 @@ func (s *Service) initializeEth1Data(ctx context.Context, eth1DataInDB *ethpb.ET
 
 // Validates that all deposit containers are valid and have their relevant indices
 // in order.
-func validateDepositContainers(ctrs []*ethpb.DepositContainer) bool {
+func validateDepositContainers(ctrs []*zondpb.DepositContainer) bool {
 	ctrLen := len(ctrs)
 	// Exit for empty containers.
 	if ctrLen == 0 {
@@ -805,14 +805,14 @@ func (s *Service) ensureValidPowchainData(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		s.chainStartData = &ethpb.ChainStartData{
+		s.chainStartData = &zondpb.ChainStartData{
 			Chainstarted:       true,
 			GenesisTime:        genState.GenesisTime(),
 			GenesisBlock:       0,
 			Eth1Data:           genState.Eth1Data(),
-			ChainstartDeposits: make([]*ethpb.Deposit, 0),
+			ChainstartDeposits: make([]*zondpb.Deposit, 0),
 		}
-		eth1Data = &ethpb.ETH1ChainData{
+		eth1Data = &zondpb.ETH1ChainData{
 			CurrentEth1Data:   s.latestEth1Data,
 			ChainstartData:    s.chainStartData,
 			BeaconState:       pbState,

@@ -7,20 +7,20 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/epoch/precompute"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestNew(t *testing.T) {
 	ffe := params.BeaconConfig().FarFutureEpoch
-	s, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	s, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Slot: params.BeaconConfig().SlotsPerEpoch,
 		// Validator 0 is slashed
 		// Validator 1 is withdrawable
 		// Validator 2 is active prev epoch and current epoch
 		// Validator 3 is active prev epoch
-		Validators: []*ethpb.Validator{
+		Validators: []*zondpb.Validator{
 			{Slashed: true, WithdrawableEpoch: ffe, EffectiveBalance: 100},
 			{EffectiveBalance: 100},
 			{WithdrawableEpoch: ffe, ExitEpoch: ffe, EffectiveBalance: 100},

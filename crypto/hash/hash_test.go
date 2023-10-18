@@ -8,7 +8,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	pb "github.com/theQRL/qrysm/v4/proto/testing"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -86,9 +86,9 @@ func TestHashProtoFuzz(t *testing.T) {
 }
 
 func BenchmarkHashProto(b *testing.B) {
-	att := &ethpb.Attestation{
+	att := &zondpb.Attestation{
 		AggregationBits: nil,
-		Data: &ethpb.AttestationData{
+		Data: &zondpb.AttestationData{
 			Slot:            5,
 			CommitteeIndex:  3,
 			BeaconBlockRoot: []byte{},

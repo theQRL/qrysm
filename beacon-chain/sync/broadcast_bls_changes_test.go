@@ -17,7 +17,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -41,8 +41,8 @@ func TestBroadcastDilithiumChanges(t *testing.T) {
 		WithDilithiumToExecPool(blstoexec.NewPool()),
 	)
 	var emptySig [96]byte
-	s.cfg.dilithiumToExecPool.InsertDilithiumToExecChange(&ethpb.SignedDilithiumToExecutionChange{
-		Message: &ethpb.DilithiumToExecutionChange{
+	s.cfg.dilithiumToExecPool.InsertDilithiumToExecChange(&zondpb.SignedDilithiumToExecutionChange{
+		Message: &zondpb.DilithiumToExecutionChange{
 			ValidatorIndex:      10,
 			FromDilithiumPubkey: make([]byte, 48),
 			ToExecutionAddress:  make([]byte, 20),
@@ -85,7 +85,7 @@ func TestRateDilithiumChanges(t *testing.T) {
 	}
 
 	for i := 0; i < 200; i++ {
-		message := &ethpb.DilithiumToExecutionChange{
+		message := &zondpb.DilithiumToExecutionChange{
 			ValidatorIndex:      primitives.ValidatorIndex(i),
 			FromDilithiumPubkey: keys[i+1].PublicKey().Marshal(),
 			ToExecutionAddress:  bytesutil.PadTo([]byte("address"), 20),
@@ -95,7 +95,7 @@ func TestRateDilithiumChanges(t *testing.T) {
 		assert.NoError(t, err)
 		htr, err := signing.SigningData(message.HashTreeRoot, domain)
 		assert.NoError(t, err)
-		signed := &ethpb.SignedDilithiumToExecutionChange{
+		signed := &zondpb.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: keys[i+1].Sign(htr[:]).Marshal(),
 		}
@@ -118,15 +118,15 @@ func TestRateDilithiumChanges(t *testing.T) {
 }
 
 func TestBroadcastDilithiumBatch_changes_slice(t *testing.T) {
-	message := &ethpb.DilithiumToExecutionChange{
+	message := &zondpb.DilithiumToExecutionChange{
 		FromDilithiumPubkey: make([]byte, 48),
 		ToExecutionAddress:  make([]byte, 20),
 	}
-	signed := &ethpb.SignedDilithiumToExecutionChange{
+	signed := &zondpb.SignedDilithiumToExecutionChange{
 		Message:   message,
 		Signature: make([]byte, 96),
 	}
-	changes := make([]*ethpb.SignedDilithiumToExecutionChange, 200)
+	changes := make([]*zondpb.SignedDilithiumToExecutionChange, 200)
 	for i := 0; i < len(changes); i++ {
 		changes[i] = signed
 	}

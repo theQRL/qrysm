@@ -15,9 +15,9 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/proto/eth/service"
-	v1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/proto/zond/service"
+	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"google.golang.org/grpc"
@@ -327,8 +327,8 @@ func orderedEvaluationOnResponses(beaconPathsAndObjects map[string]metadata, gen
 		return errors.New("failed to cast type")
 	}
 	if finalizedEpoch < helpers.AltairE2EForkEpoch+2 {
-		blockP := &ethpb.SignedBeaconBlock{}
-		blockL := &ethpb.SignedBeaconBlock{}
+		blockP := &zondpb.SignedBeaconBlock{}
+		blockL := &zondpb.SignedBeaconBlock{}
 		if err := blockL.UnmarshalSSZ(sszrspL); err != nil {
 			return errors.Wrap(err, "failed to unmarshal lighthouse ssz")
 		}
@@ -339,8 +339,8 @@ func orderedEvaluationOnResponses(beaconPathsAndObjects map[string]metadata, gen
 			return errors.New("prysm signature does not match lighthouse signature")
 		}
 	} else if finalizedEpoch >= helpers.AltairE2EForkEpoch+2 && finalizedEpoch < helpers.BellatrixE2EForkEpoch {
-		blockP := &ethpb.SignedBeaconBlockAltair{}
-		blockL := &ethpb.SignedBeaconBlockAltair{}
+		blockP := &zondpb.SignedBeaconBlockAltair{}
+		blockL := &zondpb.SignedBeaconBlockAltair{}
 		if err := blockL.UnmarshalSSZ(sszrspL); err != nil {
 			return errors.Wrap(err, "lighthouse ssz error")
 		}
@@ -354,8 +354,8 @@ func orderedEvaluationOnResponses(beaconPathsAndObjects map[string]metadata, gen
 				blockL)
 		}
 	} else {
-		blockP := &ethpb.SignedBeaconBlockBellatrix{}
-		blockL := &ethpb.SignedBeaconBlockBellatrix{}
+		blockP := &zondpb.SignedBeaconBlockBellatrix{}
+		blockL := &zondpb.SignedBeaconBlockBellatrix{}
 		if err := blockL.UnmarshalSSZ(sszrspL); err != nil {
 			return errors.Wrap(err, "lighthouse ssz error")
 		}

@@ -17,7 +17,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/crypto/rand"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // RandaoReveal returns a signature of the requested epoch using the beacon proposer private key.
@@ -46,14 +46,14 @@ func BlockSignature(
 	// copy the state since we need to process slots
 	bState = bState.Copy()
 	switch b := block.(type) {
-	case *ethpb.BeaconBlock:
-		wsb, err = blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlock{Block: b})
-	case *ethpb.BeaconBlockAltair:
-		wsb, err = blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockAltair{Block: b})
-	case *ethpb.BeaconBlockBellatrix:
-		wsb, err = blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockBellatrix{Block: b})
-	case *ethpb.BeaconBlockCapella:
-		wsb, err = blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockCapella{Block: b})
+	case *zondpb.BeaconBlock:
+		wsb, err = blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlock{Block: b})
+	case *zondpb.BeaconBlockAltair:
+		wsb, err = blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockAltair{Block: b})
+	case *zondpb.BeaconBlockBellatrix:
+		wsb, err = blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockBellatrix{Block: b})
+	case *zondpb.BeaconBlockCapella:
+		wsb, err = blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockCapella{Block: b})
 	default:
 		return nil, errors.New("unsupported block type")
 	}
@@ -66,13 +66,13 @@ func BlockSignature(
 	}
 
 	switch b := block.(type) {
-	case *ethpb.BeaconBlock:
+	case *zondpb.BeaconBlock:
 		b.StateRoot = s[:]
-	case *ethpb.BeaconBlockAltair:
+	case *zondpb.BeaconBlockAltair:
 		b.StateRoot = s[:]
-	case *ethpb.BeaconBlockBellatrix:
+	case *zondpb.BeaconBlockBellatrix:
 		b.StateRoot = s[:]
-	case *ethpb.BeaconBlockCapella:
+	case *zondpb.BeaconBlockCapella:
 		b.StateRoot = s[:]
 	}
 
@@ -80,13 +80,13 @@ func BlockSignature(
 	// function deterministic on beacon state slot.
 	var blockSlot primitives.Slot
 	switch b := block.(type) {
-	case *ethpb.BeaconBlock:
+	case *zondpb.BeaconBlock:
 		blockSlot = b.Slot
-	case *ethpb.BeaconBlockAltair:
+	case *zondpb.BeaconBlockAltair:
 		blockSlot = b.Slot
-	case *ethpb.BeaconBlockBellatrix:
+	case *zondpb.BeaconBlockBellatrix:
 		blockSlot = b.Slot
-	case *ethpb.BeaconBlockCapella:
+	case *zondpb.BeaconBlockCapella:
 		blockSlot = b.Slot
 	}
 
@@ -103,13 +103,13 @@ func BlockSignature(
 
 	var blockRoot [32]byte
 	switch b := block.(type) {
-	case *ethpb.BeaconBlock:
+	case *zondpb.BeaconBlock:
 		blockRoot, err = signing.ComputeSigningRoot(b, domain)
-	case *ethpb.BeaconBlockAltair:
+	case *zondpb.BeaconBlockAltair:
 		blockRoot, err = signing.ComputeSigningRoot(b, domain)
-	case *ethpb.BeaconBlockBellatrix:
+	case *zondpb.BeaconBlockBellatrix:
 		blockRoot, err = signing.ComputeSigningRoot(b, domain)
-	case *ethpb.BeaconBlockCapella:
+	case *zondpb.BeaconBlockCapella:
 		blockRoot, err = signing.ComputeSigningRoot(b, domain)
 	}
 	if err != nil {

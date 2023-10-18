@@ -12,7 +12,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/theQRL/qrysm/v4/build/bazel"
 	"github.com/theQRL/qrysm/v4/io/file"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	validatormock "github.com/theQRL/qrysm/v4/testing/validator-mock"
@@ -29,7 +29,7 @@ func TestExitAccountsCli_OK(t *testing.T) {
 
 	mockValidatorClient.EXPECT().
 		ValidatorIndex(gomock.Any(), gomock.Any()).
-		Return(&ethpb.ValidatorIndexResponse{Index: 1}, nil)
+		Return(&zondpb.ValidatorIndexResponse{Index: 1}, nil)
 
 	// Any time in the past will suffice
 	genesisTime := &timestamppb.Timestamp{
@@ -38,15 +38,15 @@ func TestExitAccountsCli_OK(t *testing.T) {
 
 	mockNodeClient.EXPECT().
 		GetGenesis(gomock.Any(), gomock.Any()).
-		Return(&ethpb.Genesis{GenesisTime: genesisTime}, nil)
+		Return(&zondpb.Genesis{GenesisTime: genesisTime}, nil)
 
 	mockValidatorClient.EXPECT().
 		DomainData(gomock.Any(), gomock.Any()).
-		Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
+		Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
 
 	mockValidatorClient.EXPECT().
-		ProposeExit(gomock.Any(), gomock.AssignableToTypeOf(&ethpb.SignedVoluntaryExit{})).
-		Return(&ethpb.ProposeExitResponse{}, nil)
+		ProposeExit(gomock.Any(), gomock.AssignableToTypeOf(&zondpb.SignedVoluntaryExit{})).
+		Return(&zondpb.ProposeExitResponse{}, nil)
 
 	walletDir, _, passwordFilePath := setupWalletAndPasswordsDir(t)
 	// Write a directory where we will import keys from.
@@ -121,11 +121,11 @@ func TestExitAccountsCli_OK_AllPublicKeys(t *testing.T) {
 
 	mockValidatorClient.EXPECT().
 		ValidatorIndex(gomock.Any(), gomock.Any()).
-		Return(&ethpb.ValidatorIndexResponse{Index: 0}, nil)
+		Return(&zondpb.ValidatorIndexResponse{Index: 0}, nil)
 
 	mockValidatorClient.EXPECT().
 		ValidatorIndex(gomock.Any(), gomock.Any()).
-		Return(&ethpb.ValidatorIndexResponse{Index: 1}, nil)
+		Return(&zondpb.ValidatorIndexResponse{Index: 1}, nil)
 
 	// Any time in the past will suffice
 	genesisTime := &timestamppb.Timestamp{
@@ -134,17 +134,17 @@ func TestExitAccountsCli_OK_AllPublicKeys(t *testing.T) {
 
 	mockNodeClient.EXPECT().
 		GetGenesis(gomock.Any(), gomock.Any()).
-		Return(&ethpb.Genesis{GenesisTime: genesisTime}, nil)
+		Return(&zondpb.Genesis{GenesisTime: genesisTime}, nil)
 
 	mockValidatorClient.EXPECT().
 		DomainData(gomock.Any(), gomock.Any()).
 		Times(2).
-		Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
+		Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
 
 	mockValidatorClient.EXPECT().
-		ProposeExit(gomock.Any(), gomock.AssignableToTypeOf(&ethpb.SignedVoluntaryExit{})).
+		ProposeExit(gomock.Any(), gomock.AssignableToTypeOf(&zondpb.SignedVoluntaryExit{})).
 		Times(2).
-		Return(&ethpb.ProposeExitResponse{}, nil)
+		Return(&zondpb.ProposeExitResponse{}, nil)
 
 	walletDir, _, passwordFilePath := setupWalletAndPasswordsDir(t)
 	// Write a directory where we will import keys from.
@@ -227,7 +227,7 @@ func TestExitAccountsCli_OK_ForceExit(t *testing.T) {
 
 	mockValidatorClient.EXPECT().
 		ValidatorIndex(gomock.Any(), gomock.Any()).
-		Return(&ethpb.ValidatorIndexResponse{Index: 1}, nil)
+		Return(&zondpb.ValidatorIndexResponse{Index: 1}, nil)
 
 	// Any time in the past will suffice
 	genesisTime := &timestamppb.Timestamp{
@@ -236,15 +236,15 @@ func TestExitAccountsCli_OK_ForceExit(t *testing.T) {
 
 	mockNodeClient.EXPECT().
 		GetGenesis(gomock.Any(), gomock.Any()).
-		Return(&ethpb.Genesis{GenesisTime: genesisTime}, nil)
+		Return(&zondpb.Genesis{GenesisTime: genesisTime}, nil)
 
 	mockValidatorClient.EXPECT().
 		DomainData(gomock.Any(), gomock.Any()).
-		Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
+		Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
 
 	mockValidatorClient.EXPECT().
-		ProposeExit(gomock.Any(), gomock.AssignableToTypeOf(&ethpb.SignedVoluntaryExit{})).
-		Return(&ethpb.ProposeExitResponse{}, nil)
+		ProposeExit(gomock.Any(), gomock.AssignableToTypeOf(&zondpb.SignedVoluntaryExit{})).
+		Return(&zondpb.ProposeExitResponse{}, nil)
 
 	walletDir, _, passwordFilePath := setupWalletAndPasswordsDir(t)
 	// Write a directory where we will import keys from.
@@ -316,7 +316,7 @@ func TestExitAccountsCli_WriteJSON_NoBroadcast(t *testing.T) {
 
 	mockValidatorClient.EXPECT().
 		ValidatorIndex(gomock.Any(), gomock.Any()).
-		Return(&ethpb.ValidatorIndexResponse{Index: 1}, nil)
+		Return(&zondpb.ValidatorIndexResponse{Index: 1}, nil)
 
 	// Any time in the past will suffice
 	genesisTime := &timestamppb.Timestamp{
@@ -325,11 +325,11 @@ func TestExitAccountsCli_WriteJSON_NoBroadcast(t *testing.T) {
 
 	mockNodeClient.EXPECT().
 		GetGenesis(gomock.Any(), gomock.Any()).
-		Return(&ethpb.Genesis{GenesisTime: genesisTime}, nil)
+		Return(&zondpb.Genesis{GenesisTime: genesisTime}, nil)
 
 	mockValidatorClient.EXPECT().
 		DomainData(gomock.Any(), gomock.Any()).
-		Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
+		Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
 
 	walletDir, _, passwordFilePath := setupWalletAndPasswordsDir(t)
 	// Write a directory where we will import keys from.

@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
@@ -53,7 +53,7 @@ func TestHeadRoot_DataRace(t *testing.T) {
 
 func TestHeadBlock_DataRace(t *testing.T) {
 	beaconDB := testDB.SetupDB(t)
-	wsb, err := blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlock{Block: &ethpb.BeaconBlock{Body: &ethpb.BeaconBlockBody{}}})
+	wsb, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlock{Block: &zondpb.BeaconBlock{Body: &zondpb.BeaconBlockBody{}}})
 	require.NoError(t, err)
 	s := &Service{
 		cfg:  &config{BeaconDB: beaconDB, StateGen: stategen.New(beaconDB, doublylinkedtree.New())},

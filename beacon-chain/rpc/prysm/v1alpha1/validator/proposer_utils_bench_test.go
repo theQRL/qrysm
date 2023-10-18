@@ -6,7 +6,7 @@ import (
 
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	aggtesting "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/testing"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
@@ -44,10 +44,10 @@ func BenchmarkProposerAtts_sortByProfitability(b *testing.B) {
 		},
 	}
 
-	runner := func(atts []*ethpb.Attestation) {
+	runner := func(atts []*zondpb.Attestation) {
 		attsCopy := make(proposerAtts, len(atts))
 		for i, att := range atts {
-			attsCopy[i] = ethpb.CopyAttestation(att)
+			attsCopy[i] = zondpb.CopyAttestation(att)
 		}
 		_, err := attsCopy.sortByProfitability()
 		require.NoError(b, err, "Could not sort attestations by profitability")

@@ -7,19 +7,19 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
-	ethpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 func TestV1Alpha1SignedContributionAndProofToV2(t *testing.T) {
-	alphaContribution := &ethpbalpha.SignedContributionAndProof{
-		Message: &ethpbalpha.ContributionAndProof{
+	alphaContribution := &zondpbalpha.SignedContributionAndProof{
+		Message: &zondpbalpha.ContributionAndProof{
 			AggregatorIndex: validatorIndex,
-			Contribution: &ethpbalpha.SyncCommitteeContribution{
+			Contribution: &zondpbalpha.SyncCommitteeContribution{
 				Slot:              slot,
 				BlockRoot:         blockHash,
 				SubcommitteeIndex: 1,
@@ -47,20 +47,20 @@ func TestV1Alpha1SignedContributionAndProofToV2(t *testing.T) {
 }
 
 func Test_V1Alpha1BeaconBlockAltairToV2(t *testing.T) {
-	alphaBlock := util.HydrateBeaconBlockAltair(&ethpbalpha.BeaconBlockAltair{})
+	alphaBlock := util.HydrateBeaconBlockAltair(&zondpbalpha.BeaconBlockAltair{})
 	alphaBlock.Slot = slot
 	alphaBlock.ProposerIndex = validatorIndex
 	alphaBlock.ParentRoot = parentRoot
 	alphaBlock.StateRoot = stateRoot
 	alphaBlock.Body.RandaoReveal = randaoReveal
-	alphaBlock.Body.Eth1Data = &ethpbalpha.Eth1Data{
+	alphaBlock.Body.Eth1Data = &zondpbalpha.Eth1Data{
 		DepositRoot:  depositRoot,
 		DepositCount: depositCount,
 		BlockHash:    blockHash,
 	}
 	syncCommitteeBits := bitfield.NewBitvector512()
 	syncCommitteeBits.SetBitAt(100, true)
-	alphaBlock.Body.SyncAggregate = &ethpbalpha.SyncAggregate{
+	alphaBlock.Body.SyncAggregate = &zondpbalpha.SyncAggregate{
 		SyncCommitteeBits:      syncCommitteeBits,
 		SyncCommitteeSignature: signature,
 	}
@@ -75,20 +75,20 @@ func Test_V1Alpha1BeaconBlockAltairToV2(t *testing.T) {
 }
 
 func Test_AltairToV1Alpha1SignedBlock(t *testing.T) {
-	v2Block := util.HydrateV2AltairSignedBeaconBlock(&ethpbv2.SignedBeaconBlockAltair{})
+	v2Block := util.HydrateV2AltairSignedBeaconBlock(&zondpbv2.SignedBeaconBlockAltair{})
 	v2Block.Message.Slot = slot
 	v2Block.Message.ProposerIndex = validatorIndex
 	v2Block.Message.ParentRoot = parentRoot
 	v2Block.Message.StateRoot = stateRoot
 	v2Block.Message.Body.RandaoReveal = randaoReveal
-	v2Block.Message.Body.Eth1Data = &ethpbv1.Eth1Data{
+	v2Block.Message.Body.Eth1Data = &zondpbv1.Eth1Data{
 		DepositRoot:  depositRoot,
 		DepositCount: depositCount,
 		BlockHash:    blockHash,
 	}
 	syncCommitteeBits := bitfield.NewBitvector512()
 	syncCommitteeBits.SetBitAt(100, true)
-	v2Block.Message.Body.SyncAggregate = &ethpbv1.SyncAggregate{
+	v2Block.Message.Body.SyncAggregate = &zondpbv1.SyncAggregate{
 		SyncCommitteeBits:      syncCommitteeBits,
 		SyncCommitteeSignature: signature,
 	}
@@ -104,20 +104,20 @@ func Test_AltairToV1Alpha1SignedBlock(t *testing.T) {
 }
 
 func Test_BellatrixToV1Alpha1SignedBlock(t *testing.T) {
-	v2Block := util.HydrateV2BellatrixSignedBeaconBlock(&ethpbv2.SignedBeaconBlockBellatrix{})
+	v2Block := util.HydrateV2BellatrixSignedBeaconBlock(&zondpbv2.SignedBeaconBlockBellatrix{})
 	v2Block.Message.Slot = slot
 	v2Block.Message.ProposerIndex = validatorIndex
 	v2Block.Message.ParentRoot = parentRoot
 	v2Block.Message.StateRoot = stateRoot
 	v2Block.Message.Body.RandaoReveal = randaoReveal
-	v2Block.Message.Body.Eth1Data = &ethpbv1.Eth1Data{
+	v2Block.Message.Body.Eth1Data = &zondpbv1.Eth1Data{
 		DepositRoot:  depositRoot,
 		DepositCount: depositCount,
 		BlockHash:    blockHash,
 	}
 	syncCommitteeBits := bitfield.NewBitvector512()
 	syncCommitteeBits.SetBitAt(100, true)
-	v2Block.Message.Body.SyncAggregate = &ethpbv1.SyncAggregate{
+	v2Block.Message.Body.SyncAggregate = &zondpbv1.SyncAggregate{
 		SyncCommitteeBits:      syncCommitteeBits,
 		SyncCommitteeSignature: signature,
 	}
@@ -149,20 +149,20 @@ func Test_BellatrixToV1Alpha1SignedBlock(t *testing.T) {
 }
 
 func Test_BlindedBellatrixToV1Alpha1SignedBlock(t *testing.T) {
-	v2Block := util.HydrateV2SignedBlindedBeaconBlockBellatrix(&ethpbv2.SignedBlindedBeaconBlockBellatrix{})
+	v2Block := util.HydrateV2SignedBlindedBeaconBlockBellatrix(&zondpbv2.SignedBlindedBeaconBlockBellatrix{})
 	v2Block.Message.Slot = slot
 	v2Block.Message.ProposerIndex = validatorIndex
 	v2Block.Message.ParentRoot = parentRoot
 	v2Block.Message.StateRoot = stateRoot
 	v2Block.Message.Body.RandaoReveal = randaoReveal
-	v2Block.Message.Body.Eth1Data = &ethpbv1.Eth1Data{
+	v2Block.Message.Body.Eth1Data = &zondpbv1.Eth1Data{
 		DepositRoot:  depositRoot,
 		DepositCount: depositCount,
 		BlockHash:    blockHash,
 	}
 	syncCommitteeBits := bitfield.NewBitvector512()
 	syncCommitteeBits.SetBitAt(100, true)
-	v2Block.Message.Body.SyncAggregate = &ethpbv1.SyncAggregate{
+	v2Block.Message.Body.SyncAggregate = &zondpbv1.SyncAggregate{
 		SyncCommitteeBits:      syncCommitteeBits,
 		SyncCommitteeSignature: signature,
 	}
@@ -194,20 +194,20 @@ func Test_BlindedBellatrixToV1Alpha1SignedBlock(t *testing.T) {
 }
 
 func Test_V1Alpha1BeaconBlockBellatrixToV2(t *testing.T) {
-	alphaBlock := util.HydrateBeaconBlockBellatrix(&ethpbalpha.BeaconBlockBellatrix{})
+	alphaBlock := util.HydrateBeaconBlockBellatrix(&zondpbalpha.BeaconBlockBellatrix{})
 	alphaBlock.Slot = slot
 	alphaBlock.ProposerIndex = validatorIndex
 	alphaBlock.ParentRoot = parentRoot
 	alphaBlock.StateRoot = stateRoot
 	alphaBlock.Body.RandaoReveal = randaoReveal
-	alphaBlock.Body.Eth1Data = &ethpbalpha.Eth1Data{
+	alphaBlock.Body.Eth1Data = &zondpbalpha.Eth1Data{
 		DepositRoot:  depositRoot,
 		DepositCount: depositCount,
 		BlockHash:    blockHash,
 	}
 	syncCommitteeBits := bitfield.NewBitvector512()
 	syncCommitteeBits.SetBitAt(100, true)
-	alphaBlock.Body.SyncAggregate = &ethpbalpha.SyncAggregate{
+	alphaBlock.Body.SyncAggregate = &zondpbalpha.SyncAggregate{
 		SyncCommitteeBits:      syncCommitteeBits,
 		SyncCommitteeSignature: signature,
 	}
@@ -222,20 +222,20 @@ func Test_V1Alpha1BeaconBlockBellatrixToV2(t *testing.T) {
 }
 
 func Test_V1Alpha1BeaconBlockBellatrixToV2Blinded(t *testing.T) {
-	alphaBlock := util.HydrateBeaconBlockBellatrix(&ethpbalpha.BeaconBlockBellatrix{})
+	alphaBlock := util.HydrateBeaconBlockBellatrix(&zondpbalpha.BeaconBlockBellatrix{})
 	alphaBlock.Slot = slot
 	alphaBlock.ProposerIndex = validatorIndex
 	alphaBlock.ParentRoot = parentRoot
 	alphaBlock.StateRoot = stateRoot
 	alphaBlock.Body.RandaoReveal = randaoReveal
-	alphaBlock.Body.Eth1Data = &ethpbalpha.Eth1Data{
+	alphaBlock.Body.Eth1Data = &zondpbalpha.Eth1Data{
 		DepositRoot:  depositRoot,
 		DepositCount: depositCount,
 		BlockHash:    blockHash,
 	}
 	syncCommitteeBits := bitfield.NewBitvector512()
 	syncCommitteeBits.SetBitAt(100, true)
-	alphaBlock.Body.SyncAggregate = &ethpbalpha.SyncAggregate{
+	alphaBlock.Body.SyncAggregate = &zondpbalpha.SyncAggregate{
 		SyncCommitteeBits:      syncCommitteeBits,
 		SyncCommitteeSignature: signature,
 	}
@@ -251,20 +251,20 @@ func Test_V1Alpha1BeaconBlockBellatrixToV2Blinded(t *testing.T) {
 }
 
 func Test_V1Alpha1BeaconBlockCapellaToV2Blinded(t *testing.T) {
-	alphaBlock := util.HydrateBeaconBlockCapella(&ethpbalpha.BeaconBlockCapella{})
+	alphaBlock := util.HydrateBeaconBlockCapella(&zondpbalpha.BeaconBlockCapella{})
 	alphaBlock.Slot = slot
 	alphaBlock.ProposerIndex = validatorIndex
 	alphaBlock.ParentRoot = parentRoot
 	alphaBlock.StateRoot = stateRoot
 	alphaBlock.Body.RandaoReveal = randaoReveal
-	alphaBlock.Body.Eth1Data = &ethpbalpha.Eth1Data{
+	alphaBlock.Body.Eth1Data = &zondpbalpha.Eth1Data{
 		DepositRoot:  depositRoot,
 		DepositCount: depositCount,
 		BlockHash:    blockHash,
 	}
 	syncCommitteeBits := bitfield.NewBitvector512()
 	syncCommitteeBits.SetBitAt(100, true)
-	alphaBlock.Body.SyncAggregate = &ethpbalpha.SyncAggregate{
+	alphaBlock.Body.SyncAggregate = &zondpbalpha.SyncAggregate{
 		SyncCommitteeBits:      syncCommitteeBits,
 		SyncCommitteeSignature: signature,
 	}
@@ -280,16 +280,16 @@ func Test_V1Alpha1BeaconBlockCapellaToV2Blinded(t *testing.T) {
 }
 
 func TestBeaconStateAltairToProto(t *testing.T) {
-	source, err := util.NewBeaconStateAltair(util.FillRootsNaturalOptAltair, func(state *ethpbalpha.BeaconStateAltair) error {
+	source, err := util.NewBeaconStateAltair(util.FillRootsNaturalOptAltair, func(state *zondpbalpha.BeaconStateAltair) error {
 		state.GenesisTime = 1
 		state.GenesisValidatorsRoot = bytesutil.PadTo([]byte("genesisvalidatorsroot"), 32)
 		state.Slot = 2
-		state.Fork = &ethpbalpha.Fork{
+		state.Fork = &zondpbalpha.Fork{
 			PreviousVersion: bytesutil.PadTo([]byte("123"), 4),
 			CurrentVersion:  bytesutil.PadTo([]byte("456"), 4),
 			Epoch:           3,
 		}
-		state.LatestBlockHeader = &ethpbalpha.BeaconBlockHeader{
+		state.LatestBlockHeader = &zondpbalpha.BeaconBlockHeader{
 			Slot:          4,
 			ProposerIndex: 5,
 			ParentRoot:    bytesutil.PadTo([]byte("lbhparentroot"), 32),
@@ -299,18 +299,18 @@ func TestBeaconStateAltairToProto(t *testing.T) {
 		state.BlockRoots = [][]byte{bytesutil.PadTo([]byte("blockroots"), 32)}
 		state.StateRoots = [][]byte{bytesutil.PadTo([]byte("stateroots"), 32)}
 		state.HistoricalRoots = [][]byte{bytesutil.PadTo([]byte("historicalroots"), 32)}
-		state.Eth1Data = &ethpbalpha.Eth1Data{
+		state.Eth1Data = &zondpbalpha.Eth1Data{
 			DepositRoot:  bytesutil.PadTo([]byte("e1ddepositroot"), 32),
 			DepositCount: 6,
 			BlockHash:    bytesutil.PadTo([]byte("e1dblockhash"), 32),
 		}
-		state.Eth1DataVotes = []*ethpbalpha.Eth1Data{{
+		state.Eth1DataVotes = []*zondpbalpha.Eth1Data{{
 			DepositRoot:  bytesutil.PadTo([]byte("e1dvdepositroot"), 32),
 			DepositCount: 7,
 			BlockHash:    bytesutil.PadTo([]byte("e1dvblockhash"), 32),
 		}}
 		state.Eth1DepositIndex = 8
-		state.Validators = []*ethpbalpha.Validator{{
+		state.Validators = []*zondpbalpha.Validator{{
 			PublicKey:                  bytesutil.PadTo([]byte("publickey"), 48),
 			WithdrawalCredentials:      bytesutil.PadTo([]byte("withdrawalcredentials"), 32),
 			EffectiveBalance:           9,
@@ -324,26 +324,26 @@ func TestBeaconStateAltairToProto(t *testing.T) {
 		state.RandaoMixes = [][]byte{bytesutil.PadTo([]byte("randaomixes"), 32)}
 		state.Slashings = []uint64{15}
 		state.JustificationBits = bitfield.Bitvector4{1}
-		state.PreviousJustifiedCheckpoint = &ethpbalpha.Checkpoint{
+		state.PreviousJustifiedCheckpoint = &zondpbalpha.Checkpoint{
 			Epoch: 30,
 			Root:  bytesutil.PadTo([]byte("pjcroot"), 32),
 		}
-		state.CurrentJustifiedCheckpoint = &ethpbalpha.Checkpoint{
+		state.CurrentJustifiedCheckpoint = &zondpbalpha.Checkpoint{
 			Epoch: 31,
 			Root:  bytesutil.PadTo([]byte("cjcroot"), 32),
 		}
-		state.FinalizedCheckpoint = &ethpbalpha.Checkpoint{
+		state.FinalizedCheckpoint = &zondpbalpha.Checkpoint{
 			Epoch: 32,
 			Root:  bytesutil.PadTo([]byte("fcroot"), 32),
 		}
 		state.PreviousEpochParticipation = []byte("previousepochparticipation")
 		state.CurrentEpochParticipation = []byte("currentepochparticipation")
 		state.InactivityScores = []uint64{1, 2, 3}
-		state.CurrentSyncCommittee = &ethpbalpha.SyncCommittee{
+		state.CurrentSyncCommittee = &zondpbalpha.SyncCommittee{
 			Pubkeys:         [][]byte{bytesutil.PadTo([]byte("cscpubkeys"), 48)},
 			AggregatePubkey: bytesutil.PadTo([]byte("cscaggregatepubkey"), 48),
 		}
-		state.NextSyncCommittee = &ethpbalpha.SyncCommittee{
+		state.NextSyncCommittee = &zondpbalpha.SyncCommittee{
 			Pubkeys:         [][]byte{bytesutil.PadTo([]byte("nscpubkeys"), 48)},
 			AggregatePubkey: bytesutil.PadTo([]byte("nscaggregatepubkey"), 48),
 		}
@@ -427,16 +427,16 @@ func TestBeaconStateAltairToProto(t *testing.T) {
 }
 
 func TestBeaconStateBellatrixToProto(t *testing.T) {
-	source, err := util.NewBeaconStateBellatrix(util.FillRootsNaturalOptBellatrix, func(state *ethpbalpha.BeaconStateBellatrix) error {
+	source, err := util.NewBeaconStateBellatrix(util.FillRootsNaturalOptBellatrix, func(state *zondpbalpha.BeaconStateBellatrix) error {
 		state.GenesisTime = 1
 		state.GenesisValidatorsRoot = bytesutil.PadTo([]byte("genesisvalidatorsroot"), 32)
 		state.Slot = 2
-		state.Fork = &ethpbalpha.Fork{
+		state.Fork = &zondpbalpha.Fork{
 			PreviousVersion: bytesutil.PadTo([]byte("123"), 4),
 			CurrentVersion:  bytesutil.PadTo([]byte("456"), 4),
 			Epoch:           3,
 		}
-		state.LatestBlockHeader = &ethpbalpha.BeaconBlockHeader{
+		state.LatestBlockHeader = &zondpbalpha.BeaconBlockHeader{
 			Slot:          4,
 			ProposerIndex: 5,
 			ParentRoot:    bytesutil.PadTo([]byte("lbhparentroot"), 32),
@@ -446,18 +446,18 @@ func TestBeaconStateBellatrixToProto(t *testing.T) {
 		state.BlockRoots = [][]byte{bytesutil.PadTo([]byte("blockroots"), 32)}
 		state.StateRoots = [][]byte{bytesutil.PadTo([]byte("stateroots"), 32)}
 		state.HistoricalRoots = [][]byte{bytesutil.PadTo([]byte("historicalroots"), 32)}
-		state.Eth1Data = &ethpbalpha.Eth1Data{
+		state.Eth1Data = &zondpbalpha.Eth1Data{
 			DepositRoot:  bytesutil.PadTo([]byte("e1ddepositroot"), 32),
 			DepositCount: 6,
 			BlockHash:    bytesutil.PadTo([]byte("e1dblockhash"), 32),
 		}
-		state.Eth1DataVotes = []*ethpbalpha.Eth1Data{{
+		state.Eth1DataVotes = []*zondpbalpha.Eth1Data{{
 			DepositRoot:  bytesutil.PadTo([]byte("e1dvdepositroot"), 32),
 			DepositCount: 7,
 			BlockHash:    bytesutil.PadTo([]byte("e1dvblockhash"), 32),
 		}}
 		state.Eth1DepositIndex = 8
-		state.Validators = []*ethpbalpha.Validator{{
+		state.Validators = []*zondpbalpha.Validator{{
 			PublicKey:                  bytesutil.PadTo([]byte("publickey"), 48),
 			WithdrawalCredentials:      bytesutil.PadTo([]byte("withdrawalcredentials"), 32),
 			EffectiveBalance:           9,
@@ -471,26 +471,26 @@ func TestBeaconStateBellatrixToProto(t *testing.T) {
 		state.RandaoMixes = [][]byte{bytesutil.PadTo([]byte("randaomixes"), 32)}
 		state.Slashings = []uint64{15}
 		state.JustificationBits = bitfield.Bitvector4{1}
-		state.PreviousJustifiedCheckpoint = &ethpbalpha.Checkpoint{
+		state.PreviousJustifiedCheckpoint = &zondpbalpha.Checkpoint{
 			Epoch: 30,
 			Root:  bytesutil.PadTo([]byte("pjcroot"), 32),
 		}
-		state.CurrentJustifiedCheckpoint = &ethpbalpha.Checkpoint{
+		state.CurrentJustifiedCheckpoint = &zondpbalpha.Checkpoint{
 			Epoch: 31,
 			Root:  bytesutil.PadTo([]byte("cjcroot"), 32),
 		}
-		state.FinalizedCheckpoint = &ethpbalpha.Checkpoint{
+		state.FinalizedCheckpoint = &zondpbalpha.Checkpoint{
 			Epoch: 32,
 			Root:  bytesutil.PadTo([]byte("fcroot"), 32),
 		}
 		state.PreviousEpochParticipation = []byte("previousepochparticipation")
 		state.CurrentEpochParticipation = []byte("currentepochparticipation")
 		state.InactivityScores = []uint64{1, 2, 3}
-		state.CurrentSyncCommittee = &ethpbalpha.SyncCommittee{
+		state.CurrentSyncCommittee = &zondpbalpha.SyncCommittee{
 			Pubkeys:         [][]byte{bytesutil.PadTo([]byte("cscpubkeys"), 48)},
 			AggregatePubkey: bytesutil.PadTo([]byte("cscaggregatepubkey"), 48),
 		}
-		state.NextSyncCommittee = &ethpbalpha.SyncCommittee{
+		state.NextSyncCommittee = &zondpbalpha.SyncCommittee{
 			Pubkeys:         [][]byte{bytesutil.PadTo([]byte("nscpubkeys"), 48)},
 			AggregatePubkey: bytesutil.PadTo([]byte("nscaggregatepubkey"), 48),
 		}
@@ -606,16 +606,16 @@ func TestBeaconStateBellatrixToProto(t *testing.T) {
 }
 
 func TestBeaconStateCapellaToProto(t *testing.T) {
-	source, err := util.NewBeaconStateCapella(util.FillRootsNaturalOptCapella, func(state *ethpbalpha.BeaconStateCapella) error {
+	source, err := util.NewBeaconStateCapella(util.FillRootsNaturalOptCapella, func(state *zondpbalpha.BeaconStateCapella) error {
 		state.GenesisTime = 1
 		state.GenesisValidatorsRoot = bytesutil.PadTo([]byte("genesisvalidatorsroot"), 32)
 		state.Slot = 2
-		state.Fork = &ethpbalpha.Fork{
+		state.Fork = &zondpbalpha.Fork{
 			PreviousVersion: bytesutil.PadTo([]byte("123"), 4),
 			CurrentVersion:  bytesutil.PadTo([]byte("456"), 4),
 			Epoch:           3,
 		}
-		state.LatestBlockHeader = &ethpbalpha.BeaconBlockHeader{
+		state.LatestBlockHeader = &zondpbalpha.BeaconBlockHeader{
 			Slot:          4,
 			ProposerIndex: 5,
 			ParentRoot:    bytesutil.PadTo([]byte("lbhparentroot"), 32),
@@ -625,18 +625,18 @@ func TestBeaconStateCapellaToProto(t *testing.T) {
 		state.BlockRoots = [][]byte{bytesutil.PadTo([]byte("blockroots"), 32)}
 		state.StateRoots = [][]byte{bytesutil.PadTo([]byte("stateroots"), 32)}
 		state.HistoricalRoots = [][]byte{bytesutil.PadTo([]byte("historicalroots"), 32)}
-		state.Eth1Data = &ethpbalpha.Eth1Data{
+		state.Eth1Data = &zondpbalpha.Eth1Data{
 			DepositRoot:  bytesutil.PadTo([]byte("e1ddepositroot"), 32),
 			DepositCount: 6,
 			BlockHash:    bytesutil.PadTo([]byte("e1dblockhash"), 32),
 		}
-		state.Eth1DataVotes = []*ethpbalpha.Eth1Data{{
+		state.Eth1DataVotes = []*zondpbalpha.Eth1Data{{
 			DepositRoot:  bytesutil.PadTo([]byte("e1dvdepositroot"), 32),
 			DepositCount: 7,
 			BlockHash:    bytesutil.PadTo([]byte("e1dvblockhash"), 32),
 		}}
 		state.Eth1DepositIndex = 8
-		state.Validators = []*ethpbalpha.Validator{{
+		state.Validators = []*zondpbalpha.Validator{{
 			PublicKey:                  bytesutil.PadTo([]byte("publickey"), 48),
 			WithdrawalCredentials:      bytesutil.PadTo([]byte("withdrawalcredentials"), 32),
 			EffectiveBalance:           9,
@@ -650,26 +650,26 @@ func TestBeaconStateCapellaToProto(t *testing.T) {
 		state.RandaoMixes = [][]byte{bytesutil.PadTo([]byte("randaomixes"), 32)}
 		state.Slashings = []uint64{15}
 		state.JustificationBits = bitfield.Bitvector4{1}
-		state.PreviousJustifiedCheckpoint = &ethpbalpha.Checkpoint{
+		state.PreviousJustifiedCheckpoint = &zondpbalpha.Checkpoint{
 			Epoch: 30,
 			Root:  bytesutil.PadTo([]byte("pjcroot"), 32),
 		}
-		state.CurrentJustifiedCheckpoint = &ethpbalpha.Checkpoint{
+		state.CurrentJustifiedCheckpoint = &zondpbalpha.Checkpoint{
 			Epoch: 31,
 			Root:  bytesutil.PadTo([]byte("cjcroot"), 32),
 		}
-		state.FinalizedCheckpoint = &ethpbalpha.Checkpoint{
+		state.FinalizedCheckpoint = &zondpbalpha.Checkpoint{
 			Epoch: 32,
 			Root:  bytesutil.PadTo([]byte("fcroot"), 32),
 		}
 		state.PreviousEpochParticipation = []byte("previousepochparticipation")
 		state.CurrentEpochParticipation = []byte("currentepochparticipation")
 		state.InactivityScores = []uint64{1, 2, 3}
-		state.CurrentSyncCommittee = &ethpbalpha.SyncCommittee{
+		state.CurrentSyncCommittee = &zondpbalpha.SyncCommittee{
 			Pubkeys:         [][]byte{bytesutil.PadTo([]byte("cscpubkeys"), 48)},
 			AggregatePubkey: bytesutil.PadTo([]byte("cscaggregatepubkey"), 48),
 		}
-		state.NextSyncCommittee = &ethpbalpha.SyncCommittee{
+		state.NextSyncCommittee = &zondpbalpha.SyncCommittee{
 			Pubkeys:         [][]byte{bytesutil.PadTo([]byte("nscpubkeys"), 48)},
 			AggregatePubkey: bytesutil.PadTo([]byte("nscaggregatepubkey"), 48),
 		}
@@ -692,7 +692,7 @@ func TestBeaconStateCapellaToProto(t *testing.T) {
 		}
 		state.NextWithdrawalIndex = 123
 		state.NextWithdrawalValidatorIndex = 123
-		state.HistoricalSummaries = []*ethpbalpha.HistoricalSummary{
+		state.HistoricalSummaries = []*zondpbalpha.HistoricalSummary{
 			{
 				BlockSummaryRoot: bytesutil.PadTo([]byte("blocksummaryroot"), 32),
 				StateSummaryRoot: bytesutil.PadTo([]byte("statesummaryroot"), 32),
@@ -802,8 +802,8 @@ func TestBeaconStateCapellaToProto(t *testing.T) {
 }
 
 func TestV1Alpha1SignedDilithiumToExecChangeToV2(t *testing.T) {
-	alphaChange := &ethpbalpha.SignedDilithiumToExecutionChange{
-		Message: &ethpbalpha.DilithiumToExecutionChange{
+	alphaChange := &zondpbalpha.SignedDilithiumToExecutionChange{
+		Message: &zondpbalpha.DilithiumToExecutionChange{
 			ValidatorIndex:      validatorIndex,
 			FromDilithiumPubkey: bytesutil.PadTo([]byte("fromdilithiumpubkey"), 48),
 			ToExecutionAddress:  bytesutil.PadTo([]byte("toexecutionaddress"), 20),

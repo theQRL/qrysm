@@ -16,8 +16,8 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/rand"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	prysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"google.golang.org/grpc/codes"
@@ -27,7 +27,7 @@ import (
 
 // GetDuties returns the duties assigned to a list of validators specified
 // in the request object.
-func (vs *Server) GetDuties(ctx context.Context, req *ethpb.DutiesRequest) (*ethpb.DutiesResponse, error) {
+func (vs *Server) GetDuties(ctx context.Context, req *zondpb.DutiesRequest) (*zondpb.DutiesResponse, error) {
 	if vs.SyncChecker.Syncing() {
 		return nil, status.Error(codes.Unavailable, "Syncing to latest head, not ready to respond")
 	}
@@ -37,7 +37,7 @@ func (vs *Server) GetDuties(ctx context.Context, req *ethpb.DutiesRequest) (*eth
 // StreamDuties returns the duties assigned to a list of validators specified
 // in the request object via a server-side stream. The stream sends out new assignments in case
 // a chain re-org occurred.
-func (vs *Server) StreamDuties(req *ethpb.DutiesRequest, stream ethpb.BeaconNodeValidator_StreamDutiesServer) error {
+func (vs *Server) StreamDuties(req *zondpb.DutiesRequest, stream zondpb.BeaconNodeValidator_StreamDutiesServer) error {
 	if vs.SyncChecker.Syncing() {
 		return status.Error(codes.Unavailable, "Syncing to latest head, not ready to respond")
 	}
@@ -85,7 +85,7 @@ func (vs *Server) StreamDuties(req *ethpb.DutiesRequest, stream ethpb.BeaconNode
 			// and send another response over the server stream right away.
 			currentEpoch = slots.EpochsSinceGenesis(vs.TimeFetcher.GenesisTime())
 			if ev.Type == statefeed.Reorg {
-				data, ok := ev.Data.(*ethpbv1.EventChainReorg)
+				data, ok := ev.Data.(*zondpbv1.EventChainReorg)
 				if !ok {
 					return status.Errorf(codes.Internal, "Received incorrect data type over reorg feed: %v", data)
 				}
@@ -108,7 +108,7 @@ func (vs *Server) StreamDuties(req *ethpb.DutiesRequest, stream ethpb.BeaconNode
 
 // Compute the validator duties from the head state's corresponding epoch
 // for validators public key / indices requested.
-func (vs *Server) duties(ctx context.Context, req *ethpb.DutiesRequest) (*ethpb.DutiesResponse, error) {
+func (vs *Server) duties(ctx context.Context, req *zondpb.DutiesRequest) (*zondpb.DutiesResponse, error) {
 	currentEpoch := slots.ToEpoch(vs.TimeFetcher.CurrentSlot())
 	if req.Epoch > currentEpoch+1 {
 		return nil, status.Errorf(codes.Unavailable, "Request epoch %d can not be greater than next epoch %d", req.Epoch, currentEpoch+1)
@@ -144,17 +144,17 @@ func (vs *Server) duties(ctx context.Context, req *ethpb.DutiesRequest) (*ethpb.
 		return nil, status.Errorf(codes.Internal, "Could not compute next committee assignments: %v", err)
 	}
 
-	validatorAssignments := make([]*ethpb.DutiesResponse_Duty, 0, len(req.PublicKeys))
-	nextValidatorAssignments := make([]*ethpb.DutiesResponse_Duty, 0, len(req.PublicKeys))
+	validatorAssignments := make([]*zondpb.DutiesResponse_Duty, 0, len(req.PublicKeys))
+	nextValidatorAssignments := make([]*zondpb.DutiesResponse_Duty, 0, len(req.PublicKeys))
 
 	for _, pubKey := range req.PublicKeys {
 		if ctx.Err() != nil {
 			return nil, status.Errorf(codes.Aborted, "Could not continue fetching assignments: %v", ctx.Err())
 		}
-		assignment := &ethpb.DutiesResponse_Duty{
+		assignment := &zondpb.DutiesResponse_Duty{
 			PublicKey: pubKey,
 		}
-		nextAssignment := &ethpb.DutiesResponse_Duty{
+		nextAssignment := &zondpb.DutiesResponse_Duty{
 			PublicKey: pubKey,
 		}
 		idx, ok := s.ValidatorIndexByPubkey(bytesutil.ToBytes2592(pubKey))
@@ -238,7 +238,7 @@ func (vs *Server) duties(ctx context.Context, req *ethpb.DutiesRequest) (*ethpb.
 		assignValidatorToSubnet(pubKey, nextAssignment.Status)
 	}
 
-	return &ethpb.DutiesResponse{
+	return &zondpb.DutiesResponse{
 		Duties:             validatorAssignments,
 		CurrentEpochDuties: validatorAssignments,
 		NextEpochDuties:    nextValidatorAssignments,
@@ -247,13 +247,13 @@ func (vs *Server) duties(ctx context.Context, req *ethpb.DutiesRequest) (*ethpb.
 
 // AssignValidatorToSubnet checks the status and pubkey of a particular validator
 // to discern whether persistent subnets need to be registered for them.
-func (vs *Server) AssignValidatorToSubnet(_ context.Context, req *ethpb.AssignValidatorToSubnetRequest) (*emptypb.Empty, error) {
+func (vs *Server) AssignValidatorToSubnet(_ context.Context, req *zondpb.AssignValidatorToSubnetRequest) (*emptypb.Empty, error) {
 	assignValidatorToSubnet(req.PublicKey, req.Status)
 	return &emptypb.Empty{}, nil
 }
 
-func assignValidatorToSubnet(pubkey []byte, status ethpb.ValidatorStatus) {
-	if status != ethpb.ValidatorStatus_ACTIVE && status != ethpb.ValidatorStatus_EXITING {
+func assignValidatorToSubnet(pubkey []byte, status zondpb.ValidatorStatus) {
+	if status != zondpb.ValidatorStatus_ACTIVE && status != zondpb.ValidatorStatus_EXITING {
 		return
 	}
 
@@ -276,7 +276,7 @@ func assignValidatorToSubnet(pubkey []byte, status ethpb.ValidatorStatus) {
 	cache.SubnetIDs.AddPersistentCommittee(pubkey, assignedIdxs, totalDuration*time.Second)
 }
 
-func registerSyncSubnetCurrentPeriod(s beaconState.BeaconState, epoch primitives.Epoch, pubKey []byte, status ethpb.ValidatorStatus) error {
+func registerSyncSubnetCurrentPeriod(s beaconState.BeaconState, epoch primitives.Epoch, pubKey []byte, status zondpb.ValidatorStatus) error {
 	committee, err := s.CurrentSyncCommittee()
 	if err != nil {
 		return err
@@ -286,7 +286,7 @@ func registerSyncSubnetCurrentPeriod(s beaconState.BeaconState, epoch primitives
 	return nil
 }
 
-func registerSyncSubnetNextPeriod(s beaconState.BeaconState, epoch primitives.Epoch, pubKey []byte, status ethpb.ValidatorStatus) error {
+func registerSyncSubnetNextPeriod(s beaconState.BeaconState, epoch primitives.Epoch, pubKey []byte, status zondpb.ValidatorStatus) error {
 	committee, err := s.NextSyncCommittee()
 	if err != nil {
 		return err
@@ -299,8 +299,8 @@ func registerSyncSubnetNextPeriod(s beaconState.BeaconState, epoch primitives.Ep
 // registerSyncSubnet checks the status and pubkey of a particular validator
 // to discern whether persistent subnets need to be registered for them.
 func registerSyncSubnet(currEpoch primitives.Epoch, syncPeriod uint64, pubkey []byte,
-	syncCommittee *ethpb.SyncCommittee, status ethpb.ValidatorStatus) {
-	if status != ethpb.ValidatorStatus_ACTIVE && status != ethpb.ValidatorStatus_EXITING {
+	syncCommittee *zondpb.SyncCommittee, status zondpb.ValidatorStatus) {
+	if status != zondpb.ValidatorStatus_ACTIVE && status != zondpb.ValidatorStatus_EXITING {
 		return
 	}
 	startEpoch := primitives.Epoch(syncPeriod * uint64(params.BeaconConfig().EpochsPerSyncCommitteePeriod))
@@ -334,7 +334,7 @@ func registerSyncSubnet(currEpoch primitives.Epoch, syncPeriod uint64, pubkey []
 }
 
 // subnetsFromCommittee retrieves the relevant subnets for the chosen validator.
-func subnetsFromCommittee(pubkey []byte, comm *ethpb.SyncCommittee) []uint64 {
+func subnetsFromCommittee(pubkey []byte, comm *zondpb.SyncCommittee) []uint64 {
 	positions := make([]uint64, 0)
 	for i, pkey := range comm.Pubkeys {
 		if bytes.Equal(pubkey, pkey) {

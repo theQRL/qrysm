@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/spectest/utils"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -34,14 +34,14 @@ func RunBlockHeaderTest(t *testing.T, config string) {
 			require.NoError(t, err)
 			blockSSZ, err := snappy.Decode(nil /* dst */, blockFile)
 			require.NoError(t, err, "Failed to decompress")
-			block := &ethpb.BeaconBlockAltair{}
+			block := &zondpb.BeaconBlockAltair{}
 			require.NoError(t, block.UnmarshalSSZ(blockSSZ), "Failed to unmarshal")
 
 			preBeaconStateFile, err := util.BazelFileBytes(testsFolderPath, folder.Name(), "pre.ssz_snappy")
 			require.NoError(t, err)
 			preBeaconStateSSZ, err := snappy.Decode(nil /* dst */, preBeaconStateFile)
 			require.NoError(t, err, "Failed to decompress")
-			preBeaconStateBase := &ethpb.BeaconStateAltair{}
+			preBeaconStateBase := &zondpb.BeaconStateAltair{}
 			require.NoError(t, preBeaconStateBase.UnmarshalSSZ(preBeaconStateSSZ), "Failed to unmarshal")
 			preBeaconState, err := state_native.InitializeFromProtoAltair(preBeaconStateBase)
 			require.NoError(t, err)
@@ -67,7 +67,7 @@ func RunBlockHeaderTest(t *testing.T, config string) {
 				postBeaconStateSSZ, err := snappy.Decode(nil /* dst */, postBeaconStateFile)
 				require.NoError(t, err, "Failed to decompress")
 
-				postBeaconState := &ethpb.BeaconStateAltair{}
+				postBeaconState := &zondpb.BeaconStateAltair{}
 				require.NoError(t, postBeaconState.UnmarshalSSZ(postBeaconStateSSZ), "Failed to unmarshal")
 				pbState, err := state_native.ProtobufBeaconStateAltair(beaconState.ToProto())
 				require.NoError(t, err)

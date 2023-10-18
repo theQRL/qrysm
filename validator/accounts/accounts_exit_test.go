@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/v4/build/bazel"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/io/file"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
@@ -44,8 +44,8 @@ func TestPrepareAllKeys(t *testing.T) {
 }
 
 func TestWriteSignedVoluntaryExitJSON(t *testing.T) {
-	sve := &eth.SignedVoluntaryExit{
-		Exit: &eth.VoluntaryExit{
+	sve := &zond.SignedVoluntaryExit{
+		Exit: &zond.VoluntaryExit{
 			Epoch:          5,
 			ValidatorIndex: 300,
 		},

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
@@ -45,17 +45,17 @@ func TestStore_NestedBackup(t *testing.T) {
 	db := setupDB(t, keys)
 	ctx := context.Background()
 	root := [32]byte{1}
-	idxAtt := &ethpb.IndexedAttestation{
+	idxAtt := &zondpb.IndexedAttestation{
 		AttestingIndices: nil,
-		Data: &ethpb.AttestationData{
+		Data: &zondpb.AttestationData{
 			Slot:            0,
 			CommitteeIndex:  0,
 			BeaconBlockRoot: root[:],
-			Source: &ethpb.Checkpoint{
+			Source: &zondpb.Checkpoint{
 				Epoch: 10,
 				Root:  root[:],
 			},
-			Target: &ethpb.Checkpoint{
+			Target: &zondpb.Checkpoint{
 				Epoch: 0,
 				Root:  root[:],
 			},

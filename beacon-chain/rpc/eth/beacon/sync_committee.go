@@ -13,8 +13,8 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
-	ethpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
@@ -23,7 +23,7 @@ import (
 
 // ListSyncCommittees retrieves the sync committees for the given epoch.
 // If the epoch is not passed in, then the sync committees for the epoch of the state will be obtained.
-func (bs *Server) ListSyncCommittees(ctx context.Context, req *ethpbv2.StateSyncCommitteesRequest) (*ethpbv2.StateSyncCommitteesResponse, error) {
+func (bs *Server) ListSyncCommittees(ctx context.Context, req *zondpbv2.StateSyncCommitteesRequest) (*zondpbv2.StateSyncCommitteesResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.ListSyncCommittees")
 	defer span.End()
 
@@ -72,7 +72,7 @@ func (bs *Server) ListSyncCommittees(ctx context.Context, req *ethpbv2.StateSync
 	}
 
 	var committeeIndices []primitives.ValidatorIndex
-	var committee *ethpbalpha.SyncCommittee
+	var committee *zondpbalpha.SyncCommittee
 	if requestNextCommittee {
 		// Get the next sync committee and sync committee indices from the state.
 		committeeIndices, committee, err = nextCommitteeIndicesFromState(st)
@@ -102,8 +102,8 @@ func (bs *Server) ListSyncCommittees(ctx context.Context, req *ethpbv2.StateSync
 	}
 	isFinalized := bs.FinalizationFetcher.IsFinalized(ctx, blockRoot)
 
-	return &ethpbv2.StateSyncCommitteesResponse{
-		Data: &ethpbv2.SyncCommitteeValidators{
+	return &zondpbv2.StateSyncCommitteesResponse{
+		Data: &zondpbv2.SyncCommitteeValidators{
 			Validators:          committeeIndices,
 			ValidatorAggregates: subcommittees,
 		},
@@ -112,7 +112,7 @@ func (bs *Server) ListSyncCommittees(ctx context.Context, req *ethpbv2.StateSync
 	}, nil
 }
 
-func committeeIndicesFromState(st state.BeaconState, committee *ethpbalpha.SyncCommittee) ([]primitives.ValidatorIndex, *ethpbalpha.SyncCommittee, error) {
+func committeeIndicesFromState(st state.BeaconState, committee *zondpbalpha.SyncCommittee) ([]primitives.ValidatorIndex, *zondpbalpha.SyncCommittee, error) {
 	committeeIndices := make([]primitives.ValidatorIndex, len(committee.Pubkeys))
 	for i, key := range committee.Pubkeys {
 		index, ok := st.ValidatorIndexByPubkey(bytesutil.ToBytes2592(key))
@@ -127,7 +127,7 @@ func committeeIndicesFromState(st state.BeaconState, committee *ethpbalpha.SyncC
 	return committeeIndices, committee, nil
 }
 
-func currentCommitteeIndicesFromState(st state.BeaconState) ([]primitives.ValidatorIndex, *ethpbalpha.SyncCommittee, error) {
+func currentCommitteeIndicesFromState(st state.BeaconState) ([]primitives.ValidatorIndex, *zondpbalpha.SyncCommittee, error) {
 	committee, err := st.CurrentSyncCommittee()
 	if err != nil {
 		return nil, nil, fmt.Errorf(
@@ -138,7 +138,7 @@ func currentCommitteeIndicesFromState(st state.BeaconState) ([]primitives.Valida
 	return committeeIndicesFromState(st, committee)
 }
 
-func nextCommitteeIndicesFromState(st state.BeaconState) ([]primitives.ValidatorIndex, *ethpbalpha.SyncCommittee, error) {
+func nextCommitteeIndicesFromState(st state.BeaconState) ([]primitives.ValidatorIndex, *zondpbalpha.SyncCommittee, error) {
 	committee, err := st.NextSyncCommittee()
 	if err != nil {
 		return nil, nil, fmt.Errorf(
@@ -149,9 +149,9 @@ func nextCommitteeIndicesFromState(st state.BeaconState) ([]primitives.Validator
 	return committeeIndicesFromState(st, committee)
 }
 
-func extractSyncSubcommittees(st state.BeaconState, committee *ethpbalpha.SyncCommittee) ([]*ethpbv2.SyncSubcommitteeValidators, error) {
+func extractSyncSubcommittees(st state.BeaconState, committee *zondpbalpha.SyncCommittee) ([]*zondpbv2.SyncSubcommitteeValidators, error) {
 	subcommitteeCount := params.BeaconConfig().SyncCommitteeSubnetCount
-	subcommittees := make([]*ethpbv2.SyncSubcommitteeValidators, subcommitteeCount)
+	subcommittees := make([]*zondpbv2.SyncSubcommitteeValidators, subcommitteeCount)
 	for i := uint64(0); i < subcommitteeCount; i++ {
 		pubkeys, err := altair.SyncSubCommitteePubkeys(committee, primitives.CommitteeIndex(i))
 		if err != nil {
@@ -159,7 +159,7 @@ func extractSyncSubcommittees(st state.BeaconState, committee *ethpbalpha.SyncCo
 				"failed to get subcommittee pubkeys: %v", err,
 			)
 		}
-		subcommittee := &ethpbv2.SyncSubcommitteeValidators{Validators: make([]primitives.ValidatorIndex, len(pubkeys))}
+		subcommittee := &zondpbv2.SyncSubcommitteeValidators{Validators: make([]primitives.ValidatorIndex, len(pubkeys))}
 		for j, key := range pubkeys {
 			index, ok := st.ValidatorIndexByPubkey(bytesutil.ToBytes2592(key))
 			if !ok {
@@ -176,11 +176,11 @@ func extractSyncSubcommittees(st state.BeaconState, committee *ethpbalpha.SyncCo
 }
 
 // SubmitPoolSyncCommitteeSignatures submits sync committee signature objects to the node.
-func (bs *Server) SubmitPoolSyncCommitteeSignatures(ctx context.Context, req *ethpbv2.SubmitPoolSyncCommitteeSignatures) (*empty.Empty, error) {
+func (bs *Server) SubmitPoolSyncCommitteeSignatures(ctx context.Context, req *zondpbv2.SubmitPoolSyncCommitteeSignatures) (*empty.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.SubmitPoolSyncCommitteeSignatures")
 	defer span.End()
 
-	var validMessages []*ethpbalpha.SyncCommitteeMessage
+	var validMessages []*zondpbalpha.SyncCommitteeMessage
 	var msgFailures []*helpers.SingleIndexedVerificationFailure
 	for i, msg := range req.Data {
 		if err := validateSyncCommitteeMessage(msg); err != nil {
@@ -191,7 +191,7 @@ func (bs *Server) SubmitPoolSyncCommitteeSignatures(ctx context.Context, req *et
 			continue
 		}
 
-		v1alpha1Msg := &ethpbalpha.SyncCommitteeMessage{
+		v1alpha1Msg := &zondpbalpha.SyncCommitteeMessage{
 			Slot:           msg.Slot,
 			BlockRoot:      msg.BeaconBlockRoot,
 			ValidatorIndex: msg.ValidatorIndex,
@@ -223,7 +223,7 @@ func (bs *Server) SubmitPoolSyncCommitteeSignatures(ctx context.Context, req *et
 	return &empty.Empty{}, nil
 }
 
-func validateSyncCommitteeMessage(msg *ethpbv2.SyncCommitteeMessage) error {
+func validateSyncCommitteeMessage(msg *zondpbv2.SyncCommitteeMessage) error {
 	if len(msg.BeaconBlockRoot) != 32 {
 		return errors.New("invalid block root length")
 	}

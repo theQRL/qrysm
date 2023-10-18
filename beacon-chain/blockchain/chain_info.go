@@ -15,8 +15,8 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 )
@@ -45,7 +45,7 @@ type ForkchoiceFetcher interface {
 	HighestReceivedBlockSlot() primitives.Slot
 	ReceivedBlocksLastEpoch() (uint64, error)
 	InsertNode(context.Context, state.BeaconState, [32]byte) error
-	ForkChoiceDump(context.Context) (*ethpbv1.ForkChoiceDump, error)
+	ForkChoiceDump(context.Context) (*zondpbv1.ForkChoiceDump, error)
 	NewSlot(context.Context, primitives.Slot) error
 	ProposerBoost() [32]byte
 }
@@ -71,7 +71,7 @@ type HeadFetcher interface {
 	HeadStateReadOnly(ctx context.Context) (state.ReadOnlyBeaconState, error)
 	HeadValidatorsIndices(ctx context.Context, epoch primitives.Epoch) ([]primitives.ValidatorIndex, error)
 	HeadGenesisValidatorsRoot() [32]byte
-	HeadETH1Data() *ethpb.Eth1Data
+	HeadETH1Data() *zondpb.Eth1Data
 	HeadPublicKeyToValidatorIndex(pubKey [dilithium2.CryptoPublicKeyBytes]byte) (primitives.ValidatorIndex, bool)
 	HeadValidatorIndexToPublicKey(ctx context.Context, index primitives.ValidatorIndex) ([dilithium2.CryptoPublicKeyBytes]byte, error)
 	ChainHeads() ([][32]byte, []primitives.Slot)
@@ -81,7 +81,7 @@ type HeadFetcher interface {
 
 // ForkFetcher retrieves the current fork information of the Ethereum beacon chain.
 type ForkFetcher interface {
-	CurrentFork() *ethpb.Fork
+	CurrentFork() *zondpb.Fork
 	GenesisFetcher
 	TimeFetcher
 }
@@ -100,9 +100,9 @@ type CanonicalFetcher interface {
 // FinalizationFetcher defines a common interface for methods in blockchain service which
 // directly retrieve finalization and justification related data.
 type FinalizationFetcher interface {
-	FinalizedCheckpt() *ethpb.Checkpoint
-	CurrentJustifiedCheckpt() *ethpb.Checkpoint
-	PreviousJustifiedCheckpt() *ethpb.Checkpoint
+	FinalizedCheckpt() *zondpb.Checkpoint
+	CurrentJustifiedCheckpt() *zondpb.Checkpoint
+	PreviousJustifiedCheckpt() *zondpb.Checkpoint
 	UnrealizedJustifiedPayloadBlockHash() [32]byte
 	FinalizedBlockHash() [32]byte
 	InForkchoice([32]byte) bool
@@ -116,27 +116,27 @@ type OptimisticModeFetcher interface {
 }
 
 // FinalizedCheckpt returns the latest finalized checkpoint from chain store.
-func (s *Service) FinalizedCheckpt() *ethpb.Checkpoint {
+func (s *Service) FinalizedCheckpt() *zondpb.Checkpoint {
 	s.cfg.ForkChoiceStore.RLock()
 	defer s.cfg.ForkChoiceStore.RUnlock()
 	cp := s.cfg.ForkChoiceStore.FinalizedCheckpoint()
-	return &ethpb.Checkpoint{Epoch: cp.Epoch, Root: bytesutil.SafeCopyBytes(cp.Root[:])}
+	return &zondpb.Checkpoint{Epoch: cp.Epoch, Root: bytesutil.SafeCopyBytes(cp.Root[:])}
 }
 
 // PreviousJustifiedCheckpt returns the current justified checkpoint from chain store.
-func (s *Service) PreviousJustifiedCheckpt() *ethpb.Checkpoint {
+func (s *Service) PreviousJustifiedCheckpt() *zondpb.Checkpoint {
 	s.cfg.ForkChoiceStore.RLock()
 	defer s.cfg.ForkChoiceStore.RUnlock()
 	cp := s.cfg.ForkChoiceStore.PreviousJustifiedCheckpoint()
-	return &ethpb.Checkpoint{Epoch: cp.Epoch, Root: bytesutil.SafeCopyBytes(cp.Root[:])}
+	return &zondpb.Checkpoint{Epoch: cp.Epoch, Root: bytesutil.SafeCopyBytes(cp.Root[:])}
 }
 
 // CurrentJustifiedCheckpt returns the current justified checkpoint from chain store.
-func (s *Service) CurrentJustifiedCheckpt() *ethpb.Checkpoint {
+func (s *Service) CurrentJustifiedCheckpt() *zondpb.Checkpoint {
 	s.cfg.ForkChoiceStore.RLock()
 	defer s.cfg.ForkChoiceStore.RUnlock()
 	cp := s.cfg.ForkChoiceStore.JustifiedCheckpoint()
-	return &ethpb.Checkpoint{Epoch: cp.Epoch, Root: bytesutil.SafeCopyBytes(cp.Root[:])}
+	return &zondpb.Checkpoint{Epoch: cp.Epoch, Root: bytesutil.SafeCopyBytes(cp.Root[:])}
 }
 
 // HeadSlot returns the slot of the head of the chain.
@@ -255,12 +255,12 @@ func (s *Service) HeadGenesisValidatorsRoot() [32]byte {
 }
 
 // HeadETH1Data returns the eth1data of the current head state.
-func (s *Service) HeadETH1Data() *ethpb.Eth1Data {
+func (s *Service) HeadETH1Data() *zondpb.Eth1Data {
 	s.headLock.RLock()
 	defer s.headLock.RUnlock()
 
 	if !s.hasHeadState() {
-		return &ethpb.Eth1Data{}
+		return &zondpb.Eth1Data{}
 	}
 	return s.head.state.Eth1Data()
 }
@@ -283,12 +283,12 @@ func (s *Service) GenesisValidatorsRoot() [32]byte {
 }
 
 // CurrentFork retrieves the latest fork information of the beacon chain.
-func (s *Service) CurrentFork() *ethpb.Fork {
+func (s *Service) CurrentFork() *zondpb.Fork {
 	s.headLock.RLock()
 	defer s.headLock.RUnlock()
 
 	if !s.hasHeadState() {
-		return &ethpb.Fork{
+		return &zondpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 		}
@@ -511,13 +511,13 @@ func (s *Service) SetGenesisTime(t time.Time) {
 	s.genesisTime = t
 }
 
-func (s *Service) recoverStateSummary(ctx context.Context, blockRoot [32]byte) (*ethpb.StateSummary, error) {
+func (s *Service) recoverStateSummary(ctx context.Context, blockRoot [32]byte) (*zondpb.StateSummary, error) {
 	if s.cfg.BeaconDB.HasBlock(ctx, blockRoot) {
 		b, err := s.cfg.BeaconDB.Block(ctx, blockRoot)
 		if err != nil {
 			return nil, err
 		}
-		summary := &ethpb.StateSummary{Slot: b.Block().Slot(), Root: blockRoot[:]}
+		summary := &zondpb.StateSummary{Slot: b.Block().Slot(), Root: blockRoot[:]}
 		if err := s.cfg.BeaconDB.SaveStateSummary(ctx, summary); err != nil {
 			return nil, err
 		}

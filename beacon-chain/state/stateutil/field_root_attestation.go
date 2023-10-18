@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	params "github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/encoding/ssz"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // RootsArrayHashTreeRoot computes the Merkle root of arrays of 32-byte hashes, such as [64][32]byte
@@ -17,7 +17,7 @@ func RootsArrayHashTreeRoot(vals [][]byte, length uint64) ([32]byte, error) {
 	return ArraysRoot(vals, length)
 }
 
-func EpochAttestationsRoot(atts []*ethpb.PendingAttestation) ([32]byte, error) {
+func EpochAttestationsRoot(atts []*zondpb.PendingAttestation) ([32]byte, error) {
 	max := uint64(params.BeaconConfig().CurrentEpochAttestationsLength())
 	if uint64(len(atts)) > max {
 		return [32]byte{}, fmt.Errorf("epoch attestation exceeds max length %d", max)
@@ -47,7 +47,7 @@ func EpochAttestationsRoot(atts []*ethpb.PendingAttestation) ([32]byte, error) {
 	return res, nil
 }
 
-func pendingAttestationRoot(att *ethpb.PendingAttestation) ([32]byte, error) {
+func pendingAttestationRoot(att *zondpb.PendingAttestation) ([32]byte, error) {
 	if att == nil {
 		return [32]byte{}, errors.New("nil pending attestation")
 	}

@@ -5,15 +5,15 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/protobuf/proto"
 )
 
 // skipcq: SCC-U1000
 func (s *Service) syncCommitteeMessageSubscriber(_ context.Context, msg proto.Message) error {
-	m, ok := msg.(*ethpb.SyncCommitteeMessage)
+	m, ok := msg.(*zondpb.SyncCommitteeMessage)
 	if !ok {
-		return fmt.Errorf("message was not type *ethpb.SyncCommitteeMessage, type=%T", msg)
+		return fmt.Errorf("message was not type *zondpb.SyncCommitteeMessage, type=%T", msg)
 	}
 
 	if m == nil {

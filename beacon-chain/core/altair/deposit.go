@@ -7,14 +7,14 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // ProcessDeposits processes validator deposits for beacon state Altair.
 func ProcessDeposits(
 	ctx context.Context,
 	beaconState state.BeaconState,
-	deposits []*ethpb.Deposit,
+	deposits []*zondpb.Deposit,
 ) (state.BeaconState, error) {
 	batchVerified, err := blocks.BatchVerifyDepositsSignatures(ctx, deposits)
 	if err != nil {
@@ -34,7 +34,7 @@ func ProcessDeposits(
 }
 
 // ProcessDeposit processes validator deposit for beacon state Altair.
-func ProcessDeposit(beaconState state.BeaconState, deposit *ethpb.Deposit, verifySignature bool) (state.BeaconState, error) {
+func ProcessDeposit(beaconState state.BeaconState, deposit *zondpb.Deposit, verifySignature bool) (state.BeaconState, error) {
 	beaconState, isNewValidator, err := blocks.ProcessDeposit(beaconState, deposit, verifySignature)
 	if err != nil {
 		return nil, err

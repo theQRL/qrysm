@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/spectest/utils"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -29,11 +29,11 @@ func RunDilithiumToExecutionChangeTest(t *testing.T, config string) {
 			require.NoError(t, err)
 			changeSSZ, err := snappy.Decode(nil /* dst */, changeFile)
 			require.NoError(t, err, "Failed to decompress")
-			change := &ethpb.SignedDilithiumToExecutionChange{}
+			change := &zondpb.SignedDilithiumToExecutionChange{}
 			require.NoError(t, change.UnmarshalSSZ(changeSSZ), "Failed to unmarshal")
 
-			body := &ethpb.BeaconBlockBodyCapella{
-				DilithiumToExecutionChanges: []*ethpb.SignedDilithiumToExecutionChange{change},
+			body := &zondpb.BeaconBlockBodyCapella{
+				DilithiumToExecutionChanges: []*zondpb.SignedDilithiumToExecutionChange{change},
 			}
 			RunBlockOperationTest(t, folderPath, body, func(ctx context.Context, s state.BeaconState, b interfaces.ReadOnlySignedBeaconBlock) (state.BeaconState, error) {
 				st, err := blocks.ProcessDilithiumToExecutionChanges(s, b)

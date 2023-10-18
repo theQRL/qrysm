@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -37,10 +37,10 @@ func (m *MockNodeClient) EXPECT() *MockNodeClientMockRecorder {
 }
 
 // GetGenesis mocks base method.
-func (m *MockNodeClient) GetGenesis(arg0 context.Context, arg1 *emptypb.Empty) (*eth.Genesis, error) {
+func (m *MockNodeClient) GetGenesis(arg0 context.Context, arg1 *emptypb.Empty) (*zond.Genesis, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetGenesis", arg0, arg1)
-	ret0, _ := ret[0].(*eth.Genesis)
+	ret0, _ := ret[0].(*zond.Genesis)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -52,10 +52,10 @@ func (mr *MockNodeClientMockRecorder) GetGenesis(arg0, arg1 interface{}) *gomock
 }
 
 // GetSyncStatus mocks base method.
-func (m *MockNodeClient) GetSyncStatus(arg0 context.Context, arg1 *emptypb.Empty) (*eth.SyncStatus, error) {
+func (m *MockNodeClient) GetSyncStatus(arg0 context.Context, arg1 *emptypb.Empty) (*zond.SyncStatus, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSyncStatus", arg0, arg1)
-	ret0, _ := ret[0].(*eth.SyncStatus)
+	ret0, _ := ret[0].(*zond.SyncStatus)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -67,10 +67,10 @@ func (mr *MockNodeClientMockRecorder) GetSyncStatus(arg0, arg1 interface{}) *gom
 }
 
 // GetVersion mocks base method.
-func (m *MockNodeClient) GetVersion(arg0 context.Context, arg1 *emptypb.Empty) (*eth.Version, error) {
+func (m *MockNodeClient) GetVersion(arg0 context.Context, arg1 *emptypb.Empty) (*zond.Version, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVersion", arg0, arg1)
-	ret0, _ := ret[0].(*eth.Version)
+	ret0, _ := ret[0].(*zond.Version)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -82,10 +82,10 @@ func (mr *MockNodeClientMockRecorder) GetVersion(arg0, arg1 interface{}) *gomock
 }
 
 // ListPeers mocks base method.
-func (m *MockNodeClient) ListPeers(arg0 context.Context, arg1 *emptypb.Empty) (*eth.Peers, error) {
+func (m *MockNodeClient) ListPeers(arg0 context.Context, arg1 *emptypb.Empty) (*zond.Peers, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListPeers", arg0, arg1)
-	ret0, _ := ret[0].(*eth.Peers)
+	ret0, _ := ret[0].(*zond.Peers)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

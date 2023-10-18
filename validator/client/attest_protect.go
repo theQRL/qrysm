@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/config/features"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/slashings"
 	"github.com/theQRL/qrysm/v4/validator/db/kv"
 	"go.opencensus.io/trace"
@@ -22,7 +22,7 @@ var failedPostAttSignExternalErr = "attempted to make slashable attestation, rej
 // with new values and save it to the database.
 func (v *validator) slashableAttestationCheck(
 	ctx context.Context,
-	indexedAtt *ethpb.IndexedAttestation,
+	indexedAtt *zondpb.IndexedAttestation,
 	pubKey [dilithium2.CryptoPublicKeyBytes]byte,
 	signingRoot [32]byte,
 ) error {

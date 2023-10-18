@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/validator/client/iface"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -21,7 +21,7 @@ type beaconApiNodeClient struct {
 	genesisProvider genesisProvider
 }
 
-func (c *beaconApiNodeClient) GetSyncStatus(ctx context.Context, _ *empty.Empty) (*ethpb.SyncStatus, error) {
+func (c *beaconApiNodeClient) GetSyncStatus(ctx context.Context, _ *empty.Empty) (*zondpb.SyncStatus, error) {
 	syncingResponse := apimiddleware.SyncingResponseJson{}
 	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, "/eth/v1/node/syncing", &syncingResponse); err != nil {
 		return nil, errors.Wrap(err, "failed to get sync status")
@@ -31,12 +31,12 @@ func (c *beaconApiNodeClient) GetSyncStatus(ctx context.Context, _ *empty.Empty)
 		return nil, errors.New("syncing data is nil")
 	}
 
-	return &ethpb.SyncStatus{
+	return &zondpb.SyncStatus{
 		Syncing: syncingResponse.Data.IsSyncing,
 	}, nil
 }
 
-func (c *beaconApiNodeClient) GetGenesis(ctx context.Context, _ *empty.Empty) (*ethpb.Genesis, error) {
+func (c *beaconApiNodeClient) GetGenesis(ctx context.Context, _ *empty.Empty) (*zondpb.Genesis, error) {
 	genesisJson, _, err := c.genesisProvider.GetGenesis(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get genesis")
@@ -66,7 +66,7 @@ func (c *beaconApiNodeClient) GetGenesis(ctx context.Context, _ *empty.Empty) (*
 		return nil, errors.Wrapf(err, "failed to decode deposit contract address `%s`", depositContractJson.Data.Address)
 	}
 
-	return &ethpb.Genesis{
+	return &zondpb.Genesis{
 		GenesisTime: &timestamppb.Timestamp{
 			Seconds: genesisTime,
 		},
@@ -75,7 +75,7 @@ func (c *beaconApiNodeClient) GetGenesis(ctx context.Context, _ *empty.Empty) (*
 	}, nil
 }
 
-func (c *beaconApiNodeClient) GetVersion(ctx context.Context, in *empty.Empty) (*ethpb.Version, error) {
+func (c *beaconApiNodeClient) GetVersion(ctx context.Context, in *empty.Empty) (*zondpb.Version, error) {
 	if c.fallbackClient != nil {
 		return c.fallbackClient.GetVersion(ctx, in)
 	}
@@ -84,7 +84,7 @@ func (c *beaconApiNodeClient) GetVersion(ctx context.Context, in *empty.Empty) (
 	panic("beaconApiNodeClient.GetVersion is not implemented. To use a fallback client, pass a fallback client as the last argument of NewBeaconApiNodeClientWithFallback.")
 }
 
-func (c *beaconApiNodeClient) ListPeers(ctx context.Context, in *empty.Empty) (*ethpb.Peers, error) {
+func (c *beaconApiNodeClient) ListPeers(ctx context.Context, in *empty.Empty) (*zondpb.Peers, error) {
 	if c.fallbackClient != nil {
 		return c.fallbackClient.ListPeers(ctx, in)
 	}

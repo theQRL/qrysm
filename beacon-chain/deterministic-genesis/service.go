@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime"
 	"github.com/theQRL/qrysm/v4/runtime/interop"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -31,7 +31,7 @@ type Service struct {
 	cfg                *Config
 	ctx                context.Context
 	cancel             context.CancelFunc
-	chainStartDeposits []*ethpb.Deposit
+	chainStartDeposits []*zondpb.Deposit
 }
 
 // Config options for the interop service.
@@ -65,7 +65,7 @@ func (s *Service) Start() {
 		if err != nil {
 			log.WithError(err).Fatal("Could not read pre-loaded state")
 		}
-		genesisState := &ethpb.BeaconState{}
+		genesisState := &zondpb.BeaconState{}
 		if err := genesisState.UnmarshalSSZ(data); err != nil {
 			log.WithError(err).Fatal("Could not unmarshal pre-loaded state")
 		}
@@ -114,18 +114,18 @@ func (_ *Service) Status() error {
 }
 
 // AllDeposits mocks out the deposit cache functionality for interop.
-func (_ *Service) AllDeposits(_ context.Context, _ *big.Int) []*ethpb.Deposit {
-	return []*ethpb.Deposit{}
+func (_ *Service) AllDeposits(_ context.Context, _ *big.Int) []*zondpb.Deposit {
+	return []*zondpb.Deposit{}
 }
 
 // ChainStartEth1Data mocks out the powchain functionality for interop.
-func (_ *Service) ChainStartEth1Data() *ethpb.Eth1Data {
-	return &ethpb.Eth1Data{}
+func (_ *Service) ChainStartEth1Data() *zondpb.Eth1Data {
+	return &zondpb.Eth1Data{}
 }
 
 // PreGenesisState returns an empty beacon state.
 func (_ *Service) PreGenesisState() state.BeaconState {
-	s, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{})
+	s, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{})
 	if err != nil {
 		panic("could not initialize state")
 	}
@@ -138,8 +138,8 @@ func (_ *Service) ClearPreGenesisData() {
 }
 
 // DepositByPubkey mocks out the deposit cache functionality for interop.
-func (_ *Service) DepositByPubkey(_ context.Context, _ []byte) (*ethpb.Deposit, *big.Int) {
-	return &ethpb.Deposit{}, nil
+func (_ *Service) DepositByPubkey(_ context.Context, _ []byte) (*zondpb.Deposit, *big.Int) {
+	return &zondpb.Deposit{}, nil
 }
 
 // DepositsNumberAndRootAtHeight mocks out the deposit cache functionality for interop.
@@ -153,8 +153,8 @@ func (_ *Service) FinalizedDeposits(_ context.Context) *depositcache.FinalizedDe
 }
 
 // NonFinalizedDeposits mocks out the deposit cache functionality for interop.
-func (_ *Service) NonFinalizedDeposits(_ context.Context, _ int64, _ *big.Int) []*ethpb.Deposit {
-	return []*ethpb.Deposit{}
+func (_ *Service) NonFinalizedDeposits(_ context.Context, _ int64, _ *big.Int) []*zondpb.Deposit {
+	return []*zondpb.Deposit{}
 }
 
 func (s *Service) saveGenesisState(ctx context.Context, genesisState state.BeaconState) error {
@@ -162,12 +162,12 @@ func (s *Service) saveGenesisState(ctx context.Context, genesisState state.Beaco
 		return err
 	}
 
-	s.chainStartDeposits = make([]*ethpb.Deposit, genesisState.NumValidators())
+	s.chainStartDeposits = make([]*zondpb.Deposit, genesisState.NumValidators())
 
 	for i := primitives.ValidatorIndex(0); uint64(i) < uint64(genesisState.NumValidators()); i++ {
 		pk := genesisState.PubkeyAtIndex(i)
-		s.chainStartDeposits[i] = &ethpb.Deposit{
-			Data: &ethpb.Deposit_Data{
+		s.chainStartDeposits[i] = &zondpb.Deposit{
+			Data: &zondpb.Deposit_Data{
 				PublicKey: pk[:],
 			},
 		}

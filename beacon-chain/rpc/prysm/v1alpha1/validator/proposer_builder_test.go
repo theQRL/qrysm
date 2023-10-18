@@ -19,7 +19,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	v1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
@@ -39,8 +39,8 @@ func TestServer_circuitBreakBuilder(t *testing.T) {
 	require.Equal(t, true, b)
 	require.LogsContain(t, hook, "Circuit breaker activated due to missing consecutive slot. Ignore if mev-boost is not used")
 
-	ojc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
-	ofc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ojc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ofc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 	ctx := context.Background()
 	st, blkRoot, err := createState(1, [32]byte{'a'}, [32]byte{}, params.BeaconConfig().ZeroHash, ojc, ofc)
 	require.NoError(t, err)
@@ -94,7 +94,7 @@ func TestServer_validatorRegistered(t *testing.T) {
 	f := bytesutil.PadTo([]byte{}, fieldparams.FeeRecipientLength)
 	p := bytesutil.PadTo([]byte{}, dilithium2.CryptoPublicKeyBytes)
 	require.NoError(t, db.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{0, 1},
-		[]*ethpb.ValidatorRegistrationV1{{FeeRecipient: f, Timestamp: uint64(time.Now().Unix()), Pubkey: p}, {FeeRecipient: f, Timestamp: uint64(time.Now().Unix()), Pubkey: p}}))
+		[]*zondpb.ValidatorRegistrationV1{{FeeRecipient: f, Timestamp: uint64(time.Now().Unix()), Pubkey: p}, {FeeRecipient: f, Timestamp: uint64(time.Now().Unix()), Pubkey: p}}))
 
 	reg, err = proposerServer.validatorRegistered(ctx, 0)
 	require.NoError(t, err)
@@ -136,7 +136,7 @@ func TestServer_canUseBuilder(t *testing.T) {
 	f := bytesutil.PadTo([]byte{}, fieldparams.FeeRecipientLength)
 	p := bytesutil.PadTo([]byte{}, dilithium2.CryptoPublicKeyBytes)
 	require.NoError(t, db.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{0},
-		[]*ethpb.ValidatorRegistrationV1{{FeeRecipient: f, Timestamp: uint64(time.Now().Unix()), Pubkey: p}}))
+		[]*zondpb.ValidatorRegistrationV1{{FeeRecipient: f, Timestamp: uint64(time.Now().Unix()), Pubkey: p}}))
 
 	reg, err = proposerServer.canUseBuilder(ctx, params.BeaconConfig().MaxBuilderConsecutiveMissedSlots-1, 0)
 	require.NoError(t, err)
@@ -148,11 +148,11 @@ func createState(
 	blockRoot [32]byte,
 	parentRoot [32]byte,
 	payloadHash [32]byte,
-	justified *ethpb.Checkpoint,
-	finalized *ethpb.Checkpoint,
+	justified *zondpb.Checkpoint,
+	finalized *zondpb.Checkpoint,
 ) (state.BeaconState, [32]byte, error) {
 
-	base := &ethpb.BeaconStateBellatrix{
+	base := &zondpb.BeaconStateBellatrix{
 		Slot:                       slot,
 		RandaoMixes:                make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 		BlockRoots:                 make([][]byte, 1),
@@ -161,7 +161,7 @@ func createState(
 		LatestExecutionPayloadHeader: &v1.ExecutionPayloadHeader{
 			BlockHash: payloadHash[:],
 		},
-		LatestBlockHeader: &ethpb.BeaconBlockHeader{
+		LatestBlockHeader: &zondpb.BeaconBlockHeader{
 			ParentRoot: parentRoot[:],
 		},
 	}

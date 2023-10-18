@@ -37,7 +37,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	prysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
@@ -82,7 +82,7 @@ type config struct {
 	AttService              *attestations.Service
 	StateGen                *stategen.State
 	SlasherAttestationsFeed *event.Feed
-	WeakSubjectivityCheckpt *ethpb.Checkpoint
+	WeakSubjectivityCheckpt *zondpb.Checkpoint
 	BlockFetcher            execution.POWBlockFetcher
 	FinalizedStateAtStartUp state.BeaconState
 	ExecutionEngineCaller   execution.EngineCaller
@@ -385,7 +385,7 @@ func (s *Service) initializeBeaconChain(
 	ctx context.Context,
 	genesisTime time.Time,
 	preGenesisState state.BeaconState,
-	eth1data *ethpb.Eth1Data) (state.BeaconState, error) {
+	eth1data *zondpb.Eth1Data) (state.BeaconState, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon-chain.Service.initializeBeaconChain")
 	defer span.End()
 	s.genesisTime = genesisTime

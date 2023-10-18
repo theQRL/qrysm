@@ -9,7 +9,7 @@ import (
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	validatorserviceconfig "github.com/theQRL/qrysm/v4/config/validator/service"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	prysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/validator/client/iface"
 	"github.com/theQRL/qrysm/v4/validator/keymanager"
@@ -51,7 +51,7 @@ type FakeValidator struct {
 	Balances                          map[[dilithium2.CryptoPublicKeyBytes]byte]uint64
 	IndexToPubkeyMap                  map[uint64][dilithium2.CryptoPublicKeyBytes]byte
 	PubkeyToIndexMap                  map[[dilithium2.CryptoPublicKeyBytes]byte]uint64
-	PubkeysToStatusesMap              map[[dilithium2.CryptoPublicKeyBytes]byte]ethpb.ValidatorStatus
+	PubkeysToStatusesMap              map[[dilithium2.CryptoPublicKeyBytes]byte]zondpb.ValidatorStatus
 	proposerSettings                  *validatorserviceconfig.ProposerSettings
 	ProposerSettingWait               time.Duration
 	Km                                keymanager.IKeymanager
@@ -203,7 +203,7 @@ func (fv *FakeValidator) PubkeysToIndices(_ context.Context) map[[dilithium2.Cry
 }
 
 // PubkeysToStatuses for mocking.
-func (fv *FakeValidator) PubkeysToStatuses(_ context.Context) map[[dilithium2.CryptoPublicKeyBytes]byte]ethpb.ValidatorStatus {
+func (fv *FakeValidator) PubkeysToStatuses(_ context.Context) map[[dilithium2.CryptoPublicKeyBytes]byte]zondpb.ValidatorStatus {
 	return fv.PubkeysToStatusesMap
 }
 
@@ -271,7 +271,7 @@ func (_ *FakeValidator) SetPubKeyToValidatorIndexMap(_ context.Context, _ keyman
 }
 
 // SignValidatorRegistrationRequest for mocking
-func (_ *FakeValidator) SignValidatorRegistrationRequest(_ context.Context, _ iface.SigningFunc, _ *ethpb.ValidatorRegistrationV1) (*ethpb.SignedValidatorRegistrationV1, error) {
+func (_ *FakeValidator) SignValidatorRegistrationRequest(_ context.Context, _ iface.SigningFunc, _ *zondpb.ValidatorRegistrationV1) (*zondpb.SignedValidatorRegistrationV1, error) {
 	return nil, nil
 }
 

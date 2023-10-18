@@ -20,8 +20,8 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
-	ethpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -40,7 +40,7 @@ func Test_currentCommitteeIndicesFromState(t *testing.T) {
 		wantedIndices[i] = primitives.ValidatorIndex(i)
 		wantedCommittee[i] = vals[i].PublicKey
 	}
-	require.NoError(t, st.SetCurrentSyncCommittee(&ethpbalpha.SyncCommittee{
+	require.NoError(t, st.SetCurrentSyncCommittee(&zondpbalpha.SyncCommittee{
 		Pubkeys:         wantedCommittee,
 		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
 	}))
@@ -53,7 +53,7 @@ func Test_currentCommitteeIndicesFromState(t *testing.T) {
 	})
 	t.Run("validator in committee not found in state", func(t *testing.T) {
 		wantedCommittee[0] = bytesutil.PadTo([]byte("fakepubkey"), 48)
-		require.NoError(t, st.SetCurrentSyncCommittee(&ethpbalpha.SyncCommittee{
+		require.NoError(t, st.SetCurrentSyncCommittee(&zondpbalpha.SyncCommittee{
 			Pubkeys:         wantedCommittee,
 			AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
 		}))
@@ -71,7 +71,7 @@ func Test_nextCommitteeIndicesFromState(t *testing.T) {
 		wantedIndices[i] = primitives.ValidatorIndex(i)
 		wantedCommittee[i] = vals[i].PublicKey
 	}
-	require.NoError(t, st.SetNextSyncCommittee(&ethpbalpha.SyncCommittee{
+	require.NoError(t, st.SetNextSyncCommittee(&zondpbalpha.SyncCommittee{
 		Pubkeys:         wantedCommittee,
 		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
 	}))
@@ -84,7 +84,7 @@ func Test_nextCommitteeIndicesFromState(t *testing.T) {
 	})
 	t.Run("validator in committee not found in state", func(t *testing.T) {
 		wantedCommittee[0] = bytesutil.PadTo([]byte("fakepubkey"), 48)
-		require.NoError(t, st.SetNextSyncCommittee(&ethpbalpha.SyncCommittee{
+		require.NoError(t, st.SetNextSyncCommittee(&zondpbalpha.SyncCommittee{
 			Pubkeys:         wantedCommittee,
 			AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
 		}))
@@ -100,7 +100,7 @@ func Test_extractSyncSubcommittees(t *testing.T) {
 	for i := 0; i < len(syncCommittee); i++ {
 		syncCommittee[i] = vals[i].PublicKey
 	}
-	require.NoError(t, st.SetCurrentSyncCommittee(&ethpbalpha.SyncCommittee{
+	require.NoError(t, st.SetCurrentSyncCommittee(&zondpbalpha.SyncCommittee{
 		Pubkeys:         syncCommittee,
 		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
 	}))
@@ -134,7 +134,7 @@ func Test_extractSyncSubcommittees(t *testing.T) {
 	})
 	t.Run("validator in subcommittee not found in state", func(t *testing.T) {
 		syncCommittee[0] = bytesutil.PadTo([]byte("fakepubkey"), 48)
-		require.NoError(t, st.SetCurrentSyncCommittee(&ethpbalpha.SyncCommittee{
+		require.NoError(t, st.SetCurrentSyncCommittee(&zondpbalpha.SyncCommittee{
 			Pubkeys:         syncCommittee,
 			AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
 		}))
@@ -153,7 +153,7 @@ func TestListSyncCommittees(t *testing.T) {
 	for i := 0; i < len(syncCommittee); i++ {
 		syncCommittee[i] = vals[i].PublicKey
 	}
-	require.NoError(t, st.SetCurrentSyncCommittee(&ethpbalpha.SyncCommittee{
+	require.NoError(t, st.SetCurrentSyncCommittee(&zondpbalpha.SyncCommittee{
 		Pubkeys:         syncCommittee,
 		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
 	}))
@@ -176,7 +176,7 @@ func TestListSyncCommittees(t *testing.T) {
 		BeaconDB:              db,
 		ChainInfoFetcher:      chainService,
 	}
-	req := &ethpbv2.StateSyncCommitteesRequest{StateId: stRoot[:]}
+	req := &zondpbv2.StateSyncCommitteesRequest{StateId: stRoot[:]}
 	resp, err := s.ListSyncCommittees(ctx, req)
 	require.NoError(t, err)
 	require.NotNil(t, resp.Data)
@@ -298,7 +298,7 @@ func TestListSyncCommitteesFuture(t *testing.T) {
 	for i := 0; i < len(syncCommittee); i++ {
 		syncCommittee[i] = vals[i].PublicKey
 	}
-	require.NoError(t, st.SetNextSyncCommittee(&ethpbalpha.SyncCommittee{
+	require.NoError(t, st.SetNextSyncCommittee(&zondpbalpha.SyncCommittee{
 		Pubkeys:         syncCommittee,
 		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
 	}))
@@ -317,7 +317,7 @@ func TestListSyncCommitteesFuture(t *testing.T) {
 		FinalizationFetcher:   chainService,
 		BeaconDB:              db,
 	}
-	req := &ethpbv2.StateSyncCommitteesRequest{StateId: []byte("head")}
+	req := &zondpbv2.StateSyncCommitteesRequest{StateId: []byte("head")}
 	epoch := 2 * params.BeaconConfig().EpochsPerSyncCommitteePeriod
 	req.Epoch = &epoch
 	_, err := s.ListSyncCommittees(ctx, req)
@@ -367,8 +367,8 @@ func TestSubmitPoolSyncCommitteeSignatures(t *testing.T) {
 		require.NoError(t, err)
 		sig, err := bytesutil2.FromHexString("0x" + strings.Repeat("0", 192))
 		require.NoError(t, err)
-		_, err = s.SubmitPoolSyncCommitteeSignatures(ctx, &ethpbv2.SubmitPoolSyncCommitteeSignatures{
-			Data: []*ethpbv2.SyncCommitteeMessage{
+		_, err = s.SubmitPoolSyncCommitteeSignatures(ctx, &zondpbv2.SubmitPoolSyncCommitteeSignatures{
+			Data: []*zondpbv2.SyncCommitteeMessage{
 				{
 					Slot:            0,
 					BeaconBlockRoot: root,
@@ -381,8 +381,8 @@ func TestSubmitPoolSyncCommitteeSignatures(t *testing.T) {
 	})
 
 	t.Run("Invalid message gRPC header", func(t *testing.T) {
-		_, err := s.SubmitPoolSyncCommitteeSignatures(ctx, &ethpbv2.SubmitPoolSyncCommitteeSignatures{
-			Data: []*ethpbv2.SyncCommitteeMessage{
+		_, err := s.SubmitPoolSyncCommitteeSignatures(ctx, &zondpbv2.SubmitPoolSyncCommitteeSignatures{
+			Data: []*zondpbv2.SyncCommitteeMessage{
 				{
 					Slot:            0,
 					BeaconBlockRoot: nil,
@@ -411,7 +411,7 @@ func TestValidateSyncCommitteeMessage(t *testing.T) {
 	sig, err := bytesutil2.FromHexString("0x" + strings.Repeat("0", 192))
 	require.NoError(t, err)
 	t.Run("valid", func(t *testing.T) {
-		msg := &ethpbv2.SyncCommitteeMessage{
+		msg := &zondpbv2.SyncCommitteeMessage{
 			Slot:            0,
 			BeaconBlockRoot: root,
 			ValidatorIndex:  0,
@@ -421,7 +421,7 @@ func TestValidateSyncCommitteeMessage(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("invalid block root", func(t *testing.T) {
-		msg := &ethpbv2.SyncCommitteeMessage{
+		msg := &zondpbv2.SyncCommitteeMessage{
 			Slot:            0,
 			BeaconBlockRoot: []byte("invalid"),
 			ValidatorIndex:  0,
@@ -432,7 +432,7 @@ func TestValidateSyncCommitteeMessage(t *testing.T) {
 		assert.ErrorContains(t, "invalid block root length", err)
 	})
 	t.Run("invalid block root", func(t *testing.T) {
-		msg := &ethpbv2.SyncCommitteeMessage{
+		msg := &zondpbv2.SyncCommitteeMessage{
 			Slot:            0,
 			BeaconBlockRoot: root,
 			ValidatorIndex:  0,

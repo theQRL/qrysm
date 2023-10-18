@@ -2,11 +2,11 @@
 // source: proto/prysm/v1alpha1/validator.proto
 
 /*
-Package eth is a reverse proxy.
+Package zond is a reverse proxy.
 
 It translates gRPC into RESTful JSON APIs.
 */
-package eth
+package zond
 
 import (
 	"context"
@@ -970,7 +970,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/GetDuties")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/GetDuties")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1000,7 +1000,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/DomainData")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/DomainData")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1037,7 +1037,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/ValidatorIndex")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/ValidatorIndex")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1060,7 +1060,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/ValidatorStatus")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/ValidatorStatus")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1083,7 +1083,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/MultipleValidatorStatus")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/MultipleValidatorStatus")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1106,7 +1106,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/GetBeaconBlock")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/GetBeaconBlock")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1129,7 +1129,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/ProposeBeaconBlock")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/ProposeBeaconBlock")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1152,7 +1152,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/PrepareBeaconProposer")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/PrepareBeaconProposer")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1175,7 +1175,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/GetFeeRecipientByPubKey")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/GetFeeRecipientByPubKey")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1198,7 +1198,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/GetAttestationData")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/GetAttestationData")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1221,7 +1221,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/ProposeAttestation")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/ProposeAttestation")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1244,7 +1244,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/SubmitAggregateSelectionProof")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/SubmitAggregateSelectionProof")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1267,7 +1267,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/SubmitSignedAggregateSelectionProof")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/SubmitSignedAggregateSelectionProof")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1290,7 +1290,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/ProposeExit")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/ProposeExit")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1313,7 +1313,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/SubscribeCommitteeSubnets")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/SubscribeCommitteeSubnets")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1336,7 +1336,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/CheckDoppelGanger")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/CheckDoppelGanger")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1359,7 +1359,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/GetSyncMessageBlockRoot")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/GetSyncMessageBlockRoot")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1382,7 +1382,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/SubmitSyncMessage")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/SubmitSyncMessage")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1405,7 +1405,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/GetSyncSubcommitteeIndex")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/GetSyncSubcommitteeIndex")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1428,7 +1428,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/GetSyncCommitteeContribution")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/GetSyncCommitteeContribution")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1451,7 +1451,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/SubmitSignedContributionAndProof")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/SubmitSignedContributionAndProof")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1481,7 +1481,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/SubmitValidatorRegistrations")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/SubmitValidatorRegistrations")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1504,7 +1504,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/AssignValidatorToSubnet")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/AssignValidatorToSubnet")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1527,7 +1527,7 @@ func RegisterBeaconNodeValidatorHandlerServer(ctx context.Context, mux *runtime.
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/AggregatedSigAndAggregationBits")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/AggregatedSigAndAggregationBits")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1589,7 +1589,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/GetDuties")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/GetDuties")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1609,7 +1609,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/StreamDuties")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/StreamDuties")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1629,7 +1629,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/DomainData")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/DomainData")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1649,7 +1649,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/WaitForChainStart")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/WaitForChainStart")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1669,7 +1669,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/WaitForActivation")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/WaitForActivation")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1689,7 +1689,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/ValidatorIndex")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/ValidatorIndex")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1709,7 +1709,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/ValidatorStatus")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/ValidatorStatus")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1729,7 +1729,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/MultipleValidatorStatus")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/MultipleValidatorStatus")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1749,7 +1749,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/GetBeaconBlock")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/GetBeaconBlock")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1769,7 +1769,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/ProposeBeaconBlock")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/ProposeBeaconBlock")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1789,7 +1789,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/PrepareBeaconProposer")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/PrepareBeaconProposer")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1809,7 +1809,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/GetFeeRecipientByPubKey")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/GetFeeRecipientByPubKey")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1829,7 +1829,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/GetAttestationData")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/GetAttestationData")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1849,7 +1849,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/ProposeAttestation")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/ProposeAttestation")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1869,7 +1869,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/SubmitAggregateSelectionProof")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/SubmitAggregateSelectionProof")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1889,7 +1889,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/SubmitSignedAggregateSelectionProof")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/SubmitSignedAggregateSelectionProof")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1909,7 +1909,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/ProposeExit")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/ProposeExit")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1929,7 +1929,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/SubscribeCommitteeSubnets")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/SubscribeCommitteeSubnets")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1949,7 +1949,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/CheckDoppelGanger")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/CheckDoppelGanger")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1969,7 +1969,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/GetSyncMessageBlockRoot")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/GetSyncMessageBlockRoot")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1989,7 +1989,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/SubmitSyncMessage")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/SubmitSyncMessage")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2009,7 +2009,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/GetSyncSubcommitteeIndex")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/GetSyncSubcommitteeIndex")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2029,7 +2029,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/GetSyncCommitteeContribution")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/GetSyncCommitteeContribution")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2049,7 +2049,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/SubmitSignedContributionAndProof")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/SubmitSignedContributionAndProof")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2069,7 +2069,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/StreamBlocksAltair")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/StreamBlocksAltair")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2089,7 +2089,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/SubmitValidatorRegistrations")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/SubmitValidatorRegistrations")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2109,7 +2109,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/AssignValidatorToSubnet")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/AssignValidatorToSubnet")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2129,7 +2129,7 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.BeaconNodeValidator/AggregatedSigAndAggregationBits")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.BeaconNodeValidator/AggregatedSigAndAggregationBits")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2149,61 +2149,61 @@ func RegisterBeaconNodeValidatorHandlerClient(ctx context.Context, mux *runtime.
 }
 
 var (
-	pattern_BeaconNodeValidator_GetDuties_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "duties"}, ""))
+	pattern_BeaconNodeValidator_GetDuties_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "duties"}, ""))
 
-	pattern_BeaconNodeValidator_StreamDuties_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"eth", "v1alpha1", "validator", "duties", "stream"}, ""))
+	pattern_BeaconNodeValidator_StreamDuties_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"zond", "v1alpha1", "validator", "duties", "stream"}, ""))
 
-	pattern_BeaconNodeValidator_DomainData_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "domain"}, ""))
+	pattern_BeaconNodeValidator_DomainData_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "domain"}, ""))
 
-	pattern_BeaconNodeValidator_WaitForChainStart_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"eth", "v1alpha1", "validator", "chainstart", "stream"}, ""))
+	pattern_BeaconNodeValidator_WaitForChainStart_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"zond", "v1alpha1", "validator", "chainstart", "stream"}, ""))
 
-	pattern_BeaconNodeValidator_WaitForActivation_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"eth", "v1alpha1", "validator", "activation", "stream"}, ""))
+	pattern_BeaconNodeValidator_WaitForActivation_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"zond", "v1alpha1", "validator", "activation", "stream"}, ""))
 
-	pattern_BeaconNodeValidator_ValidatorIndex_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "index"}, ""))
+	pattern_BeaconNodeValidator_ValidatorIndex_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "index"}, ""))
 
-	pattern_BeaconNodeValidator_ValidatorStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "status"}, ""))
+	pattern_BeaconNodeValidator_ValidatorStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "status"}, ""))
 
-	pattern_BeaconNodeValidator_MultipleValidatorStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "statuses"}, ""))
+	pattern_BeaconNodeValidator_MultipleValidatorStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "statuses"}, ""))
 
-	pattern_BeaconNodeValidator_GetBeaconBlock_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha2", "validator", "block"}, ""))
+	pattern_BeaconNodeValidator_GetBeaconBlock_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha2", "validator", "block"}, ""))
 
-	pattern_BeaconNodeValidator_ProposeBeaconBlock_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha2", "validator", "block"}, ""))
+	pattern_BeaconNodeValidator_ProposeBeaconBlock_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha2", "validator", "block"}, ""))
 
-	pattern_BeaconNodeValidator_PrepareBeaconProposer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "prepare_beacon_proposer"}, ""))
+	pattern_BeaconNodeValidator_PrepareBeaconProposer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "prepare_beacon_proposer"}, ""))
 
-	pattern_BeaconNodeValidator_GetFeeRecipientByPubKey_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "fee_recipient_by_pub_key"}, ""))
+	pattern_BeaconNodeValidator_GetFeeRecipientByPubKey_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "fee_recipient_by_pub_key"}, ""))
 
-	pattern_BeaconNodeValidator_GetAttestationData_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "attestation"}, ""))
+	pattern_BeaconNodeValidator_GetAttestationData_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "attestation"}, ""))
 
-	pattern_BeaconNodeValidator_ProposeAttestation_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "attestation"}, ""))
+	pattern_BeaconNodeValidator_ProposeAttestation_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "attestation"}, ""))
 
-	pattern_BeaconNodeValidator_SubmitAggregateSelectionProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "aggregate"}, ""))
+	pattern_BeaconNodeValidator_SubmitAggregateSelectionProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "aggregate"}, ""))
 
-	pattern_BeaconNodeValidator_SubmitSignedAggregateSelectionProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "aggregate"}, ""))
+	pattern_BeaconNodeValidator_SubmitSignedAggregateSelectionProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "aggregate"}, ""))
 
-	pattern_BeaconNodeValidator_ProposeExit_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "exit"}, ""))
+	pattern_BeaconNodeValidator_ProposeExit_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "exit"}, ""))
 
-	pattern_BeaconNodeValidator_SubscribeCommitteeSubnets_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"eth", "v1alpha1", "validator", "subnet", "subscribe"}, ""))
+	pattern_BeaconNodeValidator_SubscribeCommitteeSubnets_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"zond", "v1alpha1", "validator", "subnet", "subscribe"}, ""))
 
-	pattern_BeaconNodeValidator_CheckDoppelGanger_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "doppelganger"}, ""))
+	pattern_BeaconNodeValidator_CheckDoppelGanger_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "doppelganger"}, ""))
 
-	pattern_BeaconNodeValidator_GetSyncMessageBlockRoot_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "sync_message_block_root"}, ""))
+	pattern_BeaconNodeValidator_GetSyncMessageBlockRoot_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "sync_message_block_root"}, ""))
 
-	pattern_BeaconNodeValidator_SubmitSyncMessage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "sync_message"}, ""))
+	pattern_BeaconNodeValidator_SubmitSyncMessage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "sync_message"}, ""))
 
-	pattern_BeaconNodeValidator_GetSyncSubcommitteeIndex_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"eth", "v1alpha1", "sync_subcommittee_index"}, ""))
+	pattern_BeaconNodeValidator_GetSyncSubcommitteeIndex_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"zond", "v1alpha1", "sync_subcommittee_index"}, ""))
 
-	pattern_BeaconNodeValidator_GetSyncCommitteeContribution_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "contribution_and_proof"}, ""))
+	pattern_BeaconNodeValidator_GetSyncCommitteeContribution_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "contribution_and_proof"}, ""))
 
-	pattern_BeaconNodeValidator_SubmitSignedContributionAndProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "signed_contribution_and_proof"}, ""))
+	pattern_BeaconNodeValidator_SubmitSignedContributionAndProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "signed_contribution_and_proof"}, ""))
 
-	pattern_BeaconNodeValidator_StreamBlocksAltair_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"eth", "v1alpha1", "validator", "blocks", "stream"}, ""))
+	pattern_BeaconNodeValidator_StreamBlocksAltair_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"zond", "v1alpha1", "validator", "blocks", "stream"}, ""))
 
-	pattern_BeaconNodeValidator_SubmitValidatorRegistrations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"eth", "v1alpha1", "validator", "registration"}, ""))
+	pattern_BeaconNodeValidator_SubmitValidatorRegistrations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"zond", "v1alpha1", "validator", "registration"}, ""))
 
-	pattern_BeaconNodeValidator_AssignValidatorToSubnet_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"eth", "v1alpha1", "validator", "blocks", "assign_validator_to_subnet"}, ""))
+	pattern_BeaconNodeValidator_AssignValidatorToSubnet_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"zond", "v1alpha1", "validator", "blocks", "assign_validator_to_subnet"}, ""))
 
-	pattern_BeaconNodeValidator_AggregatedSigAndAggregationBits_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"eth", "v1alpha1", "validator", "blocks", "aggregated_sig_and_aggregation_bits"}, ""))
+	pattern_BeaconNodeValidator_AggregatedSigAndAggregationBits_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"zond", "v1alpha1", "validator", "blocks", "aggregated_sig_and_aggregation_bits"}, ""))
 )
 
 var (

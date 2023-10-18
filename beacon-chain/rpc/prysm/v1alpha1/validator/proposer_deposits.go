@@ -10,17 +10,17 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/container/trie"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"go.opencensus.io/trace"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-func (vs *Server) packDepositsAndAttestations(ctx context.Context, head state.BeaconState, eth1Data *ethpb.Eth1Data) ([]*ethpb.Deposit, []*ethpb.Attestation, error) {
+func (vs *Server) packDepositsAndAttestations(ctx context.Context, head state.BeaconState, eth1Data *zondpb.Eth1Data) ([]*zondpb.Deposit, []*zondpb.Attestation, error) {
 	eg, egctx := errgroup.WithContext(ctx)
-	var deposits []*ethpb.Deposit
-	var atts []*ethpb.Attestation
+	var deposits []*zondpb.Deposit
+	var atts []*zondpb.Attestation
 
 	eg.Go(func() error {
 		// Pack ETH1 deposits which have not been included in the beacon chain.
@@ -65,18 +65,18 @@ func (vs *Server) packDepositsAndAttestations(ctx context.Context, head state.Be
 func (vs *Server) deposits(
 	ctx context.Context,
 	beaconState state.BeaconState,
-	currentVote *ethpb.Eth1Data,
-) ([]*ethpb.Deposit, error) {
+	currentVote *zondpb.Eth1Data,
+) ([]*zondpb.Deposit, error) {
 	ctx, span := trace.StartSpan(ctx, "ProposerServer.deposits")
 	defer span.End()
 
 	if vs.MockEth1Votes {
-		return []*ethpb.Deposit{}, nil
+		return []*zondpb.Deposit{}, nil
 	}
 
 	if !vs.Eth1InfoFetcher.ExecutionClientConnected() {
 		log.Warn("not connected to eth1 node, skip pending deposit insertion")
-		return []*ethpb.Deposit{}, nil
+		return []*zondpb.Deposit{}, nil
 	}
 	// Need to fetch if the deposits up to the state's latest eth1 data matches
 	// the number of all deposits in this RPC call. If not, then we return nil.
@@ -87,14 +87,14 @@ func (vs *Server) deposits(
 
 	_, genesisEth1Block := vs.Eth1InfoFetcher.GenesisExecutionChainInfo()
 	if genesisEth1Block.Cmp(canonicalEth1DataHeight) == 0 {
-		return []*ethpb.Deposit{}, nil
+		return []*zondpb.Deposit{}, nil
 	}
 
 	// If there are no pending deposits, exit early.
 	allPendingContainers := vs.PendingDepositsFetcher.PendingContainers(ctx, canonicalEth1DataHeight)
 	if len(allPendingContainers) == 0 {
 		log.Debug("no pending deposits for inclusion in block")
-		return []*ethpb.Deposit{}, nil
+		return []*zondpb.Deposit{}, nil
 	}
 
 	depositTrie, err := vs.depositTrie(ctx, canonicalEth1Data, canonicalEth1DataHeight)
@@ -104,7 +104,7 @@ func (vs *Server) deposits(
 
 	// Deposits need to be received in order of merkle index root, so this has to make sure
 	// deposits are sorted from lowest to highest.
-	var pendingDeps []*ethpb.DepositContainer
+	var pendingDeps []*zondpb.DepositContainer
 	for _, dep := range allPendingContainers {
 		if uint64(dep.Index) >= beaconState.Eth1DepositIndex() && uint64(dep.Index) < canonicalEth1Data.DepositCount {
 			pendingDeps = append(pendingDeps, dep)
@@ -122,14 +122,14 @@ func (vs *Server) deposits(
 		}
 	}
 
-	var pendingDeposits []*ethpb.Deposit
+	var pendingDeposits []*zondpb.Deposit
 	for i := uint64(0); i < uint64(len(pendingDeps)); i++ {
 		pendingDeposits = append(pendingDeposits, pendingDeps[i].Deposit)
 	}
 	return pendingDeposits, nil
 }
 
-func (vs *Server) depositTrie(ctx context.Context, canonicalEth1Data *ethpb.Eth1Data, canonicalEth1DataHeight *big.Int) (*trie.SparseMerkleTrie, error) {
+func (vs *Server) depositTrie(ctx context.Context, canonicalEth1Data *zondpb.Eth1Data, canonicalEth1DataHeight *big.Int) (*trie.SparseMerkleTrie, error) {
 	ctx, span := trace.StartSpan(ctx, "ProposerServer.depositTrie")
 	defer span.End()
 
@@ -169,7 +169,7 @@ func (vs *Server) depositTrie(ctx context.Context, canonicalEth1Data *ethpb.Eth1
 
 // rebuilds our deposit trie by recreating it from all processed deposits till
 // specified eth1 block height.
-func (vs *Server) rebuildDepositTrie(ctx context.Context, canonicalEth1Data *ethpb.Eth1Data, canonicalEth1DataHeight *big.Int) (*trie.SparseMerkleTrie, error) {
+func (vs *Server) rebuildDepositTrie(ctx context.Context, canonicalEth1Data *zondpb.Eth1Data, canonicalEth1DataHeight *big.Int) (*trie.SparseMerkleTrie, error) {
 	ctx, span := trace.StartSpan(ctx, "ProposerServer.rebuildDepositTrie")
 	defer span.End()
 
@@ -196,7 +196,7 @@ func (vs *Server) rebuildDepositTrie(ctx context.Context, canonicalEth1Data *eth
 }
 
 // validate that the provided deposit trie matches up with the canonical eth1 data provided.
-func validateDepositTrie(trie *trie.SparseMerkleTrie, canonicalEth1Data *ethpb.Eth1Data) (bool, error) {
+func validateDepositTrie(trie *trie.SparseMerkleTrie, canonicalEth1Data *zondpb.Eth1Data) (bool, error) {
 	if trie == nil || canonicalEth1Data == nil {
 		return false, errors.New("nil trie or eth1data provided")
 	}
@@ -213,7 +213,7 @@ func validateDepositTrie(trie *trie.SparseMerkleTrie, canonicalEth1Data *ethpb.E
 	return true, nil
 }
 
-func constructMerkleProof(trie *trie.SparseMerkleTrie, index int, deposit *ethpb.Deposit) (*ethpb.Deposit, error) {
+func constructMerkleProof(trie *trie.SparseMerkleTrie, index int, deposit *zondpb.Deposit) (*zondpb.Deposit, error) {
 	proof, err := trie.MerkleProof(index)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate merkle proof for deposit at index %d", index)

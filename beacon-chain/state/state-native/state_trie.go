@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/v4/container/slice"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/encoding/ssz"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/proto"
@@ -91,28 +91,28 @@ const (
 )
 
 // InitializeFromProtoPhase0 the beacon state from a protobuf representation.
-func InitializeFromProtoPhase0(st *ethpb.BeaconState) (state.BeaconState, error) {
-	return InitializeFromProtoUnsafePhase0(proto.Clone(st).(*ethpb.BeaconState))
+func InitializeFromProtoPhase0(st *zondpb.BeaconState) (state.BeaconState, error) {
+	return InitializeFromProtoUnsafePhase0(proto.Clone(st).(*zondpb.BeaconState))
 }
 
 // InitializeFromProtoAltair the beacon state from a protobuf representation.
-func InitializeFromProtoAltair(st *ethpb.BeaconStateAltair) (state.BeaconState, error) {
-	return InitializeFromProtoUnsafeAltair(proto.Clone(st).(*ethpb.BeaconStateAltair))
+func InitializeFromProtoAltair(st *zondpb.BeaconStateAltair) (state.BeaconState, error) {
+	return InitializeFromProtoUnsafeAltair(proto.Clone(st).(*zondpb.BeaconStateAltair))
 }
 
 // InitializeFromProtoBellatrix the beacon state from a protobuf representation.
-func InitializeFromProtoBellatrix(st *ethpb.BeaconStateBellatrix) (state.BeaconState, error) {
-	return InitializeFromProtoUnsafeBellatrix(proto.Clone(st).(*ethpb.BeaconStateBellatrix))
+func InitializeFromProtoBellatrix(st *zondpb.BeaconStateBellatrix) (state.BeaconState, error) {
+	return InitializeFromProtoUnsafeBellatrix(proto.Clone(st).(*zondpb.BeaconStateBellatrix))
 }
 
 // InitializeFromProtoCapella the beacon state from a protobuf representation.
-func InitializeFromProtoCapella(st *ethpb.BeaconStateCapella) (state.BeaconState, error) {
-	return InitializeFromProtoUnsafeCapella(proto.Clone(st).(*ethpb.BeaconStateCapella))
+func InitializeFromProtoCapella(st *zondpb.BeaconStateCapella) (state.BeaconState, error) {
+	return InitializeFromProtoUnsafeCapella(proto.Clone(st).(*zondpb.BeaconStateCapella))
 }
 
 // InitializeFromProtoUnsafePhase0 directly uses the beacon state protobuf fields
 // and sets them as fields of the BeaconState type.
-func InitializeFromProtoUnsafePhase0(st *ethpb.BeaconState) (state.BeaconState, error) {
+func InitializeFromProtoUnsafePhase0(st *zondpb.BeaconState) (state.BeaconState, error) {
 	if st == nil {
 		return nil, errors.New("received nil state")
 	}
@@ -198,7 +198,7 @@ func InitializeFromProtoUnsafePhase0(st *ethpb.BeaconState) (state.BeaconState, 
 
 // InitializeFromProtoUnsafeAltair directly uses the beacon state protobuf fields
 // and sets them as fields of the BeaconState type.
-func InitializeFromProtoUnsafeAltair(st *ethpb.BeaconStateAltair) (state.BeaconState, error) {
+func InitializeFromProtoUnsafeAltair(st *zondpb.BeaconStateAltair) (state.BeaconState, error) {
 	if st == nil {
 		return nil, errors.New("received nil state")
 	}
@@ -288,7 +288,7 @@ func InitializeFromProtoUnsafeAltair(st *ethpb.BeaconStateAltair) (state.BeaconS
 
 // InitializeFromProtoUnsafeBellatrix directly uses the beacon state protobuf fields
 // and sets them as fields of the BeaconState type.
-func InitializeFromProtoUnsafeBellatrix(st *ethpb.BeaconStateBellatrix) (state.BeaconState, error) {
+func InitializeFromProtoUnsafeBellatrix(st *zondpb.BeaconStateBellatrix) (state.BeaconState, error) {
 	if st == nil {
 		return nil, errors.New("received nil state")
 	}
@@ -380,7 +380,7 @@ func InitializeFromProtoUnsafeBellatrix(st *ethpb.BeaconStateBellatrix) (state.B
 
 // InitializeFromProtoUnsafeCapella directly uses the beacon state protobuf fields
 // and sets them as fields of the BeaconState type.
-func InitializeFromProtoUnsafeCapella(st *ethpb.BeaconStateCapella) (state.BeaconState, error) {
+func InitializeFromProtoUnsafeCapella(st *zondpb.BeaconStateCapella) (state.BeaconState, error) {
 	if st == nil {
 		return nil, errors.New("received nil state")
 	}

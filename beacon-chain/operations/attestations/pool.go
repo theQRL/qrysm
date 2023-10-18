@@ -5,7 +5,7 @@ import (
 
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations/kv"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // Pool defines the necessary methods for Prysm attestations pool to serve
@@ -15,31 +15,31 @@ import (
 type Pool interface {
 	// For Aggregated attestations
 	AggregateUnaggregatedAttestations(ctx context.Context) error
-	SaveAggregatedAttestation(att *ethpb.Attestation) error
-	SaveAggregatedAttestations(atts []*ethpb.Attestation) error
-	AggregatedAttestations() []*ethpb.Attestation
-	AggregatedAttestationsBySlotIndex(ctx context.Context, slot primitives.Slot, committeeIndex primitives.CommitteeIndex) []*ethpb.Attestation
-	DeleteAggregatedAttestation(att *ethpb.Attestation) error
-	HasAggregatedAttestation(att *ethpb.Attestation) (bool, error)
+	SaveAggregatedAttestation(att *zondpb.Attestation) error
+	SaveAggregatedAttestations(atts []*zondpb.Attestation) error
+	AggregatedAttestations() []*zondpb.Attestation
+	AggregatedAttestationsBySlotIndex(ctx context.Context, slot primitives.Slot, committeeIndex primitives.CommitteeIndex) []*zondpb.Attestation
+	DeleteAggregatedAttestation(att *zondpb.Attestation) error
+	HasAggregatedAttestation(att *zondpb.Attestation) (bool, error)
 	AggregatedAttestationCount() int
 	// For unaggregated attestations.
-	SaveUnaggregatedAttestation(att *ethpb.Attestation) error
-	SaveUnaggregatedAttestations(atts []*ethpb.Attestation) error
-	UnaggregatedAttestations() ([]*ethpb.Attestation, error)
-	UnaggregatedAttestationsBySlotIndex(ctx context.Context, slot primitives.Slot, committeeIndex primitives.CommitteeIndex) []*ethpb.Attestation
-	DeleteUnaggregatedAttestation(att *ethpb.Attestation) error
+	SaveUnaggregatedAttestation(att *zondpb.Attestation) error
+	SaveUnaggregatedAttestations(atts []*zondpb.Attestation) error
+	UnaggregatedAttestations() ([]*zondpb.Attestation, error)
+	UnaggregatedAttestationsBySlotIndex(ctx context.Context, slot primitives.Slot, committeeIndex primitives.CommitteeIndex) []*zondpb.Attestation
+	DeleteUnaggregatedAttestation(att *zondpb.Attestation) error
 	DeleteSeenUnaggregatedAttestations() (int, error)
 	UnaggregatedAttestationCount() int
 	// For attestations that were included in the block.
-	SaveBlockAttestation(att *ethpb.Attestation) error
-	SaveBlockAttestations(atts []*ethpb.Attestation) error
-	BlockAttestations() []*ethpb.Attestation
-	DeleteBlockAttestation(att *ethpb.Attestation) error
+	SaveBlockAttestation(att *zondpb.Attestation) error
+	SaveBlockAttestations(atts []*zondpb.Attestation) error
+	BlockAttestations() []*zondpb.Attestation
+	DeleteBlockAttestation(att *zondpb.Attestation) error
 	// For attestations to be passed to fork choice.
-	SaveForkchoiceAttestation(att *ethpb.Attestation) error
-	SaveForkchoiceAttestations(atts []*ethpb.Attestation) error
-	ForkchoiceAttestations() []*ethpb.Attestation
-	DeleteForkchoiceAttestation(att *ethpb.Attestation) error
+	SaveForkchoiceAttestation(att *zondpb.Attestation) error
+	SaveForkchoiceAttestations(atts []*zondpb.Attestation) error
+	ForkchoiceAttestations() []*zondpb.Attestation
+	DeleteForkchoiceAttestation(att *zondpb.Attestation) error
 	ForkchoiceAttestationCount() int
 }
 

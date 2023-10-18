@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/empty"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client"
@@ -23,9 +23,9 @@ func (m *mockSyncChecker) Syncing(_ context.Context) (bool, error) {
 
 type mockGenesisFetcher struct{}
 
-func (_ *mockGenesisFetcher) GenesisInfo(_ context.Context) (*ethpb.Genesis, error) {
+func (_ *mockGenesisFetcher) GenesisInfo(_ context.Context) (*zondpb.Genesis, error) {
 	genesis := timestamppb.New(time.Unix(0, 0))
-	return &ethpb.Genesis{
+	return &zondpb.Genesis{
 		GenesisTime: genesis,
 	}, nil
 }

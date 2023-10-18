@@ -4,28 +4,28 @@ import (
 	"context"
 	"testing"
 
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
+	v "github.com/theQRL/qrysm/v4/beacon-chain/core/validators"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	v "github.com/theQRL/qrysm/v4/beacon-chain/core/validators"
 )
 
 func TestSlashableAttestationData_CanSlash(t *testing.T) {
-	att1 := util.HydrateAttestationData(&ethpb.AttestationData{
-		Target: &ethpb.Checkpoint{Epoch: 1, Root: make([]byte, 32)},
-		Source: &ethpb.Checkpoint{Root: bytesutil.PadTo([]byte{'A'}, 32)},
+	att1 := util.HydrateAttestationData(&zondpb.AttestationData{
+		Target: &zondpb.Checkpoint{Epoch: 1, Root: make([]byte, 32)},
+		Source: &zondpb.Checkpoint{Root: bytesutil.PadTo([]byte{'A'}, 32)},
 	})
-	att2 := util.HydrateAttestationData(&ethpb.AttestationData{
-		Target: &ethpb.Checkpoint{Epoch: 1, Root: make([]byte, 32)},
-		Source: &ethpb.Checkpoint{Root: bytesutil.PadTo([]byte{'B'}, 32)},
+	att2 := util.HydrateAttestationData(&zondpb.AttestationData{
+		Target: &zondpb.Checkpoint{Epoch: 1, Root: make([]byte, 32)},
+		Source: &zondpb.Checkpoint{Root: bytesutil.PadTo([]byte{'B'}, 32)},
 	})
 	assert.Equal(t, true, blocks.IsSlashableAttestationData(att1, att2), "Atts should have been slashable")
 	att1.Target.Epoch = 4
@@ -35,25 +35,25 @@ func TestSlashableAttestationData_CanSlash(t *testing.T) {
 }
 
 func TestProcessAttesterSlashings_DataNotSlashable(t *testing.T) {
-	slashings := []*ethpb.AttesterSlashing{{
-		Attestation_1: util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{}),
-		Attestation_2: util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
-			Data: &ethpb.AttestationData{
-				Source: &ethpb.Checkpoint{Epoch: 1},
-				Target: &ethpb.Checkpoint{Epoch: 1}},
+	slashings := []*zondpb.AttesterSlashing{{
+		Attestation_1: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{}),
+		Attestation_2: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+			Data: &zondpb.AttestationData{
+				Source: &zondpb.Checkpoint{Epoch: 1},
+				Target: &zondpb.Checkpoint{Epoch: 1}},
 		})}}
 
-	var registry []*ethpb.Validator
+	var registry []*zondpb.Validator
 	currentSlot := primitives.Slot(0)
 
-	beaconState, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators: registry,
 		Slot:       currentSlot,
 	})
 	require.NoError(t, err)
 	b := util.NewBeaconBlock()
-	b.Block = &ethpb.BeaconBlock{
-		Body: &ethpb.BeaconBlockBody{
+	b.Block = &zondpb.BeaconBlock{
+		Body: &zondpb.BeaconBlockBody{
 			AttesterSlashings: slashings,
 		},
 	}
@@ -62,32 +62,32 @@ func TestProcessAttesterSlashings_DataNotSlashable(t *testing.T) {
 }
 
 func TestProcessAttesterSlashings_IndexedAttestationFailedToVerify(t *testing.T) {
-	var registry []*ethpb.Validator
+	var registry []*zondpb.Validator
 	currentSlot := primitives.Slot(0)
 
-	beaconState, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators: registry,
 		Slot:       currentSlot,
 	})
 	require.NoError(t, err)
 
-	slashings := []*ethpb.AttesterSlashing{
+	slashings := []*zondpb.AttesterSlashing{
 		{
-			Attestation_1: util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
-				Data: &ethpb.AttestationData{
-					Source: &ethpb.Checkpoint{Epoch: 1},
+			Attestation_1: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+				Data: &zondpb.AttestationData{
+					Source: &zondpb.Checkpoint{Epoch: 1},
 				},
 				AttestingIndices: make([]uint64, params.BeaconConfig().MaxValidatorsPerCommittee+1),
 			}),
-			Attestation_2: util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
+			Attestation_2: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
 				AttestingIndices: make([]uint64, params.BeaconConfig().MaxValidatorsPerCommittee+1),
 			}),
 		},
 	}
 
 	b := util.NewBeaconBlock()
-	b.Block = &ethpb.BeaconBlock{
-		Body: &ethpb.BeaconBlockBody{
+	b.Block = &zondpb.BeaconBlock{
+		Body: &zondpb.BeaconBlockBody{
 			AttesterSlashings: slashings,
 		},
 	}
@@ -102,9 +102,9 @@ func TestProcessAttesterSlashings_AppliesCorrectStatus(t *testing.T) {
 		vv.WithdrawableEpoch = primitives.Epoch(params.BeaconConfig().SlotsPerEpoch)
 	}
 
-	att1 := util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
-		Data: &ethpb.AttestationData{
-			Source: &ethpb.Checkpoint{Epoch: 1},
+	att1 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+		Data: &zondpb.AttestationData{
+			Source: &zondpb.Checkpoint{Epoch: 1},
 		},
 		AttestingIndices: []uint64{0, 1},
 	})
@@ -117,7 +117,7 @@ func TestProcessAttesterSlashings_AppliesCorrectStatus(t *testing.T) {
 	aggregateSig := bls.AggregateSignatures([]bls.Signature{sig0, sig1})
 	att1.Signature = aggregateSig.Marshal()
 
-	att2 := util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
+	att2 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{0, 1},
 	})
 	signingRoot, err = signing.ComputeSigningRoot(att2.Data, domain)
@@ -127,7 +127,7 @@ func TestProcessAttesterSlashings_AppliesCorrectStatus(t *testing.T) {
 	aggregateSig = bls.AggregateSignatures([]bls.Signature{sig0, sig1})
 	att2.Signature = aggregateSig.Marshal()
 
-	slashings := []*ethpb.AttesterSlashing{
+	slashings := []*zondpb.AttesterSlashing{
 		{
 			Attestation_1: att1,
 			Attestation_2: att2,
@@ -138,8 +138,8 @@ func TestProcessAttesterSlashings_AppliesCorrectStatus(t *testing.T) {
 	require.NoError(t, beaconState.SetSlot(currentSlot))
 
 	b := util.NewBeaconBlock()
-	b.Block = &ethpb.BeaconBlock{
-		Body: &ethpb.BeaconBlockBody{
+	b.Block = &zondpb.BeaconBlock{
+		Body: &zondpb.BeaconBlockBody{
 			AttesterSlashings: slashings,
 		},
 	}
@@ -171,9 +171,9 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusAltair(t *testing.T) {
 		vv.WithdrawableEpoch = primitives.Epoch(params.BeaconConfig().SlotsPerEpoch)
 	}
 
-	att1 := util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
-		Data: &ethpb.AttestationData{
-			Source: &ethpb.Checkpoint{Epoch: 1},
+	att1 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+		Data: &zondpb.AttestationData{
+			Source: &zondpb.Checkpoint{Epoch: 1},
 		},
 		AttestingIndices: []uint64{0, 1},
 	})
@@ -186,7 +186,7 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusAltair(t *testing.T) {
 	aggregateSig := bls.AggregateSignatures([]bls.Signature{sig0, sig1})
 	att1.Signature = aggregateSig.Marshal()
 
-	att2 := util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
+	att2 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{0, 1},
 	})
 	signingRoot, err = signing.ComputeSigningRoot(att2.Data, domain)
@@ -196,7 +196,7 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusAltair(t *testing.T) {
 	aggregateSig = bls.AggregateSignatures([]bls.Signature{sig0, sig1})
 	att2.Signature = aggregateSig.Marshal()
 
-	slashings := []*ethpb.AttesterSlashing{
+	slashings := []*zondpb.AttesterSlashing{
 		{
 			Attestation_1: att1,
 			Attestation_2: att2,
@@ -207,8 +207,8 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusAltair(t *testing.T) {
 	require.NoError(t, beaconState.SetSlot(currentSlot))
 
 	b := util.NewBeaconBlock()
-	b.Block = &ethpb.BeaconBlock{
-		Body: &ethpb.BeaconBlockBody{
+	b.Block = &zondpb.BeaconBlock{
+		Body: &zondpb.BeaconBlockBody{
 			AttesterSlashings: slashings,
 		},
 	}
@@ -240,9 +240,9 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusBellatrix(t *testing.T) {
 		vv.WithdrawableEpoch = primitives.Epoch(params.BeaconConfig().SlotsPerEpoch)
 	}
 
-	att1 := util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
-		Data: &ethpb.AttestationData{
-			Source: &ethpb.Checkpoint{Epoch: 1},
+	att1 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+		Data: &zondpb.AttestationData{
+			Source: &zondpb.Checkpoint{Epoch: 1},
 		},
 		AttestingIndices: []uint64{0, 1},
 	})
@@ -255,7 +255,7 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusBellatrix(t *testing.T) {
 	aggregateSig := bls.AggregateSignatures([]bls.Signature{sig0, sig1})
 	att1.Signature = aggregateSig.Marshal()
 
-	att2 := util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
+	att2 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{0, 1},
 	})
 	signingRoot, err = signing.ComputeSigningRoot(att2.Data, domain)
@@ -265,7 +265,7 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusBellatrix(t *testing.T) {
 	aggregateSig = bls.AggregateSignatures([]bls.Signature{sig0, sig1})
 	att2.Signature = aggregateSig.Marshal()
 
-	slashings := []*ethpb.AttesterSlashing{
+	slashings := []*zondpb.AttesterSlashing{
 		{
 			Attestation_1: att1,
 			Attestation_2: att2,
@@ -276,8 +276,8 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusBellatrix(t *testing.T) {
 	require.NoError(t, beaconState.SetSlot(currentSlot))
 
 	b := util.NewBeaconBlock()
-	b.Block = &ethpb.BeaconBlock{
-		Body: &ethpb.BeaconBlockBody{
+	b.Block = &zondpb.BeaconBlock{
+		Body: &zondpb.BeaconBlockBody{
 			AttesterSlashings: slashings,
 		},
 	}
@@ -309,9 +309,9 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusCapella(t *testing.T) {
 		vv.WithdrawableEpoch = primitives.Epoch(params.BeaconConfig().SlotsPerEpoch)
 	}
 
-	att1 := util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
-		Data: &ethpb.AttestationData{
-			Source: &ethpb.Checkpoint{Epoch: 1},
+	att1 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+		Data: &zondpb.AttestationData{
+			Source: &zondpb.Checkpoint{Epoch: 1},
 		},
 		AttestingIndices: []uint64{0, 1},
 	})
@@ -324,7 +324,7 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusCapella(t *testing.T) {
 	aggregateSig := bls.AggregateSignatures([]bls.Signature{sig0, sig1})
 	att1.Signature = aggregateSig.Marshal()
 
-	att2 := util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
+	att2 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{0, 1},
 	})
 	signingRoot, err = signing.ComputeSigningRoot(att2.Data, domain)
@@ -334,7 +334,7 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusCapella(t *testing.T) {
 	aggregateSig = bls.AggregateSignatures([]bls.Signature{sig0, sig1})
 	att2.Signature = aggregateSig.Marshal()
 
-	slashings := []*ethpb.AttesterSlashing{
+	slashings := []*zondpb.AttesterSlashing{
 		{
 			Attestation_1: att1,
 			Attestation_2: att2,
@@ -345,8 +345,8 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusCapella(t *testing.T) {
 	require.NoError(t, beaconState.SetSlot(currentSlot))
 
 	b := util.NewBeaconBlock()
-	b.Block = &ethpb.BeaconBlock{
-		Body: &ethpb.BeaconBlockBody{
+	b.Block = &zondpb.BeaconBlock{
+		Body: &zondpb.BeaconBlockBody{
 			AttesterSlashings: slashings,
 		},
 	}

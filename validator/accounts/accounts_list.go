@@ -6,7 +6,7 @@ import (
 	"math"
 
 	"github.com/pkg/errors"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
 	"github.com/theQRL/qrysm/v4/validator/client/iface"
 	"github.com/theQRL/qrysm/v4/validator/keymanager"
@@ -39,7 +39,7 @@ func listValidatorIndices(ctx context.Context, km keymanager.IKeymanager, client
 	for i := range pubKeys {
 		pks = append(pks, pubKeys[i][:])
 	}
-	req := &ethpb.MultipleValidatorStatusRequest{PublicKeys: pks}
+	req := &zondpb.MultipleValidatorStatusRequest{PublicKeys: pks}
 	resp, err := client.MultipleValidatorStatus(ctx, req)
 	if err != nil {
 		return errors.Wrap(err, "could not request validator indices")

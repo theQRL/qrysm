@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
@@ -41,7 +41,7 @@ func TestExtractBlockDataType(t *testing.T) {
 			},
 
 			want: func() interfaces.ReadOnlySignedBeaconBlock {
-				wsb, err := blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlock{Block: &ethpb.BeaconBlock{Body: &ethpb.BeaconBlockBody{}}})
+				wsb, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlock{Block: &zondpb.BeaconBlock{Body: &zondpb.BeaconBlockBody{}}})
 				require.NoError(t, err)
 				return wsb
 			}(),
@@ -72,7 +72,7 @@ func TestExtractBlockDataType(t *testing.T) {
 				chain:  &mock.ChainService{ValidatorsRoot: [32]byte{}},
 			},
 			want: func() interfaces.ReadOnlySignedBeaconBlock {
-				wsb, err := blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlock{Block: &ethpb.BeaconBlock{Body: &ethpb.BeaconBlockBody{}}})
+				wsb, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlock{Block: &zondpb.BeaconBlock{Body: &zondpb.BeaconBlockBody{}}})
 				require.NoError(t, err)
 				return wsb
 			}(),
@@ -85,7 +85,7 @@ func TestExtractBlockDataType(t *testing.T) {
 				chain:  &mock.ChainService{ValidatorsRoot: [32]byte{}},
 			},
 			want: func() interfaces.ReadOnlySignedBeaconBlock {
-				wsb, err := blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockAltair{Block: &ethpb.BeaconBlockAltair{Body: &ethpb.BeaconBlockBodyAltair{}}})
+				wsb, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockAltair{Block: &zondpb.BeaconBlockAltair{Body: &zondpb.BeaconBlockBodyAltair{}}})
 				require.NoError(t, err)
 				return wsb
 			}(),
@@ -98,7 +98,7 @@ func TestExtractBlockDataType(t *testing.T) {
 				chain:  &mock.ChainService{ValidatorsRoot: [32]byte{}},
 			},
 			want: func() interfaces.ReadOnlySignedBeaconBlock {
-				wsb, err := blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockBellatrix{Block: &ethpb.BeaconBlockBellatrix{Body: &ethpb.BeaconBlockBodyBellatrix{}}})
+				wsb, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockBellatrix{Block: &zondpb.BeaconBlockBellatrix{Body: &zondpb.BeaconBlockBodyBellatrix{}}})
 				require.NoError(t, err)
 				return wsb
 			}(),

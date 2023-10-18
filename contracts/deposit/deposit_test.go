@@ -7,7 +7,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/contracts/deposit"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -25,7 +25,7 @@ func TestDepositInput_GeneratesPb(t *testing.T) {
 
 	sig, err := bls.SignatureFromBytes(result.Signature)
 	require.NoError(t, err)
-	testData := &ethpb.DepositMessage{
+	testData := &zondpb.DepositMessage{
 		PublicKey:             result.PublicKey,
 		WithdrawalCredentials: result.WithdrawalCredentials,
 		Amount:                result.Amount,
@@ -38,7 +38,7 @@ func TestDepositInput_GeneratesPb(t *testing.T) {
 		nil, /*genesisValidatorsRoot*/
 	)
 	require.NoError(t, err)
-	root, err := (&ethpb.SigningData{ObjectRoot: sr[:], Domain: domain}).HashTreeRoot()
+	root, err := (&zondpb.SigningData{ObjectRoot: sr[:], Domain: domain}).HashTreeRoot()
 	require.NoError(t, err)
 	assert.Equal(t, true, sig.Verify(k1.PublicKey(), root[:]))
 }

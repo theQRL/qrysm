@@ -12,9 +12,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/proto/eth/service"
-	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
+	"github.com/theQRL/qrysm/v4/proto/zond/service"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
@@ -72,9 +72,9 @@ func withCompareValidatorsEth(beaconNodeIdx int, conn *grpc.ClientConn) error {
 	}
 	ctx := context.Background()
 	beaconClient := service.NewBeaconChainClient(conn)
-	resp, err := beaconClient.ListValidators(ctx, &ethpbv1.StateValidatorsRequest{
+	resp, err := beaconClient.ListValidators(ctx, &zondpbv1.StateValidatorsRequest{
 		StateId: []byte("head"),
-		Status:  []ethpbv1.ValidatorStatus{ethpbv1.ValidatorStatus_EXITED},
+		Status:  []zondpbv1.ValidatorStatus{zondpbv1.ValidatorStatus_EXITED},
 	})
 	if err != nil {
 		return err
@@ -94,7 +94,7 @@ func withCompareValidatorsEth(beaconNodeIdx int, conn *grpc.ClientConn) error {
 			len(resp.Data),
 		)
 	}
-	resp, err = beaconClient.ListValidators(ctx, &ethpbv1.StateValidatorsRequest{
+	resp, err = beaconClient.ListValidators(ctx, &zondpbv1.StateValidatorsRequest{
 		StateId: []byte("head"),
 		Id:      [][]byte{[]byte("100"), []byte("200")},
 	})
@@ -124,7 +124,7 @@ func withCompareValidatorsEth(beaconNodeIdx int, conn *grpc.ClientConn) error {
 	return nil
 }
 
-func assertValidator(jsonVal *validatorContainerJson, val *ethpbv1.ValidatorContainer) error {
+func assertValidator(jsonVal *validatorContainerJson, val *zondpbv1.ValidatorContainer) error {
 	if jsonVal == nil {
 		return errors.New("validator is nil")
 	}
@@ -159,7 +159,7 @@ func withCompareSyncCommittee(beaconNodeIdx int, conn *grpc.ClientConn) error {
 	}
 	ctx := context.Background()
 	beaconClient := service.NewBeaconChainClient(conn)
-	resp, err := beaconClient.ListSyncCommittees(ctx, &ethpbv2.StateSyncCommitteesRequest{
+	resp, err := beaconClient.ListSyncCommittees(ctx, &zondpbv2.StateSyncCommitteesRequest{
 		StateId: []byte("head"),
 	})
 	if err != nil {
@@ -206,7 +206,7 @@ func withCompareAttesterDuties(beaconNodeIdx int, conn *grpc.ClientConn) error {
 	}
 	ctx := context.Background()
 	validatorClient := service.NewBeaconValidatorClient(conn)
-	resp, err := validatorClient.GetAttesterDuties(ctx, &ethpbv1.AttesterDutiesRequest{
+	resp, err := validatorClient.GetAttesterDuties(ctx, &zondpbv1.AttesterDutiesRequest{
 		Epoch: helpers.AltairE2EForkEpoch,
 		Index: []primitives.ValidatorIndex{0},
 	})

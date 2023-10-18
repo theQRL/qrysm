@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/math"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -31,7 +31,7 @@ var (
 // -the message within contribution and proof
 // -the contribution within contribution and proof
 // -the aggregation bits within contribution
-func ValidateNilSyncContribution(s *ethpb.SignedContributionAndProof) error {
+func ValidateNilSyncContribution(s *zondpb.SignedContributionAndProof) error {
 	if s == nil {
 		return errors.New("signed message can't be nil")
 	}
@@ -59,7 +59,7 @@ func ValidateNilSyncContribution(s *ethpb.SignedContributionAndProof) error {
 //	pubkeys = [state.validators[index].pubkey for index in indices]
 //	aggregate_pubkey = bls.AggregatePKs(pubkeys)
 //	return SyncCommittee(pubkeys=pubkeys, aggregate_pubkey=aggregate_pubkey)
-func NextSyncCommittee(ctx context.Context, s state.BeaconState) (*ethpb.SyncCommittee, error) {
+func NextSyncCommittee(ctx context.Context, s state.BeaconState) (*zondpb.SyncCommittee, error) {
 	indices, err := NextSyncCommitteeIndices(ctx, s)
 	if err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func NextSyncCommittee(ctx context.Context, s state.BeaconState) (*ethpb.SyncCom
 	for _, pubKey := range pubkeys {
 		appendedPubKeys = append(appendedPubKeys, pubKey...)
 	}
-	return &ethpb.SyncCommittee{
+	return &zondpb.SyncCommittee{
 		Pubkeys:         pubkeys,
 		AggregatePubkey: appendedPubKeys,
 	}, nil
@@ -163,7 +163,7 @@ func NextSyncCommitteeIndices(ctx context.Context, s state.BeaconState) ([]primi
 //	sync_subcommittee_size = SYNC_COMMITTEE_SIZE // SYNC_COMMITTEE_SUBNET_COUNT
 //	i = subcommittee_index * sync_subcommittee_size
 //	return sync_committee.pubkeys[i:i + sync_subcommittee_size]
-func SyncSubCommitteePubkeys(syncCommittee *ethpb.SyncCommittee, subComIdx primitives.CommitteeIndex) ([][]byte, error) {
+func SyncSubCommitteePubkeys(syncCommittee *zondpb.SyncCommittee, subComIdx primitives.CommitteeIndex) ([][]byte, error) {
 	cfg := params.BeaconConfig()
 	subCommSize := cfg.SyncCommitteeSize / cfg.SyncCommitteeSubnetCount
 	i := uint64(subComIdx) * subCommSize

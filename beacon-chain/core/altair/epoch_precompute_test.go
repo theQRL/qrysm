@@ -10,20 +10,20 @@ import (
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestInitializeEpochValidators_Ok(t *testing.T) {
 	ffe := params.BeaconConfig().FarFutureEpoch
-	s, err := state_native.InitializeFromProtoAltair(&ethpb.BeaconStateAltair{
+	s, err := state_native.InitializeFromProtoAltair(&zondpb.BeaconStateAltair{
 		Slot: params.BeaconConfig().SlotsPerEpoch,
 		// Validator 0 is slashed
 		// Validator 1 is withdrawable
 		// Validator 2 is active prev epoch and current epoch
 		// Validator 3 is active prev epoch
-		Validators: []*ethpb.Validator{
+		Validators: []*zondpb.Validator{
 			{Slashed: true, WithdrawableEpoch: ffe, EffectiveBalance: 100},
 			{EffectiveBalance: 100},
 			{WithdrawableEpoch: ffe, ExitEpoch: ffe, EffectiveBalance: 100},
@@ -65,9 +65,9 @@ func TestInitializeEpochValidators_Ok(t *testing.T) {
 
 func TestInitializeEpochValidators_Overflow(t *testing.T) {
 	ffe := params.BeaconConfig().FarFutureEpoch
-	s, err := state_native.InitializeFromProtoAltair(&ethpb.BeaconStateAltair{
+	s, err := state_native.InitializeFromProtoAltair(&zondpb.BeaconStateAltair{
 		Slot: params.BeaconConfig().SlotsPerEpoch,
-		Validators: []*ethpb.Validator{
+		Validators: []*zondpb.Validator{
 			{WithdrawableEpoch: ffe, ExitEpoch: ffe, EffectiveBalance: math.MaxUint64},
 			{WithdrawableEpoch: ffe, ExitEpoch: ffe, EffectiveBalance: math.MaxUint64},
 		},
@@ -79,8 +79,8 @@ func TestInitializeEpochValidators_Overflow(t *testing.T) {
 }
 
 func TestInitializeEpochValidators_BadState(t *testing.T) {
-	s, err := state_native.InitializeFromProtoAltair(&ethpb.BeaconStateAltair{
-		Validators:       []*ethpb.Validator{{}},
+	s, err := state_native.InitializeFromProtoAltair(&zondpb.BeaconStateAltair{
+		Validators:       []*zondpb.Validator{{}},
 		InactivityScores: []uint64{},
 	})
 	require.NoError(t, err)
@@ -149,9 +149,9 @@ func TestProcessEpochParticipation_InactiveValidator(t *testing.T) {
 		}
 		return b
 	}
-	st, err := state_native.InitializeFromProtoAltair(&ethpb.BeaconStateAltair{
+	st, err := state_native.InitializeFromProtoAltair(&zondpb.BeaconStateAltair{
 		Slot: 2 * params.BeaconConfig().SlotsPerEpoch,
-		Validators: []*ethpb.Validator{
+		Validators: []*zondpb.Validator{
 			{EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance},                                                  // Inactive
 			{EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance, ExitEpoch: 2},                                    // Inactive current epoch, active previous epoch
 			{EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance, ExitEpoch: params.BeaconConfig().FarFutureEpoch}, // Active
@@ -488,9 +488,9 @@ func testState() (state.BeaconState, error) {
 		}
 		return b
 	}
-	return state_native.InitializeFromProtoAltair(&ethpb.BeaconStateAltair{
+	return state_native.InitializeFromProtoAltair(&zondpb.BeaconStateAltair{
 		Slot: 2 * params.BeaconConfig().SlotsPerEpoch,
-		Validators: []*ethpb.Validator{
+		Validators: []*zondpb.Validator{
 			{EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance, ExitEpoch: params.BeaconConfig().FarFutureEpoch},
 			{EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance, ExitEpoch: params.BeaconConfig().FarFutureEpoch},
 			{EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance, ExitEpoch: params.BeaconConfig().FarFutureEpoch},
@@ -525,9 +525,9 @@ func testStateBellatrix() (state.BeaconState, error) {
 		}
 		return b
 	}
-	return state_native.InitializeFromProtoBellatrix(&ethpb.BeaconStateBellatrix{
+	return state_native.InitializeFromProtoBellatrix(&zondpb.BeaconStateBellatrix{
 		Slot: 2 * params.BeaconConfig().SlotsPerEpoch,
-		Validators: []*ethpb.Validator{
+		Validators: []*zondpb.Validator{
 			{EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance, ExitEpoch: params.BeaconConfig().FarFutureEpoch},
 			{EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance, ExitEpoch: params.BeaconConfig().FarFutureEpoch},
 			{EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance, ExitEpoch: params.BeaconConfig().FarFutureEpoch},

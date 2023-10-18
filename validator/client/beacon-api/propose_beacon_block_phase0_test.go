@@ -9,7 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -23,7 +23,7 @@ func TestProposeBeaconBlock_Phase0(t *testing.T) {
 
 	phase0Block := generateSignedPhase0Block()
 
-	genericSignedBlock := &ethpb.GenericSignedBeaconBlock{}
+	genericSignedBlock := &zondpb.GenericSignedBeaconBlock{}
 	genericSignedBlock.Block = phase0Block
 
 	jsonPhase0Block := &apimiddleware.SignedBeaconBlockContainerJson{
@@ -73,9 +73,9 @@ func TestProposeBeaconBlock_Phase0(t *testing.T) {
 	assert.DeepEqual(t, expectedBlockRoot[:], proposeResponse.BlockRoot)
 }
 
-func generateSignedPhase0Block() *ethpb.GenericSignedBeaconBlock_Phase0 {
-	return &ethpb.GenericSignedBeaconBlock_Phase0{
-		Phase0: &ethpb.SignedBeaconBlock{
+func generateSignedPhase0Block() *zondpb.GenericSignedBeaconBlock_Phase0 {
+	return &zondpb.GenericSignedBeaconBlock_Phase0{
+		Phase0: &zondpb.SignedBeaconBlock{
 			Block:     test_helpers.GenerateProtoPhase0BeaconBlock(),
 			Signature: test_helpers.FillByteSlice(96, 110),
 		},

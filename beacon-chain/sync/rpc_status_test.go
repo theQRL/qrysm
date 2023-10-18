@@ -28,7 +28,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/wrapper"
 	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -49,11 +49,11 @@ func TestStatusRPCHandler_Disconnects_OnForkVersionMismatch(t *testing.T) {
 		cfg: &config{
 			p2p: p1,
 			chain: &mock.ChainService{
-				Fork: &ethpb.Fork{
+				Fork: &zondpb.Fork{
 					PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 					CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 				},
-				FinalizedCheckPoint: &ethpb.Checkpoint{
+				FinalizedCheckPoint: &zondpb.Checkpoint{
 					Epoch: 0,
 					Root:  root[:],
 				},
@@ -74,7 +74,7 @@ func TestStatusRPCHandler_Disconnects_OnForkVersionMismatch(t *testing.T) {
 	p2.BHost.SetStreamHandler(pcl, func(stream network.Stream) {
 		defer wg.Done()
 		expectSuccess(t, stream)
-		out := &ethpb.Status{}
+		out := &zondpb.Status{}
 		assert.NoError(t, r.cfg.p2p.Encoding().DecodeWithMaxLength(stream, out))
 		assert.DeepEqual(t, root[:], out.FinalizedRoot)
 		assert.NoError(t, stream.Close())
@@ -95,7 +95,7 @@ func TestStatusRPCHandler_Disconnects_OnForkVersionMismatch(t *testing.T) {
 
 	stream1, err := p1.BHost.NewStream(context.Background(), p2.BHost.ID(), pcl)
 	require.NoError(t, err)
-	assert.NoError(t, r.statusRPCHandler(context.Background(), &ethpb.Status{ForkDigest: bytesutil.PadTo([]byte("f"), 4), HeadRoot: make([]byte, 32), FinalizedRoot: make([]byte, 32)}, stream1))
+	assert.NoError(t, r.statusRPCHandler(context.Background(), &zondpb.Status{ForkDigest: bytesutil.PadTo([]byte("f"), 4), HeadRoot: make([]byte, 32), FinalizedRoot: make([]byte, 32)}, stream1))
 
 	if util.WaitTimeout(&wg, 1*time.Second) {
 		t.Fatal("Did not receive stream within 1 sec")
@@ -120,11 +120,11 @@ func TestStatusRPCHandler_ConnectsOnGenesis(t *testing.T) {
 		cfg: &config{
 			p2p: p1,
 			chain: &mock.ChainService{
-				Fork: &ethpb.Fork{
+				Fork: &zondpb.Fork{
 					PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 					CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 				},
-				FinalizedCheckPoint: &ethpb.Checkpoint{
+				FinalizedCheckPoint: &zondpb.Checkpoint{
 					Epoch: 0,
 					Root:  params.BeaconConfig().ZeroHash[:],
 				},
@@ -145,7 +145,7 @@ func TestStatusRPCHandler_ConnectsOnGenesis(t *testing.T) {
 	p2.BHost.SetStreamHandler(pcl, func(stream network.Stream) {
 		defer wg.Done()
 		expectSuccess(t, stream)
-		out := &ethpb.Status{}
+		out := &zondpb.Status{}
 		assert.NoError(t, r.cfg.p2p.Encoding().DecodeWithMaxLength(stream, out))
 		assert.DeepEqual(t, root[:], out.FinalizedRoot)
 	})
@@ -155,7 +155,7 @@ func TestStatusRPCHandler_ConnectsOnGenesis(t *testing.T) {
 	digest, err := r.currentForkDigest()
 	require.NoError(t, err)
 
-	err = r.statusRPCHandler(context.Background(), &ethpb.Status{ForkDigest: digest[:], FinalizedRoot: params.BeaconConfig().ZeroHash[:]}, stream1)
+	err = r.statusRPCHandler(context.Background(), &zondpb.Status{ForkDigest: digest[:], FinalizedRoot: params.BeaconConfig().ZeroHash[:]}, stream1)
 	assert.NoError(t, err)
 
 	if util.WaitTimeout(&wg, 1*time.Second) {
@@ -182,13 +182,13 @@ func TestStatusRPCHandler_ReturnsHelloMessage(t *testing.T) {
 	finalized.Block.Slot = blkSlot
 	finalizedRoot, err := finalized.Block.HashTreeRoot()
 	require.NoError(t, err)
-	genesisState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &ethpb.Eth1Data{})
+	genesisState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &zondpb.Eth1Data{})
 	require.NoError(t, err)
 	require.NoError(t, genesisState.SetSlot(111))
 	require.NoError(t, genesisState.UpdateBlockRootAtIndex(111%uint64(params.BeaconConfig().SlotsPerHistoricalRoot), headRoot))
 	util.SaveBlock(t, context.Background(), db, finalized)
 	require.NoError(t, db.SaveGenesisBlockRoot(context.Background(), finalizedRoot))
-	finalizedCheckpt := &ethpb.Checkpoint{
+	finalizedCheckpt := &zondpb.Checkpoint{
 		Epoch: 3,
 		Root:  finalizedRoot[:],
 	}
@@ -204,7 +204,7 @@ func TestStatusRPCHandler_ReturnsHelloMessage(t *testing.T) {
 				State:               genesisState,
 				FinalizedCheckPoint: finalizedCheckpt,
 				Root:                headRoot[:],
-				Fork: &ethpb.Fork{
+				Fork: &zondpb.Fork{
 					PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 					CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 				},
@@ -231,9 +231,9 @@ func TestStatusRPCHandler_ReturnsHelloMessage(t *testing.T) {
 	p2.BHost.SetStreamHandler(pcl, func(stream network.Stream) {
 		defer wg.Done()
 		expectSuccess(t, stream)
-		out := &ethpb.Status{}
+		out := &zondpb.Status{}
 		assert.NoError(t, r.cfg.p2p.Encoding().DecodeWithMaxLength(stream, out))
-		expected := &ethpb.Status{
+		expected := &zondpb.Status{
 			ForkDigest:     digest[:],
 			HeadSlot:       genesisState.Slot(),
 			HeadRoot:       headRoot[:],
@@ -247,7 +247,7 @@ func TestStatusRPCHandler_ReturnsHelloMessage(t *testing.T) {
 	stream1, err := p1.BHost.NewStream(context.Background(), p2.BHost.ID(), pcl)
 	require.NoError(t, err)
 
-	err = r.statusRPCHandler(context.Background(), &ethpb.Status{
+	err = r.statusRPCHandler(context.Background(), &zondpb.Status{
 		ForkDigest:     digest[:],
 		FinalizedRoot:  finalizedRoot[:],
 		FinalizedEpoch: 3,
@@ -270,17 +270,17 @@ func TestHandshakeHandlers_Roundtrip(t *testing.T) {
 	p2 := p2ptest.NewTestP2P(t)
 	db := testingDB.SetupDB(t)
 
-	p1.LocalMetadata = wrapper.WrappedMetadataV0(&ethpb.MetaDataV0{
+	p1.LocalMetadata = wrapper.WrappedMetadataV0(&zondpb.MetaDataV0{
 		SeqNumber: 2,
 		Attnets:   bytesutil.PadTo([]byte{'A', 'B'}, 8),
 	})
 
-	p2.LocalMetadata = wrapper.WrappedMetadataV0(&ethpb.MetaDataV0{
+	p2.LocalMetadata = wrapper.WrappedMetadataV0(&zondpb.MetaDataV0{
 		SeqNumber: 2,
 		Attnets:   bytesutil.PadTo([]byte{'C', 'D'}, 8),
 	})
 
-	st, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	st, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Slot: 5,
 	})
 	require.NoError(t, err)
@@ -292,8 +292,8 @@ func TestHandshakeHandlers_Roundtrip(t *testing.T) {
 	require.NoError(t, db.SaveGenesisBlockRoot(ctx, finalizedRoot))
 	chain := &mock.ChainService{
 		State:               st,
-		FinalizedCheckPoint: &ethpb.Checkpoint{Epoch: 0, Root: finalizedRoot[:]},
-		Fork: &ethpb.Fork{
+		FinalizedCheckPoint: &zondpb.Checkpoint{Epoch: 0, Root: finalizedRoot[:]},
+		Fork: &zondpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 		},
@@ -321,7 +321,7 @@ func TestHandshakeHandlers_Roundtrip(t *testing.T) {
 	require.NoError(t, err)
 
 	chain2 := &mock.ChainService{
-		FinalizedCheckPoint: &ethpb.Checkpoint{Epoch: 0, Root: finalizedRoot[:]},
+		FinalizedCheckPoint: &zondpb.Checkpoint{Epoch: 0, Root: finalizedRoot[:]},
 	}
 	r2 := &Service{
 		ctx: ctx,
@@ -345,10 +345,10 @@ func TestHandshakeHandlers_Roundtrip(t *testing.T) {
 	wg.Add(1)
 	p2.BHost.SetStreamHandler(pcl, func(stream network.Stream) {
 		defer wg.Done()
-		out := &ethpb.Status{}
+		out := &zondpb.Status{}
 		assert.NoError(t, r.cfg.p2p.Encoding().DecodeWithMaxLength(stream, out))
 		log.WithField("status", out).Warn("received status")
-		resp := &ethpb.Status{HeadSlot: 100, HeadRoot: make([]byte, 32), ForkDigest: p2.Digest[:],
+		resp := &zondpb.Status{HeadSlot: 100, HeadRoot: make([]byte, 32), ForkDigest: p2.Digest[:],
 			FinalizedRoot: finalizedRoot[:], FinalizedEpoch: 0}
 		_, err := stream.Write([]byte{responseCodeSuccess})
 		assert.NoError(t, err)
@@ -427,11 +427,11 @@ func TestStatusRPCRequest_RequestSent(t *testing.T) {
 	finalized.Block.Slot = 40
 	finalizedRoot, err := finalized.Block.HashTreeRoot()
 	require.NoError(t, err)
-	genesisState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &ethpb.Eth1Data{})
+	genesisState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &zondpb.Eth1Data{})
 	require.NoError(t, err)
 	require.NoError(t, genesisState.SetSlot(111))
 	require.NoError(t, genesisState.UpdateBlockRootAtIndex(111%uint64(params.BeaconConfig().SlotsPerHistoricalRoot), headRoot))
-	finalizedCheckpt := &ethpb.Checkpoint{
+	finalizedCheckpt := &zondpb.Checkpoint{
 		Epoch: 5,
 		Root:  finalizedRoot[:],
 	}
@@ -440,7 +440,7 @@ func TestStatusRPCRequest_RequestSent(t *testing.T) {
 		State:               genesisState,
 		FinalizedCheckPoint: finalizedCheckpt,
 		Root:                headRoot[:],
-		Fork: &ethpb.Fork{
+		Fork: &zondpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 		},
@@ -465,11 +465,11 @@ func TestStatusRPCRequest_RequestSent(t *testing.T) {
 	wg.Add(1)
 	p2.BHost.SetStreamHandler(pcl, func(stream network.Stream) {
 		defer wg.Done()
-		out := &ethpb.Status{}
+		out := &zondpb.Status{}
 		assert.NoError(t, r.cfg.p2p.Encoding().DecodeWithMaxLength(stream, out))
 		digest, err := r.currentForkDigest()
 		assert.NoError(t, err)
-		expected := &ethpb.Status{
+		expected := &zondpb.Status{
 			ForkDigest:     digest[:],
 			HeadSlot:       genesisState.Slot(),
 			HeadRoot:       headRoot[:],
@@ -506,7 +506,7 @@ func TestStatusRPCRequest_FinalizedBlockExists(t *testing.T) {
 	finalized.Block.Slot = blkSlot
 	finalizedRoot, err := finalized.Block.HashTreeRoot()
 	require.NoError(t, err)
-	genesisState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &ethpb.Eth1Data{DepositRoot: make([]byte, 32), BlockHash: make([]byte, 32)})
+	genesisState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &zondpb.Eth1Data{DepositRoot: make([]byte, 32), BlockHash: make([]byte, 32)})
 	require.NoError(t, err)
 	require.NoError(t, genesisState.SetSlot(111))
 	require.NoError(t, genesisState.UpdateBlockRootAtIndex(111%uint64(params.BeaconConfig().SlotsPerHistoricalRoot), headRoot))
@@ -514,7 +514,7 @@ func TestStatusRPCRequest_FinalizedBlockExists(t *testing.T) {
 	blk.Block.Slot = blkSlot
 	util.SaveBlock(t, context.Background(), db, blk)
 	require.NoError(t, db.SaveGenesisBlockRoot(context.Background(), finalizedRoot))
-	finalizedCheckpt := &ethpb.Checkpoint{
+	finalizedCheckpt := &zondpb.Checkpoint{
 		Epoch: 3,
 		Root:  finalizedRoot[:],
 	}
@@ -524,7 +524,7 @@ func TestStatusRPCRequest_FinalizedBlockExists(t *testing.T) {
 		State:               genesisState,
 		FinalizedCheckPoint: finalizedCheckpt,
 		Root:                headRoot[:],
-		Fork: &ethpb.Fork{
+		Fork: &zondpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 		},
@@ -547,7 +547,7 @@ func TestStatusRPCRequest_FinalizedBlockExists(t *testing.T) {
 		State:               genesisState,
 		FinalizedCheckPoint: finalizedCheckpt,
 		Root:                headRoot[:],
-		Fork: &ethpb.Fork{
+		Fork: &zondpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 		},
@@ -576,7 +576,7 @@ func TestStatusRPCRequest_FinalizedBlockExists(t *testing.T) {
 	wg.Add(1)
 	p2.BHost.SetStreamHandler(pcl, func(stream network.Stream) {
 		defer wg.Done()
-		out := &ethpb.Status{}
+		out := &zondpb.Status{}
 		assert.NoError(t, r.cfg.p2p.Encoding().DecodeWithMaxLength(stream, out))
 		assert.NoError(t, r2.validateStatusMessage(context.Background(), out))
 	})
@@ -594,7 +594,7 @@ func TestStatusRPCRequest_FinalizedBlockExists(t *testing.T) {
 func TestStatusRPCRequest_FinalizedBlockSkippedSlots(t *testing.T) {
 	db, err := kv.NewKVStore(context.Background(), t.TempDir())
 	require.NoError(t, err)
-	bState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &ethpb.Eth1Data{DepositRoot: make([]byte, 32), BlockHash: make([]byte, 32)})
+	bState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &zondpb.Eth1Data{DepositRoot: make([]byte, 32), BlockHash: make([]byte, 32)})
 	require.NoError(t, err)
 
 	blk := util.NewBeaconBlock()
@@ -609,11 +609,11 @@ func TestStatusRPCRequest_FinalizedBlockSkippedSlots(t *testing.T) {
 	blocksTillHead := makeBlocks(t, 1, 1000, genRoot)
 	require.NoError(t, db.SaveBlocks(context.Background(), blocksTillHead))
 
-	stateSummaries := make([]*ethpb.StateSummary, len(blocksTillHead))
+	stateSummaries := make([]*zondpb.StateSummary, len(blocksTillHead))
 	for i, b := range blocksTillHead {
 		bRoot, err := b.Block().HashTreeRoot()
 		require.NoError(t, err)
-		stateSummaries[i] = &ethpb.StateSummary{
+		stateSummaries[i] = &zondpb.StateSummary{
 			Slot: b.Block().Slot(),
 			Root: bRoot[:],
 		}
@@ -690,12 +690,12 @@ func TestStatusRPCRequest_FinalizedBlockSkippedSlots(t *testing.T) {
 		require.NoError(t, nState.SetSlot(headSlot))
 		require.NoError(t, nState.UpdateBlockRootAtIndex(uint64(headSlot.ModSlot(params.BeaconConfig().SlotsPerHistoricalRoot)), headRoot))
 
-		finalizedCheckpt := &ethpb.Checkpoint{
+		finalizedCheckpt := &zondpb.Checkpoint{
 			Epoch: expectedFinalizedEpoch,
 			Root:  tt.expectedFinalizedRoot[:],
 		}
 
-		remoteFinalizedChkpt := &ethpb.Checkpoint{
+		remoteFinalizedChkpt := &zondpb.Checkpoint{
 			Epoch: tt.remoteFinalizedEpoch,
 			Root:  tt.remoteFinalizedRoot[:],
 		}
@@ -709,7 +709,7 @@ func TestStatusRPCRequest_FinalizedBlockSkippedSlots(t *testing.T) {
 			State:               nState,
 			FinalizedCheckPoint: remoteFinalizedChkpt,
 			Root:                rHeadRoot[:],
-			Fork: &ethpb.Fork{
+			Fork: &zondpb.Fork{
 				PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 				CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 			},
@@ -733,7 +733,7 @@ func TestStatusRPCRequest_FinalizedBlockSkippedSlots(t *testing.T) {
 			State:               nState,
 			FinalizedCheckPoint: finalizedCheckpt,
 			Root:                headRoot[:],
-			Fork: &ethpb.Fork{
+			Fork: &zondpb.Fork{
 				PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 				CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 			},
@@ -764,7 +764,7 @@ func TestStatusRPCRequest_FinalizedBlockSkippedSlots(t *testing.T) {
 		wg.Add(1)
 		p2.BHost.SetStreamHandler(pcl, func(stream network.Stream) {
 			defer wg.Done()
-			out := &ethpb.Status{}
+			out := &zondpb.Status{}
 			assert.NoError(t, r.cfg.p2p.Encoding().DecodeWithMaxLength(stream, out))
 			assert.Equal(t, tt.expectError, r2.validateStatusMessage(context.Background(), out) != nil)
 		})
@@ -798,11 +798,11 @@ func TestStatusRPCRequest_BadPeerHandshake(t *testing.T) {
 	finalized := util.NewBeaconBlock()
 	finalizedRoot, err := finalized.Block.HashTreeRoot()
 	require.NoError(t, err)
-	genesisState, err := transition.GenesisBeaconState(ctx, nil, 0, &ethpb.Eth1Data{})
+	genesisState, err := transition.GenesisBeaconState(ctx, nil, 0, &zondpb.Eth1Data{})
 	require.NoError(t, err)
 	require.NoError(t, genesisState.SetSlot(111))
 	require.NoError(t, genesisState.UpdateBlockRootAtIndex(111%uint64(params.BeaconConfig().SlotsPerHistoricalRoot), headRoot))
-	finalizedCheckpt := &ethpb.Checkpoint{
+	finalizedCheckpt := &zondpb.Checkpoint{
 		Epoch: 5,
 		Root:  finalizedRoot[:],
 	}
@@ -810,7 +810,7 @@ func TestStatusRPCRequest_BadPeerHandshake(t *testing.T) {
 		State:               genesisState,
 		FinalizedCheckPoint: finalizedCheckpt,
 		Root:                headRoot[:],
-		Fork: &ethpb.Fork{
+		Fork: &zondpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 		},
@@ -841,9 +841,9 @@ func TestStatusRPCRequest_BadPeerHandshake(t *testing.T) {
 	wg.Add(1)
 	p2.BHost.SetStreamHandler(pcl, func(stream network.Stream) {
 		defer wg.Done()
-		out := &ethpb.Status{}
+		out := &zondpb.Status{}
 		assert.NoError(t, r.cfg.p2p.Encoding().DecodeWithMaxLength(stream, out))
-		expected := &ethpb.Status{
+		expected := &zondpb.Status{
 			ForkDigest:     []byte{1, 1, 1, 1},
 			HeadSlot:       genesisState.Slot(),
 			HeadRoot:       headRoot[:],
@@ -885,11 +885,11 @@ func TestStatusRPC_ValidGenesisMessage(t *testing.T) {
 	finalized.Block.Slot = blkSlot
 	finalizedRoot, err := finalized.Block.HashTreeRoot()
 	require.NoError(t, err)
-	genesisState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &ethpb.Eth1Data{})
+	genesisState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &zondpb.Eth1Data{})
 	require.NoError(t, err)
 	require.NoError(t, genesisState.SetSlot(111))
 	require.NoError(t, genesisState.UpdateBlockRootAtIndex(111%uint64(params.BeaconConfig().SlotsPerHistoricalRoot), headRoot))
-	finalizedCheckpt := &ethpb.Checkpoint{
+	finalizedCheckpt := &zondpb.Checkpoint{
 		Epoch: 5,
 		Root:  finalizedRoot[:],
 	}
@@ -897,7 +897,7 @@ func TestStatusRPC_ValidGenesisMessage(t *testing.T) {
 		State:               genesisState,
 		FinalizedCheckPoint: finalizedCheckpt,
 		Root:                headRoot[:],
-		Fork: &ethpb.Fork{
+		Fork: &zondpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 		},
@@ -915,7 +915,7 @@ func TestStatusRPC_ValidGenesisMessage(t *testing.T) {
 	require.NoError(t, err)
 	// There should be no error for a status message
 	// with a genesis checkpoint.
-	err = r.validateStatusMessage(r.ctx, &ethpb.Status{
+	err = r.validateStatusMessage(r.ctx, &zondpb.Status{
 		ForkDigest:     digest[:],
 		FinalizedRoot:  params.BeaconConfig().ZeroHash[:],
 		FinalizedEpoch: 0,
@@ -974,7 +974,7 @@ func TestShouldResync(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		headState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &ethpb.Eth1Data{})
+		headState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &zondpb.Eth1Data{})
 		require.NoError(t, err)
 		require.NoError(t, headState.SetSlot(tt.args.headSlot))
 		chain := &mock.ChainService{
@@ -998,7 +998,7 @@ func TestShouldResync(t *testing.T) {
 }
 
 func makeBlocks(t *testing.T, i, n uint64, previousRoot [32]byte) []interfaces.ReadOnlySignedBeaconBlock {
-	blocks := make([]*ethpb.SignedBeaconBlock, n)
+	blocks := make([]*zondpb.SignedBeaconBlock, n)
 	ifaceBlocks := make([]interfaces.ReadOnlySignedBeaconBlock, n)
 	for j := i; j < n+i; j++ {
 		parentRoot := make([]byte, 32)

@@ -20,7 +20,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	prysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -71,7 +71,7 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot,
 		return
 	}
 
-	req := &ethpb.AttestationDataRequest{
+	req := &zondpb.AttestationDataRequest{
 		Slot:           slot,
 		CommitteeIndex: duty.CommitteeIndex,
 	}
@@ -85,7 +85,7 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot,
 		return
 	}
 
-	indexedAtt := &ethpb.IndexedAttestation{
+	indexedAtt := &zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{uint64(duty.ValidatorIndex)},
 		Data:             data,
 	}
@@ -129,7 +129,7 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot,
 
 	aggregationBitfield := bitfield.NewBitlist(uint64(len(duty.Committee)))
 	aggregationBitfield.SetBitAt(indexInCommittee, true)
-	attestation := &ethpb.Attestation{
+	attestation := &zondpb.Attestation{
 		Data:                    data,
 		AggregationBits:         aggregationBitfield,
 		Signature:               sig,
@@ -182,7 +182,7 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot,
 }
 
 // Given the validator public key, this gets the validator assignment.
-func (v *validator) duty(pubKey [dilithium2.CryptoPublicKeyBytes]byte) (*ethpb.DutiesResponse_Duty, error) {
+func (v *validator) duty(pubKey [dilithium2.CryptoPublicKeyBytes]byte) (*zondpb.DutiesResponse_Duty, error) {
 	if v.duties == nil {
 		return nil, errors.New("no duties for validators")
 	}
@@ -197,7 +197,7 @@ func (v *validator) duty(pubKey [dilithium2.CryptoPublicKeyBytes]byte) (*ethpb.D
 }
 
 // Given validator's public key, this function returns the signature of an attestation data and its signing root.
-func (v *validator) signAtt(ctx context.Context, pubKey [dilithium2.CryptoPublicKeyBytes]byte, data *ethpb.AttestationData, slot primitives.Slot) ([]byte, [32]byte, error) {
+func (v *validator) signAtt(ctx context.Context, pubKey [dilithium2.CryptoPublicKeyBytes]byte, data *zondpb.AttestationData, slot primitives.Slot) ([]byte, [32]byte, error) {
 	domain, root, err := v.getDomainAndSigningRoot(ctx, data)
 	if err != nil {
 		return nil, [32]byte{}, err
@@ -216,7 +216,7 @@ func (v *validator) signAtt(ctx context.Context, pubKey [dilithium2.CryptoPublic
 	return sig.Marshal(), root, nil
 }
 
-func (v *validator) getDomainAndSigningRoot(ctx context.Context, data *ethpb.AttestationData) (*ethpb.DomainResponse, [32]byte, error) {
+func (v *validator) getDomainAndSigningRoot(ctx context.Context, data *zondpb.AttestationData) (*zondpb.DomainResponse, [32]byte, error) {
 	domain, err := v.domainData(ctx, data.Target.Epoch, params.BeaconConfig().DomainBeaconAttester[:])
 	if err != nil {
 		return nil, [32]byte{}, err
@@ -230,7 +230,7 @@ func (v *validator) getDomainAndSigningRoot(ctx context.Context, data *ethpb.Att
 
 // For logging, this saves the last submitted attester index to its attestation data. The purpose of this
 // is to enhance attesting logs to be readable when multiple validator keys ran in a single client.
-func (v *validator) saveAttesterIndexToData(data *ethpb.AttestationData, index primitives.ValidatorIndex) error {
+func (v *validator) saveAttesterIndexToData(data *zondpb.AttestationData, index primitives.ValidatorIndex) error {
 	v.attLogsLock.Lock()
 	defer v.attLogsLock.Unlock()
 
@@ -297,7 +297,7 @@ func (v *validator) waitOneThirdOrValidBlock(ctx context.Context, slot primitive
 	}
 }
 
-func attestationLogFields(pubKey [dilithium2.CryptoPublicKeyBytes]byte, indexedAtt *ethpb.IndexedAttestation) logrus.Fields {
+func attestationLogFields(pubKey [dilithium2.CryptoPublicKeyBytes]byte, indexedAtt *zondpb.IndexedAttestation) logrus.Fields {
 	return logrus.Fields{
 		"attesterPublicKey": fmt.Sprintf("%#x", pubKey),
 		"attestationSlot":   indexedAtt.Data.Slot,

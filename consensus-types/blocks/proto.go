@@ -5,7 +5,7 @@ import (
 	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"google.golang.org/protobuf/proto"
 )
@@ -23,82 +23,82 @@ func (b *SignedBeaconBlock) Proto() (proto.Message, error) {
 
 	switch b.version {
 	case version.Phase0:
-		var block *eth.BeaconBlock
+		var block *zond.BeaconBlock
 		if blockMessage != nil {
 			var ok bool
-			block, ok = blockMessage.(*eth.BeaconBlock)
+			block, ok = blockMessage.(*zond.BeaconBlock)
 			if !ok {
 				return nil, errIncorrectBlockVersion
 			}
 		}
-		return &eth.SignedBeaconBlock{
+		return &zond.SignedBeaconBlock{
 			Block:     block,
 			Signature: b.signature[:],
 		}, nil
 	case version.Altair:
-		var block *eth.BeaconBlockAltair
+		var block *zond.BeaconBlockAltair
 		if blockMessage != nil {
 			var ok bool
-			block, ok = blockMessage.(*eth.BeaconBlockAltair)
+			block, ok = blockMessage.(*zond.BeaconBlockAltair)
 			if !ok {
 				return nil, errIncorrectBlockVersion
 			}
 		}
-		return &eth.SignedBeaconBlockAltair{
+		return &zond.SignedBeaconBlockAltair{
 			Block:     block,
 			Signature: b.signature[:],
 		}, nil
 	case version.Bellatrix:
 		if b.IsBlinded() {
-			var block *eth.BlindedBeaconBlockBellatrix
+			var block *zond.BlindedBeaconBlockBellatrix
 			if blockMessage != nil {
 				var ok bool
-				block, ok = blockMessage.(*eth.BlindedBeaconBlockBellatrix)
+				block, ok = blockMessage.(*zond.BlindedBeaconBlockBellatrix)
 				if !ok {
 					return nil, errIncorrectBlockVersion
 				}
 			}
-			return &eth.SignedBlindedBeaconBlockBellatrix{
+			return &zond.SignedBlindedBeaconBlockBellatrix{
 				Block:     block,
 				Signature: b.signature[:],
 			}, nil
 		}
-		var block *eth.BeaconBlockBellatrix
+		var block *zond.BeaconBlockBellatrix
 		if blockMessage != nil {
 			var ok bool
-			block, ok = blockMessage.(*eth.BeaconBlockBellatrix)
+			block, ok = blockMessage.(*zond.BeaconBlockBellatrix)
 			if !ok {
 				return nil, errIncorrectBlockVersion
 			}
 		}
-		return &eth.SignedBeaconBlockBellatrix{
+		return &zond.SignedBeaconBlockBellatrix{
 			Block:     block,
 			Signature: b.signature[:],
 		}, nil
 	case version.Capella:
 		if b.IsBlinded() {
-			var block *eth.BlindedBeaconBlockCapella
+			var block *zond.BlindedBeaconBlockCapella
 			if blockMessage != nil {
 				var ok bool
-				block, ok = blockMessage.(*eth.BlindedBeaconBlockCapella)
+				block, ok = blockMessage.(*zond.BlindedBeaconBlockCapella)
 				if !ok {
 					return nil, errIncorrectBlockVersion
 				}
 			}
-			return &eth.SignedBlindedBeaconBlockCapella{
+			return &zond.SignedBlindedBeaconBlockCapella{
 				Block:     block,
 				Signature: b.signature[:],
 			}, nil
 		}
-		var block *eth.BeaconBlockCapella
+		var block *zond.BeaconBlockCapella
 		if blockMessage != nil {
 			var ok bool
-			block, ok = blockMessage.(*eth.BeaconBlockCapella)
+			block, ok = blockMessage.(*zond.BeaconBlockCapella)
 			if !ok {
 				return nil, errIncorrectBlockVersion
 			}
 		}
-		return &eth.SignedBeaconBlockCapella{
+		return &zond.SignedBeaconBlockCapella{
 			Block:     block,
 			Signature: b.signature[:],
 		}, nil
@@ -120,15 +120,15 @@ func (b *BeaconBlock) Proto() (proto.Message, error) {
 
 	switch b.version {
 	case version.Phase0:
-		var body *eth.BeaconBlockBody
+		var body *zond.BeaconBlockBody
 		if bodyMessage != nil {
 			var ok bool
-			body, ok = bodyMessage.(*eth.BeaconBlockBody)
+			body, ok = bodyMessage.(*zond.BeaconBlockBody)
 			if !ok {
 				return nil, errIncorrectBodyVersion
 			}
 		}
-		return &eth.BeaconBlock{
+		return &zond.BeaconBlock{
 			Slot:          b.slot,
 			ProposerIndex: b.proposerIndex,
 			ParentRoot:    b.parentRoot[:],
@@ -136,15 +136,15 @@ func (b *BeaconBlock) Proto() (proto.Message, error) {
 			Body:          body,
 		}, nil
 	case version.Altair:
-		var body *eth.BeaconBlockBodyAltair
+		var body *zond.BeaconBlockBodyAltair
 		if bodyMessage != nil {
 			var ok bool
-			body, ok = bodyMessage.(*eth.BeaconBlockBodyAltair)
+			body, ok = bodyMessage.(*zond.BeaconBlockBodyAltair)
 			if !ok {
 				return nil, errIncorrectBodyVersion
 			}
 		}
-		return &eth.BeaconBlockAltair{
+		return &zond.BeaconBlockAltair{
 			Slot:          b.slot,
 			ProposerIndex: b.proposerIndex,
 			ParentRoot:    b.parentRoot[:],
@@ -153,15 +153,15 @@ func (b *BeaconBlock) Proto() (proto.Message, error) {
 		}, nil
 	case version.Bellatrix:
 		if b.IsBlinded() {
-			var body *eth.BlindedBeaconBlockBodyBellatrix
+			var body *zond.BlindedBeaconBlockBodyBellatrix
 			if bodyMessage != nil {
 				var ok bool
-				body, ok = bodyMessage.(*eth.BlindedBeaconBlockBodyBellatrix)
+				body, ok = bodyMessage.(*zond.BlindedBeaconBlockBodyBellatrix)
 				if !ok {
 					return nil, errIncorrectBodyVersion
 				}
 			}
-			return &eth.BlindedBeaconBlockBellatrix{
+			return &zond.BlindedBeaconBlockBellatrix{
 				Slot:          b.slot,
 				ProposerIndex: b.proposerIndex,
 				ParentRoot:    b.parentRoot[:],
@@ -169,15 +169,15 @@ func (b *BeaconBlock) Proto() (proto.Message, error) {
 				Body:          body,
 			}, nil
 		}
-		var body *eth.BeaconBlockBodyBellatrix
+		var body *zond.BeaconBlockBodyBellatrix
 		if bodyMessage != nil {
 			var ok bool
-			body, ok = bodyMessage.(*eth.BeaconBlockBodyBellatrix)
+			body, ok = bodyMessage.(*zond.BeaconBlockBodyBellatrix)
 			if !ok {
 				return nil, errIncorrectBodyVersion
 			}
 		}
-		return &eth.BeaconBlockBellatrix{
+		return &zond.BeaconBlockBellatrix{
 			Slot:          b.slot,
 			ProposerIndex: b.proposerIndex,
 			ParentRoot:    b.parentRoot[:],
@@ -186,15 +186,15 @@ func (b *BeaconBlock) Proto() (proto.Message, error) {
 		}, nil
 	case version.Capella:
 		if b.IsBlinded() {
-			var body *eth.BlindedBeaconBlockBodyCapella
+			var body *zond.BlindedBeaconBlockBodyCapella
 			if bodyMessage != nil {
 				var ok bool
-				body, ok = bodyMessage.(*eth.BlindedBeaconBlockBodyCapella)
+				body, ok = bodyMessage.(*zond.BlindedBeaconBlockBodyCapella)
 				if !ok {
 					return nil, errIncorrectBodyVersion
 				}
 			}
-			return &eth.BlindedBeaconBlockCapella{
+			return &zond.BlindedBeaconBlockCapella{
 				Slot:          b.slot,
 				ProposerIndex: b.proposerIndex,
 				ParentRoot:    b.parentRoot[:],
@@ -202,15 +202,15 @@ func (b *BeaconBlock) Proto() (proto.Message, error) {
 				Body:          body,
 			}, nil
 		}
-		var body *eth.BeaconBlockBodyCapella
+		var body *zond.BeaconBlockBodyCapella
 		if bodyMessage != nil {
 			var ok bool
-			body, ok = bodyMessage.(*eth.BeaconBlockBodyCapella)
+			body, ok = bodyMessage.(*zond.BeaconBlockBodyCapella)
 			if !ok {
 				return nil, errIncorrectBodyVersion
 			}
 		}
-		return &eth.BeaconBlockCapella{
+		return &zond.BeaconBlockCapella{
 			Slot:          b.slot,
 			ProposerIndex: b.proposerIndex,
 			ParentRoot:    b.parentRoot[:],
@@ -230,7 +230,7 @@ func (b *BeaconBlockBody) Proto() (proto.Message, error) {
 
 	switch b.version {
 	case version.Phase0:
-		return &eth.BeaconBlockBody{
+		return &zond.BeaconBlockBody{
 			RandaoReveal:      b.randaoReveal[:],
 			Eth1Data:          b.eth1Data,
 			Graffiti:          b.graffiti[:],
@@ -241,7 +241,7 @@ func (b *BeaconBlockBody) Proto() (proto.Message, error) {
 			VoluntaryExits:    b.voluntaryExits,
 		}, nil
 	case version.Altair:
-		return &eth.BeaconBlockBodyAltair{
+		return &zond.BeaconBlockBodyAltair{
 			RandaoReveal:      b.randaoReveal[:],
 			Eth1Data:          b.eth1Data,
 			Graffiti:          b.graffiti[:],
@@ -262,7 +262,7 @@ func (b *BeaconBlockBody) Proto() (proto.Message, error) {
 					return nil, errPayloadHeaderWrongType
 				}
 			}
-			return &eth.BlindedBeaconBlockBodyBellatrix{
+			return &zond.BlindedBeaconBlockBodyBellatrix{
 				RandaoReveal:           b.randaoReveal[:],
 				Eth1Data:               b.eth1Data,
 				Graffiti:               b.graffiti[:],
@@ -283,7 +283,7 @@ func (b *BeaconBlockBody) Proto() (proto.Message, error) {
 				return nil, errPayloadWrongType
 			}
 		}
-		return &eth.BeaconBlockBodyBellatrix{
+		return &zond.BeaconBlockBodyBellatrix{
 			RandaoReveal:      b.randaoReveal[:],
 			Eth1Data:          b.eth1Data,
 			Graffiti:          b.graffiti[:],
@@ -305,7 +305,7 @@ func (b *BeaconBlockBody) Proto() (proto.Message, error) {
 					return nil, errPayloadHeaderWrongType
 				}
 			}
-			return &eth.BlindedBeaconBlockBodyCapella{
+			return &zond.BlindedBeaconBlockBodyCapella{
 				RandaoReveal:                b.randaoReveal[:],
 				Eth1Data:                    b.eth1Data,
 				Graffiti:                    b.graffiti[:],
@@ -327,7 +327,7 @@ func (b *BeaconBlockBody) Proto() (proto.Message, error) {
 				return nil, errPayloadWrongType
 			}
 		}
-		return &eth.BeaconBlockBodyCapella{
+		return &zond.BeaconBlockBodyCapella{
 			RandaoReveal:                b.randaoReveal[:],
 			Eth1Data:                    b.eth1Data,
 			Graffiti:                    b.graffiti[:],
@@ -345,7 +345,7 @@ func (b *BeaconBlockBody) Proto() (proto.Message, error) {
 	}
 }
 
-func initSignedBlockFromProtoPhase0(pb *eth.SignedBeaconBlock) (*SignedBeaconBlock, error) {
+func initSignedBlockFromProtoPhase0(pb *zond.SignedBeaconBlock) (*SignedBeaconBlock, error) {
 	if pb == nil {
 		return nil, errNilBlock
 	}
@@ -362,7 +362,7 @@ func initSignedBlockFromProtoPhase0(pb *eth.SignedBeaconBlock) (*SignedBeaconBlo
 	return b, nil
 }
 
-func initSignedBlockFromProtoAltair(pb *eth.SignedBeaconBlockAltair) (*SignedBeaconBlock, error) {
+func initSignedBlockFromProtoAltair(pb *zond.SignedBeaconBlockAltair) (*SignedBeaconBlock, error) {
 	if pb == nil {
 		return nil, errNilBlock
 	}
@@ -379,7 +379,7 @@ func initSignedBlockFromProtoAltair(pb *eth.SignedBeaconBlockAltair) (*SignedBea
 	return b, nil
 }
 
-func initSignedBlockFromProtoBellatrix(pb *eth.SignedBeaconBlockBellatrix) (*SignedBeaconBlock, error) {
+func initSignedBlockFromProtoBellatrix(pb *zond.SignedBeaconBlockBellatrix) (*SignedBeaconBlock, error) {
 	if pb == nil {
 		return nil, errNilBlock
 	}
@@ -396,7 +396,7 @@ func initSignedBlockFromProtoBellatrix(pb *eth.SignedBeaconBlockBellatrix) (*Sig
 	return b, nil
 }
 
-func initSignedBlockFromProtoCapella(pb *eth.SignedBeaconBlockCapella) (*SignedBeaconBlock, error) {
+func initSignedBlockFromProtoCapella(pb *zond.SignedBeaconBlockCapella) (*SignedBeaconBlock, error) {
 	if pb == nil {
 		return nil, errNilBlock
 	}
@@ -413,7 +413,7 @@ func initSignedBlockFromProtoCapella(pb *eth.SignedBeaconBlockCapella) (*SignedB
 	return b, nil
 }
 
-func initBlindedSignedBlockFromProtoBellatrix(pb *eth.SignedBlindedBeaconBlockBellatrix) (*SignedBeaconBlock, error) {
+func initBlindedSignedBlockFromProtoBellatrix(pb *zond.SignedBlindedBeaconBlockBellatrix) (*SignedBeaconBlock, error) {
 	if pb == nil {
 		return nil, errNilBlock
 	}
@@ -430,7 +430,7 @@ func initBlindedSignedBlockFromProtoBellatrix(pb *eth.SignedBlindedBeaconBlockBe
 	return b, nil
 }
 
-func initBlindedSignedBlockFromProtoCapella(pb *eth.SignedBlindedBeaconBlockCapella) (*SignedBeaconBlock, error) {
+func initBlindedSignedBlockFromProtoCapella(pb *zond.SignedBlindedBeaconBlockCapella) (*SignedBeaconBlock, error) {
 	if pb == nil {
 		return nil, errNilBlock
 	}
@@ -447,7 +447,7 @@ func initBlindedSignedBlockFromProtoCapella(pb *eth.SignedBlindedBeaconBlockCape
 	return b, nil
 }
 
-func initBlockFromProtoPhase0(pb *eth.BeaconBlock) (*BeaconBlock, error) {
+func initBlockFromProtoPhase0(pb *zond.BeaconBlock) (*BeaconBlock, error) {
 	if pb == nil {
 		return nil, errNilBlock
 	}
@@ -467,7 +467,7 @@ func initBlockFromProtoPhase0(pb *eth.BeaconBlock) (*BeaconBlock, error) {
 	return b, nil
 }
 
-func initBlockFromProtoAltair(pb *eth.BeaconBlockAltair) (*BeaconBlock, error) {
+func initBlockFromProtoAltair(pb *zond.BeaconBlockAltair) (*BeaconBlock, error) {
 	if pb == nil {
 		return nil, errNilBlock
 	}
@@ -487,7 +487,7 @@ func initBlockFromProtoAltair(pb *eth.BeaconBlockAltair) (*BeaconBlock, error) {
 	return b, nil
 }
 
-func initBlockFromProtoBellatrix(pb *eth.BeaconBlockBellatrix) (*BeaconBlock, error) {
+func initBlockFromProtoBellatrix(pb *zond.BeaconBlockBellatrix) (*BeaconBlock, error) {
 	if pb == nil {
 		return nil, errNilBlock
 	}
@@ -507,7 +507,7 @@ func initBlockFromProtoBellatrix(pb *eth.BeaconBlockBellatrix) (*BeaconBlock, er
 	return b, nil
 }
 
-func initBlindedBlockFromProtoBellatrix(pb *eth.BlindedBeaconBlockBellatrix) (*BeaconBlock, error) {
+func initBlindedBlockFromProtoBellatrix(pb *zond.BlindedBeaconBlockBellatrix) (*BeaconBlock, error) {
 	if pb == nil {
 		return nil, errNilBlock
 	}
@@ -527,7 +527,7 @@ func initBlindedBlockFromProtoBellatrix(pb *eth.BlindedBeaconBlockBellatrix) (*B
 	return b, nil
 }
 
-func initBlockFromProtoCapella(pb *eth.BeaconBlockCapella) (*BeaconBlock, error) {
+func initBlockFromProtoCapella(pb *zond.BeaconBlockCapella) (*BeaconBlock, error) {
 	if pb == nil {
 		return nil, errNilBlock
 	}
@@ -547,7 +547,7 @@ func initBlockFromProtoCapella(pb *eth.BeaconBlockCapella) (*BeaconBlock, error)
 	return b, nil
 }
 
-func initBlindedBlockFromProtoCapella(pb *eth.BlindedBeaconBlockCapella) (*BeaconBlock, error) {
+func initBlindedBlockFromProtoCapella(pb *zond.BlindedBeaconBlockCapella) (*BeaconBlock, error) {
 	if pb == nil {
 		return nil, errNilBlock
 	}
@@ -567,7 +567,7 @@ func initBlindedBlockFromProtoCapella(pb *eth.BlindedBeaconBlockCapella) (*Beaco
 	return b, nil
 }
 
-func initBlockBodyFromProtoPhase0(pb *eth.BeaconBlockBody) (*BeaconBlockBody, error) {
+func initBlockBodyFromProtoPhase0(pb *zond.BeaconBlockBody) (*BeaconBlockBody, error) {
 	if pb == nil {
 		return nil, errNilBlockBody
 	}
@@ -587,7 +587,7 @@ func initBlockBodyFromProtoPhase0(pb *eth.BeaconBlockBody) (*BeaconBlockBody, er
 	return b, nil
 }
 
-func initBlockBodyFromProtoAltair(pb *eth.BeaconBlockBodyAltair) (*BeaconBlockBody, error) {
+func initBlockBodyFromProtoAltair(pb *zond.BeaconBlockBodyAltair) (*BeaconBlockBody, error) {
 	if pb == nil {
 		return nil, errNilBlockBody
 	}
@@ -608,7 +608,7 @@ func initBlockBodyFromProtoAltair(pb *eth.BeaconBlockBodyAltair) (*BeaconBlockBo
 	return b, nil
 }
 
-func initBlockBodyFromProtoBellatrix(pb *eth.BeaconBlockBodyBellatrix) (*BeaconBlockBody, error) {
+func initBlockBodyFromProtoBellatrix(pb *zond.BeaconBlockBodyBellatrix) (*BeaconBlockBody, error) {
 	if pb == nil {
 		return nil, errNilBlockBody
 	}
@@ -635,7 +635,7 @@ func initBlockBodyFromProtoBellatrix(pb *eth.BeaconBlockBodyBellatrix) (*BeaconB
 	return b, nil
 }
 
-func initBlindedBlockBodyFromProtoBellatrix(pb *eth.BlindedBeaconBlockBodyBellatrix) (*BeaconBlockBody, error) {
+func initBlindedBlockBodyFromProtoBellatrix(pb *zond.BlindedBeaconBlockBodyBellatrix) (*BeaconBlockBody, error) {
 	if pb == nil {
 		return nil, errNilBlockBody
 	}
@@ -662,7 +662,7 @@ func initBlindedBlockBodyFromProtoBellatrix(pb *eth.BlindedBeaconBlockBodyBellat
 	return b, nil
 }
 
-func initBlockBodyFromProtoCapella(pb *eth.BeaconBlockBodyCapella) (*BeaconBlockBody, error) {
+func initBlockBodyFromProtoCapella(pb *zond.BeaconBlockBodyCapella) (*BeaconBlockBody, error) {
 	if pb == nil {
 		return nil, errNilBlockBody
 	}
@@ -690,7 +690,7 @@ func initBlockBodyFromProtoCapella(pb *eth.BeaconBlockBodyCapella) (*BeaconBlock
 	return b, nil
 }
 
-func initBlindedBlockBodyFromProtoCapella(pb *eth.BlindedBeaconBlockBodyCapella) (*BeaconBlockBody, error) {
+func initBlindedBlockBodyFromProtoCapella(pb *zond.BlindedBeaconBlockBodyCapella) (*BeaconBlockBody, error) {
 	if pb == nil {
 		return nil, errNilBlockBody
 	}

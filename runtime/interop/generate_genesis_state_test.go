@@ -7,7 +7,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/container/trie"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/interop"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -25,7 +25,7 @@ func TestGenerateGenesisState(t *testing.T) {
 	require.NoError(t, err)
 	root, err := tr.HashTreeRoot()
 	require.NoError(t, err)
-	genesisState, err := transition.GenesisBeaconState(context.Background(), deposits, 0, &eth.Eth1Data{
+	genesisState, err := transition.GenesisBeaconState(context.Background(), deposits, 0, &zond.Eth1Data{
 		DepositRoot:  root[:],
 		DepositCount: uint64(len(deposits)),
 	})

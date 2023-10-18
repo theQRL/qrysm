@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/math"
-	eth "github.com/theQRL/qrysm/v4/proto/eth/v1"
+	zond "github.com/theQRL/qrysm/v4/proto/zond/v1"
 )
 
 var (
@@ -95,7 +95,7 @@ func fromSnapshot(snapshot DepositTreeSnapshot) (DepositTree, error) {
 // finalize marks a deposit as finalized.
 //
 //nolint:unused
-func (d *DepositTree) finalize(eth1data *eth.Eth1Data, executionBlockHeight uint64) error {
+func (d *DepositTree) finalize(eth1data *zond.Eth1Data, executionBlockHeight uint64) error {
 	var blockHash [32]byte
 	copy(blockHash[:], eth1data.BlockHash)
 	d.finalizedExecutionBlock = executionBlock{

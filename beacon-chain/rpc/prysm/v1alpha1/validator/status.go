@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/contracts/deposit"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
@@ -41,8 +41,8 @@ var errParticipation = status.Errorf(codes.Internal, "Failed to obtain epoch par
 //	UNKNOWN_STATUS - validator does not have a known status in the network.
 func (vs *Server) ValidatorStatus(
 	ctx context.Context,
-	req *ethpb.ValidatorStatusRequest,
-) (*ethpb.ValidatorStatusResponse, error) {
+	req *zondpb.ValidatorStatusRequest,
+) (*zondpb.ValidatorStatusResponse, error) {
 	headState, err := vs.HeadFetcher.HeadStateReadOnly(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Could not get head state")
@@ -56,8 +56,8 @@ func (vs *Server) ValidatorStatus(
 // validator statuses. Takes a list of public keys or a list of validator indices.
 func (vs *Server) MultipleValidatorStatus(
 	ctx context.Context,
-	req *ethpb.MultipleValidatorStatusRequest,
-) (*ethpb.MultipleValidatorStatusResponse, error) {
+	req *zondpb.MultipleValidatorStatusRequest,
+) (*zondpb.MultipleValidatorStatusResponse, error) {
 	if vs.SyncChecker.Syncing() {
 		return nil, status.Errorf(codes.Unavailable, "Syncing to latest head, not ready to respond")
 	}
@@ -86,14 +86,14 @@ func (vs *Server) MultipleValidatorStatus(
 		}
 	}
 	// Fetch statuses from beacon state.
-	statuses := make([]*ethpb.ValidatorStatusResponse, len(pubKeys))
+	statuses := make([]*zondpb.ValidatorStatusResponse, len(pubKeys))
 	indices := make([]primitives.ValidatorIndex, len(pubKeys))
 	lastActivated, hpErr := helpers.LastActivatedValidatorIndex(ctx, headState)
 	for i, pubKey := range pubKeys {
 		statuses[i], indices[i] = vs.validatorStatus(ctx, headState, pubKey, func() (primitives.ValidatorIndex, error) { return lastActivated, hpErr })
 	}
 
-	return &ethpb.MultipleValidatorStatusResponse{
+	return &zondpb.MultipleValidatorStatusResponse{
 		PublicKeys: pubKeys,
 		Statuses:   statuses,
 		Indices:    indices,
@@ -101,13 +101,13 @@ func (vs *Server) MultipleValidatorStatus(
 }
 
 // CheckDoppelGanger checks if the provided keys are currently active in the network.
-func (vs *Server) CheckDoppelGanger(ctx context.Context, req *ethpb.DoppelGangerRequest) (*ethpb.DoppelGangerResponse, error) {
+func (vs *Server) CheckDoppelGanger(ctx context.Context, req *zondpb.DoppelGangerRequest) (*zondpb.DoppelGangerResponse, error) {
 	if vs.SyncChecker.Syncing() {
 		return nil, status.Errorf(codes.Unavailable, "Syncing to latest head, not ready to respond")
 	}
 	if req == nil || req.ValidatorRequests == nil || len(req.ValidatorRequests) == 0 {
-		return &ethpb.DoppelGangerResponse{
-			Responses: []*ethpb.DoppelGangerResponse_ValidatorResponse{},
+		return &zondpb.DoppelGangerResponse{
+			Responses: []*zondpb.DoppelGangerResponse_ValidatorResponse{},
 		}, nil
 	}
 	headState, err := vs.HeadFetcher.HeadStateReadOnly(ctx)
@@ -119,12 +119,12 @@ func (vs *Server) CheckDoppelGanger(ctx context.Context, req *ethpb.DoppelGanger
 	if headState.Version() == version.Phase0 {
 		log.Info("Skipping doppelganger check for Phase 0")
 
-		resp := &ethpb.DoppelGangerResponse{
-			Responses: []*ethpb.DoppelGangerResponse_ValidatorResponse{},
+		resp := &zondpb.DoppelGangerResponse{
+			Responses: []*zondpb.DoppelGangerResponse_ValidatorResponse{},
 		}
 		for _, v := range req.ValidatorRequests {
 			resp.Responses = append(resp.Responses,
-				&ethpb.DoppelGangerResponse_ValidatorResponse{
+				&zondpb.DoppelGangerResponse_ValidatorResponse{
 					PublicKey:       v.PublicKey,
 					DuplicateExists: false,
 				})
@@ -172,8 +172,8 @@ func (vs *Server) CheckDoppelGanger(ctx context.Context, req *ethpb.DoppelGanger
 		return nil, errParticipation
 	}
 
-	resp = &ethpb.DoppelGangerResponse{
-		Responses: []*ethpb.DoppelGangerResponse_ValidatorResponse{},
+	resp = &zondpb.DoppelGangerResponse{
+		Responses: []*zondpb.DoppelGangerResponse_ValidatorResponse{},
 	}
 	for _, v := range req.ValidatorRequests {
 		// If the validator's last recorded epoch was less than 1 epoch
@@ -182,7 +182,7 @@ func (vs *Server) CheckDoppelGanger(ctx context.Context, req *ethpb.DoppelGanger
 		// 31 slots to be included.
 		if v.Epoch+2 >= currEpoch {
 			resp.Responses = append(resp.Responses,
-				&ethpb.DoppelGangerResponse_ValidatorResponse{
+				&zondpb.DoppelGangerResponse_ValidatorResponse{
 					PublicKey:       v.PublicKey,
 					DuplicateExists: false,
 				})
@@ -198,7 +198,7 @@ func (vs *Server) CheckDoppelGanger(ctx context.Context, req *ethpb.DoppelGanger
 			(prevCurrentParticipation[valIndex] != 0) || (prevPreviousParticipation[valIndex] != 0) {
 			log.WithField("ValidatorIndex", valIndex).Infof("Participation flag found")
 			resp.Responses = append(resp.Responses,
-				&ethpb.DoppelGangerResponse_ValidatorResponse{
+				&zondpb.DoppelGangerResponse_ValidatorResponse{
 					PublicKey:       v.PublicKey,
 					DuplicateExists: true,
 				})
@@ -206,7 +206,7 @@ func (vs *Server) CheckDoppelGanger(ctx context.Context, req *ethpb.DoppelGanger
 		}
 		// Mark the public key as valid.
 		resp.Responses = append(resp.Responses,
-			&ethpb.DoppelGangerResponse_ValidatorResponse{
+			&zondpb.DoppelGangerResponse_ValidatorResponse{
 				PublicKey:       v.PublicKey,
 				DuplicateExists: false,
 			})
@@ -219,13 +219,13 @@ func (vs *Server) CheckDoppelGanger(ctx context.Context, req *ethpb.DoppelGanger
 func (vs *Server) activationStatus(
 	ctx context.Context,
 	pubKeys [][]byte,
-) (bool, []*ethpb.ValidatorActivationResponse_Status, error) {
+) (bool, []*zondpb.ValidatorActivationResponse_Status, error) {
 	headState, err := vs.HeadFetcher.HeadStateReadOnly(ctx)
 	if err != nil {
 		return false, nil, err
 	}
 	activeValidatorExists := false
-	statusResponses := make([]*ethpb.ValidatorActivationResponse_Status, len(pubKeys))
+	statusResponses := make([]*zondpb.ValidatorActivationResponse_Status, len(pubKeys))
 	// only run calculation of last activated once per state
 	lastActivated, hpErr := helpers.LastActivatedValidatorIndex(ctx, headState)
 	for i, pubKey := range pubKeys {
@@ -236,13 +236,13 @@ func (vs *Server) activationStatus(
 		if vStatus == nil {
 			continue
 		}
-		resp := &ethpb.ValidatorActivationResponse_Status{
+		resp := &zondpb.ValidatorActivationResponse_Status{
 			Status:    vStatus,
 			PublicKey: pubKey,
 			Index:     idx,
 		}
 		statusResponses[i] = resp
-		if vStatus.Status == ethpb.ValidatorStatus_ACTIVE {
+		if vStatus.Status == zondpb.ValidatorStatus_ACTIVE {
 			activeValidatorExists = true
 		}
 	}
@@ -278,13 +278,13 @@ func (vs *Server) validatorStatus(
 	headState state.ReadOnlyBeaconState,
 	pubKey []byte,
 	lastActiveValidatorFn func() (primitives.ValidatorIndex, error),
-) (*ethpb.ValidatorStatusResponse, primitives.ValidatorIndex) {
+) (*zondpb.ValidatorStatusResponse, primitives.ValidatorIndex) {
 	ctx, span := trace.StartSpan(ctx, "ValidatorServer.validatorStatus")
 	defer span.End()
 
 	// Using ^0 as the default value for index, in case the validators index cannot be determined.
-	resp := &ethpb.ValidatorStatusResponse{
-		Status:          ethpb.ValidatorStatus_UNKNOWN_STATUS,
+	resp := &zondpb.ValidatorStatusResponse{
+		Status:          zondpb.ValidatorStatus_UNKNOWN_STATUS,
 		ActivationEpoch: params.BeaconConfig().FarFutureEpoch,
 	}
 	vStatus, idx, err := statusForPubKey(headState, pubKey)
@@ -304,7 +304,7 @@ func (vs *Server) validatorStatus(
 
 	switch resp.Status {
 	// Unknown status means the validator has not been put into the state yet.
-	case ethpb.ValidatorStatus_UNKNOWN_STATUS:
+	case zondpb.ValidatorStatus_UNKNOWN_STATUS:
 		// If no connection to ETH1, the deposit block number or position in queue cannot be determined.
 		if !vs.Eth1InfoFetcher.ExecutionClientConnected() {
 			log.Warn("Not connected to ETH1. Cannot determine validator ETH1 deposit block number")
@@ -324,7 +324,7 @@ func (vs *Server) validatorStatus(
 			return resp, nonExistentIndex
 		}
 		if err := deposit.VerifyDepositSignature(dep.Data, domain); err != nil {
-			resp.Status = ethpb.ValidatorStatus_INVALID
+			resp.Status = zondpb.ValidatorStatus_INVALID
 			log.Warn("Invalid Eth1 deposit")
 			return resp, nonExistentIndex
 		}
@@ -334,8 +334,8 @@ func (vs *Server) validatorStatus(
 
 		return resp, nonExistentIndex
 	// Deposited, Pending or Partially Deposited mean the validator has been put into the state.
-	case ethpb.ValidatorStatus_DEPOSITED, ethpb.ValidatorStatus_PENDING, ethpb.ValidatorStatus_PARTIALLY_DEPOSITED:
-		if resp.Status == ethpb.ValidatorStatus_PENDING {
+	case zondpb.ValidatorStatus_DEPOSITED, zondpb.ValidatorStatus_PENDING, zondpb.ValidatorStatus_PARTIALLY_DEPOSITED:
+		if resp.Status == zondpb.ValidatorStatus_PENDING {
 			if vs.DepositFetcher == nil {
 				log.Warn("Not connected to ETH1. Cannot determine validator ETH1 deposit.")
 			} else {
@@ -363,10 +363,10 @@ func (vs *Server) validatorStatus(
 	}
 }
 
-func checkValidatorsAreRecent(headEpoch primitives.Epoch, req *ethpb.DoppelGangerRequest) (bool, *ethpb.DoppelGangerResponse) {
+func checkValidatorsAreRecent(headEpoch primitives.Epoch, req *zondpb.DoppelGangerRequest) (bool, *zondpb.DoppelGangerResponse) {
 	validatorsAreRecent := true
-	resp := &ethpb.DoppelGangerResponse{
-		Responses: []*ethpb.DoppelGangerResponse_ValidatorResponse{},
+	resp := &zondpb.DoppelGangerResponse{
+		Responses: []*zondpb.DoppelGangerResponse_ValidatorResponse{},
 	}
 	for _, v := range req.ValidatorRequests {
 		// Due to how balances are reflected for individual
@@ -377,11 +377,11 @@ func checkValidatorsAreRecent(headEpoch primitives.Epoch, req *ethpb.DoppelGange
 			validatorsAreRecent = false
 			// Zero out response if we encounter non-recent validators to
 			// guard against potential misuse.
-			resp.Responses = []*ethpb.DoppelGangerResponse_ValidatorResponse{}
+			resp.Responses = []*zondpb.DoppelGangerResponse_ValidatorResponse{}
 			break
 		}
 		resp.Responses = append(resp.Responses,
-			&ethpb.DoppelGangerResponse_ValidatorResponse{
+			&zondpb.DoppelGangerResponse_ValidatorResponse{
 				PublicKey:       v.PublicKey,
 				DuplicateExists: false,
 			})
@@ -389,52 +389,52 @@ func checkValidatorsAreRecent(headEpoch primitives.Epoch, req *ethpb.DoppelGange
 	return validatorsAreRecent, resp
 }
 
-func statusForPubKey(headState state.ReadOnlyBeaconState, pubKey []byte) (ethpb.ValidatorStatus, primitives.ValidatorIndex, error) {
+func statusForPubKey(headState state.ReadOnlyBeaconState, pubKey []byte) (zondpb.ValidatorStatus, primitives.ValidatorIndex, error) {
 	if headState == nil || headState.IsNil() {
-		return ethpb.ValidatorStatus_UNKNOWN_STATUS, 0, errHeadstateDoesNotExist
+		return zondpb.ValidatorStatus_UNKNOWN_STATUS, 0, errHeadstateDoesNotExist
 	}
 	idx, ok := headState.ValidatorIndexByPubkey(bytesutil.ToBytes2592(pubKey))
 	if !ok || uint64(idx) >= uint64(headState.NumValidators()) {
-		return ethpb.ValidatorStatus_UNKNOWN_STATUS, 0, errPubkeyDoesNotExist
+		return zondpb.ValidatorStatus_UNKNOWN_STATUS, 0, errPubkeyDoesNotExist
 	}
 	return assignmentStatus(headState, idx), idx, nil
 }
 
-func assignmentStatus(beaconState state.ReadOnlyBeaconState, validatorIndex primitives.ValidatorIndex) ethpb.ValidatorStatus {
+func assignmentStatus(beaconState state.ReadOnlyBeaconState, validatorIndex primitives.ValidatorIndex) zondpb.ValidatorStatus {
 	validator, err := beaconState.ValidatorAtIndexReadOnly(validatorIndex)
 	if err != nil {
-		return ethpb.ValidatorStatus_UNKNOWN_STATUS
+		return zondpb.ValidatorStatus_UNKNOWN_STATUS
 	}
 	currentEpoch := time.CurrentEpoch(beaconState)
 	farFutureEpoch := params.BeaconConfig().FarFutureEpoch
 	validatorBalance := validator.EffectiveBalance()
 
 	if validator.IsNil() {
-		return ethpb.ValidatorStatus_UNKNOWN_STATUS
+		return zondpb.ValidatorStatus_UNKNOWN_STATUS
 	}
 	if currentEpoch < validator.ActivationEligibilityEpoch() {
 		return depositStatus(validatorBalance)
 	}
 	if currentEpoch < validator.ActivationEpoch() {
-		return ethpb.ValidatorStatus_PENDING
+		return zondpb.ValidatorStatus_PENDING
 	}
 	if validator.ExitEpoch() == farFutureEpoch {
-		return ethpb.ValidatorStatus_ACTIVE
+		return zondpb.ValidatorStatus_ACTIVE
 	}
 	if currentEpoch < validator.ExitEpoch() {
 		if validator.Slashed() {
-			return ethpb.ValidatorStatus_SLASHING
+			return zondpb.ValidatorStatus_SLASHING
 		}
-		return ethpb.ValidatorStatus_EXITING
+		return zondpb.ValidatorStatus_EXITING
 	}
-	return ethpb.ValidatorStatus_EXITED
+	return zondpb.ValidatorStatus_EXITED
 }
 
-func depositStatus(depositOrBalance uint64) ethpb.ValidatorStatus {
+func depositStatus(depositOrBalance uint64) zondpb.ValidatorStatus {
 	if depositOrBalance == 0 {
-		return ethpb.ValidatorStatus_PENDING
+		return zondpb.ValidatorStatus_PENDING
 	} else if depositOrBalance < params.BeaconConfig().MaxEffectiveBalance {
-		return ethpb.ValidatorStatus_PARTIALLY_DEPOSITED
+		return zondpb.ValidatorStatus_PARTIALLY_DEPOSITED
 	}
-	return ethpb.ValidatorStatus_DEPOSITED
+	return zondpb.ValidatorStatus_DEPOSITED
 }

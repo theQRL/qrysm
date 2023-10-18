@@ -4,19 +4,19 @@ import (
 	"context"
 	"encoding/binary"
 
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/network/forks"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
-	"github.com/theQRL/qrysm/v4/time/slots"
 	"github.com/pkg/errors"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	"github.com/theQRL/qrysm/v4/network/forks"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
+	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 // retrieves the signature batch from the raw data, public key,signature and domain provided.
@@ -25,7 +25,7 @@ func signatureBatch(signedData, pub, signature, domain []byte, desc string) (*di
 	if err != nil {
 		return nil, errors.Wrap(err, "could not convert bytes to public key")
 	}
-	signingData := &ethpb.SigningData{
+	signingData := &zondpb.SigningData{
 		ObjectRoot: signedData,
 		Domain:     domain,
 	}
@@ -90,7 +90,7 @@ func VerifyBlockSignature(beaconState state.ReadOnlyBeaconState,
 }
 
 // VerifyBlockHeaderSignature verifies the proposer signature of a beacon block header.
-func VerifyBlockHeaderSignature(beaconState state.BeaconState, header *ethpb.SignedBeaconBlockHeader) error {
+func VerifyBlockHeaderSignature(beaconState state.BeaconState, header *zondpb.SignedBeaconBlockHeader) error {
 	currentEpoch := slots.ToEpoch(beaconState.Slot())
 	domain, err := signing.Domain(beaconState.Fork(), currentEpoch, params.BeaconConfig().DomainBeaconProposer, beaconState.GenesisValidatorsRoot())
 	if err != nil {
@@ -185,7 +185,7 @@ func randaoSigningData(ctx context.Context, beaconState state.ReadOnlyBeaconStat
 func createAttestationSignatureBatch(
 	ctx context.Context,
 	beaconState state.ReadOnlyBeaconState,
-	atts []*ethpb.Attestation,
+	atts []*zondpb.Attestation,
 	domain []byte,
 ) (*dilithium.SignatureBatch, error) {
 	if len(atts) == 0 {
@@ -240,7 +240,7 @@ func createAttestationSignatureBatch(
 
 // AttestationSignatureBatch retrieves all the related attestation signature data such as the relevant public keys,
 // signatures and attestation signing data and collate it into a signature batch object.
-func AttestationSignatureBatch(ctx context.Context, beaconState state.ReadOnlyBeaconState, atts []*ethpb.Attestation) (*dilithium.SignatureBatch, error) {
+func AttestationSignatureBatch(ctx context.Context, beaconState state.ReadOnlyBeaconState, atts []*zondpb.Attestation) (*dilithium.SignatureBatch, error) {
 	if len(atts) == 0 {
 		return dilithium.NewSet(), nil
 	}
@@ -250,8 +250,8 @@ func AttestationSignatureBatch(ctx context.Context, beaconState state.ReadOnlyBe
 	dt := params.BeaconConfig().DomainBeaconAttester
 
 	// Split attestations by fork. Note: the signature domain will differ based on the fork.
-	var preForkAtts []*ethpb.Attestation
-	var postForkAtts []*ethpb.Attestation
+	var preForkAtts []*zondpb.Attestation
+	var postForkAtts []*zondpb.Attestation
 	for _, a := range atts {
 		if slots.ToEpoch(a.Data.Slot) < fork.Epoch {
 			preForkAtts = append(preForkAtts, a)

@@ -3,7 +3,7 @@ package testing
 import (
 	"context"
 
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -11,7 +11,7 @@ import (
 type MockBroadcaster struct {
 	BroadcastCalled       bool
 	BroadcastMessages     []proto.Message
-	BroadcastAttestations []*ethpb.Attestation
+	BroadcastAttestations []*zondpb.Attestation
 }
 
 // Broadcast records a broadcast occurred.
@@ -22,14 +22,14 @@ func (m *MockBroadcaster) Broadcast(_ context.Context, msg proto.Message) error 
 }
 
 // BroadcastAttestation records a broadcast occurred.
-func (m *MockBroadcaster) BroadcastAttestation(_ context.Context, _ uint64, a *ethpb.Attestation) error {
+func (m *MockBroadcaster) BroadcastAttestation(_ context.Context, _ uint64, a *zondpb.Attestation) error {
 	m.BroadcastCalled = true
 	m.BroadcastAttestations = append(m.BroadcastAttestations, a)
 	return nil
 }
 
 // BroadcastSyncCommitteeMessage records a broadcast occurred.
-func (m *MockBroadcaster) BroadcastSyncCommitteeMessage(_ context.Context, _ uint64, _ *ethpb.SyncCommitteeMessage) error {
+func (m *MockBroadcaster) BroadcastSyncCommitteeMessage(_ context.Context, _ uint64, _ *zondpb.SyncCommitteeMessage) error {
 	m.BroadcastCalled = true
 	return nil
 }

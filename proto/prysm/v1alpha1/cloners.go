@@ -1,4 +1,4 @@
-package eth
+package zond
 
 import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"

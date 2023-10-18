@@ -19,7 +19,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/consensus-types/wrapper"
-	ethpb "github.com/theQRL/qrysm/v4/proto/eth/v1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -571,7 +571,7 @@ func TestPeerIPTracker(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		badPeers = append(badPeers, createPeer(t, p, addr, network.DirUnknown, peerdata.PeerConnectionState(ethpb.ConnectionState_DISCONNECTED)))
+		badPeers = append(badPeers, createPeer(t, p, addr, network.DirUnknown, peerdata.PeerConnectionState(zondpb.ConnectionState_DISCONNECTED)))
 	}
 	for _, pr := range badPeers {
 		assert.Equal(t, true, p.IsBad(pr), "peer with bad ip is not bad")
@@ -680,12 +680,12 @@ func TestAtInboundPeerLimit(t *testing.T) {
 	})
 	for i := 0; i < 15; i++ {
 		// Peer added to peer handler.
-		createPeer(t, p, nil, network.DirOutbound, peerdata.PeerConnectionState(ethpb.ConnectionState_CONNECTED))
+		createPeer(t, p, nil, network.DirOutbound, peerdata.PeerConnectionState(zondpb.ConnectionState_CONNECTED))
 	}
 	assert.Equal(t, false, p.IsAboveInboundLimit(), "Inbound limit exceeded")
 	for i := 0; i < 31; i++ {
 		// Peer added to peer handler.
-		createPeer(t, p, nil, network.DirInbound, peerdata.PeerConnectionState(ethpb.ConnectionState_CONNECTED))
+		createPeer(t, p, nil, network.DirInbound, peerdata.PeerConnectionState(zondpb.ConnectionState_CONNECTED))
 	}
 	assert.Equal(t, true, p.IsAboveInboundLimit(), "Inbound limit not exceeded")
 }
@@ -705,7 +705,7 @@ func TestPrunePeers(t *testing.T) {
 	})
 	for i := 0; i < 15; i++ {
 		// Peer added to peer handler.
-		createPeer(t, p, nil, network.DirOutbound, peerdata.PeerConnectionState(ethpb.ConnectionState_CONNECTED))
+		createPeer(t, p, nil, network.DirOutbound, peerdata.PeerConnectionState(zondpb.ConnectionState_CONNECTED))
 	}
 	// Assert there are no prunable peers.
 	peersToPrune := p.PeersToPrune()
@@ -713,7 +713,7 @@ func TestPrunePeers(t *testing.T) {
 
 	for i := 0; i < 18; i++ {
 		// Peer added to peer handler.
-		createPeer(t, p, nil, network.DirInbound, peerdata.PeerConnectionState(ethpb.ConnectionState_CONNECTED))
+		createPeer(t, p, nil, network.DirInbound, peerdata.PeerConnectionState(zondpb.ConnectionState_CONNECTED))
 	}
 
 	// Assert there are the correct prunable peers.
@@ -723,7 +723,7 @@ func TestPrunePeers(t *testing.T) {
 	// Add in more peers.
 	for i := 0; i < 13; i++ {
 		// Peer added to peer handler.
-		createPeer(t, p, nil, network.DirInbound, peerdata.PeerConnectionState(ethpb.ConnectionState_CONNECTED))
+		createPeer(t, p, nil, network.DirInbound, peerdata.PeerConnectionState(zondpb.ConnectionState_CONNECTED))
 	}
 
 	// Set up bad scores for inbound peers.
@@ -767,7 +767,7 @@ func TestPrunePeers_TrustedPeers(t *testing.T) {
 
 	for i := 0; i < 15; i++ {
 		// Peer added to peer handler.
-		createPeer(t, p, nil, network.DirOutbound, peerdata.PeerConnectionState(ethpb.ConnectionState_CONNECTED))
+		createPeer(t, p, nil, network.DirOutbound, peerdata.PeerConnectionState(zondpb.ConnectionState_CONNECTED))
 	}
 	// Assert there are no prunable peers.
 	peersToPrune := p.PeersToPrune()
@@ -775,7 +775,7 @@ func TestPrunePeers_TrustedPeers(t *testing.T) {
 
 	for i := 0; i < 18; i++ {
 		// Peer added to peer handler.
-		createPeer(t, p, nil, network.DirInbound, peerdata.PeerConnectionState(ethpb.ConnectionState_CONNECTED))
+		createPeer(t, p, nil, network.DirInbound, peerdata.PeerConnectionState(zondpb.ConnectionState_CONNECTED))
 	}
 
 	// Assert there are the correct prunable peers.
@@ -785,7 +785,7 @@ func TestPrunePeers_TrustedPeers(t *testing.T) {
 	// Add in more peers.
 	for i := 0; i < 13; i++ {
 		// Peer added to peer handler.
-		createPeer(t, p, nil, network.DirInbound, peerdata.PeerConnectionState(ethpb.ConnectionState_CONNECTED))
+		createPeer(t, p, nil, network.DirInbound, peerdata.PeerConnectionState(zondpb.ConnectionState_CONNECTED))
 	}
 
 	trustedPeers := []peer.ID{}
@@ -821,7 +821,7 @@ func TestPrunePeers_TrustedPeers(t *testing.T) {
 	// Add more peers to check if trusted peers can be pruned after they are deleted from trusted peer set.
 	for i := 0; i < 9; i++ {
 		// Peer added to peer handler.
-		createPeer(t, p, nil, network.DirInbound, peerdata.PeerConnectionState(ethpb.ConnectionState_CONNECTED))
+		createPeer(t, p, nil, network.DirInbound, peerdata.PeerConnectionState(zondpb.ConnectionState_CONNECTED))
 	}
 
 	// Delete trusted peers.

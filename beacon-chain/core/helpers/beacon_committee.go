@@ -19,7 +19,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/math"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -256,7 +256,7 @@ func VerifyBitfieldLength(bf bitfield.Bitfield, committeeSize uint64) error {
 
 // VerifyAttestationBitfieldLengths verifies that an attestations aggregation bitfields is
 // a valid length matching the size of the committee.
-func VerifyAttestationBitfieldLengths(ctx context.Context, state state.ReadOnlyBeaconState, att *ethpb.Attestation) error {
+func VerifyAttestationBitfieldLengths(ctx context.Context, state state.ReadOnlyBeaconState, att *zondpb.Attestation) error {
 	committee, err := BeaconCommitteeFromState(ctx, state, att.Data.Slot, att.Data.CommitteeIndex)
 	if err != nil {
 		return errors.Wrap(err, "could not retrieve beacon committees")

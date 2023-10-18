@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/rand"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 )
@@ -88,7 +88,7 @@ func (s *Service) processPendingAtts(ctx context.Context) error {
 	return s.sendBatchRootRequest(ctx, pendingRoots, randGen)
 }
 
-func (s *Service) processAttestations(ctx context.Context, attestations []*ethpb.SignedAggregateAttestationAndProof) {
+func (s *Service) processAttestations(ctx context.Context, attestations []*zondpb.SignedAggregateAttestationAndProof) {
 	for _, signedAtt := range attestations {
 		att := signedAtt.Message
 		// The pending attestations can arrive in both aggregated and unaggregated forms,
@@ -160,7 +160,7 @@ func (s *Service) processAttestations(ctx context.Context, attestations []*ethpb
 // This defines how pending attestations is saved in the map. The key is the
 // root of the missing block. The value is the list of pending attestations
 // that voted for that block root.
-func (s *Service) savePendingAtt(att *ethpb.SignedAggregateAttestationAndProof) {
+func (s *Service) savePendingAtt(att *zondpb.SignedAggregateAttestationAndProof) {
 	root := bytesutil.ToBytes32(att.Message.Aggregate.Data.BeaconBlockRoot)
 
 	s.pendingAttsLock.Lock()
@@ -177,7 +177,7 @@ func (s *Service) savePendingAtt(att *ethpb.SignedAggregateAttestationAndProof) 
 
 	_, ok := s.blkRootToPendingAtts[root]
 	if !ok {
-		s.blkRootToPendingAtts[root] = []*ethpb.SignedAggregateAttestationAndProof{att}
+		s.blkRootToPendingAtts[root] = []*zondpb.SignedAggregateAttestationAndProof{att}
 		return
 	}
 

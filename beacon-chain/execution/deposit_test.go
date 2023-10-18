@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/v4/container/trie"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -141,7 +141,7 @@ func TestProcessDeposit_InvalidPublicKey(t *testing.T) {
 	root, err := generatedTrie.HashTreeRoot()
 	require.NoError(t, err)
 
-	eth1Data := &ethpb.Eth1Data{
+	eth1Data := &zondpb.Eth1Data{
 		DepositCount: 1,
 		DepositRoot:  root[:],
 	}
@@ -182,7 +182,7 @@ func TestProcessDeposit_InvalidSignature(t *testing.T) {
 	root, err := generatedTrie.HashTreeRoot()
 	require.NoError(t, err)
 
-	eth1Data := &ethpb.Eth1Data{
+	eth1Data := &zondpb.Eth1Data{
 		DepositCount: 1,
 		DepositRoot:  root[:],
 	}
@@ -218,7 +218,7 @@ func TestProcessDeposit_UnableToVerify(t *testing.T) {
 	require.NoError(t, err)
 	root, err := generatedTrie.HashTreeRoot()
 	require.NoError(t, err)
-	eth1Data := &ethpb.Eth1Data{
+	eth1Data := &zondpb.Eth1Data{
 		DepositCount: 1,
 		DepositRoot:  root[:],
 	}
@@ -246,10 +246,10 @@ func TestProcessDeposit_IncompleteDeposit(t *testing.T) {
 	)
 	require.NoError(t, err, "unable to setup web3 ETH1.0 chain service")
 	web3Service = setDefaultMocks(web3Service)
-	require.NoError(t, web3Service.preGenesisState.SetValidators([]*ethpb.Validator{}))
+	require.NoError(t, web3Service.preGenesisState.SetValidators([]*zondpb.Validator{}))
 
-	deposit := &ethpb.Deposit{
-		Data: &ethpb.Deposit_Data{
+	deposit := &zondpb.Deposit{
+		Data: &zondpb.Deposit_Data{
 			Amount:                params.BeaconConfig().EffectiveBalanceIncrement, // incomplete deposit
 			WithdrawalCredentials: bytesutil.PadTo([]byte("testing"), 32),
 			Signature:             bytesutil.PadTo([]byte("test"), dilithium2.CryptoBytes),
@@ -271,7 +271,7 @@ func TestProcessDeposit_IncompleteDeposit(t *testing.T) {
 	require.NoError(t, err)
 	root, err := generatedTrie.HashTreeRoot()
 	require.NoError(t, err)
-	eth1Data := &ethpb.Eth1Data{
+	eth1Data := &zondpb.Eth1Data{
 		DepositCount: 1,
 		DepositRoot:  root[:],
 	}

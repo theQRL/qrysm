@@ -8,7 +8,7 @@ import (
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -43,7 +43,7 @@ func TestCurrentEpoch_OK(t *testing.T) {
 		{slot: 200, epoch: 6},
 	}
 	for _, tt := range tests {
-		st, err := state_native.InitializeFromProtoPhase0(&eth.BeaconState{Slot: tt.slot})
+		st, err := state_native.InitializeFromProtoPhase0(&zond.BeaconState{Slot: tt.slot})
 		require.NoError(t, err)
 		assert.Equal(t, tt.epoch, time.CurrentEpoch(st), "ActiveCurrentEpoch(%d)", st.Slot())
 	}
@@ -59,7 +59,7 @@ func TestPrevEpoch_OK(t *testing.T) {
 		{slot: 2 * params.BeaconConfig().SlotsPerEpoch, epoch: 1},
 	}
 	for _, tt := range tests {
-		st, err := state_native.InitializeFromProtoPhase0(&eth.BeaconState{Slot: tt.slot})
+		st, err := state_native.InitializeFromProtoPhase0(&zond.BeaconState{Slot: tt.slot})
 		require.NoError(t, err)
 		assert.Equal(t, tt.epoch, time.PrevEpoch(st), "ActivePrevEpoch(%d)", st.Slot())
 	}
@@ -77,7 +77,7 @@ func TestNextEpoch_OK(t *testing.T) {
 		{slot: 200, epoch: primitives.Epoch(200/params.BeaconConfig().SlotsPerEpoch + 1)},
 	}
 	for _, tt := range tests {
-		st, err := state_native.InitializeFromProtoPhase0(&eth.BeaconState{Slot: tt.slot})
+		st, err := state_native.InitializeFromProtoPhase0(&zond.BeaconState{Slot: tt.slot})
 		require.NoError(t, err)
 		assert.Equal(t, tt.epoch, time.NextEpoch(st), "NextEpoch(%d)", st.Slot())
 	}
@@ -178,7 +178,7 @@ func TestCanProcessEpoch_TrueOnEpochsLastSlot(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		b := &eth.BeaconState{Slot: tt.slot}
+		b := &zond.BeaconState{Slot: tt.slot}
 		s, err := state_native.InitializeFromProtoPhase0(b)
 		require.NoError(t, err)
 		assert.Equal(t, tt.canProcessEpoch, time.CanProcessEpoch(s), "CanProcessEpoch(%d)", tt.slot)

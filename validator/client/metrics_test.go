@@ -8,7 +8,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
@@ -33,7 +33,7 @@ func TestUpdateLogAggregateStats(t *testing.T) {
 	v.startBalances[pubKeyBytes[1]] = uint64(32200000000)
 	v.startBalances[pubKeyBytes[2]] = uint64(33000000000)
 
-	responses := []*ethpb.ValidatorPerformanceResponse{
+	responses := []*zondpb.ValidatorPerformanceResponse{
 		{
 			PublicKeys: [][]byte{
 				bytesutil.FromBytes2592(pubKeyBytes[0]),
@@ -108,7 +108,7 @@ func TestUpdateLogAltairAggregateStats(t *testing.T) {
 	v.startBalances[pubKeyBytes[2]] = uint64(33000000000)
 
 	// 7 attestations included
-	responses := []*ethpb.ValidatorPerformanceResponse{
+	responses := []*zondpb.ValidatorPerformanceResponse{
 		{
 			PublicKeys: [][]byte{
 				bytesutil.FromBytes2592(pubKeyBytes[0]),

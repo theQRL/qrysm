@@ -34,7 +34,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
 	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime"
 	prysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -111,7 +111,7 @@ type Service struct {
 	cancel                           context.CancelFunc
 	slotToPendingBlocks              *gcache.Cache
 	seenPendingBlocks                map[[32]byte]bool
-	blkRootToPendingAtts             map[[32]byte][]*ethpb.SignedAggregateAttestationAndProof
+	blkRootToPendingAtts             map[[32]byte][]*zondpb.SignedAggregateAttestationAndProof
 	subHandler                       *subTopicHandler
 	pendingAttsLock                  sync.RWMutex
 	pendingQueueLock                 sync.RWMutex
@@ -154,7 +154,7 @@ func NewService(ctx context.Context, opts ...Option) *Service {
 		cfg:                  &config{clock: startup.NewClock(time.Unix(0, 0), [32]byte{})},
 		slotToPendingBlocks:  c,
 		seenPendingBlocks:    make(map[[32]byte]bool),
-		blkRootToPendingAtts: make(map[[32]byte][]*ethpb.SignedAggregateAttestationAndProof),
+		blkRootToPendingAtts: make(map[[32]byte][]*zondpb.SignedAggregateAttestationAndProof),
 		signatureChan:        make(chan *signatureVerifier, verifierLimit),
 	}
 	for _, opt := range opts {

@@ -12,7 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	"github.com/theQRL/qrysm/v4/validator/keymanager"
 )
 
@@ -26,7 +26,7 @@ func (km *Keymanager) ImportKeystores(
 	ctx context.Context,
 	keystores []*keymanager.Keystore,
 	passwords []string,
-) ([]*ethpbservice.ImportedKeystoreStatus, error) {
+) ([]*zondpbservice.ImportedKeystoreStatus, error) {
 	if len(passwords) == 0 {
 		return nil, ErrNoPasswords
 	}
@@ -36,7 +36,7 @@ func (km *Keymanager) ImportKeystores(
 	enc := keystorev4.New()
 	bar := initializeProgressBar(len(keystores), "Importing accounts...")
 	keys := map[string]string{}
-	statuses := make([]*ethpbservice.ImportedKeystoreStatus, len(keystores))
+	statuses := make([]*zondpbservice.ImportedKeystoreStatus, len(keystores))
 	var err error
 	// 1) Copy the in memory keystore
 	storeCopy := km.accountsStore.Copy()
@@ -50,8 +50,8 @@ func (km *Keymanager) ImportKeystores(
 		var pubKeyBytes []byte
 		privKeyBytes, pubKeyBytes, _, err = km.attemptDecryptKeystore(enc, keystores[i], passwords[i])
 		if err != nil {
-			statuses[i] = &ethpbservice.ImportedKeystoreStatus{
-				Status:  ethpbservice.ImportedKeystoreStatus_ERROR,
+			statuses[i] = &zondpbservice.ImportedKeystoreStatus{
+				Status:  zondpbservice.ImportedKeystoreStatus_ERROR,
 				Message: err.Error(),
 			}
 			continue
@@ -64,16 +64,16 @@ func (km *Keymanager) ImportKeystores(
 		_, isDuplicateInExisting := existingPubKeys[string(pubKeyBytes)]
 		if isDuplicateInArray || isDuplicateInExisting {
 			log.Warnf("Duplicate key in import will be ignored: %#x", pubKeyBytes)
-			statuses[i] = &ethpbservice.ImportedKeystoreStatus{
-				Status: ethpbservice.ImportedKeystoreStatus_DUPLICATE,
+			statuses[i] = &zondpbservice.ImportedKeystoreStatus{
+				Status: zondpbservice.ImportedKeystoreStatus_DUPLICATE,
 			}
 			continue
 		}
 
 		keys[string(pubKeyBytes)] = string(privKeyBytes)
 		importedKeys = append(importedKeys, pubKeyBytes)
-		statuses[i] = &ethpbservice.ImportedKeystoreStatus{
-			Status: ethpbservice.ImportedKeystoreStatus_IMPORTED,
+		statuses[i] = &zondpbservice.ImportedKeystoreStatus{
+			Status: zondpbservice.ImportedKeystoreStatus_IMPORTED,
 		}
 	}
 	if len(importedKeys) == 0 {

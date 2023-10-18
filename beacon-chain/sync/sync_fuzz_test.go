@@ -25,7 +25,7 @@ import (
 	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
 	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -41,7 +41,7 @@ func FuzzValidateBeaconBlockPubSub_Phase0(f *testing.F) {
 	bRoot, err := parentBlock.Block.HashTreeRoot()
 	require.NoError(f, err)
 	require.NoError(f, db.SaveState(ctx, beaconState, bRoot))
-	require.NoError(f, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(f, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
 	copied := beaconState.Copy()
 	require.NoError(f, copied.SetSlot(1))
 	proposerIdx, err := helpers.BeaconProposerIndex(ctx, copied)
@@ -56,7 +56,7 @@ func FuzzValidateBeaconBlockPubSub_Phase0(f *testing.F) {
 	stateGen := stategen.New(db, doublylinkedtree.New())
 	chainService := &mock.ChainService{Genesis: time.Unix(time.Now().Unix()-int64(params.BeaconConfig().SecondsPerSlot), 0),
 		State: beaconState,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		},
@@ -92,7 +92,7 @@ func FuzzValidateBeaconBlockPubSub_Phase0(f *testing.F) {
 		cService := &mock.ChainService{
 			Genesis: time.Unix(time.Now().Unix()-int64(params.BeaconConfig().SecondsPerSlot*10000000), 0),
 			State:   beaconState,
-			FinalizedCheckPoint: &ethpb.Checkpoint{
+			FinalizedCheckPoint: &zondpb.Checkpoint{
 				Epoch: 0,
 				Root:  make([]byte, 32),
 			},
@@ -123,7 +123,7 @@ func FuzzValidateBeaconBlockPubSub_Altair(f *testing.F) {
 	bRoot, err := parentBlock.Block.HashTreeRoot()
 	require.NoError(f, err)
 	require.NoError(f, db.SaveState(ctx, beaconState, bRoot))
-	require.NoError(f, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(f, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
 	copied := beaconState.Copy()
 	require.NoError(f, copied.SetSlot(1))
 	proposerIdx, err := helpers.BeaconProposerIndex(ctx, copied)
@@ -138,7 +138,7 @@ func FuzzValidateBeaconBlockPubSub_Altair(f *testing.F) {
 	stateGen := stategen.New(db, doublylinkedtree.New())
 	chainService := &mock.ChainService{Genesis: time.Unix(time.Now().Unix()-int64(params.BeaconConfig().SecondsPerSlot), 0),
 		State: beaconState,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		},
@@ -174,7 +174,7 @@ func FuzzValidateBeaconBlockPubSub_Altair(f *testing.F) {
 		cService := &mock.ChainService{
 			Genesis: time.Unix(time.Now().Unix()-int64(params.BeaconConfig().SecondsPerSlot*10000000), 0),
 			State:   beaconState,
-			FinalizedCheckPoint: &ethpb.Checkpoint{
+			FinalizedCheckPoint: &zondpb.Checkpoint{
 				Epoch: 0,
 				Root:  make([]byte, 32),
 			},
@@ -205,7 +205,7 @@ func FuzzValidateBeaconBlockPubSub_Bellatrix(f *testing.F) {
 	bRoot, err := parentBlock.Block.HashTreeRoot()
 	require.NoError(f, err)
 	require.NoError(f, db.SaveState(ctx, beaconState, bRoot))
-	require.NoError(f, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(f, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
 	copied := beaconState.Copy()
 	require.NoError(f, copied.SetSlot(1))
 	proposerIdx, err := helpers.BeaconProposerIndex(ctx, copied)
@@ -220,7 +220,7 @@ func FuzzValidateBeaconBlockPubSub_Bellatrix(f *testing.F) {
 	stateGen := stategen.New(db, doublylinkedtree.New())
 	chainService := &mock.ChainService{Genesis: time.Unix(time.Now().Unix()-int64(params.BeaconConfig().SecondsPerSlot), 0),
 		State: beaconState,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		},
@@ -256,7 +256,7 @@ func FuzzValidateBeaconBlockPubSub_Bellatrix(f *testing.F) {
 		cService := &mock.ChainService{
 			Genesis: time.Unix(time.Now().Unix()-int64(params.BeaconConfig().SecondsPerSlot*10000000), 0),
 			State:   beaconState,
-			FinalizedCheckPoint: &ethpb.Checkpoint{
+			FinalizedCheckPoint: &zondpb.Checkpoint{
 				Epoch: 0,
 				Root:  make([]byte, 32),
 			},

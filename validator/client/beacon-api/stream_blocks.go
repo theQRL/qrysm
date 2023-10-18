@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/grpc"
 )
 
@@ -25,18 +25,18 @@ type streamBlocksAltairClient struct {
 	grpc.ClientStream
 	ctx                 context.Context
 	beaconApiClient     beaconApiValidatorClient
-	streamBlocksRequest *ethpb.StreamBlocksRequest
+	streamBlocksRequest *zondpb.StreamBlocksRequest
 	prevBlockSlot       primitives.Slot
 	pingDelay           time.Duration
 }
 
 type headSignedBeaconBlockResult struct {
-	streamBlocksResponse *ethpb.StreamBlocksResponse
+	streamBlocksResponse *zondpb.StreamBlocksResponse
 	executionOptimistic  bool
 	slot                 primitives.Slot
 }
 
-func (c beaconApiValidatorClient) streamBlocks(ctx context.Context, in *ethpb.StreamBlocksRequest, pingDelay time.Duration) ethpb.BeaconNodeValidator_StreamBlocksAltairClient {
+func (c beaconApiValidatorClient) streamBlocks(ctx context.Context, in *zondpb.StreamBlocksRequest, pingDelay time.Duration) zondpb.BeaconNodeValidator_StreamBlocksAltairClient {
 	return &streamBlocksAltairClient{
 		ctx:                 ctx,
 		beaconApiClient:     c,
@@ -45,7 +45,7 @@ func (c beaconApiValidatorClient) streamBlocks(ctx context.Context, in *ethpb.St
 	}
 }
 
-func (c *streamBlocksAltairClient) Recv() (*ethpb.StreamBlocksResponse, error) {
+func (c *streamBlocksAltairClient) Recv() (*zondpb.StreamBlocksResponse, error) {
 	result, err := c.beaconApiClient.getHeadSignedBeaconBlock(c.ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get latest signed block")
@@ -80,7 +80,7 @@ func (c beaconApiValidatorClient) getHeadSignedBeaconBlock(ctx context.Context) 
 	decoder := json.NewDecoder(bytes.NewReader(signedBlockResponseJson.Data))
 	decoder.DisallowUnknownFields()
 
-	response := &ethpb.StreamBlocksResponse{}
+	response := &zondpb.StreamBlocksResponse{}
 	var slot primitives.Slot
 
 	switch signedBlockResponseJson.Version {
@@ -100,8 +100,8 @@ func (c beaconApiValidatorClient) getHeadSignedBeaconBlock(ctx context.Context) 
 			return nil, errors.Wrapf(err, "failed to decode phase0 block signature `%s`", jsonPhase0Block.Signature)
 		}
 
-		response.Block = &ethpb.StreamBlocksResponse_Phase0Block{
-			Phase0Block: &ethpb.SignedBeaconBlock{
+		response.Block = &zondpb.StreamBlocksResponse_Phase0Block{
+			Phase0Block: &zondpb.SignedBeaconBlock{
 				Signature: decodedSignature,
 				Block:     phase0Block,
 			},
@@ -125,8 +125,8 @@ func (c beaconApiValidatorClient) getHeadSignedBeaconBlock(ctx context.Context) 
 			return nil, errors.Wrapf(err, "failed to decode altair block signature `%s`", jsonAltairBlock.Signature)
 		}
 
-		response.Block = &ethpb.StreamBlocksResponse_AltairBlock{
-			AltairBlock: &ethpb.SignedBeaconBlockAltair{
+		response.Block = &zondpb.StreamBlocksResponse_AltairBlock{
+			AltairBlock: &zondpb.SignedBeaconBlockAltair{
 				Signature: decodedSignature,
 				Block:     altairBlock,
 			},
@@ -150,8 +150,8 @@ func (c beaconApiValidatorClient) getHeadSignedBeaconBlock(ctx context.Context) 
 			return nil, errors.Wrapf(err, "failed to decode bellatrix block signature `%s`", jsonBellatrixBlock.Signature)
 		}
 
-		response.Block = &ethpb.StreamBlocksResponse_BellatrixBlock{
-			BellatrixBlock: &ethpb.SignedBeaconBlockBellatrix{
+		response.Block = &zondpb.StreamBlocksResponse_BellatrixBlock{
+			BellatrixBlock: &zondpb.SignedBeaconBlockBellatrix{
 				Signature: decodedSignature,
 				Block:     bellatrixBlock,
 			},
@@ -175,8 +175,8 @@ func (c beaconApiValidatorClient) getHeadSignedBeaconBlock(ctx context.Context) 
 			return nil, errors.Wrapf(err, "failed to decode capella block signature `%s`", jsonCapellaBlock.Signature)
 		}
 
-		response.Block = &ethpb.StreamBlocksResponse_CapellaBlock{
-			CapellaBlock: &ethpb.SignedBeaconBlockCapella{
+		response.Block = &zondpb.StreamBlocksResponse_CapellaBlock{
+			CapellaBlock: &zondpb.SignedBeaconBlockCapella{
 				Signature: decodedSignature,
 				Block:     capellaBlock,
 			},

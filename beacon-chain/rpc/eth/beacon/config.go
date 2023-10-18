@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/network/forks"
-	ethpb "github.com/theQRL/qrysm/v4/proto/eth/v1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -18,19 +18,19 @@ import (
 )
 
 // GetForkSchedule retrieve all scheduled upcoming forks this node is aware of.
-func (_ *Server) GetForkSchedule(ctx context.Context, _ *emptypb.Empty) (*ethpb.ForkScheduleResponse, error) {
+func (_ *Server) GetForkSchedule(ctx context.Context, _ *emptypb.Empty) (*zondpb.ForkScheduleResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.GetForkSchedule")
 	defer span.End()
 
 	schedule := params.BeaconConfig().ForkVersionSchedule
 	if len(schedule) == 0 {
-		return &ethpb.ForkScheduleResponse{
-			Data: make([]*ethpb.Fork, 0),
+		return &zondpb.ForkScheduleResponse{
+			Data: make([]*zondpb.Fork, 0),
 		}, nil
 	}
 
 	versions := forks.SortedForkVersions(schedule)
-	chainForks := make([]*ethpb.Fork, len(schedule))
+	chainForks := make([]*zondpb.Fork, len(schedule))
 	var previous, current []byte
 	for i, v := range versions {
 		if i == 0 {
@@ -40,14 +40,14 @@ func (_ *Server) GetForkSchedule(ctx context.Context, _ *emptypb.Empty) (*ethpb.
 		}
 		copyV := v
 		current = copyV[:]
-		chainForks[i] = &ethpb.Fork{
+		chainForks[i] = &zondpb.Fork{
 			PreviousVersion: previous,
 			CurrentVersion:  current,
 			Epoch:           schedule[v],
 		}
 	}
 
-	return &ethpb.ForkScheduleResponse{
+	return &zondpb.ForkScheduleResponse{
 		Data: chainForks,
 	}, nil
 }
@@ -56,7 +56,7 @@ func (_ *Server) GetForkSchedule(ctx context.Context, _ *emptypb.Empty) (*ethpb.
 // Values are returned with following format:
 // - any value starting with 0x in the spec is returned as a hex string.
 // - all other values are returned as number.
-func (_ *Server) GetSpec(ctx context.Context, _ *emptypb.Empty) (*ethpb.SpecResponse, error) {
+func (_ *Server) GetSpec(ctx context.Context, _ *emptypb.Empty) (*zondpb.SpecResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.GetSpec")
 	defer span.End()
 
@@ -64,16 +64,16 @@ func (_ *Server) GetSpec(ctx context.Context, _ *emptypb.Empty) (*ethpb.SpecResp
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to prepare spec data: %v", err)
 	}
-	return &ethpb.SpecResponse{Data: data}, nil
+	return &zondpb.SpecResponse{Data: data}, nil
 }
 
 // GetDepositContract retrieves deposit contract address and genesis fork version.
-func (_ *Server) GetDepositContract(ctx context.Context, _ *emptypb.Empty) (*ethpb.DepositContractResponse, error) {
+func (_ *Server) GetDepositContract(ctx context.Context, _ *emptypb.Empty) (*zondpb.DepositContractResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beaconv1.GetDepositContract")
 	defer span.End()
 
-	return &ethpb.DepositContractResponse{
-		Data: &ethpb.DepositContract{
+	return &zondpb.DepositContractResponse{
+		Data: &zondpb.DepositContract{
 			ChainId: params.BeaconConfig().DepositChainID,
 			Address: params.BeaconConfig().DepositContractAddress,
 		},

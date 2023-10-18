@@ -6,7 +6,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/voluntaryexits"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
@@ -23,7 +23,7 @@ func TestServer_getExits(t *testing.T) {
 		ExitPool: voluntaryexits.NewPool(),
 	}
 
-	exits := make([]*eth.SignedVoluntaryExit, params.BeaconConfig().MaxVoluntaryExits)
+	exits := make([]*zond.SignedVoluntaryExit, params.BeaconConfig().MaxVoluntaryExits)
 	for i := primitives.ValidatorIndex(0); uint64(i) < params.BeaconConfig().MaxVoluntaryExits; i++ {
 		exit, err := util.GenerateVoluntaryExits(beaconState, privKeys[i], i)
 		require.NoError(t, err)

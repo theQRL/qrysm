@@ -21,7 +21,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/container/trie"
 	"github.com/theQRL/qrysm/v4/io/file"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/interop"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/urfave/cli/v2"
@@ -314,7 +314,7 @@ func generateGenesis(ctx context.Context) (state.BeaconState, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "could not get hash tree root")
 		}
-		e1d := &ethpb.Eth1Data{
+		e1d := &zondpb.Eth1Data{
 			DepositRoot:  depositRoot[:],
 			DepositCount: 0,
 			BlockHash:    header.Hash().Bytes(),
@@ -330,12 +330,12 @@ func generateGenesis(ctx context.Context) (state.BeaconState, error) {
 	return genesisState, err
 }
 
-func depositEntriesFromJSON(enc []byte) ([][]byte, []*ethpb.Deposit_Data, error) {
+func depositEntriesFromJSON(enc []byte) ([][]byte, []*zondpb.Deposit_Data, error) {
 	var depositJSON []*depositDataJSON
 	if err := json.Unmarshal(enc, &depositJSON); err != nil {
 		return nil, nil, err
 	}
-	dds := make([]*ethpb.Deposit_Data, len(depositJSON))
+	dds := make([]*zondpb.Deposit_Data, len(depositJSON))
 	roots := make([][]byte, len(depositJSON))
 	for i, val := range depositJSON {
 		root, data, err := depositJSONToDepositData(val)
@@ -348,7 +348,7 @@ func depositEntriesFromJSON(enc []byte) ([][]byte, []*ethpb.Deposit_Data, error)
 	return roots, dds, nil
 }
 
-func depositJSONToDepositData(input *depositDataJSON) ([]byte, *ethpb.Deposit_Data, error) {
+func depositJSONToDepositData(input *depositDataJSON) ([]byte, *zondpb.Deposit_Data, error) {
 	root, err := hex.DecodeString(strings.TrimPrefix(input.DepositDataRoot, "0x"))
 	if err != nil {
 		return nil, nil, err
@@ -365,7 +365,7 @@ func depositJSONToDepositData(input *depositDataJSON) ([]byte, *ethpb.Deposit_Da
 	if err != nil {
 		return nil, nil, err
 	}
-	return root, &ethpb.Deposit_Data{
+	return root, &zondpb.Deposit_Data{
 		PublicKey:             pk,
 		WithdrawalCredentials: creds,
 		Amount:                input.Amount,

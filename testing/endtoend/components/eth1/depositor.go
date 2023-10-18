@@ -19,7 +19,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	contracts "github.com/theQRL/qrysm/v4/contracts/deposit"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -27,7 +27,7 @@ import (
 
 var gweiPerEth = big.NewInt(int64(params.BeaconConfig().GweiPerEth))
 
-func amtInGwei(deposit *eth.Deposit) *big.Int {
+func amtInGwei(deposit *zond.Deposit) *big.Int {
 	amt := big.NewInt(0).SetUint64(deposit.Data.Amount)
 	return amt.Mul(amt, gweiPerEth)
 }
@@ -37,7 +37,7 @@ func amtInGwei(deposit *eth.Deposit) *big.Int {
 // the `offset` parameter skips the first N validators in the deterministic list.
 // In order to test the requirement that our deposit follower is able to handle multiple partial deposits,
 // the `partial` flag specifies that half of the deposits should be broken up into 2 transactions.
-func computeDeposits(offset, nvals int, partial bool) ([]*eth.Deposit, error) {
+func computeDeposits(offset, nvals int, partial bool) ([]*zond.Deposit, error) {
 	balances := make([]uint64, offset+nvals)
 	partialIndex := len(balances) // set beyond loop invariant so by default nothing gets partial
 	if partial {
@@ -58,7 +58,7 @@ func computeDeposits(offset, nvals int, partial bool) ([]*eth.Deposit, error) {
 	}
 	deposits, _, err := util.DepositsWithBalance(balances)
 	if err != nil {
-		return []*eth.Deposit{}, err
+		return []*zond.Deposit{}, err
 	}
 
 	// if partial = false, these will be a no-op (partialIndex == len(deposits)),
@@ -131,7 +131,7 @@ func (h *DepositHistory) Balances(batch types.DepositBatch) map[[dilithium2.Cryp
 // SentDeposit is the record of an individual deposit which has been successfully submitted as a transaction.
 type SentDeposit struct {
 	root    [32]byte
-	deposit *eth.Deposit
+	deposit *zond.Deposit
 	tx      *gethtypes.Transaction
 	time    time.Time
 	batch   types.DepositBatch
@@ -179,7 +179,7 @@ func (d *Depositor) SendAndMine(ctx context.Context, offset, nvals int, batch ty
 
 // SendDeposit sends a single deposit. A record of this deposit will be tracked for the life of the Depositor,
 // allowing evaluators to use the deposit history to make assertions about those deposits.
-func (d *Depositor) SendDeposit(dep *eth.Deposit, txo *bind.TransactOpts, batch types.DepositBatch) error {
+func (d *Depositor) SendDeposit(dep *zond.Deposit, txo *bind.TransactOpts, batch types.DepositBatch) error {
 	contract, err := d.contractDepositor()
 	if err != nil {
 		return err

@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/spectest/utils"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -29,10 +29,10 @@ func RunDepositTest(t *testing.T, config string) {
 			require.NoError(t, err)
 			depositSSZ, err := snappy.Decode(nil /* dst */, depositFile)
 			require.NoError(t, err, "Failed to decompress")
-			deposit := &ethpb.Deposit{}
+			deposit := &zondpb.Deposit{}
 			require.NoError(t, deposit.UnmarshalSSZ(depositSSZ), "Failed to unmarshal")
 
-			body := &ethpb.BeaconBlockBody{Deposits: []*ethpb.Deposit{deposit}}
+			body := &zondpb.BeaconBlockBody{Deposits: []*zondpb.Deposit{deposit}}
 			processDepositsFunc := func(ctx context.Context, s state.BeaconState, b interfaces.ReadOnlySignedBeaconBlock) (state.BeaconState, error) {
 				return blocks.ProcessDeposits(ctx, s, b.Block().Body().Deposits())
 			}

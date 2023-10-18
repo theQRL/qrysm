@@ -6,12 +6,12 @@ import (
 
 	"github.com/theQRL/qrysm/v4/beacon-chain/slasher/mock"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestServer_HighestAttestations(t *testing.T) {
-	highestAtts := map[primitives.ValidatorIndex]*ethpb.HighestAttestation{
+	highestAtts := map[primitives.ValidatorIndex]*zondpb.HighestAttestation{
 		0: {
 			ValidatorIndex:     0,
 			HighestSourceEpoch: 1,
@@ -29,7 +29,7 @@ func TestServer_HighestAttestations(t *testing.T) {
 	s := Server{SlashingChecker: mockSlasher}
 	ctx := context.Background()
 	t.Run("single index found", func(t *testing.T) {
-		resp, err := s.HighestAttestations(ctx, &ethpb.HighestAttestationRequest{
+		resp, err := s.HighestAttestations(ctx, &zondpb.HighestAttestationRequest{
 			ValidatorIndices: []uint64{0},
 		})
 		require.NoError(t, err)
@@ -37,14 +37,14 @@ func TestServer_HighestAttestations(t *testing.T) {
 		require.DeepEqual(t, highestAtts[0], resp.Attestations[0])
 	})
 	t.Run("single index not found", func(t *testing.T) {
-		resp, err := s.HighestAttestations(ctx, &ethpb.HighestAttestationRequest{
+		resp, err := s.HighestAttestations(ctx, &zondpb.HighestAttestationRequest{
 			ValidatorIndices: []uint64{3},
 		})
 		require.NoError(t, err)
 		require.Equal(t, 0, len(resp.Attestations))
 	})
 	t.Run("multiple indices all found", func(t *testing.T) {
-		resp, err := s.HighestAttestations(ctx, &ethpb.HighestAttestationRequest{
+		resp, err := s.HighestAttestations(ctx, &zondpb.HighestAttestationRequest{
 			ValidatorIndices: []uint64{0, 1},
 		})
 		require.NoError(t, err)
@@ -53,7 +53,7 @@ func TestServer_HighestAttestations(t *testing.T) {
 		require.DeepEqual(t, highestAtts[1], resp.Attestations[1])
 	})
 	t.Run("multiple indices some not found", func(t *testing.T) {
-		resp, err := s.HighestAttestations(ctx, &ethpb.HighestAttestationRequest{
+		resp, err := s.HighestAttestations(ctx, &zondpb.HighestAttestationRequest{
 			ValidatorIndices: []uint64{0, 3},
 		})
 		require.NoError(t, err)

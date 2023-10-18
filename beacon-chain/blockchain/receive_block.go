@@ -16,8 +16,8 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time"
@@ -37,7 +37,7 @@ type BlockReceiver interface {
 
 // SlashingReceiver interface defines the methods of chain service for receiving validated slashing over the wire.
 type SlashingReceiver interface {
-	ReceiveAttesterSlashing(ctx context.Context, slashings *ethpb.AttesterSlashing)
+	ReceiveAttesterSlashing(ctx context.Context, slashings *zondpb.AttesterSlashing)
 }
 
 // ReceiveBlock is a function that defines the operations (minus pubsub)
@@ -125,12 +125,12 @@ func (s *Service) ReceiveBlock(ctx context.Context, block interfaces.ReadOnlySig
 
 	// Reports on block and fork choice metrics.
 	cp := s.cfg.ForkChoiceStore.FinalizedCheckpoint()
-	finalized := &ethpb.Checkpoint{Epoch: cp.Epoch, Root: bytesutil.SafeCopyBytes(cp.Root[:])}
+	finalized := &zondpb.Checkpoint{Epoch: cp.Epoch, Root: bytesutil.SafeCopyBytes(cp.Root[:])}
 	reportSlotMetrics(blockCopy.Block().Slot(), s.HeadSlot(), s.CurrentSlot(), finalized)
 
 	// Log block sync status.
 	cp = s.cfg.ForkChoiceStore.JustifiedCheckpoint()
-	justified := &ethpb.Checkpoint{Epoch: cp.Epoch, Root: bytesutil.SafeCopyBytes(cp.Root[:])}
+	justified := &zondpb.Checkpoint{Epoch: cp.Epoch, Root: bytesutil.SafeCopyBytes(cp.Root[:])}
 	if err := logBlockSyncStatus(blockCopy.Block(), blockRoot, justified, finalized, receivedTime, uint64(s.genesisTime.Unix())); err != nil {
 		log.WithError(err).Error("Unable to log block sync status")
 	}
@@ -183,7 +183,7 @@ func (s *Service) ReceiveBlockBatch(ctx context.Context, blocks []interfaces.Rea
 
 		// Reports on blockCopy and fork choice metrics.
 		cp := s.cfg.ForkChoiceStore.FinalizedCheckpoint()
-		finalized := &ethpb.Checkpoint{Epoch: cp.Epoch, Root: bytesutil.SafeCopyBytes(cp.Root[:])}
+		finalized := &zondpb.Checkpoint{Epoch: cp.Epoch, Root: bytesutil.SafeCopyBytes(cp.Root[:])}
 		reportSlotMetrics(blockCopy.Block().Slot(), s.HeadSlot(), s.CurrentSlot(), finalized)
 	}
 
@@ -210,10 +210,10 @@ func (s *Service) HasBlock(ctx context.Context, root [32]byte) bool {
 }
 
 // ReceiveAttesterSlashing receives an attester slashing and inserts it to forkchoice
-func (s *Service) ReceiveAttesterSlashing(ctx context.Context, slashing *ethpb.AttesterSlashing) {
+func (s *Service) ReceiveAttesterSlashing(ctx context.Context, slashing *zondpb.AttesterSlashing) {
 	s.cfg.ForkChoiceStore.Lock()
 	defer s.cfg.ForkChoiceStore.Unlock()
-	s.InsertSlashingsToForkChoiceStore(ctx, []*ethpb.AttesterSlashing{slashing})
+	s.InsertSlashingsToForkChoiceStore(ctx, []*zondpb.AttesterSlashing{slashing})
 }
 
 // prunePostBlockOperationPools only runs on new head otherwise should return a nil.
@@ -311,7 +311,7 @@ func (s *Service) updateJustificationOnBlock(ctx context.Context, preState, post
 	preStateJustifiedEpoch := preState.CurrentJustifiedCheckpoint().Epoch
 	postStateJustifiedEpoch := postState.CurrentJustifiedCheckpoint().Epoch
 	if justified.Epoch > preJustifiedEpoch || (justified.Epoch == postStateJustifiedEpoch && justified.Epoch > preStateJustifiedEpoch) {
-		if err := s.cfg.BeaconDB.SaveJustifiedCheckpoint(ctx, &ethpb.Checkpoint{
+		if err := s.cfg.BeaconDB.SaveJustifiedCheckpoint(ctx, &zondpb.Checkpoint{
 			Epoch: justified.Epoch, Root: justified.Root[:],
 		}); err != nil {
 			return err
@@ -327,7 +327,7 @@ func (s *Service) updateFinalizationOnBlock(ctx context.Context, preState, postS
 	postStateFinalizedEpoch := postState.FinalizedCheckpoint().Epoch
 	finalized := s.cfg.ForkChoiceStore.FinalizedCheckpoint()
 	if finalized.Epoch > preFinalizedEpoch || (finalized.Epoch == postStateFinalizedEpoch && finalized.Epoch > preStateFinalizedEpoch) {
-		if err := s.updateFinalized(ctx, &ethpb.Checkpoint{Epoch: finalized.Epoch, Root: finalized.Root[:]}); err != nil {
+		if err := s.updateFinalized(ctx, &zondpb.Checkpoint{Epoch: finalized.Epoch, Root: finalized.Root[:]}); err != nil {
 			return true, err
 		}
 		return true, nil
@@ -349,7 +349,7 @@ func (s *Service) sendNewFinalizedEvent(ctx context.Context, signed interfaces.R
 	stateRoot := signed.Block().StateRoot()
 	s.cfg.StateNotifier.StateFeed().Send(&feed.Event{
 		Type: statefeed.FinalizedCheckpoint,
-		Data: &ethpbv1.EventFinalizedCheckpoint{
+		Data: &zondpbv1.EventFinalizedCheckpoint{
 			Epoch:               postState.FinalizedCheckpoint().Epoch,
 			Block:               postState.FinalizedCheckpoint().Root,
 			State:               stateRoot[:],

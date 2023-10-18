@@ -19,7 +19,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/math"
-	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
@@ -133,7 +133,7 @@ func (s *Service) saveHead(ctx context.Context, newHeadRoot [32]byte, headBlock 
 
 		s.cfg.StateNotifier.StateFeed().Send(&feed.Event{
 			Type: statefeed.Reorg,
-			Data: &ethpbv1.EventChainReorg{
+			Data: &zondpbv1.EventChainReorg{
 				Slot:                newHeadSlot,
 				Depth:               math.Max(uint64(headSlot-forkSlot), uint64(newHeadSlot-forkSlot)),
 				OldHeadBlock:        oldHeadRoot[:],
@@ -360,7 +360,7 @@ func (s *Service) notifyNewHeadEvent(
 	}
 	s.cfg.StateNotifier.StateFeed().Send(&feed.Event{
 		Type: statefeed.NewHead,
-		Data: &ethpbv1.EventHead{
+		Data: &zondpbv1.EventHead{
 			Slot:                      newHeadSlot,
 			Block:                     newHeadRoot,
 			State:                     newHeadStateRoot,

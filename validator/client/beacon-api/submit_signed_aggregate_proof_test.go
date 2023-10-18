@@ -9,7 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -42,7 +42,7 @@ func TestSubmitSignedAggregateSelectionProof_Valid(t *testing.T) {
 	require.NoError(t, err)
 
 	validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
-	resp, err := validatorClient.submitSignedAggregateSelectionProof(ctx, &ethpb.SignedAggregateSubmitRequest{
+	resp, err := validatorClient.submitSignedAggregateSelectionProof(ctx, &zondpb.SignedAggregateSubmitRequest{
 		SignedAggregateAndProof: signedAggregateAndProof,
 	})
 	require.NoError(t, err)
@@ -71,28 +71,28 @@ func TestSubmitSignedAggregateSelectionProof_BadRequest(t *testing.T) {
 	).Times(1)
 
 	validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
-	_, err = validatorClient.submitSignedAggregateSelectionProof(ctx, &ethpb.SignedAggregateSubmitRequest{
+	_, err = validatorClient.submitSignedAggregateSelectionProof(ctx, &zondpb.SignedAggregateSubmitRequest{
 		SignedAggregateAndProof: signedAggregateAndProof,
 	})
 	assert.ErrorContains(t, "failed to send POST data to REST endpoint", err)
 	assert.ErrorContains(t, "bad request", err)
 }
 
-func generateSignedAggregateAndProofJson() *ethpb.SignedAggregateAttestationAndProof {
-	return &ethpb.SignedAggregateAttestationAndProof{
-		Message: &ethpb.AggregateAttestationAndProof{
+func generateSignedAggregateAndProofJson() *zondpb.SignedAggregateAttestationAndProof {
+	return &zondpb.SignedAggregateAttestationAndProof{
+		Message: &zondpb.AggregateAttestationAndProof{
 			AggregatorIndex: 72,
-			Aggregate: &ethpb.Attestation{
+			Aggregate: &zondpb.Attestation{
 				AggregationBits: test_helpers.FillByteSlice(4, 74),
-				Data: &ethpb.AttestationData{
+				Data: &zondpb.AttestationData{
 					Slot:            75,
 					CommitteeIndex:  76,
 					BeaconBlockRoot: test_helpers.FillByteSlice(32, 38),
-					Source: &ethpb.Checkpoint{
+					Source: &zondpb.Checkpoint{
 						Epoch: 78,
 						Root:  test_helpers.FillByteSlice(32, 79),
 					},
-					Target: &ethpb.Checkpoint{
+					Target: &zondpb.Checkpoint{
 						Epoch: 80,
 						Root:  test_helpers.FillByteSlice(32, 81),
 					},

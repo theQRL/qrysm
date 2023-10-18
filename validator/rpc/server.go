@@ -15,8 +15,8 @@ import (
 	"github.com/theQRL/qrysm/v4/async/event"
 	"github.com/theQRL/qrysm/v4/io/logs"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
 	"github.com/theQRL/qrysm/v4/validator/client"
@@ -61,7 +61,7 @@ type Server struct {
 	beaconChainClient         iface.BeaconChainClient
 	beaconNodeClient          iface.NodeClient
 	beaconNodeValidatorClient iface.ValidatorClient
-	beaconNodeHealthClient    ethpb.HealthClient
+	beaconNodeHealthClient    zondpb.HealthClient
 	valDB                     db.Database
 	ctx                       context.Context
 	cancel                    context.CancelFunc
@@ -179,7 +179,7 @@ func (s *Server) Start() {
 	validatorpb.RegisterHealthServer(s.grpcServer, s)
 	validatorpb.RegisterBeaconServer(s.grpcServer, s)
 	validatorpb.RegisterAccountsServer(s.grpcServer, s)
-	ethpbservice.RegisterKeyManagementServer(s.grpcServer, s)
+	zondpbservice.RegisterKeyManagementServer(s.grpcServer, s)
 	validatorpb.RegisterSlashingProtectionServer(s.grpcServer, s)
 
 	go func() {

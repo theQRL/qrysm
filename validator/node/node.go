@@ -43,7 +43,7 @@ import (
 	"github.com/theQRL/qrysm/v4/monitoring/backup"
 	"github.com/theQRL/qrysm/v4/monitoring/prometheus"
 	tracing2 "github.com/theQRL/qrysm/v4/monitoring/tracing"
-	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/runtime"
@@ -785,7 +785,7 @@ func (c *ValidatorClient) registerRPCGatewayService(cliCtx *cli.Context) error {
 		validatorpb.RegisterAccountsHandler,
 		validatorpb.RegisterBeaconHandler,
 		validatorpb.RegisterSlashingProtectionHandler,
-		ethpbservice.RegisterKeyManagementHandler,
+		zondpbservice.RegisterKeyManagementHandler,
 	}
 	gwmux := gwruntime.NewServeMux(
 		gwruntime.WithMarshalerOption(gwruntime.MIMEWildcard, &gwruntime.HTTPBodyMarshaler{

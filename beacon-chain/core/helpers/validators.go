@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 )
@@ -35,7 +35,7 @@ var CommitteeCacheInProgressHit = promauto.NewCounter(prometheus.CounterOpts{
 //	  Check if ``validator`` is active.
 //	  """
 //	  return validator.activation_epoch <= epoch < validator.exit_epoch
-func IsActiveValidator(validator *ethpb.Validator, epoch primitives.Epoch) bool {
+func IsActiveValidator(validator *zondpb.Validator, epoch primitives.Epoch) bool {
 	return checkValidatorActiveStatus(validator.ActivationEpoch, validator.ExitEpoch, epoch)
 }
 
@@ -348,7 +348,7 @@ func ComputeProposerIndex(bState state.ReadOnlyValidators, activeIndices []primi
 //	      validator.activation_eligibility_epoch == FAR_FUTURE_EPOCH
 //	      and validator.effective_balance == MAX_EFFECTIVE_BALANCE
 //	  )
-func IsEligibleForActivationQueue(validator *ethpb.Validator) bool {
+func IsEligibleForActivationQueue(validator *zondpb.Validator) bool {
 	return isEligibileForActivationQueue(validator.ActivationEligibilityEpoch, validator.EffectiveBalance)
 }
 
@@ -378,7 +378,7 @@ func isEligibileForActivationQueue(activationEligibilityEpoch primitives.Epoch, 
 //	      # Has not yet been activated
 //	      and validator.activation_epoch == FAR_FUTURE_EPOCH
 //	  )
-func IsEligibleForActivation(state state.ReadOnlyCheckpoint, validator *ethpb.Validator) bool {
+func IsEligibleForActivation(state state.ReadOnlyCheckpoint, validator *zondpb.Validator) bool {
 	finalizedEpoch := state.FinalizedCheckpointEpoch()
 	return isEligibleForActivation(validator.ActivationEligibilityEpoch, validator.ActivationEpoch, finalizedEpoch)
 }

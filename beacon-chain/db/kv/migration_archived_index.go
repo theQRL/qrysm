@@ -6,7 +6,7 @@ import (
 
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -37,7 +37,7 @@ func migrateArchivedIndex(ctx context.Context, db *bolt.DB) error {
 			if b == nil {
 				continue
 			}
-			blk := &ethpb.SignedBeaconBlock{}
+			blk := &zondpb.SignedBeaconBlock{}
 			if err := decode(context.TODO(), b, blk); err != nil {
 				return err
 			}

@@ -2,11 +2,11 @@
 // source: proto/prysm/v1alpha1/health.proto
 
 /*
-Package eth is a reverse proxy.
+Package zond is a reverse proxy.
 
 It translates gRPC into RESTful JSON APIs.
 */
-package eth
+package zond
 
 import (
 	"context"
@@ -112,7 +112,7 @@ func RegisterHealthHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.Health/StreamBeaconLogs")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.Health/StreamBeaconLogs")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -132,7 +132,7 @@ func RegisterHealthHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 }
 
 var (
-	pattern_Health_StreamBeaconLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"eth", "v1alpha1", "health", "logs", "stream"}, ""))
+	pattern_Health_StreamBeaconLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"zond", "v1alpha1", "health", "logs", "stream"}, ""))
 )
 
 var (

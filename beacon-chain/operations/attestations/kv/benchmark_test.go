@@ -4,14 +4,14 @@ import (
 	"testing"
 
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations/kv"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
 func BenchmarkAttCaches(b *testing.B) {
 	ac := kv.NewAttCaches()
 
-	att := &ethpb.Attestation{}
+	att := &zondpb.Attestation{}
 
 	for i := 0; i < b.N; i++ {
 		assert.NoError(b, ac.SaveUnaggregatedAttestation(att))

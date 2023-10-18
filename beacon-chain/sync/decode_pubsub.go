@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	ssz "github.com/prysmaticlabs/fastssz"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -32,11 +32,11 @@ func (s *Service) decodePubsubMessage(msg *pubsub.Message) (ssz.Unmarshaler, err
 	// Specially handle subnet messages.
 	switch {
 	case strings.Contains(topic, p2p.GossipAttestationMessage):
-		topic = p2p.GossipTypeMapping[reflect.TypeOf(&ethpb.Attestation{})]
+		topic = p2p.GossipTypeMapping[reflect.TypeOf(&zondpb.Attestation{})]
 		// Given that both sync message related subnets have the same message name, we have to
 		// differentiate them below.
 	case strings.Contains(topic, p2p.GossipSyncCommitteeMessage) && !strings.Contains(topic, p2p.SyncContributionAndProofSubnetTopicFormat):
-		topic = p2p.GossipTypeMapping[reflect.TypeOf(&ethpb.SyncCommitteeMessage{})]
+		topic = p2p.GossipTypeMapping[reflect.TypeOf(&zondpb.SyncCommitteeMessage{})]
 	}
 
 	base := p2p.GossipTopicMappings(topic, 0)

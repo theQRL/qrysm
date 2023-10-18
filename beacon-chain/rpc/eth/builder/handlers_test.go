@@ -17,7 +17,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/network"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -43,7 +43,7 @@ func TestExpectedWithdrawals_BadRequest(t *testing.T) {
 	}{
 		{
 			name: "no state_id url params",
-			path: "/eth/v1/builder/states/{state_id}/expected_withdrawals?proposal_slot" +
+			path: "/zond/v1/builder/states/{state_id}/expected_withdrawals?proposal_slot" +
 				strconv.FormatUint(uint64(currentSlot), 10),
 			urlParams:    map[string]string{},
 			state:        nil,
@@ -51,14 +51,14 @@ func TestExpectedWithdrawals_BadRequest(t *testing.T) {
 		},
 		{
 			name:         "invalid proposal slot value",
-			path:         "/eth/v1/builder/states/{state_id}/expected_withdrawals?proposal_slot=aaa",
+			path:         "/zond/v1/builder/states/{state_id}/expected_withdrawals?proposal_slot=aaa",
 			urlParams:    map[string]string{"state_id": "head"},
 			state:        st,
 			errorMessage: "invalid proposal slot value",
 		},
 		{
 			name: "proposal slot < Capella start slot",
-			path: "/eth/v1/builder/states/{state_id}/expected_withdrawals?proposal_slot=" +
+			path: "/zond/v1/builder/states/{state_id}/expected_withdrawals?proposal_slot=" +
 				strconv.FormatUint(uint64(capellaSlot)-1, 10),
 			urlParams:    map[string]string{"state_id": "head"},
 			state:        st,
@@ -66,7 +66,7 @@ func TestExpectedWithdrawals_BadRequest(t *testing.T) {
 		},
 		{
 			name: "proposal slot == Capella start slot",
-			path: "/eth/v1/builder/states/{state_id}/expected_withdrawals?proposal_slot=" +
+			path: "/zond/v1/builder/states/{state_id}/expected_withdrawals?proposal_slot=" +
 				strconv.FormatUint(uint64(capellaSlot), 10),
 			urlParams:    map[string]string{"state_id": "head"},
 			state:        st,
@@ -74,7 +74,7 @@ func TestExpectedWithdrawals_BadRequest(t *testing.T) {
 		},
 		{
 			name: "Proposal slot >= 128 slots ahead of state slot",
-			path: "/eth/v1/builder/states/{state_id}/expected_withdrawals?proposal_slot=" +
+			path: "/zond/v1/builder/states/{state_id}/expected_withdrawals?proposal_slot=" +
 				strconv.FormatUint(uint64(currentSlot+128), 10),
 			urlParams:    map[string]string{"state_id": "head"},
 			state:        st,
@@ -122,12 +122,12 @@ func TestExpectedWithdrawals(t *testing.T) {
 
 		// Update state with updated validator fields
 		valCount := 17
-		validators := make([]*eth.Validator, 0, valCount)
+		validators := make([]*zond.Validator, 0, valCount)
 		balances := make([]uint64, 0, valCount)
 		for i := 0; i < valCount; i++ {
 			blsKey, err := bls.RandKey()
 			require.NoError(t, err)
-			val := &eth.Validator{
+			val := &zond.Validator{
 				PublicKey:             blsKey.PublicKey().Marshal(),
 				WithdrawalCredentials: make([]byte, 32),
 				ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
@@ -169,7 +169,7 @@ func TestExpectedWithdrawals(t *testing.T) {
 			Stater:                &testutil.MockStater{BeaconState: st},
 		}
 		request := httptest.NewRequest(
-			"GET", "/eth/v1/builder/states/{state_id}/expected_withdrawals?proposal_slot="+
+			"GET", "/zond/v1/builder/states/{state_id}/expected_withdrawals?proposal_slot="+
 				strconv.FormatUint(uint64(currentSlot+params.BeaconConfig().SlotsPerEpoch), 10), nil)
 		request = mux.SetURLVars(request, map[string]string{"state_id": "head"})
 		writer := httptest.NewRecorder()

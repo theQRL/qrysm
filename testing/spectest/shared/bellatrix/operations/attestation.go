@@ -11,7 +11,7 @@ import (
 	b "github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/spectest/utils"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -30,10 +30,10 @@ func RunAttestationTest(t *testing.T, config string) {
 			require.NoError(t, err)
 			attestationSSZ, err := snappy.Decode(nil /* dst */, attestationFile)
 			require.NoError(t, err, "Failed to decompress")
-			att := &ethpb.Attestation{}
+			att := &zondpb.Attestation{}
 			require.NoError(t, att.UnmarshalSSZ(attestationSSZ), "Failed to unmarshal")
 
-			body := &ethpb.BeaconBlockBodyBellatrix{Attestations: []*ethpb.Attestation{att}}
+			body := &zondpb.BeaconBlockBodyBellatrix{Attestations: []*zondpb.Attestation{att}}
 			processAtt := func(ctx context.Context, st state.BeaconState, blk interfaces.ReadOnlySignedBeaconBlock) (state.BeaconState, error) {
 				st, err = altair.ProcessAttestationsNoVerifySignature(ctx, st, blk)
 				if err != nil {

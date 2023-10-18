@@ -21,7 +21,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -33,7 +33,7 @@ import (
 func TestRequestAttestation_ValidatorDutiesRequestFailure(t *testing.T) {
 	hook := logTest.NewGlobal()
 	validator, _, validatorKey, finish := setup(t)
-	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{}}
+	validator.duties = &zondpb.DutiesResponse{Duties: []*zondpb.DutiesResponse_Duty{}}
 	defer finish()
 
 	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
@@ -49,7 +49,7 @@ func TestAttestToBlockHead_SubmitAttestation_EmptyCommittee(t *testing.T) {
 	defer finish()
 	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
-	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{
+	validator.duties = &zondpb.DutiesResponse{Duties: []*zondpb.DutiesResponse_Duty{
 		{
 			PublicKey:      validatorKey.PublicKey().Marshal(),
 			CommitteeIndex: 0,
@@ -65,7 +65,7 @@ func TestAttestToBlockHead_SubmitAttestation_RequestFailure(t *testing.T) {
 
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
-	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{
+	validator.duties = &zondpb.DutiesResponse{Duties: []*zondpb.DutiesResponse_Duty{
 		{
 			PublicKey:      validatorKey.PublicKey().Marshal(),
 			CommitteeIndex: 5,
@@ -74,19 +74,19 @@ func TestAttestToBlockHead_SubmitAttestation_RequestFailure(t *testing.T) {
 		}}}
 	m.validatorClient.EXPECT().GetAttestationData(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.AttestationDataRequest{}),
-	).Return(&ethpb.AttestationData{
+		gomock.AssignableToTypeOf(&zondpb.AttestationDataRequest{}),
+	).Return(&zondpb.AttestationData{
 		BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-		Target:          &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
-		Source:          &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		Target:          &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		Source:          &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 	}, nil)
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch2
-	).Times(2).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	).Times(2).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 	m.validatorClient.EXPECT().ProposeAttestation(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.Attestation{}),
+		gomock.AssignableToTypeOf(&zondpb.Attestation{}),
 	).Return(nil, errors.New("something went wrong"))
 
 	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
@@ -103,7 +103,7 @@ func TestAttestToBlockHead_AttestsCorrectly(t *testing.T) {
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
 	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
-	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{
+	validator.duties = &zondpb.DutiesResponse{Duties: []*zondpb.DutiesResponse_Duty{
 		{
 			PublicKey:      validatorKey.PublicKey().Marshal(),
 			CommitteeIndex: 5,
@@ -117,35 +117,35 @@ func TestAttestToBlockHead_AttestsCorrectly(t *testing.T) {
 	sourceRoot := bytesutil.ToBytes32([]byte("C"))
 	m.validatorClient.EXPECT().GetAttestationData(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.AttestationDataRequest{}),
-	).Return(&ethpb.AttestationData{
+		gomock.AssignableToTypeOf(&zondpb.AttestationDataRequest{}),
+	).Return(&zondpb.AttestationData{
 		BeaconBlockRoot: beaconBlockRoot[:],
-		Target:          &ethpb.Checkpoint{Root: targetRoot[:]},
-		Source:          &ethpb.Checkpoint{Root: sourceRoot[:], Epoch: 3},
+		Target:          &zondpb.Checkpoint{Root: targetRoot[:]},
+		Source:          &zondpb.Checkpoint{Root: sourceRoot[:], Epoch: 3},
 	}, nil)
 
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
-	).Times(2).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	).Times(2).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
-	var generatedAttestation *ethpb.Attestation
+	var generatedAttestation *zondpb.Attestation
 	m.validatorClient.EXPECT().ProposeAttestation(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.Attestation{}),
-	).Do(func(_ context.Context, att *ethpb.Attestation) {
+		gomock.AssignableToTypeOf(&zondpb.Attestation{}),
+	).Do(func(_ context.Context, att *zondpb.Attestation) {
 		generatedAttestation = att
-	}).Return(&ethpb.AttestResponse{}, nil /* error */)
+	}).Return(&zondpb.AttestResponse{}, nil /* error */)
 
 	validator.SubmitAttestation(context.Background(), 30, pubKey)
 
 	aggregationBitfield := bitfield.NewBitlist(uint64(len(committee)))
 	aggregationBitfield.SetBitAt(4, true)
-	expectedAttestation := &ethpb.Attestation{
-		Data: &ethpb.AttestationData{
+	expectedAttestation := &zondpb.Attestation{
+		Data: &zondpb.AttestationData{
 			BeaconBlockRoot: beaconBlockRoot[:],
-			Target:          &ethpb.Checkpoint{Root: targetRoot[:]},
-			Source:          &ethpb.Checkpoint{Root: sourceRoot[:], Epoch: 3},
+			Target:          &zondpb.Checkpoint{Root: targetRoot[:]},
+			Source:          &zondpb.Checkpoint{Root: sourceRoot[:], Epoch: 3},
 		},
 		AggregationBits: aggregationBitfield,
 		Signature:       make([]byte, 96),
@@ -176,7 +176,7 @@ func TestAttestToBlockHead_BlocksDoubleAtt(t *testing.T) {
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
 	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
-	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{
+	validator.duties = &zondpb.DutiesResponse{Duties: []*zondpb.DutiesResponse_Duty{
 		{
 			PublicKey:      validatorKey.PublicKey().Marshal(),
 			CommitteeIndex: 5,
@@ -191,29 +191,29 @@ func TestAttestToBlockHead_BlocksDoubleAtt(t *testing.T) {
 
 	m.validatorClient.EXPECT().GetAttestationData(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.AttestationDataRequest{}),
-	).Return(&ethpb.AttestationData{
+		gomock.AssignableToTypeOf(&zondpb.AttestationDataRequest{}),
+	).Return(&zondpb.AttestationData{
 		BeaconBlockRoot: beaconBlockRoot[:],
-		Target:          &ethpb.Checkpoint{Root: targetRoot[:], Epoch: 4},
-		Source:          &ethpb.Checkpoint{Root: sourceRoot[:], Epoch: 3},
+		Target:          &zondpb.Checkpoint{Root: targetRoot[:], Epoch: 4},
+		Source:          &zondpb.Checkpoint{Root: sourceRoot[:], Epoch: 3},
 	}, nil)
 	m.validatorClient.EXPECT().GetAttestationData(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.AttestationDataRequest{}),
-	).Return(&ethpb.AttestationData{
+		gomock.AssignableToTypeOf(&zondpb.AttestationDataRequest{}),
+	).Return(&zondpb.AttestationData{
 		BeaconBlockRoot: beaconBlockRoot2[:],
-		Target:          &ethpb.Checkpoint{Root: targetRoot[:], Epoch: 4},
-		Source:          &ethpb.Checkpoint{Root: sourceRoot[:], Epoch: 3},
+		Target:          &zondpb.Checkpoint{Root: targetRoot[:], Epoch: 4},
+		Source:          &zondpb.Checkpoint{Root: sourceRoot[:], Epoch: 3},
 	}, nil)
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
-	).Times(4).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	).Times(4).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 	m.validatorClient.EXPECT().ProposeAttestation(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.Attestation{}),
-	).Return(&ethpb.AttestResponse{AttestationDataRoot: make([]byte, 32)}, nil /* error */)
+		gomock.AssignableToTypeOf(&zondpb.Attestation{}),
+	).Return(&zondpb.AttestResponse{AttestationDataRoot: make([]byte, 32)}, nil /* error */)
 
 	validator.SubmitAttestation(context.Background(), 30, pubKey)
 	validator.SubmitAttestation(context.Background(), 30, pubKey)
@@ -228,7 +228,7 @@ func TestAttestToBlockHead_BlocksSurroundAtt(t *testing.T) {
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
 	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
-	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{
+	validator.duties = &zondpb.DutiesResponse{Duties: []*zondpb.DutiesResponse_Duty{
 		{
 			PublicKey:      validatorKey.PublicKey().Marshal(),
 			CommitteeIndex: 5,
@@ -242,30 +242,30 @@ func TestAttestToBlockHead_BlocksSurroundAtt(t *testing.T) {
 
 	m.validatorClient.EXPECT().GetAttestationData(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.AttestationDataRequest{}),
-	).Return(&ethpb.AttestationData{
+		gomock.AssignableToTypeOf(&zondpb.AttestationDataRequest{}),
+	).Return(&zondpb.AttestationData{
 		BeaconBlockRoot: beaconBlockRoot[:],
-		Target:          &ethpb.Checkpoint{Root: targetRoot[:], Epoch: 2},
-		Source:          &ethpb.Checkpoint{Root: sourceRoot[:], Epoch: 1},
+		Target:          &zondpb.Checkpoint{Root: targetRoot[:], Epoch: 2},
+		Source:          &zondpb.Checkpoint{Root: sourceRoot[:], Epoch: 1},
 	}, nil)
 	m.validatorClient.EXPECT().GetAttestationData(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.AttestationDataRequest{}),
-	).Return(&ethpb.AttestationData{
+		gomock.AssignableToTypeOf(&zondpb.AttestationDataRequest{}),
+	).Return(&zondpb.AttestationData{
 		BeaconBlockRoot: beaconBlockRoot[:],
-		Target:          &ethpb.Checkpoint{Root: targetRoot[:], Epoch: 3},
-		Source:          &ethpb.Checkpoint{Root: sourceRoot[:], Epoch: 0},
+		Target:          &zondpb.Checkpoint{Root: targetRoot[:], Epoch: 3},
+		Source:          &zondpb.Checkpoint{Root: sourceRoot[:], Epoch: 0},
 	}, nil)
 
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
-	).Times(4).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	).Times(4).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 	m.validatorClient.EXPECT().ProposeAttestation(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.Attestation{}),
-	).Return(&ethpb.AttestResponse{}, nil /* error */)
+		gomock.AssignableToTypeOf(&zondpb.Attestation{}),
+	).Return(&zondpb.AttestResponse{}, nil /* error */)
 
 	validator.SubmitAttestation(context.Background(), 30, pubKey)
 	validator.SubmitAttestation(context.Background(), 30, pubKey)
@@ -280,7 +280,7 @@ func TestAttestToBlockHead_BlocksSurroundedAtt(t *testing.T) {
 	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
-	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{
+	validator.duties = &zondpb.DutiesResponse{Duties: []*zondpb.DutiesResponse_Duty{
 		{
 			PublicKey:      validatorKey.PublicKey().Marshal(),
 			CommitteeIndex: 5,
@@ -294,33 +294,33 @@ func TestAttestToBlockHead_BlocksSurroundedAtt(t *testing.T) {
 
 	m.validatorClient.EXPECT().GetAttestationData(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.AttestationDataRequest{}),
-	).Return(&ethpb.AttestationData{
+		gomock.AssignableToTypeOf(&zondpb.AttestationDataRequest{}),
+	).Return(&zondpb.AttestationData{
 		BeaconBlockRoot: beaconBlockRoot[:],
-		Target:          &ethpb.Checkpoint{Root: targetRoot[:], Epoch: 3},
-		Source:          &ethpb.Checkpoint{Root: sourceRoot[:], Epoch: 0},
+		Target:          &zondpb.Checkpoint{Root: targetRoot[:], Epoch: 3},
+		Source:          &zondpb.Checkpoint{Root: sourceRoot[:], Epoch: 0},
 	}, nil)
 
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
-	).Times(4).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	).Times(4).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 	m.validatorClient.EXPECT().ProposeAttestation(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.Attestation{}),
-	).Return(&ethpb.AttestResponse{}, nil /* error */)
+		gomock.AssignableToTypeOf(&zondpb.Attestation{}),
+	).Return(&zondpb.AttestResponse{}, nil /* error */)
 
 	validator.SubmitAttestation(context.Background(), 30, pubKey)
 	require.LogsDoNotContain(t, hook, failedAttLocalProtectionErr)
 
 	m.validatorClient.EXPECT().GetAttestationData(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.AttestationDataRequest{}),
-	).Return(&ethpb.AttestationData{
+		gomock.AssignableToTypeOf(&zondpb.AttestationDataRequest{}),
+	).Return(&zondpb.AttestationData{
 		BeaconBlockRoot: bytesutil.PadTo([]byte("A"), 32),
-		Target:          &ethpb.Checkpoint{Root: bytesutil.PadTo([]byte("B"), 32), Epoch: 2},
-		Source:          &ethpb.Checkpoint{Root: bytesutil.PadTo([]byte("C"), 32), Epoch: 1},
+		Target:          &zondpb.Checkpoint{Root: bytesutil.PadTo([]byte("B"), 32), Epoch: 2},
+		Source:          &zondpb.Checkpoint{Root: bytesutil.PadTo([]byte("C"), 32), Epoch: 1},
 	}, nil)
 
 	validator.SubmitAttestation(context.Background(), 30, pubKey)
@@ -336,18 +336,18 @@ func TestAttestToBlockHead_DoesNotAttestBeforeDelay(t *testing.T) {
 	validator.genesisTime = uint64(prysmTime.Now().Unix())
 	m.validatorClient.EXPECT().GetDuties(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.DutiesRequest{}),
+		gomock.AssignableToTypeOf(&zondpb.DutiesRequest{}),
 	).Times(0)
 
 	m.validatorClient.EXPECT().GetAttestationData(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.AttestationDataRequest{}),
+		gomock.AssignableToTypeOf(&zondpb.AttestationDataRequest{}),
 	).Times(0)
 
 	m.validatorClient.EXPECT().ProposeAttestation(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.Attestation{}),
-	).Return(&ethpb.AttestResponse{}, nil /* error */).Times(0)
+		gomock.AssignableToTypeOf(&zondpb.Attestation{}),
+	).Return(&zondpb.AttestResponse{}, nil /* error */).Times(0)
 
 	timer := time.NewTimer(1 * time.Second)
 	go validator.SubmitAttestation(context.Background(), 0, pubKey)
@@ -367,7 +367,7 @@ func TestAttestToBlockHead_DoesAttestAfterDelay(t *testing.T) {
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
 	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
-	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{
+	validator.duties = &zondpb.DutiesResponse{Duties: []*zondpb.DutiesResponse_Duty{
 		{
 			PublicKey:      validatorKey.PublicKey().Marshal(),
 			CommitteeIndex: 5,
@@ -377,11 +377,11 @@ func TestAttestToBlockHead_DoesAttestAfterDelay(t *testing.T) {
 
 	m.validatorClient.EXPECT().GetAttestationData(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.AttestationDataRequest{}),
-	).Return(&ethpb.AttestationData{
+		gomock.AssignableToTypeOf(&zondpb.AttestationDataRequest{}),
+	).Return(&zondpb.AttestationData{
 		BeaconBlockRoot: bytesutil.PadTo([]byte("A"), 32),
-		Target:          &ethpb.Checkpoint{Root: bytesutil.PadTo([]byte("B"), 32)},
-		Source:          &ethpb.Checkpoint{Root: bytesutil.PadTo([]byte("C"), 32), Epoch: 3},
+		Target:          &zondpb.Checkpoint{Root: bytesutil.PadTo([]byte("B"), 32)},
+		Source:          &zondpb.Checkpoint{Root: bytesutil.PadTo([]byte("C"), 32), Epoch: 3},
 	}, nil).Do(func(arg0, arg1 interface{}) {
 		wg.Done()
 	})
@@ -389,12 +389,12 @@ func TestAttestToBlockHead_DoesAttestAfterDelay(t *testing.T) {
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
-	).Times(2).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	).Times(2).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 	m.validatorClient.EXPECT().ProposeAttestation(
 		gomock.Any(), // ctx
 		gomock.Any(),
-	).Return(&ethpb.AttestResponse{}, nil).Times(1)
+	).Return(&zondpb.AttestResponse{}, nil).Times(1)
 
 	validator.SubmitAttestation(context.Background(), 0, pubKey)
 }
@@ -406,7 +406,7 @@ func TestAttestToBlockHead_CorrectBitfieldLength(t *testing.T) {
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
 	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
-	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{
+	validator.duties = &zondpb.DutiesResponse{Duties: []*zondpb.DutiesResponse_Duty{
 		{
 			PublicKey:      validatorKey.PublicKey().Marshal(),
 			CommitteeIndex: 5,
@@ -415,25 +415,25 @@ func TestAttestToBlockHead_CorrectBitfieldLength(t *testing.T) {
 		}}}
 	m.validatorClient.EXPECT().GetAttestationData(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.AttestationDataRequest{}),
-	).Return(&ethpb.AttestationData{
-		Target:          &ethpb.Checkpoint{Root: bytesutil.PadTo([]byte("B"), 32)},
-		Source:          &ethpb.Checkpoint{Root: bytesutil.PadTo([]byte("C"), 32), Epoch: 3},
+		gomock.AssignableToTypeOf(&zondpb.AttestationDataRequest{}),
+	).Return(&zondpb.AttestationData{
+		Target:          &zondpb.Checkpoint{Root: bytesutil.PadTo([]byte("B"), 32)},
+		Source:          &zondpb.Checkpoint{Root: bytesutil.PadTo([]byte("C"), 32), Epoch: 3},
 		BeaconBlockRoot: make([]byte, fieldparams.RootLength),
 	}, nil)
 
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
-	).Times(2).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	).Times(2).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
-	var generatedAttestation *ethpb.Attestation
+	var generatedAttestation *zondpb.Attestation
 	m.validatorClient.EXPECT().ProposeAttestation(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.Attestation{}),
-	).Do(func(_ context.Context, att *ethpb.Attestation) {
+		gomock.AssignableToTypeOf(&zondpb.Attestation{}),
+	).Do(func(_ context.Context, att *zondpb.Attestation) {
 		generatedAttestation = att
-	}).Return(&ethpb.AttestResponse{}, nil /* error */)
+	}).Return(&zondpb.AttestResponse{}, nil /* error */)
 
 	validator.SubmitAttestation(context.Background(), 30, pubKey)
 
@@ -443,7 +443,7 @@ func TestAttestToBlockHead_CorrectBitfieldLength(t *testing.T) {
 func TestSignAttestation(t *testing.T) {
 	validator, m, _, finish := setup(t)
 	defer finish()
-	wantedFork := &ethpb.Fork{
+	wantedFork := &zondpb.Fork{
 		PreviousVersion: []byte{'a', 'b', 'c', 'd'},
 		CurrentVersion:  []byte{'d', 'e', 'f', 'f'},
 		Epoch:           0,
@@ -453,7 +453,7 @@ func TestSignAttestation(t *testing.T) {
 	require.NoError(t, err)
 	m.validatorClient.EXPECT().
 		DomainData(gomock.Any(), gomock.Any()).
-		Return(&ethpb.DomainResponse{SignatureDomain: attesterDomain}, nil)
+		Return(&zondpb.DomainResponse{SignatureDomain: attesterDomain}, nil)
 	ctx := context.Background()
 	att := util.NewAttestation()
 	att.Data.Source.Epoch = 100
@@ -530,8 +530,8 @@ func TestServer_WaitToSlotOneThird_ReceiveBlockSlot(t *testing.T) {
 	go func() {
 		time.Sleep(100 * time.Millisecond)
 		wsb, err := blocks.NewSignedBeaconBlock(
-			&ethpb.SignedBeaconBlock{
-				Block: &ethpb.BeaconBlock{Slot: currentSlot, Body: &ethpb.BeaconBlockBody{}},
+			&zondpb.SignedBeaconBlock{
+				Block: &zondpb.BeaconBlock{Slot: currentSlot, Body: &zondpb.BeaconBlockBody{}},
 			})
 		require.NoError(t, err)
 		v.blockFeed.Send(wsb)

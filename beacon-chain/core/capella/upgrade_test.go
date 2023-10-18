@@ -8,7 +8,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
@@ -48,7 +48,7 @@ func TestUpgradeToCapella(t *testing.T) {
 	require.DeepSSZEqual(t, make([]uint64, numValidators), s)
 
 	f := mSt.Fork()
-	require.DeepSSZEqual(t, &ethpb.Fork{
+	require.DeepSSZEqual(t, &zondpb.Fork{
 		PreviousVersion: st.Fork().CurrentVersion,
 		CurrentVersion:  params.BeaconConfig().CapellaForkVersion,
 		Epoch:           time.CurrentEpoch(st),

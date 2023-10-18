@@ -10,20 +10,20 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 type beaconBlockConverter interface {
-	ConvertRESTPhase0BlockToProto(block *apimiddleware.BeaconBlockJson) (*ethpb.BeaconBlock, error)
-	ConvertRESTAltairBlockToProto(block *apimiddleware.BeaconBlockAltairJson) (*ethpb.BeaconBlockAltair, error)
-	ConvertRESTBellatrixBlockToProto(block *apimiddleware.BeaconBlockBellatrixJson) (*ethpb.BeaconBlockBellatrix, error)
-	ConvertRESTCapellaBlockToProto(block *apimiddleware.BeaconBlockCapellaJson) (*ethpb.BeaconBlockCapella, error)
+	ConvertRESTPhase0BlockToProto(block *apimiddleware.BeaconBlockJson) (*zondpb.BeaconBlock, error)
+	ConvertRESTAltairBlockToProto(block *apimiddleware.BeaconBlockAltairJson) (*zondpb.BeaconBlockAltair, error)
+	ConvertRESTBellatrixBlockToProto(block *apimiddleware.BeaconBlockBellatrixJson) (*zondpb.BeaconBlockBellatrix, error)
+	ConvertRESTCapellaBlockToProto(block *apimiddleware.BeaconBlockCapellaJson) (*zondpb.BeaconBlockCapella, error)
 }
 
 type beaconApiBeaconBlockConverter struct{}
 
 // ConvertRESTPhase0BlockToProto converts a Phase0 JSON beacon block to its protobuf equivalent
-func (c beaconApiBeaconBlockConverter) ConvertRESTPhase0BlockToProto(block *apimiddleware.BeaconBlockJson) (*ethpb.BeaconBlock, error) {
+func (c beaconApiBeaconBlockConverter) ConvertRESTPhase0BlockToProto(block *apimiddleware.BeaconBlockJson) (*zondpb.BeaconBlock, error) {
 	blockSlot, err := strconv.ParseUint(block.Slot, 10, 64)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse slot `%s`", block.Slot)
@@ -102,14 +102,14 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTPhase0BlockToProto(block *apim
 		return nil, errors.Wrap(err, "failed to get voluntary exits")
 	}
 
-	return &ethpb.BeaconBlock{
+	return &zondpb.BeaconBlock{
 		Slot:          primitives.Slot(blockSlot),
 		ProposerIndex: primitives.ValidatorIndex(blockProposerIndex),
 		ParentRoot:    parentRoot,
 		StateRoot:     stateRoot,
-		Body: &ethpb.BeaconBlockBody{
+		Body: &zondpb.BeaconBlockBody{
 			RandaoReveal: randaoReveal,
-			Eth1Data: &ethpb.Eth1Data{
+			Eth1Data: &zondpb.Eth1Data{
 				DepositRoot:  depositRoot,
 				DepositCount: depositCount,
 				BlockHash:    blockHash,
@@ -125,7 +125,7 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTPhase0BlockToProto(block *apim
 }
 
 // ConvertRESTAltairBlockToProto converts an Altair JSON beacon block to its protobuf equivalent
-func (c beaconApiBeaconBlockConverter) ConvertRESTAltairBlockToProto(block *apimiddleware.BeaconBlockAltairJson) (*ethpb.BeaconBlockAltair, error) {
+func (c beaconApiBeaconBlockConverter) ConvertRESTAltairBlockToProto(block *apimiddleware.BeaconBlockAltairJson) (*zondpb.BeaconBlockAltair, error) {
 	if block.Body == nil {
 		return nil, errors.New("block body is nil")
 	}
@@ -166,12 +166,12 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTAltairBlockToProto(block *apim
 		return nil, errors.Wrapf(err, "failed to decode sync committee signature `%s`", block.Body.SyncAggregate.SyncCommitteeSignature)
 	}
 
-	return &ethpb.BeaconBlockAltair{
+	return &zondpb.BeaconBlockAltair{
 		Slot:          phase0Block.Slot,
 		ProposerIndex: phase0Block.ProposerIndex,
 		ParentRoot:    phase0Block.ParentRoot,
 		StateRoot:     phase0Block.StateRoot,
-		Body: &ethpb.BeaconBlockBodyAltair{
+		Body: &zondpb.BeaconBlockBodyAltair{
 			RandaoReveal:      phase0Block.Body.RandaoReveal,
 			Eth1Data:          phase0Block.Body.Eth1Data,
 			Graffiti:          phase0Block.Body.Graffiti,
@@ -180,7 +180,7 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTAltairBlockToProto(block *apim
 			Attestations:      phase0Block.Body.Attestations,
 			Deposits:          phase0Block.Body.Deposits,
 			VoluntaryExits:    phase0Block.Body.VoluntaryExits,
-			SyncAggregate: &ethpb.SyncAggregate{
+			SyncAggregate: &zondpb.SyncAggregate{
 				SyncCommitteeBits:      syncCommitteeBits,
 				SyncCommitteeSignature: syncCommitteeSignature,
 			},
@@ -189,7 +189,7 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTAltairBlockToProto(block *apim
 }
 
 // ConvertRESTBellatrixBlockToProto converts a Bellatrix JSON beacon block to its protobuf equivalent
-func (c beaconApiBeaconBlockConverter) ConvertRESTBellatrixBlockToProto(block *apimiddleware.BeaconBlockBellatrixJson) (*ethpb.BeaconBlockBellatrix, error) {
+func (c beaconApiBeaconBlockConverter) ConvertRESTBellatrixBlockToProto(block *apimiddleware.BeaconBlockBellatrixJson) (*zondpb.BeaconBlockBellatrix, error) {
 	if block.Body == nil {
 		return nil, errors.New("block body is nil")
 	}
@@ -291,12 +291,12 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTBellatrixBlockToProto(block *a
 		return nil, errors.Wrap(err, "failed to get execution payload transactions")
 	}
 
-	return &ethpb.BeaconBlockBellatrix{
+	return &zondpb.BeaconBlockBellatrix{
 		Slot:          altairBlock.Slot,
 		ProposerIndex: altairBlock.ProposerIndex,
 		ParentRoot:    altairBlock.ParentRoot,
 		StateRoot:     altairBlock.StateRoot,
-		Body: &ethpb.BeaconBlockBodyBellatrix{
+		Body: &zondpb.BeaconBlockBodyBellatrix{
 			RandaoReveal:      altairBlock.Body.RandaoReveal,
 			Eth1Data:          altairBlock.Body.Eth1Data,
 			Graffiti:          altairBlock.Body.Graffiti,
@@ -327,7 +327,7 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTBellatrixBlockToProto(block *a
 }
 
 // ConvertRESTCapellaBlockToProto converts a Capella JSON beacon block to its protobuf equivalent
-func (c beaconApiBeaconBlockConverter) ConvertRESTCapellaBlockToProto(block *apimiddleware.BeaconBlockCapellaJson) (*ethpb.BeaconBlockCapella, error) {
+func (c beaconApiBeaconBlockConverter) ConvertRESTCapellaBlockToProto(block *apimiddleware.BeaconBlockCapellaJson) (*zondpb.BeaconBlockCapella, error) {
 	if block.Body == nil {
 		return nil, errors.New("block body is nil")
 	}
@@ -385,12 +385,12 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTCapellaBlockToProto(block *api
 		return nil, errors.Wrap(err, "failed to get dilithium to execution changes")
 	}
 
-	return &ethpb.BeaconBlockCapella{
+	return &zondpb.BeaconBlockCapella{
 		Slot:          bellatrixBlock.Slot,
 		ProposerIndex: bellatrixBlock.ProposerIndex,
 		ParentRoot:    bellatrixBlock.ParentRoot,
 		StateRoot:     bellatrixBlock.StateRoot,
-		Body: &ethpb.BeaconBlockBodyCapella{
+		Body: &zondpb.BeaconBlockBodyCapella{
 			RandaoReveal:      bellatrixBlock.Body.RandaoReveal,
 			Eth1Data:          bellatrixBlock.Body.Eth1Data,
 			Graffiti:          bellatrixBlock.Body.Graffiti,

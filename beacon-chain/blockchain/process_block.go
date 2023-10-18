@@ -23,7 +23,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -179,8 +179,8 @@ func (s *Service) onBlockBatch(ctx context.Context, blks []interfaces.ReadOnlySi
 		return errors.Wrap(err, "could not fill in missing blocks to forkchoice")
 	}
 
-	jCheckpoints := make([]*ethpb.Checkpoint, len(blks))
-	fCheckpoints := make([]*ethpb.Checkpoint, len(blks))
+	jCheckpoints := make([]*zondpb.Checkpoint, len(blks))
+	fCheckpoints := make([]*zondpb.Checkpoint, len(blks))
 	sigSet := dilithium.NewSet()
 	type versionAndHeader struct {
 		version int
@@ -259,7 +259,7 @@ func (s *Service) onBlockBatch(ctx context.Context, blks []interfaces.ReadOnlySi
 			tracing.AnnotateError(span, err)
 			return err
 		}
-		if err := s.cfg.BeaconDB.SaveStateSummary(ctx, &ethpb.StateSummary{
+		if err := s.cfg.BeaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{
 			Slot: b.Block().Slot(),
 			Root: blockRoots[i][:],
 		}); err != nil {
@@ -398,7 +398,7 @@ func (s *Service) handleBlockAttestations(ctx context.Context, blk interfaces.Re
 // InsertSlashingsToForkChoiceStore inserts attester slashing indices to fork choice store.
 // To call this function, it's caller's responsibility to ensure the slashing object is valid.
 // This function requires a write lock on forkchoice.
-func (s *Service) InsertSlashingsToForkChoiceStore(ctx context.Context, slashings []*ethpb.AttesterSlashing) {
+func (s *Service) InsertSlashingsToForkChoiceStore(ctx context.Context, slashings []*zondpb.AttesterSlashing) {
 	for _, slashing := range slashings {
 		indices := blocks.SlashableAttesterIndices(slashing)
 		for _, index := range indices {

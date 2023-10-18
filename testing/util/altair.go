@@ -23,7 +23,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // DeterministicGenesisStateAltair returns a genesis state in hard fork 1 format made using the deterministic deposits.
@@ -45,7 +45,7 @@ func DeterministicGenesisStateAltair(t testing.TB, numValidators uint64) (state.
 }
 
 // GenesisBeaconState returns the genesis beacon state.
-func GenesisBeaconState(ctx context.Context, deposits []*ethpb.Deposit, genesisTime uint64, eth1Data *ethpb.Eth1Data) (state.BeaconState, error) {
+func GenesisBeaconState(ctx context.Context, deposits []*zondpb.Deposit, genesisTime uint64, eth1Data *zondpb.Eth1Data) (state.BeaconState, error) {
 	st, err := emptyGenesisState()
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func GenesisBeaconState(ctx context.Context, deposits []*ethpb.Deposit, genesisT
 func processPreGenesisDeposits(
 	ctx context.Context,
 	beaconState state.BeaconState,
-	deposits []*ethpb.Deposit,
+	deposits []*zondpb.Deposit,
 ) (state.BeaconState, error) {
 	var err error
 	beaconState, err = altair.ProcessDeposits(ctx, beaconState, deposits)
@@ -83,7 +83,7 @@ func processPreGenesisDeposits(
 	return beaconState, nil
 }
 
-func buildGenesisBeaconState(genesisTime uint64, preState state.BeaconState, eth1Data *ethpb.Eth1Data) (state.BeaconState, error) {
+func buildGenesisBeaconState(genesisTime uint64, preState state.BeaconState, eth1Data *zondpb.Eth1Data) (state.BeaconState, error) {
 	if eth1Data == nil {
 		return nil, errors.New("no eth1data provided for genesis state")
 	}
@@ -131,13 +131,13 @@ func buildGenesisBeaconState(genesisTime uint64, preState state.BeaconState, eth
 	if err != nil {
 		return nil, err
 	}
-	st := &ethpb.BeaconStateAltair{
+	st := &zondpb.BeaconStateAltair{
 		// Misc fields.
 		Slot:                  0,
 		GenesisTime:           genesisTime,
 		GenesisValidatorsRoot: genesisValidatorsRoot[:],
 
-		Fork: &ethpb.Fork{
+		Fork: &zondpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 			Epoch:           0,
@@ -154,16 +154,16 @@ func buildGenesisBeaconState(genesisTime uint64, preState state.BeaconState, eth
 		RandaoMixes: randaoMixes,
 
 		// Finality.
-		PreviousJustifiedCheckpoint: &ethpb.Checkpoint{
+		PreviousJustifiedCheckpoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  params.BeaconConfig().ZeroHash[:],
 		},
-		CurrentJustifiedCheckpoint: &ethpb.Checkpoint{
+		CurrentJustifiedCheckpoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  params.BeaconConfig().ZeroHash[:],
 		},
 		JustificationBits: []byte{0},
-		FinalizedCheckpoint: &ethpb.Checkpoint{
+		FinalizedCheckpoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  params.BeaconConfig().ZeroHash[:],
 		},
@@ -175,19 +175,19 @@ func buildGenesisBeaconState(genesisTime uint64, preState state.BeaconState, eth
 
 		// Eth1 data.
 		Eth1Data:         eth1Data,
-		Eth1DataVotes:    []*ethpb.Eth1Data{},
+		Eth1DataVotes:    []*zondpb.Eth1Data{},
 		Eth1DepositIndex: preState.Eth1DepositIndex(),
 	}
 
 	var scBits [fieldparams.SyncAggregateSyncCommitteeBytesLength]byte
-	bodyRoot, err := (&ethpb.BeaconBlockBodyAltair{
+	bodyRoot, err := (&zondpb.BeaconBlockBodyAltair{
 		RandaoReveal: make([]byte, dilithium2.CryptoBytes),
-		Eth1Data: &ethpb.Eth1Data{
+		Eth1Data: &zondpb.Eth1Data{
 			DepositRoot: make([]byte, fieldparams.RootLength),
 			BlockHash:   make([]byte, 32),
 		},
 		Graffiti: make([]byte, 32),
-		SyncAggregate: &ethpb.SyncAggregate{
+		SyncAggregate: &zondpb.SyncAggregate{
 			SyncCommitteeBits:      make([]byte, len(scBits[:])),
 			SyncCommitteeSignature: make([]byte, 96),
 		},
@@ -196,7 +196,7 @@ func buildGenesisBeaconState(genesisTime uint64, preState state.BeaconState, eth
 		return nil, errors.Wrap(err, "could not hash tree root empty block body")
 	}
 
-	st.LatestBlockHeader = &ethpb.BeaconBlockHeader{
+	st.LatestBlockHeader = &zondpb.BeaconBlockHeader{
 		ParentRoot: zeroHash,
 		StateRoot:  zeroHash,
 		BodyRoot:   bodyRoot[:],
@@ -206,11 +206,11 @@ func buildGenesisBeaconState(genesisTime uint64, preState state.BeaconState, eth
 	for i := uint64(0); i < params.BeaconConfig().SyncCommitteeSize; i++ {
 		pubKeys = append(pubKeys, bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength))
 	}
-	st.CurrentSyncCommittee = &ethpb.SyncCommittee{
+	st.CurrentSyncCommittee = &zondpb.SyncCommittee{
 		Pubkeys:         pubKeys,
 		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
 	}
-	st.NextSyncCommittee = &ethpb.SyncCommittee{
+	st.NextSyncCommittee = &zondpb.SyncCommittee{
 		Pubkeys:         bytesutil.SafeCopy2dBytes(pubKeys),
 		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
 	}
@@ -219,16 +219,16 @@ func buildGenesisBeaconState(genesisTime uint64, preState state.BeaconState, eth
 }
 
 func emptyGenesisState() (state.BeaconState, error) {
-	st := &ethpb.BeaconStateAltair{
+	st := &zondpb.BeaconStateAltair{
 		// Misc fields.
 		Slot: 0,
-		Fork: &ethpb.Fork{
+		Fork: &zondpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().AltairForkVersion,
 			Epoch:           0,
 		},
 		// Validator registry fields.
-		Validators:       []*ethpb.Validator{},
+		Validators:       []*zondpb.Validator{},
 		Balances:         []uint64{},
 		InactivityScores: []uint64{},
 
@@ -238,33 +238,33 @@ func emptyGenesisState() (state.BeaconState, error) {
 		PreviousEpochParticipation: []byte{},
 
 		// Eth1 data.
-		Eth1Data:         &ethpb.Eth1Data{},
-		Eth1DataVotes:    []*ethpb.Eth1Data{},
+		Eth1Data:         &zondpb.Eth1Data{},
+		Eth1DataVotes:    []*zondpb.Eth1Data{},
 		Eth1DepositIndex: 0,
 	}
 	return state_native.InitializeFromProtoAltair(st)
 }
 
 // NewBeaconBlockAltair creates a beacon block with minimum marshalable fields.
-func NewBeaconBlockAltair() *ethpb.SignedBeaconBlockAltair {
+func NewBeaconBlockAltair() *zondpb.SignedBeaconBlockAltair {
 	var scBits [fieldparams.SyncAggregateSyncCommitteeBytesLength]byte
-	return &ethpb.SignedBeaconBlockAltair{
-		Block: &ethpb.BeaconBlockAltair{
+	return &zondpb.SignedBeaconBlockAltair{
+		Block: &zondpb.BeaconBlockAltair{
 			ParentRoot: make([]byte, fieldparams.RootLength),
 			StateRoot:  make([]byte, fieldparams.RootLength),
-			Body: &ethpb.BeaconBlockBodyAltair{
+			Body: &zondpb.BeaconBlockBodyAltair{
 				RandaoReveal: make([]byte, dilithium2.CryptoBytes),
-				Eth1Data: &ethpb.Eth1Data{
+				Eth1Data: &zondpb.Eth1Data{
 					DepositRoot: make([]byte, fieldparams.RootLength),
 					BlockHash:   make([]byte, 32),
 				},
 				Graffiti:          make([]byte, 32),
-				Attestations:      []*ethpb.Attestation{},
-				AttesterSlashings: []*ethpb.AttesterSlashing{},
-				Deposits:          []*ethpb.Deposit{},
-				ProposerSlashings: []*ethpb.ProposerSlashing{},
-				VoluntaryExits:    []*ethpb.SignedVoluntaryExit{},
-				SyncAggregate: &ethpb.SyncAggregate{
+				Attestations:      []*zondpb.Attestation{},
+				AttesterSlashings: []*zondpb.AttesterSlashing{},
+				Deposits:          []*zondpb.Deposit{},
+				ProposerSlashings: []*zondpb.ProposerSlashing{},
+				VoluntaryExits:    []*zondpb.SignedVoluntaryExit{},
+				SyncAggregate: &zondpb.SyncAggregate{
 					SyncCommitteeBits:      scBits[:],
 					SyncCommitteeSignature: make([]byte, 96),
 				},
@@ -277,11 +277,11 @@ func NewBeaconBlockAltair() *ethpb.SignedBeaconBlockAltair {
 // BlockSignatureAltair calculates the post-state root of the block and returns the signature.
 func BlockSignatureAltair(
 	bState state.BeaconState,
-	block *ethpb.BeaconBlockAltair,
+	block *zondpb.BeaconBlockAltair,
 	privKeys []bls.SecretKey,
 ) (bls.Signature, error) {
 	var err error
-	wsb, err := consensusblocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockAltair{Block: block})
+	wsb, err := consensusblocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockAltair{Block: block})
 	if err != nil {
 		return nil, err
 	}
@@ -321,7 +321,7 @@ func GenerateFullBlockAltair(
 	privs []bls.SecretKey,
 	conf *BlockGenConfig,
 	slot primitives.Slot,
-) (*ethpb.SignedBeaconBlockAltair, error) {
+) (*zondpb.SignedBeaconBlockAltair, error) {
 	ctx := context.Background()
 	currentSlot := bState.Slot()
 	if currentSlot > slot {
@@ -334,7 +334,7 @@ func GenerateFullBlockAltair(
 	}
 
 	var err error
-	var pSlashings []*ethpb.ProposerSlashing
+	var pSlashings []*zondpb.ProposerSlashing
 	numToGen := conf.NumProposerSlashings
 	if numToGen > 0 {
 		pSlashings, err = generateProposerSlashings(bState, privs, numToGen)
@@ -344,7 +344,7 @@ func GenerateFullBlockAltair(
 	}
 
 	numToGen = conf.NumAttesterSlashings
-	var aSlashings []*ethpb.AttesterSlashing
+	var aSlashings []*zondpb.AttesterSlashing
 	if numToGen > 0 {
 		aSlashings, err = generateAttesterSlashings(bState, privs, numToGen)
 		if err != nil {
@@ -353,7 +353,7 @@ func GenerateFullBlockAltair(
 	}
 
 	numToGen = conf.NumAttestations
-	var atts []*ethpb.Attestation
+	var atts []*zondpb.Attestation
 	if numToGen > 0 {
 		atts, err = GenerateAttestations(bState, privs, numToGen, slot, false)
 		if err != nil {
@@ -362,7 +362,7 @@ func GenerateFullBlockAltair(
 	}
 
 	numToGen = conf.NumDeposits
-	var newDeposits []*ethpb.Deposit
+	var newDeposits []*zondpb.Deposit
 	eth1Data := bState.Eth1Data()
 	if numToGen > 0 {
 		newDeposits, eth1Data, err = generateDepositsAndEth1Data(bState, numToGen)
@@ -372,7 +372,7 @@ func GenerateFullBlockAltair(
 	}
 
 	numToGen = conf.NumVoluntaryExits
-	var exits []*ethpb.SignedVoluntaryExit
+	var exits []*zondpb.SignedVoluntaryExit
 	if numToGen > 0 {
 		exits, err = generateVoluntaryExits(bState, privs, numToGen)
 		if err != nil {
@@ -391,7 +391,7 @@ func GenerateFullBlockAltair(
 		return nil, err
 	}
 
-	var newSyncAggregate *ethpb.SyncAggregate
+	var newSyncAggregate *zondpb.SyncAggregate
 	if conf.FullSyncAggregate {
 		newSyncAggregate, err = generateSyncAggregate(bState, privs, parentRoot)
 		if err != nil {
@@ -399,7 +399,7 @@ func GenerateFullBlockAltair(
 		}
 	} else {
 		var syncCommitteeBits []byte
-		currSize := new(ethpb.SyncAggregate).SyncCommitteeBits.Len()
+		currSize := new(zondpb.SyncAggregate).SyncCommitteeBits.Len()
 		switch currSize {
 		case 512:
 			syncCommitteeBits = bitfield.NewBitvector512()
@@ -408,7 +408,7 @@ func GenerateFullBlockAltair(
 		default:
 			return nil, errors.New("invalid bit vector size")
 		}
-		newSyncAggregate = &ethpb.SyncAggregate{
+		newSyncAggregate = &zondpb.SyncAggregate{
 			SyncCommitteeBits:      syncCommitteeBits,
 			SyncCommitteeSignature: append([]byte{0xC0}, make([]byte, 95)...),
 		}
@@ -433,11 +433,11 @@ func GenerateFullBlockAltair(
 		return nil, err
 	}
 
-	block := &ethpb.BeaconBlockAltair{
+	block := &zondpb.BeaconBlockAltair{
 		Slot:          slot,
 		ParentRoot:    parentRoot[:],
 		ProposerIndex: idx,
-		Body: &ethpb.BeaconBlockBodyAltair{
+		Body: &zondpb.BeaconBlockBodyAltair{
 			Eth1Data:          eth1Data,
 			RandaoReveal:      reveal,
 			ProposerSlashings: pSlashings,
@@ -455,5 +455,5 @@ func GenerateFullBlockAltair(
 		return nil, err
 	}
 
-	return &ethpb.SignedBeaconBlockAltair{Block: block, Signature: signature.Marshal()}, nil
+	return &zondpb.SignedBeaconBlockAltair{Block: block, Signature: signature.Marshal()}, nil
 }

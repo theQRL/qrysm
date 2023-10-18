@@ -4,12 +4,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/container/queue"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // SaveSyncCommitteeMessage saves a sync committee message in to a priority queue.
 // The priority queue capped at syncCommitteeMaxQueueSize contributions.
-func (s *Store) SaveSyncCommitteeMessage(msg *ethpb.SyncCommitteeMessage) error {
+func (s *Store) SaveSyncCommitteeMessage(msg *zondpb.SyncCommitteeMessage) error {
 	if msg == nil {
 		return errNilMessage
 	}
@@ -22,12 +22,12 @@ func (s *Store) SaveSyncCommitteeMessage(msg *ethpb.SyncCommitteeMessage) error 
 		return err
 	}
 
-	copied := ethpb.CopySyncCommitteeMessage(msg)
+	copied := zondpb.CopySyncCommitteeMessage(msg)
 	// Messages exist in the queue. Append instead of insert new.
 	if item != nil {
-		messages, ok := item.Value.([]*ethpb.SyncCommitteeMessage)
+		messages, ok := item.Value.([]*zondpb.SyncCommitteeMessage)
 		if !ok {
-			return errors.New("not typed []ethpb.SyncCommitteeMessage")
+			return errors.New("not typed []zondpb.SyncCommitteeMessage")
 		}
 
 		idx := -1
@@ -56,7 +56,7 @@ func (s *Store) SaveSyncCommitteeMessage(msg *ethpb.SyncCommitteeMessage) error 
 	// Message does not exist. Insert new.
 	if err := s.messageCache.Push(&queue.Item{
 		Key:      syncCommitteeKey(msg.Slot),
-		Value:    []*ethpb.SyncCommitteeMessage{copied},
+		Value:    []*zondpb.SyncCommitteeMessage{copied},
 		Priority: int64(msg.Slot),
 	}); err != nil {
 		return err
@@ -75,7 +75,7 @@ func (s *Store) SaveSyncCommitteeMessage(msg *ethpb.SyncCommitteeMessage) error 
 
 // SyncCommitteeMessages returns sync committee messages by slot from the priority queue.
 // Upon retrieval, the message is removed from the queue.
-func (s *Store) SyncCommitteeMessages(slot primitives.Slot) ([]*ethpb.SyncCommitteeMessage, error) {
+func (s *Store) SyncCommitteeMessages(slot primitives.Slot) ([]*zondpb.SyncCommitteeMessage, error) {
 	s.messageLock.RLock()
 	defer s.messageLock.RUnlock()
 
@@ -84,9 +84,9 @@ func (s *Store) SyncCommitteeMessages(slot primitives.Slot) ([]*ethpb.SyncCommit
 		return nil, nil
 	}
 
-	messages, ok := item.Value.([]*ethpb.SyncCommitteeMessage)
+	messages, ok := item.Value.([]*zondpb.SyncCommitteeMessage)
 	if !ok {
-		return nil, errors.New("not typed []ethpb.SyncCommitteeMessage")
+		return nil, errors.New("not typed []zondpb.SyncCommitteeMessage")
 	}
 
 	return messages, nil

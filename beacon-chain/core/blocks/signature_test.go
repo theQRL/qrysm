@@ -9,7 +9,7 @@ import (
 	consensusblocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -21,8 +21,8 @@ func TestVerifyBlockHeaderSignature(t *testing.T) {
 
 	privKey, err := bls.RandKey()
 	require.NoError(t, err)
-	validators := make([]*ethpb.Validator, 1)
-	validators[0] = &ethpb.Validator{
+	validators := make([]*zondpb.Validator, 1)
+	validators[0] = &zondpb.Validator{
 		PublicKey:             privKey.PublicKey().Marshal(),
 		WithdrawalCredentials: make([]byte, 32),
 		EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
@@ -31,8 +31,8 @@ func TestVerifyBlockHeaderSignature(t *testing.T) {
 	require.NoError(t, err)
 
 	// Sign the block header.
-	blockHeader := util.HydrateSignedBeaconHeader(&ethpb.SignedBeaconBlockHeader{
-		Header: &ethpb.BeaconBlockHeader{
+	blockHeader := util.HydrateSignedBeaconHeader(&zondpb.SignedBeaconBlockHeader{
+		Header: &zondpb.BeaconBlockHeader{
 			Slot:          0,
 			ProposerIndex: 0,
 		},
@@ -46,7 +46,7 @@ func TestVerifyBlockHeaderSignature(t *testing.T) {
 	require.NoError(t, err)
 	htr, err := blockHeader.Header.HashTreeRoot()
 	require.NoError(t, err)
-	container := &ethpb.SigningData{
+	container := &zondpb.SigningData{
 		ObjectRoot: htr[:],
 		Domain:     domain,
 	}
@@ -72,7 +72,7 @@ func TestVerifyBlockSignatureUsingCurrentFork(t *testing.T) {
 	altairBlk := util.NewBeaconBlockAltair()
 	altairBlk.Block.ProposerIndex = 0
 	altairBlk.Block.Slot = params.BeaconConfig().SlotsPerEpoch * 100
-	fData := &ethpb.Fork{
+	fData := &zondpb.Fork{
 		Epoch:           100,
 		CurrentVersion:  params.BeaconConfig().AltairForkVersion,
 		PreviousVersion: params.BeaconConfig().GenesisForkVersion,

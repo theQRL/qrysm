@@ -24,10 +24,10 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/proto/migration"
-	ethpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
@@ -40,7 +40,7 @@ var errParticipation = status.Error(codes.Internal, "Could not obtain epoch part
 
 // GetAttesterDuties requests the beacon node to provide a set of attestation duties,
 // which should be performed by validators, for a particular epoch.
-func (vs *Server) GetAttesterDuties(ctx context.Context, req *ethpbv1.AttesterDutiesRequest) (*ethpbv1.AttesterDutiesResponse, error) {
+func (vs *Server) GetAttesterDuties(ctx context.Context, req *zondpbv1.AttesterDutiesRequest) (*zondpbv1.AttesterDutiesResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.GetAttesterDuties")
 	defer span.End()
 
@@ -85,7 +85,7 @@ func (vs *Server) GetAttesterDuties(ctx context.Context, req *ethpbv1.AttesterDu
 	}
 	committeesAtSlot := helpers.SlotCommitteeCount(activeValidatorCount)
 
-	duties := make([]*ethpbv1.AttesterDuty, 0, len(req.Index))
+	duties := make([]*zondpbv1.AttesterDuty, 0, len(req.Index))
 	for _, index := range req.Index {
 		pubkey := s.PubkeyAtIndex(index)
 		var zeroPubkey [dilithium2.CryptoPublicKeyBytes]byte
@@ -105,7 +105,7 @@ func (vs *Server) GetAttesterDuties(ctx context.Context, req *ethpbv1.AttesterDu
 				break
 			}
 		}
-		duties = append(duties, &ethpbv1.AttesterDuty{
+		duties = append(duties, &zondpbv1.AttesterDuty{
 			Pubkey:                  pubkey[:],
 			ValidatorIndex:          index,
 			CommitteeIndex:          committee.CommitteeIndex,
@@ -121,7 +121,7 @@ func (vs *Server) GetAttesterDuties(ctx context.Context, req *ethpbv1.AttesterDu
 		return nil, status.Errorf(codes.Internal, "Could not get dependent root: %v", err)
 	}
 
-	return &ethpbv1.AttesterDutiesResponse{
+	return &zondpbv1.AttesterDutiesResponse{
 		DependentRoot:       root,
 		Data:                duties,
 		ExecutionOptimistic: isOptimistic,
@@ -129,7 +129,7 @@ func (vs *Server) GetAttesterDuties(ctx context.Context, req *ethpbv1.AttesterDu
 }
 
 // GetProposerDuties requests beacon node to provide all validators that are scheduled to propose a block in the given epoch.
-func (vs *Server) GetProposerDuties(ctx context.Context, req *ethpbv1.ProposerDutiesRequest) (*ethpbv1.ProposerDutiesResponse, error) {
+func (vs *Server) GetProposerDuties(ctx context.Context, req *zondpbv1.ProposerDutiesRequest) (*zondpbv1.ProposerDutiesResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.GetProposerDuties")
 	defer span.End()
 
@@ -174,7 +174,7 @@ func (vs *Server) GetProposerDuties(ctx context.Context, req *ethpbv1.ProposerDu
 		return nil, status.Errorf(codes.Internal, "Could not compute committee assignments: %v", err)
 	}
 
-	duties := make([]*ethpbv1.ProposerDuty, 0)
+	duties := make([]*zondpbv1.ProposerDuty, 0)
 	for index, ss := range proposals {
 		val, err := s.ValidatorAtIndexReadOnly(index)
 		if err != nil {
@@ -184,7 +184,7 @@ func (vs *Server) GetProposerDuties(ctx context.Context, req *ethpbv1.ProposerDu
 		pubkey := pubkey48[:]
 		for _, s := range ss {
 			vs.ProposerSlotIndexCache.SetProposerAndPayloadIDs(s, index, [8]byte{} /* payloadID */, [32]byte{} /* head root */)
-			duties = append(duties, &ethpbv1.ProposerDuty{
+			duties = append(duties, &zondpbv1.ProposerDuty{
 				Pubkey:         pubkey,
 				ValidatorIndex: index,
 				Slot:           s,
@@ -202,7 +202,7 @@ func (vs *Server) GetProposerDuties(ctx context.Context, req *ethpbv1.ProposerDu
 
 	vs.ProposerSlotIndexCache.PrunePayloadIDs(startSlot)
 
-	return &ethpbv1.ProposerDutiesResponse{
+	return &zondpbv1.ProposerDutiesResponse{
 		DependentRoot:       root,
 		Data:                duties,
 		ExecutionOptimistic: isOptimistic,
@@ -220,7 +220,7 @@ func (vs *Server) GetProposerDuties(ctx context.Context, req *ethpbv1.ProposerDu
 //     or an epoch from the next sync committee period, then get the current state.
 //   - Get the state's current sync committee. If it's an epoch from the next sync committee period, then get the next sync committee.
 //   - Get duties.
-func (vs *Server) GetSyncCommitteeDuties(ctx context.Context, req *ethpbv2.SyncCommitteeDutiesRequest) (*ethpbv2.SyncCommitteeDutiesResponse, error) {
+func (vs *Server) GetSyncCommitteeDuties(ctx context.Context, req *zondpbv2.SyncCommitteeDutiesRequest) (*zondpbv2.SyncCommitteeDutiesResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.GetSyncCommitteeDuties")
 	defer span.End()
 
@@ -253,7 +253,7 @@ func (vs *Server) GetSyncCommitteeDuties(ctx context.Context, req *ethpbv2.SyncC
 		return nil, status.Errorf(codes.InvalidArgument, "Could not get sync committee period start epoch: %v.", err)
 	}
 	nextSyncCommitteeFirstEpoch := currentSyncCommitteeFirstEpoch + params.BeaconConfig().EpochsPerSyncCommitteePeriod
-	var committee *ethpbalpha.SyncCommittee
+	var committee *zondpbalpha.SyncCommittee
 	if req.Epoch >= nextSyncCommitteeFirstEpoch {
 		committee, err = st.NextSyncCommittee()
 		if err != nil {
@@ -290,7 +290,7 @@ func (vs *Server) GetSyncCommitteeDuties(ctx context.Context, req *ethpbv2.SyncC
 		return nil, status.Errorf(codes.Internal, "Could not check if slot's block is optimistic: %v", err)
 	}
 
-	return &ethpbv2.SyncCommitteeDutiesResponse{
+	return &zondpbv2.SyncCommitteeDutiesResponse{
 		Data:                duties,
 		ExecutionOptimistic: isOptimistic,
 	}, nil
@@ -303,7 +303,7 @@ func (vs *Server) GetSyncCommitteeDuties(ctx context.Context, req *ethpbv2.SyncC
 //
 // To use mev-boost and relayer network. It's recommended to use the following endpoint:
 // https://github.com/ethereum/beacon-APIs/blob/master/apis/validator/blinded_block.yaml
-func (vs *Server) ProduceBlockV2(ctx context.Context, req *ethpbv1.ProduceBlockRequest) (*ethpbv2.ProduceBlockResponseV2, error) {
+func (vs *Server) ProduceBlockV2(ctx context.Context, req *zondpbv1.ProduceBlockRequest) (*zondpbv2.ProduceBlockResponseV2, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.ProduceBlockV2")
 	defer span.End()
 
@@ -312,7 +312,7 @@ func (vs *Server) ProduceBlockV2(ctx context.Context, req *ethpbv1.ProduceBlockR
 		return nil, err
 	}
 
-	v1alpha1req := &ethpbalpha.BlockRequest{
+	v1alpha1req := &zondpbalpha.BlockRequest{
 		Slot:         req.Slot,
 		RandaoReveal: req.RandaoReveal,
 		Graffiti:     req.Graffiti,
@@ -323,29 +323,29 @@ func (vs *Server) ProduceBlockV2(ctx context.Context, req *ethpbv1.ProduceBlockR
 		// We simply return err because it's already of a gRPC error type.
 		return nil, err
 	}
-	phase0Block, ok := v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_Phase0)
+	phase0Block, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Phase0)
 	if ok {
 		block, err := migration.V1Alpha1ToV1Block(phase0Block.Phase0)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
 		}
-		return &ethpbv2.ProduceBlockResponseV2{
-			Version: ethpbv2.Version_PHASE0,
-			Data: &ethpbv2.BeaconBlockContainerV2{
-				Block: &ethpbv2.BeaconBlockContainerV2_Phase0Block{Phase0Block: block},
+		return &zondpbv2.ProduceBlockResponseV2{
+			Version: zondpbv2.Version_PHASE0,
+			Data: &zondpbv2.BeaconBlockContainerV2{
+				Block: &zondpbv2.BeaconBlockContainerV2_Phase0Block{Phase0Block: block},
 			},
 		}, nil
 	}
-	altairBlock, ok := v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_Altair)
+	altairBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Altair)
 	if ok {
 		block, err := migration.V1Alpha1BeaconBlockAltairToV2(altairBlock.Altair)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
 		}
-		return &ethpbv2.ProduceBlockResponseV2{
-			Version: ethpbv2.Version_ALTAIR,
-			Data: &ethpbv2.BeaconBlockContainerV2{
-				Block: &ethpbv2.BeaconBlockContainerV2_AltairBlock{AltairBlock: block},
+		return &zondpbv2.ProduceBlockResponseV2{
+			Version: zondpbv2.Version_ALTAIR,
+			Data: &zondpbv2.BeaconBlockContainerV2{
+				Block: &zondpbv2.BeaconBlockContainerV2_AltairBlock{AltairBlock: block},
 			},
 		}, nil
 	}
@@ -356,37 +356,37 @@ func (vs *Server) ProduceBlockV2(ctx context.Context, req *ethpbv1.ProduceBlockR
 	if optimistic {
 		return nil, status.Errorf(codes.Unavailable, "The node is currently optimistic and cannot serve validators")
 	}
-	_, ok = v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_BlindedBellatrix)
+	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedBellatrix)
 	if ok {
 		return nil, status.Error(codes.Internal, "Prepared Bellatrix beacon block is blinded")
 	}
-	bellatrixBlock, ok := v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_Bellatrix)
+	bellatrixBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Bellatrix)
 	if ok {
 		block, err := migration.V1Alpha1BeaconBlockBellatrixToV2(bellatrixBlock.Bellatrix)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
 		}
-		return &ethpbv2.ProduceBlockResponseV2{
-			Version: ethpbv2.Version_BELLATRIX,
-			Data: &ethpbv2.BeaconBlockContainerV2{
-				Block: &ethpbv2.BeaconBlockContainerV2_BellatrixBlock{BellatrixBlock: block},
+		return &zondpbv2.ProduceBlockResponseV2{
+			Version: zondpbv2.Version_BELLATRIX,
+			Data: &zondpbv2.BeaconBlockContainerV2{
+				Block: &zondpbv2.BeaconBlockContainerV2_BellatrixBlock{BellatrixBlock: block},
 			},
 		}, nil
 	}
-	_, ok = v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_BlindedCapella)
+	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedCapella)
 	if ok {
 		return nil, status.Error(codes.Internal, "Prepared Capella beacon block is blinded")
 	}
-	capellaBlock, ok := v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_Capella)
+	capellaBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Capella)
 	if ok {
 		block, err := migration.V1Alpha1BeaconBlockCapellaToV2(capellaBlock.Capella)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
 		}
-		return &ethpbv2.ProduceBlockResponseV2{
-			Version: ethpbv2.Version_CAPELLA,
-			Data: &ethpbv2.BeaconBlockContainerV2{
-				Block: &ethpbv2.BeaconBlockContainerV2_CapellaBlock{CapellaBlock: block},
+		return &zondpbv2.ProduceBlockResponseV2{
+			Version: zondpbv2.Version_CAPELLA,
+			Data: &zondpbv2.BeaconBlockContainerV2{
+				Block: &zondpbv2.BeaconBlockContainerV2_CapellaBlock{CapellaBlock: block},
 			},
 		}, nil
 	}
@@ -402,7 +402,7 @@ func (vs *Server) ProduceBlockV2(ctx context.Context, req *ethpbv1.ProduceBlockR
 //
 // To use mev-boost and relayer network. It's recommended to use the following endpoint:
 // https://github.com/ethereum/beacon-APIs/blob/master/apis/validator/blinded_block.yaml
-func (vs *Server) ProduceBlockV2SSZ(ctx context.Context, req *ethpbv1.ProduceBlockRequest) (*ethpbv2.SSZContainer, error) {
+func (vs *Server) ProduceBlockV2SSZ(ctx context.Context, req *zondpbv1.ProduceBlockRequest) (*zondpbv2.SSZContainer, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.ProduceBlockV2SSZ")
 	defer span.End()
 
@@ -411,7 +411,7 @@ func (vs *Server) ProduceBlockV2SSZ(ctx context.Context, req *ethpbv1.ProduceBlo
 		return nil, err
 	}
 
-	v1alpha1req := &ethpbalpha.BlockRequest{
+	v1alpha1req := &zondpbalpha.BlockRequest{
 		Slot:         req.Slot,
 		RandaoReveal: req.RandaoReveal,
 		Graffiti:     req.Graffiti,
@@ -422,7 +422,7 @@ func (vs *Server) ProduceBlockV2SSZ(ctx context.Context, req *ethpbv1.ProduceBlo
 		// We simply return err because it's already of a gRPC error type.
 		return nil, err
 	}
-	phase0Block, ok := v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_Phase0)
+	phase0Block, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Phase0)
 	if ok {
 		block, err := migration.V1Alpha1ToV1Block(phase0Block.Phase0)
 		if err != nil {
@@ -432,12 +432,12 @@ func (vs *Server) ProduceBlockV2SSZ(ctx context.Context, req *ethpbv1.ProduceBlo
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
 		}
-		return &ethpbv2.SSZContainer{
-			Version: ethpbv2.Version_PHASE0,
+		return &zondpbv2.SSZContainer{
+			Version: zondpbv2.Version_PHASE0,
 			Data:    sszBlock,
 		}, nil
 	}
-	altairBlock, ok := v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_Altair)
+	altairBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Altair)
 	if ok {
 		block, err := migration.V1Alpha1BeaconBlockAltairToV2(altairBlock.Altair)
 		if err != nil {
@@ -447,8 +447,8 @@ func (vs *Server) ProduceBlockV2SSZ(ctx context.Context, req *ethpbv1.ProduceBlo
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
 		}
-		return &ethpbv2.SSZContainer{
-			Version: ethpbv2.Version_ALTAIR,
+		return &zondpbv2.SSZContainer{
+			Version: zondpbv2.Version_ALTAIR,
 			Data:    sszBlock,
 		}, nil
 	}
@@ -459,11 +459,11 @@ func (vs *Server) ProduceBlockV2SSZ(ctx context.Context, req *ethpbv1.ProduceBlo
 	if optimistic {
 		return nil, status.Errorf(codes.Unavailable, "The node is currently optimistic and cannot serve validators")
 	}
-	_, ok = v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_BlindedBellatrix)
+	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedBellatrix)
 	if ok {
 		return nil, status.Error(codes.Internal, "Prepared Bellatrix beacon block is blinded")
 	}
-	bellatrixBlock, ok := v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_Bellatrix)
+	bellatrixBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Bellatrix)
 	if ok {
 		block, err := migration.V1Alpha1BeaconBlockBellatrixToV2(bellatrixBlock.Bellatrix)
 		if err != nil {
@@ -473,16 +473,16 @@ func (vs *Server) ProduceBlockV2SSZ(ctx context.Context, req *ethpbv1.ProduceBlo
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
 		}
-		return &ethpbv2.SSZContainer{
-			Version: ethpbv2.Version_BELLATRIX,
+		return &zondpbv2.SSZContainer{
+			Version: zondpbv2.Version_BELLATRIX,
 			Data:    sszBlock,
 		}, nil
 	}
-	_, ok = v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_BlindedCapella)
+	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedCapella)
 	if ok {
 		return nil, status.Error(codes.Internal, "Prepared Capella beacon block is blinded")
 	}
-	capellaBlock, ok := v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_Capella)
+	capellaBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Capella)
 	if ok {
 		block, err := migration.V1Alpha1BeaconBlockCapellaToV2(capellaBlock.Capella)
 		if err != nil {
@@ -492,8 +492,8 @@ func (vs *Server) ProduceBlockV2SSZ(ctx context.Context, req *ethpbv1.ProduceBlo
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
 		}
-		return &ethpbv2.SSZContainer{
-			Version: ethpbv2.Version_CAPELLA,
+		return &zondpbv2.SSZContainer{
+			Version: zondpbv2.Version_CAPELLA,
 			Data:    sszBlock,
 		}, nil
 	}
@@ -508,7 +508,7 @@ func (vs *Server) ProduceBlockV2SSZ(ctx context.Context, req *ethpbv1.ProduceBlo
 // - The builder is not figured (after bellatrix).
 // - The relayer circuit breaker is activated (after bellatrix).
 // - The relayer responded with an error (after bellatrix).
-func (vs *Server) ProduceBlindedBlock(ctx context.Context, req *ethpbv1.ProduceBlockRequest) (*ethpbv2.ProduceBlindedBlockResponse, error) {
+func (vs *Server) ProduceBlindedBlock(ctx context.Context, req *zondpbv1.ProduceBlockRequest) (*zondpbv2.ProduceBlindedBlockResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.ProduceBlindedBlock")
 	defer span.End()
 
@@ -520,7 +520,7 @@ func (vs *Server) ProduceBlindedBlock(ctx context.Context, req *ethpbv1.ProduceB
 		return nil, err
 	}
 
-	v1alpha1req := &ethpbalpha.BlockRequest{
+	v1alpha1req := &zondpbalpha.BlockRequest{
 		Slot:         req.Slot,
 		RandaoReveal: req.RandaoReveal,
 		Graffiti:     req.Graffiti,
@@ -531,29 +531,29 @@ func (vs *Server) ProduceBlindedBlock(ctx context.Context, req *ethpbv1.ProduceB
 		return nil, err
 	}
 
-	phase0Block, ok := v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_Phase0)
+	phase0Block, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Phase0)
 	if ok {
 		block, err := migration.V1Alpha1ToV1Block(phase0Block.Phase0)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
 		}
-		return &ethpbv2.ProduceBlindedBlockResponse{
-			Version: ethpbv2.Version_PHASE0,
-			Data: &ethpbv2.BlindedBeaconBlockContainer{
-				Block: &ethpbv2.BlindedBeaconBlockContainer_Phase0Block{Phase0Block: block},
+		return &zondpbv2.ProduceBlindedBlockResponse{
+			Version: zondpbv2.Version_PHASE0,
+			Data: &zondpbv2.BlindedBeaconBlockContainer{
+				Block: &zondpbv2.BlindedBeaconBlockContainer_Phase0Block{Phase0Block: block},
 			},
 		}, nil
 	}
-	altairBlock, ok := v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_Altair)
+	altairBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Altair)
 	if ok {
 		block, err := migration.V1Alpha1BeaconBlockAltairToV2(altairBlock.Altair)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
 		}
-		return &ethpbv2.ProduceBlindedBlockResponse{
-			Version: ethpbv2.Version_ALTAIR,
-			Data: &ethpbv2.BlindedBeaconBlockContainer{
-				Block: &ethpbv2.BlindedBeaconBlockContainer_AltairBlock{AltairBlock: block},
+		return &zondpbv2.ProduceBlindedBlockResponse{
+			Version: zondpbv2.Version_ALTAIR,
+			Data: &zondpbv2.BlindedBeaconBlockContainer{
+				Block: &zondpbv2.BlindedBeaconBlockContainer_AltairBlock{AltairBlock: block},
 			},
 		}, nil
 	}
@@ -564,37 +564,37 @@ func (vs *Server) ProduceBlindedBlock(ctx context.Context, req *ethpbv1.ProduceB
 	if optimistic {
 		return nil, status.Errorf(codes.Unavailable, "The node is currently optimistic and cannot serve validators")
 	}
-	_, ok = v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_Bellatrix)
+	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Bellatrix)
 	if ok {
 		return nil, status.Error(codes.Internal, "Prepared beacon block is not blinded")
 	}
-	bellatrixBlock, ok := v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_BlindedBellatrix)
+	bellatrixBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedBellatrix)
 	if ok {
 		blk, err := migration.V1Alpha1BeaconBlockBlindedBellatrixToV2Blinded(bellatrixBlock.BlindedBellatrix)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
 		}
-		return &ethpbv2.ProduceBlindedBlockResponse{
-			Version: ethpbv2.Version_BELLATRIX,
-			Data: &ethpbv2.BlindedBeaconBlockContainer{
-				Block: &ethpbv2.BlindedBeaconBlockContainer_BellatrixBlock{BellatrixBlock: blk},
+		return &zondpbv2.ProduceBlindedBlockResponse{
+			Version: zondpbv2.Version_BELLATRIX,
+			Data: &zondpbv2.BlindedBeaconBlockContainer{
+				Block: &zondpbv2.BlindedBeaconBlockContainer_BellatrixBlock{BellatrixBlock: blk},
 			},
 		}, nil
 	}
-	_, ok = v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_Capella)
+	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Capella)
 	if ok {
 		return nil, status.Error(codes.Internal, "Prepared beacon block is not blinded")
 	}
-	capellaBlock, ok := v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_BlindedCapella)
+	capellaBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedCapella)
 	if ok {
 		blk, err := migration.V1Alpha1BeaconBlockBlindedCapellaToV2Blinded(capellaBlock.BlindedCapella)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
 		}
-		return &ethpbv2.ProduceBlindedBlockResponse{
-			Version: ethpbv2.Version_CAPELLA,
-			Data: &ethpbv2.BlindedBeaconBlockContainer{
-				Block: &ethpbv2.BlindedBeaconBlockContainer_CapellaBlock{CapellaBlock: blk},
+		return &zondpbv2.ProduceBlindedBlockResponse{
+			Version: zondpbv2.Version_CAPELLA,
+			Data: &zondpbv2.BlindedBeaconBlockContainer{
+				Block: &zondpbv2.BlindedBeaconBlockContainer_CapellaBlock{CapellaBlock: blk},
 			},
 		}, nil
 	}
@@ -607,7 +607,7 @@ func (vs *Server) ProduceBlindedBlock(ctx context.Context, req *ethpbv1.ProduceB
 // The produced block is in SSZ form.
 //
 // Pre-Bellatrix, this endpoint will return a regular block.
-func (vs *Server) ProduceBlindedBlockSSZ(ctx context.Context, req *ethpbv1.ProduceBlockRequest) (*ethpbv2.SSZContainer, error) {
+func (vs *Server) ProduceBlindedBlockSSZ(ctx context.Context, req *zondpbv1.ProduceBlockRequest) (*zondpbv2.SSZContainer, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.ProduceBlindedBlockSSZ")
 	defer span.End()
 
@@ -619,7 +619,7 @@ func (vs *Server) ProduceBlindedBlockSSZ(ctx context.Context, req *ethpbv1.Produ
 		return nil, err
 	}
 
-	v1alpha1req := &ethpbalpha.BlockRequest{
+	v1alpha1req := &zondpbalpha.BlockRequest{
 		Slot:         req.Slot,
 		RandaoReveal: req.RandaoReveal,
 		Graffiti:     req.Graffiti,
@@ -630,7 +630,7 @@ func (vs *Server) ProduceBlindedBlockSSZ(ctx context.Context, req *ethpbv1.Produ
 		return nil, err
 	}
 
-	phase0Block, ok := v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_Phase0)
+	phase0Block, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Phase0)
 	if ok {
 		block, err := migration.V1Alpha1ToV1Block(phase0Block.Phase0)
 		if err != nil {
@@ -640,12 +640,12 @@ func (vs *Server) ProduceBlindedBlockSSZ(ctx context.Context, req *ethpbv1.Produ
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
 		}
-		return &ethpbv2.SSZContainer{
-			Version: ethpbv2.Version_PHASE0,
+		return &zondpbv2.SSZContainer{
+			Version: zondpbv2.Version_PHASE0,
 			Data:    sszBlock,
 		}, nil
 	}
-	altairBlock, ok := v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_Altair)
+	altairBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Altair)
 	if ok {
 		block, err := migration.V1Alpha1BeaconBlockAltairToV2(altairBlock.Altair)
 		if err != nil {
@@ -655,8 +655,8 @@ func (vs *Server) ProduceBlindedBlockSSZ(ctx context.Context, req *ethpbv1.Produ
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
 		}
-		return &ethpbv2.SSZContainer{
-			Version: ethpbv2.Version_ALTAIR,
+		return &zondpbv2.SSZContainer{
+			Version: zondpbv2.Version_ALTAIR,
 			Data:    sszBlock,
 		}, nil
 	}
@@ -667,11 +667,11 @@ func (vs *Server) ProduceBlindedBlockSSZ(ctx context.Context, req *ethpbv1.Produ
 	if optimistic {
 		return nil, status.Errorf(codes.Unavailable, "The node is currently optimistic and cannot serve validators")
 	}
-	_, ok = v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_Bellatrix)
+	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Bellatrix)
 	if ok {
 		return nil, status.Error(codes.Internal, "Prepared Bellatrix beacon block is not blinded")
 	}
-	bellatrixBlock, ok := v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_BlindedBellatrix)
+	bellatrixBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedBellatrix)
 	if ok {
 		block, err := migration.V1Alpha1BeaconBlockBlindedBellatrixToV2Blinded(bellatrixBlock.BlindedBellatrix)
 		if err != nil {
@@ -681,16 +681,16 @@ func (vs *Server) ProduceBlindedBlockSSZ(ctx context.Context, req *ethpbv1.Produ
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
 		}
-		return &ethpbv2.SSZContainer{
-			Version: ethpbv2.Version_BELLATRIX,
+		return &zondpbv2.SSZContainer{
+			Version: zondpbv2.Version_BELLATRIX,
 			Data:    sszBlock,
 		}, nil
 	}
-	_, ok = v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_Capella)
+	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Capella)
 	if ok {
 		return nil, status.Error(codes.Internal, "Prepared Capella beacon block is not blinded")
 	}
-	capellaBlock, ok := v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_BlindedCapella)
+	capellaBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedCapella)
 	if ok {
 		block, err := migration.V1Alpha1BeaconBlockBlindedCapellaToV2Blinded(capellaBlock.BlindedCapella)
 		if err != nil {
@@ -700,8 +700,8 @@ func (vs *Server) ProduceBlindedBlockSSZ(ctx context.Context, req *ethpbv1.Produ
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
 		}
-		return &ethpbv2.SSZContainer{
-			Version: ethpbv2.Version_CAPELLA,
+		return &zondpbv2.SSZContainer{
+			Version: zondpbv2.Version_CAPELLA,
 			Data:    sszBlock,
 		}, nil
 	}
@@ -710,13 +710,13 @@ func (vs *Server) ProduceBlindedBlockSSZ(ctx context.Context, req *ethpbv1.Produ
 
 // PrepareBeaconProposer caches and updates the fee recipient for the given proposer.
 func (vs *Server) PrepareBeaconProposer(
-	ctx context.Context, request *ethpbv1.PrepareBeaconProposerRequest,
+	ctx context.Context, request *zondpbv1.PrepareBeaconProposerRequest,
 ) (*emptypb.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.PrepareBeaconProposer")
 	defer span.End()
 	var feeRecipients []common.Address
 	var validatorIndices []primitives.ValidatorIndex
-	newRecipients := make([]*ethpbv1.PrepareBeaconProposerRequest_FeeRecipientContainer, 0, len(request.Recipients))
+	newRecipients := make([]*zondpbv1.PrepareBeaconProposerRequest_FeeRecipientContainer, 0, len(request.Recipients))
 	for _, r := range request.Recipients {
 		f, err := vs.BeaconDB.FeeRecipientByValidatorID(ctx, r.ValidatorIndex)
 		switch {
@@ -752,18 +752,18 @@ func (vs *Server) PrepareBeaconProposer(
 }
 
 // SubmitValidatorRegistration submits validator registrations.
-func (vs *Server) SubmitValidatorRegistration(ctx context.Context, reg *ethpbv1.SubmitValidatorRegistrationsRequest) (*empty.Empty, error) {
+func (vs *Server) SubmitValidatorRegistration(ctx context.Context, reg *zondpbv1.SubmitValidatorRegistrationsRequest) (*empty.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.SubmitValidatorRegistration")
 	defer span.End()
 
 	if vs.BlockBuilder == nil || !vs.BlockBuilder.Configured() {
 		return &empty.Empty{}, status.Errorf(codes.Internal, "Could not register block builder: %v", builder.ErrNoBuilder)
 	}
-	var registrations []*ethpbalpha.SignedValidatorRegistrationV1
+	var registrations []*zondpbalpha.SignedValidatorRegistrationV1
 	for i, registration := range reg.Registrations {
 		message := reg.Registrations[i].Message
-		registrations = append(registrations, &ethpbalpha.SignedValidatorRegistrationV1{
-			Message: &ethpbalpha.ValidatorRegistrationV1{
+		registrations = append(registrations, &zondpbalpha.SignedValidatorRegistrationV1{
+			Message: &zondpbalpha.ValidatorRegistrationV1{
 				FeeRecipient: message.FeeRecipient,
 				GasLimit:     message.GasLimit,
 				Timestamp:    message.Timestamp,
@@ -785,11 +785,11 @@ func (vs *Server) SubmitValidatorRegistration(ctx context.Context, reg *ethpbv1.
 
 // ProduceAttestationData requests that the beacon node produces attestation data for
 // the requested committee index and slot based on the nodes current head.
-func (vs *Server) ProduceAttestationData(ctx context.Context, req *ethpbv1.ProduceAttestationDataRequest) (*ethpbv1.ProduceAttestationDataResponse, error) {
+func (vs *Server) ProduceAttestationData(ctx context.Context, req *zondpbv1.ProduceAttestationDataRequest) (*zondpbv1.ProduceAttestationDataResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.ProduceAttestationData")
 	defer span.End()
 
-	v1alpha1req := &ethpbalpha.AttestationDataRequest{
+	v1alpha1req := &zondpbalpha.AttestationDataRequest{
 		Slot:           req.Slot,
 		CommitteeIndex: req.CommitteeIndex,
 	}
@@ -800,11 +800,11 @@ func (vs *Server) ProduceAttestationData(ctx context.Context, req *ethpbv1.Produ
 	}
 	attData := migration.V1Alpha1AttDataToV1(v1alpha1resp)
 
-	return &ethpbv1.ProduceAttestationDataResponse{Data: attData}, nil
+	return &zondpbv1.ProduceAttestationDataResponse{Data: attData}, nil
 }
 
 // GetAggregateAttestation aggregates all attestations matching the given attestation data root and slot, returning the aggregated result.
-func (vs *Server) GetAggregateAttestation(ctx context.Context, req *ethpbv1.AggregateAttestationRequest) (*ethpbv1.AggregateAttestationResponse, error) {
+func (vs *Server) GetAggregateAttestation(ctx context.Context, req *zondpbv1.AggregateAttestationRequest) (*zondpbv1.AggregateAttestationResponse, error) {
 	_, span := trace.StartSpan(ctx, "validator.GetAggregateAttestation")
 	defer span.End()
 
@@ -813,7 +813,7 @@ func (vs *Server) GetAggregateAttestation(ctx context.Context, req *ethpbv1.Aggr
 	}
 
 	allAtts := vs.AttestationsPool.AggregatedAttestations()
-	var bestMatchingAtt *ethpbalpha.Attestation
+	var bestMatchingAtt *zondpbalpha.Attestation
 	for _, att := range allAtts {
 		if att.Data.Slot == req.Slot {
 			root, err := att.Data.HashTreeRoot()
@@ -831,13 +831,13 @@ func (vs *Server) GetAggregateAttestation(ctx context.Context, req *ethpbv1.Aggr
 	if bestMatchingAtt == nil {
 		return nil, status.Error(codes.NotFound, "No matching attestation found")
 	}
-	return &ethpbv1.AggregateAttestationResponse{
+	return &zondpbv1.AggregateAttestationResponse{
 		Data: migration.V1Alpha1AttestationToV1(bestMatchingAtt),
 	}, nil
 }
 
 // SubmitAggregateAndProofs verifies given aggregate and proofs and publishes them on appropriate gossipsub topic.
-func (vs *Server) SubmitAggregateAndProofs(ctx context.Context, req *ethpbv1.SubmitAggregateAndProofsRequest) (*empty.Empty, error) {
+func (vs *Server) SubmitAggregateAndProofs(ctx context.Context, req *zondpbv1.SubmitAggregateAndProofsRequest) (*empty.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.SubmitAggregateAndProofs")
 	defer span.End()
 
@@ -887,7 +887,7 @@ func (vs *Server) SubmitAggregateAndProofs(ctx context.Context, req *ethpbv1.Sub
 
 // SubmitBeaconCommitteeSubscription searches using discv5 for peers related to the provided subnet information
 // and replaces current peers with those ones if necessary.
-func (vs *Server) SubmitBeaconCommitteeSubscription(ctx context.Context, req *ethpbv1.SubmitBeaconCommitteeSubscriptionsRequest) (*emptypb.Empty, error) {
+func (vs *Server) SubmitBeaconCommitteeSubscription(ctx context.Context, req *zondpbv1.SubmitBeaconCommitteeSubscriptionsRequest) (*emptypb.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.SubmitBeaconCommitteeSubscription")
 	defer span.End()
 
@@ -953,7 +953,7 @@ func (vs *Server) SubmitBeaconCommitteeSubscription(ctx context.Context, req *et
 			return nil, status.Errorf(codes.Internal, "Could not retrieve validator status: %v", err)
 		}
 		pubkey := val.PublicKey()
-		v1alpha1Req := &ethpbalpha.AssignValidatorToSubnetRequest{PublicKey: pubkey[:], Status: v1ValidatorStatusToV1Alpha1(valStatus)}
+		v1alpha1Req := &zondpbalpha.AssignValidatorToSubnetRequest{PublicKey: pubkey[:], Status: v1ValidatorStatusToV1Alpha1(valStatus)}
 		_, err = vs.V1Alpha1Server.AssignValidatorToSubnet(ctx, v1alpha1Req)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not assign validator to subnet")
@@ -968,7 +968,7 @@ func (vs *Server) SubmitBeaconCommitteeSubscription(ctx context.Context, req *et
 // Subscribing to sync committee subnets is an action performed by VC to enable
 // network participation in Altair networks, and only required if the VC has an active
 // validator in an active sync committee.
-func (vs *Server) SubmitSyncCommitteeSubscription(ctx context.Context, req *ethpbv2.SubmitSyncCommitteeSubscriptionsRequest) (*empty.Empty, error) {
+func (vs *Server) SubmitSyncCommitteeSubscription(ctx context.Context, req *zondpbv2.SubmitSyncCommitteeSubscriptionsRequest) (*empty.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.SubmitSyncCommitteeSubscription")
 	defer span.End()
 
@@ -995,7 +995,7 @@ func (vs *Server) SubmitSyncCommitteeSubscription(ctx context.Context, req *ethp
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not get validator status at index %d: %v", sub.ValidatorIndex, err)
 		}
-		if valStatus != ethpbv1.ValidatorStatus_ACTIVE_ONGOING && valStatus != ethpbv1.ValidatorStatus_ACTIVE_EXITING {
+		if valStatus != zondpbv1.ValidatorStatus_ACTIVE_ONGOING && valStatus != zondpbv1.ValidatorStatus_ACTIVE_EXITING {
 			return nil, status.Errorf(codes.InvalidArgument, "Validator at index %d is not active or exiting: %v", sub.ValidatorIndex, err)
 		}
 		validators[i] = val
@@ -1041,8 +1041,8 @@ func (vs *Server) SubmitSyncCommitteeSubscription(ctx context.Context, req *ethp
 // ProduceSyncCommitteeContribution requests that the beacon node produce a sync committee contribution.
 func (vs *Server) ProduceSyncCommitteeContribution(
 	ctx context.Context,
-	req *ethpbv2.ProduceSyncCommitteeContributionRequest,
-) (*ethpbv2.ProduceSyncCommitteeContributionResponse, error) {
+	req *zondpbv2.ProduceSyncCommitteeContributionRequest,
+) (*zondpbv2.ProduceSyncCommitteeContributionResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.ProduceSyncCommitteeContribution")
 	defer span.End()
 
@@ -1053,7 +1053,7 @@ func (vs *Server) ProduceSyncCommitteeContribution(
 	if msgs == nil {
 		return nil, status.Errorf(codes.NotFound, "No subcommittee messages found")
 	}
-	v1alpha1Req := &ethpbalpha.AggregatedSigAndAggregationBitsRequest{
+	v1alpha1Req := &zondpbalpha.AggregatedSigAndAggregationBitsRequest{
 		Msgs:      msgs,
 		Slot:      req.Slot,
 		SubnetId:  req.SubcommitteeIndex,
@@ -1063,7 +1063,7 @@ func (vs *Server) ProduceSyncCommitteeContribution(
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get contribution data: %v", err)
 	}
-	contribution := &ethpbv2.SyncCommitteeContribution{
+	contribution := &zondpbv2.SyncCommitteeContribution{
 		Slot:              req.Slot,
 		BeaconBlockRoot:   req.BeaconBlockRoot,
 		SubcommitteeIndex: req.SubcommitteeIndex,
@@ -1071,21 +1071,21 @@ func (vs *Server) ProduceSyncCommitteeContribution(
 		Signature:         v1alpha1Resp.AggregatedSig,
 	}
 
-	return &ethpbv2.ProduceSyncCommitteeContributionResponse{
+	return &zondpbv2.ProduceSyncCommitteeContributionResponse{
 		Data: contribution,
 	}, nil
 }
 
 // SubmitContributionAndProofs publishes multiple signed sync committee contribution and proofs.
-func (vs *Server) SubmitContributionAndProofs(ctx context.Context, req *ethpbv2.SubmitContributionAndProofsRequest) (*empty.Empty, error) {
+func (vs *Server) SubmitContributionAndProofs(ctx context.Context, req *zondpbv2.SubmitContributionAndProofsRequest) (*empty.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.SubmitContributionAndProofs")
 	defer span.End()
 
 	for _, item := range req.Data {
-		v1alpha1Req := &ethpbalpha.SignedContributionAndProof{
-			Message: &ethpbalpha.ContributionAndProof{
+		v1alpha1Req := &zondpbalpha.SignedContributionAndProof{
+			Message: &zondpbalpha.ContributionAndProof{
 				AggregatorIndex: item.Message.AggregatorIndex,
-				Contribution: &ethpbalpha.SyncCommitteeContribution{
+				Contribution: &zondpbalpha.SyncCommitteeContribution{
 					Slot:              item.Message.Contribution.Slot,
 					BlockRoot:         item.Message.Contribution.BeaconBlockRoot,
 					SubcommitteeIndex: item.Message.Contribution.SubcommitteeIndex,
@@ -1113,7 +1113,7 @@ func (vs *Server) SubmitContributionAndProofs(ctx context.Context, req *ethpbv2.
 // It is important to note that the values returned by the beacon node are not canonical;
 // they are best-effort and based upon a subjective view of the network.
 // A beacon node that was recently started or suffered a network partition may indicate that a validator is not live when it actually is.
-func (vs *Server) GetLiveness(ctx context.Context, req *ethpbv2.GetLivenessRequest) (*ethpbv2.GetLivenessResponse, error) {
+func (vs *Server) GetLiveness(ctx context.Context, req *zondpbv2.GetLivenessRequest) (*zondpbv2.GetLivenessResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.GetLiveness")
 	defer span.End()
 
@@ -1160,14 +1160,14 @@ func (vs *Server) GetLiveness(ctx context.Context, req *ethpbv2.GetLivenessReque
 		}
 	}
 
-	resp := &ethpbv2.GetLivenessResponse{
-		Data: make([]*ethpbv2.GetLivenessResponse_Liveness, len(req.Index)),
+	resp := &zondpbv2.GetLivenessResponse{
+		Data: make([]*zondpbv2.GetLivenessResponse_Liveness, len(req.Index)),
 	}
 	for i, vi := range req.Index {
 		if vi >= primitives.ValidatorIndex(len(participation)) {
 			return nil, status.Errorf(codes.InvalidArgument, "Validator index %d is invalid", vi)
 		}
-		resp.Data[i] = &ethpbv2.GetLivenessResponse_Liveness{
+		resp.Data[i] = &zondpbv2.GetLivenessResponse_Liveness{
 			Index:  vi,
 			IsLive: participation[vi] != 0,
 		}
@@ -1217,16 +1217,16 @@ func proposalDependentRoot(s state.BeaconState, epoch primitives.Epoch) ([]byte,
 }
 
 // Logic based on https://hackmd.io/ofFJ5gOmQpu1jjHilHbdQQ
-func v1ValidatorStatusToV1Alpha1(valStatus ethpbv1.ValidatorStatus) ethpbalpha.ValidatorStatus {
+func v1ValidatorStatusToV1Alpha1(valStatus zondpbv1.ValidatorStatus) zondpbalpha.ValidatorStatus {
 	switch valStatus {
-	case ethpbv1.ValidatorStatus_ACTIVE:
-		return ethpbalpha.ValidatorStatus_ACTIVE
-	case ethpbv1.ValidatorStatus_PENDING:
-		return ethpbalpha.ValidatorStatus_PENDING
-	case ethpbv1.ValidatorStatus_WITHDRAWAL:
-		return ethpbalpha.ValidatorStatus_EXITED
+	case zondpbv1.ValidatorStatus_ACTIVE:
+		return zondpbalpha.ValidatorStatus_ACTIVE
+	case zondpbv1.ValidatorStatus_PENDING:
+		return zondpbalpha.ValidatorStatus_PENDING
+	case zondpbv1.ValidatorStatus_WITHDRAWAL:
+		return zondpbalpha.ValidatorStatus_EXITED
 	default:
-		return ethpbalpha.ValidatorStatus_UNKNOWN_STATUS
+		return zondpbalpha.ValidatorStatus_UNKNOWN_STATUS
 	}
 }
 
@@ -1241,10 +1241,10 @@ func syncCommitteeDuties(
 	valIndices []primitives.ValidatorIndex,
 	st state.BeaconState,
 	committeePubkeys map[[dilithium2.CryptoPublicKeyBytes]byte][]uint64,
-) ([]*ethpbv2.SyncCommitteeDuty, error) {
-	duties := make([]*ethpbv2.SyncCommitteeDuty, 0)
+) ([]*zondpbv2.SyncCommitteeDuty, error) {
+	duties := make([]*zondpbv2.SyncCommitteeDuty, 0)
 	for _, index := range valIndices {
-		duty := &ethpbv2.SyncCommitteeDuty{
+		duty := &zondpbv2.SyncCommitteeDuty{
 			ValidatorIndex: index,
 		}
 		valPubkey2592 := st.PubkeyAtIndex(index)

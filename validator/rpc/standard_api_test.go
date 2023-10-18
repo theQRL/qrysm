@@ -24,8 +24,8 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/validator"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -108,7 +108,7 @@ func TestServer_ListKeystores(t *testing.T) {
 func TestServer_ImportKeystores(t *testing.T) {
 	t.Run("wallet not ready", func(t *testing.T) {
 		s := Server{}
-		response, err := s.ImportKeystores(context.Background(), &ethpbservice.ImportKeystoresRequest{})
+		response, err := s.ImportKeystores(context.Background(), &zondpbservice.ImportKeystoresRequest{})
 		require.NoError(t, err)
 		require.Equal(t, 0, len(response.Data))
 	})
@@ -140,40 +140,40 @@ func TestServer_ImportKeystores(t *testing.T) {
 		validatorService:  vs,
 	}
 	t.Run("200 response even if faulty keystore in request", func(t *testing.T) {
-		response, err := s.ImportKeystores(context.Background(), &ethpbservice.ImportKeystoresRequest{
+		response, err := s.ImportKeystores(context.Background(), &zondpbservice.ImportKeystoresRequest{
 			Keystores: []string{"hi"},
 			Passwords: []string{"hi"},
 		})
 		require.NoError(t, err)
 		require.Equal(t, 1, len(response.Data))
-		require.Equal(t, ethpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
+		require.Equal(t, zondpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
 	})
 	t.Run("200 response even if  no passwords in request", func(t *testing.T) {
-		response, err := s.ImportKeystores(context.Background(), &ethpbservice.ImportKeystoresRequest{
+		response, err := s.ImportKeystores(context.Background(), &zondpbservice.ImportKeystoresRequest{
 			Keystores: []string{"hi"},
 			Passwords: []string{},
 		})
 		require.NoError(t, err)
 		require.Equal(t, 1, len(response.Data))
-		require.Equal(t, ethpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
+		require.Equal(t, zondpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
 	})
 	t.Run("200 response even if  keystores more than passwords in request", func(t *testing.T) {
-		response, err := s.ImportKeystores(context.Background(), &ethpbservice.ImportKeystoresRequest{
+		response, err := s.ImportKeystores(context.Background(), &zondpbservice.ImportKeystoresRequest{
 			Keystores: []string{"hi", "hi"},
 			Passwords: []string{"hi"},
 		})
 		require.NoError(t, err)
 		require.Equal(t, 2, len(response.Data))
-		require.Equal(t, ethpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
+		require.Equal(t, zondpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
 	})
 	t.Run("200 response even if number of passwords does not match number of keystores", func(t *testing.T) {
-		response, err := s.ImportKeystores(context.Background(), &ethpbservice.ImportKeystoresRequest{
+		response, err := s.ImportKeystores(context.Background(), &zondpbservice.ImportKeystoresRequest{
 			Keystores: []string{"hi"},
 			Passwords: []string{"hi", "hi"},
 		})
 		require.NoError(t, err)
 		require.Equal(t, 1, len(response.Data))
-		require.Equal(t, ethpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
+		require.Equal(t, zondpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
 	})
 	t.Run("200 response even if faulty slashing protection data", func(t *testing.T) {
 		numKeystores := 5
@@ -186,7 +186,7 @@ func TestServer_ImportKeystores(t *testing.T) {
 			require.NoError(t, err)
 			passwords[i] = password
 		}
-		resp, err := s.ImportKeystores(context.Background(), &ethpbservice.ImportKeystoresRequest{
+		resp, err := s.ImportKeystores(context.Background(), &zondpbservice.ImportKeystoresRequest{
 			Keystores:          encodedKeystores,
 			Passwords:          passwords,
 			SlashingProtection: "foobar",
@@ -194,7 +194,7 @@ func TestServer_ImportKeystores(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, numKeystores, len(resp.Data))
 		for _, st := range resp.Data {
-			require.Equal(t, ethpbservice.ImportedKeystoreStatus_ERROR, st.Status)
+			require.Equal(t, zondpbservice.ImportedKeystoreStatus_ERROR, st.Status)
 		}
 	})
 	t.Run("returns proper statuses for keystores in request", func(t *testing.T) {
@@ -242,7 +242,7 @@ func TestServer_ImportKeystores(t *testing.T) {
 		encodedSlashingProtection, err := json.Marshal(mockJSON)
 		require.NoError(t, err)
 
-		resp, err := s.ImportKeystores(context.Background(), &ethpbservice.ImportKeystoresRequest{
+		resp, err := s.ImportKeystores(context.Background(), &zondpbservice.ImportKeystoresRequest{
 			Keystores:          encodedKeystores,
 			Passwords:          passwords,
 			SlashingProtection: string(encodedSlashingProtection),
@@ -250,7 +250,7 @@ func TestServer_ImportKeystores(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, numKeystores, len(resp.Data))
 		for _, status := range resp.Data {
-			require.Equal(t, ethpbservice.ImportedKeystoreStatus_IMPORTED, status.Status)
+			require.Equal(t, zondpbservice.ImportedKeystoreStatus_IMPORTED, status.Status)
 		}
 	})
 }
@@ -278,20 +278,20 @@ func TestServer_ImportKeystores_WrongKeymanagerKind(t *testing.T) {
 		wallet:            w,
 		validatorService:  vs,
 	}
-	response, err := s.ImportKeystores(context.Background(), &ethpbservice.ImportKeystoresRequest{
+	response, err := s.ImportKeystores(context.Background(), &zondpbservice.ImportKeystoresRequest{
 		Keystores: []string{"hi"},
 		Passwords: []string{"hi"},
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(response.Data))
-	require.Equal(t, ethpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
+	require.Equal(t, zondpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
 	require.Equal(t, "Keymanager kind cannot import keys", response.Data[0].Message)
 }
 
 func TestServer_DeleteKeystores(t *testing.T) {
 	t.Run("wallet not ready", func(t *testing.T) {
 		s := Server{}
-		response, err := s.DeleteKeystores(context.Background(), &ethpbservice.DeleteKeystoresRequest{})
+		response, err := s.DeleteKeystores(context.Background(), &zondpbservice.DeleteKeystoresRequest{})
 		require.NoError(t, err)
 		require.Equal(t, 0, len(response.Data))
 	})
@@ -340,7 +340,7 @@ func TestServer_DeleteKeystores(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("no slashing protection response if no keys in request even if we have a history in DB", func(t *testing.T) {
-		resp, err := srv.DeleteKeystores(context.Background(), &ethpbservice.DeleteKeystoresRequest{
+		resp, err := srv.DeleteKeystores(context.Background(), &zondpbservice.DeleteKeystoresRequest{
 			Pubkeys: nil,
 		})
 		require.NoError(t, err)
@@ -360,7 +360,7 @@ func TestServer_DeleteKeystores(t *testing.T) {
 	}
 	tests := []struct {
 		keys         []*keyCase
-		wantStatuses []ethpbservice.DeletedKeystoreStatus_Status
+		wantStatuses []zondpbservice.DeletedKeystoreStatus_Status
 	}{
 		{
 			keys: []*keyCase{
@@ -369,11 +369,11 @@ func TestServer_DeleteKeystores(t *testing.T) {
 				{id: "d"},
 				{id: "c", wantProtectionData: true},
 			},
-			wantStatuses: []ethpbservice.DeletedKeystoreStatus_Status{
-				ethpbservice.DeletedKeystoreStatus_DELETED,
-				ethpbservice.DeletedKeystoreStatus_NOT_ACTIVE,
-				ethpbservice.DeletedKeystoreStatus_NOT_FOUND,
-				ethpbservice.DeletedKeystoreStatus_DELETED,
+			wantStatuses: []zondpbservice.DeletedKeystoreStatus_Status{
+				zondpbservice.DeletedKeystoreStatus_DELETED,
+				zondpbservice.DeletedKeystoreStatus_NOT_ACTIVE,
+				zondpbservice.DeletedKeystoreStatus_NOT_FOUND,
+				zondpbservice.DeletedKeystoreStatus_DELETED,
 			},
 		},
 		{
@@ -381,17 +381,17 @@ func TestServer_DeleteKeystores(t *testing.T) {
 				{id: "a", wantProtectionData: true},
 				{id: "c", wantProtectionData: true},
 			},
-			wantStatuses: []ethpbservice.DeletedKeystoreStatus_Status{
-				ethpbservice.DeletedKeystoreStatus_NOT_ACTIVE,
-				ethpbservice.DeletedKeystoreStatus_NOT_ACTIVE,
+			wantStatuses: []zondpbservice.DeletedKeystoreStatus_Status{
+				zondpbservice.DeletedKeystoreStatus_NOT_ACTIVE,
+				zondpbservice.DeletedKeystoreStatus_NOT_ACTIVE,
 			},
 		},
 		{
 			keys: []*keyCase{
 				{id: "x"},
 			},
-			wantStatuses: []ethpbservice.DeletedKeystoreStatus_Status{
-				ethpbservice.DeletedKeystoreStatus_NOT_FOUND,
+			wantStatuses: []zondpbservice.DeletedKeystoreStatus_Status{
+				zondpbservice.DeletedKeystoreStatus_NOT_FOUND,
 			},
 		},
 	}
@@ -401,7 +401,7 @@ func TestServer_DeleteKeystores(t *testing.T) {
 			pk := publicKeysWithId[tc.keys[i].id]
 			keys[i] = pk[:]
 		}
-		resp, err := srv.DeleteKeystores(ctx, &ethpbservice.DeleteKeystoresRequest{Pubkeys: keys})
+		resp, err := srv.DeleteKeystores(ctx, &zondpbservice.DeleteKeystoresRequest{Pubkeys: keys})
 		require.NoError(t, err)
 		require.Equal(t, len(keys), len(resp.Data))
 		slashingProtectionData := &format.EIPSlashingProtectionFormat{}
@@ -459,12 +459,12 @@ func TestServer_DeleteKeystores_FailedSlashingProtectionExport(t *testing.T) {
 		require.NoError(t, validatorDB.Close())
 	}()
 
-	response, err := srv.DeleteKeystores(context.Background(), &ethpbservice.DeleteKeystoresRequest{
+	response, err := srv.DeleteKeystores(context.Background(), &zondpbservice.DeleteKeystoresRequest{
 		Pubkeys: [][]byte{[]byte("a")},
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(response.Data))
-	require.Equal(t, ethpbservice.DeletedKeystoreStatus_ERROR, response.Data[0].Status)
+	require.Equal(t, zondpbservice.DeletedKeystoreStatus_ERROR, response.Data[0].Status)
 	require.Equal(t, "Non duplicate keys that were existing were deleted, but could not export slashing protection history.",
 		response.Data[0].Message,
 	)
@@ -494,7 +494,7 @@ func TestServer_DeleteKeystores_WrongKeymanagerKind(t *testing.T) {
 		wallet:            w,
 		validatorService:  vs,
 	}
-	_, err = s.DeleteKeystores(ctx, &ethpbservice.DeleteKeystoresRequest{Pubkeys: [][]byte{[]byte("a")}})
+	_, err = s.DeleteKeystores(ctx, &zondpbservice.DeleteKeystoresRequest{Pubkeys: [][]byte{[]byte("a")}})
 	require.ErrorContains(t, "Wrong wallet type", err)
 	require.ErrorContains(t, "Only Imported or Derived wallets can delete accounts", err)
 }
@@ -625,19 +625,19 @@ func TestServer_ImportRemoteKeys(t *testing.T) {
 	}
 	bytevalue, err := hexutil.Decode("0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a")
 	require.NoError(t, err)
-	remoteKeys := []*ethpbservice.ImportRemoteKeysRequest_Keystore{
+	remoteKeys := []*zondpbservice.ImportRemoteKeysRequest_Keystore{
 		{
 			Pubkey: bytevalue,
 		},
 	}
 
 	t.Run("returns proper data with existing pub keystores", func(t *testing.T) {
-		resp, err := s.ImportRemoteKeys(context.Background(), &ethpbservice.ImportRemoteKeysRequest{
+		resp, err := s.ImportRemoteKeys(context.Background(), &zondpbservice.ImportRemoteKeysRequest{
 			RemoteKeys: remoteKeys,
 		})
-		expectedStatuses := []*ethpbservice.ImportedRemoteKeysStatus{
+		expectedStatuses := []*zondpbservice.ImportedRemoteKeysStatus{
 			{
-				Status:  ethpbservice.ImportedRemoteKeysStatus_IMPORTED,
+				Status:  zondpbservice.ImportedRemoteKeysStatus_IMPORTED,
 				Message: fmt.Sprintf("Successfully added pubkey: %v", hexutil.Encode(bytevalue)),
 			},
 		}
@@ -683,12 +683,12 @@ func TestServer_DeleteRemoteKeys(t *testing.T) {
 	}
 
 	t.Run("returns proper data with existing pub keystores", func(t *testing.T) {
-		resp, err := s.DeleteRemoteKeys(context.Background(), &ethpbservice.DeleteRemoteKeysRequest{
+		resp, err := s.DeleteRemoteKeys(context.Background(), &zondpbservice.DeleteRemoteKeysRequest{
 			Pubkeys: [][]byte{bytevalue},
 		})
-		expectedStatuses := []*ethpbservice.DeletedRemoteKeysStatus{
+		expectedStatuses := []*zondpbservice.DeletedRemoteKeysStatus{
 			{
-				Status:  ethpbservice.DeletedRemoteKeysStatus_DELETED,
+				Status:  zondpbservice.DeletedRemoteKeysStatus_DELETED,
 				Message: fmt.Sprintf("Successfully deleted pubkey: %v", hexutil.Encode(bytevalue)),
 			},
 		}
@@ -716,7 +716,7 @@ func TestServer_ListFeeRecipientByPubkey(t *testing.T) {
 		name   string
 		args   *validatorserviceconfig.ProposerSettings
 		want   *want
-		cached *eth.FeeRecipientByPubKeyResponse
+		cached *zond.FeeRecipientByPubKeyResponse
 	}{
 		{
 			name: "ProposerSettings.ProposeConfig.FeeRecipientConfig defined for pubkey (and ProposerSettings.DefaultConfig.FeeRecipientConfig defined)",
@@ -758,7 +758,7 @@ func TestServer_ListFeeRecipientByPubkey(t *testing.T) {
 			want: &want{
 				EthAddress: "0x046Fb65722E7b2455012BFEBf6177F1D2e9738D9",
 			},
-			cached: &eth.FeeRecipientByPubKeyResponse{
+			cached: &zond.FeeRecipientByPubKeyResponse{
 				FeeRecipient: common.HexToAddress("0x046Fb65722E7b2455012BFEBf6177F1D2e9738D9").Bytes(),
 			},
 		},
@@ -786,7 +786,7 @@ func TestServer_ListFeeRecipientByPubkey(t *testing.T) {
 				beaconNodeValidatorClient: mockValidatorClient,
 			}
 
-			got, err := s.ListFeeRecipientByPubkey(ctx, &ethpbservice.PubkeyRequest{Pubkey: byteval})
+			got, err := s.ListFeeRecipientByPubkey(ctx, &zondpbservice.PubkeyRequest{Pubkey: byteval})
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.want.EthAddress, common.BytesToAddress(got.Data.Ethaddress).Hex())
@@ -814,7 +814,7 @@ func TestServer_ListFeeRecipientByPubKey_BeaconNodeError(t *testing.T) {
 		beaconNodeValidatorClient: mockValidatorClient,
 	}
 
-	_, err = s.ListFeeRecipientByPubkey(ctx, &ethpbservice.PubkeyRequest{Pubkey: byteval})
+	_, err = s.ListFeeRecipientByPubkey(ctx, &zondpbservice.PubkeyRequest{Pubkey: byteval})
 	require.ErrorContains(t, "Failed to retrieve default fee recipient from beacon node", err)
 }
 
@@ -838,7 +838,7 @@ func TestServer_ListFeeRecipientByPubKey_NoFeeRecipientSet(t *testing.T) {
 		beaconNodeValidatorClient: mockValidatorClient,
 	}
 
-	_, err = s.ListFeeRecipientByPubkey(ctx, &ethpbservice.PubkeyRequest{Pubkey: byteval})
+	_, err = s.ListFeeRecipientByPubkey(ctx, &zondpbservice.PubkeyRequest{Pubkey: byteval})
 	require.ErrorContains(t, "No fee recipient set", err)
 }
 
@@ -857,7 +857,7 @@ func TestServer_ListFeeRecipientByPubkey_InvalidPubKey(t *testing.T) {
 		validatorService: &client.ValidatorService{},
 	}
 
-	req := &ethpbservice.PubkeyRequest{
+	req := &zondpbservice.PubkeyRequest{
 		Pubkey: []byte{},
 	}
 
@@ -880,7 +880,7 @@ func TestServer_FeeRecipientByPubkey(t *testing.T) {
 		defaultEthaddress string
 	}
 	type beaconResp struct {
-		resp  *eth.FeeRecipientByPubKeyResponse
+		resp  *zond.FeeRecipientByPubKeyResponse
 		error error
 	}
 	tests := []struct {
@@ -1022,7 +1022,7 @@ func TestServer_FeeRecipientByPubkey(t *testing.T) {
 				valDB:                     validatorDB,
 			}
 
-			_, err = s.SetFeeRecipientByPubkey(ctx, &ethpbservice.SetFeeRecipientByPubkeyRequest{Pubkey: byteval, Ethaddress: common.HexToAddress(tt.args).Bytes()})
+			_, err = s.SetFeeRecipientByPubkey(ctx, &zondpbservice.SetFeeRecipientByPubkeyRequest{Pubkey: byteval, Ethaddress: common.HexToAddress(tt.args).Bytes()})
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.want.valEthAddress, s.validatorService.ProposerSettings().ProposeConfig[bytesutil.ToBytes2592(byteval)].FeeRecipientConfig.FeeRecipient.Hex())
@@ -1045,7 +1045,7 @@ func TestServer_SetFeeRecipientByPubkey_InvalidPubKey(t *testing.T) {
 		validatorService: &client.ValidatorService{},
 	}
 
-	req := &ethpbservice.SetFeeRecipientByPubkeyRequest{
+	req := &zondpbservice.SetFeeRecipientByPubkeyRequest{
 		Pubkey: []byte{},
 	}
 
@@ -1063,7 +1063,7 @@ func TestServer_SetGasLimit_InvalidFeeRecipient(t *testing.T) {
 		validatorService: &client.ValidatorService{},
 	}
 
-	req := &ethpbservice.SetFeeRecipientByPubkeyRequest{
+	req := &zondpbservice.SetFeeRecipientByPubkeyRequest{
 		Pubkey: byteval,
 	}
 
@@ -1121,7 +1121,7 @@ func TestServer_DeleteFeeRecipientByPubkey(t *testing.T) {
 				validatorService: vs,
 				valDB:            validatorDB,
 			}
-			_, err = s.DeleteFeeRecipientByPubkey(ctx, &ethpbservice.PubkeyRequest{Pubkey: byteval})
+			_, err = s.DeleteFeeRecipientByPubkey(ctx, &zondpbservice.PubkeyRequest{Pubkey: byteval})
 			require.NoError(t, err)
 
 			assert.Equal(t, true, s.validatorService.ProposerSettings().ProposeConfig[bytesutil.ToBytes2592(byteval)].FeeRecipientConfig == nil)
@@ -1144,7 +1144,7 @@ func TestServer_DeleteFeeRecipientByPubkey_InvalidPubKey(t *testing.T) {
 		validatorService: &client.ValidatorService{},
 	}
 
-	req := &ethpbservice.PubkeyRequest{
+	req := &zondpbservice.PubkeyRequest{
 		Pubkey: []byte{},
 	}
 
@@ -1215,7 +1215,7 @@ func TestServer_GetGasLimit(t *testing.T) {
 			s := &Server{
 				validatorService: vs,
 			}
-			got, err := s.GetGasLimit(ctx, &ethpbservice.PubkeyRequest{Pubkey: tt.pubkey[:]})
+			got, err := s.GetGasLimit(ctx, &zondpbservice.PubkeyRequest{Pubkey: tt.pubkey[:]})
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got.Data.GasLimit)
 		})
@@ -1234,7 +1234,7 @@ func TestServer_SetGasLimit(t *testing.T) {
 	require.NoError(t, err2)
 
 	type beaconResp struct {
-		resp  *eth.FeeRecipientByPubKeyResponse
+		resp  *zond.FeeRecipientByPubKeyResponse
 		error error
 	}
 
@@ -1378,7 +1378,7 @@ func TestServer_SetGasLimit(t *testing.T) {
 				).Return(tt.beaconReturn.resp, tt.beaconReturn.error)
 			}
 
-			_, err = s.SetGasLimit(ctx, &ethpbservice.SetGasLimitRequest{Pubkey: tt.pubkey, GasLimit: tt.newGasLimit})
+			_, err = s.SetGasLimit(ctx, &zondpbservice.SetGasLimitRequest{Pubkey: tt.pubkey, GasLimit: tt.newGasLimit})
 			if tt.wantErr != "" {
 				require.ErrorContains(t, tt.wantErr, err)
 			} else {
@@ -1406,7 +1406,7 @@ func TestServer_SetGasLimit_InvalidPubKey(t *testing.T) {
 		validatorService: &client.ValidatorService{},
 	}
 
-	req := &ethpbservice.SetGasLimitRequest{
+	req := &zondpbservice.SetGasLimitRequest{
 		Pubkey: []byte{},
 	}
 
@@ -1540,7 +1540,7 @@ func TestServer_DeleteGasLimit(t *testing.T) {
 			}
 			// Set up global default value for builder gas limit.
 			params.BeaconConfig().DefaultBuilderGasLimit = uint64(globalDefaultGasLimit)
-			_, err = s.DeleteGasLimit(ctx, &ethpbservice.DeleteGasLimitRequest{Pubkey: tt.pubkey})
+			_, err = s.DeleteGasLimit(ctx, &zondpbservice.DeleteGasLimitRequest{Pubkey: tt.pubkey})
 			if tt.wantError != nil {
 				assert.ErrorContains(t, fmt.Sprintf("code = %s", tt.wantError.Error()), err)
 			} else {
@@ -1592,20 +1592,20 @@ func TestServer_SetVoluntaryExit(t *testing.T) {
 		Seconds: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC).Unix(),
 	}
 
-	beaconClient.EXPECT().ValidatorIndex(gomock.Any(), &eth.ValidatorIndexRequest{PublicKey: pubKeys[0][:]}).
+	beaconClient.EXPECT().ValidatorIndex(gomock.Any(), &zond.ValidatorIndexRequest{PublicKey: pubKeys[0][:]}).
 		Times(3).
-		Return(&eth.ValidatorIndexResponse{Index: 2}, nil)
+		Return(&zond.ValidatorIndexResponse{Index: 2}, nil)
 
 	beaconClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
 	).Times(3).
-		Return(&eth.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+		Return(&zond.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 	mockNodeClient.EXPECT().
 		GetGenesis(gomock.Any(), gomock.Any()).
 		Times(3).
-		Return(&eth.Genesis{GenesisTime: genesisTime}, nil)
+		Return(&zond.Genesis{GenesisTime: genesisTime}, nil)
 
 	s := &Server{
 		validatorService:          vs,
@@ -1646,14 +1646,14 @@ func TestServer_SetVoluntaryExit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := s.SetVoluntaryExit(ctx, &ethpbservice.SetVoluntaryExitRequest{Pubkey: pubKeys[0][:], Epoch: tt.epoch})
+			resp, err := s.SetVoluntaryExit(ctx, &zondpbservice.SetVoluntaryExitRequest{Pubkey: pubKeys[0][:], Epoch: tt.epoch})
 			require.NoError(t, err)
 			if tt.w.epoch == 0 {
 				genesisResponse, err := s.beaconNodeClient.GetGenesis(ctx, &emptypb.Empty{})
 				require.NoError(t, err)
 				tt.w.epoch, err = client.CurrentEpoch(genesisResponse.GenesisTime)
 				require.NoError(t, err)
-				resp2, err := s.SetVoluntaryExit(ctx, &ethpbservice.SetVoluntaryExitRequest{Pubkey: pubKeys[0][:], Epoch: tt.epoch})
+				resp2, err := s.SetVoluntaryExit(ctx, &zondpbservice.SetVoluntaryExitRequest{Pubkey: pubKeys[0][:], Epoch: tt.epoch})
 				require.NoError(t, err)
 				tt.w.signature = resp2.Data.Signature
 			}

@@ -21,7 +21,7 @@ import (
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
 	"github.com/theQRL/qrysm/v4/network"
 	"github.com/theQRL/qrysm/v4/network/authorization"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"go.opencensus.io/trace"
 )
@@ -86,7 +86,7 @@ var _ observer = &requestLogger{}
 type BuilderClient interface {
 	NodeURL() string
 	GetHeader(ctx context.Context, slot primitives.Slot, parentHash [32]byte, pubkey [dilithium2.CryptoPublicKeyBytes]byte) (SignedBid, error)
-	RegisterValidator(ctx context.Context, svr []*ethpb.SignedValidatorRegistrationV1) error
+	RegisterValidator(ctx context.Context, svr []*zondpb.SignedValidatorRegistrationV1) error
 	SubmitBlindedBlock(ctx context.Context, sb interfaces.ReadOnlySignedBeaconBlock) (interfaces.ExecutionData, error)
 	Status(ctx context.Context) error
 }
@@ -248,7 +248,7 @@ func (c *Client) GetHeader(ctx context.Context, slot primitives.Slot, parentHash
 
 // RegisterValidator encodes the SignedValidatorRegistrationV1 message to json (including hex-encoding the byte
 // fields with 0x prefixes) and posts to the builder validator registration endpoint.
-func (c *Client) RegisterValidator(ctx context.Context, svr []*ethpb.SignedValidatorRegistrationV1) error {
+func (c *Client) RegisterValidator(ctx context.Context, svr []*zondpb.SignedValidatorRegistrationV1) error {
 	ctx, span := trace.StartSpan(ctx, "builder.client.RegisterValidator")
 	defer span.End()
 	span.AddAttributes(trace.Int64Attribute("num_reqs", int64(len(svr))))

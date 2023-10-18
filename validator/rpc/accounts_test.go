@@ -13,7 +13,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -192,11 +192,11 @@ func TestServer_VoluntaryExit(t *testing.T) {
 
 	mockValidatorClient.EXPECT().
 		ValidatorIndex(gomock.Any(), gomock.Any()).
-		Return(&ethpb.ValidatorIndexResponse{Index: 0}, nil)
+		Return(&zondpb.ValidatorIndexResponse{Index: 0}, nil)
 
 	mockValidatorClient.EXPECT().
 		ValidatorIndex(gomock.Any(), gomock.Any()).
-		Return(&ethpb.ValidatorIndexResponse{Index: 1}, nil)
+		Return(&zondpb.ValidatorIndexResponse{Index: 1}, nil)
 
 	// Any time in the past will suffice
 	genesisTime := &timestamppb.Timestamp{
@@ -205,17 +205,17 @@ func TestServer_VoluntaryExit(t *testing.T) {
 
 	mockNodeClient.EXPECT().
 		GetGenesis(gomock.Any(), gomock.Any()).
-		Return(&ethpb.Genesis{GenesisTime: genesisTime}, nil)
+		Return(&zondpb.Genesis{GenesisTime: genesisTime}, nil)
 
 	mockValidatorClient.EXPECT().
 		DomainData(gomock.Any(), gomock.Any()).
 		Times(2).
-		Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
+		Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil)
 
 	mockValidatorClient.EXPECT().
-		ProposeExit(gomock.Any(), gomock.AssignableToTypeOf(&ethpb.SignedVoluntaryExit{})).
+		ProposeExit(gomock.Any(), gomock.AssignableToTypeOf(&zondpb.SignedVoluntaryExit{})).
 		Times(2).
-		Return(&ethpb.ProposeExitResponse{}, nil)
+		Return(&zondpb.ProposeExitResponse{}, nil)
 
 	localWalletDir := setupWalletDir(t)
 	defaultWalletPath = localWalletDir

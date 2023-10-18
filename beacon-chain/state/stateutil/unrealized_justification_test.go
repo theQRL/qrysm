@@ -4,18 +4,18 @@ import (
 	"testing"
 
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestState_UnrealizedCheckpointBalances(t *testing.T) {
-	validators := make([]*ethpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
+	validators := make([]*zondpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
 	targetFlag := params.BeaconConfig().TimelyTargetFlagIndex
 	expectedActive := params.BeaconConfig().MinGenesisActiveValidatorCount * params.BeaconConfig().MaxEffectiveBalance
 
 	balances := make([]uint64, params.BeaconConfig().MinGenesisActiveValidatorCount)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
 			EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance,
 		}

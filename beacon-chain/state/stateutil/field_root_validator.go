@@ -8,7 +8,7 @@ import (
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/crypto/hash/htr"
 	"github.com/theQRL/qrysm/v4/encoding/ssz"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 const (
@@ -25,11 +25,11 @@ const (
 // ValidatorRegistryRoot computes the HashTreeRoot Merkleization of
 // a list of validator structs according to the Ethereum
 // Simple Serialize specification.
-func ValidatorRegistryRoot(vals []*ethpb.Validator) ([32]byte, error) {
+func ValidatorRegistryRoot(vals []*zondpb.Validator) ([32]byte, error) {
 	return validatorRegistryRoot(vals)
 }
 
-func validatorRegistryRoot(validators []*ethpb.Validator) ([32]byte, error) {
+func validatorRegistryRoot(validators []*zondpb.Validator) ([32]byte, error) {
 	roots, err := OptimizedValidatorRoots(validators)
 	if err != nil {
 		return [32]byte{}, err
@@ -53,7 +53,7 @@ func validatorRegistryRoot(validators []*ethpb.Validator) ([32]byte, error) {
 
 // OptimizedValidatorRoots uses an optimized routine with gohashtree in order to
 // derive a list of validator roots from a list of validator objects.
-func OptimizedValidatorRoots(validators []*ethpb.Validator) ([][32]byte, error) {
+func OptimizedValidatorRoots(validators []*zondpb.Validator) ([][32]byte, error) {
 	// Exit early if no validators are provided.
 	if len(validators) == 0 {
 		return [][32]byte{}, nil

@@ -9,12 +9,12 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
-func FillDBWithBlocks(ctx context.Context, t *testing.T, beaconDB db.Database) (*ethpbalpha.SignedBeaconBlock, []*ethpbalpha.BeaconBlockContainer) {
+func FillDBWithBlocks(ctx context.Context, t *testing.T, beaconDB db.Database) (*zondpbalpha.SignedBeaconBlock, []*zondpbalpha.BeaconBlockContainer) {
 	parentRoot := [32]byte{1, 2, 3}
 	genBlk := util.NewBeaconBlock()
 	genBlk.Block.ParentRoot = parentRoot[:]
@@ -25,7 +25,7 @@ func FillDBWithBlocks(ctx context.Context, t *testing.T, beaconDB db.Database) (
 
 	count := primitives.Slot(100)
 	blks := make([]interfaces.ReadOnlySignedBeaconBlock, count)
-	blkContainers := make([]*ethpbalpha.BeaconBlockContainer, count)
+	blkContainers := make([]*zondpbalpha.BeaconBlockContainer, count)
 	for i := primitives.Slot(0); i < count; i++ {
 		b := util.NewBeaconBlock()
 		b.Block.Slot = i
@@ -34,16 +34,16 @@ func FillDBWithBlocks(ctx context.Context, t *testing.T, beaconDB db.Database) (
 		require.NoError(t, err)
 		blks[i], err = blocks.NewSignedBeaconBlock(b)
 		require.NoError(t, err)
-		blkContainers[i] = &ethpbalpha.BeaconBlockContainer{
-			Block:     &ethpbalpha.BeaconBlockContainer_Phase0Block{Phase0Block: b},
+		blkContainers[i] = &zondpbalpha.BeaconBlockContainer{
+			Block:     &zondpbalpha.BeaconBlockContainer_Phase0Block{Phase0Block: b},
 			BlockRoot: root[:],
 		}
 	}
 	require.NoError(t, beaconDB.SaveBlocks(ctx, blks))
 	headRoot := bytesutil.ToBytes32(blkContainers[len(blks)-1].BlockRoot)
-	summary := &ethpbalpha.StateSummary{
+	summary := &zondpbalpha.StateSummary{
 		Root: headRoot[:],
-		Slot: blkContainers[len(blks)-1].Block.(*ethpbalpha.BeaconBlockContainer_Phase0Block).Phase0Block.Block.Slot,
+		Slot: blkContainers[len(blks)-1].Block.(*zondpbalpha.BeaconBlockContainer_Phase0Block).Phase0Block.Block.Slot,
 	}
 	require.NoError(t, beaconDB.SaveStateSummary(ctx, summary))
 	require.NoError(t, beaconDB.SaveHeadBlockRoot(ctx, headRoot))

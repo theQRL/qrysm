@@ -9,7 +9,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	testp2p "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -27,7 +27,7 @@ func TestService_Send(t *testing.T) {
 		cfg:  &Config{},
 	}
 
-	msg := &ethpb.Fork{
+	msg := &zondpb.Fork{
 		CurrentVersion:  []byte("fooo"),
 		PreviousVersion: []byte("barr"),
 		Epoch:           55,
@@ -37,12 +37,12 @@ func TestService_Send(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	topic := "/testing/1"
-	RPCTopicMappings[topic] = new(ethpb.Fork)
+	RPCTopicMappings[topic] = new(zondpb.Fork)
 	defer func() {
 		delete(RPCTopicMappings, topic)
 	}()
 	p2.SetStreamHandler(topic+"/ssz_snappy", func(stream network.Stream) {
-		rcvd := &ethpb.Fork{}
+		rcvd := &zondpb.Fork{}
 		require.NoError(t, svc.Encoding().DecodeWithMaxLength(stream, rcvd))
 		_, err := svc.Encoding().EncodeWithMaxLength(stream, rcvd)
 		require.NoError(t, err)
@@ -55,7 +55,7 @@ func TestService_Send(t *testing.T) {
 
 	util.WaitTimeout(&wg, 1*time.Second)
 
-	rcvd := &ethpb.Fork{}
+	rcvd := &zondpb.Fork{}
 	require.NoError(t, svc.Encoding().DecodeWithMaxLength(stream, rcvd))
 	if !proto.Equal(rcvd, msg) {
 		t.Errorf("Expected identical message to be received. got %v want %v", rcvd, msg)

@@ -9,7 +9,7 @@ import (
 	grpcutil "github.com/theQRL/qrysm/v4/api/grpc"
 	"github.com/theQRL/qrysm/v4/cmd"
 	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/validator/accounts"
 	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
 	"github.com/theQRL/qrysm/v4/validator/client"
@@ -52,7 +52,7 @@ func AccountsExit(c *cli.Context, r io.Reader) error {
 		if err != nil {
 			return errors.Wrapf(err, "could not dial endpoint %s", beaconRPCProvider)
 		}
-		nodeClient := ethpb.NewNodeClient(conn)
+		nodeClient := zondpb.NewNodeClient(conn)
 		resp, err := nodeClient.GetGenesis(c.Context, &empty.Empty{})
 		if err != nil {
 			return errors.Wrapf(err, "failed to get genesis info")

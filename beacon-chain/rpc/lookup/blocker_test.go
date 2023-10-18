@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/testutil"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -43,7 +43,7 @@ func TestGetBlock(t *testing.T) {
 	b4.Block.ParentRoot = bytesutil.PadTo([]byte{8}, 32)
 	util.SaveBlock(t, ctx, beaconDB, b4)
 
-	wsb, err := blocks.NewSignedBeaconBlock(headBlock.Block.(*ethpbalpha.BeaconBlockContainer_Phase0Block).Phase0Block)
+	wsb, err := blocks.NewSignedBeaconBlock(headBlock.Block.(*zondpbalpha.BeaconBlockContainer_Phase0Block).Phase0Block)
 	require.NoError(t, err)
 
 	fetcher := &BeaconDbBlocker{
@@ -52,7 +52,7 @@ func TestGetBlock(t *testing.T) {
 			DB:                  beaconDB,
 			Block:               wsb,
 			Root:                headBlock.BlockRoot,
-			FinalizedCheckPoint: &ethpbalpha.Checkpoint{Root: blkContainers[64].BlockRoot},
+			FinalizedCheckPoint: &zondpbalpha.Checkpoint{Root: blkContainers[64].BlockRoot},
 			CanonicalRoots:      canonicalRoots,
 		},
 	}
@@ -63,13 +63,13 @@ func TestGetBlock(t *testing.T) {
 	tests := []struct {
 		name    string
 		blockID []byte
-		want    *ethpbalpha.SignedBeaconBlock
+		want    *zondpbalpha.SignedBeaconBlock
 		wantErr bool
 	}{
 		{
 			name:    "slot",
 			blockID: []byte("30"),
-			want:    blkContainers[30].Block.(*ethpbalpha.BeaconBlockContainer_Phase0Block).Phase0Block,
+			want:    blkContainers[30].Block.(*zondpbalpha.BeaconBlockContainer_Phase0Block).Phase0Block,
 		},
 		{
 			name:    "bad formatting",
@@ -79,7 +79,7 @@ func TestGetBlock(t *testing.T) {
 		{
 			name:    "canonical",
 			blockID: []byte("30"),
-			want:    blkContainers[30].Block.(*ethpbalpha.BeaconBlockContainer_Phase0Block).Phase0Block,
+			want:    blkContainers[30].Block.(*zondpbalpha.BeaconBlockContainer_Phase0Block).Phase0Block,
 		},
 		{
 			name:    "non canonical",
@@ -89,12 +89,12 @@ func TestGetBlock(t *testing.T) {
 		{
 			name:    "head",
 			blockID: []byte("head"),
-			want:    headBlock.Block.(*ethpbalpha.BeaconBlockContainer_Phase0Block).Phase0Block,
+			want:    headBlock.Block.(*zondpbalpha.BeaconBlockContainer_Phase0Block).Phase0Block,
 		},
 		{
 			name:    "finalized",
 			blockID: []byte("finalized"),
-			want:    blkContainers[64].Block.(*ethpbalpha.BeaconBlockContainer_Phase0Block).Phase0Block,
+			want:    blkContainers[64].Block.(*zondpbalpha.BeaconBlockContainer_Phase0Block).Phase0Block,
 		},
 		{
 			name:    "genesis",
@@ -109,7 +109,7 @@ func TestGetBlock(t *testing.T) {
 		{
 			name:    "root",
 			blockID: blkContainers[20].BlockRoot,
-			want:    blkContainers[20].Block.(*ethpbalpha.BeaconBlockContainer_Phase0Block).Phase0Block,
+			want:    blkContainers[20].Block.(*zondpbalpha.BeaconBlockContainer_Phase0Block).Phase0Block,
 		},
 		{
 			name:    "non-existent root",

@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
@@ -220,7 +220,7 @@ var (
 )
 
 // reportSlotMetrics reports slot related metrics.
-func reportSlotMetrics(stateSlot, headSlot, clockSlot primitives.Slot, finalizedCheckpoint *ethpb.Checkpoint) {
+func reportSlotMetrics(stateSlot, headSlot, clockSlot primitives.Slot, finalizedCheckpoint *zondpb.Checkpoint) {
 	clockTimeSlot.Set(float64(clockSlot))
 	beaconSlot.Set(float64(stateSlot))
 	beaconHeadSlot.Set(float64(headSlot))

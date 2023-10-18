@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
 	"google.golang.org/grpc"
@@ -20,7 +20,7 @@ var PeersCheck = types.Evaluator{
 }
 
 func peersTest(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
-	debugClient := eth.NewDebugClient(conns[0])
+	debugClient := zond.NewDebugClient(conns[0])
 
 	peerResponses, err := debugClient.ListPeers(context.Background(), &emptypb.Empty{})
 	if err != nil {

@@ -2,11 +2,11 @@
 // source: proto/prysm/v1alpha1/slasher.proto
 
 /*
-Package eth is a reverse proxy.
+Package zond is a reverse proxy.
 
 It translates gRPC into RESTful JSON APIs.
 */
-package eth
+package zond
 
 import (
 	"context"
@@ -155,7 +155,7 @@ func RegisterSlasherHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.Slasher/IsSlashableAttestation")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.Slasher/IsSlashableAttestation")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -178,7 +178,7 @@ func RegisterSlasherHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.Slasher/IsSlashableBlock")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.Slasher/IsSlashableBlock")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -201,7 +201,7 @@ func RegisterSlasherHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.eth.v1alpha1.Slasher/HighestAttestations")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.zond.v1alpha1.Slasher/HighestAttestations")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -263,7 +263,7 @@ func RegisterSlasherHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.Slasher/IsSlashableAttestation")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.Slasher/IsSlashableAttestation")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -283,7 +283,7 @@ func RegisterSlasherHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.Slasher/IsSlashableBlock")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.Slasher/IsSlashableBlock")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -303,7 +303,7 @@ func RegisterSlasherHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.eth.v1alpha1.Slasher/HighestAttestations")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.zond.v1alpha1.Slasher/HighestAttestations")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -323,11 +323,11 @@ func RegisterSlasherHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 }
 
 var (
-	pattern_Slasher_IsSlashableAttestation_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"eth", "v1alpha1", "slasher", "attestations", "slashable"}, ""))
+	pattern_Slasher_IsSlashableAttestation_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"zond", "v1alpha1", "slasher", "attestations", "slashable"}, ""))
 
-	pattern_Slasher_IsSlashableBlock_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"eth", "v1alpha1", "slasher", "blocks", "slashable"}, ""))
+	pattern_Slasher_IsSlashableBlock_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"zond", "v1alpha1", "slasher", "blocks", "slashable"}, ""))
 
-	pattern_Slasher_HighestAttestations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"eth", "v1alpha1", "slasher", "attestations", "highest"}, ""))
+	pattern_Slasher_HighestAttestations_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 2, 4}, []string{"zond", "v1alpha1", "slasher", "attestations", "highest"}, ""))
 )
 
 var (
