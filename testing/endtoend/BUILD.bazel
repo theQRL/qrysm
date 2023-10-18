@@ -1,6 +1,6 @@
 load("@qrysm//tools/go:def.bzl", "go_test")
 
-# gazelle:exclude geth_deps.go
+# gazelle:exclude gzond_deps.go
 # gazelle:exclude mainnet_e2e_test.go
 # gazelle:exclude mainnet_scenario_e2e_test.go
 # gazelle:exclude minimal_scenario_e2e_test.go
@@ -104,7 +104,7 @@ go_test(
         "//cmd/validator",
         "//config/params:custom_configs",
         "//tools/bootnode",
-        "@com_github_ethereum_go_ethereum//cmd/geth",
+        "@com_github_theqrl_go_zond//cmd/gzond",
         "@web3signer",
     ],
     eth_network = "minimal",
@@ -137,7 +137,7 @@ go_test(
         "//cmd/validator",
         "//config/params:custom_configs",
         "//tools/bootnode",
-        "@com_github_ethereum_go_ethereum//cmd/geth",
+        "@com_github_theqrl_go_zond//cmd/gzond",
         "@web3signer",
     ],
     eth_network = "minimal",
@@ -169,7 +169,7 @@ go_test(
         "//cmd/validator",
         "//config/params:custom_configs",
         "//tools/bootnode",
-        "@com_github_ethereum_go_ethereum//cmd/geth",
+        "@com_github_theqrl_go_zond//cmd/gzond",
         "@web3signer",
     ],
     eth_network = "mainnet",
@@ -202,7 +202,7 @@ go_test(
         "//cmd/validator",
         "//config/params:custom_configs",
         "//tools/bootnode",
-        "@com_github_ethereum_go_ethereum//cmd/geth",
+        "@com_github_theqrl_go_zond//cmd/gzond",
         "@web3signer",
     ],
     eth_network = "mainnet",
@@ -235,7 +235,7 @@ go_test(
         "//cmd/validator",
         "//config/params:custom_configs",
         "//tools/bootnode",
-        "@com_github_ethereum_go_ethereum//cmd/geth",
+        "@com_github_theqrl_go_zond//cmd/gzond",
         "@web3signer",
     ],
     eth_network = "minimal",

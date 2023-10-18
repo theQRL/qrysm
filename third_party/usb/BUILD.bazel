@@ -11,7 +11,7 @@ go_library(
         "usb_disabled.go",
     ],
     importpath = "github.com/karalabe/usb",
-    visibility = ["@com_github_ethereum_go_ethereum//:__subpackages__"],
+    visibility = ["@com_github_theqrl_go_zond//:__subpackages__"],
 )
 
 go_test(

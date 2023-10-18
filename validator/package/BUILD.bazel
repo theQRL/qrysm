@@ -13,12 +13,12 @@ pkg_tar(
     name = "validator-config",
     srcs = glob(["validator.yaml"]),
     mode = "0640",
-    package_dir = "/etc/prysm",
+    package_dir = "/etc/qrysm",
 )
 
 pkg_tar(
     name = "validator-service",
-    srcs = glob(["prysm-validator.service"]),
+    srcs = glob(["qrysm-validator.service"]),
     mode = "0640",
     package_dir = "/usr/lib/systemd/system",
 )
@@ -37,13 +37,13 @@ pkg_deb(
     name = "deb",
     architecture = "amd64",
     conffiles = [
-        "etc/prysm/validator.yaml",
+        "etc/qrysm/validator.yaml",
     ],
     data = ":debian-data",
-    description = "Prysm Validator Client - Ethereum consensus",
-    homepage = "https://prysmaticlabs.com/",
-    maintainer = "Prysmatic Labs <contact@prysmaticlabs.com>",
-    package = "prysm-validator",
+    description = "Qrysm Validator Client - Zond consensus",
+    homepage = "https://theqrl.org/",
+    maintainer = "The QRL Foundation <support@theqrl.org>",
+    package = "qrysm-validator",
     postinst = "postinst.sh",
     preinst = "preinst.sh",
     tags = ["no-remote"],

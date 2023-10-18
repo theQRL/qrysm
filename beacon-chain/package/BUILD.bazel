@@ -13,12 +13,12 @@ pkg_tar(
     name = "beacon-chain-config",
     srcs = glob(["beacon-chain.yaml"]),
     mode = "0640",
-    package_dir = "/etc/prysm",
+    package_dir = "/etc/qrysm",
 )
 
 pkg_tar(
     name = "beacon-chain-service",
-    srcs = glob(["prysm-beacon-chain.service"]),
+    srcs = glob(["qrysm-beacon-chain.service"]),
     mode = "0640",
     package_dir = "/usr/lib/systemd/system",
 )
@@ -37,13 +37,13 @@ pkg_deb(
     name = "deb",
     architecture = "amd64",
     conffiles = [
-        "etc/prysm/beacon-chain.yaml",
+        "etc/qrysm/beacon-chain.yaml",
     ],
     data = ":debian-data",
-    description = "Prysm Beacon Chain - Ethereum consensus network communications",
-    homepage = "https://prysmaticlabs.com/",
-    maintainer = "Prysmatic Labs <contact@prysmaticlabs.com>",
-    package = "prysm-beacon-chain",
+    description = "Qrysm Beacon Chain - Zond consensus network communications",
+    homepage = "https://theqrl.org/",
+    maintainer = "The QRL Foundation <support@theqrl.org>",
+    package = "qrysm-beacon-chain",
     postinst = "postinst.sh",
     preinst = "preinst.sh",
     tags = ["no-remote"],
