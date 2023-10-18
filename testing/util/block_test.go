@@ -12,9 +12,9 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
-	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
@@ -159,7 +159,7 @@ func TestGenerateFullBlock_ValidDeposits(t *testing.T) {
 
 	depositedPubkey := block.Block.Body.Deposits[0].Data.PublicKey
 	valIndexMap := stateutils.ValidatorIndexMap(beaconState.Validators())
-	index := valIndexMap[bytesutil.ToBytes48(depositedPubkey)]
+	index := valIndexMap[bytesutil.ToBytes2592(depositedPubkey)]
 	val, err := beaconState.ValidatorAtIndexReadOnly(index)
 	require.NoError(t, err)
 	if val.EffectiveBalance() != params.BeaconConfig().MaxEffectiveBalance {
