@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -28,9 +28,9 @@ func TestComputeFieldRootsWithHasher_Phase0(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetHistoricalRoots(historicalRoots))
 	require.NoError(t, beaconState.SetEth1Data(eth1Data()))
-	require.NoError(t, beaconState.SetEth1DataVotes([]*ethpb.Eth1Data{eth1Data()}))
+	require.NoError(t, beaconState.SetEth1DataVotes([]*zondpb.Eth1Data{eth1Data()}))
 	require.NoError(t, beaconState.SetEth1DepositIndex(123))
-	require.NoError(t, beaconState.SetValidators([]*ethpb.Validator{validator()}))
+	require.NoError(t, beaconState.SetValidators([]*zondpb.Validator{validator()}))
 	require.NoError(t, beaconState.SetBalances([]uint64{1, 2, 3}))
 	randaoMixes, err := util.PrepareRoots(int(params.BeaconConfig().EpochsPerHistoricalVector))
 	require.NoError(t, err)
@@ -45,7 +45,7 @@ func TestComputeFieldRootsWithHasher_Phase0(t *testing.T) {
 
 	nativeState, ok := beaconState.(*statenative.BeaconState)
 	require.Equal(t, true, ok)
-	protoState, ok := nativeState.ToProtoUnsafe().(*ethpb.BeaconState)
+	protoState, ok := nativeState.ToProtoUnsafe().(*zondpb.BeaconState)
 	require.Equal(t, true, ok)
 
 	initState, err := statenative.InitializeFromProtoPhase0(protoState)
@@ -92,9 +92,9 @@ func TestComputeFieldRootsWithHasher_Altair(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetHistoricalRoots(historicalRoots))
 	require.NoError(t, beaconState.SetEth1Data(eth1Data()))
-	require.NoError(t, beaconState.SetEth1DataVotes([]*ethpb.Eth1Data{eth1Data()}))
+	require.NoError(t, beaconState.SetEth1DataVotes([]*zondpb.Eth1Data{eth1Data()}))
 	require.NoError(t, beaconState.SetEth1DepositIndex(123))
-	require.NoError(t, beaconState.SetValidators([]*ethpb.Validator{validator()}))
+	require.NoError(t, beaconState.SetValidators([]*zondpb.Validator{validator()}))
 	require.NoError(t, beaconState.SetBalances([]uint64{1, 2, 3}))
 	randaoMixes, err := util.PrepareRoots(int(params.BeaconConfig().EpochsPerHistoricalVector))
 	require.NoError(t, err)
@@ -112,7 +112,7 @@ func TestComputeFieldRootsWithHasher_Altair(t *testing.T) {
 
 	nativeState, ok := beaconState.(*statenative.BeaconState)
 	require.Equal(t, true, ok)
-	protoState, ok := nativeState.ToProtoUnsafe().(*ethpb.BeaconStateAltair)
+	protoState, ok := nativeState.ToProtoUnsafe().(*zondpb.BeaconStateAltair)
 	require.Equal(t, true, ok)
 	initState, err := statenative.InitializeFromProtoAltair(protoState)
 	require.NoError(t, err)
@@ -162,9 +162,9 @@ func TestComputeFieldRootsWithHasher_Bellatrix(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetHistoricalRoots(historicalRoots))
 	require.NoError(t, beaconState.SetEth1Data(eth1Data()))
-	require.NoError(t, beaconState.SetEth1DataVotes([]*ethpb.Eth1Data{eth1Data()}))
+	require.NoError(t, beaconState.SetEth1DataVotes([]*zondpb.Eth1Data{eth1Data()}))
 	require.NoError(t, beaconState.SetEth1DepositIndex(123))
-	require.NoError(t, beaconState.SetValidators([]*ethpb.Validator{validator()}))
+	require.NoError(t, beaconState.SetValidators([]*zondpb.Validator{validator()}))
 	require.NoError(t, beaconState.SetBalances([]uint64{1, 2, 3}))
 	randaoMixes, err := util.PrepareRoots(int(params.BeaconConfig().EpochsPerHistoricalVector))
 	require.NoError(t, err)
@@ -185,7 +185,7 @@ func TestComputeFieldRootsWithHasher_Bellatrix(t *testing.T) {
 
 	nativeState, ok := beaconState.(*statenative.BeaconState)
 	require.Equal(t, true, ok)
-	protoState, ok := nativeState.ToProtoUnsafe().(*ethpb.BeaconStateBellatrix)
+	protoState, ok := nativeState.ToProtoUnsafe().(*zondpb.BeaconStateBellatrix)
 	require.Equal(t, true, ok)
 	initState, err := statenative.InitializeFromProtoBellatrix(protoState)
 	require.NoError(t, err)
@@ -236,9 +236,9 @@ func TestComputeFieldRootsWithHasher_Capella(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetHistoricalRoots(historicalRoots))
 	require.NoError(t, beaconState.SetEth1Data(eth1Data()))
-	require.NoError(t, beaconState.SetEth1DataVotes([]*ethpb.Eth1Data{eth1Data()}))
+	require.NoError(t, beaconState.SetEth1DataVotes([]*zondpb.Eth1Data{eth1Data()}))
 	require.NoError(t, beaconState.SetEth1DepositIndex(123))
-	require.NoError(t, beaconState.SetValidators([]*ethpb.Validator{validator()}))
+	require.NoError(t, beaconState.SetValidators([]*zondpb.Validator{validator()}))
 	require.NoError(t, beaconState.SetBalances([]uint64{1, 2, 3}))
 	randaoMixes, err := util.PrepareRoots(int(params.BeaconConfig().EpochsPerHistoricalVector))
 	require.NoError(t, err)
@@ -258,14 +258,14 @@ func TestComputeFieldRootsWithHasher_Capella(t *testing.T) {
 	require.NoError(t, beaconState.SetLatestExecutionPayloadHeader(wrappedHeader))
 	require.NoError(t, beaconState.SetNextWithdrawalIndex(123))
 	require.NoError(t, beaconState.SetNextWithdrawalValidatorIndex(123))
-	require.NoError(t, beaconState.AppendHistoricalSummaries(&ethpb.HistoricalSummary{
+	require.NoError(t, beaconState.AppendHistoricalSummaries(&zondpb.HistoricalSummary{
 		BlockSummaryRoot: bytesutil.PadTo([]byte("block summary root"), 32),
 		StateSummaryRoot: bytesutil.PadTo([]byte("state summary root"), 32),
 	}))
 
 	nativeState, ok := beaconState.(*statenative.BeaconState)
 	require.Equal(t, true, ok)
-	protoState, ok := nativeState.ToProtoUnsafe().(*ethpb.BeaconStateCapella)
+	protoState, ok := nativeState.ToProtoUnsafe().(*zondpb.BeaconStateCapella)
 	require.Equal(t, true, ok)
 	initState, err := statenative.InitializeFromProtoCapella(protoState)
 	require.NoError(t, err)
@@ -312,21 +312,21 @@ func genesisValidatorsRoot() []byte {
 	return gvr[:]
 }
 
-func fork() *ethpb.Fork {
+func fork() *zondpb.Fork {
 	prev := bytesutil.ToBytes4([]byte("prev"))
 	curr := bytesutil.ToBytes4([]byte("curr"))
-	return &ethpb.Fork{
+	return &zondpb.Fork{
 		PreviousVersion: prev[:],
 		CurrentVersion:  curr[:],
 		Epoch:           123,
 	}
 }
 
-func latestBlockHeader() *ethpb.BeaconBlockHeader {
+func latestBlockHeader() *zondpb.BeaconBlockHeader {
 	pr := bytesutil.ToBytes32([]byte("parent"))
 	sr := bytesutil.ToBytes32([]byte("state"))
 	br := bytesutil.ToBytes32([]byte("body"))
-	return &ethpb.BeaconBlockHeader{
+	return &zondpb.BeaconBlockHeader{
 		Slot:          123,
 		ProposerIndex: 123,
 		ParentRoot:    pr[:],
@@ -335,20 +335,20 @@ func latestBlockHeader() *ethpb.BeaconBlockHeader {
 	}
 }
 
-func eth1Data() *ethpb.Eth1Data {
+func eth1Data() *zondpb.Eth1Data {
 	dr := bytesutil.ToBytes32([]byte("deposit"))
 	bh := bytesutil.ToBytes32([]byte("block"))
-	return &ethpb.Eth1Data{
+	return &zondpb.Eth1Data{
 		DepositRoot:  dr[:],
 		DepositCount: 123,
 		BlockHash:    bh[:],
 	}
 }
 
-func validator() *ethpb.Validator {
+func validator() *zondpb.Validator {
 	pk := bytesutil.ToBytes48([]byte("public"))
 	wc := bytesutil.ToBytes32([]byte("withdrawal"))
-	return &ethpb.Validator{
+	return &zondpb.Validator{
 		PublicKey:                  pk[:],
 		WithdrawalCredentials:      wc[:],
 		EffectiveBalance:           123,
@@ -360,20 +360,20 @@ func validator() *ethpb.Validator {
 	}
 }
 
-func pendingAttestation(prefix string) *ethpb.PendingAttestation {
+func pendingAttestation(prefix string) *zondpb.PendingAttestation {
 	bbr := bytesutil.ToBytes32([]byte(prefix + "beacon"))
 	r := bytesutil.ToBytes32([]byte(prefix + "root"))
-	return &ethpb.PendingAttestation{
+	return &zondpb.PendingAttestation{
 		AggregationBits: bitfield.Bitlist{0x00, 0xFF, 0xFF, 0xFF},
-		Data: &ethpb.AttestationData{
+		Data: &zondpb.AttestationData{
 			Slot:            123,
 			CommitteeIndex:  123,
 			BeaconBlockRoot: bbr[:],
-			Source: &ethpb.Checkpoint{
+			Source: &zondpb.Checkpoint{
 				Epoch: 123,
 				Root:  r[:],
 			},
-			Target: &ethpb.Checkpoint{
+			Target: &zondpb.Checkpoint{
 				Epoch: 123,
 				Root:  r[:],
 			},
@@ -389,22 +389,22 @@ func justificationBits() bitfield.Bitvector4 {
 	return v
 }
 
-func checkpoint(prefix string) *ethpb.Checkpoint {
+func checkpoint(prefix string) *zondpb.Checkpoint {
 	r := bytesutil.ToBytes32([]byte(prefix + "root"))
-	return &ethpb.Checkpoint{
+	return &zondpb.Checkpoint{
 		Epoch: 123,
 		Root:  r[:],
 	}
 }
 
-func syncCommittee(prefix string) *ethpb.SyncCommittee {
+func syncCommittee(prefix string) *zondpb.SyncCommittee {
 	pubkeys := make([][]byte, params.BeaconConfig().SyncCommitteeSize)
 	for i := range pubkeys {
 		key := bytesutil.ToBytes48([]byte(prefix + "pubkey"))
 		pubkeys[i] = key[:]
 	}
 	agg := bytesutil.ToBytes48([]byte(prefix + "aggregate"))
-	return &ethpb.SyncCommittee{
+	return &zondpb.SyncCommittee{
 		Pubkeys:         pubkeys,
 		AggregatePubkey: agg[:],
 	}

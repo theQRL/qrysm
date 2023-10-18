@@ -32,7 +32,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -63,8 +63,8 @@ func TestServer_GetValidatorActiveSetChanges_CannotRequestFutureEpoch(t *testing
 	wanted := errNoEpochInfoError
 	_, err = bs.GetValidatorActiveSetChanges(
 		ctx,
-		&ethpb.GetValidatorActiveSetChangesRequest{
-			QueryFilter: &ethpb.GetValidatorActiveSetChangesRequest_Epoch{
+		&zondpb.GetValidatorActiveSetChangesRequest{
+			QueryFilter: &zondpb.GetValidatorActiveSetChangesRequest_Epoch{
 				Epoch: slots.ToEpoch(bs.GenesisTimeFetcher.CurrentSlot()) + 1,
 			},
 		},
@@ -90,8 +90,8 @@ func TestServer_ListValidatorBalances_CannotRequestFutureEpoch(t *testing.T) {
 	wanted := errNoEpochInfoError
 	_, err = bs.ListValidatorBalances(
 		ctx,
-		&ethpb.ListValidatorBalancesRequest{
-			QueryFilter: &ethpb.ListValidatorBalancesRequest_Epoch{
+		&zondpb.ListValidatorBalancesRequest{
+			QueryFilter: &zondpb.ListValidatorBalancesRequest_Epoch{
 				Epoch: slots.ToEpoch(bs.GenesisTimeFetcher.CurrentSlot()) + 1,
 			},
 		},
@@ -122,15 +122,15 @@ func TestServer_ListValidatorBalances_NoResults(t *testing.T) {
 
 	bs.ReplayerBuilder = mockstategen.NewMockReplayerBuilder(mockstategen.WithMockState(headState))
 
-	wanted := &ethpb.ValidatorBalances{
-		Balances:      make([]*ethpb.ValidatorBalances_Balance, 0),
+	wanted := &zondpb.ValidatorBalances{
+		Balances:      make([]*zondpb.ValidatorBalances_Balance, 0),
 		TotalSize:     int32(0),
 		NextPageToken: strconv.Itoa(0),
 	}
 	res, err := bs.ListValidatorBalances(
 		ctx,
-		&ethpb.ListValidatorBalancesRequest{
-			QueryFilter: &ethpb.ListValidatorBalancesRequest_Epoch{
+		&zondpb.ListValidatorBalancesRequest{
+			QueryFilter: &zondpb.ListValidatorBalancesRequest_Epoch{
 				Epoch: 0,
 			},
 		},
@@ -146,16 +146,16 @@ func TestServer_ListValidatorBalances_DefaultResponse_NoArchive(t *testing.T) {
 	ctx := context.Background()
 
 	numItems := 100
-	validators := make([]*ethpb.Validator, numItems)
+	validators := make([]*zondpb.Validator, numItems)
 	balances := make([]uint64, numItems)
-	balancesResponse := make([]*ethpb.ValidatorBalances_Balance, numItems)
+	balancesResponse := make([]*zondpb.ValidatorBalances_Balance, numItems)
 	for i := 0; i < numItems; i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			PublicKey:             pubKey(uint64(i)),
 			WithdrawalCredentials: make([]byte, 32),
 		}
 		balances[i] = params.BeaconConfig().MaxEffectiveBalance
-		balancesResponse[i] = &ethpb.ValidatorBalances_Balance{
+		balancesResponse[i] = &zondpb.ValidatorBalances_Balance{
 			PublicKey: pubKey(uint64(i)),
 			Index:     primitives.ValidatorIndex(i),
 			Balance:   params.BeaconConfig().MaxEffectiveBalance,
@@ -183,8 +183,8 @@ func TestServer_ListValidatorBalances_DefaultResponse_NoArchive(t *testing.T) {
 	}
 	res, err := bs.ListValidatorBalances(
 		ctx,
-		&ethpb.ListValidatorBalancesRequest{
-			QueryFilter: &ethpb.ListValidatorBalancesRequest_Epoch{Epoch: 0},
+		&zondpb.ListValidatorBalancesRequest{
+			QueryFilter: &zondpb.ListValidatorBalancesRequest_Epoch{Epoch: 0},
 		},
 	)
 	require.NoError(t, err)
@@ -212,10 +212,10 @@ func TestServer_ListValidatorBalances_PaginationOutOfRange(t *testing.T) {
 	}
 
 	wanted := fmt.Sprintf("page start %d >= list %d", 200, len(headState.Balances()))
-	_, err = bs.ListValidatorBalances(context.Background(), &ethpb.ListValidatorBalancesRequest{
+	_, err = bs.ListValidatorBalances(context.Background(), &zondpb.ListValidatorBalancesRequest{
 		PageToken:   strconv.Itoa(2),
 		PageSize:    100,
-		QueryFilter: &ethpb.ListValidatorBalancesRequest_Epoch{Epoch: 0},
+		QueryFilter: &zondpb.ListValidatorBalancesRequest_Epoch{Epoch: 0},
 	})
 	assert.ErrorContains(t, wanted, err)
 }
@@ -229,7 +229,7 @@ func TestServer_ListValidatorBalances_ExceedsMaxPageSize(t *testing.T) {
 		exceedsMax,
 		cmd.Get().MaxRPCPageSize,
 	)
-	req := &ethpb.ListValidatorBalancesRequest{PageSize: exceedsMax}
+	req := &zondpb.ListValidatorBalancesRequest{PageSize: exceedsMax}
 	_, err := bs.ListValidatorBalances(context.Background(), req)
 	assert.ErrorContains(t, wanted, err)
 }
@@ -261,21 +261,21 @@ func TestServer_ListValidatorBalances_Pagination_Default(t *testing.T) {
 	}
 
 	tests := []struct {
-		req *ethpb.ListValidatorBalancesRequest
-		res *ethpb.ValidatorBalances
+		req *zondpb.ListValidatorBalancesRequest
+		res *zondpb.ValidatorBalances
 	}{
-		{req: &ethpb.ListValidatorBalancesRequest{PublicKeys: [][]byte{pubKey(99)}, QueryFilter: &ethpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}},
-			res: &ethpb.ValidatorBalances{
-				Balances: []*ethpb.ValidatorBalances_Balance{
+		{req: &zondpb.ListValidatorBalancesRequest{PublicKeys: [][]byte{pubKey(99)}, QueryFilter: &zondpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}},
+			res: &zondpb.ValidatorBalances{
+				Balances: []*zondpb.ValidatorBalances_Balance{
 					{Index: 99, PublicKey: pubKey(99), Balance: 99, Status: "EXITED"},
 				},
 				NextPageToken: "",
 				TotalSize:     1,
 			},
 		},
-		{req: &ethpb.ListValidatorBalancesRequest{Indices: []primitives.ValidatorIndex{1, 2, 3}, QueryFilter: &ethpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}},
-			res: &ethpb.ValidatorBalances{
-				Balances: []*ethpb.ValidatorBalances_Balance{
+		{req: &zondpb.ListValidatorBalancesRequest{Indices: []primitives.ValidatorIndex{1, 2, 3}, QueryFilter: &zondpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}},
+			res: &zondpb.ValidatorBalances{
+				Balances: []*zondpb.ValidatorBalances_Balance{
 					{Index: 1, PublicKey: pubKey(1), Balance: 1, Status: "EXITED"},
 					{Index: 2, PublicKey: pubKey(2), Balance: 2, Status: "EXITED"},
 					{Index: 3, PublicKey: pubKey(3), Balance: 3, Status: "EXITED"},
@@ -284,9 +284,9 @@ func TestServer_ListValidatorBalances_Pagination_Default(t *testing.T) {
 				TotalSize:     3,
 			},
 		},
-		{req: &ethpb.ListValidatorBalancesRequest{PublicKeys: [][]byte{pubKey(10), pubKey(11), pubKey(12)}, QueryFilter: &ethpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}},
-			res: &ethpb.ValidatorBalances{
-				Balances: []*ethpb.ValidatorBalances_Balance{
+		{req: &zondpb.ListValidatorBalancesRequest{PublicKeys: [][]byte{pubKey(10), pubKey(11), pubKey(12)}, QueryFilter: &zondpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}},
+			res: &zondpb.ValidatorBalances{
+				Balances: []*zondpb.ValidatorBalances_Balance{
 					{Index: 10, PublicKey: pubKey(10), Balance: 10, Status: "EXITED"},
 					{Index: 11, PublicKey: pubKey(11), Balance: 11, Status: "EXITED"},
 					{Index: 12, PublicKey: pubKey(12), Balance: 12, Status: "EXITED"},
@@ -294,9 +294,9 @@ func TestServer_ListValidatorBalances_Pagination_Default(t *testing.T) {
 				NextPageToken: "",
 				TotalSize:     3,
 			}},
-		{req: &ethpb.ListValidatorBalancesRequest{PublicKeys: [][]byte{pubKey(2), pubKey(3)}, Indices: []primitives.ValidatorIndex{3, 4}, QueryFilter: &ethpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}}, // Duplication
-			res: &ethpb.ValidatorBalances{
-				Balances: []*ethpb.ValidatorBalances_Balance{
+		{req: &zondpb.ListValidatorBalancesRequest{PublicKeys: [][]byte{pubKey(2), pubKey(3)}, Indices: []primitives.ValidatorIndex{3, 4}, QueryFilter: &zondpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}}, // Duplication
+			res: &zondpb.ValidatorBalances{
+				Balances: []*zondpb.ValidatorBalances_Balance{
 					{Index: 2, PublicKey: pubKey(2), Balance: 2, Status: "EXITED"},
 					{Index: 3, PublicKey: pubKey(3), Balance: 3, Status: "EXITED"},
 					{Index: 4, PublicKey: pubKey(4), Balance: 4, Status: "EXITED"},
@@ -304,9 +304,9 @@ func TestServer_ListValidatorBalances_Pagination_Default(t *testing.T) {
 				NextPageToken: "",
 				TotalSize:     3,
 			}},
-		{req: &ethpb.ListValidatorBalancesRequest{PublicKeys: [][]byte{{}}, Indices: []primitives.ValidatorIndex{3, 4}, QueryFilter: &ethpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}}, // Public key has a blank value
-			res: &ethpb.ValidatorBalances{
-				Balances: []*ethpb.ValidatorBalances_Balance{
+		{req: &zondpb.ListValidatorBalancesRequest{PublicKeys: [][]byte{{}}, Indices: []primitives.ValidatorIndex{3, 4}, QueryFilter: &zondpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}}, // Public key has a blank value
+			res: &zondpb.ValidatorBalances{
+				Balances: []*zondpb.ValidatorBalances_Balance{
 					{Index: 3, PublicKey: pubKey(3), Balance: 3, Status: "EXITED"},
 					{Index: 4, PublicKey: pubKey(4), Balance: 4, Status: "EXITED"},
 				},
@@ -345,20 +345,20 @@ func TestServer_ListValidatorBalances_Pagination_CustomPageSizes(t *testing.T) {
 	}
 
 	tests := []struct {
-		req *ethpb.ListValidatorBalancesRequest
-		res *ethpb.ValidatorBalances
+		req *zondpb.ListValidatorBalancesRequest
+		res *zondpb.ValidatorBalances
 	}{
-		{req: &ethpb.ListValidatorBalancesRequest{PageToken: strconv.Itoa(1), PageSize: 3, QueryFilter: &ethpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}},
-			res: &ethpb.ValidatorBalances{
-				Balances: []*ethpb.ValidatorBalances_Balance{
+		{req: &zondpb.ListValidatorBalancesRequest{PageToken: strconv.Itoa(1), PageSize: 3, QueryFilter: &zondpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}},
+			res: &zondpb.ValidatorBalances{
+				Balances: []*zondpb.ValidatorBalances_Balance{
 					{PublicKey: pubKey(3), Index: 3, Balance: uint64(3), Status: "EXITED"},
 					{PublicKey: pubKey(4), Index: 4, Balance: uint64(4), Status: "EXITED"},
 					{PublicKey: pubKey(5), Index: 5, Balance: uint64(5), Status: "EXITED"}},
 				NextPageToken: strconv.Itoa(2),
 				TotalSize:     int32(count)}},
-		{req: &ethpb.ListValidatorBalancesRequest{PageToken: strconv.Itoa(10), PageSize: 5, QueryFilter: &ethpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}},
-			res: &ethpb.ValidatorBalances{
-				Balances: []*ethpb.ValidatorBalances_Balance{
+		{req: &zondpb.ListValidatorBalancesRequest{PageToken: strconv.Itoa(10), PageSize: 5, QueryFilter: &zondpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}},
+			res: &zondpb.ValidatorBalances{
+				Balances: []*zondpb.ValidatorBalances_Balance{
 					{PublicKey: pubKey(50), Index: 50, Balance: uint64(50), Status: "EXITED"},
 					{PublicKey: pubKey(51), Index: 51, Balance: uint64(51), Status: "EXITED"},
 					{PublicKey: pubKey(52), Index: 52, Balance: uint64(52), Status: "EXITED"},
@@ -366,18 +366,18 @@ func TestServer_ListValidatorBalances_Pagination_CustomPageSizes(t *testing.T) {
 					{PublicKey: pubKey(54), Index: 54, Balance: uint64(54), Status: "EXITED"}},
 				NextPageToken: strconv.Itoa(11),
 				TotalSize:     int32(count)}},
-		{req: &ethpb.ListValidatorBalancesRequest{PageToken: strconv.Itoa(33), PageSize: 3, QueryFilter: &ethpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}},
-			res: &ethpb.ValidatorBalances{
-				Balances: []*ethpb.ValidatorBalances_Balance{
+		{req: &zondpb.ListValidatorBalancesRequest{PageToken: strconv.Itoa(33), PageSize: 3, QueryFilter: &zondpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}},
+			res: &zondpb.ValidatorBalances{
+				Balances: []*zondpb.ValidatorBalances_Balance{
 					{PublicKey: pubKey(99), Index: 99, Balance: uint64(99), Status: "EXITED"},
 					{PublicKey: pubKey(100), Index: 100, Balance: uint64(100), Status: "EXITED"},
 					{PublicKey: pubKey(101), Index: 101, Balance: uint64(101), Status: "EXITED"},
 				},
 				NextPageToken: "34",
 				TotalSize:     int32(count)}},
-		{req: &ethpb.ListValidatorBalancesRequest{PageSize: 2, QueryFilter: &ethpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}},
-			res: &ethpb.ValidatorBalances{
-				Balances: []*ethpb.ValidatorBalances_Balance{
+		{req: &zondpb.ListValidatorBalancesRequest{PageSize: 2, QueryFilter: &zondpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}},
+			res: &zondpb.ValidatorBalances{
+				Balances: []*zondpb.ValidatorBalances_Balance{
 					{PublicKey: pubKey(0), Index: 0, Balance: uint64(0), Status: "EXITED"},
 					{PublicKey: pubKey(1), Index: 1, Balance: uint64(1), Status: "EXITED"}},
 				NextPageToken: strconv.Itoa(1),
@@ -412,7 +412,7 @@ func TestServer_ListValidatorBalances_OutOfRange(t *testing.T) {
 		ReplayerBuilder: mockstategen.NewMockReplayerBuilder(mockstategen.WithMockState(headState)),
 	}
 
-	req := &ethpb.ListValidatorBalancesRequest{Indices: []primitives.ValidatorIndex{primitives.ValidatorIndex(1)}, QueryFilter: &ethpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}}
+	req := &zondpb.ListValidatorBalancesRequest{Indices: []primitives.ValidatorIndex{primitives.ValidatorIndex(1)}, QueryFilter: &zondpb.ListValidatorBalancesRequest_Epoch{Epoch: 0}}
 	wanted := "Validator index 1 >= balance list 1"
 	_, err = bs.ListValidatorBalances(context.Background(), req)
 	assert.ErrorContains(t, wanted, err)
@@ -439,8 +439,8 @@ func TestServer_ListValidators_CannotRequestFutureEpoch(t *testing.T) {
 	wanted := errNoEpochInfoError
 	_, err = bs.ListValidators(
 		ctx,
-		&ethpb.ListValidatorsRequest{
-			QueryFilter: &ethpb.ListValidatorsRequest_Epoch{
+		&zondpb.ListValidatorsRequest{
+			QueryFilter: &zondpb.ListValidatorsRequest_Epoch{
 				Epoch: 1,
 			},
 		},
@@ -467,14 +467,14 @@ func TestServer_ListValidators_reqStateIsNil(t *testing.T) {
 		},
 	}
 	// request uses HeadFetcher to get reqState.
-	req1 := &ethpb.ListValidatorsRequest{PageToken: strconv.Itoa(1), PageSize: 100}
+	req1 := &zondpb.ListValidatorsRequest{PageToken: strconv.Itoa(1), PageSize: 100}
 	wanted := "Requested state is nil"
 	_, err := bs.ListValidators(context.Background(), req1)
 	assert.ErrorContains(t, wanted, err)
 
 	// request uses StateGen to get reqState.
-	req2 := &ethpb.ListValidatorsRequest{
-		QueryFilter: &ethpb.ListValidatorsRequest_Genesis{},
+	req2 := &zondpb.ListValidatorsRequest{
+		QueryFilter: &zondpb.ListValidatorsRequest_Genesis{},
 		PageToken:   strconv.Itoa(1),
 		PageSize:    100,
 	}
@@ -503,15 +503,15 @@ func TestServer_ListValidators_NoResults(t *testing.T) {
 		},
 		StateGen: stategen.New(beaconDB, doublylinkedtree.New()),
 	}
-	wanted := &ethpb.Validators{
-		ValidatorList: make([]*ethpb.Validators_ValidatorContainer, 0),
+	wanted := &zondpb.Validators{
+		ValidatorList: make([]*zondpb.Validators_ValidatorContainer, 0),
 		TotalSize:     int32(0),
 		NextPageToken: strconv.Itoa(0),
 	}
 	res, err := bs.ListValidators(
 		ctx,
-		&ethpb.ListValidatorsRequest{
-			QueryFilter: &ethpb.ListValidatorsRequest_Epoch{
+		&zondpb.ListValidatorsRequest{
+			QueryFilter: &zondpb.ListValidatorsRequest_Epoch{
 				Epoch: 0,
 			},
 		},
@@ -527,27 +527,27 @@ func TestServer_ListValidators_OnlyActiveValidators(t *testing.T) {
 	beaconDB := dbTest.SetupDB(t)
 	count := 100
 	balances := make([]uint64, count)
-	validators := make([]*ethpb.Validator, count)
-	activeValidators := make([]*ethpb.Validators_ValidatorContainer, 0)
+	validators := make([]*zondpb.Validator, count)
+	activeValidators := make([]*zondpb.Validators_ValidatorContainer, 0)
 	for i := 0; i < count; i++ {
 		pubKey := pubKey(uint64(i))
 		balances[i] = params.BeaconConfig().MaxEffectiveBalance
 
 		// We mark even validators as active, and odd validators as inactive.
 		if i%2 == 0 {
-			val := &ethpb.Validator{
+			val := &zondpb.Validator{
 				PublicKey:             pubKey,
 				WithdrawalCredentials: make([]byte, 32),
 				ActivationEpoch:       0,
 				ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 			}
 			validators[i] = val
-			activeValidators = append(activeValidators, &ethpb.Validators_ValidatorContainer{
+			activeValidators = append(activeValidators, &zondpb.Validators_ValidatorContainer{
 				Index:     primitives.ValidatorIndex(i),
 				Validator: val,
 			})
 		} else {
-			validators[i] = &ethpb.Validator{
+			validators[i] = &zondpb.Validator{
 				PublicKey:             pubKey,
 				WithdrawalCredentials: make([]byte, 32),
 				ActivationEpoch:       0,
@@ -578,7 +578,7 @@ func TestServer_ListValidators_OnlyActiveValidators(t *testing.T) {
 	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, gRoot))
 	require.NoError(t, beaconDB.SaveState(ctx, st, gRoot))
 
-	received, err := bs.ListValidators(ctx, &ethpb.ListValidatorsRequest{
+	received, err := bs.ListValidators(ctx, &zondpb.ListValidatorsRequest{
 		Active: true,
 	})
 	require.NoError(t, err)
@@ -590,27 +590,27 @@ func TestServer_ListValidators_InactiveInTheMiddle(t *testing.T) {
 	beaconDB := dbTest.SetupDB(t)
 	count := 100
 	balances := make([]uint64, count)
-	validators := make([]*ethpb.Validator, count)
-	activeValidators := make([]*ethpb.Validators_ValidatorContainer, 0)
+	validators := make([]*zondpb.Validator, count)
+	activeValidators := make([]*zondpb.Validators_ValidatorContainer, 0)
 	for i := 0; i < count; i++ {
 		pubKey := pubKey(uint64(i))
 		balances[i] = params.BeaconConfig().MaxEffectiveBalance
 
 		// We mark even validators as active, and odd validators as inactive.
 		if i%2 == 0 {
-			val := &ethpb.Validator{
+			val := &zondpb.Validator{
 				PublicKey:             pubKey,
 				WithdrawalCredentials: make([]byte, 32),
 				ActivationEpoch:       0,
 				ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 			}
 			validators[i] = val
-			activeValidators = append(activeValidators, &ethpb.Validators_ValidatorContainer{
+			activeValidators = append(activeValidators, &zondpb.Validators_ValidatorContainer{
 				Index:     primitives.ValidatorIndex(i),
 				Validator: val,
 			})
 		} else {
-			validators[i] = &ethpb.Validator{
+			validators[i] = &zondpb.Validator{
 				PublicKey:             pubKey,
 				WithdrawalCredentials: make([]byte, 32),
 				ActivationEpoch:       0,
@@ -646,7 +646,7 @@ func TestServer_ListValidators_InactiveInTheMiddle(t *testing.T) {
 	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, gRoot))
 	require.NoError(t, beaconDB.SaveState(ctx, st, gRoot))
 
-	received, err := bs.ListValidators(ctx, &ethpb.ListValidatorsRequest{
+	received, err := bs.ListValidators(ctx, &zondpb.ListValidatorsRequest{
 		Active: true,
 	})
 	require.NoError(t, err)
@@ -676,17 +676,17 @@ func TestServer_ListValidatorBalances_UnknownValidatorInResponse(t *testing.T) {
 	}
 
 	nonExistentPubKey := [32]byte{8}
-	req := &ethpb.ListValidatorBalancesRequest{
+	req := &zondpb.ListValidatorBalancesRequest{
 		PublicKeys: [][]byte{
 			pubKey(1),
 			pubKey(2),
 			nonExistentPubKey[:],
 		},
-		QueryFilter: &ethpb.ListValidatorBalancesRequest_Epoch{Epoch: 0},
+		QueryFilter: &zondpb.ListValidatorBalancesRequest_Epoch{Epoch: 0},
 	}
 
-	wanted := &ethpb.ValidatorBalances{
-		Balances: []*ethpb.ValidatorBalances_Balance{
+	wanted := &zondpb.ValidatorBalances{
+		Balances: []*zondpb.ValidatorBalances_Balance{
 			{Status: "UNKNOWN"},
 			{Index: 1, PublicKey: pubKey(1), Balance: 1, Status: "EXITED"},
 			{Index: 2, PublicKey: pubKey(2), Balance: 2, Status: "EXITED"},
@@ -705,9 +705,9 @@ func TestServer_ListValidators_NoPagination(t *testing.T) {
 	beaconDB := dbTest.SetupDB(t)
 
 	validators, _, headState := setupValidators(t, beaconDB, 100)
-	want := make([]*ethpb.Validators_ValidatorContainer, len(validators))
+	want := make([]*zondpb.Validators_ValidatorContainer, len(validators))
 	for i := 0; i < len(validators); i++ {
-		want[i] = &ethpb.Validators_ValidatorContainer{
+		want[i] = &zondpb.Validators_ValidatorContainer{
 			Index:     primitives.ValidatorIndex(i),
 			Validator: validators[i],
 		}
@@ -722,14 +722,14 @@ func TestServer_ListValidators_NoPagination(t *testing.T) {
 			Genesis: time.Now(),
 		},
 		FinalizationFetcher: &mock.ChainService{
-			FinalizedCheckPoint: &ethpb.Checkpoint{
+			FinalizedCheckPoint: &zondpb.Checkpoint{
 				Epoch: 0,
 			},
 		},
 		StateGen: stategen.New(beaconDB, doublylinkedtree.New()),
 	}
 
-	received, err := bs.ListValidators(context.Background(), &ethpb.ListValidatorsRequest{})
+	received, err := bs.ListValidators(context.Background(), &zondpb.ListValidatorsRequest{})
 	require.NoError(t, err)
 	assert.DeepSSZEqual(t, want, received.ValidatorList, "Incorrect respond of validators")
 }
@@ -738,9 +738,9 @@ func TestServer_ListValidators_StategenNotUsed(t *testing.T) {
 	beaconDB := dbTest.SetupDB(t)
 
 	validators, _, headState := setupValidators(t, beaconDB, 100)
-	want := make([]*ethpb.Validators_ValidatorContainer, len(validators))
+	want := make([]*zondpb.Validators_ValidatorContainer, len(validators))
 	for i := 0; i < len(validators); i++ {
-		want[i] = &ethpb.Validators_ValidatorContainer{
+		want[i] = &zondpb.Validators_ValidatorContainer{
 			Index:     primitives.ValidatorIndex(i),
 			Validator: validators[i],
 		}
@@ -756,7 +756,7 @@ func TestServer_ListValidators_StategenNotUsed(t *testing.T) {
 		},
 	}
 
-	received, err := bs.ListValidators(context.Background(), &ethpb.ListValidatorsRequest{})
+	received, err := bs.ListValidators(context.Background(), &zondpb.ListValidatorsRequest{})
 	require.NoError(t, err)
 	assert.DeepEqual(t, want, received.ValidatorList, "Incorrect respond of validators")
 }
@@ -768,9 +768,9 @@ func TestServer_ListValidators_IndicesPubKeys(t *testing.T) {
 	indicesWanted := []primitives.ValidatorIndex{2, 7, 11, 17}
 	pubkeyIndicesWanted := []primitives.ValidatorIndex{3, 5, 9, 15}
 	allIndicesWanted := append(indicesWanted, pubkeyIndicesWanted...)
-	want := make([]*ethpb.Validators_ValidatorContainer, len(allIndicesWanted))
+	want := make([]*zondpb.Validators_ValidatorContainer, len(allIndicesWanted))
 	for i, idx := range allIndicesWanted {
-		want[i] = &ethpb.Validators_ValidatorContainer{
+		want[i] = &zondpb.Validators_ValidatorContainer{
 			Index:     idx,
 			Validator: validators[idx],
 		}
@@ -784,7 +784,7 @@ func TestServer_ListValidators_IndicesPubKeys(t *testing.T) {
 			State: headState,
 		},
 		FinalizationFetcher: &mock.ChainService{
-			FinalizedCheckPoint: &ethpb.Checkpoint{
+			FinalizedCheckPoint: &zondpb.Checkpoint{
 				Epoch: 0,
 			},
 		},
@@ -799,7 +799,7 @@ func TestServer_ListValidators_IndicesPubKeys(t *testing.T) {
 	for i, indice := range pubkeyIndicesWanted {
 		pubKeysWanted[i] = pubKey(uint64(indice))
 	}
-	req := &ethpb.ListValidatorsRequest{
+	req := &zondpb.ListValidatorsRequest{
 		Indices:    indicesWanted,
 		PublicKeys: pubKeysWanted,
 	}
@@ -820,7 +820,7 @@ func TestServer_ListValidators_Pagination(t *testing.T) {
 			State: headState,
 		},
 		FinalizationFetcher: &mock.ChainService{
-			FinalizedCheckPoint: &ethpb.Checkpoint{
+			FinalizedCheckPoint: &zondpb.Checkpoint{
 				Epoch: 0,
 			},
 		},
@@ -832,28 +832,28 @@ func TestServer_ListValidators_Pagination(t *testing.T) {
 	}
 
 	tests := []struct {
-		req *ethpb.ListValidatorsRequest
-		res *ethpb.Validators
+		req *zondpb.ListValidatorsRequest
+		res *zondpb.Validators
 	}{
-		{req: &ethpb.ListValidatorsRequest{PageToken: strconv.Itoa(1), PageSize: 3},
-			res: &ethpb.Validators{
-				ValidatorList: []*ethpb.Validators_ValidatorContainer{
+		{req: &zondpb.ListValidatorsRequest{PageToken: strconv.Itoa(1), PageSize: 3},
+			res: &zondpb.Validators{
+				ValidatorList: []*zondpb.Validators_ValidatorContainer{
 					{
-						Validator: &ethpb.Validator{
+						Validator: &zondpb.Validator{
 							PublicKey:             pubKey(3),
 							WithdrawalCredentials: make([]byte, 32),
 						},
 						Index: 3,
 					},
 					{
-						Validator: &ethpb.Validator{
+						Validator: &zondpb.Validator{
 							PublicKey:             pubKey(4),
 							WithdrawalCredentials: make([]byte, 32),
 						},
 						Index: 4,
 					},
 					{
-						Validator: &ethpb.Validator{
+						Validator: &zondpb.Validator{
 							PublicKey:             pubKey(5),
 							WithdrawalCredentials: make([]byte, 32),
 						},
@@ -862,39 +862,39 @@ func TestServer_ListValidators_Pagination(t *testing.T) {
 				},
 				NextPageToken: strconv.Itoa(2),
 				TotalSize:     int32(count)}},
-		{req: &ethpb.ListValidatorsRequest{PageToken: strconv.Itoa(10), PageSize: 5},
-			res: &ethpb.Validators{
-				ValidatorList: []*ethpb.Validators_ValidatorContainer{
+		{req: &zondpb.ListValidatorsRequest{PageToken: strconv.Itoa(10), PageSize: 5},
+			res: &zondpb.Validators{
+				ValidatorList: []*zondpb.Validators_ValidatorContainer{
 					{
-						Validator: &ethpb.Validator{
+						Validator: &zondpb.Validator{
 							PublicKey:             pubKey(50),
 							WithdrawalCredentials: make([]byte, 32),
 						},
 						Index: 50,
 					},
 					{
-						Validator: &ethpb.Validator{
+						Validator: &zondpb.Validator{
 							PublicKey:             pubKey(51),
 							WithdrawalCredentials: make([]byte, 32),
 						},
 						Index: 51,
 					},
 					{
-						Validator: &ethpb.Validator{
+						Validator: &zondpb.Validator{
 							PublicKey:             pubKey(52),
 							WithdrawalCredentials: make([]byte, 32),
 						},
 						Index: 52,
 					},
 					{
-						Validator: &ethpb.Validator{
+						Validator: &zondpb.Validator{
 							PublicKey:             pubKey(53),
 							WithdrawalCredentials: make([]byte, 32),
 						},
 						Index: 53,
 					},
 					{
-						Validator: &ethpb.Validator{
+						Validator: &zondpb.Validator{
 							PublicKey:             pubKey(54),
 							WithdrawalCredentials: make([]byte, 32),
 						},
@@ -903,11 +903,11 @@ func TestServer_ListValidators_Pagination(t *testing.T) {
 				},
 				NextPageToken: strconv.Itoa(11),
 				TotalSize:     int32(count)}},
-		{req: &ethpb.ListValidatorsRequest{PageToken: strconv.Itoa(33), PageSize: 3},
-			res: &ethpb.Validators{
-				ValidatorList: []*ethpb.Validators_ValidatorContainer{
+		{req: &zondpb.ListValidatorsRequest{PageToken: strconv.Itoa(33), PageSize: 3},
+			res: &zondpb.Validators{
+				ValidatorList: []*zondpb.Validators_ValidatorContainer{
 					{
-						Validator: &ethpb.Validator{
+						Validator: &zondpb.Validator{
 							PublicKey:             pubKey(99),
 							WithdrawalCredentials: make([]byte, 32),
 						},
@@ -916,18 +916,18 @@ func TestServer_ListValidators_Pagination(t *testing.T) {
 				},
 				NextPageToken: "",
 				TotalSize:     int32(count)}},
-		{req: &ethpb.ListValidatorsRequest{PageSize: 2},
-			res: &ethpb.Validators{
-				ValidatorList: []*ethpb.Validators_ValidatorContainer{
+		{req: &zondpb.ListValidatorsRequest{PageSize: 2},
+			res: &zondpb.Validators{
+				ValidatorList: []*zondpb.Validators_ValidatorContainer{
 					{
-						Validator: &ethpb.Validator{
+						Validator: &zondpb.Validator{
 							PublicKey:             pubKey(0),
 							WithdrawalCredentials: make([]byte, 32),
 						},
 						Index: 0,
 					},
 					{
-						Validator: &ethpb.Validator{
+						Validator: &zondpb.Validator{
 							PublicKey:             pubKey(1),
 							WithdrawalCredentials: make([]byte, 32),
 						},
@@ -957,7 +957,7 @@ func TestServer_ListValidators_PaginationOutOfRange(t *testing.T) {
 			State: headState,
 		},
 		FinalizationFetcher: &mock.ChainService{
-			FinalizedCheckPoint: &ethpb.Checkpoint{
+			FinalizedCheckPoint: &zondpb.Checkpoint{
 				Epoch: 0,
 			},
 		},
@@ -968,7 +968,7 @@ func TestServer_ListValidators_PaginationOutOfRange(t *testing.T) {
 		StateGen: stategen.New(beaconDB, doublylinkedtree.New()),
 	}
 
-	req := &ethpb.ListValidatorsRequest{PageToken: strconv.Itoa(1), PageSize: 100}
+	req := &zondpb.ListValidatorsRequest{PageToken: strconv.Itoa(1), PageSize: 100}
 	wanted := fmt.Sprintf("page start %d >= list %d", req.PageSize, len(validators))
 	_, err := bs.ListValidators(context.Background(), req)
 	assert.ErrorContains(t, wanted, err)
@@ -979,7 +979,7 @@ func TestServer_ListValidators_ExceedsMaxPageSize(t *testing.T) {
 	exceedsMax := int32(cmd.Get().MaxRPCPageSize + 1)
 
 	wanted := fmt.Sprintf("Requested page size %d can not be greater than max size %d", exceedsMax, cmd.Get().MaxRPCPageSize)
-	req := &ethpb.ListValidatorsRequest{PageToken: strconv.Itoa(0), PageSize: exceedsMax}
+	req := &zondpb.ListValidatorsRequest{PageToken: strconv.Itoa(0), PageSize: exceedsMax}
 	_, err := bs.ListValidators(context.Background(), req)
 	assert.ErrorContains(t, wanted, err)
 }
@@ -988,9 +988,9 @@ func TestServer_ListValidators_DefaultPageSize(t *testing.T) {
 	beaconDB := dbTest.SetupDB(t)
 
 	validators, _, headState := setupValidators(t, beaconDB, 1000)
-	want := make([]*ethpb.Validators_ValidatorContainer, len(validators))
+	want := make([]*zondpb.Validators_ValidatorContainer, len(validators))
 	for i := 0; i < len(validators); i++ {
-		want[i] = &ethpb.Validators_ValidatorContainer{
+		want[i] = &zondpb.Validators_ValidatorContainer{
 			Index:     primitives.ValidatorIndex(i),
 			Validator: validators[i],
 		}
@@ -1001,7 +1001,7 @@ func TestServer_ListValidators_DefaultPageSize(t *testing.T) {
 			State: headState,
 		},
 		FinalizationFetcher: &mock.ChainService{
-			FinalizedCheckPoint: &ethpb.Checkpoint{
+			FinalizedCheckPoint: &zondpb.Checkpoint{
 				Epoch: 0,
 			},
 		},
@@ -1012,7 +1012,7 @@ func TestServer_ListValidators_DefaultPageSize(t *testing.T) {
 		StateGen: stategen.New(beaconDB, doublylinkedtree.New()),
 	}
 
-	req := &ethpb.ListValidatorsRequest{}
+	req := &zondpb.ListValidatorsRequest{}
 	res, err := bs.ListValidators(context.Background(), req)
 	require.NoError(t, err)
 
@@ -1057,8 +1057,8 @@ func TestServer_ListValidators_FromOldEpoch(t *testing.T) {
 	}
 	addDefaultReplayerBuilder(bs, beaconDB)
 
-	req := &ethpb.ListValidatorsRequest{
-		QueryFilter: &ethpb.ListValidatorsRequest_Genesis{
+	req := &zondpb.ListValidatorsRequest{
+		QueryFilter: &zondpb.ListValidatorsRequest_Genesis{
 			Genesis: true,
 		},
 	}
@@ -1067,15 +1067,15 @@ func TestServer_ListValidators_FromOldEpoch(t *testing.T) {
 	assert.Equal(t, epochs, len(res.ValidatorList))
 
 	vals := st.Validators()
-	want := make([]*ethpb.Validators_ValidatorContainer, 0)
+	want := make([]*zondpb.Validators_ValidatorContainer, 0)
 	for i, v := range vals {
-		want = append(want, &ethpb.Validators_ValidatorContainer{
+		want = append(want, &zondpb.Validators_ValidatorContainer{
 			Index:     primitives.ValidatorIndex(i),
 			Validator: v,
 		})
 	}
-	req = &ethpb.ListValidatorsRequest{
-		QueryFilter: &ethpb.ListValidatorsRequest_Epoch{
+	req = &zondpb.ListValidatorsRequest{
+		QueryFilter: &zondpb.ListValidatorsRequest_Epoch{
 			Epoch: 10,
 		},
 	}
@@ -1095,10 +1095,10 @@ func TestServer_ListValidators_ProcessHeadStateSlots(t *testing.T) {
 
 	headSlot := primitives.Slot(32)
 	numValidators := params.BeaconConfig().MinGenesisActiveValidatorCount
-	validators := make([]*ethpb.Validator, numValidators)
+	validators := make([]*zondpb.Validator, numValidators)
 	balances := make([]uint64, numValidators)
 	for i := uint64(0); i < numValidators; i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ActivationEpoch:       0,
 			PublicKey:             make([]byte, 48),
 			WithdrawalCredentials: make([]byte, 32),
@@ -1106,9 +1106,9 @@ func TestServer_ListValidators_ProcessHeadStateSlots(t *testing.T) {
 		}
 		balances[i] = params.BeaconConfig().MaxEffectiveBalance
 	}
-	want := make([]*ethpb.Validators_ValidatorContainer, len(validators))
+	want := make([]*zondpb.Validators_ValidatorContainer, len(validators))
 	for i := 0; i < len(validators); i++ {
-		want[i] = &ethpb.Validators_ValidatorContainer{
+		want[i] = &zondpb.Validators_ValidatorContainer{
 			Index:     primitives.ValidatorIndex(i),
 			Validator: validators[i],
 		}
@@ -1136,8 +1136,8 @@ func TestServer_ListValidators_ProcessHeadStateSlots(t *testing.T) {
 		StateGen: stategen.New(beaconDB, doublylinkedtree.New()),
 	}
 
-	req := &ethpb.ListValidatorsRequest{
-		QueryFilter: &ethpb.ListValidatorsRequest_Epoch{
+	req := &zondpb.ListValidatorsRequest{
+		QueryFilter: &zondpb.ListValidatorsRequest_Epoch{
 			Epoch: 1,
 		},
 	}
@@ -1151,9 +1151,9 @@ func TestServer_ListValidators_ProcessHeadStateSlots(t *testing.T) {
 
 func TestServer_GetValidator(t *testing.T) {
 	count := primitives.Epoch(30)
-	validators := make([]*ethpb.Validator, count)
+	validators := make([]*zondpb.Validator, count)
 	for i := primitives.Epoch(0); i < count; i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ActivationEpoch:       i,
 			PublicKey:             pubKey(uint64(i)),
 			WithdrawalCredentials: make([]byte, 32),
@@ -1171,37 +1171,37 @@ func TestServer_GetValidator(t *testing.T) {
 	}
 
 	tests := []struct {
-		req       *ethpb.GetValidatorRequest
-		res       *ethpb.Validator
+		req       *zondpb.GetValidatorRequest
+		res       *zondpb.Validator
 		wantedErr string
 	}{
 		{
-			req: &ethpb.GetValidatorRequest{
-				QueryFilter: &ethpb.GetValidatorRequest_Index{
+			req: &zondpb.GetValidatorRequest{
+				QueryFilter: &zondpb.GetValidatorRequest_Index{
 					Index: 0,
 				},
 			},
 			res: validators[0],
 		},
 		{
-			req: &ethpb.GetValidatorRequest{
-				QueryFilter: &ethpb.GetValidatorRequest_Index{
+			req: &zondpb.GetValidatorRequest{
+				QueryFilter: &zondpb.GetValidatorRequest_Index{
 					Index: primitives.ValidatorIndex(count - 1),
 				},
 			},
 			res: validators[count-1],
 		},
 		{
-			req: &ethpb.GetValidatorRequest{
-				QueryFilter: &ethpb.GetValidatorRequest_PublicKey{
+			req: &zondpb.GetValidatorRequest{
+				QueryFilter: &zondpb.GetValidatorRequest_PublicKey{
 					PublicKey: pubKey(5),
 				},
 			},
 			res: validators[5],
 		},
 		{
-			req: &ethpb.GetValidatorRequest{
-				QueryFilter: &ethpb.GetValidatorRequest_PublicKey{
+			req: &zondpb.GetValidatorRequest{
+				QueryFilter: &zondpb.GetValidatorRequest_PublicKey{
 					PublicKey: []byte("bad-keyxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"),
 				},
 			},
@@ -1209,8 +1209,8 @@ func TestServer_GetValidator(t *testing.T) {
 			wantedErr: "No validator matched filter criteria",
 		},
 		{
-			req: &ethpb.GetValidatorRequest{
-				QueryFilter: &ethpb.GetValidatorRequest_Index{
+			req: &zondpb.GetValidatorRequest{
+				QueryFilter: &zondpb.GetValidatorRequest_Index{
 					Index: primitives.ValidatorIndex(len(validators)),
 				},
 			},
@@ -1234,7 +1234,7 @@ func TestServer_GetValidatorActiveSetChanges(t *testing.T) {
 	beaconDB := dbTest.SetupDB(t)
 
 	ctx := context.Background()
-	validators := make([]*ethpb.Validator, 8)
+	validators := make([]*zondpb.Validator, 8)
 	headState, err := util.NewBeaconState()
 	require.NoError(t, err)
 	require.NoError(t, headState.SetSlot(0))
@@ -1262,7 +1262,7 @@ func TestServer_GetValidatorActiveSetChanges(t *testing.T) {
 			withdrawableEpoch = params.BeaconConfig().MinValidatorWithdrawabilityDelay
 			balance = params.BeaconConfig().EjectionBalance
 		}
-		err := headState.UpdateValidatorAtIndex(primitives.ValidatorIndex(i), &ethpb.Validator{
+		err := headState.UpdateValidatorAtIndex(primitives.ValidatorIndex(i), &zondpb.Validator{
 			ActivationEpoch:       activationEpoch,
 			PublicKey:             pubKey(uint64(i)),
 			EffectiveBalance:      balance,
@@ -1283,13 +1283,13 @@ func TestServer_GetValidatorActiveSetChanges(t *testing.T) {
 
 	bs := &Server{
 		FinalizationFetcher: &mock.ChainService{
-			FinalizedCheckPoint: &ethpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
+			FinalizedCheckPoint: &zondpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
 		},
 		GenesisTimeFetcher: &mock.ChainService{},
 	}
 	addDefaultReplayerBuilder(bs, beaconDB)
-	res, err := bs.GetValidatorActiveSetChanges(ctx, &ethpb.GetValidatorActiveSetChangesRequest{
-		QueryFilter: &ethpb.GetValidatorActiveSetChangesRequest_Genesis{Genesis: true},
+	res, err := bs.GetValidatorActiveSetChanges(ctx, &zondpb.GetValidatorActiveSetChangesRequest{
+		QueryFilter: &zondpb.GetValidatorActiveSetChangesRequest_Genesis{Genesis: true},
 	})
 	require.NoError(t, err)
 	wantedActive := [][]byte{
@@ -1311,7 +1311,7 @@ func TestServer_GetValidatorActiveSetChanges(t *testing.T) {
 		pubKey(7),
 	}
 	wantedEjectedIndices := []primitives.ValidatorIndex{7}
-	wanted := &ethpb.ActiveSetChanges{
+	wanted := &zondpb.ActiveSetChanges{
 		Epoch:               0,
 		ActivatedPublicKeys: wantedActive,
 		ActivatedIndices:    wantedActiveIndices,
@@ -1328,8 +1328,8 @@ func TestServer_GetValidatorActiveSetChanges(t *testing.T) {
 }
 
 func TestServer_GetValidatorQueue_PendingActivation(t *testing.T) {
-	headState, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
-		Validators: []*ethpb.Validator{
+	headState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		Validators: []*zondpb.Validator{
 			{
 				ActivationEpoch:            helpers.ActivationExitEpoch(0),
 				ActivationEligibilityEpoch: 3,
@@ -1349,7 +1349,7 @@ func TestServer_GetValidatorQueue_PendingActivation(t *testing.T) {
 				WithdrawalCredentials:      make([]byte, 32),
 			},
 		},
-		FinalizedCheckpoint: &ethpb.Checkpoint{
+		FinalizedCheckpoint: &zondpb.Checkpoint{
 			Epoch: 0,
 		},
 	})
@@ -1378,7 +1378,7 @@ func TestServer_GetValidatorQueue_PendingActivation(t *testing.T) {
 }
 
 func TestServer_GetValidatorQueue_ExitedValidatorLeavesQueue(t *testing.T) {
-	validators := []*ethpb.Validator{
+	validators := []*zondpb.Validator{
 		{
 			ActivationEpoch:   0,
 			ExitEpoch:         params.BeaconConfig().FarFutureEpoch,
@@ -1396,7 +1396,7 @@ func TestServer_GetValidatorQueue_ExitedValidatorLeavesQueue(t *testing.T) {
 	headState, err := util.NewBeaconState()
 	require.NoError(t, err)
 	require.NoError(t, headState.SetValidators(validators))
-	require.NoError(t, headState.SetFinalizedCheckpoint(&ethpb.Checkpoint{Epoch: 0, Root: make([]byte, 32)}))
+	require.NoError(t, headState.SetFinalizedCheckpoint(&zondpb.Checkpoint{Epoch: 0, Root: make([]byte, 32)}))
 	bs := &Server{
 		HeadFetcher: &mock.ChainService{
 			State: headState,
@@ -1427,8 +1427,8 @@ func TestServer_GetValidatorQueue_ExitedValidatorLeavesQueue(t *testing.T) {
 }
 
 func TestServer_GetValidatorQueue_PendingExit(t *testing.T) {
-	headState, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
-		Validators: []*ethpb.Validator{
+	headState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		Validators: []*zondpb.Validator{
 			{
 				ActivationEpoch:       0,
 				ExitEpoch:             4,
@@ -1451,7 +1451,7 @@ func TestServer_GetValidatorQueue_PendingExit(t *testing.T) {
 				WithdrawalCredentials: make([]byte, 32),
 			},
 		},
-		FinalizedCheckpoint: &ethpb.Checkpoint{
+		FinalizedCheckpoint: &zondpb.Checkpoint{
 			Epoch: 0,
 		},
 	})
@@ -1496,8 +1496,8 @@ func TestServer_GetValidatorParticipation_CannotRequestFutureEpoch(t *testing.T)
 	wanted := "Cannot retrieve information about an epoch"
 	_, err = bs.GetValidatorParticipation(
 		ctx,
-		&ethpb.GetValidatorParticipationRequest{
-			QueryFilter: &ethpb.GetValidatorParticipationRequest_Epoch{
+		&zondpb.GetValidatorParticipationRequest{
+			QueryFilter: &zondpb.GetValidatorParticipationRequest_Epoch{
 				Epoch: slots.ToEpoch(bs.GenesisTimeFetcher.CurrentSlot()) + 1,
 			},
 		},
@@ -1512,10 +1512,10 @@ func TestServer_GetValidatorParticipation_CurrentAndPrevEpoch(t *testing.T) {
 	ctx := context.Background()
 	validatorCount := uint64(32)
 
-	validators := make([]*ethpb.Validator, validatorCount)
+	validators := make([]*zondpb.Validator, validatorCount)
 	balances := make([]uint64, validatorCount)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			PublicKey:             bytesutil.ToBytes(uint64(i), 48),
 			WithdrawalCredentials: make([]byte, 32),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
@@ -1524,8 +1524,8 @@ func TestServer_GetValidatorParticipation_CurrentAndPrevEpoch(t *testing.T) {
 		balances[i] = params.BeaconConfig().MaxEffectiveBalance
 	}
 
-	atts := []*ethpb.PendingAttestation{{
-		Data:            util.HydrateAttestationData(&ethpb.AttestationData{}),
+	atts := []*zondpb.PendingAttestation{{
+		Data:            util.HydrateAttestationData(&zondpb.AttestationData{}),
 		InclusionDelay:  1,
 		AggregationBits: bitfield.NewBitlist(validatorCount / uint64(params.BeaconConfig().SlotsPerEpoch)),
 	}}
@@ -1541,8 +1541,8 @@ func TestServer_GetValidatorParticipation_CurrentAndPrevEpoch(t *testing.T) {
 	b.Block.Slot = 8
 	util.SaveBlock(t, ctx, beaconDB, b)
 	bRoot, err := b.Block.HashTreeRoot()
-	require.NoError(t, beaconDB.SaveStateSummary(ctx, &ethpb.StateSummary{Root: bRoot[:]}))
-	require.NoError(t, beaconDB.SaveStateSummary(ctx, &ethpb.StateSummary{Root: params.BeaconConfig().ZeroHash[:]}))
+	require.NoError(t, beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(t, beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Root: params.BeaconConfig().ZeroHash[:]}))
 	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, bRoot))
 	require.NoError(t, err)
 	require.NoError(t, beaconDB.SaveState(ctx, headState, bRoot))
@@ -1562,14 +1562,14 @@ func TestServer_GetValidatorParticipation_CurrentAndPrevEpoch(t *testing.T) {
 				bRoot: true,
 			},
 		},
-		FinalizationFetcher: &mock.ChainService{FinalizedCheckPoint: &ethpb.Checkpoint{Epoch: 100}},
+		FinalizationFetcher: &mock.ChainService{FinalizedCheckPoint: &zondpb.Checkpoint{Epoch: 100}},
 	}
 	addDefaultReplayerBuilder(bs, beaconDB)
 
-	res, err := bs.GetValidatorParticipation(ctx, &ethpb.GetValidatorParticipationRequest{QueryFilter: &ethpb.GetValidatorParticipationRequest_Epoch{Epoch: 1}})
+	res, err := bs.GetValidatorParticipation(ctx, &zondpb.GetValidatorParticipationRequest{QueryFilter: &zondpb.GetValidatorParticipationRequest_Epoch{Epoch: 1}})
 	require.NoError(t, err)
 
-	wanted := &ethpb.ValidatorParticipation{
+	wanted := &zondpb.ValidatorParticipation{
 		GlobalParticipationRate:          float32(params.BeaconConfig().EffectiveBalanceIncrement) / float32(validatorCount*params.BeaconConfig().MaxEffectiveBalance),
 		VotedEther:                       params.BeaconConfig().EffectiveBalanceIncrement,
 		EligibleEther:                    validatorCount * params.BeaconConfig().MaxEffectiveBalance,
@@ -1594,10 +1594,10 @@ func TestServer_GetValidatorParticipation_OrphanedUntilGenesis(t *testing.T) {
 	ctx := context.Background()
 	validatorCount := uint64(100)
 
-	validators := make([]*ethpb.Validator, validatorCount)
+	validators := make([]*zondpb.Validator, validatorCount)
 	balances := make([]uint64, validatorCount)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			PublicKey:             bytesutil.ToBytes(uint64(i), 48),
 			WithdrawalCredentials: make([]byte, 32),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
@@ -1606,8 +1606,8 @@ func TestServer_GetValidatorParticipation_OrphanedUntilGenesis(t *testing.T) {
 		balances[i] = params.BeaconConfig().MaxEffectiveBalance
 	}
 
-	atts := []*ethpb.PendingAttestation{{
-		Data:            util.HydrateAttestationData(&ethpb.AttestationData{}),
+	atts := []*zondpb.PendingAttestation{{
+		Data:            util.HydrateAttestationData(&zondpb.AttestationData{}),
 		InclusionDelay:  1,
 		AggregationBits: bitfield.NewBitlist((validatorCount / 3) / uint64(params.BeaconConfig().SlotsPerEpoch)),
 	}}
@@ -1641,14 +1641,14 @@ func TestServer_GetValidatorParticipation_OrphanedUntilGenesis(t *testing.T) {
 				bRoot: true,
 			},
 		},
-		FinalizationFetcher: &mock.ChainService{FinalizedCheckPoint: &ethpb.Checkpoint{Epoch: 100}},
+		FinalizationFetcher: &mock.ChainService{FinalizedCheckPoint: &zondpb.Checkpoint{Epoch: 100}},
 	}
 	addDefaultReplayerBuilder(bs, beaconDB)
 
-	res, err := bs.GetValidatorParticipation(ctx, &ethpb.GetValidatorParticipationRequest{QueryFilter: &ethpb.GetValidatorParticipationRequest_Epoch{Epoch: 1}})
+	res, err := bs.GetValidatorParticipation(ctx, &zondpb.GetValidatorParticipationRequest{QueryFilter: &zondpb.GetValidatorParticipationRequest_Epoch{Epoch: 1}})
 	require.NoError(t, err)
 
-	wanted := &ethpb.ValidatorParticipation{
+	wanted := &zondpb.ValidatorParticipation{
 		GlobalParticipationRate:          float32(params.BeaconConfig().EffectiveBalanceIncrement) / float32(validatorCount*params.BeaconConfig().MaxEffectiveBalance),
 		VotedEther:                       params.BeaconConfig().EffectiveBalanceIncrement,
 		EligibleEther:                    validatorCount * params.BeaconConfig().MaxEffectiveBalance,
@@ -1752,14 +1752,14 @@ func runGetValidatorParticipationCurrentAndPrevEpoch(t *testing.T, genState stat
 		GenesisTimeFetcher: &mock.ChainService{
 			Genesis: prysmTime.Now().Add(time.Duration(-1*offset) * time.Second),
 		},
-		FinalizationFetcher: &mock.ChainService{FinalizedCheckPoint: &ethpb.Checkpoint{Epoch: 100}},
+		FinalizationFetcher: &mock.ChainService{FinalizedCheckPoint: &zondpb.Checkpoint{Epoch: 100}},
 	}
 	addDefaultReplayerBuilder(bs, beaconDB)
 
-	res, err := bs.GetValidatorParticipation(ctx, &ethpb.GetValidatorParticipationRequest{QueryFilter: &ethpb.GetValidatorParticipationRequest_Epoch{Epoch: 0}})
+	res, err := bs.GetValidatorParticipation(ctx, &zondpb.GetValidatorParticipationRequest{QueryFilter: &zondpb.GetValidatorParticipationRequest_Epoch{Epoch: 0}})
 	require.NoError(t, err)
 
-	wanted := &ethpb.ValidatorParticipation{
+	wanted := &zondpb.ValidatorParticipation{
 		GlobalParticipationRate:          1,
 		VotedEther:                       validatorCount * params.BeaconConfig().MaxEffectiveBalance,
 		EligibleEther:                    validatorCount * params.BeaconConfig().MaxEffectiveBalance,
@@ -1774,10 +1774,10 @@ func runGetValidatorParticipationCurrentAndPrevEpoch(t *testing.T, genState stat
 	assert.DeepEqual(t, true, res.Finalized, "Incorrect validator participation respond")
 	assert.DeepEqual(t, wanted, res.Participation, "Incorrect validator participation respond")
 
-	res, err = bs.GetValidatorParticipation(ctx, &ethpb.GetValidatorParticipationRequest{QueryFilter: &ethpb.GetValidatorParticipationRequest_Epoch{Epoch: 1}})
+	res, err = bs.GetValidatorParticipation(ctx, &zondpb.GetValidatorParticipationRequest{QueryFilter: &zondpb.GetValidatorParticipationRequest_Epoch{Epoch: 1}})
 	require.NoError(t, err)
 
-	wanted = &ethpb.ValidatorParticipation{
+	wanted = &zondpb.ValidatorParticipation{
 		GlobalParticipationRate:          1,
 		VotedEther:                       validatorCount * params.BeaconConfig().MaxEffectiveBalance,
 		EligibleEther:                    validatorCount * params.BeaconConfig().MaxEffectiveBalance,
@@ -1815,12 +1815,12 @@ func TestGetValidatorPerformance_OK(t *testing.T) {
 	headState, err := util.NewBeaconState()
 	require.NoError(t, err)
 	require.NoError(t, headState.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(uint64(epoch+1))))
-	atts := make([]*ethpb.PendingAttestation, 3)
+	atts := make([]*zondpb.PendingAttestation, 3)
 	for i := 0; i < len(atts); i++ {
-		atts[i] = &ethpb.PendingAttestation{
-			Data: &ethpb.AttestationData{
-				Target: &ethpb.Checkpoint{Root: make([]byte, 32)},
-				Source: &ethpb.Checkpoint{Root: make([]byte, 32)},
+		atts[i] = &zondpb.PendingAttestation{
+			Data: &zondpb.AttestationData{
+				Target: &zondpb.Checkpoint{Root: make([]byte, 32)},
+				Source: &zondpb.Checkpoint{Root: make([]byte, 32)},
 			},
 			AggregationBits: bitfield.Bitlist{},
 			InclusionDelay:  1,
@@ -1834,7 +1834,7 @@ func TestGetValidatorPerformance_OK(t *testing.T) {
 	publicKey1 := bytesutil.ToBytes48([]byte{1})
 	publicKey2 := bytesutil.ToBytes48([]byte{2})
 	publicKey3 := bytesutil.ToBytes48([]byte{3})
-	validators := []*ethpb.Validator{
+	validators := []*zondpb.Validator{
 		{
 			PublicKey:       publicKey1[:],
 			ActivationEpoch: 5,
@@ -1863,7 +1863,7 @@ func TestGetValidatorPerformance_OK(t *testing.T) {
 		GenesisTimeFetcher: &mock.ChainService{Genesis: time.Now().Add(time.Duration(-1*offset) * time.Second)},
 		SyncChecker:        &mockSync.Sync{IsSyncing: false},
 	}
-	want := &ethpb.ValidatorPerformanceResponse{
+	want := &zondpb.ValidatorPerformanceResponse{
 		PublicKeys:                    [][]byte{publicKey2[:], publicKey3[:]},
 		CurrentEffectiveBalances:      []uint64{params.BeaconConfig().MaxEffectiveBalance, params.BeaconConfig().MaxEffectiveBalance},
 		CorrectlyVotedSource:          []bool{false, false},
@@ -1874,7 +1874,7 @@ func TestGetValidatorPerformance_OK(t *testing.T) {
 		MissingValidators:             [][]byte{publicKey1[:]},
 	}
 
-	res, err := bs.GetValidatorPerformance(ctx, &ethpb.ValidatorPerformanceRequest{
+	res, err := bs.GetValidatorPerformance(ctx, &zondpb.ValidatorPerformanceRequest{
 		PublicKeys: [][]byte{publicKey1[:], publicKey3[:], publicKey2[:]},
 	})
 	require.NoError(t, err)
@@ -1896,7 +1896,7 @@ func TestGetValidatorPerformance_Indices(t *testing.T) {
 	publicKey1 := bytesutil.ToBytes48([]byte{1})
 	publicKey2 := bytesutil.ToBytes48([]byte{2})
 	publicKey3 := bytesutil.ToBytes48([]byte{3})
-	validators := []*ethpb.Validator{
+	validators := []*zondpb.Validator{
 		{
 			PublicKey:       publicKey1[:],
 			ActivationEpoch: 5,
@@ -1932,7 +1932,7 @@ func TestGetValidatorPerformance_Indices(t *testing.T) {
 	require.NoError(t, err)
 	_, err = precompute.ProcessRewardsAndPenaltiesPrecompute(c, bp, vp, precompute.AttestationsDelta, precompute.ProposersDelta)
 	require.NoError(t, err)
-	want := &ethpb.ValidatorPerformanceResponse{
+	want := &zondpb.ValidatorPerformanceResponse{
 		PublicKeys:                    [][]byte{publicKey2[:], publicKey3[:]},
 		CurrentEffectiveBalances:      []uint64{params.BeaconConfig().MaxEffectiveBalance, params.BeaconConfig().MaxEffectiveBalance},
 		CorrectlyVotedSource:          []bool{false, false},
@@ -1943,7 +1943,7 @@ func TestGetValidatorPerformance_Indices(t *testing.T) {
 		MissingValidators:             [][]byte{publicKey1[:]},
 	}
 
-	res, err := bs.GetValidatorPerformance(ctx, &ethpb.ValidatorPerformanceRequest{
+	res, err := bs.GetValidatorPerformance(ctx, &zondpb.ValidatorPerformanceRequest{
 		Indices: []primitives.ValidatorIndex{2, 1, 0},
 	})
 	require.NoError(t, err)
@@ -1965,7 +1965,7 @@ func TestGetValidatorPerformance_IndicesPubkeys(t *testing.T) {
 	publicKey1 := bytesutil.ToBytes48([]byte{1})
 	publicKey2 := bytesutil.ToBytes48([]byte{2})
 	publicKey3 := bytesutil.ToBytes48([]byte{3})
-	validators := []*ethpb.Validator{
+	validators := []*zondpb.Validator{
 		{
 			PublicKey:       publicKey1[:],
 			ActivationEpoch: 5,
@@ -2002,7 +2002,7 @@ func TestGetValidatorPerformance_IndicesPubkeys(t *testing.T) {
 	require.NoError(t, err)
 	_, err = precompute.ProcessRewardsAndPenaltiesPrecompute(c, bp, vp, precompute.AttestationsDelta, precompute.ProposersDelta)
 	require.NoError(t, err)
-	want := &ethpb.ValidatorPerformanceResponse{
+	want := &zondpb.ValidatorPerformanceResponse{
 		PublicKeys:                    [][]byte{publicKey2[:], publicKey3[:]},
 		CurrentEffectiveBalances:      []uint64{params.BeaconConfig().MaxEffectiveBalance, params.BeaconConfig().MaxEffectiveBalance},
 		CorrectlyVotedSource:          []bool{false, false},
@@ -2014,7 +2014,7 @@ func TestGetValidatorPerformance_IndicesPubkeys(t *testing.T) {
 	}
 	// Index 2 and publicKey3 points to the same validator.
 	// Should not return duplicates.
-	res, err := bs.GetValidatorPerformance(ctx, &ethpb.ValidatorPerformanceRequest{
+	res, err := bs.GetValidatorPerformance(ctx, &zondpb.ValidatorPerformanceRequest{
 		PublicKeys: [][]byte{publicKey1[:], publicKey3[:]}, Indices: []primitives.ValidatorIndex{1, 2},
 	})
 	require.NoError(t, err)
@@ -2040,7 +2040,7 @@ func TestGetValidatorPerformanceAltair_OK(t *testing.T) {
 	publicKey1 := bytesutil.ToBytes48([]byte{1})
 	publicKey2 := bytesutil.ToBytes48([]byte{2})
 	publicKey3 := bytesutil.ToBytes48([]byte{3})
-	validators := []*ethpb.Validator{
+	validators := []*zondpb.Validator{
 		{
 			PublicKey:       publicKey1[:],
 			ActivationEpoch: 5,
@@ -2070,7 +2070,7 @@ func TestGetValidatorPerformanceAltair_OK(t *testing.T) {
 		GenesisTimeFetcher: &mock.ChainService{Genesis: time.Now().Add(time.Duration(-1*offset) * time.Second)},
 		SyncChecker:        &mockSync.Sync{IsSyncing: false},
 	}
-	want := &ethpb.ValidatorPerformanceResponse{
+	want := &zondpb.ValidatorPerformanceResponse{
 		PublicKeys:                    [][]byte{publicKey2[:], publicKey3[:]},
 		CurrentEffectiveBalances:      []uint64{params.BeaconConfig().MaxEffectiveBalance, params.BeaconConfig().MaxEffectiveBalance},
 		CorrectlyVotedSource:          []bool{false, false},
@@ -2082,7 +2082,7 @@ func TestGetValidatorPerformanceAltair_OK(t *testing.T) {
 		InactivityScores:              []uint64{0, 0},
 	}
 
-	res, err := bs.GetValidatorPerformance(ctx, &ethpb.ValidatorPerformanceRequest{
+	res, err := bs.GetValidatorPerformance(ctx, &zondpb.ValidatorPerformanceRequest{
 		PublicKeys: [][]byte{publicKey1[:], publicKey3[:], publicKey2[:]},
 	})
 	require.NoError(t, err)
@@ -2108,7 +2108,7 @@ func TestGetValidatorPerformanceBellatrix_OK(t *testing.T) {
 	publicKey1 := bytesutil.ToBytes48([]byte{1})
 	publicKey2 := bytesutil.ToBytes48([]byte{2})
 	publicKey3 := bytesutil.ToBytes48([]byte{3})
-	validators := []*ethpb.Validator{
+	validators := []*zondpb.Validator{
 		{
 			PublicKey:       publicKey1[:],
 			ActivationEpoch: 5,
@@ -2138,7 +2138,7 @@ func TestGetValidatorPerformanceBellatrix_OK(t *testing.T) {
 		GenesisTimeFetcher: &mock.ChainService{Genesis: time.Now().Add(time.Duration(-1*offset) * time.Second)},
 		SyncChecker:        &mockSync.Sync{IsSyncing: false},
 	}
-	want := &ethpb.ValidatorPerformanceResponse{
+	want := &zondpb.ValidatorPerformanceResponse{
 		PublicKeys:                    [][]byte{publicKey2[:], publicKey3[:]},
 		CurrentEffectiveBalances:      []uint64{params.BeaconConfig().MaxEffectiveBalance, params.BeaconConfig().MaxEffectiveBalance},
 		CorrectlyVotedSource:          []bool{false, false},
@@ -2150,7 +2150,7 @@ func TestGetValidatorPerformanceBellatrix_OK(t *testing.T) {
 		InactivityScores:              []uint64{0, 0},
 	}
 
-	res, err := bs.GetValidatorPerformance(ctx, &ethpb.ValidatorPerformanceRequest{
+	res, err := bs.GetValidatorPerformance(ctx, &zondpb.ValidatorPerformanceRequest{
 		PublicKeys: [][]byte{publicKey1[:], publicKey3[:], publicKey2[:]},
 	})
 	require.NoError(t, err)
@@ -2176,7 +2176,7 @@ func TestGetValidatorPerformanceCapella_OK(t *testing.T) {
 	publicKey1 := bytesutil.ToBytes48([]byte{1})
 	publicKey2 := bytesutil.ToBytes48([]byte{2})
 	publicKey3 := bytesutil.ToBytes48([]byte{3})
-	validators := []*ethpb.Validator{
+	validators := []*zondpb.Validator{
 		{
 			PublicKey:       publicKey1[:],
 			ActivationEpoch: 5,
@@ -2206,7 +2206,7 @@ func TestGetValidatorPerformanceCapella_OK(t *testing.T) {
 		GenesisTimeFetcher: &mock.ChainService{Genesis: time.Now().Add(time.Duration(-1*offset) * time.Second)},
 		SyncChecker:        &mockSync.Sync{IsSyncing: false},
 	}
-	want := &ethpb.ValidatorPerformanceResponse{
+	want := &zondpb.ValidatorPerformanceResponse{
 		PublicKeys:                    [][]byte{publicKey2[:], publicKey3[:]},
 		CurrentEffectiveBalances:      []uint64{params.BeaconConfig().MaxEffectiveBalance, params.BeaconConfig().MaxEffectiveBalance},
 		CorrectlyVotedSource:          []bool{false, false},
@@ -2218,7 +2218,7 @@ func TestGetValidatorPerformanceCapella_OK(t *testing.T) {
 		InactivityScores:              []uint64{0, 0},
 	}
 
-	res, err := bs.GetValidatorPerformance(ctx, &ethpb.ValidatorPerformanceRequest{
+	res, err := bs.GetValidatorPerformance(ctx, &zondpb.ValidatorPerformanceRequest{
 		PublicKeys: [][]byte{publicKey1[:], publicKey3[:], publicKey2[:]},
 	})
 	require.NoError(t, err)
@@ -2241,7 +2241,7 @@ func BenchmarkListValidatorBalances(b *testing.B) {
 	}
 	addDefaultReplayerBuilder(bs, beaconDB)
 
-	req := &ethpb.ListValidatorBalancesRequest{PageSize: 100}
+	req := &zondpb.ListValidatorBalancesRequest{PageSize: 100}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := bs.ListValidatorBalances(ctx, req)
@@ -2249,13 +2249,13 @@ func BenchmarkListValidatorBalances(b *testing.B) {
 	}
 }
 
-func setupValidators(t testing.TB, _ db.Database, count int) ([]*ethpb.Validator, []uint64, state.BeaconState) {
+func setupValidators(t testing.TB, _ db.Database, count int) ([]*zondpb.Validator, []uint64, state.BeaconState) {
 	balances := make([]uint64, count)
-	validators := make([]*ethpb.Validator, 0, count)
+	validators := make([]*zondpb.Validator, 0, count)
 	for i := 0; i < count; i++ {
 		pubKey := pubKey(uint64(i))
 		balances[i] = uint64(i)
-		validators = append(validators, &ethpb.Validator{
+		validators = append(validators, &zondpb.Validator{
 			PublicKey:             pubKey,
 			WithdrawalCredentials: make([]byte, 32),
 		})
@@ -2269,7 +2269,7 @@ func setupValidators(t testing.TB, _ db.Database, count int) ([]*ethpb.Validator
 
 func TestServer_GetIndividualVotes_RequestFutureSlot(t *testing.T) {
 	ds := &Server{GenesisTimeFetcher: &mock.ChainService{}}
-	req := &ethpb.IndividualVotesRequest{
+	req := &zondpb.IndividualVotesRequest{
 		Epoch: slots.ToEpoch(ds.GenesisTimeFetcher.CurrentSlot()) + 1,
 	}
 	wanted := errNoEpochInfoError
@@ -2308,40 +2308,40 @@ func TestServer_GetIndividualVotes_ValidatorsDontExist(t *testing.T) {
 	addDefaultReplayerBuilder(bs, beaconDB)
 
 	// Test non exist public key.
-	res, err := bs.GetIndividualVotes(ctx, &ethpb.IndividualVotesRequest{
+	res, err := bs.GetIndividualVotes(ctx, &zondpb.IndividualVotesRequest{
 		PublicKeys: [][]byte{{'a'}},
 		Epoch:      0,
 	})
 	require.NoError(t, err)
-	wanted := &ethpb.IndividualVotesRespond{
-		IndividualVotes: []*ethpb.IndividualVotesRespond_IndividualVote{
+	wanted := &zondpb.IndividualVotesRespond{
+		IndividualVotes: []*zondpb.IndividualVotesRespond_IndividualVote{
 			{PublicKey: []byte{'a'}, ValidatorIndex: primitives.ValidatorIndex(^uint64(0))},
 		},
 	}
 	assert.DeepEqual(t, wanted, res, "Unexpected response")
 
 	// Test non-existent validator index.
-	res, err = bs.GetIndividualVotes(ctx, &ethpb.IndividualVotesRequest{
+	res, err = bs.GetIndividualVotes(ctx, &zondpb.IndividualVotesRequest{
 		Indices: []primitives.ValidatorIndex{100},
 		Epoch:   0,
 	})
 	require.NoError(t, err)
-	wanted = &ethpb.IndividualVotesRespond{
-		IndividualVotes: []*ethpb.IndividualVotesRespond_IndividualVote{
+	wanted = &zondpb.IndividualVotesRespond{
+		IndividualVotes: []*zondpb.IndividualVotesRespond_IndividualVote{
 			{ValidatorIndex: 100},
 		},
 	}
 	assert.DeepEqual(t, wanted, res, "Unexpected response")
 
 	// Test both.
-	res, err = bs.GetIndividualVotes(ctx, &ethpb.IndividualVotesRequest{
+	res, err = bs.GetIndividualVotes(ctx, &zondpb.IndividualVotesRequest{
 		PublicKeys: [][]byte{{'a'}, {'b'}},
 		Indices:    []primitives.ValidatorIndex{100, 101},
 		Epoch:      0,
 	})
 	require.NoError(t, err)
-	wanted = &ethpb.IndividualVotesRespond{
-		IndividualVotes: []*ethpb.IndividualVotesRespond_IndividualVote{
+	wanted = &zondpb.IndividualVotesRespond{
+		IndividualVotes: []*zondpb.IndividualVotesRespond_IndividualVote{
 			{PublicKey: []byte{'a'}, ValidatorIndex: primitives.ValidatorIndex(^uint64(0))},
 			{PublicKey: []byte{'b'}, ValidatorIndex: primitives.ValidatorIndex(^uint64(0))},
 			{ValidatorIndex: 100},
@@ -2379,11 +2379,11 @@ func TestServer_GetIndividualVotes_Working(t *testing.T) {
 	require.NoError(t, beaconState.SetBlockRoots(br))
 	att2.Data.Target.Root = rt[:]
 	att2.Data.BeaconBlockRoot = newRt[:]
-	err = beaconState.AppendPreviousEpochAttestations(&ethpb.PendingAttestation{
+	err = beaconState.AppendPreviousEpochAttestations(&zondpb.PendingAttestation{
 		Data: att1.Data, AggregationBits: bf, InclusionDelay: 1,
 	})
 	require.NoError(t, err)
-	err = beaconState.AppendCurrentEpochAttestations(&ethpb.PendingAttestation{
+	err = beaconState.AppendCurrentEpochAttestations(&zondpb.PendingAttestation{
 		Data: att2.Data, AggregationBits: bf, InclusionDelay: 1,
 	})
 	require.NoError(t, err)
@@ -2403,13 +2403,13 @@ func TestServer_GetIndividualVotes_Working(t *testing.T) {
 	}
 	addDefaultReplayerBuilder(bs, beaconDB)
 
-	res, err := bs.GetIndividualVotes(ctx, &ethpb.IndividualVotesRequest{
+	res, err := bs.GetIndividualVotes(ctx, &zondpb.IndividualVotesRequest{
 		Indices: []primitives.ValidatorIndex{0, 1},
 		Epoch:   0,
 	})
 	require.NoError(t, err)
-	wanted := &ethpb.IndividualVotesRespond{
-		IndividualVotes: []*ethpb.IndividualVotesRespond_IndividualVote{
+	wanted := &zondpb.IndividualVotesRespond{
+		IndividualVotes: []*zondpb.IndividualVotesRespond_IndividualVote{
 			{
 				ValidatorIndex:                   0,
 				PublicKey:                        beaconState.Validators()[0].PublicKey,
@@ -2466,13 +2466,13 @@ func TestServer_GetIndividualVotes_WorkingAltair(t *testing.T) {
 	}
 	addDefaultReplayerBuilder(bs, beaconDB)
 
-	res, err := bs.GetIndividualVotes(ctx, &ethpb.IndividualVotesRequest{
+	res, err := bs.GetIndividualVotes(ctx, &zondpb.IndividualVotesRequest{
 		Indices: []primitives.ValidatorIndex{0, 1},
 		Epoch:   0,
 	})
 	require.NoError(t, err)
-	wanted := &ethpb.IndividualVotesRespond{
-		IndividualVotes: []*ethpb.IndividualVotesRespond_IndividualVote{
+	wanted := &zondpb.IndividualVotesRespond{
+		IndividualVotes: []*zondpb.IndividualVotesRespond_IndividualVote{
 			{
 				ValidatorIndex:                   0,
 				PublicKey:                        beaconState.Validators()[0].PublicKey,
@@ -2552,13 +2552,13 @@ func TestServer_GetIndividualVotes_AltairEndOfEpoch(t *testing.T) {
 	}
 	addDefaultReplayerBuilder(bs, beaconDB)
 
-	res, err := bs.GetIndividualVotes(ctx, &ethpb.IndividualVotesRequest{
+	res, err := bs.GetIndividualVotes(ctx, &zondpb.IndividualVotesRequest{
 		Indices: []primitives.ValidatorIndex{0, 1},
 		Epoch:   1,
 	})
 	require.NoError(t, err)
-	wanted := &ethpb.IndividualVotesRespond{
-		IndividualVotes: []*ethpb.IndividualVotesRespond_IndividualVote{
+	wanted := &zondpb.IndividualVotesRespond{
+		IndividualVotes: []*zondpb.IndividualVotesRespond_IndividualVote{
 			{
 				ValidatorIndex:                   0,
 				PublicKey:                        beaconState.Validators()[0].PublicKey,
@@ -2640,13 +2640,13 @@ func TestServer_GetIndividualVotes_BellatrixEndOfEpoch(t *testing.T) {
 	}
 	addDefaultReplayerBuilder(bs, beaconDB)
 
-	res, err := bs.GetIndividualVotes(ctx, &ethpb.IndividualVotesRequest{
+	res, err := bs.GetIndividualVotes(ctx, &zondpb.IndividualVotesRequest{
 		Indices: []primitives.ValidatorIndex{0, 1},
 		Epoch:   1,
 	})
 	require.NoError(t, err)
-	wanted := &ethpb.IndividualVotesRespond{
-		IndividualVotes: []*ethpb.IndividualVotesRespond_IndividualVote{
+	wanted := &zondpb.IndividualVotesRespond{
+		IndividualVotes: []*zondpb.IndividualVotesRespond_IndividualVote{
 			{
 				ValidatorIndex:                   0,
 				PublicKey:                        beaconState.Validators()[0].PublicKey,
@@ -2728,13 +2728,13 @@ func TestServer_GetIndividualVotes_CapellaEndOfEpoch(t *testing.T) {
 	}
 	addDefaultReplayerBuilder(bs, beaconDB)
 
-	res, err := bs.GetIndividualVotes(ctx, &ethpb.IndividualVotesRequest{
+	res, err := bs.GetIndividualVotes(ctx, &zondpb.IndividualVotesRequest{
 		Indices: []primitives.ValidatorIndex{0, 1},
 		Epoch:   1,
 	})
 	require.NoError(t, err)
-	wanted := &ethpb.IndividualVotesRespond{
-		IndividualVotes: []*ethpb.IndividualVotesRespond_IndividualVote{
+	wanted := &zondpb.IndividualVotesRespond{
+		IndividualVotes: []*zondpb.IndividualVotesRespond_IndividualVote{
 			{
 				ValidatorIndex:                   0,
 				PublicKey:                        beaconState.Validators()[0].PublicKey,
@@ -2769,75 +2769,75 @@ func TestServer_GetIndividualVotes_CapellaEndOfEpoch(t *testing.T) {
 func Test_validatorStatus(t *testing.T) {
 	tests := []struct {
 		name      string
-		validator *ethpb.Validator
+		validator *zondpb.Validator
 		epoch     primitives.Epoch
-		want      ethpb.ValidatorStatus
+		want      zondpb.ValidatorStatus
 	}{
 		{
 			name:      "Unknown",
 			validator: nil,
 			epoch:     0,
-			want:      ethpb.ValidatorStatus_UNKNOWN_STATUS,
+			want:      zondpb.ValidatorStatus_UNKNOWN_STATUS,
 		},
 		{
 			name: "Deposited",
-			validator: &ethpb.Validator{
+			validator: &zondpb.Validator{
 				ActivationEligibilityEpoch: 1,
 			},
 			epoch: 0,
-			want:  ethpb.ValidatorStatus_DEPOSITED,
+			want:  zondpb.ValidatorStatus_DEPOSITED,
 		},
 		{
 			name: "Pending",
-			validator: &ethpb.Validator{
+			validator: &zondpb.Validator{
 				ActivationEligibilityEpoch: 0,
 				ActivationEpoch:            1,
 			},
 			epoch: 0,
-			want:  ethpb.ValidatorStatus_PENDING,
+			want:  zondpb.ValidatorStatus_PENDING,
 		},
 		{
 			name: "Active",
-			validator: &ethpb.Validator{
+			validator: &zondpb.Validator{
 				ActivationEligibilityEpoch: 0,
 				ActivationEpoch:            0,
 				ExitEpoch:                  params.BeaconConfig().FarFutureEpoch,
 			},
 			epoch: 0,
-			want:  ethpb.ValidatorStatus_ACTIVE,
+			want:  zondpb.ValidatorStatus_ACTIVE,
 		},
 		{
 			name: "Slashed",
-			validator: &ethpb.Validator{
+			validator: &zondpb.Validator{
 				ActivationEligibilityEpoch: 0,
 				ActivationEpoch:            0,
 				ExitEpoch:                  5,
 				Slashed:                    true,
 			},
 			epoch: 4,
-			want:  ethpb.ValidatorStatus_SLASHING,
+			want:  zondpb.ValidatorStatus_SLASHING,
 		},
 		{
 			name: "Exiting",
-			validator: &ethpb.Validator{
+			validator: &zondpb.Validator{
 				ActivationEligibilityEpoch: 0,
 				ActivationEpoch:            0,
 				ExitEpoch:                  5,
 				Slashed:                    false,
 			},
 			epoch: 4,
-			want:  ethpb.ValidatorStatus_EXITING,
+			want:  zondpb.ValidatorStatus_EXITING,
 		},
 		{
 			name: "Exiting",
-			validator: &ethpb.Validator{
+			validator: &zondpb.Validator{
 				ActivationEligibilityEpoch: 0,
 				ActivationEpoch:            0,
 				ExitEpoch:                  3,
 				Slashed:                    false,
 			},
 			epoch: 4,
-			want:  ethpb.ValidatorStatus_EXITED,
+			want:  zondpb.ValidatorStatus_EXITED,
 		},
 	}
 	for _, tt := range tests {

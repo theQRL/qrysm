@@ -28,7 +28,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/bls/blst"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/network"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -40,14 +40,14 @@ func TestBlockRewards(t *testing.T) {
 	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, st.SetSlot(1))
 	require.NoError(t, err)
-	validators := make([]*eth.Validator, 0, valCount)
+	validators := make([]*zond.Validator, 0, valCount)
 	balances := make([]uint64, 0, valCount)
 	secretKeys := make([]bls.SecretKey, 0, valCount)
 	for i := 0; i < valCount; i++ {
 		blsKey, err := bls.RandKey()
 		require.NoError(t, err)
 		secretKeys = append(secretKeys, blsKey)
-		validators = append(validators, &eth.Validator{
+		validators = append(validators, &zond.Validator{
 			PublicKey:         blsKey.PublicKey().Marshal(),
 			ExitEpoch:         params.BeaconConfig().FarFutureEpoch,
 			WithdrawableEpoch: params.BeaconConfig().FarFutureEpoch,
@@ -70,48 +70,48 @@ func TestBlockRewards(t *testing.T) {
 	b.Block.Slot = 2
 	// we have to set the proposer index to the value that will be randomly chosen (fortunately it's deterministic)
 	b.Block.ProposerIndex = 12
-	b.Block.Body.Attestations = []*eth.Attestation{
+	b.Block.Body.Attestations = []*zond.Attestation{
 		{
 			AggregationBits: bitfield.Bitlist{0b00000111},
-			Data:            util.HydrateAttestationData(&eth.AttestationData{}),
+			Data:            util.HydrateAttestationData(&zond.AttestationData{}),
 			Signature:       make([]byte, dilithium2.CryptoBytes),
 		},
 		{
 			AggregationBits: bitfield.Bitlist{0b00000111},
-			Data:            util.HydrateAttestationData(&eth.AttestationData{}),
+			Data:            util.HydrateAttestationData(&zond.AttestationData{}),
 			Signature:       make([]byte, dilithium2.CryptoBytes),
 		},
 	}
-	attData1 := util.HydrateAttestationData(&eth.AttestationData{BeaconBlockRoot: bytesutil.PadTo([]byte("root1"), 32)})
-	attData2 := util.HydrateAttestationData(&eth.AttestationData{BeaconBlockRoot: bytesutil.PadTo([]byte("root2"), 32)})
+	attData1 := util.HydrateAttestationData(&zond.AttestationData{BeaconBlockRoot: bytesutil.PadTo([]byte("root1"), 32)})
+	attData2 := util.HydrateAttestationData(&zond.AttestationData{BeaconBlockRoot: bytesutil.PadTo([]byte("root2"), 32)})
 	domain, err := signing.Domain(st.Fork(), 0, params.BeaconConfig().DomainBeaconAttester, st.GenesisValidatorsRoot())
 	require.NoError(t, err)
 	sigRoot1, err := signing.ComputeSigningRoot(attData1, domain)
 	require.NoError(t, err)
 	sigRoot2, err := signing.ComputeSigningRoot(attData2, domain)
 	require.NoError(t, err)
-	b.Block.Body.AttesterSlashings = []*eth.AttesterSlashing{
+	b.Block.Body.AttesterSlashings = []*zond.AttesterSlashing{
 		{
-			Attestation_1: &eth.IndexedAttestation{
+			Attestation_1: &zond.IndexedAttestation{
 				AttestingIndices: []uint64{0},
 				Data:             attData1,
 				Signature:        secretKeys[0].Sign(sigRoot1[:]).Marshal(),
 			},
-			Attestation_2: &eth.IndexedAttestation{
+			Attestation_2: &zond.IndexedAttestation{
 				AttestingIndices: []uint64{0},
 				Data:             attData2,
 				Signature:        secretKeys[0].Sign(sigRoot2[:]).Marshal(),
 			},
 		},
 	}
-	header1 := &eth.BeaconBlockHeader{
+	header1 := &zond.BeaconBlockHeader{
 		Slot:          0,
 		ProposerIndex: 1,
 		ParentRoot:    bytesutil.PadTo([]byte("root1"), 32),
 		StateRoot:     bytesutil.PadTo([]byte("root1"), 32),
 		BodyRoot:      bytesutil.PadTo([]byte("root1"), 32),
 	}
-	header2 := &eth.BeaconBlockHeader{
+	header2 := &zond.BeaconBlockHeader{
 		Slot:          0,
 		ProposerIndex: 1,
 		ParentRoot:    bytesutil.PadTo([]byte("root2"), 32),
@@ -124,13 +124,13 @@ func TestBlockRewards(t *testing.T) {
 	require.NoError(t, err)
 	sigRoot2, err = signing.ComputeSigningRoot(header2, domain)
 	require.NoError(t, err)
-	b.Block.Body.ProposerSlashings = []*eth.ProposerSlashing{
+	b.Block.Body.ProposerSlashings = []*zond.ProposerSlashing{
 		{
-			Header_1: &eth.SignedBeaconBlockHeader{
+			Header_1: &zond.SignedBeaconBlockHeader{
 				Header:    header1,
 				Signature: secretKeys[1].Sign(sigRoot1[:]).Marshal(),
 			},
-			Header_2: &eth.SignedBeaconBlockHeader{
+			Header_2: &zond.SignedBeaconBlockHeader{
 				Header:    header2,
 				Signature: secretKeys[1].Sign(sigRoot2[:]).Marshal(),
 			},
@@ -151,7 +151,7 @@ func TestBlockRewards(t *testing.T) {
 	sig2, err := blst.SignatureFromBytes(secretKeys[19].Sign(r[:]).Marshal())
 	require.NoError(t, err)
 	aggSig := bls.AggregateSignatures([]bls.Signature{sig1, sig2}).Marshal()
-	b.Block.Body.SyncAggregate = &eth.SyncAggregate{SyncCommitteeBits: scBits, SyncCommitteeSignature: aggSig}
+	b.Block.Body.SyncAggregate = &zond.SyncAggregate{SyncCommitteeBits: scBits, SyncCommitteeSignature: aggSig}
 
 	sbb, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
@@ -213,14 +213,14 @@ func TestAttestationRewards(t *testing.T) {
 	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(params.BeaconConfig().SlotsPerEpoch*3-1))
-	validators := make([]*eth.Validator, 0, valCount)
+	validators := make([]*zond.Validator, 0, valCount)
 	balances := make([]uint64, 0, valCount)
 	secretKeys := make([]bls.SecretKey, 0, valCount)
 	for i := 0; i < valCount; i++ {
 		blsKey, err := bls.RandKey()
 		require.NoError(t, err)
 		secretKeys = append(secretKeys, blsKey)
-		validators = append(validators, &eth.Validator{
+		validators = append(validators, &zond.Validator{
 			PublicKey:         blsKey.PublicKey().Marshal(),
 			ExitEpoch:         params.BeaconConfig().FarFutureEpoch,
 			WithdrawableEpoch: params.BeaconConfig().FarFutureEpoch,
@@ -328,14 +328,14 @@ func TestAttestationRewards(t *testing.T) {
 		st, err := util.NewBeaconStateCapella()
 		require.NoError(t, err)
 		require.NoError(t, st.SetSlot(params.BeaconConfig().SlotsPerEpoch*3-1))
-		validators := make([]*eth.Validator, 0, valCount)
+		validators := make([]*zond.Validator, 0, valCount)
 		balances := make([]uint64, 0, valCount)
 		secretKeys := make([]bls.SecretKey, 0, valCount)
 		for i := 0; i < valCount; i++ {
 			blsKey, err := bls.RandKey()
 			require.NoError(t, err)
 			secretKeys = append(secretKeys, blsKey)
-			validators = append(validators, &eth.Validator{
+			validators = append(validators, &zond.Validator{
 				PublicKey:         blsKey.PublicKey().Marshal(),
 				ExitEpoch:         params.BeaconConfig().FarFutureEpoch,
 				WithdrawableEpoch: params.BeaconConfig().FarFutureEpoch,

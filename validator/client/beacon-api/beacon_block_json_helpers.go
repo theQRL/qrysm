@@ -6,7 +6,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 func jsonifyTransactions(transactions [][]byte) []string {
@@ -18,7 +18,7 @@ func jsonifyTransactions(transactions [][]byte) []string {
 	return jsonTransactions
 }
 
-func jsonifyDilithiumToExecutionChanges(dilithiumToExecutionChanges []*ethpb.SignedDilithiumToExecutionChange) []*apimiddleware.SignedDilithiumToExecutionChangeJson {
+func jsonifyDilithiumToExecutionChanges(dilithiumToExecutionChanges []*zondpb.SignedDilithiumToExecutionChange) []*apimiddleware.SignedDilithiumToExecutionChangeJson {
 	jsonDilithiumToExecutionChanges := make([]*apimiddleware.SignedDilithiumToExecutionChangeJson, len(dilithiumToExecutionChanges))
 	for index, signedDilithiumToExecutionChange := range dilithiumToExecutionChanges {
 		dilithiumToExecutionChangeJson := &apimiddleware.DilithiumToExecutionChangeJson{
@@ -35,7 +35,7 @@ func jsonifyDilithiumToExecutionChanges(dilithiumToExecutionChanges []*ethpb.Sig
 	return jsonDilithiumToExecutionChanges
 }
 
-func jsonifyEth1Data(eth1Data *ethpb.Eth1Data) *apimiddleware.Eth1DataJson {
+func jsonifyEth1Data(eth1Data *zondpb.Eth1Data) *apimiddleware.Eth1DataJson {
 	return &apimiddleware.Eth1DataJson{
 		BlockHash:    hexutil.Encode(eth1Data.BlockHash),
 		DepositCount: uint64ToString(eth1Data.DepositCount),
@@ -43,7 +43,7 @@ func jsonifyEth1Data(eth1Data *ethpb.Eth1Data) *apimiddleware.Eth1DataJson {
 	}
 }
 
-func jsonifyAttestations(attestations []*ethpb.Attestation) []*apimiddleware.AttestationJson {
+func jsonifyAttestations(attestations []*zondpb.Attestation) []*apimiddleware.AttestationJson {
 	jsonAttestations := make([]*apimiddleware.AttestationJson, len(attestations))
 	for index, attestation := range attestations {
 		jsonAttestations[index] = jsonifyAttestation(attestation)
@@ -51,7 +51,7 @@ func jsonifyAttestations(attestations []*ethpb.Attestation) []*apimiddleware.Att
 	return jsonAttestations
 }
 
-func jsonifyAttesterSlashings(attesterSlashings []*ethpb.AttesterSlashing) []*apimiddleware.AttesterSlashingJson {
+func jsonifyAttesterSlashings(attesterSlashings []*zondpb.AttesterSlashing) []*apimiddleware.AttesterSlashingJson {
 	jsonAttesterSlashings := make([]*apimiddleware.AttesterSlashingJson, len(attesterSlashings))
 	for index, attesterSlashing := range attesterSlashings {
 		jsonAttesterSlashing := &apimiddleware.AttesterSlashingJson{
@@ -63,7 +63,7 @@ func jsonifyAttesterSlashings(attesterSlashings []*ethpb.AttesterSlashing) []*ap
 	return jsonAttesterSlashings
 }
 
-func jsonifyDeposits(deposits []*ethpb.Deposit) []*apimiddleware.DepositJson {
+func jsonifyDeposits(deposits []*zondpb.Deposit) []*apimiddleware.DepositJson {
 	jsonDeposits := make([]*apimiddleware.DepositJson, len(deposits))
 	for depositIndex, deposit := range deposits {
 		proofs := make([]string, len(deposit.Proof))
@@ -85,7 +85,7 @@ func jsonifyDeposits(deposits []*ethpb.Deposit) []*apimiddleware.DepositJson {
 	return jsonDeposits
 }
 
-func jsonifyProposerSlashings(proposerSlashings []*ethpb.ProposerSlashing) []*apimiddleware.ProposerSlashingJson {
+func jsonifyProposerSlashings(proposerSlashings []*zondpb.ProposerSlashing) []*apimiddleware.ProposerSlashingJson {
 	jsonProposerSlashings := make([]*apimiddleware.ProposerSlashingJson, len(proposerSlashings))
 	for index, proposerSlashing := range proposerSlashings {
 		jsonProposerSlashing := &apimiddleware.ProposerSlashingJson{
@@ -98,7 +98,7 @@ func jsonifyProposerSlashings(proposerSlashings []*ethpb.ProposerSlashing) []*ap
 }
 
 // JsonifySignedVoluntaryExits converts an array of voluntary exit structs to a JSON hex string compatible format.
-func JsonifySignedVoluntaryExits(voluntaryExits []*ethpb.SignedVoluntaryExit) []*apimiddleware.SignedVoluntaryExitJson {
+func JsonifySignedVoluntaryExits(voluntaryExits []*zondpb.SignedVoluntaryExit) []*apimiddleware.SignedVoluntaryExitJson {
 	jsonSignedVoluntaryExits := make([]*apimiddleware.SignedVoluntaryExitJson, len(voluntaryExits))
 	for index, signedVoluntaryExit := range voluntaryExits {
 		jsonSignedVoluntaryExit := &apimiddleware.SignedVoluntaryExitJson{
@@ -113,7 +113,7 @@ func JsonifySignedVoluntaryExits(voluntaryExits []*ethpb.SignedVoluntaryExit) []
 	return jsonSignedVoluntaryExits
 }
 
-func jsonifySignedBeaconBlockHeader(signedBeaconBlockHeader *ethpb.SignedBeaconBlockHeader) *apimiddleware.SignedBeaconBlockHeaderJson {
+func jsonifySignedBeaconBlockHeader(signedBeaconBlockHeader *zondpb.SignedBeaconBlockHeader) *apimiddleware.SignedBeaconBlockHeaderJson {
 	return &apimiddleware.SignedBeaconBlockHeaderJson{
 		Header: &apimiddleware.BeaconBlockHeaderJson{
 			BodyRoot:      hexutil.Encode(signedBeaconBlockHeader.Header.BodyRoot),
@@ -126,7 +126,7 @@ func jsonifySignedBeaconBlockHeader(signedBeaconBlockHeader *ethpb.SignedBeaconB
 	}
 }
 
-func jsonifyIndexedAttestation(indexedAttestation *ethpb.IndexedAttestation) *apimiddleware.IndexedAttestationJson {
+func jsonifyIndexedAttestation(indexedAttestation *zondpb.IndexedAttestation) *apimiddleware.IndexedAttestationJson {
 	attestingIndices := make([]string, len(indexedAttestation.AttestingIndices))
 	for index, attestingIndex := range indexedAttestation.AttestingIndices {
 		attestingIndex := uint64ToString(attestingIndex)
@@ -140,7 +140,7 @@ func jsonifyIndexedAttestation(indexedAttestation *ethpb.IndexedAttestation) *ap
 	}
 }
 
-func jsonifyAttestationData(attestationData *ethpb.AttestationData) *apimiddleware.AttestationDataJson {
+func jsonifyAttestationData(attestationData *zondpb.AttestationData) *apimiddleware.AttestationDataJson {
 	return &apimiddleware.AttestationDataJson{
 		BeaconBlockRoot: hexutil.Encode(attestationData.BeaconBlockRoot),
 		CommitteeIndex:  uint64ToString(attestationData.CommitteeIndex),
@@ -156,7 +156,7 @@ func jsonifyAttestationData(attestationData *ethpb.AttestationData) *apimiddlewa
 	}
 }
 
-func jsonifyAttestation(attestation *ethpb.Attestation) *apimiddleware.AttestationJson {
+func jsonifyAttestation(attestation *zondpb.Attestation) *apimiddleware.AttestationJson {
 	return &apimiddleware.AttestationJson{
 		AggregationBits: hexutil.Encode(attestation.AggregationBits),
 		Data:            jsonifyAttestationData(attestation.Data),
@@ -164,7 +164,7 @@ func jsonifyAttestation(attestation *ethpb.Attestation) *apimiddleware.Attestati
 	}
 }
 
-func jsonifySignedAggregateAndProof(signedAggregateAndProof *ethpb.SignedAggregateAttestationAndProof) *apimiddleware.SignedAggregateAttestationAndProofJson {
+func jsonifySignedAggregateAndProof(signedAggregateAndProof *zondpb.SignedAggregateAttestationAndProof) *apimiddleware.SignedAggregateAttestationAndProofJson {
 	return &apimiddleware.SignedAggregateAttestationAndProofJson{
 		Message: &apimiddleware.AggregateAttestationAndProofJson{
 			AggregatorIndex: uint64ToString(signedAggregateAndProof.Message.AggregatorIndex),

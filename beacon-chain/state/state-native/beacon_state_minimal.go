@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // BeaconState defines a struct containing utilities for the Ethereum Beacon Chain state, defining
@@ -22,30 +22,30 @@ type BeaconState struct {
 	genesisTime                         uint64
 	genesisValidatorsRoot               [32]byte
 	slot                                primitives.Slot
-	fork                                *ethpb.Fork
-	latestBlockHeader                   *ethpb.BeaconBlockHeader
+	fork                                *zondpb.Fork
+	latestBlockHeader                   *zondpb.BeaconBlockHeader
 	blockRoots                          *customtypes.BlockRoots
 	stateRoots                          *customtypes.StateRoots
 	historicalRoots                     customtypes.HistoricalRoots
-	historicalSummaries                 []*ethpb.HistoricalSummary
-	eth1Data                            *ethpb.Eth1Data
-	eth1DataVotes                       []*ethpb.Eth1Data
+	historicalSummaries                 []*zondpb.HistoricalSummary
+	eth1Data                            *zondpb.Eth1Data
+	eth1DataVotes                       []*zondpb.Eth1Data
 	eth1DepositIndex                    uint64
-	validators                          []*ethpb.Validator
+	validators                          []*zondpb.Validator
 	balances                            []uint64
 	randaoMixes                         *customtypes.RandaoMixes
 	slashings                           []uint64
-	previousEpochAttestations           []*ethpb.PendingAttestation
-	currentEpochAttestations            []*ethpb.PendingAttestation
+	previousEpochAttestations           []*zondpb.PendingAttestation
+	currentEpochAttestations            []*zondpb.PendingAttestation
 	previousEpochParticipation          []byte
 	currentEpochParticipation           []byte
 	justificationBits                   bitfield.Bitvector4
-	previousJustifiedCheckpoint         *ethpb.Checkpoint
-	currentJustifiedCheckpoint          *ethpb.Checkpoint
-	finalizedCheckpoint                 *ethpb.Checkpoint
+	previousJustifiedCheckpoint         *zondpb.Checkpoint
+	currentJustifiedCheckpoint          *zondpb.Checkpoint
+	finalizedCheckpoint                 *zondpb.Checkpoint
 	inactivityScores                    []uint64
-	currentSyncCommittee                *ethpb.SyncCommittee
-	nextSyncCommittee                   *ethpb.SyncCommittee
+	currentSyncCommittee                *zondpb.SyncCommittee
+	nextSyncCommittee                   *zondpb.SyncCommittee
 	latestExecutionPayloadHeader        *enginev1.ExecutionPayloadHeader
 	latestExecutionPayloadHeaderCapella *enginev1.ExecutionPayloadHeaderCapella
 	nextWithdrawalIndex                 uint64

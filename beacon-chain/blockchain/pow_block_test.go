@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
@@ -124,10 +124,10 @@ func Test_validateMergeBlock(t *testing.T) {
 		},
 		TotalDifficulty: "0x1",
 	}
-	blk := &ethpb.SignedBeaconBlockBellatrix{
-		Block: &ethpb.BeaconBlockBellatrix{
+	blk := &zondpb.SignedBeaconBlockBellatrix{
+		Block: &zondpb.BeaconBlockBellatrix{
 			Slot: 1,
-			Body: &ethpb.BeaconBlockBodyBellatrix{
+			Body: &zondpb.BeaconBlockBodyBellatrix{
 				ExecutionPayload: &enginev1.ExecutionPayload{
 					ParentHash: a[:],
 				},
@@ -222,7 +222,7 @@ func Test_validateTerminalBlockHash(t *testing.T) {
 	service, tr := minimalTestService(t)
 	ctx := tr.ctx
 
-	blk, err := blocks.NewSignedBeaconBlock(util.HydrateSignedBeaconBlockBellatrix(&ethpb.SignedBeaconBlockBellatrix{}))
+	blk, err := blocks.NewSignedBeaconBlock(util.HydrateSignedBeaconBlockBellatrix(&zondpb.SignedBeaconBlockBellatrix{}))
 	require.NoError(t, err)
 	blk.SetSlot(1)
 	require.NoError(t, blk.SetExecution(wrapped))

@@ -4,21 +4,21 @@ import (
 	"context"
 
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 )
 
 // SaveStateSummary saves a state summary object to the DB.
-func (s *Store) SaveStateSummary(ctx context.Context, summary *ethpb.StateSummary) error {
+func (s *Store) SaveStateSummary(ctx context.Context, summary *zondpb.StateSummary) error {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.SaveStateSummary")
 	defer span.End()
 
-	return s.SaveStateSummaries(ctx, []*ethpb.StateSummary{summary})
+	return s.SaveStateSummaries(ctx, []*zondpb.StateSummary{summary})
 }
 
 // SaveStateSummaries saves state summary objects to the DB.
-func (s *Store) SaveStateSummaries(ctx context.Context, summaries []*ethpb.StateSummary) error {
+func (s *Store) SaveStateSummaries(ctx context.Context, summaries []*zondpb.StateSummary) error {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.SaveStateSummaries")
 	defer span.End()
 
@@ -38,7 +38,7 @@ func (s *Store) SaveStateSummaries(ctx context.Context, summaries []*ethpb.State
 }
 
 // StateSummary returns the state summary object from the db using input block root.
-func (s *Store) StateSummary(ctx context.Context, blockRoot [32]byte) (*ethpb.StateSummary, error) {
+func (s *Store) StateSummary(ctx context.Context, blockRoot [32]byte) (*zondpb.StateSummary, error) {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.StateSummary")
 	defer span.End()
 
@@ -55,7 +55,7 @@ func (s *Store) StateSummary(ctx context.Context, blockRoot [32]byte) (*ethpb.St
 	if len(enc) == 0 {
 		return nil, nil
 	}
-	summary := &ethpb.StateSummary{}
+	summary := &zondpb.StateSummary{}
 	if err := decode(ctx, enc, summary); err != nil {
 		return nil, err
 	}

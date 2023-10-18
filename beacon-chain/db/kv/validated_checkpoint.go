@@ -3,16 +3,16 @@ package kv
 import (
 	"context"
 
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 )
 
 // LastValidatedCheckpoint returns the latest fully validated checkpoint in beacon chain.
-func (s *Store) LastValidatedCheckpoint(ctx context.Context) (*ethpb.Checkpoint, error) {
+func (s *Store) LastValidatedCheckpoint(ctx context.Context) (*zondpb.Checkpoint, error) {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.LastValidatedCheckpoint")
 	defer span.End()
-	var checkpoint *ethpb.Checkpoint
+	var checkpoint *zondpb.Checkpoint
 	err := s.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(checkpointBucket)
 		enc := bkt.Get(lastValidatedCheckpointKey)
@@ -21,14 +21,14 @@ func (s *Store) LastValidatedCheckpoint(ctx context.Context) (*ethpb.Checkpoint,
 			checkpoint, finErr = s.FinalizedCheckpoint(ctx)
 			return finErr
 		}
-		checkpoint = &ethpb.Checkpoint{}
+		checkpoint = &zondpb.Checkpoint{}
 		return decode(ctx, enc, checkpoint)
 	})
 	return checkpoint, err
 }
 
 // SaveLastValidatedCheckpoint saves the last validated checkpoint in beacon chain.
-func (s *Store) SaveLastValidatedCheckpoint(ctx context.Context, checkpoint *ethpb.Checkpoint) error {
+func (s *Store) SaveLastValidatedCheckpoint(ctx context.Context, checkpoint *zondpb.Checkpoint) error {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.SaveLastValidatedCheckpoint")
 	defer span.End()
 

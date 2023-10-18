@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -740,22 +740,22 @@ func TestGetDutiesForEpoch_Error(t *testing.T) {
 			_, err := validatorClient.getDutiesForEpoch(
 				ctx,
 				epoch,
-				&ethpb.MultipleValidatorStatusResponse{
+				&zondpb.MultipleValidatorStatusResponse{
 					PublicKeys: pubkeys,
 					Indices:    validatorIndices,
-					Statuses: []*ethpb.ValidatorStatusResponse{
-						{Status: ethpb.ValidatorStatus_UNKNOWN_STATUS},
-						{Status: ethpb.ValidatorStatus_DEPOSITED},
-						{Status: ethpb.ValidatorStatus_PENDING},
-						{Status: ethpb.ValidatorStatus_ACTIVE},
-						{Status: ethpb.ValidatorStatus_EXITING},
-						{Status: ethpb.ValidatorStatus_SLASHING},
-						{Status: ethpb.ValidatorStatus_EXITED},
-						{Status: ethpb.ValidatorStatus_INVALID},
-						{Status: ethpb.ValidatorStatus_PARTIALLY_DEPOSITED},
-						{Status: ethpb.ValidatorStatus_UNKNOWN_STATUS},
-						{Status: ethpb.ValidatorStatus_DEPOSITED},
-						{Status: ethpb.ValidatorStatus_PENDING},
+					Statuses: []*zondpb.ValidatorStatusResponse{
+						{Status: zondpb.ValidatorStatus_UNKNOWN_STATUS},
+						{Status: zondpb.ValidatorStatus_DEPOSITED},
+						{Status: zondpb.ValidatorStatus_PENDING},
+						{Status: zondpb.ValidatorStatus_ACTIVE},
+						{Status: zondpb.ValidatorStatus_EXITING},
+						{Status: zondpb.ValidatorStatus_SLASHING},
+						{Status: zondpb.ValidatorStatus_EXITED},
+						{Status: zondpb.ValidatorStatus_INVALID},
+						{Status: zondpb.ValidatorStatus_PARTIALLY_DEPOSITED},
+						{Status: zondpb.ValidatorStatus_UNKNOWN_STATUS},
+						{Status: zondpb.ValidatorStatus_DEPOSITED},
+						{Status: zondpb.ValidatorStatus_PENDING},
 					},
 				},
 				true,
@@ -789,25 +789,25 @@ func TestGetDutiesForEpoch_Valid(t *testing.T) {
 			committeeSlots := []primitives.Slot{28, 29, 30}
 			proposerSlots := []primitives.Slot{31, 32, 33, 34, 35, 36, 37, 38}
 
-			statuses := []ethpb.ValidatorStatus{
-				ethpb.ValidatorStatus_UNKNOWN_STATUS,
-				ethpb.ValidatorStatus_DEPOSITED,
-				ethpb.ValidatorStatus_PENDING,
-				ethpb.ValidatorStatus_ACTIVE,
-				ethpb.ValidatorStatus_EXITING,
-				ethpb.ValidatorStatus_SLASHING,
-				ethpb.ValidatorStatus_EXITED,
-				ethpb.ValidatorStatus_INVALID,
-				ethpb.ValidatorStatus_PARTIALLY_DEPOSITED,
-				ethpb.ValidatorStatus_UNKNOWN_STATUS,
-				ethpb.ValidatorStatus_DEPOSITED,
-				ethpb.ValidatorStatus_PENDING,
+			statuses := []zondpb.ValidatorStatus{
+				zondpb.ValidatorStatus_UNKNOWN_STATUS,
+				zondpb.ValidatorStatus_DEPOSITED,
+				zondpb.ValidatorStatus_PENDING,
+				zondpb.ValidatorStatus_ACTIVE,
+				zondpb.ValidatorStatus_EXITING,
+				zondpb.ValidatorStatus_SLASHING,
+				zondpb.ValidatorStatus_EXITED,
+				zondpb.ValidatorStatus_INVALID,
+				zondpb.ValidatorStatus_PARTIALLY_DEPOSITED,
+				zondpb.ValidatorStatus_UNKNOWN_STATUS,
+				zondpb.ValidatorStatus_DEPOSITED,
+				zondpb.ValidatorStatus_PENDING,
 			}
 
-			multipleValidatorStatus := &ethpb.MultipleValidatorStatusResponse{
+			multipleValidatorStatus := &zondpb.MultipleValidatorStatusResponse{
 				PublicKeys: pubkeys,
 				Indices:    validatorIndices,
-				Statuses: []*ethpb.ValidatorStatusResponse{
+				Statuses: []*zondpb.ValidatorStatusResponse{
 					{Status: statuses[0]},
 					{Status: statuses[1]},
 					{Status: statuses[2]},
@@ -890,7 +890,7 @@ func TestGetDutiesForEpoch_Valid(t *testing.T) {
 				proposerSlots[7],
 			}
 
-			expectedDuties := []*ethpb.DutiesResponse_Duty{
+			expectedDuties := []*zondpb.DutiesResponse_Duty{
 				{
 					Committee: []primitives.ValidatorIndex{
 						validatorIndices[0],
@@ -1034,25 +1034,25 @@ func TestGetDuties_Valid(t *testing.T) {
 			committeeSlots := []primitives.Slot{28, 29, 30}
 			proposerSlots := []primitives.Slot{31, 32, 33, 34, 35, 36, 37, 38}
 
-			statuses := []ethpb.ValidatorStatus{
-				ethpb.ValidatorStatus_DEPOSITED,
-				ethpb.ValidatorStatus_PENDING,
-				ethpb.ValidatorStatus_ACTIVE,
-				ethpb.ValidatorStatus_EXITING,
-				ethpb.ValidatorStatus_SLASHING,
-				ethpb.ValidatorStatus_EXITED,
-				ethpb.ValidatorStatus_EXITED,
-				ethpb.ValidatorStatus_EXITED,
-				ethpb.ValidatorStatus_EXITED,
-				ethpb.ValidatorStatus_DEPOSITED,
-				ethpb.ValidatorStatus_PENDING,
-				ethpb.ValidatorStatus_ACTIVE,
+			statuses := []zondpb.ValidatorStatus{
+				zondpb.ValidatorStatus_DEPOSITED,
+				zondpb.ValidatorStatus_PENDING,
+				zondpb.ValidatorStatus_ACTIVE,
+				zondpb.ValidatorStatus_EXITING,
+				zondpb.ValidatorStatus_SLASHING,
+				zondpb.ValidatorStatus_EXITED,
+				zondpb.ValidatorStatus_EXITED,
+				zondpb.ValidatorStatus_EXITED,
+				zondpb.ValidatorStatus_EXITED,
+				zondpb.ValidatorStatus_DEPOSITED,
+				zondpb.ValidatorStatus_PENDING,
+				zondpb.ValidatorStatus_ACTIVE,
 			}
 
-			multipleValidatorStatus := &ethpb.MultipleValidatorStatusResponse{
+			multipleValidatorStatus := &zondpb.MultipleValidatorStatusResponse{
 				PublicKeys: pubkeys,
 				Indices:    validatorIndices,
-				Statuses: []*ethpb.ValidatorStatusResponse{
+				Statuses: []*zondpb.ValidatorStatusResponse{
 					{Status: statuses[0]},
 					{Status: statuses[1]},
 					{Status: statuses[2]},
@@ -1279,13 +1279,13 @@ func TestGetDuties_Valid(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			expectedDuties := &ethpb.DutiesResponse{
+			expectedDuties := &zondpb.DutiesResponse{
 				Duties:             expectedCurrentEpochDuties,
 				CurrentEpochDuties: expectedCurrentEpochDuties,
 				NextEpochDuties:    expectedNextEpochDuties,
 			}
 
-			duties, err := validatorClient.getDuties(ctx, &ethpb.DutiesRequest{
+			duties, err := validatorClient.getDuties(ctx, &zondpb.DutiesRequest{
 				Epoch:      testCase.epoch,
 				PublicKeys: pubkeys,
 			})
@@ -1317,7 +1317,7 @@ func TestGetDuties_GetValidatorStatusFailed(t *testing.T) {
 		stateValidatorsProvider: stateValidatorsProvider,
 	}
 
-	_, err := validatorClient.getDuties(ctx, &ethpb.DutiesRequest{
+	_, err := validatorClient.getDuties(ctx, &zondpb.DutiesRequest{
 		Epoch:      1,
 		PublicKeys: [][]byte{},
 	})
@@ -1359,7 +1359,7 @@ func TestGetDuties_GetDutiesForEpochFailed(t *testing.T) {
 		dutiesProvider:          dutiesProvider,
 	}
 
-	_, err := validatorClient.getDuties(ctx, &ethpb.DutiesRequest{
+	_, err := validatorClient.getDuties(ctx, &zondpb.DutiesRequest{
 		Epoch:      1,
 		PublicKeys: [][]byte{},
 	})

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"google.golang.org/protobuf/proto"
 )
@@ -14,19 +14,19 @@ func TestAttestationCache_RoundTrip(t *testing.T) {
 	ctx := context.Background()
 	c := cache.NewAttestationCache()
 
-	req := &ethpb.AttestationDataRequest{
+	req := &zondpb.AttestationDataRequest{
 		CommitteeIndex: 0,
 		Slot:           1,
 	}
 
 	response, err := c.Get(ctx, req)
 	assert.NoError(t, err)
-	assert.Equal(t, (*ethpb.AttestationData)(nil), response)
+	assert.Equal(t, (*zondpb.AttestationData)(nil), response)
 
 	assert.NoError(t, c.MarkInProgress(req))
 
-	res := &ethpb.AttestationData{
-		Target: &ethpb.Checkpoint{Epoch: 5, Root: make([]byte, 32)},
+	res := &zondpb.AttestationData{
+		Target: &zondpb.Checkpoint{Epoch: 5, Root: make([]byte, 32)},
 	}
 
 	assert.NoError(t, c.Put(ctx, req, res))

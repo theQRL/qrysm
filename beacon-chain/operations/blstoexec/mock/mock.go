@@ -3,31 +3,31 @@ package mock
 import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // PoolMock is a fake implementation of PoolManager.
 type PoolMock struct {
-	Changes []*eth.SignedDilithiumToExecutionChange
+	Changes []*zond.SignedDilithiumToExecutionChange
 }
 
 // PendingDilithiumToExecChanges --
-func (m *PoolMock) PendingDilithiumToExecChanges() ([]*eth.SignedDilithiumToExecutionChange, error) {
+func (m *PoolMock) PendingDilithiumToExecChanges() ([]*zond.SignedDilithiumToExecutionChange, error) {
 	return m.Changes, nil
 }
 
 // DilithiumToExecChangesForInclusion --
-func (m *PoolMock) DilithiumToExecChangesForInclusion(_ state.ReadOnlyBeaconState) ([]*eth.SignedDilithiumToExecutionChange, error) {
+func (m *PoolMock) DilithiumToExecChangesForInclusion(_ state.ReadOnlyBeaconState) ([]*zond.SignedDilithiumToExecutionChange, error) {
 	return m.Changes, nil
 }
 
 // InsertDilithiumToExecChange --
-func (m *PoolMock) InsertDilithiumToExecChange(change *eth.SignedDilithiumToExecutionChange) {
+func (m *PoolMock) InsertDilithiumToExecChange(change *zond.SignedDilithiumToExecutionChange) {
 	m.Changes = append(m.Changes, change)
 }
 
 // MarkIncluded --
-func (*PoolMock) MarkIncluded(_ *eth.SignedDilithiumToExecutionChange) {
+func (*PoolMock) MarkIncluded(_ *zond.SignedDilithiumToExecutionChange) {
 	panic("implement me")
 }
 

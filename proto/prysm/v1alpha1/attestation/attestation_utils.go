@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 
@@ -38,7 +38,7 @@ import (
 //	     data=attestation.data,
 //	     signature=attestation.signature,
 //	 )
-func ConvertToIndexed(ctx context.Context, attestation *ethpb.Attestation, committee []primitives.ValidatorIndex) (*ethpb.IndexedAttestation, error) {
+func ConvertToIndexed(ctx context.Context, attestation *zondpb.Attestation, committee []primitives.ValidatorIndex) (*zondpb.IndexedAttestation, error) {
 	ctx, span := trace.StartSpan(ctx, "attestationutil.ConvertToIndexed")
 	defer span.End()
 
@@ -71,7 +71,7 @@ func ConvertToIndexed(ctx context.Context, attestation *ethpb.Attestation, commi
 		signatures = append(signatures, sig...)
 	}
 
-	inAtt := &ethpb.IndexedAttestation{
+	inAtt := &zondpb.IndexedAttestation{
 		Data:                    attestation.Data,
 		Signature:               signatures,
 		SignatureValidatorIndex: signatureValidatorIndex,
@@ -126,7 +126,7 @@ func AttestingIndices(bf bitfield.Bitfield, committee []primitives.ValidatorInde
 //	 domain = get_domain(state, DOMAIN_BEACON_ATTESTER, indexed_attestation.data.target.epoch)
 //	 signing_root = compute_signing_root(indexed_attestation.data, domain)
 //	 return bls.FastAggregateVerify(pubkeys, signing_root, indexed_attestation.signature)
-func VerifyIndexedAttestationSig(ctx context.Context, indexedAtt *ethpb.IndexedAttestation, pubKeys []dilithium.PublicKey, domain []byte) error {
+func VerifyIndexedAttestationSig(ctx context.Context, indexedAtt *zondpb.IndexedAttestation, pubKeys []dilithium.PublicKey, domain []byte) error {
 	ctx, span := trace.StartSpan(ctx, "attestationutil.VerifyIndexedAttestationSig")
 	defer span.End()
 	indices := indexedAtt.AttestingIndices
@@ -166,7 +166,7 @@ func VerifyIndexedAttestationSig(ctx context.Context, indexedAtt *ethpb.IndexedA
 //	  domain = get_domain(state, DOMAIN_BEACON_ATTESTER, indexed_attestation.data.target.epoch)
 //	  signing_root = compute_signing_root(indexed_attestation.data, domain)
 //	  return bls.FastAggregateVerify(pubkeys, signing_root, indexed_attestation.signature)
-func IsValidAttestationIndices(ctx context.Context, indexedAttestation *ethpb.IndexedAttestation) error {
+func IsValidAttestationIndices(ctx context.Context, indexedAttestation *zondpb.IndexedAttestation) error {
 	ctx, span := trace.StartSpan(ctx, "attestationutil.IsValidAttestationIndices")
 	defer span.End()
 
@@ -189,7 +189,7 @@ func IsValidAttestationIndices(ctx context.Context, indexedAttestation *ethpb.In
 }
 
 // AttDataIsEqual this function performs an equality check between 2 attestation data, if they're unequal, it will return false.
-func AttDataIsEqual(attData1, attData2 *ethpb.AttestationData) bool {
+func AttDataIsEqual(attData1, attData2 *zondpb.AttestationData) bool {
 	if attData1.Slot != attData2.Slot {
 		return false
 	}
@@ -215,7 +215,7 @@ func AttDataIsEqual(attData1, attData2 *ethpb.AttestationData) bool {
 }
 
 // CheckPointIsEqual performs an equality check between 2 check points, returns false if unequal.
-func CheckPointIsEqual(checkPt1, checkPt2 *ethpb.Checkpoint) bool {
+func CheckPointIsEqual(checkPt1, checkPt2 *zondpb.Checkpoint) bool {
 	if checkPt1.Epoch != checkPt2.Epoch {
 		return false
 	}

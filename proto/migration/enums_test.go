@@ -3,34 +3,34 @@ package migration
 import (
 	"testing"
 
-	v1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 )
 
 func TestV1Alpha1ConnectionStateToV1(t *testing.T) {
 	tests := []struct {
 		name      string
-		connState eth.ConnectionState
+		connState zond.ConnectionState
 		want      v1.ConnectionState
 	}{
 		{
 			name:      "DISCONNECTED",
-			connState: eth.ConnectionState_DISCONNECTED,
+			connState: zond.ConnectionState_DISCONNECTED,
 			want:      v1.ConnectionState_DISCONNECTED,
 		},
 		{
 			name:      "CONNECTED",
-			connState: eth.ConnectionState_CONNECTED,
+			connState: zond.ConnectionState_CONNECTED,
 			want:      v1.ConnectionState_CONNECTED,
 		},
 		{
 			name:      "CONNECTING",
-			connState: eth.ConnectionState_CONNECTING,
+			connState: zond.ConnectionState_CONNECTING,
 			want:      v1.ConnectionState_CONNECTING,
 		},
 		{
 			name:      "DISCONNECTING",
-			connState: eth.ConnectionState_DISCONNECTING,
+			connState: zond.ConnectionState_DISCONNECTING,
 			want:      v1.ConnectionState_DISCONNECTING,
 		},
 	}
@@ -46,24 +46,24 @@ func TestV1Alpha1ConnectionStateToV1(t *testing.T) {
 func TestV1Alpha1PeerDirectionToV1(t *testing.T) {
 	tests := []struct {
 		name          string
-		peerDirection eth.PeerDirection
+		peerDirection zond.PeerDirection
 		want          v1.PeerDirection
 		wantErr       bool
 	}{
 		{
 			name:          "UNKNOWN",
-			peerDirection: eth.PeerDirection_UNKNOWN,
+			peerDirection: zond.PeerDirection_UNKNOWN,
 			want:          0,
 			wantErr:       true,
 		},
 		{
 			name:          "INBOUND",
-			peerDirection: eth.PeerDirection_INBOUND,
+			peerDirection: zond.PeerDirection_INBOUND,
 			want:          v1.PeerDirection_INBOUND,
 		},
 		{
 			name:          "OUTBOUND",
-			peerDirection: eth.PeerDirection_OUTBOUND,
+			peerDirection: zond.PeerDirection_OUTBOUND,
 			want:          v1.PeerDirection_OUTBOUND,
 		},
 	}

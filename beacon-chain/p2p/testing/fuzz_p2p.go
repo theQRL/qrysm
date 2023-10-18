@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/go-zond/p2p/enr"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/metadata"
 	"google.golang.org/protobuf/proto"
 )
@@ -134,12 +134,12 @@ func (_ *FakeP2P) Broadcast(_ context.Context, _ proto.Message) error {
 }
 
 // BroadcastAttestation -- fake.
-func (_ *FakeP2P) BroadcastAttestation(_ context.Context, _ uint64, _ *ethpb.Attestation) error {
+func (_ *FakeP2P) BroadcastAttestation(_ context.Context, _ uint64, _ *zondpb.Attestation) error {
 	return nil
 }
 
 // BroadcastSyncCommitteeMessage -- fake.
-func (_ *FakeP2P) BroadcastSyncCommitteeMessage(_ context.Context, _ uint64, _ *ethpb.SyncCommitteeMessage) error {
+func (_ *FakeP2P) BroadcastSyncCommitteeMessage(_ context.Context, _ uint64, _ *zondpb.SyncCommitteeMessage) error {
 	return nil
 }
 

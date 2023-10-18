@@ -21,10 +21,10 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/encoding/ssz/detect"
 	"github.com/theQRL/qrysm/v4/network/forks"
-	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/proto/migration"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
@@ -33,7 +33,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-const versionHeader = "eth-consensus-version"
+const versionHeader = "zond-consensus-version"
 
 var (
 	errNilBlock = errors.New("nil block")
@@ -42,7 +42,7 @@ var (
 // GetWeakSubjectivity computes the starting epoch of the current weak subjectivity period, and then also
 // determines the best block root and state root to use for a Checkpoint Sync starting from that point.
 // DEPRECATED: GetWeakSubjectivity endpoint will no longer be supported
-func (bs *Server) GetWeakSubjectivity(ctx context.Context, _ *empty.Empty) (*ethpbv1.WeakSubjectivityResponse, error) {
+func (bs *Server) GetWeakSubjectivity(ctx context.Context, _ *empty.Empty) (*zondpbv1.WeakSubjectivityResponse, error) {
 	if err := rpchelpers.ValidateSyncGRPC(ctx, bs.SyncChecker, bs.HeadFetcher, bs.GenesisTimeFetcher, bs.OptimisticModeFetcher); err != nil {
 		// This is already a grpc error, so we can't wrap it any further
 		return nil, err
@@ -70,9 +70,9 @@ func (bs *Server) GetWeakSubjectivity(ctx context.Context, _ *empty.Empty) (*eth
 	}
 	stateRoot := cb.Block().StateRoot()
 	log.Printf("weak subjectivity checkpoint reported as epoch=%d, block root=%#x, state root=%#x", wsEpoch, cbr, stateRoot)
-	return &ethpbv1.WeakSubjectivityResponse{
-		Data: &ethpbv1.WeakSubjectivityData{
-			WsCheckpoint: &ethpbv1.Checkpoint{
+	return &zondpbv1.WeakSubjectivityResponse{
+		Data: &zondpbv1.WeakSubjectivityData{
+			WsCheckpoint: &zondpbv1.Checkpoint{
 				Epoch: wsEpoch,
 				Root:  cbr[:],
 			},
@@ -82,7 +82,7 @@ func (bs *Server) GetWeakSubjectivity(ctx context.Context, _ *empty.Empty) (*eth
 }
 
 // GetBlockHeader retrieves block header for given block id.
-func (bs *Server) GetBlockHeader(ctx context.Context, req *ethpbv1.BlockRequest) (*ethpbv1.BlockHeaderResponse, error) {
+func (bs *Server) GetBlockHeader(ctx context.Context, req *zondpbv1.BlockRequest) (*zondpbv1.BlockHeaderResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.GetBlockHeader")
 	defer span.End()
 
@@ -113,11 +113,11 @@ func (bs *Server) GetBlockHeader(ctx context.Context, req *ethpbv1.BlockRequest)
 		return nil, status.Errorf(codes.Internal, "Could not check if block is optimistic: %v", err)
 	}
 
-	return &ethpbv1.BlockHeaderResponse{
-		Data: &ethpbv1.BlockHeaderContainer{
+	return &zondpbv1.BlockHeaderResponse{
+		Data: &zondpbv1.BlockHeaderContainer{
 			Root:      headerRoot[:],
 			Canonical: canonical,
-			Header: &ethpbv1.BeaconBlockHeaderContainer{
+			Header: &zondpbv1.BeaconBlockHeaderContainer{
 				Message:   header.Message,
 				Signature: header.Signature,
 			},
@@ -128,7 +128,7 @@ func (bs *Server) GetBlockHeader(ctx context.Context, req *ethpbv1.BlockRequest)
 }
 
 // ListBlockHeaders retrieves block headers matching given query. By default it will fetch current head slot blocks.
-func (bs *Server) ListBlockHeaders(ctx context.Context, req *ethpbv1.BlockHeadersRequest) (*ethpbv1.BlockHeadersResponse, error) {
+func (bs *Server) ListBlockHeaders(ctx context.Context, req *zondpbv1.BlockHeadersRequest) (*zondpbv1.BlockHeadersResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.ListBlockHeaders")
 	defer span.End()
 
@@ -160,7 +160,7 @@ func (bs *Server) ListBlockHeaders(ctx context.Context, req *ethpbv1.BlockHeader
 
 	isOptimistic := false
 	isFinalized := true
-	blkHdrs := make([]*ethpbv1.BlockHeaderContainer, len(blks))
+	blkHdrs := make([]*zondpbv1.BlockHeaderContainer, len(blks))
 	for i, bl := range blks {
 		v1alpha1Header, err := bl.Header()
 		if err != nil {
@@ -184,17 +184,17 @@ func (bs *Server) ListBlockHeaders(ctx context.Context, req *ethpbv1.BlockHeader
 		if isFinalized {
 			isFinalized = bs.FinalizationFetcher.IsFinalized(ctx, blkRoots[i])
 		}
-		blkHdrs[i] = &ethpbv1.BlockHeaderContainer{
+		blkHdrs[i] = &zondpbv1.BlockHeaderContainer{
 			Root:      headerRoot[:],
 			Canonical: canonical,
-			Header: &ethpbv1.BeaconBlockHeaderContainer{
+			Header: &zondpbv1.BeaconBlockHeaderContainer{
 				Message:   header.Message,
 				Signature: header.Signature,
 			},
 		}
 	}
 
-	return &ethpbv1.BlockHeadersResponse{Data: blkHdrs, ExecutionOptimistic: isOptimistic, Finalized: isFinalized}, nil
+	return &zondpbv1.BlockHeadersResponse{Data: blkHdrs, ExecutionOptimistic: isOptimistic, Finalized: isFinalized}, nil
 }
 
 // SubmitBlock instructs the beacon node to broadcast a newly signed beacon block to the beacon network, to be
@@ -202,7 +202,7 @@ func (bs *Server) ListBlockHeaders(ctx context.Context, req *ethpbv1.BlockHeader
 // response (20X) only indicates that the broadcast has been successful. The beacon node is expected to integrate the
 // new block into its state, and therefore validate the block internally, however blocks which fail the validation are
 // still broadcast but a different status code is returned (202).
-func (bs *Server) SubmitBlock(ctx context.Context, req *ethpbv2.SignedBeaconBlockContainer) (*emptypb.Empty, error) {
+func (bs *Server) SubmitBlock(ctx context.Context, req *zondpbv2.SignedBeaconBlockContainer) (*emptypb.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.SubmitBlock")
 	defer span.End()
 
@@ -212,19 +212,19 @@ func (bs *Server) SubmitBlock(ctx context.Context, req *ethpbv2.SignedBeaconBloc
 	}
 
 	switch blkContainer := req.Message.(type) {
-	case *ethpbv2.SignedBeaconBlockContainer_Phase0Block:
+	case *zondpbv2.SignedBeaconBlockContainer_Phase0Block:
 		if err := bs.submitPhase0Block(ctx, blkContainer.Phase0Block, req.Signature); err != nil {
 			return nil, err
 		}
-	case *ethpbv2.SignedBeaconBlockContainer_AltairBlock:
+	case *zondpbv2.SignedBeaconBlockContainer_AltairBlock:
 		if err := bs.submitAltairBlock(ctx, blkContainer.AltairBlock, req.Signature); err != nil {
 			return nil, err
 		}
-	case *ethpbv2.SignedBeaconBlockContainer_BellatrixBlock:
+	case *zondpbv2.SignedBeaconBlockContainer_BellatrixBlock:
 		if err := bs.submitBellatrixBlock(ctx, blkContainer.BellatrixBlock, req.Signature); err != nil {
 			return nil, err
 		}
-	case *ethpbv2.SignedBeaconBlockContainer_CapellaBlock:
+	case *zondpbv2.SignedBeaconBlockContainer_CapellaBlock:
 		if err := bs.submitCapellaBlock(ctx, blkContainer.CapellaBlock, req.Signature); err != nil {
 			return nil, err
 		}
@@ -242,7 +242,7 @@ func (bs *Server) SubmitBlock(ctx context.Context, req *ethpbv2.SignedBeaconBloc
 // still broadcast but a different status code is returned (202).
 //
 // The provided block must be SSZ-serialized.
-func (bs *Server) SubmitBlockSSZ(ctx context.Context, req *ethpbv2.SSZContainer) (*emptypb.Empty, error) {
+func (bs *Server) SubmitBlockSSZ(ctx context.Context, req *zondpbv2.SSZContainer) (*emptypb.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.SubmitBlockSSZ")
 	defer span.End()
 
@@ -282,8 +282,8 @@ func (bs *Server) SubmitBlockSSZ(ctx context.Context, req *ethpbv2.SSZContainer)
 		if err != nil {
 			return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not get proto block: %v", err)
 		}
-		_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &eth.GenericSignedBeaconBlock{
-			Block: &eth.GenericSignedBeaconBlock_Capella{
+		_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &zond.GenericSignedBeaconBlock{
+			Block: &zond.GenericSignedBeaconBlock_Capella{
 				Capella: b,
 			},
 		})
@@ -302,8 +302,8 @@ func (bs *Server) SubmitBlockSSZ(ctx context.Context, req *ethpbv2.SSZContainer)
 		if err != nil {
 			return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not get proto block: %v", err)
 		}
-		_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &eth.GenericSignedBeaconBlock{
-			Block: &eth.GenericSignedBeaconBlock_Bellatrix{
+		_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &zond.GenericSignedBeaconBlock{
+			Block: &zond.GenericSignedBeaconBlock_Bellatrix{
 				Bellatrix: b,
 			},
 		})
@@ -319,8 +319,8 @@ func (bs *Server) SubmitBlockSSZ(ctx context.Context, req *ethpbv2.SSZContainer)
 		if err != nil {
 			return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not get proto block: %v", err)
 		}
-		_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &eth.GenericSignedBeaconBlock{
-			Block: &eth.GenericSignedBeaconBlock_Altair{
+		_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &zond.GenericSignedBeaconBlock{
+			Block: &zond.GenericSignedBeaconBlock_Altair{
 				Altair: b,
 			},
 		})
@@ -336,8 +336,8 @@ func (bs *Server) SubmitBlockSSZ(ctx context.Context, req *ethpbv2.SSZContainer)
 		if err != nil {
 			return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not get proto block: %v", err)
 		}
-		_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &eth.GenericSignedBeaconBlock{
-			Block: &eth.GenericSignedBeaconBlock_Phase0{
+		_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &zond.GenericSignedBeaconBlock{
+			Block: &zond.GenericSignedBeaconBlock_Phase0{
 				Phase0: b,
 			},
 		})
@@ -355,7 +355,7 @@ func (bs *Server) SubmitBlockSSZ(ctx context.Context, req *ethpbv2.SSZContainer)
 
 // GetBlock retrieves block details for given block ID.
 // DEPRECATED: please use GetBlockV2 instead
-func (bs *Server) GetBlock(ctx context.Context, req *ethpbv1.BlockRequest) (*ethpbv1.BlockResponse, error) {
+func (bs *Server) GetBlock(ctx context.Context, req *zondpbv1.BlockRequest) (*zondpbv1.BlockResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.GetBlock")
 	defer span.End()
 
@@ -369,8 +369,8 @@ func (bs *Server) GetBlock(ctx context.Context, req *ethpbv1.BlockRequest) (*eth
 		return nil, status.Errorf(codes.Internal, "Could not get signed beacon block: %v", err)
 	}
 
-	return &ethpbv1.BlockResponse{
-		Data: &ethpbv1.BeaconBlockContainer{
+	return &zondpbv1.BlockResponse{
+		Data: &zondpbv1.BeaconBlockContainer{
 			Message:   signedBeaconBlock.Block,
 			Signature: signedBeaconBlock.Signature,
 		},
@@ -379,7 +379,7 @@ func (bs *Server) GetBlock(ctx context.Context, req *ethpbv1.BlockRequest) (*eth
 
 // GetBlockSSZ returns the SSZ-serialized version of the becaon block for given block ID.
 // DEPRECATED: please use GetBlockV2SSZ instead
-func (bs *Server) GetBlockSSZ(ctx context.Context, req *ethpbv1.BlockRequest) (*ethpbv1.BlockSSZResponse, error) {
+func (bs *Server) GetBlockSSZ(ctx context.Context, req *zondpbv1.BlockRequest) (*zondpbv1.BlockSSZResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.GetBlockSSZ")
 	defer span.End()
 
@@ -397,11 +397,11 @@ func (bs *Server) GetBlockSSZ(ctx context.Context, req *ethpbv1.BlockRequest) (*
 		return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ: %v", err)
 	}
 
-	return &ethpbv1.BlockSSZResponse{Data: sszBlock}, nil
+	return &zondpbv1.BlockSSZResponse{Data: sszBlock}, nil
 }
 
 // GetBlockV2 retrieves block details for given block ID.
-func (bs *Server) GetBlockV2(ctx context.Context, req *ethpbv2.BlockRequestV2) (*ethpbv2.BlockResponseV2, error) {
+func (bs *Server) GetBlockV2(ctx context.Context, req *zondpbv2.BlockRequestV2) (*zondpbv2.BlockResponseV2, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.GetBlockV2")
 	defer span.End()
 
@@ -455,7 +455,7 @@ func (bs *Server) GetBlockV2(ctx context.Context, req *ethpbv2.BlockRequestV2) (
 }
 
 // GetBlockSSZV2 returns the SSZ-serialized version of the beacon block for given block ID.
-func (bs *Server) GetBlockSSZV2(ctx context.Context, req *ethpbv2.BlockRequestV2) (*ethpbv2.SSZContainer, error) {
+func (bs *Server) GetBlockSSZV2(ctx context.Context, req *zondpbv2.BlockRequestV2) (*zondpbv2.SSZContainer, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.GetBlockSSZV2")
 	defer span.End()
 
@@ -510,7 +510,7 @@ func (bs *Server) GetBlockSSZV2(ctx context.Context, req *ethpbv2.BlockRequestV2
 }
 
 // GetBlockRoot retrieves hashTreeRoot of ReadOnlyBeaconBlock/BeaconBlockHeader.
-func (bs *Server) GetBlockRoot(ctx context.Context, req *ethpbv1.BlockRequest) (*ethpbv1.BlockRootResponse, error) {
+func (bs *Server) GetBlockRoot(ctx context.Context, req *zondpbv1.BlockRequest) (*zondpbv1.BlockRootResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.GetBlockRoot")
 	defer span.End()
 
@@ -587,8 +587,8 @@ func (bs *Server) GetBlockRoot(ctx context.Context, req *ethpbv1.BlockRequest) (
 		return nil, status.Errorf(codes.Internal, "Could not check if block is optimistic: %v", err)
 	}
 
-	return &ethpbv1.BlockRootResponse{
-		Data: &ethpbv1.BlockRootContainer{
+	return &zondpbv1.BlockRootResponse{
+		Data: &zondpbv1.BlockRootContainer{
 			Root: root,
 		},
 		ExecutionOptimistic: isOptimistic,
@@ -597,7 +597,7 @@ func (bs *Server) GetBlockRoot(ctx context.Context, req *ethpbv1.BlockRequest) (
 }
 
 // ListBlockAttestations retrieves attestation included in requested block.
-func (bs *Server) ListBlockAttestations(ctx context.Context, req *ethpbv1.BlockRequest) (*ethpbv1.BlockAttestationsResponse, error) {
+func (bs *Server) ListBlockAttestations(ctx context.Context, req *zondpbv1.BlockRequest) (*zondpbv1.BlockAttestationsResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.ListBlockAttestations")
 	defer span.End()
 
@@ -608,7 +608,7 @@ func (bs *Server) ListBlockAttestations(ctx context.Context, req *ethpbv1.BlockR
 	}
 
 	v1Alpha1Attestations := blk.Block().Body().Attestations()
-	v1Attestations := make([]*ethpbv1.Attestation, 0, len(v1Alpha1Attestations))
+	v1Attestations := make([]*zondpbv1.Attestation, 0, len(v1Alpha1Attestations))
 	for _, att := range v1Alpha1Attestations {
 		migratedAtt := migration.V1Alpha1AttestationToV1(att)
 		v1Attestations = append(v1Attestations, migratedAtt)
@@ -621,7 +621,7 @@ func (bs *Server) ListBlockAttestations(ctx context.Context, req *ethpbv1.BlockR
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not check if block is optimistic: %v", err)
 	}
-	return &ethpbv1.BlockAttestationsResponse{
+	return &zondpbv1.BlockAttestationsResponse{
 		Data:                v1Attestations,
 		ExecutionOptimistic: isOptimistic,
 		Finalized:           bs.FinalizationFetcher.IsFinalized(ctx, root),
@@ -641,7 +641,7 @@ func handleGetBlockError(blk interfaces.ReadOnlySignedBeaconBlock, err error) er
 	return nil
 }
 
-func getBlockPhase0(blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.BlockResponseV2, error) {
+func getBlockPhase0(blk interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.BlockResponseV2, error) {
 	phase0Blk, err := blk.PbPhase0Block()
 	if err != nil {
 		return nil, err
@@ -653,17 +653,17 @@ func getBlockPhase0(blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.BlockRes
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not get signed beacon block")
 	}
-	return &ethpbv2.BlockResponseV2{
-		Version: ethpbv2.Version_PHASE0,
-		Data: &ethpbv2.SignedBeaconBlockContainer{
-			Message:   &ethpbv2.SignedBeaconBlockContainer_Phase0Block{Phase0Block: v1Blk.Block},
+	return &zondpbv2.BlockResponseV2{
+		Version: zondpbv2.Version_PHASE0,
+		Data: &zondpbv2.SignedBeaconBlockContainer{
+			Message:   &zondpbv2.SignedBeaconBlockContainer_Phase0Block{Phase0Block: v1Blk.Block},
 			Signature: v1Blk.Signature,
 		},
 		ExecutionOptimistic: false,
 	}, nil
 }
 
-func getBlockAltair(blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.BlockResponseV2, error) {
+func getBlockAltair(blk interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.BlockResponseV2, error) {
 	altairBlk, err := blk.PbAltairBlock()
 	if err != nil {
 		return nil, err
@@ -676,17 +676,17 @@ func getBlockAltair(blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.BlockRes
 		return nil, errors.Wrapf(err, "could not get signed beacon block")
 	}
 	sig := blk.Signature()
-	return &ethpbv2.BlockResponseV2{
-		Version: ethpbv2.Version_ALTAIR,
-		Data: &ethpbv2.SignedBeaconBlockContainer{
-			Message:   &ethpbv2.SignedBeaconBlockContainer_AltairBlock{AltairBlock: v2Blk},
+	return &zondpbv2.BlockResponseV2{
+		Version: zondpbv2.Version_ALTAIR,
+		Data: &zondpbv2.SignedBeaconBlockContainer{
+			Message:   &zondpbv2.SignedBeaconBlockContainer_AltairBlock{AltairBlock: v2Blk},
 			Signature: sig[:],
 		},
 		ExecutionOptimistic: false,
 	}, nil
 }
 
-func (bs *Server) getBlockBellatrix(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.BlockResponseV2, error) {
+func (bs *Server) getBlockBellatrix(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.BlockResponseV2, error) {
 	bellatrixBlk, err := blk.PbBellatrixBlock()
 	if err != nil {
 		// ErrUnsupportedField means that we have another block type
@@ -716,10 +716,10 @@ func (bs *Server) getBlockBellatrix(ctx context.Context, blk interfaces.ReadOnly
 					return nil, errors.Wrapf(err, "could not check if block is optimistic")
 				}
 				sig := blk.Signature()
-				return &ethpbv2.BlockResponseV2{
-					Version: ethpbv2.Version_BELLATRIX,
-					Data: &ethpbv2.SignedBeaconBlockContainer{
-						Message:   &ethpbv2.SignedBeaconBlockContainer_BellatrixBlock{BellatrixBlock: v2Blk},
+				return &zondpbv2.BlockResponseV2{
+					Version: zondpbv2.Version_BELLATRIX,
+					Data: &zondpbv2.SignedBeaconBlockContainer{
+						Message:   &zondpbv2.SignedBeaconBlockContainer_BellatrixBlock{BellatrixBlock: v2Blk},
 						Signature: sig[:],
 					},
 					ExecutionOptimistic: isOptimistic,
@@ -746,17 +746,17 @@ func (bs *Server) getBlockBellatrix(ctx context.Context, blk interfaces.ReadOnly
 		return nil, errors.Wrapf(err, "could not check if block is optimistic")
 	}
 	sig := blk.Signature()
-	return &ethpbv2.BlockResponseV2{
-		Version: ethpbv2.Version_BELLATRIX,
-		Data: &ethpbv2.SignedBeaconBlockContainer{
-			Message:   &ethpbv2.SignedBeaconBlockContainer_BellatrixBlock{BellatrixBlock: v2Blk},
+	return &zondpbv2.BlockResponseV2{
+		Version: zondpbv2.Version_BELLATRIX,
+		Data: &zondpbv2.SignedBeaconBlockContainer{
+			Message:   &zondpbv2.SignedBeaconBlockContainer_BellatrixBlock{BellatrixBlock: v2Blk},
 			Signature: sig[:],
 		},
 		ExecutionOptimistic: isOptimistic,
 	}, nil
 }
 
-func (bs *Server) getBlockCapella(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.BlockResponseV2, error) {
+func (bs *Server) getBlockCapella(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.BlockResponseV2, error) {
 	capellaBlk, err := blk.PbCapellaBlock()
 	if err != nil {
 		// ErrUnsupportedField means that we have another block type
@@ -786,10 +786,10 @@ func (bs *Server) getBlockCapella(ctx context.Context, blk interfaces.ReadOnlySi
 					return nil, errors.Wrapf(err, "could not check if block is optimistic")
 				}
 				sig := blk.Signature()
-				return &ethpbv2.BlockResponseV2{
-					Version: ethpbv2.Version_CAPELLA,
-					Data: &ethpbv2.SignedBeaconBlockContainer{
-						Message:   &ethpbv2.SignedBeaconBlockContainer_CapellaBlock{CapellaBlock: v2Blk},
+				return &zondpbv2.BlockResponseV2{
+					Version: zondpbv2.Version_CAPELLA,
+					Data: &zondpbv2.SignedBeaconBlockContainer{
+						Message:   &zondpbv2.SignedBeaconBlockContainer_CapellaBlock{CapellaBlock: v2Blk},
 						Signature: sig[:],
 					},
 					ExecutionOptimistic: isOptimistic,
@@ -816,17 +816,17 @@ func (bs *Server) getBlockCapella(ctx context.Context, blk interfaces.ReadOnlySi
 		return nil, errors.Wrapf(err, "could not check if block is optimistic")
 	}
 	sig := blk.Signature()
-	return &ethpbv2.BlockResponseV2{
-		Version: ethpbv2.Version_CAPELLA,
-		Data: &ethpbv2.SignedBeaconBlockContainer{
-			Message:   &ethpbv2.SignedBeaconBlockContainer_CapellaBlock{CapellaBlock: v2Blk},
+	return &zondpbv2.BlockResponseV2{
+		Version: zondpbv2.Version_CAPELLA,
+		Data: &zondpbv2.SignedBeaconBlockContainer{
+			Message:   &zondpbv2.SignedBeaconBlockContainer_CapellaBlock{CapellaBlock: v2Blk},
 			Signature: sig[:],
 		},
 		ExecutionOptimistic: isOptimistic,
 	}, nil
 }
 
-func getSSZBlockPhase0(blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.SSZContainer, error) {
+func getSSZBlockPhase0(blk interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.SSZContainer, error) {
 	phase0Blk, err := blk.PbPhase0Block()
 	if err != nil {
 		return nil, err
@@ -842,10 +842,10 @@ func getSSZBlockPhase0(blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.SSZCo
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not marshal block into SSZ")
 	}
-	return &ethpbv2.SSZContainer{Version: ethpbv2.Version_PHASE0, ExecutionOptimistic: false, Data: sszBlock}, nil
+	return &zondpbv2.SSZContainer{Version: zondpbv2.Version_PHASE0, ExecutionOptimistic: false, Data: sszBlock}, nil
 }
 
-func getSSZBlockAltair(blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.SSZContainer, error) {
+func getSSZBlockAltair(blk interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.SSZContainer, error) {
 	altairBlk, err := blk.PbAltairBlock()
 	if err != nil {
 		return nil, err
@@ -858,7 +858,7 @@ func getSSZBlockAltair(blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.SSZCo
 		return nil, errors.Wrapf(err, "could not get signed beacon block")
 	}
 	sig := blk.Signature()
-	data := &ethpbv2.SignedBeaconBlockAltair{
+	data := &zondpbv2.SignedBeaconBlockAltair{
 		Message:   v2Blk,
 		Signature: sig[:],
 	}
@@ -866,10 +866,10 @@ func getSSZBlockAltair(blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.SSZCo
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not marshal block into SSZ")
 	}
-	return &ethpbv2.SSZContainer{Version: ethpbv2.Version_ALTAIR, ExecutionOptimistic: false, Data: sszData}, nil
+	return &zondpbv2.SSZContainer{Version: zondpbv2.Version_ALTAIR, ExecutionOptimistic: false, Data: sszData}, nil
 }
 
-func (bs *Server) getSSZBlockBellatrix(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.SSZContainer, error) {
+func (bs *Server) getSSZBlockBellatrix(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.SSZContainer, error) {
 	bellatrixBlk, err := blk.PbBellatrixBlock()
 	if err != nil {
 		// ErrUnsupportedField means that we have another block type
@@ -899,7 +899,7 @@ func (bs *Server) getSSZBlockBellatrix(ctx context.Context, blk interfaces.ReadO
 					return nil, errors.Wrapf(err, "could not check if block is optimistic")
 				}
 				sig := blk.Signature()
-				data := &ethpbv2.SignedBeaconBlockBellatrix{
+				data := &zondpbv2.SignedBeaconBlockBellatrix{
 					Message:   v2Blk,
 					Signature: sig[:],
 				}
@@ -907,8 +907,8 @@ func (bs *Server) getSSZBlockBellatrix(ctx context.Context, blk interfaces.ReadO
 				if err != nil {
 					return nil, errors.Wrapf(err, "could not marshal block into SSZ")
 				}
-				return &ethpbv2.SSZContainer{
-					Version:             ethpbv2.Version_BELLATRIX,
+				return &zondpbv2.SSZContainer{
+					Version:             zondpbv2.Version_BELLATRIX,
 					ExecutionOptimistic: isOptimistic,
 					Data:                sszData,
 				}, nil
@@ -934,7 +934,7 @@ func (bs *Server) getSSZBlockBellatrix(ctx context.Context, blk interfaces.ReadO
 		return nil, errors.Wrapf(err, "could not check if block is optimistic")
 	}
 	sig := blk.Signature()
-	data := &ethpbv2.SignedBeaconBlockBellatrix{
+	data := &zondpbv2.SignedBeaconBlockBellatrix{
 		Message:   v2Blk,
 		Signature: sig[:],
 	}
@@ -942,10 +942,10 @@ func (bs *Server) getSSZBlockBellatrix(ctx context.Context, blk interfaces.ReadO
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not marshal block into SSZ")
 	}
-	return &ethpbv2.SSZContainer{Version: ethpbv2.Version_BELLATRIX, ExecutionOptimistic: isOptimistic, Data: sszData}, nil
+	return &zondpbv2.SSZContainer{Version: zondpbv2.Version_BELLATRIX, ExecutionOptimistic: isOptimistic, Data: sszData}, nil
 }
 
-func (bs *Server) getSSZBlockCapella(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.SSZContainer, error) {
+func (bs *Server) getSSZBlockCapella(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.SSZContainer, error) {
 	capellaBlk, err := blk.PbCapellaBlock()
 	if err != nil {
 		// ErrUnsupportedField means that we have another block type
@@ -975,7 +975,7 @@ func (bs *Server) getSSZBlockCapella(ctx context.Context, blk interfaces.ReadOnl
 					return nil, errors.Wrapf(err, "could not check if block is optimistic")
 				}
 				sig := blk.Signature()
-				data := &ethpbv2.SignedBeaconBlockCapella{
+				data := &zondpbv2.SignedBeaconBlockCapella{
 					Message:   v2Blk,
 					Signature: sig[:],
 				}
@@ -983,8 +983,8 @@ func (bs *Server) getSSZBlockCapella(ctx context.Context, blk interfaces.ReadOnl
 				if err != nil {
 					return nil, errors.Wrapf(err, "could not marshal block into SSZ")
 				}
-				return &ethpbv2.SSZContainer{
-					Version:             ethpbv2.Version_CAPELLA,
+				return &zondpbv2.SSZContainer{
+					Version:             zondpbv2.Version_CAPELLA,
 					ExecutionOptimistic: isOptimistic,
 					Data:                sszData,
 				}, nil
@@ -1010,7 +1010,7 @@ func (bs *Server) getSSZBlockCapella(ctx context.Context, blk interfaces.ReadOnl
 		return nil, errors.Wrapf(err, "could not check if block is optimistic")
 	}
 	sig := blk.Signature()
-	data := &ethpbv2.SignedBeaconBlockCapella{
+	data := &zondpbv2.SignedBeaconBlockCapella{
 		Message:   v2Blk,
 		Signature: sig[:],
 	}
@@ -1018,16 +1018,16 @@ func (bs *Server) getSSZBlockCapella(ctx context.Context, blk interfaces.ReadOnl
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not marshal block into SSZ")
 	}
-	return &ethpbv2.SSZContainer{Version: ethpbv2.Version_CAPELLA, ExecutionOptimistic: isOptimistic, Data: sszData}, nil
+	return &zondpbv2.SSZContainer{Version: zondpbv2.Version_CAPELLA, ExecutionOptimistic: isOptimistic, Data: sszData}, nil
 }
 
-func (bs *Server) submitPhase0Block(ctx context.Context, phase0Blk *ethpbv1.BeaconBlock, sig []byte) error {
-	v1alpha1Blk, err := migration.V1ToV1Alpha1SignedBlock(&ethpbv1.SignedBeaconBlock{Block: phase0Blk, Signature: sig})
+func (bs *Server) submitPhase0Block(ctx context.Context, phase0Blk *zondpbv1.BeaconBlock, sig []byte) error {
+	v1alpha1Blk, err := migration.V1ToV1Alpha1SignedBlock(&zondpbv1.SignedBeaconBlock{Block: phase0Blk, Signature: sig})
 	if err != nil {
 		return status.Errorf(codes.InvalidArgument, "Could not convert block: %v", err)
 	}
-	_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &eth.GenericSignedBeaconBlock{
-		Block: &eth.GenericSignedBeaconBlock_Phase0{
+	_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &zond.GenericSignedBeaconBlock{
+		Block: &zond.GenericSignedBeaconBlock_Phase0{
 			Phase0: v1alpha1Blk,
 		},
 	})
@@ -1040,13 +1040,13 @@ func (bs *Server) submitPhase0Block(ctx context.Context, phase0Blk *ethpbv1.Beac
 	return nil
 }
 
-func (bs *Server) submitAltairBlock(ctx context.Context, altairBlk *ethpbv2.BeaconBlockAltair, sig []byte) error {
-	v1alpha1Blk, err := migration.AltairToV1Alpha1SignedBlock(&ethpbv2.SignedBeaconBlockAltair{Message: altairBlk, Signature: sig})
+func (bs *Server) submitAltairBlock(ctx context.Context, altairBlk *zondpbv2.BeaconBlockAltair, sig []byte) error {
+	v1alpha1Blk, err := migration.AltairToV1Alpha1SignedBlock(&zondpbv2.SignedBeaconBlockAltair{Message: altairBlk, Signature: sig})
 	if err != nil {
 		return status.Errorf(codes.InvalidArgument, "Could not convert block %v", err)
 	}
-	_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &eth.GenericSignedBeaconBlock{
-		Block: &eth.GenericSignedBeaconBlock_Altair{
+	_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &zond.GenericSignedBeaconBlock{
+		Block: &zond.GenericSignedBeaconBlock_Altair{
 			Altair: v1alpha1Blk,
 		},
 	})
@@ -1059,13 +1059,13 @@ func (bs *Server) submitAltairBlock(ctx context.Context, altairBlk *ethpbv2.Beac
 	return nil
 }
 
-func (bs *Server) submitBellatrixBlock(ctx context.Context, bellatrixBlk *ethpbv2.BeaconBlockBellatrix, sig []byte) error {
-	v1alpha1Blk, err := migration.BellatrixToV1Alpha1SignedBlock(&ethpbv2.SignedBeaconBlockBellatrix{Message: bellatrixBlk, Signature: sig})
+func (bs *Server) submitBellatrixBlock(ctx context.Context, bellatrixBlk *zondpbv2.BeaconBlockBellatrix, sig []byte) error {
+	v1alpha1Blk, err := migration.BellatrixToV1Alpha1SignedBlock(&zondpbv2.SignedBeaconBlockBellatrix{Message: bellatrixBlk, Signature: sig})
 	if err != nil {
 		return status.Errorf(codes.InvalidArgument, "Could not convert block to v1 block")
 	}
-	_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &eth.GenericSignedBeaconBlock{
-		Block: &eth.GenericSignedBeaconBlock_Bellatrix{
+	_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &zond.GenericSignedBeaconBlock{
+		Block: &zond.GenericSignedBeaconBlock_Bellatrix{
 			Bellatrix: v1alpha1Blk,
 		},
 	})
@@ -1078,13 +1078,13 @@ func (bs *Server) submitBellatrixBlock(ctx context.Context, bellatrixBlk *ethpbv
 	return nil
 }
 
-func (bs *Server) submitCapellaBlock(ctx context.Context, capellaBlk *ethpbv2.BeaconBlockCapella, sig []byte) error {
-	v1alpha1Blk, err := migration.CapellaToV1Alpha1SignedBlock(&ethpbv2.SignedBeaconBlockCapella{Message: capellaBlk, Signature: sig})
+func (bs *Server) submitCapellaBlock(ctx context.Context, capellaBlk *zondpbv2.BeaconBlockCapella, sig []byte) error {
+	v1alpha1Blk, err := migration.CapellaToV1Alpha1SignedBlock(&zondpbv2.SignedBeaconBlockCapella{Message: capellaBlk, Signature: sig})
 	if err != nil {
 		return status.Errorf(codes.InvalidArgument, "Could not convert block to v1 block")
 	}
-	_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &eth.GenericSignedBeaconBlock{
-		Block: &eth.GenericSignedBeaconBlock_Capella{
+	_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &zond.GenericSignedBeaconBlock{
+		Block: &zond.GenericSignedBeaconBlock_Capella{
 			Capella: v1alpha1Blk,
 		},
 	})

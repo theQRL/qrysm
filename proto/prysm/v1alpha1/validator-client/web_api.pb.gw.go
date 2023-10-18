@@ -18,7 +18,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/utilities"
 	github_com_theQRL_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
@@ -285,7 +285,7 @@ var (
 )
 
 func request_Beacon_GetValidatorParticipation_0(ctx context.Context, marshaler runtime.Marshaler, client BeaconClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq eth.GetValidatorParticipationRequest
+	var protoReq zond.GetValidatorParticipationRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
@@ -301,7 +301,7 @@ func request_Beacon_GetValidatorParticipation_0(ctx context.Context, marshaler r
 }
 
 func local_request_Beacon_GetValidatorParticipation_0(ctx context.Context, marshaler runtime.Marshaler, server BeaconServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq eth.GetValidatorParticipationRequest
+	var protoReq zond.GetValidatorParticipationRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
@@ -321,7 +321,7 @@ var (
 )
 
 func request_Beacon_GetValidatorPerformance_0(ctx context.Context, marshaler runtime.Marshaler, client BeaconClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq eth.ValidatorPerformanceRequest
+	var protoReq zond.ValidatorPerformanceRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
@@ -337,7 +337,7 @@ func request_Beacon_GetValidatorPerformance_0(ctx context.Context, marshaler run
 }
 
 func local_request_Beacon_GetValidatorPerformance_0(ctx context.Context, marshaler runtime.Marshaler, server BeaconServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq eth.ValidatorPerformanceRequest
+	var protoReq zond.ValidatorPerformanceRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
@@ -357,7 +357,7 @@ var (
 )
 
 func request_Beacon_GetValidators_0(ctx context.Context, marshaler runtime.Marshaler, client BeaconClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq eth.ListValidatorsRequest
+	var protoReq zond.ListValidatorsRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
@@ -373,7 +373,7 @@ func request_Beacon_GetValidators_0(ctx context.Context, marshaler runtime.Marsh
 }
 
 func local_request_Beacon_GetValidators_0(ctx context.Context, marshaler runtime.Marshaler, server BeaconServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq eth.ListValidatorsRequest
+	var protoReq zond.ListValidatorsRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
@@ -393,7 +393,7 @@ var (
 )
 
 func request_Beacon_GetValidatorBalances_0(ctx context.Context, marshaler runtime.Marshaler, client BeaconClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq eth.ListValidatorBalancesRequest
+	var protoReq zond.ListValidatorBalancesRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
@@ -409,7 +409,7 @@ func request_Beacon_GetValidatorBalances_0(ctx context.Context, marshaler runtim
 }
 
 func local_request_Beacon_GetValidatorBalances_0(ctx context.Context, marshaler runtime.Marshaler, server BeaconServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq eth.ListValidatorBalancesRequest
+	var protoReq zond.ListValidatorBalancesRequest
 	var metadata runtime.ServerMetadata
 
 	if err := req.ParseForm(); err != nil {
@@ -630,7 +630,7 @@ func RegisterWalletHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Wallet/CreateWallet")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Wallet/CreateWallet")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -653,7 +653,7 @@ func RegisterWalletHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Wallet/WalletConfig")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Wallet/WalletConfig")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -676,7 +676,7 @@ func RegisterWalletHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Wallet/ValidateKeystores")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Wallet/ValidateKeystores")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -699,7 +699,7 @@ func RegisterWalletHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Wallet/RecoverWallet")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Wallet/RecoverWallet")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -731,7 +731,7 @@ func RegisterAccountsHandlerServer(ctx context.Context, mux *runtime.ServeMux, s
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Accounts/ListAccounts")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Accounts/ListAccounts")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -754,7 +754,7 @@ func RegisterAccountsHandlerServer(ctx context.Context, mux *runtime.ServeMux, s
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Accounts/BackupAccounts")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Accounts/BackupAccounts")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -777,7 +777,7 @@ func RegisterAccountsHandlerServer(ctx context.Context, mux *runtime.ServeMux, s
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Accounts/VoluntaryExit")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Accounts/VoluntaryExit")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -809,7 +809,7 @@ func RegisterBeaconHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Beacon/GetBeaconStatus")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Beacon/GetBeaconStatus")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -832,7 +832,7 @@ func RegisterBeaconHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Beacon/GetValidatorParticipation")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Beacon/GetValidatorParticipation")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -855,7 +855,7 @@ func RegisterBeaconHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Beacon/GetValidatorPerformance")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Beacon/GetValidatorPerformance")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -878,7 +878,7 @@ func RegisterBeaconHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Beacon/GetValidators")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Beacon/GetValidators")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -901,7 +901,7 @@ func RegisterBeaconHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Beacon/GetValidatorBalances")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Beacon/GetValidatorBalances")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -924,7 +924,7 @@ func RegisterBeaconHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Beacon/GetValidatorQueue")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Beacon/GetValidatorQueue")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -947,7 +947,7 @@ func RegisterBeaconHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Beacon/GetPeers")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Beacon/GetPeers")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -979,7 +979,7 @@ func RegisterSlashingProtectionHandlerServer(ctx context.Context, mux *runtime.S
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.SlashingProtection/ExportSlashingProtection")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.SlashingProtection/ExportSlashingProtection")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1002,7 +1002,7 @@ func RegisterSlashingProtectionHandlerServer(ctx context.Context, mux *runtime.S
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.SlashingProtection/ImportSlashingProtection")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.SlashingProtection/ImportSlashingProtection")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1034,7 +1034,7 @@ func RegisterHealthHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Health/GetBeaconNodeConnection")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Health/GetBeaconNodeConnection")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1057,7 +1057,7 @@ func RegisterHealthHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Health/GetLogsEndpoints")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Health/GetLogsEndpoints")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1080,7 +1080,7 @@ func RegisterHealthHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Health/GetVersion")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Health/GetVersion")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1126,7 +1126,7 @@ func RegisterAuthHandlerServer(ctx context.Context, mux *runtime.ServeMux, serve
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Auth/Initialize")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Auth/Initialize")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1188,7 +1188,7 @@ func RegisterWalletHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Wallet/CreateWallet")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Wallet/CreateWallet")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1208,7 +1208,7 @@ func RegisterWalletHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Wallet/WalletConfig")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Wallet/WalletConfig")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1228,7 +1228,7 @@ func RegisterWalletHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Wallet/ValidateKeystores")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Wallet/ValidateKeystores")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1248,7 +1248,7 @@ func RegisterWalletHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Wallet/RecoverWallet")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Wallet/RecoverWallet")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1329,7 +1329,7 @@ func RegisterAccountsHandlerClient(ctx context.Context, mux *runtime.ServeMux, c
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Accounts/ListAccounts")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Accounts/ListAccounts")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1349,7 +1349,7 @@ func RegisterAccountsHandlerClient(ctx context.Context, mux *runtime.ServeMux, c
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Accounts/BackupAccounts")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Accounts/BackupAccounts")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1369,7 +1369,7 @@ func RegisterAccountsHandlerClient(ctx context.Context, mux *runtime.ServeMux, c
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Accounts/VoluntaryExit")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Accounts/VoluntaryExit")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1446,7 +1446,7 @@ func RegisterBeaconHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Beacon/GetBeaconStatus")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Beacon/GetBeaconStatus")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1466,7 +1466,7 @@ func RegisterBeaconHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Beacon/GetValidatorParticipation")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Beacon/GetValidatorParticipation")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1486,7 +1486,7 @@ func RegisterBeaconHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Beacon/GetValidatorPerformance")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Beacon/GetValidatorPerformance")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1506,7 +1506,7 @@ func RegisterBeaconHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Beacon/GetValidators")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Beacon/GetValidators")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1526,7 +1526,7 @@ func RegisterBeaconHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Beacon/GetValidatorBalances")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Beacon/GetValidatorBalances")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1546,7 +1546,7 @@ func RegisterBeaconHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Beacon/GetValidatorQueue")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Beacon/GetValidatorQueue")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1566,7 +1566,7 @@ func RegisterBeaconHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Beacon/GetPeers")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Beacon/GetPeers")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1659,7 +1659,7 @@ func RegisterSlashingProtectionHandlerClient(ctx context.Context, mux *runtime.S
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.SlashingProtection/ExportSlashingProtection")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.SlashingProtection/ExportSlashingProtection")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1679,7 +1679,7 @@ func RegisterSlashingProtectionHandlerClient(ctx context.Context, mux *runtime.S
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.SlashingProtection/ImportSlashingProtection")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.SlashingProtection/ImportSlashingProtection")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1752,7 +1752,7 @@ func RegisterHealthHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Health/GetBeaconNodeConnection")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Health/GetBeaconNodeConnection")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1772,7 +1772,7 @@ func RegisterHealthHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Health/GetLogsEndpoints")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Health/GetLogsEndpoints")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1792,7 +1792,7 @@ func RegisterHealthHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Health/GetVersion")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Health/GetVersion")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1812,7 +1812,7 @@ func RegisterHealthHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Health/StreamBeaconLogs")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Health/StreamBeaconLogs")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1832,7 +1832,7 @@ func RegisterHealthHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Health/StreamValidatorLogs")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Health/StreamValidatorLogs")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1917,7 +1917,7 @@ func RegisterAuthHandlerClient(ctx context.Context, mux *runtime.ServeMux, clien
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/ethereum.validator.accounts.v2.Auth/Initialize")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/theqrl.validator.accounts.v2.Auth/Initialize")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return

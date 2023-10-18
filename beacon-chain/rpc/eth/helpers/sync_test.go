@@ -21,7 +21,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -96,7 +96,7 @@ func TestIsOptimistic(t *testing.T) {
 		t.Run("finalized checkpoint is optimistic", func(t *testing.T) {
 			st, err := util.NewBeaconState()
 			require.NoError(t, err)
-			cs := &chainmock.ChainService{Optimistic: true, FinalizedCheckPoint: &eth.Checkpoint{}, OptimisticRoots: map[[32]byte]bool{[32]byte{}: true}}
+			cs := &chainmock.ChainService{Optimistic: true, FinalizedCheckPoint: &zond.Checkpoint{}, OptimisticRoots: map[[32]byte]bool{[32]byte{}: true}}
 			mf := &testutil.MockStater{BeaconState: st}
 			o, err := IsOptimistic(ctx, []byte("finalized"), cs, mf, cs, nil)
 			require.NoError(t, err)
@@ -105,7 +105,7 @@ func TestIsOptimistic(t *testing.T) {
 		t.Run("finalized checkpoint is not optimistic", func(t *testing.T) {
 			st, err := util.NewBeaconState()
 			require.NoError(t, err)
-			cs := &chainmock.ChainService{Optimistic: true, FinalizedCheckPoint: &eth.Checkpoint{}}
+			cs := &chainmock.ChainService{Optimistic: true, FinalizedCheckPoint: &zond.Checkpoint{}}
 			mf := &testutil.MockStater{BeaconState: st}
 			o, err := IsOptimistic(ctx, []byte("finalized"), cs, mf, cs, nil)
 			require.NoError(t, err)
@@ -116,7 +116,7 @@ func TestIsOptimistic(t *testing.T) {
 		t.Run("justified checkpoint is optimistic", func(t *testing.T) {
 			st, err := util.NewBeaconState()
 			require.NoError(t, err)
-			cs := &chainmock.ChainService{Optimistic: true, CurrentJustifiedCheckPoint: &eth.Checkpoint{}, OptimisticRoots: map[[32]byte]bool{[32]byte{}: true}}
+			cs := &chainmock.ChainService{Optimistic: true, CurrentJustifiedCheckPoint: &zond.Checkpoint{}, OptimisticRoots: map[[32]byte]bool{[32]byte{}: true}}
 			mf := &testutil.MockStater{BeaconState: st}
 			o, err := IsOptimistic(ctx, []byte("justified"), cs, mf, cs, nil)
 			require.NoError(t, err)
@@ -125,7 +125,7 @@ func TestIsOptimistic(t *testing.T) {
 		t.Run("justified checkpoint is not optimistic", func(t *testing.T) {
 			st, err := util.NewBeaconState()
 			require.NoError(t, err)
-			cs := &chainmock.ChainService{Optimistic: true, CurrentJustifiedCheckPoint: &eth.Checkpoint{}}
+			cs := &chainmock.ChainService{Optimistic: true, CurrentJustifiedCheckPoint: &zond.Checkpoint{}}
 			mf := &testutil.MockStater{BeaconState: st}
 			o, err := IsOptimistic(ctx, []byte("justified"), cs, mf, cs, nil)
 			require.NoError(t, err)
@@ -213,41 +213,41 @@ func TestIsOptimistic(t *testing.T) {
 		})
 		t.Run("is before validated slot when head is optimistic", func(t *testing.T) {
 			db := dbtest.SetupDB(t)
-			require.NoError(t, db.SaveStateSummary(ctx, &eth.StateSummary{Slot: fieldparams.SlotsPerEpoch, Root: []byte("root")}))
-			require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, &eth.Checkpoint{Epoch: 1, Root: []byte("root")}))
-			cs := &chainmock.ChainService{Optimistic: true, FinalizedCheckPoint: &eth.Checkpoint{Epoch: 1}}
+			require.NoError(t, db.SaveStateSummary(ctx, &zond.StateSummary{Slot: fieldparams.SlotsPerEpoch, Root: []byte("root")}))
+			require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, &zond.Checkpoint{Epoch: 1, Root: []byte("root")}))
+			cs := &chainmock.ChainService{Optimistic: true, FinalizedCheckPoint: &zond.Checkpoint{Epoch: 1}}
 			o, err := IsOptimistic(ctx, []byte("0"), cs, nil, cs, db)
 			require.NoError(t, err)
 			assert.Equal(t, false, o)
 		})
 		t.Run("is equal to validated slot when head is optimistic", func(t *testing.T) {
 			db := dbtest.SetupDB(t)
-			require.NoError(t, db.SaveStateSummary(ctx, &eth.StateSummary{Slot: fieldparams.SlotsPerEpoch, Root: []byte("root")}))
-			require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, &eth.Checkpoint{Epoch: 1, Root: []byte("root")}))
-			cs := &chainmock.ChainService{Optimistic: true, FinalizedCheckPoint: &eth.Checkpoint{Epoch: 1}}
+			require.NoError(t, db.SaveStateSummary(ctx, &zond.StateSummary{Slot: fieldparams.SlotsPerEpoch, Root: []byte("root")}))
+			require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, &zond.Checkpoint{Epoch: 1, Root: []byte("root")}))
+			cs := &chainmock.ChainService{Optimistic: true, FinalizedCheckPoint: &zond.Checkpoint{Epoch: 1}}
 			o, err := IsOptimistic(ctx, []byte("32"), cs, nil, cs, db)
 			require.NoError(t, err)
 			assert.Equal(t, false, o)
 		})
 		t.Run("is after validated slot and validated slot is before finalized slot", func(t *testing.T) {
 			db := dbtest.SetupDB(t)
-			require.NoError(t, db.SaveStateSummary(ctx, &eth.StateSummary{Slot: fieldparams.SlotsPerEpoch, Root: []byte("root")}))
-			require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, &eth.Checkpoint{Epoch: 1, Root: []byte("root")}))
-			cs := &chainmock.ChainService{Optimistic: true, FinalizedCheckPoint: &eth.Checkpoint{Epoch: 2}}
+			require.NoError(t, db.SaveStateSummary(ctx, &zond.StateSummary{Slot: fieldparams.SlotsPerEpoch, Root: []byte("root")}))
+			require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, &zond.Checkpoint{Epoch: 1, Root: []byte("root")}))
+			cs := &chainmock.ChainService{Optimistic: true, FinalizedCheckPoint: &zond.Checkpoint{Epoch: 2}}
 			o, err := IsOptimistic(ctx, []byte("33"), cs, nil, cs, db)
 			require.NoError(t, err)
 			assert.Equal(t, true, o)
 		})
 		t.Run("is head", func(t *testing.T) {
 			db := dbtest.SetupDB(t)
-			require.NoError(t, db.SaveStateSummary(ctx, &eth.StateSummary{Slot: fieldparams.SlotsPerEpoch, Root: []byte("root")}))
-			require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, &eth.Checkpoint{Epoch: 1, Root: []byte("root")}))
+			require.NoError(t, db.SaveStateSummary(ctx, &zond.StateSummary{Slot: fieldparams.SlotsPerEpoch, Root: []byte("root")}))
+			require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, &zond.Checkpoint{Epoch: 1, Root: []byte("root")}))
 			fetcherSt, err := util.NewBeaconState()
 			require.NoError(t, err)
 			chainSt, err := util.NewBeaconState()
 			require.NoError(t, err)
 			require.NoError(t, chainSt.SetSlot(fieldparams.SlotsPerEpoch*2))
-			cs := &chainmock.ChainService{Optimistic: true, State: chainSt, FinalizedCheckPoint: &eth.Checkpoint{Epoch: 0}}
+			cs := &chainmock.ChainService{Optimistic: true, State: chainSt, FinalizedCheckPoint: &zond.Checkpoint{Epoch: 0}}
 			mf := &testutil.MockStater{BeaconState: fetcherSt}
 			o, err := IsOptimistic(ctx, []byte(strconv.Itoa(fieldparams.SlotsPerEpoch*2)), cs, mf, cs, db)
 			require.NoError(t, err)
@@ -255,11 +255,11 @@ func TestIsOptimistic(t *testing.T) {
 		})
 		t.Run("ancestor is optimistic", func(t *testing.T) {
 			db := dbtest.SetupDB(t)
-			require.NoError(t, db.SaveStateSummary(ctx, &eth.StateSummary{Slot: fieldparams.SlotsPerEpoch, Root: []byte("root")}))
-			require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, &eth.Checkpoint{Epoch: 1, Root: []byte("root")}))
+			require.NoError(t, db.SaveStateSummary(ctx, &zond.StateSummary{Slot: fieldparams.SlotsPerEpoch, Root: []byte("root")}))
+			require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, &zond.Checkpoint{Epoch: 1, Root: []byte("root")}))
 			r := bytesutil.ToBytes32([]byte("root"))
 			fcs := doublylinkedtree.New()
-			finalizedCheckpt := &eth.Checkpoint{Epoch: 0}
+			finalizedCheckpt := &zond.Checkpoint{Epoch: 0}
 			st, root, err := prepareForkchoiceState(fieldparams.SlotsPerEpoch*2, r, [32]byte{}, [32]byte{}, finalizedCheckpt, finalizedCheckpt)
 			require.NoError(t, err)
 			require.NoError(t, fcs.InsertNode(ctx, st, root))
@@ -275,11 +275,11 @@ func TestIsOptimistic(t *testing.T) {
 		})
 		t.Run("ancestor is not optimistic", func(t *testing.T) {
 			db := dbtest.SetupDB(t)
-			require.NoError(t, db.SaveStateSummary(ctx, &eth.StateSummary{Slot: fieldparams.SlotsPerEpoch, Root: []byte("root")}))
-			require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, &eth.Checkpoint{Epoch: 1, Root: []byte("root")}))
+			require.NoError(t, db.SaveStateSummary(ctx, &zond.StateSummary{Slot: fieldparams.SlotsPerEpoch, Root: []byte("root")}))
+			require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, &zond.Checkpoint{Epoch: 1, Root: []byte("root")}))
 			r := bytesutil.ToBytes32([]byte("root"))
 			fcs := doublylinkedtree.New()
-			finalizedCheckpt := &eth.Checkpoint{Epoch: 0}
+			finalizedCheckpt := &zond.Checkpoint{Epoch: 0}
 			st, root, err := prepareForkchoiceState(fieldparams.SlotsPerEpoch*2, r, [32]byte{}, [32]byte{}, finalizedCheckpt, finalizedCheckpt)
 			require.NoError(t, err)
 			require.NoError(t, fcs.InsertNode(ctx, st, root))
@@ -303,10 +303,10 @@ func prepareForkchoiceState(
 	blockRoot [32]byte,
 	parentRoot [32]byte,
 	payloadHash [32]byte,
-	justified *eth.Checkpoint,
-	finalized *eth.Checkpoint,
+	justified *zond.Checkpoint,
+	finalized *zond.Checkpoint,
 ) (state.BeaconState, [32]byte, error) {
-	blockHeader := &eth.BeaconBlockHeader{
+	blockHeader := &zond.BeaconBlockHeader{
 		ParentRoot: parentRoot[:],
 	}
 
@@ -314,7 +314,7 @@ func prepareForkchoiceState(
 		BlockHash: payloadHash[:],
 	}
 
-	base := &eth.BeaconStateBellatrix{
+	base := &zond.BeaconStateBellatrix{
 		Slot:                         slot,
 		RandaoMixes:                  make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 		BlockRoots:                   make([][]byte, 1),

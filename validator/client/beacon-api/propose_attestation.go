@@ -6,15 +6,15 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
-func (c beaconApiValidatorClient) proposeAttestation(ctx context.Context, attestation *ethpb.Attestation) (*ethpb.AttestResponse, error) {
+func (c beaconApiValidatorClient) proposeAttestation(ctx context.Context, attestation *zondpb.Attestation) (*zondpb.AttestResponse, error) {
 	if err := checkNilAttestation(attestation); err != nil {
 		return nil, err
 	}
 
-	marshalledAttestation, err := json.Marshal(jsonifyAttestations([]*ethpb.Attestation{attestation}))
+	marshalledAttestation, err := json.Marshal(jsonifyAttestations([]*zondpb.Attestation{attestation}))
 	if err != nil {
 		return nil, err
 	}
@@ -28,11 +28,11 @@ func (c beaconApiValidatorClient) proposeAttestation(ctx context.Context, attest
 		return nil, errors.Wrap(err, "failed to compute attestation data root")
 	}
 
-	return &ethpb.AttestResponse{AttestationDataRoot: attestationDataRoot[:]}, nil
+	return &zondpb.AttestResponse{AttestationDataRoot: attestationDataRoot[:]}, nil
 }
 
 // checkNilAttestation returns error if attestation or any field of attestation is nil.
-func checkNilAttestation(attestation *ethpb.Attestation) error {
+func checkNilAttestation(attestation *zondpb.Attestation) error {
 	if attestation == nil {
 		return errors.New("attestation is nil")
 	}

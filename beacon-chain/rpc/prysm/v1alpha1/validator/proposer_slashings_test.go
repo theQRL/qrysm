@@ -7,7 +7,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/slashings"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
@@ -19,7 +19,7 @@ func TestServer_getSlashings(t *testing.T) {
 		SlashingsPool: slashings.NewPool(),
 	}
 
-	proposerSlashings := make([]*ethpb.ProposerSlashing, params.BeaconConfig().MaxProposerSlashings)
+	proposerSlashings := make([]*zondpb.ProposerSlashing, params.BeaconConfig().MaxProposerSlashings)
 	for i := primitives.ValidatorIndex(0); uint64(i) < params.BeaconConfig().MaxProposerSlashings; i++ {
 		proposerSlashing, err := util.GenerateProposerSlashingForValidator(beaconState, privKeys[i], i)
 		require.NoError(t, err)
@@ -28,7 +28,7 @@ func TestServer_getSlashings(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	attSlashings := make([]*ethpb.AttesterSlashing, params.BeaconConfig().MaxAttesterSlashings)
+	attSlashings := make([]*zondpb.AttesterSlashing, params.BeaconConfig().MaxAttesterSlashings)
 	for i := uint64(0); i < params.BeaconConfig().MaxAttesterSlashings; i++ {
 		attesterSlashing, err := util.GenerateAttesterSlashingForValidator(
 			beaconState,

@@ -10,11 +10,11 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
-func (c *beaconApiValidatorClient) submitAggregateSelectionProof(ctx context.Context, in *ethpb.AggregateSelectionRequest) (*ethpb.AggregateSelectionResponse, error) {
+func (c *beaconApiValidatorClient) submitAggregateSelectionProof(ctx context.Context, in *zondpb.AggregateSelectionRequest) (*zondpb.AggregateSelectionResponse, error) {
 	isOptimistic, err := c.isOptimistic(ctx)
 	if err != nil {
 		return nil, err
@@ -25,7 +25,7 @@ func (c *beaconApiValidatorClient) submitAggregateSelectionProof(ctx context.Con
 		return nil, errors.New("the node is currently optimistic and cannot serve validators")
 	}
 
-	validatorIndexResponse, err := c.validatorIndex(ctx, &ethpb.ValidatorIndexRequest{PublicKey: in.PublicKey})
+	validatorIndexResponse, err := c.validatorIndex(ctx, &zondpb.ValidatorIndexRequest{PublicKey: in.PublicKey})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get validator index")
 	}
@@ -75,8 +75,8 @@ func (c *beaconApiValidatorClient) submitAggregateSelectionProof(ctx context.Con
 		return nil, errors.Wrap(err, "failed to convert aggregate attestation json to proto")
 	}
 
-	return &ethpb.AggregateSelectionResponse{
-		AggregateAndProof: &ethpb.AggregateAttestationAndProof{
+	return &zondpb.AggregateSelectionResponse{
+		AggregateAndProof: &zondpb.AggregateAttestationAndProof{
 			AggregatorIndex: validatorIndexResponse.Index,
 			Aggregate:       aggregatedAttestation,
 			SelectionProof:  in.SlotSignature,

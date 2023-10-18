@@ -23,7 +23,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	pb "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
@@ -39,7 +39,7 @@ func startChainService(t testing.TB,
 	require.NoError(t, err)
 	require.NoError(t, db.SaveGenesisBlockRoot(ctx, r))
 
-	cp := &ethpb.Checkpoint{
+	cp := &zondpb.Checkpoint{
 		Epoch: coreTime.CurrentEpoch(st),
 		Root:  r[:],
 	}
@@ -75,7 +75,7 @@ func startChainService(t testing.TB,
 }
 
 type engineMock struct {
-	powBlocks       map[[32]byte]*ethpb.PowBlock
+	powBlocks       map[[32]byte]*zondpb.PowBlock
 	latestValidHash []byte
 	payloadStatus   error
 }

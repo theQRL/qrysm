@@ -14,19 +14,19 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // NewGenesisBlock returns the canonical, genesis block for the beacon chain protocol.
-func NewGenesisBlock(stateRoot []byte) *ethpb.SignedBeaconBlock {
+func NewGenesisBlock(stateRoot []byte) *zondpb.SignedBeaconBlock {
 	zeroHash := params.BeaconConfig().ZeroHash[:]
-	block := &ethpb.SignedBeaconBlock{
-		Block: &ethpb.BeaconBlock{
+	block := &zondpb.SignedBeaconBlock{
+		Block: &zondpb.BeaconBlock{
 			ParentRoot: zeroHash,
 			StateRoot:  bytesutil.PadTo(stateRoot, 32),
-			Body: &ethpb.BeaconBlockBody{
+			Body: &zondpb.BeaconBlockBody{
 				RandaoReveal: make([]byte, dilithium2.CryptoBytes),
-				Eth1Data: &ethpb.Eth1Data{
+				Eth1Data: &zondpb.Eth1Data{
 					DepositRoot: make([]byte, 32),
 					BlockHash:   make([]byte, 32),
 				},
@@ -47,14 +47,14 @@ func NewGenesisBlockForState(ctx context.Context, st state.BeaconState) (interfa
 	}
 	ps := st.ToProto()
 	switch ps.(type) {
-	case *ethpb.BeaconState:
-		return blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlock{
-			Block: &ethpb.BeaconBlock{
+	case *zondpb.BeaconState:
+		return blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlock{
+			Block: &zondpb.BeaconBlock{
 				ParentRoot: params.BeaconConfig().ZeroHash[:],
 				StateRoot:  root[:],
-				Body: &ethpb.BeaconBlockBody{
+				Body: &zondpb.BeaconBlockBody{
 					RandaoReveal: make([]byte, dilithium2.CryptoBytes),
-					Eth1Data: &ethpb.Eth1Data{
+					Eth1Data: &zondpb.Eth1Data{
 						DepositRoot: make([]byte, 32),
 						BlockHash:   make([]byte, 32),
 					},
@@ -63,19 +63,19 @@ func NewGenesisBlockForState(ctx context.Context, st state.BeaconState) (interfa
 			},
 			Signature: params.BeaconConfig().EmptyDilithiumSignature[:],
 		})
-	case *ethpb.BeaconStateAltair:
-		return blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockAltair{
-			Block: &ethpb.BeaconBlockAltair{
+	case *zondpb.BeaconStateAltair:
+		return blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockAltair{
+			Block: &zondpb.BeaconBlockAltair{
 				ParentRoot: params.BeaconConfig().ZeroHash[:],
 				StateRoot:  root[:],
-				Body: &ethpb.BeaconBlockBodyAltair{
+				Body: &zondpb.BeaconBlockBodyAltair{
 					RandaoReveal: make([]byte, dilithium2.CryptoBytes),
-					Eth1Data: &ethpb.Eth1Data{
+					Eth1Data: &zondpb.Eth1Data{
 						DepositRoot: make([]byte, 32),
 						BlockHash:   make([]byte, 32),
 					},
 					Graffiti: make([]byte, 32),
-					SyncAggregate: &ethpb.SyncAggregate{
+					SyncAggregate: &zondpb.SyncAggregate{
 						SyncCommitteeBits:      make([]byte, fieldparams.SyncCommitteeLength/8),
 						SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
 					},
@@ -83,19 +83,19 @@ func NewGenesisBlockForState(ctx context.Context, st state.BeaconState) (interfa
 			},
 			Signature: params.BeaconConfig().EmptyDilithiumSignature[:],
 		})
-	case *ethpb.BeaconStateBellatrix:
-		return blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockBellatrix{
-			Block: &ethpb.BeaconBlockBellatrix{
+	case *zondpb.BeaconStateBellatrix:
+		return blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockBellatrix{
+			Block: &zondpb.BeaconBlockBellatrix{
 				ParentRoot: params.BeaconConfig().ZeroHash[:],
 				StateRoot:  root[:],
-				Body: &ethpb.BeaconBlockBodyBellatrix{
+				Body: &zondpb.BeaconBlockBodyBellatrix{
 					RandaoReveal: make([]byte, dilithium2.CryptoBytes),
-					Eth1Data: &ethpb.Eth1Data{
+					Eth1Data: &zondpb.Eth1Data{
 						DepositRoot: make([]byte, 32),
 						BlockHash:   make([]byte, 32),
 					},
 					Graffiti: make([]byte, 32),
-					SyncAggregate: &ethpb.SyncAggregate{
+					SyncAggregate: &zondpb.SyncAggregate{
 						SyncCommitteeBits:      make([]byte, fieldparams.SyncCommitteeLength/8),
 						SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
 					},
@@ -114,19 +114,19 @@ func NewGenesisBlockForState(ctx context.Context, st state.BeaconState) (interfa
 			},
 			Signature: params.BeaconConfig().EmptyDilithiumSignature[:],
 		})
-	case *ethpb.BeaconStateCapella:
-		return blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockCapella{
-			Block: &ethpb.BeaconBlockCapella{
+	case *zondpb.BeaconStateCapella:
+		return blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockCapella{
+			Block: &zondpb.BeaconBlockCapella{
 				ParentRoot: params.BeaconConfig().ZeroHash[:],
 				StateRoot:  root[:],
-				Body: &ethpb.BeaconBlockBodyCapella{
+				Body: &zondpb.BeaconBlockBodyCapella{
 					RandaoReveal: make([]byte, dilithium2.CryptoBytes),
-					Eth1Data: &ethpb.Eth1Data{
+					Eth1Data: &zondpb.Eth1Data{
 						DepositRoot: make([]byte, 32),
 						BlockHash:   make([]byte, 32),
 					},
 					Graffiti: make([]byte, 32),
-					SyncAggregate: &ethpb.SyncAggregate{
+					SyncAggregate: &zondpb.SyncAggregate{
 						SyncCommitteeBits:      make([]byte, fieldparams.SyncCommitteeLength/8),
 						SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
 					},

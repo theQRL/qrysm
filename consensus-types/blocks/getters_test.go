@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	bytesutil2 "github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	pb "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/testing/assert"
@@ -94,7 +94,7 @@ func Test_SignedBeaconBlock_Header(t *testing.T) {
 	bb := &BeaconBlockBody{
 		version:      version.Phase0,
 		randaoReveal: [dilithium2.CryptoBytes]byte{},
-		eth1Data: &eth.Eth1Data{
+		eth1Data: &zond.Eth1Data{
 			DepositRoot: make([]byte, 32),
 			BlockHash:   make([]byte, 32),
 		},
@@ -134,7 +134,7 @@ func Test_SignedBeaconBlock_UnmarshalSSZ(t *testing.T) {
 	require.NoError(t, sb.UnmarshalSSZ(buf))
 	msg, err := sb.Proto()
 	require.NoError(t, err)
-	actualPb, ok := msg.(*eth.SignedBeaconBlock)
+	actualPb, ok := msg.(*zond.SignedBeaconBlock)
 	require.Equal(t, true, ok)
 	actualHTR, err := actualPb.HashTreeRoot()
 	require.NoError(t, err)
@@ -277,7 +277,7 @@ func Test_BeaconBlock_UnmarshalSSZ(t *testing.T) {
 	require.NoError(t, b.UnmarshalSSZ(buf))
 	msg, err := b.Proto()
 	require.NoError(t, err)
-	actualPb, ok := msg.(*eth.BeaconBlock)
+	actualPb, ok := msg.(*zond.BeaconBlock)
 	require.Equal(t, true, ok)
 	actualHTR, err := actualPb.HashTreeRoot()
 	require.NoError(t, err)
@@ -317,7 +317,7 @@ func Test_BeaconBlockBody_RandaoReveal(t *testing.T) {
 }
 
 func Test_BeaconBlockBody_Eth1Data(t *testing.T) {
-	e := &eth.Eth1Data{DepositRoot: []byte("depositroot")}
+	e := &zond.Eth1Data{DepositRoot: []byte("depositroot")}
 	bb := &SignedBeaconBlock{block: &BeaconBlock{body: &BeaconBlockBody{}}}
 	bb.SetEth1Data(e)
 	assert.DeepEqual(t, e, bb.Block().Body().Eth1Data())
@@ -330,42 +330,42 @@ func Test_BeaconBlockBody_Graffiti(t *testing.T) {
 }
 
 func Test_BeaconBlockBody_ProposerSlashings(t *testing.T) {
-	ps := make([]*eth.ProposerSlashing, 0)
+	ps := make([]*zond.ProposerSlashing, 0)
 	bb := &SignedBeaconBlock{block: &BeaconBlock{body: &BeaconBlockBody{}}}
 	bb.SetProposerSlashings(ps)
 	assert.DeepSSZEqual(t, ps, bb.Block().Body().ProposerSlashings())
 }
 
 func Test_BeaconBlockBody_AttesterSlashings(t *testing.T) {
-	as := make([]*eth.AttesterSlashing, 0)
+	as := make([]*zond.AttesterSlashing, 0)
 	bb := &SignedBeaconBlock{block: &BeaconBlock{body: &BeaconBlockBody{}}}
 	bb.SetAttesterSlashings(as)
 	assert.DeepSSZEqual(t, as, bb.Block().Body().AttesterSlashings())
 }
 
 func Test_BeaconBlockBody_Attestations(t *testing.T) {
-	a := make([]*eth.Attestation, 0)
+	a := make([]*zond.Attestation, 0)
 	bb := &SignedBeaconBlock{block: &BeaconBlock{body: &BeaconBlockBody{}}}
 	bb.SetAttestations(a)
 	assert.DeepSSZEqual(t, a, bb.Block().Body().Attestations())
 }
 
 func Test_BeaconBlockBody_Deposits(t *testing.T) {
-	d := make([]*eth.Deposit, 0)
+	d := make([]*zond.Deposit, 0)
 	bb := &SignedBeaconBlock{block: &BeaconBlock{body: &BeaconBlockBody{}}}
 	bb.SetDeposits(d)
 	assert.DeepSSZEqual(t, d, bb.Block().Body().Deposits())
 }
 
 func Test_BeaconBlockBody_VoluntaryExits(t *testing.T) {
-	ve := make([]*eth.SignedVoluntaryExit, 0)
+	ve := make([]*zond.SignedVoluntaryExit, 0)
 	bb := &SignedBeaconBlock{block: &BeaconBlock{body: &BeaconBlockBody{}}}
 	bb.SetVoluntaryExits(ve)
 	assert.DeepSSZEqual(t, ve, bb.Block().Body().VoluntaryExits())
 }
 
 func Test_BeaconBlockBody_SyncAggregate(t *testing.T) {
-	sa := &eth.SyncAggregate{}
+	sa := &zond.SyncAggregate{}
 	bb := &SignedBeaconBlock{version: version.Altair, block: &BeaconBlock{version: version.Altair, body: &BeaconBlockBody{version: version.Altair}}}
 	require.NoError(t, bb.SetSyncAggregate(sa))
 	result, err := bb.Block().Body().SyncAggregate()
@@ -374,7 +374,7 @@ func Test_BeaconBlockBody_SyncAggregate(t *testing.T) {
 }
 
 func Test_BeaconBlockBody_DilithiumToExecutionChanges(t *testing.T) {
-	changes := []*eth.SignedDilithiumToExecutionChange{{Message: &eth.DilithiumToExecutionChange{ToExecutionAddress: []byte("address")}}}
+	changes := []*zond.SignedDilithiumToExecutionChange{{Message: &zond.DilithiumToExecutionChange{ToExecutionAddress: []byte("address")}}}
 	bb := &SignedBeaconBlock{version: version.Capella, block: &BeaconBlock{body: &BeaconBlockBody{version: version.Capella}}}
 	require.NoError(t, bb.SetDilithiumToExecutionChanges(changes))
 	result, err := bb.Block().Body().DilithiumToExecutionChanges()
@@ -422,26 +422,26 @@ func Test_BeaconBlockBody_HashTreeRoot(t *testing.T) {
 	assert.DeepEqual(t, expectedHTR, actualHTR)
 }
 
-func hydrateSignedBeaconBlock() *eth.SignedBeaconBlock {
-	return &eth.SignedBeaconBlock{
+func hydrateSignedBeaconBlock() *zond.SignedBeaconBlock {
+	return &zond.SignedBeaconBlock{
 		Signature: make([]byte, dilithium2.CryptoBytes),
 		Block:     hydrateBeaconBlock(),
 	}
 }
 
-func hydrateBeaconBlock() *eth.BeaconBlock {
-	return &eth.BeaconBlock{
+func hydrateBeaconBlock() *zond.BeaconBlock {
+	return &zond.BeaconBlock{
 		ParentRoot: make([]byte, fieldparams.RootLength),
 		StateRoot:  make([]byte, fieldparams.RootLength),
 		Body:       hydrateBeaconBlockBody(),
 	}
 }
 
-func hydrateBeaconBlockBody() *eth.BeaconBlockBody {
-	return &eth.BeaconBlockBody{
+func hydrateBeaconBlockBody() *zond.BeaconBlockBody {
+	return &zond.BeaconBlockBody{
 		RandaoReveal: make([]byte, dilithium2.CryptoBytes),
 		Graffiti:     make([]byte, fieldparams.RootLength),
-		Eth1Data: &eth.Eth1Data{
+		Eth1Data: &zond.Eth1Data{
 			DepositRoot: make([]byte, fieldparams.RootLength),
 			BlockHash:   make([]byte, fieldparams.RootLength),
 		},

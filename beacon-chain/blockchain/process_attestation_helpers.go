@@ -14,12 +14,12 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 // getAttPreState retrieves the att pre state by either from the cache or the DB.
-func (s *Service) getAttPreState(ctx context.Context, c *ethpb.Checkpoint) (state.ReadOnlyBeaconState, error) {
+func (s *Service) getAttPreState(ctx context.Context, c *zondpb.Checkpoint) (state.ReadOnlyBeaconState, error) {
 	// If the attestation is recent and canonical we can use the head state to compute the shuffling.
 	headEpoch := slots.ToEpoch(s.HeadSlot())
 	if c.Epoch == headEpoch {
@@ -98,7 +98,7 @@ func (s *Service) getAttPreState(ctx context.Context, c *ethpb.Checkpoint) (stat
 }
 
 // verifyAttTargetEpoch validates attestation is from the current or previous epoch.
-func verifyAttTargetEpoch(_ context.Context, genesisTime, nowTime uint64, c *ethpb.Checkpoint) error {
+func verifyAttTargetEpoch(_ context.Context, genesisTime, nowTime uint64, c *zondpb.Checkpoint) error {
 	currentSlot := primitives.Slot((nowTime - genesisTime) / params.BeaconConfig().SecondsPerSlot)
 	currentEpoch := slots.ToEpoch(currentSlot)
 	var prevEpoch primitives.Epoch
@@ -113,7 +113,7 @@ func verifyAttTargetEpoch(_ context.Context, genesisTime, nowTime uint64, c *eth
 }
 
 // verifyBeaconBlock verifies beacon head block is known and not from the future.
-func (s *Service) verifyBeaconBlock(ctx context.Context, data *ethpb.AttestationData) error {
+func (s *Service) verifyBeaconBlock(ctx context.Context, data *zondpb.AttestationData) error {
 	r := bytesutil.ToBytes32(data.BeaconBlockRoot)
 	b, err := s.getBlock(ctx, r)
 	if err != nil {

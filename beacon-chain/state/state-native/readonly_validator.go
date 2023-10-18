@@ -5,7 +5,7 @@ import (
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 var (
@@ -16,13 +16,13 @@ var (
 // readOnlyValidator returns a wrapper that only allows fields from a validator
 // to be read, and prevents any modification of internal validator fields.
 type readOnlyValidator struct {
-	validator *ethpb.Validator
+	validator *zondpb.Validator
 }
 
 var _ = state.ReadOnlyValidator(readOnlyValidator{})
 
 // NewValidator initializes the read only wrapper for validator.
-func NewValidator(v *ethpb.Validator) (state.ReadOnlyValidator, error) {
+func NewValidator(v *zondpb.Validator) (state.ReadOnlyValidator, error) {
 	rov := readOnlyValidator{
 		validator: v,
 	}

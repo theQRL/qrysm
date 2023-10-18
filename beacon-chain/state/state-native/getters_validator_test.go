@@ -7,14 +7,14 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	statenative "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	testtmpl "github.com/theQRL/qrysm/v4/beacon-chain/state/testing"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 func TestBeaconState_ValidatorAtIndexReadOnly_HandlesNilSlice_Phase0(t *testing.T) {
 	testtmpl.VerifyBeaconStateValidatorAtIndexReadOnlyHandlesNilSlice(t, func() (state.BeaconState, error) {
-		return statenative.InitializeFromProtoUnsafePhase0(&ethpb.BeaconState{
+		return statenative.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{
 			Validators: nil,
 		})
 	})
@@ -22,7 +22,7 @@ func TestBeaconState_ValidatorAtIndexReadOnly_HandlesNilSlice_Phase0(t *testing.
 
 func TestBeaconState_ValidatorAtIndexReadOnly_HandlesNilSlice_Altair(t *testing.T) {
 	testtmpl.VerifyBeaconStateValidatorAtIndexReadOnlyHandlesNilSlice(t, func() (state.BeaconState, error) {
-		return statenative.InitializeFromProtoUnsafeAltair(&ethpb.BeaconStateAltair{
+		return statenative.InitializeFromProtoUnsafeAltair(&zondpb.BeaconStateAltair{
 			Validators: nil,
 		})
 	})
@@ -30,7 +30,7 @@ func TestBeaconState_ValidatorAtIndexReadOnly_HandlesNilSlice_Altair(t *testing.
 
 func TestBeaconState_ValidatorAtIndexReadOnly_HandlesNilSlice_Bellatrix(t *testing.T) {
 	testtmpl.VerifyBeaconStateValidatorAtIndexReadOnlyHandlesNilSlice(t, func() (state.BeaconState, error) {
-		return statenative.InitializeFromProtoUnsafeBellatrix(&ethpb.BeaconStateBellatrix{
+		return statenative.InitializeFromProtoUnsafeBellatrix(&zondpb.BeaconStateBellatrix{
 			Validators: nil,
 		})
 	})
@@ -38,7 +38,7 @@ func TestBeaconState_ValidatorAtIndexReadOnly_HandlesNilSlice_Bellatrix(t *testi
 
 func TestBeaconState_ValidatorAtIndexReadOnly_HandlesNilSlice_Capella(t *testing.T) {
 	testtmpl.VerifyBeaconStateValidatorAtIndexReadOnlyHandlesNilSlice(t, func() (state.BeaconState, error) {
-		return statenative.InitializeFromProtoUnsafeCapella(&ethpb.BeaconStateCapella{
+		return statenative.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
 			Validators: nil,
 		})
 	})

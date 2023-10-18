@@ -8,14 +8,14 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestVerifyRegistrationSignature(t *testing.T) {
 	sk, err := bls.RandKey()
 	require.NoError(t, err)
-	reg := &ethpb.ValidatorRegistrationV1{
+	reg := &zondpb.ValidatorRegistrationV1{
 		FeeRecipient: bytesutil.PadTo([]byte("fee"), 20),
 		GasLimit:     123456,
 		Timestamp:    uint64(time.Now().Unix()),
@@ -28,7 +28,7 @@ func TestVerifyRegistrationSignature(t *testing.T) {
 	require.NoError(t, err)
 	sk.Sign(sr[:]).Marshal()
 
-	sReg := &ethpb.SignedValidatorRegistrationV1{
+	sReg := &zondpb.SignedValidatorRegistrationV1{
 		Message:   reg,
 		Signature: sk.Sign(sr[:]).Marshal(),
 	}

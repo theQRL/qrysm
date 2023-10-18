@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
 	"google.golang.org/grpc"
@@ -25,7 +25,7 @@ var FinalizationOccurs = func(epoch primitives.Epoch) types.Evaluator {
 
 func finalizationOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := eth.NewBeaconChainClient(conn)
+	client := zond.NewBeaconChainClient(conn)
 	chainHead, err := client.GetChainHead(context.Background(), &emptypb.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "failed to get chain head")

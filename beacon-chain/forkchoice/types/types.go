@@ -4,10 +4,10 @@ import (
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
-// Checkpoint is an array version of ethpb.Checkpoint. It is used internally in
+// Checkpoint is an array version of zondpb.Checkpoint. It is used internally in
 // forkchoice, while the slice version is used in the interface to legacy code
 // in other packages
 type Checkpoint struct {
@@ -18,6 +18,6 @@ type Checkpoint struct {
 // BlockAndCheckpoints to call the InsertOptimisticChain function
 type BlockAndCheckpoints struct {
 	Block               interfaces.ReadOnlyBeaconBlock
-	JustifiedCheckpoint *ethpb.Checkpoint
-	FinalizedCheckpoint *ethpb.Checkpoint
+	JustifiedCheckpoint *zondpb.Checkpoint
+	FinalizedCheckpoint *zondpb.Checkpoint
 }

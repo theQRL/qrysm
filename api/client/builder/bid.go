@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/math"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
@@ -33,11 +33,11 @@ type Bid interface {
 }
 
 type signedBuilderBid struct {
-	p *ethpb.SignedBuilderBid
+	p *zondpb.SignedBuilderBid
 }
 
 // WrappedSignedBuilderBid is a constructor which wraps a protobuf signed bit into an interface.
-func WrappedSignedBuilderBid(p *ethpb.SignedBuilderBid) (SignedBid, error) {
+func WrappedSignedBuilderBid(p *zondpb.SignedBuilderBid) (SignedBid, error) {
 	w := signedBuilderBid{p: p}
 	if w.IsNil() {
 		return nil, consensus_types.ErrNilObjectWrapped
@@ -66,11 +66,11 @@ func (b signedBuilderBid) IsNil() bool {
 }
 
 type signedBuilderBidCapella struct {
-	p *ethpb.SignedBuilderBidCapella
+	p *zondpb.SignedBuilderBidCapella
 }
 
 // WrappedSignedBuilderBidCapella is a constructor which wraps a protobuf signed bit into an interface.
-func WrappedSignedBuilderBidCapella(p *ethpb.SignedBuilderBidCapella) (SignedBid, error) {
+func WrappedSignedBuilderBidCapella(p *zondpb.SignedBuilderBidCapella) (SignedBid, error) {
 	w := signedBuilderBidCapella{p: p}
 	if w.IsNil() {
 		return nil, consensus_types.ErrNilObjectWrapped
@@ -99,11 +99,11 @@ func (b signedBuilderBidCapella) IsNil() bool {
 }
 
 type builderBid struct {
-	p *ethpb.BuilderBid
+	p *zondpb.BuilderBid
 }
 
 // WrappedBuilderBid is a constructor which wraps a protobuf bid into an interface.
-func WrappedBuilderBid(p *ethpb.BuilderBid) (Bid, error) {
+func WrappedBuilderBid(p *zondpb.BuilderBid) (Bid, error) {
 	w := builderBid{p: p}
 	if w.IsNil() {
 		return nil, consensus_types.ErrNilObjectWrapped
@@ -147,11 +147,11 @@ func (b builderBid) HashTreeRootWith(hh *ssz.Hasher) error {
 }
 
 type builderBidCapella struct {
-	p *ethpb.BuilderBidCapella
+	p *zondpb.BuilderBidCapella
 }
 
 // WrappedBuilderBidCapella is a constructor which wraps a protobuf bid into an interface.
-func WrappedBuilderBidCapella(p *ethpb.BuilderBidCapella) (Bid, error) {
+func WrappedBuilderBidCapella(p *zondpb.BuilderBidCapella) (Bid, error) {
 	w := builderBidCapella{p: p}
 	if w.IsNil() {
 		return nil, consensus_types.ErrNilObjectWrapped

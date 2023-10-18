@@ -8,7 +8,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/capella"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/spectest/utils"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -33,7 +33,7 @@ func RunUpgradeToCapella(t *testing.T, config string) {
 			require.NoError(t, err)
 			preStateSSZ, err := snappy.Decode(nil /* dst */, preStateFile)
 			require.NoError(t, err, "Failed to decompress")
-			preStateBase := &ethpb.BeaconStateBellatrix{}
+			preStateBase := &zondpb.BeaconStateBellatrix{}
 			if err := preStateBase.UnmarshalSSZ(preStateSSZ); err != nil {
 				t.Fatalf("Failed to unmarshal: %v", err)
 			}
@@ -48,7 +48,7 @@ func RunUpgradeToCapella(t *testing.T, config string) {
 			require.NoError(t, err)
 			postStateSSZ, err := snappy.Decode(nil /* dst */, postStateFile)
 			require.NoError(t, err, "Failed to decompress")
-			postStateFromFile := &ethpb.BeaconStateCapella{}
+			postStateFromFile := &zondpb.BeaconStateCapella{}
 			if err := postStateFromFile.UnmarshalSSZ(postStateSSZ); err != nil {
 				t.Fatalf("Failed to unmarshal: %v", err)
 			}

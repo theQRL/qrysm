@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/helpers"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -51,7 +51,7 @@ func TestSubmitAggregateSelectionProof(t *testing.T) {
 	attestationDataRootBytes, err := attestationDataProto.HashTreeRoot()
 	require.NoError(t, err)
 
-	aggregateAttestation := &ethpb.Attestation{
+	aggregateAttestation := &zondpb.Attestation{
 		AggregationBits: test_helpers.FillByteSlice(4, 74),
 		Data:            attestationDataProto,
 		Signature:       test_helpers.FillByteSlice(96, 82),
@@ -248,8 +248,8 @@ func TestSubmitAggregateSelectionProof(t *testing.T) {
 			slotSignatureBytes, err := hexutil.Decode(slotSignature)
 			require.NoError(t, err)
 
-			expectedResponse := &ethpb.AggregateSelectionResponse{
-				AggregateAndProof: &ethpb.AggregateAttestationAndProof{
+			expectedResponse := &zondpb.AggregateSelectionResponse{
+				AggregateAndProof: &zondpb.AggregateAttestationAndProof{
 					AggregatorIndex: primitives.ValidatorIndex(55293),
 					Aggregate:       aggregateAttestation,
 					SelectionProof:  slotSignatureBytes,
@@ -265,7 +265,7 @@ func TestSubmitAggregateSelectionProof(t *testing.T) {
 					jsonRestHandler: jsonRestHandler,
 				},
 			}
-			actualResponse, err := validatorClient.submitAggregateSelectionProof(ctx, &ethpb.AggregateSelectionRequest{
+			actualResponse, err := validatorClient.submitAggregateSelectionProof(ctx, &zondpb.AggregateSelectionRequest{
 				Slot:           slot,
 				CommitteeIndex: committeeIndex,
 				PublicKey:      pubkey,

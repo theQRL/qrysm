@@ -2,11 +2,11 @@ package interfaces
 
 import (
 	"github.com/pkg/errors"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // SignedBeaconBlockHeaderFromBlock function to retrieve signed block header from block.
-func SignedBeaconBlockHeaderFromBlock(block *ethpb.SignedBeaconBlock) (*ethpb.SignedBeaconBlockHeader, error) {
+func SignedBeaconBlockHeaderFromBlock(block *zondpb.SignedBeaconBlock) (*zondpb.SignedBeaconBlockHeader, error) {
 	if block.Block == nil || block.Block.Body == nil {
 		return nil, errors.New("nil block")
 	}
@@ -15,8 +15,8 @@ func SignedBeaconBlockHeaderFromBlock(block *ethpb.SignedBeaconBlock) (*ethpb.Si
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get body root of block")
 	}
-	return &ethpb.SignedBeaconBlockHeader{
-		Header: &ethpb.BeaconBlockHeader{
+	return &zondpb.SignedBeaconBlockHeader{
+		Header: &zondpb.BeaconBlockHeader{
 			Slot:          block.Block.Slot,
 			ProposerIndex: block.Block.ProposerIndex,
 			ParentRoot:    block.Block.ParentRoot,
@@ -28,7 +28,7 @@ func SignedBeaconBlockHeaderFromBlock(block *ethpb.SignedBeaconBlock) (*ethpb.Si
 }
 
 // SignedBeaconBlockHeaderFromBlockInterface function to retrieve signed block header from block.
-func SignedBeaconBlockHeaderFromBlockInterface(sb ReadOnlySignedBeaconBlock) (*ethpb.SignedBeaconBlockHeader, error) {
+func SignedBeaconBlockHeaderFromBlockInterface(sb ReadOnlySignedBeaconBlock) (*zondpb.SignedBeaconBlockHeader, error) {
 	b := sb.Block()
 	if b.IsNil() || b.Body().IsNil() {
 		return nil, errors.New("nil block")
@@ -39,14 +39,14 @@ func SignedBeaconBlockHeaderFromBlockInterface(sb ReadOnlySignedBeaconBlock) (*e
 		return nil, errors.Wrap(err, "failed to get block header of block")
 	}
 	sig := sb.Signature()
-	return &ethpb.SignedBeaconBlockHeader{
+	return &zondpb.SignedBeaconBlockHeader{
 		Header:    h,
 		Signature: sig[:],
 	}, nil
 }
 
 // BeaconBlockHeaderFromBlock function to retrieve block header from block.
-func BeaconBlockHeaderFromBlock(block *ethpb.BeaconBlock) (*ethpb.BeaconBlockHeader, error) {
+func BeaconBlockHeaderFromBlock(block *zondpb.BeaconBlock) (*zondpb.BeaconBlockHeader, error) {
 	if block.Body == nil {
 		return nil, errors.New("nil block body")
 	}
@@ -55,7 +55,7 @@ func BeaconBlockHeaderFromBlock(block *ethpb.BeaconBlock) (*ethpb.BeaconBlockHea
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get body root of block")
 	}
-	return &ethpb.BeaconBlockHeader{
+	return &zondpb.BeaconBlockHeader{
 		Slot:          block.Slot,
 		ProposerIndex: block.ProposerIndex,
 		ParentRoot:    block.ParentRoot,
@@ -65,7 +65,7 @@ func BeaconBlockHeaderFromBlock(block *ethpb.BeaconBlock) (*ethpb.BeaconBlockHea
 }
 
 // BeaconBlockHeaderFromBlockInterface function to retrieve block header from block.
-func BeaconBlockHeaderFromBlockInterface(block ReadOnlyBeaconBlock) (*ethpb.BeaconBlockHeader, error) {
+func BeaconBlockHeaderFromBlockInterface(block ReadOnlyBeaconBlock) (*zondpb.BeaconBlockHeader, error) {
 	if block.Body().IsNil() {
 		return nil, errors.New("nil block body")
 	}
@@ -76,7 +76,7 @@ func BeaconBlockHeaderFromBlockInterface(block ReadOnlyBeaconBlock) (*ethpb.Beac
 	}
 	parentRoot := block.ParentRoot()
 	stateRoot := block.StateRoot()
-	return &ethpb.BeaconBlockHeader{
+	return &zondpb.BeaconBlockHeader{
 		Slot:          block.Slot(),
 		ProposerIndex: block.ProposerIndex(),
 		ParentRoot:    parentRoot[:],

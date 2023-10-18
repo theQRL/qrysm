@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
@@ -54,7 +54,7 @@ func TestImportAccounts_NoPassword(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(resp))
-	require.Equal(t, resp[0].Status, ethpbservice.ImportedKeystoreStatus_ERROR)
+	require.Equal(t, resp[0].Status, zondpbservice.ImportedKeystoreStatus_ERROR)
 }
 
 func TestImport_SortByDerivationPath(t *testing.T) {

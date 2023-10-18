@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -24,7 +24,7 @@ func TestProposeBeaconBlock_Bellatrix(t *testing.T) {
 
 	bellatrixBlock := generateSignedBellatrixBlock()
 
-	genericSignedBlock := &ethpb.GenericSignedBeaconBlock{}
+	genericSignedBlock := &zondpb.GenericSignedBeaconBlock{}
 	genericSignedBlock.Block = bellatrixBlock
 
 	jsonBellatrixBlock := &apimiddleware.SignedBeaconBlockBellatrixContainerJson{
@@ -94,9 +94,9 @@ func TestProposeBeaconBlock_Bellatrix(t *testing.T) {
 	assert.DeepEqual(t, expectedBlockRoot[:], proposeResponse.BlockRoot)
 }
 
-func generateSignedBellatrixBlock() *ethpb.GenericSignedBeaconBlock_Bellatrix {
-	return &ethpb.GenericSignedBeaconBlock_Bellatrix{
-		Bellatrix: &ethpb.SignedBeaconBlockBellatrix{
+func generateSignedBellatrixBlock() *zondpb.GenericSignedBeaconBlock_Bellatrix {
+	return &zondpb.GenericSignedBeaconBlock_Bellatrix{
+		Bellatrix: &zondpb.SignedBeaconBlockBellatrix{
 			Block:     test_helpers.GenerateProtoBellatrixBeaconBlock(),
 			Signature: test_helpers.FillByteSlice(96, 127),
 		},

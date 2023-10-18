@@ -18,7 +18,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -60,8 +60,8 @@ type Simulator struct {
 	beaconBlocksFeed      *event.Feed
 	sentAttSlashingFeed   *event.Feed
 	sentBlockSlashingFeed *event.Feed
-	sentProposerSlashings map[[32]byte]*ethpb.ProposerSlashing
-	sentAttesterSlashings map[[32]byte]*ethpb.AttesterSlashing
+	sentProposerSlashings map[[32]byte]*zondpb.ProposerSlashing
+	sentAttesterSlashings map[[32]byte]*zondpb.AttesterSlashing
 	genesisTime           time.Time
 }
 
@@ -109,8 +109,8 @@ func New(ctx context.Context, srvConfig *ServiceConfig) (*Simulator, error) {
 		beaconBlocksFeed:      beaconBlocksFeed,
 		sentAttSlashingFeed:   sentAttSlashingFeed,
 		sentBlockSlashingFeed: sentBlockSlashingFeed,
-		sentProposerSlashings: make(map[[32]byte]*ethpb.ProposerSlashing),
-		sentAttesterSlashings: make(map[[32]byte]*ethpb.AttesterSlashing),
+		sentProposerSlashings: make(map[[32]byte]*zondpb.ProposerSlashing),
+		sentAttesterSlashings: make(map[[32]byte]*zondpb.AttesterSlashing),
 	}, nil
 }
 
@@ -236,8 +236,8 @@ func (s *Simulator) verifySlashingsWereDetected(ctx context.Context) {
 	poolAttesterSlashings := s.srvConfig.SlashingsPool.PendingAttesterSlashings(
 		ctx, nil, true, /* no limit */
 	)
-	detectedProposerSlashings := make(map[[32]byte]*ethpb.ProposerSlashing)
-	detectedAttesterSlashings := make(map[[32]byte]*ethpb.AttesterSlashing)
+	detectedProposerSlashings := make(map[[32]byte]*zondpb.ProposerSlashing)
+	detectedAttesterSlashings := make(map[[32]byte]*zondpb.AttesterSlashing)
 	for _, slashing := range poolProposerSlashings {
 		slashingRoot, err := slashing.HashTreeRoot()
 		if err != nil {

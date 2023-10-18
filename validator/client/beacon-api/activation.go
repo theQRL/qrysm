@@ -9,11 +9,11 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/grpc"
 )
 
-func (c beaconApiValidatorClient) waitForActivation(ctx context.Context, in *ethpb.ValidatorActivationRequest) (ethpb.BeaconNodeValidator_WaitForActivationClient, error) {
+func (c beaconApiValidatorClient) waitForActivation(ctx context.Context, in *zondpb.ValidatorActivationRequest) (zondpb.BeaconNodeValidator_WaitForActivationClient, error) {
 	return &waitForActivationClient{
 		ctx:                        ctx,
 		beaconApiValidatorClient:   c,
@@ -25,7 +25,7 @@ type waitForActivationClient struct {
 	grpc.ClientStream
 	ctx context.Context
 	beaconApiValidatorClient
-	*ethpb.ValidatorActivationRequest
+	*zondpb.ValidatorActivationRequest
 	lastRecvTime time.Time
 }
 
@@ -43,7 +43,7 @@ func computeWaitElements(now time.Time, lastRecvTime time.Time) (time.Duration, 
 	return nextRecvTime.Sub(now), nextRecvTime
 }
 
-func (c *waitForActivationClient) Recv() (*ethpb.ValidatorActivationResponse, error) {
+func (c *waitForActivationClient) Recv() (*zondpb.ValidatorActivationResponse, error) {
 	waitDuration, nextRecvTime := computeWaitElements(time.Now(), c.lastRecvTime)
 
 	select {
@@ -60,7 +60,7 @@ func (c *waitForActivationClient) Recv() (*ethpb.ValidatorActivationResponse, er
 		// Contains all keys in targetPubKeys but not in retrievedPubKeys
 		var missingPubKeys [][]byte
 
-		statuses := []*ethpb.ValidatorActivationResponse_Status{}
+		statuses := []*zondpb.ValidatorActivationResponse_Status{}
 
 		for index, publicKey := range c.ValidatorActivationRequest.PublicKeys {
 			stringPubKey := hexutil.Encode(publicKey)
@@ -91,10 +91,10 @@ func (c *waitForActivationClient) Recv() (*ethpb.ValidatorActivationResponse, er
 				return nil, errors.New("invalid validator status: " + data.Status)
 			}
 
-			statuses = append(statuses, &ethpb.ValidatorActivationResponse_Status{
+			statuses = append(statuses, &zondpb.ValidatorActivationResponse_Status{
 				PublicKey: pubkey,
 				Index:     primitives.ValidatorIndex(index),
-				Status:    &ethpb.ValidatorStatusResponse{Status: validatorStatus},
+				Status:    &zondpb.ValidatorStatusResponse{Status: validatorStatus},
 			})
 		}
 
@@ -105,14 +105,14 @@ func (c *waitForActivationClient) Recv() (*ethpb.ValidatorActivationResponse, er
 		}
 
 		for _, missingPubKey := range missingPubKeys {
-			statuses = append(statuses, &ethpb.ValidatorActivationResponse_Status{
+			statuses = append(statuses, &zondpb.ValidatorActivationResponse_Status{
 				PublicKey: missingPubKey,
 				Index:     primitives.ValidatorIndex(^uint64(0)),
-				Status:    &ethpb.ValidatorStatusResponse{Status: ethpb.ValidatorStatus_UNKNOWN_STATUS},
+				Status:    &zondpb.ValidatorStatusResponse{Status: zondpb.ValidatorStatus_UNKNOWN_STATUS},
 			})
 		}
 
-		return &ethpb.ValidatorActivationResponse{
+		return &zondpb.ValidatorActivationResponse{
 			Statuses: statuses,
 		}, nil
 	case <-c.ctx.Done():

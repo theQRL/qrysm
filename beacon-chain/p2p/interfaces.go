@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/go-zond/p2p/enr"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/metadata"
 	"google.golang.org/protobuf/proto"
 )
@@ -33,8 +33,8 @@ type P2P interface {
 // Broadcaster broadcasts messages to peers over the p2p pubsub protocol.
 type Broadcaster interface {
 	Broadcast(context.Context, proto.Message) error
-	BroadcastAttestation(ctx context.Context, subnet uint64, att *ethpb.Attestation) error
-	BroadcastSyncCommitteeMessage(ctx context.Context, subnet uint64, sMsg *ethpb.SyncCommitteeMessage) error
+	BroadcastAttestation(ctx context.Context, subnet uint64, att *zondpb.Attestation) error
+	BroadcastSyncCommitteeMessage(ctx context.Context, subnet uint64, sMsg *zondpb.SyncCommitteeMessage) error
 }
 
 // SetStreamHandler configures p2p to handle streams of a certain topic ID.

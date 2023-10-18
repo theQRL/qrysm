@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	rpcmiddleware "github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -24,7 +24,7 @@ func TestGetDomainData_ValidDomainData(t *testing.T) {
 	genesisValidatorRootBytes, err := hexutil.Decode(genesisValidatorRoot)
 	require.NoError(t, err)
 
-	expectedForkDataRoot, err := (&ethpb.ForkData{
+	expectedForkDataRoot, err := (&zondpb.ForkData{
 		CurrentVersion:        forkVersion,
 		GenesisValidatorsRoot: genesisValidatorRootBytes,
 	}).HashTreeRoot()

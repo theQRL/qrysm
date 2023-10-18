@@ -4,7 +4,7 @@ import (
 	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
 	"github.com/theQRL/qrysm/v4/contracts/deposit"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 type DepositData struct {
@@ -38,7 +38,7 @@ func NewDepositData(c *Credential) (*DepositData, error) {
 		return nil, err
 	}
 
-	depositMessage := &ethpb.DepositMessage{
+	depositMessage := &zondpb.DepositMessage{
 		PublicKey:             depositKey.PublicKey().Marshal(),
 		WithdrawalCredentials: deposit.WithdrawalCredentialsHash(withdrawalKey),
 		Amount:                c.amount,

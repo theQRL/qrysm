@@ -9,7 +9,7 @@ import (
 	validatorserviceconfig "github.com/theQRL/qrysm/v4/config/validator/service"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/validator/keymanager"
 )
@@ -61,7 +61,7 @@ type Validator interface {
 	HandleKeyReload(ctx context.Context, currentKeys [][dilithium2.CryptoPublicKeyBytes]byte) (bool, error)
 	CheckDoppelGanger(ctx context.Context) error
 	PushProposerSettings(ctx context.Context, km keymanager.IKeymanager, slot primitives.Slot, deadline time.Time) error
-	SignValidatorRegistrationRequest(ctx context.Context, signer SigningFunc, newValidatorRegistration *ethpb.ValidatorRegistrationV1) (*ethpb.SignedValidatorRegistrationV1, error)
+	SignValidatorRegistrationRequest(ctx context.Context, signer SigningFunc, newValidatorRegistration *zondpb.ValidatorRegistrationV1) (*zondpb.SignedValidatorRegistrationV1, error)
 	ProposerSettings() *validatorserviceconfig.ProposerSettings
 	SetProposerSettings(context.Context, *validatorserviceconfig.ProposerSettings) error
 }

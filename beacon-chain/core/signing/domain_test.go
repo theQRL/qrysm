@@ -5,14 +5,14 @@ import (
 
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestDomain_OK(t *testing.T) {
-	state := &eth.BeaconState{
-		Fork: &eth.Fork{
+	state := &zond.BeaconState{
+		Fork: &zond.Fork{
 			Epoch:           3,
 			PreviousVersion: []byte{0, 0, 0, 2},
 			CurrentVersion:  []byte{0, 0, 0, 3},

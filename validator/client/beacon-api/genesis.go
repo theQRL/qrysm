@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
 	rpcmiddleware "github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 type genesisProvider interface {
@@ -21,7 +21,7 @@ type beaconApiGenesisProvider struct {
 	jsonRestHandler jsonRestHandler
 }
 
-func (c beaconApiValidatorClient) waitForChainStart(ctx context.Context) (*ethpb.ChainStartResponse, error) {
+func (c beaconApiValidatorClient) waitForChainStart(ctx context.Context) (*zondpb.ChainStartResponse, error) {
 	genesis, httpError, err := c.genesisProvider.GetGenesis(ctx)
 
 	for err != nil {
@@ -43,7 +43,7 @@ func (c beaconApiValidatorClient) waitForChainStart(ctx context.Context) (*ethpb
 		return nil, errors.Wrapf(err, "failed to parse genesis time: %s", genesis.GenesisTime)
 	}
 
-	chainStartResponse := &ethpb.ChainStartResponse{}
+	chainStartResponse := &zondpb.ChainStartResponse{}
 	chainStartResponse.Started = true
 	chainStartResponse.GenesisTime = genesisTime
 

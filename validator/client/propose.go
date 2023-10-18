@@ -19,7 +19,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/crypto/rand"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	prysmTime "github.com/theQRL/qrysm/v4/time"
@@ -73,7 +73,7 @@ func (v *validator) ProposeBlock(ctx context.Context, slot primitives.Slot, pubK
 	}
 
 	// Request block from beacon node
-	b, err := v.validatorClient.GetBeaconBlock(ctx, &ethpb.BlockRequest{
+	b, err := v.validatorClient.GetBeaconBlock(ctx, &zondpb.BlockRequest{
 		Slot:         slot,
 		RandaoReveal: randaoReveal,
 		Graffiti:     g,
@@ -234,15 +234,15 @@ func CreateSignedVoluntaryExit(
 	signer iface.SigningFunc,
 	pubKey []byte,
 	epoch primitives.Epoch,
-) (*ethpb.SignedVoluntaryExit, error) {
+) (*zondpb.SignedVoluntaryExit, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.CreateSignedVoluntaryExit")
 	defer span.End()
 
-	indexResponse, err := validatorClient.ValidatorIndex(ctx, &ethpb.ValidatorIndexRequest{PublicKey: pubKey})
+	indexResponse, err := validatorClient.ValidatorIndex(ctx, &zondpb.ValidatorIndexRequest{PublicKey: pubKey})
 	if err != nil {
 		return nil, errors.Wrap(err, "gRPC call to get validator index failed")
 	}
-	exit := &ethpb.VoluntaryExit{Epoch: epoch, ValidatorIndex: indexResponse.Index}
+	exit := &zondpb.VoluntaryExit{Epoch: epoch, ValidatorIndex: indexResponse.Index}
 	slot, err := slots.EpochStart(epoch)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve slot")
@@ -252,7 +252,7 @@ func CreateSignedVoluntaryExit(
 		return nil, errors.Wrap(err, "failed to sign voluntary exit")
 	}
 
-	return &ethpb.SignedVoluntaryExit{Exit: exit, Signature: sig}, nil
+	return &zondpb.SignedVoluntaryExit{Exit: exit, Signature: sig}, nil
 }
 
 // Sign randao reveal with randao domain and private key.
@@ -322,10 +322,10 @@ func signVoluntaryExit(
 	validatorClient iface.ValidatorClient,
 	signer iface.SigningFunc,
 	pubKey []byte,
-	exit *ethpb.VoluntaryExit,
+	exit *zondpb.VoluntaryExit,
 	slot primitives.Slot,
 ) ([]byte, error) {
-	req := &ethpb.DomainRequest{
+	req := &zondpb.DomainRequest{
 		Epoch:  exit.Epoch,
 		Domain: params.BeaconConfig().DomainVoluntaryExit[:],
 	}
@@ -368,7 +368,7 @@ func (v *validator) getGraffiti(ctx context.Context, pubKey [dilithium2.CryptoPu
 	}
 
 	// When specified, individual validator specified graffiti takes the second priority.
-	idx, err := v.validatorClient.ValidatorIndex(ctx, &ethpb.ValidatorIndexRequest{PublicKey: pubKey[:]})
+	idx, err := v.validatorClient.ValidatorIndex(ctx, &zondpb.ValidatorIndexRequest{PublicKey: pubKey[:]})
 	if err != nil {
 		return []byte{}, err
 	}

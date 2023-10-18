@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/proto/eth/service"
+	"github.com/theQRL/qrysm/v4/proto/zond/service"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 

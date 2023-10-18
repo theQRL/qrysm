@@ -5,7 +5,7 @@ import (
 
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
@@ -17,7 +17,7 @@ func TestHotStateCache_RoundTrip(t *testing.T) {
 	assert.Equal(t, state.BeaconState(nil), s)
 	assert.Equal(t, false, c.has(root), "Empty cache has an object")
 
-	s, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	s, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Slot: 10,
 	})
 	require.NoError(t, err)

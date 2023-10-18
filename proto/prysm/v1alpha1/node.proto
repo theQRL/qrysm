@@ -13,20 +13,20 @@
 // limitations under the License.
 syntax = "proto3";
 
-package ethereum.eth.v1alpha1;
+package theqrl.zond.v1alpha1;
 
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
-import "proto/eth/ext/options.proto";
+import "proto/zond/ext/options.proto";
 
-option csharp_namespace = "Ethereum.Eth.v1alpha1";
-option go_package = "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1;eth";
+option csharp_namespace = "TheQRL.Zond.v1alpha1";
+option go_package = "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1;zond";
 option java_multiple_files = true;
 option java_outer_classname = "NodeProto";
-option java_package = "org.ethereum.eth.v1alpha1";
-option php_namespace = "Ethereum\\Eth\\v1alpha1";
+option java_package = "org.theqrl.zond.v1alpha1";
+option php_namespace = "TheQRL\\Zond\\v1alpha1";
 
 // Node service API
 //
@@ -36,21 +36,21 @@ service Node {
     // Retrieve the current network sync status of the node.
 	rpc GetSyncStatus(google.protobuf.Empty) returns (SyncStatus) {
         option (google.api.http) = {
-            get: "/eth/v1alpha1/node/syncing"
+            get: "/zond/v1alpha1/node/syncing"
         };
     }
 
     // Retrieve information about the genesis of Ethereum proof of stake.
     rpc GetGenesis(google.protobuf.Empty) returns (Genesis) {
         option (google.api.http) = {
-            get: "/eth/v1alpha1/node/genesis"
+            get: "/zond/v1alpha1/node/genesis"
         };
     }
 
     // Retrieve information about the running Ethereum Beacon Node.
     rpc GetVersion(google.protobuf.Empty) returns (Version) {
         option (google.api.http) = {
-            get: "/eth/v1alpha1/node/version"
+            get: "/zond/v1alpha1/node/version"
         };
     }
 
@@ -61,35 +61,35 @@ service Node {
     // reflection.
     rpc ListImplementedServices(google.protobuf.Empty) returns (ImplementedServices) {
         option (google.api.http) = {
-            get: "/eth/v1alpha1/node/services"
+            get: "/zond/v1alpha1/node/services"
         };
     }
 
     // Retrieves the peer data of the local peer.
     rpc GetHost(google.protobuf.Empty) returns (HostData) {
         option (google.api.http) = {
-            get: "/eth/v1alpha1/node/p2p"
+            get: "/zond/v1alpha1/node/p2p"
         };
     }
 
     // Retrieve the peer corresponding to the provided peer id.
     rpc GetPeer(PeerRequest) returns (Peer) {
         option (google.api.http) = {
-            get: "/eth/v1alpha1/node/peer"
+            get: "/zond/v1alpha1/node/peer"
         };
     }
 
     // Retrieve the list of peers currently connected to this node.
     rpc ListPeers(google.protobuf.Empty) returns (Peers) {
         option (google.api.http) = {
-            get: "/eth/v1alpha1/node/peers"
+            get: "/zond/v1alpha1/node/peers"
         };
     }
 
     // // Retrieve the status of the ETH1 connections.
     rpc GetETH1ConnectionStatus(google.protobuf.Empty) returns (ETH1ConnectionStatus) {
         option (google.api.http) = {
-            get: "/eth/v1alpha1/node/eth1/connections"
+            get: "/zond/v1alpha1/node/zond1/connections"
         };
     }
 }
@@ -110,7 +110,7 @@ message Genesis {
 
     // Root of the genesis validators deposits; used for domain separation
     // when signing data structures for this chain.
-    bytes genesis_validators_root = 3 [(ethereum.eth.ext.ssz_size) = "32"];
+    bytes genesis_validators_root = 3 [(theqrl.zond.ext.ssz_size) = "32"];
 }
 
 // Information about the node version.

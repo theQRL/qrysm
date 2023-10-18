@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -24,7 +24,7 @@ func TestProposeBeaconBlock_Capella(t *testing.T) {
 
 	capellaBlock := generateSignedCapellaBlock()
 
-	genericSignedBlock := &ethpb.GenericSignedBeaconBlock{}
+	genericSignedBlock := &zondpb.GenericSignedBeaconBlock{}
 	genericSignedBlock.Block = capellaBlock
 
 	jsonCapellaBlock := &apimiddleware.SignedBeaconBlockCapellaContainerJson{
@@ -94,9 +94,9 @@ func TestProposeBeaconBlock_Capella(t *testing.T) {
 	assert.DeepEqual(t, expectedBlockRoot[:], proposeResponse.BlockRoot)
 }
 
-func generateSignedCapellaBlock() *ethpb.GenericSignedBeaconBlock_Capella {
-	return &ethpb.GenericSignedBeaconBlock_Capella{
-		Capella: &ethpb.SignedBeaconBlockCapella{
+func generateSignedCapellaBlock() *zondpb.GenericSignedBeaconBlock_Capella {
+	return &zondpb.GenericSignedBeaconBlock_Capella{
+		Capella: &zondpb.SignedBeaconBlockCapella{
 			Block:     test_helpers.GenerateProtoCapellaBeaconBlock(),
 			Signature: test_helpers.FillByteSlice(96, 127),
 		},

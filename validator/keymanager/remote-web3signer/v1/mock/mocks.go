@@ -7,7 +7,7 @@ import (
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common/hexutil"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/testing/util"
 	v1 "github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer/v1"
@@ -18,7 +18,7 @@ import (
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 func MockSyncComitteeBits() []byte {
-	currSize := new(eth.SyncAggregate).SyncCommitteeBits.Len()
+	currSize := new(zond.SyncAggregate).SyncCommitteeBits.Len()
 	switch currSize {
 	case 512:
 		return bitfield.NewBitvector512()
@@ -30,7 +30,7 @@ func MockSyncComitteeBits() []byte {
 }
 
 func MockAggregationBits() []byte {
-	currSize := new(eth.SyncCommitteeContribution).AggregationBits.Len()
+	currSize := new(zond.SyncCommitteeContribution).AggregationBits.Len()
 	switch currSize {
 	case 128:
 		return bitfield.NewBitvector128()
@@ -60,16 +60,16 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_AggregateAttestationAndProof{
-				AggregateAttestationAndProof: &eth.AggregateAttestationAndProof{
+				AggregateAttestationAndProof: &zond.AggregateAttestationAndProof{
 					AggregatorIndex: 0,
-					Aggregate: &eth.Attestation{
+					Aggregate: &zond.Attestation{
 						AggregationBits: bitfield.Bitlist{0b1101},
-						Data: &eth.AttestationData{
+						Data: &zond.AttestationData{
 							BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-							Source: &eth.Checkpoint{
+							Source: &zond.Checkpoint{
 								Root: make([]byte, fieldparams.RootLength),
 							},
-							Target: &eth.Checkpoint{
+							Target: &zond.Checkpoint{
 								Root: make([]byte, fieldparams.RootLength),
 							},
 						},
@@ -86,12 +86,12 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_AttestationData{
-				AttestationData: &eth.AttestationData{
+				AttestationData: &zond.AttestationData{
 					BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-					Source: &eth.Checkpoint{
+					Source: &zond.Checkpoint{
 						Root: make([]byte, fieldparams.RootLength),
 					},
-					Target: &eth.Checkpoint{
+					Target: &zond.Checkpoint{
 						Root: make([]byte, fieldparams.RootLength),
 					},
 				},
@@ -104,23 +104,23 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_Block{
-				Block: &eth.BeaconBlock{
+				Block: &zond.BeaconBlock{
 					Slot:          0,
 					ProposerIndex: 0,
 					ParentRoot:    make([]byte, fieldparams.RootLength),
 					StateRoot:     make([]byte, fieldparams.RootLength),
-					Body: &eth.BeaconBlockBody{
+					Body: &zond.BeaconBlockBody{
 						RandaoReveal: make([]byte, 32),
-						Eth1Data: &eth.Eth1Data{
+						Eth1Data: &zond.Eth1Data{
 							DepositRoot:  make([]byte, fieldparams.RootLength),
 							DepositCount: 0,
 							BlockHash:    make([]byte, 32),
 						},
 						Graffiti: make([]byte, 32),
-						ProposerSlashings: []*eth.ProposerSlashing{
+						ProposerSlashings: []*zond.ProposerSlashing{
 							{
-								Header_1: &eth.SignedBeaconBlockHeader{
-									Header: &eth.BeaconBlockHeader{
+								Header_1: &zond.SignedBeaconBlockHeader{
+									Header: &zond.BeaconBlockHeader{
 										Slot:          0,
 										ProposerIndex: 0,
 										ParentRoot:    make([]byte, fieldparams.RootLength),
@@ -129,8 +129,8 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 									},
 									Signature: make([]byte, dilithium2.CryptoBytes),
 								},
-								Header_2: &eth.SignedBeaconBlockHeader{
-									Header: &eth.BeaconBlockHeader{
+								Header_2: &zond.SignedBeaconBlockHeader{
+									Header: &zond.BeaconBlockHeader{
 										Slot:          0,
 										ProposerIndex: 0,
 										ParentRoot:    make([]byte, fieldparams.RootLength),
@@ -141,29 +141,29 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 								},
 							},
 						},
-						AttesterSlashings: []*eth.AttesterSlashing{
+						AttesterSlashings: []*zond.AttesterSlashing{
 							{
-								Attestation_1: &eth.IndexedAttestation{
+								Attestation_1: &zond.IndexedAttestation{
 									AttestingIndices: []uint64{0, 1, 2},
-									Data: &eth.AttestationData{
+									Data: &zond.AttestationData{
 										BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-										Source: &eth.Checkpoint{
+										Source: &zond.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
-										Target: &eth.Checkpoint{
+										Target: &zond.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
 									},
 									Signature: make([]byte, dilithium2.CryptoBytes),
 								},
-								Attestation_2: &eth.IndexedAttestation{
+								Attestation_2: &zond.IndexedAttestation{
 									AttestingIndices: []uint64{0, 1, 2},
-									Data: &eth.AttestationData{
+									Data: &zond.AttestationData{
 										BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-										Source: &eth.Checkpoint{
+										Source: &zond.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
-										Target: &eth.Checkpoint{
+										Target: &zond.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
 									},
@@ -171,25 +171,25 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 								},
 							},
 						},
-						Attestations: []*eth.Attestation{
+						Attestations: []*zond.Attestation{
 							{
 								AggregationBits: bitfield.Bitlist{0b1101},
-								Data: &eth.AttestationData{
+								Data: &zond.AttestationData{
 									BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-									Source: &eth.Checkpoint{
+									Source: &zond.Checkpoint{
 										Root: make([]byte, fieldparams.RootLength),
 									},
-									Target: &eth.Checkpoint{
+									Target: &zond.Checkpoint{
 										Root: make([]byte, fieldparams.RootLength),
 									},
 								},
 								Signature: make([]byte, 96),
 							},
 						},
-						Deposits: []*eth.Deposit{
+						Deposits: []*zond.Deposit{
 							{
 								Proof: [][]byte{[]byte("A")},
-								Data: &eth.Deposit_Data{
+								Data: &zond.Deposit_Data{
 									PublicKey:             make([]byte, dilithium2.CryptoPublicKeyBytes),
 									WithdrawalCredentials: make([]byte, 32),
 									Amount:                0,
@@ -197,9 +197,9 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 								},
 							},
 						},
-						VoluntaryExits: []*eth.SignedVoluntaryExit{
+						VoluntaryExits: []*zond.SignedVoluntaryExit{
 							{
-								Exit: &eth.VoluntaryExit{
+								Exit: &zond.VoluntaryExit{
 									Epoch:          0,
 									ValidatorIndex: 0,
 								},
@@ -217,23 +217,23 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_BlockAltair{
-				BlockAltair: &eth.BeaconBlockAltair{
+				BlockAltair: &zond.BeaconBlockAltair{
 					Slot:          0,
 					ProposerIndex: 0,
 					ParentRoot:    make([]byte, fieldparams.RootLength),
 					StateRoot:     make([]byte, fieldparams.RootLength),
-					Body: &eth.BeaconBlockBodyAltair{
+					Body: &zond.BeaconBlockBodyAltair{
 						RandaoReveal: make([]byte, 32),
-						Eth1Data: &eth.Eth1Data{
+						Eth1Data: &zond.Eth1Data{
 							DepositRoot:  make([]byte, fieldparams.RootLength),
 							DepositCount: 0,
 							BlockHash:    make([]byte, 32),
 						},
 						Graffiti: make([]byte, 32),
-						ProposerSlashings: []*eth.ProposerSlashing{
+						ProposerSlashings: []*zond.ProposerSlashing{
 							{
-								Header_1: &eth.SignedBeaconBlockHeader{
-									Header: &eth.BeaconBlockHeader{
+								Header_1: &zond.SignedBeaconBlockHeader{
+									Header: &zond.BeaconBlockHeader{
 										Slot:          0,
 										ProposerIndex: 0,
 										ParentRoot:    make([]byte, fieldparams.RootLength),
@@ -242,8 +242,8 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 									},
 									Signature: make([]byte, dilithium2.CryptoBytes),
 								},
-								Header_2: &eth.SignedBeaconBlockHeader{
-									Header: &eth.BeaconBlockHeader{
+								Header_2: &zond.SignedBeaconBlockHeader{
+									Header: &zond.BeaconBlockHeader{
 										Slot:          0,
 										ProposerIndex: 0,
 										ParentRoot:    make([]byte, fieldparams.RootLength),
@@ -254,29 +254,29 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 								},
 							},
 						},
-						AttesterSlashings: []*eth.AttesterSlashing{
+						AttesterSlashings: []*zond.AttesterSlashing{
 							{
-								Attestation_1: &eth.IndexedAttestation{
+								Attestation_1: &zond.IndexedAttestation{
 									AttestingIndices: []uint64{0, 1, 2},
-									Data: &eth.AttestationData{
+									Data: &zond.AttestationData{
 										BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-										Source: &eth.Checkpoint{
+										Source: &zond.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
-										Target: &eth.Checkpoint{
+										Target: &zond.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
 									},
 									Signature: make([]byte, dilithium2.CryptoBytes),
 								},
-								Attestation_2: &eth.IndexedAttestation{
+								Attestation_2: &zond.IndexedAttestation{
 									AttestingIndices: []uint64{0, 1, 2},
-									Data: &eth.AttestationData{
+									Data: &zond.AttestationData{
 										BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-										Source: &eth.Checkpoint{
+										Source: &zond.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
-										Target: &eth.Checkpoint{
+										Target: &zond.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
 									},
@@ -284,25 +284,25 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 								},
 							},
 						},
-						Attestations: []*eth.Attestation{
+						Attestations: []*zond.Attestation{
 							{
 								AggregationBits: bitfield.Bitlist{0b1101},
-								Data: &eth.AttestationData{
+								Data: &zond.AttestationData{
 									BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-									Source: &eth.Checkpoint{
+									Source: &zond.Checkpoint{
 										Root: make([]byte, fieldparams.RootLength),
 									},
-									Target: &eth.Checkpoint{
+									Target: &zond.Checkpoint{
 										Root: make([]byte, fieldparams.RootLength),
 									},
 								},
 								Signature: make([]byte, 96),
 							},
 						},
-						Deposits: []*eth.Deposit{
+						Deposits: []*zond.Deposit{
 							{
 								Proof: [][]byte{[]byte("A")},
-								Data: &eth.Deposit_Data{
+								Data: &zond.Deposit_Data{
 									PublicKey:             make([]byte, dilithium2.CryptoPublicKeyBytes),
 									WithdrawalCredentials: make([]byte, 32),
 									Amount:                0,
@@ -310,16 +310,16 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 								},
 							},
 						},
-						VoluntaryExits: []*eth.SignedVoluntaryExit{
+						VoluntaryExits: []*zond.SignedVoluntaryExit{
 							{
-								Exit: &eth.VoluntaryExit{
+								Exit: &zond.VoluntaryExit{
 									Epoch:          0,
 									ValidatorIndex: 0,
 								},
 								Signature: make([]byte, dilithium2.CryptoBytes),
 							},
 						},
-						SyncAggregate: &eth.SyncAggregate{
+						SyncAggregate: &zond.SyncAggregate{
 							SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
 							SyncCommitteeBits:      MockSyncComitteeBits(),
 						},
@@ -334,7 +334,7 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_BlockBellatrix{
-				BlockBellatrix: util.HydrateBeaconBlockBellatrix(&eth.BeaconBlockBellatrix{}),
+				BlockBellatrix: util.HydrateBeaconBlockBellatrix(&zond.BeaconBlockBellatrix{}),
 			},
 		}
 	case "BLOCK_V2_BLINDED_BELLATRIX":
@@ -343,7 +343,7 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_BlindedBlockBellatrix{
-				BlindedBlockBellatrix: util.HydrateBlindedBeaconBlockBellatrix(&eth.BlindedBeaconBlockBellatrix{}),
+				BlindedBlockBellatrix: util.HydrateBlindedBeaconBlockBellatrix(&zond.BlindedBeaconBlockBellatrix{}),
 			},
 		}
 	case "BLOCK_V2_CAPELLA":
@@ -352,7 +352,7 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_BlockCapella{
-				BlockCapella: util.HydrateBeaconBlockCapella(&eth.BeaconBlockCapella{}),
+				BlockCapella: util.HydrateBeaconBlockCapella(&zond.BeaconBlockCapella{}),
 			},
 		}
 	case "BLOCK_V2_BLINDED_CAPELLA":
@@ -361,7 +361,7 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_BlindedBlockCapella{
-				BlindedBlockCapella: util.HydrateBlindedBeaconBlockCapella(&eth.BlindedBeaconBlockCapella{}),
+				BlindedBlockCapella: util.HydrateBlindedBeaconBlockCapella(&zond.BlindedBeaconBlockCapella{}),
 			},
 		}
 	case "RANDAO_REVEAL":
@@ -380,9 +380,9 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_ContributionAndProof{
-				ContributionAndProof: &eth.ContributionAndProof{
+				ContributionAndProof: &zond.ContributionAndProof{
 					AggregatorIndex: 0,
-					Contribution: &eth.SyncCommitteeContribution{
+					Contribution: &zond.SyncCommitteeContribution{
 						Slot:              0,
 						BlockRoot:         make([]byte, fieldparams.RootLength),
 						SubcommitteeIndex: 0,
@@ -410,7 +410,7 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_SyncAggregatorSelectionData{
-				SyncAggregatorSelectionData: &eth.SyncAggregatorSelectionData{
+				SyncAggregatorSelectionData: &zond.SyncAggregatorSelectionData{
 					Slot:              0,
 					SubcommitteeIndex: 0,
 				},
@@ -423,7 +423,7 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_Exit{
-				Exit: &eth.VoluntaryExit{
+				Exit: &zond.VoluntaryExit{
 					Epoch:          0,
 					ValidatorIndex: 0,
 				},
@@ -436,7 +436,7 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_Registration{
-				Registration: &eth.ValidatorRegistrationV1{
+				Registration: &zond.ValidatorRegistrationV1{
 					FeeRecipient: make([]byte, fieldparams.FeeRecipientLength),
 					GasLimit:     uint64(0),
 					Timestamp:    uint64(0),

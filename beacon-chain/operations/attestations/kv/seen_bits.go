@@ -4,10 +4,10 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/go-bitfield"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
-func (c *AttCaches) insertSeenBit(att *ethpb.Attestation) error {
+func (c *AttCaches) insertSeenBit(att *zondpb.Attestation) error {
 	r, err := hashFn(att.Data)
 	if err != nil {
 		return err
@@ -39,7 +39,7 @@ func (c *AttCaches) insertSeenBit(att *ethpb.Attestation) error {
 	return nil
 }
 
-func (c *AttCaches) hasSeenBit(att *ethpb.Attestation) (bool, error) {
+func (c *AttCaches) hasSeenBit(att *zondpb.Attestation) (bool, error) {
 	r, err := hashFn(att.Data)
 	if err != nil {
 		return false, err

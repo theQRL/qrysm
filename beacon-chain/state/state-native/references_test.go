@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
@@ -18,7 +18,7 @@ import (
 func TestStateReferenceSharing_Finalizer_Phase0(t *testing.T) {
 	// This test showcases the logic on the RandaoMixes field with the GC finalizer.
 
-	s, err := InitializeFromProtoUnsafePhase0(&ethpb.BeaconState{RandaoMixes: [][]byte{[]byte("foo")}})
+	s, err := InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{RandaoMixes: [][]byte{[]byte("foo")}})
 	require.NoError(t, err)
 	a, ok := s.(*BeaconState)
 	require.Equal(t, true, ok)
@@ -47,7 +47,7 @@ func TestStateReferenceSharing_Finalizer_Phase0(t *testing.T) {
 func TestStateReferenceSharing_Finalizer_Altair(t *testing.T) {
 	// This test showcases the logic on the RandaoMixes field with the GC finalizer.
 
-	s, err := InitializeFromProtoUnsafeAltair(&ethpb.BeaconStateAltair{RandaoMixes: [][]byte{[]byte("foo")}})
+	s, err := InitializeFromProtoUnsafeAltair(&zondpb.BeaconStateAltair{RandaoMixes: [][]byte{[]byte("foo")}})
 	require.NoError(t, err)
 	a, ok := s.(*BeaconState)
 	require.Equal(t, true, ok)
@@ -76,7 +76,7 @@ func TestStateReferenceSharing_Finalizer_Altair(t *testing.T) {
 func TestStateReferenceSharing_Finalizer_Bellatrix(t *testing.T) {
 	// This test showcases the logic on the RandaoMixes field with the GC finalizer.
 
-	s, err := InitializeFromProtoUnsafeBellatrix(&ethpb.BeaconStateBellatrix{RandaoMixes: [][]byte{[]byte("foo")}})
+	s, err := InitializeFromProtoUnsafeBellatrix(&zondpb.BeaconStateBellatrix{RandaoMixes: [][]byte{[]byte("foo")}})
 	require.NoError(t, err)
 	a, ok := s.(*BeaconState)
 	require.Equal(t, true, ok)
@@ -105,7 +105,7 @@ func TestStateReferenceSharing_Finalizer_Bellatrix(t *testing.T) {
 func TestStateReferenceSharing_Finalizer_Capella(t *testing.T) {
 	// This test showcases the logic on the RandaoMixes field with the GC finalizer.
 
-	s, err := InitializeFromProtoUnsafeCapella(&ethpb.BeaconStateCapella{RandaoMixes: [][]byte{[]byte("foo")}})
+	s, err := InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{RandaoMixes: [][]byte{[]byte("foo")}})
 	require.NoError(t, err)
 	a, ok := s.(*BeaconState)
 	require.Equal(t, true, ok)
@@ -133,7 +133,7 @@ func TestStateReferenceSharing_Finalizer_Capella(t *testing.T) {
 
 func TestStateReferenceCopy_NoUnexpectedRootsMutation_Phase0(t *testing.T) {
 	root1, root2 := bytesutil.ToBytes32([]byte("foo")), bytesutil.ToBytes32([]byte("bar"))
-	s, err := InitializeFromProtoUnsafePhase0(&ethpb.BeaconState{
+	s, err := InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{
 		BlockRoots: [][]byte{
 			root1[:],
 		},
@@ -192,7 +192,7 @@ func TestStateReferenceCopy_NoUnexpectedRootsMutation_Phase0(t *testing.T) {
 
 func TestStateReferenceCopy_NoUnexpectedRootsMutation_Altair(t *testing.T) {
 	root1, root2 := bytesutil.ToBytes32([]byte("foo")), bytesutil.ToBytes32([]byte("bar"))
-	s, err := InitializeFromProtoUnsafeAltair(&ethpb.BeaconStateAltair{
+	s, err := InitializeFromProtoUnsafeAltair(&zondpb.BeaconStateAltair{
 		BlockRoots: [][]byte{
 			root1[:],
 		},
@@ -251,7 +251,7 @@ func TestStateReferenceCopy_NoUnexpectedRootsMutation_Altair(t *testing.T) {
 
 func TestStateReferenceCopy_NoUnexpectedRootsMutation_Bellatrix(t *testing.T) {
 	root1, root2 := bytesutil.ToBytes32([]byte("foo")), bytesutil.ToBytes32([]byte("bar"))
-	s, err := InitializeFromProtoUnsafeBellatrix(&ethpb.BeaconStateBellatrix{
+	s, err := InitializeFromProtoUnsafeBellatrix(&zondpb.BeaconStateBellatrix{
 		BlockRoots: [][]byte{
 			root1[:],
 		},
@@ -310,7 +310,7 @@ func TestStateReferenceCopy_NoUnexpectedRootsMutation_Bellatrix(t *testing.T) {
 
 func TestStateReferenceCopy_NoUnexpectedRootsMutation_Capella(t *testing.T) {
 	root1, root2 := bytesutil.ToBytes32([]byte("foo")), bytesutil.ToBytes32([]byte("bar"))
-	s, err := InitializeFromProtoUnsafeCapella(&ethpb.BeaconStateCapella{
+	s, err := InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
 		BlockRoots: [][]byte{
 			root1[:],
 		},
@@ -369,7 +369,7 @@ func TestStateReferenceCopy_NoUnexpectedRootsMutation_Capella(t *testing.T) {
 
 func TestStateReferenceCopy_NoUnexpectedRandaoMutation_Phase0(t *testing.T) {
 	val1, val2 := bytesutil.ToBytes32([]byte("foo")), bytesutil.ToBytes32([]byte("bar"))
-	s, err := InitializeFromProtoUnsafePhase0(&ethpb.BeaconState{
+	s, err := InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{
 		RandaoMixes: [][]byte{
 			val1[:],
 		},
@@ -413,7 +413,7 @@ func TestStateReferenceCopy_NoUnexpectedRandaoMutation_Phase0(t *testing.T) {
 
 func TestStateReferenceCopy_NoUnexpectedRandaoMutation_Altair(t *testing.T) {
 	val1, val2 := bytesutil.ToBytes32([]byte("foo")), bytesutil.ToBytes32([]byte("bar"))
-	s, err := InitializeFromProtoUnsafeAltair(&ethpb.BeaconStateAltair{
+	s, err := InitializeFromProtoUnsafeAltair(&zondpb.BeaconStateAltair{
 		RandaoMixes: [][]byte{
 			val1[:],
 		},
@@ -457,7 +457,7 @@ func TestStateReferenceCopy_NoUnexpectedRandaoMutation_Altair(t *testing.T) {
 
 func TestStateReferenceCopy_NoUnexpectedRandaoMutation_Bellatrix(t *testing.T) {
 	val1, val2 := bytesutil.ToBytes32([]byte("foo")), bytesutil.ToBytes32([]byte("bar"))
-	s, err := InitializeFromProtoUnsafeBellatrix(&ethpb.BeaconStateBellatrix{
+	s, err := InitializeFromProtoUnsafeBellatrix(&zondpb.BeaconStateBellatrix{
 		RandaoMixes: [][]byte{
 			val1[:],
 		},
@@ -501,7 +501,7 @@ func TestStateReferenceCopy_NoUnexpectedRandaoMutation_Bellatrix(t *testing.T) {
 
 func TestStateReferenceCopy_NoUnexpectedRandaoMutation_Capella(t *testing.T) {
 	val1, val2 := bytesutil.ToBytes32([]byte("foo")), bytesutil.ToBytes32([]byte("bar"))
-	s, err := InitializeFromProtoUnsafeCapella(&ethpb.BeaconStateCapella{
+	s, err := InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
 		RandaoMixes: [][]byte{
 			val1[:],
 		},
@@ -544,7 +544,7 @@ func TestStateReferenceCopy_NoUnexpectedRandaoMutation_Capella(t *testing.T) {
 }
 
 func TestStateReferenceCopy_NoUnexpectedAttestationsMutation(t *testing.T) {
-	assertAttFound := func(vals []*ethpb.PendingAttestation, val uint64) {
+	assertAttFound := func(vals []*zondpb.PendingAttestation, val uint64) {
 		for i := range vals {
 			if reflect.DeepEqual(vals[i].AggregationBits, bitfield.NewBitlist(val)) {
 				return
@@ -553,7 +553,7 @@ func TestStateReferenceCopy_NoUnexpectedAttestationsMutation(t *testing.T) {
 		t.Log(string(debug.Stack()))
 		t.Fatalf("Expected attestation not found (%v), want: %v", vals, val)
 	}
-	assertAttNotFound := func(vals []*ethpb.PendingAttestation, val uint64) {
+	assertAttNotFound := func(vals []*zondpb.PendingAttestation, val uint64) {
 		for i := range vals {
 			if reflect.DeepEqual(vals[i].AggregationBits, bitfield.NewBitlist(val)) {
 				t.Log(string(debug.Stack()))
@@ -563,7 +563,7 @@ func TestStateReferenceCopy_NoUnexpectedAttestationsMutation(t *testing.T) {
 		}
 	}
 
-	s, err := InitializeFromProtoUnsafePhase0(&ethpb.BeaconState{})
+	s, err := InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
 	require.NoError(t, err)
 	a, ok := s.(*BeaconState)
 	require.Equal(t, true, ok)
@@ -571,7 +571,7 @@ func TestStateReferenceCopy_NoUnexpectedAttestationsMutation(t *testing.T) {
 	assertRefCount(t, a, types.CurrentEpochAttestations, 1)
 
 	// Update initial state.
-	atts := []*ethpb.PendingAttestation{
+	atts := []*zondpb.PendingAttestation{
 		{AggregationBits: bitfield.NewBitlist(1)},
 		{AggregationBits: bitfield.NewBitlist(2)},
 	}
@@ -650,13 +650,13 @@ func TestStateReferenceCopy_NoUnexpectedAttestationsMutation(t *testing.T) {
 		// One MUST copy on write.
 		currEpochAtts, err := state.CurrentEpochAttestations()
 		require.NoError(t, err)
-		atts = make([]*ethpb.PendingAttestation, len(currEpochAtts))
+		atts = make([]*zondpb.PendingAttestation, len(currEpochAtts))
 		copy(atts, currEpochAtts)
 		state.setCurrentEpochAttestations(atts)
 		currEpochAtts, err = state.CurrentEpochAttestations()
 		require.NoError(t, err)
 		for i := range currEpochAtts {
-			att := ethpb.CopyPendingAttestation(currEpochAtts[i])
+			att := zondpb.CopyPendingAttestation(currEpochAtts[i])
 			att.AggregationBits = bitfield.NewBitlist(3)
 			currEpochAtts[i] = att
 		}
@@ -664,13 +664,13 @@ func TestStateReferenceCopy_NoUnexpectedAttestationsMutation(t *testing.T) {
 
 		prevEpochAtts, err := state.PreviousEpochAttestations()
 		require.NoError(t, err)
-		atts = make([]*ethpb.PendingAttestation, len(prevEpochAtts))
+		atts = make([]*zondpb.PendingAttestation, len(prevEpochAtts))
 		copy(atts, prevEpochAtts)
 		state.setPreviousEpochAttestations(atts)
 		prevEpochAtts, err = state.PreviousEpochAttestations()
 		require.NoError(t, err)
 		for i := range prevEpochAtts {
-			att := ethpb.CopyPendingAttestation(prevEpochAtts[i])
+			att := zondpb.CopyPendingAttestation(prevEpochAtts[i])
 			att.AggregationBits = bitfield.NewBitlist(3)
 			prevEpochAtts[i] = att
 		}
@@ -709,8 +709,8 @@ func TestStateReferenceCopy_NoUnexpectedAttestationsMutation(t *testing.T) {
 }
 
 func TestValidatorReferences_RemainsConsistent_Phase0(t *testing.T) {
-	s, err := InitializeFromProtoUnsafePhase0(&ethpb.BeaconState{
-		Validators: []*ethpb.Validator{
+	s, err := InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{
+		Validators: []*zondpb.Validator{
 			{PublicKey: []byte{'A'}},
 			{PublicKey: []byte{'B'}},
 			{PublicKey: []byte{'C'}},
@@ -728,12 +728,12 @@ func TestValidatorReferences_RemainsConsistent_Phase0(t *testing.T) {
 	require.Equal(t, true, ok)
 
 	// Update First Validator.
-	assert.NoError(t, a.UpdateValidatorAtIndex(0, &ethpb.Validator{PublicKey: []byte{'Z'}}))
+	assert.NoError(t, a.UpdateValidatorAtIndex(0, &zondpb.Validator{PublicKey: []byte{'Z'}}))
 
 	assert.DeepNotEqual(t, a.Validators()[0], b.Validators()[0], "validators are equal when they are supposed to be different")
 	// Modify all validators from copied state.
-	assert.NoError(t, b.ApplyToEveryValidator(func(idx int, val *ethpb.Validator) (bool, *ethpb.Validator, error) {
-		return true, &ethpb.Validator{PublicKey: []byte{'V'}}, nil
+	assert.NoError(t, b.ApplyToEveryValidator(func(idx int, val *zondpb.Validator) (bool, *zondpb.Validator, error) {
+		return true, &zondpb.Validator{PublicKey: []byte{'V'}}, nil
 	}))
 
 	// Ensure reference is properly accounted for.
@@ -744,8 +744,8 @@ func TestValidatorReferences_RemainsConsistent_Phase0(t *testing.T) {
 }
 
 func TestValidatorReferences_RemainsConsistent_Altair(t *testing.T) {
-	s, err := InitializeFromProtoUnsafeAltair(&ethpb.BeaconStateAltair{
-		Validators: []*ethpb.Validator{
+	s, err := InitializeFromProtoUnsafeAltair(&zondpb.BeaconStateAltair{
+		Validators: []*zondpb.Validator{
 			{PublicKey: []byte{'A'}},
 			{PublicKey: []byte{'B'}},
 			{PublicKey: []byte{'C'}},
@@ -763,12 +763,12 @@ func TestValidatorReferences_RemainsConsistent_Altair(t *testing.T) {
 	require.Equal(t, true, ok)
 
 	// Update First Validator.
-	assert.NoError(t, a.UpdateValidatorAtIndex(0, &ethpb.Validator{PublicKey: []byte{'Z'}}))
+	assert.NoError(t, a.UpdateValidatorAtIndex(0, &zondpb.Validator{PublicKey: []byte{'Z'}}))
 
 	assert.DeepNotEqual(t, a.Validators()[0], b.Validators()[0], "validators are equal when they are supposed to be different")
 	// Modify all validators from copied state.
-	assert.NoError(t, b.ApplyToEveryValidator(func(idx int, val *ethpb.Validator) (bool, *ethpb.Validator, error) {
-		return true, &ethpb.Validator{PublicKey: []byte{'V'}}, nil
+	assert.NoError(t, b.ApplyToEveryValidator(func(idx int, val *zondpb.Validator) (bool, *zondpb.Validator, error) {
+		return true, &zondpb.Validator{PublicKey: []byte{'V'}}, nil
 	}))
 
 	// Ensure reference is properly accounted for.
@@ -779,8 +779,8 @@ func TestValidatorReferences_RemainsConsistent_Altair(t *testing.T) {
 }
 
 func TestValidatorReferences_RemainsConsistent_Capella(t *testing.T) {
-	s, err := InitializeFromProtoUnsafeCapella(&ethpb.BeaconStateCapella{
-		Validators: []*ethpb.Validator{
+	s, err := InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
+		Validators: []*zondpb.Validator{
 			{PublicKey: []byte{'A'}},
 			{PublicKey: []byte{'B'}},
 			{PublicKey: []byte{'C'}},
@@ -798,12 +798,12 @@ func TestValidatorReferences_RemainsConsistent_Capella(t *testing.T) {
 	require.Equal(t, true, ok)
 
 	// Update First Validator.
-	assert.NoError(t, a.UpdateValidatorAtIndex(0, &ethpb.Validator{PublicKey: []byte{'Z'}}))
+	assert.NoError(t, a.UpdateValidatorAtIndex(0, &zondpb.Validator{PublicKey: []byte{'Z'}}))
 
 	assert.DeepNotEqual(t, a.Validators()[0], b.Validators()[0], "validators are equal when they are supposed to be different")
 	// Modify all validators from copied state.
-	assert.NoError(t, b.ApplyToEveryValidator(func(idx int, val *ethpb.Validator) (bool, *ethpb.Validator, error) {
-		return true, &ethpb.Validator{PublicKey: []byte{'V'}}, nil
+	assert.NoError(t, b.ApplyToEveryValidator(func(idx int, val *zondpb.Validator) (bool, *zondpb.Validator, error) {
+		return true, &zondpb.Validator{PublicKey: []byte{'V'}}, nil
 	}))
 
 	// Ensure reference is properly accounted for.
@@ -814,8 +814,8 @@ func TestValidatorReferences_RemainsConsistent_Capella(t *testing.T) {
 }
 
 func TestValidatorReferences_RemainsConsistent_Bellatrix(t *testing.T) {
-	s, err := InitializeFromProtoUnsafeBellatrix(&ethpb.BeaconStateBellatrix{
-		Validators: []*ethpb.Validator{
+	s, err := InitializeFromProtoUnsafeBellatrix(&zondpb.BeaconStateBellatrix{
+		Validators: []*zondpb.Validator{
 			{PublicKey: []byte{'A'}},
 			{PublicKey: []byte{'B'}},
 			{PublicKey: []byte{'C'}},
@@ -833,12 +833,12 @@ func TestValidatorReferences_RemainsConsistent_Bellatrix(t *testing.T) {
 	require.Equal(t, true, ok)
 
 	// Update First Validator.
-	assert.NoError(t, a.UpdateValidatorAtIndex(0, &ethpb.Validator{PublicKey: []byte{'Z'}}))
+	assert.NoError(t, a.UpdateValidatorAtIndex(0, &zondpb.Validator{PublicKey: []byte{'Z'}}))
 
 	assert.DeepNotEqual(t, a.Validators()[0], b.Validators()[0], "validators are equal when they are supposed to be different")
 	// Modify all validators from copied state.
-	assert.NoError(t, b.ApplyToEveryValidator(func(idx int, val *ethpb.Validator) (bool, *ethpb.Validator, error) {
-		return true, &ethpb.Validator{PublicKey: []byte{'V'}}, nil
+	assert.NoError(t, b.ApplyToEveryValidator(func(idx int, val *zondpb.Validator) (bool, *zondpb.Validator, error) {
+		return true, &zondpb.Validator{PublicKey: []byte{'V'}}, nil
 	}))
 
 	// Ensure reference is properly accounted for.

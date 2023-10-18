@@ -9,7 +9,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	apimiddleware "github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // MockbeaconBlockConverter is a mock of beaconBlockConverter interface.
@@ -36,10 +36,10 @@ func (m *MockbeaconBlockConverter) EXPECT() *MockbeaconBlockConverterMockRecorde
 }
 
 // ConvertRESTAltairBlockToProto mocks base method.
-func (m *MockbeaconBlockConverter) ConvertRESTAltairBlockToProto(block *apimiddleware.BeaconBlockAltairJson) (*eth.BeaconBlockAltair, error) {
+func (m *MockbeaconBlockConverter) ConvertRESTAltairBlockToProto(block *apimiddleware.BeaconBlockAltairJson) (*zond.BeaconBlockAltair, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ConvertRESTAltairBlockToProto", block)
-	ret0, _ := ret[0].(*eth.BeaconBlockAltair)
+	ret0, _ := ret[0].(*zond.BeaconBlockAltair)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -51,10 +51,10 @@ func (mr *MockbeaconBlockConverterMockRecorder) ConvertRESTAltairBlockToProto(bl
 }
 
 // ConvertRESTBellatrixBlockToProto mocks base method.
-func (m *MockbeaconBlockConverter) ConvertRESTBellatrixBlockToProto(block *apimiddleware.BeaconBlockBellatrixJson) (*eth.BeaconBlockBellatrix, error) {
+func (m *MockbeaconBlockConverter) ConvertRESTBellatrixBlockToProto(block *apimiddleware.BeaconBlockBellatrixJson) (*zond.BeaconBlockBellatrix, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ConvertRESTBellatrixBlockToProto", block)
-	ret0, _ := ret[0].(*eth.BeaconBlockBellatrix)
+	ret0, _ := ret[0].(*zond.BeaconBlockBellatrix)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -66,10 +66,10 @@ func (mr *MockbeaconBlockConverterMockRecorder) ConvertRESTBellatrixBlockToProto
 }
 
 // ConvertRESTCapellaBlockToProto mocks base method.
-func (m *MockbeaconBlockConverter) ConvertRESTCapellaBlockToProto(block *apimiddleware.BeaconBlockCapellaJson) (*eth.BeaconBlockCapella, error) {
+func (m *MockbeaconBlockConverter) ConvertRESTCapellaBlockToProto(block *apimiddleware.BeaconBlockCapellaJson) (*zond.BeaconBlockCapella, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ConvertRESTCapellaBlockToProto", block)
-	ret0, _ := ret[0].(*eth.BeaconBlockCapella)
+	ret0, _ := ret[0].(*zond.BeaconBlockCapella)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -81,10 +81,10 @@ func (mr *MockbeaconBlockConverterMockRecorder) ConvertRESTCapellaBlockToProto(b
 }
 
 // ConvertRESTPhase0BlockToProto mocks base method.
-func (m *MockbeaconBlockConverter) ConvertRESTPhase0BlockToProto(block *apimiddleware.BeaconBlockJson) (*eth.BeaconBlock, error) {
+func (m *MockbeaconBlockConverter) ConvertRESTPhase0BlockToProto(block *apimiddleware.BeaconBlockJson) (*zond.BeaconBlock, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ConvertRESTPhase0BlockToProto", block)
-	ret0, _ := ret[0].(*eth.BeaconBlock)
+	ret0, _ := ret[0].(*zond.BeaconBlock)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

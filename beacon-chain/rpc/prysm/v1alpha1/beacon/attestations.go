@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
 	attaggregation "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/attestations"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -26,7 +26,7 @@ import (
 
 // sortableAttestations implements the Sort interface to sort attestations
 // by slot as the canonical sorting attribute.
-type sortableAttestations []*ethpb.Attestation
+type sortableAttestations []*zondpb.Attestation
 
 // Len is the number of elements in the collection.
 func (s sortableAttestations) Len() int { return len(s) }
@@ -39,8 +39,8 @@ func (s sortableAttestations) Less(i, j int) bool {
 	return s[i].Data.Slot < s[j].Data.Slot
 }
 
-func mapAttestationsByTargetRoot(atts []*ethpb.Attestation) map[[32]byte][]*ethpb.Attestation {
-	attsMap := make(map[[32]byte][]*ethpb.Attestation, len(atts))
+func mapAttestationsByTargetRoot(atts []*zondpb.Attestation) map[[32]byte][]*zondpb.Attestation {
+	attsMap := make(map[[32]byte][]*zondpb.Attestation, len(atts))
 	if len(atts) == 0 {
 		return attsMap
 	}
@@ -57,8 +57,8 @@ func mapAttestationsByTargetRoot(atts []*ethpb.Attestation) map[[32]byte][]*ethp
 // filter criteria. This RPC should not return NOT_FOUND. Only one filter
 // criteria should be used.
 func (bs *Server) ListAttestations(
-	ctx context.Context, req *ethpb.ListAttestationsRequest,
-) (*ethpb.ListAttestationsResponse, error) {
+	ctx context.Context, req *zondpb.ListAttestationsRequest,
+) (*zondpb.ListAttestationsResponse, error) {
 	if int(req.PageSize) > cmd.Get().MaxRPCPageSize {
 		return nil, status.Errorf(codes.InvalidArgument, "Requested page size %d can not be greater than max size %d",
 			req.PageSize, cmd.Get().MaxRPCPageSize)
@@ -66,12 +66,12 @@ func (bs *Server) ListAttestations(
 	var blocks []interfaces.ReadOnlySignedBeaconBlock
 	var err error
 	switch q := req.QueryFilter.(type) {
-	case *ethpb.ListAttestationsRequest_GenesisEpoch:
+	case *zondpb.ListAttestationsRequest_GenesisEpoch:
 		blocks, _, err = bs.BeaconDB.Blocks(ctx, filters.NewFilter().SetStartEpoch(0).SetEndEpoch(0))
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not fetch attestations: %v", err)
 		}
-	case *ethpb.ListAttestationsRequest_Epoch:
+	case *zondpb.ListAttestationsRequest_Epoch:
 		blocks, _, err = bs.BeaconDB.Blocks(ctx, filters.NewFilter().SetStartEpoch(q.Epoch).SetEndEpoch(q.Epoch))
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not fetch attestations: %v", err)
@@ -79,7 +79,7 @@ func (bs *Server) ListAttestations(
 	default:
 		return nil, status.Error(codes.InvalidArgument, "Must specify a filter criteria for fetching attestations")
 	}
-	atts := make([]*ethpb.Attestation, 0, params.BeaconConfig().MaxAttestations*uint64(len(blocks)))
+	atts := make([]*zondpb.Attestation, 0, params.BeaconConfig().MaxAttestations*uint64(len(blocks)))
 	for _, blk := range blocks {
 		atts = append(atts, blk.Block().Body().Attestations()...)
 	}
@@ -90,8 +90,8 @@ func (bs *Server) ListAttestations(
 	// If there are no attestations, we simply return a response specifying this.
 	// Otherwise, attempting to paginate 0 attestations below would result in an error.
 	if numAttestations == 0 {
-		return &ethpb.ListAttestationsResponse{
-			Attestations:  make([]*ethpb.Attestation, 0),
+		return &zondpb.ListAttestationsResponse{
+			Attestations:  make([]*zondpb.Attestation, 0),
 			TotalSize:     int32(0),
 			NextPageToken: strconv.Itoa(0),
 		}, nil
@@ -101,7 +101,7 @@ func (bs *Server) ListAttestations(
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not paginate attestations: %v", err)
 	}
-	return &ethpb.ListAttestationsResponse{
+	return &zondpb.ListAttestationsResponse{
 		Attestations:  atts[start:end],
 		TotalSize:     int32(numAttestations),
 		NextPageToken: nextPageToken,
@@ -115,17 +115,17 @@ func (bs *Server) ListAttestations(
 // The server may return an empty list when no attestations match the given
 // filter criteria. This RPC should not return NOT_FOUND.
 func (bs *Server) ListIndexedAttestations(
-	ctx context.Context, req *ethpb.ListIndexedAttestationsRequest,
-) (*ethpb.ListIndexedAttestationsResponse, error) {
+	ctx context.Context, req *zondpb.ListIndexedAttestationsRequest,
+) (*zondpb.ListIndexedAttestationsResponse, error) {
 	var blocks []interfaces.ReadOnlySignedBeaconBlock
 	var err error
 	switch q := req.QueryFilter.(type) {
-	case *ethpb.ListIndexedAttestationsRequest_GenesisEpoch:
+	case *zondpb.ListIndexedAttestationsRequest_GenesisEpoch:
 		blocks, _, err = bs.BeaconDB.Blocks(ctx, filters.NewFilter().SetStartEpoch(0).SetEndEpoch(0))
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not fetch attestations: %v", err)
 		}
-	case *ethpb.ListIndexedAttestationsRequest_Epoch:
+	case *zondpb.ListIndexedAttestationsRequest_Epoch:
 		blocks, _, err = bs.BeaconDB.Blocks(ctx, filters.NewFilter().SetStartEpoch(q.Epoch).SetEndEpoch(q.Epoch))
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not fetch attestations: %v", err)
@@ -134,7 +134,7 @@ func (bs *Server) ListIndexedAttestations(
 		return nil, status.Error(codes.InvalidArgument, "Must specify a filter criteria for fetching attestations")
 	}
 
-	attsArray := make([]*ethpb.Attestation, 0, params.BeaconConfig().MaxAttestations*uint64(len(blocks)))
+	attsArray := make([]*zondpb.Attestation, 0, params.BeaconConfig().MaxAttestations*uint64(len(blocks)))
 	for _, b := range blocks {
 		attsArray = append(attsArray, b.Block().Body().Attestations()...)
 	}
@@ -145,8 +145,8 @@ func (bs *Server) ListIndexedAttestations(
 	// If there are no attestations, we simply return a response specifying this.
 	// Otherwise, attempting to paginate 0 attestations below would result in an error.
 	if numAttestations == 0 {
-		return &ethpb.ListIndexedAttestationsResponse{
-			IndexedAttestations: make([]*ethpb.IndexedAttestation, 0),
+		return &zondpb.ListIndexedAttestationsResponse{
+			IndexedAttestations: make([]*zondpb.IndexedAttestation, 0),
 			TotalSize:           int32(0),
 			NextPageToken:       strconv.Itoa(0),
 		}, nil
@@ -154,7 +154,7 @@ func (bs *Server) ListIndexedAttestations(
 	// We use the retrieved committees for the b root to convert all attestations
 	// into indexed form effectively.
 	mappedAttestations := mapAttestationsByTargetRoot(attsArray)
-	indexedAtts := make([]*ethpb.IndexedAttestation, 0, numAttestations)
+	indexedAtts := make([]*zondpb.IndexedAttestation, 0, numAttestations)
 	for targetRoot, atts := range mappedAttestations {
 		attState, err := bs.StateGen.StateByRoot(ctx, targetRoot)
 		if err != nil && strings.Contains(err.Error(), "unknown state summary") {
@@ -191,7 +191,7 @@ func (bs *Server) ListIndexedAttestations(
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not paginate attestations: %v", err)
 	}
-	return &ethpb.ListIndexedAttestationsResponse{
+	return &zondpb.ListIndexedAttestationsResponse{
 		IndexedAttestations: indexedAtts[start:end],
 		TotalSize:           int32(len(indexedAtts)),
 		NextPageToken:       nextPageToken,
@@ -203,7 +203,7 @@ func (bs *Server) ListIndexedAttestations(
 // them over a gRPC stream.
 // DEPRECATED: This endpoint is superseded by the /eth/v1/events Beacon API endpoint
 func (bs *Server) StreamAttestations(
-	_ *emptypb.Empty, stream ethpb.BeaconChain_StreamAttestationsServer,
+	_ *emptypb.Empty, stream zondpb.BeaconChain_StreamAttestationsServer,
 ) error {
 	attestationsChannel := make(chan *feed.Event, 1)
 	attSub := bs.AttestationNotifier.OperationFeed().Subscribe(attestationsChannel)
@@ -238,7 +238,7 @@ func (bs *Server) StreamAttestations(
 // sends them over a gRPC stream.
 // DEPRECATED: This endpoint is superseded by the /eth/v1/events Beacon API endpoint
 func (bs *Server) StreamIndexedAttestations(
-	_ *emptypb.Empty, stream ethpb.BeaconChain_StreamIndexedAttestationsServer,
+	_ *emptypb.Empty, stream zondpb.BeaconChain_StreamIndexedAttestationsServer,
 ) error {
 	attestationsChannel := make(chan *feed.Event, 1)
 	attSub := bs.AttestationNotifier.OperationFeed().Subscribe(attestationsChannel)
@@ -340,13 +340,13 @@ func (bs *Server) StreamIndexedAttestations(
 
 // already being done by the attestation pool in the operations service.
 func (bs *Server) collectReceivedAttestations(ctx context.Context) {
-	attsByRoot := make(map[[32]byte][]*ethpb.Attestation)
+	attsByRoot := make(map[[32]byte][]*zondpb.Attestation)
 	twoThirdsASlot := 2 * slots.DivideSlotBy(3) /* 2/3 slot duration */
 	ticker := slots.NewSlotTickerWithOffset(bs.GenesisTimeFetcher.GenesisTime(), twoThirdsASlot, params.BeaconConfig().SecondsPerSlot)
 	for {
 		select {
 		case <-ticker.C():
-			aggregatedAttsByTarget := make(map[[32]byte][]*ethpb.Attestation)
+			aggregatedAttsByTarget := make(map[[32]byte][]*zondpb.Attestation)
 			for root, atts := range attsByRoot {
 				// We aggregate the received attestations, we know they all have the same data root.
 				aggAtts, err := attaggregation.Aggregate(atts)
@@ -359,7 +359,7 @@ func (bs *Server) collectReceivedAttestations(ctx context.Context) {
 				}
 				targetRoot := bytesutil.ToBytes32(atts[0].Data.Target.Root)
 				aggregatedAttsByTarget[targetRoot] = append(aggregatedAttsByTarget[targetRoot], aggAtts...)
-				attsByRoot[root] = make([]*ethpb.Attestation, 0)
+				attsByRoot[root] = make([]*zondpb.Attestation, 0)
 			}
 			for _, atts := range aggregatedAttsByTarget {
 				bs.CollectedAttestationsBuffer <- atts
@@ -389,8 +389,8 @@ func (bs *Server) collectReceivedAttestations(ctx context.Context) {
 // attestations are processed and when they are no longer valid.
 // https://github.com/ethereum/consensus-specs/blob/dev/specs/core/0_beacon-chain.md#attestations
 func (bs *Server) AttestationPool(
-	_ context.Context, req *ethpb.AttestationPoolRequest,
-) (*ethpb.AttestationPoolResponse, error) {
+	_ context.Context, req *zondpb.AttestationPoolRequest,
+) (*zondpb.AttestationPoolResponse, error) {
 	if int(req.PageSize) > cmd.Get().MaxRPCPageSize {
 		return nil, status.Errorf(
 			codes.InvalidArgument,
@@ -402,8 +402,8 @@ func (bs *Server) AttestationPool(
 	atts := bs.AttestationsPool.AggregatedAttestations()
 	numAtts := len(atts)
 	if numAtts == 0 {
-		return &ethpb.AttestationPoolResponse{
-			Attestations:  make([]*ethpb.Attestation, 0),
+		return &zondpb.AttestationPoolResponse{
+			Attestations:  make([]*zondpb.Attestation, 0),
 			TotalSize:     int32(0),
 			NextPageToken: strconv.Itoa(0),
 		}, nil
@@ -412,7 +412,7 @@ func (bs *Server) AttestationPool(
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not paginate attestations: %v", err)
 	}
-	return &ethpb.AttestationPoolResponse{
+	return &zondpb.AttestationPoolResponse{
 		Attestations:  atts[start:end],
 		TotalSize:     int32(numAtts),
 		NextPageToken: nextPageToken,

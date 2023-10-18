@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -52,7 +52,7 @@ func TestSigningRoot_ComputeDomainAndSign(t *testing.T) {
 	tests := []struct {
 		name       string
 		genState   func(t *testing.T) (state.BeaconState, []dilithium.DilithiumKey)
-		genBlock   func(t *testing.T, st state.BeaconState, keys []dilithium.DilithiumKey) *ethpb.SignedBeaconBlock
+		genBlock   func(t *testing.T, st state.BeaconState, keys []dilithium.DilithiumKey) *zondpb.SignedBeaconBlock
 		domainType [4]byte
 		want       []byte
 	}{
@@ -63,7 +63,7 @@ func TestSigningRoot_ComputeDomainAndSign(t *testing.T) {
 				require.NoError(t, beaconState.SetSlot(beaconState.Slot()+1))
 				return beaconState, privKeys
 			},
-			genBlock: func(t *testing.T, st state.BeaconState, keys []dilithium.DilithiumKey) *ethpb.SignedBeaconBlock {
+			genBlock: func(t *testing.T, st state.BeaconState, keys []dilithium.DilithiumKey) *zondpb.SignedBeaconBlock {
 				block, err := util.GenerateFullBlock(st, keys, nil, 1)
 				require.NoError(t, err)
 				return block
@@ -113,7 +113,7 @@ func TestSigningRoot_ComputeForkDigest(t *testing.T) {
 
 func TestFuzzverifySigningRoot_10000(_ *testing.T) {
 	fuzzer := fuzz.NewWithSeed(0)
-	st := &ethpb.BeaconState{}
+	st := &zondpb.BeaconState{}
 	var pubkey [dilithium2.CryptoPublicKeyBytes]byte
 	var sig [96]byte
 	var domain [4]byte

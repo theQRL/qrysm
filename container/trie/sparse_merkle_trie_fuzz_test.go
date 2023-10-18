@@ -7,14 +7,14 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/container/trie"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func FuzzSparseMerkleTrie_HashTreeRoot(f *testing.F) {
 	h := hash.Hash([]byte("hi"))
-	pb := &ethpb.SparseMerkleTrie{
-		Layers: []*ethpb.TrieLayer{
+	pb := &zondpb.SparseMerkleTrie{
+		Layers: []*zondpb.TrieLayer{
 			{
 				Layer: [][]byte{h[:]},
 			},
@@ -32,7 +32,7 @@ func FuzzSparseMerkleTrie_HashTreeRoot(f *testing.F) {
 	f.Add(b)
 
 	f.Fuzz(func(t *testing.T, b []byte) {
-		pb := &ethpb.SparseMerkleTrie{}
+		pb := &zondpb.SparseMerkleTrie{}
 		if err := proto.Unmarshal(b, pb); err != nil {
 			return
 		}
@@ -48,8 +48,8 @@ func FuzzSparseMerkleTrie_HashTreeRoot(f *testing.F) {
 
 func FuzzSparseMerkleTrie_MerkleProof(f *testing.F) {
 	h := hash.Hash([]byte("hi"))
-	pb := &ethpb.SparseMerkleTrie{
-		Layers: []*ethpb.TrieLayer{
+	pb := &zondpb.SparseMerkleTrie{
+		Layers: []*zondpb.TrieLayer{
 			{
 				Layer: [][]byte{h[:]},
 			},
@@ -67,7 +67,7 @@ func FuzzSparseMerkleTrie_MerkleProof(f *testing.F) {
 	f.Add(b, 0)
 
 	f.Fuzz(func(t *testing.T, b []byte, i int) {
-		pb := &ethpb.SparseMerkleTrie{}
+		pb := &zondpb.SparseMerkleTrie{}
 		if err := proto.Unmarshal(b, pb); err != nil {
 			return
 		}
@@ -83,8 +83,8 @@ func FuzzSparseMerkleTrie_MerkleProof(f *testing.F) {
 
 func FuzzSparseMerkleTrie_Insert(f *testing.F) {
 	h := hash.Hash([]byte("hi"))
-	pb := &ethpb.SparseMerkleTrie{
-		Layers: []*ethpb.TrieLayer{
+	pb := &zondpb.SparseMerkleTrie{
+		Layers: []*zondpb.TrieLayer{
 			{
 				Layer: [][]byte{h[:]},
 			},
@@ -102,7 +102,7 @@ func FuzzSparseMerkleTrie_Insert(f *testing.F) {
 	f.Add(b, []byte{}, 0)
 
 	f.Fuzz(func(t *testing.T, b, item []byte, i int) {
-		pb := &ethpb.SparseMerkleTrie{}
+		pb := &zondpb.SparseMerkleTrie{}
 		if err := proto.Unmarshal(b, pb); err != nil {
 			return
 		}

@@ -13,16 +13,16 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 func ComputeValidatorPerformance(
 	ctx context.Context,
-	req *ethpb.ValidatorPerformanceRequest,
+	req *zondpb.ValidatorPerformanceRequest,
 	headFetcher blockchain.HeadFetcher,
 	currSlot primitives.Slot,
-) (*ethpb.ValidatorPerformanceResponse, *RpcError) {
+) (*zondpb.ValidatorPerformanceResponse, *RpcError) {
 	headState, err := headFetcher.HeadState(ctx)
 	if err != nil {
 		return nil, &RpcError{Err: errors.Wrap(err, "could not get head state"), Reason: Internal}
@@ -154,7 +154,7 @@ func ComputeValidatorPerformance(
 		}
 	}
 
-	return &ethpb.ValidatorPerformanceResponse{
+	return &zondpb.ValidatorPerformanceResponse{
 		PublicKeys:                    pubKeys,
 		CorrectlyVotedSource:          correctlyVotedSource,
 		CorrectlyVotedTarget:          correctlyVotedTarget, // In altair, when this is true then the attestation was definitely included.

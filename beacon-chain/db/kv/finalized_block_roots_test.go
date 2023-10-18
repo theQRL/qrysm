@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -31,7 +31,7 @@ func TestStore_IsFinalizedBlock(t *testing.T) {
 	root, err := blks[slotsPerEpoch].Block().HashTreeRoot()
 	require.NoError(t, err)
 
-	cp := &ethpb.Checkpoint{
+	cp := &zondpb.Checkpoint{
 		Epoch: 1,
 		Root:  root[:],
 	}
@@ -100,7 +100,7 @@ func TestStore_IsFinalized_ForkEdgeCase(t *testing.T) {
 	require.NoError(t, db.SaveBlocks(ctx, blocks2))
 
 	// First checkpoint
-	checkpoint1 := &ethpb.Checkpoint{
+	checkpoint1 := &zondpb.Checkpoint{
 		Root:  sszRootOrDie(t, blocks1[0]),
 		Epoch: 1,
 	}
@@ -117,7 +117,7 @@ func TestStore_IsFinalized_ForkEdgeCase(t *testing.T) {
 	}
 
 	// Second checkpoint
-	checkpoint2 := &ethpb.Checkpoint{
+	checkpoint2 := &zondpb.Checkpoint{
 		Root:  sszRootOrDie(t, blocks2[0]),
 		Epoch: 2,
 	}
@@ -147,7 +147,7 @@ func TestStore_IsFinalizedChildBlock(t *testing.T) {
 		root, err := blks[slotsPerEpoch].Block().HashTreeRoot()
 		require.NoError(t, err)
 
-		cp := &ethpb.Checkpoint{
+		cp := &zondpb.Checkpoint{
 			Epoch: 1,
 			Root:  root[:],
 		}
@@ -200,7 +200,7 @@ func sszRootOrDie(t *testing.T, block interfaces.ReadOnlySignedBeaconBlock) []by
 }
 
 func makeBlocks(t *testing.T, i, n uint64, previousRoot [32]byte) []interfaces.ReadOnlySignedBeaconBlock {
-	blocks := make([]*ethpb.SignedBeaconBlock, n)
+	blocks := make([]*zondpb.SignedBeaconBlock, n)
 	ifaceBlocks := make([]interfaces.ReadOnlySignedBeaconBlock, n)
 	for j := i; j < n+i; j++ {
 		parentRoot := make([]byte, fieldparams.RootLength)
@@ -218,7 +218,7 @@ func makeBlocks(t *testing.T, i, n uint64, previousRoot [32]byte) []interfaces.R
 }
 
 func makeBlocksAltair(t *testing.T, startIdx, num uint64, previousRoot [32]byte) []interfaces.ReadOnlySignedBeaconBlock {
-	blocks := make([]*ethpb.SignedBeaconBlockAltair, num)
+	blocks := make([]*zondpb.SignedBeaconBlockAltair, num)
 	ifaceBlocks := make([]interfaces.ReadOnlySignedBeaconBlock, num)
 	for j := startIdx; j < num+startIdx; j++ {
 		parentRoot := make([]byte, fieldparams.RootLength)

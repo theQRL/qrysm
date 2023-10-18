@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/math"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 )
@@ -79,7 +79,7 @@ func (v *validator) internalWaitForActivation(ctx context.Context, accountsChang
 		}
 	}
 
-	req := &ethpb.ValidatorActivationRequest{
+	req := &zondpb.ValidatorActivationRequest{
 		PublicKeys: bytesutil.FromBytes2592Array(validatingKeys),
 	}
 	stream, err := v.validatorClient.WaitForActivation(ctx, req)
@@ -101,7 +101,7 @@ func (v *validator) internalWaitForActivation(ctx context.Context, accountsChang
 	return nil
 }
 
-func (v *validator) handleAccountsChanged(ctx context.Context, accountsChangedChan <-chan [][dilithium2.CryptoPublicKeyBytes]byte, stream *ethpb.BeaconNodeValidator_WaitForActivationClient, span *trace.Span) error {
+func (v *validator) handleAccountsChanged(ctx context.Context, accountsChangedChan <-chan [][dilithium2.CryptoPublicKeyBytes]byte, stream *zondpb.BeaconNodeValidator_WaitForActivationClient, span *trace.Span) error {
 	for {
 		select {
 		case <-accountsChangedChan:
@@ -136,7 +136,7 @@ func (v *validator) handleAccountsChanged(ctx context.Context, accountsChangedCh
 				}
 			}
 
-			vals, err := v.beaconClient.ListValidators(ctx, &ethpb.ListValidatorsRequest{Active: true, PageSize: 0})
+			vals, err := v.beaconClient.ListValidators(ctx, &zondpb.ListValidatorsRequest{Active: true, PageSize: 0})
 			if err != nil {
 				return errors.Wrap(err, "could not get active validator count")
 			}

@@ -24,7 +24,7 @@ import (
 	contracts "github.com/theQRL/qrysm/v4/contracts/deposit"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -130,7 +130,7 @@ func (s *Service) ProcessDepositLog(ctx context.Context, depositLog zondtypes.Lo
 
 	// We then decode the deposit input in order to create a deposit object
 	// we can store in our persistent DB.
-	depositData := &ethpb.Deposit_Data{
+	depositData := &zondpb.Deposit_Data{
 		Amount:                bytesutil.FromBytes8(amount),
 		PublicKey:             pubkey,
 		Signature:             signature,
@@ -150,7 +150,7 @@ func (s *Service) ProcessDepositLog(ctx context.Context, depositLog zondtypes.Lo
 		return err
 	}
 
-	deposit := &ethpb.Deposit{
+	deposit := &zondpb.Deposit{
 		Data: depositData,
 	}
 	// Only generate the proofs during pre-genesis.
@@ -178,7 +178,7 @@ func (s *Service) ProcessDepositLog(ctx context.Context, depositLog zondtypes.Lo
 		if err != nil {
 			return errors.Wrap(err, "unable to determine root of deposit trie")
 		}
-		eth1Data := &ethpb.Eth1Data{
+		eth1Data := &zondpb.Eth1Data{
 			DepositRoot:  root[:],
 			DepositCount: uint64(len(s.chainStartData.ChainstartDeposits)),
 		}
@@ -245,7 +245,7 @@ func (s *Service) ProcessChainStart(genesisTime uint64, eth1BlockHash [32]byte, 
 		log.WithError(err).Error("unable to determine root of deposit trie, aborting chain start")
 		return
 	}
-	s.chainStartData.Eth1Data = &ethpb.Eth1Data{
+	s.chainStartData.Eth1Data = &zondpb.Eth1Data{
 		DepositCount: uint64(len(s.chainStartData.ChainstartDeposits)),
 		DepositRoot:  root[:],
 		BlockHash:    eth1BlockHash[:],
@@ -555,7 +555,7 @@ func (s *Service) savePowchainData(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	eth1Data := &ethpb.ETH1ChainData{
+	eth1Data := &zondpb.ETH1ChainData{
 		CurrentEth1Data:   s.latestEth1Data,
 		ChainstartData:    s.chainStartData,
 		BeaconState:       pbState, // I promise not to mutate it!

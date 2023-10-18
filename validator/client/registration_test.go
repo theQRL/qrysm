@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
@@ -22,9 +22,9 @@ func TestSubmitValidatorRegistrations(t *testing.T) {
 	defer finish()
 
 	ctx := context.Background()
-	require.NoError(t, nil, SubmitValidatorRegistrations(ctx, m.validatorClient, []*ethpb.SignedValidatorRegistrationV1{}))
+	require.NoError(t, nil, SubmitValidatorRegistrations(ctx, m.validatorClient, []*zondpb.SignedValidatorRegistrationV1{}))
 
-	reg := &ethpb.ValidatorRegistrationV1{
+	reg := &zondpb.ValidatorRegistrationV1{
 		FeeRecipient: bytesutil.PadTo([]byte("fee"), 20),
 		GasLimit:     123456,
 		Timestamp:    uint64(time.Now().Unix()),
@@ -32,14 +32,14 @@ func TestSubmitValidatorRegistrations(t *testing.T) {
 	}
 
 	m.validatorClient.EXPECT().
-		SubmitValidatorRegistrations(gomock.Any(), &ethpb.SignedValidatorRegistrationsV1{
-			Messages: []*ethpb.SignedValidatorRegistrationV1{
+		SubmitValidatorRegistrations(gomock.Any(), &zondpb.SignedValidatorRegistrationsV1{
+			Messages: []*zondpb.SignedValidatorRegistrationV1{
 				{Message: reg,
 					Signature: params.BeaconConfig().ZeroHash[:]},
 			},
 		}).
 		Return(nil, nil)
-	require.NoError(t, nil, SubmitValidatorRegistrations(ctx, m.validatorClient, []*ethpb.SignedValidatorRegistrationV1{
+	require.NoError(t, nil, SubmitValidatorRegistrations(ctx, m.validatorClient, []*zondpb.SignedValidatorRegistrationV1{
 		{Message: reg,
 			Signature: params.BeaconConfig().ZeroHash[:]},
 	}))
@@ -50,7 +50,7 @@ func TestSubmitValidatorRegistration_CantSign(t *testing.T) {
 	defer finish()
 
 	ctx := context.Background()
-	reg := &ethpb.ValidatorRegistrationV1{
+	reg := &zondpb.ValidatorRegistrationV1{
 		FeeRecipient: bytesutil.PadTo([]byte("fee"), 20),
 		GasLimit:     123456,
 		Timestamp:    uint64(time.Now().Unix()),
@@ -58,14 +58,14 @@ func TestSubmitValidatorRegistration_CantSign(t *testing.T) {
 	}
 
 	m.validatorClient.EXPECT().
-		SubmitValidatorRegistrations(gomock.Any(), &ethpb.SignedValidatorRegistrationsV1{
-			Messages: []*ethpb.SignedValidatorRegistrationV1{
+		SubmitValidatorRegistrations(gomock.Any(), &zondpb.SignedValidatorRegistrationsV1{
+			Messages: []*zondpb.SignedValidatorRegistrationV1{
 				{Message: reg,
 					Signature: params.BeaconConfig().ZeroHash[:]},
 			},
 		}).
 		Return(nil, errors.New("could not sign"))
-	require.ErrorContains(t, "could not sign", SubmitValidatorRegistrations(ctx, m.validatorClient, []*ethpb.SignedValidatorRegistrationV1{
+	require.ErrorContains(t, "could not sign", SubmitValidatorRegistrations(ctx, m.validatorClient, []*zondpb.SignedValidatorRegistrationV1{
 		{Message: reg,
 			Signature: params.BeaconConfig().ZeroHash[:]},
 	}))
@@ -76,7 +76,7 @@ func Test_signValidatorRegistration(t *testing.T) {
 	defer finish()
 
 	ctx := context.Background()
-	reg := &ethpb.ValidatorRegistrationV1{
+	reg := &zondpb.ValidatorRegistrationV1{
 		FeeRecipient: bytesutil.PadTo([]byte("fee"), 20),
 		GasLimit:     123456,
 		Timestamp:    uint64(time.Now().Unix()),
@@ -95,14 +95,14 @@ func TestValidator_SignValidatorRegistrationRequest(t *testing.T) {
 	require.NoError(t, err)
 	tests := []struct {
 		name            string
-		arg             *ethpb.ValidatorRegistrationV1
+		arg             *zondpb.ValidatorRegistrationV1
 		validatorSetter func(t *testing.T) *validator
 		isCached        bool
 		err             string
 	}{
 		{
 			name: " Happy Path cached",
-			arg: &ethpb.ValidatorRegistrationV1{
+			arg: &zondpb.ValidatorRegistrationV1{
 				Pubkey:       validatorKey.PublicKey().Marshal(),
 				FeeRecipient: make([]byte, fieldparams.FeeRecipientLength),
 				GasLimit:     30000000,
@@ -111,12 +111,12 @@ func TestValidator_SignValidatorRegistrationRequest(t *testing.T) {
 			validatorSetter: func(t *testing.T) *validator {
 				v := validator{
 					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					genesisTime:                  0,
 				}
-				v.signedValidatorRegistrations[bytesutil.ToBytes2592(validatorKey.PublicKey().Marshal())] = &ethpb.SignedValidatorRegistrationV1{
-					Message: &ethpb.ValidatorRegistrationV1{
+				v.signedValidatorRegistrations[bytesutil.ToBytes2592(validatorKey.PublicKey().Marshal())] = &zondpb.SignedValidatorRegistrationV1{
+					Message: &zondpb.ValidatorRegistrationV1{
 						Pubkey:       validatorKey.PublicKey().Marshal(),
 						GasLimit:     30000000,
 						FeeRecipient: make([]byte, fieldparams.FeeRecipientLength),
@@ -130,7 +130,7 @@ func TestValidator_SignValidatorRegistrationRequest(t *testing.T) {
 		},
 		{
 			name: " Happy Path not cached gas updated",
-			arg: &ethpb.ValidatorRegistrationV1{
+			arg: &zondpb.ValidatorRegistrationV1{
 				Pubkey:       validatorKey.PublicKey().Marshal(),
 				FeeRecipient: make([]byte, fieldparams.FeeRecipientLength),
 				GasLimit:     30000000,
@@ -139,12 +139,12 @@ func TestValidator_SignValidatorRegistrationRequest(t *testing.T) {
 			validatorSetter: func(t *testing.T) *validator {
 				v := validator{
 					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					genesisTime:                  0,
 				}
-				v.signedValidatorRegistrations[bytesutil.ToBytes2592(validatorKey.PublicKey().Marshal())] = &ethpb.SignedValidatorRegistrationV1{
-					Message: &ethpb.ValidatorRegistrationV1{
+				v.signedValidatorRegistrations[bytesutil.ToBytes2592(validatorKey.PublicKey().Marshal())] = &zondpb.SignedValidatorRegistrationV1{
+					Message: &zondpb.ValidatorRegistrationV1{
 						Pubkey:       validatorKey.PublicKey().Marshal(),
 						GasLimit:     35000000,
 						FeeRecipient: make([]byte, fieldparams.FeeRecipientLength),
@@ -158,7 +158,7 @@ func TestValidator_SignValidatorRegistrationRequest(t *testing.T) {
 		},
 		{
 			name: " Happy Path not cached feerecipient updated",
-			arg: &ethpb.ValidatorRegistrationV1{
+			arg: &zondpb.ValidatorRegistrationV1{
 				Pubkey:       validatorKey.PublicKey().Marshal(),
 				FeeRecipient: byteval,
 				GasLimit:     30000000,
@@ -167,12 +167,12 @@ func TestValidator_SignValidatorRegistrationRequest(t *testing.T) {
 			validatorSetter: func(t *testing.T) *validator {
 				v := validator{
 					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					genesisTime:                  0,
 				}
-				v.signedValidatorRegistrations[bytesutil.ToBytes2592(validatorKey.PublicKey().Marshal())] = &ethpb.SignedValidatorRegistrationV1{
-					Message: &ethpb.ValidatorRegistrationV1{
+				v.signedValidatorRegistrations[bytesutil.ToBytes2592(validatorKey.PublicKey().Marshal())] = &zondpb.SignedValidatorRegistrationV1{
+					Message: &zondpb.ValidatorRegistrationV1{
 						Pubkey:       validatorKey.PublicKey().Marshal(),
 						GasLimit:     30000000,
 						FeeRecipient: make([]byte, fieldparams.FeeRecipientLength),
@@ -186,7 +186,7 @@ func TestValidator_SignValidatorRegistrationRequest(t *testing.T) {
 		},
 		{
 			name: " Happy Path not cached first Entry",
-			arg: &ethpb.ValidatorRegistrationV1{
+			arg: &zondpb.ValidatorRegistrationV1{
 				Pubkey:       validatorKey.PublicKey().Marshal(),
 				FeeRecipient: byteval,
 				GasLimit:     30000000,
@@ -195,7 +195,7 @@ func TestValidator_SignValidatorRegistrationRequest(t *testing.T) {
 			validatorSetter: func(t *testing.T) *validator {
 				v := validator{
 					pubkeyToValidatorIndex:       make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
-					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ethpb.SignedValidatorRegistrationV1),
+					signedValidatorRegistrations: make(map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1),
 					useWeb:                       false,
 					genesisTime:                  0,
 				}

@@ -3,7 +3,7 @@ package validator
 import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
@@ -12,7 +12,7 @@ func (vs *Server) setDilithiumToExecData(blk interfaces.SignedBeaconBlock, headS
 	if blk.Version() < version.Capella {
 		return
 	}
-	if err := blk.SetDilithiumToExecutionChanges([]*ethpb.SignedDilithiumToExecutionChange{}); err != nil {
+	if err := blk.SetDilithiumToExecutionChanges([]*zondpb.SignedDilithiumToExecutionChange{}); err != nil {
 		log.WithError(err).Error("Could not set dilithium to execution data in block")
 		return
 	}

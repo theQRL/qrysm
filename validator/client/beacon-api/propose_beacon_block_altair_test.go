@@ -9,7 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -23,7 +23,7 @@ func TestProposeBeaconBlock_Altair(t *testing.T) {
 
 	altairBlock := generateSignedAltairBlock()
 
-	genericSignedBlock := &ethpb.GenericSignedBeaconBlock{}
+	genericSignedBlock := &zondpb.GenericSignedBeaconBlock{}
 	genericSignedBlock.Block = altairBlock
 
 	jsonAltairBlock := &apimiddleware.SignedBeaconBlockAltairContainerJson{
@@ -77,9 +77,9 @@ func TestProposeBeaconBlock_Altair(t *testing.T) {
 	assert.DeepEqual(t, expectedBlockRoot[:], proposeResponse.BlockRoot)
 }
 
-func generateSignedAltairBlock() *ethpb.GenericSignedBeaconBlock_Altair {
-	return &ethpb.GenericSignedBeaconBlock_Altair{
-		Altair: &ethpb.SignedBeaconBlockAltair{
+func generateSignedAltairBlock() *zondpb.GenericSignedBeaconBlock_Altair {
+	return &zondpb.GenericSignedBeaconBlock_Altair{
+		Altair: &zondpb.SignedBeaconBlockAltair{
 			Block:     test_helpers.GenerateProtoAltairBeaconBlock(),
 			Signature: test_helpers.FillByteSlice(96, 112),
 		},

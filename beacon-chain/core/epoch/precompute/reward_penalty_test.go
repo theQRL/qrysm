@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/math"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -25,12 +25,12 @@ func TestProcessRewardsAndPenaltiesPrecompute(t *testing.T) {
 	e := params.BeaconConfig().SlotsPerEpoch
 	validatorCount := uint64(2048)
 	base := buildState(e+3, validatorCount)
-	atts := make([]*ethpb.PendingAttestation, 3)
+	atts := make([]*zondpb.PendingAttestation, 3)
 	for i := 0; i < len(atts); i++ {
-		atts[i] = &ethpb.PendingAttestation{
-			Data: &ethpb.AttestationData{
-				Target: &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
-				Source: &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		atts[i] = &zondpb.PendingAttestation{
+			Data: &zondpb.AttestationData{
+				Target: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+				Source: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 			},
 			AggregationBits: bitfield.Bitlist{0x00, 0x00, 0x00, 0x00, 0xC0, 0xC0, 0xC0, 0xC0, 0x01},
 			InclusionDelay:  1,
@@ -63,15 +63,15 @@ func TestAttestationDeltaPrecompute(t *testing.T) {
 	e := params.BeaconConfig().SlotsPerEpoch
 	validatorCount := uint64(2048)
 	base := buildState(e+2, validatorCount)
-	atts := make([]*ethpb.PendingAttestation, 3)
+	atts := make([]*zondpb.PendingAttestation, 3)
 	var emptyRoot [32]byte
 	for i := 0; i < len(atts); i++ {
-		atts[i] = &ethpb.PendingAttestation{
-			Data: &ethpb.AttestationData{
-				Target: &ethpb.Checkpoint{
+		atts[i] = &zondpb.PendingAttestation{
+			Data: &zondpb.AttestationData{
+				Target: &zondpb.Checkpoint{
 					Root: emptyRoot[:],
 				},
-				Source: &ethpb.Checkpoint{
+				Source: &zondpb.Checkpoint{
 					Root: emptyRoot[:],
 				},
 				BeaconBlockRoot: emptyRoot[:],
@@ -147,15 +147,15 @@ func TestAttestationDeltas_ZeroEpoch(t *testing.T) {
 	e := params.BeaconConfig().SlotsPerEpoch
 	validatorCount := uint64(2048)
 	base := buildState(e+2, validatorCount)
-	atts := make([]*ethpb.PendingAttestation, 3)
+	atts := make([]*zondpb.PendingAttestation, 3)
 	var emptyRoot [32]byte
 	for i := 0; i < len(atts); i++ {
-		atts[i] = &ethpb.PendingAttestation{
-			Data: &ethpb.AttestationData{
-				Target: &ethpb.Checkpoint{
+		atts[i] = &zondpb.PendingAttestation{
+			Data: &zondpb.AttestationData{
+				Target: &zondpb.Checkpoint{
 					Root: emptyRoot[:],
 				},
-				Source: &ethpb.Checkpoint{
+				Source: &zondpb.Checkpoint{
 					Root: emptyRoot[:],
 				},
 				BeaconBlockRoot: emptyRoot[:],
@@ -183,15 +183,15 @@ func TestAttestationDeltas_ZeroInclusionDelay(t *testing.T) {
 	e := params.BeaconConfig().SlotsPerEpoch
 	validatorCount := uint64(2048)
 	base := buildState(e+2, validatorCount)
-	atts := make([]*ethpb.PendingAttestation, 3)
+	atts := make([]*zondpb.PendingAttestation, 3)
 	var emptyRoot [32]byte
 	for i := 0; i < len(atts); i++ {
-		atts[i] = &ethpb.PendingAttestation{
-			Data: &ethpb.AttestationData{
-				Target: &ethpb.Checkpoint{
+		atts[i] = &zondpb.PendingAttestation{
+			Data: &zondpb.AttestationData{
+				Target: &zondpb.Checkpoint{
 					Root: emptyRoot[:],
 				},
-				Source: &ethpb.Checkpoint{
+				Source: &zondpb.Checkpoint{
 					Root: emptyRoot[:],
 				},
 				BeaconBlockRoot: emptyRoot[:],
@@ -216,12 +216,12 @@ func TestProcessRewardsAndPenaltiesPrecompute_SlashedInactivePenalty(t *testing.
 	e := params.BeaconConfig().SlotsPerEpoch
 	validatorCount := uint64(2048)
 	base := buildState(e+3, validatorCount)
-	atts := make([]*ethpb.PendingAttestation, 3)
+	atts := make([]*zondpb.PendingAttestation, 3)
 	for i := 0; i < len(atts); i++ {
-		atts[i] = &ethpb.PendingAttestation{
-			Data: &ethpb.AttestationData{
-				Target: &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
-				Source: &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		atts[i] = &zondpb.PendingAttestation{
+			Data: &zondpb.AttestationData{
+				Target: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+				Source: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 			},
 			AggregationBits: bitfield.Bitlist{0x00, 0x00, 0x00, 0x00, 0xC0, 0xC0, 0xC0, 0xC0, 0x01},
 			InclusionDelay:  1,
@@ -260,10 +260,10 @@ func TestProcessRewardsAndPenaltiesPrecompute_SlashedInactivePenalty(t *testing.
 	}
 }
 
-func buildState(slot primitives.Slot, validatorCount uint64) *ethpb.BeaconState {
-	validators := make([]*ethpb.Validator, validatorCount)
+func buildState(slot primitives.Slot, validatorCount uint64) *zondpb.BeaconState {
+	validators := make([]*zondpb.Validator, validatorCount)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
 			EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance,
 		}
@@ -286,16 +286,16 @@ func buildState(slot primitives.Slot, validatorCount uint64) *ethpb.BeaconState 
 	for i := 0; i < len(latestRandaoMixes); i++ {
 		latestRandaoMixes[i] = params.BeaconConfig().ZeroHash[:]
 	}
-	return &ethpb.BeaconState{
+	return &zondpb.BeaconState{
 		Slot:                        slot,
 		Balances:                    validatorBalances,
 		Validators:                  validators,
 		RandaoMixes:                 make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 		Slashings:                   make([]uint64, params.BeaconConfig().EpochsPerSlashingsVector),
 		BlockRoots:                  make([][]byte, params.BeaconConfig().SlotsPerEpoch*10),
-		FinalizedCheckpoint:         &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
-		PreviousJustifiedCheckpoint: &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
-		CurrentJustifiedCheckpoint:  &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		FinalizedCheckpoint:         &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		PreviousJustifiedCheckpoint: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		CurrentJustifiedCheckpoint:  &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 	}
 }
 

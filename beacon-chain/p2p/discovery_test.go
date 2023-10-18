@@ -33,7 +33,7 @@ import (
 	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	prysmNetwork "github.com/theQRL/qrysm/v4/network"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -248,14 +248,14 @@ func TestInboundPeerLimit(t *testing.T) {
 	}
 
 	for i := 0; i < 30; i++ {
-		_ = addPeer(t, s.peers, peerdata.PeerConnectionState(ethpb.ConnectionState_CONNECTED))
+		_ = addPeer(t, s.peers, peerdata.PeerConnectionState(zondpb.ConnectionState_CONNECTED))
 	}
 
 	require.Equal(t, true, s.isPeerAtLimit(false), "not at limit for outbound peers")
 	require.Equal(t, false, s.isPeerAtLimit(true), "at limit for inbound peers")
 
 	for i := 0; i < highWatermarkBuffer; i++ {
-		_ = addPeer(t, s.peers, peerdata.PeerConnectionState(ethpb.ConnectionState_CONNECTED))
+		_ = addPeer(t, s.peers, peerdata.PeerConnectionState(zondpb.ConnectionState_CONNECTED))
 	}
 
 	require.Equal(t, true, s.isPeerAtLimit(true), "not at limit for inbound peers")
@@ -329,7 +329,7 @@ func addPeer(t *testing.T, p *peers.Status, state peerdata.PeerConnectionState) 
 	require.NoError(t, err)
 	p.Add(new(enr.Record), id, nil, network.DirInbound)
 	p.SetConnectionState(id, state)
-	p.SetMetadata(id, wrapper.WrappedMetadataV0(&ethpb.MetaDataV0{
+	p.SetMetadata(id, wrapper.WrappedMetadataV0(&zondpb.MetaDataV0{
 		SeqNumber: 0,
 		Attnets:   bitfield.NewBitvector64(),
 	}))
@@ -359,7 +359,7 @@ func TestRefreshENR_ForkBoundaries(t *testing.T) {
 				listener, err := s.createListener(ipAddr, pkey)
 				assert.NoError(t, err)
 				s.dv5Listener = listener
-				s.metaData = wrapper.WrappedMetadataV0(new(ethpb.MetaDataV0))
+				s.metaData = wrapper.WrappedMetadataV0(new(zondpb.MetaDataV0))
 				s.updateSubnetRecordWithMetadata([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
 				return s
 			},
@@ -380,7 +380,7 @@ func TestRefreshENR_ForkBoundaries(t *testing.T) {
 				listener, err := s.createListener(ipAddr, pkey)
 				assert.NoError(t, err)
 				s.dv5Listener = listener
-				s.metaData = wrapper.WrappedMetadataV0(new(ethpb.MetaDataV0))
+				s.metaData = wrapper.WrappedMetadataV0(new(zondpb.MetaDataV0))
 				s.updateSubnetRecordWithMetadata([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01})
 				cache.SubnetIDs.AddPersistentCommittee([]byte{'A'}, []uint64{1, 2, 3, 23}, 0)
 				return s
@@ -409,7 +409,7 @@ func TestRefreshENR_ForkBoundaries(t *testing.T) {
 				params.BeaconConfig().InitializeForkSchedule()
 
 				s.dv5Listener = listener
-				s.metaData = wrapper.WrappedMetadataV0(new(ethpb.MetaDataV0))
+				s.metaData = wrapper.WrappedMetadataV0(new(zondpb.MetaDataV0))
 				s.updateSubnetRecordWithMetadata([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01})
 				cache.SubnetIDs.AddPersistentCommittee([]byte{'A'}, []uint64{1, 2, 3, 23}, 0)
 				return s
@@ -440,7 +440,7 @@ func TestRefreshENR_ForkBoundaries(t *testing.T) {
 				params.BeaconConfig().InitializeForkSchedule()
 
 				s.dv5Listener = listener
-				s.metaData = wrapper.WrappedMetadataV0(new(ethpb.MetaDataV0))
+				s.metaData = wrapper.WrappedMetadataV0(new(zondpb.MetaDataV0))
 				s.updateSubnetRecordWithMetadata([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
 				return s
 			},
@@ -470,7 +470,7 @@ func TestRefreshENR_ForkBoundaries(t *testing.T) {
 				params.BeaconConfig().InitializeForkSchedule()
 
 				s.dv5Listener = listener
-				s.metaData = wrapper.WrappedMetadataV0(new(ethpb.MetaDataV0))
+				s.metaData = wrapper.WrappedMetadataV0(new(zondpb.MetaDataV0))
 				s.updateSubnetRecordWithMetadata([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
 				cache.SubnetIDs.AddPersistentCommittee([]byte{'A'}, []uint64{1, 2, 3, 23}, 0)
 				cache.SyncSubnetIDs.AddSyncCommitteeSubnets([]byte{'A'}, 0, []uint64{0, 1}, 0)

@@ -8,7 +8,7 @@ import (
 	dbIface "github.com/theQRL/qrysm/v4/beacon-chain/db/iface"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/encoding/ssz/detect"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // SaveGenesisData bootstraps the beaconDB with a given genesis state.
@@ -27,7 +27,7 @@ func (s *Store) SaveGenesisData(ctx context.Context, genesisState state.BeaconSt
 	if err := s.SaveState(ctx, genesisState, genesisBlkRoot); err != nil {
 		return errors.Wrap(err, "could not save genesis state")
 	}
-	if err := s.SaveStateSummary(ctx, &ethpb.StateSummary{
+	if err := s.SaveStateSummary(ctx, &zondpb.StateSummary{
 		Slot: 0,
 		Root: genesisBlkRoot[:],
 	}); err != nil {

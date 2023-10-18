@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -235,7 +235,7 @@ func (v *validator) LogValidatorGainsAndLosses(ctx context.Context, slot primiti
 	}
 	pubKeys := bytesutil.FromBytes2592Array(pks)
 
-	req := &ethpb.ValidatorPerformanceRequest{
+	req := &zondpb.ValidatorPerformanceRequest{
 		PublicKeys: pubKeys,
 	}
 	resp, err := v.beaconClient.GetValidatorPerformance(ctx, req)
@@ -267,7 +267,7 @@ func (v *validator) LogValidatorGainsAndLosses(ctx context.Context, slot primiti
 	return nil
 }
 
-func (v *validator) logForEachValidator(index int, pubKey []byte, resp *ethpb.ValidatorPerformanceResponse, slot primitives.Slot, prevEpoch primitives.Epoch) {
+func (v *validator) logForEachValidator(index int, pubKey []byte, resp *zondpb.ValidatorPerformanceResponse, slot primitives.Slot, prevEpoch primitives.Epoch) {
 	truncatedKey := fmt.Sprintf("%#x", bytesutil.Trunc(pubKey))
 	pubKeyBytes := bytesutil.ToBytes2592(pubKey)
 	if slot < params.BeaconConfig().SlotsPerEpoch {
@@ -371,7 +371,7 @@ func (v *validator) logForEachValidator(index int, pubKey []byte, resp *ethpb.Va
 }
 
 // UpdateLogAggregateStats updates and logs the voteStats struct of a validator using the RPC response obtained from LogValidatorGainsAndLosses.
-func (v *validator) UpdateLogAggregateStats(resp *ethpb.ValidatorPerformanceResponse, slot primitives.Slot) {
+func (v *validator) UpdateLogAggregateStats(resp *zondpb.ValidatorPerformanceResponse, slot primitives.Slot) {
 	summary := &v.voteStats
 	currentEpoch := primitives.Epoch(slot / params.BeaconConfig().SlotsPerEpoch)
 	var attested, correctSource, correctTarget, correctHead, inactivityScore int

@@ -23,7 +23,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	v1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -45,8 +45,8 @@ func Test_NotifyForkchoiceUpdate_GetPayloadAttrErrorCanContinue(t *testing.T) {
 		state: st,
 	}
 
-	ojc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
-	ofc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ojc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ofc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 	state, blkRoot, err := prepareForkchoiceState(ctx, 0, [32]byte{}, [32]byte{}, params.BeaconConfig().ZeroHash, ojc, ofc)
 	require.NoError(t, err)
 	require.NoError(t, fcs.InsertNode(ctx, state, blkRoot))
@@ -57,8 +57,8 @@ func Test_NotifyForkchoiceUpdate_GetPayloadAttrErrorCanContinue(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, fcs.InsertNode(ctx, state, blkRoot))
 
-	b, err := consensusblocks.NewBeaconBlock(&ethpb.BeaconBlockBellatrix{
-		Body: &ethpb.BeaconBlockBodyBellatrix{
+	b, err := consensusblocks.NewBeaconBlock(&zondpb.BeaconBlockBellatrix{
+		Body: &zondpb.BeaconBlockBodyBellatrix{
 			ExecutionPayload: &v1.ExecutionPayload{},
 		},
 	})
@@ -71,7 +71,7 @@ func Test_NotifyForkchoiceUpdate_GetPayloadAttrErrorCanContinue(t *testing.T) {
 	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, bellatrixBlkRoot))
 
 	// Intentionally generate a bad state such that `hash_tree_root` fails during `process_slot`
-	s, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{})
+	s, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{})
 	require.NoError(t, err)
 	arg := &notifyForkchoiceUpdateArg{
 		headState: s,
@@ -100,8 +100,8 @@ func Test_NotifyForkchoiceUpdate(t *testing.T) {
 		state: st,
 	}
 
-	ojc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
-	ofc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ojc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ofc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 	state, blkRoot, err := prepareForkchoiceState(ctx, 0, [32]byte{}, [32]byte{}, params.BeaconConfig().ZeroHash, ojc, ofc)
 	require.NoError(t, err)
 	require.NoError(t, fcs.InsertNode(ctx, state, blkRoot))
@@ -124,7 +124,7 @@ func Test_NotifyForkchoiceUpdate(t *testing.T) {
 		{
 			name: "phase0 block",
 			blk: func() interfaces.ReadOnlyBeaconBlock {
-				b, err := consensusblocks.NewBeaconBlock(&ethpb.BeaconBlock{Body: &ethpb.BeaconBlockBody{}})
+				b, err := consensusblocks.NewBeaconBlock(&zondpb.BeaconBlock{Body: &zondpb.BeaconBlockBody{}})
 				require.NoError(t, err)
 				return b
 			}(),
@@ -132,7 +132,7 @@ func Test_NotifyForkchoiceUpdate(t *testing.T) {
 		{
 			name: "altair block",
 			blk: func() interfaces.ReadOnlyBeaconBlock {
-				b, err := consensusblocks.NewBeaconBlock(&ethpb.BeaconBlockAltair{Body: &ethpb.BeaconBlockBodyAltair{}})
+				b, err := consensusblocks.NewBeaconBlock(&zondpb.BeaconBlockAltair{Body: &zondpb.BeaconBlockBodyAltair{}})
 				require.NoError(t, err)
 				return b
 			}(),
@@ -140,8 +140,8 @@ func Test_NotifyForkchoiceUpdate(t *testing.T) {
 		{
 			name: "not execution block",
 			blk: func() interfaces.ReadOnlyBeaconBlock {
-				b, err := consensusblocks.NewBeaconBlock(&ethpb.BeaconBlockBellatrix{
-					Body: &ethpb.BeaconBlockBodyBellatrix{
+				b, err := consensusblocks.NewBeaconBlock(&zondpb.BeaconBlockBellatrix{
+					Body: &zondpb.BeaconBlockBodyBellatrix{
 						ExecutionPayload: &v1.ExecutionPayload{
 							ParentHash:    make([]byte, fieldparams.RootLength),
 							FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
@@ -161,8 +161,8 @@ func Test_NotifyForkchoiceUpdate(t *testing.T) {
 		{
 			name: "happy case: finalized root is altair block",
 			blk: func() interfaces.ReadOnlyBeaconBlock {
-				b, err := consensusblocks.NewBeaconBlock(&ethpb.BeaconBlockBellatrix{
-					Body: &ethpb.BeaconBlockBodyBellatrix{
+				b, err := consensusblocks.NewBeaconBlock(&zondpb.BeaconBlockBellatrix{
+					Body: &zondpb.BeaconBlockBodyBellatrix{
 						ExecutionPayload: &v1.ExecutionPayload{},
 					},
 				})
@@ -175,8 +175,8 @@ func Test_NotifyForkchoiceUpdate(t *testing.T) {
 		{
 			name: "happy case: finalized root is bellatrix block",
 			blk: func() interfaces.ReadOnlyBeaconBlock {
-				b, err := consensusblocks.NewBeaconBlock(&ethpb.BeaconBlockBellatrix{
-					Body: &ethpb.BeaconBlockBodyBellatrix{
+				b, err := consensusblocks.NewBeaconBlock(&zondpb.BeaconBlockBellatrix{
+					Body: &zondpb.BeaconBlockBodyBellatrix{
 						ExecutionPayload: &v1.ExecutionPayload{},
 					},
 				})
@@ -189,8 +189,8 @@ func Test_NotifyForkchoiceUpdate(t *testing.T) {
 		{
 			name: "forkchoice updated with optimistic block",
 			blk: func() interfaces.ReadOnlyBeaconBlock {
-				b, err := consensusblocks.NewBeaconBlock(&ethpb.BeaconBlockBellatrix{
-					Body: &ethpb.BeaconBlockBodyBellatrix{
+				b, err := consensusblocks.NewBeaconBlock(&zondpb.BeaconBlockBellatrix{
+					Body: &zondpb.BeaconBlockBodyBellatrix{
 						ExecutionPayload: &v1.ExecutionPayload{},
 					},
 				})
@@ -204,8 +204,8 @@ func Test_NotifyForkchoiceUpdate(t *testing.T) {
 		{
 			name: "forkchoice updated with invalid block",
 			blk: func() interfaces.ReadOnlyBeaconBlock {
-				b, err := consensusblocks.NewBeaconBlock(&ethpb.BeaconBlockBellatrix{
-					Body: &ethpb.BeaconBlockBodyBellatrix{
+				b, err := consensusblocks.NewBeaconBlock(&zondpb.BeaconBlockBellatrix{
+					Body: &zondpb.BeaconBlockBodyBellatrix{
 						ExecutionPayload: &v1.ExecutionPayload{},
 					},
 				})
@@ -281,8 +281,8 @@ func Test_NotifyForkchoiceUpdate_NIlLVH(t *testing.T) {
 
 	fcs.SetBalancesByRooter(func(context.Context, [32]byte) ([]uint64, error) { return []uint64{50, 100, 200}, nil })
 	require.NoError(t, fcs.UpdateJustifiedCheckpoint(ctx, &forkchoicetypes.Checkpoint{}))
-	ojc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
-	ofc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ojc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ofc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 	state, blkRoot, err := prepareForkchoiceState(ctx, 1, bra, [32]byte{}, [32]byte{'A'}, ojc, ofc)
 	require.NoError(t, err)
 	require.NoError(t, fcs.InsertNode(ctx, state, blkRoot))
@@ -392,8 +392,8 @@ func Test_NotifyForkchoiceUpdateRecursive_DoublyLinkedTree(t *testing.T) {
 
 	fcs.SetBalancesByRooter(func(context.Context, [32]byte) ([]uint64, error) { return []uint64{50, 100, 200}, nil })
 	require.NoError(t, fcs.UpdateJustifiedCheckpoint(ctx, &forkchoicetypes.Checkpoint{}))
-	ojc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
-	ofc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ojc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ofc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 	state, blkRoot, err := prepareForkchoiceState(ctx, 1, bra, [32]byte{}, [32]byte{'A'}, ojc, ofc)
 	require.NoError(t, err)
 
@@ -473,17 +473,17 @@ func Test_NotifyNewPayload(t *testing.T) {
 	phase0State, _ := util.DeterministicGenesisState(t, 1)
 	altairState, _ := util.DeterministicGenesisStateAltair(t, 1)
 	bellatrixState, _ := util.DeterministicGenesisStateBellatrix(t, 2)
-	a := &ethpb.SignedBeaconBlockAltair{
-		Block: &ethpb.BeaconBlockAltair{
-			Body: &ethpb.BeaconBlockBodyAltair{},
+	a := &zondpb.SignedBeaconBlockAltair{
+		Block: &zondpb.BeaconBlockAltair{
+			Body: &zondpb.BeaconBlockBodyAltair{},
 		},
 	}
 	altairBlk, err := consensusblocks.NewSignedBeaconBlock(a)
 	require.NoError(t, err)
-	blk := &ethpb.SignedBeaconBlockBellatrix{
-		Block: &ethpb.BeaconBlockBellatrix{
+	blk := &zondpb.SignedBeaconBlockBellatrix{
+		Block: &zondpb.BeaconBlockBellatrix{
 			Slot: 1,
-			Body: &ethpb.BeaconBlockBodyBellatrix{
+			Body: &zondpb.BeaconBlockBodyBellatrix{
 				ExecutionPayload: &v1.ExecutionPayload{
 					BlockNumber:   1,
 					ParentHash:    make([]byte, fieldparams.RootLength),
@@ -504,8 +504,8 @@ func Test_NotifyNewPayload(t *testing.T) {
 	service.genesisTime = time.Now().Add(time.Duration(-1*int64(st)*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second)
 	r, err := bellatrixBlk.Block().HashTreeRoot()
 	require.NoError(t, err)
-	ojc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
-	ofc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ojc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ofc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 	state, blkRoot, err := prepareForkchoiceState(ctx, 0, [32]byte{}, [32]byte{}, params.BeaconConfig().ZeroHash, ojc, ofc)
 	require.NoError(t, err)
 	require.NoError(t, fcs.InsertNode(ctx, state, blkRoot))
@@ -566,9 +566,9 @@ func Test_NotifyNewPayload(t *testing.T) {
 			name:      "altair pre state, happy case",
 			postState: bellatrixState,
 			blk: func() interfaces.ReadOnlySignedBeaconBlock {
-				blk := &ethpb.SignedBeaconBlockBellatrix{
-					Block: &ethpb.BeaconBlockBellatrix{
-						Body: &ethpb.BeaconBlockBodyBellatrix{
+				blk := &zondpb.SignedBeaconBlockBellatrix{
+					Block: &zondpb.BeaconBlockBellatrix{
+						Body: &zondpb.BeaconBlockBodyBellatrix{
 							ExecutionPayload: &v1.ExecutionPayload{
 								ParentHash: bytesutil.PadTo([]byte{'a'}, fieldparams.RootLength),
 							},
@@ -585,9 +585,9 @@ func Test_NotifyNewPayload(t *testing.T) {
 			name:      "not at merge transition",
 			postState: bellatrixState,
 			blk: func() interfaces.ReadOnlySignedBeaconBlock {
-				blk := &ethpb.SignedBeaconBlockBellatrix{
-					Block: &ethpb.BeaconBlockBellatrix{
-						Body: &ethpb.BeaconBlockBodyBellatrix{
+				blk := &zondpb.SignedBeaconBlockBellatrix{
+					Block: &zondpb.BeaconBlockBellatrix{
+						Body: &zondpb.BeaconBlockBodyBellatrix{
 							ExecutionPayload: &v1.ExecutionPayload{
 								ParentHash:    make([]byte, fieldparams.RootLength),
 								FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
@@ -611,9 +611,9 @@ func Test_NotifyNewPayload(t *testing.T) {
 			name:      "happy case",
 			postState: bellatrixState,
 			blk: func() interfaces.ReadOnlySignedBeaconBlock {
-				blk := &ethpb.SignedBeaconBlockBellatrix{
-					Block: &ethpb.BeaconBlockBellatrix{
-						Body: &ethpb.BeaconBlockBodyBellatrix{
+				blk := &zondpb.SignedBeaconBlockBellatrix{
+					Block: &zondpb.BeaconBlockBellatrix{
+						Body: &zondpb.BeaconBlockBodyBellatrix{
 							ExecutionPayload: &v1.ExecutionPayload{
 								ParentHash: bytesutil.PadTo([]byte{'a'}, fieldparams.RootLength),
 							},
@@ -630,9 +630,9 @@ func Test_NotifyNewPayload(t *testing.T) {
 			name:      "undefined error from ee",
 			postState: bellatrixState,
 			blk: func() interfaces.ReadOnlySignedBeaconBlock {
-				blk := &ethpb.SignedBeaconBlockBellatrix{
-					Block: &ethpb.BeaconBlockBellatrix{
-						Body: &ethpb.BeaconBlockBodyBellatrix{
+				blk := &zondpb.SignedBeaconBlockBellatrix{
+					Block: &zondpb.BeaconBlockBellatrix{
+						Body: &zondpb.BeaconBlockBodyBellatrix{
 							ExecutionPayload: &v1.ExecutionPayload{
 								ParentHash: bytesutil.PadTo([]byte{'a'}, fieldparams.RootLength),
 							},
@@ -650,9 +650,9 @@ func Test_NotifyNewPayload(t *testing.T) {
 			name:      "invalid block hash error from ee",
 			postState: bellatrixState,
 			blk: func() interfaces.ReadOnlySignedBeaconBlock {
-				blk := &ethpb.SignedBeaconBlockBellatrix{
-					Block: &ethpb.BeaconBlockBellatrix{
-						Body: &ethpb.BeaconBlockBodyBellatrix{
+				blk := &zondpb.SignedBeaconBlockBellatrix{
+					Block: &zondpb.BeaconBlockBellatrix{
+						Body: &zondpb.BeaconBlockBodyBellatrix{
 							ExecutionPayload: &v1.ExecutionPayload{
 								ParentHash: bytesutil.PadTo([]byte{'a'}, fieldparams.RootLength),
 							},
@@ -713,9 +713,9 @@ func Test_NotifyNewPayload_SetOptimisticToValid(t *testing.T) {
 	ctx := tr.ctx
 
 	bellatrixState, _ := util.DeterministicGenesisStateBellatrix(t, 2)
-	blk := &ethpb.SignedBeaconBlockBellatrix{
-		Block: &ethpb.BeaconBlockBellatrix{
-			Body: &ethpb.BeaconBlockBodyBellatrix{
+	blk := &zondpb.SignedBeaconBlockBellatrix{
+		Block: &zondpb.BeaconBlockBellatrix{
+			Body: &zondpb.BeaconBlockBodyBellatrix{
 				ExecutionPayload: &v1.ExecutionPayload{
 					ParentHash: bytesutil.PadTo([]byte{'a'}, fieldparams.RootLength),
 				},
@@ -750,7 +750,7 @@ func Test_reportInvalidBlock(t *testing.T) {
 	params.OverrideBeaconConfig(params.MainnetConfig())
 	service, tr := minimalTestService(t)
 	ctx, _, fcs := tr.ctx, tr.db, tr.fcs
-	jcp := &ethpb.Checkpoint{}
+	jcp := &zondpb.Checkpoint{}
 	st, root, err := prepareForkchoiceState(ctx, 0, [32]byte{'A'}, [32]byte{}, [32]byte{'a'}, jcp, jcp)
 	require.NoError(t, err)
 	require.NoError(t, fcs.InsertNode(ctx, st, root))
@@ -872,8 +872,8 @@ func Test_UpdateLastValidatedCheckpoint(t *testing.T) {
 	genesisRoot, err := genesisBlk.Block.HashTreeRoot()
 	require.NoError(t, err)
 	assert.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, genesisRoot))
-	ojc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
-	ofc := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ojc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ofc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 	fjc := &forkchoicetypes.Checkpoint{Epoch: 0, Root: params.BeaconConfig().ZeroHash}
 	require.NoError(t, fcs.UpdateJustifiedCheckpoint(ctx, fjc))
 	require.NoError(t, fcs.UpdateFinalizedCheckpoint(fjc))
@@ -881,7 +881,7 @@ func Test_UpdateLastValidatedCheckpoint(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, fcs.InsertNode(ctx, state, blkRoot))
 	fcs.SetOriginRoot(genesisRoot)
-	genesisSummary := &ethpb.StateSummary{
+	genesisSummary := &zondpb.StateSummary{
 		Root: genesisStateRoot[:],
 		Slot: 0,
 	}
@@ -900,17 +900,17 @@ func Test_UpdateLastValidatedCheckpoint(t *testing.T) {
 	opRoot, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	opCheckpoint := &ethpb.Checkpoint{
+	opCheckpoint := &zondpb.Checkpoint{
 		Root:  opRoot[:],
 		Epoch: 10,
 	}
-	opStateSummary := &ethpb.StateSummary{
+	opStateSummary := &zondpb.StateSummary{
 		Root: opRoot[:],
 		Slot: 320,
 	}
 	require.NoError(t, beaconDB.SaveStateSummary(ctx, opStateSummary))
-	tenjc := &ethpb.Checkpoint{Epoch: 10, Root: genesisRoot[:]}
-	tenfc := &ethpb.Checkpoint{Epoch: 10, Root: genesisRoot[:]}
+	tenjc := &zondpb.Checkpoint{Epoch: 10, Root: genesisRoot[:]}
+	tenfc := &zondpb.Checkpoint{Epoch: 10, Root: genesisRoot[:]}
 	state, blkRoot, err = prepareForkchoiceState(ctx, 320, opRoot, genesisRoot, params.BeaconConfig().ZeroHash, tenjc, tenfc)
 	require.NoError(t, err)
 	require.NoError(t, fcs.InsertNode(ctx, state, blkRoot))
@@ -929,17 +929,17 @@ func Test_UpdateLastValidatedCheckpoint(t *testing.T) {
 	validRoot, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	validCheckpoint := &ethpb.Checkpoint{
+	validCheckpoint := &zondpb.Checkpoint{
 		Root:  validRoot[:],
 		Epoch: 20,
 	}
-	validSummary := &ethpb.StateSummary{
+	validSummary := &zondpb.StateSummary{
 		Root: validRoot[:],
 		Slot: 640,
 	}
 	require.NoError(t, beaconDB.SaveStateSummary(ctx, validSummary))
-	twentyjc := &ethpb.Checkpoint{Epoch: 20, Root: validRoot[:]}
-	twentyfc := &ethpb.Checkpoint{Epoch: 20, Root: validRoot[:]}
+	twentyjc := &zondpb.Checkpoint{Epoch: 20, Root: validRoot[:]}
+	twentyfc := &zondpb.Checkpoint{Epoch: 20, Root: validRoot[:]}
 	state, blkRoot, err = prepareForkchoiceState(ctx, 640, validRoot, genesisRoot, params.BeaconConfig().ZeroHash, twentyjc, twentyfc)
 	require.NoError(t, err)
 	fcs.SetBalancesByRooter(func(_ context.Context, _ [32]byte) ([]uint64, error) { return []uint64{}, nil })
@@ -959,7 +959,7 @@ func Test_UpdateLastValidatedCheckpoint(t *testing.T) {
 	// Checkpoint with a lower epoch
 	oldCp, err := service.cfg.BeaconDB.FinalizedCheckpoint(ctx)
 	require.NoError(t, err)
-	invalidCp := &ethpb.Checkpoint{
+	invalidCp := &zondpb.Checkpoint{
 		Epoch: oldCp.Epoch - 1,
 	}
 	// Nothing should happen as we no-op on an invalid checkpoint.
@@ -983,7 +983,7 @@ func TestService_removeInvalidBlockAndState(t *testing.T) {
 	r1, err := blk1.Block().HashTreeRoot()
 	require.NoError(t, err)
 	st, _ := util.DeterministicGenesisStateBellatrix(t, 1)
-	require.NoError(t, service.cfg.BeaconDB.SaveStateSummary(ctx, &ethpb.StateSummary{
+	require.NoError(t, service.cfg.BeaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{
 		Slot: 1,
 		Root: r1[:],
 	}))
@@ -994,7 +994,7 @@ func TestService_removeInvalidBlockAndState(t *testing.T) {
 	blk2 := util.SaveBlock(t, ctx, service.cfg.BeaconDB, b2)
 	r2, err := blk2.Block().HashTreeRoot()
 	require.NoError(t, err)
-	require.NoError(t, service.cfg.BeaconDB.SaveStateSummary(ctx, &ethpb.StateSummary{
+	require.NoError(t, service.cfg.BeaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{
 		Slot: 2,
 		Root: r2[:],
 	}))

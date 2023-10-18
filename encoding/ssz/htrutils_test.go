@@ -7,7 +7,7 @@ import (
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/encoding/ssz"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
@@ -21,7 +21,7 @@ func TestUint64Root(t *testing.T) {
 }
 
 func TestForkRoot(t *testing.T) {
-	testFork := ethpb.Fork{
+	testFork := zondpb.Fork{
 		PreviousVersion: []byte{123},
 		CurrentVersion:  []byte{124},
 		Epoch:           1234567890,
@@ -34,7 +34,7 @@ func TestForkRoot(t *testing.T) {
 }
 
 func TestCheckPointRoot(t *testing.T) {
-	testCheckpoint := ethpb.Checkpoint{
+	testCheckpoint := zondpb.Checkpoint{
 		Epoch: 1234567890,
 		Root:  []byte{222},
 	}

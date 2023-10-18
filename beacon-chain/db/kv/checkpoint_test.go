@@ -7,7 +7,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -18,7 +18,7 @@ func TestStore_JustifiedCheckpoint_CanSaveRetrieve(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
 	root := bytesutil.ToBytes32([]byte{'A'})
-	cp := &ethpb.Checkpoint{
+	cp := &zondpb.Checkpoint{
 		Epoch: 10,
 		Root:  root[:],
 	}
@@ -36,10 +36,10 @@ func TestStore_JustifiedCheckpoint_CanSaveRetrieve(t *testing.T) {
 func TestStore_JustifiedCheckpoint_Recover(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
-	blk := util.HydrateSignedBeaconBlock(&ethpb.SignedBeaconBlock{})
+	blk := util.HydrateSignedBeaconBlock(&zondpb.SignedBeaconBlock{})
 	r, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
-	cp := &ethpb.Checkpoint{
+	cp := &zondpb.Checkpoint{
 		Epoch: 2,
 		Root:  r[:],
 	}
@@ -66,7 +66,7 @@ func TestStore_FinalizedCheckpoint_CanSaveRetrieve(t *testing.T) {
 	root, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	cp := &ethpb.Checkpoint{
+	cp := &zondpb.Checkpoint{
 		Epoch: 5,
 		Root:  root[:],
 	}
@@ -91,10 +91,10 @@ func TestStore_FinalizedCheckpoint_CanSaveRetrieve(t *testing.T) {
 func TestStore_FinalizedCheckpoint_Recover(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
-	blk := util.HydrateSignedBeaconBlock(&ethpb.SignedBeaconBlock{})
+	blk := util.HydrateSignedBeaconBlock(&zondpb.SignedBeaconBlock{})
 	r, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
-	cp := &ethpb.Checkpoint{
+	cp := &zondpb.Checkpoint{
 		Epoch: 2,
 		Root:  r[:],
 	}
@@ -112,7 +112,7 @@ func TestStore_JustifiedCheckpoint_DefaultIsZeroHash(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
 
-	cp := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	cp := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 	retrieved, err := db.JustifiedCheckpoint(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, true, proto.Equal(cp, retrieved), "Wanted %v, received %v", cp, retrieved)
@@ -122,7 +122,7 @@ func TestStore_FinalizedCheckpoint_DefaultIsZeroHash(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
 
-	cp := &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	cp := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 	retrieved, err := db.FinalizedCheckpoint(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, true, proto.Equal(cp, retrieved), "Wanted %v, received %v", cp, retrieved)
@@ -131,7 +131,7 @@ func TestStore_FinalizedCheckpoint_DefaultIsZeroHash(t *testing.T) {
 func TestStore_FinalizedCheckpoint_StateMustExist(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
-	cp := &ethpb.Checkpoint{
+	cp := &zondpb.Checkpoint{
 		Epoch: 5,
 		Root:  []byte{'B'},
 	}

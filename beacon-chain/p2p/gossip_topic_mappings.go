@@ -5,22 +5,22 @@ import (
 
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"google.golang.org/protobuf/proto"
 )
 
 // gossipTopicMappings represent the protocol ID to protobuf message type map for easy
 // lookup.
 var gossipTopicMappings = map[string]proto.Message{
-	BlockSubnetTopicFormat:                      &ethpb.SignedBeaconBlock{},
-	AttestationSubnetTopicFormat:                &ethpb.Attestation{},
-	ExitSubnetTopicFormat:                       &ethpb.SignedVoluntaryExit{},
-	ProposerSlashingSubnetTopicFormat:           &ethpb.ProposerSlashing{},
-	AttesterSlashingSubnetTopicFormat:           &ethpb.AttesterSlashing{},
-	AggregateAndProofSubnetTopicFormat:          &ethpb.SignedAggregateAttestationAndProof{},
-	SyncContributionAndProofSubnetTopicFormat:   &ethpb.SignedContributionAndProof{},
-	SyncCommitteeSubnetTopicFormat:              &ethpb.SyncCommitteeMessage{},
-	DilithiumToExecutionChangeSubnetTopicFormat: &ethpb.SignedDilithiumToExecutionChange{},
+	BlockSubnetTopicFormat:                      &zondpb.SignedBeaconBlock{},
+	AttestationSubnetTopicFormat:                &zondpb.Attestation{},
+	ExitSubnetTopicFormat:                       &zondpb.SignedVoluntaryExit{},
+	ProposerSlashingSubnetTopicFormat:           &zondpb.ProposerSlashing{},
+	AttesterSlashingSubnetTopicFormat:           &zondpb.AttesterSlashing{},
+	AggregateAndProofSubnetTopicFormat:          &zondpb.SignedAggregateAttestationAndProof{},
+	SyncContributionAndProofSubnetTopicFormat:   &zondpb.SignedContributionAndProof{},
+	SyncCommitteeSubnetTopicFormat:              &zondpb.SyncCommitteeMessage{},
+	DilithiumToExecutionChangeSubnetTopicFormat: &zondpb.SignedDilithiumToExecutionChange{},
 }
 
 // GossipTopicMappings is a function to return the assigned data type
@@ -28,13 +28,13 @@ var gossipTopicMappings = map[string]proto.Message{
 func GossipTopicMappings(topic string, epoch primitives.Epoch) proto.Message {
 	if topic == BlockSubnetTopicFormat {
 		if epoch >= params.BeaconConfig().CapellaForkEpoch {
-			return &ethpb.SignedBeaconBlockCapella{}
+			return &zondpb.SignedBeaconBlockCapella{}
 		}
 		if epoch >= params.BeaconConfig().BellatrixForkEpoch {
-			return &ethpb.SignedBeaconBlockBellatrix{}
+			return &zondpb.SignedBeaconBlockBellatrix{}
 		}
 		if epoch >= params.BeaconConfig().AltairForkEpoch {
-			return &ethpb.SignedBeaconBlockAltair{}
+			return &zondpb.SignedBeaconBlockAltair{}
 		}
 	}
 	return gossipTopicMappings[topic]
@@ -59,9 +59,9 @@ func init() {
 		GossipTypeMapping[reflect.TypeOf(v)] = k
 	}
 	// Specially handle Altair objects.
-	GossipTypeMapping[reflect.TypeOf(&ethpb.SignedBeaconBlockAltair{})] = BlockSubnetTopicFormat
+	GossipTypeMapping[reflect.TypeOf(&zondpb.SignedBeaconBlockAltair{})] = BlockSubnetTopicFormat
 	// Specially handle Bellatrix objects.
-	GossipTypeMapping[reflect.TypeOf(&ethpb.SignedBeaconBlockBellatrix{})] = BlockSubnetTopicFormat
+	GossipTypeMapping[reflect.TypeOf(&zondpb.SignedBeaconBlockBellatrix{})] = BlockSubnetTopicFormat
 	// Specially handle Capella objects
-	GossipTypeMapping[reflect.TypeOf(&ethpb.SignedBeaconBlockCapella{})] = BlockSubnetTopicFormat
+	GossipTypeMapping[reflect.TypeOf(&zondpb.SignedBeaconBlockCapella{})] = BlockSubnetTopicFormat
 }

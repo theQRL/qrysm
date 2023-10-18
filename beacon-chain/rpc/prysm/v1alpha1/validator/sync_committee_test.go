@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -70,7 +70,7 @@ func TestSubmitSyncMessage_OK(t *testing.T) {
 			State: st,
 		},
 	}
-	msg := &ethpb.SyncCommitteeMessage{
+	msg := &zondpb.SyncCommitteeMessage{
 		Slot:           1,
 		ValidatorIndex: 2,
 	}
@@ -78,7 +78,7 @@ func TestSubmitSyncMessage_OK(t *testing.T) {
 	require.NoError(t, err)
 	savedMsgs, err := server.SyncCommitteePool.SyncCommitteeMessages(1)
 	require.NoError(t, err)
-	require.DeepEqual(t, []*ethpb.SyncCommitteeMessage{msg}, savedMsgs)
+	require.DeepEqual(t, []*zondpb.SyncCommitteeMessage{msg}, savedMsgs)
 }
 
 func TestGetSyncSubcommitteeIndex_Ok(t *testing.T) {
@@ -92,7 +92,7 @@ func TestGetSyncSubcommitteeIndex_Ok(t *testing.T) {
 	}
 	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	// Request slot 0, should get the index 0 for validator 0.
-	res, err := server.GetSyncSubcommitteeIndex(context.Background(), &ethpb.SyncSubcommitteeIndexRequest{
+	res, err := server.GetSyncSubcommitteeIndex(context.Background(), &zondpb.SyncSubcommitteeIndexRequest{
 		PublicKey: pubKey[:], Slot: primitives.Slot(0),
 	})
 	require.NoError(t, err)
@@ -113,7 +113,7 @@ func TestGetSyncCommitteeContribution_FiltersDuplicates(t *testing.T) {
 	secKey, err := bls.RandKey()
 	require.NoError(t, err)
 	sig := secKey.Sign([]byte{'A'}).Marshal()
-	msg := &ethpb.SyncCommitteeMessage{
+	msg := &zondpb.SyncCommitteeMessage{
 		Slot:           1,
 		ValidatorIndex: 2,
 		BlockRoot:      make([]byte, 32),
@@ -127,7 +127,7 @@ func TestGetSyncCommitteeContribution_FiltersDuplicates(t *testing.T) {
 	require.NoError(t, err)
 
 	contr, err := server.GetSyncCommitteeContribution(context.Background(),
-		&ethpb.SyncCommitteeContributionRequest{
+		&zondpb.SyncCommitteeContributionRequest{
 			Slot:      1,
 			PublicKey: val.PublicKey,
 			SubnetId:  1})
@@ -141,9 +141,9 @@ func TestSubmitSignedContributionAndProof_OK(t *testing.T) {
 		P2P:               &mockp2p.MockBroadcaster{},
 		OperationNotifier: (&mock.ChainService{}).OperationNotifier(),
 	}
-	contribution := &ethpb.SignedContributionAndProof{
-		Message: &ethpb.ContributionAndProof{
-			Contribution: &ethpb.SyncCommitteeContribution{
+	contribution := &zondpb.SignedContributionAndProof{
+		Message: &zondpb.ContributionAndProof{
+			Contribution: &zondpb.SyncCommitteeContribution{
 				Slot:              1,
 				SubcommitteeIndex: 2,
 			},
@@ -153,7 +153,7 @@ func TestSubmitSignedContributionAndProof_OK(t *testing.T) {
 	require.NoError(t, err)
 	savedMsgs, err := server.SyncCommitteePool.SyncCommitteeContributions(1)
 	require.NoError(t, err)
-	require.DeepEqual(t, []*ethpb.SyncCommitteeContribution{contribution.Message.Contribution}, savedMsgs)
+	require.DeepEqual(t, []*zondpb.SyncCommitteeContribution{contribution.Message.Contribution}, savedMsgs)
 }
 
 func TestSubmitSignedContributionAndProof_Notification(t *testing.T) {
@@ -168,9 +168,9 @@ func TestSubmitSignedContributionAndProof_Notification(t *testing.T) {
 	opSub := server.OperationNotifier.OperationFeed().Subscribe(opChannel)
 	defer opSub.Unsubscribe()
 
-	contribution := &ethpb.SignedContributionAndProof{
-		Message: &ethpb.ContributionAndProof{
-			Contribution: &ethpb.SyncCommitteeContribution{
+	contribution := &zondpb.SignedContributionAndProof{
+		Message: &zondpb.ContributionAndProof{
+			Contribution: &zondpb.SyncCommitteeContribution{
 				Slot:              1,
 				SubcommitteeIndex: 2,
 			},

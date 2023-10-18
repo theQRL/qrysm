@@ -19,24 +19,24 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/math"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 func TestProcessAttestations_InclusionDelayFailure(t *testing.T) {
-	attestations := []*ethpb.Attestation{
-		util.HydrateAttestation(&ethpb.Attestation{
-			Data: &ethpb.AttestationData{
-				Target: &ethpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
+	attestations := []*zondpb.Attestation{
+		util.HydrateAttestation(&zondpb.Attestation{
+			Data: &zondpb.AttestationData{
+				Target: &zondpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
 				Slot:   5,
 			},
 		}),
 	}
 	b := util.NewBeaconBlockAltair()
-	b.Block = &ethpb.BeaconBlockAltair{
-		Body: &ethpb.BeaconBlockBodyAltair{
+	b.Block = &zondpb.BeaconBlockAltair{
+		Body: &zondpb.BeaconBlockBodyAltair{
 			Attestations: attestations,
 		},
 	}
@@ -55,15 +55,15 @@ func TestProcessAttestations_InclusionDelayFailure(t *testing.T) {
 }
 
 func TestProcessAttestations_NeitherCurrentNorPrevEpoch(t *testing.T) {
-	att := util.HydrateAttestation(&ethpb.Attestation{
-		Data: &ethpb.AttestationData{
-			Source: &ethpb.Checkpoint{Epoch: 0, Root: []byte("hello-world")},
-			Target: &ethpb.Checkpoint{Epoch: 0}}})
+	att := util.HydrateAttestation(&zondpb.Attestation{
+		Data: &zondpb.AttestationData{
+			Source: &zondpb.Checkpoint{Epoch: 0, Root: []byte("hello-world")},
+			Target: &zondpb.Checkpoint{Epoch: 0}}})
 
 	b := util.NewBeaconBlockAltair()
-	b.Block = &ethpb.BeaconBlockAltair{
-		Body: &ethpb.BeaconBlockBodyAltair{
-			Attestations: []*ethpb.Attestation{att},
+	b.Block = &zondpb.BeaconBlockAltair{
+		Body: &zondpb.BeaconBlockBodyAltair{
+			Attestations: []*zondpb.Attestation{att},
 		},
 	}
 	beaconState, _ := util.DeterministicGenesisStateAltair(t, 100)
@@ -86,18 +86,18 @@ func TestProcessAttestations_NeitherCurrentNorPrevEpoch(t *testing.T) {
 }
 
 func TestProcessAttestations_CurrentEpochFFGDataMismatches(t *testing.T) {
-	attestations := []*ethpb.Attestation{
+	attestations := []*zondpb.Attestation{
 		{
-			Data: &ethpb.AttestationData{
-				Target: &ethpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
-				Source: &ethpb.Checkpoint{Epoch: 1, Root: make([]byte, fieldparams.RootLength)},
+			Data: &zondpb.AttestationData{
+				Target: &zondpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
+				Source: &zondpb.Checkpoint{Epoch: 1, Root: make([]byte, fieldparams.RootLength)},
 			},
 			AggregationBits: bitfield.Bitlist{0x09},
 		},
 	}
 	b := util.NewBeaconBlockAltair()
-	b.Block = &ethpb.BeaconBlockAltair{
-		Body: &ethpb.BeaconBlockBodyAltair{
+	b.Block = &zondpb.BeaconBlockAltair{
+		Body: &zondpb.BeaconBlockBodyAltair{
 			Attestations: attestations,
 		},
 	}
@@ -125,19 +125,19 @@ func TestProcessAttestations_PrevEpochFFGDataMismatches(t *testing.T) {
 
 	aggBits := bitfield.NewBitlist(3)
 	aggBits.SetBitAt(0, true)
-	attestations := []*ethpb.Attestation{
+	attestations := []*zondpb.Attestation{
 		{
-			Data: &ethpb.AttestationData{
-				Source: &ethpb.Checkpoint{Epoch: 1, Root: make([]byte, fieldparams.RootLength)},
-				Target: &ethpb.Checkpoint{Epoch: 1, Root: make([]byte, fieldparams.RootLength)},
+			Data: &zondpb.AttestationData{
+				Source: &zondpb.Checkpoint{Epoch: 1, Root: make([]byte, fieldparams.RootLength)},
+				Target: &zondpb.Checkpoint{Epoch: 1, Root: make([]byte, fieldparams.RootLength)},
 				Slot:   params.BeaconConfig().SlotsPerEpoch,
 			},
 			AggregationBits: aggBits,
 		},
 	}
 	b := util.NewBeaconBlockAltair()
-	b.Block = &ethpb.BeaconBlockAltair{
-		Body: &ethpb.BeaconBlockBodyAltair{
+	b.Block = &zondpb.BeaconBlockAltair{
+		Body: &zondpb.BeaconBlockBodyAltair{
 			Attestations: attestations,
 		},
 	}
@@ -166,17 +166,17 @@ func TestProcessAttestations_InvalidAggregationBitsLength(t *testing.T) {
 	beaconState, _ := util.DeterministicGenesisStateAltair(t, 100)
 
 	aggBits := bitfield.NewBitlist(4)
-	att := &ethpb.Attestation{
-		Data: &ethpb.AttestationData{
-			Source: &ethpb.Checkpoint{Epoch: 0, Root: []byte("hello-world")},
-			Target: &ethpb.Checkpoint{Epoch: 0}},
+	att := &zondpb.Attestation{
+		Data: &zondpb.AttestationData{
+			Source: &zondpb.Checkpoint{Epoch: 0, Root: []byte("hello-world")},
+			Target: &zondpb.Checkpoint{Epoch: 0}},
 		AggregationBits: aggBits,
 	}
 
 	b := util.NewBeaconBlockAltair()
-	b.Block = &ethpb.BeaconBlockAltair{
-		Body: &ethpb.BeaconBlockBodyAltair{
-			Attestations: []*ethpb.Attestation{att},
+	b.Block = &zondpb.BeaconBlockAltair{
+		Body: &zondpb.BeaconBlockBodyAltair{
+			Attestations: []*zondpb.Attestation{att},
 		},
 	}
 
@@ -201,10 +201,10 @@ func TestProcessAttestations_OK(t *testing.T) {
 	aggBits.SetBitAt(0, true)
 	var mockRoot [32]byte
 	copy(mockRoot[:], "hello-world")
-	att := util.HydrateAttestation(&ethpb.Attestation{
-		Data: &ethpb.AttestationData{
-			Source: &ethpb.Checkpoint{Root: mockRoot[:]},
-			Target: &ethpb.Checkpoint{Root: mockRoot[:]},
+	att := util.HydrateAttestation(&zondpb.Attestation{
+		Data: &zondpb.AttestationData{
+			Source: &zondpb.Checkpoint{Root: mockRoot[:]},
+			Target: &zondpb.Checkpoint{Root: mockRoot[:]},
 		},
 		AggregationBits: aggBits,
 	})
@@ -228,7 +228,7 @@ func TestProcessAttestations_OK(t *testing.T) {
 	att.Signature = bls.AggregateSignatures(sigs).Marshal()
 
 	block := util.NewBeaconBlockAltair()
-	block.Block.Body.Attestations = []*ethpb.Attestation{att}
+	block.Block.Body.Attestations = []*zondpb.Attestation{att}
 
 	err = beaconState.SetSlot(beaconState.Slot() + params.BeaconConfig().MinAttestationInclusionDelay)
 	require.NoError(t, err)
@@ -248,11 +248,11 @@ func TestProcessAttestationNoVerify_SourceTargetHead(t *testing.T) {
 	aggBits.SetBitAt(1, true)
 	r, err := helpers.BlockRootAtSlot(beaconState, 0)
 	require.NoError(t, err)
-	att := &ethpb.Attestation{
-		Data: &ethpb.AttestationData{
+	att := &zondpb.Attestation{
+		Data: &zondpb.AttestationData{
 			BeaconBlockRoot: r,
-			Source:          &ethpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
-			Target:          &ethpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
+			Source:          &zondpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
+			Target:          &zondpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
 		},
 		AggregationBits: aggBits,
 	}
@@ -411,13 +411,13 @@ func TestValidatorFlag_Add_ExceedsLength(t *testing.T) {
 
 func TestFuzzProcessAttestationsNoVerify_10000(t *testing.T) {
 	fuzzer := fuzz.NewWithSeed(0)
-	st := &ethpb.BeaconStateAltair{}
-	b := &ethpb.SignedBeaconBlockAltair{Block: &ethpb.BeaconBlockAltair{}}
+	st := &zondpb.BeaconStateAltair{}
+	b := &zondpb.SignedBeaconBlockAltair{Block: &zondpb.BeaconBlockAltair{}}
 	for i := 0; i < 10000; i++ {
 		fuzzer.Fuzz(st)
 		fuzzer.Fuzz(b)
 		if b.Block == nil {
-			b.Block = &ethpb.BeaconBlockAltair{}
+			b.Block = &zondpb.BeaconBlockAltair{}
 		}
 		s, err := state_native.InitializeFromProtoUnsafeAltair(st)
 		require.NoError(t, err)
@@ -633,7 +633,7 @@ func TestAttestationParticipationFlagIndices(t *testing.T) {
 	tests := []struct {
 		name                 string
 		inputState           state.BeaconState
-		inputData            *ethpb.AttestationData
+		inputData            *zondpb.AttestationData
 		inputDelay           primitives.Slot
 		participationIndices map[uint8]bool
 	}{
@@ -642,9 +642,9 @@ func TestAttestationParticipationFlagIndices(t *testing.T) {
 			inputState: func() state.BeaconState {
 				return beaconState
 			}(),
-			inputData: &ethpb.AttestationData{
-				Source: &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
-				Target: &ethpb.Checkpoint{},
+			inputData: &zondpb.AttestationData{
+				Source: &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+				Target: &zondpb.Checkpoint{},
 			},
 			inputDelay:           params.BeaconConfig().SlotsPerEpoch,
 			participationIndices: map[uint8]bool{},
@@ -654,9 +654,9 @@ func TestAttestationParticipationFlagIndices(t *testing.T) {
 			inputState: func() state.BeaconState {
 				return beaconState
 			}(),
-			inputData: &ethpb.AttestationData{
-				Source: &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
-				Target: &ethpb.Checkpoint{},
+			inputData: &zondpb.AttestationData{
+				Source: &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+				Target: &zondpb.Checkpoint{},
 			},
 			inputDelay: primitives.Slot(math.IntegerSquareRoot(uint64(cfg.SlotsPerEpoch)) - 1),
 			participationIndices: map[uint8]bool{
@@ -668,9 +668,9 @@ func TestAttestationParticipationFlagIndices(t *testing.T) {
 			inputState: func() state.BeaconState {
 				return beaconState
 			}(),
-			inputData: &ethpb.AttestationData{
-				Source: &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
-				Target: &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+			inputData: &zondpb.AttestationData{
+				Source: &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+				Target: &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
 			},
 			inputDelay: primitives.Slot(math.IntegerSquareRoot(uint64(cfg.SlotsPerEpoch)) - 1),
 			participationIndices: map[uint8]bool{
@@ -683,10 +683,10 @@ func TestAttestationParticipationFlagIndices(t *testing.T) {
 			inputState: func() state.BeaconState {
 				return beaconState
 			}(),
-			inputData: &ethpb.AttestationData{
+			inputData: &zondpb.AttestationData{
 				BeaconBlockRoot: params.BeaconConfig().ZeroHash[:],
-				Source:          &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
-				Target:          &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+				Source:          &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+				Target:          &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
 			},
 			inputDelay: 1,
 			participationIndices: map[uint8]bool{
@@ -710,8 +710,8 @@ func TestMatchingStatus(t *testing.T) {
 	tests := []struct {
 		name          string
 		inputState    state.BeaconState
-		inputData     *ethpb.AttestationData
-		inputCheckpt  *ethpb.Checkpoint
+		inputData     *zondpb.AttestationData
+		inputCheckpt  *zondpb.Checkpoint
 		matchedSource bool
 		matchedTarget bool
 		matchedHead   bool
@@ -719,52 +719,52 @@ func TestMatchingStatus(t *testing.T) {
 		{
 			name:       "non matched",
 			inputState: beaconState,
-			inputData: &ethpb.AttestationData{
-				Source: &ethpb.Checkpoint{Epoch: 1},
-				Target: &ethpb.Checkpoint{},
+			inputData: &zondpb.AttestationData{
+				Source: &zondpb.Checkpoint{Epoch: 1},
+				Target: &zondpb.Checkpoint{},
 			},
-			inputCheckpt: &ethpb.Checkpoint{},
+			inputCheckpt: &zondpb.Checkpoint{},
 		},
 		{
 			name:       "source matched",
 			inputState: beaconState,
-			inputData: &ethpb.AttestationData{
-				Source: &ethpb.Checkpoint{},
-				Target: &ethpb.Checkpoint{},
+			inputData: &zondpb.AttestationData{
+				Source: &zondpb.Checkpoint{},
+				Target: &zondpb.Checkpoint{},
 			},
-			inputCheckpt:  &ethpb.Checkpoint{},
+			inputCheckpt:  &zondpb.Checkpoint{},
 			matchedSource: true,
 		},
 		{
 			name:       "target matched",
 			inputState: beaconState,
-			inputData: &ethpb.AttestationData{
-				Source: &ethpb.Checkpoint{Epoch: 1},
-				Target: &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+			inputData: &zondpb.AttestationData{
+				Source: &zondpb.Checkpoint{Epoch: 1},
+				Target: &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
 			},
-			inputCheckpt:  &ethpb.Checkpoint{},
+			inputCheckpt:  &zondpb.Checkpoint{},
 			matchedTarget: true,
 		},
 		{
 			name:       "head matched",
 			inputState: beaconState,
-			inputData: &ethpb.AttestationData{
-				Source:          &ethpb.Checkpoint{Epoch: 1},
-				Target:          &ethpb.Checkpoint{},
+			inputData: &zondpb.AttestationData{
+				Source:          &zondpb.Checkpoint{Epoch: 1},
+				Target:          &zondpb.Checkpoint{},
 				BeaconBlockRoot: params.BeaconConfig().ZeroHash[:],
 			},
-			inputCheckpt: &ethpb.Checkpoint{},
+			inputCheckpt: &zondpb.Checkpoint{},
 			matchedHead:  true,
 		},
 		{
 			name:       "everything matched",
 			inputState: beaconState,
-			inputData: &ethpb.AttestationData{
-				Source:          &ethpb.Checkpoint{},
-				Target:          &ethpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+			inputData: &zondpb.AttestationData{
+				Source:          &zondpb.Checkpoint{},
+				Target:          &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
 				BeaconBlockRoot: params.BeaconConfig().ZeroHash[:],
 			},
-			inputCheckpt:  &ethpb.Checkpoint{},
+			inputCheckpt:  &zondpb.Checkpoint{},
 			matchedSource: true,
 			matchedTarget: true,
 			matchedHead:   true,

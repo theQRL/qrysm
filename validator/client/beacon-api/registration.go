@@ -9,10 +9,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
-func (c *beaconApiValidatorClient) submitValidatorRegistrations(ctx context.Context, registrations []*ethpb.SignedValidatorRegistrationV1) error {
+func (c *beaconApiValidatorClient) submitValidatorRegistrations(ctx context.Context, registrations []*zondpb.SignedValidatorRegistrationV1) error {
 	const endpoint = "/eth/v1/validator/register_validator"
 
 	jsonRegistration := make([]*apimiddleware.SignedValidatorRegistrationJson, len(registrations))

@@ -36,14 +36,14 @@ import (
 	"github.com/theQRL/qrysm/v4/network"
 	"github.com/theQRL/qrysm/v4/network/authorization"
 	v1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 const (
-	statusPath   = "/eth/v1/builder/status"
-	registerPath = "/eth/v1/builder/validators"
-	headerPath   = "/eth/v1/builder/header/{slot:[0-9]+}/{parent_hash:0x[a-fA-F0-9]+}/{pubkey:0x[a-fA-F0-9]+}"
-	blindedPath  = "/eth/v1/builder/blinded_blocks"
+	statusPath   = "/zond/v1/builder/status"
+	registerPath = "/zond/v1/builder/validators"
+	headerPath   = "/zond/v1/builder/header/{slot:[0-9]+}/{parent_hash:0x[a-fA-F0-9]+}/{pubkey:0x[a-fA-F0-9]+}"
+	blindedPath  = "/zond/v1/builder/blinded_blocks"
 
 	// ForkchoiceUpdatedMethod v1 request string for JSON-RPC.
 	ForkchoiceUpdatedMethod = "engine_forkchoiceUpdatedV1"
@@ -100,7 +100,7 @@ type Builder struct {
 	currId       *v1.PayloadIDBytes
 	currPayload  interfaces.ExecutionData
 	mux          *gMux.Router
-	validatorMap map[string]*eth.ValidatorRegistrationV1
+	validatorMap map[string]*zond.ValidatorRegistrationV1
 	srv          *http.Server
 }
 
@@ -146,7 +146,7 @@ func New(opts ...Option) (*Builder, error) {
 	p.address = addr
 	p.srv = srv
 	p.execClient = execClient
-	p.validatorMap = map[string]*eth.ValidatorRegistrationV1{}
+	p.validatorMap = map[string]*zond.ValidatorRegistrationV1{}
 	p.mux = router
 	return p, nil
 }
@@ -239,7 +239,7 @@ func (p *Builder) handleEngineCalls(req, resp []byte) {
 }
 
 func (p *Builder) isBuilderCall(req *http.Request) bool {
-	return strings.Contains(req.URL.Path, "/eth/v1/builder/")
+	return strings.Contains(req.URL.Path, "/zond/v1/builder/")
 }
 
 func (p *Builder) registerValidators(w http.ResponseWriter, req *http.Request) {
@@ -313,7 +313,7 @@ func (p *Builder) handleHeaderRequest(w http.ResponseWriter, req *http.Request) 
 		Value:  val,
 		Pubkey: secKey.PublicKey().Marshal(),
 	}
-	sszBid := &eth.BuilderBid{
+	sszBid := &zond.BuilderBid{
 		Header: hdr,
 		Value:  val.SSZBytes(),
 		Pubkey: secKey.PublicKey().Marshal(),
@@ -392,7 +392,7 @@ func (p *Builder) handleHeadeRequestCapella(w http.ResponseWriter) {
 		Value:  val,
 		Pubkey: secKey.PublicKey().Marshal(),
 	}
-	sszBid := &eth.BuilderBidCapella{
+	sszBid := &zond.BuilderBidCapella{
 		Header: hdr,
 		Value:  val.SSZBytes(),
 		Pubkey: secKey.PublicKey().Marshal(),
@@ -435,7 +435,7 @@ func (p *Builder) handleHeadeRequestCapella(w http.ResponseWriter) {
 
 func (p *Builder) handleBlindedBlock(w http.ResponseWriter, req *http.Request) {
 	sb := &builderAPI.SignedBlindedBeaconBlockBellatrix{
-		SignedBlindedBeaconBlockBellatrix: &eth.SignedBlindedBeaconBlockBellatrix{},
+		SignedBlindedBeaconBlockBellatrix: &zond.SignedBlindedBeaconBlockBellatrix{},
 	}
 	err := json.NewDecoder(req.Body).Decode(sb)
 	if err != nil {

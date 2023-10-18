@@ -18,7 +18,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -28,7 +28,7 @@ func TestGetState(t *testing.T) {
 	ctx := context.Background()
 
 	headSlot := primitives.Slot(123)
-	fillSlot := func(state *ethpb.BeaconState) error {
+	fillSlot := func(state *zondpb.BeaconState) error {
 		state.Slot = headSlot
 		return nil
 	}
@@ -62,7 +62,7 @@ func TestGetState(t *testing.T) {
 		r, err := b.Block.HashTreeRoot()
 		require.NoError(t, err)
 
-		bs, err := util.NewBeaconState(func(state *ethpb.BeaconState) error {
+		bs, err := util.NewBeaconState(func(state *zondpb.BeaconState) error {
 			state.BlockRoots[0] = r[:]
 			return nil
 		})
@@ -70,7 +70,7 @@ func TestGetState(t *testing.T) {
 		newStateRoot, err := bs.HashTreeRoot(ctx)
 		require.NoError(t, err)
 
-		require.NoError(t, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: r[:]}))
+		require.NoError(t, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: r[:]}))
 		require.NoError(t, db.SaveGenesisBlockRoot(ctx, r))
 		require.NoError(t, db.SaveState(ctx, bs, r))
 
@@ -100,7 +100,7 @@ func TestGetState(t *testing.T) {
 
 		p := BeaconDbStater{
 			ChainInfoFetcher: &chainMock.ChainService{
-				FinalizedCheckPoint: &ethpb.Checkpoint{
+				FinalizedCheckPoint: &zondpb.Checkpoint{
 					Root:  stateRoot[:],
 					Epoch: 10,
 				},
@@ -124,7 +124,7 @@ func TestGetState(t *testing.T) {
 
 		p := BeaconDbStater{
 			ChainInfoFetcher: &chainMock.ChainService{
-				CurrentJustifiedCheckPoint: &ethpb.Checkpoint{
+				CurrentJustifiedCheckPoint: &zondpb.Checkpoint{
 					Root:  stateRoot[:],
 					Epoch: 10,
 				},
@@ -198,7 +198,7 @@ func TestGetStateRoot(t *testing.T) {
 	ctx := context.Background()
 
 	headSlot := primitives.Slot(123)
-	fillSlot := func(state *ethpb.BeaconState) error {
+	fillSlot := func(state *zondpb.BeaconState) error {
 		state.Slot = headSlot
 		return nil
 	}
@@ -231,13 +231,13 @@ func TestGetStateRoot(t *testing.T) {
 		r, err := b.Block.HashTreeRoot()
 		require.NoError(t, err)
 
-		bs, err := util.NewBeaconState(func(state *ethpb.BeaconState) error {
+		bs, err := util.NewBeaconState(func(state *zondpb.BeaconState) error {
 			state.BlockRoots[0] = r[:]
 			return nil
 		})
 		require.NoError(t, err)
 
-		require.NoError(t, db.SaveStateSummary(ctx, &ethpb.StateSummary{Root: r[:]}))
+		require.NoError(t, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: r[:]}))
 		require.NoError(t, db.SaveGenesisBlockRoot(ctx, r))
 		require.NoError(t, db.SaveState(ctx, bs, r))
 
@@ -262,7 +262,7 @@ func TestGetStateRoot(t *testing.T) {
 		blk.Block.Slot = 40
 		root, err := blk.Block.HashTreeRoot()
 		require.NoError(t, err)
-		cp := &ethpb.Checkpoint{
+		cp := &zondpb.Checkpoint{
 			Epoch: 5,
 			Root:  root[:],
 		}
@@ -293,7 +293,7 @@ func TestGetStateRoot(t *testing.T) {
 		blk.Block.Slot = 40
 		root, err := blk.Block.HashTreeRoot()
 		require.NoError(t, err)
-		cp := &ethpb.Checkpoint{
+		cp := &zondpb.Checkpoint{
 			Epoch: 5,
 			Root:  root[:],
 		}
@@ -395,9 +395,9 @@ func TestStateBySlot_FutureSlot(t *testing.T) {
 }
 
 func TestStateBySlot_AfterHeadSlot(t *testing.T) {
-	headSt, err := statenative.InitializeFromProtoPhase0(&ethpb.BeaconState{Slot: 100})
+	headSt, err := statenative.InitializeFromProtoPhase0(&zondpb.BeaconState{Slot: 100})
 	require.NoError(t, err)
-	slotSt, err := statenative.InitializeFromProtoPhase0(&ethpb.BeaconState{Slot: 101})
+	slotSt, err := statenative.InitializeFromProtoPhase0(&zondpb.BeaconState{Slot: 101})
 	require.NoError(t, err)
 	currentSlot := primitives.Slot(102)
 	mock := &chainMock.ChainService{State: headSt, Slot: &currentSlot}

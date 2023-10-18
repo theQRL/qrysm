@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 type abstractProduceBlockResponseJson struct {
@@ -19,7 +19,7 @@ type abstractProduceBlockResponseJson struct {
 	Data    json.RawMessage `json:"data"`
 }
 
-func (c beaconApiValidatorClient) getBeaconBlock(ctx context.Context, slot primitives.Slot, randaoReveal []byte, graffiti []byte) (*ethpb.GenericBeaconBlock, error) {
+func (c beaconApiValidatorClient) getBeaconBlock(ctx context.Context, slot primitives.Slot, randaoReveal []byte, graffiti []byte) (*zondpb.GenericBeaconBlock, error) {
 	queryParams := neturl.Values{}
 	queryParams.Add("randao_reveal", hexutil.Encode(randaoReveal))
 
@@ -40,7 +40,7 @@ func (c beaconApiValidatorClient) getBeaconBlock(ctx context.Context, slot primi
 	decoder := json.NewDecoder(bytes.NewReader(produceBlockResponseJson.Data))
 	decoder.DisallowUnknownFields()
 
-	response := &ethpb.GenericBeaconBlock{}
+	response := &zondpb.GenericBeaconBlock{}
 
 	switch produceBlockResponseJson.Version {
 	case "phase0":
@@ -53,7 +53,7 @@ func (c beaconApiValidatorClient) getBeaconBlock(ctx context.Context, slot primi
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get phase0 block")
 		}
-		response.Block = &ethpb.GenericBeaconBlock_Phase0{
+		response.Block = &zondpb.GenericBeaconBlock_Phase0{
 			Phase0: phase0Block,
 		}
 
@@ -67,7 +67,7 @@ func (c beaconApiValidatorClient) getBeaconBlock(ctx context.Context, slot primi
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get altair block")
 		}
-		response.Block = &ethpb.GenericBeaconBlock_Altair{
+		response.Block = &zondpb.GenericBeaconBlock_Altair{
 			Altair: altairBlock,
 		}
 
@@ -81,7 +81,7 @@ func (c beaconApiValidatorClient) getBeaconBlock(ctx context.Context, slot primi
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get bellatrix block")
 		}
-		response.Block = &ethpb.GenericBeaconBlock_Bellatrix{
+		response.Block = &zondpb.GenericBeaconBlock_Bellatrix{
 			Bellatrix: bellatrixBlock,
 		}
 
@@ -95,7 +95,7 @@ func (c beaconApiValidatorClient) getBeaconBlock(ctx context.Context, slot primi
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get capella block")
 		}
-		response.Block = &ethpb.GenericBeaconBlock_Capella{
+		response.Block = &zondpb.GenericBeaconBlock_Capella{
 			Capella: capellaBlock,
 		}
 

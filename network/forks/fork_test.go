@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
@@ -20,14 +20,14 @@ func TestFork(t *testing.T) {
 	tests := []struct {
 		name        string
 		targetEpoch primitives.Epoch
-		want        *ethpb.Fork
+		want        *zondpb.Fork
 		wantErr     bool
 		setConfg    func()
 	}{
 		{
 			name:        "no fork",
 			targetEpoch: 0,
-			want: &ethpb.Fork{
+			want: &zondpb.Fork{
 				Epoch:           0,
 				CurrentVersion:  []byte{'A', 'B', 'C', 'D'},
 				PreviousVersion: []byte{'A', 'B', 'C', 'D'},
@@ -43,7 +43,7 @@ func TestFork(t *testing.T) {
 		{
 			name:        "genesis fork",
 			targetEpoch: 0,
-			want: &ethpb.Fork{
+			want: &zondpb.Fork{
 				Epoch:           0,
 				CurrentVersion:  []byte{'A', 'B', 'C', 'D'},
 				PreviousVersion: []byte{'A', 'B', 'C', 'D'},
@@ -61,7 +61,7 @@ func TestFork(t *testing.T) {
 		{
 			name:        "altair pre-fork",
 			targetEpoch: 0,
-			want: &ethpb.Fork{
+			want: &zondpb.Fork{
 				Epoch:           0,
 				CurrentVersion:  []byte{'A', 'B', 'C', 'D'},
 				PreviousVersion: []byte{'A', 'B', 'C', 'D'},
@@ -81,7 +81,7 @@ func TestFork(t *testing.T) {
 		{
 			name:        "altair on fork",
 			targetEpoch: 10,
-			want: &ethpb.Fork{
+			want: &zondpb.Fork{
 				Epoch:           10,
 				CurrentVersion:  []byte{'A', 'B', 'C', 'F'},
 				PreviousVersion: []byte{'A', 'B', 'C', 'D'},
@@ -102,7 +102,7 @@ func TestFork(t *testing.T) {
 		{
 			name:        "altair post fork",
 			targetEpoch: 10,
-			want: &ethpb.Fork{
+			want: &zondpb.Fork{
 				Epoch:           10,
 				CurrentVersion:  []byte{'A', 'B', 'C', 'F'},
 				PreviousVersion: []byte{'A', 'B', 'C', 'D'},
@@ -123,7 +123,7 @@ func TestFork(t *testing.T) {
 		{
 			name:        "3 forks, pre-fork",
 			targetEpoch: 20,
-			want: &ethpb.Fork{
+			want: &zondpb.Fork{
 				Epoch:           10,
 				CurrentVersion:  []byte{'A', 'B', 'C', 'F'},
 				PreviousVersion: []byte{'A', 'B', 'C', 'D'},
@@ -143,7 +143,7 @@ func TestFork(t *testing.T) {
 		{
 			name:        "3 forks, on fork",
 			targetEpoch: 100,
-			want: &ethpb.Fork{
+			want: &zondpb.Fork{
 				Epoch:           100,
 				CurrentVersion:  []byte{'A', 'B', 'C', 'Z'},
 				PreviousVersion: []byte{'A', 'B', 'C', 'F'},

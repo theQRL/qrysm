@@ -16,7 +16,7 @@ import (
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/encoding/ssz/equality"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	prefixed "github.com/theQRL/qrysm/v4/runtime/logging/logrus-prefixed-formatter"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/urfave/cli/v2"
@@ -72,29 +72,29 @@ func main() {
 				var data fssz.Unmarshaler
 				switch sszType {
 				case "block":
-					data = &ethpb.BeaconBlock{}
+					data = &zondpb.BeaconBlock{}
 				case "signed_block":
-					data = &ethpb.SignedBeaconBlock{}
+					data = &zondpb.SignedBeaconBlock{}
 				case "blinded_block":
-					data = &ethpb.BlindedBeaconBlockBellatrix{}
+					data = &zondpb.BlindedBeaconBlockBellatrix{}
 				case "attestation":
-					data = &ethpb.Attestation{}
+					data = &zondpb.Attestation{}
 				case "block_header":
-					data = &ethpb.BeaconBlockHeader{}
+					data = &zondpb.BeaconBlockHeader{}
 				case "deposit":
-					data = &ethpb.Deposit{}
+					data = &zondpb.Deposit{}
 				case "deposit_message":
-					data = &ethpb.DepositMessage{}
+					data = &zondpb.DepositMessage{}
 				case "proposer_slashing":
-					data = &ethpb.ProposerSlashing{}
+					data = &zondpb.ProposerSlashing{}
 				case "signed_block_header":
-					data = &ethpb.SignedBeaconBlockHeader{}
+					data = &zondpb.SignedBeaconBlockHeader{}
 				case "signed_voluntary_exit":
-					data = &ethpb.SignedVoluntaryExit{}
+					data = &zondpb.SignedVoluntaryExit{}
 				case "voluntary_exit":
-					data = &ethpb.VoluntaryExit{}
+					data = &zondpb.VoluntaryExit{}
 				case "state_capella":
-					data = &ethpb.BeaconStateCapella{}
+					data = &zondpb.BeaconStateCapella{}
 				default:
 					log.Fatal("Invalid type")
 				}
@@ -171,7 +171,7 @@ func main() {
 					}
 					blockPath = text
 				}
-				block := &ethpb.SignedBeaconBlock{}
+				block := &zondpb.SignedBeaconBlock{}
 				if err := dataFetcher(blockPath, block); err != nil {
 					log.Fatal(err)
 				}
@@ -192,7 +192,7 @@ func main() {
 					}
 					preStatePath = text
 				}
-				preState := &ethpb.BeaconState{}
+				preState := &zondpb.BeaconState{}
 				if err := dataFetcher(preStatePath, preState); err != nil {
 					log.Fatal(err)
 				}
@@ -228,7 +228,7 @@ func main() {
 
 				// Diff the state if a post state is provided.
 				if expectedPostStatePath != "" {
-					expectedState := &ethpb.BeaconState{}
+					expectedState := &zondpb.BeaconState{}
 					if err := dataFetcher(expectedPostStatePath, expectedState); err != nil {
 						log.Fatal(err)
 					}
@@ -269,7 +269,7 @@ func prettyPrint(sszPath string, data fssz.Unmarshaler) {
 func benchmarkHash(sszPath string, sszType string) {
 	switch sszType {
 	case "state_capella":
-		data := &ethpb.BeaconStateCapella{}
+		data := &zondpb.BeaconStateCapella{}
 		if err := dataFetcher(sszPath, data); err != nil {
 			log.Fatal(err)
 		}

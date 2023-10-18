@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/helpers"
-	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/proto/migration"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"go.opencensus.io/trace"
@@ -15,7 +15,7 @@ import (
 )
 
 // GetBeaconStateSSZ returns the SSZ-serialized version of the full beacon state object for given state ID.
-func (ds *Server) GetBeaconStateSSZ(ctx context.Context, req *ethpbv1.StateRequest) (*ethpbv2.SSZContainer, error) {
+func (ds *Server) GetBeaconStateSSZ(ctx context.Context, req *zondpbv1.StateRequest) (*zondpbv2.SSZContainer, error) {
 	ctx, span := trace.StartSpan(ctx, "debug.GetBeaconStateSSZ")
 	defer span.End()
 
@@ -29,11 +29,11 @@ func (ds *Server) GetBeaconStateSSZ(ctx context.Context, req *ethpbv1.StateReque
 		return nil, status.Errorf(codes.Internal, "Could not marshal state into SSZ: %v", err)
 	}
 
-	return &ethpbv2.SSZContainer{Data: sszState}, nil
+	return &zondpbv2.SSZContainer{Data: sszState}, nil
 }
 
 // GetBeaconStateV2 returns the full beacon state for a given state ID.
-func (ds *Server) GetBeaconStateV2(ctx context.Context, req *ethpbv2.BeaconStateRequestV2) (*ethpbv2.BeaconStateResponseV2, error) {
+func (ds *Server) GetBeaconStateV2(ctx context.Context, req *zondpbv2.BeaconStateRequestV2) (*zondpbv2.BeaconStateResponseV2, error) {
 	ctx, span := trace.StartSpan(ctx, "debug.GetBeaconStateV2")
 	defer span.End()
 
@@ -57,10 +57,10 @@ func (ds *Server) GetBeaconStateV2(ctx context.Context, req *ethpbv2.BeaconState
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not convert state to proto: %v", err)
 		}
-		return &ethpbv2.BeaconStateResponseV2{
-			Version: ethpbv2.Version_PHASE0,
-			Data: &ethpbv2.BeaconStateContainer{
-				State: &ethpbv2.BeaconStateContainer_Phase0State{Phase0State: protoSt},
+		return &zondpbv2.BeaconStateResponseV2{
+			Version: zondpbv2.Version_PHASE0,
+			Data: &zondpbv2.BeaconStateContainer{
+				State: &zondpbv2.BeaconStateContainer_Phase0State{Phase0State: protoSt},
 			},
 			ExecutionOptimistic: isOptimistic,
 			Finalized:           isFinalized,
@@ -70,10 +70,10 @@ func (ds *Server) GetBeaconStateV2(ctx context.Context, req *ethpbv2.BeaconState
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not convert state to proto: %v", err)
 		}
-		return &ethpbv2.BeaconStateResponseV2{
-			Version: ethpbv2.Version_ALTAIR,
-			Data: &ethpbv2.BeaconStateContainer{
-				State: &ethpbv2.BeaconStateContainer_AltairState{AltairState: protoState},
+		return &zondpbv2.BeaconStateResponseV2{
+			Version: zondpbv2.Version_ALTAIR,
+			Data: &zondpbv2.BeaconStateContainer{
+				State: &zondpbv2.BeaconStateContainer_AltairState{AltairState: protoState},
 			},
 			ExecutionOptimistic: isOptimistic,
 			Finalized:           isFinalized,
@@ -83,10 +83,10 @@ func (ds *Server) GetBeaconStateV2(ctx context.Context, req *ethpbv2.BeaconState
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not convert state to proto: %v", err)
 		}
-		return &ethpbv2.BeaconStateResponseV2{
-			Version: ethpbv2.Version_BELLATRIX,
-			Data: &ethpbv2.BeaconStateContainer{
-				State: &ethpbv2.BeaconStateContainer_BellatrixState{BellatrixState: protoState},
+		return &zondpbv2.BeaconStateResponseV2{
+			Version: zondpbv2.Version_BELLATRIX,
+			Data: &zondpbv2.BeaconStateContainer{
+				State: &zondpbv2.BeaconStateContainer_BellatrixState{BellatrixState: protoState},
 			},
 			ExecutionOptimistic: isOptimistic,
 			Finalized:           isFinalized,
@@ -96,10 +96,10 @@ func (ds *Server) GetBeaconStateV2(ctx context.Context, req *ethpbv2.BeaconState
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not convert state to proto: %v", err)
 		}
-		return &ethpbv2.BeaconStateResponseV2{
-			Version: ethpbv2.Version_CAPELLA,
-			Data: &ethpbv2.BeaconStateContainer{
-				State: &ethpbv2.BeaconStateContainer_CapellaState{CapellaState: protoState},
+		return &zondpbv2.BeaconStateResponseV2{
+			Version: zondpbv2.Version_CAPELLA,
+			Data: &zondpbv2.BeaconStateContainer{
+				State: &zondpbv2.BeaconStateContainer_CapellaState{CapellaState: protoState},
 			},
 			ExecutionOptimistic: isOptimistic,
 			Finalized:           isFinalized,
@@ -110,7 +110,7 @@ func (ds *Server) GetBeaconStateV2(ctx context.Context, req *ethpbv2.BeaconState
 }
 
 // GetBeaconStateSSZV2 returns the SSZ-serialized version of the full beacon state object for given state ID.
-func (ds *Server) GetBeaconStateSSZV2(ctx context.Context, req *ethpbv2.BeaconStateRequestV2) (*ethpbv2.SSZContainer, error) {
+func (ds *Server) GetBeaconStateSSZV2(ctx context.Context, req *zondpbv2.BeaconStateRequestV2) (*zondpbv2.SSZContainer, error) {
 	ctx, span := trace.StartSpan(ctx, "debug.GetBeaconStateSSZV2")
 	defer span.End()
 
@@ -123,38 +123,38 @@ func (ds *Server) GetBeaconStateSSZV2(ctx context.Context, req *ethpbv2.BeaconSt
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not marshal state into SSZ: %v", err)
 	}
-	var ver ethpbv2.Version
+	var ver zondpbv2.Version
 	switch st.Version() {
 	case version.Phase0:
-		ver = ethpbv2.Version_PHASE0
+		ver = zondpbv2.Version_PHASE0
 	case version.Altair:
-		ver = ethpbv2.Version_ALTAIR
+		ver = zondpbv2.Version_ALTAIR
 	case version.Bellatrix:
-		ver = ethpbv2.Version_BELLATRIX
+		ver = zondpbv2.Version_BELLATRIX
 	case version.Capella:
-		ver = ethpbv2.Version_CAPELLA
+		ver = zondpbv2.Version_CAPELLA
 	default:
 		return nil, status.Error(codes.Internal, "Unsupported state version")
 	}
 
-	return &ethpbv2.SSZContainer{Data: sszState, Version: ver}, nil
+	return &zondpbv2.SSZContainer{Data: sszState, Version: ver}, nil
 }
 
 // ListForkChoiceHeadsV2 retrieves the leaves of the current fork choice tree.
-func (ds *Server) ListForkChoiceHeadsV2(ctx context.Context, _ *emptypb.Empty) (*ethpbv2.ForkChoiceHeadsResponse, error) {
+func (ds *Server) ListForkChoiceHeadsV2(ctx context.Context, _ *emptypb.Empty) (*zondpbv2.ForkChoiceHeadsResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "debug.ListForkChoiceHeadsV2")
 	defer span.End()
 
 	headRoots, headSlots := ds.HeadFetcher.ChainHeads()
-	resp := &ethpbv2.ForkChoiceHeadsResponse{
-		Data: make([]*ethpbv2.ForkChoiceHead, len(headRoots)),
+	resp := &zondpbv2.ForkChoiceHeadsResponse{
+		Data: make([]*zondpbv2.ForkChoiceHead, len(headRoots)),
 	}
 	for i := range headRoots {
 		isOptimistic, err := ds.OptimisticModeFetcher.IsOptimisticForRoot(ctx, headRoots[i])
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not check if head is optimistic: %v", err)
 		}
-		resp.Data[i] = &ethpbv2.ForkChoiceHead{
+		resp.Data[i] = &zondpbv2.ForkChoiceHead{
 			Root:                headRoots[i][:],
 			Slot:                headSlots[i],
 			ExecutionOptimistic: isOptimistic,
@@ -165,6 +165,6 @@ func (ds *Server) ListForkChoiceHeadsV2(ctx context.Context, _ *emptypb.Empty) (
 }
 
 // GetForkChoice returns a dump fork choice store.
-func (ds *Server) GetForkChoice(ctx context.Context, _ *emptypb.Empty) (*ethpbv1.ForkChoiceDump, error) {
+func (ds *Server) GetForkChoice(ctx context.Context, _ *emptypb.Empty) (*zondpbv1.ForkChoiceDump, error) {
 	return ds.ForkchoiceFetcher.ForkChoiceDump(ctx)
 }

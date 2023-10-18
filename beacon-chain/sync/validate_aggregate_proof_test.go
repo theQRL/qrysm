@@ -25,7 +25,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -43,8 +43,8 @@ func TestVerifyIndexInCommittee_CanVerify(t *testing.T) {
 
 	bf := bitfield.NewBitlist(validators / uint64(params.BeaconConfig().SlotsPerEpoch))
 	bf.SetBitAt(0, true)
-	att := &ethpb.Attestation{Data: &ethpb.AttestationData{
-		Target: &ethpb.Checkpoint{Epoch: 0}},
+	att := &zondpb.Attestation{Data: &zondpb.AttestationData{
+		Target: &zondpb.Checkpoint{Epoch: 0}},
 		AggregationBits: bf}
 
 	committee, err := helpers.BeaconCommitteeFromState(context.Background(), s, att.Data.Slot, att.Data.CommitteeIndex)
@@ -67,8 +67,8 @@ func TestVerifyIndexInCommittee_ExistsInBeaconCommittee(t *testing.T) {
 	require.NoError(t, s.SetSlot(params.BeaconConfig().SlotsPerEpoch))
 
 	bf := []byte{0xff}
-	att := &ethpb.Attestation{Data: &ethpb.AttestationData{
-		Target: &ethpb.Checkpoint{Epoch: 0}},
+	att := &zondpb.Attestation{Data: &zondpb.AttestationData{
+		Target: &zondpb.Checkpoint{Epoch: 0}},
 		AggregationBits: bf}
 
 	committee, err := helpers.BeaconCommitteeFromState(context.Background(), s, att.Data.Slot, att.Data.CommitteeIndex)
@@ -88,7 +88,7 @@ func TestVerifySelection_NotAnAggregator(t *testing.T) {
 	beaconState, privKeys := util.DeterministicGenesisState(t, validators)
 
 	sig := privKeys[0].Sign([]byte{'A'})
-	data := util.HydrateAttestationData(&ethpb.AttestationData{})
+	data := util.HydrateAttestationData(&zondpb.AttestationData{})
 
 	_, err := validateSelectionIndex(ctx, beaconState, data, 0, sig.Marshal())
 	wanted := "validator is not an aggregator for slot"
@@ -99,19 +99,19 @@ func TestValidateAggregateAndProof_NoBlock(t *testing.T) {
 	db := dbtest.SetupDB(t)
 	p := p2ptest.NewTestP2P(t)
 
-	att := util.HydrateAttestation(&ethpb.Attestation{
-		Data: &ethpb.AttestationData{
-			Source: &ethpb.Checkpoint{Root: bytesutil.PadTo([]byte("hello-world"), 32)},
-			Target: &ethpb.Checkpoint{Root: bytesutil.PadTo([]byte("hello-world"), 32)},
+	att := util.HydrateAttestation(&zondpb.Attestation{
+		Data: &zondpb.AttestationData{
+			Source: &zondpb.Checkpoint{Root: bytesutil.PadTo([]byte("hello-world"), 32)},
+			Target: &zondpb.Checkpoint{Root: bytesutil.PadTo([]byte("hello-world"), 32)},
 		},
 	})
 
-	aggregateAndProof := &ethpb.AggregateAttestationAndProof{
+	aggregateAndProof := &zondpb.AggregateAttestationAndProof{
 		SelectionProof:  bytesutil.PadTo([]byte{'A'}, dilithium2.CryptoBytes),
 		Aggregate:       att,
 		AggregatorIndex: 0,
 	}
-	signedAggregateAndProof := &ethpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof, Signature: make([]byte, dilithium2.CryptoBytes)}
+	signedAggregateAndProof := &zondpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof, Signature: make([]byte, dilithium2.CryptoBytes)}
 
 	c := lruwrpr.New(10)
 	r := &Service{
@@ -122,7 +122,7 @@ func TestValidateAggregateAndProof_NoBlock(t *testing.T) {
 			attPool:     attestations.NewPool(),
 			chain:       &mock.ChainService{},
 		},
-		blkRootToPendingAtts:           make(map[[32]byte][]*ethpb.SignedAggregateAttestationAndProof),
+		blkRootToPendingAtts:           make(map[[32]byte][]*zondpb.SignedAggregateAttestationAndProof),
 		seenAggregatedAttestationCache: c,
 	}
 	r.initCaches()
@@ -162,22 +162,22 @@ func TestValidateAggregateAndProof_NotWithinSlotRange(t *testing.T) {
 
 	aggBits := bitfield.NewBitlist(3)
 	aggBits.SetBitAt(0, true)
-	att := &ethpb.Attestation{
-		Data: &ethpb.AttestationData{
+	att := &zondpb.Attestation{
+		Data: &zondpb.AttestationData{
 			Slot:            1,
 			BeaconBlockRoot: root[:],
-			Source:          &ethpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
-			Target:          &ethpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
+			Source:          &zondpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
+			Target:          &zondpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
 		},
 		AggregationBits: aggBits,
 		Signature:       make([]byte, dilithium2.CryptoBytes),
 	}
 
-	aggregateAndProof := &ethpb.AggregateAttestationAndProof{
+	aggregateAndProof := &zondpb.AggregateAttestationAndProof{
 		Aggregate:      att,
 		SelectionProof: make([]byte, dilithium2.CryptoBytes),
 	}
-	signedAggregateAndProof := &ethpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof, Signature: make([]byte, dilithium2.CryptoBytes)}
+	signedAggregateAndProof := &zondpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof, Signature: make([]byte, dilithium2.CryptoBytes)}
 
 	require.NoError(t, beaconState.SetGenesisTime(uint64(time.Now().Unix())))
 
@@ -246,22 +246,22 @@ func TestValidateAggregateAndProof_ExistedInPool(t *testing.T) {
 
 	aggBits := bitfield.NewBitlist(3)
 	aggBits.SetBitAt(0, true)
-	att := &ethpb.Attestation{
-		Data: &ethpb.AttestationData{
+	att := &zondpb.Attestation{
+		Data: &zondpb.AttestationData{
 			Slot:            1,
 			BeaconBlockRoot: root[:],
-			Source:          &ethpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
-			Target:          &ethpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
+			Source:          &zondpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
+			Target:          &zondpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
 		},
 		AggregationBits: aggBits,
 		Signature:       make([]byte, dilithium2.CryptoBytes),
 	}
 
-	aggregateAndProof := &ethpb.AggregateAttestationAndProof{
+	aggregateAndProof := &zondpb.AggregateAttestationAndProof{
 		Aggregate:      att,
 		SelectionProof: make([]byte, dilithium2.CryptoBytes),
 	}
-	signedAggregateAndProof := &ethpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof, Signature: make([]byte, dilithium2.CryptoBytes)}
+	signedAggregateAndProof := &zondpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof, Signature: make([]byte, dilithium2.CryptoBytes)}
 
 	require.NoError(t, beaconState.SetGenesisTime(uint64(time.Now().Unix())))
 	r := &Service{
@@ -275,7 +275,7 @@ func TestValidateAggregateAndProof_ExistedInPool(t *testing.T) {
 			attestationNotifier: (&mock.ChainService{}).OperationNotifier(),
 		},
 		seenAggregatedAttestationCache: lruwrpr.New(10),
-		blkRootToPendingAtts:           make(map[[32]byte][]*ethpb.SignedAggregateAttestationAndProof),
+		blkRootToPendingAtts:           make(map[[32]byte][]*zondpb.SignedAggregateAttestationAndProof),
 	}
 	r.initCaches()
 
@@ -315,12 +315,12 @@ func TestValidateAggregateAndProof_CanValidate(t *testing.T) {
 
 	aggBits := bitfield.NewBitlist(validators / uint64(params.BeaconConfig().SlotsPerEpoch))
 	aggBits.SetBitAt(0, true)
-	att := &ethpb.Attestation{
-		Data: &ethpb.AttestationData{
+	att := &zondpb.Attestation{
+		Data: &zondpb.AttestationData{
 			Slot:            1,
 			BeaconBlockRoot: root[:],
-			Source:          &ethpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
-			Target:          &ethpb.Checkpoint{Epoch: 0, Root: root[:]},
+			Source:          &zondpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
+			Target:          &zondpb.Checkpoint{Epoch: 0, Root: root[:]},
 		},
 		AggregationBits: aggBits,
 	}
@@ -344,12 +344,12 @@ func TestValidateAggregateAndProof_CanValidate(t *testing.T) {
 	sszUint := primitives.SSZUint64(att.Data.Slot)
 	sig, err := signing.ComputeDomainAndSign(beaconState, 0, &sszUint, params.BeaconConfig().DomainSelectionProof, privKeys[ai])
 	require.NoError(t, err)
-	aggregateAndProof := &ethpb.AggregateAttestationAndProof{
+	aggregateAndProof := &zondpb.AggregateAttestationAndProof{
 		SelectionProof:  sig,
 		Aggregate:       att,
 		AggregatorIndex: ai,
 	}
-	signedAggregateAndProof := &ethpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof}
+	signedAggregateAndProof := &zondpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof}
 	signedAggregateAndProof.Signature, err = signing.ComputeDomainAndSign(beaconState, 0, signedAggregateAndProof.Message, params.BeaconConfig().DomainAggregateAndProof, privKeys[ai])
 	require.NoError(t, err)
 
@@ -361,7 +361,7 @@ func TestValidateAggregateAndProof_CanValidate(t *testing.T) {
 		DB:               db,
 		State:            beaconState,
 		ValidAttestation: true,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  att.Data.BeaconBlockRoot,
 		}}
@@ -419,12 +419,12 @@ func TestVerifyIndexInCommittee_SeenAggregatorEpoch(t *testing.T) {
 
 	aggBits := bitfield.NewBitlist(validators / uint64(params.BeaconConfig().SlotsPerEpoch))
 	aggBits.SetBitAt(0, true)
-	att := &ethpb.Attestation{
-		Data: &ethpb.AttestationData{
+	att := &zondpb.Attestation{
+		Data: &zondpb.AttestationData{
 			Slot:            1,
 			BeaconBlockRoot: root[:],
-			Source:          &ethpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
-			Target:          &ethpb.Checkpoint{Epoch: 0, Root: root[:]},
+			Source:          &zondpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
+			Target:          &zondpb.Checkpoint{Epoch: 0, Root: root[:]},
 		},
 		AggregationBits: aggBits,
 	}
@@ -447,12 +447,12 @@ func TestVerifyIndexInCommittee_SeenAggregatorEpoch(t *testing.T) {
 	sszUint := primitives.SSZUint64(att.Data.Slot)
 	sig, err := signing.ComputeDomainAndSign(beaconState, 0, &sszUint, params.BeaconConfig().DomainSelectionProof, privKeys[ai])
 	require.NoError(t, err)
-	aggregateAndProof := &ethpb.AggregateAttestationAndProof{
+	aggregateAndProof := &zondpb.AggregateAttestationAndProof{
 		SelectionProof:  sig,
 		Aggregate:       att,
 		AggregatorIndex: ai,
 	}
-	signedAggregateAndProof := &ethpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof}
+	signedAggregateAndProof := &zondpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof}
 	signedAggregateAndProof.Signature, err = signing.ComputeDomainAndSign(beaconState, 0, signedAggregateAndProof.Message, params.BeaconConfig().DomainAggregateAndProof, privKeys[ai])
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetGenesisTime(uint64(time.Now().Unix())))
@@ -464,7 +464,7 @@ func TestVerifyIndexInCommittee_SeenAggregatorEpoch(t *testing.T) {
 		ValidatorsRoot:   [32]byte{'A'},
 		State:            beaconState,
 		ValidAttestation: true,
-		FinalizedCheckPoint: &ethpb.Checkpoint{
+		FinalizedCheckPoint: &zondpb.Checkpoint{
 			Epoch: 0,
 			Root:  signedAggregateAndProof.Message.Aggregate.Data.BeaconBlockRoot,
 		}}
@@ -539,11 +539,11 @@ func TestValidateAggregateAndProof_BadBlock(t *testing.T) {
 
 	aggBits := bitfield.NewBitlist(validators / uint64(params.BeaconConfig().SlotsPerEpoch))
 	aggBits.SetBitAt(0, true)
-	att := &ethpb.Attestation{
-		Data: &ethpb.AttestationData{
+	att := &zondpb.Attestation{
+		Data: &zondpb.AttestationData{
 			BeaconBlockRoot: root[:],
-			Source:          &ethpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
-			Target:          &ethpb.Checkpoint{Epoch: 0, Root: root[:]},
+			Source:          &zondpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
+			Target:          &zondpb.Checkpoint{Epoch: 0, Root: root[:]},
 		},
 		AggregationBits: aggBits,
 	}
@@ -568,12 +568,12 @@ func TestValidateAggregateAndProof_BadBlock(t *testing.T) {
 	sig, err := signing.ComputeDomainAndSign(beaconState, 0, &sszUint, params.BeaconConfig().DomainSelectionProof, privKeys[ai])
 	require.NoError(t, err)
 
-	aggregateAndProof := &ethpb.AggregateAttestationAndProof{
+	aggregateAndProof := &zondpb.AggregateAttestationAndProof{
 		SelectionProof:  sig,
 		Aggregate:       att,
 		AggregatorIndex: ai,
 	}
-	signedAggregateAndProof := &ethpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof}
+	signedAggregateAndProof := &zondpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof}
 	signedAggregateAndProof.Signature, err = signing.ComputeDomainAndSign(beaconState, 0, signedAggregateAndProof.Message, params.BeaconConfig().DomainAggregateAndProof, privKeys[ai])
 	require.NoError(t, err)
 
@@ -586,7 +586,7 @@ func TestValidateAggregateAndProof_BadBlock(t *testing.T) {
 			chain: &mock.ChainService{Genesis: time.Now(),
 				State:            beaconState,
 				ValidAttestation: true,
-				FinalizedCheckPoint: &ethpb.Checkpoint{
+				FinalizedCheckPoint: &zondpb.Checkpoint{
 					Epoch: 0,
 				}},
 			attPool:             attestations.NewPool(),
@@ -630,11 +630,11 @@ func TestValidateAggregateAndProof_RejectWhenAttEpochDoesntEqualTargetEpoch(t *t
 
 	aggBits := bitfield.NewBitlist(validators / uint64(params.BeaconConfig().SlotsPerEpoch))
 	aggBits.SetBitAt(0, true)
-	att := &ethpb.Attestation{
-		Data: &ethpb.AttestationData{
+	att := &zondpb.Attestation{
+		Data: &zondpb.AttestationData{
 			BeaconBlockRoot: root[:],
-			Source:          &ethpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
-			Target:          &ethpb.Checkpoint{Epoch: 1, Root: root[:]},
+			Source:          &zondpb.Checkpoint{Epoch: 0, Root: bytesutil.PadTo([]byte("hello-world"), 32)},
+			Target:          &zondpb.Checkpoint{Epoch: 1, Root: root[:]},
 		},
 		AggregationBits: aggBits,
 	}
@@ -658,12 +658,12 @@ func TestValidateAggregateAndProof_RejectWhenAttEpochDoesntEqualTargetEpoch(t *t
 	sszUint := primitives.SSZUint64(att.Data.Slot)
 	sig, err := signing.ComputeDomainAndSign(beaconState, 0, &sszUint, params.BeaconConfig().DomainSelectionProof, privKeys[ai])
 	require.NoError(t, err)
-	aggregateAndProof := &ethpb.AggregateAttestationAndProof{
+	aggregateAndProof := &zondpb.AggregateAttestationAndProof{
 		SelectionProof:  sig,
 		Aggregate:       att,
 		AggregatorIndex: ai,
 	}
-	signedAggregateAndProof := &ethpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof}
+	signedAggregateAndProof := &zondpb.SignedAggregateAttestationAndProof{Message: aggregateAndProof}
 	signedAggregateAndProof.Signature, err = signing.ComputeDomainAndSign(beaconState, 0, signedAggregateAndProof.Message, params.BeaconConfig().DomainAggregateAndProof, privKeys[ai])
 	require.NoError(t, err)
 
@@ -676,7 +676,7 @@ func TestValidateAggregateAndProof_RejectWhenAttEpochDoesntEqualTargetEpoch(t *t
 			chain: &mock.ChainService{Genesis: time.Now(),
 				State:            beaconState,
 				ValidAttestation: true,
-				FinalizedCheckPoint: &ethpb.Checkpoint{
+				FinalizedCheckPoint: &zondpb.Checkpoint{
 					Epoch: 0,
 					Root:  att.Data.BeaconBlockRoot,
 				}},

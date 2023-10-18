@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -55,7 +55,7 @@ func TestSubmitSyncMessage_Valid(t *testing.T) {
 		nil,
 	).Times(1)
 
-	protoSyncCommiteeMessage := ethpb.SyncCommitteeMessage{
+	protoSyncCommiteeMessage := zondpb.SyncCommitteeMessage{
 		Slot:           primitives.Slot(42),
 		BlockRoot:      decodedBeaconBlockRoot,
 		ValidatorIndex: primitives.ValidatorIndex(12345),
@@ -86,7 +86,7 @@ func TestSubmitSyncMessage_BadRequest(t *testing.T) {
 	).Times(1)
 
 	validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
-	_, err := validatorClient.SubmitSyncMessage(context.Background(), &ethpb.SyncCommitteeMessage{})
+	_, err := validatorClient.SubmitSyncMessage(context.Background(), &zondpb.SyncCommitteeMessage{})
 	assert.ErrorContains(t, "failed to send POST data to `/eth/v1/beacon/pool/sync_committees` REST endpoint", err)
 	assert.ErrorContains(t, "foo error", err)
 }
@@ -176,7 +176,7 @@ func TestGetSyncCommitteeContribution(t *testing.T) {
 
 	const blockRoot = "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
 
-	request := &ethpb.SyncCommitteeContributionRequest{
+	request := &zondpb.SyncCommitteeContributionRequest{
 		Slot:      primitives.Slot(1),
 		PublicKey: nil,
 		SubnetId:  1,
@@ -264,7 +264,7 @@ func TestGetSyncSubCommitteeIndex(t *testing.T) {
 		slot               = primitives.Slot(123)
 	)
 
-	expectedResponse := &ethpb.SyncSubcommitteeIndexResponse{
+	expectedResponse := &zondpb.SyncSubcommitteeIndexResponse{
 		Indices: []primitives.CommitteeIndex{123, 456},
 	}
 
@@ -372,7 +372,7 @@ func TestGetSyncSubCommitteeIndex(t *testing.T) {
 					jsonRestHandler: jsonRestHandler,
 				},
 			}
-			actualResponse, err := validatorClient.getSyncSubcommitteeIndex(ctx, &ethpb.SyncSubcommitteeIndexRequest{
+			actualResponse, err := validatorClient.getSyncSubcommitteeIndex(ctx, &zondpb.SyncSubcommitteeIndexRequest{
 				PublicKey: pubkey,
 				Slot:      slot,
 			})

@@ -6,7 +6,7 @@ import (
 
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
@@ -18,7 +18,7 @@ import (
 func TestVerifyProposerSlashing_BeaconFuzzIssue91(t *testing.T) {
 	file, err := os.ReadFile("testdata/beaconfuzz_91_beacon.ssz")
 	require.NoError(t, err)
-	rawState := &ethpb.BeaconState{}
+	rawState := &zondpb.BeaconState{}
 	err = rawState.UnmarshalSSZ(file)
 	require.NoError(t, err)
 
@@ -27,7 +27,7 @@ func TestVerifyProposerSlashing_BeaconFuzzIssue91(t *testing.T) {
 
 	file, err = os.ReadFile("testdata/beaconfuzz_91_proposer_slashing.ssz")
 	require.NoError(t, err)
-	slashing := &ethpb.ProposerSlashing{}
+	slashing := &zondpb.ProposerSlashing{}
 	err = slashing.UnmarshalSSZ(file)
 	require.NoError(t, err)
 

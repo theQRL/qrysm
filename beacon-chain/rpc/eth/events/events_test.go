@@ -21,9 +21,9 @@ import (
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/eth/v1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/proto/migration"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/mock"
@@ -38,7 +38,7 @@ func TestStreamEvents_Preconditions(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		mockStream := mock.NewMockEvents_StreamEventsServer(ctrl)
-		err := srv.StreamEvents(&ethpb.StreamEventsRequest{Topics: nil}, mockStream)
+		err := srv.StreamEvents(&zondpb.StreamEventsRequest{Topics: nil}, mockStream)
 		require.ErrorContains(t, "No topics specified", err)
 	})
 	t.Run("topic_not_allowed", func(t *testing.T) {
@@ -46,7 +46,7 @@ func TestStreamEvents_Preconditions(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		mockStream := mock.NewMockEvents_StreamEventsServer(ctrl)
-		err := srv.StreamEvents(&ethpb.StreamEventsRequest{Topics: []string{"foobar"}}, mockStream)
+		err := srv.StreamEvents(&zondpb.StreamEventsRequest{Topics: []string{"foobar"}}, mockStream)
 		require.ErrorContains(t, "Topic foobar not allowed", err)
 	})
 }
@@ -57,20 +57,20 @@ func TestStreamEvents_BlockEvents(t *testing.T) {
 		srv, ctrl, mockStream := setupServer(ctx, t)
 		defer ctrl.Finish()
 
-		blk := util.HydrateSignedBeaconBlock(&eth.SignedBeaconBlock{
-			Block: &eth.BeaconBlock{
+		blk := util.HydrateSignedBeaconBlock(&zond.SignedBeaconBlock{
+			Block: &zond.BeaconBlock{
 				Slot: 8,
 			},
 		})
 		bodyRoot, err := blk.Block.Body.HashTreeRoot()
 		require.NoError(t, err)
-		wantedHeader := util.HydrateBeaconHeader(&eth.BeaconBlockHeader{
+		wantedHeader := util.HydrateBeaconHeader(&zond.BeaconBlockHeader{
 			Slot:     8,
 			BodyRoot: bodyRoot[:],
 		})
 		wantedBlockRoot, err := wantedHeader.HashTreeRoot()
 		require.NoError(t, err)
-		genericResponse, err := anypb.New(&ethpb.EventBlock{
+		genericResponse, err := anypb.New(&zondpb.EventBlock{
 			Slot:                8,
 			Block:               wantedBlockRoot[:],
 			ExecutionOptimistic: true,
@@ -106,8 +106,8 @@ func TestStreamEvents_OperationsEvents(t *testing.T) {
 		srv, ctrl, mockStream := setupServer(ctx, t)
 		defer ctrl.Finish()
 
-		wantedAttV1alpha1 := util.HydrateAttestation(&eth.Attestation{
-			Data: &eth.AttestationData{
+		wantedAttV1alpha1 := util.HydrateAttestation(&zond.Attestation{
+			Data: &zond.AttestationData{
 				Slot: 8,
 			},
 		})
@@ -140,8 +140,8 @@ func TestStreamEvents_OperationsEvents(t *testing.T) {
 		srv, ctrl, mockStream := setupServer(ctx, t)
 		defer ctrl.Finish()
 
-		wantedAttV1alpha1 := &eth.AggregateAttestationAndProof{
-			Aggregate: util.HydrateAttestation(&eth.Attestation{}),
+		wantedAttV1alpha1 := &zond.AggregateAttestationAndProof{
+			Aggregate: util.HydrateAttestation(&zond.Attestation{}),
 		}
 		wantedAtt := migration.V1Alpha1AggregateAttAndProofToV1(wantedAttV1alpha1)
 		genericResponse, err := anypb.New(wantedAtt)
@@ -172,8 +172,8 @@ func TestStreamEvents_OperationsEvents(t *testing.T) {
 		srv, ctrl, mockStream := setupServer(ctx, t)
 		defer ctrl.Finish()
 
-		wantedExitV1alpha1 := &eth.SignedVoluntaryExit{
-			Exit: &eth.VoluntaryExit{
+		wantedExitV1alpha1 := &zond.SignedVoluntaryExit{
+			Exit: &zond.VoluntaryExit{
 				Epoch:          1,
 				ValidatorIndex: 1,
 			},
@@ -208,10 +208,10 @@ func TestStreamEvents_OperationsEvents(t *testing.T) {
 		srv, ctrl, mockStream := setupServer(ctx, t)
 		defer ctrl.Finish()
 
-		wantedContributionV1alpha1 := &eth.SignedContributionAndProof{
-			Message: &eth.ContributionAndProof{
+		wantedContributionV1alpha1 := &zond.SignedContributionAndProof{
+			Message: &zond.ContributionAndProof{
 				AggregatorIndex: 1,
-				Contribution: &eth.SyncCommitteeContribution{
+				Contribution: &zond.SyncCommitteeContribution{
 					Slot:              1,
 					BlockRoot:         []byte("root"),
 					SubcommitteeIndex: 1,
@@ -251,8 +251,8 @@ func TestStreamEvents_OperationsEvents(t *testing.T) {
 		srv, ctrl, mockStream := setupServer(ctx, t)
 		defer ctrl.Finish()
 
-		wantedChangeV1alpha1 := &eth.SignedDilithiumToExecutionChange{
-			Message: &eth.DilithiumToExecutionChange{
+		wantedChangeV1alpha1 := &zond.SignedDilithiumToExecutionChange{
+			Message: &zond.DilithiumToExecutionChange{
 				ValidatorIndex:      1,
 				FromDilithiumPubkey: []byte("from"),
 				ToExecutionAddress:  []byte("to"),
@@ -291,7 +291,7 @@ func TestStreamEvents_StateEvents(t *testing.T) {
 		srv, ctrl, mockStream := setupServer(ctx, t)
 		defer ctrl.Finish()
 
-		wantedHead := &ethpb.EventHead{
+		wantedHead := &zondpb.EventHead{
 			Slot:                      8,
 			Block:                     make([]byte, 32),
 			State:                     make([]byte, 32),
@@ -335,17 +335,17 @@ func TestStreamEvents_StateEvents(t *testing.T) {
 		require.NoError(t, err, "Could not get signing root")
 
 		var scBits [fieldparams.SyncAggregateSyncCommitteeBytesLength]byte
-		blk := &eth.SignedBeaconBlockBellatrix{
-			Block: &eth.BeaconBlockBellatrix{
+		blk := &zond.SignedBeaconBlockBellatrix{
+			Block: &zond.BeaconBlockBellatrix{
 				ProposerIndex: 0,
 				Slot:          1,
 				ParentRoot:    parentRoot[:],
 				StateRoot:     genesis.Block.StateRoot,
-				Body: &eth.BeaconBlockBodyBellatrix{
+				Body: &zond.BeaconBlockBodyBellatrix{
 					RandaoReveal:  genesis.Block.Body.RandaoReveal,
 					Graffiti:      genesis.Block.Body.Graffiti,
 					Eth1Data:      genesis.Block.Body.Eth1Data,
-					SyncAggregate: &eth.SyncAggregate{SyncCommitteeBits: scBits[:], SyncCommitteeSignature: make([]byte, 96)},
+					SyncAggregate: &zond.SyncAggregate{SyncCommitteeBits: scBits[:], SyncCommitteeSignature: make([]byte, 96)},
 					ExecutionPayload: &enginev1.ExecutionPayload{
 						BlockNumber:   1,
 						ParentHash:    make([]byte, fieldparams.RootLength),
@@ -378,9 +378,9 @@ func TestStreamEvents_StateEvents(t *testing.T) {
 		prevRando, err := helpers.RandaoMix(beaconState, prysmtime.CurrentEpoch(beaconState))
 		require.NoError(t, err)
 
-		wantedPayload := &ethpb.EventPayloadAttributeV1{
+		wantedPayload := &zondpb.EventPayloadAttributeV1{
 			Version: version.String(version.Bellatrix),
-			Data: &ethpb.EventPayloadAttributeV1_BasePayloadAttribute{
+			Data: &zondpb.EventPayloadAttributeV1_BasePayloadAttribute{
 				ProposerIndex:     0,
 				ProposalSlot:      2,
 				ParentBlockNumber: 1,
@@ -441,17 +441,17 @@ func TestStreamEvents_StateEvents(t *testing.T) {
 		require.NoError(t, err, "Could get expected withdrawals")
 		require.NotEqual(t, len(withdrawals), 0)
 		var scBits [fieldparams.SyncAggregateSyncCommitteeBytesLength]byte
-		blk := &eth.SignedBeaconBlockCapella{
-			Block: &eth.BeaconBlockCapella{
+		blk := &zond.SignedBeaconBlockCapella{
+			Block: &zond.BeaconBlockCapella{
 				ProposerIndex: 0,
 				Slot:          1,
 				ParentRoot:    parentRoot[:],
 				StateRoot:     genesis.Block.StateRoot,
-				Body: &eth.BeaconBlockBodyCapella{
+				Body: &zond.BeaconBlockBodyCapella{
 					RandaoReveal:  genesis.Block.Body.RandaoReveal,
 					Graffiti:      genesis.Block.Body.Graffiti,
 					Eth1Data:      genesis.Block.Body.Eth1Data,
-					SyncAggregate: &eth.SyncAggregate{SyncCommitteeBits: scBits[:], SyncCommitteeSignature: make([]byte, 96)},
+					SyncAggregate: &zond.SyncAggregate{SyncCommitteeBits: scBits[:], SyncCommitteeSignature: make([]byte, 96)},
 					ExecutionPayload: &enginev1.ExecutionPayloadCapella{
 						BlockNumber:   1,
 						ParentHash:    make([]byte, fieldparams.RootLength),
@@ -486,9 +486,9 @@ func TestStreamEvents_StateEvents(t *testing.T) {
 		prevRando, err := helpers.RandaoMix(beaconState, prysmtime.CurrentEpoch(beaconState))
 		require.NoError(t, err)
 
-		wantedPayload := &ethpb.EventPayloadAttributeV2{
+		wantedPayload := &zondpb.EventPayloadAttributeV2{
 			Version: version.String(version.Capella),
-			Data: &ethpb.EventPayloadAttributeV2_BasePayloadAttribute{
+			Data: &zondpb.EventPayloadAttributeV2_BasePayloadAttribute{
 				ProposerIndex:     0,
 				ProposalSlot:      2,
 				ParentBlockNumber: 1,
@@ -527,7 +527,7 @@ func TestStreamEvents_StateEvents(t *testing.T) {
 		srv, ctrl, mockStream := setupServer(ctx, t)
 		defer ctrl.Finish()
 
-		wantedCheckpoint := &ethpb.EventFinalizedCheckpoint{
+		wantedCheckpoint := &zondpb.EventFinalizedCheckpoint{
 			Block:               make([]byte, 32),
 			State:               make([]byte, 32),
 			Epoch:               8,
@@ -558,7 +558,7 @@ func TestStreamEvents_StateEvents(t *testing.T) {
 		srv, ctrl, mockStream := setupServer(ctx, t)
 		defer ctrl.Finish()
 
-		wantedReorg := &ethpb.EventChainReorg{
+		wantedReorg := &zondpb.EventChainReorg{
 			Slot:                8,
 			Depth:               1,
 			OldHeadBlock:        make([]byte, 32),
@@ -595,7 +595,7 @@ func TestStreamEvents_CommaSeparatedTopics(t *testing.T) {
 	srv, ctrl, mockStream := setupServer(ctx, t)
 	defer ctrl.Finish()
 
-	wantedHead := &ethpb.EventHead{
+	wantedHead := &zondpb.EventHead{
 		Slot:                      8,
 		Block:                     make([]byte, 32),
 		State:                     make([]byte, 32),
@@ -623,7 +623,7 @@ func TestStreamEvents_CommaSeparatedTopics(t *testing.T) {
 		feed: srv.StateNotifier.StateFeed(),
 	})
 
-	wantedCheckpoint := &ethpb.EventFinalizedCheckpoint{
+	wantedCheckpoint := &zondpb.EventFinalizedCheckpoint{
 		Block: make([]byte, 32),
 		State: make([]byte, 32),
 		Epoch: 8,
@@ -679,7 +679,7 @@ func assertFeedSendAndReceive(ctx context.Context, args *assertFeedArgs) {
 	})
 	args.stream.EXPECT().Context().Return(ctx).AnyTimes()
 
-	req := &ethpb.StreamEventsRequest{Topics: args.topics}
+	req := &zondpb.StreamEventsRequest{Topics: args.topics}
 	go func(tt *testing.T) {
 		assert.NoError(tt, args.srv.StreamEvents(req, args.stream), "Could not call RPC method")
 	}(args.t)

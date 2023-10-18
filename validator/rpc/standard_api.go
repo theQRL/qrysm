@@ -14,8 +14,8 @@ import (
 	validatorServiceConfig "github.com/theQRL/qrysm/v4/config/validator/service"
 	"github.com/theQRL/qrysm/v4/consensus-types/validator"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/validator/client"
 	"github.com/theQRL/qrysm/v4/validator/keymanager"
 	"github.com/theQRL/qrysm/v4/validator/keymanager/derived"
@@ -31,7 +31,7 @@ import (
 // ListKeystores implements the standard validator key management API.
 func (s *Server) ListKeystores(
 	ctx context.Context, _ *empty.Empty,
-) (*ethpbservice.ListKeystoresResponse, error) {
+) (*zondpbservice.ListKeystoresResponse, error) {
 	if !s.walletInitialized {
 		return nil, status.Error(codes.FailedPrecondition, "Prysm Wallet not initialized. Please create a new wallet.")
 	}
@@ -49,31 +49,31 @@ func (s *Server) ListKeystores(
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not retrieve keystores: %v", err)
 	}
-	keystoreResponse := make([]*ethpbservice.ListKeystoresResponse_Keystore, len(pubKeys))
+	keystoreResponse := make([]*zondpbservice.ListKeystoresResponse_Keystore, len(pubKeys))
 	for i := 0; i < len(pubKeys); i++ {
-		keystoreResponse[i] = &ethpbservice.ListKeystoresResponse_Keystore{
+		keystoreResponse[i] = &zondpbservice.ListKeystoresResponse_Keystore{
 			ValidatingPubkey: pubKeys[i][:],
 		}
 		if s.wallet.KeymanagerKind() == keymanager.Derived {
 			keystoreResponse[i].DerivationPath = fmt.Sprintf(derived.ValidatingKeyDerivationPathTemplate, i)
 		}
 	}
-	return &ethpbservice.ListKeystoresResponse{
+	return &zondpbservice.ListKeystoresResponse{
 		Data: keystoreResponse,
 	}, nil
 }
 
 // ImportKeystores allows for importing keystores into Prysm with their slashing protection history.
 func (s *Server) ImportKeystores(
-	ctx context.Context, req *ethpbservice.ImportKeystoresRequest,
-) (*ethpbservice.ImportKeystoresResponse, error) {
+	ctx context.Context, req *zondpbservice.ImportKeystoresRequest,
+) (*zondpbservice.ImportKeystoresResponse, error) {
 	if !s.walletInitialized {
 		statuses := groupImportErrors(req, "Prysm Wallet not initialized. Please create a new wallet.")
-		return &ethpbservice.ImportKeystoresResponse{Data: statuses}, nil
+		return &zondpbservice.ImportKeystoresResponse{Data: statuses}, nil
 	}
 	if s.validatorService == nil {
 		statuses := groupImportErrors(req, "Validator service not ready. Please try again once validator is ready.")
-		return &ethpbservice.ImportKeystoresResponse{Data: statuses}, nil
+		return &zondpbservice.ImportKeystoresResponse{Data: statuses}, nil
 	}
 	km, err := s.validatorService.Keymanager()
 	if err != nil {
@@ -82,10 +82,10 @@ func (s *Server) ImportKeystores(
 	importer, ok := km.(keymanager.Importer)
 	if !ok {
 		statuses := groupImportErrors(req, "Keymanager kind cannot import keys")
-		return &ethpbservice.ImportKeystoresResponse{Data: statuses}, nil
+		return &zondpbservice.ImportKeystoresResponse{Data: statuses}, nil
 	}
 	if len(req.Keystores) == 0 {
-		return &ethpbservice.ImportKeystoresResponse{}, nil
+		return &zondpbservice.ImportKeystoresResponse{}, nil
 	}
 	keystores := make([]*keymanager.Keystore, len(req.Keystores))
 	for i := 0; i < len(req.Keystores); i++ {
@@ -104,14 +104,14 @@ func (s *Server) ImportKeystores(
 		if err := slashingprotection.ImportStandardProtectionJSON(
 			ctx, s.valDB, bytes.NewBuffer([]byte(req.SlashingProtection)),
 		); err != nil {
-			statuses := make([]*ethpbservice.ImportedKeystoreStatus, len(req.Keystores))
+			statuses := make([]*zondpbservice.ImportedKeystoreStatus, len(req.Keystores))
 			for i := range statuses {
-				statuses[i] = &ethpbservice.ImportedKeystoreStatus{
-					Status:  ethpbservice.ImportedKeystoreStatus_ERROR,
+				statuses[i] = &zondpbservice.ImportedKeystoreStatus{
+					Status:  zondpbservice.ImportedKeystoreStatus_ERROR,
 					Message: fmt.Sprintf("could not import slashing protection: %v", err),
 				}
 			}
-			return &ethpbservice.ImportKeystoresResponse{Data: statuses}, nil
+			return &zondpbservice.ImportKeystoresResponse{Data: statuses}, nil
 		}
 	}
 	if len(req.Passwords) == 0 {
@@ -135,14 +135,14 @@ func (s *Server) ImportKeystores(
 
 	// If any of the keys imported had a slashing protection history before, we
 	// stop marking them as deleted from our validator database.
-	return &ethpbservice.ImportKeystoresResponse{Data: statuses}, nil
+	return &zondpbservice.ImportKeystoresResponse{Data: statuses}, nil
 }
 
-func groupImportErrors(req *ethpbservice.ImportKeystoresRequest, errorMessage string) []*ethpbservice.ImportedKeystoreStatus {
-	statuses := make([]*ethpbservice.ImportedKeystoreStatus, len(req.Keystores))
+func groupImportErrors(req *zondpbservice.ImportKeystoresRequest, errorMessage string) []*zondpbservice.ImportedKeystoreStatus {
+	statuses := make([]*zondpbservice.ImportedKeystoreStatus, len(req.Keystores))
 	for i := 0; i < len(req.Keystores); i++ {
-		statuses[i] = &ethpbservice.ImportedKeystoreStatus{
-			Status:  ethpbservice.ImportedKeystoreStatus_ERROR,
+		statuses[i] = &zondpbservice.ImportedKeystoreStatus{
+			Status:  zondpbservice.ImportedKeystoreStatus_ERROR,
 			Message: errorMessage,
 		}
 	}
@@ -151,22 +151,22 @@ func groupImportErrors(req *ethpbservice.ImportKeystoresRequest, errorMessage st
 
 // DeleteKeystores allows for deleting specified public keys from Prysm.
 func (s *Server) DeleteKeystores(
-	ctx context.Context, req *ethpbservice.DeleteKeystoresRequest,
-) (*ethpbservice.DeleteKeystoresResponse, error) {
+	ctx context.Context, req *zondpbservice.DeleteKeystoresRequest,
+) (*zondpbservice.DeleteKeystoresResponse, error) {
 	if !s.walletInitialized {
 		statuses := groupExportErrors(req, "Prysm Wallet not initialized. Please create a new wallet.")
-		return &ethpbservice.DeleteKeystoresResponse{Data: statuses}, nil
+		return &zondpbservice.DeleteKeystoresResponse{Data: statuses}, nil
 	}
 	if s.validatorService == nil {
 		statuses := groupExportErrors(req, "Validator service not ready")
-		return &ethpbservice.DeleteKeystoresResponse{Data: statuses}, nil
+		return &zondpbservice.DeleteKeystoresResponse{Data: statuses}, nil
 	}
 	km, err := s.validatorService.Keymanager()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get keymanager (possibly due to beacon node unavailable): %v", err)
 	}
 	if len(req.Pubkeys) == 0 {
-		return &ethpbservice.DeleteKeystoresResponse{Data: make([]*ethpbservice.DeletedKeystoreStatus, 0)}, nil
+		return &zondpbservice.DeleteKeystoresResponse{Data: make([]*zondpbservice.DeletedKeystoreStatus, 0)}, nil
 	}
 	statuses, err := km.DeleteKeystores(ctx, req.Pubkeys)
 	if err != nil {
@@ -182,7 +182,7 @@ func (s *Server) DeleteKeystores(
 	if err != nil {
 		log.WithError(err).Warn("Could not get slashing protection history for deleted keys")
 		statuses := groupExportErrors(req, "Non duplicate keys that were existing were deleted, but could not export slashing protection history.")
-		return &ethpbservice.DeleteKeystoresResponse{Data: statuses}, nil
+		return &zondpbservice.DeleteKeystoresResponse{Data: statuses}, nil
 	}
 	jsonHist, err := json.Marshal(exportedHistory)
 	if err != nil {
@@ -192,17 +192,17 @@ func (s *Server) DeleteKeystores(
 			err,
 		)
 	}
-	return &ethpbservice.DeleteKeystoresResponse{
+	return &zondpbservice.DeleteKeystoresResponse{
 		Data:               statuses,
 		SlashingProtection: string(jsonHist),
 	}, nil
 }
 
-func groupExportErrors(req *ethpbservice.DeleteKeystoresRequest, errorMessage string) []*ethpbservice.DeletedKeystoreStatus {
-	statuses := make([]*ethpbservice.DeletedKeystoreStatus, len(req.Pubkeys))
+func groupExportErrors(req *zondpbservice.DeleteKeystoresRequest, errorMessage string) []*zondpbservice.DeletedKeystoreStatus {
+	statuses := make([]*zondpbservice.DeletedKeystoreStatus, len(req.Pubkeys))
 	for i := 0; i < len(req.Pubkeys); i++ {
-		statuses[i] = &ethpbservice.DeletedKeystoreStatus{
-			Status:  ethpbservice.DeletedKeystoreStatus_ERROR,
+		statuses[i] = &zondpbservice.DeletedKeystoreStatus{
+			Status:  zondpbservice.DeletedKeystoreStatus_ERROR,
 			Message: errorMessage,
 		}
 	}
@@ -214,8 +214,8 @@ func groupExportErrors(req *ethpbservice.DeleteKeystoresRequest, errorMessage st
 // to NOT_ACTIVE, as we do have slashing protection history for it and should not mark it
 // as NOT_FOUND when returning a response to the caller.
 func (s *Server) transformDeletedKeysStatuses(
-	ctx context.Context, pubKeys [][]byte, statuses []*ethpbservice.DeletedKeystoreStatus,
-) ([]*ethpbservice.DeletedKeystoreStatus, error) {
+	ctx context.Context, pubKeys [][]byte, statuses []*zondpbservice.DeletedKeystoreStatus,
+) ([]*zondpbservice.DeletedKeystoreStatus, error) {
 	pubKeysInDB, err := s.publicKeysInDB(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get public keys from DB: %v", err)
@@ -223,8 +223,8 @@ func (s *Server) transformDeletedKeysStatuses(
 	if len(pubKeysInDB) > 0 {
 		for i := 0; i < len(pubKeys); i++ {
 			keyExistsInDB := pubKeysInDB[bytesutil.ToBytes2592(pubKeys[i])]
-			if keyExistsInDB && statuses[i].Status == ethpbservice.DeletedKeystoreStatus_NOT_FOUND {
-				statuses[i].Status = ethpbservice.DeletedKeystoreStatus_NOT_ACTIVE
+			if keyExistsInDB && statuses[i].Status == zondpbservice.DeletedKeystoreStatus_NOT_FOUND {
+				statuses[i].Status = zondpbservice.DeletedKeystoreStatus_NOT_ACTIVE
 			}
 		}
 	}
@@ -251,14 +251,14 @@ func (s *Server) publicKeysInDB(ctx context.Context) (map[[dilithium2.CryptoPubl
 // Exports slashing protection data for a list of DELETED or NOT_ACTIVE keys only to be used
 // as part of the DeleteKeystores endpoint.
 func (s *Server) slashingProtectionHistoryForDeletedKeys(
-	ctx context.Context, pubKeys [][]byte, statuses []*ethpbservice.DeletedKeystoreStatus,
+	ctx context.Context, pubKeys [][]byte, statuses []*zondpbservice.DeletedKeystoreStatus,
 ) (*format.EIPSlashingProtectionFormat, error) {
 	// We select the keys that were DELETED or NOT_ACTIVE from the previous action
 	// and use that to filter our slashing protection export.
 	filteredKeys := make([][]byte, 0, len(pubKeys))
 	for i, pk := range pubKeys {
-		if statuses[i].Status == ethpbservice.DeletedKeystoreStatus_DELETED ||
-			statuses[i].Status == ethpbservice.DeletedKeystoreStatus_NOT_ACTIVE {
+		if statuses[i].Status == zondpbservice.DeletedKeystoreStatus_DELETED ||
+			statuses[i].Status == zondpbservice.DeletedKeystoreStatus_NOT_ACTIVE {
 			filteredKeys = append(filteredKeys, pk)
 		}
 	}
@@ -266,7 +266,7 @@ func (s *Server) slashingProtectionHistoryForDeletedKeys(
 }
 
 // ListRemoteKeys returns a list of all public keys defined for web3signer keymanager type.
-func (s *Server) ListRemoteKeys(ctx context.Context, _ *empty.Empty) (*ethpbservice.ListRemoteKeysResponse, error) {
+func (s *Server) ListRemoteKeys(ctx context.Context, _ *empty.Empty) (*zondpbservice.ListRemoteKeysResponse, error) {
 	if !s.walletInitialized {
 		return nil, status.Error(codes.FailedPrecondition, "Prysm Wallet not initialized. Please create a new wallet.")
 	}
@@ -284,21 +284,21 @@ func (s *Server) ListRemoteKeys(ctx context.Context, _ *empty.Empty) (*ethpbserv
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not retrieve keystores: %v", err)
 	}
-	keystoreResponse := make([]*ethpbservice.ListRemoteKeysResponse_Keystore, len(pubKeys))
+	keystoreResponse := make([]*zondpbservice.ListRemoteKeysResponse_Keystore, len(pubKeys))
 	for i := 0; i < len(pubKeys); i++ {
-		keystoreResponse[i] = &ethpbservice.ListRemoteKeysResponse_Keystore{
+		keystoreResponse[i] = &zondpbservice.ListRemoteKeysResponse_Keystore{
 			Pubkey:   pubKeys[i][:],
 			Url:      s.validatorService.Web3SignerConfig.BaseEndpoint,
 			Readonly: true,
 		}
 	}
-	return &ethpbservice.ListRemoteKeysResponse{
+	return &zondpbservice.ListRemoteKeysResponse{
 		Data: keystoreResponse,
 	}, nil
 }
 
 // ImportRemoteKeys imports a list of public keys defined for web3signer keymanager type.
-func (s *Server) ImportRemoteKeys(ctx context.Context, req *ethpbservice.ImportRemoteKeysRequest) (*ethpbservice.ImportRemoteKeysResponse, error) {
+func (s *Server) ImportRemoteKeys(ctx context.Context, req *zondpbservice.ImportRemoteKeysRequest) (*zondpbservice.ImportRemoteKeysResponse, error) {
 	if !s.walletInitialized {
 		return nil, status.Error(codes.FailedPrecondition, "Prysm Wallet not initialized. Please create a new wallet.")
 	}
@@ -315,7 +315,7 @@ func (s *Server) ImportRemoteKeys(ctx context.Context, req *ethpbservice.ImportR
 	adder, ok := km.(keymanager.PublicKeyAdder)
 	if !ok {
 		statuses := groupImportRemoteKeysErrors(req, "Keymanager kind cannot import public keys for web3signer keymanager type.")
-		return &ethpbservice.ImportRemoteKeysResponse{Data: statuses}, nil
+		return &zondpbservice.ImportRemoteKeysResponse{Data: statuses}, nil
 	}
 
 	remoteKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, len(req.RemoteKeys))
@@ -333,18 +333,18 @@ func (s *Server) ImportRemoteKeys(ctx context.Context, req *ethpbservice.ImportR
 	statuses, err := adder.AddPublicKeys(ctx, remoteKeys)
 	if err != nil {
 		sts := groupImportRemoteKeysErrors(req, fmt.Sprintf("Could not add keys;error: %v", err))
-		return &ethpbservice.ImportRemoteKeysResponse{Data: sts}, nil
+		return &zondpbservice.ImportRemoteKeysResponse{Data: sts}, nil
 	}
-	return &ethpbservice.ImportRemoteKeysResponse{
+	return &zondpbservice.ImportRemoteKeysResponse{
 		Data: statuses,
 	}, nil
 }
 
-func groupImportRemoteKeysErrors(req *ethpbservice.ImportRemoteKeysRequest, errorMessage string) []*ethpbservice.ImportedRemoteKeysStatus {
-	statuses := make([]*ethpbservice.ImportedRemoteKeysStatus, len(req.RemoteKeys))
+func groupImportRemoteKeysErrors(req *zondpbservice.ImportRemoteKeysRequest, errorMessage string) []*zondpbservice.ImportedRemoteKeysStatus {
+	statuses := make([]*zondpbservice.ImportedRemoteKeysStatus, len(req.RemoteKeys))
 	for i := 0; i < len(req.RemoteKeys); i++ {
-		statuses[i] = &ethpbservice.ImportedRemoteKeysStatus{
-			Status:  ethpbservice.ImportedRemoteKeysStatus_ERROR,
+		statuses[i] = &zondpbservice.ImportedRemoteKeysStatus{
+			Status:  zondpbservice.ImportedRemoteKeysStatus_ERROR,
 			Message: errorMessage,
 		}
 	}
@@ -352,7 +352,7 @@ func groupImportRemoteKeysErrors(req *ethpbservice.ImportRemoteKeysRequest, erro
 }
 
 // DeleteRemoteKeys deletes a list of public keys defined for web3signer keymanager type.
-func (s *Server) DeleteRemoteKeys(ctx context.Context, req *ethpbservice.DeleteRemoteKeysRequest) (*ethpbservice.DeleteRemoteKeysResponse, error) {
+func (s *Server) DeleteRemoteKeys(ctx context.Context, req *zondpbservice.DeleteRemoteKeysRequest) (*zondpbservice.DeleteRemoteKeysResponse, error) {
 	if !s.walletInitialized {
 		return nil, status.Error(codes.FailedPrecondition, "Prysm Wallet not initialized. Please create a new wallet.")
 	}
@@ -369,7 +369,7 @@ func (s *Server) DeleteRemoteKeys(ctx context.Context, req *ethpbservice.DeleteR
 	deleter, ok := km.(keymanager.PublicKeyDeleter)
 	if !ok {
 		statuses := groupDeleteRemoteKeysErrors(req, "Keymanager kind cannot delete public keys for web3signer keymanager type.")
-		return &ethpbservice.DeleteRemoteKeysResponse{Data: statuses}, nil
+		return &zondpbservice.DeleteRemoteKeysResponse{Data: statuses}, nil
 	}
 	remoteKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, len(req.Pubkeys))
 	for i, key := range req.Pubkeys {
@@ -378,25 +378,25 @@ func (s *Server) DeleteRemoteKeys(ctx context.Context, req *ethpbservice.DeleteR
 	statuses, err := deleter.DeletePublicKeys(ctx, remoteKeys)
 	if err != nil {
 		sts := groupDeleteRemoteKeysErrors(req, fmt.Sprintf("Could not delete keys;error: %v", err))
-		return &ethpbservice.DeleteRemoteKeysResponse{Data: sts}, nil
+		return &zondpbservice.DeleteRemoteKeysResponse{Data: sts}, nil
 	}
-	return &ethpbservice.DeleteRemoteKeysResponse{
+	return &zondpbservice.DeleteRemoteKeysResponse{
 		Data: statuses,
 	}, nil
 }
 
-func groupDeleteRemoteKeysErrors(req *ethpbservice.DeleteRemoteKeysRequest, errorMessage string) []*ethpbservice.DeletedRemoteKeysStatus {
-	statuses := make([]*ethpbservice.DeletedRemoteKeysStatus, len(req.Pubkeys))
+func groupDeleteRemoteKeysErrors(req *zondpbservice.DeleteRemoteKeysRequest, errorMessage string) []*zondpbservice.DeletedRemoteKeysStatus {
+	statuses := make([]*zondpbservice.DeletedRemoteKeysStatus, len(req.Pubkeys))
 	for i := 0; i < len(req.Pubkeys); i++ {
-		statuses[i] = &ethpbservice.DeletedRemoteKeysStatus{
-			Status:  ethpbservice.DeletedRemoteKeysStatus_ERROR,
+		statuses[i] = &zondpbservice.DeletedRemoteKeysStatus{
+			Status:  zondpbservice.DeletedRemoteKeysStatus_ERROR,
 			Message: errorMessage,
 		}
 	}
 	return statuses
 }
 
-func (s *Server) GetGasLimit(_ context.Context, req *ethpbservice.PubkeyRequest) (*ethpbservice.GetGasLimitResponse, error) {
+func (s *Server) GetGasLimit(_ context.Context, req *zondpbservice.PubkeyRequest) (*zondpbservice.GetGasLimitResponse, error) {
 	if s.validatorService == nil {
 		return nil, status.Error(codes.FailedPrecondition, "Validator service not ready")
 	}
@@ -404,8 +404,8 @@ func (s *Server) GetGasLimit(_ context.Context, req *ethpbservice.PubkeyRequest)
 	if err := validatePublicKey(validatorKey); err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
-	resp := &ethpbservice.GetGasLimitResponse{
-		Data: &ethpbservice.GetGasLimitResponse_GasLimit{
+	resp := &zondpbservice.GetGasLimitResponse{
+		Data: &zondpbservice.GetGasLimitResponse_GasLimit{
 			Pubkey: validatorKey,
 		},
 	}
@@ -427,7 +427,7 @@ func (s *Server) GetGasLimit(_ context.Context, req *ethpbservice.PubkeyRequest)
 }
 
 // SetGasLimit updates GasLimt of the public key.
-func (s *Server) SetGasLimit(ctx context.Context, req *ethpbservice.SetGasLimitRequest) (*empty.Empty, error) {
+func (s *Server) SetGasLimit(ctx context.Context, req *zondpbservice.SetGasLimitRequest) (*empty.Empty, error) {
 	if s.validatorService == nil {
 		return nil, status.Error(codes.FailedPrecondition, "Validator service not ready")
 	}
@@ -476,7 +476,7 @@ func (s *Server) SetGasLimit(ctx context.Context, req *ethpbservice.SetGasLimitR
 	return &empty.Empty{}, nil
 }
 
-func (s *Server) DeleteGasLimit(ctx context.Context, req *ethpbservice.DeleteGasLimitRequest) (*empty.Empty, error) {
+func (s *Server) DeleteGasLimit(ctx context.Context, req *zondpbservice.DeleteGasLimitRequest) (*empty.Empty, error) {
 	if s.validatorService == nil {
 		return nil, status.Error(codes.FailedPrecondition, "Validator service not ready")
 	}
@@ -513,8 +513,8 @@ func (s *Server) DeleteGasLimit(ctx context.Context, req *ethpbservice.DeleteGas
 	return nil, status.Error(codes.NotFound, fmt.Sprintf("no gaslimt found for pubkey: %q", hexutil.Encode(validatorKey)))
 }
 
-// ListFeeRecipientByPubkey returns the public key to eth address mapping object to the end user.
-func (s *Server) ListFeeRecipientByPubkey(ctx context.Context, req *ethpbservice.PubkeyRequest) (*ethpbservice.GetFeeRecipientByPubkeyResponse, error) {
+// ListFeeRecipientByPubkey returns the public key to zond address mapping object to the end user.
+func (s *Server) ListFeeRecipientByPubkey(ctx context.Context, req *zondpbservice.PubkeyRequest) (*zondpbservice.GetFeeRecipientByPubkeyResponse, error) {
 	if s.validatorService == nil {
 		return nil, status.Error(codes.FailedPrecondition, "Validator service not ready")
 	}
@@ -524,8 +524,8 @@ func (s *Server) ListFeeRecipientByPubkey(ctx context.Context, req *ethpbservice
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	finalResp := &ethpbservice.GetFeeRecipientByPubkeyResponse{
-		Data: &ethpbservice.GetFeeRecipientByPubkeyResponse_FeeRecipient{
+	finalResp := &zondpbservice.GetFeeRecipientByPubkeyResponse{
+		Data: &zondpbservice.GetFeeRecipientByPubkeyResponse_FeeRecipient{
 			Pubkey: validatorKey,
 		},
 	}
@@ -549,7 +549,7 @@ func (s *Server) ListFeeRecipientByPubkey(ctx context.Context, req *ethpbservice
 	}
 
 	// Else, use the one defined in beacon node TODO: remove this with db removal
-	resp, err := s.beaconNodeValidatorClient.GetFeeRecipientByPubKey(ctx, &eth.FeeRecipientByPubKeyRequest{
+	resp, err := s.beaconNodeValidatorClient.GetFeeRecipientByPubKey(ctx, &zond.FeeRecipientByPubKeyRequest{
 		PublicKey: validatorKey,
 	})
 
@@ -565,8 +565,8 @@ func (s *Server) ListFeeRecipientByPubkey(ctx context.Context, req *ethpbservice
 	return nil, status.Error(codes.InvalidArgument, "No fee recipient set")
 }
 
-// SetFeeRecipientByPubkey updates the eth address mapped to the public key.
-func (s *Server) SetFeeRecipientByPubkey(ctx context.Context, req *ethpbservice.SetFeeRecipientByPubkeyRequest) (*empty.Empty, error) {
+// SetFeeRecipientByPubkey updates the zond address mapped to the public key.
+func (s *Server) SetFeeRecipientByPubkey(ctx context.Context, req *zondpbservice.SetFeeRecipientByPubkeyRequest) (*empty.Empty, error) {
 	if s.validatorService == nil {
 		return nil, status.Error(codes.FailedPrecondition, "Validator service not ready")
 	}
@@ -641,8 +641,8 @@ func (s *Server) SetFeeRecipientByPubkey(ctx context.Context, req *ethpbservice.
 	return &empty.Empty{}, nil
 }
 
-// DeleteFeeRecipientByPubkey updates the eth address mapped to the public key to the default fee recipient listed
-func (s *Server) DeleteFeeRecipientByPubkey(ctx context.Context, req *ethpbservice.PubkeyRequest) (*empty.Empty, error) {
+// DeleteFeeRecipientByPubkey updates the zond address mapped to the public key to the default fee recipient listed
+func (s *Server) DeleteFeeRecipientByPubkey(ctx context.Context, req *zondpbservice.PubkeyRequest) (*empty.Empty, error) {
 	if s.validatorService == nil {
 		return nil, status.Error(codes.FailedPrecondition, "Validator service not ready")
 	}
@@ -683,7 +683,7 @@ func validatePublicKey(pubkey []byte) error {
 }
 
 // SetVoluntaryExit creates a signed voluntary exit message and returns a VoluntaryExit object.
-func (s *Server) SetVoluntaryExit(ctx context.Context, req *ethpbservice.SetVoluntaryExitRequest) (*ethpbservice.SetVoluntaryExitResponse, error) {
+func (s *Server) SetVoluntaryExit(ctx context.Context, req *zondpbservice.SetVoluntaryExitRequest) (*zondpbservice.SetVoluntaryExitResponse, error) {
 	if s.validatorService == nil {
 		return nil, status.Error(codes.FailedPrecondition, "Validator service not ready")
 	}
@@ -719,9 +719,9 @@ func (s *Server) SetVoluntaryExit(ctx context.Context, req *ethpbservice.SetVolu
 		return nil, status.Errorf(codes.Internal, "Could not create voluntary exit: %v", err)
 	}
 
-	return &ethpbservice.SetVoluntaryExitResponse{
-		Data: &ethpbservice.SetVoluntaryExitResponse_SignedVoluntaryExit{
-			Message: &ethpbservice.SetVoluntaryExitResponse_SignedVoluntaryExit_VoluntaryExit{
+	return &zondpbservice.SetVoluntaryExitResponse{
+		Data: &zondpbservice.SetVoluntaryExitResponse_SignedVoluntaryExit{
+			Message: &zondpbservice.SetVoluntaryExitResponse_SignedVoluntaryExit_VoluntaryExit{
 				Epoch:          uint64(sve.Exit.Epoch),
 				ValidatorIndex: uint64(sve.Exit.ValidatorIndex),
 			},

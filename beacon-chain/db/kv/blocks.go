@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/container/slice"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	bolt "go.etcd.io/bbolt"
@@ -505,7 +505,7 @@ func (s *Store) FeeRecipientByValidatorID(ctx context.Context, id primitives.Val
 			if enc == nil {
 				return errors.Wrapf(ErrNotFoundFeeRecipient, "validator id %d", id)
 			}
-			reg := &ethpb.ValidatorRegistrationV1{}
+			reg := &zondpb.ValidatorRegistrationV1{}
 			if err := decode(ctx, enc, reg); err != nil {
 				return err
 			}
@@ -539,10 +539,10 @@ func (s *Store) SaveFeeRecipientsByValidatorIDs(ctx context.Context, ids []primi
 
 // RegistrationByValidatorID returns the validator registration object for a validator id.
 // `ErrNotFoundFeeRecipient` is returned if the validator id is not found.
-func (s *Store) RegistrationByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (*ethpb.ValidatorRegistrationV1, error) {
+func (s *Store) RegistrationByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (*zondpb.ValidatorRegistrationV1, error) {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.RegistrationByValidatorID")
 	defer span.End()
-	reg := &ethpb.ValidatorRegistrationV1{}
+	reg := &zondpb.ValidatorRegistrationV1{}
 	err := s.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(registrationBucket)
 		enc := bkt.Get(bytesutil.Uint64ToBytesBigEndian(uint64(id)))
@@ -556,7 +556,7 @@ func (s *Store) RegistrationByValidatorID(ctx context.Context, id primitives.Val
 
 // SaveRegistrationsByValidatorIDs saves the validator registrations for validator ids.
 // Error is returned if `ids` and `registrations` are not the same length.
-func (s *Store) SaveRegistrationsByValidatorIDs(ctx context.Context, ids []primitives.ValidatorIndex, regs []*ethpb.ValidatorRegistrationV1) error {
+func (s *Store) SaveRegistrationsByValidatorIDs(ctx context.Context, ids []primitives.ValidatorIndex, regs []*zondpb.ValidatorRegistrationV1) error {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.SaveRegistrationsByValidatorIDs")
 	defer span.End()
 
@@ -794,33 +794,33 @@ func unmarshalBlock(_ context.Context, enc []byte) (interfaces.ReadOnlySignedBea
 	switch {
 	case hasAltairKey(enc):
 		// Marshal block bytes to altair beacon block.
-		rawBlock = &ethpb.SignedBeaconBlockAltair{}
+		rawBlock = &zondpb.SignedBeaconBlockAltair{}
 		if err := rawBlock.UnmarshalSSZ(enc[len(altairKey):]); err != nil {
 			return nil, errors.Wrap(err, "could not unmarshal Altair block")
 		}
 	case hasBellatrixKey(enc):
-		rawBlock = &ethpb.SignedBeaconBlockBellatrix{}
+		rawBlock = &zondpb.SignedBeaconBlockBellatrix{}
 		if err := rawBlock.UnmarshalSSZ(enc[len(bellatrixKey):]); err != nil {
 			return nil, errors.Wrap(err, "could not unmarshal Bellatrix block")
 		}
 	case hasBellatrixBlindKey(enc):
-		rawBlock = &ethpb.SignedBlindedBeaconBlockBellatrix{}
+		rawBlock = &zondpb.SignedBlindedBeaconBlockBellatrix{}
 		if err := rawBlock.UnmarshalSSZ(enc[len(bellatrixBlindKey):]); err != nil {
 			return nil, errors.Wrap(err, "could not unmarshal blinded Bellatrix block")
 		}
 	case hasCapellaKey(enc):
-		rawBlock = &ethpb.SignedBeaconBlockCapella{}
+		rawBlock = &zondpb.SignedBeaconBlockCapella{}
 		if err := rawBlock.UnmarshalSSZ(enc[len(capellaKey):]); err != nil {
 			return nil, errors.Wrap(err, "could not unmarshal Capella block")
 		}
 	case hasCapellaBlindKey(enc):
-		rawBlock = &ethpb.SignedBlindedBeaconBlockCapella{}
+		rawBlock = &zondpb.SignedBlindedBeaconBlockCapella{}
 		if err := rawBlock.UnmarshalSSZ(enc[len(capellaBlindKey):]); err != nil {
 			return nil, errors.Wrap(err, "could not unmarshal blinded Capella block")
 		}
 	default:
 		// Marshal block bytes to phase 0 beacon block.
-		rawBlock = &ethpb.SignedBeaconBlock{}
+		rawBlock = &zondpb.SignedBeaconBlock{}
 		if err := rawBlock.UnmarshalSSZ(enc); err != nil {
 			return nil, errors.Wrap(err, "could not unmarshal Phase0 block")
 		}

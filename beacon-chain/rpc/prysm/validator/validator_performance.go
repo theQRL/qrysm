@@ -7,7 +7,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/core"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/network"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 type ValidatorPerformanceRequest struct {
@@ -44,7 +44,7 @@ func (vs *Server) GetValidatorPerformance(w http.ResponseWriter, r *http.Request
 	}
 	computed, err := core.ComputeValidatorPerformance(
 		ctx,
-		&ethpb.ValidatorPerformanceRequest{
+		&zondpb.ValidatorPerformanceRequest{
 			PublicKeys: req.PublicKeys,
 			Indices:    req.Indices,
 		},

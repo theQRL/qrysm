@@ -7,7 +7,7 @@ import (
 	testDB "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
 	doublylinkedtree "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -26,7 +26,7 @@ func TestResume(t *testing.T) {
 	require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch))
 	require.NoError(t, service.beaconDB.SaveState(ctx, beaconState, root))
 	require.NoError(t, service.beaconDB.SaveGenesisBlockRoot(ctx, root))
-	require.NoError(t, service.beaconDB.SaveFinalizedCheckpoint(ctx, &ethpb.Checkpoint{Root: root[:]}))
+	require.NoError(t, service.beaconDB.SaveFinalizedCheckpoint(ctx, &zondpb.Checkpoint{Root: root[:]}))
 
 	resumeState, err := service.Resume(ctx, beaconState)
 	require.NoError(t, err)

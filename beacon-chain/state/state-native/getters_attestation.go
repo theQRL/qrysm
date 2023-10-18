@@ -1,12 +1,12 @@
 package state_native
 
 import (
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // PreviousEpochAttestations corresponding to blocks on the beacon chain.
-func (b *BeaconState) PreviousEpochAttestations() ([]*ethpb.PendingAttestation, error) {
+func (b *BeaconState) PreviousEpochAttestations() ([]*zondpb.PendingAttestation, error) {
 	if b.version != version.Phase0 {
 		return nil, errNotSupported("PreviousEpochAttestations", b.version)
 	}
@@ -23,12 +23,12 @@ func (b *BeaconState) PreviousEpochAttestations() ([]*ethpb.PendingAttestation, 
 
 // previousEpochAttestationsVal corresponding to blocks on the beacon chain.
 // This assumes that a lock is already held on BeaconState.
-func (b *BeaconState) previousEpochAttestationsVal() []*ethpb.PendingAttestation {
-	return ethpb.CopyPendingAttestationSlice(b.previousEpochAttestations)
+func (b *BeaconState) previousEpochAttestationsVal() []*zondpb.PendingAttestation {
+	return zondpb.CopyPendingAttestationSlice(b.previousEpochAttestations)
 }
 
 // CurrentEpochAttestations corresponding to blocks on the beacon chain.
-func (b *BeaconState) CurrentEpochAttestations() ([]*ethpb.PendingAttestation, error) {
+func (b *BeaconState) CurrentEpochAttestations() ([]*zondpb.PendingAttestation, error) {
 	if b.version != version.Phase0 {
 		return nil, errNotSupported("CurrentEpochAttestations", b.version)
 	}
@@ -45,6 +45,6 @@ func (b *BeaconState) CurrentEpochAttestations() ([]*ethpb.PendingAttestation, e
 
 // currentEpochAttestations corresponding to blocks on the beacon chain.
 // This assumes that a lock is already held on BeaconState.
-func (b *BeaconState) currentEpochAttestationsVal() []*ethpb.PendingAttestation {
-	return ethpb.CopyPendingAttestationSlice(b.currentEpochAttestations)
+func (b *BeaconState) currentEpochAttestationsVal() []*zondpb.PendingAttestation {
+	return zondpb.CopyPendingAttestationSlice(b.currentEpochAttestations)
 }

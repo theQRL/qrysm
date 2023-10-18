@@ -16,20 +16,20 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestValidatorMap_DistinctCopy(t *testing.T) {
 	count := uint64(100)
-	vals := make([]*ethpb.Validator, 0, count)
+	vals := make([]*zondpb.Validator, 0, count)
 	for i := uint64(1); i < count; i++ {
 		var someRoot [32]byte
 		var someKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
-		vals = append(vals, &ethpb.Validator{
+		vals = append(vals, &zondpb.Validator{
 			PublicKey:                  someKey[:],
 			WithdrawalCredentials:      someRoot[:],
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,
@@ -51,13 +51,13 @@ func TestValidatorMap_DistinctCopy(t *testing.T) {
 
 func TestBeaconState_NoDeadlock_Phase0(t *testing.T) {
 	count := uint64(100)
-	vals := make([]*ethpb.Validator, 0, count)
+	vals := make([]*zondpb.Validator, 0, count)
 	for i := uint64(1); i < count; i++ {
 		var someRoot [32]byte
 		var someKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
-		vals = append(vals, &ethpb.Validator{
+		vals = append(vals, &zondpb.Validator{
 			PublicKey:                  someKey[:],
 			WithdrawalCredentials:      someRoot[:],
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,
@@ -68,7 +68,7 @@ func TestBeaconState_NoDeadlock_Phase0(t *testing.T) {
 			WithdrawableEpoch:          1,
 		})
 	}
-	newState, err := InitializeFromProtoUnsafePhase0(&ethpb.BeaconState{
+	newState, err := InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{
 		Validators: vals,
 	})
 	assert.NoError(t, err)
@@ -107,13 +107,13 @@ func TestBeaconState_NoDeadlock_Phase0(t *testing.T) {
 
 func TestBeaconState_NoDeadlock_Altair(t *testing.T) {
 	count := uint64(100)
-	vals := make([]*ethpb.Validator, 0, count)
+	vals := make([]*zondpb.Validator, 0, count)
 	for i := uint64(1); i < count; i++ {
 		var someRoot [32]byte
 		var someKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
-		vals = append(vals, &ethpb.Validator{
+		vals = append(vals, &zondpb.Validator{
 			PublicKey:                  someKey[:],
 			WithdrawalCredentials:      someRoot[:],
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,
@@ -124,7 +124,7 @@ func TestBeaconState_NoDeadlock_Altair(t *testing.T) {
 			WithdrawableEpoch:          1,
 		})
 	}
-	st, err := InitializeFromProtoUnsafeAltair(&ethpb.BeaconStateAltair{
+	st, err := InitializeFromProtoUnsafeAltair(&zondpb.BeaconStateAltair{
 		Validators: vals,
 	})
 	assert.NoError(t, err)
@@ -163,13 +163,13 @@ func TestBeaconState_NoDeadlock_Altair(t *testing.T) {
 
 func TestBeaconState_NoDeadlock_Bellatrix(t *testing.T) {
 	count := uint64(100)
-	vals := make([]*ethpb.Validator, 0, count)
+	vals := make([]*zondpb.Validator, 0, count)
 	for i := uint64(1); i < count; i++ {
 		var someRoot [32]byte
 		var someKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
-		vals = append(vals, &ethpb.Validator{
+		vals = append(vals, &zondpb.Validator{
 			PublicKey:                  someKey[:],
 			WithdrawalCredentials:      someRoot[:],
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,
@@ -180,7 +180,7 @@ func TestBeaconState_NoDeadlock_Bellatrix(t *testing.T) {
 			WithdrawableEpoch:          1,
 		})
 	}
-	st, err := InitializeFromProtoUnsafeBellatrix(&ethpb.BeaconStateBellatrix{
+	st, err := InitializeFromProtoUnsafeBellatrix(&zondpb.BeaconStateBellatrix{
 		Validators: vals,
 	})
 	assert.NoError(t, err)
@@ -219,13 +219,13 @@ func TestBeaconState_NoDeadlock_Bellatrix(t *testing.T) {
 
 func TestBeaconState_NoDeadlock_Capella(t *testing.T) {
 	count := uint64(100)
-	vals := make([]*ethpb.Validator, 0, count)
+	vals := make([]*zondpb.Validator, 0, count)
 	for i := uint64(1); i < count; i++ {
 		var someRoot [32]byte
 		var someKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
-		vals = append(vals, &ethpb.Validator{
+		vals = append(vals, &zondpb.Validator{
 			PublicKey:                  someKey[:],
 			WithdrawalCredentials:      someRoot[:],
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,
@@ -236,7 +236,7 @@ func TestBeaconState_NoDeadlock_Capella(t *testing.T) {
 			WithdrawableEpoch:          1,
 		})
 	}
-	st, err := InitializeFromProtoUnsafeCapella(&ethpb.BeaconStateCapella{
+	st, err := InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
 		Validators: vals,
 	})
 	assert.NoError(t, err)
@@ -298,7 +298,7 @@ func TestBeaconState_AppendBalanceWithTrie(t *testing.T) {
 }
 
 func TestBeaconState_ModifyPreviousParticipationBits(t *testing.T) {
-	st, err := InitializeFromProtoUnsafePhase0(&ethpb.BeaconState{})
+	st, err := InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
 	assert.NoError(t, err)
 	assert.ErrorContains(t, "ModifyPreviousParticipationBits is not supported", st.ModifyPreviousParticipationBits(func(val []byte) ([]byte, error) {
 		return nil, nil
@@ -306,7 +306,7 @@ func TestBeaconState_ModifyPreviousParticipationBits(t *testing.T) {
 }
 
 func TestBeaconState_ModifyCurrentParticipationBits(t *testing.T) {
-	st, err := InitializeFromProtoUnsafePhase0(&ethpb.BeaconState{})
+	st, err := InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
 	assert.NoError(t, err)
 	assert.ErrorContains(t, "ModifyCurrentParticipationBits is not supported", st.ModifyCurrentParticipationBits(func(val []byte) ([]byte, error) {
 		return nil, nil
@@ -363,14 +363,14 @@ func TestCopyAllTries(t *testing.T) {
 
 func generateState(t *testing.T) state.BeaconState {
 	count := uint64(100)
-	vals := make([]*ethpb.Validator, 0, count)
+	vals := make([]*zondpb.Validator, 0, count)
 	bals := make([]uint64, 0, count)
 	for i := uint64(1); i < count; i++ {
 		var someRoot [32]byte
 		var someKey [dilithium2.CryptoPublicKeyBytes]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
-		vals = append(vals, &ethpb.Validator{
+		vals = append(vals, &zondpb.Validator{
 			PublicKey:                  someKey[:],
 			WithdrawalCredentials:      someRoot[:],
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,
@@ -396,22 +396,22 @@ func generateState(t *testing.T) state.BeaconState {
 	for i := 0; i < len(mockrandaoMixes); i++ {
 		mockrandaoMixes[i] = zeroHash[:]
 	}
-	newState, err := InitializeFromProtoPhase0(&ethpb.BeaconState{
+	newState, err := InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Slot:                  1,
 		GenesisValidatorsRoot: make([]byte, 32),
-		Fork: &ethpb.Fork{
+		Fork: &zondpb.Fork{
 			PreviousVersion: make([]byte, 4),
 			CurrentVersion:  make([]byte, 4),
 			Epoch:           0,
 		},
-		LatestBlockHeader: &ethpb.BeaconBlockHeader{
+		LatestBlockHeader: &zondpb.BeaconBlockHeader{
 			ParentRoot: make([]byte, fieldparams.RootLength),
 			StateRoot:  make([]byte, fieldparams.RootLength),
 			BodyRoot:   make([]byte, fieldparams.RootLength),
 		},
 		Validators: vals,
 		Balances:   bals,
-		Eth1Data: &ethpb.Eth1Data{
+		Eth1Data: &zondpb.Eth1Data{
 			DepositRoot: make([]byte, 32),
 			BlockHash:   make([]byte, 32),
 		},
@@ -419,9 +419,9 @@ func generateState(t *testing.T) state.BeaconState {
 		StateRoots:                  mockstateRoots,
 		RandaoMixes:                 mockrandaoMixes,
 		JustificationBits:           bitfield.NewBitvector4(),
-		PreviousJustifiedCheckpoint: &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
-		CurrentJustifiedCheckpoint:  &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
-		FinalizedCheckpoint:         &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		PreviousJustifiedCheckpoint: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		CurrentJustifiedCheckpoint:  &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		FinalizedCheckpoint:         &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 		Slashings:                   make([]uint64, params.BeaconConfig().EpochsPerSlashingsVector),
 	})
 	assert.NoError(t, err)

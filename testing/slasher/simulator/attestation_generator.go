@@ -13,15 +13,15 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/crypto/rand"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 func (s *Simulator) generateAttestationsForSlot(
 	ctx context.Context, slot primitives.Slot,
-) ([]*ethpb.IndexedAttestation, []*ethpb.AttesterSlashing, error) {
-	attestations := make([]*ethpb.IndexedAttestation, 0)
-	slashings := make([]*ethpb.AttesterSlashing, 0)
+) ([]*zondpb.IndexedAttestation, []*zondpb.AttesterSlashing, error) {
+	attestations := make([]*zondpb.IndexedAttestation, 0)
+	slashings := make([]*zondpb.AttesterSlashing, 0)
 	currentEpoch := slots.ToEpoch(slot)
 
 	committeesPerSlot := helpers.SlotCommitteeCount(s.srvConfig.Params.NumValidators)
@@ -38,15 +38,15 @@ func (s *Simulator) generateAttestationsForSlot(
 	startIdx := valsPerSlot * uint64(slot%s.srvConfig.Params.SlotsPerEpoch)
 	endIdx := startIdx + valsPerCommittee
 	for c := primitives.CommitteeIndex(0); uint64(c) < committeesPerSlot; c++ {
-		attData := &ethpb.AttestationData{
+		attData := &zondpb.AttestationData{
 			Slot:            slot,
 			CommitteeIndex:  c,
 			BeaconBlockRoot: bytesutil.PadTo([]byte("block"), 32),
-			Source: &ethpb.Checkpoint{
+			Source: &zondpb.Checkpoint{
 				Epoch: sourceEpoch,
 				Root:  bytesutil.PadTo([]byte("source"), 32),
 			},
-			Target: &ethpb.Checkpoint{
+			Target: &zondpb.Checkpoint{
 				Epoch: currentEpoch,
 				Root:  bytesutil.PadTo([]byte("target"), 32),
 			},
@@ -62,7 +62,7 @@ func (s *Simulator) generateAttestationsForSlot(
 			for idx := i; idx < attEndIdx; idx++ {
 				indices = append(indices, idx)
 			}
-			att := &ethpb.IndexedAttestation{
+			att := &zondpb.IndexedAttestation{
 				AttestingIndices: indices,
 				Data:             attData,
 				Signature:        params.BeaconConfig().EmptyDilithiumSignature[:],
@@ -88,7 +88,7 @@ func (s *Simulator) generateAttestationsForSlot(
 				}
 				slashableAtt.Signature = aggSig.Marshal()
 				slashedIndices = append(slashedIndices, slashableAtt.AttestingIndices...)
-				slashings = append(slashings, &ethpb.AttesterSlashing{
+				slashings = append(slashings, &zondpb.AttesterSlashing{
 					Attestation_1: att,
 					Attestation_2: slashableAtt,
 				})
@@ -108,7 +108,7 @@ func (s *Simulator) generateAttestationsForSlot(
 }
 
 func (s *Simulator) aggregateSigForAttestation(
-	beaconState state.ReadOnlyBeaconState, att *ethpb.IndexedAttestation,
+	beaconState state.ReadOnlyBeaconState, att *zondpb.IndexedAttestation,
 ) (bls.Signature, error) {
 	domain, err := signing.Domain(
 		beaconState.Fork(),
@@ -131,45 +131,45 @@ func (s *Simulator) aggregateSigForAttestation(
 	return bls.AggregateSignatures(sigs), nil
 }
 
-func makeSlashableFromAtt(att *ethpb.IndexedAttestation, indices []uint64) *ethpb.IndexedAttestation {
+func makeSlashableFromAtt(att *zondpb.IndexedAttestation, indices []uint64) *zondpb.IndexedAttestation {
 	if att.Data.Source.Epoch <= 2 {
 		return makeDoubleVoteFromAtt(att, indices)
 	}
-	attData := &ethpb.AttestationData{
+	attData := &zondpb.AttestationData{
 		Slot:            att.Data.Slot,
 		CommitteeIndex:  att.Data.CommitteeIndex,
 		BeaconBlockRoot: att.Data.BeaconBlockRoot,
-		Source: &ethpb.Checkpoint{
+		Source: &zondpb.Checkpoint{
 			Epoch: att.Data.Source.Epoch - 3,
 			Root:  att.Data.Source.Root,
 		},
-		Target: &ethpb.Checkpoint{
+		Target: &zondpb.Checkpoint{
 			Epoch: att.Data.Target.Epoch,
 			Root:  att.Data.Target.Root,
 		},
 	}
-	return &ethpb.IndexedAttestation{
+	return &zondpb.IndexedAttestation{
 		AttestingIndices: indices,
 		Data:             attData,
 		Signature:        params.BeaconConfig().EmptyDilithiumSignature[:],
 	}
 }
 
-func makeDoubleVoteFromAtt(att *ethpb.IndexedAttestation, indices []uint64) *ethpb.IndexedAttestation {
-	attData := &ethpb.AttestationData{
+func makeDoubleVoteFromAtt(att *zondpb.IndexedAttestation, indices []uint64) *zondpb.IndexedAttestation {
+	attData := &zondpb.AttestationData{
 		Slot:            att.Data.Slot,
 		CommitteeIndex:  att.Data.CommitteeIndex,
 		BeaconBlockRoot: bytesutil.PadTo([]byte("slash me"), 32),
-		Source: &ethpb.Checkpoint{
+		Source: &zondpb.Checkpoint{
 			Epoch: att.Data.Source.Epoch,
 			Root:  att.Data.Source.Root,
 		},
-		Target: &ethpb.Checkpoint{
+		Target: &zondpb.Checkpoint{
 			Epoch: att.Data.Target.Epoch,
 			Root:  att.Data.Target.Root,
 		},
 	}
-	return &ethpb.IndexedAttestation{
+	return &zondpb.IndexedAttestation{
 		AttestingIndices: indices,
 		Data:             attData,
 		Signature:        params.BeaconConfig().EmptyDilithiumSignature[:],

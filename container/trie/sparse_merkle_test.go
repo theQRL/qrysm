@@ -11,36 +11,36 @@ import (
 	contracts "github.com/theQRL/qrysm/v4/contracts/deposit/mock"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestCreateTrieFromProto_Validation(t *testing.T) {
 	h := hash.Hash([]byte("hi"))
-	genValidLayers := func(num int) []*ethpb.TrieLayer {
-		l := make([]*ethpb.TrieLayer, num)
+	genValidLayers := func(num int) []*zondpb.TrieLayer {
+		l := make([]*zondpb.TrieLayer, num)
 		for i := 0; i < num; i++ {
-			l[i] = &ethpb.TrieLayer{
+			l[i] = &zondpb.TrieLayer{
 				Layer: [][]byte{h[:]},
 			}
 		}
 		return l
 	}
 	tests := []struct {
-		trie      *ethpb.SparseMerkleTrie
+		trie      *zondpb.SparseMerkleTrie
 		errString string
 	}{
 		{
-			trie: &ethpb.SparseMerkleTrie{
-				Layers: []*ethpb.TrieLayer{},
+			trie: &zondpb.SparseMerkleTrie{
+				Layers: []*zondpb.TrieLayer{},
 				Depth:  0,
 			},
 			errString: "no branches",
 		},
 		{
-			trie: &ethpb.SparseMerkleTrie{
-				Layers: []*ethpb.TrieLayer{
+			trie: &zondpb.SparseMerkleTrie{
+				Layers: []*zondpb.TrieLayer{
 					{
 						Layer: [][]byte{h[:]},
 					},
@@ -56,14 +56,14 @@ func TestCreateTrieFromProto_Validation(t *testing.T) {
 			errString: "invalid branches provided",
 		},
 		{
-			trie: &ethpb.SparseMerkleTrie{
+			trie: &zondpb.SparseMerkleTrie{
 				Layers: genValidLayers(3),
 				Depth:  12,
 			},
 			errString: "depth is greater than or equal to number of branches",
 		},
 		{
-			trie: &ethpb.SparseMerkleTrie{
+			trie: &zondpb.SparseMerkleTrie{
 				Layers: genValidLayers(66),
 				Depth:  63,
 			},
@@ -97,9 +97,9 @@ func TestMarshalDepositWithProof(t *testing.T) {
 	someRoot := [32]byte{1, 2, 3, 4}
 	someSig := [96]byte{1, 2, 3, 4}
 	someKey := [dilithium2.CryptoPublicKeyBytes]byte{1, 2, 3, 4}
-	dep := &ethpb.Deposit{
+	dep := &zondpb.Deposit{
 		Proof: proof,
-		Data: &ethpb.Deposit_Data{
+		Data: &zondpb.Deposit_Data{
 			PublicKey:             someKey[:],
 			WithdrawalCredentials: someRoot[:],
 			Amount:                32,
@@ -108,15 +108,15 @@ func TestMarshalDepositWithProof(t *testing.T) {
 	}
 	enc, err := dep.MarshalSSZ()
 	require.NoError(t, err)
-	dec := &ethpb.Deposit{}
+	dec := &zondpb.Deposit{}
 	require.NoError(t, dec.UnmarshalSSZ(enc))
 	require.DeepEqual(t, dec, dep)
 }
 
 func TestMerkleTrie_MerkleProofOutOfRange(t *testing.T) {
 	h := hash.Hash([]byte("hi"))
-	m, err := trie.CreateTrieFromProto(&ethpb.SparseMerkleTrie{
-		Layers: []*ethpb.TrieLayer{
+	m, err := trie.CreateTrieFromProto(&zondpb.SparseMerkleTrie{
+		Layers: []*zondpb.TrieLayer{
 			{
 				Layer: [][]byte{h[:]},
 			},

@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -47,7 +47,7 @@ import (
 //	        increase_balance(state, get_beacon_proposer_index(state), proposer_reward)
 //	    else:
 //	        decrease_balance(state, participant_index, participant_reward)
-func ProcessSyncAggregate(ctx context.Context, s state.BeaconState, sync *ethpb.SyncAggregate) (state.BeaconState, uint64, error) {
+func ProcessSyncAggregate(ctx context.Context, s state.BeaconState, sync *zondpb.SyncAggregate) (state.BeaconState, uint64, error) {
 	s, votedKeys, reward, err := processSyncAggregate(ctx, s, sync)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "could not filter sync committee votes")
@@ -63,7 +63,7 @@ func ProcessSyncAggregate(ctx context.Context, s state.BeaconState, sync *ethpb.
 // verifying the BLS signatures. It returns the modified beacons state, the list of validators'
 // public keys that voted (for future signature verification) and the proposer reward for including
 // sync aggregate messages.
-func processSyncAggregate(ctx context.Context, s state.BeaconState, sync *ethpb.SyncAggregate) (
+func processSyncAggregate(ctx context.Context, s state.BeaconState, sync *zondpb.SyncAggregate) (
 	state.BeaconState,
 	[]dilithium.PublicKey,
 	uint64,

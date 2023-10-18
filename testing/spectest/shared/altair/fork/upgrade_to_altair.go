@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/spectest/utils"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -34,7 +34,7 @@ func RunUpgradeToAltair(t *testing.T, config string) {
 			require.NoError(t, err)
 			preStateSSZ, err := snappy.Decode(nil /* dst */, preStateFile)
 			require.NoError(t, err, "Failed to decompress")
-			preStateBase := &ethpb.BeaconState{}
+			preStateBase := &zondpb.BeaconState{}
 			if err := preStateBase.UnmarshalSSZ(preStateSSZ); err != nil {
 				t.Fatalf("Failed to unmarshal: %v", err)
 			}
@@ -49,7 +49,7 @@ func RunUpgradeToAltair(t *testing.T, config string) {
 			require.NoError(t, err)
 			postStateSSZ, err := snappy.Decode(nil /* dst */, postStateFile)
 			require.NoError(t, err, "Failed to decompress")
-			postStateFromFile := &ethpb.BeaconStateAltair{}
+			postStateFromFile := &zondpb.BeaconStateAltair{}
 			if err := postStateFromFile.UnmarshalSSZ(postStateSSZ); err != nil {
 				t.Fatalf("Failed to unmarshal: %v", err)
 			}

@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -23,7 +23,7 @@ import (
 func TestSubmitAggregateAndProof_GetDutiesRequestFailure(t *testing.T) {
 	hook := logTest.NewGlobal()
 	validator, _, validatorKey, finish := setup(t)
-	validator.duties = &ethpb.DutiesResponse{Duties: []*ethpb.DutiesResponse_Duty{}}
+	validator.duties = &zondpb.DutiesResponse{Duties: []*zondpb.DutiesResponse_Duty{}}
 	defer finish()
 
 	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
@@ -38,8 +38,8 @@ func TestSubmitAggregateAndProof_SignFails(t *testing.T) {
 	defer finish()
 	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
-	validator.duties = &ethpb.DutiesResponse{
-		Duties: []*ethpb.DutiesResponse_Duty{
+	validator.duties = &zondpb.DutiesResponse{
+		Duties: []*zondpb.DutiesResponse_Duty{
 			{
 				PublicKey: validatorKey.PublicKey().Marshal(),
 			},
@@ -49,15 +49,15 @@ func TestSubmitAggregateAndProof_SignFails(t *testing.T) {
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
-	).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 	m.validatorClient.EXPECT().SubmitAggregateSelectionProof(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.AggregateSelectionRequest{}),
-	).Return(&ethpb.AggregateSelectionResponse{
-		AggregateAndProof: &ethpb.AggregateAttestationAndProof{
+		gomock.AssignableToTypeOf(&zondpb.AggregateSelectionRequest{}),
+	).Return(&zondpb.AggregateSelectionResponse{
+		AggregateAndProof: &zondpb.AggregateAttestationAndProof{
 			AggregatorIndex: 0,
-			Aggregate: util.HydrateAttestation(&ethpb.Attestation{
+			Aggregate: util.HydrateAttestation(&zondpb.Attestation{
 				AggregationBits: make([]byte, 1),
 			}),
 			SelectionProof: make([]byte, 96),
@@ -67,7 +67,7 @@ func TestSubmitAggregateAndProof_SignFails(t *testing.T) {
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
-	).Return(&ethpb.DomainResponse{SignatureDomain: nil}, errors.New("bad domain root"))
+	).Return(&zondpb.DomainResponse{SignatureDomain: nil}, errors.New("bad domain root"))
 
 	validator.SubmitAggregateAndProof(context.Background(), 0, pubKey)
 }
@@ -77,8 +77,8 @@ func TestSubmitAggregateAndProof_Ok(t *testing.T) {
 	defer finish()
 	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
-	validator.duties = &ethpb.DutiesResponse{
-		Duties: []*ethpb.DutiesResponse_Duty{
+	validator.duties = &zondpb.DutiesResponse{
+		Duties: []*zondpb.DutiesResponse_Duty{
 			{
 				PublicKey: validatorKey.PublicKey().Marshal(),
 			},
@@ -88,15 +88,15 @@ func TestSubmitAggregateAndProof_Ok(t *testing.T) {
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
-	).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 	m.validatorClient.EXPECT().SubmitAggregateSelectionProof(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.AggregateSelectionRequest{}),
-	).Return(&ethpb.AggregateSelectionResponse{
-		AggregateAndProof: &ethpb.AggregateAttestationAndProof{
+		gomock.AssignableToTypeOf(&zondpb.AggregateSelectionRequest{}),
+	).Return(&zondpb.AggregateSelectionResponse{
+		AggregateAndProof: &zondpb.AggregateAttestationAndProof{
 			AggregatorIndex: 0,
-			Aggregate: util.HydrateAttestation(&ethpb.Attestation{
+			Aggregate: util.HydrateAttestation(&zondpb.Attestation{
 				AggregationBits: make([]byte, 1),
 			}),
 			SelectionProof: make([]byte, 96),
@@ -106,12 +106,12 @@ func TestSubmitAggregateAndProof_Ok(t *testing.T) {
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
-	).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 	m.validatorClient.EXPECT().SubmitSignedAggregateSelectionProof(
 		gomock.Any(), // ctx
-		gomock.AssignableToTypeOf(&ethpb.SignedAggregateSubmitRequest{}),
-	).Return(&ethpb.SignedAggregateSubmitResponse{AttestationDataRoot: make([]byte, 32)}, nil)
+		gomock.AssignableToTypeOf(&zondpb.SignedAggregateSubmitRequest{}),
+	).Return(&zondpb.SignedAggregateSubmitResponse{AttestationDataRoot: make([]byte, 32)}, nil)
 
 	validator.SubmitAggregateAndProof(context.Background(), 0, pubKey)
 }
@@ -154,12 +154,12 @@ func TestAggregateAndProofSignature_CanSignValidSignature(t *testing.T) {
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
-		&ethpb.DomainRequest{Epoch: 0, Domain: params.BeaconConfig().DomainAggregateAndProof[:]},
-	).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+		&zondpb.DomainRequest{Epoch: 0, Domain: params.BeaconConfig().DomainAggregateAndProof[:]},
+	).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
-	agg := &ethpb.AggregateAttestationAndProof{
+	agg := &zondpb.AggregateAttestationAndProof{
 		AggregatorIndex: 0,
-		Aggregate: util.HydrateAttestation(&ethpb.Attestation{
+		Aggregate: util.HydrateAttestation(&zondpb.Attestation{
 			AggregationBits: bitfield.NewBitlist(1),
 		}),
 		SelectionProof: make([]byte, 96),

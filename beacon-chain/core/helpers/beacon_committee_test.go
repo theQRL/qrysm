@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/container/slice"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -24,19 +24,19 @@ func TestComputeCommittee_WithoutCache(t *testing.T) {
 	// Create 10 committees
 	committeeCount := uint64(10)
 	validatorCount := committeeCount * params.BeaconConfig().TargetCommitteeSize
-	validators := make([]*ethpb.Validator, validatorCount)
+	validators := make([]*zondpb.Validator, validatorCount)
 
 	for i := 0; i < len(validators); i++ {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			PublicKey:             k,
 			WithdrawalCredentials: make([]byte, 32),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 		}
 	}
 
-	state, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators:  validators,
 		Slot:        200,
 		BlockRoots:  make([][]byte, params.BeaconConfig().SlotsPerHistoricalRoot),
@@ -93,7 +93,7 @@ func TestCommitteeAssignments_CannotRetrieveFutureEpoch(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
 	epoch := primitives.Epoch(1)
-	state, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Slot: 0, // Epoch 0.
 	})
 	require.NoError(t, err)
@@ -104,18 +104,18 @@ func TestCommitteeAssignments_CannotRetrieveFutureEpoch(t *testing.T) {
 func TestCommitteeAssignments_NoProposerForSlot0(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
-	validators := make([]*ethpb.Validator, 4*params.BeaconConfig().SlotsPerEpoch)
+	validators := make([]*zondpb.Validator, 4*params.BeaconConfig().SlotsPerEpoch)
 	for i := 0; i < len(validators); i++ {
 		var activationEpoch primitives.Epoch
 		if i >= len(validators)/2 {
 			activationEpoch = 3
 		}
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ActivationEpoch: activationEpoch,
 			ExitEpoch:       params.BeaconConfig().FarFutureEpoch,
 		}
 	}
-	state, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators:  validators,
 		Slot:        2 * params.BeaconConfig().SlotsPerEpoch, // epoch 2
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
@@ -132,20 +132,20 @@ func TestCommitteeAssignments_NoProposerForSlot0(t *testing.T) {
 
 func TestCommitteeAssignments_CanRetrieve(t *testing.T) {
 	// Initialize test with 256 validators, each slot and each index gets 4 validators.
-	validators := make([]*ethpb.Validator, 4*params.BeaconConfig().SlotsPerEpoch)
+	validators := make([]*zondpb.Validator, 4*params.BeaconConfig().SlotsPerEpoch)
 	for i := 0; i < len(validators); i++ {
 		// First 2 epochs only half validators are activated.
 		var activationEpoch primitives.Epoch
 		if i >= len(validators)/2 {
 			activationEpoch = 3
 		}
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ActivationEpoch: activationEpoch,
 			ExitEpoch:       params.BeaconConfig().FarFutureEpoch,
 		}
 	}
 
-	state, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators:  validators,
 		Slot:        2 * params.BeaconConfig().SlotsPerEpoch, // epoch 2
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
@@ -210,20 +210,20 @@ func TestCommitteeAssignments_CanRetrieve(t *testing.T) {
 
 func TestCommitteeAssignments_CannotRetrieveFuture(t *testing.T) {
 	// Initialize test with 256 validators, each slot and each index gets 4 validators.
-	validators := make([]*ethpb.Validator, 4*params.BeaconConfig().SlotsPerEpoch)
+	validators := make([]*zondpb.Validator, 4*params.BeaconConfig().SlotsPerEpoch)
 	for i := 0; i < len(validators); i++ {
 		// First 2 epochs only half validators are activated.
 		var activationEpoch primitives.Epoch
 		if i >= len(validators)/2 {
 			activationEpoch = 3
 		}
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ActivationEpoch: activationEpoch,
 			ExitEpoch:       params.BeaconConfig().FarFutureEpoch,
 		}
 	}
 
-	state, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators:  validators,
 		Slot:        2 * params.BeaconConfig().SlotsPerEpoch, // epoch 2
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
@@ -240,14 +240,14 @@ func TestCommitteeAssignments_CannotRetrieveFuture(t *testing.T) {
 
 func TestCommitteeAssignments_CannotRetrieveOlderThanSlotsPerHistoricalRoot(t *testing.T) {
 	// Initialize test with 256 validators, each slot and each index gets 4 validators.
-	validators := make([]*ethpb.Validator, 4*params.BeaconConfig().SlotsPerEpoch)
+	validators := make([]*zondpb.Validator, 4*params.BeaconConfig().SlotsPerEpoch)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		}
 	}
 
-	state, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators:  validators,
 		Slot:        params.BeaconConfig().SlotsPerHistoricalRoot + 1,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
@@ -261,14 +261,14 @@ func TestCommitteeAssignments_EverySlotHasMin1Proposer(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
 	// Initialize test with 256 validators, each slot and each index gets 4 validators.
-	validators := make([]*ethpb.Validator, 4*params.BeaconConfig().SlotsPerEpoch)
+	validators := make([]*zondpb.Validator, 4*params.BeaconConfig().SlotsPerEpoch)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ActivationEpoch: 0,
 			ExitEpoch:       params.BeaconConfig().FarFutureEpoch,
 		}
 	}
-	state, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators:  validators,
 		Slot:        2 * params.BeaconConfig().SlotsPerEpoch, // epoch 2
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
@@ -296,83 +296,83 @@ func TestCommitteeAssignments_EverySlotHasMin1Proposer(t *testing.T) {
 }
 
 func TestVerifyAttestationBitfieldLengths_OK(t *testing.T) {
-	validators := make([]*ethpb.Validator, 2*params.BeaconConfig().SlotsPerEpoch)
+	validators := make([]*zondpb.Validator, 2*params.BeaconConfig().SlotsPerEpoch)
 	activeRoots := make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		}
 	}
 
-	state, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators:  validators,
 		RandaoMixes: activeRoots,
 	})
 	require.NoError(t, err)
 
 	tests := []struct {
-		attestation         *ethpb.Attestation
+		attestation         *zondpb.Attestation
 		stateSlot           primitives.Slot
 		verificationFailure bool
 	}{
 		{
-			attestation: &ethpb.Attestation{
+			attestation: &zondpb.Attestation{
 				AggregationBits: bitfield.Bitlist{0x05},
-				Data: &ethpb.AttestationData{
+				Data: &zondpb.AttestationData{
 					CommitteeIndex: 5,
-					Target:         &ethpb.Checkpoint{Root: make([]byte, 32)},
+					Target:         &zondpb.Checkpoint{Root: make([]byte, 32)},
 				},
 			},
 			stateSlot: 5,
 		},
 		{
 
-			attestation: &ethpb.Attestation{
+			attestation: &zondpb.Attestation{
 				AggregationBits: bitfield.Bitlist{0x06},
-				Data: &ethpb.AttestationData{
+				Data: &zondpb.AttestationData{
 					CommitteeIndex: 10,
-					Target:         &ethpb.Checkpoint{Root: make([]byte, 32)},
+					Target:         &zondpb.Checkpoint{Root: make([]byte, 32)},
 				},
 			},
 			stateSlot: 10,
 		},
 		{
-			attestation: &ethpb.Attestation{
+			attestation: &zondpb.Attestation{
 				AggregationBits: bitfield.Bitlist{0x06},
-				Data: &ethpb.AttestationData{
+				Data: &zondpb.AttestationData{
 					CommitteeIndex: 20,
-					Target:         &ethpb.Checkpoint{Root: make([]byte, 32)},
+					Target:         &zondpb.Checkpoint{Root: make([]byte, 32)},
 				},
 			},
 			stateSlot: 20,
 		},
 		{
-			attestation: &ethpb.Attestation{
+			attestation: &zondpb.Attestation{
 				AggregationBits: bitfield.Bitlist{0x06},
-				Data: &ethpb.AttestationData{
+				Data: &zondpb.AttestationData{
 					CommitteeIndex: 20,
-					Target:         &ethpb.Checkpoint{Root: make([]byte, 32)},
+					Target:         &zondpb.Checkpoint{Root: make([]byte, 32)},
 				},
 			},
 			stateSlot: 20,
 		},
 		{
-			attestation: &ethpb.Attestation{
+			attestation: &zondpb.Attestation{
 				AggregationBits: bitfield.Bitlist{0xFF, 0xC0, 0x01},
-				Data: &ethpb.AttestationData{
+				Data: &zondpb.AttestationData{
 					CommitteeIndex: 5,
-					Target:         &ethpb.Checkpoint{Root: make([]byte, 32)},
+					Target:         &zondpb.Checkpoint{Root: make([]byte, 32)},
 				},
 			},
 			stateSlot:           5,
 			verificationFailure: true,
 		},
 		{
-			attestation: &ethpb.Attestation{
+			attestation: &zondpb.Attestation{
 				AggregationBits: bitfield.Bitlist{0xFF, 0x01},
-				Data: &ethpb.AttestationData{
+				Data: &zondpb.AttestationData{
 					CommitteeIndex: 20,
-					Target:         &ethpb.Checkpoint{Root: make([]byte, 32)},
+					Target:         &zondpb.Checkpoint{Root: make([]byte, 32)},
 				},
 			},
 			stateSlot:           20,
@@ -397,16 +397,16 @@ func TestUpdateCommitteeCache_CanUpdate(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
 	validatorCount := params.BeaconConfig().MinGenesisActiveValidatorCount
-	validators := make([]*ethpb.Validator, validatorCount)
+	validators := make([]*zondpb.Validator, validatorCount)
 	indices := make([]primitives.ValidatorIndex, validatorCount)
 	for i := primitives.ValidatorIndex(0); uint64(i) < validatorCount; i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
 			EffectiveBalance: 1,
 		}
 		indices[i] = i
 	}
-	state, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators:  validators,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 	})
@@ -424,13 +424,13 @@ func TestUpdateCommitteeCache_CanUpdate(t *testing.T) {
 }
 
 func BenchmarkComputeCommittee300000_WithPreCache(b *testing.B) {
-	validators := make([]*ethpb.Validator, 300000)
+	validators := make([]*zondpb.Validator, 300000)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		}
 	}
-	state, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators:  validators,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 	})
@@ -458,13 +458,13 @@ func BenchmarkComputeCommittee300000_WithPreCache(b *testing.B) {
 }
 
 func BenchmarkComputeCommittee3000000_WithPreCache(b *testing.B) {
-	validators := make([]*ethpb.Validator, 3000000)
+	validators := make([]*zondpb.Validator, 3000000)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		}
 	}
-	state, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators:  validators,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 	})
@@ -492,13 +492,13 @@ func BenchmarkComputeCommittee3000000_WithPreCache(b *testing.B) {
 }
 
 func BenchmarkComputeCommittee128000_WithOutPreCache(b *testing.B) {
-	validators := make([]*ethpb.Validator, 128000)
+	validators := make([]*zondpb.Validator, 128000)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		}
 	}
-	state, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators:  validators,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 	})
@@ -527,13 +527,13 @@ func BenchmarkComputeCommittee128000_WithOutPreCache(b *testing.B) {
 }
 
 func BenchmarkComputeCommittee1000000_WithOutCache(b *testing.B) {
-	validators := make([]*ethpb.Validator, 1000000)
+	validators := make([]*zondpb.Validator, 1000000)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		}
 	}
-	state, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators:  validators,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 	})
@@ -562,13 +562,13 @@ func BenchmarkComputeCommittee1000000_WithOutCache(b *testing.B) {
 }
 
 func BenchmarkComputeCommittee4000000_WithOutCache(b *testing.B) {
-	validators := make([]*ethpb.Validator, 4000000)
+	validators := make([]*zondpb.Validator, 4000000)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		}
 	}
-	state, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators:  validators,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 	})
@@ -598,14 +598,14 @@ func BenchmarkComputeCommittee4000000_WithOutCache(b *testing.B) {
 
 func TestBeaconCommitteeFromState_UpdateCacheForPreviousEpoch(t *testing.T) {
 	committeeSize := uint64(16)
-	validators := make([]*ethpb.Validator, params.BeaconConfig().SlotsPerEpoch.Mul(committeeSize))
+	validators := make([]*zondpb.Validator, params.BeaconConfig().SlotsPerEpoch.Mul(committeeSize))
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		}
 	}
 
-	state, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Slot:        params.BeaconConfig().SlotsPerEpoch,
 		Validators:  validators,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
@@ -623,14 +623,14 @@ func TestBeaconCommitteeFromState_UpdateCacheForPreviousEpoch(t *testing.T) {
 }
 
 func TestPrecomputeProposerIndices_Ok(t *testing.T) {
-	validators := make([]*ethpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
+	validators := make([]*zondpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		}
 	}
 
-	state, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators:  validators,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 	})

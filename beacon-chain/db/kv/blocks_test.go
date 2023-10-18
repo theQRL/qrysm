@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -235,11 +235,11 @@ func TestStore_DeleteBlock(t *testing.T) {
 	require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesisBlockRoot))
 	blks := makeBlocks(t, 0, slotsPerEpoch*4, genesisBlockRoot)
 	require.NoError(t, db.SaveBlocks(ctx, blks))
-	ss := make([]*ethpb.StateSummary, len(blks))
+	ss := make([]*zondpb.StateSummary, len(blks))
 	for i, blk := range blks {
 		r, err := blk.Block().HashTreeRoot()
 		require.NoError(t, err)
-		ss[i] = &ethpb.StateSummary{
+		ss[i] = &zondpb.StateSummary{
 			Slot: blk.Block().Slot(),
 			Root: r[:],
 		}
@@ -248,7 +248,7 @@ func TestStore_DeleteBlock(t *testing.T) {
 
 	root, err := blks[slotsPerEpoch].Block().HashTreeRoot()
 	require.NoError(t, err)
-	cp := &ethpb.Checkpoint{
+	cp := &zondpb.Checkpoint{
 		Epoch: 1,
 		Root:  root[:],
 	}
@@ -282,7 +282,7 @@ func TestStore_DeleteJustifiedBlock(t *testing.T) {
 	b.Block.Slot = 1
 	root, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
-	cp := &ethpb.Checkpoint{
+	cp := &zondpb.Checkpoint{
 		Root: root[:],
 	}
 	st, err := util.NewBeaconState()
@@ -301,7 +301,7 @@ func TestStore_DeleteFinalizedBlock(t *testing.T) {
 	b := util.NewBeaconBlock()
 	root, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
-	cp := &ethpb.Checkpoint{
+	cp := &zondpb.Checkpoint{
 		Root: root[:],
 	}
 	st, err := util.NewBeaconState()
@@ -888,7 +888,7 @@ func TestStore_FeeRecipientByValidatorID(t *testing.T) {
 	want := errors.Wrap(ErrNotFoundFeeRecipient, "validator id 3")
 	require.Equal(t, want.Error(), err.Error())
 
-	regs := []*ethpb.ValidatorRegistrationV1{
+	regs := []*zondpb.ValidatorRegistrationV1{
 		{
 			FeeRecipient: bytesutil.PadTo([]byte("a"), 20),
 			GasLimit:     1,
@@ -909,11 +909,11 @@ func TestStore_RegistrationsByValidatorID(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
 	ids := []primitives.ValidatorIndex{0, 0, 0}
-	regs := []*ethpb.ValidatorRegistrationV1{{}, {}, {}, {}}
+	regs := []*zondpb.ValidatorRegistrationV1{{}, {}, {}, {}}
 	require.ErrorContains(t, "ids and registrations must be the same length", db.SaveRegistrationsByValidatorIDs(ctx, ids, regs))
 	timestamp := time.Now().Unix()
 	ids = []primitives.ValidatorIndex{0, 1, 2}
-	regs = []*ethpb.ValidatorRegistrationV1{
+	regs = []*zondpb.ValidatorRegistrationV1{
 		{
 			FeeRecipient: bytesutil.PadTo([]byte("a"), 20),
 			GasLimit:     1,
@@ -936,7 +936,7 @@ func TestStore_RegistrationsByValidatorID(t *testing.T) {
 	require.NoError(t, db.SaveRegistrationsByValidatorIDs(ctx, ids, regs))
 	f, err := db.RegistrationByValidatorID(ctx, 0)
 	require.NoError(t, err)
-	require.DeepEqual(t, &ethpb.ValidatorRegistrationV1{
+	require.DeepEqual(t, &zondpb.ValidatorRegistrationV1{
 		FeeRecipient: bytesutil.PadTo([]byte("a"), 20),
 		GasLimit:     1,
 		Timestamp:    uint64(timestamp),
@@ -944,7 +944,7 @@ func TestStore_RegistrationsByValidatorID(t *testing.T) {
 	}, f)
 	f, err = db.RegistrationByValidatorID(ctx, 1)
 	require.NoError(t, err)
-	require.DeepEqual(t, &ethpb.ValidatorRegistrationV1{
+	require.DeepEqual(t, &zondpb.ValidatorRegistrationV1{
 		FeeRecipient: bytesutil.PadTo([]byte("c"), 20),
 		GasLimit:     3,
 		Timestamp:    uint64(timestamp),
@@ -952,7 +952,7 @@ func TestStore_RegistrationsByValidatorID(t *testing.T) {
 	}, f)
 	f, err = db.RegistrationByValidatorID(ctx, 2)
 	require.NoError(t, err)
-	require.DeepEqual(t, &ethpb.ValidatorRegistrationV1{
+	require.DeepEqual(t, &zondpb.ValidatorRegistrationV1{
 		FeeRecipient: bytesutil.PadTo([]byte("e"), 20),
 		GasLimit:     5,
 		Timestamp:    uint64(timestamp),

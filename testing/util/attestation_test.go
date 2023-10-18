@@ -6,20 +6,20 @@ import (
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
-	v1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestHydrateAttestation(t *testing.T) {
-	a := HydrateAttestation(&ethpb.Attestation{})
+	a := HydrateAttestation(&zondpb.Attestation{})
 	_, err := a.HashTreeRoot()
 	require.NoError(t, err)
 	require.DeepEqual(t, a.Signature, make([]byte, dilithium2.CryptoBytes))
 }
 
 func TestHydrateAttestationData(t *testing.T) {
-	d := HydrateAttestationData(&ethpb.AttestationData{})
+	d := HydrateAttestationData(&zondpb.AttestationData{})
 	_, err := d.HashTreeRoot()
 	require.NoError(t, err)
 	require.DeepEqual(t, d.BeaconBlockRoot, make([]byte, fieldparams.RootLength))
@@ -44,7 +44,7 @@ func TestHydrateV1AttestationData(t *testing.T) {
 }
 
 func TestHydrateIndexedAttestation(t *testing.T) {
-	a := &ethpb.IndexedAttestation{}
+	a := &zondpb.IndexedAttestation{}
 	a = HydrateIndexedAttestation(a)
 	_, err := a.HashTreeRoot()
 	require.NoError(t, err)

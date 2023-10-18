@@ -26,7 +26,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/network/forks"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -45,13 +45,13 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 	var emptySig [96]byte
 	type args struct {
 		pid   peer.ID
-		msg   *ethpb.SyncCommitteeMessage
+		msg   *zondpb.SyncCommitteeMessage
 		topic string
 	}
 	tests := []struct {
 		name     string
 		svcopts  []Option
-		setupSvc func(s *Service, msg *ethpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock)
+		setupSvc func(s *Service, msg *zondpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock)
 		args     args
 		want     pubsub.ValidationResult
 	}{
@@ -63,7 +63,7 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *ethpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
+			setupSvc: func(s *Service, msg *zondpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(beaconDB, doublylinkedtree.New())
 				msg.BlockRoot = headRoot[:]
 				s.cfg.beaconDB = beaconDB
@@ -73,7 +73,7 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: "junk",
-				msg: &ethpb.SyncCommitteeMessage{
+				msg: &zondpb.SyncCommitteeMessage{
 					Slot:           1,
 					ValidatorIndex: 1,
 					BlockRoot:      params.BeaconConfig().ZeroHash[:],
@@ -89,7 +89,7 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *ethpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
+			setupSvc: func(s *Service, msg *zondpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(beaconDB, doublylinkedtree.New())
 				msg.BlockRoot = headRoot[:]
 				s.cfg.beaconDB = beaconDB
@@ -99,7 +99,7 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: "junk",
-				msg: &ethpb.SyncCommitteeMessage{
+				msg: &zondpb.SyncCommitteeMessage{
 					Slot:           1,
 					ValidatorIndex: 1,
 					BlockRoot:      params.BeaconConfig().ZeroHash[:],
@@ -115,7 +115,7 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *ethpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
+			setupSvc: func(s *Service, msg *zondpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(beaconDB, doublylinkedtree.New())
 				s.cfg.beaconDB = beaconDB
 				s.initCaches()
@@ -124,7 +124,7 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: fmt.Sprintf(defaultTopic, fakeDigest, 0),
-				msg: &ethpb.SyncCommitteeMessage{
+				msg: &zondpb.SyncCommitteeMessage{
 					Slot:           10,
 					ValidatorIndex: 1,
 					BlockRoot:      params.BeaconConfig().ZeroHash[:],
@@ -140,11 +140,11 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *ethpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
+			setupSvc: func(s *Service, msg *zondpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(beaconDB, doublylinkedtree.New())
 				s.cfg.beaconDB = beaconDB
 				s.initCaches()
-				m := &ethpb.SyncCommitteeMessage{
+				m := &zondpb.SyncCommitteeMessage{
 					Slot:           1,
 					ValidatorIndex: 1,
 					BlockRoot:      params.BeaconConfig().ZeroHash[:],
@@ -155,7 +155,7 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: fmt.Sprintf(defaultTopic, fakeDigest, 0),
-				msg: &ethpb.SyncCommitteeMessage{
+				msg: &zondpb.SyncCommitteeMessage{
 					Slot:           1,
 					ValidatorIndex: 1,
 					BlockRoot:      params.BeaconConfig().ZeroHash[:],
@@ -171,7 +171,7 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *ethpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
+			setupSvc: func(s *Service, msg *zondpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(beaconDB, doublylinkedtree.New())
 				s.cfg.beaconDB = beaconDB
 				s.initCaches()
@@ -185,7 +185,7 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: fmt.Sprintf(defaultTopic, fakeDigest, 0),
-				msg: &ethpb.SyncCommitteeMessage{
+				msg: &zondpb.SyncCommitteeMessage{
 					Slot:           1,
 					ValidatorIndex: 1,
 					BlockRoot:      params.BeaconConfig().ZeroHash[:],
@@ -201,7 +201,7 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *ethpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
+			setupSvc: func(s *Service, msg *zondpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(beaconDB, doublylinkedtree.New())
 				s.cfg.beaconDB = beaconDB
 				s.initCaches()
@@ -231,7 +231,7 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: defaultTopic,
-				msg: &ethpb.SyncCommitteeMessage{
+				msg: &zondpb.SyncCommitteeMessage{
 					Slot:           1,
 					ValidatorIndex: 1,
 					BlockRoot:      params.BeaconConfig().ZeroHash[:],
@@ -247,7 +247,7 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *ethpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
+			setupSvc: func(s *Service, msg *zondpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(beaconDB, doublylinkedtree.New())
 				s.cfg.beaconDB = beaconDB
 				s.initCaches()
@@ -275,7 +275,7 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: defaultTopic,
-				msg: &ethpb.SyncCommitteeMessage{
+				msg: &zondpb.SyncCommitteeMessage{
 					Slot:           1,
 					ValidatorIndex: 1,
 					BlockRoot:      params.BeaconConfig().ZeroHash[:],
@@ -291,7 +291,7 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *ethpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
+			setupSvc: func(s *Service, msg *zondpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(beaconDB, doublylinkedtree.New())
 				s.cfg.beaconDB = beaconDB
 				s.initCaches()
@@ -328,7 +328,7 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: defaultTopic,
-				msg: &ethpb.SyncCommitteeMessage{
+				msg: &zondpb.SyncCommitteeMessage{
 					Slot:           1,
 					ValidatorIndex: 1,
 					BlockRoot:      params.BeaconConfig().ZeroHash[:],
@@ -344,7 +344,7 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *ethpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
+			setupSvc: func(s *Service, msg *zondpb.SyncCommitteeMessage, topic string) (*Service, string, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(beaconDB, doublylinkedtree.New())
 				s.cfg.beaconDB = beaconDB
 				s.initCaches()
@@ -385,7 +385,7 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: defaultTopic,
-				msg: &ethpb.SyncCommitteeMessage{
+				msg: &zondpb.SyncCommitteeMessage{
 					Slot:           1,
 					ValidatorIndex: 1,
 					BlockRoot:      params.BeaconConfig().ZeroHash[:],
@@ -436,39 +436,39 @@ func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 func TestService_ignoreHasSeenSyncMsg(t *testing.T) {
 	tests := []struct {
 		name      string
-		setupSvc  func(s *Service, msg *ethpb.SyncCommitteeMessage, topic string) (*Service, string)
-		msg       *ethpb.SyncCommitteeMessage
+		setupSvc  func(s *Service, msg *zondpb.SyncCommitteeMessage, topic string) (*Service, string)
+		msg       *zondpb.SyncCommitteeMessage
 		committee []primitives.CommitteeIndex
 		want      pubsub.ValidationResult
 	}{
 		{
 			name: "has seen",
-			setupSvc: func(s *Service, msg *ethpb.SyncCommitteeMessage, topic string) (*Service, string) {
+			setupSvc: func(s *Service, msg *zondpb.SyncCommitteeMessage, topic string) (*Service, string) {
 				s.initCaches()
-				m := &ethpb.SyncCommitteeMessage{
+				m := &zondpb.SyncCommitteeMessage{
 					Slot:      1,
 					BlockRoot: params.BeaconConfig().ZeroHash[:],
 				}
 				s.setSeenSyncMessageIndexSlot(m, 0)
 				return s, ""
 			},
-			msg: &ethpb.SyncCommitteeMessage{ValidatorIndex: 0, Slot: 1,
+			msg: &zondpb.SyncCommitteeMessage{ValidatorIndex: 0, Slot: 1,
 				BlockRoot: params.BeaconConfig().ZeroHash[:]},
 			committee: []primitives.CommitteeIndex{1, 2, 3},
 			want:      pubsub.ValidationIgnore,
 		},
 		{
 			name: "has not seen",
-			setupSvc: func(s *Service, msg *ethpb.SyncCommitteeMessage, topic string) (*Service, string) {
+			setupSvc: func(s *Service, msg *zondpb.SyncCommitteeMessage, topic string) (*Service, string) {
 				s.initCaches()
-				m := &ethpb.SyncCommitteeMessage{
+				m := &zondpb.SyncCommitteeMessage{
 					Slot:      1,
 					BlockRoot: params.BeaconConfig().ZeroHash[:],
 				}
 				s.setSeenSyncMessageIndexSlot(m, 0)
 				return s, ""
 			},
-			msg: &ethpb.SyncCommitteeMessage{ValidatorIndex: 1, Slot: 1,
+			msg: &zondpb.SyncCommitteeMessage{ValidatorIndex: 1, Slot: 1,
 				BlockRoot: bytesutil.PadTo([]byte{'A'}, 32)},
 			committee: []primitives.CommitteeIndex{1, 2, 3},
 			want:      pubsub.ValidationAccept,
@@ -516,7 +516,7 @@ func TestService_rejectIncorrectSyncCommittee(t *testing.T) {
 			},
 			committeeIndices: []primitives.CommitteeIndex{0},
 			setupTopic: func(s *Service) string {
-				format := p2p.GossipTypeMapping[reflect.TypeOf(&ethpb.SyncCommitteeMessage{})]
+				format := p2p.GossipTypeMapping[reflect.TypeOf(&zondpb.SyncCommitteeMessage{})]
 
 				digest, err := s.currentForkDigest()
 				require.NoError(t, err)

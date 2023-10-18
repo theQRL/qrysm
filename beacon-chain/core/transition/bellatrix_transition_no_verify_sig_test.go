@@ -19,7 +19,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -32,7 +32,7 @@ func TestExecuteBellatrixStateTransitionNoVerify_FullProcess(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetCurrentSyncCommittee(syncCommittee))
 
-	eth1Data := &ethpb.Eth1Data{
+	eth1Data := &zondpb.Eth1Data{
 		DepositCount: 100,
 		DepositRoot:  bytesutil.PadTo([]byte{2}, 32),
 		BlockHash:    make([]byte, 32),
@@ -44,7 +44,7 @@ func TestExecuteBellatrixStateTransitionNoVerify_FullProcess(t *testing.T) {
 	bh := beaconState.LatestBlockHeader()
 	bh.Slot = beaconState.Slot()
 	require.NoError(t, beaconState.SetLatestBlockHeader(bh))
-	require.NoError(t, beaconState.SetEth1DataVotes([]*ethpb.Eth1Data{eth1Data}))
+	require.NoError(t, beaconState.SetEth1DataVotes([]*zondpb.Eth1Data{eth1Data}))
 
 	require.NoError(t, beaconState.SetSlot(beaconState.Slot()+1))
 	epoch := time.CurrentEpoch(beaconState)
@@ -71,7 +71,7 @@ func TestExecuteBellatrixStateTransitionNoVerify_FullProcess(t *testing.T) {
 	}
 	indices, err := altair.NextSyncCommitteeIndices(context.Background(), beaconState)
 	require.NoError(t, err)
-	h := ethpb.CopyBeaconBlockHeader(beaconState.LatestBlockHeader())
+	h := zondpb.CopyBeaconBlockHeader(beaconState.LatestBlockHeader())
 	prevStateRoot, err := beaconState.HashTreeRoot(context.Background())
 	require.NoError(t, err)
 	h.StateRoot = prevStateRoot[:]
@@ -87,7 +87,7 @@ func TestExecuteBellatrixStateTransitionNoVerify_FullProcess(t *testing.T) {
 		syncSigs[i] = sig
 	}
 	aggregatedSig := bls.AggregateSignatures(syncSigs).Marshal()
-	syncAggregate := &ethpb.SyncAggregate{
+	syncAggregate := &zondpb.SyncAggregate{
 		SyncCommitteeBits:      syncBits,
 		SyncCommitteeSignature: aggregatedSig,
 	}
@@ -119,7 +119,7 @@ func TestExecuteBellatrixStateTransitionNoVerifySignature_CouldNotVerifyStateRoo
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetCurrentSyncCommittee(syncCommittee))
 
-	eth1Data := &ethpb.Eth1Data{
+	eth1Data := &zondpb.Eth1Data{
 		DepositCount: 100,
 		DepositRoot:  bytesutil.PadTo([]byte{2}, 32),
 		BlockHash:    make([]byte, 32),
@@ -131,7 +131,7 @@ func TestExecuteBellatrixStateTransitionNoVerifySignature_CouldNotVerifyStateRoo
 	bh := beaconState.LatestBlockHeader()
 	bh.Slot = beaconState.Slot()
 	require.NoError(t, beaconState.SetLatestBlockHeader(bh))
-	require.NoError(t, beaconState.SetEth1DataVotes([]*ethpb.Eth1Data{eth1Data}))
+	require.NoError(t, beaconState.SetEth1DataVotes([]*zondpb.Eth1Data{eth1Data}))
 
 	require.NoError(t, beaconState.SetSlot(beaconState.Slot()+1))
 	epoch := time.CurrentEpoch(beaconState)
@@ -158,7 +158,7 @@ func TestExecuteBellatrixStateTransitionNoVerifySignature_CouldNotVerifyStateRoo
 	}
 	indices, err := altair.NextSyncCommitteeIndices(context.Background(), beaconState)
 	require.NoError(t, err)
-	h := ethpb.CopyBeaconBlockHeader(beaconState.LatestBlockHeader())
+	h := zondpb.CopyBeaconBlockHeader(beaconState.LatestBlockHeader())
 	prevStateRoot, err := beaconState.HashTreeRoot(context.Background())
 	require.NoError(t, err)
 	h.StateRoot = prevStateRoot[:]
@@ -174,7 +174,7 @@ func TestExecuteBellatrixStateTransitionNoVerifySignature_CouldNotVerifyStateRoo
 		syncSigs[i] = sig
 	}
 	aggregatedSig := bls.AggregateSignatures(syncSigs).Marshal()
-	syncAggregate := &ethpb.SyncAggregate{
+	syncAggregate := &zondpb.SyncAggregate{
 		SyncCommitteeBits:      syncBits,
 		SyncCommitteeSignature: aggregatedSig,
 	}
@@ -220,15 +220,15 @@ func TestProcessEpoch_BadBalanceBellatrix(t *testing.T) {
 }
 
 func createFullBellatrixBlockWithOperations(t *testing.T) (state.BeaconState,
-	*ethpb.SignedBeaconBlockBellatrix) {
+	*zondpb.SignedBeaconBlockBellatrix) {
 	_, altairBlk := createFullAltairBlockWithOperations(t)
-	blk := &ethpb.SignedBeaconBlockBellatrix{
-		Block: &ethpb.BeaconBlockBellatrix{
+	blk := &zondpb.SignedBeaconBlockBellatrix{
+		Block: &zondpb.BeaconBlockBellatrix{
 			Slot:          altairBlk.Block.Slot,
 			ProposerIndex: altairBlk.Block.ProposerIndex,
 			ParentRoot:    altairBlk.Block.ParentRoot,
 			StateRoot:     altairBlk.Block.StateRoot,
-			Body: &ethpb.BeaconBlockBodyBellatrix{
+			Body: &zondpb.BeaconBlockBodyBellatrix{
 				RandaoReveal:      altairBlk.Block.Body.RandaoReveal,
 				Eth1Data:          altairBlk.Block.Body.Eth1Data,
 				Graffiti:          altairBlk.Block.Body.Graffiti,
@@ -259,15 +259,15 @@ func createFullBellatrixBlockWithOperations(t *testing.T) (state.BeaconState,
 }
 
 func createFullCapellaBlockWithOperations(t *testing.T) (state.BeaconState,
-	*ethpb.SignedBeaconBlockCapella) {
+	*zondpb.SignedBeaconBlockCapella) {
 	_, bellatrixBlk := createFullBellatrixBlockWithOperations(t)
-	blk := &ethpb.SignedBeaconBlockCapella{
-		Block: &ethpb.BeaconBlockCapella{
+	blk := &zondpb.SignedBeaconBlockCapella{
+		Block: &zondpb.BeaconBlockCapella{
 			Slot:          bellatrixBlk.Block.Slot,
 			ProposerIndex: bellatrixBlk.Block.ProposerIndex,
 			ParentRoot:    bellatrixBlk.Block.ParentRoot,
 			StateRoot:     bellatrixBlk.Block.StateRoot,
-			Body: &ethpb.BeaconBlockBodyCapella{
+			Body: &zondpb.BeaconBlockBodyCapella{
 				RandaoReveal:      bellatrixBlk.Block.Body.RandaoReveal,
 				Eth1Data:          bellatrixBlk.Block.Body.Eth1Data,
 				Graffiti:          bellatrixBlk.Block.Body.Graffiti,

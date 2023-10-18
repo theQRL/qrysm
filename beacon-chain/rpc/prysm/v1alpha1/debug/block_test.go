@@ -13,7 +13,7 @@ import (
 	doublylinkedtree "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -31,7 +31,7 @@ func TestServer_GetBlock(t *testing.T) {
 	bs := &Server{
 		BeaconDB: db,
 	}
-	res, err := bs.GetBlock(ctx, &ethpb.BlockRequestByRoot{
+	res, err := bs.GetBlock(ctx, &zondpb.BlockRequestByRoot{
 		BlockRoot: blockRoot[:],
 	})
 	require.NoError(t, err)
@@ -41,7 +41,7 @@ func TestServer_GetBlock(t *testing.T) {
 
 	// Checking for nil block.
 	blockRoot = [32]byte{}
-	res, err = bs.GetBlock(ctx, &ethpb.BlockRequestByRoot{
+	res, err = bs.GetBlock(ctx, &zondpb.BlockRequestByRoot{
 		BlockRoot: blockRoot[:],
 	})
 	require.NoError(t, err)
@@ -64,10 +64,10 @@ func TestServer_GetAttestationInclusionSlot(t *testing.T) {
 	c, err := helpers.BeaconCommitteeFromState(context.Background(), s, 1, 0)
 	require.NoError(t, err)
 
-	a := &ethpb.Attestation{
-		Data: &ethpb.AttestationData{
-			Target:          &ethpb.Checkpoint{Root: tr[:]},
-			Source:          &ethpb.Checkpoint{Root: make([]byte, 32)},
+	a := &zondpb.Attestation{
+		Data: &zondpb.AttestationData{
+			Target:          &zondpb.Checkpoint{Root: tr[:]},
+			Source:          &zondpb.Checkpoint{Root: make([]byte, 32)},
 			BeaconBlockRoot: make([]byte, 32),
 			Slot:            1,
 		},
@@ -76,12 +76,12 @@ func TestServer_GetAttestationInclusionSlot(t *testing.T) {
 	}
 	b := util.NewBeaconBlock()
 	b.Block.Slot = 2
-	b.Block.Body.Attestations = []*ethpb.Attestation{a}
+	b.Block.Body.Attestations = []*zondpb.Attestation{a}
 	util.SaveBlock(t, ctx, bs.BeaconDB, b)
-	res, err := bs.GetInclusionSlot(ctx, &ethpb.InclusionSlotRequest{Slot: 1, Id: uint64(c[0])})
+	res, err := bs.GetInclusionSlot(ctx, &zondpb.InclusionSlotRequest{Slot: 1, Id: uint64(c[0])})
 	require.NoError(t, err)
 	require.Equal(t, b.Block.Slot, res.Slot)
-	res, err = bs.GetInclusionSlot(ctx, &ethpb.InclusionSlotRequest{Slot: 1, Id: 9999999})
+	res, err = bs.GetInclusionSlot(ctx, &zondpb.InclusionSlotRequest{Slot: 1, Id: 9999999})
 	require.NoError(t, err)
 	require.Equal(t, params.BeaconConfig().FarFutureSlot, res.Slot)
 }

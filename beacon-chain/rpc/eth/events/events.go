@@ -14,8 +14,8 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
-	ethpb "github.com/theQRL/qrysm/v4/proto/eth/v1"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/proto/migration"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -62,7 +62,7 @@ var casesHandled = map[string]bool{
 // The topics supported include block events, attestations, chain reorgs, voluntary exits,
 // chain finality, and more.
 func (s *Server) StreamEvents(
-	req *ethpb.StreamEventsRequest, stream ethpbservice.Events_StreamEventsServer,
+	req *zondpbv1.StreamEventsRequest, stream zondpbservice.Events_StreamEventsServer,
 ) error {
 	if req == nil || len(req.Topics) == 0 {
 		return status.Error(codes.InvalidArgument, "No topics specified to subscribe to")
@@ -117,7 +117,7 @@ func (s *Server) StreamEvents(
 }
 
 func handleBlockEvents(
-	stream ethpbservice.Events_StreamEventsServer, requestedTopics map[string]bool, event *feed.Event,
+	stream zondpbservice.Events_StreamEventsServer, requestedTopics map[string]bool, event *feed.Event,
 ) error {
 	switch event.Type {
 	case blockfeed.ReceivedBlock:
@@ -136,7 +136,7 @@ func handleBlockEvents(
 		if err != nil {
 			return errors.Wrap(err, "could not hash tree root block")
 		}
-		eventBlock := &ethpb.EventBlock{
+		eventBlock := &zondpbv1.EventBlock{
 			Slot:                v1Data.Message.Slot,
 			Block:               item[:],
 			ExecutionOptimistic: blkData.IsOptimistic,
@@ -148,7 +148,7 @@ func handleBlockEvents(
 }
 
 func handleBlockOperationEvents(
-	stream ethpbservice.Events_StreamEventsServer, requestedTopics map[string]bool, event *feed.Event,
+	stream zondpbservice.Events_StreamEventsServer, requestedTopics map[string]bool, event *feed.Event,
 ) error {
 	switch event.Type {
 	case operation.AggregatedAttReceived:
@@ -208,12 +208,12 @@ func handleBlockOperationEvents(
 }
 
 func (s *Server) handleStateEvents(
-	stream ethpbservice.Events_StreamEventsServer, requestedTopics map[string]bool, event *feed.Event,
+	stream zondpbservice.Events_StreamEventsServer, requestedTopics map[string]bool, event *feed.Event,
 ) error {
 	switch event.Type {
 	case statefeed.NewHead:
 		if _, ok := requestedTopics[HeadTopic]; ok {
-			head, ok := event.Data.(*ethpb.EventHead)
+			head, ok := event.Data.(*zondpbv1.EventHead)
 			if !ok {
 				return nil
 			}
@@ -238,7 +238,7 @@ func (s *Server) handleStateEvents(
 		if _, ok := requestedTopics[FinalizedCheckpointTopic]; !ok {
 			return nil
 		}
-		finalizedCheckpoint, ok := event.Data.(*ethpb.EventFinalizedCheckpoint)
+		finalizedCheckpoint, ok := event.Data.(*zondpbv1.EventFinalizedCheckpoint)
 		if !ok {
 			return nil
 		}
@@ -247,7 +247,7 @@ func (s *Server) handleStateEvents(
 		if _, ok := requestedTopics[ChainReorgTopic]; !ok {
 			return nil
 		}
-		reorg, ok := event.Data.(*ethpb.EventChainReorg)
+		reorg, ok := event.Data.(*zondpbv1.EventChainReorg)
 		if !ok {
 			return nil
 		}
@@ -260,7 +260,7 @@ func (s *Server) handleStateEvents(
 // streamPayloadAttributes on new head event.
 // This event stream is intended to be used by builders and relays.
 // parent_ fields are based on state at N_{current_slot}, while the rest of fields are based on state of N_{current_slot + 1}
-func (s *Server) streamPayloadAttributes(stream ethpbservice.Events_StreamEventsServer) error {
+func (s *Server) streamPayloadAttributes(stream zondpbservice.Events_StreamEventsServer) error {
 	headRoot, err := s.HeadFetcher.HeadRoot(s.Ctx)
 	if err != nil {
 		return errors.Wrap(err, "could not get head root")
@@ -302,9 +302,9 @@ func (s *Server) streamPayloadAttributes(stream ethpbservice.Events_StreamEvents
 
 	switch headState.Version() {
 	case version.Bellatrix:
-		return streamData(stream, PayloadAttributesTopic, &ethpb.EventPayloadAttributeV1{
+		return streamData(stream, PayloadAttributesTopic, &zondpbv1.EventPayloadAttributeV1{
 			Version: version.String(headState.Version()),
-			Data: &ethpb.EventPayloadAttributeV1_BasePayloadAttribute{
+			Data: &zondpbv1.EventPayloadAttributeV1_BasePayloadAttribute{
 				ProposerIndex:     proposerIndex,
 				ProposalSlot:      headState.Slot(),
 				ParentBlockNumber: headPayload.BlockNumber(),
@@ -322,9 +322,9 @@ func (s *Server) streamPayloadAttributes(stream ethpbservice.Events_StreamEvents
 		if err != nil {
 			return err
 		}
-		return streamData(stream, PayloadAttributesTopic, &ethpb.EventPayloadAttributeV2{
+		return streamData(stream, PayloadAttributesTopic, &zondpbv1.EventPayloadAttributeV2{
 			Version: version.String(headState.Version()),
-			Data: &ethpb.EventPayloadAttributeV2_BasePayloadAttribute{
+			Data: &zondpbv1.EventPayloadAttributeV2_BasePayloadAttribute{
 				ProposerIndex:     proposerIndex,
 				ProposalSlot:      headState.Slot(),
 				ParentBlockNumber: headPayload.BlockNumber(),
@@ -343,7 +343,7 @@ func (s *Server) streamPayloadAttributes(stream ethpbservice.Events_StreamEvents
 	}
 }
 
-func streamData(stream ethpbservice.Events_StreamEventsServer, name string, data proto.Message) error {
+func streamData(stream zondpbservice.Events_StreamEventsServer, name string, data proto.Message) error {
 	returnData, err := anypb.New(data)
 	if err != nil {
 		return err

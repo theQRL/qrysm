@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	slashersimulator "github.com/theQRL/qrysm/v4/testing/slasher/simulator"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -70,13 +70,13 @@ func TestEndToEnd_SlasherSimulator(t *testing.T) {
 
 	// We setup validators in the beacon state along with their
 	// private keys used to generate valid signatures in generated objects.
-	validators := make([]*ethpb.Validator, simulatorParams.NumValidators)
+	validators := make([]*zondpb.Validator, simulatorParams.NumValidators)
 	privKeys := make(map[primitives.ValidatorIndex]bls.SecretKey)
 	for valIdx := range validators {
 		privKey, err := bls.RandKey()
 		require.NoError(t, err)
 		privKeys[primitives.ValidatorIndex(valIdx)] = privKey
-		validators[valIdx] = &ethpb.Validator{
+		validators[valIdx] = &zondpb.Validator{
 			PublicKey:             privKey.PublicKey().Marshal(),
 			WithdrawalCredentials: make([]byte, 32),
 		}

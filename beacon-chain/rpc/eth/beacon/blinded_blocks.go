@@ -13,10 +13,10 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/encoding/ssz/detect"
 	"github.com/theQRL/qrysm/v4/network/forks"
-	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/proto/migration"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -25,7 +25,7 @@ import (
 )
 
 // GetBlindedBlock retrieves blinded block for given block id.
-func (bs *Server) GetBlindedBlock(ctx context.Context, req *ethpbv1.BlockRequest) (*ethpbv2.BlindedBlockResponse, error) {
+func (bs *Server) GetBlindedBlock(ctx context.Context, req *zondpbv1.BlockRequest) (*zondpbv2.BlindedBlockResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.GetBlindedBlock")
 	defer span.End()
 
@@ -80,7 +80,7 @@ func (bs *Server) GetBlindedBlock(ctx context.Context, req *ethpbv1.BlockRequest
 }
 
 // GetBlindedBlockSSZ returns the SSZ-serialized version of the blinded beacon block for given block id.
-func (bs *Server) GetBlindedBlockSSZ(ctx context.Context, req *ethpbv1.BlockRequest) (*ethpbv2.SSZContainer, error) {
+func (bs *Server) GetBlindedBlockSSZ(ctx context.Context, req *zondpbv1.BlockRequest) (*zondpbv2.SSZContainer, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.GetBlindedBlockSSZ")
 	defer span.End()
 
@@ -142,7 +142,7 @@ func (bs *Server) GetBlindedBlockSSZ(ctx context.Context, req *ethpbv1.BlockRequ
 // successful. The beacon node is expected to integrate the new block into its state, and
 // therefore validate the block internally, however blocks which fail the validation are still
 // broadcast but a different status code is returned (202).
-func (bs *Server) SubmitBlindedBlock(ctx context.Context, req *ethpbv2.SignedBlindedBeaconBlockContainer) (*emptypb.Empty, error) {
+func (bs *Server) SubmitBlindedBlock(ctx context.Context, req *zondpbv2.SignedBlindedBeaconBlockContainer) (*emptypb.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.SubmitBlindedBlock")
 	defer span.End()
 
@@ -152,19 +152,19 @@ func (bs *Server) SubmitBlindedBlock(ctx context.Context, req *ethpbv2.SignedBli
 	}
 
 	switch blkContainer := req.Message.(type) {
-	case *ethpbv2.SignedBlindedBeaconBlockContainer_CapellaBlock:
+	case *zondpbv2.SignedBlindedBeaconBlockContainer_CapellaBlock:
 		if err := bs.submitBlindedCapellaBlock(ctx, blkContainer.CapellaBlock, req.Signature); err != nil {
 			return nil, err
 		}
-	case *ethpbv2.SignedBlindedBeaconBlockContainer_BellatrixBlock:
+	case *zondpbv2.SignedBlindedBeaconBlockContainer_BellatrixBlock:
 		if err := bs.submitBlindedBellatrixBlock(ctx, blkContainer.BellatrixBlock, req.Signature); err != nil {
 			return nil, err
 		}
-	case *ethpbv2.SignedBlindedBeaconBlockContainer_Phase0Block:
+	case *zondpbv2.SignedBlindedBeaconBlockContainer_Phase0Block:
 		if err := bs.submitPhase0Block(ctx, blkContainer.Phase0Block, req.Signature); err != nil {
 			return nil, err
 		}
-	case *ethpbv2.SignedBlindedBeaconBlockContainer_AltairBlock:
+	case *zondpbv2.SignedBlindedBeaconBlockContainer_AltairBlock:
 		if err := bs.submitAltairBlock(ctx, blkContainer.AltairBlock, req.Signature); err != nil {
 			return nil, err
 		}
@@ -185,7 +185,7 @@ func (bs *Server) SubmitBlindedBlock(ctx context.Context, req *ethpbv2.SignedBli
 // broadcast but a different status code is returned (202).
 //
 // The provided block must be SSZ-serialized.
-func (bs *Server) SubmitBlindedBlockSSZ(ctx context.Context, req *ethpbv2.SSZContainer) (*emptypb.Empty, error) {
+func (bs *Server) SubmitBlindedBlockSSZ(ctx context.Context, req *zondpbv2.SSZContainer) (*emptypb.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.SubmitBlindedBlockSSZ")
 	defer span.End()
 
@@ -225,8 +225,8 @@ func (bs *Server) SubmitBlindedBlockSSZ(ctx context.Context, req *ethpbv2.SSZCon
 		if err != nil {
 			return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not get proto block: %v", err)
 		}
-		_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &eth.GenericSignedBeaconBlock{
-			Block: &eth.GenericSignedBeaconBlock_BlindedCapella{
+		_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &zond.GenericSignedBeaconBlock{
+			Block: &zond.GenericSignedBeaconBlock_BlindedCapella{
 				BlindedCapella: b,
 			},
 		})
@@ -245,8 +245,8 @@ func (bs *Server) SubmitBlindedBlockSSZ(ctx context.Context, req *ethpbv2.SSZCon
 		if err != nil {
 			return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not get proto block: %v", err)
 		}
-		_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &eth.GenericSignedBeaconBlock{
-			Block: &eth.GenericSignedBeaconBlock_BlindedBellatrix{
+		_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &zond.GenericSignedBeaconBlock{
+			Block: &zond.GenericSignedBeaconBlock_BlindedBellatrix{
 				BlindedBellatrix: b,
 			},
 		})
@@ -262,8 +262,8 @@ func (bs *Server) SubmitBlindedBlockSSZ(ctx context.Context, req *ethpbv2.SSZCon
 		if err != nil {
 			return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not get proto block: %v", err)
 		}
-		_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &eth.GenericSignedBeaconBlock{
-			Block: &eth.GenericSignedBeaconBlock_Altair{
+		_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &zond.GenericSignedBeaconBlock{
+			Block: &zond.GenericSignedBeaconBlock_Altair{
 				Altair: b,
 			},
 		})
@@ -279,8 +279,8 @@ func (bs *Server) SubmitBlindedBlockSSZ(ctx context.Context, req *ethpbv2.SSZCon
 		if err != nil {
 			return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not get proto block: %v", err)
 		}
-		_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &eth.GenericSignedBeaconBlock{
-			Block: &eth.GenericSignedBeaconBlock_Phase0{
+		_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &zond.GenericSignedBeaconBlock{
+			Block: &zond.GenericSignedBeaconBlock_Phase0{
 				Phase0: b,
 			},
 		})
@@ -296,7 +296,7 @@ func (bs *Server) SubmitBlindedBlockSSZ(ctx context.Context, req *ethpbv2.SSZCon
 	}
 }
 
-func getBlindedBlockPhase0(blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.BlindedBlockResponse, error) {
+func getBlindedBlockPhase0(blk interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.BlindedBlockResponse, error) {
 	phase0Blk, err := blk.PbPhase0Block()
 	if err != nil {
 		return nil, err
@@ -308,17 +308,17 @@ func getBlindedBlockPhase0(blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.B
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not get signed beacon block")
 	}
-	return &ethpbv2.BlindedBlockResponse{
-		Version: ethpbv2.Version_PHASE0,
-		Data: &ethpbv2.SignedBlindedBeaconBlockContainer{
-			Message:   &ethpbv2.SignedBlindedBeaconBlockContainer_Phase0Block{Phase0Block: v1Blk.Block},
+	return &zondpbv2.BlindedBlockResponse{
+		Version: zondpbv2.Version_PHASE0,
+		Data: &zondpbv2.SignedBlindedBeaconBlockContainer{
+			Message:   &zondpbv2.SignedBlindedBeaconBlockContainer_Phase0Block{Phase0Block: v1Blk.Block},
 			Signature: v1Blk.Signature,
 		},
 		ExecutionOptimistic: false,
 	}, nil
 }
 
-func getBlindedBlockAltair(blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.BlindedBlockResponse, error) {
+func getBlindedBlockAltair(blk interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.BlindedBlockResponse, error) {
 	altairBlk, err := blk.PbAltairBlock()
 	if err != nil {
 		return nil, err
@@ -331,17 +331,17 @@ func getBlindedBlockAltair(blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.B
 		return nil, errors.Wrapf(err, "could not get signed beacon block")
 	}
 	sig := blk.Signature()
-	return &ethpbv2.BlindedBlockResponse{
-		Version: ethpbv2.Version_ALTAIR,
-		Data: &ethpbv2.SignedBlindedBeaconBlockContainer{
-			Message:   &ethpbv2.SignedBlindedBeaconBlockContainer_AltairBlock{AltairBlock: v2Blk},
+	return &zondpbv2.BlindedBlockResponse{
+		Version: zondpbv2.Version_ALTAIR,
+		Data: &zondpbv2.SignedBlindedBeaconBlockContainer{
+			Message:   &zondpbv2.SignedBlindedBeaconBlockContainer_AltairBlock{AltairBlock: v2Blk},
 			Signature: sig[:],
 		},
 		ExecutionOptimistic: false,
 	}, nil
 }
 
-func (bs *Server) getBlindedBlockBellatrix(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.BlindedBlockResponse, error) {
+func (bs *Server) getBlindedBlockBellatrix(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.BlindedBlockResponse, error) {
 	bellatrixBlk, err := blk.PbBellatrixBlock()
 	if err != nil {
 		// ErrUnsupportedField means that we have another block type
@@ -363,10 +363,10 @@ func (bs *Server) getBlindedBlockBellatrix(ctx context.Context, blk interfaces.R
 					return nil, errors.Wrapf(err, "could not check if block is optimistic")
 				}
 				sig := blk.Signature()
-				return &ethpbv2.BlindedBlockResponse{
-					Version: ethpbv2.Version_BELLATRIX,
-					Data: &ethpbv2.SignedBlindedBeaconBlockContainer{
-						Message:   &ethpbv2.SignedBlindedBeaconBlockContainer_BellatrixBlock{BellatrixBlock: v2Blk},
+				return &zondpbv2.BlindedBlockResponse{
+					Version: zondpbv2.Version_BELLATRIX,
+					Data: &zondpbv2.SignedBlindedBeaconBlockContainer{
+						Message:   &zondpbv2.SignedBlindedBeaconBlockContainer_BellatrixBlock{BellatrixBlock: v2Blk},
 						Signature: sig[:],
 					},
 					ExecutionOptimistic: isOptimistic,
@@ -401,17 +401,17 @@ func (bs *Server) getBlindedBlockBellatrix(ctx context.Context, blk interfaces.R
 		return nil, errors.Wrapf(err, "could not check if block is optimistic")
 	}
 	sig := blk.Signature()
-	return &ethpbv2.BlindedBlockResponse{
-		Version: ethpbv2.Version_BELLATRIX,
-		Data: &ethpbv2.SignedBlindedBeaconBlockContainer{
-			Message:   &ethpbv2.SignedBlindedBeaconBlockContainer_BellatrixBlock{BellatrixBlock: v2Blk},
+	return &zondpbv2.BlindedBlockResponse{
+		Version: zondpbv2.Version_BELLATRIX,
+		Data: &zondpbv2.SignedBlindedBeaconBlockContainer{
+			Message:   &zondpbv2.SignedBlindedBeaconBlockContainer_BellatrixBlock{BellatrixBlock: v2Blk},
 			Signature: sig[:],
 		},
 		ExecutionOptimistic: isOptimistic,
 	}, nil
 }
 
-func (bs *Server) getBlindedBlockCapella(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.BlindedBlockResponse, error) {
+func (bs *Server) getBlindedBlockCapella(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.BlindedBlockResponse, error) {
 	capellaBlk, err := blk.PbCapellaBlock()
 	if err != nil {
 		// ErrUnsupportedField means that we have another block type
@@ -433,10 +433,10 @@ func (bs *Server) getBlindedBlockCapella(ctx context.Context, blk interfaces.Rea
 					return nil, errors.Wrapf(err, "could not check if block is optimistic")
 				}
 				sig := blk.Signature()
-				return &ethpbv2.BlindedBlockResponse{
-					Version: ethpbv2.Version_CAPELLA,
-					Data: &ethpbv2.SignedBlindedBeaconBlockContainer{
-						Message:   &ethpbv2.SignedBlindedBeaconBlockContainer_CapellaBlock{CapellaBlock: v2Blk},
+				return &zondpbv2.BlindedBlockResponse{
+					Version: zondpbv2.Version_CAPELLA,
+					Data: &zondpbv2.SignedBlindedBeaconBlockContainer{
+						Message:   &zondpbv2.SignedBlindedBeaconBlockContainer_CapellaBlock{CapellaBlock: v2Blk},
 						Signature: sig[:],
 					},
 					ExecutionOptimistic: isOptimistic,
@@ -471,17 +471,17 @@ func (bs *Server) getBlindedBlockCapella(ctx context.Context, blk interfaces.Rea
 		return nil, errors.Wrapf(err, "could not check if block is optimistic")
 	}
 	sig := blk.Signature()
-	return &ethpbv2.BlindedBlockResponse{
-		Version: ethpbv2.Version_CAPELLA,
-		Data: &ethpbv2.SignedBlindedBeaconBlockContainer{
-			Message:   &ethpbv2.SignedBlindedBeaconBlockContainer_CapellaBlock{CapellaBlock: v2Blk},
+	return &zondpbv2.BlindedBlockResponse{
+		Version: zondpbv2.Version_CAPELLA,
+		Data: &zondpbv2.SignedBlindedBeaconBlockContainer{
+			Message:   &zondpbv2.SignedBlindedBeaconBlockContainer_CapellaBlock{CapellaBlock: v2Blk},
 			Signature: sig[:],
 		},
 		ExecutionOptimistic: isOptimistic,
 	}, nil
 }
 
-func (bs *Server) getBlindedSSZBlockBellatrix(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.SSZContainer, error) {
+func (bs *Server) getBlindedSSZBlockBellatrix(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.SSZContainer, error) {
 	bellatrixBlk, err := blk.PbBellatrixBlock()
 	if err != nil {
 		// ErrUnsupportedField means that we have another block type
@@ -503,7 +503,7 @@ func (bs *Server) getBlindedSSZBlockBellatrix(ctx context.Context, blk interface
 					return nil, errors.Wrapf(err, "could not check if block is optimistic")
 				}
 				sig := blk.Signature()
-				data := &ethpbv2.SignedBlindedBeaconBlockBellatrix{
+				data := &zondpbv2.SignedBlindedBeaconBlockBellatrix{
 					Message:   v2Blk,
 					Signature: sig[:],
 				}
@@ -511,8 +511,8 @@ func (bs *Server) getBlindedSSZBlockBellatrix(ctx context.Context, blk interface
 				if err != nil {
 					return nil, errors.Wrapf(err, "could not marshal block into SSZ")
 				}
-				return &ethpbv2.SSZContainer{
-					Version:             ethpbv2.Version_BELLATRIX,
+				return &zondpbv2.SSZContainer{
+					Version:             zondpbv2.Version_BELLATRIX,
 					ExecutionOptimistic: isOptimistic,
 					Data:                sszData,
 				}, nil
@@ -545,7 +545,7 @@ func (bs *Server) getBlindedSSZBlockBellatrix(ctx context.Context, blk interface
 		return nil, errors.Wrapf(err, "could not check if block is optimistic")
 	}
 	sig := blk.Signature()
-	data := &ethpbv2.SignedBlindedBeaconBlockBellatrix{
+	data := &zondpbv2.SignedBlindedBeaconBlockBellatrix{
 		Message:   v2Blk,
 		Signature: sig[:],
 	}
@@ -553,10 +553,10 @@ func (bs *Server) getBlindedSSZBlockBellatrix(ctx context.Context, blk interface
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not marshal block into SSZ")
 	}
-	return &ethpbv2.SSZContainer{Version: ethpbv2.Version_BELLATRIX, ExecutionOptimistic: isOptimistic, Data: sszData}, nil
+	return &zondpbv2.SSZContainer{Version: zondpbv2.Version_BELLATRIX, ExecutionOptimistic: isOptimistic, Data: sszData}, nil
 }
 
-func (bs *Server) getBlindedSSZBlockCapella(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*ethpbv2.SSZContainer, error) {
+func (bs *Server) getBlindedSSZBlockCapella(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.SSZContainer, error) {
 	capellaBlk, err := blk.PbCapellaBlock()
 	if err != nil {
 		// ErrUnsupportedField means that we have another block type
@@ -578,7 +578,7 @@ func (bs *Server) getBlindedSSZBlockCapella(ctx context.Context, blk interfaces.
 					return nil, errors.Wrapf(err, "could not check if block is optimistic")
 				}
 				sig := blk.Signature()
-				data := &ethpbv2.SignedBlindedBeaconBlockCapella{
+				data := &zondpbv2.SignedBlindedBeaconBlockCapella{
 					Message:   v2Blk,
 					Signature: sig[:],
 				}
@@ -586,8 +586,8 @@ func (bs *Server) getBlindedSSZBlockCapella(ctx context.Context, blk interfaces.
 				if err != nil {
 					return nil, errors.Wrapf(err, "could not marshal block into SSZ")
 				}
-				return &ethpbv2.SSZContainer{
-					Version:             ethpbv2.Version_CAPELLA,
+				return &zondpbv2.SSZContainer{
+					Version:             zondpbv2.Version_CAPELLA,
 					ExecutionOptimistic: isOptimistic,
 					Data:                sszData,
 				}, nil
@@ -620,7 +620,7 @@ func (bs *Server) getBlindedSSZBlockCapella(ctx context.Context, blk interfaces.
 		return nil, errors.Wrapf(err, "could not check if block is optimistic")
 	}
 	sig := blk.Signature()
-	data := &ethpbv2.SignedBlindedBeaconBlockCapella{
+	data := &zondpbv2.SignedBlindedBeaconBlockCapella{
 		Message:   v2Blk,
 		Signature: sig[:],
 	}
@@ -628,19 +628,19 @@ func (bs *Server) getBlindedSSZBlockCapella(ctx context.Context, blk interfaces.
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not marshal block into SSZ")
 	}
-	return &ethpbv2.SSZContainer{Version: ethpbv2.Version_CAPELLA, ExecutionOptimistic: isOptimistic, Data: sszData}, nil
+	return &zondpbv2.SSZContainer{Version: zondpbv2.Version_CAPELLA, ExecutionOptimistic: isOptimistic, Data: sszData}, nil
 }
 
-func (bs *Server) submitBlindedBellatrixBlock(ctx context.Context, blindedBellatrixBlk *ethpbv2.BlindedBeaconBlockBellatrix, sig []byte) error {
-	b, err := migration.BlindedBellatrixToV1Alpha1SignedBlock(&ethpbv2.SignedBlindedBeaconBlockBellatrix{
+func (bs *Server) submitBlindedBellatrixBlock(ctx context.Context, blindedBellatrixBlk *zondpbv2.BlindedBeaconBlockBellatrix, sig []byte) error {
+	b, err := migration.BlindedBellatrixToV1Alpha1SignedBlock(&zondpbv2.SignedBlindedBeaconBlockBellatrix{
 		Message:   blindedBellatrixBlk,
 		Signature: sig,
 	})
 	if err != nil {
 		return status.Errorf(codes.Internal, "Could not convert block: %v", err)
 	}
-	_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &eth.GenericSignedBeaconBlock{
-		Block: &eth.GenericSignedBeaconBlock_BlindedBellatrix{
+	_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &zond.GenericSignedBeaconBlock{
+		Block: &zond.GenericSignedBeaconBlock_BlindedBellatrix{
 			BlindedBellatrix: b,
 		},
 	})
@@ -653,16 +653,16 @@ func (bs *Server) submitBlindedBellatrixBlock(ctx context.Context, blindedBellat
 	return nil
 }
 
-func (bs *Server) submitBlindedCapellaBlock(ctx context.Context, blindedCapellaBlk *ethpbv2.BlindedBeaconBlockCapella, sig []byte) error {
-	b, err := migration.BlindedCapellaToV1Alpha1SignedBlock(&ethpbv2.SignedBlindedBeaconBlockCapella{
+func (bs *Server) submitBlindedCapellaBlock(ctx context.Context, blindedCapellaBlk *zondpbv2.BlindedBeaconBlockCapella, sig []byte) error {
+	b, err := migration.BlindedCapellaToV1Alpha1SignedBlock(&zondpbv2.SignedBlindedBeaconBlockCapella{
 		Message:   blindedCapellaBlk,
 		Signature: sig,
 	})
 	if err != nil {
 		return status.Errorf(codes.Internal, "Could not convert block: %v", err)
 	}
-	_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &eth.GenericSignedBeaconBlock{
-		Block: &eth.GenericSignedBeaconBlock_BlindedCapella{
+	_, err = bs.V1Alpha1ValidatorServer.ProposeBeaconBlock(ctx, &zond.GenericSignedBeaconBlock{
+		Block: &zond.GenericSignedBeaconBlock_BlindedCapella{
 			BlindedCapella: b,
 		},
 	})

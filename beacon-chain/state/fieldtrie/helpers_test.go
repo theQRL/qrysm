@@ -12,20 +12,20 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func Test_handlePendingAttestation_OutOfRange(t *testing.T) {
-	items := make([]*ethpb.PendingAttestation, 1)
+	items := make([]*zondpb.PendingAttestation, 1)
 	indices := []uint64{3}
 	_, err := handlePendingAttestationSlice(items, indices, false)
 	assert.ErrorContains(t, "index 3 greater than number of pending attestations 1", err)
 }
 
 func Test_handleEth1DataSlice_OutOfRange(t *testing.T) {
-	items := make([]*ethpb.Eth1Data, 1)
+	items := make([]*zondpb.Eth1Data, 1)
 	indices := []uint64{3}
 	_, err := handleEth1DataSlice(items, indices, false)
 	assert.ErrorContains(t, "index 3 greater than number of items in eth1 data slice 1", err)
@@ -33,7 +33,7 @@ func Test_handleEth1DataSlice_OutOfRange(t *testing.T) {
 }
 
 func Test_handleValidatorSlice_OutOfRange(t *testing.T) {
-	vals := make([]*ethpb.Validator, 1)
+	vals := make([]*zondpb.Validator, 1)
 	indices := []uint64{3}
 	_, err := handleValidatorSlice(vals, indices, false)
 	assert.ErrorContains(t, "index 3 greater than number of validators 1", err)
@@ -235,7 +235,7 @@ func TestFieldTrie_NativeState_fieldConvertersNative(t *testing.T) {
 			args: &args{
 				field:   types.FieldIndex(9),
 				indices: []uint64{},
-				elements: []*ethpb.Eth1Data{
+				elements: []*zondpb.Eth1Data{
 					{
 						DepositRoot:  make([]byte, fieldparams.RootLength),
 						DepositCount: 1,
@@ -250,7 +250,7 @@ func TestFieldTrie_NativeState_fieldConvertersNative(t *testing.T) {
 			args: &args{
 				field:   types.FieldIndex(9),
 				indices: []uint64{1},
-				elements: []*ethpb.Eth1Data{
+				elements: []*zondpb.Eth1Data{
 					{
 						DepositRoot:  make([]byte, fieldparams.RootLength),
 						DepositCount: 2,
@@ -273,7 +273,7 @@ func TestFieldTrie_NativeState_fieldConvertersNative(t *testing.T) {
 				convertAll: true,
 			},
 			wantHex: nil,
-			errMsg:  fmt.Sprintf("Wanted type of %T", []*ethpb.Eth1Data{}),
+			errMsg:  fmt.Sprintf("Wanted type of %T", []*zondpb.Eth1Data{}),
 		},
 		{
 			name: "Balance",
@@ -290,7 +290,7 @@ func TestFieldTrie_NativeState_fieldConvertersNative(t *testing.T) {
 			args: &args{
 				field:   types.FieldIndex(11),
 				indices: []uint64{},
-				elements: []*ethpb.Validator{
+				elements: []*zondpb.Validator{
 					{
 						ActivationEpoch: 1,
 					},
@@ -308,14 +308,14 @@ func TestFieldTrie_NativeState_fieldConvertersNative(t *testing.T) {
 				convertAll: true,
 			},
 			wantHex: nil,
-			errMsg:  fmt.Sprintf("Wanted type of %T", []*ethpb.Validator{}),
+			errMsg:  fmt.Sprintf("Wanted type of %T", []*zondpb.Validator{}),
 		},
 		{
 			name: "Attestations",
 			args: &args{
 				field:   types.FieldIndex(15),
 				indices: []uint64{},
-				elements: []*ethpb.PendingAttestation{
+				elements: []*zondpb.PendingAttestation{
 					{
 						ProposerIndex: 1,
 					},
@@ -329,7 +329,7 @@ func TestFieldTrie_NativeState_fieldConvertersNative(t *testing.T) {
 			args: &args{
 				field:   types.FieldIndex(15),
 				indices: []uint64{1},
-				elements: []*ethpb.PendingAttestation{
+				elements: []*zondpb.PendingAttestation{
 					{
 						ProposerIndex: 0,
 					},
@@ -346,7 +346,7 @@ func TestFieldTrie_NativeState_fieldConvertersNative(t *testing.T) {
 			args: &args{
 				field:   types.FieldIndex(999),
 				indices: []uint64{},
-				elements: []*ethpb.PendingAttestation{
+				elements: []*zondpb.PendingAttestation{
 					{
 						ProposerIndex: 1,
 					},

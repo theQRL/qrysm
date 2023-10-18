@@ -8,7 +8,7 @@ import (
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -66,14 +66,14 @@ func TestAttestingIndices(t *testing.T) {
 func TestIsValidAttestationIndices(t *testing.T) {
 	tests := []struct {
 		name      string
-		att       *eth.IndexedAttestation
+		att       *zond.IndexedAttestation
 		wantedErr string
 	}{
 		{
 			name: "Indices should not be nil",
-			att: &eth.IndexedAttestation{
-				Data: &eth.AttestationData{
-					Target: &eth.Checkpoint{},
+			att: &zond.IndexedAttestation{
+				Data: &zond.AttestationData{
+					Target: &zond.Checkpoint{},
 				},
 				Signature: make([]byte, dilithium2.CryptoBytes),
 			},
@@ -81,10 +81,10 @@ func TestIsValidAttestationIndices(t *testing.T) {
 		},
 		{
 			name: "Indices should be non-empty",
-			att: &eth.IndexedAttestation{
+			att: &zond.IndexedAttestation{
 				AttestingIndices: []uint64{},
-				Data: &eth.AttestationData{
-					Target: &eth.Checkpoint{},
+				Data: &zond.AttestationData{
+					Target: &zond.Checkpoint{},
 				},
 				Signature: make([]byte, dilithium2.CryptoBytes),
 			},
@@ -92,10 +92,10 @@ func TestIsValidAttestationIndices(t *testing.T) {
 		},
 		{
 			name: "Greater than max validators per committee",
-			att: &eth.IndexedAttestation{
+			att: &zond.IndexedAttestation{
 				AttestingIndices: make([]uint64, params.BeaconConfig().MaxValidatorsPerCommittee+1),
-				Data: &eth.AttestationData{
-					Target: &eth.Checkpoint{},
+				Data: &zond.AttestationData{
+					Target: &zond.Checkpoint{},
 				},
 				Signature: make([]byte, dilithium2.CryptoBytes),
 			},
@@ -103,10 +103,10 @@ func TestIsValidAttestationIndices(t *testing.T) {
 		},
 		{
 			name: "Needs to be sorted",
-			att: &eth.IndexedAttestation{
+			att: &zond.IndexedAttestation{
 				AttestingIndices: []uint64{3, 2, 1},
-				Data: &eth.AttestationData{
-					Target: &eth.Checkpoint{},
+				Data: &zond.AttestationData{
+					Target: &zond.Checkpoint{},
 				},
 				Signature: make([]byte, dilithium2.CryptoBytes),
 			},
@@ -114,30 +114,30 @@ func TestIsValidAttestationIndices(t *testing.T) {
 		},
 		{
 			name: "Valid indices",
-			att: &eth.IndexedAttestation{
+			att: &zond.IndexedAttestation{
 				AttestingIndices: []uint64{1, 2, 3},
-				Data: &eth.AttestationData{
-					Target: &eth.Checkpoint{},
+				Data: &zond.AttestationData{
+					Target: &zond.Checkpoint{},
 				},
 				Signature: make([]byte, dilithium2.CryptoBytes),
 			},
 		},
 		{
 			name: "Valid indices with length of 2",
-			att: &eth.IndexedAttestation{
+			att: &zond.IndexedAttestation{
 				AttestingIndices: []uint64{1, 2},
-				Data: &eth.AttestationData{
-					Target: &eth.Checkpoint{},
+				Data: &zond.AttestationData{
+					Target: &zond.Checkpoint{},
 				},
 				Signature: make([]byte, dilithium2.CryptoBytes),
 			},
 		},
 		{
 			name: "Valid indices with length of 1",
-			att: &eth.IndexedAttestation{
+			att: &zond.IndexedAttestation{
 				AttestingIndices: []uint64{1},
-				Data: &eth.AttestationData{
-					Target: &eth.Checkpoint{},
+				Data: &zond.AttestationData{
+					Target: &zond.Checkpoint{},
 				},
 				Signature: make([]byte, dilithium2.CryptoBytes),
 			},
@@ -171,10 +171,10 @@ func BenchmarkIsValidAttestationIndices(b *testing.B) {
 	for i := 0; i < len(indices); i++ {
 		indices[i] = uint64(i)
 	}
-	att := &eth.IndexedAttestation{
+	att := &zond.IndexedAttestation{
 		AttestingIndices: indices,
-		Data: &eth.AttestationData{
-			Target: &eth.Checkpoint{},
+		Data: &zond.AttestationData{
+			Target: &zond.Checkpoint{},
 		},
 		Signature: make([]byte, dilithium2.CryptoBytes),
 	}
@@ -189,35 +189,35 @@ func BenchmarkIsValidAttestationIndices(b *testing.B) {
 func TestAttDataIsEqual(t *testing.T) {
 	type test struct {
 		name     string
-		attData1 *eth.AttestationData
-		attData2 *eth.AttestationData
+		attData1 *zond.AttestationData
+		attData2 *zond.AttestationData
 		equal    bool
 	}
 	tests := []test{
 		{
 			name: "same",
-			attData1: &eth.AttestationData{
+			attData1: &zond.AttestationData{
 				Slot:            5,
 				CommitteeIndex:  2,
 				BeaconBlockRoot: []byte("great block"),
-				Source: &eth.Checkpoint{
+				Source: &zond.Checkpoint{
 					Epoch: 4,
 					Root:  []byte("good source"),
 				},
-				Target: &eth.Checkpoint{
+				Target: &zond.Checkpoint{
 					Epoch: 10,
 					Root:  []byte("good target"),
 				},
 			},
-			attData2: &eth.AttestationData{
+			attData2: &zond.AttestationData{
 				Slot:            5,
 				CommitteeIndex:  2,
 				BeaconBlockRoot: []byte("great block"),
-				Source: &eth.Checkpoint{
+				Source: &zond.Checkpoint{
 					Epoch: 4,
 					Root:  []byte("good source"),
 				},
-				Target: &eth.Checkpoint{
+				Target: &zond.Checkpoint{
 					Epoch: 10,
 					Root:  []byte("good target"),
 				},
@@ -226,28 +226,28 @@ func TestAttDataIsEqual(t *testing.T) {
 		},
 		{
 			name: "diff slot",
-			attData1: &eth.AttestationData{
+			attData1: &zond.AttestationData{
 				Slot:            5,
 				CommitteeIndex:  2,
 				BeaconBlockRoot: []byte("great block"),
-				Source: &eth.Checkpoint{
+				Source: &zond.Checkpoint{
 					Epoch: 4,
 					Root:  []byte("good source"),
 				},
-				Target: &eth.Checkpoint{
+				Target: &zond.Checkpoint{
 					Epoch: 10,
 					Root:  []byte("good target"),
 				},
 			},
-			attData2: &eth.AttestationData{
+			attData2: &zond.AttestationData{
 				Slot:            4,
 				CommitteeIndex:  2,
 				BeaconBlockRoot: []byte("great block"),
-				Source: &eth.Checkpoint{
+				Source: &zond.Checkpoint{
 					Epoch: 4,
 					Root:  []byte("good source"),
 				},
-				Target: &eth.Checkpoint{
+				Target: &zond.Checkpoint{
 					Epoch: 10,
 					Root:  []byte("good target"),
 				},
@@ -255,28 +255,28 @@ func TestAttDataIsEqual(t *testing.T) {
 		},
 		{
 			name: "diff block",
-			attData1: &eth.AttestationData{
+			attData1: &zond.AttestationData{
 				Slot:            5,
 				CommitteeIndex:  2,
 				BeaconBlockRoot: []byte("good block"),
-				Source: &eth.Checkpoint{
+				Source: &zond.Checkpoint{
 					Epoch: 4,
 					Root:  []byte("good source"),
 				},
-				Target: &eth.Checkpoint{
+				Target: &zond.Checkpoint{
 					Epoch: 10,
 					Root:  []byte("good target"),
 				},
 			},
-			attData2: &eth.AttestationData{
+			attData2: &zond.AttestationData{
 				Slot:            5,
 				CommitteeIndex:  2,
 				BeaconBlockRoot: []byte("great block"),
-				Source: &eth.Checkpoint{
+				Source: &zond.Checkpoint{
 					Epoch: 4,
 					Root:  []byte("good source"),
 				},
-				Target: &eth.Checkpoint{
+				Target: &zond.Checkpoint{
 					Epoch: 10,
 					Root:  []byte("good target"),
 				},
@@ -284,28 +284,28 @@ func TestAttDataIsEqual(t *testing.T) {
 		},
 		{
 			name: "diff source root",
-			attData1: &eth.AttestationData{
+			attData1: &zond.AttestationData{
 				Slot:            5,
 				CommitteeIndex:  2,
 				BeaconBlockRoot: []byte("great block"),
-				Source: &eth.Checkpoint{
+				Source: &zond.Checkpoint{
 					Epoch: 4,
 					Root:  []byte("good source"),
 				},
-				Target: &eth.Checkpoint{
+				Target: &zond.Checkpoint{
 					Epoch: 10,
 					Root:  []byte("good target"),
 				},
 			},
-			attData2: &eth.AttestationData{
+			attData2: &zond.AttestationData{
 				Slot:            5,
 				CommitteeIndex:  2,
 				BeaconBlockRoot: []byte("great block"),
-				Source: &eth.Checkpoint{
+				Source: &zond.Checkpoint{
 					Epoch: 4,
 					Root:  []byte("bad source"),
 				},
-				Target: &eth.Checkpoint{
+				Target: &zond.Checkpoint{
 					Epoch: 10,
 					Root:  []byte("good target"),
 				},
@@ -322,18 +322,18 @@ func TestAttDataIsEqual(t *testing.T) {
 func TestCheckPtIsEqual(t *testing.T) {
 	type test struct {
 		name     string
-		checkPt1 *eth.Checkpoint
-		checkPt2 *eth.Checkpoint
+		checkPt1 *zond.Checkpoint
+		checkPt2 *zond.Checkpoint
 		equal    bool
 	}
 	tests := []test{
 		{
 			name: "same",
-			checkPt1: &eth.Checkpoint{
+			checkPt1: &zond.Checkpoint{
 				Epoch: 4,
 				Root:  []byte("good source"),
 			},
-			checkPt2: &eth.Checkpoint{
+			checkPt2: &zond.Checkpoint{
 				Epoch: 4,
 				Root:  []byte("good source"),
 			},
@@ -341,11 +341,11 @@ func TestCheckPtIsEqual(t *testing.T) {
 		},
 		{
 			name: "diff epoch",
-			checkPt1: &eth.Checkpoint{
+			checkPt1: &zond.Checkpoint{
 				Epoch: 4,
 				Root:  []byte("good source"),
 			},
-			checkPt2: &eth.Checkpoint{
+			checkPt2: &zond.Checkpoint{
 				Epoch: 5,
 				Root:  []byte("good source"),
 			},
@@ -353,11 +353,11 @@ func TestCheckPtIsEqual(t *testing.T) {
 		},
 		{
 			name: "diff root",
-			checkPt1: &eth.Checkpoint{
+			checkPt1: &zond.Checkpoint{
 				Epoch: 4,
 				Root:  []byte("good source"),
 			},
-			checkPt2: &eth.Checkpoint{
+			checkPt2: &zond.Checkpoint{
 				Epoch: 4,
 				Root:  []byte("bad source"),
 			},
@@ -372,28 +372,28 @@ func TestCheckPtIsEqual(t *testing.T) {
 }
 
 func BenchmarkAttDataIsEqual(b *testing.B) {
-	attData1 := &eth.AttestationData{
+	attData1 := &zond.AttestationData{
 		Slot:            5,
 		CommitteeIndex:  2,
 		BeaconBlockRoot: []byte("great block"),
-		Source: &eth.Checkpoint{
+		Source: &zond.Checkpoint{
 			Epoch: 4,
 			Root:  []byte("good source"),
 		},
-		Target: &eth.Checkpoint{
+		Target: &zond.Checkpoint{
 			Epoch: 10,
 			Root:  []byte("good target"),
 		},
 	}
-	attData2 := &eth.AttestationData{
+	attData2 := &zond.AttestationData{
 		Slot:            5,
 		CommitteeIndex:  2,
 		BeaconBlockRoot: []byte("great block"),
-		Source: &eth.Checkpoint{
+		Source: &zond.Checkpoint{
 			Epoch: 4,
 			Root:  []byte("good source"),
 		},
-		Target: &eth.Checkpoint{
+		Target: &zond.Checkpoint{
 			Epoch: 10,
 			Root:  []byte("good target"),
 		},

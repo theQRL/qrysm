@@ -27,8 +27,8 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 var ErrNilState = errors.New("nil state")
@@ -40,14 +40,14 @@ type ChainService struct {
 	ValidAttestation            bool
 	ValidatorsRoot              [32]byte
 	PublicKey                   [dilithium2.CryptoPublicKeyBytes]byte
-	FinalizedCheckPoint         *ethpb.Checkpoint
-	CurrentJustifiedCheckPoint  *ethpb.Checkpoint
-	PreviousJustifiedCheckPoint *ethpb.Checkpoint
+	FinalizedCheckPoint         *zondpb.Checkpoint
+	CurrentJustifiedCheckPoint  *zondpb.Checkpoint
+	PreviousJustifiedCheckPoint *zondpb.Checkpoint
 	Slot                        *primitives.Slot // Pointer because 0 is a useful value, so checking against it can be incorrect.
 	Balance                     *precompute.Balance
 	CanonicalRoots              map[[32]byte]bool
-	Fork                        *ethpb.Fork
-	ETH1Data                    *ethpb.Eth1Data
+	Fork                        *zondpb.Fork
+	ETH1Data                    *zondpb.Eth1Data
 	InitSyncBlockRoots          map[[32]byte]bool
 	DB                          db.Database
 	State                       state.BeaconState
@@ -295,32 +295,32 @@ func (s *ChainService) HeadStateReadOnly(context.Context) (state.ReadOnlyBeaconS
 }
 
 // CurrentFork mocks HeadState method in chain service.
-func (s *ChainService) CurrentFork() *ethpb.Fork {
+func (s *ChainService) CurrentFork() *zondpb.Fork {
 	return s.Fork
 }
 
 // FinalizedCheckpt mocks FinalizedCheckpt method in chain service.
-func (s *ChainService) FinalizedCheckpt() *ethpb.Checkpoint {
+func (s *ChainService) FinalizedCheckpt() *zondpb.Checkpoint {
 	return s.FinalizedCheckPoint
 }
 
 // CurrentJustifiedCheckpt mocks CurrentJustifiedCheckpt method in chain service.
-func (s *ChainService) CurrentJustifiedCheckpt() *ethpb.Checkpoint {
+func (s *ChainService) CurrentJustifiedCheckpt() *zondpb.Checkpoint {
 	return s.CurrentJustifiedCheckPoint
 }
 
 // PreviousJustifiedCheckpt mocks PreviousJustifiedCheckpt method in chain service.
-func (s *ChainService) PreviousJustifiedCheckpt() *ethpb.Checkpoint {
+func (s *ChainService) PreviousJustifiedCheckpt() *zondpb.Checkpoint {
 	return s.PreviousJustifiedCheckPoint
 }
 
 // ReceiveAttestation mocks ReceiveAttestation method in chain service.
-func (_ *ChainService) ReceiveAttestation(_ context.Context, _ *ethpb.Attestation) error {
+func (_ *ChainService) ReceiveAttestation(_ context.Context, _ *zondpb.Attestation) error {
 	return nil
 }
 
 // AttestationTargetState mocks AttestationTargetState method in chain service.
-func (s *ChainService) AttestationTargetState(_ context.Context, _ *ethpb.Checkpoint) (state.ReadOnlyBeaconState, error) {
+func (s *ChainService) AttestationTargetState(_ context.Context, _ *zondpb.Checkpoint) (state.ReadOnlyBeaconState, error) {
 	return s.State, nil
 }
 
@@ -333,7 +333,7 @@ func (s *ChainService) HeadValidatorsIndices(ctx context.Context, epoch primitiv
 }
 
 // HeadETH1Data provides the current ETH1Data of the head state.
-func (s *ChainService) HeadETH1Data() *ethpb.Eth1Data {
+func (s *ChainService) HeadETH1Data() *zondpb.Eth1Data {
 	return s.ETH1Data
 }
 
@@ -361,7 +361,7 @@ func (s *ChainService) Participation(_ uint64) *precompute.Balance {
 }
 
 // IsValidAttestation always returns true.
-func (s *ChainService) IsValidAttestation(_ context.Context, _ *ethpb.Attestation) bool {
+func (s *ChainService) IsValidAttestation(_ context.Context, _ *zondpb.Attestation) bool {
 	return s.ValidAttestation
 }
 
@@ -395,7 +395,7 @@ func (_ *ChainService) HeadGenesisValidatorsRoot() [32]byte {
 }
 
 // VerifyLmdFfgConsistency mocks VerifyLmdFfgConsistency and always returns nil.
-func (_ *ChainService) VerifyLmdFfgConsistency(_ context.Context, a *ethpb.Attestation) error {
+func (_ *ChainService) VerifyLmdFfgConsistency(_ context.Context, a *zondpb.Attestation) error {
 	if !bytes.Equal(a.Data.BeaconBlockRoot, a.Data.Target.Root) {
 		return errors.New("LMD and FFG miss matched")
 	}
@@ -464,7 +464,7 @@ func (s *ChainService) IsOptimisticForRoot(_ context.Context, root [32]byte) (bo
 
 // UpdateHead mocks the same method in the chain service.
 func (s *ChainService) UpdateHead(ctx context.Context, slot primitives.Slot) {
-	ojc := &ethpb.Checkpoint{}
+	ojc := &zondpb.Checkpoint{}
 	st, root, err := prepareForkchoiceState(ctx, slot, bytesutil.ToBytes32(s.Root), [32]byte{}, [32]byte{}, ojc, ojc)
 	if err != nil {
 		logrus.WithError(err).Error("could not update head")
@@ -476,7 +476,7 @@ func (s *ChainService) UpdateHead(ctx context.Context, slot primitives.Slot) {
 }
 
 // ReceiveAttesterSlashing mocks the same method in the chain service.
-func (s *ChainService) ReceiveAttesterSlashing(context.Context, *ethpb.AttesterSlashing) {}
+func (s *ChainService) ReceiveAttesterSlashing(context.Context, *zondpb.AttesterSlashing) {}
 
 // IsFinalized mocks the same method in the chain service.
 func (s *ChainService) IsFinalized(_ context.Context, blockRoot [32]byte) bool {
@@ -491,10 +491,10 @@ func prepareForkchoiceState(
 	blockRoot [32]byte,
 	parentRoot [32]byte,
 	payloadHash [32]byte,
-	justified *ethpb.Checkpoint,
-	finalized *ethpb.Checkpoint,
+	justified *zondpb.Checkpoint,
+	finalized *zondpb.Checkpoint,
 ) (state.BeaconState, [32]byte, error) {
-	blockHeader := &ethpb.BeaconBlockHeader{
+	blockHeader := &zondpb.BeaconBlockHeader{
 		ParentRoot: parentRoot[:],
 	}
 
@@ -502,7 +502,7 @@ func prepareForkchoiceState(
 		BlockHash: payloadHash[:],
 	}
 
-	base := &ethpb.BeaconStateBellatrix{
+	base := &zondpb.BeaconStateBellatrix{
 		Slot:                         slot,
 		RandaoMixes:                  make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 		BlockRoots:                   make([][]byte, 1),
@@ -565,7 +565,7 @@ func (s *ChainService) InsertNode(ctx context.Context, st state.BeaconState, roo
 }
 
 // ForkChoiceDump mocks the same method in the chain service
-func (s *ChainService) ForkChoiceDump(ctx context.Context) (*ethpbv1.ForkChoiceDump, error) {
+func (s *ChainService) ForkChoiceDump(ctx context.Context) (*zondpbv1.ForkChoiceDump, error) {
 	if s.ForkChoiceStore != nil {
 		return s.ForkChoiceStore.ForkChoiceDump(ctx)
 	}

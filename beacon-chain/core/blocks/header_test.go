@@ -15,7 +15,7 @@ import (
 	consensusblocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -27,9 +27,9 @@ func init() {
 }
 
 func TestProcessBlockHeader_ImproperBlockSlot(t *testing.T) {
-	validators := make([]*ethpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
+	validators := make([]*zondpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			PublicKey:             make([]byte, 32),
 			WithdrawalCredentials: make([]byte, 32),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
@@ -41,7 +41,7 @@ func TestProcessBlockHeader_ImproperBlockSlot(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, state.SetSlot(10))
 	require.NoError(t, state.SetValidators(validators))
-	require.NoError(t, state.SetLatestBlockHeader(util.HydrateBeaconHeader(&ethpb.BeaconBlockHeader{
+	require.NoError(t, state.SetLatestBlockHeader(util.HydrateBeaconHeader(&zondpb.BeaconBlockHeader{
 		Slot: 10, // Must be less than block.Slot
 	})))
 
@@ -77,7 +77,7 @@ func TestProcessBlockHeader_ImproperBlockSlot(t *testing.T) {
 func TestProcessBlockHeader_WrongProposerSig(t *testing.T) {
 
 	beaconState, privKeys := util.DeterministicGenesisState(t, 100)
-	require.NoError(t, beaconState.SetLatestBlockHeader(util.HydrateBeaconHeader(&ethpb.BeaconBlockHeader{
+	require.NoError(t, beaconState.SetLatestBlockHeader(util.HydrateBeaconHeader(&zondpb.BeaconBlockHeader{
 		Slot: 9,
 	})))
 	require.NoError(t, beaconState.SetSlot(10))
@@ -104,9 +104,9 @@ func TestProcessBlockHeader_WrongProposerSig(t *testing.T) {
 }
 
 func TestProcessBlockHeader_DifferentSlots(t *testing.T) {
-	validators := make([]*ethpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
+	validators := make([]*zondpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			PublicKey:             make([]byte, 32),
 			WithdrawalCredentials: make([]byte, 32),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
@@ -118,7 +118,7 @@ func TestProcessBlockHeader_DifferentSlots(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, state.SetValidators(validators))
 	require.NoError(t, state.SetSlot(10))
-	require.NoError(t, state.SetLatestBlockHeader(util.HydrateBeaconHeader(&ethpb.BeaconBlockHeader{
+	require.NoError(t, state.SetLatestBlockHeader(util.HydrateBeaconHeader(&zondpb.BeaconBlockHeader{
 		Slot: 9,
 	})))
 
@@ -132,8 +132,8 @@ func TestProcessBlockHeader_DifferentSlots(t *testing.T) {
 	blockSig, err := signing.ComputeDomainAndSign(state, currentEpoch, &sszBytes, params.BeaconConfig().DomainBeaconProposer, priv)
 	require.NoError(t, err)
 	validators[5896].PublicKey = priv.PublicKey().Marshal()
-	block := util.HydrateSignedBeaconBlock(&ethpb.SignedBeaconBlock{
-		Block: &ethpb.BeaconBlock{
+	block := util.HydrateSignedBeaconBlock(&zondpb.SignedBeaconBlock{
+		Block: &zondpb.BeaconBlock{
 			Slot:       1,
 			ParentRoot: lbhsr[:],
 		},
@@ -148,9 +148,9 @@ func TestProcessBlockHeader_DifferentSlots(t *testing.T) {
 }
 
 func TestProcessBlockHeader_PreviousBlockRootNotSignedRoot(t *testing.T) {
-	validators := make([]*ethpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
+	validators := make([]*zondpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			PublicKey:             make([]byte, 48),
 			WithdrawalCredentials: make([]byte, 32),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
@@ -189,9 +189,9 @@ func TestProcessBlockHeader_PreviousBlockRootNotSignedRoot(t *testing.T) {
 }
 
 func TestProcessBlockHeader_SlashedProposer(t *testing.T) {
-	validators := make([]*ethpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
+	validators := make([]*zondpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			PublicKey:             make([]byte, 48),
 			WithdrawalCredentials: make([]byte, 32),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
@@ -233,9 +233,9 @@ func TestProcessBlockHeader_SlashedProposer(t *testing.T) {
 }
 
 func TestProcessBlockHeader_OK(t *testing.T) {
-	validators := make([]*ethpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
+	validators := make([]*zondpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			PublicKey:             make([]byte, 32),
 			WithdrawalCredentials: make([]byte, 32),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
@@ -247,7 +247,7 @@ func TestProcessBlockHeader_OK(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, state.SetValidators(validators))
 	require.NoError(t, state.SetSlot(10))
-	require.NoError(t, state.SetLatestBlockHeader(util.HydrateBeaconHeader(&ethpb.BeaconBlockHeader{
+	require.NoError(t, state.SetLatestBlockHeader(util.HydrateBeaconHeader(&zondpb.BeaconBlockHeader{
 		Slot: 9,
 	})))
 
@@ -282,7 +282,7 @@ func TestProcessBlockHeader_OK(t *testing.T) {
 	require.NoError(t, err, "Failed to process block header got")
 	var zeroHash [32]byte
 	nsh := newState.LatestBlockHeader()
-	expected := &ethpb.BeaconBlockHeader{
+	expected := &zondpb.BeaconBlockHeader{
 		ProposerIndex: pID,
 		Slot:          block.Block.Slot,
 		ParentRoot:    latestBlockSignedRoot[:],
@@ -293,9 +293,9 @@ func TestProcessBlockHeader_OK(t *testing.T) {
 }
 
 func TestBlockSignatureSet_OK(t *testing.T) {
-	validators := make([]*ethpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
+	validators := make([]*zondpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			PublicKey:             make([]byte, 32),
 			WithdrawalCredentials: make([]byte, 32),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
@@ -307,7 +307,7 @@ func TestBlockSignatureSet_OK(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, state.SetValidators(validators))
 	require.NoError(t, state.SetSlot(10))
-	require.NoError(t, state.SetLatestBlockHeader(util.HydrateBeaconHeader(&ethpb.BeaconBlockHeader{
+	require.NoError(t, state.SetLatestBlockHeader(util.HydrateBeaconHeader(&zondpb.BeaconBlockHeader{
 		Slot:          9,
 		ProposerIndex: 0,
 	})))

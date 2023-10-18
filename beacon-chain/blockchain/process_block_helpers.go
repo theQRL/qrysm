@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	mathutil "github.com/theQRL/qrysm/v4/math"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
@@ -101,7 +101,7 @@ func (s *Service) verifyBlkFinalizedSlot(b interfaces.ReadOnlyBeaconBlock) error
 // updateFinalized saves the init sync blocks, finalized checkpoint, migrates
 // to cold old states and saves the last validated checkpoint to DB. It returns
 // early if the new checkpoint is older than the one on db.
-func (s *Service) updateFinalized(ctx context.Context, cp *ethpb.Checkpoint) error {
+func (s *Service) updateFinalized(ctx context.Context, cp *zondpb.Checkpoint) error {
 	ctx, span := trace.StartSpan(ctx, "blockChain.updateFinalized")
 	defer span.End()
 
@@ -174,7 +174,7 @@ func (s *Service) ancestorByDB(ctx context.Context, r [32]byte, slot primitives.
 // This retrieves missing blocks from DB (ie. the blocks that couldn't be received over sync) and inserts them to fork choice store.
 // This is useful for block tree visualizer and additional vote accounting.
 func (s *Service) fillInForkChoiceMissingBlocks(ctx context.Context, blk interfaces.ReadOnlyBeaconBlock,
-	fCheckpoint, jCheckpoint *ethpb.Checkpoint) error {
+	fCheckpoint, jCheckpoint *zondpb.Checkpoint) error {
 	pendingNodes := make([]*forkchoicetypes.BlockAndCheckpoints, 0)
 
 	// Fork choice only matters from last finalized slot.

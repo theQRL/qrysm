@@ -6,12 +6,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 
 // SaveUnaggregatedAttestation saves an unaggregated attestation in cache.
-func (c *AttCaches) SaveUnaggregatedAttestation(att *ethpb.Attestation) error {
+func (c *AttCaches) SaveUnaggregatedAttestation(att *zondpb.Attestation) error {
 	if att == nil {
 		return nil
 	}
@@ -31,7 +31,7 @@ func (c *AttCaches) SaveUnaggregatedAttestation(att *ethpb.Attestation) error {
 	if err != nil {
 		return errors.Wrap(err, "could not tree hash attestation")
 	}
-	att = ethpb.CopyAttestation(att) // Copied.
+	att = zondpb.CopyAttestation(att) // Copied.
 	c.unAggregateAttLock.Lock()
 	defer c.unAggregateAttLock.Unlock()
 	c.unAggregatedAtt[r] = att
@@ -40,7 +40,7 @@ func (c *AttCaches) SaveUnaggregatedAttestation(att *ethpb.Attestation) error {
 }
 
 // SaveUnaggregatedAttestations saves a list of unaggregated attestations in cache.
-func (c *AttCaches) SaveUnaggregatedAttestations(atts []*ethpb.Attestation) error {
+func (c *AttCaches) SaveUnaggregatedAttestations(atts []*zondpb.Attestation) error {
 	for _, att := range atts {
 		if err := c.SaveUnaggregatedAttestation(att); err != nil {
 			return err
@@ -51,18 +51,18 @@ func (c *AttCaches) SaveUnaggregatedAttestations(atts []*ethpb.Attestation) erro
 }
 
 // UnaggregatedAttestations returns all the unaggregated attestations in cache.
-func (c *AttCaches) UnaggregatedAttestations() ([]*ethpb.Attestation, error) {
+func (c *AttCaches) UnaggregatedAttestations() ([]*zondpb.Attestation, error) {
 	c.unAggregateAttLock.RLock()
 	defer c.unAggregateAttLock.RUnlock()
 	unAggregatedAtts := c.unAggregatedAtt
-	atts := make([]*ethpb.Attestation, 0, len(unAggregatedAtts))
+	atts := make([]*zondpb.Attestation, 0, len(unAggregatedAtts))
 	for _, att := range unAggregatedAtts {
 		seen, err := c.hasSeenBit(att)
 		if err != nil {
 			return nil, err
 		}
 		if !seen {
-			atts = append(atts, ethpb.CopyAttestation(att) /* Copied */)
+			atts = append(atts, zondpb.CopyAttestation(att) /* Copied */)
 		}
 	}
 	return atts, nil
@@ -70,11 +70,11 @@ func (c *AttCaches) UnaggregatedAttestations() ([]*ethpb.Attestation, error) {
 
 // UnaggregatedAttestationsBySlotIndex returns the unaggregated attestations in cache,
 // filtered by committee index and slot.
-func (c *AttCaches) UnaggregatedAttestationsBySlotIndex(ctx context.Context, slot primitives.Slot, committeeIndex primitives.CommitteeIndex) []*ethpb.Attestation {
+func (c *AttCaches) UnaggregatedAttestationsBySlotIndex(ctx context.Context, slot primitives.Slot, committeeIndex primitives.CommitteeIndex) []*zondpb.Attestation {
 	ctx, span := trace.StartSpan(ctx, "operations.attestations.kv.UnaggregatedAttestationsBySlotIndex")
 	defer span.End()
 
-	atts := make([]*ethpb.Attestation, 0)
+	atts := make([]*zondpb.Attestation, 0)
 
 	c.unAggregateAttLock.RLock()
 	defer c.unAggregateAttLock.RUnlock()
@@ -90,7 +90,7 @@ func (c *AttCaches) UnaggregatedAttestationsBySlotIndex(ctx context.Context, slo
 }
 
 // DeleteUnaggregatedAttestation deletes the unaggregated attestations in cache.
-func (c *AttCaches) DeleteUnaggregatedAttestation(att *ethpb.Attestation) error {
+func (c *AttCaches) DeleteUnaggregatedAttestation(att *zondpb.Attestation) error {
 	if att == nil {
 		return nil
 	}

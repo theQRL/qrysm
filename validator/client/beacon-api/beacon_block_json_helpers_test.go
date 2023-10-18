@@ -6,7 +6,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
@@ -25,9 +25,9 @@ func TestBeaconBlockJsonHelpers_JsonifyTransactions(t *testing.T) {
 }
 
 func TestBeaconBlockJsonHelpers_JsonifyBlsToExecutionChanges(t *testing.T) {
-	input := []*ethpb.SignedDilithiumToExecutionChange{
+	input := []*zondpb.SignedDilithiumToExecutionChange{
 		{
-			Message: &ethpb.DilithiumToExecutionChange{
+			Message: &zondpb.DilithiumToExecutionChange{
 				ValidatorIndex:      1,
 				FromDilithiumPubkey: []byte{2},
 				ToExecutionAddress:  []byte{3},
@@ -35,7 +35,7 @@ func TestBeaconBlockJsonHelpers_JsonifyBlsToExecutionChanges(t *testing.T) {
 			Signature: []byte{7},
 		},
 		{
-			Message: &ethpb.DilithiumToExecutionChange{
+			Message: &zondpb.DilithiumToExecutionChange{
 				ValidatorIndex:      4,
 				FromDilithiumPubkey: []byte{5},
 				ToExecutionAddress:  []byte{6},
@@ -68,7 +68,7 @@ func TestBeaconBlockJsonHelpers_JsonifyBlsToExecutionChanges(t *testing.T) {
 }
 
 func TestBeaconBlockJsonHelpers_JsonifyEth1Data(t *testing.T) {
-	input := &ethpb.Eth1Data{
+	input := &zondpb.Eth1Data{
 		DepositRoot:  []byte{1},
 		DepositCount: 2,
 		BlockHash:    []byte{3},
@@ -85,18 +85,18 @@ func TestBeaconBlockJsonHelpers_JsonifyEth1Data(t *testing.T) {
 }
 
 func TestBeaconBlockJsonHelpers_JsonifyAttestations(t *testing.T) {
-	input := []*ethpb.Attestation{
+	input := []*zondpb.Attestation{
 		{
 			AggregationBits: []byte{1},
-			Data: &ethpb.AttestationData{
+			Data: &zondpb.AttestationData{
 				Slot:            2,
 				CommitteeIndex:  3,
 				BeaconBlockRoot: []byte{4},
-				Source: &ethpb.Checkpoint{
+				Source: &zondpb.Checkpoint{
 					Epoch: 5,
 					Root:  []byte{6},
 				},
-				Target: &ethpb.Checkpoint{
+				Target: &zondpb.Checkpoint{
 					Epoch: 7,
 					Root:  []byte{8},
 				},
@@ -105,15 +105,15 @@ func TestBeaconBlockJsonHelpers_JsonifyAttestations(t *testing.T) {
 		},
 		{
 			AggregationBits: []byte{10},
-			Data: &ethpb.AttestationData{
+			Data: &zondpb.AttestationData{
 				Slot:            11,
 				CommitteeIndex:  12,
 				BeaconBlockRoot: []byte{13},
-				Source: &ethpb.Checkpoint{
+				Source: &zondpb.Checkpoint{
 					Epoch: 14,
 					Root:  []byte{15},
 				},
-				Target: &ethpb.Checkpoint{
+				Target: &zondpb.Checkpoint{
 					Epoch: 16,
 					Root:  []byte{17},
 				},
@@ -164,36 +164,36 @@ func TestBeaconBlockJsonHelpers_JsonifyAttestations(t *testing.T) {
 }
 
 func TestBeaconBlockJsonHelpers_JsonifyAttesterSlashings(t *testing.T) {
-	input := []*ethpb.AttesterSlashing{
+	input := []*zondpb.AttesterSlashing{
 		{
-			Attestation_1: &ethpb.IndexedAttestation{
+			Attestation_1: &zondpb.IndexedAttestation{
 				AttestingIndices: []uint64{1, 2},
-				Data: &ethpb.AttestationData{
+				Data: &zondpb.AttestationData{
 					Slot:            3,
 					CommitteeIndex:  4,
 					BeaconBlockRoot: []byte{5},
-					Source: &ethpb.Checkpoint{
+					Source: &zondpb.Checkpoint{
 						Epoch: 6,
 						Root:  []byte{7},
 					},
-					Target: &ethpb.Checkpoint{
+					Target: &zondpb.Checkpoint{
 						Epoch: 8,
 						Root:  []byte{9},
 					},
 				},
 				Signature: []byte{10},
 			},
-			Attestation_2: &ethpb.IndexedAttestation{
+			Attestation_2: &zondpb.IndexedAttestation{
 				AttestingIndices: []uint64{11, 12},
-				Data: &ethpb.AttestationData{
+				Data: &zondpb.AttestationData{
 					Slot:            13,
 					CommitteeIndex:  14,
 					BeaconBlockRoot: []byte{15},
-					Source: &ethpb.Checkpoint{
+					Source: &zondpb.Checkpoint{
 						Epoch: 16,
 						Root:  []byte{17},
 					},
-					Target: &ethpb.Checkpoint{
+					Target: &zondpb.Checkpoint{
 						Epoch: 18,
 						Root:  []byte{19},
 					},
@@ -202,34 +202,34 @@ func TestBeaconBlockJsonHelpers_JsonifyAttesterSlashings(t *testing.T) {
 			},
 		},
 		{
-			Attestation_1: &ethpb.IndexedAttestation{
+			Attestation_1: &zondpb.IndexedAttestation{
 				AttestingIndices: []uint64{21, 22},
-				Data: &ethpb.AttestationData{
+				Data: &zondpb.AttestationData{
 					Slot:            23,
 					CommitteeIndex:  24,
 					BeaconBlockRoot: []byte{25},
-					Source: &ethpb.Checkpoint{
+					Source: &zondpb.Checkpoint{
 						Epoch: 26,
 						Root:  []byte{27},
 					},
-					Target: &ethpb.Checkpoint{
+					Target: &zondpb.Checkpoint{
 						Epoch: 28,
 						Root:  []byte{29},
 					},
 				},
 				Signature: []byte{30},
 			},
-			Attestation_2: &ethpb.IndexedAttestation{
+			Attestation_2: &zondpb.IndexedAttestation{
 				AttestingIndices: []uint64{31, 32},
-				Data: &ethpb.AttestationData{
+				Data: &zondpb.AttestationData{
 					Slot:            33,
 					CommitteeIndex:  34,
 					BeaconBlockRoot: []byte{35},
-					Source: &ethpb.Checkpoint{
+					Source: &zondpb.Checkpoint{
 						Epoch: 36,
 						Root:  []byte{37},
 					},
-					Target: &ethpb.Checkpoint{
+					Target: &zondpb.Checkpoint{
 						Epoch: 38,
 						Root:  []byte{39},
 					},
@@ -319,10 +319,10 @@ func TestBeaconBlockJsonHelpers_JsonifyAttesterSlashings(t *testing.T) {
 }
 
 func TestBeaconBlockJsonHelpers_JsonifyDeposits(t *testing.T) {
-	input := []*ethpb.Deposit{
+	input := []*zondpb.Deposit{
 		{
 			Proof: [][]byte{{1}, {2}},
-			Data: &ethpb.Deposit_Data{
+			Data: &zondpb.Deposit_Data{
 				PublicKey:             []byte{3},
 				WithdrawalCredentials: []byte{4},
 				Amount:                5,
@@ -334,7 +334,7 @@ func TestBeaconBlockJsonHelpers_JsonifyDeposits(t *testing.T) {
 				{7},
 				{8},
 			},
-			Data: &ethpb.Deposit_Data{
+			Data: &zondpb.Deposit_Data{
 				PublicKey:             []byte{9},
 				WithdrawalCredentials: []byte{10},
 				Amount:                11,
@@ -375,10 +375,10 @@ func TestBeaconBlockJsonHelpers_JsonifyDeposits(t *testing.T) {
 }
 
 func TestBeaconBlockJsonHelpers_JsonifyProposerSlashings(t *testing.T) {
-	input := []*ethpb.ProposerSlashing{
+	input := []*zondpb.ProposerSlashing{
 		{
-			Header_1: &ethpb.SignedBeaconBlockHeader{
-				Header: &ethpb.BeaconBlockHeader{
+			Header_1: &zondpb.SignedBeaconBlockHeader{
+				Header: &zondpb.BeaconBlockHeader{
 					Slot:          1,
 					ProposerIndex: 2,
 					ParentRoot:    []byte{3},
@@ -387,8 +387,8 @@ func TestBeaconBlockJsonHelpers_JsonifyProposerSlashings(t *testing.T) {
 				},
 				Signature: []byte{6},
 			},
-			Header_2: &ethpb.SignedBeaconBlockHeader{
-				Header: &ethpb.BeaconBlockHeader{
+			Header_2: &zondpb.SignedBeaconBlockHeader{
+				Header: &zondpb.BeaconBlockHeader{
 					Slot:          7,
 					ProposerIndex: 8,
 					ParentRoot:    []byte{9},
@@ -399,8 +399,8 @@ func TestBeaconBlockJsonHelpers_JsonifyProposerSlashings(t *testing.T) {
 			},
 		},
 		{
-			Header_1: &ethpb.SignedBeaconBlockHeader{
-				Header: &ethpb.BeaconBlockHeader{
+			Header_1: &zondpb.SignedBeaconBlockHeader{
+				Header: &zondpb.BeaconBlockHeader{
 					Slot:          13,
 					ProposerIndex: 14,
 					ParentRoot:    []byte{15},
@@ -409,8 +409,8 @@ func TestBeaconBlockJsonHelpers_JsonifyProposerSlashings(t *testing.T) {
 				},
 				Signature: []byte{18},
 			},
-			Header_2: &ethpb.SignedBeaconBlockHeader{
-				Header: &ethpb.BeaconBlockHeader{
+			Header_2: &zondpb.SignedBeaconBlockHeader{
+				Header: &zondpb.BeaconBlockHeader{
 					Slot:          19,
 					ProposerIndex: 20,
 					ParentRoot:    []byte{21},
@@ -474,16 +474,16 @@ func TestBeaconBlockJsonHelpers_JsonifyProposerSlashings(t *testing.T) {
 }
 
 func TestBeaconBlockJsonHelpers_JsonifySignedVoluntaryExits(t *testing.T) {
-	input := []*ethpb.SignedVoluntaryExit{
+	input := []*zondpb.SignedVoluntaryExit{
 		{
-			Exit: &ethpb.VoluntaryExit{
+			Exit: &zondpb.VoluntaryExit{
 				Epoch:          1,
 				ValidatorIndex: 2,
 			},
 			Signature: []byte{3},
 		},
 		{
-			Exit: &ethpb.VoluntaryExit{
+			Exit: &zondpb.VoluntaryExit{
 				Epoch:          4,
 				ValidatorIndex: 5,
 			},
@@ -513,8 +513,8 @@ func TestBeaconBlockJsonHelpers_JsonifySignedVoluntaryExits(t *testing.T) {
 }
 
 func TestBeaconBlockJsonHelpers_JsonifySignedBeaconBlockHeader(t *testing.T) {
-	input := &ethpb.SignedBeaconBlockHeader{
-		Header: &ethpb.BeaconBlockHeader{
+	input := &zondpb.SignedBeaconBlockHeader{
+		Header: &zondpb.BeaconBlockHeader{
 			Slot:          1,
 			ProposerIndex: 2,
 			ParentRoot:    []byte{3},
@@ -540,17 +540,17 @@ func TestBeaconBlockJsonHelpers_JsonifySignedBeaconBlockHeader(t *testing.T) {
 }
 
 func TestBeaconBlockJsonHelpers_JsonifyIndexedAttestation(t *testing.T) {
-	input := &ethpb.IndexedAttestation{
+	input := &zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{1, 2},
-		Data: &ethpb.AttestationData{
+		Data: &zondpb.AttestationData{
 			Slot:            3,
 			CommitteeIndex:  4,
 			BeaconBlockRoot: []byte{5},
-			Source: &ethpb.Checkpoint{
+			Source: &zondpb.Checkpoint{
 				Epoch: 6,
 				Root:  []byte{7},
 			},
-			Target: &ethpb.Checkpoint{
+			Target: &zondpb.Checkpoint{
 				Epoch: 8,
 				Root:  []byte{9},
 			},
@@ -581,15 +581,15 @@ func TestBeaconBlockJsonHelpers_JsonifyIndexedAttestation(t *testing.T) {
 }
 
 func TestBeaconBlockJsonHelpers_JsonifyAttestationData(t *testing.T) {
-	input := &ethpb.AttestationData{
+	input := &zondpb.AttestationData{
 		Slot:            1,
 		CommitteeIndex:  2,
 		BeaconBlockRoot: []byte{3},
-		Source: &ethpb.Checkpoint{
+		Source: &zondpb.Checkpoint{
 			Epoch: 4,
 			Root:  []byte{5},
 		},
-		Target: &ethpb.Checkpoint{
+		Target: &zondpb.Checkpoint{
 			Epoch: 6,
 			Root:  []byte{7},
 		},

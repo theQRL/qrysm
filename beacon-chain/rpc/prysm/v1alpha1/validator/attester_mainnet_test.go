@@ -11,7 +11,7 @@ import (
 	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -55,7 +55,7 @@ func TestAttestationDataAtSlot_HandlesFarAwayJustifiedEpoch(t *testing.T) {
 	beaconState, err := util.NewBeaconState()
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetSlot(slot))
-	err = beaconState.SetCurrentJustifiedCheckpoint(&ethpb.Checkpoint{
+	err = beaconState.SetCurrentJustifiedCheckpoint(&zondpb.Checkpoint{
 		Epoch: slots.ToEpoch(1500),
 		Root:  justifiedBlockRoot[:],
 	})
@@ -81,21 +81,21 @@ func TestAttestationDataAtSlot_HandlesFarAwayJustifiedEpoch(t *testing.T) {
 		StateNotifier: chainService.StateNotifier(),
 	}
 
-	req := &ethpb.AttestationDataRequest{
+	req := &zondpb.AttestationDataRequest{
 		CommitteeIndex: 0,
 		Slot:           10000,
 	}
 	res, err := attesterServer.GetAttestationData(context.Background(), req)
 	require.NoError(t, err, "Could not get attestation info at slot")
 
-	expectedInfo := &ethpb.AttestationData{
+	expectedInfo := &zondpb.AttestationData{
 		Slot:            req.Slot,
 		BeaconBlockRoot: blockRoot[:],
-		Source: &ethpb.Checkpoint{
+		Source: &zondpb.Checkpoint{
 			Epoch: slots.ToEpoch(1500),
 			Root:  justifiedBlockRoot[:],
 		},
-		Target: &ethpb.Checkpoint{
+		Target: &zondpb.Checkpoint{
 			Epoch: 312,
 			Root:  blockRoot[:],
 		},

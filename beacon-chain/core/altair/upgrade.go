@@ -8,7 +8,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
 )
 
@@ -71,11 +71,11 @@ func UpgradeToAltair(ctx context.Context, state state.BeaconState) (state.Beacon
 	if err != nil {
 		return nil, err
 	}
-	s := &ethpb.BeaconStateAltair{
+	s := &zondpb.BeaconStateAltair{
 		GenesisTime:           state.GenesisTime(),
 		GenesisValidatorsRoot: state.GenesisValidatorsRoot(),
 		Slot:                  state.Slot(),
-		Fork: &ethpb.Fork{
+		Fork: &zondpb.Fork{
 			PreviousVersion: state.Fork().CurrentVersion,
 			CurrentVersion:  params.BeaconConfig().AltairForkVersion,
 			Epoch:           epoch,
@@ -143,7 +143,7 @@ func UpgradeToAltair(ctx context.Context, state state.BeaconState) (state.Beacon
 //	    for index in get_attesting_indices(state, data, attestation.aggregation_bits):
 //	        for flag_index in participation_flag_indices:
 //	            epoch_participation[index] = add_flag(epoch_participation[index], flag_index)
-func TranslateParticipation(ctx context.Context, state state.BeaconState, atts []*ethpb.PendingAttestation) (state.BeaconState, error) {
+func TranslateParticipation(ctx context.Context, state state.BeaconState, atts []*zondpb.PendingAttestation) (state.BeaconState, error) {
 	epochParticipation, err := state.PreviousEpochParticipation()
 	if err != nil {
 		return nil, err

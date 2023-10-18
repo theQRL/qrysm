@@ -16,8 +16,8 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 func GenerateDilithiumToExecutionChange(dilithiumExecutionChangesFolder string,
@@ -154,7 +154,7 @@ func ValidateDilithiumToExecutionChange(dilithiumToExecutionChange *DilithiumToE
 		return false
 	}
 
-	message := &ethpbv2.DilithiumToExecutionChange{
+	message := &zondpbv2.DilithiumToExecutionChange{
 		ValidatorIndex:      primitives.ValidatorIndex(uintValidatorIndex),
 		FromDilithiumPubkey: fromDilithiumPubkey.Marshal(),
 		ToExecutionAddress:  toExecutionAddress}
@@ -169,7 +169,7 @@ func ValidateDilithiumToExecutionChange(dilithiumToExecutionChange *DilithiumToE
 		chainSetting.GenesisValidatorsRoot, /*genesisValidatorsRoot*/
 	)
 
-	signingData := &ethpb.SigningData{
+	signingData := &zondpb.SigningData{
 		ObjectRoot: root[:],
 		Domain:     domain,
 	}

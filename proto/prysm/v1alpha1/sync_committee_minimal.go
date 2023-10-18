@@ -1,6 +1,6 @@
 //go:build minimal
 
-package eth
+package zond
 
 import (
 	"github.com/prysmaticlabs/go-bitfield"

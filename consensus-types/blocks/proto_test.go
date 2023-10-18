@@ -6,7 +6,7 @@ import (
 	"github.com/prysmaticlabs/go-bitfield"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -15,25 +15,25 @@ import (
 type fields struct {
 	root                        [32]byte
 	sig                         [dilithium2.CryptoBytes]byte
-	deposits                    []*eth.Deposit
-	atts                        []*eth.Attestation
-	proposerSlashings           []*eth.ProposerSlashing
-	attesterSlashings           []*eth.AttesterSlashing
-	voluntaryExits              []*eth.SignedVoluntaryExit
-	syncAggregate               *eth.SyncAggregate
+	deposits                    []*zond.Deposit
+	atts                        []*zond.Attestation
+	proposerSlashings           []*zond.ProposerSlashing
+	attesterSlashings           []*zond.AttesterSlashing
+	voluntaryExits              []*zond.SignedVoluntaryExit
+	syncAggregate               *zond.SyncAggregate
 	execPayload                 *enginev1.ExecutionPayload
 	execPayloadHeader           *enginev1.ExecutionPayloadHeader
 	execPayloadCapella          *enginev1.ExecutionPayloadCapella
 	execPayloadHeaderCapella    *enginev1.ExecutionPayloadHeaderCapella
-	dilithiumToExecutionChanges []*eth.SignedDilithiumToExecutionChange
+	dilithiumToExecutionChanges []*zond.SignedDilithiumToExecutionChange
 }
 
 func Test_SignedBeaconBlock_Proto(t *testing.T) {
 	f := getFields()
 
 	t.Run("Phase0", func(t *testing.T) {
-		expectedBlock := &eth.SignedBeaconBlock{
-			Block: &eth.BeaconBlock{
+		expectedBlock := &zond.SignedBeaconBlock{
+			Block: &zond.BeaconBlock{
 				Slot:          128,
 				ProposerIndex: 128,
 				ParentRoot:    f.root[:],
@@ -57,7 +57,7 @@ func Test_SignedBeaconBlock_Proto(t *testing.T) {
 
 		result, err := block.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.SignedBeaconBlock)
+		resultBlock, ok := result.(*zond.SignedBeaconBlock)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -66,8 +66,8 @@ func Test_SignedBeaconBlock_Proto(t *testing.T) {
 		assert.DeepEqual(t, expectedHTR, resultHTR)
 	})
 	t.Run("Altair", func(t *testing.T) {
-		expectedBlock := &eth.SignedBeaconBlockAltair{
-			Block: &eth.BeaconBlockAltair{
+		expectedBlock := &zond.SignedBeaconBlockAltair{
+			Block: &zond.BeaconBlockAltair{
 				Slot:          128,
 				ProposerIndex: 128,
 				ParentRoot:    f.root[:],
@@ -91,7 +91,7 @@ func Test_SignedBeaconBlock_Proto(t *testing.T) {
 
 		result, err := block.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.SignedBeaconBlockAltair)
+		resultBlock, ok := result.(*zond.SignedBeaconBlockAltair)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -100,8 +100,8 @@ func Test_SignedBeaconBlock_Proto(t *testing.T) {
 		assert.DeepEqual(t, expectedHTR, resultHTR)
 	})
 	t.Run("Bellatrix", func(t *testing.T) {
-		expectedBlock := &eth.SignedBeaconBlockBellatrix{
-			Block: &eth.BeaconBlockBellatrix{
+		expectedBlock := &zond.SignedBeaconBlockBellatrix{
+			Block: &zond.BeaconBlockBellatrix{
 				Slot:          128,
 				ProposerIndex: 128,
 				ParentRoot:    f.root[:],
@@ -125,7 +125,7 @@ func Test_SignedBeaconBlock_Proto(t *testing.T) {
 
 		result, err := block.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.SignedBeaconBlockBellatrix)
+		resultBlock, ok := result.(*zond.SignedBeaconBlockBellatrix)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -134,8 +134,8 @@ func Test_SignedBeaconBlock_Proto(t *testing.T) {
 		assert.DeepEqual(t, expectedHTR, resultHTR)
 	})
 	t.Run("BellatrixBlind", func(t *testing.T) {
-		expectedBlock := &eth.SignedBlindedBeaconBlockBellatrix{
-			Block: &eth.BlindedBeaconBlockBellatrix{
+		expectedBlock := &zond.SignedBlindedBeaconBlockBellatrix{
+			Block: &zond.BlindedBeaconBlockBellatrix{
 				Slot:          128,
 				ProposerIndex: 128,
 				ParentRoot:    f.root[:],
@@ -159,7 +159,7 @@ func Test_SignedBeaconBlock_Proto(t *testing.T) {
 
 		result, err := block.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.SignedBlindedBeaconBlockBellatrix)
+		resultBlock, ok := result.(*zond.SignedBlindedBeaconBlockBellatrix)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -168,8 +168,8 @@ func Test_SignedBeaconBlock_Proto(t *testing.T) {
 		assert.DeepEqual(t, expectedHTR, resultHTR)
 	})
 	t.Run("Capella", func(t *testing.T) {
-		expectedBlock := &eth.SignedBeaconBlockCapella{
-			Block: &eth.BeaconBlockCapella{
+		expectedBlock := &zond.SignedBeaconBlockCapella{
+			Block: &zond.BeaconBlockCapella{
 				Slot:          128,
 				ProposerIndex: 128,
 				ParentRoot:    f.root[:],
@@ -193,7 +193,7 @@ func Test_SignedBeaconBlock_Proto(t *testing.T) {
 
 		result, err := block.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.SignedBeaconBlockCapella)
+		resultBlock, ok := result.(*zond.SignedBeaconBlockCapella)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -202,8 +202,8 @@ func Test_SignedBeaconBlock_Proto(t *testing.T) {
 		assert.DeepEqual(t, expectedHTR, resultHTR)
 	})
 	t.Run("CapellaBlind", func(t *testing.T) {
-		expectedBlock := &eth.SignedBlindedBeaconBlockCapella{
-			Block: &eth.BlindedBeaconBlockCapella{
+		expectedBlock := &zond.SignedBlindedBeaconBlockCapella{
+			Block: &zond.BlindedBeaconBlockCapella{
 				Slot:          128,
 				ProposerIndex: 128,
 				ParentRoot:    f.root[:],
@@ -227,7 +227,7 @@ func Test_SignedBeaconBlock_Proto(t *testing.T) {
 
 		result, err := block.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.SignedBlindedBeaconBlockCapella)
+		resultBlock, ok := result.(*zond.SignedBlindedBeaconBlockCapella)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -241,7 +241,7 @@ func Test_BeaconBlock_Proto(t *testing.T) {
 	f := getFields()
 
 	t.Run("Phase0", func(t *testing.T) {
-		expectedBlock := &eth.BeaconBlock{
+		expectedBlock := &zond.BeaconBlock{
 			Slot:          128,
 			ProposerIndex: 128,
 			ParentRoot:    f.root[:],
@@ -259,7 +259,7 @@ func Test_BeaconBlock_Proto(t *testing.T) {
 
 		result, err := block.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.BeaconBlock)
+		resultBlock, ok := result.(*zond.BeaconBlock)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -268,7 +268,7 @@ func Test_BeaconBlock_Proto(t *testing.T) {
 		assert.DeepEqual(t, expectedHTR, resultHTR)
 	})
 	t.Run("Altair", func(t *testing.T) {
-		expectedBlock := &eth.BeaconBlockAltair{
+		expectedBlock := &zond.BeaconBlockAltair{
 			Slot:          128,
 			ProposerIndex: 128,
 			ParentRoot:    f.root[:],
@@ -286,7 +286,7 @@ func Test_BeaconBlock_Proto(t *testing.T) {
 
 		result, err := block.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.BeaconBlockAltair)
+		resultBlock, ok := result.(*zond.BeaconBlockAltair)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -295,7 +295,7 @@ func Test_BeaconBlock_Proto(t *testing.T) {
 		assert.DeepEqual(t, expectedHTR, resultHTR)
 	})
 	t.Run("Bellatrix", func(t *testing.T) {
-		expectedBlock := &eth.BeaconBlockBellatrix{
+		expectedBlock := &zond.BeaconBlockBellatrix{
 			Slot:          128,
 			ProposerIndex: 128,
 			ParentRoot:    f.root[:],
@@ -313,7 +313,7 @@ func Test_BeaconBlock_Proto(t *testing.T) {
 
 		result, err := block.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.BeaconBlockBellatrix)
+		resultBlock, ok := result.(*zond.BeaconBlockBellatrix)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -322,7 +322,7 @@ func Test_BeaconBlock_Proto(t *testing.T) {
 		assert.DeepEqual(t, expectedHTR, resultHTR)
 	})
 	t.Run("BellatrixBlind", func(t *testing.T) {
-		expectedBlock := &eth.BlindedBeaconBlockBellatrix{
+		expectedBlock := &zond.BlindedBeaconBlockBellatrix{
 			Slot:          128,
 			ProposerIndex: 128,
 			ParentRoot:    f.root[:],
@@ -340,7 +340,7 @@ func Test_BeaconBlock_Proto(t *testing.T) {
 
 		result, err := block.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.BlindedBeaconBlockBellatrix)
+		resultBlock, ok := result.(*zond.BlindedBeaconBlockBellatrix)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -349,7 +349,7 @@ func Test_BeaconBlock_Proto(t *testing.T) {
 		assert.DeepEqual(t, expectedHTR, resultHTR)
 	})
 	t.Run("Capella", func(t *testing.T) {
-		expectedBlock := &eth.BeaconBlockCapella{
+		expectedBlock := &zond.BeaconBlockCapella{
 			Slot:          128,
 			ProposerIndex: 128,
 			ParentRoot:    f.root[:],
@@ -367,7 +367,7 @@ func Test_BeaconBlock_Proto(t *testing.T) {
 
 		result, err := block.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.BeaconBlockCapella)
+		resultBlock, ok := result.(*zond.BeaconBlockCapella)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -376,7 +376,7 @@ func Test_BeaconBlock_Proto(t *testing.T) {
 		assert.DeepEqual(t, expectedHTR, resultHTR)
 	})
 	t.Run("CapellaBlind", func(t *testing.T) {
-		expectedBlock := &eth.BlindedBeaconBlockCapella{
+		expectedBlock := &zond.BlindedBeaconBlockCapella{
 			Slot:          128,
 			ProposerIndex: 128,
 			ParentRoot:    f.root[:],
@@ -394,7 +394,7 @@ func Test_BeaconBlock_Proto(t *testing.T) {
 
 		result, err := block.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.BlindedBeaconBlockCapella)
+		resultBlock, ok := result.(*zond.BlindedBeaconBlockCapella)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -411,7 +411,7 @@ func Test_BeaconBlockBody_Proto(t *testing.T) {
 
 		result, err := body.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.BeaconBlockBody)
+		resultBlock, ok := result.(*zond.BeaconBlockBody)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -424,7 +424,7 @@ func Test_BeaconBlockBody_Proto(t *testing.T) {
 		body := bodyAltair()
 		result, err := body.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.BeaconBlockBodyAltair)
+		resultBlock, ok := result.(*zond.BeaconBlockBodyAltair)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -437,7 +437,7 @@ func Test_BeaconBlockBody_Proto(t *testing.T) {
 		body := bodyBellatrix(t)
 		result, err := body.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.BeaconBlockBodyBellatrix)
+		resultBlock, ok := result.(*zond.BeaconBlockBodyBellatrix)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -450,7 +450,7 @@ func Test_BeaconBlockBody_Proto(t *testing.T) {
 		body := bodyBlindedBellatrix(t)
 		result, err := body.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.BlindedBeaconBlockBodyBellatrix)
+		resultBlock, ok := result.(*zond.BlindedBeaconBlockBodyBellatrix)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -463,7 +463,7 @@ func Test_BeaconBlockBody_Proto(t *testing.T) {
 		body := bodyCapella(t)
 		result, err := body.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.BeaconBlockBodyCapella)
+		resultBlock, ok := result.(*zond.BeaconBlockBodyCapella)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -476,7 +476,7 @@ func Test_BeaconBlockBody_Proto(t *testing.T) {
 		body := bodyBlindedCapella(t)
 		result, err := body.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*eth.BlindedBeaconBlockBodyCapella)
+		resultBlock, ok := result.(*zond.BlindedBeaconBlockBodyCapella)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -512,8 +512,8 @@ func Test_BeaconBlockBody_Proto(t *testing.T) {
 
 func Test_initSignedBlockFromProtoPhase0(t *testing.T) {
 	f := getFields()
-	expectedBlock := &eth.SignedBeaconBlock{
-		Block: &eth.BeaconBlock{
+	expectedBlock := &zond.SignedBeaconBlock{
+		Block: &zond.BeaconBlock{
 			Slot:          128,
 			ProposerIndex: 128,
 			ParentRoot:    f.root[:],
@@ -534,8 +534,8 @@ func Test_initSignedBlockFromProtoPhase0(t *testing.T) {
 
 func Test_initSignedBlockFromProtoAltair(t *testing.T) {
 	f := getFields()
-	expectedBlock := &eth.SignedBeaconBlockAltair{
-		Block: &eth.BeaconBlockAltair{
+	expectedBlock := &zond.SignedBeaconBlockAltair{
+		Block: &zond.BeaconBlockAltair{
 			Slot:          128,
 			ProposerIndex: 128,
 			ParentRoot:    f.root[:],
@@ -556,8 +556,8 @@ func Test_initSignedBlockFromProtoAltair(t *testing.T) {
 
 func Test_initSignedBlockFromProtoBellatrix(t *testing.T) {
 	f := getFields()
-	expectedBlock := &eth.SignedBeaconBlockBellatrix{
-		Block: &eth.BeaconBlockBellatrix{
+	expectedBlock := &zond.SignedBeaconBlockBellatrix{
+		Block: &zond.BeaconBlockBellatrix{
 			Slot:          128,
 			ProposerIndex: 128,
 			ParentRoot:    f.root[:],
@@ -578,8 +578,8 @@ func Test_initSignedBlockFromProtoBellatrix(t *testing.T) {
 
 func Test_initBlindedSignedBlockFromProtoBellatrix(t *testing.T) {
 	f := getFields()
-	expectedBlock := &eth.SignedBlindedBeaconBlockBellatrix{
-		Block: &eth.BlindedBeaconBlockBellatrix{
+	expectedBlock := &zond.SignedBlindedBeaconBlockBellatrix{
+		Block: &zond.BlindedBeaconBlockBellatrix{
 			Slot:          128,
 			ProposerIndex: 128,
 			ParentRoot:    f.root[:],
@@ -600,8 +600,8 @@ func Test_initBlindedSignedBlockFromProtoBellatrix(t *testing.T) {
 
 func Test_initSignedBlockFromProtoCapella(t *testing.T) {
 	f := getFields()
-	expectedBlock := &eth.SignedBeaconBlockCapella{
-		Block: &eth.BeaconBlockCapella{
+	expectedBlock := &zond.SignedBeaconBlockCapella{
+		Block: &zond.BeaconBlockCapella{
 			Slot:          128,
 			ProposerIndex: 128,
 			ParentRoot:    f.root[:],
@@ -622,8 +622,8 @@ func Test_initSignedBlockFromProtoCapella(t *testing.T) {
 
 func Test_initBlindedSignedBlockFromProtoCapella(t *testing.T) {
 	f := getFields()
-	expectedBlock := &eth.SignedBlindedBeaconBlockCapella{
-		Block: &eth.BlindedBeaconBlockCapella{
+	expectedBlock := &zond.SignedBlindedBeaconBlockCapella{
+		Block: &zond.BlindedBeaconBlockCapella{
 			Slot:          128,
 			ProposerIndex: 128,
 			ParentRoot:    f.root[:],
@@ -644,7 +644,7 @@ func Test_initBlindedSignedBlockFromProtoCapella(t *testing.T) {
 
 func Test_initBlockFromProtoPhase0(t *testing.T) {
 	f := getFields()
-	expectedBlock := &eth.BeaconBlock{
+	expectedBlock := &zond.BeaconBlock{
 		Slot:          128,
 		ProposerIndex: 128,
 		ParentRoot:    f.root[:],
@@ -662,7 +662,7 @@ func Test_initBlockFromProtoPhase0(t *testing.T) {
 
 func Test_initBlockFromProtoAltair(t *testing.T) {
 	f := getFields()
-	expectedBlock := &eth.BeaconBlockAltair{
+	expectedBlock := &zond.BeaconBlockAltair{
 		Slot:          128,
 		ProposerIndex: 128,
 		ParentRoot:    f.root[:],
@@ -680,7 +680,7 @@ func Test_initBlockFromProtoAltair(t *testing.T) {
 
 func Test_initBlockFromProtoBellatrix(t *testing.T) {
 	f := getFields()
-	expectedBlock := &eth.BeaconBlockBellatrix{
+	expectedBlock := &zond.BeaconBlockBellatrix{
 		Slot:          128,
 		ProposerIndex: 128,
 		ParentRoot:    f.root[:],
@@ -698,7 +698,7 @@ func Test_initBlockFromProtoBellatrix(t *testing.T) {
 
 func Test_initBlockFromProtoBlindedBellatrix(t *testing.T) {
 	f := getFields()
-	expectedBlock := &eth.BlindedBeaconBlockBellatrix{
+	expectedBlock := &zond.BlindedBeaconBlockBellatrix{
 		Slot:          128,
 		ProposerIndex: 128,
 		ParentRoot:    f.root[:],
@@ -716,7 +716,7 @@ func Test_initBlockFromProtoBlindedBellatrix(t *testing.T) {
 
 func Test_initBlockFromProtoCapella(t *testing.T) {
 	f := getFields()
-	expectedBlock := &eth.BeaconBlockCapella{
+	expectedBlock := &zond.BeaconBlockCapella{
 		Slot:          128,
 		ProposerIndex: 128,
 		ParentRoot:    f.root[:],
@@ -734,7 +734,7 @@ func Test_initBlockFromProtoCapella(t *testing.T) {
 
 func Test_initBlockFromProtoBlindedCapella(t *testing.T) {
 	f := getFields()
-	expectedBlock := &eth.BlindedBeaconBlockCapella{
+	expectedBlock := &zond.BlindedBeaconBlockCapella{
 		Slot:          128,
 		ProposerIndex: 128,
 		ParentRoot:    f.root[:],
@@ -816,11 +816,11 @@ func Test_initBlockBodyFromProtoBlindedCapella(t *testing.T) {
 	assert.DeepEqual(t, expectedHTR, resultHTR)
 }
 
-func bodyPbPhase0() *eth.BeaconBlockBody {
+func bodyPbPhase0() *zond.BeaconBlockBody {
 	f := getFields()
-	return &eth.BeaconBlockBody{
+	return &zond.BeaconBlockBody{
 		RandaoReveal: f.sig[:],
-		Eth1Data: &eth.Eth1Data{
+		Eth1Data: &zond.Eth1Data{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
 			BlockHash:    f.root[:],
@@ -834,11 +834,11 @@ func bodyPbPhase0() *eth.BeaconBlockBody {
 	}
 }
 
-func bodyPbAltair() *eth.BeaconBlockBodyAltair {
+func bodyPbAltair() *zond.BeaconBlockBodyAltair {
 	f := getFields()
-	return &eth.BeaconBlockBodyAltair{
+	return &zond.BeaconBlockBodyAltair{
 		RandaoReveal: f.sig[:],
-		Eth1Data: &eth.Eth1Data{
+		Eth1Data: &zond.Eth1Data{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
 			BlockHash:    f.root[:],
@@ -853,11 +853,11 @@ func bodyPbAltair() *eth.BeaconBlockBodyAltair {
 	}
 }
 
-func bodyPbBellatrix() *eth.BeaconBlockBodyBellatrix {
+func bodyPbBellatrix() *zond.BeaconBlockBodyBellatrix {
 	f := getFields()
-	return &eth.BeaconBlockBodyBellatrix{
+	return &zond.BeaconBlockBodyBellatrix{
 		RandaoReveal: f.sig[:],
-		Eth1Data: &eth.Eth1Data{
+		Eth1Data: &zond.Eth1Data{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
 			BlockHash:    f.root[:],
@@ -873,11 +873,11 @@ func bodyPbBellatrix() *eth.BeaconBlockBodyBellatrix {
 	}
 }
 
-func bodyPbBlindedBellatrix() *eth.BlindedBeaconBlockBodyBellatrix {
+func bodyPbBlindedBellatrix() *zond.BlindedBeaconBlockBodyBellatrix {
 	f := getFields()
-	return &eth.BlindedBeaconBlockBodyBellatrix{
+	return &zond.BlindedBeaconBlockBodyBellatrix{
 		RandaoReveal: f.sig[:],
-		Eth1Data: &eth.Eth1Data{
+		Eth1Data: &zond.Eth1Data{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
 			BlockHash:    f.root[:],
@@ -893,11 +893,11 @@ func bodyPbBlindedBellatrix() *eth.BlindedBeaconBlockBodyBellatrix {
 	}
 }
 
-func bodyPbCapella() *eth.BeaconBlockBodyCapella {
+func bodyPbCapella() *zond.BeaconBlockBodyCapella {
 	f := getFields()
-	return &eth.BeaconBlockBodyCapella{
+	return &zond.BeaconBlockBodyCapella{
 		RandaoReveal: f.sig[:],
-		Eth1Data: &eth.Eth1Data{
+		Eth1Data: &zond.Eth1Data{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
 			BlockHash:    f.root[:],
@@ -914,11 +914,11 @@ func bodyPbCapella() *eth.BeaconBlockBodyCapella {
 	}
 }
 
-func bodyPbBlindedCapella() *eth.BlindedBeaconBlockBodyCapella {
+func bodyPbBlindedCapella() *zond.BlindedBeaconBlockBodyCapella {
 	f := getFields()
-	return &eth.BlindedBeaconBlockBodyCapella{
+	return &zond.BlindedBeaconBlockBodyCapella{
 		RandaoReveal: f.sig[:],
-		Eth1Data: &eth.Eth1Data{
+		Eth1Data: &zond.Eth1Data{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
 			BlockHash:    f.root[:],
@@ -940,7 +940,7 @@ func bodyPhase0() *BeaconBlockBody {
 	return &BeaconBlockBody{
 		version:      version.Phase0,
 		randaoReveal: f.sig,
-		eth1Data: &eth.Eth1Data{
+		eth1Data: &zond.Eth1Data{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
 			BlockHash:    f.root[:],
@@ -959,7 +959,7 @@ func bodyAltair() *BeaconBlockBody {
 	return &BeaconBlockBody{
 		version:      version.Altair,
 		randaoReveal: f.sig,
-		eth1Data: &eth.Eth1Data{
+		eth1Data: &zond.Eth1Data{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
 			BlockHash:    f.root[:],
@@ -981,7 +981,7 @@ func bodyBellatrix(t *testing.T) *BeaconBlockBody {
 	return &BeaconBlockBody{
 		version:      version.Bellatrix,
 		randaoReveal: f.sig,
-		eth1Data: &eth.Eth1Data{
+		eth1Data: &zond.Eth1Data{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
 			BlockHash:    f.root[:],
@@ -1005,7 +1005,7 @@ func bodyBlindedBellatrix(t *testing.T) *BeaconBlockBody {
 		version:      version.Bellatrix,
 		isBlinded:    true,
 		randaoReveal: f.sig,
-		eth1Data: &eth.Eth1Data{
+		eth1Data: &zond.Eth1Data{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
 			BlockHash:    f.root[:],
@@ -1028,7 +1028,7 @@ func bodyCapella(t *testing.T) *BeaconBlockBody {
 	return &BeaconBlockBody{
 		version:      version.Capella,
 		randaoReveal: f.sig,
-		eth1Data: &eth.Eth1Data{
+		eth1Data: &zond.Eth1Data{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
 			BlockHash:    f.root[:],
@@ -1053,7 +1053,7 @@ func bodyBlindedCapella(t *testing.T) *BeaconBlockBody {
 		version:      version.Capella,
 		isBlinded:    true,
 		randaoReveal: f.sig,
-		eth1Data: &eth.Eth1Data{
+		eth1Data: &zond.Eth1Data{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
 			BlockHash:    f.root[:],
@@ -1081,42 +1081,42 @@ func getFields() fields {
 	b256[0], b256[5], b256[10] = 'x', 'y', 'z'
 	root[0], root[5], root[10] = 'a', 'b', 'c'
 	sig[0], sig[5], sig[10] = 'd', 'e', 'f'
-	deposits := make([]*eth.Deposit, 16)
+	deposits := make([]*zond.Deposit, 16)
 	for i := range deposits {
-		deposits[i] = &eth.Deposit{}
+		deposits[i] = &zond.Deposit{}
 		deposits[i].Proof = make([][]byte, 33)
 		for j := range deposits[i].Proof {
 			deposits[i].Proof[j] = root[:]
 		}
-		deposits[i].Data = &eth.Deposit_Data{
+		deposits[i].Data = &zond.Deposit_Data{
 			PublicKey:             b48,
 			WithdrawalCredentials: root[:],
 			Amount:                128,
 			Signature:             sig[:],
 		}
 	}
-	atts := make([]*eth.Attestation, 128)
+	atts := make([]*zond.Attestation, 128)
 	for i := range atts {
-		atts[i] = &eth.Attestation{}
+		atts[i] = &zond.Attestation{}
 		atts[i].Signature = sig[:]
 		atts[i].AggregationBits = bitfield.NewBitlist(1)
-		atts[i].Data = &eth.AttestationData{
+		atts[i].Data = &zond.AttestationData{
 			Slot:            128,
 			CommitteeIndex:  128,
 			BeaconBlockRoot: root[:],
-			Source: &eth.Checkpoint{
+			Source: &zond.Checkpoint{
 				Epoch: 128,
 				Root:  root[:],
 			},
-			Target: &eth.Checkpoint{
+			Target: &zond.Checkpoint{
 				Epoch: 128,
 				Root:  root[:],
 			},
 		}
 	}
-	proposerSlashing := &eth.ProposerSlashing{
-		Header_1: &eth.SignedBeaconBlockHeader{
-			Header: &eth.BeaconBlockHeader{
+	proposerSlashing := &zond.ProposerSlashing{
+		Header_1: &zond.SignedBeaconBlockHeader{
+			Header: &zond.BeaconBlockHeader{
 				Slot:          128,
 				ProposerIndex: 128,
 				ParentRoot:    root[:],
@@ -1125,8 +1125,8 @@ func getFields() fields {
 			},
 			Signature: sig[:],
 		},
-		Header_2: &eth.SignedBeaconBlockHeader{
-			Header: &eth.BeaconBlockHeader{
+		Header_2: &zond.SignedBeaconBlockHeader{
+			Header: &zond.BeaconBlockHeader{
 				Slot:          128,
 				ProposerIndex: 128,
 				ParentRoot:    root[:],
@@ -1136,35 +1136,35 @@ func getFields() fields {
 			Signature: sig[:],
 		},
 	}
-	attesterSlashing := &eth.AttesterSlashing{
-		Attestation_1: &eth.IndexedAttestation{
+	attesterSlashing := &zond.AttesterSlashing{
+		Attestation_1: &zond.IndexedAttestation{
 			AttestingIndices: []uint64{1, 2, 8},
-			Data: &eth.AttestationData{
+			Data: &zond.AttestationData{
 				Slot:            128,
 				CommitteeIndex:  128,
 				BeaconBlockRoot: root[:],
-				Source: &eth.Checkpoint{
+				Source: &zond.Checkpoint{
 					Epoch: 128,
 					Root:  root[:],
 				},
-				Target: &eth.Checkpoint{
+				Target: &zond.Checkpoint{
 					Epoch: 128,
 					Root:  root[:],
 				},
 			},
 			Signature: sig[:],
 		},
-		Attestation_2: &eth.IndexedAttestation{
+		Attestation_2: &zond.IndexedAttestation{
 			AttestingIndices: []uint64{1, 2, 8},
-			Data: &eth.AttestationData{
+			Data: &zond.AttestationData{
 				Slot:            128,
 				CommitteeIndex:  128,
 				BeaconBlockRoot: root[:],
-				Source: &eth.Checkpoint{
+				Source: &zond.Checkpoint{
 					Epoch: 128,
 					Root:  root[:],
 				},
-				Target: &eth.Checkpoint{
+				Target: &zond.Checkpoint{
 					Epoch: 128,
 					Root:  root[:],
 				},
@@ -1172,8 +1172,8 @@ func getFields() fields {
 			Signature: sig[:],
 		},
 	}
-	voluntaryExit := &eth.SignedVoluntaryExit{
-		Exit: &eth.VoluntaryExit{
+	voluntaryExit := &zond.SignedVoluntaryExit{
+		Exit: &zond.VoluntaryExit{
 			Epoch:          128,
 			ValidatorIndex: 128,
 		},
@@ -1183,7 +1183,7 @@ func getFields() fields {
 	syncCommitteeBits.SetBitAt(1, true)
 	syncCommitteeBits.SetBitAt(2, true)
 	syncCommitteeBits.SetBitAt(8, true)
-	syncAggregate := &eth.SyncAggregate{
+	syncAggregate := &zond.SyncAggregate{
 		SyncCommitteeBits:      syncCommitteeBits,
 		SyncCommitteeSignature: sig[:],
 	}
@@ -1267,8 +1267,8 @@ func getFields() fields {
 		TransactionsRoot: root[:],
 		WithdrawalsRoot:  root[:],
 	}
-	dilithiumToExecutionChanges := []*eth.SignedDilithiumToExecutionChange{{
-		Message: &eth.DilithiumToExecutionChange{
+	dilithiumToExecutionChanges := []*zond.SignedDilithiumToExecutionChange{{
+		Message: &zond.DilithiumToExecutionChange{
 			ValidatorIndex:      128,
 			FromDilithiumPubkey: b48,
 			ToExecutionAddress:  b20,
@@ -1281,9 +1281,9 @@ func getFields() fields {
 		sig:                         sig,
 		deposits:                    deposits,
 		atts:                        atts,
-		proposerSlashings:           []*eth.ProposerSlashing{proposerSlashing},
-		attesterSlashings:           []*eth.AttesterSlashing{attesterSlashing},
-		voluntaryExits:              []*eth.SignedVoluntaryExit{voluntaryExit},
+		proposerSlashings:           []*zond.ProposerSlashing{proposerSlashing},
+		attesterSlashings:           []*zond.AttesterSlashing{attesterSlashing},
+		voluntaryExits:              []*zond.SignedVoluntaryExit{voluntaryExit},
 		syncAggregate:               syncAggregate,
 		execPayload:                 execPayload,
 		execPayloadHeader:           execPayloadHeader,

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
@@ -35,7 +35,7 @@ func TestPoWBlock(t *testing.T) {
 	blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
 	require.NoError(t, err)
 	builder := NewBuilder(t, st, blk)
-	builder.PoWBlock(&ethpb.PowBlock{BlockHash: []byte{1, 2, 3}})
+	builder.PoWBlock(&zondpb.PowBlock{BlockHash: []byte{1, 2, 3}})
 
 	require.Equal(t, 1, len(builder.execMock.powBlocks))
 }

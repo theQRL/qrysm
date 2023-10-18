@@ -23,7 +23,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	pb "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"google.golang.org/protobuf/proto"
 )
@@ -67,9 +67,9 @@ func Test_checkTransitionConfiguration(t *testing.T) {
 		}()
 		payload := emptyPayload()
 		payload.GasUsed = 21000
-		wrappedBlock, err := blocks.NewSignedBeaconBlock(&ethpb.SignedBeaconBlockBellatrix{
-			Block: &ethpb.BeaconBlockBellatrix{
-				Body: &ethpb.BeaconBlockBodyBellatrix{
+		wrappedBlock, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockBellatrix{
+			Block: &zondpb.BeaconBlockBellatrix{
+				Body: &zondpb.BeaconBlockBodyBellatrix{
 					ExecutionPayload: payload,
 				},
 			}},

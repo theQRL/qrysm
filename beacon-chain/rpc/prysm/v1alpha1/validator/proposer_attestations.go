@@ -12,16 +12,16 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
 	attaggregation "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/attestations"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"go.opencensus.io/trace"
 )
 
-type proposerAtts []*ethpb.Attestation
+type proposerAtts []*zondpb.Attestation
 
-func (vs *Server) packAttestations(ctx context.Context, latestState state.BeaconState) ([]*ethpb.Attestation, error) {
+func (vs *Server) packAttestations(ctx context.Context, latestState state.BeaconState) ([]*zondpb.Attestation, error) {
 	ctx, span := trace.StartSpan(ctx, "ProposerServer.packAttestations")
 	defer span.End()
 
@@ -48,7 +48,7 @@ func (vs *Server) packAttestations(ctx context.Context, latestState state.Beacon
 		return nil, err
 	}
 
-	attsByDataRoot := make(map[[32]byte][]*ethpb.Attestation, len(atts))
+	attsByDataRoot := make(map[[32]byte][]*zondpb.Attestation, len(atts))
 	for _, att := range atts {
 		attDataRoot, err := att.Data.HashTreeRoot()
 		if err != nil {
@@ -57,7 +57,7 @@ func (vs *Server) packAttestations(ctx context.Context, latestState state.Beacon
 		attsByDataRoot[attDataRoot] = append(attsByDataRoot[attDataRoot], att)
 	}
 
-	attsForInclusion := proposerAtts(make([]*ethpb.Attestation, 0))
+	attsForInclusion := proposerAtts(make([]*zondpb.Attestation, 0))
 	for _, as := range attsByDataRoot {
 		as, err := attaggregation.Aggregate(as)
 		if err != nil {
@@ -81,15 +81,15 @@ func (vs *Server) packAttestations(ctx context.Context, latestState state.Beacon
 // The first group passes the all the required checks for attestation to be considered for proposing.
 // And attestations from the second group should be deleted.
 func (a proposerAtts) filter(ctx context.Context, st state.BeaconState) (proposerAtts, proposerAtts) {
-	validAtts := make([]*ethpb.Attestation, 0, len(a))
-	invalidAtts := make([]*ethpb.Attestation, 0, len(a))
-	var attestationProcessor func(context.Context, state.BeaconState, *ethpb.Attestation) (state.BeaconState, error)
+	validAtts := make([]*zondpb.Attestation, 0, len(a))
+	invalidAtts := make([]*zondpb.Attestation, 0, len(a))
+	var attestationProcessor func(context.Context, state.BeaconState, *zondpb.Attestation) (state.BeaconState, error)
 
 	if st.Version() == version.Phase0 {
 		attestationProcessor = blocks.ProcessAttestationNoVerifySignature
 	} else if st.Version() >= version.Altair {
 		// Use a wrapper here, as go needs strong typing for the function signature.
-		attestationProcessor = func(ctx context.Context, st state.BeaconState, attestation *ethpb.Attestation) (state.BeaconState, error) {
+		attestationProcessor = func(ctx context.Context, st state.BeaconState, attestation *zondpb.Attestation) (state.BeaconState, error) {
 			totalBalance, err := helpers.TotalActiveBalance(st)
 			if err != nil {
 				return nil, err
@@ -201,7 +201,7 @@ func (a proposerAtts) dedup() (proposerAtts, error) {
 	if len(a) < 2 {
 		return a, nil
 	}
-	attsByDataRoot := make(map[[32]byte][]*ethpb.Attestation, len(a))
+	attsByDataRoot := make(map[[32]byte][]*zondpb.Attestation, len(a))
 	for _, att := range a {
 		attDataRoot, err := att.Data.HashTreeRoot()
 		if err != nil {
@@ -210,7 +210,7 @@ func (a proposerAtts) dedup() (proposerAtts, error) {
 		attsByDataRoot[attDataRoot] = append(attsByDataRoot[attDataRoot], att)
 	}
 
-	uniqAtts := make([]*ethpb.Attestation, 0, len(a))
+	uniqAtts := make([]*zondpb.Attestation, 0, len(a))
 	for _, atts := range attsByDataRoot {
 		for i := 0; i < len(atts); i++ {
 			a := atts[i]
@@ -243,7 +243,7 @@ func (a proposerAtts) dedup() (proposerAtts, error) {
 }
 
 // This filters the input attestations to return a list of valid attestations to be packaged inside a beacon block.
-func (vs *Server) validateAndDeleteAttsInPool(ctx context.Context, st state.BeaconState, atts []*ethpb.Attestation) ([]*ethpb.Attestation, error) {
+func (vs *Server) validateAndDeleteAttsInPool(ctx context.Context, st state.BeaconState, atts []*zondpb.Attestation) ([]*zondpb.Attestation, error) {
 	ctx, span := trace.StartSpan(ctx, "ProposerServer.validateAndDeleteAttsInPool")
 	defer span.End()
 
@@ -256,7 +256,7 @@ func (vs *Server) validateAndDeleteAttsInPool(ctx context.Context, st state.Beac
 
 // The input attestations are processed and seen by the node, this deletes them from pool
 // so proposers don't include them in a block for the future.
-func (vs *Server) deleteAttsInPool(ctx context.Context, atts []*ethpb.Attestation) error {
+func (vs *Server) deleteAttsInPool(ctx context.Context, atts []*zondpb.Attestation) error {
 	ctx, span := trace.StartSpan(ctx, "ProposerServer.deleteAttsInPool")
 	defer span.End()
 

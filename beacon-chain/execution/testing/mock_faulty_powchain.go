@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/execution/types"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // FaultyExecutionChain defines an incorrectly functioning powchain service.
@@ -49,13 +49,13 @@ func (*FaultyExecutionChain) BlockByTimestamp(context.Context, uint64) (*types.H
 }
 
 // ChainStartEth1Data --
-func (*FaultyExecutionChain) ChainStartEth1Data() *ethpb.Eth1Data {
-	return &ethpb.Eth1Data{}
+func (*FaultyExecutionChain) ChainStartEth1Data() *zondpb.Eth1Data {
+	return &zondpb.Eth1Data{}
 }
 
 // PreGenesisState --
 func (*FaultyExecutionChain) PreGenesisState() state.BeaconState {
-	s, err := state_native.InitializeFromProtoUnsafePhase0(&ethpb.BeaconState{})
+	s, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
 	if err != nil {
 		panic("could not initialize state")
 	}

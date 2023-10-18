@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	v1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -28,8 +28,8 @@ type MockBuilderService struct {
 	Payload               *v1.ExecutionPayload
 	PayloadCapella        *v1.ExecutionPayloadCapella
 	ErrSubmitBlindedBlock error
-	Bid                   *ethpb.SignedBuilderBid
-	BidCapella            *ethpb.SignedBuilderBidCapella
+	Bid                   *zondpb.SignedBuilderBid
+	BidCapella            *zondpb.SignedBuilderBidCapella
 	RegistrationCache     *cache.RegistrationCache
 	ErrGetHeader          error
 	ErrRegisterValidator  error
@@ -70,7 +70,7 @@ func (s *MockBuilderService) GetHeader(_ context.Context, slot primitives.Slot, 
 }
 
 // RegistrationByValidatorID returns either the values from the cache or db.
-func (s *MockBuilderService) RegistrationByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (*ethpb.ValidatorRegistrationV1, error) {
+func (s *MockBuilderService) RegistrationByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (*zondpb.ValidatorRegistrationV1, error) {
 	if s.RegistrationCache != nil {
 		return s.RegistrationCache.RegistrationByIndex(id)
 	}
@@ -81,6 +81,6 @@ func (s *MockBuilderService) RegistrationByValidatorID(ctx context.Context, id p
 }
 
 // RegisterValidator for mocking.
-func (s *MockBuilderService) RegisterValidator(context.Context, []*ethpb.SignedValidatorRegistrationV1) error {
+func (s *MockBuilderService) RegisterValidator(context.Context, []*zondpb.SignedValidatorRegistrationV1) error {
 	return s.ErrRegisterValidator
 }

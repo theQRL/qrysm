@@ -8,14 +8,14 @@ import (
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	v1 "github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer/v1"
 	"github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer/v1/mock"
 )
 
 func TestMapAggregateAndProof(t *testing.T) {
 	type args struct {
-		from *ethpb.AggregateAttestationAndProof
+		from *zondpb.AggregateAttestationAndProof
 	}
 	tests := []struct {
 		name    string
@@ -26,16 +26,16 @@ func TestMapAggregateAndProof(t *testing.T) {
 		{
 			name: "HappyPathTest",
 			args: args{
-				from: &ethpb.AggregateAttestationAndProof{
+				from: &zondpb.AggregateAttestationAndProof{
 					AggregatorIndex: 0,
-					Aggregate: &ethpb.Attestation{
+					Aggregate: &zondpb.Attestation{
 						AggregationBits: bitfield.Bitlist{0b1101},
-						Data: &ethpb.AttestationData{
+						Data: &zondpb.AttestationData{
 							BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-							Source: &ethpb.Checkpoint{
+							Source: &zondpb.Checkpoint{
 								Root: make([]byte, fieldparams.RootLength),
 							},
-							Target: &ethpb.Checkpoint{
+							Target: &zondpb.Checkpoint{
 								Root: make([]byte, fieldparams.RootLength),
 							},
 						},
@@ -68,7 +68,7 @@ func TestMapAggregateAndProof(t *testing.T) {
 
 func TestMapAttestation(t *testing.T) {
 	type args struct {
-		attestation *ethpb.Attestation
+		attestation *zondpb.Attestation
 	}
 	tests := []struct {
 		name    string
@@ -79,14 +79,14 @@ func TestMapAttestation(t *testing.T) {
 		{
 			name: "HappyPathTest",
 			args: args{
-				attestation: &ethpb.Attestation{
+				attestation: &zondpb.Attestation{
 					AggregationBits: bitfield.Bitlist{0b1101},
-					Data: &ethpb.AttestationData{
+					Data: &zondpb.AttestationData{
 						BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-						Source: &ethpb.Checkpoint{
+						Source: &zondpb.Checkpoint{
 							Root: make([]byte, fieldparams.RootLength),
 						},
-						Target: &ethpb.Checkpoint{
+						Target: &zondpb.Checkpoint{
 							Root: make([]byte, fieldparams.RootLength),
 						},
 					},
@@ -113,7 +113,7 @@ func TestMapAttestation(t *testing.T) {
 
 func TestMapAttestationData(t *testing.T) {
 	type args struct {
-		data *ethpb.AttestationData
+		data *zondpb.AttestationData
 	}
 	tests := []struct {
 		name    string
@@ -124,12 +124,12 @@ func TestMapAttestationData(t *testing.T) {
 		{
 			name: "HappyPathTest",
 			args: args{
-				data: &ethpb.AttestationData{
+				data: &zondpb.AttestationData{
 					BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-					Source: &ethpb.Checkpoint{
+					Source: &zondpb.Checkpoint{
 						Root: make([]byte, fieldparams.RootLength),
 					},
-					Target: &ethpb.Checkpoint{
+					Target: &zondpb.Checkpoint{
 						Root: make([]byte, fieldparams.RootLength),
 					},
 				},
@@ -154,7 +154,7 @@ func TestMapAttestationData(t *testing.T) {
 
 func TestMapAttesterSlashing(t *testing.T) {
 	type args struct {
-		slashing *ethpb.AttesterSlashing
+		slashing *zondpb.AttesterSlashing
 	}
 	tests := []struct {
 		name    string
@@ -165,28 +165,28 @@ func TestMapAttesterSlashing(t *testing.T) {
 		{
 			name: "HappyPathTest",
 			args: args{
-				slashing: &ethpb.AttesterSlashing{
-					Attestation_1: &ethpb.IndexedAttestation{
+				slashing: &zondpb.AttesterSlashing{
+					Attestation_1: &zondpb.IndexedAttestation{
 						AttestingIndices: []uint64{0, 1, 2},
-						Data: &ethpb.AttestationData{
+						Data: &zondpb.AttestationData{
 							BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-							Source: &ethpb.Checkpoint{
+							Source: &zondpb.Checkpoint{
 								Root: make([]byte, fieldparams.RootLength),
 							},
-							Target: &ethpb.Checkpoint{
+							Target: &zondpb.Checkpoint{
 								Root: make([]byte, fieldparams.RootLength),
 							},
 						},
 						Signature: make([]byte, dilithium2.CryptoBytes),
 					},
-					Attestation_2: &ethpb.IndexedAttestation{
+					Attestation_2: &zondpb.IndexedAttestation{
 						AttestingIndices: []uint64{0, 1, 2},
-						Data: &ethpb.AttestationData{
+						Data: &zondpb.AttestationData{
 							BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-							Source: &ethpb.Checkpoint{
+							Source: &zondpb.Checkpoint{
 								Root: make([]byte, fieldparams.RootLength),
 							},
-							Target: &ethpb.Checkpoint{
+							Target: &zondpb.Checkpoint{
 								Root: make([]byte, fieldparams.RootLength),
 							},
 						},
@@ -217,7 +217,7 @@ func TestMapAttesterSlashing(t *testing.T) {
 
 func TestMapBeaconBlockAltair(t *testing.T) {
 	type args struct {
-		block *ethpb.BeaconBlockAltair
+		block *zondpb.BeaconBlockAltair
 	}
 	tests := []struct {
 		name    string
@@ -228,23 +228,23 @@ func TestMapBeaconBlockAltair(t *testing.T) {
 		{
 			name: "Happy Path Test",
 			args: args{
-				block: &ethpb.BeaconBlockAltair{
+				block: &zondpb.BeaconBlockAltair{
 					Slot:          0,
 					ProposerIndex: 0,
 					ParentRoot:    make([]byte, fieldparams.RootLength),
 					StateRoot:     make([]byte, fieldparams.RootLength),
-					Body: &ethpb.BeaconBlockBodyAltair{
+					Body: &zondpb.BeaconBlockBodyAltair{
 						RandaoReveal: make([]byte, 32),
-						Eth1Data: &ethpb.Eth1Data{
+						Eth1Data: &zondpb.Eth1Data{
 							DepositRoot:  make([]byte, fieldparams.RootLength),
 							DepositCount: 0,
 							BlockHash:    make([]byte, 32),
 						},
 						Graffiti: make([]byte, 32),
-						ProposerSlashings: []*ethpb.ProposerSlashing{
+						ProposerSlashings: []*zondpb.ProposerSlashing{
 							{
-								Header_1: &ethpb.SignedBeaconBlockHeader{
-									Header: &ethpb.BeaconBlockHeader{
+								Header_1: &zondpb.SignedBeaconBlockHeader{
+									Header: &zondpb.BeaconBlockHeader{
 										Slot:          0,
 										ProposerIndex: 0,
 										ParentRoot:    make([]byte, fieldparams.RootLength),
@@ -253,8 +253,8 @@ func TestMapBeaconBlockAltair(t *testing.T) {
 									},
 									Signature: make([]byte, dilithium2.CryptoBytes),
 								},
-								Header_2: &ethpb.SignedBeaconBlockHeader{
-									Header: &ethpb.BeaconBlockHeader{
+								Header_2: &zondpb.SignedBeaconBlockHeader{
+									Header: &zondpb.BeaconBlockHeader{
 										Slot:          0,
 										ProposerIndex: 0,
 										ParentRoot:    make([]byte, fieldparams.RootLength),
@@ -265,29 +265,29 @@ func TestMapBeaconBlockAltair(t *testing.T) {
 								},
 							},
 						},
-						AttesterSlashings: []*ethpb.AttesterSlashing{
+						AttesterSlashings: []*zondpb.AttesterSlashing{
 							{
-								Attestation_1: &ethpb.IndexedAttestation{
+								Attestation_1: &zondpb.IndexedAttestation{
 									AttestingIndices: []uint64{0, 1, 2},
-									Data: &ethpb.AttestationData{
+									Data: &zondpb.AttestationData{
 										BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-										Source: &ethpb.Checkpoint{
+										Source: &zondpb.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
-										Target: &ethpb.Checkpoint{
+										Target: &zondpb.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
 									},
 									Signature: make([]byte, dilithium2.CryptoBytes),
 								},
-								Attestation_2: &ethpb.IndexedAttestation{
+								Attestation_2: &zondpb.IndexedAttestation{
 									AttestingIndices: []uint64{0, 1, 2},
-									Data: &ethpb.AttestationData{
+									Data: &zondpb.AttestationData{
 										BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-										Source: &ethpb.Checkpoint{
+										Source: &zondpb.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
-										Target: &ethpb.Checkpoint{
+										Target: &zondpb.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
 									},
@@ -295,25 +295,25 @@ func TestMapBeaconBlockAltair(t *testing.T) {
 								},
 							},
 						},
-						Attestations: []*ethpb.Attestation{
+						Attestations: []*zondpb.Attestation{
 							{
 								AggregationBits: bitfield.Bitlist{0b1101},
-								Data: &ethpb.AttestationData{
+								Data: &zondpb.AttestationData{
 									BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-									Source: &ethpb.Checkpoint{
+									Source: &zondpb.Checkpoint{
 										Root: make([]byte, fieldparams.RootLength),
 									},
-									Target: &ethpb.Checkpoint{
+									Target: &zondpb.Checkpoint{
 										Root: make([]byte, fieldparams.RootLength),
 									},
 								},
 								Signature: make([]byte, 96),
 							},
 						},
-						Deposits: []*ethpb.Deposit{
+						Deposits: []*zondpb.Deposit{
 							{
 								Proof: [][]byte{[]byte("A")},
-								Data: &ethpb.Deposit_Data{
+								Data: &zondpb.Deposit_Data{
 									PublicKey:             make([]byte, dilithium2.CryptoPublicKeyBytes),
 									WithdrawalCredentials: make([]byte, 32),
 									Amount:                0,
@@ -321,16 +321,16 @@ func TestMapBeaconBlockAltair(t *testing.T) {
 								},
 							},
 						},
-						VoluntaryExits: []*ethpb.SignedVoluntaryExit{
+						VoluntaryExits: []*zondpb.SignedVoluntaryExit{
 							{
-								Exit: &ethpb.VoluntaryExit{
+								Exit: &zondpb.VoluntaryExit{
 									Epoch:          0,
 									ValidatorIndex: 0,
 								},
 								Signature: make([]byte, dilithium2.CryptoBytes),
 							},
 						},
-						SyncAggregate: &ethpb.SyncAggregate{
+						SyncAggregate: &zondpb.SyncAggregate{
 							SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
 							SyncCommitteeBits:      mock.MockSyncComitteeBits(),
 						},
@@ -357,7 +357,7 @@ func TestMapBeaconBlockAltair(t *testing.T) {
 
 func TestMapBeaconBlockBody(t *testing.T) {
 	type args struct {
-		body *ethpb.BeaconBlockBody
+		body *zondpb.BeaconBlockBody
 	}
 	tests := []struct {
 		name    string
@@ -368,18 +368,18 @@ func TestMapBeaconBlockBody(t *testing.T) {
 		{
 			name: "Happy Path Test",
 			args: args{
-				body: &ethpb.BeaconBlockBody{
+				body: &zondpb.BeaconBlockBody{
 					RandaoReveal: make([]byte, 32),
-					Eth1Data: &ethpb.Eth1Data{
+					Eth1Data: &zondpb.Eth1Data{
 						DepositRoot:  make([]byte, fieldparams.RootLength),
 						DepositCount: 0,
 						BlockHash:    make([]byte, 32),
 					},
 					Graffiti: make([]byte, 32),
-					ProposerSlashings: []*ethpb.ProposerSlashing{
+					ProposerSlashings: []*zondpb.ProposerSlashing{
 						{
-							Header_1: &ethpb.SignedBeaconBlockHeader{
-								Header: &ethpb.BeaconBlockHeader{
+							Header_1: &zondpb.SignedBeaconBlockHeader{
+								Header: &zondpb.BeaconBlockHeader{
 									Slot:          0,
 									ProposerIndex: 0,
 									ParentRoot:    make([]byte, fieldparams.RootLength),
@@ -388,8 +388,8 @@ func TestMapBeaconBlockBody(t *testing.T) {
 								},
 								Signature: make([]byte, dilithium2.CryptoBytes),
 							},
-							Header_2: &ethpb.SignedBeaconBlockHeader{
-								Header: &ethpb.BeaconBlockHeader{
+							Header_2: &zondpb.SignedBeaconBlockHeader{
+								Header: &zondpb.BeaconBlockHeader{
 									Slot:          0,
 									ProposerIndex: 0,
 									ParentRoot:    make([]byte, fieldparams.RootLength),
@@ -400,29 +400,29 @@ func TestMapBeaconBlockBody(t *testing.T) {
 							},
 						},
 					},
-					AttesterSlashings: []*ethpb.AttesterSlashing{
+					AttesterSlashings: []*zondpb.AttesterSlashing{
 						{
-							Attestation_1: &ethpb.IndexedAttestation{
+							Attestation_1: &zondpb.IndexedAttestation{
 								AttestingIndices: []uint64{0, 1, 2},
-								Data: &ethpb.AttestationData{
+								Data: &zondpb.AttestationData{
 									BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-									Source: &ethpb.Checkpoint{
+									Source: &zondpb.Checkpoint{
 										Root: make([]byte, fieldparams.RootLength),
 									},
-									Target: &ethpb.Checkpoint{
+									Target: &zondpb.Checkpoint{
 										Root: make([]byte, fieldparams.RootLength),
 									},
 								},
 								Signature: make([]byte, dilithium2.CryptoBytes),
 							},
-							Attestation_2: &ethpb.IndexedAttestation{
+							Attestation_2: &zondpb.IndexedAttestation{
 								AttestingIndices: []uint64{0, 1, 2},
-								Data: &ethpb.AttestationData{
+								Data: &zondpb.AttestationData{
 									BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-									Source: &ethpb.Checkpoint{
+									Source: &zondpb.Checkpoint{
 										Root: make([]byte, fieldparams.RootLength),
 									},
-									Target: &ethpb.Checkpoint{
+									Target: &zondpb.Checkpoint{
 										Root: make([]byte, fieldparams.RootLength),
 									},
 								},
@@ -430,25 +430,25 @@ func TestMapBeaconBlockBody(t *testing.T) {
 							},
 						},
 					},
-					Attestations: []*ethpb.Attestation{
+					Attestations: []*zondpb.Attestation{
 						{
 							AggregationBits: bitfield.Bitlist{0b1101},
-							Data: &ethpb.AttestationData{
+							Data: &zondpb.AttestationData{
 								BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-								Source: &ethpb.Checkpoint{
+								Source: &zondpb.Checkpoint{
 									Root: make([]byte, fieldparams.RootLength),
 								},
-								Target: &ethpb.Checkpoint{
+								Target: &zondpb.Checkpoint{
 									Root: make([]byte, fieldparams.RootLength),
 								},
 							},
 							Signature: make([]byte, 96),
 						},
 					},
-					Deposits: []*ethpb.Deposit{
+					Deposits: []*zondpb.Deposit{
 						{
 							Proof: [][]byte{[]byte("A")},
-							Data: &ethpb.Deposit_Data{
+							Data: &zondpb.Deposit_Data{
 								PublicKey:             make([]byte, dilithium2.CryptoPublicKeyBytes),
 								WithdrawalCredentials: make([]byte, 32),
 								Amount:                0,
@@ -456,9 +456,9 @@ func TestMapBeaconBlockBody(t *testing.T) {
 							},
 						},
 					},
-					VoluntaryExits: []*ethpb.SignedVoluntaryExit{
+					VoluntaryExits: []*zondpb.SignedVoluntaryExit{
 						{
-							Exit: &ethpb.VoluntaryExit{
+							Exit: &zondpb.VoluntaryExit{
 								Epoch:          0,
 								ValidatorIndex: 0,
 							},
@@ -487,7 +487,7 @@ func TestMapBeaconBlockBody(t *testing.T) {
 
 func TestMapContributionAndProof(t *testing.T) {
 	type args struct {
-		contribution *ethpb.ContributionAndProof
+		contribution *zondpb.ContributionAndProof
 	}
 	tests := []struct {
 		name    string
@@ -498,9 +498,9 @@ func TestMapContributionAndProof(t *testing.T) {
 		{
 			name: "Happy Path Test",
 			args: args{
-				contribution: &ethpb.ContributionAndProof{
+				contribution: &zondpb.ContributionAndProof{
 					AggregatorIndex: 0,
-					Contribution: &ethpb.SyncCommitteeContribution{
+					Contribution: &zondpb.SyncCommitteeContribution{
 						Slot:              0,
 						BlockRoot:         make([]byte, fieldparams.RootLength),
 						SubcommitteeIndex: 0,
@@ -565,7 +565,7 @@ func TestMapForkInfo(t *testing.T) {
 
 func TestMapSyncAggregatorSelectionData(t *testing.T) {
 	type args struct {
-		data *ethpb.SyncAggregatorSelectionData
+		data *zondpb.SyncAggregatorSelectionData
 	}
 	tests := []struct {
 		name    string
@@ -576,7 +576,7 @@ func TestMapSyncAggregatorSelectionData(t *testing.T) {
 		{
 			name: "Happy Path Test",
 			args: args{
-				data: &ethpb.SyncAggregatorSelectionData{
+				data: &zondpb.SyncAggregatorSelectionData{
 					Slot:              0,
 					SubcommitteeIndex: 0,
 				},

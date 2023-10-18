@@ -9,10 +9,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
-func (c beaconApiValidatorClient) proposeExit(ctx context.Context, signedVoluntaryExit *ethpb.SignedVoluntaryExit) (*ethpb.ProposeExitResponse, error) {
+func (c beaconApiValidatorClient) proposeExit(ctx context.Context, signedVoluntaryExit *zondpb.SignedVoluntaryExit) (*zondpb.ProposeExitResponse, error) {
 	if signedVoluntaryExit == nil {
 		return nil, errors.New("signed voluntary exit is nil")
 	}
@@ -43,7 +43,7 @@ func (c beaconApiValidatorClient) proposeExit(ctx context.Context, signedVolunta
 		return nil, errors.Wrap(err, "failed to compute exit root")
 	}
 
-	return &ethpb.ProposeExitResponse{
+	return &zondpb.ProposeExitResponse{
 		ExitRoot: exitRoot[:],
 	}, nil
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 
@@ -148,8 +148,8 @@ func (s *State) StateByRootInitialSync(ctx context.Context, blockRoot [32]byte) 
 }
 
 // This returns the state summary object of a given block root. It first checks the cache, then checks the DB.
-func (s *State) stateSummary(ctx context.Context, blockRoot [32]byte) (*ethpb.StateSummary, error) {
-	var summary *ethpb.StateSummary
+func (s *State) stateSummary(ctx context.Context, blockRoot [32]byte) (*zondpb.StateSummary, error) {
+	var summary *zondpb.StateSummary
 	var err error
 
 	summary, err = s.beaconDB.StateSummary(ctx, blockRoot)
@@ -164,13 +164,13 @@ func (s *State) stateSummary(ctx context.Context, blockRoot [32]byte) (*ethpb.St
 }
 
 // RecoverStateSummary recovers state summary object of a given block root by using the saved block in DB.
-func (s *State) recoverStateSummary(ctx context.Context, blockRoot [32]byte) (*ethpb.StateSummary, error) {
+func (s *State) recoverStateSummary(ctx context.Context, blockRoot [32]byte) (*zondpb.StateSummary, error) {
 	if s.beaconDB.HasBlock(ctx, blockRoot) {
 		b, err := s.beaconDB.Block(ctx, blockRoot)
 		if err != nil {
 			return nil, err
 		}
-		summary := &ethpb.StateSummary{Slot: b.Block().Slot(), Root: blockRoot[:]}
+		summary := &zondpb.StateSummary{Slot: b.Block().Slot(), Root: blockRoot[:]}
 		if err := s.beaconDB.SaveStateSummary(ctx, summary); err != nil {
 			return nil, err
 		}

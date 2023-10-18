@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/snappy"
 	fastssz "github.com/prysmaticlabs/fastssz"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/proto"
 )
@@ -52,25 +52,25 @@ func encode(ctx context.Context, msg proto.Message) ([]byte, error) {
 // isSSZStorageFormat returns true if the object type should be saved in SSZ encoded format.
 func isSSZStorageFormat(obj interface{}) bool {
 	switch obj.(type) {
-	case *ethpb.BeaconState:
+	case *zondpb.BeaconState:
 		return true
-	case *ethpb.SignedBeaconBlock:
+	case *zondpb.SignedBeaconBlock:
 		return true
-	case *ethpb.SignedAggregateAttestationAndProof:
+	case *zondpb.SignedAggregateAttestationAndProof:
 		return true
-	case *ethpb.BeaconBlock:
+	case *zondpb.BeaconBlock:
 		return true
-	case *ethpb.Attestation:
+	case *zondpb.Attestation:
 		return true
-	case *ethpb.Deposit:
+	case *zondpb.Deposit:
 		return true
-	case *ethpb.AttesterSlashing:
+	case *zondpb.AttesterSlashing:
 		return true
-	case *ethpb.ProposerSlashing:
+	case *zondpb.ProposerSlashing:
 		return true
-	case *ethpb.VoluntaryExit:
+	case *zondpb.VoluntaryExit:
 		return true
-	case *ethpb.ValidatorRegistrationV1:
+	case *zondpb.ValidatorRegistrationV1:
 		return true
 	default:
 		return false

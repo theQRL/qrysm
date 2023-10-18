@@ -10,7 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -37,7 +37,7 @@ func TestStreamBlocks_UnsupportedConsensusVersion(t *testing.T) {
 	).Times(1)
 
 	validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
-	streamBlocksClient := validatorClient.streamBlocks(ctx, &eth.StreamBlocksRequest{}, time.Millisecond*100)
+	streamBlocksClient := validatorClient.streamBlocks(ctx, &zond.StreamBlocksRequest{}, time.Millisecond*100)
 	_, err := streamBlocksClient.Recv()
 	assert.ErrorContains(t, "unsupported consensus version `foo`", err)
 }
@@ -164,7 +164,7 @@ func TestStreamBlocks_Error(t *testing.T) {
 
 					beaconBlockConverter := testSuite.generateBeaconBlockConverter(ctrl, testCase.conversionError)
 					validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler, beaconBlockConverter: beaconBlockConverter}
-					streamBlocksClient := validatorClient.streamBlocks(ctx, &eth.StreamBlocksRequest{}, time.Millisecond*100)
+					streamBlocksClient := validatorClient.streamBlocks(ctx, &zond.StreamBlocksRequest{}, time.Millisecond*100)
 
 					_, err := streamBlocksClient.Recv()
 					assert.ErrorContains(t, fmt.Sprintf(testCase.expectedErrorMessage, testSuite.consensusVersion), err)
@@ -215,7 +215,7 @@ func TestStreamBlocks_Phase0Valid(t *testing.T) {
 
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/eth/v2/beacon/blocks/head",
+				"/zond/v2/beacon/blocks/head",
 				&signedBlockResponseJson,
 			).Return(
 				nil,
@@ -253,7 +253,7 @@ func TestStreamBlocks_Phase0Valid(t *testing.T) {
 
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/eth/v2/beacon/blocks/head",
+				"/zond/v2/beacon/blocks/head",
 				&signedBlockResponseJson,
 			).Return(
 				nil,
@@ -281,7 +281,7 @@ func TestStreamBlocks_Phase0Valid(t *testing.T) {
 			if testCase.verifiedOnly {
 				jsonRestHandler.EXPECT().GetRestJsonResponse(
 					ctx,
-					"/eth/v2/beacon/blocks/head",
+					"/zond/v2/beacon/blocks/head",
 					&signedBlockResponseJson,
 				).Return(
 					nil,
@@ -304,15 +304,15 @@ func TestStreamBlocks_Phase0Valid(t *testing.T) {
 			}
 
 			validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler, beaconBlockConverter: beaconBlockConverter}
-			streamBlocksClient := validatorClient.streamBlocks(ctx, &eth.StreamBlocksRequest{VerifiedOnly: testCase.verifiedOnly}, time.Millisecond*100)
+			streamBlocksClient := validatorClient.streamBlocks(ctx, &zond.StreamBlocksRequest{VerifiedOnly: testCase.verifiedOnly}, time.Millisecond*100)
 
 			// Get the first block
 			streamBlocksResponse1, err := streamBlocksClient.Recv()
 			require.NoError(t, err)
 
-			expectedStreamBlocksResponse1 := &eth.StreamBlocksResponse{
-				Block: &eth.StreamBlocksResponse_Phase0Block{
-					Phase0Block: &eth.SignedBeaconBlock{
+			expectedStreamBlocksResponse1 := &zond.StreamBlocksResponse{
+				Block: &zond.StreamBlocksResponse_Phase0Block{
+					Phase0Block: &zond.SignedBeaconBlock{
 						Block:     phase0ProtoBeaconBlock1,
 						Signature: []byte{1},
 					},
@@ -325,9 +325,9 @@ func TestStreamBlocks_Phase0Valid(t *testing.T) {
 			streamBlocksResponse2, err := streamBlocksClient.Recv()
 			require.NoError(t, err)
 
-			expectedStreamBlocksResponse2 := &eth.StreamBlocksResponse{
-				Block: &eth.StreamBlocksResponse_Phase0Block{
-					Phase0Block: &eth.SignedBeaconBlock{
+			expectedStreamBlocksResponse2 := &zond.StreamBlocksResponse{
+				Block: &zond.StreamBlocksResponse_Phase0Block{
+					Phase0Block: &zond.SignedBeaconBlock{
 						Block:     phase0ProtoBeaconBlock2,
 						Signature: []byte{2},
 					},
@@ -379,7 +379,7 @@ func TestStreamBlocks_AltairValid(t *testing.T) {
 
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/eth/v2/beacon/blocks/head",
+				"/zond/v2/beacon/blocks/head",
 				&signedBlockResponseJson,
 			).Return(
 				nil,
@@ -417,7 +417,7 @@ func TestStreamBlocks_AltairValid(t *testing.T) {
 
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/eth/v2/beacon/blocks/head",
+				"/zond/v2/beacon/blocks/head",
 				&signedBlockResponseJson,
 			).Return(
 				nil,
@@ -445,7 +445,7 @@ func TestStreamBlocks_AltairValid(t *testing.T) {
 			if testCase.verifiedOnly {
 				jsonRestHandler.EXPECT().GetRestJsonResponse(
 					ctx,
-					"/eth/v2/beacon/blocks/head",
+					"/zond/v2/beacon/blocks/head",
 					&signedBlockResponseJson,
 				).Return(
 					nil,
@@ -468,15 +468,15 @@ func TestStreamBlocks_AltairValid(t *testing.T) {
 			}
 
 			validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler, beaconBlockConverter: beaconBlockConverter}
-			streamBlocksClient := validatorClient.streamBlocks(ctx, &eth.StreamBlocksRequest{VerifiedOnly: testCase.verifiedOnly}, time.Millisecond*100)
+			streamBlocksClient := validatorClient.streamBlocks(ctx, &zond.StreamBlocksRequest{VerifiedOnly: testCase.verifiedOnly}, time.Millisecond*100)
 
 			// Get the first block
 			streamBlocksResponse1, err := streamBlocksClient.Recv()
 			require.NoError(t, err)
 
-			expectedStreamBlocksResponse1 := &eth.StreamBlocksResponse{
-				Block: &eth.StreamBlocksResponse_AltairBlock{
-					AltairBlock: &eth.SignedBeaconBlockAltair{
+			expectedStreamBlocksResponse1 := &zond.StreamBlocksResponse{
+				Block: &zond.StreamBlocksResponse_AltairBlock{
+					AltairBlock: &zond.SignedBeaconBlockAltair{
 						Block:     altairProtoBeaconBlock1,
 						Signature: []byte{1},
 					},
@@ -489,9 +489,9 @@ func TestStreamBlocks_AltairValid(t *testing.T) {
 			streamBlocksResponse2, err := streamBlocksClient.Recv()
 			require.NoError(t, err)
 
-			expectedStreamBlocksResponse2 := &eth.StreamBlocksResponse{
-				Block: &eth.StreamBlocksResponse_AltairBlock{
-					AltairBlock: &eth.SignedBeaconBlockAltair{
+			expectedStreamBlocksResponse2 := &zond.StreamBlocksResponse{
+				Block: &zond.StreamBlocksResponse_AltairBlock{
+					AltairBlock: &zond.SignedBeaconBlockAltair{
 						Block:     altairProtoBeaconBlock2,
 						Signature: []byte{2},
 					},
@@ -543,7 +543,7 @@ func TestStreamBlocks_BellatrixValid(t *testing.T) {
 
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/eth/v2/beacon/blocks/head",
+				"/zond/v2/beacon/blocks/head",
 				&signedBlockResponseJson,
 			).Return(
 				nil,
@@ -581,7 +581,7 @@ func TestStreamBlocks_BellatrixValid(t *testing.T) {
 
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/eth/v2/beacon/blocks/head",
+				"/zond/v2/beacon/blocks/head",
 				&signedBlockResponseJson,
 			).Return(
 				nil,
@@ -609,7 +609,7 @@ func TestStreamBlocks_BellatrixValid(t *testing.T) {
 			if testCase.verifiedOnly {
 				jsonRestHandler.EXPECT().GetRestJsonResponse(
 					ctx,
-					"/eth/v2/beacon/blocks/head",
+					"/zond/v2/beacon/blocks/head",
 					&signedBlockResponseJson,
 				).Return(
 					nil,
@@ -632,15 +632,15 @@ func TestStreamBlocks_BellatrixValid(t *testing.T) {
 			}
 
 			validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler, beaconBlockConverter: beaconBlockConverter}
-			streamBlocksClient := validatorClient.streamBlocks(ctx, &eth.StreamBlocksRequest{VerifiedOnly: testCase.verifiedOnly}, time.Millisecond*100)
+			streamBlocksClient := validatorClient.streamBlocks(ctx, &zond.StreamBlocksRequest{VerifiedOnly: testCase.verifiedOnly}, time.Millisecond*100)
 
 			// Get the first block
 			streamBlocksResponse1, err := streamBlocksClient.Recv()
 			require.NoError(t, err)
 
-			expectedStreamBlocksResponse1 := &eth.StreamBlocksResponse{
-				Block: &eth.StreamBlocksResponse_BellatrixBlock{
-					BellatrixBlock: &eth.SignedBeaconBlockBellatrix{
+			expectedStreamBlocksResponse1 := &zond.StreamBlocksResponse{
+				Block: &zond.StreamBlocksResponse_BellatrixBlock{
+					BellatrixBlock: &zond.SignedBeaconBlockBellatrix{
 						Block:     bellatrixProtoBeaconBlock1,
 						Signature: []byte{1},
 					},
@@ -653,9 +653,9 @@ func TestStreamBlocks_BellatrixValid(t *testing.T) {
 			streamBlocksResponse2, err := streamBlocksClient.Recv()
 			require.NoError(t, err)
 
-			expectedStreamBlocksResponse2 := &eth.StreamBlocksResponse{
-				Block: &eth.StreamBlocksResponse_BellatrixBlock{
-					BellatrixBlock: &eth.SignedBeaconBlockBellatrix{
+			expectedStreamBlocksResponse2 := &zond.StreamBlocksResponse{
+				Block: &zond.StreamBlocksResponse_BellatrixBlock{
+					BellatrixBlock: &zond.SignedBeaconBlockBellatrix{
 						Block:     bellatrixProtoBeaconBlock2,
 						Signature: []byte{2},
 					},
@@ -707,7 +707,7 @@ func TestStreamBlocks_CapellaValid(t *testing.T) {
 
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/eth/v2/beacon/blocks/head",
+				"/zond/v2/beacon/blocks/head",
 				&signedBlockResponseJson,
 			).Return(
 				nil,
@@ -745,7 +745,7 @@ func TestStreamBlocks_CapellaValid(t *testing.T) {
 
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/eth/v2/beacon/blocks/head",
+				"/zond/v2/beacon/blocks/head",
 				&signedBlockResponseJson,
 			).Return(
 				nil,
@@ -773,7 +773,7 @@ func TestStreamBlocks_CapellaValid(t *testing.T) {
 			if testCase.verifiedOnly {
 				jsonRestHandler.EXPECT().GetRestJsonResponse(
 					ctx,
-					"/eth/v2/beacon/blocks/head",
+					"/zond/v2/beacon/blocks/head",
 					&signedBlockResponseJson,
 				).Return(
 					nil,
@@ -796,15 +796,15 @@ func TestStreamBlocks_CapellaValid(t *testing.T) {
 			}
 
 			validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler, beaconBlockConverter: beaconBlockConverter}
-			streamBlocksClient := validatorClient.streamBlocks(ctx, &eth.StreamBlocksRequest{VerifiedOnly: testCase.verifiedOnly}, time.Millisecond*100)
+			streamBlocksClient := validatorClient.streamBlocks(ctx, &zond.StreamBlocksRequest{VerifiedOnly: testCase.verifiedOnly}, time.Millisecond*100)
 
 			// Get the first block
 			streamBlocksResponse1, err := streamBlocksClient.Recv()
 			require.NoError(t, err)
 
-			expectedStreamBlocksResponse1 := &eth.StreamBlocksResponse{
-				Block: &eth.StreamBlocksResponse_CapellaBlock{
-					CapellaBlock: &eth.SignedBeaconBlockCapella{
+			expectedStreamBlocksResponse1 := &zond.StreamBlocksResponse{
+				Block: &zond.StreamBlocksResponse_CapellaBlock{
+					CapellaBlock: &zond.SignedBeaconBlockCapella{
 						Block:     capellaProtoBeaconBlock1,
 						Signature: []byte{1},
 					},
@@ -817,9 +817,9 @@ func TestStreamBlocks_CapellaValid(t *testing.T) {
 			streamBlocksResponse2, err := streamBlocksClient.Recv()
 			require.NoError(t, err)
 
-			expectedStreamBlocksResponse2 := &eth.StreamBlocksResponse{
-				Block: &eth.StreamBlocksResponse_CapellaBlock{
-					CapellaBlock: &eth.SignedBeaconBlockCapella{
+			expectedStreamBlocksResponse2 := &zond.StreamBlocksResponse{
+				Block: &zond.StreamBlocksResponse_CapellaBlock{
+					CapellaBlock: &zond.SignedBeaconBlockCapella{
 						Block:     capellaProtoBeaconBlock2,
 						Signature: []byte{2},
 					},

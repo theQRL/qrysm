@@ -3,14 +3,14 @@ package validator
 import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
-func (vs *Server) getExits(head state.BeaconState, slot primitives.Slot) []*ethpb.SignedVoluntaryExit {
+func (vs *Server) getExits(head state.BeaconState, slot primitives.Slot) []*zondpb.SignedVoluntaryExit {
 	exits, err := vs.ExitPool.ExitsForInclusion(head, slot)
 	if err != nil {
 		log.WithError(err).Error("Could not get exits")
-		return []*ethpb.SignedVoluntaryExit{}
+		return []*zondpb.SignedVoluntaryExit{}
 	}
 	return exits
 }

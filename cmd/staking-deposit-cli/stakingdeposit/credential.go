@@ -18,8 +18,8 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 type Credential struct {
@@ -109,7 +109,7 @@ func (c *Credential) VerifyKeystore(keystoreFileFolder, password string) bool {
 	return c.signingSeed == misc.EncodeHex(seedBytes[:])
 }
 
-func (c *Credential) GetDilithiumToExecutionChange(validatorIndex uint64) *ethpbv2.SignedDilithiumToExecutionChange {
+func (c *Credential) GetDilithiumToExecutionChange(validatorIndex uint64) *zondpbv2.SignedDilithiumToExecutionChange {
 	if len(c.hexZondWithdrawalAddress) == 0 {
 		panic("the execution address should not be empty")
 	}
@@ -120,7 +120,7 @@ func (c *Credential) GetDilithiumToExecutionChange(validatorIndex uint64) *ethpb
 		panic(fmt.Errorf("failed to generate secret Key from withdrawal seed %v", err))
 	}
 
-	message := &ethpbv2.DilithiumToExecutionChange{
+	message := &zondpbv2.DilithiumToExecutionChange{
 		ValidatorIndex:      primitives.ValidatorIndex(validatorIndex),
 		FromDilithiumPubkey: c.WithdrawalPK(),
 		ToExecutionAddress:  c.ZondWithdrawalAddress().Bytes()}
@@ -135,7 +135,7 @@ func (c *Credential) GetDilithiumToExecutionChange(validatorIndex uint64) *ethpb
 		c.chainSetting.GenesisValidatorsRoot, /*genesisValidatorsRoot*/
 	)
 
-	signingData := &ethpb.SigningData{
+	signingData := &zondpb.SigningData{
 		ObjectRoot: root[:],
 		Domain:     domain,
 	}
@@ -146,7 +146,7 @@ func (c *Credential) GetDilithiumToExecutionChange(validatorIndex uint64) *ethpb
 	}
 	signature := d.Sign(signingRoot[:])
 
-	return &ethpbv2.SignedDilithiumToExecutionChange{
+	return &zondpbv2.SignedDilithiumToExecutionChange{
 		Message:   message,
 		Signature: signature.Marshal(),
 	}

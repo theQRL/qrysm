@@ -2,13 +2,13 @@ package stateutil
 
 import (
 	"github.com/pkg/errors"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // Eth1Root computes the HashTreeRoot Merkleization of
 // a BeaconBlockHeader struct according to the eth2
 // Simple Serialize specification.
-func Eth1Root(eth1Data *ethpb.Eth1Data) ([32]byte, error) {
+func Eth1Root(eth1Data *zondpb.Eth1Data) ([32]byte, error) {
 	if eth1Data == nil {
 		return [32]byte{}, errors.New("nil eth1 data")
 	}
@@ -18,6 +18,6 @@ func Eth1Root(eth1Data *ethpb.Eth1Data) ([32]byte, error) {
 // Eth1DataVotesRoot computes the HashTreeRoot Merkleization of
 // a list of Eth1Data structs according to the eth2
 // Simple Serialize specification.
-func Eth1DataVotesRoot(eth1DataVotes []*ethpb.Eth1Data) ([32]byte, error) {
+func Eth1DataVotesRoot(eth1DataVotes []*zondpb.Eth1Data) ([32]byte, error) {
 	return Eth1DatasRoot(eth1DataVotes)
 }

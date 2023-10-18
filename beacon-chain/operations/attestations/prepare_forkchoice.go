@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/features"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	attaggregation "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/attestations"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
@@ -64,7 +64,7 @@ func (s *Service) batchForkChoiceAtts(ctx context.Context) error {
 	atts := append(s.cfg.Pool.AggregatedAttestations(), s.cfg.Pool.BlockAttestations()...)
 	atts = append(atts, s.cfg.Pool.ForkchoiceAttestations()...)
 
-	attsByDataRoot := make(map[[32]byte][]*ethpb.Attestation, len(atts))
+	attsByDataRoot := make(map[[32]byte][]*zondpb.Attestation, len(atts))
 
 	// Consolidate attestations by aggregating them by similar data root.
 	for _, att := range atts {
@@ -100,10 +100,10 @@ func (s *Service) batchForkChoiceAtts(ctx context.Context) error {
 
 // This aggregates a list of attestations using the aggregation algorithm defined in AggregateAttestations
 // and saves the attestations for fork choice.
-func (s *Service) aggregateAndSaveForkChoiceAtts(atts []*ethpb.Attestation) error {
-	clonedAtts := make([]*ethpb.Attestation, len(atts))
+func (s *Service) aggregateAndSaveForkChoiceAtts(atts []*zondpb.Attestation) error {
+	clonedAtts := make([]*zondpb.Attestation, len(atts))
 	for i, a := range atts {
-		clonedAtts[i] = ethpb.CopyAttestation(a)
+		clonedAtts[i] = zondpb.CopyAttestation(a)
 	}
 	aggregatedAtts, err := attaggregation.Aggregate(clonedAtts)
 	if err != nil {
@@ -115,7 +115,7 @@ func (s *Service) aggregateAndSaveForkChoiceAtts(atts []*ethpb.Attestation) erro
 
 // This checks if the attestation has previously been aggregated for fork choice
 // return true if yes, false if no.
-func (s *Service) seen(att *ethpb.Attestation) (bool, error) {
+func (s *Service) seen(att *zondpb.Attestation) (bool, error) {
 	attRoot, err := hash.HashProto(att.Data)
 	if err != nil {
 		return false, err

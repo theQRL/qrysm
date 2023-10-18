@@ -17,7 +17,7 @@ import (
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -26,11 +26,11 @@ import (
 
 func TestUnslashedAttestingIndices_CanSortAndFilter(t *testing.T) {
 	// Generate 2 attestations.
-	atts := make([]*ethpb.PendingAttestation, 2)
+	atts := make([]*zondpb.PendingAttestation, 2)
 	for i := 0; i < len(atts); i++ {
-		atts[i] = &ethpb.PendingAttestation{
-			Data: &ethpb.AttestationData{Source: &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
-				Target: &ethpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
+		atts[i] = &zondpb.PendingAttestation{
+			Data: &zondpb.AttestationData{Source: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+				Target: &zondpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
 			},
 			AggregationBits: bitfield.Bitlist{0x00, 0xFF, 0xFF, 0xFF},
 		}
@@ -38,13 +38,13 @@ func TestUnslashedAttestingIndices_CanSortAndFilter(t *testing.T) {
 
 	// Generate validators and state for the 2 attestations.
 	validatorCount := 1000
-	validators := make([]*ethpb.Validator, validatorCount)
+	validators := make([]*zondpb.Validator, validatorCount)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		}
 	}
-	base := &ethpb.BeaconState{
+	base := &zondpb.BeaconState{
 		Validators:  validators,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 	}
@@ -73,24 +73,24 @@ func TestUnslashedAttestingIndices_CanSortAndFilter(t *testing.T) {
 
 func TestUnslashedAttestingIndices_DuplicatedAttestations(t *testing.T) {
 	// Generate 5 of the same attestations.
-	atts := make([]*ethpb.PendingAttestation, 5)
+	atts := make([]*zondpb.PendingAttestation, 5)
 	for i := 0; i < len(atts); i++ {
-		atts[i] = &ethpb.PendingAttestation{
-			Data: &ethpb.AttestationData{Source: &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
-				Target: &ethpb.Checkpoint{Epoch: 0}},
+		atts[i] = &zondpb.PendingAttestation{
+			Data: &zondpb.AttestationData{Source: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+				Target: &zondpb.Checkpoint{Epoch: 0}},
 			AggregationBits: bitfield.Bitlist{0x00, 0xFF, 0xFF, 0xFF},
 		}
 	}
 
 	// Generate validators and state for the 5 attestations.
 	validatorCount := 1000
-	validators := make([]*ethpb.Validator, validatorCount)
+	validators := make([]*zondpb.Validator, validatorCount)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		}
 	}
-	base := &ethpb.BeaconState{
+	base := &zondpb.BeaconState{
 		Validators:  validators,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 	}
@@ -110,12 +110,12 @@ func TestUnslashedAttestingIndices_DuplicatedAttestations(t *testing.T) {
 func TestAttestingBalance_CorrectBalance(t *testing.T) {
 	helpers.ClearCache()
 	// Generate 2 attestations.
-	atts := make([]*ethpb.PendingAttestation, 2)
+	atts := make([]*zondpb.PendingAttestation, 2)
 	for i := 0; i < len(atts); i++ {
-		atts[i] = &ethpb.PendingAttestation{
-			Data: &ethpb.AttestationData{
-				Target: &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
-				Source: &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		atts[i] = &zondpb.PendingAttestation{
+			Data: &zondpb.AttestationData{
+				Target: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+				Source: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 				Slot:   primitives.Slot(i),
 			},
 			AggregationBits: bitfield.Bitlist{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -124,16 +124,16 @@ func TestAttestingBalance_CorrectBalance(t *testing.T) {
 	}
 
 	// Generate validators with balances and state for the 2 attestations.
-	validators := make([]*ethpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
+	validators := make([]*zondpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
 	balances := make([]uint64, params.BeaconConfig().MinGenesisActiveValidatorCount)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
 			EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance,
 		}
 		balances[i] = params.BeaconConfig().MaxEffectiveBalance
 	}
-	base := &ethpb.BeaconState{
+	base := &zondpb.BeaconState{
 		Slot:        2,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 
@@ -150,9 +150,9 @@ func TestAttestingBalance_CorrectBalance(t *testing.T) {
 }
 
 func TestProcessSlashings_NotSlashed(t *testing.T) {
-	base := &ethpb.BeaconState{
+	base := &zondpb.BeaconState{
 		Slot:       0,
-		Validators: []*ethpb.Validator{{Slashed: true}},
+		Validators: []*zondpb.Validator{{Slashed: true}},
 		Balances:   []uint64{params.BeaconConfig().MaxEffectiveBalance},
 		Slashings:  []uint64{0, 1e9},
 	}
@@ -166,12 +166,12 @@ func TestProcessSlashings_NotSlashed(t *testing.T) {
 
 func TestProcessSlashings_SlashedLess(t *testing.T) {
 	tests := []struct {
-		state *ethpb.BeaconState
+		state *zondpb.BeaconState
 		want  uint64
 	}{
 		{
-			state: &ethpb.BeaconState{
-				Validators: []*ethpb.Validator{
+			state: &zondpb.BeaconState{
+				Validators: []*zondpb.Validator{
 					{Slashed: true,
 						WithdrawableEpoch: params.BeaconConfig().EpochsPerSlashingsVector / 2,
 						EffectiveBalance:  params.BeaconConfig().MaxEffectiveBalance},
@@ -184,8 +184,8 @@ func TestProcessSlashings_SlashedLess(t *testing.T) {
 			want: uint64(31000000000), // 32 * 1e9 - 1000000000
 		},
 		{
-			state: &ethpb.BeaconState{
-				Validators: []*ethpb.Validator{
+			state: &zondpb.BeaconState{
+				Validators: []*zondpb.Validator{
 					{Slashed: true,
 						WithdrawableEpoch: params.BeaconConfig().EpochsPerSlashingsVector / 2,
 						EffectiveBalance:  params.BeaconConfig().MaxEffectiveBalance},
@@ -200,8 +200,8 @@ func TestProcessSlashings_SlashedLess(t *testing.T) {
 			want: uint64(32000000000), // 32 * 1e9 - 500000000
 		},
 		{
-			state: &ethpb.BeaconState{
-				Validators: []*ethpb.Validator{
+			state: &zondpb.BeaconState{
+				Validators: []*zondpb.Validator{
 					{Slashed: true,
 						WithdrawableEpoch: params.BeaconConfig().EpochsPerSlashingsVector / 2,
 						EffectiveBalance:  params.BeaconConfig().MaxEffectiveBalance},
@@ -216,8 +216,8 @@ func TestProcessSlashings_SlashedLess(t *testing.T) {
 			want: uint64(31000000000), // 32 * 1e9 - 1000000000
 		},
 		{
-			state: &ethpb.BeaconState{
-				Validators: []*ethpb.Validator{
+			state: &zondpb.BeaconState{
+				Validators: []*zondpb.Validator{
 					{Slashed: true,
 						WithdrawableEpoch: params.BeaconConfig().EpochsPerSlashingsVector / 2,
 						EffectiveBalance:  params.BeaconConfig().MaxEffectiveBalance - params.BeaconConfig().EffectiveBalanceIncrement},
@@ -248,7 +248,7 @@ func TestProcessFinalUpdates_CanProcess(t *testing.T) {
 	s := buildState(t, params.BeaconConfig().SlotsPerHistoricalRoot-1, uint64(params.BeaconConfig().SlotsPerEpoch))
 	ce := time.CurrentEpoch(s)
 	ne := ce + 1
-	require.NoError(t, s.SetEth1DataVotes([]*ethpb.Eth1Data{}))
+	require.NoError(t, s.SetEth1DataVotes([]*zondpb.Eth1Data{}))
 	balances := s.Balances()
 	balances[0] = 31.75 * 1e9
 	balances[1] = 31.74 * 1e9
@@ -285,9 +285,9 @@ func TestProcessFinalUpdates_CanProcess(t *testing.T) {
 }
 
 func TestProcessRegistryUpdates_NoRotation(t *testing.T) {
-	base := &ethpb.BeaconState{
+	base := &zondpb.BeaconState{
 		Slot: 5 * params.BeaconConfig().SlotsPerEpoch,
-		Validators: []*ethpb.Validator{
+		Validators: []*zondpb.Validator{
 			{ExitEpoch: params.BeaconConfig().MaxSeedLookahead},
 			{ExitEpoch: params.BeaconConfig().MaxSeedLookahead},
 		},
@@ -295,7 +295,7 @@ func TestProcessRegistryUpdates_NoRotation(t *testing.T) {
 			params.BeaconConfig().MaxEffectiveBalance,
 			params.BeaconConfig().MaxEffectiveBalance,
 		},
-		FinalizedCheckpoint: &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		FinalizedCheckpoint: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 	}
 	beaconState, err := state_native.InitializeFromProtoPhase0(base)
 	require.NoError(t, err)
@@ -307,14 +307,14 @@ func TestProcessRegistryUpdates_NoRotation(t *testing.T) {
 }
 
 func TestProcessRegistryUpdates_EligibleToActivate(t *testing.T) {
-	base := &ethpb.BeaconState{
+	base := &zondpb.BeaconState{
 		Slot:                5 * params.BeaconConfig().SlotsPerEpoch,
-		FinalizedCheckpoint: &ethpb.Checkpoint{Epoch: 6, Root: make([]byte, fieldparams.RootLength)},
+		FinalizedCheckpoint: &zondpb.Checkpoint{Epoch: 6, Root: make([]byte, fieldparams.RootLength)},
 	}
 	limit, err := helpers.ValidatorChurnLimit(0)
 	require.NoError(t, err)
 	for i := uint64(0); i < limit+10; i++ {
-		base.Validators = append(base.Validators, &ethpb.Validator{
+		base.Validators = append(base.Validators, &zondpb.Validator{
 			ActivationEligibilityEpoch: params.BeaconConfig().FarFutureEpoch,
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,
 			ActivationEpoch:            params.BeaconConfig().FarFutureEpoch,
@@ -339,15 +339,15 @@ func TestProcessRegistryUpdates_EligibleToActivate(t *testing.T) {
 }
 
 func TestProcessRegistryUpdates_ActivationCompletes(t *testing.T) {
-	base := &ethpb.BeaconState{
+	base := &zondpb.BeaconState{
 		Slot: 5 * params.BeaconConfig().SlotsPerEpoch,
-		Validators: []*ethpb.Validator{
+		Validators: []*zondpb.Validator{
 			{ExitEpoch: params.BeaconConfig().MaxSeedLookahead,
 				ActivationEpoch: 5 + params.BeaconConfig().MaxSeedLookahead + 1},
 			{ExitEpoch: params.BeaconConfig().MaxSeedLookahead,
 				ActivationEpoch: 5 + params.BeaconConfig().MaxSeedLookahead + 1},
 		},
-		FinalizedCheckpoint: &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		FinalizedCheckpoint: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 	}
 	beaconState, err := state_native.InitializeFromProtoPhase0(base)
 	require.NoError(t, err)
@@ -359,9 +359,9 @@ func TestProcessRegistryUpdates_ActivationCompletes(t *testing.T) {
 }
 
 func TestProcessRegistryUpdates_ValidatorsEjected(t *testing.T) {
-	base := &ethpb.BeaconState{
+	base := &zondpb.BeaconState{
 		Slot: 0,
-		Validators: []*ethpb.Validator{
+		Validators: []*zondpb.Validator{
 			{
 				ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
 				EffectiveBalance: params.BeaconConfig().EjectionBalance - 1,
@@ -371,7 +371,7 @@ func TestProcessRegistryUpdates_ValidatorsEjected(t *testing.T) {
 				EffectiveBalance: params.BeaconConfig().EjectionBalance - 1,
 			},
 		},
-		FinalizedCheckpoint: &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		FinalizedCheckpoint: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 	}
 	beaconState, err := state_native.InitializeFromProtoPhase0(base)
 	require.NoError(t, err)
@@ -386,9 +386,9 @@ func TestProcessRegistryUpdates_CanExits(t *testing.T) {
 	e := primitives.Epoch(5)
 	exitEpoch := helpers.ActivationExitEpoch(e)
 	minWithdrawalDelay := params.BeaconConfig().MinValidatorWithdrawabilityDelay
-	base := &ethpb.BeaconState{
+	base := &zondpb.BeaconState{
 		Slot: params.BeaconConfig().SlotsPerEpoch.Mul(uint64(e)),
-		Validators: []*ethpb.Validator{
+		Validators: []*zondpb.Validator{
 			{
 				ExitEpoch:         exitEpoch,
 				WithdrawableEpoch: exitEpoch + minWithdrawalDelay},
@@ -396,7 +396,7 @@ func TestProcessRegistryUpdates_CanExits(t *testing.T) {
 				ExitEpoch:         exitEpoch,
 				WithdrawableEpoch: exitEpoch + minWithdrawalDelay},
 		},
-		FinalizedCheckpoint: &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		FinalizedCheckpoint: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 	}
 	beaconState, err := state_native.InitializeFromProtoPhase0(base)
 	require.NoError(t, err)
@@ -408,9 +408,9 @@ func TestProcessRegistryUpdates_CanExits(t *testing.T) {
 }
 
 func buildState(t testing.TB, slot primitives.Slot, validatorCount uint64) state.BeaconState {
-	validators := make([]*ethpb.Validator, validatorCount)
+	validators := make([]*zondpb.Validator, validatorCount)
 	for i := 0; i < len(validators); i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
 			EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance,
 		}
@@ -448,9 +448,9 @@ func buildState(t testing.TB, slot primitives.Slot, validatorCount uint64) state
 }
 
 func TestProcessSlashings_BadValue(t *testing.T) {
-	base := &ethpb.BeaconState{
+	base := &zondpb.BeaconState{
 		Slot:       0,
-		Validators: []*ethpb.Validator{{Slashed: true}},
+		Validators: []*zondpb.Validator{{Slashed: true}},
 		Balances:   []uint64{params.BeaconConfig().MaxEffectiveBalance},
 		Slashings:  []uint64{math.MaxUint64, 1e9},
 	}
@@ -491,7 +491,7 @@ func TestProcessHistoricalDataUpdate(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, 1, len(roots))
 
-				b := &ethpb.HistoricalBatch{
+				b := &zondpb.HistoricalBatch{
 					BlockRoots: st.BlockRoots(),
 					StateRoots: st.StateRoots(),
 				}
@@ -520,7 +520,7 @@ func TestProcessHistoricalDataUpdate(t *testing.T) {
 				require.NoError(t, err)
 				sr, err := stateutil.ArraysRoot(st.StateRoots(), fieldparams.StateRootsLength)
 				require.NoError(t, err)
-				b := &ethpb.HistoricalSummary{
+				b := &zondpb.HistoricalSummary{
 					BlockSummaryRoot: br[:],
 					StateSummaryRoot: sr[:],
 				}

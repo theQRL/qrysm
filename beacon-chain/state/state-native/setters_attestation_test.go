@@ -7,16 +7,16 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestBeaconState_RotateAttestations(t *testing.T) {
-	st, err := InitializeFromProtoPhase0(&ethpb.BeaconState{
+	st, err := InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Slot:                      1,
-		CurrentEpochAttestations:  []*ethpb.PendingAttestation{{Data: &ethpb.AttestationData{Slot: 456}}},
-		PreviousEpochAttestations: []*ethpb.PendingAttestation{{Data: &ethpb.AttestationData{Slot: 123}}},
+		CurrentEpochAttestations:  []*zondpb.PendingAttestation{{Data: &zondpb.AttestationData{Slot: 456}}},
+		PreviousEpochAttestations: []*zondpb.PendingAttestation{{Data: &zondpb.AttestationData{Slot: 123}}},
 	})
 	require.NoError(t, err)
 
@@ -42,12 +42,12 @@ func TestAppendBeyondIndicesLimit(t *testing.T) {
 	for i := 0; i < len(mockrandaoMixes); i++ {
 		mockrandaoMixes[i] = zeroHash[:]
 	}
-	st, err := InitializeFromProtoPhase0(&ethpb.BeaconState{
+	st, err := InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Slot:                      1,
-		CurrentEpochAttestations:  []*ethpb.PendingAttestation{{Data: &ethpb.AttestationData{Slot: 456}}},
-		PreviousEpochAttestations: []*ethpb.PendingAttestation{{Data: &ethpb.AttestationData{Slot: 123}}},
-		Validators:                []*ethpb.Validator{},
-		Eth1Data:                  &ethpb.Eth1Data{},
+		CurrentEpochAttestations:  []*zondpb.PendingAttestation{{Data: &zondpb.AttestationData{Slot: 456}}},
+		PreviousEpochAttestations: []*zondpb.PendingAttestation{{Data: &zondpb.AttestationData{Slot: 123}}},
+		Validators:                []*zondpb.Validator{},
+		Eth1Data:                  &zondpb.Eth1Data{},
 		BlockRoots:                mockblockRoots,
 		StateRoots:                mockstateRoots,
 		RandaoMixes:               mockrandaoMixes,
@@ -63,13 +63,13 @@ func TestAppendBeyondIndicesLimit(t *testing.T) {
 	_, err = st.HashTreeRoot(context.Background())
 	require.NoError(t, err)
 	for i := 0; i < 10; i++ {
-		assert.NoError(t, st.AppendValidator(&ethpb.Validator{}))
+		assert.NoError(t, st.AppendValidator(&zondpb.Validator{}))
 	}
 	assert.Equal(t, false, s.rebuildTrie[types.Validators])
 	assert.NotEqual(t, len(s.dirtyIndices[types.Validators]), 0)
 
 	for i := 0; i < indicesLimit; i++ {
-		assert.NoError(t, st.AppendValidator(&ethpb.Validator{}))
+		assert.NoError(t, st.AppendValidator(&zondpb.Validator{}))
 	}
 	assert.Equal(t, true, s.rebuildTrie[types.Validators])
 	assert.Equal(t, len(s.dirtyIndices[types.Validators]), 0)

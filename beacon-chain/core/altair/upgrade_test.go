@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -33,14 +33,14 @@ func TestTranslateParticipation(t *testing.T) {
 	aggBits.SetBitAt(1, true)
 	r, err := helpers.BlockRootAtSlot(s, 0)
 	require.NoError(t, err)
-	var pendingAtts []*ethpb.PendingAttestation
+	var pendingAtts []*zondpb.PendingAttestation
 	for i := 0; i < 3; i++ {
-		pendingAtts = append(pendingAtts, &ethpb.PendingAttestation{
-			Data: &ethpb.AttestationData{
+		pendingAtts = append(pendingAtts, &zondpb.PendingAttestation{
+			Data: &zondpb.AttestationData{
 				CommitteeIndex:  primitives.CommitteeIndex(i),
 				BeaconBlockRoot: r,
-				Source:          &ethpb.Checkpoint{Epoch: 0, Root: make([]byte, 32)},
-				Target:          &ethpb.Checkpoint{Epoch: 0, Root: make([]byte, 32)},
+				Source:          &zondpb.Checkpoint{Epoch: 0, Root: make([]byte, 32)},
+				Target:          &zondpb.Checkpoint{Epoch: 0, Root: make([]byte, 32)},
 			},
 			AggregationBits: aggBits,
 			InclusionDelay:  1,
@@ -110,7 +110,7 @@ func TestUpgradeToAltair(t *testing.T) {
 	require.DeepSSZEqual(t, make([]uint64, numValidators), s)
 
 	f := aState.Fork()
-	require.DeepSSZEqual(t, &ethpb.Fork{
+	require.DeepSSZEqual(t, &zondpb.Fork{
 		PreviousVersion: st.Fork().CurrentVersion,
 		CurrentVersion:  params.BeaconConfig().AltairForkVersion,
 		Epoch:           time.CurrentEpoch(st),

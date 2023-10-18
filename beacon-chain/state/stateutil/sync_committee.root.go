@@ -5,13 +5,13 @@ import (
 	"github.com/theQRL/qrysm/v4/container/trie"
 	"github.com/theQRL/qrysm/v4/crypto/hash/htr"
 	"github.com/theQRL/qrysm/v4/encoding/ssz"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // SyncCommitteeRoot computes the HashTreeRoot Merkleization of a committee root.
 // a SyncCommitteeRoot struct according to the eth2
 // Simple Serialize specification.
-func SyncCommitteeRoot(committee *ethpb.SyncCommittee) ([32]byte, error) {
+func SyncCommitteeRoot(committee *zondpb.SyncCommittee) ([32]byte, error) {
 	var fieldRoots [][32]byte
 	if committee == nil {
 		return [32]byte{}, nil

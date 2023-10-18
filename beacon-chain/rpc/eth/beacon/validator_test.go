@@ -15,9 +15,9 @@ import (
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/eth/v1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/proto/migration"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -43,7 +43,7 @@ func TestGetValidator(t *testing.T) {
 			BeaconDB:              db,
 		}
 
-		resp, err := s.GetValidator(ctx, &ethpb.StateValidatorRequest{
+		resp, err := s.GetValidator(ctx, &zondpb.StateValidatorRequest{
 			StateId:     []byte("head"),
 			ValidatorId: []byte("15"),
 		})
@@ -64,7 +64,7 @@ func TestGetValidator(t *testing.T) {
 		}
 
 		pubKey := st.PubkeyAtIndex(primitives.ValidatorIndex(20))
-		resp, err := s.GetValidator(ctx, &ethpb.StateValidatorRequest{
+		resp, err := s.GetValidator(ctx, &zondpb.StateValidatorRequest{
 			StateId:     []byte("head"),
 			ValidatorId: pubKey[:],
 		})
@@ -81,7 +81,7 @@ func TestGetValidator(t *testing.T) {
 			HeadFetcher: &chainMock.ChainService{},
 			BeaconDB:    db,
 		}
-		_, err := s.GetValidator(ctx, &ethpb.StateValidatorRequest{
+		_, err := s.GetValidator(ctx, &zondpb.StateValidatorRequest{
 			StateId: []byte("head"),
 		})
 		require.ErrorContains(t, "Validator ID is required", err)
@@ -106,7 +106,7 @@ func TestGetValidator(t *testing.T) {
 			FinalizationFetcher:   chainService,
 			BeaconDB:              db,
 		}
-		resp, err := s.GetValidator(ctx, &ethpb.StateValidatorRequest{
+		resp, err := s.GetValidator(ctx, &zondpb.StateValidatorRequest{
 			StateId:     []byte("head"),
 			ValidatorId: []byte("15"),
 		})
@@ -139,7 +139,7 @@ func TestGetValidator(t *testing.T) {
 			FinalizationFetcher:   chainService,
 			BeaconDB:              db,
 		}
-		resp, err := s.GetValidator(ctx, &ethpb.StateValidatorRequest{
+		resp, err := s.GetValidator(ctx, &zondpb.StateValidatorRequest{
 			StateId:     []byte("head"),
 			ValidatorId: []byte("15"),
 		})
@@ -166,13 +166,13 @@ func TestListValidators(t *testing.T) {
 			BeaconDB:              db,
 		}
 
-		resp, err := s.ListValidators(ctx, &ethpb.StateValidatorsRequest{
+		resp, err := s.ListValidators(ctx, &zondpb.StateValidatorsRequest{
 			StateId: []byte("head"),
 		})
 		require.NoError(t, err)
 		assert.Equal(t, len(resp.Data), 8192)
 		for _, val := range resp.Data {
-			assert.Equal(t, ethpb.ValidatorStatus_ACTIVE_ONGOING, val.Status)
+			assert.Equal(t, zondpb.ValidatorStatus_ACTIVE_ONGOING, val.Status)
 		}
 	})
 
@@ -190,14 +190,14 @@ func TestListValidators(t *testing.T) {
 
 		ids := [][]byte{[]byte("15"), []byte("26"), []byte("400")}
 		idNums := []primitives.ValidatorIndex{15, 26, 400}
-		resp, err := s.ListValidators(ctx, &ethpb.StateValidatorsRequest{
+		resp, err := s.ListValidators(ctx, &zondpb.StateValidatorsRequest{
 			StateId: []byte("head"),
 			Id:      ids,
 		})
 		require.NoError(t, err)
 		for i, val := range resp.Data {
 			assert.Equal(t, idNums[i], val.Index)
-			assert.Equal(t, ethpb.ValidatorStatus_ACTIVE_ONGOING, val.Status)
+			assert.Equal(t, zondpb.ValidatorStatus_ACTIVE_ONGOING, val.Status)
 		}
 	})
 
@@ -218,7 +218,7 @@ func TestListValidators(t *testing.T) {
 		pubkey3 := st.PubkeyAtIndex(primitives.ValidatorIndex(90))
 		pubkey4 := st.PubkeyAtIndex(primitives.ValidatorIndex(100))
 		pubKeys := [][]byte{pubkey1[:], pubkey2[:], pubkey3[:], pubkey4[:]}
-		resp, err := s.ListValidators(ctx, &ethpb.StateValidatorsRequest{
+		resp, err := s.ListValidators(ctx, &zondpb.StateValidatorsRequest{
 			StateId: []byte("head"),
 			Id:      pubKeys,
 		})
@@ -226,7 +226,7 @@ func TestListValidators(t *testing.T) {
 		for i, val := range resp.Data {
 			assert.Equal(t, idNums[i], val.Index)
 			assert.Equal(t, true, bytes.Equal(pubKeys[i], val.Validator.Pubkey))
-			assert.Equal(t, ethpb.ValidatorStatus_ACTIVE_ONGOING, val.Status)
+			assert.Equal(t, zondpb.ValidatorStatus_ACTIVE_ONGOING, val.Status)
 		}
 	})
 
@@ -249,7 +249,7 @@ func TestListValidators(t *testing.T) {
 		pubkey4 := st.PubkeyAtIndex(primitives.ValidatorIndex(129))
 		pubkeys := [][]byte{pubkey1[:], pubkey2[:], pubkey3[:], pubkey4[:]}
 		ids := [][]byte{pubkey1[:], []byte("90"), pubkey3[:], []byte("129")}
-		resp, err := s.ListValidators(ctx, &ethpb.StateValidatorsRequest{
+		resp, err := s.ListValidators(ctx, &zondpb.StateValidatorsRequest{
 			StateId: []byte("head"),
 			Id:      ids,
 		})
@@ -257,7 +257,7 @@ func TestListValidators(t *testing.T) {
 		for i, val := range resp.Data {
 			assert.Equal(t, idNums[i], val.Index)
 			assert.Equal(t, true, bytes.Equal(pubkeys[i], val.Validator.Pubkey))
-			assert.Equal(t, ethpb.ValidatorStatus_ACTIVE_ONGOING, val.Status)
+			assert.Equal(t, zondpb.ValidatorStatus_ACTIVE_ONGOING, val.Status)
 		}
 	})
 
@@ -275,7 +275,7 @@ func TestListValidators(t *testing.T) {
 
 		existingKey := st.PubkeyAtIndex(primitives.ValidatorIndex(1))
 		pubkeys := [][]byte{existingKey[:], []byte(strings.Repeat("f", 48))}
-		resp, err := s.ListValidators(ctx, &ethpb.StateValidatorsRequest{
+		resp, err := s.ListValidators(ctx, &zondpb.StateValidatorsRequest{
 			StateId: []byte("head"),
 			Id:      pubkeys,
 		})
@@ -297,7 +297,7 @@ func TestListValidators(t *testing.T) {
 		}
 
 		ids := [][]byte{[]byte("1"), []byte("99999")}
-		resp, err := s.ListValidators(ctx, &ethpb.StateValidatorsRequest{
+		resp, err := s.ListValidators(ctx, &zondpb.StateValidatorsRequest{
 			StateId: []byte("head"),
 			Id:      ids,
 		})
@@ -325,7 +325,7 @@ func TestListValidators(t *testing.T) {
 			FinalizationFetcher:   chainService,
 			BeaconDB:              db,
 		}
-		resp, err := s.ListValidators(ctx, &ethpb.StateValidatorsRequest{
+		resp, err := s.ListValidators(ctx, &zondpb.StateValidatorsRequest{
 			StateId: []byte("head"),
 		})
 		require.NoError(t, err)
@@ -357,7 +357,7 @@ func TestListValidators(t *testing.T) {
 			FinalizationFetcher:   chainService,
 			BeaconDB:              db,
 		}
-		resp, err := s.ListValidators(ctx, &ethpb.StateValidatorsRequest{
+		resp, err := s.ListValidators(ctx, &zondpb.StateValidatorsRequest{
 			StateId: []byte("head"),
 		})
 		require.NoError(t, err)
@@ -373,7 +373,7 @@ func TestListValidators_Status(t *testing.T) {
 	st, _ = util.DeterministicGenesisState(t, 8192)
 
 	farFutureEpoch := params.BeaconConfig().FarFutureEpoch
-	validators := []*eth.Validator{
+	validators := []*zond.Validator{
 		// Pending initialized.
 		{
 			ActivationEpoch:            farFutureEpoch,
@@ -449,9 +449,9 @@ func TestListValidators_Status(t *testing.T) {
 			BeaconDB:              db,
 		}
 
-		resp, err := s.ListValidators(ctx, &ethpb.StateValidatorsRequest{
+		resp, err := s.ListValidators(ctx, &zondpb.StateValidatorsRequest{
 			StateId: []byte("head"),
-			Status:  []ethpb.ValidatorStatus{ethpb.ValidatorStatus_ACTIVE},
+			Status:  []zondpb.ValidatorStatus{zondpb.ValidatorStatus_ACTIVE},
 		})
 		require.NoError(t, err)
 		assert.Equal(t, len(resp.Data), 8192+2 /* 2 active */)
@@ -463,14 +463,14 @@ func TestListValidators_Status(t *testing.T) {
 			require.Equal(
 				t,
 				true,
-				status == ethpb.ValidatorStatus_ACTIVE,
+				status == zondpb.ValidatorStatus_ACTIVE,
 			)
 			require.Equal(
 				t,
 				true,
-				datum.Status == ethpb.ValidatorStatus_ACTIVE_ONGOING ||
-					datum.Status == ethpb.ValidatorStatus_ACTIVE_EXITING ||
-					datum.Status == ethpb.ValidatorStatus_ACTIVE_SLASHED,
+				datum.Status == zondpb.ValidatorStatus_ACTIVE_ONGOING ||
+					datum.Status == zondpb.ValidatorStatus_ACTIVE_EXITING ||
+					datum.Status == zondpb.ValidatorStatus_ACTIVE_SLASHED,
 			)
 		}
 	})
@@ -487,9 +487,9 @@ func TestListValidators_Status(t *testing.T) {
 			BeaconDB:              db,
 		}
 
-		resp, err := s.ListValidators(ctx, &ethpb.StateValidatorsRequest{
+		resp, err := s.ListValidators(ctx, &zondpb.StateValidatorsRequest{
 			StateId: []byte("head"),
-			Status:  []ethpb.ValidatorStatus{ethpb.ValidatorStatus_ACTIVE_ONGOING},
+			Status:  []zondpb.ValidatorStatus{zondpb.ValidatorStatus_ACTIVE_ONGOING},
 		})
 		require.NoError(t, err)
 		assert.Equal(t, len(resp.Data), 8192+1 /* 1 active_ongoing */)
@@ -501,12 +501,12 @@ func TestListValidators_Status(t *testing.T) {
 			require.Equal(
 				t,
 				true,
-				status == ethpb.ValidatorStatus_ACTIVE_ONGOING,
+				status == zondpb.ValidatorStatus_ACTIVE_ONGOING,
 			)
 			require.Equal(
 				t,
 				true,
-				datum.Status == ethpb.ValidatorStatus_ACTIVE_ONGOING,
+				datum.Status == zondpb.ValidatorStatus_ACTIVE_ONGOING,
 			)
 		}
 	})
@@ -524,9 +524,9 @@ func TestListValidators_Status(t *testing.T) {
 			BeaconDB:              db,
 		}
 
-		resp, err := s.ListValidators(ctx, &ethpb.StateValidatorsRequest{
+		resp, err := s.ListValidators(ctx, &zondpb.StateValidatorsRequest{
 			StateId: []byte("head"),
-			Status:  []ethpb.ValidatorStatus{ethpb.ValidatorStatus_EXITED},
+			Status:  []zondpb.ValidatorStatus{zondpb.ValidatorStatus_EXITED},
 		})
 		require.NoError(t, err)
 		assert.Equal(t, 4 /* 4 exited */, len(resp.Data))
@@ -538,12 +538,12 @@ func TestListValidators_Status(t *testing.T) {
 			require.Equal(
 				t,
 				true,
-				status == ethpb.ValidatorStatus_EXITED,
+				status == zondpb.ValidatorStatus_EXITED,
 			)
 			require.Equal(
 				t,
 				true,
-				datum.Status == ethpb.ValidatorStatus_EXITED_UNSLASHED || datum.Status == ethpb.ValidatorStatus_EXITED_SLASHED,
+				datum.Status == zondpb.ValidatorStatus_EXITED_UNSLASHED || datum.Status == zondpb.ValidatorStatus_EXITED_SLASHED,
 			)
 		}
 	})
@@ -560,9 +560,9 @@ func TestListValidators_Status(t *testing.T) {
 			BeaconDB:              db,
 		}
 
-		resp, err := s.ListValidators(ctx, &ethpb.StateValidatorsRequest{
+		resp, err := s.ListValidators(ctx, &zondpb.StateValidatorsRequest{
 			StateId: []byte("head"),
-			Status:  []ethpb.ValidatorStatus{ethpb.ValidatorStatus_PENDING_INITIALIZED, ethpb.ValidatorStatus_EXITED_UNSLASHED},
+			Status:  []zondpb.ValidatorStatus{zondpb.ValidatorStatus_PENDING_INITIALIZED, zondpb.ValidatorStatus_EXITED_UNSLASHED},
 		})
 		require.NoError(t, err)
 		assert.Equal(t, 4 /* 4 exited */, len(resp.Data))
@@ -574,12 +574,12 @@ func TestListValidators_Status(t *testing.T) {
 			require.Equal(
 				t,
 				true,
-				status == ethpb.ValidatorStatus_PENDING_INITIALIZED || status == ethpb.ValidatorStatus_EXITED_UNSLASHED,
+				status == zondpb.ValidatorStatus_PENDING_INITIALIZED || status == zondpb.ValidatorStatus_EXITED_UNSLASHED,
 			)
 			require.Equal(
 				t,
 				true,
-				datum.Status == ethpb.ValidatorStatus_PENDING_INITIALIZED || datum.Status == ethpb.ValidatorStatus_EXITED_UNSLASHED,
+				datum.Status == zondpb.ValidatorStatus_PENDING_INITIALIZED || datum.Status == zondpb.ValidatorStatus_EXITED_UNSLASHED,
 			)
 		}
 	})
@@ -596,9 +596,9 @@ func TestListValidators_Status(t *testing.T) {
 			BeaconDB:              db,
 		}
 
-		resp, err := s.ListValidators(ctx, &ethpb.StateValidatorsRequest{
+		resp, err := s.ListValidators(ctx, &zondpb.StateValidatorsRequest{
 			StateId: []byte("head"),
-			Status:  []ethpb.ValidatorStatus{ethpb.ValidatorStatus_PENDING, ethpb.ValidatorStatus_EXITED_SLASHED},
+			Status:  []zondpb.ValidatorStatus{zondpb.ValidatorStatus_PENDING, zondpb.ValidatorStatus_EXITED_SLASHED},
 		})
 		require.NoError(t, err)
 		assert.Equal(t, 2 /* 1 pending, 1 exited */, len(resp.Data))
@@ -612,12 +612,12 @@ func TestListValidators_Status(t *testing.T) {
 			require.Equal(
 				t,
 				true,
-				status == ethpb.ValidatorStatus_PENDING || subStatus == ethpb.ValidatorStatus_EXITED_SLASHED,
+				status == zondpb.ValidatorStatus_PENDING || subStatus == zondpb.ValidatorStatus_EXITED_SLASHED,
 			)
 			require.Equal(
 				t,
 				true,
-				datum.Status == ethpb.ValidatorStatus_PENDING_INITIALIZED || datum.Status == ethpb.ValidatorStatus_EXITED_SLASHED,
+				datum.Status == zondpb.ValidatorStatus_PENDING_INITIALIZED || datum.Status == zondpb.ValidatorStatus_EXITED_SLASHED,
 			)
 		}
 	})
@@ -649,7 +649,7 @@ func TestListValidatorBalances(t *testing.T) {
 
 		ids := [][]byte{[]byte("15"), []byte("26"), []byte("400")}
 		idNums := []primitives.ValidatorIndex{15, 26, 400}
-		resp, err := s.ListValidatorBalances(ctx, &ethpb.ValidatorBalancesRequest{
+		resp, err := s.ListValidatorBalances(ctx, &zondpb.ValidatorBalancesRequest{
 			StateId: []byte("head"),
 			Id:      ids,
 		})
@@ -677,7 +677,7 @@ func TestListValidatorBalances(t *testing.T) {
 		pubkey3 := st.PubkeyAtIndex(primitives.ValidatorIndex(90))
 		pubkey4 := st.PubkeyAtIndex(primitives.ValidatorIndex(100))
 		pubKeys := [][]byte{pubkey1[:], pubkey2[:], pubkey3[:], pubkey4[:]}
-		resp, err := s.ListValidatorBalances(ctx, &ethpb.ValidatorBalancesRequest{
+		resp, err := s.ListValidatorBalances(ctx, &zondpb.ValidatorBalancesRequest{
 			StateId: []byte("head"),
 			Id:      pubKeys,
 		})
@@ -704,7 +704,7 @@ func TestListValidatorBalances(t *testing.T) {
 		pubkey1 := st.PubkeyAtIndex(primitives.ValidatorIndex(20))
 		pubkey3 := st.PubkeyAtIndex(primitives.ValidatorIndex(170))
 		ids := [][]byte{pubkey1[:], []byte("90"), pubkey3[:], []byte("129")}
-		resp, err := s.ListValidatorBalances(ctx, &ethpb.ValidatorBalancesRequest{
+		resp, err := s.ListValidatorBalances(ctx, &zondpb.ValidatorBalancesRequest{
 			StateId: []byte("head"),
 			Id:      ids,
 		})
@@ -736,7 +736,7 @@ func TestListValidatorBalances(t *testing.T) {
 		}
 
 		ids := [][]byte{[]byte("15"), []byte("26"), []byte("400")}
-		resp, err := s.ListValidatorBalances(ctx, &ethpb.ValidatorBalancesRequest{
+		resp, err := s.ListValidatorBalances(ctx, &zondpb.ValidatorBalancesRequest{
 			StateId: []byte("head"),
 			Id:      ids,
 		})
@@ -771,7 +771,7 @@ func TestListValidatorBalances(t *testing.T) {
 		}
 
 		ids := [][]byte{[]byte("15"), []byte("26"), []byte("400")}
-		resp, err := s.ListValidatorBalances(ctx, &ethpb.ValidatorBalancesRequest{
+		resp, err := s.ListValidatorBalances(ctx, &zondpb.ValidatorBalancesRequest{
 			StateId: []byte("head"),
 			Id:      ids,
 		})
@@ -800,7 +800,7 @@ func TestListCommittees(t *testing.T) {
 			BeaconDB:              db,
 		}
 
-		resp, err := s.ListCommittees(ctx, &ethpb.StateCommitteesRequest{
+		resp, err := s.ListCommittees(ctx, &zondpb.StateCommitteesRequest{
 			StateId: []byte("head"),
 		})
 		require.NoError(t, err)
@@ -823,7 +823,7 @@ func TestListCommittees(t *testing.T) {
 			BeaconDB:              db,
 		}
 		epoch := primitives.Epoch(10)
-		resp, err := s.ListCommittees(ctx, &ethpb.StateCommitteesRequest{
+		resp, err := s.ListCommittees(ctx, &zondpb.StateCommitteesRequest{
 			StateId: []byte("head"),
 			Epoch:   &epoch,
 		})
@@ -846,7 +846,7 @@ func TestListCommittees(t *testing.T) {
 		}
 
 		slot := primitives.Slot(4)
-		resp, err := s.ListCommittees(ctx, &ethpb.StateCommitteesRequest{
+		resp, err := s.ListCommittees(ctx, &zondpb.StateCommitteesRequest{
 			StateId: []byte("head"),
 			Slot:    &slot,
 		})
@@ -874,7 +874,7 @@ func TestListCommittees(t *testing.T) {
 		}
 
 		index := primitives.CommitteeIndex(1)
-		resp, err := s.ListCommittees(ctx, &ethpb.StateCommitteesRequest{
+		resp, err := s.ListCommittees(ctx, &zondpb.StateCommitteesRequest{
 			StateId: []byte("head"),
 			Index:   &index,
 		})
@@ -903,7 +903,7 @@ func TestListCommittees(t *testing.T) {
 
 		index := primitives.CommitteeIndex(1)
 		slot := primitives.Slot(2)
-		resp, err := s.ListCommittees(ctx, &ethpb.StateCommitteesRequest{
+		resp, err := s.ListCommittees(ctx, &zondpb.StateCommitteesRequest{
 			StateId: []byte("head"),
 			Slot:    &slot,
 			Index:   &index,
@@ -937,7 +937,7 @@ func TestListCommittees(t *testing.T) {
 			BeaconDB:              db,
 		}
 
-		resp, err := s.ListCommittees(ctx, &ethpb.StateCommitteesRequest{
+		resp, err := s.ListCommittees(ctx, &zondpb.StateCommitteesRequest{
 			StateId: []byte("head"),
 		})
 		require.NoError(t, err)
@@ -970,7 +970,7 @@ func TestListCommittees(t *testing.T) {
 			BeaconDB:              db,
 		}
 
-		resp, err := s.ListCommittees(ctx, &ethpb.StateCommitteesRequest{
+		resp, err := s.ListCommittees(ctx, &zondpb.StateCommitteesRequest{
 			StateId: []byte("head"),
 		})
 		require.NoError(t, err)

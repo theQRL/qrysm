@@ -10,7 +10,7 @@ import (
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -47,19 +47,19 @@ func TestAttestation_ComputeSubnetForAttestation(t *testing.T) {
 	// Create 10 committees
 	committeeCount := uint64(10)
 	validatorCount := committeeCount * params.BeaconConfig().TargetCommitteeSize
-	validators := make([]*ethpb.Validator, validatorCount)
+	validators := make([]*zondpb.Validator, validatorCount)
 
 	for i := 0; i < len(validators); i++ {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			PublicKey:             k,
 			WithdrawalCredentials: make([]byte, 32),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 		}
 	}
 
-	state, err := state_native.InitializeFromProtoPhase0(&ethpb.BeaconState{
+	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
 		Validators:  validators,
 		Slot:        200,
 		BlockRoots:  make([][]byte, params.BeaconConfig().SlotsPerHistoricalRoot),
@@ -67,9 +67,9 @@ func TestAttestation_ComputeSubnetForAttestation(t *testing.T) {
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 	})
 	require.NoError(t, err)
-	att := &ethpb.Attestation{
+	att := &zondpb.Attestation{
 		AggregationBits: []byte{'A'},
-		Data: &ethpb.AttestationData{
+		Data: &zondpb.AttestationData{
 			Slot:            34,
 			CommitteeIndex:  4,
 			BeaconBlockRoot: []byte{'C'},
@@ -181,16 +181,16 @@ func TestVerifyCheckpointEpoch_Ok(t *testing.T) {
 	// Genesis was 6 epochs ago exactly.
 	offset := params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot * 6)
 	genesis := time.Now().Add(-1 * time.Second * time.Duration(offset))
-	assert.Equal(t, true, helpers.VerifyCheckpointEpoch(&ethpb.Checkpoint{Epoch: 6}, genesis))
-	assert.Equal(t, true, helpers.VerifyCheckpointEpoch(&ethpb.Checkpoint{Epoch: 5}, genesis))
-	assert.Equal(t, false, helpers.VerifyCheckpointEpoch(&ethpb.Checkpoint{Epoch: 4}, genesis))
-	assert.Equal(t, false, helpers.VerifyCheckpointEpoch(&ethpb.Checkpoint{Epoch: 2}, genesis))
+	assert.Equal(t, true, helpers.VerifyCheckpointEpoch(&zondpb.Checkpoint{Epoch: 6}, genesis))
+	assert.Equal(t, true, helpers.VerifyCheckpointEpoch(&zondpb.Checkpoint{Epoch: 5}, genesis))
+	assert.Equal(t, false, helpers.VerifyCheckpointEpoch(&zondpb.Checkpoint{Epoch: 4}, genesis))
+	assert.Equal(t, false, helpers.VerifyCheckpointEpoch(&zondpb.Checkpoint{Epoch: 2}, genesis))
 }
 
 func TestValidateNilAttestation(t *testing.T) {
 	tests := []struct {
 		name        string
-		attestation *ethpb.Attestation
+		attestation *zondpb.Attestation
 		errString   string
 	}{
 		{
@@ -200,45 +200,45 @@ func TestValidateNilAttestation(t *testing.T) {
 		},
 		{
 			name:        "nil attestation data",
-			attestation: &ethpb.Attestation{},
+			attestation: &zondpb.Attestation{},
 			errString:   "attestation's data can't be nil",
 		},
 		{
 			name: "nil attestation source",
-			attestation: &ethpb.Attestation{
-				Data: &ethpb.AttestationData{
+			attestation: &zondpb.Attestation{
+				Data: &zondpb.AttestationData{
 					Source: nil,
-					Target: &ethpb.Checkpoint{},
+					Target: &zondpb.Checkpoint{},
 				},
 			},
 			errString: "attestation's source can't be nil",
 		},
 		{
 			name: "nil attestation target",
-			attestation: &ethpb.Attestation{
-				Data: &ethpb.AttestationData{
+			attestation: &zondpb.Attestation{
+				Data: &zondpb.AttestationData{
 					Target: nil,
-					Source: &ethpb.Checkpoint{},
+					Source: &zondpb.Checkpoint{},
 				},
 			},
 			errString: "attestation's target can't be nil",
 		},
 		{
 			name: "nil attestation bitfield",
-			attestation: &ethpb.Attestation{
-				Data: &ethpb.AttestationData{
-					Target: &ethpb.Checkpoint{},
-					Source: &ethpb.Checkpoint{},
+			attestation: &zondpb.Attestation{
+				Data: &zondpb.AttestationData{
+					Target: &zondpb.Checkpoint{},
+					Source: &zondpb.Checkpoint{},
 				},
 			},
 			errString: "attestation's bitfield can't be nil",
 		},
 		{
 			name: "good attestation",
-			attestation: &ethpb.Attestation{
-				Data: &ethpb.AttestationData{
-					Target: &ethpb.Checkpoint{},
-					Source: &ethpb.Checkpoint{},
+			attestation: &zondpb.Attestation{
+				Data: &zondpb.AttestationData{
+					Target: &zondpb.Checkpoint{},
+					Source: &zondpb.Checkpoint{},
 				},
 				AggregationBits: []byte{},
 			},
@@ -259,15 +259,15 @@ func TestValidateNilAttestation(t *testing.T) {
 func TestValidateSlotTargetEpoch(t *testing.T) {
 	tests := []struct {
 		name        string
-		attestation *ethpb.Attestation
+		attestation *zondpb.Attestation
 		errString   string
 	}{
 		{
 			name: "incorrect slot",
-			attestation: &ethpb.Attestation{
-				Data: &ethpb.AttestationData{
-					Target: &ethpb.Checkpoint{Epoch: 1},
-					Source: &ethpb.Checkpoint{},
+			attestation: &zondpb.Attestation{
+				Data: &zondpb.AttestationData{
+					Target: &zondpb.Checkpoint{Epoch: 1},
+					Source: &zondpb.Checkpoint{},
 				},
 				AggregationBits: []byte{},
 			},
@@ -275,11 +275,11 @@ func TestValidateSlotTargetEpoch(t *testing.T) {
 		},
 		{
 			name: "good attestation",
-			attestation: &ethpb.Attestation{
-				Data: &ethpb.AttestationData{
+			attestation: &zondpb.Attestation{
+				Data: &zondpb.AttestationData{
 					Slot:   2 * params.BeaconConfig().SlotsPerEpoch,
-					Target: &ethpb.Checkpoint{Epoch: 2},
-					Source: &ethpb.Checkpoint{},
+					Target: &zondpb.Checkpoint{Epoch: 2},
+					Source: &zondpb.Checkpoint{},
 				},
 				AggregationBits: []byte{},
 			},

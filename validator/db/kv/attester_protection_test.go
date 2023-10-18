@@ -11,7 +11,7 @@ import (
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	bolt "go.etcd.io/bbolt"
@@ -49,9 +49,9 @@ func TestStore_CheckSlashableAttestation_DoubleVote(t *testing.T) {
 	validatorDB := setupDB(t, pubKeys)
 	tests := []struct {
 		name                string
-		existingAttestation *ethpb.IndexedAttestation
+		existingAttestation *zondpb.IndexedAttestation
 		existingSigningRoot [32]byte
-		incomingAttestation *ethpb.IndexedAttestation
+		incomingAttestation *zondpb.IndexedAttestation
 		incomingSigningRoot [32]byte
 		want                bool
 	}{
@@ -172,7 +172,7 @@ func TestStore_CheckSlashableAttestation_SurroundVote_54kEpochs(t *testing.T) {
 	tests := []struct {
 		name        string
 		signingRoot [32]byte
-		attestation *ethpb.IndexedAttestation
+		attestation *zondpb.IndexedAttestation
 		want        SlashingKind
 	}{
 		{
@@ -334,7 +334,7 @@ func TestStore_SaveAttestationsForPubKey(t *testing.T) {
 	numValidators := 1
 	pubKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, numValidators)
 	validatorDB := setupDB(t, pubKeys)
-	atts := make([]*ethpb.IndexedAttestation, 0)
+	atts := make([]*zondpb.IndexedAttestation, 0)
 	signingRoots := make([][32]byte, 0)
 	for i := primitives.Epoch(1); i < 10; i++ {
 		atts = append(atts, createAttestation(i-1, i))
@@ -535,7 +535,7 @@ func benchCheckSurroundVote(
 	require.NoError(b, err)
 
 	// Will surround many attestations.
-	var surroundingVote *ethpb.IndexedAttestation
+	var surroundingVote *zondpb.IndexedAttestation
 	if shouldSurround {
 		surroundingVote = createAttestation(numEpochs/2, numEpochs)
 	} else {
@@ -555,13 +555,13 @@ func benchCheckSurroundVote(
 	}
 }
 
-func createAttestation(source, target primitives.Epoch) *ethpb.IndexedAttestation {
-	return &ethpb.IndexedAttestation{
-		Data: &ethpb.AttestationData{
-			Source: &ethpb.Checkpoint{
+func createAttestation(source, target primitives.Epoch) *zondpb.IndexedAttestation {
+	return &zondpb.IndexedAttestation{
+		Data: &zondpb.AttestationData{
+			Source: &zondpb.Checkpoint{
 				Epoch: source,
 			},
-			Target: &ethpb.Checkpoint{
+			Target: &zondpb.Checkpoint{
 				Epoch: target,
 			},
 		},

@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	prysmTime "github.com/theQRL/qrysm/v4/time"
@@ -20,14 +20,14 @@ import (
 
 func TestSyncCommitteeIndices_CanGet(t *testing.T) {
 	getState := func(t *testing.T, count uint64) state.BeaconState {
-		validators := make([]*ethpb.Validator, count)
+		validators := make([]*zondpb.Validator, count)
 		for i := 0; i < len(validators); i++ {
-			validators[i] = &ethpb.Validator{
+			validators[i] = &zondpb.Validator{
 				ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
 				EffectiveBalance: params.BeaconConfig().MinDepositAmount,
 			}
 		}
-		st, err := state_native.InitializeFromProtoAltair(&ethpb.BeaconStateAltair{
+		st, err := state_native.InitializeFromProtoAltair(&zondpb.BeaconStateAltair{
 			Validators:  validators,
 			RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 		})
@@ -87,14 +87,14 @@ func TestSyncCommitteeIndices_CanGet(t *testing.T) {
 func TestSyncCommitteeIndices_DifferentPeriods(t *testing.T) {
 	helpers.ClearCache()
 	getState := func(t *testing.T, count uint64) state.BeaconState {
-		validators := make([]*ethpb.Validator, count)
+		validators := make([]*zondpb.Validator, count)
 		for i := 0; i < len(validators); i++ {
-			validators[i] = &ethpb.Validator{
+			validators[i] = &zondpb.Validator{
 				ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
 				EffectiveBalance: params.BeaconConfig().MinDepositAmount,
 			}
 		}
-		st, err := state_native.InitializeFromProtoAltair(&ethpb.BeaconStateAltair{
+		st, err := state_native.InitializeFromProtoAltair(&zondpb.BeaconStateAltair{
 			Validators:  validators,
 			RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 		})
@@ -121,17 +121,17 @@ func TestSyncCommitteeIndices_DifferentPeriods(t *testing.T) {
 
 func TestSyncCommittee_CanGet(t *testing.T) {
 	getState := func(t *testing.T, count uint64) state.BeaconState {
-		validators := make([]*ethpb.Validator, count)
+		validators := make([]*zondpb.Validator, count)
 		for i := 0; i < len(validators); i++ {
 			blsKey, err := bls.RandKey()
 			require.NoError(t, err)
-			validators[i] = &ethpb.Validator{
+			validators[i] = &zondpb.Validator{
 				ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
 				EffectiveBalance: params.BeaconConfig().MinDepositAmount,
 				PublicKey:        blsKey.PublicKey().Marshal(),
 			}
 		}
-		st, err := state_native.InitializeFromProtoAltair(&ethpb.BeaconStateAltair{
+		st, err := state_native.InitializeFromProtoAltair(&zondpb.BeaconStateAltair{
 			Validators:  validators,
 			RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 		})
@@ -195,7 +195,7 @@ func TestSyncCommittee_CanGet(t *testing.T) {
 func TestValidateNilSyncContribution(t *testing.T) {
 	tests := []struct {
 		name    string
-		s       *ethpb.SignedContributionAndProof
+		s       *zondpb.SignedContributionAndProof
 		wantErr bool
 	}{
 		{
@@ -205,27 +205,27 @@ func TestValidateNilSyncContribution(t *testing.T) {
 		},
 		{
 			name:    "nil message",
-			s:       &ethpb.SignedContributionAndProof{},
+			s:       &zondpb.SignedContributionAndProof{},
 			wantErr: true,
 		},
 		{
 			name:    "nil contribution",
-			s:       &ethpb.SignedContributionAndProof{Message: &ethpb.ContributionAndProof{}},
+			s:       &zondpb.SignedContributionAndProof{Message: &zondpb.ContributionAndProof{}},
 			wantErr: true,
 		},
 		{
 			name: "nil bitfield",
-			s: &ethpb.SignedContributionAndProof{
-				Message: &ethpb.ContributionAndProof{
-					Contribution: &ethpb.SyncCommitteeContribution{},
+			s: &zondpb.SignedContributionAndProof{
+				Message: &zondpb.ContributionAndProof{
+					Contribution: &zondpb.SyncCommitteeContribution{},
 				}},
 			wantErr: true,
 		},
 		{
 			name: "non nil sync contribution",
-			s: &ethpb.SignedContributionAndProof{
-				Message: &ethpb.ContributionAndProof{
-					Contribution: &ethpb.SyncCommitteeContribution{
+			s: &zondpb.SignedContributionAndProof{
+				Message: &zondpb.ContributionAndProof{
+					Contribution: &zondpb.SyncCommitteeContribution{
 						AggregationBits: []byte{},
 					},
 				}},
@@ -368,17 +368,17 @@ func Test_ValidateSyncMessageTime(t *testing.T) {
 }
 
 func getState(t *testing.T, count uint64) state.BeaconState {
-	validators := make([]*ethpb.Validator, count)
+	validators := make([]*zondpb.Validator, count)
 	for i := 0; i < len(validators); i++ {
 		blsKey, err := bls.RandKey()
 		require.NoError(t, err)
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
 			EffectiveBalance: params.BeaconConfig().MinDepositAmount,
 			PublicKey:        blsKey.PublicKey().Marshal(),
 		}
 	}
-	st, err := state_native.InitializeFromProtoAltair(&ethpb.BeaconStateAltair{
+	st, err := state_native.InitializeFromProtoAltair(&zondpb.BeaconStateAltair{
 		Validators:  validators,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 	})

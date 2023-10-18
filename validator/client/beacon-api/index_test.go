@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	rpcmiddleware "github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -68,7 +68,7 @@ func TestIndex_Nominal(t *testing.T) {
 
 	validatorIndex, err := validatorClient.ValidatorIndex(
 		ctx,
-		&ethpb.ValidatorIndexRequest{
+		&zondpb.ValidatorIndexRequest{
 			PublicKey: pubKey,
 		},
 	)
@@ -109,7 +109,7 @@ func TestIndex_UnexistingValidator(t *testing.T) {
 
 	_, err := validatorClient.ValidatorIndex(
 		ctx,
-		&ethpb.ValidatorIndexRequest{
+		&zondpb.ValidatorIndexRequest{
 			PublicKey: pubKey,
 		},
 	)
@@ -158,7 +158,7 @@ func TestIndex_BadIndexError(t *testing.T) {
 
 	_, err := validatorClient.ValidatorIndex(
 		ctx,
-		&ethpb.ValidatorIndexRequest{
+		&zondpb.ValidatorIndexRequest{
 			PublicKey: pubKey,
 		},
 	)
@@ -193,7 +193,7 @@ func TestIndex_JsonResponseError(t *testing.T) {
 
 	_, err := validatorClient.ValidatorIndex(
 		ctx,
-		&ethpb.ValidatorIndexRequest{
+		&zondpb.ValidatorIndexRequest{
 			PublicKey: pubKey,
 		},
 	)

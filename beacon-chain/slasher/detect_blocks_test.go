@@ -17,7 +17,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
@@ -33,13 +33,13 @@ func Test_processQueuedBlocks_DetectsDoubleProposals(t *testing.T) {
 
 	// Initialize validators in the state.
 	numVals := params.BeaconConfig().MinGenesisActiveValidatorCount
-	validators := make([]*ethpb.Validator, numVals)
+	validators := make([]*zondpb.Validator, numVals)
 	privKeys := make([]bls.SecretKey, numVals)
 	for i := range validators {
 		privKey, err := bls.RandKey()
 		require.NoError(t, err)
 		privKeys[i] = privKey
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			PublicKey:             privKey.PublicKey().Marshal(),
 			WithdrawalCredentials: make([]byte, 32),
 		}
@@ -93,7 +93,7 @@ func Test_processQueuedBlocks_DetectsDoubleProposals(t *testing.T) {
 		proposalWrapper.SignedBeaconBlockHeader.Header.ParentRoot = parentRoot[:]
 		headerHtr, err := proposalWrapper.SignedBeaconBlockHeader.Header.HashTreeRoot()
 		require.NoError(t, err)
-		container := &ethpb.SigningData{
+		container := &zondpb.SigningData{
 			ObjectRoot: headerHtr[:],
 			Domain:     domain,
 		}
@@ -153,7 +153,7 @@ func Test_processQueuedBlocks_NotSlashable(t *testing.T) {
 }
 
 func createProposalWrapper(t *testing.T, slot primitives.Slot, proposerIndex primitives.ValidatorIndex, signingRoot []byte) *slashertypes.SignedBlockHeaderWrapper {
-	header := &ethpb.BeaconBlockHeader{
+	header := &zondpb.BeaconBlockHeader{
 		Slot:          slot,
 		ProposerIndex: proposerIndex,
 		ParentRoot:    params.BeaconConfig().ZeroHash[:],
@@ -165,7 +165,7 @@ func createProposalWrapper(t *testing.T, slot primitives.Slot, proposerIndex pri
 	fakeSig := make([]byte, 96)
 	copy(fakeSig, "hello")
 	return &slashertypes.SignedBlockHeaderWrapper{
-		SignedBeaconBlockHeader: &ethpb.SignedBeaconBlockHeader{
+		SignedBeaconBlockHeader: &zondpb.SignedBeaconBlockHeader{
 			Header:    header,
 			Signature: fakeSig,
 		},

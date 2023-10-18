@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	blocktest "github.com/theQRL/qrysm/v4/consensus-types/blocks/testing"
 	"github.com/theQRL/qrysm/v4/network/forks"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/util"
 	"github.com/theQRL/qrysm/v4/time/slots"
 
@@ -323,7 +323,7 @@ func TestGetWeakSubjectivityEpochFromHead(t *testing.T) {
 	require.Equal(t, expectedEpoch, actualEpoch)
 }
 
-func forkForEpoch(cfg *params.BeaconChainConfig, epoch primitives.Epoch) (*ethpb.Fork, error) {
+func forkForEpoch(cfg *params.BeaconChainConfig, epoch primitives.Epoch) (*zondpb.Fork, error) {
 	os := forks.NewOrderedSchedule(cfg)
 	currentVersion, err := os.VersionForEpoch(epoch)
 	if err != nil {
@@ -338,7 +338,7 @@ func forkForEpoch(cfg *params.BeaconChainConfig, epoch primitives.Epoch) (*ethpb
 		prevVersion = currentVersion
 	}
 	forkEpoch := cfg.ForkVersionSchedule[currentVersion]
-	return &ethpb.Fork{
+	return &zondpb.Fork{
 		PreviousVersion: prevVersion[:],
 		CurrentVersion:  currentVersion[:],
 		Epoch:           forkEpoch,
@@ -359,7 +359,7 @@ func defaultTestHeadState(t *testing.T, cfg *params.BeaconChainConfig) (state.Be
 
 	var validatorCount, avgBalance uint64 = 100, 35
 	require.NoError(t, populateValidators(cfg, st, validatorCount, avgBalance))
-	require.NoError(t, st.SetFinalizedCheckpoint(&ethpb.Checkpoint{
+	require.NoError(t, st.SetFinalizedCheckpoint(&zondpb.Checkpoint{
 		Epoch: fork.Epoch - 10,
 		Root:  make([]byte, 32),
 	}))
@@ -371,10 +371,10 @@ func defaultTestHeadState(t *testing.T, cfg *params.BeaconChainConfig) (state.Be
 
 // TODO(10429): refactor beacon state options in testing/util to take a state.BeaconState so this can become an option
 func populateValidators(cfg *params.BeaconChainConfig, st state.BeaconState, valCount, avgBalance uint64) error {
-	validators := make([]*ethpb.Validator, valCount)
+	validators := make([]*zondpb.Validator, valCount)
 	balances := make([]uint64, len(validators))
 	for i := uint64(0); i < valCount; i++ {
-		validators[i] = &ethpb.Validator{
+		validators[i] = &zondpb.Validator{
 			PublicKey:             make([]byte, cfg.BLSPubkeyLength),
 			WithdrawalCredentials: make([]byte, 32),
 			EffectiveBalance:      avgBalance * 1e9,

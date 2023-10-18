@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -48,7 +48,7 @@ func TestBeaconApiValidatorClient_GetAttestationDataValid(t *testing.T) {
 
 	resp, err := validatorClient.GetAttestationData(
 		context.Background(),
-		&ethpb.AttestationDataRequest{Slot: slot, CommitteeIndex: committeeIndex},
+		&zondpb.AttestationDataRequest{Slot: slot, CommitteeIndex: committeeIndex},
 	)
 
 	assert.DeepEqual(t, expectedErr, err)
@@ -89,7 +89,7 @@ func TestBeaconApiValidatorClient_GetAttestationDataError(t *testing.T) {
 
 	resp, err := validatorClient.GetAttestationData(
 		context.Background(),
-		&ethpb.AttestationDataRequest{Slot: slot, CommitteeIndex: committeeIndex},
+		&zondpb.AttestationDataRequest{Slot: slot, CommitteeIndex: committeeIndex},
 	)
 
 	assert.ErrorContains(t, expectedErr.Error(), err)
@@ -99,7 +99,7 @@ func TestBeaconApiValidatorClient_GetAttestationDataError(t *testing.T) {
 func TestBeaconApiValidatorClient_GetFeeRecipientByPubKey(t *testing.T) {
 	ctx := context.Background()
 	validatorClient := beaconApiValidatorClient{}
-	var expected *ethpb.FeeRecipientByPubKeyResponse = nil
+	var expected *zondpb.FeeRecipientByPubKeyResponse = nil
 
 	resp, err := validatorClient.GetFeeRecipientByPubKey(ctx, nil)
 	require.NoError(t, err)
@@ -124,7 +124,7 @@ func TestBeaconApiValidatorClient_DomainDataValid(t *testing.T) {
 	).Times(2)
 
 	validatorClient := beaconApiValidatorClient{genesisProvider: genesisProvider}
-	resp, err := validatorClient.DomainData(context.Background(), &ethpb.DomainRequest{Epoch: epoch, Domain: domainType})
+	resp, err := validatorClient.DomainData(context.Background(), &zondpb.DomainRequest{Epoch: epoch, Domain: domainType})
 
 	domainTypeArray := bytesutil.ToBytes4(domainType)
 	expectedResp, expectedErr := validatorClient.getDomainData(ctx, epoch, domainTypeArray)
@@ -136,7 +136,7 @@ func TestBeaconApiValidatorClient_DomainDataError(t *testing.T) {
 	epoch := params.BeaconConfig().AltairForkEpoch
 	domainType := make([]byte, 3)
 	validatorClient := beaconApiValidatorClient{}
-	_, err := validatorClient.DomainData(context.Background(), &ethpb.DomainRequest{Epoch: epoch, Domain: domainType})
+	_, err := validatorClient.DomainData(context.Background(), &zondpb.DomainRequest{Epoch: epoch, Domain: domainType})
 	assert.ErrorContains(t, fmt.Sprintf("invalid domain type: %s", hexutil.Encode(domainType)), err)
 }
 
@@ -161,14 +161,14 @@ func TestBeaconApiValidatorClient_ProposeBeaconBlockValid(t *testing.T) {
 	validatorClient := beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
 	expectedResp, expectedErr := validatorClient.proposeBeaconBlock(
 		ctx,
-		&ethpb.GenericSignedBeaconBlock{
+		&zondpb.GenericSignedBeaconBlock{
 			Block: generateSignedPhase0Block(),
 		},
 	)
 
 	resp, err := validatorClient.ProposeBeaconBlock(
 		ctx,
-		&ethpb.GenericSignedBeaconBlock{
+		&zondpb.GenericSignedBeaconBlock{
 			Block: generateSignedPhase0Block(),
 		},
 	)
@@ -198,14 +198,14 @@ func TestBeaconApiValidatorClient_ProposeBeaconBlockError(t *testing.T) {
 	validatorClient := beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
 	expectedResp, expectedErr := validatorClient.proposeBeaconBlock(
 		ctx,
-		&ethpb.GenericSignedBeaconBlock{
+		&zondpb.GenericSignedBeaconBlock{
 			Block: generateSignedPhase0Block(),
 		},
 	)
 
 	resp, err := validatorClient.ProposeBeaconBlock(
 		ctx,
-		&ethpb.GenericSignedBeaconBlock{
+		&zondpb.GenericSignedBeaconBlock{
 			Block: generateSignedPhase0Block(),
 		},
 	)

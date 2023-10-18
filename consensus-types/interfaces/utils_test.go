@@ -7,36 +7,36 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestBeaconBlockHeaderFromBlock(t *testing.T) {
 	hashLen := 32
-	blk := &eth.BeaconBlock{
+	blk := &zond.BeaconBlock{
 		Slot:          200,
 		ProposerIndex: 2,
 		ParentRoot:    bytesutil.PadTo([]byte("parent root"), hashLen),
 		StateRoot:     bytesutil.PadTo([]byte("state root"), hashLen),
-		Body: &eth.BeaconBlockBody{
-			Eth1Data: &eth.Eth1Data{
+		Body: &zond.BeaconBlockBody{
+			Eth1Data: &zond.Eth1Data{
 				BlockHash:    bytesutil.PadTo([]byte("block hash"), hashLen),
 				DepositRoot:  bytesutil.PadTo([]byte("deposit root"), hashLen),
 				DepositCount: 1,
 			},
 			RandaoReveal:      bytesutil.PadTo([]byte("randao"), dilithium2.CryptoBytes),
 			Graffiti:          bytesutil.PadTo([]byte("teehee"), hashLen),
-			ProposerSlashings: []*eth.ProposerSlashing{},
-			AttesterSlashings: []*eth.AttesterSlashing{},
-			Attestations:      []*eth.Attestation{},
-			Deposits:          []*eth.Deposit{},
-			VoluntaryExits:    []*eth.SignedVoluntaryExit{},
+			ProposerSlashings: []*zond.ProposerSlashing{},
+			AttesterSlashings: []*zond.AttesterSlashing{},
+			Attestations:      []*zond.Attestation{},
+			Deposits:          []*zond.Deposit{},
+			VoluntaryExits:    []*zond.SignedVoluntaryExit{},
 		},
 	}
 	bodyRoot, err := blk.Body.HashTreeRoot()
 	require.NoError(t, err)
-	want := &eth.BeaconBlockHeader{
+	want := &zond.BeaconBlockHeader{
 		Slot:          blk.Slot,
 		ProposerIndex: blk.ProposerIndex,
 		ParentRoot:    blk.ParentRoot,
@@ -51,29 +51,29 @@ func TestBeaconBlockHeaderFromBlock(t *testing.T) {
 
 func TestBeaconBlockHeaderFromBlockInterface(t *testing.T) {
 	hashLen := 32
-	blk := &eth.BeaconBlock{
+	blk := &zond.BeaconBlock{
 		Slot:          200,
 		ProposerIndex: 2,
 		ParentRoot:    bytesutil.PadTo([]byte("parent root"), hashLen),
 		StateRoot:     bytesutil.PadTo([]byte("state root"), hashLen),
-		Body: &eth.BeaconBlockBody{
-			Eth1Data: &eth.Eth1Data{
+		Body: &zond.BeaconBlockBody{
+			Eth1Data: &zond.Eth1Data{
 				BlockHash:    bytesutil.PadTo([]byte("block hash"), hashLen),
 				DepositRoot:  bytesutil.PadTo([]byte("deposit root"), hashLen),
 				DepositCount: 1,
 			},
 			RandaoReveal:      bytesutil.PadTo([]byte("randao"), dilithium2.CryptoBytes),
 			Graffiti:          bytesutil.PadTo([]byte("teehee"), hashLen),
-			ProposerSlashings: []*eth.ProposerSlashing{},
-			AttesterSlashings: []*eth.AttesterSlashing{},
-			Attestations:      []*eth.Attestation{},
-			Deposits:          []*eth.Deposit{},
-			VoluntaryExits:    []*eth.SignedVoluntaryExit{},
+			ProposerSlashings: []*zond.ProposerSlashing{},
+			AttesterSlashings: []*zond.AttesterSlashing{},
+			Attestations:      []*zond.Attestation{},
+			Deposits:          []*zond.Deposit{},
+			VoluntaryExits:    []*zond.SignedVoluntaryExit{},
 		},
 	}
 	bodyRoot, err := blk.Body.HashTreeRoot()
 	require.NoError(t, err)
-	want := &eth.BeaconBlockHeader{
+	want := &zond.BeaconBlockHeader{
 		Slot:          blk.Slot,
 		ProposerIndex: blk.ProposerIndex,
 		ParentRoot:    blk.ParentRoot,
@@ -90,7 +90,7 @@ func TestBeaconBlockHeaderFromBlockInterface(t *testing.T) {
 
 func TestBeaconBlockHeaderFromBlock_NilBlockBody(t *testing.T) {
 	hashLen := 32
-	blk := &eth.BeaconBlock{
+	blk := &zond.BeaconBlock{
 		Slot:          200,
 		ProposerIndex: 2,
 		ParentRoot:    bytesutil.PadTo([]byte("parent root"), hashLen),
@@ -102,31 +102,31 @@ func TestBeaconBlockHeaderFromBlock_NilBlockBody(t *testing.T) {
 
 func TestSignedBeaconBlockHeaderFromBlock(t *testing.T) {
 	hashLen := 32
-	blk := &eth.SignedBeaconBlock{Block: &eth.BeaconBlock{
+	blk := &zond.SignedBeaconBlock{Block: &zond.BeaconBlock{
 		Slot:          200,
 		ProposerIndex: 2,
 		ParentRoot:    bytesutil.PadTo([]byte("parent root"), hashLen),
 		StateRoot:     bytesutil.PadTo([]byte("state root"), hashLen),
-		Body: &eth.BeaconBlockBody{
-			Eth1Data: &eth.Eth1Data{
+		Body: &zond.BeaconBlockBody{
+			Eth1Data: &zond.Eth1Data{
 				BlockHash:    bytesutil.PadTo([]byte("block hash"), hashLen),
 				DepositRoot:  bytesutil.PadTo([]byte("deposit root"), hashLen),
 				DepositCount: 1,
 			},
 			RandaoReveal:      bytesutil.PadTo([]byte("randao"), dilithium2.CryptoBytes),
 			Graffiti:          bytesutil.PadTo([]byte("teehee"), hashLen),
-			ProposerSlashings: []*eth.ProposerSlashing{},
-			AttesterSlashings: []*eth.AttesterSlashing{},
-			Attestations:      []*eth.Attestation{},
-			Deposits:          []*eth.Deposit{},
-			VoluntaryExits:    []*eth.SignedVoluntaryExit{},
+			ProposerSlashings: []*zond.ProposerSlashing{},
+			AttesterSlashings: []*zond.AttesterSlashing{},
+			Attestations:      []*zond.Attestation{},
+			Deposits:          []*zond.Deposit{},
+			VoluntaryExits:    []*zond.SignedVoluntaryExit{},
 		},
 	},
 		Signature: bytesutil.PadTo([]byte("signature"), dilithium2.CryptoBytes),
 	}
 	bodyRoot, err := blk.Block.Body.HashTreeRoot()
 	require.NoError(t, err)
-	want := &eth.SignedBeaconBlockHeader{Header: &eth.BeaconBlockHeader{
+	want := &zond.SignedBeaconBlockHeader{Header: &zond.BeaconBlockHeader{
 		Slot:          blk.Block.Slot,
 		ProposerIndex: blk.Block.ProposerIndex,
 		ParentRoot:    blk.Block.ParentRoot,
@@ -143,31 +143,31 @@ func TestSignedBeaconBlockHeaderFromBlock(t *testing.T) {
 
 func TestSignedBeaconBlockHeaderFromBlockInterface(t *testing.T) {
 	hashLen := 32
-	blk := &eth.SignedBeaconBlock{Block: &eth.BeaconBlock{
+	blk := &zond.SignedBeaconBlock{Block: &zond.BeaconBlock{
 		Slot:          200,
 		ProposerIndex: 2,
 		ParentRoot:    bytesutil.PadTo([]byte("parent root"), hashLen),
 		StateRoot:     bytesutil.PadTo([]byte("state root"), hashLen),
-		Body: &eth.BeaconBlockBody{
-			Eth1Data: &eth.Eth1Data{
+		Body: &zond.BeaconBlockBody{
+			Eth1Data: &zond.Eth1Data{
 				BlockHash:    bytesutil.PadTo([]byte("block hash"), hashLen),
 				DepositRoot:  bytesutil.PadTo([]byte("deposit root"), hashLen),
 				DepositCount: 1,
 			},
 			RandaoReveal:      bytesutil.PadTo([]byte("randao"), dilithium2.CryptoBytes),
 			Graffiti:          bytesutil.PadTo([]byte("teehee"), hashLen),
-			ProposerSlashings: []*eth.ProposerSlashing{},
-			AttesterSlashings: []*eth.AttesterSlashing{},
-			Attestations:      []*eth.Attestation{},
-			Deposits:          []*eth.Deposit{},
-			VoluntaryExits:    []*eth.SignedVoluntaryExit{},
+			ProposerSlashings: []*zond.ProposerSlashing{},
+			AttesterSlashings: []*zond.AttesterSlashing{},
+			Attestations:      []*zond.Attestation{},
+			Deposits:          []*zond.Deposit{},
+			VoluntaryExits:    []*zond.SignedVoluntaryExit{},
 		},
 	},
 		Signature: bytesutil.PadTo([]byte("signature"), dilithium2.CryptoBytes),
 	}
 	bodyRoot, err := blk.Block.Body.HashTreeRoot()
 	require.NoError(t, err)
-	want := &eth.SignedBeaconBlockHeader{Header: &eth.BeaconBlockHeader{
+	want := &zond.SignedBeaconBlockHeader{Header: &zond.BeaconBlockHeader{
 		Slot:          blk.Block.Slot,
 		ProposerIndex: blk.Block.ProposerIndex,
 		ParentRoot:    blk.Block.ParentRoot,
@@ -185,7 +185,7 @@ func TestSignedBeaconBlockHeaderFromBlockInterface(t *testing.T) {
 
 func TestSignedBeaconBlockHeaderFromBlock_NilBlockBody(t *testing.T) {
 	hashLen := 32
-	blk := &eth.SignedBeaconBlock{Block: &eth.BeaconBlock{
+	blk := &zond.SignedBeaconBlock{Block: &zond.BeaconBlock{
 		Slot:          200,
 		ProposerIndex: 2,
 		ParentRoot:    bytesutil.PadTo([]byte("parent root"), hashLen),

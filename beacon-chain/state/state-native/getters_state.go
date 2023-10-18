@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
@@ -19,7 +19,7 @@ func (b *BeaconState) ToProtoUnsafe() interface{} {
 
 	switch b.version {
 	case version.Phase0:
-		return &ethpb.BeaconState{
+		return &zondpb.BeaconState{
 			GenesisTime:                 b.genesisTime,
 			GenesisValidatorsRoot:       gvrCopy[:],
 			Slot:                        b.slot,
@@ -43,7 +43,7 @@ func (b *BeaconState) ToProtoUnsafe() interface{} {
 			FinalizedCheckpoint:         b.finalizedCheckpoint,
 		}
 	case version.Altair:
-		return &ethpb.BeaconStateAltair{
+		return &zondpb.BeaconStateAltair{
 			GenesisTime:                 b.genesisTime,
 			GenesisValidatorsRoot:       gvrCopy[:],
 			Slot:                        b.slot,
@@ -70,7 +70,7 @@ func (b *BeaconState) ToProtoUnsafe() interface{} {
 			NextSyncCommittee:           b.nextSyncCommittee,
 		}
 	case version.Bellatrix:
-		return &ethpb.BeaconStateBellatrix{
+		return &zondpb.BeaconStateBellatrix{
 			GenesisTime:                  b.genesisTime,
 			GenesisValidatorsRoot:        gvrCopy[:],
 			Slot:                         b.slot,
@@ -98,7 +98,7 @@ func (b *BeaconState) ToProtoUnsafe() interface{} {
 			LatestExecutionPayloadHeader: b.latestExecutionPayloadHeader,
 		}
 	case version.Capella:
-		return &ethpb.BeaconStateCapella{
+		return &zondpb.BeaconStateCapella{
 			GenesisTime:                  b.genesisTime,
 			GenesisValidatorsRoot:        gvrCopy[:],
 			Slot:                         b.slot,
@@ -146,7 +146,7 @@ func (b *BeaconState) ToProto() interface{} {
 
 	switch b.version {
 	case version.Phase0:
-		return &ethpb.BeaconState{
+		return &zondpb.BeaconState{
 			GenesisTime:                 b.genesisTime,
 			GenesisValidatorsRoot:       gvrCopy[:],
 			Slot:                        b.slot,
@@ -170,7 +170,7 @@ func (b *BeaconState) ToProto() interface{} {
 			FinalizedCheckpoint:         b.finalizedCheckpointVal(),
 		}
 	case version.Altair:
-		return &ethpb.BeaconStateAltair{
+		return &zondpb.BeaconStateAltair{
 			GenesisTime:                 b.genesisTime,
 			GenesisValidatorsRoot:       gvrCopy[:],
 			Slot:                        b.slot,
@@ -197,7 +197,7 @@ func (b *BeaconState) ToProto() interface{} {
 			NextSyncCommittee:           b.nextSyncCommitteeVal(),
 		}
 	case version.Bellatrix:
-		return &ethpb.BeaconStateBellatrix{
+		return &zondpb.BeaconStateBellatrix{
 			GenesisTime:                  b.genesisTime,
 			GenesisValidatorsRoot:        gvrCopy[:],
 			Slot:                         b.slot,
@@ -225,7 +225,7 @@ func (b *BeaconState) ToProto() interface{} {
 			LatestExecutionPayloadHeader: b.latestExecutionPayloadHeaderVal(),
 		}
 	case version.Capella:
-		return &ethpb.BeaconStateCapella{
+		return &zondpb.BeaconStateCapella{
 			GenesisTime:                  b.genesisTime,
 			GenesisValidatorsRoot:        gvrCopy[:],
 			Slot:                         b.slot,
@@ -301,18 +301,18 @@ func (b *BeaconState) stateRootAtIndex(idx uint64) ([32]byte, error) {
 
 // ProtobufBeaconStatePhase0 transforms an input into beacon state in the form of protobuf.
 // Error is returned if the input is not type protobuf beacon state.
-func ProtobufBeaconStatePhase0(s interface{}) (*ethpb.BeaconState, error) {
-	pbState, ok := s.(*ethpb.BeaconState)
+func ProtobufBeaconStatePhase0(s interface{}) (*zondpb.BeaconState, error) {
+	pbState, ok := s.(*zondpb.BeaconState)
 	if !ok {
-		return nil, errors.New("input is not type ethpb.BeaconState")
+		return nil, errors.New("input is not type zondpb.BeaconState")
 	}
 	return pbState, nil
 }
 
 // ProtobufBeaconStateAltair transforms an input into beacon state Altair in the form of protobuf.
 // Error is returned if the input is not type protobuf beacon state.
-func ProtobufBeaconStateAltair(s interface{}) (*ethpb.BeaconStateAltair, error) {
-	pbState, ok := s.(*ethpb.BeaconStateAltair)
+func ProtobufBeaconStateAltair(s interface{}) (*zondpb.BeaconStateAltair, error) {
+	pbState, ok := s.(*zondpb.BeaconStateAltair)
 	if !ok {
 		return nil, errors.New("input is not type pb.BeaconStateAltair")
 	}
@@ -321,8 +321,8 @@ func ProtobufBeaconStateAltair(s interface{}) (*ethpb.BeaconStateAltair, error) 
 
 // ProtobufBeaconStateBellatrix transforms an input into beacon state Bellatrix in the form of protobuf.
 // Error is returned if the input is not type protobuf beacon state.
-func ProtobufBeaconStateBellatrix(s interface{}) (*ethpb.BeaconStateBellatrix, error) {
-	pbState, ok := s.(*ethpb.BeaconStateBellatrix)
+func ProtobufBeaconStateBellatrix(s interface{}) (*zondpb.BeaconStateBellatrix, error) {
+	pbState, ok := s.(*zondpb.BeaconStateBellatrix)
 	if !ok {
 		return nil, errors.New("input is not type pb.BeaconStateBellatrix")
 	}
@@ -331,8 +331,8 @@ func ProtobufBeaconStateBellatrix(s interface{}) (*ethpb.BeaconStateBellatrix, e
 
 // ProtobufBeaconStateCapella transforms an input into beacon state Capella in the form of protobuf.
 // Error is returned if the input is not type protobuf beacon state.
-func ProtobufBeaconStateCapella(s interface{}) (*ethpb.BeaconStateCapella, error) {
-	pbState, ok := s.(*ethpb.BeaconStateCapella)
+func ProtobufBeaconStateCapella(s interface{}) (*zondpb.BeaconStateCapella, error) {
+	pbState, ok := s.(*zondpb.BeaconStateCapella)
 	if !ok {
 		return nil, errors.New("input is not type pb.BeaconStateCapella")
 	}

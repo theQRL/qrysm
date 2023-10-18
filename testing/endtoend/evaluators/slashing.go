@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/container/slice"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
 	e2eTypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
@@ -64,13 +64,13 @@ var slashedIndices []uint64
 func validatorsSlashed(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
 	ctx := context.Background()
-	client := eth.NewBeaconChainClient(conn)
+	client := zond.NewBeaconChainClient(conn)
 
 	actualSlashedIndices := 0
 
 	for _, slashedIndex := range slashedIndices {
-		req := &eth.GetValidatorRequest{
-			QueryFilter: &eth.GetValidatorRequest_Index{
+		req := &zond.GetValidatorRequest{
+			QueryFilter: &zond.GetValidatorRequest_Index{
 				Index: primitives.ValidatorIndex(slashedIndex),
 			},
 		}
@@ -93,11 +93,11 @@ func validatorsSlashed(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientConn)
 func validatorsLoseBalance(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
 	ctx := context.Background()
-	client := eth.NewBeaconChainClient(conn)
+	client := zond.NewBeaconChainClient(conn)
 
 	for i, slashedIndex := range slashedIndices {
-		req := &eth.GetValidatorRequest{
-			QueryFilter: &eth.GetValidatorRequest_Index{
+		req := &zond.GetValidatorRequest{
+			QueryFilter: &zond.GetValidatorRequest_Index{
 				Index: primitives.ValidatorIndex(slashedIndex),
 			},
 		}
@@ -122,8 +122,8 @@ func validatorsLoseBalance(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientC
 
 func insertDoubleAttestationIntoPool(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	valClient := eth.NewBeaconNodeValidatorClient(conn)
-	beaconClient := eth.NewBeaconChainClient(conn)
+	valClient := zond.NewBeaconNodeValidatorClient(conn)
+	beaconClient := zond.NewBeaconChainClient(conn)
 
 	ctx := context.Background()
 	chainHead, err := beaconClient.GetChainHead(ctx, &emptypb.Empty{})
@@ -139,7 +139,7 @@ func insertDoubleAttestationIntoPool(_ *e2eTypes.EvaluationContext, conns ...*gr
 	for i, priv := range privKeys {
 		pubKeys[i] = priv.PublicKey().Marshal()
 	}
-	duties, err := valClient.GetDuties(ctx, &eth.DutiesRequest{
+	duties, err := valClient.GetDuties(ctx, &zond.DutiesRequest{
 		Epoch:      chainHead.HeadEpoch,
 		PublicKeys: pubKeys,
 	})
@@ -157,7 +157,7 @@ func insertDoubleAttestationIntoPool(_ *e2eTypes.EvaluationContext, conns ...*gr
 		}
 	}
 
-	attDataReq := &eth.AttestationDataRequest{
+	attDataReq := &zond.AttestationDataRequest{
 		CommitteeIndex: committeeIndex,
 		Slot:           chainHead.HeadSlot - 1,
 	}
@@ -169,7 +169,7 @@ func insertDoubleAttestationIntoPool(_ *e2eTypes.EvaluationContext, conns ...*gr
 	blockRoot := bytesutil.ToBytes32([]byte("muahahahaha I'm an evil validator"))
 	attData.BeaconBlockRoot = blockRoot[:]
 
-	req := &eth.DomainRequest{
+	req := &zond.DomainRequest{
 		Epoch:  chainHead.HeadEpoch,
 		Domain: params.BeaconConfig().DomainBeaconAttester[:],
 	}
@@ -192,14 +192,14 @@ func insertDoubleAttestationIntoPool(_ *e2eTypes.EvaluationContext, conns ...*gr
 		attBitfield := bitfield.NewBitlist(uint64(len(committee)))
 		attBitfield.SetBitAt(i, true)
 
-		att := &eth.Attestation{
+		att := &zond.Attestation{
 			AggregationBits: attBitfield,
 			Data:            attData,
 			Signature:       privKeys[committee[i]].Sign(signingRoot[:]).Marshal(),
 		}
 		// We only broadcast to conns[0] here since we can trust that at least 1 node will be online.
 		// Only broadcasting the attestation to one node also helps test slashing propagation.
-		client := eth.NewBeaconNodeValidatorClient(conns[0])
+		client := zond.NewBeaconNodeValidatorClient(conns[0])
 		if _, err = client.ProposeAttestation(ctx, att); err != nil {
 			return errors.Wrap(err, "could not propose attestation")
 		}
@@ -210,8 +210,8 @@ func insertDoubleAttestationIntoPool(_ *e2eTypes.EvaluationContext, conns ...*gr
 
 func proposeDoubleBlock(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	valClient := eth.NewBeaconNodeValidatorClient(conn)
-	beaconClient := eth.NewBeaconChainClient(conn)
+	valClient := zond.NewBeaconNodeValidatorClient(conn)
+	beaconClient := zond.NewBeaconChainClient(conn)
 
 	ctx := context.Background()
 	chainHead, err := beaconClient.GetChainHead(ctx, &emptypb.Empty{})
@@ -226,7 +226,7 @@ func proposeDoubleBlock(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientConn
 	for i, priv := range privKeys {
 		pubKeys[i] = priv.PublicKey().Marshal()
 	}
-	duties, err := valClient.GetDuties(ctx, &eth.DutiesRequest{
+	duties, err := valClient.GetDuties(ctx, &zond.DutiesRequest{
 		Epoch:      chainHead.HeadEpoch,
 		PublicKeys: pubKeys,
 	})
@@ -252,7 +252,7 @@ func proposeDoubleBlock(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientConn
 	// If the proposer index is in the second validator client, we connect to
 	// the corresponding beacon node instead.
 	if proposerIndex >= primitives.ValidatorIndex(uint64(validatorsPerNode)) {
-		valClient = eth.NewBeaconNodeValidatorClient(conns[1])
+		valClient = zond.NewBeaconNodeValidatorClient(conns[1])
 	}
 
 	b, err := generateSignedBeaconBlock(chainHead, proposerIndex, valClient, privKeys, "bad state root")
@@ -276,37 +276,37 @@ func proposeDoubleBlock(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientConn
 }
 
 func generateSignedBeaconBlock(
-	chainHead *eth.ChainHead,
+	chainHead *zond.ChainHead,
 	proposerIndex primitives.ValidatorIndex,
-	valClient eth.BeaconNodeValidatorClient,
+	valClient zond.BeaconNodeValidatorClient,
 	privKeys []bls.SecretKey,
 	stateRoot string,
-) (*eth.GenericSignedBeaconBlock, error) {
+) (*zond.GenericSignedBeaconBlock, error) {
 	ctx := context.Background()
 
 	hashLen := 32
-	blk := &eth.BeaconBlock{
+	blk := &zond.BeaconBlock{
 		Slot:          chainHead.HeadSlot - 1,
 		ParentRoot:    chainHead.HeadBlockRoot,
 		StateRoot:     bytesutil.PadTo([]byte(stateRoot), hashLen),
 		ProposerIndex: proposerIndex,
-		Body: &eth.BeaconBlockBody{
-			Eth1Data: &eth.Eth1Data{
+		Body: &zond.BeaconBlockBody{
+			Eth1Data: &zond.Eth1Data{
 				BlockHash:    bytesutil.PadTo([]byte("bad block hash"), hashLen),
 				DepositRoot:  bytesutil.PadTo([]byte("bad deposit root"), hashLen),
 				DepositCount: 1,
 			},
 			RandaoReveal:      bytesutil.PadTo([]byte("bad randao"), dilithium2.CryptoBytes),
 			Graffiti:          bytesutil.PadTo([]byte("teehee"), hashLen),
-			ProposerSlashings: []*eth.ProposerSlashing{},
-			AttesterSlashings: []*eth.AttesterSlashing{},
-			Attestations:      []*eth.Attestation{},
-			Deposits:          []*eth.Deposit{},
-			VoluntaryExits:    []*eth.SignedVoluntaryExit{},
+			ProposerSlashings: []*zond.ProposerSlashing{},
+			AttesterSlashings: []*zond.AttesterSlashing{},
+			Attestations:      []*zond.Attestation{},
+			Deposits:          []*zond.Deposit{},
+			VoluntaryExits:    []*zond.SignedVoluntaryExit{},
 		},
 	}
 
-	req := &eth.DomainRequest{
+	req := &zond.DomainRequest{
 		Epoch:  chainHead.HeadEpoch,
 		Domain: params.BeaconConfig().DomainBeaconProposer[:],
 	}
@@ -319,7 +319,7 @@ func generateSignedBeaconBlock(
 		return nil, errors.Wrap(err, "could not compute signing root")
 	}
 	sig := privKeys[proposerIndex].Sign(signingRoot[:]).Marshal()
-	signedBlk := &eth.SignedBeaconBlock{
+	signedBlk := &zond.SignedBeaconBlock{
 		Block:     blk,
 		Signature: sig,
 	}

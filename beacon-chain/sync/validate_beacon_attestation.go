@@ -20,7 +20,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
@@ -55,7 +55,7 @@ func (s *Service) validateCommitteeIndexBeaconAttestation(ctx context.Context, p
 		return pubsub.ValidationReject, err
 	}
 
-	att, ok := m.(*eth.Attestation)
+	att, ok := m.(*zond.Attestation)
 	if !ok {
 		return pubsub.ValidationReject, errWrongMessage
 	}
@@ -133,7 +133,7 @@ func (s *Service) validateCommitteeIndexBeaconAttestation(ctx context.Context, p
 	blockRoot := bytesutil.ToBytes32(att.Data.BeaconBlockRoot)
 	if !s.hasBlockAndState(ctx, blockRoot) {
 		// A node doesn't have the block, it'll request from peer while saving the pending attestation to a queue.
-		s.savePendingAtt(&eth.SignedAggregateAttestationAndProof{Message: &eth.AggregateAttestationAndProof{Aggregate: att}})
+		s.savePendingAtt(&zond.SignedAggregateAttestationAndProof{Message: &zond.AggregateAttestationAndProof{Aggregate: att}})
 		return pubsub.ValidationIgnore, nil
 	}
 
@@ -171,7 +171,7 @@ func (s *Service) validateCommitteeIndexBeaconAttestation(ctx context.Context, p
 }
 
 // This validates beacon unaggregated attestation has correct topic string.
-func (s *Service) validateUnaggregatedAttTopic(ctx context.Context, a *eth.Attestation, bs state.ReadOnlyBeaconState, t string) (pubsub.ValidationResult, error) {
+func (s *Service) validateUnaggregatedAttTopic(ctx context.Context, a *zond.Attestation, bs state.ReadOnlyBeaconState, t string) (pubsub.ValidationResult, error) {
 	ctx, span := trace.StartSpan(ctx, "sync.validateUnaggregatedAttTopic")
 	defer span.End()
 
@@ -185,7 +185,7 @@ func (s *Service) validateUnaggregatedAttTopic(ctx context.Context, a *eth.Attes
 		return pubsub.ValidationReject, errors.Errorf("committee index %d > %d", a.Data.CommitteeIndex, count)
 	}
 	subnet := helpers.ComputeSubnetForAttestation(valCount, a)
-	format := p2p.GossipTypeMapping[reflect.TypeOf(&eth.Attestation{})]
+	format := p2p.GossipTypeMapping[reflect.TypeOf(&zond.Attestation{})]
 	digest, err := s.currentForkDigest()
 	if err != nil {
 		tracing.AnnotateError(span, err)
@@ -200,7 +200,7 @@ func (s *Service) validateUnaggregatedAttTopic(ctx context.Context, a *eth.Attes
 
 // This validates beacon unaggregated attestation using the given state, the validation consists of bitfield length and count consistency
 // and signature verification.
-func (s *Service) validateUnaggregatedAttWithState(ctx context.Context, a *eth.Attestation, bs state.ReadOnlyBeaconState) (pubsub.ValidationResult, error) {
+func (s *Service) validateUnaggregatedAttWithState(ctx context.Context, a *zond.Attestation, bs state.ReadOnlyBeaconState) (pubsub.ValidationResult, error) {
 	ctx, span := trace.StartSpan(ctx, "sync.validateUnaggregatedAttWithState")
 	defer span.End()
 
@@ -222,7 +222,7 @@ func (s *Service) validateUnaggregatedAttWithState(ctx context.Context, a *eth.A
 		return pubsub.ValidationReject, errors.New("attestation bitfield is invalid")
 	}
 
-	set, err := blocks.AttestationSignatureBatch(ctx, bs, []*eth.Attestation{a})
+	set, err := blocks.AttestationSignatureBatch(ctx, bs, []*zond.Attestation{a})
 	if err != nil {
 		tracing.AnnotateError(span, err)
 		attBadSignatureBatchCount.Inc()

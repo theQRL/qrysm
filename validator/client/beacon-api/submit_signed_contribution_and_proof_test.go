@@ -10,7 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -56,10 +56,10 @@ func TestSubmitSignedContributionAndProof_Valid(t *testing.T) {
 		nil,
 	).Times(1)
 
-	contributionAndProof := &ethpb.SignedContributionAndProof{
-		Message: &ethpb.ContributionAndProof{
+	contributionAndProof := &zondpb.SignedContributionAndProof{
+		Message: &zondpb.ContributionAndProof{
 			AggregatorIndex: 1,
-			Contribution: &ethpb.SyncCommitteeContribution{
+			Contribution: &zondpb.SyncCommitteeContribution{
 				Slot:              2,
 				BlockRoot:         []byte{3},
 				SubcommitteeIndex: 4,
@@ -79,7 +79,7 @@ func TestSubmitSignedContributionAndProof_Valid(t *testing.T) {
 func TestSubmitSignedContributionAndProof_Error(t *testing.T) {
 	testCases := []struct {
 		name                 string
-		data                 *ethpb.SignedContributionAndProof
+		data                 *zondpb.SignedContributionAndProof
 		expectedErrorMessage string
 		httpRequestExpected  bool
 	}{
@@ -90,21 +90,21 @@ func TestSubmitSignedContributionAndProof_Error(t *testing.T) {
 		},
 		{
 			name:                 "nil message",
-			data:                 &ethpb.SignedContributionAndProof{},
+			data:                 &zondpb.SignedContributionAndProof{},
 			expectedErrorMessage: "signed contribution and proof message is nil",
 		},
 		{
 			name: "nil contribution",
-			data: &ethpb.SignedContributionAndProof{
-				Message: &ethpb.ContributionAndProof{},
+			data: &zondpb.SignedContributionAndProof{
+				Message: &zondpb.ContributionAndProof{},
 			},
 			expectedErrorMessage: "signed contribution and proof contribution is nil",
 		},
 		{
 			name: "bad request",
-			data: &ethpb.SignedContributionAndProof{
-				Message: &ethpb.ContributionAndProof{
-					Contribution: &ethpb.SyncCommitteeContribution{},
+			data: &zondpb.SignedContributionAndProof{
+				Message: &zondpb.ContributionAndProof{
+					Contribution: &zondpb.SyncCommitteeContribution{},
 				},
 			},
 			httpRequestExpected:  true,

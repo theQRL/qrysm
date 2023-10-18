@@ -29,9 +29,9 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
-	ethpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/mock"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -91,7 +91,7 @@ func TestGetAttesterDuties(t *testing.T) {
 	}
 
 	t.Run("Single validator", func(t *testing.T) {
-		req := &ethpbv1.AttesterDutiesRequest{
+		req := &zondpbv1.AttesterDutiesRequest{
 			Epoch: 0,
 			Index: []primitives.ValidatorIndex{0},
 		}
@@ -110,7 +110,7 @@ func TestGetAttesterDuties(t *testing.T) {
 	})
 
 	t.Run("Multiple validators", func(t *testing.T) {
-		req := &ethpbv1.AttesterDutiesRequest{
+		req := &zondpbv1.AttesterDutiesRequest{
 			Epoch: 0,
 			Index: []primitives.ValidatorIndex{0, 1},
 		}
@@ -120,7 +120,7 @@ func TestGetAttesterDuties(t *testing.T) {
 	})
 
 	t.Run("Next epoch", func(t *testing.T) {
-		req := &ethpbv1.AttesterDutiesRequest{
+		req := &zondpbv1.AttesterDutiesRequest{
 			Epoch: slots.ToEpoch(bs.Slot()) + 1,
 			Index: []primitives.ValidatorIndex{0},
 		}
@@ -140,7 +140,7 @@ func TestGetAttesterDuties(t *testing.T) {
 
 	t.Run("Epoch out of bound", func(t *testing.T) {
 		currentEpoch := slots.ToEpoch(bs.Slot())
-		req := &ethpbv1.AttesterDutiesRequest{
+		req := &zondpbv1.AttesterDutiesRequest{
 			Epoch: currentEpoch + 2,
 			Index: []primitives.ValidatorIndex{0},
 		}
@@ -150,7 +150,7 @@ func TestGetAttesterDuties(t *testing.T) {
 	})
 
 	t.Run("Validator index out of bound", func(t *testing.T) {
-		req := &ethpbv1.AttesterDutiesRequest{
+		req := &zondpbv1.AttesterDutiesRequest{
 			Epoch: 0,
 			Index: []primitives.ValidatorIndex{primitives.ValidatorIndex(len(pubKeys))},
 		}
@@ -160,7 +160,7 @@ func TestGetAttesterDuties(t *testing.T) {
 	})
 
 	t.Run("Inactive validator - no duties", func(t *testing.T) {
-		req := &ethpbv1.AttesterDutiesRequest{
+		req := &zondpbv1.AttesterDutiesRequest{
 			Epoch: 0,
 			Index: []primitives.ValidatorIndex{primitives.ValidatorIndex(len(pubKeys) - 1)},
 		}
@@ -189,7 +189,7 @@ func TestGetAttesterDuties(t *testing.T) {
 			OptimisticModeFetcher: chain,
 			SyncChecker:           &mockSync.Sync{IsSyncing: false},
 		}
-		req := &ethpbv1.AttesterDutiesRequest{
+		req := &zondpbv1.AttesterDutiesRequest{
 			Epoch: 0,
 			Index: []primitives.ValidatorIndex{0},
 		}
@@ -209,7 +209,7 @@ func TestGetAttesterDuties_SyncNotReady(t *testing.T) {
 		TimeFetcher:           chainService,
 		OptimisticModeFetcher: chainService,
 	}
-	_, err = vs.GetAttesterDuties(context.Background(), &ethpbv1.AttesterDutiesRequest{})
+	_, err = vs.GetAttesterDuties(context.Background(), &zondpbv1.AttesterDutiesRequest{})
 	assert.ErrorContains(t, "Syncing to latest head, not ready to respond", err)
 }
 
@@ -252,7 +252,7 @@ func TestGetProposerDuties(t *testing.T) {
 			ProposerSlotIndexCache: cache.NewProposerPayloadIDsCache(),
 		}
 
-		req := &ethpbv1.ProposerDutiesRequest{
+		req := &zondpbv1.ProposerDutiesRequest{
 			Epoch: 0,
 		}
 		resp, err := vs.GetProposerDuties(ctx, req)
@@ -260,7 +260,7 @@ func TestGetProposerDuties(t *testing.T) {
 		assert.DeepEqual(t, genesisRoot[:], resp.DependentRoot)
 		assert.Equal(t, 31, len(resp.Data))
 		// We expect a proposer duty for slot 11.
-		var expectedDuty *ethpbv1.ProposerDuty
+		var expectedDuty *zondpbv1.ProposerDuty
 		for _, duty := range resp.Data {
 			if duty.Slot == 11 {
 				expectedDuty = duty
@@ -291,7 +291,7 @@ func TestGetProposerDuties(t *testing.T) {
 			ProposerSlotIndexCache: cache.NewProposerPayloadIDsCache(),
 		}
 
-		req := &ethpbv1.ProposerDutiesRequest{
+		req := &zondpbv1.ProposerDutiesRequest{
 			Epoch: 1,
 		}
 		resp, err := vs.GetProposerDuties(ctx, req)
@@ -299,7 +299,7 @@ func TestGetProposerDuties(t *testing.T) {
 		assert.DeepEqual(t, bytesutil.PadTo(genesisRoot[:], 32), resp.DependentRoot)
 		assert.Equal(t, 32, len(resp.Data))
 		// We expect a proposer duty for slot 43.
-		var expectedDuty *ethpbv1.ProposerDuty
+		var expectedDuty *zondpbv1.ProposerDuty
 		for _, duty := range resp.Data {
 			if duty.Slot == 43 {
 				expectedDuty = duty
@@ -331,7 +331,7 @@ func TestGetProposerDuties(t *testing.T) {
 			ProposerSlotIndexCache: cache.NewProposerPayloadIDsCache(),
 		}
 
-		req := &ethpbv1.ProposerDutiesRequest{
+		req := &zondpbv1.ProposerDutiesRequest{
 			Epoch: 1,
 		}
 		vs.ProposerSlotIndexCache.SetProposerAndPayloadIDs(1, 1, [8]byte{1}, [32]byte{2})
@@ -372,7 +372,7 @@ func TestGetProposerDuties(t *testing.T) {
 		}
 
 		currentEpoch := slots.ToEpoch(bs.Slot())
-		req := &ethpbv1.ProposerDutiesRequest{
+		req := &zondpbv1.ProposerDutiesRequest{
 			Epoch: currentEpoch + 2,
 		}
 		_, err = vs.GetProposerDuties(ctx, req)
@@ -407,7 +407,7 @@ func TestGetProposerDuties(t *testing.T) {
 			SyncChecker:            &mockSync.Sync{IsSyncing: false},
 			ProposerSlotIndexCache: cache.NewProposerPayloadIDsCache(),
 		}
-		req := &ethpbv1.ProposerDutiesRequest{
+		req := &zondpbv1.ProposerDutiesRequest{
 			Epoch: 0,
 		}
 		resp, err := vs.GetProposerDuties(ctx, req)
@@ -426,7 +426,7 @@ func TestGetProposerDuties_SyncNotReady(t *testing.T) {
 		TimeFetcher:           chainService,
 		OptimisticModeFetcher: chainService,
 	}
-	_, err = vs.GetProposerDuties(context.Background(), &ethpbv1.ProposerDutiesRequest{})
+	_, err = vs.GetProposerDuties(context.Background(), &zondpbv1.ProposerDutiesRequest{})
 	assert.ErrorContains(t, "Syncing to latest head, not ready to respond", err)
 }
 
@@ -437,7 +437,7 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 	st, _ := util.DeterministicGenesisStateAltair(t, numVals)
 	require.NoError(t, st.SetGenesisTime(uint64(genesisTime.Unix())))
 	vals := st.Validators()
-	currCommittee := &ethpbalpha.SyncCommittee{}
+	currCommittee := &zondpbalpha.SyncCommittee{}
 	for i := 0; i < 5; i++ {
 		currCommittee.Pubkeys = append(currCommittee.Pubkeys, vals[i].PublicKey)
 		currCommittee.AggregatePubkey = make([]byte, 48)
@@ -445,7 +445,7 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 	// add one public key twice - this is needed for one of the test cases
 	currCommittee.Pubkeys = append(currCommittee.Pubkeys, vals[0].PublicKey)
 	require.NoError(t, st.SetCurrentSyncCommittee(currCommittee))
-	nextCommittee := &ethpbalpha.SyncCommittee{}
+	nextCommittee := &zondpbalpha.SyncCommittee{}
 	for i := 5; i < 10; i++ {
 		nextCommittee.Pubkeys = append(nextCommittee.Pubkeys, vals[i].PublicKey)
 		nextCommittee.AggregatePubkey = make([]byte, 48)
@@ -463,7 +463,7 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 	}
 
 	t.Run("Single validator", func(t *testing.T) {
-		req := &ethpbv2.SyncCommitteeDutiesRequest{
+		req := &zondpbv2.SyncCommitteeDutiesRequest{
 			Epoch: 0,
 			Index: []primitives.ValidatorIndex{1},
 		}
@@ -480,7 +480,7 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 	})
 
 	t.Run("Epoch not at period start", func(t *testing.T) {
-		req := &ethpbv2.SyncCommitteeDutiesRequest{
+		req := &zondpbv2.SyncCommitteeDutiesRequest{
 			Epoch: 1,
 			Index: []primitives.ValidatorIndex{1},
 		}
@@ -497,7 +497,7 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 	})
 
 	t.Run("Multiple validators", func(t *testing.T) {
-		req := &ethpbv2.SyncCommitteeDutiesRequest{
+		req := &zondpbv2.SyncCommitteeDutiesRequest{
 			Epoch: 0,
 			Index: []primitives.ValidatorIndex{1, 2},
 		}
@@ -507,7 +507,7 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 	})
 
 	t.Run("Validator without duty not returned", func(t *testing.T) {
-		req := &ethpbv2.SyncCommitteeDutiesRequest{
+		req := &zondpbv2.SyncCommitteeDutiesRequest{
 			Epoch: 0,
 			Index: []primitives.ValidatorIndex{1, 10},
 		}
@@ -518,7 +518,7 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 	})
 
 	t.Run("Multiple indices for validator", func(t *testing.T) {
-		req := &ethpbv2.SyncCommitteeDutiesRequest{
+		req := &zondpbv2.SyncCommitteeDutiesRequest{
 			Epoch: 0,
 			Index: []primitives.ValidatorIndex{0},
 		}
@@ -530,7 +530,7 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 	})
 
 	t.Run("Validator index out of bound", func(t *testing.T) {
-		req := &ethpbv2.SyncCommitteeDutiesRequest{
+		req := &zondpbv2.SyncCommitteeDutiesRequest{
 			Epoch: 0,
 			Index: []primitives.ValidatorIndex{primitives.ValidatorIndex(numVals)},
 		}
@@ -540,7 +540,7 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 	})
 
 	t.Run("next sync committee period", func(t *testing.T) {
-		req := &ethpbv2.SyncCommitteeDutiesRequest{
+		req := &zondpbv2.SyncCommitteeDutiesRequest{
 			Epoch: params.BeaconConfig().EpochsPerSyncCommitteePeriod,
 			Index: []primitives.ValidatorIndex{5},
 		}
@@ -557,7 +557,7 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 	})
 
 	t.Run("epoch too far in the future", func(t *testing.T) {
-		req := &ethpbv2.SyncCommitteeDutiesRequest{
+		req := &zondpbv2.SyncCommitteeDutiesRequest{
 			Epoch: params.BeaconConfig().EpochsPerSyncCommitteePeriod * 2,
 			Index: []primitives.ValidatorIndex{5},
 		}
@@ -574,13 +574,13 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 		require.NoError(t, newSyncPeriodSt.SetSlot(newSyncPeriodStartSlot))
 		require.NoError(t, newSyncPeriodSt.SetGenesisTime(uint64(genesisTime.Unix())))
 		vals := newSyncPeriodSt.Validators()
-		currCommittee := &ethpbalpha.SyncCommittee{}
+		currCommittee := &zondpbalpha.SyncCommittee{}
 		for i := 5; i < 10; i++ {
 			currCommittee.Pubkeys = append(currCommittee.Pubkeys, vals[i].PublicKey)
 			currCommittee.AggregatePubkey = make([]byte, 48)
 		}
 		require.NoError(t, newSyncPeriodSt.SetCurrentSyncCommittee(currCommittee))
-		nextCommittee := &ethpbalpha.SyncCommittee{}
+		nextCommittee := &zondpbalpha.SyncCommittee{}
 		for i := 0; i < 5; i++ {
 			nextCommittee.Pubkeys = append(nextCommittee.Pubkeys, vals[i].PublicKey)
 			nextCommittee.AggregatePubkey = make([]byte, 48)
@@ -604,7 +604,7 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 			OptimisticModeFetcher: mockChainService,
 		}
 
-		req := &ethpbv2.SyncCommitteeDutiesRequest{
+		req := &zondpbv2.SyncCommitteeDutiesRequest{
 			Epoch: params.BeaconConfig().EpochsPerSyncCommitteePeriod,
 			Index: []primitives.ValidatorIndex{8},
 		}
@@ -622,8 +622,8 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 
 	t.Run("execution optimistic", func(t *testing.T) {
 		db := dbutil.SetupDB(t)
-		require.NoError(t, db.SaveStateSummary(ctx, &ethpbalpha.StateSummary{Slot: 0, Root: []byte("root")}))
-		require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, &ethpbalpha.Checkpoint{Epoch: 0, Root: []byte("root")}))
+		require.NoError(t, db.SaveStateSummary(ctx, &zondpbalpha.StateSummary{Slot: 0, Root: []byte("root")}))
+		require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, &zondpbalpha.Checkpoint{Epoch: 0, Root: []byte("root")}))
 
 		parentRoot := [32]byte{'a'}
 		blk := util.NewBeaconBlock()
@@ -644,7 +644,7 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 			Genesis:    genesisTime,
 			Optimistic: true,
 			Slot:       &slot,
-			FinalizedCheckPoint: &ethpbalpha.Checkpoint{
+			FinalizedCheckPoint: &zondpbalpha.Checkpoint{
 				Root:  root[:],
 				Epoch: 1,
 			},
@@ -659,7 +659,7 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 			ChainInfoFetcher:      mockChainService,
 			BeaconDB:              db,
 		}
-		req := &ethpbv2.SyncCommitteeDutiesRequest{
+		req := &zondpbv2.SyncCommitteeDutiesRequest{
 			Epoch: 1,
 			Index: []primitives.ValidatorIndex{1},
 		}
@@ -679,7 +679,7 @@ func TestGetSyncCommitteeDuties_SyncNotReady(t *testing.T) {
 		TimeFetcher:           chainService,
 		OptimisticModeFetcher: chainService,
 	}
-	_, err = vs.GetSyncCommitteeDuties(context.Background(), &ethpbv2.SyncCommitteeDutiesRequest{})
+	_, err = vs.GetSyncCommitteeDuties(context.Background(), &zondpbv2.SyncCommitteeDutiesRequest{})
 	assert.ErrorContains(t, "Syncing to latest head, not ready to respond", err)
 }
 
@@ -701,7 +701,7 @@ func TestProduceBlockV2(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Phase 0", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Phase0{Phase0: &ethpbalpha.BeaconBlock{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Phase0{Phase0: &zondpbalpha.BeaconBlock{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -709,16 +709,16 @@ func TestProduceBlockV2(t *testing.T) {
 			SyncChecker:    &mockSync.Sync{IsSyncing: false},
 		}
 
-		resp, err := server.ProduceBlockV2(ctx, &ethpbv1.ProduceBlockRequest{})
+		resp, err := server.ProduceBlockV2(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.NoError(t, err)
 
-		assert.Equal(t, ethpbv2.Version_PHASE0, resp.Version)
-		containerBlock, ok := resp.Data.Block.(*ethpbv2.BeaconBlockContainerV2_Phase0Block)
+		assert.Equal(t, zondpbv2.Version_PHASE0, resp.Version)
+		containerBlock, ok := resp.Data.Block.(*zondpbv2.BeaconBlockContainerV2_Phase0Block)
 		require.Equal(t, true, ok)
 		assert.Equal(t, primitives.Slot(123), containerBlock.Phase0Block.Slot)
 	})
 	t.Run("Altair", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Altair{Altair: &ethpbalpha.BeaconBlockAltair{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Altair{Altair: &zondpbalpha.BeaconBlockAltair{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -726,16 +726,16 @@ func TestProduceBlockV2(t *testing.T) {
 			SyncChecker:    &mockSync.Sync{IsSyncing: false},
 		}
 
-		resp, err := server.ProduceBlockV2(ctx, &ethpbv1.ProduceBlockRequest{})
+		resp, err := server.ProduceBlockV2(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.NoError(t, err)
 
-		assert.Equal(t, ethpbv2.Version_ALTAIR, resp.Version)
-		containerBlock, ok := resp.Data.Block.(*ethpbv2.BeaconBlockContainerV2_AltairBlock)
+		assert.Equal(t, zondpbv2.Version_ALTAIR, resp.Version)
+		containerBlock, ok := resp.Data.Block.(*zondpbv2.BeaconBlockContainerV2_AltairBlock)
 		require.Equal(t, true, ok)
 		assert.Equal(t, primitives.Slot(123), containerBlock.AltairBlock.Slot)
 	})
 	t.Run("Bellatrix", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Bellatrix{Bellatrix: &ethpbalpha.BeaconBlockBellatrix{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Bellatrix{Bellatrix: &zondpbalpha.BeaconBlockBellatrix{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -744,16 +744,16 @@ func TestProduceBlockV2(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: false},
 		}
 
-		resp, err := server.ProduceBlockV2(ctx, &ethpbv1.ProduceBlockRequest{})
+		resp, err := server.ProduceBlockV2(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.NoError(t, err)
 
-		assert.Equal(t, ethpbv2.Version_BELLATRIX, resp.Version)
-		containerBlock, ok := resp.Data.Block.(*ethpbv2.BeaconBlockContainerV2_BellatrixBlock)
+		assert.Equal(t, zondpbv2.Version_BELLATRIX, resp.Version)
+		containerBlock, ok := resp.Data.Block.(*zondpbv2.BeaconBlockContainerV2_BellatrixBlock)
 		require.Equal(t, true, ok)
 		assert.Equal(t, primitives.Slot(123), containerBlock.BellatrixBlock.Slot)
 	})
 	t.Run("Bellatrix blinded", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_BlindedBellatrix{BlindedBellatrix: &ethpbalpha.BlindedBeaconBlockBellatrix{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_BlindedBellatrix{BlindedBellatrix: &zondpbalpha.BlindedBeaconBlockBellatrix{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -762,11 +762,11 @@ func TestProduceBlockV2(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: false},
 		}
 
-		_, err := server.ProduceBlockV2(ctx, &ethpbv1.ProduceBlockRequest{})
+		_, err := server.ProduceBlockV2(ctx, &zondpbv1.ProduceBlockRequest{})
 		assert.ErrorContains(t, "Prepared Bellatrix beacon block is blinded", err)
 	})
 	t.Run("Capella", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Capella{Capella: &ethpbalpha.BeaconBlockCapella{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Capella{Capella: &zondpbalpha.BeaconBlockCapella{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -775,15 +775,15 @@ func TestProduceBlockV2(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: false},
 		}
 
-		resp, err := server.ProduceBlockV2(ctx, &ethpbv1.ProduceBlockRequest{})
+		resp, err := server.ProduceBlockV2(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.NoError(t, err)
-		assert.Equal(t, ethpbv2.Version_CAPELLA, resp.Version)
-		containerBlock, ok := resp.Data.Block.(*ethpbv2.BeaconBlockContainerV2_CapellaBlock)
+		assert.Equal(t, zondpbv2.Version_CAPELLA, resp.Version)
+		containerBlock, ok := resp.Data.Block.(*zondpbv2.BeaconBlockContainerV2_CapellaBlock)
 		require.Equal(t, true, ok)
 		assert.Equal(t, primitives.Slot(123), containerBlock.CapellaBlock.Slot)
 	})
 	t.Run("Capella blinded", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_BlindedCapella{BlindedCapella: &ethpbalpha.BlindedBeaconBlockCapella{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_BlindedCapella{BlindedCapella: &zondpbalpha.BlindedBeaconBlockCapella{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -792,11 +792,11 @@ func TestProduceBlockV2(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: false},
 		}
 
-		_, err := server.ProduceBlockV2(ctx, &ethpbv1.ProduceBlockRequest{})
+		_, err := server.ProduceBlockV2(ctx, &zondpbv1.ProduceBlockRequest{})
 		assert.ErrorContains(t, "Prepared Capella beacon block is blinded", err)
 	})
 	t.Run("optimistic", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Bellatrix{Bellatrix: &ethpbalpha.BeaconBlockBellatrix{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Bellatrix{Bellatrix: &zondpbalpha.BeaconBlockBellatrix{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -806,7 +806,7 @@ func TestProduceBlockV2(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: true},
 		}
 
-		_, err := server.ProduceBlockV2(ctx, &ethpbv1.ProduceBlockRequest{})
+		_, err := server.ProduceBlockV2(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.ErrorContains(t, "The node is currently optimistic and cannot serve validators", err)
 	})
 	t.Run("sync not ready", func(t *testing.T) {
@@ -827,9 +827,9 @@ func TestProduceBlockV2SSZ(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Phase 0", func(t *testing.T) {
-		b := util.HydrateBeaconBlock(&ethpbalpha.BeaconBlock{})
+		b := util.HydrateBeaconBlock(&zondpbalpha.BeaconBlock{})
 		b.Slot = 123
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Phase0{Phase0: b}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Phase0{Phase0: b}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -837,16 +837,16 @@ func TestProduceBlockV2SSZ(t *testing.T) {
 			SyncChecker:    &mockSync.Sync{IsSyncing: false},
 		}
 
-		resp, err := server.ProduceBlockV2SSZ(ctx, &ethpbv1.ProduceBlockRequest{})
+		resp, err := server.ProduceBlockV2SSZ(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.NoError(t, err)
 		expectedData, err := b.MarshalSSZ()
 		assert.NoError(t, err)
 		assert.DeepEqual(t, expectedData, resp.Data)
 	})
 	t.Run("Altair", func(t *testing.T) {
-		b := util.HydrateBeaconBlockAltair(&ethpbalpha.BeaconBlockAltair{})
+		b := util.HydrateBeaconBlockAltair(&zondpbalpha.BeaconBlockAltair{})
 		b.Slot = 123
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Altair{Altair: b}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Altair{Altair: b}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -854,16 +854,16 @@ func TestProduceBlockV2SSZ(t *testing.T) {
 			SyncChecker:    &mockSync.Sync{IsSyncing: false},
 		}
 
-		resp, err := server.ProduceBlockV2SSZ(ctx, &ethpbv1.ProduceBlockRequest{})
+		resp, err := server.ProduceBlockV2SSZ(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.NoError(t, err)
 		expectedData, err := b.MarshalSSZ()
 		assert.NoError(t, err)
 		assert.DeepEqual(t, expectedData, resp.Data)
 	})
 	t.Run("Bellatrix", func(t *testing.T) {
-		b := util.HydrateBeaconBlockBellatrix(&ethpbalpha.BeaconBlockBellatrix{})
+		b := util.HydrateBeaconBlockBellatrix(&zondpbalpha.BeaconBlockBellatrix{})
 		b.Slot = 123
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Bellatrix{Bellatrix: b}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Bellatrix{Bellatrix: b}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -872,14 +872,14 @@ func TestProduceBlockV2SSZ(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: false},
 		}
 
-		resp, err := server.ProduceBlockV2SSZ(ctx, &ethpbv1.ProduceBlockRequest{})
+		resp, err := server.ProduceBlockV2SSZ(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.NoError(t, err)
 		expectedData, err := b.MarshalSSZ()
 		assert.NoError(t, err)
 		assert.DeepEqual(t, expectedData, resp.Data)
 	})
 	t.Run("Bellatrix blinded", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_BlindedBellatrix{BlindedBellatrix: &ethpbalpha.BlindedBeaconBlockBellatrix{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_BlindedBellatrix{BlindedBellatrix: &zondpbalpha.BlindedBeaconBlockBellatrix{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -888,13 +888,13 @@ func TestProduceBlockV2SSZ(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: false},
 		}
 
-		_, err := server.ProduceBlockV2SSZ(ctx, &ethpbv1.ProduceBlockRequest{})
+		_, err := server.ProduceBlockV2SSZ(ctx, &zondpbv1.ProduceBlockRequest{})
 		assert.ErrorContains(t, "Prepared Bellatrix beacon block is blinded", err)
 	})
 	t.Run("Capella", func(t *testing.T) {
-		b := util.HydrateBeaconBlockCapella(&ethpbalpha.BeaconBlockCapella{})
+		b := util.HydrateBeaconBlockCapella(&zondpbalpha.BeaconBlockCapella{})
 		b.Slot = 123
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Capella{Capella: b}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Capella{Capella: b}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -903,14 +903,14 @@ func TestProduceBlockV2SSZ(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: false},
 		}
 
-		resp, err := server.ProduceBlockV2SSZ(ctx, &ethpbv1.ProduceBlockRequest{})
+		resp, err := server.ProduceBlockV2SSZ(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.NoError(t, err)
 		expectedData, err := b.MarshalSSZ()
 		assert.NoError(t, err)
 		assert.DeepEqual(t, expectedData, resp.Data)
 	})
 	t.Run("Capella blinded", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_BlindedCapella{BlindedCapella: &ethpbalpha.BlindedBeaconBlockCapella{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_BlindedCapella{BlindedCapella: &zondpbalpha.BlindedBeaconBlockCapella{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -919,11 +919,11 @@ func TestProduceBlockV2SSZ(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: false},
 		}
 
-		_, err := server.ProduceBlockV2SSZ(ctx, &ethpbv1.ProduceBlockRequest{})
+		_, err := server.ProduceBlockV2SSZ(ctx, &zondpbv1.ProduceBlockRequest{})
 		assert.ErrorContains(t, "Prepared Capella beacon block is blinded", err)
 	})
 	t.Run("optimistic", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Bellatrix{Bellatrix: &ethpbalpha.BeaconBlockBellatrix{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Bellatrix{Bellatrix: &zondpbalpha.BeaconBlockBellatrix{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -933,7 +933,7 @@ func TestProduceBlockV2SSZ(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: true},
 		}
 
-		_, err := server.ProduceBlockV2SSZ(ctx, &ethpbv1.ProduceBlockRequest{})
+		_, err := server.ProduceBlockV2SSZ(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.ErrorContains(t, "The node is currently optimistic and cannot serve validators", err)
 	})
 	t.Run("sync not ready", func(t *testing.T) {
@@ -954,7 +954,7 @@ func TestProduceBlindedBlock(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Phase 0", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Phase0{Phase0: &ethpbalpha.BeaconBlock{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Phase0{Phase0: &zondpbalpha.BeaconBlock{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -963,16 +963,16 @@ func TestProduceBlindedBlock(t *testing.T) {
 			BlockBuilder:   &builderTest.MockBuilderService{HasConfigured: true},
 		}
 
-		resp, err := server.ProduceBlindedBlock(ctx, &ethpbv1.ProduceBlockRequest{})
+		resp, err := server.ProduceBlindedBlock(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.NoError(t, err)
 
-		assert.Equal(t, ethpbv2.Version_PHASE0, resp.Version)
-		containerBlock, ok := resp.Data.Block.(*ethpbv2.BlindedBeaconBlockContainer_Phase0Block)
+		assert.Equal(t, zondpbv2.Version_PHASE0, resp.Version)
+		containerBlock, ok := resp.Data.Block.(*zondpbv2.BlindedBeaconBlockContainer_Phase0Block)
 		require.Equal(t, true, ok)
 		assert.Equal(t, primitives.Slot(123), containerBlock.Phase0Block.Slot)
 	})
 	t.Run("Altair", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Altair{Altair: &ethpbalpha.BeaconBlockAltair{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Altair{Altair: &zondpbalpha.BeaconBlockAltair{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -981,16 +981,16 @@ func TestProduceBlindedBlock(t *testing.T) {
 			BlockBuilder:   &builderTest.MockBuilderService{HasConfigured: true},
 		}
 
-		resp, err := server.ProduceBlindedBlock(ctx, &ethpbv1.ProduceBlockRequest{})
+		resp, err := server.ProduceBlindedBlock(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.NoError(t, err)
 
-		assert.Equal(t, ethpbv2.Version_ALTAIR, resp.Version)
-		containerBlock, ok := resp.Data.Block.(*ethpbv2.BlindedBeaconBlockContainer_AltairBlock)
+		assert.Equal(t, zondpbv2.Version_ALTAIR, resp.Version)
+		containerBlock, ok := resp.Data.Block.(*zondpbv2.BlindedBeaconBlockContainer_AltairBlock)
 		require.Equal(t, true, ok)
 		assert.Equal(t, primitives.Slot(123), containerBlock.AltairBlock.Slot)
 	})
 	t.Run("Bellatrix", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_BlindedBellatrix{BlindedBellatrix: &ethpbalpha.BlindedBeaconBlockBellatrix{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_BlindedBellatrix{BlindedBellatrix: &zondpbalpha.BlindedBeaconBlockBellatrix{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -1000,16 +1000,16 @@ func TestProduceBlindedBlock(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: false},
 		}
 
-		resp, err := server.ProduceBlindedBlock(ctx, &ethpbv1.ProduceBlockRequest{})
+		resp, err := server.ProduceBlindedBlock(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.NoError(t, err)
 
-		assert.Equal(t, ethpbv2.Version_BELLATRIX, resp.Version)
-		containerBlock, ok := resp.Data.Block.(*ethpbv2.BlindedBeaconBlockContainer_BellatrixBlock)
+		assert.Equal(t, zondpbv2.Version_BELLATRIX, resp.Version)
+		containerBlock, ok := resp.Data.Block.(*zondpbv2.BlindedBeaconBlockContainer_BellatrixBlock)
 		require.Equal(t, true, ok)
 		assert.Equal(t, primitives.Slot(123), containerBlock.BellatrixBlock.Slot)
 	})
 	t.Run("Bellatrix full", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Bellatrix{Bellatrix: &ethpbalpha.BeaconBlockBellatrix{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Bellatrix{Bellatrix: &zondpbalpha.BeaconBlockBellatrix{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -1019,11 +1019,11 @@ func TestProduceBlindedBlock(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: false},
 		}
 
-		_, err := server.ProduceBlindedBlock(ctx, &ethpbv1.ProduceBlockRequest{})
+		_, err := server.ProduceBlindedBlock(ctx, &zondpbv1.ProduceBlockRequest{})
 		assert.ErrorContains(t, "Prepared beacon block is not blinded", err)
 	})
 	t.Run("Capella", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_BlindedCapella{BlindedCapella: &ethpbalpha.BlindedBeaconBlockCapella{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_BlindedCapella{BlindedCapella: &zondpbalpha.BlindedBeaconBlockCapella{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -1033,16 +1033,16 @@ func TestProduceBlindedBlock(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: false},
 		}
 
-		resp, err := server.ProduceBlindedBlock(ctx, &ethpbv1.ProduceBlockRequest{})
+		resp, err := server.ProduceBlindedBlock(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.NoError(t, err)
 
-		assert.Equal(t, ethpbv2.Version_CAPELLA, resp.Version)
-		containerBlock, ok := resp.Data.Block.(*ethpbv2.BlindedBeaconBlockContainer_CapellaBlock)
+		assert.Equal(t, zondpbv2.Version_CAPELLA, resp.Version)
+		containerBlock, ok := resp.Data.Block.(*zondpbv2.BlindedBeaconBlockContainer_CapellaBlock)
 		require.Equal(t, true, ok)
 		assert.Equal(t, primitives.Slot(123), containerBlock.CapellaBlock.Slot)
 	})
 	t.Run("Capella full", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Capella{Capella: &ethpbalpha.BeaconBlockCapella{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Capella{Capella: &zondpbalpha.BeaconBlockCapella{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -1052,11 +1052,11 @@ func TestProduceBlindedBlock(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: false},
 		}
 
-		_, err := server.ProduceBlindedBlock(ctx, &ethpbv1.ProduceBlockRequest{})
+		_, err := server.ProduceBlindedBlock(ctx, &zondpbv1.ProduceBlockRequest{})
 		assert.ErrorContains(t, "Prepared beacon block is not blinded", err)
 	})
 	t.Run("optimistic", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_BlindedBellatrix{BlindedBellatrix: &ethpbalpha.BlindedBeaconBlockBellatrix{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_BlindedBellatrix{BlindedBellatrix: &zondpbalpha.BlindedBeaconBlockBellatrix{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -1066,7 +1066,7 @@ func TestProduceBlindedBlock(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: true},
 		}
 
-		_, err := server.ProduceBlindedBlock(ctx, &ethpbv1.ProduceBlockRequest{})
+		_, err := server.ProduceBlindedBlock(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.ErrorContains(t, "The node is currently optimistic and cannot serve validators", err)
 	})
 	t.Run("builder not configured", func(t *testing.T) {
@@ -1095,9 +1095,9 @@ func TestProduceBlindedBlockSSZ(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Phase 0", func(t *testing.T) {
-		b := util.HydrateBeaconBlock(&ethpbalpha.BeaconBlock{})
+		b := util.HydrateBeaconBlock(&zondpbalpha.BeaconBlock{})
 		b.Slot = 123
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Phase0{Phase0: b}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Phase0{Phase0: b}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -1106,16 +1106,16 @@ func TestProduceBlindedBlockSSZ(t *testing.T) {
 			BlockBuilder:   &builderTest.MockBuilderService{HasConfigured: true},
 		}
 
-		resp, err := server.ProduceBlindedBlockSSZ(ctx, &ethpbv1.ProduceBlockRequest{})
+		resp, err := server.ProduceBlindedBlockSSZ(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.NoError(t, err)
 		expectedData, err := b.MarshalSSZ()
 		assert.NoError(t, err)
 		assert.DeepEqual(t, expectedData, resp.Data)
 	})
 	t.Run("Altair", func(t *testing.T) {
-		b := util.HydrateBeaconBlockAltair(&ethpbalpha.BeaconBlockAltair{})
+		b := util.HydrateBeaconBlockAltair(&zondpbalpha.BeaconBlockAltair{})
 		b.Slot = 123
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Altair{Altair: b}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Altair{Altair: b}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -1124,16 +1124,16 @@ func TestProduceBlindedBlockSSZ(t *testing.T) {
 			BlockBuilder:   &builderTest.MockBuilderService{HasConfigured: true},
 		}
 
-		resp, err := server.ProduceBlindedBlockSSZ(ctx, &ethpbv1.ProduceBlockRequest{})
+		resp, err := server.ProduceBlindedBlockSSZ(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.NoError(t, err)
 		expectedData, err := b.MarshalSSZ()
 		assert.NoError(t, err)
 		assert.DeepEqual(t, expectedData, resp.Data)
 	})
 	t.Run("Bellatrix", func(t *testing.T) {
-		b := util.HydrateBlindedBeaconBlockBellatrix(&ethpbalpha.BlindedBeaconBlockBellatrix{})
+		b := util.HydrateBlindedBeaconBlockBellatrix(&zondpbalpha.BlindedBeaconBlockBellatrix{})
 		b.Slot = 123
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_BlindedBellatrix{BlindedBellatrix: b}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_BlindedBellatrix{BlindedBellatrix: b}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -1143,14 +1143,14 @@ func TestProduceBlindedBlockSSZ(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: false},
 		}
 
-		resp, err := server.ProduceBlindedBlockSSZ(ctx, &ethpbv1.ProduceBlockRequest{})
+		resp, err := server.ProduceBlindedBlockSSZ(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.NoError(t, err)
 		expectedData, err := b.MarshalSSZ()
 		assert.NoError(t, err)
 		assert.DeepEqual(t, expectedData, resp.Data)
 	})
 	t.Run("Bellatrix full", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Bellatrix{Bellatrix: &ethpbalpha.BeaconBlockBellatrix{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Bellatrix{Bellatrix: &zondpbalpha.BeaconBlockBellatrix{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -1160,13 +1160,13 @@ func TestProduceBlindedBlockSSZ(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: false},
 		}
 
-		_, err := server.ProduceBlindedBlockSSZ(ctx, &ethpbv1.ProduceBlockRequest{})
+		_, err := server.ProduceBlindedBlockSSZ(ctx, &zondpbv1.ProduceBlockRequest{})
 		assert.ErrorContains(t, "Prepared Bellatrix beacon block is not blinded", err)
 	})
 	t.Run("Capella", func(t *testing.T) {
-		b := util.HydrateBlindedBeaconBlockCapella(&ethpbalpha.BlindedBeaconBlockCapella{})
+		b := util.HydrateBlindedBeaconBlockCapella(&zondpbalpha.BlindedBeaconBlockCapella{})
 		b.Slot = 123
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_BlindedCapella{BlindedCapella: b}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_BlindedCapella{BlindedCapella: b}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -1176,14 +1176,14 @@ func TestProduceBlindedBlockSSZ(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: false},
 		}
 
-		resp, err := server.ProduceBlindedBlockSSZ(ctx, &ethpbv1.ProduceBlockRequest{})
+		resp, err := server.ProduceBlindedBlockSSZ(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.NoError(t, err)
 		expectedData, err := b.MarshalSSZ()
 		assert.NoError(t, err)
 		assert.DeepEqual(t, expectedData, resp.Data)
 	})
 	t.Run("Capella full", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_Capella{Capella: &ethpbalpha.BeaconBlockCapella{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_Capella{Capella: &zondpbalpha.BeaconBlockCapella{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -1193,11 +1193,11 @@ func TestProduceBlindedBlockSSZ(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: false},
 		}
 
-		_, err := server.ProduceBlindedBlockSSZ(ctx, &ethpbv1.ProduceBlockRequest{})
+		_, err := server.ProduceBlindedBlockSSZ(ctx, &zondpbv1.ProduceBlockRequest{})
 		assert.ErrorContains(t, "Prepared Capella beacon block is not blinded", err)
 	})
 	t.Run("optimistic", func(t *testing.T) {
-		blk := &ethpbalpha.GenericBeaconBlock{Block: &ethpbalpha.GenericBeaconBlock_BlindedBellatrix{BlindedBellatrix: &ethpbalpha.BlindedBeaconBlockBellatrix{Slot: 123}}}
+		blk := &zondpbalpha.GenericBeaconBlock{Block: &zondpbalpha.GenericBeaconBlock_BlindedBellatrix{BlindedBellatrix: &zondpbalpha.BlindedBeaconBlockBellatrix{Slot: 123}}}
 		v1alpha1Server := mock.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(blk, nil)
 		server := &Server{
@@ -1207,7 +1207,7 @@ func TestProduceBlindedBlockSSZ(t *testing.T) {
 			OptimisticModeFetcher: &mockChain.ChainService{Optimistic: true},
 		}
 
-		_, err := server.ProduceBlindedBlockSSZ(ctx, &ethpbv1.ProduceBlockRequest{})
+		_, err := server.ProduceBlindedBlockSSZ(ctx, &zondpbv1.ProduceBlockRequest{})
 		require.ErrorContains(t, "The node is currently optimistic and cannot serve validators", err)
 	})
 	t.Run("builder not configured", func(t *testing.T) {
@@ -1248,7 +1248,7 @@ func TestProduceAttestationData(t *testing.T) {
 	beaconState, err := util.NewBeaconState()
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetSlot(slot))
-	err = beaconState.SetCurrentJustifiedCheckpoint(&ethpbalpha.Checkpoint{
+	err = beaconState.SetCurrentJustifiedCheckpoint(&zondpbalpha.Checkpoint{
 		Epoch: 2,
 		Root:  justifiedRoot[:],
 	})
@@ -1282,21 +1282,21 @@ func TestProduceAttestationData(t *testing.T) {
 		V1Alpha1Server: v1Alpha1Server,
 	}
 
-	req := &ethpbv1.ProduceAttestationDataRequest{
+	req := &zondpbv1.ProduceAttestationDataRequest{
 		CommitteeIndex: 0,
 		Slot:           3*params.BeaconConfig().SlotsPerEpoch + 1,
 	}
 	res, err := v1Server.ProduceAttestationData(context.Background(), req)
 	require.NoError(t, err, "Could not get attestation info at slot")
 
-	expectedInfo := &ethpbv1.AttestationData{
+	expectedInfo := &zondpbv1.AttestationData{
 		Slot:            3*params.BeaconConfig().SlotsPerEpoch + 1,
 		BeaconBlockRoot: blockRoot[:],
-		Source: &ethpbv1.Checkpoint{
+		Source: &zondpbv1.Checkpoint{
 			Epoch: 2,
 			Root:  justifiedRoot[:],
 		},
-		Target: &ethpbv1.Checkpoint{
+		Target: &zondpbv1.Checkpoint{
 			Epoch: 3,
 			Root:  blockRoot[:],
 		},
@@ -1311,17 +1311,17 @@ func TestGetAggregateAttestation(t *testing.T) {
 	ctx := context.Background()
 	root1 := bytesutil.PadTo([]byte("root1"), 32)
 	sig1 := bytesutil.PadTo([]byte("sig1"), dilithium2.CryptoBytes)
-	attSlot1 := &ethpbalpha.Attestation{
+	attSlot1 := &zondpbalpha.Attestation{
 		AggregationBits: []byte{0, 1},
-		Data: &ethpbalpha.AttestationData{
+		Data: &zondpbalpha.AttestationData{
 			Slot:            1,
 			CommitteeIndex:  1,
 			BeaconBlockRoot: root1,
-			Source: &ethpbalpha.Checkpoint{
+			Source: &zondpbalpha.Checkpoint{
 				Epoch: 1,
 				Root:  root1,
 			},
-			Target: &ethpbalpha.Checkpoint{
+			Target: &zondpbalpha.Checkpoint{
 				Epoch: 1,
 				Root:  root1,
 			},
@@ -1330,17 +1330,17 @@ func TestGetAggregateAttestation(t *testing.T) {
 	}
 	root21 := bytesutil.PadTo([]byte("root2_1"), 32)
 	sig21 := bytesutil.PadTo([]byte("sig2_1"), dilithium2.CryptoBytes)
-	attslot21 := &ethpbalpha.Attestation{
+	attslot21 := &zondpbalpha.Attestation{
 		AggregationBits: []byte{0, 1, 1},
-		Data: &ethpbalpha.AttestationData{
+		Data: &zondpbalpha.AttestationData{
 			Slot:            2,
 			CommitteeIndex:  2,
 			BeaconBlockRoot: root21,
-			Source: &ethpbalpha.Checkpoint{
+			Source: &zondpbalpha.Checkpoint{
 				Epoch: 1,
 				Root:  root21,
 			},
-			Target: &ethpbalpha.Checkpoint{
+			Target: &zondpbalpha.Checkpoint{
 				Epoch: 1,
 				Root:  root21,
 			},
@@ -1349,17 +1349,17 @@ func TestGetAggregateAttestation(t *testing.T) {
 	}
 	root22 := bytesutil.PadTo([]byte("root2_2"), 32)
 	sig22 := bytesutil.PadTo([]byte("sig2_2"), dilithium2.CryptoBytes)
-	attslot22 := &ethpbalpha.Attestation{
+	attslot22 := &zondpbalpha.Attestation{
 		AggregationBits: []byte{0, 1, 1, 1},
-		Data: &ethpbalpha.AttestationData{
+		Data: &zondpbalpha.AttestationData{
 			Slot:            2,
 			CommitteeIndex:  3,
 			BeaconBlockRoot: root22,
-			Source: &ethpbalpha.Checkpoint{
+			Source: &zondpbalpha.Checkpoint{
 				Epoch: 1,
 				Root:  root22,
 			},
-			Target: &ethpbalpha.Checkpoint{
+			Target: &zondpbalpha.Checkpoint{
 				Epoch: 1,
 				Root:  root22,
 			},
@@ -1369,17 +1369,17 @@ func TestGetAggregateAttestation(t *testing.T) {
 	root33 := bytesutil.PadTo([]byte("root3_3"), 32)
 	sig33 := dilithium.NewAggregateSignature().Marshal()
 
-	attslot33 := &ethpbalpha.Attestation{
+	attslot33 := &zondpbalpha.Attestation{
 		AggregationBits: []byte{1, 0, 0, 1},
-		Data: &ethpbalpha.AttestationData{
+		Data: &zondpbalpha.AttestationData{
 			Slot:            2,
 			CommitteeIndex:  3,
 			BeaconBlockRoot: root33,
-			Source: &ethpbalpha.Checkpoint{
+			Source: &zondpbalpha.Checkpoint{
 				Epoch: 1,
 				Root:  root33,
 			},
-			Target: &ethpbalpha.Checkpoint{
+			Target: &zondpbalpha.Checkpoint{
 				Epoch: 1,
 				Root:  root33,
 			},
@@ -1387,7 +1387,7 @@ func TestGetAggregateAttestation(t *testing.T) {
 		Signature: sig33,
 	}
 	pool := attestations.NewPool()
-	err := pool.SaveAggregatedAttestations([]*ethpbalpha.Attestation{attSlot1, attslot21, attslot22})
+	err := pool.SaveAggregatedAttestations([]*zondpbalpha.Attestation{attSlot1, attslot21, attslot22})
 	assert.NoError(t, err)
 	vs := &Server{
 		AttestationsPool: pool,
@@ -1396,7 +1396,7 @@ func TestGetAggregateAttestation(t *testing.T) {
 	t.Run("OK", func(t *testing.T) {
 		reqRoot, err := attslot22.Data.HashTreeRoot()
 		require.NoError(t, err)
-		req := &ethpbv1.AggregateAttestationRequest{
+		req := &zondpbv1.AggregateAttestationRequest{
 			AttestationDataRoot: reqRoot[:],
 			Slot:                2,
 		}
@@ -1422,11 +1422,11 @@ func TestGetAggregateAttestation(t *testing.T) {
 		require.NoError(t, err)
 		err = vs.AttestationsPool.SaveUnaggregatedAttestation(attslot33)
 		require.NoError(t, err)
-		newAtt := ethpbalpha.CopyAttestation(attslot33)
+		newAtt := zondpbalpha.CopyAttestation(attslot33)
 		newAtt.AggregationBits = []byte{0, 1, 0, 1}
 		err = vs.AttestationsPool.SaveUnaggregatedAttestation(newAtt)
 		require.NoError(t, err)
-		req := &ethpbv1.AggregateAttestationRequest{
+		req := &zondpbv1.AggregateAttestationRequest{
 			AttestationDataRoot: reqRoot[:],
 			Slot:                2,
 		}
@@ -1435,7 +1435,7 @@ func TestGetAggregateAttestation(t *testing.T) {
 		assert.DeepEqual(t, bitfield.Bitlist{1, 1, 0, 1}, aggAtt.Data.AggregationBits)
 	})
 	t.Run("No matching attestation", func(t *testing.T) {
-		req := &ethpbv1.AggregateAttestationRequest{
+		req := &zondpbv1.AggregateAttestationRequest{
 			AttestationDataRoot: bytesutil.PadTo([]byte("foo"), 32),
 			Slot:                2,
 		}
@@ -1448,34 +1448,34 @@ func TestGetAggregateAttestation_SameSlotAndRoot_ReturnMostAggregationBits(t *te
 	ctx := context.Background()
 	root := bytesutil.PadTo([]byte("root"), 32)
 	sig := bytesutil.PadTo([]byte("sig"), dilithium2.CryptoBytes)
-	att1 := &ethpbalpha.Attestation{
+	att1 := &zondpbalpha.Attestation{
 		AggregationBits: []byte{3, 0, 0, 1},
-		Data: &ethpbalpha.AttestationData{
+		Data: &zondpbalpha.AttestationData{
 			Slot:            1,
 			CommitteeIndex:  1,
 			BeaconBlockRoot: root,
-			Source: &ethpbalpha.Checkpoint{
+			Source: &zondpbalpha.Checkpoint{
 				Epoch: 1,
 				Root:  root,
 			},
-			Target: &ethpbalpha.Checkpoint{
+			Target: &zondpbalpha.Checkpoint{
 				Epoch: 1,
 				Root:  root,
 			},
 		},
 		Signature: sig,
 	}
-	att2 := &ethpbalpha.Attestation{
+	att2 := &zondpbalpha.Attestation{
 		AggregationBits: []byte{0, 3, 0, 1},
-		Data: &ethpbalpha.AttestationData{
+		Data: &zondpbalpha.AttestationData{
 			Slot:            1,
 			CommitteeIndex:  1,
 			BeaconBlockRoot: root,
-			Source: &ethpbalpha.Checkpoint{
+			Source: &zondpbalpha.Checkpoint{
 				Epoch: 1,
 				Root:  root,
 			},
-			Target: &ethpbalpha.Checkpoint{
+			Target: &zondpbalpha.Checkpoint{
 				Epoch: 1,
 				Root:  root,
 			},
@@ -1483,14 +1483,14 @@ func TestGetAggregateAttestation_SameSlotAndRoot_ReturnMostAggregationBits(t *te
 		Signature: sig,
 	}
 	pool := attestations.NewPool()
-	err := pool.SaveAggregatedAttestations([]*ethpbalpha.Attestation{att1, att2})
+	err := pool.SaveAggregatedAttestations([]*zondpbalpha.Attestation{att1, att2})
 	assert.NoError(t, err)
 	vs := &Server{
 		AttestationsPool: pool,
 	}
 	reqRoot, err := att1.Data.HashTreeRoot()
 	require.NoError(t, err)
-	req := &ethpbv1.AggregateAttestationRequest{
+	req := &zondpbv1.AggregateAttestationRequest{
 		AttestationDataRoot: reqRoot[:],
 		Slot:                1,
 	}
@@ -1537,8 +1537,8 @@ func TestSubmitBeaconCommitteeSubscription(t *testing.T) {
 
 	t.Run("Single subscription", func(t *testing.T) {
 		cache.SubnetIDs.EmptyAllCaches()
-		req := &ethpbv1.SubmitBeaconCommitteeSubscriptionsRequest{
-			Data: []*ethpbv1.BeaconCommitteeSubscribe{
+		req := &zondpbv1.SubmitBeaconCommitteeSubscriptionsRequest{
+			Data: []*zondpbv1.BeaconCommitteeSubscribe{
 				{
 					ValidatorIndex: 1,
 					CommitteeIndex: 1,
@@ -1556,8 +1556,8 @@ func TestSubmitBeaconCommitteeSubscription(t *testing.T) {
 
 	t.Run("Multiple subscriptions", func(t *testing.T) {
 		cache.SubnetIDs.EmptyAllCaches()
-		req := &ethpbv1.SubmitBeaconCommitteeSubscriptionsRequest{
-			Data: []*ethpbv1.BeaconCommitteeSubscribe{
+		req := &zondpbv1.SubmitBeaconCommitteeSubscriptionsRequest{
+			Data: []*zondpbv1.BeaconCommitteeSubscribe{
 				{
 					ValidatorIndex: 1,
 					CommitteeIndex: 1,
@@ -1580,8 +1580,8 @@ func TestSubmitBeaconCommitteeSubscription(t *testing.T) {
 
 	t.Run("Is aggregator", func(t *testing.T) {
 		cache.SubnetIDs.EmptyAllCaches()
-		req := &ethpbv1.SubmitBeaconCommitteeSubscriptionsRequest{
-			Data: []*ethpbv1.BeaconCommitteeSubscribe{
+		req := &zondpbv1.SubmitBeaconCommitteeSubscriptionsRequest{
+			Data: []*zondpbv1.BeaconCommitteeSubscribe{
 				{
 					ValidatorIndex: 1,
 					CommitteeIndex: 1,
@@ -1598,8 +1598,8 @@ func TestSubmitBeaconCommitteeSubscription(t *testing.T) {
 
 	t.Run("Validators assigned to subnet", func(t *testing.T) {
 		cache.SubnetIDs.EmptyAllCaches()
-		req := &ethpbv1.SubmitBeaconCommitteeSubscriptionsRequest{
-			Data: []*ethpbv1.BeaconCommitteeSubscribe{
+		req := &zondpbv1.SubmitBeaconCommitteeSubscriptionsRequest{
+			Data: []*zondpbv1.BeaconCommitteeSubscribe{
 				{
 					ValidatorIndex: 1,
 					CommitteeIndex: 1,
@@ -1625,8 +1625,8 @@ func TestSubmitBeaconCommitteeSubscription(t *testing.T) {
 	})
 
 	t.Run("No subscriptions", func(t *testing.T) {
-		req := &ethpbv1.SubmitBeaconCommitteeSubscriptionsRequest{
-			Data: make([]*ethpbv1.BeaconCommitteeSubscribe, 0),
+		req := &zondpbv1.SubmitBeaconCommitteeSubscriptionsRequest{
+			Data: make([]*zondpbv1.BeaconCommitteeSubscribe, 0),
 		}
 		_, err = vs.SubmitBeaconCommitteeSubscription(ctx, req)
 		require.NotNil(t, err)
@@ -1644,7 +1644,7 @@ func TestSubmitBeaconCommitteeSubscription_SyncNotReady(t *testing.T) {
 		TimeFetcher:           chainService,
 		OptimisticModeFetcher: chainService,
 	}
-	_, err = vs.SubmitBeaconCommitteeSubscription(context.Background(), &ethpbv1.SubmitBeaconCommitteeSubscriptionsRequest{})
+	_, err = vs.SubmitBeaconCommitteeSubscription(context.Background(), &zondpbv1.SubmitBeaconCommitteeSubscriptionsRequest{})
 	assert.ErrorContains(t, "Syncing to latest head, not ready to respond", err)
 }
 
@@ -1681,8 +1681,8 @@ func TestSubmitSyncCommitteeSubscription(t *testing.T) {
 
 	t.Run("Single subscription", func(t *testing.T) {
 		cache.SyncSubnetIDs.EmptyAllCaches()
-		req := &ethpbv2.SubmitSyncCommitteeSubscriptionsRequest{
-			Data: []*ethpbv2.SyncCommitteeSubscription{
+		req := &zondpbv2.SubmitSyncCommitteeSubscriptionsRequest{
+			Data: []*zondpbv2.SyncCommitteeSubscription{
 				{
 					ValidatorIndex:       0,
 					SyncCommitteeIndices: []uint64{0, 2},
@@ -1700,8 +1700,8 @@ func TestSubmitSyncCommitteeSubscription(t *testing.T) {
 
 	t.Run("Multiple subscriptions", func(t *testing.T) {
 		cache.SyncSubnetIDs.EmptyAllCaches()
-		req := &ethpbv2.SubmitSyncCommitteeSubscriptionsRequest{
-			Data: []*ethpbv2.SyncCommitteeSubscription{
+		req := &zondpbv2.SubmitSyncCommitteeSubscriptionsRequest{
+			Data: []*zondpbv2.SyncCommitteeSubscription{
 				{
 					ValidatorIndex:       0,
 					SyncCommitteeIndices: []uint64{0},
@@ -1725,8 +1725,8 @@ func TestSubmitSyncCommitteeSubscription(t *testing.T) {
 	})
 
 	t.Run("No subscriptions", func(t *testing.T) {
-		req := &ethpbv2.SubmitSyncCommitteeSubscriptionsRequest{
-			Data: make([]*ethpbv2.SyncCommitteeSubscription, 0),
+		req := &zondpbv2.SubmitSyncCommitteeSubscriptionsRequest{
+			Data: make([]*zondpbv2.SyncCommitteeSubscription, 0),
 		}
 		_, err = vs.SubmitSyncCommitteeSubscription(ctx, req)
 		require.NotNil(t, err)
@@ -1734,8 +1734,8 @@ func TestSubmitSyncCommitteeSubscription(t *testing.T) {
 	})
 
 	t.Run("Invalid validator index", func(t *testing.T) {
-		req := &ethpbv2.SubmitSyncCommitteeSubscriptionsRequest{
-			Data: []*ethpbv2.SyncCommitteeSubscription{
+		req := &zondpbv2.SubmitSyncCommitteeSubscriptionsRequest{
+			Data: []*zondpbv2.SyncCommitteeSubscription{
 				{
 					ValidatorIndex:       99,
 					SyncCommitteeIndices: []uint64{},
@@ -1749,8 +1749,8 @@ func TestSubmitSyncCommitteeSubscription(t *testing.T) {
 	})
 
 	t.Run("Epoch in the past", func(t *testing.T) {
-		req := &ethpbv2.SubmitSyncCommitteeSubscriptionsRequest{
-			Data: []*ethpbv2.SyncCommitteeSubscription{
+		req := &zondpbv2.SubmitSyncCommitteeSubscriptionsRequest{
+			Data: []*zondpbv2.SyncCommitteeSubscription{
 				{
 					ValidatorIndex:       0,
 					SyncCommitteeIndices: []uint64{},
@@ -1764,8 +1764,8 @@ func TestSubmitSyncCommitteeSubscription(t *testing.T) {
 	})
 
 	t.Run("First epoch after the next sync committee is valid", func(t *testing.T) {
-		req := &ethpbv2.SubmitSyncCommitteeSubscriptionsRequest{
-			Data: []*ethpbv2.SyncCommitteeSubscription{
+		req := &zondpbv2.SubmitSyncCommitteeSubscriptionsRequest{
+			Data: []*zondpbv2.SyncCommitteeSubscription{
 				{
 					ValidatorIndex:       0,
 					SyncCommitteeIndices: []uint64{},
@@ -1778,8 +1778,8 @@ func TestSubmitSyncCommitteeSubscription(t *testing.T) {
 	})
 
 	t.Run("Epoch too far in the future", func(t *testing.T) {
-		req := &ethpbv2.SubmitSyncCommitteeSubscriptionsRequest{
-			Data: []*ethpbv2.SyncCommitteeSubscription{
+		req := &zondpbv2.SubmitSyncCommitteeSubscriptionsRequest{
+			Data: []*zondpbv2.SyncCommitteeSubscription{
 				{
 					ValidatorIndex:       0,
 					SyncCommitteeIndices: []uint64{},
@@ -1803,7 +1803,7 @@ func TestSubmitSyncCommitteeSubscription_SyncNotReady(t *testing.T) {
 		TimeFetcher:           chainService,
 		OptimisticModeFetcher: chainService,
 	}
-	_, err = vs.SubmitSyncCommitteeSubscription(context.Background(), &ethpbv2.SubmitSyncCommitteeSubscriptionsRequest{})
+	_, err = vs.SubmitSyncCommitteeSubscription(context.Background(), &zondpbv2.SubmitSyncCommitteeSubscriptionsRequest{})
 	assert.ErrorContains(t, "Syncing to latest head, not ready to respond", err)
 }
 
@@ -1816,17 +1816,17 @@ func TestSubmitAggregateAndProofs(t *testing.T) {
 	root := bytesutil.PadTo([]byte("root"), 32)
 	sig := bytesutil.PadTo([]byte("sig"), dilithium2.CryptoBytes)
 	proof := bytesutil.PadTo([]byte("proof"), dilithium2.CryptoBytes)
-	att := &ethpbv1.Attestation{
+	att := &zondpbv1.Attestation{
 		AggregationBits: []byte{0, 1},
-		Data: &ethpbv1.AttestationData{
+		Data: &zondpbv1.AttestationData{
 			Slot:            1,
 			Index:           1,
 			BeaconBlockRoot: root,
-			Source: &ethpbv1.Checkpoint{
+			Source: &zondpbv1.Checkpoint{
 				Epoch: 1,
 				Root:  root,
 			},
-			Target: &ethpbv1.Checkpoint{
+			Target: &zondpbv1.Checkpoint{
 				Epoch: 1,
 				Root:  root,
 			},
@@ -1845,10 +1845,10 @@ func TestSubmitAggregateAndProofs(t *testing.T) {
 			Broadcaster: broadcaster,
 		}
 
-		req := &ethpbv1.SubmitAggregateAndProofsRequest{
-			Data: []*ethpbv1.SignedAggregateAttestationAndProof{
+		req := &zondpbv1.SubmitAggregateAndProofsRequest{
+			Data: []*zondpbv1.SignedAggregateAttestationAndProof{
 				{
-					Message: &ethpbv1.AggregateAttestationAndProof{
+					Message: &zondpbv1.AggregateAttestationAndProof{
 						AggregatorIndex: 1,
 						Aggregate:       att,
 						SelectionProof:  proof,
@@ -1869,8 +1869,8 @@ func TestSubmitAggregateAndProofs(t *testing.T) {
 			Broadcaster: broadcaster,
 		}
 
-		req := &ethpbv1.SubmitAggregateAndProofsRequest{
-			Data: []*ethpbv1.SignedAggregateAttestationAndProof{
+		req := &zondpbv1.SubmitAggregateAndProofsRequest{
+			Data: []*zondpbv1.SignedAggregateAttestationAndProof{
 				nil,
 			},
 		}
@@ -1879,8 +1879,8 @@ func TestSubmitAggregateAndProofs(t *testing.T) {
 		assert.ErrorContains(t, "Signed aggregate request can't be nil", err)
 		assert.Equal(t, false, broadcaster.BroadcastCalled)
 
-		req = &ethpbv1.SubmitAggregateAndProofsRequest{
-			Data: []*ethpbv1.SignedAggregateAttestationAndProof{
+		req = &zondpbv1.SubmitAggregateAndProofsRequest{
+			Data: []*zondpbv1.SignedAggregateAttestationAndProof{
 				{
 					Message:   nil,
 					Signature: sig,
@@ -1892,12 +1892,12 @@ func TestSubmitAggregateAndProofs(t *testing.T) {
 		assert.ErrorContains(t, "Signed aggregate request can't be nil", err)
 		assert.Equal(t, false, broadcaster.BroadcastCalled)
 
-		req = &ethpbv1.SubmitAggregateAndProofsRequest{
-			Data: []*ethpbv1.SignedAggregateAttestationAndProof{
+		req = &zondpbv1.SubmitAggregateAndProofsRequest{
+			Data: []*zondpbv1.SignedAggregateAttestationAndProof{
 				{
-					Message: &ethpbv1.AggregateAttestationAndProof{
+					Message: &zondpbv1.AggregateAttestationAndProof{
 						AggregatorIndex: 1,
-						Aggregate: &ethpbv1.Attestation{
+						Aggregate: &zondpbv1.Attestation{
 							AggregationBits: []byte{0, 1},
 							Data:            nil,
 							Signature:       sig,
@@ -1919,10 +1919,10 @@ func TestSubmitAggregateAndProofs(t *testing.T) {
 		vs := Server{
 			Broadcaster: broadcaster,
 		}
-		req := &ethpbv1.SubmitAggregateAndProofsRequest{
-			Data: []*ethpbv1.SignedAggregateAttestationAndProof{
+		req := &zondpbv1.SubmitAggregateAndProofsRequest{
+			Data: []*zondpbv1.SignedAggregateAttestationAndProof{
 				{
-					Message: &ethpbv1.AggregateAttestationAndProof{
+					Message: &zondpbv1.AggregateAttestationAndProof{
 						AggregatorIndex: 1,
 						Aggregate:       att,
 						SelectionProof:  proof,
@@ -1942,10 +1942,10 @@ func TestSubmitAggregateAndProofs(t *testing.T) {
 		vs := Server{
 			Broadcaster: broadcaster,
 		}
-		req := &ethpbv1.SubmitAggregateAndProofsRequest{
-			Data: []*ethpbv1.SignedAggregateAttestationAndProof{
+		req := &zondpbv1.SubmitAggregateAndProofsRequest{
+			Data: []*zondpbv1.SignedAggregateAttestationAndProof{
 				{
-					Message: &ethpbv1.AggregateAttestationAndProof{
+					Message: &zondpbv1.AggregateAttestationAndProof{
 						AggregatorIndex: 1,
 						Aggregate:       att,
 						SelectionProof:  make([]byte, 96),
@@ -1965,22 +1965,22 @@ func TestSubmitAggregateAndProofs(t *testing.T) {
 		vs := Server{
 			Broadcaster: broadcaster,
 		}
-		req := &ethpbv1.SubmitAggregateAndProofsRequest{
-			Data: []*ethpbv1.SignedAggregateAttestationAndProof{
+		req := &zondpbv1.SubmitAggregateAndProofsRequest{
+			Data: []*zondpbv1.SignedAggregateAttestationAndProof{
 				{
-					Message: &ethpbv1.AggregateAttestationAndProof{
+					Message: &zondpbv1.AggregateAttestationAndProof{
 						AggregatorIndex: 1,
-						Aggregate: &ethpbv1.Attestation{
+						Aggregate: &zondpbv1.Attestation{
 							AggregationBits: []byte{0, 1},
-							Data: &ethpbv1.AttestationData{
+							Data: &zondpbv1.AttestationData{
 								Slot:            1,
 								Index:           1,
 								BeaconBlockRoot: root,
-								Source: &ethpbv1.Checkpoint{
+								Source: &zondpbv1.Checkpoint{
 									Epoch: 1,
 									Root:  root,
 								},
-								Target: &ethpbv1.Checkpoint{
+								Target: &zondpbv1.Checkpoint{
 									Epoch: 1,
 									Root:  root,
 								},
@@ -2005,10 +2005,10 @@ func TestSubmitAggregateAndProofs(t *testing.T) {
 			Broadcaster: broadcaster,
 		}
 
-		req := &ethpbv1.SubmitAggregateAndProofsRequest{
-			Data: []*ethpbv1.SignedAggregateAttestationAndProof{
+		req := &zondpbv1.SubmitAggregateAndProofsRequest{
+			Data: []*zondpbv1.SignedAggregateAttestationAndProof{
 				{
-					Message: &ethpbv1.AggregateAttestationAndProof{
+					Message: &zondpbv1.AggregateAttestationAndProof{
 						AggregatorIndex: 1,
 						Aggregate:       att,
 						SelectionProof:  proof,
@@ -2022,22 +2022,22 @@ func TestSubmitAggregateAndProofs(t *testing.T) {
 		assert.ErrorContains(t, "Incorrect signature length. Expected "+strconv.Itoa(96)+" bytes", err)
 		assert.Equal(t, false, broadcaster.BroadcastCalled)
 
-		req = &ethpbv1.SubmitAggregateAndProofsRequest{
-			Data: []*ethpbv1.SignedAggregateAttestationAndProof{
+		req = &zondpbv1.SubmitAggregateAndProofsRequest{
+			Data: []*zondpbv1.SignedAggregateAttestationAndProof{
 				{
-					Message: &ethpbv1.AggregateAttestationAndProof{
+					Message: &zondpbv1.AggregateAttestationAndProof{
 						AggregatorIndex: 1,
-						Aggregate: &ethpbv1.Attestation{
+						Aggregate: &zondpbv1.Attestation{
 							AggregationBits: []byte{0, 1},
-							Data: &ethpbv1.AttestationData{
+							Data: &zondpbv1.AttestationData{
 								Slot:            1,
 								Index:           1,
 								BeaconBlockRoot: root,
-								Source: &ethpbv1.Checkpoint{
+								Source: &zondpbv1.Checkpoint{
 									Epoch: 1,
 									Root:  root,
 								},
-								Target: &ethpbv1.Checkpoint{
+								Target: &zondpbv1.Checkpoint{
 									Epoch: 1,
 									Root:  root,
 								},
@@ -2067,10 +2067,10 @@ func TestSubmitAggregateAndProofs(t *testing.T) {
 			Broadcaster: broadcaster,
 		}
 
-		req := &ethpbv1.SubmitAggregateAndProofsRequest{
-			Data: []*ethpbv1.SignedAggregateAttestationAndProof{
+		req := &zondpbv1.SubmitAggregateAndProofsRequest{
+			Data: []*zondpbv1.SignedAggregateAttestationAndProof{
 				{
-					Message: &ethpbv1.AggregateAttestationAndProof{
+					Message: &zondpbv1.AggregateAttestationAndProof{
 						AggregatorIndex: 1,
 						Aggregate:       att,
 						SelectionProof:  proof,
@@ -2091,7 +2091,7 @@ func TestProduceSyncCommitteeContribution(t *testing.T) {
 	ctx := context.Background()
 	root := bytesutil.PadTo([]byte("root"), 32)
 	sig := dilithium.NewAggregateSignature().Marshal()
-	messsage := &ethpbalpha.SyncCommitteeMessage{
+	messsage := &zondpbalpha.SyncCommitteeMessage{
 		Slot:           0,
 		BlockRoot:      root,
 		ValidatorIndex: 0,
@@ -2110,7 +2110,7 @@ func TestProduceSyncCommitteeContribution(t *testing.T) {
 		SyncCommitteePool: syncCommitteePool,
 	}
 
-	req := &ethpbv2.ProduceSyncCommitteeContributionRequest{
+	req := &zondpbv2.ProduceSyncCommitteeContributionRequest{
 		Slot:              0,
 		SubcommitteeIndex: 0,
 		BeaconBlockRoot:   root,
@@ -2135,7 +2135,7 @@ func TestProduceSyncCommitteeContribution(t *testing.T) {
 		V1Alpha1Server:    v1Server,
 		SyncCommitteePool: syncCommitteePool,
 	}
-	req = &ethpbv2.ProduceSyncCommitteeContributionRequest{
+	req = &zondpbv2.ProduceSyncCommitteeContributionRequest{
 		Slot:              0,
 		SubcommitteeIndex: 0,
 		BeaconBlockRoot:   root,
@@ -2161,12 +2161,12 @@ func TestSubmitContributionAndProofs(t *testing.T) {
 
 	t.Run("Single contribution", func(t *testing.T) {
 		v1Server.SyncCommitteePool = synccommittee.NewStore()
-		req := &ethpbv2.SubmitContributionAndProofsRequest{
-			Data: []*ethpbv2.SignedContributionAndProof{
+		req := &zondpbv2.SubmitContributionAndProofsRequest{
+			Data: []*zondpbv2.SignedContributionAndProof{
 				{
-					Message: &ethpbv2.ContributionAndProof{
+					Message: &zondpbv2.ContributionAndProof{
 						AggregatorIndex: 0,
-						Contribution: &ethpbv2.SyncCommitteeContribution{
+						Contribution: &zondpbv2.SyncCommitteeContribution{
 							Slot:              0,
 							BeaconBlockRoot:   root,
 							SubcommitteeIndex: 0,
@@ -2184,24 +2184,24 @@ func TestSubmitContributionAndProofs(t *testing.T) {
 		require.NoError(t, err)
 		savedMsgs, err := v1Server.SyncCommitteePool.SyncCommitteeContributions(0)
 		require.NoError(t, err)
-		expectedContribution := &ethpbalpha.SyncCommitteeContribution{
+		expectedContribution := &zondpbalpha.SyncCommitteeContribution{
 			Slot:              req.Data[0].Message.Contribution.Slot,
 			BlockRoot:         req.Data[0].Message.Contribution.BeaconBlockRoot,
 			SubcommitteeIndex: req.Data[0].Message.Contribution.SubcommitteeIndex,
 			AggregationBits:   req.Data[0].Message.Contribution.AggregationBits,
 			Signature:         req.Data[0].Message.Contribution.Signature,
 		}
-		require.DeepEqual(t, []*ethpbalpha.SyncCommitteeContribution{expectedContribution}, savedMsgs)
+		require.DeepEqual(t, []*zondpbalpha.SyncCommitteeContribution{expectedContribution}, savedMsgs)
 	})
 
 	t.Run("Multiple contributions", func(t *testing.T) {
 		v1Server.SyncCommitteePool = synccommittee.NewStore()
-		req := &ethpbv2.SubmitContributionAndProofsRequest{
-			Data: []*ethpbv2.SignedContributionAndProof{
+		req := &zondpbv2.SubmitContributionAndProofsRequest{
+			Data: []*zondpbv2.SignedContributionAndProof{
 				{
-					Message: &ethpbv2.ContributionAndProof{
+					Message: &zondpbv2.ContributionAndProof{
 						AggregatorIndex: 0,
-						Contribution: &ethpbv2.SyncCommitteeContribution{
+						Contribution: &zondpbv2.SyncCommitteeContribution{
 							Slot:              0,
 							BeaconBlockRoot:   root,
 							SubcommitteeIndex: 0,
@@ -2213,9 +2213,9 @@ func TestSubmitContributionAndProofs(t *testing.T) {
 					Signature: sig,
 				},
 				{
-					Message: &ethpbv2.ContributionAndProof{
+					Message: &zondpbv2.ContributionAndProof{
 						AggregatorIndex: 1,
-						Contribution: &ethpbv2.SyncCommitteeContribution{
+						Contribution: &zondpbv2.SyncCommitteeContribution{
 							Slot:              1,
 							BeaconBlockRoot:   root,
 							SubcommitteeIndex: 1,
@@ -2233,7 +2233,7 @@ func TestSubmitContributionAndProofs(t *testing.T) {
 		require.NoError(t, err)
 		savedMsgs, err := v1Server.SyncCommitteePool.SyncCommitteeContributions(0)
 		require.NoError(t, err)
-		expectedContributions := []*ethpbalpha.SyncCommitteeContribution{
+		expectedContributions := []*zondpbalpha.SyncCommitteeContribution{
 			{
 				Slot:              req.Data[0].Message.Contribution.Slot,
 				BlockRoot:         req.Data[0].Message.Contribution.BeaconBlockRoot,
@@ -2245,7 +2245,7 @@ func TestSubmitContributionAndProofs(t *testing.T) {
 		require.DeepEqual(t, expectedContributions, savedMsgs)
 		savedMsgs, err = v1Server.SyncCommitteePool.SyncCommitteeContributions(1)
 		require.NoError(t, err)
-		expectedContributions = []*ethpbalpha.SyncCommitteeContribution{
+		expectedContributions = []*zondpbalpha.SyncCommitteeContribution{
 			{
 				Slot:              req.Data[1].Message.Contribution.Slot,
 				BlockRoot:         req.Data[1].Message.Contribution.BeaconBlockRoot,
@@ -2260,7 +2260,7 @@ func TestSubmitContributionAndProofs(t *testing.T) {
 
 func TestPrepareBeaconProposer(t *testing.T) {
 	type args struct {
-		request *ethpbv1.PrepareBeaconProposerRequest
+		request *zondpbv1.PrepareBeaconProposerRequest
 	}
 	tests := []struct {
 		name    string
@@ -2270,8 +2270,8 @@ func TestPrepareBeaconProposer(t *testing.T) {
 		{
 			name: "Happy Path",
 			args: args{
-				request: &ethpbv1.PrepareBeaconProposerRequest{
-					Recipients: []*ethpbv1.PrepareBeaconProposerRequest_FeeRecipientContainer{
+				request: &zondpbv1.PrepareBeaconProposerRequest{
+					Recipients: []*zondpbv1.PrepareBeaconProposerRequest_FeeRecipientContainer{
 						{
 							FeeRecipient:   make([]byte, fieldparams.FeeRecipientLength),
 							ValidatorIndex: 1,
@@ -2284,8 +2284,8 @@ func TestPrepareBeaconProposer(t *testing.T) {
 		{
 			name: "invalid fee recipient length",
 			args: args{
-				request: &ethpbv1.PrepareBeaconProposerRequest{
-					Recipients: []*ethpbv1.PrepareBeaconProposerRequest_FeeRecipientContainer{
+				request: &zondpbv1.PrepareBeaconProposerRequest{
+					Recipients: []*zondpbv1.PrepareBeaconProposerRequest_FeeRecipientContainer{
 						{
 							FeeRecipient:   make([]byte, dilithium2.CryptoPublicKeyBytes),
 							ValidatorIndex: 1,
@@ -2329,8 +2329,8 @@ func TestProposer_PrepareBeaconProposerOverlapping(t *testing.T) {
 
 	// New validator
 	f := bytesutil.PadTo([]byte{0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF}, fieldparams.FeeRecipientLength)
-	req := &ethpbv1.PrepareBeaconProposerRequest{
-		Recipients: []*ethpbv1.PrepareBeaconProposerRequest_FeeRecipientContainer{
+	req := &zondpbv1.PrepareBeaconProposerRequest{
+		Recipients: []*zondpbv1.PrepareBeaconProposerRequest_FeeRecipientContainer{
 			{FeeRecipient: f, ValidatorIndex: 1},
 		},
 	}
@@ -2347,8 +2347,8 @@ func TestProposer_PrepareBeaconProposerOverlapping(t *testing.T) {
 	// Same validator with different fee recipient
 	hook.Reset()
 	f = bytesutil.PadTo([]byte{0x01, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF}, fieldparams.FeeRecipientLength)
-	req = &ethpbv1.PrepareBeaconProposerRequest{
-		Recipients: []*ethpbv1.PrepareBeaconProposerRequest_FeeRecipientContainer{
+	req = &zondpbv1.PrepareBeaconProposerRequest{
+		Recipients: []*zondpbv1.PrepareBeaconProposerRequest_FeeRecipientContainer{
 			{FeeRecipient: f, ValidatorIndex: 1},
 		},
 	}
@@ -2359,8 +2359,8 @@ func TestProposer_PrepareBeaconProposerOverlapping(t *testing.T) {
 	// More than one validator
 	hook.Reset()
 	f = bytesutil.PadTo([]byte{0x01, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF}, fieldparams.FeeRecipientLength)
-	req = &ethpbv1.PrepareBeaconProposerRequest{
-		Recipients: []*ethpbv1.PrepareBeaconProposerRequest_FeeRecipientContainer{
+	req = &zondpbv1.PrepareBeaconProposerRequest{
+		Recipients: []*zondpbv1.PrepareBeaconProposerRequest_FeeRecipientContainer{
 			{FeeRecipient: f, ValidatorIndex: 1},
 			{FeeRecipient: f, ValidatorIndex: 2},
 		},
@@ -2382,12 +2382,12 @@ func BenchmarkServer_PrepareBeaconProposer(b *testing.B) {
 	proposerServer := &Server{BeaconDB: db}
 
 	f := bytesutil.PadTo([]byte{0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF}, fieldparams.FeeRecipientLength)
-	recipients := make([]*ethpbv1.PrepareBeaconProposerRequest_FeeRecipientContainer, 0)
+	recipients := make([]*zondpbv1.PrepareBeaconProposerRequest_FeeRecipientContainer, 0)
 	for i := 0; i < 10000; i++ {
-		recipients = append(recipients, &ethpbv1.PrepareBeaconProposerRequest_FeeRecipientContainer{FeeRecipient: f, ValidatorIndex: primitives.ValidatorIndex(i)})
+		recipients = append(recipients, &zondpbv1.PrepareBeaconProposerRequest_FeeRecipientContainer{FeeRecipient: f, ValidatorIndex: primitives.ValidatorIndex(i)})
 	}
 
-	req := &ethpbv1.PrepareBeaconProposerRequest{
+	req := &zondpbv1.PrepareBeaconProposerRequest{
 		Recipients: recipients,
 	}
 	b.ResetTimer()
@@ -2401,7 +2401,7 @@ func BenchmarkServer_PrepareBeaconProposer(b *testing.B) {
 
 func TestServer_SubmitValidatorRegistrations(t *testing.T) {
 	type args struct {
-		request *ethpbv1.SubmitValidatorRegistrationsRequest
+		request *zondpbv1.SubmitValidatorRegistrationsRequest
 	}
 	tests := []struct {
 		name    string
@@ -2411,10 +2411,10 @@ func TestServer_SubmitValidatorRegistrations(t *testing.T) {
 		{
 			name: "Happy Path",
 			args: args{
-				request: &ethpbv1.SubmitValidatorRegistrationsRequest{
-					Registrations: []*ethpbv1.SubmitValidatorRegistrationsRequest_SignedValidatorRegistration{
+				request: &zondpbv1.SubmitValidatorRegistrationsRequest{
+					Registrations: []*zondpbv1.SubmitValidatorRegistrationsRequest_SignedValidatorRegistration{
 						{
-							Message: &ethpbv1.SubmitValidatorRegistrationsRequest_ValidatorRegistration{
+							Message: &zondpbv1.SubmitValidatorRegistrationsRequest_ValidatorRegistration{
 								FeeRecipient: make([]byte, dilithium2.CryptoPublicKeyBytes),
 								GasLimit:     30000000,
 								Timestamp:    uint64(time.Now().Unix()),
@@ -2430,8 +2430,8 @@ func TestServer_SubmitValidatorRegistrations(t *testing.T) {
 		{
 			name: "Empty Request",
 			args: args{
-				request: &ethpbv1.SubmitValidatorRegistrationsRequest{
-					Registrations: []*ethpbv1.SubmitValidatorRegistrationsRequest_SignedValidatorRegistration{},
+				request: &zondpbv1.SubmitValidatorRegistrationsRequest{
+					Registrations: []*zondpbv1.SubmitValidatorRegistrationsRequest_SignedValidatorRegistration{},
 				},
 			},
 			wantErr: "Validator registration request is empty",
@@ -2488,7 +2488,7 @@ func TestGetLiveness(t *testing.T) {
 	}
 
 	t.Run("old epoch", func(t *testing.T) {
-		resp, err := server.GetLiveness(ctx, &ethpbv2.GetLivenessRequest{
+		resp, err := server.GetLiveness(ctx, &zondpbv2.GetLivenessRequest{
 			Epoch: 0,
 			Index: []primitives.ValidatorIndex{0, 1},
 		})
@@ -2499,7 +2499,7 @@ func TestGetLiveness(t *testing.T) {
 		assert.Equal(t, true, (data1.Index == 0 && !data1.IsLive) || (data1.Index == 1 && !data1.IsLive))
 	})
 	t.Run("previous epoch", func(t *testing.T) {
-		resp, err := server.GetLiveness(ctx, &ethpbv2.GetLivenessRequest{
+		resp, err := server.GetLiveness(ctx, &zondpbv2.GetLivenessRequest{
 			Epoch: 1,
 			Index: []primitives.ValidatorIndex{0, 1},
 		})
@@ -2510,7 +2510,7 @@ func TestGetLiveness(t *testing.T) {
 		assert.Equal(t, true, (data1.Index == 0 && !data1.IsLive) || (data1.Index == 1 && data1.IsLive))
 	})
 	t.Run("current epoch", func(t *testing.T) {
-		resp, err := server.GetLiveness(ctx, &ethpbv2.GetLivenessRequest{
+		resp, err := server.GetLiveness(ctx, &zondpbv2.GetLivenessRequest{
 			Epoch: 2,
 			Index: []primitives.ValidatorIndex{0, 1},
 		})
@@ -2521,14 +2521,14 @@ func TestGetLiveness(t *testing.T) {
 		assert.Equal(t, true, (data1.Index == 0 && data1.IsLive) || (data1.Index == 1 && !data1.IsLive))
 	})
 	t.Run("future epoch", func(t *testing.T) {
-		_, err := server.GetLiveness(ctx, &ethpbv2.GetLivenessRequest{
+		_, err := server.GetLiveness(ctx, &zondpbv2.GetLivenessRequest{
 			Epoch: 3,
 			Index: []primitives.ValidatorIndex{0, 1},
 		})
 		require.ErrorContains(t, "Requested epoch cannot be in the future", err)
 	})
 	t.Run("unknown validator index", func(t *testing.T) {
-		_, err := server.GetLiveness(ctx, &ethpbv2.GetLivenessRequest{
+		_, err := server.GetLiveness(ctx, &zondpbv2.GetLivenessRequest{
 			Epoch: 0,
 			Index: []primitives.ValidatorIndex{0, 1, 2},
 		})

@@ -12,7 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
 	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
@@ -100,7 +100,7 @@ func peersConnect(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) erro
 	}
 	ctx := context.Background()
 	for _, conn := range conns {
-		nodeClient := eth.NewNodeClient(conn)
+		nodeClient := zond.NewNodeClient(conn)
 		peersResp, err := nodeClient.ListPeers(ctx, &emptypb.Empty{})
 		if err != nil {
 			return err
@@ -116,7 +116,7 @@ func peersConnect(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) erro
 
 func finishedSyncing(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	syncNodeClient := eth.NewNodeClient(conn)
+	syncNodeClient := zond.NewNodeClient(conn)
 	syncStatus, err := syncNodeClient.GetSyncStatus(context.Background(), &emptypb.Empty{})
 	if err != nil {
 		return err
@@ -133,7 +133,7 @@ func allNodesHaveSameHead(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientCo
 	prevJustifiedRoots := make([][]byte, len(conns))
 	finalizedRoots := make([][]byte, len(conns))
 	for i, conn := range conns {
-		beaconClient := eth.NewBeaconChainClient(conn)
+		beaconClient := zond.NewBeaconChainClient(conn)
 		chainHead, err := beaconClient.GetChainHead(context.Background(), &emptypb.Empty{})
 		if err != nil {
 			return errors.Wrapf(err, "connection number=%d", i)

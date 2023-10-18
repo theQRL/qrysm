@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/container/trie"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -29,13 +29,13 @@ func TestValidatorStatus_Active(t *testing.T) {
 
 	pubkey := generatePubkey(1)
 
-	depData := &ethpb.Deposit_Data{
+	depData := &zondpb.Deposit_Data{
 		PublicKey:             pubkey,
 		Signature:             bytesutil.PadTo([]byte("hi"), 96),
 		WithdrawalCredentials: bytesutil.PadTo([]byte("hey"), 32),
 	}
 
-	deposit := &ethpb.Deposit{
+	deposit := &zondpb.Deposit{
 		Data: depData,
 	}
 	depositTrie, err := trie.NewTrie(params.BeaconConfig().DepositContractTreeDepth)
@@ -54,10 +54,10 @@ func TestValidatorStatus_Active(t *testing.T) {
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
-	st := &ethpb.BeaconState{
+	st := &zondpb.BeaconState{
 		GenesisTime: uint64(time.Unix(0, 0).Unix()),
 		Slot:        10000,
-		Validators: []*ethpb.Validator{{
+		Validators: []*zondpb.Validator{{
 			ActivationEpoch:   activeEpoch,
 			ExitEpoch:         params.BeaconConfig().FarFutureEpoch,
 			WithdrawableEpoch: params.BeaconConfig().FarFutureEpoch,
@@ -79,14 +79,14 @@ func TestValidatorStatus_Active(t *testing.T) {
 		DepositFetcher:    depositCache,
 		HeadFetcher:       &mockChain.ChainService{State: stateObj, Root: genesisRoot[:]},
 	}
-	req := &ethpb.ValidatorStatusRequest{
+	req := &zondpb.ValidatorStatusRequest{
 		PublicKey: pubkey,
 	}
 	resp, err := vs.ValidatorStatus(context.Background(), req)
 	require.NoError(t, err, "Could not get validator status")
 
-	expected := &ethpb.ValidatorStatusResponse{
-		Status:          ethpb.ValidatorStatus_ACTIVE,
+	expected := &zondpb.ValidatorStatusResponse{
+		Status:          zondpb.ValidatorStatus_ACTIVE,
 		ActivationEpoch: 5,
 	}
 	if !proto.Equal(resp, expected) {

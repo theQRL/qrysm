@@ -2,11 +2,11 @@ package kv
 
 import (
 	"github.com/pkg/errors"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // SaveBlockAttestation saves an block attestation in cache.
-func (c *AttCaches) SaveBlockAttestation(att *ethpb.Attestation) error {
+func (c *AttCaches) SaveBlockAttestation(att *zondpb.Attestation) error {
 	if att == nil {
 		return nil
 	}
@@ -19,7 +19,7 @@ func (c *AttCaches) SaveBlockAttestation(att *ethpb.Attestation) error {
 	defer c.blockAttLock.Unlock()
 	atts, ok := c.blockAtt[r]
 	if !ok {
-		atts = make([]*ethpb.Attestation, 0, 1)
+		atts = make([]*zondpb.Attestation, 0, 1)
 	}
 
 	// Ensure that this attestation is not already fully contained in an existing attestation.
@@ -31,13 +31,13 @@ func (c *AttCaches) SaveBlockAttestation(att *ethpb.Attestation) error {
 		}
 	}
 
-	c.blockAtt[r] = append(atts, ethpb.CopyAttestation(att))
+	c.blockAtt[r] = append(atts, zondpb.CopyAttestation(att))
 
 	return nil
 }
 
 // SaveBlockAttestations saves a list of block attestations in cache.
-func (c *AttCaches) SaveBlockAttestations(atts []*ethpb.Attestation) error {
+func (c *AttCaches) SaveBlockAttestations(atts []*zondpb.Attestation) error {
 	for _, att := range atts {
 		if err := c.SaveBlockAttestation(att); err != nil {
 			return err
@@ -48,8 +48,8 @@ func (c *AttCaches) SaveBlockAttestations(atts []*ethpb.Attestation) error {
 }
 
 // BlockAttestations returns the block attestations in cache.
-func (c *AttCaches) BlockAttestations() []*ethpb.Attestation {
-	atts := make([]*ethpb.Attestation, 0)
+func (c *AttCaches) BlockAttestations() []*zondpb.Attestation {
+	atts := make([]*zondpb.Attestation, 0)
 
 	c.blockAttLock.RLock()
 	defer c.blockAttLock.RUnlock()
@@ -61,7 +61,7 @@ func (c *AttCaches) BlockAttestations() []*ethpb.Attestation {
 }
 
 // DeleteBlockAttestation deletes a block attestation in cache.
-func (c *AttCaches) DeleteBlockAttestation(att *ethpb.Attestation) error {
+func (c *AttCaches) DeleteBlockAttestation(att *zondpb.Attestation) error {
 	if att == nil {
 		return nil
 	}

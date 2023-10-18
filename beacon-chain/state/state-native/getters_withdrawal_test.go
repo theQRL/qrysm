@@ -6,7 +6,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -42,34 +42,34 @@ func TestNextWithdrawalValidatorIndex(t *testing.T) {
 
 func TestHasETH1WithdrawalCredentials(t *testing.T) {
 	creds := []byte{0xFA, 0xCC}
-	v := &ethpb.Validator{WithdrawalCredentials: creds}
+	v := &zondpb.Validator{WithdrawalCredentials: creds}
 	require.Equal(t, false, hasETH1WithdrawalCredential(v))
 	creds = []byte{params.BeaconConfig().ETH1AddressWithdrawalPrefixByte, 0xCC}
-	v = &ethpb.Validator{WithdrawalCredentials: creds}
+	v = &zondpb.Validator{WithdrawalCredentials: creds}
 	require.Equal(t, true, hasETH1WithdrawalCredential(v))
 	// No Withdrawal cred
-	v = &ethpb.Validator{}
+	v = &zondpb.Validator{}
 	require.Equal(t, false, hasETH1WithdrawalCredential(v))
 }
 
 func TestIsFullyWithdrawableValidator(t *testing.T) {
 	// No ETH1 prefix
 	creds := []byte{0xFA, 0xCC}
-	v := &ethpb.Validator{
+	v := &zondpb.Validator{
 		WithdrawalCredentials: creds,
 		WithdrawableEpoch:     2,
 	}
 	require.Equal(t, false, isFullyWithdrawableValidator(v, 3))
 	// Wrong withdrawable epoch
 	creds = []byte{params.BeaconConfig().ETH1AddressWithdrawalPrefixByte, 0xCC}
-	v = &ethpb.Validator{
+	v = &zondpb.Validator{
 		WithdrawalCredentials: creds,
 		WithdrawableEpoch:     2,
 	}
 	require.Equal(t, false, isFullyWithdrawableValidator(v, 1))
 	// Fully withdrawable
 	creds = []byte{params.BeaconConfig().ETH1AddressWithdrawalPrefixByte, 0xCC}
-	v = &ethpb.Validator{
+	v = &zondpb.Validator{
 		WithdrawalCredentials: creds,
 		WithdrawableEpoch:     2,
 	}
@@ -80,12 +80,12 @@ func TestExpectedWithdrawals(t *testing.T) {
 	t.Run("no withdrawals", func(t *testing.T) {
 		s := BeaconState{
 			version:    version.Capella,
-			validators: make([]*ethpb.Validator, 100),
+			validators: make([]*zondpb.Validator, 100),
 			balances:   make([]uint64, 100),
 		}
 		for i := range s.validators {
 			s.balances[i] = params.BeaconConfig().MaxEffectiveBalance
-			val := &ethpb.Validator{
+			val := &zondpb.Validator{
 				WithdrawalCredentials: make([]byte, 32),
 				EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
 				WithdrawableEpoch:     primitives.Epoch(1),
@@ -100,13 +100,13 @@ func TestExpectedWithdrawals(t *testing.T) {
 	t.Run("one fully withdrawable", func(t *testing.T) {
 		s := BeaconState{
 			version:                      version.Capella,
-			validators:                   make([]*ethpb.Validator, 100),
+			validators:                   make([]*zondpb.Validator, 100),
 			balances:                     make([]uint64, 100),
 			nextWithdrawalValidatorIndex: 20,
 		}
 		for i := range s.validators {
 			s.balances[i] = params.BeaconConfig().MaxEffectiveBalance
-			val := &ethpb.Validator{
+			val := &zondpb.Validator{
 				WithdrawalCredentials: make([]byte, 32),
 				EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
 				WithdrawableEpoch:     primitives.Epoch(1),
@@ -129,12 +129,12 @@ func TestExpectedWithdrawals(t *testing.T) {
 	t.Run("one partially withdrawable", func(t *testing.T) {
 		s := BeaconState{
 			version:    version.Capella,
-			validators: make([]*ethpb.Validator, 100),
+			validators: make([]*zondpb.Validator, 100),
 			balances:   make([]uint64, 100),
 		}
 		for i := range s.validators {
 			s.balances[i] = params.BeaconConfig().MaxEffectiveBalance
-			val := &ethpb.Validator{
+			val := &zondpb.Validator{
 				WithdrawalCredentials: make([]byte, 32),
 				EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
 				WithdrawableEpoch:     primitives.Epoch(1),
@@ -157,12 +157,12 @@ func TestExpectedWithdrawals(t *testing.T) {
 	t.Run("one partially and one fully withdrawable", func(t *testing.T) {
 		s := BeaconState{
 			version:    version.Capella,
-			validators: make([]*ethpb.Validator, 100),
+			validators: make([]*zondpb.Validator, 100),
 			balances:   make([]uint64, 100),
 		}
 		for i := range s.validators {
 			s.balances[i] = params.BeaconConfig().MaxEffectiveBalance
-			val := &ethpb.Validator{
+			val := &zondpb.Validator{
 				WithdrawalCredentials: make([]byte, 32),
 				EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
 				WithdrawableEpoch:     primitives.Epoch(1),
@@ -195,12 +195,12 @@ func TestExpectedWithdrawals(t *testing.T) {
 	t.Run("all partially withdrawable", func(t *testing.T) {
 		s := BeaconState{
 			version:    version.Capella,
-			validators: make([]*ethpb.Validator, 100),
+			validators: make([]*zondpb.Validator, 100),
 			balances:   make([]uint64, 100),
 		}
 		for i := range s.validators {
 			s.balances[i] = params.BeaconConfig().MaxEffectiveBalance + 1
-			val := &ethpb.Validator{
+			val := &zondpb.Validator{
 				WithdrawalCredentials: make([]byte, 32),
 				EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
 				WithdrawableEpoch:     primitives.Epoch(1),
@@ -222,12 +222,12 @@ func TestExpectedWithdrawals(t *testing.T) {
 	t.Run("all fully withdrawable", func(t *testing.T) {
 		s := BeaconState{
 			version:    version.Capella,
-			validators: make([]*ethpb.Validator, 100),
+			validators: make([]*zondpb.Validator, 100),
 			balances:   make([]uint64, 100),
 		}
 		for i := range s.validators {
 			s.balances[i] = params.BeaconConfig().MaxEffectiveBalance
-			val := &ethpb.Validator{
+			val := &zondpb.Validator{
 				WithdrawalCredentials: make([]byte, 32),
 				EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
 				WithdrawableEpoch:     primitives.Epoch(0),
@@ -249,12 +249,12 @@ func TestExpectedWithdrawals(t *testing.T) {
 	t.Run("all fully and partially withdrawable", func(t *testing.T) {
 		s := BeaconState{
 			version:    version.Capella,
-			validators: make([]*ethpb.Validator, 100),
+			validators: make([]*zondpb.Validator, 100),
 			balances:   make([]uint64, 100),
 		}
 		for i := range s.validators {
 			s.balances[i] = params.BeaconConfig().MaxEffectiveBalance + 1
-			val := &ethpb.Validator{
+			val := &zondpb.Validator{
 				WithdrawalCredentials: make([]byte, 32),
 				EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
 				WithdrawableEpoch:     primitives.Epoch(0),
@@ -276,13 +276,13 @@ func TestExpectedWithdrawals(t *testing.T) {
 	t.Run("one fully withdrawable but zero balance", func(t *testing.T) {
 		s := BeaconState{
 			version:                      version.Capella,
-			validators:                   make([]*ethpb.Validator, 100),
+			validators:                   make([]*zondpb.Validator, 100),
 			balances:                     make([]uint64, 100),
 			nextWithdrawalValidatorIndex: 20,
 		}
 		for i := range s.validators {
 			s.balances[i] = params.BeaconConfig().MaxEffectiveBalance
-			val := &ethpb.Validator{
+			val := &zondpb.Validator{
 				WithdrawalCredentials: make([]byte, 32),
 				EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
 				WithdrawableEpoch:     primitives.Epoch(1),
@@ -299,12 +299,12 @@ func TestExpectedWithdrawals(t *testing.T) {
 	t.Run("one partially withdrawable, one above sweep bound", func(t *testing.T) {
 		s := BeaconState{
 			version:    version.Capella,
-			validators: make([]*ethpb.Validator, 100),
+			validators: make([]*zondpb.Validator, 100),
 			balances:   make([]uint64, 100),
 		}
 		for i := range s.validators {
 			s.balances[i] = params.BeaconConfig().MaxEffectiveBalance
-			val := &ethpb.Validator{
+			val := &zondpb.Validator{
 				WithdrawalCredentials: make([]byte, 32),
 				EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
 				WithdrawableEpoch:     primitives.Epoch(1),

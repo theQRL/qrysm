@@ -21,13 +21,13 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/container/slice"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
-func setupValidAttesterSlashing(t *testing.T) (*ethpb.AttesterSlashing, state.BeaconState) {
+func setupValidAttesterSlashing(t *testing.T) (*zondpb.AttesterSlashing, state.BeaconState) {
 	s, privKeys := util.DeterministicGenesisState(t, 5)
 	vals := s.Validators()
 	for _, vv := range vals {
@@ -35,9 +35,9 @@ func setupValidAttesterSlashing(t *testing.T) (*ethpb.AttesterSlashing, state.Be
 	}
 	require.NoError(t, s.SetValidators(vals))
 
-	att1 := util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
-		Data: &ethpb.AttestationData{
-			Source: &ethpb.Checkpoint{Epoch: 1},
+	att1 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+		Data: &zondpb.AttestationData{
+			Source: &zondpb.Checkpoint{Epoch: 1},
 		},
 		AttestingIndices: []uint64{0, 1},
 	})
@@ -50,7 +50,7 @@ func setupValidAttesterSlashing(t *testing.T) (*ethpb.AttesterSlashing, state.Be
 	aggregateSig := bls.AggregateSignatures([]bls.Signature{sig0, sig1})
 	att1.Signature = aggregateSig.Marshal()
 
-	att2 := util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
+	att2 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{0, 1},
 	})
 	hashTreeRoot, err = signing.ComputeSigningRoot(att2.Data, domain)
@@ -60,7 +60,7 @@ func setupValidAttesterSlashing(t *testing.T) (*ethpb.AttesterSlashing, state.Be
 	aggregateSig = bls.AggregateSignatures([]bls.Signature{sig0, sig1})
 	att2.Signature = aggregateSig.Marshal()
 
-	slashing := &ethpb.AttesterSlashing{
+	slashing := &zondpb.AttesterSlashing{
 		Attestation_1: att1,
 		Attestation_2: att2,
 	}
@@ -191,16 +191,16 @@ func TestValidateAttesterSlashing_CanFilter(t *testing.T) {
 	r.setAttesterSlashingIndicesSeen([]uint64{1, 2, 3, 4}, []uint64{3, 4, 5, 6})
 
 	// The below attestations should be filtered hence bad signature is ok.
-	topic := p2p.GossipTypeMapping[reflect.TypeOf(&ethpb.AttesterSlashing{})]
+	topic := p2p.GossipTypeMapping[reflect.TypeOf(&zondpb.AttesterSlashing{})]
 	d, err := r.currentForkDigest()
 	assert.NoError(t, err)
 	topic = r.addDigestToTopic(topic, d)
 	buf := new(bytes.Buffer)
-	_, err = p.Encoding().EncodeGossip(buf, &ethpb.AttesterSlashing{
-		Attestation_1: util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
+	_, err = p.Encoding().EncodeGossip(buf, &zondpb.AttesterSlashing{
+		Attestation_1: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
 			AttestingIndices: []uint64{3},
 		}),
-		Attestation_2: util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
+		Attestation_2: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
 			AttestingIndices: []uint64{3},
 		}),
 	})
@@ -217,11 +217,11 @@ func TestValidateAttesterSlashing_CanFilter(t *testing.T) {
 	assert.Equal(t, true, ignored)
 
 	buf = new(bytes.Buffer)
-	_, err = p.Encoding().EncodeGossip(buf, &ethpb.AttesterSlashing{
-		Attestation_1: util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
+	_, err = p.Encoding().EncodeGossip(buf, &zondpb.AttesterSlashing{
+		Attestation_1: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
 			AttestingIndices: []uint64{4, 3},
 		}),
-		Attestation_2: util.HydrateIndexedAttestation(&ethpb.IndexedAttestation{
+		Attestation_2: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
 			AttestingIndices: []uint64{3, 4},
 		}),
 	})

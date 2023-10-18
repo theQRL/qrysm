@@ -5,7 +5,7 @@ import (
 
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // JustificationBits marking which epochs have been justified in the beacon chain.
@@ -33,7 +33,7 @@ func (b *BeaconState) justificationBitsVal() bitfield.Bitvector4 {
 }
 
 // PreviousJustifiedCheckpoint denoting an epoch and block root.
-func (b *BeaconState) PreviousJustifiedCheckpoint() *ethpb.Checkpoint {
+func (b *BeaconState) PreviousJustifiedCheckpoint() *zondpb.Checkpoint {
 	if b.previousJustifiedCheckpoint == nil {
 		return nil
 	}
@@ -46,12 +46,12 @@ func (b *BeaconState) PreviousJustifiedCheckpoint() *ethpb.Checkpoint {
 
 // previousJustifiedCheckpointVal denoting an epoch and block root.
 // This assumes that a lock is already held on BeaconState.
-func (b *BeaconState) previousJustifiedCheckpointVal() *ethpb.Checkpoint {
-	return ethpb.CopyCheckpoint(b.previousJustifiedCheckpoint)
+func (b *BeaconState) previousJustifiedCheckpointVal() *zondpb.Checkpoint {
+	return zondpb.CopyCheckpoint(b.previousJustifiedCheckpoint)
 }
 
 // CurrentJustifiedCheckpoint denoting an epoch and block root.
-func (b *BeaconState) CurrentJustifiedCheckpoint() *ethpb.Checkpoint {
+func (b *BeaconState) CurrentJustifiedCheckpoint() *zondpb.Checkpoint {
 	if b.currentJustifiedCheckpoint == nil {
 		return nil
 	}
@@ -64,13 +64,13 @@ func (b *BeaconState) CurrentJustifiedCheckpoint() *ethpb.Checkpoint {
 
 // currentJustifiedCheckpointVal denoting an epoch and block root.
 // This assumes that a lock is already held on BeaconState.
-func (b *BeaconState) currentJustifiedCheckpointVal() *ethpb.Checkpoint {
-	return ethpb.CopyCheckpoint(b.currentJustifiedCheckpoint)
+func (b *BeaconState) currentJustifiedCheckpointVal() *zondpb.Checkpoint {
+	return zondpb.CopyCheckpoint(b.currentJustifiedCheckpoint)
 }
 
 // MatchCurrentJustifiedCheckpoint returns true if input justified checkpoint matches
 // the current justified checkpoint in state.
-func (b *BeaconState) MatchCurrentJustifiedCheckpoint(c *ethpb.Checkpoint) bool {
+func (b *BeaconState) MatchCurrentJustifiedCheckpoint(c *zondpb.Checkpoint) bool {
 	if b.currentJustifiedCheckpoint == nil {
 		return false
 	}
@@ -83,7 +83,7 @@ func (b *BeaconState) MatchCurrentJustifiedCheckpoint(c *ethpb.Checkpoint) bool 
 
 // MatchPreviousJustifiedCheckpoint returns true if the input justified checkpoint matches
 // the previous justified checkpoint in state.
-func (b *BeaconState) MatchPreviousJustifiedCheckpoint(c *ethpb.Checkpoint) bool {
+func (b *BeaconState) MatchPreviousJustifiedCheckpoint(c *zondpb.Checkpoint) bool {
 	if b.previousJustifiedCheckpoint == nil {
 		return false
 	}
@@ -95,7 +95,7 @@ func (b *BeaconState) MatchPreviousJustifiedCheckpoint(c *ethpb.Checkpoint) bool
 }
 
 // FinalizedCheckpoint denoting an epoch and block root.
-func (b *BeaconState) FinalizedCheckpoint() *ethpb.Checkpoint {
+func (b *BeaconState) FinalizedCheckpoint() *zondpb.Checkpoint {
 	if b.finalizedCheckpoint == nil {
 		return nil
 	}
@@ -108,8 +108,8 @@ func (b *BeaconState) FinalizedCheckpoint() *ethpb.Checkpoint {
 
 // finalizedCheckpointVal denoting an epoch and block root.
 // This assumes that a lock is already held on BeaconState.
-func (b *BeaconState) finalizedCheckpointVal() *ethpb.Checkpoint {
-	return ethpb.CopyCheckpoint(b.finalizedCheckpoint)
+func (b *BeaconState) finalizedCheckpointVal() *zondpb.Checkpoint {
+	return zondpb.CopyCheckpoint(b.finalizedCheckpoint)
 }
 
 // FinalizedCheckpointEpoch returns the epoch value of the finalized checkpoint.

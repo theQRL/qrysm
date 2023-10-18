@@ -7,7 +7,7 @@ import (
 	"github.com/prysmaticlabs/go-bitfield"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation"
 )
 
@@ -15,7 +15,7 @@ import (
 // Aggregation occurs in many rounds, up until no more aggregation is possible (all attestations
 // are overlapping).
 // See https://hackmd.io/@farazdagi/in-place-attagg for design and rationale.
-func MaxCoverAttestationAggregation(atts []*ethpb.Attestation) ([]*ethpb.Attestation, error) {
+func MaxCoverAttestationAggregation(atts []*zondpb.Attestation) ([]*zondpb.Attestation, error) {
 	if len(atts) < 2 {
 		return atts, nil
 	}
@@ -112,7 +112,7 @@ func MaxCoverAttestationAggregation(atts []*ethpb.Attestation) ([]*ethpb.Attesta
 }
 
 // NewMaxCover returns initialized Maximum Coverage problem for attestations aggregation.
-func NewMaxCover(atts []*ethpb.Attestation) *aggregation.MaxCoverProblem {
+func NewMaxCover(atts []*zondpb.Attestation) *aggregation.MaxCoverProblem {
 	candidates := make([]*aggregation.MaxCoverCandidate, len(atts))
 	for i := 0; i < len(atts); i++ {
 		candidates[i] = aggregation.NewMaxCoverCandidate(i, &atts[i].AggregationBits)
@@ -121,7 +121,7 @@ func NewMaxCover(atts []*ethpb.Attestation) *aggregation.MaxCoverProblem {
 }
 
 // aggregate returns list as an aggregated attestation.
-func (al attList) aggregate(coverage bitfield.Bitlist) (*ethpb.Attestation, error) {
+func (al attList) aggregate(coverage bitfield.Bitlist) (*zondpb.Attestation, error) {
 	if len(al) < 2 {
 		return nil, errors.Wrap(ErrInvalidAttestationCount, "cannot aggregate")
 	}
@@ -133,9 +133,9 @@ func (al attList) aggregate(coverage bitfield.Bitlist) (*ethpb.Attestation, erro
 		}
 		signs[i] = sig
 	}
-	return &ethpb.Attestation{
+	return &zondpb.Attestation{
 		AggregationBits: coverage,
-		Data:            ethpb.CopyAttestationData(al[0].Data),
+		Data:            zondpb.CopyAttestationData(al[0].Data),
 		Signature:       aggregateSignatures(signs).Marshal(),
 	}, nil
 }
@@ -150,7 +150,7 @@ func padSelectedKeys(keys []int, pad int) []int {
 
 // aggregateAttestations combines signatures of selected attestations into a single aggregate attestation, and
 // pushes that aggregated attestation into the position of the first of selected attestations.
-func aggregateAttestations(atts []*ethpb.Attestation, keys []int, coverage *bitfield.Bitlist64) (targetIdx int, err error) {
+func aggregateAttestations(atts []*zondpb.Attestation, keys []int, coverage *bitfield.Bitlist64) (targetIdx int, err error) {
 	if len(keys) < 2 || atts == nil || len(atts) < 2 {
 		return targetIdx, errors.Wrap(ErrInvalidAttestationCount, "cannot aggregate")
 	}
@@ -158,10 +158,10 @@ func aggregateAttestations(atts []*ethpb.Attestation, keys []int, coverage *bitf
 		return targetIdx, errors.New("invalid or empty coverage")
 	}
 
-	var data *ethpb.AttestationData
+	var data *zondpb.AttestationData
 	for i, idx := range keys {
 		if i == 0 {
-			data = ethpb.CopyAttestationData(atts[idx].Data)
+			data = zondpb.CopyAttestationData(atts[idx].Data)
 			targetIdx = idx
 		}
 	}
@@ -195,7 +195,7 @@ func aggregateAttestations(atts []*ethpb.Attestation, keys []int, coverage *bitf
 	}
 
 	// Put aggregated attestation at a position of the first selected attestation.
-	atts[targetIdx] = &ethpb.Attestation{
+	atts[targetIdx] = &zondpb.Attestation{
 		// Append size byte, which will be unnecessary on switch to Bitlist64.
 		AggregationBits: coverage.ToBitlist(),
 		Data:            data,
@@ -209,7 +209,7 @@ func aggregateAttestations(atts []*ethpb.Attestation, keys []int, coverage *bitf
 // rearrangeProcessedAttestations pushes processed attestations to the end of the slice, returning
 // the number of items re-arranged (so that caller can cut the slice, and allow processed items to be
 // garbage collected).
-func rearrangeProcessedAttestations(atts []*ethpb.Attestation, candidates []*bitfield.Bitlist64, processedKeys []int) {
+func rearrangeProcessedAttestations(atts []*zondpb.Attestation, candidates []*bitfield.Bitlist64, processedKeys []int) {
 	if atts == nil || candidates == nil || processedKeys == nil {
 		return
 	}
@@ -241,7 +241,7 @@ func (al attList) merge(al1 attList) attList {
 
 // selectUsingKeys returns only items with specified keys.
 func (al attList) selectUsingKeys(keys []int) attList {
-	filtered := make([]*ethpb.Attestation, len(keys))
+	filtered := make([]*zondpb.Attestation, len(keys))
 	for i, key := range keys {
 		filtered[i] = al[key]
 	}

@@ -15,8 +15,8 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	v1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
@@ -145,7 +145,7 @@ func (f *ForkChoice) InsertNode(ctx context.Context, state state.BeaconState, ro
 }
 
 // updateCheckpoints update the checkpoints when inserting a new node.
-func (f *ForkChoice) updateCheckpoints(ctx context.Context, jc, fc *ethpb.Checkpoint) error {
+func (f *ForkChoice) updateCheckpoints(ctx context.Context, jc, fc *zondpb.Checkpoint) error {
 	if jc.Epoch > f.store.justifiedCheckpoint.Epoch {
 		f.store.prevJustifiedCheckpoint = f.store.justifiedCheckpoint
 		jcRoot := bytesutil.ToBytes32(jc.Root)

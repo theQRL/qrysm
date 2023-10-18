@@ -9,7 +9,7 @@ import (
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/async/event"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 )
 
@@ -43,12 +43,12 @@ type Signer interface {
 type Importer interface {
 	ImportKeystores(
 		ctx context.Context, keystores []*Keystore, passwords []string,
-	) ([]*ethpbservice.ImportedKeystoreStatus, error)
+	) ([]*zondpbservice.ImportedKeystoreStatus, error)
 }
 
 // Deleter can delete keystores from the keymanager.
 type Deleter interface {
-	DeleteKeystores(ctx context.Context, publicKeys [][]byte) ([]*ethpbservice.DeletedKeystoreStatus, error)
+	DeleteKeystores(ctx context.Context, publicKeys [][]byte) ([]*zondpbservice.DeletedKeystoreStatus, error)
 }
 
 // KeyChangeSubscriber allows subscribing to changes made to the underlying keys.
@@ -63,12 +63,12 @@ type KeyStoreExtractor interface {
 
 // PublicKeyAdder allows adding public keys to the keymanager.
 type PublicKeyAdder interface {
-	AddPublicKeys(ctx context.Context, publicKeys [][dilithium2.CryptoPublicKeyBytes]byte) ([]*ethpbservice.ImportedRemoteKeysStatus, error)
+	AddPublicKeys(ctx context.Context, publicKeys [][dilithium2.CryptoPublicKeyBytes]byte) ([]*zondpbservice.ImportedRemoteKeysStatus, error)
 }
 
 // PublicKeyDeleter allows deleting public keys set in keymanager.
 type PublicKeyDeleter interface {
-	DeletePublicKeys(ctx context.Context, publicKeys [][dilithium2.CryptoPublicKeyBytes]byte) ([]*ethpbservice.DeletedRemoteKeysStatus, error)
+	DeletePublicKeys(ctx context.Context, publicKeys [][dilithium2.CryptoPublicKeyBytes]byte) ([]*zondpbservice.DeletedRemoteKeysStatus, error)
 }
 
 type ListKeymanagerAccountConfig struct {

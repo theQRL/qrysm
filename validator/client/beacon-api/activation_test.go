@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	rpcmiddleware "github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -77,33 +77,33 @@ func TestActivation_Nominal(t *testing.T) {
 		pubKeys[i] = pubKey
 	}
 
-	wantedStatuses := []*ethpb.ValidatorActivationResponse_Status{
+	wantedStatuses := []*zondpb.ValidatorActivationResponse_Status{
 		{
 			PublicKey: pubKeys[0],
 			Index:     55293,
-			Status: &ethpb.ValidatorStatusResponse{
-				Status: ethpb.ValidatorStatus_ACTIVE,
+			Status: &zondpb.ValidatorStatusResponse{
+				Status: zondpb.ValidatorStatus_ACTIVE,
 			},
 		},
 		{
 			PublicKey: pubKeys[1],
 			Index:     11877,
-			Status: &ethpb.ValidatorStatusResponse{
-				Status: ethpb.ValidatorStatus_EXITING,
+			Status: &zondpb.ValidatorStatusResponse{
+				Status: zondpb.ValidatorStatus_EXITING,
 			},
 		},
 		{
 			PublicKey: pubKeys[3],
 			Index:     210439,
-			Status: &ethpb.ValidatorStatusResponse{
-				Status: ethpb.ValidatorStatus_EXITED,
+			Status: &zondpb.ValidatorStatusResponse{
+				Status: zondpb.ValidatorStatus_EXITED,
 			},
 		},
 		{
 			PublicKey: pubKeys[2],
 			Index:     18446744073709551615,
-			Status: &ethpb.ValidatorStatusResponse{
-				Status: ethpb.ValidatorStatus_UNKNOWN_STATUS,
+			Status: &zondpb.ValidatorStatusResponse{
+				Status: zondpb.ValidatorStatus_UNKNOWN_STATUS,
 			},
 		},
 	}
@@ -160,7 +160,7 @@ func TestActivation_Nominal(t *testing.T) {
 
 	waitForActivation, err := validatorClient.WaitForActivation(
 		ctx,
-		&ethpb.ValidatorActivationRequest{
+		&zondpb.ValidatorActivationRequest{
 			PublicKeys: pubKeys,
 		},
 	)
@@ -261,7 +261,7 @@ func TestActivation_InvalidData(t *testing.T) {
 
 				waitForActivation, err := validatorClient.WaitForActivation(
 					ctx,
-					&ethpb.ValidatorActivationRequest{},
+					&zondpb.ValidatorActivationRequest{},
 				)
 				assert.NoError(t, err)
 
@@ -296,7 +296,7 @@ func TestActivation_JsonResponseError(t *testing.T) {
 
 	waitForActivation, err := validatorClient.WaitForActivation(
 		ctx,
-		&ethpb.ValidatorActivationRequest{},
+		&zondpb.ValidatorActivationRequest{},
 	)
 	assert.NoError(t, err)
 

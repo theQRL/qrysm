@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // ValidatorCount is for declaring how many validators the benchmarks will be
@@ -49,7 +49,7 @@ func PreGenState1Epoch() (state.BeaconState, error) {
 	if err != nil {
 		return nil, err
 	}
-	beaconState := &ethpb.BeaconState{}
+	beaconState := &zondpb.BeaconState{}
 	if err := beaconState.UnmarshalSSZ(beaconBytes); err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func PreGenstateFullEpochs() (state.BeaconState, error) {
 	if err != nil {
 		return nil, err
 	}
-	beaconState := &ethpb.BeaconState{}
+	beaconState := &zondpb.BeaconState{}
 	if err := beaconState.UnmarshalSSZ(beaconBytes); err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func PreGenstateFullEpochs() (state.BeaconState, error) {
 }
 
 // PreGenFullBlock unmarshals the pre-generated signed beacon block containing an epochs worth of attestations and returns it.
-func PreGenFullBlock() (*ethpb.SignedBeaconBlock, error) {
+func PreGenFullBlock() (*zondpb.SignedBeaconBlock, error) {
 	path, err := bazel.Runfile(filePath(FullBlockFileName))
 	if err != nil {
 		return nil, err
@@ -83,7 +83,7 @@ func PreGenFullBlock() (*ethpb.SignedBeaconBlock, error) {
 	if err != nil {
 		return nil, err
 	}
-	beaconBlock := &ethpb.SignedBeaconBlock{}
+	beaconBlock := &zondpb.SignedBeaconBlock{}
 	if err := beaconBlock.UnmarshalSSZ(blockBytes); err != nil {
 		return nil, err
 	}

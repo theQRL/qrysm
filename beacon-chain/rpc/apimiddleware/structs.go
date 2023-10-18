@@ -5,7 +5,7 @@ import (
 
 	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/helpers"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 )
 
 //----------------
@@ -1078,7 +1078,7 @@ func (ssz *SszResponseJson) SSZData() string {
 }
 
 func (*SszResponseJson) SSZVersion() string {
-	return strings.ToLower(ethpbv2.Version_PHASE0.String())
+	return strings.ToLower(zondpbv2.Version_PHASE0.String())
 }
 
 func (*SszResponseJson) SSZOptimistic() bool {

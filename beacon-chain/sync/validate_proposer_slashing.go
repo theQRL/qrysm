@@ -8,7 +8,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 
@@ -35,7 +35,7 @@ func (s *Service) validateProposerSlashing(ctx context.Context, pid peer.ID, msg
 		return pubsub.ValidationReject, err
 	}
 
-	slashing, ok := m.(*ethpb.ProposerSlashing)
+	slashing, ok := m.(*zondpb.ProposerSlashing)
 	if !ok {
 		return pubsub.ValidationReject, errWrongMessage
 	}

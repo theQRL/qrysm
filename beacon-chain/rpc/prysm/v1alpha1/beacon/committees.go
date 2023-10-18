@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -21,18 +21,18 @@ import (
 // all beacon committees for the current epoch. The results are paginated by default.
 func (bs *Server) ListBeaconCommittees(
 	ctx context.Context,
-	req *ethpb.ListCommitteesRequest,
-) (*ethpb.BeaconCommittees, error) {
+	req *zondpb.ListCommitteesRequest,
+) (*zondpb.BeaconCommittees, error) {
 	currentSlot := bs.GenesisTimeFetcher.CurrentSlot()
 	var requestedSlot primitives.Slot
 	switch q := req.QueryFilter.(type) {
-	case *ethpb.ListCommitteesRequest_Epoch:
+	case *zondpb.ListCommitteesRequest_Epoch:
 		startSlot, err := slots.EpochStart(q.Epoch)
 		if err != nil {
 			return nil, err
 		}
 		requestedSlot = startSlot
-	case *ethpb.ListCommitteesRequest_Genesis:
+	case *zondpb.ListCommitteesRequest_Genesis:
 		requestedSlot = 0
 	default:
 		requestedSlot = currentSlot
@@ -59,7 +59,7 @@ func (bs *Server) ListBeaconCommittees(
 		)
 	}
 
-	return &ethpb.BeaconCommittees{
+	return &zondpb.BeaconCommittees{
 		Epoch:                requestedEpoch,
 		Committees:           committees.SlotToUint64(),
 		ActiveValidatorCount: uint64(len(activeIndices)),
@@ -153,7 +153,7 @@ func computeCommittees(
 		if countAtSlot == 0 {
 			countAtSlot = 1
 		}
-		committeeItems := make([]*ethpb.BeaconCommittees_CommitteeItem, countAtSlot)
+		committeeItems := make([]*zondpb.BeaconCommittees_CommitteeItem, countAtSlot)
 		for committeeIndex := uint64(0); committeeIndex < countAtSlot; committeeIndex++ {
 			committee, err := helpers.BeaconCommittee(ctx, activeIndices, attesterSeed, slot, primitives.CommitteeIndex(committeeIndex))
 			if err != nil {
@@ -164,11 +164,11 @@ func computeCommittees(
 					err,
 				)
 			}
-			committeeItems[committeeIndex] = &ethpb.BeaconCommittees_CommitteeItem{
+			committeeItems[committeeIndex] = &zondpb.BeaconCommittees_CommitteeItem{
 				ValidatorIndices: committee,
 			}
 		}
-		committeesListsBySlot[slot] = &ethpb.BeaconCommittees_CommitteesList{
+		committeesListsBySlot[slot] = &zondpb.BeaconCommittees_CommitteesList{
 			Committees: committeeItems,
 		}
 	}
@@ -176,12 +176,12 @@ func computeCommittees(
 }
 
 // SlotToCommiteesMap represents <slot, CommitteeList> map.
-type SlotToCommiteesMap map[primitives.Slot]*ethpb.BeaconCommittees_CommitteesList
+type SlotToCommiteesMap map[primitives.Slot]*zondpb.BeaconCommittees_CommitteesList
 
 // SlotToUint64 updates map keys to slots (workaround which will be unnecessary if we can cast
 // map<uint64, CommitteesList> correctly in beacon_chain.proto)
-func (m SlotToCommiteesMap) SlotToUint64() map[uint64]*ethpb.BeaconCommittees_CommitteesList {
-	updatedCommittees := make(map[uint64]*ethpb.BeaconCommittees_CommitteesList, len(m))
+func (m SlotToCommiteesMap) SlotToUint64() map[uint64]*zondpb.BeaconCommittees_CommitteesList {
+	updatedCommittees := make(map[uint64]*zondpb.BeaconCommittees_CommitteesList, len(m))
 	for k, v := range m {
 		updatedCommittees[uint64(k)] = v
 	}

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -16,17 +16,17 @@ import (
 )
 
 func TestProposeAttestation(t *testing.T) {
-	attestation := &ethpb.Attestation{
+	attestation := &zondpb.Attestation{
 		AggregationBits: test_helpers.FillByteSlice(4, 74),
-		Data: &ethpb.AttestationData{
+		Data: &zondpb.AttestationData{
 			Slot:            75,
 			CommitteeIndex:  76,
 			BeaconBlockRoot: test_helpers.FillByteSlice(32, 38),
-			Source: &ethpb.Checkpoint{
+			Source: &zondpb.Checkpoint{
 				Epoch: 78,
 				Root:  test_helpers.FillByteSlice(32, 79),
 			},
-			Target: &ethpb.Checkpoint{
+			Target: &zondpb.Checkpoint{
 				Epoch: 80,
 				Root:  test_helpers.FillByteSlice(32, 81),
 			},
@@ -36,7 +36,7 @@ func TestProposeAttestation(t *testing.T) {
 
 	tests := []struct {
 		name                 string
-		attestation          *ethpb.Attestation
+		attestation          *zondpb.Attestation
 		expectedErrorMessage string
 		endpointError        error
 		endpointCall         int
@@ -52,7 +52,7 @@ func TestProposeAttestation(t *testing.T) {
 		},
 		{
 			name: "nil attestation data",
-			attestation: &ethpb.Attestation{
+			attestation: &zondpb.Attestation{
 				AggregationBits: test_helpers.FillByteSlice(4, 74),
 				Signature:       test_helpers.FillByteSlice(96, 82),
 			},
@@ -60,10 +60,10 @@ func TestProposeAttestation(t *testing.T) {
 		},
 		{
 			name: "nil source checkpoint",
-			attestation: &ethpb.Attestation{
+			attestation: &zondpb.Attestation{
 				AggregationBits: test_helpers.FillByteSlice(4, 74),
-				Data: &ethpb.AttestationData{
-					Target: &ethpb.Checkpoint{},
+				Data: &zondpb.AttestationData{
+					Target: &zondpb.Checkpoint{},
 				},
 				Signature: test_helpers.FillByteSlice(96, 82),
 			},
@@ -71,10 +71,10 @@ func TestProposeAttestation(t *testing.T) {
 		},
 		{
 			name: "nil target checkpoint",
-			attestation: &ethpb.Attestation{
+			attestation: &zondpb.Attestation{
 				AggregationBits: test_helpers.FillByteSlice(4, 74),
-				Data: &ethpb.AttestationData{
-					Source: &ethpb.Checkpoint{},
+				Data: &zondpb.AttestationData{
+					Source: &zondpb.Checkpoint{},
 				},
 				Signature: test_helpers.FillByteSlice(96, 82),
 			},
@@ -82,10 +82,10 @@ func TestProposeAttestation(t *testing.T) {
 		},
 		{
 			name: "nil aggregation bits",
-			attestation: &ethpb.Attestation{
-				Data: &ethpb.AttestationData{
-					Source: &ethpb.Checkpoint{},
-					Target: &ethpb.Checkpoint{},
+			attestation: &zondpb.Attestation{
+				Data: &zondpb.AttestationData{
+					Source: &zondpb.Checkpoint{},
+					Target: &zondpb.Checkpoint{},
 				},
 				Signature: test_helpers.FillByteSlice(96, 82),
 			},
@@ -93,11 +93,11 @@ func TestProposeAttestation(t *testing.T) {
 		},
 		{
 			name: "nil signature",
-			attestation: &ethpb.Attestation{
+			attestation: &zondpb.Attestation{
 				AggregationBits: test_helpers.FillByteSlice(4, 74),
-				Data: &ethpb.AttestationData{
-					Source: &ethpb.Checkpoint{},
-					Target: &ethpb.Checkpoint{},
+				Data: &zondpb.AttestationData{
+					Source: &zondpb.Checkpoint{},
+					Target: &zondpb.Checkpoint{},
 				},
 			},
 			expectedErrorMessage: "attestation signature is empty",
@@ -118,7 +118,7 @@ func TestProposeAttestation(t *testing.T) {
 
 			var marshalledAttestations []byte
 			if checkNilAttestation(test.attestation) == nil {
-				b, err := json.Marshal(jsonifyAttestations([]*ethpb.Attestation{test.attestation}))
+				b, err := json.Marshal(jsonifyAttestations([]*zondpb.Attestation{test.attestation}))
 				require.NoError(t, err)
 				marshalledAttestations = b
 			}

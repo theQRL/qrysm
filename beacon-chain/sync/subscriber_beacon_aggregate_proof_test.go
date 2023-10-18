@@ -9,7 +9,7 @@ import (
 	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
 	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -24,9 +24,9 @@ func TestBeaconAggregateProofSubscriber_CanSaveAggregatedAttestation(t *testing.
 		seenUnAggregatedAttestationCache: lruwrpr.New(10),
 	}
 
-	a := &ethpb.SignedAggregateAttestationAndProof{
-		Message: &ethpb.AggregateAttestationAndProof{
-			Aggregate: util.HydrateAttestation(&ethpb.Attestation{
+	a := &zondpb.SignedAggregateAttestationAndProof{
+		Message: &zondpb.AggregateAttestationAndProof{
+			Aggregate: util.HydrateAttestation(&zondpb.Attestation{
 				AggregationBits: bitfield.Bitlist{0x07},
 			}),
 			AggregatorIndex: 100,
@@ -34,7 +34,7 @@ func TestBeaconAggregateProofSubscriber_CanSaveAggregatedAttestation(t *testing.
 		Signature: make([]byte, dilithium2.CryptoBytes),
 	}
 	require.NoError(t, r.beaconAggregateProofSubscriber(context.Background(), a))
-	assert.DeepSSZEqual(t, []*ethpb.Attestation{a.Message.Aggregate}, r.cfg.attPool.AggregatedAttestations(), "Did not save aggregated attestation")
+	assert.DeepSSZEqual(t, []*zondpb.Attestation{a.Message.Aggregate}, r.cfg.attPool.AggregatedAttestations(), "Did not save aggregated attestation")
 }
 
 func TestBeaconAggregateProofSubscriber_CanSaveUnaggregatedAttestation(t *testing.T) {
@@ -46,9 +46,9 @@ func TestBeaconAggregateProofSubscriber_CanSaveUnaggregatedAttestation(t *testin
 		seenUnAggregatedAttestationCache: lruwrpr.New(10),
 	}
 
-	a := &ethpb.SignedAggregateAttestationAndProof{
-		Message: &ethpb.AggregateAttestationAndProof{
-			Aggregate: util.HydrateAttestation(&ethpb.Attestation{
+	a := &zondpb.SignedAggregateAttestationAndProof{
+		Message: &zondpb.AggregateAttestationAndProof{
+			Aggregate: util.HydrateAttestation(&zondpb.Attestation{
 				AggregationBits: bitfield.Bitlist{0x03},
 				Signature:       make([]byte, dilithium2.CryptoBytes),
 			}),
@@ -59,5 +59,5 @@ func TestBeaconAggregateProofSubscriber_CanSaveUnaggregatedAttestation(t *testin
 
 	atts, err := r.cfg.attPool.UnaggregatedAttestations()
 	require.NoError(t, err)
-	assert.DeepEqual(t, []*ethpb.Attestation{a.Message.Aggregate}, atts, "Did not save unaggregated attestation")
+	assert.DeepEqual(t, []*zondpb.Attestation{a.Message.Aggregate}, atts, "Did not save unaggregated attestation")
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 func GenerateKeys(validatorStartIndex, numValidators uint64,
@@ -122,7 +122,7 @@ func validateDeposit(depositData *DepositData, credential *Credential) bool {
 		return false
 	}
 
-	depositMessage := &ethpb.DepositMessage{
+	depositMessage := &zondpb.DepositMessage{
 		PublicKey:             depositKey.PublicKey().Marshal(),
 		WithdrawalCredentials: withdrawalCredentials,
 		Amount:                depositData.Amount,
@@ -136,7 +136,7 @@ func validateDeposit(depositData *DepositData, credential *Credential) bool {
 		config.ToHex(depositData.ForkVersion), /*forkVersion*/
 		nil,                                   /*genesisValidatorsRoot*/
 	)
-	signingData := &ethpb.SigningData{
+	signingData := &zondpb.SigningData{
 		ObjectRoot: root[:],
 		Domain:     domain,
 	}

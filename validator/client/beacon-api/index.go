@@ -7,10 +7,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
-func (c beaconApiValidatorClient) validatorIndex(ctx context.Context, in *ethpb.ValidatorIndexRequest) (*ethpb.ValidatorIndexResponse, error) {
+func (c beaconApiValidatorClient) validatorIndex(ctx context.Context, in *zondpb.ValidatorIndexRequest) (*zondpb.ValidatorIndexResponse, error) {
 	stringPubKey := hexutil.Encode(in.PublicKey)
 
 	stateValidator, err := c.stateValidatorsProvider.GetStateValidators(ctx, []string{stringPubKey}, nil, nil)
@@ -29,5 +29,5 @@ func (c beaconApiValidatorClient) validatorIndex(ctx context.Context, in *ethpb.
 		return nil, errors.Wrap(err, "failed to parse validator index")
 	}
 
-	return &ethpb.ValidatorIndexResponse{Index: primitives.ValidatorIndex(index)}, nil
+	return &zondpb.ValidatorIndexResponse{Index: primitives.ValidatorIndex(index)}, nil
 }

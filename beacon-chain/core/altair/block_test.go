@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -49,7 +49,7 @@ func TestProcessSyncCommittee_PerfectParticipation(t *testing.T) {
 		sigs[i] = sig
 	}
 	aggregatedSig := bls.AggregateSignatures(sigs).Marshal()
-	syncAggregate := &ethpb.SyncAggregate{
+	syncAggregate := &zondpb.SyncAggregate{
 		SyncCommitteeBits:      syncBits,
 		SyncCommitteeSignature: aggregatedSig,
 	}
@@ -125,7 +125,7 @@ func TestProcessSyncCommittee_MixParticipation_BadSignature(t *testing.T) {
 		sigs[i] = sig
 	}
 	aggregatedSig := bls.AggregateSignatures(sigs).Marshal()
-	syncAggregate := &ethpb.SyncAggregate{
+	syncAggregate := &zondpb.SyncAggregate{
 		SyncCommitteeBits:      syncBits,
 		SyncCommitteeSignature: aggregatedSig,
 	}
@@ -162,7 +162,7 @@ func TestProcessSyncCommittee_MixParticipation_GoodSignature(t *testing.T) {
 		}
 	}
 	aggregatedSig := bls.AggregateSignatures(sigs).Marshal()
-	syncAggregate := &ethpb.SyncAggregate{
+	syncAggregate := &zondpb.SyncAggregate{
 		SyncCommitteeBits:      syncBits,
 		SyncCommitteeSignature: aggregatedSig,
 	}
@@ -188,7 +188,7 @@ func TestProcessSyncCommittee_DontPrecompute(t *testing.T) {
 		syncBits[i] = 0xFF
 	}
 	syncBits.SetBitAt(0, false)
-	syncAggregate := &ethpb.SyncAggregate{
+	syncAggregate := &zondpb.SyncAggregate{
 		SyncCommitteeBits: syncBits,
 	}
 	require.NoError(t, beaconState.UpdateBalancesAtIndex(idx, 0))
@@ -211,7 +211,7 @@ func TestProcessSyncCommittee_processSyncAggregate(t *testing.T) {
 	for i := range syncBits {
 		syncBits[i] = 0xAA
 	}
-	syncAggregate := &ethpb.SyncAggregate{
+	syncAggregate := &zondpb.SyncAggregate{
 		SyncCommitteeBits: syncBits,
 	}
 

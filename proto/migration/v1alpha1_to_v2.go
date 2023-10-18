@@ -7,19 +7,19 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/encoding/ssz"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
-	ethpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"google.golang.org/protobuf/proto"
 )
 
 // V1Alpha1BeaconBlockAltairToV2 converts a v1alpha1 Altair beacon block to a v2 Altair block.
-func V1Alpha1BeaconBlockAltairToV2(v1alpha1Block *ethpbalpha.BeaconBlockAltair) (*ethpbv2.BeaconBlockAltair, error) {
+func V1Alpha1BeaconBlockAltairToV2(v1alpha1Block *zondpbalpha.BeaconBlockAltair) (*zondpbv2.BeaconBlockAltair, error) {
 	marshaledBlk, err := proto.Marshal(v1alpha1Block)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal block")
 	}
-	v2Block := &ethpbv2.BeaconBlockAltair{}
+	v2Block := &zondpbv2.BeaconBlockAltair{}
 	if err := proto.Unmarshal(marshaledBlk, v2Block); err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal block")
 	}
@@ -27,12 +27,12 @@ func V1Alpha1BeaconBlockAltairToV2(v1alpha1Block *ethpbalpha.BeaconBlockAltair) 
 }
 
 // AltairToV1Alpha1SignedBlock converts a v2 SignedBeaconBlockAltair proto to a v1alpha1 proto.
-func AltairToV1Alpha1SignedBlock(altairBlk *ethpbv2.SignedBeaconBlockAltair) (*ethpbalpha.SignedBeaconBlockAltair, error) {
+func AltairToV1Alpha1SignedBlock(altairBlk *zondpbv2.SignedBeaconBlockAltair) (*zondpbalpha.SignedBeaconBlockAltair, error) {
 	marshaledBlk, err := proto.Marshal(altairBlk)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal block")
 	}
-	v1alpha1Block := &ethpbalpha.SignedBeaconBlockAltair{}
+	v1alpha1Block := &zondpbalpha.SignedBeaconBlockAltair{}
 	if err := proto.Unmarshal(marshaledBlk, v1alpha1Block); err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal block")
 	}
@@ -40,12 +40,12 @@ func AltairToV1Alpha1SignedBlock(altairBlk *ethpbv2.SignedBeaconBlockAltair) (*e
 }
 
 // BellatrixToV1Alpha1SignedBlock converts a v2 SignedBeaconBlockBellatrix proto to a v1alpha1 proto.
-func BellatrixToV1Alpha1SignedBlock(bellatrixBlk *ethpbv2.SignedBeaconBlockBellatrix) (*ethpbalpha.SignedBeaconBlockBellatrix, error) {
+func BellatrixToV1Alpha1SignedBlock(bellatrixBlk *zondpbv2.SignedBeaconBlockBellatrix) (*zondpbalpha.SignedBeaconBlockBellatrix, error) {
 	marshaledBlk, err := proto.Marshal(bellatrixBlk)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal block")
 	}
-	v1alpha1Block := &ethpbalpha.SignedBeaconBlockBellatrix{}
+	v1alpha1Block := &zondpbalpha.SignedBeaconBlockBellatrix{}
 	if err := proto.Unmarshal(marshaledBlk, v1alpha1Block); err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal block")
 	}
@@ -53,12 +53,12 @@ func BellatrixToV1Alpha1SignedBlock(bellatrixBlk *ethpbv2.SignedBeaconBlockBella
 }
 
 // CapellaToV1Alpha1SignedBlock converts a v2 SignedBeaconBlockCapella proto to a v1alpha1 proto.
-func CapellaToV1Alpha1SignedBlock(capellaBlk *ethpbv2.SignedBeaconBlockCapella) (*ethpbalpha.SignedBeaconBlockCapella, error) {
+func CapellaToV1Alpha1SignedBlock(capellaBlk *zondpbv2.SignedBeaconBlockCapella) (*zondpbalpha.SignedBeaconBlockCapella, error) {
 	marshaledBlk, err := proto.Marshal(capellaBlk)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal block")
 	}
-	v1alpha1Block := &ethpbalpha.SignedBeaconBlockCapella{}
+	v1alpha1Block := &zondpbalpha.SignedBeaconBlockCapella{}
 	if err := proto.Unmarshal(marshaledBlk, v1alpha1Block); err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal block")
 	}
@@ -66,12 +66,12 @@ func CapellaToV1Alpha1SignedBlock(capellaBlk *ethpbv2.SignedBeaconBlockCapella) 
 }
 
 // BlindedBellatrixToV1Alpha1SignedBlock converts a v2 SignedBlindedBeaconBlockBellatrix proto to a v1alpha1 proto.
-func BlindedBellatrixToV1Alpha1SignedBlock(bellatrixBlk *ethpbv2.SignedBlindedBeaconBlockBellatrix) (*ethpbalpha.SignedBlindedBeaconBlockBellatrix, error) {
+func BlindedBellatrixToV1Alpha1SignedBlock(bellatrixBlk *zondpbv2.SignedBlindedBeaconBlockBellatrix) (*zondpbalpha.SignedBlindedBeaconBlockBellatrix, error) {
 	marshaledBlk, err := proto.Marshal(bellatrixBlk)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal block")
 	}
-	v1alpha1Block := &ethpbalpha.SignedBlindedBeaconBlockBellatrix{}
+	v1alpha1Block := &zondpbalpha.SignedBlindedBeaconBlockBellatrix{}
 	if err := proto.Unmarshal(marshaledBlk, v1alpha1Block); err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal block")
 	}
@@ -79,12 +79,12 @@ func BlindedBellatrixToV1Alpha1SignedBlock(bellatrixBlk *ethpbv2.SignedBlindedBe
 }
 
 // BlindedCapellaToV1Alpha1SignedBlock converts a v2 SignedBlindedBeaconBlockCapella proto to a v1alpha1 proto.
-func BlindedCapellaToV1Alpha1SignedBlock(capellaBlk *ethpbv2.SignedBlindedBeaconBlockCapella) (*ethpbalpha.SignedBlindedBeaconBlockCapella, error) {
+func BlindedCapellaToV1Alpha1SignedBlock(capellaBlk *zondpbv2.SignedBlindedBeaconBlockCapella) (*zondpbalpha.SignedBlindedBeaconBlockCapella, error) {
 	marshaledBlk, err := proto.Marshal(capellaBlk)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal block")
 	}
-	v1alpha1Block := &ethpbalpha.SignedBlindedBeaconBlockCapella{}
+	v1alpha1Block := &zondpbalpha.SignedBlindedBeaconBlockCapella{}
 	if err := proto.Unmarshal(marshaledBlk, v1alpha1Block); err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal block")
 	}
@@ -93,12 +93,12 @@ func BlindedCapellaToV1Alpha1SignedBlock(capellaBlk *ethpbv2.SignedBlindedBeacon
 
 // V1Alpha1BeaconBlockBellatrixToV2 converts a v1alpha1 Bellatrix beacon block to a v2
 // Bellatrix block.
-func V1Alpha1BeaconBlockBellatrixToV2(v1alpha1Block *ethpbalpha.BeaconBlockBellatrix) (*ethpbv2.BeaconBlockBellatrix, error) {
+func V1Alpha1BeaconBlockBellatrixToV2(v1alpha1Block *zondpbalpha.BeaconBlockBellatrix) (*zondpbv2.BeaconBlockBellatrix, error) {
 	marshaledBlk, err := proto.Marshal(v1alpha1Block)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal block")
 	}
-	v2Block := &ethpbv2.BeaconBlockBellatrix{}
+	v2Block := &zondpbv2.BeaconBlockBellatrix{}
 	if err := proto.Unmarshal(marshaledBlk, v2Block); err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal block")
 	}
@@ -107,12 +107,12 @@ func V1Alpha1BeaconBlockBellatrixToV2(v1alpha1Block *ethpbalpha.BeaconBlockBella
 
 // V1Alpha1BeaconBlockCapellaToV2 converts a v1alpha1 Capella beacon block to a v2
 // Capella block.
-func V1Alpha1BeaconBlockCapellaToV2(v1alpha1Block *ethpbalpha.BeaconBlockCapella) (*ethpbv2.BeaconBlockCapella, error) {
+func V1Alpha1BeaconBlockCapellaToV2(v1alpha1Block *zondpbalpha.BeaconBlockCapella) (*zondpbv2.BeaconBlockCapella, error) {
 	marshaledBlk, err := proto.Marshal(v1alpha1Block)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal block")
 	}
-	v2Block := &ethpbv2.BeaconBlockCapella{}
+	v2Block := &zondpbv2.BeaconBlockCapella{}
 	if err := proto.Unmarshal(marshaledBlk, v2Block); err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal block")
 	}
@@ -120,12 +120,12 @@ func V1Alpha1BeaconBlockCapellaToV2(v1alpha1Block *ethpbalpha.BeaconBlockCapella
 }
 
 // V1Alpha1BeaconBlockBlindedBellatrixToV2Blinded converts a v1alpha1 Blinded Bellatrix beacon block to a v2 Blinded Bellatrix block.
-func V1Alpha1BeaconBlockBlindedBellatrixToV2Blinded(v1alpha1Block *ethpbalpha.BlindedBeaconBlockBellatrix) (*ethpbv2.BlindedBeaconBlockBellatrix, error) {
+func V1Alpha1BeaconBlockBlindedBellatrixToV2Blinded(v1alpha1Block *zondpbalpha.BlindedBeaconBlockBellatrix) (*zondpbv2.BlindedBeaconBlockBellatrix, error) {
 	marshaledBlk, err := proto.Marshal(v1alpha1Block)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal block")
 	}
-	v2Block := &ethpbv2.BlindedBeaconBlockBellatrix{}
+	v2Block := &zondpbv2.BlindedBeaconBlockBellatrix{}
 	if err := proto.Unmarshal(marshaledBlk, v2Block); err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal block")
 	}
@@ -133,12 +133,12 @@ func V1Alpha1BeaconBlockBlindedBellatrixToV2Blinded(v1alpha1Block *ethpbalpha.Bl
 }
 
 // V1Alpha1BeaconBlockBlindedCapellaToV2Blinded converts a v1alpha1 Blinded Capella beacon block to a v2 Blinded Capella block.
-func V1Alpha1BeaconBlockBlindedCapellaToV2Blinded(v1alpha1Block *ethpbalpha.BlindedBeaconBlockCapella) (*ethpbv2.BlindedBeaconBlockCapella, error) {
+func V1Alpha1BeaconBlockBlindedCapellaToV2Blinded(v1alpha1Block *zondpbalpha.BlindedBeaconBlockCapella) (*zondpbv2.BlindedBeaconBlockCapella, error) {
 	marshaledBlk, err := proto.Marshal(v1alpha1Block)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal block")
 	}
-	v2Block := &ethpbv2.BlindedBeaconBlockCapella{}
+	v2Block := &zondpbv2.BlindedBeaconBlockCapella{}
 	if err := proto.Unmarshal(marshaledBlk, v2Block); err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal block")
 	}
@@ -147,13 +147,13 @@ func V1Alpha1BeaconBlockBlindedCapellaToV2Blinded(v1alpha1Block *ethpbalpha.Blin
 
 // V1Alpha1BeaconBlockBellatrixToV2Blinded converts a v1alpha1 Bellatrix beacon block to a v2
 // blinded Bellatrix block.
-func V1Alpha1BeaconBlockBellatrixToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlockBellatrix) (*ethpbv2.BlindedBeaconBlockBellatrix, error) {
+func V1Alpha1BeaconBlockBellatrixToV2Blinded(v1alpha1Block *zondpbalpha.BeaconBlockBellatrix) (*zondpbv2.BlindedBeaconBlockBellatrix, error) {
 	sourceProposerSlashings := v1alpha1Block.Body.ProposerSlashings
-	resultProposerSlashings := make([]*ethpbv1.ProposerSlashing, len(sourceProposerSlashings))
+	resultProposerSlashings := make([]*zondpbv1.ProposerSlashing, len(sourceProposerSlashings))
 	for i, s := range sourceProposerSlashings {
-		resultProposerSlashings[i] = &ethpbv1.ProposerSlashing{
-			SignedHeader_1: &ethpbv1.SignedBeaconBlockHeader{
-				Message: &ethpbv1.BeaconBlockHeader{
+		resultProposerSlashings[i] = &zondpbv1.ProposerSlashing{
+			SignedHeader_1: &zondpbv1.SignedBeaconBlockHeader{
+				Message: &zondpbv1.BeaconBlockHeader{
 					Slot:          s.Header_1.Header.Slot,
 					ProposerIndex: s.Header_1.Header.ProposerIndex,
 					ParentRoot:    bytesutil.SafeCopyBytes(s.Header_1.Header.ParentRoot),
@@ -162,8 +162,8 @@ func V1Alpha1BeaconBlockBellatrixToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlo
 				},
 				Signature: bytesutil.SafeCopyBytes(s.Header_1.Signature),
 			},
-			SignedHeader_2: &ethpbv1.SignedBeaconBlockHeader{
-				Message: &ethpbv1.BeaconBlockHeader{
+			SignedHeader_2: &zondpbv1.SignedBeaconBlockHeader{
+				Message: &zondpbv1.BeaconBlockHeader{
 					Slot:          s.Header_2.Header.Slot,
 					ProposerIndex: s.Header_2.Header.ProposerIndex,
 					ParentRoot:    bytesutil.SafeCopyBytes(s.Header_2.Header.ParentRoot),
@@ -176,41 +176,41 @@ func V1Alpha1BeaconBlockBellatrixToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlo
 	}
 
 	sourceAttesterSlashings := v1alpha1Block.Body.AttesterSlashings
-	resultAttesterSlashings := make([]*ethpbv1.AttesterSlashing, len(sourceAttesterSlashings))
+	resultAttesterSlashings := make([]*zondpbv1.AttesterSlashing, len(sourceAttesterSlashings))
 	for i, s := range sourceAttesterSlashings {
 		att1Indices := make([]uint64, len(s.Attestation_1.AttestingIndices))
 		copy(att1Indices, s.Attestation_1.AttestingIndices)
 		att2Indices := make([]uint64, len(s.Attestation_2.AttestingIndices))
 		copy(att2Indices, s.Attestation_2.AttestingIndices)
-		resultAttesterSlashings[i] = &ethpbv1.AttesterSlashing{
-			Attestation_1: &ethpbv1.IndexedAttestation{
+		resultAttesterSlashings[i] = &zondpbv1.AttesterSlashing{
+			Attestation_1: &zondpbv1.IndexedAttestation{
 				AttestingIndices: att1Indices,
-				Data: &ethpbv1.AttestationData{
+				Data: &zondpbv1.AttestationData{
 					Slot:            s.Attestation_1.Data.Slot,
 					Index:           s.Attestation_1.Data.CommitteeIndex,
 					BeaconBlockRoot: bytesutil.SafeCopyBytes(s.Attestation_1.Data.BeaconBlockRoot),
-					Source: &ethpbv1.Checkpoint{
+					Source: &zondpbv1.Checkpoint{
 						Epoch: s.Attestation_1.Data.Source.Epoch,
 						Root:  bytesutil.SafeCopyBytes(s.Attestation_1.Data.Source.Root),
 					},
-					Target: &ethpbv1.Checkpoint{
+					Target: &zondpbv1.Checkpoint{
 						Epoch: s.Attestation_1.Data.Target.Epoch,
 						Root:  bytesutil.SafeCopyBytes(s.Attestation_1.Data.Target.Root),
 					},
 				},
 				Signature: bytesutil.SafeCopyBytes(s.Attestation_1.Signature),
 			},
-			Attestation_2: &ethpbv1.IndexedAttestation{
+			Attestation_2: &zondpbv1.IndexedAttestation{
 				AttestingIndices: att2Indices,
-				Data: &ethpbv1.AttestationData{
+				Data: &zondpbv1.AttestationData{
 					Slot:            s.Attestation_2.Data.Slot,
 					Index:           s.Attestation_2.Data.CommitteeIndex,
 					BeaconBlockRoot: bytesutil.SafeCopyBytes(s.Attestation_2.Data.BeaconBlockRoot),
-					Source: &ethpbv1.Checkpoint{
+					Source: &zondpbv1.Checkpoint{
 						Epoch: s.Attestation_2.Data.Source.Epoch,
 						Root:  bytesutil.SafeCopyBytes(s.Attestation_2.Data.Source.Root),
 					},
-					Target: &ethpbv1.Checkpoint{
+					Target: &zondpbv1.Checkpoint{
 						Epoch: s.Attestation_2.Data.Target.Epoch,
 						Root:  bytesutil.SafeCopyBytes(s.Attestation_2.Data.Target.Root),
 					},
@@ -221,19 +221,19 @@ func V1Alpha1BeaconBlockBellatrixToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlo
 	}
 
 	sourceAttestations := v1alpha1Block.Body.Attestations
-	resultAttestations := make([]*ethpbv1.Attestation, len(sourceAttestations))
+	resultAttestations := make([]*zondpbv1.Attestation, len(sourceAttestations))
 	for i, a := range sourceAttestations {
-		resultAttestations[i] = &ethpbv1.Attestation{
+		resultAttestations[i] = &zondpbv1.Attestation{
 			AggregationBits: bytesutil.SafeCopyBytes(a.AggregationBits),
-			Data: &ethpbv1.AttestationData{
+			Data: &zondpbv1.AttestationData{
 				Slot:            a.Data.Slot,
 				Index:           a.Data.CommitteeIndex,
 				BeaconBlockRoot: bytesutil.SafeCopyBytes(a.Data.BeaconBlockRoot),
-				Source: &ethpbv1.Checkpoint{
+				Source: &zondpbv1.Checkpoint{
 					Epoch: a.Data.Source.Epoch,
 					Root:  bytesutil.SafeCopyBytes(a.Data.Source.Root),
 				},
-				Target: &ethpbv1.Checkpoint{
+				Target: &zondpbv1.Checkpoint{
 					Epoch: a.Data.Target.Epoch,
 					Root:  bytesutil.SafeCopyBytes(a.Data.Target.Root),
 				},
@@ -243,11 +243,11 @@ func V1Alpha1BeaconBlockBellatrixToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlo
 	}
 
 	sourceDeposits := v1alpha1Block.Body.Deposits
-	resultDeposits := make([]*ethpbv1.Deposit, len(sourceDeposits))
+	resultDeposits := make([]*zondpbv1.Deposit, len(sourceDeposits))
 	for i, d := range sourceDeposits {
-		resultDeposits[i] = &ethpbv1.Deposit{
+		resultDeposits[i] = &zondpbv1.Deposit{
 			Proof: bytesutil.SafeCopy2dBytes(d.Proof),
-			Data: &ethpbv1.Deposit_Data{
+			Data: &zondpbv1.Deposit_Data{
 				Pubkey:                bytesutil.SafeCopyBytes(d.Data.PublicKey),
 				WithdrawalCredentials: bytesutil.SafeCopyBytes(d.Data.WithdrawalCredentials),
 				Amount:                d.Data.Amount,
@@ -257,10 +257,10 @@ func V1Alpha1BeaconBlockBellatrixToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlo
 	}
 
 	sourceExits := v1alpha1Block.Body.VoluntaryExits
-	resultExits := make([]*ethpbv1.SignedVoluntaryExit, len(sourceExits))
+	resultExits := make([]*zondpbv1.SignedVoluntaryExit, len(sourceExits))
 	for i, e := range sourceExits {
-		resultExits[i] = &ethpbv1.SignedVoluntaryExit{
-			Message: &ethpbv1.VoluntaryExit{
+		resultExits[i] = &zondpbv1.SignedVoluntaryExit{
+			Message: &zondpbv1.VoluntaryExit{
 				Epoch:          e.Exit.Epoch,
 				ValidatorIndex: e.Exit.ValidatorIndex,
 			},
@@ -273,9 +273,9 @@ func V1Alpha1BeaconBlockBellatrixToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlo
 		return nil, errors.Wrapf(err, "could not calculate transactions root")
 	}
 
-	resultBlockBody := &ethpbv2.BlindedBeaconBlockBodyBellatrix{
+	resultBlockBody := &zondpbv2.BlindedBeaconBlockBodyBellatrix{
 		RandaoReveal: bytesutil.SafeCopyBytes(v1alpha1Block.Body.RandaoReveal),
-		Eth1Data: &ethpbv1.Eth1Data{
+		Eth1Data: &zondpbv1.Eth1Data{
 			DepositRoot:  bytesutil.SafeCopyBytes(v1alpha1Block.Body.Eth1Data.DepositRoot),
 			DepositCount: v1alpha1Block.Body.Eth1Data.DepositCount,
 			BlockHash:    bytesutil.SafeCopyBytes(v1alpha1Block.Body.Eth1Data.BlockHash),
@@ -286,7 +286,7 @@ func V1Alpha1BeaconBlockBellatrixToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlo
 		Attestations:      resultAttestations,
 		Deposits:          resultDeposits,
 		VoluntaryExits:    resultExits,
-		SyncAggregate: &ethpbv1.SyncAggregate{
+		SyncAggregate: &zondpbv1.SyncAggregate{
 			SyncCommitteeBits:      bytesutil.SafeCopyBytes(v1alpha1Block.Body.SyncAggregate.SyncCommitteeBits),
 			SyncCommitteeSignature: bytesutil.SafeCopyBytes(v1alpha1Block.Body.SyncAggregate.SyncCommitteeSignature),
 		},
@@ -307,7 +307,7 @@ func V1Alpha1BeaconBlockBellatrixToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlo
 			TransactionsRoot: transactionsRoot[:],
 		},
 	}
-	v2Block := &ethpbv2.BlindedBeaconBlockBellatrix{
+	v2Block := &zondpbv2.BlindedBeaconBlockBellatrix{
 		Slot:          v1alpha1Block.Slot,
 		ProposerIndex: v1alpha1Block.ProposerIndex,
 		ParentRoot:    bytesutil.SafeCopyBytes(v1alpha1Block.ParentRoot),
@@ -319,13 +319,13 @@ func V1Alpha1BeaconBlockBellatrixToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlo
 
 // V1Alpha1BeaconBlockCapellaToV2Blinded converts a v1alpha1 Capella beacon block to a v2
 // blinded Capella block.
-func V1Alpha1BeaconBlockCapellaToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlockCapella) (*ethpbv2.BlindedBeaconBlockCapella, error) {
+func V1Alpha1BeaconBlockCapellaToV2Blinded(v1alpha1Block *zondpbalpha.BeaconBlockCapella) (*zondpbv2.BlindedBeaconBlockCapella, error) {
 	sourceProposerSlashings := v1alpha1Block.Body.ProposerSlashings
-	resultProposerSlashings := make([]*ethpbv1.ProposerSlashing, len(sourceProposerSlashings))
+	resultProposerSlashings := make([]*zondpbv1.ProposerSlashing, len(sourceProposerSlashings))
 	for i, s := range sourceProposerSlashings {
-		resultProposerSlashings[i] = &ethpbv1.ProposerSlashing{
-			SignedHeader_1: &ethpbv1.SignedBeaconBlockHeader{
-				Message: &ethpbv1.BeaconBlockHeader{
+		resultProposerSlashings[i] = &zondpbv1.ProposerSlashing{
+			SignedHeader_1: &zondpbv1.SignedBeaconBlockHeader{
+				Message: &zondpbv1.BeaconBlockHeader{
 					Slot:          s.Header_1.Header.Slot,
 					ProposerIndex: s.Header_1.Header.ProposerIndex,
 					ParentRoot:    bytesutil.SafeCopyBytes(s.Header_1.Header.ParentRoot),
@@ -334,8 +334,8 @@ func V1Alpha1BeaconBlockCapellaToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlock
 				},
 				Signature: bytesutil.SafeCopyBytes(s.Header_1.Signature),
 			},
-			SignedHeader_2: &ethpbv1.SignedBeaconBlockHeader{
-				Message: &ethpbv1.BeaconBlockHeader{
+			SignedHeader_2: &zondpbv1.SignedBeaconBlockHeader{
+				Message: &zondpbv1.BeaconBlockHeader{
 					Slot:          s.Header_2.Header.Slot,
 					ProposerIndex: s.Header_2.Header.ProposerIndex,
 					ParentRoot:    bytesutil.SafeCopyBytes(s.Header_2.Header.ParentRoot),
@@ -348,41 +348,41 @@ func V1Alpha1BeaconBlockCapellaToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlock
 	}
 
 	sourceAttesterSlashings := v1alpha1Block.Body.AttesterSlashings
-	resultAttesterSlashings := make([]*ethpbv1.AttesterSlashing, len(sourceAttesterSlashings))
+	resultAttesterSlashings := make([]*zondpbv1.AttesterSlashing, len(sourceAttesterSlashings))
 	for i, s := range sourceAttesterSlashings {
 		att1Indices := make([]uint64, len(s.Attestation_1.AttestingIndices))
 		copy(att1Indices, s.Attestation_1.AttestingIndices)
 		att2Indices := make([]uint64, len(s.Attestation_2.AttestingIndices))
 		copy(att2Indices, s.Attestation_2.AttestingIndices)
-		resultAttesterSlashings[i] = &ethpbv1.AttesterSlashing{
-			Attestation_1: &ethpbv1.IndexedAttestation{
+		resultAttesterSlashings[i] = &zondpbv1.AttesterSlashing{
+			Attestation_1: &zondpbv1.IndexedAttestation{
 				AttestingIndices: att1Indices,
-				Data: &ethpbv1.AttestationData{
+				Data: &zondpbv1.AttestationData{
 					Slot:            s.Attestation_1.Data.Slot,
 					Index:           s.Attestation_1.Data.CommitteeIndex,
 					BeaconBlockRoot: bytesutil.SafeCopyBytes(s.Attestation_1.Data.BeaconBlockRoot),
-					Source: &ethpbv1.Checkpoint{
+					Source: &zondpbv1.Checkpoint{
 						Epoch: s.Attestation_1.Data.Source.Epoch,
 						Root:  bytesutil.SafeCopyBytes(s.Attestation_1.Data.Source.Root),
 					},
-					Target: &ethpbv1.Checkpoint{
+					Target: &zondpbv1.Checkpoint{
 						Epoch: s.Attestation_1.Data.Target.Epoch,
 						Root:  bytesutil.SafeCopyBytes(s.Attestation_1.Data.Target.Root),
 					},
 				},
 				Signature: bytesutil.SafeCopyBytes(s.Attestation_1.Signature),
 			},
-			Attestation_2: &ethpbv1.IndexedAttestation{
+			Attestation_2: &zondpbv1.IndexedAttestation{
 				AttestingIndices: att2Indices,
-				Data: &ethpbv1.AttestationData{
+				Data: &zondpbv1.AttestationData{
 					Slot:            s.Attestation_2.Data.Slot,
 					Index:           s.Attestation_2.Data.CommitteeIndex,
 					BeaconBlockRoot: bytesutil.SafeCopyBytes(s.Attestation_2.Data.BeaconBlockRoot),
-					Source: &ethpbv1.Checkpoint{
+					Source: &zondpbv1.Checkpoint{
 						Epoch: s.Attestation_2.Data.Source.Epoch,
 						Root:  bytesutil.SafeCopyBytes(s.Attestation_2.Data.Source.Root),
 					},
-					Target: &ethpbv1.Checkpoint{
+					Target: &zondpbv1.Checkpoint{
 						Epoch: s.Attestation_2.Data.Target.Epoch,
 						Root:  bytesutil.SafeCopyBytes(s.Attestation_2.Data.Target.Root),
 					},
@@ -393,19 +393,19 @@ func V1Alpha1BeaconBlockCapellaToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlock
 	}
 
 	sourceAttestations := v1alpha1Block.Body.Attestations
-	resultAttestations := make([]*ethpbv1.Attestation, len(sourceAttestations))
+	resultAttestations := make([]*zondpbv1.Attestation, len(sourceAttestations))
 	for i, a := range sourceAttestations {
-		resultAttestations[i] = &ethpbv1.Attestation{
+		resultAttestations[i] = &zondpbv1.Attestation{
 			AggregationBits: bytesutil.SafeCopyBytes(a.AggregationBits),
-			Data: &ethpbv1.AttestationData{
+			Data: &zondpbv1.AttestationData{
 				Slot:            a.Data.Slot,
 				Index:           a.Data.CommitteeIndex,
 				BeaconBlockRoot: bytesutil.SafeCopyBytes(a.Data.BeaconBlockRoot),
-				Source: &ethpbv1.Checkpoint{
+				Source: &zondpbv1.Checkpoint{
 					Epoch: a.Data.Source.Epoch,
 					Root:  bytesutil.SafeCopyBytes(a.Data.Source.Root),
 				},
-				Target: &ethpbv1.Checkpoint{
+				Target: &zondpbv1.Checkpoint{
 					Epoch: a.Data.Target.Epoch,
 					Root:  bytesutil.SafeCopyBytes(a.Data.Target.Root),
 				},
@@ -415,11 +415,11 @@ func V1Alpha1BeaconBlockCapellaToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlock
 	}
 
 	sourceDeposits := v1alpha1Block.Body.Deposits
-	resultDeposits := make([]*ethpbv1.Deposit, len(sourceDeposits))
+	resultDeposits := make([]*zondpbv1.Deposit, len(sourceDeposits))
 	for i, d := range sourceDeposits {
-		resultDeposits[i] = &ethpbv1.Deposit{
+		resultDeposits[i] = &zondpbv1.Deposit{
 			Proof: bytesutil.SafeCopy2dBytes(d.Proof),
-			Data: &ethpbv1.Deposit_Data{
+			Data: &zondpbv1.Deposit_Data{
 				Pubkey:                bytesutil.SafeCopyBytes(d.Data.PublicKey),
 				WithdrawalCredentials: bytesutil.SafeCopyBytes(d.Data.WithdrawalCredentials),
 				Amount:                d.Data.Amount,
@@ -429,10 +429,10 @@ func V1Alpha1BeaconBlockCapellaToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlock
 	}
 
 	sourceExits := v1alpha1Block.Body.VoluntaryExits
-	resultExits := make([]*ethpbv1.SignedVoluntaryExit, len(sourceExits))
+	resultExits := make([]*zondpbv1.SignedVoluntaryExit, len(sourceExits))
 	for i, e := range sourceExits {
-		resultExits[i] = &ethpbv1.SignedVoluntaryExit{
-			Message: &ethpbv1.VoluntaryExit{
+		resultExits[i] = &zondpbv1.SignedVoluntaryExit{
+			Message: &zondpbv1.VoluntaryExit{
 				Epoch:          e.Exit.Epoch,
 				ValidatorIndex: e.Exit.ValidatorIndex,
 			},
@@ -450,10 +450,10 @@ func V1Alpha1BeaconBlockCapellaToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlock
 		return nil, errors.Wrapf(err, "could not calculate transactions root")
 	}
 
-	changes := make([]*ethpbv2.SignedDilithiumToExecutionChange, len(v1alpha1Block.Body.DilithiumToExecutionChanges))
+	changes := make([]*zondpbv2.SignedDilithiumToExecutionChange, len(v1alpha1Block.Body.DilithiumToExecutionChanges))
 	for i, change := range v1alpha1Block.Body.DilithiumToExecutionChanges {
-		changes[i] = &ethpbv2.SignedDilithiumToExecutionChange{
-			Message: &ethpbv2.DilithiumToExecutionChange{
+		changes[i] = &zondpbv2.SignedDilithiumToExecutionChange{
+			Message: &zondpbv2.DilithiumToExecutionChange{
 				ValidatorIndex:      change.Message.ValidatorIndex,
 				FromDilithiumPubkey: bytesutil.SafeCopyBytes(change.Message.FromDilithiumPubkey),
 				ToExecutionAddress:  bytesutil.SafeCopyBytes(change.Message.ToExecutionAddress),
@@ -462,9 +462,9 @@ func V1Alpha1BeaconBlockCapellaToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlock
 		}
 	}
 
-	resultBlockBody := &ethpbv2.BlindedBeaconBlockBodyCapella{
+	resultBlockBody := &zondpbv2.BlindedBeaconBlockBodyCapella{
 		RandaoReveal: bytesutil.SafeCopyBytes(v1alpha1Block.Body.RandaoReveal),
-		Eth1Data: &ethpbv1.Eth1Data{
+		Eth1Data: &zondpbv1.Eth1Data{
 			DepositRoot:  bytesutil.SafeCopyBytes(v1alpha1Block.Body.Eth1Data.DepositRoot),
 			DepositCount: v1alpha1Block.Body.Eth1Data.DepositCount,
 			BlockHash:    bytesutil.SafeCopyBytes(v1alpha1Block.Body.Eth1Data.BlockHash),
@@ -475,7 +475,7 @@ func V1Alpha1BeaconBlockCapellaToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlock
 		Attestations:      resultAttestations,
 		Deposits:          resultDeposits,
 		VoluntaryExits:    resultExits,
-		SyncAggregate: &ethpbv1.SyncAggregate{
+		SyncAggregate: &zondpbv1.SyncAggregate{
 			SyncCommitteeBits:      bytesutil.SafeCopyBytes(v1alpha1Block.Body.SyncAggregate.SyncCommitteeBits),
 			SyncCommitteeSignature: bytesutil.SafeCopyBytes(v1alpha1Block.Body.SyncAggregate.SyncCommitteeSignature),
 		},
@@ -498,7 +498,7 @@ func V1Alpha1BeaconBlockCapellaToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlock
 		},
 		DilithiumToExecutionChanges: changes,
 	}
-	v2Block := &ethpbv2.BlindedBeaconBlockCapella{
+	v2Block := &zondpbv2.BlindedBeaconBlockCapella{
 		Slot:          v1alpha1Block.Slot,
 		ProposerIndex: v1alpha1Block.ProposerIndex,
 		ParentRoot:    bytesutil.SafeCopyBytes(v1alpha1Block.ParentRoot),
@@ -509,7 +509,7 @@ func V1Alpha1BeaconBlockCapellaToV2Blinded(v1alpha1Block *ethpbalpha.BeaconBlock
 }
 
 // BeaconStateAltairToProto converts a state.BeaconState object to its protobuf equivalent.
-func BeaconStateAltairToProto(altairState state.BeaconState) (*ethpbv2.BeaconState, error) {
+func BeaconStateAltairToProto(altairState state.BeaconState) (*zondpbv2.BeaconState, error) {
 	sourceFork := altairState.Fork()
 	sourceLatestBlockHeader := altairState.LatestBlockHeader()
 	sourceEth1Data := altairState.Eth1Data()
@@ -520,17 +520,17 @@ func BeaconStateAltairToProto(altairState state.BeaconState) (*ethpbv2.BeaconSta
 	sourceCurrJustifiedCheckpoint := altairState.CurrentJustifiedCheckpoint()
 	sourceFinalizedCheckpoint := altairState.FinalizedCheckpoint()
 
-	resultEth1DataVotes := make([]*ethpbv1.Eth1Data, len(sourceEth1DataVotes))
+	resultEth1DataVotes := make([]*zondpbv1.Eth1Data, len(sourceEth1DataVotes))
 	for i, vote := range sourceEth1DataVotes {
-		resultEth1DataVotes[i] = &ethpbv1.Eth1Data{
+		resultEth1DataVotes[i] = &zondpbv1.Eth1Data{
 			DepositRoot:  bytesutil.SafeCopyBytes(vote.DepositRoot),
 			DepositCount: vote.DepositCount,
 			BlockHash:    bytesutil.SafeCopyBytes(vote.BlockHash),
 		}
 	}
-	resultValidators := make([]*ethpbv1.Validator, len(sourceValidators))
+	resultValidators := make([]*zondpbv1.Validator, len(sourceValidators))
 	for i, validator := range sourceValidators {
-		resultValidators[i] = &ethpbv1.Validator{
+		resultValidators[i] = &zondpbv1.Validator{
 			Pubkey:                     bytesutil.SafeCopyBytes(validator.PublicKey),
 			WithdrawalCredentials:      bytesutil.SafeCopyBytes(validator.WithdrawalCredentials),
 			EffectiveBalance:           validator.EffectiveBalance,
@@ -568,16 +568,16 @@ func BeaconStateAltairToProto(altairState state.BeaconState) (*ethpbv2.BeaconSta
 		return nil, errors.Wrap(err, "could not get historical roots")
 	}
 
-	result := &ethpbv2.BeaconState{
+	result := &zondpbv2.BeaconState{
 		GenesisTime:           altairState.GenesisTime(),
 		GenesisValidatorsRoot: bytesutil.SafeCopyBytes(altairState.GenesisValidatorsRoot()),
 		Slot:                  altairState.Slot(),
-		Fork: &ethpbv1.Fork{
+		Fork: &zondpbv1.Fork{
 			PreviousVersion: bytesutil.SafeCopyBytes(sourceFork.PreviousVersion),
 			CurrentVersion:  bytesutil.SafeCopyBytes(sourceFork.CurrentVersion),
 			Epoch:           sourceFork.Epoch,
 		},
-		LatestBlockHeader: &ethpbv1.BeaconBlockHeader{
+		LatestBlockHeader: &zondpbv1.BeaconBlockHeader{
 			Slot:          sourceLatestBlockHeader.Slot,
 			ProposerIndex: sourceLatestBlockHeader.ProposerIndex,
 			ParentRoot:    bytesutil.SafeCopyBytes(sourceLatestBlockHeader.ParentRoot),
@@ -587,7 +587,7 @@ func BeaconStateAltairToProto(altairState state.BeaconState) (*ethpbv2.BeaconSta
 		BlockRoots:      bytesutil.SafeCopy2dBytes(altairState.BlockRoots()),
 		StateRoots:      bytesutil.SafeCopy2dBytes(altairState.StateRoots()),
 		HistoricalRoots: bytesutil.SafeCopy2dBytes(hrs),
-		Eth1Data: &ethpbv1.Eth1Data{
+		Eth1Data: &zondpbv1.Eth1Data{
 			DepositRoot:  bytesutil.SafeCopyBytes(sourceEth1Data.DepositRoot),
 			DepositCount: sourceEth1Data.DepositCount,
 			BlockHash:    bytesutil.SafeCopyBytes(sourceEth1Data.BlockHash),
@@ -601,24 +601,24 @@ func BeaconStateAltairToProto(altairState state.BeaconState) (*ethpbv2.BeaconSta
 		PreviousEpochParticipation: bytesutil.SafeCopyBytes(sourcePrevEpochParticipation),
 		CurrentEpochParticipation:  bytesutil.SafeCopyBytes(sourceCurrEpochParticipation),
 		JustificationBits:          bytesutil.SafeCopyBytes(sourceJustificationBits),
-		PreviousJustifiedCheckpoint: &ethpbv1.Checkpoint{
+		PreviousJustifiedCheckpoint: &zondpbv1.Checkpoint{
 			Epoch: sourcePrevJustifiedCheckpoint.Epoch,
 			Root:  bytesutil.SafeCopyBytes(sourcePrevJustifiedCheckpoint.Root),
 		},
-		CurrentJustifiedCheckpoint: &ethpbv1.Checkpoint{
+		CurrentJustifiedCheckpoint: &zondpbv1.Checkpoint{
 			Epoch: sourceCurrJustifiedCheckpoint.Epoch,
 			Root:  bytesutil.SafeCopyBytes(sourceCurrJustifiedCheckpoint.Root),
 		},
-		FinalizedCheckpoint: &ethpbv1.Checkpoint{
+		FinalizedCheckpoint: &zondpbv1.Checkpoint{
 			Epoch: sourceFinalizedCheckpoint.Epoch,
 			Root:  bytesutil.SafeCopyBytes(sourceFinalizedCheckpoint.Root),
 		},
 		InactivityScores: sourceInactivityScores,
-		CurrentSyncCommittee: &ethpbv2.SyncCommittee{
+		CurrentSyncCommittee: &zondpbv2.SyncCommittee{
 			Pubkeys:         bytesutil.SafeCopy2dBytes(sourceCurrSyncCommittee.Pubkeys),
 			AggregatePubkey: bytesutil.SafeCopyBytes(sourceCurrSyncCommittee.AggregatePubkey),
 		},
-		NextSyncCommittee: &ethpbv2.SyncCommittee{
+		NextSyncCommittee: &zondpbv2.SyncCommittee{
 			Pubkeys:         bytesutil.SafeCopy2dBytes(sourceNextSyncCommittee.Pubkeys),
 			AggregatePubkey: bytesutil.SafeCopyBytes(sourceNextSyncCommittee.AggregatePubkey),
 		},
@@ -628,7 +628,7 @@ func BeaconStateAltairToProto(altairState state.BeaconState) (*ethpbv2.BeaconSta
 }
 
 // BeaconStateBellatrixToProto converts a state.BeaconState object to its protobuf equivalent.
-func BeaconStateBellatrixToProto(st state.BeaconState) (*ethpbv2.BeaconStateBellatrix, error) {
+func BeaconStateBellatrixToProto(st state.BeaconState) (*zondpbv2.BeaconStateBellatrix, error) {
 	sourceFork := st.Fork()
 	sourceLatestBlockHeader := st.LatestBlockHeader()
 	sourceEth1Data := st.Eth1Data()
@@ -639,17 +639,17 @@ func BeaconStateBellatrixToProto(st state.BeaconState) (*ethpbv2.BeaconStateBell
 	sourceCurrJustifiedCheckpoint := st.CurrentJustifiedCheckpoint()
 	sourceFinalizedCheckpoint := st.FinalizedCheckpoint()
 
-	resultEth1DataVotes := make([]*ethpbv1.Eth1Data, len(sourceEth1DataVotes))
+	resultEth1DataVotes := make([]*zondpbv1.Eth1Data, len(sourceEth1DataVotes))
 	for i, vote := range sourceEth1DataVotes {
-		resultEth1DataVotes[i] = &ethpbv1.Eth1Data{
+		resultEth1DataVotes[i] = &zondpbv1.Eth1Data{
 			DepositRoot:  bytesutil.SafeCopyBytes(vote.DepositRoot),
 			DepositCount: vote.DepositCount,
 			BlockHash:    bytesutil.SafeCopyBytes(vote.BlockHash),
 		}
 	}
-	resultValidators := make([]*ethpbv1.Validator, len(sourceValidators))
+	resultValidators := make([]*zondpbv1.Validator, len(sourceValidators))
 	for i, validator := range sourceValidators {
-		resultValidators[i] = &ethpbv1.Validator{
+		resultValidators[i] = &zondpbv1.Validator{
 			Pubkey:                     bytesutil.SafeCopyBytes(validator.PublicKey),
 			WithdrawalCredentials:      bytesutil.SafeCopyBytes(validator.WithdrawalCredentials),
 			EffectiveBalance:           validator.EffectiveBalance,
@@ -695,16 +695,16 @@ func BeaconStateBellatrixToProto(st state.BeaconState) (*ethpbv2.BeaconStateBell
 		return nil, errors.Wrap(err, "could not get historical roots")
 	}
 
-	result := &ethpbv2.BeaconStateBellatrix{
+	result := &zondpbv2.BeaconStateBellatrix{
 		GenesisTime:           st.GenesisTime(),
 		GenesisValidatorsRoot: bytesutil.SafeCopyBytes(st.GenesisValidatorsRoot()),
 		Slot:                  st.Slot(),
-		Fork: &ethpbv1.Fork{
+		Fork: &zondpbv1.Fork{
 			PreviousVersion: bytesutil.SafeCopyBytes(sourceFork.PreviousVersion),
 			CurrentVersion:  bytesutil.SafeCopyBytes(sourceFork.CurrentVersion),
 			Epoch:           sourceFork.Epoch,
 		},
-		LatestBlockHeader: &ethpbv1.BeaconBlockHeader{
+		LatestBlockHeader: &zondpbv1.BeaconBlockHeader{
 			Slot:          sourceLatestBlockHeader.Slot,
 			ProposerIndex: sourceLatestBlockHeader.ProposerIndex,
 			ParentRoot:    bytesutil.SafeCopyBytes(sourceLatestBlockHeader.ParentRoot),
@@ -714,7 +714,7 @@ func BeaconStateBellatrixToProto(st state.BeaconState) (*ethpbv2.BeaconStateBell
 		BlockRoots:      bytesutil.SafeCopy2dBytes(st.BlockRoots()),
 		StateRoots:      bytesutil.SafeCopy2dBytes(st.StateRoots()),
 		HistoricalRoots: bytesutil.SafeCopy2dBytes(hRoots),
-		Eth1Data: &ethpbv1.Eth1Data{
+		Eth1Data: &zondpbv1.Eth1Data{
 			DepositRoot:  bytesutil.SafeCopyBytes(sourceEth1Data.DepositRoot),
 			DepositCount: sourceEth1Data.DepositCount,
 			BlockHash:    bytesutil.SafeCopyBytes(sourceEth1Data.BlockHash),
@@ -728,24 +728,24 @@ func BeaconStateBellatrixToProto(st state.BeaconState) (*ethpbv2.BeaconStateBell
 		PreviousEpochParticipation: bytesutil.SafeCopyBytes(sourcePrevEpochParticipation),
 		CurrentEpochParticipation:  bytesutil.SafeCopyBytes(sourceCurrEpochParticipation),
 		JustificationBits:          bytesutil.SafeCopyBytes(sourceJustificationBits),
-		PreviousJustifiedCheckpoint: &ethpbv1.Checkpoint{
+		PreviousJustifiedCheckpoint: &zondpbv1.Checkpoint{
 			Epoch: sourcePrevJustifiedCheckpoint.Epoch,
 			Root:  bytesutil.SafeCopyBytes(sourcePrevJustifiedCheckpoint.Root),
 		},
-		CurrentJustifiedCheckpoint: &ethpbv1.Checkpoint{
+		CurrentJustifiedCheckpoint: &zondpbv1.Checkpoint{
 			Epoch: sourceCurrJustifiedCheckpoint.Epoch,
 			Root:  bytesutil.SafeCopyBytes(sourceCurrJustifiedCheckpoint.Root),
 		},
-		FinalizedCheckpoint: &ethpbv1.Checkpoint{
+		FinalizedCheckpoint: &zondpbv1.Checkpoint{
 			Epoch: sourceFinalizedCheckpoint.Epoch,
 			Root:  bytesutil.SafeCopyBytes(sourceFinalizedCheckpoint.Root),
 		},
 		InactivityScores: sourceInactivityScores,
-		CurrentSyncCommittee: &ethpbv2.SyncCommittee{
+		CurrentSyncCommittee: &zondpbv2.SyncCommittee{
 			Pubkeys:         bytesutil.SafeCopy2dBytes(sourceCurrSyncCommittee.Pubkeys),
 			AggregatePubkey: bytesutil.SafeCopyBytes(sourceCurrSyncCommittee.AggregatePubkey),
 		},
-		NextSyncCommittee: &ethpbv2.SyncCommittee{
+		NextSyncCommittee: &zondpbv2.SyncCommittee{
 			Pubkeys:         bytesutil.SafeCopy2dBytes(sourceNextSyncCommittee.Pubkeys),
 			AggregatePubkey: bytesutil.SafeCopyBytes(sourceNextSyncCommittee.AggregatePubkey),
 		},
@@ -771,7 +771,7 @@ func BeaconStateBellatrixToProto(st state.BeaconState) (*ethpbv2.BeaconStateBell
 }
 
 // BeaconStateCapellaToProto converts a state.BeaconState object to its protobuf equivalent.
-func BeaconStateCapellaToProto(st state.BeaconState) (*ethpbv2.BeaconStateCapella, error) {
+func BeaconStateCapellaToProto(st state.BeaconState) (*zondpbv2.BeaconStateCapella, error) {
 	sourceFork := st.Fork()
 	sourceLatestBlockHeader := st.LatestBlockHeader()
 	sourceEth1Data := st.Eth1Data()
@@ -782,17 +782,17 @@ func BeaconStateCapellaToProto(st state.BeaconState) (*ethpbv2.BeaconStateCapell
 	sourceCurrJustifiedCheckpoint := st.CurrentJustifiedCheckpoint()
 	sourceFinalizedCheckpoint := st.FinalizedCheckpoint()
 
-	resultEth1DataVotes := make([]*ethpbv1.Eth1Data, len(sourceEth1DataVotes))
+	resultEth1DataVotes := make([]*zondpbv1.Eth1Data, len(sourceEth1DataVotes))
 	for i, vote := range sourceEth1DataVotes {
-		resultEth1DataVotes[i] = &ethpbv1.Eth1Data{
+		resultEth1DataVotes[i] = &zondpbv1.Eth1Data{
 			DepositRoot:  bytesutil.SafeCopyBytes(vote.DepositRoot),
 			DepositCount: vote.DepositCount,
 			BlockHash:    bytesutil.SafeCopyBytes(vote.BlockHash),
 		}
 	}
-	resultValidators := make([]*ethpbv1.Validator, len(sourceValidators))
+	resultValidators := make([]*zondpbv1.Validator, len(sourceValidators))
 	for i, validator := range sourceValidators {
-		resultValidators[i] = &ethpbv1.Validator{
+		resultValidators[i] = &zondpbv1.Validator{
 			Pubkey:                     bytesutil.SafeCopyBytes(validator.PublicKey),
 			WithdrawalCredentials:      bytesutil.SafeCopyBytes(validator.WithdrawalCredentials),
 			EffectiveBalance:           validator.EffectiveBalance,
@@ -844,24 +844,24 @@ func BeaconStateCapellaToProto(st state.BeaconState) (*ethpbv2.BeaconStateCapell
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get historical summaries")
 	}
-	sourceHistoricalSummaries := make([]*ethpbv2.HistoricalSummary, len(summaries))
+	sourceHistoricalSummaries := make([]*zondpbv2.HistoricalSummary, len(summaries))
 	for i, summary := range summaries {
-		sourceHistoricalSummaries[i] = &ethpbv2.HistoricalSummary{
+		sourceHistoricalSummaries[i] = &zondpbv2.HistoricalSummary{
 			BlockSummaryRoot: summary.BlockSummaryRoot,
 			StateSummaryRoot: summary.StateSummaryRoot,
 		}
 	}
 
-	result := &ethpbv2.BeaconStateCapella{
+	result := &zondpbv2.BeaconStateCapella{
 		GenesisTime:           st.GenesisTime(),
 		GenesisValidatorsRoot: bytesutil.SafeCopyBytes(st.GenesisValidatorsRoot()),
 		Slot:                  st.Slot(),
-		Fork: &ethpbv1.Fork{
+		Fork: &zondpbv1.Fork{
 			PreviousVersion: bytesutil.SafeCopyBytes(sourceFork.PreviousVersion),
 			CurrentVersion:  bytesutil.SafeCopyBytes(sourceFork.CurrentVersion),
 			Epoch:           sourceFork.Epoch,
 		},
-		LatestBlockHeader: &ethpbv1.BeaconBlockHeader{
+		LatestBlockHeader: &zondpbv1.BeaconBlockHeader{
 			Slot:          sourceLatestBlockHeader.Slot,
 			ProposerIndex: sourceLatestBlockHeader.ProposerIndex,
 			ParentRoot:    bytesutil.SafeCopyBytes(sourceLatestBlockHeader.ParentRoot),
@@ -870,7 +870,7 @@ func BeaconStateCapellaToProto(st state.BeaconState) (*ethpbv2.BeaconStateCapell
 		},
 		BlockRoots: bytesutil.SafeCopy2dBytes(st.BlockRoots()),
 		StateRoots: bytesutil.SafeCopy2dBytes(st.StateRoots()),
-		Eth1Data: &ethpbv1.Eth1Data{
+		Eth1Data: &zondpbv1.Eth1Data{
 			DepositRoot:  bytesutil.SafeCopyBytes(sourceEth1Data.DepositRoot),
 			DepositCount: sourceEth1Data.DepositCount,
 			BlockHash:    bytesutil.SafeCopyBytes(sourceEth1Data.BlockHash),
@@ -884,24 +884,24 @@ func BeaconStateCapellaToProto(st state.BeaconState) (*ethpbv2.BeaconStateCapell
 		PreviousEpochParticipation: bytesutil.SafeCopyBytes(sourcePrevEpochParticipation),
 		CurrentEpochParticipation:  bytesutil.SafeCopyBytes(sourceCurrEpochParticipation),
 		JustificationBits:          bytesutil.SafeCopyBytes(sourceJustificationBits),
-		PreviousJustifiedCheckpoint: &ethpbv1.Checkpoint{
+		PreviousJustifiedCheckpoint: &zondpbv1.Checkpoint{
 			Epoch: sourcePrevJustifiedCheckpoint.Epoch,
 			Root:  bytesutil.SafeCopyBytes(sourcePrevJustifiedCheckpoint.Root),
 		},
-		CurrentJustifiedCheckpoint: &ethpbv1.Checkpoint{
+		CurrentJustifiedCheckpoint: &zondpbv1.Checkpoint{
 			Epoch: sourceCurrJustifiedCheckpoint.Epoch,
 			Root:  bytesutil.SafeCopyBytes(sourceCurrJustifiedCheckpoint.Root),
 		},
-		FinalizedCheckpoint: &ethpbv1.Checkpoint{
+		FinalizedCheckpoint: &zondpbv1.Checkpoint{
 			Epoch: sourceFinalizedCheckpoint.Epoch,
 			Root:  bytesutil.SafeCopyBytes(sourceFinalizedCheckpoint.Root),
 		},
 		InactivityScores: sourceInactivityScores,
-		CurrentSyncCommittee: &ethpbv2.SyncCommittee{
+		CurrentSyncCommittee: &zondpbv2.SyncCommittee{
 			Pubkeys:         bytesutil.SafeCopy2dBytes(sourceCurrSyncCommittee.Pubkeys),
 			AggregatePubkey: bytesutil.SafeCopyBytes(sourceCurrSyncCommittee.AggregatePubkey),
 		},
-		NextSyncCommittee: &ethpbv2.SyncCommittee{
+		NextSyncCommittee: &zondpbv2.SyncCommittee{
 			Pubkeys:         bytesutil.SafeCopy2dBytes(sourceNextSyncCommittee.Pubkeys),
 			AggregatePubkey: bytesutil.SafeCopyBytes(sourceNextSyncCommittee.AggregatePubkey),
 		},
@@ -931,11 +931,11 @@ func BeaconStateCapellaToProto(st state.BeaconState) (*ethpbv2.BeaconStateCapell
 }
 
 // V1Alpha1SignedContributionAndProofToV2 converts a v1alpha1 SignedContributionAndProof object to its v2 equivalent.
-func V1Alpha1SignedContributionAndProofToV2(alphaContribution *ethpbalpha.SignedContributionAndProof) *ethpbv2.SignedContributionAndProof {
-	result := &ethpbv2.SignedContributionAndProof{
-		Message: &ethpbv2.ContributionAndProof{
+func V1Alpha1SignedContributionAndProofToV2(alphaContribution *zondpbalpha.SignedContributionAndProof) *zondpbv2.SignedContributionAndProof {
+	result := &zondpbv2.SignedContributionAndProof{
+		Message: &zondpbv2.ContributionAndProof{
 			AggregatorIndex: alphaContribution.Message.AggregatorIndex,
-			Contribution: &ethpbv2.SyncCommitteeContribution{
+			Contribution: &zondpbv2.SyncCommitteeContribution{
 				Slot:              alphaContribution.Message.Contribution.Slot,
 				BeaconBlockRoot:   alphaContribution.Message.Contribution.BlockRoot,
 				SubcommitteeIndex: alphaContribution.Message.Contribution.SubcommitteeIndex,
@@ -949,9 +949,9 @@ func V1Alpha1SignedContributionAndProofToV2(alphaContribution *ethpbalpha.Signed
 	return result
 }
 
-func V2SignedDilithiumToExecutionChangeToV1Alpha1(change *ethpbv2.SignedDilithiumToExecutionChange) *ethpbalpha.SignedDilithiumToExecutionChange {
-	return &ethpbalpha.SignedDilithiumToExecutionChange{
-		Message: &ethpbalpha.DilithiumToExecutionChange{
+func V2SignedDilithiumToExecutionChangeToV1Alpha1(change *zondpbv2.SignedDilithiumToExecutionChange) *zondpbalpha.SignedDilithiumToExecutionChange {
+	return &zondpbalpha.SignedDilithiumToExecutionChange{
+		Message: &zondpbalpha.DilithiumToExecutionChange{
 			ValidatorIndex:      change.Message.ValidatorIndex,
 			FromDilithiumPubkey: bytesutil.SafeCopyBytes(change.Message.FromDilithiumPubkey),
 			ToExecutionAddress:  bytesutil.SafeCopyBytes(change.Message.ToExecutionAddress),
@@ -961,9 +961,9 @@ func V2SignedDilithiumToExecutionChangeToV1Alpha1(change *ethpbv2.SignedDilithiu
 }
 
 // V1Alpha1SignedDilithiumToExecChangeToV2 converts a v1alpha1 SignedDilithiumToExecutionChange object to its v2 equivalent.
-func V1Alpha1SignedDilithiumToExecChangeToV2(alphaChange *ethpbalpha.SignedDilithiumToExecutionChange) *ethpbv2.SignedDilithiumToExecutionChange {
-	result := &ethpbv2.SignedDilithiumToExecutionChange{
-		Message: &ethpbv2.DilithiumToExecutionChange{
+func V1Alpha1SignedDilithiumToExecChangeToV2(alphaChange *zondpbalpha.SignedDilithiumToExecutionChange) *zondpbv2.SignedDilithiumToExecutionChange {
+	result := &zondpbv2.SignedDilithiumToExecutionChange{
+		Message: &zondpbv2.DilithiumToExecutionChange{
 			ValidatorIndex:      alphaChange.Message.ValidatorIndex,
 			FromDilithiumPubkey: bytesutil.SafeCopyBytes(alphaChange.Message.FromDilithiumPubkey),
 			ToExecutionAddress:  bytesutil.SafeCopyBytes(alphaChange.Message.ToExecutionAddress),

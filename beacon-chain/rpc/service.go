@@ -52,8 +52,8 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/io/logs"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
-	ethpbv1alpha1 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
+	zondpbv1alpha1 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -70,7 +70,7 @@ type Service struct {
 	cancel               context.CancelFunc
 	listener             net.Listener
 	grpcServer           *grpc.Server
-	incomingAttestation  chan *ethpbv1alpha1.Attestation
+	incomingAttestation  chan *zondpbv1alpha1.Attestation
 	credentialError      error
 	connectedRPCClients  map[net.Addr]bool
 	clientConnectionLock sync.Mutex
@@ -135,7 +135,7 @@ func NewService(ctx context.Context, cfg *Config) *Service {
 		cfg:                 cfg,
 		ctx:                 ctx,
 		cancel:              cancel,
-		incomingAttestation: make(chan *ethpbv1alpha1.Attestation, params.BeaconConfig().DefaultBufferSize),
+		incomingAttestation: make(chan *zondpbv1alpha1.Attestation, params.BeaconConfig().DefaultBufferSize),
 		connectedRPCClients: make(map[net.Addr]bool),
 	}
 
@@ -343,8 +343,8 @@ func (s *Service) Start() {
 		Broadcaster:                 s.cfg.Broadcaster,
 		StateGen:                    s.cfg.StateGen,
 		SyncChecker:                 s.cfg.SyncService,
-		ReceivedAttestationsBuffer:  make(chan *ethpbv1alpha1.Attestation, attestationBufferSize),
-		CollectedAttestationsBuffer: make(chan []*ethpbv1alpha1.Attestation, attestationBufferSize),
+		ReceivedAttestationsBuffer:  make(chan *zondpbv1alpha1.Attestation, attestationBufferSize),
+		CollectedAttestationsBuffer: make(chan []*zondpbv1alpha1.Attestation, attestationBufferSize),
 		ReplayerBuilder:             ch,
 	}
 	beaconChainServerV1 := &beacon.Server{
@@ -380,12 +380,12 @@ func (s *Service) Start() {
 	s.cfg.Router.HandleFunc("/prysm/validators/performance", httpServer.GetValidatorPerformance)
 	s.cfg.Router.HandleFunc("/eth/v2/beacon/blocks", beaconChainServerV1.PublishBlockV2)
 	s.cfg.Router.HandleFunc("/eth/v2/beacon/blinded_blocks", beaconChainServerV1.PublishBlindedBlockV2)
-	ethpbv1alpha1.RegisterNodeServer(s.grpcServer, nodeServer)
-	ethpbservice.RegisterBeaconNodeServer(s.grpcServer, nodeServerV1)
-	ethpbv1alpha1.RegisterHealthServer(s.grpcServer, nodeServer)
-	ethpbv1alpha1.RegisterBeaconChainServer(s.grpcServer, beaconChainServer)
-	ethpbservice.RegisterBeaconChainServer(s.grpcServer, beaconChainServerV1)
-	ethpbservice.RegisterEventsServer(s.grpcServer, &events.Server{
+	zondpbv1alpha1.RegisterNodeServer(s.grpcServer, nodeServer)
+	zondpbservice.RegisterBeaconNodeServer(s.grpcServer, nodeServerV1)
+	zondpbv1alpha1.RegisterHealthServer(s.grpcServer, nodeServer)
+	zondpbv1alpha1.RegisterBeaconChainServer(s.grpcServer, beaconChainServer)
+	zondpbservice.RegisterBeaconChainServer(s.grpcServer, beaconChainServerV1)
+	zondpbservice.RegisterEventsServer(s.grpcServer, &events.Server{
 		Ctx:               s.ctx,
 		StateNotifier:     s.cfg.StateNotifier,
 		BlockNotifier:     s.cfg.BlockNotifier,
@@ -414,11 +414,11 @@ func (s *Service) Start() {
 			FinalizationFetcher:   s.cfg.FinalizationFetcher,
 			ChainInfoFetcher:      s.cfg.ChainInfoFetcher,
 		}
-		ethpbv1alpha1.RegisterDebugServer(s.grpcServer, debugServer)
-		ethpbservice.RegisterBeaconDebugServer(s.grpcServer, debugServerV1)
+		zondpbv1alpha1.RegisterDebugServer(s.grpcServer, debugServer)
+		zondpbservice.RegisterBeaconDebugServer(s.grpcServer, debugServerV1)
 	}
-	ethpbv1alpha1.RegisterBeaconNodeValidatorServer(s.grpcServer, validatorServer)
-	ethpbservice.RegisterBeaconValidatorServer(s.grpcServer, validatorServerV1)
+	zondpbv1alpha1.RegisterBeaconNodeValidatorServer(s.grpcServer, validatorServer)
+	zondpbservice.RegisterBeaconValidatorServer(s.grpcServer, validatorServerV1)
 	// Register reflection service on gRPC server.
 	reflection.Register(s.grpcServer)
 

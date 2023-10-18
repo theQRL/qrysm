@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/theQRL/qrysm/v4/encoding/ssz/equality"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
@@ -59,15 +59,15 @@ func TestDeepEqualStructs_Unexported(t *testing.T) {
 }
 
 func TestDeepEqualProto(t *testing.T) {
-	var fork1, fork2 *ethpb.Fork
+	var fork1, fork2 *zondpb.Fork
 	assert.Equal(t, true, equality.DeepEqual(fork1, fork2))
 
-	fork1 = &ethpb.Fork{
+	fork1 = &zondpb.Fork{
 		PreviousVersion: []byte{123},
 		CurrentVersion:  []byte{124},
 		Epoch:           1234567890,
 	}
-	fork2 = &ethpb.Fork{
+	fork2 = &zondpb.Fork{
 		PreviousVersion: []byte{123},
 		CurrentVersion:  []byte{125},
 		Epoch:           1234567890,
@@ -75,11 +75,11 @@ func TestDeepEqualProto(t *testing.T) {
 	assert.Equal(t, true, equality.DeepEqual(fork1, fork1))
 	assert.Equal(t, false, equality.DeepEqual(fork1, fork2))
 
-	checkpoint1 := &ethpb.Checkpoint{
+	checkpoint1 := &zondpb.Checkpoint{
 		Epoch: 1234567890,
 		Root:  []byte{},
 	}
-	checkpoint2 := &ethpb.Checkpoint{
+	checkpoint2 := &zondpb.Checkpoint{
 		Epoch: 1234567890,
 		Root:  nil,
 	}
@@ -109,17 +109,17 @@ func Test_IsProto(t *testing.T) {
 		},
 		{
 			name: "Attestation",
-			item: &ethpb.Attestation{},
+			item: &zondpb.Attestation{},
 			want: true,
 		},
 		{
 			name: "Array of attestations",
-			item: []*ethpb.Attestation{},
+			item: []*zondpb.Attestation{},
 			want: true,
 		},
 		{
 			name: "Map of attestations",
-			item: make(map[uint64]*ethpb.Attestation),
+			item: make(map[uint64]*zondpb.Attestation),
 			want: true,
 		},
 	}

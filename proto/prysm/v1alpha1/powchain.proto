@@ -1,16 +1,16 @@
 syntax = "proto3";
 
-package ethereum.eth.v1alpha1;
+package theqrl.zond.v1alpha1;
 
 import "proto/prysm/v1alpha1/beacon_block.proto";
 import "proto/prysm/v1alpha1/beacon_state.proto";
 
-option csharp_namespace = "Ethereum.Eth.V1alpha1";
-option go_package = "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1;eth";
+option csharp_namespace = "TheQRL.Zond.V1alpha1";
+option go_package = "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1;zond";
 option java_multiple_files = true;
 option java_outer_classname = "PowchainProto";
-option java_package = "org.ethereum.eth.v1alpha1";
-option php_namespace = "Ethereum\\Eth\\v1alpha1";
+option java_package = "org.theqrl.zond.v1alpha1";
+option php_namespace = "TheQRL\\Zond\\v1alpha1";
 
 // ETH1ChainData is a container which holds all the relevant eth1
 // information

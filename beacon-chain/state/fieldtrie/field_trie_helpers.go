@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	pmath "github.com/theQRL/qrysm/v4/math"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // ProofFromMerkleLayers creates a proof starting at the leaf index of the state Merkle layers.
@@ -117,25 +117,25 @@ func convertRandaoMixes(indices []uint64, elements interface{}, convertAll bool)
 }
 
 func convertEth1DataVotes(indices []uint64, elements interface{}, convertAll bool) ([][32]byte, error) {
-	val, ok := elements.([]*ethpb.Eth1Data)
+	val, ok := elements.([]*zondpb.Eth1Data)
 	if !ok {
-		return nil, errors.Errorf("Wanted type of %T but got %T", []*ethpb.Eth1Data{}, elements)
+		return nil, errors.Errorf("Wanted type of %T but got %T", []*zondpb.Eth1Data{}, elements)
 	}
 	return handleEth1DataSlice(val, indices, convertAll)
 }
 
 func convertValidators(indices []uint64, elements interface{}, convertAll bool) ([][32]byte, error) {
-	val, ok := elements.([]*ethpb.Validator)
+	val, ok := elements.([]*zondpb.Validator)
 	if !ok {
-		return nil, errors.Errorf("Wanted type of %T but got %T", []*ethpb.Validator{}, elements)
+		return nil, errors.Errorf("Wanted type of %T but got %T", []*zondpb.Validator{}, elements)
 	}
 	return handleValidatorSlice(val, indices, convertAll)
 }
 
 func convertAttestations(indices []uint64, elements interface{}, convertAll bool) ([][32]byte, error) {
-	val, ok := elements.([]*ethpb.PendingAttestation)
+	val, ok := elements.([]*zondpb.PendingAttestation)
 	if !ok {
-		return nil, errors.Errorf("Wanted type of %T but got %T", []*ethpb.PendingAttestation{}, elements)
+		return nil, errors.Errorf("Wanted type of %T but got %T", []*zondpb.PendingAttestation{}, elements)
 	}
 	return handlePendingAttestationSlice(val, indices, convertAll)
 }
@@ -204,13 +204,13 @@ func handle32ByteArrays(val [][32]byte, indices []uint64, convertAll bool) ([][3
 }
 
 // handleValidatorSlice returns the validator indices in a slice of root format.
-func handleValidatorSlice(val []*ethpb.Validator, indices []uint64, convertAll bool) ([][32]byte, error) {
+func handleValidatorSlice(val []*zondpb.Validator, indices []uint64, convertAll bool) ([][32]byte, error) {
 	length := len(indices)
 	if convertAll {
 		return stateutil.OptimizedValidatorRoots(val)
 	}
 	roots := make([][32]byte, 0, length)
-	rootCreator := func(input *ethpb.Validator) error {
+	rootCreator := func(input *zondpb.Validator) error {
 		newRoot, err := stateutil.ValidatorRootWithHasher(input)
 		if err != nil {
 			return err
@@ -233,13 +233,13 @@ func handleValidatorSlice(val []*ethpb.Validator, indices []uint64, convertAll b
 }
 
 // handleEth1DataSlice processes a list of eth1data and indices into the appropriate roots.
-func handleEth1DataSlice(val []*ethpb.Eth1Data, indices []uint64, convertAll bool) ([][32]byte, error) {
+func handleEth1DataSlice(val []*zondpb.Eth1Data, indices []uint64, convertAll bool) ([][32]byte, error) {
 	length := len(indices)
 	if convertAll {
 		length = len(val)
 	}
 	roots := make([][32]byte, 0, length)
-	rootCreator := func(input *ethpb.Eth1Data) error {
+	rootCreator := func(input *zondpb.Eth1Data) error {
 		newRoot, err := stateutil.Eth1DataRootWithHasher(input)
 		if err != nil {
 			return err
@@ -271,13 +271,13 @@ func handleEth1DataSlice(val []*ethpb.Eth1Data, indices []uint64, convertAll boo
 }
 
 // handlePendingAttestationSlice returns the root of a slice of pending attestations.
-func handlePendingAttestationSlice(val []*ethpb.PendingAttestation, indices []uint64, convertAll bool) ([][32]byte, error) {
+func handlePendingAttestationSlice(val []*zondpb.PendingAttestation, indices []uint64, convertAll bool) ([][32]byte, error) {
 	length := len(indices)
 	if convertAll {
 		length = len(val)
 	}
 	roots := make([][32]byte, 0, length)
-	rootCreator := func(input *ethpb.PendingAttestation) error {
+	rootCreator := func(input *zondpb.PendingAttestation) error {
 		newRoot, err := stateutil.PendingAttRootWithHasher(input)
 		if err != nil {
 			return err

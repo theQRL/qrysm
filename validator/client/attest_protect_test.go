@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/features"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
@@ -23,17 +23,17 @@ func Test_slashableAttestationCheck(t *testing.T) {
 	defer finish()
 	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
-	att := &ethpb.IndexedAttestation{
+	att := &zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{1, 2},
-		Data: &ethpb.AttestationData{
+		Data: &zondpb.AttestationData{
 			Slot:            5,
 			CommitteeIndex:  2,
 			BeaconBlockRoot: bytesutil.PadTo([]byte("great block"), 32),
-			Source: &ethpb.Checkpoint{
+			Source: &zondpb.Checkpoint{
 				Epoch: 4,
 				Root:  bytesutil.PadTo([]byte("good source"), 32),
 			},
-			Target: &ethpb.Checkpoint{
+			Target: &zondpb.Checkpoint{
 				Epoch: 10,
 				Root:  bytesutil.PadTo([]byte("good target"), 32),
 			},
@@ -43,9 +43,9 @@ func Test_slashableAttestationCheck(t *testing.T) {
 	m.slasherClient.EXPECT().IsSlashableAttestation(
 		gomock.Any(), // ctx
 		att,
-	).Return(&ethpb.AttesterSlashingResponse{AttesterSlashings: []*ethpb.AttesterSlashing{{
-		Attestation_1: &ethpb.IndexedAttestation{},
-		Attestation_2: &ethpb.IndexedAttestation{},
+	).Return(&zondpb.AttesterSlashingResponse{AttesterSlashings: []*zondpb.AttesterSlashing{{
+		Attestation_1: &zondpb.IndexedAttestation{},
+		Attestation_2: &zondpb.IndexedAttestation{},
 	}}}, nil /*err*/)
 
 	err := validator.slashableAttestationCheck(context.Background(), att, pubKey, [32]byte{1})
@@ -54,7 +54,7 @@ func Test_slashableAttestationCheck(t *testing.T) {
 	m.slasherClient.EXPECT().IsSlashableAttestation(
 		gomock.Any(), // ctx
 		att,
-	).Return(&ethpb.AttesterSlashingResponse{}, nil /*err*/)
+	).Return(&zondpb.AttesterSlashingResponse{}, nil /*err*/)
 
 	err = validator.slashableAttestationCheck(context.Background(), att, pubKey, [32]byte{1})
 	require.NoError(t, err, "Expected allowed attestation not to throw error")
@@ -71,17 +71,17 @@ func Test_slashableAttestationCheck_UpdatesLowestSignedEpochs(t *testing.T) {
 	ctx := context.Background()
 	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
-	att := &ethpb.IndexedAttestation{
+	att := &zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{1, 2},
-		Data: &ethpb.AttestationData{
+		Data: &zondpb.AttestationData{
 			Slot:            5,
 			CommitteeIndex:  2,
 			BeaconBlockRoot: bytesutil.PadTo([]byte("great block"), 32),
-			Source: &ethpb.Checkpoint{
+			Source: &zondpb.Checkpoint{
 				Epoch: 4,
 				Root:  bytesutil.PadTo([]byte("good source"), 32),
 			},
-			Target: &ethpb.Checkpoint{
+			Target: &zondpb.Checkpoint{
 				Epoch: 10,
 				Root:  bytesutil.PadTo([]byte("good target"), 32),
 			},
@@ -91,12 +91,12 @@ func Test_slashableAttestationCheck_UpdatesLowestSignedEpochs(t *testing.T) {
 	m.slasherClient.EXPECT().IsSlashableAttestation(
 		gomock.Any(), // ctx
 		att,
-	).Return(&ethpb.AttesterSlashingResponse{}, nil /*err*/)
+	).Return(&zondpb.AttesterSlashingResponse{}, nil /*err*/)
 
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
-		&ethpb.DomainRequest{Epoch: 10, Domain: []byte{1, 0, 0, 0}},
-	).Return(&ethpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+		&zondpb.DomainRequest{Epoch: 10, Domain: []byte{1, 0, 0, 0}},
+	).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 	_, sr, err := validator.getDomainAndSigningRoot(ctx, att.Data)
 	require.NoError(t, err)
 
@@ -126,17 +126,17 @@ func Test_slashableAttestationCheck_OK(t *testing.T) {
 	ctx := context.Background()
 	validator, mocks, _, finish := setup(t)
 	defer finish()
-	att := &ethpb.IndexedAttestation{
+	att := &zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{1, 2},
-		Data: &ethpb.AttestationData{
+		Data: &zondpb.AttestationData{
 			Slot:            5,
 			CommitteeIndex:  2,
 			BeaconBlockRoot: []byte("great block"),
-			Source: &ethpb.Checkpoint{
+			Source: &zondpb.Checkpoint{
 				Epoch: 4,
 				Root:  []byte("good source"),
 			},
-			Target: &ethpb.Checkpoint{
+			Target: &zondpb.Checkpoint{
 				Epoch: 10,
 				Root:  []byte("good target"),
 			},
@@ -148,7 +148,7 @@ func Test_slashableAttestationCheck_OK(t *testing.T) {
 	mocks.slasherClient.EXPECT().IsSlashableAttestation(
 		gomock.Any(), // ctx
 		att,
-	).Return(&ethpb.AttesterSlashingResponse{}, nil /*err*/)
+	).Return(&zondpb.AttesterSlashingResponse{}, nil /*err*/)
 
 	err := validator.slashableAttestationCheck(ctx, att, fakePubkey, sr)
 	require.NoError(t, err, "Expected allowed attestation not to throw error")
@@ -163,17 +163,17 @@ func Test_slashableAttestationCheck_GenesisEpoch(t *testing.T) {
 	ctx := context.Background()
 	validator, mocks, _, finish := setup(t)
 	defer finish()
-	att := &ethpb.IndexedAttestation{
+	att := &zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{1, 2},
-		Data: &ethpb.AttestationData{
+		Data: &zondpb.AttestationData{
 			Slot:            5,
 			CommitteeIndex:  2,
 			BeaconBlockRoot: bytesutil.PadTo([]byte("great block root"), 32),
-			Source: &ethpb.Checkpoint{
+			Source: &zondpb.Checkpoint{
 				Epoch: 0,
 				Root:  bytesutil.PadTo([]byte("great root"), 32),
 			},
-			Target: &ethpb.Checkpoint{
+			Target: &zondpb.Checkpoint{
 				Epoch: 0,
 				Root:  bytesutil.PadTo([]byte("great root"), 32),
 			},
@@ -183,7 +183,7 @@ func Test_slashableAttestationCheck_GenesisEpoch(t *testing.T) {
 	mocks.slasherClient.EXPECT().IsSlashableAttestation(
 		gomock.Any(), // ctx
 		att,
-	).Return(&ethpb.AttesterSlashingResponse{}, nil /*err*/)
+	).Return(&zondpb.AttesterSlashingResponse{}, nil /*err*/)
 
 	fakePubkey := bytesutil.ToBytes2592([]byte("test"))
 	err := validator.slashableAttestationCheck(ctx, att, fakePubkey, [32]byte{})

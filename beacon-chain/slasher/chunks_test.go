@@ -8,7 +8,7 @@ import (
 	dbtest "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
 	slashertypes "github.com/theQRL/qrysm/v4/beacon-chain/slasher/types"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
@@ -115,11 +115,11 @@ func TestMinSpanChunksSlice_CheckSlashable(t *testing.T) {
 	// based on our min chunk for either validator.
 	slashing, err := chunk.CheckSlashable(ctx, slasherDB, validatorIdx, att)
 	require.NoError(t, err)
-	require.Equal(t, (*ethpb.AttesterSlashing)(nil), slashing)
+	require.Equal(t, (*zondpb.AttesterSlashing)(nil), slashing)
 
 	slashing, err = chunk.CheckSlashable(ctx, slasherDB, validatorIdx.Sub(1), att)
 	require.NoError(t, err)
-	require.Equal(t, (*ethpb.AttesterSlashing)(nil), slashing)
+	require.Equal(t, (*zondpb.AttesterSlashing)(nil), slashing)
 
 	// Next up we initialize an empty chunks slice and mark an attestation
 	// with (source 1, target 2) as attested.
@@ -145,7 +145,7 @@ func TestMinSpanChunksSlice_CheckSlashable(t *testing.T) {
 
 	slashing, err = chunk.CheckSlashable(ctx, slasherDB, validatorIdx, surroundingVote)
 	require.NoError(t, err)
-	require.Equal(t, (*ethpb.AttesterSlashing)(nil), slashing)
+	require.Equal(t, (*zondpb.AttesterSlashing)(nil), slashing)
 
 	// Next up, we save the old attestation record, then check if the
 	// surrounding vote is indeed slashable.
@@ -159,7 +159,7 @@ func TestMinSpanChunksSlice_CheckSlashable(t *testing.T) {
 
 	slashing, err = chunk.CheckSlashable(ctx, slasherDB, validatorIdx, surroundingVote)
 	require.NoError(t, err)
-	require.NotEqual(t, (*ethpb.AttesterSlashing)(nil), slashing)
+	require.NotEqual(t, (*zondpb.AttesterSlashing)(nil), slashing)
 }
 
 func TestMaxSpanChunksSlice_CheckSlashable(t *testing.T) {
@@ -197,11 +197,11 @@ func TestMaxSpanChunksSlice_CheckSlashable(t *testing.T) {
 	// based on our max chunk for either validator.
 	slashing, err := chunk.CheckSlashable(ctx, slasherDB, validatorIdx, att)
 	require.NoError(t, err)
-	require.Equal(t, (*ethpb.AttesterSlashing)(nil), slashing)
+	require.Equal(t, (*zondpb.AttesterSlashing)(nil), slashing)
 
 	slashing, err = chunk.CheckSlashable(ctx, slasherDB, validatorIdx.Sub(1), att)
 	require.NoError(t, err)
-	require.Equal(t, (*ethpb.AttesterSlashing)(nil), slashing)
+	require.Equal(t, (*zondpb.AttesterSlashing)(nil), slashing)
 
 	// Next up we initialize an empty chunks slice and mark an attestation
 	// with (source 0, target 3) as attested.
@@ -227,7 +227,7 @@ func TestMaxSpanChunksSlice_CheckSlashable(t *testing.T) {
 
 	slashing, err = chunk.CheckSlashable(ctx, slasherDB, validatorIdx, surroundedVote)
 	require.NoError(t, err)
-	require.Equal(t, (*ethpb.AttesterSlashing)(nil), slashing)
+	require.Equal(t, (*zondpb.AttesterSlashing)(nil), slashing)
 
 	// Next up, we save the old attestation record, then check if the
 	// surroundedVote vote is indeed slashable.
@@ -244,7 +244,7 @@ func TestMaxSpanChunksSlice_CheckSlashable(t *testing.T) {
 
 	slashing, err = chunk.CheckSlashable(ctx, slasherDB, validatorIdx, surroundedVote)
 	require.NoError(t, err)
-	require.NotEqual(t, (*ethpb.AttesterSlashing)(nil), slashing)
+	require.NotEqual(t, (*zondpb.AttesterSlashing)(nil), slashing)
 }
 
 func TestMinSpanChunksSlice_Update_MultipleChunks(t *testing.T) {

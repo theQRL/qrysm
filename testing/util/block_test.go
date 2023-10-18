@@ -12,9 +12,9 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
-	ethpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
@@ -195,7 +195,7 @@ func TestGenerateFullBlock_ValidVoluntaryExits(t *testing.T) {
 }
 
 func TestHydrateSignedBeaconBlock_NoError(t *testing.T) {
-	b := &ethpbalpha.SignedBeaconBlock{}
+	b := &zondpbalpha.SignedBeaconBlock{}
 	b = HydrateSignedBeaconBlock(b)
 	_, err := b.HashTreeRoot()
 	require.NoError(t, err)
@@ -206,7 +206,7 @@ func TestHydrateSignedBeaconBlock_NoError(t *testing.T) {
 }
 
 func TestHydrateV1SignedBeaconBlock_NoError(t *testing.T) {
-	b := &ethpbv1.SignedBeaconBlock{}
+	b := &zondpbv1.SignedBeaconBlock{}
 	b = HydrateV1SignedBeaconBlock(b)
 	_, err := b.HashTreeRoot()
 	require.NoError(t, err)
@@ -217,7 +217,7 @@ func TestHydrateV1SignedBeaconBlock_NoError(t *testing.T) {
 }
 
 func TestHydrateV2AltairSignedBeaconBlock_NoError(t *testing.T) {
-	b := &ethpbv2.SignedBeaconBlockAltair{}
+	b := &zondpbv2.SignedBeaconBlockAltair{}
 	b = HydrateV2AltairSignedBeaconBlock(b)
 	_, err := b.HashTreeRoot()
 	require.NoError(t, err)
@@ -228,7 +228,7 @@ func TestHydrateV2AltairSignedBeaconBlock_NoError(t *testing.T) {
 }
 
 func TestHydrateV2BellatrixSignedBeaconBlock_NoError(t *testing.T) {
-	b := &ethpbv2.SignedBeaconBlockBellatrix{}
+	b := &zondpbv2.SignedBeaconBlockBellatrix{}
 	b = HydrateV2BellatrixSignedBeaconBlock(b)
 	_, err := b.HashTreeRoot()
 	require.NoError(t, err)
@@ -239,7 +239,7 @@ func TestHydrateV2BellatrixSignedBeaconBlock_NoError(t *testing.T) {
 }
 
 func TestHydrateSignedBeaconBlockAltair_NoError(t *testing.T) {
-	b := &ethpbalpha.SignedBeaconBlockAltair{}
+	b := &zondpbalpha.SignedBeaconBlockAltair{}
 	b = HydrateSignedBeaconBlockAltair(b)
 
 	// HTR should not error. It errors with incorrect field length sizes.
@@ -252,7 +252,7 @@ func TestHydrateSignedBeaconBlockAltair_NoError(t *testing.T) {
 }
 
 func TestHydrateSignedBlindedBeaconBlockBellatrix_NoError(t *testing.T) {
-	b := &ethpbalpha.SignedBlindedBeaconBlockBellatrix{}
+	b := &zondpbalpha.SignedBlindedBeaconBlockBellatrix{}
 	b = HydrateSignedBlindedBeaconBlockBellatrix(b)
 	_, err := b.HashTreeRoot()
 	require.NoError(t, err)
@@ -263,7 +263,7 @@ func TestHydrateSignedBlindedBeaconBlockBellatrix_NoError(t *testing.T) {
 }
 
 func TestHydrateBlindedBeaconBlockBellatrix_NoError(t *testing.T) {
-	b := &ethpbalpha.BlindedBeaconBlockBellatrix{}
+	b := &zondpbalpha.BlindedBeaconBlockBellatrix{}
 	b = HydrateBlindedBeaconBlockBellatrix(b)
 	_, err := b.HashTreeRoot()
 	require.NoError(t, err)
@@ -272,14 +272,14 @@ func TestHydrateBlindedBeaconBlockBellatrix_NoError(t *testing.T) {
 }
 
 func TestHydrateBlindedBeaconBlockBodyBellatrix_NoError(t *testing.T) {
-	b := &ethpbalpha.BlindedBeaconBlockBodyBellatrix{}
+	b := &zondpbalpha.BlindedBeaconBlockBodyBellatrix{}
 	b = HydrateBlindedBeaconBlockBodyBellatrix(b)
 	_, err := b.HashTreeRoot()
 	require.NoError(t, err)
 }
 
 func TestHydrateV2SignedBlindedBeaconBlockBellatrix_NoError(t *testing.T) {
-	b := &ethpbv2.SignedBlindedBeaconBlockBellatrix{}
+	b := &zondpbv2.SignedBlindedBeaconBlockBellatrix{}
 	b = HydrateV2SignedBlindedBeaconBlockBellatrix(b)
 	_, err := b.HashTreeRoot()
 	require.NoError(t, err)
@@ -290,7 +290,7 @@ func TestHydrateV2SignedBlindedBeaconBlockBellatrix_NoError(t *testing.T) {
 }
 
 func TestHydrateV2BlindedBeaconBlockBellatrix_NoError(t *testing.T) {
-	b := &ethpbv2.BlindedBeaconBlockBellatrix{}
+	b := &zondpbv2.BlindedBeaconBlockBellatrix{}
 	b = HydrateV2BlindedBeaconBlockBellatrix(b)
 	_, err := b.HashTreeRoot()
 	require.NoError(t, err)
@@ -299,14 +299,14 @@ func TestHydrateV2BlindedBeaconBlockBellatrix_NoError(t *testing.T) {
 }
 
 func TestHydrateV2BlindedBeaconBlockBodyBellatrix_NoError(t *testing.T) {
-	b := &ethpbv2.BlindedBeaconBlockBodyBellatrix{}
+	b := &zondpbv2.BlindedBeaconBlockBodyBellatrix{}
 	b = HydrateV2BlindedBeaconBlockBodyBellatrix(b)
 	_, err := b.HashTreeRoot()
 	require.NoError(t, err)
 }
 
 func TestHydrateSignedBeaconBlockCapella_NoError(t *testing.T) {
-	b := &ethpbalpha.SignedBeaconBlockCapella{}
+	b := &zondpbalpha.SignedBeaconBlockCapella{}
 	b = HydrateSignedBeaconBlockCapella(b)
 	_, err := b.HashTreeRoot()
 	require.NoError(t, err)
@@ -317,7 +317,7 @@ func TestHydrateSignedBeaconBlockCapella_NoError(t *testing.T) {
 }
 
 func TestHydrateBeaconBlockCapella_NoError(t *testing.T) {
-	b := &ethpbalpha.BeaconBlockCapella{}
+	b := &zondpbalpha.BeaconBlockCapella{}
 	b = HydrateBeaconBlockCapella(b)
 	_, err := b.HashTreeRoot()
 	require.NoError(t, err)
@@ -326,14 +326,14 @@ func TestHydrateBeaconBlockCapella_NoError(t *testing.T) {
 }
 
 func TestHydrateBeaconBlockBodyCapella_NoError(t *testing.T) {
-	b := &ethpbalpha.BeaconBlockBodyCapella{}
+	b := &zondpbalpha.BeaconBlockBodyCapella{}
 	b = HydrateBeaconBlockBodyCapella(b)
 	_, err := b.HashTreeRoot()
 	require.NoError(t, err)
 }
 
 func TestHydrateSignedBlindedBeaconBlockCapella_NoError(t *testing.T) {
-	b := &ethpbalpha.SignedBlindedBeaconBlockCapella{}
+	b := &zondpbalpha.SignedBlindedBeaconBlockCapella{}
 	b = HydrateSignedBlindedBeaconBlockCapella(b)
 	_, err := b.HashTreeRoot()
 	require.NoError(t, err)
@@ -344,7 +344,7 @@ func TestHydrateSignedBlindedBeaconBlockCapella_NoError(t *testing.T) {
 }
 
 func TestHydrateBlindedBeaconBlockCapella_NoError(t *testing.T) {
-	b := &ethpbalpha.BlindedBeaconBlockCapella{}
+	b := &zondpbalpha.BlindedBeaconBlockCapella{}
 	b = HydrateBlindedBeaconBlockCapella(b)
 	_, err := b.HashTreeRoot()
 	require.NoError(t, err)
@@ -353,7 +353,7 @@ func TestHydrateBlindedBeaconBlockCapella_NoError(t *testing.T) {
 }
 
 func TestHydrateBlindedBeaconBlockBodyCapella_NoError(t *testing.T) {
-	b := &ethpbalpha.BlindedBeaconBlockBodyCapella{}
+	b := &zondpbalpha.BlindedBeaconBlockBodyCapella{}
 	b = HydrateBlindedBeaconBlockBodyCapella(b)
 	_, err := b.HashTreeRoot()
 	require.NoError(t, err)

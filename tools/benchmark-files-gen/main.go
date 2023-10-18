@@ -18,7 +18,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/io/file"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/interop"
 	"github.com/theQRL/qrysm/v4/testing/benchmark"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -120,7 +120,7 @@ func generateMarshalledFullStateAndBlock() error {
 		NumAttestations: benchmark.AttestationsPerEpoch / uint64(slotsPerEpoch),
 	}
 
-	var atts []*ethpb.Attestation
+	var atts []*zondpb.Attestation
 	for i := slotOffset + 1; i < slotsPerEpoch+slotOffset; i++ {
 		attsForSlot, err := util.GenerateAttestations(beaconState, privs, attConfig.NumAttestations, i, false)
 		if err != nil {
@@ -230,7 +230,7 @@ func genesisBeaconState() (state.BeaconState, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot read genesis state file")
 	}
-	genesisState := &ethpb.BeaconState{}
+	genesisState := &zondpb.BeaconState{}
 	if err := genesisState.UnmarshalSSZ(beaconBytes); err != nil {
 		return nil, errors.Wrap(err, "cannot unmarshal genesis state file")
 	}

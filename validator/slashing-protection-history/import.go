@@ -11,7 +11,7 @@ import (
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/slashings"
 	"github.com/theQRL/qrysm/v4/validator/db"
 	"github.com/theQRL/qrysm/v4/validator/db/kv"
@@ -123,7 +123,7 @@ func ImportStandardProtectionJSON(ctx context.Context, validatorDB db.Database, 
 		if err := bar.Add(1); err != nil {
 			log.WithError(err).Debug("Could not increase progress bar")
 		}
-		indexedAtts := make([]*ethpb.IndexedAttestation, len(attestations))
+		indexedAtts := make([]*zondpb.IndexedAttestation, len(attestations))
 		signingRoots := make([][32]byte, len(attestations))
 		for i, att := range attestations {
 			indexedAtt := createAttestation(att.Source, att.Target)
@@ -367,13 +367,13 @@ func transformSignedAttestations(pubKey [dilithium2.CryptoPublicKeyBytes]byte, a
 	return historicalAtts, nil
 }
 
-func createAttestation(source, target primitives.Epoch) *ethpb.IndexedAttestation {
-	return &ethpb.IndexedAttestation{
-		Data: &ethpb.AttestationData{
-			Source: &ethpb.Checkpoint{
+func createAttestation(source, target primitives.Epoch) *zondpb.IndexedAttestation {
+	return &zondpb.IndexedAttestation{
+		Data: &zondpb.AttestationData{
+			Source: &zondpb.Checkpoint{
 				Epoch: source,
 			},
-			Target: &ethpb.Checkpoint{
+			Target: &zondpb.Checkpoint{
 				Epoch: target,
 			},
 		},

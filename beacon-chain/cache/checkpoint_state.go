@@ -7,7 +7,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 var (
@@ -41,7 +41,7 @@ func NewCheckpointStateCache() *CheckpointStateCache {
 
 // StateByCheckpoint fetches state by checkpoint. Returns true with a
 // reference to the CheckpointState info, if exists. Otherwise returns false, nil.
-func (c *CheckpointStateCache) StateByCheckpoint(cp *ethpb.Checkpoint) (state.BeaconState, error) {
+func (c *CheckpointStateCache) StateByCheckpoint(cp *zondpb.Checkpoint) (state.BeaconState, error) {
 	h, err := hash.HashProto(cp)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (c *CheckpointStateCache) StateByCheckpoint(cp *ethpb.Checkpoint) (state.Be
 
 // AddCheckpointState adds CheckpointState object to the cache. This method also trims the least
 // recently added CheckpointState object if the cache size has ready the max cache size limit.
-func (c *CheckpointStateCache) AddCheckpointState(cp *ethpb.Checkpoint, s state.ReadOnlyBeaconState) error {
+func (c *CheckpointStateCache) AddCheckpointState(cp *zondpb.Checkpoint, s state.ReadOnlyBeaconState) error {
 	h, err := hash.HashProto(cp)
 	if err != nil {
 		return err

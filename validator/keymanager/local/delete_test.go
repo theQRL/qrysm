@@ -10,7 +10,7 @@ import (
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	mock "github.com/theQRL/qrysm/v4/validator/accounts/testing"
 	"github.com/theQRL/qrysm/v4/validator/keymanager"
@@ -47,8 +47,8 @@ func TestLocalKeymanager_DeleteKeystores(t *testing.T) {
 		statuses, err := dr.DeleteKeystores(ctx, [][]byte{notFoundPubKey[:], notFoundPubKey2[:]})
 		require.NoError(t, err)
 		require.Equal(t, 2, len(statuses))
-		require.Equal(t, ethpbservice.DeletedKeystoreStatus_NOT_FOUND, statuses[0].Status)
-		require.Equal(t, ethpbservice.DeletedKeystoreStatus_NOT_FOUND, statuses[1].Status)
+		require.Equal(t, zondpbservice.DeletedKeystoreStatus_NOT_FOUND, statuses[0].Status)
+		require.Equal(t, zondpbservice.DeletedKeystoreStatus_NOT_FOUND, statuses[1].Status)
 	})
 	t.Run("file write errors should not lead to updated local keystore or cache", func(t *testing.T) {
 		wallet.HasWriteFileError = true
@@ -68,7 +68,7 @@ func TestLocalKeymanager_DeleteKeystores(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, 1, len(statuses))
-		require.Equal(t, ethpbservice.DeletedKeystoreStatus_DELETED, statuses[0].Status)
+		require.Equal(t, zondpbservice.DeletedKeystoreStatus_DELETED, statuses[0].Status)
 
 		// Ensure the keystore file was written to the wallet
 		// and ensure we can decrypt it using the EIP-2335 standard.
@@ -109,9 +109,9 @@ func TestLocalKeymanager_DeleteKeystores(t *testing.T) {
 		require.Equal(t, 4, len(statuses))
 		for i, st := range statuses {
 			if i == 0 {
-				require.Equal(t, ethpbservice.DeletedKeystoreStatus_DELETED, st.Status)
+				require.Equal(t, zondpbservice.DeletedKeystoreStatus_DELETED, st.Status)
 			} else {
-				require.Equal(t, ethpbservice.DeletedKeystoreStatus_NOT_ACTIVE, st.Status)
+				require.Equal(t, zondpbservice.DeletedKeystoreStatus_NOT_ACTIVE, st.Status)
 			}
 		}
 

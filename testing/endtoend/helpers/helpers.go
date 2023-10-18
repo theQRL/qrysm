@@ -22,7 +22,7 @@ import (
 	"github.com/theQRL/go-zond/rpc"
 	"github.com/theQRL/go-zond/zondclient"
 	"github.com/theQRL/qrysm/v4/config/params"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -340,7 +340,7 @@ func ComponentsStarted(ctx context.Context, comps []e2etypes.ComponentRunner) er
 }
 
 // EpochTickerStartTime calculates the best time to start epoch ticker for a given genesis.
-func EpochTickerStartTime(genesis *eth.Genesis) time.Time {
+func EpochTickerStartTime(genesis *zond.Genesis) time.Time {
 	epochSeconds := uint64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))
 	epochSecondsHalf := time.Duration(int64(epochSeconds*1000)/2) * time.Millisecond
 	// Adding a half slot here to ensure the requests are in the middle of an epoch.

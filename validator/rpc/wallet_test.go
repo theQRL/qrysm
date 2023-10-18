@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/crypto/rand"
 	"github.com/theQRL/qrysm/v4/io/file"
-	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -76,7 +76,7 @@ func TestServer_CreateWallet_Local(t *testing.T) {
 		passwords[i] = password
 	}
 
-	importReq := &ethpbservice.ImportKeystoresRequest{
+	importReq := &zondpbservice.ImportKeystoresRequest{
 		Keystores: encodedKeystores,
 		Passwords: passwords,
 	}

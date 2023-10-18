@@ -8,7 +8,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/epoch/precompute"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/testing/assert"
@@ -21,7 +21,7 @@ func TestUpdateValidator_Works(t *testing.T) {
 	vp := []*precompute.Validator{{}, {InclusionSlot: e}, {}, {InclusionSlot: e}, {}, {InclusionSlot: e}}
 	record := &precompute.Validator{IsCurrentEpochAttester: true, IsCurrentEpochTargetAttester: true,
 		IsPrevEpochAttester: true, IsPrevEpochTargetAttester: true, IsPrevEpochHeadAttester: true}
-	a := &ethpb.PendingAttestation{InclusionDelay: 1, ProposerIndex: 2}
+	a := &zondpb.PendingAttestation{InclusionDelay: 1, ProposerIndex: 2}
 
 	// Indices 1 3 and 5 attested
 	vp = precompute.UpdateValidator(vp, record, []uint64{1, 3, 5}, a, 100)
@@ -37,7 +37,7 @@ func TestUpdateValidator_InclusionOnlyCountsPrevEpoch(t *testing.T) {
 	e := params.BeaconConfig().FarFutureSlot
 	vp := []*precompute.Validator{{InclusionSlot: e}}
 	record := &precompute.Validator{IsCurrentEpochAttester: true, IsCurrentEpochTargetAttester: true}
-	a := &ethpb.PendingAttestation{InclusionDelay: 1, ProposerIndex: 2}
+	a := &zondpb.PendingAttestation{InclusionDelay: 1, ProposerIndex: 2}
 
 	// Verify inclusion info doesn't get updated.
 	vp = precompute.UpdateValidator(vp, record, []uint64{0}, a, 100)
@@ -100,19 +100,19 @@ func TestUpdateBalanceDifferentVersions(t *testing.T) {
 func TestSameHead(t *testing.T) {
 	beaconState, _ := util.DeterministicGenesisState(t, 100)
 	require.NoError(t, beaconState.SetSlot(1))
-	att := &ethpb.Attestation{Data: &ethpb.AttestationData{
-		Target: &ethpb.Checkpoint{Epoch: 0}}}
+	att := &zondpb.Attestation{Data: &zondpb.AttestationData{
+		Target: &zondpb.Checkpoint{Epoch: 0}}}
 	r := [32]byte{'A'}
 	br := beaconState.BlockRoots()
 	br[0] = r[:]
 	require.NoError(t, beaconState.SetBlockRoots(br))
 	att.Data.BeaconBlockRoot = r[:]
-	same, err := precompute.SameHead(beaconState, &ethpb.PendingAttestation{Data: att.Data})
+	same, err := precompute.SameHead(beaconState, &zondpb.PendingAttestation{Data: att.Data})
 	require.NoError(t, err)
 	assert.Equal(t, true, same, "Head in state does not match head in attestation")
 	newRoot := [32]byte{'B'}
 	att.Data.BeaconBlockRoot = newRoot[:]
-	same, err = precompute.SameHead(beaconState, &ethpb.PendingAttestation{Data: att.Data})
+	same, err = precompute.SameHead(beaconState, &zondpb.PendingAttestation{Data: att.Data})
 	require.NoError(t, err)
 	assert.Equal(t, false, same, "Head in state matches head in attestation")
 }
@@ -120,19 +120,19 @@ func TestSameHead(t *testing.T) {
 func TestSameTarget(t *testing.T) {
 	beaconState, _ := util.DeterministicGenesisState(t, 100)
 	require.NoError(t, beaconState.SetSlot(1))
-	att := &ethpb.Attestation{Data: &ethpb.AttestationData{
-		Target: &ethpb.Checkpoint{Epoch: 0}}}
+	att := &zondpb.Attestation{Data: &zondpb.AttestationData{
+		Target: &zondpb.Checkpoint{Epoch: 0}}}
 	r := [32]byte{'A'}
 	br := beaconState.BlockRoots()
 	br[0] = r[:]
 	require.NoError(t, beaconState.SetBlockRoots(br))
 	att.Data.Target.Root = r[:]
-	same, err := precompute.SameTarget(beaconState, &ethpb.PendingAttestation{Data: att.Data}, 0)
+	same, err := precompute.SameTarget(beaconState, &zondpb.PendingAttestation{Data: att.Data}, 0)
 	require.NoError(t, err)
 	assert.Equal(t, true, same, "Head in state does not match head in attestation")
 	newRoot := [32]byte{'B'}
 	att.Data.Target.Root = newRoot[:]
-	same, err = precompute.SameTarget(beaconState, &ethpb.PendingAttestation{Data: att.Data}, 0)
+	same, err = precompute.SameTarget(beaconState, &zondpb.PendingAttestation{Data: att.Data}, 0)
 	require.NoError(t, err)
 	assert.Equal(t, false, same, "Head in state matches head in attestation")
 }
@@ -140,15 +140,15 @@ func TestSameTarget(t *testing.T) {
 func TestAttestedPrevEpoch(t *testing.T) {
 	beaconState, _ := util.DeterministicGenesisState(t, 100)
 	require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch))
-	att := &ethpb.Attestation{Data: &ethpb.AttestationData{
-		Target: &ethpb.Checkpoint{Epoch: 0}}}
+	att := &zondpb.Attestation{Data: &zondpb.AttestationData{
+		Target: &zondpb.Checkpoint{Epoch: 0}}}
 	r := [32]byte{'A'}
 	br := beaconState.BlockRoots()
 	br[0] = r[:]
 	require.NoError(t, beaconState.SetBlockRoots(br))
 	att.Data.Target.Root = r[:]
 	att.Data.BeaconBlockRoot = r[:]
-	votedEpoch, votedTarget, votedHead, err := precompute.AttestedPrevEpoch(beaconState, &ethpb.PendingAttestation{Data: att.Data})
+	votedEpoch, votedTarget, votedHead, err := precompute.AttestedPrevEpoch(beaconState, &zondpb.PendingAttestation{Data: att.Data})
 	require.NoError(t, err)
 	assert.Equal(t, true, votedEpoch, "Did not vote epoch")
 	assert.Equal(t, true, votedTarget, "Did not vote target")
@@ -158,8 +158,8 @@ func TestAttestedPrevEpoch(t *testing.T) {
 func TestAttestedCurrentEpoch(t *testing.T) {
 	beaconState, _ := util.DeterministicGenesisState(t, 100)
 	require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch+1))
-	att := &ethpb.Attestation{Data: &ethpb.AttestationData{
-		Target: &ethpb.Checkpoint{Epoch: 1}}}
+	att := &zondpb.Attestation{Data: &zondpb.AttestationData{
+		Target: &zondpb.Checkpoint{Epoch: 1}}}
 	r := [32]byte{'A'}
 
 	br := beaconState.BlockRoots()
@@ -167,7 +167,7 @@ func TestAttestedCurrentEpoch(t *testing.T) {
 	require.NoError(t, beaconState.SetBlockRoots(br))
 	att.Data.Target.Root = r[:]
 	att.Data.BeaconBlockRoot = r[:]
-	votedEpoch, votedTarget, err := precompute.AttestedCurrentEpoch(beaconState, &ethpb.PendingAttestation{Data: att.Data})
+	votedEpoch, votedTarget, err := precompute.AttestedCurrentEpoch(beaconState, &zondpb.PendingAttestation{Data: att.Data})
 	require.NoError(t, err)
 	assert.Equal(t, true, votedEpoch, "Did not vote epoch")
 	assert.Equal(t, true, votedTarget, "Did not vote target")
@@ -182,11 +182,11 @@ func TestProcessAttestations(t *testing.T) {
 	require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch))
 	c := helpers.SlotCommitteeCount(validators)
 	bf := bitfield.NewBitlist(c)
-	att1 := &ethpb.Attestation{Data: &ethpb.AttestationData{
-		Target: &ethpb.Checkpoint{Epoch: 0}},
+	att1 := &zondpb.Attestation{Data: &zondpb.AttestationData{
+		Target: &zondpb.Checkpoint{Epoch: 0}},
 		AggregationBits: bf}
-	att2 := &ethpb.Attestation{Data: &ethpb.AttestationData{
-		Target: &ethpb.Checkpoint{Epoch: 0}},
+	att2 := &zondpb.Attestation{Data: &zondpb.AttestationData{
+		Target: &zondpb.Checkpoint{Epoch: 0}},
 		AggregationBits: bf}
 	rt := [32]byte{'A'}
 	att1.Data.Target.Root = rt[:]
@@ -197,9 +197,9 @@ func TestProcessAttestations(t *testing.T) {
 	require.NoError(t, beaconState.SetBlockRoots(br))
 	att2.Data.Target.Root = newRt[:]
 	att2.Data.BeaconBlockRoot = newRt[:]
-	err := beaconState.AppendPreviousEpochAttestations(&ethpb.PendingAttestation{Data: att1.Data, AggregationBits: bf, InclusionDelay: 1})
+	err := beaconState.AppendPreviousEpochAttestations(&zondpb.PendingAttestation{Data: att1.Data, AggregationBits: bf, InclusionDelay: 1})
 	require.NoError(t, err)
-	err = beaconState.AppendCurrentEpochAttestations(&ethpb.PendingAttestation{Data: att2.Data, AggregationBits: bf, InclusionDelay: 1})
+	err = beaconState.AppendCurrentEpochAttestations(&zondpb.PendingAttestation{Data: att2.Data, AggregationBits: bf, InclusionDelay: 1})
 	require.NoError(t, err)
 
 	pVals := make([]*precompute.Validator, validators)

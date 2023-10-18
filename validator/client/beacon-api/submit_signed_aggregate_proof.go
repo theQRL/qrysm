@@ -7,10 +7,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
-func (c *beaconApiValidatorClient) submitSignedAggregateSelectionProof(ctx context.Context, in *ethpb.SignedAggregateSubmitRequest) (*ethpb.SignedAggregateSubmitResponse, error) {
+func (c *beaconApiValidatorClient) submitSignedAggregateSelectionProof(ctx context.Context, in *zondpb.SignedAggregateSubmitRequest) (*zondpb.SignedAggregateSubmitResponse, error) {
 	body, err := json.Marshal([]*apimiddleware.SignedAggregateAttestationAndProofJson{jsonifySignedAggregateAndProof(in.SignedAggregateAndProof)})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal SignedAggregateAttestationAndProof")
@@ -25,5 +25,5 @@ func (c *beaconApiValidatorClient) submitSignedAggregateSelectionProof(ctx conte
 		return nil, errors.Wrap(err, "failed to compute attestation data root")
 	}
 
-	return &ethpb.SignedAggregateSubmitResponse{AttestationDataRoot: attestationDataRoot[:]}, nil
+	return &zondpb.SignedAggregateSubmitResponse{AttestationDataRoot: attestationDataRoot[:]}, nil
 }

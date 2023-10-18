@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -108,7 +108,7 @@ func (s *Service) HeadSyncCommitteePubKeys(ctx context.Context, slot primitives.
 	nextSlotEpoch := slots.ToEpoch(headState.Slot() + 1)
 	currEpoch := slots.ToEpoch(headState.Slot())
 
-	var syncCommittee *ethpb.SyncCommittee
+	var syncCommittee *zondpb.SyncCommittee
 	if currEpoch == nextSlotEpoch || slots.SyncCommitteePeriod(currEpoch) == slots.SyncCommitteePeriod(nextSlotEpoch) {
 		syncCommittee, err = headState.CurrentSyncCommittee()
 		if err != nil {

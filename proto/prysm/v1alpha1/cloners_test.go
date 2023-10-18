@@ -1,4 +1,4 @@
-package eth_test
+package zond_test
 
 import (
 	"math/rand"

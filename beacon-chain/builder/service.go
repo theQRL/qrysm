@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 
@@ -27,8 +27,8 @@ var ErrNoBuilder = errors.New("builder endpoint not configured")
 type BlockBuilder interface {
 	SubmitBlindedBlock(ctx context.Context, block interfaces.ReadOnlySignedBeaconBlock) (interfaces.ExecutionData, error)
 	GetHeader(ctx context.Context, slot primitives.Slot, parentHash [32]byte, pubKey [dilithium2.CryptoPublicKeyBytes]byte) (builder.SignedBid, error)
-	RegisterValidator(ctx context.Context, reg []*ethpb.SignedValidatorRegistrationV1) error
-	RegistrationByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (*ethpb.ValidatorRegistrationV1, error)
+	RegisterValidator(ctx context.Context, reg []*zondpb.SignedValidatorRegistrationV1) error
+	RegistrationByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (*zondpb.ValidatorRegistrationV1, error)
 	Configured() bool
 }
 
@@ -132,7 +132,7 @@ func (s *Service) Status() error {
 
 // RegisterValidator registers a validator with the builder relay network.
 // It also saves the registration object to the DB.
-func (s *Service) RegisterValidator(ctx context.Context, reg []*ethpb.SignedValidatorRegistrationV1) error {
+func (s *Service) RegisterValidator(ctx context.Context, reg []*zondpb.SignedValidatorRegistrationV1) error {
 	ctx, span := trace.StartSpan(ctx, "builder.RegisterValidator")
 	defer span.End()
 	start := time.Now()
@@ -145,11 +145,11 @@ func (s *Service) RegisterValidator(ctx context.Context, reg []*ethpb.SignedVali
 
 	// should be removed if db is removed
 	idxs := make([]primitives.ValidatorIndex, 0)
-	msgs := make([]*ethpb.ValidatorRegistrationV1, 0)
+	msgs := make([]*zondpb.ValidatorRegistrationV1, 0)
 
-	indexToRegistration := make(map[primitives.ValidatorIndex]*ethpb.ValidatorRegistrationV1)
+	indexToRegistration := make(map[primitives.ValidatorIndex]*zondpb.ValidatorRegistrationV1)
 
-	valid := make([]*ethpb.SignedValidatorRegistrationV1, 0)
+	valid := make([]*zondpb.SignedValidatorRegistrationV1, 0)
 	for i := 0; i < len(reg); i++ {
 		r := reg[i]
 		nx, exists := s.cfg.headFetcher.HeadPublicKeyToValidatorIndex(bytesutil.ToBytes2592(r.Message.Pubkey))
@@ -180,7 +180,7 @@ func (s *Service) RegisterValidator(ctx context.Context, reg []*ethpb.SignedVali
 }
 
 // RegistrationByValidatorID returns either the values from the cache or db.
-func (s *Service) RegistrationByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (*ethpb.ValidatorRegistrationV1, error) {
+func (s *Service) RegistrationByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (*zondpb.ValidatorRegistrationV1, error) {
 	if s.registrationCache != nil {
 		return s.registrationCache.RegistrationByIndex(id)
 	} else {

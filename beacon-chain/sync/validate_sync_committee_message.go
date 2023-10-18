@@ -18,7 +18,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 
@@ -103,12 +103,12 @@ func (s *Service) validateSyncCommitteeMessage(
 }
 
 // Parse a sync committee message from a pubsub message.
-func (s *Service) readSyncCommitteeMessage(msg *pubsub.Message) (*ethpb.SyncCommitteeMessage, error) {
+func (s *Service) readSyncCommitteeMessage(msg *pubsub.Message) (*zondpb.SyncCommitteeMessage, error) {
 	raw, err := s.decodePubsubMessage(msg)
 	if err != nil {
 		return nil, err
 	}
-	m, ok := raw.(*ethpb.SyncCommitteeMessage)
+	m, ok := raw.(*zondpb.SyncCommitteeMessage)
 	if !ok {
 		return nil, errWrongMessage
 	}
@@ -119,7 +119,7 @@ func (s *Service) readSyncCommitteeMessage(msg *pubsub.Message) (*ethpb.SyncComm
 }
 
 // Mark all a slot and validator index as seen for every index in a committee and subnet.
-func (s *Service) markSyncCommitteeMessagesSeen(committeeIndices []primitives.CommitteeIndex, m *ethpb.SyncCommitteeMessage) {
+func (s *Service) markSyncCommitteeMessagesSeen(committeeIndices []primitives.CommitteeIndex, m *zondpb.SyncCommitteeMessage) {
 	subCommitteeSize := params.BeaconConfig().SyncCommitteeSize / params.BeaconConfig().SyncCommitteeSubnetCount
 	for _, idx := range committeeIndices {
 		subnet := uint64(idx) / subCommitteeSize
@@ -128,7 +128,7 @@ func (s *Service) markSyncCommitteeMessagesSeen(committeeIndices []primitives.Co
 }
 
 // Returns true if the node has received sync committee for the validator with index and slot.
-func (s *Service) hasSeenSyncMessageIndexSlot(ctx context.Context, m *ethpb.SyncCommitteeMessage, subCommitteeIndex uint64) bool {
+func (s *Service) hasSeenSyncMessageIndexSlot(ctx context.Context, m *zondpb.SyncCommitteeMessage, subCommitteeIndex uint64) bool {
 	s.seenSyncMessageLock.RLock()
 	defer s.seenSyncMessageLock.RUnlock()
 	rt, seen := s.seenSyncMessageCache.Get(seenSyncCommitteeKey(m.Slot, m.ValidatorIndex, subCommitteeIndex))
@@ -157,7 +157,7 @@ func (s *Service) hasSeenSyncMessageIndexSlot(ctx context.Context, m *ethpb.Sync
 }
 
 // Set sync committee message validator index and slot as seen.
-func (s *Service) setSeenSyncMessageIndexSlot(m *ethpb.SyncCommitteeMessage, subCommitteeIndex uint64) {
+func (s *Service) setSeenSyncMessageIndexSlot(m *zondpb.SyncCommitteeMessage, subCommitteeIndex uint64) {
 	s.seenSyncMessageLock.Lock()
 	defer s.seenSyncMessageLock.Unlock()
 	key := seenSyncCommitteeKey(m.Slot, m.ValidatorIndex, subCommitteeIndex)
@@ -185,7 +185,7 @@ func (s *Service) rejectIncorrectSyncCommittee(
 			return pubsub.ValidationIgnore, err
 		}
 
-		format := p2p.GossipTypeMapping[reflect.TypeOf(&ethpb.SyncCommitteeMessage{})]
+		format := p2p.GossipTypeMapping[reflect.TypeOf(&zondpb.SyncCommitteeMessage{})]
 		// Validate that the validator is in the correct committee.
 		subCommitteeSize := params.BeaconConfig().SyncCommitteeSize / params.BeaconConfig().SyncCommitteeSubnetCount
 		for _, idx := range committeeIndices {
@@ -206,7 +206,7 @@ func (s *Service) rejectIncorrectSyncCommittee(
 // and `subcommittee_index`. In the event of `validator_index` belongs to multiple subnets, as long
 // as one subnet has not been seen, we should let it in.
 func (s *Service) ignoreHasSeenSyncMsg(ctx context.Context,
-	m *ethpb.SyncCommitteeMessage, committeeIndices []primitives.CommitteeIndex,
+	m *zondpb.SyncCommitteeMessage, committeeIndices []primitives.CommitteeIndex,
 ) validationFn {
 	return func(ctx context.Context) (pubsub.ValidationResult, error) {
 		var isValid bool
@@ -225,7 +225,7 @@ func (s *Service) ignoreHasSeenSyncMsg(ctx context.Context,
 	}
 }
 
-func (s *Service) rejectInvalidSyncCommitteeSignature(m *ethpb.SyncCommitteeMessage) validationFn {
+func (s *Service) rejectInvalidSyncCommitteeSignature(m *zondpb.SyncCommitteeMessage) validationFn {
 	return func(ctx context.Context) (pubsub.ValidationResult, error) {
 		ctx, span := trace.StartSpan(ctx, "sync.rejectInvalidSyncCommitteeSignature")
 		defer span.End()

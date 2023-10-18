@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // ForkVersionByteLength length of fork version byte array.
@@ -90,7 +90,7 @@ func SigningData(rootFunc func() ([32]byte, error), domain []byte) ([32]byte, er
 	if err != nil {
 		return [32]byte{}, err
 	}
-	container := &ethpb.SigningData{
+	container := &zondpb.SigningData{
 		ObjectRoot: objRoot[:],
 		Domain:     domain,
 	}
@@ -131,7 +131,7 @@ func VerifySigningRoot(obj fssz.HashRoot, pub, signature, domain []byte) error {
 }
 
 // VerifyBlockHeaderSigningRoot verifies the signing root of a block header given its public key, signature and domain.
-func VerifyBlockHeaderSigningRoot(blkHdr *ethpb.BeaconBlockHeader, pub, signature, domain []byte) error {
+func VerifyBlockHeaderSigningRoot(blkHdr *zondpb.BeaconBlockHeader, pub, signature, domain []byte) error {
 	publicKey, err := dilithium.PublicKeyFromBytes(pub)
 	if err != nil {
 		return errors.Wrap(err, "could not convert bytes to public key")
@@ -253,7 +253,7 @@ func computeForkDataRoot(version, root []byte) ([32]byte, error) {
 		return val, nil
 	}
 	digestMapLock.RUnlock()
-	r, err := (&ethpb.ForkData{
+	r, err := (&zondpb.ForkData{
 		CurrentVersion:        version,
 		GenesisValidatorsRoot: root,
 	}).HashTreeRoot()

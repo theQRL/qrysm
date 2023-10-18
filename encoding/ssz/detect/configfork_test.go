@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/v4/time/slots"
 
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
@@ -94,7 +94,7 @@ func TestByState(t *testing.T) {
 	for _, c := range cases {
 		st, err := stateForVersion(c.version)
 		require.NoError(t, err)
-		require.NoError(t, st.SetFork(&ethpb.Fork{
+		require.NoError(t, st.SetFork(&zondpb.Fork{
 			PreviousVersion: make([]byte, 4),
 			CurrentVersion:  c.forkversion[:],
 			Epoch:           0,
@@ -165,7 +165,7 @@ func TestUnmarshalState(t *testing.T) {
 	for _, c := range cases {
 		st, err := stateForVersion(c.version)
 		require.NoError(t, err)
-		require.NoError(t, st.SetFork(&ethpb.Fork{
+		require.NoError(t, st.SetFork(&zondpb.Fork{
 			PreviousVersion: make([]byte, 4),
 			CurrentVersion:  c.forkversion[:],
 			Epoch:           0,

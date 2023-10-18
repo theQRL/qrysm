@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 
@@ -19,7 +19,7 @@ func (v *validator) HandleKeyReload(ctx context.Context, currentKeys [][dilithiu
 	for i := range currentKeys {
 		statusRequestKeys[i] = currentKeys[i][:]
 	}
-	resp, err := v.validatorClient.MultipleValidatorStatus(ctx, &eth.MultipleValidatorStatusRequest{
+	resp, err := v.validatorClient.MultipleValidatorStatus(ctx, &zond.MultipleValidatorStatusRequest{
 		PublicKeys: statusRequestKeys,
 	})
 	if err != nil {
@@ -33,7 +33,7 @@ func (v *validator) HandleKeyReload(ctx context.Context, currentKeys [][dilithiu
 			index:     resp.Indices[i],
 		}
 	}
-	vals, err := v.beaconClient.ListValidators(ctx, &eth.ListValidatorsRequest{Active: true, PageSize: 0})
+	vals, err := v.beaconClient.ListValidators(ctx, &zond.ListValidatorsRequest{Active: true, PageSize: 0})
 	if err != nil {
 		return false, errors.Wrap(err, "could not get active validator count")
 	}

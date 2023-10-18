@@ -6,7 +6,7 @@ import (
 
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
@@ -78,8 +78,8 @@ func TestROBlockSorting(t *testing.T) {
 }
 
 func testROBlock(t *testing.T, slot primitives.Slot, root [32]byte) ROBlock {
-	b, err := NewSignedBeaconBlock(&eth.SignedBeaconBlock{Block: &eth.BeaconBlock{
-		Body: &eth.BeaconBlockBody{},
+	b, err := NewSignedBeaconBlock(&zond.SignedBeaconBlock{Block: &zond.BeaconBlock{
+		Body: &zond.BeaconBlockBody{},
 		Slot: slot,
 	}})
 	require.NoError(t, err)

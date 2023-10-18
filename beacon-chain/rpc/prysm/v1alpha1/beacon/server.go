@@ -19,7 +19,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
 	"github.com/theQRL/qrysm/v4/beacon-chain/sync"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // Server defines a server implementation of the gRPC Beacon Chain service,
@@ -41,8 +41,8 @@ type Server struct {
 	AttestationsPool            attestations.Pool
 	SlashingsPool               slashings.PoolManager
 	ChainStartChan              chan time.Time
-	ReceivedAttestationsBuffer  chan *ethpb.Attestation
-	CollectedAttestationsBuffer chan []*ethpb.Attestation
+	ReceivedAttestationsBuffer  chan *zondpb.Attestation
+	CollectedAttestationsBuffer chan []*zondpb.Attestation
 	StateGen                    stategen.StateManager
 	SyncChecker                 sync.Checker
 	ReplayerBuilder             stategen.ReplayerBuilder

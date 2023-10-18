@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -525,7 +525,7 @@ func serializeV2Block(response interface{}) (apimiddleware.RunDefault, []byte, a
 
 	var actualRespContainer interface{}
 	switch {
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_PHASE0.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_PHASE0.String())):
 		actualRespContainer = &phase0BlockResponseJson{
 			Version: respContainer.Version,
 			Data: &SignedBeaconBlockContainerJson{
@@ -535,7 +535,7 @@ func serializeV2Block(response interface{}) (apimiddleware.RunDefault, []byte, a
 			ExecutionOptimistic: respContainer.ExecutionOptimistic,
 			Finalized:           respContainer.Finalized,
 		}
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_ALTAIR.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_ALTAIR.String())):
 		actualRespContainer = &altairBlockResponseJson{
 			Version: respContainer.Version,
 			Data: &SignedBeaconBlockAltairContainerJson{
@@ -545,7 +545,7 @@ func serializeV2Block(response interface{}) (apimiddleware.RunDefault, []byte, a
 			ExecutionOptimistic: respContainer.ExecutionOptimistic,
 			Finalized:           respContainer.Finalized,
 		}
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_BELLATRIX.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_BELLATRIX.String())):
 		actualRespContainer = &bellatrixBlockResponseJson{
 			Version: respContainer.Version,
 			Data: &SignedBeaconBlockBellatrixContainerJson{
@@ -555,7 +555,7 @@ func serializeV2Block(response interface{}) (apimiddleware.RunDefault, []byte, a
 			ExecutionOptimistic: respContainer.ExecutionOptimistic,
 			Finalized:           respContainer.Finalized,
 		}
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_CAPELLA.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_CAPELLA.String())):
 		actualRespContainer = &capellaBlockResponseJson{
 			Version: respContainer.Version,
 			Data: &SignedBeaconBlockCapellaContainerJson{
@@ -584,7 +584,7 @@ func serializeBlindedBlock(response interface{}) (apimiddleware.RunDefault, []by
 
 	var actualRespContainer interface{}
 	switch {
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_PHASE0.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_PHASE0.String())):
 		actualRespContainer = &phase0BlockResponseJson{
 			Version: respContainer.Version,
 			Data: &SignedBeaconBlockContainerJson{
@@ -594,7 +594,7 @@ func serializeBlindedBlock(response interface{}) (apimiddleware.RunDefault, []by
 			ExecutionOptimistic: respContainer.ExecutionOptimistic,
 			Finalized:           respContainer.Finalized,
 		}
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_ALTAIR.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_ALTAIR.String())):
 		actualRespContainer = &altairBlockResponseJson{
 			Version: respContainer.Version,
 			Data: &SignedBeaconBlockAltairContainerJson{
@@ -604,7 +604,7 @@ func serializeBlindedBlock(response interface{}) (apimiddleware.RunDefault, []by
 			ExecutionOptimistic: respContainer.ExecutionOptimistic,
 			Finalized:           respContainer.Finalized,
 		}
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_BELLATRIX.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_BELLATRIX.String())):
 		actualRespContainer = &bellatrixBlindedBlockResponseJson{
 			Version: respContainer.Version,
 			Data: &SignedBlindedBeaconBlockBellatrixContainerJson{
@@ -614,7 +614,7 @@ func serializeBlindedBlock(response interface{}) (apimiddleware.RunDefault, []by
 			ExecutionOptimistic: respContainer.ExecutionOptimistic,
 			Finalized:           respContainer.Finalized,
 		}
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_CAPELLA.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_CAPELLA.String())):
 		actualRespContainer = &capellaBlindedBlockResponseJson{
 			Version: respContainer.Version,
 			Data: &SignedBlindedBeaconBlockCapellaContainerJson{
@@ -663,22 +663,22 @@ func serializeV2State(response interface{}) (apimiddleware.RunDefault, []byte, a
 
 	var actualRespContainer interface{}
 	switch {
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_PHASE0.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_PHASE0.String())):
 		actualRespContainer = &phase0StateResponseJson{
 			Version: respContainer.Version,
 			Data:    respContainer.Data.Phase0State,
 		}
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_ALTAIR.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_ALTAIR.String())):
 		actualRespContainer = &altairStateResponseJson{
 			Version: respContainer.Version,
 			Data:    respContainer.Data.AltairState,
 		}
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_BELLATRIX.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_BELLATRIX.String())):
 		actualRespContainer = &bellatrixStateResponseJson{
 			Version: respContainer.Version,
 			Data:    respContainer.Data.BellatrixState,
 		}
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_CAPELLA.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_CAPELLA.String())):
 		actualRespContainer = &capellaStateResponseJson{
 			Version: respContainer.Version,
 			Data:    respContainer.Data.CapellaState,
@@ -732,22 +732,22 @@ func serializeProducedV2Block(response interface{}) (apimiddleware.RunDefault, [
 
 	var actualRespContainer interface{}
 	switch {
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_PHASE0.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_PHASE0.String())):
 		actualRespContainer = &phase0ProduceBlockResponseJson{
 			Version: respContainer.Version,
 			Data:    respContainer.Data.Phase0Block,
 		}
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_ALTAIR.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_ALTAIR.String())):
 		actualRespContainer = &altairProduceBlockResponseJson{
 			Version: respContainer.Version,
 			Data:    respContainer.Data.AltairBlock,
 		}
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_BELLATRIX.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_BELLATRIX.String())):
 		actualRespContainer = &bellatrixProduceBlockResponseJson{
 			Version: respContainer.Version,
 			Data:    respContainer.Data.BellatrixBlock,
 		}
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_CAPELLA.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_CAPELLA.String())):
 		actualRespContainer = &capellaProduceBlockResponseJson{
 			Version: respContainer.Version,
 			Data:    respContainer.Data.CapellaBlock,
@@ -771,22 +771,22 @@ func serializeProducedBlindedBlock(response interface{}) (apimiddleware.RunDefau
 
 	var actualRespContainer interface{}
 	switch {
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_PHASE0.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_PHASE0.String())):
 		actualRespContainer = &phase0ProduceBlockResponseJson{
 			Version: respContainer.Version,
 			Data:    respContainer.Data.Phase0Block,
 		}
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_ALTAIR.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_ALTAIR.String())):
 		actualRespContainer = &altairProduceBlockResponseJson{
 			Version: respContainer.Version,
 			Data:    respContainer.Data.AltairBlock,
 		}
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_BELLATRIX.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_BELLATRIX.String())):
 		actualRespContainer = &bellatrixProduceBlindedBlockResponseJson{
 			Version: respContainer.Version,
 			Data:    respContainer.Data.BellatrixBlock,
 		}
-	case strings.EqualFold(respContainer.Version, strings.ToLower(ethpbv2.Version_CAPELLA.String())):
+	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv2.Version_CAPELLA.String())):
 		actualRespContainer = &capellaProduceBlindedBlockResponseJson{
 			Version: respContainer.Version,
 			Data:    respContainer.Data.CapellaBlock,

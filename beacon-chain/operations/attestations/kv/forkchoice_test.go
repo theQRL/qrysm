@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/prysmaticlabs/go-bitfield"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -14,10 +14,10 @@ import (
 func TestKV_Forkchoice_CanSaveRetrieve(t *testing.T) {
 	cache := NewAttCaches()
 
-	att1 := util.HydrateAttestation(&ethpb.Attestation{Data: &ethpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1101}})
-	att2 := util.HydrateAttestation(&ethpb.Attestation{Data: &ethpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1101}})
-	att3 := util.HydrateAttestation(&ethpb.Attestation{Data: &ethpb.AttestationData{Slot: 3}, AggregationBits: bitfield.Bitlist{0b1101}})
-	atts := []*ethpb.Attestation{att1, att2, att3}
+	att1 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1101}})
+	att2 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1101}})
+	att3 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 3}, AggregationBits: bitfield.Bitlist{0b1101}})
+	atts := []*zondpb.Attestation{att1, att2, att3}
 
 	for _, att := range atts {
 		require.NoError(t, cache.SaveForkchoiceAttestation(att))
@@ -35,10 +35,10 @@ func TestKV_Forkchoice_CanSaveRetrieve(t *testing.T) {
 func TestKV_Forkchoice_CanDelete(t *testing.T) {
 	cache := NewAttCaches()
 
-	att1 := util.HydrateAttestation(&ethpb.Attestation{Data: &ethpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1101}})
-	att2 := util.HydrateAttestation(&ethpb.Attestation{Data: &ethpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1101}})
-	att3 := util.HydrateAttestation(&ethpb.Attestation{Data: &ethpb.AttestationData{Slot: 3}, AggregationBits: bitfield.Bitlist{0b1101}})
-	atts := []*ethpb.Attestation{att1, att2, att3}
+	att1 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1101}})
+	att2 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1101}})
+	att3 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 3}, AggregationBits: bitfield.Bitlist{0b1101}})
+	atts := []*zondpb.Attestation{att1, att2, att3}
 
 	for _, att := range atts {
 		require.NoError(t, cache.SaveForkchoiceAttestation(att))
@@ -48,17 +48,17 @@ func TestKV_Forkchoice_CanDelete(t *testing.T) {
 	require.NoError(t, cache.DeleteForkchoiceAttestation(att3))
 
 	returned := cache.ForkchoiceAttestations()
-	wanted := []*ethpb.Attestation{att2}
+	wanted := []*zondpb.Attestation{att2}
 	assert.DeepEqual(t, wanted, returned)
 }
 
 func TestKV_Forkchoice_CanCount(t *testing.T) {
 	cache := NewAttCaches()
 
-	att1 := util.HydrateAttestation(&ethpb.Attestation{Data: &ethpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1101}})
-	att2 := util.HydrateAttestation(&ethpb.Attestation{Data: &ethpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1101}})
-	att3 := util.HydrateAttestation(&ethpb.Attestation{Data: &ethpb.AttestationData{Slot: 3}, AggregationBits: bitfield.Bitlist{0b1101}})
-	atts := []*ethpb.Attestation{att1, att2, att3}
+	att1 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1101}})
+	att2 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1101}})
+	att3 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 3}, AggregationBits: bitfield.Bitlist{0b1101}})
+	atts := []*zondpb.Attestation{att1, att2, att3}
 
 	for _, att := range atts {
 		require.NoError(t, cache.SaveForkchoiceAttestation(att))

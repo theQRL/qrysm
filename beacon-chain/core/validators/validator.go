@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	mathutil "github.com/theQRL/qrysm/v4/math"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -193,7 +193,7 @@ func SlashValidator(
 }
 
 // ActivatedValidatorIndices determines the indices activated during the given epoch.
-func ActivatedValidatorIndices(epoch primitives.Epoch, validators []*ethpb.Validator) []primitives.ValidatorIndex {
+func ActivatedValidatorIndices(epoch primitives.Epoch, validators []*zondpb.Validator) []primitives.ValidatorIndex {
 	activations := make([]primitives.ValidatorIndex, 0)
 	for i := 0; i < len(validators); i++ {
 		val := validators[i]
@@ -205,7 +205,7 @@ func ActivatedValidatorIndices(epoch primitives.Epoch, validators []*ethpb.Valid
 }
 
 // SlashedValidatorIndices determines the indices slashed during the given epoch.
-func SlashedValidatorIndices(epoch primitives.Epoch, validators []*ethpb.Validator) []primitives.ValidatorIndex {
+func SlashedValidatorIndices(epoch primitives.Epoch, validators []*zondpb.Validator) []primitives.ValidatorIndex {
 	slashed := make([]primitives.ValidatorIndex, 0)
 	for i := 0; i < len(validators); i++ {
 		val := validators[i]
@@ -218,7 +218,7 @@ func SlashedValidatorIndices(epoch primitives.Epoch, validators []*ethpb.Validat
 }
 
 // ExitedValidatorIndices determines the indices exited during the current epoch.
-func ExitedValidatorIndices(epoch primitives.Epoch, validators []*ethpb.Validator, activeValidatorCount uint64) ([]primitives.ValidatorIndex, error) {
+func ExitedValidatorIndices(epoch primitives.Epoch, validators []*zondpb.Validator, activeValidatorCount uint64) ([]primitives.ValidatorIndex, error) {
 	exited := make([]primitives.ValidatorIndex, 0)
 	exitEpochs := make([]primitives.Epoch, 0)
 	for i := 0; i < len(validators); i++ {
@@ -259,7 +259,7 @@ func ExitedValidatorIndices(epoch primitives.Epoch, validators []*ethpb.Validato
 }
 
 // EjectedValidatorIndices determines the indices ejected during the given epoch.
-func EjectedValidatorIndices(epoch primitives.Epoch, validators []*ethpb.Validator, activeValidatorCount uint64) ([]primitives.ValidatorIndex, error) {
+func EjectedValidatorIndices(epoch primitives.Epoch, validators []*zondpb.Validator, activeValidatorCount uint64) ([]primitives.ValidatorIndex, error) {
 	ejected := make([]primitives.ValidatorIndex, 0)
 	exitEpochs := make([]primitives.Epoch, 0)
 	for i := 0; i < len(validators); i++ {

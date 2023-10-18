@@ -23,8 +23,8 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/mock"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -68,7 +68,7 @@ func TestGetDuties_OK(t *testing.T) {
 	}
 
 	// Test the first validator in registry.
-	req := &ethpb.DutiesRequest{
+	req := &zondpb.DutiesRequest{
 		PublicKeys: [][]byte{deposits[0].Data.PublicKey},
 	}
 	res, err := vs.GetDuties(context.Background(), req)
@@ -80,7 +80,7 @@ func TestGetDuties_OK(t *testing.T) {
 
 	// Test the last validator in registry.
 	lastValidatorIndex := depChainStart - 1
-	req = &ethpb.DutiesRequest{
+	req = &zondpb.DutiesRequest{
 		PublicKeys: [][]byte{deposits[lastValidatorIndex].Data.PublicKey},
 	}
 	res, err = vs.GetDuties(context.Background(), req)
@@ -91,7 +91,7 @@ func TestGetDuties_OK(t *testing.T) {
 	}
 
 	// We request for duties for all validators.
-	req = &ethpb.DutiesRequest{
+	req = &zondpb.DutiesRequest{
 		PublicKeys: pubKeys,
 		Epoch:      0,
 	}
@@ -115,7 +115,7 @@ func TestGetAltairDuties_SyncCommitteeOK(t *testing.T) {
 	require.NoError(t, err)
 	bs, err := util.GenesisBeaconState(context.Background(), deposits, 0, eth1Data)
 	require.NoError(t, err, "Could not setup genesis bs")
-	h := &ethpb.BeaconBlockHeader{
+	h := &zondpb.BeaconBlockHeader{
 		StateRoot:  bytesutil.PadTo([]byte{'a'}, fieldparams.RootLength),
 		ParentRoot: bytesutil.PadTo([]byte{'b'}, fieldparams.RootLength),
 		BodyRoot:   bytesutil.PadTo([]byte{'c'}, fieldparams.RootLength),
@@ -154,7 +154,7 @@ func TestGetAltairDuties_SyncCommitteeOK(t *testing.T) {
 	}
 
 	// Test the first validator in registry.
-	req := &ethpb.DutiesRequest{
+	req := &zondpb.DutiesRequest{
 		PublicKeys: [][]byte{deposits[0].Data.PublicKey},
 	}
 	res, err := vs.GetDuties(context.Background(), req)
@@ -166,7 +166,7 @@ func TestGetAltairDuties_SyncCommitteeOK(t *testing.T) {
 
 	// Test the last validator in registry.
 	lastValidatorIndex := params.BeaconConfig().SyncCommitteeSize - 1
-	req = &ethpb.DutiesRequest{
+	req = &zondpb.DutiesRequest{
 		PublicKeys: [][]byte{deposits[lastValidatorIndex].Data.PublicKey},
 	}
 	res, err = vs.GetDuties(context.Background(), req)
@@ -177,7 +177,7 @@ func TestGetAltairDuties_SyncCommitteeOK(t *testing.T) {
 	}
 
 	// We request for duties for all validators.
-	req = &ethpb.DutiesRequest{
+	req = &zondpb.DutiesRequest{
 		PublicKeys: pubKeys,
 		Epoch:      0,
 	}
@@ -193,7 +193,7 @@ func TestGetAltairDuties_SyncCommitteeOK(t *testing.T) {
 	}
 
 	// Current epoch and next epoch duties should not be equal at the sync period epoch boundary.
-	req = &ethpb.DutiesRequest{
+	req = &zondpb.DutiesRequest{
 		PublicKeys: pubKeys,
 		Epoch:      params.BeaconConfig().EpochsPerSyncCommitteePeriod - 1,
 	}
@@ -217,7 +217,7 @@ func TestGetBellatrixDuties_SyncCommitteeOK(t *testing.T) {
 	eth1Data, err := util.DeterministicEth1Data(len(deposits))
 	require.NoError(t, err)
 	bs, err := util.GenesisBeaconState(context.Background(), deposits, 0, eth1Data)
-	h := &ethpb.BeaconBlockHeader{
+	h := &zondpb.BeaconBlockHeader{
 		StateRoot:  bytesutil.PadTo([]byte{'a'}, fieldparams.RootLength),
 		ParentRoot: bytesutil.PadTo([]byte{'b'}, fieldparams.RootLength),
 		BodyRoot:   bytesutil.PadTo([]byte{'c'}, fieldparams.RootLength),
@@ -260,7 +260,7 @@ func TestGetBellatrixDuties_SyncCommitteeOK(t *testing.T) {
 	}
 
 	// Test the first validator in registry.
-	req := &ethpb.DutiesRequest{
+	req := &zondpb.DutiesRequest{
 		PublicKeys: [][]byte{deposits[0].Data.PublicKey},
 	}
 	res, err := vs.GetDuties(context.Background(), req)
@@ -272,7 +272,7 @@ func TestGetBellatrixDuties_SyncCommitteeOK(t *testing.T) {
 
 	// Test the last validator in registry.
 	lastValidatorIndex := params.BeaconConfig().SyncCommitteeSize - 1
-	req = &ethpb.DutiesRequest{
+	req = &zondpb.DutiesRequest{
 		PublicKeys: [][]byte{deposits[lastValidatorIndex].Data.PublicKey},
 	}
 	res, err = vs.GetDuties(context.Background(), req)
@@ -283,7 +283,7 @@ func TestGetBellatrixDuties_SyncCommitteeOK(t *testing.T) {
 	}
 
 	// We request for duties for all validators.
-	req = &ethpb.DutiesRequest{
+	req = &zondpb.DutiesRequest{
 		PublicKeys: pubKeys,
 		Epoch:      0,
 	}
@@ -299,7 +299,7 @@ func TestGetBellatrixDuties_SyncCommitteeOK(t *testing.T) {
 	}
 
 	// Current epoch and next epoch duties should not be equal at the sync period epoch boundary.
-	req = &ethpb.DutiesRequest{
+	req = &zondpb.DutiesRequest{
 		PublicKeys: pubKeys,
 		Epoch:      params.BeaconConfig().EpochsPerSyncCommitteePeriod - 1,
 	}
@@ -323,7 +323,7 @@ func TestGetAltairDuties_UnknownPubkey(t *testing.T) {
 	require.NoError(t, err)
 	bs, err := util.GenesisBeaconState(context.Background(), deposits, 0, eth1Data)
 	require.NoError(t, err)
-	h := &ethpb.BeaconBlockHeader{
+	h := &zondpb.BeaconBlockHeader{
 		StateRoot:  bytesutil.PadTo([]byte{'a'}, fieldparams.RootLength),
 		ParentRoot: bytesutil.PadTo([]byte{'b'}, fieldparams.RootLength),
 		BodyRoot:   bytesutil.PadTo([]byte{'c'}, fieldparams.RootLength),
@@ -353,7 +353,7 @@ func TestGetAltairDuties_UnknownPubkey(t *testing.T) {
 	}
 
 	unknownPubkey := bytesutil.PadTo([]byte{'u'}, 48)
-	req := &ethpb.DutiesRequest{
+	req := &zondpb.DutiesRequest{
 		PublicKeys: [][]byte{unknownPubkey},
 	}
 	res, err := vs.GetDuties(context.Background(), req)
@@ -369,7 +369,7 @@ func TestGetDuties_SlotOutOfUpperBound(t *testing.T) {
 	vs := &Server{
 		TimeFetcher: chain,
 	}
-	req := &ethpb.DutiesRequest{
+	req := &zondpb.DutiesRequest{
 		Epoch: primitives.Epoch(chain.CurrentSlot()/params.BeaconConfig().SlotsPerEpoch + 2),
 	}
 	_, err := vs.duties(context.Background(), req)
@@ -409,7 +409,7 @@ func TestGetDuties_CurrentEpoch_ShouldNotFail(t *testing.T) {
 	}
 
 	// Test the first validator in registry.
-	req := &ethpb.DutiesRequest{
+	req := &zondpb.DutiesRequest{
 		PublicKeys: [][]byte{deposits[0].Data.PublicKey},
 	}
 	res, err := vs.GetDuties(context.Background(), req)
@@ -451,7 +451,7 @@ func TestGetDuties_MultipleKeys_OK(t *testing.T) {
 	pubkey1 := deposits[1].Data.PublicKey
 
 	// Test the first validator in registry.
-	req := &ethpb.DutiesRequest{
+	req := &zondpb.DutiesRequest{
 		PublicKeys: [][]byte{pubkey0, pubkey1},
 	}
 	res, err := vs.GetDuties(context.Background(), req)
@@ -465,7 +465,7 @@ func TestGetDuties_SyncNotReady(t *testing.T) {
 	vs := &Server{
 		SyncChecker: &mockSync.Sync{IsSyncing: true},
 	}
-	_, err := vs.GetDuties(context.Background(), &ethpb.DutiesRequest{})
+	_, err := vs.GetDuties(context.Background(), &zondpb.DutiesRequest{})
 	assert.ErrorContains(t, "Syncing to latest head", err)
 }
 
@@ -476,7 +476,7 @@ func TestStreamDuties_SyncNotReady(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockStream := mock.NewMockBeaconNodeValidator_StreamDutiesServer(ctrl)
-	assert.ErrorContains(t, "Syncing to latest head", vs.StreamDuties(&ethpb.DutiesRequest{}, mockStream))
+	assert.ErrorContains(t, "Syncing to latest head", vs.StreamDuties(&zondpb.DutiesRequest{}, mockStream))
 }
 
 func TestStreamDuties_OK(t *testing.T) {
@@ -517,7 +517,7 @@ func TestStreamDuties_OK(t *testing.T) {
 	}
 
 	// Test the first validator in registry.
-	req := &ethpb.DutiesRequest{
+	req := &zondpb.DutiesRequest{
 		PublicKeys: [][]byte{deposits[0].Data.PublicKey},
 	}
 	wantedRes, err := vs.duties(ctx, req)
@@ -575,7 +575,7 @@ func TestStreamDuties_OK_ChainReorg(t *testing.T) {
 	}
 
 	// Test the first validator in registry.
-	req := &ethpb.DutiesRequest{
+	req := &zondpb.DutiesRequest{
 		PublicKeys: [][]byte{deposits[0].Data.PublicKey},
 	}
 	wantedRes, err := vs.duties(ctx, req)
@@ -597,7 +597,7 @@ func TestStreamDuties_OK_ChainReorg(t *testing.T) {
 	for sent := 0; sent == 0; {
 		sent = vs.StateNotifier.StateFeed().Send(&feed.Event{
 			Type: statefeed.Reorg,
-			Data: &ethpbv1.EventChainReorg{Depth: uint64(params.BeaconConfig().SlotsPerEpoch), Slot: 0},
+			Data: &zondpbv1.EventChainReorg{Depth: uint64(params.BeaconConfig().SlotsPerEpoch), Slot: 0},
 		})
 	}
 	<-exitRoutine
@@ -607,7 +607,7 @@ func TestStreamDuties_OK_ChainReorg(t *testing.T) {
 func TestAssignValidatorToSubnet(t *testing.T) {
 	k := pubKey(3)
 
-	assignValidatorToSubnet(k, ethpb.ValidatorStatus_ACTIVE)
+	assignValidatorToSubnet(k, zondpb.ValidatorStatus_ACTIVE)
 	coms, ok, exp := cache.SubnetIDs.GetPersistentSubnets(k)
 	require.Equal(t, true, ok, "No cache entry found for validator")
 	assert.Equal(t, params.BeaconConfig().RandomSubnetsPerValidator, uint64(len(coms)))
@@ -626,10 +626,10 @@ func TestAssignValidatorToSyncSubnet(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		committee = append(committee, pubKey(uint64(i)))
 	}
-	sCommittee := &ethpb.SyncCommittee{
+	sCommittee := &zondpb.SyncCommittee{
 		Pubkeys: committee,
 	}
-	registerSyncSubnet(0, 0, k, sCommittee, ethpb.ValidatorStatus_ACTIVE)
+	registerSyncSubnet(0, 0, k, sCommittee, zondpb.ValidatorStatus_ACTIVE)
 	coms, _, ok, exp := cache.SyncSubnetIDs.GetSyncCommitteeSubnets(k, 0)
 	require.Equal(t, true, ok, "No cache entry found for validator")
 	assert.Equal(t, uint64(1), uint64(len(coms)))
@@ -671,7 +671,7 @@ func BenchmarkCommitteeAssignment(b *testing.B) {
 	for i, deposit := range deposits {
 		pks[i] = deposit.Data.PublicKey
 	}
-	req := &ethpb.DutiesRequest{
+	req := &zondpb.DutiesRequest{
 		PublicKeys: pks,
 		Epoch:      0,
 	}

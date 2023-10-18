@@ -5,14 +5,14 @@ import (
 	"os"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 // Beaconfuzz discovered an off by one issue where an attestation could be produced which would pass
@@ -24,7 +24,7 @@ func TestProcessAttestationNoVerifySignature_BeaconFuzzIssue78(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	att := &ethpb.Attestation{}
+	att := &zondpb.Attestation{}
 	if err := att.UnmarshalSSZ(attData); err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +32,7 @@ func TestProcessAttestationNoVerifySignature_BeaconFuzzIssue78(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	spb := &ethpb.BeaconState{}
+	spb := &zondpb.BeaconState{}
 	if err := spb.UnmarshalSSZ(stateData); err != nil {
 		t.Fatal(err)
 	}
@@ -56,10 +56,10 @@ func TestVerifyAttestationNoVerifySignature_IncorrectSourceEpoch(t *testing.T) {
 	aggBits.SetBitAt(1, true)
 	var mockRoot [32]byte
 	copy(mockRoot[:], "hello-world")
-	att := &ethpb.Attestation{
-		Data: &ethpb.AttestationData{
-			Source: &ethpb.Checkpoint{Epoch: 99, Root: mockRoot[:]},
-			Target: &ethpb.Checkpoint{Epoch: 0, Root: make([]byte, 32)},
+	att := &zondpb.Attestation{
+		Data: &zondpb.AttestationData{
+			Source: &zondpb.Checkpoint{Epoch: 99, Root: mockRoot[:]},
+			Target: &zondpb.Checkpoint{Epoch: 0, Root: make([]byte, 32)},
 		},
 		AggregationBits: aggBits,
 	}
@@ -72,7 +72,7 @@ func TestVerifyAttestationNoVerifySignature_IncorrectSourceEpoch(t *testing.T) {
 	ckp := beaconState.CurrentJustifiedCheckpoint()
 	copy(ckp.Root, "hello-world")
 	require.NoError(t, beaconState.SetCurrentJustifiedCheckpoint(ckp))
-	require.NoError(t, beaconState.AppendCurrentEpochAttestations(&ethpb.PendingAttestation{}))
+	require.NoError(t, beaconState.AppendCurrentEpochAttestations(&zondpb.PendingAttestation{}))
 
 	err = blocks.VerifyAttestationNoVerifySignature(context.TODO(), beaconState, att)
 	assert.NotEqual(t, nil, err)

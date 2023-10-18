@@ -7,7 +7,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/math"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // ProcessSlashingsPrecompute processes the slashed validators during epoch processing.
@@ -44,7 +44,7 @@ func ProcessSlashingsPrecompute(s state.BeaconState, pBal *Balance) error {
 	}
 
 	increment := params.BeaconConfig().EffectiveBalanceIncrement
-	validatorFunc := func(idx int, val *ethpb.Validator) (bool, *ethpb.Validator, error) {
+	validatorFunc := func(idx int, val *zondpb.Validator) (bool, *zondpb.Validator, error) {
 		correctEpoch := epochToWithdraw == val.WithdrawableEpoch
 		if val.Slashed && correctEpoch {
 			penaltyNumerator := val.EffectiveBalance / increment * minSlashing

@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
@@ -36,7 +36,7 @@ import (
 //
 //	 # Update latest messages for attesting indices
 //	 update_latest_messages(store, indexed_attestation.attesting_indices, attestation)
-func (s *Service) OnAttestation(ctx context.Context, a *ethpb.Attestation, disparity time.Duration) error {
+func (s *Service) OnAttestation(ctx context.Context, a *zondpb.Attestation, disparity time.Duration) error {
 	ctx, span := trace.StartSpan(ctx, "blockChain.onAttestation")
 	defer span.End()
 
@@ -46,7 +46,7 @@ func (s *Service) OnAttestation(ctx context.Context, a *ethpb.Attestation, dispa
 	if err := helpers.ValidateSlotTargetEpoch(a.Data); err != nil {
 		return err
 	}
-	tgt := ethpb.CopyCheckpoint(a.Data.Target)
+	tgt := zondpb.CopyCheckpoint(a.Data.Target)
 
 	// Note that target root check is ignored here because it was performed in sync's validation pipeline:
 	// validate_aggregate_proof.go and validate_beacon_attestation.go

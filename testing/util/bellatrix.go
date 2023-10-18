@@ -18,7 +18,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -31,7 +31,7 @@ func GenerateFullBlockBellatrix(
 	privs []bls.SecretKey,
 	conf *BlockGenConfig,
 	slot primitives.Slot,
-) (*ethpb.SignedBeaconBlockBellatrix, error) {
+) (*zondpb.SignedBeaconBlockBellatrix, error) {
 	ctx := context.Background()
 	currentSlot := bState.Slot()
 	if currentSlot > slot {
@@ -44,7 +44,7 @@ func GenerateFullBlockBellatrix(
 	}
 
 	var err error
-	var pSlashings []*ethpb.ProposerSlashing
+	var pSlashings []*zondpb.ProposerSlashing
 	numToGen := conf.NumProposerSlashings
 	if numToGen > 0 {
 		pSlashings, err = generateProposerSlashings(bState, privs, numToGen)
@@ -54,7 +54,7 @@ func GenerateFullBlockBellatrix(
 	}
 
 	numToGen = conf.NumAttesterSlashings
-	var aSlashings []*ethpb.AttesterSlashing
+	var aSlashings []*zondpb.AttesterSlashing
 	if numToGen > 0 {
 		aSlashings, err = generateAttesterSlashings(bState, privs, numToGen)
 		if err != nil {
@@ -63,7 +63,7 @@ func GenerateFullBlockBellatrix(
 	}
 
 	numToGen = conf.NumAttestations
-	var atts []*ethpb.Attestation
+	var atts []*zondpb.Attestation
 	if numToGen > 0 {
 		atts, err = GenerateAttestations(bState, privs, numToGen, slot, false)
 		if err != nil {
@@ -72,7 +72,7 @@ func GenerateFullBlockBellatrix(
 	}
 
 	numToGen = conf.NumDeposits
-	var newDeposits []*ethpb.Deposit
+	var newDeposits []*zondpb.Deposit
 	eth1Data := bState.Eth1Data()
 	if numToGen > 0 {
 		newDeposits, eth1Data, err = generateDepositsAndEth1Data(bState, numToGen)
@@ -82,7 +82,7 @@ func GenerateFullBlockBellatrix(
 	}
 
 	numToGen = conf.NumVoluntaryExits
-	var exits []*ethpb.SignedVoluntaryExit
+	var exits []*zondpb.SignedVoluntaryExit
 	if numToGen > 0 {
 		exits, err = generateVoluntaryExits(bState, privs, numToGen)
 		if err != nil {
@@ -131,7 +131,7 @@ func GenerateFullBlockBellatrix(
 		Transactions:  newTransactions,
 	}
 	var syncCommitteeBits []byte
-	currSize := new(ethpb.SyncAggregate).SyncCommitteeBits.Len()
+	currSize := new(zondpb.SyncAggregate).SyncCommitteeBits.Len()
 	switch currSize {
 	case 512:
 		syncCommitteeBits = bitfield.NewBitvector512()
@@ -140,7 +140,7 @@ func GenerateFullBlockBellatrix(
 	default:
 		return nil, errors.New("invalid bit vector size")
 	}
-	newSyncAggregate := &ethpb.SyncAggregate{
+	newSyncAggregate := &zondpb.SyncAggregate{
 		SyncCommitteeBits:      syncCommitteeBits,
 		SyncCommitteeSignature: append([]byte{0xC0}, make([]byte, 95)...),
 	}
@@ -170,11 +170,11 @@ func GenerateFullBlockBellatrix(
 		return nil, errors.Wrap(err, "could not compute beacon proposer index")
 	}
 
-	block := &ethpb.BeaconBlockBellatrix{
+	block := &zondpb.BeaconBlockBellatrix{
 		Slot:          slot,
 		ParentRoot:    parentRoot[:],
 		ProposerIndex: idx,
-		Body: &ethpb.BeaconBlockBodyBellatrix{
+		Body: &zondpb.BeaconBlockBodyBellatrix{
 			Eth1Data:          eth1Data,
 			RandaoReveal:      reveal,
 			ProposerSlashings: pSlashings,
@@ -194,7 +194,7 @@ func GenerateFullBlockBellatrix(
 		return nil, errors.Wrap(err, "could not compute block signature")
 	}
 
-	return &ethpb.SignedBeaconBlockBellatrix{Block: block, Signature: signature.Marshal()}, nil
+	return &zondpb.SignedBeaconBlockBellatrix{Block: block, Signature: signature.Marshal()}, nil
 }
 
 func indexToHash(i uint64) [32]byte {

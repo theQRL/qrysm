@@ -6,7 +6,7 @@ import (
 	"github.com/prysmaticlabs/go-bitfield"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
@@ -15,8 +15,8 @@ func TestProcessSyncCommitteeContribution(t *testing.T) {
 	hook := logTest.NewGlobal()
 	s := setupService(t)
 
-	contrib := &ethpb.SignedContributionAndProof{
-		Message: &ethpb.ContributionAndProof{
+	contrib := &zondpb.SignedContributionAndProof{
+		Message: &zondpb.ContributionAndProof{
 			AggregatorIndex: 1,
 		},
 	}
@@ -31,10 +31,10 @@ func TestProcessSyncAggregate(t *testing.T) {
 	s := setupService(t)
 	beaconState, _ := util.DeterministicGenesisStateAltair(t, 256)
 
-	block := &ethpb.BeaconBlockAltair{
+	block := &zondpb.BeaconBlockAltair{
 		Slot: 2,
-		Body: &ethpb.BeaconBlockBodyAltair{
-			SyncAggregate: &ethpb.SyncAggregate{
+		Body: &zondpb.BeaconBlockBodyAltair{
+			SyncAggregate: &zondpb.SyncAggregate{
 				SyncCommitteeBits: bitfield.Bitvector512{
 					0x31, 0xff, 0xff, 0xff, 0xff, 0x3f, 0xff, 0xff,
 					0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,

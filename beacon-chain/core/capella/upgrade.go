@@ -6,7 +6,7 @@ import (
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // UpgradeToCapella updates a generic state to return the version Capella state.
@@ -46,11 +46,11 @@ func UpgradeToCapella(state state.BeaconState) (state.BeaconState, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &ethpb.BeaconStateCapella{
+	s := &zondpb.BeaconStateCapella{
 		GenesisTime:           state.GenesisTime(),
 		GenesisValidatorsRoot: state.GenesisValidatorsRoot(),
 		Slot:                  state.Slot(),
-		Fork: &ethpb.Fork{
+		Fork: &zondpb.Fork{
 			PreviousVersion: state.Fork().CurrentVersion,
 			CurrentVersion:  params.BeaconConfig().CapellaForkVersion,
 			Epoch:           epoch,
@@ -94,7 +94,7 @@ func UpgradeToCapella(state state.BeaconState) (state.BeaconState, error) {
 		},
 		NextWithdrawalIndex:          0,
 		NextWithdrawalValidatorIndex: 0,
-		HistoricalSummaries:          make([]*ethpb.HistoricalSummary, 0),
+		HistoricalSummaries:          make([]*zondpb.HistoricalSummary, 0),
 	}
 
 	return state_native.InitializeFromProtoUnsafeCapella(s)

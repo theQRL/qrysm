@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 )
@@ -119,7 +119,7 @@ func (s *State) saveStateByRoot(ctx context.Context, blockRoot [32]byte, st stat
 	}
 
 	// On an intermediate slot, save state summary.
-	if err := s.beaconDB.SaveStateSummary(ctx, &ethpb.StateSummary{
+	if err := s.beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{
 		Slot: st.Slot(),
 		Root: blockRoot[:],
 	}); err != nil {

@@ -6,12 +6,12 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // Verifies attester slashings, logs them, and submits them to the slashing operations pool
 // in the beacon node if they pass validation.
-func (s *Service) processAttesterSlashings(ctx context.Context, slashings []*ethpb.AttesterSlashing) error {
+func (s *Service) processAttesterSlashings(ctx context.Context, slashings []*zondpb.AttesterSlashing) error {
 	var beaconState state.BeaconState
 	var err error
 	if len(slashings) > 0 {
@@ -47,7 +47,7 @@ func (s *Service) processAttesterSlashings(ctx context.Context, slashings []*eth
 
 // Verifies proposer slashings, logs them, and submits them to the slashing operations pool
 // in the beacon node if they pass validation.
-func (s *Service) processProposerSlashings(ctx context.Context, slashings []*ethpb.ProposerSlashing) error {
+func (s *Service) processProposerSlashings(ctx context.Context, slashings []*zondpb.ProposerSlashing) error {
 	var beaconState state.BeaconState
 	var err error
 	if len(slashings) > 0 {
@@ -78,7 +78,7 @@ func (s *Service) processProposerSlashings(ctx context.Context, slashings []*eth
 	return nil
 }
 
-func (s *Service) verifyBlockSignature(ctx context.Context, header *ethpb.SignedBeaconBlockHeader) error {
+func (s *Service) verifyBlockSignature(ctx context.Context, header *zondpb.SignedBeaconBlockHeader) error {
 	parentState, err := s.serviceCfg.StateGen.StateByRoot(ctx, bytesutil.ToBytes32(header.Header.ParentRoot))
 	if err != nil {
 		return err
@@ -86,7 +86,7 @@ func (s *Service) verifyBlockSignature(ctx context.Context, header *ethpb.Signed
 	return blocks.VerifyBlockHeaderSignature(parentState, header)
 }
 
-func (s *Service) verifyAttSignature(ctx context.Context, att *ethpb.IndexedAttestation) error {
+func (s *Service) verifyAttSignature(ctx context.Context, att *zondpb.IndexedAttestation) error {
 	preState, err := s.serviceCfg.AttestationStateFetcher.AttestationTargetState(ctx, att.Data.Target)
 	if err != nil {
 		return err

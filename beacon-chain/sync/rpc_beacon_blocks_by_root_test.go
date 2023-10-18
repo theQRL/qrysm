@@ -27,7 +27,7 @@ import (
 	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -195,11 +195,11 @@ func TestRecentBeaconBlocks_RPCRequestSent(t *testing.T) {
 	require.NoError(t, err)
 	blockBRoot, err := blockB.Block.HashTreeRoot()
 	require.NoError(t, err)
-	genesisState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &ethpb.Eth1Data{})
+	genesisState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &zondpb.Eth1Data{})
 	require.NoError(t, err)
 	require.NoError(t, genesisState.SetSlot(111))
 	require.NoError(t, genesisState.UpdateBlockRootAtIndex(111%uint64(params.BeaconConfig().SlotsPerHistoricalRoot), blockARoot))
-	finalizedCheckpt := &ethpb.Checkpoint{
+	finalizedCheckpt := &zondpb.Checkpoint{
 		Epoch: 5,
 		Root:  blockBRoot[:],
 	}
@@ -237,7 +237,7 @@ func TestRecentBeaconBlocks_RPCRequestSent(t *testing.T) {
 		out := new(p2pTypes.BeaconBlockByRootsReq)
 		assert.NoError(t, p2.Encoding().DecodeWithMaxLength(stream, out))
 		assert.DeepEqual(t, &expectedRoots, out, "Did not receive expected message")
-		response := []*ethpb.SignedBeaconBlock{blockB, blockA}
+		response := []*zondpb.SignedBeaconBlock{blockB, blockA}
 		for _, blk := range response {
 			_, err := stream.Write([]byte{responseCodeSuccess})
 			assert.NoError(t, err, "Could not write to stream")

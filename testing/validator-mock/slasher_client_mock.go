@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // MockSlasherClient is a mock of SlasherClient interface.
@@ -36,10 +36,10 @@ func (m *MockSlasherClient) EXPECT() *MockSlasherClientMockRecorder {
 }
 
 // IsSlashableAttestation mocks base method.
-func (m *MockSlasherClient) IsSlashableAttestation(arg0 context.Context, arg1 *eth.IndexedAttestation) (*eth.AttesterSlashingResponse, error) {
+func (m *MockSlasherClient) IsSlashableAttestation(arg0 context.Context, arg1 *zond.IndexedAttestation) (*zond.AttesterSlashingResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsSlashableAttestation", arg0, arg1)
-	ret0, _ := ret[0].(*eth.AttesterSlashingResponse)
+	ret0, _ := ret[0].(*zond.AttesterSlashingResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -51,10 +51,10 @@ func (mr *MockSlasherClientMockRecorder) IsSlashableAttestation(arg0, arg1 inter
 }
 
 // IsSlashableBlock mocks base method.
-func (m *MockSlasherClient) IsSlashableBlock(arg0 context.Context, arg1 *eth.SignedBeaconBlockHeader) (*eth.ProposerSlashingResponse, error) {
+func (m *MockSlasherClient) IsSlashableBlock(arg0 context.Context, arg1 *zond.SignedBeaconBlockHeader) (*zond.ProposerSlashingResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsSlashableBlock", arg0, arg1)
-	ret0, _ := ret[0].(*eth.ProposerSlashingResponse)
+	ret0, _ := ret[0].(*zond.ProposerSlashingResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

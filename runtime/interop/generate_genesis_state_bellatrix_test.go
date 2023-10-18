@@ -8,7 +8,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/container/trie"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
@@ -29,7 +29,7 @@ func TestGenerateGenesisStateBellatrix(t *testing.T) {
 		BlockHash:     make([]byte, 32),
 		Transactions:  make([][]byte, 0),
 	}
-	e1d := &ethpb.Eth1Data{
+	e1d := &zondpb.Eth1Data{
 		DepositRoot:  make([]byte, 32),
 		DepositCount: 0,
 		BlockHash:    make([]byte, 32),

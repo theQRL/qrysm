@@ -5,19 +5,19 @@ import (
 
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 type MockSlashingChecker struct {
 	AttesterSlashingFound bool
 	ProposerSlashingFound bool
-	HighestAtts           map[primitives.ValidatorIndex]*ethpb.HighestAttestation
+	HighestAtts           map[primitives.ValidatorIndex]*zondpb.HighestAttestation
 }
 
 func (s *MockSlashingChecker) HighestAttestations(
 	_ context.Context, indices []primitives.ValidatorIndex,
-) ([]*ethpb.HighestAttestation, error) {
-	atts := make([]*ethpb.HighestAttestation, 0, len(indices))
+) ([]*zondpb.HighestAttestation, error) {
+	atts := make([]*zondpb.HighestAttestation, 0, len(indices))
 	for _, valIdx := range indices {
 		att, ok := s.HighestAtts[valIdx]
 		if !ok {
@@ -28,11 +28,11 @@ func (s *MockSlashingChecker) HighestAttestations(
 	return atts, nil
 }
 
-func (s *MockSlashingChecker) IsSlashableBlock(_ context.Context, _ *ethpb.SignedBeaconBlockHeader) (*ethpb.ProposerSlashing, error) {
+func (s *MockSlashingChecker) IsSlashableBlock(_ context.Context, _ *zondpb.SignedBeaconBlockHeader) (*zondpb.ProposerSlashing, error) {
 	if s.ProposerSlashingFound {
-		return &ethpb.ProposerSlashing{
-			Header_1: &ethpb.SignedBeaconBlockHeader{
-				Header: &ethpb.BeaconBlockHeader{
+		return &zondpb.ProposerSlashing{
+			Header_1: &zondpb.SignedBeaconBlockHeader{
+				Header: &zondpb.BeaconBlockHeader{
 					Slot:          0,
 					ProposerIndex: 0,
 					ParentRoot:    params.BeaconConfig().ZeroHash[:],
@@ -41,8 +41,8 @@ func (s *MockSlashingChecker) IsSlashableBlock(_ context.Context, _ *ethpb.Signe
 				},
 				Signature: params.BeaconConfig().EmptySignature[:],
 			},
-			Header_2: &ethpb.SignedBeaconBlockHeader{
-				Header: &ethpb.BeaconBlockHeader{
+			Header_2: &zondpb.SignedBeaconBlockHeader{
+				Header: &zondpb.BeaconBlockHeader{
 					Slot:          0,
 					ProposerIndex: 0,
 					ParentRoot:    params.BeaconConfig().ZeroHash[:],
@@ -56,15 +56,15 @@ func (s *MockSlashingChecker) IsSlashableBlock(_ context.Context, _ *ethpb.Signe
 	return nil, nil
 }
 
-func (s *MockSlashingChecker) IsSlashableAttestation(_ context.Context, _ *ethpb.IndexedAttestation) ([]*ethpb.AttesterSlashing, error) {
+func (s *MockSlashingChecker) IsSlashableAttestation(_ context.Context, _ *zondpb.IndexedAttestation) ([]*zondpb.AttesterSlashing, error) {
 	if s.AttesterSlashingFound {
-		return []*ethpb.AttesterSlashing{
+		return []*zondpb.AttesterSlashing{
 			{
-				Attestation_1: &ethpb.IndexedAttestation{
-					Data: &ethpb.AttestationData{},
+				Attestation_1: &zondpb.IndexedAttestation{
+					Data: &zondpb.AttestationData{},
 				},
-				Attestation_2: &ethpb.IndexedAttestation{
-					Data: &ethpb.AttestationData{},
+				Attestation_2: &zondpb.IndexedAttestation{
+					Data: &zondpb.AttestationData{},
 				},
 			},
 		}, nil

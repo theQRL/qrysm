@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/container/queue"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // To give two slots tolerance for objects that arrive earlier.
@@ -15,7 +15,7 @@ const syncCommitteeMaxQueueSize = 4
 
 // SaveSyncCommitteeContribution saves a sync committee contribution in to a priority queue.
 // The priority queue is capped at syncCommitteeMaxQueueSize contributions.
-func (s *Store) SaveSyncCommitteeContribution(cont *ethpb.SyncCommitteeContribution) error {
+func (s *Store) SaveSyncCommitteeContribution(cont *zondpb.SyncCommitteeContribution) error {
 	if cont == nil {
 		return errNilContribution
 	}
@@ -28,13 +28,13 @@ func (s *Store) SaveSyncCommitteeContribution(cont *ethpb.SyncCommitteeContribut
 		return err
 	}
 
-	copied := ethpb.CopySyncCommitteeContribution(cont)
+	copied := zondpb.CopySyncCommitteeContribution(cont)
 
 	// Contributions exist in the queue. Append instead of insert new.
 	if item != nil {
-		contributions, ok := item.Value.([]*ethpb.SyncCommitteeContribution)
+		contributions, ok := item.Value.([]*zondpb.SyncCommitteeContribution)
 		if !ok {
-			return errors.New("not typed []ethpb.SyncCommitteeContribution")
+			return errors.New("not typed []zondpb.SyncCommitteeContribution")
 		}
 
 		contributions = append(contributions, copied)
@@ -49,7 +49,7 @@ func (s *Store) SaveSyncCommitteeContribution(cont *ethpb.SyncCommitteeContribut
 	// Contribution does not exist. Insert new.
 	if err := s.contributionCache.Push(&queue.Item{
 		Key:      syncCommitteeKey(cont.Slot),
-		Value:    []*ethpb.SyncCommitteeContribution{copied},
+		Value:    []*zondpb.SyncCommitteeContribution{copied},
 		Priority: int64(cont.Slot),
 	}); err != nil {
 		return err
@@ -68,18 +68,18 @@ func (s *Store) SaveSyncCommitteeContribution(cont *ethpb.SyncCommitteeContribut
 
 // SyncCommitteeContributions returns sync committee contributions by slot from the priority queue.
 // Upon retrieval, the contribution is removed from the queue.
-func (s *Store) SyncCommitteeContributions(slot primitives.Slot) ([]*ethpb.SyncCommitteeContribution, error) {
+func (s *Store) SyncCommitteeContributions(slot primitives.Slot) ([]*zondpb.SyncCommitteeContribution, error) {
 	s.contributionLock.RLock()
 	defer s.contributionLock.RUnlock()
 
 	item := s.contributionCache.RetrieveByKey(syncCommitteeKey(slot))
 	if item == nil {
-		return []*ethpb.SyncCommitteeContribution{}, nil
+		return []*zondpb.SyncCommitteeContribution{}, nil
 	}
 
-	contributions, ok := item.Value.([]*ethpb.SyncCommitteeContribution)
+	contributions, ok := item.Value.([]*zondpb.SyncCommitteeContribution)
 	if !ok {
-		return nil, errors.New("not typed []ethpb.SyncCommitteeContribution")
+		return nil, errors.New("not typed []zondpb.SyncCommitteeContribution")
 	}
 
 	return contributions, nil

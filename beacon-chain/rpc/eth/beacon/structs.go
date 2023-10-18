@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	bytesutil2 "github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/wealdtech/go-bytesutil"
 )
 
@@ -337,7 +337,7 @@ type DilithiumToExecutionChange struct {
 	ToExecutionAddress  string `json:"to_execution_address" validate:"required"`
 }
 
-func (b *SignedBeaconBlock) ToGeneric() (*eth.GenericSignedBeaconBlock, error) {
+func (b *SignedBeaconBlock) ToGeneric() (*zond.GenericSignedBeaconBlock, error) {
 	sig, err := hexutil.Decode(b.Signature)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Signature")
@@ -399,15 +399,15 @@ func (b *SignedBeaconBlock) ToGeneric() (*eth.GenericSignedBeaconBlock, error) {
 		return nil, err
 	}
 
-	block := &eth.SignedBeaconBlock{
-		Block: &eth.BeaconBlock{
+	block := &zond.SignedBeaconBlock{
+		Block: &zond.BeaconBlock{
 			Slot:          primitives.Slot(slot),
 			ProposerIndex: primitives.ValidatorIndex(proposerIndex),
 			ParentRoot:    parentRoot,
 			StateRoot:     stateRoot,
-			Body: &eth.BeaconBlockBody{
+			Body: &zond.BeaconBlockBody{
 				RandaoReveal: randaoReveal,
-				Eth1Data: &eth.Eth1Data{
+				Eth1Data: &zond.Eth1Data{
 					DepositRoot:  depositRoot,
 					DepositCount: depositCount,
 					BlockHash:    blockHash,
@@ -422,10 +422,10 @@ func (b *SignedBeaconBlock) ToGeneric() (*eth.GenericSignedBeaconBlock, error) {
 		},
 		Signature: sig,
 	}
-	return &eth.GenericSignedBeaconBlock{Block: &eth.GenericSignedBeaconBlock_Phase0{Phase0: block}}, nil
+	return &zond.GenericSignedBeaconBlock{Block: &zond.GenericSignedBeaconBlock_Phase0{Phase0: block}}, nil
 }
 
-func (b *SignedBeaconBlockAltair) ToGeneric() (*eth.GenericSignedBeaconBlock, error) {
+func (b *SignedBeaconBlockAltair) ToGeneric() (*zond.GenericSignedBeaconBlock, error) {
 	sig, err := hexutil.Decode(b.Signature)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Signature")
@@ -495,15 +495,15 @@ func (b *SignedBeaconBlockAltair) ToGeneric() (*eth.GenericSignedBeaconBlock, er
 		return nil, errors.Wrap(err, "could not decode b.Message.Body.SyncAggregate.SyncCommitteeSignature")
 	}
 
-	block := &eth.SignedBeaconBlockAltair{
-		Block: &eth.BeaconBlockAltair{
+	block := &zond.SignedBeaconBlockAltair{
+		Block: &zond.BeaconBlockAltair{
 			Slot:          primitives.Slot(slot),
 			ProposerIndex: primitives.ValidatorIndex(proposerIndex),
 			ParentRoot:    parentRoot,
 			StateRoot:     stateRoot,
-			Body: &eth.BeaconBlockBodyAltair{
+			Body: &zond.BeaconBlockBodyAltair{
 				RandaoReveal: randaoReveal,
-				Eth1Data: &eth.Eth1Data{
+				Eth1Data: &zond.Eth1Data{
 					DepositRoot:  depositRoot,
 					DepositCount: depositCount,
 					BlockHash:    blockHash,
@@ -514,7 +514,7 @@ func (b *SignedBeaconBlockAltair) ToGeneric() (*eth.GenericSignedBeaconBlock, er
 				Attestations:      atts,
 				Deposits:          deposits,
 				VoluntaryExits:    exits,
-				SyncAggregate: &eth.SyncAggregate{
+				SyncAggregate: &zond.SyncAggregate{
 					SyncCommitteeBits:      syncCommitteeBits,
 					SyncCommitteeSignature: syncCommitteeSig,
 				},
@@ -522,10 +522,10 @@ func (b *SignedBeaconBlockAltair) ToGeneric() (*eth.GenericSignedBeaconBlock, er
 		},
 		Signature: sig,
 	}
-	return &eth.GenericSignedBeaconBlock{Block: &eth.GenericSignedBeaconBlock_Altair{Altair: block}}, nil
+	return &zond.GenericSignedBeaconBlock{Block: &zond.GenericSignedBeaconBlock_Altair{Altair: block}}, nil
 }
 
-func (b *SignedBeaconBlockBellatrix) ToGeneric() (*eth.GenericSignedBeaconBlock, error) {
+func (b *SignedBeaconBlockBellatrix) ToGeneric() (*zond.GenericSignedBeaconBlock, error) {
 	sig, err := hexutil.Decode(b.Signature)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Signature")
@@ -654,15 +654,15 @@ func (b *SignedBeaconBlockBellatrix) ToGeneric() (*eth.GenericSignedBeaconBlock,
 		}
 	}
 
-	block := &eth.SignedBeaconBlockBellatrix{
-		Block: &eth.BeaconBlockBellatrix{
+	block := &zond.SignedBeaconBlockBellatrix{
+		Block: &zond.BeaconBlockBellatrix{
 			Slot:          primitives.Slot(slot),
 			ProposerIndex: primitives.ValidatorIndex(proposerIndex),
 			ParentRoot:    parentRoot,
 			StateRoot:     stateRoot,
-			Body: &eth.BeaconBlockBodyBellatrix{
+			Body: &zond.BeaconBlockBodyBellatrix{
 				RandaoReveal: randaoReveal,
-				Eth1Data: &eth.Eth1Data{
+				Eth1Data: &zond.Eth1Data{
 					DepositRoot:  depositRoot,
 					DepositCount: depositCount,
 					BlockHash:    blockHash,
@@ -673,7 +673,7 @@ func (b *SignedBeaconBlockBellatrix) ToGeneric() (*eth.GenericSignedBeaconBlock,
 				Attestations:      atts,
 				Deposits:          deposits,
 				VoluntaryExits:    exits,
-				SyncAggregate: &eth.SyncAggregate{
+				SyncAggregate: &zond.SyncAggregate{
 					SyncCommitteeBits:      syncCommitteeBits,
 					SyncCommitteeSignature: syncCommitteeSig,
 				},
@@ -697,10 +697,10 @@ func (b *SignedBeaconBlockBellatrix) ToGeneric() (*eth.GenericSignedBeaconBlock,
 		},
 		Signature: sig,
 	}
-	return &eth.GenericSignedBeaconBlock{Block: &eth.GenericSignedBeaconBlock_Bellatrix{Bellatrix: block}}, nil
+	return &zond.GenericSignedBeaconBlock{Block: &zond.GenericSignedBeaconBlock_Bellatrix{Bellatrix: block}}, nil
 }
 
-func (b *SignedBlindedBeaconBlockBellatrix) ToGeneric() (*eth.GenericSignedBeaconBlock, error) {
+func (b *SignedBlindedBeaconBlockBellatrix) ToGeneric() (*zond.GenericSignedBeaconBlock, error) {
 	sig, err := hexutil.Decode(b.Signature)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Signature")
@@ -826,15 +826,15 @@ func (b *SignedBlindedBeaconBlockBellatrix) ToGeneric() (*eth.GenericSignedBeaco
 		return nil, errors.Wrap(err, "could not decode b.Message.Body.ExecutionPayloadHeader.TransactionsRoot")
 	}
 
-	block := &eth.SignedBlindedBeaconBlockBellatrix{
-		Block: &eth.BlindedBeaconBlockBellatrix{
+	block := &zond.SignedBlindedBeaconBlockBellatrix{
+		Block: &zond.BlindedBeaconBlockBellatrix{
 			Slot:          primitives.Slot(slot),
 			ProposerIndex: primitives.ValidatorIndex(proposerIndex),
 			ParentRoot:    parentRoot,
 			StateRoot:     stateRoot,
-			Body: &eth.BlindedBeaconBlockBodyBellatrix{
+			Body: &zond.BlindedBeaconBlockBodyBellatrix{
 				RandaoReveal: randaoReveal,
-				Eth1Data: &eth.Eth1Data{
+				Eth1Data: &zond.Eth1Data{
 					DepositRoot:  depositRoot,
 					DepositCount: depositCount,
 					BlockHash:    blockHash,
@@ -845,7 +845,7 @@ func (b *SignedBlindedBeaconBlockBellatrix) ToGeneric() (*eth.GenericSignedBeaco
 				Attestations:      atts,
 				Deposits:          deposits,
 				VoluntaryExits:    exits,
-				SyncAggregate: &eth.SyncAggregate{
+				SyncAggregate: &zond.SyncAggregate{
 					SyncCommitteeBits:      syncCommitteeBits,
 					SyncCommitteeSignature: syncCommitteeSig,
 				},
@@ -869,10 +869,10 @@ func (b *SignedBlindedBeaconBlockBellatrix) ToGeneric() (*eth.GenericSignedBeaco
 		},
 		Signature: sig,
 	}
-	return &eth.GenericSignedBeaconBlock{Block: &eth.GenericSignedBeaconBlock_BlindedBellatrix{BlindedBellatrix: block}}, nil
+	return &zond.GenericSignedBeaconBlock{Block: &zond.GenericSignedBeaconBlock_BlindedBellatrix{BlindedBellatrix: block}}, nil
 }
 
-func (b *SignedBeaconBlockCapella) ToGeneric() (*eth.GenericSignedBeaconBlock, error) {
+func (b *SignedBeaconBlockCapella) ToGeneric() (*zond.GenericSignedBeaconBlock, error) {
 	sig, err := hexutil.Decode(b.Signature)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Signature")
@@ -1030,15 +1030,15 @@ func (b *SignedBeaconBlockCapella) ToGeneric() (*eth.GenericSignedBeaconBlock, e
 		return nil, err
 	}
 
-	block := &eth.SignedBeaconBlockCapella{
-		Block: &eth.BeaconBlockCapella{
+	block := &zond.SignedBeaconBlockCapella{
+		Block: &zond.BeaconBlockCapella{
 			Slot:          primitives.Slot(slot),
 			ProposerIndex: primitives.ValidatorIndex(proposerIndex),
 			ParentRoot:    parentRoot,
 			StateRoot:     stateRoot,
-			Body: &eth.BeaconBlockBodyCapella{
+			Body: &zond.BeaconBlockBodyCapella{
 				RandaoReveal: randaoReveal,
-				Eth1Data: &eth.Eth1Data{
+				Eth1Data: &zond.Eth1Data{
 					DepositRoot:  depositRoot,
 					DepositCount: depositCount,
 					BlockHash:    blockHash,
@@ -1049,7 +1049,7 @@ func (b *SignedBeaconBlockCapella) ToGeneric() (*eth.GenericSignedBeaconBlock, e
 				Attestations:      atts,
 				Deposits:          deposits,
 				VoluntaryExits:    exits,
-				SyncAggregate: &eth.SyncAggregate{
+				SyncAggregate: &zond.SyncAggregate{
 					SyncCommitteeBits:      syncCommitteeBits,
 					SyncCommitteeSignature: syncCommitteeSig,
 				},
@@ -1075,10 +1075,10 @@ func (b *SignedBeaconBlockCapella) ToGeneric() (*eth.GenericSignedBeaconBlock, e
 		},
 		Signature: sig,
 	}
-	return &eth.GenericSignedBeaconBlock{Block: &eth.GenericSignedBeaconBlock_Capella{Capella: block}}, nil
+	return &zond.GenericSignedBeaconBlock{Block: &zond.GenericSignedBeaconBlock_Capella{Capella: block}}, nil
 }
 
-func (b *SignedBlindedBeaconBlockCapella) ToGeneric() (*eth.GenericSignedBeaconBlock, error) {
+func (b *SignedBlindedBeaconBlockCapella) ToGeneric() (*zond.GenericSignedBeaconBlock, error) {
 	sig, err := hexutil.Decode(b.Signature)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Signature")
@@ -1212,15 +1212,15 @@ func (b *SignedBlindedBeaconBlockCapella) ToGeneric() (*eth.GenericSignedBeaconB
 		return nil, err
 	}
 
-	block := &eth.SignedBlindedBeaconBlockCapella{
-		Block: &eth.BlindedBeaconBlockCapella{
+	block := &zond.SignedBlindedBeaconBlockCapella{
+		Block: &zond.BlindedBeaconBlockCapella{
 			Slot:          primitives.Slot(slot),
 			ProposerIndex: primitives.ValidatorIndex(proposerIndex),
 			ParentRoot:    parentRoot,
 			StateRoot:     stateRoot,
-			Body: &eth.BlindedBeaconBlockBodyCapella{
+			Body: &zond.BlindedBeaconBlockBodyCapella{
 				RandaoReveal: randaoReveal,
-				Eth1Data: &eth.Eth1Data{
+				Eth1Data: &zond.Eth1Data{
 					DepositRoot:  depositRoot,
 					DepositCount: depositCount,
 					BlockHash:    blockHash,
@@ -1231,7 +1231,7 @@ func (b *SignedBlindedBeaconBlockCapella) ToGeneric() (*eth.GenericSignedBeaconB
 				Attestations:      atts,
 				Deposits:          deposits,
 				VoluntaryExits:    exits,
-				SyncAggregate: &eth.SyncAggregate{
+				SyncAggregate: &zond.SyncAggregate{
 					SyncCommitteeBits:      syncCommitteeBits,
 					SyncCommitteeSignature: syncCommitteeSig,
 				},
@@ -1257,15 +1257,15 @@ func (b *SignedBlindedBeaconBlockCapella) ToGeneric() (*eth.GenericSignedBeaconB
 		},
 		Signature: sig,
 	}
-	return &eth.GenericSignedBeaconBlock{Block: &eth.GenericSignedBeaconBlock_BlindedCapella{BlindedCapella: block}}, nil
+	return &zond.GenericSignedBeaconBlock{Block: &zond.GenericSignedBeaconBlock_BlindedCapella{BlindedCapella: block}}, nil
 }
 
-func convertProposerSlashings(src []ProposerSlashing) ([]*eth.ProposerSlashing, error) {
+func convertProposerSlashings(src []ProposerSlashing) ([]*zond.ProposerSlashing, error) {
 	if src == nil {
 		return nil, errors.New("nil b.Message.Body.ProposerSlashings")
 	}
 
-	proposerSlashings := make([]*eth.ProposerSlashing, len(src))
+	proposerSlashings := make([]*zond.ProposerSlashing, len(src))
 	for i, s := range src {
 		h1Sig, err := hexutil.Decode(s.SignedHeader1.Signature)
 		if err != nil {
@@ -1315,9 +1315,9 @@ func convertProposerSlashings(src []ProposerSlashing) ([]*eth.ProposerSlashing, 
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not decode b.Message.Body.ProposerSlashings[%d].SignedHeader2.Message.BodyRoot", i)
 		}
-		proposerSlashings[i] = &eth.ProposerSlashing{
-			Header_1: &eth.SignedBeaconBlockHeader{
-				Header: &eth.BeaconBlockHeader{
+		proposerSlashings[i] = &zond.ProposerSlashing{
+			Header_1: &zond.SignedBeaconBlockHeader{
+				Header: &zond.BeaconBlockHeader{
 					Slot:          primitives.Slot(h1Slot),
 					ProposerIndex: primitives.ValidatorIndex(h1ProposerIndex),
 					ParentRoot:    h1ParentRoot,
@@ -1326,8 +1326,8 @@ func convertProposerSlashings(src []ProposerSlashing) ([]*eth.ProposerSlashing, 
 				},
 				Signature: h1Sig,
 			},
-			Header_2: &eth.SignedBeaconBlockHeader{
-				Header: &eth.BeaconBlockHeader{
+			Header_2: &zond.SignedBeaconBlockHeader{
+				Header: &zond.BeaconBlockHeader{
 					Slot:          primitives.Slot(h2Slot),
 					ProposerIndex: primitives.ValidatorIndex(h2ProposerIndex),
 					ParentRoot:    h2ParentRoot,
@@ -1341,12 +1341,12 @@ func convertProposerSlashings(src []ProposerSlashing) ([]*eth.ProposerSlashing, 
 	return proposerSlashings, nil
 }
 
-func convertAttesterSlashings(src []AttesterSlashing) ([]*eth.AttesterSlashing, error) {
+func convertAttesterSlashings(src []AttesterSlashing) ([]*zond.AttesterSlashing, error) {
 	if src == nil {
 		return nil, errors.New("nil b.Message.Body.AttesterSlashings")
 	}
 
-	attesterSlashings := make([]*eth.AttesterSlashing, len(src))
+	attesterSlashings := make([]*zond.AttesterSlashing, len(src))
 	for i, s := range src {
 		a1Sig, err := hexutil.Decode(s.Attestation1.Signature)
 		if err != nil {
@@ -1428,35 +1428,35 @@ func convertAttesterSlashings(src []AttesterSlashing) ([]*eth.AttesterSlashing, 
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not decode b.Message.Body.AttesterSlashings[%d].Attestation2.Data.Target.Root", i)
 		}
-		attesterSlashings[i] = &eth.AttesterSlashing{
-			Attestation_1: &eth.IndexedAttestation{
+		attesterSlashings[i] = &zond.AttesterSlashing{
+			Attestation_1: &zond.IndexedAttestation{
 				AttestingIndices: a1AttestingIndices,
-				Data: &eth.AttestationData{
+				Data: &zond.AttestationData{
 					Slot:            primitives.Slot(a1Slot),
 					CommitteeIndex:  primitives.CommitteeIndex(a1CommitteeIndex),
 					BeaconBlockRoot: a1BeaconBlockRoot,
-					Source: &eth.Checkpoint{
+					Source: &zond.Checkpoint{
 						Epoch: primitives.Epoch(a1SourceEpoch),
 						Root:  a1SourceRoot,
 					},
-					Target: &eth.Checkpoint{
+					Target: &zond.Checkpoint{
 						Epoch: primitives.Epoch(a1TargetEpoch),
 						Root:  a1TargetRoot,
 					},
 				},
 				Signature: a1Sig,
 			},
-			Attestation_2: &eth.IndexedAttestation{
+			Attestation_2: &zond.IndexedAttestation{
 				AttestingIndices: a2AttestingIndices,
-				Data: &eth.AttestationData{
+				Data: &zond.AttestationData{
 					Slot:            primitives.Slot(a2Slot),
 					CommitteeIndex:  primitives.CommitteeIndex(a2CommitteeIndex),
 					BeaconBlockRoot: a2BeaconBlockRoot,
-					Source: &eth.Checkpoint{
+					Source: &zond.Checkpoint{
 						Epoch: primitives.Epoch(a2SourceEpoch),
 						Root:  a2SourceRoot,
 					},
-					Target: &eth.Checkpoint{
+					Target: &zond.Checkpoint{
 						Epoch: primitives.Epoch(a2TargetEpoch),
 						Root:  a2TargetRoot,
 					},
@@ -1468,12 +1468,12 @@ func convertAttesterSlashings(src []AttesterSlashing) ([]*eth.AttesterSlashing, 
 	return attesterSlashings, nil
 }
 
-func convertAtts(src []Attestation) ([]*eth.Attestation, error) {
+func convertAtts(src []Attestation) ([]*zond.Attestation, error) {
 	if src == nil {
 		return nil, errors.New("nil b.Message.Body.Attestations")
 	}
 
-	atts := make([]*eth.Attestation, len(src))
+	atts := make([]*zond.Attestation, len(src))
 	for i, a := range src {
 		sig, err := hexutil.Decode(a.Signature)
 		if err != nil {
@@ -1507,17 +1507,17 @@ func convertAtts(src []Attestation) ([]*eth.Attestation, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not decode b.Message.Body.Attestations[%d].Data.Target.Root", i)
 		}
-		atts[i] = &eth.Attestation{
+		atts[i] = &zond.Attestation{
 			AggregationBits: []byte(a.AggregationBits),
-			Data: &eth.AttestationData{
+			Data: &zond.AttestationData{
 				Slot:            primitives.Slot(slot),
 				CommitteeIndex:  primitives.CommitteeIndex(committeeIndex),
 				BeaconBlockRoot: beaconBlockRoot,
-				Source: &eth.Checkpoint{
+				Source: &zond.Checkpoint{
 					Epoch: primitives.Epoch(sourceEpoch),
 					Root:  sourceRoot,
 				},
-				Target: &eth.Checkpoint{
+				Target: &zond.Checkpoint{
 					Epoch: primitives.Epoch(targetEpoch),
 					Root:  targetRoot,
 				},
@@ -1528,12 +1528,12 @@ func convertAtts(src []Attestation) ([]*eth.Attestation, error) {
 	return atts, nil
 }
 
-func convertDeposits(src []Deposit) ([]*eth.Deposit, error) {
+func convertDeposits(src []Deposit) ([]*zond.Deposit, error) {
 	if src == nil {
 		return nil, errors.New("nil b.Message.Body.Deposits")
 	}
 
-	deposits := make([]*eth.Deposit, len(src))
+	deposits := make([]*zond.Deposit, len(src))
 	for i, d := range src {
 		proof := make([][]byte, len(d.Proof))
 		for j, p := range d.Proof {
@@ -1559,9 +1559,9 @@ func convertDeposits(src []Deposit) ([]*eth.Deposit, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not decode b.Message.Body.Deposits[%d].Signature", i)
 		}
-		deposits[i] = &eth.Deposit{
+		deposits[i] = &zond.Deposit{
 			Proof: proof,
-			Data: &eth.Deposit_Data{
+			Data: &zond.Deposit_Data{
 				PublicKey:             pubkey,
 				WithdrawalCredentials: withdrawalCreds,
 				Amount:                amount,
@@ -1572,12 +1572,12 @@ func convertDeposits(src []Deposit) ([]*eth.Deposit, error) {
 	return deposits, nil
 }
 
-func convertExits(src []SignedVoluntaryExit) ([]*eth.SignedVoluntaryExit, error) {
+func convertExits(src []SignedVoluntaryExit) ([]*zond.SignedVoluntaryExit, error) {
 	if src == nil {
 		return nil, errors.New("nil b.Message.Body.VoluntaryExits")
 	}
 
-	exits := make([]*eth.SignedVoluntaryExit, len(src))
+	exits := make([]*zond.SignedVoluntaryExit, len(src))
 	for i, e := range src {
 		sig, err := hexutil.Decode(e.Signature)
 		if err != nil {
@@ -1591,8 +1591,8 @@ func convertExits(src []SignedVoluntaryExit) ([]*eth.SignedVoluntaryExit, error)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not decode b.Message.Body.VoluntaryExits[%d].ValidatorIndex", i)
 		}
-		exits[i] = &eth.SignedVoluntaryExit{
-			Exit: &eth.VoluntaryExit{
+		exits[i] = &zond.SignedVoluntaryExit{
+			Exit: &zond.VoluntaryExit{
 				Epoch:          primitives.Epoch(epoch),
 				ValidatorIndex: primitives.ValidatorIndex(validatorIndex),
 			},
@@ -1602,12 +1602,12 @@ func convertExits(src []SignedVoluntaryExit) ([]*eth.SignedVoluntaryExit, error)
 	return exits, nil
 }
 
-func convertDilithiumChanges(src []SignedDilithiumToExecutionChange) ([]*eth.SignedDilithiumToExecutionChange, error) {
+func convertDilithiumChanges(src []SignedDilithiumToExecutionChange) ([]*zond.SignedDilithiumToExecutionChange, error) {
 	if src == nil {
 		return nil, errors.New("nil b.Message.Body.DilithiumToExecutionChanges")
 	}
 
-	changes := make([]*eth.SignedDilithiumToExecutionChange, len(src))
+	changes := make([]*zond.SignedDilithiumToExecutionChange, len(src))
 	for i, ch := range src {
 		sig, err := hexutil.Decode(ch.Signature)
 		if err != nil {
@@ -1625,8 +1625,8 @@ func convertDilithiumChanges(src []SignedDilithiumToExecutionChange) ([]*eth.Sig
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not decode b.Message.Body.DilithiumToExecutionChanges[%d].Message.ToExecutionAddress", i)
 		}
-		changes[i] = &eth.SignedDilithiumToExecutionChange{
-			Message: &eth.DilithiumToExecutionChange{
+		changes[i] = &zond.SignedDilithiumToExecutionChange{
+			Message: &zond.DilithiumToExecutionChange{
 				ValidatorIndex:      primitives.ValidatorIndex(index),
 				FromDilithiumPubkey: pubkey,
 				ToExecutionAddress:  address,

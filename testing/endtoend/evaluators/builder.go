@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
 	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
@@ -23,8 +23,8 @@ var BuilderIsActive = e2etypes.Evaluator{
 
 func builderActive(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := ethpb.NewNodeClient(conn)
-	beaconClient := ethpb.NewBeaconChainClient(conn)
+	client := zondpb.NewNodeClient(conn)
+	beaconClient := zondpb.NewBeaconChainClient(conn)
 	genesis, err := client.GetGenesis(context.Background(), &emptypb.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "failed to get genesis data")
@@ -39,7 +39,7 @@ func builderActive(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) err
 	if lowestBound < helpers.BellatrixE2EForkEpoch {
 		lowestBound = helpers.BellatrixE2EForkEpoch
 	}
-	blockCtrs, err := beaconClient.ListBeaconBlocks(context.Background(), &ethpb.ListBlocksRequest{QueryFilter: &ethpb.ListBlocksRequest_Epoch{Epoch: lowestBound}})
+	blockCtrs, err := beaconClient.ListBeaconBlocks(context.Background(), &zondpb.ListBlocksRequest{QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: lowestBound}})
 	if err != nil {
 		return errors.Wrap(err, "failed to get beacon blocks")
 	}
@@ -71,7 +71,7 @@ func builderActive(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) err
 	if lowestBound == currEpoch {
 		return nil
 	}
-	blockCtrs, err = beaconClient.ListBeaconBlocks(context.Background(), &ethpb.ListBlocksRequest{QueryFilter: &ethpb.ListBlocksRequest_Epoch{Epoch: currEpoch}})
+	blockCtrs, err = beaconClient.ListBeaconBlocks(context.Background(), &zondpb.ListBlocksRequest{QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: currEpoch}})
 	if err != nil {
 		return errors.Wrap(err, "failed to get validator participation")
 	}

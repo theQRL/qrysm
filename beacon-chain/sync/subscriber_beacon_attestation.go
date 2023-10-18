@@ -9,15 +9,15 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/container/slice"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"google.golang.org/protobuf/proto"
 )
 
 func (s *Service) committeeIndexBeaconAttestationSubscriber(_ context.Context, msg proto.Message) error {
-	a, ok := msg.(*eth.Attestation)
+	a, ok := msg.(*zond.Attestation)
 	if !ok {
-		return fmt.Errorf("message was not type *eth.Attestation, type=%T", msg)
+		return fmt.Errorf("message was not type *zond.Attestation, type=%T", msg)
 	}
 
 	if a.Data == nil {

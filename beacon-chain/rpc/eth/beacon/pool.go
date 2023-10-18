@@ -13,10 +13,10 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/helpers"
 	"github.com/theQRL/qrysm/v4/config/features"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	ethpbv1 "github.com/theQRL/qrysm/v4/proto/eth/v1"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/proto/migration"
-	ethpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
@@ -29,7 +29,7 @@ const broadcastDilithiumChangesRateLimit = 128
 
 // ListPoolAttestations retrieves attestations known by the node but
 // not necessarily incorporated into any block. Allows filtering by committee index or slot.
-func (bs *Server) ListPoolAttestations(ctx context.Context, req *ethpbv1.AttestationsPoolRequest) (*ethpbv1.AttestationsPoolResponse, error) {
+func (bs *Server) ListPoolAttestations(ctx context.Context, req *zondpbv1.AttestationsPoolRequest) (*zondpbv1.AttestationsPoolResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.ListPoolAttestations")
 	defer span.End()
 
@@ -41,14 +41,14 @@ func (bs *Server) ListPoolAttestations(ctx context.Context, req *ethpbv1.Attesta
 	attestations = append(attestations, unaggAtts...)
 	isEmptyReq := req.Slot == nil && req.CommitteeIndex == nil
 	if isEmptyReq {
-		allAtts := make([]*ethpbv1.Attestation, len(attestations))
+		allAtts := make([]*zondpbv1.Attestation, len(attestations))
 		for i, att := range attestations {
 			allAtts[i] = migration.V1Alpha1AttestationToV1(att)
 		}
-		return &ethpbv1.AttestationsPoolResponse{Data: allAtts}, nil
+		return &zondpbv1.AttestationsPoolResponse{Data: allAtts}, nil
 	}
 
-	filteredAtts := make([]*ethpbv1.Attestation, 0, len(attestations))
+	filteredAtts := make([]*zondpbv1.Attestation, 0, len(attestations))
 	for _, att := range attestations {
 		bothDefined := req.Slot != nil && req.CommitteeIndex != nil
 		committeeIndexMatch := req.CommitteeIndex != nil && att.Data.CommitteeIndex == *req.CommitteeIndex
@@ -60,16 +60,16 @@ func (bs *Server) ListPoolAttestations(ctx context.Context, req *ethpbv1.Attesta
 			filteredAtts = append(filteredAtts, migration.V1Alpha1AttestationToV1(att))
 		}
 	}
-	return &ethpbv1.AttestationsPoolResponse{Data: filteredAtts}, nil
+	return &zondpbv1.AttestationsPoolResponse{Data: filteredAtts}, nil
 }
 
 // SubmitAttestations submits Attestation object to node. If attestation passes all validation
 // constraints, node MUST publish attestation on appropriate subnet.
-func (bs *Server) SubmitAttestations(ctx context.Context, req *ethpbv1.SubmitAttestationsRequest) (*emptypb.Empty, error) {
+func (bs *Server) SubmitAttestations(ctx context.Context, req *zondpbv1.SubmitAttestationsRequest) (*emptypb.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.SubmitAttestation")
 	defer span.End()
 
-	var validAttestations []*ethpbalpha.Attestation
+	var validAttestations []*zondpbalpha.Attestation
 	var attFailures []*helpers.SingleIndexedVerificationFailure
 	for i, sourceAtt := range req.Data {
 		att := migration.V1AttToV1Alpha1(sourceAtt)
@@ -144,7 +144,7 @@ func (bs *Server) SubmitAttestations(ctx context.Context, req *ethpbv1.SubmitAtt
 
 // ListPoolAttesterSlashings retrieves attester slashings known by the node but
 // not necessarily incorporated into any block.
-func (bs *Server) ListPoolAttesterSlashings(ctx context.Context, _ *emptypb.Empty) (*ethpbv1.AttesterSlashingsPoolResponse, error) {
+func (bs *Server) ListPoolAttesterSlashings(ctx context.Context, _ *emptypb.Empty) (*zondpbv1.AttesterSlashingsPoolResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.ListPoolAttesterSlashings")
 	defer span.End()
 
@@ -154,19 +154,19 @@ func (bs *Server) ListPoolAttesterSlashings(ctx context.Context, _ *emptypb.Empt
 	}
 	sourceSlashings := bs.SlashingsPool.PendingAttesterSlashings(ctx, headState, true /* return unlimited slashings */)
 
-	slashings := make([]*ethpbv1.AttesterSlashing, len(sourceSlashings))
+	slashings := make([]*zondpbv1.AttesterSlashing, len(sourceSlashings))
 	for i, s := range sourceSlashings {
 		slashings[i] = migration.V1Alpha1AttSlashingToV1(s)
 	}
 
-	return &ethpbv1.AttesterSlashingsPoolResponse{
+	return &zondpbv1.AttesterSlashingsPoolResponse{
 		Data: slashings,
 	}, nil
 }
 
 // SubmitAttesterSlashing submits AttesterSlashing object to node's pool and
 // if passes validation node MUST broadcast it to network.
-func (bs *Server) SubmitAttesterSlashing(ctx context.Context, req *ethpbv1.AttesterSlashing) (*emptypb.Empty, error) {
+func (bs *Server) SubmitAttesterSlashing(ctx context.Context, req *zondpbv1.AttesterSlashing) (*emptypb.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.SubmitAttesterSlashing")
 	defer span.End()
 
@@ -200,7 +200,7 @@ func (bs *Server) SubmitAttesterSlashing(ctx context.Context, req *ethpbv1.Attes
 
 // ListPoolProposerSlashings retrieves proposer slashings known by the node
 // but not necessarily incorporated into any block.
-func (bs *Server) ListPoolProposerSlashings(ctx context.Context, _ *emptypb.Empty) (*ethpbv1.ProposerSlashingPoolResponse, error) {
+func (bs *Server) ListPoolProposerSlashings(ctx context.Context, _ *emptypb.Empty) (*zondpbv1.ProposerSlashingPoolResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.ListPoolProposerSlashings")
 	defer span.End()
 
@@ -210,19 +210,19 @@ func (bs *Server) ListPoolProposerSlashings(ctx context.Context, _ *emptypb.Empt
 	}
 	sourceSlashings := bs.SlashingsPool.PendingProposerSlashings(ctx, headState, true /* return unlimited slashings */)
 
-	slashings := make([]*ethpbv1.ProposerSlashing, len(sourceSlashings))
+	slashings := make([]*zondpbv1.ProposerSlashing, len(sourceSlashings))
 	for i, s := range sourceSlashings {
 		slashings[i] = migration.V1Alpha1ProposerSlashingToV1(s)
 	}
 
-	return &ethpbv1.ProposerSlashingPoolResponse{
+	return &zondpbv1.ProposerSlashingPoolResponse{
 		Data: slashings,
 	}, nil
 }
 
 // SubmitProposerSlashing submits AttesterSlashing object to node's pool and if
 // passes validation node MUST broadcast it to network.
-func (bs *Server) SubmitProposerSlashing(ctx context.Context, req *ethpbv1.ProposerSlashing) (*emptypb.Empty, error) {
+func (bs *Server) SubmitProposerSlashing(ctx context.Context, req *zondpbv1.ProposerSlashing) (*emptypb.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.SubmitProposerSlashing")
 	defer span.End()
 
@@ -256,7 +256,7 @@ func (bs *Server) SubmitProposerSlashing(ctx context.Context, req *ethpbv1.Propo
 
 // ListPoolVoluntaryExits retrieves voluntary exits known by the node but
 // not necessarily incorporated into any block.
-func (bs *Server) ListPoolVoluntaryExits(ctx context.Context, _ *emptypb.Empty) (*ethpbv1.VoluntaryExitsPoolResponse, error) {
+func (bs *Server) ListPoolVoluntaryExits(ctx context.Context, _ *emptypb.Empty) (*zondpbv1.VoluntaryExitsPoolResponse, error) {
 	_, span := trace.StartSpan(ctx, "beacon.ListPoolVoluntaryExits")
 	defer span.End()
 
@@ -264,19 +264,19 @@ func (bs *Server) ListPoolVoluntaryExits(ctx context.Context, _ *emptypb.Empty) 
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Could not get exits from the pool")
 	}
-	exits := make([]*ethpbv1.SignedVoluntaryExit, len(sourceExits))
+	exits := make([]*zondpbv1.SignedVoluntaryExit, len(sourceExits))
 	for i, s := range sourceExits {
 		exits[i] = migration.V1Alpha1ExitToV1(s)
 	}
 
-	return &ethpbv1.VoluntaryExitsPoolResponse{
+	return &zondpbv1.VoluntaryExitsPoolResponse{
 		Data: exits,
 	}, nil
 }
 
 // SubmitVoluntaryExit submits SignedVoluntaryExit object to node's pool
 // and if passes validation node MUST broadcast it to network.
-func (bs *Server) SubmitVoluntaryExit(ctx context.Context, req *ethpbv1.SignedVoluntaryExit) (*emptypb.Empty, error) {
+func (bs *Server) SubmitVoluntaryExit(ctx context.Context, req *zondpbv1.SignedVoluntaryExit) (*emptypb.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.SubmitVoluntaryExit")
 	defer span.End()
 
@@ -313,7 +313,7 @@ func (bs *Server) SubmitVoluntaryExit(ctx context.Context, req *ethpbv1.SignedVo
 
 // SubmitSignedDilithiumToExecutionChanges submits said object to the node's pool
 // if it passes validation the node must broadcast it to the network.
-func (bs *Server) SubmitSignedDilithiumToExecutionChanges(ctx context.Context, req *ethpbv2.SubmitDilithiumToExecutionChangesRequest) (*emptypb.Empty, error) {
+func (bs *Server) SubmitSignedDilithiumToExecutionChanges(ctx context.Context, req *zondpbv2.SubmitDilithiumToExecutionChangesRequest) (*emptypb.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.SubmitSignedDilithiumToExecutionChanges")
 	defer span.End()
 	st, err := bs.ChainInfoFetcher.HeadStateReadOnly(ctx)
@@ -321,7 +321,7 @@ func (bs *Server) SubmitSignedDilithiumToExecutionChanges(ctx context.Context, r
 		return nil, status.Errorf(codes.Internal, "Could not get head state: %v", err)
 	}
 	var failures []*helpers.SingleIndexedVerificationFailure
-	var toBroadcast []*ethpbalpha.SignedDilithiumToExecutionChange
+	var toBroadcast []*zondpbalpha.SignedDilithiumToExecutionChange
 
 	for i, change := range req.GetChanges() {
 		alphaChange := migration.V2SignedDilithiumToExecutionChangeToV1Alpha1(change)
@@ -370,7 +370,7 @@ func (bs *Server) SubmitSignedDilithiumToExecutionChanges(ctx context.Context, r
 // broadcastDilithiumBatch broadcasts the first `broadcastDilithiumChangesRateLimit` messages from the slice pointed to by ptr.
 // It validates the messages again because they could have been invalidated by being included in blocks since the last validation.
 // It removes the messages from the slice and modifies it in place.
-func (bs *Server) broadcastDilithiumBatch(ctx context.Context, ptr *[]*ethpbalpha.SignedDilithiumToExecutionChange) {
+func (bs *Server) broadcastDilithiumBatch(ctx context.Context, ptr *[]*zondpbalpha.SignedDilithiumToExecutionChange) {
 	limit := broadcastDilithiumChangesRateLimit
 	if len(*ptr) < broadcastDilithiumChangesRateLimit {
 		limit = len(*ptr)
@@ -395,7 +395,7 @@ func (bs *Server) broadcastDilithiumBatch(ctx context.Context, ptr *[]*ethpbalph
 	*ptr = (*ptr)[limit:]
 }
 
-func (bs *Server) broadcastDilithiumChanges(ctx context.Context, changes []*ethpbalpha.SignedDilithiumToExecutionChange) {
+func (bs *Server) broadcastDilithiumChanges(ctx context.Context, changes []*zondpbalpha.SignedDilithiumToExecutionChange) {
 	bs.broadcastDilithiumBatch(ctx, &changes)
 	if len(changes) == 0 {
 		return
@@ -416,7 +416,7 @@ func (bs *Server) broadcastDilithiumChanges(ctx context.Context, changes []*ethp
 }
 
 // ListDilithiumToExecutionChanges retrieves Dilithium to execution changes known by the node but not necessarily incorporated into any block
-func (bs *Server) ListDilithiumToExecutionChanges(ctx context.Context, _ *emptypb.Empty) (*ethpbv2.DilithiumToExecutionChangesPoolResponse, error) {
+func (bs *Server) ListDilithiumToExecutionChanges(ctx context.Context, _ *emptypb.Empty) (*zondpbv2.DilithiumToExecutionChangesPoolResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.ListDilithiumToExecutionChanges")
 	defer span.End()
 
@@ -425,12 +425,12 @@ func (bs *Server) ListDilithiumToExecutionChanges(ctx context.Context, _ *emptyp
 		return nil, status.Errorf(codes.Internal, "Could not get Dilithium to execution changes: %v", err)
 	}
 
-	changes := make([]*ethpbv2.SignedDilithiumToExecutionChange, len(sourceChanges))
+	changes := make([]*zondpbv2.SignedDilithiumToExecutionChange, len(sourceChanges))
 	for i, ch := range sourceChanges {
 		changes[i] = migration.V1Alpha1SignedDilithiumToExecChangeToV2(ch)
 	}
 
-	return &ethpbv2.DilithiumToExecutionChangesPoolResponse{
+	return &zondpbv2.DilithiumToExecutionChangesPoolResponse{
 		Data: changes,
 	}, nil
 }

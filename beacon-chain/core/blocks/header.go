@@ -5,13 +5,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 // ProcessBlockHeader validates a block by its header.
@@ -134,7 +134,7 @@ func ProcessBlockHeaderNoVerify(
 		return nil, fmt.Errorf("proposer at index %d was previously slashed", idx)
 	}
 
-	if err := beaconState.SetLatestBlockHeader(&ethpb.BeaconBlockHeader{
+	if err := beaconState.SetLatestBlockHeader(&zondpb.BeaconBlockHeader{
 		Slot:          slot,
 		ProposerIndex: proposerIndex,
 		ParentRoot:    parentRoot,

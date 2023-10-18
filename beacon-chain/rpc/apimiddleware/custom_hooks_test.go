@@ -13,7 +13,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ethpbv2 "github.com/theQRL/qrysm/v4/proto/eth/v2"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -662,7 +662,7 @@ func TestPrepareValidatorAggregates(t *testing.T) {
 func TestSerializeV2Block(t *testing.T) {
 	t.Run("Phase 0", func(t *testing.T) {
 		response := &BlockV2ResponseJson{
-			Version: ethpbv2.Version_PHASE0.String(),
+			Version: zondpbv2.Version_PHASE0.String(),
 			Data: &SignedBeaconBlockContainerV2Json{
 				Phase0Block: &BeaconBlockJson{
 					Slot:          "1",
@@ -694,7 +694,7 @@ func TestSerializeV2Block(t *testing.T) {
 
 	t.Run("Altair", func(t *testing.T) {
 		response := &BlockV2ResponseJson{
-			Version: ethpbv2.Version_ALTAIR.String(),
+			Version: zondpbv2.Version_ALTAIR.String(),
 			Data: &SignedBeaconBlockContainerV2Json{
 				AltairBlock: &BeaconBlockAltairJson{
 					Slot:          "1",
@@ -726,7 +726,7 @@ func TestSerializeV2Block(t *testing.T) {
 
 	t.Run("Bellatrix", func(t *testing.T) {
 		response := &BlockV2ResponseJson{
-			Version: ethpbv2.Version_BELLATRIX.String(),
+			Version: zondpbv2.Version_BELLATRIX.String(),
 			Data: &SignedBeaconBlockContainerV2Json{
 				BellatrixBlock: &BeaconBlockBellatrixJson{
 					Slot:          "1",
@@ -780,7 +780,7 @@ func TestSerializeV2Block(t *testing.T) {
 func TestSerializeBlindedBlock(t *testing.T) {
 	t.Run("Phase 0", func(t *testing.T) {
 		response := &BlindedBlockResponseJson{
-			Version: ethpbv2.Version_PHASE0.String(),
+			Version: zondpbv2.Version_PHASE0.String(),
 			Data: &SignedBlindedBeaconBlockContainerJson{
 				Phase0Block: &BeaconBlockJson{
 					Slot:          "1",
@@ -812,7 +812,7 @@ func TestSerializeBlindedBlock(t *testing.T) {
 
 	t.Run("Altair", func(t *testing.T) {
 		response := &BlindedBlockResponseJson{
-			Version: ethpbv2.Version_ALTAIR.String(),
+			Version: zondpbv2.Version_ALTAIR.String(),
 			Data: &SignedBlindedBeaconBlockContainerJson{
 				AltairBlock: &BeaconBlockAltairJson{
 					Slot:          "1",
@@ -844,7 +844,7 @@ func TestSerializeBlindedBlock(t *testing.T) {
 
 	t.Run("Bellatrix", func(t *testing.T) {
 		response := &BlindedBlockResponseJson{
-			Version: ethpbv2.Version_BELLATRIX.String(),
+			Version: zondpbv2.Version_BELLATRIX.String(),
 			Data: &SignedBlindedBeaconBlockContainerJson{
 				BellatrixBlock: &BlindedBeaconBlockBellatrixJson{
 					Slot:          "1",
@@ -876,7 +876,7 @@ func TestSerializeBlindedBlock(t *testing.T) {
 
 	t.Run("Capella", func(t *testing.T) {
 		response := &BlindedBlockResponseJson{
-			Version: ethpbv2.Version_CAPELLA.String(),
+			Version: zondpbv2.Version_CAPELLA.String(),
 			Data: &SignedBlindedBeaconBlockContainerJson{
 				CapellaBlock: &BlindedBeaconBlockCapellaJson{
 					Slot:          "1",
@@ -966,7 +966,7 @@ func TestSerializeBlindedBlock(t *testing.T) {
 func TestSerializeV2State(t *testing.T) {
 	t.Run("Phase 0", func(t *testing.T) {
 		response := &BeaconStateV2ResponseJson{
-			Version: ethpbv2.Version_PHASE0.String(),
+			Version: zondpbv2.Version_PHASE0.String(),
 			Data: &BeaconStateContainerV2Json{
 				Phase0State: &BeaconStateJson{},
 				AltairState: nil,
@@ -981,7 +981,7 @@ func TestSerializeV2State(t *testing.T) {
 
 	t.Run("Altair", func(t *testing.T) {
 		response := &BeaconStateV2ResponseJson{
-			Version: ethpbv2.Version_ALTAIR.String(),
+			Version: zondpbv2.Version_ALTAIR.String(),
 			Data: &BeaconStateContainerV2Json{
 				Phase0State: nil,
 				AltairState: &BeaconStateAltairJson{},
@@ -996,7 +996,7 @@ func TestSerializeV2State(t *testing.T) {
 
 	t.Run("Bellatrix", func(t *testing.T) {
 		response := &BeaconStateV2ResponseJson{
-			Version: ethpbv2.Version_BELLATRIX.String(),
+			Version: zondpbv2.Version_BELLATRIX.String(),
 			Data: &BeaconStateContainerV2Json{
 				Phase0State:    nil,
 				BellatrixState: &BeaconStateBellatrixJson{},
@@ -1011,7 +1011,7 @@ func TestSerializeV2State(t *testing.T) {
 
 	t.Run("Capella", func(t *testing.T) {
 		response := &BeaconStateV2ResponseJson{
-			Version: ethpbv2.Version_CAPELLA.String(),
+			Version: zondpbv2.Version_CAPELLA.String(),
 			Data: &BeaconStateContainerV2Json{
 				Phase0State:  nil,
 				CapellaState: &BeaconStateCapellaJson{},
@@ -1047,7 +1047,7 @@ func TestSerializeV2State(t *testing.T) {
 func TestSerializeProducedV2Block(t *testing.T) {
 	t.Run("Phase 0", func(t *testing.T) {
 		response := &ProduceBlockResponseV2Json{
-			Version: ethpbv2.Version_PHASE0.String(),
+			Version: zondpbv2.Version_PHASE0.String(),
 			Data: &BeaconBlockContainerV2Json{
 				Phase0Block: &BeaconBlockJson{
 					Slot:          "1",
@@ -1076,7 +1076,7 @@ func TestSerializeProducedV2Block(t *testing.T) {
 
 	t.Run("Altair", func(t *testing.T) {
 		response := &ProduceBlockResponseV2Json{
-			Version: ethpbv2.Version_ALTAIR.String(),
+			Version: zondpbv2.Version_ALTAIR.String(),
 			Data: &BeaconBlockContainerV2Json{
 				AltairBlock: &BeaconBlockAltairJson{
 					Slot:          "1",
@@ -1105,7 +1105,7 @@ func TestSerializeProducedV2Block(t *testing.T) {
 
 	t.Run("Bellatrix", func(t *testing.T) {
 		response := &ProduceBlockResponseV2Json{
-			Version: ethpbv2.Version_BELLATRIX.String(),
+			Version: zondpbv2.Version_BELLATRIX.String(),
 			Data: &BeaconBlockContainerV2Json{
 				BellatrixBlock: &BeaconBlockBellatrixJson{
 					Slot:          "1",
@@ -1133,7 +1133,7 @@ func TestSerializeProducedV2Block(t *testing.T) {
 	})
 	t.Run("Capella", func(t *testing.T) {
 		response := &ProduceBlockResponseV2Json{
-			Version: ethpbv2.Version_CAPELLA.String(),
+			Version: zondpbv2.Version_CAPELLA.String(),
 			Data: &BeaconBlockContainerV2Json{
 				CapellaBlock: &BeaconBlockCapellaJson{
 					Slot:          "1",
@@ -1183,7 +1183,7 @@ func TestSerializeProducedV2Block(t *testing.T) {
 func TestSerializeProduceBlindedBlock(t *testing.T) {
 	t.Run("Phase 0", func(t *testing.T) {
 		response := &ProduceBlindedBlockResponseJson{
-			Version: ethpbv2.Version_PHASE0.String(),
+			Version: zondpbv2.Version_PHASE0.String(),
 			Data: &BlindedBeaconBlockContainerJson{
 				Phase0Block: &BeaconBlockJson{
 					Slot:          "1",
@@ -1213,7 +1213,7 @@ func TestSerializeProduceBlindedBlock(t *testing.T) {
 
 	t.Run("Altair", func(t *testing.T) {
 		response := &ProduceBlindedBlockResponseJson{
-			Version: ethpbv2.Version_ALTAIR.String(),
+			Version: zondpbv2.Version_ALTAIR.String(),
 			Data: &BlindedBeaconBlockContainerJson{
 				AltairBlock: &BeaconBlockAltairJson{
 					Slot:          "1",
@@ -1242,7 +1242,7 @@ func TestSerializeProduceBlindedBlock(t *testing.T) {
 
 	t.Run("Bellatrix", func(t *testing.T) {
 		response := &ProduceBlindedBlockResponseJson{
-			Version: ethpbv2.Version_BELLATRIX.String(),
+			Version: zondpbv2.Version_BELLATRIX.String(),
 			Data: &BlindedBeaconBlockContainerJson{
 				BellatrixBlock: &BlindedBeaconBlockBellatrixJson{
 					Slot:          "1",
@@ -1271,7 +1271,7 @@ func TestSerializeProduceBlindedBlock(t *testing.T) {
 
 	t.Run("Capella", func(t *testing.T) {
 		response := &ProduceBlindedBlockResponseJson{
-			Version: ethpbv2.Version_CAPELLA.String(),
+			Version: zondpbv2.Version_CAPELLA.String(),
 			Data: &BlindedBeaconBlockContainerJson{
 				CapellaBlock: &BlindedBeaconBlockCapellaJson{
 					Slot:          "1",

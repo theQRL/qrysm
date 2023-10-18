@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	testing2 "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
-	eth "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	mock2 "github.com/theQRL/qrysm/v4/testing/mock"
 )
@@ -21,8 +21,8 @@ func TestPublishBlockV2(t *testing.T) {
 
 	t.Run("Phase 0", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
-		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Phase0)
+		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *zond.GenericSignedBeaconBlock) bool {
+			_, ok := req.Block.(*zond.GenericSignedBeaconBlock_Phase0)
 			return ok
 		}))
 		server := &Server{
@@ -38,8 +38,8 @@ func TestPublishBlockV2(t *testing.T) {
 	})
 	t.Run("Altair", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
-		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Altair)
+		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *zond.GenericSignedBeaconBlock) bool {
+			_, ok := req.Block.(*zond.GenericSignedBeaconBlock_Altair)
 			return ok
 		}))
 		server := &Server{
@@ -55,8 +55,8 @@ func TestPublishBlockV2(t *testing.T) {
 	})
 	t.Run("Bellatrix", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
-		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Bellatrix)
+		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *zond.GenericSignedBeaconBlock) bool {
+			_, ok := req.Block.(*zond.GenericSignedBeaconBlock_Bellatrix)
 			return ok
 		}))
 		server := &Server{
@@ -72,8 +72,8 @@ func TestPublishBlockV2(t *testing.T) {
 	})
 	t.Run("Capella", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
-		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Capella)
+		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *zond.GenericSignedBeaconBlock) bool {
+			_, ok := req.Block.(*zond.GenericSignedBeaconBlock_Capella)
 			return ok
 		}))
 		server := &Server{
@@ -122,8 +122,8 @@ func TestPublishBlindedBlockV2(t *testing.T) {
 
 	t.Run("Phase 0", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
-		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Phase0)
+		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *zond.GenericSignedBeaconBlock) bool {
+			_, ok := req.Block.(*zond.GenericSignedBeaconBlock_Phase0)
 			return ok
 		}))
 		server := &Server{
@@ -139,8 +139,8 @@ func TestPublishBlindedBlockV2(t *testing.T) {
 	})
 	t.Run("Altair", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
-		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Altair)
+		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *zond.GenericSignedBeaconBlock) bool {
+			_, ok := req.Block.(*zond.GenericSignedBeaconBlock_Altair)
 			return ok
 		}))
 		server := &Server{
@@ -156,8 +156,8 @@ func TestPublishBlindedBlockV2(t *testing.T) {
 	})
 	t.Run("Bellatrix", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
-		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_BlindedBellatrix)
+		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *zond.GenericSignedBeaconBlock) bool {
+			_, ok := req.Block.(*zond.GenericSignedBeaconBlock_BlindedBellatrix)
 			return ok
 		}))
 		server := &Server{
@@ -173,8 +173,8 @@ func TestPublishBlindedBlockV2(t *testing.T) {
 	})
 	t.Run("Capella", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
-		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_BlindedCapella)
+		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *zond.GenericSignedBeaconBlock) bool {
+			_, ok := req.Block.(*zond.GenericSignedBeaconBlock_BlindedCapella)
 			return ok
 		}))
 		server := &Server{

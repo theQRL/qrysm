@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
-	ethpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 type Option func(s *Service) error
@@ -30,7 +30,7 @@ func WithMaxGoroutines(x int) Option {
 }
 
 // WithWeakSubjectivityCheckpoint for checkpoint sync.
-func WithWeakSubjectivityCheckpoint(c *ethpb.Checkpoint) Option {
+func WithWeakSubjectivityCheckpoint(c *zondpb.Checkpoint) Option {
 	return func(s *Service) error {
 		s.cfg.WeakSubjectivityCheckpt = c
 		return nil

@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	ethpbservice "github.com/theQRL/qrysm/v4/proto/eth/service"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer/internal"
@@ -299,12 +299,12 @@ func TestKeymanager_AddPublicKeys(t *testing.T) {
 	statuses, err := km.AddPublicKeys(ctx, publicKeys)
 	require.NoError(t, err)
 	for _, status := range statuses {
-		require.Equal(t, ethpbservice.ImportedRemoteKeysStatus_IMPORTED, status.Status)
+		require.Equal(t, zondpbservice.ImportedRemoteKeysStatus_IMPORTED, status.Status)
 	}
 	statuses, err = km.AddPublicKeys(ctx, publicKeys)
 	require.NoError(t, err)
 	for _, status := range statuses {
-		require.Equal(t, ethpbservice.ImportedRemoteKeysStatus_DUPLICATE, status.Status)
+		require.Equal(t, zondpbservice.ImportedRemoteKeysStatus_DUPLICATE, status.Status)
 	}
 }
 
@@ -330,18 +330,18 @@ func TestKeymanager_DeletePublicKeys(t *testing.T) {
 	statuses, err := km.AddPublicKeys(ctx, publicKeys)
 	require.NoError(t, err)
 	for _, status := range statuses {
-		require.Equal(t, ethpbservice.ImportedRemoteKeysStatus_IMPORTED, status.Status)
+		require.Equal(t, zondpbservice.ImportedRemoteKeysStatus_IMPORTED, status.Status)
 	}
 
 	s, err := km.DeletePublicKeys(ctx, publicKeys)
 	require.NoError(t, err)
 	for _, status := range s {
-		require.Equal(t, ethpbservice.DeletedRemoteKeysStatus_DELETED, status.Status)
+		require.Equal(t, zondpbservice.DeletedRemoteKeysStatus_DELETED, status.Status)
 	}
 
 	s, err = km.DeletePublicKeys(ctx, publicKeys)
 	require.NoError(t, err)
 	for _, status := range s {
-		require.Equal(t, ethpbservice.DeletedRemoteKeysStatus_NOT_FOUND, status.Status)
+		require.Equal(t, zondpbservice.DeletedRemoteKeysStatus_NOT_FOUND, status.Status)
 	}
 }
