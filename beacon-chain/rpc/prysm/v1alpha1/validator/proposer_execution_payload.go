@@ -69,7 +69,7 @@ func (vs *Server) getLocalPayload(ctx context.Context, blk interfaces.ReadOnlyBe
 				"burnAddress":    params.BeaconConfig().EthBurnAddressHex,
 			}).Warn("Fee recipient is currently using the burn address, " +
 				"you will not be rewarded transaction fees on this setting. " +
-				"Please set a different eth address as the fee recipient. " +
+				"Please set a different zond address as the fee recipient. " +
 				"Please refer to our documentation for instructions")
 		}
 	default:
