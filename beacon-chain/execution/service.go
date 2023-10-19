@@ -452,7 +452,7 @@ func safelyHandlePanic() {
 	if r := recover(); r != nil {
 		log.WithFields(logrus.Fields{
 			"r": r,
-		}).Error("Panicked when handling data from ETH 1.0 Chain! Recovering...")
+		}).Error("Panicked when handling data from Zond 1.0 Chain! Recovering...")
 
 		debug.PrintStack()
 	}
