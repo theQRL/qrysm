@@ -1243,8 +1243,8 @@ github.com/theQRL/go-qrllib v0.0.0-20230406170304-b7eb19c367e1/go.mod h1:IspDEOe
 github.com/theQRL/go-zond v0.0.0-20231010132528-f0be919588c9 h1:BvT+70NXBzy2kvTzKnb2lpkPqFPBefcxnNDLvvSVwCo=
 github.com/theQRL/go-zond v0.0.0-20231010132528-f0be919588c9/go.mod h1:Z6uom723qIaOui0sxKYGLS7UNYOTJ4PLB9edk85HPNo=
 github.com/theQRL/go-zond-types v0.0.0-20230824233758-ea0b707a1e23 h1:9ifrMzlO0V61aT0nThIPFaEu83VAImLhAWGg5ppDf9A=
-github.com/theQRL/go-zond-wallet-encryptor-keystore v0.0.0-20230903120454-b2565dd3a98c h1:zMTNbNZo/jNeVKS7WsV0/4TcqX3A/JL3Vx/S3Jno+Bw=
-github.com/theQRL/go-zond-wallet-encryptor-keystore v0.0.0-20230903120454-b2565dd3a98c/go.mod h1:I5bUryQPoIVh1OJ1rEsrzCiX7Z9UNThZv5Z39vhU9aE=
+github.com/theQRL/go-zond-wallet-encryptor-keystore v0.0.0-20231020114450-f6f12b82ea8b h1:tX4WpoKWAXMyHFLMTQugNISJlPzP+V64y81RClFbufU=
+github.com/theQRL/go-zond-wallet-encryptor-keystore v0.0.0-20231020114450-f6f12b82ea8b/go.mod h1:I5bUryQPoIVh1OJ1rEsrzCiX7Z9UNThZv5Z39vhU9aE=
 github.com/theQRL/go-zond-wallet-types v0.0.0-20230825000054-1d9fefb6afe7 h1:CI58ub/yz8UnaSMu9eS3o3fFnoJqA6zShtZNbgIfRgI=
 github.com/theQRL/grpc-gateway/v2 v2.0.0-20231017104325-b6100930ca2f h1:e4sCvuJZ377tN7JidV2gQhZSHAn9urw5Tmsl5RNib24=
 github.com/theQRL/grpc-gateway/v2 v2.0.0-20231017104325-b6100930ca2f/go.mod h1:IOyTYjcIO0rkmnGBfJTL0NJ11exy/Tc2QEuv7hCXp24=
