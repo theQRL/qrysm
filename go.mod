@@ -70,7 +70,7 @@ require (
 	github.com/supranational/blst v0.3.11-0.20230406105308-e9dfc5ee724b
 	github.com/theQRL/go-qrllib v0.0.0-20230406170304-b7eb19c367e1
 	github.com/theQRL/go-zond v0.0.0-20231010132528-f0be919588c9
-	github.com/theQRL/go-zond-wallet-encryptor-keystore v0.0.0-20230903120454-b2565dd3a98c
+	github.com/theQRL/go-zond-wallet-encryptor-keystore v0.0.0-20231020114450-f6f12b82ea8b
 	github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e
 	github.com/trailofbits/go-mutexasserts v0.0.0-20230328101604-8cdbc5f3d279
 	github.com/tyler-smith/go-bip39 v1.1.0
