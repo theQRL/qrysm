@@ -147,7 +147,7 @@ func (_ *Keymanager) attemptDecryptKeystore(
 	// Attempt to use the pubkey present in the keystore itself as a field. If unavailable,
 	// then utilize the public key directly from the private key.
 	if keystore.Pubkey != "" {
-		pubKeyBytes, err = hex.DecodeString(keystore.Pubkey)
+		pubKeyBytes, err = hex.DecodeString(strings.TrimPrefix(keystore.Pubkey, "0x"))
 		if err != nil {
 			return nil, nil, "", errors.Wrap(err, "could not decode pubkey from keystore")
 		}
