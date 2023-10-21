@@ -28,7 +28,7 @@ func GetConfig() *Config {
 			BETANET: {
 				Name:                  BETANET,
 				GenesisForkVersion:    ToHex("0x20000089"),
-				GenesisValidatorsRoot: ToHex("0xadbacd278c79e71f4dd0c8975a8398eca12748437e0dcbed8efed700bf509c71"),
+				GenesisValidatorsRoot: ToHex("0x8e0aea32a97da3012c2c158bae29794fd08a098144dfee4ed016272035e0d6da"),
 			},
 		},
 	}
