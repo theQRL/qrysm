@@ -48,7 +48,7 @@ var APIMiddlewareVerifyIntegrity = e2etypes.Evaluator{
 }
 
 const (
-	v1MiddlewarePathTemplate = "http://localhost:%d/eth/v1"
+	v1MiddlewarePathTemplate = "http://localhost:%d/zond/v1"
 )
 
 func apiMiddlewareVerify(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {

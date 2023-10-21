@@ -28,7 +28,7 @@ var APIGatewayV1Alpha1VerifyIntegrity = e2etypes.Evaluator{
 }
 
 const (
-	v1Alpha1GatewayPathTemplate = "http://localhost:%d/eth/v1alpha1"
+	v1Alpha1GatewayPathTemplate = "http://localhost:%d/zond/v1alpha1"
 )
 
 type apiComparisonFunc func(beaconNodeIdx int, conn *grpc.ClientConn) error

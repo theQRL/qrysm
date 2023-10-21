@@ -21,7 +21,7 @@ func (c beaconApiValidatorClient) getAttestationData(
 	params.Add("slot", strconv.FormatUint(uint64(reqSlot), 10))
 	params.Add("committee_index", strconv.FormatUint(uint64(reqCommitteeIndex), 10))
 
-	query := buildURL("/eth/v1/validator/attestation_data", params)
+	query := buildURL("/zond/v1/validator/attestation_data", params)
 	produceAttestationDataResponseJson := rpcmiddleware.ProduceAttestationDataResponseJson{}
 
 	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, query, &produceAttestationDataResponseJson); err != nil {

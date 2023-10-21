@@ -23,7 +23,7 @@ type GenesisResponse_GenesisJson struct {
 }
 
 // WeakSubjectivityResponse is used to marshal/unmarshal the response for the
-// /eth/v1/beacon/weak_subjectivity endpoint.
+// /zond/v1/beacon/weak_subjectivity endpoint.
 type WeakSubjectivityResponse struct {
 	Data *struct {
 		Checkpoint *CheckpointJson `json:"ws_checkpoint"`

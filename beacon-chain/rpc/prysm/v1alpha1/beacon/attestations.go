@@ -201,7 +201,7 @@ func (bs *Server) ListIndexedAttestations(
 // StreamAttestations to clients at the end of every slot. This method retrieves the
 // aggregated attestations currently in the pool at the start of a slot and sends
 // them over a gRPC stream.
-// DEPRECATED: This endpoint is superseded by the /eth/v1/events Beacon API endpoint
+// DEPRECATED: This endpoint is superseded by the /zond/v1/events Beacon API endpoint
 func (bs *Server) StreamAttestations(
 	_ *emptypb.Empty, stream zondpb.BeaconChain_StreamAttestationsServer,
 ) error {
@@ -236,7 +236,7 @@ func (bs *Server) StreamAttestations(
 // StreamIndexedAttestations to clients at the end of every slot. This method retrieves the
 // aggregated attestations currently in the pool, converts them into indexed form, and
 // sends them over a gRPC stream.
-// DEPRECATED: This endpoint is superseded by the /eth/v1/events Beacon API endpoint
+// DEPRECATED: This endpoint is superseded by the /zond/v1/events Beacon API endpoint
 func (bs *Server) StreamIndexedAttestations(
 	_ *emptypb.Empty, stream zondpb.BeaconChain_StreamIndexedAttestationsServer,
 ) error {

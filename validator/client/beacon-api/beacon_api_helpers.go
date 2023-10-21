@@ -49,7 +49,7 @@ func buildURL(path string, queryParams ...neturl.Values) string {
 }
 
 func (c *beaconApiValidatorClient) getFork(ctx context.Context) (*apimiddleware.StateForkResponseJson, error) {
-	const endpoint = "/eth/v1/beacon/states/head/fork"
+	const endpoint = "/zond/v1/beacon/states/head/fork"
 
 	stateForkResponseJson := &apimiddleware.StateForkResponseJson{}
 
@@ -65,7 +65,7 @@ func (c *beaconApiValidatorClient) getFork(ctx context.Context) (*apimiddleware.
 }
 
 func (c *beaconApiValidatorClient) getHeaders(ctx context.Context) (*apimiddleware.BlockHeadersResponseJson, error) {
-	const endpoint = "/eth/v1/beacon/headers"
+	const endpoint = "/zond/v1/beacon/headers"
 
 	blockHeadersResponseJson := &apimiddleware.BlockHeadersResponseJson{}
 
@@ -81,7 +81,7 @@ func (c *beaconApiValidatorClient) getHeaders(ctx context.Context) (*apimiddlewa
 }
 
 func (c *beaconApiValidatorClient) getLiveness(ctx context.Context, epoch primitives.Epoch, validatorIndexes []string) (*apimiddleware.LivenessResponseJson, error) {
-	const endpoint = "/eth/v1/validator/liveness/"
+	const endpoint = "/zond/v1/validator/liveness/"
 	url := endpoint + strconv.FormatUint(uint64(epoch), 10)
 
 	livenessResponseJson := &apimiddleware.LivenessResponseJson{}
@@ -99,7 +99,7 @@ func (c *beaconApiValidatorClient) getLiveness(ctx context.Context, epoch primit
 }
 
 func (c *beaconApiValidatorClient) getSyncing(ctx context.Context) (*apimiddleware.SyncingResponseJson, error) {
-	const endpoint = "/eth/v1/node/syncing"
+	const endpoint = "/zond/v1/node/syncing"
 
 	syncingResponseJson := &apimiddleware.SyncingResponseJson{}
 

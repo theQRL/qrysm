@@ -13,7 +13,7 @@ import (
 )
 
 func (c *beaconApiValidatorClient) submitValidatorRegistrations(ctx context.Context, registrations []*zondpb.SignedValidatorRegistrationV1) error {
-	const endpoint = "/eth/v1/validator/register_validator"
+	const endpoint = "/zond/v1/validator/register_validator"
 
 	jsonRegistration := make([]*apimiddleware.SignedValidatorRegistrationJson, len(registrations))
 

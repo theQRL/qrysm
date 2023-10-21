@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	localKeysPath    = "/eth/v1/keystores"
-	remoteKeysPath   = "/eth/v1/remotekeys"
-	feeRecipientPath = "/eth/v1/validator/{pubkey}/feerecipient"
+	localKeysPath    = "/zond/v1/keystores"
+	remoteKeysPath   = "/zond/v1/remotekeys"
+	feeRecipientPath = "/zond/v1/validator/{pubkey}/feerecipient"
 )
 
 // Client provides a collection of helper methods for calling the Keymanager API endpoints.

@@ -97,7 +97,7 @@ func (s *Server) GetBeaconStatus(ctx context.Context, _ *empty.Empty) (*validato
 	}, nil
 }
 
-// GetValidatorParticipation is a wrapper around the /eth/v1alpha1 endpoint of the same name.
+// GetValidatorParticipation is a wrapper around the /zond/v1alpha1 endpoint of the same name.
 // DEPRECATED: Prysm Web UI and associated endpoints will be fully removed in a future hard fork.
 func (s *Server) GetValidatorParticipation(
 	ctx context.Context, req *zondpb.GetValidatorParticipationRequest,
@@ -105,7 +105,7 @@ func (s *Server) GetValidatorParticipation(
 	return s.beaconChainClient.GetValidatorParticipation(ctx, req)
 }
 
-// GetValidatorPerformance is a wrapper around the /eth/v1alpha1 endpoint of the same name.
+// GetValidatorPerformance is a wrapper around the /zond/v1alpha1 endpoint of the same name.
 // DEPRECATED: Prysm Web UI and associated endpoints will be fully removed in a future hard fork.
 func (s *Server) GetValidatorPerformance(
 	ctx context.Context, req *zondpb.ValidatorPerformanceRequest,
@@ -113,7 +113,7 @@ func (s *Server) GetValidatorPerformance(
 	return s.beaconChainClient.GetValidatorPerformance(ctx, req)
 }
 
-// GetValidatorBalances is a wrapper around the /eth/v1alpha1 endpoint of the same name.
+// GetValidatorBalances is a wrapper around the /zond/v1alpha1 endpoint of the same name.
 // DEPRECATED: Prysm Web UI and associated endpoints will be fully removed in a future hard fork.
 func (s *Server) GetValidatorBalances(
 	ctx context.Context, req *zondpb.ListValidatorBalancesRequest,
@@ -121,7 +121,7 @@ func (s *Server) GetValidatorBalances(
 	return s.beaconChainClient.ListValidatorBalances(ctx, req)
 }
 
-// GetValidators is a wrapper around the /eth/v1alpha1 endpoint of the same name.
+// GetValidators is a wrapper around the /zond/v1alpha1 endpoint of the same name.
 // DEPRECATED: Prysm Web UI and associated endpoints will be fully removed in a future hard fork.
 func (s *Server) GetValidators(
 	ctx context.Context, req *zondpb.ListValidatorsRequest,
@@ -129,7 +129,7 @@ func (s *Server) GetValidators(
 	return s.beaconChainClient.ListValidators(ctx, req)
 }
 
-// GetValidatorQueue is a wrapper around the /eth/v1alpha1 endpoint of the same name.
+// GetValidatorQueue is a wrapper around the /zond/v1alpha1 endpoint of the same name.
 // DEPRECATED: Prysm Web UI and associated endpoints will be fully removed in a future hard fork.
 func (s *Server) GetValidatorQueue(
 	ctx context.Context, _ *empty.Empty,
@@ -137,7 +137,7 @@ func (s *Server) GetValidatorQueue(
 	return s.beaconChainClient.GetValidatorQueue(ctx, &emptypb.Empty{})
 }
 
-// GetPeers is a wrapper around the /eth/v1alpha1 endpoint of the same name.
+// GetPeers is a wrapper around the /zond/v1alpha1 endpoint of the same name.
 // DEPRECATED: Prysm Web UI and associated endpoints will be fully removed in a future hard fork.
 func (s *Server) GetPeers(
 	ctx context.Context, _ *empty.Empty,

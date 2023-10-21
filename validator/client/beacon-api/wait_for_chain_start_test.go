@@ -25,7 +25,7 @@ func TestWaitForChainStart_ValidGenesis(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		"/eth/v1/beacon/genesis",
+		"/zond/v1/beacon/genesis",
 		&genesisResponseJson,
 	).Return(
 		nil,
@@ -93,7 +93,7 @@ func TestWaitForChainStart_BadGenesis(t *testing.T) {
 			jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/eth/v1/beacon/genesis",
+				"/zond/v1/beacon/genesis",
 				&genesisResponseJson,
 			).Return(
 				nil,
@@ -122,7 +122,7 @@ func TestWaitForChainStart_JsonResponseError(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		"/eth/v1/beacon/genesis",
+		"/zond/v1/beacon/genesis",
 		&genesisResponseJson,
 	).Return(
 		nil,
@@ -148,7 +148,7 @@ func TestWaitForChainStart_JsonResponseError404(t *testing.T) {
 	// First, mock a request that receives a 404 error (which means that the genesis data is not available yet)
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		"/eth/v1/beacon/genesis",
+		"/zond/v1/beacon/genesis",
 		&genesisResponseJson,
 	).Return(
 		&apimiddleware.DefaultErrorJson{
@@ -161,7 +161,7 @@ func TestWaitForChainStart_JsonResponseError404(t *testing.T) {
 	// After receiving a 404 error, mock a request that actually has genesis data available
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		"/eth/v1/beacon/genesis",
+		"/zond/v1/beacon/genesis",
 		&genesisResponseJson,
 	).Return(
 		nil,

@@ -266,13 +266,13 @@ func (bs *Server) listBlocksForGenesis(ctx context.Context, _ *zondpb.ListBlocks
 //
 // This includes the head block slot and root as well as information about
 // the most recent finalized and justified slots.
-// DEPRECATED: This endpoint is superseded by the /eth/v1/beacon API endpoint
+// DEPRECATED: This endpoint is superseded by the /zond/v1/beacon API endpoint
 func (bs *Server) GetChainHead(ctx context.Context, _ *emptypb.Empty) (*zondpb.ChainHead, error) {
 	return bs.chainHeadRetrieval(ctx)
 }
 
 // StreamBlocks to clients every single time a block is received by the beacon node.
-// DEPRECATED: This endpoint is superseded by the /eth/v1/events Beacon API endpoint
+// DEPRECATED: This endpoint is superseded by the /zond/v1/events Beacon API endpoint
 func (bs *Server) StreamBlocks(req *zondpb.StreamBlocksRequest, stream zondpb.BeaconChain_StreamBlocksServer) error {
 	blocksChannel := make(chan *feed.Event, 1)
 	var blockSub event.Subscription
@@ -344,7 +344,7 @@ func (bs *Server) StreamBlocks(req *zondpb.StreamBlocksRequest, stream zondpb.Be
 }
 
 // StreamChainHead to clients every single time the head block and state of the chain change.
-// DEPRECATED: This endpoint is superseded by the /eth/v1/events Beacon API endpoint
+// DEPRECATED: This endpoint is superseded by the /zond/v1/events Beacon API endpoint
 func (bs *Server) StreamChainHead(_ *emptypb.Empty, stream zondpb.BeaconChain_StreamChainHeadServer) error {
 	stateChannel := make(chan *feed.Event, 4)
 	stateSub := bs.StateNotifier.StateFeed().Subscribe(stateChannel)

@@ -23,7 +23,7 @@ func TestGetGenesis_ValidGenesis(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		"/eth/v1/beacon/genesis",
+		"/zond/v1/beacon/genesis",
 		&genesisResponseJson,
 	).Return(
 		nil,
@@ -57,7 +57,7 @@ func TestGetGenesis_NilData(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		"/eth/v1/beacon/genesis",
+		"/zond/v1/beacon/genesis",
 		&genesisResponseJson,
 	).Return(
 		nil,
@@ -88,7 +88,7 @@ func TestGetGenesis_JsonResponseError(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		"/eth/v1/beacon/genesis",
+		"/zond/v1/beacon/genesis",
 		&genesisResponseJson,
 	).Return(
 		expectedHttpErrorJson,

@@ -25,7 +25,7 @@ type beaconApiBeaconChainClient struct {
 
 func (c beaconApiBeaconChainClient) getHeadBlockHeaders(ctx context.Context) (*apimiddleware.BlockHeaderResponseJson, error) {
 	blockHeader := apimiddleware.BlockHeaderResponseJson{}
-	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, "/eth/v1/beacon/headers/head", &blockHeader); err != nil {
+	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, "/zond/v1/beacon/headers/head", &blockHeader); err != nil {
 		return nil, errors.Wrap(err, "failed to get head block header")
 	}
 
@@ -41,7 +41,7 @@ func (c beaconApiBeaconChainClient) getHeadBlockHeaders(ctx context.Context) (*a
 }
 
 func (c beaconApiBeaconChainClient) GetChainHead(ctx context.Context, _ *empty.Empty) (*zondpb.ChainHead, error) {
-	const endpoint = "/eth/v1/beacon/states/head/finality_checkpoints"
+	const endpoint = "/zond/v1/beacon/states/head/finality_checkpoints"
 
 	finalityCheckpoints := apimiddleware.StateFinalityCheckpointResponseJson{}
 	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, endpoint, &finalityCheckpoints); err != nil {

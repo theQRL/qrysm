@@ -43,9 +43,9 @@ import (
 	"github.com/theQRL/qrysm/v4/monitoring/backup"
 	"github.com/theQRL/qrysm/v4/monitoring/prometheus"
 	tracing2 "github.com/theQRL/qrysm/v4/monitoring/tracing"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	"github.com/theQRL/qrysm/v4/runtime"
 	"github.com/theQRL/qrysm/v4/runtime/debug"
 	"github.com/theQRL/qrysm/v4/runtime/prereqs"
@@ -826,7 +826,7 @@ func (c *ValidatorClient) registerRPCGatewayService(cliCtx *cli.Context) error {
 	// remove "/accounts/", "/v2/" after WebUI DEPRECATED
 	pbHandler := &gateway.PbMux{
 		Registrations: registrations,
-		Patterns:      []string{"/accounts/", "/v2/", "/internal/eth/v1/"},
+		Patterns:      []string{"/accounts/", "/v2/", "/internal/zond/v1/"},
 		Mux:           gwmux,
 	}
 	opts := []gateway.Option{

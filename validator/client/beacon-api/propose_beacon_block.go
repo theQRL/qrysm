@@ -97,9 +97,9 @@ func (c beaconApiValidatorClient) proposeBeaconBlock(ctx context.Context, in *zo
 	var endpoint string
 
 	if blinded {
-		endpoint = "/eth/v1/beacon/blinded_blocks"
+		endpoint = "/zond/v1/beacon/blinded_blocks"
 	} else {
-		endpoint = "/eth/v1/beacon/blocks"
+		endpoint = "/zond/v1/beacon/blocks"
 	}
 
 	headers := map[string]string{"Eth-Consensus-Version": consensusVersion}

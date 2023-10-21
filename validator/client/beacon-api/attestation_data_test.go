@@ -34,7 +34,7 @@ func TestGetAttestationData_ValidAttestation(t *testing.T) {
 
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		fmt.Sprintf("/eth/v1/validator/attestation_data?committee_index=%d&slot=%d", expectedCommitteeIndex, expectedSlot),
+		fmt.Sprintf("/zond/v1/validator/attestation_data?committee_index=%d&slot=%d", expectedCommitteeIndex, expectedSlot),
 		&produceAttestationDataResponseJson,
 	).Return(
 		nil,
@@ -185,7 +185,7 @@ func TestGetAttestationData_InvalidData(t *testing.T) {
 			jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/eth/v1/validator/attestation_data?committee_index=2&slot=1",
+				"/zond/v1/validator/attestation_data?committee_index=2&slot=1",
 				&produceAttestationDataResponseJson,
 			).Return(
 				nil,
@@ -215,7 +215,7 @@ func TestGetAttestationData_JsonResponseError(t *testing.T) {
 	produceAttestationDataResponseJson := rpcmiddleware.ProduceAttestationDataResponseJson{}
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		fmt.Sprintf("/eth/v1/validator/attestation_data?committee_index=%d&slot=%d", committeeIndex, slot),
+		fmt.Sprintf("/zond/v1/validator/attestation_data?committee_index=%d&slot=%d", committeeIndex, slot),
 		&produceAttestationDataResponseJson,
 	).Return(
 		nil,

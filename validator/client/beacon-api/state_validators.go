@@ -36,7 +36,7 @@ func (c beaconApiStateValidatorsProvider) GetStateValidators(
 		}
 	}
 
-	return c.getStateValidatorsHelper(ctx, "/eth/v1/beacon/states/head/validators", params, stringPubkeys, statuses)
+	return c.getStateValidatorsHelper(ctx, "/zond/v1/beacon/states/head/validators", params, stringPubkeys, statuses)
 }
 
 func (c beaconApiStateValidatorsProvider) GetStateValidatorsForSlot(
@@ -47,7 +47,7 @@ func (c beaconApiStateValidatorsProvider) GetStateValidatorsForSlot(
 	statuses []string,
 ) (*rpcmiddleware.StateValidatorsResponseJson, error) {
 	params := convertValidatorIndicesToParams(indices)
-	url := fmt.Sprintf("/eth/v1/beacon/states/%d/validators", slot)
+	url := fmt.Sprintf("/zond/v1/beacon/states/%d/validators", slot)
 	return c.getStateValidatorsHelper(ctx, url, params, stringPubkeys, statuses)
 }
 
@@ -58,7 +58,7 @@ func (c beaconApiStateValidatorsProvider) GetStateValidatorsForHead(
 	statuses []string,
 ) (*rpcmiddleware.StateValidatorsResponseJson, error) {
 	params := convertValidatorIndicesToParams(indices)
-	return c.getStateValidatorsHelper(ctx, "/eth/v1/beacon/states/head/validators", params, stringPubkeys, statuses)
+	return c.getStateValidatorsHelper(ctx, "/zond/v1/beacon/states/head/validators", params, stringPubkeys, statuses)
 }
 
 func convertValidatorIndicesToParams(indices []primitives.ValidatorIndex) neturl.Values {

@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
 )
 
-const submitSignedContributionAndProofTestEndpoint = "/eth/v1/validator/contribution_and_proofs"
+const submitSignedContributionAndProofTestEndpoint = "/zond/v1/validator/contribution_and_proofs"
 
 func TestSubmitSignedContributionAndProof_Valid(t *testing.T) {
 	ctrl := gomock.NewController(t)

@@ -76,7 +76,7 @@ func TestProposeBeaconBlock_Bellatrix(t *testing.T) {
 	headers := map[string]string{"Eth-Consensus-Version": "bellatrix"}
 	jsonRestHandler.EXPECT().PostRestJson(
 		ctx,
-		"/eth/v1/beacon/blocks",
+		"/zond/v1/beacon/blocks",
 		headers,
 		bytes.NewBuffer(marshalledBlock),
 		nil,

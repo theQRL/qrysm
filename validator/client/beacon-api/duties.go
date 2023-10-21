@@ -202,7 +202,7 @@ func (c beaconApiValidatorClient) getDutiesForEpoch(
 func (c beaconApiDutiesProvider) GetCommittees(ctx context.Context, epoch primitives.Epoch) ([]*apimiddleware.CommitteeJson, error) {
 	committeeParams := url.Values{}
 	committeeParams.Add("epoch", strconv.FormatUint(uint64(epoch), 10))
-	committeesRequest := buildURL("/eth/v1/beacon/states/head/committees", committeeParams)
+	committeesRequest := buildURL("/zond/v1/beacon/states/head/committees", committeeParams)
 
 	var stateCommittees apimiddleware.StateCommitteesResponseJson
 	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, committeesRequest, &stateCommittees); err != nil {
@@ -235,7 +235,7 @@ func (c beaconApiDutiesProvider) GetAttesterDuties(ctx context.Context, epoch pr
 	}
 
 	attesterDuties := &apimiddleware.AttesterDutiesResponseJson{}
-	if _, err := c.jsonRestHandler.PostRestJson(ctx, fmt.Sprintf("/eth/v1/validator/duties/attester/%d", epoch), nil, bytes.NewBuffer(validatorIndicesBytes), attesterDuties); err != nil {
+	if _, err := c.jsonRestHandler.PostRestJson(ctx, fmt.Sprintf("/zond/v1/validator/duties/attester/%d", epoch), nil, bytes.NewBuffer(validatorIndicesBytes), attesterDuties); err != nil {
 		return nil, errors.Wrap(err, "failed to send POST data to REST endpoint")
 	}
 
@@ -251,7 +251,7 @@ func (c beaconApiDutiesProvider) GetAttesterDuties(ctx context.Context, epoch pr
 // GetProposerDuties retrieves the proposer duties for the given epoch
 func (c beaconApiDutiesProvider) GetProposerDuties(ctx context.Context, epoch primitives.Epoch) ([]*apimiddleware.ProposerDutyJson, error) {
 	proposerDuties := apimiddleware.ProposerDutiesResponseJson{}
-	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, fmt.Sprintf("/eth/v1/validator/duties/proposer/%d", epoch), &proposerDuties); err != nil {
+	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, fmt.Sprintf("/zond/v1/validator/duties/proposer/%d", epoch), &proposerDuties); err != nil {
 		return nil, errors.Wrapf(err, "failed to query proposer duties for epoch `%d`", epoch)
 	}
 
@@ -281,7 +281,7 @@ func (c beaconApiDutiesProvider) GetSyncDuties(ctx context.Context, epoch primit
 	}
 
 	syncDuties := apimiddleware.SyncCommitteeDutiesResponseJson{}
-	if _, err := c.jsonRestHandler.PostRestJson(ctx, fmt.Sprintf("/eth/v1/validator/duties/sync/%d", epoch), nil, bytes.NewBuffer(validatorIndicesBytes), &syncDuties); err != nil {
+	if _, err := c.jsonRestHandler.PostRestJson(ctx, fmt.Sprintf("/zond/v1/validator/duties/sync/%d", epoch), nil, bytes.NewBuffer(validatorIndicesBytes), &syncDuties); err != nil {
 		return nil, errors.Wrap(err, "failed to send POST data to REST endpoint")
 	}
 

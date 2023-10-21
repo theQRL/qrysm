@@ -59,7 +59,7 @@ func TestProposeBeaconBlock_Altair(t *testing.T) {
 	headers := map[string]string{"Eth-Consensus-Version": "altair"}
 	jsonRestHandler.EXPECT().PostRestJson(
 		ctx,
-		"/eth/v1/beacon/blocks",
+		"/zond/v1/beacon/blocks",
 		headers,
 		bytes.NewBuffer(marshalledBlock),
 		nil,

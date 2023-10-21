@@ -55,7 +55,7 @@ func TestProposeBeaconBlock_Phase0(t *testing.T) {
 	headers := map[string]string{"Eth-Consensus-Version": "phase0"}
 	jsonRestHandler.EXPECT().PostRestJson(
 		ctx,
-		"/eth/v1/beacon/blocks",
+		"/zond/v1/beacon/blocks",
 		headers,
 		bytes.NewBuffer(marshalledBlock),
 		nil,
