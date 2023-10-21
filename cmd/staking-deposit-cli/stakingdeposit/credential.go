@@ -18,8 +18,8 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
-	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 )
 
 type Credential struct {
@@ -154,7 +154,7 @@ func (c *Credential) GetDilithiumToExecutionChange(validatorIndex uint64) *zondp
 
 func (c *Credential) GetDilithiumToExecutionChangeData(validatorIndex uint64) *DilithiumToExecutionChangeData {
 	signedDilithiumToExecutionChange := c.GetDilithiumToExecutionChange(validatorIndex)
-	return NewDilithiumToExeuctionChangeData(signedDilithiumToExecutionChange, c.chainSetting)
+	return NewDilithiumToExecutionChangeData(signedDilithiumToExecutionChange, c.chainSetting)
 }
 
 func NewCredential(seed string, index, amount uint64,
