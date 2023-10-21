@@ -26,7 +26,7 @@ type DilithiumToExecutionChangeData struct {
 	MetaData  *DilithiumToExecutionChangeMetaData `json:"metadata"`
 }
 
-func NewDilithiumToExeuctionChangeData(
+func NewDilithiumToExecutionChangeData(
 	signedDilithiumToExecutionChange *zondpbv2.SignedDilithiumToExecutionChange,
 	chainSetting *config.ChainSetting) *DilithiumToExecutionChangeData {
 	return &DilithiumToExecutionChangeData{
