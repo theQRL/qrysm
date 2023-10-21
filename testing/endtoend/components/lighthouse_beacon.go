@@ -170,8 +170,8 @@ func (node *LighthouseBeaconNode) Start(ctx context.Context) error {
 	}
 
 	prysmNodeCount := e2e.TestParams.BeaconNodeCount
-	jwtPath := path.Join(e2e.TestParams.TestPath, "eth1data/"+strconv.Itoa(node.index+prysmNodeCount)+"/")
-	jwtPath = path.Join(jwtPath, "geth/jwtsecret")
+	jwtPath := path.Join(e2e.TestParams.TestPath, "zond1data/"+strconv.Itoa(node.index+prysmNodeCount)+"/")
+	jwtPath = path.Join(jwtPath, "gzond/jwtsecret")
 	args := []string{
 		"beacon_node",
 		fmt.Sprintf("--datadir=%s/lighthouse-beacon-node-%d", e2e.TestParams.TestPath, index),

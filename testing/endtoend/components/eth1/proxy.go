@@ -141,9 +141,9 @@ func (node *Proxy) Start(ctx context.Context) error {
 	}
 	jwtPath := path.Join(e2e.TestParams.TestPath, "eth1data/"+strconv.Itoa(node.index)+"/")
 	if node.index == 0 {
-		jwtPath = path.Join(e2e.TestParams.TestPath, "eth1data/miner/")
+		jwtPath = path.Join(e2e.TestParams.TestPath, "zond1data/miner/")
 	}
-	jwtPath = path.Join(jwtPath, "geth/jwtsecret")
+	jwtPath = path.Join(jwtPath, "gzond/jwtsecret")
 	secret, err := parseJWTSecretFromFile(jwtPath)
 	if err != nil {
 		return err
