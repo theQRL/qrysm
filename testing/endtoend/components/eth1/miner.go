@@ -82,7 +82,7 @@ func (m *Miner) initAttempt(ctx context.Context, attempt int) (*os.File, error) 
 	}
 
 	// find geth so we can run it.
-	binaryPath, found := bazel.FindBinary("cmd/geth", "geth")
+	binaryPath, found := bazel.FindBinary("cmd/gzond", "gzond")
 	if !found {
 		return nil, errors.New("go-ethereum binary not found")
 	}

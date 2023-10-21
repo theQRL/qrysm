@@ -29,19 +29,19 @@ import (
 
 var (
 	generateGenesisStateFlags = struct {
-		DepositJsonFile    string
-		ChainConfigFile    string
-		ConfigName         string
-		NumValidators      uint64
-		GenesisTime        uint64
-		OutputSSZ          string
-		OutputJSON         string
-		OutputYaml         string
-		ForkName           string
-		OverrideEth1Data   bool
-		ExecutionEndpoint  string
-		GethGenesisJsonIn  string
-		GethGenesisJsonOut string
+		DepositJsonFile     string
+		ChainConfigFile     string
+		ConfigName          string
+		NumValidators       uint64
+		GenesisTime         uint64
+		OutputSSZ           string
+		OutputJSON          string
+		OutputYaml          string
+		ForkName            string
+		OverrideZond1Data   bool
+		ExecutionEndpoint   string
+		GzondGenesisJsonIn  string
+		GzondGenesisJsonOut string
 	}{}
 	log           = logrus.WithField("prefix", "genesis")
 	outputSSZFlag = &cli.StringFlag{
@@ -100,25 +100,25 @@ var (
 				Usage:       "Unix timestamp seconds used as the genesis time in the genesis state. If unset, defaults to now()",
 			},
 			&cli.BoolFlag{
-				Name:        "override-eth1data",
-				Destination: &generateGenesisStateFlags.OverrideEth1Data,
-				Usage:       "Overrides Eth1Data with values from execution client. If unset, defaults to false",
+				Name:        "override-zond1data",
+				Destination: &generateGenesisStateFlags.OverrideZond1Data,
+				Usage:       "Overrides Zond1Data with values from execution client. If unset, defaults to false",
 				Value:       false,
 			},
 			&cli.StringFlag{
-				Name:        "geth-genesis-json-in",
-				Destination: &generateGenesisStateFlags.GethGenesisJsonIn,
-				Usage:       "Path to a \"genesis.json\" file, containing a json representation of Geth's core.Genesis",
+				Name:        "gzond-genesis-json-in",
+				Destination: &generateGenesisStateFlags.GzondGenesisJsonIn,
+				Usage:       "Path to a \"genesis.json\" file, containing a json representation of Gzond's core.Genesis",
 			},
 			&cli.StringFlag{
-				Name:        "geth-genesis-json-out",
-				Destination: &generateGenesisStateFlags.GethGenesisJsonOut,
-				Usage:       "Path to write generated \"genesis.json\" file, containing a json representation of Geth's core.Genesis",
+				Name:        "gzond-genesis-json-out",
+				Destination: &generateGenesisStateFlags.GzondGenesisJsonOut,
+				Usage:       "Path to write generated \"genesis.json\" file, containing a json representation of Gzond's core.Genesis",
 			},
 			&cli.StringFlag{
 				Name:        "execution-endpoint",
 				Destination: &generateGenesisStateFlags.ExecutionEndpoint,
-				Usage:       "Endpoint to preferred execution client. If unset, defaults to Geth",
+				Usage:       "Endpoint to preferred execution client. If unset, defaults to Gzond",
 				Value:       "http://localhost:8545",
 			},
 			flags.EnumValue{
@@ -252,10 +252,10 @@ func generateGenesis(ctx context.Context) (state.BeaconState, error) {
 	}
 
 	gen := &core.Genesis{}
-	if f.GethGenesisJsonIn != "" {
-		gbytes, err := os.ReadFile(f.GethGenesisJsonIn) // #nosec G304
+	if f.GzondGenesisJsonIn != "" {
+		gbytes, err := os.ReadFile(f.GzondGenesisJsonIn) // #nosec G304
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to read %s", f.GethGenesisJsonIn)
+			return nil, errors.Wrapf(err, "failed to read %s", f.GzondGenesisJsonIn)
 		}
 		if err := json.Unmarshal(gbytes, gen); err != nil {
 			return nil, err
@@ -274,13 +274,13 @@ func generateGenesis(ctx context.Context) (state.BeaconState, error) {
 		gen = interop.GethTestnetGenesis(f.GenesisTime, params.BeaconConfig())
 	}
 
-	if f.GethGenesisJsonOut != "" {
+	if f.GzondGenesisJsonOut != "" {
 		gbytes, err := json.MarshalIndent(gen, "", "\t")
 		if err != nil {
 			return nil, err
 		}
-		if err := os.WriteFile(f.GethGenesisJsonOut, gbytes, os.ModePerm); err != nil {
-			return nil, errors.Wrapf(err, "failed to write %s", f.GethGenesisJsonOut)
+		if err := os.WriteFile(f.GzondGenesisJsonOut, gbytes, os.ModePerm); err != nil {
+			return nil, errors.Wrapf(err, "failed to write %s", f.GzondGenesisJsonOut)
 		}
 	}
 
@@ -292,7 +292,7 @@ func generateGenesis(ctx context.Context) (state.BeaconState, error) {
 		return nil, err
 	}
 
-	if f.OverrideEth1Data {
+	if f.OverrideZond1Data {
 		log.Print("Overriding Eth1Data with data from execution client")
 		conn, err := rpc.Dial(generateGenesisStateFlags.ExecutionEndpoint)
 		if err != nil {
