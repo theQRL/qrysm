@@ -46,7 +46,7 @@ func TestSubmitSyncMessage_Valid(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().PostRestJson(
 		context.Background(),
-		"/eth/v1/beacon/pool/sync_committees",
+		"/zond/v1/beacon/pool/sync_committees",
 		nil,
 		bytes.NewBuffer(marshalledJsonRegistrations),
 		nil,
@@ -76,7 +76,7 @@ func TestSubmitSyncMessage_BadRequest(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().PostRestJson(
 		context.Background(),
-		"/eth/v1/beacon/pool/sync_committees",
+		"/zond/v1/beacon/pool/sync_committees",
 		nil,
 		gomock.Any(),
 		nil,
@@ -87,7 +87,7 @@ func TestSubmitSyncMessage_BadRequest(t *testing.T) {
 
 	validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
 	_, err := validatorClient.SubmitSyncMessage(context.Background(), &zondpb.SyncCommitteeMessage{})
-	assert.ErrorContains(t, "failed to send POST data to `/eth/v1/beacon/pool/sync_committees` REST endpoint", err)
+	assert.ErrorContains(t, "failed to send POST data to `/zond/v1/beacon/pool/sync_committees` REST endpoint", err)
 	assert.ErrorContains(t, "foo error", err)
 }
 
@@ -142,7 +142,7 @@ func TestGetSyncMessageBlockRoot(t *testing.T) {
 			jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/eth/v1/beacon/blocks/head/root",
+				"/zond/v1/beacon/blocks/head/root",
 				&apimiddleware.BlockRootResponseJson{},
 			).SetArg(
 				2,
@@ -213,7 +213,7 @@ func TestGetSyncCommitteeContribution(t *testing.T) {
 			jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/eth/v1/beacon/blocks/head/root",
+				"/zond/v1/beacon/blocks/head/root",
 				&apimiddleware.BlockRootResponseJson{},
 			).SetArg(
 				2,
@@ -229,7 +229,7 @@ func TestGetSyncCommitteeContribution(t *testing.T) {
 
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				fmt.Sprintf("/eth/v1/validator/sync_committee_contribution?beacon_block_root=%s&slot=%d&subcommittee_index=%d",
+				fmt.Sprintf("/zond/v1/validator/sync_committee_contribution?beacon_block_root=%s&slot=%d&subcommittee_index=%d",
 					blockRoot, uint64(request.Slot), request.SubnetId),
 				&apimiddleware.ProduceSyncCommitteeContributionResponseJson{},
 			).SetArg(
@@ -258,8 +258,8 @@ func TestGetSyncCommitteeContribution(t *testing.T) {
 func TestGetSyncSubCommitteeIndex(t *testing.T) {
 	const (
 		pubkeyStr          = "0x8000091c2ae64ee414a54c1cc1fc67dec663408bc636cb86756e0200e41a75c8f86603f104f02c856983d2783116be13"
-		syncDutiesEndpoint = "/eth/v1/validator/duties/sync"
-		validatorsEndpoint = "/eth/v1/beacon/states/head/validators"
+		syncDutiesEndpoint = "/zond/v1/validator/duties/sync"
+		validatorsEndpoint = "/zond/v1/beacon/states/head/validators"
 		validatorIndex     = "55293"
 		slot               = primitives.Slot(123)
 	)

@@ -43,7 +43,7 @@ func TestProposeBeaconBlock_Error(t *testing.T) {
 		{
 			name:             "phase0",
 			consensusVersion: "phase0",
-			endpoint:         "/eth/v1/beacon/blocks",
+			endpoint:         "/zond/v1/beacon/blocks",
 			block: &zondpb.GenericSignedBeaconBlock{
 				Block: generateSignedPhase0Block(),
 			},
@@ -51,7 +51,7 @@ func TestProposeBeaconBlock_Error(t *testing.T) {
 		{
 			name:             "altair",
 			consensusVersion: "altair",
-			endpoint:         "/eth/v1/beacon/blocks",
+			endpoint:         "/zond/v1/beacon/blocks",
 			block: &zondpb.GenericSignedBeaconBlock{
 				Block: generateSignedAltairBlock(),
 			},
@@ -59,7 +59,7 @@ func TestProposeBeaconBlock_Error(t *testing.T) {
 		{
 			name:             "bellatrix",
 			consensusVersion: "bellatrix",
-			endpoint:         "/eth/v1/beacon/blocks",
+			endpoint:         "/zond/v1/beacon/blocks",
 			block: &zondpb.GenericSignedBeaconBlock{
 				Block: generateSignedBellatrixBlock(),
 			},
@@ -67,7 +67,7 @@ func TestProposeBeaconBlock_Error(t *testing.T) {
 		{
 			name:             "blinded bellatrix",
 			consensusVersion: "bellatrix",
-			endpoint:         "/eth/v1/beacon/blinded_blocks",
+			endpoint:         "/zond/v1/beacon/blinded_blocks",
 			block: &zondpb.GenericSignedBeaconBlock{
 				Block: generateSignedBlindedBellatrixBlock(),
 			},
@@ -75,7 +75,7 @@ func TestProposeBeaconBlock_Error(t *testing.T) {
 		{
 			name:             "blinded capella",
 			consensusVersion: "capella",
-			endpoint:         "/eth/v1/beacon/blinded_blocks",
+			endpoint:         "/zond/v1/beacon/blinded_blocks",
 			block: &zondpb.GenericSignedBeaconBlock{
 				Block: generateSignedBlindedCapellaBlock(),
 			},

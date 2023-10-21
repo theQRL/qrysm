@@ -14,8 +14,8 @@ var BeaconAPIMultiClientVerifyIntegrity = e2etypes.Evaluator{
 }
 
 const (
-	v1MiddlewarePathTemplate = "http://localhost:%d/eth/v1"
-	v2MiddlewarePathTemplate = "http://localhost:%d/eth/v2"
+	v1MiddlewarePathTemplate = "http://localhost:%d/zond/v1"
+	v2MiddlewarePathTemplate = "http://localhost:%d/zond/v2"
 )
 
 type apiComparisonFunc func(beaconNodeIdx int, conn *grpc.ClientConn) error

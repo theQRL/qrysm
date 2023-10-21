@@ -47,7 +47,7 @@ func (c beaconApiValidatorClient) submitSignedContributionAndProof(ctx context.C
 		return errors.Wrap(err, "failed to marshall signed contribution and proof")
 	}
 
-	if _, err := c.jsonRestHandler.PostRestJson(ctx, "/eth/v1/validator/contribution_and_proofs", nil, bytes.NewBuffer(jsonContributionAndProofsBytes), nil); err != nil {
+	if _, err := c.jsonRestHandler.PostRestJson(ctx, "/zond/v1/validator/contribution_and_proofs", nil, bytes.NewBuffer(jsonContributionAndProofsBytes), nil); err != nil {
 		return errors.Wrap(err, "failed to send POST data to REST endpoint")
 	}
 

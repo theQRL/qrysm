@@ -29,7 +29,7 @@ func TestSubmitSignedAggregateSelectionProof_Valid(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().PostRestJson(
 		ctx,
-		"/eth/v1/validator/aggregate_and_proofs",
+		"/zond/v1/validator/aggregate_and_proofs",
 		nil,
 		bytes.NewBuffer(marshalledSignedAggregateSignedAndProof),
 		nil,
@@ -61,7 +61,7 @@ func TestSubmitSignedAggregateSelectionProof_BadRequest(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().PostRestJson(
 		ctx,
-		"/eth/v1/validator/aggregate_and_proofs",
+		"/zond/v1/validator/aggregate_and_proofs",
 		nil,
 		bytes.NewBuffer(marshalledSignedAggregateSignedAndProof),
 		nil,

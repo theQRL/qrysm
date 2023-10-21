@@ -127,7 +127,7 @@ func TestProposeAttestation(t *testing.T) {
 
 			jsonRestHandler.EXPECT().PostRestJson(
 				ctx,
-				"/eth/v1/beacon/pool/attestations",
+				"/zond/v1/beacon/pool/attestations",
 				nil,
 				bytes.NewBuffer(marshalledAttestations),
 				nil,

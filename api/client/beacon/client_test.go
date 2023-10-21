@@ -98,31 +98,31 @@ func TestValidHostname(t *testing.T) {
 			name:    "hostname with port",
 			hostArg: "mydomain.org:3500",
 			path:    getNodeVersionPath,
-			joined:  "http://mydomain.org:3500/eth/v1/node/version",
+			joined:  "http://mydomain.org:3500/zond/v1/node/version",
 		},
 		{
 			name:    "https scheme, hostname with port",
 			hostArg: "https://mydomain.org:3500",
 			path:    getNodeVersionPath,
-			joined:  "https://mydomain.org:3500/eth/v1/node/version",
+			joined:  "https://mydomain.org:3500/zond/v1/node/version",
 		},
 		{
 			name:    "http scheme, hostname without port",
 			hostArg: "http://mydomain.org",
 			path:    getNodeVersionPath,
-			joined:  "http://mydomain.org/eth/v1/node/version",
+			joined:  "http://mydomain.org/zond/v1/node/version",
 		},
 		{
 			name:    "http scheme, trailing slash, hostname without port",
 			hostArg: "http://mydomain.org/",
 			path:    getNodeVersionPath,
-			joined:  "http://mydomain.org/eth/v1/node/version",
+			joined:  "http://mydomain.org/zond/v1/node/version",
 		},
 		{
 			name:    "http scheme, hostname with basic auth creds and no port",
 			hostArg: "http://username:pass@mydomain.org/",
 			path:    getNodeVersionPath,
-			joined:  "http://username:pass@mydomain.org/eth/v1/node/version",
+			joined:  "http://username:pass@mydomain.org/zond/v1/node/version",
 		},
 	}
 	for _, c := range cases {

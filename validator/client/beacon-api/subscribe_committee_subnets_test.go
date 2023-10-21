@@ -18,7 +18,7 @@ import (
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
 )
 
-const subscribeCommitteeSubnetsTestEndpoint = "/eth/v1/validator/beacon_committee_subscriptions"
+const subscribeCommitteeSubnetsTestEndpoint = "/zond/v1/validator/beacon_committee_subscriptions"
 
 func TestSubscribeCommitteeSubnets_Valid(t *testing.T) {
 	subscribeSlots := []primitives.Slot{0, 1, 100}

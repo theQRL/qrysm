@@ -88,7 +88,7 @@ func (c *beaconApiValidatorClient) getAggregateAttestation(ctx context.Context, 
 	params := url.Values{}
 	params.Add("slot", strconv.FormatUint(uint64(slot), 10))
 	params.Add("attestation_data_root", hexutil.Encode(attestationDataRoot))
-	endpoint := buildURL("/eth/v1/validator/aggregate_attestation", params)
+	endpoint := buildURL("/zond/v1/validator/aggregate_attestation", params)
 
 	var aggregateAttestationResponse apimiddleware.AggregateAttestationResponseJson
 	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, endpoint, &aggregateAttestationResponse); err != nil {

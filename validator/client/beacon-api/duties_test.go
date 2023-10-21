@@ -20,10 +20,10 @@ import (
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
 )
 
-const getAttesterDutiesTestEndpoint = "/eth/v1/validator/duties/attester"
-const getProposerDutiesTestEndpoint = "/eth/v1/validator/duties/proposer"
-const getSyncDutiesTestEndpoint = "/eth/v1/validator/duties/sync"
-const getCommitteesTestEndpoint = "/eth/v1/beacon/states/head/committees"
+const getAttesterDutiesTestEndpoint = "/zond/v1/validator/duties/attester"
+const getProposerDutiesTestEndpoint = "/zond/v1/validator/duties/proposer"
+const getSyncDutiesTestEndpoint = "/zond/v1/validator/duties/sync"
+const getCommitteesTestEndpoint = "/zond/v1/beacon/states/head/committees"
 
 func TestGetAttesterDuties_Valid(t *testing.T) {
 	stringValidatorIndices := []string{"2", "9"}

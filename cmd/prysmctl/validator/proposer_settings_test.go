@@ -26,7 +26,7 @@ func getValidatorHappyPathTestServer(t *testing.T) *httptest.Server {
 		w.WriteHeader(200)
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == http.MethodGet {
-			if r.RequestURI == "/eth/v1/keystores" {
+			if r.RequestURI == "/zond/v1/keystores" {
 				err := json.NewEncoder(w).Encode(&apimiddleware.ListKeystoresResponseJson{
 					Keystores: []*apimiddleware.KeystoreJson{
 						{
@@ -38,7 +38,7 @@ func getValidatorHappyPathTestServer(t *testing.T) *httptest.Server {
 					},
 				})
 				require.NoError(t, err)
-			} else if r.RequestURI == "/eth/v1/remotekeys" {
+			} else if r.RequestURI == "/zond/v1/remotekeys" {
 				err := json.NewEncoder(w).Encode(&apimiddleware.ListRemoteKeysResponseJson{
 					Keystores: []*apimiddleware.RemoteKeysListJson{
 						{

@@ -18,7 +18,7 @@ func TestGetStateValidators_Nominal(t *testing.T) {
 	defer ctrl.Finish()
 
 	url := strings.Join([]string{
-		"/eth/v1/beacon/states/head/validators?",
+		"/zond/v1/beacon/states/head/validators?",
 		"id=0x8000091c2ae64ee414a54c1cc1fc67dec663408bc636cb86756e0200e41a75c8f86603f104f02c856983d2783116be13&", // active_ongoing
 		"id=0x80000e851c0f53c3246ff726d7ff7766661ca5e12a07c45c114d208d54f0f8233d4380b2e9aff759d69795d1df905526&", // active_exiting
 		"id=0x424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242&", // does not exist
@@ -98,7 +98,7 @@ func TestGetStateValidators_GetRestJsonResponseOnError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	url := "/eth/v1/beacon/states/head/validators?id=0x8000091c2ae64ee414a54c1cc1fc67dec663408bc636cb86756e0200e41a75c8f86603f104f02c856983d2783116be13"
+	url := "/zond/v1/beacon/states/head/validators?id=0x8000091c2ae64ee414a54c1cc1fc67dec663408bc636cb86756e0200e41a75c8f86603f104f02c856983d2783116be13"
 
 	stateValidatorsResponseJson := rpcmiddleware.StateValidatorsResponseJson{}
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
@@ -129,7 +129,7 @@ func TestGetStateValidators_DataIsNil(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	url := "/eth/v1/beacon/states/head/validators?id=0x8000091c2ae64ee414a54c1cc1fc67dec663408bc636cb86756e0200e41a75c8f86603f104f02c856983d2783116be13"
+	url := "/zond/v1/beacon/states/head/validators?id=0x8000091c2ae64ee414a54c1cc1fc67dec663408bc636cb86756e0200e41a75c8f86603f104f02c856983d2783116be13"
 
 	ctx := context.Background()
 	stateValidatorsResponseJson := rpcmiddleware.StateValidatorsResponseJson{}

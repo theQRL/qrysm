@@ -33,7 +33,7 @@ func TestBeaconApiValidatorClient_GetAttestationDataValid(t *testing.T) {
 	produceAttestationDataResponseJson := rpcmiddleware.ProduceAttestationDataResponseJson{}
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		fmt.Sprintf("/eth/v1/validator/attestation_data?committee_index=%d&slot=%d", committeeIndex, slot),
+		fmt.Sprintf("/zond/v1/validator/attestation_data?committee_index=%d&slot=%d", committeeIndex, slot),
 		&produceAttestationDataResponseJson,
 	).Return(
 		nil,
@@ -74,7 +74,7 @@ func TestBeaconApiValidatorClient_GetAttestationDataError(t *testing.T) {
 	produceAttestationDataResponseJson := rpcmiddleware.ProduceAttestationDataResponseJson{}
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		fmt.Sprintf("/eth/v1/validator/attestation_data?committee_index=%d&slot=%d", committeeIndex, slot),
+		fmt.Sprintf("/zond/v1/validator/attestation_data?committee_index=%d&slot=%d", committeeIndex, slot),
 		&produceAttestationDataResponseJson,
 	).Return(
 		nil,
@@ -149,7 +149,7 @@ func TestBeaconApiValidatorClient_ProposeBeaconBlockValid(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().PostRestJson(
 		ctx,
-		"/eth/v1/beacon/blocks",
+		"/zond/v1/beacon/blocks",
 		map[string]string{"Eth-Consensus-Version": "phase0"},
 		gomock.Any(),
 		nil,
@@ -186,7 +186,7 @@ func TestBeaconApiValidatorClient_ProposeBeaconBlockError(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().PostRestJson(
 		ctx,
-		"/eth/v1/beacon/blocks",
+		"/zond/v1/beacon/blocks",
 		map[string]string{"Eth-Consensus-Version": "phase0"},
 		gomock.Any(),
 		nil,

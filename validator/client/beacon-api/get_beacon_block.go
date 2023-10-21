@@ -27,7 +27,7 @@ func (c beaconApiValidatorClient) getBeaconBlock(ctx context.Context, slot primi
 		queryParams.Add("graffiti", hexutil.Encode(graffiti))
 	}
 
-	queryUrl := buildURL(fmt.Sprintf("/eth/v2/validator/blocks/%d", slot), queryParams)
+	queryUrl := buildURL(fmt.Sprintf("/zond/v2/validator/blocks/%d", slot), queryParams)
 
 	// Since we don't know yet what the json looks like, we unmarshal into an abstract structure that has only a version
 	// and a blob of data

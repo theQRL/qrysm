@@ -16,7 +16,7 @@ import (
 )
 
 func (c *beaconApiValidatorClient) submitSyncMessage(ctx context.Context, syncMessage *zondpb.SyncCommitteeMessage) error {
-	const endpoint = "/eth/v1/beacon/pool/sync_committees"
+	const endpoint = "/zond/v1/beacon/pool/sync_committees"
 
 	jsonSyncCommitteeMessage := &apimiddleware.SyncCommitteeMessageJson{
 		Slot:            strconv.FormatUint(uint64(syncMessage.Slot), 10),
@@ -40,7 +40,7 @@ func (c *beaconApiValidatorClient) submitSyncMessage(ctx context.Context, syncMe
 func (c *beaconApiValidatorClient) getSyncMessageBlockRoot(ctx context.Context) (*zondpb.SyncMessageBlockRootResponse, error) {
 	// Get head beacon block root.
 	var resp apimiddleware.BlockRootResponseJson
-	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, "/eth/v1/beacon/blocks/head/root", &resp); err != nil {
+	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, "/zond/v1/beacon/blocks/head/root", &resp); err != nil {
 		return nil, errors.Wrap(err, "failed to query GET REST endpoint")
 	}
 
@@ -84,7 +84,7 @@ func (c *beaconApiValidatorClient) getSyncCommitteeContribution(
 	params.Add("subcommittee_index", strconv.FormatUint(req.SubnetId, 10))
 	params.Add("beacon_block_root", blockRoot)
 
-	url := buildURL("/eth/v1/validator/sync_committee_contribution", params)
+	url := buildURL("/zond/v1/validator/sync_committee_contribution", params)
 
 	var resp apimiddleware.ProduceSyncCommitteeContributionResponseJson
 	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, url, &resp); err != nil {

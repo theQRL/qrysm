@@ -52,8 +52,8 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/io/logs"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	zondpbv1alpha1 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -218,15 +218,15 @@ func (s *Service) Start() {
 		Stater:                stater,
 		HeadFetcher:           s.cfg.HeadFetcher,
 	}
-	s.cfg.Router.HandleFunc("/eth/v1/beacon/rewards/blocks/{block_id}", rewardsServer.BlockRewards)
-	s.cfg.Router.HandleFunc("/eth/v1/beacon/rewards/attestations/{epoch}", rewardsServer.AttestationRewards)
+	s.cfg.Router.HandleFunc("/zond/v1/beacon/rewards/blocks/{block_id}", rewardsServer.BlockRewards)
+	s.cfg.Router.HandleFunc("/zond/v1/beacon/rewards/attestations/{epoch}", rewardsServer.AttestationRewards)
 
 	builderServer := &rpcBuilder.Server{
 		FinalizationFetcher:   s.cfg.FinalizationFetcher,
 		OptimisticModeFetcher: s.cfg.OptimisticModeFetcher,
 		Stater:                stater,
 	}
-	s.cfg.Router.HandleFunc("/eth/v1/builder/states/{state_id}/expected_withdrawals", builderServer.ExpectedWithdrawals)
+	s.cfg.Router.HandleFunc("/zond/v1/builder/states/{state_id}/expected_withdrawals", builderServer.ExpectedWithdrawals)
 
 	validatorServer := &validatorv1alpha1.Server{
 		Ctx:                    s.ctx,
@@ -320,9 +320,9 @@ func (s *Service) Start() {
 		ExecutionChainInfoFetcher: s.cfg.ExecutionChainInfoFetcher,
 	}
 
-	s.cfg.Router.HandleFunc("/prysm/node/trusted_peers", nodeServerPrysm.ListTrustedPeer).Methods("GET")
-	s.cfg.Router.HandleFunc("/prysm/node/trusted_peers", nodeServerPrysm.AddTrustedPeer).Methods("POST")
-	s.cfg.Router.HandleFunc("/prysm/node/trusted_peers/{peer_id}", nodeServerPrysm.RemoveTrustedPeer).Methods("Delete")
+	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers", nodeServerPrysm.ListTrustedPeer).Methods("GET")
+	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers", nodeServerPrysm.AddTrustedPeer).Methods("POST")
+	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers/{peer_id}", nodeServerPrysm.RemoveTrustedPeer).Methods("Delete")
 
 	beaconChainServer := &beaconv1alpha1.Server{
 		Ctx:                         s.ctx,
@@ -377,9 +377,9 @@ func (s *Service) Start() {
 		HeadFetcher:        s.cfg.HeadFetcher,
 		SyncChecker:        s.cfg.SyncService,
 	}
-	s.cfg.Router.HandleFunc("/prysm/validators/performance", httpServer.GetValidatorPerformance)
-	s.cfg.Router.HandleFunc("/eth/v2/beacon/blocks", beaconChainServerV1.PublishBlockV2)
-	s.cfg.Router.HandleFunc("/eth/v2/beacon/blinded_blocks", beaconChainServerV1.PublishBlindedBlockV2)
+	s.cfg.Router.HandleFunc("/qrysm/validators/performance", httpServer.GetValidatorPerformance)
+	s.cfg.Router.HandleFunc("/zond/v2/beacon/blocks", beaconChainServerV1.PublishBlockV2)
+	s.cfg.Router.HandleFunc("/zond/v2/beacon/blinded_blocks", beaconChainServerV1.PublishBlindedBlockV2)
 	zondpbv1alpha1.RegisterNodeServer(s.grpcServer, nodeServer)
 	zondpbservice.RegisterBeaconNodeServer(s.grpcServer, nodeServerV1)
 	zondpbv1alpha1.RegisterHealthServer(s.grpcServer, nodeServer)

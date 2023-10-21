@@ -4,8 +4,8 @@ import (
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/theQRL/qrysm/v4/api/gateway"
 	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -46,7 +46,7 @@ func DefaultConfig(enableDebugRPCEndpoints bool, httpModules string) MuxConfig {
 		)
 		v1AlphaPbHandler = &gateway.PbMux{
 			Registrations: v1AlphaRegistrations,
-			Patterns:      []string{"/eth/v1alpha1/", "/eth/v1alpha2/"},
+			Patterns:      []string{"/zond/v1alpha1/", "/zond/v1alpha2/"},
 			Mux:           v1AlphaMux,
 		}
 	}
@@ -75,7 +75,7 @@ func DefaultConfig(enableDebugRPCEndpoints bool, httpModules string) MuxConfig {
 		)
 		ethPbHandler = &gateway.PbMux{
 			Registrations: ethRegistrations,
-			Patterns:      []string{"/internal/eth/v1/", "/internal/eth/v2/"},
+			Patterns:      []string{"/internal/zond/v1/", "/internal/zond/v2/"},
 			Mux:           ethMux,
 		}
 	}

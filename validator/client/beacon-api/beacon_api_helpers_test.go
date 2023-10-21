@@ -90,7 +90,7 @@ func TestBuildURL_WithParams(t *testing.T) {
 	assert.Equal(t, wanted, actual)
 }
 
-const forkEndpoint = "/eth/v1/beacon/states/head/fork"
+const forkEndpoint = "/zond/v1/beacon/states/head/fork"
 
 func TestGetFork_Nominal(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -152,10 +152,10 @@ func TestGetFork_Invalid(t *testing.T) {
 	}
 
 	_, err := validatorClient.getFork(ctx)
-	require.ErrorContains(t, "failed to get json response from `/eth/v1/beacon/states/head/fork` REST endpoint", err)
+	require.ErrorContains(t, "failed to get json response from `/zond/v1/beacon/states/head/fork` REST endpoint", err)
 }
 
-const headersEndpoint = "/eth/v1/beacon/headers"
+const headersEndpoint = "/zond/v1/beacon/headers"
 
 func TestGetHeaders_Nominal(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -221,10 +221,10 @@ func TestGetHeaders_Invalid(t *testing.T) {
 	}
 
 	_, err := validatorClient.getHeaders(ctx)
-	require.ErrorContains(t, "failed to get json response from `/eth/v1/beacon/headers` REST endpoint", err)
+	require.ErrorContains(t, "failed to get json response from `/zond/v1/beacon/headers` REST endpoint", err)
 }
 
-const livenessEndpoint = "/eth/v1/validator/liveness/42"
+const livenessEndpoint = "/zond/v1/validator/liveness/42"
 
 func TestGetLiveness_Nominal(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -297,10 +297,10 @@ func TestGetLiveness_Invalid(t *testing.T) {
 	validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
 	_, err := validatorClient.getLiveness(ctx, 42, nil)
 
-	require.ErrorContains(t, "failed to send POST data to `/eth/v1/validator/liveness/42` REST URL", err)
+	require.ErrorContains(t, "failed to send POST data to `/zond/v1/validator/liveness/42` REST URL", err)
 }
 
-const syncingEnpoint = "/eth/v1/node/syncing"
+const syncingEnpoint = "/zond/v1/node/syncing"
 
 func TestGetIsSyncing_Nominal(t *testing.T) {
 	testCases := []struct {

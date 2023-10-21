@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
 )
 
-const prepareBeaconProposerTestEndpoint = "/eth/v1/validator/prepare_beacon_proposer"
+const prepareBeaconProposerTestEndpoint = "/zond/v1/validator/prepare_beacon_proposer"
 
 func TestPrepareBeaconProposer_Valid(t *testing.T) {
 	const feeRecipient1 = "0xca008b199c03a2a2f6bc2ed52d6404c4d8510b35"

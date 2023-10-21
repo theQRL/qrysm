@@ -159,7 +159,7 @@ func (s *Server) BackupAccounts(
 }
 
 // VoluntaryExit performs a voluntary exit for the validator keys specified in a request.
-// DEPRECATE: Prysm Web UI and associated endpoints will be fully removed in a future hard fork. There is a similar endpoint that is still used /eth/v1alpha1/validator/exit.
+// DEPRECATE: Prysm Web UI and associated endpoints will be fully removed in a future hard fork. There is a similar endpoint that is still used /zond/v1alpha1/validator/exit.
 func (s *Server) VoluntaryExit(
 	ctx context.Context, req *pb.VoluntaryExitRequest,
 ) (*pb.VoluntaryExitResponse, error) {

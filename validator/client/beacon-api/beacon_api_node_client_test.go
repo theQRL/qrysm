@@ -127,7 +127,7 @@ func TestGetGenesis(t *testing.T) {
 			if testCase.queriesDepositContract {
 				jsonRestHandler.EXPECT().GetRestJsonResponse(
 					ctx,
-					"/eth/v1/config/deposit_contract",
+					"/zond/v1/config/deposit_contract",
 					&depositContractJson,
 				).Return(
 					nil,
@@ -154,7 +154,7 @@ func TestGetGenesis(t *testing.T) {
 }
 
 func TestGetSyncStatus(t *testing.T) {
-	const syncingEndpoint = "/eth/v1/node/syncing"
+	const syncingEndpoint = "/zond/v1/node/syncing"
 
 	testCases := []struct {
 		name                 string

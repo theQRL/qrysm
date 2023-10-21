@@ -60,10 +60,10 @@ func (c beaconApiValidatorClient) waitForChainStart(ctx context.Context) (*zondp
 	return chainStartResponse, nil
 }
 
-// GetGenesis gets the genesis information from the beacon node via the /eth/v1/beacon/genesis endpoint
+// GetGenesis gets the genesis information from the beacon node via the /zond/v1/beacon/genesis endpoint
 func (c beaconApiGenesisProvider) GetGenesis(ctx context.Context) (*rpcmiddleware.GenesisResponse_GenesisJson, *apimiddleware.DefaultErrorJson, error) {
 	genesisJson := &rpcmiddleware.GenesisResponseJson{}
-	errorJson, err := c.jsonRestHandler.GetRestJsonResponse(ctx, "/eth/v1/beacon/genesis", genesisJson)
+	errorJson, err := c.jsonRestHandler.GetRestJsonResponse(ctx, "/zond/v1/beacon/genesis", genesisJson)
 	if err != nil {
 		return nil, errorJson, errors.Wrap(err, "failed to get json response")
 	}

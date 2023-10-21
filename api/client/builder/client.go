@@ -27,10 +27,10 @@ import (
 )
 
 const (
-	getExecHeaderPath          = "/eth/v1/builder/header/{{.Slot}}/{{.ParentHash}}/{{.Pubkey}}"
-	getStatus                  = "/eth/v1/builder/status"
-	postBlindedBeaconBlockPath = "/eth/v1/builder/blinded_blocks"
-	postRegisterValidatorPath  = "/eth/v1/builder/validators"
+	getExecHeaderPath          = "/zond/v1/builder/header/{{.Slot}}/{{.ParentHash}}/{{.Pubkey}}"
+	getStatus                  = "/zond/v1/builder/status"
+	postBlindedBeaconBlockPath = "/zond/v1/builder/blinded_blocks"
+	postRegisterValidatorPath  = "/zond/v1/builder/validators"
 )
 
 var errMalformedHostname = errors.New("hostname must include port, separated by one colon, like example.com:3500")

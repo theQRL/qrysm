@@ -69,7 +69,7 @@ func TestRegistration_Valid(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().PostRestJson(
 		context.Background(),
-		"/eth/v1/validator/register_validator",
+		"/zond/v1/validator/register_validator",
 		nil,
 		bytes.NewBuffer(marshalledJsonRegistrations),
 		nil,
@@ -145,7 +145,7 @@ func TestRegistration_BadRequest(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().PostRestJson(
 		context.Background(),
-		"/eth/v1/validator/register_validator",
+		"/zond/v1/validator/register_validator",
 		nil,
 		gomock.Any(),
 		nil,
@@ -156,6 +156,6 @@ func TestRegistration_BadRequest(t *testing.T) {
 
 	validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
 	_, err := validatorClient.SubmitValidatorRegistrations(context.Background(), &zondpb.SignedValidatorRegistrationsV1{})
-	assert.ErrorContains(t, "failed to send POST data to `/eth/v1/validator/register_validator` REST endpoint", err)
+	assert.ErrorContains(t, "failed to send POST data to `/zond/v1/validator/register_validator` REST endpoint", err)
 	assert.ErrorContains(t, "foo error", err)
 }
