@@ -42,11 +42,11 @@ rbe_configs_gen \
 4) Test the builds work locally for all supported platforms.
 
 ```bash
-bazel build --config=release --config=linux_amd64 --config=llvm //cmd/beacon-chain //cmd/validator //cmd/client-stats //cmd/prysmctl
-bazel build --config=release --config=linux_arm64_docker //cmd/beacon-chain //cmd/validator //cmd/client-stats //cmd/prysmctl
-bazel build --config=release --config=osx_amd64_docker //cmd/beacon-chain //cmd/validator //cmd/client-stats //cmd/prysmctl
-bazel build --config=release --config=osx_arm64_docker //cmd/beacon-chain //cmd/validator //cmd/client-stats //cmd/prysmctl 
-bazel build --config=release --config=windows_amd64_docker //cmd/beacon-chain //cmd/validator //cmd/client-stats //cmd/prysmctl
+bazel build --config=release --config=linux_amd64 --config=llvm //cmd/beacon-chain //cmd/validator //cmd/client-stats //cmd/qrysmctl
+bazel build --config=release --config=linux_arm64_docker //cmd/beacon-chain //cmd/validator //cmd/client-stats //cmd/qrysmctl
+bazel build --config=release --config=osx_amd64_docker //cmd/beacon-chain //cmd/validator //cmd/client-stats //cmd/qrysmctl
+bazel build --config=release --config=osx_arm64_docker //cmd/beacon-chain //cmd/validator //cmd/client-stats //cmd/qrysmctl 
+bazel build --config=release --config=windows_amd64_docker //cmd/beacon-chain //cmd/validator //cmd/client-stats //cmd/qrysmctl
 ```
 
 5) Run gazelle.

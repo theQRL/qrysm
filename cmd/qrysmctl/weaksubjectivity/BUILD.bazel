@@ -3,10 +3,10 @@ load("@qrysm//tools/go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = [
+        "checkpoint.go",
         "cmd.go",
-        "download.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/cmd/prysmctl/checkpointsync",
+    importpath = "github.com/theQRL/qrysm/v4/cmd/qrysmctl/weaksubjectivity",
     visibility = ["//visibility:public"],
     deps = [
         "//api/client:go_default_library",

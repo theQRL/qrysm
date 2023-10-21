@@ -12,7 +12,7 @@ go_library(
         "peers.go",
         "request_blocks.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/cmd/prysmctl/p2p",
+    importpath = "github.com/theQRL/qrysm/v4/cmd/qrysmctl/p2p",
     visibility = ["//visibility:public"],
     deps = [
         "//beacon-chain/forkchoice:go_default_library",

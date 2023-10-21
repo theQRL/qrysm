@@ -6,7 +6,7 @@ go_library(
         "generate_genesis.go",
         "testnet.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/cmd/prysmctl/testnet",
+    importpath = "github.com/theQRL/qrysm/v4/cmd/qrysmctl/testnet",
     visibility = ["//visibility:public"],
     deps = [
         "//beacon-chain/state:go_default_library",

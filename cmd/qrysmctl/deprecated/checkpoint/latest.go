@@ -8,10 +8,10 @@ import (
 
 var checkpointCmd = &cli.Command{
 	Name:   "latest",
-	Usage:  "deprecated - please use 'prysmctl weak-subjectivity checkpoint' instead!",
+	Usage:  "deprecated - please use 'qrysmctl weak-subjectivity checkpoint' instead!",
 	Action: cliDeprecatedLatest,
 }
 
 func cliDeprecatedLatest(_ *cli.Context) error {
-	return fmt.Errorf("This command has moved. Please use 'prysmctl weak-subjectivity checkpoint' instead!")
+	return fmt.Errorf("This command has moved. Please use 'qrysmctl weak-subjectivity checkpoint' instead!")
 }
