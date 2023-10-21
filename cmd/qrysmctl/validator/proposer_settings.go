@@ -21,7 +21,7 @@ import (
 )
 
 func getProposerSettings(c *cli.Context, r io.Reader) error {
-	ctx, span := trace.StartSpan(c.Context, "prysmctl.getProposerSettings")
+	ctx, span := trace.StartSpan(c.Context, "qrysmctl.getProposerSettings")
 	defer span.End()
 	if !c.IsSet(ValidatorHostFlag.Name) {
 		return errNoFlag(ValidatorHostFlag.Name)
