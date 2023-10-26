@@ -610,7 +610,12 @@ func (s *Service) ReconstructFullBellatrixBlockBatch(
 	// For blocks that are pre-merge we simply reconstruct them via an empty
 	// execution payload.
 	for _, realIdx := range zeroExecPayloads {
-		payload := buildEmptyExecutionPayload()
+		var payload interface{}
+		if blindedBlocks[realIdx].Version() == version.Bellatrix {
+			payload = buildEmptyExecutionPayload()
+		} else {
+			payload = buildEmptyExecutionPayloadCapella()
+		}
 		fullBlock, err := blocks.BuildSignedBeaconBlockFromExecutionPayload(blindedBlocks[realIdx], payload)
 		if err != nil {
 			return nil, err
