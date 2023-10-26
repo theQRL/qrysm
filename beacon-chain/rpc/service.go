@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"sync"
 
 	"github.com/gorilla/mux"
@@ -30,6 +31,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/synccommittee"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/voluntaryexits"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/core"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/beacon"
 	rpcBuilder "github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/builder"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/debug"
@@ -218,15 +220,26 @@ func (s *Service) Start() {
 		Stater:                stater,
 		HeadFetcher:           s.cfg.HeadFetcher,
 	}
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/rewards/blocks/{block_id}", rewardsServer.BlockRewards)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/rewards/attestations/{epoch}", rewardsServer.AttestationRewards)
+
+	s.cfg.Router.HandleFunc("/zond/v1/beacon/rewards/blocks/{block_id}", rewardsServer.BlockRewards).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/zond/v1/beacon/rewards/attestations/{epoch}", rewardsServer.AttestationRewards).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/zond/v1/beacon/rewards/sync_committee/{block_id}", rewardsServer.SyncCommitteeRewards).Methods(http.MethodPost)
 
 	builderServer := &rpcBuilder.Server{
 		FinalizationFetcher:   s.cfg.FinalizationFetcher,
 		OptimisticModeFetcher: s.cfg.OptimisticModeFetcher,
 		Stater:                stater,
 	}
-	s.cfg.Router.HandleFunc("/zond/v1/builder/states/{state_id}/expected_withdrawals", builderServer.ExpectedWithdrawals)
+	s.cfg.Router.HandleFunc("/zond/v1/builder/states/{state_id}/expected_withdrawals", builderServer.ExpectedWithdrawals).Methods(http.MethodGet)
+
+	coreService := &core.Service{
+		HeadFetcher:        s.cfg.HeadFetcher,
+		GenesisTimeFetcher: s.cfg.GenesisTimeFetcher,
+		SyncChecker:        s.cfg.SyncService,
+		Broadcaster:        s.cfg.Broadcaster,
+		SyncCommitteePool:  s.cfg.SyncCommitteeObjectPool,
+		OperationNotifier:  s.cfg.OperationNotifier,
+	}
 
 	validatorServer := &validatorv1alpha1.Server{
 		Ctx:                    s.ctx,
@@ -263,6 +276,7 @@ func (s *Service) Start() {
 		BlockBuilder:           s.cfg.BlockBuilder,
 		DilithiumChangesPool:   s.cfg.DilithiumChangesPool,
 		ClockWaiter:            s.cfg.ClockWaiter,
+		CoreService:            coreService,
 	}
 	validatorServerV1 := &validator.Server{
 		HeadFetcher:            s.cfg.HeadFetcher,
@@ -279,7 +293,13 @@ func (s *Service) Start() {
 		ChainInfoFetcher:       s.cfg.ChainInfoFetcher,
 		BeaconDB:               s.cfg.BeaconDB,
 		BlockBuilder:           s.cfg.BlockBuilder,
+		OperationNotifier:      s.cfg.OperationNotifier,
+		CoreService:            coreService,
 	}
+
+	s.cfg.Router.HandleFunc("/zond/v1/validator/aggregate_attestation", validatorServerV1.GetAggregateAttestation).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/zond/v1/validator/contribution_and_proofs", validatorServerV1.SubmitContributionAndProofs).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/zond/v1/validator/aggregate_and_proofs", validatorServerV1.SubmitAggregateAndProofs).Methods(http.MethodPost)
 
 	nodeServer := &nodev1alpha1.Server{
 		LogsStreamer:         logs.NewStreamServer(),
@@ -320,9 +340,9 @@ func (s *Service) Start() {
 		ExecutionChainInfoFetcher: s.cfg.ExecutionChainInfoFetcher,
 	}
 
-	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers", nodeServerPrysm.ListTrustedPeer).Methods("GET")
-	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers", nodeServerPrysm.AddTrustedPeer).Methods("POST")
-	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers/{peer_id}", nodeServerPrysm.RemoveTrustedPeer).Methods("Delete")
+	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers", nodeServerPrysm.ListTrustedPeer).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers", nodeServerPrysm.AddTrustedPeer).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers/{peer_id}", nodeServerPrysm.RemoveTrustedPeer).Methods(http.MethodDelete)
 
 	beaconChainServer := &beaconv1alpha1.Server{
 		Ctx:                         s.ctx,
@@ -346,6 +366,7 @@ func (s *Service) Start() {
 		ReceivedAttestationsBuffer:  make(chan *zondpbv1alpha1.Attestation, attestationBufferSize),
 		CollectedAttestationsBuffer: make(chan []*zondpbv1alpha1.Attestation, attestationBufferSize),
 		ReplayerBuilder:             ch,
+		CoreService:                 coreService,
 	}
 	beaconChainServerV1 := &beacon.Server{
 		CanonicalHistory:              ch,
@@ -376,10 +397,11 @@ func (s *Service) Start() {
 		GenesisTimeFetcher: s.cfg.GenesisTimeFetcher,
 		HeadFetcher:        s.cfg.HeadFetcher,
 		SyncChecker:        s.cfg.SyncService,
+		CoreService:        coreService,
 	}
-	s.cfg.Router.HandleFunc("/qrysm/validators/performance", httpServer.GetValidatorPerformance)
-	s.cfg.Router.HandleFunc("/zond/v2/beacon/blocks", beaconChainServerV1.PublishBlockV2)
-	s.cfg.Router.HandleFunc("/zond/v2/beacon/blinded_blocks", beaconChainServerV1.PublishBlindedBlockV2)
+	s.cfg.Router.HandleFunc("/qrysm/validators/performance", httpServer.GetValidatorPerformance).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/zond/v2/beacon/blocks", beaconChainServerV1.PublishBlockV2).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/zond/v2/beacon/blinded_blocks", beaconChainServerV1.PublishBlindedBlockV2).Methods(http.MethodPost)
 	zondpbv1alpha1.RegisterNodeServer(s.grpcServer, nodeServer)
 	zondpbservice.RegisterBeaconNodeServer(s.grpcServer, nodeServerV1)
 	zondpbv1alpha1.RegisterHealthServer(s.grpcServer, nodeServer)
@@ -388,7 +410,6 @@ func (s *Service) Start() {
 	zondpbservice.RegisterEventsServer(s.grpcServer, &events.Server{
 		Ctx:               s.ctx,
 		StateNotifier:     s.cfg.StateNotifier,
-		BlockNotifier:     s.cfg.BlockNotifier,
 		OperationNotifier: s.cfg.OperationNotifier,
 		HeadFetcher:       s.cfg.HeadFetcher,
 		ChainInfoFetcher:  s.cfg.ChainInfoFetcher,

@@ -7,16 +7,15 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
-	blockfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/block"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
 	statefeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/state"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/proto/migration"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
+	zondpb "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"google.golang.org/grpc/codes"
@@ -62,7 +61,7 @@ var casesHandled = map[string]bool{
 // The topics supported include block events, attestations, chain reorgs, voluntary exits,
 // chain finality, and more.
 func (s *Server) StreamEvents(
-	req *zondpbv1.StreamEventsRequest, stream zondpbservice.Events_StreamEventsServer,
+	req *zondpb.StreamEventsRequest, stream zondpbservice.Events_StreamEventsServer,
 ) error {
 	if req == nil || len(req.Topics) == 0 {
 		return status.Error(codes.InvalidArgument, "No topics specified to subscribe to")
@@ -80,26 +79,18 @@ func (s *Server) StreamEvents(
 	}
 
 	// Subscribe to event feeds from information received in the beacon node runtime.
-	blockChan := make(chan *feed.Event, 1)
-	blockSub := s.BlockNotifier.BlockFeed().Subscribe(blockChan)
-
 	opsChan := make(chan *feed.Event, 1)
 	opsSub := s.OperationNotifier.OperationFeed().Subscribe(opsChan)
 
 	stateChan := make(chan *feed.Event, 1)
 	stateSub := s.StateNotifier.StateFeed().Subscribe(stateChan)
 
-	defer blockSub.Unsubscribe()
 	defer opsSub.Unsubscribe()
 	defer stateSub.Unsubscribe()
 
 	// Handle each event received and context cancelation.
 	for {
 		select {
-		case event := <-blockChan:
-			if err := handleBlockEvents(stream, requestedTopics, event); err != nil {
-				return status.Errorf(codes.Internal, "Could not handle block event: %v", err)
-			}
 		case event := <-opsChan:
 			if err := handleBlockOperationEvents(stream, requestedTopics, event); err != nil {
 				return status.Errorf(codes.Internal, "Could not handle block operations event: %v", err)
@@ -113,37 +104,6 @@ func (s *Server) StreamEvents(
 		case <-stream.Context().Done():
 			return status.Errorf(codes.Canceled, "Context canceled")
 		}
-	}
-}
-
-func handleBlockEvents(
-	stream zondpbservice.Events_StreamEventsServer, requestedTopics map[string]bool, event *feed.Event,
-) error {
-	switch event.Type {
-	case blockfeed.ReceivedBlock:
-		if _, ok := requestedTopics[BlockTopic]; !ok {
-			return nil
-		}
-		blkData, ok := event.Data.(*blockfeed.ReceivedBlockData)
-		if !ok {
-			return nil
-		}
-		v1Data, err := migration.BlockIfaceToV1BlockHeader(blkData.SignedBlock)
-		if err != nil {
-			return err
-		}
-		item, err := v1Data.Message.HashTreeRoot()
-		if err != nil {
-			return errors.Wrap(err, "could not hash tree root block")
-		}
-		eventBlock := &zondpbv1.EventBlock{
-			Slot:                v1Data.Message.Slot,
-			Block:               item[:],
-			ExecutionOptimistic: blkData.IsOptimistic,
-		}
-		return streamData(stream, BlockTopic, eventBlock)
-	default:
-		return nil
 	}
 }
 
@@ -213,7 +173,7 @@ func (s *Server) handleStateEvents(
 	switch event.Type {
 	case statefeed.NewHead:
 		if _, ok := requestedTopics[HeadTopic]; ok {
-			head, ok := event.Data.(*zondpbv1.EventHead)
+			head, ok := event.Data.(*zondpb.EventHead)
 			if !ok {
 				return nil
 			}
@@ -238,7 +198,7 @@ func (s *Server) handleStateEvents(
 		if _, ok := requestedTopics[FinalizedCheckpointTopic]; !ok {
 			return nil
 		}
-		finalizedCheckpoint, ok := event.Data.(*zondpbv1.EventFinalizedCheckpoint)
+		finalizedCheckpoint, ok := event.Data.(*zondpb.EventFinalizedCheckpoint)
 		if !ok {
 			return nil
 		}
@@ -247,11 +207,33 @@ func (s *Server) handleStateEvents(
 		if _, ok := requestedTopics[ChainReorgTopic]; !ok {
 			return nil
 		}
-		reorg, ok := event.Data.(*zondpbv1.EventChainReorg)
+		reorg, ok := event.Data.(*zondpb.EventChainReorg)
 		if !ok {
 			return nil
 		}
 		return streamData(stream, ChainReorgTopic, reorg)
+	case statefeed.BlockProcessed:
+		if _, ok := requestedTopics[BlockTopic]; !ok {
+			return nil
+		}
+		blkData, ok := event.Data.(*statefeed.BlockProcessedData)
+		if !ok {
+			return nil
+		}
+		v1Data, err := migration.BlockIfaceToV1BlockHeader(blkData.SignedBlock)
+		if err != nil {
+			return err
+		}
+		item, err := v1Data.Message.HashTreeRoot()
+		if err != nil {
+			return errors.Wrap(err, "could not hash tree root block")
+		}
+		eventBlock := &zondpb.EventBlock{
+			Slot:                blkData.Slot,
+			Block:               item[:],
+			ExecutionOptimistic: blkData.Optimistic,
+		}
+		return streamData(stream, BlockTopic, eventBlock)
 	default:
 		return nil
 	}
@@ -302,9 +284,9 @@ func (s *Server) streamPayloadAttributes(stream zondpbservice.Events_StreamEvent
 
 	switch headState.Version() {
 	case version.Bellatrix:
-		return streamData(stream, PayloadAttributesTopic, &zondpbv1.EventPayloadAttributeV1{
+		return streamData(stream, PayloadAttributesTopic, &zondpb.EventPayloadAttributeV1{
 			Version: version.String(headState.Version()),
-			Data: &zondpbv1.EventPayloadAttributeV1_BasePayloadAttribute{
+			Data: &zondpb.EventPayloadAttributeV1_BasePayloadAttribute{
 				ProposerIndex:     proposerIndex,
 				ProposalSlot:      headState.Slot(),
 				ParentBlockNumber: headPayload.BlockNumber(),
@@ -322,9 +304,9 @@ func (s *Server) streamPayloadAttributes(stream zondpbservice.Events_StreamEvent
 		if err != nil {
 			return err
 		}
-		return streamData(stream, PayloadAttributesTopic, &zondpbv1.EventPayloadAttributeV2{
+		return streamData(stream, PayloadAttributesTopic, &zondpb.EventPayloadAttributeV2{
 			Version: version.String(headState.Version()),
-			Data: &zondpbv1.EventPayloadAttributeV2_BasePayloadAttribute{
+			Data: &zondpb.EventPayloadAttributeV2_BasePayloadAttribute{
 				ProposerIndex:     proposerIndex,
 				ProposalSlot:      headState.Slot(),
 				ParentBlockNumber: headPayload.BlockNumber(),

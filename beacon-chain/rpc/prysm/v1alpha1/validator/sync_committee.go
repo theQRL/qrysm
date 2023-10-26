@@ -7,8 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
-	opfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/core"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
@@ -123,30 +122,11 @@ func (vs *Server) GetSyncCommitteeContribution(
 func (vs *Server) SubmitSignedContributionAndProof(
 	ctx context.Context, s *zondpb.SignedContributionAndProof,
 ) (*emptypb.Empty, error) {
-	errs, ctx := errgroup.WithContext(ctx)
-
-	// Broadcasting and saving contribution into the pool in parallel. As one fail should not affect another.
-	errs.Go(func() error {
-		return vs.P2P.Broadcast(ctx, s)
-	})
-
-	if err := vs.SyncCommitteePool.SaveSyncCommitteeContribution(s.Message.Contribution); err != nil {
-		return nil, err
+	err := vs.CoreService.SubmitSignedContributionAndProof(ctx, s)
+	if err != nil {
+		return &emptypb.Empty{}, status.Errorf(core.ErrorReasonToGRPC(err.Reason), err.Err.Error())
 	}
-
-	// Wait for p2p broadcast to complete and return the first error (if any)
-	err := errs.Wait()
-
-	if err == nil {
-		vs.OperationNotifier.OperationFeed().Send(&feed.Event{
-			Type: opfeed.SyncCommitteeContributionReceived,
-			Data: &opfeed.SyncCommitteeContributionReceivedData{
-				Contribution: s,
-			},
-		})
-	}
-
-	return &emptypb.Empty{}, err
+	return &emptypb.Empty{}, nil
 }
 
 // AggregatedSigAndAggregationBits returns the aggregated signature and aggregation bits

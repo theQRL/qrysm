@@ -1,12 +1,10 @@
 package validator
 
 import (
-	"bytes"
 	"context"
 
-	"github.com/sirupsen/logrus"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/core"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
@@ -115,32 +113,8 @@ func (vs *Server) SubmitSignedAggregateSelectionProof(
 	ctx context.Context,
 	req *zondpb.SignedAggregateSubmitRequest,
 ) (*zondpb.SignedAggregateSubmitResponse, error) {
-	if req.SignedAggregateAndProof == nil || req.SignedAggregateAndProof.Message == nil ||
-		req.SignedAggregateAndProof.Message.Aggregate == nil || req.SignedAggregateAndProof.Message.Aggregate.Data == nil {
-		return nil, status.Error(codes.InvalidArgument, "Signed aggregate request can't be nil")
+	if err := vs.CoreService.SubmitSignedAggregateSelectionProof(ctx, req); err != nil {
+		return nil, status.Errorf(core.ErrorReasonToGRPC(err.Reason), "Could not submit aggregate: %v", err.Err)
 	}
-	emptySig := make([]byte, dilithium2.CryptoBytes)
-	if bytes.Equal(req.SignedAggregateAndProof.Signature, emptySig) ||
-		bytes.Equal(req.SignedAggregateAndProof.Message.SelectionProof, emptySig) {
-		return nil, status.Error(codes.InvalidArgument, "Signed signatures can't be zero hashes")
-	}
-
-	// As a preventive measure, a beacon node shouldn't broadcast an attestation whose slot is out of range.
-	if err := helpers.ValidateAttestationTime(req.SignedAggregateAndProof.Message.Aggregate.Data.Slot,
-		vs.TimeFetcher.GenesisTime(), params.BeaconNetworkConfig().MaximumGossipClockDisparity); err != nil {
-		return nil, status.Error(codes.InvalidArgument, "Attestation slot is no longer valid from current time")
-	}
-
-	if err := vs.P2P.Broadcast(ctx, req.SignedAggregateAndProof); err != nil {
-		return nil, status.Errorf(codes.Internal, "Could not broadcast signed aggregated attestation: %v", err)
-	}
-
-	log.WithFields(logrus.Fields{
-		"slot":            req.SignedAggregateAndProof.Message.Aggregate.Data.Slot,
-		"committeeIndex":  req.SignedAggregateAndProof.Message.Aggregate.Data.CommitteeIndex,
-		"validatorIndex":  req.SignedAggregateAndProof.Message.AggregatorIndex,
-		"aggregatedCount": req.SignedAggregateAndProof.Message.Aggregate.AggregationBits.Count(),
-	}).Debug("Broadcasting aggregated attestation and proof")
-
 	return &zondpb.SignedAggregateSubmitResponse{}, nil
 }

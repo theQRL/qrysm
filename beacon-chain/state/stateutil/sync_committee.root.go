@@ -57,9 +57,7 @@ func merkleizePubkey(pubkey []byte) ([32]byte, error) {
 		if oddChunksLen {
 			chunks = append(chunks, trie.ZeroHashes[i])
 		}
-		outputLen := len(chunks) / 2
-		outputChunk := make([][32]byte, outputLen)
-		htr.VectorizedSha256(chunks, outputChunk)
+		outputChunk := htr.VectorizedSha256(chunks)
 		chunks = outputChunk
 	}
 

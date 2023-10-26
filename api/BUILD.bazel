@@ -1,0 +1,8 @@
+load("@qrysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["headers.go"],
+    importpath = "github.com/theQRL/qrysm/v4/api",
+    visibility = ["//visibility:public"],
+)

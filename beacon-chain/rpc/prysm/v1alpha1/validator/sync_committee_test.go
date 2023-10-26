@@ -12,6 +12,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/synccommittee"
 	mockp2p "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/core"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
@@ -137,9 +138,11 @@ func TestGetSyncCommitteeContribution_FiltersDuplicates(t *testing.T) {
 
 func TestSubmitSignedContributionAndProof_OK(t *testing.T) {
 	server := &Server{
-		SyncCommitteePool: synccommittee.NewStore(),
-		P2P:               &mockp2p.MockBroadcaster{},
-		OperationNotifier: (&mock.ChainService{}).OperationNotifier(),
+		CoreService: &core.Service{
+			SyncCommitteePool: synccommittee.NewStore(),
+			Broadcaster:       &mockp2p.MockBroadcaster{},
+			OperationNotifier: (&mock.ChainService{}).OperationNotifier(),
+		},
 	}
 	contribution := &zondpb.SignedContributionAndProof{
 		Message: &zondpb.ContributionAndProof{
@@ -151,21 +154,23 @@ func TestSubmitSignedContributionAndProof_OK(t *testing.T) {
 	}
 	_, err := server.SubmitSignedContributionAndProof(context.Background(), contribution)
 	require.NoError(t, err)
-	savedMsgs, err := server.SyncCommitteePool.SyncCommitteeContributions(1)
+	savedMsgs, err := server.CoreService.SyncCommitteePool.SyncCommitteeContributions(1)
 	require.NoError(t, err)
 	require.DeepEqual(t, []*zondpb.SyncCommitteeContribution{contribution.Message.Contribution}, savedMsgs)
 }
 
 func TestSubmitSignedContributionAndProof_Notification(t *testing.T) {
 	server := &Server{
-		SyncCommitteePool: synccommittee.NewStore(),
-		P2P:               &mockp2p.MockBroadcaster{},
-		OperationNotifier: (&mock.ChainService{}).OperationNotifier(),
+		CoreService: &core.Service{
+			SyncCommitteePool: synccommittee.NewStore(),
+			Broadcaster:       &mockp2p.MockBroadcaster{},
+			OperationNotifier: (&mock.ChainService{}).OperationNotifier(),
+		},
 	}
 
 	// Subscribe to operation notifications.
 	opChannel := make(chan *feed.Event, 1024)
-	opSub := server.OperationNotifier.OperationFeed().Subscribe(opChannel)
+	opSub := server.CoreService.OperationNotifier.OperationFeed().Subscribe(opChannel)
 	defer opSub.Unsubscribe()
 
 	contribution := &zondpb.SignedContributionAndProof{

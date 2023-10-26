@@ -2,9 +2,11 @@ package beacon
 
 import (
 	"context"
+	"google.golang.org/grpc"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/api"
 	rpchelpers "github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/prysm/v1alpha1/validator"
 	"github.com/theQRL/qrysm/v4/config/params"
@@ -13,10 +15,11 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/encoding/ssz/detect"
 	"github.com/theQRL/qrysm/v4/network/forks"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/proto/migration"
 	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -37,6 +40,9 @@ func (bs *Server) GetBlindedBlock(ctx context.Context, req *zondpbv1.BlockReques
 	blkRoot, err := blk.Block().HashTreeRoot()
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not get block root")
+	}
+	if err := grpc.SetHeader(ctx, metadata.Pairs(api.VersionHeader, version.String(blk.Version()))); err != nil {
+		return nil, status.Errorf(codes.Internal, "Could not set "+api.VersionHeader+" header: %v", err)
 	}
 
 	result, err := getBlindedBlockPhase0(blk)
@@ -196,11 +202,11 @@ func (bs *Server) SubmitBlindedBlockSSZ(ctx context.Context, req *zondpbv2.SSZCo
 
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not read"+versionHeader+" header")
+		return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not read"+api.VersionHeader+" header")
 	}
-	ver := md.Get(versionHeader)
+	ver := md.Get(api.VersionHeader)
 	if len(ver) == 0 {
-		return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not read"+versionHeader+" header")
+		return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not read"+api.VersionHeader+" header")
 	}
 	schedule := forks.NewOrderedSchedule(params.BeaconConfig())
 	forkVer, err := schedule.VersionForName(ver[0])

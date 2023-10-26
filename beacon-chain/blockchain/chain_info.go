@@ -15,8 +15,8 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 )
@@ -387,7 +387,7 @@ func (s *Service) InForkchoice(root [32]byte) bool {
 	return s.cfg.ForkChoiceStore.HasNode(root)
 }
 
-// IsViableForkCheckpoint returns whether the given checkpoint is a checkpoint in any
+// IsViableForCheckpoint returns whether the given checkpoint is a checkpoint in any
 // chain known to forkchoice
 func (s *Service) IsViableForCheckpoint(cp *forkchoicetypes.Checkpoint) (bool, error) {
 	s.cfg.ForkChoiceStore.RLock()

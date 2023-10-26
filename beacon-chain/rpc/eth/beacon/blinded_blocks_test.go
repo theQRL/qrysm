@@ -2,17 +2,20 @@ package beacon
 
 import (
 	"context"
+	"google.golang.org/grpc"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/theQRL/qrysm/v4/api"
 	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/testutil"
 	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	"github.com/theQRL/qrysm/v4/proto/migration"
 	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
-	"github.com/theQRL/qrysm/v4/proto/migration"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	mock2 "github.com/theQRL/qrysm/v4/testing/mock"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -21,7 +24,8 @@ import (
 )
 
 func TestServer_GetBlindedBlock(t *testing.T) {
-	ctx := context.Background()
+	stream := &runtime.ServerTransportStream{}
+	ctx := grpc.NewContextWithServerTransportStream(context.Background(), stream)
 
 	t.Run("Phase 0", func(t *testing.T) {
 		b := util.NewBeaconBlock()
@@ -321,7 +325,7 @@ func TestServer_SubmitBlindedBlockSSZ(t *testing.T) {
 			Data: ssz,
 		}
 		md := metadata.MD{}
-		md.Set(versionHeader, "phase0")
+		md.Set(api.VersionHeader, "phase0")
 		sszCtx := metadata.NewIncomingContext(ctx, md)
 		_, err = server.SubmitBlindedBlockSSZ(sszCtx, blockReq)
 		assert.NoError(t, err)
@@ -342,7 +346,7 @@ func TestServer_SubmitBlindedBlockSSZ(t *testing.T) {
 			Data: ssz,
 		}
 		md := metadata.MD{}
-		md.Set(versionHeader, "altair")
+		md.Set(api.VersionHeader, "altair")
 		sszCtx := metadata.NewIncomingContext(ctx, md)
 		_, err = server.SubmitBlindedBlockSSZ(sszCtx, blockReq)
 		assert.NoError(t, err)
@@ -363,7 +367,7 @@ func TestServer_SubmitBlindedBlockSSZ(t *testing.T) {
 			Data: ssz,
 		}
 		md := metadata.MD{}
-		md.Set(versionHeader, "bellatrix")
+		md.Set(api.VersionHeader, "bellatrix")
 		sszCtx := metadata.NewIncomingContext(ctx, md)
 		_, err = server.SubmitBlindedBlockSSZ(sszCtx, blockReq)
 		assert.NoError(t, err)
@@ -381,7 +385,7 @@ func TestServer_SubmitBlindedBlockSSZ(t *testing.T) {
 			Data: ssz,
 		}
 		md := metadata.MD{}
-		md.Set(versionHeader, "bellatrix")
+		md.Set(api.VersionHeader, "bellatrix")
 		sszCtx := metadata.NewIncomingContext(ctx, md)
 		_, err = server.SubmitBlindedBlockSSZ(sszCtx, blockReq)
 		assert.NotNil(t, err)
@@ -402,7 +406,7 @@ func TestServer_SubmitBlindedBlockSSZ(t *testing.T) {
 			Data: ssz,
 		}
 		md := metadata.MD{}
-		md.Set(versionHeader, "capella")
+		md.Set(api.VersionHeader, "capella")
 		sszCtx := metadata.NewIncomingContext(ctx, md)
 		_, err = server.SubmitBlindedBlockSSZ(sszCtx, blockReq)
 		assert.NoError(t, err)
@@ -420,7 +424,7 @@ func TestServer_SubmitBlindedBlockSSZ(t *testing.T) {
 			Data: ssz,
 		}
 		md := metadata.MD{}
-		md.Set(versionHeader, "capella")
+		md.Set(api.VersionHeader, "capella")
 		sszCtx := metadata.NewIncomingContext(ctx, md)
 		_, err = server.SubmitBlindedBlockSSZ(sszCtx, blockReq)
 		assert.NotNil(t, err)
