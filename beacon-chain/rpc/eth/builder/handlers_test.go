@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
-	"github.com/theQRL/qrysm/v4/network"
+	http2 "github.com/theQRL/qrysm/v4/network/http"
 	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -96,7 +96,7 @@ func TestExpectedWithdrawals_BadRequest(t *testing.T) {
 
 			s.ExpectedWithdrawals(writer, request)
 			assert.Equal(t, http.StatusBadRequest, writer.Code)
-			e := &network.DefaultErrorJson{}
+			e := &http2.DefaultErrorJson{}
 			require.NoError(t, json.Unmarshal(writer.Body.Bytes(), e))
 			assert.Equal(t, http.StatusBadRequest, e.Code)
 			assert.StringContains(t, testCase.errorMessage, e.Message)

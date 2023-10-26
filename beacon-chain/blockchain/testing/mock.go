@@ -27,8 +27,8 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 )
 
 var ErrNilState = errors.New("nil state")
@@ -533,7 +533,7 @@ func (s *ChainService) GetProposerHead() [32]byte {
 	return [32]byte{}
 }
 
-// SetForkchoiceGenesisTime mocks the same method in the chain service
+// SetForkChoiceGenesisTime mocks the same method in the chain service
 func (s *ChainService) SetForkChoiceGenesisTime(timestamp uint64) {
 	if s.ForkChoiceStore != nil {
 		s.ForkChoiceStore.SetGenesisTime(timestamp)

@@ -23,6 +23,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/synccommittee"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/voluntaryexits"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/core"
 	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
 	"github.com/theQRL/qrysm/v4/beacon-chain/sync"
@@ -74,6 +75,7 @@ type Server struct {
 	BlockBuilder           builder.BlockBuilder
 	DilithiumChangesPool   blstoexec.PoolManager
 	ClockWaiter            startup.ClockWaiter
+	CoreService            *core.Service
 }
 
 // WaitForActivation checks if a validator public key exists in the active validator registry of the current

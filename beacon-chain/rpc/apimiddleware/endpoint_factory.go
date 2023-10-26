@@ -66,12 +66,9 @@ func (_ *BeaconEndpointFactory) Paths() []string {
 		"/zond/v2/validator/blocks/{slot}",
 		"/zond/v1/validator/blinded_blocks/{slot}",
 		"/zond/v1/validator/attestation_data",
-		"/zond/v1/validator/aggregate_attestation",
 		"/zond/v1/validator/beacon_committee_subscriptions",
 		"/zond/v1/validator/sync_committee_subscriptions",
-		"/zond/v1/validator/aggregate_and_proofs",
 		"/zond/v1/validator/sync_committee_contribution",
-		"/zond/v1/validator/contribution_and_proofs",
 		"/zond/v1/validator/prepare_beacon_proposer",
 		"/zond/v1/validator/register_validator",
 		"/zond/v1/validator/liveness/{epoch}",
@@ -263,9 +260,6 @@ func (_ *BeaconEndpointFactory) Create(path string) (*apimiddleware.Endpoint, er
 	case "/zond/v1/validator/attestation_data":
 		endpoint.GetResponse = &ProduceAttestationDataResponseJson{}
 		endpoint.RequestQueryParams = []apimiddleware.QueryParam{{Name: "slot"}, {Name: "committee_index"}}
-	case "/zond/v1/validator/aggregate_attestation":
-		endpoint.GetResponse = &AggregateAttestationResponseJson{}
-		endpoint.RequestQueryParams = []apimiddleware.QueryParam{{Name: "attestation_data_root", Hex: true}, {Name: "slot"}}
 	case "/zond/v1/validator/beacon_committee_subscriptions":
 		endpoint.PostRequest = &SubmitBeaconCommitteeSubscriptionsRequestJson{}
 		endpoint.Err = &NodeSyncDetailsErrorJson{}
@@ -278,19 +272,9 @@ func (_ *BeaconEndpointFactory) Create(path string) (*apimiddleware.Endpoint, er
 		endpoint.Hooks = apimiddleware.HookCollection{
 			OnPreDeserializeRequestBodyIntoContainer: wrapSyncCommitteeSubscriptionsArray,
 		}
-	case "/zond/v1/validator/aggregate_and_proofs":
-		endpoint.PostRequest = &SubmitAggregateAndProofsRequestJson{}
-		endpoint.Hooks = apimiddleware.HookCollection{
-			OnPreDeserializeRequestBodyIntoContainer: wrapSignedAggregateAndProofArray,
-		}
 	case "/zond/v1/validator/sync_committee_contribution":
 		endpoint.GetResponse = &ProduceSyncCommitteeContributionResponseJson{}
 		endpoint.RequestQueryParams = []apimiddleware.QueryParam{{Name: "slot"}, {Name: "subcommittee_index"}, {Name: "beacon_block_root", Hex: true}}
-	case "/zond/v1/validator/contribution_and_proofs":
-		endpoint.PostRequest = &SubmitContributionAndProofsRequestJson{}
-		endpoint.Hooks = apimiddleware.HookCollection{
-			OnPreDeserializeRequestBodyIntoContainer: wrapSignedContributionAndProofsArray,
-		}
 	case "/zond/v1/validator/prepare_beacon_proposer":
 		endpoint.PostRequest = &FeeRecipientsRequestJSON{}
 		endpoint.Hooks = apimiddleware.HookCollection{

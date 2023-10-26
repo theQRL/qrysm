@@ -851,6 +851,10 @@ func BeaconStateCapellaToProto(st state.BeaconState) (*zondpbv2.BeaconStateCapel
 			StateSummaryRoot: summary.StateSummaryRoot,
 		}
 	}
+	hRoots, err := st.HistoricalRoots()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not get historical roots")
+	}
 
 	result := &zondpbv2.BeaconStateCapella{
 		GenesisTime:           st.GenesisTime(),
@@ -925,6 +929,7 @@ func BeaconStateCapellaToProto(st state.BeaconState) (*zondpbv2.BeaconStateCapel
 		NextWithdrawalIndex:          sourceNextWithdrawalIndex,
 		NextWithdrawalValidatorIndex: sourceNextWithdrawalValIndex,
 		HistoricalSummaries:          sourceHistoricalSummaries,
+		HistoricalRoots:              hRoots,
 	}
 
 	return result, nil

@@ -2,6 +2,7 @@ package validator
 
 import (
 	"context"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/core"
 	"reflect"
 	"testing"
 	"time"
@@ -399,7 +400,9 @@ func TestSubmitAggregateAndProof_SelectsMostBitsWhenOwnAttestationNotPresent(t *
 }
 
 func TestSubmitSignedAggregateSelectionProof_ZeroHashesSignatures(t *testing.T) {
-	aggregatorServer := &Server{}
+	aggregatorServer := &Server{
+		TimeFetcher: &mock.ChainService{Genesis: time.Now()},
+	}
 	req := &zondpb.SignedAggregateSubmitRequest{
 		SignedAggregateAndProof: &zondpb.SignedAggregateAttestationAndProof{
 			Signature: make([]byte, dilithium2.CryptoBytes),
@@ -411,7 +414,7 @@ func TestSubmitSignedAggregateSelectionProof_ZeroHashesSignatures(t *testing.T) 
 		},
 	}
 	_, err := aggregatorServer.SubmitSignedAggregateSelectionProof(context.Background(), req)
-	require.ErrorContains(t, "Signed signatures can't be zero hashes", err)
+	require.ErrorContains(t, "signed signatures can't be zero hashes", err)
 
 	req = &zondpb.SignedAggregateSubmitRequest{
 		SignedAggregateAndProof: &zondpb.SignedAggregateAttestationAndProof{
@@ -425,12 +428,16 @@ func TestSubmitSignedAggregateSelectionProof_ZeroHashesSignatures(t *testing.T) 
 		},
 	}
 	_, err = aggregatorServer.SubmitSignedAggregateSelectionProof(context.Background(), req)
-	require.ErrorContains(t, "Signed signatures can't be zero hashes", err)
+	require.ErrorContains(t, "signed signatures can't be zero hashes", err)
 }
 
 func TestSubmitSignedAggregateSelectionProof_InvalidSlot(t *testing.T) {
 	c := &mock.ChainService{Genesis: time.Now()}
-	aggregatorServer := &Server{TimeFetcher: c}
+	aggregatorServer := &Server{
+		CoreService: &core.Service{
+			GenesisTimeFetcher: c,
+		},
+	}
 	req := &zondpb.SignedAggregateSubmitRequest{
 		SignedAggregateAndProof: &zondpb.SignedAggregateAttestationAndProof{
 			Signature: []byte{'a'},
@@ -443,5 +450,5 @@ func TestSubmitSignedAggregateSelectionProof_InvalidSlot(t *testing.T) {
 		},
 	}
 	_, err := aggregatorServer.SubmitSignedAggregateSelectionProof(context.Background(), req)
-	require.ErrorContains(t, "Attestation slot is no longer valid from current time", err)
+	require.ErrorContains(t, "attestation slot is no longer valid from current time", err)
 }

@@ -3,9 +3,12 @@
 package blst
 
 import (
+	"fmt"
 	"runtime"
 
 	blst "github.com/supranational/blst/bindings/go"
+	"github.com/theQRL/qrysm/v4/cache/nonblocking"
+	"github.com/theQRL/qrysm/v4/crypto/bls/common"
 )
 
 func init() {
@@ -15,4 +18,10 @@ func init() {
 		maxProcs = 1
 	}
 	blst.SetMaxProcs(maxProcs)
+	onEvict := func(_ [48]byte, _ common.PublicKey) {}
+	keysCache, err := nonblocking.NewLRU(maxKeys, onEvict)
+	if err != nil {
+		panic(fmt.Sprintf("Could not initiate public keys cache: %v", err))
+	}
+	pubkeyCache = keysCache
 }

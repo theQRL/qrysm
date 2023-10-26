@@ -5,7 +5,9 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/qrysm/v4/api"
 	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/db"
 	dbTest "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
@@ -16,14 +18,15 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/proto/migration"
 	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	mock2 "github.com/theQRL/qrysm/v4/testing/mock"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -444,7 +447,7 @@ func TestServer_SubmitBlockSSZ(t *testing.T) {
 			Data: ssz,
 		}
 		md := metadata.MD{}
-		md.Set(versionHeader, "phase0")
+		md.Set(api.VersionHeader, "phase0")
 		sszCtx := metadata.NewIncomingContext(ctx, md)
 		_, err = server.SubmitBlockSSZ(sszCtx, blockReq)
 		assert.NoError(t, err)
@@ -465,7 +468,7 @@ func TestServer_SubmitBlockSSZ(t *testing.T) {
 			Data: ssz,
 		}
 		md := metadata.MD{}
-		md.Set(versionHeader, "altair")
+		md.Set(api.VersionHeader, "altair")
 		sszCtx := metadata.NewIncomingContext(ctx, md)
 		_, err = server.SubmitBlockSSZ(sszCtx, blockReq)
 		assert.NoError(t, err)
@@ -486,7 +489,7 @@ func TestServer_SubmitBlockSSZ(t *testing.T) {
 			Data: ssz,
 		}
 		md := metadata.MD{}
-		md.Set(versionHeader, "bellatrix")
+		md.Set(api.VersionHeader, "bellatrix")
 		sszCtx := metadata.NewIncomingContext(ctx, md)
 		_, err = server.SubmitBlockSSZ(sszCtx, blockReq)
 		assert.NoError(t, err)
@@ -504,7 +507,7 @@ func TestServer_SubmitBlockSSZ(t *testing.T) {
 			Data: ssz,
 		}
 		md := metadata.MD{}
-		md.Set(versionHeader, "bellatrix")
+		md.Set(api.VersionHeader, "bellatrix")
 		sszCtx := metadata.NewIncomingContext(ctx, md)
 		_, err = server.SubmitBlockSSZ(sszCtx, blockReq)
 		assert.NotNil(t, err)
@@ -525,7 +528,7 @@ func TestServer_SubmitBlockSSZ(t *testing.T) {
 			Data: ssz,
 		}
 		md := metadata.MD{}
-		md.Set(versionHeader, "capella")
+		md.Set(api.VersionHeader, "capella")
 		sszCtx := metadata.NewIncomingContext(ctx, md)
 		_, err = server.SubmitBlockSSZ(sszCtx, blockReq)
 		assert.NoError(t, err)
@@ -543,7 +546,7 @@ func TestServer_SubmitBlockSSZ(t *testing.T) {
 			Data: ssz,
 		}
 		md := metadata.MD{}
-		md.Set(versionHeader, "capella")
+		md.Set(api.VersionHeader, "capella")
 		sszCtx := metadata.NewIncomingContext(ctx, md)
 		_, err = server.SubmitBlockSSZ(sszCtx, blockReq)
 		assert.NotNil(t, err)
@@ -579,8 +582,8 @@ func TestServer_GetBlock(t *testing.T) {
 }
 
 func TestServer_GetBlockV2(t *testing.T) {
-	ctx := context.Background()
-
+	stream := &runtime.ServerTransportStream{}
+	ctx := grpc.NewContextWithServerTransportStream(context.Background(), stream)
 	t.Run("Phase 0", func(t *testing.T) {
 		b := util.NewBeaconBlock()
 		b.Block.Slot = 123

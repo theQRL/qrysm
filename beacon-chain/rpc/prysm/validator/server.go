@@ -2,6 +2,7 @@ package validator
 
 import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/core"
 	"github.com/theQRL/qrysm/v4/beacon-chain/sync"
 )
 
@@ -11,4 +12,5 @@ type Server struct {
 	GenesisTimeFetcher blockchain.TimeFetcher
 	SyncChecker        sync.Checker
 	HeadFetcher        blockchain.HeadFetcher
+	CoreService        *core.Service
 }

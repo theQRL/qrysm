@@ -1,7 +1,9 @@
 package beacon_api
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -10,8 +12,11 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/theQRL/go-zond/common/hexutil"
+	gatewaymiddleware "github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/prysm/validator"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -924,4 +929,45 @@ func TestGetChainHead(t *testing.T) {
 		require.NoError(t, err)
 		assert.DeepEqual(t, expectedChainHead, chainHead)
 	})
+}
+
+func Test_beaconApiBeaconChainClient_GetValidatorPerformance(t *testing.T) {
+	publicKeys := [][2592]byte{
+		bytesutil.ToBytes2592([]byte{1}),
+		bytesutil.ToBytes2592([]byte{2}),
+		bytesutil.ToBytes2592([]byte{3}),
+	}
+
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	request, err := json.Marshal(validator.ValidatorPerformanceRequest{
+		PublicKeys: [][]byte{publicKeys[0][:], publicKeys[2][:], publicKeys[1][:]},
+	})
+	require.NoError(t, err)
+
+	wantResponse := &validator.ValidatorPerformanceResponse{}
+	want := &zondpb.ValidatorPerformanceResponse{}
+	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
+	jsonRestHandler.EXPECT().PostRestJson(
+		ctx,
+		getValidatorPerformanceEndpoint,
+		nil,
+		bytes.NewBuffer(request),
+		wantResponse,
+	).Return(
+		&gatewaymiddleware.DefaultErrorJson{},
+		nil,
+	)
+
+	c := beaconApiBeaconChainClient{
+		jsonRestHandler: jsonRestHandler,
+	}
+
+	got, err := c.GetValidatorPerformance(ctx, &zondpb.ValidatorPerformanceRequest{
+		PublicKeys: [][]byte{publicKeys[0][:], publicKeys[2][:], publicKeys[1][:]},
+	})
+	require.NoError(t, err)
+	require.DeepEqual(t, want.PublicKeys, got.PublicKeys)
 }
