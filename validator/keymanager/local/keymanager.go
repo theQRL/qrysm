@@ -247,7 +247,7 @@ func (km *Keymanager) initializeAccountKeystore(ctx context.Context) error {
 	}
 
 	store := &accountStore{}
-	if err := json.Unmarshal(enc[:], store); err != nil {
+	if err := json.Unmarshal(enc, store); err != nil {
 		return err
 	}
 	if len(store.PublicKeys) != len(store.Seeds) {
