@@ -113,6 +113,6 @@ func (vs *Server) getSyncAggregate(ctx context.Context, slot primitives.Slot, ro
 
 	return &zondpb.SyncAggregate{
 		SyncCommitteeBits:      syncBits,
-		SyncCommitteeSignature: syncSigBytes[:],
+		SyncCommitteeSignature: syncSigBytes,
 	}, nil
 }
