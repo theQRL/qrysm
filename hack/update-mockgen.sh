@@ -36,7 +36,7 @@ for ((i = 0; i < ${#proto_mocks_service[@]}; i++)); do
     interfaces=${proto_mocks_service[i]#* };
     echo "generating $file for interfaces: $interfaces";
     echo
-    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/v4/proto/eth/service "$interfaces"
+    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/v4/proto/zond/service "$interfaces"
 done
 
 # github.com/theQRL/qrysm/proto/v4/prysm/v1alpha1/validator-client

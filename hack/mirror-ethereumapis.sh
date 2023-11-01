@@ -32,7 +32,7 @@ git clone https://github.com/prysmaticlabs/ethereumapis /tmp/ethereumapis/
 cd /tmp/prysm && git checkout "$BUILDKITE_COMMIT"
 
 # Copy proto files, go files, and markdown files
-find proto/eth \( -name '*.go' -o -name '*.proto' -o -name '*.md' \) -print0 |
+find proto/zond \( -name '*.go' -o -name '*.proto' -o -name '*.md' \) -print0 |
     while IFS= read -r -d '' line; do
         item_path=$(dirname "$line")
         mkdir -p /tmp/ethereumapis"${item_path#*proto}" && cp "$line" /tmp/ethereumapis"${line#*proto}"
