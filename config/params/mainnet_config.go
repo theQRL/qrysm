@@ -34,8 +34,8 @@ var mainnetNetworkConfig = &NetworkConfig{
 	AttestationSubnetCount:          64,
 	AttestationPropagationSlotRange: 32,
 	MaxRequestBlocks:                1 << 10, // 1024
-	TtfbTimeout:                     25 * time.Second,
-	RespTimeout:                     10 * time.Second,
+	TtfbTimeout:                     35 * time.Second,
+	RespTimeout:                     50 * time.Second,
 	MaximumGossipClockDisparity:     500 * time.Millisecond,
 	MessageDomainInvalidSnappy:      [4]byte{00, 00, 00, 00},
 	MessageDomainValidSnappy:        [4]byte{01, 00, 00, 00},

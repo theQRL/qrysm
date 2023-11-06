@@ -3383,7 +3383,6 @@ def qrysm_deps():
         build_directives = [
             "gazelle:exclude mockgen.go",
             "gazelle:exclude tools.go",
-            "gazelle:exclude internal/qtls/go120.go",  # Disabled until go1.20 is supported in Prysm.
         ],
         importpath = "github.com/quic-go/quic-go",
         sum = "h1:ItNoTDN/Fm/zBlq769lLJc8ECe9gYaW40veHCCco7y0=",
