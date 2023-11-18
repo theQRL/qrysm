@@ -11,9 +11,8 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
-	"github.com/theQRL/qrysm/v4/proto/zond/v2"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
 	e2eparams "github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
@@ -289,6 +288,12 @@ func syncCompatibleBlockFromCtr(container *zondpb.BeaconBlockContainer) (interfa
 	}
 	if container.GetBlindedCapellaBlock() != nil {
 		return blocks.NewSignedBeaconBlock(container.GetBlindedCapellaBlock())
+	}
+	if container.GetDenebBlock() != nil {
+		return blocks.NewSignedBeaconBlock(container.GetDenebBlock())
+	}
+	if container.GetBlindedDenebBlock() != nil {
+		return blocks.NewSignedBeaconBlock(container.GetBlindedDenebBlock())
 	}
 	return nil, errors.New("no supported block type in container")
 }

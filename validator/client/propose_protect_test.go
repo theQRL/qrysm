@@ -4,12 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/config/features"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -85,12 +82,7 @@ func Test_slashableProposalCheck_PreventsLowerThanMinProposal(t *testing.T) {
 
 func Test_slashableProposalCheck(t *testing.T) {
 	ctx := context.Background()
-	config := &features.Flags{
-		RemoteSlasherProtection: true,
-	}
-	reset := features.InitWithReset(config)
-	defer reset()
-	validator, mocks, validatorKey, finish := setup(t)
+	validator, _, validatorKey, finish := setup(t)
 	defer finish()
 
 	blk := util.HydrateSignedBeaconBlock(&zondpb.SignedBeaconBlock{
@@ -117,13 +109,6 @@ func Test_slashableProposalCheck(t *testing.T) {
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	sBlock, err := blocks.NewSignedBeaconBlock(blk)
 	require.NoError(t, err)
-	blockHdr, err := interfaces.SignedBeaconBlockHeaderFromBlockInterface(sBlock)
-	require.NoError(t, err)
-
-	mocks.slasherClient.EXPECT().IsSlashableBlock(
-		gomock.Any(), // ctx
-		blockHdr,
-	).Return(&zondpb.ProposerSlashingResponse{}, nil /*err*/)
 
 	// We expect the same block sent out with the same root should not be slasahble.
 	err = validator.slashableProposalCheck(context.Background(), pubKey, sBlock, dummySigningRoot)
@@ -150,23 +135,12 @@ func Test_slashableProposalCheck(t *testing.T) {
 	blk.Block.Slot = 9
 	sBlock, err = blocks.NewSignedBeaconBlock(blk)
 	require.NoError(t, err)
-	blockHdr, err = interfaces.SignedBeaconBlockHeaderFromBlockInterface(sBlock)
-	require.NoError(t, err)
-	mocks.slasherClient.EXPECT().IsSlashableBlock(
-		gomock.Any(), // ctx
-		blockHdr,
-	).Return(&zondpb.ProposerSlashingResponse{}, nil /*err*/)
 	err = validator.slashableProposalCheck(context.Background(), pubKey, sBlock, [32]byte{3})
 	require.NoError(t, err, "Expected allowed block not to throw error")
 }
 
 func Test_slashableProposalCheck_RemoteProtection(t *testing.T) {
-	config := &features.Flags{
-		RemoteSlasherProtection: true,
-	}
-	reset := features.InitWithReset(config)
-	defer reset()
-	validator, m, validatorKey, finish := setup(t)
+	validator, _, validatorKey, finish := setup(t)
 	defer finish()
 	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
@@ -175,20 +149,6 @@ func Test_slashableProposalCheck_RemoteProtection(t *testing.T) {
 	blk.Block.Slot = 10
 	sBlock, err := blocks.NewSignedBeaconBlock(blk)
 	require.NoError(t, err)
-	blockHdr, err := interfaces.SignedBeaconBlockHeaderFromBlockInterface(sBlock)
-	require.NoError(t, err)
-	m.slasherClient.EXPECT().IsSlashableBlock(
-		gomock.Any(), // ctx
-		blockHdr,
-	).Return(&zondpb.ProposerSlashingResponse{ProposerSlashings: []*zondpb.ProposerSlashing{{}}}, nil /*err*/)
-
-	err = validator.slashableProposalCheck(context.Background(), pubKey, sBlock, [32]byte{2})
-	require.ErrorContains(t, failedBlockSignExternalErr, err)
-
-	m.slasherClient.EXPECT().IsSlashableBlock(
-		gomock.Any(), // ctx
-		blockHdr,
-	).Return(&zondpb.ProposerSlashingResponse{}, nil /*err*/)
 
 	err = validator.slashableProposalCheck(context.Background(), pubKey, sBlock, [32]byte{2})
 	require.NoError(t, err, "Expected allowed block not to throw error")

@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/shared"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
@@ -98,7 +99,16 @@ func (c beaconApiValidatorClient) getBeaconBlock(ctx context.Context, slot primi
 		response.Block = &zondpb.GenericBeaconBlock_Capella{
 			Capella: capellaBlock,
 		}
-
+	case "deneb":
+		jsonDenebBlockContents := shared.BeaconBlockContentsDeneb{}
+		if err := decoder.Decode(&jsonDenebBlockContents); err != nil {
+			return nil, errors.Wrap(err, "failed to decode deneb block response json")
+		}
+		genericBlock, err := jsonDenebBlockContents.ToGeneric()
+		if err != nil {
+			return nil, errors.Wrap(err, "could not convert deneb block contents to generic block")
+		}
+		response = genericBlock
 	default:
 		return nil, errors.Errorf("unsupported consensus version `%s`", produceBlockResponseJson.Version)
 	}

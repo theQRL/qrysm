@@ -8,14 +8,6 @@ import (
 	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
-func TestStateRoots_Casting(t *testing.T) {
-	var b [fieldparams.StateRootsLength][32]byte
-	d := StateRoots(b)
-	if !reflect.DeepEqual([fieldparams.StateRootsLength][32]byte(d), b) {
-		t.Errorf("Unequal: %v = %v", d, b)
-	}
-}
-
 func TestStateRoots_UnmarshalSSZ(t *testing.T) {
 	t.Run("Ok", func(t *testing.T) {
 		d := StateRoots{}
@@ -86,7 +78,7 @@ func TestStateRoots_MarshalSSZ(t *testing.T) {
 }
 
 func TestStateRoots_SizeSSZ(t *testing.T) {
-	d := StateRoots{}
+	d := StateRoots(make([][32]byte, fieldparams.StateRootsLength))
 	if d.SizeSSZ() != fieldparams.StateRootsLength*32 {
 		t.Errorf("Wrong SSZ size. Expected %v vs actual %v", fieldparams.StateRootsLength*32, d.SizeSSZ())
 	}
@@ -94,7 +86,7 @@ func TestStateRoots_SizeSSZ(t *testing.T) {
 
 func TestStateRoots_Slice(t *testing.T) {
 	a, b, c := [32]byte{'a'}, [32]byte{'b'}, [32]byte{'c'}
-	roots := StateRoots{}
+	roots := StateRoots(make([][32]byte, fieldparams.StateRootsLength))
 	roots[1] = a
 	roots[10] = b
 	roots[100] = c

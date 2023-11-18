@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/go-zond/common/hexutil"
 	base "github.com/theQRL/qrysm/v4/api/client"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
@@ -109,8 +110,8 @@ func DownloadFinalizedData(ctx context.Context, client *Client) (*OriginData, er
 	log.
 		WithField("block_slot", b.Block().Slot()).
 		WithField("state_slot", s.Slot()).
-		WithField("state_root", sr).
-		WithField("block_root", br).
+		WithField("state_root", hexutil.Encode(sr[:])).
+		WithField("block_root", hexutil.Encode(br[:])).
 		Info("Downloaded checkpoint sync state and block.")
 	return &OriginData{
 		st: s,

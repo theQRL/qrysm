@@ -6,7 +6,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/config/features"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
@@ -14,12 +13,7 @@ import (
 )
 
 func Test_slashableAttestationCheck(t *testing.T) {
-	config := &features.Flags{
-		RemoteSlasherProtection: true,
-	}
-	reset := features.InitWithReset(config)
-	defer reset()
-	validator, m, validatorKey, finish := setup(t)
+	validator, _, validatorKey, finish := setup(t)
 	defer finish()
 	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
@@ -40,32 +34,11 @@ func Test_slashableAttestationCheck(t *testing.T) {
 		},
 	}
 
-	m.slasherClient.EXPECT().IsSlashableAttestation(
-		gomock.Any(), // ctx
-		att,
-	).Return(&zondpb.AttesterSlashingResponse{AttesterSlashings: []*zondpb.AttesterSlashing{{
-		Attestation_1: &zondpb.IndexedAttestation{},
-		Attestation_2: &zondpb.IndexedAttestation{},
-	}}}, nil /*err*/)
-
 	err := validator.slashableAttestationCheck(context.Background(), att, pubKey, [32]byte{1})
-	require.ErrorContains(t, failedPostAttSignExternalErr, err)
-
-	m.slasherClient.EXPECT().IsSlashableAttestation(
-		gomock.Any(), // ctx
-		att,
-	).Return(&zondpb.AttesterSlashingResponse{}, nil /*err*/)
-
-	err = validator.slashableAttestationCheck(context.Background(), att, pubKey, [32]byte{1})
 	require.NoError(t, err, "Expected allowed attestation not to throw error")
 }
 
 func Test_slashableAttestationCheck_UpdatesLowestSignedEpochs(t *testing.T) {
-	config := &features.Flags{
-		RemoteSlasherProtection: true,
-	}
-	reset := features.InitWithReset(config)
-	defer reset()
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
 	ctx := context.Background()
@@ -87,11 +60,6 @@ func Test_slashableAttestationCheck_UpdatesLowestSignedEpochs(t *testing.T) {
 			},
 		},
 	}
-
-	m.slasherClient.EXPECT().IsSlashableAttestation(
-		gomock.Any(), // ctx
-		att,
-	).Return(&zondpb.AttesterSlashingResponse{}, nil /*err*/)
 
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
@@ -118,13 +86,8 @@ func Test_slashableAttestationCheck_UpdatesLowestSignedEpochs(t *testing.T) {
 }
 
 func Test_slashableAttestationCheck_OK(t *testing.T) {
-	config := &features.Flags{
-		RemoteSlasherProtection: true,
-	}
-	reset := features.InitWithReset(config)
-	defer reset()
 	ctx := context.Background()
-	validator, mocks, _, finish := setup(t)
+	validator, _, _, finish := setup(t)
 	defer finish()
 	att := &zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{1, 2},
@@ -145,23 +108,13 @@ func Test_slashableAttestationCheck_OK(t *testing.T) {
 	sr := [32]byte{1}
 	fakePubkey := bytesutil.ToBytes2592([]byte("test"))
 
-	mocks.slasherClient.EXPECT().IsSlashableAttestation(
-		gomock.Any(), // ctx
-		att,
-	).Return(&zondpb.AttesterSlashingResponse{}, nil /*err*/)
-
 	err := validator.slashableAttestationCheck(ctx, att, fakePubkey, sr)
 	require.NoError(t, err, "Expected allowed attestation not to throw error")
 }
 
 func Test_slashableAttestationCheck_GenesisEpoch(t *testing.T) {
-	config := &features.Flags{
-		RemoteSlasherProtection: true,
-	}
-	reset := features.InitWithReset(config)
-	defer reset()
 	ctx := context.Background()
-	validator, mocks, _, finish := setup(t)
+	validator, _, _, finish := setup(t)
 	defer finish()
 	att := &zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{1, 2},
@@ -179,11 +132,6 @@ func Test_slashableAttestationCheck_GenesisEpoch(t *testing.T) {
 			},
 		},
 	}
-
-	mocks.slasherClient.EXPECT().IsSlashableAttestation(
-		gomock.Any(), // ctx
-		att,
-	).Return(&zondpb.AttesterSlashingResponse{}, nil /*err*/)
 
 	fakePubkey := bytesutil.ToBytes2592([]byte("test"))
 	err := validator.slashableAttestationCheck(ctx, att, fakePubkey, [32]byte{})

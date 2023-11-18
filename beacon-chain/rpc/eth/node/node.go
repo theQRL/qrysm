@@ -14,9 +14,9 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
-	zondpb "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/proto/migration"
 	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
@@ -255,29 +255,6 @@ func (_ *Server) GetVersion(ctx context.Context, _ *emptypb.Empty) (*zondpb.Vers
 	return &zondpb.VersionResponse{
 		Data: &zondpb.Version{
 			Version: v,
-		},
-	}, nil
-}
-
-// GetSyncStatus requests the beacon node to describe if it's currently syncing or not, and
-// if it is, what block it is up to.
-func (ns *Server) GetSyncStatus(ctx context.Context, _ *emptypb.Empty) (*zondpb.SyncingResponse, error) {
-	ctx, span := trace.StartSpan(ctx, "node.GetSyncStatus")
-	defer span.End()
-
-	isOptimistic, err := ns.OptimisticModeFetcher.IsOptimistic(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Could not check optimistic status: %v", err)
-	}
-
-	headSlot := ns.HeadFetcher.HeadSlot()
-	return &zondpb.SyncingResponse{
-		Data: &zondpb.SyncInfo{
-			HeadSlot:     headSlot,
-			SyncDistance: ns.GenesisTimeFetcher.CurrentSlot() - headSlot,
-			IsSyncing:    ns.SyncChecker.Syncing(),
-			IsOptimistic: isOptimistic,
-			ElOffline:    !ns.ExecutionChainInfoFetcher.ExecutionClientConnected(),
 		},
 	}, nil
 }

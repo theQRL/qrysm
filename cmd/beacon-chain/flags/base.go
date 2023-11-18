@@ -25,9 +25,10 @@ var (
 		Usage: "Number of total skip slot to fallback from using relay/builder to local execution engine for block construction in last epoch rolling window",
 		Value: 8,
 	}
-	LocalBlockValueBoost = &cli.Float64Flag{
+	// LocalBlockValueBoost sets a percentage boost for local block construction while using a custom builder.
+	LocalBlockValueBoost = &cli.Uint64Flag{
 		Name: "local-block-value-boost",
-		Usage: "A percentage boost for local block construction. This is used to prioritize local block construction over relay/builder block construction" +
+		Usage: "A percentage boost for local block construction as a Uint64. This is used to prioritize local block construction over relay/builder block construction" +
 			"Boost is an additional percentage to multiple local block value. Use builder block if: builder_bid_value * 100 > local_block_value * (local-block-value-boost + 100)",
 	}
 	// ExecutionEngineEndpoint provides an HTTP access endpoint to connect to an execution client on the execution layer
@@ -137,13 +138,11 @@ var (
 		Usage: "The percentage of freshly allocated data to live data on which the gc will be run again.",
 		Value: 100,
 	}
-	// SafeSlotsToImportOptimistically specifies the number of slots that a
-	// node should wait before being able to optimistically sync blocks
-	// across the merge boundary
+	// SafeSlotsToImportOptimistically is deprecated. It should be removed in the next major release.
 	SafeSlotsToImportOptimistically = &cli.IntFlag{
-		Name:  "safe-slots-to-import-optimistically",
-		Usage: "The number of slots to wait before optimistically syncing a block without enabled execution.",
-		Value: 128,
+		Name:   "safe-slots-to-import-optimistically",
+		Usage:  "DEPRECATED. DO NOT USE",
+		Hidden: true,
 	}
 	// SlotsPerArchivedPoint specifies the number of slots between the archived points, to save beacon state in the cold
 	// section of beaconDB.
@@ -162,6 +161,18 @@ var (
 	BlockBatchLimitBurstFactor = &cli.IntFlag{
 		Name:  "block-batch-limit-burst-factor",
 		Usage: "The factor by which block batch limit may increase on burst.",
+		Value: 2,
+	}
+	// BlobBatchLimit specifies the requested blob batch size.
+	BlobBatchLimit = &cli.IntFlag{
+		Name:  "blob-batch-limit",
+		Usage: "The amount of blobs the local peer is bounded to request and respond to in a batch.",
+		Value: 8,
+	}
+	// BlobBatchLimitBurstFactor specifies the factor by which blob batch size may increase.
+	BlobBatchLimitBurstFactor = &cli.IntFlag{
+		Name:  "blob-batch-limit-burst-factor",
+		Usage: "The factor by which blob batch limit may increase on burst.",
 		Value: 2,
 	}
 	// EnableDebugRPCEndpoints as /v1/beacon/state.
@@ -249,5 +260,10 @@ var (
 		Name:  "slasher-datadir",
 		Usage: "Directory for the slasher database",
 		Value: cmd.DefaultDataDir(),
+	}
+	BlobRetentionEpoch = &cli.Uint64Flag{
+		Name:  "extend-blob-retention-epoch",
+		Usage: "Extend blob retention epoch period to beyond default 4096 epochs (~18 days). The node will error at start if input value is less than 4096 epochs.",
+		Value: uint64(params.BeaconNetworkConfig().MinEpochsForBlobsSidecarsRequest),
 	}
 )

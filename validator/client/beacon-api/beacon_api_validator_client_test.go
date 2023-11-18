@@ -7,10 +7,11 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	rpcmiddleware "github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/beacon"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 
 	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/validator"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
@@ -30,7 +31,7 @@ func TestBeaconApiValidatorClient_GetAttestationDataValid(t *testing.T) {
 	ctx := context.Background()
 
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
-	produceAttestationDataResponseJson := rpcmiddleware.ProduceAttestationDataResponseJson{}
+	produceAttestationDataResponseJson := validator.GetAttestationDataResponse{}
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
 		fmt.Sprintf("/zond/v1/validator/attestation_data?committee_index=%d&slot=%d", committeeIndex, slot),
@@ -71,7 +72,7 @@ func TestBeaconApiValidatorClient_GetAttestationDataError(t *testing.T) {
 	ctx := context.Background()
 
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
-	produceAttestationDataResponseJson := rpcmiddleware.ProduceAttestationDataResponseJson{}
+	produceAttestationDataResponseJson := validator.GetAttestationDataResponse{}
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
 		fmt.Sprintf("/zond/v1/validator/attestation_data?committee_index=%d&slot=%d", committeeIndex, slot),
@@ -118,7 +119,7 @@ func TestBeaconApiValidatorClient_DomainDataValid(t *testing.T) {
 
 	genesisProvider := mock.NewMockgenesisProvider(ctrl)
 	genesisProvider.EXPECT().GetGenesis(ctx).Return(
-		&rpcmiddleware.GenesisResponse_GenesisJson{GenesisValidatorsRoot: genesisValidatorRoot},
+		&beacon.Genesis{GenesisValidatorsRoot: genesisValidatorRoot},
 		nil,
 		nil,
 	).Times(2)

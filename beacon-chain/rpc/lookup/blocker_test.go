@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/theQRL/go-zond/common/hexutil"
 	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	dbtesting "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/testutil"
@@ -115,6 +116,11 @@ func TestGetBlock(t *testing.T) {
 			name:    "non-existent root",
 			blockID: bytesutil.PadTo([]byte("hi there"), 32),
 			want:    nil,
+		},
+		{
+			name:    "hex",
+			blockID: []byte(hexutil.Encode(blkContainers[20].BlockRoot)),
+			want:    blkContainers[20].Block.(*zondpbalpha.BeaconBlockContainer_Phase0Block).Phase0Block,
 		},
 		{
 			name:    "no block",

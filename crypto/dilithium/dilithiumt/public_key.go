@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/bls/common"
 )
 
-var maxKeys = 1000000
+var maxKeys = 2_000_000
 var pubkeyCache = lruwrpr.New(maxKeys)
 
 type PublicKey struct {
@@ -23,12 +23,19 @@ func (p *PublicKey) Marshal() []byte {
 }
 
 func PublicKeyFromBytes(pubKey []byte) (common.PublicKey, error) {
+	return publicKeyFromBytes(pubKey, true)
+}
+
+func publicKeyFromBytes(pubKey []byte, cacheCopy bool) (common.PublicKey, error) {
 	if len(pubKey) != dilithium2.CryptoPublicKeyBytes {
 		return nil, fmt.Errorf("public key must be %d bytes", dilithium2.CryptoPublicKeyBytes)
 	}
 	newKey := (*[dilithium2.CryptoPublicKeyBytes]uint8)(pubKey)
 	if cv, ok := pubkeyCache.Get(*newKey); ok {
-		return cv.(*PublicKey).Copy(), nil
+		if cacheCopy {
+			return cv.(*PublicKey).Copy(), nil
+		}
+		return cv.(*PublicKey), nil
 	}
 	var p [dilithium2.CryptoPublicKeyBytes]uint8
 	copy(p[:], pubKey)

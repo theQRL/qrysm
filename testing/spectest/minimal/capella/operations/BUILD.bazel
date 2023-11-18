@@ -7,7 +7,7 @@ go_test(
         "attestation_test.go",
         "attester_slashing_test.go",
         "block_header_test.go",
-        "bls_to_execution_change_test.go",
+        "dilithium_to_execution_change_test.go",
         "deposit_test.go",
         "execution_payload_test.go",
         "proposer_slashing_test.go",

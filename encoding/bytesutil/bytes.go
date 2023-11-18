@@ -3,6 +3,8 @@ package bytesutil
 
 import (
 	"fmt"
+
+	"github.com/theQRL/go-zond/common/hexutil"
 )
 
 // ToBytes48Array is a convenience method for converting an array of
@@ -102,6 +104,18 @@ func SafeCopyBytes(cp []byte) []byte {
 		}
 		copied := make([]byte, len(cp))
 		copy(copied, cp)
+		return copied
+	}
+	return nil
+}
+
+// SafeCopy2dHexUtilBytes will copy and return a non-nil 2d hex util byte slice, otherwise it returns nil.
+func SafeCopy2dHexUtilBytes(ary []hexutil.Bytes) [][]byte {
+	if ary != nil {
+		copied := make([][]byte, len(ary))
+		for i, a := range ary {
+			copied[i] = SafeCopyBytes(a)
+		}
 		return copied
 	}
 	return nil

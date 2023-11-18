@@ -10,6 +10,7 @@ import (
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/async/event"
+	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
 	mockChain "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	b "github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
@@ -19,6 +20,7 @@ import (
 	prysmtime "github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	"github.com/theQRL/qrysm/v4/proto/migration"
 	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
@@ -228,6 +230,52 @@ func TestStreamEvents_OperationsEvents(t *testing.T) {
 				Type: operation.DilithiumToExecutionChangeReceived,
 				Data: &operation.DilithiumToExecutionChangeReceivedData{
 					Change: wantedChangeV1alpha1,
+				},
+			},
+			feed: srv.OperationNotifier.OperationFeed(),
+		})
+	})
+	t.Run(BlobSidecarTopic, func(t *testing.T) {
+		ctx := context.Background()
+		srv, ctrl, mockStream := setupServer(ctx, t)
+		defer ctrl.Finish()
+		commitment, err := hexutil.Decode("0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8000")
+		require.NoError(t, err)
+		wantedBlobV1alpha1 := &zond.SignedBlobSidecar{
+			Message: &zond.BlobSidecar{
+				BlockRoot:     make([]byte, fieldparams.RootLength),
+				Index:         1,
+				Slot:          3,
+				KzgCommitment: commitment,
+			},
+			Signature: make([]byte, 96),
+		}
+		versionedHash := blockchain.ConvertKzgCommitmentToVersionedHash(commitment)
+		blobEvent := &zondpb.EventBlobSidecar{
+			BlockRoot:     bytesutil.SafeCopyBytes(wantedBlobV1alpha1.Message.BlockRoot),
+			Index:         wantedBlobV1alpha1.Message.Index,
+			Slot:          wantedBlobV1alpha1.Message.Slot,
+			VersionedHash: bytesutil.SafeCopyBytes(versionedHash.Bytes()),
+			KzgCommitment: bytesutil.SafeCopyBytes(wantedBlobV1alpha1.Message.KzgCommitment),
+		}
+		genericResponse, err := anypb.New(blobEvent)
+		require.NoError(t, err)
+
+		wantedMessage := &gateway.EventSource{
+			Event: BlobSidecarTopic,
+			Data:  genericResponse,
+		}
+
+		assertFeedSendAndReceive(ctx, &assertFeedArgs{
+			t:             t,
+			srv:           srv,
+			topics:        []string{BlobSidecarTopic},
+			stream:        mockStream,
+			shouldReceive: wantedMessage,
+			itemToSend: &feed.Event{
+				Type: operation.BlobSidecarReceived,
+				Data: &operation.BlobSidecarReceivedData{
+					Blob: wantedBlobV1alpha1,
 				},
 			},
 			feed: srv.OperationNotifier.OperationFeed(),

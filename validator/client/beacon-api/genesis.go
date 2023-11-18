@@ -9,12 +9,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
-	rpcmiddleware "github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/beacon"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 type genesisProvider interface {
-	GetGenesis(ctx context.Context) (*rpcmiddleware.GenesisResponse_GenesisJson, *apimiddleware.DefaultErrorJson, error)
+	GetGenesis(ctx context.Context) (*beacon.Genesis, *apimiddleware.DefaultErrorJson, error)
 }
 
 type beaconApiGenesisProvider struct {
@@ -61,8 +61,8 @@ func (c beaconApiValidatorClient) waitForChainStart(ctx context.Context) (*zondp
 }
 
 // GetGenesis gets the genesis information from the beacon node via the /zond/v1/beacon/genesis endpoint
-func (c beaconApiGenesisProvider) GetGenesis(ctx context.Context) (*rpcmiddleware.GenesisResponse_GenesisJson, *apimiddleware.DefaultErrorJson, error) {
-	genesisJson := &rpcmiddleware.GenesisResponseJson{}
+func (c beaconApiGenesisProvider) GetGenesis(ctx context.Context) (*beacon.Genesis, *apimiddleware.DefaultErrorJson, error) {
+	genesisJson := &beacon.GetGenesisResponse{}
 	errorJson, err := c.jsonRestHandler.GetRestJsonResponse(ctx, "/zond/v1/beacon/genesis", genesisJson)
 	if err != nil {
 		return nil, errorJson, errors.Wrap(err, "failed to get json response")

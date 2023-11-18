@@ -13,6 +13,7 @@ import (
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
+	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	blocktest "github.com/theQRL/qrysm/v4/consensus-types/blocks/testing"
@@ -22,6 +23,7 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -33,7 +35,6 @@ import (
 type mocks struct {
 	validatorClient *validatormock.MockValidatorClient
 	nodeClient      *validatormock.MockNodeClient
-	slasherClient   *validatormock.MockSlasherClient
 	signfunc        func(context.Context, *validatorpb.SignRequest) (dilithium.Signature, error)
 }
 
@@ -78,17 +79,16 @@ func setupWithKey(t *testing.T, validatorKey dilithium.DilithiumKey) (*validator
 	m := &mocks{
 		validatorClient: validatormock.NewMockValidatorClient(ctrl),
 		nodeClient:      validatormock.NewMockNodeClient(ctrl),
-		slasherClient:   validatormock.NewMockSlasherClient(ctrl),
 		signfunc: func(ctx context.Context, req *validatorpb.SignRequest) (dilithium.Signature, error) {
 			return mockSignature{}, nil
 		},
 	}
 	aggregatedSlotCommitteeIDCache := lruwrpr.New(int(params.BeaconConfig().MaxCommitteesPerSlot))
+
 	validator := &validator{
 		db:                             valDB,
 		keyManager:                     newMockKeymanager(t, keypair{pub: pubKey, pri: validatorKey}),
 		validatorClient:                m.validatorClient,
-		slashingProtectionClient:       m.slasherClient,
 		graffiti:                       []byte{},
 		attLogs:                        make(map[[32]byte]*attSubmitted),
 		aggregatedSlotCommitteeIDCache: aggregatedSlotCommitteeIDCache,
@@ -508,8 +508,9 @@ func TestProposeBlock_BroadcastsBlock_WithGraffiti(t *testing.T) {
 
 func testProposeBlock(t *testing.T, graffiti []byte) {
 	tests := []struct {
-		name  string
-		block *zondpb.GenericBeaconBlock
+		name    string
+		block   *zondpb.GenericBeaconBlock
+		version int
 	}{
 		{
 			name: "phase0",
@@ -583,6 +584,80 @@ func testProposeBlock(t *testing.T, graffiti []byte) {
 				},
 			},
 		},
+		{
+			name:    "deneb block and blobs",
+			version: version.Deneb,
+			block: &zondpb.GenericBeaconBlock{
+				Block: &zondpb.GenericBeaconBlock_Deneb{
+					Deneb: func() *zondpb.BeaconBlockAndBlobsDeneb {
+						blk := util.NewBeaconBlockDeneb()
+						blk.Block.Body.Graffiti = graffiti
+						return &zondpb.BeaconBlockAndBlobsDeneb{
+							Block: blk.Block,
+							Blobs: []*zondpb.BlobSidecar{
+								{
+									BlockRoot:       bytesutil.PadTo([]byte("blockRoot"), 32),
+									Index:           1,
+									Slot:            2,
+									BlockParentRoot: bytesutil.PadTo([]byte("blockParentRoot"), 32),
+									ProposerIndex:   3,
+									Blob:            bytesutil.PadTo([]byte("blob"), fieldparams.BlobLength),
+									KzgCommitment:   bytesutil.PadTo([]byte("kzgCommitment"), 48),
+									KzgProof:        bytesutil.PadTo([]byte("kzgPRoof"), 48),
+								},
+								{
+									BlockRoot:       bytesutil.PadTo([]byte("blockRoot1"), 32),
+									Index:           4,
+									Slot:            5,
+									BlockParentRoot: bytesutil.PadTo([]byte("blockParentRoot1"), 32),
+									ProposerIndex:   6,
+									Blob:            bytesutil.PadTo([]byte("blob1"), fieldparams.BlobLength),
+									KzgCommitment:   bytesutil.PadTo([]byte("kzgCommitment1"), 48),
+									KzgProof:        bytesutil.PadTo([]byte("kzgPRoof1"), 48),
+								},
+							},
+						}
+					}(),
+				},
+			},
+		},
+		{
+			name:    "deneb blind block and blobs",
+			version: version.Deneb,
+			block: &zondpb.GenericBeaconBlock{
+				Block: &zondpb.GenericBeaconBlock_BlindedDeneb{
+					BlindedDeneb: func() *zondpb.BlindedBeaconBlockAndBlobsDeneb {
+						blk := util.NewBlindedBeaconBlockDeneb()
+						blk.Message.Body.Graffiti = graffiti
+						return &zondpb.BlindedBeaconBlockAndBlobsDeneb{
+							Block: blk.Message,
+							Blobs: []*zondpb.BlindedBlobSidecar{
+								{
+									BlockRoot:       bytesutil.PadTo([]byte("blockRoot"), 32),
+									Index:           1,
+									Slot:            2,
+									BlockParentRoot: bytesutil.PadTo([]byte("blockParentRoot"), 32),
+									ProposerIndex:   3,
+									BlobRoot:        bytesutil.PadTo([]byte("blobRoot"), 32),
+									KzgCommitment:   bytesutil.PadTo([]byte("kzgCommitment"), 48),
+									KzgProof:        bytesutil.PadTo([]byte("kzgPRoof"), 48),
+								},
+								{
+									BlockRoot:       bytesutil.PadTo([]byte("blockRoot1"), 32),
+									Index:           4,
+									Slot:            5,
+									BlockParentRoot: bytesutil.PadTo([]byte("blockParentRoot1"), 32),
+									ProposerIndex:   6,
+									BlobRoot:        bytesutil.PadTo([]byte("blobRoot1"), 32),
+									KzgCommitment:   bytesutil.PadTo([]byte("kzgCommitment1"), 48),
+									KzgProof:        bytesutil.PadTo([]byte("kzgPRoof1"), 48),
+								},
+							},
+						}
+					}(),
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -617,12 +692,31 @@ func testProposeBlock(t *testing.T, graffiti []byte) {
 			var sentBlock interfaces.ReadOnlySignedBeaconBlock
 			var err error
 
+			if tt.version == version.Deneb {
+				m.validatorClient.EXPECT().DomainData(
+					gomock.Any(), // ctx
+					gomock.Any(), // epoch
+				).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+				m.validatorClient.EXPECT().DomainData(
+					gomock.Any(), // ctx
+					gomock.Any(), // epoch
+				).Return(&zondpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+			}
+
 			m.validatorClient.EXPECT().ProposeBeaconBlock(
 				gomock.Any(), // ctx
 				gomock.AssignableToTypeOf(&zondpb.GenericSignedBeaconBlock{}),
 			).DoAndReturn(func(ctx context.Context, block *zondpb.GenericSignedBeaconBlock) (*zondpb.ProposeResponse, error) {
 				sentBlock, err = blocktest.NewSignedBeaconBlockFromGeneric(block)
 				assert.NoError(t, err, "Unexpected error unwrapping block")
+				if tt.version == version.Deneb {
+					switch {
+					case tt.name == "deneb block and blobs":
+						require.Equal(t, 2, len(block.GetDeneb().Blobs))
+					case tt.name == "deneb blind block and blobs":
+						require.Equal(t, 2, len(block.GetBlindedDeneb().SignedBlindedBlobSidecars))
+					}
+				}
 				return &zondpb.ProposeResponse{BlockRoot: make([]byte, 32)}, nil
 			})
 
@@ -630,6 +724,7 @@ func testProposeBlock(t *testing.T, graffiti []byte) {
 			g := sentBlock.Block().Body().Graffiti()
 			assert.Equal(t, string(validator.graffiti), string(g[:]))
 			require.LogsContain(t, hook, "Submitted new block")
+
 		})
 	}
 }
@@ -822,28 +917,21 @@ func TestSignBellatrixBlock(t *testing.T) {
 	validator, m, _, finish := setup(t)
 	defer finish()
 
-	secretKey, err := dilithium.SecretKeyFromBytes(bytesutil.PadTo([]byte{1}, common2.SeedSize))
-	require.NoError(t, err, "Failed to generate key from bytes")
-	publicKey := secretKey.PublicKey()
 	proposerDomain := make([]byte, 32)
 	m.validatorClient.EXPECT().
 		DomainData(gomock.Any(), gomock.Any()).
 		Return(&zondpb.DomainResponse{SignatureDomain: proposerDomain}, nil)
+
 	ctx := context.Background()
 	blk := util.NewBeaconBlockBellatrix()
 	blk.Block.Slot = 1
 	blk.Block.ProposerIndex = 100
-	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
-	copy(pubKey[:], publicKey.Marshal())
-	km := &mockKeymanager{
-		keysMap: map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey{
-			pubKey: secretKey,
-		},
-	}
-	validator.keyManager = km
+
+	kp := randKeypair(t)
+	validator.keyManager = newMockKeymanager(t, kp)
 	wb, err := blocks.NewBeaconBlock(blk.Block)
 	require.NoError(t, err)
-	sig, blockRoot, err := validator.signBlock(ctx, pubKey, 0, 0, wb)
+	sig, blockRoot, err := validator.signBlock(ctx, kp.pub, 0, 0, wb)
 	require.NoError(t, err, "%x,%v", sig, err)
 	// Verify the returned block root matches the expected root using the proposer signature
 	// domain.

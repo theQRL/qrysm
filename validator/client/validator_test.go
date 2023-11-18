@@ -28,9 +28,9 @@ import (
 	blsmock "github.com/theQRL/qrysm/v4/crypto/bls/common/mock"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	mock2 "github.com/theQRL/qrysm/v4/testing/mock"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -939,6 +939,37 @@ func TestService_ReceiveBlocks_SetHighest(t *testing.T) {
 		&zondpb.StreamBlocksResponse{
 			Block: &zondpb.StreamBlocksResponse_Phase0Block{
 				Phase0Block: &zondpb.SignedBeaconBlock{Block: &zondpb.BeaconBlock{Slot: slot, Body: &zondpb.BeaconBlockBody{}}}},
+		},
+		nil,
+	).Do(func() {
+		cancel()
+	})
+	connectionErrorChannel := make(chan error)
+	v.ReceiveBlocks(ctx, connectionErrorChannel)
+	require.Equal(t, slot, v.highestValidSlot)
+}
+
+func TestService_ReceiveBlocks_SetHighestDeneb(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	client := validatormock.NewMockValidatorClient(ctrl)
+
+	v := validator{
+		validatorClient: client,
+		blockFeed:       new(event.Feed),
+	}
+	stream := mock2.NewMockBeaconNodeValidatorAltair_StreamBlocksClient(ctrl)
+	ctx, cancel := context.WithCancel(context.Background())
+	client.EXPECT().StreamBlocksAltair(
+		gomock.Any(),
+		&zondpb.StreamBlocksRequest{VerifiedOnly: true},
+	).Return(stream, nil)
+	stream.EXPECT().Context().Return(ctx).AnyTimes()
+	slot := primitives.Slot(100)
+	stream.EXPECT().Recv().Return(
+		&zondpb.StreamBlocksResponse{
+			Block: &zondpb.StreamBlocksResponse_DenebBlock{
+				DenebBlock: &zondpb.SignedBeaconBlockDeneb{Block: &zondpb.BeaconBlockDeneb{Slot: slot, Body: &zondpb.BeaconBlockBodyDeneb{}}}},
 		},
 		nil,
 	).Do(func() {
@@ -2358,6 +2389,64 @@ func TestValidator_buildSignedRegReqs_SignerOnError(t *testing.T) {
 		return nil, errors.New("custom error")
 	}
 
+	actual, err := v.buildSignedRegReqs(ctx, pubkeys, signer)
+	require.NoError(t, err)
+
+	assert.Equal(t, 0, len(actual))
+}
+
+func TestValidator_buildSignedRegReqs_TimestampBeforeGenesis(t *testing.T) {
+	// Public keys
+	pubkey1 := getPubkeyFromString(t, "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111")
+
+	// Fee recipients
+	feeRecipient1 := getFeeRecipientFromString(t, "0x0000000000000000000000000000000000000000")
+
+	defaultFeeRecipient := getFeeRecipientFromString(t, "0xdddddddddddddddddddddddddddddddddddddddd")
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ctx := context.Background()
+	client := validatormock.NewMockValidatorClient(ctrl)
+
+	signature := blsmock.NewMockSignature(ctrl)
+
+	v := validator{
+		signedValidatorRegistrations: map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1{},
+		validatorClient:              client,
+		genesisTime:                  uint64(time.Now().UTC().Unix() + 1000),
+		proposerSettings: &validatorserviceconfig.ProposerSettings{
+			DefaultConfig: &validatorserviceconfig.ProposerOption{
+				FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
+					FeeRecipient: defaultFeeRecipient,
+				},
+				BuilderConfig: &validatorserviceconfig.BuilderConfig{
+					Enabled:  true,
+					GasLimit: 9999,
+				},
+			},
+			ProposeConfig: map[[dilithium2.CryptoPublicKeyBytes]byte]*validatorserviceconfig.ProposerOption{
+				pubkey1: {
+					FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
+						FeeRecipient: feeRecipient1,
+					},
+					BuilderConfig: &validatorserviceconfig.BuilderConfig{
+						Enabled:  true,
+						GasLimit: 1111,
+					},
+				},
+			},
+		},
+		pubkeyToValidatorIndex: make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
+	}
+
+	pubkeys := [][dilithium2.CryptoPublicKeyBytes]byte{pubkey1}
+
+	var signer = func(_ context.Context, _ *validatorpb.SignRequest) (dilithium.Signature, error) {
+		return signature, nil
+	}
+	v.pubkeyToValidatorIndex[pubkey1] = primitives.ValidatorIndex(1)
 	actual, err := v.buildSignedRegReqs(ctx, pubkeys, signer)
 	require.NoError(t, err)
 

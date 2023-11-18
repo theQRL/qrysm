@@ -7,6 +7,7 @@ go_library(
         "domain.go",
         "epoch.go",
         "slot.go",
+        "randao.go",
         "sszbytes.go",
         "sszuint64.go",
         "validator.go",

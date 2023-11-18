@@ -1,6 +1,8 @@
 package events
 
 import (
+	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"strings"
 
 	gwpb "github.com/grpc-ecosystem/grpc-gateway/v2/proto/gateway"
@@ -43,6 +45,8 @@ const (
 	DilithiumToExecutionChangeTopic = "dilithium_to_execution_change"
 	// PayloadAttributesTopic represents a new payload attributes for execution payload building event topic.
 	PayloadAttributesTopic = "payload_attributes"
+	// BlobSidecarTopic represents a new blob sidecar event topic
+	BlobSidecarTopic = "blob_sidecar"
 )
 
 var casesHandled = map[string]bool{
@@ -55,6 +59,7 @@ var casesHandled = map[string]bool{
 	SyncCommitteeContributionTopic:  true,
 	DilithiumToExecutionChangeTopic: true,
 	PayloadAttributesTopic:          true,
+	BlobSidecarTopic:                true,
 }
 
 // StreamEvents allows requesting all events from a set of topics defined in the Ethereum consensus API standard.
@@ -161,7 +166,26 @@ func handleBlockOperationEvents(
 		}
 		v2Change := migration.V1Alpha1SignedDilithiumToExecChangeToV2(changeData.Change)
 		return streamData(stream, DilithiumToExecutionChangeTopic, v2Change)
-
+	case operation.BlobSidecarReceived:
+		if _, ok := requestedTopics[BlobSidecarTopic]; !ok {
+			return nil
+		}
+		blobData, ok := event.Data.(*operation.BlobSidecarReceivedData)
+		if !ok {
+			return nil
+		}
+		if blobData == nil || blobData.Blob == nil {
+			return nil
+		}
+		versionedHash := blockchain.ConvertKzgCommitmentToVersionedHash(blobData.Blob.Message.KzgCommitment)
+		blobEvent := &zondpb.EventBlobSidecar{
+			BlockRoot:     bytesutil.SafeCopyBytes(blobData.Blob.Message.BlockRoot),
+			Index:         blobData.Blob.Message.Index,
+			Slot:          blobData.Blob.Message.Slot,
+			VersionedHash: bytesutil.SafeCopyBytes(versionedHash.Bytes()),
+			KzgCommitment: bytesutil.SafeCopyBytes(blobData.Blob.Message.KzgCommitment),
+		}
+		return streamData(stream, BlobSidecarTopic, blobEvent)
 	default:
 		return nil
 	}
@@ -299,7 +323,7 @@ func (s *Server) streamPayloadAttributes(stream zondpbservice.Events_StreamEvent
 				},
 			},
 		})
-	case version.Capella:
+	case version.Capella, version.Deneb:
 		withdrawals, err := headState.ExpectedWithdrawals()
 		if err != nil {
 			return err

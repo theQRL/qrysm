@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
-	rpcmiddleware "github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/validator"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
@@ -22,7 +22,7 @@ func (c beaconApiValidatorClient) getAttestationData(
 	params.Add("committee_index", strconv.FormatUint(uint64(reqCommitteeIndex), 10))
 
 	query := buildURL("/zond/v1/validator/attestation_data", params)
-	produceAttestationDataResponseJson := rpcmiddleware.ProduceAttestationDataResponseJson{}
+	produceAttestationDataResponseJson := validator.GetAttestationDataResponse{}
 
 	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, query, &produceAttestationDataResponseJson); err != nil {
 		return nil, errors.Wrap(err, "failed to get json response")

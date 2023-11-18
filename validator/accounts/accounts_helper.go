@@ -127,11 +127,11 @@ func filterPublicKeys(pubKeyStrings []string) ([]dilithium.PublicKey, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not decode string %s as hex", pkString)
 		}
-		blsPublicKey, err := dilithium.PublicKeyFromBytes(pubKeyBytes)
+		dilithiumPublicKey, err := dilithium.PublicKeyFromBytes(pubKeyBytes)
 		if err != nil {
 			return nil, errors.Wrapf(err, "%#x is not a valid BLS public key", pubKeyBytes)
 		}
-		filteredPubKeys = append(filteredPubKeys, blsPublicKey)
+		filteredPubKeys = append(filteredPubKeys, dilithiumPublicKey)
 	}
 	return filteredPubKeys, nil
 }

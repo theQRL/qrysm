@@ -5,9 +5,12 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/epoch/precompute"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
@@ -15,12 +18,16 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	coreTime "github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/consensus-types/validator"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	"github.com/theQRL/qrysm/v4/crypto/rand"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
+	prysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/v4/time/slots"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -239,7 +246,7 @@ func (s *Service) SubmitSignedAggregateSelectionProof(
 		req.SignedAggregateAndProof.Message.Aggregate == nil || req.SignedAggregateAndProof.Message.Aggregate.Data == nil {
 		return &RpcError{Err: errors.New("signed aggregate request can't be nil"), Reason: BadRequest}
 	}
-	emptySig := make([]byte, fieldparams.BLSSignatureLength)
+	emptySig := make([]byte, dilithium2.CryptoBytes)
 	if bytes.Equal(req.SignedAggregateAndProof.Signature, emptySig) ||
 		bytes.Equal(req.SignedAggregateAndProof.Message.SelectionProof, emptySig) {
 		return &RpcError{Err: errors.New("signed signatures can't be zero hashes"), Reason: BadRequest}
@@ -262,5 +269,237 @@ func (s *Service) SubmitSignedAggregateSelectionProof(
 		"aggregatedCount": req.SignedAggregateAndProof.Message.Aggregate.AggregationBits.Count(),
 	}).Debug("Broadcasting aggregated attestation and proof")
 
+	return nil
+}
+
+// AggregatedSigAndAggregationBits returns the aggregated signature and aggregation bits
+// associated with a particular set of sync committee messages.
+func (s *Service) AggregatedSigAndAggregationBits(
+	ctx context.Context,
+	req *zondpb.AggregatedSigAndAggregationBitsRequest) ([]byte, []byte, error) {
+	subCommitteeSize := params.BeaconConfig().SyncCommitteeSize / params.BeaconConfig().SyncCommitteeSubnetCount
+	sigs := make([][]byte, 0, subCommitteeSize)
+	bits := zondpb.NewSyncCommitteeAggregationBits()
+	syncCommitteeIndicesSigMap := make(map[primitives.CommitteeIndex]*zondpb.SyncCommitteeMessage)
+	appendedSyncCommitteeIndices := make([]primitives.CommitteeIndex, 0)
+	for _, msg := range req.Msgs {
+		if bytes.Equal(req.BlockRoot, msg.BlockRoot) {
+			headSyncCommitteeIndices, err := s.HeadFetcher.HeadSyncCommitteeIndices(ctx, msg.ValidatorIndex, req.Slot)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "could not get sync subcommittee index")
+			}
+			for _, index := range headSyncCommitteeIndices {
+				i := uint64(index)
+				subnetIndex := i / subCommitteeSize
+				indexMod := i % subCommitteeSize
+				if subnetIndex == req.SubnetId && !bits.BitAt(indexMod) {
+					bits.SetBitAt(indexMod, true)
+					syncCommitteeIndicesSigMap[index] = msg
+					appendedSyncCommitteeIndices = append(appendedSyncCommitteeIndices, index)
+				}
+			}
+		}
+	}
+
+	sort.Slice(appendedSyncCommitteeIndices, func(i, j int) bool {
+		return appendedSyncCommitteeIndices[i] < appendedSyncCommitteeIndices[j]
+	})
+
+	for _, syncCommitteeIndex := range appendedSyncCommitteeIndices {
+		msg, ok := syncCommitteeIndicesSigMap[syncCommitteeIndex]
+		if !ok {
+			return []byte{}, nil, errors.Errorf("could not get sync subcommittee index %d "+
+				"in syncCommitteeIndicesSigMap", syncCommitteeIndex)
+		}
+		sigs = append(sigs, msg.Signature)
+	}
+
+	aggregatedSig := make([]byte, dilithium2.CryptoBytes)
+	aggregatedSig[0] = 0xC0
+	if len(sigs) != 0 {
+		uncompressedSigs, err := dilithium.MultipleSignaturesFromBytes(sigs)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "could not decompress signatures")
+		}
+		aggregatedSig = dilithium.UnaggregatedSignatures(uncompressedSigs)
+	}
+	return aggregatedSig, bits, nil
+}
+
+// AssignValidatorToSubnet checks the status and pubkey of a particular validator
+// to discern whether persistent subnets need to be registered for them.
+func AssignValidatorToSubnet(pubkey []byte, status validator.ValidatorStatus) {
+	if status != validator.Active {
+		return
+	}
+	assignValidatorToSubnet(pubkey)
+}
+
+// AssignValidatorToSubnetProto checks the status and pubkey of a particular validator
+// to discern whether persistent subnets need to be registered for them.
+//
+// It has a Proto suffix because the status is a protobuf type.
+func AssignValidatorToSubnetProto(pubkey []byte, status zondpb.ValidatorStatus) {
+	if status != zondpb.ValidatorStatus_ACTIVE && status != zondpb.ValidatorStatus_EXITING {
+		return
+	}
+	assignValidatorToSubnet(pubkey)
+}
+
+func assignValidatorToSubnet(pubkey []byte) {
+	_, ok, expTime := cache.SubnetIDs.GetPersistentSubnets(pubkey)
+	if ok && expTime.After(prysmTime.Now()) {
+		return
+	}
+	epochDuration := time.Duration(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))
+	var assignedIdxs []uint64
+	randGen := rand.NewGenerator()
+	for i := uint64(0); i < params.BeaconConfig().RandomSubnetsPerValidator; i++ {
+		assignedIdx := randGen.Intn(int(params.BeaconNetworkConfig().AttestationSubnetCount))
+		assignedIdxs = append(assignedIdxs, uint64(assignedIdx))
+	}
+
+	assignedDuration := uint64(randGen.Intn(int(params.BeaconConfig().EpochsPerRandomSubnetSubscription)))
+	assignedDuration += params.BeaconConfig().EpochsPerRandomSubnetSubscription
+
+	totalDuration := epochDuration * time.Duration(assignedDuration)
+	cache.SubnetIDs.AddPersistentCommittee(pubkey, assignedIdxs, totalDuration*time.Second)
+}
+
+// GetAttestationData requests that the beacon node produces attestation data for
+// the requested committee index and slot based on the nodes current head.
+func (s *Service) GetAttestationData(
+	ctx context.Context, req *zondpb.AttestationDataRequest,
+) (*zondpb.AttestationData, *RpcError) {
+	if err := helpers.ValidateAttestationTime(
+		req.Slot,
+		s.GenesisTimeFetcher.GenesisTime(),
+		params.BeaconNetworkConfig().MaximumGossipClockDisparity,
+	); err != nil {
+		return nil, &RpcError{Reason: BadRequest, Err: errors.Errorf("invalid request: %v", err)}
+	}
+
+	res, err := s.AttestationCache.Get(ctx, req)
+	if err != nil {
+		return nil, &RpcError{Reason: Internal, Err: errors.Errorf("could not retrieve data from attestation cache: %v", err)}
+	}
+	if res != nil {
+		res.CommitteeIndex = req.CommitteeIndex
+		return res, nil
+	}
+
+	if err := s.AttestationCache.MarkInProgress(req); err != nil {
+		if errors.Is(err, cache.ErrAlreadyInProgress) {
+			res, err := s.AttestationCache.Get(ctx, req)
+			if err != nil {
+				return nil, &RpcError{Reason: Internal, Err: errors.Errorf("could not retrieve data from attestation cache: %v", err)}
+			}
+			if res == nil {
+				return nil, &RpcError{Reason: Internal, Err: errors.New("a request was in progress and resolved to nil")}
+			}
+			res.CommitteeIndex = req.CommitteeIndex
+			return res, nil
+		}
+		return nil, &RpcError{Reason: Internal, Err: errors.Errorf("could not mark attestation as in-progress: %v", err)}
+	}
+	defer func() {
+		if err := s.AttestationCache.MarkNotInProgress(req); err != nil {
+			log.WithError(err).Error("could not mark attestation as not-in-progress")
+		}
+	}()
+
+	headState, err := s.HeadFetcher.HeadState(ctx)
+	if err != nil {
+		return nil, &RpcError{Reason: Internal, Err: errors.Errorf("could not retrieve head state: %v", err)}
+	}
+	headRoot, err := s.HeadFetcher.HeadRoot(ctx)
+	if err != nil {
+		return nil, &RpcError{Reason: Internal, Err: errors.Errorf("could not retrieve head root: %v", err)}
+	}
+
+	// In the case that we receive an attestation request after a newer state/block has been processed.
+	if headState.Slot() > req.Slot {
+		headRoot, err = helpers.BlockRootAtSlot(headState, req.Slot)
+		if err != nil {
+			return nil, &RpcError{Reason: Internal, Err: errors.Errorf("could not get historical head root: %v", err)}
+		}
+		headState, err = s.StateGen.StateByRoot(ctx, bytesutil.ToBytes32(headRoot))
+		if err != nil {
+			return nil, &RpcError{Reason: Internal, Err: errors.Errorf("could not get historical head state: %v", err)}
+		}
+	}
+	if headState == nil || headState.IsNil() {
+		return nil, &RpcError{Reason: Internal, Err: errors.New("could not lookup parent state from head")}
+	}
+
+	if coreTime.CurrentEpoch(headState) < slots.ToEpoch(req.Slot) {
+		headState, err = transition.ProcessSlotsUsingNextSlotCache(ctx, headState, headRoot, req.Slot)
+		if err != nil {
+			return nil, &RpcError{Reason: Internal, Err: errors.Errorf("could not process slots up to %d: %v", req.Slot, err)}
+		}
+	}
+
+	targetEpoch := coreTime.CurrentEpoch(headState)
+	epochStartSlot, err := slots.EpochStart(targetEpoch)
+	if err != nil {
+		return nil, &RpcError{Reason: Internal, Err: errors.Errorf("could not calculate epoch start: %v", err)}
+	}
+	var targetRoot []byte
+	if epochStartSlot == headState.Slot() {
+		targetRoot = headRoot
+	} else {
+		targetRoot, err = helpers.BlockRootAtSlot(headState, epochStartSlot)
+		if err != nil {
+			return nil, &RpcError{Reason: Internal, Err: errors.Errorf("could not get target block for slot %d: %v", epochStartSlot, err)}
+		}
+		if bytesutil.ToBytes32(targetRoot) == params.BeaconConfig().ZeroHash {
+			targetRoot = headRoot
+		}
+	}
+
+	res = &zondpb.AttestationData{
+		Slot:            req.Slot,
+		CommitteeIndex:  req.CommitteeIndex,
+		BeaconBlockRoot: headRoot,
+		Source:          headState.CurrentJustifiedCheckpoint(),
+		Target: &zondpb.Checkpoint{
+			Epoch: targetEpoch,
+			Root:  targetRoot,
+		},
+	}
+
+	if err := s.AttestationCache.Put(ctx, req, res); err != nil {
+		log.WithError(err).Error("could not store attestation data in cache")
+	}
+	return res, nil
+}
+
+// SubmitSyncMessage submits the sync committee message to the network.
+// It also saves the sync committee message into the pending pool for block inclusion.
+func (s *Service) SubmitSyncMessage(ctx context.Context, msg *zondpb.SyncCommitteeMessage) *RpcError {
+	errs, ctx := errgroup.WithContext(ctx)
+
+	headSyncCommitteeIndices, err := s.HeadFetcher.HeadSyncCommitteeIndices(ctx, msg.ValidatorIndex, msg.Slot)
+	if err != nil {
+		return &RpcError{Reason: Internal, Err: errors.Wrap(err, "could not get head sync committee indices")}
+	}
+	// Broadcasting and saving message into the pool in parallel. As one fail should not affect another.
+	// This broadcasts for all subnets.
+	for _, index := range headSyncCommitteeIndices {
+		subCommitteeSize := params.BeaconConfig().SyncCommitteeSize / params.BeaconConfig().SyncCommitteeSubnetCount
+		subnet := uint64(index) / subCommitteeSize
+		errs.Go(func() error {
+			return s.P2P.BroadcastSyncCommitteeMessage(ctx, subnet, msg)
+		})
+	}
+
+	if err := s.SyncCommitteePool.SaveSyncCommitteeMessage(msg); err != nil {
+		return &RpcError{Reason: Internal, Err: errors.Wrap(err, "could not save sync committee message")}
+	}
+
+	// Wait for p2p broadcast to complete and return the first error (if any)
+	if err = errs.Wait(); err != nil {
+		return &RpcError{Reason: Internal, Err: errors.Wrap(err, "could not broadcast sync committee message")}
+	}
 	return nil
 }

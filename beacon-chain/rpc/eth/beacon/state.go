@@ -1,7 +1,6 @@
 package beacon
 
 import (
-	"bytes"
 	"context"
 	"strconv"
 
@@ -12,45 +11,15 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	zondpb "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	zond2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
-	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type stateRequest struct {
 	epoch   *primitives.Epoch
 	stateId []byte
-}
-
-// GetGenesis retrieves details of the chain's genesis which can be used to identify chain.
-func (bs *Server) GetGenesis(ctx context.Context, _ *emptypb.Empty) (*zondpb.GenesisResponse, error) {
-	ctx, span := trace.StartSpan(ctx, "beacon.GetGenesis")
-	defer span.End()
-
-	genesisTime := bs.GenesisTimeFetcher.GenesisTime()
-	if genesisTime.IsZero() {
-		return nil, status.Errorf(codes.NotFound, "Chain genesis info is not yet known")
-	}
-	validatorRoot := bs.ChainInfoFetcher.GenesisValidatorsRoot()
-	if bytes.Equal(validatorRoot[:], params.BeaconConfig().ZeroHash[:]) {
-		return nil, status.Errorf(codes.NotFound, "Chain genesis info is not yet known")
-	}
-	forkVersion := params.BeaconConfig().GenesisForkVersion
-
-	return &zondpb.GenesisResponse{
-		Data: &zondpb.GenesisResponse_Genesis{
-			GenesisTime: &timestamppb.Timestamp{
-				Seconds: genesisTime.Unix(),
-				Nanos:   0,
-			},
-			GenesisValidatorsRoot: validatorRoot[:],
-			GenesisForkVersion:    forkVersion,
-		},
-	}, nil
 }
 
 // GetStateRoot calculates HashTreeRoot for state with given 'stateId'. If stateId is root, same value will be returned.
@@ -84,68 +53,6 @@ func (bs *Server) GetStateRoot(ctx context.Context, req *zondpb.StateRequest) (*
 	return &zondpb.StateRootResponse{
 		Data: &zondpb.StateRootResponse_StateRoot{
 			Root: stateRoot,
-		},
-		ExecutionOptimistic: isOptimistic,
-		Finalized:           isFinalized,
-	}, nil
-}
-
-// GetStateFork returns Fork object for state with given 'stateId'.
-func (bs *Server) GetStateFork(ctx context.Context, req *zondpb.StateRequest) (*zondpb.StateForkResponse, error) {
-	ctx, span := trace.StartSpan(ctx, "beacon.GetStateFork")
-	defer span.End()
-
-	st, err := bs.Stater.State(ctx, req.StateId)
-	if err != nil {
-		return nil, helpers.PrepareStateFetchGRPCError(err)
-	}
-	fork := st.Fork()
-	isOptimistic, err := helpers.IsOptimistic(ctx, req.StateId, bs.OptimisticModeFetcher, bs.Stater, bs.ChainInfoFetcher, bs.BeaconDB)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Could not check if slot's block is optimistic: %v", err)
-	}
-	blockRoot, err := st.LatestBlockHeader().HashTreeRoot()
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Could not calculate root of latest block header")
-	}
-	isFinalized := bs.FinalizationFetcher.IsFinalized(ctx, blockRoot)
-
-	return &zondpb.StateForkResponse{
-		Data: &zondpb.Fork{
-			PreviousVersion: fork.PreviousVersion,
-			CurrentVersion:  fork.CurrentVersion,
-			Epoch:           fork.Epoch,
-		},
-		ExecutionOptimistic: isOptimistic,
-		Finalized:           isFinalized,
-	}, nil
-}
-
-// GetFinalityCheckpoints returns finality checkpoints for state with given 'stateId'. In case finality is
-// not yet achieved, checkpoint should return epoch 0 and ZERO_HASH as root.
-func (bs *Server) GetFinalityCheckpoints(ctx context.Context, req *zondpb.StateRequest) (*zondpb.StateFinalityCheckpointResponse, error) {
-	ctx, span := trace.StartSpan(ctx, "beacon.GetFinalityCheckpoints")
-	defer span.End()
-
-	st, err := bs.Stater.State(ctx, req.StateId)
-	if err != nil {
-		return nil, helpers.PrepareStateFetchGRPCError(err)
-	}
-	isOptimistic, err := helpers.IsOptimistic(ctx, req.StateId, bs.OptimisticModeFetcher, bs.Stater, bs.ChainInfoFetcher, bs.BeaconDB)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Could not check if slot's block is optimistic: %v", err)
-	}
-	blockRoot, err := st.LatestBlockHeader().HashTreeRoot()
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Could not calculate root of latest block header")
-	}
-	isFinalized := bs.FinalizationFetcher.IsFinalized(ctx, blockRoot)
-
-	return &zondpb.StateFinalityCheckpointResponse{
-		Data: &zondpb.StateFinalityCheckpointResponse_StateFinalityCheckpoint{
-			PreviousJustified: checkpoint(st.PreviousJustifiedCheckpoint()),
-			CurrentJustified:  checkpoint(st.CurrentJustifiedCheckpoint()),
-			Finalized:         checkpoint(st.FinalizedCheckpoint()),
 		},
 		ExecutionOptimistic: isOptimistic,
 		Finalized:           isFinalized,
@@ -227,17 +134,4 @@ func (bs *Server) stateFromRequest(ctx context.Context, req *stateRequest) (stat
 		return nil, helpers.PrepareStateFetchGRPCError(err)
 	}
 	return st, nil
-}
-
-func checkpoint(sourceCheckpoint *zond.Checkpoint) *zondpb.Checkpoint {
-	if sourceCheckpoint != nil {
-		return &zondpb.Checkpoint{
-			Epoch: sourceCheckpoint.Epoch,
-			Root:  sourceCheckpoint.Root,
-		}
-	}
-	return &zondpb.Checkpoint{
-		Epoch: 0,
-		Root:  params.BeaconConfig().ZeroHash[:],
-	}
 }

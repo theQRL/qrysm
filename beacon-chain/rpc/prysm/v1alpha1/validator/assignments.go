@@ -11,13 +11,13 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	coreTime "github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/core"
 	beaconState "github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/rand"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	prysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"google.golang.org/grpc/codes"
@@ -191,8 +191,6 @@ func (vs *Server) duties(ctx context.Context, req *zondpb.DutiesRequest) (*zondp
 			for _, slot := range nextProposerIndexToSlots[idx] {
 				vs.ProposerSlotIndexCache.SetProposerAndPayloadIDs(slot, idx, [8]byte{} /* payloadID */, [32]byte{} /* head root */)
 			}
-			// Prune payload ID cache for any slots before request slot.
-			vs.ProposerSlotIndexCache.PrunePayloadIDs(epochStartSlot)
 		} else {
 			// If the validator isn't in the beacon state, try finding their deposit to determine their status.
 			// We don't need the lastActiveValidatorFn because we don't use the response in this.
@@ -234,9 +232,11 @@ func (vs *Server) duties(ctx context.Context, req *zondpb.DutiesRequest) (*zondp
 		validatorAssignments = append(validatorAssignments, assignment)
 		nextValidatorAssignments = append(nextValidatorAssignments, nextAssignment)
 		// Assign relevant validator to subnet.
-		assignValidatorToSubnet(pubKey, assignment.Status)
-		assignValidatorToSubnet(pubKey, nextAssignment.Status)
+		core.AssignValidatorToSubnetProto(pubKey, assignment.Status)
+		core.AssignValidatorToSubnetProto(pubKey, nextAssignment.Status)
 	}
+	// Prune payload ID cache for any slots before request slot.
+	vs.ProposerSlotIndexCache.PrunePayloadIDs(epochStartSlot)
 
 	return &zondpb.DutiesResponse{
 		Duties:             validatorAssignments,
@@ -248,32 +248,8 @@ func (vs *Server) duties(ctx context.Context, req *zondpb.DutiesRequest) (*zondp
 // AssignValidatorToSubnet checks the status and pubkey of a particular validator
 // to discern whether persistent subnets need to be registered for them.
 func (vs *Server) AssignValidatorToSubnet(_ context.Context, req *zondpb.AssignValidatorToSubnetRequest) (*emptypb.Empty, error) {
-	assignValidatorToSubnet(req.PublicKey, req.Status)
+	core.AssignValidatorToSubnetProto(req.PublicKey, req.Status)
 	return &emptypb.Empty{}, nil
-}
-
-func assignValidatorToSubnet(pubkey []byte, status zondpb.ValidatorStatus) {
-	if status != zondpb.ValidatorStatus_ACTIVE && status != zondpb.ValidatorStatus_EXITING {
-		return
-	}
-
-	_, ok, expTime := cache.SubnetIDs.GetPersistentSubnets(pubkey)
-	if ok && expTime.After(prysmTime.Now()) {
-		return
-	}
-	epochDuration := time.Duration(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))
-	var assignedIdxs []uint64
-	randGen := rand.NewGenerator()
-	for i := uint64(0); i < params.BeaconConfig().RandomSubnetsPerValidator; i++ {
-		assignedIdx := randGen.Intn(int(params.BeaconNetworkConfig().AttestationSubnetCount))
-		assignedIdxs = append(assignedIdxs, uint64(assignedIdx))
-	}
-
-	assignedDuration := uint64(randGen.Intn(int(params.BeaconConfig().EpochsPerRandomSubnetSubscription)))
-	assignedDuration += params.BeaconConfig().EpochsPerRandomSubnetSubscription
-
-	totalDuration := epochDuration * time.Duration(assignedDuration)
-	cache.SubnetIDs.AddPersistentCommittee(pubkey, assignedIdxs, totalDuration*time.Second)
 }
 
 func registerSyncSubnetCurrentPeriod(s beaconState.BeaconState, epoch primitives.Epoch, pubKey []byte, status zondpb.ValidatorStatus) error {

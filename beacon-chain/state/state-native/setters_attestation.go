@@ -90,8 +90,8 @@ func (b *BeaconState) AppendPreviousEpochAttestations(val *zondpb.PendingAttesta
 	}
 
 	if b.sharedFieldReferences[types.PreviousEpochAttestations].Refs() > 1 {
-		atts = make([]*zondpb.PendingAttestation, len(b.previousEpochAttestations))
-		copy(atts, b.previousEpochAttestations)
+		atts = make([]*zondpb.PendingAttestation, 0, len(b.previousEpochAttestations)+1)
+		atts = append(atts, b.previousEpochAttestations...)
 		b.sharedFieldReferences[types.PreviousEpochAttestations].MinusRef()
 		b.sharedFieldReferences[types.PreviousEpochAttestations] = stateutil.NewRef(1)
 	}
