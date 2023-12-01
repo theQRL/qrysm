@@ -246,8 +246,8 @@ github.com/crate-crypto/go-kzg-4844 v0.3.0/go.mod h1:SBP7ikXEgDnUPONgm33HtuDZEDt
 github.com/creack/pty v1.1.7/go.mod h1:lj5s0c3V2DBrqTV7llrYr5NG6My20zk30Fl46Y7DoTY=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/cyberdelia/templates v0.0.0-20141128023046-ca7fffd4298c/go.mod h1:GyV+0YP4qX0UQ7r2MoYZ+AvYDp12OF5yg4q8rGnyNh4=
-github.com/cyyber/go-zond v0.0.0-20231130154029-94d9cf1ddc85 h1:xE/AQL/qUhOg+e5zn2F+E2FU6pLZB73AT/gWoczg64Q=
-github.com/cyyber/go-zond v0.0.0-20231130154029-94d9cf1ddc85/go.mod h1:05izEtGhNkKpq/ZSK+sD7IrDVOrL9MafXENrGmzkEp0=
+github.com/cyyber/go-zond v0.0.0-20231201081419-5ed6809e9a97 h1:0TEb3qShhSSHtryqrKkOqYT5EYsJxY3ti/l12JVdBso=
+github.com/cyyber/go-zond v0.0.0-20231201081419-5ed6809e9a97/go.mod h1:05izEtGhNkKpq/ZSK+sD7IrDVOrL9MafXENrGmzkEp0=
 github.com/d4l3k/messagediff v1.2.1 h1:ZcAIMYsUg0EAp9X+tt8/enBE/Q8Yd5kzPynLyKptt9U=
 github.com/d4l3k/messagediff v1.2.1/go.mod h1:Oozbb1TVXFac9FtSIxHBMnBCq2qeH/2KkEQxENCrlLo=
 github.com/dave/jennifer v1.2.0/go.mod h1:fIb+770HOpJ2fmN9EPPKOqm1vMGhB+TwXKMZhrIygKg=
