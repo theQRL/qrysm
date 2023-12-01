@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
+	bytesutil2 "github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/wealdtech/go-bytesutil"
 	"go.opencensus.io/trace"
@@ -108,7 +109,7 @@ func (c *Cache) DepositByPubkey(ctx context.Context, pubKey []byte) (*zondpb.Dep
 
 	var deposit *zondpb.Deposit
 	var blockNum *big.Int
-	deps, ok := c.depositsByKey[bytesutil.ToBytes48(pubKey)]
+	deps, ok := c.depositsByKey[bytesutil2.ToBytes2592(pubKey)]
 	if !ok || len(deps) == 0 {
 		return deposit, blockNum
 	}

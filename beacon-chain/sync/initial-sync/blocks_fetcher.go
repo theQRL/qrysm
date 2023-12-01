@@ -107,19 +107,19 @@ type peerLock struct {
 
 // fetchRequestParams holds parameters necessary to schedule a fetch request.
 type fetchRequestParams struct {
-	pid   peer.ID
-	start primitives.Slot
-	count uint64
+	ctx   context.Context // if provided, it is used instead of global fetcher's context
+	start primitives.Slot // starting slot
+	count uint64          // how many slots to receive (fetcher may return fewer slots)
 }
 
 // fetchRequestResponse is a combined type to hold results of both successful executions and errors.
 // Valid usage pattern will be to check whether result's `err` is nil, before using `blocks`.
 type fetchRequestResponse struct {
-	pid    peer.ID
-	start  primitives.Slot
-	count  uint64
-	blocks []interfaces.ReadOnlySignedBeaconBlock
-	err    error
+	pid   peer.ID
+	start primitives.Slot
+	count uint64
+	bwb   []blocks2.BlockWithVerifiedBlobs
+	err   error
 }
 
 // newBlocksFetcher creates ready to use fetcher.

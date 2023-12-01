@@ -61,7 +61,7 @@ func (s *Service) GenesisExecutionChainInfo() (uint64, *big.Int) {
 
 // ProcessETH1Block processes logs from the provided eth1 block.
 func (s *Service) ProcessETH1Block(ctx context.Context, blkNum *big.Int) error {
-	query := ethereum.FilterQuery{
+	query := zond.FilterQuery{
 		Addresses: []common.Address{
 			s.cfg.depositContractAddr,
 		},
@@ -378,7 +378,7 @@ func (s *Service) processBlockInBatch(ctx context.Context, currentBlockNum uint6
 	if end > latestFollowHeight {
 		end = latestFollowHeight
 	}
-	query := ethereum.FilterQuery{
+	query := zond.FilterQuery{
 		Addresses: []common.Address{
 			s.cfg.depositContractAddr,
 		},

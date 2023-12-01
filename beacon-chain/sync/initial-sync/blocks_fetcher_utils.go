@@ -210,7 +210,6 @@ func findForkReqRangeSize() uint64 {
 func (f *blocksFetcher) findForkWithPeer(ctx context.Context, pid peer.ID, slot primitives.Slot) (*forkData, error) {
 	reqCount := findForkReqRangeSize()
 	// Safe-guard, since previous epoch is used when calculating.
-	slotsPerEpoch := params.BeaconConfig().SlotsPerEpoch
 	if uint64(slot) < reqCount {
 		return nil, fmt.Errorf("slot is too low to backtrack, min. expected %d", reqCount)
 	}

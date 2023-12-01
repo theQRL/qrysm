@@ -52,7 +52,7 @@ func (c *Cache) InsertDeposit(ctx context.Context, d *zondpb.Deposit, blockNum u
 	c.deposits = append(c.deposits[:heightIdx], newDeposits...)
 	// Append the deposit to our map, in the event no deposits
 	// exist for the pubkey , it is simply added to the map.
-	pubkey := bytesutil.ToBytes48(d.Data.PublicKey)
+	pubkey := bytesutil.ToBytes2592(d.Data.PublicKey)
 	c.depositsByKey[pubkey] = append(c.depositsByKey[pubkey], depCtr)
 	historicalDepositsCount.Inc()
 	return nil
@@ -75,7 +75,7 @@ func (c *Cache) InsertDepositContainers(ctx context.Context, ctrs []*zondpb.Depo
 		// Use a new value, as the reference
 		// changes in the next iteration.
 		newPtr := ctr
-		pKey := bytesutil.ToBytes48(newPtr.Deposit.Data.PublicKey)
+		pKey := bytesutil.ToBytes2592(newPtr.Deposit.Data.PublicKey)
 		c.depositsByKey[pKey] = append(c.depositsByKey[pKey], newPtr)
 	}
 	historicalDepositsCount.Add(float64(len(ctrs)))
