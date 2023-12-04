@@ -1,7 +1,7 @@
 package testing
 
 import (
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"

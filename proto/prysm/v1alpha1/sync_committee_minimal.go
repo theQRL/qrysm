@@ -3,7 +3,7 @@
 package zond
 
 import (
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 )
 
 func NewSyncCommitteeAggregationBits() bitfield.Bitvector8 {

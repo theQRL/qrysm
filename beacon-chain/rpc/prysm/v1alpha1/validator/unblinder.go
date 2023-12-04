@@ -10,6 +10,8 @@ import (
 	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
 	consensusblocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"google.golang.org/protobuf/proto"
@@ -17,10 +19,11 @@ import (
 
 type unblinder struct {
 	b       interfaces.SignedBeaconBlock
+	blobs   []*zondpb.SignedBlindedBlobSidecar
 	builder builder.BlockBuilder
 }
 
-func newUnblinder(b interfaces.SignedBeaconBlock, builder builder.BlockBuilder) (*unblinder, error) {
+func newUnblinder(b interfaces.SignedBeaconBlock, blobs []*zondpb.SignedBlindedBlobSidecar, builder builder.BlockBuilder) (*unblinder, error) {
 	if err := consensusblocks.BeaconBlockIsNil(b); err != nil {
 		return nil, err
 	}
@@ -29,73 +32,78 @@ func newUnblinder(b interfaces.SignedBeaconBlock, builder builder.BlockBuilder) 
 	}
 	return &unblinder{
 		b:       b,
+		blobs:   blobs,
 		builder: builder,
 	}, nil
 }
 
-func (u *unblinder) unblindBuilderBlock(ctx context.Context) (interfaces.SignedBeaconBlock, error) {
+func (u *unblinder) unblindBuilderBlock(ctx context.Context) (interfaces.SignedBeaconBlock, []*zondpb.SignedBlobSidecar, error) {
 	if !u.b.IsBlinded() || u.b.Version() < version.Bellatrix {
-		return u.b, nil
+		return u.b, nil, nil
 	}
 	if u.b.IsBlinded() && !u.builder.Configured() {
-		return nil, errors.New("builder not configured")
+		return nil, nil, errors.New("builder not configured")
 	}
 
 	psb, err := u.blindedProtoBlock()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get blinded proto block")
+		return nil, nil, errors.Wrap(err, "could not get blinded proto block")
 	}
 	sb, err := consensusblocks.NewSignedBeaconBlock(psb)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create signed block")
+		return nil, nil, errors.Wrap(err, "could not create signed block")
 	}
 	if err = copyBlockData(u.b, sb); err != nil {
-		return nil, errors.Wrap(err, "could not copy block data")
+		return nil, nil, errors.Wrap(err, "could not copy block data")
 	}
 	h, err := u.b.Block().Body().Execution()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get execution")
+		return nil, nil, errors.Wrap(err, "could not get execution")
 	}
 	if err = sb.SetExecution(h); err != nil {
-		return nil, errors.Wrap(err, "could not set execution")
+		return nil, nil, errors.Wrap(err, "could not set execution")
 	}
-
-	payload, err := u.builder.SubmitBlindedBlock(ctx, sb)
+	payload, blobsBundle, err := u.builder.SubmitBlindedBlock(ctx, sb, u.blobs)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not submit blinded block")
+		return nil, nil, errors.Wrap(err, "could not submit blinded block")
 	}
 	headerRoot, err := h.HashTreeRoot()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get header root")
+		return nil, nil, errors.Wrap(err, "could not get header root")
 	}
 	payloadRoot, err := payload.HashTreeRoot()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get payload root")
+		return nil, nil, errors.Wrap(err, "could not get payload root")
 	}
 	if headerRoot != payloadRoot {
-		return nil, fmt.Errorf("header and payload root do not match, consider disconnect from relay to avoid further issues, "+
+		return nil, nil, fmt.Errorf("header and payload root do not match, consider disconnect from relay to avoid further issues, "+
 			"%#x != %#x", headerRoot, payloadRoot)
 	}
 
 	bb, err := u.protoBlock()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get proto block")
+		return nil, nil, errors.Wrap(err, "could not get proto block")
 	}
 	wb, err := consensusblocks.NewSignedBeaconBlock(bb)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create signed block")
+		return nil, nil, errors.Wrap(err, "could not create signed block")
 	}
 	if err = copyBlockData(sb, wb); err != nil {
-		return nil, errors.Wrap(err, "could not copy block data")
+		return nil, nil, errors.Wrap(err, "could not copy block data")
 	}
 	if err = wb.SetExecution(payload); err != nil {
-		return nil, errors.Wrap(err, "could not set execution")
+		return nil, nil, errors.Wrap(err, "could not set execution")
 	}
 
 	txs, err := payload.Transactions()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get transactions from payload")
+		return nil, nil, errors.Wrap(err, "could not get transactions from payload")
 	}
+
+	if wb.Version() >= version.Bellatrix && blobsBundle != nil {
+		log.WithField("blobCount", len(blobsBundle.Blobs))
+	}
+
 	log.WithFields(logrus.Fields{
 		"blockHash":    fmt.Sprintf("%#x", h.BlockHash()),
 		"feeRecipient": fmt.Sprintf("%#x", h.FeeRecipient()),
@@ -104,7 +112,36 @@ func (u *unblinder) unblindBuilderBlock(ctx context.Context) (interfaces.SignedB
 		"txs":          len(txs),
 	}).Info("Retrieved full payload from builder")
 
-	return wb, nil
+	bundle, err := unblindBlobsSidecars(u.blobs, blobsBundle)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "could not unblind blobs sidecars")
+	}
+
+	return wb, bundle, nil
+}
+
+func unblindBlobsSidecars(blindSidecars []*zondpb.SignedBlindedBlobSidecar, bundle *enginev1.BlobsBundle) ([]*zondpb.SignedBlobSidecar, error) {
+	if bundle == nil {
+		return nil, nil
+	}
+
+	sidecars := make([]*zondpb.SignedBlobSidecar, len(blindSidecars))
+	for i, b := range blindSidecars {
+		sidecars[i] = &zondpb.SignedBlobSidecar{
+			Message: &zondpb.BlobSidecar{
+				BlockRoot:       bytesutil.SafeCopyBytes(b.Message.BlockRoot),
+				Index:           b.Message.Index,
+				Slot:            b.Message.Slot,
+				BlockParentRoot: bytesutil.SafeCopyBytes(b.Message.BlockParentRoot),
+				ProposerIndex:   b.Message.ProposerIndex,
+				Blob:            bytesutil.SafeCopyBytes(bundle.Blobs[i]),
+				KzgCommitment:   bytesutil.SafeCopyBytes(b.Message.KzgCommitment),
+				KzgProof:        bytesutil.SafeCopyBytes(b.Message.KzgProof),
+			},
+			Signature: bytesutil.SafeCopyBytes(b.Signature),
+		}
+	}
+	return sidecars, nil
 }
 
 func copyBlockData(src interfaces.SignedBeaconBlock, dst interfaces.SignedBeaconBlock) error {
@@ -120,6 +157,10 @@ func copyBlockData(src interfaces.SignedBeaconBlock, dst interfaces.SignedBeacon
 	dilithiumToExecChanges, err := src.Block().Body().DilithiumToExecutionChanges()
 	if err != nil && !errors.Is(err, consensus_types.ErrUnsupportedField) {
 		return errors.Wrap(err, "could not get dilithium to execution changes")
+	}
+	kzgCommitments, err := src.Block().Body().BlobKzgCommitments()
+	if err != nil && !errors.Is(err, consensus_types.ErrUnsupportedField) {
+		return errors.Wrap(err, "could not get blob kzg commitments")
 	}
 
 	dst.SetSlot(src.Block().Slot())
@@ -141,6 +182,9 @@ func copyBlockData(src interfaces.SignedBeaconBlock, dst interfaces.SignedBeacon
 	if err = dst.SetDilithiumToExecutionChanges(dilithiumToExecChanges); err != nil && !errors.Is(err, consensus_types.ErrUnsupportedField) {
 		return errors.Wrap(err, "could not set dilithium to execution changes")
 	}
+	if err = dst.SetBlobKzgCommitments(kzgCommitments); err != nil && !errors.Is(err, consensus_types.ErrUnsupportedField) {
+		return errors.Wrap(err, "could not set bls to execution changes")
+	}
 
 	return nil
 }
@@ -157,6 +201,12 @@ func (u *unblinder) blindedProtoBlock() (proto.Message, error) {
 		return &zondpb.SignedBlindedBeaconBlockCapella{
 			Block: &zondpb.BlindedBeaconBlockCapella{
 				Body: &zondpb.BlindedBeaconBlockBodyCapella{},
+			},
+		}, nil
+	case version.Deneb:
+		return &zondpb.SignedBlindedBeaconBlockDeneb{
+			Message: &zondpb.BlindedBeaconBlockDeneb{
+				Body: &zondpb.BlindedBeaconBlockBodyDeneb{},
 			},
 		}, nil
 	default:
@@ -176,6 +226,12 @@ func (u *unblinder) protoBlock() (proto.Message, error) {
 		return &zondpb.SignedBeaconBlockCapella{
 			Block: &zondpb.BeaconBlockCapella{
 				Body: &zondpb.BeaconBlockBodyCapella{},
+			},
+		}, nil
+	case version.Deneb:
+		return &zondpb.SignedBeaconBlockDeneb{
+			Block: &zondpb.BeaconBlockDeneb{
+				Body: &zondpb.BeaconBlockBodyDeneb{},
 			},
 		}, nil
 	default:

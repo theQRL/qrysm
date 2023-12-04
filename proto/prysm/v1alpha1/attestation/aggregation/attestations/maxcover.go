@@ -4,7 +4,7 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"

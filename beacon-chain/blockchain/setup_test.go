@@ -52,6 +52,11 @@ func (mb *mockBroadcaster) BroadcastSyncCommitteeMessage(_ context.Context, _ ui
 	return nil
 }
 
+func (mb *mockBroadcaster) BroadcastBlob(_ context.Context, _ uint64, _ *zondpb.SignedBlobSidecar) error {
+	mb.broadcastCalled = true
+	return nil
+}
+
 func (mb *mockBroadcaster) BroadcastDilithiumChanges(_ context.Context, _ []*zondpb.SignedDilithiumToExecutionChange) {
 }
 

@@ -10,7 +10,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/go-zond/p2p/enr"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
@@ -19,8 +19,8 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/consensus-types/wrapper"
-	zondpb "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )

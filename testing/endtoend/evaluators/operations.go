@@ -17,9 +17,9 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/encoding/ssz/detect"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	v2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
 	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
@@ -30,8 +30,6 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-// churnLimit is normally 4 unless the validator set is extremely large.
-var churnLimit = 4
 var depositValCount = e2e.DepositCount
 var numOfExits = 2
 
@@ -40,7 +38,7 @@ var depositsInBlockStart = params.E2ETestConfig().EpochsPerEth1VotingPeriod * 2
 
 // deposits included + finalization + MaxSeedLookahead for activation.
 var depositActivationStartEpoch = depositsInBlockStart + 2 + params.E2ETestConfig().MaxSeedLookahead
-var depositEndEpoch = depositActivationStartEpoch + primitives.Epoch(math.Ceil(float64(depositValCount)/float64(churnLimit)))
+var depositEndEpoch = depositActivationStartEpoch + primitives.Epoch(math.Ceil(float64(depositValCount)/float64(params.E2ETestConfig().MinPerEpochChurnLimit)))
 var exitSubmissionEpoch = primitives.Epoch(7)
 
 // ProcessesDepositsInBlocks ensures the expected amount of deposits are accepted into blocks.
@@ -250,8 +248,8 @@ func activatesDepositedValidators(ec *e2etypes.EvaluationContext, conns ...*grpc
 		return fmt.Errorf("missing %d validators for post-genesis deposits", len(expected))
 	}
 
-	if deposits != churnLimit {
-		return fmt.Errorf("expected %d deposits to be processed in epoch %d, received %d", churnLimit, epoch, deposits)
+	if uint64(deposits) != params.BeaconConfig().MinPerEpochChurnLimit {
+		return fmt.Errorf("expected %d deposits to be processed in epoch %d, received %d", params.BeaconConfig().MinPerEpochChurnLimit, epoch, deposits)
 	}
 
 	if lowBalance > 0 {
@@ -501,6 +499,14 @@ func validatorsVoteWithTheMajority(ec *e2etypes.EvaluationContext, conns ...*grp
 			vote = b.Body.Eth1Data.BlockHash
 		case *zondpb.BeaconBlockContainer_BlindedCapellaBlock:
 			b := blk.GetBlindedCapellaBlock().Block
+			slot = b.Slot
+			vote = b.Body.Eth1Data.BlockHash
+		case *zondpb.BeaconBlockContainer_DenebBlock:
+			b := blk.GetDenebBlock().Block
+			slot = b.Slot
+			vote = b.Body.Eth1Data.BlockHash
+		case *zondpb.BeaconBlockContainer_BlindedDenebBlock:
+			b := blk.GetBlindedDenebBlock().Message
 			slot = b.Slot
 			vote = b.Body.Eth1Data.BlockHash
 		default:

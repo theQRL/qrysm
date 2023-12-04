@@ -8,14 +8,14 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/shared"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 
 func (c *beaconApiValidatorClient) prepareBeaconProposer(ctx context.Context, recipients []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer) error {
-	jsonRecipients := make([]*apimiddleware.FeeRecipientJson, len(recipients))
+	jsonRecipients := make([]*shared.FeeRecipient, len(recipients))
 	for index, recipient := range recipients {
-		jsonRecipients[index] = &apimiddleware.FeeRecipientJson{
+		jsonRecipients[index] = &shared.FeeRecipient{
 			FeeRecipient:   hexutil.Encode(recipient.FeeRecipient),
 			ValidatorIndex: strconv.FormatUint(uint64(recipient.ValidatorIndex), 10),
 		}

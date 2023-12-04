@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/prysmaticlabs/go-bitfield"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/theQRL/go-bitfield"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"

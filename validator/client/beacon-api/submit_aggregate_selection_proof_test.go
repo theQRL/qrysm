@@ -11,7 +11,9 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/helpers"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/beacon"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/shared"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/validator"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
@@ -35,7 +37,7 @@ func TestSubmitAggregateSelectionProof(t *testing.T) {
 		committeeIndex               = primitives.CommitteeIndex(1)
 	)
 
-	attesterDuties := []*apimiddleware.AttesterDutyJson{
+	attesterDuties := []*validator.AttesterDuty{
 		{
 			Pubkey:          pubkeyStr,
 			ValidatorIndex:  validatorIndex,
@@ -46,7 +48,7 @@ func TestSubmitAggregateSelectionProof(t *testing.T) {
 	}
 
 	attestationDataResponse := generateValidAttestation(uint64(slot), uint64(committeeIndex))
-	attestationDataProto, err := convertAttestationDataToProto(attestationDataResponse.Data)
+	attestationDataProto, err := attestationDataResponse.Data.ToConsensus()
 	require.NoError(t, err)
 	attestationDataRootBytes, err := attestationDataProto.HashTreeRoot()
 	require.NoError(t, err)
@@ -68,7 +70,7 @@ func TestSubmitAggregateSelectionProof(t *testing.T) {
 		dutiesErr                  error
 		attestationDataErr         error
 		aggregateAttestationErr    error
-		duties                     []*apimiddleware.AttesterDutyJson
+		duties                     []*validator.AttesterDuty
 		validatorsCalled           int
 		attesterDutiesCalled       int
 		attestationDataCalled      int
@@ -128,7 +130,7 @@ func TestSubmitAggregateSelectionProof(t *testing.T) {
 		},
 		{
 			name: "validator is not an aggregator",
-			duties: []*apimiddleware.AttesterDutyJson{
+			duties: []*validator.AttesterDuty{
 				{
 					Pubkey:          pubkeyStr,
 					ValidatorIndex:  validatorIndex,
@@ -143,7 +145,7 @@ func TestSubmitAggregateSelectionProof(t *testing.T) {
 		},
 		{
 			name:                 "no attester duties",
-			duties:               []*apimiddleware.AttesterDutyJson{},
+			duties:               []*validator.AttesterDuty{},
 			validatorsCalled:     1,
 			attesterDutiesCalled: 1,
 			expectedErrorMsg:     fmt.Sprintf("no attester duty for the given slot %d", slot),
@@ -163,7 +165,7 @@ func TestSubmitAggregateSelectionProof(t *testing.T) {
 			).SetArg(
 				2,
 				apimiddleware.SyncingResponseJson{
-					Data: &helpers.SyncDetailsJson{
+					Data: &shared.SyncDetails{
 						IsOptimistic: test.isOptimistic,
 					},
 				},
@@ -176,16 +178,16 @@ func TestSubmitAggregateSelectionProof(t *testing.T) {
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
 				fmt.Sprintf("%s?id=%s", validatorsEndpoint, pubkeyStr),
-				&apimiddleware.StateValidatorsResponseJson{},
+				&beacon.GetValidatorsResponse{},
 			).SetArg(
 				2,
-				apimiddleware.StateValidatorsResponseJson{
-					Data: []*apimiddleware.ValidatorContainerJson{
+				beacon.GetValidatorsResponse{
+					Data: []*beacon.ValidatorContainer{
 						{
 							Index:  validatorIndex,
 							Status: "active_ongoing",
-							Validator: &apimiddleware.ValidatorJson{
-								PublicKey: pubkeyStr,
+							Validator: &beacon.Validator{
+								Pubkey: pubkeyStr,
 							},
 						},
 					},
@@ -203,10 +205,10 @@ func TestSubmitAggregateSelectionProof(t *testing.T) {
 				fmt.Sprintf("%s/%d", attesterDutiesEndpoint, slots.ToEpoch(slot)),
 				nil,
 				bytes.NewBuffer(validatorIndicesBytes),
-				&apimiddleware.AttesterDutiesResponseJson{},
+				&validator.GetAttesterDutiesResponse{},
 			).SetArg(
 				4,
-				apimiddleware.AttesterDutiesResponseJson{
+				validator.GetAttesterDutiesResponse{
 					Data: test.duties,
 				},
 			).Return(
@@ -218,7 +220,7 @@ func TestSubmitAggregateSelectionProof(t *testing.T) {
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
 				fmt.Sprintf("%s?committee_index=%d&slot=%d", attestationDataEndpoint, committeeIndex, slot),
-				&apimiddleware.ProduceAttestationDataResponseJson{},
+				&validator.GetAttestationDataResponse{},
 			).SetArg(
 				2,
 				attestationDataResponse,

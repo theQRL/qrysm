@@ -14,6 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/slashings"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/voluntaryexits"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/core"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/lookup"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
 	"github.com/theQRL/qrysm/v4/beacon-chain/sync"
@@ -46,4 +47,5 @@ type Server struct {
 	FinalizationFetcher           blockchain.FinalizationFetcher
 	DilithiumChangesPool          blstoexec.PoolManager
 	ForkchoiceFetcher             blockchain.ForkchoiceFetcher
+	CoreService                   *core.Service
 }

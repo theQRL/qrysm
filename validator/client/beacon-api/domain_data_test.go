@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/theQRL/go-zond/common/hexutil"
-	rpcmiddleware "github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/beacon"
 	"github.com/theQRL/qrysm/v4/config/params"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
@@ -38,7 +38,7 @@ func TestGetDomainData_ValidDomainData(t *testing.T) {
 	// Make sure that GetGenesis() is called exactly once
 	genesisProvider := mock.NewMockgenesisProvider(ctrl)
 	genesisProvider.EXPECT().GetGenesis(ctx).Return(
-		&rpcmiddleware.GenesisResponse_GenesisJson{GenesisValidatorsRoot: genesisValidatorRoot},
+		&beacon.Genesis{GenesisValidatorsRoot: genesisValidatorRoot},
 		nil,
 		nil,
 	).Times(1)
@@ -87,7 +87,7 @@ func TestGetDomainData_InvalidGenesisRoot(t *testing.T) {
 	// Make sure that GetGenesis() is called exactly once
 	genesisProvider := mock.NewMockgenesisProvider(ctrl)
 	genesisProvider.EXPECT().GetGenesis(ctx).Return(
-		&rpcmiddleware.GenesisResponse_GenesisJson{GenesisValidatorsRoot: "foo"},
+		&beacon.Genesis{GenesisValidatorsRoot: "foo"},
 		nil,
 		nil,
 	).Times(1)

@@ -18,13 +18,14 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
 	mockExecution "github.com/theQRL/qrysm/v4/beacon-chain/execution/testing"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/core"
 	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/mock"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -607,7 +608,7 @@ func TestStreamDuties_OK_ChainReorg(t *testing.T) {
 func TestAssignValidatorToSubnet(t *testing.T) {
 	k := pubKey(3)
 
-	assignValidatorToSubnet(k, zondpb.ValidatorStatus_ACTIVE)
+	core.AssignValidatorToSubnetProto(k, zondpb.ValidatorStatus_ACTIVE)
 	coms, ok, exp := cache.SubnetIDs.GetPersistentSubnets(k)
 	require.Equal(t, true, ok, "No cache entry found for validator")
 	assert.Equal(t, params.BeaconConfig().RandomSubnetsPerValidator, uint64(len(coms)))

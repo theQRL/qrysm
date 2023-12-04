@@ -6,7 +6,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/v4/config/features"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
@@ -94,7 +94,9 @@ func TestBatchAttestations_Multiple(t *testing.T) {
 	}
 	require.NoError(t, s.cfg.Pool.SaveUnaggregatedAttestations(unaggregatedAtts))
 	require.NoError(t, s.cfg.Pool.SaveAggregatedAttestations(aggregatedAtts))
-	require.NoError(t, s.cfg.Pool.SaveBlockAttestations(blockAtts))
+	for _, att := range blockAtts {
+		require.NoError(t, s.cfg.Pool.SaveBlockAttestation(att))
+	}
 	require.NoError(t, s.batchForkChoiceAtts(context.Background()))
 
 	wanted, err := attaggregation.Aggregate([]*zondpb.Attestation{aggregatedAtts[0], blockAtts[0]})
@@ -148,7 +150,10 @@ func TestBatchAttestations_Single(t *testing.T) {
 	}
 	require.NoError(t, s.cfg.Pool.SaveUnaggregatedAttestations(unaggregatedAtts))
 	require.NoError(t, s.cfg.Pool.SaveAggregatedAttestations(aggregatedAtts))
-	require.NoError(t, s.cfg.Pool.SaveBlockAttestations(blockAtts))
+
+	for _, att := range blockAtts {
+		require.NoError(t, s.cfg.Pool.SaveBlockAttestation(att))
+	}
 	require.NoError(t, s.batchForkChoiceAtts(context.Background()))
 
 	wanted, err := attaggregation.Aggregate(append(aggregatedAtts, unaggregatedAtts...))

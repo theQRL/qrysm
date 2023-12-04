@@ -14,8 +14,8 @@ import (
 
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/go-zond/p2p/enr"
 	"github.com/theQRL/qrysm/v4/consensus-types/wrapper"
 	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"

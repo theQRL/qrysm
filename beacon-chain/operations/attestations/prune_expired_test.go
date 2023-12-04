@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/async"
 	"github.com/theQRL/qrysm/v4/config/params"
@@ -42,7 +42,9 @@ func TestPruneExpired_Ticker(t *testing.T) {
 	}
 	require.NoError(t, s.cfg.Pool.SaveAggregatedAttestations(atts))
 	assert.Equal(t, 2, s.cfg.Pool.AggregatedAttestationCount())
-	require.NoError(t, s.cfg.Pool.SaveBlockAttestations(atts))
+	for _, att := range atts {
+		require.NoError(t, s.cfg.Pool.SaveBlockAttestation(att))
+	}
 
 	// Rewind back one epoch worth of time.
 	s.genesisTime = uint64(prysmTime.Now().Unix()) - uint64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))
@@ -95,7 +97,9 @@ func TestPruneExpired_PruneExpiredAtts(t *testing.T) {
 	att4 := &zondpb.Attestation{Data: ad2, AggregationBits: bitfield.Bitlist{0b1110}}
 	atts := []*zondpb.Attestation{att1, att2, att3, att4}
 	require.NoError(t, s.cfg.Pool.SaveAggregatedAttestations(atts))
-	require.NoError(t, s.cfg.Pool.SaveBlockAttestations(atts))
+	for _, att := range atts {
+		require.NoError(t, s.cfg.Pool.SaveBlockAttestation(att))
+	}
 
 	// Rewind back one epoch worth of time.
 	s.genesisTime = uint64(prysmTime.Now().Unix()) - uint64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))

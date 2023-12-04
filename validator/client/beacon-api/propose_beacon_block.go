@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/shared"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
@@ -90,6 +91,35 @@ func (c beaconApiValidatorClient) proposeBeaconBlock(ctx context.Context, in *zo
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to marshall blinded capella beacon block")
 		}
+	case *zondpb.GenericSignedBeaconBlock_Deneb:
+		consensusVersion = "deneb"
+		beaconBlockRoot, err = blockType.Deneb.Block.HashTreeRoot()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to compute block root for deneb beacon block")
+		}
+		signedBlock, err := shared.SignedBeaconBlockContentsDenebFromConsensus(blockType.Deneb)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to convert deneb beacon block contents")
+		}
+		marshalledSignedBeaconBlockJson, err = json.Marshal(signedBlock)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to marshal deneb beacon block contents")
+		}
+	case *zondpb.GenericSignedBeaconBlock_BlindedDeneb:
+		blinded = true
+		consensusVersion = "deneb"
+		beaconBlockRoot, err = blockType.BlindedDeneb.SignedBlindedBlock.HashTreeRoot()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to compute block root for blinded deneb beacon block")
+		}
+		signedBlock, err := shared.SignedBlindedBeaconBlockContentsDenebFromConsensus(blockType.BlindedDeneb)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to convert blinded deneb beacon block contents")
+		}
+		marshalledSignedBeaconBlockJson, err = json.Marshal(signedBlock)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to marshal blinded deneb beacon block contents")
+		}
 	default:
 		return nil, errors.Errorf("unsupported block type %T", in.Block)
 	}
@@ -116,7 +146,7 @@ func (c beaconApiValidatorClient) proposeBeaconBlock(ctx context.Context, in *zo
 }
 
 func marshallBeaconBlockPhase0(block *zondpb.SignedBeaconBlock) ([]byte, error) {
-	signedBeaconBlockJson := &apimiddleware.SignedBeaconBlockContainerJson{
+	signedBeaconBlockJson := &apimiddleware.SignedBeaconBlockJson{
 		Signature: hexutil.Encode(block.Signature),
 		Message: &apimiddleware.BeaconBlockJson{
 			Body: &apimiddleware.BeaconBlockBodyJson{
@@ -140,7 +170,7 @@ func marshallBeaconBlockPhase0(block *zondpb.SignedBeaconBlock) ([]byte, error) 
 }
 
 func marshallBeaconBlockAltair(block *zondpb.SignedBeaconBlockAltair) ([]byte, error) {
-	signedBeaconBlockAltairJson := &apimiddleware.SignedBeaconBlockAltairContainerJson{
+	signedBeaconBlockAltairJson := &apimiddleware.SignedBeaconBlockAltairJson{
 		Signature: hexutil.Encode(block.Signature),
 		Message: &apimiddleware.BeaconBlockAltairJson{
 			ParentRoot:    hexutil.Encode(block.Block.ParentRoot),
@@ -168,7 +198,7 @@ func marshallBeaconBlockAltair(block *zondpb.SignedBeaconBlockAltair) ([]byte, e
 }
 
 func marshallBeaconBlockBellatrix(block *zondpb.SignedBeaconBlockBellatrix) ([]byte, error) {
-	signedBeaconBlockBellatrixJson := &apimiddleware.SignedBeaconBlockBellatrixContainerJson{
+	signedBeaconBlockBellatrixJson := &apimiddleware.SignedBeaconBlockBellatrixJson{
 		Signature: hexutil.Encode(block.Signature),
 		Message: &apimiddleware.BeaconBlockBellatrixJson{
 			ParentRoot:    hexutil.Encode(block.Block.ParentRoot),
@@ -212,7 +242,7 @@ func marshallBeaconBlockBellatrix(block *zondpb.SignedBeaconBlockBellatrix) ([]b
 }
 
 func marshallBeaconBlockBlindedBellatrix(block *zondpb.SignedBlindedBeaconBlockBellatrix) ([]byte, error) {
-	signedBeaconBlockBellatrixJson := &apimiddleware.SignedBlindedBeaconBlockBellatrixContainerJson{
+	signedBeaconBlockBellatrixJson := &apimiddleware.SignedBlindedBeaconBlockBellatrixJson{
 		Signature: hexutil.Encode(block.Signature),
 		Message: &apimiddleware.BlindedBeaconBlockBellatrixJson{
 			ParentRoot:    hexutil.Encode(block.Block.ParentRoot),
@@ -256,7 +286,7 @@ func marshallBeaconBlockBlindedBellatrix(block *zondpb.SignedBlindedBeaconBlockB
 }
 
 func marshallBeaconBlockCapella(block *zondpb.SignedBeaconBlockCapella) ([]byte, error) {
-	signedBeaconBlockCapellaJson := &apimiddleware.SignedBeaconBlockCapellaContainerJson{
+	signedBeaconBlockCapellaJson := &apimiddleware.SignedBeaconBlockCapellaJson{
 		Signature: hexutil.Encode(block.Signature),
 		Message: &apimiddleware.BeaconBlockCapellaJson{
 			ParentRoot:    hexutil.Encode(block.Block.ParentRoot),
@@ -302,7 +332,7 @@ func marshallBeaconBlockCapella(block *zondpb.SignedBeaconBlockCapella) ([]byte,
 }
 
 func marshallBeaconBlockBlindedCapella(block *zondpb.SignedBlindedBeaconBlockCapella) ([]byte, error) {
-	signedBeaconBlockCapellaJson := &apimiddleware.SignedBlindedBeaconBlockCapellaContainerJson{
+	signedBeaconBlockCapellaJson := &apimiddleware.SignedBlindedBeaconBlockCapellaJson{
 		Signature: hexutil.Encode(block.Signature),
 		Message: &apimiddleware.BlindedBeaconBlockCapellaJson{
 			ParentRoot:    hexutil.Encode(block.Block.ParentRoot),

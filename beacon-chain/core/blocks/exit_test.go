@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
@@ -139,32 +140,36 @@ func TestVerifyExitAndSignature(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		args    args
-		setup   func() (*zondpb.Validator, *zondpb.SignedVoluntaryExit, *zondpb.Fork, []byte, error)
+		setup   func() (*zondpb.Validator, *zondpb.SignedVoluntaryExit, state.ReadOnlyBeaconState, error)
 		wantErr string
 	}{
 		{
 			name: "Empty Exit",
-			args: args{
-				currentSlot: 0,
-			},
-			setup: func() (*zondpb.Validator, *zondpb.SignedVoluntaryExit, *zondpb.Fork, []byte, error) {
+			setup: func() (*zondpb.Validator, *zondpb.SignedVoluntaryExit, state.ReadOnlyBeaconState, error) {
 				fork := &zondpb.Fork{
 					PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 					CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 					Epoch:           0,
 				}
 				genesisRoot := [32]byte{'a'}
-				return &zondpb.Validator{}, &zondpb.SignedVoluntaryExit{}, fork, genesisRoot[:], nil
+
+				st := &zondpb.BeaconState{
+					Slot:                  0,
+					Fork:                  fork,
+					GenesisValidatorsRoot: genesisRoot[:],
+				}
+
+				s, err := state_native.InitializeFromProtoUnsafePhase0(st)
+				if err != nil {
+					return nil, nil, nil, err
+				}
+				return &zondpb.Validator{}, &zondpb.SignedVoluntaryExit{},
 			},
 			wantErr: "nil exit",
 		},
 		{
 			name: "Happy Path",
-			args: args{
-				currentSlot: (params.BeaconConfig().SlotsPerEpoch * 2) + 1,
-			},
-			setup: func() (*zondpb.Validator, *zondpb.SignedVoluntaryExit, *zondpb.Fork, []byte, error) {
+			setup: func() (*zondpb.Validator, *zondpb.SignedVoluntaryExit, state.ReadOnlyBeaconState, error) {
 				fork := &zondpb.Fork{
 					PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 					CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
@@ -186,15 +191,18 @@ func TestVerifyExitAndSignature(t *testing.T) {
 				sig, err := bls.SignatureFromBytes(sb)
 				require.NoError(t, err)
 				signedExit.Signature = sig.Marshal()
-				return validator, signedExit, fork, bs.GenesisValidatorsRoot(), nil
+				if err := bs.SetFork(fork); err != nil {
+					return nil, nil, nil, err
+				}
+				if err := bs.SetSlot((params.BeaconConfig().SlotsPerEpoch * 2) + 1); err != nil {
+					return nil, nil, nil, err
+				}
+				return validator, signedExit, bs, nil
 			},
 		},
 		{
 			name: "bad signature",
-			args: args{
-				currentSlot: (params.BeaconConfig().SlotsPerEpoch * 2) + 1,
-			},
-			setup: func() (*zondpb.Validator, *zondpb.SignedVoluntaryExit, *zondpb.Fork, []byte, error) {
+			setup: func() (*zondpb.Validator, *zondpb.SignedVoluntaryExit, state.ReadOnlyBeaconState, error) {
 				fork := &zondpb.Fork{
 					PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 					CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
@@ -215,27 +223,71 @@ func TestVerifyExitAndSignature(t *testing.T) {
 				sig, err := bls.SignatureFromBytes(sb)
 				require.NoError(t, err)
 				signedExit.Signature = sig.Marshal()
-				genesisRoot := [32]byte{'a'}
+				if err := bs.SetFork(fork); err != nil {
+					return nil, nil, nil, err
+				}
+				if err := bs.SetSlot((params.BeaconConfig().SlotsPerEpoch * 2) + 1); err != nil {
+					return nil, nil, nil, err
+				}
 				// use wrong genesis root and don't update validator
-				return validator, signedExit, fork, genesisRoot[:], nil
+				genesisRoot := [32]byte{'a'}
+				if err := bs.SetGenesisValidatorsRoot(genesisRoot[:]); err != nil {
+					return nil, nil, nil, err
+				}
+				return validator, signedExit, bs, nil
 			},
 			wantErr: "signature did not verify",
+		},
+		{
+			name: "EIP-7044: deneb exits should verify with capella fork information",
+			setup: func() (*zondpb.Validator, *zondpb.SignedVoluntaryExit, state.ReadOnlyBeaconState, error) {
+				fork := &zondpb.Fork{
+					PreviousVersion: params.BeaconConfig().CapellaForkVersion,
+					CurrentVersion:  params.BeaconConfig().DenebForkVersion,
+					Epoch:           primitives.Epoch(2),
+				}
+				signedExit := &zondpb.SignedVoluntaryExit{
+					Exit: &zondpb.VoluntaryExit{
+						Epoch:          2,
+						ValidatorIndex: 0,
+					},
+				}
+				bs, keys := util.DeterministicGenesisState(t, 1)
+				bs, err := state_native.InitializeFromProtoUnsafeDeneb(&zondpb.BeaconStateDeneb{
+					GenesisValidatorsRoot: bs.GenesisValidatorsRoot(),
+					Fork:                  fork,
+					Slot:                  (params.BeaconConfig().SlotsPerEpoch * 2) + 1,
+					Validators:            bs.Validators(),
+				})
+				if err != nil {
+					return nil, nil, nil, err
+				}
+				validator := bs.Validators()[0]
+				validator.ActivationEpoch = 1
+				err = bs.UpdateValidatorAtIndex(0, validator)
+				require.NoError(t, err)
+				sb, err := signing.ComputeDomainAndSign(bs, signedExit.Exit.Epoch, signedExit.Exit, params.BeaconConfig().DomainVoluntaryExit, keys[0])
+				require.NoError(t, err)
+				sig, err := bls.SignatureFromBytes(sb)
+				require.NoError(t, err)
+				signedExit.Signature = sig.Marshal()
+
+				return validator, signedExit, bs, nil
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := params.BeaconConfig().ShardCommitteePeriod
 			params.BeaconConfig().ShardCommitteePeriod = 0
-			validator, signedExit, fork, genesisRoot, err := tt.setup()
+			validator, signedExit, st, err := tt.setup()
 			require.NoError(t, err)
 			rvalidator, err := state_native.NewValidator(validator)
 			require.NoError(t, err)
 			err = blocks.VerifyExitAndSignature(
 				rvalidator,
-				tt.args.currentSlot,
-				fork,
+				st,
 				signedExit,
-				genesisRoot,
 			)
 			if tt.wantErr == "" {
 				require.NoError(t, err)

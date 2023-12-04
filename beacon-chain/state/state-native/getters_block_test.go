@@ -56,6 +56,18 @@ func TestBeaconState_LatestBlockHeader_Capella(t *testing.T) {
 	)
 }
 
+func TestBeaconState_LatestBlockHeader_Deneb(t *testing.T) {
+	testtmpl.VerifyBeaconStateLatestBlockHeader(
+		t,
+		func() (state.BeaconState, error) {
+			return InitializeFromProtoDeneb(&zondpb.BeaconStateDeneb{})
+		},
+		func(BH *zondpb.BeaconBlockHeader) (state.BeaconState, error) {
+			return InitializeFromProtoDeneb(&zondpb.BeaconStateDeneb{LatestBlockHeader: BH})
+		},
+	)
+}
+
 func TestBeaconState_BlockRoots_Phase0(t *testing.T) {
 	testtmpl.VerifyBeaconStateBlockRootsNative(
 		t,
@@ -140,6 +152,18 @@ func TestBeaconState_BlockRootAtIndex_Bellatrix(t *testing.T) {
 	)
 }
 
+func TestBeaconState_BlockRoots_Deneb(t *testing.T) {
+	testtmpl.VerifyBeaconStateBlockRootsNative(
+		t,
+		func() (state.BeaconState, error) {
+			return InitializeFromProtoDeneb(&zondpb.BeaconStateDeneb{})
+		},
+		func(BR [][]byte) (state.BeaconState, error) {
+			return InitializeFromProtoDeneb(&zondpb.BeaconStateDeneb{BlockRoots: BR})
+		},
+	)
+}
+
 func TestBeaconState_BlockRootAtIndex_Capella(t *testing.T) {
 	testtmpl.VerifyBeaconStateBlockRootAtIndexNative(
 		t,
@@ -148,6 +172,18 @@ func TestBeaconState_BlockRootAtIndex_Capella(t *testing.T) {
 		},
 		func(BR [][]byte) (state.BeaconState, error) {
 			return InitializeFromProtoCapella(&zondpb.BeaconStateCapella{BlockRoots: BR})
+		},
+	)
+}
+
+func TestBeaconState_BlockRootAtIndex_Deneb(t *testing.T) {
+	testtmpl.VerifyBeaconStateBlockRootAtIndexNative(
+		t,
+		func() (state.BeaconState, error) {
+			return InitializeFromProtoDeneb(&zondpb.BeaconStateDeneb{})
+		},
+		func(BR [][]byte) (state.BeaconState, error) {
+			return InitializeFromProtoDeneb(&zondpb.BeaconStateDeneb{BlockRoots: BR})
 		},
 	)
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
@@ -166,14 +167,39 @@ func ValidateAttestationTime(attSlot primitives.Slot, genesisTime time.Time, clo
 		lowerBoundsSlot,
 		currentSlot,
 	)
-	if attTime.Before(lowerBounds) {
-		attReceivedTooLateCount.Inc()
-		return errors.Join(ErrTooLate, attError)
-	}
 	if attTime.After(upperBounds) {
 		attReceivedTooEarlyCount.Inc()
 		return attError
 	}
+
+	attEpoch := slots.ToEpoch(attSlot)
+	if attEpoch < params.BeaconConfig().DenebForkEpoch {
+		if attTime.Before(lowerBounds) {
+			attReceivedTooLateCount.Inc()
+			return errors.Join(ErrTooLate, attError)
+		}
+		return nil
+	}
+
+	// EIP-7045: Starting in Deneb, allow any attestations from the current or previous epoch.
+
+	currentEpoch := slots.ToEpoch(currentSlot)
+	prevEpoch, err := currentEpoch.SafeSub(1)
+	if err != nil {
+		log.WithError(err).Debug("Ignoring underflow for a deneb attestation inclusion check in epoch 0")
+		prevEpoch = 0
+	}
+	attSlotEpoch := slots.ToEpoch(attSlot)
+	if attSlotEpoch != currentEpoch && attSlotEpoch != prevEpoch {
+		attError = fmt.Errorf(
+			"attestation epoch %d not within current epoch %d or previous epoch %d",
+			attSlot/params.BeaconConfig().SlotsPerEpoch,
+			currentEpoch,
+			prevEpoch,
+		)
+		return errors.Join(ErrTooLate, attError)
+	}
+
 	return nil
 }
 

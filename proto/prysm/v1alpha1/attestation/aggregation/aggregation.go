@@ -4,8 +4,8 @@ package aggregation
 import (
 	"errors"
 
-	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-bitfield"
 )
 
 var _ = logrus.WithField("prefix", "aggregation")

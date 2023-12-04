@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
 	chainMock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"

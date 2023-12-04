@@ -1,3 +1,5 @@
+load("@qrysm//tools/go:def.bzl", "go_test")
+
 oad("@qrysm//tools/go:def.bzl", "go_test")
 
 go_test(

@@ -121,16 +121,59 @@ func (v *validator) ProposeBlock(ctx context.Context, slot primitives.Slot, pubK
 		return
 	}
 
-	// Propose and broadcast block via beacon node
-	proposal, err := blk.PbGenericBlock()
-	if err != nil {
-		log.WithError(err).Error("Failed to create proposal request")
-		if v.emitAccountMetrics {
-			ValidatorProposeFailVec.WithLabelValues(fmtKey).Inc()
+	var genericSignedBlock *zondpb.GenericSignedBeaconBlock
+	if blk.Version() >= version.Deneb {
+		if !blk.IsBlinded() {
+			signedBlobs, err := v.signDenebBlobs(ctx, b.GetDeneb().Blobs, pubKey)
+			if err != nil {
+				log.WithError(err).Error("Failed to sign blobs")
+				return
+			}
+			denebBlock, err := blk.PbDenebBlock()
+			if err != nil {
+				log.WithError(err).Error("Failed to get deneb block")
+				return
+			}
+			genericSignedBlock = &zondpb.GenericSignedBeaconBlock{
+				Block: &zondpb.GenericSignedBeaconBlock_Deneb{
+					Deneb: &zondpb.SignedBeaconBlockAndBlobsDeneb{
+						Block: denebBlock,
+						Blobs: signedBlobs,
+					},
+				},
+			}
+		} else {
+			signedBlindBlobs, err := v.signBlindedDenebBlobs(ctx, b.GetBlindedDeneb().Blobs, pubKey)
+			if err != nil {
+				log.WithError(err).Error("Failed to sign blinded blob sidecar")
+				return
+			}
+			blindedDenebBlock, err := blk.PbBlindedDenebBlock()
+			if err != nil {
+				log.WithError(err).Error("Failed to get blinded deneb block")
+				return
+			}
+			genericSignedBlock = &zondpb.GenericSignedBeaconBlock{
+				Block: &zondpb.GenericSignedBeaconBlock_BlindedDeneb{
+					BlindedDeneb: &zondpb.SignedBlindedBeaconBlockAndBlobsDeneb{
+						SignedBlindedBlock:        blindedDenebBlock,
+						SignedBlindedBlobSidecars: signedBlindBlobs,
+					},
+				},
+			}
 		}
-		return
+	} else {
+		genericSignedBlock, err = blk.PbGenericBlock()
+		if err != nil {
+			log.WithError(err).Error("Failed to create proposal request")
+			if v.emitAccountMetrics {
+				ValidatorProposeFailVec.WithLabelValues(fmtKey).Inc()
+			}
+			return
+		}
 	}
-	blkResp, err := v.validatorClient.ProposeBeaconBlock(ctx, proposal)
+
+	blkResp, err := v.validatorClient.ProposeBeaconBlock(ctx, genericSignedBlock)
 	if err != nil {
 		log.WithField("blockSlot", slot).WithError(err).Error("Failed to propose block")
 		if v.emitAccountMetrics {
@@ -175,6 +218,15 @@ func (v *validator) ProposeBlock(ctx context.Context, slot primitives.Slot, pubK
 			}
 			log = log.WithField("withdrawalCount", len(withdrawals))
 		}
+		if blk.Version() >= version.Deneb {
+			kzgs, err := blk.Block().Body().BlobKzgCommitments()
+			if err != nil {
+				log.WithError(err).Error("Failed to get blob KZG commitments")
+				return
+			} else if len(kzgs) != 0 {
+				log = log.WithField("kzgCommitmentCount", len(kzgs))
+			}
+		}
 	}
 
 	blkRoot := fmt.Sprintf("%#x", bytesutil.Trunc(blkResp.BlockRoot))
@@ -217,7 +269,6 @@ func ProposeExit(
 	span.AddAttributes(
 		trace.StringAttribute("exitRoot", fmt.Sprintf("%#x", exitResp.ExitRoot)),
 	)
-
 	return nil
 }
 

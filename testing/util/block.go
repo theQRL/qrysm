@@ -20,9 +20,9 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/rand"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	v2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assertions"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
@@ -73,6 +73,19 @@ func NewBeaconBlock() *zondpb.SignedBeaconBlock {
 				ProposerSlashings: []*zondpb.ProposerSlashing{},
 				VoluntaryExits:    []*zondpb.SignedVoluntaryExit{},
 			},
+		},
+		Signature: make([]byte, dilithium2.CryptoBytes),
+	}
+}
+
+func NewBlobsidecar() *zondpb.SignedBlobSidecar {
+	return &zondpb.SignedBlobSidecar{
+		Message: &zondpb.BlobSidecar{
+			BlockRoot:       make([]byte, fieldparams.RootLength),
+			BlockParentRoot: make([]byte, fieldparams.RootLength),
+			Blob:            make([]byte, fieldparams.BlobLength),
+			KzgCommitment:   make([]byte, dilithium2.CryptoPublicKeyBytes),
+			KzgProof:        make([]byte, dilithium2.CryptoPublicKeyBytes),
 		},
 		Signature: make([]byte, dilithium2.CryptoBytes),
 	}
@@ -386,10 +399,16 @@ func generateVoluntaryExits(
 	currentEpoch := time.CurrentEpoch(bState)
 
 	voluntaryExits := make([]*zondpb.SignedVoluntaryExit, numExits)
+	valMap := map[primitives.ValidatorIndex]bool{}
 	for i := 0; i < len(voluntaryExits); i++ {
 		valIndex, err := randValIndex(bState)
 		if err != nil {
 			return nil, err
+		}
+		// Retry if validator exit already exists.
+		if valMap[valIndex] {
+			i--
+			continue
 		}
 		exit := &zondpb.SignedVoluntaryExit{
 			Exit: &zondpb.VoluntaryExit{
@@ -402,6 +421,7 @@ func generateVoluntaryExits(
 			return nil, err
 		}
 		voluntaryExits[i] = exit
+		valMap[valIndex] = true
 	}
 	return voluntaryExits, nil
 }
@@ -1115,4 +1135,274 @@ func SaveBlock(tb assertions.AssertionTestingTB, ctx context.Context, db iface.N
 	require.NoError(tb, err)
 	require.NoError(tb, db.SaveBlock(ctx, wsb))
 	return wsb
+}
+
+// HydrateSignedBeaconBlockDeneb hydrates a signed beacon block with correct field length sizes
+// to comply with fssz marshalling and unmarshalling rules.
+func HydrateSignedBeaconBlockDeneb(b *zondpb.SignedBeaconBlockDeneb) *zondpb.SignedBeaconBlockDeneb {
+	if b.Signature == nil {
+		b.Signature = make([]byte, dilithium2.CryptoBytes)
+	}
+	b.Block = HydrateBeaconBlockDeneb(b.Block)
+	return b
+}
+
+// HydrateV2SignedBeaconBlockDeneb hydrates a v2 signed beacon block with correct field length sizes
+// to comply with fssz marshalling and unmarshalling rules.
+func HydrateV2SignedBeaconBlockDeneb(b *v2.SignedBeaconBlockDeneb) *v2.SignedBeaconBlockDeneb {
+	if b.Signature == nil {
+		b.Signature = make([]byte, dilithium2.CryptoBytes)
+	}
+	b.Message = HydrateV2BeaconBlockDeneb(b.Message)
+	return b
+}
+
+// HydrateBeaconBlockDeneb hydrates a beacon block with correct field length sizes
+// to comply with fssz marshalling and unmarshalling rules.
+func HydrateBeaconBlockDeneb(b *zondpb.BeaconBlockDeneb) *zondpb.BeaconBlockDeneb {
+	if b == nil {
+		b = &zondpb.BeaconBlockDeneb{}
+	}
+	if b.ParentRoot == nil {
+		b.ParentRoot = make([]byte, fieldparams.RootLength)
+	}
+	if b.StateRoot == nil {
+		b.StateRoot = make([]byte, fieldparams.RootLength)
+	}
+	b.Body = HydrateBeaconBlockBodyDeneb(b.Body)
+	return b
+}
+
+// HydrateV2BeaconBlockDeneb hydrates a v2 beacon block with correct field length sizes
+// to comply with fssz marshalling and unmarshalling rules.
+func HydrateV2BeaconBlockDeneb(b *v2.BeaconBlockDeneb) *v2.BeaconBlockDeneb {
+	if b == nil {
+		b = &v2.BeaconBlockDeneb{}
+	}
+	if b.ParentRoot == nil {
+		b.ParentRoot = make([]byte, fieldparams.RootLength)
+	}
+	if b.StateRoot == nil {
+		b.StateRoot = make([]byte, fieldparams.RootLength)
+	}
+	b.Body = HydrateV2BeaconBlockBodyDeneb(b.Body)
+	return b
+}
+
+// HydrateBeaconBlockBodyDeneb hydrates a beacon block body with correct field length sizes
+// to comply with fssz marshalling and unmarshalling rules.
+func HydrateBeaconBlockBodyDeneb(b *zondpb.BeaconBlockBodyDeneb) *zondpb.BeaconBlockBodyDeneb {
+	if b == nil {
+		b = &zondpb.BeaconBlockBodyDeneb{}
+	}
+	if b.RandaoReveal == nil {
+		b.RandaoReveal = make([]byte, dilithium2.CryptoBytes)
+	}
+	if b.Graffiti == nil {
+		b.Graffiti = make([]byte, fieldparams.RootLength)
+	}
+	if b.Eth1Data == nil {
+		b.Eth1Data = &zondpb.Eth1Data{
+			DepositRoot: make([]byte, fieldparams.RootLength),
+			BlockHash:   make([]byte, fieldparams.RootLength),
+		}
+	}
+	if b.SyncAggregate == nil {
+		b.SyncAggregate = &zondpb.SyncAggregate{
+			SyncCommitteeBits:      make([]byte, fieldparams.SyncAggregateSyncCommitteeBytesLength),
+			SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
+		}
+	}
+	if b.ExecutionPayload == nil {
+		b.ExecutionPayload = &enginev1.ExecutionPayloadDeneb{
+			ParentHash:    make([]byte, fieldparams.RootLength),
+			FeeRecipient:  make([]byte, 20),
+			StateRoot:     make([]byte, fieldparams.RootLength),
+			ReceiptsRoot:  make([]byte, fieldparams.RootLength),
+			LogsBloom:     make([]byte, 256),
+			PrevRandao:    make([]byte, fieldparams.RootLength),
+			BaseFeePerGas: make([]byte, fieldparams.RootLength),
+			BlockHash:     make([]byte, fieldparams.RootLength),
+			Transactions:  make([][]byte, 0),
+			ExtraData:     make([]byte, 0),
+		}
+	}
+	return b
+}
+
+// HydrateV2BeaconBlockBodyDeneb hydrates a v2 beacon block body with correct field length sizes
+// to comply with fssz marshalling and unmarshalling rules.
+func HydrateV2BeaconBlockBodyDeneb(b *v2.BeaconBlockBodyDeneb) *v2.BeaconBlockBodyDeneb {
+	if b == nil {
+		b = &v2.BeaconBlockBodyDeneb{}
+	}
+	if b.RandaoReveal == nil {
+		b.RandaoReveal = make([]byte, dilithium2.CryptoBytes)
+	}
+	if b.Graffiti == nil {
+		b.Graffiti = make([]byte, fieldparams.RootLength)
+	}
+	if b.Eth1Data == nil {
+		b.Eth1Data = &v1.Eth1Data{
+			DepositRoot: make([]byte, fieldparams.RootLength),
+			BlockHash:   make([]byte, fieldparams.RootLength),
+		}
+	}
+	if b.SyncAggregate == nil {
+		b.SyncAggregate = &v1.SyncAggregate{
+			SyncCommitteeBits:      make([]byte, fieldparams.SyncAggregateSyncCommitteeBytesLength),
+			SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
+		}
+	}
+	if b.ExecutionPayload == nil {
+		b.ExecutionPayload = &enginev1.ExecutionPayloadDeneb{
+			ParentHash:    make([]byte, fieldparams.RootLength),
+			FeeRecipient:  make([]byte, 20),
+			StateRoot:     make([]byte, fieldparams.RootLength),
+			ReceiptsRoot:  make([]byte, fieldparams.RootLength),
+			LogsBloom:     make([]byte, 256),
+			PrevRandao:    make([]byte, fieldparams.RootLength),
+			BaseFeePerGas: make([]byte, fieldparams.RootLength),
+			BlockHash:     make([]byte, fieldparams.RootLength),
+			Transactions:  make([][]byte, 0),
+			ExtraData:     make([]byte, 0),
+		}
+	}
+	return b
+}
+
+// HydrateSignedBlindedBeaconBlockDeneb hydrates a signed blinded beacon block with correct field length sizes
+// to comply with fssz marshalling and unmarshalling rules.
+func HydrateSignedBlindedBeaconBlockDeneb(b *zondpb.SignedBlindedBeaconBlockDeneb) *zondpb.SignedBlindedBeaconBlockDeneb {
+	if b.Signature == nil {
+		b.Signature = make([]byte, dilithium2.CryptoBytes)
+	}
+	b.Message = HydrateBlindedBeaconBlockDeneb(b.Message)
+	return b
+}
+
+// HydrateV2SignedBlindedBeaconBlockDeneb hydrates a signed v2 blinded beacon block with correct field length sizes
+// to comply with fssz marshalling and unmarshalling rules.
+func HydrateV2SignedBlindedBeaconBlockDeneb(b *v2.SignedBlindedBeaconBlockDeneb) *v2.SignedBlindedBeaconBlockDeneb {
+	if b.Signature == nil {
+		b.Signature = make([]byte, dilithium2.CryptoBytes)
+	}
+	b.Message = HydrateV2BlindedBeaconBlockDeneb(b.Message)
+	return b
+}
+
+// HydrateBlindedBeaconBlockDeneb hydrates a blinded beacon block with correct field length sizes
+// to comply with fssz marshalling and unmarshalling rules.
+func HydrateBlindedBeaconBlockDeneb(b *zondpb.BlindedBeaconBlockDeneb) *zondpb.BlindedBeaconBlockDeneb {
+	if b == nil {
+		b = &zondpb.BlindedBeaconBlockDeneb{}
+	}
+	if b.ParentRoot == nil {
+		b.ParentRoot = make([]byte, fieldparams.RootLength)
+	}
+	if b.StateRoot == nil {
+		b.StateRoot = make([]byte, fieldparams.RootLength)
+	}
+	b.Body = HydrateBlindedBeaconBlockBodyDeneb(b.Body)
+	return b
+}
+
+// HydrateV2BlindedBeaconBlockDeneb hydrates a v2 blinded beacon block with correct field length sizes
+// to comply with fssz marshalling and unmarshalling rules.
+func HydrateV2BlindedBeaconBlockDeneb(b *v2.BlindedBeaconBlockDeneb) *v2.BlindedBeaconBlockDeneb {
+	if b == nil {
+		b = &v2.BlindedBeaconBlockDeneb{}
+	}
+	if b.ParentRoot == nil {
+		b.ParentRoot = make([]byte, fieldparams.RootLength)
+	}
+	if b.StateRoot == nil {
+		b.StateRoot = make([]byte, fieldparams.RootLength)
+	}
+	b.Body = HydrateV2BlindedBeaconBlockBodyDeneb(b.Body)
+	return b
+}
+
+// HydrateBlindedBeaconBlockBodyDeneb hydrates a blinded beacon block body with correct field length sizes
+// to comply with fssz marshalling and unmarshalling rules.
+func HydrateBlindedBeaconBlockBodyDeneb(b *zondpb.BlindedBeaconBlockBodyDeneb) *zondpb.BlindedBeaconBlockBodyDeneb {
+	if b == nil {
+		b = &zondpb.BlindedBeaconBlockBodyDeneb{}
+	}
+	if b.RandaoReveal == nil {
+		b.RandaoReveal = make([]byte, dilithium2.CryptoBytes)
+	}
+	if b.Graffiti == nil {
+		b.Graffiti = make([]byte, 32)
+	}
+	if b.Eth1Data == nil {
+		b.Eth1Data = &zondpb.Eth1Data{
+			DepositRoot: make([]byte, fieldparams.RootLength),
+			BlockHash:   make([]byte, 32),
+		}
+	}
+	if b.SyncAggregate == nil {
+		b.SyncAggregate = &zondpb.SyncAggregate{
+			SyncCommitteeBits:      make([]byte, fieldparams.SyncAggregateSyncCommitteeBytesLength),
+			SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
+		}
+	}
+	if b.ExecutionPayloadHeader == nil {
+		b.ExecutionPayloadHeader = &enginev1.ExecutionPayloadHeaderDeneb{
+			ParentHash:       make([]byte, 32),
+			FeeRecipient:     make([]byte, 20),
+			StateRoot:        make([]byte, fieldparams.RootLength),
+			ReceiptsRoot:     make([]byte, fieldparams.RootLength),
+			LogsBloom:        make([]byte, 256),
+			PrevRandao:       make([]byte, 32),
+			BaseFeePerGas:    make([]byte, 32),
+			BlockHash:        make([]byte, 32),
+			TransactionsRoot: make([]byte, fieldparams.RootLength),
+			ExtraData:        make([]byte, 0),
+			WithdrawalsRoot:  make([]byte, fieldparams.RootLength),
+		}
+	}
+	return b
+}
+
+// HydrateV2BlindedBeaconBlockBodyDeneb hydrates a blinded v2 beacon block body with correct field length sizes
+// to comply with fssz marshalling and unmarshalling rules.
+func HydrateV2BlindedBeaconBlockBodyDeneb(b *v2.BlindedBeaconBlockBodyDeneb) *v2.BlindedBeaconBlockBodyDeneb {
+	if b == nil {
+		b = &v2.BlindedBeaconBlockBodyDeneb{}
+	}
+	if b.RandaoReveal == nil {
+		b.RandaoReveal = make([]byte, dilithium2.CryptoBytes)
+	}
+	if b.Graffiti == nil {
+		b.Graffiti = make([]byte, 32)
+	}
+	if b.Eth1Data == nil {
+		b.Eth1Data = &v1.Eth1Data{
+			DepositRoot: make([]byte, fieldparams.RootLength),
+			BlockHash:   make([]byte, 32),
+		}
+	}
+	if b.SyncAggregate == nil {
+		b.SyncAggregate = &v1.SyncAggregate{
+			SyncCommitteeBits:      make([]byte, fieldparams.SyncAggregateSyncCommitteeBytesLength),
+			SyncCommitteeSignature: make([]byte, dilithium2.CryptoBytes),
+		}
+	}
+	if b.ExecutionPayloadHeader == nil {
+		b.ExecutionPayloadHeader = &enginev1.ExecutionPayloadHeaderDeneb{
+			ParentHash:       make([]byte, 32),
+			FeeRecipient:     make([]byte, 20),
+			StateRoot:        make([]byte, fieldparams.RootLength),
+			ReceiptsRoot:     make([]byte, fieldparams.RootLength),
+			LogsBloom:        make([]byte, 256),
+			PrevRandao:       make([]byte, 32),
+			BaseFeePerGas:    make([]byte, 32),
+			BlockHash:        make([]byte, 32),
+			TransactionsRoot: make([]byte, fieldparams.RootLength),
+			ExtraData:        make([]byte, 0),
+			WithdrawalsRoot:  make([]byte, fieldparams.RootLength),
+		}
+	}
+	return b
 }

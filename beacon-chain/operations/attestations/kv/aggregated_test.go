@@ -8,7 +8,7 @@ import (
 	c "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	fssz "github.com/prysmaticlabs/fastssz"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/v4/config/features"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
@@ -477,8 +477,10 @@ func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 
 				// Same test for block attestations
 				cache = NewAttCaches()
-				assert.NoError(t, cache.SaveBlockAttestations(tt.existing))
 
+				for _, att := range tt.existing {
+					require.NoError(t, cache.SaveBlockAttestation(att))
+				}
 				result, err = cache.HasAggregatedAttestation(tt.input)
 				require.NoError(t, err)
 				assert.Equal(t, tt.want, result)

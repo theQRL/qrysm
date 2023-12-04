@@ -5,8 +5,9 @@ package state
 
 import (
 	"context"
+	"encoding/json"
 
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
@@ -23,6 +24,7 @@ type BeaconState interface {
 	CopyAllTries()
 	HashTreeRoot(ctx context.Context) ([32]byte, error)
 	StateProver
+	json.Marshaler
 }
 
 // SpecParametersProvider provides fork-specific configuration parameters as
@@ -235,7 +237,7 @@ type WriteOnlyBalances interface {
 // WriteOnlyRandaoMixes defines a struct which only has write access to randao mixes methods.
 type WriteOnlyRandaoMixes interface {
 	SetRandaoMixes(val [][]byte) error
-	UpdateRandaoMixesAtIndex(idx uint64, val []byte) error
+	UpdateRandaoMixesAtIndex(idx uint64, val [32]byte) error
 }
 
 // WriteOnlyCheckpoint defines a struct which only has write access to check point methods.

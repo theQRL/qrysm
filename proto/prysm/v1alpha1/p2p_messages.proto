@@ -31,6 +31,7 @@ message ENRForkID {
   bytes next_fork_version = 2 [(theqrl.zond.ext.ssz_size) = "4"];
   uint64 next_fork_epoch = 3 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
 }
+
 /*
  Spec Definition:
  MetaData
@@ -41,7 +42,7 @@ message ENRForkID {
 */
 message MetaDataV0 {
   uint64 seq_number = 1;
-  bytes attnets = 2 [(theqrl.zond.ext.ssz_size) = "8", (theqrl.zond.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitvector64"];
+  bytes attnets = 2 [(theqrl.zond.ext.ssz_size) = "8", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitvector64"];
 }
 
 /*
@@ -54,6 +55,18 @@ message MetaDataV0 {
 */
 message MetaDataV1 {
   uint64 seq_number = 1;
-  bytes attnets = 2 [(theqrl.zond.ext.ssz_size) = "8", (theqrl.zond.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitvector64"];
-  bytes syncnets = 3 [(theqrl.zond.ext.ssz_size) = "1", (theqrl.zond.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitvector4"];
+  bytes attnets = 2 [(theqrl.zond.ext.ssz_size) = "8", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitvector64"];
+  bytes syncnets = 3 [(theqrl.zond.ext.ssz_size) = "1", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitvector4"];
+}
+
+/*
+ Spec Definition:
+ (
+  start_slot: Slot
+  count: uint64
+ )
+*/
+message BlobSidecarsByRangeRequest {
+  uint64 start_slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+  uint64 count = 2;
 }

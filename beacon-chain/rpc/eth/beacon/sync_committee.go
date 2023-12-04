@@ -4,17 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/api/grpc"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
@@ -173,62 +170,4 @@ func extractSyncSubcommittees(st state.BeaconState, committee *zondpbalpha.SyncC
 		subcommittees[i] = subcommittee
 	}
 	return subcommittees, nil
-}
-
-// SubmitPoolSyncCommitteeSignatures submits sync committee signature objects to the node.
-func (bs *Server) SubmitPoolSyncCommitteeSignatures(ctx context.Context, req *zondpbv2.SubmitPoolSyncCommitteeSignatures) (*empty.Empty, error) {
-	ctx, span := trace.StartSpan(ctx, "beacon.SubmitPoolSyncCommitteeSignatures")
-	defer span.End()
-
-	var validMessages []*zondpbalpha.SyncCommitteeMessage
-	var msgFailures []*helpers.SingleIndexedVerificationFailure
-	for i, msg := range req.Data {
-		if err := validateSyncCommitteeMessage(msg); err != nil {
-			msgFailures = append(msgFailures, &helpers.SingleIndexedVerificationFailure{
-				Index:   i,
-				Message: err.Error(),
-			})
-			continue
-		}
-
-		v1alpha1Msg := &zondpbalpha.SyncCommitteeMessage{
-			Slot:           msg.Slot,
-			BlockRoot:      msg.BeaconBlockRoot,
-			ValidatorIndex: msg.ValidatorIndex,
-			Signature:      msg.Signature,
-		}
-		validMessages = append(validMessages, v1alpha1Msg)
-	}
-
-	for _, msg := range validMessages {
-		_, err := bs.V1Alpha1ValidatorServer.SubmitSyncMessage(ctx, msg)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not submit message: %v", err)
-		}
-	}
-
-	if len(msgFailures) > 0 {
-		failuresContainer := &helpers.IndexedVerificationFailure{Failures: msgFailures}
-		err := grpc.AppendCustomErrorHeader(ctx, failuresContainer)
-		if err != nil {
-			return nil, status.Errorf(
-				codes.InvalidArgument,
-				"One or more messages failed validation. Could not prepare detailed failure information: %v",
-				err,
-			)
-		}
-		return nil, status.Errorf(codes.InvalidArgument, "One or more messages failed validation")
-	}
-
-	return &empty.Empty{}, nil
-}
-
-func validateSyncCommitteeMessage(msg *zondpbv2.SyncCommitteeMessage) error {
-	if len(msg.BeaconBlockRoot) != 32 {
-		return errors.New("invalid block root length")
-	}
-	if len(msg.Signature) != 96 {
-		return errors.New("invalid signature length")
-	}
-	return nil
 }

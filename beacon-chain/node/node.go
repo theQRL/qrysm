@@ -24,6 +24,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/builder"
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache/depositcache"
+	"github.com/theQRL/qrysm/v4/beacon-chain/cache/depositsnapshot"
 	"github.com/theQRL/qrysm/v4/beacon-chain/db"
 	"github.com/theQRL/qrysm/v4/beacon-chain/db/kv"
 	"github.com/theQRL/qrysm/v4/beacon-chain/db/slasherkv"
@@ -94,7 +95,7 @@ type BeaconNode struct {
 	slashingsPool           slashings.PoolManager
 	syncCommitteePool       synccommittee.Pool
 	dilithiumToExecPool     blstoexec.PoolManager
-	depositCache            *depositcache.DepositCache
+	depositCache            cache.DepositCache
 	proposerIdsCache        *cache.ProposerPayloadIDsCache
 	stateFeed               *event.Feed
 	blockFeed               *event.Feed
@@ -150,6 +151,9 @@ func New(cliCtx *cli.Context, opts ...Option) (*BeaconNode, error) {
 		return nil, err
 	}
 	if err := configureExecutionSetting(cliCtx); err != nil {
+		return nil, err
+	}
+	if err := kv.ConfigureBlobRetentionEpoch(cliCtx); err != nil {
 		return nil, err
 	}
 	configureFastSSZHashingAlgorithm()
@@ -212,6 +216,11 @@ func New(cliCtx *cli.Context, opts ...Option) (*BeaconNode, error) {
 
 	log.Debugln("Starting State Gen")
 	if err := beacon.startStateGen(ctx, bfs, beacon.forkChoicer); err != nil {
+		if errors.Is(err, stategen.ErrNoGenesisBlock) {
+			log.Errorf("No genesis block/state is found. Prysm only provides a mainnet genesis "+
+				"state bundled in the application. You must provide the --%s or --%s flag to load "+
+				"a genesis block/state for this network.", "genesis-state", "genesis-beacon-api-url")
+		}
 		return nil, err
 	}
 
@@ -262,6 +271,7 @@ func New(cliCtx *cli.Context, opts ...Option) (*BeaconNode, error) {
 
 	log.Debugln("Registering RPC Service")
 	router := mux.NewRouter()
+	router.Use(middleware)
 	if err := beacon.registerRPCService(router); err != nil {
 		return nil, err
 	}
@@ -401,10 +411,16 @@ func (b *BeaconNode) startDB(cliCtx *cli.Context, depositAddress string) error {
 
 	b.db = d
 
-	depositCache, err := depositcache.New()
+	var depositCache cache.DepositCache
+	if features.Get().EnableEIP4881 {
+		depositCache, err = depositsnapshot.New()
+	} else {
+		depositCache, err = depositcache.New()
+	}
 	if err != nil {
 		return errors.Wrap(err, "could not create deposit cache")
 	}
+
 	b.depositCache = depositCache
 
 	if b.GenesisInitializer != nil {
@@ -776,7 +792,7 @@ func (b *BeaconNode) registerRPCService(router *mux.Router) error {
 	}
 
 	genesisValidators := b.cliCtx.Uint64(flags.InteropNumValidatorsFlag.Name)
-	var depositFetcher depositcache.DepositFetcher
+	var depositFetcher cache.DepositFetcher
 	var chainStartFetcher execution.ChainStartFetcher
 	if genesisValidators > 0 {
 		var interopService *interopcoldstart.Service

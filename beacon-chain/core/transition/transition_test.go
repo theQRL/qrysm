@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
@@ -626,6 +626,20 @@ func TestProcessSlots_ThroughBellatrixEpoch(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, version.Bellatrix, st.Version())
 
+	require.Equal(t, params.BeaconConfig().SlotsPerEpoch*10, st.Slot())
+}
+
+func TestProcessSlots_ThroughDenebEpoch(t *testing.T) {
+	transition.SkipSlotCache.Disable()
+	params.SetupTestConfigCleanup(t)
+	conf := params.BeaconConfig()
+	conf.DenebForkEpoch = 5
+	params.OverrideBeaconConfig(conf)
+
+	st, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+	st, err := transition.ProcessSlots(context.Background(), st, params.BeaconConfig().SlotsPerEpoch*10)
+	require.NoError(t, err)
+	require.Equal(t, version.Deneb, st.Version())
 	require.Equal(t, params.BeaconConfig().SlotsPerEpoch*10, st.Slot())
 }
 

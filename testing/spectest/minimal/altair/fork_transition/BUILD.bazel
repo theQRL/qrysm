@@ -4,10 +4,10 @@ go_test(
     name = "go_default_test",
     size = "medium",
     timeout = "short",
-    srcs = ["random_test.go"],
+    srcs = ["transition_test.go"],
     data = glob(["*.yaml"]) + [
         "@consensus_spec_tests_mainnet//:test_data",
     ],
     tags = ["spectest"],
-    deps = ["//testing/spectest/shared/capella/sanity:go_default_library"],
+    deps = ["//testing/spectest/shared/altair/fork:go_default_library"],
 )

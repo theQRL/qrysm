@@ -11,7 +11,6 @@ import (
 	"github.com/theQRL/qrysm/v4/async/event"
 	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	dbtest "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	mockslasher "github.com/theQRL/qrysm/v4/beacon-chain/slasher/mock"
 	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
 	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
@@ -21,7 +20,6 @@ import (
 )
 
 var _ = SlashingChecker(&Service{})
-var _ = SlashingChecker(&mockslasher.MockSlashingChecker{})
 
 func TestMain(m *testing.M) {
 	logrus.SetLevel(logrus.DebugLevel)

@@ -31,11 +31,7 @@ message SubmitSyncCommitteeSignaturesRequest {
 // SyncCommittee serves as committees to facilitate light client syncing to beacon chain.
 message SyncCommittee {
   repeated bytes pubkeys = 1  [(theqrl.zond.ext.ssz_size) = "sync_committee_bits.size,2592"];
-  bytes aggregate_pubkey = 2 [(theqrl.zond.ext.ssz_size) = "1327104"];
-}
-
-message SubmitPoolSyncCommitteeSignatures {
-  repeated SyncCommitteeMessage data = 1;
+  bytes aggregate_pubkey = 2 [(theqrl.zond.ext.ssz_size) = "41472"];
 }
 
 // Sync committee object to support light client.

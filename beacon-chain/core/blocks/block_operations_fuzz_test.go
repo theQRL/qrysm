@@ -2,13 +2,13 @@ package blocks
 
 import (
 	"context"
+	"github.com/theQRL/qrysm/v4/config/params"
 	"testing"
 
 	fuzz "github.com/google/gofuzz"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	v "github.com/theQRL/qrysm/v4/beacon-chain/core/validators"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
@@ -413,7 +413,7 @@ func TestFuzzProcessVoluntaryExitsNoVerify_10000(t *testing.T) {
 	}
 }
 
-func TestFuzzVerifyExit_10000(_ *testing.T) {
+func TestFuzzVerifyExit_10000(t *testing.T) {
 	fuzzer := fuzz.NewWithSeed(0)
 	ve := &zondpb.SignedVoluntaryExit{}
 	rawVal := &zondpb.Validator{}
@@ -425,9 +425,18 @@ func TestFuzzVerifyExit_10000(_ *testing.T) {
 		fuzzer.Fuzz(rawVal)
 		fuzzer.Fuzz(fork)
 		fuzzer.Fuzz(&slot)
+
+		state := &zondpb.BeaconState{
+			Slot:                  slot,
+			Fork:                  fork,
+			GenesisValidatorsRoot: params.BeaconConfig().ZeroHash[:],
+		}
+		s, err := state_native.InitializeFromProtoUnsafePhase0(state)
+		require.NoError(t, err)
+
 		val, err := state_native.NewValidator(&zondpb.Validator{})
 		_ = err
-		err = VerifyExitAndSignature(val, slot, fork, ve, params.BeaconConfig().ZeroHash[:])
+		err = VerifyExitAndSignature(val, s, ve)
 		_ = err
 	}
 }

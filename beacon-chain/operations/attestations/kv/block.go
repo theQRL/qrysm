@@ -36,17 +36,6 @@ func (c *AttCaches) SaveBlockAttestation(att *zondpb.Attestation) error {
 	return nil
 }
 
-// SaveBlockAttestations saves a list of block attestations in cache.
-func (c *AttCaches) SaveBlockAttestations(atts []*zondpb.Attestation) error {
-	for _, att := range atts {
-		if err := c.SaveBlockAttestation(att); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // BlockAttestations returns the block attestations in cache.
 func (c *AttCaches) BlockAttestations() []*zondpb.Attestation {
 	atts := make([]*zondpb.Attestation, 0)

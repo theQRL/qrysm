@@ -3,7 +3,7 @@ package kv
 import (
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 

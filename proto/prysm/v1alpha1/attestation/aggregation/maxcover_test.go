@@ -5,7 +5,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	aggtesting "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation/aggregation/testing"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 )

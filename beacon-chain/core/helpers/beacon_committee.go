@@ -9,7 +9,7 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"

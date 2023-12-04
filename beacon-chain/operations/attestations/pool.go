@@ -32,7 +32,6 @@ type Pool interface {
 	UnaggregatedAttestationCount() int
 	// For attestations that were included in the block.
 	SaveBlockAttestation(att *zondpb.Attestation) error
-	SaveBlockAttestations(atts []*zondpb.Attestation) error
 	BlockAttestations() []*zondpb.Attestation
 	DeleteBlockAttestation(att *zondpb.Attestation) error
 	// For attestations to be passed to fork choice.

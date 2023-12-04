@@ -2,7 +2,7 @@ package metadata
 
 import (
 	ssz "github.com/prysmaticlabs/fastssz"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )
 

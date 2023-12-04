@@ -67,6 +67,14 @@ func (SignedBeaconBlock) PbBlindedCapellaBlock() (*zond.SignedBlindedBeaconBlock
 	panic("implement me")
 }
 
+func (SignedBeaconBlock) PbDenebBlock() (*zond.SignedBeaconBlockDeneb, error) {
+	panic("implement me")
+}
+
+func (SignedBeaconBlock) PbBlindedDenebBlock() (*zond.SignedBlindedBeaconBlockDeneb, error) {
+	panic("implement me")
+}
+
 func (SignedBeaconBlock) MarshalSSZTo(_ []byte) ([]byte, error) {
 	panic("implement me")
 }
@@ -96,6 +104,10 @@ func (SignedBeaconBlock) ToBlinded() (interfaces.ReadOnlySignedBeaconBlock, erro
 }
 
 func (SignedBeaconBlock) Header() (*zond.SignedBeaconBlockHeader, error) {
+	panic("implement me")
+}
+
+func (SignedBeaconBlock) ValueInGwei() uint64 {
 	panic("implement me")
 }
 
@@ -216,10 +228,6 @@ func (BeaconBlockBody) AttesterSlashings() []*zond.AttesterSlashing {
 	panic("implement me")
 }
 
-func (BeaconBlockBody) Attestations() []*zond.Attestation {
-	panic("implement me")
-}
-
 func (BeaconBlockBody) Deposits() []*zond.Deposit {
 	panic("implement me")
 }
@@ -297,6 +305,15 @@ func (b *BeaconBlockBody) SetExecution(interfaces.ExecutionData) error {
 }
 
 func (b *BeaconBlockBody) SetDilithiumToExecutionChanges([]*zond.SignedDilithiumToExecutionChange) error {
+	panic("implement me")
+}
+
+// BlobKzgCommitments returns the blob kzg commitments in the block.
+func (b *BeaconBlockBody) BlobKzgCommitments() ([][]byte, error) {
+	panic("implement me")
+}
+
+func (b *BeaconBlockBody) Attestations() []*zond.Attestation {
 	panic("implement me")
 }
 

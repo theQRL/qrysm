@@ -5,9 +5,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
