@@ -3,7 +3,7 @@ package migration
 import (
 	"testing"
 
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"

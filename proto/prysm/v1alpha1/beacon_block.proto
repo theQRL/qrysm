@@ -316,14 +316,14 @@ message SignedBeaconBlockHeader {
 }
 
 message IndexedAttestation {
-    repeated uint64 attesting_indices = 1 [(theqrl.zond.ext.ssz_max) = "2048"];
+    repeated uint64 attesting_indices = 1 [(theqrl.zond.ext.ssz_max) = "128"];
 
     AttestationData data = 2;
 
-    // 4595 (signature size per signer) * 2048 (number of signers) bytes of unaggregated signatures
-    bytes signature = 3 [(theqrl.zond.ext.ssz_size) = "9410560"];
+    // 4595 (signature size per signer) * 128 (number of signers) bytes of unaggregated signatures
+    bytes signature = 3 [(theqrl.zond.ext.ssz_max) = "588160"];
 
-    repeated uint64 signatureValidatorIndex = 4 [(theqrl.zond.ext.ssz_max) = "2048"];
+    repeated uint64 signatureValidatorIndex = 4 [(theqrl.zond.ext.ssz_max) = "128"];
 }
 
 // The sync aggregate object for the beacon chain to track sync committee votes and to
@@ -332,7 +332,7 @@ message SyncAggregate {
     // Sync committee bits as Bitvector to track votes.
     bytes sync_committee_bits = 1 [(theqrl.zond.ext.ssz_size) = "sync_committee_bytes.size", (theqrl.zond.ext.cast_type) = "sync_committee_bits.type"];
 
-    bytes sync_committee_signature = 2 [(theqrl.zond.ext.ssz_max) = "9410560"];
+    bytes sync_committee_signature = 2 [(theqrl.zond.ext.ssz_max) = "73520"];
 }
 
 message SignedBeaconBlockBellatrix {

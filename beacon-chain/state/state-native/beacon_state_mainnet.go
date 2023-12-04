@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/fieldtrie"
 	customtypes "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/custom-types"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"

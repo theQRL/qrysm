@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-bitfield"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/async"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"

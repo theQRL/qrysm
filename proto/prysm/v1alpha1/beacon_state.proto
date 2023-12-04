@@ -49,7 +49,7 @@ message BeaconState {
 
   // Finality [8001-9000]
   // Spec type [4]Bitvector which means this would be a fixed size of 4 bits.
-  bytes justification_bits = 8001 [(theqrl.zond.ext.ssz_size) = "1", (theqrl.zond.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitvector4"];
+  bytes justification_bits = 8001 [(theqrl.zond.ext.ssz_size) = "1", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitvector4"];
   Checkpoint previous_justified_checkpoint = 8002;
   Checkpoint current_justified_checkpoint = 8003;
   Checkpoint finalized_checkpoint = 8004;
@@ -91,7 +91,7 @@ message BeaconStateAltair {
 
   // Finality [8001-9000]
   // Spec type [4]Bitvector which means this would be a fixed size of 4 bits.
-  bytes justification_bits = 8001 [(theqrl.zond.ext.ssz_size) = "1", (theqrl.zond.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitvector4"];
+  bytes justification_bits = 8001 [(theqrl.zond.ext.ssz_size) = "1", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitvector4"];
   Checkpoint previous_justified_checkpoint = 8002;
   Checkpoint current_justified_checkpoint = 8003;
   Checkpoint finalized_checkpoint = 8004;
@@ -111,7 +111,7 @@ message Fork {
 message PendingAttestation {
   // Bitfield representation of validator indices that have voted exactly
   // the same vote and have been aggregated into this attestation.
-  bytes aggregation_bits = 1 [(theqrl.zond.ext.ssz_max) = "2048", (theqrl.zond.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitlist"];
+  bytes aggregation_bits = 1 [(theqrl.zond.ext.ssz_max) = "2048", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitlist"];
   AttestationData data = 2;
   // The difference of when attestation gets created and get included on chain.
   uint64 inclusion_delay = 3 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
@@ -177,7 +177,7 @@ message DepositMessage {
 // SyncCommittee serves as committees to facilitate light client syncing to beacon chain.
 message SyncCommittee {
   repeated bytes pubkeys = 1  [(theqrl.zond.ext.ssz_size) = "sync_committee_bits.size,2592"];
-  bytes aggregate_pubkey = 2 [(theqrl.zond.ext.ssz_size) = "1327104"];
+  bytes aggregate_pubkey = 2 [(theqrl.zond.ext.ssz_size) = "41472"];
 }
 
 // SyncAggregatorSelectionData is used to sign over and then check whether the aggregator is selected within a subcommittee.
@@ -222,7 +222,7 @@ message BeaconStateBellatrix {
 
   // Finality [8001-9000]
   // Spec type [4]Bitvector which means this would be a fixed size of 4 bits.
-  bytes justification_bits = 8001 [(theqrl.zond.ext.ssz_size) = "1", (theqrl.zond.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitvector4"];
+  bytes justification_bits = 8001 [(theqrl.zond.ext.ssz_size) = "1", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitvector4"];
   Checkpoint previous_justified_checkpoint = 8002;
   Checkpoint current_justified_checkpoint = 8003;
   Checkpoint finalized_checkpoint = 8004;
@@ -270,7 +270,7 @@ message BeaconStateCapella {
 
   // Finality [8001-9000]
   // Spec type [4]Bitvector which means this would be a fixed size of 4 bits.
-  bytes justification_bits = 8001 [(theqrl.zond.ext.ssz_size) = "1", (theqrl.zond.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitvector4"];
+  bytes justification_bits = 8001 [(theqrl.zond.ext.ssz_size) = "1", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitvector4"];
   Checkpoint previous_justified_checkpoint = 8002;
   Checkpoint current_justified_checkpoint = 8003;
   Checkpoint finalized_checkpoint = 8004;
@@ -323,7 +323,7 @@ message BeaconStateDeneb {
 
   // Finality [8001-9000]
   // Spec type [4]Bitvector which means this would be a fixed size of 4 bits.
-  bytes justification_bits = 8001 [(theqrl.zond.ext.ssz_size) = "1", (theqrl.zond.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitvector4"];
+  bytes justification_bits = 8001 [(theqrl.zond.ext.ssz_size) = "1", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitvector4"];
   Checkpoint previous_justified_checkpoint = 8002;
   Checkpoint current_justified_checkpoint = 8003;
   Checkpoint finalized_checkpoint = 8004;

@@ -8,7 +8,7 @@ import (
 	c "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	fssz "github.com/prysmaticlabs/fastssz"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/v4/config/features"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"

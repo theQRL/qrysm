@@ -16,8 +16,8 @@ go_library(
     deps = [
         "//config/fieldparams:go_default_library",
         "//consensus-types/primitives:go_default_library",
-        "@com_github_theqrl_go_zond//common/hexutil:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
+        "@com_github_theqrl_go_zond//common/hexutil:go_default_library",
     ],
 )
 

@@ -240,10 +240,10 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 
 	// Validator related values.
 	TargetAggregatorsPerSyncSubcommittee: 16,
-	SyncCommitteeSubnetCount:             4,
+	SyncCommitteeSubnetCount:             1, // TODO: (cyyber) finalize SyncCommitteeSubnetCount, original value was 4
 
 	// Misc values.
-	SyncCommitteeSize:            512,
+	SyncCommitteeSize:            16, // TODO: (cyyber) finalize SyncCommitteeSize, original value was 512
 	InactivityScoreBias:          4,
 	InactivityScoreRecoveryRate:  16,
 	EpochsPerSyncCommitteePeriod: 256,

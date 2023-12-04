@@ -3,7 +3,7 @@ package state_native
 import (
 	"bytes"
 
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 )

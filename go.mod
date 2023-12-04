@@ -59,7 +59,6 @@ require (
 	github.com/prometheus/client_model v0.3.0
 	github.com/prometheus/prom2json v1.3.0
 	github.com/prysmaticlabs/fastssz v0.0.0-20221107182844-78142813af44
-	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7
 	github.com/prysmaticlabs/prombbolt v0.0.0-20210126082820-9b7adba6db7c
 	github.com/prysmaticlabs/protoc-gen-go-cast v0.0.0-20230228205207-28762a7b9294
 	github.com/r3labs/sse/v2 v2.10.0
@@ -69,6 +68,7 @@ require (
 	github.com/status-im/keycard-go v0.2.0
 	github.com/stretchr/testify v1.8.4
 	github.com/supranational/blst v0.3.11
+	github.com/theQRL/go-bitfield v0.0.0-20231204084259-f3b877be8f63
 	github.com/theQRL/go-qrllib v0.0.0-20230406170304-b7eb19c367e1
 	github.com/theQRL/go-zond v0.0.0-20231010132528-f0be919588c9
 	github.com/theQRL/go-zond-wallet-encryptor-keystore v0.0.0-20231020114450-f6f12b82ea8b

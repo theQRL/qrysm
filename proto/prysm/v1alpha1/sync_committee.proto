@@ -53,9 +53,9 @@ message SyncCommitteeContribution {
   // A bit is set if a signature from the validator at the corresponding
   // index in the subcommittee is present in the aggregate `signature`.
   bytes aggregation_bits = 4 [(theqrl.zond.ext.ssz_size) = "sync_committee_aggregate_bytes.size", (theqrl.zond.ext.cast_type) = "sync_committee_aggregate_bits.type"];
+
   // Signature by the validator(s) over the block root of `slot`.
-//  bytes signature = 5 [(theqrl.zond.ext.ssz_size) = "4595"];
-  bytes signature = 5 [(theqrl.zond.ext.ssz_max) = "9410560"];
+  bytes signature = 5 [(theqrl.zond.ext.ssz_max) = "73520"];
 }
 
 // Aggregated sync committee signature object with selection proof to support light client.

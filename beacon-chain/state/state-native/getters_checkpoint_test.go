@@ -3,7 +3,7 @@ package state_native
 import (
 	"testing"
 
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	testtmpl "github.com/theQRL/qrysm/v4/beacon-chain/state/testing"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"

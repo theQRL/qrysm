@@ -28,7 +28,7 @@ option php_namespace = "TheQRL\\Zond\\v1";
 message Attestation {
     // A bitfield representation of validator indices that have voted exactly
     // the same vote and have been aggregated into this attestation.
-    bytes aggregation_bits = 1 [(theqrl.zond.ext.ssz_max) = "2048", (theqrl.zond.ext.cast_type) = "github.com/prysmaticlabs/go-bitfield.Bitlist"];
+    bytes aggregation_bits = 1 [(theqrl.zond.ext.ssz_max) = "2048", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitlist"];
 
     AttestationData data = 2;
 

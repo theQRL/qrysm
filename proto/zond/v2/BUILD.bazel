@@ -74,7 +74,7 @@ go_proto_library(
         "//proto/zond/ext:go_default_library",
         "//proto/zond/v1:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@com_github_prysmaticlabs_go_bitfield//:go_default_library",
+        "@com_github_theqrl_go_bitfield//:go_default_library",
     ],
 )
 

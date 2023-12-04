@@ -10,12 +10,40 @@ go_library(
     importpath = "github.com/theQRL/qrysm/v4/crypto/dilithium/dilithiumt",
     visibility = ["//visibility:public"],
     deps = [
-        "//cache/lru:go_default_library",
         "//crypto/bls/common:go_default_library",
         "//crypto/dilithium/common:go_default_library",
         "//crypto/rand:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
         "@com_github_theqrl_go_qrllib//common:go_default_library",
         "@com_github_theqrl_go_qrllib//dilithium:go_default_library",
-    ],
+    ] + select({
+        "@io_bazel_rules_go//go/platform:android_amd64": [
+            "//cache/lru:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:android_arm64": [
+            "//cache/lru:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:darwin_amd64": [
+            "//cache/lru:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:darwin_arm64": [
+            "//cache/lru:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:ios_amd64": [
+            "//cache/lru:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:ios_arm64": [
+            "//cache/lru:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:linux_amd64": [
+            "//cache/lru:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:linux_arm64": [
+            "//cache/lru:go_default_library",
+        ],
+        "@io_bazel_rules_go//go/platform:windows_amd64": [
+            "//cache/lru:go_default_library",
+        ],
+        "//conditions:default": [],
+    }),
 )

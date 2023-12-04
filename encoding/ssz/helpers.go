@@ -7,7 +7,7 @@ import (
 
 	"github.com/minio/sha256-simd"
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 )
 

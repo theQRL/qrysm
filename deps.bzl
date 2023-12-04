@@ -3392,10 +3392,10 @@ def qrysm_deps():
     )
 
     go_repository(
-        name = "com_github_prysmaticlabs_go_bitfield",
-        importpath = "github.com/prysmaticlabs/go-bitfield",
-        sum = "h1:0tVE4tdWQK9ZpYygoV7+vS6QkDvQVySboMVEIxBJmXw=",
-        version = "v0.0.0-20210809151128-385d8c5e3fb7",
+        name = "com_github_theqrl_go_bitfield",
+        importpath = "github.com/theQRL/go-bitfield",
+        sum = "h1:cU1QlEDDZ3zI6uya2Bbz+ldjvy+j6yhTmDtLkipDvz4=",
+        version = "v0.0.0-20231204084259-f3b877be8f63",
     )
     go_repository(
         name = "com_github_prysmaticlabs_gohashtree",

@@ -11,7 +11,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/shared"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"

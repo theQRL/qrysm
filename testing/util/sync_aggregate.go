@@ -2,7 +2,7 @@ package util
 
 import (
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	p2pType "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"

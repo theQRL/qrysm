@@ -13,7 +13,7 @@ const (
 	PreviousEpochAttestationsLength       = 4096          // MAX_ATTESTATIONS * SLOTS_PER_EPOCH
 	CurrentEpochAttestationsLength        = 4096          // MAX_ATTESTATIONS * SLOTS_PER_EPOCH
 	SlashingsLength                       = 8192          // EPOCHS_PER_SLASHINGS_VECTOR
-	SyncCommitteeLength                   = 512           // SYNC_COMMITTEE_SIZE
+	SyncCommitteeLength                   = 16            // SYNC_COMMITTEE_SIZE  // TODO (cyyber) : Original value 512, new value needs to be decided
 	RootLength                            = 32            // RootLength defines the byte length of a Merkle root.
 	BLSSignatureLength                    = 96            // BLSSignatureLength defines the byte length of a BLSSignature.
 	BLSPubkeyLength                       = 48            // BLSPubkeyLength defines the byte length of a BLSSignature.
@@ -23,8 +23,8 @@ const (
 	LogsBloomLength                       = 256           // LogsBloomLength defines the byte length of a logs bloom.
 	VersionLength                         = 4             // VersionLength defines the byte length of a fork version number.
 	SlotsPerEpoch                         = 32            // SlotsPerEpoch defines the number of slots per epoch.
-	SyncCommitteeAggregationBytesLength   = 16            // SyncCommitteeAggregationBytesLength defines the length of sync committee aggregate bytes.
-	SyncAggregateSyncCommitteeBytesLength = 64            // SyncAggregateSyncCommitteeBytesLength defines the length of sync committee bytes in a sync aggregate.
+	SyncCommitteeAggregationBytesLength   = 2             // SyncCommitteeAggregationBytesLength defines the length of sync committee aggregate bytes. // TODO (cyyber) : Original value 16, new value needs to be decided
+	SyncAggregateSyncCommitteeBytesLength = 2             // SyncAggregateSyncCommitteeBytesLength defines the length of sync committee bytes in a sync aggregate. // TODO (cyyber) : Original value 64, new value needs to be decided
 	MaxWithdrawalsPerPayload              = 16            // MaxWithdrawalsPerPayloadLength defines the maximum number of withdrawals that can be included in a payload.
 	MaxBlobsPerBlock                      = 6             // MaxBlobsPerBlock defines the maximum number of blobs with respect to consensus rule can be included in a block.
 	MaxBlobCommitmentsPerBlock            = 4096          // MaxBlobCommitmentsPerBlock defines the theoretical limit of blobs can be included in a block.

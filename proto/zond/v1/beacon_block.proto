@@ -50,12 +50,12 @@ message SignedBeaconBlock {
     BeaconBlock block = 1;
 
     // 96 byte BLS signature from the validator that produced this block.
-    bytes signature = 2 [(theqrl.zond.ext.ssz_size) = "96"];
+    bytes signature = 2 [(theqrl.zond.ext.ssz_size) = "4595"];
 }
 
 // The block body of an Ethereum consensus beacon block.
 message BeaconBlockBody {
-    // The validators RANDAO reveal 96 byte value.
+    // The validators RANDAO reveal 4595 byte value.
     bytes randao_reveal = 1 [(theqrl.zond.ext.ssz_size) = "4595"];
 
     // A reference to the Ethereum 1.x chain.
@@ -108,7 +108,7 @@ message AttesterSlashing {
 message Deposit {
     message Data {
         // 48 byte BLS public key of the validator.
-        bytes pubkey = 1 [(theqrl.zond.ext.ssz_size) = "48", (theqrl.zond.ext.spec_name) = "pubkey"];
+        bytes pubkey = 1 [(theqrl.zond.ext.ssz_size) = "2592", (theqrl.zond.ext.spec_name) = "pubkey"];
 
         // A 32 byte hash of the withdrawal address public key.
         bytes withdrawal_credentials = 2 [(theqrl.zond.ext.ssz_size) = "32"];
@@ -117,7 +117,7 @@ message Deposit {
         uint64 amount = 3;
 
         // 96 byte signature from the validators public key.
-        bytes signature = 4 [(theqrl.zond.ext.ssz_size) = "96"];
+        bytes signature = 4 [(theqrl.zond.ext.ssz_size) = "4595"];
     }
 
     // 32 byte roots in the deposit tree branch.
@@ -144,7 +144,7 @@ message SignedVoluntaryExit {
     VoluntaryExit message = 1;
 
     // Validator's 96 byte signature
-    bytes signature = 2 [(theqrl.zond.ext.ssz_size) = "96"];
+    bytes signature = 2 [(theqrl.zond.ext.ssz_size) = "4595"];
 }
 
 // Eth1Data represents references to the Ethereum 1.x deposit contract.
@@ -188,16 +188,18 @@ message SignedBeaconBlockHeader {
     BeaconBlockHeader message = 1;
 
     // 96 byte BLS signature from the validator that produced this block header.
-    bytes signature = 2 [(theqrl.zond.ext.ssz_size) = "96"];
+    bytes signature = 2 [(theqrl.zond.ext.ssz_size) = "4595"];
 }
 
 message IndexedAttestation {
-    repeated uint64 attesting_indices = 1 [(theqrl.zond.ext.ssz_max) = "2048"];
+    repeated uint64 attesting_indices = 1 [(theqrl.zond.ext.ssz_max) = "128"];
 
     AttestationData data = 2;
 
-    // 96 bytes aggregate signature.
-    bytes signature = 3 [(theqrl.zond.ext.ssz_size) = "96"];
+    // 4595 (signature size per signer) * 128 (number of signers) bytes of unaggregated signatures
+    bytes signature = 3 [(theqrl.zond.ext.ssz_max) = "588160"];
+
+    repeated uint64 signatureValidatorIndex = 4 [(theqrl.zond.ext.ssz_max) = "128"];
 }
 
 // The sync aggregate object for the beacon chain to track sync committee votes and to
@@ -206,6 +208,5 @@ message SyncAggregate {
     // Sync committee bits as Bitvector to track votes.
     bytes sync_committee_bits = 1 [(theqrl.zond.ext.ssz_size) = "sync_committee_bytes.size", (theqrl.zond.ext.cast_type) = "sync_committee_bits.type"];
 
-    // BLS aggregated signature of the sync committee for the ones that voted.
-    bytes sync_committee_signature = 2 [(theqrl.zond.ext.ssz_size) = "96"];
+    bytes sync_committee_signature = 2 [(theqrl.zond.ext.ssz_size) = "73520"];
 }

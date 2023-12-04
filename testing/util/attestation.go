@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/prysmaticlabs/go-bitfield"
 	log "github.com/sirupsen/logrus"
+	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
@@ -18,8 +18,8 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/crypto/rand"
-	attv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	attv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
