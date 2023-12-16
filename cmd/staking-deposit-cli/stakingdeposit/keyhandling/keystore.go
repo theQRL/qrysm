@@ -36,10 +36,18 @@ func (k *Keystore) ToJSON() []byte {
 }
 
 func (k *Keystore) Save(fileFolder string) error {
-	if err := os.WriteFile(fileFolder, k.ToJSON(), 0644); err != nil {
+	f, err := os.Create(fileFolder)
+	if err != nil {
 		return err
 	}
-	if runtime.GOOS == "linux" {
+	defer f.Close()
+	if _, err := f.Write(k.ToJSON()); err != nil {
+		return err
+	}
+	if err := f.Sync(); err != nil {
+		return err
+	}
+	if runtime.GOOS != "windows" {
 		if err := os.Chmod(fileFolder, 0440); err != nil {
 			return err
 		}
