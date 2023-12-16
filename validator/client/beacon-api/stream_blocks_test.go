@@ -874,7 +874,7 @@ func TestStreamBlocks_DenebValid(t *testing.T) {
 			require.NoError(t, err)
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/eth/v2/beacon/blocks/head",
+				"/zond/v2/beacon/blocks/head",
 				&signedBlockResponseJson,
 			).Return(
 				nil,
@@ -904,7 +904,7 @@ func TestStreamBlocks_DenebValid(t *testing.T) {
 
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/eth/v2/beacon/blocks/head",
+				"/zond/v2/beacon/blocks/head",
 				&signedBlockResponseJson,
 			).Return(
 				nil,
@@ -922,7 +922,7 @@ func TestStreamBlocks_DenebValid(t *testing.T) {
 			if testCase.verifiedOnly {
 				jsonRestHandler.EXPECT().GetRestJsonResponse(
 					ctx,
-					"/eth/v2/beacon/blocks/head",
+					"/zond/v2/beacon/blocks/head",
 					&signedBlockResponseJson,
 				).Return(
 					nil,
