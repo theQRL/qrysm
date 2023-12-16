@@ -31,7 +31,7 @@ func TestProposeBeaconBlock_Deneb(t *testing.T) {
 	headers := map[string]string{"Eth-Consensus-Version": "deneb"}
 	jsonRestHandler.EXPECT().PostRestJson(
 		context.Background(),
-		"/eth/v1/beacon/blocks",
+		"/zond/v1/beacon/blocks",
 		headers,
 		bytes.NewBuffer(denebBytes),
 		nil,
