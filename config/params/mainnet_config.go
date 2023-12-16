@@ -93,8 +93,8 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 
 	// Gwei value constants.
 	MinDepositAmount:          1 * 1e9,
-	MaxEffectiveBalance:       32 * 1e9,
-	EjectionBalance:           16 * 1e9,
+	MaxEffectiveBalance:       40000 * 1e9,
+	EjectionBalance:           20000 * 1e9,
 	EffectiveBalanceIncrement: 1 * 1e9,
 
 	// Initial value constants.
@@ -106,9 +106,9 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 
 	// Time parameter constants.
 	MinAttestationInclusionDelay:     1,
-	SecondsPerSlot:                   12,
-	SlotsPerEpoch:                    32,
-	SqrRootSlotsPerEpoch:             5,
+	SecondsPerSlot:                   60,
+	SlotsPerEpoch:                    128,
+	SqrRootSlotsPerEpoch:             11,
 	MinSeedLookahead:                 1,
 	MaxSeedLookahead:                 4,
 	EpochsPerEth1VotingPeriod:        64,
@@ -140,7 +140,7 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	// Additional context: https://github.com/ethereum/consensus-specs/issues/2132
 	// Bug prompting this change: https://github.com/theQRL/qrysm/issues/7856
 	// Future optimization: https://github.com/theQRL/qrysm/issues/7739
-	SecondsPerETH1Block: 14,
+	SecondsPerETH1Block: 60,
 
 	// State list length constants.
 	EpochsPerHistoricalVector: 65536,
