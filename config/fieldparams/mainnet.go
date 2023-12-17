@@ -22,7 +22,7 @@ const (
 	FeeRecipientLength                    = 20            // FeeRecipientLength defines the byte length of a fee recipient.
 	LogsBloomLength                       = 256           // LogsBloomLength defines the byte length of a logs bloom.
 	VersionLength                         = 4             // VersionLength defines the byte length of a fork version number.
-	SlotsPerEpoch                         = 32            // SlotsPerEpoch defines the number of slots per epoch.
+	SlotsPerEpoch                         = 128           // SlotsPerEpoch defines the number of slots per epoch.
 	SyncCommitteeAggregationBytesLength   = 2             // SyncCommitteeAggregationBytesLength defines the length of sync committee aggregate bytes. // TODO (cyyber) : Original value 16, new value needs to be decided
 	SyncAggregateSyncCommitteeBytesLength = 2             // SyncAggregateSyncCommitteeBytesLength defines the length of sync committee bytes in a sync aggregate. // TODO (cyyber) : Original value 64, new value needs to be decided
 	MaxWithdrawalsPerPayload              = 16            // MaxWithdrawalsPerPayloadLength defines the maximum number of withdrawals that can be included in a payload.
