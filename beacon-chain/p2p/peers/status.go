@@ -553,10 +553,14 @@ func (p *Status) Prune() {
 		p.deprecatedPrune()
 		return
 	}
+	// Cyyber: Disabled to prune the node even
+	// when the number of connected nodes are low
+	// to remove the disconnected peers to avoid
+	// peer limit from same ip
 	// Exit early if there is nothing to prune.
-	if len(p.store.Peers()) <= p.store.Config().MaxPeers {
-		return
-	}
+	//if len(p.store.Peers()) <= p.store.Config().MaxPeers {
+	//	return
+	//}
 	notBadPeer := func(pid peer.ID) bool {
 		return !p.isBad(pid)
 	}
@@ -587,12 +591,13 @@ func (p *Status) Prune() {
 		return peersToPrune[i].score > peersToPrune[j].score
 	})
 
-	limitDiff := len(p.store.Peers()) - p.store.Config().MaxPeers
-	if limitDiff > len(peersToPrune) {
-		limitDiff = len(peersToPrune)
-	}
-
-	peersToPrune = peersToPrune[:limitDiff]
+	// Cyyber: Disabled to prune all peers added in the peersToPrune
+	//limitDiff := len(p.store.Peers()) - p.store.Config().MaxPeers
+	//if limitDiff > len(peersToPrune) {
+	//	limitDiff = len(peersToPrune)
+	//}
+	//
+	//peersToPrune = peersToPrune[:limitDiff]
 
 	// Delete peers from map.
 	for _, peerData := range peersToPrune {
@@ -605,9 +610,9 @@ func (p *Status) Prune() {
 // bad response counts.
 func (p *Status) deprecatedPrune() {
 	// Exit early if there is nothing to prune.
-	if len(p.store.Peers()) <= p.store.Config().MaxPeers {
-		return
-	}
+	//if len(p.store.Peers()) <= p.store.Config().MaxPeers {
+	//	return
+	//}
 
 	notBadPeer := func(peerData *peerdata.PeerData) bool {
 		return peerData.BadResponses < p.scorers.BadResponsesScorer().Params().Threshold
@@ -639,11 +644,11 @@ func (p *Status) deprecatedPrune() {
 		return peersToPrune[i].badResp < peersToPrune[j].badResp
 	})
 
-	limitDiff := len(p.store.Peers()) - p.store.Config().MaxPeers
-	if limitDiff > len(peersToPrune) {
-		limitDiff = len(peersToPrune)
-	}
-	peersToPrune = peersToPrune[:limitDiff]
+	//limitDiff := len(p.store.Peers()) - p.store.Config().MaxPeers
+	//if limitDiff > len(peersToPrune) {
+	//	limitDiff = len(peersToPrune)
+	//}
+	//peersToPrune = peersToPrune[:limitDiff]
 	// Delete peers from map.
 	for _, peerData := range peersToPrune {
 		p.store.DeletePeerData(peerData.pid)

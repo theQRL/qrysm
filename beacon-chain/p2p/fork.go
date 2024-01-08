@@ -61,14 +61,16 @@ func (s *Service) compareForkENR(record *enr.Record) error {
 	// starting at the earlier next_fork_epoch.
 	if peerForkENR.NextForkEpoch != currentForkENR.NextForkEpoch {
 		log.WithFields(logrus.Fields{
-			"peerNextForkEpoch": peerForkENR.NextForkEpoch,
-			"peerENR":           enrString,
+			"peerNextForkEpoch":    peerForkENR.NextForkEpoch,
+			"currentNextForkEpoch": currentForkENR.NextForkEpoch,
+			"peerENR":              enrString,
 		}).Trace("Peer matches fork digest but has different next fork epoch")
 	}
 	if !bytes.Equal(peerForkENR.NextForkVersion, currentForkENR.NextForkVersion) {
 		log.WithFields(logrus.Fields{
-			"peerNextForkVersion": peerForkENR.NextForkVersion,
-			"peerENR":             enrString,
+			"peerNextForkVersion":    peerForkENR.NextForkVersion,
+			"currentNextForkVersion": currentForkENR.NextForkVersion,
+			"peerENR":                enrString,
 		}).Trace("Peer matches fork digest but has different next fork version")
 	}
 	return nil
