@@ -1,12 +1,14 @@
 package deposit_test
 
 import (
+	"crypto/rand"
 	"testing"
 
+	"github.com/theQRL/go-qrllib/common"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/contracts/deposit"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -14,16 +16,22 @@ import (
 )
 
 func TestDepositInput_GeneratesPb(t *testing.T) {
-	k1, err := bls.RandKey()
+	var seed [common.SeedSize]uint8
+	_, err := rand.Read(seed[:])
 	require.NoError(t, err)
-	k2, err := bls.RandKey()
+	k1, err := dilithium.SecretKeyFromBytes(seed[:])
+	require.NoError(t, err)
+
+	_, err = rand.Read(seed[:])
+	require.NoError(t, err)
+	k2, err := dilithium.SecretKeyFromBytes(seed[:])
 	require.NoError(t, err)
 
 	result, _, err := deposit.DepositInput(k1, k2, 0, nil)
 	require.NoError(t, err)
 	assert.DeepEqual(t, k1.PublicKey().Marshal(), result.PublicKey)
 
-	sig, err := bls.SignatureFromBytes(result.Signature)
+	sig, err := dilithium.SignatureFromBytes(result.Signature)
 	require.NoError(t, err)
 	testData := &zondpb.DepositMessage{
 		PublicKey:             result.PublicKey,

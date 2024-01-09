@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/theQRL/go-zond"
+	zond "github.com/theQRL/go-zond"
 	"github.com/theQRL/go-zond/common"
 	depositcontract "github.com/theQRL/qrysm/v4/contracts/deposit"
 	"github.com/theQRL/qrysm/v4/contracts/deposit/mock"
@@ -61,7 +61,7 @@ func TestValidatorRegister_OK(t *testing.T) {
 	testAccount.Backend.Commit()
 	assert.NoError(t, err, "Validator registration failed")
 
-	query := ethereum.FilterQuery{
+	query := zond.FilterQuery{
 		Addresses: []common.Address{
 			testAccount.ContractAddr,
 		},
