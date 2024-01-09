@@ -41,7 +41,7 @@ func TestRegister_Below1ETH(t *testing.T) {
 func TestValidatorRegister_OK(t *testing.T) {
 	testAccount, err := mock.Setup()
 	require.NoError(t, err)
-	testAccount.TxOpts.Value = mock.Amount32Eth()
+	testAccount.TxOpts.Value = mock.Amount40000Eth()
 
 	// Generate deposit data
 	privKeys, pubKeys, err := interop.DeterministicallyGenerateKeys(0 /*startIndex*/, 1)
