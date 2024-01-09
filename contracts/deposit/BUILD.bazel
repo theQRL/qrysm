@@ -40,7 +40,7 @@ go_test(
         "//config/params:go_default_library",
         "//container/trie:go_default_library",
         "//contracts/deposit/mock:go_default_library",
-        "//crypto/bls:go_default_library",
+        "//crypto/dilithium:go_default_library",
         "//proto/prysm/v1alpha1:go_default_library",
         "//runtime/interop:go_default_library",
         "//testing/assert:go_default_library",
@@ -49,5 +49,7 @@ go_test(
         "@com_github_theqrl_go_zond//:go_default_library",
         "@com_github_theqrl_go_zond//accounts/abi/bind:go_default_library",
         "@com_github_theqrl_go_zond//common:go_default_library",
+        "@com_github_theqrl_go_zond//core/types:go_default_library",
+        "@com_github_theqrl_go_qrllib//common:go_default_library",
     ],
 )

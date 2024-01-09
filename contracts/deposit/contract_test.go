@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/theQRL/go-zond"
+	zond "github.com/theQRL/go-zond"
 	"github.com/theQRL/go-zond/common"
 	depositcontract "github.com/theQRL/qrysm/v4/contracts/deposit"
 	"github.com/theQRL/qrysm/v4/contracts/deposit/mock"
@@ -41,7 +41,7 @@ func TestRegister_Below1ETH(t *testing.T) {
 func TestValidatorRegister_OK(t *testing.T) {
 	testAccount, err := mock.Setup()
 	require.NoError(t, err)
-	testAccount.TxOpts.Value = mock.Amount32Eth()
+	testAccount.TxOpts.Value = mock.Amount40000Eth()
 
 	// Generate deposit data
 	privKeys, pubKeys, err := interop.DeterministicallyGenerateKeys(0 /*startIndex*/, 1)
@@ -61,7 +61,7 @@ func TestValidatorRegister_OK(t *testing.T) {
 	testAccount.Backend.Commit()
 	assert.NoError(t, err, "Validator registration failed")
 
-	query := ethereum.FilterQuery{
+	query := zond.FilterQuery{
 		Addresses: []common.Address{
 			testAccount.ContractAddr,
 		},
