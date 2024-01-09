@@ -9,7 +9,7 @@
 
 // SPDX-License-Identifier: CC0-1.0
 
-pragma solidity 0.6.11;
+pragma solidity ^0.8.22;
 
 // This interface is designed to be compatible with the Vyper version.
 /// @notice This is the Ethereum 2.0 deposit contract interface.
@@ -25,9 +25,9 @@ interface IDepositContract {
     );
 
     /// @notice Submit a Phase 0 DepositData object.
-    /// @param pubkey A BLS12-381 public key.
+    /// @param pubkey A Dilithium public key.
     /// @param withdrawal_credentials Commitment to a public key for withdrawals.
-    /// @param signature A BLS12-381 signature.
+    /// @param signature A Dilithium signature.
     /// @param deposit_data_root The SHA-256 hash of the SSZ-encoded DepositData object.
     /// Used as a protection against malformed input.
     function deposit(
@@ -105,9 +105,9 @@ contract DepositContract is IDepositContract, ERC165 {
         bytes32 deposit_data_root
     ) override external payable {
         // Extended ABI length checks since dynamic types are used.
-        require(pubkey.length == 48, "DepositContract: invalid pubkey length");
+        require(pubkey.length == 2592, "DepositContract: invalid pubkey length");
         require(withdrawal_credentials.length == 32, "DepositContract: invalid withdrawal_credentials length");
-        require(signature.length == 96, "DepositContract: invalid signature length");
+        require(signature.length == 4595, "DepositContract: invalid signature length");
 
         // Check deposit amount
         require(msg.value >= 1 ether, "DepositContract: deposit value too low");
@@ -125,16 +125,7 @@ contract DepositContract is IDepositContract, ERC165 {
             to_little_endian_64(uint64(deposit_count))
         );
 
-        // Compute deposit data root (`DepositData` hash tree root)
-        bytes32 pubkey_root = sha256(abi.encodePacked(pubkey, bytes16(0)));
-        bytes32 signature_root = sha256(abi.encodePacked(
-                sha256(abi.encodePacked(signature[:64])),
-                sha256(abi.encodePacked(signature[64:], bytes32(0)))
-            ));
-        bytes32 node = sha256(abi.encodePacked(
-                sha256(abi.encodePacked(pubkey_root, withdrawal_credentials)),
-                sha256(abi.encodePacked(amount, bytes24(0), signature_root))
-            ));
+        bytes32 node = depositroot(pubkey, withdrawal_credentials, amount, signature);
 
         // Verify computed and expected deposit data roots match
         require(node == deposit_data_root, "DepositContract: reconstructed DepositData does not match supplied deposit_data_root");

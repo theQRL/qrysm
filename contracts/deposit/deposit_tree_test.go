@@ -32,7 +32,7 @@ func TestDepositTrieRoot_OK(t *testing.T) {
 	depositDataItems, depositDataRoots, err := interop.DepositDataFromKeys(privKeys, pubKeys)
 	require.NoError(t, err)
 
-	testAcc.TxOpts.Value = depositcontract.Amount32Eth()
+	testAcc.TxOpts.Value = depositcontract.Amount40000Eth()
 
 	for i := 0; i < 100; i++ {
 		data := depositDataItems[i]
@@ -73,7 +73,7 @@ func TestDepositTrieRoot_Fail(t *testing.T) {
 	require.NoError(t, err)
 	depositDataItems, depositDataRoots, err := interop.DepositDataFromKeys(privKeys, pubKeys)
 	require.NoError(t, err)
-	testAcc.TxOpts.Value = depositcontract.Amount32Eth()
+	testAcc.TxOpts.Value = depositcontract.Amount40000Eth()
 
 	for i := 0; i < 100; i++ {
 		data := depositDataItems[i]

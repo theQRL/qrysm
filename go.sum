@@ -209,6 +209,7 @@ github.com/cockroachdb/pebble v0.0.0-20230906160148-46873a6a7a06 h1:T+Np/xtzIjYM
 github.com/cockroachdb/pebble v0.0.0-20230906160148-46873a6a7a06/go.mod h1:bynZ3gvVyhlvjLI7PT6dmZ7g76xzJ7HpxfjgkzCGz6s=
 github.com/cockroachdb/redact v1.1.3 h1:AKZds10rFSIj7qADf0g46UixK8NNLwWTNdCIGS5wfSQ=
 github.com/cockroachdb/redact v1.1.3/go.mod h1:BVNblN9mBWFyMyqK1k3AAiSxhvhfK2oOZZ2lK+dpvRg=
+github.com/cockroachdb/sentry-go v0.6.1-cockroachdb.2/go.mod h1:8BT+cPK6xvFOcRlk0R8eg+OTkcqI6baNH4xAkpiYVvQ=
 github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd/go.mod h1:sE/e/2PUdi/liOCUjSTXgM1o87ZssimdTWN964YiIeI=
 github.com/codegangsta/inject v0.0.0-20150114235600-33e0aa1cb7c0/go.mod h1:4Zcjuz89kmFXt9morQgcfYZAYZ5n8WHjt81YYWIwtTM=
 github.com/consensys/bavard v0.1.8-0.20210406032232-f3452dc9b572/go.mod h1:Bpd0/3mZuaj6Sj+PqrmIquiOKy397AKGThQPaGzNXAQ=
@@ -394,6 +395,7 @@ github.com/go-kit/kit v0.10.0/go.mod h1:xUsJbQ/Fp4kEt7AFgCuvyX4a71u8h9jB8tj/ORgO
 github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9GBnD5lWE=
 github.com/go-logfmt/logfmt v0.4.0/go.mod h1:3RMwSq7FuexP4Kalkev3ejPJsZTpXXBr9+V4qmtdjCk=
 github.com/go-logfmt/logfmt v0.5.0/go.mod h1:wCYkCAKZfumFQihp8CzCvQ3paCTfi41vtzG1KdI/P7A=
+github.com/go-logfmt/logfmt v0.5.1/go.mod h1:WYhtIu8zTZfxdn5+rREduYbwxfcBr/Vr6KEVveWlfTs=
 github.com/go-logr/logr v0.1.0/go.mod h1:ixOQHD9gLJUVQQ2ZOR7zLEifBX6tGkNJF4QyIY7sIas=
 github.com/go-logr/logr v0.2.0/go.mod h1:z6/tIYblkpsD+a4lm/fGIIU9mZ+XfAiaFtq7xTgseGU=
 github.com/go-logr/logr v1.2.0/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
@@ -1264,6 +1266,8 @@ github.com/theQRL/go-bitfield v0.0.0-20231204084259-f3b877be8f63 h1:cU1QlEDDZ3zI
 github.com/theQRL/go-bitfield v0.0.0-20231204084259-f3b877be8f63/go.mod h1:Xm3tb2axH6IT4miFd3hKIeD877Y6aA9Hxf2jOYtfTIk=
 github.com/theQRL/go-qrllib v0.0.0-20230406170304-b7eb19c367e1 h1:YvUxImh18qCxX1rjvYF9wqAAL236s2FqrjzTRqg5Alg=
 github.com/theQRL/go-qrllib v0.0.0-20230406170304-b7eb19c367e1/go.mod h1:IspDEOeIlmm6GujPeTNygL3T72MUluDDyUa20AisjaQ=
+github.com/theQRL/go-zond v0.0.0-20240109134606-45a2c3abad1d h1:Gt7hMvqxfEEt3TKGFunMkbkNndnNJ11HCDOiCN/RDzY=
+github.com/theQRL/go-zond v0.0.0-20240109134606-45a2c3abad1d/go.mod h1:vopU4opPUSj6HxhT6mqISmGbTejKcciluUp6OWJvUfI=
 github.com/theQRL/go-zond-types v0.0.0-20230824233758-ea0b707a1e23 h1:9ifrMzlO0V61aT0nThIPFaEu83VAImLhAWGg5ppDf9A=
 github.com/theQRL/go-zond-wallet-encryptor-keystore v0.0.0-20231020114450-f6f12b82ea8b h1:tX4WpoKWAXMyHFLMTQugNISJlPzP+V64y81RClFbufU=
 github.com/theQRL/go-zond-wallet-encryptor-keystore v0.0.0-20231020114450-f6f12b82ea8b/go.mod h1:I5bUryQPoIVh1OJ1rEsrzCiX7Z9UNThZv5Z39vhU9aE=

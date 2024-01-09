@@ -1023,8 +1023,8 @@ def qrysm_deps():
         patches = [
             "//third_party:com_github_ethereum_go_ethereum_secp256k1.patch",
         ],
-        sum = "h1:UF2FaUKPIy5jeZk3X06ait3y2Q4wI+vJ1l7+UARp+60=",
-        version = "v1.13.1",
+        sum = "h1:dZALM0PlDTtNITTECPiqSrFo0iEYVDfby+mSVc0LxIs=",
+        version = "v1.13.0",
     )
 
     go_repository(
@@ -1056,8 +1056,8 @@ def qrysm_deps():
     go_repository(
         name = "com_github_ferranbt_fastssz",
         importpath = "github.com/ferranbt/fastssz",
-        sum = "h1:c3p3UzV4vFA7xaCDphnDWOjpxcadrQ26l5b+ypsvyxo=",
-        version = "v0.0.0-20221107182844-78142813af44",
+        sum = "h1:9VDpsWq096+oGMDTT/SgBD/VgZYf4pTF+KTPmZ+OaKM=",
+        version = "v0.0.0-20210120143747-11b9eff30ea9",
     )
     go_repository(
         name = "com_github_fjl_gencodec",
@@ -1617,11 +1617,11 @@ def qrysm_deps():
     )
 
     go_repository(
-            name = "com_github_google_subcommands",
-            importpath = "github.com/google/subcommands",
-            sum = "h1:vWQspBTo2nEqTUFita5/KeEWlUL8kQObDFbub/EN9oE=",
-            version = "v1.2.0",
-        )
+        name = "com_github_google_subcommands",
+        importpath = "github.com/google/subcommands",
+        sum = "h1:vWQspBTo2nEqTUFita5/KeEWlUL8kQObDFbub/EN9oE=",
+        version = "v1.2.0",
+    )
     go_repository(
         name = "com_github_guptarohit_asciigraph",
         importpath = "github.com/guptarohit/asciigraph",
@@ -3387,8 +3387,8 @@ def qrysm_deps():
     go_repository(
         name = "com_github_prysmaticlabs_fastssz",
         importpath = "github.com/prysmaticlabs/fastssz",
-        sum = "h1:Y3PcvUrnneMWLuypZpwPz8P70/DQsz6KgV9JveKpyZs=",
-        version = "v0.0.0-20220628121656-93dfe28febab",
+        sum = "h1:c3p3UzV4vFA7xaCDphnDWOjpxcadrQ26l5b+ypsvyxo=",
+        version = "v0.0.0-20221107182844-78142813af44",
     )
 
     go_repository(
@@ -3524,8 +3524,8 @@ def qrysm_deps():
             "gazelle:exclude gen_properties.go",
         ],
         importpath = "github.com/rivo/uniseg",
-        sum = "h1:8TfxU8dW6PdqD27gjM8MVNuicgxIjxpm4K7x4jp8sis=",
-        version = "v0.4.4",
+        sum = "h1:utMvzDsuh3suAEnhH0RdHmoPbU648o6CvXxTx4SBMOw=",
+        version = "v0.4.3",
     )
     go_repository(
         name = "com_github_rjeczalik_notify",
@@ -5669,14 +5669,14 @@ def go_dependencies():
     go_repository(
         name = "com_github_crate_crypto_go_kzg_4844",
         importpath = "github.com/crate-crypto/go-kzg-4844",
-        sum = "h1:UVuHOE+5tIWrim4zf/Xaa43+MIsDCPyW76QhUpiMGj4=",
-        version = "v0.2.0",
+        sum = "h1:UBlWE0CgyFqqzTI+IFyCzA7A3Zw4iip6uzRv5NIXG0A=",
+        version = "v0.3.0",
     )
     go_repository(
         name = "com_github_ethereum_c_kzg_4844",
         importpath = "github.com/ethereum/c-kzg-4844",
-        sum = "h1:+cUvymlnoDDQgMInp25Bo3OmLajmmY8mLJ/tLjqd77Q=",
-        version = "v0.2.0",
+        sum = "h1:sR65+68+WdnMKxseNWxSJuAv2tsUrihTpVBTfM/U5Zg=",
+        version = "v0.3.1",
     )
     go_repository(
         name = "com_github_kilic_bls12_381",
@@ -5691,6 +5691,13 @@ def go_dependencies():
         version = "v0.0.0-20220416220906-d8552aa452c7",
     )
     go_repository(
+        name = "com_github_prysmaticlabs_go_bitfield",
+        importpath = "github.com/prysmaticlabs/go-bitfield",
+        sum = "h1:Ws/Of2yg9JTVV9n8lQGXAf1RDDNthAu3SvTj93HkHgM=",
+        version = "v0.0.0-20210108222456-8e92c3709aa0",
+    )
+
+    go_repository(
         name = "com_github_theqrl_go_zond",
         build_directives = [
             "gazelle:resolve go github.com/karalabe/usb @qrysm//third_party/usb:go_default_library",
@@ -5700,8 +5707,8 @@ def go_dependencies():
         patches = [
             "//third_party:com_github_theqrl_go_zond_secp256k1.patch",
         ],
-        sum = "h1:BvT+70NXBzy2kvTzKnb2lpkPqFPBefcxnNDLvvSVwCo=",
-        version = "v0.0.0-20231010132528-f0be919588c9",
+        sum = "h1:Gt7hMvqxfEEt3TKGFunMkbkNndnNJ11HCDOiCN/RDzY=",
+        version = "v0.0.0-20240109134606-45a2c3abad1d",
     )
     go_repository(
         name = "com_github_theqrl_go_zond_types",
