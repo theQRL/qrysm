@@ -27,13 +27,6 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// TODO(rgeraldes24): value validation?
-// TODO(rgeraldes24): operation timeout
-// TODO(rgeraldes24): gas fees
-// TODO(rgeraldes24): check if the deposit already exists?
-// TODO(rgeraldes24): wait for tx confirmation option?
-// TODO(rgeraldes24): delay between transactions?
-
 const depositDataFilePrefix = "deposit_data-"
 
 func submitDeposits(cliCtx *cli.Context) error {
@@ -84,13 +77,18 @@ func submitDeposits(cliCtx *cli.Context) error {
 		return fmt.Errorf("failed to generate the deposit key from the signing seed. reason: %v", err)
 	}
 
+	gasTip, err := zondCli.SuggestGasTipCap(cliCtx.Context)
+	if err != nil {
+		return fmt.Errorf("failed to get gas tip suggestion. reason: %v", err)
+	}
+
 	txOpts, err := bind.NewKeyedTransactorWithChainID(depositKey, chainID)
 	if err != nil {
 		return err
 	}
 	txOpts.GasLimit = 500000
-	txOpts.GasFeeCap = new(big.Int).SetUint64(50000)
-	txOpts.GasTipCap = new(big.Int).SetUint64(50000)
+	txOpts.GasFeeCap = nil
+	txOpts.GasTipCap = gasTip
 	txOpts.Value = new(big.Int).Mul(big.NewInt(int64(params.BeaconConfig().MaxEffectiveBalance)), big.NewInt(1e9)) // value in wei
 
 	depositDelaySeconds := cliCtx.Int(flags.DepositDelaySecondsFlag.Name)
@@ -121,7 +119,6 @@ func sendDepositTx(
 	chainID *big.Int,
 	txOpts *bind.TransactOpts,
 ) error {
-
 	tx, err := contract.Deposit(
 		txOpts,
 		misc.DecodeHex(data.PubKey),
