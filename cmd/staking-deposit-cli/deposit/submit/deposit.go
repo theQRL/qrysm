@@ -40,7 +40,7 @@ func submitDeposits(cliCtx *cli.Context) error {
 	if !cliCtx.Bool(flags.SkipDepositConfirmationFlag.Name) {
 		qrlDepositTotal := uint64(len(depositDataList)) * params.BeaconConfig().MaxEffectiveBalance / params.BeaconConfig().GweiPerEth
 		actionText := "This will submit the deposits stored in your deposit data directory. " +
-			fmt.Sprintf("A total of %d QRL will be sent to contract address %s for %d validator accounts.", qrlDepositTotal, contractAddr, len(depositDataList)) +
+			fmt.Sprintf("A total of %d QRL will be sent to contract address %s for %d validator accounts. ", qrlDepositTotal, contractAddr, len(depositDataList)) +
 			"Do you want to proceed? (Y/N)"
 		deniedText := "Deposits will not be submitted. No changes have been made."
 		submitConfirmed, err := cmd.ConfirmAction(actionText, deniedText)
@@ -155,10 +155,7 @@ func sendDepositTx(
 
 	log.WithFields(logrus.Fields{
 		"Transaction Hash": fmt.Sprintf("%#x", tx.Hash()),
-	}).Infof(
-		"Deposit sent for validator with a public key %#x",
-		data.PubKey,
-	)
+	}).Info("Deposit sent for validator")
 
 	return nil
 }
