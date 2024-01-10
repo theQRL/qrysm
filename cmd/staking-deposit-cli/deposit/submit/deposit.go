@@ -101,7 +101,7 @@ func submitDeposits(cliCtx *cli.Context) error {
 	depositDelay := time.Duration(depositDelaySeconds) * time.Second
 	bar := initializeProgressBar(len(depositDataList), "Sending deposit transactions...")
 	for i, depositData := range depositDataList {
-		if err := sendDepositTx(contract, depositKey, depositData, chainID, txOpts); err != nil {
+		if err := sendDepositTx(contract, depositData, chainID, txOpts); err != nil {
 			log.Errorf("Unable to send transaction to contract: %v | deposit data index: %d", err, i)
 			continue
 		}
@@ -120,7 +120,6 @@ func submitDeposits(cliCtx *cli.Context) error {
 
 func sendDepositTx(
 	contract *deposit.DepositContract,
-	key *dilithiumlib.Dilithium,
 	data *stakingdeposit.DepositData,
 	chainID *big.Int,
 	txOpts *bind.TransactOpts,
