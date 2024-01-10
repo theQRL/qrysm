@@ -7,6 +7,7 @@ import (
 	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/deposit/existingseed"
 	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/deposit/generatedilithiumtoexecutionchange"
 	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/deposit/newseed"
+	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/deposit/submit"
 	"github.com/urfave/cli/v2"
 )
 
@@ -26,4 +27,5 @@ func init() {
 	depositCommands = append(depositCommands, existingseed.Commands...)
 	depositCommands = append(depositCommands, newseed.Commands...)
 	depositCommands = append(depositCommands, generatedilithiumtoexecutionchange.Commands...)
+	depositCommands = append(depositCommands, submit.Command)
 }
