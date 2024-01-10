@@ -7,17 +7,21 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/k0kubun/go-ansi"
+	"github.com/schollz/progressbar/v3"
 	"github.com/sirupsen/logrus"
 	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/accounts/abi/bind"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/rpc"
 	"github.com/theQRL/go-zond/zondclient"
+	"github.com/theQRL/qrysm/v4/cmd"
 	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/deposit/flags"
 	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
 	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit"
+	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/contracts/deposit"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/urfave/cli/v2"
@@ -33,6 +37,27 @@ import (
 const depositDataFilePrefix = "deposit_data-"
 
 func submitDeposits(cliCtx *cli.Context) error {
+	validatorKeysDir := cliCtx.String(flags.HTTPWeb3ProviderFlag.Name)
+	depositDataList, err := importDepositDataJSON(validatorKeysDir)
+	if err != nil {
+		return fmt.Errorf("failed to read deposit data. reason: %v", err)
+	}
+
+	contractAddr := cliCtx.String(flags.DepositContractAddressFlag.Name)
+	if !cliCtx.Bool(flags.SkipDepositConfirmationFlag.Name) {
+		qrlDepositTotal := uint64(len(depositDataList)) * params.BeaconConfig().MaxEffectiveBalance / params.BeaconConfig().GweiPerEth
+		actionText := "This will submit the deposits stored in your deposit data directory. " +
+			fmt.Sprintf("A total of %d QRL will be sent to contract address %s for %d validator accounts.", qrlDepositTotal, contractAddr, len(depositDataList)) +
+			"Do you want to proceed? (Y/N)"
+		deniedText := "Deposits will not be submitted. No changes have been made."
+		submitConfirmed, err := cmd.ConfirmAction(actionText, deniedText)
+		if err != nil {
+			return err
+		}
+		if !submitConfirmed {
+			return nil
+		}
+	}
 
 	web3Provider := cliCtx.String(flags.HTTPWeb3ProviderFlag.Name)
 	rpcClient, err := rpc.Dial(web3Provider)
@@ -44,16 +69,9 @@ func submitDeposits(cliCtx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to retrieve the chain ID. reason: %v", err)
 	}
-	contractAddr := cliCtx.String(flags.DepositContractAddressFlag.Name)
 	contract, err := deposit.NewDepositContract(common.HexToAddress(contractAddr), zondCli)
 	if err != nil {
 		return fmt.Errorf("failed to create a new instance of the deposit contract. reason: %v", err)
-	}
-
-	validatorKeysDir := cliCtx.String(flags.HTTPWeb3ProviderFlag.Name)
-	depositDataList, err := importDepositDataJSON(validatorKeysDir)
-	if err != nil {
-		return fmt.Errorf("failed to read deposit data. reason: %v", err)
 	}
 
 	signingSeedFile := cliCtx.String(flags.ZondSeedFileFlag.Name)
@@ -66,20 +84,32 @@ func submitDeposits(cliCtx *cli.Context) error {
 		return fmt.Errorf("failed to generate the deposit key from the signing seed. reason: %v", err)
 	}
 
-	for _, depositData := range depositDataList {
-		tx, err := sendDepositTx(contract, depositKey, depositData, chainID)
-		if err != nil {
-			return fmt.Errorf("failed to submit deposit transaction. reason: %v", err)
+	txOpts, err := bind.NewKeyedTransactorWithChainID(depositKey, chainID)
+	if err != nil {
+		return err
+	}
+	txOpts.GasLimit = 500000
+	txOpts.GasFeeCap = new(big.Int).SetUint64(50000)
+	txOpts.GasTipCap = new(big.Int).SetUint64(50000)
+	txOpts.Value = new(big.Int).Mul(big.NewInt(int64(params.BeaconConfig().MaxEffectiveBalance)), big.NewInt(1e9)) // value in wei
+
+	depositDelaySeconds := cliCtx.Int(flags.DepositDelaySecondsFlag.Name)
+	depositDelay := time.Duration(depositDelaySeconds) * time.Second
+	bar := initializeProgressBar(len(depositDataList), "Sending deposit transactions...")
+	for i, depositData := range depositDataList {
+		if err := sendDepositTx(contract, depositKey, depositData, chainID, txOpts); err != nil {
+			log.Errorf("Unable to send transaction to contract: %v | deposit data index: %d", err, i)
+			continue
 		}
 
-		log.WithFields(logrus.Fields{
-			"Transaction Hash": fmt.Sprintf("%#x", tx.Hash()),
-		}).Infof(
-			"Deposit sent to contract address %v for validator with a public key %#x",
-			contractAddr,
-			depositData.PubKey,
-		)
+		log.Infof("Waiting for a short delay of %v seconds...", depositDelaySeconds)
+		if err := bar.Add(1); err != nil {
+			log.Errorf("Could not increase progress bar percentage: %v", err)
+		}
+		time.Sleep(depositDelay)
 	}
+
+	log.Infof("Successfully sent all validator deposits!")
 
 	return nil
 }
@@ -89,16 +119,8 @@ func sendDepositTx(
 	key *dilithiumlib.Dilithium,
 	data *stakingdeposit.DepositData,
 	chainID *big.Int,
-) (*types.Transaction, error) {
-	txOpts, err := bind.NewKeyedTransactorWithChainID(key, chainID)
-	if err != nil {
-		return nil, err
-	}
-
-	txOpts.Value = new(big.Int).Mul(big.NewInt(int64(data.Amount)), big.NewInt(1e9)) // value in wei
-	txOpts.GasLimit = 500000
-	txOpts.GasFeeCap = new(big.Int).SetUint64(50000)
-	txOpts.GasTipCap = new(big.Int).SetUint64(50000)
+	txOpts *bind.TransactOpts,
+) error {
 
 	tx, err := contract.Deposit(
 		txOpts,
@@ -108,10 +130,17 @@ func sendDepositTx(
 		bytesutil.ToBytes32(misc.DecodeHex(data.DepositDataRoot)),
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return tx, nil
+	log.WithFields(logrus.Fields{
+		"Transaction Hash": fmt.Sprintf("%#x", tx.Hash()),
+	}).Infof(
+		"Deposit sent for validator with a public key %#x",
+		data.PubKey,
+	)
+
+	return nil
 }
 
 func importDepositDataJSON(folder string) ([]*stakingdeposit.DepositData, error) {
@@ -144,4 +173,22 @@ func importDepositDataJSON(folder string) ([]*stakingdeposit.DepositData, error)
 	}
 
 	return depositDataList, nil
+}
+
+func initializeProgressBar(numItems int, msg string) *progressbar.ProgressBar {
+	return progressbar.NewOptions(
+		numItems,
+		progressbar.OptionFullWidth(),
+		progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
+		progressbar.OptionEnableColorCodes(true),
+		progressbar.OptionSetTheme(progressbar.Theme{
+			Saucer:        "[green]=[reset]",
+			SaucerHead:    "[green]>[reset]",
+			SaucerPadding: " ",
+			BarStart:      "[",
+			BarEnd:        "]",
+		}),
+		progressbar.OptionOnCompletion(func() { fmt.Println() }),
+		progressbar.OptionSetDescription(msg),
+	)
 }

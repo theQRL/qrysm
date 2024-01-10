@@ -21,5 +21,7 @@ var Command = &cli.Command{
 		flags.ZondSeedFileFlag,
 		flags.DepositContractAddressFlag,
 		flags.HTTPWeb3ProviderFlag,
+		flags.DepositDelaySecondsFlag,
+		flags.SkipDepositConfirmationFlag,
 	},
 }

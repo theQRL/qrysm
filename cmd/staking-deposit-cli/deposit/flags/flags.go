@@ -35,17 +35,16 @@ var (
 		Usage: "Address of the deposit contract",
 		Value: params.MainnetConfig().DepositContractAddress,
 	}
-	/*
-		// SkipDepositConfirmationFlag skips the y/n confirmation prompt for sending a deposit to the deposit contract.
-		SkipDepositConfirmationFlag = &cli.BoolFlag{
-			Name:  "skip-deposit-confirmation",
-			Usage: "Skips the y/n confirmation prompt for sending a deposit to the deposit contract",
-		}
-		// DepositDelaySecondsFlag to delay sending deposit transactions by a fixed interval.
-		DepositDelaySecondsFlag = &cli.Int64Flag{
-			Name:  "deposit-delay-seconds",
-			Usage: "The time delay between sending the deposits to the contract (in seconds)",
-			Value: 5,
-		}
-	*/
+	// SkipDepositConfirmationFlag skips the y/n confirmation prompt for sending a deposit to the deposit contract.
+	SkipDepositConfirmationFlag = &cli.BoolFlag{
+		Name:  "skip-deposit-confirmation",
+		Usage: "Skips the y/n confirmation prompt for sending a deposit to the deposit contract",
+		Value: false,
+	}
+	// DepositDelaySecondsFlag to delay sending deposit transactions by a fixed interval.
+	DepositDelaySecondsFlag = &cli.Int64Flag{
+		Name:  "deposit-delay-seconds",
+		Usage: "The time delay between sending the deposits to the contract (in seconds)",
+		Value: 5,
+	}
 )
