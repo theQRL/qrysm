@@ -95,12 +95,13 @@ func submitDeposits(cliCtx *cli.Context) error {
 	txOpts.GasLimit = 500000
 	txOpts.GasFeeCap = nil
 	txOpts.GasTipCap = gasTip
-	txOpts.Value = new(big.Int).Mul(big.NewInt(int64(params.BeaconConfig().MaxEffectiveBalance)), big.NewInt(1e9)) // value in wei
 
 	depositDelaySeconds := cliCtx.Int(flags.DepositDelaySecondsFlag.Name)
 	depositDelay := time.Duration(depositDelaySeconds) * time.Second
 	bar := initializeProgressBar(len(depositDataList), "Sending deposit transactions...")
 	for i, depositData := range depositDataList {
+		txOpts.Value = new(big.Int).Mul(new(big.Int).SetUint64(depositData.Amount), big.NewInt(1e9)) // value in wei
+
 		if err := sendDepositTx(contract, depositData, chainID, txOpts); err != nil {
 			log.Errorf("Unable to send transaction to contract: %v | deposit data index: %d", err, i)
 			continue
@@ -136,7 +137,7 @@ func sendDepositTx(
 	if err != nil {
 		return err
 	}
-	depDataRootBytes, err := hex.DecodeString(data.Signature)
+	depDataRootBytes, err := hex.DecodeString(data.DepositDataRoot)
 	if err != nil {
 		return err
 	}
