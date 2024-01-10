@@ -27,6 +27,5 @@ func init() {
 	depositCommands = append(depositCommands, existingseed.Commands...)
 	depositCommands = append(depositCommands, newseed.Commands...)
 	depositCommands = append(depositCommands, generatedilithiumtoexecutionchange.Commands...)
-	depositCommands = append(depositCommands, generatedilithiumtoexecutionchange.Commands...)
 	depositCommands = append(depositCommands, submit.Command)
 }
