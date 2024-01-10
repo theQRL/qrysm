@@ -6,7 +6,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var log = logrus.WithField("prefix", "submit")
+var log = logrus.WithField("prefix2", "deposit")
 
 var Command = &cli.Command{
 	Name: "submit",

@@ -13,7 +13,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var log = logrus.WithField("prefix", "node")
+var log = logrus.WithField("prefix", "cmd")
 
 // ConfirmAction uses the passed in actionText as the confirmation text displayed in the terminal.
 // The user must enter Y or N to indicate whether they confirm the action detailed in the warning text.

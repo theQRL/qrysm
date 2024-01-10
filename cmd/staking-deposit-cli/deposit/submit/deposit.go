@@ -1,6 +1,7 @@
 package submit
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -19,7 +20,6 @@ import (
 	"github.com/theQRL/go-zond/zondclient"
 	"github.com/theQRL/qrysm/v4/cmd"
 	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/deposit/flags"
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
 	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/contracts/deposit"
@@ -68,11 +68,17 @@ func submitDeposits(cliCtx *cli.Context) error {
 	}
 
 	signingSeedFile := cliCtx.String(flags.ZondSeedFileFlag.Name)
-	binSigningSeed, err := os.ReadFile(signingSeedFile)
+	signingSeedHex, err := os.ReadFile(signingSeedFile)
 	if err != nil {
 		return fmt.Errorf("failed to read seed file. reason: %v", err)
 	}
-	depositKey, err := dilithiumlib.NewDilithiumFromSeed(bytesutil.ToBytes48(binSigningSeed))
+	signingSeed := make([]byte, hex.DecodedLen(len(signingSeedHex)))
+	_, err = hex.Decode(signingSeed, signingSeedHex)
+	if err != nil {
+		return fmt.Errorf("failed to read seed. reason: %v", err)
+	}
+
+	depositKey, err := dilithiumlib.NewDilithiumFromSeed(bytesutil.ToBytes48(signingSeed))
 	if err != nil {
 		return fmt.Errorf("failed to generate the deposit key from the signing seed. reason: %v", err)
 	}
@@ -119,12 +125,29 @@ func sendDepositTx(
 	chainID *big.Int,
 	txOpts *bind.TransactOpts,
 ) error {
+	pubKeyBytes, err := hex.DecodeString(data.PubKey)
+	if err != nil {
+		return err
+	}
+	credsBytes, err := hex.DecodeString(data.WithdrawalCredentials)
+	if err != nil {
+		return err
+	}
+	sigBytes, err := hex.DecodeString(data.Signature)
+	if err != nil {
+		return err
+	}
+	depDataRootBytes, err := hex.DecodeString(data.Signature)
+	if err != nil {
+		return err
+	}
+
 	tx, err := contract.Deposit(
 		txOpts,
-		misc.DecodeHex(data.PubKey),
-		misc.DecodeHex(data.WithdrawalCredentials),
-		misc.DecodeHex(data.Signature),
-		bytesutil.ToBytes32(misc.DecodeHex(data.DepositDataRoot)),
+		pubKeyBytes,
+		credsBytes,
+		sigBytes,
+		bytesutil.ToBytes32(depDataRootBytes),
 	)
 	if err != nil {
 		return err
