@@ -102,7 +102,7 @@ func submitDeposits(cliCtx *cli.Context) error {
 	for i, depositData := range depositDataList {
 		txOpts.Value = new(big.Int).Mul(new(big.Int).SetUint64(depositData.Amount), big.NewInt(1e9)) // value in wei
 
-		if err := sendDepositTx(contract, depositData, chainID, txOpts); err != nil {
+		if err := sendDepositTx(contract, depositData, txOpts); err != nil {
 			log.Errorf("Unable to send transaction to contract: %v | deposit data index: %d", err, i)
 			continue
 		}
@@ -122,7 +122,6 @@ func submitDeposits(cliCtx *cli.Context) error {
 func sendDepositTx(
 	contract *deposit.DepositContract,
 	data *stakingdeposit.DepositData,
-	chainID *big.Int,
 	txOpts *bind.TransactOpts,
 ) error {
 	pubKeyBytes, err := hex.DecodeString(data.PubKey)
