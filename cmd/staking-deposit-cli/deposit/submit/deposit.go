@@ -148,7 +148,8 @@ func importDepositDataJSON(folder string) ([]*stakingdeposit.DepositData, error)
 
 	var file string
 	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasPrefix(depositDataFilePrefix, entry.Name()) {
+		fmt.Println(entry.Name())
+		if !entry.IsDir() && strings.HasPrefix(entry.Name(), depositDataFilePrefix) {
 			file = entry.Name()
 			break
 		}
