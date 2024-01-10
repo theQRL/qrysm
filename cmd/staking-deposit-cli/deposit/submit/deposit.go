@@ -30,7 +30,7 @@ import (
 const depositDataFilePrefix = "deposit_data-"
 
 func submitDeposits(cliCtx *cli.Context) error {
-	validatorKeysDir := cliCtx.String(flags.HTTPWeb3ProviderFlag.Name)
+	validatorKeysDir := cliCtx.String(flags.ValidatorKeysDirFlag.Name)
 	depositDataList, err := importDepositDataJSON(validatorKeysDir)
 	if err != nil {
 		return fmt.Errorf("failed to read deposit data. reason: %v", err)

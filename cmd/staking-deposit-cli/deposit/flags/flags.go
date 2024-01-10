@@ -23,13 +23,13 @@ var (
 		Value:    "",
 		Required: true,
 	}
-	// HTTPWeb3ProviderFlag provides an HTTP access endpoint to an ETH 1.0 RPC.
+	// HTTPWeb3ProviderFlag provides an HTTP access endpoint to a ZOND RPC.
 	HTTPWeb3ProviderFlag = &cli.StringFlag{
 		Name:  "http-web3provider",
 		Usage: "A zond web3 provider string http endpoint",
 		Value: "http://localhost:8545",
 	}
-	// DepositContractAddressFlag for the validator deposit contract on eth1.
+	// DepositContractAddressFlag for the validator deposit contract on zond.
 	DepositContractAddressFlag = &cli.StringFlag{
 		Name:  "deposit-contract",
 		Usage: "Address of the deposit contract",
