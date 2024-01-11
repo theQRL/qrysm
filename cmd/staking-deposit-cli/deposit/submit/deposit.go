@@ -1,6 +1,7 @@
 package submit
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -72,6 +73,7 @@ func submitDeposits(cliCtx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to read seed file. reason: %v", err)
 	}
+	signingSeedHex = bytes.TrimSpace(signingSeedHex)
 	signingSeed := make([]byte, hex.DecodedLen(len(signingSeedHex)))
 	_, err = hex.Decode(signingSeed, signingSeedHex)
 	if err != nil {
@@ -124,19 +126,19 @@ func sendDepositTx(
 	data *stakingdeposit.DepositData,
 	txOpts *bind.TransactOpts,
 ) error {
-	pubKeyBytes, err := hex.DecodeString(data.PubKey)
+	pubKeyBytes, err := hex.DecodeString(data.PubKey[2:])
 	if err != nil {
 		return err
 	}
-	credsBytes, err := hex.DecodeString(data.WithdrawalCredentials)
+	credsBytes, err := hex.DecodeString(data.WithdrawalCredentials[2:])
 	if err != nil {
 		return err
 	}
-	sigBytes, err := hex.DecodeString(data.Signature)
+	sigBytes, err := hex.DecodeString(data.Signature[2:])
 	if err != nil {
 		return err
 	}
-	depDataRootBytes, err := hex.DecodeString(data.DepositDataRoot)
+	depDataRootBytes, err := hex.DecodeString(data.DepositDataRoot[2:])
 	if err != nil {
 		return err
 	}
