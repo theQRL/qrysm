@@ -1,7 +1,6 @@
 package flags
 
 import (
-	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/urfave/cli/v2"
 )
 
@@ -33,7 +32,7 @@ var (
 	DepositContractAddressFlag = &cli.StringFlag{
 		Name:  "deposit-contract",
 		Usage: "Address of the deposit contract",
-		Value: params.MainnetConfig().DepositContractAddress,
+		Value: "0x4242424242424242424242424242424242424242",
 	}
 	// SkipDepositConfirmationFlag skips the y/n confirmation prompt for sending a deposit to the deposit contract.
 	SkipDepositConfirmationFlag = &cli.BoolFlag{
