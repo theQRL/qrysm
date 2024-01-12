@@ -81,7 +81,7 @@ var Commands = []*cli.Command{
 			{
 				Name:    "withdraw",
 				Aliases: []string{"w"},
-				Usage:   "Assign Ethereum withdrawal addresses to validator keys. WARNING: once set values are included they can no longer be updated.",
+				Usage:   "Assign Zond withdrawal addresses to validator keys. WARNING: once set values are included they can no longer be updated.",
 				Flags: []cli.Flag{
 					BeaconHostFlag,
 					PathFlag,

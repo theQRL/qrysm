@@ -63,25 +63,25 @@ var (
 	eth1DepositCacheHits = promauto.NewCounter(
 		prometheus.CounterOpts{
 			Name: "infostream_eth1_deposit_cache_hits",
-			Help: "The number of times the infostream Ethereum 1 deposit cache is hit.",
+			Help: "The number of times the infostream Zond 1 deposit cache is hit.",
 		},
 	)
 	eth1DepositCacheMisses = promauto.NewCounter(
 		prometheus.CounterOpts{
 			Name: "infostream_eth1_deposit_cache_misses",
-			Help: "The number of times the infostream Ethereum 1 deposit cache is missed.",
+			Help: "The number of times the infostream Zond 1 deposit cache is missed.",
 		},
 	)
 	eth1BlocktimeCacheHits = promauto.NewCounter(
 		prometheus.CounterOpts{
 			Name: "infostream_eth1_blocktime_cache_hits",
-			Help: "The number of times the infostream Ethereum 1 block time cache is hit.",
+			Help: "The number of times the infostream Zond 1 block time cache is hit.",
 		},
 	)
 	eth1BlocktimeCacheMisses = promauto.NewCounter(
 		prometheus.CounterOpts{
 			Name: "infostream_eth1_blocktime_cache_misses",
-			Help: "The number of times the infostream Ethereum 1 block time cache is missed.",
+			Help: "The number of times the infostream Zond 1 block time cache is missed.",
 		},
 	)
 )

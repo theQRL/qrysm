@@ -142,9 +142,9 @@ func configureTestnet(ctx *cli.Context) error {
 		params.UseHoleskyNetworkConfig()
 	} else {
 		if ctx.IsSet(cmd.ChainConfigFileFlag.Name) {
-			log.Warn("Running on custom Ethereum network specified in a chain configuration yaml file")
+			log.Warn("Running on custom Zond network specified in a chain configuration yaml file")
 		} else {
-			log.Warn("Running on Ethereum Mainnet")
+			log.Warn("Running on Zond Mainnet")
 		}
 		if err := params.SetActive(params.MainnetConfig().Copy()); err != nil {
 			return err

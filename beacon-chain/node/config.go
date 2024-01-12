@@ -169,7 +169,7 @@ func configureExecutionSetting(cliCtx *cli.Context) error {
 
 	if !cliCtx.IsSet(flags.SuggestedFeeRecipient.Name) {
 		log.Warnf("In order to receive transaction fees from proposing blocks, " +
-			"you must provide flag --" + flags.SuggestedFeeRecipient.Name + " with a valid ethereum address when starting your beacon node. " +
+			"you must provide flag --" + flags.SuggestedFeeRecipient.Name + " with a valid zond address when starting your beacon node. " +
 			"Please see our documentation for more information on this requirement (https://docs.prylabs.network/docs/execution-node/fee-recipient).")
 		return nil
 	}
@@ -187,10 +187,10 @@ func configureExecutionSetting(cliCtx *cli.Context) error {
 	}
 	checksumAddress := common.HexToAddress(ha)
 	if !mixedcaseAddress.ValidChecksum() {
-		log.Warnf("Fee recipient %s is not a checksum Ethereum address. "+
+		log.Warnf("Fee recipient %s is not a checksum Zond address. "+
 			"The checksummed address is %s and will be used as the fee recipient. "+
 			"We recommend using a mixed-case address (checksum) "+
-			"to prevent spelling mistakes in your fee recipient Ethereum address", ha, checksumAddress.Hex())
+			"to prevent spelling mistakes in your fee recipient Zond address", ha, checksumAddress.Hex())
 	}
 	c.DefaultFeeRecipient = checksumAddress
 	log.Infof("Default fee recipient is set to %s, recipient may be overwritten from validator client and persist in db."+

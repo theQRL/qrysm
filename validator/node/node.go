@@ -704,10 +704,10 @@ func warnNonChecksummedAddress(feeRecipient string) error {
 		return errors.Wrapf(err, "could not decode fee recipient %s", feeRecipient)
 	}
 	if !mixedcaseAddress.ValidChecksum() {
-		log.Warnf("Fee recipient %s is not a checksum Ethereum address. "+
+		log.Warnf("Fee recipient %s is not a checksum Zond address. "+
 			"The checksummed address is %s and will be used as the fee recipient. "+
 			"We recommend using a mixed-case address (checksum) "+
-			"to prevent spelling mistakes in your fee recipient Ethereum address", feeRecipient, mixedcaseAddress.Address().Hex())
+			"to prevent spelling mistakes in your fee recipient Zond address", feeRecipient, mixedcaseAddress.Address().Hex())
 	}
 	return nil
 }

@@ -45,7 +45,7 @@ func NewNode(index int, enr string) *Node {
 func (node *Node) Start(ctx context.Context) error {
 	binaryPath, found := bazel.FindBinary("cmd/gzond", "gzond")
 	if !found {
-		return errors.New("go-ethereum binary not found")
+		return errors.New("go-zond binary not found")
 	}
 
 	eth1Path := path.Join(e2e.TestParams.TestPath, "eth1data/"+strconv.Itoa(node.index)+"/")

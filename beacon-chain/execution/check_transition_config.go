@@ -26,7 +26,7 @@ var (
 		"Please check your execution client and restart it with the proper configuration. If this is not done, " +
 		"your node will not be able to complete the proof-of-stake transition"
 	needsEnginePortLog = "Could not check execution client configuration. " +
-		"You are probably connecting to your execution client on the wrong port. For the Ethereum " +
+		"You are probably connecting to your execution client on the wrong port. For the Zond " +
 		"merge, you will need to connect to your " +
 		"execution client on port 8551 rather than 8545. This is known as the 'engine API' port and needs to be " +
 		"authenticated if connecting via HTTP. See our documentation on how to set up this up here " +

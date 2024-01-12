@@ -100,7 +100,7 @@ func TestConfigureExecutionSetting(t *testing.T) {
 	assert.Equal(t, common.HexToAddress("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), params.BeaconConfig().DefaultFeeRecipient)
 
 	assert.LogsContain(t, hook,
-		"is not a checksum Ethereum address",
+		"is not a checksum Zond address",
 	)
 	require.NoError(t, set.Set(flags.SuggestedFeeRecipient.Name, "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"))
 	cliCtx = cli.NewContext(&app, set, nil)

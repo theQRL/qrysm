@@ -14,8 +14,8 @@ import (
 	validatorServiceConfig "github.com/theQRL/qrysm/v4/config/validator/service"
 	"github.com/theQRL/qrysm/v4/consensus-types/validator"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	"github.com/theQRL/qrysm/v4/validator/client"
 	"github.com/theQRL/qrysm/v4/validator/keymanager"
 	"github.com/theQRL/qrysm/v4/validator/keymanager/derived"
@@ -582,7 +582,7 @@ func (s *Server) SetFeeRecipientByPubkey(ctx context.Context, req *zondpbservice
 
 	if !common.IsHexAddress(encoded) {
 		return nil, status.Error(
-			codes.InvalidArgument, "Fee recipient is not a valid Ethereum address")
+			codes.InvalidArgument, "Fee recipient is not a valid Zond address")
 	}
 	settings := s.validatorService.ProposerSettings()
 	switch {
