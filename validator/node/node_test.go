@@ -282,7 +282,7 @@ func TestProposerSettings(t *testing.T) {
 				}
 			},
 			wantErr: "",
-			wantLog: "is not a checksum Ethereum address",
+			wantLog: "is not a checksum Zond address",
 		},
 		{
 			name: "Happy Path Config file File multiple fee recipients",

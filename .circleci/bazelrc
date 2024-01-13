@@ -1,0 +1,31 @@
+build --disk_cache=/tmp/bazel-disk-cache
+
+# Set convenient location for Bazel files to cache
+startup --output_user_root=/tmp/bazel-cache/output-root
+
+#build --experimental_use_hermetic_linux_sandbox
+
+# Enable blake3 once it is supported in remote cache. See: https://github.com/buchgr/bazel-remote/issues/710
+# startup --digest_function=blake3
+
+startup --host_jvm_args=-Xmx8g --host_jvm_args=-Xms4g
+#build --experimental_strict_action_env
+#build --sandbox_tmpfs_path=/tmp
+build --verbose_failures
+build --announce_rc
+build --show_progress_rate_limit=5
+build --curses=no --color=no
+build --keep_going
+build --test_output=errors
+build --flaky_test_attempts=5
+build --build_runfile_links=false # Only build runfile symlink forest when required by local action, test, or run command.
+# Disabled race detection due to unstable test results under constrained environment build kite
+# build --features=race
+
+# Better caching
+build:nostamp --nostamp
+
+# Build metadata
+build --build_metadata=ROLE=CI
+build --build_metadata=REPO_URL=https://github.com/theQRL/qrysm.git
+build --workspace_status_command=./hack/workspace_status_ci.sh

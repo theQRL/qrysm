@@ -111,12 +111,12 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	SqrRootSlotsPerEpoch:             11,
 	MinSeedLookahead:                 1,
 	MaxSeedLookahead:                 4,
-	EpochsPerEth1VotingPeriod:        64,
+	EpochsPerEth1VotingPeriod:        2, // TODO (cyyber) : Re-evaluate the value
 	SlotsPerHistoricalRoot:           8192,
 	MinValidatorWithdrawabilityDelay: 256,
 	ShardCommitteePeriod:             256,
 	MinEpochsToInactivityPenalty:     4,
-	Eth1FollowDistance:               0,
+	Eth1FollowDistance:               0, // TODO (cyyber) : Re-evaluate the value
 
 	// Fork choice algorithm constants.
 	ProposerScoreBoost:              40,

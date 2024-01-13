@@ -4,23 +4,23 @@ $ProgressPreference = 'SilentlyContinue' # Disable Invoke-WebRequest progress ba
 # Complain if invalid arguments were provided.
 if ("beacon-chain", "validator", "client-stats" -notcontains $args[0]) {
     Write-Host @"
-Usage: ./prysm.sh1 PROCESS FLAGS.
+Usage: ./qrysm.sh1 PROCESS FLAGS.
 
 PROCESS can be beacon-chain, validator, or client-stats.
 FLAGS are the flags or arguments passed to the PROCESS.
  
-Use this script to download the latest Prysm release binaries.
+Use this script to download the latest Qrysm release binaries.
 Downloaded binaries are saved to .\dist
  
 To specify a specific release version:
-  `$env:USE_PRYSM_VERSION="v1.0.0-beta.3"
+  `$env:USE_QRYSM_VERSION="v1.0.0-beta.3"
  to resume using the latest release:
-  Remove-Item env:USE_PRYSM_VERSION
+  Remove-Item env:USE_QRYSM_VERSION
  
 To automatically restart crashed processes:
-  `$env:PRYSM_AUTORESTART=`$TRUE ; .\prysm.sh1 beacon-chain
+  `$env:QRYSM_AUTORESTART=`$TRUE ; .\qrysm.sh1 beacon-chain
  to stop autorestart run:
-  Remove-Item env:PRYSM_AUTORESTART
+  Remove-Item env:QRYSM_AUTORESTART
 "@;
 
     exit;
@@ -28,7 +28,7 @@ To automatically restart crashed processes:
 
 # 64bit check.
 if (-not [Environment]::Is64BitOperatingSystem) {
-    Write-Host "ERROR: prysm is only supported on 64-bit Operating Systems" -ForegroundColor Red;
+    Write-Host "ERROR: qrysm is only supported on 64-bit Operating Systems" -ForegroundColor Red;
     exit;
 }
 
@@ -37,17 +37,20 @@ if (-not (Test-Path $folderDist)) {
     New-Item -Path . -Name $folderDist -ItemType "directory";
 }
 
-# Determine the latest release version, unless specified by $USE_PRYSM_VERSION.
-if (Test-Path env:USE_PRYSM_VERSION) {
-    Write-Host "Detected variable `$env:USE_PRYSM_VERSION=$env:USE_PRYSM_VERSION";
-    $version = $env:USE_PRYSM_VERSION;
+# Determine the latest release version, unless specified by $USE_QRYSM_VERSION.
+if (Test-Path env:USE_QRYSM_VERSION) {
+    Write-Host "Detected variable `$env:USE_QRYSM_VERSION=$env:USE_QRYSM_VERSION";
+    $version = $env:USE_QRYSM_VERSION;
 }
 else {
     try {
-        $response = Invoke-WebRequest -Uri "https://prysmaticlabs.com/releases/latest";
-        $version = $response.Content.Trim();
+        # TODO(rgeraldes24)
+        #$response = Invoke-WebRequest -Uri "https://prysmaticlabs.com/releases/latest";
+        #$version = $response.Content.Trim();
+        $version = "v0.1.1";
 
-        Write-Host "Using (latest) prysm version: $version";
+
+        Write-Host "Using (latest) qrysm version: $version";
     }
     catch {
         Write-Host "ERROR: Failed to get the latest version:" -ForegroundColor Red;
@@ -66,10 +69,13 @@ if ((Test-Path $folderBin) -and (Test-Path "$folderBin.sha256") -and (Test-Path 
 else {
     try {
         Write-Host "Downloading $fileName" -ForegroundColor Green;
-
-        Invoke-WebRequest -Uri "https://prysmaticlabs.com/releases/$fileName" -OutFile "$folderBin";
-        Invoke-WebRequest -Uri "https://prysmaticlabs.com/releases/$fileName.sha256" -OutFile "$folderBin.sha256";
-        Invoke-WebRequest -Uri "https://prysmaticlabs.com/releases/$fileName.sig" -OutFile "$folderBin.sig";
+        
+        #Invoke-WebRequest -Uri "https://prysmaticlabs.com/releases/$fileName" -OutFile "$folderBin";
+        #Invoke-WebRequest -Uri "https://prysmaticlabs.com/releases/$fileName.sha256" -OutFile "$folderBin.sha256";
+        #Invoke-WebRequest -Uri "https://prysmaticlabs.com/releases/$fileName.sig" -OutFile "$folderBin.sig";
+        Invoke-WebRequest -Uri "https://github.com/theQRL/qrysm/releases/download/$version/$fileName" -OutFile "$folderBin";
+        Invoke-WebRequest -Uri "https://github.com/theQRL/qrysm/releases/download/$version/$fileName.sha256" -OutFile "$folderBin.sha256";
+        Invoke-WebRequest -Uri "https://github.com/theQRL/qrysm/releases/download/$version/$fileName.sig" -OutFile "$folderBin.sig";
 
         Write-Host "Downloading complete!" -ForegroundColor Green;
     }
@@ -91,20 +97,20 @@ $hashActual = (Get-FileHash -Path $folderBin -Algorithm SHA256).Hash.ToUpperInva
 if ($hashExpected -eq $hashActual) {
     Write-Host "SHA256 Hash Match!" -ForegroundColor Green;
 }
-elseif ((Test-Path env:PRYSM_ALLOW_UNVERIFIED_BINARIES) -and $env:PRYSM_ALLOW_UNVERIFIED_BINARIES -eq $TRUE) {
-    Write-Host "WARN Failed to verify prysm binary" -ForegroundColor Yellow;
-    Write-Host "Detected `$env:PRYSM_ALLOW_UNVERIFIED_BINARIES=`$TRUE";
+elseif ((Test-Path env:QRYSM_ALLOW_UNVERIFIED_BINARIES) -and $env:QRYSM_ALLOW_UNVERIFIED_BINARIES -eq $TRUE) {
+    Write-Host "WARN Failed to verify qrysm binary" -ForegroundColor Yellow;
+    Write-Host "Detected `$env:QRYSM_ALLOW_UNVERIFIED_BINARIES=`$TRUE";
     Write-Host "Proceeding...";
 }
 else {
-    Write-Host "ERROR Failed to verify prysm binary" -ForegroundColor Red;
+    Write-Host "ERROR Failed to verify qrysm binary" -ForegroundColor Red;
     Write-Host @"
 Please erase downloads in the
 dist directory and run this script again. Alternatively, you can use a
-a prior version by specifying environment variable `$env:USE_PRYSM_VERSION
-with the specific version, as desired. Example: `$env:USE_PRYSM_VERSION=v1.0.0-alpha.5
+a prior version by specifying environment variable `$env:USE_QRYSM_VERSION
+with the specific version, as desired. Example: `$env:USE_QRYSM_VERSION=v1.0.0-alpha.5
 If you must wish to continue running an unverified binary, use:
-`$env:PRYSM_ALLOW_UNVERIFIED_BINARIES=`$TRUE
+`$env:QRYSM_ALLOW_UNVERIFIED_BINARIES=`$TRUE
 "@;
 
     exit;
@@ -112,7 +118,7 @@ If you must wish to continue running an unverified binary, use:
 
 # Finally, start the process.
 do {
-    Write-Host "Starting: prysm $($args -join ' ')";
+    Write-Host "Starting: qrysm $($args -join ' ')";
 
     $argumentList = $args | Select-Object -Skip 1;
 
@@ -123,5 +129,5 @@ do {
         $process = Start-Process -FilePath $folderBin -NoNewWindow -PassThru -Wait;
     }
     
-    $restart = (Test-Path env:PRYSM_AUTORESTART) -and $env:PRYSM_AUTORESTART -eq $TRUE -and $process.ExitCode -ne 0;
+    $restart = (Test-Path env:QRYSM_AUTORESTART) -and $env:QRYSM_AUTORESTART -eq $TRUE -and $process.ExitCode -ne 0;
 } while ($restart)

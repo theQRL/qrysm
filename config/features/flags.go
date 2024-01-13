@@ -27,7 +27,7 @@ var (
 	Mainnet = &cli.BoolFlag{
 		Value: true,
 		Name:  "mainnet",
-		Usage: "Run on Ethereum Beacon Chain Main Net. This is the default and can be omitted.",
+		Usage: "Run on Zond Beacon Chain Main Net. This is the default and can be omitted.",
 	}
 	devModeFlag = &cli.BoolFlag{
 		Name:  "dev",

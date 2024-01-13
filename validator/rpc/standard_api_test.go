@@ -24,9 +24,9 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/validator"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	validatormock "github.com/theQRL/qrysm/v4/testing/validator-mock"
@@ -1068,7 +1068,7 @@ func TestServer_SetGasLimit_InvalidFeeRecipient(t *testing.T) {
 	}
 
 	_, err = s.SetFeeRecipientByPubkey(ctx, req)
-	require.ErrorContains(t, "Fee recipient is not a valid Ethereum address", err)
+	require.ErrorContains(t, "Fee recipient is not a valid Zond address", err)
 }
 
 func TestServer_DeleteFeeRecipientByPubkey(t *testing.T) {

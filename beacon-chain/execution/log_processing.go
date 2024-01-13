@@ -212,7 +212,7 @@ func (s *Service) ProcessDepositLog(ctx context.Context, depositLog *gzondtypes.
 				log.WithFields(logrus.Fields{
 					"deposits":          deposits,
 					"genesisValidators": valCount,
-				}).Info("Processing deposits from Ethereum 1 chain")
+				}).Info("Processing deposits from Zond 1 chain")
 			}
 		}
 	} else {

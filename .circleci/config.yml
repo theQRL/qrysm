@@ -1,0 +1,195 @@
+version: 2.1
+
+filters-release: &filters-release
+  tags:
+    only: 
+      - /^v.*/
+  branches:
+    ignore: /.*/
+
+restore_bazel_cache: &restore_bazel_cache
+  restore_cache:
+    keys:
+      - v4-bazel-cache-{{ .Environment.CIRCLE_JOB }}-{{ .Branch }}-{{ .Revision }}
+      - v4-bazel-cache-{{ .Environment.CIRCLE_JOB }}-{{ .Branch }}
+      - v4-bazel-cache-{{ .Environment.CIRCLE_JOB }}-main
+
+save_bazel_cache: &save_bazel_cache
+  save_cache:
+    # Always saving the cache, even in case of failures, helps with completing
+    # jobs where the bazel process was killed because it took too long or OOM.
+    # Restart the job if you see the bazel server being terminated abruptly.
+    when: always
+    key: v4-bazel-cache-{{ .Environment.CIRCLE_JOB }}-{{ .Branch }}-{{ .Revision }}
+    paths:
+      - /tmp/bazel-cache
+      - /tmp/bazel-disk-cache
+
+clean_bazel_cache: &clean_bazel_cache
+  run:
+    name: Clean Bazel disk cache of files that have not been modified in 30 days
+    # mtime is the only time preserved after untaring the cache.
+    command: /usr/bin/find /tmp/bazel-disk-cache -mtime +30 -exec rm -v {} \;
+
+set_bazelrc: &set_bazelrc
+  run:
+    name: Set bazelrc
+    command: cat .circleci/bazelrc >> .bazelrc
+
+commands:
+  setup-bazel:
+    parameters:
+      platform:
+        type: string
+        default: "linux-amd64"
+    steps:
+      - run: |
+          curl -LO "https://github.com/bazelbuild/bazelisk/releases/download/v1.19.0/bazelisk-<< parameters.platform >>"
+          mkdir -p bin
+          mv bazelisk-<< parameters.platform >> bin/bazel
+          chmod +x bin/bazel
+  prepare-publish-artifacts:
+    parameters:
+      platform:
+        type: string
+        default: "linux-amd64"
+      file_extension:
+        type: string
+        default: ""
+    steps:
+      - run: |
+          cp bazel-bin/cmd/beacon-chain/beacon-chain_/beacon-chain<< parameters.file_extension >> /tmp/beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
+          cp bazel-bin/cmd/validator/validator_/validator<< parameters.file_extension >> /tmp/validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
+
+          (cd /tmp && sha256sum beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >> > beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sha256)
+          (cd /tmp && sha256sum validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >> > validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sha256)
+
+          # TODO(rgeraldes24): replace default key with the new one
+          echo -n "$GPG_KEY" | base64 --decode | gpg --import
+          gpg -o /tmp/beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sig --default-key C6A8251946339065ECE9B1553D2EF77E42EB27AE --sign --detach-sig /tmp/beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
+          gpg -o /tmp/validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sig --default-key C6A8251946339065ECE9B1553D2EF77E42EB27AE --sign --detach-sig /tmp/validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
+
+          ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=qrysm tag=${CIRCLE_TAG} filename=/tmp/beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
+          ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=qrysm tag=${CIRCLE_TAG} filename=/tmp/beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sha256
+          ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=qrysm tag=${CIRCLE_TAG} filename=/tmp/beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sig
+          ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=qrysm tag=${CIRCLE_TAG} filename=/tmp/validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
+          ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=qrysm tag=${CIRCLE_TAG} filename=/tmp/validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sha256
+          ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=qrysm tag=${CIRCLE_TAG} filename=/tmp/validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sig
+
+jobs:
+  publish-linux-amd64-beacon-chain-binary:
+    machine:
+      image: ubuntu-2004:current
+    resource_class: medium
+    steps:
+      - checkout
+      - setup-bazel:
+          platform: "linux-amd64"
+      - *restore_bazel_cache
+      - *set_bazelrc
+      - run: |
+          rm -rf /tmp/bazel-cache/output-root/install
+          sudo apt install libssl-dev libgmp-dev libtinfo5 cmake          
+          bin/bazel build --config=release --define=blst_modern=false //cmd/beacon-chain //cmd/validator
+      - prepare-publish-artifacts:
+          platform: "linux-amd64"
+      - *clean_bazel_cache
+      - *save_bazel_cache
+
+  publish-linux-arm64-beacon-chain-binary:
+    machine:
+      image: ubuntu-2004:current
+    resource_class: medium
+    steps:
+      - checkout
+      - setup-bazel:
+          platform: "linux-amd64"
+      - *restore_bazel_cache
+      - *set_bazelrc
+      - run: |
+          rm -rf /tmp/bazel-cache/output-root/install
+          sudo apt install libssl-dev libgmp-dev libtinfo5 cmake
+          bin/bazel build --config=release --config=linux_arm64_docker //cmd/beacon-chain //cmd/validator
+      - prepare-publish-artifacts:
+          platform: "linux-arm64"
+      - *clean_bazel_cache
+      - *save_bazel_cache
+
+  publish-darwin-amd64-beacon-chain-binary:
+    macos:
+      xcode: 14.2.0
+    resource_class: macos.x86.medium.gen2
+    environment:
+      HOMEBREW_NO_AUTO_UPDATE: 1
+    steps:
+      - checkout
+      - setup-bazel:
+          platform: "darwin-amd64"
+      - *restore_bazel_cache
+      - *set_bazelrc
+      - run: |
+          brew install gpg
+          brew install coreutils # required for sha256sum cmd
+          rm -rf /tmp/bazel-cache/output-root/install
+          bin/bazel build --config=release //cmd/beacon-chain //cmd/validator
+      - prepare-publish-artifacts:
+          platform: "darwin-amd64"
+      - *clean_bazel_cache
+      - *save_bazel_cache
+
+  publish-darwin-arm64-beacon-chain-binary:
+    machine:
+      image: ubuntu-2004:current
+      resource_class: medium
+    steps:
+      - checkout
+      - setup-bazel
+      - *restore_bazel_cache
+      - *set_bazelrc
+      - run: |
+          rm -rf /tmp/bazel-cache/output-root/install
+          sudo apt install libssl-dev libgmp-dev libtinfo5 cmake
+          bin/bazel build --config=release --config=osx_arm64_docker //cmd/beacon-chain //cmd/validator
+      - prepare-publish-artifacts:
+          platform: "darwin-arm64"
+      - *clean_bazel_cache
+      - *save_bazel_cache
+          
+  publish-windows-amd64-beacon-chain-binary:
+    machine:
+      image: ubuntu-2004:current
+      resource_class: medium
+    steps:
+      - checkout
+      - setup-bazel
+      - *restore_bazel_cache
+      - *set_bazelrc
+      - run: |
+          rm -rf /tmp/bazel-cache/output-root/install
+          sudo apt install libssl-dev libgmp-dev libtinfo5 cmake
+          bin/bazel build --config=release --config=windows_amd64_docker //cmd/beacon-chain //cmd/validator
+      - prepare-publish-artifacts:
+          platform: "windows-amd64"
+          file_extension: ".exe"
+      - *clean_bazel_cache
+      - *save_bazel_cache
+      
+workflows:
+  release:
+    jobs:
+      - publish-linux-amd64-beacon-chain-binary:
+          filters:
+            <<: *filters-release
+      - publish-linux-arm64-beacon-chain-binary:
+          filters:
+            <<: *filters-release
+      - publish-darwin-amd64-beacon-chain-binary:
+          filters:
+            <<: *filters-release
+      - publish-darwin-arm64-beacon-chain-binary:
+          filters:
+            <<: *filters-release
+      - publish-windows-amd64-beacon-chain-binary:
+          filters: 
+            <<: *filters-release
+            

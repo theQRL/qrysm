@@ -142,7 +142,7 @@ func init() {
 func main() {
 	app := cli.App{}
 	app.Name = "beacon-chain"
-	app.Usage = "this is a beacon chain implementation for Ethereum"
+	app.Usage = "this is a beacon chain implementation for Zond"
 	app.Action = func(ctx *cli.Context) error {
 		if err := startNode(ctx); err != nil {
 			return cli.Exit(err.Error(), 1)
