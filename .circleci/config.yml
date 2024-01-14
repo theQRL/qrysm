@@ -66,8 +66,8 @@ commands:
 
           # TODO(rgeraldes24): replace default key with the new one
           echo -n "$GPG_KEY" | base64 --decode | gpg --import
-          gpg -o /tmp/beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sig --default-key C6A8251946339065ECE9B1553D2EF77E42EB27AE --sign --detach-sig /tmp/beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
-          gpg -o /tmp/validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sig --default-key C6A8251946339065ECE9B1553D2EF77E42EB27AE --sign --detach-sig /tmp/validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
+          gpg -o /tmp/beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sig --default-key 28580FDD99DA68203ABCE4205EA04E4E0FAC11B6 --sign --detach-sig /tmp/beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
+          gpg -o /tmp/validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sig --default-key 28580FDD99DA68203ABCE4205EA04E4E0FAC11B6 --sign --detach-sig /tmp/validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
 
           ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=qrysm tag=${CIRCLE_TAG} filename=/tmp/beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
           ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=qrysm tag=${CIRCLE_TAG} filename=/tmp/beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sha256
