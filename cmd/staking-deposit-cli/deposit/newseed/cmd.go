@@ -80,13 +80,13 @@ func cliActionNewSeed(cliCtx *cli.Context) error {
 
 	fmt.Println("Create a password that secures your validator keystore(s). " +
 		"You will need to re-enter this to decrypt them when you setup your Zond validators.")
-	keystorePassword, err := term.ReadPassword(syscall.Stdin)
+	keystorePassword, err := term.ReadPassword(int(syscall.Stdin))
 	if err != nil {
 		return err
 	}
 
 	fmt.Println("Re-enter password ")
-	reEnterKeystorePassword, err := term.ReadPassword(syscall.Stdin)
+	reEnterKeystorePassword, err := term.ReadPassword(int(syscall.Stdin))
 	if err != nil {
 		return err
 	}
