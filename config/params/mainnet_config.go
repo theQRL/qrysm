@@ -81,7 +81,7 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	TargetCommitteeSize:            128,
 	MaxValidatorsPerCommittee:      2048,
 	MaxCommitteesPerSlot:           64,
-	MinPerEpochChurnLimit:          4,
+	MinPerEpochChurnLimit:          10, // TODO (cyyber): Re-evaluate the value
 	ChurnLimitQuotient:             1 << 16,
 	ShuffleRoundCount:              90,
 	MinGenesisActiveValidatorCount: 16384,
