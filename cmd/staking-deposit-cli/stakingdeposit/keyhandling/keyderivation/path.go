@@ -30,6 +30,9 @@ func SeedAndPathToSeed(strSeed, path string) (string, error) {
 
 	var newSeed [common.SeedSize]uint8
 	_, err := h.Read(newSeed[:])
+	if err != nil {
+		return "", err
+	}
 
 	// Try generating Dilithium from seed to ensure seed validity
 	_, err = dilithium.NewDilithiumFromSeed(newSeed)

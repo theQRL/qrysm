@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"reflect"
 	"runtime"
@@ -40,7 +41,11 @@ func (k *Keystore) Save(fileFolder string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Println(err)
+		}
+	}()
 	if _, err := f.Write(k.ToJSON()); err != nil {
 		return err
 	}
@@ -93,7 +98,7 @@ func (k *Keystore) Decrypt(password string) [common.SeedSize]byte {
 	binAESIV := misc.DecodeHex(aesIV.(string))
 
 	stream := cipher.NewCTR(block, binAESIV)
-	stream.XORKeyStream(seed[:], cipherText[:])
+	stream.XORKeyStream(seed[:], cipherText)
 
 	return seed
 }

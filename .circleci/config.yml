@@ -60,14 +60,16 @@ commands:
       - run: |
           cp bazel-bin/cmd/beacon-chain/beacon-chain_/beacon-chain<< parameters.file_extension >> /tmp/beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
           cp bazel-bin/cmd/validator/validator_/validator<< parameters.file_extension >> /tmp/validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
+          cp bazel-bin/cmd/staking-deposit-cli/deposit/deposit_/deposit<< parameters.file_extension >> /tmp/deposit-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
 
           (cd /tmp && sha256sum beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >> > beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sha256)
           (cd /tmp && sha256sum validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >> > validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sha256)
+          (cd /tmp && sha256sum deposit-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >> > deposit-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sha256)
 
-          # TODO(rgeraldes24): replace default key with the new one
           echo -n "$GPG_KEY" | base64 --decode | gpg --import
           gpg -o /tmp/beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sig --default-key 28580FDD99DA68203ABCE4205EA04E4E0FAC11B6 --sign --detach-sig /tmp/beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
           gpg -o /tmp/validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sig --default-key 28580FDD99DA68203ABCE4205EA04E4E0FAC11B6 --sign --detach-sig /tmp/validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
+          gpg -o /tmp/deposit-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sig --default-key 28580FDD99DA68203ABCE4205EA04E4E0FAC11B6 --sign --detach-sig /tmp/deposit-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
 
           ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=qrysm tag=${CIRCLE_TAG} filename=/tmp/beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
           ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=qrysm tag=${CIRCLE_TAG} filename=/tmp/beacon-chain-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sha256
@@ -75,9 +77,12 @@ commands:
           ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=qrysm tag=${CIRCLE_TAG} filename=/tmp/validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
           ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=qrysm tag=${CIRCLE_TAG} filename=/tmp/validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sha256
           ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=qrysm tag=${CIRCLE_TAG} filename=/tmp/validator-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sig
+          ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=qrysm tag=${CIRCLE_TAG} filename=/tmp/deposit-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
+          ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=qrysm tag=${CIRCLE_TAG} filename=/tmp/deposit-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sha256
+          ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=qrysm tag=${CIRCLE_TAG} filename=/tmp/deposit-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sig
 
 jobs:
-  publish-linux-amd64-beacon-chain-binary:
+  publish-linux-amd64-binaries:
     machine:
       image: ubuntu-2004:current
     resource_class: medium
@@ -90,13 +95,13 @@ jobs:
       - run: |
           rm -rf /tmp/bazel-cache/output-root/install
           sudo apt install libssl-dev libgmp-dev libtinfo5 cmake          
-          bin/bazel build --config=release --define=blst_modern=false //cmd/beacon-chain //cmd/validator
+          bin/bazel build --config=release --define=blst_modern=false //cmd/beacon-chain //cmd/validator //cmd/staking-deposit-cli/deposit
       - prepare-publish-artifacts:
           platform: "linux-amd64"
       - *clean_bazel_cache
       - *save_bazel_cache
 
-  publish-linux-arm64-beacon-chain-binary:
+  publish-linux-arm64-binaries:
     machine:
       image: ubuntu-2004:current
     resource_class: medium
@@ -109,13 +114,13 @@ jobs:
       - run: |
           rm -rf /tmp/bazel-cache/output-root/install
           sudo apt install libssl-dev libgmp-dev libtinfo5 cmake
-          bin/bazel build --config=release --config=linux_arm64_docker //cmd/beacon-chain //cmd/validator
+          bin/bazel build --config=release --config=linux_arm64_docker //cmd/beacon-chain //cmd/validator //cmd/staking-deposit-cli/deposit
       - prepare-publish-artifacts:
           platform: "linux-arm64"
       - *clean_bazel_cache
       - *save_bazel_cache
 
-  publish-darwin-amd64-beacon-chain-binary:
+  publish-darwin-amd64-binaries:
     macos:
       xcode: 14.2.0
     resource_class: macos.x86.medium.gen2
@@ -131,13 +136,13 @@ jobs:
           brew install gpg
           brew install coreutils # required for sha256sum cmd
           rm -rf /tmp/bazel-cache/output-root/install
-          bin/bazel build --config=release //cmd/beacon-chain //cmd/validator
+          bin/bazel build --config=release //cmd/beacon-chain //cmd/validator //cmd/staking-deposit-cli/deposit
       - prepare-publish-artifacts:
           platform: "darwin-amd64"
       - *clean_bazel_cache
       - *save_bazel_cache
 
-  publish-darwin-arm64-beacon-chain-binary:
+  publish-darwin-arm64-binaries:
     machine:
       image: ubuntu-2004:current
       resource_class: medium
@@ -149,13 +154,13 @@ jobs:
       - run: |
           rm -rf /tmp/bazel-cache/output-root/install
           sudo apt install libssl-dev libgmp-dev libtinfo5 cmake
-          bin/bazel build --config=release --config=osx_arm64_docker //cmd/beacon-chain //cmd/validator
+          bin/bazel build --config=release --config=osx_arm64_docker //cmd/beacon-chain //cmd/validator //cmd/staking-deposit-cli/deposit
       - prepare-publish-artifacts:
           platform: "darwin-arm64"
       - *clean_bazel_cache
       - *save_bazel_cache
           
-  publish-windows-amd64-beacon-chain-binary:
+  publish-windows-amd64-binaries:
     machine:
       image: ubuntu-2004:current
       resource_class: medium
@@ -167,7 +172,7 @@ jobs:
       - run: |
           rm -rf /tmp/bazel-cache/output-root/install
           sudo apt install libssl-dev libgmp-dev libtinfo5 cmake
-          bin/bazel build --config=release --config=windows_amd64_docker //cmd/beacon-chain //cmd/validator
+          bin/bazel build --config=release --config=windows_amd64_docker //cmd/beacon-chain //cmd/validator //cmd/staking-deposit-cli/deposit
       - prepare-publish-artifacts:
           platform: "windows-amd64"
           file_extension: ".exe"
@@ -177,19 +182,19 @@ jobs:
 workflows:
   release:
     jobs:
-      - publish-linux-amd64-beacon-chain-binary:
+      - publish-linux-amd64-binaries:
           filters:
             <<: *filters-release
-      - publish-linux-arm64-beacon-chain-binary:
+      - publish-linux-arm64-binaries:
           filters:
             <<: *filters-release
-      - publish-darwin-amd64-beacon-chain-binary:
+      - publish-darwin-amd64-binaries:
           filters:
             <<: *filters-release
-      - publish-darwin-arm64-beacon-chain-binary:
+      - publish-darwin-arm64-binaries:
           filters:
             <<: *filters-release
-      - publish-windows-amd64-beacon-chain-binary:
+      - publish-windows-amd64-binaries:
           filters: 
             <<: *filters-release
             

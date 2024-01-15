@@ -105,13 +105,13 @@ func submitDeposits(cliCtx *cli.Context) error {
 		txOpts.Value = new(big.Int).Mul(new(big.Int).SetUint64(depositData.Amount), big.NewInt(1e9)) // value in wei
 
 		if err := sendDepositTx(contract, depositData, txOpts); err != nil {
-			log.Errorf("Unable to send transaction to contract: %v | deposit data index: %d", err, i)
+			log.WithError(err).Errorf("Unable to send transaction to contract: deposit data index: %d", i)
 			continue
 		}
 
 		log.Infof("Waiting for a short delay of %v seconds...", depositDelaySeconds)
 		if err := bar.Add(1); err != nil {
-			log.Errorf("Could not increase progress bar percentage: %v", err)
+			log.WithError(err).Error("Could not increase progress bar percentage")
 		}
 		time.Sleep(depositDelay)
 	}
