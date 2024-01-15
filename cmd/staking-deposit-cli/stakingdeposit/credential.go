@@ -134,6 +134,9 @@ func (c *Credential) GetDilithiumToExecutionChange(validatorIndex uint64) *zondp
 		c.chainSetting.GenesisForkVersion,    /*forkVersion*/
 		c.chainSetting.GenesisValidatorsRoot, /*genesisValidatorsRoot*/
 	)
+	if err != nil {
+		panic(fmt.Errorf("failed to compute domain %v", err))
+	}
 
 	signingData := &zondpb.SigningData{
 		ObjectRoot: root[:],

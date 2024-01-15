@@ -43,6 +43,9 @@ func GenerateKeys(validatorStartIndex, numValidators uint64,
 		panic(fmt.Errorf("export keystores failed. reason: %v", err))
 	}
 	depositFile, err := credentials.ExportDepositDataJSON(folder)
+	if err != nil {
+		panic(fmt.Errorf("failed to export deposit data. reason: %v", err))
+	}
 	if !credentials.VerifyKeystores(keystoreFileFolders, keystorePassword) {
 		panic("failed to verify the keystores")
 	}
@@ -136,6 +139,9 @@ func validateDeposit(depositData *DepositData, credential *Credential) bool {
 		config.ToHex(depositData.ForkVersion), /*forkVersion*/
 		nil,                                   /*genesisValidatorsRoot*/
 	)
+	if err != nil {
+		panic(fmt.Errorf("failed to compute domain | reason %v", err))
+	}
 	signingData := &zondpb.SigningData{
 		ObjectRoot: root[:],
 		Domain:     domain,
@@ -145,7 +151,13 @@ func validateDeposit(depositData *DepositData, credential *Credential) bool {
 		panic(fmt.Errorf("could not get signingData.HashTreeRoot() | reason %v", err))
 	}
 	sig, err := dilithium.SignatureFromBytes(signature)
+	if err != nil {
+		panic(fmt.Errorf("could not parse signature bytes | reason %v", err))
+	}
 	publicKey, err := dilithium.PublicKeyFromBytes(pubKey)
+	if err != nil {
+		panic(fmt.Errorf("could not parse public key bytes | reason %v", err))
+	}
 
 	if !sig.Verify(publicKey, ctrRoot[:]) {
 		return false
