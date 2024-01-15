@@ -1,28 +1,12 @@
 # Qrysm: A Zond Consensus Implementation Written in Go
 
-[![Build status](https://badge.buildkite.com/b555891daf3614bae4284dcf365b2340cefc0089839526f096.svg?branch=master)](https://buildkite.com/prysmatic-labs/prysm)
-[![Go Report Card](https://goreportcard.com/badge/github.com/prysmaticlabs/prysm)](https://goreportcard.com/report/github.com/prysmaticlabs/prysm)
-[![Consensus_Spec_Version 1.2.0](https://img.shields.io/badge/Consensus%20Spec%20Version-v1.2.0-blue.svg)](https://github.com/ethereum/consensus-specs/tree/v1.2.0)
-[![Execution_API_Version 1.0.0-beta.1](https://img.shields.io/badge/Execution%20API%20Version-v1.0.0.beta.1-blue.svg)](https://github.com/ethereum/execution-apis/tree/v1.0.0-beta.1/src/engine)
 [![Discord](https://user-images.githubusercontent.com/7288322/34471967-1df7808a-efbb-11e7-9088-ed0b04151291.png)](https://www.theqrl.org/discord)
-[![GitPOAP Badge](https://public-api.gitpoap.io/v1/repo/prysmaticlabs/prysm/badge)](https://www.gitpoap.io/gh/prysmaticlabs/prysm)
 
-This is the core repository for Qrysm, a [Golang](https://golang.org/) implementation of the [Zond Consensus](https://ethereum.org/en/eth2/) specification, developed by [The QRL](https://theqrl.org). See the [Changelog](https://github.com/theQRL/qrysm/releases) for details of the latest releases and upcoming breaking changes.
+This is the core repository for Qrysm, a [Golang](https://golang.org/) implementation of the Zond Consensus specification, developed by [The QRL](https://theqrl.org) and based on the [Prysmatic Labs implementation](https://github.com/prysmaticlabs/prysm) of the Eth2 consensus specification. See the [Changelog](https://github.com/theQRL/qrysm/releases) for details of the latest releases and upcoming breaking changes.
 
 ### Getting Started
 
-A detailed set of installation and usage instructions as well as breakdowns of each individual component are available in the [official documentation portal](https://docs.prylabs.network). If you still have questions, feel free to stop by our [Discord](https://www.theqrl.org/discord).
-
-
-## Contributing
-### Branches
-Qrysm maintains two permanent branches:
-
-* [master](https://github.com/theQRL/qrysm/tree/master): This points to the latest stable release. It is ideal for most users.
-* [develop](https://github.com/theQRL/qrysm/tree/develop): This is used for development, it contains the latest PRs. Developers should base their PRs on this branch.
-
-### Guide
-Want to get involved? Check out our [Contribution Guide](https://docs.prylabs.network/docs/contribute/contribution-guidelines/) to learn more!
+A set of installation and usage instructions are available in the [documentation portal](https://test-zond.theqrl.org). If you still have questions, feel free to stop by our [Discord](https://www.theqrl.org/discord).
 
 ## License
 
