@@ -47,7 +47,7 @@ approval_rules:
     requires:
       count: 2
       teams:
-        - "prysmaticlabs/core-team"
+        - "theqrl/core"
   - name: touches sync/blockchain/p2p code
     if:
       only_changed_files:
@@ -61,7 +61,7 @@ approval_rules:
     requires:
       count: 2
       teams:
-        - "prysmaticlabs/core-team"
+        - "theqrl/core"
   - name: large line count
     if:
       modified_lines:
@@ -77,7 +77,7 @@ approval_rules:
     requires:
       count: 2
       teams:
-        - "prysmaticlabs/core-team"
+        - "theqrl/core"
   - name: is critical priority
     if:
       has_labels:
@@ -88,4 +88,4 @@ approval_rules:
     requires:
       count: 3
       teams:
-        - "prysmaticlabs/core-team"
+        - "theqrl/core"

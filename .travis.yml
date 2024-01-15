@@ -1,5 +1,5 @@
 language: go
-go_import_path: github.com/prysmaticlabs/prysm
+go_import_path: github.com/theqrl/qrysm
 sudo: false
 matrix:
   include:
@@ -7,7 +7,7 @@ matrix:
       dist: xenial
       go: 1.12.x
       env:
-        - lint
+        - GOLINT=true
       install:
         - go get ${gobuild_args} -t ./...
         - go get ${gobuild_args} github.com/golangci/golangci-lint/cmd/golangci-lint
