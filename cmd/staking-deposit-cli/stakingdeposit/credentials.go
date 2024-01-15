@@ -3,6 +3,7 @@ package stakingdeposit
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -47,7 +48,11 @@ func (c *Credentials) ExportDepositDataJSON(folder string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Println(err)
+		}
+	}()
 
 	if _, err := f.Write(jsonDepositDataList); err != nil {
 		return "", err
@@ -89,7 +94,11 @@ func (c *Credentials) ExportDilithiumToExecutionChangeJSON(folder string, valida
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Println(err)
+		}
+	}()
 
 	if _, err := f.Write(jsonDepositDataList); err != nil {
 		return "", err
