@@ -111,10 +111,10 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	SqrRootSlotsPerEpoch:             11,
 	MinSeedLookahead:                 1,
 	MaxSeedLookahead:                 4,
-	EpochsPerEth1VotingPeriod:        2, // TODO (cyyber) : Re-evaluate the value
-	SlotsPerHistoricalRoot:           8192,
-	MinValidatorWithdrawabilityDelay: 256,
-	ShardCommitteePeriod:             256,
+	EpochsPerEth1VotingPeriod:        2,    // TODO (cyyber) : Re-evaluate the value
+	SlotsPerHistoricalRoot:           1024, // TODO (cyyber) : Re-evaluate the value
+	MinValidatorWithdrawabilityDelay: 16,   // TODO (cyyber) : Re-evaluate the value
+	ShardCommitteePeriod:             16,   // TODO (cyyber) : Re-evaluate the value
 	MinEpochsToInactivityPenalty:     4,
 	Eth1FollowDistance:               0, // TODO (cyyber) : Re-evaluate the value
 
@@ -144,7 +144,7 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 
 	// State list length constants.
 	EpochsPerHistoricalVector: 65536,
-	EpochsPerSlashingsVector:  8192,
+	EpochsPerSlashingsVector:  1024,
 	HistoricalRootsLimit:      16777216,
 	ValidatorRegistryLimit:    1099511627776,
 
@@ -246,7 +246,7 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	SyncCommitteeSize:            16, // TODO: (cyyber) finalize SyncCommitteeSize, original value was 512
 	InactivityScoreBias:          4,
 	InactivityScoreRecoveryRate:  16,
-	EpochsPerSyncCommitteePeriod: 256,
+	EpochsPerSyncCommitteePeriod: 8, // TODO: (cyyber) finalize EpochsPerSyncCommitteePeriod, original value was 512
 
 	// Updated penalty values.
 	InactivityPenaltyQuotientAltair:         3 * 1 << 24, //50331648

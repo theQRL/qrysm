@@ -2602,9 +2602,9 @@ func (b *BlobsBundle) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 
 		numItems := uint64(len(b.KzgCommitments))
 		if ssz.EnableVectorizedHTR {
-			hh.MerkleizeWithMixinVectorizedHTR(subIndx, numItems, ssz.CalculateLimit(4096, numItems, 0))
+			hh.MerkleizeWithMixinVectorizedHTR(subIndx, numItems, 4096)
 		} else {
-			hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(4096, numItems, 0))
+			hh.MerkleizeWithMixin(subIndx, numItems, 4096)
 		}
 	}
 
@@ -2625,9 +2625,9 @@ func (b *BlobsBundle) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 
 		numItems := uint64(len(b.Proofs))
 		if ssz.EnableVectorizedHTR {
-			hh.MerkleizeWithMixinVectorizedHTR(subIndx, numItems, ssz.CalculateLimit(4096, numItems, 0))
+			hh.MerkleizeWithMixinVectorizedHTR(subIndx, numItems, 4096)
 		} else {
-			hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(4096, numItems, 0))
+			hh.MerkleizeWithMixin(subIndx, numItems, 4096)
 		}
 	}
 
@@ -2648,9 +2648,9 @@ func (b *BlobsBundle) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 
 		numItems := uint64(len(b.Blobs))
 		if ssz.EnableVectorizedHTR {
-			hh.MerkleizeWithMixinVectorizedHTR(subIndx, numItems, ssz.CalculateLimit(4096, numItems, 0))
+			hh.MerkleizeWithMixinVectorizedHTR(subIndx, numItems, 4096)
 		} else {
-			hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(4096, numItems, 0))
+			hh.MerkleizeWithMixin(subIndx, numItems, 4096)
 		}
 	}
 
@@ -2848,9 +2848,9 @@ func (b *BlindedBlobsBundle) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 
 		numItems := uint64(len(b.KzgCommitments))
 		if ssz.EnableVectorizedHTR {
-			hh.MerkleizeWithMixinVectorizedHTR(subIndx, numItems, ssz.CalculateLimit(4096, numItems, 0))
+			hh.MerkleizeWithMixinVectorizedHTR(subIndx, numItems, 4096)
 		} else {
-			hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(4096, numItems, 0))
+			hh.MerkleizeWithMixin(subIndx, numItems, 4096)
 		}
 	}
 
@@ -2871,9 +2871,9 @@ func (b *BlindedBlobsBundle) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 
 		numItems := uint64(len(b.Proofs))
 		if ssz.EnableVectorizedHTR {
-			hh.MerkleizeWithMixinVectorizedHTR(subIndx, numItems, ssz.CalculateLimit(4096, numItems, 0))
+			hh.MerkleizeWithMixinVectorizedHTR(subIndx, numItems, 4096)
 		} else {
-			hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(4096, numItems, 0))
+			hh.MerkleizeWithMixin(subIndx, numItems, 4096)
 		}
 	}
 
@@ -2894,9 +2894,9 @@ func (b *BlindedBlobsBundle) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 
 		numItems := uint64(len(b.BlobRoots))
 		if ssz.EnableVectorizedHTR {
-			hh.MerkleizeWithMixinVectorizedHTR(subIndx, numItems, ssz.CalculateLimit(4096, numItems, 32))
+			hh.MerkleizeWithMixinVectorizedHTR(subIndx, numItems, 4096)
 		} else {
-			hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(4096, numItems, 32))
+			hh.MerkleizeWithMixin(subIndx, numItems, 4096)
 		}
 	}
 

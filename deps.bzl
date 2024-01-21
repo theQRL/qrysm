@@ -5707,8 +5707,8 @@ def go_dependencies():
         patches = [
             "//third_party:com_github_theqrl_go_zond_secp256k1.patch",
         ],
-        sum = "h1:Gt7hMvqxfEEt3TKGFunMkbkNndnNJ11HCDOiCN/RDzY=",
-        version = "v0.0.0-20240109134606-45a2c3abad1d",
+        sum = "h1:1sQh2jTCFNZW29cJo9KvwjKXemIlASZlfQx8rLwYa5E=",
+        version = "v0.0.0-20240121131316-e347fd2f1f3d",
     )
     go_repository(
         name = "com_github_theqrl_go_zond_types",

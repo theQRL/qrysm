@@ -8,13 +8,13 @@ These rules allow for variable substitution for hardcoded tag values like ssz-si
 ####### Configuration #######
 
 mainnet = {
-    "block_roots.size": "8192,32",  # SLOTS_PER_HISTORICAL_ROOT, [32]byte
-    "state_roots.size": "8192,32",  # SLOTS_PER_HISTORICAL_ROOT, [32]byte
-    "eth1_data_votes.size": "2048",  # SLOTS_PER_ETH1_VOTING_PERIOD
+    "block_roots.size": "1024,32",  # SLOTS_PER_HISTORICAL_ROOT, [32]byte
+    "state_roots.size": "1024,32",  # SLOTS_PER_HISTORICAL_ROOT, [32]byte
+    "eth1_data_votes.size": "256",  # SLOTS_PER_ETH1_VOTING_PERIOD
     "randao_mixes.size": "65536,32",  # EPOCHS_PER_HISTORICAL_VECTOR, [32]byte
-    "previous_epoch_attestations.max": "4096",  # MAX_ATTESTATIONS * SLOTS_PER_EPOCH
-    "current_epoch_attestations.max": "4096",  # MAX_ATTESTATIONS * SLOTS_PER_EPOCH
-    "slashings.size": "8192",  # EPOCHS_PER_SLASHINGS_VECTOR
+    "previous_epoch_attestations.max": "16384",  # MAX_ATTESTATIONS * SLOTS_PER_EPOCH
+    "current_epoch_attestations.max": "16384",  # MAX_ATTESTATIONS * SLOTS_PER_EPOCH
+    "slashings.size": "1024",  # EPOCHS_PER_SLASHINGS_VECTOR
     "sync_committee_bits.size": "16", #SYNC_COMMITTEE_SIZE
     "sync_committee_bytes.size": "2",
     "sync_committee_bits.type": "github.com/theQRL/go-bitfield.Bitvector16",
