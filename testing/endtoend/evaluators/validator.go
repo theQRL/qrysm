@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"github.com/prysmaticlabs/prysm/v4/proto/eth/v2"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
@@ -13,8 +14,6 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
-	e2eparams "github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -23,8 +22,6 @@ import (
 )
 
 var expectedParticipation = 0.99
-
-var expectedMulticlientParticipation = 0.98
 
 var expectedSyncParticipation = 0.99
 
@@ -47,8 +44,9 @@ var ValidatorsParticipatingAtEpoch = func(epoch primitives.Epoch) types.Evaluato
 // ValidatorSyncParticipation ensures the expected amount of sync committee participants
 // are active.
 var ValidatorSyncParticipation = types.Evaluator{
-	Name:       "validator_sync_participation_%d",
-	Policy:     policies.OnwardsNthEpoch(helpers.AltairE2EForkEpoch),
+	Name: "validator_sync_participation_%d",
+	// Policy:     policies.OnwardsNthEpoch(helpers.AltairE2EForkEpoch),
+	Policy:     policies.OnwardsNthEpoch(6),
 	Evaluation: validatorsSyncParticipation,
 }
 
@@ -117,15 +115,7 @@ func validatorsParticipating(_ *types.EvaluationContext, conns ...*grpc.ClientCo
 
 	partRate := participation.Participation.GlobalParticipationRate
 	expected := float32(expectedParticipation)
-	if e2eparams.TestParams.LighthouseBeaconNodeCount != 0 {
-		expected = float32(expectedMulticlientParticipation)
-	}
-	if participation.Epoch > 0 && participation.Epoch.Sub(1) == helpers.BellatrixE2EForkEpoch {
-		// Reduce Participation requirement to 95% to account for longer EE calls for
-		// the merge block. Target and head will likely be missed for a few validators at
-		// slot 0.
-		expected = 0.95
-	}
+
 	if partRate < expected {
 		st, err := debugClient.GetBeaconStateV2(context.Background(), &eth.BeaconStateRequestV2{StateId: []byte("head")})
 		if err != nil {
@@ -135,18 +125,6 @@ func validatorsParticipating(_ *types.EvaluationContext, conns ...*grpc.ClientCo
 		var missTgtVals []uint64
 		var missHeadVals []uint64
 		switch obj := st.Data.State.(type) {
-		case *eth.BeaconStateContainer_Phase0State:
-		// Do Nothing
-		case *eth.BeaconStateContainer_AltairState:
-			missSrcVals, missTgtVals, missHeadVals, err = findMissingValidators(obj.AltairState.PreviousEpochParticipation)
-			if err != nil {
-				return errors.Wrap(err, "failed to get missing validators")
-			}
-		case *eth.BeaconStateContainer_BellatrixState:
-			missSrcVals, missTgtVals, missHeadVals, err = findMissingValidators(obj.BellatrixState.PreviousEpochParticipation)
-			if err != nil {
-				return errors.Wrap(err, "failed to get missing validators")
-			}
 		case *eth.BeaconStateContainer_CapellaState:
 			missSrcVals, missTgtVals, missHeadVals, err = findMissingValidators(obj.CapellaState.PreviousEpochParticipation)
 			if err != nil {
@@ -186,9 +164,10 @@ func validatorsSyncParticipation(_ *types.EvaluationContext, conns ...*grpc.Clie
 		lowestBound = currEpoch - 1
 	}
 
-	if lowestBound < helpers.AltairE2EForkEpoch {
-		lowestBound = helpers.AltairE2EForkEpoch
-	}
+	// if lowestBound < helpers.AltairE2EForkEpoch {
+	// 	lowestBound = helpers.AltairE2EForkEpoch
+	// }
+
 	blockCtrs, err := altairClient.ListBeaconBlocks(context.Background(), &zondpb.ListBlocksRequest{QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: lowestBound}})
 	if err != nil {
 		return errors.Wrap(err, "failed to get validator participation")
@@ -202,22 +181,22 @@ func validatorsSyncParticipation(_ *types.EvaluationContext, conns ...*grpc.Clie
 		if b.IsNil() {
 			return errors.New("nil block provided")
 		}
-		forkStartSlot, err := slots.EpochStart(helpers.AltairE2EForkEpoch)
-		if err != nil {
-			return err
-		}
-		if forkStartSlot == b.Block().Slot() {
-			// Skip fork slot.
-			continue
-		}
+		// forkStartSlot, err := slots.EpochStart(helpers.AltairE2EForkEpoch)
+		// if err != nil {
+		// 	return err
+		// }
+		// if forkStartSlot == b.Block().Slot() {
+		// 	// Skip fork slot.
+		// 	continue
+		// }
 		expectedParticipation := expectedSyncParticipation
-		switch slots.ToEpoch(b.Block().Slot()) {
-		case helpers.AltairE2EForkEpoch:
-			// Drop expected sync participation figure.
-			expectedParticipation = 0.90
-		default:
-			// no-op
-		}
+		// switch slots.ToEpoch(b.Block().Slot()) {
+		// case helpers.AltairE2EForkEpoch:
+		// 	// Drop expected sync participation figure.
+		// 	expectedParticipation = 0.90
+		// default:
+		// 	// no-op
+		// }
 		syncAgg, err := b.Block().Body().SyncAggregate()
 		if err != nil {
 			return err
@@ -243,21 +222,21 @@ func validatorsSyncParticipation(_ *types.EvaluationContext, conns ...*grpc.Clie
 		if b.IsNil() {
 			return errors.New("nil block provided")
 		}
-		forkSlot, err := slots.EpochStart(helpers.AltairE2EForkEpoch)
-		if err != nil {
-			return err
-		}
-		nexForkSlot, err := slots.EpochStart(helpers.BellatrixE2EForkEpoch)
-		if err != nil {
-			return err
-		}
-		switch b.Block().Slot() {
-		case forkSlot, forkSlot + 1, nexForkSlot:
-			// Skip evaluation of the slot.
-			continue
-		default:
-			// no-op
-		}
+		// forkSlot, err := slots.EpochStart(helpers.AltairE2EForkEpoch)
+		// if err != nil {
+		// 	return err
+		// }
+		// nexForkSlot, err := slots.EpochStart(helpers.BellatrixE2EForkEpoch)
+		// if err != nil {
+		// 	return err
+		// }
+		// switch b.Block().Slot() {
+		// case forkSlot, forkSlot + 1, nexForkSlot:
+		// 	// Skip evaluation of the slot.
+		// 	continue
+		// default:
+		// 	// no-op
+		// }
 		syncAgg, err := b.Block().Body().SyncAggregate()
 		if err != nil {
 			return err
@@ -271,29 +250,11 @@ func validatorsSyncParticipation(_ *types.EvaluationContext, conns ...*grpc.Clie
 }
 
 func syncCompatibleBlockFromCtr(container *zondpb.BeaconBlockContainer) (interfaces.ReadOnlySignedBeaconBlock, error) {
-	if container.GetPhase0Block() != nil {
-		return nil, errors.New("block doesn't support sync committees")
-	}
-	if container.GetAltairBlock() != nil {
-		return blocks.NewSignedBeaconBlock(container.GetAltairBlock())
-	}
-	if container.GetBellatrixBlock() != nil {
-		return blocks.NewSignedBeaconBlock(container.GetBellatrixBlock())
-	}
-	if container.GetBlindedBellatrixBlock() != nil {
-		return blocks.NewSignedBeaconBlock(container.GetBlindedBellatrixBlock())
-	}
 	if container.GetCapellaBlock() != nil {
 		return blocks.NewSignedBeaconBlock(container.GetCapellaBlock())
 	}
 	if container.GetBlindedCapellaBlock() != nil {
 		return blocks.NewSignedBeaconBlock(container.GetBlindedCapellaBlock())
-	}
-	if container.GetDenebBlock() != nil {
-		return blocks.NewSignedBeaconBlock(container.GetDenebBlock())
-	}
-	if container.GetBlindedDenebBlock() != nil {
-		return blocks.NewSignedBeaconBlock(container.GetBlindedDenebBlock())
 	}
 	return nil, errors.New("no supported block type in container")
 }

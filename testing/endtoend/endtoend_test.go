@@ -25,7 +25,6 @@ import (
 	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/components"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/components/eth1"
 	zondcomp "github.com/theQRL/qrysm/v4/testing/endtoend/components/zond"
 	ev "github.com/theQRL/qrysm/v4/testing/endtoend/evaluators"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
@@ -73,7 +72,7 @@ type runEvent func() error
 func (r *testRunner) runBase(runEvents []runEvent) {
 	r.comHandler = NewComponentHandler(r.config, r.t)
 	r.comHandler.group.Go(func() error {
-		miner, ok := r.comHandler.zondMiner.(*eth1.Miner)
+		miner, ok := r.comHandler.zondMiner.(*zondcomp.Miner)
 		if !ok {
 			return errors.New("in runBase, comHandler.zondMiner fails type assertion to *zond.Miner")
 		}

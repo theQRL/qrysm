@@ -22,18 +22,17 @@ import (
 
 // params struct defines the parameters needed for running E2E tests to properly handle test sharding.
 type params struct {
-	TestPath                  string
-	LogPath                   string
-	TestShardIndex            int
-	BeaconNodeCount           int
-	LighthouseBeaconNodeCount int
-	Ports                     *ports
-	Paths                     *paths
-	ZondGenesisBlock          *types.Block
-	StartTime                 time.Time
-	CLGenesisTime             uint64
-	ZondGenesisTime           uint64
-	NumberOfExecutionCreds    uint64
+	TestPath               string
+	LogPath                string
+	TestShardIndex         int
+	BeaconNodeCount        int
+	Ports                  *ports
+	Paths                  *paths
+	ZondGenesisBlock       *types.Block
+	StartTime              time.Time
+	CLGenesisTime          uint64
+	ZondGenesisTime        uint64
+	NumberOfExecutionCreds uint64
 }
 
 type ports struct {
@@ -111,9 +110,6 @@ var ValidatorLogFileName = "vals-%d.log"
 // StandardBeaconCount is a global constant for the count of beacon nodes of standard E2E tests.
 var StandardBeaconCount = 2
 
-// StandardLighthouseNodeCount is a global constant for the count of lighthouse beacon nodes of standard E2E tests.
-var StandardLighthouseNodeCount = 2
-
 // DepositCount is the number of deposits the E2E runner should make to evaluate post-genesis deposit processing.
 var DepositCount = uint64(64)
 
@@ -145,10 +141,6 @@ const (
 	PrysmBeaconNodeGatewayPort = PrysmBeaconNodeRPCPort + 3*portSpan
 	PrysmBeaconNodeMetricsPort = PrysmBeaconNodeRPCPort + 4*portSpan
 	PrysmBeaconNodePprofPort   = PrysmBeaconNodeRPCPort + 5*portSpan
-
-	LighthouseBeaconNodeP2PPort     = 5150
-	LighthouseBeaconNodeHTTPPort    = LighthouseBeaconNodeP2PPort + portSpan
-	LighthouseBeaconNodeMetricsPort = LighthouseBeaconNodeP2PPort + 2*portSpan
 
 	ValidatorGatewayPort = 6150
 	ValidatorMetricsPort = ValidatorGatewayPort + portSpan
@@ -215,60 +207,6 @@ func Init(t *testing.T, beaconNodeCount int) error {
 		CLGenesisTime:          genTime,
 		ZondGenesisTime:        genTime,
 		NumberOfExecutionCreds: PregenesisExecCreds,
-	}
-	return nil
-}
-
-// InitMultiClient initializes the multiclient E2E config, properly handling test sharding.
-func InitMultiClient(t *testing.T, beaconNodeCount int, lighthouseNodeCount int) error {
-	testPath := bazel.TestTmpDir()
-	logPath, ok := os.LookupEnv("TEST_UNDECLARED_OUTPUTS_DIR")
-	if !ok {
-		return errors.New("expected TEST_UNDECLARED_OUTPUTS_DIR to be defined")
-	}
-	logPath = path.Join(logPath, t.Name())
-	if err := file.MkdirAll(logPath); err != nil {
-		return err
-	}
-	testTotalShardsStr, ok := os.LookupEnv("TEST_TOTAL_SHARDS")
-	if !ok {
-		testTotalShardsStr = "1"
-	}
-	testTotalShards, err := strconv.Atoi(testTotalShardsStr)
-	if err != nil {
-		return err
-	}
-	testShardIndexStr, ok := os.LookupEnv("TEST_SHARD_INDEX")
-	if !ok {
-		testShardIndexStr = "0"
-	}
-	testShardIndex, err := strconv.Atoi(testShardIndexStr)
-	if err != nil {
-		return err
-	}
-
-	var existingRegistrations []int
-	testPorts := &ports{}
-	err = initializeStandardPorts(testTotalShards, testShardIndex, testPorts, &existingRegistrations)
-	if err != nil {
-		return err
-	}
-	err = initializeMulticlientPorts(testTotalShards, testShardIndex, testPorts, &existingRegistrations)
-	if err != nil {
-		return err
-	}
-
-	genTime := uint64(time.Now().Unix()) + StartupBufferSecs
-	TestParams = &params{
-		TestPath:                  filepath.Join(testPath, fmt.Sprintf("shard-%d", testShardIndex)),
-		LogPath:                   logPath,
-		TestShardIndex:            testShardIndex,
-		BeaconNodeCount:           beaconNodeCount,
-		LighthouseBeaconNodeCount: lighthouseNodeCount,
-		Ports:                     testPorts,
-		CLGenesisTime:             genTime,
-		ZondGenesisTime:           genTime,
-		NumberOfExecutionCreds:    PregenesisExecCreds,
 	}
 	return nil
 }
@@ -371,22 +309,5 @@ func initializeStandardPorts(shardCount, shardIndex int, ports *ports, existingR
 	ports.ValidatorMetricsPort = validatorMetricsPort
 	ports.ValidatorGatewayPort = validatorGatewayPort
 	ports.JaegerTracingPort = jaegerTracingPort
-	return nil
-}
-
-func initializeMulticlientPorts(shardCount, shardIndex int, ports *ports, existingRegistrations *[]int) error {
-	lighthouseBeaconNodeP2PPort, err := port(LighthouseBeaconNodeP2PPort, shardCount, shardIndex, existingRegistrations)
-	if err != nil {
-		return err
-	}
-	lighthouseBeaconNodeHTTPPort, err := port(LighthouseBeaconNodeHTTPPort, shardCount, shardIndex, existingRegistrations)
-	if err != nil {
-		return err
-	}
-	lighthouseBeaconNodeMetricsPort, err := port(LighthouseBeaconNodeMetricsPort, shardCount, shardIndex, existingRegistrations)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }

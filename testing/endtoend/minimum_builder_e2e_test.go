@@ -8,6 +8,5 @@ import (
 )
 
 func TestEndToEnd_MinimalConfig_WithBuilder(t *testing.T) {
-	r := e2eMinimal(t, version.Phase0, types.WithCheckpointSync(), types.WithBuilder())
-	r.run()
+	e2eMinimal(t, version.Capella /*, types.WithCheckpointSync()*/, types.WithBuilder()).run()
 }

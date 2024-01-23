@@ -84,7 +84,7 @@ func (m *Miner) initAttempt(ctx context.Context, attempt int) (*os.File, error) 
 	}
 
 	gzondJsonPath := path.Join(path.Dir(binaryPath), "genesis.json")
-	gen := interop.GethTestnetGenesis(e2e.TestParams.ZondGenesisTime, params.BeaconConfig())
+	gen := interop.GzondTestnetGenesis(e2e.TestParams.ZondGenesisTime, params.BeaconConfig())
 	log.Infof("zond miner genesis timestamp=%d", e2e.TestParams.ZondGenesisTime)
 	b, err := json.Marshal(gen)
 	if err != nil {

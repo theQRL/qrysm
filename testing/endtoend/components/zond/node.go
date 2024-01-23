@@ -61,7 +61,7 @@ func (node *Node) Start(ctx context.Context) error {
 	}
 	gzondJsonPath := path.Join(zondPath, "genesis.json")
 
-	gen := interop.GethTestnetGenesis(e2e.TestParams.ZondGenesisTime, params.BeaconConfig())
+	gen := interop.GzondTestnetGenesis(e2e.TestParams.ZondGenesisTime, params.BeaconConfig())
 	b, err := json.Marshal(gen)
 	if err != nil {
 		return err

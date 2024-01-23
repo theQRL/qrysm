@@ -287,7 +287,7 @@ func generateGenesis(ctx context.Context) (state.BeaconState, error) {
 			gen.Config.TerminalTotalDifficultyPassed = true
 		}
 	} else {
-		gen = interop.GethTestnetGenesis(f.GenesisTime, params.BeaconConfig())
+		gen = interop.GzondTestnetGenesis(f.GenesisTime, params.BeaconConfig())
 	}
 
 	if f.GzondGenesisJsonOut != "" {

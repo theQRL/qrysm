@@ -6,8 +6,7 @@ import (
 	"context"
 	"os"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"google.golang.org/grpc"
@@ -21,17 +20,21 @@ func WithEpochs(e uint64) E2EConfigOpt {
 	}
 }
 
+/*
 func WithRemoteSigner() E2EConfigOpt {
 	return func(cfg *E2EConfig) {
 		cfg.UseWeb3RemoteSigner = true
 	}
 }
+*/
 
+/*
 func WithCheckpointSync() E2EConfigOpt {
 	return func(cfg *E2EConfig) {
 		cfg.TestCheckpointSync = true
 	}
 }
+*/
 
 func WithValidatorRESTApi() E2EConfigOpt {
 	return func(cfg *E2EConfig) {
@@ -47,12 +50,12 @@ func WithBuilder() E2EConfigOpt {
 
 // E2EConfig defines the struct for all configurations needed for E2E testing.
 type E2EConfig struct {
-	TestCheckpointSync  bool
+	// TestCheckpointSync  bool
 	TestSync            bool
 	TestFeature         bool
 	UseQrysmShValidator bool
 	UsePprof            bool
-	UseWeb3RemoteSigner bool
+	// UseWeb3RemoteSigner bool
 	TestDeposits        bool
 	UseFixedPeerIDs     bool
 	UseBeaconRestApi    bool
@@ -69,17 +72,21 @@ type E2EConfig struct {
 }
 
 func GenesisFork() int {
-	cfg := params.BeaconConfig()
-	if cfg.CapellaForkEpoch == 0 {
-		return version.Capella
-	}
-	if cfg.BellatrixForkEpoch == 0 {
-		return version.Bellatrix
-	}
-	if cfg.AltairForkEpoch == 0 {
-		return version.Altair
-	}
-	return version.Phase0
+	/*
+		cfg := params.BeaconConfig()
+		if cfg.CapellaForkEpoch == 0 {
+			return version.Capella
+		}
+		if cfg.BellatrixForkEpoch == 0 {
+			return version.Bellatrix
+		}
+		if cfg.AltairForkEpoch == 0 {
+			return version.Altair
+		}
+		return version.Phase0
+	*/
+
+	return version.Capella
 }
 
 // Evaluator defines the structure of the evaluators used to
@@ -106,13 +113,13 @@ const (
 
 // DepositBalancer represents a type that can sum, by validator, all deposits made in E2E prior to the function call.
 type DepositBalancer interface {
-	Balances(DepositBatch) map[[dilithium2.CryptoPublicKeyBytes]byte]uint64
+	Balances(DepositBatch) map[[dilithium.CryptoPublicKeyBytes]byte]uint64
 }
 
 // EvaluationContext allows for additional data to be provided to evaluators that need extra state.
 type EvaluationContext struct {
 	DepositBalancer
-	ExitedVals           map[[dilithium2.CryptoPublicKeyBytes]byte]bool
+	ExitedVals           map[[dilithium.CryptoPublicKeyBytes]byte]bool
 	SeenVotes            map[primitives.Slot][]byte
 	ExpectedEth1DataVote []byte
 }
@@ -121,7 +128,7 @@ type EvaluationContext struct {
 func NewEvaluationContext(d DepositBalancer) *EvaluationContext {
 	return &EvaluationContext{
 		DepositBalancer: d,
-		ExitedVals:      make(map[[dilithium2.CryptoPublicKeyBytes]byte]bool),
+		ExitedVals:      make(map[[dilithium.CryptoPublicKeyBytes]byte]bool),
 		SeenVotes:       make(map[primitives.Slot][]byte),
 	}
 }
