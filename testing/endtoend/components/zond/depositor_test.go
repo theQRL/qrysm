@@ -1,4 +1,4 @@
-package eth1
+package zond
 
 import (
 	"fmt"
