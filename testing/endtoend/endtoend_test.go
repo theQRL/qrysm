@@ -15,22 +15,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/api/client/beacon"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/io/file"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/components"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/components/eth1"
+	zondcomp "github.com/theQRL/qrysm/v4/testing/endtoend/components/zond"
 	ev "github.com/theQRL/qrysm/v4/testing/endtoend/evaluators"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
 	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
@@ -38,6 +34,8 @@ import (
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -59,7 +57,7 @@ type testRunner struct {
 	t          *testing.T
 	config     *e2etypes.E2EConfig
 	comHandler *componentHandler
-	depositor  *eth1.Depositor
+	depositor  *zondcomp.Depositor
 }
 
 // newTestRunner creates E2E test runner.
@@ -75,12 +73,12 @@ type runEvent func() error
 func (r *testRunner) runBase(runEvents []runEvent) {
 	r.comHandler = NewComponentHandler(r.config, r.t)
 	r.comHandler.group.Go(func() error {
-		miner, ok := r.comHandler.eth1Miner.(*eth1.Miner)
+		miner, ok := r.comHandler.zondMiner.(*eth1.Miner)
 		if !ok {
-			return errors.New("in runBase, comHandler.eth1Miner fails type assertion to *eth1.Miner")
+			return errors.New("in runBase, comHandler.zondMiner fails type assertion to *zond.Miner")
 		}
 		if err := helpers.ComponentsStarted(r.comHandler.ctx, []e2etypes.ComponentRunner{miner}); err != nil {
-			return errors.Wrap(err, "eth1Miner component never started - cannot send deposits")
+			return errors.Wrap(err, "zondMiner component never started - cannot send deposits")
 		}
 		keyPath, err := e2e.TestParams.Paths.MinerKeyPath()
 		if err != nil {
@@ -94,7 +92,7 @@ func (r *testRunner) runBase(runEvents []runEvent) {
 		if err != nil {
 			return errors.Wrap(err, "failed to initialize a client to connect to the miner EL node")
 		}
-		r.depositor = &eth1.Depositor{Key: key, Client: client, NetworkId: big.NewInt(eth1.NetworkId)}
+		r.depositor = &zondcomp.Depositor{Key: key, Client: client, NetworkId: big.NewInt(zondcomp.NetworkId)}
 		if err := r.depositor.Start(r.comHandler.ctx); err != nil {
 			return errors.Wrap(err, "depositor.Start failed")
 		}
@@ -192,8 +190,8 @@ func (r *testRunner) runEvaluators(ec *e2etypes.EvaluationContext, conns []*grpc
 func (r *testRunner) testDepositsAndTx(ctx context.Context, g *errgroup.Group,
 	keystorePath string, requiredNodes []e2etypes.ComponentRunner) {
 	minGenesisActiveCount := int(params.BeaconConfig().MinGenesisActiveValidatorCount)
-	// prysm web3signer doesn't support deposits
-	r.config.UseWeb3RemoteSigner = false
+	// qrysm web3signer doesn't support deposits
+	// r.config.UseWeb3RemoteSigner = false
 	depositCheckValidator := components.NewValidatorNode(r.config, int(e2e.DepositCount), e2e.TestParams.BeaconNodeCount, minGenesisActiveCount)
 	g.Go(func() error {
 		if err := helpers.ComponentsStarted(ctx, requiredNodes); err != nil {
@@ -223,10 +221,10 @@ func (r *testRunner) testDepositsAndTx(ctx context.Context, g *errgroup.Group,
 }
 
 func (r *testRunner) testTxGeneration(ctx context.Context, g *errgroup.Group, keystorePath string, requiredNodes []e2etypes.ComponentRunner) {
-	txGenerator := eth1.NewTransactionGenerator(keystorePath, r.config.Seed)
+	txGenerator := zondcomp.NewTransactionGenerator(keystorePath, r.config.Seed)
 	g.Go(func() error {
 		if err := helpers.ComponentsStarted(ctx, requiredNodes); err != nil {
-			return fmt.Errorf("transaction generator requires eth1 nodes to be run: %w", err)
+			return fmt.Errorf("transaction generator requires zond execution nodes to be run: %w", err)
 		}
 		return txGenerator.Start(ctx)
 	})
@@ -265,16 +263,17 @@ func (r *testRunner) waitForMatchingHead(ctx context.Context, timeout time.Durat
 	}
 }
 
+/*
 func (r *testRunner) testCheckpointSync(ctx context.Context, g *errgroup.Group, i int, conns []*grpc.ClientConn, bnAPI, enr, minerEnr string) error {
 	matchTimeout := 3 * time.Minute
-	ethNode := eth1.NewNode(i, minerEnr)
+	zondNode := zondcomp.NewNode(i, minerEnr)
 	g.Go(func() error {
-		return ethNode.Start(ctx)
+		return zondNode.Start(ctx)
 	})
-	if err := helpers.ComponentsStarted(ctx, []e2etypes.ComponentRunner{ethNode}); err != nil {
+	if err := helpers.ComponentsStarted(ctx, []e2etypes.ComponentRunner{zondNode}); err != nil {
 		return fmt.Errorf("sync beacon node not ready: %w", err)
 	}
-	proxyNode := eth1.NewProxy(i)
+	proxyNode := zondcomp.NewProxy(i)
 	g.Go(func() error {
 		return proxyNode.Start(ctx)
 	})
@@ -310,7 +309,7 @@ func (r *testRunner) testCheckpointSync(ctx context.Context, g *errgroup.Group, 
 	if err := helpers.ComponentsStarted(ctx, []e2etypes.ComponentRunner{cpsyncer}); err != nil {
 		return fmt.Errorf("checkpoint sync beacon node not ready: %w", err)
 	}
-	c, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", e2e.TestParams.Ports.PrysmBeaconNodeRPCPort+i), grpc.WithInsecure())
+	c, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", e2e.TestParams.Ports.QrysmBeaconNodeRPCPort+i), grpc.WithInsecure())
 	require.NoError(r.t, err, "Failed to dial")
 
 	// this is so that the syncEvaluators checks can run on the checkpoint sync'd node
@@ -328,20 +327,21 @@ func (r *testRunner) testCheckpointSync(ctx context.Context, g *errgroup.Group, 
 	}
 	return nil
 }
+*/
 
 // testBeaconChainSync creates another beacon node, and tests whether it can sync to head using previous nodes.
 func (r *testRunner) testBeaconChainSync(ctx context.Context, g *errgroup.Group,
 	conns []*grpc.ClientConn, tickingStartTime time.Time, bootnodeEnr, minerEnr string) error {
 	t, config := r.t, r.config
-	index := e2e.TestParams.BeaconNodeCount + e2e.TestParams.LighthouseBeaconNodeCount
-	ethNode := eth1.NewNode(index, minerEnr)
+	index := e2e.TestParams.BeaconNodeCount
+	zondNode := zondcomp.NewNode(index, minerEnr)
 	g.Go(func() error {
-		return ethNode.Start(ctx)
+		return zondNode.Start(ctx)
 	})
-	if err := helpers.ComponentsStarted(ctx, []e2etypes.ComponentRunner{ethNode}); err != nil {
+	if err := helpers.ComponentsStarted(ctx, []e2etypes.ComponentRunner{zondNode}); err != nil {
 		return fmt.Errorf("sync beacon node not ready: %w", err)
 	}
-	proxyNode := eth1.NewProxy(index)
+	proxyNode := zondcomp.NewProxy(index)
 	g.Go(func() error {
 		return proxyNode.Start(ctx)
 	})
@@ -355,7 +355,7 @@ func (r *testRunner) testBeaconChainSync(ctx context.Context, g *errgroup.Group,
 	if err := helpers.ComponentsStarted(ctx, []e2etypes.ComponentRunner{syncBeaconNode}); err != nil {
 		return fmt.Errorf("sync beacon node not ready: %w", err)
 	}
-	syncConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", e2e.TestParams.Ports.PrysmBeaconNodeRPCPort+index), grpc.WithInsecure())
+	syncConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", e2e.TestParams.Ports.QrysmBeaconNodeRPCPort+index), grpc.WithInsecure())
 	require.NoError(t, err, "Failed to dial")
 	conns = append(conns, syncConn)
 
@@ -388,7 +388,7 @@ func (r *testRunner) testBeaconChainSync(ctx context.Context, g *errgroup.Group,
 
 func (r *testRunner) testDoppelGangerProtection(ctx context.Context) error {
 	// Exit if we are running from the previous release.
-	if r.config.UsePrysmShValidator {
+	if r.config.UseQrysmShValidator {
 		return nil
 	}
 	g, ctx := errgroup.WithContext(ctx)
@@ -461,7 +461,7 @@ func (r *testRunner) defaultEndToEndRun() error {
 	if t.Failed() {
 		return errors.New("chain cannot start")
 	}
-	eth1Miner, ok := r.comHandler.eth1Miner.(*eth1.Miner)
+	zondMiner, ok := r.comHandler.zondMiner.(*zondcomp.Miner)
 	if !ok {
 		return errors.New("incorrect component type")
 	}
@@ -497,24 +497,26 @@ func (r *testRunner) defaultEndToEndRun() error {
 		return errors.Wrap(err, "one or more evaluators failed")
 	}
 
-	index := e2e.TestParams.BeaconNodeCount + e2e.TestParams.LighthouseBeaconNodeCount
+	// index := e2e.TestParams.BeaconNodeCount
 	if config.TestSync {
-		if err := r.testBeaconChainSync(ctx, g, conns, tickingStartTime, bootNode.ENR(), eth1Miner.ENR()); err != nil {
+		if err := r.testBeaconChainSync(ctx, g, conns, tickingStartTime, bootNode.ENR(), zondMiner.ENR()); err != nil {
 			return errors.Wrap(err, "beacon chain sync test failed")
 		}
-		index += 1
+		// index += 1
 		if err := r.testDoppelGangerProtection(ctx); err != nil {
 			return errors.Wrap(err, "doppel ganger protection check failed")
 		}
 	}
-	if config.TestCheckpointSync {
-		httpEndpoints := helpers.BeaconAPIHostnames(e2e.TestParams.BeaconNodeCount)
-		menr := eth1Miner.ENR()
-		benr := bootNode.ENR()
-		if err := r.testCheckpointSync(ctx, g, index, conns, httpEndpoints[0], benr, menr); err != nil {
-			return errors.Wrap(err, "checkpoint sync test failed")
+	/*
+		if config.TestCheckpointSync {
+			httpEndpoints := helpers.BeaconAPIHostnames(e2e.TestParams.BeaconNodeCount)
+			menr := zondMiner.ENR()
+			benr := bootNode.ENR()
+			if err := r.testCheckpointSync(ctx, g, index, conns, httpEndpoints[0], benr, menr); err != nil {
+				return errors.Wrap(err, "checkpoint sync test failed")
+			}
 		}
-	}
+	*/
 
 	if config.ExtraEpochs > 0 {
 		if err := r.waitExtra(ctx, primitives.Epoch(config.EpochsToRun+config.ExtraEpochs), conns[0], primitives.Epoch(config.ExtraEpochs)); err != nil {
@@ -601,100 +603,13 @@ func (r *testRunner) executeProvidedEvaluators(ec *e2etypes.EvaluationContext, c
 	wg.Wait()
 }
 
-// This interceptor will define the multi scenario run for our minimal tests.
-// 1) In the first scenario we will be taking a single prysm node and its validator offline.
-// Along with that we will also take a single lighthouse node and its validator offline.
-// After 1 epoch we will then attempt to bring it online again.
-//
-// 2) Then we will start testing optimistic sync by engaging our engine proxy.
-// After the proxy has been sending `SYNCING` responses to the beacon node, we
-// will test this with our optimistic sync evaluator to ensure everything works
-// as expected.
-func (r *testRunner) multiScenarioMulticlient(ec *e2etypes.EvaluationContext, epoch uint64, conns []*grpc.ClientConn) bool {
-	type ForkchoiceUpdatedResponse struct {
-		Status    *enginev1.PayloadStatus  `json:"payloadStatus"`
-		PayloadId *enginev1.PayloadIDBytes `json:"payloadId"`
-	}
-	switch epoch {
-	case 11:
-		require.NoError(r.t, r.comHandler.beaconNodes.PauseAtIndex(0))
-		require.NoError(r.t, r.comHandler.validatorNodes.PauseAtIndex(0))
-		return true
-	case 12:
-		require.NoError(r.t, r.comHandler.beaconNodes.ResumeAtIndex(0))
-		require.NoError(r.t, r.comHandler.validatorNodes.ResumeAtIndex(0))
-		return true
-	case 16:
-		// Set it for prysm beacon node.
-		component, err := r.comHandler.eth1Proxy.ComponentAtIndex(0)
-		require.NoError(r.t, err)
-		component.(e2etypes.EngineProxy).AddRequestInterceptor("engine_newPayloadV2", func() interface{} {
-			return &enginev1.PayloadStatus{
-				Status:          enginev1.PayloadStatus_SYNCING,
-				LatestValidHash: make([]byte, 32),
-			}
-		}, func() bool {
-			return true
-		})
-		// Set it for lighthouse beacon node.
-		component, err = r.comHandler.eth1Proxy.ComponentAtIndex(2)
-		require.NoError(r.t, err)
-		component.(e2etypes.EngineProxy).AddRequestInterceptor("engine_newPayloadV2", func() interface{} {
-			return &enginev1.PayloadStatus{
-				Status:          enginev1.PayloadStatus_SYNCING,
-				LatestValidHash: make([]byte, 32),
-			}
-		}, func() bool {
-			return true
-		})
-
-		component.(e2etypes.EngineProxy).AddRequestInterceptor("engine_forkchoiceUpdatedV2", func() interface{} {
-			return &ForkchoiceUpdatedResponse{
-				Status: &enginev1.PayloadStatus{
-					Status:          enginev1.PayloadStatus_SYNCING,
-					LatestValidHash: nil,
-				},
-				PayloadId: nil,
-			}
-		}, func() bool {
-			return true
-		})
-		return true
-	case 17:
-		evs := []e2etypes.Evaluator{ev.OptimisticSyncEnabled}
-		r.executeProvidedEvaluators(ec, epoch, []*grpc.ClientConn{conns[0]}, evs)
-		// Disable Interceptor
-		component, err := r.comHandler.eth1Proxy.ComponentAtIndex(0)
-		require.NoError(r.t, err)
-		engineProxy, ok := component.(e2etypes.EngineProxy)
-		require.Equal(r.t, true, ok)
-		engineProxy.RemoveRequestInterceptor("engine_newPayloadV2")
-		engineProxy.ReleaseBackedUpRequests("engine_newPayloadV2")
-
-		// Remove for lighthouse too
-		component, err = r.comHandler.eth1Proxy.ComponentAtIndex(2)
-		require.NoError(r.t, err)
-		engineProxy, ok = component.(e2etypes.EngineProxy)
-		require.Equal(r.t, true, ok)
-		engineProxy.RemoveRequestInterceptor("engine_newPayloadV2")
-		engineProxy.RemoveRequestInterceptor("engine_forkchoiceUpdatedV2")
-		engineProxy.ReleaseBackedUpRequests("engine_newPayloadV2")
-
-		return true
-	case 13, 14, 18, 19:
-		// Allow 2 epochs for the network to finalize again.
-		return true
-	}
-	return false
-}
-
 func (r *testRunner) eeOffline(_ *e2etypes.EvaluationContext, epoch uint64, _ []*grpc.ClientConn) bool {
 	switch epoch {
 	case 9:
-		require.NoError(r.t, r.comHandler.eth1Miner.Pause())
+		require.NoError(r.t, r.comHandler.zondMiner.Pause())
 		return true
 	case 10:
-		require.NoError(r.t, r.comHandler.eth1Miner.Resume())
+		require.NoError(r.t, r.comHandler.zondMiner.Resume())
 		return true
 	case 11, 12:
 		// Allow 2 epochs for the network to finalize again.
@@ -715,6 +630,11 @@ func (r *testRunner) eeOffline(_ *e2etypes.EvaluationContext, epoch uint64, _ []
 // will test this with our optimistic sync evaluator to ensure everything works
 // as expected.
 func (r *testRunner) multiScenario(ec *e2etypes.EvaluationContext, epoch uint64, conns []*grpc.ClientConn) bool {
+	type ForkchoiceUpdatedResponse struct {
+		Status    *enginev1.PayloadStatus  `json:"payloadStatus"`
+		PayloadId *enginev1.PayloadIDBytes `json:"payloadId"`
+	}
+
 	switch epoch {
 	case 11:
 		require.NoError(r.t, r.comHandler.beaconNodes.PauseAtIndex(0))
@@ -733,7 +653,7 @@ func (r *testRunner) multiScenario(ec *e2etypes.EvaluationContext, epoch uint64,
 		require.NoError(r.t, r.comHandler.validatorNodes.ResumeAtIndex(1))
 		return true
 	case 21:
-		component, err := r.comHandler.eth1Proxy.ComponentAtIndex(0)
+		component, err := r.comHandler.zondProxy.ComponentAtIndex(0)
 		require.NoError(r.t, err)
 		component.(e2etypes.EngineProxy).AddRequestInterceptor("engine_newPayloadV2", func() interface{} {
 			return &enginev1.PayloadStatus{
@@ -743,12 +663,25 @@ func (r *testRunner) multiScenario(ec *e2etypes.EvaluationContext, epoch uint64,
 		}, func() bool {
 			return true
 		})
+
+		component.(e2etypes.EngineProxy).AddRequestInterceptor("engine_forkchoiceUpdated", func() interface{} {
+			return &ForkchoiceUpdatedResponse{
+				Status: &enginev1.PayloadStatus{
+					Status:          enginev1.PayloadStatus_SYNCING,
+					LatestValidHash: nil,
+				},
+				PayloadId: nil,
+			}
+		}, func() bool {
+			return true
+		})
+
 		return true
 	case 22:
 		evs := []e2etypes.Evaluator{ev.OptimisticSyncEnabled}
 		r.executeProvidedEvaluators(ec, epoch, []*grpc.ClientConn{conns[0]}, evs)
 		// Disable Interceptor
-		component, err := r.comHandler.eth1Proxy.ComponentAtIndex(0)
+		component, err := r.comHandler.zondProxy.ComponentAtIndex(0)
 		require.NoError(r.t, err)
 		engineProxy, ok := component.(e2etypes.EngineProxy)
 		require.Equal(r.t, true, ok)

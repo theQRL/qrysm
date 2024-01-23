@@ -34,7 +34,7 @@ func NewBuilderSet() *BuilderSet {
 
 // Start starts all the builders in set.
 func (s *BuilderSet) Start(ctx context.Context) error {
-	totalNodeCount := e2e.TestParams.BeaconNodeCount + e2e.TestParams.LighthouseBeaconNodeCount
+	totalNodeCount := e2e.TestParams.BeaconNodeCount
 	nodes := make([]e2etypes.ComponentRunner, totalNodeCount)
 	for i := 0; i < totalNodeCount; i++ {
 		nodes[i] = NewBuilder(i)
@@ -149,8 +149,8 @@ func (node *Builder) Start(ctx context.Context) error {
 		return err
 	}
 	opts := []builder.Option{
-		builder.WithDestinationAddress(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.Eth1AuthRPCPort+node.index)),
-		builder.WithPort(e2e.TestParams.Ports.Eth1ProxyPort + node.index),
+		builder.WithDestinationAddress(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.ZondAuthRPCPort+node.index)),
+		builder.WithPort(e2e.TestParams.Ports.ZondProxyPort + node.index),
 		builder.WithLogger(logrus.New()),
 		builder.WithLogFile(f),
 		builder.WithJwtSecret(string(secret)),
@@ -159,7 +159,7 @@ func (node *Builder) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("Starting builder %d with port: %d and file %s", node.index, e2e.TestParams.Ports.Eth1ProxyPort+node.index, f.Name())
+	log.Infof("Starting builder %d with port: %d and file %s", node.index, e2e.TestParams.Ports.ZondProxyPort+node.index, f.Name())
 
 	// Set cancel into context.
 	ctx, cancel := context.WithCancel(ctx)

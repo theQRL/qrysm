@@ -33,12 +33,6 @@ func WithCheckpointSync() E2EConfigOpt {
 	}
 }
 
-func WithValidatorCrossClient() E2EConfigOpt {
-	return func(cfg *E2EConfig) {
-		cfg.UseValidatorCrossClient = true
-	}
-}
-
 func WithValidatorRESTApi() E2EConfigOpt {
 	return func(cfg *E2EConfig) {
 		cfg.UseBeaconRestApi = true
@@ -53,26 +47,25 @@ func WithBuilder() E2EConfigOpt {
 
 // E2EConfig defines the struct for all configurations needed for E2E testing.
 type E2EConfig struct {
-	TestCheckpointSync      bool
-	TestSync                bool
-	TestFeature             bool
-	UsePrysmShValidator     bool
-	UsePprof                bool
-	UseWeb3RemoteSigner     bool
-	TestDeposits            bool
-	UseFixedPeerIDs         bool
-	UseValidatorCrossClient bool
-	UseBeaconRestApi        bool
-	UseBuilder              bool
-	EpochsToRun             uint64
-	Seed                    int64
-	TracingSinkEndpoint     string
-	Evaluators              []Evaluator
-	EvalInterceptor         func(*EvaluationContext, uint64, []*grpc.ClientConn) bool
-	BeaconFlags             []string
-	ValidatorFlags          []string
-	PeerIDs                 []string
-	ExtraEpochs             uint64
+	TestCheckpointSync  bool
+	TestSync            bool
+	TestFeature         bool
+	UseQrysmShValidator bool
+	UsePprof            bool
+	UseWeb3RemoteSigner bool
+	TestDeposits        bool
+	UseFixedPeerIDs     bool
+	UseBeaconRestApi    bool
+	UseBuilder          bool
+	EpochsToRun         uint64
+	Seed                int64
+	TracingSinkEndpoint string
+	Evaluators          []Evaluator
+	EvalInterceptor     func(*EvaluationContext, uint64, []*grpc.ClientConn) bool
+	BeaconFlags         []string
+	ValidatorFlags      []string
+	PeerIDs             []string
+	ExtraEpochs         uint64
 }
 
 func GenesisFork() int {

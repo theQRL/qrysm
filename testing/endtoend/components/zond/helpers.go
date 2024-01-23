@@ -3,6 +3,7 @@ package zond
 import (
 	"context"
 	"math/big"
+	"math/rand"
 	"time"
 
 	"github.com/theQRL/go-zond/accounts/keystore"
@@ -12,11 +13,11 @@ import (
 	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
 )
 
-// NetworkId is the ID of the ETH1 chain.
+// NetworkId is the ID of the Zond chain.
 const NetworkId = 1337
 
-// KeystorePassword is the password used to decrypt ETH1 keystores.
-const KeystorePassword = "password"
+// KeystorePassword is the password used to decrypt Zond keystores.
+const KeystorePassword = ""
 
 const minerPasswordFile = "password.txt"
 const minerFile = "UTC--2021-12-22T19-14-08.590377700Z--878705ba3f8bc32fcf7f4caa1a35e72af65cf766"
@@ -29,7 +30,7 @@ var _ e2etypes.ComponentRunner = (*Miner)(nil)
 var _ e2etypes.ComponentRunner = (*Node)(nil)
 var _ e2etypes.EngineProxy = (*Proxy)(nil)
 
-// WaitForBlocks waits for a certain amount of blocks to be mined by the ETH1 chain before returning.
+// WaitForBlocks waits for a certain amount of blocks to be mined by the Zond chain before returning.
 func WaitForBlocks(web3 *zondclient.Client, key *keystore.Key, blocksToWait uint64) error {
 	nonce, err := web3.PendingNonceAt(context.Background(), key.Address)
 	if err != nil {
@@ -46,12 +47,18 @@ func WaitForBlocks(web3 *zondclient.Client, key *keystore.Key, blocksToWait uint
 	finishBlock := block.NumberU64() + blocksToWait
 
 	for block.NumberU64() <= finishBlock {
-		gasPrice, err := web3.SuggestGasPrice(context.Background())
-		if err != nil {
-			return err
-		}
-		spamTX := types.NewTransaction(nonce, key.Address, big.NewInt(0), params.SpamTxGasLimit, gasPrice, []byte{})
-		signed, err := types.SignTx(spamTX, types.NewEIP155Signer(chainID), key.Dilithium)
+		spamTX := types.NewTx(&types.DynamicFeeTx{
+			Nonce:     nonce,
+			To:        &key.Address,
+			Value:     big.NewInt(100),
+			Gas:       params.SpamTxGasLimit,
+			GasFeeCap: big.NewInt(int64(500)),
+			GasTipCap: big.NewInt(int64(rand.Intn(500 + 1))),
+			Data:      nil,
+		})
+
+		// spamTX := types.NewTransaction(nonce, key.Address, big.NewInt(0), params.SpamTxGasLimit, gasPrice, []byte{})
+		signed, err := types.SignTx(spamTX, types.NewLondonSigner(chainID), key.Dilithium)
 		if err != nil {
 			return err
 		}

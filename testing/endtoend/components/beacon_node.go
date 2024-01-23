@@ -226,13 +226,13 @@ func (node *BeaconNode) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	expectedNumOfPeers := e2e.TestParams.BeaconNodeCount + e2e.TestParams.LighthouseBeaconNodeCount - 1
+	expectedNumOfPeers := e2e.TestParams.BeaconNodeCount
 	if node.config.TestSync {
 		expectedNumOfPeers += 1
 	}
-	if node.config.TestCheckpointSync {
-		expectedNumOfPeers += 1
-	}
+	// if node.config.TestCheckpointSync {
+	// 	expectedNumOfPeers += 1
+	// }
 	jwtPath := path.Join(e2e.TestParams.TestPath, "zond1data/"+strconv.Itoa(node.index)+"/")
 	if index == 0 {
 		jwtPath = path.Join(e2e.TestParams.TestPath, "zond1data/miner/")
@@ -249,18 +249,18 @@ func (node *BeaconNode) Start(ctx context.Context) error {
 	}
 	args := []string{
 		fmt.Sprintf("--%s=%s", genesis.StatePath.Name, genesisPath),
-		fmt.Sprintf("--%s=%s/eth2-beacon-node-%d", cmdshared.DataDirFlag.Name, e2e.TestParams.TestPath, index),
+		fmt.Sprintf("--%s=%s/zond-beacon-node-%d", cmdshared.DataDirFlag.Name, e2e.TestParams.TestPath, index),
 		fmt.Sprintf("--%s=%s", cmdshared.LogFileName.Name, stdOutFile.Name()),
 		fmt.Sprintf("--%s=%s", flags.DepositContractFlag.Name, params.BeaconConfig().DepositContractAddress),
-		fmt.Sprintf("--%s=%d", flags.RPCPort.Name, e2e.TestParams.Ports.PrysmBeaconNodeRPCPort+index),
-		fmt.Sprintf("--%s=http://127.0.0.1:%d", flags.ExecutionEngineEndpoint.Name, e2e.TestParams.Ports.Eth1ProxyPort+index),
+		fmt.Sprintf("--%s=%d", flags.RPCPort.Name, e2e.TestParams.Ports.QrysmBeaconNodeRPCPort+index),
+		fmt.Sprintf("--%s=http://127.0.0.1:%d", flags.ExecutionEngineEndpoint.Name, e2e.TestParams.Ports.ZondProxyPort+index),
 		fmt.Sprintf("--%s=%s", flags.ExecutionJWTSecretFlag.Name, jwtPath),
 		fmt.Sprintf("--%s=%d", flags.MinSyncPeers.Name, 1),
-		fmt.Sprintf("--%s=%d", cmdshared.P2PUDPPort.Name, e2e.TestParams.Ports.PrysmBeaconNodeUDPPort+index),
-		fmt.Sprintf("--%s=%d", cmdshared.P2PTCPPort.Name, e2e.TestParams.Ports.PrysmBeaconNodeTCPPort+index),
+		fmt.Sprintf("--%s=%d", cmdshared.P2PUDPPort.Name, e2e.TestParams.Ports.QrysmBeaconNodeUDPPort+index),
+		fmt.Sprintf("--%s=%d", cmdshared.P2PTCPPort.Name, e2e.TestParams.Ports.QrysmBeaconNodeTCPPort+index),
 		fmt.Sprintf("--%s=%d", cmdshared.P2PMaxPeers.Name, expectedNumOfPeers),
-		fmt.Sprintf("--%s=%d", flags.MonitoringPortFlag.Name, e2e.TestParams.Ports.PrysmBeaconNodeMetricsPort+index),
-		fmt.Sprintf("--%s=%d", flags.GRPCGatewayPort.Name, e2e.TestParams.Ports.PrysmBeaconNodeGatewayPort+index),
+		fmt.Sprintf("--%s=%d", flags.MonitoringPortFlag.Name, e2e.TestParams.Ports.QrysmBeaconNodeMetricsPort+index),
+		fmt.Sprintf("--%s=%d", flags.GRPCGatewayPort.Name, e2e.TestParams.Ports.QrysmBeaconNodeGatewayPort+index),
 		fmt.Sprintf("--%s=%d", flags.ContractDeploymentBlock.Name, 0),
 		fmt.Sprintf("--%s=%d", flags.MinPeersPerSubnet.Name, 0),
 		fmt.Sprintf("--%s=%d", cmdshared.RPCMaxPageSizeFlag.Name, params.BeaconConfig().MinGenesisActiveValidatorCount),
@@ -275,7 +275,7 @@ func (node *BeaconNode) Start(ctx context.Context) error {
 		"--" + flags.EnableDebugRPCEndpoints.Name,
 	}
 	if config.UsePprof {
-		args = append(args, "--pprof", fmt.Sprintf("--pprofport=%d", e2e.TestParams.Ports.PrysmBeaconNodePprofPort+index))
+		args = append(args, "--pprof", fmt.Sprintf("--pprofport=%d", e2e.TestParams.Ports.QrysmBeaconNodePprofPort+index))
 	}
 	// Only add in the feature flags if we either aren't performing a control test
 	// on our features or the beacon index is a multiplier of 2 (idea is to split nodes
@@ -285,7 +285,7 @@ func (node *BeaconNode) Start(ctx context.Context) error {
 		args = append(args, features.E2EBeaconChainFlags...)
 	}
 	if config.UseBuilder {
-		args = append(args, fmt.Sprintf("--%s=%s:%d", flags.MevRelayEndpoint.Name, "http://127.0.0.1", e2e.TestParams.Ports.Eth1ProxyPort+index))
+		args = append(args, fmt.Sprintf("--%s=%s:%d", flags.MevRelayEndpoint.Name, "http://127.0.0.1", e2e.TestParams.Ports.ZondProxyPort+index))
 	}
 	args = append(args, config.BeaconFlags...)
 
@@ -350,10 +350,10 @@ func (node *BeaconNode) UnderlyingProcess() *os.Process {
 }
 
 func generateGenesis(ctx context.Context) (state.BeaconState, error) {
-	if e2e.TestParams.Eth1GenesisBlock == nil {
+	if e2e.TestParams.ZondGenesisBlock == nil {
 		return nil, errors.New("Cannot construct bellatrix block, e2e.TestParams.Eth1GenesisBlock == nil")
 	}
-	gb := e2e.TestParams.Eth1GenesisBlock
+	gb := e2e.TestParams.ZondGenesisBlock
 	t := e2e.TestParams.CLGenesisTime
 	pcreds := e2e.TestParams.NumberOfExecutionCreds
 	nvals := params.BeaconConfig().MinGenesisActiveValidatorCount

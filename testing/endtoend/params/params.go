@@ -29,33 +29,30 @@ type params struct {
 	LighthouseBeaconNodeCount int
 	Ports                     *ports
 	Paths                     *paths
-	Eth1GenesisBlock          *types.Block
+	ZondGenesisBlock          *types.Block
 	StartTime                 time.Time
 	CLGenesisTime             uint64
-	Eth1GenesisTime           uint64
+	ZondGenesisTime           uint64
 	NumberOfExecutionCreds    uint64
 }
 
 type ports struct {
-	BootNodePort                    int
-	BootNodeMetricsPort             int
-	Eth1Port                        int
-	Eth1RPCPort                     int
-	Eth1AuthRPCPort                 int
-	Eth1WSPort                      int
-	Eth1ProxyPort                   int
-	PrysmBeaconNodeRPCPort          int
-	PrysmBeaconNodeUDPPort          int
-	PrysmBeaconNodeTCPPort          int
-	PrysmBeaconNodeGatewayPort      int
-	PrysmBeaconNodeMetricsPort      int
-	PrysmBeaconNodePprofPort        int
-	LighthouseBeaconNodeP2PPort     int
-	LighthouseBeaconNodeHTTPPort    int
-	LighthouseBeaconNodeMetricsPort int
-	ValidatorMetricsPort            int
-	ValidatorGatewayPort            int
-	JaegerTracingPort               int
+	BootNodePort               int
+	BootNodeMetricsPort        int
+	ZondPort                   int
+	ZondRPCPort                int
+	ZondAuthRPCPort            int
+	ZondWSPort                 int
+	ZondProxyPort              int
+	QrysmBeaconNodeRPCPort     int
+	QrysmBeaconNodeUDPPort     int
+	QrysmBeaconNodeTCPPort     int
+	QrysmBeaconNodeGatewayPort int
+	QrysmBeaconNodeMetricsPort int
+	QrysmBeaconNodePprofPort   int
+	ValidatorMetricsPort       int
+	ValidatorGatewayPort       int
+	JaegerTracingPort          int
 }
 
 type paths struct{}
@@ -88,14 +85,14 @@ func (p *params) Logfile(rel ...string) string {
 	return path.Join(append([]string{p.LogPath}, rel...)...)
 }
 
-// Eth1RPCURL gives the full url to use to connect to the given eth1 client's RPC endpoint.
-// The `index` param corresponds to the `index` field of the `eth1.Node` e2e component.
+// ZondRPCURL gives the full url to use to connect to the given zond client's RPC endpoint.
+// The `index` param corresponds to the `index` field of the `zond.Node` e2e component.
 // These are off by one compared to corresponding beacon nodes, because the miner is assigned index 0.
 // eg instance the index of the EL instance associated with beacon node index `0` would typically be `1`.
-func (p *params) Eth1RPCURL(index int) *url.URL {
+func (p *params) ZondRPCURL(index int) *url.URL {
 	return &url.URL{
 		Scheme: baseELScheme,
-		Host:   net.JoinHostPort(baseELHost, fmt.Sprintf("%d", p.Ports.Eth1RPCPort+index)),
+		Host:   net.JoinHostPort(baseELHost, fmt.Sprintf("%d", p.Ports.ZondRPCPort+index)),
 	}
 }
 
@@ -216,7 +213,7 @@ func Init(t *testing.T, beaconNodeCount int) error {
 		BeaconNodeCount:        beaconNodeCount,
 		Ports:                  testPorts,
 		CLGenesisTime:          genTime,
-		Eth1GenesisTime:        genTime,
+		ZondGenesisTime:        genTime,
 		NumberOfExecutionCreds: PregenesisExecCreds,
 	}
 	return nil
@@ -270,7 +267,7 @@ func InitMultiClient(t *testing.T, beaconNodeCount int, lighthouseNodeCount int)
 		LighthouseBeaconNodeCount: lighthouseNodeCount,
 		Ports:                     testPorts,
 		CLGenesisTime:             genTime,
-		Eth1GenesisTime:           genTime,
+		ZondGenesisTime:           genTime,
 		NumberOfExecutionCreds:    PregenesisExecCreds,
 	}
 	return nil
@@ -360,17 +357,17 @@ func initializeStandardPorts(shardCount, shardIndex int, ports *ports, existingR
 	}
 	ports.BootNodePort = bootnodePort
 	ports.BootNodeMetricsPort = bootnodeMetricsPort
-	ports.Eth1Port = eth1Port
-	ports.Eth1RPCPort = eth1RPCPort
-	ports.Eth1AuthRPCPort = eth1AuthPort
-	ports.Eth1WSPort = eth1WSPort
-	ports.Eth1ProxyPort = eth1ProxyPort
-	ports.PrysmBeaconNodeRPCPort = beaconNodeRPCPort
-	ports.PrysmBeaconNodeUDPPort = beaconNodeUDPPort
-	ports.PrysmBeaconNodeTCPPort = beaconNodeTCPPort
-	ports.PrysmBeaconNodeGatewayPort = beaconNodeGatewayPort
-	ports.PrysmBeaconNodeMetricsPort = beaconNodeMetricsPort
-	ports.PrysmBeaconNodePprofPort = beaconNodePprofPort
+	ports.ZondPort = eth1Port
+	ports.ZondRPCPort = eth1RPCPort
+	ports.ZondAuthRPCPort = eth1AuthPort
+	ports.ZondWSPort = eth1WSPort
+	ports.ZondProxyPort = eth1ProxyPort
+	ports.QrysmBeaconNodeRPCPort = beaconNodeRPCPort
+	ports.QrysmBeaconNodeUDPPort = beaconNodeUDPPort
+	ports.QrysmBeaconNodeTCPPort = beaconNodeTCPPort
+	ports.QrysmBeaconNodeGatewayPort = beaconNodeGatewayPort
+	ports.QrysmBeaconNodeMetricsPort = beaconNodeMetricsPort
+	ports.QrysmBeaconNodePprofPort = beaconNodePprofPort
 	ports.ValidatorMetricsPort = validatorMetricsPort
 	ports.ValidatorGatewayPort = validatorGatewayPort
 	ports.JaegerTracingPort = jaegerTracingPort
@@ -390,8 +387,6 @@ func initializeMulticlientPorts(shardCount, shardIndex int, ports *ports, existi
 	if err != nil {
 		return err
 	}
-	ports.LighthouseBeaconNodeP2PPort = lighthouseBeaconNodeP2PPort
-	ports.LighthouseBeaconNodeHTTPPort = lighthouseBeaconNodeHTTPPort
-	ports.LighthouseBeaconNodeMetricsPort = lighthouseBeaconNodeMetricsPort
+
 	return nil
 }

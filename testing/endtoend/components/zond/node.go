@@ -22,7 +22,7 @@ import (
 	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
 )
 
-// Node represents an ETH1 node.
+// Node represents a zond node.
 type Node struct {
 	e2etypes.ComponentRunner
 	started chan struct{}
@@ -31,7 +31,7 @@ type Node struct {
 	cmd     *exec.Cmd
 }
 
-// NewNode creates and returns ETH1 node.
+// NewNode creates and returns a zond node.
 func NewNode(index int, enr string) *Node {
 	return &Node{
 		started: make(chan struct{}, 1),
@@ -40,7 +40,7 @@ func NewNode(index int, enr string) *Node {
 	}
 }
 
-// Start runs a non-mining ETH1 node.
+// Start runs a non-mining zond node.
 // To connect to a miner and start working properly, this node should be a part of a NodeSet.
 func (node *Node) Start(ctx context.Context) error {
 	binaryPath, found := bazel.FindBinary("cmd/gzond", "gzond")
@@ -48,35 +48,35 @@ func (node *Node) Start(ctx context.Context) error {
 		return errors.New("go-zond binary not found")
 	}
 
-	eth1Path := path.Join(e2e.TestParams.TestPath, "eth1data/"+strconv.Itoa(node.index)+"/")
+	zondPath := path.Join(e2e.TestParams.TestPath, "zonddata/"+strconv.Itoa(node.index)+"/")
 	// Clear out potentially existing dir to prevent issues.
-	if _, err := os.Stat(eth1Path); !os.IsNotExist(err) {
-		if err = os.RemoveAll(eth1Path); err != nil {
+	if _, err := os.Stat(zondPath); !os.IsNotExist(err) {
+		if err = os.RemoveAll(zondPath); err != nil {
 			return err
 		}
 	}
 
-	if err := file.MkdirAll(eth1Path); err != nil {
+	if err := file.MkdirAll(zondPath); err != nil {
 		return err
 	}
-	gethJsonPath := path.Join(eth1Path, "genesis.json")
+	gzondJsonPath := path.Join(zondPath, "genesis.json")
 
-	gen := interop.GethTestnetGenesis(e2e.TestParams.Eth1GenesisTime, params.BeaconConfig())
+	gen := interop.GethTestnetGenesis(e2e.TestParams.ZondGenesisTime, params.BeaconConfig())
 	b, err := json.Marshal(gen)
 	if err != nil {
 		return err
 	}
 
-	if err := file.WriteFile(gethJsonPath, b); err != nil {
+	if err := file.WriteFile(gzondJsonPath, b); err != nil {
 		return err
 	}
-	copyPath := path.Join(e2e.TestParams.LogPath, "eth1-genesis.json")
+	copyPath := path.Join(e2e.TestParams.LogPath, "zond-genesis.json")
 	if err := file.WriteFile(copyPath, b); err != nil {
 		return err
 	}
 
-	initCmd := exec.CommandContext(ctx, binaryPath, "init", fmt.Sprintf("--datadir=%s", eth1Path), gethJsonPath) // #nosec G204 -- Safe
-	initFile, err := helpers.DeleteAndCreateFile(e2e.TestParams.LogPath, "eth1-init_"+strconv.Itoa(node.index)+".log")
+	initCmd := exec.CommandContext(ctx, binaryPath, "init", fmt.Sprintf("--datadir=%s", zondPath), gzondJsonPath) // #nosec G204 -- Safe
+	initFile, err := helpers.DeleteAndCreateFile(e2e.TestParams.LogPath, "zond-init_"+strconv.Itoa(node.index)+".log")
 	if err != nil {
 		return err
 	}
@@ -90,53 +90,53 @@ func (node *Node) Start(ctx context.Context) error {
 
 	args := []string{
 		"--nat=none", // disable nat traversal in e2e, it is failure prone and not needed
-		fmt.Sprintf("--datadir=%s", eth1Path),
-		fmt.Sprintf("--http.port=%d", e2e.TestParams.Ports.Eth1RPCPort+node.index),
-		fmt.Sprintf("--ws.port=%d", e2e.TestParams.Ports.Eth1WSPort+node.index),
-		fmt.Sprintf("--authrpc.port=%d", e2e.TestParams.Ports.Eth1AuthRPCPort+node.index),
+		fmt.Sprintf("--datadir=%s", zondPath),
+		fmt.Sprintf("--http.port=%d", e2e.TestParams.Ports.ZondRPCPort+node.index),
+		fmt.Sprintf("--ws.port=%d", e2e.TestParams.Ports.ZondWSPort+node.index),
+		fmt.Sprintf("--authrpc.port=%d", e2e.TestParams.Ports.ZondAuthRPCPort+node.index),
 		fmt.Sprintf("--bootnodes=%s", node.enr),
-		fmt.Sprintf("--port=%d", e2e.TestParams.Ports.Eth1Port+node.index),
+		fmt.Sprintf("--port=%d", e2e.TestParams.Ports.ZondPort+node.index),
 		fmt.Sprintf("--networkid=%d", NetworkId),
 		"--http",
-		"--http.api=engine,net,eth",
+		"--http.api=engine,net,zond",
 		"--http.addr=127.0.0.1",
 		"--http.corsdomain=\"*\"",
 		"--http.vhosts=\"*\"",
 		"--rpc.allow-unprotected-txs",
 		"--ws",
-		"--ws.api=net,eth,engine",
+		"--ws.api=net,zond,engine",
 		"--ws.addr=127.0.0.1",
 		"--ws.origins=\"*\"",
 		"--ipcdisable",
 		"--verbosity=4",
 		"--syncmode=full",
-		fmt.Sprintf("--txpool.locals=%s", EthAddress),
+		// fmt.Sprintf("--txpool.locals=%s", EthAddress),
 	}
 
 	// give the miner start a couple of tries, since the p2p networking check is flaky
 	var retryErr error
 	for retries := 0; retries < 3; retries++ {
 		retryErr = nil
-		log.Infof("Starting eth1 node %d, attempt %d with flags: %s", node.index, retries, strings.Join(args[2:], " "))
+		log.Infof("Starting zond node %d, attempt %d with flags: %s", node.index, retries, strings.Join(args[2:], " "))
 		runCmd := exec.CommandContext(ctx, binaryPath, args...) // #nosec G204 -- Safe
-		errLog, err := os.Create(path.Join(e2e.TestParams.LogPath, "eth1_"+strconv.Itoa(node.index)+".log"))
+		errLog, err := os.Create(path.Join(e2e.TestParams.LogPath, "zond_"+strconv.Itoa(node.index)+".log"))
 		if err != nil {
 			return err
 		}
 		runCmd.Stderr = errLog
 		if err = runCmd.Start(); err != nil {
-			return fmt.Errorf("failed to start eth1 chain: %w", err)
+			return fmt.Errorf("failed to start zond chain: %w", err)
 		}
 		if err = helpers.WaitForTextInFile(errLog, "Started P2P networking"); err != nil {
 			kerr := runCmd.Process.Kill()
 			if kerr != nil {
 				log.WithError(kerr).Error("error sending kill to failed node command process")
 			}
-			retryErr = fmt.Errorf("P2P log not found, this means the eth1 chain had issues starting: %w", err)
+			retryErr = fmt.Errorf("P2P log not found, this means the zond chain had issues starting: %w", err)
 			continue
 		}
 		node.cmd = runCmd
-		log.Infof("eth1 node started after %d retries", retries)
+		log.Infof("zond node started after %d retries", retries)
 		break
 	}
 	if retryErr != nil {
@@ -149,7 +149,7 @@ func (node *Node) Start(ctx context.Context) error {
 	return node.cmd.Wait()
 }
 
-// Started checks whether ETH1 node is started and ready to be queried.
+// Started checks whether zond node is started and ready to be queried.
 func (node *Node) Started() <-chan struct{} {
 	return node.started
 }

@@ -10,11 +10,11 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/accounts/abi/bind"
 	"github.com/theQRL/go-zond/accounts/keystore"
 	"github.com/theQRL/go-zond/common"
-	gethtypes "github.com/theQRL/go-zond/core/types"
+	gzondtypes "github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/zondclient"
 	"github.com/theQRL/qrysm/v4/config/params"
 	contracts "github.com/theQRL/qrysm/v4/contracts/deposit"
@@ -113,8 +113,8 @@ func (h *DepositHistory) updateByBatch(sd *SentDeposit) {
 
 // Balances sums, by validator, all deposit amounts that were sent as part of the given batch.
 // This can be used in e2e evaluators to check that the results of deposit transactions are visible on chain.
-func (h *DepositHistory) Balances(batch types.DepositBatch) map[[dilithium2.CryptoPublicKeyBytes]byte]uint64 {
-	balances := make(map[[dilithium2.CryptoPublicKeyBytes]byte]uint64)
+func (h *DepositHistory) Balances(batch types.DepositBatch) map[[dilithium.CryptoPublicKeyBytes]byte]uint64 {
+	balances := make(map[[dilithium.CryptoPublicKeyBytes]byte]uint64)
 	h.RLock()
 	defer h.RUnlock()
 	for _, d := range h.byBatch[batch] {
@@ -132,7 +132,7 @@ func (h *DepositHistory) Balances(batch types.DepositBatch) map[[dilithium2.Cryp
 type SentDeposit struct {
 	root    [32]byte
 	deposit *zond.Deposit
-	tx      *gethtypes.Transaction
+	tx      *gzondtypes.Transaction
 	time    time.Time
 	batch   types.DepositBatch
 }

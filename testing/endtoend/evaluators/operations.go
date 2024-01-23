@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-qrllib/dilithium"
 	corehelpers "github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
@@ -85,8 +85,9 @@ var ValidatorsHaveExited = e2etypes.Evaluator{
 
 // SubmitWithdrawal sends a withdrawal from a previously exited validator.
 var SubmitWithdrawal = e2etypes.Evaluator{
-	Name:       "submit_withdrawal_epoch_%d",
-	Policy:     policies.BetweenEpochs(helpers.CapellaE2EForkEpoch-2, helpers.CapellaE2EForkEpoch+1),
+	Name: "submit_withdrawal_epoch_%d",
+	// Policy:     policies.BetweenEpochs(helpers.CapellaE2EForkEpoch-2, helpers.CapellaE2EForkEpoch+1),
+	Policy:     policies.BetweenEpochs(8, 11),
 	Evaluation: submitWithdrawal,
 }
 
@@ -100,7 +101,8 @@ var ValidatorsHaveWithdrawn = e2etypes.Evaluator{
 		validWithdrawnEpoch := exitSubmissionEpoch + 1 + params.BeaconConfig().MaxSeedLookahead
 		// Only run this for minimal setups after capella
 		if params.BeaconConfig().ConfigName == params.EndToEndName {
-			validWithdrawnEpoch = helpers.CapellaE2EForkEpoch + 1
+			// validWithdrawnEpoch = helpers.CapellaE2EForkEpoch + 1
+			validWithdrawnEpoch = 11
 		}
 		requiredPolicy := policies.OnEpoch(validWithdrawnEpoch)
 		return requiredPolicy(currentEpoch)
@@ -116,7 +118,7 @@ var ValidatorsVoteWithTheMajority = e2etypes.Evaluator{
 }
 
 type mismatch struct {
-	k [dilithium2.CryptoPublicKeyBytes]byte
+	k [dilithium.CryptoPublicKeyBytes]byte
 	e uint64
 	o uint64
 }
@@ -139,7 +141,7 @@ func processesDepositsInBlocks(ec *e2etypes.EvaluationContext, conns ...*grpc.Cl
 	if err != nil {
 		return errors.Wrap(err, "failed to get blocks from beacon-chain")
 	}
-	observed := make(map[[dilithium2.CryptoPublicKeyBytes]byte]uint64)
+	observed := make(map[[dilithium.CryptoPublicKeyBytes]byte]uint64)
 	for _, blk := range blks.BlockContainers {
 		sb, err := blocks.BeaconBlockContainerToSignedBeaconBlock(blk)
 		if err != nil {
@@ -477,22 +479,6 @@ func validatorsVoteWithTheMajority(ec *e2etypes.EvaluationContext, conns ...*grp
 		var slot primitives.Slot
 		var vote []byte
 		switch blk.Block.(type) {
-		case *zondpb.BeaconBlockContainer_Phase0Block:
-			b := blk.GetPhase0Block().Block
-			slot = b.Slot
-			vote = b.Body.Eth1Data.BlockHash
-		case *zondpb.BeaconBlockContainer_AltairBlock:
-			b := blk.GetAltairBlock().Block
-			slot = b.Slot
-			vote = b.Body.Eth1Data.BlockHash
-		case *zondpb.BeaconBlockContainer_BellatrixBlock:
-			b := blk.GetBellatrixBlock().Block
-			slot = b.Slot
-			vote = b.Body.Eth1Data.BlockHash
-		case *zondpb.BeaconBlockContainer_BlindedBellatrixBlock:
-			b := blk.GetBlindedBellatrixBlock().Block
-			slot = b.Slot
-			vote = b.Body.Eth1Data.BlockHash
 		case *zondpb.BeaconBlockContainer_CapellaBlock:
 			b := blk.GetCapellaBlock().Block
 			slot = b.Slot
@@ -501,16 +487,8 @@ func validatorsVoteWithTheMajority(ec *e2etypes.EvaluationContext, conns ...*grp
 			b := blk.GetBlindedCapellaBlock().Block
 			slot = b.Slot
 			vote = b.Body.Eth1Data.BlockHash
-		case *zondpb.BeaconBlockContainer_DenebBlock:
-			b := blk.GetDenebBlock().Block
-			slot = b.Slot
-			vote = b.Body.Eth1Data.BlockHash
-		case *zondpb.BeaconBlockContainer_BlindedDenebBlock:
-			b := blk.GetBlindedDenebBlock().Message
-			slot = b.Slot
-			vote = b.Body.Eth1Data.BlockHash
 		default:
-			return errors.New("block neither phase0,altair or bellatrix")
+			return errors.New("invalid block type")
 		}
 		ec.SeenVotes[slot] = vote
 

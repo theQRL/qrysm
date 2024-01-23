@@ -32,12 +32,6 @@ func optimisticSyncEnabled(_ *types.EvaluationContext, conns ...*grpc.ClientConn
 		}
 		headSlot := uint64(0)
 		switch hb := head.Data.Message.(type) {
-		case *v2.SignedBlindedBeaconBlockContainer_Phase0Block:
-			headSlot = uint64(hb.Phase0Block.Slot)
-		case *v2.SignedBlindedBeaconBlockContainer_AltairBlock:
-			headSlot = uint64(hb.AltairBlock.Slot)
-		case *v2.SignedBlindedBeaconBlockContainer_BellatrixBlock:
-			headSlot = uint64(hb.BellatrixBlock.Slot)
 		case *v2.SignedBlindedBeaconBlockContainer_CapellaBlock:
 			headSlot = uint64(hb.CapellaBlock.Slot)
 		default:

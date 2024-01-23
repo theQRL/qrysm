@@ -82,7 +82,7 @@ func withCompareSyncCommittee(beaconNodeIdx int, conn *grpc.ClientConn) error {
 }
 
 func doMiddlewareJSONGetRequestV1(requestPath string, beaconNodeIdx int, dst interface{}) error {
-	basePath := fmt.Sprintf(v1MiddlewarePathTemplate, params.TestParams.Ports.PrysmBeaconNodeGatewayPort+beaconNodeIdx)
+	basePath := fmt.Sprintf(v1MiddlewarePathTemplate, params.TestParams.Ports.QrysmBeaconNodeGatewayPort+beaconNodeIdx)
 	httpResp, err := http.Get(
 		basePath + requestPath,
 	)
