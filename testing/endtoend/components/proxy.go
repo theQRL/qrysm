@@ -1,17 +1,14 @@
-package zond
+package components
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"path"
 	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
 	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
@@ -151,7 +148,7 @@ func (node *Proxy) Start(ctx context.Context) error {
 	opts := []proxy.Option{
 		proxy.WithDestinationAddress(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.ZondAuthRPCPort+node.index)),
 		proxy.WithPort(e2e.TestParams.Ports.ZondProxyPort + node.index),
-		proxy.WithLogger(log.New()),
+		proxy.WithLogger(logrus.New()),
 		proxy.WithLogFile(f),
 		proxy.WithJwtSecret(string(secret)),
 	}
@@ -207,23 +204,4 @@ func (node *Proxy) RemoveRequestInterceptor(rpcMethodName string) {
 // were previously ignored due to our interceptors.
 func (node *Proxy) ReleaseBackedUpRequests(rpcMethodName string) {
 	node.engineProxy.ReleaseBackedUpRequests(rpcMethodName)
-}
-
-func parseJWTSecretFromFile(jwtSecretFile string) ([]byte, error) {
-	enc, err := file.ReadFileAsBytes(jwtSecretFile)
-	if err != nil {
-		return nil, err
-	}
-	strData := strings.TrimSpace(string(enc))
-	if len(strData) == 0 {
-		return nil, fmt.Errorf("provided JWT secret in file %s cannot be empty", jwtSecretFile)
-	}
-	secret, err := hex.DecodeString(strings.TrimPrefix(strData, "0x"))
-	if err != nil {
-		return nil, err
-	}
-	if len(secret) < 32 {
-		return nil, errors.New("provided JWT secret should be a hex string of at least 32 bytes")
-	}
-	return secret, nil
 }

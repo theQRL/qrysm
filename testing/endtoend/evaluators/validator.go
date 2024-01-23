@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v4/proto/eth/v2"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
@@ -14,6 +13,7 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
+	v2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -117,7 +117,7 @@ func validatorsParticipating(_ *types.EvaluationContext, conns ...*grpc.ClientCo
 	expected := float32(expectedParticipation)
 
 	if partRate < expected {
-		st, err := debugClient.GetBeaconStateV2(context.Background(), &eth.BeaconStateRequestV2{StateId: []byte("head")})
+		st, err := debugClient.GetBeaconStateV2(context.Background(), &v2.BeaconStateRequestV2{StateId: []byte("head")})
 		if err != nil {
 			return errors.Wrap(err, "failed to get beacon state")
 		}
@@ -125,7 +125,7 @@ func validatorsParticipating(_ *types.EvaluationContext, conns ...*grpc.ClientCo
 		var missTgtVals []uint64
 		var missHeadVals []uint64
 		switch obj := st.Data.State.(type) {
-		case *eth.BeaconStateContainer_CapellaState:
+		case *v2.BeaconStateContainer_CapellaState:
 			missSrcVals, missTgtVals, missHeadVals, err = findMissingValidators(obj.CapellaState.PreviousEpochParticipation)
 			if err != nil {
 				return errors.Wrap(err, "failed to get missing validators")

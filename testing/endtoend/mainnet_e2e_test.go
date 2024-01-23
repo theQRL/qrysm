@@ -10,11 +10,9 @@ import (
 
 // Run mainnet e2e config with the current release validator against latest beacon node.
 func TestEndToEnd_MainnetConfig_ValidatorAtCurrentRelease(t *testing.T) {
-	r := e2eMainnet(t, true, types.StartAt(version.Capella, params.E2EMainnetTestConfig()))
-	r.run()
+	e2eMainnet(t, true, types.StartAt(version.Capella, params.E2EMainnetTestConfig())).run()
 }
 
-// TODO(rgeraldes24): remove? same as above
 func TestEndToEnd_MainnetConfig(t *testing.T) {
 	e2eMainnet(t, false, types.StartAt(version.Capella, params.E2EMainnetTestConfig())).run()
 }

@@ -1,4 +1,4 @@
-package zond
+package components
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/theQRL/qrysm/v4/config/params"
-
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 

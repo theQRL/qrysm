@@ -179,27 +179,3 @@ func scenarioEvals() []types.Evaluator {
 		ev.ValidatorSyncParticipation,
 	}
 }
-
-// NOTE(rgeraldes24): not valid for now(support multiple clients)
-/*
-func scenarioEvalsMulti() []types.Evaluator {
-	return []types.Evaluator{
-		ev.PeersConnect,
-		ev.HealthzCheck,
-		ev.MetricsCheck,
-		ev.ValidatorsParticipatingAtEpoch(2),
-		ev.FinalizationOccurs(3),
-		ev.ProposeVoluntaryExit,
-		ev.ValidatorsHaveExited,
-		ev.ColdStateCheckpoint,
-		ev.AltairForkTransition,
-		ev.BellatrixForkTransition,
-		ev.CapellaForkTransition,
-		// ev.DenebForkTransition, // TODO(12750): Enable this when gzond main branch's engine API support.
-		ev.APIMiddlewareVerifyIntegrity,
-		ev.APIGatewayV1Alpha1VerifyIntegrity,
-		ev.FinishedSyncing,
-		ev.AllNodesHaveSameHead,
-	}
-}
-*/

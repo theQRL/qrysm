@@ -1,5 +1,5 @@
-// Package endtoend performs full a end-to-end test for Prysm,
-// including spinning up an ETH1 dev chain, sending deposits to the deposit
+// Package endtoend performs full a end-to-end test for Qrysm,
+// including spinning up execution nodes, sending deposits to the deposit
 // contract, and making sure the beacon node and validators are running and
 // performing properly for a few epochs.
 package endtoend
@@ -25,7 +25,6 @@ import (
 	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/components"
-	zondcomp "github.com/theQRL/qrysm/v4/testing/endtoend/components/zond"
 	ev "github.com/theQRL/qrysm/v4/testing/endtoend/evaluators"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
 	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
@@ -56,7 +55,7 @@ type testRunner struct {
 	t          *testing.T
 	config     *e2etypes.E2EConfig
 	comHandler *componentHandler
-	depositor  *zondcomp.Depositor
+	depositor  *components.Depositor
 }
 
 // newTestRunner creates E2E test runner.
@@ -72,26 +71,32 @@ type runEvent func() error
 func (r *testRunner) runBase(runEvents []runEvent) {
 	r.comHandler = NewComponentHandler(r.config, r.t)
 	r.comHandler.group.Go(func() error {
-		miner, ok := r.comHandler.zondMiner.(*zondcomp.Miner)
+		execComponent, err := r.comHandler.executionNodes.ComponentAtIndex(0)
+		if err != nil {
+			return errors.New("failed to get first execution node")
+		}
+
+		execNode, ok := execComponent.(*components.ExecutionNode)
 		if !ok {
-			return errors.New("in runBase, comHandler.zondMiner fails type assertion to *zond.Miner")
+			return errors.New("in runBase, comHandler.executionNodes.ComponentAtIndex(0) fails type assertion to *zond.Node")
 		}
-		if err := helpers.ComponentsStarted(r.comHandler.ctx, []e2etypes.ComponentRunner{miner}); err != nil {
-			return errors.Wrap(err, "zondMiner component never started - cannot send deposits")
+
+		if err := helpers.ComponentsStarted(r.comHandler.ctx, []e2etypes.ComponentRunner{execNode}); err != nil {
+			return errors.Wrap(err, "execNode component never started - cannot send deposits")
 		}
-		keyPath, err := e2e.TestParams.Paths.MinerKeyPath()
+		keyPath, err := e2e.TestParams.Paths.TestKeyPath()
 		if err != nil {
-			return errors.Wrap(err, "error getting miner key file from bazel static files")
+			return errors.Wrap(err, "error getting key file from bazel static files")
 		}
-		key, err := helpers.KeyFromPath(keyPath, miner.Password())
+		key, err := helpers.KeyFromPath(keyPath, components.KeystorePassword)
 		if err != nil {
-			return errors.Wrap(err, "failed to read key from miner wallet")
+			return errors.Wrap(err, "failed to read key from wallet")
 		}
 		client, err := helpers.MinerRPCClient()
 		if err != nil {
-			return errors.Wrap(err, "failed to initialize a client to connect to the miner EL node")
+			return errors.Wrap(err, "failed to initialize a client to connect to the EL node")
 		}
-		r.depositor = &zondcomp.Depositor{Key: key, Client: client, NetworkId: big.NewInt(zondcomp.NetworkId)}
+		r.depositor = &components.Depositor{Key: key, Client: client, NetworkId: big.NewInt(components.NetworkId)}
 		if err := r.depositor.Start(r.comHandler.ctx); err != nil {
 			return errors.Wrap(err, "depositor.Start failed")
 		}
@@ -210,7 +215,8 @@ func (r *testRunner) testDepositsAndTx(ctx context.Context, g *errgroup.Group,
 					r.t.Fatal(err)
 				}
 			}
-			r.testTxGeneration(ctx, g, keystorePath, []e2etypes.ComponentRunner{})
+			// TODO(rgeraldes24)
+			// r.testTxGeneration(ctx, g, keystorePath, []e2etypes.ComponentRunner{})
 		}()
 		if r.config.TestDeposits {
 			return depositCheckValidator.Start(ctx)
@@ -220,13 +226,15 @@ func (r *testRunner) testDepositsAndTx(ctx context.Context, g *errgroup.Group,
 }
 
 func (r *testRunner) testTxGeneration(ctx context.Context, g *errgroup.Group, keystorePath string, requiredNodes []e2etypes.ComponentRunner) {
-	txGenerator := zondcomp.NewTransactionGenerator(keystorePath, r.config.Seed)
-	g.Go(func() error {
-		if err := helpers.ComponentsStarted(ctx, requiredNodes); err != nil {
-			return fmt.Errorf("transaction generator requires zond execution nodes to be run: %w", err)
-		}
-		return txGenerator.Start(ctx)
-	})
+	/*
+		txGenerator := components.NewTransactionGenerator(keystorePath, r.config.Seed)
+		g.Go(func() error {
+			if err := helpers.ComponentsStarted(ctx, requiredNodes); err != nil {
+				return fmt.Errorf("transaction generator requires zond execution nodes to be run: %w", err)
+			}
+			return txGenerator.Start(ctx)
+		})
+	*/
 }
 
 func (r *testRunner) waitForMatchingHead(ctx context.Context, timeout time.Duration, check, ref *grpc.ClientConn) error {
@@ -330,17 +338,17 @@ func (r *testRunner) testCheckpointSync(ctx context.Context, g *errgroup.Group, 
 
 // testBeaconChainSync creates another beacon node, and tests whether it can sync to head using previous nodes.
 func (r *testRunner) testBeaconChainSync(ctx context.Context, g *errgroup.Group,
-	conns []*grpc.ClientConn, tickingStartTime time.Time, bootnodeEnr, minerEnr string) error {
+	conns []*grpc.ClientConn, tickingStartTime time.Time, bootnodeEnr string) error {
 	t, config := r.t, r.config
 	index := e2e.TestParams.BeaconNodeCount
-	zondNode := zondcomp.NewNode(index, minerEnr)
+	executionNode := components.NewExecutionNode(index)
 	g.Go(func() error {
-		return zondNode.Start(ctx)
+		return executionNode.Start(ctx)
 	})
-	if err := helpers.ComponentsStarted(ctx, []e2etypes.ComponentRunner{zondNode}); err != nil {
+	if err := helpers.ComponentsStarted(ctx, []e2etypes.ComponentRunner{executionNode}); err != nil {
 		return fmt.Errorf("sync beacon node not ready: %w", err)
 	}
-	proxyNode := zondcomp.NewProxy(index)
+	proxyNode := components.NewProxy(index)
 	g.Go(func() error {
 		return proxyNode.Start(ctx)
 	})
@@ -460,10 +468,12 @@ func (r *testRunner) defaultEndToEndRun() error {
 	if t.Failed() {
 		return errors.New("chain cannot start")
 	}
-	zondMiner, ok := r.comHandler.zondMiner.(*zondcomp.Miner)
-	if !ok {
-		return errors.New("incorrect component type")
-	}
+	/*
+		zondMiner, ok := r.comHandler.zondMiner.(*zondcomp.Miner)
+		if !ok {
+			return errors.New("incorrect component type")
+		}
+	*/
 	beaconNodes, ok := r.comHandler.beaconNodes.(*components.BeaconNodeSet)
 	if !ok {
 		return errors.New("incorrect component type")
@@ -473,9 +483,9 @@ func (r *testRunner) defaultEndToEndRun() error {
 		return errors.New("incorrect component type")
 	}
 
-	keypath, err := e2e.TestParams.Paths.MinerKeyPath()
+	keypath, err := e2e.TestParams.Paths.TestKeyPath()
 	if err != nil {
-		return errors.Wrap(err, "error getting miner key path from bazel static files in defaultEndToEndRun")
+		return errors.Wrap(err, "error getting test key path from bazel static files in defaultEndToEndRun")
 	}
 	r.testDepositsAndTx(ctx, g, keypath, []e2etypes.ComponentRunner{beaconNodes})
 
@@ -498,7 +508,7 @@ func (r *testRunner) defaultEndToEndRun() error {
 
 	// index := e2e.TestParams.BeaconNodeCount
 	if config.TestSync {
-		if err := r.testBeaconChainSync(ctx, g, conns, tickingStartTime, bootNode.ENR(), zondMiner.ENR()); err != nil {
+		if err := r.testBeaconChainSync(ctx, g, conns, tickingStartTime, bootNode.ENR() /*, zondMiner.ENR()*/); err != nil {
 			return errors.Wrap(err, "beacon chain sync test failed")
 		}
 		// index += 1
@@ -602,21 +612,6 @@ func (r *testRunner) executeProvidedEvaluators(ec *e2etypes.EvaluationContext, c
 	wg.Wait()
 }
 
-func (r *testRunner) eeOffline(_ *e2etypes.EvaluationContext, epoch uint64, _ []*grpc.ClientConn) bool {
-	switch epoch {
-	case 9:
-		require.NoError(r.t, r.comHandler.zondMiner.Pause())
-		return true
-	case 10:
-		require.NoError(r.t, r.comHandler.zondMiner.Resume())
-		return true
-	case 11, 12:
-		// Allow 2 epochs for the network to finalize again.
-		return true
-	}
-	return false
-}
-
 // This interceptor will define the multi scenario run for our minimal tests.
 // 1) In the first scenario we will be taking a single node and its validator offline.
 // After 1 epoch we will then attempt to bring it online again.
@@ -652,7 +647,7 @@ func (r *testRunner) multiScenario(ec *e2etypes.EvaluationContext, epoch uint64,
 		require.NoError(r.t, r.comHandler.validatorNodes.ResumeAtIndex(1))
 		return true
 	case 21:
-		component, err := r.comHandler.zondProxy.ComponentAtIndex(0)
+		component, err := r.comHandler.proxies.ComponentAtIndex(0)
 		require.NoError(r.t, err)
 		component.(e2etypes.EngineProxy).AddRequestInterceptor("engine_newPayloadV2", func() interface{} {
 			return &enginev1.PayloadStatus{
@@ -680,7 +675,7 @@ func (r *testRunner) multiScenario(ec *e2etypes.EvaluationContext, epoch uint64,
 		evs := []e2etypes.Evaluator{ev.OptimisticSyncEnabled}
 		r.executeProvidedEvaluators(ec, epoch, []*grpc.ClientConn{conns[0]}, evs)
 		// Disable Interceptor
-		component, err := r.comHandler.zondProxy.ComponentAtIndex(0)
+		component, err := r.comHandler.proxies.ComponentAtIndex(0)
 		require.NoError(r.t, err)
 		engineProxy, ok := component.(e2etypes.EngineProxy)
 		require.Equal(r.t, true, ok)

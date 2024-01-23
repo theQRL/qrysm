@@ -1,4 +1,4 @@
-package zond
+package components
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/io/file"
 	"github.com/theQRL/qrysm/v4/runtime/interop"
@@ -22,8 +21,114 @@ import (
 	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
 )
 
+// ExecutionNodeSet represents a set of execution nodes, none of which is a mining node.
+type ExecutionNodeSet struct {
+	e2etypes.ComponentRunner
+	started chan struct{}
+	nodes   []e2etypes.ComponentRunner
+}
+
+// NewNodeSet creates and returns a set of zond nodes.
+func NewExecutionNodeSet() *ExecutionNodeSet {
+	return &ExecutionNodeSet{
+		started: make(chan struct{}, 1),
+	}
+}
+
+/*
+// SetMinerENR sets the miner's enode, used to connect to the miner through P2P.
+func (s *ExecutionNodeSet) SetMinerENR(enr string) {
+	s.enr = enr
+}
+*/
+
+// Start starts all the execution nodes in set.
+func (s *ExecutionNodeSet) Start(ctx context.Context) error {
+	totalNodeCount := e2e.TestParams.BeaconNodeCount
+	nodes := make([]e2etypes.ComponentRunner, totalNodeCount)
+	for i := 0; i < totalNodeCount; i++ {
+		node := NewExecutionNode(i)
+		nodes[i] = node
+	}
+	s.nodes = nodes
+
+	// Wait for all nodes to finish their job (blocking).
+	// Once nodes are ready passed in handler function will be called.
+	return helpers.WaitOnNodes(ctx, nodes, func() {
+		// All nodes started, close channel, so that all services waiting on a set, can proceed.
+		close(s.started)
+	})
+}
+
+// Started checks whether execution node set is started and all nodes are ready to be queried.
+func (s *ExecutionNodeSet) Started() <-chan struct{} {
+	return s.started
+}
+
+// Pause pauses the component and its underlying process.
+func (s *ExecutionNodeSet) Pause() error {
+	for _, n := range s.nodes {
+		if err := n.Pause(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Resume resumes the component and its underlying process.
+func (s *ExecutionNodeSet) Resume() error {
+	for _, n := range s.nodes {
+		if err := n.Resume(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Stop stops the component and its underlying process.
+func (s *ExecutionNodeSet) Stop() error {
+	for _, n := range s.nodes {
+		if err := n.Stop(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// PauseAtIndex pauses the component and its underlying process at the desired index.
+func (s *ExecutionNodeSet) PauseAtIndex(i int) error {
+	if i >= len(s.nodes) {
+		return errors.Errorf("provided index exceeds slice size: %d >= %d", i, len(s.nodes))
+	}
+	return s.nodes[i].Pause()
+}
+
+// ResumeAtIndex resumes the component and its underlying process at the desired index.
+func (s *ExecutionNodeSet) ResumeAtIndex(i int) error {
+	if i >= len(s.nodes) {
+		return errors.Errorf("provided index exceeds slice size: %d >= %d", i, len(s.nodes))
+	}
+	return s.nodes[i].Resume()
+}
+
+// StopAtIndex stops the component and its underlying process at the desired index.
+func (s *ExecutionNodeSet) StopAtIndex(i int) error {
+	if i >= len(s.nodes) {
+		return errors.Errorf("provided index exceeds slice size: %d >= %d", i, len(s.nodes))
+	}
+	return s.nodes[i].Stop()
+}
+
+// ComponentAtIndex returns the component at the provided index.
+func (s *ExecutionNodeSet) ComponentAtIndex(i int) (e2etypes.ComponentRunner, error) {
+	if i >= len(s.nodes) {
+		return nil, errors.Errorf("provided index exceeds slice size: %d >= %d", i, len(s.nodes))
+	}
+	return s.nodes[i], nil
+}
+
 // Node represents a zond node.
-type Node struct {
+type ExecutionNode struct {
 	e2etypes.ComponentRunner
 	started chan struct{}
 	index   int
@@ -31,18 +136,18 @@ type Node struct {
 	cmd     *exec.Cmd
 }
 
-// NewNode creates and returns a zond node.
-func NewNode(index int, enr string) *Node {
-	return &Node{
+// NewExecutionNode creates and returns an execution node.
+func NewExecutionNode(index int /*, enr string*/) *ExecutionNode {
+	return &ExecutionNode{
 		started: make(chan struct{}, 1),
 		index:   index,
-		enr:     enr,
+		// enr:     enr,
 	}
 }
 
 // Start runs a non-mining zond node.
 // To connect to a miner and start working properly, this node should be a part of a NodeSet.
-func (node *Node) Start(ctx context.Context) error {
+func (node *ExecutionNode) Start(ctx context.Context) error {
 	binaryPath, found := bazel.FindBinary("cmd/gzond", "gzond")
 	if !found {
 		return errors.New("go-zond binary not found")
@@ -61,7 +166,7 @@ func (node *Node) Start(ctx context.Context) error {
 	}
 	gzondJsonPath := path.Join(zondPath, "genesis.json")
 
-	gen := interop.GzondTestnetGenesis(e2e.TestParams.ZondGenesisTime, params.BeaconConfig())
+	gen := interop.GzondTestnetGenesis(e2e.TestParams.ELGenesisTime, params.BeaconConfig())
 	b, err := json.Marshal(gen)
 	if err != nil {
 		return err
@@ -117,7 +222,7 @@ func (node *Node) Start(ctx context.Context) error {
 	var retryErr error
 	for retries := 0; retries < 3; retries++ {
 		retryErr = nil
-		log.Infof("Starting zond node %d, attempt %d with flags: %s", node.index, retries, strings.Join(args[2:], " "))
+		log.Infof("Starting execution node %d, attempt %d with flags: %s", node.index, retries, strings.Join(args[2:], " "))
 		runCmd := exec.CommandContext(ctx, binaryPath, args...) // #nosec G204 -- Safe
 		errLog, err := os.Create(path.Join(e2e.TestParams.LogPath, "zond_"+strconv.Itoa(node.index)+".log"))
 		if err != nil {
@@ -136,7 +241,7 @@ func (node *Node) Start(ctx context.Context) error {
 			continue
 		}
 		node.cmd = runCmd
-		log.Infof("zond node started after %d retries", retries)
+		log.Infof("execution node started after %d retries", retries)
 		break
 	}
 	if retryErr != nil {
@@ -150,25 +255,25 @@ func (node *Node) Start(ctx context.Context) error {
 }
 
 // Started checks whether zond node is started and ready to be queried.
-func (node *Node) Started() <-chan struct{} {
+func (node *ExecutionNode) Started() <-chan struct{} {
 	return node.started
 }
 
 // Pause pauses the component and its underlying process.
-func (node *Node) Pause() error {
+func (node *ExecutionNode) Pause() error {
 	return node.cmd.Process.Signal(syscall.SIGSTOP)
 }
 
 // Resume resumes the component and its underlying process.
-func (node *Node) Resume() error {
+func (node *ExecutionNode) Resume() error {
 	return node.cmd.Process.Signal(syscall.SIGCONT)
 }
 
 // Stop kills the component and its underlying process.
-func (node *Node) Stop() error {
+func (node *ExecutionNode) Stop() error {
 	return node.cmd.Process.Kill()
 }
 
-func (node *Node) UnderlyingProcess() *os.Process {
+func (node *ExecutionNode) UnderlyingProcess() *os.Process {
 	return node.cmd.Process
 }

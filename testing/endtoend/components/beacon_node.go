@@ -350,10 +350,10 @@ func (node *BeaconNode) UnderlyingProcess() *os.Process {
 }
 
 func generateGenesis(ctx context.Context) (state.BeaconState, error) {
-	if e2e.TestParams.ZondGenesisBlock == nil {
-		return nil, errors.New("Cannot construct bellatrix block, e2e.TestParams.Eth1GenesisBlock == nil")
+	if e2e.TestParams.ELGenesisBlock == nil {
+		return nil, errors.New("Cannot construct genesis block, e2e.TestParams.Eth1GenesisBlock == nil")
 	}
-	gb := e2e.TestParams.ZondGenesisBlock
+	gb := e2e.TestParams.ELGenesisBlock
 	t := e2e.TestParams.CLGenesisTime
 	pcreds := e2e.TestParams.NumberOfExecutionCreds
 	nvals := params.BeaconConfig().MinGenesisActiveValidatorCount

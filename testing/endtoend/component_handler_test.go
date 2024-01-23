@@ -10,7 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/components"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/components/zond"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
 	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
@@ -18,21 +17,20 @@ import (
 )
 
 type componentHandler struct {
-	t                        *testing.T
-	cfg                      *e2etypes.E2EConfig
-	ctx                      context.Context
-	done                     func()
-	group                    *errgroup.Group
-	keygen                   e2etypes.ComponentRunner
-	tracingSink              e2etypes.ComponentRunner
+	t           *testing.T
+	cfg         *e2etypes.E2EConfig
+	ctx         context.Context
+	done        func()
+	group       *errgroup.Group
+	keygen      e2etypes.ComponentRunner
+	tracingSink e2etypes.ComponentRunner
 	// web3Signer               e2etypes.ComponentRunner
-	bootnode                 e2etypes.ComponentRunner
-	zondMiner                e2etypes.ComponentRunner
-	builders                 e2etypes.MultipleComponentRunners
-	zondProxy                e2etypes.MultipleComponentRunners
-	zondNodes                e2etypes.MultipleComponentRunners
-	beaconNodes              e2etypes.MultipleComponentRunners
-	validatorNodes           e2etypes.MultipleComponentRunners
+	bootnode       e2etypes.ComponentRunner
+	builders       e2etypes.MultipleComponentRunners
+	proxies        e2etypes.MultipleComponentRunners
+	executionNodes e2etypes.MultipleComponentRunners
+	beaconNodes    e2etypes.MultipleComponentRunners
+	validatorNodes e2etypes.MultipleComponentRunners
 }
 
 func NewComponentHandler(cfg *e2etypes.E2EConfig, t *testing.T) *componentHandler {
@@ -40,12 +38,11 @@ func NewComponentHandler(cfg *e2etypes.E2EConfig, t *testing.T) *componentHandle
 	g, ctx := errgroup.WithContext(ctx)
 
 	return &componentHandler{
-		ctx:       ctx,
-		done:      done,
-		group:     g,
-		cfg:       cfg,
-		t:         t,
-		zondMiner: zond.NewMiner(),
+		ctx:   ctx,
+		done:  done,
+		group: g,
+		cfg:   cfg,
+		t:     t,
 	}
 }
 
@@ -84,50 +81,27 @@ func (c *componentHandler) setup() {
 	})
 	c.bootnode = bootNode
 
-	miner, ok := c.zondMiner.(*zond.Miner)
-	if !ok {
-		g.Go(func() error {
-			return errors.New("c.zondMiner fails type assertion to *zond.Miner")
-		})
-		return
-	}
-	// Zond miner.
+	// Zond execution nodes.
+	executionNodes := components.NewExecutionNodeSet()
 	g.Go(func() error {
-		if err := helpers.ComponentsStarted(ctx, []e2etypes.ComponentRunner{bootNode}); err != nil {
-			return errors.Wrap(err, "miner require boot node to run")
-		}
-		miner.SetBootstrapENR(bootNode.ENR())
-		if err := miner.Start(ctx); err != nil {
-			return errors.Wrap(err, "failed to start the Zond miner")
+		if err := executionNodes.Start(ctx); err != nil {
+			return errors.Wrap(err, "failed to start executions nodes")
 		}
 		return nil
 	})
-
-	// Zond non-mining nodes.
-	zondNodes := zond.NewNodeSet()
-	g.Go(func() error {
-		if err := helpers.ComponentsStarted(ctx, []e2etypes.ComponentRunner{miner}); err != nil {
-			return errors.Wrap(err, "execution nodes require miner to run")
-		}
-		zondNodes.SetMinerENR(miner.ENR())
-		if err := zondNodes.Start(ctx); err != nil {
-			return errors.Wrap(err, "failed to start zond nodes")
-		}
-		return nil
-	})
-	c.zondNodes = zondNodes
+	c.executionNodes = c.executionNodes
 
 	// if config.TestCheckpointSync {
 	// 	appendDebugEndpoints(config)
 	// }
 
 	var builders *components.BuilderSet
-	var proxies *zond.ProxySet
+	var proxies *components.ProxySet
 	if config.UseBuilder {
 		// Builder
 		builders = components.NewBuilderSet()
 		g.Go(func() error {
-			if err := helpers.ComponentsStarted(ctx, []e2etypes.ComponentRunner{zondNodes}); err != nil {
+			if err := helpers.ComponentsStarted(ctx, []e2etypes.ComponentRunner{executionNodes}); err != nil {
 				return errors.Wrap(err, "builders require execution nodes to run")
 			}
 			if err := builders.Start(ctx); err != nil {
@@ -138,9 +112,9 @@ func (c *componentHandler) setup() {
 		c.builders = builders
 	} else {
 		// Proxies
-		proxies = zond.NewProxySet()
+		proxies = components.NewProxySet()
 		g.Go(func() error {
-			if err := helpers.ComponentsStarted(ctx, []e2etypes.ComponentRunner{zondNodes}); err != nil {
+			if err := helpers.ComponentsStarted(ctx, []e2etypes.ComponentRunner{executionNodes}); err != nil {
 				return errors.Wrap(err, "proxies require execution nodes to run")
 			}
 			if err := proxies.Start(ctx); err != nil {
@@ -148,13 +122,13 @@ func (c *componentHandler) setup() {
 			}
 			return nil
 		})
-		c.zondProxy = proxies
+		c.proxies = proxies
 	}
 
 	// Beacon nodes.
 	beaconNodes := components.NewBeaconNodes(config)
 	g.Go(func() error {
-		wantedComponents := []e2etypes.ComponentRunner{zondNodes, bootNode}
+		wantedComponents := []e2etypes.ComponentRunner{executionNodes, bootNode}
 		if config.UseBuilder {
 			wantedComponents = append(wantedComponents, builders)
 		} else {
@@ -193,12 +167,12 @@ func (c *componentHandler) setup() {
 
 func (c *componentHandler) required() []e2etypes.ComponentRunner {
 	requiredComponents := []e2etypes.ComponentRunner{
-		c.tracingSink, c.zondNodes, c.bootnode, c.beaconNodes, c.validatorNodes,
+		c.tracingSink, c.executionNodes, c.bootnode, c.beaconNodes, c.validatorNodes,
 	}
 	if c.cfg.UseBuilder {
 		requiredComponents = append(requiredComponents, c.builders)
 	} else {
-		requiredComponents = append(requiredComponents, c.zondProxy)
+		requiredComponents = append(requiredComponents, c.proxies)
 	}
 	return requiredComponents
 }
@@ -213,7 +187,7 @@ func (c *componentHandler) printPIDs(logger func(string, ...interface{})) {
 	// Validator nodes
 	msg += fmt.Sprintf("Validators: %v\n", PIDsFromMultiComponentRunner(c.validatorNodes))
 	// Zond nodes
-	msg += fmt.Sprintf("Zond nodes: %v\n", PIDsFromMultiComponentRunner(c.zondNodes))
+	msg += fmt.Sprintf("Zond nodes: %v\n", PIDsFromMultiComponentRunner(c.executionNodes))
 
 	logger(msg)
 }

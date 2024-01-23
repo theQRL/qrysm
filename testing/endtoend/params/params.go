@@ -28,10 +28,10 @@ type params struct {
 	BeaconNodeCount        int
 	Ports                  *ports
 	Paths                  *paths
-	ZondGenesisBlock       *types.Block
+	ELGenesisBlock         *types.Block
+	ELGenesisTime          uint64
 	StartTime              time.Time
 	CLGenesisTime          uint64
-	ZondGenesisTime        uint64
 	NumberOfExecutionCreds uint64
 }
 
@@ -70,9 +70,9 @@ func (p *paths) Eth1Runfile(rel ...string) (string, error) {
 	return bazel.Runfile(p.Eth1StaticFile(rel...))
 }
 
-// MinerKeyPath returns the full path to the file containing the miner's cryptographic keys.
-func (p *paths) MinerKeyPath() (string, error) {
-	return p.Eth1Runfile(minerKeyFilename)
+// TestKeyPath returns the full path to the file containing the test cryptographic keys.
+func (p *paths) TestKeyPath() (string, error) {
+	return p.Eth1Runfile(keyFilename)
 }
 
 // TestParams is the globally accessible var for getting config elements.
@@ -135,12 +135,12 @@ const (
 	Eth1AuthRPCPort = Eth1Port + 3*portSpan
 	Eth1ProxyPort   = Eth1Port + 4*portSpan
 
-	PrysmBeaconNodeRPCPort     = 4150
-	PrysmBeaconNodeUDPPort     = PrysmBeaconNodeRPCPort + portSpan
-	PrysmBeaconNodeTCPPort     = PrysmBeaconNodeRPCPort + 2*portSpan
-	PrysmBeaconNodeGatewayPort = PrysmBeaconNodeRPCPort + 3*portSpan
-	PrysmBeaconNodeMetricsPort = PrysmBeaconNodeRPCPort + 4*portSpan
-	PrysmBeaconNodePprofPort   = PrysmBeaconNodeRPCPort + 5*portSpan
+	QrysmBeaconNodeRPCPort     = 4150
+	QrysmBeaconNodeUDPPort     = QrysmBeaconNodeRPCPort + portSpan
+	QrysmBeaconNodeTCPPort     = QrysmBeaconNodeRPCPort + 2*portSpan
+	QrysmBeaconNodeGatewayPort = QrysmBeaconNodeRPCPort + 3*portSpan
+	QrysmBeaconNodeMetricsPort = QrysmBeaconNodeRPCPort + 4*portSpan
+	QrysmBeaconNodePprofPort   = QrysmBeaconNodeRPCPort + 5*portSpan
 
 	ValidatorGatewayPort = 6150
 	ValidatorMetricsPort = ValidatorGatewayPort + portSpan
@@ -205,7 +205,7 @@ func Init(t *testing.T, beaconNodeCount int) error {
 		BeaconNodeCount:        beaconNodeCount,
 		Ports:                  testPorts,
 		CLGenesisTime:          genTime,
-		ZondGenesisTime:        genTime,
+		ELGenesisTime:          genTime,
 		NumberOfExecutionCreds: PregenesisExecCreds,
 	}
 	return nil
@@ -257,27 +257,27 @@ func initializeStandardPorts(shardCount, shardIndex int, ports *ports, existingR
 	if err != nil {
 		return err
 	}
-	beaconNodeRPCPort, err := port(PrysmBeaconNodeRPCPort, shardCount, shardIndex, existingRegistrations)
+	beaconNodeRPCPort, err := port(QrysmBeaconNodeRPCPort, shardCount, shardIndex, existingRegistrations)
 	if err != nil {
 		return err
 	}
-	beaconNodeUDPPort, err := port(PrysmBeaconNodeUDPPort, shardCount, shardIndex, existingRegistrations)
+	beaconNodeUDPPort, err := port(QrysmBeaconNodeUDPPort, shardCount, shardIndex, existingRegistrations)
 	if err != nil {
 		return err
 	}
-	beaconNodeTCPPort, err := port(PrysmBeaconNodeTCPPort, shardCount, shardIndex, existingRegistrations)
+	beaconNodeTCPPort, err := port(QrysmBeaconNodeTCPPort, shardCount, shardIndex, existingRegistrations)
 	if err != nil {
 		return err
 	}
-	beaconNodeGatewayPort, err := port(PrysmBeaconNodeGatewayPort, shardCount, shardIndex, existingRegistrations)
+	beaconNodeGatewayPort, err := port(QrysmBeaconNodeGatewayPort, shardCount, shardIndex, existingRegistrations)
 	if err != nil {
 		return err
 	}
-	beaconNodeMetricsPort, err := port(PrysmBeaconNodeMetricsPort, shardCount, shardIndex, existingRegistrations)
+	beaconNodeMetricsPort, err := port(QrysmBeaconNodeMetricsPort, shardCount, shardIndex, existingRegistrations)
 	if err != nil {
 		return err
 	}
-	beaconNodePprofPort, err := port(PrysmBeaconNodePprofPort, shardCount, shardIndex, existingRegistrations)
+	beaconNodePprofPort, err := port(QrysmBeaconNodePprofPort, shardCount, shardIndex, existingRegistrations)
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-package zond
+package components
 
 import (
 	"context"

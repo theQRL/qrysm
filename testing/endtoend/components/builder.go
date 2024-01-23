@@ -2,16 +2,13 @@ package components
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"path"
 	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/io/file"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
 	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
@@ -191,23 +188,4 @@ func (node *Builder) Resume() error {
 func (node *Builder) Stop() error {
 	node.cancel()
 	return nil
-}
-
-func parseJWTSecretFromFile(jwtSecretFile string) ([]byte, error) {
-	enc, err := file.ReadFileAsBytes(jwtSecretFile)
-	if err != nil {
-		return nil, err
-	}
-	strData := strings.TrimSpace(string(enc))
-	if strData == "" {
-		return nil, fmt.Errorf("provided JWT secret in file %s cannot be empty", jwtSecretFile)
-	}
-	secret, err := hex.DecodeString(strings.TrimPrefix(strData, "0x"))
-	if err != nil {
-		return nil, err
-	}
-	if len(secret) < 32 {
-		return nil, errors.New("provided JWT secret should be a hex string of at least 32 bytes")
-	}
-	return secret, nil
 }
