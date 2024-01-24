@@ -132,7 +132,7 @@ func NewProxy(index int) *Proxy {
 
 // Start runs a proxy.
 func (node *Proxy) Start(ctx context.Context) error {
-	f, err := os.Create(path.Join(e2e.TestParams.LogPath, "zond_proxy_"+strconv.Itoa(node.index)+".log"))
+	f, err := os.Create(path.Join(e2e.TestParams.LogPath, "execution_proxy_"+strconv.Itoa(node.index)+".log"))
 	if err != nil {
 		return err
 	}

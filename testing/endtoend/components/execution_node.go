@@ -169,13 +169,13 @@ func (node *ExecutionNode) Start(ctx context.Context) error {
 	if err := file.WriteFile(gzondJsonPath, b); err != nil {
 		return err
 	}
-	copyPath := path.Join(e2e.TestParams.LogPath, "zond-genesis.json")
+	copyPath := path.Join(e2e.TestParams.LogPath, "execution-genesis.json")
 	if err := file.WriteFile(copyPath, b); err != nil {
 		return err
 	}
 
 	initCmd := exec.CommandContext(ctx, binaryPath, "init", fmt.Sprintf("--datadir=%s", zondPath), gzondJsonPath) // #nosec G204 -- Safe
-	initFile, err := helpers.DeleteAndCreateFile(e2e.TestParams.LogPath, "zond-init_"+strconv.Itoa(node.index)+".log")
+	initFile, err := helpers.DeleteAndCreateFile(e2e.TestParams.LogPath, "execution-init_"+strconv.Itoa(node.index)+".log")
 	if err != nil {
 		return err
 	}
@@ -218,7 +218,7 @@ func (node *ExecutionNode) Start(ctx context.Context) error {
 		retryErr = nil
 		log.Infof("Starting execution node %d, attempt %d with flags: %s", node.index, retries, strings.Join(args[2:], " "))
 		runCmd := exec.CommandContext(ctx, binaryPath, args...) // #nosec G204 -- Safe
-		errLog, err := os.Create(path.Join(e2e.TestParams.LogPath, "zond_"+strconv.Itoa(node.index)+".log"))
+		errLog, err := os.Create(path.Join(e2e.TestParams.LogPath, "execution_"+strconv.Itoa(node.index)+".log"))
 		if err != nil {
 			return err
 		}

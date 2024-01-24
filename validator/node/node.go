@@ -62,7 +62,6 @@ import (
 	"github.com/theQRL/qrysm/v4/validator/web"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/protobuf/encoding/protojson"
-	"gopkg.in/yaml.v2"
 )
 
 // ValidatorClient defines an instance of an Ethereum validator that manages
@@ -955,8 +954,8 @@ func unmarshalFromFile(ctx context.Context, from string, to interface{}) error {
 		return errors.Wrap(err, "failed to open file")
 	}
 
-	if err := yaml.Unmarshal(b, to); err != nil {
-		return errors.Wrap(err, "failed to unmarshal yaml file")
+	if err := json.Unmarshal(b, to); err != nil {
+		return errors.Wrap(err, "failed to unmarshal json file")
 	}
 
 	return nil
