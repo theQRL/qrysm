@@ -146,8 +146,8 @@ func (node *Builder) Start(ctx context.Context) error {
 		return err
 	}
 	opts := []builder.Option{
-		builder.WithDestinationAddress(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.ZondAuthRPCPort+node.index)),
-		builder.WithPort(e2e.TestParams.Ports.ZondProxyPort + node.index),
+		builder.WithDestinationAddress(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.GzondExecutionNodeAuthRPCPort+node.index)),
+		builder.WithPort(e2e.TestParams.Ports.ProxyPort + node.index),
 		builder.WithLogger(logrus.New()),
 		builder.WithLogFile(f),
 		builder.WithJwtSecret(string(secret)),
@@ -156,7 +156,7 @@ func (node *Builder) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("Starting builder %d with port: %d and file %s", node.index, e2e.TestParams.Ports.ZondProxyPort+node.index, f.Name())
+	log.Infof("Starting builder %d with port: %d and file %s", node.index, e2e.TestParams.Ports.ProxyPort+node.index, f.Name())
 
 	// Set cancel into context.
 	ctx, cancel := context.WithCancel(ctx)

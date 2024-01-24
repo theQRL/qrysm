@@ -36,43 +36,43 @@ type params struct {
 }
 
 type ports struct {
-	BootNodePort               int
-	BootNodeMetricsPort        int
-	ZondPort                   int
-	ZondRPCPort                int
-	ZondAuthRPCPort            int
-	ZondWSPort                 int
-	ZondProxyPort              int
-	QrysmBeaconNodeRPCPort     int
-	QrysmBeaconNodeUDPPort     int
-	QrysmBeaconNodeTCPPort     int
-	QrysmBeaconNodeGatewayPort int
-	QrysmBeaconNodeMetricsPort int
-	QrysmBeaconNodePprofPort   int
-	ValidatorMetricsPort       int
-	ValidatorGatewayPort       int
-	JaegerTracingPort          int
+	BootNodePort                  int
+	BootNodeMetricsPort           int
+	GzondExecutionNodePort        int
+	GzondExecutionNodeRPCPort     int
+	GzondExecutionNodeAuthRPCPort int
+	GzondExecutionNodeWSPort      int
+	ProxyPort                     int
+	QrysmBeaconNodeRPCPort        int
+	QrysmBeaconNodeUDPPort        int
+	QrysmBeaconNodeTCPPort        int
+	QrysmBeaconNodeGatewayPort    int
+	QrysmBeaconNodeMetricsPort    int
+	QrysmBeaconNodePprofPort      int
+	ValidatorMetricsPort          int
+	ValidatorGatewayPort          int
+	JaegerTracingPort             int
 }
 
 type paths struct{}
 
-// Eth1StaticFile abstracts the location of the eth1 static file folder in the e2e directory, so that
+// ZondStaticFile abstracts the location of the zond static file folder in the e2e directory, so that
 // a relative path can be used.
 // The relative path is specified as a variadic slice of path parts, in the same way as path.Join.
-func (*paths) Eth1StaticFile(rel ...string) string {
-	parts := append([]string{Eth1StaticFilesPath}, rel...)
+func (*paths) ZondStaticFile(rel ...string) string {
+	parts := append([]string{StaticFilesPath}, rel...)
 	return path.Join(parts...)
 }
 
-// Eth1Runfile returns the full path to a file in the eth1 static directory, within bazel's run context.
+// ZondRunfile returns the full path to a file in the zond static directory, within bazel's run context.
 // The relative path is specified as a variadic slice of path parts, in the same style as path.Join.
-func (p *paths) Eth1Runfile(rel ...string) (string, error) {
-	return bazel.Runfile(p.Eth1StaticFile(rel...))
+func (p *paths) ZondRunfile(rel ...string) (string, error) {
+	return bazel.Runfile(p.ZondStaticFile(rel...))
 }
 
 // TestKeyPath returns the full path to the file containing the test cryptographic keys.
 func (p *paths) TestKeyPath() (string, error) {
-	return p.Eth1Runfile(keyFilename)
+	return p.ZondRunfile(keyFilename)
 }
 
 // TestParams is the globally accessible var for getting config elements.
@@ -84,14 +84,14 @@ func (p *params) Logfile(rel ...string) string {
 	return path.Join(append([]string{p.LogPath}, rel...)...)
 }
 
-// ZondRPCURL gives the full url to use to connect to the given zond client's RPC endpoint.
-// The `index` param corresponds to the `index` field of the `zond.Node` e2e component.
+// ExecutionNodeRPCURL gives the full url to use to connect to the given execution client's RPC endpoint.
+// The `index` param corresponds to the `index` field of the `zond.ExecutionNode` e2e component.
 // These are off by one compared to corresponding beacon nodes, because the miner is assigned index 0.
 // eg instance the index of the EL instance associated with beacon node index `0` would typically be `1`.
-func (p *params) ZondRPCURL(index int) *url.URL {
+func (p *params) ExecutionNodeRPCURL(index int) *url.URL {
 	return &url.URL{
 		Scheme: baseELScheme,
-		Host:   net.JoinHostPort(baseELHost, fmt.Sprintf("%d", p.Ports.ZondRPCPort+index)),
+		Host:   net.JoinHostPort(baseELHost, fmt.Sprintf("%d", p.Ports.GzondExecutionNodeRPCPort+index)),
 	}
 }
 
@@ -129,11 +129,11 @@ const (
 	BootNodePort        = 2150
 	BootNodeMetricsPort = BootNodePort + portSpan
 
-	Eth1Port        = 3150
-	Eth1RPCPort     = Eth1Port + portSpan
-	Eth1WSPort      = Eth1Port + 2*portSpan
-	Eth1AuthRPCPort = Eth1Port + 3*portSpan
-	Eth1ProxyPort   = Eth1Port + 4*portSpan
+	GzondExecutionNodePort        = 3150
+	GzondExecutionNodeRPCPort     = GzondExecutionNodePort + portSpan
+	GzondExecutionNodeWSPort      = GzondExecutionNodePort + 2*portSpan
+	GzondExecutionNodeAuthRPCPort = GzondExecutionNodePort + 3*portSpan
+	ExecutionNodeProxyPort        = GzondExecutionNodePort + 4*portSpan
 
 	QrysmBeaconNodeRPCPort     = 4150
 	QrysmBeaconNodeUDPPort     = QrysmBeaconNodeRPCPort + portSpan
@@ -237,23 +237,23 @@ func initializeStandardPorts(shardCount, shardIndex int, ports *ports, existingR
 	if err != nil {
 		return err
 	}
-	eth1Port, err := port(Eth1Port, shardCount, shardIndex, existingRegistrations)
+	executionNodePort, err := port(GzondExecutionNodePort, shardCount, shardIndex, existingRegistrations)
 	if err != nil {
 		return err
 	}
-	eth1RPCPort, err := port(Eth1RPCPort, shardCount, shardIndex, existingRegistrations)
+	executionNodeRPCPort, err := port(GzondExecutionNodeRPCPort, shardCount, shardIndex, existingRegistrations)
 	if err != nil {
 		return err
 	}
-	eth1WSPort, err := port(Eth1WSPort, shardCount, shardIndex, existingRegistrations)
+	executionNodeWSPort, err := port(GzondExecutionNodeWSPort, shardCount, shardIndex, existingRegistrations)
 	if err != nil {
 		return err
 	}
-	eth1AuthPort, err := port(Eth1AuthRPCPort, shardCount, shardIndex, existingRegistrations)
+	executionNodeAuthPort, err := port(GzondExecutionNodeAuthRPCPort, shardCount, shardIndex, existingRegistrations)
 	if err != nil {
 		return err
 	}
-	eth1ProxyPort, err := port(Eth1ProxyPort, shardCount, shardIndex, existingRegistrations)
+	executionNodeProxyPort, err := port(ExecutionNodeProxyPort, shardCount, shardIndex, existingRegistrations)
 	if err != nil {
 		return err
 	}
@@ -295,11 +295,11 @@ func initializeStandardPorts(shardCount, shardIndex int, ports *ports, existingR
 	}
 	ports.BootNodePort = bootnodePort
 	ports.BootNodeMetricsPort = bootnodeMetricsPort
-	ports.ZondPort = eth1Port
-	ports.ZondRPCPort = eth1RPCPort
-	ports.ZondAuthRPCPort = eth1AuthPort
-	ports.ZondWSPort = eth1WSPort
-	ports.ZondProxyPort = eth1ProxyPort
+	ports.GzondExecutionNodePort = executionNodePort
+	ports.GzondExecutionNodeRPCPort = executionNodeRPCPort
+	ports.GzondExecutionNodeAuthRPCPort = executionNodeAuthPort
+	ports.GzondExecutionNodeWSPort = executionNodeWSPort
+	ports.ProxyPort = executionNodeProxyPort
 	ports.QrysmBeaconNodeRPCPort = beaconNodeRPCPort
 	ports.QrysmBeaconNodeUDPPort = beaconNodeUDPPort
 	ports.QrysmBeaconNodeTCPPort = beaconNodeTCPPort

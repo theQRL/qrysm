@@ -89,7 +89,7 @@ func (c *componentHandler) setup() {
 		}
 		return nil
 	})
-	c.executionNodes = c.executionNodes
+	c.executionNodes = executionNodes
 
 	// if config.TestCheckpointSync {
 	// 	appendDebugEndpoints(config)

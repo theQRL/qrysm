@@ -196,11 +196,11 @@ func (node *ExecutionNode) Start(ctx context.Context) error {
 	args := []string{
 		"--nat=none", // disable nat traversal in e2e, it is failure prone and not needed
 		fmt.Sprintf("--datadir=%s", zondPath),
-		fmt.Sprintf("--http.port=%d", e2e.TestParams.Ports.ZondRPCPort+node.index),
-		fmt.Sprintf("--ws.port=%d", e2e.TestParams.Ports.ZondWSPort+node.index),
-		fmt.Sprintf("--authrpc.port=%d", e2e.TestParams.Ports.ZondAuthRPCPort+node.index),
+		fmt.Sprintf("--http.port=%d", e2e.TestParams.Ports.GzondExecutionNodeRPCPort+node.index),
+		fmt.Sprintf("--ws.port=%d", e2e.TestParams.Ports.GzondExecutionNodeWSPort+node.index),
+		fmt.Sprintf("--authrpc.port=%d", e2e.TestParams.Ports.GzondExecutionNodeAuthRPCPort+node.index),
 		fmt.Sprintf("--bootnodes=%s", node.enr),
-		fmt.Sprintf("--port=%d", e2e.TestParams.Ports.ZondPort+node.index),
+		fmt.Sprintf("--port=%d", e2e.TestParams.Ports.GzondExecutionNodePort+node.index),
 		fmt.Sprintf("--networkid=%d", NetworkId),
 		"--http",
 		"--http.api=engine,net,zond",

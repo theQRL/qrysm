@@ -92,7 +92,7 @@ func (r *testRunner) runBase(runEvents []runEvent) {
 		if err != nil {
 			return errors.Wrap(err, "failed to read key from wallet")
 		}
-		client, err := helpers.MinerRPCClient()
+		client, err := helpers.ExecutionNodeRPCClient()
 		if err != nil {
 			return errors.Wrap(err, "failed to initialize a client to connect to the EL node")
 		}
@@ -468,12 +468,7 @@ func (r *testRunner) defaultEndToEndRun() error {
 	if t.Failed() {
 		return errors.New("chain cannot start")
 	}
-	/*
-		zondMiner, ok := r.comHandler.zondMiner.(*zondcomp.Miner)
-		if !ok {
-			return errors.New("incorrect component type")
-		}
-	*/
+
 	beaconNodes, ok := r.comHandler.beaconNodes.(*components.BeaconNodeSet)
 	if !ok {
 		return errors.New("incorrect component type")

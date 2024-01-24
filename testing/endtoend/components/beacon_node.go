@@ -253,7 +253,7 @@ func (node *BeaconNode) Start(ctx context.Context) error {
 		fmt.Sprintf("--%s=%s", cmdshared.LogFileName.Name, stdOutFile.Name()),
 		fmt.Sprintf("--%s=%s", flags.DepositContractFlag.Name, params.BeaconConfig().DepositContractAddress),
 		fmt.Sprintf("--%s=%d", flags.RPCPort.Name, e2e.TestParams.Ports.QrysmBeaconNodeRPCPort+index),
-		fmt.Sprintf("--%s=http://127.0.0.1:%d", flags.ExecutionEngineEndpoint.Name, e2e.TestParams.Ports.ZondProxyPort+index),
+		fmt.Sprintf("--%s=http://127.0.0.1:%d", flags.ExecutionEngineEndpoint.Name, e2e.TestParams.Ports.ProxyPort+index),
 		fmt.Sprintf("--%s=%s", flags.ExecutionJWTSecretFlag.Name, jwtPath),
 		fmt.Sprintf("--%s=%d", flags.MinSyncPeers.Name, 1),
 		fmt.Sprintf("--%s=%d", cmdshared.P2PUDPPort.Name, e2e.TestParams.Ports.QrysmBeaconNodeUDPPort+index),
@@ -285,7 +285,7 @@ func (node *BeaconNode) Start(ctx context.Context) error {
 		args = append(args, features.E2EBeaconChainFlags...)
 	}
 	if config.UseBuilder {
-		args = append(args, fmt.Sprintf("--%s=%s:%d", flags.MevRelayEndpoint.Name, "http://127.0.0.1", e2e.TestParams.Ports.ZondProxyPort+index))
+		args = append(args, fmt.Sprintf("--%s=%s:%d", flags.MevRelayEndpoint.Name, "http://127.0.0.1", e2e.TestParams.Ports.ProxyPort+index))
 	}
 	args = append(args, config.BeaconFlags...)
 
@@ -351,7 +351,7 @@ func (node *BeaconNode) UnderlyingProcess() *os.Process {
 
 func generateGenesis(ctx context.Context) (state.BeaconState, error) {
 	if e2e.TestParams.ELGenesisBlock == nil {
-		return nil, errors.New("Cannot construct genesis block, e2e.TestParams.Eth1GenesisBlock == nil")
+		return nil, errors.New("Cannot construct genesis block, e2e.TestParams.ELGenesisBlock == nil")
 	}
 	gb := e2e.TestParams.ELGenesisBlock
 	t := e2e.TestParams.CLGenesisTime

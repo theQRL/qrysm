@@ -150,7 +150,7 @@ common_files = {
 }
 
 sh_binary(
-    name = "prysm_sh",
-    srcs = ["prysm.sh"],
+    name = "qrysm_sh",
+    srcs = ["qrysm.sh"],
     visibility = ["//visibility:public"],
 )

@@ -146,8 +146,8 @@ func (node *Proxy) Start(ctx context.Context) error {
 		return err
 	}
 	opts := []proxy.Option{
-		proxy.WithDestinationAddress(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.ZondAuthRPCPort+node.index)),
-		proxy.WithPort(e2e.TestParams.Ports.ZondProxyPort + node.index),
+		proxy.WithDestinationAddress(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.GzondExecutionNodeAuthRPCPort+node.index)),
+		proxy.WithPort(e2e.TestParams.Ports.ProxyPort + node.index),
 		proxy.WithLogger(logrus.New()),
 		proxy.WithLogFile(f),
 		proxy.WithJwtSecret(string(secret)),
@@ -156,7 +156,7 @@ func (node *Proxy) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("Starting zond proxy %d with port: %d and file %s", node.index, e2e.TestParams.Ports.ZondProxyPort+node.index, f.Name())
+	log.Infof("Starting zond proxy %d with port: %d and file %s", node.index, e2e.TestParams.Ports.ProxyPort+node.index, f.Name())
 
 	// Set cancel into context.
 	ctx, cancel := context.WithCancel(ctx)

@@ -56,7 +56,7 @@ func feeRecipientIsPresent(_ *types.EvaluationContext, conns ...*grpc.ClientConn
 		return errors.Wrap(err, "failed to list blocks")
 	}
 
-	rpcclient, err := rpc.DialHTTP(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.ZondRPCPort))
+	rpcclient, err := rpc.DialHTTP(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.GzondExecutionNodeRPCPort))
 	if err != nil {
 		return err
 	}
