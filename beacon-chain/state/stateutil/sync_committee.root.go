@@ -31,14 +31,7 @@ func SyncCommitteeRoot(committee *zondpb.SyncCommittee) ([32]byte, error) {
 		return [32]byte{}, err
 	}
 
-	/*
-		// Field 2: BLSPubkey
-		aggregateKeyRoot, err := merkleizePubkey(committee.AggregatePubkey)
-		if err != nil {
-			return [32]byte{}, err
-		}
-	*/
-	fieldRoots = [][32]byte{pubkeyRoot /*, aggregateKeyRoot*/}
+	fieldRoots = [][32]byte{pubkeyRoot}
 
 	return ssz.BitwiseMerkleize(fieldRoots, uint64(len(fieldRoots)), uint64(len(fieldRoots)))
 }
