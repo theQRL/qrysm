@@ -383,9 +383,10 @@ load("@qrysm//third_party/herumi:herumi.bzl", "bls_dependencies")
 
 bls_dependencies()
 
-load("@qrysm//testing/endtoend:deps.bzl", "e2e_deps")
+# NOTE(rgeraldes24): this deps are not needed until we support the remote web signer.
+#load("@qrysm//testing/endtoend:deps.bzl", "e2e_deps")
 
-e2e_deps()
+#e2e_deps()
 
 load(
     "@io_bazel_rules_docker//go:image.bzl",

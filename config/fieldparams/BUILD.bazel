@@ -29,7 +29,7 @@ go_test(
         "common_test.go",
         "minimal_test.go",
     ],
-    eth_network = "minimal",
+    zond_network = "minimal",
     tags = ["minimal"],
     deps = [
         ":go_default_library",
