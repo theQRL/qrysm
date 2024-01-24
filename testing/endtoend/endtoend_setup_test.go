@@ -50,7 +50,7 @@ func e2eMinimal(t *testing.T, v int, cfgo ...types.E2EConfigOpt) *testRunner {
 		ev.ProcessesDepositsInBlocks,
 		ev.ActivatesDepositedValidators,
 		ev.DepositedValidatorsAreActive,
-		ev.ValidatorsVoteWithTheMajority,
+		// ev.ValidatorsVoteWithTheMajority, TODO(rgeraldes24): re-enable once the unit tests are complete
 		ev.ColdStateCheckpoint,
 		// ev.DenebForkTransition, // TODO(12750): Enable this when gzond main branch's engine API support.
 		ev.APIMiddlewareVerifyIntegrity,

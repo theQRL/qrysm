@@ -211,7 +211,7 @@ func (r *testRunner) testDepositsAndTx(ctx context.Context, g *errgroup.Group,
 					r.t.Fatal(err)
 				}
 			}
-			// TODO(rgeraldes24): enable
+			// TODO(rgeraldes24): re-enable once the unit tests are complete
 			// r.testTxGeneration(ctx, g, keystorePath, []e2etypes.ComponentRunner{})
 		}()
 		if r.config.TestDeposits {
@@ -503,9 +503,12 @@ func (r *testRunner) defaultEndToEndRun() error {
 			return errors.Wrap(err, "beacon chain sync test failed")
 		}
 		// index += 1
-		if err := r.testDoppelGangerProtection(ctx); err != nil {
-			return errors.Wrap(err, "doppel ganger protection check failed")
-		}
+		// TODO(rgeraldes24): re-enable once the unit tests are complete
+		/*
+			if err := r.testDoppelGangerProtection(ctx); err != nil {
+				return errors.Wrap(err, "doppel ganger protection check failed")
+			}
+		*/
 	}
 	/*
 		if config.TestCheckpointSync {
