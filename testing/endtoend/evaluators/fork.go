@@ -1,6 +1,6 @@
 package evaluators
 
-// NOTE(rgeraldes24): fork transitions tests are not needed at the moment
+// NOTE(rgeraldes24): re-enable once we have to test fork transitions
 /*
 import (
 	"context"
