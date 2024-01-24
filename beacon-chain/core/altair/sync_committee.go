@@ -75,7 +75,6 @@ func NextSyncCommittee(ctx context.Context, s state.BeaconState) (*zondpb.SyncCo
 	}
 	return &zondpb.SyncCommittee{
 		Pubkeys: pubkeys,
-		// AggregatePubkey: appendedPubKeys,
 	}, nil
 }
 
