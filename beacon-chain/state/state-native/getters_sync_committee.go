@@ -57,6 +57,5 @@ func copySyncCommittee(data *zondpb.SyncCommittee) *zondpb.SyncCommittee {
 	}
 	return &zondpb.SyncCommittee{
 		Pubkeys: bytesutil.SafeCopy2dBytes(data.Pubkeys),
-		// AggregatePubkey: bytesutil.SafeCopyBytes(data.AggregatePubkey),
 	}
 }
