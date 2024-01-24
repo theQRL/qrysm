@@ -383,7 +383,7 @@ load("@qrysm//third_party/herumi:herumi.bzl", "bls_dependencies")
 
 bls_dependencies()
 
-# NOTE(rgeraldes24): this deps are not needed until we support the remote web signer.
+# NOTE(rgeraldes24): re-enable once we support the remote web signer
 #load("@qrysm//testing/endtoend:deps.bzl", "e2e_deps")
 
 #e2e_deps()
