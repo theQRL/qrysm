@@ -1,5 +1,5 @@
 // Package endtoend performs full a end-to-end test for Qrysm,
-// including spinning up execution nodes, sending deposits to the deposit
+// including spinning up execution clients, sending deposits to the deposit
 // contract, and making sure the beacon node and validators are running and
 // performing properly for a few epochs.
 package endtoend
