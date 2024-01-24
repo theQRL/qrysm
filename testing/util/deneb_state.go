@@ -220,12 +220,6 @@ func buildGenesisBeaconStateDeneb(genesisTime uint64, preState state.BeaconState
 		j := i % uint64(len(vals))
 		pubKeys = append(pubKeys, vals[j].PublicKey)
 	}
-	/*
-		aggregated, err := bls.AggregatePublicKeys(pubKeys)
-		if err != nil {
-			return nil, err
-		}
-	*/
 	st.CurrentSyncCommittee = &zondpb.SyncCommittee{
 		Pubkeys: pubKeys,
 	}
