@@ -19,7 +19,7 @@ import (
 var APIMiddlewareVerifyIntegrity = e2etypes.Evaluator{
 	Name: "api_middleware_verify_integrity_epoch_%d",
 	// Policy:     policies.OnEpoch(helpers.AltairE2EForkEpoch),
-	Policy:     policies.OnEpoch(6), // TODO(rgeraldes24) replace with const
+	Policy:     policies.OnEpoch(6),
 	Evaluation: apiMiddlewareVerify,
 }
 
