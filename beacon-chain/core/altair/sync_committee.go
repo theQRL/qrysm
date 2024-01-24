@@ -69,10 +69,6 @@ func NextSyncCommittee(ctx context.Context, s state.BeaconState) (*zondpb.SyncCo
 		p := s.PubkeyAtIndex(index)
 		pubkeys[i] = p[:]
 	}
-	appendedPubKeys := make([]byte, 0, len(pubkeys))
-	for _, pubKey := range pubkeys {
-		appendedPubKeys = append(appendedPubKeys, pubKey...)
-	}
 	return &zondpb.SyncCommittee{
 		Pubkeys: pubkeys,
 	}, nil
