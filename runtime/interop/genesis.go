@@ -135,7 +135,7 @@ func GzondTestnetGenesis(genesisTime uint64, cfg *clparams.BeaconChainConfig) *c
 		GrayGlacierBlock:              bigz,
 		MergeNetsplitBlock:            bigz,
 		TerminalTotalDifficulty:       ttd,
-		TerminalTotalDifficultyPassed: false,
+		TerminalTotalDifficultyPassed: true,
 		Clique: &params.CliqueConfig{
 			Period: cfg.SecondsPerETH1Block,
 			Epoch:  20000,
