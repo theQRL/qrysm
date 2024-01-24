@@ -13,6 +13,8 @@ import (
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/pkg/errors"
+	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-zond/zondclient"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/io/file"
 	"github.com/theQRL/qrysm/v4/runtime/interop"
@@ -34,13 +36,6 @@ func NewExecutionNodeSet() *ExecutionNodeSet {
 		started: make(chan struct{}, 1),
 	}
 }
-
-/*
-// SetMinerENR sets the miner's enode, used to connect to the miner through P2P.
-func (s *ExecutionNodeSet) SetMinerENR(enr string) {
-	s.enr = enr
-}
-*/
 
 // Start starts all the execution nodes in set.
 func (s *ExecutionNodeSet) Start(ctx context.Context) error {
@@ -137,11 +132,10 @@ type ExecutionNode struct {
 }
 
 // NewExecutionNode creates and returns an execution node.
-func NewExecutionNode(index int /*, enr string*/) *ExecutionNode {
+func NewExecutionNode(index int) *ExecutionNode {
 	return &ExecutionNode{
 		started: make(chan struct{}, 1),
 		index:   index,
-		// enr:     enr,
 	}
 }
 
@@ -242,6 +236,22 @@ func (node *ExecutionNode) Start(ctx context.Context) error {
 		}
 		node.cmd = runCmd
 		log.Infof("execution node started after %d retries", retries)
+
+		if node.index == 0 {
+			client, err := rpc.DialHTTP(e2e.TestParams.ExecutionNodeRPCURL(e2e.ExecutionNodeComponentOffset).String())
+			if err != nil {
+				return fmt.Errorf("failed to connect to ipc: %w", err)
+			}
+
+			web3 := zondclient.NewClient(client)
+			block, err := web3.BlockByNumber(ctx, nil)
+			if err != nil {
+				return err
+			}
+
+			e2e.TestParams.ELGenesisBlock = block
+		}
+
 		break
 	}
 	if retryErr != nil {

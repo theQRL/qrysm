@@ -233,10 +233,7 @@ func (node *BeaconNode) Start(ctx context.Context) error {
 	// if node.config.TestCheckpointSync {
 	// 	expectedNumOfPeers += 1
 	// }
-	jwtPath := path.Join(e2e.TestParams.TestPath, "zond1data/"+strconv.Itoa(node.index)+"/")
-	if index == 0 {
-		jwtPath = path.Join(e2e.TestParams.TestPath, "zond1data/miner/")
-	}
+	jwtPath := path.Join(e2e.TestParams.TestPath, "zonddata/"+strconv.Itoa(node.index)+"/")
 	jwtPath = path.Join(jwtPath, "gzond/jwtsecret")
 
 	genesisPath, err := node.saveGenesis(ctx)

@@ -40,11 +40,6 @@ func builderActive(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) err
 	// 	lowestBound = helpers.BellatrixE2EForkEpoch
 	// }
 
-	// TODO(rgeraldes24) - I think that the following code is not necessary given the logic before
-	if lowestBound < 0 {
-		lowestBound = 0
-	}
-
 	blockCtrs, err := beaconClient.ListBeaconBlocks(context.Background(), &zondpb.ListBlocksRequest{QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: lowestBound}})
 	if err != nil {
 		return errors.Wrap(err, "failed to get beacon blocks")

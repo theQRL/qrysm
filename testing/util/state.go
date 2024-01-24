@@ -159,12 +159,12 @@ func NewBeaconStateAltair(options ...func(state *zondpb.BeaconStateAltair) error
 		PreviousEpochParticipation:  make([]byte, 0),
 		CurrentEpochParticipation:   make([]byte, 0),
 		CurrentSyncCommittee: &zondpb.SyncCommittee{
-			Pubkeys:         pubkeys,
-			AggregatePubkey: make([]byte, 48),
+			Pubkeys: pubkeys,
+			// AggregatePubkey: make([]byte, 48),
 		},
 		NextSyncCommittee: &zondpb.SyncCommittee{
-			Pubkeys:         pubkeys,
-			AggregatePubkey: make([]byte, 48),
+			Pubkeys: pubkeys,
+			// AggregatePubkey: make([]byte, 48),
 		},
 	}
 
@@ -214,12 +214,12 @@ func NewBeaconStateBellatrix(options ...func(state *zondpb.BeaconStateBellatrix)
 		PreviousEpochParticipation:  make([]byte, 0),
 		CurrentEpochParticipation:   make([]byte, 0),
 		CurrentSyncCommittee: &zondpb.SyncCommittee{
-			Pubkeys:         pubkeys,
-			AggregatePubkey: make([]byte, 48),
+			Pubkeys: pubkeys,
+			// AggregatePubkey: make([]byte, 48),
 		},
 		NextSyncCommittee: &zondpb.SyncCommittee{
-			Pubkeys:         pubkeys,
-			AggregatePubkey: make([]byte, 48),
+			Pubkeys: pubkeys,
+			// AggregatePubkey: make([]byte, 48),
 		},
 		LatestExecutionPayloadHeader: &enginev1.ExecutionPayloadHeader{
 			ParentHash:       make([]byte, 32),
@@ -281,12 +281,12 @@ func NewBeaconStateCapella(options ...func(state *zondpb.BeaconStateCapella) err
 		PreviousEpochParticipation:  make([]byte, 0),
 		CurrentEpochParticipation:   make([]byte, 0),
 		CurrentSyncCommittee: &zondpb.SyncCommittee{
-			Pubkeys:         pubkeys,
-			AggregatePubkey: make([]byte, 48),
+			Pubkeys: pubkeys,
+			// AggregatePubkey: make([]byte, 48),
 		},
 		NextSyncCommittee: &zondpb.SyncCommittee{
-			Pubkeys:         pubkeys,
-			AggregatePubkey: make([]byte, 48),
+			Pubkeys: pubkeys,
+			// AggregatePubkey: make([]byte, 48),
 		},
 		LatestExecutionPayloadHeader: &enginev1.ExecutionPayloadHeaderCapella{
 			ParentHash:       make([]byte, 32),
@@ -349,12 +349,12 @@ func NewBeaconStateDeneb(options ...func(state *zondpb.BeaconStateDeneb) error) 
 		PreviousEpochParticipation:  make([]byte, 0),
 		CurrentEpochParticipation:   make([]byte, 0),
 		CurrentSyncCommittee: &zondpb.SyncCommittee{
-			Pubkeys:         pubkeys,
-			AggregatePubkey: make([]byte, 48),
+			Pubkeys: pubkeys,
+			// AggregatePubkey: make([]byte, 48),
 		},
 		NextSyncCommittee: &zondpb.SyncCommittee{
-			Pubkeys:         pubkeys,
-			AggregatePubkey: make([]byte, 48),
+			Pubkeys: pubkeys,
+			// AggregatePubkey: make([]byte, 48),
 		},
 		LatestExecutionPayloadHeader: &enginev1.ExecutionPayloadHeaderDeneb{
 			ParentHash:       make([]byte, 32),

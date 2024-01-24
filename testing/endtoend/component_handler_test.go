@@ -186,8 +186,8 @@ func (c *componentHandler) printPIDs(logger func(string, ...interface{})) {
 	msg += fmt.Sprintf("Beacon chain nodes: %v\n", PIDsFromMultiComponentRunner(c.beaconNodes))
 	// Validator nodes
 	msg += fmt.Sprintf("Validators: %v\n", PIDsFromMultiComponentRunner(c.validatorNodes))
-	// Zond nodes
-	msg += fmt.Sprintf("Zond nodes: %v\n", PIDsFromMultiComponentRunner(c.executionNodes))
+	// Execution nodes
+	msg += fmt.Sprintf("Execution nodes: %v\n", PIDsFromMultiComponentRunner(c.executionNodes))
 
 	logger(msg)
 }

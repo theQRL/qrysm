@@ -253,7 +253,9 @@ func (s *Service) waitForChainStart() {
 	s.registerRPCHandlers()
 	// Wait for chainstart in separate routine.
 	if startTime.After(prysmTime.Now()) {
+		log.Debug("sleep")
 		time.Sleep(prysmTime.Until(startTime))
+		log.Debug("sleep2")
 	}
 	log.WithField("starttime", startTime).Debug("Chain started in sync service")
 	s.markForChainStart()

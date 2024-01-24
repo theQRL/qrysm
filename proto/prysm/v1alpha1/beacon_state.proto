@@ -177,7 +177,7 @@ message DepositMessage {
 // SyncCommittee serves as committees to facilitate light client syncing to beacon chain.
 message SyncCommittee {
   repeated bytes pubkeys = 1  [(theqrl.zond.ext.ssz_size) = "sync_committee_bits.size,2592"];
-  bytes aggregate_pubkey = 2 [(theqrl.zond.ext.ssz_size) = "41472"];
+  // bytes aggregate_pubkey = 2 [(theqrl.zond.ext.ssz_size) = "41472"];
 }
 
 // SyncAggregatorSelectionData is used to sign over and then check whether the aggregator is selected within a subcommittee.

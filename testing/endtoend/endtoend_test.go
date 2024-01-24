@@ -70,18 +70,15 @@ type runEvent func() error
 
 func (r *testRunner) runBase(runEvents []runEvent) {
 	r.comHandler = NewComponentHandler(r.config, r.t)
+	r.comHandler.setup()
 	r.comHandler.group.Go(func() error {
-		execComponent, err := r.comHandler.executionNodes.ComponentAtIndex(0)
-		if err != nil {
-			return errors.New("failed to get first execution node")
-		}
-
-		execNode, ok := execComponent.(*components.ExecutionNode)
+		execNodesComponents := r.comHandler.executionNodes
+		execNodeSet, ok := execNodesComponents.(*components.ExecutionNodeSet)
 		if !ok {
 			return errors.New("in runBase, comHandler.executionNodes.ComponentAtIndex(0) fails type assertion to *zond.Node")
 		}
 
-		if err := helpers.ComponentsStarted(r.comHandler.ctx, []e2etypes.ComponentRunner{execNode}); err != nil {
+		if err := helpers.ComponentsStarted(r.comHandler.ctx, []e2etypes.ComponentRunner{execNodeSet}); err != nil {
 			return errors.Wrap(err, "execNode component never started - cannot send deposits")
 		}
 		keyPath, err := e2e.TestParams.Paths.TestKeyPath()
@@ -102,7 +99,6 @@ func (r *testRunner) runBase(runEvents []runEvent) {
 		}
 		return nil
 	})
-	r.comHandler.setup()
 
 	for _, re := range runEvents {
 		r.addEvent(re)
@@ -215,7 +211,7 @@ func (r *testRunner) testDepositsAndTx(ctx context.Context, g *errgroup.Group,
 					r.t.Fatal(err)
 				}
 			}
-			// TODO(rgeraldes24)
+			// TODO(rgeraldes24): enable
 			// r.testTxGeneration(ctx, g, keystorePath, []e2etypes.ComponentRunner{})
 		}()
 		if r.config.TestDeposits {
