@@ -760,11 +760,9 @@ func BeaconStateAltairToProto(altairState state.BeaconState) (*zondpbv2.BeaconSt
 		InactivityScores: sourceInactivityScores,
 		CurrentSyncCommittee: &zondpbv2.SyncCommittee{
 			Pubkeys: bytesutil.SafeCopy2dBytes(sourceCurrSyncCommittee.Pubkeys),
-			// AggregatePubkey: bytesutil.SafeCopyBytes(sourceCurrSyncCommittee.AggregatePubkey),
 		},
 		NextSyncCommittee: &zondpbv2.SyncCommittee{
 			Pubkeys: bytesutil.SafeCopy2dBytes(sourceNextSyncCommittee.Pubkeys),
-			// AggregatePubkey: bytesutil.SafeCopyBytes(sourceNextSyncCommittee.AggregatePubkey),
 		},
 	}
 
@@ -887,11 +885,9 @@ func BeaconStateBellatrixToProto(st state.BeaconState) (*zondpbv2.BeaconStateBel
 		InactivityScores: sourceInactivityScores,
 		CurrentSyncCommittee: &zondpbv2.SyncCommittee{
 			Pubkeys: bytesutil.SafeCopy2dBytes(sourceCurrSyncCommittee.Pubkeys),
-			// AggregatePubkey: bytesutil.SafeCopyBytes(sourceCurrSyncCommittee.AggregatePubkey),
 		},
 		NextSyncCommittee: &zondpbv2.SyncCommittee{
 			Pubkeys: bytesutil.SafeCopy2dBytes(sourceNextSyncCommittee.Pubkeys),
-			// AggregatePubkey: bytesutil.SafeCopyBytes(sourceNextSyncCommittee.AggregatePubkey),
 		},
 		LatestExecutionPayloadHeader: &enginev1.ExecutionPayloadHeader{
 			ParentHash:       bytesutil.SafeCopyBytes(sourceLatestExecutionPayloadHeader.ParentHash),
@@ -1047,11 +1043,9 @@ func BeaconStateCapellaToProto(st state.BeaconState) (*zondpbv2.BeaconStateCapel
 		InactivityScores: sourceInactivityScores,
 		CurrentSyncCommittee: &zondpbv2.SyncCommittee{
 			Pubkeys: bytesutil.SafeCopy2dBytes(sourceCurrSyncCommittee.Pubkeys),
-			// AggregatePubkey: bytesutil.SafeCopyBytes(sourceCurrSyncCommittee.AggregatePubkey),
 		},
 		NextSyncCommittee: &zondpbv2.SyncCommittee{
 			Pubkeys: bytesutil.SafeCopy2dBytes(sourceNextSyncCommittee.Pubkeys),
-			// AggregatePubkey: bytesutil.SafeCopyBytes(sourceNextSyncCommittee.AggregatePubkey),
 		},
 		LatestExecutionPayloadHeader: &enginev1.ExecutionPayloadHeaderCapella{
 			ParentHash:       bytesutil.SafeCopyBytes(sourceLatestExecutionPayloadHeader.ParentHash),
@@ -1214,11 +1208,9 @@ func BeaconStateDenebToProto(st state.BeaconState) (*zondpbv2.BeaconStateDeneb, 
 		InactivityScores: sourceInactivityScores,
 		CurrentSyncCommittee: &zondpbv2.SyncCommittee{
 			Pubkeys: bytesutil.SafeCopy2dBytes(sourceCurrSyncCommittee.Pubkeys),
-			// AggregatePubkey: bytesutil.SafeCopyBytes(sourceCurrSyncCommittee.AggregatePubkey),
 		},
 		NextSyncCommittee: &zondpbv2.SyncCommittee{
 			Pubkeys: bytesutil.SafeCopy2dBytes(sourceNextSyncCommittee.Pubkeys),
-			// AggregatePubkey: bytesutil.SafeCopyBytes(sourceNextSyncCommittee.AggregatePubkey),
 		},
 		LatestExecutionPayloadHeader: &enginev1.ExecutionPayloadHeaderDeneb{
 			ParentHash:       bytesutil.SafeCopyBytes(sourceLatestExecutionPayloadHeader.ParentHash),

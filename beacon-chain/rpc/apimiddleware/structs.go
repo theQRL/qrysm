@@ -933,8 +933,7 @@ type ValidatorJson struct {
 }
 
 type SyncCommitteeJson struct {
-	Pubkeys         []string `json:"pubkeys" hex:"true"`
-	AggregatePubkey string   `json:"aggregate_pubkey" hex:"true"`
+	Pubkeys []string `json:"pubkeys" hex:"true"`
 }
 
 type SyncCommitteeValidatorsJson struct {

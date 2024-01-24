@@ -186,7 +186,6 @@ func TestSyncCommittee_CanGet(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, int(params.BeaconConfig().SyncCommitteeSize), len(got.Pubkeys))
-				require.Equal(t, params.BeaconConfig().BLSPubkeyLength, len(got.AggregatePubkey))
 			}
 		})
 	}

@@ -19,7 +19,7 @@ func (x *SyncCommittee) Equals(other *SyncCommittee) bool {
 			return false
 		}
 	}
-	return bytes.Equal(x.AggregatePubkey, other.AggregatePubkey)
+	return true
 }
 
 func FloorLog2(x uint64) int {

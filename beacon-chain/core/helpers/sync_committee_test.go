@@ -20,9 +20,7 @@ func TestIsCurrentEpochSyncCommittee_UsingCache(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
 	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
-	}
+	syncCommittee := &zondpb.SyncCommittee{}
 	for i := 0; i < len(validators); i++ {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
@@ -51,9 +49,7 @@ func TestIsCurrentEpochSyncCommittee_UsingCommittee(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
 	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
-	}
+	syncCommittee := &zondpb.SyncCommittee{}
 	for i := 0; i < len(validators); i++ {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
@@ -79,9 +75,7 @@ func TestIsCurrentEpochSyncCommittee_DoesNotExist(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
 	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
-	}
+	syncCommittee := &zondpb.SyncCommittee{}
 	for i := 0; i < len(validators); i++ {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
@@ -107,9 +101,7 @@ func TestIsNextEpochSyncCommittee_UsingCache(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
 	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
-	}
+	syncCommittee := &zondpb.SyncCommittee{}
 	for i := 0; i < len(validators); i++ {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
@@ -136,9 +128,7 @@ func TestIsNextEpochSyncCommittee_UsingCache(t *testing.T) {
 
 func TestIsNextEpochSyncCommittee_UsingCommittee(t *testing.T) {
 	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
-	}
+	syncCommittee := &zondpb.SyncCommittee{}
 	for i := 0; i < len(validators); i++ {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
@@ -162,9 +152,7 @@ func TestIsNextEpochSyncCommittee_UsingCommittee(t *testing.T) {
 
 func TestIsNextEpochSyncCommittee_DoesNotExist(t *testing.T) {
 	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
-	}
+	syncCommittee := &zondpb.SyncCommittee{}
 	for i := 0; i < len(validators); i++ {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
@@ -190,9 +178,7 @@ func TestCurrentEpochSyncSubcommitteeIndices_UsingCache(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
 	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
-	}
+	syncCommittee := &zondpb.SyncCommittee{}
 	for i := 0; i < len(validators); i++ {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
@@ -221,9 +207,7 @@ func TestCurrentEpochSyncSubcommitteeIndices_UsingCommittee(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
 	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
-	}
+	syncCommittee := &zondpb.SyncCommittee{}
 	for i := 0; i < len(validators); i++ {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
@@ -262,9 +246,7 @@ func TestCurrentEpochSyncSubcommitteeIndices_DoesNotExist(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
 	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
-	}
+	syncCommittee := &zondpb.SyncCommittee{}
 	for i := 0; i < len(validators); i++ {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
@@ -290,9 +272,7 @@ func TestNextEpochSyncSubcommitteeIndices_UsingCache(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
 	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
-	}
+	syncCommittee := &zondpb.SyncCommittee{}
 	for i := 0; i < len(validators); i++ {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
@@ -319,9 +299,7 @@ func TestNextEpochSyncSubcommitteeIndices_UsingCache(t *testing.T) {
 
 func TestNextEpochSyncSubcommitteeIndices_UsingCommittee(t *testing.T) {
 	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
-	}
+	syncCommittee := &zondpb.SyncCommittee{}
 	for i := 0; i < len(validators); i++ {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
@@ -347,9 +325,7 @@ func TestNextEpochSyncSubcommitteeIndices_DoesNotExist(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
 	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
-	}
+	syncCommittee := &zondpb.SyncCommittee{}
 	for i := 0; i < len(validators); i++ {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
@@ -401,9 +377,7 @@ func TestIsCurrentEpochSyncCommittee_SameBlockRoot(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
 	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
-	}
+	syncCommittee := &zondpb.SyncCommittee{}
 	for i := 0; i < len(validators); i++ {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))

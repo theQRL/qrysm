@@ -160,11 +160,9 @@ func NewBeaconStateAltair(options ...func(state *zondpb.BeaconStateAltair) error
 		CurrentEpochParticipation:   make([]byte, 0),
 		CurrentSyncCommittee: &zondpb.SyncCommittee{
 			Pubkeys: pubkeys,
-			// AggregatePubkey: make([]byte, 48),
 		},
 		NextSyncCommittee: &zondpb.SyncCommittee{
 			Pubkeys: pubkeys,
-			// AggregatePubkey: make([]byte, 48),
 		},
 	}
 
@@ -215,11 +213,9 @@ func NewBeaconStateBellatrix(options ...func(state *zondpb.BeaconStateBellatrix)
 		CurrentEpochParticipation:   make([]byte, 0),
 		CurrentSyncCommittee: &zondpb.SyncCommittee{
 			Pubkeys: pubkeys,
-			// AggregatePubkey: make([]byte, 48),
 		},
 		NextSyncCommittee: &zondpb.SyncCommittee{
 			Pubkeys: pubkeys,
-			// AggregatePubkey: make([]byte, 48),
 		},
 		LatestExecutionPayloadHeader: &enginev1.ExecutionPayloadHeader{
 			ParentHash:       make([]byte, 32),
@@ -282,11 +278,9 @@ func NewBeaconStateCapella(options ...func(state *zondpb.BeaconStateCapella) err
 		CurrentEpochParticipation:   make([]byte, 0),
 		CurrentSyncCommittee: &zondpb.SyncCommittee{
 			Pubkeys: pubkeys,
-			// AggregatePubkey: make([]byte, 48),
 		},
 		NextSyncCommittee: &zondpb.SyncCommittee{
 			Pubkeys: pubkeys,
-			// AggregatePubkey: make([]byte, 48),
 		},
 		LatestExecutionPayloadHeader: &enginev1.ExecutionPayloadHeaderCapella{
 			ParentHash:       make([]byte, 32),
@@ -350,11 +344,9 @@ func NewBeaconStateDeneb(options ...func(state *zondpb.BeaconStateDeneb) error) 
 		CurrentEpochParticipation:   make([]byte, 0),
 		CurrentSyncCommittee: &zondpb.SyncCommittee{
 			Pubkeys: pubkeys,
-			// AggregatePubkey: make([]byte, 48),
 		},
 		NextSyncCommittee: &zondpb.SyncCommittee{
 			Pubkeys: pubkeys,
-			// AggregatePubkey: make([]byte, 48),
 		},
 		LatestExecutionPayloadHeader: &enginev1.ExecutionPayloadHeaderDeneb{
 			ParentHash:       make([]byte, 32),

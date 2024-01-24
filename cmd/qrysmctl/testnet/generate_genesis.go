@@ -271,8 +271,8 @@ func generateGenesis(ctx context.Context) (state.BeaconState, error) {
 		}
 		// set timestamps for genesis and shanghai fork
 		gen.Timestamp = f.GenesisTime
-		gen.Config.ShanghaiTime = interop.GethShanghaiTime(f.GenesisTime, params.BeaconConfig())
-		gen.Config.CancunTime = interop.GethCancunTime(f.GenesisTime, params.BeaconConfig())
+		gen.Config.ShanghaiTime = interop.GzondShanghaiTime(f.GenesisTime, params.BeaconConfig())
+		gen.Config.CancunTime = interop.GzondCancunTime(f.GenesisTime, params.BeaconConfig())
 
 		if gen.Config.ShanghaiTime != nil {
 			log.WithField("shanghai", fmt.Sprintf("%d", *gen.Config.ShanghaiTime))

@@ -221,19 +221,12 @@ func buildGenesisBeaconStateCapella(genesisTime uint64, preState state.BeaconSta
 		j := i % uint64(len(vals))
 		pubKeys = append(pubKeys, vals[j].PublicKey)
 	}
-	/*
-		aggregated, err := bls.AggregatePublicKeys(pubKeys)
-		if err != nil {
-			return nil, err
-		}
-	*/
+
 	st.CurrentSyncCommittee = &zondpb.SyncCommittee{
 		Pubkeys: pubKeys,
-		// AggregatePubkey: aggregated.Marshal(),
 	}
 	st.NextSyncCommittee = &zondpb.SyncCommittee{
 		Pubkeys: pubKeys,
-		// AggregatePubkey: aggregated.Marshal(),
 	}
 
 	st.LatestExecutionPayloadHeader = &enginev1.ExecutionPayloadHeaderCapella{

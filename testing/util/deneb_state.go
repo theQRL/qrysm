@@ -228,11 +228,9 @@ func buildGenesisBeaconStateDeneb(genesisTime uint64, preState state.BeaconState
 	*/
 	st.CurrentSyncCommittee = &zondpb.SyncCommittee{
 		Pubkeys: pubKeys,
-		// AggregatePubkey: aggregated.Marshal(),
 	}
 	st.NextSyncCommittee = &zondpb.SyncCommittee{
 		Pubkeys: pubKeys,
-		// AggregatePubkey: aggregated.Marshal(),
 	}
 
 	st.LatestExecutionPayloadHeader = &enginev1.ExecutionPayloadHeaderDeneb{

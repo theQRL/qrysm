@@ -208,11 +208,9 @@ func buildGenesisBeaconState(genesisTime uint64, preState state.BeaconState, eth
 	}
 	st.CurrentSyncCommittee = &zondpb.SyncCommittee{
 		Pubkeys: pubKeys,
-		// AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
 	}
 	st.NextSyncCommittee = &zondpb.SyncCommittee{
 		Pubkeys: bytesutil.SafeCopy2dBytes(pubKeys),
-		// AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
 	}
 
 	return state_native.InitializeFromProtoAltair(st)
