@@ -1,5 +1,7 @@
 package evaluators
 
+// NOTE(rgeraldes24): re-enable once we have to test fork transitions
+/*
 import (
 	"context"
 	"time"
@@ -176,3 +178,4 @@ func capellaForkOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) er
 	}
 	return nil
 }
+*/

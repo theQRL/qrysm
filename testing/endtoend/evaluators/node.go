@@ -55,7 +55,7 @@ var AllNodesHaveSameHead = e2etypes.Evaluator{
 func healthzCheck(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	count := len(conns)
 	for i := 0; i < count; i++ {
-		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/healthz", e2e.TestParams.Ports.PrysmBeaconNodeMetricsPort+i))
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/healthz", e2e.TestParams.Ports.QrysmBeaconNodeMetricsPort+i))
 		if err != nil {
 			// Continue if the connection fails, regular flake.
 			continue
@@ -105,7 +105,7 @@ func peersConnect(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) erro
 		if err != nil {
 			return err
 		}
-		expectedPeers := len(conns) - 1 + e2e.TestParams.LighthouseBeaconNodeCount
+		expectedPeers := len(conns) - 1
 		if expectedPeers != len(peersResp.Peers) {
 			return fmt.Errorf("unexpected amount of peers, expected %d, received %d", expectedPeers, len(peersResp.Peers))
 		}

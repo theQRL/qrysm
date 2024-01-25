@@ -227,12 +227,10 @@ func buildGenesisBeaconStateBellatrix(genesisTime uint64, preState state.BeaconS
 		pubKeys = append(pubKeys, bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength))
 	}
 	st.CurrentSyncCommittee = &zondpb.SyncCommittee{
-		Pubkeys:         pubKeys,
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
+		Pubkeys: pubKeys,
 	}
 	st.NextSyncCommittee = &zondpb.SyncCommittee{
-		Pubkeys:         bytesutil.SafeCopy2dBytes(pubKeys),
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
+		Pubkeys: bytesutil.SafeCopy2dBytes(pubKeys),
 	}
 
 	st.LatestExecutionPayloadHeader = &enginev1.ExecutionPayloadHeader{

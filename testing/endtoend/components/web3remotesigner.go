@@ -1,5 +1,6 @@
 package components
 
+/*
 import (
 	"context"
 	"encoding/hex"
@@ -269,3 +270,4 @@ func createTestnetDir() (string, error) {
 
 	return configPath, nil
 }
+*/

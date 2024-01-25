@@ -518,11 +518,9 @@ func TestSyncCommiteeRewards(t *testing.T) {
 	for i := 0; i < fieldparams.SyncCommitteeLength; i++ {
 		syncCommitteePubkeys[i] = secretKeys[i].PublicKey().Marshal()
 	}
-	aggPubkey, err := bls.AggregatePublicKeys(syncCommitteePubkeys)
 	require.NoError(t, err)
 	require.NoError(t, st.SetCurrentSyncCommittee(&zond.SyncCommittee{
-		Pubkeys:         syncCommitteePubkeys,
-		AggregatePubkey: aggPubkey.Marshal(),
+		Pubkeys: syncCommitteePubkeys,
 	}))
 
 	b := util.HydrateSignedBeaconBlockCapella(util.NewBeaconBlockCapella())

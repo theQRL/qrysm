@@ -206,7 +206,7 @@ go_test(
         "validator_test.go",
     ],
     embed = [":go_default_library"],
-    eth_network = "minimal",
+    zond_network = "minimal",
     tags = ["minimal"],
     deps = common_deps,
 )

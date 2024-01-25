@@ -8,7 +8,6 @@ import (
 
 	"github.com/theQRL/qrysm/v4/proto/zond/service"
 	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
 	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
@@ -18,8 +17,9 @@ import (
 // APIMiddlewareVerifyIntegrity tests our API Middleware for the official Ethereum API.
 // This ensures our API Middleware returns good data compared to gRPC.
 var APIMiddlewareVerifyIntegrity = e2etypes.Evaluator{
-	Name:       "api_middleware_verify_integrity_epoch_%d",
-	Policy:     policies.OnEpoch(helpers.AltairE2EForkEpoch),
+	Name: "api_middleware_verify_integrity_epoch_%d",
+	// Policy:     policies.OnEpoch(helpers.AltairE2EForkEpoch),
+	Policy:     policies.OnEpoch(6),
 	Evaluation: apiMiddlewareVerify,
 }
 
@@ -82,7 +82,7 @@ func withCompareSyncCommittee(beaconNodeIdx int, conn *grpc.ClientConn) error {
 }
 
 func doMiddlewareJSONGetRequestV1(requestPath string, beaconNodeIdx int, dst interface{}) error {
-	basePath := fmt.Sprintf(v1MiddlewarePathTemplate, params.TestParams.Ports.PrysmBeaconNodeGatewayPort+beaconNodeIdx)
+	basePath := fmt.Sprintf(v1MiddlewarePathTemplate, params.TestParams.Ports.QrysmBeaconNodeGatewayPort+beaconNodeIdx)
 	httpResp, err := http.Get(
 		basePath + requestPath,
 	)

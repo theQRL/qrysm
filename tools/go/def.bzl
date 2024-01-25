@@ -6,10 +6,10 @@ def _go_test_transition_impl(settings, attr):
     """Edge transition to add minimal or mainnet build tags"""
     settings = dict(settings)
 
-    if attr.eth_network == "minimal":
+    if attr.zond_network == "minimal":
         settings["//proto:network"] = "minimal"
         settings["@io_bazel_rules_go//go/config:tags"] += ["minimal"]
-    elif attr.eth_network == "mainnet":  # Default / optional
+    elif attr.zond_network == "mainnet":  # Default / optional
         settings["//proto:network"] = "mainnet"
         settings["@io_bazel_rules_go//go/config:tags"] += ["mainnet"]
 
@@ -37,11 +37,11 @@ go_test_transition = transition(
 )
 
 def _go_test_transition_rule(**kwargs):
-    """A wrapper around go_test to add an eth_network attribute and incoming edge transition to support compile time configuration"""
+    """A wrapper around go_test to add an zond_network attribute and incoming edge transition to support compile time configuration"""
     kwargs = dict(kwargs)
     attrs = dict(kwargs["attrs"])
     attrs.update({
-        "eth_network": attr.string(values = ["mainnet", "minimal"]),
+        "zond_network": attr.string(values = ["mainnet", "minimal"]),
         "_whitelist_function_transition": attr.label(
             default = "@bazel_tools//tools/whitelists/function_transition_whitelist",
         ),

@@ -403,10 +403,8 @@ func syncCommittee(prefix string) *zondpb.SyncCommittee {
 		key := bytesutil.ToBytes48([]byte(prefix + "pubkey"))
 		pubkeys[i] = key[:]
 	}
-	agg := bytesutil.ToBytes48([]byte(prefix + "aggregate"))
 	return &zondpb.SyncCommittee{
-		Pubkeys:         pubkeys,
-		AggregatePubkey: agg[:],
+		Pubkeys: pubkeys,
 	}
 }
 

@@ -33,8 +33,7 @@ func Test_currentCommitteeIndicesFromState(t *testing.T) {
 		wantedCommittee[i] = vals[i].PublicKey
 	}
 	require.NoError(t, st.SetCurrentSyncCommittee(&zondpbalpha.SyncCommittee{
-		Pubkeys:         wantedCommittee,
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
+		Pubkeys: wantedCommittee,
 	}))
 
 	t.Run("OK", func(t *testing.T) {
@@ -46,8 +45,7 @@ func Test_currentCommitteeIndicesFromState(t *testing.T) {
 	t.Run("validator in committee not found in state", func(t *testing.T) {
 		wantedCommittee[0] = bytesutil.PadTo([]byte("fakepubkey"), 48)
 		require.NoError(t, st.SetCurrentSyncCommittee(&zondpbalpha.SyncCommittee{
-			Pubkeys:         wantedCommittee,
-			AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
+			Pubkeys: wantedCommittee,
 		}))
 		_, _, err := currentCommitteeIndicesFromState(st)
 		require.ErrorContains(t, "index not found for pubkey", err)
@@ -64,8 +62,7 @@ func Test_nextCommitteeIndicesFromState(t *testing.T) {
 		wantedCommittee[i] = vals[i].PublicKey
 	}
 	require.NoError(t, st.SetNextSyncCommittee(&zondpbalpha.SyncCommittee{
-		Pubkeys:         wantedCommittee,
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
+		Pubkeys: wantedCommittee,
 	}))
 
 	t.Run("OK", func(t *testing.T) {
@@ -77,8 +74,7 @@ func Test_nextCommitteeIndicesFromState(t *testing.T) {
 	t.Run("validator in committee not found in state", func(t *testing.T) {
 		wantedCommittee[0] = bytesutil.PadTo([]byte("fakepubkey"), 48)
 		require.NoError(t, st.SetNextSyncCommittee(&zondpbalpha.SyncCommittee{
-			Pubkeys:         wantedCommittee,
-			AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
+			Pubkeys: wantedCommittee,
 		}))
 		_, _, err := nextCommitteeIndicesFromState(st)
 		require.ErrorContains(t, "index not found for pubkey", err)
@@ -93,8 +89,7 @@ func Test_extractSyncSubcommittees(t *testing.T) {
 		syncCommittee[i] = vals[i].PublicKey
 	}
 	require.NoError(t, st.SetCurrentSyncCommittee(&zondpbalpha.SyncCommittee{
-		Pubkeys:         syncCommittee,
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
+		Pubkeys: syncCommittee,
 	}))
 
 	commSize := params.BeaconConfig().SyncCommitteeSize
@@ -127,8 +122,7 @@ func Test_extractSyncSubcommittees(t *testing.T) {
 	t.Run("validator in subcommittee not found in state", func(t *testing.T) {
 		syncCommittee[0] = bytesutil.PadTo([]byte("fakepubkey"), 48)
 		require.NoError(t, st.SetCurrentSyncCommittee(&zondpbalpha.SyncCommittee{
-			Pubkeys:         syncCommittee,
-			AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
+			Pubkeys: syncCommittee,
 		}))
 		committee, err := st.CurrentSyncCommittee()
 		require.NoError(t, err)
@@ -146,8 +140,7 @@ func TestListSyncCommittees(t *testing.T) {
 		syncCommittee[i] = vals[i].PublicKey
 	}
 	require.NoError(t, st.SetCurrentSyncCommittee(&zondpbalpha.SyncCommittee{
-		Pubkeys:         syncCommittee,
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
+		Pubkeys: syncCommittee,
 	}))
 	stRoot, err := st.HashTreeRoot(ctx)
 	require.NoError(t, err)
@@ -291,8 +284,7 @@ func TestListSyncCommitteesFuture(t *testing.T) {
 		syncCommittee[i] = vals[i].PublicKey
 	}
 	require.NoError(t, st.SetNextSyncCommittee(&zondpbalpha.SyncCommittee{
-		Pubkeys:         syncCommittee,
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
+		Pubkeys: syncCommittee,
 	}))
 	db := dbTest.SetupDB(t)
 

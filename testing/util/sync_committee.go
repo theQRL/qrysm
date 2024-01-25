@@ -31,7 +31,6 @@ func ConvertToCommittee(inputKeys [][]byte) *zondpb.SyncCommittee {
 	}
 
 	return &zondpb.SyncCommittee{
-		Pubkeys:         pubKeys,
-		AggregatePubkey: bytesutil.PadTo([]byte{}, params.BeaconConfig().BLSPubkeyLength),
+		Pubkeys: pubKeys,
 	}
 }

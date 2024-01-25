@@ -2057,7 +2057,6 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 	currCommittee := &zondpbalpha.SyncCommittee{}
 	for i := 0; i < 5; i++ {
 		currCommittee.Pubkeys = append(currCommittee.Pubkeys, vals[i].PublicKey)
-		currCommittee.AggregatePubkey = make([]byte, 48)
 	}
 	// add one public key twice - this is needed for one of the test cases
 	currCommittee.Pubkeys = append(currCommittee.Pubkeys, vals[0].PublicKey)
@@ -2065,8 +2064,6 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 	nextCommittee := &zondpbalpha.SyncCommittee{}
 	for i := 5; i < 10; i++ {
 		nextCommittee.Pubkeys = append(nextCommittee.Pubkeys, vals[i].PublicKey)
-		nextCommittee.AggregatePubkey = make([]byte, 48)
-
 	}
 	require.NoError(t, st.SetNextSyncCommittee(nextCommittee))
 
@@ -2238,14 +2235,11 @@ func TestGetSyncCommitteeDuties(t *testing.T) {
 		currCommittee := &zondpbalpha.SyncCommittee{}
 		for i := 5; i < 10; i++ {
 			currCommittee.Pubkeys = append(currCommittee.Pubkeys, vals[i].PublicKey)
-			currCommittee.AggregatePubkey = make([]byte, 48)
 		}
 		require.NoError(t, newSyncPeriodSt.SetCurrentSyncCommittee(currCommittee))
 		nextCommittee := &zondpbalpha.SyncCommittee{}
 		for i := 0; i < 5; i++ {
 			nextCommittee.Pubkeys = append(nextCommittee.Pubkeys, vals[i].PublicKey)
-			nextCommittee.AggregatePubkey = make([]byte, 48)
-
 		}
 		require.NoError(t, newSyncPeriodSt.SetNextSyncCommittee(nextCommittee))
 

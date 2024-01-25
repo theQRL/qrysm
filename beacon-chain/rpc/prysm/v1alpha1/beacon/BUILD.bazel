@@ -82,7 +82,7 @@ go_test(
         "validators_test.go",
     ],
     embed = [":go_default_library"],
-    eth_network = "minimal",
+    zond_network = "minimal",
     shard_count = 4,
     tags = ["minimal"],
     deps = [

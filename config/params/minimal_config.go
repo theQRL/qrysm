@@ -93,7 +93,7 @@ func MinimalSpecConfig() *BeaconChainConfig {
 	minimalConfig.CapellaForkEpoch = math.MaxUint64
 	minimalConfig.DenebForkVersion = []byte{4, 0, 0, 1}
 
-	minimalConfig.SyncCommitteeSize = 32
+	minimalConfig.SyncCommitteeSize = 16
 	minimalConfig.InactivityScoreBias = 4
 	minimalConfig.EpochsPerSyncCommitteePeriod = 8
 

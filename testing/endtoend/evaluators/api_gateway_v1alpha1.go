@@ -16,7 +16,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-// APIGatewayV1Alpha1VerifyIntegrity of our API gateway for the Prysm v1alpha1 API.
+// APIGatewayV1Alpha1VerifyIntegrity of our API gateway for the Qrysm v1alpha1 API.
 // This ensures our gRPC HTTP gateway returns and processes the same data _for the same endpoints_
 // as using a gRPC connection to interact with the API. Running this in end-to-end tests helps us
 // ensure parity between our HTTP gateway for our API and gRPC never breaks.
@@ -456,7 +456,7 @@ func withCompareChainHead(beaconNodeIdx int, conn *grpc.ClientConn) error {
 }
 
 func doGatewayJSONRequest(requestPath string, beaconNodeIdx int, dst interface{}) error {
-	basePath := fmt.Sprintf(v1Alpha1GatewayPathTemplate, e2e.TestParams.Ports.PrysmBeaconNodeGatewayPort+beaconNodeIdx)
+	basePath := fmt.Sprintf(v1Alpha1GatewayPathTemplate, e2e.TestParams.Ports.QrysmBeaconNodeGatewayPort+beaconNodeIdx)
 	httpResp, err := http.Get(
 		basePath + requestPath,
 	)

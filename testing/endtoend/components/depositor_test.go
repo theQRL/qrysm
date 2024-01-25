@@ -1,4 +1,4 @@
-package eth1
+package components
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/theQRL/qrysm/v4/config/params"
-
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
@@ -67,7 +66,7 @@ func TestComputeDeposits(t *testing.T) {
 			totals := make(map[string]uint64, c.nvals)
 			d, err := computeDeposits(c.offset, c.nvals, c.partial)
 			for _, dd := range d {
-				require.Equal(t, 48, len(dd.Data.PublicKey))
+				require.Equal(t, 2592, len(dd.Data.PublicKey))
 				k := fmt.Sprintf("%#x", dd.Data.PublicKey)
 				if _, ok := totals[k]; !ok {
 					totals[k] = dd.Data.Amount

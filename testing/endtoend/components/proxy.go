@@ -1,17 +1,14 @@
-package eth1
+package components
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"path"
 	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
 	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
@@ -34,7 +31,7 @@ func NewProxySet() *ProxySet {
 
 // Start starts all the proxies in set.
 func (s *ProxySet) Start(ctx context.Context) error {
-	totalNodeCount := e2e.TestParams.BeaconNodeCount + e2e.TestParams.LighthouseBeaconNodeCount
+	totalNodeCount := e2e.TestParams.BeaconNodeCount
 	nodes := make([]e2etypes.ComponentRunner, totalNodeCount)
 	for i := 0; i < totalNodeCount; i++ {
 		nodes[i] = NewProxy(i)
@@ -135,23 +132,20 @@ func NewProxy(index int) *Proxy {
 
 // Start runs a proxy.
 func (node *Proxy) Start(ctx context.Context) error {
-	f, err := os.Create(path.Join(e2e.TestParams.LogPath, "eth1_proxy_"+strconv.Itoa(node.index)+".log"))
+	f, err := os.Create(path.Join(e2e.TestParams.LogPath, "execution_proxy_"+strconv.Itoa(node.index)+".log"))
 	if err != nil {
 		return err
 	}
-	jwtPath := path.Join(e2e.TestParams.TestPath, "eth1data/"+strconv.Itoa(node.index)+"/")
-	if node.index == 0 {
-		jwtPath = path.Join(e2e.TestParams.TestPath, "zond1data/miner/")
-	}
+	jwtPath := path.Join(e2e.TestParams.TestPath, "zonddata/"+strconv.Itoa(node.index)+"/")
 	jwtPath = path.Join(jwtPath, "gzond/jwtsecret")
 	secret, err := parseJWTSecretFromFile(jwtPath)
 	if err != nil {
 		return err
 	}
 	opts := []proxy.Option{
-		proxy.WithDestinationAddress(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.Eth1AuthRPCPort+node.index)),
-		proxy.WithPort(e2e.TestParams.Ports.Eth1ProxyPort + node.index),
-		proxy.WithLogger(log.New()),
+		proxy.WithDestinationAddress(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.GzondExecutionNodeAuthRPCPort+node.index)),
+		proxy.WithPort(e2e.TestParams.Ports.ProxyPort + node.index),
+		proxy.WithLogger(logrus.New()),
 		proxy.WithLogFile(f),
 		proxy.WithJwtSecret(string(secret)),
 	}
@@ -159,7 +153,7 @@ func (node *Proxy) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("Starting eth1 proxy %d with port: %d and file %s", node.index, e2e.TestParams.Ports.Eth1ProxyPort+node.index, f.Name())
+	log.Infof("Starting zond proxy %d with port: %d and file %s", node.index, e2e.TestParams.Ports.ProxyPort+node.index, f.Name())
 
 	// Set cancel into context.
 	ctx, cancel := context.WithCancel(ctx)
@@ -170,7 +164,7 @@ func (node *Proxy) Start(ctx context.Context) error {
 	return nProxy.Start(ctx)
 }
 
-// Started checks whether the eth1 proxy is started and ready to be queried.
+// Started checks whether the zond proxy is started and ready to be queried.
 func (node *Proxy) Started() <-chan struct{} {
 	return node.started
 }
@@ -207,23 +201,4 @@ func (node *Proxy) RemoveRequestInterceptor(rpcMethodName string) {
 // were previously ignored due to our interceptors.
 func (node *Proxy) ReleaseBackedUpRequests(rpcMethodName string) {
 	node.engineProxy.ReleaseBackedUpRequests(rpcMethodName)
-}
-
-func parseJWTSecretFromFile(jwtSecretFile string) ([]byte, error) {
-	enc, err := file.ReadFileAsBytes(jwtSecretFile)
-	if err != nil {
-		return nil, err
-	}
-	strData := strings.TrimSpace(string(enc))
-	if len(strData) == 0 {
-		return nil, fmt.Errorf("provided JWT secret in file %s cannot be empty", jwtSecretFile)
-	}
-	secret, err := hex.DecodeString(strings.TrimPrefix(strData, "0x"))
-	if err != nil {
-		return nil, err
-	}
-	if len(secret) < 32 {
-		return nil, errors.New("provided JWT secret should be a hex string of at least 32 bytes")
-	}
-	return secret, nil
 }

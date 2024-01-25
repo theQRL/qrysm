@@ -331,7 +331,7 @@ var (
 	// ProposerSettingsFlag defines the path or URL to a file with proposer config.
 	ProposerSettingsFlag = &cli.StringFlag{
 		Name:  "proposer-settings-file",
-		Usage: "Set path to a YAML or JSON file containing validator settings used when proposing blocks such as (fee recipient and gas limit) (i.e. --proposer-settings-file=/path/to/proposer.json). File format found in docs",
+		Usage: "Set path to a JSON file containing validator settings used when proposing blocks such as (fee recipient and gas limit) (i.e. --proposer-settings-file=/path/to/proposer.json). File format found in docs",
 		Value: "",
 	}
 	// ProposerSettingsURLFlag defines the path or URL to a file with proposer config.

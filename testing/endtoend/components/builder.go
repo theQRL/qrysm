@@ -2,16 +2,13 @@ package components
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"path"
 	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/io/file"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
 	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
@@ -34,7 +31,7 @@ func NewBuilderSet() *BuilderSet {
 
 // Start starts all the builders in set.
 func (s *BuilderSet) Start(ctx context.Context) error {
-	totalNodeCount := e2e.TestParams.BeaconNodeCount + e2e.TestParams.LighthouseBeaconNodeCount
+	totalNodeCount := e2e.TestParams.BeaconNodeCount
 	nodes := make([]e2etypes.ComponentRunner, totalNodeCount)
 	for i := 0; i < totalNodeCount; i++ {
 		nodes[i] = NewBuilder(i)
@@ -139,18 +136,15 @@ func (node *Builder) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	jwtPath := path.Join(e2e.TestParams.TestPath, "zond1data/"+strconv.Itoa(node.index)+"/")
-	if node.index == 0 {
-		jwtPath = path.Join(e2e.TestParams.TestPath, "zond1data/miner/")
-	}
+	jwtPath := path.Join(e2e.TestParams.TestPath, "zonddata/"+strconv.Itoa(node.index)+"/")
 	jwtPath = path.Join(jwtPath, "gzond/jwtsecret")
 	secret, err := parseJWTSecretFromFile(jwtPath)
 	if err != nil {
 		return err
 	}
 	opts := []builder.Option{
-		builder.WithDestinationAddress(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.Eth1AuthRPCPort+node.index)),
-		builder.WithPort(e2e.TestParams.Ports.Eth1ProxyPort + node.index),
+		builder.WithDestinationAddress(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.GzondExecutionNodeAuthRPCPort+node.index)),
+		builder.WithPort(e2e.TestParams.Ports.ProxyPort + node.index),
 		builder.WithLogger(logrus.New()),
 		builder.WithLogFile(f),
 		builder.WithJwtSecret(string(secret)),
@@ -159,7 +153,7 @@ func (node *Builder) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("Starting builder %d with port: %d and file %s", node.index, e2e.TestParams.Ports.Eth1ProxyPort+node.index, f.Name())
+	log.Infof("Starting builder %d with port: %d and file %s", node.index, e2e.TestParams.Ports.ProxyPort+node.index, f.Name())
 
 	// Set cancel into context.
 	ctx, cancel := context.WithCancel(ctx)
@@ -191,23 +185,4 @@ func (node *Builder) Resume() error {
 func (node *Builder) Stop() error {
 	node.cancel()
 	return nil
-}
-
-func parseJWTSecretFromFile(jwtSecretFile string) ([]byte, error) {
-	enc, err := file.ReadFileAsBytes(jwtSecretFile)
-	if err != nil {
-		return nil, err
-	}
-	strData := strings.TrimSpace(string(enc))
-	if strData == "" {
-		return nil, fmt.Errorf("provided JWT secret in file %s cannot be empty", jwtSecretFile)
-	}
-	secret, err := hex.DecodeString(strings.TrimPrefix(strData, "0x"))
-	if err != nil {
-		return nil, err
-	}
-	if len(secret) < 32 {
-		return nil, errors.New("provided JWT secret should be a hex string of at least 32 bytes")
-	}
-	return secret, nil
 }

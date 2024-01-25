@@ -14,7 +14,7 @@ import (
 	mockstategen "github.com/theQRL/qrysm/v4/beacon-chain/state/stategen/mock"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	slashersimulator "github.com/theQRL/qrysm/v4/testing/slasher/simulator"
@@ -71,9 +71,9 @@ func TestEndToEnd_SlasherSimulator(t *testing.T) {
 	// We setup validators in the beacon state along with their
 	// private keys used to generate valid signatures in generated objects.
 	validators := make([]*zondpb.Validator, simulatorParams.NumValidators)
-	privKeys := make(map[primitives.ValidatorIndex]bls.SecretKey)
+	privKeys := make(map[primitives.ValidatorIndex]dilithium.DilithiumKey)
 	for valIdx := range validators {
-		privKey, err := bls.RandKey()
+		privKey, err := dilithium.RandKey()
 		require.NoError(t, err)
 		privKeys[primitives.ValidatorIndex(valIdx)] = privKey
 		validators[valIdx] = &zondpb.Validator{

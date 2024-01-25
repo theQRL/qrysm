@@ -8,7 +8,6 @@ import (
 
 	"github.com/theQRL/qrysm/v4/config/params"
 	ev "github.com/theQRL/qrysm/v4/testing/endtoend/evaluators"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/evaluators/beaconapi_evaluators"
 	e2eParams "github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -51,12 +50,9 @@ func e2eMinimal(t *testing.T, v int, cfgo ...types.E2EConfigOpt) *testRunner {
 		ev.ProcessesDepositsInBlocks,
 		ev.ActivatesDepositedValidators,
 		ev.DepositedValidatorsAreActive,
-		ev.ValidatorsVoteWithTheMajority,
+		// ev.ValidatorsVoteWithTheMajority, TODO(rgeraldes24): re-enable once the unit tests are complete
 		ev.ColdStateCheckpoint,
-		ev.AltairForkTransition,
-		ev.BellatrixForkTransition,
-		ev.CapellaForkTransition,
-		// ev.DenebForkTransition, // TODO(12750): Enable this when geth main branch's engine API support.
+		// ev.DenebForkTransition, // TODO(12750): Enable this when gzond main branch's engine API support.
 		ev.APIMiddlewareVerifyIntegrity,
 		ev.APIGatewayV1Alpha1VerifyIntegrity,
 		ev.FinishedSyncing,
@@ -77,7 +73,7 @@ func e2eMinimal(t *testing.T, v int, cfgo ...types.E2EConfigOpt) *testRunner {
 		TestSync:            true,
 		TestFeature:         true,
 		TestDeposits:        true,
-		UsePrysmShValidator: false,
+		UseQrysmShValidator: false,
 		UsePprof:            !longRunning,
 		TracingSinkEndpoint: tracingEndpoint,
 		Evaluators:          evals,
@@ -94,14 +90,10 @@ func e2eMinimal(t *testing.T, v int, cfgo ...types.E2EConfigOpt) *testRunner {
 	return newTestRunner(t, testConfig)
 }
 
-func e2eMainnet(t *testing.T, usePrysmSh, useMultiClient bool, cfg *params.BeaconChainConfig, cfgo ...types.E2EConfigOpt) *testRunner {
+func e2eMainnet(t *testing.T, useQrysmSh bool, cfg *params.BeaconChainConfig, cfgo ...types.E2EConfigOpt) *testRunner {
 	params.SetupTestConfigCleanup(t)
 	require.NoError(t, params.SetActive(cfg))
-	if useMultiClient {
-		require.NoError(t, e2eParams.InitMultiClient(t, e2eParams.StandardBeaconCount, e2eParams.StandardLighthouseNodeCount))
-	} else {
-		require.NoError(t, e2eParams.Init(t, e2eParams.StandardBeaconCount))
-	}
+	require.NoError(t, e2eParams.Init(t, e2eParams.StandardBeaconCount))
 	// Run for 10 epochs if not in long-running to confirm long-running has no issues.
 	var err error
 	epochsToRun := 12
@@ -130,10 +122,7 @@ func e2eMainnet(t *testing.T, usePrysmSh, useMultiClient bool, cfg *params.Beaco
 		ev.ValidatorsHaveWithdrawn,
 		ev.DepositedValidatorsAreActive,
 		ev.ColdStateCheckpoint,
-		ev.AltairForkTransition,
-		ev.BellatrixForkTransition,
-		ev.CapellaForkTransition,
-		// ev.DenebForkTransition, // TODO(12750): Enable this when geth main branch's engine API support.
+		// ev.DenebForkTransition, // TODO(12750): Enable this when gzond main branch's engine API support.
 		ev.APIMiddlewareVerifyIntegrity,
 		ev.APIGatewayV1Alpha1VerifyIntegrity,
 		ev.FinishedSyncing,
@@ -154,7 +143,7 @@ func e2eMainnet(t *testing.T, usePrysmSh, useMultiClient bool, cfg *params.Beaco
 		TestFeature:         true,
 		TestDeposits:        true,
 		UseFixedPeerIDs:     true,
-		UsePrysmShValidator: usePrysmSh,
+		UseQrysmShValidator: useQrysmSh,
 		UsePprof:            !longRunning,
 		TracingSinkEndpoint: tracingEndpoint,
 		Evaluators:          evals,
@@ -165,11 +154,6 @@ func e2eMainnet(t *testing.T, usePrysmSh, useMultiClient bool, cfg *params.Beaco
 		o(testConfig)
 	}
 
-	// In the event we use the cross-client e2e option, we add in an additional
-	// evaluator for multiclient runs to verify the beacon api conformance.
-	if testConfig.UseValidatorCrossClient {
-		testConfig.Evaluators = append(testConfig.Evaluators, beaconapi_evaluators.BeaconAPIMultiClientVerifyIntegrity)
-	}
 	if testConfig.UseBuilder {
 		testConfig.Evaluators = append(testConfig.Evaluators, ev.BuilderIsActive)
 	}
@@ -187,35 +171,11 @@ func scenarioEvals() []types.Evaluator {
 		ev.ProposeVoluntaryExit,
 		ev.ValidatorsHaveExited,
 		ev.ColdStateCheckpoint,
-		ev.AltairForkTransition,
-		ev.BellatrixForkTransition,
-		ev.CapellaForkTransition,
-		// ev.DenebForkTransition, // TODO(12750): Enable this when geth main branch's engine API support.
+		// ev.DenebForkTransition, // TODO(12750): Enable this when gzond main branch's engine API support.
 		ev.APIMiddlewareVerifyIntegrity,
 		ev.APIGatewayV1Alpha1VerifyIntegrity,
 		ev.FinishedSyncing,
 		ev.AllNodesHaveSameHead,
 		ev.ValidatorSyncParticipation,
-	}
-}
-
-func scenarioEvalsMulti() []types.Evaluator {
-	return []types.Evaluator{
-		ev.PeersConnect,
-		ev.HealthzCheck,
-		ev.MetricsCheck,
-		ev.ValidatorsParticipatingAtEpoch(2),
-		ev.FinalizationOccurs(3),
-		ev.ProposeVoluntaryExit,
-		ev.ValidatorsHaveExited,
-		ev.ColdStateCheckpoint,
-		ev.AltairForkTransition,
-		ev.BellatrixForkTransition,
-		ev.CapellaForkTransition,
-		// ev.DenebForkTransition, // TODO(12750): Enable this when geth main branch's engine API support.
-		ev.APIMiddlewareVerifyIntegrity,
-		ev.APIGatewayV1Alpha1VerifyIntegrity,
-		ev.FinishedSyncing,
-		ev.AllNodesHaveSameHead,
 	}
 }
