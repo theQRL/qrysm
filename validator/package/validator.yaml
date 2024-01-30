@@ -1,13 +1,13 @@
-# Configuration file for Prysm validator
+# Configuration file for Qrysm validator
 
 # datadir: Location of slashing protection DB
-datadir: /var/lib/prysm/validator
+datadir: /var/lib/qrysm/validator
 
-# wallet-dir: Path to a wallet directory on-disk for Prysm validator accounts.
-wallet-dir: /var/lib/prysm/validator
+# wallet-dir: Path to a wallet directory on-disk for Qrysm validator accounts.
+wallet-dir: /var/lib/qrysm/validator
 
 # wallet-password-file: Path to a plain-text, .txt file containing your wallet password.
-# wallet-password-file: /var/lib/prysm/validator/password.txt
+# wallet-password-file: /var/lib/qrysm/validator/password.txt
 
 # Optional tuning parameters
 # For full list, see https://docs.prylabs.network/docs/prysm-usage/parameters

@@ -9,9 +9,9 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/beacon"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/beacon"
 	"github.com/theQRL/qrysm/v4/config/params"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -40,7 +40,7 @@ func TestComputeWaitElements_LastRecvTimeNotZero(t *testing.T) {
 }
 
 func TestComputeWaitElements_Longest(t *testing.T) {
-	now := time.Date(2022, 1, 1, 0, 0, 20, 0, time.UTC)
+	now := time.Date(2022, 1, 1, 0, 1, 0, 0, time.UTC)
 	lastRecvTime := time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	waitDuration, nextRecvTime := computeWaitElements(now, lastRecvTime)

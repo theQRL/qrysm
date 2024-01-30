@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
@@ -14,8 +14,8 @@ import (
 )
 
 func TestPruneAttestations_NoPruning(t *testing.T) {
-	pubKey := [dilithium2.CryptoPublicKeyBytes]byte{1}
-	validatorDB := setupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{pubKey})
+	pubKey := [dilithium.CryptoPublicKeyBytes]byte{1}
+	validatorDB := setupDB(t, [][dilithium.CryptoPublicKeyBytes]byte{pubKey})
 
 	// Write attesting history for every single epoch
 	// since genesis to a specified number of epochs.
@@ -41,9 +41,9 @@ func TestPruneAttestations_NoPruning(t *testing.T) {
 
 func TestPruneAttestations_OK(t *testing.T) {
 	numKeys := uint64(64)
-	pks := make([][dilithium2.CryptoPublicKeyBytes]byte, 0, numKeys)
+	pks := make([][dilithium.CryptoPublicKeyBytes]byte, 0, numKeys)
 	for i := uint64(0); i < numKeys; i++ {
-		pks = append(pks, bytesutil.ToBytes2592(bytesutil.ToBytes(i, 48)))
+		pks = append(pks, bytesutil.ToBytes2592(bytesutil.ToBytes(i, 2592)))
 	}
 	validatorDB := setupDB(t, pks)
 
@@ -90,9 +90,9 @@ func TestPruneAttestations_OK(t *testing.T) {
 
 func BenchmarkPruneAttestations(b *testing.B) {
 	numKeys := uint64(8)
-	pks := make([][dilithium2.CryptoPublicKeyBytes]byte, 0, numKeys)
+	pks := make([][dilithium.CryptoPublicKeyBytes]byte, 0, numKeys)
 	for i := uint64(0); i < numKeys; i++ {
-		pks = append(pks, bytesutil.ToBytes2592(bytesutil.ToBytes(i, 48)))
+		pks = append(pks, bytesutil.ToBytes2592(bytesutil.ToBytes(i, 2592)))
 	}
 	validatorDB := setupDB(b, pks)
 
@@ -114,7 +114,7 @@ func BenchmarkPruneAttestations(b *testing.B) {
 
 // Saves attesting history for every (source, target = source + 1) pairs since genesis
 // up to a given number of epochs for a validator public key.
-func setupAttestationsForEveryEpoch(validatorDB *Store, pubKey [dilithium2.CryptoPublicKeyBytes]byte,
+func setupAttestationsForEveryEpoch(validatorDB *Store, pubKey [dilithium.CryptoPublicKeyBytes]byte,
 	numEpochs primitives.Epoch) error {
 	return validatorDB.update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(pubKeysBucket)
@@ -154,7 +154,7 @@ func setupAttestationsForEveryEpoch(validatorDB *Store, pubKey [dilithium2.Crypt
 func checkAttestingHistoryAfterPruning(
 	t testing.TB,
 	validatorDB *Store,
-	pubKey [dilithium2.CryptoPublicKeyBytes]byte,
+	pubKey [dilithium.CryptoPublicKeyBytes]byte,
 	startEpoch,
 	numEpochs primitives.Epoch,
 	shouldBePruned bool,

@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
-	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
 	slashing "github.com/theQRL/qrysm/v4/validator/slashing-protection-history"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

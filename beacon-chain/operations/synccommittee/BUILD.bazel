@@ -15,7 +15,7 @@ go_library(
     deps = [
         "//consensus-types/primitives:go_default_library",
         "//container/queue:go_default_library",
-        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
         "@com_github_prometheus_client_golang//prometheus:go_default_library",
         "@com_github_prometheus_client_golang//prometheus/promauto:go_default_library",
@@ -30,7 +30,7 @@ go_test(
     ],
     embed = [":go_default_library"],
     deps = [
-        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
         "//testing/require:go_default_library",
     ],
 )

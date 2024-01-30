@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/features"
 	"github.com/theQRL/qrysm/v4/encoding/ssz/detect"
 	"github.com/theQRL/qrysm/v4/monitoring/progress"
-	v1alpha1 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	v1alpha1 "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	bolt "go.etcd.io/bbolt"
 )
 

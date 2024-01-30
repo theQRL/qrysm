@@ -1,5 +1,5 @@
 // Package client represents a gRPC polling-based implementation
-// of an Ethereum validator client.
+// of a Zond validator client.
 package client
 
 import (
@@ -19,7 +19,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/async/event"
@@ -33,7 +33,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	accountsiface "github.com/theQRL/qrysm/v4/validator/accounts/iface"
 	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
@@ -43,7 +43,6 @@ import (
 	"github.com/theQRL/qrysm/v4/validator/graffiti"
 	"github.com/theQRL/qrysm/v4/validator/keymanager"
 	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
-	remoteweb3signer "github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -67,7 +66,6 @@ var (
 
 type validator struct {
 	logValidatorBalances               bool
-	useWeb                             bool
 	emitAccountMetrics                 bool
 	domainDataLock                     sync.Mutex
 	attLogsLock                        sync.Mutex
@@ -75,15 +73,15 @@ type validator struct {
 	highestValidSlotLock               sync.Mutex
 	prevBalanceLock                    sync.RWMutex
 	slashableKeysLock                  sync.RWMutex
-	eipImportBlacklistedPublicKeys     map[[dilithium2.CryptoPublicKeyBytes]byte]bool
+	eipImportBlacklistedPublicKeys     map[[dilithium.CryptoPublicKeyBytes]byte]bool
 	walletInitializedFeed              *event.Feed
 	attLogs                            map[[32]byte]*attSubmitted
-	startBalances                      map[[dilithium2.CryptoPublicKeyBytes]byte]uint64
+	startBalances                      map[[dilithium.CryptoPublicKeyBytes]byte]uint64
 	dutiesLock                         sync.RWMutex
 	duties                             *zondpb.DutiesResponse
-	prevBalance                        map[[dilithium2.CryptoPublicKeyBytes]byte]uint64
-	pubkeyToValidatorIndex             map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex
-	signedValidatorRegistrations       map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1
+	prevBalance                        map[[dilithium.CryptoPublicKeyBytes]byte]uint64
+	pubkeyToValidatorIndex             map[[dilithium.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex
+	signedValidatorRegistrations       map[[dilithium.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1
 	graffitiOrderedIndex               uint64
 	aggregatedSlotCommitteeIDCache     *lru.Cache
 	domainDataCache                    *ristretto.Cache
@@ -102,9 +100,9 @@ type validator struct {
 	graffiti                           []byte
 	voteStats                          voteStats
 	syncCommitteeStats                 syncCommitteeStats
-	Web3SignerConfig                   *remoteweb3signer.SetupConfig
-	proposerSettings                   *validatorserviceconfig.ProposerSettings
-	walletInitializedChannel           chan *wallet.Wallet
+	// Web3SignerConfig                   *remoteweb3signer.SetupConfig
+	proposerSettings         *validatorserviceconfig.ProposerSettings
+	walletInitializedChannel chan *wallet.Wallet
 }
 
 type validatorStatus struct {
@@ -120,43 +118,66 @@ func (v *validator) Done() {
 
 // WaitForKeymanagerInitialization checks if the validator needs to wait for
 func (v *validator) WaitForKeymanagerInitialization(ctx context.Context) error {
-	genesisRoot, err := v.db.GenesisValidatorsRoot(ctx)
-	if err != nil {
-		return errors.Wrap(err, "unable to retrieve valid genesis validators root while initializing key manager")
+	// genesisRoot, err := v.db.GenesisValidatorsRoot(ctx)
+	// if err != nil {
+	// 	return errors.Wrap(err, "unable to retrieve valid genesis validators root while initializing key manager")
+	// }
+
+	/*
+		if v.useWeb && v.wallet == nil {
+			log.Info("Waiting for keymanager to initialize validator client with web UI")
+			// if wallet is not set, wait for it to be set through the UI
+			km, err := waitForWebWalletInitialization(ctx, v.walletInitializedFeed, v.walletInitializedChannel)
+			if err != nil {
+				return err
+			}
+			v.keyManager = km
+		} else {
+			if v.interopKeysConfig != nil {
+				keyManager, err := local.NewInteropKeymanager(ctx, v.interopKeysConfig.Offset, v.interopKeysConfig.NumValidatorKeys)
+				if err != nil {
+					return errors.Wrap(err, "could not generate interop keys for key manager")
+				}
+				v.keyManager = keyManager
+			} else if v.wallet == nil {
+				return errors.New("wallet not set")
+			} else {
+				if v.Web3SignerConfig != nil {
+					v.Web3SignerConfig.GenesisValidatorsRoot = genesisRoot
+				}
+				keyManager, err := v.wallet.InitializeKeymanager(ctx, accountsiface.InitKeymanagerConfig{ListenForChanges: true, Web3SignerConfig: v.Web3SignerConfig})
+				if err != nil {
+					return errors.Wrap(err, "could not initialize key manager")
+				}
+				v.keyManager = keyManager
+			}
+		}
+	*/
+
+	if v.interopKeysConfig != nil {
+		keyManager, err := local.NewInteropKeymanager(ctx, v.interopKeysConfig.Offset, v.interopKeysConfig.NumValidatorKeys)
+		if err != nil {
+			return errors.Wrap(err, "could not generate interop keys for key manager")
+		}
+		v.keyManager = keyManager
+	} else if v.wallet == nil {
+		return errors.New("wallet not set")
+	} else {
+		// if v.Web3SignerConfig != nil {
+		// 	v.Web3SignerConfig.GenesisValidatorsRoot = genesisRoot
+		// }
+		keyManager, err := v.wallet.InitializeKeymanager(ctx, accountsiface.InitKeymanagerConfig{ListenForChanges: true /*, Web3SignerConfig: v.Web3SignerConfig*/})
+		if err != nil {
+			return errors.Wrap(err, "could not initialize key manager")
+		}
+		v.keyManager = keyManager
 	}
 
-	if v.useWeb && v.wallet == nil {
-		log.Info("Waiting for keymanager to initialize validator client with web UI")
-		// if wallet is not set, wait for it to be set through the UI
-		km, err := waitForWebWalletInitialization(ctx, v.walletInitializedFeed, v.walletInitializedChannel)
-		if err != nil {
-			return err
-		}
-		v.keyManager = km
-	} else {
-		if v.interopKeysConfig != nil {
-			keyManager, err := local.NewInteropKeymanager(ctx, v.interopKeysConfig.Offset, v.interopKeysConfig.NumValidatorKeys)
-			if err != nil {
-				return errors.Wrap(err, "could not generate interop keys for key manager")
-			}
-			v.keyManager = keyManager
-		} else if v.wallet == nil {
-			return errors.New("wallet not set")
-		} else {
-			if v.Web3SignerConfig != nil {
-				v.Web3SignerConfig.GenesisValidatorsRoot = genesisRoot
-			}
-			keyManager, err := v.wallet.InitializeKeymanager(ctx, accountsiface.InitKeymanagerConfig{ListenForChanges: true, Web3SignerConfig: v.Web3SignerConfig})
-			if err != nil {
-				return errors.Wrap(err, "could not initialize key manager")
-			}
-			v.keyManager = keyManager
-		}
-	}
 	recheckKeys(ctx, v.db, v.keyManager)
 	return nil
 }
 
+/*
 // subscribe to channel for when the wallet is initialized
 func waitForWebWalletInitialization(
 	ctx context.Context,
@@ -181,11 +202,12 @@ func waitForWebWalletInitialization(
 		}
 	}
 }
+*/
 
 // recheckKeys checks if the validator has any keys that need to be rechecked.
 // the keymanager implements a subscription to push these updates to the validator.
 func recheckKeys(ctx context.Context, valDB vdb.Database, keyManager keymanager.IKeymanager) {
-	var validatingKeys [][dilithium2.CryptoPublicKeyBytes]byte
+	var validatingKeys [][dilithium.CryptoPublicKeyBytes]byte
 	var err error
 	validatingKeys, err = keyManager.FetchValidatingPublicKeys(ctx)
 	if err != nil {
@@ -209,7 +231,7 @@ func recheckValidatingKeysBucket(ctx context.Context, valDB vdb.Database, km key
 	if !ok {
 		return
 	}
-	validatingPubKeysChan := make(chan [][dilithium2.CryptoPublicKeyBytes]byte, 1)
+	validatingPubKeysChan := make(chan [][dilithium.CryptoPublicKeyBytes]byte, 1)
 	sub := importedKeymanager.SubscribeAccountChanges(validatingPubKeysChan)
 	defer func() {
 		sub.Unsubscribe()
@@ -232,7 +254,7 @@ func recheckValidatingKeysBucket(ctx context.Context, valDB vdb.Database, km key
 }
 
 // WaitForChainStart checks whether the beacon node has started its runtime. That is,
-// it calls to the beacon node which then verifies the ETH1.0 deposit contract logs to check
+// it calls to the beacon node which then verifies the Zond deposit contract logs to check
 // for the ChainStart log to have been emitted. If so, it starts a ticker based on the ChainStart
 // unix timestamp which will be used to keep track of time within the validator client.
 func (v *validator) WaitForChainStart(ctx context.Context) error {
@@ -342,16 +364,8 @@ func (v *validator) ReceiveBlocks(ctx context.Context, connectionErrorChannel ch
 		}
 		var blk interfaces.ReadOnlySignedBeaconBlock
 		switch b := res.Block.(type) {
-		case *zondpb.StreamBlocksResponse_Phase0Block:
-			blk, err = blocks.NewSignedBeaconBlock(b.Phase0Block)
-		case *zondpb.StreamBlocksResponse_AltairBlock:
-			blk, err = blocks.NewSignedBeaconBlock(b.AltairBlock)
-		case *zondpb.StreamBlocksResponse_BellatrixBlock:
-			blk, err = blocks.NewSignedBeaconBlock(b.BellatrixBlock)
 		case *zondpb.StreamBlocksResponse_CapellaBlock:
 			blk, err = blocks.NewSignedBeaconBlock(b.CapellaBlock)
-		case *zondpb.StreamBlocksResponse_DenebBlock:
-			blk, err = blocks.NewSignedBeaconBlock(b.DenebBlock)
 		}
 		if err != nil {
 			log.WithError(err).Error("Failed to wrap signed block")
@@ -417,7 +431,7 @@ func (v *validator) checkAndLogValidatorStatus(statuses []*validatorStatus, acti
 		case zondpb.ValidatorStatus_EXITED:
 			log.Info("Validator exited")
 		case zondpb.ValidatorStatus_INVALID:
-			log.Warn("Invalid Eth1 deposit")
+			log.Warn("Invalid Zond deposit")
 		default:
 			log.WithFields(logrus.Fields{
 				"activationEpoch": status.status.ActivationEpoch,
@@ -522,7 +536,7 @@ func buildDuplicateError(response []*zondpb.DoppelGangerResponse_ValidatorRespon
 	duplicates := make([][]byte, 0)
 	for _, valRes := range response {
 		if valRes.DuplicateExists {
-			var copiedKey [dilithium2.CryptoPublicKeyBytes]byte
+			var copiedKey [dilithium.CryptoPublicKeyBytes]byte
 			copy(copiedKey[:], valRes.PublicKey)
 			duplicates = append(duplicates, copiedKey[:])
 		}
@@ -580,7 +594,7 @@ func (v *validator) UpdateDuties(ctx context.Context, slot primitives.Slot) erro
 	}
 
 	// Filter out the slashable public keys from the duties request.
-	filteredKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, 0, len(validatingKeys))
+	filteredKeys := make([][dilithium.CryptoPublicKeyBytes]byte, 0, len(validatingKeys))
 	v.slashableKeysLock.RLock()
 	for _, pubKey := range validatingKeys {
 		if ok := v.eipImportBlacklistedPublicKeys[pubKey]; !ok {
@@ -717,11 +731,11 @@ func (v *validator) subscribeToSubnets(ctx context.Context, res *zondpb.DutiesRe
 // RolesAt slot returns the validator roles at the given slot. Returns nil if the
 // validator is known to not have a roles at the slot. Returns UNKNOWN if the
 // validator assignments are unknown. Otherwise returns a valid ValidatorRole map.
-func (v *validator) RolesAt(ctx context.Context, slot primitives.Slot) (map[[dilithium2.CryptoPublicKeyBytes]byte][]iface.ValidatorRole, error) {
+func (v *validator) RolesAt(ctx context.Context, slot primitives.Slot) (map[[dilithium.CryptoPublicKeyBytes]byte][]iface.ValidatorRole, error) {
 	v.dutiesLock.RLock()
 	defer v.dutiesLock.RUnlock()
-	rolesAt := make(map[[dilithium2.CryptoPublicKeyBytes]byte][]iface.ValidatorRole)
-	for validator, duty := range v.duties.Duties {
+	rolesAt := make(map[[dilithium.CryptoPublicKeyBytes]byte][]iface.ValidatorRole)
+	for validator, duty := range v.duties.CurrentEpochDuties {
 		var roles []iface.ValidatorRole
 
 		if duty == nil {
@@ -776,7 +790,7 @@ func (v *validator) RolesAt(ctx context.Context, slot primitives.Slot) (map[[dil
 			roles = append(roles, iface.RoleUnknown)
 		}
 
-		var pubKey [dilithium2.CryptoPublicKeyBytes]byte
+		var pubKey [dilithium.CryptoPublicKeyBytes]byte
 		copy(pubKey[:], duty.PublicKey)
 		rolesAt[pubKey] = roles
 	}
@@ -793,7 +807,7 @@ func (v *validator) Keymanager() (keymanager.IKeymanager, error) {
 
 // isAggregator checks if a validator is an aggregator of a given slot and committee,
 // it uses a modulo calculated by validator count in committee and samples randomness around it.
-func (v *validator) isAggregator(ctx context.Context, committee []primitives.ValidatorIndex, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte) (bool, error) {
+func (v *validator) isAggregator(ctx context.Context, committee []primitives.ValidatorIndex, slot primitives.Slot, pubKey [dilithium.CryptoPublicKeyBytes]byte) (bool, error) {
 	modulo := uint64(1)
 	if len(committee)/int(params.BeaconConfig().TargetAggregatorsPerCommittee) > 1 {
 		modulo = uint64(len(committee)) / params.BeaconConfig().TargetAggregatorsPerCommittee
@@ -817,7 +831,7 @@ func (v *validator) isAggregator(ctx context.Context, committee []primitives.Val
 //
 //	modulo = max(1, SYNC_COMMITTEE_SIZE // SYNC_COMMITTEE_SUBNET_COUNT // TARGET_AGGREGATORS_PER_SYNC_SUBCOMMITTEE)
 //	return bytes_to_uint64(hash(signature)[0:8]) % modulo == 0
-func (v *validator) isSyncCommitteeAggregator(ctx context.Context, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte) (bool, error) {
+func (v *validator) isSyncCommitteeAggregator(ctx context.Context, slot primitives.Slot, pubKey [dilithium.CryptoPublicKeyBytes]byte) (bool, error) {
 	res, err := v.validatorClient.GetSyncSubcommitteeIndex(ctx, &zondpb.SyncSubcommitteeIndexRequest{
 		PublicKey: pubKey[:],
 		Slot:      slot,
@@ -1051,8 +1065,8 @@ func (v *validator) PushProposerSettings(ctx context.Context, km keymanager.IKey
 	return nil
 }
 
-func (v *validator) filterAndCacheActiveKeys(ctx context.Context, pubkeys [][dilithium2.CryptoPublicKeyBytes]byte, slot primitives.Slot) ([][dilithium2.CryptoPublicKeyBytes]byte, error) {
-	filteredKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, 0)
+func (v *validator) filterAndCacheActiveKeys(ctx context.Context, pubkeys [][dilithium.CryptoPublicKeyBytes]byte, slot primitives.Slot) ([][dilithium.CryptoPublicKeyBytes]byte, error) {
+	filteredKeys := make([][dilithium.CryptoPublicKeyBytes]byte, 0)
 	statusRequestKeys := make([][]byte, 0)
 	for _, k := range pubkeys {
 		_, ok := v.pubkeyToValidatorIndex[k]
@@ -1095,7 +1109,7 @@ func (v *validator) filterAndCacheActiveKeys(ctx context.Context, pubkeys [][dil
 	return filteredKeys, nil
 }
 
-func (v *validator) buildPrepProposerReqs(ctx context.Context, pubkeys [][dilithium2.CryptoPublicKeyBytes]byte /* only active pubkeys */) ([]*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer, error) {
+func (v *validator) buildPrepProposerReqs(ctx context.Context, pubkeys [][dilithium.CryptoPublicKeyBytes]byte /* only active pubkeys */) ([]*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer, error) {
 	var prepareProposerReqs []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer
 	for _, k := range pubkeys {
 		// Default case: Define fee recipient to burn address
@@ -1140,7 +1154,7 @@ func (v *validator) buildPrepProposerReqs(ctx context.Context, pubkeys [][dilith
 	return prepareProposerReqs, nil
 }
 
-func (v *validator) buildSignedRegReqs(ctx context.Context, pubkeys [][dilithium2.CryptoPublicKeyBytes]byte /* only active pubkeys */, signer iface.SigningFunc) ([]*zondpb.SignedValidatorRegistrationV1, error) {
+func (v *validator) buildSignedRegReqs(ctx context.Context, pubkeys [][dilithium.CryptoPublicKeyBytes]byte /* only active pubkeys */, signer iface.SigningFunc) ([]*zondpb.SignedValidatorRegistrationV1, error) {
 	var signedValRegRegs []*zondpb.SignedValidatorRegistrationV1
 
 	// if the timestamp is pre-genesis, don't create registrations
@@ -1217,7 +1231,7 @@ func (v *validator) buildSignedRegReqs(ctx context.Context, pubkeys [][dilithium
 	return signedValRegRegs, nil
 }
 
-func (v *validator) validatorIndex(ctx context.Context, pubkey [dilithium2.CryptoPublicKeyBytes]byte) (primitives.ValidatorIndex, bool, error) {
+func (v *validator) validatorIndex(ctx context.Context, pubkey [dilithium.CryptoPublicKeyBytes]byte) (primitives.ValidatorIndex, bool, error) {
 	resp, err := v.validatorClient.ValidatorIndex(ctx, &zondpb.ValidatorIndexRequest{PublicKey: pubkey[:]})
 	switch {
 	case status.Code(err) == codes.NotFound:

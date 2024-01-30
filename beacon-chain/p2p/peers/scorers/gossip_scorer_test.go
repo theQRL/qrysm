@@ -6,7 +6,7 @@ import (
 
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/scorers"
-	pbrpc "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	pbrpc "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 

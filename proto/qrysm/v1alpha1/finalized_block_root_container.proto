@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package theqrl.zond.v1alpha1;
+
+option csharp_namespace = "TheQRL.Zond.v1alpha1";
+option go_package = "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1;zond";
+option java_multiple_files = true;
+option java_outer_classname = "FinalizedBlockRootContainerProto";
+option java_package = "org.theqrl.zond.v1alpha1";
+option php_namespace = "TheQRL\\Zond\\v1alpha1";
+
+message FinalizedBlockRootContainer {
+    bytes parent_root = 1;
+    bytes child_root = 2;
+}

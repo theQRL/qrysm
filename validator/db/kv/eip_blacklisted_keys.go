@@ -3,23 +3,23 @@ package kv
 import (
 	"context"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-qrllib/dilithium"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 )
 
 // EIPImportBlacklistedPublicKeys returns keys that were marked as blacklisted during EIP-3076 slashing
 // protection imports, ensuring that we can prevent these keys from having duties at runtime.
-func (s *Store) EIPImportBlacklistedPublicKeys(ctx context.Context) ([][dilithium2.CryptoPublicKeyBytes]byte, error) {
+func (s *Store) EIPImportBlacklistedPublicKeys(ctx context.Context) ([][dilithium.CryptoPublicKeyBytes]byte, error) {
 	ctx, span := trace.StartSpan(ctx, "Validator.EIPImportBlacklistedPublicKeys")
 	defer span.End()
 	var err error
-	publicKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, 0)
+	publicKeys := make([][dilithium.CryptoPublicKeyBytes]byte, 0)
 	err = s.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(slashablePublicKeysBucket)
 		return bucket.ForEach(func(key []byte, _ []byte) error {
 			if key != nil {
-				var pubKeyBytes [dilithium2.CryptoPublicKeyBytes]byte
+				var pubKeyBytes [dilithium.CryptoPublicKeyBytes]byte
 				copy(pubKeyBytes[:], key)
 				publicKeys = append(publicKeys, pubKeyBytes)
 			}
@@ -31,7 +31,7 @@ func (s *Store) EIPImportBlacklistedPublicKeys(ctx context.Context) ([][dilithiu
 
 // SaveEIPImportBlacklistedPublicKeys stores a list of blacklisted public keys that
 // were determined during EIP-3076 slashing protection imports.
-func (s *Store) SaveEIPImportBlacklistedPublicKeys(ctx context.Context, publicKeys [][dilithium2.CryptoPublicKeyBytes]byte) error {
+func (s *Store) SaveEIPImportBlacklistedPublicKeys(ctx context.Context, publicKeys [][dilithium.CryptoPublicKeyBytes]byte) error {
 	ctx, span := trace.StartSpan(ctx, "Validator.SaveEIPImportBlacklistedPublicKeys")
 	defer span.End()
 	return s.db.Update(func(tx *bolt.Tx) error {

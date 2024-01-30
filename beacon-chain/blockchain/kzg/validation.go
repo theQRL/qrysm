@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	GoKZG "github.com/crate-crypto/go-kzg-4844"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 )
 
 // IsDataAvailable checks that

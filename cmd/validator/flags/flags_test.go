@@ -2,9 +2,7 @@ package flags
 
 import (
 	"flag"
-	"fmt"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/theQRL/qrysm/v4/cmd"
@@ -12,6 +10,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+/*
 func TestLoadFlagsFromConfig_PreProcessing_Web3signer(t *testing.T) {
 	app := cli.App{}
 	set := flag.NewFlagSet("test", 0)
@@ -50,6 +49,7 @@ func TestLoadFlagsFromConfig_PreProcessing_Web3signer(t *testing.T) {
 	require.NoError(t, command.Run(context, context.Args().Slice()...))
 	require.NoError(t, os.Remove("flags_test.yaml"))
 }
+*/
 
 func TestLoadFlagsFromConfig_EnableBuilderHasDefaultValue(t *testing.T) {
 	app := cli.App{}

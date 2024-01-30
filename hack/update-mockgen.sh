@@ -6,7 +6,7 @@
 mock_path="testing/mock"
 iface_mock_path="testing/validator-mock"
 
-# github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1
+# github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1
 # ------------------------------------------------------
 proto_mocks_v1alpha1=(
       "$mock_path/beacon_service_mock.go BeaconChainClient,BeaconChain_StreamChainHeadClient,BeaconChain_StreamAttestationsClient,BeaconChain_StreamBlocksClient,BeaconChain_StreamValidatorsInfoClient,BeaconChain_StreamIndexedAttestationsClient"
@@ -22,7 +22,7 @@ for ((i = 0; i < ${#proto_mocks_v1alpha1[@]}; i++)); do
     interfaces=${proto_mocks_v1alpha1[i]#* };
     echo "generating $file for interfaces: $interfaces";
     echo
-    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1 "$interfaces"
+    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1 "$interfaces"
 done
 
 # github.com/theQRL/qrysm/v4/proto/eth/service
@@ -50,7 +50,7 @@ for ((i = 0; i < ${#proto_mocks_v1alpha1_validator_clients[@]}; i++)); do
     interfaces=${proto_mocks_v1alpha1_validator_clients[i]#* };
     echo "generating $file for interfaces: $interfaces";
     echo
-    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client "$interfaces"
+    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client "$interfaces"
 done
 
 # github.com/theQRL/qrysm/v4/validator/client/iface

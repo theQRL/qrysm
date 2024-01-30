@@ -15,7 +15,7 @@ go_library(
         "//async/event:go_default_library",
         "//crypto/dilithium:go_default_library",
         "//encoding/bytesutil:go_default_library",
-        "//proto/prysm/v1alpha1/validator-client:go_default_library",
+        "//proto/qrysm/v1alpha1/validator-client:go_default_library",
         "//proto/zond/service:go_default_library",
         "//validator/accounts/petnames:go_default_library",
         "//validator/keymanager:go_default_library",
@@ -39,7 +39,7 @@ go_test(
     deps = [
         "//crypto/dilithium:go_default_library",
         "//encoding/bytesutil:go_default_library",
-        "//proto/prysm/v1alpha1/validator-client:go_default_library",
+        "//proto/qrysm/v1alpha1/validator-client:go_default_library",
         "//proto/zond/service:go_default_library",
         "//testing/require:go_default_library",
         "//validator/keymanager/remote-web3signer/internal:go_default_library",

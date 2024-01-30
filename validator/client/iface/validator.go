@@ -5,12 +5,12 @@ import (
 	"errors"
 	"time"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
 	validatorserviceconfig "github.com/theQRL/qrysm/v4/config/validator/service"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/validator/keymanager"
 )
 
@@ -40,25 +40,25 @@ type Validator interface {
 	Done()
 	WaitForChainStart(ctx context.Context) error
 	WaitForSync(ctx context.Context) error
-	WaitForActivation(ctx context.Context, accountsChangedChan chan [][dilithium2.CryptoPublicKeyBytes]byte) error
+	WaitForActivation(ctx context.Context, accountsChangedChan chan [][dilithiumlib.CryptoPublicKeyBytes]byte) error
 	CanonicalHeadSlot(ctx context.Context) (primitives.Slot, error)
 	NextSlot() <-chan primitives.Slot
 	SlotDeadline(slot primitives.Slot) time.Time
 	LogValidatorGainsAndLosses(ctx context.Context, slot primitives.Slot) error
 	UpdateDuties(ctx context.Context, slot primitives.Slot) error
-	RolesAt(ctx context.Context, slot primitives.Slot) (map[[dilithium2.CryptoPublicKeyBytes]byte][]ValidatorRole, error) // validator pubKey -> roles
-	SubmitAttestation(ctx context.Context, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte)
-	ProposeBlock(ctx context.Context, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte)
-	SubmitAggregateAndProof(ctx context.Context, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte)
-	SubmitSyncCommitteeMessage(ctx context.Context, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte)
-	SubmitSignedContributionAndProof(ctx context.Context, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte)
+	RolesAt(ctx context.Context, slot primitives.Slot) (map[[dilithiumlib.CryptoPublicKeyBytes]byte][]ValidatorRole, error) // validator pubKey -> roles
+	SubmitAttestation(ctx context.Context, slot primitives.Slot, pubKey [dilithiumlib.CryptoPublicKeyBytes]byte)
+	ProposeBlock(ctx context.Context, slot primitives.Slot, pubKey [dilithiumlib.CryptoPublicKeyBytes]byte)
+	SubmitAggregateAndProof(ctx context.Context, slot primitives.Slot, pubKey [dilithiumlib.CryptoPublicKeyBytes]byte)
+	SubmitSyncCommitteeMessage(ctx context.Context, slot primitives.Slot, pubKey [dilithiumlib.CryptoPublicKeyBytes]byte)
+	SubmitSignedContributionAndProof(ctx context.Context, slot primitives.Slot, pubKey [dilithiumlib.CryptoPublicKeyBytes]byte)
 	LogAttestationsSubmitted()
 	LogSyncCommitteeMessagesSubmitted()
 	UpdateDomainDataCaches(ctx context.Context, slot primitives.Slot)
 	WaitForKeymanagerInitialization(ctx context.Context) error
 	Keymanager() (keymanager.IKeymanager, error)
 	ReceiveBlocks(ctx context.Context, connectionErrorChannel chan<- error)
-	HandleKeyReload(ctx context.Context, currentKeys [][dilithium2.CryptoPublicKeyBytes]byte) (bool, error)
+	HandleKeyReload(ctx context.Context, currentKeys [][dilithiumlib.CryptoPublicKeyBytes]byte) (bool, error)
 	CheckDoppelGanger(ctx context.Context) error
 	PushProposerSettings(ctx context.Context, km keymanager.IKeymanager, slot primitives.Slot, deadline time.Time) error
 	SignValidatorRegistrationRequest(ctx context.Context, signer SigningFunc, newValidatorRegistration *zondpb.ValidatorRegistrationV1) (*zondpb.SignedValidatorRegistrationV1, error)

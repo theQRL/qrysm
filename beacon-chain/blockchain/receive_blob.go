@@ -3,7 +3,7 @@ package blockchain
 import (
 	"context"
 
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 )
 
 // SendNewBlobEvent sends a message to the BlobNotifier channel that the blob

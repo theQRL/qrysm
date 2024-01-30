@@ -40,7 +40,7 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/io/logs"
 	"github.com/theQRL/qrysm/v4/network"
-	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	_ "github.com/theQRL/qrysm/v4/runtime/maxprocs"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 )

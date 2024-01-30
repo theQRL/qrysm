@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/beacon"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/beacon"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	gomock "github.com/golang/mock/gomock"
 )

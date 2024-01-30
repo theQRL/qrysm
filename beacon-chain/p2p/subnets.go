@@ -15,7 +15,7 @@ import (
 	"go.opencensus.io/trace"
 
 	"github.com/theQRL/qrysm/v4/config/params"
-	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 )
 
 var attestationSubnetCount = params.BeaconNetworkConfig().AttestationSubnetCount

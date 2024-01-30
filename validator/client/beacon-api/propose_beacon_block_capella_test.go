@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -98,7 +98,7 @@ func generateSignedCapellaBlock() *zondpb.GenericSignedBeaconBlock_Capella {
 	return &zondpb.GenericSignedBeaconBlock_Capella{
 		Capella: &zondpb.SignedBeaconBlockCapella{
 			Block:     test_helpers.GenerateProtoCapellaBeaconBlock(),
-			Signature: test_helpers.FillByteSlice(96, 127),
+			Signature: test_helpers.FillByteSlice(4595, 127),
 		},
 	}
 }

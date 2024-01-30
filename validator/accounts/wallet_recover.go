@@ -1,5 +1,6 @@
 package accounts
 
+/*
 import (
 	"context"
 	"strings"
@@ -74,3 +75,4 @@ func ValidateMnemonic(mnemonic string) error {
 	}
 	return nil
 }
+*/

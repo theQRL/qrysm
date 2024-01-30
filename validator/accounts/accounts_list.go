@@ -6,7 +6,7 @@ import (
 	"math"
 
 	"github.com/pkg/errors"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
 	"github.com/theQRL/qrysm/v4/validator/client/iface"
 	"github.com/theQRL/qrysm/v4/validator/keymanager"

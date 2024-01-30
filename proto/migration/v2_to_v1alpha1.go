@@ -3,7 +3,7 @@ package migration
 import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpbalpha "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"google.golang.org/protobuf/proto"
 )

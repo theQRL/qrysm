@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/shared"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared"
 	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 )
 

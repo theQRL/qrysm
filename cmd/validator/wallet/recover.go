@@ -1,5 +1,6 @@
 package wallet
 
+/*
 import (
 	"fmt"
 	"os"
@@ -49,7 +50,7 @@ func walletRecover(c *cli.Context) error {
 				flags.Mnemonic25thWordFileFlag,
 				mnemonicPassphrasePromptText,
 				"Confirm mnemonic passphrase",
-				false, /* Should confirm password */
+				false,
 				func(input string) error {
 					if strings.TrimSpace(input) == "" {
 						return errors.New("input cannot be empty")
@@ -72,7 +73,7 @@ func walletRecover(c *cli.Context) error {
 		flags.WalletPasswordFileFlag,
 		wallet.NewWalletPasswordPromptText,
 		wallet.ConfirmPasswordPromptText,
-		true, /* Should confirm password */
+		true,
 		prompt.ValidatePasswordInput,
 	)
 	if err != nil {
@@ -173,3 +174,4 @@ func inputNumAccounts(cliCtx *cli.Context) (int64, error) {
 	}
 	return int64(numAccountsInt), nil
 }
+*/

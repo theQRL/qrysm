@@ -107,7 +107,7 @@ func VerifyMultipleSignatures(sigs [][]byte, msgs [][32]byte, pubKeys [][]common
 			length, len(pubKeys), len(msgs))
 	}
 
-	for i, _ := range sigs {
+	for i := range sigs {
 		for pubKeyIndex, pubKey := range pubKeys[i] {
 			offset := pubKeyIndex * dilithium2.CryptoBytes
 			sig := sigs[i][offset : offset+dilithium2.CryptoBytes]

@@ -28,7 +28,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
 	prysmnetwork "github.com/theQRL/qrysm/v4/network"
-	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/metadata"
+	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/metadata"
 	"github.com/theQRL/qrysm/v4/runtime"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"

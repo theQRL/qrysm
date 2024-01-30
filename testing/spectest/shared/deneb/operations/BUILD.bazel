@@ -29,7 +29,7 @@ go_library(
         "//consensus-types/blocks:go_default_library",
         "//consensus-types/interfaces:go_default_library",
         "//proto/engine/v1:go_default_library",
-        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
         "//proto/zond/v1:go_default_library",
         "//proto/zond/v2:go_default_library",
         "//testing/require:go_default_library",

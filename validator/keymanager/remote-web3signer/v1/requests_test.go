@@ -1,12 +1,13 @@
 package v1_test
 
+/*
 import (
 	"reflect"
 	"testing"
 
 	"github.com/theQRL/go-zond/common/hexutil"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	v1 "github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer/v1"
 	"github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer/v1/mock"
@@ -471,3 +472,4 @@ func TestGetValidatorRegistrationSignRequest(t *testing.T) {
 		})
 	}
 }
+*/

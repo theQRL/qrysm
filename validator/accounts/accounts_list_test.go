@@ -13,20 +13,18 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
+	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
 	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
 	"github.com/theQRL/qrysm/v4/config/params"
 	types "github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	validatormock "github.com/theQRL/qrysm/v4/testing/validator-mock"
 	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/derived"
 	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
-	constant "github.com/theQRL/qrysm/v4/validator/testing"
 	"github.com/urfave/cli/v2"
-	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 )
 
 const (
@@ -35,10 +33,10 @@ const (
 )
 
 type testWalletConfig struct {
-	exitAll                 bool
-	skipDepositConfirm      bool
-	keymanagerKind          keymanager.Kind
-	numAccounts             int64
+	exitAll            bool
+	skipDepositConfirm bool
+	keymanagerKind     keymanager.Kind
+	// numAccounts             int64
 	grpcHeaders             string
 	privateKeyFile          string
 	accountPasswordFile     string
@@ -69,9 +67,9 @@ func setupWalletCtx(
 	set.String(flags.BackupPublicKeysFlag.Name, cfg.backupPublicKeys, "")
 	set.String(flags.WalletPasswordFileFlag.Name, cfg.walletPasswordFile, "")
 	set.String(flags.AccountPasswordFileFlag.Name, cfg.accountPasswordFile, "")
-	set.Int64(flags.NumAccountsFlag.Name, cfg.numAccounts, "")
+	// set.Int64(flags.NumAccountsFlag.Name, cfg.numAccounts, "")
 	set.Bool(flags.SkipDepositConfirmationFlag.Name, cfg.skipDepositConfirm, "")
-	set.Bool(flags.SkipMnemonic25thWordCheckFlag.Name, true, "")
+	// set.Bool(flags.SkipMnemonic25thWordCheckFlag.Name, true, "")
 	set.Bool(flags.ExitAllFlag.Name, cfg.exitAll, "")
 	set.String(flags.GrpcHeadersFlag.Name, cfg.grpcHeaders, "")
 
@@ -80,7 +78,7 @@ func setupWalletCtx(
 		assert.NoError(tb, set.Set(flags.ImportPrivateKeyFileFlag.Name, cfg.privateKeyFile))
 	}
 	assert.NoError(tb, set.Set(flags.WalletDirFlag.Name, cfg.walletDir))
-	assert.NoError(tb, set.Set(flags.SkipMnemonic25thWordCheckFlag.Name, "true"))
+	// assert.NoError(tb, set.Set(flags.SkipMnemonic25thWordCheckFlag.Name, "true"))
 	assert.NoError(tb, set.Set(flags.KeysDirFlag.Name, cfg.keysDir))
 	assert.NoError(tb, set.Set(flags.KeymanagerKindFlag.Name, cfg.keymanagerKind.String()))
 	assert.NoError(tb, set.Set(flags.DeletePublicKeysFlag.Name, cfg.deletePublicKeys))
@@ -90,7 +88,7 @@ func setupWalletCtx(
 	assert.NoError(tb, set.Set(flags.BackupPasswordFile.Name, cfg.backupPasswordFile))
 	assert.NoError(tb, set.Set(flags.WalletPasswordFileFlag.Name, cfg.walletPasswordFile))
 	assert.NoError(tb, set.Set(flags.AccountPasswordFileFlag.Name, cfg.accountPasswordFile))
-	assert.NoError(tb, set.Set(flags.NumAccountsFlag.Name, strconv.Itoa(int(cfg.numAccounts))))
+	// assert.NoError(tb, set.Set(flags.NumAccountsFlag.Name, strconv.Itoa(int(cfg.numAccounts))))
 	assert.NoError(tb, set.Set(flags.SkipDepositConfirmationFlag.Name, strconv.FormatBool(cfg.skipDepositConfirm)))
 	assert.NoError(tb, set.Set(flags.ExitAllFlag.Name, strconv.FormatBool(cfg.exitAll)))
 	assert.NoError(tb, set.Set(flags.GrpcHeadersFlag.Name, cfg.grpcHeaders))
@@ -111,7 +109,7 @@ func createRandomKeystore(t testing.TB, password string) *keymanager.Keystore {
 	encryptor := keystorev4.New()
 	id, err := uuid.NewRandom()
 	require.NoError(t, err)
-	validatingKey, err := bls.RandKey()
+	validatingKey, err := dilithium.RandKey()
 	require.NoError(t, err)
 	pubKey := validatingKey.PublicKey().Marshal()
 	cryptoFields, err := encryptor.Encrypt(validatingKey.Marshal(), password)
@@ -190,7 +188,7 @@ func TestListAccounts_LocalKeymanager(t *testing.T) {
 		(keymanager kind) local wallet
 
 		Showing 5 validator accounts
-		View the eth1 deposit transaction data for your accounts by running `validator accounts list --show-deposit-data
+		View the zond deposit transaction data for your accounts by running `validator accounts list --show-deposit-data
 
 		Account 0 | fully-evolving-fawn
 		[validating public key] 0xa6669aa0381c06470b9a6faf8abf4194ad5148a62e461cbef5a6bc4d292026f58b992c4cf40e50552d301cef19da75b9
@@ -319,6 +317,7 @@ func TestListAccounts_LocalKeymanager(t *testing.T) {
 	require.Equal(t, expectedStdout, string(out))
 }
 
+/*
 func TestListAccounts_DerivedKeymanager(t *testing.T) {
 	walletDir, passwordsDir, passwordFilePath := setupWalletAndPasswordsDir(t)
 	cliCtx := setupWalletCtx(t, &testWalletConfig{
@@ -369,7 +368,7 @@ func TestListAccounts_DerivedKeymanager(t *testing.T) {
 	lines := strings.Split(string(out), newLine)
 
 	// Expected output example:
-	/*
+
 		(keymanager kind) derived, (HD) hierarchical-deterministic
 		(derivation format) m / purpose / coin_type / account_index / withdrawal_key / validating_key
 		Showing 2 validator accounts
@@ -403,7 +402,7 @@ func TestListAccounts_DerivedKeymanager(t *testing.T) {
 		===================================================================
 
 
-	*/
+
 
 	// Expected output format definition
 	const prologLength = 3
@@ -460,3 +459,4 @@ func TestListAccounts_DerivedKeymanager(t *testing.T) {
 		assert.Equal(t, true, keyFound, "Validating Private Key %s not found on line number %d", keyString, lineNumber)
 	}
 }
+*/

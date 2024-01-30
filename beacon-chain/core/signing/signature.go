@@ -3,7 +3,7 @@ package signing
 import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/config/params"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 )
 
 var ErrNilRegistration = errors.New("nil signed registration")

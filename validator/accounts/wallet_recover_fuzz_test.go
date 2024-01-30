@@ -2,6 +2,7 @@
 
 package accounts_test
 
+/*
 import (
 	"testing"
 
@@ -17,3 +18,4 @@ func FuzzValidateMnemonic(f *testing.F) {
 		_ = err
 	})
 }
+*/

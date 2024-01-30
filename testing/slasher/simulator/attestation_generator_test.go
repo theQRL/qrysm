@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/slashings"
+	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/slashings"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 

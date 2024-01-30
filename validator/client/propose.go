@@ -9,7 +9,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/async"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/v4/config/params"
@@ -19,10 +19,10 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/crypto/rand"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/runtime/version"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"github.com/theQRL/qrysm/v4/validator/client/iface"
 	"go.opencensus.io/trace"
@@ -37,7 +37,7 @@ const signExitErr = "could not sign voluntary exit proposal"
 // chain node to construct the new block. The new block is then processed with
 // the state root computation, and finally signed by the validator before being
 // sent back to the beacon node for broadcasting.
-func (v *validator) ProposeBlock(ctx context.Context, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte) {
+func (v *validator) ProposeBlock(ctx context.Context, slot primitives.Slot, pubKey [dilithiumlib.CryptoPublicKeyBytes]byte) {
 	if slot == 0 {
 		log.Debug("Assigned to genesis slot, skipping proposal")
 		return
@@ -121,56 +121,13 @@ func (v *validator) ProposeBlock(ctx context.Context, slot primitives.Slot, pubK
 		return
 	}
 
-	var genericSignedBlock *zondpb.GenericSignedBeaconBlock
-	if blk.Version() >= version.Deneb {
-		if !blk.IsBlinded() {
-			signedBlobs, err := v.signDenebBlobs(ctx, b.GetDeneb().Blobs, pubKey)
-			if err != nil {
-				log.WithError(err).Error("Failed to sign blobs")
-				return
-			}
-			denebBlock, err := blk.PbDenebBlock()
-			if err != nil {
-				log.WithError(err).Error("Failed to get deneb block")
-				return
-			}
-			genericSignedBlock = &zondpb.GenericSignedBeaconBlock{
-				Block: &zondpb.GenericSignedBeaconBlock_Deneb{
-					Deneb: &zondpb.SignedBeaconBlockAndBlobsDeneb{
-						Block: denebBlock,
-						Blobs: signedBlobs,
-					},
-				},
-			}
-		} else {
-			signedBlindBlobs, err := v.signBlindedDenebBlobs(ctx, b.GetBlindedDeneb().Blobs, pubKey)
-			if err != nil {
-				log.WithError(err).Error("Failed to sign blinded blob sidecar")
-				return
-			}
-			blindedDenebBlock, err := blk.PbBlindedDenebBlock()
-			if err != nil {
-				log.WithError(err).Error("Failed to get blinded deneb block")
-				return
-			}
-			genericSignedBlock = &zondpb.GenericSignedBeaconBlock{
-				Block: &zondpb.GenericSignedBeaconBlock_BlindedDeneb{
-					BlindedDeneb: &zondpb.SignedBlindedBeaconBlockAndBlobsDeneb{
-						SignedBlindedBlock:        blindedDenebBlock,
-						SignedBlindedBlobSidecars: signedBlindBlobs,
-					},
-				},
-			}
+	genericSignedBlock, err := blk.PbGenericBlock()
+	if err != nil {
+		log.WithError(err).Error("Failed to create proposal request")
+		if v.emitAccountMetrics {
+			ValidatorProposeFailVec.WithLabelValues(fmtKey).Inc()
 		}
-	} else {
-		genericSignedBlock, err = blk.PbGenericBlock()
-		if err != nil {
-			log.WithError(err).Error("Failed to create proposal request")
-			if v.emitAccountMetrics {
-				ValidatorProposeFailVec.WithLabelValues(fmtKey).Inc()
-			}
-			return
-		}
+		return
 	}
 
 	blkResp, err := v.validatorClient.ProposeBeaconBlock(ctx, genericSignedBlock)
@@ -188,45 +145,34 @@ func (v *validator) ProposeBlock(ctx context.Context, slot primitives.Slot, pubK
 		trace.Int64Attribute("numAttestations", int64(len(blk.Block().Body().Attestations()))),
 	)
 
-	if blk.Version() >= version.Bellatrix {
-		p, err := blk.Block().Body().Execution()
+	p, err := blk.Block().Body().Execution()
+	if err != nil {
+		log.WithError(err).Error("Failed to get execution payload")
+		return
+	}
+	log = log.WithFields(logrus.Fields{
+		"payloadHash": fmt.Sprintf("%#x", bytesutil.Trunc(p.BlockHash())),
+		"parentHash":  fmt.Sprintf("%#x", bytesutil.Trunc(p.ParentHash())),
+		"blockNumber": p.BlockNumber,
+	})
+	if !blk.IsBlinded() {
+		txs, err := p.Transactions()
 		if err != nil {
-			log.WithError(err).Error("Failed to get execution payload")
+			log.WithError(err).Error("Failed to get execution payload transactions")
 			return
 		}
-		log = log.WithFields(logrus.Fields{
-			"payloadHash": fmt.Sprintf("%#x", bytesutil.Trunc(p.BlockHash())),
-			"parentHash":  fmt.Sprintf("%#x", bytesutil.Trunc(p.ParentHash())),
-			"blockNumber": p.BlockNumber,
-		})
-		if !blk.IsBlinded() {
-			txs, err := p.Transactions()
-			if err != nil {
-				log.WithError(err).Error("Failed to get execution payload transactions")
-				return
-			}
-			log = log.WithField("txCount", len(txs))
+		log = log.WithField("txCount", len(txs))
+	}
+	if p.GasLimit() != 0 {
+		log = log.WithField("gasUtilized", float64(p.GasUsed())/float64(p.GasLimit()))
+	}
+	if !blk.IsBlinded() {
+		withdrawals, err := p.Withdrawals()
+		if err != nil {
+			log.WithError(err).Error("Failed to get execution payload withdrawals")
+			return
 		}
-		if p.GasLimit() != 0 {
-			log = log.WithField("gasUtilized", float64(p.GasUsed())/float64(p.GasLimit()))
-		}
-		if blk.Version() >= version.Capella && !blk.IsBlinded() {
-			withdrawals, err := p.Withdrawals()
-			if err != nil {
-				log.WithError(err).Error("Failed to get execution payload withdrawals")
-				return
-			}
-			log = log.WithField("withdrawalCount", len(withdrawals))
-		}
-		if blk.Version() >= version.Deneb {
-			kzgs, err := blk.Block().Body().BlobKzgCommitments()
-			if err != nil {
-				log.WithError(err).Error("Failed to get blob KZG commitments")
-				return
-			} else if len(kzgs) != 0 {
-				log = log.WithField("kzgCommitmentCount", len(kzgs))
-			}
-		}
+		log = log.WithField("withdrawalCount", len(withdrawals))
 	}
 
 	blkRoot := fmt.Sprintf("%#x", bytesutil.Trunc(blkResp.BlockRoot))
@@ -273,7 +219,7 @@ func ProposeExit(
 }
 
 func CurrentEpoch(genesisTime *timestamp.Timestamp) (primitives.Epoch, error) {
-	totalSecondsPassed := prysmTime.Now().Unix() - genesisTime.Seconds
+	totalSecondsPassed := qrysmTime.Now().Unix() - genesisTime.Seconds
 	currentSlot := primitives.Slot((uint64(totalSecondsPassed)) / params.BeaconConfig().SecondsPerSlot)
 	currentEpoch := slots.ToEpoch(currentSlot)
 	return currentEpoch, nil
@@ -307,7 +253,7 @@ func CreateSignedVoluntaryExit(
 }
 
 // Sign randao reveal with randao domain and private key.
-func (v *validator) signRandaoReveal(ctx context.Context, pubKey [dilithium2.CryptoPublicKeyBytes]byte, epoch primitives.Epoch, slot primitives.Slot) ([]byte, error) {
+func (v *validator) signRandaoReveal(ctx context.Context, pubKey [dilithiumlib.CryptoPublicKeyBytes]byte, epoch primitives.Epoch, slot primitives.Slot) ([]byte, error) {
 	domain, err := v.domainData(ctx, epoch, params.BeaconConfig().DomainRandao[:])
 	if err != nil {
 		return nil, errors.Wrap(err, domainDataErr)
@@ -337,7 +283,7 @@ func (v *validator) signRandaoReveal(ctx context.Context, pubKey [dilithium2.Cry
 
 // Sign block with proposer domain and private key.
 // Returns the signature, block signing root, and any error.
-func (v *validator) signBlock(ctx context.Context, pubKey [dilithium2.CryptoPublicKeyBytes]byte, epoch primitives.Epoch, slot primitives.Slot, b interfaces.ReadOnlyBeaconBlock) ([]byte, [32]byte, error) {
+func (v *validator) signBlock(ctx context.Context, pubKey [dilithiumlib.CryptoPublicKeyBytes]byte, epoch primitives.Epoch, slot primitives.Slot, b interfaces.ReadOnlyBeaconBlock) ([]byte, [32]byte, error) {
 	domain, err := v.domainData(ctx, epoch, params.BeaconConfig().DomainBeaconProposer[:])
 	if err != nil {
 		return nil, [32]byte{}, errors.Wrap(err, domainDataErr)
@@ -408,7 +354,7 @@ func signVoluntaryExit(
 }
 
 // Gets the graffiti from cli or file for the validator public key.
-func (v *validator) getGraffiti(ctx context.Context, pubKey [dilithium2.CryptoPublicKeyBytes]byte) ([]byte, error) {
+func (v *validator) getGraffiti(ctx context.Context, pubKey [dilithiumlib.CryptoPublicKeyBytes]byte) ([]byte, error) {
 	// When specified, default graffiti from the command line takes the first priority.
 	if len(v.graffiti) != 0 {
 		return v.graffiti, nil

@@ -13,7 +13,7 @@ import (
 
 var log = logrus.WithField("prefix", "accounts")
 
-// Commands for managing Prysm validator accounts.
+// Commands for managing Qrysm validator accounts.
 var Commands = &cli.Command{
 	Name:     "accounts",
 	Category: "accounts",
@@ -27,9 +27,6 @@ var Commands = &cli.Command{
 				flags.WalletPasswordFileFlag,
 				flags.DeletePublicKeysFlag,
 				features.Mainnet,
-				features.PraterTestnet,
-				features.SepoliaTestnet,
-				features.HoleskyTestnet,
 				cmd.AcceptTosFlag,
 			}),
 			Before: func(cliCtx *cli.Context) error {
@@ -64,9 +61,6 @@ var Commands = &cli.Command{
 				flags.GrpcRetriesFlag,
 				flags.GrpcRetryDelayFlag,
 				features.Mainnet,
-				features.PraterTestnet,
-				features.SepoliaTestnet,
-				features.HoleskyTestnet,
 				cmd.AcceptTosFlag,
 			}),
 			Before: func(cliCtx *cli.Context) error {
@@ -98,9 +92,6 @@ var Commands = &cli.Command{
 				flags.BackupPublicKeysFlag,
 				flags.BackupPasswordFile,
 				features.Mainnet,
-				features.PraterTestnet,
-				features.SepoliaTestnet,
-				features.HoleskyTestnet,
 				cmd.AcceptTosFlag,
 			}),
 			Before: func(cliCtx *cli.Context) error {
@@ -129,9 +120,6 @@ var Commands = &cli.Command{
 				flags.AccountPasswordFileFlag,
 				flags.ImportPrivateKeyFileFlag,
 				features.Mainnet,
-				features.PraterTestnet,
-				features.SepoliaTestnet,
-				features.HoleskyTestnet,
 				cmd.AcceptTosFlag,
 			}),
 			Before: func(cliCtx *cli.Context) error {
@@ -159,8 +147,8 @@ var Commands = &cli.Command{
 				flags.AccountPasswordFileFlag,
 				flags.VoluntaryExitPublicKeysFlag,
 				flags.BeaconRPCProviderFlag,
-				flags.Web3SignerURLFlag,
-				flags.Web3SignerPublicValidatorKeysFlag,
+				// flags.Web3SignerURLFlag,
+				// flags.Web3SignerPublicValidatorKeysFlag,
 				flags.InteropNumValidators,
 				flags.InteropStartIndex,
 				cmd.GrpcMaxCallRecvMsgSizeFlag,
@@ -172,9 +160,6 @@ var Commands = &cli.Command{
 				flags.ForceExitFlag,
 				flags.VoluntaryExitJSONOutputPath,
 				features.Mainnet,
-				features.PraterTestnet,
-				features.SepoliaTestnet,
-				features.HoleskyTestnet,
 				cmd.AcceptTosFlag,
 			}),
 			Before: func(cliCtx *cli.Context) error {

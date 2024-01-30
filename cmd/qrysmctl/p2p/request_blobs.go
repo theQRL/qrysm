@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/v4/cmd"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/protobuf/types/known/emptypb"

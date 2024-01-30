@@ -5,7 +5,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	protodb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	protodb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 )
 
 // DepositTreeSnapshot represents the data used to create a deposit tree given a snapshot.

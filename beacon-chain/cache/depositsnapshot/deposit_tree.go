@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/math"
-	protodb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	protodb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 )
 
 var (

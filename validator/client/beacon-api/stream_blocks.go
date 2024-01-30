@@ -9,9 +9,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/shared"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"google.golang.org/grpc"
 )
 
@@ -85,81 +84,6 @@ func (c beaconApiValidatorClient) getHeadSignedBeaconBlock(ctx context.Context) 
 	var slot primitives.Slot
 
 	switch signedBlockResponseJson.Version {
-	case "phase0":
-		jsonPhase0Block := apimiddleware.SignedBeaconBlockJson{}
-		if err := decoder.Decode(&jsonPhase0Block); err != nil {
-			return nil, errors.Wrap(err, "failed to decode signed phase0 block response json")
-		}
-
-		phase0Block, err := c.beaconBlockConverter.ConvertRESTPhase0BlockToProto(jsonPhase0Block.Message)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get signed phase0 block")
-		}
-
-		decodedSignature, err := hexutil.Decode(jsonPhase0Block.Signature)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to decode phase0 block signature `%s`", jsonPhase0Block.Signature)
-		}
-
-		response.Block = &zondpb.StreamBlocksResponse_Phase0Block{
-			Phase0Block: &zondpb.SignedBeaconBlock{
-				Signature: decodedSignature,
-				Block:     phase0Block,
-			},
-		}
-
-		slot = phase0Block.Slot
-
-	case "altair":
-		jsonAltairBlock := apimiddleware.SignedBeaconBlockAltairJson{}
-		if err := decoder.Decode(&jsonAltairBlock); err != nil {
-			return nil, errors.Wrap(err, "failed to decode signed altair block response json")
-		}
-
-		altairBlock, err := c.beaconBlockConverter.ConvertRESTAltairBlockToProto(jsonAltairBlock.Message)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get signed altair block")
-		}
-
-		decodedSignature, err := hexutil.Decode(jsonAltairBlock.Signature)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to decode altair block signature `%s`", jsonAltairBlock.Signature)
-		}
-
-		response.Block = &zondpb.StreamBlocksResponse_AltairBlock{
-			AltairBlock: &zondpb.SignedBeaconBlockAltair{
-				Signature: decodedSignature,
-				Block:     altairBlock,
-			},
-		}
-
-		slot = altairBlock.Slot
-
-	case "bellatrix":
-		jsonBellatrixBlock := apimiddleware.SignedBeaconBlockBellatrixJson{}
-		if err := decoder.Decode(&jsonBellatrixBlock); err != nil {
-			return nil, errors.Wrap(err, "failed to decode signed bellatrix block response json")
-		}
-
-		bellatrixBlock, err := c.beaconBlockConverter.ConvertRESTBellatrixBlockToProto(jsonBellatrixBlock.Message)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get signed bellatrix block")
-		}
-
-		decodedSignature, err := hexutil.Decode(jsonBellatrixBlock.Signature)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to decode bellatrix block signature `%s`", jsonBellatrixBlock.Signature)
-		}
-
-		response.Block = &zondpb.StreamBlocksResponse_BellatrixBlock{
-			BellatrixBlock: &zondpb.SignedBeaconBlockBellatrix{
-				Signature: decodedSignature,
-				Block:     bellatrixBlock,
-			},
-		}
-
-		slot = bellatrixBlock.Slot
-
 	case "capella":
 		jsonCapellaBlock := apimiddleware.SignedBeaconBlockCapellaJson{}
 		if err := decoder.Decode(&jsonCapellaBlock); err != nil {
@@ -184,26 +108,6 @@ func (c beaconApiValidatorClient) getHeadSignedBeaconBlock(ctx context.Context) 
 		}
 
 		slot = capellaBlock.Slot
-	case "deneb":
-		jsonDenebBlock := shared.SignedBeaconBlockDeneb{}
-		if err := decoder.Decode(&jsonDenebBlock); err != nil {
-			return nil, errors.Wrap(err, "failed to decode signed deneb block response json")
-		}
-
-		denebBlock, err := jsonDenebBlock.ToConsensus()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get signed deneb block")
-		}
-
-		response.Block = &zondpb.StreamBlocksResponse_DenebBlock{
-			DenebBlock: &zondpb.SignedBeaconBlockDeneb{
-				Signature: denebBlock.Signature,
-				Block:     denebBlock.Block,
-			},
-		}
-
-		slot = denebBlock.Block.Slot
-
 	default:
 		return nil, errors.Errorf("unsupported consensus version `%s`", signedBlockResponseJson.Version)
 	}

@@ -22,7 +22,7 @@ import (
 	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
 	"github.com/theQRL/qrysm/v4/config/features"
 	"github.com/theQRL/qrysm/v4/config/params"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime"
 	"github.com/theQRL/qrysm/v4/runtime/interop"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -180,12 +180,6 @@ func Test_hasNetworkFlag(t *testing.T) {
 		networkValue string
 		want         bool
 	}{
-		{
-			name:         "Prater testnet",
-			networkName:  features.PraterTestnet.Name,
-			networkValue: "prater",
-			want:         true,
-		},
 		{
 			name:         "Mainnet",
 			networkName:  features.Mainnet.Name,

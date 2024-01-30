@@ -5,17 +5,17 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func Test_slashableAttestationCheck(t *testing.T) {
 	validator, _, validatorKey, finish := setup(t)
 	defer finish()
-	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
+	var pubKey [dilithium.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	att := &zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{1, 2},
@@ -42,7 +42,7 @@ func Test_slashableAttestationCheck_UpdatesLowestSignedEpochs(t *testing.T) {
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
 	ctx := context.Background()
-	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
+	var pubKey [dilithium.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	att := &zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{1, 2},

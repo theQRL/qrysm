@@ -13,6 +13,7 @@ const (
 	GoodbyeCodeWrongNetwork
 	GoodbyeCodeGenericError
 
+	// TODO(theQRL/qrysm/issues/62)
 	// Teku specific codes
 	GoodbyeCodeUnableToVerifyNetwork = RPCGoodbyeCode(128)
 

@@ -10,11 +10,11 @@ import (
 
 var log = logrus.WithField("prefix", "db")
 
-// Commands for interacting with the Prysm validator database.
+// Commands for interacting with the Qrysm validator database.
 var Commands = &cli.Command{
 	Name:     "db",
 	Category: "db",
-	Usage:    "defines commands for interacting with the Prysm validator database",
+	Usage:    "defines commands for interacting with the Qrysm validator database",
 	Subcommands: []*cli.Command{
 		{
 			Name:        "restore",

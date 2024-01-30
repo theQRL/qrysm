@@ -5,7 +5,7 @@ import (
 
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	testtmpl "github.com/theQRL/qrysm/v4/beacon-chain/state/testing"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 )
 
 func TestBeaconState_SlotDataRace_Phase0(t *testing.T) {

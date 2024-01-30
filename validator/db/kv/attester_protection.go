@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/slashings"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/slashings"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 )
@@ -30,7 +30,7 @@ type AttestationRecordSaveRequest struct {
 // AttestationRecord which can be represented by these simple values
 // for manipulation by database methods.
 type AttestationRecord struct {
-	PubKey      [dilithium2.CryptoPublicKeyBytes]byte
+	PubKey      [dilithium.CryptoPublicKeyBytes]byte
 	Source      primitives.Epoch
 	Target      primitives.Epoch
 	SigningRoot [32]byte
@@ -100,7 +100,7 @@ var (
 
 // AttestationHistoryForPubKey retrieves a list of attestation records for data
 // we have stored in the database for the given validator public key.
-func (s *Store) AttestationHistoryForPubKey(ctx context.Context, pubKey [dilithium2.CryptoPublicKeyBytes]byte) ([]*AttestationRecord, error) {
+func (s *Store) AttestationHistoryForPubKey(ctx context.Context, pubKey [dilithium.CryptoPublicKeyBytes]byte) ([]*AttestationRecord, error) {
 	records := make([]*AttestationRecord, 0)
 	ctx, span := trace.StartSpan(ctx, "Validator.AttestationHistoryForPubKey")
 	defer span.End()
@@ -141,7 +141,7 @@ func (s *Store) AttestationHistoryForPubKey(ctx context.Context, pubKey [dilithi
 // CheckSlashableAttestation verifies an incoming attestation is
 // not a double vote for a validator public key nor a surround vote.
 func (s *Store) CheckSlashableAttestation(
-	ctx context.Context, pubKey [dilithium2.CryptoPublicKeyBytes]byte, signingRoot [32]byte, att *zondpb.IndexedAttestation,
+	ctx context.Context, pubKey [dilithium.CryptoPublicKeyBytes]byte, signingRoot [32]byte, att *zondpb.IndexedAttestation,
 ) (SlashingKind, error) {
 	ctx, span := trace.StartSpan(ctx, "Validator.CheckSlashableAttestation")
 	defer span.End()
@@ -281,7 +281,7 @@ func (_ *Store) checkSurroundingVote(
 
 // SaveAttestationsForPubKey stores a batch of attestations all at once.
 func (s *Store) SaveAttestationsForPubKey(
-	ctx context.Context, pubKey [dilithium2.CryptoPublicKeyBytes]byte, signingRoots [][32]byte, atts []*zondpb.IndexedAttestation,
+	ctx context.Context, pubKey [dilithium.CryptoPublicKeyBytes]byte, signingRoots [][32]byte, atts []*zondpb.IndexedAttestation,
 ) error {
 	ctx, span := trace.StartSpan(ctx, "Validator.SaveAttestationsForPubKey")
 	defer span.End()
@@ -307,7 +307,7 @@ func (s *Store) SaveAttestationsForPubKey(
 // SaveAttestationForPubKey saves an attestation for a validator public
 // key for local validator slashing protection.
 func (s *Store) SaveAttestationForPubKey(
-	ctx context.Context, pubKey [dilithium2.CryptoPublicKeyBytes]byte, signingRoot [32]byte, att *zondpb.IndexedAttestation,
+	ctx context.Context, pubKey [dilithium.CryptoPublicKeyBytes]byte, signingRoot [32]byte, att *zondpb.IndexedAttestation,
 ) error {
 	ctx, span := trace.StartSpan(ctx, "Validator.SaveAttestationForPubKey")
 	defer span.End()
@@ -518,15 +518,15 @@ func (s *Store) saveAttestationRecords(ctx context.Context, atts []*AttestationR
 }
 
 // AttestedPublicKeys retrieves all public keys that have attested.
-func (s *Store) AttestedPublicKeys(ctx context.Context) ([][dilithium2.CryptoPublicKeyBytes]byte, error) {
+func (s *Store) AttestedPublicKeys(ctx context.Context) ([][dilithium.CryptoPublicKeyBytes]byte, error) {
 	ctx, span := trace.StartSpan(ctx, "Validator.AttestedPublicKeys")
 	defer span.End()
 	var err error
-	attestedPublicKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, 0)
+	attestedPublicKeys := make([][dilithium.CryptoPublicKeyBytes]byte, 0)
 	err = s.view(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(pubKeysBucket)
 		return bucket.ForEach(func(pubKey []byte, _ []byte) error {
-			var pk [dilithium2.CryptoPublicKeyBytes]byte
+			var pk [dilithium.CryptoPublicKeyBytes]byte
 			copy(pk[:], pubKey)
 			attestedPublicKeys = append(attestedPublicKeys, pk)
 			return nil
@@ -537,7 +537,7 @@ func (s *Store) AttestedPublicKeys(ctx context.Context) ([][dilithium2.CryptoPub
 
 // SigningRootAtTargetEpoch checks for an existing signing root at a specified
 // target epoch for a given validator public key.
-func (s *Store) SigningRootAtTargetEpoch(ctx context.Context, pubKey [dilithium2.CryptoPublicKeyBytes]byte, target primitives.Epoch) ([32]byte, error) {
+func (s *Store) SigningRootAtTargetEpoch(ctx context.Context, pubKey [dilithium.CryptoPublicKeyBytes]byte, target primitives.Epoch) ([32]byte, error) {
 	ctx, span := trace.StartSpan(ctx, "Validator.SigningRootAtTargetEpoch")
 	defer span.End()
 	var signingRoot [32]byte
@@ -560,7 +560,7 @@ func (s *Store) SigningRootAtTargetEpoch(ctx context.Context, pubKey [dilithium2
 
 // LowestSignedSourceEpoch returns the lowest signed source epoch for a validator public key.
 // If no data exists, returning 0 is a sensible default.
-func (s *Store) LowestSignedSourceEpoch(ctx context.Context, publicKey [dilithium2.CryptoPublicKeyBytes]byte) (primitives.Epoch, bool, error) {
+func (s *Store) LowestSignedSourceEpoch(ctx context.Context, publicKey [dilithium.CryptoPublicKeyBytes]byte) (primitives.Epoch, bool, error) {
 	ctx, span := trace.StartSpan(ctx, "Validator.LowestSignedSourceEpoch")
 	defer span.End()
 
@@ -583,7 +583,7 @@ func (s *Store) LowestSignedSourceEpoch(ctx context.Context, publicKey [dilithiu
 
 // LowestSignedTargetEpoch returns the lowest signed target epoch for a validator public key.
 // If no data exists, returning 0 is a sensible default.
-func (s *Store) LowestSignedTargetEpoch(ctx context.Context, publicKey [dilithium2.CryptoPublicKeyBytes]byte) (primitives.Epoch, bool, error) {
+func (s *Store) LowestSignedTargetEpoch(ctx context.Context, publicKey [dilithium.CryptoPublicKeyBytes]byte) (primitives.Epoch, bool, error) {
 	ctx, span := trace.StartSpan(ctx, "Validator.LowestSignedTargetEpoch")
 	defer span.End()
 

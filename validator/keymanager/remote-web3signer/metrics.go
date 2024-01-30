@@ -1,5 +1,6 @@
 package remote_web3signer
 
+/*
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -75,3 +76,4 @@ var (
 		Help: "Total number of validator registration sign requests",
 	})
 )
+*/

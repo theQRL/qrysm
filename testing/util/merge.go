@@ -2,10 +2,10 @@ package util
 
 import (
 	"fmt"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 
+	"github.com/theQRL/go-qrllib/dilithium"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	v2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 )
 
@@ -69,10 +69,10 @@ func NewBeaconBlockContentsDeneb(numOfBlobs uint64) (*v2.SignedBeaconBlockConten
 				BlockParentRoot: make([]byte, fieldparams.RootLength),
 				ProposerIndex:   0,
 				Blob:            make([]byte, fieldparams.BlobLength),
-				KzgCommitment:   make([]byte, dilithium2.CryptoPublicKeyBytes),
-				KzgProof:        make([]byte, dilithium2.CryptoPublicKeyBytes),
+				KzgCommitment:   make([]byte, dilithium.CryptoPublicKeyBytes),
+				KzgProof:        make([]byte, dilithium.CryptoPublicKeyBytes),
 			},
-			Signature: make([]byte, dilithium2.CryptoBytes),
+			Signature: make([]byte, dilithium.CryptoBytes),
 		}
 	}
 	return &v2.SignedBeaconBlockContentsDeneb{
@@ -96,10 +96,10 @@ func NewBlindedBeaconBlockContentsDeneb(numOfBlobs uint64) (*v2.SignedBlindedBea
 				BlockParentRoot: make([]byte, fieldparams.RootLength),
 				ProposerIndex:   0,
 				BlobRoot:        make([]byte, fieldparams.RootLength),
-				KzgCommitment:   make([]byte, dilithium2.CryptoPublicKeyBytes),
-				KzgProof:        make([]byte, dilithium2.CryptoPublicKeyBytes),
+				KzgCommitment:   make([]byte, dilithium.CryptoPublicKeyBytes),
+				KzgProof:        make([]byte, dilithium.CryptoPublicKeyBytes),
 			},
-			Signature: make([]byte, dilithium2.CryptoBytes),
+			Signature: make([]byte, dilithium.CryptoBytes),
 		}
 	}
 	return &v2.SignedBlindedBeaconBlockContentsDeneb{

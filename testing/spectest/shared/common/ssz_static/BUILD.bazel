@@ -25,7 +25,7 @@ go_test(
     deps = [
         ":go_default_library",
         "//beacon-chain/state/state-native:go_default_library",
-        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
         "//testing/require:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
         "@com_github_prysmaticlabs_fastssz//:go_default_library",

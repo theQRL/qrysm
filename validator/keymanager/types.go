@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"strings"
 
-	common2 "github.com/theQRL/go-qrllib/common"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-qrllib/common"
+	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/async/event"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
 	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
 )
 
-// IKeymanager defines a general keymanager interface for Prysm wallets.
+// IKeymanager defines a general keymanager interface for Qrysm wallets.
 type IKeymanager interface {
 	PublicKeysFetcher
 	Signer
@@ -25,13 +25,13 @@ type IKeymanager interface {
 
 // KeysFetcher for validating private and public keys.
 type KeysFetcher interface {
-	FetchValidatingSeeds(ctx context.Context) ([][common2.SeedSize]byte, error)
+	FetchValidatingSeeds(ctx context.Context) ([][common.SeedSize]byte, error)
 	PublicKeysFetcher
 }
 
 // PublicKeysFetcher for validating public keys.
 type PublicKeysFetcher interface {
-	FetchValidatingPublicKeys(ctx context.Context) ([][dilithium2.CryptoPublicKeyBytes]byte, error)
+	FetchValidatingPublicKeys(ctx context.Context) ([][dilithiumlib.CryptoPublicKeyBytes]byte, error)
 }
 
 // Signer allows signing messages using a validator private key.
@@ -53,7 +53,7 @@ type Deleter interface {
 
 // KeyChangeSubscriber allows subscribing to changes made to the underlying keys.
 type KeyChangeSubscriber interface {
-	SubscribeAccountChanges(pubKeysChan chan [][dilithium2.CryptoPublicKeyBytes]byte) event.Subscription
+	SubscribeAccountChanges(pubKeysChan chan [][dilithiumlib.CryptoPublicKeyBytes]byte) event.Subscription
 }
 
 // KeyStoreExtractor allows keys to be extracted from the keymanager.
@@ -62,14 +62,14 @@ type KeyStoreExtractor interface {
 }
 
 // PublicKeyAdder allows adding public keys to the keymanager.
-type PublicKeyAdder interface {
-	AddPublicKeys(ctx context.Context, publicKeys [][dilithium2.CryptoPublicKeyBytes]byte) ([]*zondpbservice.ImportedRemoteKeysStatus, error)
-}
+// type PublicKeyAdder interface {
+// 	AddPublicKeys(ctx context.Context, publicKeys [][dilithiumlib.CryptoPublicKeyBytes]byte) ([]*zondpbservice.ImportedRemoteKeysStatus, error)
+// }
 
 // PublicKeyDeleter allows deleting public keys set in keymanager.
-type PublicKeyDeleter interface {
-	DeletePublicKeys(ctx context.Context, publicKeys [][dilithium2.CryptoPublicKeyBytes]byte) ([]*zondpbservice.DeletedRemoteKeysStatus, error)
-}
+// type PublicKeyDeleter interface {
+// 	DeletePublicKeys(ctx context.Context, publicKeys [][dilithiumlib.CryptoPublicKeyBytes]byte) ([]*zondpbservice.DeletedRemoteKeysStatus, error)
+// }
 
 type ListKeymanagerAccountConfig struct {
 	ShowDepositData          bool
@@ -89,40 +89,43 @@ type Keystore struct {
 	Pubkey      string                 `json:"pubkey"`
 	Version     uint                   `json:"version"`
 	Description string                 `json:"description"`
-	Name        string                 `json:"name,omitempty"` // field deprecated in favor of description, EIP2335
 	Path        string                 `json:"path"`
 }
 
 // Kind defines an enum for either local, derived, or remote-signing
-// keystores for Prysm wallets.
+// keystores for Qrysm wallets.
 type Kind int
 
 const (
 	// Local keymanager defines an on-disk, encrypted keystore-capable store.
 	Local Kind = iota
 	// Derived keymanager using a hierarchical-deterministic algorithm.
-	Derived
+	// Derived
 	// Web3Signer keymanager capable of signing data using a remote signer called Web3Signer.
-	Web3Signer
+	// Web3Signer
 )
 
+// @NOTE(rgeraldes24)
+// QRL Version - https://github.com/theQRL/go-zond-wallet-encryptor-keystore/blob/main/decrypt.go#L87
+// Eth Version - https://github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4/blob/master/decrypt.go#L168
 // IncorrectPasswordErrMsg defines a common error string representing an EIP-2335
 // keystore password was incorrect.
-const IncorrectPasswordErrMsg = "invalid checksum"
+// const IncorrectPasswordErrMsg = "invalid checksum"
+const IncorrectPasswordErrMsg = "checksum mismatch"
 
 // String marshals a keymanager kind to a string value.
 func (k Kind) String() string {
 	switch k {
-	case Derived:
-		return "derived"
+	// case Derived:
+	// 	return "derived"
 	case Local:
 		// TODO(#10181) need a safe way to migrate away from using direct.
 		// function is used for directory creation, dangerous to change which may result in multiple directories.
 		// multiple directories will cause the isValid function to fail in wallet.go
 		// and may result in using a unintended wallet.
 		return "direct"
-	case Web3Signer:
-		return "web3signer"
+	// case Web3Signer:
+	// 	return "web3signer"
 	default:
 		return fmt.Sprintf("%d", int(k))
 	}
@@ -131,12 +134,12 @@ func (k Kind) String() string {
 // ParseKind from a raw string, returning a keymanager kind.
 func ParseKind(k string) (Kind, error) {
 	switch strings.ToLower(k) {
-	case "derived":
-		return Derived, nil
+	// case "derived":
+	// 	return Derived, nil
 	case "direct", "imported", "local":
 		return Local, nil
-	case "web3signer":
-		return Web3Signer, nil
+	// case "web3signer":
+	// 	return Web3Signer, nil
 	default:
 		return 0, fmt.Errorf("%s is not an allowed keymanager", k)
 	}

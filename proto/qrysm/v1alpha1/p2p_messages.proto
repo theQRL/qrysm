@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package theqrl.zond.v1alpha1;
+
+import "google/protobuf/descriptor.proto";
+import "proto/zond/ext/options.proto";
+
+option csharp_namespace = "TheQRL.Zond.V1alpha1";
+option go_package = "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1;zond";
+option java_multiple_files = true;
+option java_outer_classname = "P2PMessagesProto";
+option java_package = "org.theqrl.zond.v1alpha1";
+option php_namespace = "TheQRL\\Zond\\v1alpha1";
+
+message Status {
+  bytes fork_digest = 1 [(theqrl.zond.ext.ssz_size) = "4"];
+  bytes finalized_root = 2 [(theqrl.zond.ext.ssz_size) = "32"];
+  uint64 finalized_epoch = 3 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+  bytes head_root = 4 [(theqrl.zond.ext.ssz_size) = "32"];
+  uint64 head_slot = 5 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+}
+
+message BeaconBlocksByRangeRequest {
+  uint64 start_slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+  uint64 count = 2;
+  uint64 step = 3;
+}
+
+message ENRForkID {
+  bytes current_fork_digest = 1 [(theqrl.zond.ext.ssz_size) = "4"];
+  bytes next_fork_version = 2 [(theqrl.zond.ext.ssz_size) = "4"];
+  uint64 next_fork_epoch = 3 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+}
+
+/*
+ Spec Definition:
+ MetaData
+ (
+  seq_number: uint64
+  attnets: Bitvector[ATTESTATION_SUBNET_COUNT]
+ )
+*/
+message MetaDataV0 {
+  uint64 seq_number = 1;
+  bytes attnets = 2 [(theqrl.zond.ext.ssz_size) = "8", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitvector64"];
+}
+
+/*
+ Spec Definition:
+ MetaData
+ (
+ seq_number: uint64
+ attnets: Bitvector[ATTESTATION_SUBNET_COUNT]
+ )
+*/
+message MetaDataV1 {
+  uint64 seq_number = 1;
+  bytes attnets = 2 [(theqrl.zond.ext.ssz_size) = "8", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitvector64"];
+  bytes syncnets = 3 [(theqrl.zond.ext.ssz_size) = "1", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitvector4"];
+}
+
+/*
+ Spec Definition:
+ (
+  start_slot: Slot
+  count: uint64
+ )
+*/
+message BlobSidecarsByRangeRequest {
+  uint64 start_slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+  uint64 count = 2;
+}

@@ -1,5 +1,6 @@
 package derived
 
+/*
 import (
 	"encoding/hex"
 	"fmt"
@@ -122,3 +123,4 @@ func secretKeyFromBigNum(s string) (bls.SecretKey, error) {
 	}
 	return bls.SecretKeyFromBytes(bts)
 }
+*/

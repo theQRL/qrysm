@@ -4,29 +4,29 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-bitfield"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
-	"github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 func TestSubmitAggregateAndProof_GetDutiesRequestFailure(t *testing.T) {
 	hook := logTest.NewGlobal()
 	validator, _, validatorKey, finish := setup(t)
-	validator.duties = &zondpb.DutiesResponse{Duties: []*zondpb.DutiesResponse_Duty{}}
+	validator.duties = &zondpb.DutiesResponse{CurrentEpochDuties: []*zondpb.DutiesResponse_Duty{}}
 	defer finish()
 
-	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
+	var pubKey [dilithiumlib.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.SubmitAggregateAndProof(context.Background(), 0, pubKey)
 
@@ -36,10 +36,10 @@ func TestSubmitAggregateAndProof_GetDutiesRequestFailure(t *testing.T) {
 func TestSubmitAggregateAndProof_SignFails(t *testing.T) {
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
-	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
+	var pubKey [dilithiumlib.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.duties = &zondpb.DutiesResponse{
-		Duties: []*zondpb.DutiesResponse_Duty{
+		CurrentEpochDuties: []*zondpb.DutiesResponse_Duty{
 			{
 				PublicKey: validatorKey.PublicKey().Marshal(),
 			},
@@ -60,7 +60,7 @@ func TestSubmitAggregateAndProof_SignFails(t *testing.T) {
 			Aggregate: util.HydrateAttestation(&zondpb.Attestation{
 				AggregationBits: make([]byte, 1),
 			}),
-			SelectionProof: make([]byte, 96),
+			SelectionProof: make([]byte, 4595),
 		},
 	}, nil)
 
@@ -75,10 +75,10 @@ func TestSubmitAggregateAndProof_SignFails(t *testing.T) {
 func TestSubmitAggregateAndProof_Ok(t *testing.T) {
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
-	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
+	var pubKey [dilithiumlib.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.duties = &zondpb.DutiesResponse{
-		Duties: []*zondpb.DutiesResponse_Duty{
+		CurrentEpochDuties: []*zondpb.DutiesResponse_Duty{
 			{
 				PublicKey: validatorKey.PublicKey().Marshal(),
 			},
@@ -99,7 +99,7 @@ func TestSubmitAggregateAndProof_Ok(t *testing.T) {
 			Aggregate: util.HydrateAttestation(&zondpb.Attestation{
 				AggregationBits: make([]byte, 1),
 			}),
-			SelectionProof: make([]byte, 96),
+			SelectionProof: make([]byte, 4595),
 		},
 	}, nil)
 
@@ -117,6 +117,10 @@ func TestSubmitAggregateAndProof_Ok(t *testing.T) {
 }
 
 func TestWaitForSlotTwoThird_WaitCorrectly(t *testing.T) {
+	cfg := params.BeaconConfig().Copy()
+	cfg.SecondsPerSlot = 10
+	params.OverrideBeaconConfig(cfg)
+
 	validator, _, _, finish := setup(t)
 	defer finish()
 	currentTime := time.Now()
@@ -132,6 +136,10 @@ func TestWaitForSlotTwoThird_WaitCorrectly(t *testing.T) {
 }
 
 func TestWaitForSlotTwoThird_DoneContext_ReturnsImmediately(t *testing.T) {
+	cfg := params.BeaconConfig().Copy()
+	cfg.SecondsPerSlot = 10
+	params.OverrideBeaconConfig(cfg)
+
 	validator, _, _, finish := setup(t)
 	defer finish()
 	currentTime := time.Now()
@@ -150,7 +158,7 @@ func TestAggregateAndProofSignature_CanSignValidSignature(t *testing.T) {
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
 
-	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
+	var pubKey [dilithiumlib.CryptoPublicKeyBytes]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	m.validatorClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
@@ -162,7 +170,7 @@ func TestAggregateAndProofSignature_CanSignValidSignature(t *testing.T) {
 		Aggregate: util.HydrateAttestation(&zondpb.Attestation{
 			AggregationBits: bitfield.NewBitlist(1),
 		}),
-		SelectionProof: make([]byte, 96),
+		SelectionProof: make([]byte, 4595),
 	}
 	sig, err := validator.aggregateAndProofSig(context.Background(), pubKey, agg, 0 /* slot */)
 	require.NoError(t, err)

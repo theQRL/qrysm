@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 )
 
 // PoolMock is a fake implementation of PoolManager.

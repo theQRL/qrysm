@@ -7,7 +7,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/features"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 )
 
 // SetLatestBlockHeader in the beacon state.

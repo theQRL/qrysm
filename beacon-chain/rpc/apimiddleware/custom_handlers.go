@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/v4/api"
 	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
 	"github.com/theQRL/qrysm/v4/api/grpc"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/events"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/events"
 	http2 "github.com/theQRL/qrysm/v4/network/http"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 )

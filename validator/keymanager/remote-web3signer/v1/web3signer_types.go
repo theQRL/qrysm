@@ -2,9 +2,11 @@
 /* Web3Signer Specs are found by searching Consensys' Web3Signer API specification*/
 package v1
 
+/*
 import (
 	"github.com/theQRL/go-zond/common/hexutil"
 )
+
 
 // AggregationSlotSignRequest is a request object for web3signer sign api.
 type AggregationSlotSignRequest struct {
@@ -55,7 +57,7 @@ type BlockV2BlindedSignRequest struct {
 	BeaconBlock *BeaconBlockV2Blinded `json:"beacon_block" validate:"required"`
 }
 
-// DepositSignRequest Not currently supported by Prysm.
+// DepositSignRequest Not currently supported by Qrysm.
 // DepositSignRequest is a request object for web3signer sign api.
 
 // RandaoRevealSignRequest is a request object for web3signer sign api.
@@ -119,7 +121,7 @@ type ForkInfo struct {
 type Fork struct {
 	PreviousVersion hexutil.Bytes `json:"previous_version"`
 	CurrentVersion  hexutil.Bytes `json:"current_version"`
-	Epoch           string        `json:"epoch"` /*uint64*/
+	Epoch           string        `json:"epoch"` // uint64
 }
 
 // AggregationSlot a sub property of AggregationSlotSignRequest.
@@ -129,22 +131,22 @@ type AggregationSlot struct {
 
 // AggregateAndProof a sub property of AggregateAndProofSignRequest.
 type AggregateAndProof struct {
-	AggregatorIndex string        `json:"aggregator_index"` /* uint64 */
+	AggregatorIndex string        `json:"aggregator_index"` // uint64
 	Aggregate       *Attestation  `json:"aggregate"`
-	SelectionProof  hexutil.Bytes `json:"selection_proof"` /* 96 bytes */
+	SelectionProof  hexutil.Bytes `json:"selection_proof"` // 4595 bytes
 }
 
 // Attestation a sub property of AggregateAndProofSignRequest.
 type Attestation struct {
-	AggregationBits hexutil.Bytes    `json:"aggregation_bits"` /*hex bitlist*/
+	AggregationBits hexutil.Bytes    `json:"aggregation_bits"` // hex bitlist
 	Data            *AttestationData `json:"data"`
 	Signature       hexutil.Bytes    `json:"signature"`
 }
 
 // AttestationData a sub property of Attestation.
 type AttestationData struct {
-	Slot            string        `json:"slot"`  /* uint64 */
-	Index           string        `json:"index"` /* uint64 */ // Prysm uses CommitteeIndex but web3signer uses index.
+	Slot            string        `json:"slot"`  // uint64
+	Index           string        `json:"index"` // uint64  // Qrysm uses CommitteeIndex but web3signer uses index.
 	BeaconBlockRoot hexutil.Bytes `json:"beacon_block_root"`
 	Source          *Checkpoint   `json:"source"`
 	Target          *Checkpoint   `json:"target"`
@@ -158,8 +160,8 @@ type Checkpoint struct {
 
 // BeaconBlock a sub property of BeaconBlockBlockV2.
 type BeaconBlock struct {
-	Slot          string           `json:"slot"`           /* uint64 */
-	ProposerIndex string           `json:"proposer_index"` /* uint64 */
+	Slot          string           `json:"slot"`           // uint64
+	ProposerIndex string           `json:"proposer_index"` // uint64
 	ParentRoot    hexutil.Bytes    `json:"parent_root"`
 	StateRoot     hexutil.Bytes    `json:"state_root"`
 	Body          *BeaconBlockBody `json:"body"`
@@ -180,15 +182,15 @@ type BeaconBlockBody struct {
 // Eth1Data a sub property of BeaconBlockBody.
 type Eth1Data struct {
 	DepositRoot  hexutil.Bytes `json:"deposit_root"`
-	DepositCount string        `json:"deposit_count"` /* uint64 */
+	DepositCount string        `json:"deposit_count"` // uint64
 	BlockHash    hexutil.Bytes `json:"block_hash"`
 }
 
 // ProposerSlashing a sub property of BeaconBlockBody.
 type ProposerSlashing struct {
-	// Prysm uses Header_1 but web3signer uses signed_header_1.
+	// Qrysm uses Header_1 but web3signer uses signed_header_1.
 	Signedheader1 *SignedBeaconBlockHeader `json:"signed_header_1"`
-	// Prysm uses Header_2 but web3signer uses signed_header_2.
+	// Qrysm uses Header_2 but web3signer uses signed_header_2.
 	Signedheader2 *SignedBeaconBlockHeader `json:"signed_header_2"`
 }
 
@@ -200,11 +202,11 @@ type SignedBeaconBlockHeader struct {
 
 // BeaconBlockHeader is a sub property of SignedBeaconBlockHeader.
 type BeaconBlockHeader struct {
-	Slot          string        `json:"slot"`           /* uint64 */
-	ProposerIndex string        `json:"proposer_index"` /* uint64 */
-	ParentRoot    hexutil.Bytes `json:"parent_root"`    /* Hash32 */
-	StateRoot     hexutil.Bytes `json:"state_root"`     /* Hash32 */
-	BodyRoot      hexutil.Bytes `json:"body_root"`      /* Hash32 */
+	Slot          string        `json:"slot"`           // uint64
+	ProposerIndex string        `json:"proposer_index"` // uint64
+	ParentRoot    hexutil.Bytes `json:"parent_root"`    // Hash32
+	StateRoot     hexutil.Bytes `json:"state_root"`     // Hash32
+	BodyRoot      hexutil.Bytes `json:"body_root"`      // Hash32
 }
 
 // AttesterSlashing a sub property of BeaconBlockBody.
@@ -215,7 +217,7 @@ type AttesterSlashing struct {
 
 // IndexedAttestation a sub property of AttesterSlashing.
 type IndexedAttestation struct {
-	AttestingIndices []string         `json:"attesting_indices"` /* uint64[] */
+	AttestingIndices []string         `json:"attesting_indices"` // uint64[]
 	Data             *AttestationData `json:"data"`
 	Signature        hexutil.Bytes    `json:"signature"`
 }
@@ -227,25 +229,25 @@ type Deposit struct {
 }
 
 // DepositData a sub property of Deposit.
-// DepositData Prysm uses Deposit_data instead of DepositData which is inconsistent naming
+// DepositData Qrysm uses Deposit_data instead of DepositData which is inconsistent naming
 type DepositData struct {
 	PublicKey             hexutil.Bytes `json:"pubkey"`
 	WithdrawalCredentials hexutil.Bytes `json:"withdrawal_credentials"`
-	Amount                string        `json:"amount"` /* uint64 */
+	Amount                string        `json:"amount"` // uint64
 	Signature             hexutil.Bytes `json:"signature"`
 }
 
 // SignedVoluntaryExit is a sub property of BeaconBlockBody.
 type SignedVoluntaryExit struct {
-	// Prysm uses Exit instead of Message
+	// Qrysm uses Exit instead of Message
 	Message   *VoluntaryExit `json:"message"`
 	Signature hexutil.Bytes  `json:"signature"`
 }
 
 // VoluntaryExit a sub property of SignedVoluntaryExit.
 type VoluntaryExit struct {
-	Epoch          string `json:"epoch"`           /* uint64 */
-	ValidatorIndex string `json:"validator_index"` /* uint64 */
+	Epoch          string `json:"epoch"`          // uint64
+	ValidatorIndex string `json:"validator_index"` // uint64
 }
 
 // BeaconBlockAltairBlockV2 a sub property of BlockAltairSignRequest.
@@ -267,7 +269,7 @@ type BeaconBlockAltair struct {
 type BeaconBlockBodyAltair struct {
 	RandaoReveal      hexutil.Bytes          `json:"randao_reveal"`
 	Eth1Data          *Eth1Data              `json:"eth1_data"`
-	Graffiti          hexutil.Bytes          `json:"graffiti"` /* Hash32 */
+	Graffiti          hexutil.Bytes          `json:"graffiti"` // Hash32
 	ProposerSlashings []*ProposerSlashing    `json:"proposer_slashings"`
 	AttesterSlashings []*AttesterSlashing    `json:"attester_slashings"`
 	Attestations      []*Attestation         `json:"attestations"`
@@ -285,8 +287,8 @@ type BeaconBlockV2Blinded struct {
 
 // SyncAggregate is a sub property of BeaconBlockBodyAltair.
 type SyncAggregate struct {
-	SyncCommitteeBits      hexutil.Bytes `json:"sync_committee_bits"`      /* SSZ hexadecimal string */
-	SyncCommitteeSignature hexutil.Bytes `json:"sync_committee_signature"` /* 96 byte hexadecimal string */
+	SyncCommitteeBits      hexutil.Bytes `json:"sync_committee_bits"`      // SSZ hexadecimal string
+	SyncCommitteeSignature hexutil.Bytes `json:"sync_committee_signature"` // 4595 byte hexadecimal string
 }
 
 // BeaconBlockBlockV2 a sub property of BlockV2SignRequest.
@@ -297,46 +299,47 @@ type BeaconBlockBlockV2 struct {
 
 // RandaoReveal a sub property of RandaoRevealSignRequest.
 type RandaoReveal struct {
-	Epoch string `json:"epoch"` /* uint64 */
+	Epoch string `json:"epoch"` // uint64
 }
 
 // SyncCommitteeMessage a sub property of SyncCommitteeSignRequest.
 type SyncCommitteeMessage struct {
-	BeaconBlockRoot hexutil.Bytes `json:"beacon_block_root"` /* Hash32 */
-	Slot            string        `json:"slot"`              /* uint64 */
-	// Prysm uses BlockRoot instead of BeaconBlockRoot and has the following extra properties : ValidatorIndex, Signature
+	BeaconBlockRoot hexutil.Bytes `json:"beacon_block_root"` // Hash32
+	Slot            string        `json:"slot"`              // uint64
+	// Qrysm uses BlockRoot instead of BeaconBlockRoot and has the following extra properties : ValidatorIndex, Signature
 }
 
 // SyncAggregatorSelectionData a sub property of SyncAggregatorSelectionSignRequest.
 type SyncAggregatorSelectionData struct {
-	Slot              string `json:"slot"`               /* uint64 */
-	SubcommitteeIndex string `json:"subcommittee_index"` /* uint64 */
+	Slot              string `json:"slot"`               // uint64
+	SubcommitteeIndex string `json:"subcommittee_index"` // uint64
 }
 
 // ContributionAndProof a sub property of AggregatorSelectionSignRequest.
 type ContributionAndProof struct {
-	AggregatorIndex string                     `json:"aggregator_index"` /* uint64 */
-	SelectionProof  hexutil.Bytes              `json:"selection_proof"`  /* 96 byte hexadecimal */
+	AggregatorIndex string                     `json:"aggregator_index"` // uint64
+	SelectionProof  hexutil.Bytes              `json:"selection_proof"`  // 4595 byte hexadecimal
 	Contribution    *SyncCommitteeContribution `json:"contribution"`
 }
 
 // SyncCommitteeContribution a sub property of AggregatorSelectionSignRequest.
 type SyncCommitteeContribution struct {
-	Slot              string        `json:"slot"`               /* uint64 */
-	BeaconBlockRoot   hexutil.Bytes `json:"beacon_block_root"`  /* Hash32 */ // Prysm uses BlockRoot instead of BeaconBlockRoot
-	SubcommitteeIndex string        `json:"subcommittee_index"` /* uint64 */
-	AggregationBits   hexutil.Bytes `json:"aggregation_bits"`   /* SSZ hexadecimal string */
-	Signature         hexutil.Bytes `json:"signature"`          /* 96 byte hexadecimal string */
+	Slot              string        `json:"slot"`               // uint64
+	BeaconBlockRoot   hexutil.Bytes `json:"beacon_block_root"`  // Hash32 // Qrysm uses BlockRoot instead of BeaconBlockRoot
+	SubcommitteeIndex string        `json:"subcommittee_index"` // uint64
+	AggregationBits   hexutil.Bytes `json:"aggregation_bits"`   // SSZ hexadecimal string
+	Signature         hexutil.Bytes `json:"signature"`          // 4595 byte hexadecimal string
 }
 
 // ValidatorRegistration a sub property of ValidatorRegistrationSignRequest
 type ValidatorRegistration struct {
-	FeeRecipient hexutil.Bytes `json:"fee_recipient" validate:"required"` /* 42 hexadecimal string */
-	GasLimit     string        `json:"gas_limit" validate:"required"`     /* uint64 */
-	Timestamp    string        `json:"timestamp" validate:"required"`     /* uint64 */
-	Pubkey       hexutil.Bytes `json:"pubkey"  validate:"required"`       /* bls hexadecimal string */
+	FeeRecipient hexutil.Bytes `json:"fee_recipient" validate:"required"` // 42 hexadecimal string
+	GasLimit     string        `json:"gas_limit" validate:"required"`     // uint64
+	Timestamp    string        `json:"timestamp" validate:"required"`     // uint64
+	Pubkey       hexutil.Bytes `json:"pubkey"  validate:"required"`       // bls hexadecimal string
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+*/

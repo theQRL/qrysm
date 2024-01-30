@@ -8,7 +8,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 )
 
 func convertProposerSlashingsToProto(jsonProposerSlashings []*apimiddleware.ProposerSlashingJson) ([]*zondpb.ProposerSlashing, error) {
@@ -404,7 +404,7 @@ func convertWithdrawalsToProto(jsonWithdrawals []*apimiddleware.WithdrawalJson) 
 }
 
 func convertDilithiumToExecutionChangesToProto(jsonSignedDilithiumToExecutionChanges []*apimiddleware.SignedDilithiumToExecutionChangeJson) ([]*zondpb.SignedDilithiumToExecutionChange, error) {
-	signedBlsToExecutionChanges := make([]*zondpb.SignedDilithiumToExecutionChange, len(jsonSignedDilithiumToExecutionChanges))
+	signedDilithiumToExecutionChanges := make([]*zondpb.SignedDilithiumToExecutionChange, len(jsonSignedDilithiumToExecutionChanges))
 
 	for index, jsonDilithiumToExecutionChange := range jsonSignedDilithiumToExecutionChanges {
 		if jsonDilithiumToExecutionChange == nil {
@@ -422,7 +422,7 @@ func convertDilithiumToExecutionChangesToProto(jsonSignedDilithiumToExecutionCha
 
 		fromDilithiumPubkey, err := hexutil.Decode(jsonDilithiumToExecutionChange.Message.FromDilithiumPubkey)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to decode bls pubkey `%s`", jsonDilithiumToExecutionChange.Message.FromDilithiumPubkey)
+			return nil, errors.Wrapf(err, "failed to decode dilithium pubkey `%s`", jsonDilithiumToExecutionChange.Message.FromDilithiumPubkey)
 		}
 
 		toExecutionAddress, err := hexutil.Decode(jsonDilithiumToExecutionChange.Message.ToExecutionAddress)
@@ -435,7 +435,7 @@ func convertDilithiumToExecutionChangesToProto(jsonSignedDilithiumToExecutionCha
 			return nil, errors.Wrapf(err, "failed to decode signature `%s`", jsonDilithiumToExecutionChange.Signature)
 		}
 
-		signedBlsToExecutionChanges[index] = &zondpb.SignedDilithiumToExecutionChange{
+		signedDilithiumToExecutionChanges[index] = &zondpb.SignedDilithiumToExecutionChange{
 			Message: &zondpb.DilithiumToExecutionChange{
 				ValidatorIndex:      primitives.ValidatorIndex(validatorIndex),
 				FromDilithiumPubkey: fromDilithiumPubkey,
@@ -445,5 +445,5 @@ func convertDilithiumToExecutionChangesToProto(jsonSignedDilithiumToExecutionCha
 		}
 	}
 
-	return signedBlsToExecutionChanges, nil
+	return signedDilithiumToExecutionChanges, nil
 }

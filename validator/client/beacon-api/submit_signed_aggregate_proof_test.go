@@ -9,7 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -97,10 +97,10 @@ func generateSignedAggregateAndProofJson() *zondpb.SignedAggregateAttestationAnd
 						Root:  test_helpers.FillByteSlice(32, 81),
 					},
 				},
-				Signature: test_helpers.FillByteSlice(96, 82),
+				Signature: test_helpers.FillByteSlice(4595, 82),
 			},
-			SelectionProof: test_helpers.FillByteSlice(96, 82),
+			SelectionProof: test_helpers.FillByteSlice(4595, 82),
 		},
-		Signature: test_helpers.FillByteSlice(96, 82),
+		Signature: test_helpers.FillByteSlice(4595, 82),
 	}
 }

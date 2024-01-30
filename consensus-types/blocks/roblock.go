@@ -5,7 +5,7 @@ import (
 	"sort"
 
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 )
 
 // ROBlock is a value that embeds a ReadOnlySignedBeaconBlock along with its block root ([32]byte).

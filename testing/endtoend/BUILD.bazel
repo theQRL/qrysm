@@ -61,7 +61,7 @@ common_deps = [
     "//proto/zond/v1:go_default_library",
     "//math:go_default_library",
     "//proto/engine/v1:go_default_library",
-    "//proto/prysm/v1alpha1:go_default_library",
+    "//proto/qrysm/v1alpha1:go_default_library",
     "//testing/assert:go_default_library",
     "//testing/endtoend/components:go_default_library",
     "//testing/endtoend/evaluators:go_default_library",

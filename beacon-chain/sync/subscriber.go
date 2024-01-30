@@ -26,7 +26,7 @@ import (
 	"github.com/theQRL/qrysm/v4/container/slice"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
 	"github.com/theQRL/qrysm/v4/network/forks"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/messagehandler"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"

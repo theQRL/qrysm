@@ -10,7 +10,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-bitfield"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/async"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/v4/config/features"
@@ -20,9 +20,9 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"github.com/theQRL/qrysm/v4/validator/client/iface"
 	"go.opencensus.io/trace"
@@ -32,7 +32,7 @@ import (
 // It fetches the latest beacon block head along with the latest canonical beacon state
 // information in order to sign the block and include information about the validator's
 // participation in voting on the block.
-func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot, pubKey [dilithium2.CryptoPublicKeyBytes]byte) {
+func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot, pubKey [dilithium.CryptoPublicKeyBytes]byte) {
 	ctx, span := trace.StartSpan(ctx, "validator.SubmitAttestation")
 	defer span.End()
 	span.AddAttributes(trace.StringAttribute("validator", fmt.Sprintf("%#x", pubKey)))
@@ -182,14 +182,14 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot,
 }
 
 // Given the validator public key, this gets the validator assignment.
-func (v *validator) duty(pubKey [dilithium2.CryptoPublicKeyBytes]byte) (*zondpb.DutiesResponse_Duty, error) {
+func (v *validator) duty(pubKey [dilithium.CryptoPublicKeyBytes]byte) (*zondpb.DutiesResponse_Duty, error) {
 	v.dutiesLock.RLock()
 	defer v.dutiesLock.RUnlock()
 	if v.duties == nil {
 		return nil, errors.New("no duties for validators")
 	}
 
-	for _, duty := range v.duties.Duties {
+	for _, duty := range v.duties.CurrentEpochDuties {
 		if bytes.Equal(pubKey[:], duty.PublicKey) {
 			return duty, nil
 		}
@@ -199,7 +199,7 @@ func (v *validator) duty(pubKey [dilithium2.CryptoPublicKeyBytes]byte) (*zondpb.
 }
 
 // Given validator's public key, this function returns the signature of an attestation data and its signing root.
-func (v *validator) signAtt(ctx context.Context, pubKey [dilithium2.CryptoPublicKeyBytes]byte, data *zondpb.AttestationData, slot primitives.Slot) ([]byte, [32]byte, error) {
+func (v *validator) signAtt(ctx context.Context, pubKey [dilithium.CryptoPublicKeyBytes]byte, data *zondpb.AttestationData, slot primitives.Slot) ([]byte, [32]byte, error) {
 	domain, root, err := v.getDomainAndSigningRoot(ctx, data)
 	if err != nil {
 		return nil, [32]byte{}, err
@@ -268,7 +268,7 @@ func (v *validator) waitOneThirdOrValidBlock(ctx context.Context, slot primitive
 	delay := slots.DivideSlotBy(3 /* a third of the slot duration */)
 	startTime := slots.StartTime(v.genesisTime, slot)
 	finalTime := startTime.Add(delay)
-	wait := prysmTime.Until(finalTime)
+	wait := qrysmTime.Until(finalTime)
 	if wait <= 0 {
 		return
 	}
@@ -299,7 +299,7 @@ func (v *validator) waitOneThirdOrValidBlock(ctx context.Context, slot primitive
 	}
 }
 
-func attestationLogFields(pubKey [dilithium2.CryptoPublicKeyBytes]byte, indexedAtt *zondpb.IndexedAttestation) logrus.Fields {
+func attestationLogFields(pubKey [dilithium.CryptoPublicKeyBytes]byte, indexedAtt *zondpb.IndexedAttestation) logrus.Fields {
 	return logrus.Fields{
 		"attesterPublicKey": fmt.Sprintf("%#x", pubKey),
 		"attestationSlot":   indexedAtt.Data.Slot,

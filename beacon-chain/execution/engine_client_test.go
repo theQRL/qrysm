@@ -14,7 +14,7 @@ import (
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/go-zond"
+	zond "github.com/theQRL/go-zond"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
 	zondtypes "github.com/theQRL/go-zond/core/types"
@@ -52,7 +52,7 @@ func (RPCClientBad) BatchCall([]zondRPC.BatchElem) error {
 }
 
 func (RPCClientBad) CallContext(context.Context, interface{}, string, ...interface{}) error {
-	return ethereum.NotFound
+	return zond.NotFound
 }
 
 func TestClient_IPC(t *testing.T) {
@@ -1422,25 +1422,28 @@ func fixtures() map[string]interface{} {
 		Transactions:  [][]byte{foo[:]},
 		Withdrawals:   []*pb.Withdrawal{},
 	}
-	executionPayloadFixtureDeneb := &pb.ExecutionPayloadDeneb{
-		ParentHash:    foo[:],
-		FeeRecipient:  bar,
-		StateRoot:     foo[:],
-		ReceiptsRoot:  foo[:],
-		LogsBloom:     baz,
-		PrevRandao:    foo[:],
-		BlockNumber:   1,
-		GasLimit:      1,
-		GasUsed:       1,
-		Timestamp:     1,
-		ExtraData:     foo[:],
-		BaseFeePerGas: bytesutil.PadTo(baseFeePerGas.Bytes(), fieldparams.RootLength),
-		BlockHash:     foo[:],
-		Transactions:  [][]byte{foo[:]},
-		Withdrawals:   []*pb.Withdrawal{},
-		BlobGasUsed:   2,
-		ExcessBlobGas: 3,
-	}
+	// TODO(rgeraldes24): declared and not used
+	/*
+		executionPayloadFixtureDeneb := &pb.ExecutionPayloadDeneb{
+			ParentHash:    foo[:],
+			FeeRecipient:  bar,
+			StateRoot:     foo[:],
+			ReceiptsRoot:  foo[:],
+			LogsBloom:     baz,
+			PrevRandao:    foo[:],
+			BlockNumber:   1,
+			GasLimit:      1,
+			GasUsed:       1,
+			Timestamp:     1,
+			ExtraData:     foo[:],
+			BaseFeePerGas: bytesutil.PadTo(baseFeePerGas.Bytes(), fieldparams.RootLength),
+			BlockHash:     foo[:],
+			Transactions:  [][]byte{foo[:]},
+			Withdrawals:   []*pb.Withdrawal{},
+			BlobGasUsed:   2,
+			ExcessBlobGas: 3,
+		}
+	*/
 	hexUint := hexutil.Uint64(1)
 	executionPayloadWithValueFixtureCapella := &pb.GetPayloadV2ResponseJson{
 		ExecutionPayload: &pb.ExecutionPayloadCapellaJSON{
@@ -1582,12 +1585,12 @@ func fixtures() map[string]interface{} {
 		LatestValidHash: foo[:],
 	}
 	return map[string]interface{}{
-		"ExecutionBlock":                    executionBlock,
-		"ExecutionPayload":                  executionPayloadFixture,
-		"ExecutionPayloadCapella":           executionPayloadFixtureCapella,
-		"ExecutionPayloadDenebWithValue":    executionPayloadWithValueFixtureDeneb,
-		"ExecutionPayloadCapellaWithValue":  executionPayloadWithValueFixtureCapella,
-		"ExecutionPayloadDenebWithValue":    executionPayloadWithValueFixtureDeneb,
+		"ExecutionBlock":                   executionBlock,
+		"ExecutionPayload":                 executionPayloadFixture,
+		"ExecutionPayloadCapella":          executionPayloadFixtureCapella,
+		"ExecutionPayloadDenebWithValue":   executionPayloadWithValueFixtureDeneb,
+		"ExecutionPayloadCapellaWithValue": executionPayloadWithValueFixtureCapella,
+		// "ExecutionPayloadDenebWithValue":    executionPayloadWithValueFixtureDeneb, TODO(rgeraldes24): duplicate
 		"ValidPayloadStatus":                validStatus,
 		"InvalidBlockHashStatus":            inValidBlockHashStatus,
 		"AcceptedStatus":                    acceptedStatus,
@@ -1790,7 +1793,7 @@ func TestHeaderByHash_NotFound(t *testing.T) {
 	srv.rpcClient = RPCClientBad{}
 
 	_, err := srv.HeaderByHash(context.Background(), [32]byte{})
-	assert.Equal(t, ethereum.NotFound, err)
+	assert.Equal(t, zond.NotFound, err)
 }
 
 func TestHeaderByNumber_NotFound(t *testing.T) {
@@ -1798,7 +1801,7 @@ func TestHeaderByNumber_NotFound(t *testing.T) {
 	srv.rpcClient = RPCClientBad{}
 
 	_, err := srv.HeaderByNumber(context.Background(), big.NewInt(100))
-	assert.Equal(t, ethereum.NotFound, err)
+	assert.Equal(t, zond.NotFound, err)
 }
 
 func TestToBlockNumArg(t *testing.T) {

@@ -9,7 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/go-zond"
+	zond "github.com/theQRL/go-zond"
 	"github.com/theQRL/go-zond/accounts/abi/bind/backends"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
@@ -28,7 +28,7 @@ import (
 	"github.com/theQRL/qrysm/v4/contracts/deposit/mock"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/monitoring/clientstats"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -46,14 +46,14 @@ type goodLogger struct {
 
 func (_ *goodLogger) Close() {}
 
-func (g *goodLogger) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- zondTypes.Log) (ethereum.Subscription, error) {
+func (g *goodLogger) SubscribeFilterLogs(ctx context.Context, q zond.FilterQuery, ch chan<- zondTypes.Log) (zond.Subscription, error) {
 	if g.backend == nil {
 		return new(event.Feed).Subscribe(ch), nil
 	}
 	return g.backend.SubscribeFilterLogs(ctx, q, ch)
 }
 
-func (g *goodLogger) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]zondTypes.Log, error) {
+func (g *goodLogger) FilterLogs(ctx context.Context, q zond.FilterQuery) ([]zondTypes.Log, error) {
 	if g.backend == nil {
 		logs := make([]zondTypes.Log, 3)
 		for i := 0; i < len(logs); i++ {

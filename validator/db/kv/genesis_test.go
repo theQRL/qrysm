@@ -4,14 +4,14 @@ import (
 	"context"
 	"testing"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
 func TestStore_GenesisValidatorsRoot_ReadAndWrite(t *testing.T) {
 	ctx := context.Background()
-	db := setupDB(t, [][dilithium2.CryptoPublicKeyBytes]byte{})
+	db := setupDB(t, [][dilithium.CryptoPublicKeyBytes]byte{})
 	tests := []struct {
 		name    string
 		want    []byte

@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/validator"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/shared"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/validator"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared"
 	gomock "github.com/golang/mock/gomock"
 	primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
 )

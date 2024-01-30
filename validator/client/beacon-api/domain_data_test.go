@@ -7,9 +7,10 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/beacon"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/beacon"
 	"github.com/theQRL/qrysm/v4/config/params"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
@@ -17,8 +18,8 @@ import (
 
 func TestGetDomainData_ValidDomainData(t *testing.T) {
 	const genesisValidatorRoot = "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
-	forkVersion := params.BeaconConfig().AltairForkVersion
-	epoch := params.BeaconConfig().AltairForkEpoch
+	forkVersion := params.BeaconConfig().CapellaForkVersion
+	epoch := params.BeaconConfig().CapellaForkEpoch
 	domainType := params.BeaconConfig().DomainBeaconProposer
 
 	genesisValidatorRootBytes, err := hexutil.Decode(genesisValidatorRoot)
@@ -57,7 +58,7 @@ func TestGetDomainData_ValidDomainData(t *testing.T) {
 }
 
 func TestGetDomainData_GenesisError(t *testing.T) {
-	epoch := params.BeaconConfig().AltairForkEpoch
+	epoch := primitives.Epoch(0)
 	domainType := params.BeaconConfig().DomainBeaconProposer
 
 	ctrl := gomock.NewController(t)
@@ -76,7 +77,7 @@ func TestGetDomainData_GenesisError(t *testing.T) {
 }
 
 func TestGetDomainData_InvalidGenesisRoot(t *testing.T) {
-	epoch := params.BeaconConfig().AltairForkEpoch
+	epoch := primitives.Epoch(0)
 	domainType := params.BeaconConfig().DomainBeaconProposer
 
 	ctrl := gomock.NewController(t)

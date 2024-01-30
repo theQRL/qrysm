@@ -1,7 +1,8 @@
 run:
   skip-files:
-    - validator/web/site_data.go
+    - validator/keymanager/remote-web3signer/v1/web3signer_types.go
     - .*_test.go
+    - testing/spectest
   skip-dirs:
     - proto
     - tools/analyzers

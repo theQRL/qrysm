@@ -32,7 +32,7 @@ const (
 func exportSlashingProtectionJSON(cliCtx *cli.Context) error {
 	log.Info(
 		"This command exports your validator's attestation and proposal history into " +
-			"a file that can then be imported into any other Prysm setup across computers",
+			"a file that can then be imported into any other Qrysm setup across computers",
 	)
 	var err error
 	dataDir := cliCtx.String(cmd.DataDirFlag.Name)
@@ -72,8 +72,8 @@ func exportSlashingProtectionJSON(cliCtx *cli.Context) error {
 	if eipJSON == nil || len(eipJSON.Data) == 0 {
 		log.Fatal(
 			"No slashing protection data was found in your database. This is likely because an older version of " +
-				"Prysm would place your validator database in your wallet directory as a validator.db file. Now, " +
-				"Prysm keeps its validator database inside the direct/ or derived/ folder in your wallet directory. " +
+				"Qrysm would place your validator database in your wallet directory as a validator.db file. Now, " +
+				"Qrysm keeps its validator database inside the direct/ or derived/ folder in your wallet directory. " +
 				"Try running this command again, but add direct/ or derived/ to the path where your wallet " +
 				"directory is in and you should obtain your slashing protection history",
 		)
@@ -109,7 +109,7 @@ func exportSlashingProtectionJSON(cliCtx *cli.Context) error {
 		return errors.Wrapf(err, "could not write file to path %s", outputFilePath)
 	}
 	log.Infof(
-		"Successfully wrote %s. You can import this file using Prysm's "+
+		"Successfully wrote %s. You can import this file using Qrysm's "+
 			"validator slashing-protection-history import command in another machine",
 		outputFilePath,
 	)

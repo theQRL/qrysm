@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/qrysm/v4/async/event"
 	"github.com/theQRL/qrysm/v4/config/params"
@@ -189,8 +189,8 @@ func TestKeyReload_ActiveKey(t *testing.T) {
 	ctx := context.Background()
 	km := &mockKeymanager{}
 	v := &testutil.FakeValidator{Km: km}
-	ac := make(chan [][dilithium2.CryptoPublicKeyBytes]byte)
-	current := [][dilithium2.CryptoPublicKeyBytes]byte{testutil.ActiveKey}
+	ac := make(chan [][dilithium.CryptoPublicKeyBytes]byte)
+	current := [][dilithium.CryptoPublicKeyBytes]byte{testutil.ActiveKey}
 	onAccountsChanged(ctx, v, current, ac)
 	assert.Equal(t, true, v.HandleKeyReloadCalled)
 	// HandleKeyReloadCalled in the FakeValidator returns true if one of the keys is equal to the
@@ -203,8 +203,8 @@ func TestKeyReload_NoActiveKey(t *testing.T) {
 	ctx := context.Background()
 	km := &mockKeymanager{}
 	v := &testutil.FakeValidator{Km: km}
-	ac := make(chan [][dilithium2.CryptoPublicKeyBytes]byte)
-	current := [][dilithium2.CryptoPublicKeyBytes]byte{na}
+	ac := make(chan [][dilithium.CryptoPublicKeyBytes]byte)
+	current := [][dilithium.CryptoPublicKeyBytes]byte{na}
 	onAccountsChanged(ctx, v, current, ac)
 	assert.Equal(t, true, v.HandleKeyReloadCalled)
 	// HandleKeyReloadCalled in the FakeValidator returns true if one of the keys is equal to the
@@ -213,8 +213,8 @@ func TestKeyReload_NoActiveKey(t *testing.T) {
 	assert.Equal(t, 1, v.WaitForActivationCalled)
 }
 
-func notActive(t *testing.T) [dilithium2.CryptoPublicKeyBytes]byte {
-	var r [dilithium2.CryptoPublicKeyBytes]byte
+func notActive(t *testing.T) [dilithium.CryptoPublicKeyBytes]byte {
+	var r [dilithium.CryptoPublicKeyBytes]byte
 	copy(r[:], testutil.ActiveKey[:])
 	for i := 0; i < len(r); i++ {
 		r[i] = bits.Reverse8(r[i])

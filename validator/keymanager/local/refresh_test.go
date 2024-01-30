@@ -6,13 +6,13 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
 	"github.com/theQRL/qrysm/v4/async/event"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	mock "github.com/theQRL/qrysm/v4/validator/accounts/testing"
-	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 )
 
 func TestLocalKeymanager_reloadAccountsFromKeystore_MismatchedNumKeys(t *testing.T) {
@@ -62,7 +62,7 @@ func TestLocalKeymanager_reloadAccountsFromKeystore(t *testing.T) {
 	privKeys := make([][]byte, numAccounts)
 	pubKeys := make([][]byte, numAccounts)
 	for i := 0; i < numAccounts; i++ {
-		privKey, err := bls.RandKey()
+		privKey, err := dilithium.RandKey()
 		require.NoError(t, err)
 		privKeys[i] = privKey.Marshal()
 		pubKeys[i] = privKey.PublicKey().Marshal()
@@ -74,7 +74,7 @@ func TestLocalKeymanager_reloadAccountsFromKeystore(t *testing.T) {
 
 	// Check that the public keys were added to the public keys cache.
 	for i, keyBytes := range pubKeys {
-		require.Equal(t, bytesutil.ToBytes48(keyBytes), orderedPublicKeys[i])
+		require.Equal(t, bytesutil.ToBytes2592(keyBytes), orderedPublicKeys[i])
 	}
 
 	// Check that the secret keys were added to the secret keys cache.
@@ -83,7 +83,7 @@ func TestLocalKeymanager_reloadAccountsFromKeystore(t *testing.T) {
 	for i, keyBytes := range privKeys {
 		privKey, ok := dilithiumKeysCache[bytesutil.ToBytes2592(pubKeys[i])]
 		require.Equal(t, true, ok)
-		require.Equal(t, bytesutil.ToBytes48(keyBytes), bytesutil.ToBytes48(privKey.Marshal()))
+		require.Equal(t, bytesutil.ToBytes2592(keyBytes), bytesutil.ToBytes2592(privKey.Marshal()))
 	}
 
 	// Check the key was added to the global accounts store.

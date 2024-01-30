@@ -1,5 +1,6 @@
 package derived
 
+/*
 import (
 	"fmt"
 	"os"
@@ -110,3 +111,4 @@ func setBip39Lang(lang string) error {
 	bip39.SetWordList(wordlist)
 	return nil
 }
+*/

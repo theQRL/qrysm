@@ -8,15 +8,15 @@ import (
 
 	"github.com/google/uuid"
 	logTest "github.com/sirupsen/logrus/hooks/test"
+	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	mock "github.com/theQRL/qrysm/v4/validator/accounts/testing"
 	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 )
 
 const password = "secretPassw0rd$1999"
@@ -25,7 +25,7 @@ func createRandomKeystore(t testing.TB, password string) *keymanager.Keystore {
 	encryptor := keystorev4.New()
 	id, err := uuid.NewRandom()
 	require.NoError(t, err)
-	validatingKey, err := bls.RandKey()
+	validatingKey, err := dilithium.RandKey()
 	require.NoError(t, err)
 	pubKey := validatingKey.PublicKey().Marshal()
 	cryptoFields, err := encryptor.Encrypt(validatingKey.Marshal(), password)
@@ -44,7 +44,7 @@ func TestLocalKeymanager_NoDuplicates(t *testing.T) {
 	pubKeys := make([][]byte, numKeys)
 	seeds := make([][]byte, numKeys)
 	for i := 0; i < numKeys; i++ {
-		priv, err := bls.RandKey()
+		priv, err := dilithium.RandKey()
 		require.NoError(t, err)
 		seeds[i] = priv.Marshal()
 		pubKeys[i] = priv.PublicKey().Marshal()
@@ -83,7 +83,7 @@ func TestLocalKeymanager_NoDuplicates(t *testing.T) {
 
 	// Now, we run the function again but with a new priv and pubkey and this
 	// time, we do expect a change.
-	privKey, err := bls.RandKey()
+	privKey, err := dilithium.RandKey()
 	require.NoError(t, err)
 	seeds = append(seeds, privKey.Marshal())
 	pubKeys = append(pubKeys, privKey.PublicKey().Marshal())

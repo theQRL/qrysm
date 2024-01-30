@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/ptypes/empty"
-	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/accounts"
 	"github.com/theQRL/qrysm/v4/validator/db/kv"
@@ -37,7 +37,7 @@ func TestImportSlashingProtection_Preconditions(t *testing.T) {
 		accounts.WithWalletDir(defaultWalletPath),
 		accounts.WithKeymanagerType(keymanager.Local),
 		accounts.WithWalletPassword(strongPass),
-		accounts.WithSkipMnemonicConfirm(true),
+		// accounts.WithSkipMnemonicConfirm(true),
 	}
 	acc, err := accounts.NewCLIManager(opts...)
 	require.NoError(t, err)

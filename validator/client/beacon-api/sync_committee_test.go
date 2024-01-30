@@ -12,11 +12,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/beacon"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/shared"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/validator"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/beacon"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/validator"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -25,7 +25,7 @@ import (
 
 func TestSubmitSyncMessage_Valid(t *testing.T) {
 	const beaconBlockRoot = "0x719d4f66a5f25c35d93718821aacb342194391034b11cf0a5822cc249178a274"
-	const signature = "0xb459ef852bd4e0cb96e6723d67cacc8215406dd9ba663f8874a083167ebf428b28b746431bdbc1820a25289377b2610881e52b3a05c3548c5e99c08c8a36342573be5962d7510c03dcba8ddfb8ae419e59d222ddcf31cc512e704ef2cc3cf8"
+	const signature = "0xb459ef852bd4e0cb96e6723d67cacc8215406dd9ba663f8874a083167ebf428b28b746431bdbc1820a25289377b2610881e52b3a05c35c5e99c08c8a36342573be5962d7510c03dcba8ddfb8ae419e59d222ddcf31cc512e704ef2cc3cf8"
 
 	decodedBeaconBlockRoot, err := hexutil.Decode(beaconBlockRoot)
 	require.NoError(t, err)

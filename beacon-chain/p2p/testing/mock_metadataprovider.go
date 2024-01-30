@@ -1,7 +1,7 @@
 package testing
 
 import (
-	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/metadata"
+	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/metadata"
 )
 
 // MockMetadataProvider is a fake implementation of the MetadataProvider interface.

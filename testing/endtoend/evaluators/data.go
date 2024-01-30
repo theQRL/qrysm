@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
 	"google.golang.org/grpc"
 )

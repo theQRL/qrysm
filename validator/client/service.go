@@ -11,7 +11,7 @@ import (
 	grpcopentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	grpcprometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-qrllib/dilithium"
 	grpcutil "github.com/theQRL/qrysm/v4/api/grpc"
 	"github.com/theQRL/qrysm/v4/async/event"
 	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
@@ -19,7 +19,7 @@ import (
 	validatorserviceconfig "github.com/theQRL/qrysm/v4/config/validator/service"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
 	beaconChainClientFactory "github.com/theQRL/qrysm/v4/validator/client/beacon-chain-client-factory"
 	"github.com/theQRL/qrysm/v4/validator/client/iface"
@@ -30,7 +30,6 @@ import (
 	validatorHelpers "github.com/theQRL/qrysm/v4/validator/helpers"
 	"github.com/theQRL/qrysm/v4/validator/keymanager"
 	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
-	remoteweb3signer "github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer"
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -52,7 +51,6 @@ type GenesisFetcher interface {
 // ValidatorService represents a service to manage the validator client
 // routine.
 type ValidatorService struct {
-	useWeb                bool
 	emitAccountMetrics    bool
 	logValidatorBalances  bool
 	interopKeysConfig     *local.InteropKeymanagerConfig
@@ -72,13 +70,12 @@ type ValidatorService struct {
 	db                    db.Database
 	grpcHeaders           []string
 	graffiti              []byte
-	Web3SignerConfig      *remoteweb3signer.SetupConfig
-	proposerSettings      *validatorserviceconfig.ProposerSettings
+	// Web3SignerConfig      *remoteweb3signer.SetupConfig
+	proposerSettings *validatorserviceconfig.ProposerSettings
 }
 
 // Config for the validator service.
 type Config struct {
-	UseWeb                     bool
 	LogValidatorBalances       bool
 	EmitAccountMetrics         bool
 	InteropKeysConfig          *local.InteropKeymanagerConfig
@@ -95,10 +92,10 @@ type Config struct {
 	GrpcHeadersFlag            string
 	GraffitiFlag               string
 	Endpoint                   string
-	Web3SignerConfig           *remoteweb3signer.SetupConfig
-	ProposerSettings           *validatorserviceconfig.ProposerSettings
-	BeaconApiEndpoint          string
-	BeaconApiTimeout           time.Duration
+	// Web3SignerConfig           *remoteweb3signer.SetupConfig
+	ProposerSettings  *validatorserviceconfig.ProposerSettings
+	BeaconApiEndpoint string
+	BeaconApiTimeout  time.Duration
 }
 
 // NewValidatorService creates a new validator service for the service
@@ -122,11 +119,10 @@ func NewValidatorService(ctx context.Context, cfg *Config) (*ValidatorService, e
 		db:                    cfg.ValDB,
 		wallet:                cfg.Wallet,
 		walletInitializedFeed: cfg.WalletInitializedFeed,
-		useWeb:                cfg.UseWeb,
 		interopKeysConfig:     cfg.InteropKeysConfig,
 		graffitiStruct:        cfg.GraffitiStruct,
-		Web3SignerConfig:      cfg.Web3SignerConfig,
-		proposerSettings:      cfg.ProposerSettings,
+		// Web3SignerConfig:  cfg.Web3SignerConfig,
+		proposerSettings: cfg.ProposerSettings,
 	}
 
 	dialOpts := ConstructDialOptions(
@@ -176,7 +172,7 @@ func (v *ValidatorService) Start() {
 		log.WithError(err).Error("Could not read slashable public keys from disk")
 		return
 	}
-	slashablePublicKeys := make(map[[dilithium2.CryptoPublicKeyBytes]byte]bool)
+	slashablePublicKeys := make(map[[dilithium.CryptoPublicKeyBytes]byte]bool)
 	for _, pubKey := range sPubKeys {
 		slashablePublicKeys[pubKey] = true
 	}
@@ -198,16 +194,15 @@ func (v *ValidatorService) Start() {
 		graffiti:                       v.graffiti,
 		logValidatorBalances:           v.logValidatorBalances,
 		emitAccountMetrics:             v.emitAccountMetrics,
-		startBalances:                  make(map[[dilithium2.CryptoPublicKeyBytes]byte]uint64),
-		prevBalance:                    make(map[[dilithium2.CryptoPublicKeyBytes]byte]uint64),
-		pubkeyToValidatorIndex:         make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
-		signedValidatorRegistrations:   make(map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1),
+		startBalances:                  make(map[[dilithium.CryptoPublicKeyBytes]byte]uint64),
+		prevBalance:                    make(map[[dilithium.CryptoPublicKeyBytes]byte]uint64),
+		pubkeyToValidatorIndex:         make(map[[dilithium.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
+		signedValidatorRegistrations:   make(map[[dilithium.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1),
 		attLogs:                        make(map[[32]byte]*attSubmitted),
 		domainDataCache:                cache,
 		aggregatedSlotCommitteeIDCache: aggregatedSlotCommitteeIDCache,
 		voteStats:                      voteStats{startEpoch: primitives.Epoch(^uint64(0))},
 		syncCommitteeStats:             syncCommitteeStats{},
-		useWeb:                         v.useWeb,
 		interopKeysConfig:              v.interopKeysConfig,
 		wallet:                         v.wallet,
 		walletInitializedFeed:          v.walletInitializedFeed,
@@ -215,9 +210,9 @@ func (v *ValidatorService) Start() {
 		graffitiStruct:                 v.graffitiStruct,
 		graffitiOrderedIndex:           graffitiOrderedIndex,
 		eipImportBlacklistedPublicKeys: slashablePublicKeys,
-		Web3SignerConfig:               v.Web3SignerConfig,
-		proposerSettings:               v.proposerSettings,
-		walletInitializedChannel:       make(chan *wallet.Wallet, 1),
+		// Web3SignerConfig:               v.Web3SignerConfig,
+		proposerSettings:         v.proposerSettings,
+		walletInitializedChannel: make(chan *wallet.Wallet, 1),
 	}
 
 	// To resolve a race condition at startup due to the interface

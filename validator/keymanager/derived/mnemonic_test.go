@@ -1,5 +1,6 @@
 package derived
 
+/*
 import (
 	"testing"
 
@@ -51,3 +52,4 @@ func Test_setBip39Lang(t *testing.T) {
 		})
 	}
 }
+*/

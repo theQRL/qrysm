@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 )
@@ -14,7 +14,7 @@ import (
 var failedBlockSignLocalErr = "attempted to sign a double proposal, block rejected by local protection"
 
 func (v *validator) slashableProposalCheck(
-	ctx context.Context, pubKey [dilithium2.CryptoPublicKeyBytes]byte, signedBlock interfaces.ReadOnlySignedBeaconBlock, signingRoot [32]byte,
+	ctx context.Context, pubKey [dilithium.CryptoPublicKeyBytes]byte, signedBlock interfaces.ReadOnlySignedBeaconBlock, signingRoot [32]byte,
 ) error {
 	fmtKey := fmt.Sprintf("%#x", pubKey[:])
 
@@ -65,7 +65,7 @@ func (v *validator) slashableProposalCheck(
 	return nil
 }
 
-func blockLogFields(pubKey [dilithium2.CryptoPublicKeyBytes]byte, blk interfaces.ReadOnlyBeaconBlock, sig []byte) logrus.Fields {
+func blockLogFields(pubKey [dilithium.CryptoPublicKeyBytes]byte, blk interfaces.ReadOnlyBeaconBlock, sig []byte) logrus.Fields {
 	fields := logrus.Fields{
 		"proposerPublicKey": fmt.Sprintf("%#x", pubKey),
 		"proposerIndex":     blk.ProposerIndex(),

@@ -5,7 +5,7 @@ import (
 	customtypes "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/custom-types"
 	"github.com/theQRL/qrysm/v4/config/features"
 	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 )
 
 // LatestBlockHeader stored within the beacon state.

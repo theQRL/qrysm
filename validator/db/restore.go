@@ -16,7 +16,7 @@ import (
 const dbExistsYesNoPrompt = "A database file already exists in the target directory. " +
 	"Are you sure that you want to overwrite it? [y/n]"
 
-// Restore a Prysm validator database.
+// Restore a Qrysm validator database.
 func Restore(cliCtx *cli.Context) error {
 	sourceFile := cliCtx.String(cmd.RestoreSourceFileFlag.Name)
 	targetDir := cliCtx.String(cmd.RestoreTargetDirFlag.Name)

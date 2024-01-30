@@ -21,7 +21,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/container/trie"
 	"github.com/theQRL/qrysm/v4/io/file"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/interop"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/urfave/cli/v2"
@@ -85,7 +85,7 @@ var (
 			},
 			&cli.StringFlag{
 				Name:        "config-name",
-				Usage:       "Config kind to be used for generating the genesis state. Default: mainnet. Options include mainnet, interop, minimal, prater, sepolia. --chain-config-file will override this flag.",
+				Usage:       "Config kind to be used for generating the genesis state. Default: mainnet. Options include mainnet, interop, minimal. --chain-config-file will override this flag.",
 				Destination: &generateGenesisStateFlags.ConfigName,
 				Value:       params.MainnetName,
 			},

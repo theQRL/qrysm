@@ -9,9 +9,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/shared"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 )
 
 func (c beaconApiValidatorClient) proposeBeaconBlock(ctx context.Context, in *zondpb.GenericSignedBeaconBlock) (*zondpb.ProposeResponse, error) {
@@ -23,51 +22,6 @@ func (c beaconApiValidatorClient) proposeBeaconBlock(ctx context.Context, in *zo
 	blinded := false
 
 	switch blockType := in.Block.(type) {
-	case *zondpb.GenericSignedBeaconBlock_Phase0:
-		consensusVersion = "phase0"
-		beaconBlockRoot, err = blockType.Phase0.Block.HashTreeRoot()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to compute block root for phase0 beacon block")
-		}
-
-		marshalledSignedBeaconBlockJson, err = marshallBeaconBlockPhase0(blockType.Phase0)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshall phase0 beacon block")
-		}
-	case *zondpb.GenericSignedBeaconBlock_Altair:
-		consensusVersion = "altair"
-		beaconBlockRoot, err = blockType.Altair.Block.HashTreeRoot()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to compute block root for altair beacon block")
-		}
-
-		marshalledSignedBeaconBlockJson, err = marshallBeaconBlockAltair(blockType.Altair)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshall altair beacon block")
-		}
-	case *zondpb.GenericSignedBeaconBlock_Bellatrix:
-		consensusVersion = "bellatrix"
-		beaconBlockRoot, err = blockType.Bellatrix.Block.HashTreeRoot()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to compute block root for bellatrix beacon block")
-		}
-
-		marshalledSignedBeaconBlockJson, err = marshallBeaconBlockBellatrix(blockType.Bellatrix)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshall bellatrix beacon block")
-		}
-	case *zondpb.GenericSignedBeaconBlock_BlindedBellatrix:
-		blinded = true
-		consensusVersion = "bellatrix"
-		beaconBlockRoot, err = blockType.BlindedBellatrix.Block.HashTreeRoot()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to compute block root for blinded bellatrix beacon block")
-		}
-
-		marshalledSignedBeaconBlockJson, err = marshallBeaconBlockBlindedBellatrix(blockType.BlindedBellatrix)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshall blinded bellatrix beacon block")
-		}
 	case *zondpb.GenericSignedBeaconBlock_Capella:
 		consensusVersion = "capella"
 		beaconBlockRoot, err = blockType.Capella.Block.HashTreeRoot()
@@ -90,35 +44,6 @@ func (c beaconApiValidatorClient) proposeBeaconBlock(ctx context.Context, in *zo
 		marshalledSignedBeaconBlockJson, err = marshallBeaconBlockBlindedCapella(blockType.BlindedCapella)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to marshall blinded capella beacon block")
-		}
-	case *zondpb.GenericSignedBeaconBlock_Deneb:
-		consensusVersion = "deneb"
-		beaconBlockRoot, err = blockType.Deneb.Block.HashTreeRoot()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to compute block root for deneb beacon block")
-		}
-		signedBlock, err := shared.SignedBeaconBlockContentsDenebFromConsensus(blockType.Deneb)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to convert deneb beacon block contents")
-		}
-		marshalledSignedBeaconBlockJson, err = json.Marshal(signedBlock)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshal deneb beacon block contents")
-		}
-	case *zondpb.GenericSignedBeaconBlock_BlindedDeneb:
-		blinded = true
-		consensusVersion = "deneb"
-		beaconBlockRoot, err = blockType.BlindedDeneb.SignedBlindedBlock.HashTreeRoot()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to compute block root for blinded deneb beacon block")
-		}
-		signedBlock, err := shared.SignedBlindedBeaconBlockContentsDenebFromConsensus(blockType.BlindedDeneb)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to convert blinded deneb beacon block contents")
-		}
-		marshalledSignedBeaconBlockJson, err = json.Marshal(signedBlock)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshal blinded deneb beacon block contents")
 		}
 	default:
 		return nil, errors.Errorf("unsupported block type %T", in.Block)
@@ -143,146 +68,6 @@ func (c beaconApiValidatorClient) proposeBeaconBlock(ctx context.Context, in *zo
 	}
 
 	return &zondpb.ProposeResponse{BlockRoot: beaconBlockRoot[:]}, nil
-}
-
-func marshallBeaconBlockPhase0(block *zondpb.SignedBeaconBlock) ([]byte, error) {
-	signedBeaconBlockJson := &apimiddleware.SignedBeaconBlockJson{
-		Signature: hexutil.Encode(block.Signature),
-		Message: &apimiddleware.BeaconBlockJson{
-			Body: &apimiddleware.BeaconBlockBodyJson{
-				Attestations:      jsonifyAttestations(block.Block.Body.Attestations),
-				AttesterSlashings: jsonifyAttesterSlashings(block.Block.Body.AttesterSlashings),
-				Deposits:          jsonifyDeposits(block.Block.Body.Deposits),
-				Eth1Data:          jsonifyEth1Data(block.Block.Body.Eth1Data),
-				Graffiti:          hexutil.Encode(block.Block.Body.Graffiti),
-				ProposerSlashings: jsonifyProposerSlashings(block.Block.Body.ProposerSlashings),
-				RandaoReveal:      hexutil.Encode(block.Block.Body.RandaoReveal),
-				VoluntaryExits:    JsonifySignedVoluntaryExits(block.Block.Body.VoluntaryExits),
-			},
-			ParentRoot:    hexutil.Encode(block.Block.ParentRoot),
-			ProposerIndex: uint64ToString(block.Block.ProposerIndex),
-			Slot:          uint64ToString(block.Block.Slot),
-			StateRoot:     hexutil.Encode(block.Block.StateRoot),
-		},
-	}
-
-	return json.Marshal(signedBeaconBlockJson)
-}
-
-func marshallBeaconBlockAltair(block *zondpb.SignedBeaconBlockAltair) ([]byte, error) {
-	signedBeaconBlockAltairJson := &apimiddleware.SignedBeaconBlockAltairJson{
-		Signature: hexutil.Encode(block.Signature),
-		Message: &apimiddleware.BeaconBlockAltairJson{
-			ParentRoot:    hexutil.Encode(block.Block.ParentRoot),
-			ProposerIndex: uint64ToString(block.Block.ProposerIndex),
-			Slot:          uint64ToString(block.Block.Slot),
-			StateRoot:     hexutil.Encode(block.Block.StateRoot),
-			Body: &apimiddleware.BeaconBlockBodyAltairJson{
-				Attestations:      jsonifyAttestations(block.Block.Body.Attestations),
-				AttesterSlashings: jsonifyAttesterSlashings(block.Block.Body.AttesterSlashings),
-				Deposits:          jsonifyDeposits(block.Block.Body.Deposits),
-				Eth1Data:          jsonifyEth1Data(block.Block.Body.Eth1Data),
-				Graffiti:          hexutil.Encode(block.Block.Body.Graffiti),
-				ProposerSlashings: jsonifyProposerSlashings(block.Block.Body.ProposerSlashings),
-				RandaoReveal:      hexutil.Encode(block.Block.Body.RandaoReveal),
-				VoluntaryExits:    JsonifySignedVoluntaryExits(block.Block.Body.VoluntaryExits),
-				SyncAggregate: &apimiddleware.SyncAggregateJson{
-					SyncCommitteeBits:      hexutil.Encode(block.Block.Body.SyncAggregate.SyncCommitteeBits),
-					SyncCommitteeSignature: hexutil.Encode(block.Block.Body.SyncAggregate.SyncCommitteeSignature),
-				},
-			},
-		},
-	}
-
-	return json.Marshal(signedBeaconBlockAltairJson)
-}
-
-func marshallBeaconBlockBellatrix(block *zondpb.SignedBeaconBlockBellatrix) ([]byte, error) {
-	signedBeaconBlockBellatrixJson := &apimiddleware.SignedBeaconBlockBellatrixJson{
-		Signature: hexutil.Encode(block.Signature),
-		Message: &apimiddleware.BeaconBlockBellatrixJson{
-			ParentRoot:    hexutil.Encode(block.Block.ParentRoot),
-			ProposerIndex: uint64ToString(block.Block.ProposerIndex),
-			Slot:          uint64ToString(block.Block.Slot),
-			StateRoot:     hexutil.Encode(block.Block.StateRoot),
-			Body: &apimiddleware.BeaconBlockBodyBellatrixJson{
-				Attestations:      jsonifyAttestations(block.Block.Body.Attestations),
-				AttesterSlashings: jsonifyAttesterSlashings(block.Block.Body.AttesterSlashings),
-				Deposits:          jsonifyDeposits(block.Block.Body.Deposits),
-				Eth1Data:          jsonifyEth1Data(block.Block.Body.Eth1Data),
-				Graffiti:          hexutil.Encode(block.Block.Body.Graffiti),
-				ProposerSlashings: jsonifyProposerSlashings(block.Block.Body.ProposerSlashings),
-				RandaoReveal:      hexutil.Encode(block.Block.Body.RandaoReveal),
-				VoluntaryExits:    JsonifySignedVoluntaryExits(block.Block.Body.VoluntaryExits),
-				SyncAggregate: &apimiddleware.SyncAggregateJson{
-					SyncCommitteeBits:      hexutil.Encode(block.Block.Body.SyncAggregate.SyncCommitteeBits),
-					SyncCommitteeSignature: hexutil.Encode(block.Block.Body.SyncAggregate.SyncCommitteeSignature),
-				},
-				ExecutionPayload: &apimiddleware.ExecutionPayloadJson{
-					BaseFeePerGas: bytesutil.LittleEndianBytesToBigInt(block.Block.Body.ExecutionPayload.BaseFeePerGas).String(),
-					BlockHash:     hexutil.Encode(block.Block.Body.ExecutionPayload.BlockHash),
-					BlockNumber:   uint64ToString(block.Block.Body.ExecutionPayload.BlockNumber),
-					ExtraData:     hexutil.Encode(block.Block.Body.ExecutionPayload.ExtraData),
-					FeeRecipient:  hexutil.Encode(block.Block.Body.ExecutionPayload.FeeRecipient),
-					GasLimit:      uint64ToString(block.Block.Body.ExecutionPayload.GasLimit),
-					GasUsed:       uint64ToString(block.Block.Body.ExecutionPayload.GasUsed),
-					LogsBloom:     hexutil.Encode(block.Block.Body.ExecutionPayload.LogsBloom),
-					ParentHash:    hexutil.Encode(block.Block.Body.ExecutionPayload.ParentHash),
-					PrevRandao:    hexutil.Encode(block.Block.Body.ExecutionPayload.PrevRandao),
-					ReceiptsRoot:  hexutil.Encode(block.Block.Body.ExecutionPayload.ReceiptsRoot),
-					StateRoot:     hexutil.Encode(block.Block.Body.ExecutionPayload.StateRoot),
-					TimeStamp:     uint64ToString(block.Block.Body.ExecutionPayload.Timestamp),
-					Transactions:  jsonifyTransactions(block.Block.Body.ExecutionPayload.Transactions),
-				},
-			},
-		},
-	}
-
-	return json.Marshal(signedBeaconBlockBellatrixJson)
-}
-
-func marshallBeaconBlockBlindedBellatrix(block *zondpb.SignedBlindedBeaconBlockBellatrix) ([]byte, error) {
-	signedBeaconBlockBellatrixJson := &apimiddleware.SignedBlindedBeaconBlockBellatrixJson{
-		Signature: hexutil.Encode(block.Signature),
-		Message: &apimiddleware.BlindedBeaconBlockBellatrixJson{
-			ParentRoot:    hexutil.Encode(block.Block.ParentRoot),
-			ProposerIndex: uint64ToString(block.Block.ProposerIndex),
-			Slot:          uint64ToString(block.Block.Slot),
-			StateRoot:     hexutil.Encode(block.Block.StateRoot),
-			Body: &apimiddleware.BlindedBeaconBlockBodyBellatrixJson{
-				Attestations:      jsonifyAttestations(block.Block.Body.Attestations),
-				AttesterSlashings: jsonifyAttesterSlashings(block.Block.Body.AttesterSlashings),
-				Deposits:          jsonifyDeposits(block.Block.Body.Deposits),
-				Eth1Data:          jsonifyEth1Data(block.Block.Body.Eth1Data),
-				Graffiti:          hexutil.Encode(block.Block.Body.Graffiti),
-				ProposerSlashings: jsonifyProposerSlashings(block.Block.Body.ProposerSlashings),
-				RandaoReveal:      hexutil.Encode(block.Block.Body.RandaoReveal),
-				VoluntaryExits:    JsonifySignedVoluntaryExits(block.Block.Body.VoluntaryExits),
-				SyncAggregate: &apimiddleware.SyncAggregateJson{
-					SyncCommitteeBits:      hexutil.Encode(block.Block.Body.SyncAggregate.SyncCommitteeBits),
-					SyncCommitteeSignature: hexutil.Encode(block.Block.Body.SyncAggregate.SyncCommitteeSignature),
-				},
-				ExecutionPayloadHeader: &apimiddleware.ExecutionPayloadHeaderJson{
-					BaseFeePerGas:    bytesutil.LittleEndianBytesToBigInt(block.Block.Body.ExecutionPayloadHeader.BaseFeePerGas).String(),
-					BlockHash:        hexutil.Encode(block.Block.Body.ExecutionPayloadHeader.BlockHash),
-					BlockNumber:      uint64ToString(block.Block.Body.ExecutionPayloadHeader.BlockNumber),
-					ExtraData:        hexutil.Encode(block.Block.Body.ExecutionPayloadHeader.ExtraData),
-					FeeRecipient:     hexutil.Encode(block.Block.Body.ExecutionPayloadHeader.FeeRecipient),
-					GasLimit:         uint64ToString(block.Block.Body.ExecutionPayloadHeader.GasLimit),
-					GasUsed:          uint64ToString(block.Block.Body.ExecutionPayloadHeader.GasUsed),
-					LogsBloom:        hexutil.Encode(block.Block.Body.ExecutionPayloadHeader.LogsBloom),
-					ParentHash:       hexutil.Encode(block.Block.Body.ExecutionPayloadHeader.ParentHash),
-					PrevRandao:       hexutil.Encode(block.Block.Body.ExecutionPayloadHeader.PrevRandao),
-					ReceiptsRoot:     hexutil.Encode(block.Block.Body.ExecutionPayloadHeader.ReceiptsRoot),
-					StateRoot:        hexutil.Encode(block.Block.Body.ExecutionPayloadHeader.StateRoot),
-					TimeStamp:        uint64ToString(block.Block.Body.ExecutionPayloadHeader.Timestamp),
-					TransactionsRoot: hexutil.Encode(block.Block.Body.ExecutionPayloadHeader.TransactionsRoot),
-				},
-			},
-		},
-	}
-
-	return json.Marshal(signedBeaconBlockBellatrixJson)
 }
 
 func marshallBeaconBlockCapella(block *zondpb.SignedBeaconBlockCapella) ([]byte, error) {

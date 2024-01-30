@@ -17,7 +17,7 @@ var depositCommands []*cli.Command
 func main() {
 	app := &cli.App{
 		Commands: depositCommands,
-		Version: version.Version(),
+		Version:  version.Version(),
 	}
 	err := app.Run(os.Args)
 	if err != nil {
