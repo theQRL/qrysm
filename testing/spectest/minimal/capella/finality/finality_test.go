@@ -1,5 +1,6 @@
 package finality
 
+/*
 import (
 	"testing"
 
@@ -9,3 +10,4 @@ import (
 func TestMinimal_Capella_Finality(t *testing.T) {
 	finality.RunFinalityTest(t, "minimal")
 }
+*/

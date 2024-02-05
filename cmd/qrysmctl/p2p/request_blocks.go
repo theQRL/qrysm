@@ -55,8 +55,8 @@ var requestBlocksCmd = &cli.Command{
 			Value:       13001,
 		},
 		&cli.StringFlag{
-			Name:        "prysm-api-endpoints",
-			Usage:       "comma-separated, gRPC API endpoint(s) for Prysm beacon node(s)",
+			Name:        "qrysm-api-endpoints",
+			Usage:       "comma-separated, gRPC API endpoint(s) for Qrysm beacon node(s)",
 			Destination: &requestBlocksFlags.APIEndpoints,
 			Value:       "localhost:4000",
 		},

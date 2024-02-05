@@ -43,7 +43,7 @@ import (
 	pmath "github.com/theQRL/qrysm/v4/math"
 	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/metadata"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -322,7 +322,7 @@ func (p *Status) ChainStateLastUpdated(pid peer.ID) (time.Time, error) {
 	if peerData, ok := p.store.PeerData(pid); ok {
 		return peerData.ChainStateLastUpdated, nil
 	}
-	return prysmTime.Now(), peerdata.ErrPeerUnknown
+	return qrysmTime.Now(), peerdata.ErrPeerUnknown
 }
 
 // IsBad states if the peer is to be considered bad (by *any* of the registered scorers).
@@ -352,7 +352,7 @@ func (p *Status) NextValidTime(pid peer.ID) (time.Time, error) {
 	if peerData, ok := p.store.PeerData(pid); ok {
 		return peerData.NextValidTime, nil
 	}
-	return prysmTime.Now(), peerdata.ErrPeerUnknown
+	return qrysmTime.Now(), peerdata.ErrPeerUnknown
 }
 
 // SetNextValidTime sets the earliest possible time we are

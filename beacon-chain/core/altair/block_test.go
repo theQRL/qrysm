@@ -30,7 +30,7 @@ func TestProcessSyncCommittee_PerfectParticipation(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetCurrentSyncCommittee(committee))
 
-	syncBits := bitfield.NewBitvector512()
+	syncBits := bitfield.NewBitvector16()
 	for i := range syncBits {
 		syncBits[i] = 0xff
 	}
@@ -106,7 +106,7 @@ func TestProcessSyncCommittee_MixParticipation_BadSignature(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetCurrentSyncCommittee(committee))
 
-	syncBits := bitfield.NewBitvector512()
+	syncBits := bitfield.NewBitvector16()
 	for i := range syncBits {
 		syncBits[i] = 0xAA
 	}
@@ -141,7 +141,7 @@ func TestProcessSyncCommittee_MixParticipation_GoodSignature(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetCurrentSyncCommittee(committee))
 
-	syncBits := bitfield.NewBitvector512()
+	syncBits := bitfield.NewBitvector16()
 	for i := range syncBits {
 		syncBits[i] = 0xAA
 	}
@@ -183,7 +183,7 @@ func TestProcessSyncCommittee_DontPrecompute(t *testing.T) {
 	idx, ok := beaconState.ValidatorIndexByPubkey(bytesutil.ToBytes2592(committeeKeys[0]))
 	require.Equal(t, true, ok)
 
-	syncBits := bitfield.NewBitvector512()
+	syncBits := bitfield.NewBitvector16()
 	for i := range syncBits {
 		syncBits[i] = 0xFF
 	}
@@ -207,7 +207,7 @@ func TestProcessSyncCommittee_processSyncAggregate(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetCurrentSyncCommittee(committee))
 
-	syncBits := bitfield.NewBitvector512()
+	syncBits := bitfield.NewBitvector16()
 	for i := range syncBits {
 		syncBits[i] = 0xAA
 	}

@@ -11,7 +11,6 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // ForkVersionByteLength length of fork version byte array.
@@ -58,15 +57,19 @@ const (
 // ComputeDomainAndSign computes the domain and signing root and sign it using the passed in private key.
 func ComputeDomainAndSign(st state.ReadOnlyBeaconState, epoch primitives.Epoch, obj fssz.HashRoot, domain [4]byte, key dilithium.DilithiumKey) ([]byte, error) {
 	fork := st.Fork()
+
+	// NOTE(rgeraldes24): important for a future fork
 	// EIP-7044: Beginning in Deneb, fix the fork version to Capella for signed exits.
 	// This allows for signed validator exits to be valid forever.
-	if st.Version() >= version.Deneb && domain == params.BeaconConfig().DomainVoluntaryExit {
-		fork = &zondpb.Fork{
-			PreviousVersion: params.BeaconConfig().CapellaForkVersion,
-			CurrentVersion:  params.BeaconConfig().CapellaForkVersion,
-			Epoch:           params.BeaconConfig().CapellaForkEpoch,
+	/*
+		if st.Version() >= version.Deneb && domain == params.BeaconConfig().DomainVoluntaryExit {
+			fork = &zondpb.Fork{
+				PreviousVersion: params.BeaconConfig().CapellaForkVersion,
+				CurrentVersion:  params.BeaconConfig().CapellaForkVersion,
+				Epoch:           params.BeaconConfig().CapellaForkEpoch,
+			}
 		}
-	}
+	*/
 
 	d, err := Domain(fork, epoch, domain, st.GenesisValidatorsRoot())
 	if err != nil {

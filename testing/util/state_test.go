@@ -49,16 +49,6 @@ func TestNewBeaconStateCapella(t *testing.T) {
 	assert.DeepEqual(t, st.ToProtoUnsafe(), got)
 }
 
-func TestNewBeaconStateDeneb(t *testing.T) {
-	st, err := NewBeaconStateDeneb()
-	require.NoError(t, err)
-	b, err := st.MarshalSSZ()
-	require.NoError(t, err)
-	got := &zondpb.BeaconStateDeneb{}
-	require.NoError(t, got.UnmarshalSSZ(b))
-	assert.DeepEqual(t, st.ToProtoUnsafe(), got)
-}
-
 func TestNewBeaconState_HashTreeRoot(t *testing.T) {
 	st, err := NewBeaconState()
 	require.NoError(t, err)

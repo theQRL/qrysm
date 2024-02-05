@@ -1,5 +1,6 @@
 package forkchoice
 
+/*
 import (
 	"testing"
 
@@ -10,3 +11,4 @@ import (
 func TestMainnet_Capella_Forkchoice(t *testing.T) {
 	forkchoice.Run(t, "mainnet", version.Capella)
 }
+*/

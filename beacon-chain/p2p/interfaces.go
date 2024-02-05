@@ -35,7 +35,6 @@ type Broadcaster interface {
 	Broadcast(context.Context, proto.Message) error
 	BroadcastAttestation(ctx context.Context, subnet uint64, att *zondpb.Attestation) error
 	BroadcastSyncCommitteeMessage(ctx context.Context, subnet uint64, sMsg *zondpb.SyncCommitteeMessage) error
-	BroadcastBlob(ctx context.Context, subnet uint64, blob *zondpb.SignedBlobSidecar) error
 }
 
 // SetStreamHandler configures p2p to handle streams of a certain topic ID.

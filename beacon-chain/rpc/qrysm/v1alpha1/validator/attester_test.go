@@ -25,7 +25,7 @@ import (
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -400,13 +400,13 @@ func TestGetAttestationData_SucceedsInFirstEpoch(t *testing.T) {
 	attesterServer := &Server{
 		SyncChecker:           &mockSync.Sync{IsSyncing: false},
 		OptimisticModeFetcher: &mock.ChainService{Optimistic: false},
-		TimeFetcher:           &mock.ChainService{Genesis: prysmTime.Now().Add(time.Duration(-1*offset) * time.Second)},
+		TimeFetcher:           &mock.ChainService{Genesis: qrysmTime.Now().Add(time.Duration(-1*offset) * time.Second)},
 		CoreService: &core.Service{
 			AttestationCache: cache.NewAttestationCache(),
 			HeadFetcher: &mock.ChainService{
 				State: beaconState, Root: blockRoot[:],
 			},
-			GenesisTimeFetcher: &mock.ChainService{Genesis: prysmTime.Now().Add(time.Duration(-1*offset) * time.Second)},
+			GenesisTimeFetcher: &mock.ChainService{Genesis: qrysmTime.Now().Add(time.Duration(-1*offset) * time.Second)},
 		},
 	}
 

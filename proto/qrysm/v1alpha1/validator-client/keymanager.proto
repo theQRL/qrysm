@@ -6,7 +6,6 @@ import "proto/qrysm/v1alpha1/attestation.proto";
 import "proto/qrysm/v1alpha1/beacon_block.proto";
 import "proto/qrysm/v1alpha1/beacon_state.proto";
 import "proto/qrysm/v1alpha1/sync_committee.proto";
-import "proto/qrysm/v1alpha1/blobs.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
@@ -86,15 +85,8 @@ message SignRequest {
         // Capella objects.
         theqrl.zond.v1alpha1.BeaconBlockCapella block_capella = 114;
         theqrl.zond.v1alpha1.BlindedBeaconBlockCapella blinded_block_capella = 115;
-
-        // Deneb objects.
-        theqrl.zond.v1alpha1.BeaconBlockDeneb block_deneb = 116;
-        theqrl.zond.v1alpha1.BlindedBeaconBlockDeneb blinded_block_deneb = 117;
-        theqrl.zond.v1alpha1.BlobSidecar blob = 118;
-        theqrl.zond.v1alpha1.BlindedBlobSidecar blinded_blob = 119;
     }
-    reserved 4, 5; // Reserving old, deleted fields.
-    uint64 signing_slot = 6 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+    uint64 signing_slot = 4 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
 }
 
 // SignResponse returned by a RemoteSigner gRPC service.

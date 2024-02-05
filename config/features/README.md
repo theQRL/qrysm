@@ -1,6 +1,6 @@
-# Prysm Feature Flags
+# Qrysm Feature Flags
 
-Part of Prysm's feature development often involves use of feature flags which serve as a way to
+Part of Qrysm's feature development often involves use of feature flags which serve as a way to
 toggle new features as they are introduced. Using this methodology, you are assured that your
 feature can be safely tested in production with a fall back option if any regression were to occur.
 This reduces the likelihood of an emergency release or rollback of a given feature due to

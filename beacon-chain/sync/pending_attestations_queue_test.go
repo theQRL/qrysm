@@ -29,7 +29,7 @@ import (
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 )
 
 func TestProcessPendingAtts_NoBlockRequestBlock(t *testing.T) {
@@ -43,7 +43,7 @@ func TestProcessPendingAtts_NoBlockRequestBlock(t *testing.T) {
 	p1.Peers().SetConnectionState(p2.PeerID(), peers.PeerConnected)
 	p1.Peers().SetChainState(p2.PeerID(), &zondpb.Status{})
 
-	chain := &mock.ChainService{Genesis: prysmTime.Now(), FinalizedCheckPoint: &zondpb.Checkpoint{}}
+	chain := &mock.ChainService{Genesis: qrysmTime.Now(), FinalizedCheckPoint: &zondpb.Checkpoint{}}
 	r := &Service{
 		cfg:                  &config{p2p: p1, beaconDB: db, chain: chain, clock: startup.NewClock(chain.Genesis, chain.ValidatorsRoot)},
 		blkRootToPendingAtts: make(map[[32]byte][]*zondpb.SignedAggregateAttestationAndProof),
@@ -153,7 +153,7 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 	s, _ := util.DeterministicGenesisState(t, 256)
 	chain := &mock.ChainService{
 		State:   s,
-		Genesis: prysmTime.Now(), FinalizedCheckPoint: &zondpb.Checkpoint{Root: make([]byte, 32)}}
+		Genesis: qrysmTime.Now(), FinalizedCheckPoint: &zondpb.Checkpoint{Root: make([]byte, 32)}}
 	r := &Service{
 		cfg: &config{
 			p2p:      p1,

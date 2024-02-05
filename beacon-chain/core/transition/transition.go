@@ -12,7 +12,6 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/capella"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/deneb"
 	e "github.com/theQRL/qrysm/v4/beacon-chain/core/epoch"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/epoch/precompute"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/execution"
@@ -313,13 +312,6 @@ func UpgradeState(ctx context.Context, state state.BeaconState) (state.BeaconSta
 		}
 	}
 
-	if time.CanUpgradeToDeneb(state.Slot()) {
-		state, err = deneb.UpgradeToDeneb(state)
-		if err != nil {
-			tracing.AnnotateError(span, err)
-			return nil, err
-		}
-	}
 	return state, nil
 }
 

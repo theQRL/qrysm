@@ -38,15 +38,17 @@ func getValidatorHappyPathTestServer(t *testing.T) *httptest.Server {
 					},
 				})
 				require.NoError(t, err)
-			} else if r.RequestURI == "/zond/v1/remotekeys" {
-				err := json.NewEncoder(w).Encode(&apimiddleware.ListRemoteKeysResponseJson{
-					Keystores: []*apimiddleware.RemoteKeysListJson{
-						{
-							Pubkey: key1,
-						},
-					},
-				})
-				require.NoError(t, err)
+				/*
+					} else if r.RequestURI == "/zond/v1/remotekeys" {
+						err := json.NewEncoder(w).Encode(&apimiddleware.ListRemoteKeysResponseJson{
+							Keystores: []*apimiddleware.RemoteKeysListJson{
+								{
+									Pubkey: key1,
+								},
+							},
+						})
+						require.NoError(t, err)
+				*/
 			} else if r.RequestURI[strings.LastIndex(r.RequestURI, "/")+1:] == "feerecipient" {
 				pathSeg := strings.Split(r.RequestURI, "/")
 				validatorKey := pathSeg[len(pathSeg)-2]
@@ -58,8 +60,8 @@ func getValidatorHappyPathTestServer(t *testing.T) *httptest.Server {
 				require.Equal(t, ok, true)
 				err := json.NewEncoder(w).Encode(&apimiddleware.GetFeeRecipientByPubkeyResponseJson{
 					Data: &apimiddleware.FeeRecipientJson{
-						Pubkey:     validatorKey,
-						Ethaddress: address,
+						Pubkey:      validatorKey,
+						Zondaddress: address,
 					},
 				})
 				require.NoError(t, err)

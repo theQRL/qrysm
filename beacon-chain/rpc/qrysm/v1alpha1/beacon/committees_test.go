@@ -22,7 +22,7 @@ import (
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"google.golang.org/protobuf/proto"
 	"gopkg.in/d4l3k/messagediff.v1"
@@ -38,7 +38,7 @@ func TestServer_ListBeaconCommittees_CurrentEpoch(t *testing.T) {
 
 	offset := int64(headState.Slot().Mul(params.BeaconConfig().SecondsPerSlot))
 	m := &mock.ChainService{
-		Genesis: prysmTime.Now().Add(time.Duration(-1*offset) * time.Second),
+		Genesis: qrysmTime.Now().Add(time.Duration(-1*offset) * time.Second),
 	}
 	bs := &Server{
 		HeadFetcher:        m,
@@ -111,7 +111,7 @@ func TestServer_ListBeaconCommittees_PreviousEpoch(t *testing.T) {
 	offset := int64(headState.Slot().Mul(params.BeaconConfig().SecondsPerSlot))
 	m := &mock.ChainService{
 		State:   headState,
-		Genesis: prysmTime.Now().Add(time.Duration(-1*offset) * time.Second),
+		Genesis: qrysmTime.Now().Add(time.Duration(-1*offset) * time.Second),
 	}
 	bs := &Server{
 		HeadFetcher:        m,
@@ -166,7 +166,7 @@ func TestRetrieveCommitteesForRoot(t *testing.T) {
 
 	offset := int64(headState.Slot().Mul(params.BeaconConfig().SecondsPerSlot))
 	m := &mock.ChainService{
-		Genesis: prysmTime.Now().Add(time.Duration(-1*offset) * time.Second),
+		Genesis: qrysmTime.Now().Add(time.Duration(-1*offset) * time.Second),
 	}
 	bs := &Server{
 		HeadFetcher:        m,

@@ -278,15 +278,8 @@ func (f *blocksFetcher) findForkWithPeer(ctx context.Context, pid peer.ID, slot 
 		if err != nil {
 			return nil, errors.Wrap(err, "invalid blocks received in findForkWithPeer")
 		}
-		// We need to fetch the blobs for the given alt-chain if any exist, so that we can try to verify and import
-		// the blocks.
-		bwb, err := f.fetchBlobsFromPeer(ctx, altBlocks, pid)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to retrieve blobs for blocks found in findForkWithPeer")
-		}
-		// The caller will use the BlocksWith VerifiedBlobs in bwb as the starting point for
-		// round-robin syncing the alternate chain.
-		return &forkData{peer: pid, bwb: bwb}, nil
+
+		return &forkData{peer: pid, bwb: altBlocks}, nil
 	}
 	return nil, errNoAlternateBlocks
 }
@@ -302,10 +295,7 @@ func (f *blocksFetcher) findAncestor(ctx context.Context, pid peer.ID, b interfa
 			if err != nil {
 				return nil, errors.Wrap(err, "received invalid blocks in findAncestor")
 			}
-			bwb, err = f.fetchBlobsFromPeer(ctx, bwb, pid)
-			if err != nil {
-				return nil, errors.Wrap(err, "unable to retrieve blobs for blocks found in findAncestor")
-			}
+
 			return &forkData{
 				peer: pid,
 				bwb:  bwb,

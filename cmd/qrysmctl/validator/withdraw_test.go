@@ -278,55 +278,6 @@ func TestCallWithdrawalEndpoint_Errors(t *testing.T) {
 	assert.LogsContain(t, hook, "Could not validate SignedDilithiumToExecutionChange")
 }
 
-func TestCallWithdrawalEndpoint_ForkBeforeCapella(t *testing.T) {
-	file := "./testdata/change-operations.json"
-	baseurl := "127.0.0.1:3500"
-	l, err := net.Listen("tcp", baseurl)
-	require.NoError(t, err)
-	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-		w.Header().Set("Content-Type", "application/json")
-		if r.RequestURI == "/zond/v1/beacon/states/head/fork" {
-
-			err := json.NewEncoder(w).Encode(&beacon.GetStateForkResponse{
-				Data: &shared.Fork{
-					PreviousVersion: hexutil.Encode(params.BeaconConfig().BellatrixForkVersion),
-					CurrentVersion:  hexutil.Encode(params.BeaconConfig().BellatrixForkVersion),
-					Epoch:           "1000",
-				},
-				ExecutionOptimistic: false,
-				Finalized:           true,
-			})
-			require.NoError(t, err)
-		} else if r.RequestURI == "/zond/v1/config/spec" {
-			m := make(map[string]string)
-			m["CAPELLA_FORK_EPOCH"] = "1350"
-			err := json.NewEncoder(w).Encode(&apimiddleware.SpecResponseJson{
-				Data: m,
-			})
-			require.NoError(t, err)
-		}
-	}))
-	err = srv.Listener.Close()
-	require.NoError(t, err)
-	srv.Listener = l
-	srv.Start()
-	defer srv.Close()
-
-	app := cli.App{}
-	set := flag.NewFlagSet("test", 0)
-	set.String("beacon-node-host", baseurl, "")
-	set.String("path", file, "")
-	set.Bool("confirm", true, "")
-	set.Bool("accept-terms-of-use", true, "")
-	assert.NoError(t, set.Set("beacon-node-host", baseurl))
-	assert.NoError(t, set.Set("path", file))
-	cliCtx := cli.NewContext(&app, set, nil)
-
-	err = setWithdrawalAddresses(cliCtx)
-	require.ErrorContains(t, "setting withdrawals using the DilithiumtoExecutionChange endpoint is only available after the Capella/Shanghai hard fork.", err)
-}
-
 func TestVerifyWithdrawal_Mutiple(t *testing.T) {
 	file := "./testdata/change-operations-multiple.json"
 	baseurl := "127.0.0.1:3500"

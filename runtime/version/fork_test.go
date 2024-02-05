@@ -9,14 +9,9 @@ func TestVersionString(t *testing.T) {
 		want    string
 	}{
 		{
-			name:    "phase0",
-			version: Phase0,
-			want:    "phase0",
-		},
-		{
-			name:    "altair",
-			version: Altair,
-			want:    "altair",
+			name:    "capella",
+			version: Capella,
+			want:    "capella",
 		},
 	}
 	for _, tt := range tests {

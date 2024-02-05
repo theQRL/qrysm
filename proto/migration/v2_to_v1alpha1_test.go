@@ -24,7 +24,7 @@ func Test_AltairToV1Alpha1SignedBlock(t *testing.T) {
 		DepositCount: depositCount,
 		BlockHash:    blockHash,
 	}
-	syncCommitteeBits := bitfield.NewBitvector512()
+	syncCommitteeBits := bitfield.NewBitvector16()
 	syncCommitteeBits.SetBitAt(100, true)
 	v2Block.Message.Body.SyncAggregate = &zondpbv1.SyncAggregate{
 		SyncCommitteeBits:      syncCommitteeBits,
@@ -53,7 +53,7 @@ func Test_BellatrixToV1Alpha1SignedBlock(t *testing.T) {
 		DepositCount: depositCount,
 		BlockHash:    blockHash,
 	}
-	syncCommitteeBits := bitfield.NewBitvector512()
+	syncCommitteeBits := bitfield.NewBitvector16()
 	syncCommitteeBits.SetBitAt(100, true)
 	v2Block.Message.Body.SyncAggregate = &zondpbv1.SyncAggregate{
 		SyncCommitteeBits:      syncCommitteeBits,
@@ -98,7 +98,7 @@ func Test_BlindedBellatrixToV1Alpha1SignedBlock(t *testing.T) {
 		DepositCount: depositCount,
 		BlockHash:    blockHash,
 	}
-	syncCommitteeBits := bitfield.NewBitvector512()
+	syncCommitteeBits := bitfield.NewBitvector16()
 	syncCommitteeBits.SetBitAt(100, true)
 	v2Block.Message.Body.SyncAggregate = &zondpbv1.SyncAggregate{
 		SyncCommitteeBits:      syncCommitteeBits,

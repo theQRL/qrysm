@@ -38,24 +38,6 @@ func (a *data) Withdrawals() ([]*enginev1.Withdrawal, error) {
 	return a.withdrawals, nil
 }
 
-// PbV1 returns the payload attribute in version 1.
-func (a *data) PbV1() (*enginev1.PayloadAttributes, error) {
-	if a == nil {
-		return nil, errNilPayloadAttribute
-	}
-	if a.version != version.Bellatrix {
-		return nil, consensus_types.ErrNotSupported("PbV1", a.version)
-	}
-	if a.timeStamp == 0 && len(a.prevRandao) == 0 {
-		return nil, nil
-	}
-	return &enginev1.PayloadAttributes{
-		Timestamp:             a.timeStamp,
-		PrevRandao:            a.prevRandao,
-		SuggestedFeeRecipient: a.suggestedFeeRecipient,
-	}, nil
-}
-
 // PbV2 returns the payload attribute in version 2.
 func (a *data) PbV2() (*enginev1.PayloadAttributesV2, error) {
 	if a == nil {
@@ -72,25 +54,5 @@ func (a *data) PbV2() (*enginev1.PayloadAttributesV2, error) {
 		PrevRandao:            a.prevRandao,
 		SuggestedFeeRecipient: a.suggestedFeeRecipient,
 		Withdrawals:           a.withdrawals,
-	}, nil
-}
-
-// PbV3 returns the payload attribute in version 3.
-func (a *data) PbV3() (*enginev1.PayloadAttributesV3, error) {
-	if a == nil {
-		return nil, errNilPayloadAttribute
-	}
-	if a.version != version.Deneb {
-		return nil, consensus_types.ErrNotSupported("PbV3", a.version)
-	}
-	if a.timeStamp == 0 && len(a.prevRandao) == 0 && len(a.parentBeaconBlockRoot) == 0 {
-		return nil, nil
-	}
-	return &enginev1.PayloadAttributesV3{
-		Timestamp:             a.timeStamp,
-		PrevRandao:            a.prevRandao,
-		SuggestedFeeRecipient: a.suggestedFeeRecipient,
-		Withdrawals:           a.withdrawals,
-		ParentBeaconBlockRoot: a.parentBeaconBlockRoot,
 	}, nil
 }

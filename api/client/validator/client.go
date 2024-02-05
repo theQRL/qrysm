@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	localKeysPath    = "/zond/v1/keystores"
-	remoteKeysPath   = "/zond/v1/remotekeys"
+	localKeysPath = "/zond/v1/keystores"
+	// remoteKeysPath   = "/zond/v1/remotekeys"
 	feeRecipientPath = "/zond/v1/validator/{pubkey}/feerecipient"
 )
 
@@ -82,7 +82,7 @@ func (c *Client) GetLocalValidatorKeys(ctx context.Context) (*apimiddleware.List
 func (c *Client) GetRemoteValidatorKeys(ctx context.Context) (*apimiddleware.ListRemoteKeysResponseJson, error) {
 	remoteBytes, err := c.Get(ctx, remoteKeysPath, client.WithAuthorizationToken(c.Token()))
 	if err != nil {
-		if !strings.Contains(err.Error(), "Prysm Wallet is not of type Web3Signer") {
+		if !strings.Contains(err.Error(), "Qrysm Wallet is not of type Web3Signer") {
 			return nil, err
 		}
 	}

@@ -141,37 +141,6 @@ func (b *BeaconState) ToProtoUnsafe() interface{} {
 			NextWithdrawalValidatorIndex: b.nextWithdrawalValidatorIndex,
 			HistoricalSummaries:          b.historicalSummaries,
 		}
-	case version.Deneb:
-		return &zondpb.BeaconStateDeneb{
-			GenesisTime:                  b.genesisTime,
-			GenesisValidatorsRoot:        gvrCopy[:],
-			Slot:                         b.slot,
-			Fork:                         b.fork,
-			LatestBlockHeader:            b.latestBlockHeader,
-			BlockRoots:                   br,
-			StateRoots:                   sr,
-			HistoricalRoots:              b.historicalRoots.Slice(),
-			Eth1Data:                     b.eth1Data,
-			Eth1DataVotes:                b.eth1DataVotes,
-			Eth1DepositIndex:             b.eth1DepositIndex,
-			Validators:                   vals,
-			Balances:                     bals,
-			RandaoMixes:                  rm,
-			Slashings:                    b.slashings,
-			PreviousEpochParticipation:   b.previousEpochParticipation,
-			CurrentEpochParticipation:    b.currentEpochParticipation,
-			JustificationBits:            b.justificationBits,
-			PreviousJustifiedCheckpoint:  b.previousJustifiedCheckpoint,
-			CurrentJustifiedCheckpoint:   b.currentJustifiedCheckpoint,
-			FinalizedCheckpoint:          b.finalizedCheckpoint,
-			InactivityScores:             b.inactivityScores,
-			CurrentSyncCommittee:         b.currentSyncCommittee,
-			NextSyncCommittee:            b.nextSyncCommittee,
-			LatestExecutionPayloadHeader: b.latestExecutionPayloadHeaderDeneb,
-			NextWithdrawalIndex:          b.nextWithdrawalIndex,
-			NextWithdrawalValidatorIndex: b.nextWithdrawalValidatorIndex,
-			HistoricalSummaries:          b.historicalSummaries,
-		}
 	default:
 		return nil
 	}
@@ -307,37 +276,6 @@ func (b *BeaconState) ToProto() interface{} {
 			NextWithdrawalValidatorIndex: b.nextWithdrawalValidatorIndex,
 			HistoricalSummaries:          b.historicalSummariesVal(),
 		}
-	case version.Deneb:
-		return &zondpb.BeaconStateDeneb{
-			GenesisTime:                  b.genesisTime,
-			GenesisValidatorsRoot:        gvrCopy[:],
-			Slot:                         b.slot,
-			Fork:                         b.forkVal(),
-			LatestBlockHeader:            b.latestBlockHeaderVal(),
-			BlockRoots:                   br,
-			StateRoots:                   sr,
-			HistoricalRoots:              b.historicalRoots.Slice(),
-			Eth1Data:                     b.eth1DataVal(),
-			Eth1DataVotes:                b.eth1DataVotesVal(),
-			Eth1DepositIndex:             b.eth1DepositIndex,
-			Validators:                   b.validatorsVal(),
-			Balances:                     b.balancesVal(),
-			RandaoMixes:                  rm,
-			Slashings:                    b.slashingsVal(),
-			PreviousEpochParticipation:   b.previousEpochParticipationVal(),
-			CurrentEpochParticipation:    b.currentEpochParticipationVal(),
-			JustificationBits:            b.justificationBitsVal(),
-			PreviousJustifiedCheckpoint:  b.previousJustifiedCheckpointVal(),
-			CurrentJustifiedCheckpoint:   b.currentJustifiedCheckpointVal(),
-			FinalizedCheckpoint:          b.finalizedCheckpointVal(),
-			InactivityScores:             b.inactivityScoresVal(),
-			CurrentSyncCommittee:         b.currentSyncCommitteeVal(),
-			NextSyncCommittee:            b.nextSyncCommitteeVal(),
-			LatestExecutionPayloadHeader: b.latestExecutionPayloadHeaderDenebVal(),
-			NextWithdrawalIndex:          b.nextWithdrawalIndex,
-			NextWithdrawalValidatorIndex: b.nextWithdrawalValidatorIndex,
-			HistoricalSummaries:          b.historicalSummariesVal(),
-		}
 	default:
 		return nil
 	}
@@ -440,16 +378,6 @@ func ProtobufBeaconStateCapella(s interface{}) (*zondpb.BeaconStateCapella, erro
 	pbState, ok := s.(*zondpb.BeaconStateCapella)
 	if !ok {
 		return nil, errors.New("input is not type pb.BeaconStateCapella")
-	}
-	return pbState, nil
-}
-
-// ProtobufBeaconStateDeneb transforms an input into beacon state Deneb in the form of protobuf.
-// Error is returned if the input is not type protobuf beacon state.
-func ProtobufBeaconStateDeneb(s interface{}) (*zondpb.BeaconStateDeneb, error) {
-	pbState, ok := s.(*zondpb.BeaconStateDeneb)
-	if !ok {
-		return nil, errors.New("input is not type pb.ProtobufBeaconStateDeneb")
 	}
 	return pbState, nil
 }

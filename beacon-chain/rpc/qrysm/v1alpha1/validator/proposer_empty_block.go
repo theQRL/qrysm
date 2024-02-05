@@ -30,13 +30,8 @@ func getEmptyBlock(slot primitives.Slot) (interfaces.SignedBeaconBlock, error) {
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not initialize block for proposal: %v", err)
 		}
-	case slots.ToEpoch(slot) < params.BeaconConfig().DenebForkEpoch:
-		sBlk, err = blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockCapella{Block: &zondpb.BeaconBlockCapella{Body: &zondpb.BeaconBlockBodyCapella{}}})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not initialize block for proposal: %v", err)
-		}
 	default:
-		sBlk, err = blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockDeneb{Block: &zondpb.BeaconBlockDeneb{Body: &zondpb.BeaconBlockBodyDeneb{}}})
+		sBlk, err = blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockCapella{Block: &zondpb.BeaconBlockCapella{Body: &zondpb.BeaconBlockBodyCapella{}}})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not initialize block for proposal: %v", err)
 		}

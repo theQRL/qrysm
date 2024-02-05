@@ -1,5 +1,6 @@
 package main
 
+/*
 import (
 	"bufio"
 	"context"
@@ -95,3 +96,4 @@ func hexDecodeOrDie(str string) []byte {
 	}
 	return decoded
 }
+*/

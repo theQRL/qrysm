@@ -9,7 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/capella"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/deneb"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/execution"
 	prysmtime "github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
@@ -208,7 +207,7 @@ func ReplayProcessSlots(ctx context.Context, state state.BeaconState, slot primi
 					tracing.AnnotateError(span, err)
 					return nil, errors.Wrap(err, "could not process epoch with optimizations")
 				}
-			case version.Altair, version.Bellatrix, version.Capella, version.Deneb:
+			case version.Altair, version.Bellatrix, version.Capella:
 				state, err = altair.ProcessEpoch(ctx, state)
 				if err != nil {
 					tracing.AnnotateError(span, err)
@@ -241,14 +240,6 @@ func ReplayProcessSlots(ctx context.Context, state state.BeaconState, slot primi
 
 		if prysmtime.CanUpgradeToCapella(state.Slot()) {
 			state, err = capella.UpgradeToCapella(state)
-			if err != nil {
-				tracing.AnnotateError(span, err)
-				return nil, err
-			}
-		}
-
-		if prysmtime.CanUpgradeToDeneb(state.Slot()) {
-			state, err = deneb.UpgradeToDeneb(state)
 			if err != nil {
 				tracing.AnnotateError(span, err)
 				return nil, err

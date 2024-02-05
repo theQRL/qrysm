@@ -818,16 +818,6 @@ func unmarshalBlock(_ context.Context, enc []byte) (interfaces.ReadOnlySignedBea
 		if err := rawBlock.UnmarshalSSZ(enc[len(capellaBlindKey):]); err != nil {
 			return nil, errors.Wrap(err, "could not unmarshal blinded Capella block")
 		}
-	case hasDenebKey(enc):
-		rawBlock = &zondpb.SignedBeaconBlockDeneb{}
-		if err := rawBlock.UnmarshalSSZ(enc[len(denebKey):]); err != nil {
-			return nil, errors.Wrap(err, "could not unmarshal Deneb block")
-		}
-	case hasDenebBlindKey(enc):
-		rawBlock = &zondpb.SignedBlindedBeaconBlockDeneb{}
-		if err := rawBlock.UnmarshalSSZ(enc[len(denebBlindKey):]); err != nil {
-			return nil, errors.Wrap(err, "could not unmarshal blinded Deneb block")
-		}
 	default:
 		// Marshal block bytes to phase 0 beacon block.
 		rawBlock = &zondpb.SignedBeaconBlock{}
@@ -864,8 +854,6 @@ func marshalBlockFull(
 		return nil, err
 	}
 	switch blk.Version() {
-	case version.Deneb:
-		return snappy.Encode(nil, append(denebKey, encodedBlock...)), nil
 	case version.Capella:
 		return snappy.Encode(nil, append(capellaKey, encodedBlock...)), nil
 	case version.Bellatrix:
@@ -900,8 +888,6 @@ func marshalBlockBlinded(
 		return nil, errors.Wrap(err, "could not marshal blinded block")
 	}
 	switch blk.Version() {
-	case version.Deneb:
-		return snappy.Encode(nil, append(denebBlindKey, encodedBlock...)), nil
 	case version.Capella:
 		return snappy.Encode(nil, append(capellaBlindKey, encodedBlock...)), nil
 	case version.Bellatrix:

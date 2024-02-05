@@ -16,7 +16,6 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 	"go.opencensus.io/trace"
 )
 
@@ -91,16 +90,14 @@ func VerifyAttestationNoVerifySignature(
 		)
 	}
 
-	if beaconState.Version() < version.Deneb {
-		epochInclusionCheck := beaconState.Slot() <= s+params.BeaconConfig().SlotsPerEpoch
-		if !epochInclusionCheck {
-			return fmt.Errorf(
-				"state slot %d > attestation slot %d + SLOTS_PER_EPOCH %d",
-				beaconState.Slot(),
-				s,
-				params.BeaconConfig().SlotsPerEpoch,
-			)
-		}
+	epochInclusionCheck := beaconState.Slot() <= s+params.BeaconConfig().SlotsPerEpoch
+	if !epochInclusionCheck {
+		return fmt.Errorf(
+			"state slot %d > attestation slot %d + SLOTS_PER_EPOCH %d",
+			beaconState.Slot(),
+			s,
+			params.BeaconConfig().SlotsPerEpoch,
+		)
 	}
 	activeValidatorCount, err := helpers.ActiveValidatorCount(ctx, beaconState, att.Data.Target.Epoch)
 	if err != nil {

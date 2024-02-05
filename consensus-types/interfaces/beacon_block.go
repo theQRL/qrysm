@@ -26,9 +26,7 @@ type ReadOnlySignedBeaconBlock interface {
 	PbBellatrixBlock() (*zondpb.SignedBeaconBlockBellatrix, error)
 	PbBlindedBellatrixBlock() (*zondpb.SignedBlindedBeaconBlockBellatrix, error)
 	PbCapellaBlock() (*zondpb.SignedBeaconBlockCapella, error)
-	PbDenebBlock() (*zondpb.SignedBeaconBlockDeneb, error)
 	PbBlindedCapellaBlock() (*zondpb.SignedBlindedBeaconBlockCapella, error)
-	PbBlindedDenebBlock() (*zondpb.SignedBlindedBeaconBlockDeneb, error)
 	ssz.Marshaler
 	ssz.Unmarshaler
 	Version() int
@@ -74,14 +72,12 @@ type ReadOnlyBeaconBlockBody interface {
 	Proto() (proto.Message, error)
 	Execution() (ExecutionData, error)
 	DilithiumToExecutionChanges() ([]*zondpb.SignedDilithiumToExecutionChange, error)
-	BlobKzgCommitments() ([][]byte, error)
 }
 
 type SignedBeaconBlock interface {
 	ReadOnlySignedBeaconBlock
 	SetExecution(ExecutionData) error
 	SetDilithiumToExecutionChanges([]*zondpb.SignedDilithiumToExecutionChange) error
-	SetBlobKzgCommitments(c [][]byte) error
 	SetSyncAggregate(*zondpb.SyncAggregate) error
 	SetVoluntaryExits([]*zondpb.SignedVoluntaryExit)
 	SetDeposits([]*zondpb.Deposit)
@@ -120,8 +116,6 @@ type ExecutionData interface {
 	Timestamp() uint64
 	ExtraData() []byte
 	BaseFeePerGas() []byte
-	BlobGasUsed() (uint64, error)
-	ExcessBlobGas() (uint64, error)
 	BlockHash() []byte
 	Transactions() ([][]byte, error)
 	TransactionsRoot() ([]byte, error)

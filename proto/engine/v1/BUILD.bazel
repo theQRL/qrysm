@@ -39,10 +39,6 @@ ssz_gen_marshal(
         "ExecutionPayloadCapella",
         "ExecutionPayloadHeader",
         "ExecutionPayloadHeaderCapella",
-        "ExecutionPayloadHeaderDeneb",
-        "ExecutionPayloadDeneb",
-        "BlindedBlobsBundle",
-        "BlobsBundle",
         "Withdrawal",
     ],
 )

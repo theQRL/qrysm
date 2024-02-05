@@ -18,7 +18,6 @@ package theqrl.zond.v2;
 import "proto/zond/ext/options.proto";
 import "proto/zond/v1/attestation.proto";
 import "proto/zond/v1/beacon_block.proto";
-import "proto/zond/v2/blobs.proto";
 import "proto/zond/v2/version.proto";
 import "proto/zond/v2/withdrawals.proto";
 import "proto/engine/v1/execution_engine.proto";
@@ -56,7 +55,6 @@ message BeaconBlockContainerV2 {
     BeaconBlockAltair altair_block = 2;
     BeaconBlockBellatrix bellatrix_block = 3;
     BeaconBlockCapella capella_block = 4;
-    BeaconBlockContentsDeneb deneb_contents = 5;
   }
 }
 
@@ -66,7 +64,6 @@ message SignedBeaconBlockContainer {
     BeaconBlockAltair altair_block = 2;
     BeaconBlockBellatrix bellatrix_block = 3;
     BeaconBlockCapella capella_block = 4;
-    BeaconBlockDeneb deneb_block = 5;
   }
 
   // 96 byte Dilithium signature from the validator that produced this block.
@@ -79,7 +76,6 @@ message SignedBeaconBlockContentsContainer {
     SignedBeaconBlockAltair altair_block = 2;
     SignedBeaconBlockBellatrix bellatrix_block = 3;
     SignedBeaconBlockCapella capella_block = 4;
-    SignedBeaconBlockContentsDeneb deneb_contents = 5;
   }
 }
 
@@ -90,7 +86,6 @@ message BlindedBeaconBlockContainer {
     BeaconBlockAltair altair_block = 2;
     BlindedBeaconBlockBellatrix bellatrix_block = 3;
     BlindedBeaconBlockCapella capella_block = 4;
-    BlindedBeaconBlockContentsDeneb deneb_contents = 5; // is contents
   }
 }
 
@@ -101,7 +96,6 @@ message SignedBlindedBeaconBlockContainer {
     BeaconBlockAltair altair_block = 2;
     BlindedBeaconBlockBellatrix bellatrix_block = 3;
     BlindedBeaconBlockCapella capella_block = 4;
-    BlindedBeaconBlockDeneb deneb_block = 5; // is block
   }
 
   // 96 byte Dilithium signature from the validator that produced this block.
@@ -114,7 +108,6 @@ message SignedBlindedBeaconBlockContentsContainer {
     SignedBeaconBlockAltair altair_block = 2;
     SignedBlindedBeaconBlockBellatrix bellatrix_block = 3;
     SignedBlindedBeaconBlockCapella capella_block = 4;
-    SignedBlindedBeaconBlockContentsDeneb deneb_contents = 5;
   }
 }
 
@@ -138,13 +131,6 @@ message SignedBeaconBlockCapella {
   bytes signature = 2 [(theqrl.zond.ext.ssz_size) = "4595"];
 }
 
-message SignedBeaconBlockDeneb {
-  BeaconBlockDeneb message = 1;
-
-  // 96 byte Dilithium signature from the validator that produced this block.
-  bytes signature = 2 [(theqrl.zond.ext.ssz_size) = "4595"];
-}
-
 message SignedBlindedBeaconBlockBellatrix {
   BlindedBeaconBlockBellatrix message = 1;
 
@@ -154,13 +140,6 @@ message SignedBlindedBeaconBlockBellatrix {
 
 message SignedBlindedBeaconBlockCapella {
   BlindedBeaconBlockCapella message = 1;
-
-  // 96 byte Dilithium signature from the validator that produced this block.
-  bytes signature = 2 [(theqrl.zond.ext.ssz_size) = "4595"];
-}
-
-message SignedBlindedBeaconBlockDeneb {
-  BlindedBeaconBlockDeneb message = 1;
 
   // 96 byte Dilithium signature from the validator that produced this block.
   bytes signature = 2 [(theqrl.zond.ext.ssz_size) = "4595"];
@@ -254,40 +233,6 @@ message BlindedBeaconBlockCapella {
 
   // The block body itself.
   BlindedBeaconBlockBodyCapella body = 5;
-}
-
-// The Ethereum consensus beacon block. The message does not contain a validator signature.
-message BeaconBlockDeneb {
-  // Beacon chain slot that this block represents.
-  uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
-
-  // Validator index of the validator that proposed the block header.
-  uint64 proposer_index = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
-
-  // 32 byte root of the parent block.
-  bytes parent_root = 3 [(theqrl.zond.ext.ssz_size) = "32"];
-
-  // 32 byte root of the resulting state after processing this block.
-  bytes state_root = 4 [(theqrl.zond.ext.ssz_size) = "32"];
-
-  // The beacon block body.
-  BeaconBlockBodyDeneb body = 5;
-}
-
-// The Ethereum consensus beacon block. The message does not contain a validator signature.
-message BlindedBeaconBlockDeneb {
-  // Beacon chain slot that this block represents.
-  uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
-
-  // Validator index of the validator that proposed the block header.
-  uint64 proposer_index = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
-  // 32 byte root of the parent block.
-  bytes parent_root = 3 [(theqrl.zond.ext.ssz_size) = "32"];
-  // 32 byte root of the resulting state after processing this block.
-  bytes state_root = 4 [(theqrl.zond.ext.ssz_size) = "32"];
-
-  // The block body itself.
-  BlindedBeaconBlockBodyDeneb body = 5;
 }
 
 message BeaconBlockBodyAltair {
@@ -471,99 +416,4 @@ message BlindedBeaconBlockBodyCapella {
 
   // Dilithium To Execution Changes: signed messages to change withdrawal credentials [New in Capella]
   repeated SignedDilithiumToExecutionChange dilithium_to_execution_changes = 11 [(theqrl.zond.ext.ssz_max) = "16"];
-}
-
-message BlindedBeaconBlockBodyDeneb {
-  // The validators RANDAO reveal 96 byte value.
-  bytes randao_reveal = 1 [(theqrl.zond.ext.ssz_size) = "96"];
-
-  // A reference to the Ethereum 1.x chain.
-  v1.Eth1Data eth1_data = 2;
-  // 32 byte field of arbitrary data. This field may contain any data and
-  // is not used for anything other than a fun message.
-  bytes graffiti = 3 [(theqrl.zond.ext.ssz_size) = "32"];
-  // Block operations
-  // Refer to spec constants at https://github.com/ethereum/consensus-specs/blob/dev/specs/core/0_beacon-chain.md#max-operations-per-block
-  // At most MAX_PROPOSER_SLASHINGS.
-  repeated v1.ProposerSlashing proposer_slashings = 4 [(theqrl.zond.ext.ssz_max) = "16"];
-  // At most MAX_ATTESTER_SLASHINGS.
-  repeated v1.AttesterSlashing attester_slashings = 5 [(theqrl.zond.ext.ssz_max) = "2"];
-  // At most MAX_ATTESTATIONS.
-  repeated v1.Attestation attestations = 6 [(theqrl.zond.ext.ssz_max) = "128"];
-  // At most MAX_DEPOSITS.
-  repeated v1.Deposit deposits = 7 [(theqrl.zond.ext.ssz_max) = "16"];
-  // At most MAX_VOLUNTARY_EXITS.
-  repeated v1.SignedVoluntaryExit voluntary_exits = 8 [(theqrl.zond.ext.ssz_max) = "16"];
-  // Sync aggregate object to track sync committee votes for light client support.
-  v1.SyncAggregate sync_aggregate = 9;
-
-  // Execution payload header: the embedded execution payload of the block [Modified in Deneb]
-  theqrl.engine.v1.ExecutionPayloadHeaderDeneb execution_payload_header = 10;
-
-  // Dilithium To Execution Changes: signed messages to change withdrawal credentials [New in Capella]
-  repeated SignedDilithiumToExecutionChange dilithium_to_execution_changes = 11 [(theqrl.zond.ext.ssz_max) = "16"];
-
-  repeated bytes blob_kzg_commitments = 12 [(theqrl.zond.ext.ssz_size) = "?,48", (theqrl.zond.ext.ssz_max)  = "max_blob_commitments.size"];
-}
-
-message BeaconBlockBodyDeneb {
-  // The validators RANDAO reveal 96 byte value.
-  bytes randao_reveal = 1 [(theqrl.zond.ext.ssz_size) = "4595"];
-
-  // A reference to the Ethereum 1.x chain.
-  v1.Eth1Data eth1_data = 2;
-
-  // 32 byte field of arbitrary data. This field may contain any data and
-  // is not used for anything other than a fun message.
-  bytes graffiti = 3 [(theqrl.zond.ext.ssz_size) = "32"];
-
-  // Block operations
-  // Refer to spec constants at https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#max-operations-per-block
-
-  // At most MAX_PROPOSER_SLASHINGS.
-  repeated  v1.ProposerSlashing proposer_slashings = 4 [(theqrl.zond.ext.ssz_max) = "16"];
-
-  // At most MAX_ATTESTER_SLASHINGS.
-  repeated  v1.AttesterSlashing attester_slashings = 5 [(theqrl.zond.ext.ssz_max) = "2"];
-
-  // At most MAX_ATTESTATIONS.
-  repeated  v1.Attestation attestations = 6 [(theqrl.zond.ext.ssz_max) = "128"];
-
-  // At most MAX_DEPOSITS.
-  repeated  v1.Deposit deposits = 7 [(theqrl.zond.ext.ssz_max) = "16"];
-
-  // At most MAX_VOLUNTARY_EXITS.
-  repeated v1.SignedVoluntaryExit voluntary_exits = 8 [(theqrl.zond.ext.ssz_max) = "16"];
-
-  // Sync aggregate object for the beacon chain to track sync committee votes. New in Altair network upgrade.
-  v1.SyncAggregate sync_aggregate = 9;
-
-  // Execution payload from the execution chain. New in Bellatrix network upgrade.
-  theqrl.engine.v1.ExecutionPayloadDeneb execution_payload = 10;
-
-  // At most MAX_DILITHIUM_TO_EXECUTION_CHANGES. New in Capella network upgrade.
-  repeated SignedDilithiumToExecutionChange dilithium_to_execution_changes = 11 [(theqrl.zond.ext.ssz_max) = "16"];
-
-  // At most MAX_BLOBS_PER_BLOCK. New in Deneb network upgrade.
-  repeated bytes blob_kzg_commitments = 12 [(theqrl.zond.ext.ssz_size) = "?,48", (theqrl.zond.ext.ssz_max)  = "max_blob_commitments.size"];
-}
-
-message SignedBeaconBlockContentsDeneb {
-  SignedBeaconBlockDeneb signed_block = 1;
-  repeated SignedBlobSidecar signed_blob_sidecars = 2 [(theqrl.zond.ext.ssz_max) = "max_blobs_per_block.size"];
-}
-
-message SignedBlindedBeaconBlockContentsDeneb {
-  SignedBlindedBeaconBlockDeneb signed_blinded_block = 1;
-  repeated SignedBlindedBlobSidecar signed_blinded_blob_sidecars = 2 [(theqrl.zond.ext.ssz_max) = "max_blobs_per_block.size"];
-}
-
-message BeaconBlockContentsDeneb {
-  BeaconBlockDeneb block = 1;
-  repeated BlobSidecar blob_sidecars = 2 [(theqrl.zond.ext.ssz_max) = "max_blobs_per_block.size"];
-}
-
-message BlindedBeaconBlockContentsDeneb {
-  BlindedBeaconBlockDeneb blinded_block = 1;
-  repeated BlindedBlobSidecar blinded_blob_sidecars = 2 [(theqrl.zond.ext.ssz_max) = "max_blobs_per_block.size"];
 }

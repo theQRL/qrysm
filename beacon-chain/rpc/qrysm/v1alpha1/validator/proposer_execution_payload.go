@@ -42,13 +42,12 @@ var (
 )
 
 // This returns the local execution payload of a given slot. The function has full awareness of pre and post merge.
-// It also returns the blobs bundle.
-func (vs *Server) getLocalPayloadAndBlobs(ctx context.Context, blk interfaces.ReadOnlyBeaconBlock, st state.BeaconState) (interfaces.ExecutionData, *enginev1.BlobsBundle, bool, error) {
+func (vs *Server) getLocalPayload(ctx context.Context, blk interfaces.ReadOnlyBeaconBlock, st state.BeaconState) (interfaces.ExecutionData, bool, error) {
 	ctx, span := trace.StartSpan(ctx, "ProposerServer.getLocalPayload")
 	defer span.End()
 
 	if blk.Version() < version.Bellatrix {
-		return nil, nil, false, nil
+		return nil, false, nil
 	}
 
 	slot := blk.Slot()
@@ -73,21 +72,21 @@ func (vs *Server) getLocalPayloadAndBlobs(ctx context.Context, blk interfaces.Re
 				"Please refer to our documentation for instructions")
 		}
 	default:
-		return nil, nil, false, errors.Wrap(err, "could not get fee recipient in db")
+		return nil, false, errors.Wrap(err, "could not get fee recipient in db")
 	}
 
 	if ok && proposerID == vIdx && payloadId != [8]byte{} { // Payload ID is cache hit. Return the cached payload ID.
 		var pid [8]byte
 		copy(pid[:], payloadId[:])
 		payloadIDCacheHit.Inc()
-		payload, blobsBundle, overrideBuilder, err := vs.ExecutionEngineCaller.GetPayload(ctx, pid, slot)
+		payload, overrideBuilder, err := vs.ExecutionEngineCaller.GetPayload(ctx, pid, slot)
 		switch {
 		case err == nil:
 			warnIfFeeRecipientDiffers(payload, feeRecipient)
-			return payload, blobsBundle, overrideBuilder, nil
+			return payload, overrideBuilder, nil
 		case errors.Is(err, context.DeadlineExceeded):
 		default:
-			return nil, nil, false, errors.Wrap(err, "could not get cached payload from execution client")
+			return nil, false, errors.Wrap(err, "could not get cached payload from execution client")
 		}
 	}
 
@@ -96,17 +95,17 @@ func (vs *Server) getLocalPayloadAndBlobs(ctx context.Context, blk interfaces.Re
 	case errors.Is(err, errActivationNotReached) || errors.Is(err, errNoTerminalBlockHash):
 		p, err := consensusblocks.WrappedExecutionPayload(emptyPayload())
 		if err != nil {
-			return nil, nil, false, err
+			return nil, false, err
 		}
-		return p, nil, false, nil
+		return p, false, nil
 	case err != nil:
-		return nil, nil, false, err
+		return nil, false, err
 	}
 	payloadIDCacheMiss.Inc()
 
 	random, err := helpers.RandaoMix(st, time.CurrentEpoch(st))
 	if err != nil {
-		return nil, nil, false, err
+		return nil, false, err
 	}
 
 	finalizedBlockHash := [32]byte{}
@@ -125,29 +124,14 @@ func (vs *Server) getLocalPayloadAndBlobs(ctx context.Context, blk interfaces.Re
 
 	t, err := slots.ToTime(st.GenesisTime(), slot)
 	if err != nil {
-		return nil, nil, false, err
+		return nil, false, err
 	}
 	var attr payloadattribute.Attributer
 	switch st.Version() {
-	case version.Deneb:
-		withdrawals, err := st.ExpectedWithdrawals()
-		if err != nil {
-			return nil, nil, false, err
-		}
-		attr, err = payloadattribute.New(&enginev1.PayloadAttributesV3{
-			Timestamp:             uint64(t.Unix()),
-			PrevRandao:            random,
-			SuggestedFeeRecipient: feeRecipient.Bytes(),
-			Withdrawals:           withdrawals,
-			ParentBeaconBlockRoot: headRoot[:],
-		})
-		if err != nil {
-			return nil, nil, false, err
-		}
 	case version.Capella:
 		withdrawals, err := st.ExpectedWithdrawals()
 		if err != nil {
-			return nil, nil, false, err
+			return nil, false, err
 		}
 		attr, err = payloadattribute.New(&enginev1.PayloadAttributesV2{
 			Timestamp:             uint64(t.Unix()),
@@ -156,7 +140,7 @@ func (vs *Server) getLocalPayloadAndBlobs(ctx context.Context, blk interfaces.Re
 			Withdrawals:           withdrawals,
 		})
 		if err != nil {
-			return nil, nil, false, err
+			return nil, false, err
 		}
 	case version.Bellatrix:
 		attr, err = payloadattribute.New(&enginev1.PayloadAttributes{
@@ -165,24 +149,24 @@ func (vs *Server) getLocalPayloadAndBlobs(ctx context.Context, blk interfaces.Re
 			SuggestedFeeRecipient: feeRecipient.Bytes(),
 		})
 		if err != nil {
-			return nil, nil, false, err
+			return nil, false, err
 		}
 	default:
-		return nil, nil, false, errors.New("unknown beacon state version")
+		return nil, false, errors.New("unknown beacon state version")
 	}
 	payloadID, _, err := vs.ExecutionEngineCaller.ForkchoiceUpdated(ctx, f, attr)
 	if err != nil {
-		return nil, nil, false, errors.Wrap(err, "could not prepare payload")
+		return nil, false, errors.Wrap(err, "could not prepare payload")
 	}
 	if payloadID == nil {
-		return nil, nil, false, fmt.Errorf("nil payload with block hash: %#x", parentHash)
+		return nil, false, fmt.Errorf("nil payload with block hash: %#x", parentHash)
 	}
-	payload, blobsBundle, overrideBuilder, err := vs.ExecutionEngineCaller.GetPayload(ctx, *payloadID, slot)
+	payload, overrideBuilder, err := vs.ExecutionEngineCaller.GetPayload(ctx, *payloadID, slot)
 	if err != nil {
-		return nil, nil, false, err
+		return nil, false, err
 	}
 	warnIfFeeRecipientDiffers(payload, feeRecipient)
-	return payload, blobsBundle, overrideBuilder, nil
+	return payload, overrideBuilder, nil
 }
 
 // warnIfFeeRecipientDiffers logs a warning if the fee recipient in the included payload does not
@@ -229,22 +213,22 @@ func (vs *Server) getTerminalBlockHashIfExists(ctx context.Context, transitionTi
 	return vs.ExecutionEngineCaller.GetTerminalBlockHash(ctx, transitionTime)
 }
 
-func (vs *Server) getBuilderPayloadAndBlobs(ctx context.Context,
+func (vs *Server) getBuilderPayload(ctx context.Context,
 	slot primitives.Slot,
-	vIdx primitives.ValidatorIndex) (interfaces.ExecutionData, *enginev1.BlindedBlobsBundle, error) {
-	ctx, span := trace.StartSpan(ctx, "ProposerServer.getBuilderPayloadAndBlobs")
+	vIdx primitives.ValidatorIndex) (interfaces.ExecutionData, error) {
+	ctx, span := trace.StartSpan(ctx, "ProposerServer.getBuilderPayload")
 	defer span.End()
 
 	if slots.ToEpoch(slot) < params.BeaconConfig().BellatrixForkEpoch {
-		return nil, nil, nil
+		return nil, nil
 	}
 	canUseBuilder, err := vs.canUseBuilder(ctx, slot, vIdx)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to check if we can use the builder")
+		return nil, errors.Wrap(err, "failed to check if we can use the builder")
 	}
 	span.AddAttributes(trace.BoolAttribute("canUseBuilder", canUseBuilder))
 	if !canUseBuilder {
-		return nil, nil, nil
+		return nil, nil
 	}
 
 	return vs.getPayloadHeaderFromBuilder(ctx, slot, vIdx)
@@ -349,21 +333,6 @@ func emptyPayload() *enginev1.ExecutionPayload {
 
 func emptyPayloadCapella() *enginev1.ExecutionPayloadCapella {
 	return &enginev1.ExecutionPayloadCapella{
-		ParentHash:    make([]byte, fieldparams.RootLength),
-		FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
-		StateRoot:     make([]byte, fieldparams.RootLength),
-		ReceiptsRoot:  make([]byte, fieldparams.RootLength),
-		LogsBloom:     make([]byte, fieldparams.LogsBloomLength),
-		PrevRandao:    make([]byte, fieldparams.RootLength),
-		BaseFeePerGas: make([]byte, fieldparams.RootLength),
-		BlockHash:     make([]byte, fieldparams.RootLength),
-		Transactions:  make([][]byte, 0),
-		Withdrawals:   make([]*enginev1.Withdrawal, 0),
-	}
-}
-
-func emptyPayloadDeneb() *enginev1.ExecutionPayloadDeneb {
-	return &enginev1.ExecutionPayloadDeneb{
 		ParentHash:    make([]byte, fieldparams.RootLength),
 		FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 		StateRoot:     make([]byte, fieldparams.RootLength),

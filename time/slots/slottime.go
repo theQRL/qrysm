@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	mathutil "github.com/theQRL/qrysm/v4/math"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 )
 
 // MaxSlotBuffer specifies the max buffer given to slots from
@@ -32,10 +32,10 @@ func StartTime(genesis uint64, slot primitives.Slot) time.Time {
 // SinceGenesis returns the number of slots since
 // the provided genesis time.
 func SinceGenesis(genesis time.Time) primitives.Slot {
-	if genesis.After(prysmTime.Now()) { // Genesis has not occurred yet.
+	if genesis.After(qrysmTime.Now()) { // Genesis has not occurred yet.
 		return 0
 	}
-	return primitives.Slot(uint64(prysmTime.Since(genesis).Seconds()) / params.BeaconConfig().SecondsPerSlot)
+	return primitives.Slot(uint64(qrysmTime.Since(genesis).Seconds()) / params.BeaconConfig().SecondsPerSlot)
 }
 
 // EpochsSinceGenesis returns the number of epochs since
@@ -141,7 +141,7 @@ func VerifyTime(genesisTime uint64, slot primitives.Slot, timeTolerance time.Dur
 		return err
 	}
 
-	currentTime := prysmTime.Now()
+	currentTime := qrysmTime.Now()
 	diff := slotTime.Sub(currentTime)
 
 	if diff > timeTolerance {
@@ -171,7 +171,7 @@ func Since(time time.Time) primitives.Slot {
 // CurrentSlot returns the current slot as determined by the local clock and
 // provided genesis time.
 func CurrentSlot(genesisTimeSec uint64) primitives.Slot {
-	now := uint64(prysmTime.Now().Unix())
+	now := uint64(qrysmTime.Now().Unix())
 	if now < genesisTimeSec {
 		return 0
 	}

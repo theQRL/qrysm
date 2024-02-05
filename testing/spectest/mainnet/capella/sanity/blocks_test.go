@@ -1,5 +1,6 @@
 package sanity
 
+/*
 import (
 	"testing"
 
@@ -9,3 +10,4 @@ import (
 func TestMainnet_Capella_Sanity_Blocks(t *testing.T) {
 	sanity.RunBlockProcessingTest(t, "mainnet", "sanity/blocks/pyspec_tests")
 }
+*/

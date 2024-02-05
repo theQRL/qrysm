@@ -1,5 +1,5 @@
 // Package runtime includes useful utilities globally accessible in
-// the Prysm monorepo.
+// the Qrysm monorepo.
 package runtime
 
 import (

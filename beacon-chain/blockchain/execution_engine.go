@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"context"
-	"crypto/sha256"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -27,8 +26,6 @@ import (
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 )
-
-const blobCommitmentVersionKZG uint8 = 0x01
 
 var defaultLatestValidHash = bytesutil.PadTo([]byte{0xff}, 32)
 
@@ -215,18 +212,7 @@ func (s *Service) notifyNewPayload(ctx context.Context, preStateVersion int,
 		return false, errors.Wrap(invalidBlock{error: err}, "could not get execution payload")
 	}
 
-	var lastValidHash []byte
-	if blk.Version() >= version.Deneb {
-		var versionedHashes []common.Hash
-		versionedHashes, err = kzgCommitmentsToVersionedHashes(blk.Block().Body())
-		if err != nil {
-			return false, errors.Wrap(err, "could not get versioned hashes to feed the engine")
-		}
-		pr := common.Hash(blk.Block().ParentRoot())
-		lastValidHash, err = s.cfg.ExecutionEngineCaller.NewPayload(ctx, payload, versionedHashes, &pr)
-	} else {
-		lastValidHash, err = s.cfg.ExecutionEngineCaller.NewPayload(ctx, payload, []common.Hash{}, &common.Hash{} /*empty version hashes and root before Deneb*/)
-	}
+	lastValidHash, err := s.cfg.ExecutionEngineCaller.NewPayload(ctx, payload, []common.Hash{}, &common.Hash{} /*empty version hashes and root before Deneb*/)
 	switch err {
 	case nil:
 		newPayloadValidNodeCount.Inc()
@@ -326,23 +312,6 @@ func (s *Service) getPayloadAttribute(ctx context.Context, st state.BeaconState,
 
 	var attr payloadattribute.Attributer
 	switch st.Version() {
-	case version.Deneb:
-		withdrawals, err := st.ExpectedWithdrawals()
-		if err != nil {
-			log.WithError(err).Error("Could not get expected withdrawals to get payload attribute")
-			return false, emptyAttri, 0
-		}
-		attr, err = payloadattribute.New(&enginev1.PayloadAttributesV3{
-			Timestamp:             uint64(t.Unix()),
-			PrevRandao:            prevRando,
-			SuggestedFeeRecipient: feeRecipient.Bytes(),
-			Withdrawals:           withdrawals,
-			ParentBeaconBlockRoot: headRoot,
-		})
-		if err != nil {
-			log.WithError(err).Error("Could not get payload attribute")
-			return false, emptyAttri, 0
-		}
 	case version.Capella:
 		withdrawals, err := st.ExpectedWithdrawals()
 		if err != nil {
@@ -389,29 +358,6 @@ func (s *Service) removeInvalidBlockAndState(ctx context.Context, blkRoots [][32
 			// This is an irreparable condition, it would me a justified or finalized block has become invalid.
 			return err
 		}
-		// No op if the sidecar does not exist.
-		if err := s.cfg.BeaconDB.DeleteBlobSidecar(ctx, root); err != nil {
-			return err
-		}
 	}
 	return nil
-}
-
-func kzgCommitmentsToVersionedHashes(body interfaces.ReadOnlyBeaconBlockBody) ([]common.Hash, error) {
-	commitments, err := body.BlobKzgCommitments()
-	if err != nil {
-		return nil, errors.Wrap(invalidBlock{error: err}, "could not get blob kzg commitments")
-	}
-
-	versionedHashes := make([]common.Hash, len(commitments))
-	for i, commitment := range commitments {
-		versionedHashes[i] = ConvertKzgCommitmentToVersionedHash(commitment)
-	}
-	return versionedHashes, nil
-}
-
-func ConvertKzgCommitmentToVersionedHash(commitment []byte) common.Hash {
-	versionedHash := sha256.Sum256(commitment)
-	versionedHash[0] = blobCommitmentVersionKZG
-	return versionedHash
 }

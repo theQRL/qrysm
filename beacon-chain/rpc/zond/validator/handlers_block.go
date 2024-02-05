@@ -125,16 +125,6 @@ func (s *Server) produceBlockV3(ctx context.Context, w http.ResponseWriter, r *h
 		handleProduceCapellaV3(ctx, w, isSSZ, capellaBlock, v1alpha1resp.PayloadValue)
 		return
 	}
-	blindedDenebBlockContents, ok := v1alpha1resp.Block.(*zond.GenericBeaconBlock_BlindedDeneb)
-	if ok {
-		handleProduceBlindedDenebV3(ctx, w, isSSZ, blindedDenebBlockContents, v1alpha1resp.PayloadValue)
-		return
-	}
-	denebBlockContents, ok := v1alpha1resp.Block.(*zond.GenericBeaconBlock_Deneb)
-	if ok {
-		handleProduceDenebV3(ctx, w, isSSZ, denebBlockContents, v1alpha1resp.PayloadValue)
-		return
-	}
 }
 
 func handleProducePhase0V3(
@@ -347,78 +337,6 @@ func handleProduceCapellaV3(
 	}
 	http2.WriteJson(w, &ProduceBlockV3Response{
 		Version:                 version.String(version.Capella),
-		ExecutionPayloadBlinded: false,
-		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
-		Data:                    jsonBytes,
-	})
-}
-
-func handleProduceBlindedDenebV3(
-	ctx context.Context,
-	w http.ResponseWriter,
-	isSSZ bool,
-	blk *zond.GenericBeaconBlock_BlindedDeneb,
-	payloadValue uint64,
-) {
-	_, span := trace.StartSpan(ctx, "validator.ProduceBlockV3.internal.handleProduceBlindedDenebV3")
-	defer span.End()
-	if isSSZ {
-		sszResp, err := blk.BlindedDeneb.MarshalSSZ()
-		if err != nil {
-			http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		http2.WriteSsz(w, sszResp, "blindedDenebBlockContents.ssz")
-		return
-	}
-	blockContents, err := shared.BlindedBeaconBlockContentsDenebFromConsensus(blk.BlindedDeneb)
-	if err != nil {
-		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	jsonBytes, err := json.Marshal(blockContents)
-	if err != nil {
-		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http2.WriteJson(w, &ProduceBlockV3Response{
-		Version:                 version.String(version.Deneb),
-		ExecutionPayloadBlinded: true,
-		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue),
-		Data:                    jsonBytes,
-	})
-}
-
-func handleProduceDenebV3(
-	ctx context.Context,
-	w http.ResponseWriter,
-	isSSZ bool,
-	blk *zond.GenericBeaconBlock_Deneb,
-	payloadValue uint64,
-) {
-	_, span := trace.StartSpan(ctx, "validator.ProduceBlockV3.internal.handleProduceDenebV3")
-	defer span.End()
-	if isSSZ {
-		sszResp, err := blk.Deneb.MarshalSSZ()
-		if err != nil {
-			http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		http2.WriteSsz(w, sszResp, "denebBlockContents.ssz")
-		return
-	}
-	blockContents, err := shared.BeaconBlockContentsDenebFromConsensus(blk.Deneb)
-	if err != nil {
-		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	jsonBytes, err := json.Marshal(blockContents)
-	if err != nil {
-		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http2.WriteJson(w, &ProduceBlockV3Response{
-		Version:                 version.String(version.Deneb),
 		ExecutionPayloadBlinded: false,
 		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
 		Data:                    jsonBytes,

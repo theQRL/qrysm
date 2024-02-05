@@ -172,16 +172,6 @@ func (bs *Server) GetBlockV2(ctx context.Context, req *zondpbv2.BlockRequestV2) 
 		return nil, status.Errorf(codes.Internal, "Could not get signed beacon block: %v", err)
 	}
 
-	result, err = bs.getBlockDeneb(ctx, blk)
-	if result != nil {
-		result.Finalized = bs.FinalizationFetcher.IsFinalized(ctx, blkRoot)
-		return result, nil
-	}
-
-	// ErrUnsupportedField means that we have another block type
-	if !errors.Is(err, consensus_types.ErrUnsupportedField) {
-		return nil, status.Errorf(codes.Internal, "Could not get signed beacon block: %v", err)
-	}
 	return nil, status.Errorf(codes.Internal, "Unknown block type %T", blk)
 }
 
@@ -228,16 +218,6 @@ func (bs *Server) GetBlockSSZV2(ctx context.Context, req *zondpbv2.BlockRequestV
 		return nil, status.Errorf(codes.Internal, "Could not get signed beacon block: %v", err)
 	}
 	result, err = bs.getSSZBlockCapella(ctx, blk)
-	if result != nil {
-		result.Finalized = bs.FinalizationFetcher.IsFinalized(ctx, blkRoot)
-		return result, nil
-	}
-	// ErrUnsupportedField means that we have another block type
-	if !errors.Is(err, consensus_types.ErrUnsupportedField) {
-		return nil, status.Errorf(codes.Internal, "Could not get signed beacon block: %v", err)
-	}
-
-	result, err = bs.getSSZBlockDeneb(ctx, blk)
 	if result != nil {
 		result.Finalized = bs.FinalizationFetcher.IsFinalized(ctx, blkRoot)
 		return result, nil
@@ -467,76 +447,6 @@ func (bs *Server) getBlockCapella(ctx context.Context, blk interfaces.ReadOnlySi
 	}, nil
 }
 
-func (bs *Server) getBlockDeneb(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.BlockResponseV2, error) {
-	denebBlk, err := blk.PbDenebBlock()
-	if err != nil {
-		// ErrUnsupportedGetter means that we have another block type
-		if errors.Is(err, consensus_types.ErrUnsupportedField) {
-			if blindedDenebBlk, err := blk.PbBlindedDenebBlock(); err == nil {
-				if blindedDenebBlk == nil {
-					return nil, errNilBlock
-				}
-				signedFullBlock, err := bs.ExecutionPayloadReconstructor.ReconstructFullBlock(ctx, blk)
-				if err != nil {
-					return nil, errors.Wrapf(err, "could not reconstruct full execution payload to create signed beacon block")
-				}
-				denebBlk, err = signedFullBlock.PbDenebBlock()
-				if err != nil {
-					return nil, errors.Wrapf(err, "could not get signed beacon block")
-				}
-				v2Blk, err := migration.V1Alpha1BeaconBlockDenebToV2(denebBlk.Block)
-				if err != nil {
-					return nil, errors.Wrapf(err, "could not convert beacon block")
-				}
-				root, err := blk.Block().HashTreeRoot()
-				if err != nil {
-					return nil, errors.Wrapf(err, "could not get block root")
-				}
-				isOptimistic, err := bs.OptimisticModeFetcher.IsOptimisticForRoot(ctx, root)
-				if err != nil {
-					return nil, errors.Wrapf(err, "could not check if block is optimistic")
-				}
-				sig := blk.Signature()
-				return &zondpbv2.BlockResponseV2{
-					Version: zondpbv2.Version_DENEB,
-					Data: &zondpbv2.SignedBeaconBlockContainer{
-						Message:   &zondpbv2.SignedBeaconBlockContainer_DenebBlock{DenebBlock: v2Blk},
-						Signature: sig[:],
-					},
-					ExecutionOptimistic: isOptimistic,
-				}, nil
-			}
-			return nil, err
-		}
-		return nil, err
-	}
-
-	if denebBlk == nil {
-		return nil, errNilBlock
-	}
-	v2Blk, err := migration.V1Alpha1BeaconBlockDenebToV2(denebBlk.Block)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not convert beacon block")
-	}
-	root, err := blk.Block().HashTreeRoot()
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not get block root")
-	}
-	isOptimistic, err := bs.OptimisticModeFetcher.IsOptimisticForRoot(ctx, root)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not check if block is optimistic")
-	}
-	sig := blk.Signature()
-	return &zondpbv2.BlockResponseV2{
-		Version: zondpbv2.Version_DENEB,
-		Data: &zondpbv2.SignedBeaconBlockContainer{
-			Message:   &zondpbv2.SignedBeaconBlockContainer_DenebBlock{DenebBlock: v2Blk},
-			Signature: sig[:],
-		},
-		ExecutionOptimistic: isOptimistic,
-	}, nil
-}
-
 func getSSZBlockPhase0(blk interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.SSZContainer, error) {
 	phase0Blk, err := blk.PbPhase0Block()
 	if err != nil {
@@ -730,80 +640,4 @@ func (bs *Server) getSSZBlockCapella(ctx context.Context, blk interfaces.ReadOnl
 		return nil, errors.Wrapf(err, "could not marshal block into SSZ")
 	}
 	return &zondpbv2.SSZContainer{Version: zondpbv2.Version_CAPELLA, ExecutionOptimistic: isOptimistic, Data: sszData}, nil
-}
-
-func (bs *Server) getSSZBlockDeneb(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.SSZContainer, error) {
-	denebBlk, err := blk.PbDenebBlock()
-	if err != nil {
-		// ErrUnsupportedGetter means that we have another block type
-		if errors.Is(err, consensus_types.ErrUnsupportedField) {
-			if blindedDenebBlk, err := blk.PbBlindedDenebBlock(); err == nil {
-				if blindedDenebBlk == nil {
-					return nil, errNilBlock
-				}
-				signedFullBlock, err := bs.ExecutionPayloadReconstructor.ReconstructFullBlock(ctx, blk)
-				if err != nil {
-					return nil, errors.Wrapf(err, "could not reconstruct full execution payload to create signed beacon block")
-				}
-				denebBlk, err = signedFullBlock.PbDenebBlock()
-				if err != nil {
-					return nil, errors.Wrapf(err, "could not get signed beacon block")
-				}
-				v2Blk, err := migration.V1Alpha1BeaconBlockDenebToV2(denebBlk.Block)
-				if err != nil {
-					return nil, errors.Wrapf(err, "could not convert signed beacon block")
-				}
-				root, err := blk.Block().HashTreeRoot()
-				if err != nil {
-					return nil, errors.Wrapf(err, "could not get block root")
-				}
-				isOptimistic, err := bs.OptimisticModeFetcher.IsOptimisticForRoot(ctx, root)
-				if err != nil {
-					return nil, errors.Wrapf(err, "could not check if block is optimistic")
-				}
-				sig := blk.Signature()
-				data := &zondpbv2.SignedBeaconBlockDeneb{
-					Message:   v2Blk,
-					Signature: sig[:],
-				}
-				sszData, err := data.MarshalSSZ()
-				if err != nil {
-					return nil, errors.Wrapf(err, "could not marshal block into SSZ")
-				}
-				return &zondpbv2.SSZContainer{
-					Version:             zondpbv2.Version_DENEB,
-					ExecutionOptimistic: isOptimistic,
-					Data:                sszData,
-				}, nil
-			}
-			return nil, err
-		}
-		return nil, err
-	}
-
-	if denebBlk == nil {
-		return nil, errNilBlock
-	}
-	v2Blk, err := migration.V1Alpha1BeaconBlockDenebToV2(denebBlk.Block)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not convert signed beacon block")
-	}
-	root, err := blk.Block().HashTreeRoot()
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not get block root")
-	}
-	isOptimistic, err := bs.OptimisticModeFetcher.IsOptimisticForRoot(ctx, root)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not check if block is optimistic")
-	}
-	sig := blk.Signature()
-	data := &zondpbv2.SignedBeaconBlockDeneb{
-		Message:   v2Blk,
-		Signature: sig[:],
-	}
-	sszData, err := data.MarshalSSZ()
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not marshal block into SSZ")
-	}
-	return &zondpbv2.SSZContainer{Version: zondpbv2.Version_DENEB, ExecutionOptimistic: isOptimistic, Data: sszData}, nil
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
 	"github.com/theQRL/qrysm/v4/config/params"
 	mathutil "github.com/theQRL/qrysm/v4/math"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 )
@@ -22,12 +22,12 @@ func (f *blocksFetcher) peerLock(pid peer.ID) *peerLock {
 	f.Lock()
 	defer f.Unlock()
 	if lock, ok := f.peerLocks[pid]; ok && lock != nil {
-		lock.accessed = prysmTime.Now()
+		lock.accessed = qrysmTime.Now()
 		return lock
 	}
 	f.peerLocks[pid] = &peerLock{
 		Mutex:    sync.Mutex{},
-		accessed: prysmTime.Now(),
+		accessed: qrysmTime.Now(),
 	}
 	return f.peerLocks[pid]
 }

@@ -63,7 +63,7 @@ func TestExecuteAltairStateTransitionNoVerify_FullProcess(t *testing.T) {
 	block.Block.Body.RandaoReveal = randaoReveal
 	block.Block.Body.Eth1Data = eth1Data
 
-	syncBits := bitfield.NewBitvector512()
+	syncBits := bitfield.NewBitvector16()
 	for i := range syncBits {
 		syncBits[i] = 0xff
 	}
@@ -150,7 +150,7 @@ func TestExecuteAltairStateTransitionNoVerifySignature_CouldNotVerifyStateRoot(t
 	block.Block.Body.RandaoReveal = randaoReveal
 	block.Block.Body.Eth1Data = eth1Data
 
-	syncBits := bitfield.NewBitvector512()
+	syncBits := bitfield.NewBitvector16()
 	for i := range syncBits {
 		syncBits[i] = 0xff
 	}

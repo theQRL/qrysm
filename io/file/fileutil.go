@@ -62,8 +62,8 @@ func HandleBackupDir(dirPath string, permissionOverride bool) error {
 // MkdirAll takes in a path, expands it if necessary, and looks through the
 // permissions of every directory along the path, ensuring we are not attempting
 // to overwrite any existing permissions. Finally, creates the directory accordingly
-// with standardized, Prysm project permissions. This is the static-analysis enforced
-// method for creating a directory programmatically in Prysm.
+// with standardized, Qrysm project permissions. This is the static-analysis enforced
+// method for creating a directory programmatically in Qrysm.
 func MkdirAll(dirPath string) error {
 	expanded, err := ExpandPath(dirPath)
 	if err != nil {
@@ -86,7 +86,7 @@ func MkdirAll(dirPath string) error {
 }
 
 // WriteFile is the static-analysis enforced method for writing binary data to a file
-// in Prysm, enforcing a single entrypoint with standardized permissions.
+// in Qrysm, enforcing a single entrypoint with standardized permissions.
 func WriteFile(file string, data []byte) error {
 	expanded, err := ExpandPath(file)
 	if err != nil {

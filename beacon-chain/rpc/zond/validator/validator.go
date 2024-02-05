@@ -108,27 +108,7 @@ func (vs *Server) ProduceBlockV2(ctx context.Context, req *zondpbv1.ProduceBlock
 			},
 		}, nil
 	}
-	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedDeneb)
-	if ok {
-		return nil, status.Error(codes.Internal, "Prepared Deneb beacon block contents are blinded")
-	}
-	denebBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Deneb)
-	if ok {
-		blockAndBlobs, err := migration.V1Alpha1BeaconBlockDenebAndBlobsToV2(denebBlock.Deneb)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block contents: %v", err)
-		}
-		return &zondpbv2.ProduceBlockResponseV2{
-			Version: zondpbv2.Version_DENEB,
-			Data: &zondpbv2.BeaconBlockContainerV2{
-				Block: &zondpbv2.BeaconBlockContainerV2_DenebContents{
-					DenebContents: &zondpbv2.BeaconBlockContentsDeneb{
-						Block:        blockAndBlobs.Block,
-						BlobSidecars: blockAndBlobs.BlobSidecars,
-					}},
-			},
-		}, nil
-	}
+
 	return nil, status.Error(codes.InvalidArgument, "Unsupported block type")
 }
 
@@ -237,26 +217,6 @@ func (vs *Server) ProduceBlockV2SSZ(ctx context.Context, req *zondpbv1.ProduceBl
 		}, nil
 	}
 
-	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedDeneb)
-	if ok {
-		return nil, status.Error(codes.Internal, "Prepared Deneb beacon blockcontent is blinded")
-	}
-	denebBlockcontent, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Deneb)
-	if ok {
-		blockContent, err := migration.V1Alpha1BeaconBlockDenebAndBlobsToV2(denebBlockcontent.Deneb)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
-		}
-		sszBlock, err := blockContent.MarshalSSZ()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
-		}
-		return &zondpbv2.SSZContainer{
-			Version: zondpbv2.Version_DENEB,
-			Data:    sszBlock,
-		}, nil
-	}
-
 	return nil, status.Error(codes.InvalidArgument, "Unsupported block type")
 }
 
@@ -358,27 +318,7 @@ func (vs *Server) ProduceBlindedBlock(ctx context.Context, req *zondpbv1.Produce
 			},
 		}, nil
 	}
-	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Deneb)
-	if ok {
-		return nil, status.Error(codes.Internal, "Prepared Deneb beacon block contents are not blinded")
-	}
-	denebBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedDeneb)
-	if ok {
-		blockAndBlobs, err := migration.V1Alpha1BlindedBlockAndBlobsDenebToV2Blinded(denebBlock.BlindedDeneb)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block contents: %v", err)
-		}
-		return &zondpbv2.ProduceBlindedBlockResponse{
-			Version: zondpbv2.Version_DENEB,
-			Data: &zondpbv2.BlindedBeaconBlockContainer{
-				Block: &zondpbv2.BlindedBeaconBlockContainer_DenebContents{
-					DenebContents: &zondpbv2.BlindedBeaconBlockContentsDeneb{
-						BlindedBlock:        blockAndBlobs.BlindedBlock,
-						BlindedBlobSidecars: blockAndBlobs.BlindedBlobSidecars,
-					}},
-			},
-		}, nil
-	}
+
 	return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("block was not a supported blinded block type, validator may not be registered if using a relay. received: %T", v1alpha1resp.Block))
 }
 
@@ -486,24 +426,6 @@ func (vs *Server) ProduceBlindedBlockSSZ(ctx context.Context, req *zondpbv1.Prod
 			Data:    sszBlock,
 		}, nil
 	}
-	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Deneb)
-	if ok {
-		return nil, status.Error(codes.Internal, "Prepared Deneb beacon block content is not blinded")
-	}
-	denebBlockcontent, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedDeneb)
-	if ok {
-		blockContent, err := migration.V1Alpha1BlindedBlockAndBlobsDenebToV2Blinded(denebBlockcontent.BlindedDeneb)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
-		}
-		sszBlock, err := blockContent.MarshalSSZ()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
-		}
-		return &zondpbv2.SSZContainer{
-			Version: zondpbv2.Version_DENEB,
-			Data:    sszBlock,
-		}, nil
-	}
+
 	return nil, status.Error(codes.InvalidArgument, "Unsupported block type")
 }

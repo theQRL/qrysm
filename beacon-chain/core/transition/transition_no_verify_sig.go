@@ -11,7 +11,6 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition/interop"
 	v "github.com/theQRL/qrysm/v4/beacon-chain/core/validators"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
@@ -257,7 +256,7 @@ func ProcessOperationsNoVerifyAttsSigs(
 		if err != nil {
 			return nil, err
 		}
-	case version.Altair, version.Bellatrix, version.Capella, version.Deneb:
+	case version.Altair, version.Bellatrix, version.Capella:
 		state, err = altairOperations(ctx, state, signedBeaconBlock)
 		if err != nil {
 			return nil, err
@@ -325,10 +324,6 @@ func ProcessBlockForStateRoot(
 		}
 	}
 
-	if err := VerifyBlobCommitmentCount(blk); err != nil {
-		return nil, err
-	}
-
 	randaoReveal := signed.Block().Body().RandaoReveal()
 	state, err = b.ProcessRandaoNoVerify(state, randaoReveal[:])
 	if err != nil {
@@ -362,20 +357,6 @@ func ProcessBlockForStateRoot(
 	}
 
 	return state, nil
-}
-
-func VerifyBlobCommitmentCount(blk interfaces.ReadOnlyBeaconBlock) error {
-	if blk.Version() < version.Deneb {
-		return nil
-	}
-	kzgs, err := blk.Body().BlobKzgCommitments()
-	if err != nil {
-		return err
-	}
-	if len(kzgs) > field_params.MaxBlobsPerBlock {
-		return fmt.Errorf("too many kzg commitments in block: %d", len(kzgs))
-	}
-	return nil
 }
 
 // This calls altair block operations.

@@ -10,7 +10,7 @@ var _ fssz.HashRoot = (Domain)([]byte{})
 var _ fssz.Marshaler = (*Domain)(nil)
 var _ fssz.Unmarshaler = (*Domain)(nil)
 
-// Domain represents a 32 bytes domain object in Ethereum beacon chain consensus.
+// Domain represents a 32 bytes domain object in Zond beacon chain consensus.
 type Domain []byte
 
 // HashTreeRoot --

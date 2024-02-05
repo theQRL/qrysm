@@ -21,14 +21,11 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/v4/beacon-chain/db/kv"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
@@ -106,10 +103,7 @@ func (vs *Server) GetBeaconBlock(ctx context.Context, req *zondpb.BlockRequest) 
 	}
 	sBlk.SetProposerIndex(idx)
 
-	var blobBundle *enginev1.BlobsBundle
-	var blindBlobBundle *enginev1.BlindedBlobsBundle
-	blindBlobBundle, blobBundle, err = vs.BuildBlockParallel(ctx, sBlk, head, req.SkipMevBoost)
-	if err != nil {
+	if err = vs.BuildBlockParallel(ctx, sBlk, head, req.SkipMevBoost); err != nil {
 		return nil, errors.Wrap(err, "could not build block in parallel")
 	}
 
@@ -119,25 +113,16 @@ func (vs *Server) GetBeaconBlock(ctx context.Context, req *zondpb.BlockRequest) 
 	}
 	sBlk.SetStateRoot(sr)
 
-	fullBlobs, err := blobsBundleToSidecars(blobBundle, sBlk.Block())
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Could not convert blobs bundle to sidecar: %v", err)
-	}
-
-	blindBlobs, err := blindBlobsBundleToSidecars(blindBlobBundle, sBlk.Block())
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Could not convert blind blobs bundle to sidecar: %v", err)
-	}
 	log.WithFields(logrus.Fields{
 		"slot":               req.Slot,
 		"sinceSlotStartTime": time.Since(t),
 		"validator":          sBlk.Block().ProposerIndex(),
 	}).Info("Finished building block")
 
-	return vs.constructGenericBeaconBlock(sBlk, blindBlobs, fullBlobs)
+	return vs.constructGenericBeaconBlock(sBlk)
 }
 
-func (vs *Server) BuildBlockParallel(ctx context.Context, sBlk interfaces.SignedBeaconBlock, head state.BeaconState, skipMevBoost bool) (*enginev1.BlindedBlobsBundle, *enginev1.BlobsBundle, error) {
+func (vs *Server) BuildBlockParallel(ctx context.Context, sBlk interfaces.SignedBeaconBlock, head state.BeaconState, skipMevBoost bool) error {
 	// Build consensus fields in background
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -178,17 +163,16 @@ func (vs *Server) BuildBlockParallel(ctx context.Context, sBlk interfaces.Signed
 		vs.setDilithiumToExecData(sBlk, head)
 	}()
 
-	localPayload, blobsBundle, overrideBuilder, err := vs.getLocalPayloadAndBlobs(ctx, sBlk.Block(), head)
+	localPayload, overrideBuilder, err := vs.getLocalPayload(ctx, sBlk.Block(), head)
 	if err != nil {
-		return nil, nil, status.Errorf(codes.Internal, "Could not get local payload: %v", err)
+		return status.Errorf(codes.Internal, "Could not get local payload: %v", err)
 	}
 
 	// There's no reason to try to get a builder bid if local override is true.
 	var builderPayload interfaces.ExecutionData
-	var blindBlobsBundle *enginev1.BlindedBlobsBundle
 	overrideBuilder = overrideBuilder || skipMevBoost // Skip using mev-boost if requested by the caller.
 	if !overrideBuilder {
-		builderPayload, blindBlobsBundle, err = vs.getBuilderPayloadAndBlobs(ctx, sBlk.Block().Slot(), sBlk.Block().ProposerIndex())
+		builderPayload, err = vs.getBuilderPayload(ctx, sBlk.Block().Slot(), sBlk.Block().ProposerIndex())
 		if err != nil {
 			builderGetPayloadMissCount.Inc()
 			log.WithError(err).Error("Could not get builder payload")
@@ -196,16 +180,12 @@ func (vs *Server) BuildBlockParallel(ctx context.Context, sBlk interfaces.Signed
 	}
 
 	if err := setExecutionData(ctx, sBlk, localPayload, builderPayload); err != nil {
-		return nil, nil, status.Errorf(codes.Internal, "Could not set execution data: %v", err)
-	}
-
-	if err := setKzgCommitments(sBlk, blobsBundle, blindBlobsBundle); err != nil {
-		return nil, nil, status.Errorf(codes.Internal, "Could not set kzg commitment: %v", err)
+		return status.Errorf(codes.Internal, "Could not set execution data: %v", err)
 	}
 
 	wg.Wait() // Wait until block is built via consensus and execution fields.
 
-	return blindBlobsBundle, blobsBundle, nil
+	return nil
 }
 
 // ProposeBeaconBlock is called by a proposer during its assigned slot to create a block in an attempt
@@ -219,18 +199,12 @@ func (vs *Server) ProposeBeaconBlock(ctx context.Context, req *zondpb.GenericSig
 		return nil, status.Errorf(codes.InvalidArgument, "%s: %v", CouldNotDecodeBlock, err)
 	}
 
-	var blindSidecars []*zondpb.SignedBlindedBlobSidecar
-	if blk.Version() >= version.Deneb && blk.IsBlinded() {
-		blindSidecars = req.GetBlindedDeneb().SignedBlindedBlobSidecars
-	}
-
-	unblinder, err := newUnblinder(blk, blindSidecars, vs.BlockBuilder)
+	unblinder, err := newUnblinder(blk, vs.BlockBuilder)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create unblinder")
 	}
-	blinded := unblinder.b.IsBlinded() //
 
-	blk, unblindedSidecars, err := unblinder.unblindBuilderBlock(ctx)
+	blk, err = unblinder.unblindBuilderBlock(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not unblind builder block")
 	}
@@ -242,34 +216,6 @@ func (vs *Server) ProposeBeaconBlock(ctx context.Context, req *zondpb.GenericSig
 	}
 	if err := vs.P2P.Broadcast(ctx, blkPb); err != nil {
 		return nil, fmt.Errorf("could not broadcast block: %v", err)
-	}
-
-	var scs []*zondpb.SignedBlobSidecar
-	if blk.Version() >= version.Deneb {
-		if blinded {
-			scs = unblindedSidecars // Use sidecars from unblinder if the block was blinded.
-		} else {
-			scs, err = extraSidecars(req) // Use sidecars from the request if the block was not blinded.
-			if err != nil {
-				return nil, errors.Wrap(err, "could not extract blobs")
-			}
-		}
-		sidecars := make([]*zondpb.BlobSidecar, len(scs))
-		for i, sc := range scs {
-			log.WithFields(logrus.Fields{
-				"blockRoot": hex.EncodeToString(sc.Message.BlockRoot),
-				"index":     sc.Message.Index,
-			}).Debug("Broadcasting blob sidecar")
-			if err := vs.P2P.BroadcastBlob(ctx, sc.Message.Index, sc); err != nil {
-				log.WithError(err).Errorf("Could not broadcast blob sidecar index %d / %d", i, len(scs))
-			}
-			sidecars[i] = sc.Message
-		}
-		if len(scs) > 0 {
-			if err := vs.BeaconDB.SaveBlobSidecar(ctx, sidecars); err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	root, err := blk.Block().HashTreeRoot()
@@ -294,19 +240,6 @@ func (vs *Server) ProposeBeaconBlock(ctx context.Context, req *zondpb.GenericSig
 	return &zondpb.ProposeResponse{
 		BlockRoot: root[:],
 	}, nil
-}
-
-// extraSidecars extracts the sidecars from the request.
-// return error if there are too many sidecars.
-func extraSidecars(req *zondpb.GenericSignedBeaconBlock) ([]*zondpb.SignedBlobSidecar, error) {
-	b, ok := req.GetBlock().(*zondpb.GenericSignedBeaconBlock_Deneb)
-	if !ok {
-		return nil, errors.New("Could not cast block to Deneb")
-	}
-	if len(b.Deneb.Blobs) > fieldparams.MaxBlobsPerBlock {
-		return nil, fmt.Errorf("too many blobs in block: %d", len(b.Deneb.Blobs))
-	}
-	return b.Deneb.Blobs, nil
 }
 
 // PrepareBeaconProposer caches and updates the fee recipient for the given proposer.

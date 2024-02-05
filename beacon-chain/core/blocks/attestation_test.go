@@ -151,18 +151,6 @@ func TestProcessAttestationsNoVerify_OlderThanSlotsPerEpoch(t *testing.T) {
 
 		require.ErrorContains(t, "state slot 33 > attestation slot 0 + SLOTS_PER_EPOCH 32", blocks.VerifyAttestationNoVerifySignature(ctx, beaconState, att))
 	})
-
-	t.Run("attestation older than slots per epoch in deneb", func(t *testing.T) {
-		beaconState, _ := util.DeterministicGenesisStateDeneb(t, 100)
-
-		err := beaconState.SetSlot(beaconState.Slot() + params.BeaconConfig().SlotsPerEpoch + 1)
-		require.NoError(t, err)
-		ckp := beaconState.CurrentJustifiedCheckpoint()
-		copy(ckp.Root, "hello-world")
-		require.NoError(t, beaconState.SetCurrentJustifiedCheckpoint(ckp))
-
-		require.NoError(t, blocks.VerifyAttestationNoVerifySignature(ctx, beaconState, att))
-	})
 }
 
 func TestVerifyAttestationNoVerifySignature_OK(t *testing.T) {

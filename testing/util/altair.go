@@ -189,7 +189,7 @@ func buildGenesisBeaconState(genesisTime uint64, preState state.BeaconState, eth
 		Graffiti: make([]byte, 32),
 		SyncAggregate: &zondpb.SyncAggregate{
 			SyncCommitteeBits:      make([]byte, len(scBits[:])),
-			SyncCommitteeSignature: make([]byte, 96),
+			SyncCommitteeSignature: make([]byte, 4595),
 		},
 	}).HashTreeRoot()
 	if err != nil {
@@ -264,11 +264,11 @@ func NewBeaconBlockAltair() *zondpb.SignedBeaconBlockAltair {
 				VoluntaryExits:    []*zondpb.SignedVoluntaryExit{},
 				SyncAggregate: &zondpb.SyncAggregate{
 					SyncCommitteeBits:      scBits[:],
-					SyncCommitteeSignature: make([]byte, 96),
+					SyncCommitteeSignature: make([]byte, 4595),
 				},
 			},
 		},
-		Signature: make([]byte, 96),
+		Signature: make([]byte, 4595),
 	}
 }
 

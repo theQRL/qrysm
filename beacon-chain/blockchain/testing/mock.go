@@ -610,8 +610,3 @@ func (s *ChainService) UnrealizedJustifiedPayloadBlockHash() [32]byte {
 func (c *ChainService) BlockBeingSynced(root [32]byte) bool {
 	return root == c.SyncingRoot
 }
-
-// ReceiveBlob implements the same method in the chain service
-func (*ChainService) ReceiveBlob(_ context.Context, _ *zondpb.BlobSidecar) error {
-	return nil
-}

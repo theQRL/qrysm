@@ -172,7 +172,7 @@ func ReplaceHexStringWithYAMLFormat(line string) []string {
 }
 
 // ConfigToYaml takes a provided config and outputs its contents
-// in yaml. This allows prysm's custom configs to be read by other clients.
+// in yaml. This allows qrysm's custom configs to be read by other clients.
 func ConfigToYaml(cfg *BeaconChainConfig) []byte {
 	lines := []string{
 		fmt.Sprintf("PRESET_BASE: '%s'", cfg.PresetBase),
@@ -207,8 +207,6 @@ func ConfigToYaml(cfg *BeaconChainConfig) []byte {
 		fmt.Sprintf("TERMINAL_BLOCK_HASH: %#x", cfg.TerminalBlockHash),
 		fmt.Sprintf("TERMINAL_BLOCK_HASH_ACTIVATION_EPOCH: %d", cfg.TerminalBlockHashActivationEpoch),
 		fmt.Sprintf("DEPOSIT_CONTRACT_ADDRESS: %s", cfg.DepositContractAddress),
-		fmt.Sprintf("DENEB_FORK_EPOCH: %d", cfg.DenebForkEpoch),
-		fmt.Sprintf("DENEB_FORK_VERSION: %#x", cfg.DenebForkVersion),
 	}
 
 	yamlFile := []byte(strings.Join(lines, "\n"))

@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/accounts/abi/bind"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/container/trie"
@@ -95,8 +95,8 @@ func TestMarshalDepositWithProof(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, len(proof), int(params.BeaconConfig().DepositContractTreeDepth)+1)
 	someRoot := [32]byte{1, 2, 3, 4}
-	someSig := [96]byte{1, 2, 3, 4}
-	someKey := [dilithium2.CryptoPublicKeyBytes]byte{1, 2, 3, 4}
+	someSig := [dilithium.CryptoBytes]byte{1, 2, 3, 4}
+	someKey := [dilithium.CryptoPublicKeyBytes]byte{1, 2, 3, 4}
 	dep := &zondpb.Deposit{
 		Proof: proof,
 		Data: &zondpb.Deposit_Data{

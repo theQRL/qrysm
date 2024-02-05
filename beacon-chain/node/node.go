@@ -153,9 +153,7 @@ func New(cliCtx *cli.Context, opts ...Option) (*BeaconNode, error) {
 	if err := configureExecutionSetting(cliCtx); err != nil {
 		return nil, err
 	}
-	if err := kv.ConfigureBlobRetentionEpoch(cliCtx); err != nil {
-		return nil, err
-	}
+
 	configureFastSSZHashingAlgorithm()
 
 	// Initializes any forks here.
@@ -930,7 +928,7 @@ func (b *BeaconNode) registerGRPCGateway(router *mux.Router) error {
 		apigateway.WithAllowedOrigins(allowedOrigins),
 		apigateway.WithTimeout(uint64(timeout)),
 	}
-	if flags.EnableHTTPEthAPI(httpModules) {
+	if flags.EnableHTTPZondAPI(httpModules) {
 		opts = append(opts, apigateway.WithApiMiddleware(&apimiddleware.BeaconEndpointFactory{}))
 	}
 	g, err := apigateway.New(b.ctx, opts...)

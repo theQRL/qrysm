@@ -72,7 +72,7 @@ do
 done
 
 
-echo "Converting hex yaml keys to a format that Prysm understands"
+echo "Converting hex yaml keys to a format that Qrysm understands"
 
 # Expect YAML keys in hex encoded format. Convert this into the format the validator already understands.
 ./convert-keys $YAML_KEY_FILE /tmp/keys.json

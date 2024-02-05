@@ -6,7 +6,7 @@ import (
 
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 )
 
 // The Ticker interface defines a type which can expose a
@@ -83,7 +83,7 @@ func NewSlotTicker(genesisTime time.Time, secondsPerSlot uint64) *SlotTicker {
 		c:    make(chan primitives.Slot),
 		done: make(chan struct{}),
 	}
-	ticker.start(genesisTime, secondsPerSlot, prysmTime.Since, prysmTime.Until, time.After)
+	ticker.start(genesisTime, secondsPerSlot, qrysmTime.Since, qrysmTime.Until, time.After)
 	return ticker
 }
 
@@ -100,7 +100,7 @@ func NewSlotTickerWithOffset(genesisTime time.Time, offset time.Duration, second
 		c:    make(chan primitives.Slot),
 		done: make(chan struct{}),
 	}
-	ticker.start(genesisTime.Add(offset), secondsPerSlot, prysmTime.Since, prysmTime.Until, time.After)
+	ticker.start(genesisTime.Add(offset), secondsPerSlot, qrysmTime.Since, qrysmTime.Until, time.After)
 	return ticker
 }
 
@@ -198,6 +198,6 @@ func NewSlotTickerWithIntervals(genesisTime time.Time, intervals []time.Duration
 		c:    make(chan SlotInterval),
 		done: make(chan struct{}),
 	}
-	ticker.startWithIntervals(genesisTime, prysmTime.Until, time.After, intervals)
+	ticker.startWithIntervals(genesisTime, qrysmTime.Until, time.After, intervals)
 	return ticker
 }

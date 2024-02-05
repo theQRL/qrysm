@@ -129,8 +129,6 @@ var Buckets = [][]byte{
 
 	feeRecipientBucket,
 	registrationBucket,
-
-	blobsBucket,
 }
 
 // NewKVStore initializes a new boltDB key-value store at the directory
@@ -200,10 +198,6 @@ func NewKVStore(ctx context.Context, dirPath string) (*Store, error) {
 	// Setup the type of block storage used depending on whether or not this is a fresh database.
 	if err := kv.setupBlockStorageType(ctx); err != nil {
 		return nil, err
-	}
-
-	if err := checkEpochsForBlobSidecarsRequestBucket(boltDB); err != nil {
-		return nil, errors.Wrap(err, "failed to check epochs for blob sidecars request bucket")
 	}
 
 	return kv, nil

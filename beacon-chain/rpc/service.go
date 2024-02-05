@@ -40,7 +40,6 @@ import (
 	validatorv1alpha1 "github.com/theQRL/qrysm/v4/beacon-chain/rpc/qrysm/v1alpha1/validator"
 	httpserver "github.com/theQRL/qrysm/v4/beacon-chain/rpc/qrysm/validator"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/beacon"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/blob"
 	rpcBuilder "github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/builder"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/debug"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/events"
@@ -232,12 +231,6 @@ func (s *Service) Start() {
 		Stater:                stater,
 	}
 	s.cfg.Router.HandleFunc("/zond/v1/builder/states/{state_id}/expected_withdrawals", builderServer.ExpectedWithdrawals).Methods(http.MethodGet)
-
-	blobServer := &blob.Server{
-		ChainInfoFetcher: s.cfg.ChainInfoFetcher,
-		BeaconDB:         s.cfg.BeaconDB,
-	}
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/blob_sidecars/{block_id}", blobServer.Blobs).Methods(http.MethodGet)
 
 	coreService := &core.Service{
 		HeadFetcher:        s.cfg.HeadFetcher,

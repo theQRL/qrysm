@@ -12,7 +12,6 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -117,15 +116,18 @@ func VerifyExitAndSignature(
 	fork := state.Fork()
 	genesisRoot := state.GenesisValidatorsRoot()
 
-	// EIP-7044: Beginning in Deneb, fix the fork version to Capella.
-	// This allows for signed validator exits to be valid forever.
-	if state.Version() >= version.Deneb {
-		fork = &zondpb.Fork{
-			PreviousVersion: params.BeaconConfig().CapellaForkVersion,
-			CurrentVersion:  params.BeaconConfig().CapellaForkVersion,
-			Epoch:           params.BeaconConfig().CapellaForkEpoch,
+	// NOTE(rgeraldes24): important for a future fork
+	/*
+		// EIP-7044: Beginning in Deneb, fix the fork version to Capella.
+		// This allows for signed validator exits to be valid forever.
+		if state.Version() >= version.Deneb {
+			fork = &zondpb.Fork{
+				PreviousVersion: params.BeaconConfig().CapellaForkVersion,
+				CurrentVersion:  params.BeaconConfig().CapellaForkVersion,
+				Epoch:           params.BeaconConfig().CapellaForkEpoch,
+			}
 		}
-	}
+	*/
 
 	exit := signed.Exit
 	if err := verifyExitConditions(validator, currentSlot, exit); err != nil {

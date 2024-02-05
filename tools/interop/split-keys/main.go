@@ -11,6 +11,7 @@
 // used to encrypt the wallets in a text file using -wallet-password-file.
 package main
 
+/*
 import (
 	"bufio"
 	"context"
@@ -91,7 +92,7 @@ func generateKeysFromMnemonicList(mnemonicListFile *bufio.Scanner, keysPerMnemon
 	for mnemonicListFile.Scan() {
 		log.Printf("Generating %d keys from mnemonic\n", keysPerMnemonic)
 		mnemonic := mnemonicListFile.Text()
-		seed, err = seedFromMnemonic(mnemonic, "" /* 25th word*/)
+		seed, err = seedFromMnemonic(mnemonic, "")
 		if err != nil {
 			return
 		}
@@ -141,3 +142,4 @@ func spreadKeysAcrossLocalWallets(
 	}
 	return nil
 }
+*/

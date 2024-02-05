@@ -139,10 +139,6 @@ func ProcessRegistryUpdates(ctx context.Context, state state.BeaconState) (state
 
 	churnLimit := helpers.ValidatorActivationChurnLimit(activeValidatorCount)
 
-	if state.Version() >= version.Deneb {
-		churnLimit = helpers.ValidatorActivationChurnLimitDeneb(activeValidatorCount)
-	}
-
 	// Prevent churn limit cause index out of bound.
 	if churnLimit < limit {
 		limit = churnLimit

@@ -2,15 +2,15 @@ package flags
 
 import "strings"
 
-const PrysmAPIModule string = "prysm"
-const EthAPIModule string = "eth"
+const QrysmAPIModule string = "qrysm"
+const ZondAPIModule string = "zond"
 
-func EnableHTTPPrysmAPI(httpModules string) bool {
-	return enableAPI(httpModules, PrysmAPIModule)
+func EnableHTTPQrysmAPI(httpModules string) bool {
+	return enableAPI(httpModules, QrysmAPIModule)
 }
 
-func EnableHTTPEthAPI(httpModules string) bool {
-	return enableAPI(httpModules, EthAPIModule)
+func EnableHTTPZondAPI(httpModules string) bool {
+	return enableAPI(httpModules, ZondAPIModule)
 }
 
 func enableAPI(httpModules, api string) bool {

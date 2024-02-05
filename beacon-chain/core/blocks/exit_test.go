@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
@@ -163,7 +163,7 @@ func TestVerifyExitAndSignature(t *testing.T) {
 				if err != nil {
 					return nil, nil, nil, err
 				}
-				return &zondpb.Validator{}, &zondpb.SignedVoluntaryExit{},
+				return &zondpb.Validator{}, &zondpb.SignedVoluntaryExit{}, s, nil
 			},
 			wantErr: "nil exit",
 		},
@@ -238,43 +238,45 @@ func TestVerifyExitAndSignature(t *testing.T) {
 			},
 			wantErr: "signature did not verify",
 		},
-		{
-			name: "EIP-7044: deneb exits should verify with capella fork information",
-			setup: func() (*zondpb.Validator, *zondpb.SignedVoluntaryExit, state.ReadOnlyBeaconState, error) {
-				fork := &zondpb.Fork{
-					PreviousVersion: params.BeaconConfig().CapellaForkVersion,
-					CurrentVersion:  params.BeaconConfig().DenebForkVersion,
-					Epoch:           primitives.Epoch(2),
-				}
-				signedExit := &zondpb.SignedVoluntaryExit{
-					Exit: &zondpb.VoluntaryExit{
-						Epoch:          2,
-						ValidatorIndex: 0,
-					},
-				}
-				bs, keys := util.DeterministicGenesisState(t, 1)
-				bs, err := state_native.InitializeFromProtoUnsafeDeneb(&zondpb.BeaconStateDeneb{
-					GenesisValidatorsRoot: bs.GenesisValidatorsRoot(),
-					Fork:                  fork,
-					Slot:                  (params.BeaconConfig().SlotsPerEpoch * 2) + 1,
-					Validators:            bs.Validators(),
-				})
-				if err != nil {
-					return nil, nil, nil, err
-				}
-				validator := bs.Validators()[0]
-				validator.ActivationEpoch = 1
-				err = bs.UpdateValidatorAtIndex(0, validator)
-				require.NoError(t, err)
-				sb, err := signing.ComputeDomainAndSign(bs, signedExit.Exit.Epoch, signedExit.Exit, params.BeaconConfig().DomainVoluntaryExit, keys[0])
-				require.NoError(t, err)
-				sig, err := bls.SignatureFromBytes(sb)
-				require.NoError(t, err)
-				signedExit.Signature = sig.Marshal()
+		/*
+			{
+				name: "EIP-7044: deneb exits should verify with capella fork information",
+				setup: func() (*zondpb.Validator, *zondpb.SignedVoluntaryExit, state.ReadOnlyBeaconState, error) {
+					fork := &zondpb.Fork{
+						PreviousVersion: params.BeaconConfig().CapellaForkVersion,
+						CurrentVersion:  params.BeaconConfig().DenebForkVersion,
+						Epoch:           primitives.Epoch(2),
+					}
+					signedExit := &zondpb.SignedVoluntaryExit{
+						Exit: &zondpb.VoluntaryExit{
+							Epoch:          2,
+							ValidatorIndex: 0,
+						},
+					}
+					bs, keys := util.DeterministicGenesisState(t, 1)
+					bs, err := state_native.InitializeFromProtoUnsafeDeneb(&zondpb.BeaconStateDeneb{
+						GenesisValidatorsRoot: bs.GenesisValidatorsRoot(),
+						Fork:                  fork,
+						Slot:                  (params.BeaconConfig().SlotsPerEpoch * 2) + 1,
+						Validators:            bs.Validators(),
+					})
+					if err != nil {
+						return nil, nil, nil, err
+					}
+					validator := bs.Validators()[0]
+					validator.ActivationEpoch = 1
+					err = bs.UpdateValidatorAtIndex(0, validator)
+					require.NoError(t, err)
+					sb, err := signing.ComputeDomainAndSign(bs, signedExit.Exit.Epoch, signedExit.Exit, params.BeaconConfig().DomainVoluntaryExit, keys[0])
+					require.NoError(t, err)
+					sig, err := bls.SignatureFromBytes(sb)
+					require.NoError(t, err)
+					signedExit.Signature = sig.Marshal()
 
-				return validator, signedExit, bs, nil
+					return validator, signedExit, bs, nil
+				},
 			},
-		},
+		*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

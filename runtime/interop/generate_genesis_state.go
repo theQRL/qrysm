@@ -206,5 +206,5 @@ func createDepositData(privKey dilithium.DilithiumKey, pubKey dilithium.PublicKe
 // where withdrawal_credentials is of type bytes32.
 func withdrawalCredentialsHash(pubKey []byte) []byte {
 	h := hash.Hash(pubKey)
-	return append([]byte{blsWithdrawalPrefixByte}, h[1:]...)[:32]
+	return append([]byte{dilithiumWithdrawalPrefixByte}, h[1:]...)[:32]
 }

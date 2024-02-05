@@ -50,7 +50,6 @@ type BeaconBlockBody struct {
 	executionPayload            interfaces.ExecutionData
 	executionPayloadHeader      interfaces.ExecutionData
 	dilithiumToExecutionChanges []*zond.SignedDilithiumToExecutionChange
-	blobKzgCommitments          [][]byte
 }
 
 // BeaconBlock is the main beacon block structure. It can represent any block type.

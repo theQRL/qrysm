@@ -9,7 +9,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -79,7 +79,7 @@ func (smm *stateMachineManager) addStateMachine(startSlot primitives.Slot) *stat
 		start:   startSlot,
 		state:   stateNew,
 		bwb:     []blocks.BlockWithVerifiedBlobs{},
-		updated: prysmTime.Now(),
+		updated: qrysmTime.Now(),
 	}
 	smm.recalculateMachineAttribs()
 	return smm.machines[startSlot]
@@ -158,7 +158,7 @@ func (m *stateMachine) setState(name stateID) {
 		return
 	}
 	m.state = name
-	m.updated = prysmTime.Now()
+	m.updated = qrysmTime.Now()
 }
 
 // trigger invokes the event handler on a given state machine.

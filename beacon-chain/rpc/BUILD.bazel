@@ -26,7 +26,6 @@ go_library(
         "//beacon-chain/p2p:go_default_library",
         "//beacon-chain/rpc/core:go_default_library",
         "//beacon-chain/rpc/zond/beacon:go_default_library",
-        "//beacon-chain/rpc/zond/blob:go_default_library",
         "//beacon-chain/rpc/zond/builder:go_default_library",
         "//beacon-chain/rpc/zond/debug:go_default_library",
         "//beacon-chain/rpc/zond/events:go_default_library",

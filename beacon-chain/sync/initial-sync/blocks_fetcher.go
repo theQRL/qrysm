@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -18,16 +17,13 @@ import (
 	prysmsync "github.com/theQRL/qrysm/v4/beacon-chain/sync"
 	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
 	"github.com/theQRL/qrysm/v4/config/params"
-	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
 	blocks2 "github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
 	"github.com/theQRL/qrysm/v4/crypto/rand"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/math"
 	p2ppb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 )
 
@@ -285,15 +281,8 @@ func (f *blocksFetcher) handleRequest(ctx context.Context, start primitives.Slot
 			return response
 		}
 	}
-
 	response.bwb, response.pid, response.err = f.fetchBlocksFromPeer(ctx, start, count, peers)
-	if response.err == nil {
-		bwb, err := f.fetchBlobsFromPeer(ctx, response.bwb, response.pid)
-		if err != nil {
-			response.err = err
-		}
-		response.bwb = bwb
-	}
+
 	return response
 }
 
@@ -343,153 +332,6 @@ func sortedBlockWithVerifiedBlobSlice(blocks []interfaces.ReadOnlySignedBeaconBl
 	return rb, nil
 }
 
-func blobRequest(bwb []blocks2.BlockWithVerifiedBlobs, blobWindowStart primitives.Slot) *p2ppb.BlobSidecarsByRangeRequest {
-	if len(bwb) == 0 {
-		return nil
-	}
-	lowest := lowestSlotNeedsBlob(blobWindowStart, bwb)
-	if lowest == nil {
-		return nil
-	}
-	highest := bwb[len(bwb)-1].Block.Block().Slot()
-	return &p2ppb.BlobSidecarsByRangeRequest{
-		StartSlot: *lowest,
-		Count:     uint64(highest.SubSlot(*lowest)) + 1,
-	}
-}
-
-func lowestSlotNeedsBlob(retentionStart primitives.Slot, bwb []blocks2.BlockWithVerifiedBlobs) *primitives.Slot {
-	if len(bwb) == 0 {
-		return nil
-	}
-	// Short-circuit if the highest block is before the deneb start epoch or retention period start.
-	// This assumes blocks are sorted by sortedBlockWithVerifiedBlobSlice.
-	// bwb is sorted by slot, so if the last element is outside the retention window, no blobs are needed.
-	if bwb[len(bwb)-1].Block.Block().Slot() < retentionStart {
-		return nil
-	}
-	for _, b := range bwb {
-		slot := b.Block.Block().Slot()
-		if slot < retentionStart {
-			continue
-		}
-		commits, err := b.Block.Block().Body().BlobKzgCommitments()
-		if err != nil || len(commits) == 0 {
-			continue
-		}
-		return &slot
-	}
-	return nil
-}
-
-func sortBlobs(blobs []*p2ppb.BlobSidecar) []*p2ppb.BlobSidecar {
-	sort.Slice(blobs, func(i, j int) bool {
-		if blobs[i].Slot == blobs[j].Slot {
-			return blobs[i].Index < blobs[j].Index
-		}
-		return blobs[i].Slot < blobs[j].Slot
-	})
-
-	return blobs
-}
-
-var errBlobVerification = errors.New("peer unable to serve aligned BlobSidecarsByRange and BeaconBlockSidecarsByRange responses")
-var errMissingBlobsForBlockCommitments = errors.Wrap(errBlobVerification, "blobs unavailable for processing block with kzg commitments")
-var errMismatchedBlobBlockRoot = errors.Wrap(errBlobVerification, "BlockRoot in BlobSidecar does not match the expected root")
-var errMissingBlobIndex = errors.Wrap(errBlobVerification, "missing expected blob index")
-var errMismatchedBlobCommitments = errors.Wrap(errBlobVerification, "commitments at given slot, root and index do not match")
-
-func verifyAndPopulateBlobs(bwb []blocks2.BlockWithVerifiedBlobs, blobs []*p2ppb.BlobSidecar, blobWindowStart primitives.Slot) ([]blocks2.BlockWithVerifiedBlobs, error) {
-	// Assumes bwb has already been sorted by sortedBlockWithVerifiedBlobSlice.
-	blobs = sortBlobs(blobs)
-	blobi := 0
-	// Loop over all blocks, and each time a commitment is observed, advance the index into the blob slice.
-	// The assumption is that the blob slice contains a value for every commitment in the blocks it is based on,
-	// correctly ordered by slot and blob index.
-	for i, bb := range bwb {
-		block := bb.Block.Block()
-		if block.Slot() < blobWindowStart {
-			continue
-		}
-		commits, err := block.Body().BlobKzgCommitments()
-		if err != nil {
-			if errors.Is(err, consensus_types.ErrUnsupportedField) {
-				log.
-					WithField("block_slot", block.Slot()).
-					WithField("retention_start", blobWindowStart).
-					Warn("block with slot within blob retention period has version which does not support commitments")
-				continue
-			}
-			return nil, err
-		}
-		bb.Blobs = make([]*p2ppb.BlobSidecar, len(commits))
-		for ci := range commits {
-			// There are more expected commitments in this block, but we've run out of blobs from the response
-			// (out-of-bound error guard).
-			if blobi == len(blobs) {
-				return nil, missingCommitError(bb.Block.Root(), bb.Block.Block().Slot(), commits[ci:])
-			}
-			bl := blobs[blobi]
-			if bl.Slot != block.Slot() {
-				return nil, missingCommitError(bb.Block.Root(), bb.Block.Block().Slot(), commits[ci:])
-			}
-			if bytesutil.ToBytes32(bl.BlockRoot) != bb.Block.Root() {
-				return nil, errors.Wrapf(errMismatchedBlobBlockRoot,
-					"block root %#x != BlobSidecar.BlockRoot %#x at slot %d", bb.Block.Root(), bl.BlockRoot, block.Slot())
-			}
-			if ci != int(bl.Index) {
-				return nil, errors.Wrapf(errMissingBlobIndex,
-					"did not receive blob index %d for block root %#x at slot %d", ci, bb.Block.Root(), block.Slot())
-			}
-			ec := bytesutil.ToBytes48(commits[ci])
-			ac := bytesutil.ToBytes48(bl.KzgCommitment)
-			if ec != ac {
-				return nil, errors.Wrapf(errMismatchedBlobCommitments,
-					"commitment %#x != block commitment %#x, at index %d for block root %#x at slot %d ",
-					ac, ec, bl.Index, bb.Block.Root(), block.Slot())
-			}
-			bb.Blobs[ci] = bl
-			blobi += 1
-		}
-		bwb[i] = bb
-	}
-	return bwb, nil
-}
-
-func missingCommitError(root [32]byte, slot primitives.Slot, missing [][]byte) error {
-	missStr := make([]string, len(missing))
-	for k := range missing {
-		missStr = append(missStr, fmt.Sprintf("%#x", k))
-	}
-	return errors.Wrapf(errMissingBlobsForBlockCommitments,
-		"block root %#x at slot %d missing %d commitments %s", root, slot, len(missing), strings.Join(missStr, ","))
-}
-
-// fetchBlobsFromPeer fetches blocks from a single randomly selected peer.
-func (f *blocksFetcher) fetchBlobsFromPeer(ctx context.Context, bwb []blocks2.BlockWithVerifiedBlobs, pid peer.ID) ([]blocks2.BlockWithVerifiedBlobs, error) {
-	ctx, span := trace.StartSpan(ctx, "initialsync.fetchBlobsFromPeer")
-	defer span.End()
-	if slots.ToEpoch(f.clock.CurrentSlot()) < params.BeaconConfig().DenebForkEpoch {
-		return bwb, nil
-	}
-	blobWindowStart, err := prysmsync.BlobsByRangeMinStartSlot(f.clock.CurrentSlot())
-	if err != nil {
-		return nil, err
-	}
-	// Construct request message based on observed interval of blocks in need of blobs.
-	req := blobRequest(bwb, blobWindowStart)
-	if req == nil {
-		return bwb, nil
-	}
-	// Request blobs from the same peer that gave us the blob batch.
-	blobs, err := f.requestBlobs(ctx, req, pid)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not request blobs by range")
-	}
-	f.p2p.Peers().Scorers().BlockProviderScorer().Touch(pid)
-	return verifyAndPopulateBlobs(bwb, blobs, blobWindowStart)
-}
-
 // requestBlocks is a wrapper for handling BeaconBlocksByRangeRequest requests/streams.
 func (f *blocksFetcher) requestBlocks(
 	ctx context.Context,
@@ -518,33 +360,6 @@ func (f *blocksFetcher) requestBlocks(
 	f.rateLimiter.Add(pid.String(), int64(req.Count))
 	l.Unlock()
 	return prysmsync.SendBeaconBlocksByRangeRequest(ctx, f.chain, f.p2p, pid, req, nil)
-}
-
-func (f *blocksFetcher) requestBlobs(ctx context.Context, req *p2ppb.BlobSidecarsByRangeRequest, pid peer.ID) ([]*p2ppb.BlobSidecar, error) {
-	if ctx.Err() != nil {
-		return nil, ctx.Err()
-	}
-	l := f.peerLock(pid)
-	l.Lock()
-	log.WithFields(logrus.Fields{
-		"peer":     pid,
-		"start":    req.StartSlot,
-		"count":    req.Count,
-		"capacity": f.rateLimiter.Remaining(pid.String()),
-		"score":    f.p2p.Peers().Scorers().BlockProviderScorer().FormatScorePretty(pid),
-	}).Debug("Requesting blobs")
-	// We're intentionally abusing the block rate limit here, treating blob requests as if they were blob requests.
-	// Since blob requests take more bandwidth than blocks, we should improve how we account for the different kinds
-	// of requests, more in proportion to the cost of serving them.
-	if f.rateLimiter.Remaining(pid.String()) < int64(req.Count) {
-		if err := f.waitForBandwidth(pid, req.Count); err != nil {
-			l.Unlock()
-			return nil, err
-		}
-	}
-	f.rateLimiter.Add(pid.String(), int64(req.Count))
-	l.Unlock()
-	return prysmsync.SendBlobsByRangeRequest(ctx, f.clock, f.p2p, pid, f.ctxMap, req)
 }
 
 // requestBlocksByRoot is a wrapper for handling BeaconBlockByRootsReq requests/streams.

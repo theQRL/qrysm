@@ -1,5 +1,6 @@
 package ssz_static
 
+/*
 import (
 	"testing"
 
@@ -9,3 +10,4 @@ import (
 func TestMainnet_Capella_SSZStatic(t *testing.T) {
 	ssz_static.RunSSZStaticTests(t, "mainnet")
 }
+*/

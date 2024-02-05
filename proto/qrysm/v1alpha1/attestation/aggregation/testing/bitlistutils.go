@@ -93,7 +93,7 @@ func MakeAttestationsFromBitlists(bl []bitfield.Bitlist) []*zondpb.Attestation {
 }
 
 // MakeSyncContributionsFromBitVector creates list of sync contributions from list of bitvector.
-func MakeSyncContributionsFromBitVector(bl []bitfield.Bitvector128) []*zondpb.SyncCommitteeContribution {
+func MakeSyncContributionsFromBitVector(bl []bitfield.Bitvector16) []*zondpb.SyncCommitteeContribution {
 	c := make([]*zondpb.SyncCommitteeContribution, len(bl))
 	for i, b := range bl {
 		c[i] = &zondpb.SyncCommitteeContribution{

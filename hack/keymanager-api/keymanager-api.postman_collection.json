@@ -6,7 +6,7 @@
 	},
 	"item": [
 		{
-			"name": "/eth/v1/keystores",
+			"name": "/zond/v1/keystores",
 			"request": {
 				"auth": {
 					"type": "bearer",
@@ -27,13 +27,13 @@
 					}
 				],
 				"url": {
-					"raw": "localhost:7500/eth/v1/keystores",
+					"raw": "localhost:7500/zond/v1/keystores",
 					"host": [
 						"localhost"
 					],
 					"port": "7500",
 					"path": [
-						"eth",
+						"zond",
 						"v1",
 						"keystores"
 					]
@@ -42,7 +42,7 @@
 			"response": []
 		},
 		{
-			"name": "/eth/v1/keystores",
+			"name": "/zond/v1/keystores",
 			"request": {
 				"auth": {
 					"type": "bearer",
@@ -67,13 +67,13 @@
 					"raw": "{\n    \"keystores\":[\n        \"543534534543543543534\"\n    ],\n    \"passwords\":[\n        \"hrtyt564634534\"\n    ],\n    \"slashing_protection\":null\n}"
 				},
 				"url": {
-					"raw": "localhost:7500/eth/v1/keystores",
+					"raw": "localhost:7500/zond/v1/keystores",
 					"host": [
 						"localhost"
 					],
 					"port": "7500",
 					"path": [
-						"eth",
+						"zond",
 						"v1",
 						"keystores"
 					]
@@ -82,7 +82,7 @@
 			"response": []
 		},
 		{
-			"name": "/eth/v1/keystores",
+			"name": "/zond/v1/keystores",
 			"request": {
 				"auth": {
 					"type": "bearer",
@@ -107,13 +107,13 @@
 					"raw": "{\n  \"pubkeys\": [\n    \"0x8d65ffe7b65ee8e7c3e14a474a360f16722920ef8c0ef1da6f942fd6ddc3628c1edda7f57cf28d7ddc7fc9cb9745df60\"\n  ]\n}"
 				},
 				"url": {
-					"raw": "localhost:7500/eth/v1/keystores",
+					"raw": "localhost:7500/zond/v1/keystores",
 					"host": [
 						"localhost"
 					],
 					"port": "7500",
 					"path": [
-						"eth",
+						"zond",
 						"v1",
 						"keystores"
 					]
@@ -143,13 +143,13 @@
 					}
 				],
 				"url": {
-					"raw": "localhost:7500/eth/v1/validator/0xaf2e7ba294e03438ea819bd4033c6c1bf6b04320ee2075b77273c08d02f8a61bcc303c2c06bd3713cb442072ae591494/feerecipient",
+					"raw": "localhost:7500/zond/v1/validator/0xaf2e7ba294e03438ea819bd4033c6c1bf6b04320ee2075b77273c08d02f8a61bcc303c2c06bd3713cb442072ae591494/feerecipient",
 					"host": [
 						"localhost"
 					],
 					"port": "7500",
 					"path": [
-						"eth",
+						"zond",
 						"v1",
 						"validator",
 						"0xaf2e7ba294e03438ea819bd4033c6c1bf6b04320ee2075b77273c08d02f8a61bcc303c2c06bd3713cb442072ae591494",
@@ -176,16 +176,16 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"ethaddress\":\"0x046FB65722E7b2455012bfebF6177F4d2e9738D9\"\n}\n"
+					"raw": "{\n    \"zondaddress\":\"0x046FB65722E7b2455012bfebF6177F4d2e9738D9\"\n}\n"
 				},
 				"url": {
-					"raw": "localhost:7500/eth/v1/validator/0xaf2e7ba294e03438ea819bd4033c6c1bf6b04320ee2075b77273c08d02f8a61bcc303c2c06bd3713cb442072ae591494/feerecipient",
+					"raw": "localhost:7500/zond/v1/validator/0xaf2e7ba294e03438ea819bd4033c6c1bf6b04320ee2075b77273c08d02f8a61bcc303c2c06bd3713cb442072ae591494/feerecipient",
 					"host": [
 						"localhost"
 					],
 					"port": "7500",
 					"path": [
-						"eth",
+						"zond",
 						"v1",
 						"validator",
 						"0xaf2e7ba294e03438ea819bd4033c6c1bf6b04320ee2075b77273c08d02f8a61bcc303c2c06bd3713cb442072ae591494",
@@ -217,13 +217,13 @@
 					}
 				],
 				"url": {
-					"raw": "localhost:7500/eth/v1/validator/0xaf2e7ba294e03438ea819bd4033c6c1bf6b04320ee2075b77273c08d02f8a61bcc303c2c06bd3713cb442072ae591494/feerecipient",
+					"raw": "localhost:7500/zond/v1/validator/0xaf2e7ba294e03438ea819bd4033c6c1bf6b04320ee2075b77273c08d02f8a61bcc303c2c06bd3713cb442072ae591494/feerecipient",
 					"host": [
 						"localhost"
 					],
 					"port": "7500",
 					"path": [
-						"eth",
+						"zond",
 						"v1",
 						"validator",
 						"0xaf2e7ba294e03438ea819bd4033c6c1bf6b04320ee2075b77273c08d02f8a61bcc303c2c06bd3713cb442072ae591494",

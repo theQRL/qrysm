@@ -52,7 +52,6 @@ func e2eMinimal(t *testing.T, v int, cfgo ...types.E2EConfigOpt) *testRunner {
 		ev.DepositedValidatorsAreActive,
 		// ev.ValidatorsVoteWithTheMajority, TODO(rgeraldes24): re-enable once the unit tests are complete
 		ev.ColdStateCheckpoint,
-		// ev.DenebForkTransition, // TODO(12750): Enable this when gzond main branch's engine API support.
 		ev.APIMiddlewareVerifyIntegrity,
 		ev.APIGatewayV1Alpha1VerifyIntegrity,
 		ev.FinishedSyncing,
@@ -122,7 +121,6 @@ func e2eMainnet(t *testing.T, useQrysmSh bool, cfg *params.BeaconChainConfig, cf
 		ev.ValidatorsHaveWithdrawn,
 		ev.DepositedValidatorsAreActive,
 		ev.ColdStateCheckpoint,
-		// ev.DenebForkTransition, // TODO(12750): Enable this when gzond main branch's engine API support.
 		ev.APIMiddlewareVerifyIntegrity,
 		ev.APIGatewayV1Alpha1VerifyIntegrity,
 		ev.FinishedSyncing,
@@ -171,7 +169,6 @@ func scenarioEvals() []types.Evaluator {
 		ev.ProposeVoluntaryExit,
 		ev.ValidatorsHaveExited,
 		ev.ColdStateCheckpoint,
-		// ev.DenebForkTransition, // TODO(12750): Enable this when gzond main branch's engine API support.
 		ev.APIMiddlewareVerifyIntegrity,
 		ev.APIGatewayV1Alpha1VerifyIntegrity,
 		ev.FinishedSyncing,

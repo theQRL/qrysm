@@ -32,9 +32,10 @@ go_test(
     srcs = ["generate_genesis_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//crypto/bls:go_default_library",
+        "//crypto/dilithium:go_default_library",
         "//runtime/interop:go_default_library",
         "//testing/assert:go_default_library",
         "//testing/require:go_default_library",
+        "@com_github_theqrl_go_qrllib//common:go_default_library",
     ],
 )

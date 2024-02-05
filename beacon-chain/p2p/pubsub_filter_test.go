@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/v4/network/forks"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 )
 
 func TestService_CanSubscribe(t *testing.T) {
@@ -90,7 +90,7 @@ func TestService_CanSubscribe(t *testing.T) {
 		formatting := []interface{}{digest}
 
 		// Special case for attestation subnets which have a second formatting placeholder.
-		if topic == AttestationSubnetTopicFormat || topic == SyncCommitteeSubnetTopicFormat || topic == BlobSubnetTopicFormat {
+		if topic == AttestationSubnetTopicFormat || topic == SyncCommitteeSubnetTopicFormat {
 			formatting = append(formatting, 0 /* some subnet ID */)
 		}
 
@@ -344,7 +344,7 @@ func TestService_MonitorsStateForkUpdates(t *testing.T) {
 	go s.awaitStateInitialized()
 
 	vr := bytesutil.ToBytes32(bytesutil.PadTo([]byte("genesis"), 32))
-	require.NoError(t, cs.SetClock(startup.NewClock(prysmTime.Now(), vr)))
+	require.NoError(t, cs.SetClock(startup.NewClock(qrysmTime.Now(), vr)))
 
 	time.Sleep(50 * time.Millisecond)
 

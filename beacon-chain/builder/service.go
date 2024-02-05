@@ -2,23 +2,20 @@ package builder
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/api/client/builder"
 	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
 	"github.com/theQRL/qrysm/v4/beacon-chain/db"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	v1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
@@ -28,8 +25,8 @@ var ErrNoBuilder = errors.New("builder endpoint not configured")
 
 // BlockBuilder defines the interface for interacting with the block builder
 type BlockBuilder interface {
-	SubmitBlindedBlock(ctx context.Context, block interfaces.ReadOnlySignedBeaconBlock, blobs []*zondpb.SignedBlindedBlobSidecar) (interfaces.ExecutionData, *v1.BlobsBundle, error)
-	GetHeader(ctx context.Context, slot primitives.Slot, parentHash [32]byte, pubKey [dilithium2.CryptoPublicKeyBytes]byte) (builder.SignedBid, error)
+	SubmitBlindedBlock(ctx context.Context, block interfaces.ReadOnlySignedBeaconBlock) (interfaces.ExecutionData, error)
+	GetHeader(ctx context.Context, slot primitives.Slot, parentHash [32]byte, pubKey [dilithium.CryptoPublicKeyBytes]byte) (builder.SignedBid, error)
 	RegisterValidator(ctx context.Context, reg []*zondpb.SignedValidatorRegistrationV1) error
 	RegistrationByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (*zondpb.ValidatorRegistrationV1, error)
 	Configured() bool
@@ -91,7 +88,7 @@ func (s *Service) Stop() error {
 }
 
 // SubmitBlindedBlock submits a blinded block to the builder relay network.
-func (s *Service) SubmitBlindedBlock(ctx context.Context, b interfaces.ReadOnlySignedBeaconBlock, blobs []*zondpb.SignedBlindedBlobSidecar) (interfaces.ExecutionData, *v1.BlobsBundle, error) {
+func (s *Service) SubmitBlindedBlock(ctx context.Context, b interfaces.ReadOnlySignedBeaconBlock) (interfaces.ExecutionData, error) {
 	ctx, span := trace.StartSpan(ctx, "builder.SubmitBlindedBlock")
 	defer span.End()
 	start := time.Now()
@@ -99,17 +96,14 @@ func (s *Service) SubmitBlindedBlock(ctx context.Context, b interfaces.ReadOnlyS
 		submitBlindedBlockLatency.Observe(float64(time.Since(start).Milliseconds()))
 	}()
 	if s.c == nil {
-		return nil, nil, ErrNoBuilder
-	}
-	if uint64(len(blobs)) > fieldparams.MaxBlobsPerBlock {
-		return nil, nil, fmt.Errorf("blob count %d beyond max limit of %d", len(blobs), fieldparams.MaxBlobsPerBlock)
+		return nil, ErrNoBuilder
 	}
 
-	return s.c.SubmitBlindedBlock(ctx, b, blobs)
+	return s.c.SubmitBlindedBlock(ctx, b)
 }
 
 // GetHeader retrieves the header for a given slot and parent hash from the builder relay network.
-func (s *Service) GetHeader(ctx context.Context, slot primitives.Slot, parentHash [32]byte, pubKey [dilithium2.CryptoPublicKeyBytes]byte) (builder.SignedBid, error) {
+func (s *Service) GetHeader(ctx context.Context, slot primitives.Slot, parentHash [32]byte, pubKey [dilithium.CryptoPublicKeyBytes]byte) (builder.SignedBid, error) {
 	ctx, span := trace.StartSpan(ctx, "builder.GetHeader")
 	defer span.End()
 	start := time.Now()

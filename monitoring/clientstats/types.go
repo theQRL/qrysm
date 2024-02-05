@@ -1,7 +1,7 @@
 package clientstats
 
 const (
-	ClientName            = "prysm"
+	ClientName            = "qrysm"
 	BeaconNodeProcessName = "beaconnode"
 	ValidatorProcessName  = "validator"
 	APIVersion            = 1

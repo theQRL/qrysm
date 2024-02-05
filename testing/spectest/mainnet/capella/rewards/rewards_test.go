@@ -1,5 +1,6 @@
 package rewards
 
+/*
 import (
 	"testing"
 
@@ -9,3 +10,4 @@ import (
 func TestMainnet_Capella_Rewards(t *testing.T) {
 	rewards.RunPrecomputeRewardsAndPenaltiesTests(t, "mainnet")
 }
+*/

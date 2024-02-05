@@ -92,21 +92,21 @@ var (
 	// HTTPModules define the set of enabled HTTP APIs.
 	HTTPModules = &cli.StringFlag{
 		Name:  "http-modules",
-		Usage: "Comma-separated list of API module names. Possible values: `" + PrysmAPIModule + `,` + EthAPIModule + "`.",
-		Value: PrysmAPIModule + `,` + EthAPIModule,
+		Usage: "Comma-separated list of API module names. Possible values: `" + QrysmAPIModule + `,` + ZondAPIModule + "`.",
+		Value: QrysmAPIModule + `,` + ZondAPIModule,
 	}
 	// DisableGRPCGateway for JSON-HTTP requests to the beacon node.
 	DisableGRPCGateway = &cli.BoolFlag{
 		Name:  "disable-grpc-gateway",
 		Usage: "Disable the gRPC gateway for JSON-HTTP requests",
 	}
-	// GRPCGatewayHost specifies a gRPC gateway host for Prysm.
+	// GRPCGatewayHost specifies a gRPC gateway host for Qrysm.
 	GRPCGatewayHost = &cli.StringFlag{
 		Name:  "grpc-gateway-host",
 		Usage: "The host on which the gateway server runs on",
 		Value: "127.0.0.1",
 	}
-	// GRPCGatewayPort specifies a gRPC gateway port for Prysm.
+	// GRPCGatewayPort specifies a gRPC gateway port for Qrysm.
 	GRPCGatewayPort = &cli.IntFlag{
 		Name:  "grpc-gateway-port",
 		Usage: "The port on which the gateway server runs on",
@@ -138,12 +138,6 @@ var (
 		Usage: "The percentage of freshly allocated data to live data on which the gc will be run again.",
 		Value: 100,
 	}
-	// SafeSlotsToImportOptimistically is deprecated. It should be removed in the next major release.
-	SafeSlotsToImportOptimistically = &cli.IntFlag{
-		Name:   "safe-slots-to-import-optimistically",
-		Usage:  "DEPRECATED. DO NOT USE",
-		Hidden: true,
-	}
 	// SlotsPerArchivedPoint specifies the number of slots between the archived points, to save beacon state in the cold
 	// section of beaconDB.
 	SlotsPerArchivedPoint = &cli.IntFlag{
@@ -161,18 +155,6 @@ var (
 	BlockBatchLimitBurstFactor = &cli.IntFlag{
 		Name:  "block-batch-limit-burst-factor",
 		Usage: "The factor by which block batch limit may increase on burst.",
-		Value: 2,
-	}
-	// BlobBatchLimit specifies the requested blob batch size.
-	BlobBatchLimit = &cli.IntFlag{
-		Name:  "blob-batch-limit",
-		Usage: "The amount of blobs the local peer is bounded to request and respond to in a batch.",
-		Value: 8,
-	}
-	// BlobBatchLimitBurstFactor specifies the factor by which blob batch size may increase.
-	BlobBatchLimitBurstFactor = &cli.IntFlag{
-		Name:  "blob-batch-limit-burst-factor",
-		Usage: "The factor by which blob batch limit may increase on burst.",
 		Value: 2,
 	}
 	// EnableDebugRPCEndpoints as /v1/beacon/state.
@@ -260,10 +242,5 @@ var (
 		Name:  "slasher-datadir",
 		Usage: "Directory for the slasher database",
 		Value: cmd.DefaultDataDir(),
-	}
-	BlobRetentionEpoch = &cli.Uint64Flag{
-		Name:  "extend-blob-retention-epoch",
-		Usage: "Extend blob retention epoch period to beyond default 4096 epochs (~18 days). The node will error at start if input value is less than 4096 epochs.",
-		Value: uint64(params.BeaconNetworkConfig().MinEpochsForBlobsSidecarsRequest),
 	}
 )

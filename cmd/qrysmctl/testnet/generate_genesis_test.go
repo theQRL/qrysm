@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/runtime/interop"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -13,7 +13,8 @@ import (
 
 func Test_genesisStateFromJSONValidators(t *testing.T) {
 	numKeys := 5
-	jsonData := createGenesisDepositData(t, numKeys)
+	jsonData, err := createGenesisDepositData(t, numKeys)
+	require.NoError(t, err)
 	jsonInput, err := json.Marshal(jsonData)
 	require.NoError(t, err)
 	_, dds, err := depositEntriesFromJSON(jsonInput)
@@ -23,11 +24,11 @@ func Test_genesisStateFromJSONValidators(t *testing.T) {
 	}
 }
 
-func createGenesisDepositData(t *testing.T, numKeys int) []*depositDataJSON {
-	pubKeys := make([]bls.PublicKey, numKeys)
-	privKeys := make([]bls.SecretKey, numKeys)
+func createGenesisDepositData(t *testing.T, numKeys int) ([]*depositDataJSON, error) {
+	pubKeys := make([]dilithium.PublicKey, numKeys)
+	privKeys := make([]dilithium.DilithiumKey, numKeys)
 	for i := 0; i < numKeys; i++ {
-		randKey, err := bls.RandKey()
+		randKey, err := dilithium.RandKey()
 		require.NoError(t, err)
 		privKeys[i] = randKey
 		pubKeys[i] = randKey.PublicKey()
@@ -46,5 +47,5 @@ func createGenesisDepositData(t *testing.T, numKeys int) []*depositDataJSON {
 			Signature:             fmt.Sprintf("%#x", dataList[i].Signature),
 		}
 	}
-	return jsonData
+	return jsonData, nil
 }

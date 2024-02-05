@@ -39,12 +39,6 @@ type BlockReceiver interface {
 	BlockBeingSynced([32]byte) bool
 }
 
-// BlobReceiver interface defines the methods of chain service for receiving new
-// blobs
-type BlobReceiver interface {
-	ReceiveBlob(context.Context, *zondpb.BlobSidecar) error
-}
-
 // SlashingReceiver interface defines the methods of chain service for receiving validated slashing over the wire.
 type SlashingReceiver interface {
 	ReceiveAttesterSlashing(ctx context.Context, slashings *zondpb.AttesterSlashing)
@@ -100,9 +94,7 @@ func (s *Service) ReceiveBlock(ctx context.Context, block interfaces.ReadOnlySig
 	if err := eg.Wait(); err != nil {
 		return err
 	}
-	if err := s.isDataAvailable(ctx, blockRoot, blockCopy); err != nil {
-		return errors.Wrap(err, "could not validate blob data availability")
-	}
+
 	// The rest of block processing takes a lock on forkchoice.
 	s.cfg.ForkChoiceStore.Lock()
 	defer s.cfg.ForkChoiceStore.Unlock()

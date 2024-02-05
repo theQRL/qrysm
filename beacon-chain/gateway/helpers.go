@@ -19,7 +19,7 @@ type MuxConfig struct {
 // DefaultConfig returns a fully configured MuxConfig with standard gateway behavior.
 func DefaultConfig(enableDebugRPCEndpoints bool, httpModules string) MuxConfig {
 	var v1AlphaPbHandler, ethPbHandler *gateway.PbMux
-	if flags.EnableHTTPPrysmAPI(httpModules) {
+	if flags.EnableHTTPQrysmAPI(httpModules) {
 		v1AlphaRegistrations := []gateway.PbHandlerRegistration{
 			zondpbalpha.RegisterNodeHandler,
 			zondpbalpha.RegisterBeaconChainHandler,
@@ -50,7 +50,7 @@ func DefaultConfig(enableDebugRPCEndpoints bool, httpModules string) MuxConfig {
 			Mux:           v1AlphaMux,
 		}
 	}
-	if flags.EnableHTTPEthAPI(httpModules) {
+	if flags.EnableHTTPZondAPI(httpModules) {
 		ethRegistrations := []gateway.PbHandlerRegistration{
 			zondpbservice.RegisterBeaconNodeHandler,
 			zondpbservice.RegisterBeaconChainHandler,

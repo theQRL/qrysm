@@ -26,11 +26,6 @@ func NewSignedBeaconBlockFromGeneric(gb *zond.GenericSignedBeaconBlock) (interfa
 		return blocks.NewSignedBeaconBlock(bb.Capella)
 	case *zond.GenericSignedBeaconBlock_BlindedCapella:
 		return blocks.NewSignedBeaconBlock(bb.BlindedCapella)
-	case *zond.GenericSignedBeaconBlock_Deneb:
-		return blocks.NewSignedBeaconBlock(bb.Deneb.Block)
-	case *zond.GenericSignedBeaconBlock_BlindedDeneb:
-		return blocks.NewSignedBeaconBlock(bb.BlindedDeneb.SignedBlindedBlock)
-	// Generic Signed Beacon Block Deneb can't be used here as it is not a block, but block content with blobs
 	default:
 		return nil, errors.Wrapf(blocks.ErrUnsupportedSignedBeaconBlock, "unable to create block from type %T", gb)
 	}

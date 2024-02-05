@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/common/hexutil"
-	base "github.com/theQRL/qrysm/v4/api/client"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
@@ -17,8 +16,6 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/ssz/detect"
 	"github.com/theQRL/qrysm/v4/io/file"
 	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/time/slots"
-	"golang.org/x/mod/semver"
 )
 
 var errCheckpointBlockMismatch = errors.New("mismatch between checkpoint sync state and block")
@@ -140,112 +137,21 @@ func (wsd *WeakSubjectivityData) CheckpointString() string {
 	return fmt.Sprintf("%#x:%d", wsd.BlockRoot, wsd.Epoch)
 }
 
-// ComputeWeakSubjectivityCheckpoint attempts to use the prysm weak_subjectivity api
+// ComputeWeakSubjectivityCheckpoint attempts to use the qrysm weak_subjectivity api
 // to obtain the current weak_subjectivity checkpoint.
-// For non-prysm nodes, the same computation will be performed with extra steps,
+// For non-qrysm nodes, the same computation will be performed with extra steps,
 // using the head state downloaded from the beacon node api.
 func ComputeWeakSubjectivityCheckpoint(ctx context.Context, client *Client) (*WeakSubjectivityData, error) {
 	ws, err := client.GetWeakSubjectivity(ctx)
 	if err != nil {
-		// a 404/405 is expected if querying an endpoint that doesn't support the weak subjectivity checkpoint api
-		if !errors.Is(err, base.ErrNotOK) {
-			return nil, errors.Wrap(err, "unexpected API response for prysm-only weak subjectivity checkpoint API")
-		}
-		// fall back to vanilla Beacon Node API method
-		return computeBackwardsCompatible(ctx, client)
+		return nil, errors.Wrap(err, "unexpected API response for qrysm-only weak subjectivity checkpoint API")
 	}
 	log.Printf("server weak subjectivity checkpoint response - epoch=%d, block_root=%#x, state_root=%#x", ws.Epoch, ws.BlockRoot, ws.StateRoot)
 	return ws, nil
 }
 
-const (
-	prysmMinimumVersion     = "v2.0.7"
-	prysmImplementationName = "Prysm"
-)
-
-// errUnsupportedPrysmCheckpointVersion indicates remote beacon node can't be used for checkpoint retrieval.
-var errUnsupportedPrysmCheckpointVersion = errors.New("node does not meet minimum version requirements for checkpoint retrieval")
-
-// for older endpoints or clients that do not support the weak_subjectivity api method
-// we gather the necessary data for a checkpoint sync by:
-// - inspecting the remote server's head state and computing the weak subjectivity epoch locally
-// - requesting the state at the first slot of the epoch
-// - using hash_tree_root(state.latest_block_header) to compute the block the state integrates
-// - requesting that block by its root
-func computeBackwardsCompatible(ctx context.Context, client *Client) (*WeakSubjectivityData, error) {
-	log.Print("falling back to generic checkpoint derivation, weak_subjectivity API not supported by server")
-	nv, err := client.GetNodeVersion(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to proceed with fallback method without confirming node version")
-	}
-	if nv.implementation == prysmImplementationName && semver.Compare(nv.semver, prysmMinimumVersion) < 0 {
-		return nil, errors.Wrapf(errUnsupportedPrysmCheckpointVersion, "%s < minimum (%s)", nv.semver, prysmMinimumVersion)
-	}
-	epoch, err := getWeakSubjectivityEpochFromHead(ctx, client)
-	if err != nil {
-		return nil, errors.Wrap(err, "error computing weak subjectivity epoch via head state inspection")
-	}
-
-	// use first slot of the epoch for the state slot
-	slot, err := slots.EpochStart(epoch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error computing first slot of epoch=%d", epoch)
-	}
-
-	log.Printf("requesting checkpoint state at slot %d", slot)
-	// get the state at the first slot of the epoch
-	sb, err := client.GetState(ctx, IdFromSlot(slot))
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to request state by slot from api, slot=%d", slot)
-	}
-
-	// ConfigFork is used to unmarshal the BeaconState so we can read the block root in latest_block_header
-	vu, err := detect.FromState(sb)
-	if err != nil {
-		return nil, errors.Wrap(err, "error detecting chain config for beacon state")
-	}
-	log.Printf("detected supported config in checkpoint state, name=%s, fork=%s", vu.Config.ConfigName, version.String(vu.Fork))
-
-	s, err := vu.UnmarshalBeaconState(sb)
-	if err != nil {
-		return nil, errors.Wrap(err, "error using detected config fork to unmarshal state bytes")
-	}
-
-	// compute state and block roots
-	sr, err := s.HashTreeRoot(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "error computing hash_tree_root of state")
-	}
-
-	h := s.LatestBlockHeader()
-	h.StateRoot = sr[:]
-	br, err := h.HashTreeRoot()
-	if err != nil {
-		return nil, errors.Wrap(err, "error while computing block root using state data")
-	}
-
-	bb, err := client.GetBlock(ctx, IdFromRoot(br))
-	if err != nil {
-		return nil, errors.Wrapf(err, "error requesting block by root = %d", br)
-	}
-	b, err := vu.UnmarshalBeaconBlock(bb)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to unmarshal block to a supported type using the detected fork schedule")
-	}
-	br, err = b.Block().HashTreeRoot()
-	if err != nil {
-		return nil, errors.Wrap(err, "error computing hash_tree_root for block obtained via root")
-	}
-
-	return &WeakSubjectivityData{
-		Epoch:     epoch,
-		BlockRoot: br,
-		StateRoot: sr,
-	}, nil
-}
-
 // this method downloads the head state, which can be used to find the correct chain config
-// and use prysm's helper methods to compute the latest weak subjectivity epoch.
+// and use qrysm's helper methods to compute the latest weak subjectivity epoch.
 func getWeakSubjectivityEpochFromHead(ctx context.Context, client *Client) (primitives.Epoch, error) {
 	headBytes, err := client.GetState(ctx, IdHead)
 	if err != nil {

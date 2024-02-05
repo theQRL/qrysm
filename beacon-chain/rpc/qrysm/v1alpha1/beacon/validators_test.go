@@ -37,7 +37,7 @@ import (
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -1553,7 +1553,7 @@ func TestServer_GetValidatorParticipation_CurrentAndPrevEpoch(t *testing.T) {
 		HeadFetcher: m,
 		StateGen:    stategen.New(beaconDB, doublylinkedtree.New()),
 		GenesisTimeFetcher: &mock.ChainService{
-			Genesis: prysmTime.Now().Add(time.Duration(-1*offset) * time.Second),
+			Genesis: qrysmTime.Now().Add(time.Duration(-1*offset) * time.Second),
 		},
 		CanonicalFetcher: &mock.ChainService{
 			CanonicalRoots: map[[32]byte]bool{
@@ -1632,7 +1632,7 @@ func TestServer_GetValidatorParticipation_OrphanedUntilGenesis(t *testing.T) {
 		HeadFetcher: m,
 		StateGen:    stategen.New(beaconDB, doublylinkedtree.New()),
 		GenesisTimeFetcher: &mock.ChainService{
-			Genesis: prysmTime.Now().Add(time.Duration(-1*offset) * time.Second),
+			Genesis: qrysmTime.Now().Add(time.Duration(-1*offset) * time.Second),
 		},
 		CanonicalFetcher: &mock.ChainService{
 			CanonicalRoots: map[[32]byte]bool{
@@ -1748,7 +1748,7 @@ func runGetValidatorParticipationCurrentAndPrevEpoch(t *testing.T, genState stat
 		HeadFetcher: m,
 		StateGen:    stategen.New(beaconDB, doublylinkedtree.New()),
 		GenesisTimeFetcher: &mock.ChainService{
-			Genesis: prysmTime.Now().Add(time.Duration(-1*offset) * time.Second),
+			Genesis: qrysmTime.Now().Add(time.Duration(-1*offset) * time.Second),
 		},
 		FinalizationFetcher: &mock.ChainService{FinalizedCheckPoint: &zondpb.Checkpoint{Epoch: 100}},
 	}

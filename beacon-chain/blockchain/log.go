@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -61,14 +61,7 @@ func logStateTransitionData(b interfaces.ReadOnlyBeaconBlock) error {
 			txsPerSlotCount.Set(float64(len(txs)))
 		}
 	}
-	if b.Version() >= version.Deneb {
-		kzgs, err := b.Body().BlobKzgCommitments()
-		if err != nil {
-			log.WithError(err).Error("Failed to get blob KZG commitments")
-		} else if len(kzgs) > 0 {
-			log = log.WithField("kzgCommitmentCount", len(kzgs))
-		}
-	}
+
 	log.Info("Finished applying state transition")
 	return nil
 }
@@ -92,8 +85,8 @@ func logBlockSyncStatus(block interfaces.ReadOnlyBeaconBlock, blockRoot [32]byte
 			"finalizedRoot":             fmt.Sprintf("0x%s...", hex.EncodeToString(finalized.Root)[:8]),
 			"parentRoot":                fmt.Sprintf("0x%s...", hex.EncodeToString(parentRoot[:])[:8]),
 			"version":                   version.String(block.Version()),
-			"sinceSlotStartTime":        prysmTime.Now().Sub(startTime),
-			"chainServiceProcessedTime": prysmTime.Now().Sub(receivedTime),
+			"sinceSlotStartTime":        qrysmTime.Now().Sub(startTime),
+			"chainServiceProcessedTime": qrysmTime.Now().Sub(receivedTime),
 			"deposits":                  len(block.Body().Deposits()),
 		}
 		log.WithFields(lf).Debug("Synced new block")
@@ -146,16 +139,4 @@ func logPayload(block interfaces.ReadOnlyBeaconBlock) error {
 	}
 	log.WithFields(fields).Debug("Synced new payload")
 	return nil
-}
-
-func logBlobSidecar(scs []*zondpb.BlobSidecar, startTime time.Time) {
-	if len(scs) == 0 {
-		return
-	}
-	log.WithFields(logrus.Fields{
-		"count":          len(scs),
-		"slot":           scs[0].Slot,
-		"block":          hex.EncodeToString(scs[0].BlockRoot),
-		"validationTime": time.Since(startTime),
-	}).Debug("Synced new blob sidecars")
 }

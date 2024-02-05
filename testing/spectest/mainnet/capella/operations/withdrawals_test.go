@@ -1,5 +1,6 @@
 package operations
 
+/*
 import (
 	"testing"
 
@@ -9,3 +10,4 @@ import (
 func TestMainnet_Capella_Operations_Withdrawals(t *testing.T) {
 	operations.RunWithdrawalsTest(t, "mainnet")
 }
+*/

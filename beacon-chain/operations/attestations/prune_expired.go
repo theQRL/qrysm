@@ -5,7 +5,7 @@ import (
 
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 )
 
 // pruneAttsPool prunes attestations pool on every slot interval.
@@ -69,6 +69,6 @@ func (s *Service) pruneExpiredAtts() {
 func (s *Service) expired(slot primitives.Slot) bool {
 	expirationSlot := slot + params.BeaconConfig().SlotsPerEpoch
 	expirationTime := s.genesisTime + uint64(expirationSlot.Mul(params.BeaconConfig().SecondsPerSlot))
-	currentTime := uint64(prysmTime.Now().Unix())
+	currentTime := uint64(qrysmTime.Now().Unix())
 	return currentTime >= expirationTime
 }

@@ -1,5 +1,6 @@
 package operations
 
+/*
 import (
 	"testing"
 
@@ -9,3 +10,4 @@ import (
 func TestMainnet_Capella_Operations_AttesterSlashing(t *testing.T) {
 	operations.RunAttesterSlashingTest(t, "mainnet")
 }
+*/

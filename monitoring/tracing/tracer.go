@@ -1,5 +1,5 @@
 // Package tracing sets up jaeger as an opentracing tool
-// for services in Prysm.
+// for services in Qrysm.
 package tracing
 
 import (

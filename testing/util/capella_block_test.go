@@ -11,9 +11,9 @@ import (
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
-func TestGenerateBLSToExecutionChange(t *testing.T) {
+func TestGenerateDilithiumToExecutionChange(t *testing.T) {
 	st, keys := DeterministicGenesisStateCapella(t, 64)
-	change, err := GenerateBLSToExecutionChange(st, keys[0], 0)
+	change, err := GenerateDilithiumToExecutionChange(st, keys[0], 0)
 	require.NoError(t, err)
 
 	message := change.Message
@@ -23,7 +23,7 @@ func TestGenerateBLSToExecutionChange(t *testing.T) {
 	cred := val.WithdrawalCredentials
 	require.DeepEqual(t, cred[0], params.BeaconConfig().BLSWithdrawalPrefixByte)
 
-	fromPubkey := message.FromBlsPubkey
+	fromPubkey := message.FromDilithiumPubkey
 	hashFn := ssz.NewHasherFunc(hash.CustomSHA256Hasher())
 	digest := hashFn.Hash(fromPubkey)
 	require.DeepEqual(t, digest[1:], digest[1:])

@@ -11,13 +11,13 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/keymanager"
 	"github.com/urfave/cli/v2"
-	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 )
 
 const password = "secretPassw0rd$1999"
@@ -60,7 +60,7 @@ func createRandomKeystore(t testing.TB, password string) (*keymanager.Keystore, 
 		Pubkey:  fmt.Sprintf("%x", pubKey),
 		ID:      id.String(),
 		Version: encryptor.Version(),
-		Name:    encryptor.Name(),
+		// Name:    encryptor.Name(),
 	}, validatingKey
 }
 

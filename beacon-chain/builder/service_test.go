@@ -34,7 +34,7 @@ func Test_RegisterValidator(t *testing.T) {
 	builder := buildertesting.NewClient()
 	s, err := NewService(ctx, WithDatabase(db), WithHeadFetcher(headFetcher), WithBuilderClient(&builder))
 	require.NoError(t, err)
-	pubkey := bytesutil.ToBytes48([]byte("pubkey"))
+	pubkey := bytesutil.ToBytes2592([]byte("pubkey"))
 	var feeRecipient [20]byte
 	require.NoError(t, s.RegisterValidator(ctx, []*zond.SignedValidatorRegistrationV1{{Message: &zond.ValidatorRegistrationV1{Pubkey: pubkey[:], FeeRecipient: feeRecipient[:]}}}))
 	assert.Equal(t, true, builder.RegisteredVals[pubkey])
@@ -63,7 +63,7 @@ func Test_BuilderMethodsWithouClient(t *testing.T) {
 	_, err = s.GetHeader(context.Background(), 0, [32]byte{}, [dilithium2.CryptoPublicKeyBytes]byte{})
 	assert.ErrorContains(t, ErrNoBuilder.Error(), err)
 
-	_, _, err = s.SubmitBlindedBlock(context.Background(), nil, nil)
+	_, err = s.SubmitBlindedBlock(context.Background(), nil)
 	assert.ErrorContains(t, ErrNoBuilder.Error(), err)
 
 	err = s.RegisterValidator(context.Background(), nil)

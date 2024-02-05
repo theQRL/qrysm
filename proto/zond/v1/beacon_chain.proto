@@ -16,13 +16,11 @@ syntax = "proto3";
 package theqrl.zond.v1;
 
 import "google/protobuf/descriptor.proto";
-import "google/protobuf/timestamp.proto";
 
 import "proto/zond/ext/options.proto";
 import "proto/zond/v1/attestation.proto";
 import "proto/zond/v1/beacon_block.proto";
 import "proto/zond/v1/beacon_state.proto";
-import "proto/zond/v1/validator.proto";
 
 option csharp_namespace = "TheQRL.Zond.V1";
 option go_package = "github.com/theQRL/qrysm/v4/proto/zond/v1";
@@ -130,24 +128,23 @@ message WeakSubjectivityData {
 }
 
 message ForkChoiceDump {
-    reserved 3;
     // Latest justified checkpoint in forkchoice store.
     Checkpoint justified_checkpoint = 1;
     // Latest finalized checkpoint in forkchoice store.
     Checkpoint finalized_checkpoint = 2;
     // Unrealized justified checkpoint in forkchoice store.
-    Checkpoint unrealized_justified_checkpoint = 4;
+    Checkpoint unrealized_justified_checkpoint = 3;
     // Unrealized finalized checkpoint in forkchoice store.
-    Checkpoint unrealized_finalized_checkpoint = 5;
+    Checkpoint unrealized_finalized_checkpoint = 4;
     // Proposer Boost Root in forkchoice store.
-    bytes proposer_boost_root = 6 [(theqrl.zond.ext.ssz_size) = "32"];
+    bytes proposer_boost_root = 5 [(theqrl.zond.ext.ssz_size) = "32"];
     // Previous proposer Boost Root in forkchoice store.
-    bytes previous_proposer_boost_root = 7 [(theqrl.zond.ext.ssz_size) = "32"];
+    bytes previous_proposer_boost_root = 6 [(theqrl.zond.ext.ssz_size) = "32"];
     // Head root in forkchoice store.
-    bytes head_root = 8 [(theqrl.zond.ext.ssz_size) = "32"];
+    bytes head_root = 7 [(theqrl.zond.ext.ssz_size) = "32"];
 
     // The list of the forkchoice nodes in store.
-    repeated ForkChoiceNode fork_choice_nodes = 9;
+    repeated ForkChoiceNode fork_choice_nodes = 8;
 }
 
 message ForkChoiceNode {

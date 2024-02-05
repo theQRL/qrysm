@@ -6,24 +6,24 @@ import (
 	"github.com/theQRL/qrysm/v4/testing/assert"
 )
 
-func TestEnableHTTPPrysmAPI(t *testing.T) {
-	assert.Equal(t, true, EnableHTTPPrysmAPI("prysm"))
-	assert.Equal(t, true, EnableHTTPPrysmAPI("prysm,foo"))
-	assert.Equal(t, true, EnableHTTPPrysmAPI("foo,prysm"))
-	assert.Equal(t, true, EnableHTTPPrysmAPI("prysm,prysm"))
-	assert.Equal(t, true, EnableHTTPPrysmAPI("PrYsM"))
-	assert.Equal(t, false, EnableHTTPPrysmAPI("foo"))
-	assert.Equal(t, false, EnableHTTPPrysmAPI(""))
+func TestEnableHTTPQrysmAPI(t *testing.T) {
+	assert.Equal(t, true, EnableHTTPQrysmAPI("qrysm"))
+	assert.Equal(t, true, EnableHTTPQrysmAPI("Qrysm,foo"))
+	assert.Equal(t, true, EnableHTTPQrysmAPI("foo,qrysm"))
+	assert.Equal(t, true, EnableHTTPQrysmAPI("qrysm,qrysm"))
+	assert.Equal(t, true, EnableHTTPQrysmAPI("QrYsM"))
+	assert.Equal(t, false, EnableHTTPQrysmAPI("foo"))
+	assert.Equal(t, false, EnableHTTPQrysmAPI(""))
 }
 
-func TestEnableHTTPEthAPI(t *testing.T) {
-	assert.Equal(t, true, EnableHTTPEthAPI("eth"))
-	assert.Equal(t, true, EnableHTTPEthAPI("eth,foo"))
-	assert.Equal(t, true, EnableHTTPEthAPI("foo,eth"))
-	assert.Equal(t, true, EnableHTTPEthAPI("eth,eth"))
-	assert.Equal(t, true, EnableHTTPEthAPI("EtH"))
-	assert.Equal(t, false, EnableHTTPEthAPI("foo"))
-	assert.Equal(t, false, EnableHTTPEthAPI(""))
+func TestEnableHTTPZondAPI(t *testing.T) {
+	assert.Equal(t, true, EnableHTTPZondAPI("zond"))
+	assert.Equal(t, true, EnableHTTPZondAPI("zond,foo"))
+	assert.Equal(t, true, EnableHTTPZondAPI("foo,zond"))
+	assert.Equal(t, true, EnableHTTPZondAPI("zond,zond"))
+	assert.Equal(t, true, EnableHTTPZondAPI("ZonD"))
+	assert.Equal(t, false, EnableHTTPZondAPI("foo"))
+	assert.Equal(t, false, EnableHTTPZondAPI(""))
 }
 
 func TestEnableApi(t *testing.T) {

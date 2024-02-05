@@ -20,7 +20,7 @@ import (
 	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/runtime"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -95,7 +95,7 @@ func (s *Service) Start() {
 		log.WithField("genesisTime", gt).Info("Due to number of peers required for sync being set at 0, entering regular sync immediately.")
 		return
 	}
-	if gt.After(prysmTime.Now()) {
+	if gt.After(qrysmTime.Now()) {
 		s.markSynced()
 		log.WithField("genesisTime", gt).Info("Genesis time has not arrived - not syncing")
 		return

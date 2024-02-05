@@ -9,7 +9,6 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	zondtypes "github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain/kzg"
 	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache/depositcache"
@@ -72,8 +71,6 @@ func startChainService(t testing.TB,
 	)
 	service, err := blockchain.NewService(context.Background(), opts...)
 	require.NoError(t, err)
-	// force start kzg context here until Deneb fork epoch is decided
-	require.NoError(t, kzg.Start())
 	require.NoError(t, service.StartFromSavedState(st))
 	return service
 }
@@ -84,8 +81,8 @@ type engineMock struct {
 	payloadStatus   error
 }
 
-func (m *engineMock) GetPayload(context.Context, [8]byte, primitives.Slot) (interfaces.ExecutionData, *pb.BlobsBundle, bool, error) {
-	return nil, nil, false, nil
+func (m *engineMock) GetPayload(context.Context, [8]byte, primitives.Slot) (interfaces.ExecutionData, bool, error) {
+	return nil, false, nil
 }
 func (m *engineMock) GetPayloadV2(context.Context, [8]byte) (*pb.ExecutionPayloadCapella, error) {
 	return nil, nil

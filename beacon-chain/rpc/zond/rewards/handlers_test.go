@@ -139,7 +139,7 @@ func TestBlockRewards(t *testing.T) {
 			},
 		},
 	}
-	scBits := bitfield.NewBitvector512()
+	scBits := bitfield.NewBitvector16()
 	scBits.SetBitAt(10, true)
 	scBits.SetBitAt(100, true)
 	domain, err = signing.Domain(st.Fork(), 0, params.BeaconConfig().DomainSyncCommittee, st.GenesisValidatorsRoot())
@@ -526,7 +526,7 @@ func TestSyncCommiteeRewards(t *testing.T) {
 	b := util.HydrateSignedBeaconBlockCapella(util.NewBeaconBlockCapella())
 	b.Block.Slot = 32
 	b.Block.ProposerIndex = proposerIndex
-	scBits := bitfield.NewBitvector512()
+	scBits := bitfield.NewBitvector16()
 	// last 10 sync committee members didn't perform their duty
 	for i := uint64(0); i < fieldparams.SyncCommitteeLength-10; i++ {
 		scBits.SetBitAt(i, true)

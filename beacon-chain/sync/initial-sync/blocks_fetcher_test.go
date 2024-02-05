@@ -3,7 +3,6 @@ package initialsync
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"sort"
 	"sync"
 	"testing"
@@ -26,7 +25,6 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
 	"github.com/theQRL/qrysm/v4/container/slice"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -957,172 +955,4 @@ func TestTimeToWait(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestSortBlobs(t *testing.T) {
-	_, blobs := util.ExtendBlocksPlusBlobs(t, []blocks.ROBlock{}, 10)
-	shuffled := make([]*zondpb.BlobSidecar, len(blobs))
-	for i := range blobs {
-		shuffled[i] = blobs[i]
-	}
-	rand.Shuffle(len(shuffled), func(i, j int) {
-		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
-	})
-	sorted := sortBlobs(shuffled)
-	require.Equal(t, len(sorted), len(shuffled))
-	for i := range blobs {
-		expect := blobs[i]
-		actual := sorted[i]
-		require.Equal(t, expect.Slot, actual.Slot)
-		require.Equal(t, expect.Index, actual.Index)
-		require.Equal(t, bytesutil.ToBytes48(expect.KzgCommitment), bytesutil.ToBytes48(actual.KzgCommitment))
-		require.Equal(t, bytesutil.ToBytes32(expect.BlockRoot), bytesutil.ToBytes32(actual.BlockRoot))
-	}
-}
-
-func TestLowestSlotNeedsBlob(t *testing.T) {
-	blks, _ := util.ExtendBlocksPlusBlobs(t, []blocks.ROBlock{}, 10)
-	sbbs := make([]interfaces.ReadOnlySignedBeaconBlock, len(blks))
-	for i := range blks {
-		sbbs[i] = blks[i]
-	}
-	retentionStart := primitives.Slot(5)
-	bwb, err := sortedBlockWithVerifiedBlobSlice(sbbs)
-	require.NoError(t, err)
-	lowest := lowestSlotNeedsBlob(retentionStart, bwb)
-	require.Equal(t, retentionStart, *lowest)
-	higher := primitives.Slot(len(blks) + 1)
-	lowest = lowestSlotNeedsBlob(higher, bwb)
-	var nilSlot *primitives.Slot
-	require.Equal(t, nilSlot, lowest)
-
-	blks, _ = util.ExtendBlocksPlusBlobs(t, []blocks.ROBlock{}, 10)
-	sbbs = make([]interfaces.ReadOnlySignedBeaconBlock, len(blks))
-	for i := range blks {
-		sbbs[i] = blks[i]
-	}
-	bwb, err = sortedBlockWithVerifiedBlobSlice(sbbs)
-	require.NoError(t, err)
-	retentionStart = bwb[5].Block.Block().Slot()
-	next := bwb[6].Block.Block().Slot()
-	skip := bwb[5].Block.Block()
-	bwb[5].Block, _ = util.GenerateTestDenebBlockWithSidecar(t, skip.ParentRoot(), skip.Slot(), 0)
-	lowest = lowestSlotNeedsBlob(retentionStart, bwb)
-	require.Equal(t, next, *lowest)
-}
-
-func TestBlobRequest(t *testing.T) {
-	var nilReq *zondpb.BlobSidecarsByRangeRequest
-	// no blocks
-	req := blobRequest([]blocks.BlockWithVerifiedBlobs{}, 0)
-	require.Equal(t, nilReq, req)
-	blks, _ := util.ExtendBlocksPlusBlobs(t, []blocks.ROBlock{}, 10)
-	sbbs := make([]interfaces.ReadOnlySignedBeaconBlock, len(blks))
-	for i := range blks {
-		sbbs[i] = blks[i]
-	}
-	bwb, err := sortedBlockWithVerifiedBlobSlice(sbbs)
-	require.NoError(t, err)
-	maxBlkSlot := primitives.Slot(len(blks) - 1)
-
-	tooHigh := primitives.Slot(len(blks) + 1)
-	req = blobRequest(bwb, tooHigh)
-	require.Equal(t, nilReq, req)
-
-	req = blobRequest(bwb, maxBlkSlot)
-	require.Equal(t, uint64(1), req.Count)
-	require.Equal(t, maxBlkSlot, req.StartSlot)
-
-	halfway := primitives.Slot(5)
-	req = blobRequest(bwb, halfway)
-	require.Equal(t, halfway, req.StartSlot)
-	// adding 1 to include the halfway slot itself
-	require.Equal(t, uint64(1+maxBlkSlot-halfway), req.Count)
-
-	before := bwb[0].Block.Block().Slot()
-	allAfter := bwb[1:]
-	req = blobRequest(allAfter, before)
-	require.Equal(t, allAfter[0].Block.Block().Slot(), req.StartSlot)
-	require.Equal(t, len(allAfter), int(req.Count))
-}
-
-func testSequenceBlockWithBlob(t *testing.T, nblocks int) ([]blocks.BlockWithVerifiedBlobs, []*zondpb.BlobSidecar) {
-	blks, blobs := util.ExtendBlocksPlusBlobs(t, []blocks.ROBlock{}, nblocks)
-	sbbs := make([]interfaces.ReadOnlySignedBeaconBlock, len(blks))
-	for i := range blks {
-		sbbs[i] = blks[i]
-	}
-	bwb, err := sortedBlockWithVerifiedBlobSlice(sbbs)
-	require.NoError(t, err)
-	return bwb, blobs
-}
-
-func TestVerifyAndPopulateBlobs(t *testing.T) {
-	bwb, blobs := testSequenceBlockWithBlob(t, 10)
-	lastBlobIdx := len(blobs) - 1
-	// Blocks are all before the retention window, blobs argument is ignored.
-	windowAfter := bwb[len(bwb)-1].Block.Block().Slot() + 1
-	_, err := verifyAndPopulateBlobs(bwb, nil, windowAfter)
-	require.NoError(t, err)
-
-	firstBlockSlot := bwb[0].Block.Block().Slot()
-	// slice off blobs for the last block so we hit the out of bounds / blob exhaustion check.
-	_, err = verifyAndPopulateBlobs(bwb, blobs[0:len(blobs)-6], firstBlockSlot)
-	require.ErrorIs(t, err, errMissingBlobsForBlockCommitments)
-
-	bwb, blobs = testSequenceBlockWithBlob(t, 10)
-	// Misalign the slots of the blobs for the first block to simulate them being missing from the response.
-	offByOne := blobs[0].Slot
-	for i := range blobs {
-		if blobs[i].Slot == offByOne {
-			blobs[i].Slot = offByOne + 1
-		}
-	}
-	_, err = verifyAndPopulateBlobs(bwb, blobs, firstBlockSlot)
-	require.ErrorIs(t, err, errMissingBlobsForBlockCommitments)
-
-	bwb, blobs = testSequenceBlockWithBlob(t, 10)
-	blobs[lastBlobIdx].BlockRoot = blobs[0].BlockRoot
-	_, err = verifyAndPopulateBlobs(bwb, blobs, firstBlockSlot)
-	require.ErrorIs(t, err, errMismatchedBlobBlockRoot)
-
-	bwb, blobs = testSequenceBlockWithBlob(t, 10)
-	blobs[lastBlobIdx].Index = 100
-	_, err = verifyAndPopulateBlobs(bwb, blobs, firstBlockSlot)
-	require.ErrorIs(t, err, errMissingBlobIndex)
-
-	var emptyKzg [48]byte
-	bwb, blobs = testSequenceBlockWithBlob(t, 10)
-	blobs[lastBlobIdx].KzgCommitment = emptyKzg[:]
-	_, err = verifyAndPopulateBlobs(bwb, blobs, firstBlockSlot)
-	require.ErrorIs(t, err, errMismatchedBlobCommitments)
-
-	// happy path
-	bwb, blobs = testSequenceBlockWithBlob(t, 10)
-
-	expectedCommits := make(map[[48]byte]bool)
-	for _, bl := range blobs {
-		expectedCommits[bytesutil.ToBytes48(bl.KzgCommitment)] = true
-	}
-	// The assertions using this map expect all commitments to be unique, so make sure that stays true.
-	require.Equal(t, len(blobs), len(expectedCommits))
-
-	bwb, err = verifyAndPopulateBlobs(bwb, blobs, firstBlockSlot)
-	require.NoError(t, err)
-	for _, bw := range bwb {
-		commits, err := bw.Block.Block().Body().BlobKzgCommitments()
-		require.NoError(t, err)
-		require.Equal(t, len(commits), len(bw.Blobs))
-		for i := range commits {
-			bc := bytesutil.ToBytes48(commits[i])
-			require.Equal(t, bc, bytesutil.ToBytes48(bw.Blobs[i].KzgCommitment))
-			// Since we delete entries we've seen, duplicates will cause an error here.
-			_, ok := expectedCommits[bc]
-			// Make sure this was an expected delete, then delete it from the map so we can make sure we saw all of them.
-			require.Equal(t, true, ok)
-			delete(expectedCommits, bc)
-		}
-	}
-	// We delete each entry we've seen, so if we see all expected commits, the map should be empty at the end.
-	require.Equal(t, 0, len(expectedCommits))
 }

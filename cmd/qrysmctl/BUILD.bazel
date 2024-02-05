@@ -14,7 +14,6 @@ go_library(
     deps = [
         "//cmd/qrysmctl/checkpointsync:go_default_library",
         "//cmd/qrysmctl/db:go_default_library",
-        "//cmd/qrysmctl/deprecated:go_default_library",
         "//cmd/qrysmctl/p2p:go_default_library",
         "//cmd/qrysmctl/testnet:go_default_library",
         "//cmd/qrysmctl/validator:go_default_library",

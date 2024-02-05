@@ -58,6 +58,7 @@ func TestFork(t *testing.T) {
 				params.OverrideBeaconConfig(cfg)
 			},
 		},
+
 		{
 			name:        "altair pre-fork",
 			targetEpoch: 0,

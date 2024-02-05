@@ -28,7 +28,6 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -424,9 +423,6 @@ func (is *infostream) calculateActivationTimeForPendingValidators(res []*zondpb.
 	// Loop over epochs, roughly simulating progression.
 	for curEpoch := epoch + 1; len(sortedIndices) > 0 && len(pendingValidators) > 0; curEpoch++ {
 		toProcess := helpers.ValidatorActivationChurnLimit(numAttestingValidators)
-		if headState.Version() >= version.Deneb {
-			toProcess = helpers.ValidatorActivationChurnLimitDeneb(numAttestingValidators)
-		}
 
 		if toProcess > uint64(len(sortedIndices)) {
 			toProcess = uint64(len(sortedIndices))

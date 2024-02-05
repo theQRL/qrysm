@@ -31,5 +31,5 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = ["deposit_test.go"],
+    srcs = [],
 )

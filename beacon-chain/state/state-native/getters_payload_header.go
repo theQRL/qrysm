@@ -21,11 +21,7 @@ func (b *BeaconState) LatestExecutionPayloadHeader() (interfaces.ExecutionData, 
 		return blocks.WrappedExecutionPayloadHeader(b.latestExecutionPayloadHeaderVal())
 	}
 
-	if b.version == version.Capella {
-		return blocks.WrappedExecutionPayloadHeaderCapella(b.latestExecutionPayloadHeaderCapellaVal(), 0)
-	}
-
-	return blocks.WrappedExecutionPayloadHeaderDeneb(b.latestExecutionPayloadHeaderDenebVal(), 0)
+	return blocks.WrappedExecutionPayloadHeaderCapella(b.latestExecutionPayloadHeaderCapellaVal(), 0)
 }
 
 // latestExecutionPayloadHeaderVal of the beacon state.
@@ -38,8 +34,4 @@ func (b *BeaconState) latestExecutionPayloadHeaderVal() *enginev1.ExecutionPaylo
 // This assumes that a lock is already held on BeaconState.
 func (b *BeaconState) latestExecutionPayloadHeaderCapellaVal() *enginev1.ExecutionPayloadHeaderCapella {
 	return zondpb.CopyExecutionPayloadHeaderCapella(b.latestExecutionPayloadHeaderCapella)
-}
-
-func (b *BeaconState) latestExecutionPayloadHeaderDenebVal() *enginev1.ExecutionPayloadHeaderDeneb {
-	return zondpb.CopyExecutionPayloadHeaderDeneb(b.latestExecutionPayloadHeaderDeneb)
 }

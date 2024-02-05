@@ -1,4 +1,4 @@
-// This code was adapted from https://github.com/theQRL/go-zond/blob/master/cmd/geth/usage.go
+// This code was adapted from https://github.com/theQRL/go-zond/blob/master/cmd/gzond/usage.go
 package main
 
 import (
@@ -112,8 +112,6 @@ var appHelpFlagGroups = []flagGroup{
 			flags.SlotsPerArchivedPoint,
 			flags.BlockBatchLimit,
 			flags.BlockBatchLimitBurstFactor,
-			flags.BlobBatchLimit,
-			flags.BlobBatchLimitBurstFactor,
 			flags.EnableDebugRPCEndpoints,
 			flags.SubscribeToAllSubnets,
 			flags.HistoricalSlasherNode,
@@ -128,7 +126,6 @@ var appHelpFlagGroups = []flagGroup{
 			flags.EngineEndpointTimeoutSeconds,
 			flags.SlasherDirFlag,
 			flags.LocalBlockValueBoost,
-			flags.BlobRetentionEpoch,
 			checkpoint.BlockPath,
 			checkpoint.StatePath,
 			checkpoint.RemoteURL,

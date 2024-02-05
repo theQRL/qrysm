@@ -643,9 +643,7 @@ func (bs *Server) GetValidatorQueue(
 	}
 
 	churnLimit := helpers.ValidatorActivationChurnLimit(activeValidatorCount)
-	if headState.Version() >= version.Deneb {
-		churnLimit = helpers.ValidatorActivationChurnLimitDeneb(activeValidatorCount)
-	}
+
 	return &zondpb.ValidatorQueue{
 		ChurnLimit:                 churnLimit,
 		ActivationPublicKeys:       activationQueueKeys,

@@ -1,7 +1,6 @@
 package params_test
 
 import (
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -12,12 +11,15 @@ import (
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
+// TODO(rgeraldes24): re-enable once we add the required repos
+/*
 func testnetConfigFilePath(t *testing.T, network string) string {
-	fPath, err := bazel.Runfile("external/eth2_networks")
+	fPath, err := bazel.Runfile("external/zond_networks")
 	require.NoError(t, err)
 	configFilePath := path.Join(fPath, "shared", network, "config.yaml")
 	return configFilePath
 }
+*/
 
 func TestE2EConfigParity(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
@@ -127,7 +129,6 @@ func compareConfigs(t *testing.T, expected, actual *params.BeaconChainConfig) {
 	require.DeepEqual(t, expected.BeaconStateAltairFieldCount, actual.BeaconStateAltairFieldCount)
 	require.DeepEqual(t, expected.BeaconStateBellatrixFieldCount, actual.BeaconStateBellatrixFieldCount)
 	require.DeepEqual(t, expected.BeaconStateCapellaFieldCount, actual.BeaconStateCapellaFieldCount)
-	require.DeepEqual(t, expected.BeaconStateDenebFieldCount, actual.BeaconStateDenebFieldCount)
 	require.DeepEqual(t, expected.WeakSubjectivityPeriod, actual.WeakSubjectivityPeriod)
 	require.DeepEqual(t, expected.PruneSlasherStoragePeriod, actual.PruneSlasherStoragePeriod)
 	require.DeepEqual(t, expected.SlashingProtectionPruningEpochs, actual.SlashingProtectionPruningEpochs)

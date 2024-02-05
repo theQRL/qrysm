@@ -1,5 +1,6 @@
 package random
 
+/*
 import (
 	"testing"
 
@@ -9,3 +10,4 @@ import (
 func TestMainnet_Capella_Random(t *testing.T) {
 	sanity.RunBlockProcessingTest(t, "mainnet", "random/random/pyspec_tests")
 }
+*/

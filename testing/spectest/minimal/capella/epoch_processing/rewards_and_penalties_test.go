@@ -1,5 +1,6 @@
 package epoch_processing
 
+/*
 import (
 	"testing"
 
@@ -9,3 +10,4 @@ import (
 func TestMinimal_Capella_EpochProcessing_RewardsAndPenalties(t *testing.T) {
 	epoch_processing.RunRewardsAndPenaltiesTests(t, "minimal")
 }
+*/

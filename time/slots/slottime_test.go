@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 )
 
 func TestSlotsSinceGenesis(t *testing.T) {
@@ -24,14 +24,14 @@ func TestSlotsSinceGenesis(t *testing.T) {
 		{
 			name: "pre-genesis",
 			args: args{
-				genesis: prysmTime.Now().Add(1 * time.Hour), // 1 hour in the future
+				genesis: qrysmTime.Now().Add(1 * time.Hour), // 1 hour in the future
 			},
 			want: 0,
 		},
 		{
 			name: "post-genesis",
 			args: args{
-				genesis: prysmTime.Now().Add(-5 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second),
+				genesis: qrysmTime.Now().Add(-5 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second),
 			},
 			want: 5,
 		},
@@ -103,21 +103,21 @@ func TestMultiplySlotBy(t *testing.T) {
 			args: args{
 				times: 1,
 			},
-			want: time.Duration(12) * time.Second,
+			want: time.Duration(60) * time.Second,
 		},
 		{
 			name: "multiply by 2",
 			args: args{
 				times: 2,
 			},
-			want: time.Duration(24) * time.Second,
+			want: time.Duration(120) * time.Second,
 		},
 		{
 			name: "multiply by 10",
 			args: args{
 				times: 10,
 			},
-			want: time.Duration(120) * time.Second,
+			want: time.Duration(600) * time.Second,
 		},
 	}
 	for _, tt := range tests {
@@ -138,7 +138,9 @@ func TestEpochStartSlot_OK(t *testing.T) {
 		{epoch: 0, startSlot: 0 * params.BeaconConfig().SlotsPerEpoch, error: false},
 		{epoch: 1, startSlot: 1 * params.BeaconConfig().SlotsPerEpoch, error: false},
 		{epoch: 10, startSlot: 10 * params.BeaconConfig().SlotsPerEpoch, error: false},
-		{epoch: 1 << 58, startSlot: 1 << 63, error: false},
+		// NOTE(rgeraldes24): returns an error now because of the new params.BeaconConfig().SlotsPerEpoch value
+		// {epoch: 1 << 58, startSlot: 1 << 63, error: false},
+		{epoch: 1 << 58, startSlot: 1 << 63, error: true},
 		{epoch: 1 << 59, startSlot: 1 << 63, error: true},
 		{epoch: 1 << 60, startSlot: 1 << 63, error: true},
 	}
@@ -334,21 +336,21 @@ func TestVerifySlotTime(t *testing.T) {
 		{
 			name: "Past slot",
 			args: args{
-				genesisTime: prysmTime.Now().Add(-1 * 5 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second).Unix(),
+				genesisTime: qrysmTime.Now().Add(-1 * 5 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second).Unix(),
 				slot:        3,
 			},
 		},
 		{
 			name: "within tolerance",
 			args: args{
-				genesisTime: prysmTime.Now().Add(-1 * 5 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second).Add(20 * time.Millisecond).Unix(),
+				genesisTime: qrysmTime.Now().Add(-1 * 5 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second).Add(20 * time.Millisecond).Unix(),
 				slot:        5,
 			},
 		},
 		{
 			name: "future slot",
 			args: args{
-				genesisTime: prysmTime.Now().Add(-1 * 5 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second).Unix(),
+				genesisTime: qrysmTime.Now().Add(-1 * 5 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second).Unix(),
 				slot:        6,
 			},
 			wantedErr: "could not process slot from the future",
@@ -356,7 +358,7 @@ func TestVerifySlotTime(t *testing.T) {
 		{
 			name: "future slot but ok given 2s tolerance",
 			args: args{
-				genesisTime:   prysmTime.Now().Add(-1*time.Duration(params.BeaconConfig().SecondsPerSlot) - 10*time.Second).Unix(),
+				genesisTime:   qrysmTime.Now().Add(-1*time.Duration(params.BeaconConfig().SecondsPerSlot) - 58*time.Second).Unix(),
 				slot:          1,
 				timeTolerance: 2 * time.Second,
 			},
@@ -364,7 +366,7 @@ func TestVerifySlotTime(t *testing.T) {
 		{
 			name: "max future slot",
 			args: args{
-				genesisTime: prysmTime.Now().Add(-1 * 5 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second).Unix(),
+				genesisTime: qrysmTime.Now().Add(-1 * 5 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second).Unix(),
 				slot:        primitives.Slot(MaxSlotBuffer + 6),
 			},
 			wantedErr: "exceeds max allowed value relative to the local clock",
@@ -372,7 +374,7 @@ func TestVerifySlotTime(t *testing.T) {
 		{
 			name: "evil future slot",
 			args: args{
-				genesisTime: prysmTime.Now().Add(-1 * 24 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second).Unix(), // 24 slots in the past
+				genesisTime: qrysmTime.Now().Add(-1 * 24 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second).Unix(), // 24 slots in the past
 				// Gets multiplied with slot duration, and results in an overflow. Wraps around to a valid time.
 				// Lower than max signed int. And chosen specifically to wrap to a valid slot 24
 				slot: primitives.Slot((^uint64(0))/params.BeaconConfig().SecondsPerSlot) + 24,
@@ -393,7 +395,7 @@ func TestVerifySlotTime(t *testing.T) {
 }
 
 func TestValidateSlotClock_HandlesBadSlot(t *testing.T) {
-	genTime := prysmTime.Now().Add(-1 * time.Duration(MaxSlotBuffer) * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second).Unix()
+	genTime := qrysmTime.Now().Add(-1 * time.Duration(MaxSlotBuffer) * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second).Unix()
 
 	assert.NoError(t, ValidateClock(primitives.Slot(MaxSlotBuffer), uint64(genTime)), "unexpected error validating slot")
 	assert.NoError(t, ValidateClock(primitives.Slot(2*MaxSlotBuffer), uint64(genTime)), "unexpected error validating slot")
@@ -459,7 +461,9 @@ func TestSyncCommitteePeriodStartEpoch(t *testing.T) {
 	}{
 		{epoch: 0, wanted: 0},
 		{epoch: params.BeaconConfig().EpochsPerSyncCommitteePeriod + 1, wanted: params.BeaconConfig().EpochsPerSyncCommitteePeriod},
-		{epoch: params.BeaconConfig().EpochsPerSyncCommitteePeriod*2 + 100, wanted: params.BeaconConfig().EpochsPerSyncCommitteePeriod * 2},
+		// NOTE(rgeraldes24): EpochsPerSyncCommitteePeriod is now 8 instead of 512 hence the wanted value
+		// {epoch: params.BeaconConfig().EpochsPerSyncCommitteePeriod*2 + 100, wanted: params.BeaconConfig().EpochsPerSyncCommitteePeriod * 2},
+		{epoch: params.BeaconConfig().EpochsPerSyncCommitteePeriod*2 + 100, wanted: 112},
 		{epoch: params.BeaconConfig().EpochsPerSyncCommitteePeriod*params.BeaconConfig().EpochsPerSyncCommitteePeriod + 1, wanted: params.BeaconConfig().EpochsPerSyncCommitteePeriod * params.BeaconConfig().EpochsPerSyncCommitteePeriod},
 	}
 	for _, test := range tests {
@@ -565,7 +569,7 @@ func TestDuration(t *testing.T) {
 }
 
 func TestTimeIntoSlot(t *testing.T) {
-	genesisTime := uint64(time.Now().Add(-37 * time.Second).Unix())
+	genesisTime := uint64(time.Now().Add(-182 * time.Second).Unix())
 	require.Equal(t, true, TimeIntoSlot(genesisTime) > 900*time.Millisecond)
 	require.Equal(t, true, TimeIntoSlot(genesisTime) < 3000*time.Millisecond)
 }

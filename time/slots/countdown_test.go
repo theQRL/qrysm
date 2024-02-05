@@ -9,7 +9,7 @@ import (
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/testing/require"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 )
 
 func TestCountdownToGenesis(t *testing.T) {
@@ -28,7 +28,7 @@ func TestCountdownToGenesis(t *testing.T) {
 		genesisReached := "Chain genesis time reached"
 		CountdownToGenesis(
 			context.Background(),
-			prysmTime.Now().Add(2*time.Second),
+			qrysmTime.Now().Add(2*time.Second),
 			params.BeaconConfig().MinGenesisActiveValidatorCount,
 			[32]byte{},
 		)
@@ -46,7 +46,7 @@ func TestCountdownToGenesis(t *testing.T) {
 		}()
 		CountdownToGenesis(
 			ctx,
-			prysmTime.Now().Add(5*time.Second),
+			qrysmTime.Now().Add(5*time.Second),
 			params.BeaconConfig().MinGenesisActiveValidatorCount,
 			[32]byte{},
 		)

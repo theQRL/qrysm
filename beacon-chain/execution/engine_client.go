@@ -105,7 +105,7 @@ type EngineCaller interface {
 	ForkchoiceUpdated(
 		ctx context.Context, state *pb.ForkchoiceState, attrs payloadattribute.Attributer,
 	) (*pb.PayloadIDBytes, []byte, error)
-	GetPayload(ctx context.Context, payloadId [8]byte, slot primitives.Slot) (interfaces.ExecutionData, *pb.BlobsBundle, bool, error)
+	GetPayload(ctx context.Context, payloadId [8]byte, slot primitives.Slot) (interfaces.ExecutionData, bool, error)
 	ExchangeTransitionConfiguration(
 		ctx context.Context, cfg *pb.TransitionConfiguration,
 	) error
@@ -145,15 +145,6 @@ func (s *Service) NewPayload(ctx context.Context, payload interfaces.ExecutionDa
 			return nil, errors.New("execution data must be a Capella execution payload")
 		}
 		err := s.rpcClient.CallContext(ctx, result, NewPayloadMethodV2, payloadPb)
-		if err != nil {
-			return nil, handleRPCError(err)
-		}
-	case *pb.ExecutionPayloadDeneb:
-		payloadPb, ok := payload.Proto().(*pb.ExecutionPayloadDeneb)
-		if !ok {
-			return nil, errors.New("execution data must be a Deneb execution payload")
-		}
-		err := s.rpcClient.CallContext(ctx, result, NewPayloadMethodV3, payloadPb, versionedHashes, parentBlockRoot)
 		if err != nil {
 			return nil, handleRPCError(err)
 		}
@@ -197,30 +188,12 @@ func (s *Service) ForkchoiceUpdated(
 		return nil, nil, errors.New("nil payload attributer")
 	}
 	switch attrs.Version() {
-	case version.Bellatrix:
-		a, err := attrs.PbV1()
-		if err != nil {
-			return nil, nil, err
-		}
-		err = s.rpcClient.CallContext(ctx, result, ForkchoiceUpdatedMethod, state, a)
-		if err != nil {
-			return nil, nil, handleRPCError(err)
-		}
 	case version.Capella:
 		a, err := attrs.PbV2()
 		if err != nil {
 			return nil, nil, err
 		}
 		err = s.rpcClient.CallContext(ctx, result, ForkchoiceUpdatedMethodV2, state, a)
-		if err != nil {
-			return nil, nil, handleRPCError(err)
-		}
-	case version.Deneb:
-		a, err := attrs.PbV3()
-		if err != nil {
-			return nil, nil, err
-		}
-		err = s.rpcClient.CallContext(ctx, result, ForkchoiceUpdatedMethodV3, state, a)
 		if err != nil {
 			return nil, nil, handleRPCError(err)
 		}
@@ -249,7 +222,7 @@ func (s *Service) ForkchoiceUpdated(
 
 // GetPayload calls the engine_getPayloadVX method via JSON-RPC.
 // It returns the execution data as well as the blobs bundle.
-func (s *Service) GetPayload(ctx context.Context, payloadId [8]byte, slot primitives.Slot) (interfaces.ExecutionData, *pb.BlobsBundle, bool, error) {
+func (s *Service) GetPayload(ctx context.Context, payloadId [8]byte, slot primitives.Slot) (interfaces.ExecutionData, bool, error) {
 	ctx, span := trace.StartSpan(ctx, "powchain.engine-api-client.GetPayload")
 	defer span.End()
 	start := time.Now()
@@ -261,42 +234,29 @@ func (s *Service) GetPayload(ctx context.Context, payloadId [8]byte, slot primit
 	ctx, cancel := context.WithDeadline(ctx, d)
 	defer cancel()
 
-	if slots.ToEpoch(slot) >= params.BeaconConfig().DenebForkEpoch {
-		result := &pb.ExecutionPayloadDenebWithValueAndBlobsBundle{}
-		err := s.rpcClient.CallContext(ctx, result, GetPayloadMethodV3, pb.PayloadIDBytes(payloadId))
-		if err != nil {
-			return nil, nil, false, handleRPCError(err)
-		}
-		ed, err := blocks.WrappedExecutionPayloadDeneb(result.Payload, blocks.PayloadValueToGwei(result.Value))
-		if err != nil {
-			return nil, nil, false, err
-		}
-		return ed, result.BlobsBundle, result.ShouldOverrideBuilder, nil
-	}
-
 	if slots.ToEpoch(slot) >= params.BeaconConfig().CapellaForkEpoch {
 		result := &pb.ExecutionPayloadCapellaWithValue{}
 		err := s.rpcClient.CallContext(ctx, result, GetPayloadMethodV2, pb.PayloadIDBytes(payloadId))
 		if err != nil {
-			return nil, nil, false, handleRPCError(err)
+			return nil, false, handleRPCError(err)
 		}
 		ed, err := blocks.WrappedExecutionPayloadCapella(result.Payload, blocks.PayloadValueToGwei(result.Value))
 		if err != nil {
-			return nil, nil, false, err
+			return nil, false, err
 		}
-		return ed, nil, false, nil
+		return ed, false, nil
 	}
 
 	result := &pb.ExecutionPayload{}
 	err := s.rpcClient.CallContext(ctx, result, GetPayloadMethod, pb.PayloadIDBytes(payloadId))
 	if err != nil {
-		return nil, nil, false, handleRPCError(err)
+		return nil, false, handleRPCError(err)
 	}
 	ed, err := blocks.WrappedExecutionPayload(result)
 	if err != nil {
-		return nil, nil, false, err
+		return nil, false, err
 	}
-	return ed, nil, false, nil
+	return ed, false, nil
 }
 
 // ExchangeTransitionConfiguration calls the engine_exchangeTransitionConfigurationV1 method via JSON-RPC.
@@ -821,35 +781,6 @@ func fullPayloadFromExecutionBlock(
 			Transactions:  txs,
 			Withdrawals:   block.Withdrawals,
 		}, 0) // We can't get the block value and don't care about the block value for this instance
-	case version.Deneb:
-		ebg, err := header.ExcessBlobGas()
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to extract ExcessBlobGas attribute from excution payload header")
-		}
-		bgu, err := header.BlobGasUsed()
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to extract BlobGasUsed attribute from excution payload header")
-		}
-		return blocks.WrappedExecutionPayloadDeneb(
-			&pb.ExecutionPayloadDeneb{
-				ParentHash:    header.ParentHash(),
-				FeeRecipient:  header.FeeRecipient(),
-				StateRoot:     header.StateRoot(),
-				ReceiptsRoot:  header.ReceiptsRoot(),
-				LogsBloom:     header.LogsBloom(),
-				PrevRandao:    header.PrevRandao(),
-				BlockNumber:   header.BlockNumber(),
-				GasLimit:      header.GasLimit(),
-				GasUsed:       header.GasUsed(),
-				Timestamp:     header.Timestamp(),
-				ExtraData:     header.ExtraData(),
-				BaseFeePerGas: header.BaseFeePerGas(),
-				BlockHash:     blockHash[:],
-				Transactions:  txs,
-				Withdrawals:   block.Withdrawals,
-				ExcessBlobGas: ebg,
-				BlobGasUsed:   bgu,
-			}, 0) // We can't get the block value and don't care about the block value for this instance
 	default:
 		return nil, fmt.Errorf("unknown execution block version %d", block.Version)
 	}
@@ -898,35 +829,6 @@ func fullPayloadFromPayloadBody(
 			Transactions:  body.Transactions,
 			Withdrawals:   body.Withdrawals,
 		}, 0) // We can't get the block value and don't care about the block value for this instance
-	case version.Deneb:
-		ebg, err := header.ExcessBlobGas()
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to extract ExcessBlobGas attribute from excution payload header")
-		}
-		bgu, err := header.BlobGasUsed()
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to extract BlobGasUsed attribute from excution payload header")
-		}
-		return blocks.WrappedExecutionPayloadDeneb(
-			&pb.ExecutionPayloadDeneb{
-				ParentHash:    header.ParentHash(),
-				FeeRecipient:  header.FeeRecipient(),
-				StateRoot:     header.StateRoot(),
-				ReceiptsRoot:  header.ReceiptsRoot(),
-				LogsBloom:     header.LogsBloom(),
-				PrevRandao:    header.PrevRandao(),
-				BlockNumber:   header.BlockNumber(),
-				GasLimit:      header.GasLimit(),
-				GasUsed:       header.GasUsed(),
-				Timestamp:     header.Timestamp(),
-				ExtraData:     header.ExtraData(),
-				BaseFeePerGas: header.BaseFeePerGas(),
-				BlockHash:     header.BlockHash(),
-				Transactions:  body.Transactions,
-				Withdrawals:   body.Withdrawals,
-				ExcessBlobGas: ebg,
-				BlobGasUsed:   bgu,
-			}, 0) // We can't get the block value and don't care about the block value for this instance
 	default:
 		return nil, fmt.Errorf("unknown execution block version for payload %d", bVersion)
 	}
@@ -1034,20 +936,6 @@ func buildEmptyExecutionPayload(v int) (proto.Message, error) {
 		}, nil
 	case version.Capella:
 		return &pb.ExecutionPayloadCapella{
-			ParentHash:    make([]byte, fieldparams.RootLength),
-			FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
-			StateRoot:     make([]byte, fieldparams.RootLength),
-			ReceiptsRoot:  make([]byte, fieldparams.RootLength),
-			LogsBloom:     make([]byte, fieldparams.LogsBloomLength),
-			PrevRandao:    make([]byte, fieldparams.RootLength),
-			BaseFeePerGas: make([]byte, fieldparams.RootLength),
-			BlockHash:     make([]byte, fieldparams.RootLength),
-			Transactions:  make([][]byte, 0),
-			ExtraData:     make([]byte, 0),
-			Withdrawals:   make([]*pb.Withdrawal, 0),
-		}, nil
-	case version.Deneb:
-		return &pb.ExecutionPayloadDeneb{
 			ParentHash:    make([]byte, fieldparams.RootLength),
 			FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 			StateRoot:     make([]byte, fieldparams.RootLength),

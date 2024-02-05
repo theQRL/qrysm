@@ -217,136 +217,119 @@ http_archive(
     url = "https://github.com/kubernetes/repo-infra/archive/6537f2101fb432b679f3d103ee729dd8ac5d30a0.tar.gz",
 )
 
-http_archive(
-    name = "eip3076_spec_tests",
-    build_file_content = """
-filegroup(
-    name = "test_data",
-    srcs = glob([
-        "**/*.json",
-    ]),
-    visibility = ["//visibility:public"],
-)
-    """,
-    sha256 = "91434d5fd5e1c6eb7b0174fed2afe25e09bddf00e1e4c431db931b2cee4e7773",
-    url = "https://github.com/eth-clients/slashing-protection-interchange-tests/archive/b8413ca42dc92308019d0d4db52c87e9e125c4e9.tar.gz",
-)
+#http_archive(
+#    name = "eip3076_spec_tests",
+#    build_file_content = """
+#filegroup(
+#    name = "test_data",
+#    srcs = glob([
+#        "**/*.json",
+#    ]),
+#    visibility = ["//visibility:public"],
+#)
+#    """,
+#    sha256 = "91434d5fd5e1c6eb7b0174fed2afe25e09bddf00e1e4c431db931b2cee4e7773",
+#    url = "https://github.com/eth-clients/slashing-protection-interchange-tests/archive/b8413ca42dc92308019d0d4db52c87e9e125c4e9.tar.gz",
+#)
 
-http_archive(
-    name = "eip4881_spec_tests",
-    build_file_content = """
-filegroup(
-    name = "test_data",
-    srcs = glob([
-        "**/*.yaml",
-    ]),
-    visibility = ["//visibility:public"],
-)
-    """,
-    sha256 = "89cb659498c0d196fc9f957f8b849b2e1a5c041c3b2b3ae5432ac5c26944297e",
-    url = "https://github.com/ethereum/EIPs/archive/5480440fe51742ed23342b68cf106cefd427e39d.tar.gz",
-)
+#http_archive(
+#    name = "eip4881_spec_tests",
+#    build_file_content = """
+#filegroup(
+#    name = "test_data",
+#    srcs = glob([
+#        "**/*.yaml",
+#    ]),
+#    visibility = ["//visibility:public"],
+#)
+#    """,
+#    sha256 = "89cb659498c0d196fc9f957f8b849b2e1a5c041c3b2b3ae5432ac5c26944297e",
+#    url = "https://github.com/ethereum/EIPs/archive/5480440fe51742ed23342b68cf106cefd427e39d.tar.gz",
+#)
 
-consensus_spec_test_version = "v1.4.0-beta.2-hotfix"
+#consensus_spec_test_version = "v1.4.0-beta.2-hotfix"
 
-consensus_spec_version = "v1.4.0-beta.2"
+#consensus_spec_version = "v1.4.0-beta.2"
 
-bls_test_version = "v0.1.1"
+#http_archive(
+#    name = "consensus_spec_tests_general",
+#    build_file_content = """
+#filegroup(
+#    name = "test_data",
+#    srcs = glob([
+#        "**/*.ssz_snappy",
+#        "**/*.yaml",
+#    ]),
+#    visibility = ["//visibility:public"],
+#)
+#    """,
+#    sha256 = "99770a001189f66204a4ef79161c8002bcbbcbd8236f1c6479bd5b83a3c68d42",
+#    url = "https://github.com/ethereum/consensus-spec-tests/releases/download/%s/general.tar.gz" % consensus_spec_test_version,
+#)
 
-http_archive(
-    name = "consensus_spec_tests_general",
-    build_file_content = """
-filegroup(
-    name = "test_data",
-    srcs = glob([
-        "**/*.ssz_snappy",
-        "**/*.yaml",
-    ]),
-    visibility = ["//visibility:public"],
-)
-    """,
-    sha256 = "99770a001189f66204a4ef79161c8002bcbbcbd8236f1c6479bd5b83a3c68d42",
-    url = "https://github.com/ethereum/consensus-spec-tests/releases/download/%s/general.tar.gz" % consensus_spec_test_version,
-)
+#http_archive(
+#    name = "consensus_spec_tests_minimal",
+#    build_file_content = """
+#filegroup(
+#    name = "test_data",
+#    srcs = glob([
+#        "**/*.ssz_snappy",
+#        "**/*.yaml",
+#    ]),
+#    visibility = ["//visibility:public"],
+#)
+#    """,
+#    sha256 = "56763f6492ee137108271007d62feef60d8e3f1698e53dee4bc4b07e55f7326b",
+#    url = "https://github.com/ethereum/consensus-spec-tests/releases/download/%s/minimal.tar.gz" % consensus_spec_test_version,
+#)
 
-http_archive(
-    name = "consensus_spec_tests_minimal",
-    build_file_content = """
-filegroup(
-    name = "test_data",
-    srcs = glob([
-        "**/*.ssz_snappy",
-        "**/*.yaml",
-    ]),
-    visibility = ["//visibility:public"],
-)
-    """,
-    sha256 = "56763f6492ee137108271007d62feef60d8e3f1698e53dee4bc4b07e55f7326b",
-    url = "https://github.com/ethereum/consensus-spec-tests/releases/download/%s/minimal.tar.gz" % consensus_spec_test_version,
-)
+#http_archive(
+#    name = "consensus_spec_tests_mainnet",
+#    build_file_content = """
+#filegroup(
+#    name = "test_data",
+#    srcs = glob([
+#         "**/*.ssz_snappy",
+#         "**/*.yaml",
+#     ]),
+#     visibility = ["//visibility:public"],
+# )
+#     """,
+#     sha256 = "bc1cac1a991cdc7426efea14385dcf215df85ed3f0572b824ad6a1d7ca0c89ad",
+#     url = "https://github.com/ethereum/consensus-spec-tests/releases/download/%s/mainnet.tar.gz" % consensus_spec_test_version,
+# )
 
-http_archive(
-    name = "consensus_spec_tests_mainnet",
-    build_file_content = """
-filegroup(
-    name = "test_data",
-    srcs = glob([
-        "**/*.ssz_snappy",
-        "**/*.yaml",
-    ]),
-    visibility = ["//visibility:public"],
-)
-    """,
-    sha256 = "bc1cac1a991cdc7426efea14385dcf215df85ed3f0572b824ad6a1d7ca0c89ad",
-    url = "https://github.com/ethereum/consensus-spec-tests/releases/download/%s/mainnet.tar.gz" % consensus_spec_test_version,
-)
+# http_archive(
+#     name = "consensus_spec",
+#     build_file_content = """
+# filegroup(
+#     name = "spec_data",
+#     srcs = glob([
+#         "**/*.yaml",
+#     ]),
+#     visibility = ["//visibility:public"],
+# )
+#     """,
+#     sha256 = "c5898001aaab2a5bb38a39ff9d17a52f1f9befcc26e63752cbf556040f0c884e",
+#     strip_prefix = "consensus-specs-" + consensus_spec_version[1:],
+#     url = "https://github.com/ethereum/consensus-specs/archive/refs/tags/%s.tar.gz" % consensus_spec_version,
+# )
 
-http_archive(
-    name = "consensus_spec",
-    build_file_content = """
-filegroup(
-    name = "spec_data",
-    srcs = glob([
-        "**/*.yaml",
-    ]),
-    visibility = ["//visibility:public"],
-)
-    """,
-    sha256 = "c5898001aaab2a5bb38a39ff9d17a52f1f9befcc26e63752cbf556040f0c884e",
-    strip_prefix = "consensus-specs-" + consensus_spec_version[1:],
-    url = "https://github.com/ethereum/consensus-specs/archive/refs/tags/%s.tar.gz" % consensus_spec_version,
-)
-
-http_archive(
-    name = "bls_spec_tests",
-    build_file_content = """
-filegroup(
-    name = "test_data",
-    srcs = glob([
-        "**/*.yaml",
-    ]),
-    visibility = ["//visibility:public"],
-)
-    """,
-    sha256 = "93c7d006e7c5b882cbd11dc9ec6c5d0e07f4a8c6b27a32f964eb17cf2db9763a",
-    url = "https://github.com/ethereum/bls12-381-tests/releases/download/%s/bls_tests_yaml.tar.gz" % bls_test_version,
-)
-
-http_archive(
-    name = "eth2_networks",
-    build_file_content = """
-filegroup(
-    name = "configs",
-    srcs = glob([
-        "shared/**/config.yaml",
-    ]),
-    visibility = ["//visibility:public"],
-)
-    """,
-    sha256 = "2701e1e1a3ec10c673fe7dbdbbe6f02c8ae8c922aebbf6e720d8c72d5458aafe",
-    strip_prefix = "eth2-networks-7b4897888cebef23801540236f73123e21774954",
-    url = "https://github.com/eth-clients/eth2-networks/archive/7b4897888cebef23801540236f73123e21774954.tar.gz",
-)
+#http_archive(
+#    name = "zond_networks",
+#    build_file_content = """
+#filegroup(
+#    name = "configs",
+#    srcs = glob([
+#        "shared/**/config.yaml",
+#    ]),
+#    visibility = ["//visibility:public"],
+#)
+#    """,
+#    sha256 = "2701e1e1a3ec10c673fe7dbdbbe6f02c8ae8c922aebbf6e720d8c72d5458aafe",
+#    strip_prefix = "eth2-networks-7b4897888cebef23801540236f73123e21774954",
+#    url = "https://github.com/eth-clients/eth2-networks/archive/7b4897888cebef23801540236f73123e21774954.tar.gz",
+#)
 
 http_archive(
     name = "com_google_protobuf",
@@ -362,10 +345,6 @@ load("//:deps.bzl", "go_dependencies", "qrysm_deps")
 
 # gazelle:repository_macro deps.bzl%qrysm_deps
 qrysm_deps()
-
-load("@qrysm//third_party/herumi:herumi.bzl", "bls_dependencies")
-
-bls_dependencies()
 
 # NOTE(rgeraldes24): re-enable once we support the remote web signer
 #load("@qrysm//testing/endtoend:deps.bzl", "e2e_deps")

@@ -68,8 +68,6 @@ func FromForkVersion(cv [fieldparams.VersionLength]byte) (*VersionedUnmarshaler,
 		fork = version.Bellatrix
 	case bytesutil.ToBytes4(cfg.CapellaForkVersion):
 		fork = version.Capella
-	case bytesutil.ToBytes4(cfg.DenebForkVersion):
-		fork = version.Deneb
 	default:
 		return nil, errors.Wrapf(ErrForkNotFound, "version=%#x", cv)
 	}
@@ -125,16 +123,6 @@ func (cf *VersionedUnmarshaler) UnmarshalBeaconState(marshaled []byte) (s state.
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to init state trie from state, detected fork=%s", forkName)
 		}
-	case version.Deneb:
-		st := &zondpb.BeaconStateDeneb{}
-		err = st.UnmarshalSSZ(marshaled)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal state, detected fork=%s", forkName)
-		}
-		s, err = state_native.InitializeFromProtoUnsafeDeneb(st)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to init state trie from state, detected fork=%s", forkName)
-		}
 	default:
 		return nil, fmt.Errorf("unable to initialize BeaconState for fork version=%s", forkName)
 	}
@@ -145,8 +133,8 @@ func (cf *VersionedUnmarshaler) UnmarshalBeaconState(marshaled []byte) (s state.
 var beaconBlockSlot = fieldSpec{
 	// ssz variable length offset (not to be confused with the fieldSpec offset) is a uint32
 	// variable length. Offsets come before fixed length data, so that's 4 bytes at the beginning
-	// then signature is 96 bytes, 4+96 = 100
-	offset: 100,
+	// then signature is 96 bytes, 4+4595 = 4599
+	offset: 4599,
 	t:      typeUint64,
 }
 
@@ -181,8 +169,6 @@ func (cf *VersionedUnmarshaler) UnmarshalBeaconBlock(marshaled []byte) (interfac
 		blk = &zondpb.SignedBeaconBlockBellatrix{}
 	case version.Capella:
 		blk = &zondpb.SignedBeaconBlockCapella{}
-	case version.Deneb:
-		blk = &zondpb.SignedBeaconBlockDeneb{}
 	default:
 		forkName := version.String(cf.Fork)
 		return nil, fmt.Errorf("unable to initialize ReadOnlyBeaconBlock for fork version=%s at slot=%d", forkName, slot)
@@ -216,8 +202,6 @@ func (cf *VersionedUnmarshaler) UnmarshalBlindedBeaconBlock(marshaled []byte) (i
 		blk = &zondpb.SignedBlindedBeaconBlockBellatrix{}
 	case version.Capella:
 		blk = &zondpb.SignedBlindedBeaconBlockCapella{}
-	case version.Deneb:
-		blk = &zondpb.SignedBlindedBeaconBlockDeneb{}
 	default:
 		forkName := version.String(cf.Fork)
 		return nil, fmt.Errorf("unable to initialize ReadOnlyBeaconBlock for fork version=%s at slot=%d", forkName, slot)

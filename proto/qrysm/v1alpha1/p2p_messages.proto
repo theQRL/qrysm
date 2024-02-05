@@ -58,15 +58,3 @@ message MetaDataV1 {
   bytes attnets = 2 [(theqrl.zond.ext.ssz_size) = "8", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitvector64"];
   bytes syncnets = 3 [(theqrl.zond.ext.ssz_size) = "1", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitvector4"];
 }
-
-/*
- Spec Definition:
- (
-  start_slot: Slot
-  count: uint64
- )
-*/
-message BlobSidecarsByRangeRequest {
-  uint64 start_slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
-  uint64 count = 2;
-}

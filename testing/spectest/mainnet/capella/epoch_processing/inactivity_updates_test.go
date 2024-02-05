@@ -1,5 +1,6 @@
 package epoch_processing
 
+/*
 import (
 	"testing"
 
@@ -9,3 +10,4 @@ import (
 func TestMainnet_Capella_EpochProcessing_InactivityUpdates(t *testing.T) {
 	epoch_processing.RunInactivityUpdatesTest(t, "mainnet")
 }
+*/

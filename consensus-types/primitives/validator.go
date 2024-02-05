@@ -10,7 +10,7 @@ var _ fssz.HashRoot = (ValidatorIndex)(0)
 var _ fssz.Marshaler = (*ValidatorIndex)(nil)
 var _ fssz.Unmarshaler = (*ValidatorIndex)(nil)
 
-// ValidatorIndex in eth2.
+// ValidatorIndex in zond.
 type ValidatorIndex uint64
 
 // Div divides validator index by x.

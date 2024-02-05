@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/network/forks"
 	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -92,7 +92,7 @@ func addForkEntry(
 	}
 	currentSlot := slots.Since(genesisTime)
 	currentEpoch := slots.ToEpoch(currentSlot)
-	if prysmTime.Now().Before(genesisTime) {
+	if qrysmTime.Now().Before(genesisTime) {
 		currentEpoch = 0
 	}
 	nextForkVersion, nextForkEpoch, err := forks.NextForkData(currentEpoch)

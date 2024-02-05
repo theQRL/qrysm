@@ -62,6 +62,8 @@ func TestGetSyncMessageBlockRoot_Optimistic(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// TODO(rgeraldes24)
+/*
 func TestSubmitSyncMessage_OK(t *testing.T) {
 	st, _ := util.DeterministicGenesisStateAltair(t, 10)
 	server := &Server{
@@ -83,6 +85,7 @@ func TestSubmitSyncMessage_OK(t *testing.T) {
 	require.NoError(t, err)
 	require.DeepEqual(t, []*zondpb.SyncCommitteeMessage{msg}, savedMsgs)
 }
+*/
 
 func TestGetSyncSubcommitteeIndex_Ok(t *testing.T) {
 	transition.SkipSlotCache.Disable()

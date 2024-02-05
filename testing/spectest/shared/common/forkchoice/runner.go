@@ -1,19 +1,15 @@
 package forkchoice
 
 import (
-	"context"
 	"fmt"
-	"os"
 	"path"
 	"testing"
 
 	"github.com/golang/snappy"
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
@@ -81,9 +77,6 @@ func runTest(t *testing.T, config string, fork int, basePath string) {
 				case version.Capella:
 					beaconState = unmarshalCapellaState(t, preBeaconStateSSZ)
 					beaconBlock = unmarshalCapellaBlock(t, blockSSZ)
-				case version.Deneb:
-					beaconState = unmarshalDenebState(t, preBeaconStateSSZ)
-					beaconBlock = unmarshalDenebBlock(t, blockSSZ)
 				default:
 					t.Fatalf("unknown fork version: %v", fork)
 				}
@@ -109,13 +102,10 @@ func runTest(t *testing.T, config string, fork int, basePath string) {
 							beaconBlock = unmarshalSignedBellatrixBlock(t, blockSSZ)
 						case version.Capella:
 							beaconBlock = unmarshalSignedCapellaBlock(t, blockSSZ)
-						case version.Deneb:
-							beaconBlock = unmarshalSignedDenebBlock(t, blockSSZ)
 						default:
 							t.Fatalf("unknown fork version: %v", fork)
 						}
 					}
-					runBlobStep(t, step.Blobs, beaconBlock, fork, folder, testsFolderPath, step.Proofs, builder)
 					if beaconBlock != nil {
 						if step.Valid != nil && !*step.Valid {
 							builder.InvalidBlock(t, beaconBlock)
@@ -254,82 +244,4 @@ func unmarshalSignedCapellaBlock(t *testing.T, raw []byte) interfaces.ReadOnlySi
 	blk, err := blocks.NewSignedBeaconBlock(base)
 	require.NoError(t, err)
 	return blk
-}
-
-func unmarshalDenebState(t *testing.T, raw []byte) state.BeaconState {
-	base := &zondpb.BeaconStateDeneb{}
-	require.NoError(t, base.UnmarshalSSZ(raw))
-	st, err := state_native.InitializeFromProtoDeneb(base)
-	require.NoError(t, err)
-	return st
-}
-
-func unmarshalDenebBlock(t *testing.T, raw []byte) interfaces.SignedBeaconBlock {
-	base := &zondpb.BeaconBlockDeneb{}
-	require.NoError(t, base.UnmarshalSSZ(raw))
-	blk, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockDeneb{Block: base, Signature: make([]byte, dilithium2.CryptoBytes)})
-	require.NoError(t, err)
-	return blk
-}
-
-func unmarshalSignedDenebBlock(t *testing.T, raw []byte) interfaces.SignedBeaconBlock {
-	base := &zondpb.SignedBeaconBlockDeneb{}
-	require.NoError(t, base.UnmarshalSSZ(raw))
-	blk, err := blocks.NewSignedBeaconBlock(base)
-	require.NoError(t, err)
-	return blk
-}
-
-func runBlobStep(t *testing.T,
-	blobs *string,
-	beaconBlock interfaces.ReadOnlySignedBeaconBlock,
-	fork int,
-	folder os.DirEntry,
-	testsFolderPath string,
-	proofs []*string,
-	builder *Builder,
-) {
-	if blobs != nil && *blobs != "null" {
-		require.NotNil(t, beaconBlock)
-		require.Equal(t, true, fork >= version.Deneb)
-
-		block := beaconBlock.Block()
-		root, err := block.HashTreeRoot()
-		require.NoError(t, err)
-		parentRoot := block.ParentRoot()
-		kzgs, err := block.Body().BlobKzgCommitments()
-		require.NoError(t, err)
-
-		blobsFile, err := util.BazelFileBytes(testsFolderPath, folder.Name(), fmt.Sprint(*blobs, ".ssz_snappy"))
-		require.NoError(t, err)
-		blobsSSZ, err := snappy.Decode(nil /* dst */, blobsFile)
-		require.NoError(t, err)
-		for index := uint64(0); index*fieldparams.BlobLength < uint64(len(blobsSSZ)); index++ {
-			var proof []byte
-			if index < uint64(len(proofs)) {
-				proofPTR := proofs[index]
-				require.NotNil(t, proofPTR)
-				proof, err = hexutil.Decode(*proofPTR)
-				require.NoError(t, err)
-			}
-
-			var kzg []byte
-			if uint64(len(kzgs)) < index {
-				kzg = kzgs[index]
-			}
-			blob := [fieldparams.BlobLength]byte{}
-			copy(blob[:], blobsSSZ[index*fieldparams.BlobLength:])
-			sidecar := &zondpb.BlobSidecar{
-				BlockRoot:       root[:],
-				Index:           index,
-				Slot:            block.Slot(),
-				BlockParentRoot: parentRoot[:],
-				ProposerIndex:   block.ProposerIndex(),
-				Blob:            blob[:],
-				KzgCommitment:   kzg,
-				KzgProof:        proof,
-			}
-			require.NoError(t, builder.service.ReceiveBlob(context.Background(), sidecar))
-		}
-	}
 }

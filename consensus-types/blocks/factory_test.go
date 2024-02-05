@@ -121,46 +121,6 @@ func Test_NewSignedBeaconBlock(t *testing.T) {
 		assert.Equal(t, version.Capella, b.Version())
 		assert.Equal(t, true, b.IsBlinded())
 	})
-	t.Run("GenericSignedBeaconBlock_Deneb", func(t *testing.T) {
-		pb := &zond.GenericSignedBeaconBlock_Deneb{
-			Deneb: &zond.SignedBeaconBlockAndBlobsDeneb{
-				Block: &zond.SignedBeaconBlockDeneb{
-					Block: &zond.BeaconBlockDeneb{
-						Body: &zond.BeaconBlockBodyDeneb{},
-					}}}}
-		b, err := NewSignedBeaconBlock(pb)
-		require.NoError(t, err)
-		assert.Equal(t, version.Deneb, b.Version())
-	})
-	t.Run("SignedBeaconBlockDeneb", func(t *testing.T) {
-		pb := &zond.SignedBeaconBlockDeneb{
-			Block: &zond.BeaconBlockDeneb{
-				Body: &zond.BeaconBlockBodyDeneb{}}}
-		b, err := NewSignedBeaconBlock(pb)
-		require.NoError(t, err)
-		assert.Equal(t, version.Deneb, b.Version())
-	})
-	t.Run("SignedBlindedBeaconBlockDeneb", func(t *testing.T) {
-		pb := &zond.SignedBlindedBeaconBlockDeneb{
-			Message: &zond.BlindedBeaconBlockDeneb{
-				Body: &zond.BlindedBeaconBlockBodyDeneb{}}}
-		b, err := NewSignedBeaconBlock(pb)
-		require.NoError(t, err)
-		assert.Equal(t, version.Deneb, b.Version())
-		assert.Equal(t, true, b.IsBlinded())
-	})
-	t.Run("GenericSignedBeaconBlock_BlindedDeneb", func(t *testing.T) {
-		pb := &zond.GenericSignedBeaconBlock_BlindedDeneb{
-			BlindedDeneb: &zond.SignedBlindedBeaconBlockAndBlobsDeneb{
-				SignedBlindedBlock: &zond.SignedBlindedBeaconBlockDeneb{
-					Message: &zond.BlindedBeaconBlockDeneb{
-						Body: &zond.BlindedBeaconBlockBodyDeneb{},
-					}}}}
-		b, err := NewSignedBeaconBlock(pb)
-		require.NoError(t, err)
-		assert.Equal(t, version.Deneb, b.Version())
-		assert.Equal(t, true, b.IsBlinded())
-	})
 	t.Run("nil", func(t *testing.T) {
 		_, err := NewSignedBeaconBlock(nil)
 		assert.ErrorContains(t, "received nil object", err)
@@ -248,34 +208,6 @@ func Test_NewBeaconBlock(t *testing.T) {
 		assert.Equal(t, version.Capella, b.Version())
 		assert.Equal(t, true, b.IsBlinded())
 	})
-	t.Run("GenericBeaconBlock_Deneb", func(t *testing.T) {
-		pb := &zond.GenericBeaconBlock_Deneb{Deneb: &zond.BeaconBlockAndBlobsDeneb{Block: &zond.BeaconBlockDeneb{
-			Body: &zond.BeaconBlockBodyDeneb{},
-		}}}
-		b, err := NewBeaconBlock(pb)
-		require.NoError(t, err)
-		assert.Equal(t, version.Deneb, b.Version())
-	})
-	t.Run("BeaconBlockDeneb", func(t *testing.T) {
-		pb := &zond.BeaconBlockDeneb{Body: &zond.BeaconBlockBodyDeneb{}}
-		b, err := NewBeaconBlock(pb)
-		require.NoError(t, err)
-		assert.Equal(t, version.Deneb, b.Version())
-	})
-	t.Run("BlindedBeaconBlockDeneb", func(t *testing.T) {
-		pb := &zond.BlindedBeaconBlockDeneb{Body: &zond.BlindedBeaconBlockBodyDeneb{}}
-		b, err := NewBeaconBlock(pb)
-		require.NoError(t, err)
-		assert.Equal(t, version.Deneb, b.Version())
-		assert.Equal(t, true, b.IsBlinded())
-	})
-	t.Run("GenericBeaconBlock_BlindedDeneb", func(t *testing.T) {
-		pb := &zond.GenericBeaconBlock_BlindedDeneb{BlindedDeneb: &zond.BlindedBeaconBlockAndBlobsDeneb{Block: &zond.BlindedBeaconBlockDeneb{Body: &zond.BlindedBeaconBlockBodyDeneb{}}}}
-		b, err := NewBeaconBlock(pb)
-		require.NoError(t, err)
-		assert.Equal(t, version.Deneb, b.Version())
-		assert.Equal(t, true, b.IsBlinded())
-	})
 	t.Run("nil", func(t *testing.T) {
 		_, err := NewBeaconBlock(nil)
 		assert.ErrorContains(t, "received nil object", err)
@@ -337,23 +269,7 @@ func Test_NewBeaconBlockBody(t *testing.T) {
 		assert.Equal(t, version.Capella, b.version)
 		assert.Equal(t, true, b.isBlinded)
 	})
-	t.Run("BeaconBlockBodyDeneb", func(t *testing.T) {
-		pb := &zond.BeaconBlockBodyDeneb{}
-		i, err := NewBeaconBlockBody(pb)
-		require.NoError(t, err)
-		b, ok := i.(*BeaconBlockBody)
-		require.Equal(t, true, ok)
-		assert.Equal(t, version.Deneb, b.version)
-	})
-	t.Run("BlindedBeaconBlockBodyDeneb", func(t *testing.T) {
-		pb := &zond.BlindedBeaconBlockBodyDeneb{}
-		i, err := NewBeaconBlockBody(pb)
-		require.NoError(t, err)
-		b, ok := i.(*BeaconBlockBody)
-		require.Equal(t, true, ok)
-		assert.Equal(t, version.Deneb, b.version)
-		assert.Equal(t, true, b.isBlinded)
-	})
+
 	t.Run("nil", func(t *testing.T) {
 		_, err := NewBeaconBlockBody(nil)
 		assert.ErrorContains(t, "received nil object", err)
@@ -365,36 +281,7 @@ func Test_NewBeaconBlockBody(t *testing.T) {
 }
 
 func Test_BuildSignedBeaconBlock(t *testing.T) {
-	sig := bytesutil.ToBytes96([]byte("signature"))
-	t.Run("Phase0", func(t *testing.T) {
-		b := &BeaconBlock{version: version.Phase0, body: &BeaconBlockBody{version: version.Phase0}}
-		sb, err := BuildSignedBeaconBlock(b, sig[:])
-		require.NoError(t, err)
-		assert.DeepEqual(t, sig, sb.Signature())
-		assert.Equal(t, version.Phase0, sb.Version())
-	})
-	t.Run("Altair", func(t *testing.T) {
-		b := &BeaconBlock{version: version.Altair, body: &BeaconBlockBody{version: version.Altair}}
-		sb, err := BuildSignedBeaconBlock(b, sig[:])
-		require.NoError(t, err)
-		assert.DeepEqual(t, sig, sb.Signature())
-		assert.Equal(t, version.Altair, sb.Version())
-	})
-	t.Run("Bellatrix", func(t *testing.T) {
-		b := &BeaconBlock{version: version.Bellatrix, body: &BeaconBlockBody{version: version.Bellatrix}}
-		sb, err := BuildSignedBeaconBlock(b, sig[:])
-		require.NoError(t, err)
-		assert.DeepEqual(t, sig, sb.Signature())
-		assert.Equal(t, version.Bellatrix, sb.Version())
-	})
-	t.Run("BellatrixBlind", func(t *testing.T) {
-		b := &BeaconBlock{version: version.Bellatrix, body: &BeaconBlockBody{version: version.Bellatrix, isBlinded: true}}
-		sb, err := BuildSignedBeaconBlock(b, sig[:])
-		require.NoError(t, err)
-		assert.DeepEqual(t, sig, sb.Signature())
-		assert.Equal(t, version.Bellatrix, sb.Version())
-		assert.Equal(t, true, sb.IsBlinded())
-	})
+	sig := bytesutil.ToBytes4595([]byte("signature"))
 	t.Run("Capella", func(t *testing.T) {
 		b := &BeaconBlock{version: version.Capella, body: &BeaconBlockBody{version: version.Capella}}
 		sb, err := BuildSignedBeaconBlock(b, sig[:])
@@ -408,21 +295,6 @@ func Test_BuildSignedBeaconBlock(t *testing.T) {
 		require.NoError(t, err)
 		assert.DeepEqual(t, sig, sb.Signature())
 		assert.Equal(t, version.Capella, sb.Version())
-		assert.Equal(t, true, sb.IsBlinded())
-	})
-	t.Run("Deneb", func(t *testing.T) {
-		b := &BeaconBlock{version: version.Deneb, body: &BeaconBlockBody{version: version.Deneb}}
-		sb, err := BuildSignedBeaconBlock(b, sig[:])
-		require.NoError(t, err)
-		assert.DeepEqual(t, sig, sb.Signature())
-		assert.Equal(t, version.Deneb, sb.Version())
-	})
-	t.Run("DenebBlind", func(t *testing.T) {
-		b := &BeaconBlock{version: version.Deneb, body: &BeaconBlockBody{version: version.Deneb, isBlinded: true}}
-		sb, err := BuildSignedBeaconBlock(b, sig[:])
-		require.NoError(t, err)
-		assert.DeepEqual(t, sig, sb.Signature())
-		assert.Equal(t, version.Deneb, sb.Version())
 		assert.Equal(t, true, sb.IsBlinded())
 	})
 }
@@ -500,39 +372,5 @@ func TestBuildSignedBeaconBlockFromExecutionPayload(t *testing.T) {
 		got, err := builtBlock.Block().Body().Execution()
 		require.NoError(t, err)
 		require.DeepEqual(t, payload, got.Proto())
-	})
-	t.Run("deneb", func(t *testing.T) {
-		payload := &enginev1.ExecutionPayloadDeneb{
-			ParentHash:    make([]byte, fieldparams.RootLength),
-			FeeRecipient:  make([]byte, 20),
-			StateRoot:     make([]byte, fieldparams.RootLength),
-			ReceiptsRoot:  make([]byte, fieldparams.RootLength),
-			LogsBloom:     make([]byte, 256),
-			PrevRandao:    make([]byte, fieldparams.RootLength),
-			BaseFeePerGas: make([]byte, fieldparams.RootLength),
-			BlockHash:     make([]byte, fieldparams.RootLength),
-			Transactions:  make([][]byte, 0),
-			ExcessBlobGas: 123,
-			BlobGasUsed:   321,
-		}
-		wrapped, err := WrappedExecutionPayloadDeneb(payload, 123)
-		require.NoError(t, err)
-		header, err := PayloadToHeaderDeneb(wrapped)
-		require.NoError(t, err)
-		blindedBlock := &zond.SignedBlindedBeaconBlockDeneb{
-			Message: &zond.BlindedBeaconBlockDeneb{
-				Body: &zond.BlindedBeaconBlockBodyDeneb{}}}
-		blindedBlock.Message.Body.ExecutionPayloadHeader = header
-
-		blk, err := NewSignedBeaconBlock(blindedBlock)
-		require.NoError(t, err)
-		builtBlock, err := BuildSignedBeaconBlockFromExecutionPayload(blk, payload)
-		require.NoError(t, err)
-
-		got, err := builtBlock.Block().Body().Execution()
-		require.NoError(t, err)
-		require.DeepEqual(t, payload, got.Proto())
-		require.DeepEqual(t, uint64(123), payload.ExcessBlobGas)
-		require.DeepEqual(t, uint64(321), payload.BlobGasUsed)
 	})
 }

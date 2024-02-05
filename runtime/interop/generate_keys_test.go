@@ -14,7 +14,7 @@ import (
 )
 
 type TestCase struct {
-	Privkey string `yaml:"privkey"`
+	Seed string `yaml:"seed"`
 }
 
 type KeyTest struct {
@@ -28,17 +28,17 @@ func TestKeyGenerator(t *testing.T) {
 	require.NoError(t, err)
 	testCases := &KeyTest{}
 	require.NoError(t, yaml.Unmarshal(file, testCases))
-	priv, pubkeys, err := interop.DeterministicallyGenerateKeys(0, 1000)
+	seeds, pubkeys, err := interop.DeterministicallyGenerateKeys(0, 100)
 	require.NoError(t, err)
-	// cross-check with the first 1000 keys generated from the python spec
-	for i, key := range priv {
-		hexKey := testCases.TestCases[i].Privkey
-		nKey, err := hexutil.Decode("0x" + hexKey)
+	// cross-check with the first 100 keys generated from the python spec
+	for i, s := range seeds {
+		hexSeed := testCases.TestCases[i].Seed
+		nKey, err := hexutil.Decode("0x" + hexSeed)
 		if err != nil {
 			t.Error(err)
 			continue
 		}
-		assert.DeepEqual(t, key.Marshal(), nKey)
-		fmt.Printf("pubkey: %s privkey: %s \n", hexutil.Encode(pubkeys[i].Marshal()), hexutil.Encode(key.Marshal()))
+		assert.DeepEqual(t, s.Marshal(), nKey)
+		fmt.Printf("pubkey: %s seed: %s \n", hexutil.Encode(pubkeys[i].Marshal()), hexutil.Encode(s.Marshal()))
 	}
 }

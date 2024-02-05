@@ -21,16 +21,12 @@ var gossipTopicMappings = map[string]proto.Message{
 	SyncContributionAndProofSubnetTopicFormat:   &zondpb.SignedContributionAndProof{},
 	SyncCommitteeSubnetTopicFormat:              &zondpb.SyncCommitteeMessage{},
 	DilithiumToExecutionChangeSubnetTopicFormat: &zondpb.SignedDilithiumToExecutionChange{},
-	BlobSubnetTopicFormat:                       &zondpb.SignedBlobSidecar{},
 }
 
 // GossipTopicMappings is a function to return the assigned data type
 // versioned by epoch.
 func GossipTopicMappings(topic string, epoch primitives.Epoch) proto.Message {
 	if topic == BlockSubnetTopicFormat {
-		if epoch >= params.BeaconConfig().DenebForkEpoch {
-			return &zondpb.SignedBeaconBlockDeneb{}
-		}
 		if epoch >= params.BeaconConfig().CapellaForkEpoch {
 			return &zondpb.SignedBeaconBlockCapella{}
 		}
@@ -68,6 +64,4 @@ func init() {
 	GossipTypeMapping[reflect.TypeOf(&zondpb.SignedBeaconBlockBellatrix{})] = BlockSubnetTopicFormat
 	// Specially handle Capella objects.
 	GossipTypeMapping[reflect.TypeOf(&zondpb.SignedBeaconBlockCapella{})] = BlockSubnetTopicFormat
-	// Specially handle Deneb objects.
-	GossipTypeMapping[reflect.TypeOf(&zondpb.SignedBeaconBlockDeneb{})] = BlockSubnetTopicFormat
 }

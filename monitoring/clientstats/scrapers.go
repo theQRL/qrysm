@@ -152,9 +152,9 @@ func populateCommonStats(pf metricMap) CommonStats {
 		cs.MemoryProcessBytes = int64(m.Gauge.GetValue())
 	}
 
-	f, err = pf.getFamily("prysm_version")
+	f, err = pf.getFamily("qrysm_version")
 	if err != nil {
-		log.WithError(err).Debug("Failed to get prysm_version")
+		log.WithError(err).Debug("Failed to get qrysm_version")
 	} else {
 		m = f.Metric[0]
 		for _, l := range m.GetLabel() {
@@ -164,7 +164,7 @@ func populateCommonStats(pf metricMap) CommonStats {
 			case "buildDate":
 				buildDate, err := strconv.Atoi(l.GetValue())
 				if err != nil {
-					log.WithError(err).Debug("Failed to retrieve buildDate label from the prysm_version metric")
+					log.WithError(err).Debug("Failed to retrieve buildDate label from the qrysm_version metric")
 					continue
 				}
 				cs.ClientBuild = int64(buildDate)

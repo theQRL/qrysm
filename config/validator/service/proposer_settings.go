@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/consensus-types/validator"
@@ -16,7 +16,7 @@ import (
 func ToSettings(ps *validatorpb.ProposerSettingsPayload) (*ProposerSettings, error) {
 	settings := &ProposerSettings{}
 	if ps.ProposerConfig != nil {
-		settings.ProposeConfig = make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ProposerOption)
+		settings.ProposeConfig = make(map[[dilithium.CryptoPublicKeyBytes]byte]*ProposerOption)
 		for key, optionPayload := range ps.ProposerConfig {
 			if optionPayload.FeeRecipient == "" {
 				continue
@@ -77,10 +77,10 @@ func ToBuilderConfig(from *validatorpb.BuilderConfig) *BuilderConfig {
 	return config
 }
 
-// ProposerSettings is a Prysm internal representation of the fee recipient config on the validator client.
+// ProposerSettings is a Qrysm internal representation of the fee recipient config on the validator client.
 // validatorpb.ProposerSettingsPayload maps to ProposerSettings on import through the CLI.
 type ProposerSettings struct {
-	ProposeConfig map[[dilithium2.CryptoPublicKeyBytes]byte]*ProposerOption
+	ProposeConfig map[[dilithium.CryptoPublicKeyBytes]byte]*ProposerOption
 	DefaultConfig *ProposerOption
 }
 
@@ -125,12 +125,12 @@ func (ps *ProposerSettings) ToPayload() *validatorpb.ProposerSettingsPayload {
 	return payload
 }
 
-// FeeRecipientConfig is a prysm internal representation to see if the fee recipient was set.
+// FeeRecipientConfig is a qrysm internal representation to see if the fee recipient was set.
 type FeeRecipientConfig struct {
 	FeeRecipient common.Address
 }
 
-// ProposerOption is a Prysm internal representation of the ProposerOptionPayload on the validator client in bytes format instead of hex.
+// ProposerOption is a Qrysm internal representation of the ProposerOptionPayload on the validator client in bytes format instead of hex.
 type ProposerOption struct {
 	FeeRecipientConfig *FeeRecipientConfig
 	BuilderConfig      *BuilderConfig
@@ -146,7 +146,7 @@ func (ps *ProposerSettings) Clone() *ProposerSettings {
 		clone.DefaultConfig = ps.DefaultConfig.Clone()
 	}
 	if ps.ProposeConfig != nil {
-		clone.ProposeConfig = make(map[[dilithium2.CryptoPublicKeyBytes]byte]*ProposerOption)
+		clone.ProposeConfig = make(map[[dilithium.CryptoPublicKeyBytes]byte]*ProposerOption)
 		for k, v := range ps.ProposeConfig {
 			keyCopy := k
 			valCopy := v.Clone()

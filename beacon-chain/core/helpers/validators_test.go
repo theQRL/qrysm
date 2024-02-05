@@ -372,48 +372,6 @@ func TestChurnLimit_OK(t *testing.T) {
 	}
 }
 
-func TestChurnLimitDeneb_OK(t *testing.T) {
-	tests := []struct {
-		validatorCount int
-		wantedChurn    uint64
-	}{
-		{1000, 4},
-		{100000, 4},
-		{1000000, params.BeaconConfig().MaxPerEpochActivationChurnLimit},
-		{2000000, params.BeaconConfig().MaxPerEpochActivationChurnLimit},
-	}
-
-	defer ClearCache()
-
-	for _, test := range tests {
-		ClearCache()
-
-		// Create validators
-		validators := make([]*zondpb.Validator, test.validatorCount)
-		for i := range validators {
-			validators[i] = &zondpb.Validator{
-				ExitEpoch: params.BeaconConfig().FarFutureEpoch,
-			}
-		}
-
-		// Initialize beacon state
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
-			Slot:        1,
-			Validators:  validators,
-			RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
-		})
-		require.NoError(t, err)
-
-		// Get active validator count
-		validatorCount, err := ActiveValidatorCount(context.Background(), beaconState, time.CurrentEpoch(beaconState))
-		require.NoError(t, err)
-
-		// Test churn limit calculation
-		resultChurn := ValidatorActivationChurnLimitDeneb(validatorCount)
-		assert.Equal(t, test.wantedChurn, resultChurn)
-	}
-}
-
 // Test basic functionality of ActiveValidatorIndices without caching. This test will need to be
 // rewritten when releasing some cache flag.
 func TestActiveValidatorIndices(t *testing.T) {

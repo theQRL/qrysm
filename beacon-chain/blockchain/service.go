@@ -12,7 +12,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/async/event"
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain/kzg"
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
 	statefeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/state"
@@ -32,13 +31,12 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
 	"github.com/theQRL/qrysm/v4/config/features"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 )
@@ -61,7 +59,6 @@ type Service struct {
 	clockSetter          startup.ClockSetter
 	clockWaiter          startup.ClockWaiter
 	syncComplete         chan struct{}
-	blobNotifiers        *blobNotifierMap
 	blockBeingSynced     *currentlySyncingBlock
 }
 
@@ -91,49 +88,17 @@ type config struct {
 
 var ErrMissingClockSetter = errors.New("blockchain Service initialized without a startup.ClockSetter")
 
-type blobNotifierMap struct {
-	sync.RWMutex
-	notifiers map[[32]byte]chan uint64
-}
-
-func (bn *blobNotifierMap) forRoot(root [32]byte) chan uint64 {
-	bn.Lock()
-	defer bn.Unlock()
-	c, ok := bn.notifiers[root]
-	if !ok {
-		c = make(chan uint64, fieldparams.MaxBlobsPerBlock)
-		bn.notifiers[root] = c
-	}
-	return c
-}
-
-func (bn *blobNotifierMap) delete(root [32]byte) {
-	bn.Lock()
-	defer bn.Unlock()
-	delete(bn.notifiers, root)
-}
-
 // NewService instantiates a new block service instance that will
 // be registered into a running beacon node.
 func NewService(ctx context.Context, opts ...Option) (*Service, error) {
 	var err error
-	if params.DenebEnabled() {
-		err = kzg.Start()
-		if err != nil {
-			return nil, errors.Wrap(err, "could not initialize go-kzg context")
-		}
-	}
 	ctx, cancel := context.WithCancel(ctx)
-	bn := &blobNotifierMap{
-		notifiers: make(map[[32]byte]chan uint64),
-	}
 	srv := &Service{
 		ctx:                  ctx,
 		cancel:               cancel,
 		boundaryRoots:        [][32]byte{},
 		checkpointStateCache: cache.NewCheckpointStateCache(),
 		initSyncBlocks:       make(map[[32]byte]interfaces.ReadOnlySignedBeaconBlock),
-		blobNotifiers:        bn,
 		cfg:                  &config{ProposerSlotIndexCache: cache.NewProposerPayloadIDsCache()},
 		blockBeingSynced:     &currentlySyncingBlock{roots: make(map[[32]byte]struct{})},
 	}
@@ -507,7 +472,7 @@ func (s *Service) hasBlock(ctx context.Context, root [32]byte) bool {
 }
 
 func spawnCountdownIfPreGenesis(ctx context.Context, genesisTime time.Time, db db.HeadAccessDatabase) {
-	currentTime := prysmTime.Now()
+	currentTime := qrysmTime.Now()
 	if currentTime.After(genesisTime) {
 		return
 	}

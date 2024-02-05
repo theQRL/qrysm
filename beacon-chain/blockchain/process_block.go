@@ -7,14 +7,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain/kzg"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
 	statefeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/state"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	coreTime "github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
 	forkchoicetypes "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/types"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/features"
@@ -265,9 +263,7 @@ func (s *Service) onBlockBatch(ctx context.Context, blks []consensusblocks.ROBlo
 				return err
 			}
 		}
-		if err := s.databaseDACheck(ctx, b); err != nil {
-			return errors.Wrap(err, "could not validate blob data availability")
-		}
+
 		args := &forkchoicetypes.BlockAndCheckpoints{Block: b.Block(),
 			JustifiedCheckpoint: jCheckpoints[i],
 			FinalizedCheckpoint: fCheckpoints[i]}
@@ -331,33 +327,6 @@ func (s *Service) onBlockBatch(ctx context.Context, blks []consensusblocks.ROBlo
 		return err
 	}
 	return s.saveHeadNoDB(ctx, lastB, lastBR, preState, !isValidPayload)
-}
-
-func commitmentsToCheck(b consensusblocks.ROBlock, current primitives.Slot) [][]byte {
-	if b.Version() < version.Deneb {
-		return nil
-	}
-	// We are only required to check within MIN_EPOCHS_FOR_BLOB_SIDECARS_REQUESTS
-	if !params.WithinDAPeriod(slots.ToEpoch(b.Block().Slot()), slots.ToEpoch(current)) {
-		return nil
-	}
-	kzgCommitments, err := b.Block().Body().BlobKzgCommitments()
-	if err != nil {
-		return nil
-	}
-	return kzgCommitments
-}
-
-func (s *Service) databaseDACheck(ctx context.Context, b consensusblocks.ROBlock) error {
-	commitments := commitmentsToCheck(b, s.CurrentSlot())
-	if len(commitments) == 0 {
-		return nil
-	}
-	sidecars, err := s.cfg.BeaconDB.BlobSidecarsByRoot(ctx, b.Root())
-	if err != nil {
-		return errors.Wrap(err, "could not get blob sidecars")
-	}
-	return kzg.IsDataAvailable(commitments, sidecars)
 }
 
 func (s *Service) updateEpochBoundaryCaches(ctx context.Context, st state.BeaconState) error {
@@ -525,81 +494,6 @@ func (s *Service) runLateBlockTasks() {
 		case <-s.ctx.Done():
 			log.Debug("Context closed, exiting routine")
 			return
-		}
-	}
-}
-
-func (s *Service) isDataAvailable(ctx context.Context, root [32]byte, signed interfaces.ReadOnlySignedBeaconBlock) error {
-	if signed.Version() < version.Deneb {
-		return nil
-	}
-	t := time.Now()
-
-	block := signed.Block()
-	if block == nil {
-		return errors.New("invalid nil beacon block")
-	}
-	// We are only required to check within MIN_EPOCHS_FOR_BLOB_SIDECARS_REQUESTS
-	if !params.WithinDAPeriod(slots.ToEpoch(block.Slot()), slots.ToEpoch(s.CurrentSlot())) {
-		return nil
-	}
-
-	body := block.Body()
-	if body == nil {
-		return errors.New("invalid nil beacon block body")
-	}
-	kzgCommitments, err := body.BlobKzgCommitments()
-	if err != nil {
-		return errors.Wrap(err, "could not get KZG commitments")
-	}
-	expected := len(kzgCommitments)
-	if expected == 0 {
-		return nil
-	}
-
-	// Read first from db in case we have the blobs
-	sidecars, err := s.cfg.BeaconDB.BlobSidecarsByRoot(ctx, root)
-	switch {
-	case err == nil:
-		if len(sidecars) >= expected {
-			s.blobNotifiers.delete(root)
-			if err := kzg.IsDataAvailable(kzgCommitments, sidecars); err != nil {
-				return err
-			}
-			logBlobSidecar(sidecars, t)
-			return nil
-		}
-	case errors.Is(err, db.ErrNotFound):
-	// If the blob sidecars haven't arrived yet, the subsequent code will wait for them.
-	// Note: The system will not exit with an error in this scenario.
-	default:
-		log.WithError(err).Error("could not get blob sidecars from DB")
-	}
-
-	found := map[uint64]struct{}{}
-	for _, sc := range sidecars {
-		found[sc.Index] = struct{}{}
-	}
-	nc := s.blobNotifiers.forRoot(root)
-	for {
-		select {
-		case idx := <-nc:
-			found[idx] = struct{}{}
-			if len(found) != expected {
-				continue
-			}
-			s.blobNotifiers.delete(root)
-			sidecars, err := s.cfg.BeaconDB.BlobSidecarsByRoot(ctx, root)
-			if err != nil {
-				return errors.Wrap(err, "could not get blob sidecars")
-			}
-			if err := kzg.IsDataAvailable(kzgCommitments, sidecars); err != nil {
-				return err
-			}
-			logBlobSidecar(sidecars, t)
-			return nil
-		case <-ctx.Done():
-			return errors.Wrap(ctx.Err(), "context deadline waiting for blob sidecars")
 		}
 	}
 }

@@ -18,7 +18,7 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -49,7 +49,7 @@ func (vs *Server) StreamDuties(req *zondpb.DutiesRequest, stream zondpb.BeaconNo
 		return status.Error(codes.Unavailable, "genesis time is not set")
 	}
 	var currentEpoch primitives.Epoch
-	if genesisTime.Before(prysmTime.Now()) {
+	if genesisTime.Before(qrysmTime.Now()) {
 		currentEpoch = slots.EpochsSinceGenesis(vs.TimeFetcher.GenesisTime())
 	}
 	req.Epoch = currentEpoch
@@ -283,7 +283,7 @@ func registerSyncSubnet(currEpoch primitives.Epoch, syncPeriod uint64, pubkey []
 	currPeriod := slots.SyncCommitteePeriod(currEpoch)
 	endEpoch := startEpoch + params.BeaconConfig().EpochsPerSyncCommitteePeriod
 	_, _, ok, expTime := cache.SyncSubnetIDs.GetSyncCommitteeSubnets(pubkey, startEpoch)
-	if ok && expTime.After(prysmTime.Now()) {
+	if ok && expTime.After(qrysmTime.Now()) {
 		return
 	}
 	firstValidEpoch, err := startEpoch.SafeSub(params.BeaconConfig().SyncCommitteeSubnetCount)
