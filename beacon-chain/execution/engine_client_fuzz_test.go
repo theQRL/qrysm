@@ -175,12 +175,6 @@ func FuzzExecutionBlock(f *testing.F) {
 		To:        &addr,
 		Value:     big.NewInt(math.MaxInt),
 		Data:      []byte{'r', 'a', 'n', 'd', 'o', 'm'},
-
-		// Signature values
-		// TODO(rgeraldes24): remove
-		// V: big.NewInt(0),
-		// R: big.NewInt(math.MaxInt),
-		// S: big.NewInt(math.MaxInt),
 	}
 	tx := types.NewTx(innerData)
 	execBlock := &pb.ExecutionBlock{

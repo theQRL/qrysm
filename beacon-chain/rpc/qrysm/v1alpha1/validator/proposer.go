@@ -71,10 +71,8 @@ func (vs *Server) GetBeaconBlock(ctx context.Context, req *zondpb.BlockRequest) 
 	}
 
 	// An optimistic validator MUST NOT produce a block (i.e., sign across the DOMAIN_BEACON_PROPOSER domain).
-	if slots.ToEpoch(req.Slot) >= params.BeaconConfig().BellatrixForkEpoch {
-		if err := vs.optimisticStatus(ctx); err != nil {
-			return nil, status.Errorf(codes.Unavailable, "Validator is not ready to propose: %v", err)
-		}
+	if err := vs.optimisticStatus(ctx); err != nil {
+		return nil, status.Errorf(codes.Unavailable, "Validator is not ready to propose: %v", err)
 	}
 
 	sBlk, err := getEmptyBlock(req.Slot)
@@ -156,10 +154,10 @@ func (vs *Server) BuildBlockParallel(ctx context.Context, sBlk interfaces.Signed
 		// Set exits.
 		sBlk.SetVoluntaryExits(vs.getExits(head, sBlk.Block().Slot()))
 
-		// Set sync aggregate. New in Altair.
+		// Set sync aggregate.
 		vs.setSyncAggregate(ctx, sBlk)
 
-		// Set bls to execution change. New in Capella.
+		// Set dilithium to execution change.
 		vs.setDilithiumToExecData(sBlk, head)
 	}()
 

@@ -49,8 +49,8 @@ func checkNilAttestation(attestation *zondpb.Attestation) error {
 		return errors.New("attestation aggregation bits is empty")
 	}
 
-	if len(attestation.Signature) == 0 {
-		return errors.New("attestation signature is empty")
+	if len(attestation.Signatures) == 0 {
+		return errors.New("attestation signatures slice is empty")
 	}
 
 	return nil

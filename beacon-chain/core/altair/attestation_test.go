@@ -17,7 +17,6 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/math"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation"
@@ -34,13 +33,13 @@ func TestProcessAttestations_InclusionDelayFailure(t *testing.T) {
 			},
 		}),
 	}
-	b := util.NewBeaconBlockAltair()
-	b.Block = &zondpb.BeaconBlockAltair{
-		Body: &zondpb.BeaconBlockBodyAltair{
+	b := util.NewBeaconBlockCapella()
+	b.Block = &zondpb.BeaconBlockCapella{
+		Body: &zondpb.BeaconBlockBodyCapella{
 			Attestations: attestations,
 		},
 	}
-	beaconState, _ := util.DeterministicGenesisStateAltair(t, 100)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 100)
 
 	want := fmt.Sprintf(
 		"attestation slot %d + inclusion delay %d > state slot %d",
@@ -60,13 +59,13 @@ func TestProcessAttestations_NeitherCurrentNorPrevEpoch(t *testing.T) {
 			Source: &zondpb.Checkpoint{Epoch: 0, Root: []byte("hello-world")},
 			Target: &zondpb.Checkpoint{Epoch: 0}}})
 
-	b := util.NewBeaconBlockAltair()
-	b.Block = &zondpb.BeaconBlockAltair{
-		Body: &zondpb.BeaconBlockBodyAltair{
+	b := util.NewBeaconBlockCapella()
+	b.Block = &zondpb.BeaconBlockCapella{
+		Body: &zondpb.BeaconBlockBodyCapella{
 			Attestations: []*zondpb.Attestation{att},
 		},
 	}
-	beaconState, _ := util.DeterministicGenesisStateAltair(t, 100)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 100)
 	err := beaconState.SetSlot(beaconState.Slot() + params.BeaconConfig().SlotsPerEpoch*4 + params.BeaconConfig().MinAttestationInclusionDelay)
 	require.NoError(t, err)
 	pfc := beaconState.PreviousJustifiedCheckpoint()
@@ -95,13 +94,13 @@ func TestProcessAttestations_CurrentEpochFFGDataMismatches(t *testing.T) {
 			AggregationBits: bitfield.Bitlist{0x09},
 		},
 	}
-	b := util.NewBeaconBlockAltair()
-	b.Block = &zondpb.BeaconBlockAltair{
-		Body: &zondpb.BeaconBlockBodyAltair{
+	b := util.NewBeaconBlockCapella()
+	b.Block = &zondpb.BeaconBlockCapella{
+		Body: &zondpb.BeaconBlockBodyCapella{
 			Attestations: attestations,
 		},
 	}
-	beaconState, _ := util.DeterministicGenesisStateAltair(t, 100)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 100)
 	require.NoError(t, beaconState.SetSlot(beaconState.Slot()+params.BeaconConfig().MinAttestationInclusionDelay))
 	cfc := beaconState.CurrentJustifiedCheckpoint()
 	cfc.Root = []byte("hello-world")
@@ -121,7 +120,7 @@ func TestProcessAttestations_CurrentEpochFFGDataMismatches(t *testing.T) {
 }
 
 func TestProcessAttestations_PrevEpochFFGDataMismatches(t *testing.T) {
-	beaconState, _ := util.DeterministicGenesisStateAltair(t, 100)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 100)
 
 	aggBits := bitfield.NewBitlist(3)
 	aggBits.SetBitAt(0, true)
@@ -135,9 +134,9 @@ func TestProcessAttestations_PrevEpochFFGDataMismatches(t *testing.T) {
 			AggregationBits: aggBits,
 		},
 	}
-	b := util.NewBeaconBlockAltair()
-	b.Block = &zondpb.BeaconBlockAltair{
-		Body: &zondpb.BeaconBlockBodyAltair{
+	b := util.NewBeaconBlockCapella()
+	b.Block = &zondpb.BeaconBlockCapella{
+		Body: &zondpb.BeaconBlockBodyCapella{
 			Attestations: attestations,
 		},
 	}
@@ -163,7 +162,7 @@ func TestProcessAttestations_PrevEpochFFGDataMismatches(t *testing.T) {
 }
 
 func TestProcessAttestations_InvalidAggregationBitsLength(t *testing.T) {
-	beaconState, _ := util.DeterministicGenesisStateAltair(t, 100)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 256)
 
 	aggBits := bitfield.NewBitlist(4)
 	att := &zondpb.Attestation{
@@ -173,9 +172,9 @@ func TestProcessAttestations_InvalidAggregationBitsLength(t *testing.T) {
 		AggregationBits: aggBits,
 	}
 
-	b := util.NewBeaconBlockAltair()
-	b.Block = &zondpb.BeaconBlockAltair{
-		Body: &zondpb.BeaconBlockBodyAltair{
+	b := util.NewBeaconBlockCapella()
+	b.Block = &zondpb.BeaconBlockCapella{
+		Body: &zondpb.BeaconBlockBodyCapella{
 			Attestations: []*zondpb.Attestation{att},
 		},
 	}
@@ -187,7 +186,7 @@ func TestProcessAttestations_InvalidAggregationBitsLength(t *testing.T) {
 	cfc.Root = []byte("hello-world")
 	require.NoError(t, beaconState.SetCurrentJustifiedCheckpoint(cfc))
 
-	expected := "failed to verify aggregation bitfield: wanted participants bitfield length 3, got: 4"
+	expected := "failed to verify aggregation bitfield: wanted participants bitfield length 2, got: 4"
 	wsb, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
 	_, err = altair.ProcessAttestationsNoVerifySignature(context.Background(), beaconState, wsb)
@@ -195,9 +194,9 @@ func TestProcessAttestations_InvalidAggregationBitsLength(t *testing.T) {
 }
 
 func TestProcessAttestations_OK(t *testing.T) {
-	beaconState, privKeys := util.DeterministicGenesisStateAltair(t, 100)
+	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 256)
 
-	aggBits := bitfield.NewBitlist(3)
+	aggBits := bitfield.NewBitlist(2)
 	aggBits.SetBitAt(0, true)
 	var mockRoot [32]byte
 	copy(mockRoot[:], "hello-world")
@@ -217,17 +216,15 @@ func TestProcessAttestations_OK(t *testing.T) {
 	require.NoError(t, err)
 	attestingIndices, err := attestation.AttestingIndices(att.AggregationBits, committee)
 	require.NoError(t, err)
-	sigs := make([]bls.Signature, len(attestingIndices))
+	sigs := make([][]byte, len(attestingIndices))
 	for i, indice := range attestingIndices {
 		sb, err := signing.ComputeDomainAndSign(beaconState, 0, att.Data, params.BeaconConfig().DomainBeaconAttester, privKeys[indice])
 		require.NoError(t, err)
-		sig, err := bls.SignatureFromBytes(sb)
-		require.NoError(t, err)
-		sigs[i] = sig
+		sigs[i] = sb
 	}
-	att.Signature = bls.AggregateSignatures(sigs).Marshal()
+	att.Signatures = sigs
 
-	block := util.NewBeaconBlockAltair()
+	block := util.NewBeaconBlockCapella()
 	block.Block.Body.Attestations = []*zondpb.Attestation{att}
 
 	err = beaconState.SetSlot(beaconState.Slot() + params.BeaconConfig().MinAttestationInclusionDelay)
@@ -239,7 +236,7 @@ func TestProcessAttestations_OK(t *testing.T) {
 }
 
 func TestProcessAttestationNoVerify_SourceTargetHead(t *testing.T) {
-	beaconState, _ := util.DeterministicGenesisStateAltair(t, 64)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 256)
 	err := beaconState.SetSlot(beaconState.Slot() + params.BeaconConfig().MinAttestationInclusionDelay)
 	require.NoError(t, err)
 
@@ -256,8 +253,8 @@ func TestProcessAttestationNoVerify_SourceTargetHead(t *testing.T) {
 		},
 		AggregationBits: aggBits,
 	}
-	var zeroSig [96]byte
-	att.Signature = zeroSig[:]
+	var zeroSig [4595]byte
+	att.Signatures = [][]byte{zeroSig[:], zeroSig[:]}
 
 	ckp := beaconState.CurrentJustifiedCheckpoint()
 	copy(ckp.Root, make([]byte, fieldparams.RootLength))
@@ -411,15 +408,15 @@ func TestValidatorFlag_Add_ExceedsLength(t *testing.T) {
 
 func TestFuzzProcessAttestationsNoVerify_10000(t *testing.T) {
 	fuzzer := fuzz.NewWithSeed(0)
-	st := &zondpb.BeaconStateAltair{}
-	b := &zondpb.SignedBeaconBlockAltair{Block: &zondpb.BeaconBlockAltair{}}
+	st := &zondpb.BeaconStateCapella{}
+	b := &zondpb.SignedBeaconBlockCapella{Block: &zondpb.BeaconBlockCapella{}}
 	for i := 0; i < 10000; i++ {
 		fuzzer.Fuzz(st)
 		fuzzer.Fuzz(b)
 		if b.Block == nil {
-			b.Block = &zondpb.BeaconBlockAltair{}
+			b.Block = &zondpb.BeaconBlockCapella{}
 		}
-		s, err := state_native.InitializeFromProtoUnsafeAltair(st)
+		s, err := state_native.InitializeFromProtoUnsafeCapella(st)
 		require.NoError(t, err)
 		if b.Block == nil || b.Block.Body == nil {
 			continue
@@ -454,7 +451,7 @@ func TestSetParticipationAndRewardProposer(t *testing.T) {
 				headFlagIndex:   false,
 			},
 			wantedParticipation: []byte{0, 0, 0, 0, 0, 0, 0, 0},
-			wantedBalance:       32000000000,
+			wantedBalance:       40000000000000,
 		},
 		{name: "some participated without flags",
 			indices: []uint64{0, 1, 2, 3}, epochParticipation: []byte{0, 0, 0, 0, 0, 0, 0, 0}, participatedFlags: map[uint8]bool{
@@ -463,7 +460,7 @@ func TestSetParticipationAndRewardProposer(t *testing.T) {
 				headFlagIndex:   false,
 			},
 			wantedParticipation: []byte{0, 0, 0, 0, 0, 0, 0, 0},
-			wantedBalance:       32000000000,
+			wantedBalance:       40000000000000,
 		},
 		{name: "some participated with some flags",
 			indices: []uint64{0, 1, 2, 3}, epochParticipation: []byte{0, 0, 0, 0, 0, 0, 0, 0}, participatedFlags: map[uint8]bool{
@@ -472,7 +469,7 @@ func TestSetParticipationAndRewardProposer(t *testing.T) {
 				headFlagIndex:   false,
 			},
 			wantedParticipation: []byte{3, 3, 3, 3, 0, 0, 0, 0},
-			wantedBalance:       32000090342,
+			wantedBalance:       40000003185714,
 		},
 		{name: "all participated with some flags",
 			indices: []uint64{0, 1, 2, 3, 4, 5, 6, 7}, epochParticipation: []byte{0, 0, 0, 0, 0, 0, 0, 0}, participatedFlags: map[uint8]bool{
@@ -481,7 +478,7 @@ func TestSetParticipationAndRewardProposer(t *testing.T) {
 				headFlagIndex:   false,
 			},
 			wantedParticipation: []byte{1, 1, 1, 1, 1, 1, 1, 1},
-			wantedBalance:       32000063240,
+			wantedBalance:       40000002230000,
 		},
 		{name: "all participated with all flags",
 			indices: []uint64{0, 1, 2, 3, 4, 5, 6, 7}, epochParticipation: []byte{0, 0, 0, 0, 0, 0, 0, 0}, participatedFlags: map[uint8]bool{
@@ -490,12 +487,12 @@ func TestSetParticipationAndRewardProposer(t *testing.T) {
 				headFlagIndex:   true,
 			},
 			wantedParticipation: []byte{7, 7, 7, 7, 7, 7, 7, 7},
-			wantedBalance:       32000243925,
+			wantedBalance:       40000008601428,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			beaconState, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+			beaconState, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().MaxValidatorsPerCommittee)
 			require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch))
 
 			currentEpoch := time.CurrentEpoch(beaconState)
@@ -530,7 +527,7 @@ func TestSetParticipationAndRewardProposer(t *testing.T) {
 }
 
 func TestEpochParticipation(t *testing.T) {
-	beaconState, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().MaxValidatorsPerCommittee)
 	cfg := params.BeaconConfig()
 	sourceFlagIndex := cfg.TimelySourceFlagIndex
 	targetFlagIndex := cfg.TimelyTargetFlagIndex
@@ -567,7 +564,7 @@ func TestEpochParticipation(t *testing.T) {
 				targetFlagIndex: true,
 				headFlagIndex:   false,
 			},
-			wantedNumerator:          40473600,
+			wantedNumerator:          1427200000,
 			wantedEpochParticipation: []byte{3, 3, 3, 3, 0, 0, 0, 0},
 		},
 		{name: "all participated with some flags",
@@ -576,7 +573,7 @@ func TestEpochParticipation(t *testing.T) {
 				targetFlagIndex: false,
 				headFlagIndex:   false,
 			},
-			wantedNumerator:          28331520,
+			wantedNumerator:          999040000,
 			wantedEpochParticipation: []byte{1, 1, 1, 1, 1, 1, 1, 1},
 		},
 		{name: "all participated with all flags",
@@ -585,7 +582,7 @@ func TestEpochParticipation(t *testing.T) {
 				targetFlagIndex: true,
 				headFlagIndex:   true,
 			},
-			wantedNumerator:          109278720,
+			wantedNumerator:          3853440000,
 			wantedEpochParticipation: []byte{7, 7, 7, 7, 7, 7, 7, 7},
 		},
 	}
@@ -600,17 +597,17 @@ func TestEpochParticipation(t *testing.T) {
 }
 
 func TestRewardProposer(t *testing.T) {
-	beaconState, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().MaxValidatorsPerCommittee)
 	require.NoError(t, beaconState.SetSlot(1))
 	tests := []struct {
 		rewardNumerator uint64
 		want            uint64
 	}{
-		{rewardNumerator: 1, want: 32000000000},
-		{rewardNumerator: 10000, want: 32000000022},
-		{rewardNumerator: 1000000, want: 32000002254},
-		{rewardNumerator: 1000000000, want: 32002234396},
-		{rewardNumerator: 1000000000000, want: 34234377253},
+		{rewardNumerator: 1, want: 40000000000000},
+		{rewardNumerator: 10000, want: 40000000000022},
+		{rewardNumerator: 1000000, want: 40000000002254},
+		{rewardNumerator: 1000000000, want: 40000002234396},
+		{rewardNumerator: 1000000000000, want: 40002234377253},
 	}
 	for _, test := range tests {
 		require.NoError(t, altair.RewardProposer(context.Background(), beaconState, test.rewardNumerator))
@@ -623,7 +620,7 @@ func TestRewardProposer(t *testing.T) {
 }
 
 func TestAttestationParticipationFlagIndices(t *testing.T) {
-	beaconState, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().MaxValidatorsPerCommittee)
 	require.NoError(t, beaconState.SetSlot(1))
 	cfg := params.BeaconConfig()
 	sourceFlagIndex := cfg.TimelySourceFlagIndex
@@ -718,7 +715,7 @@ func TestAttestationParticipationFlagIndices(t *testing.T) {
 }
 
 func TestMatchingStatus(t *testing.T) {
-	beaconState, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().MaxValidatorsPerCommittee)
 	require.NoError(t, beaconState.SetSlot(1))
 	tests := []struct {
 		name          string

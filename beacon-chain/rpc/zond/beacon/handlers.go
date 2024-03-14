@@ -38,28 +38,7 @@ const (
 	broadcastValidationConsensusAndEquivocation = "consensus_and_equivocation"
 )
 
-// PublishBlindedBlock instructs the beacon node to use the components of the `SignedBlindedBeaconBlock` to construct
-// and publish a SignedBeaconBlock by swapping out the transactions_root for the corresponding full list of `transactions`.
-// The beacon node should broadcast a newly constructed SignedBeaconBlock to the beacon network, to be included in the
-// beacon chain. The beacon node is not required to validate the signed BeaconBlock, and a successful response (20X)
-// only indicates that the broadcast has been successful. The beacon node is expected to integrate the new block into
-// its state, and therefore validate the block internally, however blocks which fail the validation are still broadcast
-// but a different status code is returned (202). Pre-Bellatrix, this endpoint will accept a SignedBeaconBlock.
-func (s *Server) PublishBlindedBlock(w http.ResponseWriter, r *http.Request) {
-	ctx, span := trace.StartSpan(r.Context(), "beacon.PublishBlindedBlock")
-	defer span.End()
-	if shared.IsSyncing(r.Context(), w, s.SyncChecker, s.HeadFetcher, s.TimeFetcher, s.OptimisticModeFetcher) {
-		return
-	}
-	isSSZ := http2.SszRequested(r)
-	if isSSZ {
-		s.publishBlindedBlockSSZ(ctx, w, r)
-	} else {
-		s.publishBlindedBlock(ctx, w, r)
-	}
-}
-
-// PublishBlindedBlockV2 instructs the beacon node to use the components of the `SignedBlindedBeaconBlock` to construct and publish a
+// PublishBlindedBlock instructs the beacon node to use the components of the `SignedBlindedBeaconBlock` to construct and publish a
 // `SignedBeaconBlock` by swapping out the `transactions_root` for the corresponding full list of `transactions`.
 // The beacon node should broadcast a newly constructed `SignedBeaconBlock` to the beacon network,
 // to be included in the beacon chain. The beacon node is not required to validate the signed
@@ -68,8 +47,8 @@ func (s *Server) PublishBlindedBlock(w http.ResponseWriter, r *http.Request) {
 // therefore validate the block internally, however blocks which fail the validation are still
 // broadcast but a different status code is returned (202). Pre-Bellatrix, this endpoint will accept
 // a `SignedBeaconBlock`.
-func (s *Server) PublishBlindedBlockV2(w http.ResponseWriter, r *http.Request) {
-	ctx, span := trace.StartSpan(r.Context(), "beacon.PublishBlindedBlockV2")
+func (s *Server) PublishBlindedBlock(w http.ResponseWriter, r *http.Request) {
+	ctx, span := trace.StartSpan(r.Context(), "beacon.PublishBlindedBlock")
 	defer span.End()
 	if shared.IsSyncing(r.Context(), w, s.SyncChecker, s.HeadFetcher, s.TimeFetcher, s.OptimisticModeFetcher) {
 		return
@@ -102,50 +81,7 @@ func (s *Server) publishBlindedBlockSSZ(ctx context.Context, w http.ResponseWrit
 		s.proposeBlock(ctx, w, genericBlock)
 		return
 	}
-	bellatrixBlock := &zond.SignedBlindedBeaconBlockBellatrix{}
-	if err := bellatrixBlock.UnmarshalSSZ(body); err == nil {
-		genericBlock := &zond.GenericSignedBeaconBlock{
-			Block: &zond.GenericSignedBeaconBlock_BlindedBellatrix{
-				BlindedBellatrix: bellatrixBlock,
-			},
-		}
-		if err = s.validateBroadcast(ctx, r, genericBlock); err != nil {
-			http2.HandleError(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		s.proposeBlock(ctx, w, genericBlock)
-		return
-	}
 
-	// blinded is not supported before bellatrix hardfork
-	altairBlock := &zond.SignedBeaconBlockAltair{}
-	if err := altairBlock.UnmarshalSSZ(body); err == nil {
-		genericBlock := &zond.GenericSignedBeaconBlock{
-			Block: &zond.GenericSignedBeaconBlock_Altair{
-				Altair: altairBlock,
-			},
-		}
-		if err = s.validateBroadcast(ctx, r, genericBlock); err != nil {
-			http2.HandleError(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		s.proposeBlock(ctx, w, genericBlock)
-		return
-	}
-	phase0Block := &zond.SignedBeaconBlock{}
-	if err := phase0Block.UnmarshalSSZ(body); err == nil {
-		genericBlock := &zond.GenericSignedBeaconBlock{
-			Block: &zond.GenericSignedBeaconBlock_Phase0{
-				Phase0: phase0Block,
-			},
-		}
-		if err = s.validateBroadcast(ctx, r, genericBlock); err != nil {
-			http2.HandleError(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		s.proposeBlock(ctx, w, genericBlock)
-		return
-	}
 	http2.HandleError(w, "Body does not represent a valid block type", http.StatusBadRequest)
 }
 
@@ -174,51 +110,6 @@ func (s *Server) publishBlindedBlock(ctx context.Context, w http.ResponseWriter,
 		}
 	}
 
-	var bellatrixBlock *shared.SignedBlindedBeaconBlockBellatrix
-	if err = unmarshalStrict(body, &bellatrixBlock); err == nil {
-		consensusBlock, err := capellaBlock.ToGeneric()
-		if err == nil {
-			if err = s.validateBroadcast(ctx, r, consensusBlock); err != nil {
-				http2.HandleError(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			s.proposeBlock(ctx, w, consensusBlock)
-			return
-		}
-		if versionHeader == version.String(version.Capella) {
-			blockVersionError = fmt.Sprintf("could not decode %s request body into consensus block: %v", version.String(version.Capella), err.Error())
-		}
-	}
-	var altairBlock *shared.SignedBeaconBlockAltair
-	if err = unmarshalStrict(body, &altairBlock); err == nil {
-		consensusBlock, err := bellatrixBlock.ToGeneric()
-		if err == nil {
-			if err = s.validateBroadcast(ctx, r, consensusBlock); err != nil {
-				http2.HandleError(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			s.proposeBlock(ctx, w, consensusBlock)
-			return
-		}
-		if versionHeader == version.String(version.Altair) {
-			blockVersionError = fmt.Sprintf("could not decode %s request body into consensus block: %v", version.String(version.Altair), err.Error())
-		}
-	}
-	var phase0Block *shared.SignedBeaconBlock
-	if err = unmarshalStrict(body, &phase0Block); err == nil {
-		consensusBlock, err := phase0Block.ToGeneric()
-		if err == nil {
-			if err = s.validateBroadcast(ctx, r, consensusBlock); err != nil {
-				http2.HandleError(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			s.proposeBlock(ctx, w, consensusBlock)
-			return
-		}
-		if versionHeader == version.String(version.Phase0) {
-			blockVersionError = fmt.Sprintf("could not decode %s request body into consensus block: %v", version.String(version.Phase0), err.Error())
-		}
-	}
 	if versionHeader == "" {
 		blockVersionError = fmt.Sprintf("please add the api header %s to see specific type errors", api.VersionHeader)
 	}
@@ -228,33 +119,12 @@ func (s *Server) publishBlindedBlock(ctx context.Context, w http.ResponseWriter,
 // PublishBlock instructs the beacon node to broadcast a newly signed beacon block to the beacon network,
 // to be included in the beacon chain. A success response (20x) indicates that the block
 // passed gossip validation and was successfully broadcast onto the network.
-// The beacon node is also expected to integrate the block into state, but may broadcast it
+// The beacon node is also expected to integrate the block into the state, but may broadcast it
 // before doing so, so as to aid timely delivery of the block. Should the block fail full
 // validation, a separate success response code (202) is used to indicate that the block was
 // successfully broadcast but failed integration.
 func (s *Server) PublishBlock(w http.ResponseWriter, r *http.Request) {
 	ctx, span := trace.StartSpan(r.Context(), "beacon.PublishBlock")
-	defer span.End()
-	if shared.IsSyncing(r.Context(), w, s.SyncChecker, s.HeadFetcher, s.TimeFetcher, s.OptimisticModeFetcher) {
-		return
-	}
-	isSSZ := http2.SszRequested(r)
-	if isSSZ {
-		s.publishBlockSSZ(ctx, w, r)
-	} else {
-		s.publishBlock(ctx, w, r)
-	}
-}
-
-// PublishBlockV2 instructs the beacon node to broadcast a newly signed beacon block to the beacon network,
-// to be included in the beacon chain. A success response (20x) indicates that the block
-// passed gossip validation and was successfully broadcast onto the network.
-// The beacon node is also expected to integrate the block into the state, but may broadcast it
-// before doing so, so as to aid timely delivery of the block. Should the block fail full
-// validation, a separate success response code (202) is used to indicate that the block was
-// successfully broadcast but failed integration.
-func (s *Server) PublishBlockV2(w http.ResponseWriter, r *http.Request) {
-	ctx, span := trace.StartSpan(r.Context(), "beacon.PublishBlockV2")
 	defer span.End()
 	if shared.IsSyncing(r.Context(), w, s.SyncChecker, s.HeadFetcher, s.TimeFetcher, s.OptimisticModeFetcher) {
 		return
@@ -287,48 +157,7 @@ func (s *Server) publishBlockSSZ(ctx context.Context, w http.ResponseWriter, r *
 		s.proposeBlock(ctx, w, genericBlock)
 		return
 	}
-	bellatrixBlock := &zond.SignedBeaconBlockBellatrix{}
-	if err := bellatrixBlock.UnmarshalSSZ(body); err == nil {
-		genericBlock := &zond.GenericSignedBeaconBlock{
-			Block: &zond.GenericSignedBeaconBlock_Bellatrix{
-				Bellatrix: bellatrixBlock,
-			},
-		}
-		if err = s.validateBroadcast(ctx, r, genericBlock); err != nil {
-			http2.HandleError(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		s.proposeBlock(ctx, w, genericBlock)
-		return
-	}
-	altairBlock := &zond.SignedBeaconBlockAltair{}
-	if err := altairBlock.UnmarshalSSZ(body); err == nil {
-		genericBlock := &zond.GenericSignedBeaconBlock{
-			Block: &zond.GenericSignedBeaconBlock_Altair{
-				Altair: altairBlock,
-			},
-		}
-		if err = s.validateBroadcast(ctx, r, genericBlock); err != nil {
-			http2.HandleError(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		s.proposeBlock(ctx, w, genericBlock)
-		return
-	}
-	phase0Block := &zond.SignedBeaconBlock{}
-	if err := phase0Block.UnmarshalSSZ(body); err == nil {
-		genericBlock := &zond.GenericSignedBeaconBlock{
-			Block: &zond.GenericSignedBeaconBlock_Phase0{
-				Phase0: phase0Block,
-			},
-		}
-		if err = s.validateBroadcast(ctx, r, genericBlock); err != nil {
-			http2.HandleError(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		s.proposeBlock(ctx, w, genericBlock)
-		return
-	}
+
 	http2.HandleError(w, "Body does not represent a valid block type", http.StatusBadRequest)
 }
 
@@ -355,51 +184,7 @@ func (s *Server) publishBlock(ctx context.Context, w http.ResponseWriter, r *htt
 			blockVersionError = fmt.Sprintf(": could not decode %s request body into consensus block: %v", version.String(version.Capella), err.Error())
 		}
 	}
-	var bellatrixBlock *shared.SignedBeaconBlockBellatrix
-	if err = unmarshalStrict(body, &bellatrixBlock); err == nil {
-		consensusBlock, err := bellatrixBlock.ToGeneric()
-		if err == nil {
-			if err = s.validateBroadcast(ctx, r, consensusBlock); err != nil {
-				http2.HandleError(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			s.proposeBlock(ctx, w, consensusBlock)
-			return
-		}
-		if versionHeader == version.String(version.Bellatrix) {
-			blockVersionError = fmt.Sprintf(": could not decode %s request body into consensus block: %v", version.String(version.Bellatrix), err.Error())
-		}
-	}
-	var altairBlock *shared.SignedBeaconBlockAltair
-	if err = unmarshalStrict(body, &altairBlock); err == nil {
-		consensusBlock, err := altairBlock.ToGeneric()
-		if err == nil {
-			if err = s.validateBroadcast(ctx, r, consensusBlock); err != nil {
-				http2.HandleError(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			s.proposeBlock(ctx, w, consensusBlock)
-			return
-		}
-		if versionHeader == version.String(version.Altair) {
-			blockVersionError = fmt.Sprintf(": could not decode %s request body into consensus block: %v", version.String(version.Altair), err.Error())
-		}
-	}
-	var phase0Block *shared.SignedBeaconBlock
-	if err = unmarshalStrict(body, &phase0Block); err == nil {
-		consensusBlock, err := phase0Block.ToGeneric()
-		if err == nil {
-			if err = s.validateBroadcast(ctx, r, consensusBlock); err != nil {
-				http2.HandleError(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			s.proposeBlock(ctx, w, consensusBlock)
-			return
-		}
-		if versionHeader == version.String(version.Phase0) {
-			blockVersionError = fmt.Sprintf(": Could not decode %s request body into consensus block: %v", version.String(version.Phase0), err.Error())
-		}
-	}
+
 	if versionHeader == "" {
 		blockVersionError = fmt.Sprintf(": please add the api header %s to see specific type errors", api.VersionHeader)
 	}

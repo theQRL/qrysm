@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/theQRL/go-qrllib/dilithium"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -15,7 +15,7 @@ import (
 
 func TestExportStandardProtectionJSON_EmptyGenesisRoot(t *testing.T) {
 	ctx := context.Background()
-	pubKeys := [][dilithium.CryptoPublicKeyBytes]byte{
+	pubKeys := [][field_params.DilithiumPubkeyLength]byte{
 		{1},
 	}
 	validatorDB := dbtest.SetupDB(t, pubKeys)
@@ -30,7 +30,7 @@ func TestExportStandardProtectionJSON_EmptyGenesisRoot(t *testing.T) {
 
 func Test_getSignedAttestationsByPubKey(t *testing.T) {
 	t.Run("OK", func(t *testing.T) {
-		pubKeys := [][dilithium.CryptoPublicKeyBytes]byte{
+		pubKeys := [][field_params.DilithiumPubkeyLength]byte{
 			{1},
 		}
 		ctx := context.Background()
@@ -73,7 +73,7 @@ func Test_getSignedAttestationsByPubKey(t *testing.T) {
 		assert.DeepEqual(t, wanted, signedAttestations)
 	})
 	t.Run("old_schema_bug_edge_case_genesis", func(t *testing.T) {
-		pubKeys := [][dilithium.CryptoPublicKeyBytes]byte{
+		pubKeys := [][field_params.DilithiumPubkeyLength]byte{
 			{1},
 		}
 		ctx := context.Background()
@@ -115,7 +115,7 @@ func Test_getSignedAttestationsByPubKey(t *testing.T) {
 		assert.DeepEqual(t, wanted, signedAttestations)
 	})
 	t.Run("old_schema_bug_edge_case_not_genesis", func(t *testing.T) {
-		pubKeys := [][dilithium.CryptoPublicKeyBytes]byte{
+		pubKeys := [][field_params.DilithiumPubkeyLength]byte{
 			{1},
 		}
 		ctx := context.Background()
@@ -164,7 +164,7 @@ func Test_getSignedAttestationsByPubKey(t *testing.T) {
 }
 
 func Test_getSignedBlocksByPubKey(t *testing.T) {
-	pubKeys := [][dilithium.CryptoPublicKeyBytes]byte{
+	pubKeys := [][field_params.DilithiumPubkeyLength]byte{
 		{1},
 	}
 	ctx := context.Background()

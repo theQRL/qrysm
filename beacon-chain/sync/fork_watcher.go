@@ -1,11 +1,7 @@
 package sync
 
 import (
-	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
 	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/network/forks"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -19,15 +15,20 @@ func (s *Service) forkWatcher() {
 		// topics during/after the fork epoch. This routine is to ensure correct
 		// subscriptions for nodes running before a fork epoch.
 		case currSlot := <-slotTicker.C():
-			currEpoch := slots.ToEpoch(currSlot)
-			if err := s.registerForUpcomingFork(currEpoch); err != nil {
-				log.WithError(err).Error("Unable to check for fork in the next epoch")
-				continue
-			}
-			if err := s.deregisterFromPastFork(currEpoch); err != nil {
-				log.WithError(err).Error("Unable to check for fork in the previous epoch")
-				continue
-			}
+			// NOTE(rgeraldes24): re-enable once we have more forks + need to subscribe/unsubscribe topics
+			/*
+				currEpoch := slots.ToEpoch(currSlot)
+				if err := s.registerForUpcomingFork(currEpoch); err != nil {
+					log.WithError(err).Error("Unable to check for fork in the next epoch")
+					continue
+				}
+
+				if err := s.deregisterFromPastFork(currEpoch); err != nil {
+					log.WithError(err).Error("Unable to check for fork in the previous epoch")
+					continue
+				}
+			*/
+
 			// Broadcast Dilithium changes at the Capella fork boundary
 			s.broadcastDilithiumChanges(currSlot)
 
@@ -41,6 +42,7 @@ func (s *Service) forkWatcher() {
 
 // Checks if there is a fork in the next epoch and if there is
 // it registers the appropriate gossip and rpc topics.
+/*
 func (s *Service) registerForUpcomingFork(currEpoch primitives.Epoch) error {
 	genRoot := s.cfg.clock.GenesisValidatorsRoot()
 	isNextForkEpoch, err := forks.IsForkNextEpoch(s.cfg.clock.GenesisTime(), genRoot[:])
@@ -66,7 +68,9 @@ func (s *Service) registerForUpcomingFork(currEpoch primitives.Epoch) error {
 	}
 	return nil
 }
+*/
 
+/*
 // Checks if there was a fork in the previous epoch, and if there
 // was then we deregister the topics from that particular fork.
 func (s *Service) deregisterFromPastFork(currEpoch primitives.Epoch) error {
@@ -98,13 +102,6 @@ func (s *Service) deregisterFromPastFork(currEpoch primitives.Epoch) error {
 		if !s.subHandler.digestExists(prevDigest) {
 			return nil
 		}
-		prevFork, err := forks.Fork(epochBeforeFork)
-		if err != nil {
-			return errors.Wrap(err, "failed to determine previous epoch fork data")
-		}
-		if prevFork.Epoch == params.BeaconConfig().GenesisEpoch {
-			s.unregisterPhase0Handlers()
-		}
 		// Run through all our current active topics and see
 		// if there are any subscriptions to be removed.
 		for _, t := range s.subHandler.allTopics() {
@@ -120,3 +117,4 @@ func (s *Service) deregisterFromPastFork(currEpoch primitives.Epoch) error {
 	}
 	return nil
 }
+*/

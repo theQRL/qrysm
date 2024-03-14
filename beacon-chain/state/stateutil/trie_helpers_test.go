@@ -15,7 +15,7 @@ import (
 )
 
 func TestReturnTrieLayer_OK(t *testing.T) {
-	newState, _ := util.DeterministicGenesisState(t, 32)
+	newState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	root, err := stateutil.RootsArrayHashTreeRoot(newState.BlockRoots(), uint64(params.BeaconConfig().SlotsPerHistoricalRoot))
 	require.NoError(t, err)
 	roots := retrieveBlockRoots(newState)
@@ -31,7 +31,7 @@ func TestReturnTrieLayer_OK(t *testing.T) {
 }
 
 func BenchmarkReturnTrieLayer_NormalAlgorithm(b *testing.B) {
-	newState, _ := util.DeterministicGenesisState(b, 32)
+	newState, _ := util.DeterministicGenesisStateCapella(b, 32)
 	root, err := stateutil.RootsArrayHashTreeRoot(newState.BlockRoots(), uint64(params.BeaconConfig().SlotsPerHistoricalRoot))
 	require.NoError(b, err)
 	roots := retrieveBlockRoots(newState)
@@ -46,7 +46,7 @@ func BenchmarkReturnTrieLayer_NormalAlgorithm(b *testing.B) {
 }
 
 func BenchmarkReturnTrieLayer_VectorizedAlgorithm(b *testing.B) {
-	newState, _ := util.DeterministicGenesisState(b, 32)
+	newState, _ := util.DeterministicGenesisStateCapella(b, 32)
 	root, err := stateutil.RootsArrayHashTreeRoot(newState.BlockRoots(), uint64(params.BeaconConfig().SlotsPerHistoricalRoot))
 	require.NoError(b, err)
 	roots := retrieveBlockRoots(newState)
@@ -61,7 +61,7 @@ func BenchmarkReturnTrieLayer_VectorizedAlgorithm(b *testing.B) {
 }
 
 func TestReturnTrieLayerVariable_OK(t *testing.T) {
-	newState, _ := util.DeterministicGenesisState(t, 32)
+	newState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	root, err := stateutil.ValidatorRegistryRoot(newState.Validators())
 	require.NoError(t, err)
 	validators := newState.Validators()
@@ -86,7 +86,7 @@ func TestReturnTrieLayerVariable_OK(t *testing.T) {
 }
 
 func BenchmarkReturnTrieLayerVariable_NormalAlgorithm(b *testing.B) {
-	newState, _ := util.DeterministicGenesisState(b, 16000)
+	newState, _ := util.DeterministicGenesisStateCapella(b, 16000)
 	root, err := stateutil.ValidatorRegistryRoot(newState.Validators())
 	require.NoError(b, err)
 	validators := newState.Validators()
@@ -108,7 +108,7 @@ func BenchmarkReturnTrieLayerVariable_NormalAlgorithm(b *testing.B) {
 
 func BenchmarkReturnTrieLayerVariable_VectorizedAlgorithm(b *testing.B) {
 
-	newState, _ := util.DeterministicGenesisState(b, 16000)
+	newState, _ := util.DeterministicGenesisStateCapella(b, 16000)
 	root, err := stateutil.ValidatorRegistryRoot(newState.Validators())
 	require.NoError(b, err)
 	validators := newState.Validators()
@@ -129,7 +129,7 @@ func BenchmarkReturnTrieLayerVariable_VectorizedAlgorithm(b *testing.B) {
 }
 
 func TestRecomputeFromLayer_FixedSizedArray(t *testing.T) {
-	newState, _ := util.DeterministicGenesisState(t, 32)
+	newState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	roots := retrieveBlockRoots(newState)
 
 	layers, err := stateutil.ReturnTrieLayer(roots, uint64(len(roots)))
@@ -148,7 +148,7 @@ func TestRecomputeFromLayer_FixedSizedArray(t *testing.T) {
 }
 
 func TestRecomputeFromLayer_VariableSizedArray(t *testing.T) {
-	newState, _ := util.DeterministicGenesisState(t, 32)
+	newState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	validators := newState.Validators()
 	roots := make([][32]byte, 0, len(validators))
 	for _, val := range validators {

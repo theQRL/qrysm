@@ -23,7 +23,7 @@ import (
 	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
 	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
 	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -42,7 +42,7 @@ func setupValidExit(t *testing.T) (*zondpb.SignedVoluntaryExit, state.BeaconStat
 			ActivationEpoch: 0,
 		},
 	}
-	st, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	st, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Validators: registry,
 		Fork: &zondpb.Fork{
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
@@ -54,7 +54,7 @@ func setupValidExit(t *testing.T) (*zondpb.SignedVoluntaryExit, state.BeaconStat
 	err = st.SetSlot(st.Slot() + params.BeaconConfig().SlotsPerEpoch.Mul(uint64(params.BeaconConfig().ShardCommitteePeriod)))
 	require.NoError(t, err)
 
-	priv, err := bls.RandKey()
+	priv, err := dilithium.RandKey()
 	require.NoError(t, err)
 	exit.Signature, err = signing.ComputeDomainAndSign(st, coreTime.CurrentEpoch(st), exit.Exit, params.BeaconConfig().DomainVoluntaryExit, priv)
 	require.NoError(t, err)

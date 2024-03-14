@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpbalpha "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
@@ -20,7 +20,7 @@ import (
 
 // ListSyncCommittees retrieves the sync committees for the given epoch.
 // If the epoch is not passed in, then the sync committees for the epoch of the state will be obtained.
-func (bs *Server) ListSyncCommittees(ctx context.Context, req *zondpbv2.StateSyncCommitteesRequest) (*zondpbv2.StateSyncCommitteesResponse, error) {
+func (bs *Server) ListSyncCommittees(ctx context.Context, req *zondpbv1.StateSyncCommitteesRequest) (*zondpbv1.StateSyncCommitteesResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.ListSyncCommittees")
 	defer span.End()
 
@@ -99,8 +99,8 @@ func (bs *Server) ListSyncCommittees(ctx context.Context, req *zondpbv2.StateSyn
 	}
 	isFinalized := bs.FinalizationFetcher.IsFinalized(ctx, blockRoot)
 
-	return &zondpbv2.StateSyncCommitteesResponse{
-		Data: &zondpbv2.SyncCommitteeValidators{
+	return &zondpbv1.StateSyncCommitteesResponse{
+		Data: &zondpbv1.SyncCommitteeValidators{
 			Validators:          committeeIndices,
 			ValidatorAggregates: subcommittees,
 		},
@@ -146,9 +146,9 @@ func nextCommitteeIndicesFromState(st state.BeaconState) ([]primitives.Validator
 	return committeeIndicesFromState(st, committee)
 }
 
-func extractSyncSubcommittees(st state.BeaconState, committee *zondpbalpha.SyncCommittee) ([]*zondpbv2.SyncSubcommitteeValidators, error) {
+func extractSyncSubcommittees(st state.BeaconState, committee *zondpbalpha.SyncCommittee) ([]*zondpbv1.SyncSubcommitteeValidators, error) {
 	subcommitteeCount := params.BeaconConfig().SyncCommitteeSubnetCount
-	subcommittees := make([]*zondpbv2.SyncSubcommitteeValidators, subcommitteeCount)
+	subcommittees := make([]*zondpbv1.SyncSubcommitteeValidators, subcommitteeCount)
 	for i := uint64(0); i < subcommitteeCount; i++ {
 		pubkeys, err := altair.SyncSubCommitteePubkeys(committee, primitives.CommitteeIndex(i))
 		if err != nil {
@@ -156,7 +156,7 @@ func extractSyncSubcommittees(st state.BeaconState, committee *zondpbalpha.SyncC
 				"failed to get subcommittee pubkeys: %v", err,
 			)
 		}
-		subcommittee := &zondpbv2.SyncSubcommitteeValidators{Validators: make([]primitives.ValidatorIndex, len(pubkeys))}
+		subcommittee := &zondpbv1.SyncSubcommitteeValidators{Validators: make([]primitives.ValidatorIndex, len(pubkeys))}
 		for j, key := range pubkeys {
 			index, ok := st.ValidatorIndexByPubkey(bytesutil.ToBytes2592(key))
 			if !ok {

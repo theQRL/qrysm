@@ -5,7 +5,7 @@ import (
 	"context"
 
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/go-qrllib/dilithium"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 )
@@ -22,7 +22,7 @@ func (km *Keymanager) DeleteKeystores(
 	ctx context.Context, publicKeys [][]byte,
 ) ([]*zondpbservice.DeletedKeystoreStatus, error) {
 	// Check for duplicate keys and filter them out.
-	trackedPublicKeys := make(map[[dilithium.CryptoPublicKeyBytes]byte]bool)
+	trackedPublicKeys := make(map[[field_params.DilithiumPubkeyLength]byte]bool)
 	statuses := make([]*zondpbservice.DeletedKeystoreStatus, 0, len(publicKeys))
 	deletedKeys := make([][]byte, 0, len(publicKeys))
 	// 1) Copy the in memory keystore

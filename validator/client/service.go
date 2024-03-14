@@ -11,10 +11,10 @@ import (
 	grpcopentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	grpcprometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-qrllib/dilithium"
 	grpcutil "github.com/theQRL/qrysm/v4/api/grpc"
 	"github.com/theQRL/qrysm/v4/async/event"
 	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	validatorserviceconfig "github.com/theQRL/qrysm/v4/config/validator/service"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
@@ -172,7 +172,7 @@ func (v *ValidatorService) Start() {
 		log.WithError(err).Error("Could not read slashable public keys from disk")
 		return
 	}
-	slashablePublicKeys := make(map[[dilithium.CryptoPublicKeyBytes]byte]bool)
+	slashablePublicKeys := make(map[[field_params.DilithiumPubkeyLength]byte]bool)
 	for _, pubKey := range sPubKeys {
 		slashablePublicKeys[pubKey] = true
 	}
@@ -194,10 +194,10 @@ func (v *ValidatorService) Start() {
 		graffiti:                       v.graffiti,
 		logValidatorBalances:           v.logValidatorBalances,
 		emitAccountMetrics:             v.emitAccountMetrics,
-		startBalances:                  make(map[[dilithium.CryptoPublicKeyBytes]byte]uint64),
-		prevBalance:                    make(map[[dilithium.CryptoPublicKeyBytes]byte]uint64),
-		pubkeyToValidatorIndex:         make(map[[dilithium.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
-		signedValidatorRegistrations:   make(map[[dilithium.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1),
+		startBalances:                  make(map[[field_params.DilithiumPubkeyLength]byte]uint64),
+		prevBalance:                    make(map[[field_params.DilithiumPubkeyLength]byte]uint64),
+		pubkeyToValidatorIndex:         make(map[[field_params.DilithiumPubkeyLength]byte]primitives.ValidatorIndex),
+		signedValidatorRegistrations:   make(map[[field_params.DilithiumPubkeyLength]byte]*zondpb.SignedValidatorRegistrationV1),
 		attLogs:                        make(map[[32]byte]*attSubmitted),
 		domainDataCache:                cache,
 		aggregatedSlotCommitteeIDCache: aggregatedSlotCommitteeIDCache,
@@ -294,6 +294,7 @@ func ConstructDialOptions(
 		}
 		transportSecurity = grpc.WithTransportCredentials(creds)
 	} else {
+		// TODO(theQRL/qrysm/issues/67)
 		transportSecurity = grpc.WithInsecure()
 		log.Warn("You are using an insecure gRPC connection. If you are running your beacon node and " +
 			"validator on the same machines, you can ignore this message. If you want to know " +

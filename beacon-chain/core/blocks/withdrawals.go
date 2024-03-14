@@ -17,8 +17,7 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/encoding/ssz"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 )
 
 const executionToDilithiumPadding = 12
@@ -30,9 +29,6 @@ const executionToDilithiumPadding = 12
 func ProcessDilithiumToExecutionChanges(
 	st state.BeaconState,
 	signed interfaces.ReadOnlySignedBeaconBlock) (state.BeaconState, error) {
-	if signed.Version() < version.Capella {
-		return st, nil
-	}
 	changes, err := signed.Block().Body().DilithiumToExecutionChanges()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get DilithiumToExecutionChanges")
@@ -80,7 +76,7 @@ func processDilithiumToExecutionChange(st state.BeaconState, signed *zondpb.Sign
 
 	message := signed.Message
 	newCredentials := make([]byte, executionToDilithiumPadding)
-	newCredentials[0] = params.BeaconConfig().ETH1AddressWithdrawalPrefixByte
+	newCredentials[0] = params.BeaconConfig().ZondAddressWithdrawalPrefixByte
 	val.WithdrawalCredentials = append(newCredentials, message.ToExecutionAddress...)
 	err = st.UpdateValidatorAtIndex(message.ValidatorIndex, val)
 	return st, err
@@ -219,7 +215,7 @@ func DilithiumChangesSignatureBatch(
 		return dilithium.NewSet(), nil
 	}
 	batch := &dilithium.SignatureBatch{
-		Signatures:   make([][]byte, len(changes)),
+		Signatures:   make([][][]byte, len(changes)),
 		PublicKeys:   make([][]dilithium.PublicKey, len(changes)),
 		Messages:     make([][32]byte, len(changes)),
 		Descriptions: make([]string, len(changes)),
@@ -230,7 +226,7 @@ func DilithiumChangesSignatureBatch(
 		return nil, errors.Wrap(err, "could not compute signing domain")
 	}
 	for i, change := range changes {
-		batch.Signatures[i] = change.Signature
+		batch.Signatures[i] = append(batch.Signatures[i], change.Signature)
 		publicKey, err := dilithium.PublicKeyFromBytes(change.Message.FromDilithiumPubkey)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not convert bytes to public key")
@@ -251,7 +247,7 @@ func DilithiumChangesSignatureBatch(
 // is from a previous fork.
 func VerifyDilithiumChangeSignature(
 	st state.ReadOnlyBeaconState,
-	change *zondpbv2.SignedDilithiumToExecutionChange,
+	change *zondpbv1.SignedDilithiumToExecutionChange,
 ) error {
 	c := params.BeaconConfig()
 	domain, err := signing.ComputeDomain(c.DomainDilithiumToExecutionChange, c.GenesisForkVersion, st.GenesisValidatorsRoot())

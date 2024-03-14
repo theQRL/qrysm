@@ -173,7 +173,7 @@ func TestStreamBlocks_CapellaValid(t *testing.T) {
 
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/zond/v2/beacon/blocks/head",
+				"/zond/v1/beacon/blocks/head",
 				&signedBlockResponseJson,
 			).Return(
 				nil,
@@ -211,7 +211,7 @@ func TestStreamBlocks_CapellaValid(t *testing.T) {
 
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/zond/v2/beacon/blocks/head",
+				"/zond/v1/beacon/blocks/head",
 				&signedBlockResponseJson,
 			).Return(
 				nil,
@@ -239,7 +239,7 @@ func TestStreamBlocks_CapellaValid(t *testing.T) {
 			if testCase.verifiedOnly {
 				jsonRestHandler.EXPECT().GetRestJsonResponse(
 					ctx,
-					"/zond/v2/beacon/blocks/head",
+					"/zond/v1/beacon/blocks/head",
 					&signedBlockResponseJson,
 				).Return(
 					nil,

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
@@ -24,7 +24,7 @@ import (
 // via gRPC. Beacon node will verify the slot signature and determine if the validator is also
 // an aggregator. If yes, then beacon node will broadcast aggregated signature and
 // proof on the validator's behalf.
-func (v *validator) SubmitAggregateAndProof(ctx context.Context, slot primitives.Slot, pubKey [dilithiumlib.CryptoPublicKeyBytes]byte) {
+func (v *validator) SubmitAggregateAndProof(ctx context.Context, slot primitives.Slot, pubKey [field_params.DilithiumPubkeyLength]byte) {
 	ctx, span := trace.StartSpan(ctx, "validator.SubmitAggregateAndProof")
 	defer span.End()
 
@@ -116,7 +116,7 @@ func (v *validator) SubmitAggregateAndProof(ctx context.Context, slot primitives
 }
 
 // Signs input slot with domain selection proof. This is used to create the signature for aggregator selection.
-func (v *validator) signSlotWithSelectionProof(ctx context.Context, pubKey [dilithiumlib.CryptoPublicKeyBytes]byte, slot primitives.Slot) (signature []byte, err error) {
+func (v *validator) signSlotWithSelectionProof(ctx context.Context, pubKey [field_params.DilithiumPubkeyLength]byte, slot primitives.Slot) (signature []byte, err error) {
 	domain, err := v.domainData(ctx, slots.ToEpoch(slot), params.BeaconConfig().DomainSelectionProof[:])
 	if err != nil {
 		return nil, err
@@ -172,7 +172,7 @@ func (v *validator) waitToSlotTwoThirds(ctx context.Context, slot primitives.Slo
 
 // This returns the signature of validator signing over aggregate and
 // proof object.
-func (v *validator) aggregateAndProofSig(ctx context.Context, pubKey [dilithiumlib.CryptoPublicKeyBytes]byte, agg *zondpb.AggregateAttestationAndProof, slot primitives.Slot) ([]byte, error) {
+func (v *validator) aggregateAndProofSig(ctx context.Context, pubKey [field_params.DilithiumPubkeyLength]byte, agg *zondpb.AggregateAttestationAndProof, slot primitives.Slot) ([]byte, error) {
 	d, err := v.domainData(ctx, slots.ToEpoch(agg.Aggregate.Data.Slot), params.BeaconConfig().DomainAggregateAndProof[:])
 	if err != nil {
 		return nil, err

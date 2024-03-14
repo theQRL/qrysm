@@ -8,8 +8,8 @@ import (
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
 	types "github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	"github.com/theQRL/qrysm/v4/crypto/bls/common"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium/common"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -65,7 +65,7 @@ func TestExitsForInclusion(t *testing.T) {
 		} else {
 			v.ExitEpoch = params.BeaconConfig().FarFutureEpoch
 		}
-		priv, err := bls.RandKey()
+		priv, err := dilithium.RandKey()
 		require.NoError(t, err)
 		privKeys[i] = priv
 		pubkey := priv.PublicKey().Marshal()

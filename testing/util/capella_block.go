@@ -2,6 +2,7 @@ package util
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -14,7 +15,8 @@ import (
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	v1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
@@ -24,10 +26,9 @@ import (
 // GenerateFullBlockCapella generates a fully valid Capella block with the requested parameters.
 // Use BlockGenConfig to declare the conditions you would like the block generated under.
 // This function modifies the passed state as follows:
-
 func GenerateFullBlockCapella(
 	bState state.BeaconState,
-	privs []bls.SecretKey,
+	privs []dilithium.DilithiumKey,
 	conf *BlockGenConfig,
 	slot primitives.Slot,
 ) (*zondpb.SignedBeaconBlockCapella, error) {
@@ -101,6 +102,10 @@ func GenerateFullBlockCapella(
 		return nil, errors.Wrap(err, "could not process randao mix")
 	}
 
+	if slot == currentSlot {
+		slot = currentSlot + 1
+	}
+
 	timestamp, err := slots.ToTime(bState.GenesisTime(), slot)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get current timestamp")
@@ -132,20 +137,6 @@ func GenerateFullBlockCapella(
 		Transactions:  newTransactions,
 		Withdrawals:   newWithdrawals,
 	}
-	var syncCommitteeBits []byte
-	currSize := new(zondpb.SyncAggregate).SyncCommitteeBits.Len()
-	switch currSize {
-	case 512:
-		syncCommitteeBits = bitfield.NewBitvector512()
-	case 32:
-		syncCommitteeBits = bitfield.NewBitvector32()
-	default:
-		return nil, errors.New("invalid bit vector size")
-	}
-	newSyncAggregate := &zondpb.SyncAggregate{
-		SyncCommitteeBits:      syncCommitteeBits,
-		SyncCommitteeSignature: append([]byte{0xC0}, make([]byte, 95)...),
-	}
 
 	newHeader := bState.LatestBlockHeader()
 	prevStateRoot, err := bState.HashTreeRoot(ctx)
@@ -158,8 +149,29 @@ func GenerateFullBlockCapella(
 		return nil, errors.Wrap(err, "could not hash the new header")
 	}
 
-	if slot == currentSlot {
-		slot = currentSlot + 1
+	var newSyncAggregate *zondpb.SyncAggregate
+	if conf.FullSyncAggregate {
+		newSyncAggregate, err = generateSyncAggregate(bState, privs, parentRoot)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed generating syncAggregate")
+		}
+	} else {
+		var syncCommitteeBits []byte
+		currSize := new(zondpb.SyncAggregate).SyncCommitteeBits.Len()
+		switch currSize {
+		case 512:
+			syncCommitteeBits = bitfield.NewBitvector512()
+		case 32:
+			syncCommitteeBits = bitfield.NewBitvector32()
+		case 16:
+			syncCommitteeBits = bitfield.NewBitvector16()
+		default:
+			return nil, errors.New("invalid bit vector size")
+		}
+		newSyncAggregate = &zondpb.SyncAggregate{
+			SyncCommitteeBits:       syncCommitteeBits,
+			SyncCommitteeSignatures: [][]byte{},
+		}
 	}
 
 	reveal, err := RandaoReveal(stCopy, time.CurrentEpoch(stCopy), privs)
@@ -209,7 +221,7 @@ func GenerateFullBlockCapella(
 }
 
 // GenerateDilithiumToExecutionChange generates a valid dilithium to exec changes for validator `val` and its private key `priv` with the given beacon state `st`.
-func GenerateDilithiumToExecutionChange(st state.BeaconState, priv bls.SecretKey, val primitives.ValidatorIndex) (*zondpb.SignedDilithiumToExecutionChange, error) {
+func GenerateDilithiumToExecutionChange(st state.BeaconState, priv dilithium.DilithiumKey, val primitives.ValidatorIndex) (*zondpb.SignedDilithiumToExecutionChange, error) {
 	cred := indexToHash(uint64(val))
 	pubkey := priv.PublicKey().Marshal()
 	message := &zondpb.DilithiumToExecutionChange{
@@ -231,4 +243,10 @@ func GenerateDilithiumToExecutionChange(st state.BeaconState, priv bls.SecretKey
 		Message:   message,
 		Signature: signature,
 	}, nil
+}
+
+func indexToHash(i uint64) [32]byte {
+	var b [8]byte
+	binary.LittleEndian.PutUint64(b[:], i)
+	return hash.Hash(b[:])
 }

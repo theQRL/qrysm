@@ -40,14 +40,14 @@ service Node {
         };
     }
 
-    // Retrieve information about the genesis of Ethereum proof of stake.
+    // Retrieve information about the genesis of Zond proof of stake.
     rpc GetGenesis(google.protobuf.Empty) returns (Genesis) {
         option (google.api.http) = {
             get: "/zond/v1alpha1/node/genesis"
         };
     }
 
-    // Retrieve information about the running Ethereum Beacon Node.
+    // Retrieve information about the running Zond Beacon Node.
     rpc GetVersion(google.protobuf.Empty) returns (Version) {
         option (google.api.http) = {
             get: "/zond/v1alpha1/node/version"
@@ -100,12 +100,12 @@ message SyncStatus {
     bool syncing = 1;
 }
 
-// Information about the genesis of Ethereum proof of stake.
+// Information about the genesis of Zond proof of stake.
 message Genesis {
     // UTC time specified in the chain start event in the deposit contract.
     google.protobuf.Timestamp genesis_time = 1;
 
-    // Address of the deposit contract in the Ethereum 1 chain.
+    // Address of the deposit contract in the Zond execution chain.
     bytes deposit_contract_address = 2;
 
     // Root of the genesis validators deposits; used for domain separation

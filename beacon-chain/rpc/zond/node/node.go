@@ -37,10 +37,10 @@ var (
 
 // GetIdentity retrieves data about the node's network presence.
 func (ns *Server) GetIdentity(ctx context.Context, _ *emptypb.Empty) (*zondpb.IdentityResponse, error) {
-	ctx, span := trace.StartSpan(ctx, "node.GetIdentity")
+	_, span := trace.StartSpan(ctx, "node.GetIdentity")
 	defer span.End()
 
-	peerId := ns.PeerManager.PeerID().Pretty()
+	peerId := ns.PeerManager.PeerID().String()
 
 	serializedEnr, err := p2p.SerializeENR(ns.PeerManager.ENR())
 	if err != nil {
@@ -81,7 +81,7 @@ func (ns *Server) GetIdentity(ctx context.Context, _ *emptypb.Empty) (*zondpb.Id
 
 // GetPeer retrieves data about the given peer.
 func (ns *Server) GetPeer(ctx context.Context, req *zondpb.PeerRequest) (*zondpb.PeerResponse, error) {
-	ctx, span := trace.StartSpan(ctx, "node.GetPeer")
+	_, span := trace.StartSpan(ctx, "node.GetPeer")
 	defer span.End()
 
 	peerStatus := ns.PeersFetcher.Peers()
@@ -134,7 +134,7 @@ func (ns *Server) GetPeer(ctx context.Context, req *zondpb.PeerRequest) (*zondpb
 
 // ListPeers retrieves data about the node's network peers.
 func (ns *Server) ListPeers(ctx context.Context, req *zondpb.PeersRequest) (*zondpb.PeersResponse, error) {
-	ctx, span := trace.StartSpan(ctx, "node.ListPeers")
+	_, span := trace.StartSpan(ctx, "node.ListPeers")
 	defer span.End()
 
 	peerStatus := ns.PeersFetcher.Peers()
@@ -207,7 +207,7 @@ func (ns *Server) ListPeers(ctx context.Context, req *zondpb.PeersRequest) (*zon
 	var filteredIds []peer.ID
 	for _, stateId := range stateIds {
 		for _, directionId := range directionIds {
-			if stateId.Pretty() == directionId.Pretty() {
+			if stateId.String() == directionId.String() {
 				filteredIds = append(filteredIds, stateId)
 				break
 			}
@@ -230,7 +230,7 @@ func (ns *Server) ListPeers(ctx context.Context, req *zondpb.PeersRequest) (*zon
 
 // PeerCount retrieves number of known peers.
 func (ns *Server) PeerCount(ctx context.Context, _ *emptypb.Empty) (*zondpb.PeerCountResponse, error) {
-	ctx, span := trace.StartSpan(ctx, "node.PeerCount")
+	_, span := trace.StartSpan(ctx, "node.PeerCount")
 	defer span.End()
 
 	peerStatus := ns.PeersFetcher.Peers()
@@ -247,13 +247,13 @@ func (ns *Server) PeerCount(ctx context.Context, _ *emptypb.Empty) (*zondpb.Peer
 
 // GetVersion requests that the beacon node identify information about its implementation in a
 // format similar to a HTTP User-Agent field.
-func (_ *Server) GetVersion(ctx context.Context, _ *emptypb.Empty) (*zondpb.VersionResponse, error) {
-	ctx, span := trace.StartSpan(ctx, "node.GetVersion")
+func (*Server) GetVersion(ctx context.Context, _ *emptypb.Empty) (*zondpb.VersionResponse, error) {
+	_, span := trace.StartSpan(ctx, "node.GetVersion")
 	defer span.End()
 
 	v := fmt.Sprintf("Prysm/%s (%s %s)", version.SemanticVersion(), runtime.GOOS, runtime.GOARCH)
 	return &zondpb.VersionResponse{
-		Data: &zondpb.Version{
+		Data: &zondpb.NodeVersion{
 			Version: v,
 		},
 	}, nil
@@ -356,7 +356,7 @@ func peerInfo(peerStatus *peers.Status, id peer.ID) (*zondpb.Peer, error) {
 		return nil, errors.Wrapf(err, "could not handle peer direction")
 	}
 	p := zondpb.Peer{
-		PeerId:    id.Pretty(),
+		PeerId:    id.String(),
 		State:     v1ConnState,
 		Direction: v1PeerDirection,
 	}

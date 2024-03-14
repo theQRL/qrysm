@@ -18,10 +18,6 @@ func TestExtractBlockDataType(t *testing.T) {
 	// Precompute digests
 	genDigest, err := signing.ComputeForkDigest(params.BeaconConfig().GenesisForkVersion, params.BeaconConfig().ZeroHash[:])
 	require.NoError(t, err)
-	altairDigest, err := signing.ComputeForkDigest(params.BeaconConfig().AltairForkVersion, params.BeaconConfig().ZeroHash[:])
-	require.NoError(t, err)
-	bellatrixDigest, err := signing.ComputeForkDigest(params.BeaconConfig().BellatrixForkVersion, params.BeaconConfig().ZeroHash[:])
-	require.NoError(t, err)
 
 	type args struct {
 		digest []byte
@@ -41,7 +37,7 @@ func TestExtractBlockDataType(t *testing.T) {
 			},
 
 			want: func() interfaces.ReadOnlySignedBeaconBlock {
-				wsb, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlock{Block: &zondpb.BeaconBlock{Body: &zondpb.BeaconBlockBody{}}})
+				wsb, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockCapella{Block: &zondpb.BeaconBlockCapella{Body: &zondpb.BeaconBlockBodyCapella{}}})
 				require.NoError(t, err)
 				return wsb
 			}(),
@@ -72,33 +68,7 @@ func TestExtractBlockDataType(t *testing.T) {
 				chain:  &mock.ChainService{ValidatorsRoot: [32]byte{}},
 			},
 			want: func() interfaces.ReadOnlySignedBeaconBlock {
-				wsb, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlock{Block: &zondpb.BeaconBlock{Body: &zondpb.BeaconBlockBody{}}})
-				require.NoError(t, err)
-				return wsb
-			}(),
-			wantErr: false,
-		},
-		{
-			name: "altair fork version",
-			args: args{
-				digest: altairDigest[:],
-				chain:  &mock.ChainService{ValidatorsRoot: [32]byte{}},
-			},
-			want: func() interfaces.ReadOnlySignedBeaconBlock {
-				wsb, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockAltair{Block: &zondpb.BeaconBlockAltair{Body: &zondpb.BeaconBlockBodyAltair{}}})
-				require.NoError(t, err)
-				return wsb
-			}(),
-			wantErr: false,
-		},
-		{
-			name: "bellatrix fork version",
-			args: args{
-				digest: bellatrixDigest[:],
-				chain:  &mock.ChainService{ValidatorsRoot: [32]byte{}},
-			},
-			want: func() interfaces.ReadOnlySignedBeaconBlock {
-				wsb, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockBellatrix{Block: &zondpb.BeaconBlockBellatrix{Body: &zondpb.BeaconBlockBodyBellatrix{}}})
+				wsb, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockCapella{Block: &zondpb.BeaconBlockCapella{Body: &zondpb.BeaconBlockBodyCapella{}}})
 				require.NoError(t, err)
 				return wsb
 			}(),

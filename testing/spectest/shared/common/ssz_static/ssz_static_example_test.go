@@ -22,9 +22,9 @@ func ExampleRunSSZStaticTests() {
 		case "Attestation":
 			obj = &zondpb.Attestation{}
 		case "BeaconState":
-			obj = &zondpb.BeaconState{}
+			obj = &zondpb.BeaconStateCapella{}
 		case "Eth1Block":
-			// Some types may not apply to prysm, but exist in the spec test folders. It is OK to
+			// Some types may not apply to qrysm, but exist in the spec test folders. It is OK to
 			// skip these tests with a valid justification. Otherwise, the test should fail with an
 			// unsupported type.
 			t.Skip("Unused type")
@@ -47,9 +47,9 @@ func ExampleRunSSZStaticTests() {
 	// is used and you want to ensure it passes spectests.
 	customHTR := func(t *testing.T, htrs []common.HTR, object interface{}) []common.HTR {
 		switch object.(type) {
-		case *zondpb.BeaconState:
+		case *zondpb.BeaconBlockBodyCapella:
 			htrs = append(htrs, func(s interface{}) ([32]byte, error) {
-				beaconState, err := state_native.InitializeFromProtoPhase0(s.(*zondpb.BeaconState))
+				beaconState, err := state_native.InitializeFromProtoCapella(s.(*zondpb.BeaconStateCapella))
 				require.NoError(t, err)
 				return beaconState.HashTreeRoot(context.TODO())
 			})
@@ -64,7 +64,7 @@ func ExampleRunSSZStaticTests() {
 	// HTR methods if provided.
 	common.RunSSZStaticTests(t,
 		"mainnet", // Network configuration
-		"phase0",  // Fork or phase
+		"capella", // Fork or phase
 		unmarshaller,
 		customHTR) // nil customHTR is acceptable.
 }

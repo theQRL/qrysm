@@ -121,11 +121,11 @@ enum ConnectionState {
 }
 
 message VersionResponse {
-  Version data = 1;
+  NodeVersion data = 1;
 }
 
 // Information about the node version.
-message Version {
+message NodeVersion {
   // A string that uniquely identifies the node and its version.
   string version = 1;
 }

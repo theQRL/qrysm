@@ -21,10 +21,10 @@ func TestBalanceCache_AddGetBalance(t *testing.T) {
 		binary.LittleEndian.PutUint64(b, uint64(i))
 		blockRoots[i] = b
 	}
-	raw := &zondpb.BeaconState{
+	raw := &zondpb.BeaconStateCapella{
 		BlockRoots: blockRoots,
 	}
-	st, err := state_native.InitializeFromProtoPhase0(raw)
+	st, err := state_native.InitializeFromProtoCapella(raw)
 	require.NoError(t, err)
 
 	cache := NewEffectiveBalanceCache()
@@ -65,10 +65,10 @@ func TestBalanceCache_BalanceKey(t *testing.T) {
 		binary.LittleEndian.PutUint64(b, uint64(i))
 		blockRoots[i] = b
 	}
-	raw := &zondpb.BeaconState{
+	raw := &zondpb.BeaconStateCapella{
 		BlockRoots: blockRoots,
 	}
-	st, err := state_native.InitializeFromProtoPhase0(raw)
+	st, err := state_native.InitializeFromProtoCapella(raw)
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(primitives.Slot(math.MaxUint64)))
 

@@ -21,7 +21,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
 	"github.com/theQRL/qrysm/v4/consensus-types/wrapper"
-	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
+	ecdsaqrysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
 	"github.com/theQRL/qrysm/v4/network"
@@ -124,7 +124,7 @@ func (c *client) Send(
 		return nil, errors.Wrap(err, "could not open new stream")
 	}
 	// do not encode anything if we are sending a metadata request
-	if baseTopic != p2p.RPCMetaDataTopicV1 && baseTopic != p2p.RPCMetaDataTopicV2 {
+	if baseTopic != p2p.RPCMetaDataTopicV2 {
 		castedMsg, ok := message.(ssz.Marshaler)
 		if !ok {
 			return nil, errors.Errorf("%T does not support the ssz marshaller interface", message)
@@ -203,7 +203,7 @@ func privKey() (*ecdsa.PrivateKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ecdsaprysm.ConvertFromInterfacePrivKey(priv)
+	return ecdsaqrysm.ConvertFromInterfacePrivKey(priv)
 }
 
 // Adds a private key to the libp2p option if the option was provided.
@@ -211,7 +211,7 @@ func privKey() (*ecdsa.PrivateKey, error) {
 // private key contents cannot be marshaled, an exception is thrown.
 func privKeyOption(privkey *ecdsa.PrivateKey) libp2p.Option {
 	return func(cfg *libp2p.Config) error {
-		ifaceKey, err := ecdsaprysm.ConvertToInterfacePrivkey(privkey)
+		ifaceKey, err := ecdsaqrysm.ConvertToInterfacePrivkey(privkey)
 		if err != nil {
 			return err
 		}

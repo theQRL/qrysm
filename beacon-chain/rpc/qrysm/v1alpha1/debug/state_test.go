@@ -26,11 +26,11 @@ func addDefaultReplayerBuilder(s *Server, h stategen.HistoryAccessor) {
 func TestServer_GetBeaconState(t *testing.T) {
 	db := dbTest.SetupDB(t)
 	ctx := context.Background()
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	slot := primitives.Slot(100)
 	require.NoError(t, st.SetSlot(slot))
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	b.Block.Slot = slot
 	util.SaveBlock(t, ctx, db, b)
 	gRoot, err := b.Block.HashTreeRoot()
@@ -65,7 +65,7 @@ func TestServer_GetBeaconState(t *testing.T) {
 	require.NoError(t, err)
 	res, err = bs.GetBeaconState(ctx, req)
 	require.NoError(t, err)
-	resState := &pbrpc.BeaconState{}
+	resState := &pbrpc.BeaconStateCapella{}
 	err = resState.UnmarshalSSZ(res.Encoded)
 	require.NoError(t, err)
 	assert.Equal(t, resState.Slot, st.Slot())
@@ -88,7 +88,7 @@ func TestServer_GetBeaconState(t *testing.T) {
 	require.NoError(t, err)
 	res, err = bs.GetBeaconState(ctx, req)
 	require.NoError(t, err)
-	resState = &pbrpc.BeaconState{}
+	resState = &pbrpc.BeaconStateCapella{}
 	err = resState.UnmarshalSSZ(res.Encoded)
 	require.NoError(t, err)
 	assert.Equal(t, resState.Slot, state.Slot())

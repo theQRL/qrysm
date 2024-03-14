@@ -4,11 +4,17 @@ import (
 	"bytes"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-bitfield"
+	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
+	testDB "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
+	doublylinkedtree "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -17,24 +23,24 @@ import (
 
 func TestGetAttestingIndices(t *testing.T) {
 	ctx := context.Background()
-	beaconState, _ := util.DeterministicGenesisState(t, 256)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 256)
 	att := &zondpb.Attestation{
 		Data: &zondpb.AttestationData{
 			Slot:           1,
 			CommitteeIndex: 0,
 		},
-		AggregationBits: bitfield.Bitlist{0b11, 0b1},
+		AggregationBits: bitfield.Bitlist{0b111},
 	}
 	attestingIndices, err := attestingIndices(ctx, beaconState, att)
 	require.NoError(t, err)
-	require.DeepEqual(t, attestingIndices, []uint64{0xc, 0x2})
+	require.DeepEqual(t, []uint64{0x6b, 0x56}, attestingIndices)
 
 }
 
 func TestProcessIncludedAttestationTwoTracked(t *testing.T) {
 	hook := logTest.NewGlobal()
 	s := setupService(t)
-	state, _ := util.DeterministicGenesisStateAltair(t, 256)
+	state, _ := util.DeterministicGenesisStateCapella(t, 256)
 	require.NoError(t, state.SetSlot(2))
 	require.NoError(t, state.SetCurrentParticipationBits(bytes.Repeat([]byte{0xff}, 13)))
 
@@ -52,11 +58,12 @@ func TestProcessIncludedAttestationTwoTracked(t *testing.T) {
 				Root:  bytesutil.PadTo([]byte("hello-world"), 32),
 			},
 		},
-		AggregationBits: bitfield.Bitlist{0b11, 0b1},
+		AggregationBits: bitfield.Bitlist{0b111},
 	}
+
 	s.processIncludedAttestation(context.Background(), state, att)
-	wanted1 := "\"Attestation included\" BalanceChange=0 CorrectHead=true CorrectSource=true CorrectTarget=true Head=0x68656c6c6f2d InclusionSlot=2 NewBalance=32000000000 Slot=1 Source=0x68656c6c6f2d Target=0x68656c6c6f2d ValidatorIndex=2 prefix=monitor"
-	wanted2 := "\"Attestation included\" BalanceChange=100000000 CorrectHead=true CorrectSource=true CorrectTarget=true Head=0x68656c6c6f2d InclusionSlot=2 NewBalance=32000000000 Slot=1 Source=0x68656c6c6f2d Target=0x68656c6c6f2d ValidatorIndex=12 prefix=monitor"
+	wanted1 := "\"Attestation included\" BalanceChange=0 CorrectHead=true CorrectSource=true CorrectTarget=true Head=0x68656c6c6f2d InclusionSlot=2 NewBalance=40000000000000 Slot=1 Source=0x68656c6c6f2d Target=0x68656c6c6f2d ValidatorIndex=107 prefix=monitor"
+	wanted2 := "\"Attestation included\" BalanceChange=100000000 CorrectHead=true CorrectSource=true CorrectTarget=true Head=0x68656c6c6f2d InclusionSlot=2 NewBalance=40000000000000 Slot=1 Source=0x68656c6c6f2d Target=0x68656c6c6f2d ValidatorIndex=86 prefix=monitor"
 	require.LogsContain(t, hook, wanted1)
 	require.LogsContain(t, hook, wanted2)
 }
@@ -67,7 +74,7 @@ func TestProcessUnaggregatedAttestationStateNotCached(t *testing.T) {
 	ctx := context.Background()
 
 	s := setupService(t)
-	state, _ := util.DeterministicGenesisStateAltair(t, 256)
+	state, _ := util.DeterministicGenesisStateCapella(t, 256)
 	require.NoError(t, state.SetSlot(2))
 	header := state.LatestBlockHeader()
 	participation := []byte{0xff, 0xff, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
@@ -99,8 +106,8 @@ func TestProcessUnaggregatedAttestationStateCached(t *testing.T) {
 	hook := logTest.NewGlobal()
 
 	s := setupService(t)
-	state, _ := util.DeterministicGenesisStateAltair(t, 256)
-	participation := []byte{0xff, 0xff, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	state, _ := util.DeterministicGenesisStateCapella(t, 256)
+	participation := []byte{0xff, 0xff, 0x01}
 	require.NoError(t, state.SetCurrentParticipationBits(participation))
 
 	var root [32]byte
@@ -120,12 +127,12 @@ func TestProcessUnaggregatedAttestationStateCached(t *testing.T) {
 				Root:  root[:],
 			},
 		},
-		AggregationBits: bitfield.Bitlist{0b11, 0b1},
+		AggregationBits: bitfield.Bitlist{0b111},
 	}
 	require.NoError(t, s.config.StateGen.SaveState(ctx, root, state))
 	s.processUnaggregatedAttestation(context.Background(), att)
-	wanted1 := "\"Processed unaggregated attestation\" Head=0x68656c6c6f2d Slot=1 Source=0x68656c6c6f2d Target=0x68656c6c6f2d ValidatorIndex=2 prefix=monitor"
-	wanted2 := "\"Processed unaggregated attestation\" Head=0x68656c6c6f2d Slot=1 Source=0x68656c6c6f2d Target=0x68656c6c6f2d ValidatorIndex=12 prefix=monitor"
+	wanted1 := "\"Processed unaggregated attestation\" Head=0x68656c6c6f2d Slot=1 Source=0x68656c6c6f2d Target=0x68656c6c6f2d ValidatorIndex=107 prefix=monitor"
+	wanted2 := "\"Processed unaggregated attestation\" Head=0x68656c6c6f2d Slot=1 Source=0x68656c6c6f2d Target=0x68656c6c6f2d ValidatorIndex=86 prefix=monitor"
 	require.LogsContain(t, hook, wanted1)
 	require.LogsContain(t, hook, wanted2)
 }
@@ -135,15 +142,53 @@ func TestProcessAggregatedAttestationStateNotCached(t *testing.T) {
 	hook := logTest.NewGlobal()
 	ctx := context.Background()
 
-	s := setupService(t)
-	state, _ := util.DeterministicGenesisStateAltair(t, 256)
+	state, _ := util.DeterministicGenesisStateCapella(t, 256)
+	beaconDB := testDB.SetupDB(t)
+
+	chainService := &mock.ChainService{
+		Genesis:        time.Now(),
+		DB:             beaconDB,
+		State:          state,
+		Root:           []byte("hello-world"),
+		ValidatorsRoot: [32]byte{},
+	}
+	aggregatedPerformance := map[primitives.ValidatorIndex]ValidatorAggregatedPerformance{
+		86: {},
+	}
+	trackedVals := map[primitives.ValidatorIndex]bool{
+		86: true,
+	}
+	latestPerformance := map[primitives.ValidatorIndex]ValidatorLatestPerformance{
+		86: {
+			balance:      39999900000000,
+			timelyHead:   true,
+			timelySource: true,
+			timelyTarget: true,
+		},
+	}
+
+	svc := &Service{
+		config: &ValidatorMonitorConfig{
+			StateGen:            stategen.New(beaconDB, doublylinkedtree.New()),
+			StateNotifier:       chainService.StateNotifier(),
+			HeadFetcher:         chainService,
+			AttestationNotifier: chainService.OperationNotifier(),
+			InitialSyncComplete: make(chan struct{}),
+		},
+		ctx:                   context.Background(),
+		TrackedValidators:     trackedVals,
+		latestPerformance:     latestPerformance,
+		aggregatedPerformance: aggregatedPerformance,
+		lastSyncedEpoch:       0,
+	}
+
 	require.NoError(t, state.SetSlot(2))
 	header := state.LatestBlockHeader()
-	participation := []byte{0xff, 0xff, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	participation := []byte{0xff, 0xff, 0x01}
 	require.NoError(t, state.SetCurrentParticipationBits(participation))
 
 	att := &zondpb.AggregateAttestationAndProof{
-		AggregatorIndex: 2,
+		AggregatorIndex: 86,
 		Aggregate: &zondpb.Attestation{
 			Data: &zondpb.AttestationData{
 				Slot:            1,
@@ -158,11 +203,11 @@ func TestProcessAggregatedAttestationStateNotCached(t *testing.T) {
 					Root:  bytesutil.PadTo([]byte("hello-world"), 32),
 				},
 			},
-			AggregationBits: bitfield.Bitlist{0b11, 0b1},
+			AggregationBits: bitfield.Bitlist{0b111},
 		},
 	}
-	s.processAggregatedAttestation(ctx, att)
-	require.LogsContain(t, hook, "\"Processed attestation aggregation\" AggregatorIndex=2 BeaconBlockRoot=0x000000000000 Slot=1 SourceRoot=0x68656c6c6f2d TargetRoot=0x68656c6c6f2d prefix=monitor")
+	svc.processAggregatedAttestation(ctx, att)
+	require.LogsContain(t, hook, "\"Processed attestation aggregation\" AggregatorIndex=86 BeaconBlockRoot=0x000000000000 Slot=1 SourceRoot=0x68656c6c6f2d TargetRoot=0x68656c6c6f2d prefix=monitor")
 	require.LogsContain(t, hook, "Skipping aggregated attestation due to state not found in cache")
 	logrus.SetLevel(logrus.InfoLevel)
 }
@@ -170,16 +215,55 @@ func TestProcessAggregatedAttestationStateNotCached(t *testing.T) {
 func TestProcessAggregatedAttestationStateCached(t *testing.T) {
 	hook := logTest.NewGlobal()
 	ctx := context.Background()
-	s := setupService(t)
-	state, _ := util.DeterministicGenesisStateAltair(t, 256)
-	participation := []byte{0xff, 0xff, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+	beaconDB := testDB.SetupDB(t)
+	state, _ := util.DeterministicGenesisStateCapella(t, 256)
+
+	chainService := &mock.ChainService{
+		Genesis:        time.Now(),
+		DB:             beaconDB,
+		State:          state,
+		Root:           []byte("hello-world"),
+		ValidatorsRoot: [32]byte{},
+	}
+	aggregatedPerformance := map[primitives.ValidatorIndex]ValidatorAggregatedPerformance{
+		86: {},
+	}
+	trackedVals := map[primitives.ValidatorIndex]bool{
+		86: true,
+	}
+	latestPerformance := map[primitives.ValidatorIndex]ValidatorLatestPerformance{
+		86: {
+			balance:      39999900000000,
+			timelyHead:   true,
+			timelySource: true,
+			timelyTarget: true,
+		},
+	}
+
+	svc := &Service{
+		config: &ValidatorMonitorConfig{
+			StateGen:            stategen.New(beaconDB, doublylinkedtree.New()),
+			StateNotifier:       chainService.StateNotifier(),
+			HeadFetcher:         chainService,
+			AttestationNotifier: chainService.OperationNotifier(),
+			InitialSyncComplete: make(chan struct{}),
+		},
+		ctx:                   context.Background(),
+		TrackedValidators:     trackedVals,
+		latestPerformance:     latestPerformance,
+		aggregatedPerformance: aggregatedPerformance,
+		lastSyncedEpoch:       0,
+	}
+
+	participation := []byte{0xff, 0xff, 0x01}
 	require.NoError(t, state.SetCurrentParticipationBits(participation))
 
 	var root [32]byte
 	copy(root[:], "hello-world")
 
 	att := &zondpb.AggregateAttestationAndProof{
-		AggregatorIndex: 2,
+		AggregatorIndex: 86,
 		Aggregate: &zondpb.Attestation{
 			Data: &zondpb.AttestationData{
 				Slot:            1,
@@ -194,22 +278,22 @@ func TestProcessAggregatedAttestationStateCached(t *testing.T) {
 					Root:  root[:],
 				},
 			},
-			AggregationBits: bitfield.Bitlist{0b10, 0b1},
+			AggregationBits: bitfield.Bitlist{0b110},
 		},
 	}
 
-	require.NoError(t, s.config.StateGen.SaveState(ctx, root, state))
-	s.processAggregatedAttestation(ctx, att)
-	require.LogsContain(t, hook, "\"Processed attestation aggregation\" AggregatorIndex=2 BeaconBlockRoot=0x68656c6c6f2d Slot=1 SourceRoot=0x68656c6c6f2d TargetRoot=0x68656c6c6f2d prefix=monitor")
-	require.LogsContain(t, hook, "\"Processed aggregated attestation\" Head=0x68656c6c6f2d Slot=1 Source=0x68656c6c6f2d Target=0x68656c6c6f2d ValidatorIndex=2 prefix=monitor")
-	require.LogsDoNotContain(t, hook, "\"Processed aggregated attestation\" Head=0x68656c6c6f2d Slot=1 Source=0x68656c6c6f2d Target=0x68656c6c6f2d ValidatorIndex=12 prefix=monitor")
+	require.NoError(t, svc.config.StateGen.SaveState(ctx, root, state))
+	svc.processAggregatedAttestation(ctx, att)
+	require.LogsContain(t, hook, "\"Processed attestation aggregation\" AggregatorIndex=86 BeaconBlockRoot=0x68656c6c6f2d Slot=1 SourceRoot=0x68656c6c6f2d TargetRoot=0x68656c6c6f2d prefix=monitor")
+	require.LogsContain(t, hook, "\"Processed aggregated attestation\" Head=0x68656c6c6f2d Slot=1 Source=0x68656c6c6f2d Target=0x68656c6c6f2d ValidatorIndex=86 prefix=monitor")
+	require.LogsDoNotContain(t, hook, "\"Processed aggregated attestation\" Head=0x68656c6c6f2d Slot=1 Source=0x68656c6c6f2d Target=0x68656c6c6f2d ValidatorIndex=107 prefix=monitor")
 }
 
 func TestProcessAttestations(t *testing.T) {
 	hook := logTest.NewGlobal()
 	s := setupService(t)
 	ctx := context.Background()
-	state, _ := util.DeterministicGenesisStateAltair(t, 256)
+	state, _ := util.DeterministicGenesisStateCapella(t, 256)
 	require.NoError(t, state.SetSlot(2))
 	require.NoError(t, state.SetCurrentParticipationBits(bytes.Repeat([]byte{0xff}, 13)))
 
@@ -227,12 +311,12 @@ func TestProcessAttestations(t *testing.T) {
 				Root:  bytesutil.PadTo([]byte("hello-world"), 32),
 			},
 		},
-		AggregationBits: bitfield.Bitlist{0b11, 0b1},
+		AggregationBits: bitfield.Bitlist{0b111},
 	}
 
-	block := &zondpb.BeaconBlockAltair{
+	block := &zondpb.BeaconBlockCapella{
 		Slot: 2,
-		Body: &zondpb.BeaconBlockBodyAltair{
+		Body: &zondpb.BeaconBlockBodyCapella{
 			Attestations: []*zondpb.Attestation{att},
 		},
 	}
@@ -240,8 +324,8 @@ func TestProcessAttestations(t *testing.T) {
 	wrappedBlock, err := blocks.NewBeaconBlock(block)
 	require.NoError(t, err)
 	s.processAttestations(ctx, state, wrappedBlock)
-	wanted1 := "\"Attestation included\" BalanceChange=0 CorrectHead=true CorrectSource=true CorrectTarget=true Head=0x68656c6c6f2d InclusionSlot=2 NewBalance=32000000000 Slot=1 Source=0x68656c6c6f2d Target=0x68656c6c6f2d ValidatorIndex=2 prefix=monitor"
-	wanted2 := "\"Attestation included\" BalanceChange=100000000 CorrectHead=true CorrectSource=true CorrectTarget=true Head=0x68656c6c6f2d InclusionSlot=2 NewBalance=32000000000 Slot=1 Source=0x68656c6c6f2d Target=0x68656c6c6f2d ValidatorIndex=12 prefix=monitor"
+	wanted1 := "\"Attestation included\" BalanceChange=0 CorrectHead=true CorrectSource=true CorrectTarget=true Head=0x68656c6c6f2d InclusionSlot=2 NewBalance=40000000000000 Slot=1 Source=0x68656c6c6f2d Target=0x68656c6c6f2d ValidatorIndex=107 prefix=monitor"
+	wanted2 := "\"Attestation included\" BalanceChange=100000000 CorrectHead=true CorrectSource=true CorrectTarget=true Head=0x68656c6c6f2d InclusionSlot=2 NewBalance=40000000000000 Slot=1 Source=0x68656c6c6f2d Target=0x68656c6c6f2d ValidatorIndex=86 prefix=monitor"
 	require.LogsContain(t, hook, wanted1)
 	require.LogsContain(t, hook, wanted2)
 

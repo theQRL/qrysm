@@ -22,13 +22,13 @@ type DepositData struct {
 
 func NewDepositData(c *Credential) (*DepositData, error) {
 	binSigningSeed := misc.StrSeedToBinSeed(c.signingSeed)
-	depositKey, err := dilithium.SecretKeyFromBytes(binSigningSeed[:])
+	depositKey, err := dilithium.SecretKeyFromSeed(binSigningSeed[:])
 	if err != nil {
 		return nil, err
 	}
 
 	binWithdrawalSeed := misc.StrSeedToBinSeed(c.withdrawalSeed)
-	withdrawalKey, err := dilithium.SecretKeyFromBytes(binWithdrawalSeed[:])
+	withdrawalKey, err := dilithium.SecretKeyFromSeed(binWithdrawalSeed[:])
 	if err != nil {
 		return nil, err
 	}

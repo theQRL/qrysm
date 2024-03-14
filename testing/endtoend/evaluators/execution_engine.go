@@ -9,7 +9,6 @@ import (
 	mathutil "github.com/theQRL/qrysm/v4/math"
 	"github.com/theQRL/qrysm/v4/proto/zond/service"
 	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	v2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -32,7 +31,7 @@ func optimisticSyncEnabled(_ *types.EvaluationContext, conns ...*grpc.ClientConn
 		}
 		headSlot := uint64(0)
 		switch hb := head.Data.Message.(type) {
-		case *v2.SignedBlindedBeaconBlockContainer_CapellaBlock:
+		case *v1.SignedBlindedBeaconBlockContainer_CapellaBlock:
 			headSlot = uint64(hb.CapellaBlock.Slot)
 		default:
 			return errors.New("no valid block type retrieved")

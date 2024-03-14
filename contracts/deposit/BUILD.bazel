@@ -37,6 +37,7 @@ go_test(
     deps = [
         ":go_default_library",
         "//beacon-chain/core/signing:go_default_library",
+        "//config/fieldparams:go_default_library",
         "//config/params:go_default_library",
         "//container/trie:go_default_library",
         "//contracts/deposit/mock:go_default_library",

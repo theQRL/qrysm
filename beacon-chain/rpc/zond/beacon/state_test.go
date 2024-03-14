@@ -11,7 +11,6 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zond "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	zond2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -19,7 +18,7 @@ import (
 
 func TestGetStateRoot(t *testing.T) {
 	ctx := context.Background()
-	fakeState, err := util.NewBeaconState()
+	fakeState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	stateRoot, err := fakeState.HashTreeRoot(ctx)
 	require.NoError(t, err)
@@ -46,7 +45,7 @@ func TestGetStateRoot(t *testing.T) {
 
 	t.Run("execution optimistic", func(t *testing.T) {
 		parentRoot := [32]byte{'a'}
-		blk := util.NewBeaconBlock()
+		blk := util.NewBeaconBlockCapella()
 		blk.Block.ParentRoot = parentRoot[:]
 		root, err := blk.Block.HashTreeRoot()
 		require.NoError(t, err)
@@ -74,7 +73,7 @@ func TestGetStateRoot(t *testing.T) {
 
 	t.Run("finalized", func(t *testing.T) {
 		parentRoot := [32]byte{'a'}
-		blk := util.NewBeaconBlock()
+		blk := util.NewBeaconBlockCapella()
 		blk.Block.ParentRoot = parentRoot[:]
 		root, err := blk.Block.HashTreeRoot()
 		require.NoError(t, err)
@@ -114,7 +113,7 @@ func TestGetRandao(t *testing.T) {
 	epochOld := 100000 - params.BeaconConfig().EpochsPerHistoricalVector + 1
 
 	ctx := context.Background()
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	// Set slot to epoch 100000
 	require.NoError(t, st.SetSlot(params.BeaconConfig().SlotsPerEpoch*100000))
@@ -122,7 +121,7 @@ func TestGetRandao(t *testing.T) {
 	require.NoError(t, st.UpdateRandaoMixesAtIndex(uint64(epochOld%params.BeaconConfig().EpochsPerHistoricalVector), mixOld))
 
 	headEpoch := primitives.Epoch(1)
-	headSt, err := util.NewBeaconState()
+	headSt, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, headSt.SetSlot(params.BeaconConfig().SlotsPerEpoch))
 	headRandao := bytesutil.ToBytes32([]byte("head"))
@@ -141,17 +140,17 @@ func TestGetRandao(t *testing.T) {
 	}
 
 	t.Run("no epoch requested", func(t *testing.T) {
-		resp, err := server.GetRandao(ctx, &zond2.RandaoRequest{StateId: []byte("head")})
+		resp, err := server.GetRandao(ctx, &zond.RandaoRequest{StateId: []byte("head")})
 		require.NoError(t, err)
 		assert.DeepEqual(t, mixCurrent[:], resp.Data.Randao)
 	})
 	t.Run("current epoch requested", func(t *testing.T) {
-		resp, err := server.GetRandao(ctx, &zond2.RandaoRequest{StateId: []byte("head"), Epoch: &epochCurrent})
+		resp, err := server.GetRandao(ctx, &zond.RandaoRequest{StateId: []byte("head"), Epoch: &epochCurrent})
 		require.NoError(t, err)
 		assert.DeepEqual(t, mixCurrent[:], resp.Data.Randao)
 	})
 	t.Run("old epoch requested", func(t *testing.T) {
-		resp, err := server.GetRandao(ctx, &zond2.RandaoRequest{StateId: []byte("head"), Epoch: &epochOld})
+		resp, err := server.GetRandao(ctx, &zond.RandaoRequest{StateId: []byte("head"), Epoch: &epochOld})
 		require.NoError(t, err)
 		assert.DeepEqual(t, mixOld[:], resp.Data.Randao)
 	})
@@ -159,23 +158,23 @@ func TestGetRandao(t *testing.T) {
 		server.Stater = &testutil.MockStater{
 			BeaconState: headSt,
 		}
-		resp, err := server.GetRandao(ctx, &zond2.RandaoRequest{StateId: []byte("head")})
+		resp, err := server.GetRandao(ctx, &zond.RandaoRequest{StateId: []byte("head")})
 		require.NoError(t, err)
 		assert.DeepEqual(t, headRandao[:], resp.Data.Randao)
 	})
 	t.Run("epoch too old", func(t *testing.T) {
 		epochTooOld := primitives.Epoch(100000 - st.RandaoMixesLength())
-		_, err := server.GetRandao(ctx, &zond2.RandaoRequest{StateId: make([]byte, 0), Epoch: &epochTooOld})
+		_, err := server.GetRandao(ctx, &zond.RandaoRequest{StateId: make([]byte, 0), Epoch: &epochTooOld})
 		require.ErrorContains(t, "Epoch is out of range for the randao mixes of the state", err)
 	})
 	t.Run("epoch in the future", func(t *testing.T) {
 		futureEpoch := primitives.Epoch(100000 + 1)
-		_, err := server.GetRandao(ctx, &zond2.RandaoRequest{StateId: make([]byte, 0), Epoch: &futureEpoch})
+		_, err := server.GetRandao(ctx, &zond.RandaoRequest{StateId: make([]byte, 0), Epoch: &futureEpoch})
 		require.ErrorContains(t, "Epoch is out of range for the randao mixes of the state", err)
 	})
 	t.Run("execution optimistic", func(t *testing.T) {
 		parentRoot := [32]byte{'a'}
-		blk := util.NewBeaconBlock()
+		blk := util.NewBeaconBlockCapella()
 		blk.Block.ParentRoot = parentRoot[:]
 		root, err := blk.Block.HashTreeRoot()
 		require.NoError(t, err)
@@ -192,7 +191,7 @@ func TestGetRandao(t *testing.T) {
 			FinalizationFetcher:   chainService,
 			BeaconDB:              db,
 		}
-		resp, err := server.GetRandao(context.Background(), &zond2.RandaoRequest{
+		resp, err := server.GetRandao(context.Background(), &zond.RandaoRequest{
 			StateId: []byte("head"),
 		})
 		require.NoError(t, err)
@@ -201,7 +200,7 @@ func TestGetRandao(t *testing.T) {
 	})
 	t.Run("finalized", func(t *testing.T) {
 		parentRoot := [32]byte{'a'}
-		blk := util.NewBeaconBlock()
+		blk := util.NewBeaconBlockCapella()
 		blk.Block.ParentRoot = parentRoot[:]
 		root, err := blk.Block.HashTreeRoot()
 		require.NoError(t, err)
@@ -224,7 +223,7 @@ func TestGetRandao(t *testing.T) {
 			FinalizationFetcher:   chainService,
 			BeaconDB:              db,
 		}
-		resp, err := server.GetRandao(context.Background(), &zond2.RandaoRequest{
+		resp, err := server.GetRandao(context.Background(), &zond.RandaoRequest{
 			StateId: []byte("head"),
 		})
 		require.NoError(t, err)

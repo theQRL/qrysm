@@ -37,6 +37,7 @@ func (c *Client) GetValidatorPubKeys(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	// TODO(theQRL/qrysm/issues/70)
 	/*
 		jsonremote, err := c.GetRemoteValidatorKeys(ctx)
 		if err != nil {

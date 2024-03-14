@@ -44,9 +44,6 @@ var (
 
 	// Below keys are used to identify objects are to be fork compatible.
 	// Objects that are only compatible with specific forks should be prefixed with such keys.
-	altairKey                  = []byte("altair")
-	bellatrixKey               = []byte("merge")
-	bellatrixBlindKey          = []byte("blind-bellatrix")
 	capellaKey                 = []byte("capella")
 	capellaBlindKey            = []byte("blind-capella")
 	saveBlindedBeaconBlocksKey = []byte("save-blinded-beacon-blocks")

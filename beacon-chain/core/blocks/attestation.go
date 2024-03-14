@@ -10,44 +10,21 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation"
 	"go.opencensus.io/trace"
 )
 
-// ProcessAttestationsNoVerifySignature applies processing operations to a block's inner attestation
-// records. The only difference would be that the attestation signature would not be verified.
-func ProcessAttestationsNoVerifySignature(
-	ctx context.Context,
-	beaconState state.BeaconState,
-	b interfaces.ReadOnlySignedBeaconBlock,
-) (state.BeaconState, error) {
-	if err := blocks.BeaconBlockIsNil(b); err != nil {
-		return nil, err
-	}
-	body := b.Block().Body()
-	var err error
-	for idx, att := range body.Attestations() {
-		beaconState, err = ProcessAttestationNoVerifySignature(ctx, beaconState, att)
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not verify attestation at index %d in block", idx)
-		}
-	}
-	return beaconState, nil
-}
-
-// VerifyAttestationNoVerifySignature verifies the attestation without verifying the attestation signature. This is
+// VerifyAttestationNoVerifySignatures verifies the attestation without verifying the attestation signatures. This is
 // used before processing attestation with the beacon state.
-func VerifyAttestationNoVerifySignature(
+func VerifyAttestationNoVerifySignatures(
 	ctx context.Context,
 	beaconState state.ReadOnlyBeaconState,
 	att *zondpb.Attestation,
 ) error {
-	ctx, span := trace.StartSpan(ctx, "core.VerifyAttestationNoVerifySignature")
+	ctx, span := trace.StartSpan(ctx, "core.VerifyAttestationNoVerifySignatures")
 	defer span.End()
 
 	if err := helpers.ValidateNilAttestation(att); err != nil {
@@ -125,50 +102,9 @@ func VerifyAttestationNoVerifySignature(
 	return attestation.IsValidAttestationIndices(ctx, indexedAtt)
 }
 
-// ProcessAttestationNoVerifySignature processes the attestation without verifying the attestation signature. This
-// method is used to validate attestations whose signatures have already been verified.
-func ProcessAttestationNoVerifySignature(
-	ctx context.Context,
-	beaconState state.BeaconState,
-	att *zondpb.Attestation,
-) (state.BeaconState, error) {
-	ctx, span := trace.StartSpan(ctx, "core.ProcessAttestationNoVerifySignature")
-	defer span.End()
-
-	if err := VerifyAttestationNoVerifySignature(ctx, beaconState, att); err != nil {
-		return nil, err
-	}
-
-	currEpoch := time.CurrentEpoch(beaconState)
-	data := att.Data
-	s := att.Data.Slot
-	proposerIndex, err := helpers.BeaconProposerIndex(ctx, beaconState)
-	if err != nil {
-		return nil, err
-	}
-	pendingAtt := &zondpb.PendingAttestation{
-		Data:            data,
-		AggregationBits: att.AggregationBits,
-		InclusionDelay:  beaconState.Slot() - s,
-		ProposerIndex:   proposerIndex,
-	}
-
-	if data.Target.Epoch == currEpoch {
-		if err := beaconState.AppendCurrentEpochAttestations(pendingAtt); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := beaconState.AppendPreviousEpochAttestations(pendingAtt); err != nil {
-			return nil, err
-		}
-	}
-
-	return beaconState, nil
-}
-
-// VerifyAttestationSignature converts and attestation into an indexed attestation and verifies
-// the signature in that attestation.
-func VerifyAttestationSignature(ctx context.Context, beaconState state.ReadOnlyBeaconState, att *zondpb.Attestation) error {
+// VerifyAttestationSignatures converts and attestation into an indexed attestation and verifies
+// the signatures in that attestation.
+func VerifyAttestationSignatures(ctx context.Context, beaconState state.ReadOnlyBeaconState, att *zondpb.Attestation) error {
 	if err := helpers.ValidateNilAttestation(att); err != nil {
 		return err
 	}
@@ -217,14 +153,14 @@ func VerifyIndexedAttestation(ctx context.Context, beaconState state.ReadOnlyBea
 		return err
 	}
 	indices := indexedAtt.AttestingIndices
-	var pubkeys []bls.PublicKey
+	var pubkeys []dilithium.PublicKey
 	for i := 0; i < len(indices); i++ {
 		pubkeyAtIdx := beaconState.PubkeyAtIndex(primitives.ValidatorIndex(indices[i]))
-		pk, err := bls.PublicKeyFromBytes(pubkeyAtIdx[:])
+		pk, err := dilithium.PublicKeyFromBytes(pubkeyAtIdx[:])
 		if err != nil {
 			return errors.Wrap(err, "could not deserialize validator public key")
 		}
 		pubkeys = append(pubkeys, pk)
 	}
-	return attestation.VerifyIndexedAttestationSig(ctx, indexedAtt, pubkeys, domain)
+	return attestation.VerifyIndexedAttestationSigs(ctx, indexedAtt, pubkeys, domain)
 }

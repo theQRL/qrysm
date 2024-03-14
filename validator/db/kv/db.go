@@ -10,10 +10,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	prombolt "github.com/prysmaticlabs/prombbolt"
-	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/async/abool"
 	"github.com/theQRL/qrysm/v4/async/event"
 	"github.com/theQRL/qrysm/v4/config/features"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/io/file"
 	bolt "go.etcd.io/bbolt"
@@ -54,11 +54,11 @@ var blockedBuckets = [][]byte{
 
 // Config represents store's config object.
 type Config struct {
-	PubKeys [][dilithium.CryptoPublicKeyBytes]byte
+	PubKeys [][field_params.DilithiumPubkeyLength]byte
 }
 
 // Store defines an implementation of the Qrysm Database interface
-// using BoltDB as the underlying persistent kv-store for Ethereum consensus nodes.
+// using BoltDB as the underlying persistent kv-store for Zond consensus nodes.
 type Store struct {
 	db                                 *bolt.DB
 	databasePath                       string
@@ -178,7 +178,7 @@ func NewKVStore(ctx context.Context, dirPath string, config *Config) (*Store, er
 }
 
 // UpdatePublicKeysBuckets for a specified list of keys.
-func (s *Store) UpdatePublicKeysBuckets(pubKeys [][dilithium.CryptoPublicKeyBytes]byte) error {
+func (s *Store) UpdatePublicKeysBuckets(pubKeys [][field_params.DilithiumPubkeyLength]byte) error {
 	return s.update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(historicProposalsBucket)
 		for _, pubKey := range pubKeys {

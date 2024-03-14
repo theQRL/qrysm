@@ -60,12 +60,12 @@ func TestService_decodePubsubMessage(t *testing.T) {
 		},
 		{
 			name:  "valid message -- beacon block",
-			topic: fmt.Sprintf(p2p.GossipTypeMapping[reflect.TypeOf(&zondpb.SignedBeaconBlock{})], digest),
+			topic: fmt.Sprintf(p2p.GossipTypeMapping[reflect.TypeOf(&zondpb.SignedBeaconBlockCapella{})], digest),
 			input: &pubsub.Message{
 				Message: &pb.Message{
 					Data: func() []byte {
 						buf := new(bytes.Buffer)
-						if _, err := p2ptesting.NewTestP2P(t).Encoding().EncodeGossip(buf, util.NewBeaconBlock()); err != nil {
+						if _, err := p2ptesting.NewTestP2P(t).Encoding().EncodeGossip(buf, util.NewBeaconBlockCapella()); err != nil {
 							t.Fatal(err)
 						}
 						return buf.Bytes()
@@ -74,7 +74,7 @@ func TestService_decodePubsubMessage(t *testing.T) {
 			},
 			wantErr: nil,
 			want: func() interfaces.ReadOnlySignedBeaconBlock {
-				wsb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
+				wsb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 				require.NoError(t, err)
 				return wsb
 			}(),

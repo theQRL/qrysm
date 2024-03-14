@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
 	p2pTypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
 	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	prysmsync "github.com/theQRL/qrysm/v4/beacon-chain/sync"
+	qrysmsync "github.com/theQRL/qrysm/v4/beacon-chain/sync"
 	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
 	"github.com/theQRL/qrysm/v4/config/params"
 	blocks2 "github.com/theQRL/qrysm/v4/consensus-types/blocks"
@@ -64,7 +64,7 @@ var blockLimiterPeriod = 30 * time.Second
 // blocksFetcherConfig is a config to setup the block fetcher.
 type blocksFetcherConfig struct {
 	clock                    *startup.Clock
-	ctxMap                   prysmsync.ContextByteVersions
+	ctxMap                   qrysmsync.ContextByteVersions
 	chain                    blockchainService
 	p2p                      p2p.P2P
 	db                       db.ReadOnlyDatabase
@@ -82,7 +82,7 @@ type blocksFetcher struct {
 	rand            *rand.Rand
 	chain           blockchainService
 	clock           *startup.Clock
-	ctxMap          prysmsync.ContextByteVersions
+	ctxMap          qrysmsync.ContextByteVersions
 	p2p             p2p.P2P
 	db              db.ReadOnlyDatabase
 	blocksPerPeriod uint64
@@ -359,7 +359,7 @@ func (f *blocksFetcher) requestBlocks(
 	}
 	f.rateLimiter.Add(pid.String(), int64(req.Count))
 	l.Unlock()
-	return prysmsync.SendBeaconBlocksByRangeRequest(ctx, f.chain, f.p2p, pid, req, nil)
+	return qrysmsync.SendBeaconBlocksByRangeRequest(ctx, f.chain, f.p2p, pid, req, nil)
 }
 
 // requestBlocksByRoot is a wrapper for handling BeaconBlockByRootsReq requests/streams.
@@ -388,7 +388,7 @@ func (f *blocksFetcher) requestBlocksByRoot(
 	f.rateLimiter.Add(pid.String(), int64(len(*req)))
 	l.Unlock()
 
-	return prysmsync.SendBeaconBlocksByRootRequest(ctx, f.chain, f.p2p, pid, req, nil)
+	return qrysmsync.SendBeaconBlocksByRootRequest(ctx, f.chain, f.p2p, pid, req, nil)
 }
 
 // waitForBandwidth blocks up until peer's bandwidth is restored.

@@ -19,13 +19,13 @@ func TestValidateWithBatchVerifier(t *testing.T) {
 	validSet := &dilithium.SignatureBatch{
 		Messages:     [][32]byte{{}},
 		PublicKeys:   [][]dilithium.PublicKey{{keys[0].PublicKey()}},
-		Signatures:   [][]byte{sig.Marshal()},
+		Signatures:   [][][]byte{{sig.Marshal()}},
 		Descriptions: []string{signing.UnknownSignature},
 	}
 	invalidSet := &dilithium.SignatureBatch{
 		Messages:     [][32]byte{{}},
 		PublicKeys:   [][]dilithium.PublicKey{{keys[0].PublicKey()}},
-		Signatures:   [][]byte{badSig.Marshal()},
+		Signatures:   [][][]byte{{badSig.Marshal()}},
 		Descriptions: []string{signing.UnknownSignature},
 	}
 	tests := []struct {

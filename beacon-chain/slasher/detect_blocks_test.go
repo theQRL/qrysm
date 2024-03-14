@@ -13,9 +13,10 @@ import (
 	slashertypes "github.com/theQRL/qrysm/v4/beacon-chain/slasher/types"
 	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -28,15 +29,15 @@ func Test_processQueuedBlocks_DetectsDoubleProposals(t *testing.T) {
 	beaconDB := dbtest.SetupDB(t)
 	ctx, cancel := context.WithCancel(context.Background())
 
-	beaconState, err := util.NewBeaconState()
+	beaconState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 
 	// Initialize validators in the state.
 	numVals := params.BeaconConfig().MinGenesisActiveValidatorCount
 	validators := make([]*zondpb.Validator, numVals)
-	privKeys := make([]bls.SecretKey, numVals)
+	privKeys := make([]dilithium.DilithiumKey, numVals)
 	for i := range validators {
-		privKey, err := bls.RandKey()
+		privKey, err := dilithium.RandKey()
 		require.NoError(t, err)
 		privKeys[i] = privKey
 		validators[i] = &zondpb.Validator{
@@ -117,7 +118,7 @@ func Test_processQueuedBlocks_NotSlashable(t *testing.T) {
 	slasherDB := dbtest.SetupSlasherDB(t)
 	ctx, cancel := context.WithCancel(context.Background())
 
-	beaconState, err := util.NewBeaconState()
+	beaconState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	currentSlot := primitives.Slot(4)
 	require.NoError(t, beaconState.SetSlot(currentSlot))
@@ -162,7 +163,7 @@ func createProposalWrapper(t *testing.T, slot primitives.Slot, proposerIndex pri
 	}
 	signRoot, err := header.HashTreeRoot()
 	require.NoError(t, err)
-	fakeSig := make([]byte, 96)
+	fakeSig := make([]byte, field_params.DilithiumSignatureLength)
 	copy(fakeSig, "hello")
 	return &slashertypes.SignedBlockHeaderWrapper{
 		SignedBeaconBlockHeader: &zondpb.SignedBeaconBlockHeader{

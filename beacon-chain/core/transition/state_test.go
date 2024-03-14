@@ -9,6 +9,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
+	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -29,14 +30,14 @@ func TestGenesisBeaconState_OK(t *testing.T) {
 	assert.Equal(t, uint64(16777216), params.BeaconConfig().HistoricalRootsLimit, "HistoricalRootsLimit should be 16777216 for these tests to pass")
 
 	depositsForChainStart := 100
-	assert.Equal(t, primitives.Epoch(8192), params.BeaconConfig().EpochsPerSlashingsVector, "EpochsPerSlashingsVector should be 8192 for these tests to pass")
+	assert.Equal(t, primitives.Epoch(1024), params.BeaconConfig().EpochsPerSlashingsVector, "EpochsPerSlashingsVector should be 1024 for these tests to pass")
 
 	genesisTime := uint64(99999)
 	deposits, _, err := util.DeterministicDepositsAndKeys(uint64(depositsForChainStart))
 	require.NoError(t, err)
 	eth1Data, err := util.DeterministicEth1Data(len(deposits))
 	require.NoError(t, err)
-	newState, err := transition.GenesisBeaconState(context.Background(), deposits, genesisTime, eth1Data)
+	newState, err := transition.GenesisBeaconStateCapella(context.Background(), deposits, genesisTime, eth1Data, &enginev1.ExecutionPayloadCapella{})
 	require.NoError(t, err, "Could not execute GenesisBeaconState")
 
 	// Misc fields checks.
@@ -73,12 +74,6 @@ func TestGenesisBeaconState_OK(t *testing.T) {
 
 	// Recent state checks.
 	assert.DeepEqual(t, make([]uint64, params.BeaconConfig().EpochsPerSlashingsVector), newState.Slashings(), "Slashings was not correctly initialized")
-	currAtt, err := newState.CurrentEpochAttestations()
-	require.NoError(t, err)
-	assert.DeepSSZEqual(t, []*zondpb.PendingAttestation{}, currAtt, "CurrentEpochAttestations was not correctly initialized")
-	prevAtt, err := newState.CurrentEpochAttestations()
-	require.NoError(t, err)
-	assert.DeepSSZEqual(t, []*zondpb.PendingAttestation{}, prevAtt, "PreviousEpochAttestations was not correctly initialized")
 
 	zeroHash := params.BeaconConfig().ZeroHash[:]
 	// History root checks.
@@ -93,14 +88,34 @@ func TestGenesisBeaconState_OK(t *testing.T) {
 func TestGenesisState_HashEquality(t *testing.T) {
 	deposits, _, err := util.DeterministicDepositsAndKeys(100)
 	require.NoError(t, err)
-	state1, err := transition.GenesisBeaconState(context.Background(), deposits, 0, &zondpb.Eth1Data{BlockHash: make([]byte, 32)})
+	ee1 := &enginev1.ExecutionPayloadCapella{
+		ParentHash:    make([]byte, 32),
+		FeeRecipient:  make([]byte, 20),
+		StateRoot:     make([]byte, 32),
+		ReceiptsRoot:  make([]byte, 32),
+		LogsBloom:     make([]byte, 256),
+		PrevRandao:    make([]byte, 32),
+		BaseFeePerGas: make([]byte, 32),
+		BlockHash:     make([]byte, 32),
+	}
+	state1, err := transition.GenesisBeaconStateCapella(context.Background(), deposits, 0, &zondpb.Eth1Data{BlockHash: make([]byte, 32)}, ee1)
 	require.NoError(t, err)
-	state, err := transition.GenesisBeaconState(context.Background(), deposits, 0, &zondpb.Eth1Data{BlockHash: make([]byte, 32)})
+	ee := &enginev1.ExecutionPayloadCapella{
+		ParentHash:    make([]byte, 32),
+		FeeRecipient:  make([]byte, 20),
+		StateRoot:     make([]byte, 32),
+		ReceiptsRoot:  make([]byte, 32),
+		LogsBloom:     make([]byte, 256),
+		PrevRandao:    make([]byte, 32),
+		BaseFeePerGas: make([]byte, 32),
+		BlockHash:     make([]byte, 32),
+	}
+	state, err := transition.GenesisBeaconStateCapella(context.Background(), deposits, 0, &zondpb.Eth1Data{BlockHash: make([]byte, 32)}, ee)
 	require.NoError(t, err)
 
-	pbState1, err := state_native.ProtobufBeaconStatePhase0(state1.ToProto())
+	pbState1, err := state_native.ProtobufBeaconStateCapella(state1.ToProto())
 	require.NoError(t, err)
-	pbstate, err := state_native.ProtobufBeaconStatePhase0(state.ToProto())
+	pbstate, err := state_native.ProtobufBeaconStateCapella(state.ToProto())
 	require.NoError(t, err)
 
 	root1, err1 := hash.HashProto(pbState1)
@@ -113,7 +128,9 @@ func TestGenesisState_HashEquality(t *testing.T) {
 }
 
 func TestGenesisState_InitializesLatestBlockHashes(t *testing.T) {
-	s, err := transition.GenesisBeaconState(context.Background(), nil, 0, &zondpb.Eth1Data{})
+	deposits, _, err := util.DeterministicDepositsAndKeys(100)
+	require.NoError(t, err)
+	s, err := transition.GenesisBeaconStateCapella(context.Background(), deposits, 0, &zondpb.Eth1Data{}, &enginev1.ExecutionPayloadCapella{})
 	require.NoError(t, err)
 	got, want := uint64(len(s.BlockRoots())), uint64(params.BeaconConfig().SlotsPerHistoricalRoot)
 	assert.Equal(t, want, got, "Wrong number of recent block hashes")
@@ -127,6 +144,6 @@ func TestGenesisState_InitializesLatestBlockHashes(t *testing.T) {
 }
 
 func TestGenesisState_FailsWithoutEth1data(t *testing.T) {
-	_, err := transition.GenesisBeaconState(context.Background(), nil, 0, nil)
+	_, err := transition.GenesisBeaconStateCapella(context.Background(), nil, 0, nil, &enginev1.ExecutionPayloadCapella{})
 	assert.ErrorContains(t, "no eth1data provided for genesis state", err)
 }

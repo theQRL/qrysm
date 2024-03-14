@@ -38,7 +38,7 @@ type SignatureResponse struct {
 // HttpSignerClient defines the interface for interacting with a remote web3signer.
 type HttpSignerClient interface {
 	Sign(ctx context.Context, pubKey string, request SignRequestJson) (dilithium.Signature, error)
-	GetPublicKeys(ctx context.Context, url string) ([][dilithiumlib.CryptoPublicKeyBytes]byte, error)
+	GetPublicKeys(ctx context.Context, url string) ([][field_params.DilithiumPubkeyLength]byte, error)
 }
 
 // ApiClient a wrapper object around web3signer APIs. Please refer to the docs from Consensys' web3signer project.
@@ -88,7 +88,7 @@ func (client *ApiClient) Sign(ctx context.Context, pubKey string, request SignRe
 }
 
 // GetPublicKeys is a wrapper method around the web3signer publickeys api (this may be removed in the future or moved to another location due to its usage).
-func (client *ApiClient) GetPublicKeys(ctx context.Context, url string) ([][dilithiumlib.CryptoPublicKeyBytes]byte, error) {
+func (client *ApiClient) GetPublicKeys(ctx context.Context, url string) ([][field_params.DilithiumPubkeyLength]byte, error) {
 	resp, err := client.doRequest(ctx, http.MethodGet, url, nil // no body needed on get request )
 	if err != nil {
 		return nil, err
@@ -97,7 +97,7 @@ func (client *ApiClient) GetPublicKeys(ctx context.Context, url string) ([][dili
 	if err := unmarshalResponse(resp.Body, &publicKeys); err != nil {
 		return nil, err
 	}
-	decodedKeys := make([][dilithiumlib.CryptoPublicKeyBytes]byte, len(publicKeys))
+	decodedKeys := make([][field_params.DilithiumPubkeyLength]byte, len(publicKeys))
 	var errorKeyPositions string
 	for i, value := range publicKeys {
 		decodedKey, err := hexutil.Decode(value)

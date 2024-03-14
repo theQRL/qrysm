@@ -5,20 +5,48 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
+	b "github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/v4/beacon-chain/db/iface"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
+// DeterministicGenesisStateCapellaWithGenesisBlock creates a genesis state, saves the genesis block,
+// genesis state and head block root. It returns the genesis state, genesis block's root and
+// validator private keys.
+func DeterministicGenesisStateCapellaWithGenesisBlock(
+	t *testing.T,
+	ctx context.Context,
+	db iface.HeadAccessDatabase,
+	numValidators uint64,
+) (state.BeaconState, [32]byte, []dilithium.DilithiumKey) {
+	genesisState, privateKeys := DeterministicGenesisStateCapella(t, numValidators)
+	stateRoot, err := genesisState.HashTreeRoot(ctx)
+	require.NoError(t, err, "Could not hash genesis state")
+
+	genesis := b.NewGenesisBlock(stateRoot[:])
+	SaveBlock(t, ctx, db, genesis)
+
+	parentRoot, err := genesis.Block.HashTreeRoot()
+	require.NoError(t, err, "Could not get signing root")
+	require.NoError(t, db.SaveState(ctx, genesisState, parentRoot), "Could not save genesis state")
+	require.NoError(t, db.SaveHeadBlockRoot(ctx, parentRoot), "Could not save genesis state")
+
+	return genesisState, parentRoot, privateKeys
+}
+
 // DeterministicGenesisStateCapella returns a genesis state in Capella format made using the deterministic deposits.
-func DeterministicGenesisStateCapella(t testing.TB, numValidators uint64) (state.BeaconState, []bls.SecretKey) {
+func DeterministicGenesisStateCapella(t testing.TB, numValidators uint64) (state.BeaconState, []dilithium.DilithiumKey) {
 	deposits, privKeys, err := DeterministicDepositsAndKeys(numValidators)
 	if err != nil {
 		t.Fatal(errors.Wrapf(err, "failed to get %d deposits", numValidators))
@@ -27,7 +55,7 @@ func DeterministicGenesisStateCapella(t testing.TB, numValidators uint64) (state
 	if err != nil {
 		t.Fatal(errors.Wrapf(err, "failed to get eth1data for %d deposits", numValidators))
 	}
-	beaconState, err := genesisBeaconStateCapella(context.Background(), deposits, uint64(0), eth1Data)
+	beaconState, err := GenesisBeaconStateCapella(context.Background(), deposits, uint64(0), eth1Data)
 	if err != nil {
 		t.Fatal(errors.Wrapf(err, "failed to get genesis beacon state of %d validators", numValidators))
 	}
@@ -35,8 +63,8 @@ func DeterministicGenesisStateCapella(t testing.TB, numValidators uint64) (state
 	return beaconState, privKeys
 }
 
-// genesisBeaconStateCapella returns the genesis beacon state.
-func genesisBeaconStateCapella(ctx context.Context, deposits []*zondpb.Deposit, genesisTime uint64, eth1Data *zondpb.Eth1Data) (state.BeaconState, error) {
+// GenesisBeaconStateCapella returns the genesis beacon state.
+func GenesisBeaconStateCapella(ctx context.Context, deposits []*zondpb.Deposit, genesisTime uint64, eth1Data *zondpb.Eth1Data) (state.BeaconState, error) {
 	st, err := emptyGenesisStateCapella()
 	if err != nil {
 		return nil, err
@@ -62,8 +90,8 @@ func emptyGenesisStateCapella() (state.BeaconState, error) {
 		// Misc fields.
 		Slot: 0,
 		Fork: &zondpb.Fork{
-			PreviousVersion: params.BeaconConfig().BellatrixForkVersion,
-			CurrentVersion:  params.BeaconConfig().CapellaForkVersion,
+			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
+			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 			Epoch:           0,
 		},
 		// Validator registry fields.
@@ -184,15 +212,15 @@ func buildGenesisBeaconStateCapella(genesisTime uint64, preState state.BeaconSta
 
 	var scBits [fieldparams.SyncAggregateSyncCommitteeBytesLength]byte
 	bodyRoot, err := (&zondpb.BeaconBlockBodyCapella{
-		RandaoReveal: make([]byte, dilithium2.CryptoBytes),
+		RandaoReveal: make([]byte, fieldparams.DilithiumSignatureLength),
 		Eth1Data: &zondpb.Eth1Data{
 			DepositRoot: make([]byte, 32),
 			BlockHash:   make([]byte, 32),
 		},
 		Graffiti: make([]byte, 32),
 		SyncAggregate: &zondpb.SyncAggregate{
-			SyncCommitteeBits:      scBits[:],
-			SyncCommitteeSignature: make([]byte, 96),
+			SyncCommitteeBits:       scBits[:],
+			SyncCommitteeSignatures: [][]byte{},
 		},
 		ExecutionPayload: &enginev1.ExecutionPayloadCapella{
 			ParentHash:    make([]byte, 32),
@@ -243,4 +271,22 @@ func buildGenesisBeaconStateCapella(genesisTime uint64, preState state.BeaconSta
 	}
 
 	return state_native.InitializeFromProtoCapella(st)
+}
+
+// processPreGenesisDeposits processes a deposit for the beacon state Altair before chain start.
+func processPreGenesisDeposits(
+	ctx context.Context,
+	beaconState state.BeaconState,
+	deposits []*zondpb.Deposit,
+) (state.BeaconState, error) {
+	var err error
+	beaconState, err = altair.ProcessDeposits(ctx, beaconState, deposits)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not process deposit")
+	}
+	beaconState, err = blocks.ActivateValidatorWithEffectiveBalance(beaconState, deposits)
+	if err != nil {
+		return nil, err
+	}
+	return beaconState, nil
 }

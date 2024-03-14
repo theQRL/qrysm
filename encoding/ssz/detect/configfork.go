@@ -61,12 +61,6 @@ func FromForkVersion(cv [fieldparams.VersionLength]byte) (*VersionedUnmarshaler,
 	var fork int
 	switch cv {
 	case bytesutil.ToBytes4(cfg.GenesisForkVersion):
-		fork = version.Phase0
-	case bytesutil.ToBytes4(cfg.AltairForkVersion):
-		fork = version.Altair
-	case bytesutil.ToBytes4(cfg.BellatrixForkVersion):
-		fork = version.Bellatrix
-	case bytesutil.ToBytes4(cfg.CapellaForkVersion):
 		fork = version.Capella
 	default:
 		return nil, errors.Wrapf(ErrForkNotFound, "version=%#x", cv)
@@ -83,36 +77,6 @@ func FromForkVersion(cv [fieldparams.VersionLength]byte) (*VersionedUnmarshaler,
 func (cf *VersionedUnmarshaler) UnmarshalBeaconState(marshaled []byte) (s state.BeaconState, err error) {
 	forkName := version.String(cf.Fork)
 	switch fork := cf.Fork; fork {
-	case version.Phase0:
-		st := &zondpb.BeaconState{}
-		err = st.UnmarshalSSZ(marshaled)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal state, detected fork=%s", forkName)
-		}
-		s, err = state_native.InitializeFromProtoUnsafePhase0(st)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to init state trie from state, detected fork=%s", forkName)
-		}
-	case version.Altair:
-		st := &zondpb.BeaconStateAltair{}
-		err = st.UnmarshalSSZ(marshaled)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal state, detected fork=%s", forkName)
-		}
-		s, err = state_native.InitializeFromProtoUnsafeAltair(st)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to init state trie from state, detected fork=%s", forkName)
-		}
-	case version.Bellatrix:
-		st := &zondpb.BeaconStateBellatrix{}
-		err = st.UnmarshalSSZ(marshaled)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal state, detected fork=%s", forkName)
-		}
-		s, err = state_native.InitializeFromProtoUnsafeBellatrix(st)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to init state trie from state, detected fork=%s", forkName)
-		}
 	case version.Capella:
 		st := &zondpb.BeaconStateCapella{}
 		err = st.UnmarshalSSZ(marshaled)
@@ -161,12 +125,6 @@ func (cf *VersionedUnmarshaler) UnmarshalBeaconBlock(marshaled []byte) (interfac
 
 	var blk ssz.Unmarshaler
 	switch cf.Fork {
-	case version.Phase0:
-		blk = &zondpb.SignedBeaconBlock{}
-	case version.Altair:
-		blk = &zondpb.SignedBeaconBlockAltair{}
-	case version.Bellatrix:
-		blk = &zondpb.SignedBeaconBlockBellatrix{}
 	case version.Capella:
 		blk = &zondpb.SignedBeaconBlockCapella{}
 	default:
@@ -182,7 +140,6 @@ func (cf *VersionedUnmarshaler) UnmarshalBeaconBlock(marshaled []byte) (interfac
 
 // UnmarshalBlindedBeaconBlock uses internal knowledge in the VersionedUnmarshaler to pick the right concrete blinded ReadOnlySignedBeaconBlock type,
 // then Unmarshal()s the type and returns an instance of block.ReadOnlySignedBeaconBlock if successful.
-// For Phase0 and Altair it works exactly line UnmarshalBeaconBlock.
 func (cf *VersionedUnmarshaler) UnmarshalBlindedBeaconBlock(marshaled []byte) (interfaces.ReadOnlySignedBeaconBlock, error) {
 	slot, err := slotFromBlock(marshaled)
 	if err != nil {
@@ -194,12 +151,6 @@ func (cf *VersionedUnmarshaler) UnmarshalBlindedBeaconBlock(marshaled []byte) (i
 
 	var blk ssz.Unmarshaler
 	switch cf.Fork {
-	case version.Phase0:
-		blk = &zondpb.SignedBeaconBlock{}
-	case version.Altair:
-		blk = &zondpb.SignedBeaconBlockAltair{}
-	case version.Bellatrix:
-		blk = &zondpb.SignedBlindedBeaconBlockBellatrix{}
 	case version.Capella:
 		blk = &zondpb.SignedBlindedBeaconBlockCapella{}
 	default:

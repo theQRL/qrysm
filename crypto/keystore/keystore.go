@@ -196,7 +196,7 @@ func DecryptKey(keyJSON []byte, password string) (*Key, error) {
 		return nil, err
 	}
 
-	secretKey, err := dilithium.SecretKeyFromBytes(keyBytes)
+	secretKey, err := dilithium.SecretKeyFromSeed(keyBytes)
 	if err != nil {
 		return nil, err
 	}

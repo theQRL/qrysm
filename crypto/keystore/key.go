@@ -122,7 +122,7 @@ func (k *Key) UnmarshalJSON(j []byte) (err error) {
 	if err != nil {
 		return err
 	}
-	k.SecretKey, err = dilithium.SecretKeyFromBytes(seckey)
+	k.SecretKey, err = dilithium.SecretKeyFromSeed(seckey)
 	if err != nil {
 		return err
 	}

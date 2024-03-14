@@ -138,8 +138,6 @@ func TestEpochStartSlot_OK(t *testing.T) {
 		{epoch: 0, startSlot: 0 * params.BeaconConfig().SlotsPerEpoch, error: false},
 		{epoch: 1, startSlot: 1 * params.BeaconConfig().SlotsPerEpoch, error: false},
 		{epoch: 10, startSlot: 10 * params.BeaconConfig().SlotsPerEpoch, error: false},
-		// NOTE(rgeraldes24): returns an error now because of the new params.BeaconConfig().SlotsPerEpoch value
-		// {epoch: 1 << 58, startSlot: 1 << 63, error: false},
 		{epoch: 1 << 58, startSlot: 1 << 63, error: true},
 		{epoch: 1 << 59, startSlot: 1 << 63, error: true},
 		{epoch: 1 << 60, startSlot: 1 << 63, error: true},
@@ -461,8 +459,6 @@ func TestSyncCommitteePeriodStartEpoch(t *testing.T) {
 	}{
 		{epoch: 0, wanted: 0},
 		{epoch: params.BeaconConfig().EpochsPerSyncCommitteePeriod + 1, wanted: params.BeaconConfig().EpochsPerSyncCommitteePeriod},
-		// NOTE(rgeraldes24): EpochsPerSyncCommitteePeriod is now 8 instead of 512 hence the wanted value
-		// {epoch: params.BeaconConfig().EpochsPerSyncCommitteePeriod*2 + 100, wanted: params.BeaconConfig().EpochsPerSyncCommitteePeriod * 2},
 		{epoch: params.BeaconConfig().EpochsPerSyncCommitteePeriod*2 + 100, wanted: 112},
 		{epoch: params.BeaconConfig().EpochsPerSyncCommitteePeriod*params.BeaconConfig().EpochsPerSyncCommitteePeriod + 1, wanted: params.BeaconConfig().EpochsPerSyncCommitteePeriod * params.BeaconConfig().EpochsPerSyncCommitteePeriod},
 	}

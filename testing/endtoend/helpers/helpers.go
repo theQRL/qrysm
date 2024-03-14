@@ -37,9 +37,6 @@ const (
 	cpuProfileFileName  = "node_cpu_profile_%d.pb.gz"
 	fileBufferSize      = 64 * 1024
 	maxFileBufferSize   = 1024 * 1024
-	// AltairE2EForkEpoch    = params.AltairE2EForkEpoch
-	// BellatrixE2EForkEpoch = params.BellatrixE2EForkEpoch
-	// CapellaE2EForkEpoch   = params.CapellaE2EForkEpoch
 )
 
 // Graffiti is a list of sample graffiti strings.
@@ -111,22 +108,27 @@ func WaitForTextInFile(src *os.File, match string) error {
 					errChan <- err
 					return
 				}
-				lineScanner := bufio.NewScanner(f)
-				// Scan will return true until it hits EOF or another error.
-				// If .Close is called on the underlying file, Scan will return false, causing this goroutine to exit.
-				for lineScanner.Scan() {
-					line := lineScanner.Text()
+
+				// NOTE(rgeraldes24): replaced the bufio scanner with ReadString due to the token too long error
+				rd := bufio.NewReader(f)
+				for {
+					line, err := rd.ReadString('\n')
+					if err == io.EOF {
+						break
+					}
+
+					if err != nil {
+						// Bubble the error back up to the parent goroutine.
+						errChan <- err
+						break
+					}
+
 					if strings.Contains(line, match) {
 						// closing foundChan causes the <-foundChan case in the outer select to execute,
 						// ending the function with a nil return (success result).
 						close(foundChan)
 						return
 					}
-				}
-				// If Scan returned false for an error (except EOF), Err will return it.
-				if err = lineScanner.Err(); err != nil {
-					// Bubble the error back up to the parent goroutine.
-					errChan <- err
 				}
 			}
 		}

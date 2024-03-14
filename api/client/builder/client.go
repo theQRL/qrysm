@@ -14,8 +14,8 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
@@ -87,7 +87,7 @@ var _ observer = &requestLogger{}
 // BuilderClient provides a collection of helper methods for calling Builder API endpoints.
 type BuilderClient interface {
 	NodeURL() string
-	GetHeader(ctx context.Context, slot primitives.Slot, parentHash [32]byte, pubkey [dilithium.CryptoPublicKeyBytes]byte) (SignedBid, error)
+	GetHeader(ctx context.Context, slot primitives.Slot, parentHash [32]byte, pubkey [field_params.DilithiumPubkeyLength]byte) (SignedBid, error)
 	RegisterValidator(ctx context.Context, svr []*zondpb.SignedValidatorRegistrationV1) error
 	SubmitBlindedBlock(ctx context.Context, sb interfaces.ReadOnlySignedBeaconBlock) (interfaces.ExecutionData, error)
 	Status(ctx context.Context) error
@@ -190,7 +190,7 @@ func (c *Client) do(ctx context.Context, method string, path string, body io.Rea
 
 var execHeaderTemplate = template.Must(template.New("").Parse(getExecHeaderPath))
 
-func execHeaderPath(slot primitives.Slot, parentHash [32]byte, pubkey [dilithium.CryptoPublicKeyBytes]byte) (string, error) {
+func execHeaderPath(slot primitives.Slot, parentHash [32]byte, pubkey [field_params.DilithiumPubkeyLength]byte) (string, error) {
 	v := struct {
 		Slot       primitives.Slot
 		ParentHash string
@@ -209,7 +209,7 @@ func execHeaderPath(slot primitives.Slot, parentHash [32]byte, pubkey [dilithium
 }
 
 // GetHeader is used by a proposing validator to request an execution payload header from the Builder node.
-func (c *Client) GetHeader(ctx context.Context, slot primitives.Slot, parentHash [32]byte, pubkey [dilithium.CryptoPublicKeyBytes]byte) (SignedBid, error) {
+func (c *Client) GetHeader(ctx context.Context, slot primitives.Slot, parentHash [32]byte, pubkey [field_params.DilithiumPubkeyLength]byte) (SignedBid, error) {
 	path, err := execHeaderPath(slot, parentHash, pubkey)
 	if err != nil {
 		return nil, err

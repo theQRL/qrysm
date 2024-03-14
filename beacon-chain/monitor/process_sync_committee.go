@@ -7,7 +7,6 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // processSyncCommitteeContribution logs the event when tracked validators' aggregated sync contribution has been processed.
@@ -30,9 +29,7 @@ func (s *Service) processSyncAggregate(state state.BeaconState, blk interfaces.R
 	if blk == nil || blk.Body() == nil {
 		return
 	}
-	if blk.Version() == version.Phase0 {
-		return
-	}
+
 	bits, err := blk.Body().SyncAggregate()
 	if err != nil {
 		log.WithError(err).Error("Could not get SyncAggregate")

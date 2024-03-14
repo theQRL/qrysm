@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "Ethereum Serenity APIs",
+    "title": "Zond APIs",
     "description": "{{ index . description }}",
     "version": "v1alpha1",
     "license": {
@@ -9,7 +9,7 @@
       "url": "http://www.apache.org/licenses/LICENSE-2.0"
     }
   },
-  "host": "api.prylabs.net",
+  "host": "api.theqrl.org",
   "schemes": [
     "https",
     "wss"

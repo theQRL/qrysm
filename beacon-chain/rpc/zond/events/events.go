@@ -149,7 +149,7 @@ func handleBlockOperationEvents(
 		if !ok {
 			return nil
 		}
-		v2Data := migration.V1Alpha1SignedContributionAndProofToV2(contributionData.Contribution)
+		v2Data := migration.V1Alpha1SignedContributionAndProofToV1(contributionData.Contribution)
 		return streamData(stream, SyncCommitteeContributionTopic, v2Data)
 	case operation.DilithiumToExecutionChangeReceived:
 		if _, ok := requestedTopics[DilithiumToExecutionChangeTopic]; !ok {
@@ -159,7 +159,7 @@ func handleBlockOperationEvents(
 		if !ok {
 			return nil
 		}
-		v2Change := migration.V1Alpha1SignedDilithiumToExecChangeToV2(changeData.Change)
+		v2Change := migration.V1Alpha1SignedDilithiumToExecChangeToV1(changeData.Change)
 		return streamData(stream, DilithiumToExecutionChangeTopic, v2Change)
 	default:
 		return nil
@@ -282,22 +282,6 @@ func (s *Server) streamPayloadAttributes(stream zondpbservice.Events_StreamEvent
 	}
 
 	switch headState.Version() {
-	case version.Bellatrix:
-		return streamData(stream, PayloadAttributesTopic, &zondpb.EventPayloadAttributeV1{
-			Version: version.String(headState.Version()),
-			Data: &zondpb.EventPayloadAttributeV1_BasePayloadAttribute{
-				ProposerIndex:     proposerIndex,
-				ProposalSlot:      headState.Slot(),
-				ParentBlockNumber: headPayload.BlockNumber(),
-				ParentBlockRoot:   headRoot,
-				ParentBlockHash:   headPayload.BlockHash(),
-				PayloadAttributes: &enginev1.PayloadAttributes{
-					Timestamp:             uint64(t.Unix()),
-					PrevRandao:            prevRando,
-					SuggestedFeeRecipient: headPayload.FeeRecipient(),
-				},
-			},
-		})
 	case version.Capella:
 		withdrawals, err := headState.ExpectedWithdrawals()
 		if err != nil {

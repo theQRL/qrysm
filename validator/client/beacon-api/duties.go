@@ -49,7 +49,6 @@ func (c beaconApiValidatorClient) getDuties(ctx context.Context, in *zondpb.Duti
 	}
 
 	return &zondpb.DutiesResponse{
-		Duties:             currentEpochDuties,
 		CurrentEpochDuties: currentEpochDuties,
 		NextEpochDuties:    nextEpochDuties,
 	}, nil

@@ -2,23 +2,8 @@ package util
 
 import (
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	v2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 )
-
-// NewBeaconBlockBellatrix creates a beacon block with minimum marshalable fields.
-func NewBeaconBlockBellatrix() *zondpb.SignedBeaconBlockBellatrix {
-	return HydrateSignedBeaconBlockBellatrix(&zondpb.SignedBeaconBlockBellatrix{})
-}
-
-// NewBlindedBeaconBlockBellatrix creates a blinded beacon block with minimum marshalable fields.
-func NewBlindedBeaconBlockBellatrix() *zondpb.SignedBlindedBeaconBlockBellatrix {
-	return HydrateSignedBlindedBeaconBlockBellatrix(&zondpb.SignedBlindedBeaconBlockBellatrix{})
-}
-
-// NewBlindedBeaconBlockBellatrixV2 creates a blinded beacon block with minimum marshalable fields.
-func NewBlindedBeaconBlockBellatrixV2() *v2.SignedBlindedBeaconBlockBellatrix {
-	return HydrateV2SignedBlindedBeaconBlockBellatrix(&v2.SignedBlindedBeaconBlockBellatrix{})
-}
 
 // NewBeaconBlockCapella creates a beacon block with minimum marshalable fields.
 func NewBeaconBlockCapella() *zondpb.SignedBeaconBlockCapella {
@@ -30,7 +15,7 @@ func NewBlindedBeaconBlockCapella() *zondpb.SignedBlindedBeaconBlockCapella {
 	return HydrateSignedBlindedBeaconBlockCapella(&zondpb.SignedBlindedBeaconBlockCapella{})
 }
 
-// NewBlindedBeaconBlockCapellaV2 creates a blinded beacon block with minimum marshalable fields.
-func NewBlindedBeaconBlockCapellaV2() *v2.SignedBlindedBeaconBlockCapella {
-	return HydrateV2SignedBlindedBeaconBlockCapella(&v2.SignedBlindedBeaconBlockCapella{})
+// NewBlindedBeaconBlockCapellaV1 creates a blinded beacon block with minimum marshalable fields.
+func NewBlindedBeaconBlockCapellaV1() *v1.SignedBlindedBeaconBlockCapella {
+	return HydrateV1SignedBlindedBeaconBlockCapella(&v1.SignedBlindedBeaconBlockCapella{})
 }

@@ -792,22 +792,6 @@ func unmarshalBlock(_ context.Context, enc []byte) (interfaces.ReadOnlySignedBea
 	}
 	var rawBlock ssz.Unmarshaler
 	switch {
-	case hasAltairKey(enc):
-		// Marshal block bytes to altair beacon block.
-		rawBlock = &zondpb.SignedBeaconBlockAltair{}
-		if err := rawBlock.UnmarshalSSZ(enc[len(altairKey):]); err != nil {
-			return nil, errors.Wrap(err, "could not unmarshal Altair block")
-		}
-	case hasBellatrixKey(enc):
-		rawBlock = &zondpb.SignedBeaconBlockBellatrix{}
-		if err := rawBlock.UnmarshalSSZ(enc[len(bellatrixKey):]); err != nil {
-			return nil, errors.Wrap(err, "could not unmarshal Bellatrix block")
-		}
-	case hasBellatrixBlindKey(enc):
-		rawBlock = &zondpb.SignedBlindedBeaconBlockBellatrix{}
-		if err := rawBlock.UnmarshalSSZ(enc[len(bellatrixBlindKey):]); err != nil {
-			return nil, errors.Wrap(err, "could not unmarshal blinded Bellatrix block")
-		}
 	case hasCapellaKey(enc):
 		rawBlock = &zondpb.SignedBeaconBlockCapella{}
 		if err := rawBlock.UnmarshalSSZ(enc[len(capellaKey):]); err != nil {
@@ -819,11 +803,6 @@ func unmarshalBlock(_ context.Context, enc []byte) (interfaces.ReadOnlySignedBea
 			return nil, errors.Wrap(err, "could not unmarshal blinded Capella block")
 		}
 	default:
-		// Marshal block bytes to phase 0 beacon block.
-		rawBlock = &zondpb.SignedBeaconBlock{}
-		if err := rawBlock.UnmarshalSSZ(enc); err != nil {
-			return nil, errors.Wrap(err, "could not unmarshal Phase0 block")
-		}
 	}
 	return blocks.NewSignedBeaconBlock(rawBlock)
 }
@@ -856,12 +835,6 @@ func marshalBlockFull(
 	switch blk.Version() {
 	case version.Capella:
 		return snappy.Encode(nil, append(capellaKey, encodedBlock...)), nil
-	case version.Bellatrix:
-		return snappy.Encode(nil, append(bellatrixKey, encodedBlock...)), nil
-	case version.Altair:
-		return snappy.Encode(nil, append(altairKey, encodedBlock...)), nil
-	case version.Phase0:
-		return snappy.Encode(nil, encodedBlock), nil
 	default:
 		return nil, errors.New("unknown block version")
 	}
@@ -890,8 +863,6 @@ func marshalBlockBlinded(
 	switch blk.Version() {
 	case version.Capella:
 		return snappy.Encode(nil, append(capellaBlindKey, encodedBlock...)), nil
-	case version.Bellatrix:
-		return snappy.Encode(nil, append(bellatrixBlindKey, encodedBlock...)), nil
 	default:
 		return nil, fmt.Errorf("unsupported block version: %v", blk.Version())
 	}

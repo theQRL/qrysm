@@ -49,11 +49,11 @@ func PreGenState1Epoch() (state.BeaconState, error) {
 	if err != nil {
 		return nil, err
 	}
-	beaconState := &zondpb.BeaconState{}
+	beaconState := &zondpb.BeaconStateCapella{}
 	if err := beaconState.UnmarshalSSZ(beaconBytes); err != nil {
 		return nil, err
 	}
-	return state_native.InitializeFromProtoPhase0(beaconState)
+	return state_native.InitializeFromProtoCapella(beaconState)
 }
 
 // PreGenstateFullEpochs unmarshals the pre-generated beacon state after 2 epoch of full block processing and returns it.
@@ -66,15 +66,15 @@ func PreGenstateFullEpochs() (state.BeaconState, error) {
 	if err != nil {
 		return nil, err
 	}
-	beaconState := &zondpb.BeaconState{}
+	beaconState := &zondpb.BeaconStateCapella{}
 	if err := beaconState.UnmarshalSSZ(beaconBytes); err != nil {
 		return nil, err
 	}
-	return state_native.InitializeFromProtoPhase0(beaconState)
+	return state_native.InitializeFromProtoCapella(beaconState)
 }
 
 // PreGenFullBlock unmarshals the pre-generated signed beacon block containing an epochs worth of attestations and returns it.
-func PreGenFullBlock() (*zondpb.SignedBeaconBlock, error) {
+func PreGenFullBlock() (*zondpb.SignedBeaconBlockCapella, error) {
 	path, err := bazel.Runfile(filePath(FullBlockFileName))
 	if err != nil {
 		return nil, err
@@ -83,7 +83,7 @@ func PreGenFullBlock() (*zondpb.SignedBeaconBlock, error) {
 	if err != nil {
 		return nil, err
 	}
-	beaconBlock := &zondpb.SignedBeaconBlock{}
+	beaconBlock := &zondpb.SignedBeaconBlockCapella{}
 	if err := beaconBlock.UnmarshalSSZ(blockBytes); err != nil {
 		return nil, err
 	}

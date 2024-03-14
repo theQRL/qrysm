@@ -10,7 +10,6 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	zondpb "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	zond2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
@@ -63,7 +62,7 @@ func (bs *Server) GetStateRoot(ctx context.Context, req *zondpb.StateRequest) (*
 // If an epoch is not specified then the RANDAO mix for the state's current epoch will be returned.
 // By adjusting the state_id parameter you can query for any historic value of the RANDAO mix.
 // Ordinarily states from the same epoch will mutate the RANDAO mix for that epoch as blocks are applied.
-func (bs *Server) GetRandao(ctx context.Context, req *zond2.RandaoRequest) (*zond2.RandaoResponse, error) {
+func (bs *Server) GetRandao(ctx context.Context, req *zondpb.RandaoRequest) (*zondpb.RandaoResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.GetRandao")
 	defer span.End()
 
@@ -104,8 +103,8 @@ func (bs *Server) GetRandao(ctx context.Context, req *zond2.RandaoRequest) (*zon
 	}
 	isFinalized := bs.FinalizationFetcher.IsFinalized(ctx, blockRoot)
 
-	return &zond2.RandaoResponse{
-		Data:                &zond2.RandaoResponse_Randao{Randao: randao},
+	return &zondpb.RandaoResponse{
+		Data:                &zondpb.RandaoResponse_Randao{Randao: randao},
 		ExecutionOptimistic: isOptimistic,
 		Finalized:           isFinalized,
 	}, nil

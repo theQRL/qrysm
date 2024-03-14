@@ -32,7 +32,7 @@ func Test_setupBlockStorageType(t *testing.T) {
 		defer resetFn()
 		store := setupDB(t)
 
-		blk := util.NewBeaconBlockBellatrix()
+		blk := util.NewBeaconBlockCapella()
 		blk.Block.Body.ExecutionPayload.BlockNumber = 1
 		wrappedBlock, err := blocks.NewSignedBeaconBlock(blk)
 		require.NoError(t, err)
@@ -53,7 +53,7 @@ func Test_setupBlockStorageType(t *testing.T) {
 		defer resetFn()
 		store := setupDB(t)
 
-		blk := util.NewBeaconBlockBellatrix()
+		blk := util.NewBeaconBlockCapella()
 		blk.Block.Body.ExecutionPayload.BlockNumber = 1
 		wrappedBlock, err := blocks.NewSignedBeaconBlock(blk)
 		require.NoError(t, err)
@@ -76,7 +76,7 @@ func Test_setupBlockStorageType(t *testing.T) {
 			return tx.Bucket(chainMetadataBucket).Put(saveBlindedBeaconBlocksKey, []byte{1})
 		}))
 
-		blk := util.NewBlindedBeaconBlockBellatrix()
+		blk := util.NewBlindedBeaconBlockCapella()
 		blk.Block.Body.ExecutionPayloadHeader.BlockNumber = 1
 		wrappedBlock, err := blocks.NewSignedBeaconBlock(blk)
 		require.NoError(t, err)
@@ -109,7 +109,7 @@ func Test_setupBlockStorageType(t *testing.T) {
 		// Should have set the chain metadata bucket to save blinded
 		require.Equal(t, true, shouldSaveBlinded)
 
-		blkFull := util.NewBeaconBlockBellatrix()
+		blkFull := util.NewBeaconBlockCapella()
 		blkFull.Block.Body.ExecutionPayload.BlockNumber = 2
 		wrappedBlock, err = blocks.NewSignedBeaconBlock(blkFull)
 		require.NoError(t, err)
@@ -130,7 +130,7 @@ func Test_setupBlockStorageType(t *testing.T) {
 			return tx.Bucket(chainMetadataBucket).Delete(saveBlindedBeaconBlocksKey)
 		}))
 
-		blk := util.NewBeaconBlockBellatrix()
+		blk := util.NewBeaconBlockCapella()
 		blk.Block.Body.ExecutionPayload.BlockNumber = 1
 		wrappedBlock, err := blocks.NewSignedBeaconBlock(blk)
 		require.NoError(t, err)
@@ -148,7 +148,7 @@ func Test_setupBlockStorageType(t *testing.T) {
 		err = store.setupBlockStorageType(ctx)
 		require.NoError(t, err)
 
-		blk = util.NewBeaconBlockBellatrix()
+		blk = util.NewBeaconBlockCapella()
 		blk.Block.Body.ExecutionPayload.BlockNumber = 2
 		wrappedBlock, err = blocks.NewSignedBeaconBlock(blk)
 		require.NoError(t, err)
@@ -163,7 +163,7 @@ func Test_setupBlockStorageType(t *testing.T) {
 	t.Run("existing database with blinded blocks type should error if user enables full blocks feature flag", func(t *testing.T) {
 		store := setupDB(t)
 
-		blk := util.NewBeaconBlockBellatrix()
+		blk := util.NewBeaconBlockCapella()
 		blk.Block.Body.ExecutionPayload.BlockNumber = 1
 		wrappedBlock, err := blocks.NewSignedBeaconBlock(blk)
 		require.NoError(t, err)

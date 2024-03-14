@@ -32,7 +32,6 @@ go_test(
     ],
     embed = [":go_default_library"],
     deps = [
-        "//crypto/bls:go_default_library",
         "//crypto/dilithium:go_default_library",
         "//encoding/bytesutil:go_default_library",
         "//testing/assert:go_default_library",

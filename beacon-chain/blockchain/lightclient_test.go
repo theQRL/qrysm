@@ -11,7 +11,6 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
@@ -32,7 +31,7 @@ func newTestLc(t *testing.T) *testlc {
 func (l *testlc) setupTest() *testlc {
 	ctx := context.Background()
 
-	slot := primitives.Slot(params.BeaconConfig().AltairForkEpoch * primitives.Epoch(params.BeaconConfig().SlotsPerEpoch)).Add(1)
+	slot := primitives.Slot(0)
 
 	attestedState, err := util.NewBeaconStateCapella()
 	require.NoError(l.t, err)
@@ -100,7 +99,7 @@ func (l *testlc) setupTest() *testlc {
 	return l
 }
 
-func (l *testlc) checkAttestedHeader(update *zondpbv2.LightClientUpdate) {
+func (l *testlc) checkAttestedHeader(update *v1.LightClientUpdate) {
 	require.Equal(l.t, l.attestedHeader.Slot, update.AttestedHeader.Slot, "Attested header slot is not equal")
 	require.Equal(l.t, l.attestedHeader.ProposerIndex, update.AttestedHeader.ProposerIndex, "Attested header proposer index is not equal")
 	require.DeepSSZEqual(l.t, l.attestedHeader.ParentRoot, update.AttestedHeader.ParentRoot, "Attested header parent root is not equal")
@@ -111,11 +110,11 @@ func (l *testlc) checkAttestedHeader(update *zondpbv2.LightClientUpdate) {
 	require.DeepSSZEqual(l.t, attestedStateRoot[:], update.AttestedHeader.StateRoot, "Attested header state root is not equal")
 }
 
-func (l *testlc) checkSyncAggregate(update *zondpbv2.LightClientUpdate) {
+func (l *testlc) checkSyncAggregate(update *v1.LightClientUpdate) {
 	syncAggregate, err := l.block.Block().Body().SyncAggregate()
 	require.NoError(l.t, err)
 	require.DeepSSZEqual(l.t, syncAggregate.SyncCommitteeBits, update.SyncAggregate.SyncCommitteeBits, "SyncAggregate bits is not equal")
-	require.DeepSSZEqual(l.t, syncAggregate.SyncCommitteeSignature, update.SyncAggregate.SyncCommitteeSignature, "SyncAggregate signature is not equal")
+	require.DeepSSZEqual(l.t, syncAggregate.SyncCommitteeSignatures, update.SyncAggregate.SyncCommitteeSignatures, "SyncAggregate signatures are not equal")
 }
 
 func TestLightClient_NewLightClientOptimisticUpdateFromBeaconState(t *testing.T) {

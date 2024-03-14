@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	fuzz "github.com/google/gofuzz"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
@@ -95,7 +94,7 @@ func BenchmarkHashProto(b *testing.B) {
 			Source:          nil,
 			Target:          nil,
 		},
-		Signature: bls.NewAggregateSignature().Marshal(),
+		Signatures: nil,
 	}
 
 	for i := 0; i < b.N; i++ {

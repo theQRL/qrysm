@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/go-qrllib/dilithium"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
@@ -45,7 +45,7 @@ func TestPendingAttestationRecords_Len(t *testing.T) {
 func TestStore_CheckSlashableAttestation_DoubleVote(t *testing.T) {
 	ctx := context.Background()
 	numValidators := 1
-	pubKeys := make([][dilithium.CryptoPublicKeyBytes]byte, numValidators)
+	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
 	validatorDB := setupDB(t, pubKeys)
 	tests := []struct {
 		name                string
@@ -116,7 +116,7 @@ func TestStore_CheckSlashableAttestation_DoubleVote(t *testing.T) {
 func TestStore_CheckSlashableAttestation_SurroundVote_MultipleTargetsPerSource(t *testing.T) {
 	ctx := context.Background()
 	numValidators := 1
-	pubKeys := make([][dilithium.CryptoPublicKeyBytes]byte, numValidators)
+	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
 	validatorDB := setupDB(t, pubKeys)
 
 	// Create an attestation with source 1 and target 50, save it.
@@ -142,7 +142,7 @@ func TestStore_CheckSlashableAttestation_SurroundVote_54kEpochs(t *testing.T) {
 	ctx := context.Background()
 	numValidators := 1
 	numEpochs := primitives.Epoch(54000)
-	pubKeys := make([][dilithium.CryptoPublicKeyBytes]byte, numValidators)
+	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
 	validatorDB := setupDB(t, pubKeys)
 
 	// Attest to every (source = epoch, target = epoch + 1) sequential pair
@@ -219,8 +219,8 @@ func TestLowestSignedSourceEpoch_SaveRetrieve(t *testing.T) {
 		require.NoError(t, validatorDB.Close(), "Failed to close database")
 		require.NoError(t, validatorDB.ClearDB(), "Failed to clear database")
 	})
-	p0 := [dilithium.CryptoPublicKeyBytes]byte{0}
-	p1 := [dilithium.CryptoPublicKeyBytes]byte{1}
+	p0 := [field_params.DilithiumPubkeyLength]byte{0}
+	p1 := [field_params.DilithiumPubkeyLength]byte{1}
 	// Can save.
 	require.NoError(
 		t,
@@ -278,8 +278,8 @@ func TestLowestSignedTargetEpoch_SaveRetrieveReplace(t *testing.T) {
 		require.NoError(t, validatorDB.Close(), "Failed to close database")
 		require.NoError(t, validatorDB.ClearDB(), "Failed to clear database")
 	})
-	p0 := [dilithium.CryptoPublicKeyBytes]byte{0}
-	p1 := [dilithium.CryptoPublicKeyBytes]byte{1}
+	p0 := [field_params.DilithiumPubkeyLength]byte{0}
+	p1 := [field_params.DilithiumPubkeyLength]byte{1}
 	// Can save.
 	require.NoError(
 		t,
@@ -332,7 +332,7 @@ func TestLowestSignedTargetEpoch_SaveRetrieveReplace(t *testing.T) {
 func TestStore_SaveAttestationsForPubKey(t *testing.T) {
 	ctx := context.Background()
 	numValidators := 1
-	pubKeys := make([][dilithium.CryptoPublicKeyBytes]byte, numValidators)
+	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
 	validatorDB := setupDB(t, pubKeys)
 	atts := make([]*zondpb.IndexedAttestation, 0)
 	signingRoots := make([][32]byte, 0)
@@ -374,14 +374,14 @@ func TestSaveAttestationForPubKey_BatchWrites_FullCapacity(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	numValidators := attestationBatchCapacity
-	pubKeys := make([][dilithium.CryptoPublicKeyBytes]byte, numValidators)
+	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
 	validatorDB := setupDB(t, pubKeys)
 
 	// For each public key, we attempt to save an attestation with signing root.
 	var wg sync.WaitGroup
 	for i, pubKey := range pubKeys {
 		wg.Add(1)
-		go func(j primitives.Epoch, pk [dilithium.CryptoPublicKeyBytes]byte, w *sync.WaitGroup) {
+		go func(j primitives.Epoch, pk [field_params.DilithiumPubkeyLength]byte, w *sync.WaitGroup) {
 			defer w.Done()
 			var signingRoot [32]byte
 			copy(signingRoot[:], fmt.Sprintf("%d", j))
@@ -431,14 +431,14 @@ func TestSaveAttestationForPubKey_BatchWrites_LowCapacity_TimerReached(t *testin
 	// test force flushing to the DB based on a timer instead
 	// of the max capacity being reached.
 	numValidators := attestationBatchCapacity / 2
-	pubKeys := make([][dilithium.CryptoPublicKeyBytes]byte, numValidators)
+	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
 	validatorDB := setupDB(t, pubKeys)
 
 	// For each public key, we attempt to save an attestation with signing root.
 	var wg sync.WaitGroup
 	for i, pubKey := range pubKeys {
 		wg.Add(1)
-		go func(j primitives.Epoch, pk [dilithium.CryptoPublicKeyBytes]byte, w *sync.WaitGroup) {
+		go func(j primitives.Epoch, pk [field_params.DilithiumPubkeyLength]byte, w *sync.WaitGroup) {
 			defer w.Done()
 			var signingRoot [32]byte
 			copy(signingRoot[:], fmt.Sprintf("%d", j))
@@ -482,20 +482,20 @@ func TestSaveAttestationForPubKey_BatchWrites_LowCapacity_TimerReached(t *testin
 func BenchmarkStore_CheckSlashableAttestation_Surround_SafeAttestation_54kEpochs(b *testing.B) {
 	numValidators := 1
 	numEpochs := primitives.Epoch(54000)
-	pubKeys := make([][dilithium.CryptoPublicKeyBytes]byte, numValidators)
+	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
 	benchCheckSurroundVote(b, pubKeys, numEpochs, false /* surround */)
 }
 
 func BenchmarkStore_CheckSurroundVote_Surround_Slashable_54kEpochs(b *testing.B) {
 	numValidators := 1
 	numEpochs := primitives.Epoch(54000)
-	pubKeys := make([][dilithium.CryptoPublicKeyBytes]byte, numValidators)
+	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
 	benchCheckSurroundVote(b, pubKeys, numEpochs, true /* surround */)
 }
 
 func benchCheckSurroundVote(
 	b *testing.B,
-	pubKeys [][dilithium.CryptoPublicKeyBytes]byte,
+	pubKeys [][field_params.DilithiumPubkeyLength]byte,
 	numEpochs primitives.Epoch,
 	shouldSurround bool,
 ) {

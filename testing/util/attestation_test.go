@@ -3,7 +3,6 @@ package util
 import (
 	"testing"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
@@ -15,7 +14,7 @@ func TestHydrateAttestation(t *testing.T) {
 	a := HydrateAttestation(&zondpb.Attestation{})
 	_, err := a.HashTreeRoot()
 	require.NoError(t, err)
-	require.DeepEqual(t, a.Signature, make([]byte, dilithium2.CryptoBytes))
+	require.DeepEqual(t, a.Signatures[0], make([]byte, fieldparams.DilithiumSignatureLength))
 }
 
 func TestHydrateAttestationData(t *testing.T) {
@@ -31,7 +30,7 @@ func TestHydrateV1Attestation(t *testing.T) {
 	a := HydrateV1Attestation(&v1.Attestation{})
 	_, err := a.HashTreeRoot()
 	require.NoError(t, err)
-	require.DeepEqual(t, a.Signature, make([]byte, dilithium2.CryptoBytes))
+	require.DeepEqual(t, a.Signatures[0], make([]byte, fieldparams.DilithiumSignatureLength))
 }
 
 func TestHydrateV1AttestationData(t *testing.T) {
@@ -53,7 +52,7 @@ func TestHydrateIndexedAttestation(t *testing.T) {
 }
 
 func TestGenerateAttestations_EpochBoundary(t *testing.T) {
-	gs, pk := DeterministicGenesisState(t, 32)
+	gs, pk := DeterministicGenesisStateCapella(t, 32)
 	_, err := GenerateAttestations(gs, pk, 1, params.BeaconConfig().SlotsPerEpoch, false)
 	require.NoError(t, err)
 }

@@ -3,7 +3,7 @@ package testing
 import (
 	"fmt"
 
-	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
@@ -16,7 +16,7 @@ import (
 // MockSlashingProtectionJSON creates a mock, full slashing protection JSON struct
 // using attesting and proposing histories provided.
 func MockSlashingProtectionJSON(
-	publicKeys [][dilithiumlib.CryptoPublicKeyBytes]byte,
+	publicKeys [][field_params.DilithiumPubkeyLength]byte,
 	attestingHistories [][]*kv.AttestationRecord,
 	proposalHistories []kv.ProposalHistoryForPubkey,
 ) (*format.EIPSlashingProtectionFormat, error) {
@@ -52,7 +52,7 @@ func MockSlashingProtectionJSON(
 
 // MockAttestingAndProposalHistories given a number of validators, creates mock attesting
 // and proposing histories within WEAK_SUBJECTIVITY_PERIOD bounds.
-func MockAttestingAndProposalHistories(pubkeys [][dilithiumlib.CryptoPublicKeyBytes]byte) ([][]*kv.AttestationRecord, []kv.ProposalHistoryForPubkey) {
+func MockAttestingAndProposalHistories(pubkeys [][field_params.DilithiumPubkeyLength]byte) ([][]*kv.AttestationRecord, []kv.ProposalHistoryForPubkey) {
 	// deduplicate and transform them into our internal format.
 	numValidators := len(pubkeys)
 	attData := make([][]*kv.AttestationRecord, numValidators)
@@ -94,8 +94,8 @@ func MockAttestingAndProposalHistories(pubkeys [][dilithiumlib.CryptoPublicKeyBy
 }
 
 // CreateRandomPubKeys --
-func CreateRandomPubKeys(numValidators int) ([][dilithiumlib.CryptoPublicKeyBytes]byte, error) {
-	pubKeys := make([][dilithiumlib.CryptoPublicKeyBytes]byte, numValidators)
+func CreateRandomPubKeys(numValidators int) ([][field_params.DilithiumPubkeyLength]byte, error) {
+	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
 	for i := 0; i < numValidators; i++ {
 		randKey, err := dilithium.RandKey()
 		if err != nil {

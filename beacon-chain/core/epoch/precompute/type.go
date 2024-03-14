@@ -40,7 +40,7 @@ type Validator struct {
 	// AfterEpochTransitionBalance is the validator balance after epoch transition.
 	AfterEpochTransitionBalance uint64
 
-	// InactivityScore of the validator. [New in Altair]
+	// InactivityScore of the validator.
 	InactivityScore uint64
 }
 

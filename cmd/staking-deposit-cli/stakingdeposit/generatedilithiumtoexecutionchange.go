@@ -17,7 +17,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 )
 
 func GenerateDilithiumToExecutionChange(dilithiumExecutionChangesFolder string,
@@ -154,7 +154,7 @@ func ValidateDilithiumToExecutionChange(dilithiumToExecutionChange *DilithiumToE
 		return false
 	}
 
-	message := &zondpbv2.DilithiumToExecutionChange{
+	message := &zondpbv1.DilithiumToExecutionChange{
 		ValidatorIndex:      primitives.ValidatorIndex(uintValidatorIndex),
 		FromDilithiumPubkey: fromDilithiumPubkey.Marshal(),
 		ToExecutionAddress:  toExecutionAddress}

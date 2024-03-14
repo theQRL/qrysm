@@ -23,7 +23,7 @@ const (
 	// DerivationPathFormat describes the structure of how keys are derived from a master key.
 	DerivationPathFormat = "m / purpose / coin_type / account_index / withdrawal_key / validating_key"
 	// ValidatingKeyDerivationPathTemplate defining the hierarchical path for validating
-	// keys for Prysm Ethereum validators. According to EIP-2334, the format is as follows:
+	// keys for Qrysm Zond validators. According to EIP-2334, the format is as follows:
 	// m / purpose / coin_type / account_index / withdrawal_key / validating_key
 	ValidatingKeyDerivationPathTemplate = "m/12381/3600/%d/0/0"
 )
@@ -102,7 +102,7 @@ func (km *Keymanager) Sign(ctx context.Context, req *validatorpb.SignRequest) (d
 }
 
 // FetchValidatingPublicKeys fetches the list of validating public keys from the keymanager.
-func (km *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][dilithiumlib.CryptoPublicKeyBytes]byte, error) {
+func (km *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][field_params.DilithiumPubkeyLength]byte, error) {
 	return km.localKM.FetchValidatingPublicKeys(ctx)
 }
 
@@ -128,7 +128,7 @@ func (km *Keymanager) DeleteKeystores(
 // SubscribeAccountChanges creates an event subscription for a channel
 // to listen for public key changes at runtime, such as when new validator accounts
 // are imported into the keymanager while the validator process is running.
-func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][dilithiumlib.CryptoPublicKeyBytes]byte) event.Subscription {
+func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][field_params.DilithiumPubkeyLength]byte) event.Subscription {
 	return km.localKM.SubscribeAccountChanges(pubKeysChan)
 }
 

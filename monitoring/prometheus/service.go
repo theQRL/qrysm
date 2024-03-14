@@ -1,5 +1,5 @@
 // Package prometheus defines a service which is used for metrics collection
-// and health of a node in Prysm.
+// and health of a node in Qrysm.
 package prometheus
 
 import (

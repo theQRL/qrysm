@@ -83,7 +83,7 @@ func (a proposerAtts) filter(ctx context.Context, st state.BeaconState) (propose
 	invalidAtts := make([]*zondpb.Attestation, 0, len(a))
 
 	for _, att := range a {
-		if err := blocks.VerifyAttestationNoVerifySignature(ctx, st, att); err == nil {
+		if err := blocks.VerifyAttestationNoVerifySignatures(ctx, st, att); err == nil {
 			validAtts = append(validAtts, att)
 			continue
 		}

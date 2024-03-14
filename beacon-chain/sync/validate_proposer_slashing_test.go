@@ -23,7 +23,7 @@ import (
 	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -46,7 +46,7 @@ func setupValidProposerSlashing(t *testing.T) (*zondpb.ProposerSlashing, state.B
 	}
 
 	currentSlot := primitives.Slot(0)
-	st, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	st, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Validators: validators,
 		Slot:       currentSlot,
 		Balances:   validatorBalances,
@@ -64,7 +64,7 @@ func setupValidProposerSlashing(t *testing.T) (*zondpb.ProposerSlashing, state.B
 	})
 	require.NoError(t, err)
 
-	privKey, err := bls.RandKey()
+	privKey, err := dilithium.RandKey()
 	require.NoError(t, err)
 	someRoot := [32]byte{1, 2, 3}
 	someRoot2 := [32]byte{4, 5, 6}

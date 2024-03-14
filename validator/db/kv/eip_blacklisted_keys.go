@@ -3,23 +3,23 @@ package kv
 import (
 	"context"
 
-	"github.com/theQRL/go-qrllib/dilithium"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 )
 
 // EIPImportBlacklistedPublicKeys returns keys that were marked as blacklisted during EIP-3076 slashing
 // protection imports, ensuring that we can prevent these keys from having duties at runtime.
-func (s *Store) EIPImportBlacklistedPublicKeys(ctx context.Context) ([][dilithium.CryptoPublicKeyBytes]byte, error) {
-	ctx, span := trace.StartSpan(ctx, "Validator.EIPImportBlacklistedPublicKeys")
+func (s *Store) EIPImportBlacklistedPublicKeys(ctx context.Context) ([][field_params.DilithiumPubkeyLength]byte, error) {
+	_, span := trace.StartSpan(ctx, "Validator.EIPImportBlacklistedPublicKeys")
 	defer span.End()
 	var err error
-	publicKeys := make([][dilithium.CryptoPublicKeyBytes]byte, 0)
+	publicKeys := make([][field_params.DilithiumPubkeyLength]byte, 0)
 	err = s.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(slashablePublicKeysBucket)
 		return bucket.ForEach(func(key []byte, _ []byte) error {
 			if key != nil {
-				var pubKeyBytes [dilithium.CryptoPublicKeyBytes]byte
+				var pubKeyBytes [field_params.DilithiumPubkeyLength]byte
 				copy(pubKeyBytes[:], key)
 				publicKeys = append(publicKeys, pubKeyBytes)
 			}
@@ -31,8 +31,8 @@ func (s *Store) EIPImportBlacklistedPublicKeys(ctx context.Context) ([][dilithiu
 
 // SaveEIPImportBlacklistedPublicKeys stores a list of blacklisted public keys that
 // were determined during EIP-3076 slashing protection imports.
-func (s *Store) SaveEIPImportBlacklistedPublicKeys(ctx context.Context, publicKeys [][dilithium.CryptoPublicKeyBytes]byte) error {
-	ctx, span := trace.StartSpan(ctx, "Validator.SaveEIPImportBlacklistedPublicKeys")
+func (s *Store) SaveEIPImportBlacklistedPublicKeys(ctx context.Context, publicKeys [][field_params.DilithiumPubkeyLength]byte) error {
+	_, span := trace.StartSpan(ctx, "Validator.SaveEIPImportBlacklistedPublicKeys")
 	defer span.End()
 	return s.db.Update(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(slashablePublicKeysBucket)

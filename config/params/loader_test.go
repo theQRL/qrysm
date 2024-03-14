@@ -99,8 +99,8 @@ func assertEqualConfigs(t *testing.T, name string, fields []string, expected, ac
 
 	// Initial values.
 	assert.DeepEqual(t, expected.GenesisForkVersion, actual.GenesisForkVersion, "%s: GenesisForkVersion", name)
-	assert.DeepEqual(t, expected.BLSWithdrawalPrefixByte, actual.BLSWithdrawalPrefixByte, "%s: BLSWithdrawalPrefixByte", name)
-	assert.DeepEqual(t, expected.ETH1AddressWithdrawalPrefixByte, actual.ETH1AddressWithdrawalPrefixByte, "%s: ETH1AddressWithdrawalPrefixByte", name)
+	assert.DeepEqual(t, expected.DilithiumWithdrawalPrefixByte, actual.DilithiumWithdrawalPrefixByte, "%s: DilithiumWithdrawalPrefixByte", name)
+	assert.DeepEqual(t, expected.ZondAddressWithdrawalPrefixByte, actual.ZondAddressWithdrawalPrefixByte, "%s: ZondAddressWithdrawalPrefixByte", name)
 
 	// Time parameters.
 	assert.Equal(t, expected.GenesisDelay, actual.GenesisDelay, "%s: GenesisDelay", name)
@@ -125,12 +125,9 @@ func assertEqualConfigs(t *testing.T, name string, fields []string, expected, ac
 	assert.Equal(t, expected.BaseRewardFactor, actual.BaseRewardFactor, "%s: BaseRewardFactor", name)
 	assert.Equal(t, expected.WhistleBlowerRewardQuotient, actual.WhistleBlowerRewardQuotient, "%s: WhistleBlowerRewardQuotient", name)
 	assert.Equal(t, expected.ProposerRewardQuotient, actual.ProposerRewardQuotient, "%s: ProposerRewardQuotient", name)
-	assert.Equal(t, expected.InactivityPenaltyQuotient, actual.InactivityPenaltyQuotient, "%s: InactivityPenaltyQuotient", name)
-	assert.Equal(t, expected.InactivityPenaltyQuotientAltair, actual.InactivityPenaltyQuotientAltair, "%s: InactivityPenaltyQuotientAltair", name)
-	assert.Equal(t, expected.MinSlashingPenaltyQuotient, actual.MinSlashingPenaltyQuotient, "%s: MinSlashingPenaltyQuotient", name)
-	assert.Equal(t, expected.MinSlashingPenaltyQuotientAltair, actual.MinSlashingPenaltyQuotientAltair, "%s: MinSlashingPenaltyQuotientAltair", name)
-	assert.Equal(t, expected.ProportionalSlashingMultiplier, actual.ProportionalSlashingMultiplier, "%s: ProportionalSlashingMultiplier", name)
-	assert.Equal(t, expected.ProportionalSlashingMultiplierAltair, actual.ProportionalSlashingMultiplierAltair, "%s: ProportionalSlashingMultiplierAltair", name)
+	assert.Equal(t, expected.InactivityPenaltyQuotient, actual.InactivityPenaltyQuotient, "%s: InactivityPenaltyQuotientCapella", name)
+	assert.Equal(t, expected.MinSlashingPenaltyQuotient, actual.MinSlashingPenaltyQuotient, "%s: MinSlashingPenaltyQuotientCapella", name)
+	assert.Equal(t, expected.ProportionalSlashingMultiplier, actual.ProportionalSlashingMultiplier, "%s: ProportionalSlashingMultiplierCapella", name)
 
 	// Max operations per block.
 	assert.Equal(t, expected.MaxProposerSlashings, actual.MaxProposerSlashings, "%s: MaxProposerSlashings", name)
@@ -147,15 +144,8 @@ func assertEqualConfigs(t *testing.T, name string, fields []string, expected, ac
 	assert.Equal(t, expected.DomainVoluntaryExit, actual.DomainVoluntaryExit, "%s: DomainVoluntaryExit", name)
 	assert.Equal(t, expected.DomainSelectionProof, actual.DomainSelectionProof, "%s: DomainSelectionProof", name)
 	assert.Equal(t, expected.DomainAggregateAndProof, actual.DomainAggregateAndProof, "%s: DomainAggregateAndProof", name)
-	assert.Equal(t, expected.TerminalTotalDifficulty, actual.TerminalTotalDifficulty, "%s: TerminalTotalDifficulty", name)
-	assert.Equal(t, expected.AltairForkEpoch, actual.AltairForkEpoch, "%s: AltairForkEpoch", name)
-	assert.Equal(t, expected.BellatrixForkEpoch, actual.BellatrixForkEpoch, "%s: BellatrixForkEpoch", name)
-	assert.Equal(t, expected.CapellaForkEpoch, actual.CapellaForkEpoch, "%s: CapellaForkEpoch", name)
 	assert.Equal(t, expected.SqrRootSlotsPerEpoch, actual.SqrRootSlotsPerEpoch, "%s: SqrRootSlotsPerEpoch", name)
 	assert.DeepEqual(t, expected.GenesisForkVersion, actual.GenesisForkVersion, "%s: GenesisForkVersion", name)
-	assert.DeepEqual(t, expected.AltairForkVersion, actual.AltairForkVersion, "%s: AltairForkVersion", name)
-	assert.DeepEqual(t, expected.BellatrixForkVersion, actual.BellatrixForkVersion, "%s: BellatrixForkVersion", name)
-	assert.DeepEqual(t, expected.CapellaForkVersion, actual.CapellaForkVersion, "%s: CapellaForkVersion", name)
 
 	assertYamlFieldsMatch(t, name, fields, expected, actual)
 }
@@ -163,10 +153,6 @@ func assertEqualConfigs(t *testing.T, name string, fields []string, expected, ac
 func TestModifiedE2E(t *testing.T) {
 	c := params.E2ETestConfig().Copy()
 	c.DepositContractAddress = "0x4242424242424242424242424242424242424242"
-	c.TerminalTotalDifficulty = "0"
-	c.AltairForkEpoch = 112
-	c.BellatrixForkEpoch = 123
-	c.CapellaForkEpoch = 235
 	y := params.ConfigToYaml(c)
 	cfg, err := params.UnmarshalConfig(y, nil)
 	require.NoError(t, err)
@@ -174,7 +160,7 @@ func TestModifiedE2E(t *testing.T) {
 }
 
 func TestLoadConfigFile(t *testing.T) {
-	// NOTE(rgeraldes24): re-enable once we fix the spec tests
+	// NOTE(theQRL/qrysm/issues/69)
 	/*
 		t.Run("mainnet", func(t *testing.T) {
 			mn := params.MainnetConfig().Copy()

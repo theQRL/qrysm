@@ -9,7 +9,7 @@ import (
 )
 
 func BenchmarkAppendBalance(b *testing.B) {
-	st, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{})
+	st, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{})
 	require.NoError(b, err)
 
 	max := uint64(16777216)

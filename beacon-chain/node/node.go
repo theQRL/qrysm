@@ -36,7 +36,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/monitor"
 	"github.com/theQRL/qrysm/v4/beacon-chain/node/registration"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/blstoexec"
+	"github.com/theQRL/qrysm/v4/beacon-chain/operations/dilithiumtoexec"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/slashings"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/synccommittee"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/voluntaryexits"
@@ -94,7 +94,7 @@ type BeaconNode struct {
 	exitPool                voluntaryexits.PoolManager
 	slashingsPool           slashings.PoolManager
 	syncCommitteePool       synccommittee.Pool
-	dilithiumToExecPool     blstoexec.PoolManager
+	dilithiumToExecPool     dilithiumtoexec.PoolManager
 	depositCache            cache.DepositCache
 	proposerIdsCache        *cache.ProposerPayloadIDsCache
 	stateFeed               *event.Feed
@@ -175,7 +175,7 @@ func New(cliCtx *cli.Context, opts ...Option) (*BeaconNode, error) {
 		exitPool:                voluntaryexits.NewPool(),
 		slashingsPool:           slashings.NewPool(),
 		syncCommitteePool:       synccommittee.NewPool(),
-		dilithiumToExecPool:     blstoexec.NewPool(),
+		dilithiumToExecPool:     dilithiumtoexec.NewPool(),
 		slasherBlockHeadersFeed: new(event.Feed),
 		slasherAttestationsFeed: new(event.Feed),
 		serviceFlagOpts:         &serviceFlagOpts{},
@@ -913,8 +913,8 @@ func (b *BeaconNode) registerGRPCGateway(router *mux.Router) error {
 	if gatewayConfig.V1AlphaPbMux != nil {
 		muxs = append(muxs, gatewayConfig.V1AlphaPbMux)
 	}
-	if gatewayConfig.EthPbMux != nil {
-		muxs = append(muxs, gatewayConfig.EthPbMux)
+	if gatewayConfig.ZondPbMux != nil {
+		muxs = append(muxs, gatewayConfig.ZondPbMux)
 	}
 
 	opts := []apigateway.Option{

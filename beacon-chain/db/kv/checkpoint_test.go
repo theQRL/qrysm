@@ -22,7 +22,7 @@ func TestStore_JustifiedCheckpoint_CanSaveRetrieve(t *testing.T) {
 		Epoch: 10,
 		Root:  root[:],
 	}
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(1))
 	require.NoError(t, db.SaveState(ctx, st, root))
@@ -36,7 +36,7 @@ func TestStore_JustifiedCheckpoint_CanSaveRetrieve(t *testing.T) {
 func TestStore_JustifiedCheckpoint_Recover(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
-	blk := util.HydrateSignedBeaconBlock(&zondpb.SignedBeaconBlock{})
+	blk := util.HydrateSignedBeaconBlockCapella(&zondpb.SignedBeaconBlockCapella{})
 	r, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
 	cp := &zondpb.Checkpoint{
@@ -59,7 +59,7 @@ func TestStore_FinalizedCheckpoint_CanSaveRetrieve(t *testing.T) {
 	genesis := bytesutil.ToBytes32([]byte{'G', 'E', 'N', 'E', 'S', 'I', 'S'})
 	require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesis))
 
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blk.Block.ParentRoot = genesis[:]
 	blk.Block.Slot = 40
 
@@ -75,7 +75,7 @@ func TestStore_FinalizedCheckpoint_CanSaveRetrieve(t *testing.T) {
 	wsb, err := blocks.NewSignedBeaconBlock(blk)
 	require.NoError(t, err)
 	require.NoError(t, db.SaveBlock(ctx, wsb))
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(1))
 	// a state is required to save checkpoint
@@ -91,7 +91,7 @@ func TestStore_FinalizedCheckpoint_CanSaveRetrieve(t *testing.T) {
 func TestStore_FinalizedCheckpoint_Recover(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
-	blk := util.HydrateSignedBeaconBlock(&zondpb.SignedBeaconBlock{})
+	blk := util.HydrateSignedBeaconBlockCapella(&zondpb.SignedBeaconBlockCapella{})
 	r, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
 	cp := &zondpb.Checkpoint{

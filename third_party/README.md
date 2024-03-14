@@ -57,5 +57,5 @@ go_repository(
 )
 ```
 
-Now, when used in Prysm, the dependency you patched will have the patched modifications
+Now, when used in Qrysm, the dependency you patched will have the patched modifications
 when you run your code.

@@ -54,7 +54,6 @@ type Config struct {
 // Server defining a gRPC server for the remote signer API.
 type Server struct {
 	logsStreamer              logs.Streamer
-	streamLogsBufferSize      int
 	beaconNodeClient          iface.NodeClient
 	beaconNodeValidatorClient iface.ValidatorClient
 	valDB                     db.Database
@@ -95,7 +94,6 @@ func NewServer(ctx context.Context, cfg *Config) *Server {
 		ctx:                      ctx,
 		cancel:                   cancel,
 		logsStreamer:             logs.NewStreamServer(),
-		streamLogsBufferSize:     1000, // Enough to handle most bursts of logs in the validator client.
 		host:                     cfg.Host,
 		port:                     cfg.Port,
 		withCert:                 cfg.CertFlag,

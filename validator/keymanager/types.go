@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/theQRL/go-qrllib/common"
-	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/async/event"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
 	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
@@ -25,13 +24,13 @@ type IKeymanager interface {
 
 // KeysFetcher for validating private and public keys.
 type KeysFetcher interface {
-	FetchValidatingSeeds(ctx context.Context) ([][common.SeedSize]byte, error)
+	FetchValidatingSeeds(ctx context.Context) ([][field_params.DilithiumSeedLength]byte, error)
 	PublicKeysFetcher
 }
 
 // PublicKeysFetcher for validating public keys.
 type PublicKeysFetcher interface {
-	FetchValidatingPublicKeys(ctx context.Context) ([][dilithiumlib.CryptoPublicKeyBytes]byte, error)
+	FetchValidatingPublicKeys(ctx context.Context) ([][field_params.DilithiumPubkeyLength]byte, error)
 }
 
 // Signer allows signing messages using a validator private key.
@@ -53,7 +52,7 @@ type Deleter interface {
 
 // KeyChangeSubscriber allows subscribing to changes made to the underlying keys.
 type KeyChangeSubscriber interface {
-	SubscribeAccountChanges(pubKeysChan chan [][dilithiumlib.CryptoPublicKeyBytes]byte) event.Subscription
+	SubscribeAccountChanges(pubKeysChan chan [][field_params.DilithiumPubkeyLength]byte) event.Subscription
 }
 
 // KeyStoreExtractor allows keys to be extracted from the keymanager.
@@ -63,12 +62,12 @@ type KeyStoreExtractor interface {
 
 // PublicKeyAdder allows adding public keys to the keymanager.
 // type PublicKeyAdder interface {
-// 	AddPublicKeys(ctx context.Context, publicKeys [][dilithiumlib.CryptoPublicKeyBytes]byte) ([]*zondpbservice.ImportedRemoteKeysStatus, error)
+// 	AddPublicKeys(ctx context.Context, publicKeys [][field_params.DilithiumPubkeyLength]byte) ([]*zondpbservice.ImportedRemoteKeysStatus, error)
 // }
 
 // PublicKeyDeleter allows deleting public keys set in keymanager.
 // type PublicKeyDeleter interface {
-// 	DeletePublicKeys(ctx context.Context, publicKeys [][dilithiumlib.CryptoPublicKeyBytes]byte) ([]*zondpbservice.DeletedRemoteKeysStatus, error)
+// 	DeletePublicKeys(ctx context.Context, publicKeys [][field_params.DilithiumPubkeyLength]byte) ([]*zondpbservice.DeletedRemoteKeysStatus, error)
 // }
 
 type ListKeymanagerAccountConfig struct {
@@ -105,7 +104,7 @@ const (
 	// Web3Signer
 )
 
-// @NOTE(rgeraldes24)
+// @NOTE(rgeraldes24):
 // QRL Version - https://github.com/theQRL/go-zond-wallet-encryptor-keystore/blob/main/decrypt.go#L87
 // Eth Version - https://github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4/blob/master/decrypt.go#L168
 // IncorrectPasswordErrMsg defines a common error string representing an EIP-2335

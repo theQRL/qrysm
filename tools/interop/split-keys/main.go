@@ -1,5 +1,5 @@
 // Package main provides a tool named split-keys which allows for generating any number of Ethereum validator keys
-// from a list of BIP39 mnemonics and spreading them across any number of Prysm wallets. This is useful for creating
+// from a list of BIP39 mnemonics and spreading them across any number of Qrysm wallets. This is useful for creating
 // custom allocations of keys across containers running in a cloud environment, such as for public testnets.
 // An example of why you would use this tool is as follows. Let's say we have 1 mnemonic contained inside of a file.
 // Then, we want to generate 10 keys from the mnemonic, and we want to spread them across 5 different wallets, each

@@ -39,7 +39,7 @@ func (s *Service) decodePubsubMessage(msg *pubsub.Message) (ssz.Unmarshaler, err
 		topic = p2p.GossipTypeMapping[reflect.TypeOf(&zondpb.SyncCommitteeMessage{})]
 	}
 
-	base := p2p.GossipTopicMappings(topic, 0)
+	base := p2p.GossipTopicMappings(topic)
 	if base == nil {
 		return nil, p2p.ErrMessageNotMapped
 	}
@@ -49,7 +49,7 @@ func (s *Service) decodePubsubMessage(msg *pubsub.Message) (ssz.Unmarshaler, err
 	}
 	// Handle different message types across forks.
 	if topic == p2p.BlockSubnetTopicFormat {
-		m, err = extractBlockDataType(fDigest[:], s.cfg.chain)
+		m, err = extractBlockDataType(fDigest[:], s.cfg.clock)
 		if err != nil {
 			return nil, err
 		}

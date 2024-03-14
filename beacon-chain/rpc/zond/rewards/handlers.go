@@ -7,18 +7,17 @@ import (
 	"strconv"
 	"strings"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
 	coreblocks "github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/epoch/precompute"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/validators"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	bytesutil2 "github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	http2 "github.com/theQRL/qrysm/v4/network/http"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"github.com/wealdtech/go-bytesutil"
 )
@@ -30,10 +29,6 @@ func (s *Server) BlockRewards(w http.ResponseWriter, r *http.Request) {
 
 	blk, err := s.Blocker.Block(r.Context(), []byte(blockId))
 	if !shared.WriteBlockFetchError(w, blk, err) {
-		return
-	}
-	if blk.Version() == version.Phase0 {
-		http2.HandleError(w, "Block rewards are not supported for Phase 0 blocks", http.StatusBadRequest)
 		return
 	}
 
@@ -173,10 +168,7 @@ func (s *Server) SyncCommitteeRewards(w http.ResponseWriter, r *http.Request) {
 	if !shared.WriteBlockFetchError(w, blk, err) {
 		return
 	}
-	if blk.Version() == version.Phase0 {
-		http2.HandleError(w, "Sync committee rewards are not supported for Phase 0", http.StatusBadRequest)
-		return
-	}
+
 	st, err := s.ReplayerBuilder.ReplayerForSlot(blk.Block().Slot()-1).ReplayToSlot(r.Context(), blk.Block().Slot())
 	if err != nil {
 		http2.HandleError(w, "Could not get state: "+err.Error(), http.StatusInternalServerError)
@@ -192,6 +184,7 @@ func (s *Server) SyncCommitteeRewards(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+
 	preProcessBals := make([]uint64, len(vals))
 	for i, valIdx := range valIndices {
 		preProcessBals[i], err = st.BalanceAtIndex(valIdx)
@@ -254,10 +247,6 @@ func (s *Server) attRewardsState(w http.ResponseWriter, r *http.Request) (state.
 		http2.HandleError(w, "Could not decode epoch: "+err.Error(), http.StatusBadRequest)
 		return nil, false
 	}
-	if primitives.Epoch(requestedEpoch) < params.BeaconConfig().AltairForkEpoch {
-		http2.HandleError(w, "Attestation rewards are not supported for Phase 0", http.StatusNotFound)
-		return nil, false
-	}
 	currentEpoch := uint64(slots.ToEpoch(s.TimeFetcher.CurrentSlot()))
 	if requestedEpoch+1 >= currentEpoch {
 		http2.HandleError(w,
@@ -316,11 +305,16 @@ func idealAttRewards(
 	bal *precompute.Balance,
 	vals []*precompute.Validator,
 ) ([]IdealAttestationReward, bool) {
-	idealValsCount := uint64(16)
-	minIdealBalance := uint64(17)
+	// NOTE(rgeraldes24): EJECTION_BALANCE is now 20000 instead of 16
+	// idealValsCount := uint64(16)
+	// minIdealBalance := uint64(17)
+	idealValsCount := uint64(20000)
+	minIdealBalance := uint64(20001)
 	maxIdealBalance := minIdealBalance + idealValsCount - 1
 	idealRewards := make([]IdealAttestationReward, 0, idealValsCount)
-	idealVals := make([]*precompute.Validator, 0, idealValsCount)
+	// idealVals := make([]*precompute.Validator, 0, idealValsCount)
+	// NOTE(rgeraldes24): use previous value, 20000 is a lot
+	idealVals := make([]*precompute.Validator, 0, 16)
 	increment := params.BeaconConfig().EffectiveBalanceIncrement
 	for i := minIdealBalance; i <= maxIdealBalance; i++ {
 		for _, v := range vals {
@@ -450,7 +444,7 @@ func requestedValIndices(w http.ResponseWriter, r *http.Request, st state.Beacon
 		index, err := strconv.ParseUint(v, 10, 64)
 		if err != nil {
 			pubkey, err := bytesutil.FromHexString(v)
-			if err != nil || len(pubkey) != dilithium2.CryptoPublicKeyBytes {
+			if err != nil || len(pubkey) != field_params.DilithiumPubkeyLength {
 				http2.HandleError(w, fmt.Sprintf("%s is not a validator index or pubkey", v), http.StatusBadRequest)
 				return nil, false
 			}

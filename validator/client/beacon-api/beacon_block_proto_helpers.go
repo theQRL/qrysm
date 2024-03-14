@@ -132,9 +132,13 @@ func convertIndexedAttestationToProto(jsonAttestation *apimiddleware.IndexedAtte
 		attestingIndices[index] = attestingIndex
 	}
 
-	signature, err := hexutil.Decode(jsonAttestation.Signature)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to decode attestation signature `%s`", jsonAttestation.Signature)
+	var err error
+	signatures := make([][]byte, len(jsonAttestation.Signatures))
+	for i, sig := range jsonAttestation.Signatures {
+		signatures[i], err = hexutil.Decode(sig)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to decode attestation signature `%s`", sig)
+		}
 	}
 
 	attestationData, err := convertAttestationDataToProto(jsonAttestation.Data)
@@ -145,7 +149,7 @@ func convertIndexedAttestationToProto(jsonAttestation *apimiddleware.IndexedAtte
 	return &zondpb.IndexedAttestation{
 		AttestingIndices: attestingIndices,
 		Data:             attestationData,
-		Signature:        signature,
+		Signatures:       signatures,
 	}, nil
 }
 
@@ -185,15 +189,18 @@ func convertAttestationToProto(jsonAttestation *apimiddleware.AttestationJson) (
 		return nil, errors.Wrap(err, "failed to get attestation data")
 	}
 
-	signature, err := hexutil.Decode(jsonAttestation.Signature)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to decode attestation signature `%s`", jsonAttestation.Signature)
+	signatures := make([][]byte, len(jsonAttestation.Signatures))
+	for i, sig := range jsonAttestation.Signatures {
+		signatures[i], err = hexutil.Decode(sig)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to decode attestation signature `%s`", sig)
+		}
 	}
 
 	return &zondpb.Attestation{
 		AggregationBits: aggregationBits,
 		Data:            attestationData,
-		Signature:       signature,
+		Signatures:      signatures,
 	}, nil
 }
 

@@ -247,7 +247,7 @@ func TestFieldTrie_NativeState_fieldConvertersNative(t *testing.T) {
 				},
 				convertAll: true,
 			},
-			wantHex: []string{"0x79817c24fc7ba90cdac48fd462fafc1cb501884e847b18733f7ca6df214a301e"},
+			wantHex: []string{"0x467db8ae2800ecb5fa427aba49c1c41a8200a1863570520f9a029a73231d0bec"},
 		},
 		{
 			name: "Validators not found",
@@ -259,37 +259,6 @@ func TestFieldTrie_NativeState_fieldConvertersNative(t *testing.T) {
 			},
 			wantHex: nil,
 			errMsg:  fmt.Sprintf("Wanted type of %T", []*zondpb.Validator{}),
-		},
-		{
-			name: "Attestations",
-			args: &args{
-				field:   types.FieldIndex(15),
-				indices: []uint64{},
-				elements: []*zondpb.PendingAttestation{
-					{
-						ProposerIndex: 1,
-					},
-				},
-				convertAll: true,
-			},
-			wantHex: []string{"0x7d7696e7f12593934afcd87a0d38e1a981bee63cb4cf0568ba36a6e0596eeccb"},
-		},
-		{
-			name: "Attestations convertAll false",
-			args: &args{
-				field:   types.FieldIndex(15),
-				indices: []uint64{1},
-				elements: []*zondpb.PendingAttestation{
-					{
-						ProposerIndex: 0,
-					},
-					{
-						ProposerIndex: 1,
-					},
-				},
-				convertAll: false,
-			},
-			wantHex: []string{"0x7d7696e7f12593934afcd87a0d38e1a981bee63cb4cf0568ba36a6e0596eeccb"},
 		},
 		{
 			name: "Type not found",

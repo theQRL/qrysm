@@ -126,7 +126,7 @@ func (km *Keymanager) ImportKeypairs(ctx context.Context, privKeys, pubKeys [][]
 // Retrieves the private key and public key from an EIP-2335 keystore file
 // by decrypting using a specified password. If the password fails,
 // it prompts the user for the correct password until it confirms.
-func (_ *Keymanager) attemptDecryptKeystore(
+func (*Keymanager) attemptDecryptKeystore(
 	enc *keystorev4.Encryptor, keystore *keymanager.Keystore, password string,
 ) ([]byte, []byte, string, error) {
 	// Attempt to decrypt the keystore with the specifies password.
@@ -152,7 +152,7 @@ func (_ *Keymanager) attemptDecryptKeystore(
 			return nil, nil, "", errors.Wrap(err, "could not decode pubkey from keystore")
 		}
 	} else {
-		privKey, err := dilithium.SecretKeyFromBytes(privKeyBytes)
+		privKey, err := dilithium.SecretKeyFromSeed(privKeyBytes)
 		if err != nil {
 			return nil, nil, "", errors.Wrap(err, "could not initialize private key from bytes")
 		}

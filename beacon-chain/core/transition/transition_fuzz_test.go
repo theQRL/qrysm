@@ -17,9 +17,9 @@ func TestFuzzExecuteStateTransition_1000(t *testing.T) {
 	SkipSlotCache.Disable()
 	defer SkipSlotCache.Enable()
 	ctx := context.Background()
-	state, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
+	state, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{})
 	require.NoError(t, err)
-	sb := &zondpb.SignedBeaconBlock{}
+	sb := &zondpb.SignedBeaconBlockCapella{}
 	fuzzer := fuzz.NewWithSeed(0)
 	fuzzer.NilChance(0.1)
 	for i := 0; i < 1000; i++ {
@@ -41,9 +41,9 @@ func TestFuzzCalculateStateRoot_1000(t *testing.T) {
 	SkipSlotCache.Disable()
 	defer SkipSlotCache.Enable()
 	ctx := context.Background()
-	state, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
+	state, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{})
 	require.NoError(t, err)
-	sb := &zondpb.SignedBeaconBlock{}
+	sb := &zondpb.SignedBeaconBlockCapella{}
 	fuzzer := fuzz.NewWithSeed(0)
 	fuzzer.NilChance(0.1)
 	for i := 0; i < 1000; i++ {
@@ -65,7 +65,7 @@ func TestFuzzProcessSlot_1000(t *testing.T) {
 	SkipSlotCache.Disable()
 	defer SkipSlotCache.Enable()
 	ctx := context.Background()
-	state, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
+	state, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{})
 	require.NoError(t, err)
 	fuzzer := fuzz.NewWithSeed(0)
 	fuzzer.NilChance(0.1)
@@ -82,7 +82,7 @@ func TestFuzzProcessSlots_1000(t *testing.T) {
 	SkipSlotCache.Disable()
 	defer SkipSlotCache.Enable()
 	ctx := context.Background()
-	state, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
+	state, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{})
 	require.NoError(t, err)
 	slot := primitives.Slot(0)
 	fuzzer := fuzz.NewWithSeed(0)
@@ -101,9 +101,9 @@ func TestFuzzprocessOperationsNoVerify_1000(t *testing.T) {
 	SkipSlotCache.Disable()
 	defer SkipSlotCache.Enable()
 	ctx := context.Background()
-	state, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
+	state, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{})
 	require.NoError(t, err)
-	bb := &zondpb.SignedBeaconBlock{}
+	bb := &zondpb.SignedBeaconBlockCapella{}
 	fuzzer := fuzz.NewWithSeed(0)
 	fuzzer.NilChance(0.1)
 	for i := 0; i < 1000; i++ {
@@ -124,9 +124,9 @@ func TestFuzzprocessOperationsNoVerify_1000(t *testing.T) {
 func TestFuzzverifyOperationLengths_10000(t *testing.T) {
 	SkipSlotCache.Disable()
 	defer SkipSlotCache.Enable()
-	state, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
+	state, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{})
 	require.NoError(t, err)
-	bb := &zondpb.SignedBeaconBlock{}
+	bb := &zondpb.SignedBeaconBlockCapella{}
 	fuzzer := fuzz.NewWithSeed(0)
 	fuzzer.NilChance(0.1)
 	for i := 0; i < 10000; i++ {
@@ -145,7 +145,7 @@ func TestFuzzverifyOperationLengths_10000(t *testing.T) {
 func TestFuzzCanProcessEpoch_10000(t *testing.T) {
 	SkipSlotCache.Disable()
 	defer SkipSlotCache.Enable()
-	state, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
+	state, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{})
 	require.NoError(t, err)
 	fuzzer := fuzz.NewWithSeed(0)
 	fuzzer.NilChance(0.1)
@@ -155,30 +155,13 @@ func TestFuzzCanProcessEpoch_10000(t *testing.T) {
 	}
 }
 
-func TestFuzzProcessEpochPrecompute_1000(t *testing.T) {
-	SkipSlotCache.Disable()
-	defer SkipSlotCache.Enable()
-	ctx := context.Background()
-	state, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
-	require.NoError(t, err)
-	fuzzer := fuzz.NewWithSeed(0)
-	fuzzer.NilChance(0.1)
-	for i := 0; i < 1000; i++ {
-		fuzzer.Fuzz(state)
-		s, err := ProcessEpochPrecompute(ctx, state)
-		if err != nil && s != nil {
-			t.Fatalf("state should be nil on err. found: %v on error: %v for state: %v", s, err, state)
-		}
-	}
-}
-
 func TestFuzzProcessBlockForStateRoot_1000(t *testing.T) {
 	SkipSlotCache.Disable()
 	defer SkipSlotCache.Enable()
 	ctx := context.Background()
-	state, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
+	state, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{})
 	require.NoError(t, err)
-	sb := &zondpb.SignedBeaconBlock{}
+	sb := &zondpb.SignedBeaconBlockCapella{}
 	fuzzer := fuzz.NewWithSeed(0)
 	fuzzer.NilChance(0.1)
 	for i := 0; i < 1000; i++ {

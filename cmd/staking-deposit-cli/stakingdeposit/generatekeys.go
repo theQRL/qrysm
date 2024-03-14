@@ -7,10 +7,10 @@ import (
 	"os"
 	"reflect"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/config"
 	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
@@ -77,7 +77,7 @@ func VerifyDepositDataJSON(fileFolder string, credentials []*Credential) bool {
 
 func validateDeposit(depositData *DepositData, credential *Credential) bool {
 	signingSeed := misc.StrSeedToBinSeed(credential.signingSeed)
-	depositKey, err := dilithium.SecretKeyFromBytes(signingSeed[:])
+	depositKey, err := dilithium.SecretKeyFromSeed(signingSeed[:])
 	if err != nil {
 		panic(fmt.Errorf("failed to derive dilithium depositKey from signingSeed | reason %v", err))
 	}
@@ -87,7 +87,7 @@ func validateDeposit(depositData *DepositData, credential *Credential) bool {
 
 	signature := misc.DecodeHex(depositData.Signature)
 
-	if len(pubKey) != dilithium2.CryptoPublicKeyBytes {
+	if len(pubKey) != field_params.DilithiumPubkeyLength {
 		return false
 	}
 	if !reflect.DeepEqual(pubKey, depositKey.PublicKey().Marshal()) {
@@ -117,7 +117,7 @@ func validateDeposit(depositData *DepositData, credential *Credential) bool {
 		panic(fmt.Errorf("invalid prefixbyte withdrawalCredentials[0] %x", withdrawalCredentials[0]))
 	}
 
-	if len(signature) != dilithium2.CryptoBytes {
+	if len(signature) != field_params.DilithiumSignatureLength {
 		panic(fmt.Errorf("invalid dilitihium signature length %d", len(signature)))
 	}
 

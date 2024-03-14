@@ -6,6 +6,7 @@ go_library(
     importpath = "github.com/theQRL/qrysm/v4/config/validator/service",
     visibility = ["//visibility:public"],
     deps = [
+        "//config/fieldparams:go_default_library",
         "//consensus-types/validator:go_default_library",
         "//encoding/bytesutil:go_default_library",
         "//proto/qrysm/v1alpha1/validator-client:go_default_library",

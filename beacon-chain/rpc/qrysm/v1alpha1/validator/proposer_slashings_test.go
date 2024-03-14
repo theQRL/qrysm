@@ -13,7 +13,7 @@ import (
 )
 
 func TestServer_getSlashings(t *testing.T) {
-	beaconState, privKeys := util.DeterministicGenesisState(t, 64)
+	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 64)
 
 	proposerServer := &Server{
 		SlashingsPool: slashings.NewPool(),

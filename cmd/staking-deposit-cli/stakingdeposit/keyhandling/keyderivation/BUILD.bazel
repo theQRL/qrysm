@@ -7,7 +7,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//cmd/staking-deposit-cli/misc:go_default_library",
-        "@com_github_theqrl_go_qrllib//common:go_default_library",
+        "//config/fieldparams:go_default_library",
         "@com_github_theqrl_go_qrllib//dilithium:go_default_library",
         "@org_golang_x_crypto//sha3:go_default_library",
     ],

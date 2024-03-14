@@ -17,7 +17,7 @@ func TestHotStateCache_RoundTrip(t *testing.T) {
 	assert.Equal(t, state.BeaconState(nil), s)
 	assert.Equal(t, false, c.has(root), "Empty cache has an object")
 
-	s, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	s, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Slot: 10,
 	})
 	require.NoError(t, err)

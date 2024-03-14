@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
 	opfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
@@ -13,9 +12,10 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/synccommittee"
 	mockp2p "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/core"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -28,8 +28,9 @@ import (
 func TestGetSyncMessageBlockRoot_OK(t *testing.T) {
 	r := []byte{'a'}
 	server := &Server{
-		HeadFetcher: &mock.ChainService{Root: r},
-		TimeFetcher: &mock.ChainService{Genesis: time.Now()},
+		HeadFetcher:           &mock.ChainService{Root: r},
+		TimeFetcher:           &mock.ChainService{Genesis: time.Now()},
+		OptimisticModeFetcher: &mock.ChainService{},
 	}
 	res, err := server.GetSyncMessageBlockRoot(context.Background(), &emptypb.Empty{})
 	require.NoError(t, err)
@@ -38,9 +39,6 @@ func TestGetSyncMessageBlockRoot_OK(t *testing.T) {
 
 func TestGetSyncMessageBlockRoot_Optimistic(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
-	cfg := params.BeaconConfig().Copy()
-	cfg.BellatrixForkEpoch = 0
-	params.OverrideBeaconConfig(cfg)
 
 	server := &Server{
 		HeadFetcher:           &mock.ChainService{},
@@ -62,10 +60,8 @@ func TestGetSyncMessageBlockRoot_Optimistic(t *testing.T) {
 	require.NoError(t, err)
 }
 
-// TODO(rgeraldes24)
-/*
 func TestSubmitSyncMessage_OK(t *testing.T) {
-	st, _ := util.DeterministicGenesisStateAltair(t, 10)
+	st, _ := util.DeterministicGenesisStateCapella(t, 10)
 	server := &Server{
 		CoreService: &core.Service{
 			SyncCommitteePool: synccommittee.NewStore(),
@@ -81,11 +77,10 @@ func TestSubmitSyncMessage_OK(t *testing.T) {
 	}
 	_, err := server.SubmitSyncMessage(context.Background(), msg)
 	require.NoError(t, err)
-	savedMsgs, err := server.CoreService.SyncCommitteeMessages(1)
+	savedMsgs, err := server.CoreService.SyncCommitteePool.SyncCommitteeMessages(1)
 	require.NoError(t, err)
 	require.DeepEqual(t, []*zondpb.SyncCommitteeMessage{msg}, savedMsgs)
 }
-*/
 
 func TestGetSyncSubcommitteeIndex_Ok(t *testing.T) {
 	transition.SkipSlotCache.Disable()
@@ -96,7 +91,7 @@ func TestGetSyncSubcommitteeIndex_Ok(t *testing.T) {
 			SyncCommitteeIndices: []primitives.CommitteeIndex{0},
 		},
 	}
-	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
+	var pubKey [field_params.DilithiumPubkeyLength]byte
 	// Request slot 0, should get the index 0 for validator 0.
 	res, err := server.GetSyncSubcommitteeIndex(context.Background(), &zondpb.SyncSubcommitteeIndexRequest{
 		PublicKey: pubKey[:], Slot: primitives.Slot(0),
@@ -106,7 +101,7 @@ func TestGetSyncSubcommitteeIndex_Ok(t *testing.T) {
 }
 
 func TestGetSyncCommitteeContribution_FiltersDuplicates(t *testing.T) {
-	st, _ := util.DeterministicGenesisStateAltair(t, 10)
+	st, _ := util.DeterministicGenesisStateCapella(t, 10)
 	syncCommitteePool := synccommittee.NewStore()
 	headFetcher := &mock.ChainService{
 		State:                st,
@@ -118,12 +113,13 @@ func TestGetSyncCommitteeContribution_FiltersDuplicates(t *testing.T) {
 			HeadFetcher:       headFetcher,
 			P2P:               &mockp2p.MockBroadcaster{},
 		},
-		SyncCommitteePool: syncCommitteePool,
-		HeadFetcher:       headFetcher,
-		P2P:               &mockp2p.MockBroadcaster{},
-		TimeFetcher:       &mock.ChainService{Genesis: time.Now()},
+		SyncCommitteePool:     syncCommitteePool,
+		HeadFetcher:           headFetcher,
+		P2P:                   &mockp2p.MockBroadcaster{},
+		TimeFetcher:           &mock.ChainService{Genesis: time.Now()},
+		OptimisticModeFetcher: &mock.ChainService{},
 	}
-	secKey, err := bls.RandKey()
+	secKey, err := dilithium.RandKey()
 	require.NoError(t, err)
 	sig := secKey.Sign([]byte{'A'}).Marshal()
 	msg := &zondpb.SyncCommitteeMessage{
@@ -143,9 +139,9 @@ func TestGetSyncCommitteeContribution_FiltersDuplicates(t *testing.T) {
 		&zondpb.SyncCommitteeContributionRequest{
 			Slot:      1,
 			PublicKey: val.PublicKey,
-			SubnetId:  1})
+			SubnetId:  0})
 	require.NoError(t, err)
-	assert.DeepEqual(t, sig, contr.Signature)
+	assert.DeepEqual(t, sig, contr.Signatures[0])
 }
 
 func TestSubmitSignedContributionAndProof_OK(t *testing.T) {
@@ -161,6 +157,7 @@ func TestSubmitSignedContributionAndProof_OK(t *testing.T) {
 			Contribution: &zondpb.SyncCommitteeContribution{
 				Slot:              1,
 				SubcommitteeIndex: 2,
+				Signatures:        [][]byte{},
 			},
 		},
 	}

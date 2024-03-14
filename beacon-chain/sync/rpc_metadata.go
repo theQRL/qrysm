@@ -89,7 +89,7 @@ func (s *Service) sendMetaDataRequest(ctx context.Context, id peer.ID) (metadata
 	ctx, cancel := context.WithTimeout(ctx, respTimeout)
 	defer cancel()
 
-	topic, err := p2p.TopicFromMessage(p2p.MetadataMessageName, slots.ToEpoch(s.cfg.clock.CurrentSlot()))
+	topic, err := p2p.TopicFromMessage(p2p.MetadataMessageName)
 	if err != nil {
 		return nil, err
 	}

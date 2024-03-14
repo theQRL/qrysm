@@ -25,7 +25,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/db"
 	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/blstoexec"
+	"github.com/theQRL/qrysm/v4/beacon-chain/operations/dilithiumtoexec"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/slashings"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/synccommittee"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/voluntaryexits"
@@ -34,7 +34,6 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
 	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
 	"github.com/theQRL/qrysm/v4/config/params"
-	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime"
 	qrysmTime "github.com/theQRL/qrysm/v4/time"
@@ -77,7 +76,7 @@ type config struct {
 	exitPool                      voluntaryexits.PoolManager
 	slashingPool                  slashings.PoolManager
 	syncCommsPool                 synccommittee.Pool
-	dilithiumToExecPool           blstoexec.PoolManager
+	dilithiumToExecPool           dilithiumtoexec.PoolManager
 	chain                         blockchainService
 	initialSync                   Checker
 	blockNotifier                 blockfeed.Notifier
@@ -276,10 +275,6 @@ func (s *Service) registerHandlers() {
 
 func (s *Service) writeErrorResponseToStream(responseCode byte, reason string, stream libp2pcore.Stream) {
 	writeErrorResponseToStream(responseCode, reason, stream, s.cfg.p2p)
-}
-
-func (s *Service) setRateCollector(topic string, c *leakybucket.Collector) {
-	s.rateLimiter.limiterMap[topic] = c
 }
 
 // marks the chain as having started.

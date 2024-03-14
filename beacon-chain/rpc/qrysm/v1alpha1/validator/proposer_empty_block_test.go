@@ -13,11 +13,6 @@ import (
 
 func Test_getEmptyBlock(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
-	config := params.BeaconConfig()
-	config.AltairForkEpoch = 1
-	config.BellatrixForkEpoch = 2
-	config.CapellaForkEpoch = 3
-	params.OverrideBeaconConfig(config)
 
 	tests := []struct {
 		name string
@@ -25,26 +20,8 @@ func Test_getEmptyBlock(t *testing.T) {
 		want func() interfaces.ReadOnlySignedBeaconBlock
 	}{
 		{
-			name: "altair",
-			slot: primitives.Slot(params.BeaconConfig().AltairForkEpoch) * params.BeaconConfig().SlotsPerEpoch,
-			want: func() interfaces.ReadOnlySignedBeaconBlock {
-				b, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockAltair{Block: &zondpb.BeaconBlockAltair{Body: &zondpb.BeaconBlockBodyAltair{}}})
-				require.NoError(t, err)
-				return b
-			},
-		},
-		{
-			name: "bellatrix",
-			slot: primitives.Slot(params.BeaconConfig().BellatrixForkEpoch) * params.BeaconConfig().SlotsPerEpoch,
-			want: func() interfaces.ReadOnlySignedBeaconBlock {
-				b, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockBellatrix{Block: &zondpb.BeaconBlockBellatrix{Body: &zondpb.BeaconBlockBodyBellatrix{}}})
-				require.NoError(t, err)
-				return b
-			},
-		},
-		{
 			name: "capella",
-			slot: primitives.Slot(params.BeaconConfig().CapellaForkEpoch) * params.BeaconConfig().SlotsPerEpoch,
+			slot: primitives.Slot(0),
 			want: func() interfaces.ReadOnlySignedBeaconBlock {
 				b, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockCapella{Block: &zondpb.BeaconBlockCapella{Body: &zondpb.BeaconBlockBodyCapella{}}})
 				require.NoError(t, err)

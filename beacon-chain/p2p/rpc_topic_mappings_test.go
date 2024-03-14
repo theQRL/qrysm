@@ -7,8 +7,6 @@ import (
 
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
 	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -19,10 +17,10 @@ func TestVerifyRPCMappings(t *testing.T) {
 	assert.NoError(t, VerifyTopicMapping(RPCStatusTopicV1, &pb.Status{}), "Failed to verify status rpc topic")
 	assert.NotNil(t, VerifyTopicMapping(RPCStatusTopicV1, new([]byte)), "Incorrect message type verified for status rpc topic")
 
-	assert.NoError(t, VerifyTopicMapping(RPCMetaDataTopicV1, new(interface{})), "Failed to verify metadata rpc topic")
+	assert.NoError(t, VerifyTopicMapping(RPCMetaDataTopicV2, new(interface{})), "Failed to verify metadata rpc topic")
 	assert.NotNil(t, VerifyTopicMapping(RPCStatusTopicV1, new([]byte)), "Incorrect message type verified for metadata rpc topic")
 
-	assert.NoError(t, VerifyTopicMapping(RPCBlocksByRootTopicV1, new(types.BeaconBlockByRootsReq)), "Failed to verify blocks by root rpc topic")
+	assert.NoError(t, VerifyTopicMapping(RPCBlocksByRootTopicV2, new(types.BeaconBlockByRootsReq)), "Failed to verify blocks by root rpc topic")
 }
 
 func TestTopicDeconstructor(t *testing.T) {
@@ -83,30 +81,15 @@ func TestTopicDeconstructor(t *testing.T) {
 
 func TestTopicFromMessage_CorrectType(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
-	bCfg := params.BeaconConfig().Copy()
-	forkEpoch := primitives.Epoch(100)
-	bCfg.AltairForkEpoch = forkEpoch
-	bCfg.ForkVersionSchedule[bytesutil.ToBytes4(bCfg.AltairForkVersion)] = primitives.Epoch(100)
-	params.OverrideBeaconConfig(bCfg)
 
 	// Garbage Message
 	badMsg := "wljdjska"
-	_, err := TopicFromMessage(badMsg, 0)
+	_, err := TopicFromMessage(badMsg)
 	assert.ErrorContains(t, fmt.Sprintf("%s: %s", invalidRPCMessageType, badMsg), err)
-	// Before Fork
-	for m := range messageMapping {
-		topic, err := TopicFromMessage(m, 0)
-		assert.NoError(t, err)
-
-		assert.Equal(t, true, strings.Contains(topic, SchemaVersionV1))
-		_, _, version, err := TopicDeconstructor(topic)
-		assert.NoError(t, err)
-		assert.Equal(t, SchemaVersionV1, version)
-	}
 
 	// Altair Fork
 	for m := range messageMapping {
-		topic, err := TopicFromMessage(m, forkEpoch)
+		topic, err := TopicFromMessage(m)
 		assert.NoError(t, err)
 
 		if altairMapping[m] {

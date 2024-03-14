@@ -8,8 +8,8 @@ type Step struct {
 	Attestation      *string         `json:"attestation"`
 	AttesterSlashing *string         `json:"attester_slashing"`
 	PayloadStatus    *MockEngineResp `json:"payload_status"`
-	PowBlock         *string         `json:"pow_block"`
-	Check            *Check          `json:"checks"`
+	// PowBlock         *string         `json:"pow_block"`
+	Check *Check `json:"checks"`
 }
 
 type Check struct {

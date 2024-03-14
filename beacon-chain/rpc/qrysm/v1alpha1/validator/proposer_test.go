@@ -2,6 +2,7 @@ package validator
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -9,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-bitfield"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
 	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
@@ -27,7 +27,7 @@ import (
 	mockExecution "github.com/theQRL/qrysm/v4/beacon-chain/execution/testing"
 	doublylinkedtree "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/blstoexec"
+	"github.com/theQRL/qrysm/v4/beacon-chain/operations/dilithiumtoexec"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/slashings"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/synccommittee"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/voluntaryexits"
@@ -37,12 +37,13 @@ import (
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
 	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/container/trie"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/encoding/ssz"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
@@ -58,281 +59,13 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func TestServer_GetBeaconBlock_Phase0(t *testing.T) {
-	db := dbutil.SetupDB(t)
-	ctx := context.Background()
-
-	beaconState, privKeys := util.DeterministicGenesisState(t, 64)
-	stateRoot, err := beaconState.HashTreeRoot(ctx)
-	require.NoError(t, err, "Could not hash genesis state")
-
-	genesis := b.NewGenesisBlock(stateRoot[:])
-	genBlk := &zondpb.SignedBeaconBlock{
-		Block: &zondpb.BeaconBlock{
-			Slot:       genesis.Block.Slot,
-			ParentRoot: genesis.Block.ParentRoot,
-			StateRoot:  genesis.Block.StateRoot,
-			Body: &zondpb.BeaconBlockBody{
-				RandaoReveal: genesis.Block.Body.RandaoReveal,
-				Graffiti:     genesis.Block.Body.Graffiti,
-				Eth1Data:     genesis.Block.Body.Eth1Data,
-			},
-		},
-		Signature: genesis.Signature,
-	}
-	util.SaveBlock(t, ctx, db, genBlk)
-
-	parentRoot, err := genBlk.Block.HashTreeRoot()
-	require.NoError(t, err, "Could not get signing root")
-	require.NoError(t, db.SaveState(ctx, beaconState, parentRoot), "Could not save genesis state")
-	require.NoError(t, db.SaveHeadBlockRoot(ctx, parentRoot), "Could not save genesis state")
-
-	require.NoError(t, err, "Could not get signing root")
-	require.NoError(t, db.SaveState(ctx, beaconState, parentRoot), "Could not save genesis state")
-	require.NoError(t, db.SaveHeadBlockRoot(ctx, parentRoot), "Could not save genesis state")
-
-	proposerServer := getProposerServer(db, beaconState, parentRoot[:])
-
-	randaoReveal, err := util.RandaoReveal(beaconState, 0, privKeys)
-	require.NoError(t, err)
-
-	graffiti := bytesutil.ToBytes32([]byte("eth2"))
-	req := &zondpb.BlockRequest{
-		Slot:         1,
-		RandaoReveal: randaoReveal,
-		Graffiti:     graffiti[:],
-	}
-	proposerSlashings, attSlashings := injectSlashings(t, beaconState, privKeys, proposerServer)
-
-	block, err := proposerServer.GetBeaconBlock(ctx, req)
-	require.NoError(t, err)
-	phase0Blk, ok := block.GetBlock().(*zondpb.GenericBeaconBlock_Phase0)
-	require.Equal(t, true, ok)
-	assert.Equal(t, req.Slot, phase0Blk.Phase0.Slot)
-	assert.DeepEqual(t, parentRoot[:], phase0Blk.Phase0.ParentRoot, "Expected block to have correct parent root")
-	assert.DeepEqual(t, randaoReveal, phase0Blk.Phase0.Body.RandaoReveal, "Expected block to have correct randao reveal")
-	assert.DeepEqual(t, req.Graffiti, phase0Blk.Phase0.Body.Graffiti, "Expected block to have correct Graffiti")
-	assert.Equal(t, params.BeaconConfig().MaxProposerSlashings, uint64(len(phase0Blk.Phase0.Body.ProposerSlashings)))
-	assert.DeepEqual(t, proposerSlashings, phase0Blk.Phase0.Body.ProposerSlashings)
-	assert.Equal(t, params.BeaconConfig().MaxAttesterSlashings, uint64(len(phase0Blk.Phase0.Body.AttesterSlashings)))
-	assert.DeepEqual(t, attSlashings, phase0Blk.Phase0.Body.AttesterSlashings)
-}
-
-func TestServer_GetBeaconBlock_Altair(t *testing.T) {
-	db := dbutil.SetupDB(t)
-	ctx := context.Background()
-
-	params.SetupTestConfigCleanup(t)
-	cfg := params.BeaconConfig().Copy()
-	cfg.AltairForkEpoch = 1
-	params.OverrideBeaconConfig(cfg)
-	beaconState, privKeys := util.DeterministicGenesisState(t, 64)
-
-	stateRoot, err := beaconState.HashTreeRoot(ctx)
-	require.NoError(t, err, "Could not hash genesis state")
-
-	genesis := b.NewGenesisBlock(stateRoot[:])
-	util.SaveBlock(t, ctx, db, genesis)
-
-	parentRoot, err := genesis.Block.HashTreeRoot()
-	require.NoError(t, err, "Could not get signing root")
-	require.NoError(t, db.SaveState(ctx, beaconState, parentRoot), "Could not save genesis state")
-	require.NoError(t, db.SaveHeadBlockRoot(ctx, parentRoot), "Could not save genesis state")
-
-	altairSlot, err := slots.EpochStart(params.BeaconConfig().AltairForkEpoch)
-	require.NoError(t, err)
-
-	var scBits [fieldparams.SyncAggregateSyncCommitteeBytesLength]byte
-	genAltair := &zondpb.SignedBeaconBlockAltair{
-		Block: &zondpb.BeaconBlockAltair{
-			Slot:       altairSlot + 1,
-			ParentRoot: parentRoot[:],
-			StateRoot:  genesis.Block.StateRoot,
-			Body: &zondpb.BeaconBlockBodyAltair{
-				RandaoReveal:  genesis.Block.Body.RandaoReveal,
-				Graffiti:      genesis.Block.Body.Graffiti,
-				Eth1Data:      genesis.Block.Body.Eth1Data,
-				SyncAggregate: &zondpb.SyncAggregate{SyncCommitteeBits: scBits[:], SyncCommitteeSignature: make([]byte, 96)},
-			},
-		},
-		Signature: genesis.Signature,
-	}
-
-	blkRoot, err := genAltair.Block.HashTreeRoot()
-	require.NoError(t, err)
-	require.NoError(t, err, "Could not get signing root")
-	require.NoError(t, db.SaveState(ctx, beaconState, blkRoot), "Could not save genesis state")
-	require.NoError(t, db.SaveHeadBlockRoot(ctx, blkRoot), "Could not save genesis state")
-
-	proposerServer := getProposerServer(db, beaconState, parentRoot[:])
-
-	randaoReveal, err := util.RandaoReveal(beaconState, 0, privKeys)
-	require.NoError(t, err)
-
-	graffiti := bytesutil.ToBytes32([]byte("eth2"))
-	require.NoError(t, err)
-	req := &zondpb.BlockRequest{
-		Slot:         altairSlot + 1,
-		RandaoReveal: randaoReveal,
-		Graffiti:     graffiti[:],
-	}
-	proposerSlashings, attSlashings := injectSlashings(t, beaconState, privKeys, proposerServer)
-
-	block, err := proposerServer.GetBeaconBlock(ctx, req)
-	require.NoError(t, err)
-	altairBlk, ok := block.GetBlock().(*zondpb.GenericBeaconBlock_Altair)
-	require.Equal(t, true, ok)
-
-	assert.Equal(t, req.Slot, altairBlk.Altair.Slot)
-	assert.DeepEqual(t, parentRoot[:], altairBlk.Altair.ParentRoot, "Expected block to have correct parent root")
-	assert.DeepEqual(t, randaoReveal, altairBlk.Altair.Body.RandaoReveal, "Expected block to have correct randao reveal")
-	assert.DeepEqual(t, req.Graffiti, altairBlk.Altair.Body.Graffiti, "Expected block to have correct Graffiti")
-	assert.Equal(t, params.BeaconConfig().MaxProposerSlashings, uint64(len(altairBlk.Altair.Body.ProposerSlashings)))
-	assert.DeepEqual(t, proposerSlashings, altairBlk.Altair.Body.ProposerSlashings)
-	assert.Equal(t, params.BeaconConfig().MaxAttesterSlashings, uint64(len(altairBlk.Altair.Body.AttesterSlashings)))
-	assert.DeepEqual(t, attSlashings, altairBlk.Altair.Body.AttesterSlashings)
-}
-
-func TestServer_GetBeaconBlock_Bellatrix(t *testing.T) {
-	db := dbutil.SetupDB(t)
-	ctx := context.Background()
-	hook := logTest.NewGlobal()
-
-	terminalBlockHash := bytesutil.PadTo([]byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}, 32)
-	params.SetupTestConfigCleanup(t)
-	cfg := params.BeaconConfig().Copy()
-	cfg.BellatrixForkEpoch = 2
-	cfg.AltairForkEpoch = 1
-	cfg.TerminalBlockHash = common.BytesToHash(terminalBlockHash)
-	cfg.TerminalBlockHashActivationEpoch = 2
-	params.OverrideBeaconConfig(cfg)
-	beaconState, privKeys := util.DeterministicGenesisState(t, 64)
-
-	stateRoot, err := beaconState.HashTreeRoot(ctx)
-	require.NoError(t, err, "Could not hash genesis state")
-
-	genesis := b.NewGenesisBlock(stateRoot[:])
-	util.SaveBlock(t, ctx, db, genesis)
-
-	parentRoot, err := genesis.Block.HashTreeRoot()
-	require.NoError(t, err, "Could not get signing root")
-	require.NoError(t, db.SaveState(ctx, beaconState, parentRoot), "Could not save genesis state")
-	require.NoError(t, db.SaveHeadBlockRoot(ctx, parentRoot), "Could not save genesis state")
-
-	bellatrixSlot, err := slots.EpochStart(params.BeaconConfig().BellatrixForkEpoch)
-	require.NoError(t, err)
-
-	var scBits [fieldparams.SyncAggregateSyncCommitteeBytesLength]byte
-	blk := &zondpb.SignedBeaconBlockBellatrix{
-		Block: &zondpb.BeaconBlockBellatrix{
-			Slot:       bellatrixSlot + 1,
-			ParentRoot: parentRoot[:],
-			StateRoot:  genesis.Block.StateRoot,
-			Body: &zondpb.BeaconBlockBodyBellatrix{
-				RandaoReveal:  genesis.Block.Body.RandaoReveal,
-				Graffiti:      genesis.Block.Body.Graffiti,
-				Eth1Data:      genesis.Block.Body.Eth1Data,
-				SyncAggregate: &zondpb.SyncAggregate{SyncCommitteeBits: scBits[:], SyncCommitteeSignature: make([]byte, 96)},
-				ExecutionPayload: &enginev1.ExecutionPayload{
-					ParentHash:    make([]byte, fieldparams.RootLength),
-					FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
-					StateRoot:     make([]byte, fieldparams.RootLength),
-					ReceiptsRoot:  make([]byte, fieldparams.RootLength),
-					LogsBloom:     make([]byte, fieldparams.LogsBloomLength),
-					PrevRandao:    make([]byte, fieldparams.RootLength),
-					BaseFeePerGas: make([]byte, fieldparams.RootLength),
-					BlockHash:     make([]byte, fieldparams.RootLength),
-				},
-			},
-		},
-		Signature: genesis.Signature,
-	}
-
-	blkRoot, err := blk.Block.HashTreeRoot()
-	require.NoError(t, err)
-	require.NoError(t, err, "Could not get signing root")
-	require.NoError(t, db.SaveState(ctx, beaconState, blkRoot), "Could not save genesis state")
-	require.NoError(t, db.SaveHeadBlockRoot(ctx, blkRoot), "Could not save genesis state")
-
-	c := mockExecution.New()
-	c.HashesByHeight[0] = terminalBlockHash
-	random, err := helpers.RandaoMix(beaconState, slots.ToEpoch(beaconState.Slot()))
-	require.NoError(t, err)
-	timeStamp, err := slots.ToTime(beaconState.GenesisTime(), bellatrixSlot+1)
-	require.NoError(t, err)
-
-	payload := &enginev1.ExecutionPayload{
-		ParentHash:    make([]byte, fieldparams.RootLength),
-		FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
-		StateRoot:     make([]byte, fieldparams.RootLength),
-		ReceiptsRoot:  make([]byte, fieldparams.RootLength),
-		LogsBloom:     make([]byte, fieldparams.LogsBloomLength),
-		PrevRandao:    random,
-		BaseFeePerGas: make([]byte, fieldparams.RootLength),
-		BlockHash:     make([]byte, fieldparams.RootLength),
-		Transactions:  make([][]byte, 0),
-		ExtraData:     make([]byte, 0),
-		BlockNumber:   1,
-		GasLimit:      2,
-		GasUsed:       3,
-		Timestamp:     uint64(timeStamp.Unix()),
-	}
-
-	proposerServer := getProposerServer(db, beaconState, parentRoot[:])
-	proposerServer.Eth1BlockFetcher = c
-	proposerServer.ExecutionEngineCaller = &mockExecution.EngineClient{
-		PayloadIDBytes:   &enginev1.PayloadIDBytes{1},
-		ExecutionPayload: payload,
-	}
-
-	randaoReveal, err := util.RandaoReveal(beaconState, 0, privKeys)
-	require.NoError(t, err)
-
-	graffiti := bytesutil.ToBytes32([]byte("eth2"))
-	require.NoError(t, err)
-	req := &zondpb.BlockRequest{
-		Slot:         bellatrixSlot + 1,
-		RandaoReveal: randaoReveal,
-		Graffiti:     graffiti[:],
-	}
-
-	block, err := proposerServer.GetBeaconBlock(ctx, req)
-	require.NoError(t, err)
-	bellatrixBlk, ok := block.GetBlock().(*zondpb.GenericBeaconBlock_Bellatrix)
-	require.Equal(t, true, ok)
-
-	assert.Equal(t, req.Slot, bellatrixBlk.Bellatrix.Slot)
-	assert.DeepEqual(t, parentRoot[:], bellatrixBlk.Bellatrix.ParentRoot, "Expected block to have correct parent root")
-	assert.DeepEqual(t, randaoReveal, bellatrixBlk.Bellatrix.Body.RandaoReveal, "Expected block to have correct randao reveal")
-	assert.DeepEqual(t, req.Graffiti, bellatrixBlk.Bellatrix.Body.Graffiti, "Expected block to have correct Graffiti")
-
-	require.LogsContain(t, hook, "Fee recipient is currently using the burn address")
-	require.DeepEqual(t, payload, bellatrixBlk.Bellatrix.Body.ExecutionPayload) // Payload should equal.
-
-	// Operator sets default fee recipient to not be burned through beacon node cli.
-	newHook := logTest.NewGlobal()
-	params.SetupTestConfigCleanup(t)
-	cfg = params.MinimalSpecConfig().Copy()
-	cfg.DefaultFeeRecipient = common.Address{'b'}
-	params.OverrideBeaconConfig(cfg)
-	_, err = proposerServer.GetBeaconBlock(ctx, req)
-	require.NoError(t, err)
-	require.LogsDoNotContain(t, newHook, "Fee recipient is currently using the burn address")
-}
-
 func TestServer_GetBeaconBlock_Capella(t *testing.T) {
 	db := dbutil.SetupDB(t)
 	ctx := context.Background()
 	transition.SkipSlotCache.Disable()
 
 	params.SetupTestConfigCleanup(t)
-	cfg := params.BeaconConfig().Copy()
-	cfg.CapellaForkEpoch = 3
-	cfg.BellatrixForkEpoch = 2
-	cfg.AltairForkEpoch = 1
-	params.OverrideBeaconConfig(cfg)
-	beaconState, privKeys := util.DeterministicGenesisState(t, 64)
+	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 64)
 
 	stateRoot, err := beaconState.HashTreeRoot(ctx)
 	require.NoError(t, err, "Could not hash genesis state")
@@ -345,8 +78,8 @@ func TestServer_GetBeaconBlock_Capella(t *testing.T) {
 	require.NoError(t, db.SaveState(ctx, beaconState, parentRoot), "Could not save genesis state")
 	require.NoError(t, db.SaveHeadBlockRoot(ctx, parentRoot), "Could not save genesis state")
 
-	capellaSlot, err := slots.EpochStart(params.BeaconConfig().CapellaForkEpoch)
-	require.NoError(t, err)
+	// NOTE(rgeraldes24) the slot must be > fieldparams.SlotsPerEpoch
+	capellaSlot := primitives.Slot(fieldparams.SlotsPerEpoch + 1)
 
 	var scBits [fieldparams.SyncAggregateSyncCommitteeBytesLength]byte
 	blk := &zondpb.SignedBeaconBlockCapella{
@@ -358,7 +91,7 @@ func TestServer_GetBeaconBlock_Capella(t *testing.T) {
 				RandaoReveal:  genesis.Block.Body.RandaoReveal,
 				Graffiti:      genesis.Block.Body.Graffiti,
 				Eth1Data:      genesis.Block.Body.Eth1Data,
-				SyncAggregate: &zondpb.SyncAggregate{SyncCommitteeBits: scBits[:], SyncCommitteeSignature: make([]byte, 96)},
+				SyncAggregate: &zondpb.SyncAggregate{SyncCommitteeBits: scBits[:], SyncCommitteeSignatures: [][]byte{}},
 				ExecutionPayload: &enginev1.ExecutionPayloadCapella{
 					ParentHash:    make([]byte, fieldparams.RootLength),
 					FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
@@ -433,13 +166,8 @@ func TestServer_GetBeaconBlock_Capella(t *testing.T) {
 
 func TestServer_GetBeaconBlock_Optimistic(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
-	cfg := params.BeaconConfig().Copy()
-	cfg.BellatrixForkEpoch = 2
-	cfg.AltairForkEpoch = 1
-	params.OverrideBeaconConfig(cfg)
 
-	bellatrixSlot, err := slots.EpochStart(params.BeaconConfig().BellatrixForkEpoch)
-	require.NoError(t, err)
+	capellaSlot := primitives.Slot(0)
 
 	mockChainService := &mock.ChainService{ForkChoiceStore: doublylinkedtree.New()}
 	proposerServer := &Server{
@@ -449,9 +177,9 @@ func TestServer_GetBeaconBlock_Optimistic(t *testing.T) {
 		ForkchoiceFetcher:     mockChainService,
 		TimeFetcher:           &mock.ChainService{}}
 	req := &zondpb.BlockRequest{
-		Slot: bellatrixSlot + 1,
+		Slot: capellaSlot + 1,
 	}
-	_, err = proposerServer.GetBeaconBlock(context.Background(), req)
+	_, err := proposerServer.GetBeaconBlock(context.Background(), req)
 	s, ok := status.FromError(err)
 	require.Equal(t, true, ok)
 	require.DeepEqual(t, codes.Unavailable, s.Code())
@@ -482,12 +210,12 @@ func getProposerServer(db db.HeadAccessDatabase, headState state.BeaconState, he
 		},
 		ProposerSlotIndexCache: cache.NewProposerPayloadIDsCache(),
 		BeaconDB:               db,
-		DilithiumChangesPool:   blstoexec.NewPool(),
+		DilithiumChangesPool:   dilithiumtoexec.NewPool(),
 		BlockBuilder:           &builderTest.MockBuilderService{HasConfigured: true},
 	}
 }
 
-func injectSlashings(t *testing.T, st state.BeaconState, keys []bls.SecretKey, server *Server) ([]*zondpb.ProposerSlashing, []*zondpb.AttesterSlashing) {
+func injectSlashings(t *testing.T, st state.BeaconState, keys []dilithium.DilithiumKey, server *Server) ([]*zondpb.ProposerSlashing, []*zondpb.AttesterSlashing) {
 	proposerSlashings := make([]*zondpb.ProposerSlashing, params.BeaconConfig().MaxProposerSlashings)
 	for i := primitives.ValidatorIndex(0); uint64(i) < params.BeaconConfig().MaxProposerSlashings; i++ {
 		proposerSlashing, err := util.GenerateProposerSlashingForValidator(st, keys[i], i /* validator index */)
@@ -514,36 +242,7 @@ func TestProposer_ProposeBlock_OK(t *testing.T) {
 		block func([32]byte) *zondpb.GenericSignedBeaconBlock
 		err   string
 	}{
-		{
-			name: "phase0",
-			block: func(parent [32]byte) *zondpb.GenericSignedBeaconBlock {
-				blockToPropose := util.NewBeaconBlock()
-				blockToPropose.Block.Slot = 5
-				blockToPropose.Block.ParentRoot = parent[:]
-				blk := &zondpb.GenericSignedBeaconBlock_Phase0{Phase0: blockToPropose}
-				return &zondpb.GenericSignedBeaconBlock{Block: blk}
-			},
-		},
-		{
-			name: "altair",
-			block: func(parent [32]byte) *zondpb.GenericSignedBeaconBlock {
-				blockToPropose := util.NewBeaconBlockAltair()
-				blockToPropose.Block.Slot = 5
-				blockToPropose.Block.ParentRoot = parent[:]
-				blk := &zondpb.GenericSignedBeaconBlock_Altair{Altair: blockToPropose}
-				return &zondpb.GenericSignedBeaconBlock{Block: blk}
-			},
-		},
-		{
-			name: "bellatrix",
-			block: func(parent [32]byte) *zondpb.GenericSignedBeaconBlock {
-				blockToPropose := util.NewBeaconBlockBellatrix()
-				blockToPropose.Block.Slot = 5
-				blockToPropose.Block.ParentRoot = parent[:]
-				blk := &zondpb.GenericSignedBeaconBlock_Bellatrix{Bellatrix: blockToPropose}
-				return &zondpb.GenericSignedBeaconBlock{Block: blk}
-			},
-		},
+
 		{
 			name: "blind capella",
 			block: func(parent [32]byte) *zondpb.GenericSignedBeaconBlock {
@@ -561,49 +260,15 @@ func TestProposer_ProposeBlock_OK(t *testing.T) {
 			},
 		},
 		{
-			name: "bellatrix",
+			name: "capella",
 			block: func(parent [32]byte) *zondpb.GenericSignedBeaconBlock {
-				blockToPropose := util.NewBeaconBlockBellatrix()
+				blockToPropose := util.NewBeaconBlockCapella()
 				blockToPropose.Block.Slot = 5
 				blockToPropose.Block.ParentRoot = parent[:]
-				blk := &zondpb.GenericSignedBeaconBlock_Bellatrix{Bellatrix: blockToPropose}
+				blk := &zondpb.GenericSignedBeaconBlock_Capella{Capella: blockToPropose}
 				return &zondpb.GenericSignedBeaconBlock{Block: blk}
 			},
 		},
-		/*
-			{
-				name: "blind capella",
-				block: func(parent [32]byte) *zondpb.GenericSignedBeaconBlock {
-					blockToPropose := util.NewBlindedBeaconBlockDeneb()
-					blockToPropose.Message.Slot = 5
-					blockToPropose.Message.ParentRoot = parent[:]
-					txRoot, err := ssz.TransactionsRoot([][]byte{})
-					require.NoError(t, err)
-					withdrawalsRoot, err := ssz.WithdrawalSliceRoot([]*enginev1.Withdrawal{}, fieldparams.MaxWithdrawalsPerPayload)
-					require.NoError(t, err)
-					blockToPropose.Message.Body.ExecutionPayloadHeader.TransactionsRoot = txRoot[:]
-					blockToPropose.Message.Body.ExecutionPayloadHeader.WithdrawalsRoot = withdrawalsRoot[:]
-					blk := &zondpb.GenericSignedBeaconBlock_BlindedDeneb{BlindedDeneb: &zondpb.SignedBlindedBeaconBlockAndBlobsDeneb{
-						SignedBlindedBlock: blockToPropose,
-						SignedBlindedBlobSidecars: []*zondpb.SignedBlindedBlobSidecar{
-							{
-								Message: &zondpb.BlindedBlobSidecar{
-									BlockRoot:       []byte{0x01},
-									Slot:            2,
-									BlockParentRoot: []byte{0x03},
-									ProposerIndex:   3,
-									BlobRoot:        []byte{0x04},
-									KzgCommitment:   []byte{0x05},
-									KzgProof:        []byte{0x06},
-								},
-								Signature: []byte{0x07},
-							},
-						},
-					}}
-					return &zondpb.GenericSignedBeaconBlock{Block: blk}
-				},
-			},
-		*/
 	}
 
 	for _, tt := range tests {
@@ -611,7 +276,7 @@ func TestProposer_ProposeBlock_OK(t *testing.T) {
 			ctx := context.Background()
 
 			numDeposits := uint64(64)
-			beaconState, _ := util.DeterministicGenesisState(t, numDeposits)
+			beaconState, _ := util.DeterministicGenesisStateCapella(t, numDeposits)
 			bsRoot, err := beaconState.HashTreeRoot(ctx)
 			require.NoError(t, err)
 
@@ -642,7 +307,7 @@ func TestProposer_ComputeStateRoot_OK(t *testing.T) {
 	db := dbutil.SetupDB(t)
 	ctx := context.Background()
 
-	beaconState, parentRoot, privKeys := util.DeterministicGenesisStateWithGenesisBlock(t, ctx, db, 100)
+	beaconState, parentRoot, privKeys := util.DeterministicGenesisStateCapellaWithGenesisBlock(t, ctx, db, 100)
 
 	proposerServer := &Server{
 		ChainStartFetcher: &mockExecution.Chain{},
@@ -650,8 +315,8 @@ func TestProposer_ComputeStateRoot_OK(t *testing.T) {
 		Eth1BlockFetcher:  &mockExecution.Chain{},
 		StateGen:          stategen.New(db, doublylinkedtree.New()),
 	}
-	req := util.NewBeaconBlock()
-	req.Block.ProposerIndex = 84
+	req := util.NewBeaconBlockCapella()
+	req.Block.ProposerIndex = 18
 	req.Block.ParentRoot = parentRoot[:]
 	req.Block.Slot = 1
 	require.NoError(t, beaconState.SetSlot(beaconState.Slot()+1))
@@ -700,7 +365,7 @@ func TestProposer_PendingDeposits_Eth1DataVoteOK(t *testing.T) {
 
 	blockHash = make([]byte, 32)
 	copy(blockHash, "0x0")
-	beaconState, err := util.NewBeaconState()
+	beaconState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetEth1DepositIndex(2))
 	require.NoError(t, beaconState.SetEth1Data(&zondpb.Eth1Data{
@@ -710,7 +375,7 @@ func TestProposer_PendingDeposits_Eth1DataVoteOK(t *testing.T) {
 	}))
 	require.NoError(t, beaconState.SetEth1DataVotes(votes))
 
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blkRoot, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
 
@@ -762,7 +427,7 @@ func TestProposer_PendingDeposits_OutsideEth1FollowWindow(t *testing.T) {
 		},
 	}
 
-	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Eth1Data: &zondpb.Eth1Data{
 			BlockHash:   bytesutil.PadTo([]byte("0x0"), 32),
 			DepositRoot: make([]byte, 32),
@@ -771,7 +436,7 @@ func TestProposer_PendingDeposits_OutsideEth1FollowWindow(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	var mockSig [96]byte
+	var mockSig [field_params.DilithiumSignatureLength]byte
 	var mockCreds [32]byte
 
 	// Using the merkleTreeIndex as the block number for this test...
@@ -781,7 +446,7 @@ func TestProposer_PendingDeposits_OutsideEth1FollowWindow(t *testing.T) {
 			Eth1BlockHeight: 2,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("a"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("a"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -791,7 +456,7 @@ func TestProposer_PendingDeposits_OutsideEth1FollowWindow(t *testing.T) {
 			Eth1BlockHeight: 8,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("b"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("b"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -804,7 +469,7 @@ func TestProposer_PendingDeposits_OutsideEth1FollowWindow(t *testing.T) {
 			Eth1BlockHeight: 400,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("c"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("c"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -814,7 +479,7 @@ func TestProposer_PendingDeposits_OutsideEth1FollowWindow(t *testing.T) {
 			Eth1BlockHeight: 600,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("d"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("d"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -841,7 +506,7 @@ func TestProposer_PendingDeposits_OutsideEth1FollowWindow(t *testing.T) {
 		depositCache.InsertPendingDeposit(ctx, dp.Deposit, dp.Eth1BlockHeight, dp.Index, root)
 	}
 
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blk.Block.Slot = beaconState.Slot()
 
 	blkRoot, err := blk.HashTreeRoot()
@@ -894,7 +559,7 @@ func TestProposer_PendingDeposits_FollowsCorrectEth1Block(t *testing.T) {
 		votes = append(votes, vote)
 	}
 
-	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Eth1Data: &zondpb.Eth1Data{
 			BlockHash:    []byte("0x0"),
 			DepositRoot:  make([]byte, 32),
@@ -904,13 +569,13 @@ func TestProposer_PendingDeposits_FollowsCorrectEth1Block(t *testing.T) {
 		Eth1DataVotes:    votes,
 	})
 	require.NoError(t, err)
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blk.Block.Slot = beaconState.Slot()
 
 	blkRoot, err := blk.HashTreeRoot()
 	require.NoError(t, err)
 
-	var mockSig [96]byte
+	var mockSig [field_params.DilithiumSignatureLength]byte
 	var mockCreds [32]byte
 
 	// Using the merkleTreeIndex as the block number for this test...
@@ -920,7 +585,7 @@ func TestProposer_PendingDeposits_FollowsCorrectEth1Block(t *testing.T) {
 			Eth1BlockHeight: 8,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("a"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("a"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -930,7 +595,7 @@ func TestProposer_PendingDeposits_FollowsCorrectEth1Block(t *testing.T) {
 			Eth1BlockHeight: 14,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("b"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("b"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -943,7 +608,7 @@ func TestProposer_PendingDeposits_FollowsCorrectEth1Block(t *testing.T) {
 			Eth1BlockHeight: 5000,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("c"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("c"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -953,7 +618,7 @@ func TestProposer_PendingDeposits_FollowsCorrectEth1Block(t *testing.T) {
 			Eth1BlockHeight: 6000,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("d"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("d"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1013,7 +678,7 @@ func TestProposer_PendingDeposits_CantReturnBelowStateEth1DepositIndex(t *testin
 		},
 	}
 
-	beaconState, err := util.NewBeaconState()
+	beaconState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetEth1Data(&zondpb.Eth1Data{
 		BlockHash:    bytesutil.PadTo([]byte("0x0"), 32),
@@ -1021,12 +686,12 @@ func TestProposer_PendingDeposits_CantReturnBelowStateEth1DepositIndex(t *testin
 		DepositCount: 100,
 	}))
 	require.NoError(t, beaconState.SetEth1DepositIndex(10))
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blk.Block.Slot = beaconState.Slot()
 	blkRoot, err := blk.HashTreeRoot()
 	require.NoError(t, err)
 
-	var mockSig [96]byte
+	var mockSig [field_params.DilithiumSignatureLength]byte
 	var mockCreds [32]byte
 
 	readyDeposits := []*zondpb.DepositContainer{
@@ -1034,7 +699,7 @@ func TestProposer_PendingDeposits_CantReturnBelowStateEth1DepositIndex(t *testin
 			Index: 0,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("a"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("a"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1043,7 +708,7 @@ func TestProposer_PendingDeposits_CantReturnBelowStateEth1DepositIndex(t *testin
 			Index: 1,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("b"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("b"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1056,7 +721,7 @@ func TestProposer_PendingDeposits_CantReturnBelowStateEth1DepositIndex(t *testin
 			Index: i,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{byte(i)}, 48),
+					PublicKey:             bytesutil.PadTo([]byte{byte(i)}, field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1113,7 +778,7 @@ func TestProposer_PendingDeposits_CantReturnMoreThanMax(t *testing.T) {
 		},
 	}
 
-	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Eth1Data: &zondpb.Eth1Data{
 			BlockHash:    bytesutil.PadTo([]byte("0x0"), 32),
 			DepositRoot:  make([]byte, 32),
@@ -1122,11 +787,11 @@ func TestProposer_PendingDeposits_CantReturnMoreThanMax(t *testing.T) {
 		Eth1DepositIndex: 2,
 	})
 	require.NoError(t, err)
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blk.Block.Slot = beaconState.Slot()
 	blkRoot, err := blk.HashTreeRoot()
 	require.NoError(t, err)
-	var mockSig [96]byte
+	var mockSig [field_params.DilithiumSignatureLength]byte
 	var mockCreds [32]byte
 
 	readyDeposits := []*zondpb.DepositContainer{
@@ -1134,7 +799,7 @@ func TestProposer_PendingDeposits_CantReturnMoreThanMax(t *testing.T) {
 			Index: 0,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("a"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("a"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1143,7 +808,7 @@ func TestProposer_PendingDeposits_CantReturnMoreThanMax(t *testing.T) {
 			Index: 1,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("b"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("b"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1156,7 +821,7 @@ func TestProposer_PendingDeposits_CantReturnMoreThanMax(t *testing.T) {
 			Index: i,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{byte(i)}, 48),
+					PublicKey:             bytesutil.PadTo([]byte{byte(i)}, field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1211,7 +876,7 @@ func TestProposer_PendingDeposits_CantReturnMoreThanDepositCount(t *testing.T) {
 		},
 	}
 
-	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Eth1Data: &zondpb.Eth1Data{
 			BlockHash:    bytesutil.PadTo([]byte("0x0"), 32),
 			DepositRoot:  make([]byte, 32),
@@ -1220,11 +885,11 @@ func TestProposer_PendingDeposits_CantReturnMoreThanDepositCount(t *testing.T) {
 		Eth1DepositIndex: 2,
 	})
 	require.NoError(t, err)
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blk.Block.Slot = beaconState.Slot()
 	blkRoot, err := blk.HashTreeRoot()
 	require.NoError(t, err)
-	var mockSig [96]byte
+	var mockSig [field_params.DilithiumSignatureLength]byte
 	var mockCreds [32]byte
 
 	readyDeposits := []*zondpb.DepositContainer{
@@ -1232,7 +897,7 @@ func TestProposer_PendingDeposits_CantReturnMoreThanDepositCount(t *testing.T) {
 			Index: 0,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("a"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("a"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1241,7 +906,7 @@ func TestProposer_PendingDeposits_CantReturnMoreThanDepositCount(t *testing.T) {
 			Index: 1,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("b"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("b"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1254,7 +919,7 @@ func TestProposer_PendingDeposits_CantReturnMoreThanDepositCount(t *testing.T) {
 			Index: i,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{byte(i)}, 48),
+					PublicKey:             bytesutil.PadTo([]byte{byte(i)}, field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1309,7 +974,7 @@ func TestProposer_DepositTrie_UtilizesCachedFinalizedDeposits(t *testing.T) {
 		},
 	}
 
-	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Eth1Data: &zondpb.Eth1Data{
 			BlockHash:    bytesutil.PadTo([]byte("0x0"), 32),
 			DepositRoot:  make([]byte, 32),
@@ -1318,13 +983,13 @@ func TestProposer_DepositTrie_UtilizesCachedFinalizedDeposits(t *testing.T) {
 		Eth1DepositIndex: 1,
 	})
 	require.NoError(t, err)
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blk.Block.Slot = beaconState.Slot()
 
 	blkRoot, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	var mockSig [96]byte
+	var mockSig [field_params.DilithiumSignatureLength]byte
 	var mockCreds [32]byte
 
 	// Using the merkleTreeIndex as the block number for this test...
@@ -1334,7 +999,7 @@ func TestProposer_DepositTrie_UtilizesCachedFinalizedDeposits(t *testing.T) {
 			Eth1BlockHeight: 10,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("a"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("a"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1344,7 +1009,7 @@ func TestProposer_DepositTrie_UtilizesCachedFinalizedDeposits(t *testing.T) {
 			Eth1BlockHeight: 10,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("b"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("b"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1357,7 +1022,7 @@ func TestProposer_DepositTrie_UtilizesCachedFinalizedDeposits(t *testing.T) {
 			Eth1BlockHeight: 11,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("c"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("c"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1367,7 +1032,7 @@ func TestProposer_DepositTrie_UtilizesCachedFinalizedDeposits(t *testing.T) {
 			Eth1BlockHeight: 11,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("d"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("d"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1425,7 +1090,7 @@ func TestProposer_DepositTrie_RebuildTrie(t *testing.T) {
 		},
 	}
 
-	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Eth1Data: &zondpb.Eth1Data{
 			BlockHash:    bytesutil.PadTo([]byte("0x0"), 32),
 			DepositRoot:  make([]byte, 32),
@@ -1434,13 +1099,13 @@ func TestProposer_DepositTrie_RebuildTrie(t *testing.T) {
 		Eth1DepositIndex: 1,
 	})
 	require.NoError(t, err)
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blk.Block.Slot = beaconState.Slot()
 
 	blkRoot, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	var mockSig [96]byte
+	var mockSig [field_params.DilithiumSignatureLength]byte
 	var mockCreds [32]byte
 
 	// Using the merkleTreeIndex as the block number for this test...
@@ -1450,7 +1115,7 @@ func TestProposer_DepositTrie_RebuildTrie(t *testing.T) {
 			Eth1BlockHeight: 10,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("a"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("a"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1460,7 +1125,7 @@ func TestProposer_DepositTrie_RebuildTrie(t *testing.T) {
 			Eth1BlockHeight: 10,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("b"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("b"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1473,7 +1138,7 @@ func TestProposer_DepositTrie_RebuildTrie(t *testing.T) {
 			Eth1BlockHeight: 11,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("c"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("c"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1483,7 +1148,7 @@ func TestProposer_DepositTrie_RebuildTrie(t *testing.T) {
 			Eth1BlockHeight: 11,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("d"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("d"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -1642,7 +1307,7 @@ func TestProposer_Eth1Data_MajorityVote_SpansGenesis(t *testing.T) {
 		HeadFetcher:       &mock.ChainService{ETH1Data: &zondpb.Eth1Data{BlockHash: headBlockHash, DepositCount: 0}},
 	}
 
-	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Slot: slot,
 		Eth1DataVotes: []*zondpb.Eth1Data{
 			{BlockHash: []byte("earliest"), DepositCount: 1},
@@ -1657,7 +1322,7 @@ func TestProposer_Eth1Data_MajorityVote_SpansGenesis(t *testing.T) {
 func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 	followDistanceSecs := params.BeaconConfig().Eth1FollowDistance * params.BeaconConfig().SecondsPerETH1Block
 	followSlots := followDistanceSecs / params.BeaconConfig().SecondsPerSlot
-	slot := primitives.Slot(64 + followSlots)
+	slot := primitives.Slot(256 + followSlots)
 	earliestValidTime, latestValidTime := majorityVoteBoundaryTime(slot)
 
 	dc := zondpb.DepositContainer{
@@ -1665,8 +1330,8 @@ func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 		Eth1BlockHeight: 0,
 		Deposit: &zondpb.Deposit{
 			Data: &zondpb.Deposit_Data{
-				PublicKey:             bytesutil.PadTo([]byte("a"), 48),
-				Signature:             make([]byte, 96),
+				PublicKey:             bytesutil.PadTo([]byte("a"), field_params.DilithiumPubkeyLength),
+				Signature:             make([]byte, field_params.DilithiumSignatureLength),
 				WithdrawalCredentials: make([]byte, 32),
 			}},
 	}
@@ -1686,7 +1351,7 @@ func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 			InsertBlock(52, earliestValidTime+2, []byte("second")).
 			InsertBlock(100, latestValidTime, []byte("latest"))
 
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 			Slot: slot,
 			Eth1DataVotes: []*zondpb.Eth1Data{
 				{BlockHash: []byte("first"), DepositCount: 1},
@@ -1722,7 +1387,7 @@ func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 			InsertBlock(52, earliestValidTime+2, []byte("second")).
 			InsertBlock(100, latestValidTime, []byte("latest"))
 
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 			Slot: slot,
 			Eth1DataVotes: []*zondpb.Eth1Data{
 				{BlockHash: []byte("earliest"), DepositCount: 1},
@@ -1758,7 +1423,7 @@ func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 			InsertBlock(51, earliestValidTime+1, []byte("first")).
 			InsertBlock(100, latestValidTime, []byte("latest"))
 
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 			Slot: slot,
 			Eth1DataVotes: []*zondpb.Eth1Data{
 				{BlockHash: []byte("first"), DepositCount: 1},
@@ -1795,7 +1460,7 @@ func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 			InsertBlock(51, earliestValidTime+1, []byte("first")).
 			InsertBlock(100, latestValidTime, []byte("latest"))
 
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 			Slot: slot,
 			Eth1DataVotes: []*zondpb.Eth1Data{
 				{BlockHash: []byte("before_range"), DepositCount: 1},
@@ -1832,7 +1497,7 @@ func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 			InsertBlock(100, latestValidTime, []byte("latest")).
 			InsertBlock(101, latestValidTime+1, []byte("after_range"))
 
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 			Slot: slot,
 			Eth1DataVotes: []*zondpb.Eth1Data{
 				{BlockHash: []byte("first"), DepositCount: 1},
@@ -1869,7 +1534,7 @@ func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 			InsertBlock(52, earliestValidTime+2, []byte("second")).
 			InsertBlock(100, latestValidTime, []byte("latest"))
 
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 			Slot: slot,
 			Eth1DataVotes: []*zondpb.Eth1Data{
 				{BlockHash: []byte("unknown"), DepositCount: 1},
@@ -1903,7 +1568,7 @@ func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 			InsertBlock(49, earliestValidTime-1, []byte("before_range")).
 			InsertBlock(101, latestValidTime+1, []byte("after_range"))
 
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 			Slot: slot,
 		})
 		require.NoError(t, err)
@@ -1935,7 +1600,7 @@ func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 			InsertBlock(52, earliestValidTime+2, []byte("second")).
 			InsertBlock(101, latestValidTime+1, []byte("after_range"))
 
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 			Slot: slot,
 			Eth1DataVotes: []*zondpb.Eth1Data{
 				{BlockHash: []byte("before_range"), DepositCount: 1},
@@ -1969,7 +1634,7 @@ func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 			InsertBlock(50, earliestValidTime, []byte("earliest")).
 			InsertBlock(100, latestValidTime, []byte("latest"))
 
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 			Slot:          slot,
 			Eth1DataVotes: []*zondpb.Eth1Data{}})
 		require.NoError(t, err)
@@ -1999,7 +1664,7 @@ func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 			InsertBlock(50, earliestValidTime, []byte("earliest")).
 			InsertBlock(100, latestValidTime, []byte("latest"))
 
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 			Slot: slot,
 		})
 		require.NoError(t, err)
@@ -2033,7 +1698,7 @@ func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 			InsertBlock(52, earliestValidTime+2, []byte("second")).
 			InsertBlock(100, latestValidTime, []byte("latest"))
 
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 			Slot: slot,
 			Eth1DataVotes: []*zondpb.Eth1Data{
 				{BlockHash: []byte("first"), DepositCount: 1},
@@ -2069,7 +1734,7 @@ func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 			InsertBlock(52, earliestValidTime+2, []byte("second")).
 			InsertBlock(100, latestValidTime, []byte("latest"))
 
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 			Slot: slot,
 			Eth1DataVotes: []*zondpb.Eth1Data{
 				{BlockHash: []byte("no_new_deposits"), DepositCount: 0},
@@ -2102,7 +1767,7 @@ func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 		t.Skip()
 		p := mockExecution.New().InsertBlock(50, earliestValidTime, []byte("earliest"))
 
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 			Slot: slot,
 			Eth1DataVotes: []*zondpb.Eth1Data{
 				{BlockHash: []byte("earliest"), DepositCount: 1},
@@ -2136,7 +1801,7 @@ func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 			// because of earliest block increment in the algorithm.
 			InsertBlock(50, earliestValidTime+1, []byte("first"))
 
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 			Slot: slot,
 			Eth1DataVotes: []*zondpb.Eth1Data{
 				{BlockHash: []byte("before_range"), DepositCount: 1},
@@ -2175,7 +1840,7 @@ func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 		depositCache, err := depositcache.New()
 		require.NoError(t, err)
 
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 			Slot: slot,
 			Eth1DataVotes: []*zondpb.Eth1Data{
 				{BlockHash: []byte("earliest"), DepositCount: 1},
@@ -2204,10 +1869,10 @@ func TestProposer_Eth1Data_MajorityVote(t *testing.T) {
 }
 
 func TestProposer_FilterAttestation(t *testing.T) {
-	genesis := util.NewBeaconBlock()
+	genesis := util.NewBeaconBlockCapella()
 
 	numValidators := uint64(64)
-	st, privKeys := util.DeterministicGenesisState(t, numValidators)
+	st, privKeys := util.DeterministicGenesisStateCapella(t, numValidators)
 	require.NoError(t, st.SetGenesisValidatorsRoot(params.BeaconConfig().ZeroHash[:]))
 	assert.NoError(t, st.SetSlot(1))
 
@@ -2265,17 +1930,17 @@ func TestProposer_FilterAttestation(t *testing.T) {
 					assert.NoError(t, err)
 					domain, err := signing.Domain(st.Fork(), 0, params.BeaconConfig().DomainBeaconAttester, params.BeaconConfig().ZeroHash[:])
 					require.NoError(t, err)
-					sigs := make([]bls.Signature, len(attestingIndices))
-					var zeroSig [96]byte
-					atts[i].Signature = zeroSig[:]
+					sigs := make([][]byte, len(attestingIndices))
+					var zeroSig [field_params.DilithiumSignatureLength]byte
+					atts[i].Signatures = [][]byte{zeroSig[:]}
 
 					for i, indice := range attestingIndices {
 						hashTreeRoot, err := signing.ComputeSigningRoot(atts[i].Data, domain)
 						require.NoError(t, err)
-						sig := privKeys[indice].Sign(hashTreeRoot[:])
+						sig := privKeys[indice].Sign(hashTreeRoot[:]).Marshal()
 						sigs[i] = sig
 					}
-					atts[i].Signature = bls.AggregateSignatures(sigs).Marshal()
+					atts[i].Signatures = sigs
 				}
 				return atts
 			},
@@ -2316,7 +1981,7 @@ func TestProposer_Deposits_ReturnsEmptyList_IfLatestEth1DataEqGenesisEth1Block(t
 		GenesisEth1Block: height,
 	}
 
-	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Eth1Data: &zondpb.Eth1Data{
 			BlockHash:   bytesutil.PadTo([]byte("0x0"), 32),
 			DepositRoot: make([]byte, 32),
@@ -2324,12 +1989,12 @@ func TestProposer_Deposits_ReturnsEmptyList_IfLatestEth1DataEqGenesisEth1Block(t
 		Eth1DepositIndex: 2,
 	})
 	require.NoError(t, err)
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blk.Block.Slot = beaconState.Slot()
 	blkRoot, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	var mockSig [96]byte
+	var mockSig [field_params.DilithiumSignatureLength]byte
 	var mockCreds [32]byte
 
 	readyDeposits := []*zondpb.DepositContainer{
@@ -2337,7 +2002,7 @@ func TestProposer_Deposits_ReturnsEmptyList_IfLatestEth1DataEqGenesisEth1Block(t
 			Index: 0,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("a"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("a"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -2346,7 +2011,7 @@ func TestProposer_Deposits_ReturnsEmptyList_IfLatestEth1DataEqGenesisEth1Block(t
 			Index: 1,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte("b"), 48),
+					PublicKey:             bytesutil.PadTo([]byte("b"), field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -2359,7 +2024,7 @@ func TestProposer_Deposits_ReturnsEmptyList_IfLatestEth1DataEqGenesisEth1Block(t
 			Index: i,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{byte(i)}, 48),
+					PublicKey:             bytesutil.PadTo([]byte{byte(i)}, field_params.DilithiumPubkeyLength),
 					Signature:             mockSig[:],
 					WithdrawalCredentials: mockCreds[:],
 				}},
@@ -2407,15 +2072,15 @@ func TestProposer_DeleteAttsInPool_Aggregated(t *testing.T) {
 	s := &Server{
 		AttPool: attestations.NewPool(),
 	}
-	priv, err := bls.RandKey()
+	priv, err := dilithium.RandKey()
 	require.NoError(t, err)
 	sig := priv.Sign([]byte("foo")).Marshal()
 	aggregatedAtts := []*zondpb.Attestation{
-		util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b10101}, Signature: sig}),
-		util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b11010}, Signature: sig})}
+		util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b10101}, Signatures: [][]byte{sig, sig}}),
+		util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b11010}, Signatures: [][]byte{sig, sig}})}
 	unaggregatedAtts := []*zondpb.Attestation{
-		util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b10010}, Signature: sig}),
-		util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b10100}, Signature: sig})}
+		util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b10010}, Signatures: [][]byte{sig}}),
+		util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b10100}, Signatures: [][]byte{sig}})}
 
 	require.NoError(t, s.AttPool.SaveAggregatedAttestations(aggregatedAtts))
 	require.NoError(t, s.AttPool.SaveUnaggregatedAttestations(unaggregatedAtts))
@@ -2435,24 +2100,21 @@ func TestProposer_GetSyncAggregate_OK(t *testing.T) {
 		SyncCommitteePool: synccommittee.NewStore(),
 	}
 
+	priv, err := dilithium.RandKey()
+	require.NoError(t, err)
+	sigsLen := 8
+	sigs := make([][]byte, 0, sigsLen)
+	for i := 0; i < sigsLen; i++ {
+		sigs = append(sigs, priv.Sign([]byte(fmt.Sprintf("foo%d", i))).Marshal())
+	}
+
 	r := params.BeaconConfig().ZeroHash
+
 	conts := []*zondpb.SyncCommitteeContribution{
-		{Slot: 1, SubcommitteeIndex: 0, Signature: bls.NewAggregateSignature().Marshal(), AggregationBits: []byte{0b0001}, BlockRoot: r[:]},
-		{Slot: 1, SubcommitteeIndex: 0, Signature: bls.NewAggregateSignature().Marshal(), AggregationBits: []byte{0b1001}, BlockRoot: r[:]},
-		{Slot: 1, SubcommitteeIndex: 0, Signature: bls.NewAggregateSignature().Marshal(), AggregationBits: []byte{0b1110}, BlockRoot: r[:]},
-		{Slot: 1, SubcommitteeIndex: 1, Signature: bls.NewAggregateSignature().Marshal(), AggregationBits: []byte{0b0001}, BlockRoot: r[:]},
-		{Slot: 1, SubcommitteeIndex: 1, Signature: bls.NewAggregateSignature().Marshal(), AggregationBits: []byte{0b1001}, BlockRoot: r[:]},
-		{Slot: 1, SubcommitteeIndex: 1, Signature: bls.NewAggregateSignature().Marshal(), AggregationBits: []byte{0b1110}, BlockRoot: r[:]},
-		{Slot: 1, SubcommitteeIndex: 2, Signature: bls.NewAggregateSignature().Marshal(), AggregationBits: []byte{0b0001}, BlockRoot: r[:]},
-		{Slot: 1, SubcommitteeIndex: 2, Signature: bls.NewAggregateSignature().Marshal(), AggregationBits: []byte{0b1001}, BlockRoot: r[:]},
-		{Slot: 1, SubcommitteeIndex: 2, Signature: bls.NewAggregateSignature().Marshal(), AggregationBits: []byte{0b1110}, BlockRoot: r[:]},
-		{Slot: 1, SubcommitteeIndex: 3, Signature: bls.NewAggregateSignature().Marshal(), AggregationBits: []byte{0b0001}, BlockRoot: r[:]},
-		{Slot: 1, SubcommitteeIndex: 3, Signature: bls.NewAggregateSignature().Marshal(), AggregationBits: []byte{0b1001}, BlockRoot: r[:]},
-		{Slot: 1, SubcommitteeIndex: 3, Signature: bls.NewAggregateSignature().Marshal(), AggregationBits: []byte{0b1110}, BlockRoot: r[:]},
-		{Slot: 2, SubcommitteeIndex: 0, Signature: bls.NewAggregateSignature().Marshal(), AggregationBits: []byte{0b10101010}, BlockRoot: r[:]},
-		{Slot: 2, SubcommitteeIndex: 1, Signature: bls.NewAggregateSignature().Marshal(), AggregationBits: []byte{0b10101010}, BlockRoot: r[:]},
-		{Slot: 2, SubcommitteeIndex: 2, Signature: bls.NewAggregateSignature().Marshal(), AggregationBits: []byte{0b10101010}, BlockRoot: r[:]},
-		{Slot: 2, SubcommitteeIndex: 3, Signature: bls.NewAggregateSignature().Marshal(), AggregationBits: []byte{0b10101010}, BlockRoot: r[:]},
+		{Slot: 1, SubcommitteeIndex: 0, Signatures: [][]byte{sigs[0]}, AggregationBits: []byte{0b0001}, BlockRoot: r[:]},
+		{Slot: 1, SubcommitteeIndex: 0, Signatures: [][]byte{sigs[0], sigs[3]}, AggregationBits: []byte{0b1001}, BlockRoot: r[:]},
+		{Slot: 1, SubcommitteeIndex: 0, Signatures: [][]byte{sigs[1], sigs[2], sigs[3]}, AggregationBits: []byte{0b1110}, BlockRoot: r[:]},
+		{Slot: 2, SubcommitteeIndex: 0, Signatures: [][]byte{sigs[1], sigs[3], sigs[5], sigs[7]}, AggregationBits: []byte{0b10101010}, BlockRoot: r[:]},
 	}
 
 	for _, cont := range conts {
@@ -2461,15 +2123,15 @@ func TestProposer_GetSyncAggregate_OK(t *testing.T) {
 
 	aggregate, err := proposerServer.getSyncAggregate(context.Background(), 1, bytesutil.ToBytes32(conts[0].BlockRoot))
 	require.NoError(t, err)
-	require.DeepEqual(t, bitfield.Bitvector32{0xf, 0xf, 0xf, 0xf}, aggregate.SyncCommitteeBits)
+	require.DeepEqual(t, bitfield.Bitvector16{0xf}, aggregate.SyncCommitteeBits)
 
 	aggregate, err = proposerServer.getSyncAggregate(context.Background(), 2, bytesutil.ToBytes32(conts[0].BlockRoot))
 	require.NoError(t, err)
-	require.DeepEqual(t, bitfield.Bitvector32{0xaa, 0xaa, 0xaa, 0xaa}, aggregate.SyncCommitteeBits)
+	require.DeepEqual(t, bitfield.Bitvector16{0xaa}, aggregate.SyncCommitteeBits)
 
 	aggregate, err = proposerServer.getSyncAggregate(context.Background(), 3, bytesutil.ToBytes32(conts[0].BlockRoot))
 	require.NoError(t, err)
-	require.DeepEqual(t, bitfield.NewBitvector32(), aggregate.SyncCommitteeBits)
+	require.DeepEqual(t, bitfield.NewBitvector16(), aggregate.SyncCommitteeBits)
 }
 
 func TestProposer_PrepareBeaconProposer(t *testing.T) {
@@ -2501,7 +2163,7 @@ func TestProposer_PrepareBeaconProposer(t *testing.T) {
 				request: &zondpb.PrepareBeaconProposerRequest{
 					Recipients: []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
 						{
-							FeeRecipient:   make([]byte, dilithium2.CryptoPublicKeyBytes),
+							FeeRecipient:   make([]byte, field_params.DilithiumPubkeyLength),
 							ValidatorIndex: 1,
 						},
 					},
@@ -2637,7 +2299,7 @@ func TestProposer_GetFeeRecipientByPubKey(t *testing.T) {
 	db := dbutil.SetupDB(t)
 	ctx := context.Background()
 	numDeposits := uint64(64)
-	beaconState, _ := util.DeterministicGenesisState(t, numDeposits)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, numDeposits)
 	bsRoot, err := beaconState.HashTreeRoot(ctx)
 	require.NoError(t, err)
 	proposerServer := &Server{

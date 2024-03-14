@@ -80,13 +80,7 @@ func TestConfigureExecutionSetting(t *testing.T) {
 	app := cli.App{}
 	set := flag.NewFlagSet("test", 0)
 	set.String(flags.SuggestedFeeRecipient.Name, "", "")
-	set.Uint64(flags.TerminalTotalDifficultyOverride.Name, 0, "")
-	set.String(flags.TerminalBlockHashOverride.Name, "", "")
-	set.Uint64(flags.TerminalBlockHashActivationEpochOverride.Name, 0, "")
 
-	require.NoError(t, set.Set(flags.TerminalTotalDifficultyOverride.Name, strconv.Itoa(100)))
-	require.NoError(t, set.Set(flags.TerminalBlockHashOverride.Name, "0xA"))
-	require.NoError(t, set.Set(flags.TerminalBlockHashActivationEpochOverride.Name, strconv.Itoa(200)))
 	require.NoError(t, set.Set(flags.SuggestedFeeRecipient.Name, "0xB"))
 	cliCtx := cli.NewContext(&app, set, nil)
 	err := configureExecutionSetting(cliCtx)
@@ -107,11 +101,6 @@ func TestConfigureExecutionSetting(t *testing.T) {
 	err = configureExecutionSetting(cliCtx)
 	require.NoError(t, err)
 	assert.Equal(t, common.HexToAddress("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"), params.BeaconConfig().DefaultFeeRecipient)
-
-	assert.Equal(t, "100", params.BeaconConfig().TerminalTotalDifficulty)
-	assert.Equal(t, common.HexToHash("0xA"), params.BeaconConfig().TerminalBlockHash)
-	assert.Equal(t, primitives.Epoch(200), params.BeaconConfig().TerminalBlockHashActivationEpoch)
-
 }
 
 func TestConfigureNetwork(t *testing.T) {

@@ -91,8 +91,8 @@ go_binary(
 
 qrysm_image_upload(
     name = "push_oci_image",
-    binary = ":prysmctl",
-    entrypoint = ["/prysmctl"],
+    binary = ":qrysmctl",
+    entrypoint = ["/qrysmctl"],
     repository = "gcr.io/prylabs-dev/prysm/prysmctl",
     symlinks = {
         # Backwards compatiability for images that depended on the old filepath.

@@ -3,7 +3,7 @@ package cache
 import (
 	"testing"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -47,12 +47,12 @@ func TestSubnetIDsCache_PersistentCommitteeRoundtrip(t *testing.T) {
 	c := newSubnetIDs()
 
 	for i := 0; i < 20; i++ {
-		pubkey := [dilithium2.CryptoPublicKeyBytes]byte{byte(i)}
+		pubkey := [field_params.DilithiumPubkeyLength]byte{byte(i)}
 		c.AddPersistentCommittee(pubkey[:], []uint64{uint64(i)}, 0)
 	}
 
 	for i := uint64(0); i < 20; i++ {
-		pubkey := [dilithium2.CryptoPublicKeyBytes]byte{byte(i)}
+		pubkey := [field_params.DilithiumPubkeyLength]byte{byte(i)}
 
 		idxs, ok, _ := c.GetPersistentSubnets(pubkey[:])
 		if !ok {

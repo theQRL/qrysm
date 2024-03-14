@@ -7,7 +7,6 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	_ "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // SetLatestExecutionPayloadHeader for the beacon state.
@@ -15,19 +14,7 @@ func (b *BeaconState) SetLatestExecutionPayloadHeader(val interfaces.ExecutionDa
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
-	if b.version < version.Bellatrix {
-		return errNotSupported("SetLatestExecutionPayloadHeader", b.version)
-	}
-
 	switch header := val.Proto().(type) {
-	case *enginev1.ExecutionPayload:
-		latest, err := consensusblocks.PayloadToHeader(val)
-		if err != nil {
-			return errors.Wrap(err, "could not convert payload to header")
-		}
-		b.latestExecutionPayloadHeader = latest
-		b.markFieldAsDirty(types.LatestExecutionPayloadHeader)
-		return nil
 	case *enginev1.ExecutionPayloadCapella:
 		latest, err := consensusblocks.PayloadToHeaderCapella(val)
 		if err != nil {
@@ -35,10 +22,6 @@ func (b *BeaconState) SetLatestExecutionPayloadHeader(val interfaces.ExecutionDa
 		}
 		b.latestExecutionPayloadHeaderCapella = latest
 		b.markFieldAsDirty(types.LatestExecutionPayloadHeaderCapella)
-		return nil
-	case *enginev1.ExecutionPayloadHeader:
-		b.latestExecutionPayloadHeader = header
-		b.markFieldAsDirty(types.LatestExecutionPayloadHeader)
 		return nil
 	case *enginev1.ExecutionPayloadHeaderCapella:
 		b.latestExecutionPayloadHeaderCapella = header

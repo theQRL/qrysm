@@ -2,7 +2,6 @@ package blocks
 
 import (
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
@@ -38,7 +37,7 @@ var (
 type BeaconBlockBody struct {
 	version                     int
 	isBlinded                   bool
-	randaoReveal                [dilithium2.CryptoBytes]byte
+	randaoReveal                [field_params.DilithiumSignatureLength]byte
 	eth1Data                    *zond.Eth1Data
 	graffiti                    [field_params.RootLength]byte
 	proposerSlashings           []*zond.ProposerSlashing
@@ -66,5 +65,5 @@ type BeaconBlock struct {
 type SignedBeaconBlock struct {
 	version   int
 	block     *BeaconBlock
-	signature [dilithium2.CryptoBytes]byte
+	signature [field_params.DilithiumSignatureLength]byte
 }

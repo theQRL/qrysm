@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
+	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/v4/beacon-chain/db"
+	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	blocktest "github.com/theQRL/qrysm/v4/consensus-types/blocks/testing"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-
-	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -143,7 +143,7 @@ func goodBlockRoot(root [32]byte) func(ctx context.Context) ([32]byte, error) {
 }
 
 func setupTestBlock(slot primitives.Slot) (interfaces.ReadOnlySignedBeaconBlock, error) {
-	bRaw := util.NewBeaconBlock()
+	bRaw := util.NewBeaconBlockCapella()
 	b, err := blocks.NewSignedBeaconBlock(bRaw)
 	if err != nil {
 		return nil, err
@@ -173,7 +173,7 @@ func TestReload(t *testing.T) {
 		err      error
 		expected *Status
 	}{
-		/*{
+		{
 			name: "origin not found, implying genesis sync ",
 			db: &mockBackfillDB{
 				genesisBlockRoot: goodBlockRoot(params.BeaconConfig().ZeroHash),
@@ -316,7 +316,7 @@ func TestReload(t *testing.T) {
 				backfillBlockRoot: goodBlockRoot(backfillRoot),
 			},
 			err: derp,
-		},*/
+		},
 		{
 			name: "complete happy path",
 			db: &mockBackfillDB{

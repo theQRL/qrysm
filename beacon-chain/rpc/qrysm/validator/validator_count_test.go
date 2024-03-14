@@ -12,23 +12,21 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/lookup"
-	http2 "github.com/theQRL/qrysm/v4/network/http"
-
 	"github.com/gorilla/mux"
 	chainMock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/lookup"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/testutil"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	http2 "github.com/theQRL/qrysm/v4/network/http"
 	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
 func TestGetValidatorCountInvalidRequest(t *testing.T) {
-	st, _ := util.DeterministicGenesisState(t, 10)
+	st, _ := util.DeterministicGenesisStateCapella(t, 10)
 	stateIdCheckerStateFunc := func(_ context.Context, stateId []byte) (state.BeaconState, error) {
 		stateIdString := strings.ToLower(string(stateId))
 		switch stateIdString {
@@ -111,7 +109,7 @@ func TestGetValidatorCountInvalidRequest(t *testing.T) {
 }
 
 func TestGetValidatorCount(t *testing.T) {
-	st, _ := util.DeterministicGenesisState(t, 10)
+	st, _ := util.DeterministicGenesisStateCapella(t, 10)
 	farFutureEpoch := params.BeaconConfig().FarFutureEpoch
 	validators := []*zond.Validator{
 		// Pending initialized.

@@ -127,11 +127,11 @@ func (c *grpcValidatorClient) WaitForChainStart(ctx context.Context, in *empty.E
 func (c *grpcValidatorClient) AssignValidatorToSubnet(ctx context.Context, in *zondpb.AssignValidatorToSubnetRequest) (*empty.Empty, error) {
 	return c.beaconNodeValidatorClient.AssignValidatorToSubnet(ctx, in)
 }
-func (c *grpcValidatorClient) AggregatedSigAndAggregationBits(
+func (c *grpcValidatorClient) SignaturesAndAggregationBits(
 	ctx context.Context,
-	in *zondpb.AggregatedSigAndAggregationBitsRequest,
-) (*zondpb.AggregatedSigAndAggregationBitsResponse, error) {
-	return c.beaconNodeValidatorClient.AggregatedSigAndAggregationBits(ctx, in)
+	in *zondpb.SignaturesAndAggregationBitsRequest,
+) (*zondpb.SignaturesAndAggregationBitsResponse, error) {
+	return c.beaconNodeValidatorClient.SignaturesAndAggregationBits(ctx, in)
 }
 
 func NewGrpcValidatorClient(cc grpc.ClientConnInterface) iface.ValidatorClient {

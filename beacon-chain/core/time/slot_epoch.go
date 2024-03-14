@@ -4,7 +4,6 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
@@ -46,39 +45,6 @@ func PrevEpoch(state state.ReadOnlyBeaconState) primitives.Epoch {
 // the slot number stored in beacon state.
 func NextEpoch(state state.ReadOnlyBeaconState) primitives.Epoch {
 	return slots.ToEpoch(state.Slot()) + 1
-}
-
-// HigherEqualThanAltairVersionAndEpoch returns if the input state `s` has a higher version number than Altair state and input epoch `e` is higher equal than fork epoch.
-func HigherEqualThanAltairVersionAndEpoch(s state.BeaconState, e primitives.Epoch) bool {
-	return s.Version() >= version.Altair && e >= params.BeaconConfig().AltairForkEpoch
-}
-
-// CanUpgradeToAltair returns true if the input `slot` can upgrade to Altair.
-// Spec code:
-// If state.slot % SLOTS_PER_EPOCH == 0 and compute_epoch_at_slot(state.slot) == ALTAIR_FORK_EPOCH
-func CanUpgradeToAltair(slot primitives.Slot) bool {
-	epochStart := slots.IsEpochStart(slot)
-	altairEpoch := slots.ToEpoch(slot) == params.BeaconConfig().AltairForkEpoch
-	return epochStart && altairEpoch
-}
-
-// CanUpgradeToBellatrix returns true if the input `slot` can upgrade to Bellatrix fork.
-//
-// Spec code:
-// If state.slot % SLOTS_PER_EPOCH == 0 and compute_epoch_at_slot(state.slot) == BELLATRIX_FORK_EPOCH
-func CanUpgradeToBellatrix(slot primitives.Slot) bool {
-	epochStart := slots.IsEpochStart(slot)
-	bellatrixEpoch := slots.ToEpoch(slot) == params.BeaconConfig().BellatrixForkEpoch
-	return epochStart && bellatrixEpoch
-}
-
-// CanUpgradeToCapella returns true if the input `slot` can upgrade to Capella.
-// Spec code:
-// If state.slot % SLOTS_PER_EPOCH == 0 and compute_epoch_at_slot(state.slot) == CAPELLA_FORK_EPOCH
-func CanUpgradeToCapella(slot primitives.Slot) bool {
-	epochStart := slots.IsEpochStart(slot)
-	capellaEpoch := slots.ToEpoch(slot) == params.BeaconConfig().CapellaForkEpoch
-	return epochStart && capellaEpoch
 }
 
 // CanProcessEpoch checks the eligibility to process epoch.

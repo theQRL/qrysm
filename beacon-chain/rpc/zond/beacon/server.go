@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/db"
 	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/blstoexec"
+	"github.com/theQRL/qrysm/v4/beacon-chain/operations/dilithiumtoexec"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/slashings"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/voluntaryexits"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
@@ -45,7 +45,7 @@ type Server struct {
 	CanonicalHistory              *stategen.CanonicalHistory
 	ExecutionPayloadReconstructor execution.ExecutionPayloadReconstructor
 	FinalizationFetcher           blockchain.FinalizationFetcher
-	DilithiumChangesPool          blstoexec.PoolManager
+	DilithiumChangesPool          dilithiumtoexec.PoolManager
 	ForkchoiceFetcher             blockchain.ForkchoiceFetcher
 	CoreService                   *core.Service
 }

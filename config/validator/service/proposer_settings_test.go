@@ -3,9 +3,9 @@ package validator_service_config
 import (
 	"testing"
 
-	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/validator"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
@@ -17,7 +17,7 @@ func Test_Proposer_Setting_Cloning(t *testing.T) {
 	key1, err := hexutil.Decode(key1hex)
 	require.NoError(t, err)
 	settings := &ProposerSettings{
-		ProposeConfig: map[[dilithium.CryptoPublicKeyBytes]byte]*ProposerOption{
+		ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*ProposerOption{
 			bytesutil.ToBytes2592(key1): {
 				FeeRecipientConfig: &FeeRecipientConfig{
 					FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
@@ -104,7 +104,7 @@ func TestProposerSettings_ShouldBeSaved(t *testing.T) {
 	key1, err := hexutil.Decode(key1hex)
 	require.NoError(t, err)
 	type fields struct {
-		ProposeConfig map[[dilithium.CryptoPublicKeyBytes]byte]*ProposerOption
+		ProposeConfig map[[field_params.DilithiumPubkeyLength]byte]*ProposerOption
 		DefaultConfig *ProposerOption
 	}
 	tests := []struct {
@@ -115,7 +115,7 @@ func TestProposerSettings_ShouldBeSaved(t *testing.T) {
 		{
 			name: "Should be saved, proposeconfig populated and no default config",
 			fields: fields{
-				ProposeConfig: map[[dilithium.CryptoPublicKeyBytes]byte]*ProposerOption{
+				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*ProposerOption{
 					bytesutil.ToBytes2592(key1): {
 						FeeRecipientConfig: &FeeRecipientConfig{
 							FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
@@ -151,7 +151,7 @@ func TestProposerSettings_ShouldBeSaved(t *testing.T) {
 		{
 			name: "Should be saved, all populated",
 			fields: fields{
-				ProposeConfig: map[[dilithium.CryptoPublicKeyBytes]byte]*ProposerOption{
+				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*ProposerOption{
 					bytesutil.ToBytes2592(key1): {
 						FeeRecipientConfig: &FeeRecipientConfig{
 							FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),

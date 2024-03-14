@@ -20,7 +20,7 @@ import (
 )
 
 // ProcessAttestationsNoVerifySignature applies processing operations to a block's inner attestation
-// records. The only difference would be that the attestation signature would not be verified.
+// records. The only difference would be that the attestation signatures would not be verified.
 func ProcessAttestationsNoVerifySignature(
 	ctx context.Context,
 	beaconState state.BeaconState,
@@ -54,7 +54,7 @@ func ProcessAttestationNoVerifySignature(
 	ctx, span := trace.StartSpan(ctx, "altair.ProcessAttestationNoVerifySignature")
 	defer span.End()
 
-	if err := blocks.VerifyAttestationNoVerifySignature(ctx, beaconState, att); err != nil {
+	if err := blocks.VerifyAttestationNoVerifySignatures(ctx, beaconState, att); err != nil {
 		return nil, err
 	}
 

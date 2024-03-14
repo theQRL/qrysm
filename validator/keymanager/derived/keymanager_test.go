@@ -100,11 +100,11 @@ func TestDerivedKeymanager_FetchValidatingPublicKeys(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, numAccounts, len(publicKeys))
 
-	wantedPubKeys := make([][dilithiumlib.CryptoPublicKeyBytes]byte, numAccounts)
+	wantedPubKeys := make([][field_params.DilithiumPubkeyLength]byte, numAccounts)
 	for i := 0; i < numAccounts; i++ {
 		privKey, err := util.PrivateKeyFromSeedAndPath(derivedSeed, fmt.Sprintf(ValidatingKeyDerivationPathTemplate, i))
 		require.NoError(t, err)
-		var pubKey [dilithiumlib.CryptoPublicKeyBytes]byte
+		var pubKey [field_params.DilithiumPubkeyLength]byte
 		copy(pubKey[:], privKey.PublicKey().Marshal())
 		wantedPubKeys[i] = pubKey
 	}

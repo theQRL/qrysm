@@ -4,8 +4,8 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"github.com/theQRL/go-qrllib/common"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/contracts/deposit"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
@@ -16,15 +16,15 @@ import (
 )
 
 func TestDepositInput_GeneratesPb(t *testing.T) {
-	var seed [common.SeedSize]uint8
+	var seed [field_params.DilithiumSeedLength]uint8
 	_, err := rand.Read(seed[:])
 	require.NoError(t, err)
-	k1, err := dilithium.SecretKeyFromBytes(seed[:])
+	k1, err := dilithium.SecretKeyFromSeed(seed[:])
 	require.NoError(t, err)
 
 	_, err = rand.Read(seed[:])
 	require.NoError(t, err)
-	k2, err := dilithium.SecretKeyFromBytes(seed[:])
+	k2, err := dilithium.SecretKeyFromSeed(seed[:])
 	require.NoError(t, err)
 
 	result, _, err := deposit.DepositInput(k1, k2, 0, nil)

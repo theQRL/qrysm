@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 )
@@ -24,36 +22,9 @@ func TestMappingHasNoDuplicates(t *testing.T) {
 
 func TestGossipTopicMappings_CorrectBlockType(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
-	bCfg := params.BeaconConfig().Copy()
-	altairForkEpoch := primitives.Epoch(100)
-	BellatrixForkEpoch := primitives.Epoch(200)
-	CapellaForkEpoch := primitives.Epoch(300)
-
-	bCfg.AltairForkEpoch = altairForkEpoch
-	bCfg.BellatrixForkEpoch = BellatrixForkEpoch
-	bCfg.CapellaForkEpoch = CapellaForkEpoch
-	bCfg.ForkVersionSchedule[bytesutil.ToBytes4(bCfg.AltairForkVersion)] = primitives.Epoch(100)
-	bCfg.ForkVersionSchedule[bytesutil.ToBytes4(bCfg.BellatrixForkVersion)] = primitives.Epoch(200)
-	bCfg.ForkVersionSchedule[bytesutil.ToBytes4(bCfg.CapellaForkVersion)] = primitives.Epoch(300)
-	params.OverrideBeaconConfig(bCfg)
-
-	// Phase 0
-	pMessage := GossipTopicMappings(BlockSubnetTopicFormat, 0)
-	_, ok := pMessage.(*zondpb.SignedBeaconBlock)
-	assert.Equal(t, true, ok)
-
-	// Altair Fork
-	pMessage = GossipTopicMappings(BlockSubnetTopicFormat, altairForkEpoch)
-	_, ok = pMessage.(*zondpb.SignedBeaconBlockAltair)
-	assert.Equal(t, true, ok)
-
-	// Bellatrix Fork
-	pMessage = GossipTopicMappings(BlockSubnetTopicFormat, BellatrixForkEpoch)
-	_, ok = pMessage.(*zondpb.SignedBeaconBlockBellatrix)
-	assert.Equal(t, true, ok)
 
 	// Capella Fork
-	pMessage = GossipTopicMappings(BlockSubnetTopicFormat, CapellaForkEpoch)
-	_, ok = pMessage.(*zondpb.SignedBeaconBlockCapella)
+	pMessage := GossipTopicMappings(BlockSubnetTopicFormat)
+	_, ok := pMessage.(*zondpb.SignedBeaconBlockCapella)
 	assert.Equal(t, true, ok)
 }

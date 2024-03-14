@@ -20,7 +20,7 @@ import (
 func TestService_VerifyWeakSubjectivityRoot(t *testing.T) {
 	beaconDB := testDB.SetupDB(t)
 
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	b.Block.Slot = 1792480
 	util.SaveBlock(t, context.Background(), beaconDB, b)
 	r, err := b.Block.HashTreeRoot()

@@ -11,7 +11,7 @@ import (
 )
 
 func TestDomain_OK(t *testing.T) {
-	state := &zond.BeaconState{
+	state := &zond.BeaconStateCapella{
 		Fork: &zond.Fork{
 			Epoch:           3,
 			PreviousVersion: []byte{0, 0, 0, 2},

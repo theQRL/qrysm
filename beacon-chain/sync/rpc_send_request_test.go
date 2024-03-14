@@ -26,7 +26,7 @@ import (
 func TestSendRequest_SendBeaconBlocksByRangeRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	pcl := fmt.Sprintf("%s/ssz_snappy", p2p.RPCBlocksByRangeTopicV1)
+	pcl := fmt.Sprintf("%s/ssz_snappy", p2p.RPCBlocksByRangeTopicV2)
 
 	t.Run("stream error", func(t *testing.T) {
 		p1 := p2ptest.NewTestP2P(t)
@@ -39,13 +39,13 @@ func TestSendRequest_SendBeaconBlocksByRangeRequest(t *testing.T) {
 		assert.ErrorContains(t, "protocols not supported", err)
 	})
 
-	knownBlocks := make([]*zondpb.SignedBeaconBlock, 0)
-	genesisBlk := util.NewBeaconBlock()
+	knownBlocks := make([]*zondpb.SignedBeaconBlockCapella, 0)
+	genesisBlk := util.NewBeaconBlockCapella()
 	genesisBlkRoot, err := genesisBlk.Block.HashTreeRoot()
 	require.NoError(t, err)
 	parentRoot := genesisBlkRoot
 	for i := 0; i < 255; i++ {
-		blk := util.NewBeaconBlock()
+		blk := util.NewBeaconBlockCapella()
 		blk.Block.Slot = primitives.Slot(i)
 		blk.Block.ParentRoot = parentRoot[:]
 		knownBlocks = append(knownBlocks, blk)
@@ -298,12 +298,12 @@ func TestSendRequest_SendBeaconBlocksByRangeRequest(t *testing.T) {
 func TestSendRequest_SendBeaconBlocksByRootRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	pcl := fmt.Sprintf("%s/ssz_snappy", p2p.RPCBlocksByRootTopicV1)
+	pcl := fmt.Sprintf("%s/ssz_snappy", p2p.RPCBlocksByRootTopicV2)
 
-	knownBlocks := make(map[[32]byte]*zondpb.SignedBeaconBlock)
+	knownBlocks := make(map[[32]byte]*zondpb.SignedBeaconBlockCapella)
 	knownRoots := make([][32]byte, 0)
 	for i := 0; i < 5; i++ {
-		blk := util.NewBeaconBlock()
+		blk := util.NewBeaconBlockCapella()
 		blkRoot, err := blk.Block.HashTreeRoot()
 		require.NoError(t, err)
 		knownRoots = append(knownRoots, blkRoot)
@@ -334,9 +334,9 @@ func TestSendRequest_SendBeaconBlocksByRootRequest(t *testing.T) {
 			}
 			for _, root := range *req {
 				if blk, ok := knownBlocks[root]; ok {
+					wsb, err := blocks.NewSignedBeaconBlock(blk)
+					require.NoError(t, err)
 					if processor != nil {
-						wsb, err := blocks.NewSignedBeaconBlock(blk)
-						require.NoError(t, err)
 						if processorErr := processor(wsb); processorErr != nil {
 							if errors.Is(processorErr, io.EOF) {
 								// Close stream, w/o any errors written.
@@ -350,10 +350,11 @@ func TestSendRequest_SendBeaconBlocksByRootRequest(t *testing.T) {
 							return
 						}
 					}
-					_, err := stream.Write([]byte{0x00})
-					assert.NoError(t, err, "Could not write to stream")
-					_, err = p2pProvider.Encoding().EncodeWithMaxLength(stream, blk)
-					assert.NoError(t, err, "Could not send response back")
+
+					err = WriteBlockChunk(stream, startup.NewClock(time.Now(), [32]byte{}), p2pProvider.Encoding(), wsb)
+					if err != nil && err.Error() != network.ErrReset.Error() {
+						require.NoError(t, err)
+					}
 				}
 			}
 		}

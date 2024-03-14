@@ -1,9 +1,7 @@
 package payloadattribute
 
 import (
-	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // Version returns the version of the payload attribute.
@@ -32,9 +30,6 @@ func (a *data) Withdrawals() ([]*enginev1.Withdrawal, error) {
 	if a == nil {
 		return nil, errNilPayloadAttribute
 	}
-	if a.version < version.Capella {
-		return nil, consensus_types.ErrNotSupported("Withdrawals", a.version)
-	}
 	return a.withdrawals, nil
 }
 
@@ -42,9 +37,6 @@ func (a *data) Withdrawals() ([]*enginev1.Withdrawal, error) {
 func (a *data) PbV2() (*enginev1.PayloadAttributesV2, error) {
 	if a == nil {
 		return nil, errNilPayloadAttribute
-	}
-	if a.version != version.Capella {
-		return nil, consensus_types.ErrNotSupported("PbV2", a.version)
 	}
 	if a.timeStamp == 0 && len(a.prevRandao) == 0 {
 		return nil, nil

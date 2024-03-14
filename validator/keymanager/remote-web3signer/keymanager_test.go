@@ -33,8 +33,8 @@ func (mc *MockClient) Sign(_ context.Context, _ string, _ internal.SignRequestJs
 	}
 	return dilithium.SignatureFromBytes(decoded)
 }
-func (mc *MockClient) GetPublicKeys(_ context.Context, _ string) ([][dilithiumlib.CryptoPublicKeyBytes]byte, error) {
-	var keys [][dilithiumlib.CryptoPublicKeyBytes]byte
+func (mc *MockClient) GetPublicKeys(_ context.Context, _ string) ([][field_params.DilithiumPubkeyLength]byte, error) {
+	var keys [][field_params.DilithiumPubkeyLength]byte
 	for _, pk := range mc.PublicKeys {
 		decoded, err := hex.DecodeString(strings.TrimPrefix(pk, "0x"))
 		if err != nil {
@@ -192,7 +192,7 @@ func TestKeymanager_FetchValidatingPublicKeys_HappyPath_WithKeyList(t *testing.T
 	if err != nil {
 		fmt.Printf("error: %v", err)
 	}
-	keys := [][dilithiumlib.CryptoPublicKeyBytes]byte{
+	keys := [][field_params.DilithiumPubkeyLength]byte{
 		bytesutil.ToBytes2592(decodedKey),
 	}
 	root, err := hexutil.Decode("0x270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69")
@@ -226,7 +226,7 @@ func TestKeymanager_FetchValidatingPublicKeys_HappyPath_WithExternalURL(t *testi
 	if err != nil {
 		fmt.Printf("error: %v", err)
 	}
-	keys := [][dilithiumlib.CryptoPublicKeyBytes]byte{
+	keys := [][field_params.DilithiumPubkeyLength]byte{
 		bytesutil.ToBytes2592(decodedKey),
 	}
 	root, err := hexutil.Decode("0x270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69")
@@ -294,7 +294,7 @@ func TestKeymanager_AddPublicKeys(t *testing.T) {
 	}
 	pubkey, err := hexutil.Decode("0xa2b5aaad9c6efefe7bb9b1243a043404f3362937cfb6b31833929833173f476630ea2cfeb0d9ddf15f97ca8685948820")
 	require.NoError(t, err)
-	publicKeys := [][dilithiumlib.CryptoPublicKeyBytes]byte{
+	publicKeys := [][field_params.DilithiumPubkeyLength]byte{
 		bytesutil.ToBytes2592(pubkey),
 	}
 	statuses, err := km.AddPublicKeys(ctx, publicKeys)
@@ -325,7 +325,7 @@ func TestKeymanager_DeletePublicKeys(t *testing.T) {
 	}
 	pubkey, err := hexutil.Decode("0xa2b5aaad9c6efefe7bb9b1243a043404f3362937cfb6b31833929833173f476630ea2cfeb0d9ddf15f97ca8685948820")
 	require.NoError(t, err)
-	publicKeys := [][dilithiumlib.CryptoPublicKeyBytes]byte{
+	publicKeys := [][field_params.DilithiumPubkeyLength]byte{
 		bytesutil.ToBytes2592(pubkey),
 	}
 	statuses, err := km.AddPublicKeys(ctx, publicKeys)

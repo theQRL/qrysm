@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/theQRL/go-bitfield"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
@@ -17,9 +16,10 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation"
@@ -32,7 +32,7 @@ import (
 func TestSubmitAggregateAndProof_Syncing(t *testing.T) {
 	ctx := context.Background()
 
-	s, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
+	s, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{})
 	require.NoError(t, err)
 
 	aggregatorServer := &Server{
@@ -49,18 +49,19 @@ func TestSubmitAggregateAndProof_Syncing(t *testing.T) {
 func TestSubmitAggregateAndProof_CantFindValidatorIndex(t *testing.T) {
 	ctx := context.Background()
 
-	s, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	s, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 	})
 	require.NoError(t, err)
 
 	server := &Server{
-		HeadFetcher: &mock.ChainService{State: s},
-		SyncChecker: &mockSync.Sync{IsSyncing: false},
-		TimeFetcher: &mock.ChainService{Genesis: time.Now()},
+		HeadFetcher:           &mock.ChainService{State: s},
+		SyncChecker:           &mockSync.Sync{IsSyncing: false},
+		TimeFetcher:           &mock.ChainService{Genesis: time.Now()},
+		OptimisticModeFetcher: &mock.ChainService{Optimistic: false},
 	}
 
-	priv, err := bls.RandKey()
+	priv, err := dilithium.RandKey()
 	require.NoError(t, err)
 	sig := priv.Sign([]byte{'A'})
 	req := &zondpb.AggregateSelectionRequest{CommitteeIndex: 1, SlotSignature: sig.Marshal(), PublicKey: pubKey(3)}
@@ -72,7 +73,7 @@ func TestSubmitAggregateAndProof_CantFindValidatorIndex(t *testing.T) {
 func TestSubmitAggregateAndProof_IsAggregatorAndNoAtts(t *testing.T) {
 	ctx := context.Background()
 
-	s, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	s, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 		Validators: []*zondpb.Validator{
 			{PublicKey: pubKey(0)},
@@ -82,13 +83,14 @@ func TestSubmitAggregateAndProof_IsAggregatorAndNoAtts(t *testing.T) {
 	require.NoError(t, err)
 
 	server := &Server{
-		HeadFetcher: &mock.ChainService{State: s},
-		SyncChecker: &mockSync.Sync{IsSyncing: false},
-		AttPool:     attestations.NewPool(),
-		TimeFetcher: &mock.ChainService{Genesis: time.Now()},
+		HeadFetcher:           &mock.ChainService{State: s},
+		SyncChecker:           &mockSync.Sync{IsSyncing: false},
+		AttPool:               attestations.NewPool(),
+		TimeFetcher:           &mock.ChainService{Genesis: time.Now()},
+		OptimisticModeFetcher: &mock.ChainService{Optimistic: false},
 	}
 
-	priv, err := bls.RandKey()
+	priv, err := dilithium.RandKey()
 	require.NoError(t, err)
 	sig := priv.Sign([]byte{'A'})
 	v, err := s.ValidatorAtIndex(1)
@@ -108,21 +110,22 @@ func TestSubmitAggregateAndProof_UnaggregateOk(t *testing.T) {
 
 	ctx := context.Background()
 
-	beaconState, privKeys := util.DeterministicGenesisState(t, 32)
+	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 32)
 	att0, err := generateUnaggregatedAtt(beaconState, 0, privKeys)
 	require.NoError(t, err)
 	err = beaconState.SetSlot(beaconState.Slot() + params.BeaconConfig().MinAttestationInclusionDelay)
 	require.NoError(t, err)
 
 	aggregatorServer := &Server{
-		HeadFetcher: &mock.ChainService{State: beaconState},
-		SyncChecker: &mockSync.Sync{IsSyncing: false},
-		AttPool:     attestations.NewPool(),
-		P2P:         &mockp2p.MockBroadcaster{},
-		TimeFetcher: &mock.ChainService{Genesis: time.Now()},
+		HeadFetcher:           &mock.ChainService{State: beaconState},
+		SyncChecker:           &mockSync.Sync{IsSyncing: false},
+		AttPool:               attestations.NewPool(),
+		P2P:                   &mockp2p.MockBroadcaster{},
+		TimeFetcher:           &mock.ChainService{Genesis: time.Now()},
+		OptimisticModeFetcher: &mock.ChainService{Optimistic: false},
 	}
 
-	priv, err := bls.RandKey()
+	priv, err := dilithium.RandKey()
 	require.NoError(t, err)
 	sig := priv.Sign([]byte{'B'})
 	v, err := beaconState.ValidatorAtIndex(1)
@@ -143,7 +146,7 @@ func TestSubmitAggregateAndProof_AggregateOk(t *testing.T) {
 
 	ctx := context.Background()
 
-	beaconState, privKeys := util.DeterministicGenesisState(t, 32)
+	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 32)
 	att0, err := generateAtt(beaconState, 0, privKeys)
 	require.NoError(t, err)
 	att1, err := generateAtt(beaconState, 2, privKeys)
@@ -153,14 +156,15 @@ func TestSubmitAggregateAndProof_AggregateOk(t *testing.T) {
 	require.NoError(t, err)
 
 	aggregatorServer := &Server{
-		HeadFetcher: &mock.ChainService{State: beaconState},
-		SyncChecker: &mockSync.Sync{IsSyncing: false},
-		AttPool:     attestations.NewPool(),
-		P2P:         &mockp2p.MockBroadcaster{},
-		TimeFetcher: &mock.ChainService{Genesis: time.Now()},
+		HeadFetcher:           &mock.ChainService{State: beaconState},
+		SyncChecker:           &mockSync.Sync{IsSyncing: false},
+		AttPool:               attestations.NewPool(),
+		P2P:                   &mockp2p.MockBroadcaster{},
+		TimeFetcher:           &mock.ChainService{Genesis: time.Now()},
+		OptimisticModeFetcher: &mock.ChainService{Optimistic: false},
 	}
 
-	priv, err := bls.RandKey()
+	priv, err := dilithium.RandKey()
 	require.NoError(t, err)
 	sig := priv.Sign([]byte{'B'})
 	v, err := beaconState.ValidatorAtIndex(1)
@@ -189,18 +193,19 @@ func TestSubmitAggregateAndProof_AggregateNotOk(t *testing.T) {
 
 	ctx := context.Background()
 
-	beaconState, _ := util.DeterministicGenesisState(t, 32)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	require.NoError(t, beaconState.SetSlot(beaconState.Slot()+params.BeaconConfig().MinAttestationInclusionDelay))
 
 	aggregatorServer := &Server{
-		HeadFetcher: &mock.ChainService{State: beaconState},
-		SyncChecker: &mockSync.Sync{IsSyncing: false},
-		AttPool:     attestations.NewPool(),
-		P2P:         &mockp2p.MockBroadcaster{},
-		TimeFetcher: &mock.ChainService{Genesis: time.Now()},
+		HeadFetcher:           &mock.ChainService{State: beaconState},
+		SyncChecker:           &mockSync.Sync{IsSyncing: false},
+		AttPool:               attestations.NewPool(),
+		P2P:                   &mockp2p.MockBroadcaster{},
+		TimeFetcher:           &mock.ChainService{Genesis: time.Now()},
+		OptimisticModeFetcher: &mock.ChainService{Optimistic: false},
 	}
 
-	priv, err := bls.RandKey()
+	priv, err := dilithium.RandKey()
 	require.NoError(t, err)
 	sig := priv.Sign([]byte{'B'})
 	v, err := beaconState.ValidatorAtIndex(1)
@@ -215,7 +220,7 @@ func TestSubmitAggregateAndProof_AggregateNotOk(t *testing.T) {
 	assert.Equal(t, 0, len(aggregatedAtts), "Wanted aggregated attestation")
 }
 
-func generateAtt(state state.ReadOnlyBeaconState, index uint64, privKeys []bls.SecretKey) (*zondpb.Attestation, error) {
+func generateAtt(state state.ReadOnlyBeaconState, index uint64, privKeys []dilithium.DilithiumKey) (*zondpb.Attestation, error) {
 	aggBits := bitfield.NewBitlist(4)
 	aggBits.SetBitAt(index, true)
 	aggBits.SetBitAt(index+1, true)
@@ -232,28 +237,24 @@ func generateAtt(state state.ReadOnlyBeaconState, index uint64, privKeys []bls.S
 		return nil, err
 	}
 
-	sigs := make([]bls.Signature, len(attestingIndices))
-	var zeroSig [96]byte
-	att.Signature = zeroSig[:]
+	sigs := make([][]byte, len(attestingIndices))
+	var zeroSig [4595]byte
+	att.Signatures = [][]byte{zeroSig[:]}
 
 	for i, indice := range attestingIndices {
 		sb, err := signing.ComputeDomainAndSign(state, 0, att.Data, params.BeaconConfig().DomainBeaconAttester, privKeys[indice])
 		if err != nil {
 			return nil, err
 		}
-		sig, err := bls.SignatureFromBytes(sb)
-		if err != nil {
-			return nil, err
-		}
-		sigs[i] = sig
+		sigs[i] = sb
 	}
 
-	att.Signature = bls.AggregateSignatures(sigs).Marshal()
+	att.Signatures = sigs
 
 	return att, nil
 }
 
-func generateUnaggregatedAtt(state state.ReadOnlyBeaconState, index uint64, privKeys []bls.SecretKey) (*zondpb.Attestation, error) {
+func generateUnaggregatedAtt(state state.ReadOnlyBeaconState, index uint64, privKeys []dilithium.DilithiumKey) (*zondpb.Attestation, error) {
 	aggBits := bitfield.NewBitlist(4)
 	aggBits.SetBitAt(index, true)
 	att := util.HydrateAttestation(&zondpb.Attestation{
@@ -275,20 +276,20 @@ func generateUnaggregatedAtt(state state.ReadOnlyBeaconState, index uint64, priv
 		return nil, err
 	}
 
-	sigs := make([]bls.Signature, len(attestingIndices))
-	var zeroSig [96]byte
-	att.Signature = zeroSig[:]
+	sigs := make([][]byte, len(attestingIndices))
+	var zeroSig [4595]byte
+	att.Signatures = [][]byte{zeroSig[:]}
 
 	for i, indice := range attestingIndices {
 		hashTreeRoot, err := signing.ComputeSigningRoot(att.Data, domain)
 		if err != nil {
 			return nil, err
 		}
-		sig := privKeys[indice].Sign(hashTreeRoot[:])
+		sig := privKeys[indice].Sign(hashTreeRoot[:]).Marshal()
 		sigs[i] = sig
 	}
 
-	att.Signature = bls.AggregateSignatures(sigs).Marshal()
+	att.Signatures = sigs
 
 	return att, nil
 }
@@ -304,7 +305,7 @@ func TestSubmitAggregateAndProof_PreferOwnAttestation(t *testing.T) {
 	// This test creates 3 attestations. 0 and 2 have the same attestation data and can be
 	// aggregated. 1 has the validator's signature making this request and that is the expected
 	// attestation to sign, even though the aggregated 0&2 would have more aggregated bits.
-	beaconState, privKeys := util.DeterministicGenesisState(t, 32)
+	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 32)
 	att0, err := generateAtt(beaconState, 0, privKeys)
 	require.NoError(t, err)
 	att0.Data.BeaconBlockRoot = bytesutil.PadTo([]byte("foo"), fieldparams.RootLength)
@@ -322,14 +323,15 @@ func TestSubmitAggregateAndProof_PreferOwnAttestation(t *testing.T) {
 	require.NoError(t, err)
 
 	aggregatorServer := &Server{
-		HeadFetcher: &mock.ChainService{State: beaconState},
-		SyncChecker: &mockSync.Sync{IsSyncing: false},
-		AttPool:     attestations.NewPool(),
-		P2P:         &mockp2p.MockBroadcaster{},
-		TimeFetcher: &mock.ChainService{Genesis: time.Now()},
+		HeadFetcher:           &mock.ChainService{State: beaconState},
+		SyncChecker:           &mockSync.Sync{IsSyncing: false},
+		AttPool:               attestations.NewPool(),
+		P2P:                   &mockp2p.MockBroadcaster{},
+		TimeFetcher:           &mock.ChainService{Genesis: time.Now()},
+		OptimisticModeFetcher: &mock.ChainService{Optimistic: false},
 	}
 
-	priv, err := bls.RandKey()
+	priv, err := dilithium.RandKey()
 	require.NoError(t, err)
 	sig := priv.Sign([]byte{'B'})
 	v, err := beaconState.ValidatorAtIndex(1)
@@ -359,7 +361,7 @@ func TestSubmitAggregateAndProof_SelectsMostBitsWhenOwnAttestationNotPresent(t *
 
 	// This test creates two distinct attestations, neither of which contain the validator's index,
 	// index 0. This test should choose the most bits attestation, att1.
-	beaconState, privKeys := util.DeterministicGenesisState(t, fieldparams.RootLength)
+	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, fieldparams.RootLength)
 	att0, err := generateAtt(beaconState, 0, privKeys)
 	require.NoError(t, err)
 	att0.Data.BeaconBlockRoot = bytesutil.PadTo([]byte("foo"), fieldparams.RootLength)
@@ -373,14 +375,15 @@ func TestSubmitAggregateAndProof_SelectsMostBitsWhenOwnAttestationNotPresent(t *
 	require.NoError(t, err)
 
 	aggregatorServer := &Server{
-		HeadFetcher: &mock.ChainService{State: beaconState},
-		SyncChecker: &mockSync.Sync{IsSyncing: false},
-		AttPool:     attestations.NewPool(),
-		P2P:         &mockp2p.MockBroadcaster{},
-		TimeFetcher: &mock.ChainService{Genesis: time.Now()},
+		HeadFetcher:           &mock.ChainService{State: beaconState},
+		SyncChecker:           &mockSync.Sync{IsSyncing: false},
+		AttPool:               attestations.NewPool(),
+		P2P:                   &mockp2p.MockBroadcaster{},
+		TimeFetcher:           &mock.ChainService{Genesis: time.Now()},
+		OptimisticModeFetcher: &mock.ChainService{Optimistic: false},
 	}
 
-	priv, err := bls.RandKey()
+	priv, err := dilithium.RandKey()
 	require.NoError(t, err)
 	sig := priv.Sign([]byte{'B'})
 	v, err := beaconState.ValidatorAtIndex(1)
@@ -405,7 +408,7 @@ func TestSubmitSignedAggregateSelectionProof_ZeroHashesSignatures(t *testing.T) 
 	}
 	req := &zondpb.SignedAggregateSubmitRequest{
 		SignedAggregateAndProof: &zondpb.SignedAggregateAttestationAndProof{
-			Signature: make([]byte, dilithium2.CryptoBytes),
+			Signature: make([]byte, field_params.DilithiumSignatureLength),
 			Message: &zondpb.AggregateAttestationAndProof{
 				Aggregate: &zondpb.Attestation{
 					Data: &zondpb.AttestationData{},
@@ -423,7 +426,7 @@ func TestSubmitSignedAggregateSelectionProof_ZeroHashesSignatures(t *testing.T) 
 				Aggregate: &zondpb.Attestation{
 					Data: &zondpb.AttestationData{},
 				},
-				SelectionProof: make([]byte, dilithium2.CryptoBytes),
+				SelectionProof: make([]byte, field_params.DilithiumSignatureLength),
 			},
 		},
 	}

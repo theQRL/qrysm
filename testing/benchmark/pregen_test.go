@@ -1,5 +1,7 @@
 package benchmark
 
+// TODO(theQRL/qrysm/issues/77)
+/*
 import (
 	"testing"
 
@@ -20,3 +22,4 @@ func TestPreGenstateFullEpochs(t *testing.T) {
 	_, err := PreGenFullBlock()
 	require.NoError(t, err)
 }
+*/

@@ -36,7 +36,7 @@ func TestValidateSync(t *testing.T) {
 			IsSyncing: true,
 		}
 		headSlot := primitives.Slot(100)
-		st, err := util.NewBeaconState()
+		st, err := util.NewBeaconStateCapella()
 		require.NoError(t, err)
 		require.NoError(t, st.SetSlot(50))
 		chainService := &chainmock.ChainService{
@@ -61,7 +61,7 @@ func TestValidateSync(t *testing.T) {
 			IsSyncing: false,
 		}
 		headSlot := primitives.Slot(100)
-		st, err := util.NewBeaconState()
+		st, err := util.NewBeaconStateCapella()
 		require.NoError(t, err)
 		require.NoError(t, st.SetSlot(50))
 		chainService := &chainmock.ChainService{
@@ -95,7 +95,7 @@ func TestIsOptimistic(t *testing.T) {
 	})
 	t.Run("finalized", func(t *testing.T) {
 		t.Run("finalized checkpoint is optimistic", func(t *testing.T) {
-			st, err := util.NewBeaconState()
+			st, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
 			cs := &chainmock.ChainService{Optimistic: true, FinalizedCheckPoint: &zond.Checkpoint{}, OptimisticRoots: map[[32]byte]bool{[32]byte{}: true}}
 			mf := &testutil.MockStater{BeaconState: st}
@@ -104,7 +104,7 @@ func TestIsOptimistic(t *testing.T) {
 			assert.Equal(t, true, o)
 		})
 		t.Run("finalized checkpoint is not optimistic", func(t *testing.T) {
-			st, err := util.NewBeaconState()
+			st, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
 			cs := &chainmock.ChainService{Optimistic: true, FinalizedCheckPoint: &zond.Checkpoint{}}
 			mf := &testutil.MockStater{BeaconState: st}
@@ -115,7 +115,7 @@ func TestIsOptimistic(t *testing.T) {
 	})
 	t.Run("justified", func(t *testing.T) {
 		t.Run("justified checkpoint is optimistic", func(t *testing.T) {
-			st, err := util.NewBeaconState()
+			st, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
 			cs := &chainmock.ChainService{Optimistic: true, CurrentJustifiedCheckPoint: &zond.Checkpoint{}, OptimisticRoots: map[[32]byte]bool{[32]byte{}: true}}
 			mf := &testutil.MockStater{BeaconState: st}
@@ -124,7 +124,7 @@ func TestIsOptimistic(t *testing.T) {
 			assert.Equal(t, true, o)
 		})
 		t.Run("justified checkpoint is not optimistic", func(t *testing.T) {
-			st, err := util.NewBeaconState()
+			st, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
 			cs := &chainmock.ChainService{Optimistic: true, CurrentJustifiedCheckPoint: &zond.Checkpoint{}}
 			mf := &testutil.MockStater{BeaconState: st}
@@ -135,7 +135,7 @@ func TestIsOptimistic(t *testing.T) {
 	})
 	t.Run("root", func(t *testing.T) {
 		t.Run("is head and head is optimistic", func(t *testing.T) {
-			st, err := util.NewBeaconState()
+			st, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
 			cs := &chainmock.ChainService{Optimistic: true}
 			mf := &testutil.MockStater{BeaconState: st}
@@ -144,7 +144,7 @@ func TestIsOptimistic(t *testing.T) {
 			assert.Equal(t, true, o)
 		})
 		t.Run("is head and head is not optimistic", func(t *testing.T) {
-			st, err := util.NewBeaconState()
+			st, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
 			cs := &chainmock.ChainService{Optimistic: false}
 			mf := &testutil.MockStater{BeaconState: st}
@@ -153,14 +153,14 @@ func TestIsOptimistic(t *testing.T) {
 			assert.Equal(t, false, o)
 		})
 		t.Run("root is optimistic", func(t *testing.T) {
-			b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
+			b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 			require.NoError(t, err)
 			b.SetStateRoot(bytesutil.PadTo([]byte("root"), 32))
 			db := dbtest.SetupDB(t)
 			require.NoError(t, db.SaveBlock(ctx, b))
-			fetcherSt, err := util.NewBeaconState()
+			fetcherSt, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
-			chainSt, err := util.NewBeaconState()
+			chainSt, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
 			require.NoError(t, chainSt.SetSlot(fieldparams.SlotsPerEpoch))
 			bRoot, err := b.Block().HashTreeRoot()
@@ -172,14 +172,14 @@ func TestIsOptimistic(t *testing.T) {
 			assert.Equal(t, true, o)
 		})
 		t.Run("root is not optimistic", func(t *testing.T) {
-			b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
+			b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 			require.NoError(t, err)
 			b.SetStateRoot(bytesutil.PadTo([]byte("root"), 32))
 			db := dbtest.SetupDB(t)
 			require.NoError(t, db.SaveBlock(ctx, b))
-			fetcherSt, err := util.NewBeaconState()
+			fetcherSt, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
-			chainSt, err := util.NewBeaconState()
+			chainSt, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
 			require.NoError(t, chainSt.SetSlot(fieldparams.SlotsPerEpoch))
 			cs := &chainmock.ChainService{State: chainSt}
@@ -189,13 +189,13 @@ func TestIsOptimistic(t *testing.T) {
 			assert.Equal(t, false, o)
 		})
 		t.Run("no canonical blocks", func(t *testing.T) {
-			b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
+			b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 			require.NoError(t, err)
 			db := dbtest.SetupDB(t)
 			require.NoError(t, db.SaveBlock(ctx, b))
-			fetcherSt, err := util.NewBeaconState()
+			fetcherSt, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
-			chainSt, err := util.NewBeaconState()
+			chainSt, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
 			require.NoError(t, chainSt.SetSlot(fieldparams.SlotsPerEpoch))
 			cs := &chainmock.ChainService{Optimistic: false, State: chainSt, CanonicalRoots: map[[32]byte]bool{}}
@@ -207,7 +207,7 @@ func TestIsOptimistic(t *testing.T) {
 	})
 	t.Run("hex", func(t *testing.T) {
 		t.Run("is head and head is optimistic", func(t *testing.T) {
-			st, err := util.NewBeaconState()
+			st, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
 			cs := &chainmock.ChainService{Optimistic: true}
 			mf := &testutil.MockStater{BeaconState: st}
@@ -216,7 +216,7 @@ func TestIsOptimistic(t *testing.T) {
 			assert.Equal(t, true, o)
 		})
 		t.Run("is head and head is not optimistic", func(t *testing.T) {
-			st, err := util.NewBeaconState()
+			st, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
 			cs := &chainmock.ChainService{Optimistic: false}
 			mf := &testutil.MockStater{BeaconState: st}
@@ -225,14 +225,14 @@ func TestIsOptimistic(t *testing.T) {
 			assert.Equal(t, false, o)
 		})
 		t.Run("root is optimistic", func(t *testing.T) {
-			b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
+			b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 			require.NoError(t, err)
 			b.SetStateRoot(bytesutil.PadTo([]byte("root"), 32))
 			db := dbtest.SetupDB(t)
 			require.NoError(t, db.SaveBlock(ctx, b))
-			fetcherSt, err := util.NewBeaconState()
+			fetcherSt, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
-			chainSt, err := util.NewBeaconState()
+			chainSt, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
 			require.NoError(t, chainSt.SetSlot(fieldparams.SlotsPerEpoch))
 			bRoot, err := b.Block().HashTreeRoot()
@@ -244,14 +244,14 @@ func TestIsOptimistic(t *testing.T) {
 			assert.Equal(t, true, o)
 		})
 		t.Run("root is not optimistic", func(t *testing.T) {
-			b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
+			b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 			require.NoError(t, err)
 			b.SetStateRoot(bytesutil.PadTo([]byte("root"), 32))
 			db := dbtest.SetupDB(t)
 			require.NoError(t, db.SaveBlock(ctx, b))
-			fetcherSt, err := util.NewBeaconState()
+			fetcherSt, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
-			chainSt, err := util.NewBeaconState()
+			chainSt, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
 			require.NoError(t, chainSt.SetSlot(fieldparams.SlotsPerEpoch))
 			cs := &chainmock.ChainService{State: chainSt}
@@ -261,13 +261,13 @@ func TestIsOptimistic(t *testing.T) {
 			assert.Equal(t, false, o)
 		})
 		t.Run("no canonical blocks", func(t *testing.T) {
-			b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
+			b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 			require.NoError(t, err)
 			db := dbtest.SetupDB(t)
 			require.NoError(t, db.SaveBlock(ctx, b))
-			fetcherSt, err := util.NewBeaconState()
+			fetcherSt, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
-			chainSt, err := util.NewBeaconState()
+			chainSt, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
 			require.NoError(t, chainSt.SetSlot(fieldparams.SlotsPerEpoch))
 			cs := &chainmock.ChainService{Optimistic: false, State: chainSt, CanonicalRoots: map[[32]byte]bool{}}
@@ -298,7 +298,7 @@ func TestIsOptimistic(t *testing.T) {
 			require.NoError(t, db.SaveStateSummary(ctx, &zond.StateSummary{Slot: fieldparams.SlotsPerEpoch, Root: []byte("root")}))
 			require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, &zond.Checkpoint{Epoch: 1, Root: []byte("root")}))
 			cs := &chainmock.ChainService{Optimistic: true, FinalizedCheckPoint: &zond.Checkpoint{Epoch: 1}}
-			o, err := IsOptimistic(ctx, []byte("32"), cs, nil, cs, db)
+			o, err := IsOptimistic(ctx, []byte("128"), cs, nil, cs, db)
 			require.NoError(t, err)
 			assert.Equal(t, false, o)
 		})
@@ -307,7 +307,7 @@ func TestIsOptimistic(t *testing.T) {
 			require.NoError(t, db.SaveStateSummary(ctx, &zond.StateSummary{Slot: fieldparams.SlotsPerEpoch, Root: []byte("root")}))
 			require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, &zond.Checkpoint{Epoch: 1, Root: []byte("root")}))
 			cs := &chainmock.ChainService{Optimistic: true, FinalizedCheckPoint: &zond.Checkpoint{Epoch: 2}}
-			o, err := IsOptimistic(ctx, []byte("33"), cs, nil, cs, db)
+			o, err := IsOptimistic(ctx, []byte("129"), cs, nil, cs, db)
 			require.NoError(t, err)
 			assert.Equal(t, true, o)
 		})
@@ -315,9 +315,9 @@ func TestIsOptimistic(t *testing.T) {
 			db := dbtest.SetupDB(t)
 			require.NoError(t, db.SaveStateSummary(ctx, &zond.StateSummary{Slot: fieldparams.SlotsPerEpoch, Root: []byte("root")}))
 			require.NoError(t, db.SaveLastValidatedCheckpoint(ctx, &zond.Checkpoint{Epoch: 1, Root: []byte("root")}))
-			fetcherSt, err := util.NewBeaconState()
+			fetcherSt, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
-			chainSt, err := util.NewBeaconState()
+			chainSt, err := util.NewBeaconStateCapella()
 			require.NoError(t, err)
 			require.NoError(t, chainSt.SetSlot(fieldparams.SlotsPerEpoch*2))
 			cs := &chainmock.ChainService{Optimistic: true, State: chainSt, FinalizedCheckPoint: &zond.Checkpoint{Epoch: 0}}
@@ -383,11 +383,11 @@ func prepareForkchoiceState(
 		ParentRoot: parentRoot[:],
 	}
 
-	executionHeader := &enginev1.ExecutionPayloadHeader{
+	executionHeader := &enginev1.ExecutionPayloadHeaderCapella{
 		BlockHash: payloadHash[:],
 	}
 
-	base := &zond.BeaconStateBellatrix{
+	base := &zond.BeaconStateCapella{
 		Slot:                         slot,
 		RandaoMixes:                  make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 		BlockRoots:                   make([][]byte, 1),
@@ -398,6 +398,6 @@ func prepareForkchoiceState(
 	}
 
 	base.BlockRoots[0] = append(base.BlockRoots[0], blockRoot[:]...)
-	st, err := state_native.InitializeFromProtoBellatrix(base)
+	st, err := state_native.InitializeFromProtoCapella(base)
 	return st, blockRoot, err
 }

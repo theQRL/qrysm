@@ -5,4 +5,5 @@ It also performs a test on a syncing node, and supports feature flags to allow e
 
 ## How it works
 
+// TODO(theQRL/qrysm/issues/67)
 Please see our docs page, https://docs.prylabs.network/docs/devtools/end-to-end, to read more about the feature.

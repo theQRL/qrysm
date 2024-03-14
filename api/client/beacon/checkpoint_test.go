@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/api/client"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	blocktest "github.com/theQRL/qrysm/v4/consensus-types/blocks/testing"
@@ -90,18 +91,18 @@ func TestDownloadWeakSubjectivityCheckpoint(t *testing.T) {
 	ctx := context.Background()
 	cfg := params.MainnetConfig().Copy()
 
-	epoch := cfg.AltairForkEpoch - 1
+	epoch := primitives.Epoch(0)
 	// set up checkpoint state, using the epoch that will be computed as the ws checkpoint state based on the head state
 	wSlot, err := slots.EpochStart(epoch)
 	require.NoError(t, err)
-	wst, err := util.NewBeaconState()
+	wst, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	fork, err := forkForEpoch(cfg, epoch)
 	require.NoError(t, err)
 	require.NoError(t, wst.SetFork(fork))
 
 	// set up checkpoint block
-	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
+	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 	require.NoError(t, err)
 	b, err = blocktest.SetBlockParentRoot(b, cfg.ZeroHash)
 	require.NoError(t, err)
@@ -180,8 +181,6 @@ func TestDownloadWeakSubjectivityCheckpoint(t *testing.T) {
 	require.Equal(t, expectedWSD.BlockRoot, wsd.BlockRoot)
 }
 
-// TODO(rgeraldes24): Values are not equal, want: 74016 (primitives.Epoch), got: 74224 (primitives.Epoch)
-/*
 func TestGetWeakSubjectivityEpochFromHead(t *testing.T) {
 	st, expectedEpoch := defaultTestHeadState(t, params.MainnetConfig())
 	serialized, err := st.MarshalSSZ()
@@ -200,7 +199,6 @@ func TestGetWeakSubjectivityEpochFromHead(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, expectedEpoch, actualEpoch)
 }
-*/
 
 func forkForEpoch(cfg *params.BeaconChainConfig, epoch primitives.Epoch) (*zondpb.Fork, error) {
 	os := forks.NewOrderedSchedule(cfg)
@@ -225,26 +223,21 @@ func forkForEpoch(cfg *params.BeaconChainConfig, epoch primitives.Epoch) (*zondp
 }
 
 func defaultTestHeadState(t *testing.T, cfg *params.BeaconChainConfig) (state.BeaconState, primitives.Epoch) {
-	st, err := util.NewBeaconStateAltair()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 
-	fork, err := forkForEpoch(cfg, cfg.AltairForkEpoch)
-	require.NoError(t, err)
-	require.NoError(t, st.SetFork(fork))
-
-	slot, err := slots.EpochStart(cfg.AltairForkEpoch)
+	epoch := primitives.Epoch(500)
+	slot, err := slots.EpochStart(epoch)
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(slot))
 
 	var validatorCount, avgBalance uint64 = 100, 35
 	require.NoError(t, populateValidators(cfg, st, validatorCount, avgBalance))
 	require.NoError(t, st.SetFinalizedCheckpoint(&zondpb.Checkpoint{
-		Epoch: fork.Epoch - 10,
+		Epoch: epoch - 10,
 		Root:  make([]byte, 32),
 	}))
-	// to see the math for this, look at helpers.LatestWeakSubjectivityEpoch
-	// and for the values use mainnet config values, the validatorCount and avgBalance above, and altair fork epoch
-	expectedEpoch := slots.ToEpoch(st.Slot()) - 224
+	expectedEpoch := slots.ToEpoch(st.Slot()) - 20
 	return st, expectedEpoch
 }
 
@@ -254,7 +247,7 @@ func populateValidators(cfg *params.BeaconChainConfig, st state.BeaconState, val
 	balances := make([]uint64, len(validators))
 	for i := uint64(0); i < valCount; i++ {
 		validators[i] = &zondpb.Validator{
-			PublicKey:             make([]byte, cfg.DilithiumPubkeyLength),
+			PublicKey:             make([]byte, field_params.DilithiumPubkeyLength),
 			WithdrawalCredentials: make([]byte, 32),
 			EffectiveBalance:      avgBalance * 1e9,
 			ExitEpoch:             cfg.FarFutureEpoch,
@@ -273,11 +266,11 @@ func TestDownloadFinalizedData(t *testing.T) {
 	cfg := params.MainnetConfig().Copy()
 
 	// avoid the altair zone because genesis tests are easier to set up
-	epoch := cfg.AltairForkEpoch - 1
+	epoch := primitives.Epoch(0)
 	// set up checkpoint state, using the epoch that will be computed as the ws checkpoint state based on the head state
 	slot, err := slots.EpochStart(epoch)
 	require.NoError(t, err)
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	fork, err := forkForEpoch(cfg, epoch)
 	require.NoError(t, err)
@@ -285,7 +278,7 @@ func TestDownloadFinalizedData(t *testing.T) {
 	require.NoError(t, st.SetSlot(slot))
 
 	// set up checkpoint block
-	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
+	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 	require.NoError(t, err)
 	b, err = blocktest.SetBlockParentRoot(b, cfg.ZeroHash)
 	require.NoError(t, err)

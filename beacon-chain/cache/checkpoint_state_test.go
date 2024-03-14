@@ -18,7 +18,7 @@ func TestCheckpointStateCache_StateByCheckpoint(t *testing.T) {
 	cache := NewCheckpointStateCache()
 
 	cp1 := &zondpb.Checkpoint{Epoch: 1, Root: bytesutil.PadTo([]byte{'A'}, 32)}
-	st, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	st, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		GenesisValidatorsRoot: params.BeaconConfig().ZeroHash[:],
 		Slot:                  64,
 	})
@@ -33,16 +33,16 @@ func TestCheckpointStateCache_StateByCheckpoint(t *testing.T) {
 	s, err = cache.StateByCheckpoint(cp1)
 	require.NoError(t, err)
 
-	pbState1, err := state_native.ProtobufBeaconStatePhase0(s.ToProtoUnsafe())
+	pbState1, err := state_native.ProtobufBeaconStateCapella(s.ToProtoUnsafe())
 	require.NoError(t, err)
-	pbstate, err := state_native.ProtobufBeaconStatePhase0(st.ToProtoUnsafe())
+	pbstate, err := state_native.ProtobufBeaconStateCapella(st.ToProtoUnsafe())
 	require.NoError(t, err)
 	if !proto.Equal(pbState1, pbstate) {
 		t.Error("incorrectly cached state")
 	}
 
 	cp2 := &zondpb.Checkpoint{Epoch: 2, Root: bytesutil.PadTo([]byte{'B'}, 32)}
-	st2, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	st2, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Slot: 128,
 	})
 	require.NoError(t, err)
@@ -59,7 +59,7 @@ func TestCheckpointStateCache_StateByCheckpoint(t *testing.T) {
 
 func TestCheckpointStateCache_MaxSize(t *testing.T) {
 	c := NewCheckpointStateCache()
-	st, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	st, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Slot: 0,
 	})
 	require.NoError(t, err)

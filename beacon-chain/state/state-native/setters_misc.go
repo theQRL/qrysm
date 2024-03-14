@@ -9,7 +9,6 @@ import (
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -106,38 +105,11 @@ func (b *BeaconState) SetHistoricalRoots(val [][]byte) error {
 	return nil
 }
 
-// AppendHistoricalRoots for the beacon state. Appends the new value
-// to the end of list.
-func (b *BeaconState) AppendHistoricalRoots(root [32]byte) error {
-	b.lock.Lock()
-	defer b.lock.Unlock()
-
-	if b.version > version.Bellatrix {
-		return errNotSupported("AppendHistoricalRoots", b.version)
-	}
-
-	roots := b.historicalRoots
-	if b.sharedFieldReferences[types.HistoricalRoots].Refs() > 1 {
-		roots = make([][32]byte, 0, len(b.historicalRoots)+1)
-		roots = append(roots, b.historicalRoots...)
-		b.sharedFieldReferences[types.HistoricalRoots].MinusRef()
-		b.sharedFieldReferences[types.HistoricalRoots] = stateutil.NewRef(1)
-	}
-
-	b.historicalRoots = append(roots, root)
-	b.markFieldAsDirty(types.HistoricalRoots)
-	return nil
-}
-
 // AppendHistoricalSummaries for the beacon state. Appends the new value
 // to the end of list.
 func (b *BeaconState) AppendHistoricalSummaries(summary *zondpb.HistoricalSummary) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
-
-	if b.version < version.Capella {
-		return errNotSupported("AppendHistoricalSummaries", b.version)
-	}
 
 	summaries := b.historicalSummaries
 	if b.sharedFieldReferences[types.HistoricalSummaries].Refs() > 1 {

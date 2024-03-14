@@ -522,7 +522,7 @@ func createProposalWrapper(t *testing.T, slot primitives.Slot, proposerIndex pri
 	return &slashertypes.SignedBlockHeaderWrapper{
 		SignedBeaconBlockHeader: &zondpb.SignedBeaconBlockHeader{
 			Header:    header,
-			Signature: params.BeaconConfig().EmptySignature[:],
+			Signature: params.BeaconConfig().EmptyDilithiumSignature[:],
 		},
 		SigningRoot: signRoot,
 	}
@@ -548,7 +548,7 @@ func createAttestationWrapper(source, target primitives.Epoch, indices []uint64,
 		IndexedAttestation: &zondpb.IndexedAttestation{
 			AttestingIndices: indices,
 			Data:             data,
-			Signature:        params.BeaconConfig().EmptySignature[:],
+			Signatures:       [][]byte{params.BeaconConfig().EmptyDilithiumSignature[:]},
 		},
 		SigningRoot: signRoot,
 	}

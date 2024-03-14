@@ -29,21 +29,14 @@ func TestProcessSyncCommitteeContribution(t *testing.T) {
 func TestProcessSyncAggregate(t *testing.T) {
 	hook := logTest.NewGlobal()
 	s := setupService(t)
-	beaconState, _ := util.DeterministicGenesisStateAltair(t, 256)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 256)
 
-	block := &zondpb.BeaconBlockAltair{
+	block := &zondpb.BeaconBlockCapella{
 		Slot: 2,
-		Body: &zondpb.BeaconBlockBodyAltair{
+		Body: &zondpb.BeaconBlockBodyCapella{
 			SyncAggregate: &zondpb.SyncAggregate{
 				SyncCommitteeBits: bitfield.Bitvector16{
-					0x31, 0xff, 0xff, 0xff, 0xff, 0x3f, 0xff, 0xff,
-					0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-					0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-					0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-					0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-					0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-					0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-					0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+					0x31, 0xff,
 				},
 			},
 		},
@@ -53,7 +46,7 @@ func TestProcessSyncAggregate(t *testing.T) {
 	require.NoError(t, err)
 
 	s.processSyncAggregate(beaconState, wrappedBlock)
-	require.LogsContain(t, hook, "\"Sync committee contribution included\" BalanceChange=0 ContribCount=1 ExpectedContribCount=4 NewBalance=32000000000 ValidatorIndex=1 prefix=monitor")
-	require.LogsContain(t, hook, "\"Sync committee contribution included\" BalanceChange=100000000 ContribCount=2 ExpectedContribCount=2 NewBalance=32000000000 ValidatorIndex=12 prefix=monitor")
+	require.LogsContain(t, hook, "\"Sync committee contribution included\" BalanceChange=0 ContribCount=1 ExpectedContribCount=4 NewBalance=40000000000000 ValidatorIndex=1 prefix=monitor")
+	require.LogsContain(t, hook, "\"Sync committee contribution included\" BalanceChange=100000000 ContribCount=2 ExpectedContribCount=2 NewBalance=40000000000000 ValidatorIndex=86 prefix=monitor")
 	require.LogsDoNotContain(t, hook, "ValidatorIndex=2")
 }

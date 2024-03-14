@@ -403,9 +403,6 @@ func TestRefreshENR_ForkBoundaries(t *testing.T) {
 				assert.NoError(t, err)
 
 				// Update params
-				cfg := params.BeaconConfig().Copy()
-				cfg.AltairForkEpoch = 5
-				params.OverrideBeaconConfig(cfg)
 				params.BeaconConfig().InitializeForkSchedule()
 
 				s.dv5Listener = listener
@@ -434,9 +431,6 @@ func TestRefreshENR_ForkBoundaries(t *testing.T) {
 				assert.NoError(t, err)
 
 				// Update params
-				cfg := params.BeaconConfig().Copy()
-				cfg.AltairForkEpoch = 5
-				params.OverrideBeaconConfig(cfg)
 				params.BeaconConfig().InitializeForkSchedule()
 
 				s.dv5Listener = listener
@@ -464,9 +458,6 @@ func TestRefreshENR_ForkBoundaries(t *testing.T) {
 				assert.NoError(t, err)
 
 				// Update params
-				cfg := params.BeaconConfig().Copy()
-				cfg.AltairForkEpoch = 5
-				params.OverrideBeaconConfig(cfg)
 				params.BeaconConfig().InitializeForkSchedule()
 
 				s.dv5Listener = listener

@@ -2,12 +2,9 @@ package forkchoice
 
 import (
 	"context"
-	"math/big"
 	"testing"
 
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	zondtypes "github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
 	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
@@ -22,7 +19,6 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	payloadattribute "github.com/theQRL/qrysm/v4/consensus-types/payload-attribute"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	pb "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -57,7 +53,7 @@ func startChainService(t testing.TB,
 
 	fc := doublylinkedtree.New()
 	opts := append([]blockchain.Option{},
-		blockchain.WithExecutionEngineCaller(engineMock),
+		// blockchain.WithExecutionEngineCaller(engineMock),
 		blockchain.WithFinalizedStateAtStartUp(st),
 		blockchain.WithDatabase(db),
 		blockchain.WithAttestationService(attPool),
@@ -76,7 +72,7 @@ func startChainService(t testing.TB,
 }
 
 type engineMock struct {
-	powBlocks       map[[32]byte]*zondpb.PowBlock
+	// powBlocks       map[[32]byte]*zondpb.PowBlock
 	latestValidHash []byte
 	payloadStatus   error
 }
@@ -107,6 +103,7 @@ func (m *engineMock) ExchangeTransitionConfiguration(context.Context, *pb.Transi
 	return nil
 }
 
+/*
 func (m *engineMock) ExecutionBlockByHash(_ context.Context, hash common.Hash, _ bool) (*pb.ExecutionBlock, error) {
 	b, ok := m.powBlocks[bytesutil.ToBytes32(hash.Bytes())]
 	if !ok {
@@ -123,7 +120,4 @@ func (m *engineMock) ExecutionBlockByHash(_ context.Context, hash common.Hash, _
 		Hash:            common.BytesToHash(b.BlockHash),
 	}, nil
 }
-
-func (m *engineMock) GetTerminalBlockHash(context.Context, uint64) ([]byte, bool, error) {
-	return nil, false, nil
-}
+*/

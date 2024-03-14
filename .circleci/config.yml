@@ -95,7 +95,7 @@ jobs:
       - run: |
           rm -rf /tmp/bazel-cache/output-root/install
           sudo apt install libssl-dev libgmp-dev libtinfo5 cmake          
-          bin/bazel build --config=release --define=blst_modern=false //cmd/beacon-chain //cmd/validator //cmd/staking-deposit-cli/deposit
+          bin/bazel build --config=release //cmd/beacon-chain //cmd/validator //cmd/staking-deposit-cli/deposit
       - prepare-publish-artifacts:
           platform: "linux-amd64"
       - *clean_bazel_cache

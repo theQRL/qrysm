@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common/hexutil"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
@@ -16,7 +15,7 @@ import (
 type Attestation struct {
 	AggregationBits string           `json:"aggregation_bits"`
 	Data            *AttestationData `json:"data"`
-	Signature       string           `json:"signature"`
+	Signatures      []string         `json:"signatures"`
 }
 
 type AttestationData struct {
@@ -50,11 +49,11 @@ type ContributionAndProof struct {
 }
 
 type SyncCommitteeContribution struct {
-	Slot              string `json:"slot"`
-	BeaconBlockRoot   string `json:"beacon_block_root"`
-	SubcommitteeIndex string `json:"subcommittee_index"`
-	AggregationBits   string `json:"aggregation_bits"`
-	Signature         string `json:"signature"`
+	Slot              string   `json:"slot"`
+	BeaconBlockRoot   string   `json:"beacon_block_root"`
+	SubcommitteeIndex string   `json:"subcommittee_index"`
+	AggregationBits   string   `json:"aggregation_bits"`
+	Signatures        []string `json:"signatures"`
 }
 
 type SignedAggregateAttestationAndProof struct {
@@ -151,8 +150,8 @@ func (s *SignedValidatorRegistration) ToConsensus() (*zond.SignedValidatorRegist
 	if err != nil {
 		return nil, NewDecodeError(err, "Signature")
 	}
-	if len(sig) != dilithium2.CryptoBytes {
-		return nil, fmt.Errorf("Signature length was %d when expecting length %d", len(sig), dilithium2.CryptoBytes)
+	if len(sig) != fieldparams.DilithiumSignatureLength {
+		return nil, fmt.Errorf("Signature length was %d when expecting length %d", len(sig), fieldparams.DilithiumSignatureLength)
 	}
 	return &zond.SignedValidatorRegistrationV1{
 		Message:   msg,
@@ -172,8 +171,8 @@ func (s *ValidatorRegistration) ToConsensus() (*zond.ValidatorRegistrationV1, er
 	if err != nil {
 		return nil, NewDecodeError(err, "FeeRecipient")
 	}
-	if len(pubKey) != dilithium2.CryptoPublicKeyBytes {
-		return nil, fmt.Errorf("FeeRecipient length was %d when expecting length %d", len(pubKey), dilithium2.CryptoPublicKeyBytes)
+	if len(pubKey) != fieldparams.DilithiumPubkeyLength {
+		return nil, fmt.Errorf("FeeRecipient length was %d when expecting length %d", len(pubKey), fieldparams.DilithiumPubkeyLength)
 	}
 	gasLimit, err := strconv.ParseUint(s.GasLimit, 10, 64)
 	if err != nil {
@@ -271,9 +270,14 @@ func (s *SyncCommitteeContribution) ToConsensus() (*zond.SyncCommitteeContributi
 	if err != nil {
 		return nil, NewDecodeError(err, "AggregationBits")
 	}
-	sig, err := hexutil.Decode(s.Signature)
-	if err != nil {
-		return nil, NewDecodeError(err, "Signature")
+
+	sigs := make([][]byte, len(s.Signatures))
+	for i, hexSig := range s.Signatures {
+		sig, err := hexutil.Decode(hexSig)
+		if err != nil {
+			return nil, NewDecodeError(err, fmt.Sprintf("Signatures[%d]", i))
+		}
+		sigs[i] = sig
 	}
 
 	return &zond.SyncCommitteeContribution{
@@ -281,7 +285,7 @@ func (s *SyncCommitteeContribution) ToConsensus() (*zond.SyncCommitteeContributi
 		BlockRoot:         bbRoot,
 		SubcommitteeIndex: subcommitteeIndex,
 		AggregationBits:   aggBits,
-		Signature:         sig,
+		Signatures:        sigs,
 	}, nil
 }
 
@@ -330,23 +334,33 @@ func (a *Attestation) ToConsensus() (*zond.Attestation, error) {
 	if err != nil {
 		return nil, NewDecodeError(err, "Data")
 	}
-	sig, err := hexutil.Decode(a.Signature)
-	if err != nil {
-		return nil, NewDecodeError(err, "Signature")
+
+	sigs := make([][]byte, len(a.Signatures))
+	for i, hexSig := range a.Signatures {
+		sig, err := hexutil.Decode(hexSig)
+		if err != nil {
+			return nil, NewDecodeError(err, fmt.Sprintf("Signatures[%d]", i))
+		}
+		sigs[i] = sig
 	}
 
 	return &zond.Attestation{
 		AggregationBits: aggBits,
 		Data:            data,
-		Signature:       sig,
+		Signatures:      sigs,
 	}, nil
 }
 
 func AttestationFromConsensus(a *zond.Attestation) *Attestation {
+	sigs := make([]string, len(a.Signatures))
+	for i, sig := range a.Signatures {
+		sigs[i] = hexutil.Encode(sig)
+	}
+
 	return &Attestation{
 		AggregationBits: hexutil.Encode(a.AggregationBits),
 		Data:            AttestationDataFromConsensus(a.Data),
-		Signature:       hexutil.Encode(a.Signature),
+		Signatures:      sigs,
 	}
 }
 
@@ -517,7 +531,7 @@ func (m *SyncCommitteeMessage) ToConsensus() (*zond.SyncCommitteeMessage, error)
 	if err != nil {
 		return nil, NewDecodeError(err, "ValidatorIndex")
 	}
-	sig, err := DecodeHexWithLength(m.Signature, dilithium2.CryptoBytes)
+	sig, err := DecodeHexWithLength(m.Signature, fieldparams.DilithiumSignatureLength)
 	if err != nil {
 		return nil, NewDecodeError(err, "Signature")
 	}

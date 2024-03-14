@@ -167,7 +167,7 @@ func (s *Service) validateAggregatedAtt(ctx context.Context, signed *zondpb.Sign
 		return pubsub.ValidationReject, wrappedErr
 	}
 
-	// Verify selection signature, aggregator signature and attestation signature are valid.
+	// Verify selection signature, aggregator signature and attestation signatures are valid.
 	// We use batch verify here to save compute.
 	aggregatorSigSet, err := aggSigSet(bs, signed)
 	if err != nil {
@@ -177,7 +177,7 @@ func (s *Service) validateAggregatedAtt(ctx context.Context, signed *zondpb.Sign
 	}
 	attSigSet, err := blocks.AttestationSignatureBatch(ctx, bs, []*zondpb.Attestation{signed.Message.Aggregate})
 	if err != nil {
-		wrappedErr := errors.Wrapf(err, "Could not verify aggregator signature %d", signed.Message.AggregatorIndex)
+		wrappedErr := errors.Wrapf(err, "Could not verify attestation signatures %d", signed.Message.AggregatorIndex)
 		tracing.AnnotateError(span, wrappedErr)
 		return pubsub.ValidationIgnore, wrappedErr
 	}
@@ -285,7 +285,7 @@ func validateSelectionIndex(
 		return nil, err
 	}
 	return &dilithium.SignatureBatch{
-		Signatures:   [][]byte{proof},
+		Signatures:   [][][]byte{{proof}},
 		PublicKeys:   [][]dilithium.PublicKey{{publicKey}},
 		Messages:     [][32]byte{root},
 		Descriptions: []string{signing.SelectionProof},
@@ -313,7 +313,7 @@ func aggSigSet(s state.ReadOnlyBeaconState, a *zondpb.SignedAggregateAttestation
 		return nil, err
 	}
 	return &dilithium.SignatureBatch{
-		Signatures:   [][]byte{a.Signature},
+		Signatures:   [][][]byte{{a.Signature}},
 		PublicKeys:   [][]dilithium.PublicKey{{publicKey}},
 		Messages:     [][32]byte{root},
 		Descriptions: []string{signing.AggregatorSignature},

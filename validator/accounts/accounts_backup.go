@@ -26,7 +26,7 @@ const (
 
 // Backup allows users to select validator accounts from their wallet
 // and export them as a backup.zip file containing the keys as EIP-2335 compliant
-// keystore.json files, which are compatible with importing in other Ethereum consensus clients.
+// keystore.json files, which are compatible with importing in other Zond consensus clients.
 func (acm *AccountsCLIManager) Backup(ctx context.Context) error {
 	keystoresToBackup, err := acm.keymanager.ExtractKeystores(ctx, acm.filteredPubKeys, acm.backupsPassword)
 	if err != nil {

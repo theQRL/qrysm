@@ -165,14 +165,10 @@ func (s *Service) notifyForkchoiceUpdate(ctx context.Context, arg *notifyForkcho
 }
 
 // getPayloadHash returns the payload hash given the block root.
-// if the block is before bellatrix fork epoch, it returns the zero hash.
 func (s *Service) getPayloadHash(ctx context.Context, root []byte) ([32]byte, error) {
 	blk, err := s.getBlock(ctx, s.ensureRootNotZeros(bytesutil.ToBytes32(root)))
 	if err != nil {
 		return [32]byte{}, err
-	}
-	if blocks.IsPreBellatrixVersion(blk.Block().Version()) {
-		return params.BeaconConfig().ZeroHash, nil
 	}
 	payload, err := blk.Block().Body().Execution()
 	if err != nil {
@@ -183,18 +179,13 @@ func (s *Service) getPayloadHash(ctx context.Context, root []byte) ([32]byte, er
 
 // notifyNewPayload signals execution engine on a new payload.
 // It returns true if the EL has returned VALID for the block
-func (s *Service) notifyNewPayload(ctx context.Context, preStateVersion int,
+func (s *Service) notifyNewPayload(ctx context.Context,
 	preStateHeader interfaces.ExecutionData, blk interfaces.ReadOnlySignedBeaconBlock) (bool, error) {
 	ctx, span := trace.StartSpan(ctx, "blockChain.notifyNewPayload")
 	defer span.End()
 
-	// Execution payload is only supported in Bellatrix and beyond. Pre
-	// merge blocks are never optimistic
 	if blk == nil {
 		return false, errors.New("signed beacon block can't be nil")
-	}
-	if preStateVersion < version.Bellatrix {
-		return true, nil
 	}
 	if err := consensusblocks.BeaconBlockIsNil(blk); err != nil {
 		return false, err
@@ -323,16 +314,6 @@ func (s *Service) getPayloadAttribute(ctx context.Context, st state.BeaconState,
 			PrevRandao:            prevRando,
 			SuggestedFeeRecipient: feeRecipient.Bytes(),
 			Withdrawals:           withdrawals,
-		})
-		if err != nil {
-			log.WithError(err).Error("Could not get payload attribute")
-			return false, emptyAttri, 0
-		}
-	case version.Bellatrix:
-		attr, err = payloadattribute.New(&enginev1.PayloadAttributes{
-			Timestamp:             uint64(t.Unix()),
-			PrevRandao:            prevRando,
-			SuggestedFeeRecipient: feeRecipient.Bytes(),
 		})
 		if err != nil {
 			log.WithError(err).Error("Could not get payload attribute")

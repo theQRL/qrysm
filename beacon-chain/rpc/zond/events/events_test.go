@@ -11,14 +11,14 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/async/event"
 	mockChain "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	b "github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
 	statefeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/state"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	prysmtime "github.com/theQRL/qrysm/v4/beacon-chain/core/time"
+	qrysmtime "github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	consensusBlocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	"github.com/theQRL/qrysm/v4/proto/migration"
 	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
@@ -166,13 +166,13 @@ func TestStreamEvents_OperationsEvents(t *testing.T) {
 					BlockRoot:         []byte("root"),
 					SubcommitteeIndex: 1,
 					AggregationBits:   bitfield.NewBitvector16(),
-					Signature:         []byte("sig"),
+					Signatures:        [][]byte{[]byte("sig")},
 				},
 				SelectionProof: []byte("proof"),
 			},
 			Signature: []byte("sig"),
 		}
-		wantedContribution := migration.V1Alpha1SignedContributionAndProofToV2(wantedContributionV1alpha1)
+		wantedContribution := migration.V1Alpha1SignedContributionAndProofToV1(wantedContributionV1alpha1)
 		genericResponse, err := anypb.New(wantedContribution)
 		require.NoError(t, err)
 
@@ -209,7 +209,7 @@ func TestStreamEvents_OperationsEvents(t *testing.T) {
 			},
 			Signature: make([]byte, 96),
 		}
-		wantedChange := migration.V1Alpha1SignedDilithiumToExecChangeToV2(wantedChangeV1alpha1)
+		wantedChange := migration.V1Alpha1SignedDilithiumToExecChangeToV1(wantedChangeV1alpha1)
 		genericResponse, err := anypb.New(wantedChange)
 		require.NoError(t, err)
 
@@ -270,99 +270,7 @@ func TestStreamEvents_StateEvents(t *testing.T) {
 			feed: srv.StateNotifier.StateFeed(),
 		})
 	})
-	t.Run(PayloadAttributesTopic+"_bellatrix", func(t *testing.T) {
-		ctx := context.Background()
 
-		beaconState, _ := util.DeterministicGenesisStateBellatrix(t, 1)
-		err := beaconState.SetSlot(2)
-		require.NoError(t, err, "Count not set slot")
-		stateRoot, err := beaconState.HashTreeRoot(ctx)
-		require.NoError(t, err, "Could not hash genesis state")
-
-		genesis := b.NewGenesisBlock(stateRoot[:])
-
-		parentRoot, err := genesis.Block.HashTreeRoot()
-		require.NoError(t, err, "Could not get signing root")
-
-		var scBits [fieldparams.SyncAggregateSyncCommitteeBytesLength]byte
-		blk := &zond.SignedBeaconBlockBellatrix{
-			Block: &zond.BeaconBlockBellatrix{
-				ProposerIndex: 0,
-				Slot:          1,
-				ParentRoot:    parentRoot[:],
-				StateRoot:     genesis.Block.StateRoot,
-				Body: &zond.BeaconBlockBodyBellatrix{
-					RandaoReveal:  genesis.Block.Body.RandaoReveal,
-					Graffiti:      genesis.Block.Body.Graffiti,
-					Eth1Data:      genesis.Block.Body.Eth1Data,
-					SyncAggregate: &zond.SyncAggregate{SyncCommitteeBits: scBits[:], SyncCommitteeSignature: make([]byte, 96)},
-					ExecutionPayload: &enginev1.ExecutionPayload{
-						BlockNumber:   1,
-						ParentHash:    make([]byte, fieldparams.RootLength),
-						FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
-						StateRoot:     make([]byte, fieldparams.RootLength),
-						ReceiptsRoot:  make([]byte, fieldparams.RootLength),
-						LogsBloom:     make([]byte, fieldparams.LogsBloomLength),
-						PrevRandao:    make([]byte, fieldparams.RootLength),
-						BaseFeePerGas: make([]byte, fieldparams.RootLength),
-						BlockHash:     make([]byte, fieldparams.RootLength),
-					},
-				},
-			},
-			Signature: genesis.Signature,
-		}
-		signedBlk, err := blocks.NewSignedBeaconBlock(blk)
-		require.NoError(t, err)
-		srv, ctrl, mockStream := setupServer(ctx, t)
-		defer ctrl.Finish()
-		fetcher := &mockChain.ChainService{
-			Genesis:        time.Now(),
-			State:          beaconState,
-			Block:          signedBlk,
-			Root:           make([]byte, 32),
-			ValidatorsRoot: [32]byte{},
-		}
-		srv.HeadFetcher = fetcher
-		srv.ChainInfoFetcher = fetcher
-
-		prevRando, err := helpers.RandaoMix(beaconState, prysmtime.CurrentEpoch(beaconState))
-		require.NoError(t, err)
-
-		wantedPayload := &zondpb.EventPayloadAttributeV1{
-			Version: version.String(version.Bellatrix),
-			Data: &zondpb.EventPayloadAttributeV1_BasePayloadAttribute{
-				ProposerIndex:     0,
-				ProposalSlot:      2,
-				ParentBlockNumber: 1,
-				ParentBlockRoot:   make([]byte, 32),
-				ParentBlockHash:   make([]byte, 32),
-				PayloadAttributes: &enginev1.PayloadAttributes{
-					Timestamp:             24,
-					PrevRandao:            prevRando,
-					SuggestedFeeRecipient: make([]byte, 20),
-				},
-			},
-		}
-		genericResponse, err := anypb.New(wantedPayload)
-		require.NoError(t, err)
-		wantedMessage := &gateway.EventSource{
-			Event: PayloadAttributesTopic,
-			Data:  genericResponse,
-		}
-
-		assertFeedSendAndReceive(ctx, &assertFeedArgs{
-			t:             t,
-			srv:           srv,
-			topics:        []string{PayloadAttributesTopic},
-			stream:        mockStream,
-			shouldReceive: wantedMessage,
-			itemToSend: &feed.Event{
-				Type: statefeed.NewHead,
-				Data: wantedPayload,
-			},
-			feed: srv.StateNotifier.StateFeed(),
-		})
-	})
 	t.Run(PayloadAttributesTopic+"_capella", func(t *testing.T) {
 		ctx := context.Background()
 		beaconState, _ := util.DeterministicGenesisStateCapella(t, 1)
@@ -377,12 +285,12 @@ func TestStreamEvents_StateEvents(t *testing.T) {
 		require.NoError(t, err, "Count not set slot")
 		err = beaconState.SetNextWithdrawalValidatorIndex(0)
 		require.NoError(t, err, "Could not set withdrawal index")
-		err = beaconState.SetBalances([]uint64{33000000000})
+		err = beaconState.SetBalances([]uint64{41000000000000})
 		require.NoError(t, err, "Could not set validator balance")
 		stateRoot, err := beaconState.HashTreeRoot(ctx)
 		require.NoError(t, err, "Could not hash genesis state")
 
-		genesis := b.NewGenesisBlock(stateRoot[:])
+		genesis := blocks.NewGenesisBlock(stateRoot[:])
 
 		parentRoot, err := genesis.Block.HashTreeRoot()
 		require.NoError(t, err, "Could not get signing root")
@@ -401,7 +309,7 @@ func TestStreamEvents_StateEvents(t *testing.T) {
 					RandaoReveal:  genesis.Block.Body.RandaoReveal,
 					Graffiti:      genesis.Block.Body.Graffiti,
 					Eth1Data:      genesis.Block.Body.Eth1Data,
-					SyncAggregate: &zond.SyncAggregate{SyncCommitteeBits: scBits[:], SyncCommitteeSignature: make([]byte, 96)},
+					SyncAggregate: &zond.SyncAggregate{SyncCommitteeBits: scBits[:], SyncCommitteeSignatures: [][]byte{}},
 					ExecutionPayload: &enginev1.ExecutionPayloadCapella{
 						BlockNumber:   1,
 						ParentHash:    make([]byte, fieldparams.RootLength),
@@ -418,7 +326,7 @@ func TestStreamEvents_StateEvents(t *testing.T) {
 			},
 			Signature: genesis.Signature,
 		}
-		signedBlk, err := blocks.NewSignedBeaconBlock(blk)
+		signedBlk, err := consensusBlocks.NewSignedBeaconBlock(blk)
 		require.NoError(t, err)
 		srv, ctrl, mockStream := setupServer(ctx, t)
 		defer ctrl.Finish()
@@ -433,7 +341,7 @@ func TestStreamEvents_StateEvents(t *testing.T) {
 		srv.HeadFetcher = fetcher
 		srv.ChainInfoFetcher = fetcher
 
-		prevRando, err := helpers.RandaoMix(beaconState, prysmtime.CurrentEpoch(beaconState))
+		prevRando, err := helpers.RandaoMix(beaconState, qrysmtime.CurrentEpoch(beaconState))
 		require.NoError(t, err)
 
 		wantedPayload := &zondpb.EventPayloadAttributeV2{
@@ -445,7 +353,7 @@ func TestStreamEvents_StateEvents(t *testing.T) {
 				ParentBlockRoot:   make([]byte, 32),
 				ParentBlockHash:   make([]byte, 32),
 				PayloadAttributes: &enginev1.PayloadAttributesV2{
-					Timestamp:             24,
+					Timestamp:             120,
 					PrevRandao:            prevRando,
 					SuggestedFeeRecipient: make([]byte, 20),
 					Withdrawals:           withdrawals,
@@ -543,8 +451,8 @@ func TestStreamEvents_StateEvents(t *testing.T) {
 		srv, ctrl, mockStream := setupServer(ctx, t)
 		defer ctrl.Finish()
 
-		blk := util.HydrateSignedBeaconBlock(&zond.SignedBeaconBlock{
-			Block: &zond.BeaconBlock{
+		blk := util.HydrateSignedBeaconBlockCapella(&zond.SignedBeaconBlockCapella{
+			Block: &zond.BeaconBlockCapella{
 				Slot: 8,
 			},
 		})
@@ -566,7 +474,7 @@ func TestStreamEvents_StateEvents(t *testing.T) {
 			Event: BlockTopic,
 			Data:  genericResponse,
 		}
-		wsb, err := blocks.NewSignedBeaconBlock(blk)
+		wsb, err := consensusBlocks.NewSignedBeaconBlock(blk)
 		require.NoError(t, err)
 		assertFeedSendAndReceive(ctx, &assertFeedArgs{
 			t:             t,
@@ -683,5 +591,6 @@ func assertFeedSendAndReceive(ctx context.Context, args *assertFeedArgs) {
 	for sent := 0; sent == 0; {
 		sent = args.feed.Send(args.itemToSend)
 	}
+
 	<-exitRoutine
 }

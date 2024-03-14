@@ -1,6 +1,7 @@
 package util
 
 import (
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
@@ -24,9 +25,9 @@ func ConvertToCommittee(inputKeys [][]byte) *zondpb.SyncCommittee {
 	var pubKeys [][]byte
 	for i := uint64(0); i < params.BeaconConfig().SyncCommitteeSize; i++ {
 		if i < uint64(len(inputKeys)) {
-			pubKeys = append(pubKeys, bytesutil.PadTo(inputKeys[i], params.BeaconConfig().DilithiumPubkeyLength))
+			pubKeys = append(pubKeys, bytesutil.PadTo(inputKeys[i], field_params.DilithiumPubkeyLength))
 		} else {
-			pubKeys = append(pubKeys, bytesutil.PadTo([]byte{}, params.BeaconConfig().DilithiumPubkeyLength))
+			pubKeys = append(pubKeys, bytesutil.PadTo([]byte{}, field_params.DilithiumPubkeyLength))
 		}
 	}
 

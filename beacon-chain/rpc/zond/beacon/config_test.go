@@ -45,14 +45,8 @@ func TestGetSpec(t *testing.T) {
 	config.EjectionBalance = 22
 	config.EffectiveBalanceIncrement = 23
 	config.GenesisForkVersion = []byte("GenesisForkVersion")
-	config.AltairForkVersion = []byte("AltairForkVersion")
-	config.AltairForkEpoch = 100
-	config.BellatrixForkVersion = []byte("BellatrixForkVersion")
-	config.BellatrixForkEpoch = 101
-	config.CapellaForkVersion = []byte("CapellaForkVersion")
-	config.CapellaForkEpoch = 103
-	config.BLSWithdrawalPrefixByte = byte('b')
-	config.ETH1AddressWithdrawalPrefixByte = byte('c')
+	config.DilithiumWithdrawalPrefixByte = byte('b')
+	config.ZondAddressWithdrawalPrefixByte = byte('c')
 	config.GenesisDelay = 24
 	config.SecondsPerSlot = 25
 	config.MinAttestationInclusionDelay = 26
@@ -92,14 +86,8 @@ func TestGetSpec(t *testing.T) {
 	config.SyncCommitteeSize = 63
 	config.InactivityScoreBias = 65
 	config.EpochsPerSyncCommitteePeriod = 66
-	config.InactivityPenaltyQuotientAltair = 67
-	config.MinSlashingPenaltyQuotientAltair = 68
-	config.ProportionalSlashingMultiplierAltair = 69
 	config.InactivityScoreRecoveryRate = 70
 	config.MinSyncCommitteeParticipants = 71
-	config.TerminalBlockHash = common.HexToHash("TerminalBlockHash")
-	config.TerminalBlockHashActivationEpoch = 72
-	config.TerminalTotalDifficulty = "73"
 	config.DefaultFeeRecipient = common.HexToAddress("DefaultFeeRecipient")
 	config.MaxWithdrawalsPerPayload = 74
 	config.MaxDilithiumToExecutionChanges = 75
@@ -136,7 +124,7 @@ func TestGetSpec(t *testing.T) {
 	resp, err := server.GetSpec(context.Background(), &emptypb.Empty{})
 	require.NoError(t, err)
 
-	assert.Equal(t, 112, len(resp.Data))
+	assert.Equal(t, 91, len(resp.Data))
 	for k, v := range resp.Data {
 		switch k {
 		case "CONFIG_NAME":
@@ -193,23 +181,11 @@ func TestGetSpec(t *testing.T) {
 			assert.Equal(t, "23", v)
 		case "GENESIS_FORK_VERSION":
 			assert.Equal(t, "0x"+hex.EncodeToString([]byte("GenesisForkVersion")), v)
-		case "ALTAIR_FORK_VERSION":
-			assert.Equal(t, "0x"+hex.EncodeToString([]byte("AltairForkVersion")), v)
-		case "ALTAIR_FORK_EPOCH":
-			assert.Equal(t, "100", v)
-		case "BELLATRIX_FORK_VERSION":
-			assert.Equal(t, "0x"+hex.EncodeToString([]byte("BellatrixForkVersion")), v)
-		case "BELLATRIX_FORK_EPOCH":
-			assert.Equal(t, "101", v)
-		case "CAPELLA_FORK_VERSION":
-			assert.Equal(t, "0x"+hex.EncodeToString([]byte("CapellaForkVersion")), v)
-		case "CAPELLA_FORK_EPOCH":
-			assert.Equal(t, "103", v)
 		case "MIN_ANCHOR_POW_BLOCK_DIFFICULTY":
 			assert.Equal(t, "1000", v)
-		case "BLS_WITHDRAWAL_PREFIX":
+		case "DILITHIUM_WITHDRAWAL_PREFIX":
 			assert.Equal(t, "0x62", v)
-		case "ETH1_ADDRESS_WITHDRAWAL_PREFIX":
+		case "ZOND_ADDRESS_WITHDRAWAL_PREFIX":
 			assert.Equal(t, "0x63", v)
 		case "GENESIS_DELAY":
 			assert.Equal(t, "24", v)
@@ -251,12 +227,8 @@ func TestGetSpec(t *testing.T) {
 			assert.Equal(t, "42", v)
 		case "HF1_INACTIVITY_PENALTY_QUOTIENT":
 			assert.Equal(t, "43", v)
-		case "MIN_SLASHING_PENALTY_QUOTIENT":
-			assert.Equal(t, "44", v)
 		case "HF1_MIN_SLASHING_PENALTY_QUOTIENT":
 			assert.Equal(t, "45", v)
-		case "PROPORTIONAL_SLASHING_MULTIPLIER":
-			assert.Equal(t, "46", v)
 		case "HF1_PROPORTIONAL_SLASHING_MULTIPLIER":
 			assert.Equal(t, "47", v)
 		case "MAX_PROPOSER_SLASHINGS":
@@ -297,12 +269,6 @@ func TestGetSpec(t *testing.T) {
 			assert.Equal(t, "65", v)
 		case "EPOCHS_PER_SYNC_COMMITTEE_PERIOD":
 			assert.Equal(t, "66", v)
-		case "INACTIVITY_PENALTY_QUOTIENT_ALTAIR":
-			assert.Equal(t, "67", v)
-		case "MIN_SLASHING_PENALTY_QUOTIENT_ALTAIR":
-			assert.Equal(t, "68", v)
-		case "PROPORTIONAL_SLASHING_MULTIPLIER_ALTAIR":
-			assert.Equal(t, "69", v)
 		case "INACTIVITY_SCORE_RECOVERY_RATE":
 			assert.Equal(t, "70", v)
 		case "MIN_SYNC_COMMITTEE_PARTICIPANTS":
@@ -331,25 +297,17 @@ func TestGetSpec(t *testing.T) {
 			assert.Equal(t, "0x08000000", v)
 		case "DOMAIN_CONTRIBUTION_AND_PROOF":
 			assert.Equal(t, "0x09000000", v)
-		case "DOMAIN_BLS_TO_EXECUTION_CHANGE":
+		case "DOMAIN_DILITHIUM_TO_EXECUTION_CHANGE":
 			assert.Equal(t, "0x0a000000", v)
 		case "DOMAIN_APPLICATION_BUILDER":
 			assert.Equal(t, "0x00000001", v)
-		case "TRANSITION_TOTAL_DIFFICULTY":
-			assert.Equal(t, "0", v)
-		case "TERMINAL_BLOCK_HASH_ACTIVATION_EPOCH":
-			assert.Equal(t, "72", v)
-		case "TERMINAL_BLOCK_HASH":
-			assert.Equal(t, common.HexToHash("TerminalBlockHash"), common.HexToHash(v))
-		case "TERMINAL_TOTAL_DIFFICULTY":
-			assert.Equal(t, "73", v)
 		case "DefaultFeeRecipient":
 			assert.Equal(t, common.HexToAddress("DefaultFeeRecipient"), v)
-		case "PROPORTIONAL_SLASHING_MULTIPLIER_BELLATRIX":
-			assert.Equal(t, "3", v)
-		case "MIN_SLASHING_PENALTY_QUOTIENT_BELLATRIX":
-			assert.Equal(t, "32", v)
-		case "INACTIVITY_PENALTY_QUOTIENT_BELLATRIX":
+		case "PROPORTIONAL_SLASHING_MULTIPLIER":
+			assert.Equal(t, "46", v)
+		case "MIN_SLASHING_PENALTY_QUOTIENT":
+			assert.Equal(t, "44", v)
+		case "INACTIVITY_PENALTY_QUOTIENT_":
 			assert.Equal(t, "16777216", v)
 		case "PROPOSER_SCORE_BOOST":
 			assert.Equal(t, "40", v)
@@ -357,7 +315,7 @@ func TestGetSpec(t *testing.T) {
 			assert.Equal(t, "3", v)
 		case "MAX_WITHDRAWALS_PER_PAYLOAD":
 			assert.Equal(t, "74", v)
-		case "MAX_BLS_TO_EXECUTION_CHANGES":
+		case "MAX_DILITHIUM_TO_EXECUTION_CHANGES":
 			assert.Equal(t, "75", v)
 		case "MAX_VALIDATORS_PER_WITHDRAWALS_SWEEP":
 			assert.Equal(t, "76", v)

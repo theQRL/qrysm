@@ -1,5 +1,7 @@
 package main
 
+// TODO(theQRL/qrysm/issues/75)
+/*
 import (
 	"context"
 	"flag"
@@ -236,3 +238,4 @@ func genesisBeaconState() (state.BeaconState, error) {
 	}
 	return state_native.InitializeFromProtoUnsafePhase0(genesisState)
 }
+*/

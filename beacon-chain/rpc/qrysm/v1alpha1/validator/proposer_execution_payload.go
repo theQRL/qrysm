@@ -10,18 +10,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/v4/beacon-chain/db/kv"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
-	consensusblocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	payloadattribute "github.com/theQRL/qrysm/v4/consensus-types/payload-attribute"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -45,10 +42,6 @@ var (
 func (vs *Server) getLocalPayload(ctx context.Context, blk interfaces.ReadOnlyBeaconBlock, st state.BeaconState) (interfaces.ExecutionData, bool, error) {
 	ctx, span := trace.StartSpan(ctx, "ProposerServer.getLocalPayload")
 	defer span.End()
-
-	if blk.Version() < version.Bellatrix {
-		return nil, false, nil
-	}
 
 	slot := blk.Slot()
 	vIdx := blk.ProposerIndex()
@@ -91,14 +84,7 @@ func (vs *Server) getLocalPayload(ctx context.Context, blk interfaces.ReadOnlyBe
 	}
 
 	parentHash, err := vs.getParentBlockHash(ctx, st, slot)
-	switch {
-	case errors.Is(err, errActivationNotReached) || errors.Is(err, errNoTerminalBlockHash):
-		p, err := consensusblocks.WrappedExecutionPayload(emptyPayload())
-		if err != nil {
-			return nil, false, err
-		}
-		return p, false, nil
-	case err != nil:
+	if err != nil {
 		return nil, false, err
 	}
 	payloadIDCacheMiss.Inc()
@@ -108,13 +94,8 @@ func (vs *Server) getLocalPayload(ctx context.Context, blk interfaces.ReadOnlyBe
 		return nil, false, err
 	}
 
-	finalizedBlockHash := [32]byte{}
-	justifiedBlockHash := [32]byte{}
-
-	if st.Version() >= version.Altair {
-		finalizedBlockHash = vs.FinalizationFetcher.FinalizedBlockHash()
-		justifiedBlockHash = vs.FinalizationFetcher.UnrealizedJustifiedPayloadBlockHash()
-	}
+	finalizedBlockHash := vs.FinalizationFetcher.FinalizedBlockHash()
+	justifiedBlockHash := vs.FinalizationFetcher.UnrealizedJustifiedPayloadBlockHash()
 
 	f := &enginev1.ForkchoiceState{
 		HeadBlockHash:      parentHash,
@@ -138,15 +119,6 @@ func (vs *Server) getLocalPayload(ctx context.Context, blk interfaces.ReadOnlyBe
 			PrevRandao:            random,
 			SuggestedFeeRecipient: feeRecipient.Bytes(),
 			Withdrawals:           withdrawals,
-		})
-		if err != nil {
-			return nil, false, err
-		}
-	case version.Bellatrix:
-		attr, err = payloadattribute.New(&enginev1.PayloadAttributes{
-			Timestamp:             uint64(t.Unix()),
-			PrevRandao:            random,
-			SuggestedFeeRecipient: feeRecipient.Bytes(),
 		})
 		if err != nil {
 			return nil, false, err
@@ -182,46 +154,12 @@ func warnIfFeeRecipientDiffers(payload interfaces.ExecutionData, feeRecipient co
 	}
 }
 
-// This returns the valid terminal block hash with an existence bool value.
-//
-// Spec code:
-// def get_terminal_pow_block(pow_chain: Dict[Hash32, PowBlock]) -> Optional[PowBlock]:
-//
-//	if TERMINAL_BLOCK_HASH != Hash32():
-//	    # Terminal block hash override takes precedence over terminal total difficulty
-//	    if TERMINAL_BLOCK_HASH in pow_chain:
-//	        return pow_chain[TERMINAL_BLOCK_HASH]
-//	    else:
-//	        return None
-//
-//	return get_pow_block_at_terminal_total_difficulty(pow_chain)
-func (vs *Server) getTerminalBlockHashIfExists(ctx context.Context, transitionTime uint64) ([]byte, bool, error) {
-	terminalBlockHash := params.BeaconConfig().TerminalBlockHash
-	// Terminal block hash override takes precedence over terminal total difficulty.
-	if params.BeaconConfig().TerminalBlockHash != params.BeaconConfig().ZeroHash {
-		exists, _, err := vs.Eth1BlockFetcher.BlockExists(ctx, terminalBlockHash)
-		if err != nil {
-			return nil, false, err
-		}
-		if !exists {
-			return nil, false, nil
-		}
-
-		return terminalBlockHash.Bytes(), true, nil
-	}
-
-	return vs.ExecutionEngineCaller.GetTerminalBlockHash(ctx, transitionTime)
-}
-
 func (vs *Server) getBuilderPayload(ctx context.Context,
 	slot primitives.Slot,
 	vIdx primitives.ValidatorIndex) (interfaces.ExecutionData, error) {
 	ctx, span := trace.StartSpan(ctx, "ProposerServer.getBuilderPayload")
 	defer span.End()
 
-	if slots.ToEpoch(slot) < params.BeaconConfig().BellatrixForkEpoch {
-		return nil, nil
-	}
 	canUseBuilder, err := vs.canUseBuilder(ctx, slot, vIdx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to check if we can use the builder")
@@ -234,9 +172,6 @@ func (vs *Server) getBuilderPayload(ctx context.Context,
 	return vs.getPayloadHeaderFromBuilder(ctx, slot, vIdx)
 }
 
-var errActivationNotReached = errors.New("activation epoch not reached")
-var errNoTerminalBlockHash = errors.New("no terminal block hash")
-
 // getParentBlockHash retrieves the parent block hash of the block at the given slot.
 // The function's behavior varies depending on the state version and whether the merge has been completed.
 //
@@ -248,87 +183,11 @@ var errNoTerminalBlockHash = errors.New("no terminal block hash")
 //
 // Otherwise, the terminal block hash is fetched based on the slot's time, and an error is returned if it doesn't exist.
 func (vs *Server) getParentBlockHash(ctx context.Context, st state.BeaconState, slot primitives.Slot) ([]byte, error) {
-	if st.Version() >= version.Capella {
-		return getParentBlockHashPostCapella(st)
-	}
-
-	mergeComplete, err := blocks.IsMergeTransitionComplete(st)
-	if err != nil {
-		return nil, err
-	}
-	if mergeComplete {
-		return getParentBlockHashPostMerge(st)
-	}
-
-	if activationEpochNotReached(slot) {
-		return nil, errActivationNotReached
-	}
-
-	return getParentBlockHashPreMerge(ctx, vs, st, slot)
-}
-
-// getParentBlockHashPostCapella retrieves the parent block hash for states of version Capella or later.
-func getParentBlockHashPostCapella(st state.BeaconState) ([]byte, error) {
 	header, err := st.LatestExecutionPayloadHeader()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get post capella payload header")
 	}
 	return header.BlockHash(), nil
-}
-
-// getParentBlockHashPostMerge retrieves the parent block hash after the merge has completed.
-func getParentBlockHashPostMerge(st state.BeaconState) ([]byte, error) {
-	header, err := st.LatestExecutionPayloadHeader()
-	if err != nil {
-		return nil, errors.Wrap(err, "could not get post merge payload header")
-	}
-	return header.ParentHash(), nil
-}
-
-// getParentBlockHashPreMerge retrieves the parent block hash before the merge has completed.
-func getParentBlockHashPreMerge(ctx context.Context, vs *Server, st state.BeaconState, slot primitives.Slot) ([]byte, error) {
-	t, err := slots.ToTime(st.GenesisTime(), slot)
-	if err != nil {
-		return nil, err
-	}
-
-	parentHash, hasTerminalBlock, err := vs.getTerminalBlockHashIfExists(ctx, uint64(t.Unix()))
-	if err != nil {
-		return nil, err
-	}
-	if !hasTerminalBlock {
-		return nil, errNoTerminalBlockHash
-	}
-	return parentHash, nil
-}
-
-// activationEpochNotReached returns true if activation epoch has not been reach.
-// Which satisfy the following conditions in spec:
-//
-//	  is_terminal_block_hash_set = TERMINAL_BLOCK_HASH != Hash32()
-//	  is_activation_epoch_reached = get_current_epoch(state) >= TERMINAL_BLOCK_HASH_ACTIVATION_EPOCH
-//	  if is_terminal_block_hash_set and not is_activation_epoch_reached:
-//		return True
-func activationEpochNotReached(slot primitives.Slot) bool {
-	terminalBlockHashSet := bytesutil.ToBytes32(params.BeaconConfig().TerminalBlockHash.Bytes()) != [32]byte{}
-	if terminalBlockHashSet {
-		return params.BeaconConfig().TerminalBlockHashActivationEpoch > slots.ToEpoch(slot)
-	}
-	return false
-}
-
-func emptyPayload() *enginev1.ExecutionPayload {
-	return &enginev1.ExecutionPayload{
-		ParentHash:    make([]byte, fieldparams.RootLength),
-		FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
-		StateRoot:     make([]byte, fieldparams.RootLength),
-		ReceiptsRoot:  make([]byte, fieldparams.RootLength),
-		LogsBloom:     make([]byte, fieldparams.LogsBloomLength),
-		PrevRandao:    make([]byte, fieldparams.RootLength),
-		BaseFeePerGas: make([]byte, fieldparams.RootLength),
-		BlockHash:     make([]byte, fieldparams.RootLength),
-		Transactions:  make([][]byte, 0),
-	}
 }
 
 func emptyPayloadCapella() *enginev1.ExecutionPayloadCapella {

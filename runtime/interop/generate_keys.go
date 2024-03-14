@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-qrllib/common"
 	"github.com/theQRL/qrysm/v4/async"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/crypto/hash"
 )
@@ -50,9 +50,9 @@ func deterministicallyGenerateKeys(startIndex, numKeys uint64) ([]dilithium.Dili
 		binary.LittleEndian.PutUint32(enc, uint32(i))
 		// TODO: (cyyber) Hash returns 32 bytes hash, need to be replaced to get 48 bytes hash
 		h := hash.Hash(enc)
-		var seed [common.SeedSize]uint8
+		var seed [field_params.DilithiumSeedLength]uint8
 		copy(seed[:], h[:])
-		d, err := dilithium.SecretKeyFromBytes(seed[:])
+		d, err := dilithium.SecretKeyFromSeed(seed[:])
 		if err != nil {
 			return nil, nil, err
 		}

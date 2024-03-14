@@ -14,7 +14,6 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	http2 "github.com/theQRL/qrysm/v4/network/http"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 // ExpectedWithdrawals get the withdrawals computed from the specified state, that will be included in the block that gets built on the specified state.
@@ -45,19 +44,7 @@ func (s *Server) ExpectedWithdrawals(w http.ResponseWriter, r *http.Request) {
 	} else {
 		proposalSlot = st.Slot() + 1
 	}
-	// Perform sanity checks on proposal slot before computing state
-	capellaStart, err := slots.EpochStart(params.BeaconConfig().CapellaForkEpoch)
-	if err != nil {
-		http2.WriteError(w, handleWrapError(err, "could not calculate Capella start slot", http.StatusInternalServerError))
-		return
-	}
-	if proposalSlot < capellaStart {
-		http2.WriteError(w, &http2.DefaultErrorJson{
-			Message: "expected withdrawals are not supported before Capella fork",
-			Code:    http.StatusBadRequest,
-		})
-		return
-	}
+
 	if proposalSlot <= st.Slot() {
 		http2.WriteError(w, &http2.DefaultErrorJson{
 			Message: fmt.Sprintf("proposal slot must be bigger than state slot. proposal slot: %d, state slot: %d", proposalSlot, st.Slot()),

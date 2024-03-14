@@ -21,6 +21,7 @@ import "proto/zond/ext/options.proto";
 import "proto/zond/v1/attestation.proto";
 import "proto/zond/v1/beacon_block.proto";
 import "proto/zond/v1/beacon_state.proto";
+import "proto/zond/v1/withdrawals.proto";
 
 option csharp_namespace = "TheQRL.Zond.V1";
 option go_package = "github.com/theQRL/qrysm/v4/proto/zond/v1";
@@ -51,7 +52,7 @@ message StateRootResponse {
 // Beacon Block API related messages.
 
 message BlockAttestationsResponse {
-    repeated theqrl.zond.v1.Attestation data = 1;
+    repeated Attestation data = 1;
     bool execution_optimistic = 2;
     bool finalized  = 3;
 }
@@ -62,19 +63,8 @@ message BlockRequest {
     bytes block_id = 1;
 }
 
-message BlockResponse {
-    BeaconBlockContainer data = 1;
-}
-
 message BlockSSZResponse {
     bytes data = 1;
-}
-
-message BeaconBlockContainer {
-    BeaconBlock message = 1;
-
-    // 96 byte BLS signature from the validator that produced this block.
-    bytes signature = 2 [(theqrl.zond.ext.ssz_size) = "96"];
 }
 
 // Beacon Pool related API service.
@@ -123,7 +113,7 @@ message WeakSubjectivityResponse {
 // DEPRECATED: GetWeakSubjectivity endpoint is no longer be supported
 message WeakSubjectivityData {
     option deprecated = true;
-    theqrl.zond.v1.Checkpoint ws_checkpoint = 1;
+    Checkpoint ws_checkpoint = 1;
     bytes state_root = 2;
 }
 
@@ -180,4 +170,8 @@ enum ForkChoiceNodeValidity {
     VALID = 0;
     INVALID = 1;
     OPTIMISTIC = 2;
+}
+
+message DilithiumToExecutionChangesPoolResponse {
+  repeated SignedDilithiumToExecutionChange data = 1;
 }

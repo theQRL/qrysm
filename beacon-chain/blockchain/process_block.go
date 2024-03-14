@@ -25,7 +25,6 @@ import (
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 )
@@ -149,13 +148,9 @@ func getStateVersionAndPayload(st state.BeaconState) (int, interfaces.ExecutionD
 	var preStateHeader interfaces.ExecutionData
 	var err error
 	preStateVersion := st.Version()
-	switch preStateVersion {
-	case version.Phase0, version.Altair:
-	default:
-		preStateHeader, err = st.LatestExecutionPayloadHeader()
-		if err != nil {
-			return 0, nil, err
-		}
+	preStateHeader, err = st.LatestExecutionPayloadHeader()
+	if err != nil {
+		return 0, nil, err
 	}
 	return preStateVersion, preStateHeader, nil
 }
@@ -252,16 +247,9 @@ func (s *Service) onBlockBatch(ctx context.Context, blks []consensusblocks.ROBlo
 	for i, b := range blks {
 		root := b.Root()
 		isValidPayload, err = s.notifyNewPayload(ctx,
-			postVersionAndHeaders[i].version,
 			postVersionAndHeaders[i].header, b)
 		if err != nil {
 			return s.handleInvalidExecutionError(ctx, err, root, b.Block().ParentRoot())
-		}
-		if isValidPayload {
-			if err := s.validateMergeTransitionBlock(ctx, preVersionAndHeaders[i].version,
-				preVersionAndHeaders[i].header, b); err != nil {
-				return err
-			}
 		}
 
 		args := &forkchoicetypes.BlockAndCheckpoints{Block: b.Block(),
@@ -437,44 +425,6 @@ func (s *Service) pruneAttsFromPool(headBlock interfaces.ReadOnlySignedBeaconBlo
 		}
 	}
 	return nil
-}
-
-// validateMergeTransitionBlock validates the merge transition block.
-func (s *Service) validateMergeTransitionBlock(ctx context.Context, stateVersion int, stateHeader interfaces.ExecutionData, blk interfaces.ReadOnlySignedBeaconBlock) error {
-	// Skip validation if block is older than Bellatrix.
-	if blocks.IsPreBellatrixVersion(blk.Block().Version()) {
-		return nil
-	}
-
-	// Skip validation if block has an empty payload.
-	payload, err := blk.Block().Body().Execution()
-	if err != nil {
-		return invalidBlock{error: err}
-	}
-	isEmpty, err := consensusblocks.IsEmptyExecutionData(payload)
-	if err != nil {
-		return err
-	}
-	if isEmpty {
-		return nil
-	}
-
-	// Handle case where pre-state is Altair but block contains payload.
-	// To reach here, the block must have contained a valid payload.
-	if blocks.IsPreBellatrixVersion(stateVersion) {
-		return s.validateMergeBlock(ctx, blk)
-	}
-
-	// Skip validation if the block is not a merge transition block.
-	// To reach here. The payload must be non-empty. If the state header is empty then it's at transition.
-	empty, err := consensusblocks.IsEmptyExecutionData(stateHeader)
-	if err != nil {
-		return err
-	}
-	if !empty {
-		return nil
-	}
-	return s.validateMergeBlock(ctx, blk)
 }
 
 // This routine checks if there is a cached proposer payload ID available for the next slot proposer.

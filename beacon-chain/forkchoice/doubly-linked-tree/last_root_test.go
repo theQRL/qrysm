@@ -21,16 +21,16 @@ func TestLastRoot(t *testing.T) {
 	st, root, err = prepareForkchoiceState(ctx, 3, [32]byte{'3'}, [32]byte{'1'}, [32]byte{'3'}, 0, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, st, root))
-	st, root, err = prepareForkchoiceState(ctx, 32, [32]byte{'4'}, [32]byte{'3'}, [32]byte{'4'}, 0, 0)
+	st, root, err = prepareForkchoiceState(ctx, 128, [32]byte{'4'}, [32]byte{'3'}, [32]byte{'4'}, 0, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, st, root))
-	st, root, err = prepareForkchoiceState(ctx, 33, [32]byte{'5'}, [32]byte{'2'}, [32]byte{'5'}, 0, 0)
+	st, root, err = prepareForkchoiceState(ctx, 129, [32]byte{'5'}, [32]byte{'2'}, [32]byte{'5'}, 0, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, st, root))
-	st, root, err = prepareForkchoiceState(ctx, 34, [32]byte{'6'}, [32]byte{'5'}, [32]byte{'6'}, 0, 0)
+	st, root, err = prepareForkchoiceState(ctx, 130, [32]byte{'6'}, [32]byte{'5'}, [32]byte{'6'}, 0, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, st, root))
-	headNode, _ := f.store.nodeByRoot[[32]byte{'6'}]
+	headNode := f.store.nodeByRoot[[32]byte{'6'}]
 	f.store.headNode = headNode
 	require.Equal(t, [32]byte{'6'}, f.store.headNode.root)
 	require.Equal(t, [32]byte{'2'}, f.LastRoot(0))

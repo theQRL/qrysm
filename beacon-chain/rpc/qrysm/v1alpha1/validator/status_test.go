@@ -18,7 +18,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/container/trie"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
@@ -50,7 +50,7 @@ func TestValidatorStatus_DepositedEth1(t *testing.T) {
 			0: uint64(height),
 		},
 	}
-	stateObj, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
+	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{})
 	require.NoError(t, err)
 	vs := &Server{
 		DepositFetcher: depositCache,
@@ -92,7 +92,7 @@ func TestValidatorStatus_Deposited(t *testing.T) {
 			0: uint64(height),
 		},
 	}
-	stateObj, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
+	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{})
 	require.NoError(t, err)
 	vs := &Server{
 		DepositFetcher: depositCache,
@@ -137,7 +137,7 @@ func TestValidatorStatus_PartiallyDeposited(t *testing.T) {
 			0: uint64(height),
 		},
 	}
-	stateObj, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{
+	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
 		Validators: []*zondpb.Validator{
 			{
 				PublicKey:                  pubKey1,
@@ -192,7 +192,7 @@ func TestValidatorStatus_Pending_MultipleDeposits(t *testing.T) {
 			0: uint64(height),
 		},
 	}
-	stateObj, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{
+	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
 		Validators: []*zondpb.Validator{
 			{
 				PublicKey:                  pubKey1,
@@ -226,11 +226,11 @@ func TestValidatorStatus_Pending(t *testing.T) {
 	ctx := context.Background()
 
 	pubKey := pubKey(1)
-	block := util.NewBeaconBlock()
+	block := util.NewBeaconBlockCapella()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 	// Pending active because activation epoch is still defaulted at far future slot.
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(5000))
 	err = st.SetValidators([]*zondpb.Validator{
@@ -293,11 +293,11 @@ func TestValidatorStatus_Exiting(t *testing.T) {
 	epoch := slots.ToEpoch(slot)
 	exitEpoch := helpers.ActivationExitEpoch(epoch)
 	withdrawableEpoch := exitEpoch + params.BeaconConfig().MinValidatorWithdrawabilityDelay
-	block := util.NewBeaconBlock()
+	block := util.NewBeaconBlockCapella()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
-	st := &zondpb.BeaconState{
+	st := &zondpb.BeaconStateCapella{
 		Slot: slot,
 		Validators: []*zondpb.Validator{{
 			PublicKey:         pubKey,
@@ -305,7 +305,7 @@ func TestValidatorStatus_Exiting(t *testing.T) {
 			ExitEpoch:         exitEpoch,
 			WithdrawableEpoch: withdrawableEpoch},
 		}}
-	stateObj, err := state_native.InitializeFromProtoUnsafePhase0(st)
+	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(st)
 	require.NoError(t, err)
 	depData := &zondpb.Deposit_Data{
 		PublicKey:             pubKey,
@@ -353,18 +353,18 @@ func TestValidatorStatus_Slashing(t *testing.T) {
 	// Exit slashed because slashed is true, exit epoch is =< current epoch and withdrawable epoch > epoch .
 	slot := primitives.Slot(10000)
 	epoch := slots.ToEpoch(slot)
-	block := util.NewBeaconBlock()
+	block := util.NewBeaconBlockCapella()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
-	st := &zondpb.BeaconState{
+	st := &zondpb.BeaconStateCapella{
 		Slot: slot,
 		Validators: []*zondpb.Validator{{
 			Slashed:           true,
 			PublicKey:         pubKey,
 			WithdrawableEpoch: epoch + 1},
 		}}
-	stateObj, err := state_native.InitializeFromProtoUnsafePhase0(st)
+	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(st)
 	require.NoError(t, err)
 	depData := &zondpb.Deposit_Data{
 		PublicKey:             pubKey,
@@ -412,10 +412,10 @@ func TestValidatorStatus_Exited(t *testing.T) {
 	// Exit because only exit epoch is =< current epoch.
 	slot := primitives.Slot(10000)
 	epoch := slots.ToEpoch(slot)
-	block := util.NewBeaconBlock()
+	block := util.NewBeaconBlockCapella()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(slot))
 	err = st.SetValidators([]*zondpb.Validator{{
@@ -467,7 +467,7 @@ func TestValidatorStatus_UnknownStatus(t *testing.T) {
 	depositCache, err := depositcache.New()
 	require.NoError(t, err)
 
-	stateObj, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{
+	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
 		Slot: 0,
 	})
 	require.NoError(t, err)
@@ -492,7 +492,7 @@ func TestActivationStatus_OK(t *testing.T) {
 	deposits, _, err := util.DeterministicDepositsAndKeys(4)
 	require.NoError(t, err)
 	pubKeys := [][]byte{deposits[0].Data.PublicKey, deposits[1].Data.PublicKey, deposits[2].Data.PublicKey, deposits[3].Data.PublicKey}
-	stateObj, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{
+	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
 		Slot: 4000,
 		Validators: []*zondpb.Validator{
 			{
@@ -514,7 +514,7 @@ func TestActivationStatus_OK(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	block := util.NewBeaconBlock()
+	block := util.NewBeaconBlockCapella()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 	dep := deposits[0]
@@ -583,10 +583,6 @@ func TestOptimisticStatus(t *testing.T) {
 	err := server.optimisticStatus(context.Background())
 	require.NoError(t, err)
 
-	cfg := params.BeaconConfig().Copy()
-	cfg.BellatrixForkEpoch = 2
-	params.OverrideBeaconConfig(cfg)
-
 	server = &Server{OptimisticModeFetcher: &mockChain.ChainService{Optimistic: true}, TimeFetcher: &mockChain.ChainService{}}
 	err = server.optimisticStatus(context.Background())
 	s, ok := status.FromError(err)
@@ -603,7 +599,7 @@ func TestValidatorStatus_CorrectActivationQueue(t *testing.T) {
 	ctx := context.Background()
 
 	pbKey := pubKey(5)
-	block := util.NewBeaconBlock()
+	block := util.NewBeaconBlockCapella()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 	currentSlot := primitives.Slot(5000)
@@ -652,7 +648,7 @@ func TestValidatorStatus_CorrectActivationQueue(t *testing.T) {
 			WithdrawableEpoch:     params.BeaconConfig().FarFutureEpoch,
 		},
 	}
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetValidators(validators))
 	require.NoError(t, st.SetSlot(currentSlot))
@@ -713,7 +709,7 @@ func TestMultipleValidatorStatus_Pubkeys(t *testing.T) {
 		deposits[4].Data.PublicKey,
 		deposits[5].Data.PublicKey,
 	}
-	stateObj, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{
+	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
 		Slot: 4000,
 		Validators: []*zondpb.Validator{
 			{
@@ -746,7 +742,7 @@ func TestMultipleValidatorStatus_Pubkeys(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	block := util.NewBeaconBlock()
+	block := util.NewBeaconBlockCapella()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 	depositTrie, err := trie.NewTrie(params.BeaconConfig().DepositContractTreeDepth)
@@ -816,7 +812,7 @@ func TestMultipleValidatorStatus_Indices(t *testing.T) {
 	slot := primitives.Slot(10000)
 	epoch := slots.ToEpoch(slot)
 	pubKeys := [][]byte{pubKey(1), pubKey(2), pubKey(3), pubKey(4), pubKey(5), pubKey(6), pubKey(7)}
-	beaconState := &zondpb.BeaconState{
+	beaconState := &zondpb.BeaconStateCapella{
 		Slot: 4000,
 		Validators: []*zondpb.Validator{
 			{
@@ -853,9 +849,9 @@ func TestMultipleValidatorStatus_Indices(t *testing.T) {
 			},
 		},
 	}
-	stateObj, err := state_native.InitializeFromProtoUnsafePhase0(beaconState)
+	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(beaconState)
 	require.NoError(t, err)
-	block := util.NewBeaconBlock()
+	block := util.NewBeaconBlockCapella()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
@@ -928,7 +924,7 @@ func TestValidatorStatus_Invalid(t *testing.T) {
 			0: uint64(height),
 		},
 	}
-	stateObj, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
+	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{})
 	require.NoError(t, err)
 	vs := &Server{
 		DepositFetcher: depositCache,
@@ -958,11 +954,12 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 		wantErr bool
 		svSetup func(t *testing.T) (*Server, *zondpb.DoppelGangerRequest, *zondpb.DoppelGangerResponse)
 	}{
+
 		{
 			name:    "normal doppelganger request",
 			wantErr: false,
 			svSetup: func(t *testing.T) (*Server, *zondpb.DoppelGangerRequest, *zondpb.DoppelGangerResponse) {
-				hs, ps, keys := createStateSetupAltair(t, 3)
+				hs, ps, keys := createStateSetupCapella(t, 3)
 				rb := mockstategen.NewMockReplayerBuilder()
 				rb.SetMockStateForSlot(ps, 23)
 				vs := &Server{
@@ -994,7 +991,7 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 			name:    "doppelganger exists current epoch",
 			wantErr: false,
 			svSetup: func(t *testing.T) (*Server, *zondpb.DoppelGangerRequest, *zondpb.DoppelGangerResponse) {
-				hs, ps, keys := createStateSetupAltair(t, 3)
+				hs, ps, keys := createStateSetupCapella(t, 3)
 				rb := mockstategen.NewMockReplayerBuilder()
 				rb.SetMockStateForSlot(ps, 23)
 				currentIndices := make([]byte, 64)
@@ -1041,7 +1038,7 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 			name:    "doppelganger exists previous epoch",
 			wantErr: false,
 			svSetup: func(t *testing.T) (*Server, *zondpb.DoppelGangerRequest, *zondpb.DoppelGangerResponse) {
-				hs, ps, keys := createStateSetupAltair(t, 3)
+				hs, ps, keys := createStateSetupCapella(t, 3)
 				prevIndices := make([]byte, 64)
 				prevIndices[2] = 1
 				require.NoError(t, ps.SetPreviousParticipationBits(prevIndices))
@@ -1088,7 +1085,7 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 			name:    "multiple doppelganger exists",
 			wantErr: false,
 			svSetup: func(t *testing.T) (*Server, *zondpb.DoppelGangerRequest, *zondpb.DoppelGangerResponse) {
-				hs, ps, keys := createStateSetupAltair(t, 3)
+				hs, ps, keys := createStateSetupCapella(t, 3)
 				currentIndices := make([]byte, 64)
 				currentIndices[10] = 1
 				currentIndices[11] = 2
@@ -1144,7 +1141,7 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 			name:    "attesters are too recent",
 			wantErr: false,
 			svSetup: func(t *testing.T) (*Server, *zondpb.DoppelGangerRequest, *zondpb.DoppelGangerResponse) {
-				hs, ps, keys := createStateSetupAltair(t, 3)
+				hs, ps, keys := createStateSetupCapella(t, 3)
 				rb := mockstategen.NewMockReplayerBuilder()
 				rb.SetMockStateForSlot(ps, 23)
 				currentIndices := make([]byte, 64)
@@ -1181,7 +1178,7 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 			name:    "attesters are too recent(previous state)",
 			wantErr: false,
 			svSetup: func(t *testing.T) (*Server, *zondpb.DoppelGangerRequest, *zondpb.DoppelGangerResponse) {
-				hs, ps, keys := createStateSetupAltair(t, 3)
+				hs, ps, keys := createStateSetupCapella(t, 3)
 				rb := mockstategen.NewMockReplayerBuilder()
 				rb.SetMockStateForSlot(ps, 23)
 				currentIndices := make([]byte, 64)
@@ -1218,7 +1215,7 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 			name:    "exit early for Phase 0",
 			wantErr: false,
 			svSetup: func(t *testing.T) (*Server, *zondpb.DoppelGangerRequest, *zondpb.DoppelGangerResponse) {
-				hs, _, keys := createStateSetupPhase0(t, 3)
+				hs, _, keys := createStateSetupCapella(t, 3)
 
 				vs := &Server{
 					HeadFetcher: &mockChain.ChainService{
@@ -1264,26 +1261,9 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 	}
 }
 
-func createStateSetupPhase0(t *testing.T, head primitives.Epoch) (state.BeaconState,
-	state.BeaconState, []bls.SecretKey) {
-	gs, keys := util.DeterministicGenesisState(t, 64)
-	hs := gs.Copy()
-
-	// Head State
-	headSlot := primitives.Slot(head)*params.BeaconConfig().SlotsPerEpoch + params.BeaconConfig().SlotsPerEpoch/2
-	assert.NoError(t, hs.SetSlot(headSlot))
-
-	// Previous Epoch State
-	prevSlot := headSlot - params.BeaconConfig().SlotsPerEpoch
-	ps := gs.Copy()
-	assert.NoError(t, ps.SetSlot(prevSlot))
-
-	return hs, ps, keys
-}
-
-func createStateSetupAltair(t *testing.T, head primitives.Epoch) (state.BeaconState,
-	state.BeaconState, []bls.SecretKey) {
-	gs, keys := util.DeterministicGenesisStateAltair(t, 64)
+func createStateSetupCapella(t *testing.T, head primitives.Epoch) (state.BeaconState,
+	state.BeaconState, []dilithium.DilithiumKey) {
+	gs, keys := util.DeterministicGenesisStateCapella(t, 64)
 	hs := gs.Copy()
 
 	// Head State

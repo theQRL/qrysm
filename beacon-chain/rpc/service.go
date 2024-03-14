@@ -26,7 +26,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/db"
 	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/blstoexec"
+	"github.com/theQRL/qrysm/v4/beacon-chain/operations/dilithiumtoexec"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/slashings"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/synccommittee"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/voluntaryexits"
@@ -108,7 +108,7 @@ type Config struct {
 	SlashingsPool                 slashings.PoolManager
 	SlashingChecker               slasherservice.SlashingChecker
 	SyncCommitteeObjectPool       synccommittee.Pool
-	DilithiumChangesPool          blstoexec.PoolManager
+	DilithiumChangesPool          dilithiumtoexec.PoolManager
 	SyncService                   chainSync.Checker
 	Broadcaster                   p2p.Broadcaster
 	PeersFetcher                  p2p.PeersProvider
@@ -176,6 +176,7 @@ func NewService(ctx context.Context, cfg *Config) *Service {
 		}
 		opts = append(opts, grpc.Creds(creds))
 	} else {
+		// TODO(theQRL/qrysm/issues/67)
 		log.Warn("You are using an insecure gRPC server. If you are running your beacon node and " +
 			"validator on the same machines, you can ignore this message. If you want to know " +
 			"how to enable secure connections, see: https://docs.prylabs.network/docs/prysm-usage/secure-grpc")
@@ -317,7 +318,6 @@ func (s *Service) Start() {
 
 	nodeServer := &nodev1alpha1.Server{
 		LogsStreamer:         logs.NewStreamServer(),
-		StreamLogsBufferSize: 1000, // Enough to handle bursts of beacon node logs for gRPC streaming.
 		BeaconDB:             s.cfg.BeaconDB,
 		Server:               s.grpcServer,
 		SyncChecker:          s.cfg.SyncService,
@@ -427,8 +427,6 @@ func (s *Service) Start() {
 	s.cfg.Router.HandleFunc("/zond/v1/beacon/states/{state_id}/fork", beaconChainServerV1.GetStateFork).Methods(http.MethodGet)
 	s.cfg.Router.HandleFunc("/zond/v1/beacon/blocks", beaconChainServerV1.PublishBlock).Methods(http.MethodPost)
 	s.cfg.Router.HandleFunc("/zond/v1/beacon/blinded_blocks", beaconChainServerV1.PublishBlindedBlock).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v2/beacon/blocks", beaconChainServerV1.PublishBlockV2).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v2/beacon/blinded_blocks", beaconChainServerV1.PublishBlindedBlockV2).Methods(http.MethodPost)
 	s.cfg.Router.HandleFunc("/zond/v1/beacon/blocks/{block_id}/root", beaconChainServerV1.GetBlockRoot).Methods(http.MethodGet)
 	s.cfg.Router.HandleFunc("/zond/v1/beacon/pool/attestations", beaconChainServerV1.ListAttestations).Methods(http.MethodGet)
 	s.cfg.Router.HandleFunc("/zond/v1/beacon/pool/attestations", beaconChainServerV1.SubmitAttestations).Methods(http.MethodPost)
@@ -446,7 +444,6 @@ func (s *Service) Start() {
 
 	zondpbv1alpha1.RegisterNodeServer(s.grpcServer, nodeServer)
 	zondpbservice.RegisterBeaconNodeServer(s.grpcServer, nodeServerZond)
-	zondpbv1alpha1.RegisterHealthServer(s.grpcServer, nodeServer)
 	zondpbv1alpha1.RegisterBeaconChainServer(s.grpcServer, beaconChainServer)
 	zondpbservice.RegisterBeaconChainServer(s.grpcServer, beaconChainServerV1)
 	zondpbservice.RegisterEventsServer(s.grpcServer, &events.Server{

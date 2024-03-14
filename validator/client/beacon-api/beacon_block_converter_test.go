@@ -190,7 +190,7 @@ func TestGetBeaconBlockConverter_CapellaError(t *testing.T) {
 			expectedErrorMessage: "failed to decode sync committee signature `bar`",
 			generateData: func() *apimiddleware.BeaconBlockCapellaJson {
 				beaconBlock := test_helpers.GenerateJsonCapellaBeaconBlock()
-				beaconBlock.Body.SyncAggregate.SyncCommitteeSignature = "bar"
+				beaconBlock.Body.SyncAggregate.SyncCommitteeSignatures = []string{"bar"}
 				return beaconBlock
 			},
 		},

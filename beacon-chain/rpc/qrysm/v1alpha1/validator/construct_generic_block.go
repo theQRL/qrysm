@@ -26,12 +26,6 @@ func (vs *Server) constructGenericBeaconBlock(sBlk interfaces.SignedBeaconBlock)
 	switch sBlk.Version() {
 	case version.Capella:
 		return vs.constructCapellaBlock(blockProto, isBlinded, payloadValue), nil
-	case version.Bellatrix:
-		return vs.constructBellatrixBlock(blockProto, isBlinded, payloadValue), nil
-	case version.Altair:
-		return vs.constructAltairBlock(blockProto), nil
-	case version.Phase0:
-		return vs.constructPhase0Block(blockProto), nil
 	default:
 		return nil, fmt.Errorf("unknown block version: %d", sBlk.Version())
 	}
@@ -42,19 +36,4 @@ func (vs *Server) constructCapellaBlock(pb proto.Message, isBlinded bool, payloa
 		return &zondpb.GenericBeaconBlock{Block: &zondpb.GenericBeaconBlock_BlindedCapella{BlindedCapella: pb.(*zondpb.BlindedBeaconBlockCapella)}, IsBlinded: true, PayloadValue: payloadValue}
 	}
 	return &zondpb.GenericBeaconBlock{Block: &zondpb.GenericBeaconBlock_Capella{Capella: pb.(*zondpb.BeaconBlockCapella)}, IsBlinded: false, PayloadValue: payloadValue}
-}
-
-func (vs *Server) constructBellatrixBlock(pb proto.Message, isBlinded bool, payloadValue uint64) *zondpb.GenericBeaconBlock {
-	if isBlinded {
-		return &zondpb.GenericBeaconBlock{Block: &zondpb.GenericBeaconBlock_BlindedBellatrix{BlindedBellatrix: pb.(*zondpb.BlindedBeaconBlockBellatrix)}, IsBlinded: true, PayloadValue: payloadValue}
-	}
-	return &zondpb.GenericBeaconBlock{Block: &zondpb.GenericBeaconBlock_Bellatrix{Bellatrix: pb.(*zondpb.BeaconBlockBellatrix)}, IsBlinded: false, PayloadValue: payloadValue}
-}
-
-func (vs *Server) constructAltairBlock(pb proto.Message) *zondpb.GenericBeaconBlock {
-	return &zondpb.GenericBeaconBlock{Block: &zondpb.GenericBeaconBlock_Altair{Altair: pb.(*zondpb.BeaconBlockAltair)}}
-}
-
-func (vs *Server) constructPhase0Block(pb proto.Message) *zondpb.GenericBeaconBlock {
-	return &zondpb.GenericBeaconBlock{Block: &zondpb.GenericBeaconBlock_Phase0{Phase0: pb.(*zondpb.BeaconBlock)}}
 }

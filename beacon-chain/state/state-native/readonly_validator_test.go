@@ -3,8 +3,8 @@ package state_native_test
 import (
 	"testing"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	statenative "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
@@ -53,7 +53,7 @@ func TestReadOnlyValidator_ExitEpoch(t *testing.T) {
 }
 
 func TestReadOnlyValidator_PublicKey(t *testing.T) {
-	key := [dilithium2.CryptoPublicKeyBytes]byte{0xFA, 0xCC}
+	key := [field_params.DilithiumPubkeyLength]byte{0xFA, 0xCC}
 	v, err := statenative.NewValidator(&zondpb.Validator{PublicKey: key[:]})
 	require.NoError(t, err)
 	assert.Equal(t, key, v.PublicKey())

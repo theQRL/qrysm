@@ -29,7 +29,6 @@ go_test(
     name = "go_default_test",
     size = "small",
     srcs = [
-        "epoch_processing_fuzz_test.go",
         "epoch_processing_test.go",
     ],
     embed = [":go_default_library"],

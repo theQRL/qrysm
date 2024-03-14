@@ -15,6 +15,7 @@ import (
 	"time"
 
 	gMux "github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/beacon/engine"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
@@ -27,9 +28,7 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-
-	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/math"
 	"github.com/theQRL/qrysm/v4/network"
@@ -77,11 +76,6 @@ type ForkchoiceUpdatedResponse struct {
 		Status    *v1.PayloadStatus  `json:"payloadStatus"`
 		PayloadId *v1.PayloadIDBytes `json:"payloadId"`
 	} `json:"result"`
-}
-
-type ExecPayloadResponse struct {
-	Version string               `json:"version"`
-	Data    *v1.ExecutionPayload `json:"data"`
 }
 
 type ExecHeaderResponseCapella struct {
@@ -273,8 +267,6 @@ func (p *Builder) handleHeaderRequest(w http.ResponseWriter, req *http.Request) 
 	}
 
 	p.handleHeaderRequestCapella(w)
-
-	return
 }
 
 func (p *Builder) handleHeaderRequestCapella(w http.ResponseWriter) {
@@ -285,7 +277,7 @@ func (p *Builder) handleHeaderRequestCapella(w http.ResponseWriter) {
 		return
 	}
 
-	secKey, err := bls.RandKey()
+	secKey, err := dilithium.RandKey()
 	if err != nil {
 		p.cfg.logger.WithError(err).Error("Could not retrieve secret key")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -384,32 +376,6 @@ func (p *Builder) handleBlindedBlock(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-
-	return
-}
-
-func (p *Builder) retrievePendingBlock() (*v1.ExecutionPayload, error) {
-	result := &engine.ExecutableData{}
-	if p.currId == nil {
-		return nil, errors.New("no payload id is cached")
-	}
-	err := p.execClient.CallContext(context.Background(), result, GetPayloadMethod, *p.currId)
-	if err != nil {
-		return nil, err
-	}
-	payloadEnv, err := modifyExecutionPayload(*result, big.NewInt(0))
-	if err != nil {
-		return nil, err
-	}
-	marshalledOutput, err := payloadEnv.ExecutionPayload.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	bellatrixPayload := &v1.ExecutionPayload{}
-	if err = json.Unmarshal(marshalledOutput, bellatrixPayload); err != nil {
-		return nil, err
-	}
-	return bellatrixPayload, nil
 }
 
 func (p *Builder) retrievePendingBlockCapella() (*v1.ExecutionPayloadCapellaWithValue, error) {
@@ -534,7 +500,7 @@ func executableDataToBlock(params engine.ExecutableData) (*zondTypes.Block, erro
 		GasUsed:         params.GasUsed,
 		Time:            params.Timestamp,
 		BaseFee:         params.BaseFeePerGas,
-		Extra:           []byte("prysm-builder"), // add in extra data
+		Extra:           []byte("qrysm-builder"), // add in extra data
 		MixDigest:       params.Random,
 		WithdrawalsHash: withdrawalsRoot,
 	}

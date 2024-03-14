@@ -1,8 +1,9 @@
-load("@qrysm//tools/go:def.bzl", "go_library")
+load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
     srcs = [
+        "constants.go",
         "dilithium.go",
         "interface.go",
         "signature_batch.go",
@@ -10,9 +11,22 @@ go_library(
     importpath = "github.com/theQRL/qrysm/v4/crypto/dilithium",
     visibility = ["//visibility:public"],
     deps = [
-        "//crypto/bls/common:go_default_library",
+        "//crypto/dilithium/common:go_default_library",
         "//crypto/dilithium/dilithiumt:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
         "@com_github_theqrl_go_qrllib//dilithium:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = [
+        "signature_batch_test.go",
+    ],
+    embed = [":go_default_library"],
+    deps = [
+        "//crypto/dilithium/common:go_default_library",
+        "//testing/assert:go_default_library",
+        "//testing/require:go_default_library",
     ],
 )

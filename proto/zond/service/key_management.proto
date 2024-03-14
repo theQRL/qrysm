@@ -241,7 +241,7 @@ service KeyManagement {
 message ListKeystoresResponse {
   message Keystore {
     bytes validating_pubkey = 1;
-    string derivation_path = 2;
+    // string derivation_path = 2;
   }
   repeated Keystore data = 1;
 }
@@ -373,7 +373,7 @@ message DeleteGasLimitRequest {
 }
 
 message SetVoluntaryExitRequest {
-  bytes pubkey = 1 [(theqrl.zond.ext.ssz_size) = "48"];
+  bytes pubkey = 1 [(theqrl.zond.ext.ssz_size) = "2592"];
   uint64 epoch = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
 }
 

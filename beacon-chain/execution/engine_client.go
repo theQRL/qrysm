@@ -10,34 +10,26 @@ import (
 
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
 	zondRPC "github.com/theQRL/go-zond/rpc"
 	"github.com/theQRL/qrysm/v4/beacon-chain/execution/types"
 	"github.com/theQRL/qrysm/v4/config/features"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	payloadattribute "github.com/theQRL/qrysm/v4/consensus-types/payload-attribute"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	pb "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
-	"google.golang.org/protobuf/proto"
 )
 
 var (
 	supportedEngineEndpoints = []string{
-		NewPayloadMethod,
 		NewPayloadMethodV2,
-		ForkchoiceUpdatedMethod,
 		ForkchoiceUpdatedMethodV2,
-		GetPayloadMethod,
 		GetPayloadMethodV2,
 		ExchangeTransitionConfigurationMethod,
 		GetPayloadBodiesByHashV1,
@@ -46,22 +38,12 @@ var (
 )
 
 const (
-	// NewPayloadMethod v1 request string for JSON-RPC.
-	NewPayloadMethod = "engine_newPayloadV1"
 	// NewPayloadMethodV2 v2 request string for JSON-RPC.
 	NewPayloadMethodV2 = "engine_newPayloadV2"
-	NewPayloadMethodV3 = "engine_newPayloadV3"
-	// ForkchoiceUpdatedMethod v1 request string for JSON-RPC.
-	ForkchoiceUpdatedMethod = "engine_forkchoiceUpdatedV1"
 	// ForkchoiceUpdatedMethodV2 v2 request string for JSON-RPC.
 	ForkchoiceUpdatedMethodV2 = "engine_forkchoiceUpdatedV2"
-	// ForkchoiceUpdatedMethodV3 v3 request string for JSON-RPC.
-	ForkchoiceUpdatedMethodV3 = "engine_forkchoiceUpdatedV3"
-	// GetPayloadMethod v1 request string for JSON-RPC.
-	GetPayloadMethod = "engine_getPayloadV1"
 	// GetPayloadMethodV2 v2 request string for JSON-RPC.
 	GetPayloadMethodV2 = "engine_getPayloadV2"
-	GetPayloadMethodV3 = "engine_getPayloadV3"
 	// ExchangeTransitionConfigurationMethod v1 request string for JSON-RPC.
 	ExchangeTransitionConfigurationMethod = "engine_exchangeTransitionConfigurationV1"
 	// ExecutionBlockByHashMethod request string for JSON-RPC.
@@ -93,7 +75,7 @@ type ExecutionPayloadReconstructor interface {
 	ReconstructFullBlock(
 		ctx context.Context, blindedBlock interfaces.ReadOnlySignedBeaconBlock,
 	) (interfaces.SignedBeaconBlock, error)
-	ReconstructFullBellatrixBlockBatch(
+	ReconstructFullBlockBatch(
 		ctx context.Context, blindedBlocks []interfaces.ReadOnlySignedBeaconBlock,
 	) ([]interfaces.SignedBeaconBlock, error)
 }
@@ -110,7 +92,6 @@ type EngineCaller interface {
 		ctx context.Context, cfg *pb.TransitionConfiguration,
 	) error
 	ExecutionBlockByHash(ctx context.Context, hash common.Hash, withTxs bool) (*pb.ExecutionBlock, error)
-	GetTerminalBlockHash(ctx context.Context, transitionTime uint64) ([]byte, bool, error)
 }
 
 var EmptyBlockHash = errors.New("Block hash is empty 0x0000...")
@@ -130,15 +111,6 @@ func (s *Service) NewPayload(ctx context.Context, payload interfaces.ExecutionDa
 	result := &pb.PayloadStatus{}
 
 	switch payload.Proto().(type) {
-	case *pb.ExecutionPayload:
-		payloadPb, ok := payload.Proto().(*pb.ExecutionPayload)
-		if !ok {
-			return nil, errors.New("execution data must be a Bellatrix or Capella execution payload")
-		}
-		err := s.rpcClient.CallContext(ctx, result, NewPayloadMethod, payloadPb)
-		if err != nil {
-			return nil, handleRPCError(err)
-		}
 	case *pb.ExecutionPayloadCapella:
 		payloadPb, ok := payload.Proto().(*pb.ExecutionPayloadCapella)
 		if !ok {
@@ -234,25 +206,12 @@ func (s *Service) GetPayload(ctx context.Context, payloadId [8]byte, slot primit
 	ctx, cancel := context.WithDeadline(ctx, d)
 	defer cancel()
 
-	if slots.ToEpoch(slot) >= params.BeaconConfig().CapellaForkEpoch {
-		result := &pb.ExecutionPayloadCapellaWithValue{}
-		err := s.rpcClient.CallContext(ctx, result, GetPayloadMethodV2, pb.PayloadIDBytes(payloadId))
-		if err != nil {
-			return nil, false, handleRPCError(err)
-		}
-		ed, err := blocks.WrappedExecutionPayloadCapella(result.Payload, blocks.PayloadValueToGwei(result.Value))
-		if err != nil {
-			return nil, false, err
-		}
-		return ed, false, nil
-	}
-
-	result := &pb.ExecutionPayload{}
-	err := s.rpcClient.CallContext(ctx, result, GetPayloadMethod, pb.PayloadIDBytes(payloadId))
+	result := &pb.ExecutionPayloadCapellaWithValue{}
+	err := s.rpcClient.CallContext(ctx, result, GetPayloadMethodV2, pb.PayloadIDBytes(payloadId))
 	if err != nil {
 		return nil, false, handleRPCError(err)
 	}
-	ed, err := blocks.WrappedExecutionPayload(result)
+	ed, err := blocks.WrappedExecutionPayloadCapella(result.Payload, blocks.PayloadValueToGwei(result.Value))
 	if err != nil {
 		return nil, false, err
 	}
@@ -279,26 +238,21 @@ func (s *Service) ExchangeTransitionConfiguration(
 
 	// We surface an error to the user if local configuration settings mismatch
 	// according to the response from the execution node.
-	cfgTerminalHash := params.BeaconConfig().TerminalBlockHash[:]
-	if !bytes.Equal(cfgTerminalHash, result.TerminalBlockHash) {
+	if !bytes.Equal(cfg.TerminalBlockHash, result.TerminalBlockHash) {
 		return errors.Wrapf(
 			ErrConfigMismatch,
 			"got %#x from execution node, wanted %#x",
 			result.TerminalBlockHash,
-			cfgTerminalHash,
+			cfg.TerminalBlockHash,
 		)
 	}
-	ttdCfg := params.BeaconConfig().TerminalTotalDifficulty
-	ttdResult, err := hexutil.DecodeBig(result.TerminalTotalDifficulty)
-	if err != nil {
-		return errors.Wrap(err, "could not decode received terminal total difficulty")
-	}
-	if ttdResult.String() != ttdCfg {
+
+	if result.TerminalTotalDifficulty != cfg.TerminalTotalDifficulty {
 		return errors.Wrapf(
 			ErrConfigMismatch,
-			"got %s from execution node, wanted %s",
-			ttdResult.String(),
-			ttdCfg,
+			"got terminal total difficulty %s from execution node, wanted %s",
+			result.TerminalTotalDifficulty,
+			cfg.TerminalTotalDifficulty,
 		)
 	}
 	return nil
@@ -328,89 +282,6 @@ func (s *Service) ExchangeCapabilities(ctx context.Context) ([]string, error) {
 		log.Warnf("Please update client, detected the following unsupported engine methods: %s", unsupported)
 	}
 	return result.SupportedMethods, handleRPCError(err)
-}
-
-// GetTerminalBlockHash returns the valid terminal block hash based on total difficulty.
-//
-// Spec code:
-// def get_pow_block_at_terminal_total_difficulty(pow_chain: Dict[Hash32, PowBlock]) -> Optional[PowBlock]:
-//
-//	# `pow_chain` abstractly represents all blocks in the PoW chain
-//	for block in pow_chain:
-//	    parent = pow_chain[block.parent_hash]
-//	    block_reached_ttd = block.total_difficulty >= TERMINAL_TOTAL_DIFFICULTY
-//	    parent_reached_ttd = parent.total_difficulty >= TERMINAL_TOTAL_DIFFICULTY
-//	    if block_reached_ttd and not parent_reached_ttd:
-//	        return block
-//
-//	return None
-func (s *Service) GetTerminalBlockHash(ctx context.Context, transitionTime uint64) ([]byte, bool, error) {
-	ttd := new(big.Int)
-	ttd.SetString(params.BeaconConfig().TerminalTotalDifficulty, 10)
-	terminalTotalDifficulty, overflows := uint256.FromBig(ttd)
-	if overflows {
-		return nil, false, errors.New("could not convert terminal total difficulty to uint256")
-	}
-	blk, err := s.LatestExecutionBlock(ctx)
-	if err != nil {
-		return nil, false, errors.Wrap(err, "could not get latest execution block")
-	}
-	if blk == nil {
-		return nil, false, errors.New("latest execution block is nil")
-	}
-
-	for {
-		if ctx.Err() != nil {
-			return nil, false, ctx.Err()
-		}
-		currentTotalDifficulty, err := tDStringToUint256(blk.TotalDifficulty)
-		if err != nil {
-			return nil, false, errors.Wrap(err, "could not convert total difficulty to uint256")
-		}
-		blockReachedTTD := currentTotalDifficulty.Cmp(terminalTotalDifficulty) >= 0
-
-		parentHash := blk.ParentHash
-		if parentHash == params.BeaconConfig().ZeroHash {
-			return nil, false, nil
-		}
-		parentBlk, err := s.ExecutionBlockByHash(ctx, parentHash, false /* no txs */)
-		if err != nil {
-			return nil, false, errors.Wrap(err, "could not get parent execution block")
-		}
-		if parentBlk == nil {
-			return nil, false, errors.New("parent execution block is nil")
-		}
-
-		if blockReachedTTD {
-			parentTotalDifficulty, err := tDStringToUint256(parentBlk.TotalDifficulty)
-			if err != nil {
-				return nil, false, errors.Wrap(err, "could not convert total difficulty to uint256")
-			}
-
-			// If terminal block has time same timestamp or greater than transition time,
-			// then the node violates the invariant that a block's timestamp must be
-			// greater than its parent's timestamp. Execution layer will reject
-			// a fcu call with such payload attributes. It's best that we return `None` in this a case.
-			parentReachedTTD := parentTotalDifficulty.Cmp(terminalTotalDifficulty) >= 0
-			if !parentReachedTTD {
-				if blk.Time >= transitionTime {
-					return nil, false, nil
-				}
-
-				log.WithFields(logrus.Fields{
-					"number":   blk.Number,
-					"hash":     fmt.Sprintf("%#x", bytesutil.Trunc(blk.Hash[:])),
-					"td":       blk.TotalDifficulty,
-					"parentTd": parentBlk.TotalDifficulty,
-					"ttd":      terminalTotalDifficulty,
-				}).Info("Retrieved terminal block hash")
-				return blk.Hash[:], true, nil
-			}
-		} else {
-			return nil, false, nil
-		}
-		blk = parentBlk
-	}
 }
 
 // LatestExecutionBlock fetches the latest execution engine block by calling
@@ -551,16 +422,6 @@ func (s *Service) ReconstructFullBlock(
 		return nil, errors.New("execution payload header in blinded block was nil")
 	}
 
-	// If the payload header has a block hash of 0x0, it means we are pre-merge and should
-	// simply return the block with an empty execution payload.
-	if bytes.Equal(header.BlockHash(), params.BeaconConfig().ZeroHash[:]) {
-		payload, err := buildEmptyExecutionPayload(blindedBlock.Version())
-		if err != nil {
-			return nil, err
-		}
-		return blocks.BuildSignedBeaconBlockFromExecutionPayload(blindedBlock, payload)
-	}
-
 	executionBlockHash := common.BytesToHash(header.BlockHash())
 	payload, err := s.retrievePayloadFromExecutionHash(ctx, executionBlockHash, header, blindedBlock.Version())
 	if err != nil {
@@ -574,9 +435,9 @@ func (s *Service) ReconstructFullBlock(
 	return fullBlock, nil
 }
 
-// ReconstructFullBellatrixBlockBatch takes in a batch of blinded beacon blocks and reconstructs
+// ReconstructFullBlockBatch takes in a batch of blinded beacon blocks and reconstructs
 // them with a full execution payload for each block via the engine API.
-func (s *Service) ReconstructFullBellatrixBlockBatch(
+func (s *Service) ReconstructFullBlockBatch(
 	ctx context.Context, blindedBlocks []interfaces.ReadOnlySignedBeaconBlock,
 ) ([]interfaces.SignedBeaconBlock, error) {
 	if len(blindedBlocks) == 0 {
@@ -584,7 +445,6 @@ func (s *Service) ReconstructFullBellatrixBlockBatch(
 	}
 	executionHashes := []common.Hash{}
 	validExecPayloads := []int{}
-	zeroExecPayloads := []int{}
 	for i, b := range blindedBlocks {
 		if err := blocks.BeaconBlockIsNil(b); err != nil {
 			return nil, errors.Wrap(err, "cannot reconstruct bellatrix block from nil data")
@@ -599,34 +459,16 @@ func (s *Service) ReconstructFullBellatrixBlockBatch(
 		if header.IsNil() {
 			return nil, errors.New("execution payload header in blinded block was nil")
 		}
-		// Determine if the block is pre-merge or post-merge. Depending on the result,
-		// we will ask the execution engine for the full payload.
-		if bytes.Equal(header.BlockHash(), params.BeaconConfig().ZeroHash[:]) {
-			zeroExecPayloads = append(zeroExecPayloads, i)
-		} else {
-			executionBlockHash := common.BytesToHash(header.BlockHash())
-			validExecPayloads = append(validExecPayloads, i)
-			executionHashes = append(executionHashes, executionBlockHash)
-		}
+
+		executionBlockHash := common.BytesToHash(header.BlockHash())
+		validExecPayloads = append(validExecPayloads, i)
+		executionHashes = append(executionHashes, executionBlockHash)
 	}
 	fullBlocks, err := s.retrievePayloadsFromExecutionHashes(ctx, executionHashes, validExecPayloads, blindedBlocks)
 	if err != nil {
 		return nil, err
 	}
-	// For blocks that are pre-merge we simply reconstruct them via an empty
-	// execution payload.
-	for _, realIdx := range zeroExecPayloads {
-		bblock := blindedBlocks[realIdx]
-		payload, err := buildEmptyExecutionPayload(bblock.Version())
-		if err != nil {
-			return nil, err
-		}
-		fullBlock, err := blocks.BuildSignedBeaconBlockFromExecutionPayload(blindedBlocks[realIdx], payload)
-		if err != nil {
-			return nil, err
-		}
-		fullBlocks[realIdx] = fullBlock
-	}
+
 	reconstructedExecutionPayloadCount.Add(float64(len(blindedBlocks)))
 	return fullBlocks, nil
 }
@@ -746,23 +588,6 @@ func fullPayloadFromExecutionBlock(
 	}
 
 	switch blockVersion {
-	case version.Bellatrix:
-		return blocks.WrappedExecutionPayload(&pb.ExecutionPayload{
-			ParentHash:    header.ParentHash(),
-			FeeRecipient:  header.FeeRecipient(),
-			StateRoot:     header.StateRoot(),
-			ReceiptsRoot:  header.ReceiptsRoot(),
-			LogsBloom:     header.LogsBloom(),
-			PrevRandao:    header.PrevRandao(),
-			BlockNumber:   header.BlockNumber(),
-			GasLimit:      header.GasLimit(),
-			GasUsed:       header.GasUsed(),
-			Timestamp:     header.Timestamp(),
-			ExtraData:     header.ExtraData(),
-			BaseFeePerGas: header.BaseFeePerGas(),
-			BlockHash:     blockHash[:],
-			Transactions:  txs,
-		})
 	case version.Capella:
 		return blocks.WrappedExecutionPayloadCapella(&pb.ExecutionPayloadCapella{
 			ParentHash:    header.ParentHash(),
@@ -794,23 +619,6 @@ func fullPayloadFromPayloadBody(
 	}
 
 	switch bVersion {
-	case version.Bellatrix:
-		return blocks.WrappedExecutionPayload(&pb.ExecutionPayload{
-			ParentHash:    header.ParentHash(),
-			FeeRecipient:  header.FeeRecipient(),
-			StateRoot:     header.StateRoot(),
-			ReceiptsRoot:  header.ReceiptsRoot(),
-			LogsBloom:     header.LogsBloom(),
-			PrevRandao:    header.PrevRandao(),
-			BlockNumber:   header.BlockNumber(),
-			GasLimit:      header.GasLimit(),
-			GasUsed:       header.GasUsed(),
-			Timestamp:     header.Timestamp(),
-			ExtraData:     header.ExtraData(),
-			BaseFeePerGas: header.BaseFeePerGas(),
-			BlockHash:     header.BlockHash(),
-			Transactions:  body.Transactions,
-		})
 	case version.Capella:
 		return blocks.WrappedExecutionPayloadCapella(&pb.ExecutionPayloadCapella{
 			ParentHash:    header.ParentHash(),
@@ -844,9 +652,10 @@ func handleRPCError(err error) error {
 	}
 	e, ok := err.(zondRPC.Error)
 	if !ok {
+		// TODO(theQRL/qrysm/issues/67)
 		if strings.Contains(err.Error(), "401 Unauthorized") {
 			log.Error("HTTP authentication to your execution client is not working. Please ensure " +
-				"you are setting a correct value for the --jwt-secret flag in Prysm, or use an IPC connection if on " +
+				"you are setting a correct value for the --jwt-secret flag in Qrysm, or use an IPC connection if on " +
 				"the same machine. Please see our documentation for more information on authenticating connections " +
 				"here https://docs.prylabs.network/docs/execution-node/authentication")
 			return fmt.Errorf("could not authenticate connection to execution client: %v", err)
@@ -917,40 +726,6 @@ func tDStringToUint256(td string) (*uint256.Int, error) {
 		return nil, errors.New("total difficulty overflowed")
 	}
 	return i, nil
-}
-
-func buildEmptyExecutionPayload(v int) (proto.Message, error) {
-	switch v {
-	case version.Bellatrix:
-		return &pb.ExecutionPayload{
-			ParentHash:    make([]byte, fieldparams.RootLength),
-			FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
-			StateRoot:     make([]byte, fieldparams.RootLength),
-			ReceiptsRoot:  make([]byte, fieldparams.RootLength),
-			LogsBloom:     make([]byte, fieldparams.LogsBloomLength),
-			PrevRandao:    make([]byte, fieldparams.RootLength),
-			BaseFeePerGas: make([]byte, fieldparams.RootLength),
-			BlockHash:     make([]byte, fieldparams.RootLength),
-			Transactions:  make([][]byte, 0),
-			ExtraData:     make([]byte, 0),
-		}, nil
-	case version.Capella:
-		return &pb.ExecutionPayloadCapella{
-			ParentHash:    make([]byte, fieldparams.RootLength),
-			FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
-			StateRoot:     make([]byte, fieldparams.RootLength),
-			ReceiptsRoot:  make([]byte, fieldparams.RootLength),
-			LogsBloom:     make([]byte, fieldparams.LogsBloomLength),
-			PrevRandao:    make([]byte, fieldparams.RootLength),
-			BaseFeePerGas: make([]byte, fieldparams.RootLength),
-			BlockHash:     make([]byte, fieldparams.RootLength),
-			Transactions:  make([][]byte, 0),
-			ExtraData:     make([]byte, 0),
-			Withdrawals:   make([]*pb.Withdrawal, 0),
-		}, nil
-	default:
-		return nil, errors.Wrapf(ErrUnsupportedVersion, "version=%s", version.String(v))
-	}
 }
 
 func toBlockNumArg(number *big.Int) string {

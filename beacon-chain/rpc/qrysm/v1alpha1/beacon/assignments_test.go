@@ -14,6 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
 	mockstategen "github.com/theQRL/qrysm/v4/beacon-chain/state/stategen/mock"
 	"github.com/theQRL/qrysm/v4/cmd"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
@@ -48,10 +49,10 @@ func TestServer_ListAssignments_CannotRequestFutureEpoch(t *testing.T) {
 func TestServer_ListAssignments_NoResults(t *testing.T) {
 	db := dbTest.SetupDB(t)
 	ctx := context.Background()
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	util.SaveBlock(t, ctx, db, b)
 	gRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -90,7 +91,7 @@ func TestServer_ListAssignments_Pagination_InputOutOfRange(t *testing.T) {
 	count := 100
 	validators := make([]*zondpb.Validator, 0, count)
 	for i := 0; i < count; i++ {
-		pubKey := make([]byte, params.BeaconConfig().BLSPubkeyLength)
+		pubKey := make([]byte, field_params.DilithiumPubkeyLength)
 		withdrawalCred := make([]byte, 32)
 		binary.LittleEndian.PutUint64(pubKey, uint64(i))
 		validators = append(validators, &zondpb.Validator{
@@ -102,11 +103,11 @@ func TestServer_ListAssignments_Pagination_InputOutOfRange(t *testing.T) {
 		})
 	}
 
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blockRoot, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	s, err := util.NewBeaconState()
+	s, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, s.SetValidators(validators))
 	require.NoError(t, db.SaveState(ctx, s, blockRoot))
@@ -155,7 +156,7 @@ func TestServer_ListAssignments_Pagination_DefaultPageSize_NoArchive(t *testing.
 	count := 500
 	validators := make([]*zondpb.Validator, 0, count)
 	for i := 0; i < count; i++ {
-		pubKey := make([]byte, params.BeaconConfig().BLSPubkeyLength)
+		pubKey := make([]byte, field_params.DilithiumPubkeyLength)
 		withdrawalCred := make([]byte, 32)
 		binary.LittleEndian.PutUint64(pubKey, uint64(i))
 		// Mark the validators with index divisible by 3 inactive.
@@ -178,11 +179,11 @@ func TestServer_ListAssignments_Pagination_DefaultPageSize_NoArchive(t *testing.
 		}
 	}
 
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	blockRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	s, err := util.NewBeaconState()
+	s, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, s.SetValidators(validators))
 	require.NoError(t, db.SaveState(ctx, s, blockRoot))
@@ -216,14 +217,12 @@ func TestServer_ListAssignments_Pagination_DefaultPageSize_NoArchive(t *testing.
 	committeeAssignments, proposerIndexToSlots, err := helpers.CommitteeAssignments(context.Background(), s, 0)
 	require.NoError(t, err)
 	for _, index := range activeIndices[0:params.BeaconConfig().DefaultPageSize] {
-		val, err := s.ValidatorAtIndex(index)
 		require.NoError(t, err)
 		wanted = append(wanted, &zondpb.ValidatorAssignments_CommitteeAssignment{
 			BeaconCommittees: committeeAssignments[index].Committee,
 			CommitteeIndex:   committeeAssignments[index].CommitteeIndex,
 			AttesterSlot:     committeeAssignments[index].AttesterSlot,
 			ProposerSlots:    proposerIndexToSlots[index],
-			PublicKey:        val.PublicKey,
 			ValidatorIndex:   index,
 		})
 	}
@@ -239,7 +238,7 @@ func TestServer_ListAssignments_FilterPubkeysIndices_NoPagination(t *testing.T) 
 	validators := make([]*zondpb.Validator, 0, count)
 	withdrawCreds := make([]byte, 32)
 	for i := 0; i < count; i++ {
-		pubKey := make([]byte, params.BeaconConfig().BLSPubkeyLength)
+		pubKey := make([]byte, field_params.DilithiumPubkeyLength)
 		binary.LittleEndian.PutUint64(pubKey, uint64(i))
 		val := &zondpb.Validator{
 			PublicKey:             pubKey,
@@ -249,10 +248,10 @@ func TestServer_ListAssignments_FilterPubkeysIndices_NoPagination(t *testing.T) 
 		validators = append(validators, val)
 	}
 
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	blockRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
-	s, err := util.NewBeaconState()
+	s, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, s.SetValidators(validators))
 	require.NoError(t, db.SaveState(ctx, s, blockRoot))
@@ -270,9 +269,9 @@ func TestServer_ListAssignments_FilterPubkeysIndices_NoPagination(t *testing.T) 
 		ReplayerBuilder:    mockstategen.NewMockReplayerBuilder(mockstategen.WithMockState(s)),
 	}
 
-	pubKey1 := make([]byte, params.BeaconConfig().BLSPubkeyLength)
+	pubKey1 := make([]byte, field_params.DilithiumPubkeyLength)
 	binary.LittleEndian.PutUint64(pubKey1, 1)
-	pubKey2 := make([]byte, params.BeaconConfig().BLSPubkeyLength)
+	pubKey2 := make([]byte, field_params.DilithiumPubkeyLength)
 	binary.LittleEndian.PutUint64(pubKey2, 2)
 	req := &zondpb.ListValidatorAssignmentsRequest{PublicKeys: [][]byte{pubKey1, pubKey2}, Indices: []primitives.ValidatorIndex{2, 3}}
 	res, err := bs.ListValidatorAssignments(context.Background(), req)
@@ -286,14 +285,12 @@ func TestServer_ListAssignments_FilterPubkeysIndices_NoPagination(t *testing.T) 
 	committeeAssignments, proposerIndexToSlots, err := helpers.CommitteeAssignments(context.Background(), s, 0)
 	require.NoError(t, err)
 	for _, index := range activeIndices[1:4] {
-		val, err := s.ValidatorAtIndex(index)
 		require.NoError(t, err)
 		wanted = append(wanted, &zondpb.ValidatorAssignments_CommitteeAssignment{
 			BeaconCommittees: committeeAssignments[index].Committee,
 			CommitteeIndex:   committeeAssignments[index].CommitteeIndex,
 			AttesterSlot:     committeeAssignments[index].AttesterSlot,
 			ProposerSlots:    proposerIndexToSlots[index],
-			PublicKey:        val.PublicKey,
 			ValidatorIndex:   index,
 		})
 	}
@@ -309,7 +306,7 @@ func TestServer_ListAssignments_CanFilterPubkeysIndices_WithPagination(t *testin
 	validators := make([]*zondpb.Validator, 0, count)
 	withdrawCred := make([]byte, 32)
 	for i := 0; i < count; i++ {
-		pubKey := make([]byte, params.BeaconConfig().BLSPubkeyLength)
+		pubKey := make([]byte, field_params.DilithiumPubkeyLength)
 		binary.LittleEndian.PutUint64(pubKey, uint64(i))
 		val := &zondpb.Validator{
 			PublicKey:             pubKey,
@@ -319,10 +316,10 @@ func TestServer_ListAssignments_CanFilterPubkeysIndices_WithPagination(t *testin
 		validators = append(validators, val)
 	}
 
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	blockRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
-	s, err := util.NewBeaconState()
+	s, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	util.SaveBlock(t, ctx, db, b)
 	require.NoError(t, s.SetValidators(validators))
@@ -354,14 +351,12 @@ func TestServer_ListAssignments_CanFilterPubkeysIndices_WithPagination(t *testin
 	committeeAssignments, proposerIndexToSlots, err := helpers.CommitteeAssignments(context.Background(), s, 0)
 	require.NoError(t, err)
 	for _, index := range activeIndices[3:5] {
-		val, err := s.ValidatorAtIndex(index)
 		require.NoError(t, err)
 		assignments = append(assignments, &zondpb.ValidatorAssignments_CommitteeAssignment{
 			BeaconCommittees: committeeAssignments[index].Committee,
 			CommitteeIndex:   committeeAssignments[index].CommitteeIndex,
 			AttesterSlot:     committeeAssignments[index].AttesterSlot,
 			ProposerSlots:    proposerIndexToSlots[index],
-			PublicKey:        val.PublicKey,
 			ValidatorIndex:   index,
 		})
 	}
@@ -382,14 +377,12 @@ func TestServer_ListAssignments_CanFilterPubkeysIndices_WithPagination(t *testin
 	cAssignments, proposerIndexToSlots, err := helpers.CommitteeAssignments(context.Background(), s, 0)
 	require.NoError(t, err)
 	for _, index := range activeIndices[6:7] {
-		val, err := s.ValidatorAtIndex(index)
 		require.NoError(t, err)
 		assignments = append(assignments, &zondpb.ValidatorAssignments_CommitteeAssignment{
 			BeaconCommittees: cAssignments[index].Committee,
 			CommitteeIndex:   cAssignments[index].CommitteeIndex,
 			AttesterSlot:     cAssignments[index].AttesterSlot,
 			ProposerSlots:    proposerIndexToSlots[index],
-			PublicKey:        val.PublicKey,
 			ValidatorIndex:   index,
 		})
 	}

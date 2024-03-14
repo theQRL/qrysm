@@ -9,7 +9,7 @@ go_library(
         "//tools/interop/convert-keys:__pkg__",
     ],
     deps = [
-        "//crypto/bls:go_default_library",
+        "//crypto/dilithium:go_default_library",
         "//runtime/interop:go_default_library",
         "//tools/unencrypted-keys-gen/keygen:go_default_library",
     ],

@@ -16,7 +16,7 @@ import (
 )
 
 func TestFieldTrie_NewTrie(t *testing.T) {
-	newState, _ := util.DeterministicGenesisState(t, 40)
+	newState, _ := util.DeterministicGenesisStateCapella(t, 40)
 	roots := newState.BlockRoots()
 	blockRoots := make([][32]byte, len(roots))
 	for i, r := range roots {
@@ -40,7 +40,7 @@ func TestFieldTrie_NewTrie_NilElements(t *testing.T) {
 }
 
 func TestFieldTrie_RecomputeTrie(t *testing.T) {
-	newState, _ := util.DeterministicGenesisState(t, 32)
+	newState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	trie, err := fieldtrie.NewFieldTrie(types.Validators, types.CompositeArray, newState.Validators(), params.BeaconConfig().ValidatorRegistryLimit)
 	require.NoError(t, err)
 
@@ -71,7 +71,7 @@ func TestFieldTrie_RecomputeTrie(t *testing.T) {
 }
 
 func TestFieldTrie_RecomputeTrie_CompressedArray(t *testing.T) {
-	newState, _ := util.DeterministicGenesisState(t, 32)
+	newState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	trie, err := fieldtrie.NewFieldTrie(types.Balances, types.CompressedArray, newState.Balances(), stateutil.ValidatorLimitForBalancesChunks())
 	require.NoError(t, err)
 	require.Equal(t, trie.Length(), stateutil.ValidatorLimitForBalancesChunks())
@@ -88,13 +88,13 @@ func TestFieldTrie_RecomputeTrie_CompressedArray(t *testing.T) {
 }
 
 func TestNewFieldTrie_UnknownType(t *testing.T) {
-	newState, _ := util.DeterministicGenesisState(t, 32)
+	newState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	_, err := fieldtrie.NewFieldTrie(types.Balances, 4, newState.Balances(), 32)
 	require.ErrorContains(t, "unrecognized data type", err)
 }
 
 func TestFieldTrie_CopyTrieImmutable(t *testing.T) {
-	newState, _ := util.DeterministicGenesisState(t, 32)
+	newState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	mixes := newState.RandaoMixes()
 	randaoMixes := make([][32]byte, len(mixes))
 	for i, r := range mixes {
@@ -135,7 +135,7 @@ func TestFieldTrie_CopyAndTransferEmpty(t *testing.T) {
 }
 
 func TestFieldTrie_TransferTrie(t *testing.T) {
-	newState, _ := util.DeterministicGenesisState(t, 32)
+	newState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	maxLength := (params.BeaconConfig().ValidatorRegistryLimit*8 + 31) / 32
 	trie, err := fieldtrie.NewFieldTrie(types.Balances, types.CompressedArray, newState.Balances(), maxLength)
 	require.NoError(t, err)
@@ -153,7 +153,7 @@ func TestFieldTrie_TransferTrie(t *testing.T) {
 }
 
 func FuzzFieldTrie(f *testing.F) {
-	newState, _ := util.DeterministicGenesisState(f, 40)
+	newState, _ := util.DeterministicGenesisStateCapella(f, 40)
 	var data []byte
 	for _, root := range newState.StateRoots() {
 		data = append(data, root...)

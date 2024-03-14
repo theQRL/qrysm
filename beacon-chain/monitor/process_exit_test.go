@@ -34,8 +34,8 @@ func TestProcessExitsFromBlockTrackedIndices(t *testing.T) {
 		},
 	}
 
-	block := &zondpb.BeaconBlock{
-		Body: &zondpb.BeaconBlockBody{
+	block := &zondpb.BeaconBlockCapella{
+		Body: &zondpb.BeaconBlockBodyCapella{
 			VoluntaryExits: exits,
 		},
 	}
@@ -70,8 +70,8 @@ func TestProcessExitsFromBlockUntrackedIndices(t *testing.T) {
 		},
 	}
 
-	block := &zondpb.BeaconBlock{
-		Body: &zondpb.BeaconBlockBody{
+	block := &zondpb.BeaconBlockCapella{
+		Body: &zondpb.BeaconBlockBodyCapella{
 			VoluntaryExits: exits,
 		},
 	}

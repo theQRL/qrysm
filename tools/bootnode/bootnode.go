@@ -36,7 +36,7 @@ import (
 	"github.com/theQRL/qrysm/v4/async"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
+	ecdsaqrysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/io/logs"
 	"github.com/theQRL/qrysm/v4/network"
@@ -255,7 +255,7 @@ func extractPrivateKey() *ecdsa.PrivateKey {
 			panic(err)
 		}
 
-		privKey, err = ecdsaprysm.ConvertFromInterfacePrivKey(unmarshalledKey)
+		privKey, err = ecdsaqrysm.ConvertFromInterfacePrivKey(unmarshalledKey)
 		if err != nil {
 			panic(err)
 		}
@@ -264,7 +264,7 @@ func extractPrivateKey() *ecdsa.PrivateKey {
 		if err != nil {
 			panic(err)
 		}
-		privKey, err = ecdsaprysm.ConvertFromInterfacePrivKey(privInterfaceKey)
+		privKey, err = ecdsaqrysm.ConvertFromInterfacePrivKey(privInterfaceKey)
 		if err != nil {
 			panic(err)
 		}

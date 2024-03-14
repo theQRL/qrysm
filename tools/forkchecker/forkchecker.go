@@ -9,6 +9,8 @@
  */
 package main
 
+// TODO(theQRL/qrysm/issues/75)
+/*
 import (
 	"context"
 	"encoding/hex"
@@ -147,3 +149,4 @@ func randomEndpt(clients map[string]pb.BeaconChainClient) string {
 	}
 	return ""
 }
+*/

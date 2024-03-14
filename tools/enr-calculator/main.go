@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
-	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
+	ecdsaqrysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
 	"github.com/theQRL/qrysm/v4/io/file"
 	_ "github.com/theQRL/qrysm/v4/runtime/maxprocs"
 )
@@ -38,7 +38,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	ecdsaPrivKey, err := ecdsaprysm.ConvertFromInterfacePrivKey(unmarshalledKey)
+	ecdsaPrivKey, err := ecdsaqrysm.ConvertFromInterfacePrivKey(unmarshalledKey)
 	if err != nil {
 		panic(err)
 	}

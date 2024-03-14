@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
 	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
@@ -29,7 +29,7 @@ func TestLocalKeymanager_FetchValidatingPublicKeys(t *testing.T) {
 	// First, generate accounts and their keystore.json files.
 	ctx := context.Background()
 	numAccounts := 10
-	wantedPubKeys := make([][dilithiumlib.CryptoPublicKeyBytes]byte, 0)
+	wantedPubKeys := make([][field_params.DilithiumPubkeyLength]byte, 0)
 	for i := 0; i < numAccounts; i++ {
 		privKey, err := dilithium.RandKey()
 		require.NoError(t, err)
@@ -163,7 +163,7 @@ func TestLocalKeymanager_Sign_NoPublicKeyInCache(t *testing.T) {
 	req := &validatorpb.SignRequest{
 		PublicKey: []byte("hello world"),
 	}
-	dilithiumKeysCache = make(map[[dilithiumlib.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey)
+	dilithiumKeysCache = make(map[[field_params.DilithiumPubkeyLength]byte]dilithium.DilithiumKey)
 	dr := &Keymanager{}
 	_, err := dr.Sign(context.Background(), req)
 	assert.ErrorContains(t, "no signing key found in keys cache", err)

@@ -254,11 +254,11 @@ func TestGetVersion(t *testing.T) {
 			name: "returns proper version response",
 			restEndpointResponse: apimiddleware.VersionResponseJson{
 				Data: &apimiddleware.VersionJson{
-					Version: "prysm/local",
+					Version: "qrysm/local",
 				},
 			},
 			expectedResponse: &zondpb.Version{
-				Version: "prysm/local",
+				Version: "qrysm/local",
 			},
 		},
 	}

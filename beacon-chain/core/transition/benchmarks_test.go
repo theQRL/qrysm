@@ -70,29 +70,6 @@ func BenchmarkExecuteStateTransition_WithCache(b *testing.B) {
 	}
 }
 
-func BenchmarkProcessEpoch_2FullEpochs(b *testing.B) {
-	undo, err := benchmark.SetBenchmarkConfig()
-	require.NoError(b, err)
-	defer undo()
-	beaconState, err := benchmark.PreGenstateFullEpochs()
-	require.NoError(b, err)
-
-	// We have to reset slot back to last epoch to hydrate cache. Since
-	// some attestations in block are from previous epoch
-	currentSlot := beaconState.Slot()
-	require.NoError(b, beaconState.SetSlot(beaconState.Slot()-params.BeaconConfig().SlotsPerEpoch))
-	require.NoError(b, helpers.UpdateCommitteeCache(context.Background(), beaconState, time.CurrentEpoch(beaconState)))
-	require.NoError(b, beaconState.SetSlot(currentSlot))
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		// ProcessEpochPrecompute is the optimized version of process epoch. It's enabled by default
-		// at run time.
-		_, err := coreState.ProcessEpochPrecompute(context.Background(), beaconState.Copy())
-		require.NoError(b, err)
-	}
-}
-
 func BenchmarkHashTreeRoot_FullState(b *testing.B) {
 	beaconState, err := benchmark.PreGenstateFullEpochs()
 	require.NoError(b, err)
@@ -124,7 +101,7 @@ func BenchmarkHashTreeRootState_FullState(b *testing.B) {
 func BenchmarkMarshalState_FullState(b *testing.B) {
 	beaconState, err := benchmark.PreGenstateFullEpochs()
 	require.NoError(b, err)
-	natState, err := state_native.ProtobufBeaconStatePhase0(beaconState.ToProtoUnsafe())
+	natState, err := state_native.ProtobufBeaconStateCapella(beaconState.ToProtoUnsafe())
 	require.NoError(b, err)
 	b.Run("Proto_Marshal", func(b *testing.B) {
 		b.ResetTimer()
@@ -148,7 +125,7 @@ func BenchmarkMarshalState_FullState(b *testing.B) {
 func BenchmarkUnmarshalState_FullState(b *testing.B) {
 	beaconState, err := benchmark.PreGenstateFullEpochs()
 	require.NoError(b, err)
-	natState, err := state_native.ProtobufBeaconStatePhase0(beaconState.ToProtoUnsafe())
+	natState, err := state_native.ProtobufBeaconStateCapella(beaconState.ToProtoUnsafe())
 	require.NoError(b, err)
 	protoObject, err := proto.Marshal(natState)
 	require.NoError(b, err)
@@ -159,7 +136,7 @@ func BenchmarkUnmarshalState_FullState(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
-			require.NoError(b, proto.Unmarshal(protoObject, &zondpb.BeaconState{}))
+			require.NoError(b, proto.Unmarshal(protoObject, &zondpb.BeaconStateCapella{}))
 		}
 	})
 
@@ -167,7 +144,7 @@ func BenchmarkUnmarshalState_FullState(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
-			sszState := &zondpb.BeaconState{}
+			sszState := &zondpb.BeaconStateCapella{}
 			require.NoError(b, sszState.UnmarshalSSZ(sszObject))
 		}
 	})

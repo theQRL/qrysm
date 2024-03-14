@@ -127,7 +127,7 @@ func TestGetBeaconBlock_CapellaValid(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		fmt.Sprintf("/zond/v2/validator/blocks/%d?graffiti=%s&randao_reveal=%s", slot, hexutil.Encode(graffiti), hexutil.Encode(randaoReveal)),
+		fmt.Sprintf("/zond/v1/validator/blocks/%d?graffiti=%s&randao_reveal=%s", slot, hexutil.Encode(graffiti), hexutil.Encode(randaoReveal)),
 		&abstractProduceBlockResponseJson{},
 	).SetArg(
 		2,

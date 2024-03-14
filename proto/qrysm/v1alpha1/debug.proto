@@ -51,24 +51,6 @@ service Debug {
             get: "/zond/v1alpha1/debug/peer"
         };
     }
-
-    // Returns the inclusion slot of a given attester id and slot.
-    // DEPRECATED: This endpoint doesn't appear to be used and have been marked for deprecation.
-    rpc GetInclusionSlot(InclusionSlotRequest) returns (InclusionSlotResponse) {
-        option deprecated = true;
-        option (google.api.http) = {
-            get: "/zond/v1alpha1/debug/inclusion"
-        };
-    }
-}
-
-message InclusionSlotRequest {
-    uint64 id = 1;
-    uint64 slot = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
-}
-
-message InclusionSlotResponse {
-    uint64 slot = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
 }
 
 message BeaconStateRequest {

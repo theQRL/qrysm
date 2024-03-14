@@ -25,7 +25,6 @@ import (
 	"github.com/pkg/errors"
 	fastssz "github.com/prysmaticlabs/fastssz"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/api/gateway"
@@ -34,6 +33,7 @@ import (
 	"github.com/theQRL/qrysm/v4/cmd"
 	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
 	"github.com/theQRL/qrysm/v4/config/features"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	validatorServiceConfig "github.com/theQRL/qrysm/v4/config/validator/service"
 	"github.com/theQRL/qrysm/v4/consensus-types/validator"
@@ -396,7 +396,7 @@ func Web3SignerConfig(cliCtx *cli.Context) (*remoteweb3signer.SetupConfig, error
 			}
 			if len(pks) > 0 {
 				pks = slice.Unique[string](pks)
-				var validatorKeys [][dilithium.CryptoPublicKeyBytes]byte
+				var validatorKeys [][field_params.DilithiumPubkeyLength]byte
 				for _, key := range pks {
 					decodedKey, decodeErr := hexutil.Decode(key)
 					if decodeErr != nil {
@@ -495,13 +495,13 @@ func proposerSettings(cliCtx *cli.Context, db iface.ValidatorDB) (*validatorServ
 	}
 
 	if fileConfig.ProposerConfig != nil && len(fileConfig.ProposerConfig) != 0 {
-		vpSettings.ProposeConfig = make(map[[dilithium.CryptoPublicKeyBytes]byte]*validatorServiceConfig.ProposerOption)
+		vpSettings.ProposeConfig = make(map[[field_params.DilithiumPubkeyLength]byte]*validatorServiceConfig.ProposerOption)
 		for key, option := range fileConfig.ProposerConfig {
 			decodedKey, err := hexutil.Decode(key)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not decode public key %s", key)
 			}
-			if len(decodedKey) != dilithium.CryptoPublicKeyBytes {
+			if len(decodedKey) != field_params.DilithiumPubkeyLength {
 				return nil, fmt.Errorf("%v  is not a dilithium public key", key)
 			}
 			if err := verifyOption(key, option); err != nil {

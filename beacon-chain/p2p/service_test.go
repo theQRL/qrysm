@@ -159,9 +159,6 @@ func TestService_Start_NoDiscoverFlag(t *testing.T) {
 	// required params to addForkEntry in s.forkWatcher
 	s.genesisTime = time.Now()
 	beaconCfg := params.BeaconConfig().Copy()
-	beaconCfg.AltairForkEpoch = 0
-	beaconCfg.BellatrixForkEpoch = 0
-	beaconCfg.CapellaForkEpoch = 0
 	beaconCfg.SecondsPerSlot = 1
 	params.OverrideBeaconConfig(beaconCfg)
 

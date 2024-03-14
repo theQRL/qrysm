@@ -54,8 +54,8 @@ message SyncCommitteeContribution {
   // index in the subcommittee is present in the aggregate `signature`.
   bytes aggregation_bits = 4 [(theqrl.zond.ext.ssz_size) = "sync_committee_aggregate_bytes.size", (theqrl.zond.ext.cast_type) = "sync_committee_aggregate_bits.type"];
 
-  // Signature by the validator(s) over the block root of `slot`.
-  bytes signature = 5 [(theqrl.zond.ext.ssz_max) = "73520"];
+  // Signature(s) by the validator(s) over the block root of `slot`.
+  repeated bytes signatures = 5 [(theqrl.zond.ext.ssz_size) = "?,4595", (theqrl.zond.ext.ssz_max) = "16"];
 }
 
 // Aggregated sync committee signature object with selection proof to support light client.
@@ -74,5 +74,5 @@ message SignedContributionAndProof {
   ContributionAndProof message = 1;
 
   // Signature of the aggregator that produced `message`.
-  bytes signature = 4 [(theqrl.zond.ext.ssz_size) = "4595"];
+  bytes signature = 2 [(theqrl.zond.ext.ssz_size) = "4595"];
 }

@@ -23,7 +23,7 @@ func TestSkipSlotCache_RoundTrip(t *testing.T) {
 
 	require.NoError(t, c.MarkInProgress(r))
 
-	s, err = state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	s, err = state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Slot: 10,
 	})
 	require.NoError(t, err)

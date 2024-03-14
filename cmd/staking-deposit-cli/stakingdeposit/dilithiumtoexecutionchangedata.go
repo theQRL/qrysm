@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/config"
-	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 )
 
 type DilithiumToExecutionChangeMessage struct {
@@ -27,7 +27,7 @@ type DilithiumToExecutionChangeData struct {
 }
 
 func NewDilithiumToExecutionChangeData(
-	signedDilithiumToExecutionChange *zondpbv2.SignedDilithiumToExecutionChange,
+	signedDilithiumToExecutionChange *zondpbv1.SignedDilithiumToExecutionChange,
 	chainSetting *config.ChainSetting) *DilithiumToExecutionChangeData {
 	return &DilithiumToExecutionChangeData{
 		Message: &DilithiumToExecutionChangeMessage{

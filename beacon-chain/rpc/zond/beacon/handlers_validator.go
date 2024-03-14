@@ -7,12 +7,12 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	statenative "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/consensus-types/validator"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
@@ -286,8 +286,8 @@ func decodeIds(w http.ResponseWriter, st state.BeaconState, rawIds []string, ign
 	for _, rawId := range rawIds {
 		pubkey, err := hexutil.Decode(rawId)
 		if err == nil {
-			if len(pubkey) != dilithium2.CryptoPublicKeyBytes {
-				http2.HandleError(w, fmt.Sprintf("Pubkey length is %d instead of %d", len(pubkey), dilithium2.CryptoPublicKeyBytes), http.StatusBadRequest)
+			if len(pubkey) != field_params.DilithiumPubkeyLength {
+				http2.HandleError(w, fmt.Sprintf("Pubkey length is %d instead of %d", len(pubkey), field_params.DilithiumPubkeyLength), http.StatusBadRequest)
 				return nil, false
 			}
 			valIndex, ok := st.ValidatorIndexByPubkey(bytesutil.ToBytes2592(pubkey))

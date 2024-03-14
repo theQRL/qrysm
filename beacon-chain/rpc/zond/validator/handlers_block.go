@@ -9,9 +9,9 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/api"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	http2 "github.com/theQRL/qrysm/v4/network/http"
 	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
@@ -47,9 +47,10 @@ func (s *Server) ProduceBlockV3(w http.ResponseWriter, r *http.Request) {
 
 	var randaoReveal []byte
 	if rawSkipRandaoVerification == "true" {
+		// TODO(theQRL/qrysm/issues/74)
 		randaoReveal = primitives.PointAtInfinity
 	} else {
-		rr, err := shared.DecodeHexWithLength(rawRandaoReveal, dilithium2.CryptoBytes)
+		rr, err := shared.DecodeHexWithLength(rawRandaoReveal, field_params.DilithiumSignatureLength)
 		if err != nil {
 			http2.HandleError(w, errors.Wrap(err, "unable to decode randao reveal").Error(), http.StatusBadRequest)
 			return
@@ -86,16 +87,6 @@ func (s *Server) produceBlockV3(ctx context.Context, w http.ResponseWriter, r *h
 	}
 	w.Header().Set(api.ExecutionPayloadBlindedHeader, fmt.Sprintf("%v", v1alpha1resp.IsBlinded))
 	w.Header().Set(api.ExecutionPayloadValueHeader, fmt.Sprintf("%d", v1alpha1resp.PayloadValue))
-	phase0Block, ok := v1alpha1resp.Block.(*zond.GenericBeaconBlock_Phase0)
-	if ok {
-		handleProducePhase0V3(ctx, w, isSSZ, phase0Block, v1alpha1resp.PayloadValue)
-		return
-	}
-	altairBlock, ok := v1alpha1resp.Block.(*zond.GenericBeaconBlock_Altair)
-	if ok {
-		handleProduceAltairV3(ctx, w, isSSZ, altairBlock, v1alpha1resp.PayloadValue)
-		return
-	}
 	optimistic, err := s.OptimisticModeFetcher.IsOptimistic(ctx)
 	if err != nil {
 		http2.HandleError(w, errors.Wrap(err, "Could not determine if the node is a optimistic node").Error(), http.StatusInternalServerError)
@@ -103,16 +94,6 @@ func (s *Server) produceBlockV3(ctx context.Context, w http.ResponseWriter, r *h
 	}
 	if optimistic {
 		http2.HandleError(w, "The node is currently optimistic and cannot serve validators", http.StatusServiceUnavailable)
-		return
-	}
-	blindedBellatrixBlock, ok := v1alpha1resp.Block.(*zond.GenericBeaconBlock_BlindedBellatrix)
-	if ok {
-		handleProduceBlindedBellatrixV3(ctx, w, isSSZ, blindedBellatrixBlock, v1alpha1resp.PayloadValue)
-		return
-	}
-	bellatrixBlock, ok := v1alpha1resp.Block.(*zond.GenericBeaconBlock_Bellatrix)
-	if ok {
-		handleProduceBellatrixV3(ctx, w, isSSZ, bellatrixBlock, v1alpha1resp.PayloadValue)
 		return
 	}
 	blindedCapellaBlock, ok := v1alpha1resp.Block.(*zond.GenericBeaconBlock_BlindedCapella)
@@ -125,150 +106,6 @@ func (s *Server) produceBlockV3(ctx context.Context, w http.ResponseWriter, r *h
 		handleProduceCapellaV3(ctx, w, isSSZ, capellaBlock, v1alpha1resp.PayloadValue)
 		return
 	}
-}
-
-func handleProducePhase0V3(
-	ctx context.Context,
-	w http.ResponseWriter,
-	isSSZ bool,
-	blk *zond.GenericBeaconBlock_Phase0,
-	payloadValue uint64,
-) {
-	_, span := trace.StartSpan(ctx, "validator.ProduceBlockV3.internal.handleProducePhase0V3")
-	defer span.End()
-	if isSSZ {
-		sszResp, err := blk.Phase0.MarshalSSZ()
-		if err != nil {
-			http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		http2.WriteSsz(w, sszResp, "phase0Block.ssz")
-		return
-	}
-	block, err := shared.BeaconBlockFromConsensus(blk.Phase0)
-	if err != nil {
-		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	jsonBytes, err := json.Marshal(block)
-	if err != nil {
-		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http2.WriteJson(w, &ProduceBlockV3Response{
-		Version:                 version.String(version.Phase0),
-		ExecutionPayloadBlinded: false,
-		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
-		Data:                    jsonBytes,
-	})
-}
-
-func handleProduceAltairV3(
-	ctx context.Context,
-	w http.ResponseWriter,
-	isSSZ bool,
-	blk *zond.GenericBeaconBlock_Altair,
-	payloadValue uint64,
-) {
-	_, span := trace.StartSpan(ctx, "validator.ProduceBlockV3.internal.handleProduceAltairV3")
-	defer span.End()
-	if isSSZ {
-		sszResp, err := blk.Altair.MarshalSSZ()
-		if err != nil {
-			http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		http2.WriteSsz(w, sszResp, "altairBlock.ssz")
-		return
-	}
-	block, err := shared.BeaconBlockAltairFromConsensus(blk.Altair)
-	if err != nil {
-		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	jsonBytes, err := json.Marshal(block)
-	if err != nil {
-		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http2.WriteJson(w, &ProduceBlockV3Response{
-		Version:                 version.String(version.Altair),
-		ExecutionPayloadBlinded: false,
-		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
-		Data:                    jsonBytes,
-	})
-}
-
-func handleProduceBellatrixV3(
-	ctx context.Context,
-	w http.ResponseWriter,
-	isSSZ bool,
-	blk *zond.GenericBeaconBlock_Bellatrix,
-	payloadValue uint64,
-) {
-	_, span := trace.StartSpan(ctx, "validator.ProduceBlockV3.internal.handleProduceBellatrixV3")
-	defer span.End()
-	if isSSZ {
-		sszResp, err := blk.Bellatrix.MarshalSSZ()
-		if err != nil {
-			http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		http2.WriteSsz(w, sszResp, "bellatrixBlock.ssz")
-		return
-	}
-	block, err := shared.BeaconBlockBellatrixFromConsensus(blk.Bellatrix)
-	if err != nil {
-		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	jsonBytes, err := json.Marshal(block)
-	if err != nil {
-		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http2.WriteJson(w, &ProduceBlockV3Response{
-		Version:                 version.String(version.Bellatrix),
-		ExecutionPayloadBlinded: false,
-		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
-		Data:                    jsonBytes,
-	})
-}
-
-func handleProduceBlindedBellatrixV3(
-	ctx context.Context,
-	w http.ResponseWriter,
-	isSSZ bool,
-	blk *zond.GenericBeaconBlock_BlindedBellatrix,
-	payloadValue uint64,
-) {
-	_, span := trace.StartSpan(ctx, "validator.ProduceBlockV3.internal.handleProduceBlindedBellatrixV3")
-	defer span.End()
-	if isSSZ {
-		sszResp, err := blk.BlindedBellatrix.MarshalSSZ()
-		if err != nil {
-			http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		http2.WriteSsz(w, sszResp, "blindedBellatrixBlock.ssz")
-		return
-	}
-	block, err := shared.BlindedBeaconBlockBellatrixFromConsensus(blk.BlindedBellatrix)
-	if err != nil {
-		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	jsonBytes, err := json.Marshal(block)
-	if err != nil {
-		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http2.WriteJson(w, &ProduceBlockV3Response{
-		Version:                 version.String(version.Bellatrix),
-		ExecutionPayloadBlinded: true,
-		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue),
-		Data:                    jsonBytes,
-	})
 }
 
 func handleProduceBlindedCapellaV3(

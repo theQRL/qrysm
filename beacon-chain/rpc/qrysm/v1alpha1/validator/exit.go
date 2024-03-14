@@ -3,10 +3,10 @@ package validator
 import (
 	"context"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
 	opfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -24,7 +24,7 @@ func (vs *Server) ProposeExit(ctx context.Context, req *zondpb.SignedVoluntaryEx
 	if req.Exit == nil {
 		return nil, status.Error(codes.InvalidArgument, "voluntary exit does not exist")
 	}
-	if req.Signature == nil || len(req.Signature) != dilithium2.CryptoBytes {
+	if req.Signature == nil || len(req.Signature) != field_params.DilithiumSignatureLength {
 		return nil, status.Error(codes.InvalidArgument, "invalid signature provided")
 	}
 

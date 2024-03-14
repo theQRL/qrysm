@@ -14,7 +14,6 @@ import (
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
@@ -27,7 +26,7 @@ type Builder struct {
 
 func NewBuilder(t testing.TB, initialState state.BeaconState, initialBlock interfaces.ReadOnlySignedBeaconBlock) *Builder {
 	execMock := &engineMock{
-		powBlocks: make(map[[32]byte]*zondpb.PowBlock),
+		// powBlocks: make(map[[32]byte]*zondpb.PowBlock),
 	}
 	service := startChainService(t, initialState, initialBlock, execMock)
 	return &Builder{
@@ -101,10 +100,12 @@ func (bb *Builder) ValidBlock(t testing.TB, b interfaces.ReadOnlySignedBeaconBlo
 	require.NoError(t, bb.service.ReceiveBlock(ctx, b, r))
 }
 
+/*
 // PoWBlock receives the block and notifies a mocked execution engine.
 func (bb *Builder) PoWBlock(pb *zondpb.PowBlock) {
 	bb.execMock.powBlocks[bytesutil.ToBytes32(pb.BlockHash)] = pb
 }
+*/
 
 // Attestation receives the attestation and updates forkchoice.
 func (bb *Builder) Attestation(t testing.TB, a *zondpb.Attestation) {

@@ -19,7 +19,7 @@ import (
 	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
@@ -38,7 +38,7 @@ func TestProposeAttestation_OK(t *testing.T) {
 		AttPool:           attestations.NewPool(),
 		OperationNotifier: (&mock.ChainService{}).OperationNotifier(),
 	}
-	head := util.NewBeaconBlock()
+	head := util.NewBeaconBlockCapella()
 	head.Block.Slot = 999
 	head.Block.ParentRoot = bytesutil.PadTo([]byte{'a'}, 32)
 	root, err := head.Block.HashTreeRoot()
@@ -54,16 +54,16 @@ func TestProposeAttestation_OK(t *testing.T) {
 		}
 	}
 
-	state, err := util.NewBeaconState()
+	state, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, state.SetSlot(params.BeaconConfig().SlotsPerEpoch+1))
 	require.NoError(t, state.SetValidators(validators))
 
-	sk, err := bls.RandKey()
+	sk, err := dilithium.RandKey()
 	require.NoError(t, err)
 	sig := sk.Sign([]byte("dummy_test_data"))
 	req := &zondpb.Attestation{
-		Signature: sig.Marshal(),
+		Signatures: [][]byte{sig.Marshal()},
 		Data: &zondpb.AttestationData{
 			BeaconBlockRoot: root[:],
 			Source:          &zondpb.Checkpoint{Root: make([]byte, 32)},
@@ -82,18 +82,18 @@ func TestProposeAttestation_IncorrectSignature(t *testing.T) {
 		OperationNotifier: (&mock.ChainService{}).OperationNotifier(),
 	}
 
-	req := util.HydrateAttestation(&zondpb.Attestation{})
+	req := util.HydrateAttestation(&zondpb.Attestation{Signatures: [][]byte{make([]byte, 999)}})
 	wanted := "Incorrect attestation signature"
 	_, err := attesterServer.ProposeAttestation(context.Background(), req)
 	assert.ErrorContains(t, wanted, err)
 }
 
 func TestGetAttestationData_OK(t *testing.T) {
-	block := util.NewBeaconBlock()
+	block := util.NewBeaconBlockCapella()
 	block.Block.Slot = 3*params.BeaconConfig().SlotsPerEpoch + 1
-	targetBlock := util.NewBeaconBlock()
+	targetBlock := util.NewBeaconBlockCapella()
 	targetBlock.Block.Slot = 1 * params.BeaconConfig().SlotsPerEpoch
-	justifiedBlock := util.NewBeaconBlock()
+	justifiedBlock := util.NewBeaconBlockCapella()
 	justifiedBlock.Block.Slot = 2 * params.BeaconConfig().SlotsPerEpoch
 	blockRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not hash beacon block")
@@ -102,7 +102,7 @@ func TestGetAttestationData_OK(t *testing.T) {
 	targetRoot, err := targetBlock.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root for target block")
 	slot := 3*params.BeaconConfig().SlotsPerEpoch + 1
-	beaconState, err := util.NewBeaconState()
+	beaconState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetSlot(slot))
 	err = beaconState.SetCurrentJustifiedCheckpoint(&zondpb.Checkpoint{
@@ -167,9 +167,6 @@ func TestGetAttestationData_SyncNotReady(t *testing.T) {
 
 func TestGetAttestationData_Optimistic(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
-	cfg := params.BeaconConfig().Copy()
-	cfg.BellatrixForkEpoch = 0
-	params.OverrideBeaconConfig(cfg)
 
 	as := &Server{
 		SyncChecker: &mockSync.Sync{},
@@ -186,7 +183,7 @@ func TestGetAttestationData_Optimistic(t *testing.T) {
 	require.DeepEqual(t, codes.Unavailable, s.Code())
 	require.ErrorContains(t, errOptimisticMode.Error(), err)
 
-	beaconState, err := util.NewBeaconState()
+	beaconState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	as = &Server{
 		SyncChecker:           &mockSync.Sync{},
@@ -203,8 +200,8 @@ func TestGetAttestationData_Optimistic(t *testing.T) {
 }
 
 func TestAttestationDataSlot_handlesInProgressRequest(t *testing.T) {
-	s := &zondpb.BeaconState{Slot: 100}
-	state, err := state_native.InitializeFromProtoPhase0(s)
+	s := &zondpb.BeaconStateCapella{Slot: 100}
+	state, err := state_native.InitializeFromProtoCapella(s)
 	require.NoError(t, err)
 	ctx := context.Background()
 	slot := primitives.Slot(2)
@@ -285,13 +282,13 @@ func TestServer_GetAttestationData_HeadStateSlotGreaterThanRequestSlot(t *testin
 	db := dbutil.SetupDB(t)
 
 	slot := 3*params.BeaconConfig().SlotsPerEpoch + 1
-	block := util.NewBeaconBlock()
+	block := util.NewBeaconBlockCapella()
 	block.Block.Slot = slot
-	block2 := util.NewBeaconBlock()
+	block2 := util.NewBeaconBlockCapella()
 	block2.Block.Slot = slot - 1
-	targetBlock := util.NewBeaconBlock()
+	targetBlock := util.NewBeaconBlockCapella()
 	targetBlock.Block.Slot = 1 * params.BeaconConfig().SlotsPerEpoch
-	justifiedBlock := util.NewBeaconBlock()
+	justifiedBlock := util.NewBeaconBlockCapella()
 	justifiedBlock.Block.Slot = 2 * params.BeaconConfig().SlotsPerEpoch
 	blockRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not hash beacon block")
@@ -303,7 +300,7 @@ func TestServer_GetAttestationData_HeadStateSlotGreaterThanRequestSlot(t *testin
 	targetRoot, err := targetBlock.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root for target block")
 
-	beaconState, err := util.NewBeaconState()
+	beaconState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetSlot(slot))
 	offset := int64(slot.Mul(params.BeaconConfig().SecondsPerSlot))
@@ -370,11 +367,11 @@ func TestServer_GetAttestationData_HeadStateSlotGreaterThanRequestSlot(t *testin
 
 func TestGetAttestationData_SucceedsInFirstEpoch(t *testing.T) {
 	slot := primitives.Slot(5)
-	block := util.NewBeaconBlock()
+	block := util.NewBeaconBlockCapella()
 	block.Block.Slot = slot
-	targetBlock := util.NewBeaconBlock()
+	targetBlock := util.NewBeaconBlockCapella()
 	targetBlock.Block.Slot = 0
-	justifiedBlock := util.NewBeaconBlock()
+	justifiedBlock := util.NewBeaconBlockCapella()
 	justifiedBlock.Block.Slot = 0
 	blockRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not hash beacon block")
@@ -383,7 +380,7 @@ func TestGetAttestationData_SucceedsInFirstEpoch(t *testing.T) {
 	targetRoot, err := targetBlock.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root for target block")
 
-	beaconState, err := util.NewBeaconState()
+	beaconState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetSlot(slot))
 	err = beaconState.SetCurrentJustifiedCheckpoint(&zondpb.Checkpoint{
@@ -497,7 +494,7 @@ func TestServer_SubscribeCommitteeSubnets_MultipleSlots(t *testing.T) {
 		}
 	}
 
-	state, err := util.NewBeaconState()
+	state, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, state.SetValidators(validators))
 

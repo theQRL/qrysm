@@ -40,8 +40,8 @@ func TestService_beaconBlockSubscriber(t *testing.T) {
 		{
 			name: "invalid block does not remove attestations",
 			args: args{
-				msg: func() *zondpb.SignedBeaconBlock {
-					b := util.NewBeaconBlock()
+				msg: func() *zondpb.SignedBeaconBlockCapella {
+					b := util.NewBeaconBlockCapella()
 					b.Block.Body.Attestations = pooledAttestations
 					return b
 				}(),
@@ -102,7 +102,7 @@ func TestService_BeaconBlockSubscribe_ExecutionEngineTimesOut(t *testing.T) {
 		seenBlockCache: lruwrpr.New(10),
 		badBlockCache:  lruwrpr.New(10),
 	}
-	require.ErrorIs(t, execution.ErrHTTPTimeout, s.beaconBlockSubscriber(context.Background(), util.NewBeaconBlock()))
+	require.ErrorIs(t, execution.ErrHTTPTimeout, s.beaconBlockSubscriber(context.Background(), util.NewBeaconBlockCapella()))
 	require.Equal(t, 0, len(s.badBlockCache.Keys()))
 	require.Equal(t, 1, len(s.seenBlockCache.Keys()))
 }
@@ -120,7 +120,7 @@ func TestService_BeaconBlockSubscribe_UndefinedEeError(t *testing.T) {
 		seenBlockCache: lruwrpr.New(10),
 		badBlockCache:  lruwrpr.New(10),
 	}
-	require.ErrorIs(t, s.beaconBlockSubscriber(context.Background(), util.NewBeaconBlock()), blockchain.ErrUndefinedExecutionEngineError)
+	require.ErrorIs(t, s.beaconBlockSubscriber(context.Background(), util.NewBeaconBlockCapella()), blockchain.ErrUndefinedExecutionEngineError)
 	require.Equal(t, 0, len(s.badBlockCache.Keys()))
 	require.Equal(t, 1, len(s.seenBlockCache.Keys()))
 }

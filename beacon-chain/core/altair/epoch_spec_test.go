@@ -22,7 +22,7 @@ import (
 )
 
 func TestProcessSyncCommitteeUpdates_CanRotate(t *testing.T) {
-	s, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+	s, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().MaxValidatorsPerCommittee)
 	h := &zondpb.BeaconBlockHeader{
 		StateRoot:  bytesutil.PadTo([]byte{'a'}, 32),
 		ParentRoot: bytesutil.PadTo([]byte{'b'}, 32),
@@ -67,7 +67,7 @@ func TestProcessSyncCommitteeUpdates_CanRotate(t *testing.T) {
 }
 
 func TestProcessParticipationFlagUpdates_CanRotate(t *testing.T) {
-	s, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+	s, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().MaxValidatorsPerCommittee)
 	c, err := s.CurrentEpochParticipation()
 	require.NoError(t, err)
 	require.DeepEqual(t, make([]byte, params.BeaconConfig().MaxValidatorsPerCommittee), c)
@@ -97,15 +97,15 @@ func TestProcessParticipationFlagUpdates_CanRotate(t *testing.T) {
 }
 
 func TestProcessSlashings_NotSlashed(t *testing.T) {
-	base := &zondpb.BeaconStateAltair{
+	base := &zondpb.BeaconStateCapella{
 		Slot:       0,
 		Validators: []*zondpb.Validator{{Slashed: true}},
 		Balances:   []uint64{params.BeaconConfig().MaxEffectiveBalance},
 		Slashings:  []uint64{0, 1e9},
 	}
-	s, err := state_native.InitializeFromProtoAltair(base)
+	s, err := state_native.InitializeFromProtoCapella(base)
 	require.NoError(t, err)
-	newState, err := epoch.ProcessSlashings(s, params.BeaconConfig().ProportionalSlashingMultiplierAltair)
+	newState, err := epoch.ProcessSlashings(s, params.BeaconConfig().ProportionalSlashingMultiplier)
 	require.NoError(t, err)
 	wanted := params.BeaconConfig().MaxEffectiveBalance
 	assert.Equal(t, wanted, newState.Balances()[0], "Unexpected slashed balance")
@@ -113,11 +113,11 @@ func TestProcessSlashings_NotSlashed(t *testing.T) {
 
 func TestProcessSlashings_SlashedLess(t *testing.T) {
 	tests := []struct {
-		state *zondpb.BeaconStateAltair
+		state *zondpb.BeaconStateCapella
 		want  uint64
 	}{
 		{
-			state: &zondpb.BeaconStateAltair{
+			state: &zondpb.BeaconStateCapella{
 				Validators: []*zondpb.Validator{
 					{Slashed: true,
 						WithdrawableEpoch: params.BeaconConfig().EpochsPerSlashingsVector / 2,
@@ -126,10 +126,10 @@ func TestProcessSlashings_SlashedLess(t *testing.T) {
 				Balances:  []uint64{params.BeaconConfig().MaxEffectiveBalance, params.BeaconConfig().MaxEffectiveBalance},
 				Slashings: []uint64{0, 1e9},
 			},
-			want: uint64(30000000000),
+			want: uint64(39997000000000),
 		},
 		{
-			state: &zondpb.BeaconStateAltair{
+			state: &zondpb.BeaconStateCapella{
 				Validators: []*zondpb.Validator{
 					{Slashed: true,
 						WithdrawableEpoch: params.BeaconConfig().EpochsPerSlashingsVector / 2,
@@ -140,10 +140,10 @@ func TestProcessSlashings_SlashedLess(t *testing.T) {
 				Balances:  []uint64{params.BeaconConfig().MaxEffectiveBalance, params.BeaconConfig().MaxEffectiveBalance},
 				Slashings: []uint64{0, 1e9},
 			},
-			want: uint64(31000000000),
+			want: uint64(39999000000000),
 		},
 		{
-			state: &zondpb.BeaconStateAltair{
+			state: &zondpb.BeaconStateCapella{
 				Validators: []*zondpb.Validator{
 					{Slashed: true,
 						WithdrawableEpoch: params.BeaconConfig().EpochsPerSlashingsVector / 2,
@@ -154,10 +154,10 @@ func TestProcessSlashings_SlashedLess(t *testing.T) {
 				Balances:  []uint64{params.BeaconConfig().MaxEffectiveBalance, params.BeaconConfig().MaxEffectiveBalance},
 				Slashings: []uint64{0, 2 * 1e9},
 			},
-			want: uint64(30000000000),
+			want: uint64(39997000000000),
 		},
 		{
-			state: &zondpb.BeaconStateAltair{
+			state: &zondpb.BeaconStateCapella{
 				Validators: []*zondpb.Validator{
 					{Slashed: true,
 						WithdrawableEpoch: params.BeaconConfig().EpochsPerSlashingsVector / 2,
@@ -166,7 +166,7 @@ func TestProcessSlashings_SlashedLess(t *testing.T) {
 				Balances:  []uint64{params.BeaconConfig().MaxEffectiveBalance - params.BeaconConfig().EffectiveBalanceIncrement, params.BeaconConfig().MaxEffectiveBalance - params.BeaconConfig().EffectiveBalanceIncrement},
 				Slashings: []uint64{0, 1e9},
 			},
-			want: uint64(29000000000),
+			want: uint64(39996000000000),
 		},
 	}
 
@@ -174,9 +174,9 @@ func TestProcessSlashings_SlashedLess(t *testing.T) {
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
 			helpers.ClearCache()
 			original := proto.Clone(tt.state)
-			s, err := state_native.InitializeFromProtoAltair(tt.state)
+			s, err := state_native.InitializeFromProtoCapella(tt.state)
 			require.NoError(t, err)
-			newState, err := epoch.ProcessSlashings(s, params.BeaconConfig().ProportionalSlashingMultiplierAltair)
+			newState, err := epoch.ProcessSlashings(s, params.BeaconConfig().ProportionalSlashingMultiplier)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, newState.Balances()[0], "ProcessSlashings({%v}) = newState; newState.Balances[0] = %d", original, newState.Balances()[0])
 		})
@@ -184,14 +184,14 @@ func TestProcessSlashings_SlashedLess(t *testing.T) {
 }
 
 func TestProcessSlashings_BadValue(t *testing.T) {
-	base := &zondpb.BeaconStateAltair{
+	base := &zondpb.BeaconStateCapella{
 		Slot:       0,
 		Validators: []*zondpb.Validator{{Slashed: true}},
 		Balances:   []uint64{params.BeaconConfig().MaxEffectiveBalance},
 		Slashings:  []uint64{math.MaxUint64, 1e9},
 	}
-	s, err := state_native.InitializeFromProtoAltair(base)
+	s, err := state_native.InitializeFromProtoCapella(base)
 	require.NoError(t, err)
-	_, err = epoch.ProcessSlashings(s, params.BeaconConfig().ProportionalSlashingMultiplierAltair)
+	_, err = epoch.ProcessSlashings(s, params.BeaconConfig().ProportionalSlashingMultiplier)
 	require.ErrorContains(t, "addition overflows", err)
 }

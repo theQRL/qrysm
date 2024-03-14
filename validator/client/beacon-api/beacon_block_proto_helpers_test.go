@@ -276,7 +276,7 @@ func TestBeaconBlockProtoHelpers_ConvertAttesterSlashingsToProto(t *testing.T) {
 								Root:  []byte{9},
 							},
 						},
-						Signature: []byte{10},
+						Signatures: [][]byte{{10}},
 					},
 					Attestation_2: &zondpb.IndexedAttestation{
 						AttestingIndices: []uint64{11, 12},
@@ -293,7 +293,7 @@ func TestBeaconBlockProtoHelpers_ConvertAttesterSlashingsToProto(t *testing.T) {
 								Root:  []byte{19},
 							},
 						},
-						Signature: []byte{20},
+						Signatures: [][]byte{{20}},
 					},
 				},
 				{
@@ -312,7 +312,7 @@ func TestBeaconBlockProtoHelpers_ConvertAttesterSlashingsToProto(t *testing.T) {
 								Root:  []byte{29},
 							},
 						},
-						Signature: []byte{30},
+						Signatures: [][]byte{{30}},
 					},
 					Attestation_2: &zondpb.IndexedAttestation{
 						AttestingIndices: []uint64{31, 32},
@@ -329,7 +329,7 @@ func TestBeaconBlockProtoHelpers_ConvertAttesterSlashingsToProto(t *testing.T) {
 								Root:  []byte{39},
 							},
 						},
-						Signature: []byte{40},
+						Signatures: [][]byte{{40}},
 					},
 				},
 			},
@@ -376,7 +376,7 @@ func TestBeaconBlockProtoHelpers_ConvertAttestationToProto(t *testing.T) {
 			expectedErrorMessage: "failed to decode attestation signature `bar`",
 			generateInput: func() *apimiddleware.IndexedAttestationJson {
 				input := generateIndexedAttestation()
-				input.Signature = "bar"
+				input.Signatures = []string{"bar"}
 				return input
 			},
 		},
@@ -407,7 +407,7 @@ func TestBeaconBlockProtoHelpers_ConvertAttestationToProto(t *testing.T) {
 						Root:  []byte{9},
 					},
 				},
-				Signature: []byte{10},
+				Signatures: [][]byte{{10}},
 			},
 		},
 	}
@@ -519,7 +519,7 @@ func TestBeaconBlockProtoHelpers_ConvertAttestationsToProto(t *testing.T) {
 			expectedErrorMessage: "failed to decode attestation signature `bar`",
 			generateInput: func() []*apimiddleware.AttestationJson {
 				input := generateAttestations()
-				input[0].Signature = "bar"
+				input[0].Signatures = []string{"bar"}
 				return input
 			},
 		},
@@ -542,7 +542,7 @@ func TestBeaconBlockProtoHelpers_ConvertAttestationsToProto(t *testing.T) {
 							Root:  []byte{8},
 						},
 					},
-					Signature: []byte{9},
+					Signatures: [][]byte{{9}},
 				},
 				{
 					AggregationBits: []byte{10},
@@ -559,7 +559,7 @@ func TestBeaconBlockProtoHelpers_ConvertAttestationsToProto(t *testing.T) {
 							Root:  []byte{17},
 						},
 					},
-					Signature: []byte{18},
+					Signatures: [][]byte{{18}},
 				},
 			},
 		},
@@ -1161,7 +1161,7 @@ func generateAttesterSlashings() []*apimiddleware.AttesterSlashingJson {
 						Root:  hexutil.Encode([]byte{9}),
 					},
 				},
-				Signature: hexutil.Encode([]byte{10}),
+				Signatures: []string{hexutil.Encode([]byte{10})},
 			},
 			Attestation_2: &apimiddleware.IndexedAttestationJson{
 				AttestingIndices: []string{"11", "12"},
@@ -1178,7 +1178,7 @@ func generateAttesterSlashings() []*apimiddleware.AttesterSlashingJson {
 						Root:  hexutil.Encode([]byte{19}),
 					},
 				},
-				Signature: hexutil.Encode([]byte{20}),
+				Signatures: []string{hexutil.Encode([]byte{20})},
 			},
 		},
 		{
@@ -1197,7 +1197,7 @@ func generateAttesterSlashings() []*apimiddleware.AttesterSlashingJson {
 						Root:  hexutil.Encode([]byte{29}),
 					},
 				},
-				Signature: hexutil.Encode([]byte{30}),
+				Signatures: []string{hexutil.Encode([]byte{30})},
 			},
 			Attestation_2: &apimiddleware.IndexedAttestationJson{
 				AttestingIndices: []string{"31", "32"},
@@ -1214,7 +1214,7 @@ func generateAttesterSlashings() []*apimiddleware.AttesterSlashingJson {
 						Root:  hexutil.Encode([]byte{39}),
 					},
 				},
-				Signature: hexutil.Encode([]byte{40}),
+				Signatures: []string{hexutil.Encode([]byte{40})},
 			},
 		},
 	}
@@ -1236,7 +1236,7 @@ func generateIndexedAttestation() *apimiddleware.IndexedAttestationJson {
 				Root:  hexutil.Encode([]byte{9}),
 			},
 		},
-		Signature: hexutil.Encode([]byte{10}),
+		Signatures: []string{hexutil.Encode([]byte{10})},
 	}
 }
 
@@ -1264,7 +1264,7 @@ func generateAttestations() []*apimiddleware.AttestationJson {
 					Root:  hexutil.Encode([]byte{8}),
 				},
 			},
-			Signature: hexutil.Encode([]byte{9}),
+			Signatures: []string{hexutil.Encode([]byte{9})},
 		},
 		{
 			AggregationBits: hexutil.Encode([]byte{10}),
@@ -1281,7 +1281,7 @@ func generateAttestations() []*apimiddleware.AttestationJson {
 					Root:  hexutil.Encode([]byte{17}),
 				},
 			},
-			Signature: hexutil.Encode([]byte{18}),
+			Signatures: []string{hexutil.Encode([]byte{18})},
 		},
 	}
 }

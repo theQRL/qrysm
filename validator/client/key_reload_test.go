@@ -7,7 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/go-qrllib/dilithium"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -45,7 +45,7 @@ func TestValidator_HandleKeyReload(t *testing.T) {
 		).Return(resp, nil)
 		beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&zondpb.Validators{}, nil)
 
-		anyActive, err := v.HandleKeyReload(context.Background(), [][dilithium.CryptoPublicKeyBytes]byte{inactive.pub, active.pub})
+		anyActive, err := v.HandleKeyReload(context.Background(), [][field_params.DilithiumPubkeyLength]byte{inactive.pub, active.pub})
 		require.NoError(t, err)
 		assert.Equal(t, true, anyActive)
 		assert.LogsContain(t, hook, "Waiting for deposit to be observed by beacon node")
@@ -75,7 +75,7 @@ func TestValidator_HandleKeyReload(t *testing.T) {
 		).Return(resp, nil)
 		beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&zondpb.Validators{}, nil)
 
-		anyActive, err := v.HandleKeyReload(context.Background(), [][dilithium.CryptoPublicKeyBytes]byte{kp.pub})
+		anyActive, err := v.HandleKeyReload(context.Background(), [][field_params.DilithiumPubkeyLength]byte{kp.pub})
 		require.NoError(t, err)
 		assert.Equal(t, false, anyActive)
 		assert.LogsContain(t, hook, "Waiting for deposit to be observed by beacon node")
@@ -98,7 +98,7 @@ func TestValidator_HandleKeyReload(t *testing.T) {
 			},
 		).Return(nil, errors.New("error"))
 
-		_, err := v.HandleKeyReload(context.Background(), [][dilithium.CryptoPublicKeyBytes]byte{kp.pub})
+		_, err := v.HandleKeyReload(context.Background(), [][field_params.DilithiumPubkeyLength]byte{kp.pub})
 		assert.ErrorContains(t, "error", err)
 	})
 }

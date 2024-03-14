@@ -8,6 +8,7 @@ import (
 
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
@@ -20,7 +21,7 @@ import (
 
 func TestAttestation_IsAggregator(t *testing.T) {
 	t.Run("aggregator", func(t *testing.T) {
-		beaconState, privKeys := util.DeterministicGenesisState(t, 100)
+		beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 100)
 		committee, err := helpers.BeaconCommitteeFromState(context.Background(), beaconState, 0, 0)
 		require.NoError(t, err)
 		sig := privKeys[0].Sign([]byte{'A'})
@@ -32,11 +33,11 @@ func TestAttestation_IsAggregator(t *testing.T) {
 	t.Run("not aggregator", func(t *testing.T) {
 		params.SetupTestConfigCleanup(t)
 		params.OverrideBeaconConfig(params.MinimalSpecConfig())
-		beaconState, privKeys := util.DeterministicGenesisState(t, 2048)
+		beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 2048)
 
 		committee, err := helpers.BeaconCommitteeFromState(context.Background(), beaconState, 0, 0)
 		require.NoError(t, err)
-		sig := privKeys[0].Sign([]byte{'A'})
+		sig := privKeys[0].Sign([]byte{'B'})
 		agg, err := helpers.IsAggregator(uint64(len(committee)), sig.Marshal())
 		require.NoError(t, err)
 		assert.Equal(t, false, agg, "Wanted aggregator false")
@@ -50,7 +51,7 @@ func TestAttestation_ComputeSubnetForAttestation(t *testing.T) {
 	validators := make([]*zondpb.Validator, validatorCount)
 
 	for i := 0; i < len(validators); i++ {
-		k := make([]byte, 48)
+		k := make([]byte, field_params.DilithiumPubkeyLength)
 		copy(k, strconv.Itoa(i))
 		validators[i] = &zondpb.Validator{
 			PublicKey:             k,
@@ -59,7 +60,7 @@ func TestAttestation_ComputeSubnetForAttestation(t *testing.T) {
 		}
 	}
 
-	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Validators:  validators,
 		Slot:        200,
 		BlockRoots:  make([][]byte, params.BeaconConfig().SlotsPerHistoricalRoot),
@@ -70,13 +71,13 @@ func TestAttestation_ComputeSubnetForAttestation(t *testing.T) {
 	att := &zondpb.Attestation{
 		AggregationBits: []byte{'A'},
 		Data: &zondpb.AttestationData{
-			Slot:            34,
+			Slot:            130,
 			CommitteeIndex:  4,
 			BeaconBlockRoot: []byte{'C'},
 			Source:          nil,
 			Target:          nil,
 		},
-		Signature: []byte{'B'},
+		Signatures: [][]byte{{'B'}},
 	}
 	valCount, err := helpers.ActiveValidatorCount(context.Background(), state, slots.ToEpoch(att.Data.Slot))
 	require.NoError(t, err)

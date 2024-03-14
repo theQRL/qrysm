@@ -101,7 +101,7 @@ func TestGetIdentity(t *testing.T) {
 
 		resp, err := s.GetIdentity(ctx, &emptypb.Empty{})
 		require.NoError(t, err)
-		expectedID := peer.ID("foo").Pretty()
+		expectedID := peer.ID("foo").String()
 		assert.Equal(t, expectedID, resp.Data.PeerId)
 		expectedEnr, err := p2p.SerializeENR(enrRecord)
 		require.NoError(t, err)
@@ -254,7 +254,7 @@ func TestListPeers(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, 1, len(resp.Data))
 		returnedPeer := resp.Data[0]
-		assert.Equal(t, expectedId.Pretty(), returnedPeer.PeerId)
+		assert.Equal(t, expectedId.String(), returnedPeer.PeerId)
 		expectedEnr, err := peerStatus.ENR(expectedId)
 		require.NoError(t, err)
 		serializedEnr, err := p2p.SerializeENR(expectedEnr)
@@ -325,7 +325,7 @@ func TestListPeers(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, len(tt.wantIds), len(resp.Data), "Wrong number of peers returned")
 			for _, id := range tt.wantIds {
-				expectedId := id.Pretty()
+				expectedId := id.String()
 				found := false
 				for _, returnedPeer := range resp.Data {
 					if returnedPeer.PeerId == expectedId {

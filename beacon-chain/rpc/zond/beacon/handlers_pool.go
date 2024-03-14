@@ -18,7 +18,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared"
 	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	http2 "github.com/theQRL/qrysm/v4/network/http"
 	ethpbalpha "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -93,6 +93,7 @@ func (s *Server) SubmitAttestations(w http.ResponseWriter, r *http.Request) {
 
 	var validAttestations []*ethpbalpha.Attestation
 	var attFailures []*shared.IndexedVerificationFailure
+outer:
 	for i, sourceAtt := range req.Data {
 		att, err := sourceAtt.ToConsensus()
 		if err != nil {
@@ -102,12 +103,15 @@ func (s *Server) SubmitAttestations(w http.ResponseWriter, r *http.Request) {
 			})
 			continue
 		}
-		if _, err = bls.SignatureFromBytes(att.Signature); err != nil {
-			attFailures = append(attFailures, &shared.IndexedVerificationFailure{
-				Index:   i,
-				Message: "Incorrect attestation signature: " + err.Error(),
-			})
-			continue
+
+		for _, sig := range att.Signatures {
+			if _, err = dilithium.SignatureFromBytes(sig); err != nil {
+				attFailures = append(attFailures, &shared.IndexedVerificationFailure{
+					Index:   i,
+					Message: "Incorrect attestation signature: " + err.Error(),
+				})
+				continue outer
+			}
 		}
 
 		// Broadcast the unaggregated attestation on a feed to notify other services in the beacon node

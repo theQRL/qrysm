@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-bitfield"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
@@ -20,13 +19,13 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/testutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	mockstategen "github.com/theQRL/qrysm/v4/beacon-chain/state/stategen/mock"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	"github.com/theQRL/qrysm/v4/crypto/bls/blst"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	http2 "github.com/theQRL/qrysm/v4/network/http"
 	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
@@ -38,20 +37,20 @@ import (
 func TestBlockRewards(t *testing.T) {
 	helpers.ClearCache()
 
-	valCount := 64
+	valCount := 256
 
 	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, st.SetSlot(1))
 	require.NoError(t, err)
 	validators := make([]*zond.Validator, 0, valCount)
 	balances := make([]uint64, 0, valCount)
-	secretKeys := make([]bls.SecretKey, 0, valCount)
+	secretKeys := make([]dilithium.DilithiumKey, 0, valCount)
 	for i := 0; i < valCount; i++ {
-		blsKey, err := bls.RandKey()
+		dilithiumKey, err := dilithium.RandKey()
 		require.NoError(t, err)
-		secretKeys = append(secretKeys, blsKey)
+		secretKeys = append(secretKeys, dilithiumKey)
 		validators = append(validators, &zond.Validator{
-			PublicKey:         blsKey.PublicKey().Marshal(),
+			PublicKey:         dilithiumKey.PublicKey().Marshal(),
 			ExitEpoch:         params.BeaconConfig().FarFutureEpoch,
 			WithdrawableEpoch: params.BeaconConfig().FarFutureEpoch,
 			EffectiveBalance:  params.BeaconConfig().MaxEffectiveBalance,
@@ -77,12 +76,12 @@ func TestBlockRewards(t *testing.T) {
 		{
 			AggregationBits: bitfield.Bitlist{0b00000111},
 			Data:            util.HydrateAttestationData(&zond.AttestationData{}),
-			Signature:       make([]byte, dilithium2.CryptoBytes),
+			Signatures:      [][]byte{make([]byte, field_params.DilithiumSignatureLength), make([]byte, field_params.DilithiumSignatureLength)},
 		},
 		{
 			AggregationBits: bitfield.Bitlist{0b00000111},
 			Data:            util.HydrateAttestationData(&zond.AttestationData{}),
-			Signature:       make([]byte, dilithium2.CryptoBytes),
+			Signatures:      [][]byte{make([]byte, field_params.DilithiumSignatureLength), make([]byte, field_params.DilithiumSignatureLength)},
 		},
 	}
 	attData1 := util.HydrateAttestationData(&zond.AttestationData{BeaconBlockRoot: bytesutil.PadTo([]byte("root1"), 32)})
@@ -98,12 +97,12 @@ func TestBlockRewards(t *testing.T) {
 			Attestation_1: &zond.IndexedAttestation{
 				AttestingIndices: []uint64{0},
 				Data:             attData1,
-				Signature:        secretKeys[0].Sign(sigRoot1[:]).Marshal(),
+				Signatures:       [][]byte{secretKeys[0].Sign(sigRoot1[:]).Marshal()},
 			},
 			Attestation_2: &zond.IndexedAttestation{
 				AttestingIndices: []uint64{0},
 				Data:             attData2,
-				Signature:        secretKeys[0].Sign(sigRoot2[:]).Marshal(),
+				Signatures:       [][]byte{secretKeys[0].Sign(sigRoot2[:]).Marshal()},
 			},
 		},
 	}
@@ -141,7 +140,7 @@ func TestBlockRewards(t *testing.T) {
 	}
 	scBits := bitfield.NewBitvector16()
 	scBits.SetBitAt(10, true)
-	scBits.SetBitAt(100, true)
+	scBits.SetBitAt(12, true)
 	domain, err = signing.Domain(st.Fork(), 0, params.BeaconConfig().DomainSyncCommittee, st.GenesisValidatorsRoot())
 	require.NoError(t, err)
 	sszBytes := primitives.SSZBytes(slot0bRoot)
@@ -149,21 +148,16 @@ func TestBlockRewards(t *testing.T) {
 	require.NoError(t, err)
 	// Bits set in sync committee bits determine which validators will be treated as participating in sync committee.
 	// These validators have to sign the message.
-	sig1, err := blst.SignatureFromBytes(secretKeys[47].Sign(r[:]).Marshal())
-	require.NoError(t, err)
-	sig2, err := blst.SignatureFromBytes(secretKeys[19].Sign(r[:]).Marshal())
-	require.NoError(t, err)
-	aggSig := bls.AggregateSignatures([]bls.Signature{sig1, sig2}).Marshal()
-	b.Block.Body.SyncAggregate = &zond.SyncAggregate{SyncCommitteeBits: scBits, SyncCommitteeSignature: aggSig}
+	sig1 := secretKeys[149].Sign(r[:]).Marshal()
+	sig2 := secretKeys[48].Sign(r[:]).Marshal()
+	b.Block.Body.SyncAggregate = &zond.SyncAggregate{SyncCommitteeBits: scBits, SyncCommitteeSignatures: [][]byte{sig1, sig2}}
 
 	sbb, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
-	phase0block, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
 	require.NoError(t, err)
 	mockChainService := &mock.ChainService{Optimistic: true}
 	s := &Server{
 		Blocker: &testutil.MockBlocker{SlotBlockMap: map[primitives.Slot]interfaces.ReadOnlySignedBeaconBlock{
-			0: phase0block,
 			2: sbb,
 		}},
 		OptimisticModeFetcher: mockChainService,
@@ -182,34 +176,18 @@ func TestBlockRewards(t *testing.T) {
 		resp := &BlockRewardsResponse{}
 		require.NoError(t, json.Unmarshal(writer.Body.Bytes(), resp))
 		assert.Equal(t, "12", resp.Data.ProposerIndex)
-		assert.Equal(t, "125089490", resp.Data.Total)
-		assert.Equal(t, "89442", resp.Data.Attestations)
-		assert.Equal(t, "48", resp.Data.SyncAggregate)
-		assert.Equal(t, "62500000", resp.Data.AttesterSlashings)
-		assert.Equal(t, "62500000", resp.Data.ProposerSlashings)
+		assert.Equal(t, "28214", resp.Data.Total)
+		assert.Equal(t, "0", resp.Data.Attestations)
+		assert.Equal(t, "28214", resp.Data.SyncAggregate)
+		assert.Equal(t, "0", resp.Data.AttesterSlashings)
+		assert.Equal(t, "0", resp.Data.ProposerSlashings)
 		assert.Equal(t, true, resp.ExecutionOptimistic)
 		assert.Equal(t, false, resp.Finalized)
-	})
-	t.Run("phase 0", func(t *testing.T) {
-		url := "http://only.the.slot.number.at.the.end.is.important/0"
-		request := httptest.NewRequest("GET", url, nil)
-		writer := httptest.NewRecorder()
-		writer.Body = &bytes.Buffer{}
-
-		s.BlockRewards(writer, request)
-		assert.Equal(t, http.StatusBadRequest, writer.Code)
-		e := &http2.DefaultErrorJson{}
-		require.NoError(t, json.Unmarshal(writer.Body.Bytes(), e))
-		assert.Equal(t, http.StatusBadRequest, e.Code)
-		assert.Equal(t, "Block rewards are not supported for Phase 0 blocks", e.Message)
 	})
 }
 
 func TestAttestationRewards(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
-	cfg := params.BeaconConfig()
-	cfg.AltairForkEpoch = 1
-	params.OverrideBeaconConfig(cfg)
 	helpers.ClearCache()
 
 	valCount := 64
@@ -219,13 +197,13 @@ func TestAttestationRewards(t *testing.T) {
 	require.NoError(t, st.SetSlot(params.BeaconConfig().SlotsPerEpoch*3-1))
 	validators := make([]*zond.Validator, 0, valCount)
 	balances := make([]uint64, 0, valCount)
-	secretKeys := make([]bls.SecretKey, 0, valCount)
+	secretKeys := make([]dilithium.DilithiumKey, 0, valCount)
 	for i := 0; i < valCount; i++ {
-		blsKey, err := bls.RandKey()
+		dilithiumKey, err := dilithium.RandKey()
 		require.NoError(t, err)
-		secretKeys = append(secretKeys, blsKey)
+		secretKeys = append(secretKeys, dilithiumKey)
 		validators = append(validators, &zond.Validator{
-			PublicKey:         blsKey.PublicKey().Marshal(),
+			PublicKey:         dilithiumKey.PublicKey().Marshal(),
 			ExitEpoch:         params.BeaconConfig().FarFutureEpoch,
 			WithdrawableEpoch: params.BeaconConfig().FarFutureEpoch,
 			EffectiveBalance:  params.BeaconConfig().MaxEffectiveBalance / 64 * uint64(i+1),
@@ -263,7 +241,7 @@ func TestAttestationRewards(t *testing.T) {
 		assert.Equal(t, http.StatusOK, writer.Code)
 		resp := &AttestationRewardsResponse{}
 		require.NoError(t, json.Unmarshal(writer.Body.Bytes(), resp))
-		require.Equal(t, 16, len(resp.Data.IdealRewards))
+		require.Equal(t, 32, len(resp.Data.IdealRewards))
 		sum := uint64(0)
 		for _, r := range resp.Data.IdealRewards {
 			hr, err := strconv.ParseUint(r.Head, 10, 64)
@@ -274,8 +252,10 @@ func TestAttestationRewards(t *testing.T) {
 			require.NoError(t, err)
 			sum += hr + sr + tr
 		}
-		assert.Equal(t, uint64(20756849), sum)
+		// assert.Equal(t, uint64(20756849), sum)
+		assert.Equal(t, uint64(1452726516), sum)
 	})
+
 	t.Run("ok - filtered vals", func(t *testing.T) {
 		url := "http://only.the.epoch.number.at.the.end.is.important/1"
 		var body bytes.Buffer
@@ -303,7 +283,8 @@ func TestAttestationRewards(t *testing.T) {
 			require.NoError(t, err)
 			sum += hr + sr + tr
 		}
-		assert.Equal(t, uint64(794265), sum)
+		// assert.Equal(t, uint64(794265), sum)
+		assert.Equal(t, uint64(29953122), sum)
 	})
 	t.Run("ok - all vals", func(t *testing.T) {
 		url := "http://only.the.epoch.number.at.the.end.is.important/1"
@@ -326,7 +307,8 @@ func TestAttestationRewards(t *testing.T) {
 			require.NoError(t, err)
 			sum += hr + sr + tr
 		}
-		assert.Equal(t, uint64(54221955), sum)
+		// assert.Equal(t, uint64(54221955), sum)
+		assert.Equal(t, uint64(1946953032), sum)
 	})
 	t.Run("ok - penalty", func(t *testing.T) {
 		st, err := util.NewBeaconStateCapella()
@@ -334,13 +316,13 @@ func TestAttestationRewards(t *testing.T) {
 		require.NoError(t, st.SetSlot(params.BeaconConfig().SlotsPerEpoch*3-1))
 		validators := make([]*zond.Validator, 0, valCount)
 		balances := make([]uint64, 0, valCount)
-		secretKeys := make([]bls.SecretKey, 0, valCount)
+		secretKeys := make([]dilithium.DilithiumKey, 0, valCount)
 		for i := 0; i < valCount; i++ {
-			blsKey, err := bls.RandKey()
+			dilithiumKey, err := dilithium.RandKey()
 			require.NoError(t, err)
-			secretKeys = append(secretKeys, blsKey)
+			secretKeys = append(secretKeys, dilithiumKey)
 			validators = append(validators, &zond.Validator{
-				PublicKey:         blsKey.PublicKey().Marshal(),
+				PublicKey:         dilithiumKey.PublicKey().Marshal(),
 				ExitEpoch:         params.BeaconConfig().FarFutureEpoch,
 				WithdrawableEpoch: params.BeaconConfig().FarFutureEpoch,
 				EffectiveBalance:  params.BeaconConfig().MaxEffectiveBalance / 64 * uint64(i),
@@ -384,8 +366,10 @@ func TestAttestationRewards(t *testing.T) {
 		resp := &AttestationRewardsResponse{}
 		require.NoError(t, json.Unmarshal(writer.Body.Bytes(), resp))
 		assert.Equal(t, "0", resp.Data.TotalRewards[0].Head)
-		assert.Equal(t, "-432270", resp.Data.TotalRewards[0].Source)
-		assert.Equal(t, "-802788", resp.Data.TotalRewards[0].Target)
+		// assert.Equal(t, "-432270", resp.Data.TotalRewards[0].Source)
+		assert.Equal(t, "-15521132", resp.Data.TotalRewards[0].Source)
+		// assert.Equal(t, "-802788", resp.Data.TotalRewards[0].Target)
+		assert.Equal(t, "-28824960", resp.Data.TotalRewards[0].Target)
 	})
 	t.Run("invalid validator index/pubkey", func(t *testing.T) {
 		url := "http://only.the.epoch.number.at.the.end.is.important/1"
@@ -408,7 +392,7 @@ func TestAttestationRewards(t *testing.T) {
 	t.Run("unknown validator pubkey", func(t *testing.T) {
 		url := "http://only.the.epoch.number.at.the.end.is.important/1"
 		var body bytes.Buffer
-		privkey, err := bls.RandKey()
+		privkey, err := dilithium.RandKey()
 		require.NoError(t, err)
 		pubkey := fmt.Sprintf("%#x", privkey.PublicKey().Marshal())
 		valIds, err := json.Marshal([]string{"10", pubkey})
@@ -444,19 +428,6 @@ func TestAttestationRewards(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, e.Code)
 		assert.Equal(t, "Validator index 999 is too large. Maximum allowed index is 63", e.Message)
 	})
-	t.Run("phase 0", func(t *testing.T) {
-		url := "http://only.the.epoch.number.at.the.end.is.important/0"
-		request := httptest.NewRequest("POST", url, nil)
-		writer := httptest.NewRecorder()
-		writer.Body = &bytes.Buffer{}
-
-		s.AttestationRewards(writer, request)
-		assert.Equal(t, http.StatusNotFound, writer.Code)
-		e := &http2.DefaultErrorJson{}
-		require.NoError(t, json.Unmarshal(writer.Body.Bytes(), e))
-		assert.Equal(t, http.StatusNotFound, e.Code)
-		assert.Equal(t, "Attestation rewards are not supported for Phase 0", e.Message)
-	})
 	t.Run("invalid epoch", func(t *testing.T) {
 		url := "http://only.the.epoch.number.at.the.end.is.important/foo"
 		request := httptest.NewRequest("POST", url, nil)
@@ -487,26 +458,23 @@ func TestAttestationRewards(t *testing.T) {
 
 func TestSyncCommiteeRewards(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
-	cfg := params.BeaconConfig()
-	cfg.AltairForkEpoch = 1
-	params.OverrideBeaconConfig(cfg)
 	helpers.ClearCache()
 
 	const valCount = 1024
 	// we have to set the proposer index to the value that will be randomly chosen (fortunately it's deterministic)
-	const proposerIndex = 84
+	const proposerIndex = 7
 
 	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(params.BeaconConfig().SlotsPerEpoch-1))
 	validators := make([]*zond.Validator, 0, valCount)
-	secretKeys := make([]bls.SecretKey, 0, valCount)
+	secretKeys := make([]dilithium.DilithiumKey, 0, valCount)
 	for i := 0; i < valCount; i++ {
-		blsKey, err := bls.RandKey()
+		dilithiumKey, err := dilithium.RandKey()
 		require.NoError(t, err)
-		secretKeys = append(secretKeys, blsKey)
+		secretKeys = append(secretKeys, dilithiumKey)
 		validators = append(validators, &zond.Validator{
-			PublicKey:         blsKey.PublicKey().Marshal(),
+			PublicKey:         dilithiumKey.PublicKey().Marshal(),
 			ExitEpoch:         params.BeaconConfig().FarFutureEpoch,
 			WithdrawableEpoch: params.BeaconConfig().FarFutureEpoch,
 			EffectiveBalance:  params.BeaconConfig().MaxEffectiveBalance,
@@ -524,11 +492,11 @@ func TestSyncCommiteeRewards(t *testing.T) {
 	}))
 
 	b := util.HydrateSignedBeaconBlockCapella(util.NewBeaconBlockCapella())
-	b.Block.Slot = 32
+	b.Block.Slot = 128
 	b.Block.ProposerIndex = proposerIndex
 	scBits := bitfield.NewBitvector16()
 	// last 10 sync committee members didn't perform their duty
-	for i := uint64(0); i < fieldparams.SyncCommitteeLength-10; i++ {
+	for i := uint64(0); i < fieldparams.SyncCommitteeLength-2; i++ {
 		scBits.SetBitAt(i, true)
 	}
 	domain, err := signing.Domain(st.Fork(), 0, params.BeaconConfig().DomainSyncCommittee, st.GenesisValidatorsRoot())
@@ -538,24 +506,20 @@ func TestSyncCommiteeRewards(t *testing.T) {
 	require.NoError(t, err)
 	// Bits set in sync committee bits determine which validators will be treated as participating in sync committee.
 	// These validators have to sign the message.
-	sigs := make([]bls.Signature, fieldparams.SyncCommitteeLength-10)
+	sigs := make([][]byte, fieldparams.SyncCommitteeLength-2)
 	for i := range sigs {
-		sigs[i], err = blst.SignatureFromBytes(secretKeys[i].Sign(r[:]).Marshal())
-		require.NoError(t, err)
+		sigs[i] = secretKeys[i].Sign(r[:]).Marshal()
 	}
-	aggSig := bls.AggregateSignatures(sigs).Marshal()
-	b.Block.Body.SyncAggregate = &zond.SyncAggregate{SyncCommitteeBits: scBits, SyncCommitteeSignature: aggSig}
+	b.Block.Body.SyncAggregate = &zond.SyncAggregate{SyncCommitteeBits: scBits, SyncCommitteeSignatures: sigs}
 	sbb, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
-	phase0block, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
 	require.NoError(t, err)
 
 	currentSlot := params.BeaconConfig().SlotsPerEpoch
 	mockChainService := &mock.ChainService{Optimistic: true, Slot: &currentSlot}
 	s := &Server{
 		Blocker: &testutil.MockBlocker{SlotBlockMap: map[primitives.Slot]interfaces.ReadOnlySignedBeaconBlock{
-			0:  phase0block,
-			32: sbb,
+			128: sbb,
 		}},
 		OptimisticModeFetcher: mockChainService,
 		FinalizationFetcher:   mockChainService,
@@ -569,10 +533,10 @@ func TestSyncCommiteeRewards(t *testing.T) {
 		}
 		require.NoError(t, st.SetBalances(balances))
 
-		url := "http://only.the.slot.number.at.the.end.is.important/32"
+		url := "http://only.the.slot.number.at.the.end.is.important/128"
 		var body bytes.Buffer
 		pubkey := fmt.Sprintf("%#x", secretKeys[10].PublicKey().Marshal())
-		valIds, err := json.Marshal([]string{"20", pubkey})
+		valIds, err := json.Marshal([]string{"5", pubkey})
 		require.NoError(t, err)
 		_, err = body.Write(valIds)
 		require.NoError(t, err)
@@ -591,7 +555,8 @@ func TestSyncCommiteeRewards(t *testing.T) {
 			require.NoError(t, err)
 			sum += r
 		}
-		assert.Equal(t, uint64(1396), sum)
+		// assert.Equal(t, uint64(1396), sum)
+		assert.Equal(t, uint64(395000), sum)
 		assert.Equal(t, true, resp.ExecutionOptimistic)
 		assert.Equal(t, false, resp.Finalized)
 	})
@@ -602,7 +567,7 @@ func TestSyncCommiteeRewards(t *testing.T) {
 		}
 		require.NoError(t, st.SetBalances(balances))
 
-		url := "http://only.the.slot.number.at.the.end.is.important/32"
+		url := "http://only.the.slot.number.at.the.end.is.important/128"
 		request := httptest.NewRequest("POST", url, nil)
 		writer := httptest.NewRecorder()
 		writer.Body = &bytes.Buffer{}
@@ -611,14 +576,15 @@ func TestSyncCommiteeRewards(t *testing.T) {
 		assert.Equal(t, http.StatusOK, writer.Code)
 		resp := &SyncCommitteeRewardsResponse{}
 		require.NoError(t, json.Unmarshal(writer.Body.Bytes(), resp))
-		require.Equal(t, 512, len(resp.Data))
+		require.Equal(t, 16, len(resp.Data))
 		sum := 0
 		for _, scReward := range resp.Data {
 			r, err := strconv.Atoi(scReward.Reward)
 			require.NoError(t, err)
 			sum += r
 		}
-		assert.Equal(t, 343416, sum)
+		// assert.Equal(t, 343416, sum)
+		assert.Equal(t, 1975004, sum)
 	})
 	t.Run("ok - validator outside sync committee is ignored", func(t *testing.T) {
 		balances := make([]uint64, 0, valCount)
@@ -627,10 +593,10 @@ func TestSyncCommiteeRewards(t *testing.T) {
 		}
 		require.NoError(t, st.SetBalances(balances))
 
-		url := "http://only.the.slot.number.at.the.end.is.important/32"
+		url := "http://only.the.slot.number.at.the.end.is.important/128"
 		var body bytes.Buffer
 		pubkey := fmt.Sprintf("%#x", secretKeys[10].PublicKey().Marshal())
-		valIds, err := json.Marshal([]string{"20", "999", pubkey})
+		valIds, err := json.Marshal([]string{"12", "999", pubkey})
 		require.NoError(t, err)
 		_, err = body.Write(valIds)
 		require.NoError(t, err)
@@ -649,8 +615,10 @@ func TestSyncCommiteeRewards(t *testing.T) {
 			require.NoError(t, err)
 			sum += r
 		}
-		assert.Equal(t, 1396, sum)
+		// assert.Equal(t, 1396, sum)
+		assert.Equal(t, 395000, sum)
 	})
+
 	t.Run("ok - proposer reward is deducted", func(t *testing.T) {
 		balances := make([]uint64, 0, valCount)
 		for i := 0; i < valCount; i++ {
@@ -658,10 +626,10 @@ func TestSyncCommiteeRewards(t *testing.T) {
 		}
 		require.NoError(t, st.SetBalances(balances))
 
-		url := "http://only.the.slot.number.at.the.end.is.important/32"
+		url := "http://only.the.slot.number.at.the.end.is.important/128"
 		var body bytes.Buffer
 		pubkey := fmt.Sprintf("%#x", secretKeys[10].PublicKey().Marshal())
-		valIds, err := json.Marshal([]string{"20", "84", pubkey})
+		valIds, err := json.Marshal([]string{"5", "7", pubkey})
 		require.NoError(t, err)
 		_, err = body.Write(valIds)
 		require.NoError(t, err)
@@ -680,7 +648,8 @@ func TestSyncCommiteeRewards(t *testing.T) {
 			require.NoError(t, err)
 			sum += r
 		}
-		assert.Equal(t, 2094, sum)
+		// assert.Equal(t, 2094, sum)
+		assert.Equal(t, 197504, sum)
 	})
 	t.Run("invalid validator index/pubkey", func(t *testing.T) {
 		balances := make([]uint64, 0, valCount)
@@ -689,7 +658,7 @@ func TestSyncCommiteeRewards(t *testing.T) {
 		}
 		require.NoError(t, st.SetBalances(balances))
 
-		url := "http://only.the.slot.number.at.the.end.is.important/32"
+		url := "http://only.the.slot.number.at.the.end.is.important/128"
 		var body bytes.Buffer
 		valIds, err := json.Marshal([]string{"10", "foo"})
 		require.NoError(t, err)
@@ -706,6 +675,7 @@ func TestSyncCommiteeRewards(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, e.Code)
 		assert.Equal(t, "foo is not a validator index or pubkey", e.Message)
 	})
+
 	t.Run("unknown validator pubkey", func(t *testing.T) {
 		balances := make([]uint64, 0, valCount)
 		for i := 0; i < valCount; i++ {
@@ -713,9 +683,9 @@ func TestSyncCommiteeRewards(t *testing.T) {
 		}
 		require.NoError(t, st.SetBalances(balances))
 
-		url := "http://only.the.slot.number.at.the.end.is.important/32"
+		url := "http://only.the.slot.number.at.the.end.is.important/128"
 		var body bytes.Buffer
-		privkey, err := bls.RandKey()
+		privkey, err := dilithium.RandKey()
 		require.NoError(t, err)
 		pubkey := fmt.Sprintf("%#x", privkey.PublicKey().Marshal())
 		valIds, err := json.Marshal([]string{"10", pubkey})
@@ -740,7 +710,7 @@ func TestSyncCommiteeRewards(t *testing.T) {
 		}
 		require.NoError(t, st.SetBalances(balances))
 
-		url := "http://only.the.slot.number.at.the.end.is.important/32"
+		url := "http://only.the.slot.number.at.the.end.is.important/128"
 		var body bytes.Buffer
 		valIds, err := json.Marshal([]string{"10", "9999"})
 		require.NoError(t, err)
@@ -756,24 +726,5 @@ func TestSyncCommiteeRewards(t *testing.T) {
 		require.NoError(t, json.Unmarshal(writer.Body.Bytes(), e))
 		assert.Equal(t, http.StatusBadRequest, e.Code)
 		assert.Equal(t, "Validator index 9999 is too large. Maximum allowed index is 1023", e.Message)
-	})
-	t.Run("phase 0", func(t *testing.T) {
-		balances := make([]uint64, 0, valCount)
-		for i := 0; i < valCount; i++ {
-			balances = append(balances, params.BeaconConfig().MaxEffectiveBalance)
-		}
-		require.NoError(t, st.SetBalances(balances))
-
-		url := "http://only.the.slot.number.at.the.end.is.important/0"
-		request := httptest.NewRequest("POST", url, nil)
-		writer := httptest.NewRecorder()
-		writer.Body = &bytes.Buffer{}
-
-		s.SyncCommitteeRewards(writer, request)
-		assert.Equal(t, http.StatusBadRequest, writer.Code)
-		e := &http2.DefaultErrorJson{}
-		require.NoError(t, json.Unmarshal(writer.Body.Bytes(), e))
-		assert.Equal(t, http.StatusBadRequest, e.Code)
-		assert.Equal(t, "Sync committee rewards are not supported for Phase 0", e.Message)
 	})
 }

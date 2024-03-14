@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-qrllib/dilithium"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/slashings"
 	"github.com/theQRL/qrysm/v4/validator/db/kv"
@@ -21,7 +21,7 @@ var failedAttLocalProtectionErr = "attempted to make slashable attestation, reje
 func (v *validator) slashableAttestationCheck(
 	ctx context.Context,
 	indexedAtt *zondpb.IndexedAttestation,
-	pubKey [dilithium.CryptoPublicKeyBytes]byte,
+	pubKey [field_params.DilithiumPubkeyLength]byte,
 	signingRoot [32]byte,
 ) error {
 	ctx, span := trace.StartSpan(ctx, "validator.postAttSignUpdate")

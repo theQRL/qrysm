@@ -9,6 +9,7 @@ curl -sLo osxcross.tar.gz "https://codeload.github.com/${OSXCROSS_REPO}/tar.gz/$
 tar --strip=1 -xzf osxcross.tar.gz
 rm -f osxcross.tar.gz
 
+# TODO(theQRL/qrysm/issues/67)
 curl -sLo tarballs/${OSX_SDK}.tar.xz "https://prysmaticlabs.com/uploads/${OSX_SDK}.tar.xz"
 
 echo "${OSX_SDK_SUM}"  "tarballs/${OSX_SDK}.tar.xz" | sha256sum -c -

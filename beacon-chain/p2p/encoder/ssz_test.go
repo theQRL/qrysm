@@ -107,7 +107,7 @@ func TestSszNetworkEncoder_DecodeWithMaxLength(t *testing.T) {
 
 func TestSszNetworkEncoder_DecodeWithMultipleFrames(t *testing.T) {
 	buf := new(bytes.Buffer)
-	st, _ := util.DeterministicGenesisState(t, 100)
+	st, _ := util.DeterministicGenesisStateCapella(t, 100)
 	e := &encoder.SszNetworkEncoder{}
 	params.SetupTestConfigCleanup(t)
 	c := params.BeaconNetworkConfig()
@@ -115,13 +115,13 @@ func TestSszNetworkEncoder_DecodeWithMultipleFrames(t *testing.T) {
 	maxChunkSize := uint64(1 << 22)
 	encoder.MaxChunkSize = maxChunkSize
 	params.OverrideBeaconNetworkConfig(c)
-	_, err := e.EncodeWithMaxLength(buf, st.ToProtoUnsafe().(*zondpb.BeaconState))
+	_, err := e.EncodeWithMaxLength(buf, st.ToProtoUnsafe().(*zondpb.BeaconStateCapella))
 	require.NoError(t, err)
 	// Max snappy block size
 	if buf.Len() <= 76490 {
 		t.Errorf("buffer smaller than expected, wanted > %d but got %d", 76490, buf.Len())
 	}
-	decoded := new(zondpb.BeaconState)
+	decoded := new(zondpb.BeaconStateCapella)
 	err = e.DecodeWithMaxLength(buf, decoded)
 	assert.NoError(t, err)
 }

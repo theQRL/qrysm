@@ -211,7 +211,6 @@ func (r *testRunner) testDepositsAndTx(ctx context.Context, g *errgroup.Group,
 					r.t.Fatal(err)
 				}
 			}
-			// TODO(rgeraldes24): re-enable once the unit tests are complete
 			// r.testTxGeneration(ctx, g, keystorePath, []e2etypes.ComponentRunner{})
 		}()
 		if r.config.TestDeposits {
@@ -222,15 +221,13 @@ func (r *testRunner) testDepositsAndTx(ctx context.Context, g *errgroup.Group,
 }
 
 func (r *testRunner) testTxGeneration(ctx context.Context, g *errgroup.Group, keystorePath string, requiredNodes []e2etypes.ComponentRunner) {
-	/*
-		txGenerator := components.NewTransactionGenerator(keystorePath, r.config.Seed)
-		g.Go(func() error {
-			if err := helpers.ComponentsStarted(ctx, requiredNodes); err != nil {
-				return fmt.Errorf("transaction generator requires zond execution nodes to be run: %w", err)
-			}
-			return txGenerator.Start(ctx)
-		})
-	*/
+	txGenerator := components.NewTransactionGenerator(keystorePath, r.config.Seed)
+	g.Go(func() error {
+		if err := helpers.ComponentsStarted(ctx, requiredNodes); err != nil {
+			return fmt.Errorf("transaction generator requires zond execution nodes to be run: %w", err)
+		}
+		return txGenerator.Start(ctx)
+	})
 }
 
 func (r *testRunner) waitForMatchingHead(ctx context.Context, timeout time.Duration, check, ref *grpc.ClientConn) error {
@@ -405,7 +402,7 @@ func (r *testRunner) testDoppelGangerProtection(ctx context.Context) error {
 	valIndex := beaconNodeNum + 1
 
 	// Replicate starting up validator client 0 to test doppleganger protection.
-	valNode := components.NewValidatorNode(r.config, validatorsPerNode, valIndex, validatorsPerNode*0)
+	valNode := components.NewValidatorNode(r.config, validatorsPerNode, valIndex, 0)
 	g.Go(func() error {
 		return valNode.Start(ctx)
 	})
@@ -503,12 +500,10 @@ func (r *testRunner) defaultEndToEndRun() error {
 			return errors.Wrap(err, "beacon chain sync test failed")
 		}
 		// index += 1
-		// TODO(rgeraldes24): re-enable once the unit tests are complete
-		/*
-			if err := r.testDoppelGangerProtection(ctx); err != nil {
-				return errors.Wrap(err, "doppel ganger protection check failed")
-			}
-		*/
+		if err := r.testDoppelGangerProtection(ctx); err != nil {
+			return errors.Wrap(err, "doppel ganger protection check failed")
+		}
+
 	}
 	/*
 		if config.TestCheckpointSync {

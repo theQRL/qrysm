@@ -116,9 +116,12 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTCapellaBlockToProto(block *api
 		return nil, errors.Wrapf(err, "failed to decode sync committee bits `%s`", block.Body.SyncAggregate.SyncCommitteeBits)
 	}
 
-	syncCommitteeSignature, err := hexutil.Decode(block.Body.SyncAggregate.SyncCommitteeSignature)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to decode sync committee signature `%s`", block.Body.SyncAggregate.SyncCommitteeSignature)
+	syncCommitteeSignatures := make([][]byte, len(block.Body.SyncAggregate.SyncCommitteeSignatures))
+	for i, sig := range block.Body.SyncAggregate.SyncCommitteeSignatures {
+		syncCommitteeSignatures[i], err = hexutil.Decode(sig)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to decode sync committee signature `%s`", sig)
+		}
 	}
 
 	if block.Body.ExecutionPayload == nil {
@@ -224,8 +227,8 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTCapellaBlockToProto(block *api
 			Deposits:          deposits,
 			VoluntaryExits:    voluntaryExits,
 			SyncAggregate: &zondpb.SyncAggregate{
-				SyncCommitteeBits:      syncCommitteeBits,
-				SyncCommitteeSignature: syncCommitteeSignature,
+				SyncCommitteeBits:       syncCommitteeBits,
+				SyncCommitteeSignatures: syncCommitteeSignatures,
 			},
 			ExecutionPayload: &enginev1.ExecutionPayloadCapella{
 				ParentHash:    parentHash,

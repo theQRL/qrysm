@@ -25,6 +25,11 @@ func (c beaconApiValidatorClient) submitSignedContributionAndProof(ctx context.C
 		return errors.New("signed contribution and proof contribution is nil")
 	}
 
+	signatures := make([]string, len(in.Message.Contribution.Signatures))
+	for i, sig := range in.Message.Contribution.Signatures {
+		signatures[i] = hexutil.Encode(sig)
+	}
+
 	jsonContributionAndProofs := []apimiddleware.SignedContributionAndProofJson{
 		{
 			Message: &apimiddleware.ContributionAndProofJson{
@@ -34,7 +39,7 @@ func (c beaconApiValidatorClient) submitSignedContributionAndProof(ctx context.C
 					BeaconBlockRoot:   hexutil.Encode(in.Message.Contribution.BlockRoot),
 					SubcommitteeIndex: strconv.FormatUint(in.Message.Contribution.SubcommitteeIndex, 10),
 					AggregationBits:   hexutil.Encode(in.Message.Contribution.AggregationBits),
-					Signature:         hexutil.Encode(in.Message.Contribution.Signature),
+					Signatures:        signatures,
 				},
 				SelectionProof: hexutil.Encode(in.Message.SelectionProof),
 			},

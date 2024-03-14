@@ -16,11 +16,10 @@ go_library(
     ],
     deps = [
         "//async/event:go_default_library",
+        "//config/fieldparams:go_default_library",
         "//crypto/dilithium:go_default_library",
         "//proto/qrysm/v1alpha1/validator-client:go_default_library",
         "//proto/zond/service:go_default_library",
-        "@com_github_theqrl_go_qrllib//common:go_default_library",
-        "@com_github_theqrl_go_qrllib//dilithium:go_default_library",
     ],
 )
 

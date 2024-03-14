@@ -10,10 +10,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/async"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/v4/config/features"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
@@ -32,7 +32,7 @@ import (
 // It fetches the latest beacon block head along with the latest canonical beacon state
 // information in order to sign the block and include information about the validator's
 // participation in voting on the block.
-func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot, pubKey [dilithium.CryptoPublicKeyBytes]byte) {
+func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot, pubKey [field_params.DilithiumPubkeyLength]byte) {
 	ctx, span := trace.StartSpan(ctx, "validator.SubmitAttestation")
 	defer span.End()
 	span.AddAttributes(trace.StringAttribute("validator", fmt.Sprintf("%#x", pubKey)))
@@ -130,14 +130,13 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot,
 	aggregationBitfield := bitfield.NewBitlist(uint64(len(duty.Committee)))
 	aggregationBitfield.SetBitAt(indexInCommittee, true)
 	attestation := &zondpb.Attestation{
-		Data:                    data,
-		AggregationBits:         aggregationBitfield,
-		Signature:               sig,
-		SignatureValidatorIndex: []uint64{uint64(duty.ValidatorIndex)},
+		Data:            data,
+		AggregationBits: aggregationBitfield,
+		Signatures:      [][]byte{sig},
 	}
 
 	// Set the signature of the attestation and send it out to the beacon node.
-	indexedAtt.Signature = sig
+	indexedAtt.Signatures = [][]byte{sig}
 	if err := v.slashableAttestationCheck(ctx, indexedAtt, pubKey, signingRoot); err != nil {
 		log.WithError(err).Error("Failed attestation slashing protection check")
 		log.WithFields(
@@ -182,7 +181,7 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot,
 }
 
 // Given the validator public key, this gets the validator assignment.
-func (v *validator) duty(pubKey [dilithium.CryptoPublicKeyBytes]byte) (*zondpb.DutiesResponse_Duty, error) {
+func (v *validator) duty(pubKey [field_params.DilithiumPubkeyLength]byte) (*zondpb.DutiesResponse_Duty, error) {
 	v.dutiesLock.RLock()
 	defer v.dutiesLock.RUnlock()
 	if v.duties == nil {
@@ -199,7 +198,7 @@ func (v *validator) duty(pubKey [dilithium.CryptoPublicKeyBytes]byte) (*zondpb.D
 }
 
 // Given validator's public key, this function returns the signature of an attestation data and its signing root.
-func (v *validator) signAtt(ctx context.Context, pubKey [dilithium.CryptoPublicKeyBytes]byte, data *zondpb.AttestationData, slot primitives.Slot) ([]byte, [32]byte, error) {
+func (v *validator) signAtt(ctx context.Context, pubKey [field_params.DilithiumPubkeyLength]byte, data *zondpb.AttestationData, slot primitives.Slot) ([]byte, [32]byte, error) {
 	domain, root, err := v.getDomainAndSigningRoot(ctx, data)
 	if err != nil {
 		return nil, [32]byte{}, err
@@ -299,7 +298,7 @@ func (v *validator) waitOneThirdOrValidBlock(ctx context.Context, slot primitive
 	}
 }
 
-func attestationLogFields(pubKey [dilithium.CryptoPublicKeyBytes]byte, indexedAtt *zondpb.IndexedAttestation) logrus.Fields {
+func attestationLogFields(pubKey [field_params.DilithiumPubkeyLength]byte, indexedAtt *zondpb.IndexedAttestation) logrus.Fields {
 	return logrus.Fields{
 		"attesterPublicKey": fmt.Sprintf("%#x", pubKey),
 		"attestationSlot":   indexedAtt.Data.Slot,
@@ -309,6 +308,6 @@ func attestationLogFields(pubKey [dilithium.CryptoPublicKeyBytes]byte, indexedAt
 		"sourceRoot":        fmt.Sprintf("%#x", indexedAtt.Data.Source.Root),
 		"targetEpoch":       indexedAtt.Data.Target.Epoch,
 		"targetRoot":        fmt.Sprintf("%#x", indexedAtt.Data.Target.Root),
-		"signature":         fmt.Sprintf("%#x", indexedAtt.Signature),
+		"signatures":        fmt.Sprintf("%#x", indexedAtt.Signatures),
 	}
 }

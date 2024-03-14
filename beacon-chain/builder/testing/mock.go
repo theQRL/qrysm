@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/api/client/builder"
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
 	"github.com/theQRL/qrysm/v4/beacon-chain/db"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
@@ -24,13 +24,10 @@ type Config struct {
 // MockBuilderService to mock builder.
 type MockBuilderService struct {
 	HasConfigured         bool
-	Payload               *v1.ExecutionPayload
 	PayloadCapella        *v1.ExecutionPayloadCapella
 	ErrSubmitBlindedBlock error
-	Bid                   *zondpb.SignedBuilderBid
 	BidCapella            *zondpb.SignedBuilderBidCapella
 	RegistrationCache     *cache.RegistrationCache
-	ErrGetHeader          error
 	ErrRegisterValidator  error
 	Cfg                   *Config
 }
@@ -43,12 +40,6 @@ func (s *MockBuilderService) Configured() bool {
 // SubmitBlindedBlock for mocking.
 func (s *MockBuilderService) SubmitBlindedBlock(_ context.Context, b interfaces.ReadOnlySignedBeaconBlock) (interfaces.ExecutionData, error) {
 	switch b.Version() {
-	case version.Bellatrix:
-		w, err := blocks.WrappedExecutionPayload(s.Payload)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not wrap payload")
-		}
-		return w, s.ErrSubmitBlindedBlock
 	case version.Capella:
 		w, err := blocks.WrappedExecutionPayloadCapella(s.PayloadCapella, 0)
 		if err != nil {
@@ -61,17 +52,8 @@ func (s *MockBuilderService) SubmitBlindedBlock(_ context.Context, b interfaces.
 }
 
 // GetHeader for mocking.
-func (s *MockBuilderService) GetHeader(_ context.Context, slot primitives.Slot, _ [32]byte, _ [dilithium2.CryptoPublicKeyBytes]byte) (builder.SignedBid, error) {
-	// TODO(rgeraldes24): come back to this one once we cover the beacon chain unit tests
-	/*
-		w, err := builder.WrappedSignedBuilderBid(s.Bid)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not wrap capella bid")
-		}
-		return w, s.ErrGetHeader
-	*/
-
-	return nil, nil
+func (s *MockBuilderService) GetHeader(_ context.Context, slot primitives.Slot, _ [32]byte, _ [field_params.DilithiumPubkeyLength]byte) (builder.SignedBid, error) {
+	return builder.WrappedSignedBuilderBidCapella(s.BidCapella)
 }
 
 // RegistrationByValidatorID returns either the values from the cache or db.

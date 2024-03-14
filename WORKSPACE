@@ -21,13 +21,29 @@ http_archive(
     sha256 = "973ab22945b921ef45b8e1d6ce01ca7ce1b8a462167449a36e297438c4ec2755",
     strip_prefix = "hermetic_cc_toolchain-5098046bccc15d2962f3cc8e7e53d6a2a26072dc",
     urls = [
-        "https://github.com/uber/hermetic_cc_toolchain/archive/5098046bccc15d2962f3cc8e7e53d6a2a26072dc.tar.gz", # 2023-06-28
+        "https://github.com/uber/hermetic_cc_toolchain/archive/5098046bccc15d2962f3cc8e7e53d6a2a26072dc.tar.gz",  # 2023-06-28
     ],
 )
 
 load("@hermetic_cc_toolchain//toolchain:defs.bzl", zig_toolchains = "toolchains")
 
-zig_toolchains()
+# Temporarily use a nightly build until 0.12.0 is released.
+# See: https://github.com/prysmaticlabs/prysm/issues/13130
+zig_toolchains(
+    host_platform_sha256 = {
+        "linux-aarch64": "45afb8e32adde825165f4f293fcea9ecea503f7f9ec0e9bf4435afe70e67fb70",
+        "linux-x86_64": "f136c6a8a0f6adcb057d73615fbcd6f88281b3593f7008d5f7ed514ff925c02e",
+        "macos-aarch64": "05d995853c05243151deff47b60bdc2674f1e794a939eaeca0f42312da031cee",
+        "macos-x86_64": "721754ba5a50f31e8a1f0e1a74cace26f8246576878ac4a8591b0ee7b6db1fc1",
+        "windows-x86_64": "93f5248b2ea8c5ee8175e15b1384e133edc1cd49870b3ea259062a2e04164343",
+    },
+    url_formats = [
+        "https://ziglang.org/builds/zig-{host_platform}-{version}.{_ext}",
+        "https://mirror.bazel.build/ziglang.org/builds/zig-{host_platform}-{version}.{_ext}",
+        "https://prysmaticlabs.com/mirror/ziglang.org/builds/zig-{host_platform}-{version}.{_ext}",
+    ],
+    version = "0.12.0-dev.1349+fa022d1ec",
+)
 
 # Register zig sdk toolchains with support for Ubuntu 20.04 (Focal Fossa) which has an EOL date of April, 2025.
 # For ubuntu glibc support, see https://launchpad.net/ubuntu/+source/glibc
@@ -65,10 +81,10 @@ bazel_skylib_workspace()
 
 http_archive(
     name = "bazel_gazelle",
-    sha256 = "29d5dafc2a5582995488c6735115d1d366fcd6a0fc2e2a153f02988706349825",
+    sha256 = "d3fa66a39028e97d76f9e2db8f1b0c11c099e8e01bf363a923074784e451f809",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.31.0/bazel-gazelle-v0.31.0.tar.gz",
-        "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.31.0/bazel-gazelle-v0.31.0.tar.gz",
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.33.0/bazel-gazelle-v0.33.0.tar.gz",
+        "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.33.0/bazel-gazelle-v0.33.0.tar.gz",
     ],
 )
 
@@ -110,10 +126,10 @@ http_archive(
         # Expose internals of go_test for custom build transitions.
         "//third_party:io_bazel_rules_go_test.patch",
     ],
-    sha256 = "bfc5ce70b9d1634ae54f4e7b495657a18a04e0d596785f672d35d5f505ab491a",
+    sha256 = "d6ab6b57e48c09523e93050f13698f708428cfd5e619252e369d377af6597707",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.40.0/rules_go-v0.40.0.zip",
-        "https://github.com/bazelbuild/rules_go/releases/download/v0.40.0/rules_go-v0.40.0.zip",
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.43.0/rules_go-v0.43.0.zip",
+        "https://github.com/bazelbuild/rules_go/releases/download/v0.43.0/rules_go-v0.43.0.zip",
     ],
 )
 
@@ -188,11 +204,11 @@ load("@rules_oci//oci:pull.bzl", "oci_pull")
 # A multi-arch base image
 oci_pull(
     name = "linux_debian11_multiarch_base",  # Debian bullseye
-    digest = "sha256:9b8e0854865dcaf49470b4ec305df45957020fbcf17b71eeb50ffd3bc5bf885d",  # 2023-05-17
+    digest = "sha256:b82f113425c5b5c714151aaacd8039bc141821cdcd3c65202d42bdf9c43ae60b",  # 2023-12-12
     image = "gcr.io/distroless/cc-debian11",
     platforms = [
         "linux/amd64",
-        "linux/arm64",
+        "linux/arm64/v8",
     ],
     reproducible = True,
 )
@@ -206,7 +222,7 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_depe
 go_rules_dependencies()
 
 go_register_toolchains(
-    go_version = "1.20.9",
+    go_version = "1.21.6",
     nogo = "@//:nogo",
 )
 
@@ -315,6 +331,7 @@ http_archive(
 #     url = "https://github.com/ethereum/consensus-specs/archive/refs/tags/%s.tar.gz" % consensus_spec_version,
 # )
 
+# TODO(theQRL/qrysm/issues/78)
 #http_archive(
 #    name = "zond_networks",
 #    build_file_content = """
@@ -333,41 +350,34 @@ http_archive(
 
 http_archive(
     name = "com_google_protobuf",
-    sha256 = "4e176116949be52b0408dfd24f8925d1eb674a781ae242a75296b17a1c721395",
-    strip_prefix = "protobuf-23.3",
+    sha256 = "9bd87b8280ef720d3240514f884e56a712f2218f0d693b48050c836028940a42",
+    strip_prefix = "protobuf-25.1",
     urls = [
-        "https://github.com/protocolbuffers/protobuf/archive/v23.3.tar.gz",
+        "https://github.com/protocolbuffers/protobuf/archive/v25.1.tar.gz",
     ],
 )
 
 # External dependencies
+http_archive(
+    name = "googleapis",
+    sha256 = "9d1a930e767c93c825398b8f8692eca3fe353b9aaadedfbcf1fca2282c85df88",
+    strip_prefix = "googleapis-64926d52febbf298cb82a8f472ade4a3969ba922",
+    urls = [
+        "https://github.com/googleapis/googleapis/archive/64926d52febbf298cb82a8f472ade4a3969ba922.zip",
+    ],
+)
+
+load("@googleapis//:repository_rules.bzl", "switched_rules_by_language")
+
+switched_rules_by_language(
+    name = "com_google_googleapis_imports",
+    go = True,
+)
+
 load("//:deps.bzl", "go_dependencies", "qrysm_deps")
 
 # gazelle:repository_macro deps.bzl%qrysm_deps
 qrysm_deps()
-
-# NOTE(rgeraldes24): re-enable once we support the remote web signer
-#load("@qrysm//testing/endtoend:deps.bzl", "e2e_deps")
-
-#e2e_deps()
-
-load(
-    "@io_bazel_rules_docker//go:image.bzl",
-    _go_image_repos = "repositories",
-)
-
-# Golang images
-# This is using gcr.io/distroless/base
-_go_image_repos()
-
-# CC images
-# This is using gcr.io/distroless/base
-load(
-    "@io_bazel_rules_docker//cc:image.bzl",
-    _cc_image_repos = "repositories",
-)
-
-_cc_image_repos()
 
 load("@com_github_atlassian_bazel_tools//gometalinter:deps.bzl", "gometalinter_dependencies")
 

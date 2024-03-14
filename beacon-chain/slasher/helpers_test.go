@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	slashertypes "github.com/theQRL/qrysm/v4/beacon-chain/slasher/types"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
@@ -410,7 +410,7 @@ func Test_validateBlockHeaderIntegrity(t *testing.T) {
 	type args struct {
 		header *zondpb.SignedBeaconBlockHeader
 	}
-	fakeSig := make([]byte, 96)
+	fakeSig := make([]byte, field_params.DilithiumSignatureLength)
 	copy(fakeSig, "hi")
 	tests := []struct {
 		name string
@@ -443,7 +443,7 @@ func Test_validateBlockHeaderIntegrity(t *testing.T) {
 			args: args{
 				header: &zondpb.SignedBeaconBlockHeader{
 					Header:    &zondpb.BeaconBlockHeader{},
-					Signature: make([]byte, dilithium2.CryptoBytes+1),
+					Signature: make([]byte, field_params.DilithiumSignatureLength+1),
 				},
 			},
 			want: false,

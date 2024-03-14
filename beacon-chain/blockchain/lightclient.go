@@ -8,12 +8,9 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	types "github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/proto/migration"
 	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
-	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 const (
@@ -30,8 +27,8 @@ const (
 //	    sync_aggregate=update.sync_aggregate,
 //	    signature_slot=update.signature_slot,
 //	)
-func CreateLightClientFinalityUpdate(update *zondpbv2.LightClientUpdate) *zondpbv2.LightClientFinalityUpdate {
-	return &zondpbv2.LightClientFinalityUpdate{
+func CreateLightClientFinalityUpdate(update *zondpbv1.LightClientUpdate) *zondpbv1.LightClientFinalityUpdate {
+	return &zondpbv1.LightClientFinalityUpdate{
 		AttestedHeader:  update.AttestedHeader,
 		FinalizedHeader: update.FinalizedHeader,
 		FinalityBranch:  update.FinalityBranch,
@@ -48,8 +45,8 @@ func CreateLightClientFinalityUpdate(update *zondpbv2.LightClientUpdate) *zondpb
 //	    sync_aggregate=update.sync_aggregate,
 //	    signature_slot=update.signature_slot,
 //	)
-func CreateLightClientOptimisticUpdate(update *zondpbv2.LightClientUpdate) *zondpbv2.LightClientOptimisticUpdate {
-	return &zondpbv2.LightClientOptimisticUpdate{
+func CreateLightClientOptimisticUpdate(update *zondpbv1.LightClientUpdate) *zondpbv1.LightClientOptimisticUpdate {
+	return &zondpbv1.LightClientOptimisticUpdate{
 		AttestedHeader: update.AttestedHeader,
 		SyncAggregate:  update.SyncAggregate,
 		SignatureSlot:  update.SignatureSlot,
@@ -60,13 +57,7 @@ func NewLightClientOptimisticUpdateFromBeaconState(
 	ctx context.Context,
 	state state.BeaconState,
 	block interfaces.ReadOnlySignedBeaconBlock,
-	attestedState state.BeaconState) (*zondpbv2.LightClientUpdate, error) {
-	// assert compute_epoch_at_slot(attested_state.slot) >= ALTAIR_FORK_EPOCH
-	attestedEpoch := slots.ToEpoch(attestedState.Slot())
-	if attestedEpoch < types.Epoch(params.BeaconConfig().AltairForkEpoch) {
-		return nil, fmt.Errorf("invalid attested epoch %d", attestedEpoch)
-	}
-
+	attestedState state.BeaconState) (*zondpbv1.LightClientUpdate, error) {
 	// assert sum(block.message.body.sync_aggregate.sync_committee_bits) >= MIN_SYNC_COMMITTEE_PARTICIPANTS
 	syncAggregate, err := block.Block().Body().SyncAggregate()
 	if err != nil {
@@ -139,11 +130,11 @@ func NewLightClientOptimisticUpdateFromBeaconState(
 	}
 
 	syncAggregateResult := &zondpbv1.SyncAggregate{
-		SyncCommitteeBits:      syncAggregate.SyncCommitteeBits,
-		SyncCommitteeSignature: syncAggregate.SyncCommitteeSignature,
+		SyncCommitteeBits:       syncAggregate.SyncCommitteeBits,
+		SyncCommitteeSignatures: syncAggregate.SyncCommitteeSignatures,
 	}
 
-	result := &zondpbv2.LightClientUpdate{
+	result := &zondpbv1.LightClientUpdate{
 		AttestedHeader: attestedHeaderResult,
 		SyncAggregate:  syncAggregateResult,
 		SignatureSlot:  block.Block().Slot(),
@@ -157,7 +148,7 @@ func NewLightClientFinalityUpdateFromBeaconState(
 	state state.BeaconState,
 	block interfaces.ReadOnlySignedBeaconBlock,
 	attestedState state.BeaconState,
-	finalizedBlock interfaces.ReadOnlySignedBeaconBlock) (*zondpbv2.LightClientUpdate, error) {
+	finalizedBlock interfaces.ReadOnlySignedBeaconBlock) (*zondpbv1.LightClientUpdate, error) {
 	result, err := NewLightClientOptimisticUpdateFromBeaconState(
 		ctx,
 		state,
@@ -227,8 +218,8 @@ func NewLightClientFinalityUpdateFromBeaconState(
 	return result, nil
 }
 
-func NewLightClientUpdateFromFinalityUpdate(update *zondpbv2.LightClientFinalityUpdate) *zondpbv2.LightClientUpdate {
-	return &zondpbv2.LightClientUpdate{
+func NewLightClientUpdateFromFinalityUpdate(update *zondpbv1.LightClientFinalityUpdate) *zondpbv1.LightClientUpdate {
+	return &zondpbv1.LightClientUpdate{
 		AttestedHeader:  update.AttestedHeader,
 		FinalizedHeader: update.FinalizedHeader,
 		FinalityBranch:  update.FinalityBranch,
@@ -237,8 +228,8 @@ func NewLightClientUpdateFromFinalityUpdate(update *zondpbv2.LightClientFinality
 	}
 }
 
-func NewLightClientUpdateFromOptimisticUpdate(update *zondpbv2.LightClientOptimisticUpdate) *zondpbv2.LightClientUpdate {
-	return &zondpbv2.LightClientUpdate{
+func NewLightClientUpdateFromOptimisticUpdate(update *zondpbv1.LightClientOptimisticUpdate) *zondpbv1.LightClientUpdate {
+	return &zondpbv1.LightClientUpdate{
 		AttestedHeader: update.AttestedHeader,
 		SyncAggregate:  update.SyncAggregate,
 		SignatureSlot:  update.SignatureSlot,

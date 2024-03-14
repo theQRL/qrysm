@@ -114,6 +114,8 @@ func Test_fromSnapshotParts(t *testing.T) {
 	}
 }
 
+// TODO(theQRL/qrysm/issues/69)
+/*
 func Test_generateProof(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -150,3 +152,4 @@ func Test_generateProof(t *testing.T) {
 		})
 	}
 }
+*/

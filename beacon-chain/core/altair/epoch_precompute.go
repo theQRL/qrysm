@@ -212,7 +212,7 @@ func ProcessEpochParticipation(
 			vals[i].IsPrevEpochHeadAttester = true
 		}
 	}
-	bal = precompute.UpdateBalance(vals, bal, beaconState.Version())
+	bal = precompute.UpdateBalance(vals, bal)
 	return vals, bal, nil
 }
 

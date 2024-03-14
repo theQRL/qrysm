@@ -28,12 +28,11 @@ option php_namespace = "TheQRL\\Zond\\v1";
 message Attestation {
     // A bitfield representation of validator indices that have voted exactly
     // the same vote and have been aggregated into this attestation.
-    bytes aggregation_bits = 1 [(theqrl.zond.ext.ssz_max) = "2048", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitlist"];
+    bytes aggregation_bits = 1 [(theqrl.zond.ext.ssz_max) = "128", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitlist"];
 
     AttestationData data = 2;
 
-    // 96 byte BLS aggregate signature.
-    bytes signature = 3 [(theqrl.zond.ext.ssz_size) = "96"];
+    repeated bytes signatures = 3 [(theqrl.zond.ext.ssz_size) = "?,4595", (theqrl.zond.ext.ssz_max) = "128"];
 }
 
 message AggregateAttestationAndProof {
@@ -43,16 +42,16 @@ message AggregateAttestationAndProof {
     // The aggregated attestation that was submitted.
     Attestation aggregate = 3;
 
-    // 96 byte selection proof signed by the aggregator, which is the signature of the slot to aggregate.
-    bytes selection_proof = 2 [(theqrl.zond.ext.ssz_size) = "96"];
+    // 4595 byte selection proof signed by the aggregator, which is the signature of the slot to aggregate.
+    bytes selection_proof = 2 [(theqrl.zond.ext.ssz_size) = "4595"];
 }
 
 message SignedAggregateAttestationAndProof {
     // The aggregated attestation and selection proof itself.
     AggregateAttestationAndProof message = 1;
 
-    // 96 byte BLS aggregate signature signed by the aggregator over the message.
-    bytes signature = 2 [(theqrl.zond.ext.ssz_size) = "96"];
+    // 4595 byte Dilithium aggregate signature signed by the aggregator over the message.
+    bytes signature = 2 [(theqrl.zond.ext.ssz_size) = "4595"];
 }
 
 message AttestationData {

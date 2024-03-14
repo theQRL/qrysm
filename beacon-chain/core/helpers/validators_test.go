@@ -8,6 +8,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
@@ -47,7 +48,7 @@ func TestIsActiveValidatorUsingTrie_OK(t *testing.T) {
 		{a: 64, b: true},
 	}
 	val := &zondpb.Validator{ActivationEpoch: 10, ExitEpoch: 100}
-	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{Validators: []*zondpb.Validator{val}})
+	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{Validators: []*zondpb.Validator{val}})
 	require.NoError(t, err)
 	for _, test := range tests {
 		readOnlyVal, err := beaconState.ValidatorAtIndexReadOnly(0)
@@ -76,7 +77,7 @@ func TestIsActiveNonSlashedValidatorUsingTrie_OK(t *testing.T) {
 	for _, test := range tests {
 		val := &zondpb.Validator{ActivationEpoch: 10, ExitEpoch: 100}
 		val.Slashed = test.s
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{Validators: []*zondpb.Validator{val}})
+		beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{Validators: []*zondpb.Validator{val}})
 		require.NoError(t, err)
 		readOnlyVal, err := beaconState.ValidatorAtIndexReadOnly(0)
 		require.NoError(t, err)
@@ -165,7 +166,7 @@ func TestIsSlashableValidator_OK(t *testing.T) {
 				assert.Equal(t, test.slashable, slashableValidator, "Expected active validator slashable to be %t", test.slashable)
 			})
 			t.Run("with trie", func(t *testing.T) {
-				beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{Validators: []*zondpb.Validator{test.validator}})
+				beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{Validators: []*zondpb.Validator{test.validator}})
 				require.NoError(t, err)
 				readOnlyVal, err := beaconState.ValidatorAtIndexReadOnly(0)
 				require.NoError(t, err)
@@ -190,7 +191,7 @@ func TestBeaconProposerIndex_OK(t *testing.T) {
 		}
 	}
 
-	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Validators:  validators,
 		Slot:        0,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
@@ -219,7 +220,7 @@ func TestBeaconProposerIndex_OK(t *testing.T) {
 		},
 		{
 			slot:  43,
-			index: 464,
+			index: 2003,
 		},
 	}
 
@@ -251,7 +252,7 @@ func TestBeaconProposerIndex_BadState(t *testing.T) {
 		roots[i] = make([]byte, fieldparams.RootLength)
 	}
 
-	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Validators:  validators,
 		Slot:        0,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
@@ -275,7 +276,7 @@ func TestComputeProposerIndex_Compatibility(t *testing.T) {
 		}
 	}
 
-	state, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Validators:  validators,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 	})
@@ -322,7 +323,7 @@ func TestActiveValidatorCount_Genesis(t *testing.T) {
 			ExitEpoch: params.BeaconConfig().FarFutureEpoch,
 		}
 	}
-	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Slot:        0,
 		Validators:  validators,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
@@ -343,8 +344,8 @@ func TestChurnLimit_OK(t *testing.T) {
 		validatorCount int
 		wantedChurn    uint64
 	}{
-		{validatorCount: 1000, wantedChurn: 4},
-		{validatorCount: 100000, wantedChurn: 4},
+		{validatorCount: 1000, wantedChurn: 10},
+		{validatorCount: 100000, wantedChurn: 10},
 		{validatorCount: 1000000, wantedChurn: 15 /* validatorCount/churnLimitQuotient */},
 		{validatorCount: 2000000, wantedChurn: 30 /* validatorCount/churnLimitQuotient */},
 	}
@@ -359,7 +360,7 @@ func TestChurnLimit_OK(t *testing.T) {
 			}
 		}
 
-		beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+		beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 			Slot:        1,
 			Validators:  validators,
 			RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
@@ -377,7 +378,7 @@ func TestChurnLimit_OK(t *testing.T) {
 func TestActiveValidatorIndices(t *testing.T) {
 	farFutureEpoch := params.BeaconConfig().FarFutureEpoch
 	type args struct {
-		state *zondpb.BeaconState
+		state *zondpb.BeaconStateCapella
 		epoch primitives.Epoch
 	}
 	tests := []struct {
@@ -389,7 +390,7 @@ func TestActiveValidatorIndices(t *testing.T) {
 		{
 			name: "all_active_epoch_10",
 			args: args{
-				state: &zondpb.BeaconState{
+				state: &zondpb.BeaconStateCapella{
 					RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 					Validators: []*zondpb.Validator{
 						{
@@ -413,7 +414,7 @@ func TestActiveValidatorIndices(t *testing.T) {
 		{
 			name: "some_active_epoch_10",
 			args: args{
-				state: &zondpb.BeaconState{
+				state: &zondpb.BeaconStateCapella{
 					RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 					Validators: []*zondpb.Validator{
 						{
@@ -437,7 +438,7 @@ func TestActiveValidatorIndices(t *testing.T) {
 		{
 			name: "some_active_with_recent_new_epoch_10",
 			args: args{
-				state: &zondpb.BeaconState{
+				state: &zondpb.BeaconStateCapella{
 					RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 					Validators: []*zondpb.Validator{
 						{
@@ -465,7 +466,7 @@ func TestActiveValidatorIndices(t *testing.T) {
 		{
 			name: "some_active_with_recent_new_epoch_10",
 			args: args{
-				state: &zondpb.BeaconState{
+				state: &zondpb.BeaconStateCapella{
 					RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 					Validators: []*zondpb.Validator{
 						{
@@ -493,7 +494,7 @@ func TestActiveValidatorIndices(t *testing.T) {
 		{
 			name: "some_active_with_recent_new_epoch_10",
 			args: args{
-				state: &zondpb.BeaconState{
+				state: &zondpb.BeaconStateCapella{
 					RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 					Validators: []*zondpb.Validator{
 						{
@@ -522,7 +523,7 @@ func TestActiveValidatorIndices(t *testing.T) {
 	defer ClearCache()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s, err := state_native.InitializeFromProtoPhase0(tt.args.state)
+			s, err := state_native.InitializeFromProtoCapella(tt.args.state)
 			require.NoError(t, err)
 			got, err := ActiveValidatorIndices(context.Background(), s, tt.args.epoch)
 			if tt.wantedErr != "" {
@@ -631,8 +632,8 @@ func TestComputeProposerIndex(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bState := &zondpb.BeaconState{Validators: tt.args.validators}
-			stTrie, err := state_native.InitializeFromProtoUnsafePhase0(bState)
+			bState := &zondpb.BeaconStateCapella{Validators: tt.args.validators}
+			stTrie, err := state_native.InitializeFromProtoUnsafeCapella(bState)
 			require.NoError(t, err)
 			got, err := ComputeProposerIndex(stTrie, tt.args.indices, tt.args.seed)
 			if tt.wantedErr != "" {
@@ -672,25 +673,25 @@ func TestIsIsEligibleForActivation(t *testing.T) {
 	tests := []struct {
 		name      string
 		validator *zondpb.Validator
-		state     *zondpb.BeaconState
+		state     *zondpb.BeaconStateCapella
 		want      bool
 	}{
 		{"Eligible",
 			&zondpb.Validator{ActivationEligibilityEpoch: 1, ActivationEpoch: params.BeaconConfig().FarFutureEpoch},
-			&zondpb.BeaconState{FinalizedCheckpoint: &zondpb.Checkpoint{Epoch: 2}},
+			&zondpb.BeaconStateCapella{FinalizedCheckpoint: &zondpb.Checkpoint{Epoch: 2}},
 			true},
 		{"Not yet finalized",
 			&zondpb.Validator{ActivationEligibilityEpoch: 1, ActivationEpoch: params.BeaconConfig().FarFutureEpoch},
-			&zondpb.BeaconState{FinalizedCheckpoint: &zondpb.Checkpoint{Root: make([]byte, 32)}},
+			&zondpb.BeaconStateCapella{FinalizedCheckpoint: &zondpb.Checkpoint{Root: make([]byte, 32)}},
 			false},
 		{"Incorrect activation epoch",
 			&zondpb.Validator{ActivationEligibilityEpoch: 1},
-			&zondpb.BeaconState{FinalizedCheckpoint: &zondpb.Checkpoint{Epoch: 2}},
+			&zondpb.BeaconStateCapella{FinalizedCheckpoint: &zondpb.Checkpoint{Epoch: 2}},
 			false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s, err := state_native.InitializeFromProtoPhase0(tt.state)
+			s, err := state_native.InitializeFromProtoCapella(tt.state)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, IsEligibleForActivation(s, tt.validator), "IsEligibleForActivation()")
 		})
@@ -728,14 +729,14 @@ func computeProposerIndexWithValidators(validators []*zondpb.Validator, activeIn
 }
 
 func TestLastActivatedValidatorIndex_OK(t *testing.T) {
-	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{})
+	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{})
 	require.NoError(t, err)
 
 	validators := make([]*zondpb.Validator, 4)
 	balances := make([]uint64, len(validators))
 	for i := uint64(0); i < 4; i++ {
 		validators[i] = &zondpb.Validator{
-			PublicKey:             make([]byte, params.BeaconConfig().BLSPubkeyLength),
+			PublicKey:             make([]byte, field_params.DilithiumPubkeyLength),
 			WithdrawalCredentials: make([]byte, 32),
 			EffectiveBalance:      32 * 1e9,
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,

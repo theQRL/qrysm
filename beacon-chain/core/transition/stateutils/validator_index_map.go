@@ -4,7 +4,7 @@
 package stateutils
 
 import (
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
@@ -12,8 +12,8 @@ import (
 
 // ValidatorIndexMap builds a lookup map for quickly determining the index of
 // a validator by their public key.
-func ValidatorIndexMap(validators []*zondpb.Validator) map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex {
-	m := make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex, len(validators))
+func ValidatorIndexMap(validators []*zondpb.Validator) map[[field_params.DilithiumPubkeyLength]byte]primitives.ValidatorIndex {
+	m := make(map[[field_params.DilithiumPubkeyLength]byte]primitives.ValidatorIndex, len(validators))
 	if validators == nil {
 		return m
 	}

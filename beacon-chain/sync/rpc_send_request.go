@@ -13,7 +13,6 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 // ErrInvalidFetchedData is used to signal that an error occurred which should result in peer downscoring.
@@ -28,7 +27,7 @@ func SendBeaconBlocksByRangeRequest(
 	ctx context.Context, tor blockchain.TemporalOracle, p2pProvider p2p.SenderEncoder, pid peer.ID,
 	req *pb.BeaconBlocksByRangeRequest, blockProcessor BeaconBlockProcessor,
 ) ([]interfaces.ReadOnlySignedBeaconBlock, error) {
-	topic, err := p2p.TopicFromMessage(p2p.BeaconBlocksByRangeMessageName, slots.ToEpoch(tor.CurrentSlot()))
+	topic, err := p2p.TopicFromMessage(p2p.BeaconBlocksByRangeMessageName)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +89,7 @@ func SendBeaconBlocksByRootRequest(
 	ctx context.Context, clock blockchain.TemporalOracle, p2pProvider p2p.P2P, pid peer.ID,
 	req *p2ptypes.BeaconBlockByRootsReq, blockProcessor BeaconBlockProcessor,
 ) ([]interfaces.ReadOnlySignedBeaconBlock, error) {
-	topic, err := p2p.TopicFromMessage(p2p.BeaconBlocksByRootsMessageName, slots.ToEpoch(clock.CurrentSlot()))
+	topic, err := p2p.TopicFromMessage(p2p.BeaconBlocksByRootsMessageName)
 	if err != nil {
 		return nil, err
 	}

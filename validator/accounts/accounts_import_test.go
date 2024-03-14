@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/theQRL/go-qrllib/common"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
@@ -130,7 +130,7 @@ func Test_importPrivateKeyAsAccount(t *testing.T) {
 
 	// We create a new private key and save it to a file on disk.
 	// We create a new seed and save it to a file on disk.
-	var seed [common.SeedSize]uint8
+	var seed [field_params.DilithiumSeedLength]uint8
 	_, err := rand.Read(seed[:])
 	require.NoError(t, err)
 	seedHex := fmt.Sprintf("%x", seed)
@@ -138,7 +138,7 @@ func Test_importPrivateKeyAsAccount(t *testing.T) {
 		t,
 		os.WriteFile(privKeyFileName, []byte(seedHex), params.BeaconIoConfig().ReadWritePermissions),
 	)
-	privKey, err := dilithium.SecretKeyFromBytes(seed[:])
+	privKey, err := dilithium.SecretKeyFromSeed(seed[:])
 	require.NoError(t, err)
 
 	// We instantiate a new wallet from a cli context.

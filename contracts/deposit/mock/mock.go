@@ -4,7 +4,6 @@ import (
 	"math/big"
 	"strings"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/accounts/abi"
 	"github.com/theQRL/go-zond/accounts/abi/bind"
 	"github.com/theQRL/go-zond/accounts/abi/bind/backends"
@@ -12,6 +11,7 @@ import (
 	"github.com/theQRL/go-zond/core"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/pqcrypto"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/contracts/deposit"
 )
 
@@ -41,7 +41,7 @@ func Setup() (*TestAccount, error) {
 
 	// strip off the 0x and the first 2 characters 04 which is always the EC prefix and is not required.
 	publicKeyBytes := dilithiumKey.GetPK()
-	var pubKey = make([]byte, dilithium2.CryptoPublicKeyBytes)
+	var pubKey = make([]byte, field_params.DilithiumPubkeyLength)
 	copy(pubKey, publicKeyBytes[:])
 
 	addr := dilithiumKey.GetAddress()

@@ -2,6 +2,7 @@ package kv
 
 import (
 	"testing"
+	"time"
 
 	"github.com/theQRL/go-bitfield"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
@@ -46,6 +47,9 @@ func TestAttCaches_insertSeenBitDuplicates(t *testing.T) {
 
 	_, expirationTime1, ok := c.seenAtt.GetWithExpiration(string(r[:]))
 	require.Equal(t, true, ok)
+
+	// NOTE(rgeraldes24): required to create a time gap otherwise the last check fails sometimes
+	time.Sleep(2 * time.Second)
 
 	// Make sure that duplicates are not inserted, but expiration time gets updated.
 	require.NoError(t, c.insertSeenBit(att1))

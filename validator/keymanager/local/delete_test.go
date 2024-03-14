@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/go-qrllib/dilithium"
 	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -42,8 +42,8 @@ func TestLocalKeymanager_DeleteKeystores(t *testing.T) {
 	require.Equal(t, numAccounts, len(accounts))
 
 	t.Run("keys not found", func(t *testing.T) {
-		notFoundPubKey := [dilithium.CryptoPublicKeyBytes]byte{1, 2, 3}
-		notFoundPubKey2 := [dilithium.CryptoPublicKeyBytes]byte{4, 5, 6}
+		notFoundPubKey := [field_params.DilithiumPubkeyLength]byte{1, 2, 3}
+		notFoundPubKey2 := [field_params.DilithiumPubkeyLength]byte{4, 5, 6}
 		statuses, err := dr.DeleteKeystores(ctx, [][]byte{notFoundPubKey[:], notFoundPubKey2[:]})
 		require.NoError(t, err)
 		require.Equal(t, 2, len(statuses))

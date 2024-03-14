@@ -1,22 +1,18 @@
 package attestations
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation/aggregation"
+	"golang.org/x/exp/slices"
 )
 
 // attList represents list of attestations, defined for easier en masse operations (filtering, sorting).
 type attList []*zondpb.Attestation
-
-// BLS aggregate signature aliases for testing / benchmark substitution. These methods are
-// significantly more expensive than the inner logic of AggregateAttestations so they must be
-// substituted for benchmarks which analyze AggregateAttestations.
-var aggregateSignatures = dilithium.AggregateSignatures
-var unaggregatedSignatures = dilithium.UnaggregatedSignatures
-var signatureFromBytes = dilithium.SignatureFromBytes
 
 var _ = logrus.WithField("prefix", "aggregation.attestations")
 
@@ -43,6 +39,12 @@ func AggregateDisjointOneBitAtts(atts []*zondpb.Attestation) (*zondpb.Attestatio
 	if len(atts) == 0 {
 		return nil, nil
 	}
+	for i, att := range atts {
+		if len(att.Signatures) != len(att.AggregationBits.BitIndices()) {
+			return nil, fmt.Errorf("signatures length %d is not equal to the attesting participants indices length %d for attestation with index %d", len(att.Signatures), len(att.AggregationBits.BitIndices()), i)
+		}
+	}
+
 	if len(atts) == 1 {
 		return atts[0], nil
 	}
@@ -76,6 +78,13 @@ func AggregateDisjointOneBitAtts(atts []*zondpb.Attestation) (*zondpb.Attestatio
 
 // AggregatePair aggregates pair of attestations a1 and a2 together.
 func AggregatePair(a1, a2 *zondpb.Attestation) (*zondpb.Attestation, error) {
+	if len(a1.AggregationBits.BitIndices()) != len(a1.Signatures) {
+		return nil, fmt.Errorf("att1: signatures length %d is not equal to the attesting participants indices length %d", len(a1.Signatures), len(a1.AggregationBits.BitIndices()))
+	}
+	if len(a2.AggregationBits.BitIndices()) != len(a2.Signatures) {
+		return nil, fmt.Errorf("att2: signatures length %d is not equal to the attesting participants indices length %d", len(a2.Signatures), len(a2.AggregationBits.BitIndices()))
+	}
+
 	o, err := a1.AggregationBits.Overlaps(a2.AggregationBits)
 	if err != nil {
 		return nil, err
@@ -90,30 +99,60 @@ func AggregatePair(a1, a2 *zondpb.Attestation) (*zondpb.Attestation, error) {
 		baseAtt, newAtt = newAtt, baseAtt
 	}
 
-	c, err := baseAtt.AggregationBits.Contains(newAtt.AggregationBits)
-	if err != nil {
-		return nil, err
+	// update the signatures slice
+	// 1. check for new participants in the new attestation with the help of an aux map
+	// containing the base participants and index the new required signatures.
+	// 2. search for the insert index of the participants to add(sorted) on the slice of
+	// the base participants(sorted) and update the base signatures slice accordingly
+	duplicates := make(map[int]struct{})
+	baseParticipants := baseAtt.AggregationBits.BitIndices()
+	for _, baseParticipant := range baseParticipants {
+		duplicates[baseParticipant] = struct{}{}
 	}
-	if c {
+
+	newParticipants := newAtt.AggregationBits.BitIndices()
+	participantsToAdd := make([]int, 0, len(newParticipants))
+	sigIndex := make(map[int][]byte)
+	for i, newParticipant := range newParticipants {
+		_, ok := duplicates[newParticipant]
+		if !ok {
+			participantsToAdd = append(participantsToAdd, newParticipant)
+			sigIndex[newParticipant] = newAtt.Signatures[i]
+		}
+	}
+
+	// base attestation already contains all the participants of the new attestation
+	if len(participantsToAdd) == 0 {
 		return baseAtt, nil
 	}
 
-	newBits, err := baseAtt.AggregationBits.Or(newAtt.AggregationBits)
-	if err != nil {
-		return nil, err
-	}
-	newSig, err := signatureFromBytes(newAtt.Signature)
-	if err != nil {
-		return nil, err
-	}
-	baseSig, err := signatureFromBytes(baseAtt.Signature)
-	if err != nil {
-		return nil, err
+	initialIdx := 0
+	for i, participant := range participantsToAdd {
+		insertIdx, err := attestation.SearchInsertIdxWithOffset(baseParticipants, initialIdx, participant)
+		if err != nil {
+			return nil, err
+		}
+
+		// no need for more index searches; just append the signatures of the remaining
+		// participants that we need to add.
+		if insertIdx > (len(baseParticipants) - 1) {
+			for _, missingParticipant := range participantsToAdd[i:] {
+				baseAtt.Signatures = slices.Insert(baseAtt.Signatures, insertIdx, sigIndex[missingParticipant])
+			}
+			break
+		}
+
+		baseParticipants = slices.Insert(baseParticipants, insertIdx, participant)
+		baseAtt.Signatures = slices.Insert(baseAtt.Signatures, insertIdx, sigIndex[participant])
+		initialIdx = insertIdx + 1
 	}
 
-	aggregatedSig := aggregateSignatures([]dilithium.Signature{baseSig, newSig})
-	baseAtt.Signature = aggregatedSig.Marshal()
-	baseAtt.AggregationBits = newBits
+	// update the participants bitfield
+	participants, err := baseAtt.AggregationBits.Or(newAtt.AggregationBits)
+	if err != nil {
+		return nil, err
+	}
+	baseAtt.AggregationBits = participants
 
 	return baseAtt, nil
 }

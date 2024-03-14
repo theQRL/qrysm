@@ -27,13 +27,13 @@ import (
 )
 
 const (
-	getSignedBlockPath             = "/zond/v2/beacon/blocks"
+	getSignedBlockPath             = "/zond/v1/beacon/blocks"
 	getBlockRootPath               = "/zond/v1/beacon/blocks/{{.Id}}/root"
 	getForkForStatePath            = "/zond/v1/beacon/states/{{.Id}}/fork"
 	getWeakSubjectivityPath        = "/zond/v1/beacon/weak_subjectivity"
 	getForkSchedulePath            = "/zond/v1/config/fork_schedule"
 	getConfigSpecPath              = "/zond/v1/config/spec"
-	getStatePath                   = "/zond/v2/debug/beacon/states"
+	getStatePath                   = "/zond/v1/debug/beacon/states"
 	getNodeVersionPath             = "/zond/v1/node/version"
 	changeDilithiumtoExecutionPath = "/zond/v1/beacon/pool/dilithium_to_execution_changes"
 )

@@ -1,7 +1,6 @@
 package interop
 
 import (
-	"fmt"
 	"math"
 	"math/big"
 
@@ -10,18 +9,19 @@ import (
 	"github.com/theQRL/go-zond/core"
 	"github.com/theQRL/go-zond/params"
 	clparams "github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 // defaultMinerAddress is used to send deposits and test transactions in the e2e test.
 // This account is given a large initial balance in the genesis block in test setups.
-const defaultMinerAddress = "0x205547bA6232eEc096770f7161d57dEA54FD13D0"
+const defaultTestAccountAddress = "0x205547bA6232eEc096770f7161d57dEA54FD13D0"
 const defaultTestChainId int64 = 1337
 const defaultCoinbase = "0x0000000000000000000000000000000000000000"
-const defaultDifficulty = "1"
+const defaultDifficulty = "0"
 const defaultMixhash = "0x0000000000000000000000000000000000000000000000000000000000000000"
 const defaultParenthash = "0x0000000000000000000000000000000000000000000000000000000000000000"
-const defaultMinerBalance = "100000000000000000000000000000"
+const defaultTestAccountBalance = "100000000000000000000000000000"
 
 // DepositContractCode is the compiled deposit contract code, via https://github.com/protolambda/merge-genesis-tools
 // This is embedded into genesis so that we can start the chain at a merge block.
@@ -64,30 +64,15 @@ var DefaultDepositContractStorage = map[string]string{
 }
 
 var bigz = big.NewInt(0)
-var minerBalance = big.NewInt(0)
-
-// DefaultCliqueSigner is the testnet miner (clique signer) address encoded in the special way EIP-225 requires.
-// EIP-225 assigns a special meaning to the `extra-data` field in the block header for clique chains.
-// In a clique chain, this field contains one secp256k1 "miner" signature. This allows other nodes to
-// verify that the block was signed by an authorized signer, in place of the typical PoW verification.
-// Clique overloads the meaning of the `miner` and `nonce` fields to implement a voting protocol, whereby additional
-// signatures can be added to the list (for details see `Repurposing header fields for signing and voting` in EIP-225).
-// https://eips.ethereum.org/EIPS/eip-225
-// The following value is for the key used by the e2e test "miner" node.
-const DefaultCliqueSigner = "0x0000000000000000000000000000000000000000000000000000000000000000878705ba3f8bc32fcf7f4caa1a35e72af65cf7660000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+var testAccountBalance = big.NewInt(0)
 
 // GzondShanghaiTime calculates the absolute time of the shanghai (aka capella) fork block
 // by adding the relative time of the capella the fork epoch to the given genesis timestamp.
-func GzondShanghaiTime(genesisTime uint64, cfg *clparams.BeaconChainConfig) *uint64 {
-	var shanghaiTime *uint64
-	if cfg.CapellaForkEpoch != math.MaxUint64 {
-		startSlot, err := slots.EpochStart(cfg.CapellaForkEpoch)
-		if err == nil {
-			startTime := slots.StartTime(genesisTime, startSlot)
-			newTime := uint64(startTime.Unix())
-			shanghaiTime = &newTime
-		}
-	}
+func GzondShanghaiTime(genesisTime uint64) *uint64 {
+	startSlot := primitives.Slot(0)
+	startTime := slots.StartTime(genesisTime, startSlot)
+	newTime := uint64(startTime.Unix())
+	shanghaiTime := &newTime
 	return shanghaiTime
 }
 
@@ -95,12 +80,7 @@ func GzondShanghaiTime(genesisTime uint64, cfg *clparams.BeaconChainConfig) *uin
 // like in an e2e test. The parameters are minimal but the full value is returned unmarshaled so that it can be
 // customized as desired.
 func GzondTestnetGenesis(genesisTime uint64, cfg *clparams.BeaconChainConfig) *core.Genesis {
-	ttd, ok := big.NewInt(0).SetString(clparams.BeaconConfig().TerminalTotalDifficulty, 10)
-	if !ok {
-		panic(fmt.Sprintf("unable to parse TerminalTotalDifficulty as an integer = %s", clparams.BeaconConfig().TerminalTotalDifficulty))
-	}
-
-	shanghaiTime := GzondShanghaiTime(genesisTime, cfg)
+	shanghaiTime := GzondShanghaiTime(genesisTime)
 	cc := &params.ChainConfig{
 		ChainID:                       big.NewInt(defaultTestChainId),
 		HomesteadBlock:                bigz,
@@ -118,28 +98,19 @@ func GzondTestnetGenesis(genesisTime uint64, cfg *clparams.BeaconChainConfig) *c
 		ArrowGlacierBlock:             bigz,
 		GrayGlacierBlock:              bigz,
 		MergeNetsplitBlock:            bigz,
-		TerminalTotalDifficulty:       ttd,
+		TerminalTotalDifficulty:       bigz,
 		TerminalTotalDifficultyPassed: true,
-		Clique: &params.CliqueConfig{
-			Period: cfg.SecondsPerETH1Block,
-			Epoch:  20000,
-		},
-		ShanghaiTime: shanghaiTime,
-		// NOTE(rgeraldes24): setting value to nil since we are not going to transition to Deneb
-		// and eventually we will review go-zond to discard this fork and review other forks.
-		CancunTime: nil,
+		ShanghaiTime:                  shanghaiTime,
 	}
 	da := defaultDepositContractAllocation(cfg.DepositContractAddress)
 	ma := minerAllocation()
-	extra, err := hexutil.Decode(DefaultCliqueSigner)
-	if err != nil {
-		panic(fmt.Sprintf("unable to decode DefaultCliqueSigner, with error %v", err.Error()))
-	}
 	return &core.Genesis{
-		Config:     cc,
-		Nonce:      0, // overridden for authorized signer votes in clique, so we should leave it empty?
-		Timestamp:  genesisTime,
-		ExtraData:  extra,
+		Config:    cc,
+		Nonce:     0,
+		Timestamp: genesisTime,
+		// NOTE(rgeraldes24): required by the genesis generation on the beacon node side
+		// during the e2e tests
+		ExtraData:  make([]byte, 32),
 		GasLimit:   math.MaxUint64 >> 1, // shift 1 back from the max, just in case
 		Difficulty: common.HexToHash(defaultDifficulty).Big(),
 		Mixhash:    common.HexToHash(defaultMixhash),
@@ -159,9 +130,9 @@ type depositAllocation struct {
 
 func minerAllocation() depositAllocation {
 	return depositAllocation{
-		Address: common.HexToAddress(defaultMinerAddress),
+		Address: common.HexToAddress(defaultTestAccountAddress),
 		Account: core.GenesisAccount{
-			Balance: minerBalance,
+			Balance: testAccountBalance,
 		},
 	}
 }
@@ -191,7 +162,7 @@ func deterministicNonce(i uint64) uint64 {
 }
 
 func init() {
-	err := minerBalance.UnmarshalText([]byte(defaultMinerBalance))
+	err := testAccountBalance.UnmarshalText([]byte(defaultTestAccountBalance))
 	if err != nil {
 		panic(err)
 	}

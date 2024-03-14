@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	mock2 "github.com/stretchr/testify/mock"
-	"github.com/theQRL/go-qrllib/dilithium"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/mock"
@@ -194,7 +194,7 @@ func TestWaitForActivation_RefetchKeys(t *testing.T) {
 	clientStream.EXPECT().Recv().Return(
 		resp,
 		nil)
-	assert.NoError(t, v.internalWaitForActivation(context.Background(), make(chan [][dilithium.CryptoPublicKeyBytes]byte)), "Could not wait for activation")
+	assert.NoError(t, v.internalWaitForActivation(context.Background(), make(chan [][field_params.DilithiumPubkeyLength]byte)), "Could not wait for activation")
 	assert.LogsContain(t, hook, msgNoKeysFetched)
 	assert.LogsContain(t, hook, "Validator activated")
 }
@@ -256,7 +256,7 @@ func TestWaitForActivation_AccountsChanged(t *testing.T) {
 			// We add the active key into the keymanager and simulate a key refresh.
 			time.Sleep(time.Second * 1)
 			require.NoError(t, km.add(active))
-			km.SimulateAccountChanges(make([][dilithium.CryptoPublicKeyBytes]byte, 0))
+			km.SimulateAccountChanges(make([][field_params.DilithiumPubkeyLength]byte, 0))
 		}()
 
 		assert.NoError(t, v.WaitForActivation(context.Background(), nil))
@@ -269,12 +269,12 @@ func TestWaitForActivation_AccountsChanged(t *testing.T) {
 			inactivePrivKey, err :=
 				util.PrivateKeyFromSeedAndPath(seed, fmt.Sprintf(derived.ValidatingKeyDerivationPathTemplate, 0))
 			require.NoError(t, err)
-			var inactivePubKey [dilithium.CryptoPublicKeyBytes]byte
+			var inactivePubKey [field_params.DilithiumPubkeyLength]byte
 			copy(inactivePubKey[:], inactivePrivKey.PublicKey().Marshal())
 			activePrivKey, err :=
 				util.PrivateKeyFromSeedAndPath(seed, fmt.Sprintf(derived.ValidatingKeyDerivationPathTemplate, 1))
 			require.NoError(t, err)
-			var activePubKey [dilithium.CryptoPublicKeyBytes]byte
+			var activePubKey [field_params.DilithiumPubkeyLength]byte
 			copy(activePubKey[:], activePrivKey.PublicKey().Marshal())
 			wallet := &walletMock.Wallet{
 				Files:            make(map[string]map[string][]byte),
@@ -328,13 +328,13 @@ func TestWaitForActivation_AccountsChanged(t *testing.T) {
 				nil,
 			)
 
-			channel := make(chan [][dilithium.CryptoPublicKeyBytes]byte)
+			channel := make(chan [][field_params.DilithiumPubkeyLength]byte)
 			go func() {
 				// We add the active key into the keymanager and simulate a key refresh.
 				time.Sleep(time.Second * 1)
 				err = km.RecoverAccountsFromMnemonic(ctx, constant.TestMnemonic, derived.DefaultMnemonicLanguage, "", 2)
 				require.NoError(t, err)
-				channel <- [][dilithium.CryptoPublicKeyBytes]byte{}
+				channel <- [][field_params.DilithiumPubkeyLength]byte{}
 			}()
 
 			assert.NoError(t, v.internalWaitForActivation(context.Background(), channel))

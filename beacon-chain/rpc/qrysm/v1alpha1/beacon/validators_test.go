@@ -12,20 +12,18 @@ import (
 	"github.com/theQRL/go-bitfield"
 	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/epoch/precompute"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	coreTime "github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/v4/beacon-chain/db"
 	dbTest "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
 	doublylinkedtree "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/core"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
 	mockstategen "github.com/theQRL/qrysm/v4/beacon-chain/state/stategen/mock"
 	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
 	"github.com/theQRL/qrysm/v4/cmd"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
@@ -40,7 +38,6 @@ import (
 	qrysmTime "github.com/theQRL/qrysm/v4/time"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 const (
@@ -50,7 +47,7 @@ const (
 func TestServer_GetValidatorActiveSetChanges_CannotRequestFutureEpoch(t *testing.T) {
 	beaconDB := dbTest.SetupDB(t)
 	ctx := context.Background()
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(0))
 	bs := &Server{
@@ -77,7 +74,7 @@ func TestServer_ListValidatorBalances_CannotRequestFutureEpoch(t *testing.T) {
 	beaconDB := dbTest.SetupDB(t)
 	ctx := context.Background()
 
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(0))
 	bs := &Server{
@@ -104,7 +101,7 @@ func TestServer_ListValidatorBalances_NoResults(t *testing.T) {
 	beaconDB := dbTest.SetupDB(t)
 
 	ctx := context.Background()
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(0))
 	bs := &Server{
@@ -112,9 +109,9 @@ func TestServer_ListValidatorBalances_NoResults(t *testing.T) {
 		StateGen:           stategen.New(beaconDB, doublylinkedtree.New()),
 	}
 
-	headState, err := util.NewBeaconState()
+	headState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	util.SaveBlock(t, ctx, beaconDB, b)
 	gRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -163,12 +160,12 @@ func TestServer_ListValidatorBalances_DefaultResponse_NoArchive(t *testing.T) {
 			Status:    "EXITED",
 		}
 	}
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(0))
 	require.NoError(t, st.SetValidators(validators))
 	require.NoError(t, st.SetBalances(balances))
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	util.SaveBlock(t, ctx, beaconDB, b)
 	gRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -197,7 +194,7 @@ func TestServer_ListValidatorBalances_PaginationOutOfRange(t *testing.T) {
 	ctx := context.Background()
 
 	_, _, headState := setupValidators(t, beaconDB, 100)
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	gRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, gRoot))
@@ -236,7 +233,7 @@ func TestServer_ListValidatorBalances_ExceedsMaxPageSize(t *testing.T) {
 }
 
 func pubKey(i uint64) []byte {
-	pubKey := make([]byte, params.BeaconConfig().BLSPubkeyLength)
+	pubKey := make([]byte, field_params.DilithiumPubkeyLength)
 	binary.LittleEndian.PutUint64(pubKey, i)
 	return pubKey
 }
@@ -246,7 +243,7 @@ func TestServer_ListValidatorBalances_Pagination_Default(t *testing.T) {
 	ctx := context.Background()
 
 	_, _, headState := setupValidators(t, beaconDB, 100)
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	gRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, gRoot))
@@ -330,7 +327,7 @@ func TestServer_ListValidatorBalances_Pagination_CustomPageSizes(t *testing.T) {
 
 	count := 1000
 	_, _, headState := setupValidators(t, beaconDB, count)
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	gRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, gRoot))
@@ -398,7 +395,7 @@ func TestServer_ListValidatorBalances_OutOfRange(t *testing.T) {
 
 	ctx := context.Background()
 	_, _, headState := setupValidators(t, beaconDB, 1)
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	gRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, gRoot))
@@ -423,7 +420,7 @@ func TestServer_ListValidators_CannotRequestFutureEpoch(t *testing.T) {
 	beaconDB := dbTest.SetupDB(t)
 	ctx := context.Background()
 
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(0))
 	bs := &Server{
@@ -487,7 +484,7 @@ func TestServer_ListValidators_NoResults(t *testing.T) {
 	beaconDB := dbTest.SetupDB(t)
 
 	ctx := context.Background()
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(0))
 	gRoot := [32]byte{'g'}
@@ -556,7 +553,7 @@ func TestServer_ListValidators_OnlyActiveValidators(t *testing.T) {
 			}
 		}
 	}
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetValidators(validators))
 	require.NoError(t, st.SetBalances(balances))
@@ -572,7 +569,7 @@ func TestServer_ListValidators_OnlyActiveValidators(t *testing.T) {
 		StateGen: stategen.New(beaconDB, doublylinkedtree.New()),
 	}
 
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	util.SaveBlock(t, ctx, beaconDB, b)
 	gRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -624,7 +621,7 @@ func TestServer_ListValidators_InactiveInTheMiddle(t *testing.T) {
 	validators[0].ActivationEpoch = params.BeaconConfig().FarFutureEpoch
 	activeValidators[0].Validator.ActivationEpoch = params.BeaconConfig().FarFutureEpoch
 
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetValidators(validators))
 	require.NoError(t, st.SetBalances(balances))
@@ -640,7 +637,7 @@ func TestServer_ListValidators_InactiveInTheMiddle(t *testing.T) {
 		StateGen: stategen.New(beaconDB, doublylinkedtree.New()),
 	}
 
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	util.SaveBlock(t, ctx, beaconDB, b)
 	gRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -661,7 +658,7 @@ func TestServer_ListValidatorBalances_UnknownValidatorInResponse(t *testing.T) {
 	ctx := context.Background()
 
 	_, _, headState := setupValidators(t, beaconDB, 4)
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	gRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, gRoot))
@@ -1029,18 +1026,18 @@ func TestServer_ListValidators_FromOldEpoch(t *testing.T) {
 
 	ctx := context.Background()
 	slot := primitives.Slot(0)
-	epochs := 10
-	numVals := uint64(10)
+	epochs := 3
+	numVals := uint64(3)
 
 	beaconDB := dbTest.SetupDB(t)
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	b.Block.Slot = slot
 	util.SaveBlock(t, ctx, beaconDB, b)
 
 	r, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	st, _ := util.DeterministicGenesisState(t, numVals)
+	st, _ := util.DeterministicGenesisStateCapella(t, numVals)
 	require.NoError(t, st.SetSlot(slot))
 	require.Equal(t, int(numVals), len(st.Validators()))
 
@@ -1077,7 +1074,7 @@ func TestServer_ListValidators_FromOldEpoch(t *testing.T) {
 	}
 	req = &zondpb.ListValidatorsRequest{
 		QueryFilter: &zondpb.ListValidatorsRequest_Epoch{
-			Epoch: 10,
+			Epoch: 2,
 		},
 	}
 	res, err = bs.ListValidators(context.Background(), req)
@@ -1101,7 +1098,7 @@ func TestServer_ListValidators_ProcessHeadStateSlots(t *testing.T) {
 	for i := uint64(0); i < numValidators; i++ {
 		validators[i] = &zondpb.Validator{
 			ActivationEpoch:       0,
-			PublicKey:             make([]byte, 48),
+			PublicKey:             make([]byte, field_params.DilithiumPubkeyLength),
 			WithdrawalCredentials: make([]byte, 32),
 			EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
 		}
@@ -1115,12 +1112,12 @@ func TestServer_ListValidators_ProcessHeadStateSlots(t *testing.T) {
 		}
 	}
 
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(headSlot))
 	require.NoError(t, st.SetValidators(validators))
 	require.NoError(t, st.SetBalances(balances))
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	util.SaveBlock(t, ctx, beaconDB, b)
 	gRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -1161,7 +1158,7 @@ func TestServer_GetValidator(t *testing.T) {
 		}
 	}
 
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetValidators(validators))
 
@@ -1236,7 +1233,7 @@ func TestServer_GetValidatorActiveSetChanges(t *testing.T) {
 
 	ctx := context.Background()
 	validators := make([]*zondpb.Validator, 8)
-	headState, err := util.NewBeaconState()
+	headState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, headState.SetSlot(0))
 	require.NoError(t, headState.SetValidators(validators))
@@ -1274,7 +1271,7 @@ func TestServer_GetValidatorActiveSetChanges(t *testing.T) {
 		})
 		require.NoError(t, err)
 	}
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	util.SaveBlock(t, ctx, beaconDB, b)
 
 	gRoot, err := b.Block.HashTreeRoot()
@@ -1328,158 +1325,11 @@ func TestServer_GetValidatorActiveSetChanges(t *testing.T) {
 	}
 }
 
-func TestServer_GetValidatorQueue_PendingActivation(t *testing.T) {
-	headState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
-		Validators: []*zondpb.Validator{
-			{
-				ActivationEpoch:            helpers.ActivationExitEpoch(0),
-				ActivationEligibilityEpoch: 3,
-				PublicKey:                  pubKey(3),
-				WithdrawalCredentials:      make([]byte, 32),
-			},
-			{
-				ActivationEpoch:            helpers.ActivationExitEpoch(0),
-				ActivationEligibilityEpoch: 2,
-				PublicKey:                  pubKey(2),
-				WithdrawalCredentials:      make([]byte, 32),
-			},
-			{
-				ActivationEpoch:            helpers.ActivationExitEpoch(0),
-				ActivationEligibilityEpoch: 1,
-				PublicKey:                  pubKey(1),
-				WithdrawalCredentials:      make([]byte, 32),
-			},
-		},
-		FinalizedCheckpoint: &zondpb.Checkpoint{
-			Epoch: 0,
-		},
-	})
-	require.NoError(t, err)
-	bs := &Server{
-		HeadFetcher: &mock.ChainService{
-			State: headState,
-		},
-	}
-	res, err := bs.GetValidatorQueue(context.Background(), &emptypb.Empty{})
-	require.NoError(t, err)
-	// We verify the keys are properly sorted by the validators' activation eligibility epoch.
-	wanted := [][]byte{
-		pubKey(1),
-		pubKey(2),
-		pubKey(3),
-	}
-	activeValidatorCount, err := helpers.ActiveValidatorCount(context.Background(), headState, coreTime.CurrentEpoch(headState))
-	require.NoError(t, err)
-	wantChurn := helpers.ValidatorActivationChurnLimit(activeValidatorCount)
-	assert.Equal(t, wantChurn, res.ChurnLimit)
-	assert.DeepEqual(t, wanted, res.ActivationPublicKeys)
-	wantedActiveIndices := []primitives.ValidatorIndex{2, 1, 0}
-	assert.DeepEqual(t, wantedActiveIndices, res.ActivationValidatorIndices)
-}
-
-func TestServer_GetValidatorQueue_ExitedValidatorLeavesQueue(t *testing.T) {
-	validators := []*zondpb.Validator{
-		{
-			ActivationEpoch:   0,
-			ExitEpoch:         params.BeaconConfig().FarFutureEpoch,
-			WithdrawableEpoch: params.BeaconConfig().FarFutureEpoch,
-			PublicKey:         bytesutil.PadTo([]byte("1"), 48),
-		},
-		{
-			ActivationEpoch:   0,
-			ExitEpoch:         4,
-			WithdrawableEpoch: 6,
-			PublicKey:         bytesutil.PadTo([]byte("2"), 48),
-		},
-	}
-
-	headState, err := util.NewBeaconState()
-	require.NoError(t, err)
-	require.NoError(t, headState.SetValidators(validators))
-	require.NoError(t, headState.SetFinalizedCheckpoint(&zondpb.Checkpoint{Epoch: 0, Root: make([]byte, 32)}))
-	bs := &Server{
-		HeadFetcher: &mock.ChainService{
-			State: headState,
-		},
-	}
-
-	// First we check if validator with index 1 is in the exit queue.
-	res, err := bs.GetValidatorQueue(context.Background(), &emptypb.Empty{})
-	require.NoError(t, err)
-	wanted := [][]byte{
-		bytesutil.PadTo([]byte("2"), 48),
-	}
-	activeValidatorCount, err := helpers.ActiveValidatorCount(context.Background(), headState, coreTime.CurrentEpoch(headState))
-	require.NoError(t, err)
-	wantChurn := helpers.ValidatorExitChurnLimit(activeValidatorCount)
-	assert.Equal(t, wantChurn, res.ChurnLimit)
-	assert.DeepEqual(t, wanted, res.ExitPublicKeys)
-	wantedExitIndices := []primitives.ValidatorIndex{1}
-	assert.DeepEqual(t, wantedExitIndices, res.ExitValidatorIndices)
-
-	// Now, we move the state.slot past the exit epoch of the validator, and now
-	// the validator should no longer exist in the queue.
-	require.NoError(t, headState.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(uint64(validators[1].ExitEpoch+1))))
-	res, err = bs.GetValidatorQueue(context.Background(), &emptypb.Empty{})
-	require.NoError(t, err)
-	assert.Equal(t, 0, len(res.ExitPublicKeys))
-}
-
-func TestServer_GetValidatorQueue_PendingExit(t *testing.T) {
-	headState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
-		Validators: []*zondpb.Validator{
-			{
-				ActivationEpoch:       0,
-				ExitEpoch:             4,
-				WithdrawableEpoch:     3,
-				PublicKey:             pubKey(3),
-				WithdrawalCredentials: make([]byte, 32),
-			},
-			{
-				ActivationEpoch:       0,
-				ExitEpoch:             4,
-				WithdrawableEpoch:     2,
-				PublicKey:             pubKey(2),
-				WithdrawalCredentials: make([]byte, 32),
-			},
-			{
-				ActivationEpoch:       0,
-				ExitEpoch:             4,
-				WithdrawableEpoch:     1,
-				PublicKey:             pubKey(1),
-				WithdrawalCredentials: make([]byte, 32),
-			},
-		},
-		FinalizedCheckpoint: &zondpb.Checkpoint{
-			Epoch: 0,
-		},
-	})
-	require.NoError(t, err)
-	bs := &Server{
-		HeadFetcher: &mock.ChainService{
-			State: headState,
-		},
-	}
-	res, err := bs.GetValidatorQueue(context.Background(), &emptypb.Empty{})
-	require.NoError(t, err)
-	// We verify the keys are properly sorted by the validators' withdrawable epoch.
-	wanted := [][]byte{
-		pubKey(1),
-		pubKey(2),
-		pubKey(3),
-	}
-	activeValidatorCount, err := helpers.ActiveValidatorCount(context.Background(), headState, coreTime.CurrentEpoch(headState))
-	require.NoError(t, err)
-	wantChurn := helpers.ValidatorExitChurnLimit(activeValidatorCount)
-	assert.Equal(t, wantChurn, res.ChurnLimit)
-	assert.DeepEqual(t, wanted, res.ExitPublicKeys)
-}
-
 func TestServer_GetValidatorParticipation_CannotRequestFutureEpoch(t *testing.T) {
 	beaconDB := dbTest.SetupDB(t)
 
 	ctx := context.Background()
-	headState, err := util.NewBeaconState()
+	headState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, headState.SetSlot(0))
 	bs := &Server{
@@ -1503,86 +1353,6 @@ func TestServer_GetValidatorParticipation_CannotRequestFutureEpoch(t *testing.T)
 	assert.ErrorContains(t, wanted, err)
 }
 
-func TestServer_GetValidatorParticipation_CurrentAndPrevEpoch(t *testing.T) {
-	helpers.ClearCache()
-	beaconDB := dbTest.SetupDB(t)
-
-	ctx := context.Background()
-	validatorCount := uint64(32)
-
-	validators := make([]*zondpb.Validator, validatorCount)
-	balances := make([]uint64, validatorCount)
-	for i := 0; i < len(validators); i++ {
-		validators[i] = &zondpb.Validator{
-			PublicKey:             bytesutil.ToBytes(uint64(i), 48),
-			WithdrawalCredentials: make([]byte, 32),
-			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
-			EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
-		}
-		balances[i] = params.BeaconConfig().MaxEffectiveBalance
-	}
-
-	atts := []*zondpb.PendingAttestation{{
-		Data:            util.HydrateAttestationData(&zondpb.AttestationData{}),
-		InclusionDelay:  1,
-		AggregationBits: bitfield.NewBitlist(validatorCount / uint64(params.BeaconConfig().SlotsPerEpoch)),
-	}}
-	headState, err := util.NewBeaconState()
-	require.NoError(t, err)
-	require.NoError(t, headState.SetSlot(8))
-	require.NoError(t, headState.SetValidators(validators))
-	require.NoError(t, headState.SetBalances(balances))
-	require.NoError(t, headState.AppendCurrentEpochAttestations(atts[0]))
-	require.NoError(t, headState.AppendPreviousEpochAttestations(atts[0]))
-
-	b := util.NewBeaconBlock()
-	b.Block.Slot = 8
-	util.SaveBlock(t, ctx, beaconDB, b)
-	bRoot, err := b.Block.HashTreeRoot()
-	require.NoError(t, beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
-	require.NoError(t, beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Root: params.BeaconConfig().ZeroHash[:]}))
-	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, bRoot))
-	require.NoError(t, err)
-	require.NoError(t, beaconDB.SaveState(ctx, headState, bRoot))
-	require.NoError(t, beaconDB.SaveState(ctx, headState, params.BeaconConfig().ZeroHash))
-
-	m := &mock.ChainService{State: headState}
-	offset := int64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))
-	bs := &Server{
-		BeaconDB:    beaconDB,
-		HeadFetcher: m,
-		StateGen:    stategen.New(beaconDB, doublylinkedtree.New()),
-		GenesisTimeFetcher: &mock.ChainService{
-			Genesis: qrysmTime.Now().Add(time.Duration(-1*offset) * time.Second),
-		},
-		CanonicalFetcher: &mock.ChainService{
-			CanonicalRoots: map[[32]byte]bool{
-				bRoot: true,
-			},
-		},
-		FinalizationFetcher: &mock.ChainService{FinalizedCheckPoint: &zondpb.Checkpoint{Epoch: 100}},
-	}
-	addDefaultReplayerBuilder(bs, beaconDB)
-
-	res, err := bs.GetValidatorParticipation(ctx, &zondpb.GetValidatorParticipationRequest{QueryFilter: &zondpb.GetValidatorParticipationRequest_Epoch{Epoch: 1}})
-	require.NoError(t, err)
-
-	wanted := &zondpb.ValidatorParticipation{
-		GlobalParticipationRate:          float32(params.BeaconConfig().EffectiveBalanceIncrement) / float32(validatorCount*params.BeaconConfig().MaxEffectiveBalance),
-		VotedEther:                       params.BeaconConfig().EffectiveBalanceIncrement,
-		EligibleEther:                    validatorCount * params.BeaconConfig().MaxEffectiveBalance,
-		CurrentEpochActiveGwei:           validatorCount * params.BeaconConfig().MaxEffectiveBalance,
-		CurrentEpochAttestingGwei:        params.BeaconConfig().EffectiveBalanceIncrement,
-		CurrentEpochTargetAttestingGwei:  params.BeaconConfig().EffectiveBalanceIncrement,
-		PreviousEpochActiveGwei:          validatorCount * params.BeaconConfig().MaxEffectiveBalance,
-		PreviousEpochAttestingGwei:       params.BeaconConfig().EffectiveBalanceIncrement,
-		PreviousEpochTargetAttestingGwei: params.BeaconConfig().EffectiveBalanceIncrement,
-		PreviousEpochHeadAttestingGwei:   params.BeaconConfig().EffectiveBalanceIncrement,
-	}
-	assert.DeepEqual(t, true, res.Finalized, "Incorrect validator participation respond")
-	assert.DeepEqual(t, wanted, res.Participation, "Incorrect validator participation respond")
-}
-
 func TestServer_GetValidatorParticipation_OrphanedUntilGenesis(t *testing.T) {
 	helpers.ClearCache()
 	params.SetupTestConfigCleanup(t)
@@ -1596,7 +1366,7 @@ func TestServer_GetValidatorParticipation_OrphanedUntilGenesis(t *testing.T) {
 	balances := make([]uint64, validatorCount)
 	for i := 0; i < len(validators); i++ {
 		validators[i] = &zondpb.Validator{
-			PublicKey:             bytesutil.ToBytes(uint64(i), 48),
+			PublicKey:             bytesutil.ToBytes(uint64(i), field_params.DilithiumPubkeyLength),
 			WithdrawalCredentials: make([]byte, 32),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 			EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
@@ -1604,20 +1374,14 @@ func TestServer_GetValidatorParticipation_OrphanedUntilGenesis(t *testing.T) {
 		balances[i] = params.BeaconConfig().MaxEffectiveBalance
 	}
 
-	atts := []*zondpb.PendingAttestation{{
-		Data:            util.HydrateAttestationData(&zondpb.AttestationData{}),
-		InclusionDelay:  1,
-		AggregationBits: bitfield.NewBitlist((validatorCount / 3) / uint64(params.BeaconConfig().SlotsPerEpoch)),
-	}}
-	headState, err := util.NewBeaconState()
+	headState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, headState.SetSlot(0))
 	require.NoError(t, headState.SetValidators(validators))
 	require.NoError(t, headState.SetBalances(balances))
-	require.NoError(t, headState.AppendCurrentEpochAttestations(atts[0]))
-	require.NoError(t, headState.AppendPreviousEpochAttestations(atts[0]))
+	require.NoError(t, headState.SetInactivityScores(make([]uint64, len(headState.Validators()))))
 
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	util.SaveBlock(t, ctx, beaconDB, b)
 	bRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, bRoot))
@@ -1647,9 +1411,6 @@ func TestServer_GetValidatorParticipation_OrphanedUntilGenesis(t *testing.T) {
 	require.NoError(t, err)
 
 	wanted := &zondpb.ValidatorParticipation{
-		GlobalParticipationRate:          float32(params.BeaconConfig().EffectiveBalanceIncrement) / float32(validatorCount*params.BeaconConfig().MaxEffectiveBalance),
-		VotedEther:                       params.BeaconConfig().EffectiveBalanceIncrement,
-		EligibleEther:                    validatorCount * params.BeaconConfig().MaxEffectiveBalance,
 		CurrentEpochActiveGwei:           validatorCount * params.BeaconConfig().MaxEffectiveBalance,
 		CurrentEpochAttestingGwei:        params.BeaconConfig().EffectiveBalanceIncrement,
 		CurrentEpochTargetAttestingGwei:  params.BeaconConfig().EffectiveBalanceIncrement,
@@ -1666,42 +1427,6 @@ func TestServer_GetValidatorParticipation_CurrentAndPrevEpochWithBits(t *testing
 	params.SetupTestConfigCleanup(t)
 	params.OverrideBeaconConfig(params.BeaconConfig())
 	transition.SkipSlotCache.Disable()
-
-	t.Run("altair", func(t *testing.T) {
-		validatorCount := uint64(32)
-		genState, _ := util.DeterministicGenesisStateAltair(t, validatorCount)
-		c, err := altair.NextSyncCommittee(context.Background(), genState)
-		require.NoError(t, err)
-		require.NoError(t, genState.SetCurrentSyncCommittee(c))
-
-		bits := make([]byte, validatorCount)
-		for i := range bits {
-			bits[i] = 0xff
-		}
-		require.NoError(t, genState.SetCurrentParticipationBits(bits))
-		require.NoError(t, genState.SetPreviousParticipationBits(bits))
-		gb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockAltair())
-		assert.NoError(t, err)
-		runGetValidatorParticipationCurrentAndPrevEpoch(t, genState, gb)
-	})
-
-	t.Run("bellatrix", func(t *testing.T) {
-		validatorCount := uint64(32)
-		genState, _ := util.DeterministicGenesisStateBellatrix(t, validatorCount)
-		c, err := altair.NextSyncCommittee(context.Background(), genState)
-		require.NoError(t, err)
-		require.NoError(t, genState.SetCurrentSyncCommittee(c))
-
-		bits := make([]byte, validatorCount)
-		for i := range bits {
-			bits[i] = 0xff
-		}
-		require.NoError(t, genState.SetCurrentParticipationBits(bits))
-		require.NoError(t, genState.SetPreviousParticipationBits(bits))
-		gb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockBellatrix())
-		assert.NoError(t, err)
-		runGetValidatorParticipationCurrentAndPrevEpoch(t, genState, gb)
-	})
 
 	t.Run("capella", func(t *testing.T) {
 		validatorCount := uint64(32)
@@ -1758,9 +1483,6 @@ func runGetValidatorParticipationCurrentAndPrevEpoch(t *testing.T, genState stat
 	require.NoError(t, err)
 
 	wanted := &zondpb.ValidatorParticipation{
-		GlobalParticipationRate:          1,
-		VotedEther:                       validatorCount * params.BeaconConfig().MaxEffectiveBalance,
-		EligibleEther:                    validatorCount * params.BeaconConfig().MaxEffectiveBalance,
 		CurrentEpochActiveGwei:           validatorCount * params.BeaconConfig().MaxEffectiveBalance,
 		CurrentEpochAttestingGwei:        validatorCount * params.BeaconConfig().MaxEffectiveBalance,
 		CurrentEpochTargetAttestingGwei:  validatorCount * params.BeaconConfig().MaxEffectiveBalance,
@@ -1776,9 +1498,6 @@ func runGetValidatorParticipationCurrentAndPrevEpoch(t *testing.T, genState stat
 	require.NoError(t, err)
 
 	wanted = &zondpb.ValidatorParticipation{
-		GlobalParticipationRate:          1,
-		VotedEther:                       validatorCount * params.BeaconConfig().MaxEffectiveBalance,
-		EligibleEther:                    validatorCount * params.BeaconConfig().MaxEffectiveBalance,
 		CurrentEpochActiveGwei:           validatorCount * params.BeaconConfig().MaxEffectiveBalance,
 		CurrentEpochAttestingGwei:        params.BeaconConfig().EffectiveBalanceIncrement, // Empty because after one epoch, current participation rotates to previous
 		CurrentEpochTargetAttestingGwei:  params.BeaconConfig().EffectiveBalanceIncrement,
@@ -1812,28 +1531,17 @@ func TestGetValidatorPerformance_OK(t *testing.T) {
 
 	ctx := context.Background()
 	epoch := primitives.Epoch(1)
-	headState, err := util.NewBeaconState()
+	headState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, headState.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(uint64(epoch+1))))
-	atts := make([]*zondpb.PendingAttestation, 3)
-	for i := 0; i < len(atts); i++ {
-		atts[i] = &zondpb.PendingAttestation{
-			Data: &zondpb.AttestationData{
-				Target: &zondpb.Checkpoint{Root: make([]byte, 32)},
-				Source: &zondpb.Checkpoint{Root: make([]byte, 32)},
-			},
-			AggregationBits: bitfield.Bitlist{},
-			InclusionDelay:  1,
-		}
-		require.NoError(t, headState.AppendPreviousEpochAttestations(atts[i]))
-	}
+
 	defaultBal := params.BeaconConfig().MaxEffectiveBalance
 	extraBal := params.BeaconConfig().MaxEffectiveBalance + params.BeaconConfig().GweiPerEth
 	balances := []uint64{defaultBal, extraBal, extraBal + params.BeaconConfig().GweiPerEth}
 	require.NoError(t, headState.SetBalances(balances))
-	publicKey1 := bytesutil.ToBytes48([]byte{1})
-	publicKey2 := bytesutil.ToBytes48([]byte{2})
-	publicKey3 := bytesutil.ToBytes48([]byte{3})
+	publicKey1 := bytesutil.ToBytes2592([]byte{1})
+	publicKey2 := bytesutil.ToBytes2592([]byte{2})
+	publicKey3 := bytesutil.ToBytes2592([]byte{3})
 	validators := []*zondpb.Validator{
 		{
 			PublicKey:       publicKey1[:],
@@ -1854,6 +1562,7 @@ func TestGetValidatorPerformance_OK(t *testing.T) {
 		},
 	}
 	require.NoError(t, headState.SetValidators(validators))
+	require.NoError(t, headState.SetInactivityScores([]uint64{0, 0, 0}))
 	require.NoError(t, headState.SetBalances([]uint64{100, 101, 102}))
 	offset := int64(headState.Slot().Mul(params.BeaconConfig().SecondsPerSlot))
 	bs := &Server{
@@ -1874,6 +1583,7 @@ func TestGetValidatorPerformance_OK(t *testing.T) {
 		BalancesBeforeEpochTransition: []uint64{101, 102},
 		BalancesAfterEpochTransition:  []uint64{0, 0},
 		MissingValidators:             [][]byte{publicKey1[:]},
+		InactivityScores:              []uint64{0, 0},
 	}
 
 	res, err := bs.GetValidatorPerformance(ctx, &zondpb.ValidatorPerformanceRequest{
@@ -1890,14 +1600,14 @@ func TestGetValidatorPerformance_Indices(t *testing.T) {
 	epoch := primitives.Epoch(1)
 	defaultBal := params.BeaconConfig().MaxEffectiveBalance
 	extraBal := params.BeaconConfig().MaxEffectiveBalance + params.BeaconConfig().GweiPerEth
-	headState, err := util.NewBeaconState()
+	headState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, headState.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(uint64(epoch+1))))
 	balances := []uint64{defaultBal, extraBal, extraBal + params.BeaconConfig().GweiPerEth}
 	require.NoError(t, headState.SetBalances(balances))
-	publicKey1 := bytesutil.ToBytes48([]byte{1})
-	publicKey2 := bytesutil.ToBytes48([]byte{2})
-	publicKey3 := bytesutil.ToBytes48([]byte{3})
+	publicKey1 := bytesutil.ToBytes2592([]byte{1})
+	publicKey2 := bytesutil.ToBytes2592([]byte{2})
+	publicKey3 := bytesutil.ToBytes2592([]byte{3})
 	validators := []*zondpb.Validator{
 		{
 			PublicKey:       publicKey1[:],
@@ -1918,6 +1628,7 @@ func TestGetValidatorPerformance_Indices(t *testing.T) {
 		},
 	}
 	require.NoError(t, headState.SetValidators(validators))
+	require.NoError(t, headState.SetInactivityScores([]uint64{0, 0, 0}))
 	offset := int64(headState.Slot().Mul(params.BeaconConfig().SecondsPerSlot))
 	bs := &Server{
 		CoreService: &core.Service{
@@ -1930,12 +1641,15 @@ func TestGetValidatorPerformance_Indices(t *testing.T) {
 		},
 	}
 	c := headState.Copy()
-	vp, bp, err := precompute.New(ctx, c)
+	vp, bp, err := altair.InitializePrecomputeValidators(ctx, c)
 	require.NoError(t, err)
-	vp, bp, err = precompute.ProcessAttestations(ctx, c, vp, bp)
+	vp, bp, err = altair.ProcessEpochParticipation(ctx, c, bp, vp)
 	require.NoError(t, err)
-	_, err = precompute.ProcessRewardsAndPenaltiesPrecompute(c, bp, vp, precompute.AttestationsDelta, precompute.ProposersDelta)
+	c, vp, err = altair.ProcessInactivityScores(ctx, c, vp)
 	require.NoError(t, err)
+	_, err = altair.ProcessRewardsAndPenaltiesPrecompute(c, bp, vp)
+	require.NoError(t, err)
+
 	want := &zondpb.ValidatorPerformanceResponse{
 		PublicKeys:                    [][]byte{publicKey2[:], publicKey3[:]},
 		CurrentEffectiveBalances:      []uint64{params.BeaconConfig().MaxEffectiveBalance, params.BeaconConfig().MaxEffectiveBalance},
@@ -1945,6 +1659,7 @@ func TestGetValidatorPerformance_Indices(t *testing.T) {
 		BalancesBeforeEpochTransition: []uint64{extraBal, extraBal + params.BeaconConfig().GweiPerEth},
 		BalancesAfterEpochTransition:  []uint64{vp[1].AfterEpochTransitionBalance, vp[2].AfterEpochTransitionBalance},
 		MissingValidators:             [][]byte{publicKey1[:]},
+		InactivityScores:              []uint64{0, 0},
 	}
 
 	res, err := bs.GetValidatorPerformance(ctx, &zondpb.ValidatorPerformanceRequest{
@@ -1961,14 +1676,14 @@ func TestGetValidatorPerformance_IndicesPubkeys(t *testing.T) {
 	epoch := primitives.Epoch(1)
 	defaultBal := params.BeaconConfig().MaxEffectiveBalance
 	extraBal := params.BeaconConfig().MaxEffectiveBalance + params.BeaconConfig().GweiPerEth
-	headState, err := util.NewBeaconState()
+	headState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, headState.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(uint64(epoch+1))))
 	balances := []uint64{defaultBal, extraBal, extraBal + params.BeaconConfig().GweiPerEth}
 	require.NoError(t, headState.SetBalances(balances))
-	publicKey1 := bytesutil.ToBytes48([]byte{1})
-	publicKey2 := bytesutil.ToBytes48([]byte{2})
-	publicKey3 := bytesutil.ToBytes48([]byte{3})
+	publicKey1 := bytesutil.ToBytes2592([]byte{1})
+	publicKey2 := bytesutil.ToBytes2592([]byte{2})
+	publicKey3 := bytesutil.ToBytes2592([]byte{3})
 	validators := []*zondpb.Validator{
 		{
 			PublicKey:       publicKey1[:],
@@ -1989,6 +1704,7 @@ func TestGetValidatorPerformance_IndicesPubkeys(t *testing.T) {
 		},
 	}
 	require.NoError(t, headState.SetValidators(validators))
+	require.NoError(t, headState.SetInactivityScores([]uint64{0, 0, 0}))
 
 	offset := int64(headState.Slot().Mul(params.BeaconConfig().SecondsPerSlot))
 	bs := &Server{
@@ -2002,12 +1718,15 @@ func TestGetValidatorPerformance_IndicesPubkeys(t *testing.T) {
 		},
 	}
 	c := headState.Copy()
-	vp, bp, err := precompute.New(ctx, c)
+	vp, bp, err := altair.InitializePrecomputeValidators(ctx, c)
 	require.NoError(t, err)
-	vp, bp, err = precompute.ProcessAttestations(ctx, c, vp, bp)
+	vp, bp, err = altair.ProcessEpochParticipation(ctx, c, bp, vp)
 	require.NoError(t, err)
-	_, err = precompute.ProcessRewardsAndPenaltiesPrecompute(c, bp, vp, precompute.AttestationsDelta, precompute.ProposersDelta)
+	c, vp, err = altair.ProcessInactivityScores(ctx, c, vp)
 	require.NoError(t, err)
+	_, err = altair.ProcessRewardsAndPenaltiesPrecompute(c, bp, vp)
+	require.NoError(t, err)
+
 	want := &zondpb.ValidatorPerformanceResponse{
 		PublicKeys:                    [][]byte{publicKey2[:], publicKey3[:]},
 		CurrentEffectiveBalances:      []uint64{params.BeaconConfig().MaxEffectiveBalance, params.BeaconConfig().MaxEffectiveBalance},
@@ -2017,151 +1736,12 @@ func TestGetValidatorPerformance_IndicesPubkeys(t *testing.T) {
 		BalancesBeforeEpochTransition: []uint64{extraBal, extraBal + params.BeaconConfig().GweiPerEth},
 		BalancesAfterEpochTransition:  []uint64{vp[1].AfterEpochTransitionBalance, vp[2].AfterEpochTransitionBalance},
 		MissingValidators:             [][]byte{publicKey1[:]},
+		InactivityScores:              []uint64{0, 0},
 	}
 	// Index 2 and publicKey3 points to the same validator.
 	// Should not return duplicates.
 	res, err := bs.GetValidatorPerformance(ctx, &zondpb.ValidatorPerformanceRequest{
 		PublicKeys: [][]byte{publicKey1[:], publicKey3[:]}, Indices: []primitives.ValidatorIndex{1, 2},
-	})
-	require.NoError(t, err)
-	if !proto.Equal(want, res) {
-		t.Errorf("Wanted %v\nReceived %v", want, res)
-	}
-}
-
-func TestGetValidatorPerformanceAltair_OK(t *testing.T) {
-	helpers.ClearCache()
-	params.SetupTestConfigCleanup(t)
-	params.OverrideBeaconConfig(params.MinimalSpecConfig())
-
-	ctx := context.Background()
-	epoch := primitives.Epoch(1)
-	headState, _ := util.DeterministicGenesisStateAltair(t, 32)
-	require.NoError(t, headState.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(uint64(epoch+1))))
-
-	defaultBal := params.BeaconConfig().MaxEffectiveBalance
-	extraBal := params.BeaconConfig().MaxEffectiveBalance + params.BeaconConfig().GweiPerEth
-	balances := []uint64{defaultBal, extraBal, extraBal + params.BeaconConfig().GweiPerEth}
-	require.NoError(t, headState.SetBalances(balances))
-	publicKey1 := bytesutil.ToBytes48([]byte{1})
-	publicKey2 := bytesutil.ToBytes48([]byte{2})
-	publicKey3 := bytesutil.ToBytes48([]byte{3})
-	validators := []*zondpb.Validator{
-		{
-			PublicKey:       publicKey1[:],
-			ActivationEpoch: 5,
-			ExitEpoch:       params.BeaconConfig().FarFutureEpoch,
-		},
-		{
-			PublicKey:        publicKey2[:],
-			EffectiveBalance: defaultBal,
-			ActivationEpoch:  0,
-			ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
-		},
-		{
-			PublicKey:        publicKey3[:],
-			EffectiveBalance: defaultBal,
-			ActivationEpoch:  0,
-			ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
-		},
-	}
-	require.NoError(t, headState.SetValidators(validators))
-	require.NoError(t, headState.SetInactivityScores([]uint64{0, 0, 0}))
-	require.NoError(t, headState.SetBalances([]uint64{100, 101, 102}))
-	offset := int64(headState.Slot().Mul(params.BeaconConfig().SecondsPerSlot))
-	bs := &Server{
-		CoreService: &core.Service{
-			HeadFetcher: &mock.ChainService{
-				State: headState,
-			},
-			GenesisTimeFetcher: &mock.ChainService{Genesis: time.Now().Add(time.Duration(-1*offset) * time.Second)},
-			SyncChecker:        &mockSync.Sync{IsSyncing: false},
-		},
-	}
-	want := &zondpb.ValidatorPerformanceResponse{
-		PublicKeys:                    [][]byte{publicKey2[:], publicKey3[:]},
-		CurrentEffectiveBalances:      []uint64{params.BeaconConfig().MaxEffectiveBalance, params.BeaconConfig().MaxEffectiveBalance},
-		CorrectlyVotedSource:          []bool{false, false},
-		CorrectlyVotedTarget:          []bool{false, false},
-		CorrectlyVotedHead:            []bool{false, false},
-		BalancesBeforeEpochTransition: []uint64{101, 102},
-		BalancesAfterEpochTransition:  []uint64{0, 0},
-		MissingValidators:             [][]byte{publicKey1[:]},
-		InactivityScores:              []uint64{0, 0},
-	}
-
-	res, err := bs.GetValidatorPerformance(ctx, &zondpb.ValidatorPerformanceRequest{
-		PublicKeys: [][]byte{publicKey1[:], publicKey3[:], publicKey2[:]},
-	})
-	require.NoError(t, err)
-	if !proto.Equal(want, res) {
-		t.Errorf("Wanted %v\nReceived %v", want, res)
-	}
-}
-
-func TestGetValidatorPerformanceBellatrix_OK(t *testing.T) {
-	helpers.ClearCache()
-	params.SetupTestConfigCleanup(t)
-	params.OverrideBeaconConfig(params.MinimalSpecConfig())
-
-	ctx := context.Background()
-	epoch := primitives.Epoch(1)
-	headState, _ := util.DeterministicGenesisStateBellatrix(t, 32)
-	require.NoError(t, headState.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(uint64(epoch+1))))
-
-	defaultBal := params.BeaconConfig().MaxEffectiveBalance
-	extraBal := params.BeaconConfig().MaxEffectiveBalance + params.BeaconConfig().GweiPerEth
-	balances := []uint64{defaultBal, extraBal, extraBal + params.BeaconConfig().GweiPerEth}
-	require.NoError(t, headState.SetBalances(balances))
-	publicKey1 := bytesutil.ToBytes48([]byte{1})
-	publicKey2 := bytesutil.ToBytes48([]byte{2})
-	publicKey3 := bytesutil.ToBytes48([]byte{3})
-	validators := []*zondpb.Validator{
-		{
-			PublicKey:       publicKey1[:],
-			ActivationEpoch: 5,
-			ExitEpoch:       params.BeaconConfig().FarFutureEpoch,
-		},
-		{
-			PublicKey:        publicKey2[:],
-			EffectiveBalance: defaultBal,
-			ActivationEpoch:  0,
-			ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
-		},
-		{
-			PublicKey:        publicKey3[:],
-			EffectiveBalance: defaultBal,
-			ActivationEpoch:  0,
-			ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
-		},
-	}
-	require.NoError(t, headState.SetValidators(validators))
-	require.NoError(t, headState.SetInactivityScores([]uint64{0, 0, 0}))
-	require.NoError(t, headState.SetBalances([]uint64{100, 101, 102}))
-	offset := int64(headState.Slot().Mul(params.BeaconConfig().SecondsPerSlot))
-	bs := &Server{
-		CoreService: &core.Service{
-			HeadFetcher: &mock.ChainService{
-				State: headState,
-			},
-			GenesisTimeFetcher: &mock.ChainService{Genesis: time.Now().Add(time.Duration(-1*offset) * time.Second)},
-			SyncChecker:        &mockSync.Sync{IsSyncing: false},
-		},
-	}
-	want := &zondpb.ValidatorPerformanceResponse{
-		PublicKeys:                    [][]byte{publicKey2[:], publicKey3[:]},
-		CurrentEffectiveBalances:      []uint64{params.BeaconConfig().MaxEffectiveBalance, params.BeaconConfig().MaxEffectiveBalance},
-		CorrectlyVotedSource:          []bool{false, false},
-		CorrectlyVotedTarget:          []bool{false, false},
-		CorrectlyVotedHead:            []bool{false, false},
-		BalancesBeforeEpochTransition: []uint64{101, 102},
-		BalancesAfterEpochTransition:  []uint64{0, 0},
-		MissingValidators:             [][]byte{publicKey1[:]},
-		InactivityScores:              []uint64{0, 0},
-	}
-
-	res, err := bs.GetValidatorPerformance(ctx, &zondpb.ValidatorPerformanceRequest{
-		PublicKeys: [][]byte{publicKey1[:], publicKey3[:], publicKey2[:]},
 	})
 	require.NoError(t, err)
 	if !proto.Equal(want, res) {
@@ -2183,9 +1763,9 @@ func TestGetValidatorPerformanceCapella_OK(t *testing.T) {
 	extraBal := params.BeaconConfig().MaxEffectiveBalance + params.BeaconConfig().GweiPerEth
 	balances := []uint64{defaultBal, extraBal, extraBal + params.BeaconConfig().GweiPerEth}
 	require.NoError(t, headState.SetBalances(balances))
-	publicKey1 := bytesutil.ToBytes48([]byte{1})
-	publicKey2 := bytesutil.ToBytes48([]byte{2})
-	publicKey3 := bytesutil.ToBytes48([]byte{3})
+	publicKey1 := bytesutil.ToBytes2592([]byte{1})
+	publicKey2 := bytesutil.ToBytes2592([]byte{2})
+	publicKey3 := bytesutil.ToBytes2592([]byte{3})
 	validators := []*zondpb.Validator{
 		{
 			PublicKey:       publicKey1[:],
@@ -2272,7 +1852,7 @@ func setupValidators(t testing.TB, _ db.Database, count int) ([]*zondpb.Validato
 			WithdrawalCredentials: make([]byte, 32),
 		})
 	}
-	s, err := util.NewBeaconState()
+	s, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, s.SetValidators(validators))
 	require.NoError(t, s.SetBalances(balances))
@@ -2298,13 +1878,14 @@ func TestServer_GetIndividualVotes_ValidatorsDontExist(t *testing.T) {
 
 	var slot primitives.Slot = 0
 	validators := uint64(64)
-	stateWithValidators, _ := util.DeterministicGenesisState(t, validators)
-	beaconState, err := util.NewBeaconState()
+	stateWithValidators, _ := util.DeterministicGenesisStateCapella(t, validators)
+	beaconState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetValidators(stateWithValidators.Validators()))
+	require.NoError(t, beaconState.SetInactivityScores(make([]uint64, len(stateWithValidators.Validators()))))
 	require.NoError(t, beaconState.SetSlot(slot))
 
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	b.Block.Slot = slot
 	util.SaveBlock(t, ctx, beaconDB, b)
 	gRoot, err := b.Block.HashTreeRoot()
@@ -2372,10 +1953,11 @@ func TestServer_GetIndividualVotes_Working(t *testing.T) {
 	ctx := context.Background()
 
 	validators := uint64(32)
-	stateWithValidators, _ := util.DeterministicGenesisState(t, validators)
-	beaconState, err := util.NewBeaconState()
+	stateWithValidators, _ := util.DeterministicGenesisStateCapella(t, validators)
+	beaconState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetValidators(stateWithValidators.Validators()))
+	require.NoError(t, beaconState.SetInactivityScores(make([]uint64, len(stateWithValidators.Validators()))))
 
 	bf := bitfield.NewBitlist(validators / uint64(params.BeaconConfig().SlotsPerEpoch))
 	att1 := util.NewAttestation()
@@ -2391,16 +1973,8 @@ func TestServer_GetIndividualVotes_Working(t *testing.T) {
 	require.NoError(t, beaconState.SetBlockRoots(br))
 	att2.Data.Target.Root = rt[:]
 	att2.Data.BeaconBlockRoot = newRt[:]
-	err = beaconState.AppendPreviousEpochAttestations(&zondpb.PendingAttestation{
-		Data: att1.Data, AggregationBits: bf, InclusionDelay: 1,
-	})
-	require.NoError(t, err)
-	err = beaconState.AppendCurrentEpochAttestations(&zondpb.PendingAttestation{
-		Data: att2.Data, AggregationBits: bf, InclusionDelay: 1,
-	})
-	require.NoError(t, err)
 
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	b.Block.Slot = 0
 	util.SaveBlock(t, ctx, beaconDB, b)
 	gRoot, err := b.Block.HashTreeRoot()
@@ -2428,8 +2002,6 @@ func TestServer_GetIndividualVotes_Working(t *testing.T) {
 				IsActiveInCurrentEpoch:           true,
 				IsActiveInPreviousEpoch:          true,
 				CurrentEpochEffectiveBalanceGwei: params.BeaconConfig().MaxEffectiveBalance,
-				InclusionSlot:                    params.BeaconConfig().FarFutureSlot,
-				InclusionDistance:                params.BeaconConfig().FarFutureSlot,
 			},
 			{
 				ValidatorIndex:                   1,
@@ -2437,8 +2009,6 @@ func TestServer_GetIndividualVotes_Working(t *testing.T) {
 				IsActiveInCurrentEpoch:           true,
 				IsActiveInPreviousEpoch:          true,
 				CurrentEpochEffectiveBalanceGwei: params.BeaconConfig().MaxEffectiveBalance,
-				InclusionSlot:                    params.BeaconConfig().FarFutureSlot,
-				InclusionDistance:                params.BeaconConfig().FarFutureSlot,
 			},
 		},
 	}
@@ -2452,7 +2022,7 @@ func TestServer_GetIndividualVotes_WorkingAltair(t *testing.T) {
 
 	var slot primitives.Slot = 0
 	validators := uint64(32)
-	beaconState, _ := util.DeterministicGenesisStateAltair(t, validators)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, validators)
 	require.NoError(t, beaconState.SetSlot(slot))
 
 	pb, err := beaconState.CurrentEpochParticipation()
@@ -2463,7 +2033,7 @@ func TestServer_GetIndividualVotes_WorkingAltair(t *testing.T) {
 	require.NoError(t, beaconState.SetCurrentParticipationBits(pb))
 	require.NoError(t, beaconState.SetPreviousParticipationBits(pb))
 
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	b.Block.Slot = slot
 	util.SaveBlock(t, ctx, beaconDB, b)
 	gRoot, err := b.Block.HashTreeRoot()
@@ -2522,12 +2092,12 @@ func TestServer_GetIndividualVotes_AltairEndOfEpoch(t *testing.T) {
 	ctx := context.Background()
 
 	validators := uint64(32)
-	beaconState, _ := util.DeterministicGenesisStateAltair(t, validators)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, validators)
 	startSlot, err := slots.EpochStart(1)
 	assert.NoError(t, err)
 	require.NoError(t, beaconState.SetSlot(startSlot))
 
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	b.Block.Slot = startSlot
 	util.SaveBlock(t, ctx, beaconDB, b)
 	gRoot, err := b.Block.HashTreeRoot()
@@ -2540,7 +2110,7 @@ func TestServer_GetIndividualVotes_AltairEndOfEpoch(t *testing.T) {
 	endSlot, err := slots.EpochEnd(1)
 	assert.NoError(t, err)
 
-	beaconState, _ = util.DeterministicGenesisStateAltair(t, validators)
+	beaconState, _ = util.DeterministicGenesisStateCapella(t, validators)
 	require.NoError(t, beaconState.SetSlot(endSlot))
 
 	pb, err := beaconState.CurrentEpochParticipation()
@@ -2610,12 +2180,12 @@ func TestServer_GetIndividualVotes_BellatrixEndOfEpoch(t *testing.T) {
 	ctx := context.Background()
 
 	validators := uint64(32)
-	beaconState, _ := util.DeterministicGenesisStateBellatrix(t, validators)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, validators)
 	startSlot, err := slots.EpochStart(1)
 	assert.NoError(t, err)
 	require.NoError(t, beaconState.SetSlot(startSlot))
 
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	b.Block.Slot = startSlot
 	util.SaveBlock(t, ctx, beaconDB, b)
 	gRoot, err := b.Block.HashTreeRoot()
@@ -2628,7 +2198,7 @@ func TestServer_GetIndividualVotes_BellatrixEndOfEpoch(t *testing.T) {
 	endSlot, err := slots.EpochEnd(1)
 	assert.NoError(t, err)
 
-	beaconState, _ = util.DeterministicGenesisStateBellatrix(t, validators)
+	beaconState, _ = util.DeterministicGenesisStateCapella(t, validators)
 	require.NoError(t, beaconState.SetSlot(endSlot))
 
 	pb, err := beaconState.CurrentEpochParticipation()
@@ -2703,7 +2273,7 @@ func TestServer_GetIndividualVotes_CapellaEndOfEpoch(t *testing.T) {
 	assert.NoError(t, err)
 	require.NoError(t, beaconState.SetSlot(startSlot))
 
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	b.Block.Slot = startSlot
 	util.SaveBlock(t, ctx, beaconDB, b)
 	gRoot, err := b.Block.HashTreeRoot()

@@ -40,7 +40,7 @@ const (
 	SelectionProof = "selection proof"
 	// AggregatorSignature represents aggregator's signature
 	AggregatorSignature = "aggregator signature"
-	// AttestationSignature represents aggregated attestation signature
+	// AttestationSignature represents attestation signature
 	AttestationSignature = "attestation signature"
 	// DilithiumChangeSignature represents signature to DilithiumToExecutionChange
 	DilithiumChangeSignature = "dilithiumchange signature"
@@ -172,7 +172,7 @@ func VerifyBlockSigningRoot(pub, signature, domain []byte, rootFunc func() ([32]
 		return err
 	}
 	// We assume only one signature batch is returned here.
-	sig := set.Signatures[0]
+	sig := set.Signatures[0][0]
 	publicKey := set.PublicKeys[0][0]
 	root := set.Messages[0]
 
@@ -200,14 +200,14 @@ func BlockSignatureBatch(pub, signature, domain []byte, rootFunc func() ([32]byt
 	}
 	desc := BlockSignature
 	return &dilithium.SignatureBatch{
-		Signatures:   [][]byte{signature},
+		Signatures:   [][][]byte{{signature}},
 		PublicKeys:   [][]dilithium.PublicKey{{publicKey}},
 		Messages:     [][32]byte{root},
 		Descriptions: []string{desc},
 	}, nil
 }
 
-// ComputeDomain returns the domain version for BLS private key to sign and verify with a zeroed 4-byte
+// ComputeDomain returns the domain version for Dilithium private key to sign and verify with a zeroed 4-byte
 // array as the fork version.
 //
 // def compute_domain(domain_type: DomainType, fork_version: Version=None, genesis_validators_root: Root=None) -> Domain:
@@ -239,7 +239,7 @@ func ComputeDomain(domainType [DomainByteLength]byte, forkVersion, genesisValida
 	return domain(domainType, forkDataRoot[:]), nil
 }
 
-// This returns the bls domain given by the domain type and fork data root.
+// This returns the dilithium domain given by the domain type and fork data root.
 func domain(domainType [DomainByteLength]byte, forkDataRoot []byte) []byte {
 	var b []byte
 	b = append(b, domainType[:4]...)

@@ -6,7 +6,7 @@ import (
 )
 
 // SignedBeaconBlockHeaderFromBlock function to retrieve signed block header from block.
-func SignedBeaconBlockHeaderFromBlock(block *zondpb.SignedBeaconBlock) (*zondpb.SignedBeaconBlockHeader, error) {
+func SignedBeaconBlockHeaderFromBlock(block *zondpb.SignedBeaconBlockCapella) (*zondpb.SignedBeaconBlockHeader, error) {
 	if block.Block == nil || block.Block.Body == nil {
 		return nil, errors.New("nil block")
 	}
@@ -46,7 +46,7 @@ func SignedBeaconBlockHeaderFromBlockInterface(sb ReadOnlySignedBeaconBlock) (*z
 }
 
 // BeaconBlockHeaderFromBlock function to retrieve block header from block.
-func BeaconBlockHeaderFromBlock(block *zondpb.BeaconBlock) (*zondpb.BeaconBlockHeader, error) {
+func BeaconBlockHeaderFromBlock(block *zondpb.BeaconBlockCapella) (*zondpb.BeaconBlockHeader, error) {
 	if block.Body == nil {
 		return nil, errors.New("nil block body")
 	}

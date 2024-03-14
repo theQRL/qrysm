@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/sirupsen/logrus"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	slashertypes "github.com/theQRL/qrysm/v4/beacon-chain/slasher/types"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/container/slice"
@@ -112,8 +112,8 @@ func validateBlockHeaderIntegrity(header *zondpb.SignedBeaconBlockHeader) bool {
 	// If a signed block header is malformed, we drop it.
 	if header == nil ||
 		header.Header == nil ||
-		len(header.Signature) != dilithium2.CryptoBytes ||
-		bytes.Equal(header.Signature, make([]byte, dilithium2.CryptoBytes)) {
+		len(header.Signature) != field_params.DilithiumSignatureLength ||
+		bytes.Equal(header.Signature, make([]byte, field_params.DilithiumSignatureLength)) {
 		return false
 	}
 	return true

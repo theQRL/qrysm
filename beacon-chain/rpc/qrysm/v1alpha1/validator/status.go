@@ -4,18 +4,17 @@ import (
 	"context"
 	"errors"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/contracts/deposit"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
@@ -67,8 +66,8 @@ func (vs *Server) MultipleValidatorStatus(
 	}
 	responseCap := len(req.PublicKeys) + len(req.Indices)
 	pubKeys := make([][]byte, 0, responseCap)
-	filtered := make(map[[dilithium2.CryptoPublicKeyBytes]byte]bool)
-	filtered[[dilithium2.CryptoPublicKeyBytes]byte{}] = true // Filter out keys with all zeros.
+	filtered := make(map[[field_params.DilithiumPubkeyLength]byte]bool)
+	filtered[[field_params.DilithiumPubkeyLength]byte{}] = true // Filter out keys with all zeros.
 	// Filter out duplicate public keys.
 	for _, pubKey := range req.PublicKeys {
 		pubkeyBytes := bytesutil.ToBytes2592(pubKey)
@@ -113,23 +112,6 @@ func (vs *Server) CheckDoppelGanger(ctx context.Context, req *zondpb.DoppelGange
 	headState, err := vs.HeadFetcher.HeadStateReadOnly(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "Could not get head state")
-	}
-
-	// Return early if we are in phase0.
-	if headState.Version() == version.Phase0 {
-		log.Info("Skipping doppelganger check for Phase 0")
-
-		resp := &zondpb.DoppelGangerResponse{
-			Responses: []*zondpb.DoppelGangerResponse_ValidatorResponse{},
-		}
-		for _, v := range req.ValidatorRequests {
-			resp.Responses = append(resp.Responses,
-				&zondpb.DoppelGangerResponse_ValidatorResponse{
-					PublicKey:       v.PublicKey,
-					DuplicateExists: false,
-				})
-		}
-		return resp, nil
 	}
 
 	headSlot := headState.Slot()
@@ -258,9 +240,6 @@ func (vs *Server) activationStatus(
 // Spec:
 // https://github.com/ethereum/consensus-specs/blob/dev/sync/optimistic.md
 func (vs *Server) optimisticStatus(ctx context.Context) error {
-	if slots.ToEpoch(vs.TimeFetcher.CurrentSlot()) < params.BeaconConfig().BellatrixForkEpoch {
-		return nil
-	}
 	optimistic, err := vs.OptimisticModeFetcher.IsOptimistic(ctx)
 	if err != nil {
 		return status.Errorf(codes.Internal, "Could not determine if the node is a optimistic node: %v", err)

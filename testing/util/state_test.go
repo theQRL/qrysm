@@ -9,36 +9,6 @@ import (
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
-func TestNewBeaconState(t *testing.T) {
-	st, err := NewBeaconState()
-	require.NoError(t, err)
-	b, err := st.MarshalSSZ()
-	require.NoError(t, err)
-	got := &zondpb.BeaconState{}
-	require.NoError(t, got.UnmarshalSSZ(b))
-	assert.DeepEqual(t, st.ToProtoUnsafe(), got)
-}
-
-func TestNewBeaconStateAltair(t *testing.T) {
-	st, err := NewBeaconStateAltair()
-	require.NoError(t, err)
-	b, err := st.MarshalSSZ()
-	require.NoError(t, err)
-	got := &zondpb.BeaconStateAltair{}
-	require.NoError(t, got.UnmarshalSSZ(b))
-	assert.DeepEqual(t, st.ToProtoUnsafe(), got)
-}
-
-func TestNewBeaconStateBellatrix(t *testing.T) {
-	st, err := NewBeaconStateBellatrix()
-	require.NoError(t, err)
-	b, err := st.MarshalSSZ()
-	require.NoError(t, err)
-	got := &zondpb.BeaconStateBellatrix{}
-	require.NoError(t, got.UnmarshalSSZ(b))
-	assert.DeepEqual(t, st.ToProtoUnsafe(), got)
-}
-
 func TestNewBeaconStateCapella(t *testing.T) {
 	st, err := NewBeaconStateCapella()
 	require.NoError(t, err)
@@ -50,19 +20,7 @@ func TestNewBeaconStateCapella(t *testing.T) {
 }
 
 func TestNewBeaconState_HashTreeRoot(t *testing.T) {
-	st, err := NewBeaconState()
-	require.NoError(t, err)
-	_, err = st.HashTreeRoot(context.Background())
-	require.NoError(t, err)
-	st, err = NewBeaconStateAltair()
-	require.NoError(t, err)
-	_, err = st.HashTreeRoot(context.Background())
-	require.NoError(t, err)
-	st, err = NewBeaconStateBellatrix()
-	require.NoError(t, err)
-	_, err = st.HashTreeRoot(context.Background())
-	require.NoError(t, err)
-	st, err = NewBeaconStateCapella()
+	st, err := NewBeaconStateCapella()
 	require.NoError(t, err)
 	_, err = st.HashTreeRoot(context.Background())
 	require.NoError(t, err)

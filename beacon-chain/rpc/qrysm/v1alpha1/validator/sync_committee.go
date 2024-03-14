@@ -76,9 +76,9 @@ func (vs *Server) GetSyncCommitteeContribution(
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get head root: %v", err)
 	}
-	sig, aggregatedBits, err := vs.CoreService.AggregatedSigAndAggregationBits(
+	signatures, aggregatedBits, err := vs.CoreService.SignaturesAndAggregationBits(
 		ctx,
-		&zondpb.AggregatedSigAndAggregationBitsRequest{
+		&zondpb.SignaturesAndAggregationBitsRequest{
 			Msgs:      msgs,
 			Slot:      req.Slot,
 			SubnetId:  req.SubnetId,
@@ -92,7 +92,7 @@ func (vs *Server) GetSyncCommitteeContribution(
 		BlockRoot:         headRoot,
 		SubcommitteeIndex: req.SubnetId,
 		AggregationBits:   aggregatedBits,
-		Signature:         sig,
+		Signatures:        signatures,
 	}
 
 	return contribution, nil
@@ -110,18 +110,18 @@ func (vs *Server) SubmitSignedContributionAndProof(
 	return &emptypb.Empty{}, nil
 }
 
-// AggregatedSigAndAggregationBits returns the aggregated signature and aggregation bits
+// SignaturesAndAggregationBits returns the signatures and aggregation bits
 // associated with a particular set of sync committee messages.
-func (vs *Server) AggregatedSigAndAggregationBits(
+func (vs *Server) SignaturesAndAggregationBits(
 	ctx context.Context,
-	req *zondpb.AggregatedSigAndAggregationBitsRequest,
-) (*zondpb.AggregatedSigAndAggregationBitsResponse, error) {
-	sig, aggregatedBits, err := vs.CoreService.AggregatedSigAndAggregationBits(ctx, req)
+	req *zondpb.SignaturesAndAggregationBitsRequest,
+) (*zondpb.SignaturesAndAggregationBitsResponse, error) {
+	signatures, aggregatedBits, err := vs.CoreService.SignaturesAndAggregationBits(ctx, req)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return &zondpb.AggregatedSigAndAggregationBitsResponse{
-		AggregatedSig: sig,
-		Bits:          aggregatedBits,
+	return &zondpb.SignaturesAndAggregationBitsResponse{
+		Signatures: signatures,
+		Bits:       aggregatedBits,
 	}, nil
 }

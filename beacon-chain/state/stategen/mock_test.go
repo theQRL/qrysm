@@ -208,7 +208,7 @@ func newMockHistory(t *testing.T, hist []mockHistorySpec, current primitives.Slo
 	}
 
 	// genesis state for history
-	gs, _ := util.DeterministicGenesisState(t, 32)
+	gs, _ := util.DeterministicGenesisStateCapella(t, 32)
 	gsr, err := gs.HashTreeRoot(ctx)
 	require.NoError(t, err)
 
@@ -231,7 +231,7 @@ func newMockHistory(t *testing.T, hist []mockHistorySpec, current primitives.Slo
 		require.NoError(t, err)
 
 		// create proposer block, setting values in the order seen in the validator.md spec
-		b, err := consensusblocks.NewSignedBeaconBlock(util.NewBeaconBlock())
+		b, err := consensusblocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 		require.NoError(t, err)
 
 		// set slot to mock history spec value

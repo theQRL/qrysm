@@ -12,27 +12,6 @@ import (
 )
 
 func TestSyncCommitteeHeadState(t *testing.T) {
-	beaconState, err := state_native.InitializeFromProtoAltair(&zondpb.BeaconStateAltair{
-		Fork: &zondpb.Fork{
-			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
-			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
-		},
-	})
-	require.NoError(t, err)
-	phase0State, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
-		Fork: &zondpb.Fork{
-			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
-			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
-		},
-	})
-	require.NoError(t, err)
-	bellatrixState, err := state_native.InitializeFromProtoBellatrix(&zondpb.BeaconStateBellatrix{
-		Fork: &zondpb.Fork{
-			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
-			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
-		},
-	})
-	require.NoError(t, err)
 	capellaState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Fork: &zondpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
@@ -63,16 +42,6 @@ func TestSyncCommitteeHeadState(t *testing.T) {
 			wantErr:    true,
 		},
 		{
-			name: "putting invalid state in",
-			key:  primitives.Slot(1),
-			put: &put{
-				slot:  primitives.Slot(1),
-				state: phase0State,
-			},
-			wantPutErr: true,
-			wantErr:    true,
-		},
-		{
 			name:    "not found when empty cache",
 			key:     primitives.Slot(1),
 			wantErr: true,
@@ -82,7 +51,7 @@ func TestSyncCommitteeHeadState(t *testing.T) {
 			key:  primitives.Slot(2),
 			put: &put{
 				slot:  primitives.Slot(1),
-				state: beaconState,
+				state: capellaState,
 			},
 			wantErr: true,
 		},
@@ -91,27 +60,18 @@ func TestSyncCommitteeHeadState(t *testing.T) {
 			key:  primitives.Slot(1),
 			put: &put{
 				slot:  primitives.Slot(1),
-				state: beaconState,
+				state: capellaState,
 			},
-			want: beaconState,
+			want: capellaState,
 		},
 		{
 			name: "not found when non-existent key in non-empty cache (bellatrix state)",
 			key:  primitives.Slot(2),
 			put: &put{
 				slot:  primitives.Slot(1),
-				state: bellatrixState,
+				state: capellaState,
 			},
 			wantErr: true,
-		},
-		{
-			name: "found with key (bellatrix state)",
-			key:  primitives.Slot(100),
-			put: &put{
-				slot:  primitives.Slot(100),
-				state: bellatrixState,
-			},
-			want: bellatrixState,
 		},
 		{
 			name: "found with key (capella state)",

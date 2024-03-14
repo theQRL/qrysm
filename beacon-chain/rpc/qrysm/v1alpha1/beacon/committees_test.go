@@ -14,6 +14,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
 	mockstategen "github.com/theQRL/qrysm/v4/beacon-chain/state/stategen/mock"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
@@ -45,7 +46,7 @@ func TestServer_ListBeaconCommittees_CurrentEpoch(t *testing.T) {
 		GenesisTimeFetcher: m,
 		StateGen:           stategen.New(db, doublylinkedtree.New()),
 	}
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	util.SaveBlock(t, ctx, db, b)
 	gRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -99,7 +100,7 @@ func TestServer_ListBeaconCommittees_PreviousEpoch(t *testing.T) {
 	require.NoError(t, headState.SetRandaoMixes(mixes))
 	require.NoError(t, headState.SetSlot(params.BeaconConfig().SlotsPerEpoch))
 
-	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
+	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 	require.NoError(t, err)
 	b, err = blocktest.SetBlockSlot(b, headState.Slot())
 	require.NoError(t, err)
@@ -173,7 +174,7 @@ func TestRetrieveCommitteesForRoot(t *testing.T) {
 		GenesisTimeFetcher: m,
 		StateGen:           stategen.New(db, doublylinkedtree.New()),
 	}
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	util.SaveBlock(t, ctx, db, b)
 	gRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -215,7 +216,7 @@ func setupActiveValidators(t *testing.T, count int) state.BeaconState {
 	balances := make([]uint64, count)
 	validators := make([]*zondpb.Validator, 0, count)
 	for i := 0; i < count; i++ {
-		pubKey := make([]byte, params.BeaconConfig().BLSPubkeyLength)
+		pubKey := make([]byte, field_params.DilithiumPubkeyLength)
 		binary.LittleEndian.PutUint64(pubKey, uint64(i))
 		balances[i] = uint64(i)
 		validators = append(validators, &zondpb.Validator{
@@ -225,7 +226,7 @@ func setupActiveValidators(t *testing.T, count int) state.BeaconState {
 			WithdrawalCredentials: make([]byte, 32),
 		})
 	}
-	s, err := util.NewBeaconState()
+	s, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	if err := s.SetValidators(validators); err != nil {
 		t.Error(err)

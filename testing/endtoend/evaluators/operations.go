@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-qrllib/dilithium"
 	corehelpers "github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
@@ -19,7 +19,7 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/ssz/detect"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
-	v2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
 	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
@@ -118,7 +118,7 @@ var ValidatorsVoteWithTheMajority = e2etypes.Evaluator{
 }
 
 type mismatch struct {
-	k [dilithium.CryptoPublicKeyBytes]byte
+	k [field_params.DilithiumPubkeyLength]byte
 	e uint64
 	o uint64
 }
@@ -141,7 +141,7 @@ func processesDepositsInBlocks(ec *e2etypes.EvaluationContext, conns ...*grpc.Cl
 	if err != nil {
 		return errors.Wrap(err, "failed to get blocks from beacon-chain")
 	}
-	observed := make(map[[dilithium.CryptoPublicKeyBytes]byte]uint64)
+	observed := make(map[[field_params.DilithiumPubkeyLength]byte]uint64)
 	for _, blk := range blks.BlockContainers {
 		sb, err := blocks.BeaconBlockContainerToSignedBeaconBlock(blk)
 		if err != nil {
@@ -365,7 +365,7 @@ func proposeVoluntaryExit(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientC
 	}
 	execIndices := []int{}
 	err = st.ReadFromEveryValidator(func(idx int, val state.ReadOnlyValidator) error {
-		if val.WithdrawalCredentials()[0] == params.BeaconConfig().ETH1AddressWithdrawalPrefixByte {
+		if val.WithdrawalCredentials()[0] == params.BeaconConfig().ZondAddressWithdrawalPrefixByte {
 			execIndices = append(execIndices, idx)
 		}
 		return nil
@@ -563,7 +563,7 @@ func submitWithdrawal(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn)
 	if err != nil {
 		return err
 	}
-	changes := make([]*v2.SignedDilithiumToExecutionChange, 0)
+	changes := make([]*v1.SignedDilithiumToExecutionChange, 0)
 	// Only send half the number of changes each time, to allow us to test
 	// at the fork boundary.
 	wantedChanges := numOfExits / 2
@@ -576,13 +576,13 @@ func submitWithdrawal(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn)
 		if err != nil {
 			return err
 		}
-		if val.WithdrawalCredentials[0] == params.BeaconConfig().ETH1AddressWithdrawalPrefixByte {
+		if val.WithdrawalCredentials[0] == params.BeaconConfig().ZondAddressWithdrawalPrefixByte {
 			continue
 		}
 		if !bytes.Equal(val.PublicKey, privKeys[idx].PublicKey().Marshal()) {
 			return errors.Errorf("pubkey is not equal, wanted %#x but received %#x", val.PublicKey, privKeys[idx].PublicKey().Marshal())
 		}
-		message := &v2.DilithiumToExecutionChange{
+		message := &v1.DilithiumToExecutionChange{
 			ValidatorIndex:      idx,
 			FromDilithiumPubkey: privKeys[idx].PublicKey().Marshal(),
 			ToExecutionAddress:  bytesutil.ToBytes(uint64(idx), 20),
@@ -596,13 +596,13 @@ func submitWithdrawal(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn)
 			return err
 		}
 		signature := privKeys[idx].Sign(sigRoot[:]).Marshal()
-		change := &v2.SignedDilithiumToExecutionChange{
+		change := &v1.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
 		changes = append(changes, change)
 	}
-	_, err = beaconAPIClient.SubmitSignedDilithiumToExecutionChanges(ctx, &v2.SubmitDilithiumToExecutionChangesRequest{Changes: changes})
+	_, err = beaconAPIClient.SubmitSignedDilithiumToExecutionChanges(ctx, &v1.SubmitDilithiumToExecutionChangesRequest{Changes: changes})
 
 	return err
 }

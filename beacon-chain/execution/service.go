@@ -23,7 +23,6 @@ import (
 	zondRPC "github.com/theQRL/go-zond/rpc"
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache/depositsnapshot"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
 	statefeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/state"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/v4/beacon-chain/db"
@@ -63,8 +62,6 @@ var (
 	backOffPeriod = 15 * time.Second
 	// amount of times before we log the status of the eth1 dial attempt.
 	logThreshold = 8
-	// period to log chainstart related information
-	logPeriod = 1 * time.Minute
 )
 
 // ChainStartFetcher retrieves information pertaining to the chain start event
@@ -91,7 +88,7 @@ type POWBlockFetcher interface {
 	BlockExists(ctx context.Context, hash common.Hash) (bool, *big.Int, error)
 }
 
-// Chain defines a standard interface for the powchain service in Prysm.
+// Chain defines a standard interface for the powchain service in Qrysm.
 type Chain interface {
 	ChainStartFetcher
 	ChainInfoFetcher
@@ -172,7 +169,7 @@ func NewService(ctx context.Context, opts ...Option) (*Service, error) {
 			return nil, errors.Wrap(err, "could not set up deposit trie")
 		}
 	}
-	genState, err := transition.EmptyGenesisState()
+	genState, err := transition.EmptyGenesisStateCapella()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not set up genesis state")
 	}
@@ -194,8 +191,7 @@ func NewService(ctx context.Context, opts ...Option) (*Service, error) {
 		headerCache: newHeaderCache(),
 		depositTrie: depositTrie,
 		chainStartData: &zondpb.ChainStartData{
-			Eth1Data:           &zondpb.Eth1Data{},
-			ChainstartDeposits: make([]*zondpb.Deposit, 0),
+			Eth1Data: &zondpb.Eth1Data{},
 		},
 		lastReceivedMerkleIndex: -1,
 		preGenesisState:         genState,
@@ -227,27 +223,11 @@ func (s *Service) Start() {
 	if err := s.setupExecutionClientConnections(s.ctx, s.cfg.currHttpEndpoint); err != nil {
 		log.WithError(err).Error("Could not connect to execution endpoint")
 	}
-	// If the chain has not started already and we don't have access to eth1 nodes, we will not be
-	// able to generate the genesis state.
-	if !s.chainStartData.Chainstarted && s.cfg.currHttpEndpoint.Url == "" {
-		// check for genesis state before shutting down the node,
-		// if a genesis state exists, we can continue on.
-		genState, err := s.cfg.beaconDB.GenesisState(s.ctx)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if genState == nil || genState.IsNil() {
-			log.Fatal("cannot create genesis state: no eth1 http endpoint defined")
-		}
-	}
 
 	s.isRunning = true
 
 	// Poll the execution client connection and fallback if errors occur.
 	s.pollConnectionStatus(s.ctx)
-
-	// Check transition configuration for the engine API client in the background.
-	go s.checkTransitionConfiguration(s.ctx, make(chan *feed.Event, 1))
 
 	go s.run(s.ctx.Done())
 }
@@ -265,7 +245,6 @@ func (s *Service) Stop() error {
 
 // ClearPreGenesisData clears out the stored chainstart deposits and beacon state.
 func (s *Service) ClearPreGenesisData() {
-	s.chainStartData.ChainstartDeposits = []*zondpb.Deposit{}
 	s.preGenesisState = &native.BeaconState{}
 }
 
@@ -343,11 +322,7 @@ func (s *Service) initDepositCaches(ctx context.Context, ctrs []*zondpb.DepositC
 		return nil
 	}
 	s.cfg.depositCache.InsertDepositContainers(ctx, ctrs)
-	if !s.chainStartData.Chainstarted {
-		// Do not add to pending cache if no genesis state exists.
-		validDepositsCount.Add(float64(s.preGenesisState.Eth1DepositIndex()))
-		return nil
-	}
+
 	genesisState, err := s.cfg.beaconDB.GenesisState(ctx)
 	if err != nil {
 		return err
@@ -459,7 +434,7 @@ func safelyHandlePanic() {
 	if r := recover(); r != nil {
 		log.WithFields(logrus.Fields{
 			"r": r,
-		}).Error("Panicked when handling data from Zond 1.0 Chain! Recovering...")
+		}).Error("Panicked when handling data from Zond execution chain! Recovering...")
 
 		debug.PrintStack()
 	}
@@ -475,13 +450,6 @@ func (s *Service) handleETH1FollowDistance() {
 	// check that web3 client is syncing
 	if time.Unix(int64(s.latestEth1Data.BlockTime), 0).Before(fiveMinutesTimeout) {
 		log.Warn("Execution client is not syncing")
-	}
-	if !s.chainStartData.Chainstarted {
-		if err := s.processChainStartFromBlockNum(ctx, big.NewInt(int64(s.latestEth1Data.LastRequestedBlock))); err != nil {
-			s.runError = errors.Wrap(err, "processChainStartFromBlockNum")
-			log.Error(err)
-			return
-		}
 	}
 
 	// If the last requested block has not changed,
@@ -557,7 +525,7 @@ func (s *Service) initPOWService() {
 			}
 			// Handle edge case with embedded genesis state by fetching genesis header to determine
 			// its height.
-			if s.chainStartData.Chainstarted && s.chainStartData.GenesisBlock == 0 {
+			if s.chainStartData.GenesisBlock == 0 {
 				genHash := common.BytesToHash(s.chainStartData.Eth1Data.BlockHash)
 				genBlock := s.chainStartData.GenesisBlock
 				// In the event our provided chainstart data references a non-existent block hash,
@@ -591,9 +559,6 @@ func (s *Service) run(done <-chan struct{}) {
 
 	s.initPOWService()
 
-	chainstartTicker := time.NewTicker(logPeriod)
-	defer chainstartTicker.Stop()
-
 	for {
 		select {
 		case <-done:
@@ -612,44 +577,8 @@ func (s *Service) run(done <-chan struct{}) {
 			}
 			s.processBlockHeader(head)
 			s.handleETH1FollowDistance()
-		case <-chainstartTicker.C:
-			if s.chainStartData.Chainstarted {
-				chainstartTicker.Stop()
-				continue
-			}
-			s.logTillChainStart(context.Background())
 		}
 	}
-}
-
-// logs the current thresholds required to hit chainstart every minute.
-func (s *Service) logTillChainStart(ctx context.Context) {
-	if s.chainStartData.Chainstarted {
-		return
-	}
-	_, blockTime, err := s.retrieveBlockHashAndTime(s.ctx, big.NewInt(int64(s.latestEth1Data.LastRequestedBlock)))
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	valCount, genesisTime := s.currentCountAndTime(ctx, blockTime)
-	valNeeded := uint64(0)
-	if valCount < params.BeaconConfig().MinGenesisActiveValidatorCount {
-		valNeeded = params.BeaconConfig().MinGenesisActiveValidatorCount - valCount
-	}
-	secondsLeft := uint64(0)
-	if genesisTime < params.BeaconConfig().MinGenesisTime {
-		secondsLeft = params.BeaconConfig().MinGenesisTime - genesisTime
-	}
-
-	fields := logrus.Fields{
-		"Additional validators needed": valNeeded,
-	}
-	if secondsLeft > 0 {
-		fields["Generating genesis state in"] = time.Duration(secondsLeft) * time.Second
-	}
-
-	log.WithFields(fields).Info("Currently waiting for chainstart")
 }
 
 // cacheHeadersForEth1DataVote makes sure that voting for eth1data after startup utilizes cached headers
@@ -765,7 +694,7 @@ func (s *Service) initializeEth1Data(ctx context.Context, eth1DataInDB *zondpb.E
 	}
 	s.chainStartData = eth1DataInDB.ChainstartData
 	if !reflect.ValueOf(eth1DataInDB.BeaconState).IsZero() {
-		s.preGenesisState, err = native.InitializeFromProtoPhase0(eth1DataInDB.BeaconState)
+		s.preGenesisState, err = native.InitializeFromProtoCapella(eth1DataInDB.BeaconState)
 		if err != nil {
 			return errors.Wrap(err, "Could not initialize state trie")
 		}
@@ -835,17 +764,15 @@ func (s *Service) ensureValidPowchainData(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve eth1 data")
 	}
-	if eth1Data == nil || !eth1Data.ChainstartData.Chainstarted || !validateDepositContainers(eth1Data.DepositContainers) {
-		pbState, err := native.ProtobufBeaconStatePhase0(s.preGenesisState.ToProtoUnsafe())
+	if eth1Data == nil || !validateDepositContainers(eth1Data.DepositContainers) {
+		pbState, err := native.ProtobufBeaconStateCapella(s.preGenesisState.ToProtoUnsafe())
 		if err != nil {
 			return err
 		}
 		s.chainStartData = &zondpb.ChainStartData{
-			Chainstarted:       true,
-			GenesisTime:        genState.GenesisTime(),
-			GenesisBlock:       0,
-			Eth1Data:           genState.Eth1Data(),
-			ChainstartDeposits: make([]*zondpb.Deposit, 0),
+			GenesisTime:  genState.GenesisTime(),
+			GenesisBlock: 0,
+			Eth1Data:     genState.Eth1Data(),
 		}
 		eth1Data = &zondpb.ETH1ChainData{
 			CurrentEth1Data:   s.latestEth1Data,
@@ -872,19 +799,6 @@ func (s *Service) ensureValidPowchainData(ctx context.Context) error {
 		return s.cfg.beaconDB.SaveExecutionChainData(ctx, eth1Data)
 	}
 	return nil
-}
-
-func dedupEndpoints(endpoints []string) []string {
-	selectionMap := make(map[string]bool)
-	newEndpoints := make([]string, 0, len(endpoints))
-	for _, point := range endpoints {
-		if selectionMap[point] {
-			continue
-		}
-		newEndpoints = append(newEndpoints, point)
-		selectionMap[point] = true
-	}
-	return newEndpoints
 }
 
 func (s *Service) migrateOldDepositTree(eth1DataInDB *zondpb.ETH1ChainData) error {

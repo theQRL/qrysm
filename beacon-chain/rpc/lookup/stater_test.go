@@ -7,15 +7,14 @@ import (
 	"testing"
 	"time"
 
-	statenative "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-
 	"github.com/theQRL/go-zond/common/hexutil"
 	chainMock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	testDB "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
+	statenative "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
 	mockstategen "github.com/theQRL/qrysm/v4/beacon-chain/state/stategen/mock"
 	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
@@ -28,11 +27,11 @@ func TestGetState(t *testing.T) {
 	ctx := context.Background()
 
 	headSlot := primitives.Slot(123)
-	fillSlot := func(state *zondpb.BeaconState) error {
+	fillSlot := func(state *zondpb.BeaconStateCapella) error {
 		state.Slot = headSlot
 		return nil
 	}
-	newBeaconState, err := util.NewBeaconState(util.FillRootsNaturalOpt, fillSlot)
+	newBeaconState, err := util.NewBeaconStateCapella(util.FillRootsNaturalOptCapella, fillSlot)
 	require.NoError(t, err)
 	stateRoot, err := newBeaconState.HashTreeRoot(ctx)
 	require.NoError(t, err)
@@ -56,13 +55,13 @@ func TestGetState(t *testing.T) {
 		params.OverrideBeaconConfig(cfg)
 
 		db := testDB.SetupDB(t)
-		b := util.NewBeaconBlock()
+		b := util.NewBeaconBlockCapella()
 		b.Block.StateRoot = bytesutil.PadTo([]byte("foo"), 32)
 		util.SaveBlock(t, ctx, db, b)
 		r, err := b.Block.HashTreeRoot()
 		require.NoError(t, err)
 
-		bs, err := util.NewBeaconState(func(state *zondpb.BeaconState) error {
+		bs, err := util.NewBeaconStateCapella(func(state *zondpb.BeaconStateCapella) error {
 			state.BlockRoots[0] = r[:]
 			return nil
 		})
@@ -184,7 +183,7 @@ func TestGetState(t *testing.T) {
 		stateId, err := hexutil.Decode("0x" + strings.Repeat("f", 64))
 		require.NoError(t, err)
 		_, err = p.State(ctx, stateId)
-		require.ErrorContains(t, "state not found in the last 8192 state roots", err)
+		require.ErrorContains(t, "state not found in the last 1024 state roots", err)
 	})
 
 	t.Run("slot", func(t *testing.T) {
@@ -217,17 +216,17 @@ func TestGetStateRoot(t *testing.T) {
 	ctx := context.Background()
 
 	headSlot := primitives.Slot(123)
-	fillSlot := func(state *zondpb.BeaconState) error {
+	fillSlot := func(state *zondpb.BeaconStateCapella) error {
 		state.Slot = headSlot
 		return nil
 	}
-	newBeaconState, err := util.NewBeaconState(util.FillRootsNaturalOpt, fillSlot)
+	newBeaconState, err := util.NewBeaconStateCapella(util.FillRootsNaturalOptCapella, fillSlot)
 	require.NoError(t, err)
 	stateRoot, err := newBeaconState.HashTreeRoot(ctx)
 	require.NoError(t, err)
 
 	t.Run("head", func(t *testing.T) {
-		b := util.NewBeaconBlock()
+		b := util.NewBeaconBlockCapella()
 		b.Block.StateRoot = stateRoot[:]
 		wsb, err := blocks.NewSignedBeaconBlock(b)
 		require.NoError(t, err)
@@ -245,12 +244,12 @@ func TestGetStateRoot(t *testing.T) {
 
 	t.Run("genesis", func(t *testing.T) {
 		db := testDB.SetupDB(t)
-		b := util.NewBeaconBlock()
+		b := util.NewBeaconBlockCapella()
 		util.SaveBlock(t, ctx, db, b)
 		r, err := b.Block.HashTreeRoot()
 		require.NoError(t, err)
 
-		bs, err := util.NewBeaconState(func(state *zondpb.BeaconState) error {
+		bs, err := util.NewBeaconStateCapella(func(state *zondpb.BeaconStateCapella) error {
 			state.BlockRoots[0] = r[:]
 			return nil
 		})
@@ -276,7 +275,7 @@ func TestGetStateRoot(t *testing.T) {
 		db := testDB.SetupDB(t)
 		genesis := bytesutil.ToBytes32([]byte("genesis"))
 		require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesis))
-		blk := util.NewBeaconBlock()
+		blk := util.NewBeaconBlockCapella()
 		blk.Block.ParentRoot = genesis[:]
 		blk.Block.Slot = 40
 		root, err := blk.Block.HashTreeRoot()
@@ -287,7 +286,7 @@ func TestGetStateRoot(t *testing.T) {
 		}
 		// a valid chain is required to save finalized checkpoint.
 		util.SaveBlock(t, ctx, db, blk)
-		st, err := util.NewBeaconState()
+		st, err := util.NewBeaconStateCapella()
 		require.NoError(t, err)
 		require.NoError(t, st.SetSlot(1))
 		// a state is required to save checkpoint
@@ -307,7 +306,7 @@ func TestGetStateRoot(t *testing.T) {
 		db := testDB.SetupDB(t)
 		genesis := bytesutil.ToBytes32([]byte("genesis"))
 		require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesis))
-		blk := util.NewBeaconBlock()
+		blk := util.NewBeaconBlockCapella()
 		blk.Block.ParentRoot = genesis[:]
 		blk.Block.Slot = 40
 		root, err := blk.Block.HashTreeRoot()
@@ -318,7 +317,7 @@ func TestGetStateRoot(t *testing.T) {
 		}
 		// a valid chain is required to save finalized checkpoint.
 		util.SaveBlock(t, ctx, db, blk)
-		st, err := util.NewBeaconState()
+		st, err := util.NewBeaconStateCapella()
 		require.NoError(t, err)
 		require.NoError(t, st.SetSlot(1))
 		// a state is required to save checkpoint
@@ -354,20 +353,20 @@ func TestGetStateRoot(t *testing.T) {
 		stateId, err := hexutil.Decode("0x" + strings.Repeat("f", 64))
 		require.NoError(t, err)
 		_, err = p.StateRoot(ctx, stateId)
-		require.ErrorContains(t, "state root not found in the last 8192 state roots", err)
+		require.ErrorContains(t, "state root not found in the last 1024 state roots", err)
 	})
 
 	t.Run("slot", func(t *testing.T) {
 		db := testDB.SetupDB(t)
 		genesis := bytesutil.ToBytes32([]byte("genesis"))
 		require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesis))
-		blk := util.NewBeaconBlock()
+		blk := util.NewBeaconBlockCapella()
 		blk.Block.ParentRoot = genesis[:]
 		blk.Block.Slot = 40
 		root, err := blk.Block.HashTreeRoot()
 		require.NoError(t, err)
 		util.SaveBlock(t, ctx, db, blk)
-		st, err := util.NewBeaconState()
+		st, err := util.NewBeaconStateCapella()
 		require.NoError(t, err)
 		require.NoError(t, st.SetSlot(1))
 		// a state is required to save checkpoint
@@ -414,9 +413,9 @@ func TestStateBySlot_FutureSlot(t *testing.T) {
 }
 
 func TestStateBySlot_AfterHeadSlot(t *testing.T) {
-	headSt, err := statenative.InitializeFromProtoPhase0(&zondpb.BeaconState{Slot: 100})
+	headSt, err := statenative.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{Slot: 100})
 	require.NoError(t, err)
-	slotSt, err := statenative.InitializeFromProtoPhase0(&zondpb.BeaconState{Slot: 101})
+	slotSt, err := statenative.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{Slot: 101})
 	require.NoError(t, err)
 	currentSlot := primitives.Slot(102)
 	mock := &chainMock.ChainService{State: headSt, Slot: &currentSlot}

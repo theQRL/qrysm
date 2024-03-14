@@ -17,7 +17,6 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 )
@@ -116,14 +115,12 @@ func (f *ForkChoice) InsertNode(ctx context.Context, state state.BeaconState, ro
 	}
 	parentRoot := bytesutil.ToBytes32(bh.ParentRoot)
 	var payloadHash [32]byte
-	if state.Version() >= version.Bellatrix {
-		ph, err := state.LatestExecutionPayloadHeader()
-		if err != nil {
-			return err
-		}
-		if ph != nil {
-			copy(payloadHash[:], ph.BlockHash())
-		}
+	ph, err := state.LatestExecutionPayloadHeader()
+	if err != nil {
+		return err
+	}
+	if ph != nil {
+		copy(payloadHash[:], ph.BlockHash())
 	}
 	jc := state.CurrentJustifiedCheckpoint()
 	if jc == nil {

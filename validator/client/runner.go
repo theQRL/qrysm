@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
@@ -47,7 +47,7 @@ func run(ctx context.Context, v iface.Validator) {
 		handleAssignmentError(err, headSlot)
 	}
 
-	accountsChangedChan := make(chan [][dilithium.CryptoPublicKeyBytes]byte, 1)
+	accountsChangedChan := make(chan [][field_params.DilithiumPubkeyLength]byte, 1)
 	km, err := v.Keymanager()
 	if err != nil {
 		log.WithError(err).Fatal("Could not get keymanager")
@@ -139,7 +139,7 @@ func run(ctx context.Context, v iface.Validator) {
 	}
 }
 
-func onAccountsChanged(ctx context.Context, v iface.Validator, current [][dilithium.CryptoPublicKeyBytes]byte, ac chan [][dilithium.CryptoPublicKeyBytes]byte) {
+func onAccountsChanged(ctx context.Context, v iface.Validator, current [][field_params.DilithiumPubkeyLength]byte, ac chan [][field_params.DilithiumPubkeyLength]byte) {
 	anyActive, err := v.HandleKeyReload(ctx, current)
 	if err != nil {
 		log.WithError(err).Error("Could not properly handle reloaded keys")
@@ -219,11 +219,11 @@ func initializeValidatorAndGetHeadSlot(ctx context.Context, v iface.Validator) (
 	return headSlot, nil
 }
 
-func performRoles(slotCtx context.Context, allRoles map[[dilithium.CryptoPublicKeyBytes]byte][]iface.ValidatorRole, v iface.Validator, slot primitives.Slot, wg *sync.WaitGroup, span *trace.Span) {
+func performRoles(slotCtx context.Context, allRoles map[[field_params.DilithiumPubkeyLength]byte][]iface.ValidatorRole, v iface.Validator, slot primitives.Slot, wg *sync.WaitGroup, span *trace.Span) {
 	for pubKey, roles := range allRoles {
 		wg.Add(len(roles))
 		for _, role := range roles {
-			go func(role iface.ValidatorRole, pubKey [dilithium.CryptoPublicKeyBytes]byte) {
+			go func(role iface.ValidatorRole, pubKey [field_params.DilithiumPubkeyLength]byte) {
 				defer wg.Done()
 				switch role {
 				case iface.RoleAttester:

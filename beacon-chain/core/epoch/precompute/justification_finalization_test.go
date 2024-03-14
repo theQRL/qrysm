@@ -23,7 +23,7 @@ func TestProcessJustificationAndFinalizationPreCompute_ConsecutiveEpochs(t *test
 	for i := 0; i < len(blockRoots); i++ {
 		blockRoots[i] = []byte{byte(i)}
 	}
-	base := &zondpb.BeaconState{
+	base := &zondpb.BeaconStateCapella{
 		Slot: params.BeaconConfig().SlotsPerEpoch*2 + 1,
 		PreviousJustifiedCheckpoint: &zondpb.Checkpoint{
 			Epoch: 0,
@@ -39,13 +39,13 @@ func TestProcessJustificationAndFinalizationPreCompute_ConsecutiveEpochs(t *test
 		Balances:            []uint64{a, a, a, a}, // validator total balance should be 128000000000
 		BlockRoots:          blockRoots,
 	}
-	state, err := state_native.InitializeFromProtoPhase0(base)
+	state, err := state_native.InitializeFromProtoCapella(base)
 	require.NoError(t, err)
 	attestedBalance := 4 * uint64(e) * 3 / 2
 	b := &precompute.Balance{PrevEpochTargetAttested: attestedBalance}
 	newState, err := precompute.ProcessJustificationAndFinalizationPreCompute(state, b)
 	require.NoError(t, err)
-	rt := [32]byte{byte(64)}
+	rt := [32]byte{}
 	assert.DeepEqual(t, rt[:], newState.CurrentJustifiedCheckpoint().Root, "Unexpected justified root")
 	assert.Equal(t, primitives.Epoch(2), newState.CurrentJustifiedCheckpoint().Epoch, "Unexpected justified epoch")
 	assert.Equal(t, primitives.Epoch(0), newState.PreviousJustifiedCheckpoint().Epoch, "Unexpected previous justified epoch")
@@ -60,7 +60,7 @@ func TestProcessJustificationAndFinalizationPreCompute_JustifyCurrentEpoch(t *te
 	for i := 0; i < len(blockRoots); i++ {
 		blockRoots[i] = []byte{byte(i)}
 	}
-	base := &zondpb.BeaconState{
+	base := &zondpb.BeaconStateCapella{
 		Slot: params.BeaconConfig().SlotsPerEpoch*2 + 1,
 		PreviousJustifiedCheckpoint: &zondpb.Checkpoint{
 			Epoch: 0,
@@ -76,13 +76,13 @@ func TestProcessJustificationAndFinalizationPreCompute_JustifyCurrentEpoch(t *te
 		Balances:            []uint64{a, a, a, a}, // validator total balance should be 128000000000
 		BlockRoots:          blockRoots,
 	}
-	state, err := state_native.InitializeFromProtoPhase0(base)
+	state, err := state_native.InitializeFromProtoCapella(base)
 	require.NoError(t, err)
 	attestedBalance := 4 * uint64(e) * 3 / 2
 	b := &precompute.Balance{PrevEpochTargetAttested: attestedBalance}
 	newState, err := precompute.ProcessJustificationAndFinalizationPreCompute(state, b)
 	require.NoError(t, err)
-	rt := [32]byte{byte(64)}
+	rt := [32]byte{}
 	assert.DeepEqual(t, rt[:], newState.CurrentJustifiedCheckpoint().Root, "Unexpected current justified root")
 	assert.Equal(t, primitives.Epoch(2), newState.CurrentJustifiedCheckpoint().Epoch, "Unexpected justified epoch")
 	assert.Equal(t, primitives.Epoch(0), newState.PreviousJustifiedCheckpoint().Epoch, "Unexpected previous justified epoch")
@@ -97,7 +97,7 @@ func TestProcessJustificationAndFinalizationPreCompute_JustifyPrevEpoch(t *testi
 	for i := 0; i < len(blockRoots); i++ {
 		blockRoots[i] = []byte{byte(i)}
 	}
-	base := &zondpb.BeaconState{
+	base := &zondpb.BeaconStateCapella{
 		Slot: params.BeaconConfig().SlotsPerEpoch*2 + 1,
 		PreviousJustifiedCheckpoint: &zondpb.Checkpoint{
 			Epoch: 0,
@@ -112,13 +112,13 @@ func TestProcessJustificationAndFinalizationPreCompute_JustifyPrevEpoch(t *testi
 		Balances:          []uint64{a, a, a, a}, // validator total balance should be 128000000000
 		BlockRoots:        blockRoots, FinalizedCheckpoint: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 	}
-	state, err := state_native.InitializeFromProtoPhase0(base)
+	state, err := state_native.InitializeFromProtoCapella(base)
 	require.NoError(t, err)
 	attestedBalance := 4 * uint64(e) * 3 / 2
 	b := &precompute.Balance{PrevEpochTargetAttested: attestedBalance}
 	newState, err := precompute.ProcessJustificationAndFinalizationPreCompute(state, b)
 	require.NoError(t, err)
-	rt := [32]byte{byte(64)}
+	rt := [32]byte{}
 	assert.DeepEqual(t, rt[:], newState.CurrentJustifiedCheckpoint().Root, "Unexpected current justified root")
 	assert.Equal(t, primitives.Epoch(0), newState.PreviousJustifiedCheckpoint().Epoch, "Unexpected previous justified epoch")
 	assert.Equal(t, primitives.Epoch(2), newState.CurrentJustifiedCheckpoint().Epoch, "Unexpected justified epoch")
@@ -151,7 +151,7 @@ func TestUnrealizedCheckpoints(t *testing.T) {
 	}{
 		{
 			"Not enough votes, keep previous justification",
-			129,
+			513,
 			len(validators) / 3,
 			len(validators) / 3,
 			je,
@@ -159,7 +159,7 @@ func TestUnrealizedCheckpoints(t *testing.T) {
 		},
 		{
 			"Not enough votes, keep previous justification, N+2",
-			161,
+			641,
 			len(validators) / 3,
 			len(validators) / 3,
 			je,
@@ -167,7 +167,7 @@ func TestUnrealizedCheckpoints(t *testing.T) {
 		},
 		{
 			"Enough to justify previous epoch but not current",
-			129,
+			513,
 			2*len(validators)/3 + 3,
 			len(validators) / 3,
 			je,
@@ -175,7 +175,7 @@ func TestUnrealizedCheckpoints(t *testing.T) {
 		},
 		{
 			"Enough to justify previous epoch but not current, N+2",
-			161,
+			641,
 			2*len(validators)/3 + 3,
 			len(validators) / 3,
 			je + 1,
@@ -183,7 +183,7 @@ func TestUnrealizedCheckpoints(t *testing.T) {
 		},
 		{
 			"Enough to justify current epoch",
-			129,
+			513,
 			len(validators) / 3,
 			2*len(validators)/3 + 3,
 			je + 1,
@@ -191,7 +191,7 @@ func TestUnrealizedCheckpoints(t *testing.T) {
 		},
 		{
 			"Enough to justify current epoch, but not previous",
-			161,
+			641,
 			len(validators) / 3,
 			2*len(validators)/3 + 3,
 			je + 2,
@@ -199,7 +199,7 @@ func TestUnrealizedCheckpoints(t *testing.T) {
 		},
 		{
 			"Enough to justify current and previous",
-			161,
+			641,
 			2*len(validators)/3 + 3,
 			2*len(validators)/3 + 3,
 			je + 2,
@@ -208,7 +208,7 @@ func TestUnrealizedCheckpoints(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			base := &zondpb.BeaconStateAltair{
+			base := &zondpb.BeaconStateCapella{
 				RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 
 				Validators:                  validators,
@@ -236,7 +236,7 @@ func TestUnrealizedCheckpoints(t *testing.T) {
 				base.JustificationBits.SetBitAt(2, true)
 			}
 
-			state, err := state_native.InitializeFromProtoAltair(base)
+			state, err := state_native.InitializeFromProtoCapella(base)
 			require.NoError(t, err)
 
 			_, _, err = altair.InitializePrecomputeValidators(context.Background(), state)
@@ -251,7 +251,7 @@ func TestUnrealizedCheckpoints(t *testing.T) {
 }
 
 func Test_ComputeCheckpoints_CantUpdateToLower(t *testing.T) {
-	st, err := state_native.InitializeFromProtoAltair(&zondpb.BeaconStateAltair{
+	st, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Slot: params.BeaconConfig().SlotsPerEpoch * 2,
 		CurrentJustifiedCheckpoint: &zondpb.Checkpoint{
 			Epoch: 2,

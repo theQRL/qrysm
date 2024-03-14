@@ -4,7 +4,6 @@ import (
 	"math"
 	"time"
 
-	"github.com/theQRL/go-qrllib/dilithium"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 )
@@ -17,21 +16,12 @@ func MainnetConfig() *BeaconChainConfig {
 	return mainnetBeaconConfig
 }
 
-const (
-	// Genesis Fork Epoch for the mainnet config.
-	genesisForkEpoch = 0
-	// TODO(rgeraldes24): remove once we remove the forks before Capella
-	// Altair Fork Epoch for mainnet config.
-	mainnetAltairForkEpoch = 74240 // Oct 27, 2021, 10:56:23am UTC
-	// Bellatrix Fork Epoch for mainnet config.
-	mainnetBellatrixForkEpoch = 144896 // Sept 6, 2022, 11:34:47am UTC
-)
+// Genesis Fork Epoch for the mainnet config.
+const genesisForkEpoch = 0
 
 var mainnetNetworkConfig = &NetworkConfig{
-	GossipMaxSize:                   1 << 23,      // 8 MiB
-	GossipMaxSizeBellatrix:          10 * 1 << 20, // 10 MiB
-	MaxChunkSize:                    1 << 20,      // 1 MiB
-	MaxChunkSizeBellatrix:           10 * 1 << 20, // 10 MiB
+	GossipMaxSize:                   10 * 1 << 20, // 10 MiB
+	MaxChunkSize:                    10 * 1 << 20, // 10 MiB
 	AttestationSubnetCount:          64,
 	AttestationPropagationSlotRange: 32,
 	MaxRequestBlocks:                1 << 10, // 1024
@@ -81,9 +71,7 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	EffectiveBalanceIncrement: 1 * 1e9,
 
 	// Initial value constants.
-	BLSWithdrawalPrefixByte:         byte(0),
 	DilithiumWithdrawalPrefixByte:   byte(0), // TODO (cyyber): Change it to 1 & check if we should add XMSSWithdrawalPrefixByte
-	ETH1AddressWithdrawalPrefixByte: byte(1),
 	ZondAddressWithdrawalPrefixByte: byte(1), // TODO (cyyber): Change it to 0
 	ZeroHash:                        [32]byte{},
 
@@ -99,7 +87,7 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	MinValidatorWithdrawabilityDelay: 16,   // TODO (cyyber) : Re-evaluate the value
 	ShardCommitteePeriod:             16,   // TODO (cyyber) : Re-evaluate the value
 	MinEpochsToInactivityPenalty:     4,
-	Eth1FollowDistance:               0, // TODO (cyyber) : Re-evaluate the value
+	Eth1FollowDistance:               0, // TODO(theQRL/qrysm/issues/66)
 
 	// Fork choice algorithm constants.
 	ProposerScoreBoost:              40,
@@ -132,12 +120,9 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	ValidatorRegistryLimit:    1099511627776,
 
 	// Reward and penalty quotients constants.
-	BaseRewardFactor:               64,
-	WhistleBlowerRewardQuotient:    512,
-	ProposerRewardQuotient:         8,
-	InactivityPenaltyQuotient:      67108864,
-	MinSlashingPenaltyQuotient:     128,
-	ProportionalSlashingMultiplier: 1,
+	BaseRewardFactor:            64,
+	WhistleBlowerRewardQuotient: 512,
+	ProposerRewardQuotient:      8,
 
 	// Max operations per block constants.
 	MaxProposerSlashings:             16,
@@ -149,7 +134,7 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	MaxDilithiumToExecutionChanges:   16,
 	MaxValidatorsPerWithdrawalsSweep: 16384,
 
-	// BLS domain values.
+	// Dilithium domain values.
 	DomainBeaconProposer:              bytesutil.Uint32ToBytes4(0x00000000),
 	DomainBeaconAttester:              bytesutil.Uint32ToBytes4(0x01000000),
 	DomainRandao:                      bytesutil.Uint32ToBytes4(0x02000000),
@@ -165,26 +150,19 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	DomainDilithiumToExecutionChange:  bytesutil.Uint32ToBytes4(0x0A000000),
 
 	// Qrysm constants.
-	GweiPerEth:                     1000000000,
-	BLSSecretKeyLength:             32,
-	BLSPubkeyLength:                48,
-	DilithiumPubkeyLength:          2592,
-	DefaultBufferSize:              10000,
-	WithdrawalPrivkeyFileName:      "/shardwithdrawalkey",
-	ValidatorPrivkeyFileName:       "/validatorprivatekey",
-	RPCSyncCheck:                   1,
-	EmptySignature:                 [96]byte{},
-	EmptyDilithiumSignature:        [dilithium.CryptoBytes]byte{},
-	DefaultPageSize:                250,
-	MaxPeersToSync:                 15,
-	SlotsPerArchivedPoint:          2048,
-	GenesisCountdownInterval:       time.Minute,
-	ConfigName:                     MainnetName,
-	PresetBase:                     "mainnet",
-	BeaconStateFieldCount:          21,
-	BeaconStateAltairFieldCount:    24,
-	BeaconStateBellatrixFieldCount: 25,
-	BeaconStateCapellaFieldCount:   28,
+	GweiPerEth:                   1000000000,
+	DefaultBufferSize:            10000,
+	WithdrawalPrivkeyFileName:    "/shardwithdrawalkey",
+	ValidatorPrivkeyFileName:     "/validatorprivatekey",
+	RPCSyncCheck:                 1,
+	EmptyDilithiumSignature:      [fieldparams.DilithiumSignatureLength]byte{},
+	DefaultPageSize:              250,
+	MaxPeersToSync:               15,
+	SlotsPerArchivedPoint:        2048,
+	GenesisCountdownInterval:     time.Minute,
+	ConfigName:                   MainnetName,
+	PresetBase:                   "mainnet",
+	BeaconStateCapellaFieldCount: 28,
 
 	// Slasher related values.
 	WeakSubjectivityPeriod:          54000,
@@ -195,16 +173,9 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	SafetyDecay: 10,
 
 	// Fork related values.
-	GenesisEpoch:         genesisForkEpoch,
-	GenesisForkVersion:   []byte{0, 0, 0, 0},
-	AltairForkVersion:    []byte{1, 0, 0, 0},
-	AltairForkEpoch:      mainnetAltairForkEpoch,
-	BellatrixForkVersion: []byte{2, 0, 0, 0},
-	BellatrixForkEpoch:   mainnetBellatrixForkEpoch,
-	CapellaForkVersion:   []byte{3, 0, 0, 0},
-	CapellaForkEpoch:     194048,
+	GenesisEpoch:       genesisForkEpoch,
+	GenesisForkVersion: []byte{0, 0, 0, 0},
 
-	// New values introduced in Altair hard fork 1.
 	// Participation flag indices.
 	TimelySourceFlagIndex: 0,
 	TimelyTargetFlagIndex: 1,
@@ -229,22 +200,16 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	EpochsPerSyncCommitteePeriod: 8, // TODO: (cyyber) finalize EpochsPerSyncCommitteePeriod, original value was 512
 
 	// Updated penalty values.
-	InactivityPenaltyQuotientAltair:         3 * 1 << 24, //50331648
-	MinSlashingPenaltyQuotientAltair:        64,
-	ProportionalSlashingMultiplierAltair:    2,
-	MinSlashingPenaltyQuotientBellatrix:     32,
-	ProportionalSlashingMultiplierBellatrix: 3,
-	InactivityPenaltyQuotientBellatrix:      1 << 24,
+	MinSlashingPenaltyQuotient:     32,
+	ProportionalSlashingMultiplier: 3,
+	InactivityPenaltyQuotient:      1 << 24,
 
 	// Light client
 	MinSyncCommitteeParticipants: 1,
 
 	// Bellatrix
-	TerminalBlockHashActivationEpoch: 18446744073709551615,
-	TerminalBlockHash:                [32]byte{},
-	TerminalTotalDifficulty:          "58750000000000000000000", // Estimated: Sept 15, 2022
-	EthBurnAddressHex:                "0x0000000000000000000000000000000000000000",
-	DefaultBuilderGasLimit:           uint64(30000000),
+	EthBurnAddressHex:      "0x0000000000000000000000000000000000000000",
+	DefaultBuilderGasLimit: uint64(30000000),
 
 	// Mevboost circuit breaker
 	MaxBuilderConsecutiveMissedSlots: 3,
@@ -269,17 +234,6 @@ func MainnetTestConfig() *BeaconChainConfig {
 // byte argument as the high byte (common across forks).
 func FillTestVersions(c *BeaconChainConfig, b byte) {
 	c.GenesisForkVersion = make([]byte, fieldparams.VersionLength)
-	c.AltairForkVersion = make([]byte, fieldparams.VersionLength)
-	c.BellatrixForkVersion = make([]byte, fieldparams.VersionLength)
-	c.CapellaForkVersion = make([]byte, fieldparams.VersionLength)
-
 	c.GenesisForkVersion[fieldparams.VersionLength-1] = b
-	c.AltairForkVersion[fieldparams.VersionLength-1] = b
-	c.BellatrixForkVersion[fieldparams.VersionLength-1] = b
-	c.CapellaForkVersion[fieldparams.VersionLength-1] = b
-
 	c.GenesisForkVersion[0] = 0
-	c.AltairForkVersion[0] = 1
-	c.BellatrixForkVersion[0] = 2
-	c.CapellaForkVersion[0] = 3
 }

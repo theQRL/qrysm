@@ -58,18 +58,6 @@ func TestPayloadAttributeGetters(t *testing.T) {
 				require.DeepEqual(t, wd, got)
 			},
 		},
-		// NOTE(rgeraldes): not valid for now since we will only use v2 for capella
-		/*
-			{
-				name: "Get PbCapella (bad version)",
-				tc: func(t *testing.T) {
-					a, err := New(&enginev1.PayloadAttributesV2{})
-					require.NoError(t, err)
-					_, err = a.PbV1()
-					require.ErrorContains(t, "PbV1 is not supported for capella: unsupported getter", err)
-				},
-			},
-		*/
 		{
 			name: "Get PbCapella (nil)",
 			tc: func(t *testing.T) {

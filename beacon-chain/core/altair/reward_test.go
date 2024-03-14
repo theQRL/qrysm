@@ -16,7 +16,7 @@ import (
 func Test_BaseReward(t *testing.T) {
 	helpers.ClearCache()
 	genState := func(valCount uint64) state.ReadOnlyBeaconState {
-		s, _ := util.DeterministicGenesisStateAltair(t, valCount)
+		s, _ := util.DeterministicGenesisStateCapella(t, valCount)
 		return s
 	}
 	tests := []struct {
@@ -34,24 +34,24 @@ func Test_BaseReward(t *testing.T) {
 			errString: "validator index 2 does not exist",
 		},
 		{
-			name:      "active balance is 32eth",
+			name:      "active balance is 40000eth",
 			valIdx:    0,
 			st:        genState(1),
-			want:      11448672,
+			want:      404760000,
 			errString: "",
 		},
 		{
-			name:      "active balance is 32eth * target committee size",
+			name:      "active balance is 40000eth * target committee size",
 			valIdx:    0,
 			st:        genState(params.BeaconConfig().TargetCommitteeSize),
-			want:      1011904,
+			want:      35760000,
 			errString: "",
 		},
 		{
-			name:      "active balance is 32eth * max validator per  committee size",
+			name:      "active balance is 40000eth * max validator per  committee size",
 			valIdx:    0,
 			st:        genState(params.BeaconConfig().MaxValidatorsPerCommittee),
-			want:      252960,
+			want:      8920000,
 			errString: "",
 		},
 	}
@@ -69,7 +69,7 @@ func Test_BaseReward(t *testing.T) {
 
 func Test_BaseRewardWithTotalBalance(t *testing.T) {
 	helpers.ClearCache()
-	s, _ := util.DeterministicGenesisStateAltair(t, 1)
+	s, _ := util.DeterministicGenesisStateCapella(t, 1)
 	tests := []struct {
 		name          string
 		valIdx        primitives.ValidatorIndex
@@ -95,35 +95,35 @@ func Test_BaseRewardWithTotalBalance(t *testing.T) {
 			name:          "active balance is 1",
 			valIdx:        0,
 			activeBalance: 1,
-			want:          2048000000000,
+			want:          2560000000000000,
 			errString:     "",
 		},
 		{
 			name:          "active balance is 1eth",
 			valIdx:        0,
 			activeBalance: params.BeaconConfig().EffectiveBalanceIncrement,
-			want:          64765024,
+			want:          80956280000,
 			errString:     "",
 		},
 		{
-			name:          "active balance is 32eth",
+			name:          "active balance is 40000eth",
 			valIdx:        0,
 			activeBalance: params.BeaconConfig().MaxEffectiveBalance,
-			want:          11448672,
+			want:          404760000,
 			errString:     "",
 		},
 		{
-			name:          "active balance is 32eth * 1m validators",
+			name:          "active balance is 40000eth * 1m validators",
 			valIdx:        0,
 			activeBalance: params.BeaconConfig().MaxEffectiveBalance * 1e9,
-			want:          544,
+			want:          920000,
 			errString:     "",
 		},
 		{
 			name:          "active balance is max uint64",
 			valIdx:        0,
 			activeBalance: math.MaxUint64,
-			want:          448,
+			want:          560000,
 			errString:     "",
 		},
 	}
@@ -166,15 +166,15 @@ func Test_BaseRewardPerIncrement(t *testing.T) {
 			errString:     "",
 		},
 		{
-			name:          "active balance is 32eth",
+			name:          "active balance is 40000eth",
 			activeBalance: params.BeaconConfig().MaxEffectiveBalance,
-			want:          357771,
+			want:          10119,
 			errString:     "",
 		},
 		{
-			name:          "active balance is 32eth * 1m validators",
+			name:          "active balance is 40000eth * 1m validators",
 			activeBalance: params.BeaconConfig().MaxEffectiveBalance * 1e9,
-			want:          17,
+			want:          23,
 			errString:     "",
 		},
 		{

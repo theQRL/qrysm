@@ -10,6 +10,7 @@ go_library(
     importpath = "github.com/theQRL/qrysm/v4/beacon-chain/state",
     visibility = ["//visibility:public"],
     deps = [
+        "//config/fieldparams:go_default_library",
         "//consensus-types/interfaces:go_default_library",
         "//consensus-types/primitives:go_default_library",
         "//proto/engine/v1:go_default_library",

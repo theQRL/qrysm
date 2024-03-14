@@ -4,7 +4,6 @@ package params
 import (
 	"time"
 
-	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
@@ -46,9 +45,7 @@ type BeaconChainConfig struct {
 	EffectiveBalanceIncrement uint64 `yaml:"EFFECTIVE_BALANCE_INCREMENT" spec:"true"` // EffectiveBalanceIncrement is used for converting the high balance into the low balance for validators.
 
 	// Initial value constants.
-	BLSWithdrawalPrefixByte         byte     `yaml:"BLS_WITHDRAWAL_PREFIX" spec:"true"`          // BLSWithdrawalPrefixByte is used for BLS withdrawal and it's the first byte.
 	DilithiumWithdrawalPrefixByte   byte     `yaml:"DILITHIUM_WITHDRAWAL_PREFIX" spec:"true"`    // DilithiumWithdrawalPrefixByte is used for Dilithium withdrawal and it's the first byte.
-	ETH1AddressWithdrawalPrefixByte byte     `yaml:"ETH1_ADDRESS_WITHDRAWAL_PREFIX" spec:"true"` // ETH1AddressWithdrawalPrefixByte is used for withdrawals and it's the first byte.
 	ZondAddressWithdrawalPrefixByte byte     `yaml:"ZOND_ADDRESS_WITHDRAWAL_PREFIX" spec:"true"` // ZondAddressWithdrawalPrefixByte is used for withdrawals and it's the first byte.
 	ZeroHash                        [32]byte // ZeroHash is used to represent a zeroed out 32 byte array.
 
@@ -92,12 +89,9 @@ type BeaconChainConfig struct {
 	ValidatorRegistryLimit    uint64           `yaml:"VALIDATOR_REGISTRY_LIMIT" spec:"true"`     // ValidatorRegistryLimit defines the upper bound of validators can participate in eth2.
 
 	// Reward and penalty quotients constants.
-	BaseRewardFactor               uint64 `yaml:"BASE_REWARD_FACTOR" spec:"true"`               // BaseRewardFactor is used to calculate validator per-slot interest rate.
-	WhistleBlowerRewardQuotient    uint64 `yaml:"WHISTLEBLOWER_REWARD_QUOTIENT" spec:"true"`    // WhistleBlowerRewardQuotient is used to calculate whistle blower reward.
-	ProposerRewardQuotient         uint64 `yaml:"PROPOSER_REWARD_QUOTIENT" spec:"true"`         // ProposerRewardQuotient is used to calculate the reward for proposers.
-	InactivityPenaltyQuotient      uint64 `yaml:"INACTIVITY_PENALTY_QUOTIENT" spec:"true"`      // InactivityPenaltyQuotient is used to calculate the penalty for a validator that is offline.
-	MinSlashingPenaltyQuotient     uint64 `yaml:"MIN_SLASHING_PENALTY_QUOTIENT" spec:"true"`    // MinSlashingPenaltyQuotient is used to calculate the minimum penalty to prevent DoS attacks.
-	ProportionalSlashingMultiplier uint64 `yaml:"PROPORTIONAL_SLASHING_MULTIPLIER" spec:"true"` // ProportionalSlashingMultiplier is used as a multiplier on slashed penalties.
+	BaseRewardFactor            uint64 `yaml:"BASE_REWARD_FACTOR" spec:"true"`            // BaseRewardFactor is used to calculate validator per-slot interest rate.
+	WhistleBlowerRewardQuotient uint64 `yaml:"WHISTLEBLOWER_REWARD_QUOTIENT" spec:"true"` // WhistleBlowerRewardQuotient is used to calculate whistle blower reward.
+	ProposerRewardQuotient      uint64 `yaml:"PROPOSER_REWARD_QUOTIENT" spec:"true"`      // ProposerRewardQuotient is used to calculate the reward for proposers.
 
 	// Max operations per block constants.
 	MaxProposerSlashings             uint64 `yaml:"MAX_PROPOSER_SLASHINGS" spec:"true"`               // MaxProposerSlashings defines the maximum number of slashings of proposers possible in a block.
@@ -109,40 +103,33 @@ type BeaconChainConfig struct {
 	MaxDilithiumToExecutionChanges   uint64 `yaml:"MAX_DILITHIUM_TO_EXECUTION_CHANGES" spec:"true"`   // MaxDilithiumToExecutionChanges defines the maximum number of Dilithium-to-execution-change objects in a block.
 	MaxValidatorsPerWithdrawalsSweep uint64 `yaml:"MAX_VALIDATORS_PER_WITHDRAWALS_SWEEP" spec:"true"` // MaxValidatorsPerWithdrawalsSweep bounds the size of the sweep searching for withdrawals per slot.
 
-	// BLS domain values.
-	DomainBeaconProposer              [4]byte `yaml:"DOMAIN_BEACON_PROPOSER" spec:"true"`                // DomainBeaconProposer defines the BLS signature domain for beacon proposal verification.
-	DomainRandao                      [4]byte `yaml:"DOMAIN_RANDAO" spec:"true"`                         // DomainRandao defines the BLS signature domain for randao verification.
-	DomainBeaconAttester              [4]byte `yaml:"DOMAIN_BEACON_ATTESTER" spec:"true"`                // DomainBeaconAttester defines the BLS signature domain for attestation verification.
-	DomainDeposit                     [4]byte `yaml:"DOMAIN_DEPOSIT" spec:"true"`                        // DomainDeposit defines the BLS signature domain for deposit verification.
-	DomainVoluntaryExit               [4]byte `yaml:"DOMAIN_VOLUNTARY_EXIT" spec:"true"`                 // DomainVoluntaryExit defines the BLS signature domain for exit verification.
-	DomainSelectionProof              [4]byte `yaml:"DOMAIN_SELECTION_PROOF" spec:"true"`                // DomainSelectionProof defines the BLS signature domain for selection proof.
-	DomainAggregateAndProof           [4]byte `yaml:"DOMAIN_AGGREGATE_AND_PROOF" spec:"true"`            // DomainAggregateAndProof defines the BLS signature domain for aggregate and proof.
-	DomainSyncCommittee               [4]byte `yaml:"DOMAIN_SYNC_COMMITTEE" spec:"true"`                 // DomainVoluntaryExit defines the BLS signature domain for sync committee.
-	DomainSyncCommitteeSelectionProof [4]byte `yaml:"DOMAIN_SYNC_COMMITTEE_SELECTION_PROOF" spec:"true"` // DomainSelectionProof defines the BLS signature domain for sync committee selection proof.
-	DomainContributionAndProof        [4]byte `yaml:"DOMAIN_CONTRIBUTION_AND_PROOF" spec:"true"`         // DomainAggregateAndProof defines the BLS signature domain for contribution and proof.
-	DomainApplicationMask             [4]byte `yaml:"DOMAIN_APPLICATION_MASK" spec:"true"`               // DomainApplicationMask defines the BLS signature domain for application mask.
-	DomainApplicationBuilder          [4]byte // DomainApplicationBuilder defines the BLS signature domain for application builder.
+	// Dilithium domain values.
+	DomainBeaconProposer              [4]byte `yaml:"DOMAIN_BEACON_PROPOSER" spec:"true"`                // DomainBeaconProposer defines the Dilithium signature domain for beacon proposal verification.
+	DomainRandao                      [4]byte `yaml:"DOMAIN_RANDAO" spec:"true"`                         // DomainRandao defines the Dilithium signature domain for randao verification.
+	DomainBeaconAttester              [4]byte `yaml:"DOMAIN_BEACON_ATTESTER" spec:"true"`                // DomainBeaconAttester defines the Dilithium signature domain for attestation verification.
+	DomainDeposit                     [4]byte `yaml:"DOMAIN_DEPOSIT" spec:"true"`                        // DomainDeposit defines the Dilithium signature domain for deposit verification.
+	DomainVoluntaryExit               [4]byte `yaml:"DOMAIN_VOLUNTARY_EXIT" spec:"true"`                 // DomainVoluntaryExit defines the Dilithium signature domain for exit verification.
+	DomainSelectionProof              [4]byte `yaml:"DOMAIN_SELECTION_PROOF" spec:"true"`                // DomainSelectionProof defines the Dilithium signature domain for selection proof.
+	DomainAggregateAndProof           [4]byte `yaml:"DOMAIN_AGGREGATE_AND_PROOF" spec:"true"`            // DomainAggregateAndProof defines the Dilithium signature domain for aggregate and proof.
+	DomainSyncCommittee               [4]byte `yaml:"DOMAIN_SYNC_COMMITTEE" spec:"true"`                 // DomainVoluntaryExit defines the Dilithium signature domain for sync committee.
+	DomainSyncCommitteeSelectionProof [4]byte `yaml:"DOMAIN_SYNC_COMMITTEE_SELECTION_PROOF" spec:"true"` // DomainSelectionProof defines the Dilithium signature domain for sync committee selection proof.
+	DomainContributionAndProof        [4]byte `yaml:"DOMAIN_CONTRIBUTION_AND_PROOF" spec:"true"`         // DomainAggregateAndProof defines the Dilithium signature domain for contribution and proof.
+	DomainApplicationMask             [4]byte `yaml:"DOMAIN_APPLICATION_MASK" spec:"true"`               // DomainApplicationMask defines the Dilithium signature domain for application mask.
+	DomainApplicationBuilder          [4]byte // DomainApplicationBuilder defines the Dilithium signature domain for application builder.
 	DomainDilithiumToExecutionChange  [4]byte // DomainDilithiumToExecutionChange defines the Dilithium signature domain to change withdrawal addresses to Zond prefix
 
-	// Prysm constants.
-	GweiPerEth                     uint64                      // GweiPerEth is the amount of gwei corresponding to 1 eth.
-	BLSSecretKeyLength             int                         // BLSSecretKeyLength defines the expected length of BLS secret keys in bytes.
-	BLSPubkeyLength                int                         // BLSPubkeyLength defines the expected length of BLS public keys in bytes.
-	DilithiumPubkeyLength          int                         // DilithiumPubkeyLength defines the expected length of Dilithium public keys in bytes.
-	DefaultBufferSize              int                         // DefaultBufferSize for channels across the Prysm repository.
-	ValidatorPrivkeyFileName       string                      // ValidatorPrivKeyFileName specifies the string name of a validator private key file.
-	WithdrawalPrivkeyFileName      string                      // WithdrawalPrivKeyFileName specifies the string name of a withdrawal private key file.
-	RPCSyncCheck                   time.Duration               // Number of seconds to query the sync service, to find out if the node is synced or not.
-	EmptySignature                 [96]byte                    // EmptySignature is used to represent a zeroed out BLS Signature.
-	EmptyDilithiumSignature        [dilithium.CryptoBytes]byte // EmptyDilithiumSignature is used to represent a zeroed out Dilithium Signature.
-	DefaultPageSize                int                         // DefaultPageSize defines the default page size for RPC server request.
-	MaxPeersToSync                 int                         // MaxPeersToSync describes the limit for number of peers in round robin sync.
-	SlotsPerArchivedPoint          primitives.Slot             // SlotsPerArchivedPoint defines the number of slots per one archived point.
-	GenesisCountdownInterval       time.Duration               // How often to log the countdown until the genesis time is reached.
-	BeaconStateFieldCount          int                         // BeaconStateFieldCount defines how many fields are in the Phase0 beacon state.
-	BeaconStateAltairFieldCount    int                         // BeaconStateAltairFieldCount defines how many fields are in the beacon state post upgrade to Altair.
-	BeaconStateBellatrixFieldCount int                         // BeaconStateBellatrixFieldCount defines how many fields are in beacon state post upgrade to Bellatrix.
-	BeaconStateCapellaFieldCount   int                         // BeaconStateCapellaFieldCount defines how many fields are in beacon state post upgrade to Capella.
+	// Qrysm constants.
+	GweiPerEth                   uint64                                     // GweiPerEth is the amount of gwei corresponding to 1 eth.
+	DefaultBufferSize            int                                        // DefaultBufferSize for channels across the Prysm repository.
+	ValidatorPrivkeyFileName     string                                     // ValidatorPrivKeyFileName specifies the string name of a validator private key file.
+	WithdrawalPrivkeyFileName    string                                     // WithdrawalPrivKeyFileName specifies the string name of a withdrawal private key file.
+	RPCSyncCheck                 time.Duration                              // Number of seconds to query the sync service, to find out if the node is synced or not.
+	EmptyDilithiumSignature      [fieldparams.DilithiumSignatureLength]byte // EmptyDilithiumSignature is used to represent a zeroed out Dilithium Signature.
+	DefaultPageSize              int                                        // DefaultPageSize defines the default page size for RPC server request.
+	MaxPeersToSync               int                                        // MaxPeersToSync describes the limit for number of peers in round robin sync.
+	SlotsPerArchivedPoint        primitives.Slot                            // SlotsPerArchivedPoint defines the number of slots per one archived point.
+	GenesisCountdownInterval     time.Duration                              // How often to log the countdown until the genesis time is reached.
+	BeaconStateCapellaFieldCount int                                        // BeaconStateCapellaFieldCount defines how many fields are in beacon state post upgrade to Capella.
 
 	// Slasher constants.
 	WeakSubjectivityPeriod    primitives.Epoch // WeakSubjectivityPeriod defines the time period expressed in number of epochs were proof of stake network should validate block headers and attestations for slashable events.
@@ -152,13 +139,7 @@ type BeaconChainConfig struct {
 	SlashingProtectionPruningEpochs primitives.Epoch // SlashingProtectionPruningEpochs defines a period after which all prior epochs are pruned in the validator database.
 
 	// Fork-related values.
-	GenesisForkVersion   []byte           `yaml:"GENESIS_FORK_VERSION" spec:"true"`   // GenesisForkVersion is used to track fork version between state transitions.
-	AltairForkVersion    []byte           `yaml:"ALTAIR_FORK_VERSION" spec:"true"`    // AltairForkVersion is used to represent the fork version for altair.
-	AltairForkEpoch      primitives.Epoch `yaml:"ALTAIR_FORK_EPOCH" spec:"true"`      // AltairForkEpoch is used to represent the assigned fork epoch for altair.
-	BellatrixForkVersion []byte           `yaml:"BELLATRIX_FORK_VERSION" spec:"true"` // BellatrixForkVersion is used to represent the fork version for bellatrix.
-	BellatrixForkEpoch   primitives.Epoch `yaml:"BELLATRIX_FORK_EPOCH" spec:"true"`   // BellatrixForkEpoch is used to represent the assigned fork epoch for bellatrix.
-	CapellaForkVersion   []byte           `yaml:"CAPELLA_FORK_VERSION" spec:"true"`   // CapellaForkVersion is used to represent the fork version for capella.
-	CapellaForkEpoch     primitives.Epoch `yaml:"CAPELLA_FORK_EPOCH" spec:"true"`     // CapellaForkEpoch is used to represent the assigned fork epoch for capella.
+	GenesisForkVersion []byte `yaml:"GENESIS_FORK_VERSION" spec:"true"` // GenesisForkVersion is used to track fork version between state transitions.
 
 	ForkVersionSchedule map[[fieldparams.VersionLength]byte]primitives.Epoch // Schedule of fork epochs by version.
 	ForkVersionNames    map[[fieldparams.VersionLength]byte]string           // Human-readable names of fork versions.
@@ -166,7 +147,6 @@ type BeaconChainConfig struct {
 	// Weak subjectivity values.
 	SafetyDecay uint64 // SafetyDecay is defined as the loss in the 1/3 consensus safety margin of the casper FFG mechanism.
 
-	// New values introduced in Altair hard fork 1.
 	// Participation flag indices.
 	TimelySourceFlagIndex uint8 `yaml:"TIMELY_SOURCE_FLAG_INDEX" spec:"true"` // TimelySourceFlagIndex is the source flag position of the participation bits.
 	TimelyTargetFlagIndex uint8 `yaml:"TIMELY_TARGET_FLAG_INDEX" spec:"true"` // TimelyTargetFlagIndex is the target flag position of the participation bits.
@@ -190,25 +170,17 @@ type BeaconChainConfig struct {
 	InactivityScoreRecoveryRate  uint64           `yaml:"INACTIVITY_SCORE_RECOVERY_RATE" spec:"true"`   // InactivityScoreRecoveryRate for recovering score bias penalties during inactivity.
 	EpochsPerSyncCommitteePeriod primitives.Epoch `yaml:"EPOCHS_PER_SYNC_COMMITTEE_PERIOD" spec:"true"` // EpochsPerSyncCommitteePeriod defines how many epochs per sync committee period.
 
-	// Updated penalty values. This moves penalty parameters toward their final, maximum security values.
-	// Note: We do not override previous configuration values but instead creates new values and replaces usage throughout.
-	InactivityPenaltyQuotientAltair         uint64 `yaml:"INACTIVITY_PENALTY_QUOTIENT_ALTAIR" spec:"true"`         // InactivityPenaltyQuotientAltair for penalties during inactivity post Altair hard fork.
-	MinSlashingPenaltyQuotientAltair        uint64 `yaml:"MIN_SLASHING_PENALTY_QUOTIENT_ALTAIR" spec:"true"`       // MinSlashingPenaltyQuotientAltair for slashing penalties post Altair hard fork.
-	ProportionalSlashingMultiplierAltair    uint64 `yaml:"PROPORTIONAL_SLASHING_MULTIPLIER_ALTAIR" spec:"true"`    // ProportionalSlashingMultiplierAltair for slashing penalties' multiplier post Alair hard fork.
-	MinSlashingPenaltyQuotientBellatrix     uint64 `yaml:"MIN_SLASHING_PENALTY_QUOTIENT_BELLATRIX" spec:"true"`    // MinSlashingPenaltyQuotientBellatrix for slashing penalties post Bellatrix hard fork.
-	ProportionalSlashingMultiplierBellatrix uint64 `yaml:"PROPORTIONAL_SLASHING_MULTIPLIER_BELLATRIX" spec:"true"` // ProportionalSlashingMultiplierBellatrix for slashing penalties' multiplier post Bellatrix hard fork.
-	InactivityPenaltyQuotientBellatrix      uint64 `yaml:"INACTIVITY_PENALTY_QUOTIENT_BELLATRIX" spec:"true"`      // InactivityPenaltyQuotientBellatrix for penalties during inactivity post Bellatrix hard fork.
+	MinSlashingPenaltyQuotient     uint64 `yaml:"MIN_SLASHING_PENALTY_QUOTIENT" spec:"true"`    // MinSlashingPenaltyQuotientCapella for slashing penalties post Capella hard fork.
+	ProportionalSlashingMultiplier uint64 `yaml:"PROPORTIONAL_SLASHING_MULTIPLIER" spec:"true"` // ProportionalSlashingMultiplierCapella for slashing penalties' multiplier post Capella hard fork.
+	InactivityPenaltyQuotient      uint64 `yaml:"INACTIVITY_PENALTY_QUOTIENT" spec:"true"`      // InactivityPenaltyQuotientCapella for penalties during inactivity post Capella hard fork.
 
 	// Light client
 	MinSyncCommitteeParticipants uint64 `yaml:"MIN_SYNC_COMMITTEE_PARTICIPANTS" spec:"true"` // MinSyncCommitteeParticipants defines the minimum amount of sync committee participants for which the light client acknowledges the signature.
 
 	// Bellatrix
-	TerminalBlockHash                common.Hash      `yaml:"TERMINAL_BLOCK_HASH" spec:"true"`                  // TerminalBlockHash of beacon chain.
-	TerminalBlockHashActivationEpoch primitives.Epoch `yaml:"TERMINAL_BLOCK_HASH_ACTIVATION_EPOCH" spec:"true"` // TerminalBlockHashActivationEpoch of beacon chain.
-	TerminalTotalDifficulty          string           `yaml:"TERMINAL_TOTAL_DIFFICULTY" spec:"true"`            // TerminalTotalDifficulty is part of the experimental Bellatrix spec. This value is type is currently TBD.
-	DefaultFeeRecipient              common.Address   // DefaultFeeRecipient where the transaction fee goes to.
-	EthBurnAddressHex                string           // EthBurnAddressHex is the constant zond address written in hex format to burn fees in that network. the default is 0x0
-	DefaultBuilderGasLimit           uint64           // DefaultBuilderGasLimit is the default used to set the gaslimit for the Builder APIs, typically at around 30M wei.
+	DefaultFeeRecipient    common.Address // DefaultFeeRecipient where the transaction fee goes to.
+	EthBurnAddressHex      string         // EthBurnAddressHex is the constant zond address written in hex format to burn fees in that network. the default is 0x0
+	DefaultBuilderGasLimit uint64         // DefaultBuilderGasLimit is the default used to set the gaslimit for the Builder APIs, typically at around 30M wei.
 
 	// Mev-boost circuit breaker
 	MaxBuilderConsecutiveMissedSlots primitives.Slot // MaxBuilderConsecutiveMissedSlots defines the number of consecutive skip slot to fallback from using relay/builder to local execution engine for block construction.
@@ -232,9 +204,6 @@ func (b *BeaconChainConfig) InitializeForkSchedule() {
 func configForkSchedule(b *BeaconChainConfig) map[[fieldparams.VersionLength]byte]primitives.Epoch {
 	fvs := map[[fieldparams.VersionLength]byte]primitives.Epoch{}
 	fvs[bytesutil.ToBytes4(b.GenesisForkVersion)] = b.GenesisEpoch
-	fvs[bytesutil.ToBytes4(b.AltairForkVersion)] = b.AltairForkEpoch
-	fvs[bytesutil.ToBytes4(b.BellatrixForkVersion)] = b.BellatrixForkEpoch
-	fvs[bytesutil.ToBytes4(b.CapellaForkVersion)] = b.CapellaForkEpoch
 	return fvs
 }
 
@@ -251,10 +220,7 @@ func configForkNames(b *BeaconChainConfig) map[[fieldparams.VersionLength]byte]s
 // from the runtime/version package.
 func ConfigForkVersions(b *BeaconChainConfig) map[[fieldparams.VersionLength]byte]int {
 	return map[[fieldparams.VersionLength]byte]int{
-		bytesutil.ToBytes4(b.GenesisForkVersion):   version.Phase0,
-		bytesutil.ToBytes4(b.AltairForkVersion):    version.Altair,
-		bytesutil.ToBytes4(b.BellatrixForkVersion): version.Bellatrix,
-		bytesutil.ToBytes4(b.CapellaForkVersion):   version.Capella,
+		bytesutil.ToBytes4(b.GenesisForkVersion): version.Capella,
 	}
 }
 

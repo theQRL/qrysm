@@ -4,11 +4,10 @@ go_library(
     name = "go_default_library",
     srcs = [
         "generate_genesis_state.go",
-        "generate_genesis_state_bellatrix.go",
+        "generate_genesis_state_capella.go",
         "generate_keys.go",
         "genesis.go",
         "premine-state.go",
-        "premined_genesis_state.go",
     ],
     importpath = "github.com/theQRL/qrysm/v4/runtime/interop",
     visibility = ["//visibility:public"],
@@ -26,6 +25,7 @@ go_library(
         "//config/params:go_default_library",
         "//consensus-types/blocks:go_default_library",
         "//consensus-types/interfaces:go_default_library",
+        "//consensus-types/primitives:go_default_library",
         "//container/trie:go_default_library",
         "//crypto/dilithium:go_default_library",
         "//crypto/hash:go_default_library",
@@ -36,8 +36,6 @@ go_library(
         "//time:go_default_library",
         "//time/slots:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
-        "@com_github_theqrl_go_qrllib//common:go_default_library",
-        "@com_github_theqrl_go_qrllib//dilithium:go_default_library",
         "@com_github_theqrl_go_zond//common:go_default_library",
         "@com_github_theqrl_go_zond//common/hexutil:go_default_library",
         "@com_github_theqrl_go_zond//core:go_default_library",
@@ -49,8 +47,7 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = [
-        "generate_genesis_state_bellatrix_test.go",
-        "generate_genesis_state_test.go",
+        "generate_genesis_state_capella_test.go",
         "generate_keys_test.go",
     ],
     data = [

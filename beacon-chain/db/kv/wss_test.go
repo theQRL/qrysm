@@ -30,11 +30,11 @@ func TestSaveOrigin(t *testing.T) {
 	// so the genesis root key is never written to the db.
 	require.NoError(t, db.EnsureEmbeddedGenesis(ctx))
 
-	cst, err := util.NewBeaconState()
+	cst, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	csb, err := cst.MarshalSSZ()
 	require.NoError(t, err)
-	cb := util.NewBeaconBlock()
+	cb := util.NewBeaconBlockCapella()
 	scb, err := blocks.NewSignedBeaconBlock(cb)
 	require.NoError(t, err)
 	cbb, err := scb.MarshalSSZ()

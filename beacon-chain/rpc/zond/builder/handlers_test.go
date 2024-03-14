@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	http2 "github.com/theQRL/qrysm/v4/network/http"
 	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
@@ -28,8 +28,7 @@ func TestExpectedWithdrawals_BadRequest(t *testing.T) {
 	st, err := util.NewBeaconStateCapella()
 	slotsAhead := 5000
 	require.NoError(t, err)
-	capellaSlot, err := slots.EpochStart(params.BeaconConfig().CapellaForkEpoch)
-	require.NoError(t, err)
+	capellaSlot := primitives.Slot(0)
 	currentSlot := capellaSlot + primitives.Slot(slotsAhead)
 	require.NoError(t, st.SetSlot(currentSlot))
 	mockChainService := &mock.ChainService{Optimistic: true}
@@ -57,14 +56,6 @@ func TestExpectedWithdrawals_BadRequest(t *testing.T) {
 			errorMessage: "invalid proposal slot value",
 		},
 		{
-			name: "proposal slot < Capella start slot",
-			path: "/zond/v1/builder/states/{state_id}/expected_withdrawals?proposal_slot=" +
-				strconv.FormatUint(uint64(capellaSlot)-1, 10),
-			urlParams:    map[string]string{"state_id": "head"},
-			state:        st,
-			errorMessage: "expected withdrawals are not supported before Capella fork",
-		},
-		{
 			name: "proposal slot == Capella start slot",
 			path: "/zond/v1/builder/states/{state_id}/expected_withdrawals?proposal_slot=" +
 				strconv.FormatUint(uint64(capellaSlot), 10),
@@ -73,12 +64,12 @@ func TestExpectedWithdrawals_BadRequest(t *testing.T) {
 			errorMessage: "proposal slot must be bigger than state slot",
 		},
 		{
-			name: "Proposal slot >= 128 slots ahead of state slot",
+			name: "Proposal slot >= 512 slots ahead of state slot",
 			path: "/zond/v1/builder/states/{state_id}/expected_withdrawals?proposal_slot=" +
-				strconv.FormatUint(uint64(currentSlot+128), 10),
+				strconv.FormatUint(uint64(currentSlot+512), 10),
 			urlParams:    map[string]string{"state_id": "head"},
 			state:        st,
-			errorMessage: "proposal slot cannot be >= 128 slots ahead of state slot",
+			errorMessage: "proposal slot cannot be >= 512 slots ahead of state slot",
 		},
 	}
 
@@ -108,8 +99,7 @@ func TestExpectedWithdrawals(t *testing.T) {
 	st, err := util.NewBeaconStateCapella()
 	slotsAhead := 5000
 	require.NoError(t, err)
-	capellaSlot, err := slots.EpochStart(params.BeaconConfig().CapellaForkEpoch)
-	require.NoError(t, err)
+	capellaSlot := primitives.Slot(0)
 	currentSlot := capellaSlot + primitives.Slot(slotsAhead)
 	require.NoError(t, st.SetSlot(currentSlot))
 	mockChainService := &mock.ChainService{Optimistic: true}
@@ -125,16 +115,16 @@ func TestExpectedWithdrawals(t *testing.T) {
 		validators := make([]*zond.Validator, 0, valCount)
 		balances := make([]uint64, 0, valCount)
 		for i := 0; i < valCount; i++ {
-			blsKey, err := bls.RandKey()
+			dilithiumKey, err := dilithium.RandKey()
 			require.NoError(t, err)
 			val := &zond.Validator{
-				PublicKey:             blsKey.PublicKey().Marshal(),
+				PublicKey:             dilithiumKey.PublicKey().Marshal(),
 				WithdrawalCredentials: make([]byte, 32),
 				ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 				WithdrawableEpoch:     params.BeaconConfig().FarFutureEpoch,
 				EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
 			}
-			val.WithdrawalCredentials[0] = params.BeaconConfig().ETH1AddressWithdrawalPrefixByte
+			val.WithdrawalCredentials[0] = params.BeaconConfig().ZondAddressWithdrawalPrefixByte
 			validators = append(validators, val)
 			balances = append(balances, params.BeaconConfig().MaxEffectiveBalance)
 		}
@@ -187,21 +177,21 @@ func TestExpectedWithdrawals(t *testing.T) {
 			ValidatorIndex: strconv.FormatUint(5, 10),
 			Address:        hexutil.Encode(validators[5].WithdrawalCredentials[12:]),
 			// Decreased due to epoch processing when state advanced forward
-			Amount: strconv.FormatUint(31998257885, 10),
+			Amount: strconv.FormatUint(39999930305350, 10),
 		}
 		expectedWithdrawal2 := &ExpectedWithdrawal{
 			Index:          strconv.FormatUint(1, 10),
 			ValidatorIndex: strconv.FormatUint(14, 10),
 			Address:        hexutil.Encode(validators[14].WithdrawalCredentials[12:]),
 			// MaxEffectiveBalance + MinDepositAmount + decrease after epoch processing
-			Amount: strconv.FormatUint(32998257885, 10),
+			Amount: strconv.FormatUint(40000930305350, 10),
 		}
 		expectedWithdrawal3 := &ExpectedWithdrawal{
 			Index:          strconv.FormatUint(2, 10),
 			ValidatorIndex: strconv.FormatUint(15, 10),
 			Address:        hexutil.Encode(validators[15].WithdrawalCredentials[12:]),
 			// MinDepositAmount + decrease after epoch processing
-			Amount: strconv.FormatUint(998257885, 10),
+			Amount: strconv.FormatUint(930305350, 10),
 		}
 		require.DeepEqual(t, expectedWithdrawal1, resp.Data[0])
 		require.DeepEqual(t, expectedWithdrawal2, resp.Data[1])

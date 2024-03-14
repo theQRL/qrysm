@@ -17,7 +17,7 @@ func TestServer_getExits(t *testing.T) {
 	config.ShardCommitteePeriod = 0
 	params.OverrideBeaconConfig(config)
 
-	beaconState, privKeys := util.DeterministicGenesisState(t, 256)
+	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 256)
 
 	proposerServer := &Server{
 		ExitPool: voluntaryexits.NewPool(),

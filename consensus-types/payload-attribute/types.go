@@ -17,7 +17,6 @@ type data struct {
 	prevRandao            []byte
 	suggestedFeeRecipient []byte
 	withdrawals           []*enginev1.Withdrawal
-	// parentBeaconBlockRoot []byte TODO(rgeraldes24): field `parentBeaconBlockRoot` is unused (golangci)
 }
 
 var (

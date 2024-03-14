@@ -14,14 +14,6 @@ func NewSignedBeaconBlockFromGeneric(gb *zond.GenericSignedBeaconBlock) (interfa
 		return nil, blocks.ErrNilObject
 	}
 	switch bb := gb.Block.(type) {
-	case *zond.GenericSignedBeaconBlock_Phase0:
-		return blocks.NewSignedBeaconBlock(bb.Phase0)
-	case *zond.GenericSignedBeaconBlock_Altair:
-		return blocks.NewSignedBeaconBlock(bb.Altair)
-	case *zond.GenericSignedBeaconBlock_Bellatrix:
-		return blocks.NewSignedBeaconBlock(bb.Bellatrix)
-	case *zond.GenericSignedBeaconBlock_BlindedBellatrix:
-		return blocks.NewSignedBeaconBlock(bb.BlindedBellatrix)
 	case *zond.GenericSignedBeaconBlock_Capella:
 		return blocks.NewSignedBeaconBlock(bb.Capella)
 	case *zond.GenericSignedBeaconBlock_BlindedCapella:

@@ -8,21 +8,20 @@ import (
 	"github.com/theQRL/qrysm/v4/proto/migration"
 	zondpbalpha "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-// ProduceBlockV2 requests the beacon node to produce a valid unsigned beacon block, which can then be signed by a proposer and submitted.
-// By definition `/zond/v2/validator/blocks/{slot}`, does not produce block using mev-boost and relayer network.
+// ProduceBlock requests the beacon node to produce a valid unsigned beacon block, which can then be signed by a proposer and submitted.
+// By definition `/zond/v1/validator/blocks/{slot}`, does not produce block using mev-boost and relayer network.
 // The following endpoint states that the returned object is a BeaconBlock, not a BlindedBeaconBlock. As such, the block must return a full ExecutionPayload:
 // https://ethereum.github.io/beacon-APIs/?urls.primaryName=v2.3.0#/Validator/produceBlockV2
 //
 // To use mev-boost and relayer network. It's recommended to use the following endpoint:
 // https://github.com/ethereum/beacon-APIs/blob/master/apis/validator/blinded_block.yaml
-func (vs *Server) ProduceBlockV2(ctx context.Context, req *zondpbv1.ProduceBlockRequest) (*zondpbv2.ProduceBlockResponseV2, error) {
-	ctx, span := trace.StartSpan(ctx, "validator.ProduceBlockV2")
+func (vs *Server) ProduceBlock(ctx context.Context, req *zondpbv1.ProduceBlockRequest) (*zondpbv1.ProduceBlockResponse, error) {
+	ctx, span := trace.StartSpan(ctx, "validator.ProduceBlock")
 	defer span.End()
 
 	if err := rpchelpers.ValidateSyncGRPC(ctx, vs.SyncChecker, vs.HeadFetcher, vs.TimeFetcher, vs.OptimisticModeFetcher); err != nil {
@@ -41,32 +40,6 @@ func (vs *Server) ProduceBlockV2(ctx context.Context, req *zondpbv1.ProduceBlock
 		// We simply return err because it's already of a gRPC error type.
 		return nil, err
 	}
-	phase0Block, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Phase0)
-	if ok {
-		block, err := migration.V1Alpha1ToV1Block(phase0Block.Phase0)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
-		}
-		return &zondpbv2.ProduceBlockResponseV2{
-			Version: zondpbv2.Version_PHASE0,
-			Data: &zondpbv2.BeaconBlockContainerV2{
-				Block: &zondpbv2.BeaconBlockContainerV2_Phase0Block{Phase0Block: block},
-			},
-		}, nil
-	}
-	altairBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Altair)
-	if ok {
-		block, err := migration.V1Alpha1BeaconBlockAltairToV2(altairBlock.Altair)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
-		}
-		return &zondpbv2.ProduceBlockResponseV2{
-			Version: zondpbv2.Version_ALTAIR,
-			Data: &zondpbv2.BeaconBlockContainerV2{
-				Block: &zondpbv2.BeaconBlockContainerV2_AltairBlock{AltairBlock: block},
-			},
-		}, nil
-	}
 	optimistic, err := vs.OptimisticModeFetcher.IsOptimistic(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not determine if the node is a optimistic node: %v", err)
@@ -74,37 +47,20 @@ func (vs *Server) ProduceBlockV2(ctx context.Context, req *zondpbv1.ProduceBlock
 	if optimistic {
 		return nil, status.Errorf(codes.Unavailable, "The node is currently optimistic and cannot serve validators")
 	}
-	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedBellatrix)
-	if ok {
-		return nil, status.Error(codes.Internal, "Prepared Bellatrix beacon block is blinded")
-	}
-	bellatrixBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Bellatrix)
-	if ok {
-		block, err := migration.V1Alpha1BeaconBlockBellatrixToV2(bellatrixBlock.Bellatrix)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
-		}
-		return &zondpbv2.ProduceBlockResponseV2{
-			Version: zondpbv2.Version_BELLATRIX,
-			Data: &zondpbv2.BeaconBlockContainerV2{
-				Block: &zondpbv2.BeaconBlockContainerV2_BellatrixBlock{BellatrixBlock: block},
-			},
-		}, nil
-	}
-	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedCapella)
+	_, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedCapella)
 	if ok {
 		return nil, status.Error(codes.Internal, "Prepared Capella beacon block is blinded")
 	}
 	capellaBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Capella)
 	if ok {
-		block, err := migration.V1Alpha1BeaconBlockCapellaToV2(capellaBlock.Capella)
+		block, err := migration.V1Alpha1BeaconBlockCapellaToV1(capellaBlock.Capella)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
 		}
-		return &zondpbv2.ProduceBlockResponseV2{
-			Version: zondpbv2.Version_CAPELLA,
-			Data: &zondpbv2.BeaconBlockContainerV2{
-				Block: &zondpbv2.BeaconBlockContainerV2_CapellaBlock{CapellaBlock: block},
+		return &zondpbv1.ProduceBlockResponse{
+			Version: zondpbv1.Version_CAPELLA,
+			Data: &zondpbv1.BeaconBlockContainer{
+				Block: &zondpbv1.BeaconBlockContainer_CapellaBlock{CapellaBlock: block},
 			},
 		}, nil
 	}
@@ -112,17 +68,17 @@ func (vs *Server) ProduceBlockV2(ctx context.Context, req *zondpbv1.ProduceBlock
 	return nil, status.Error(codes.InvalidArgument, "Unsupported block type")
 }
 
-// ProduceBlockV2SSZ requests the beacon node to produce a valid unsigned beacon block, which can then be signed by a proposer and submitted.
+// ProduceBlockSSZ requests the beacon node to produce a valid unsigned beacon block, which can then be signed by a proposer and submitted.
 //
 // The produced block is in SSZ form.
-// By definition `/zond/v2/validator/blocks/{slot}/ssz`, does not produce block using mev-boost and relayer network:
+// By definition `/zond/v1/validator/blocks/{slot}/ssz`, does not produce block using mev-boost and relayer network:
 // The following endpoint states that the returned object is a BeaconBlock, not a BlindedBeaconBlock. As such, the block must return a full ExecutionPayload:
 // https://ethereum.github.io/beacon-APIs/?urls.primaryName=v2.3.0#/Validator/produceBlockV2
 //
 // To use mev-boost and relayer network. It's recommended to use the following endpoint:
 // https://github.com/ethereum/beacon-APIs/blob/master/apis/validator/blinded_block.yaml
-func (vs *Server) ProduceBlockV2SSZ(ctx context.Context, req *zondpbv1.ProduceBlockRequest) (*zondpbv2.SSZContainer, error) {
-	ctx, span := trace.StartSpan(ctx, "validator.ProduceBlockV2SSZ")
+func (vs *Server) ProduceBlockSSZ(ctx context.Context, req *zondpbv1.ProduceBlockRequest) (*zondpbv1.SSZContainer, error) {
+	ctx, span := trace.StartSpan(ctx, "validator.ProduceBlockSSZ")
 	defer span.End()
 
 	if err := rpchelpers.ValidateSyncGRPC(ctx, vs.SyncChecker, vs.HeadFetcher, vs.TimeFetcher, vs.OptimisticModeFetcher); err != nil {
@@ -141,36 +97,6 @@ func (vs *Server) ProduceBlockV2SSZ(ctx context.Context, req *zondpbv1.ProduceBl
 		// We simply return err because it's already of a gRPC error type.
 		return nil, err
 	}
-	phase0Block, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Phase0)
-	if ok {
-		block, err := migration.V1Alpha1ToV1Block(phase0Block.Phase0)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
-		}
-		sszBlock, err := block.MarshalSSZ()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
-		}
-		return &zondpbv2.SSZContainer{
-			Version: zondpbv2.Version_PHASE0,
-			Data:    sszBlock,
-		}, nil
-	}
-	altairBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Altair)
-	if ok {
-		block, err := migration.V1Alpha1BeaconBlockAltairToV2(altairBlock.Altair)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
-		}
-		sszBlock, err := block.MarshalSSZ()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
-		}
-		return &zondpbv2.SSZContainer{
-			Version: zondpbv2.Version_ALTAIR,
-			Data:    sszBlock,
-		}, nil
-	}
 	optimistic, err := vs.OptimisticModeFetcher.IsOptimistic(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not determine if the node is a optimistic node: %v", err)
@@ -178,32 +104,13 @@ func (vs *Server) ProduceBlockV2SSZ(ctx context.Context, req *zondpbv1.ProduceBl
 	if optimistic {
 		return nil, status.Errorf(codes.Unavailable, "The node is currently optimistic and cannot serve validators")
 	}
-	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedBellatrix)
-	if ok {
-		return nil, status.Error(codes.Internal, "Prepared Bellatrix beacon block is blinded")
-	}
-	bellatrixBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Bellatrix)
-	if ok {
-		block, err := migration.V1Alpha1BeaconBlockBellatrixToV2(bellatrixBlock.Bellatrix)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
-		}
-		sszBlock, err := block.MarshalSSZ()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
-		}
-		return &zondpbv2.SSZContainer{
-			Version: zondpbv2.Version_BELLATRIX,
-			Data:    sszBlock,
-		}, nil
-	}
-	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedCapella)
+	_, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedCapella)
 	if ok {
 		return nil, status.Error(codes.Internal, "Prepared Capella beacon block is blinded")
 	}
 	capellaBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Capella)
 	if ok {
-		block, err := migration.V1Alpha1BeaconBlockCapellaToV2(capellaBlock.Capella)
+		block, err := migration.V1Alpha1BeaconBlockCapellaToV1(capellaBlock.Capella)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
 		}
@@ -211,8 +118,8 @@ func (vs *Server) ProduceBlockV2SSZ(ctx context.Context, req *zondpbv1.ProduceBl
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
 		}
-		return &zondpbv2.SSZContainer{
-			Version: zondpbv2.Version_CAPELLA,
+		return &zondpbv1.SSZContainer{
+			Version: zondpbv1.Version_CAPELLA,
 			Data:    sszBlock,
 		}, nil
 	}
@@ -228,7 +135,7 @@ func (vs *Server) ProduceBlockV2SSZ(ctx context.Context, req *zondpbv1.ProduceBl
 // - The builder is not figured (after bellatrix).
 // - The relayer circuit breaker is activated (after bellatrix).
 // - The relayer responded with an error (after bellatrix).
-func (vs *Server) ProduceBlindedBlock(ctx context.Context, req *zondpbv1.ProduceBlockRequest) (*zondpbv2.ProduceBlindedBlockResponse, error) {
+func (vs *Server) ProduceBlindedBlock(ctx context.Context, req *zondpbv1.ProduceBlockRequest) (*zondpbv1.ProduceBlindedBlockResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.ProduceBlindedBlock")
 	defer span.End()
 
@@ -251,32 +158,6 @@ func (vs *Server) ProduceBlindedBlock(ctx context.Context, req *zondpbv1.Produce
 		return nil, err
 	}
 
-	phase0Block, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Phase0)
-	if ok {
-		block, err := migration.V1Alpha1ToV1Block(phase0Block.Phase0)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
-		}
-		return &zondpbv2.ProduceBlindedBlockResponse{
-			Version: zondpbv2.Version_PHASE0,
-			Data: &zondpbv2.BlindedBeaconBlockContainer{
-				Block: &zondpbv2.BlindedBeaconBlockContainer_Phase0Block{Phase0Block: block},
-			},
-		}, nil
-	}
-	altairBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Altair)
-	if ok {
-		block, err := migration.V1Alpha1BeaconBlockAltairToV2(altairBlock.Altair)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
-		}
-		return &zondpbv2.ProduceBlindedBlockResponse{
-			Version: zondpbv2.Version_ALTAIR,
-			Data: &zondpbv2.BlindedBeaconBlockContainer{
-				Block: &zondpbv2.BlindedBeaconBlockContainer_AltairBlock{AltairBlock: block},
-			},
-		}, nil
-	}
 	optimistic, err := vs.OptimisticModeFetcher.IsOptimistic(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not determine if the node is a optimistic node: %v", err)
@@ -284,37 +165,20 @@ func (vs *Server) ProduceBlindedBlock(ctx context.Context, req *zondpbv1.Produce
 	if optimistic {
 		return nil, status.Errorf(codes.Unavailable, "The node is currently optimistic and cannot serve validators")
 	}
-	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Bellatrix)
-	if ok {
-		return nil, status.Error(codes.Internal, "Prepared beacon block is not blinded")
-	}
-	bellatrixBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedBellatrix)
-	if ok {
-		blk, err := migration.V1Alpha1BeaconBlockBlindedBellatrixToV2Blinded(bellatrixBlock.BlindedBellatrix)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
-		}
-		return &zondpbv2.ProduceBlindedBlockResponse{
-			Version: zondpbv2.Version_BELLATRIX,
-			Data: &zondpbv2.BlindedBeaconBlockContainer{
-				Block: &zondpbv2.BlindedBeaconBlockContainer_BellatrixBlock{BellatrixBlock: blk},
-			},
-		}, nil
-	}
-	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Capella)
+	_, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Capella)
 	if ok {
 		return nil, status.Error(codes.Internal, "Prepared beacon block is not blinded")
 	}
 	capellaBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedCapella)
 	if ok {
-		blk, err := migration.V1Alpha1BeaconBlockBlindedCapellaToV2Blinded(capellaBlock.BlindedCapella)
+		blk, err := migration.V1Alpha1BeaconBlockBlindedCapellaToV1Blinded(capellaBlock.BlindedCapella)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
 		}
-		return &zondpbv2.ProduceBlindedBlockResponse{
-			Version: zondpbv2.Version_CAPELLA,
-			Data: &zondpbv2.BlindedBeaconBlockContainer{
-				Block: &zondpbv2.BlindedBeaconBlockContainer_CapellaBlock{CapellaBlock: blk},
+		return &zondpbv1.ProduceBlindedBlockResponse{
+			Version: zondpbv1.Version_CAPELLA,
+			Data: &zondpbv1.BlindedBeaconBlockContainer{
+				Block: &zondpbv1.BlindedBeaconBlockContainer_CapellaBlock{CapellaBlock: blk},
 			},
 		}, nil
 	}
@@ -328,7 +192,7 @@ func (vs *Server) ProduceBlindedBlock(ctx context.Context, req *zondpbv1.Produce
 // The produced block is in SSZ form.
 //
 // Pre-Bellatrix, this endpoint will return a regular block.
-func (vs *Server) ProduceBlindedBlockSSZ(ctx context.Context, req *zondpbv1.ProduceBlockRequest) (*zondpbv2.SSZContainer, error) {
+func (vs *Server) ProduceBlindedBlockSSZ(ctx context.Context, req *zondpbv1.ProduceBlockRequest) (*zondpbv1.SSZContainer, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.ProduceBlindedBlockSSZ")
 	defer span.End()
 
@@ -351,36 +215,6 @@ func (vs *Server) ProduceBlindedBlockSSZ(ctx context.Context, req *zondpbv1.Prod
 		return nil, err
 	}
 
-	phase0Block, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Phase0)
-	if ok {
-		block, err := migration.V1Alpha1ToV1Block(phase0Block.Phase0)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
-		}
-		sszBlock, err := block.MarshalSSZ()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
-		}
-		return &zondpbv2.SSZContainer{
-			Version: zondpbv2.Version_PHASE0,
-			Data:    sszBlock,
-		}, nil
-	}
-	altairBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Altair)
-	if ok {
-		block, err := migration.V1Alpha1BeaconBlockAltairToV2(altairBlock.Altair)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
-		}
-		sszBlock, err := block.MarshalSSZ()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
-		}
-		return &zondpbv2.SSZContainer{
-			Version: zondpbv2.Version_ALTAIR,
-			Data:    sszBlock,
-		}, nil
-	}
 	optimistic, err := vs.OptimisticModeFetcher.IsOptimistic(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not determine if the node is a optimistic node: %v", err)
@@ -388,32 +222,13 @@ func (vs *Server) ProduceBlindedBlockSSZ(ctx context.Context, req *zondpbv1.Prod
 	if optimistic {
 		return nil, status.Errorf(codes.Unavailable, "The node is currently optimistic and cannot serve validators")
 	}
-	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Bellatrix)
-	if ok {
-		return nil, status.Error(codes.Internal, "Prepared Bellatrix beacon block is not blinded")
-	}
-	bellatrixBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedBellatrix)
-	if ok {
-		block, err := migration.V1Alpha1BeaconBlockBlindedBellatrixToV2Blinded(bellatrixBlock.BlindedBellatrix)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
-		}
-		sszBlock, err := block.MarshalSSZ()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
-		}
-		return &zondpbv2.SSZContainer{
-			Version: zondpbv2.Version_BELLATRIX,
-			Data:    sszBlock,
-		}, nil
-	}
-	_, ok = v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Capella)
+	_, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_Capella)
 	if ok {
 		return nil, status.Error(codes.Internal, "Prepared Capella beacon block is not blinded")
 	}
 	capellaBlock, ok := v1alpha1resp.Block.(*zondpbalpha.GenericBeaconBlock_BlindedCapella)
 	if ok {
-		block, err := migration.V1Alpha1BeaconBlockBlindedCapellaToV2Blinded(capellaBlock.BlindedCapella)
+		block, err := migration.V1Alpha1BeaconBlockBlindedCapellaToV1Blinded(capellaBlock.BlindedCapella)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
 		}
@@ -421,8 +236,8 @@ func (vs *Server) ProduceBlindedBlockSSZ(ctx context.Context, req *zondpbv1.Prod
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not marshal block into SSZ format: %v", err)
 		}
-		return &zondpbv2.SSZContainer{
-			Version: zondpbv2.Version_CAPELLA,
+		return &zondpbv1.SSZContainer{
+			Version: zondpbv1.Version_CAPELLA,
 			Data:    sszBlock,
 		}, nil
 	}

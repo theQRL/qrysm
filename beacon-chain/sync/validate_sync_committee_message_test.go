@@ -22,6 +22,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
 	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
@@ -35,14 +36,13 @@ import (
 func TestService_ValidateSyncCommitteeMessage(t *testing.T) {
 	beaconDB := testingdb.SetupDB(t)
 	headRoot, keys := fillUpBlocksAndState(context.Background(), t, beaconDB)
-	defaultTopic := p2p.SyncCommitteeSubnetTopicFormat
 	fakeDigest := []byte{0xAB, 0x00, 0xCC, 0x9E}
-	defaultTopic = defaultTopic + "/" + encoder.ProtocolSuffixSSZSnappy
+	defaultTopic := p2p.SyncCommitteeSubnetTopicFormat + "/" + encoder.ProtocolSuffixSSZSnappy
 	chainService := &mockChain.ChainService{
 		Genesis:        time.Now(),
 		ValidatorsRoot: [32]byte{'A'},
 	}
-	var emptySig [96]byte
+	var emptySig [field_params.DilithiumSignatureLength]byte
 	type args struct {
 		pid   peer.ID
 		msg   *zondpb.SyncCommitteeMessage

@@ -424,53 +424,6 @@ func Test_SyncSubnets(t *testing.T) {
 			want:    []uint64{0},
 			wantErr: false,
 		},
-		{
-			name: "multiple subnets",
-			record: func(t *testing.T) *enr.Record {
-				db, err := enode.OpenDB("")
-				assert.NoError(t, err)
-				priv, _, err := crypto.GenerateSecp256k1Key(rand.Reader)
-				assert.NoError(t, err)
-				convertedKey, err := ecdsaprysm.ConvertFromInterfacePrivKey(priv)
-				assert.NoError(t, err)
-				localNode := enode.NewLocalNode(db, convertedKey)
-				bitV := bitfield.Bitvector4{byte(0x00)}
-				for i := uint64(0); i < bitV.Len(); i++ {
-					// skip 2 subnets
-					if (i+1)%2 == 0 {
-						continue
-					}
-					bitV.SetBitAt(i, true)
-				}
-				bitV.SetBitAt(0, true)
-				entry := enr.WithEntry(syncCommsSubnetEnrKey, bitV.Bytes())
-				localNode.Set(entry)
-				return localNode.Node().Record()
-			},
-			want:    []uint64{0, 2},
-			wantErr: false,
-		},
-		{
-			name: "all subnets",
-			record: func(t *testing.T) *enr.Record {
-				db, err := enode.OpenDB("")
-				assert.NoError(t, err)
-				priv, _, err := crypto.GenerateSecp256k1Key(rand.Reader)
-				assert.NoError(t, err)
-				convertedKey, err := ecdsaprysm.ConvertFromInterfacePrivKey(priv)
-				assert.NoError(t, err)
-				localNode := enode.NewLocalNode(db, convertedKey)
-				bitV := bitfield.Bitvector4{byte(0x00)}
-				for i := uint64(0); i < bitV.Len(); i++ {
-					bitV.SetBitAt(i, true)
-				}
-				entry := enr.WithEntry(syncCommsSubnetEnrKey, bitV.Bytes())
-				localNode.Set(entry)
-				return localNode.Node().Record()
-			},
-			want:    []uint64{0, 1, 2, 3},
-			wantErr: false,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

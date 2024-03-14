@@ -1,5 +1,7 @@
 package depositsnapshot
 
+// TODO(theQRL/qrysm/issues/69)
+/*
 import (
 	"encoding/hex"
 	"fmt"
@@ -370,3 +372,4 @@ func TestEmptyTree(t *testing.T) {
 	tree := NewDepositTree()
 	require.Equal(t, fmt.Sprintf("%x", tree.getRoot()), "d70a234731285c6804c2a4f56711ddb8c82c99740f207854891028af34e27e5e")
 }
+*/

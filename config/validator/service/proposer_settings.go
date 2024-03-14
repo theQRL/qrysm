@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/consensus-types/validator"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
@@ -16,7 +16,7 @@ import (
 func ToSettings(ps *validatorpb.ProposerSettingsPayload) (*ProposerSettings, error) {
 	settings := &ProposerSettings{}
 	if ps.ProposerConfig != nil {
-		settings.ProposeConfig = make(map[[dilithium.CryptoPublicKeyBytes]byte]*ProposerOption)
+		settings.ProposeConfig = make(map[[field_params.DilithiumPubkeyLength]byte]*ProposerOption)
 		for key, optionPayload := range ps.ProposerConfig {
 			if optionPayload.FeeRecipient == "" {
 				continue
@@ -80,7 +80,7 @@ func ToBuilderConfig(from *validatorpb.BuilderConfig) *BuilderConfig {
 // ProposerSettings is a Qrysm internal representation of the fee recipient config on the validator client.
 // validatorpb.ProposerSettingsPayload maps to ProposerSettings on import through the CLI.
 type ProposerSettings struct {
-	ProposeConfig map[[dilithium.CryptoPublicKeyBytes]byte]*ProposerOption
+	ProposeConfig map[[field_params.DilithiumPubkeyLength]byte]*ProposerOption
 	DefaultConfig *ProposerOption
 }
 
@@ -146,7 +146,7 @@ func (ps *ProposerSettings) Clone() *ProposerSettings {
 		clone.DefaultConfig = ps.DefaultConfig.Clone()
 	}
 	if ps.ProposeConfig != nil {
-		clone.ProposeConfig = make(map[[dilithium.CryptoPublicKeyBytes]byte]*ProposerOption)
+		clone.ProposeConfig = make(map[[field_params.DilithiumPubkeyLength]byte]*ProposerOption)
 		for k, v := range ps.ProposeConfig {
 			keyCopy := k
 			valCopy := v.Clone()

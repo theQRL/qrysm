@@ -1,91 +1,19 @@
 package execution
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
-	"github.com/holiman/uint256"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-zond/common"
-	zondtypes "github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/rpc"
-	mockChain "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
-	statefeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/state"
-	mocks "github.com/theQRL/qrysm/v4/beacon-chain/execution/testing"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	pb "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"google.golang.org/protobuf/proto"
 )
-
-func Test_checkTransitionConfiguration(t *testing.T) {
-	params.SetupTestConfigCleanup(t)
-	cfg := params.BeaconConfig().Copy()
-	cfg.BellatrixForkEpoch = 0
-	params.OverrideBeaconConfig(cfg)
-	hook := logTest.NewGlobal()
-
-	t.Run("context canceled", func(t *testing.T) {
-		ctx := context.Background()
-		m := &mocks.EngineClient{}
-		m.Err = errors.New("something went wrong")
-
-		srv := setupTransitionConfigTest(t)
-		srv.cfg.stateNotifier = &mockChain.MockStateNotifier{}
-		checkTransitionPollingInterval = time.Millisecond
-		ctx, cancel := context.WithCancel(ctx)
-		go srv.checkTransitionConfiguration(ctx, make(chan *feed.Event, 1))
-		<-time.After(100 * time.Millisecond)
-		cancel()
-		require.LogsContain(t, hook, "Could not check configuration values")
-	})
-
-	t.Run("block containing execution payload exits routine", func(t *testing.T) {
-		ctx := context.Background()
-		m := &mocks.EngineClient{}
-		m.Err = errors.New("something went wrong")
-		srv := setupTransitionConfigTest(t)
-		srv.cfg.stateNotifier = &mockChain.MockStateNotifier{}
-
-		checkTransitionPollingInterval = time.Millisecond
-		ctx, cancel := context.WithCancel(ctx)
-		exit := make(chan bool)
-		notification := make(chan *feed.Event)
-		go func() {
-			srv.checkTransitionConfiguration(ctx, notification)
-			exit <- true
-		}()
-		payload := emptyPayload()
-		payload.GasUsed = 21000
-		wrappedBlock, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockBellatrix{
-			Block: &zondpb.BeaconBlockBellatrix{
-				Body: &zondpb.BeaconBlockBodyBellatrix{
-					ExecutionPayload: payload,
-				},
-			}},
-		)
-		require.NoError(t, err)
-		notification <- &feed.Event{
-			Data: &statefeed.BlockProcessedData{
-				SignedBlock: wrappedBlock,
-			},
-			Type: statefeed.BlockProcessed,
-		}
-		<-exit
-		cancel()
-		require.LogsContain(t, hook, "PoS transition is complete, no longer checking")
-	})
-}
 
 func TestService_handleExchangeConfigurationError(t *testing.T) {
 	hook := logTest.NewGlobal()
@@ -154,107 +82,4 @@ func setupTransitionConfigTest(t testing.TB) *Service {
 	}
 	service.rpcClient = rpcClient
 	return service
-}
-
-func TestService_logTtdStatus(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		defer func() {
-			require.NoError(t, r.Body.Close())
-		}()
-
-		resp := &pb.ExecutionBlock{
-			Header: zondtypes.Header{
-				ParentHash:  common.Hash{},
-				UncleHash:   common.Hash{},
-				Coinbase:    common.Address{},
-				Root:        common.Hash{},
-				TxHash:      common.Hash{},
-				ReceiptHash: common.Hash{},
-				Bloom:       zondtypes.Bloom{},
-				Difficulty:  big.NewInt(1),
-				Number:      big.NewInt(2),
-				GasLimit:    3,
-				GasUsed:     4,
-				Time:        5,
-				Extra:       nil,
-				MixDigest:   common.Hash{},
-				Nonce:       zondtypes.BlockNonce{},
-				BaseFee:     big.NewInt(6),
-			},
-			TotalDifficulty: "0x12345678",
-		}
-		respJSON := map[string]interface{}{
-			"jsonrpc": "2.0",
-			"id":      1,
-			"result":  resp,
-		}
-		require.NoError(t, json.NewEncoder(w).Encode(respJSON))
-	}))
-	defer srv.Close()
-
-	rpcClient, err := rpc.DialHTTP(srv.URL)
-	require.NoError(t, err)
-	defer rpcClient.Close()
-
-	service := &Service{
-		cfg: &config{},
-	}
-	service.rpcClient = rpcClient
-
-	ttd := new(uint256.Int)
-	reached, err := service.logTtdStatus(context.Background(), ttd.SetUint64(24343))
-	require.NoError(t, err)
-	require.Equal(t, true, reached)
-
-	reached, err = service.logTtdStatus(context.Background(), ttd.SetUint64(323423484))
-	require.NoError(t, err)
-	require.Equal(t, false, reached)
-}
-
-func TestService_logTtdStatus_NotSyncedClient(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		defer func() {
-			require.NoError(t, r.Body.Close())
-		}()
-
-		resp := (*pb.ExecutionBlock)(nil) // Nil response when a client is not synced
-		respJSON := map[string]interface{}{
-			"jsonrpc": "2.0",
-			"id":      1,
-			"result":  resp,
-		}
-		require.NoError(t, json.NewEncoder(w).Encode(respJSON))
-	}))
-	defer srv.Close()
-
-	rpcClient, err := rpc.DialHTTP(srv.URL)
-	require.NoError(t, err)
-	defer rpcClient.Close()
-
-	service := &Service{
-		cfg: &config{},
-	}
-	service.rpcClient = rpcClient
-
-	ttd := new(uint256.Int)
-	reached, err := service.logTtdStatus(context.Background(), ttd.SetUint64(24343))
-	require.ErrorContains(t, "missing required field 'parentHash' for Header", err)
-	require.Equal(t, false, reached)
-}
-
-func emptyPayload() *pb.ExecutionPayload {
-	return &pb.ExecutionPayload{
-		ParentHash:    make([]byte, fieldparams.RootLength),
-		FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
-		StateRoot:     make([]byte, fieldparams.RootLength),
-		ReceiptsRoot:  make([]byte, fieldparams.RootLength),
-		LogsBloom:     make([]byte, fieldparams.LogsBloomLength),
-		PrevRandao:    make([]byte, fieldparams.RootLength),
-		BaseFeePerGas: make([]byte, fieldparams.RootLength),
-		BlockHash:     make([]byte, fieldparams.RootLength),
-		Transactions:  make([][]byte, 0),
-		ExtraData:     make([]byte, 0),
-	}
 }

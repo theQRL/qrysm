@@ -100,52 +100,40 @@ func (s *Service) registerSubscribers(epoch primitives.Epoch, digest [4]byte) {
 			digest,
 		)
 	}
-	// Altair Fork Version
-	if epoch >= params.BeaconConfig().AltairForkEpoch {
-		s.subscribe(
-			p2p.SyncContributionAndProofSubnetTopicFormat,
-			s.validateSyncContributionAndProof,
-			s.syncContributionAndProofSubscriber,
+	s.subscribe(
+		p2p.SyncContributionAndProofSubnetTopicFormat,
+		s.validateSyncContributionAndProof,
+		s.syncContributionAndProofSubscriber,
+		digest,
+	)
+	if flags.Get().SubscribeToAllSubnets {
+		s.subscribeStaticWithSyncSubnets(
+			p2p.SyncCommitteeSubnetTopicFormat,
+			s.validateSyncCommitteeMessage,   /* validator */
+			s.syncCommitteeMessageSubscriber, /* message handler */
 			digest,
 		)
-		if flags.Get().SubscribeToAllSubnets {
-			s.subscribeStaticWithSyncSubnets(
-				p2p.SyncCommitteeSubnetTopicFormat,
-				s.validateSyncCommitteeMessage,   /* validator */
-				s.syncCommitteeMessageSubscriber, /* message handler */
-				digest,
-			)
-		} else {
-			s.subscribeDynamicWithSyncSubnets(
-				p2p.SyncCommitteeSubnetTopicFormat,
-				s.validateSyncCommitteeMessage,   /* validator */
-				s.syncCommitteeMessageSubscriber, /* message handler */
-				digest,
-			)
-		}
+	} else {
+		s.subscribeDynamicWithSyncSubnets(
+			p2p.SyncCommitteeSubnetTopicFormat,
+			s.validateSyncCommitteeMessage,   /* validator */
+			s.syncCommitteeMessageSubscriber, /* message handler */
+			digest,
+		)
 	}
 
-	// New Gossip Topic in Capella
-	if epoch >= params.BeaconConfig().CapellaForkEpoch {
-		s.subscribe(
-			p2p.DilithiumToExecutionChangeSubnetTopicFormat,
-			s.validateDilithiumToExecutionChange,
-			s.dilithiumToExecutionChangeSubscriber,
-			digest,
-		)
-	}
+	s.subscribe(
+		p2p.DilithiumToExecutionChangeSubnetTopicFormat,
+		s.validateDilithiumToExecutionChange,
+		s.dilithiumToExecutionChangeSubscriber,
+		digest,
+	)
 }
 
 // subscribe to a given topic with a given validator and subscription handler.
 // The base protobuf message is used to initialize new messages for decoding.
 func (s *Service) subscribe(topic string, validator wrappedVal, handle subHandler, digest [4]byte) *pubsub.Subscription {
-	genRoot := s.cfg.clock.GenesisValidatorsRoot()
-	_, e, err := forks.RetrieveForkDataFromDigest(digest, genRoot[:])
-	if err != nil {
-		// Impossible condition as it would mean digest does not exist.
-		panic(err)
-	}
-	base := p2p.GossipTopicMappings(topic, e)
+	base := p2p.GossipTopicMappings(topic)
 	if base == nil {
 		// Impossible condition as it would mean topic does not exist.
 		panic(fmt.Sprintf("%s is not mapped to any message in GossipTopicMappings", topic))
@@ -307,13 +295,7 @@ func (s *Service) wrapAndReportValidation(topic string, v wrappedVal) (string, p
 // subscribe to a static subnet  with the given topic and index.A given validator and subscription handler is
 // used to handle messages from the subnet. The base protobuf message is used to initialize new messages for decoding.
 func (s *Service) subscribeStaticWithSubnets(topic string, validator wrappedVal, handle subHandler, digest [4]byte, subnetCount uint64) {
-	genRoot := s.cfg.clock.GenesisValidatorsRoot()
-	_, e, err := forks.RetrieveForkDataFromDigest(digest, genRoot[:])
-	if err != nil {
-		// Impossible condition as it would mean digest does not exist.
-		panic(err)
-	}
-	base := p2p.GossipTopicMappings(topic, e)
+	base := p2p.GossipTopicMappings(topic)
 	if base == nil {
 		// Impossible condition as it would mean topic does not exist.
 		panic(fmt.Sprintf("%s is not mapped to any message in GossipTopicMappings", topic))
@@ -334,6 +316,7 @@ func (s *Service) subscribeStaticWithSubnets(topic string, validator wrappedVal,
 				if s.chainStarted.IsSet() && s.cfg.initialSync.Syncing() {
 					continue
 				}
+				genRoot := s.cfg.clock.GenesisValidatorsRoot()
 				valid, err := isDigestValid(digest, genesis, genRoot)
 				if err != nil {
 					log.Error(err)
@@ -380,13 +363,7 @@ func (s *Service) subscribeDynamicWithSubnets(
 	handle subHandler,
 	digest [4]byte,
 ) {
-	genRoot := s.cfg.clock.GenesisValidatorsRoot()
-	_, e, err := forks.RetrieveForkDataFromDigest(digest, genRoot[:])
-	if err != nil {
-		// Impossible condition as it would mean digest does not exist.
-		panic(err)
-	}
-	base := p2p.GossipTopicMappings(topicFormat, e)
+	base := p2p.GossipTopicMappings(topicFormat)
 	if base == nil {
 		panic(fmt.Sprintf("%s is not mapped to any message in GossipTopicMappings", topicFormat))
 	}
@@ -404,6 +381,7 @@ func (s *Service) subscribeDynamicWithSubnets(
 				if s.chainStarted.IsSet() && s.cfg.initialSync.Syncing() {
 					continue
 				}
+				genRoot := s.cfg.clock.GenesisValidatorsRoot()
 				valid, err := isDigestValid(digest, genesis, genRoot)
 				if err != nil {
 					log.Error(err)
@@ -509,12 +487,7 @@ func (s *Service) subscribeSyncSubnet(
 // subscribe to a static subnet with the given topic and index. A given validator and subscription handler is
 // used to handle messages from the subnet. The base protobuf message is used to initialize new messages for decoding.
 func (s *Service) subscribeStaticWithSyncSubnets(topic string, validator wrappedVal, handle subHandler, digest [4]byte) {
-	genRoot := s.cfg.clock.GenesisValidatorsRoot()
-	_, e, err := forks.RetrieveForkDataFromDigest(digest, genRoot[:])
-	if err != nil {
-		panic(err)
-	}
-	base := p2p.GossipTopicMappings(topic, e)
+	base := p2p.GossipTopicMappings(topic)
 	if base == nil {
 		panic(fmt.Sprintf("%s is not mapped to any message in GossipTopicMappings", topic))
 	}
@@ -534,6 +507,7 @@ func (s *Service) subscribeStaticWithSyncSubnets(topic string, validator wrapped
 				if s.chainStarted.IsSet() && s.cfg.initialSync.Syncing() {
 					continue
 				}
+				genRoot := s.cfg.clock.GenesisValidatorsRoot()
 				valid, err := isDigestValid(digest, genesis, genRoot)
 				if err != nil {
 					log.Error(err)
@@ -580,12 +554,7 @@ func (s *Service) subscribeDynamicWithSyncSubnets(
 	handle subHandler,
 	digest [4]byte,
 ) {
-	genRoot := s.cfg.clock.GenesisValidatorsRoot()
-	_, e, err := forks.RetrieveForkDataFromDigest(digest, genRoot[:])
-	if err != nil {
-		panic(err)
-	}
-	base := p2p.GossipTopicMappings(topicFormat, e)
+	base := p2p.GossipTopicMappings(topicFormat)
 	if base == nil {
 		panic(fmt.Sprintf("%s is not mapped to any message in GossipTopicMappings", topicFormat))
 	}
@@ -603,6 +572,7 @@ func (s *Service) subscribeDynamicWithSyncSubnets(
 				if s.chainStarted.IsSet() && s.cfg.initialSync.Syncing() {
 					continue
 				}
+				genRoot := s.cfg.clock.GenesisValidatorsRoot()
 				valid, err := isDigestValid(digest, genesis, genRoot)
 				if err != nil {
 					log.Error(err)
@@ -756,16 +726,21 @@ func isDigestValid(digest [4]byte, genesis time.Time, genValRoot [32]byte) (bool
 	if err != nil {
 		return false, err
 	}
-	isNextEpoch, err := forks.IsForkNextEpoch(genesis, genValRoot[:])
-	if err != nil {
-		return false, err
-	}
-	// In the event there is a fork the next epoch,
-	// we skip the check, as we subscribe subnets an
-	// epoch in advance.
-	if isNextEpoch {
-		return true, nil
-	}
+
+	// NOTE(rgeraldes24): re-enable once we have more forks
+	/*
+		isNextEpoch, err := forks.IsForkNextEpoch(genesis, genValRoot[:])
+		if err != nil {
+			return false, err
+		}
+		// In the event there is a fork the next epoch,
+		// we skip the check, as we subscribe subnets an
+		// epoch in advance.
+		if isNextEpoch {
+			return true, nil
+		}
+	*/
+
 	return retDigest == digest, nil
 }
 

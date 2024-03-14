@@ -277,7 +277,7 @@ func TestService_processQueuedBlocks(t *testing.T) {
 	hook := logTest.NewGlobal()
 	slasherDB := dbtest.SetupSlasherDB(t)
 
-	beaconState, err := util.NewBeaconState()
+	beaconState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	currentSlot := primitives.Slot(0)
 	require.NoError(t, beaconState.SetSlot(currentSlot))

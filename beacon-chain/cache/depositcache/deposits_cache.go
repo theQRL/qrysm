@@ -15,9 +15,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/container/trie"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
@@ -46,7 +46,7 @@ type DepositCache struct {
 	pendingDeposits   []*zondpb.DepositContainer
 	deposits          []*zondpb.DepositContainer
 	finalizedDeposits FinalizedDeposits
-	depositsByKey     map[[dilithium2.CryptoPublicKeyBytes]byte][]*zondpb.DepositContainer
+	depositsByKey     map[[field_params.DilithiumPubkeyLength]byte][]*zondpb.DepositContainer
 	depositsLock      sync.RWMutex
 }
 
@@ -62,7 +62,7 @@ func New() (*DepositCache, error) {
 	return &DepositCache{
 		pendingDeposits:   []*zondpb.DepositContainer{},
 		deposits:          []*zondpb.DepositContainer{},
-		depositsByKey:     map[[dilithium2.CryptoPublicKeyBytes]byte][]*zondpb.DepositContainer{},
+		depositsByKey:     map[[field_params.DilithiumPubkeyLength]byte][]*zondpb.DepositContainer{},
 		finalizedDeposits: FinalizedDeposits{deposits: finalizedDepositsTrie, merkleTrieIndex: -1},
 	}, nil
 }

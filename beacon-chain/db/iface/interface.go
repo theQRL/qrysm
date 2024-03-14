@@ -1,5 +1,5 @@
 // Package iface defines the actual database interface used
-// by a Prysm beacon node, also containing useful, scoped interfaces such as
+// by a Qrysm beacon node, also containing useful, scoped interfaces such as
 // a ReadOnlyDatabase.
 package iface
 

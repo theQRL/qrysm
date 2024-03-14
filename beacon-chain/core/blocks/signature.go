@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
@@ -34,7 +33,7 @@ func signatureBatch(signedData, pub, signature, domain []byte, desc string) (*di
 		return nil, errors.Wrap(err, "could not hash container")
 	}
 	return &dilithium.SignatureBatch{
-		Signatures:   [][]byte{signature},
+		Signatures:   [][][]byte{{signature}},
 		PublicKeys:   [][]dilithium.PublicKey{{publicKey}},
 		Messages:     [][32]byte{root},
 		Descriptions: []string{desc},
@@ -50,23 +49,16 @@ func verifySignature(signedData, pub, signature, domain []byte) error {
 	if len(set.Signatures) != 1 {
 		return errors.Errorf("signature set contains %d signatures instead of 1", len(set.Signatures))
 	}
-	totalSigsLen := len(set.PublicKeys[0]) * dilithium2.CryptoBytes
-	if totalSigsLen != len(set.Signatures[0]) {
-		return errors.Errorf("signature set length is %d instead of %d", len(set.Signatures[0]), totalSigsLen)
-	}
 	// We assume only one signature set is returned here.
-	sig := set.Signatures[0]
-	sigOffset := 0
-	for _, publicKey := range set.PublicKeys[0] {
-		root := set.Messages[0]
-		rSig, err := dilithium.SignatureFromBytes(sig[sigOffset : sigOffset+dilithium2.CryptoBytes])
-		if err != nil {
-			return err
-		}
-		if !rSig.Verify(publicKey, root[:]) {
-			return signing.ErrSigFailedToVerify
-		}
-		sigOffset += dilithium2.CryptoBytes
+	sig := set.Signatures[0][0]
+	publicKey := set.PublicKeys[0][0]
+	root := set.Messages[0]
+	rSig, err := dilithium.SignatureFromBytes(sig)
+	if err != nil {
+		return err
+	}
+	if !rSig.Verify(publicKey, root[:]) {
+		return signing.ErrSigFailedToVerify
 	}
 	return nil
 }
@@ -192,7 +184,7 @@ func createAttestationSignatureBatch(
 		return nil, nil
 	}
 
-	sigs := make([][]byte, len(atts))
+	sigs := make([][][]byte, len(atts))
 	pks := make([][]dilithium.PublicKey, len(atts))
 	msgs := make([][32]byte, len(atts))
 	descs := make([]string, len(atts))
@@ -208,7 +200,7 @@ func createAttestationSignatureBatch(
 		if err := attestation.IsValidAttestationIndices(ctx, ia); err != nil {
 			return nil, err
 		}
-		sigs[i] = ia.Signature
+		sigs[i] = ia.Signatures
 		indices := ia.AttestingIndices
 		pubkeys := make([][]byte, len(indices))
 		for j := 0; j < len(indices); j++ {

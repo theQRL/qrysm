@@ -18,7 +18,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/db"
 	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/blstoexec"
+	"github.com/theQRL/qrysm/v4/beacon-chain/operations/dilithiumtoexec"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/slashings"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/synccommittee"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/voluntaryexits"
@@ -72,7 +72,7 @@ type Server struct {
 	BeaconDB               db.HeadAccessDatabase
 	ExecutionEngineCaller  execution.EngineCaller
 	BlockBuilder           builder.BlockBuilder
-	DilithiumChangesPool   blstoexec.PoolManager
+	DilithiumChangesPool   dilithiumtoexec.PoolManager
 	ClockWaiter            startup.ClockWaiter
 	CoreService            *core.Service
 }

@@ -21,7 +21,7 @@ func TestGenerateDilithiumToExecutionChange(t *testing.T) {
 	require.NoError(t, err)
 
 	cred := val.WithdrawalCredentials
-	require.DeepEqual(t, cred[0], params.BeaconConfig().BLSWithdrawalPrefixByte)
+	require.DeepEqual(t, cred[0], params.BeaconConfig().DilithiumWithdrawalPrefixByte)
 
 	fromPubkey := message.FromDilithiumPubkey
 	hashFn := ssz.NewHasherFunc(hash.CustomSHA256Hasher())

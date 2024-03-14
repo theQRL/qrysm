@@ -78,8 +78,8 @@ func TestROBlockSorting(t *testing.T) {
 }
 
 func testROBlock(t *testing.T, slot primitives.Slot, root [32]byte) ROBlock {
-	b, err := NewSignedBeaconBlock(&zond.SignedBeaconBlock{Block: &zond.BeaconBlock{
-		Body: &zond.BeaconBlockBody{},
+	b, err := NewSignedBeaconBlock(&zond.SignedBeaconBlockCapella{Block: &zond.BeaconBlockCapella{
+		Body: &zond.BeaconBlockBodyCapella{},
 		Slot: slot,
 	}})
 	require.NoError(t, err)

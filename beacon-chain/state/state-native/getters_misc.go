@@ -3,7 +3,6 @@ package state_native
 import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // Id is the identifier of the beacon state.
@@ -86,10 +85,6 @@ func (b *BeaconState) HistoricalRoots() ([][]byte, error) {
 
 // HistoricalSummaries of the beacon state.
 func (b *BeaconState) HistoricalSummaries() ([]*zondpb.HistoricalSummary, error) {
-	if b.version < version.Capella {
-		return nil, errNotSupported("HistoricalSummaries", b.version)
-	}
-
 	if b.historicalSummaries == nil {
 		return nil, nil
 	}

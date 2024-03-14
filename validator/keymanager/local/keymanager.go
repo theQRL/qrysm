@@ -10,10 +10,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-qrllib/common"
-	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
 	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
 	"github.com/theQRL/qrysm/v4/async/event"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
@@ -26,8 +25,8 @@ import (
 
 var (
 	lock               sync.RWMutex
-	orderedPublicKeys  = make([][dilithiumlib.CryptoPublicKeyBytes]byte, 0)
-	dilithiumKeysCache = make(map[[dilithiumlib.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey)
+	orderedPublicKeys  = make([][field_params.DilithiumPubkeyLength]byte, 0)
+	dilithiumKeysCache = make(map[[field_params.DilithiumPubkeyLength]byte]dilithium.DilithiumKey)
 )
 
 const (
@@ -80,8 +79,8 @@ type AccountsKeystoreRepresentation struct {
 // ResetCaches for the keymanager.
 func ResetCaches() {
 	lock.Lock()
-	orderedPublicKeys = make([][dilithiumlib.CryptoPublicKeyBytes]byte, 0)
-	dilithiumKeysCache = make(map[[dilithiumlib.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey)
+	orderedPublicKeys = make([][field_params.DilithiumPubkeyLength]byte, 0)
+	dilithiumKeysCache = make(map[[field_params.DilithiumPubkeyLength]byte]dilithium.DilithiumKey)
 	lock.Unlock()
 }
 
@@ -126,7 +125,7 @@ func NewInteropKeymanager(_ context.Context, offset, numValidatorKeys uint64) (*
 		return nil, errors.Wrap(err, "could not generate interop keys")
 	}
 	lock.Lock()
-	pubKeys := make([][dilithiumlib.CryptoPublicKeyBytes]byte, numValidatorKeys)
+	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidatorKeys)
 	for i := uint64(0); i < numValidatorKeys; i++ {
 		publicKey := bytesutil.ToBytes2592(publicKeys[i].Marshal())
 		pubKeys[i] = publicKey
@@ -140,12 +139,12 @@ func NewInteropKeymanager(_ context.Context, offset, numValidatorKeys uint64) (*
 // SubscribeAccountChanges creates an event subscription for a channel
 // to listen for public key changes at runtime, such as when new validator accounts
 // are imported into the keymanager while the validator process is running.
-func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][dilithiumlib.CryptoPublicKeyBytes]byte) event.Subscription {
+func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][field_params.DilithiumPubkeyLength]byte) event.Subscription {
 	return km.accountsChangedFeed.Subscribe(pubKeysChan)
 }
 
 // ValidatingAccountNames for a local keymanager.
-func (_ *Keymanager) ValidatingAccountNames() ([]string, error) {
+func (*Keymanager) ValidatingAccountNames() ([]string, error) {
 	lock.RLock()
 	names := make([]string, len(orderedPublicKeys))
 	for i, pubKey := range orderedPublicKeys {
@@ -161,12 +160,12 @@ func (km *Keymanager) initializeKeysCachesFromKeystore() error {
 	lock.Lock()
 	defer lock.Unlock()
 	count := len(km.accountsStore.Seeds)
-	orderedPublicKeys = make([][dilithiumlib.CryptoPublicKeyBytes]byte, count)
-	dilithiumKeysCache = make(map[[dilithiumlib.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey, count)
+	orderedPublicKeys = make([][field_params.DilithiumPubkeyLength]byte, count)
+	dilithiumKeysCache = make(map[[field_params.DilithiumPubkeyLength]byte]dilithium.DilithiumKey, count)
 	for i, publicKey := range km.accountsStore.PublicKeys {
 		publicKey2592 := bytesutil.ToBytes2592(publicKey)
 		orderedPublicKeys[i] = publicKey2592
-		secretKey, err := dilithium.SecretKeyFromBytes(km.accountsStore.Seeds[i])
+		secretKey, err := dilithium.SecretKeyFromSeed(km.accountsStore.Seeds[i])
 		if err != nil {
 			return errors.Wrap(err, "failed to initialize keys caches from account keystore")
 		}
@@ -176,23 +175,23 @@ func (km *Keymanager) initializeKeysCachesFromKeystore() error {
 }
 
 // FetchValidatingPublicKeys fetches the list of active public keys from the local account keystores.
-func (_ *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][dilithiumlib.CryptoPublicKeyBytes]byte, error) {
-	ctx, span := trace.StartSpan(ctx, "keymanager.FetchValidatingPublicKeys")
+func (*Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][field_params.DilithiumPubkeyLength]byte, error) {
+	_, span := trace.StartSpan(ctx, "keymanager.FetchValidatingPublicKeys")
 	defer span.End()
 
 	lock.RLock()
 	keys := orderedPublicKeys
-	result := make([][dilithiumlib.CryptoPublicKeyBytes]byte, len(keys))
+	result := make([][field_params.DilithiumPubkeyLength]byte, len(keys))
 	copy(result, keys)
 	lock.RUnlock()
 	return result, nil
 }
 
 // FetchValidatingSeeds fetches the list of private keys from the secret keys cache
-func (km *Keymanager) FetchValidatingSeeds(ctx context.Context) ([][common.SeedSize]byte, error) {
+func (km *Keymanager) FetchValidatingSeeds(ctx context.Context) ([][field_params.DilithiumSeedLength]byte, error) {
 	lock.RLock()
 	defer lock.RUnlock()
-	dilithiumSeed := make([][common.SeedSize]byte, len(dilithiumKeysCache))
+	dilithiumSeed := make([][field_params.DilithiumSeedLength]byte, len(dilithiumKeysCache))
 	pubKeys, err := km.FetchValidatingPublicKeys(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not retrieve public keys")
@@ -208,7 +207,7 @@ func (km *Keymanager) FetchValidatingSeeds(ctx context.Context) ([][common.SeedS
 }
 
 // Sign signs a message using a validator key.
-func (_ *Keymanager) Sign(ctx context.Context, req *validatorpb.SignRequest) (dilithium.Signature, error) {
+func (*Keymanager) Sign(ctx context.Context, req *validatorpb.SignRequest) (dilithium.Signature, error) {
 	publicKey := req.PublicKey
 	if publicKey == nil {
 		return nil, errors.New("nil public key in request")
@@ -394,7 +393,7 @@ func (km *Keymanager) ListKeymanagerAccounts(ctx context.Context, cfg keymanager
 	if err != nil {
 		return errors.Wrap(err, "could not fetch validating public keys")
 	}
-	var seeds [][common.SeedSize]byte
+	var seeds [][field_params.DilithiumSeedLength]byte
 	if cfg.ShowPrivateKeys {
 		seeds, err = km.FetchValidatingSeeds(ctx)
 		if err != nil {

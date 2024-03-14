@@ -41,8 +41,8 @@ func getHappyPathTestServer(file string, t *testing.T) *httptest.Server {
 			} else if r.RequestURI == "/zond/v1/beacon/states/head/fork" {
 				err := json.NewEncoder(w).Encode(&beacon.GetStateForkResponse{
 					Data: &shared.Fork{
-						PreviousVersion: hexutil.Encode(params.BeaconConfig().CapellaForkVersion),
-						CurrentVersion:  hexutil.Encode(params.BeaconConfig().CapellaForkVersion),
+						PreviousVersion: hexutil.Encode(params.BeaconConfig().GenesisForkVersion),
+						CurrentVersion:  hexutil.Encode(params.BeaconConfig().GenesisForkVersion),
 						Epoch:           "1350",
 					},
 					ExecutionOptimistic: false,
@@ -232,9 +232,9 @@ func TestCallWithdrawalEndpoint_Errors(t *testing.T) {
 				w.Header().Set("Content-Type", "application/json")
 				err := json.NewEncoder(w).Encode(&beacon.GetStateForkResponse{
 					Data: &shared.Fork{
-						PreviousVersion: hexutil.Encode(params.BeaconConfig().CapellaForkVersion),
-						CurrentVersion:  hexutil.Encode(params.BeaconConfig().CapellaForkVersion),
-						Epoch:           fmt.Sprintf("%d", params.BeaconConfig().CapellaForkEpoch),
+						PreviousVersion: hexutil.Encode(params.BeaconConfig().GenesisForkVersion),
+						CurrentVersion:  hexutil.Encode(params.BeaconConfig().GenesisForkVersion),
+						Epoch:           "0",
 					},
 					ExecutionOptimistic: false,
 					Finalized:           true,

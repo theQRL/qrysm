@@ -55,7 +55,7 @@ func (*FaultyExecutionChain) ChainStartEth1Data() *zondpb.Eth1Data {
 
 // PreGenesisState --
 func (*FaultyExecutionChain) PreGenesisState() state.BeaconState {
-	s, err := state_native.InitializeFromProtoUnsafePhase0(&zondpb.BeaconState{})
+	s, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{})
 	if err != nil {
 		panic("could not initialize state")
 	}

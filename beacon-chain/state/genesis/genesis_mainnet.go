@@ -10,8 +10,9 @@ import (
 )
 
 var (
+	// TODO(theQRL/qrysm/issues/81)
 	//go:embed mainnet.ssz.snappy
-	mainnetRawSSZCompressed []byte // 1.8Mb
+	mainnetRawSSZCompressed []byte
 )
 
 func init() {

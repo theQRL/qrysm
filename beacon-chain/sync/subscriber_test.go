@@ -12,7 +12,6 @@ import (
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
 	"github.com/libp2p/go-libp2p/core/peer"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/async/abool"
 	mockChain "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
@@ -26,6 +25,7 @@ import (
 	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
 	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
 	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
@@ -74,7 +74,7 @@ func TestSubscribe_ReceivesValidMessage(t *testing.T) {
 	}, p2pService.Digest)
 	r.markForChainStart()
 
-	p2pService.ReceivePubSub(topic, &pb.SignedVoluntaryExit{Exit: &pb.VoluntaryExit{Epoch: 55}, Signature: make([]byte, dilithium2.CryptoBytes)})
+	p2pService.ReceivePubSub(topic, &pb.SignedVoluntaryExit{Exit: &pb.VoluntaryExit{Epoch: 55}, Signature: make([]byte, field_params.DilithiumSignatureLength)})
 
 	if util.WaitTimeout(&wg, time.Second) {
 		t.Fatal("Did not receive PubSub in 1 second")
@@ -161,7 +161,7 @@ func TestSubscribe_ReceivesAttesterSlashing(t *testing.T) {
 		wg.Done()
 		return nil
 	}, p2pService.Digest)
-	beaconState, privKeys := util.DeterministicGenesisState(t, 64)
+	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 64)
 	chainService.State = beaconState
 	r.markForChainStart()
 	attesterSlashing, err := util.GenerateAttesterSlashingForValidator(
@@ -216,7 +216,7 @@ func TestSubscribe_ReceivesProposerSlashing(t *testing.T) {
 		wg.Done()
 		return nil
 	}, p2pService.Digest)
-	beaconState, privKeys := util.DeterministicGenesisState(t, 64)
+	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 64)
 	chainService.State = beaconState
 	r.markForChainStart()
 	proposerSlashing, err := util.GenerateProposerSlashingForValidator(
@@ -264,7 +264,7 @@ func TestSubscribe_HandlesPanic(t *testing.T) {
 		panic("bad")
 	}, p.Digest)
 	r.markForChainStart()
-	p.ReceivePubSub(topic, &pb.SignedVoluntaryExit{Exit: &pb.VoluntaryExit{Epoch: 55}, Signature: make([]byte, dilithium2.CryptoBytes)})
+	p.ReceivePubSub(topic, &pb.SignedVoluntaryExit{Exit: &pb.VoluntaryExit{Epoch: 55}, Signature: make([]byte, field_params.DilithiumSignatureLength)})
 
 	if util.WaitTimeout(&wg, time.Second) {
 		t.Fatal("Did not receive PubSub in 1 second")
@@ -615,13 +615,11 @@ func TestSubscribeWithSyncSubnets_DynamicOK(t *testing.T) {
 	cancel()
 }
 
+// NOTE(rgeraldes24): tests are not valid at the moment
+/*
 func TestSubscribeWithSyncSubnets_StaticSwitchFork(t *testing.T) {
 	p := p2ptest.NewTestP2P(t)
 	params.SetupTestConfigCleanup(t)
-	cfg := params.BeaconConfig()
-	cfg.AltairForkEpoch = 1
-	cfg.SecondsPerSlot = 1
-	params.OverrideBeaconConfig(cfg)
 	params.BeaconConfig().InitializeForkSchedule()
 	ctx, cancel := context.WithCancel(context.Background())
 	currSlot := primitives.Slot(100)
@@ -658,11 +656,6 @@ func TestSubscribeWithSyncSubnets_StaticSwitchFork(t *testing.T) {
 func TestSubscribeWithSyncSubnets_DynamicSwitchFork(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	p := p2ptest.NewTestP2P(t)
-	cfg := params.BeaconConfig().Copy()
-	cfg.AltairForkEpoch = 1
-	cfg.SecondsPerSlot = 1
-	cfg.SlotsPerEpoch = 4
-	params.OverrideBeaconConfig(cfg)
 	params.BeaconConfig().InitializeForkSchedule()
 	ctx, cancel := context.WithCancel(context.Background())
 	currSlot := primitives.Slot(100)
@@ -708,6 +701,7 @@ func TestSubscribeWithSyncSubnets_DynamicSwitchFork(t *testing.T) {
 
 	cancel()
 }
+*/
 
 func TestIsDigestValid(t *testing.T) {
 	genRoot := [32]byte{'A'}
@@ -716,13 +710,6 @@ func TestIsDigestValid(t *testing.T) {
 	valid, err := isDigestValid(digest, time.Now().Add(-100*time.Second), genRoot)
 	assert.NoError(t, err)
 	assert.Equal(t, true, valid)
-
-	// Compute future fork digest that will be invalid currently.
-	digest, err = signing.ComputeForkDigest(params.BeaconConfig().AltairForkVersion, genRoot[:])
-	assert.NoError(t, err)
-	valid, err = isDigestValid(digest, time.Now().Add(-100*time.Second), genRoot)
-	assert.NoError(t, err)
-	assert.Equal(t, false, valid)
 }
 
 // Create peer and register them to provided topics.

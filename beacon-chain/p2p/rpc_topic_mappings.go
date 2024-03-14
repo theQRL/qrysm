@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 	p2ptypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 )
@@ -43,14 +42,8 @@ const (
 	RPCStatusTopicV1 = protocolPrefix + StatusMessageName + SchemaVersionV1
 	// RPCGoodByeTopicV1 defines the v1 topic for the goodbye rpc method.
 	RPCGoodByeTopicV1 = protocolPrefix + GoodbyeMessageName + SchemaVersionV1
-	// RPCBlocksByRangeTopicV1 defines v1 the topic for the blocks by range rpc method.
-	RPCBlocksByRangeTopicV1 = protocolPrefix + BeaconBlocksByRangeMessageName + SchemaVersionV1
-	// RPCBlocksByRootTopicV1 defines the v1 topic for the blocks by root rpc method.
-	RPCBlocksByRootTopicV1 = protocolPrefix + BeaconBlocksByRootsMessageName + SchemaVersionV1
 	// RPCPingTopicV1 defines the v1 topic for the ping rpc method.
 	RPCPingTopicV1 = protocolPrefix + PingMessageName + SchemaVersionV1
-	// RPCMetaDataTopicV1 defines the v1 topic for the metadata rpc method.
-	RPCMetaDataTopicV1 = protocolPrefix + MetadataMessageName + SchemaVersionV1
 
 	// V2 RPC Topics
 	// RPCBlocksByRangeTopicV2 defines v2 the topic for the blocks by range rpc method.
@@ -73,15 +66,12 @@ var RPCTopicMappings = map[string]interface{}{
 	// RPC Goodbye Message
 	RPCGoodByeTopicV1: new(primitives.SSZUint64),
 	// RPC Block By Range Message
-	RPCBlocksByRangeTopicV1: new(pb.BeaconBlocksByRangeRequest),
 	RPCBlocksByRangeTopicV2: new(pb.BeaconBlocksByRangeRequest),
 	// RPC Block By Root Message
-	RPCBlocksByRootTopicV1: new(p2ptypes.BeaconBlockByRootsReq),
 	RPCBlocksByRootTopicV2: new(p2ptypes.BeaconBlockByRootsReq),
 	// RPC Ping Message
 	RPCPingTopicV1: new(primitives.SSZUint64),
 	// RPC Metadata Message
-	RPCMetaDataTopicV1: new(interface{}),
 	RPCMetaDataTopicV2: new(interface{}),
 }
 
@@ -237,14 +227,15 @@ func (r RPCTopic) Version() string {
 
 // TopicFromMessage constructs the rpc topic from the provided message
 // type and epoch.
-func TopicFromMessage(msg string, epoch primitives.Epoch) (string, error) {
+func TopicFromMessage(msg string) (string, error) {
 	if !messageMapping[msg] {
 		return "", errors.Errorf("%s: %s", invalidRPCMessageType, msg)
 	}
 	version := SchemaVersionV1
-	isAltair := epoch >= params.BeaconConfig().AltairForkEpoch
-	if isAltair && altairMapping[msg] {
+
+	if altairMapping[msg] {
 		version = SchemaVersionV2
 	}
+
 	return protocolPrefix + msg + version, nil
 }

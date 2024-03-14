@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-bitfield"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
@@ -14,15 +14,13 @@ import (
 
 type fields struct {
 	root                        [32]byte
-	sig                         [dilithium2.CryptoBytes]byte
+	sig                         [field_params.DilithiumSignatureLength]byte
 	deposits                    []*zond.Deposit
 	atts                        []*zond.Attestation
 	proposerSlashings           []*zond.ProposerSlashing
 	attesterSlashings           []*zond.AttesterSlashing
 	voluntaryExits              []*zond.SignedVoluntaryExit
 	syncAggregate               *zond.SyncAggregate
-	execPayload                 *enginev1.ExecutionPayload
-	execPayloadHeader           *enginev1.ExecutionPayloadHeader
 	execPayloadCapella          *enginev1.ExecutionPayloadCapella
 	execPayloadHeaderCapella    *enginev1.ExecutionPayloadHeaderCapella
 	dilithiumToExecutionChanges []*zond.SignedDilithiumToExecutionChange
@@ -399,7 +397,7 @@ func getFields() fields {
 	b2592 := make([]byte, 2592)
 	b256 := make([]byte, 256)
 	var root [32]byte
-	var sig [dilithium2.CryptoBytes]byte
+	var sig [field_params.DilithiumSignatureLength]byte
 	b20[0], b20[5], b20[10] = 'q', 'u', 'x'
 	b2592[0], b2592[5], b2592[10] = 'b', 'a', 'r'
 	b256[0], b256[5], b256[10] = 'x', 'y', 'z'
@@ -422,7 +420,7 @@ func getFields() fields {
 	atts := make([]*zond.Attestation, 128)
 	for i := range atts {
 		atts[i] = &zond.Attestation{}
-		atts[i].Signature = sig[:]
+		atts[i].Signatures = [][]byte{sig[:]}
 		atts[i].AggregationBits = bitfield.NewBitlist(1)
 		atts[i].Data = &zond.AttestationData{
 			Slot:            128,
@@ -476,7 +474,7 @@ func getFields() fields {
 					Root:  root[:],
 				},
 			},
-			Signature: sig[:],
+			Signatures: [][]byte{sig[:]},
 		},
 		Attestation_2: &zond.IndexedAttestation{
 			AttestingIndices: []uint64{1, 2, 8},
@@ -493,7 +491,7 @@ func getFields() fields {
 					Root:  root[:],
 				},
 			},
-			Signature: sig[:],
+			Signatures: [][]byte{sig[:]},
 		},
 	}
 	voluntaryExit := &zond.SignedVoluntaryExit{
@@ -508,44 +506,8 @@ func getFields() fields {
 	syncCommitteeBits.SetBitAt(2, true)
 	syncCommitteeBits.SetBitAt(8, true)
 	syncAggregate := &zond.SyncAggregate{
-		SyncCommitteeBits:      syncCommitteeBits,
-		SyncCommitteeSignature: sig[:],
-	}
-	execPayload := &enginev1.ExecutionPayload{
-		ParentHash:    root[:],
-		FeeRecipient:  b20,
-		StateRoot:     root[:],
-		ReceiptsRoot:  root[:],
-		LogsBloom:     b256,
-		PrevRandao:    root[:],
-		BlockNumber:   128,
-		GasLimit:      128,
-		GasUsed:       128,
-		Timestamp:     128,
-		ExtraData:     root[:],
-		BaseFeePerGas: root[:],
-		BlockHash:     root[:],
-		Transactions: [][]byte{
-			[]byte("transaction1"),
-			[]byte("transaction2"),
-			[]byte("transaction8"),
-		},
-	}
-	execPayloadHeader := &enginev1.ExecutionPayloadHeader{
-		ParentHash:       root[:],
-		FeeRecipient:     b20,
-		StateRoot:        root[:],
-		ReceiptsRoot:     root[:],
-		LogsBloom:        b256,
-		PrevRandao:       root[:],
-		BlockNumber:      128,
-		GasLimit:         128,
-		GasUsed:          128,
-		Timestamp:        128,
-		ExtraData:        root[:],
-		BaseFeePerGas:    root[:],
-		BlockHash:        root[:],
-		TransactionsRoot: root[:],
+		SyncCommitteeBits:       syncCommitteeBits,
+		SyncCommitteeSignatures: [][]byte{sig[:]},
 	}
 	execPayloadCapella := &enginev1.ExecutionPayloadCapella{
 		ParentHash:    root[:],
@@ -609,8 +571,6 @@ func getFields() fields {
 		attesterSlashings:           []*zond.AttesterSlashing{attesterSlashing},
 		voluntaryExits:              []*zond.SignedVoluntaryExit{voluntaryExit},
 		syncAggregate:               syncAggregate,
-		execPayload:                 execPayload,
-		execPayloadHeader:           execPayloadHeader,
 		execPayloadCapella:          execPayloadCapella,
 		execPayloadHeaderCapella:    execPayloadHeaderCapella,
 		dilithiumToExecutionChanges: dilithiumToExecutionChanges,

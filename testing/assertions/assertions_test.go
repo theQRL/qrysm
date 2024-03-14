@@ -600,7 +600,7 @@ func Test_NotNil(t *testing.T) {
 		obj  interface{}
 		msgs []interface{}
 	}
-	var nilBlock *zond.SignedBeaconBlock = nil
+	var nilBlock *zond.SignedBeaconBlockCapella = nil
 	tests := []struct {
 		name        string
 		args        args

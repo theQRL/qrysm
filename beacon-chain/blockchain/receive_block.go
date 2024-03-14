@@ -21,7 +21,6 @@ import (
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation"
 	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
 	"go.opencensus.io/trace"
 	"golang.org/x/sync/errgroup"
@@ -290,9 +289,6 @@ func (s *Service) prunePostBlockOperationPools(ctx context.Context, blk interfac
 }
 
 func (s *Service) markIncludedBlockDilithiumToExecChanges(headBlock interfaces.ReadOnlyBeaconBlock) error {
-	if headBlock.Version() < version.Capella {
-		return nil
-	}
 	changes, err := headBlock.Body().DilithiumToExecutionChanges()
 	if err != nil {
 		return errors.Wrap(err, "could not get DilithiumToExecutionChanges")
@@ -420,14 +416,10 @@ func (s *Service) sendBlockAttestationsToSlasher(signed interfaces.ReadOnlySigne
 
 // validateExecutionOnBlock notifies the engine of the incoming block execution payload and returns true if the payload is valid
 func (s *Service) validateExecutionOnBlock(ctx context.Context, ver int, header interfaces.ExecutionData, signed interfaces.ReadOnlySignedBeaconBlock, blockRoot [32]byte) (bool, error) {
-	isValidPayload, err := s.notifyNewPayload(ctx, ver, header, signed)
+	isValidPayload, err := s.notifyNewPayload(ctx, header, signed)
 	if err != nil {
 		return false, s.handleInvalidExecutionError(ctx, err, blockRoot, signed.Block().ParentRoot())
 	}
-	if signed.Version() < version.Capella && isValidPayload {
-		if err := s.validateMergeTransitionBlock(ctx, ver, header, signed); err != nil {
-			return isValidPayload, err
-		}
-	}
+
 	return isValidPayload, nil
 }

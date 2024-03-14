@@ -1,11 +1,9 @@
 package blocks
 
 import (
-	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // SetSignature sets the signature of the signed beacon block.
@@ -95,9 +93,6 @@ func (b *SignedBeaconBlock) SetVoluntaryExits(v []*zond.SignedVoluntaryExit) {
 // SetSyncAggregate sets the sync aggregate in the block.
 // This function is not thread safe, it is only used during block creation.
 func (b *SignedBeaconBlock) SetSyncAggregate(s *zond.SyncAggregate) error {
-	if b.version == version.Phase0 {
-		return consensus_types.ErrNotSupported("SyncAggregate", b.version)
-	}
 	b.block.body.syncAggregate = s
 	return nil
 }
@@ -105,9 +100,6 @@ func (b *SignedBeaconBlock) SetSyncAggregate(s *zond.SyncAggregate) error {
 // SetExecution sets the execution payload of the block body.
 // This function is not thread safe, it is only used during block creation.
 func (b *SignedBeaconBlock) SetExecution(e interfaces.ExecutionData) error {
-	if b.version == version.Phase0 || b.version == version.Altair {
-		return consensus_types.ErrNotSupported("Execution", b.version)
-	}
 	if b.block.body.isBlinded {
 		b.block.body.executionPayloadHeader = e
 		return nil
@@ -119,9 +111,6 @@ func (b *SignedBeaconBlock) SetExecution(e interfaces.ExecutionData) error {
 // SetDilithiumToExecutionChanges sets the Dilithium to execution changes in the block.
 // This function is not thread safe, it is only used during block creation.
 func (b *SignedBeaconBlock) SetDilithiumToExecutionChanges(dilithiumToExecutionChanges []*zond.SignedDilithiumToExecutionChange) error {
-	if b.version < version.Capella {
-		return consensus_types.ErrNotSupported("DilithiumToExecutionChanges", b.version)
-	}
 	b.block.body.dilithiumToExecutionChanges = dilithiumToExecutionChanges
 	return nil
 }

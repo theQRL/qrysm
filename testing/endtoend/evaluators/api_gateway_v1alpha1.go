@@ -153,7 +153,7 @@ func withCompareListAttestations(beaconNodeIdx int, conn *grpc.ClientConn) error
 	type attestationJSON struct {
 		AggregationBits string               `json:"aggregationBits"`
 		Data            *attestationDataJSON `json:"data"`
-		Signature       string               `json:"signature"`
+		Signatures      []string             `json:"signatures"`
 	}
 	type attestationsResponseJSON struct {
 		Attestations  []*attestationJSON `json:"attestations"`
@@ -260,13 +260,25 @@ func withCompareListAttestations(beaconNodeIdx int, conn *grpc.ClientConn) error
 				grpcData.Target.Root,
 			)
 		}
-		if att.Signature != base64.StdEncoding.EncodeToString(grpcAtt.Signature) {
+		if len(att.Signatures) != len(grpcAtt.Signatures) {
 			return fmt.Errorf(
-				"HTTP gateway attestation %d signature %s does not match gRPC %d",
+				"HTTP gateway attestation %d signatures length %d does not match gRPC %d",
 				i,
-				att.Signature,
-				grpcAtt.Signature,
+				len(att.Signatures),
+				len(grpcAtt.Signatures),
 			)
+		}
+
+		for j, sig := range att.Signatures {
+			if sig != base64.StdEncoding.EncodeToString(grpcAtt.Signatures[j]) {
+				return fmt.Errorf(
+					"HTTP gateway attestation %d signature %d %s does not match gRPC %d",
+					i,
+					j,
+					sig,
+					grpcAtt.Signatures[j],
+				)
+			}
 		}
 	}
 	return nil

@@ -10,7 +10,7 @@ import (
 	fssz "github.com/prysmaticlabs/fastssz"
 	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -24,18 +24,18 @@ func TestKV_Aggregated_AggregateUnaggregatedAttestations(t *testing.T) {
 	defer resetFn()
 
 	cache := NewAttCaches()
-	priv, err := bls.RandKey()
+	priv, err := dilithium.RandKey()
 	require.NoError(t, err)
 	sig1 := priv.Sign([]byte{'a'})
 	sig2 := priv.Sign([]byte{'b'})
-	att1 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1001}, Signature: sig1.Marshal()})
-	att2 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1010}, Signature: sig1.Marshal()})
-	att3 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1100}, Signature: sig1.Marshal()})
-	att4 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1001}, Signature: sig2.Marshal()})
-	att5 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1001}, Signature: sig1.Marshal()})
-	att6 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1010}, Signature: sig1.Marshal()})
-	att7 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1100}, Signature: sig1.Marshal()})
-	att8 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1001}, Signature: sig2.Marshal()})
+	att1 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1001}, Signatures: [][]byte{sig1.Marshal()}})
+	att2 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1010}, Signatures: [][]byte{sig1.Marshal()}})
+	att3 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1100}, Signatures: [][]byte{sig1.Marshal()}})
+	att4 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1001}, Signatures: [][]byte{sig2.Marshal()}})
+	att5 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1001}, Signatures: [][]byte{sig1.Marshal()}})
+	att6 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1010}, Signatures: [][]byte{sig1.Marshal()}})
+	att7 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1100}, Signatures: [][]byte{sig1.Marshal()}})
+	att8 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1001}, Signatures: [][]byte{sig2.Marshal()}})
 	atts := []*zondpb.Attestation{att1, att2, att3, att4, att5, att6, att7, att8}
 	require.NoError(t, cache.SaveUnaggregatedAttestations(atts))
 	require.NoError(t, cache.AggregateUnaggregatedAttestations(context.Background()))
@@ -463,8 +463,8 @@ func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 			cache := NewAttCaches()
 			require.NoError(t, cache.SaveAggregatedAttestations(tt.existing))
 
-			if tt.input != nil && tt.input.Signature == nil {
-				tt.input.Signature = make([]byte, 96)
+			if tt.input != nil && tt.input.Signatures == nil {
+				tt.input.Signatures = [][]byte{}
 			}
 
 			if tt.err != nil {
@@ -491,9 +491,12 @@ func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 
 func TestKV_Aggregated_DuplicateAggregatedAttestations(t *testing.T) {
 	cache := NewAttCaches()
+	priv, err := dilithium.RandKey()
+	require.NoError(t, err)
+	sig := priv.Sign([]byte{'a'}).Marshal()
 
-	att1 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1101}})
-	att2 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1111}})
+	att1 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1101}, Signatures: [][]byte{sig, sig}})
+	att2 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1111}, Signatures: [][]byte{sig, sig, sig}})
 	atts := []*zondpb.Attestation{att1, att2}
 
 	for _, att := range atts {

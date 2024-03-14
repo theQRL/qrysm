@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 func TestService_StartStop_ChainInitialized(t *testing.T) {
 	slasherDB := dbtest.SetupSlasherDB(t)
 	hook := logTest.NewGlobal()
-	beaconState, err := util.NewBeaconState()
+	beaconState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	currentSlot := primitives.Slot(4)
 	require.NoError(t, beaconState.SetSlot(currentSlot))

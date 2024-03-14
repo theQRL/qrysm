@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/v4/build/bazel"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/io/file"
 	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
@@ -18,7 +18,7 @@ import (
 	"github.com/theQRL/qrysm/v4/testing/require"
 )
 
-// NOTE(rgeraldes24): old version
+// TODO(theQRL/qrysm/issues/67): remove test below when ready
 /*
 func TestDisplayExitInfo(t *testing.T) {
 	logHook := test.NewGlobal()
@@ -44,7 +44,7 @@ func TestDisplayExitInfo_NoKeys(t *testing.T) {
 func TestPrepareAllKeys(t *testing.T) {
 	key1 := bytesutil.ToBytes2592([]byte("key1"))
 	key2 := bytesutil.ToBytes2592([]byte("key2"))
-	raw, formatted := prepareAllKeys([][dilithium.CryptoPublicKeyBytes]byte{key1, key2})
+	raw, formatted := prepareAllKeys([][field_params.DilithiumPubkeyLength]byte{key1, key2})
 	require.Equal(t, 2, len(raw))
 	require.Equal(t, 2, len(formatted))
 	assert.DeepEqual(t, bytesutil.ToBytes2592([]byte{107, 101, 121, 49}), bytesutil.ToBytes2592(raw[0]))

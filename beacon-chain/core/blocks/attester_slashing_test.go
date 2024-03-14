@@ -10,7 +10,6 @@ import (
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
@@ -46,14 +45,14 @@ func TestProcessAttesterSlashings_DataNotSlashable(t *testing.T) {
 	var registry []*zondpb.Validator
 	currentSlot := primitives.Slot(0)
 
-	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Validators: registry,
 		Slot:       currentSlot,
 	})
 	require.NoError(t, err)
-	b := util.NewBeaconBlock()
-	b.Block = &zondpb.BeaconBlock{
-		Body: &zondpb.BeaconBlockBody{
+	b := util.NewBeaconBlockCapella()
+	b.Block = &zondpb.BeaconBlockCapella{
+		Body: &zondpb.BeaconBlockBodyCapella{
 			AttesterSlashings: slashings,
 		},
 	}
@@ -65,7 +64,7 @@ func TestProcessAttesterSlashings_IndexedAttestationFailedToVerify(t *testing.T)
 	var registry []*zondpb.Validator
 	currentSlot := primitives.Slot(0)
 
-	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Validators: registry,
 		Slot:       currentSlot,
 	})
@@ -85,222 +84,15 @@ func TestProcessAttesterSlashings_IndexedAttestationFailedToVerify(t *testing.T)
 		},
 	}
 
-	b := util.NewBeaconBlock()
-	b.Block = &zondpb.BeaconBlock{
-		Body: &zondpb.BeaconBlockBody{
+	b := util.NewBeaconBlockCapella()
+	b.Block = &zondpb.BeaconBlockCapella{
+		Body: &zondpb.BeaconBlockBodyCapella{
 			AttesterSlashings: slashings,
 		},
 	}
 
 	_, err = blocks.ProcessAttesterSlashings(context.Background(), beaconState, b.Block.Body.AttesterSlashings, v.SlashValidator)
 	assert.ErrorContains(t, "validator indices count exceeds MAX_VALIDATORS_PER_COMMITTEE", err)
-}
-
-func TestProcessAttesterSlashings_AppliesCorrectStatus(t *testing.T) {
-	beaconState, privKeys := util.DeterministicGenesisState(t, 100)
-	for _, vv := range beaconState.Validators() {
-		vv.WithdrawableEpoch = primitives.Epoch(params.BeaconConfig().SlotsPerEpoch)
-	}
-
-	att1 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
-		Data: &zondpb.AttestationData{
-			Source: &zondpb.Checkpoint{Epoch: 1},
-		},
-		AttestingIndices: []uint64{0, 1},
-	})
-	domain, err := signing.Domain(beaconState.Fork(), 0, params.BeaconConfig().DomainBeaconAttester, beaconState.GenesisValidatorsRoot())
-	require.NoError(t, err)
-	signingRoot, err := signing.ComputeSigningRoot(att1.Data, domain)
-	assert.NoError(t, err, "Could not get signing root of beacon block header")
-	sig0 := privKeys[0].Sign(signingRoot[:])
-	sig1 := privKeys[1].Sign(signingRoot[:])
-	aggregateSig := bls.AggregateSignatures([]bls.Signature{sig0, sig1})
-	att1.Signature = aggregateSig.Marshal()
-
-	att2 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
-		AttestingIndices: []uint64{0, 1},
-	})
-	signingRoot, err = signing.ComputeSigningRoot(att2.Data, domain)
-	assert.NoError(t, err, "Could not get signing root of beacon block header")
-	sig0 = privKeys[0].Sign(signingRoot[:])
-	sig1 = privKeys[1].Sign(signingRoot[:])
-	aggregateSig = bls.AggregateSignatures([]bls.Signature{sig0, sig1})
-	att2.Signature = aggregateSig.Marshal()
-
-	slashings := []*zondpb.AttesterSlashing{
-		{
-			Attestation_1: att1,
-			Attestation_2: att2,
-		},
-	}
-
-	currentSlot := 2 * params.BeaconConfig().SlotsPerEpoch
-	require.NoError(t, beaconState.SetSlot(currentSlot))
-
-	b := util.NewBeaconBlock()
-	b.Block = &zondpb.BeaconBlock{
-		Body: &zondpb.BeaconBlockBody{
-			AttesterSlashings: slashings,
-		},
-	}
-
-	newState, err := blocks.ProcessAttesterSlashings(context.Background(), beaconState, b.Block.Body.AttesterSlashings, v.SlashValidator)
-	require.NoError(t, err)
-	newRegistry := newState.Validators()
-
-	// Given the intersection of slashable indices is [1], only validator
-	// at index 1 should be slashed and exited. We confirm this below.
-	if newRegistry[1].ExitEpoch != beaconState.Validators()[1].ExitEpoch {
-		t.Errorf(
-			`
-			Expected validator at index 1's exit epoch to match
-			%d, received %d instead
-			`,
-			beaconState.Validators()[1].ExitEpoch,
-			newRegistry[1].ExitEpoch,
-		)
-	}
-
-	require.Equal(t, uint64(31750000000), newState.Balances()[1])
-	require.Equal(t, uint64(32000000000), newState.Balances()[2])
-}
-
-func TestProcessAttesterSlashings_AppliesCorrectStatusAltair(t *testing.T) {
-	beaconState, privKeys := util.DeterministicGenesisStateAltair(t, 100)
-	for _, vv := range beaconState.Validators() {
-		vv.WithdrawableEpoch = primitives.Epoch(params.BeaconConfig().SlotsPerEpoch)
-	}
-
-	att1 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
-		Data: &zondpb.AttestationData{
-			Source: &zondpb.Checkpoint{Epoch: 1},
-		},
-		AttestingIndices: []uint64{0, 1},
-	})
-	domain, err := signing.Domain(beaconState.Fork(), 0, params.BeaconConfig().DomainBeaconAttester, beaconState.GenesisValidatorsRoot())
-	require.NoError(t, err)
-	signingRoot, err := signing.ComputeSigningRoot(att1.Data, domain)
-	assert.NoError(t, err, "Could not get signing root of beacon block header")
-	sig0 := privKeys[0].Sign(signingRoot[:])
-	sig1 := privKeys[1].Sign(signingRoot[:])
-	aggregateSig := bls.AggregateSignatures([]bls.Signature{sig0, sig1})
-	att1.Signature = aggregateSig.Marshal()
-
-	att2 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
-		AttestingIndices: []uint64{0, 1},
-	})
-	signingRoot, err = signing.ComputeSigningRoot(att2.Data, domain)
-	assert.NoError(t, err, "Could not get signing root of beacon block header")
-	sig0 = privKeys[0].Sign(signingRoot[:])
-	sig1 = privKeys[1].Sign(signingRoot[:])
-	aggregateSig = bls.AggregateSignatures([]bls.Signature{sig0, sig1})
-	att2.Signature = aggregateSig.Marshal()
-
-	slashings := []*zondpb.AttesterSlashing{
-		{
-			Attestation_1: att1,
-			Attestation_2: att2,
-		},
-	}
-
-	currentSlot := 2 * params.BeaconConfig().SlotsPerEpoch
-	require.NoError(t, beaconState.SetSlot(currentSlot))
-
-	b := util.NewBeaconBlock()
-	b.Block = &zondpb.BeaconBlock{
-		Body: &zondpb.BeaconBlockBody{
-			AttesterSlashings: slashings,
-		},
-	}
-
-	newState, err := blocks.ProcessAttesterSlashings(context.Background(), beaconState, b.Block.Body.AttesterSlashings, v.SlashValidator)
-	require.NoError(t, err)
-	newRegistry := newState.Validators()
-
-	// Given the intersection of slashable indices is [1], only validator
-	// at index 1 should be slashed and exited. We confirm this below.
-	if newRegistry[1].ExitEpoch != beaconState.Validators()[1].ExitEpoch {
-		t.Errorf(
-			`
-			Expected validator at index 1's exit epoch to match
-			%d, received %d instead
-			`,
-			beaconState.Validators()[1].ExitEpoch,
-			newRegistry[1].ExitEpoch,
-		)
-	}
-
-	require.Equal(t, uint64(31500000000), newState.Balances()[1])
-	require.Equal(t, uint64(32000000000), newState.Balances()[2])
-}
-
-func TestProcessAttesterSlashings_AppliesCorrectStatusBellatrix(t *testing.T) {
-	beaconState, privKeys := util.DeterministicGenesisStateBellatrix(t, 100)
-	for _, vv := range beaconState.Validators() {
-		vv.WithdrawableEpoch = primitives.Epoch(params.BeaconConfig().SlotsPerEpoch)
-	}
-
-	att1 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
-		Data: &zondpb.AttestationData{
-			Source: &zondpb.Checkpoint{Epoch: 1},
-		},
-		AttestingIndices: []uint64{0, 1},
-	})
-	domain, err := signing.Domain(beaconState.Fork(), 0, params.BeaconConfig().DomainBeaconAttester, beaconState.GenesisValidatorsRoot())
-	require.NoError(t, err)
-	signingRoot, err := signing.ComputeSigningRoot(att1.Data, domain)
-	assert.NoError(t, err, "Could not get signing root of beacon block header")
-	sig0 := privKeys[0].Sign(signingRoot[:])
-	sig1 := privKeys[1].Sign(signingRoot[:])
-	aggregateSig := bls.AggregateSignatures([]bls.Signature{sig0, sig1})
-	att1.Signature = aggregateSig.Marshal()
-
-	att2 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
-		AttestingIndices: []uint64{0, 1},
-	})
-	signingRoot, err = signing.ComputeSigningRoot(att2.Data, domain)
-	assert.NoError(t, err, "Could not get signing root of beacon block header")
-	sig0 = privKeys[0].Sign(signingRoot[:])
-	sig1 = privKeys[1].Sign(signingRoot[:])
-	aggregateSig = bls.AggregateSignatures([]bls.Signature{sig0, sig1})
-	att2.Signature = aggregateSig.Marshal()
-
-	slashings := []*zondpb.AttesterSlashing{
-		{
-			Attestation_1: att1,
-			Attestation_2: att2,
-		},
-	}
-
-	currentSlot := 2 * params.BeaconConfig().SlotsPerEpoch
-	require.NoError(t, beaconState.SetSlot(currentSlot))
-
-	b := util.NewBeaconBlock()
-	b.Block = &zondpb.BeaconBlock{
-		Body: &zondpb.BeaconBlockBody{
-			AttesterSlashings: slashings,
-		},
-	}
-
-	newState, err := blocks.ProcessAttesterSlashings(context.Background(), beaconState, b.Block.Body.AttesterSlashings, v.SlashValidator)
-	require.NoError(t, err)
-	newRegistry := newState.Validators()
-
-	// Given the intersection of slashable indices is [1], only validator
-	// at index 1 should be slashed and exited. We confirm this below.
-	if newRegistry[1].ExitEpoch != beaconState.Validators()[1].ExitEpoch {
-		t.Errorf(
-			`
-			Expected validator at index 1's exit epoch to match
-			%d, received %d instead
-			`,
-			beaconState.Validators()[1].ExitEpoch,
-			newRegistry[1].ExitEpoch,
-		)
-	}
-
-	require.Equal(t, uint64(31000000000), newState.Balances()[1])
-	require.Equal(t, uint64(32000000000), newState.Balances()[2])
 }
 
 func TestProcessAttesterSlashings_AppliesCorrectStatusCapella(t *testing.T) {
@@ -319,20 +111,18 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusCapella(t *testing.T) {
 	require.NoError(t, err)
 	signingRoot, err := signing.ComputeSigningRoot(att1.Data, domain)
 	assert.NoError(t, err, "Could not get signing root of beacon block header")
-	sig0 := privKeys[0].Sign(signingRoot[:])
-	sig1 := privKeys[1].Sign(signingRoot[:])
-	aggregateSig := bls.AggregateSignatures([]bls.Signature{sig0, sig1})
-	att1.Signature = aggregateSig.Marshal()
+	sig0 := privKeys[0].Sign(signingRoot[:]).Marshal()
+	sig1 := privKeys[1].Sign(signingRoot[:]).Marshal()
+	att1.Signatures = [][]byte{sig0, sig1}
 
 	att2 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{0, 1},
 	})
 	signingRoot, err = signing.ComputeSigningRoot(att2.Data, domain)
 	assert.NoError(t, err, "Could not get signing root of beacon block header")
-	sig0 = privKeys[0].Sign(signingRoot[:])
-	sig1 = privKeys[1].Sign(signingRoot[:])
-	aggregateSig = bls.AggregateSignatures([]bls.Signature{sig0, sig1})
-	att2.Signature = aggregateSig.Marshal()
+	sig0 = privKeys[0].Sign(signingRoot[:]).Marshal()
+	sig1 = privKeys[1].Sign(signingRoot[:]).Marshal()
+	att2.Signatures = [][]byte{sig0, sig1}
 
 	slashings := []*zondpb.AttesterSlashing{
 		{
@@ -344,9 +134,9 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusCapella(t *testing.T) {
 	currentSlot := 2 * params.BeaconConfig().SlotsPerEpoch
 	require.NoError(t, beaconState.SetSlot(currentSlot))
 
-	b := util.NewBeaconBlock()
-	b.Block = &zondpb.BeaconBlock{
-		Body: &zondpb.BeaconBlockBody{
+	b := util.NewBeaconBlockCapella()
+	b.Block = &zondpb.BeaconBlockCapella{
+		Body: &zondpb.BeaconBlockBodyCapella{
 			AttesterSlashings: slashings,
 		},
 	}
@@ -368,6 +158,6 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusCapella(t *testing.T) {
 		)
 	}
 
-	require.Equal(t, uint64(31000000000), newState.Balances()[1])
-	require.Equal(t, uint64(32000000000), newState.Balances()[2])
+	require.Equal(t, uint64(38750000000000), newState.Balances()[1])
+	require.Equal(t, uint64(40000000000000), newState.Balances()[2])
 }

@@ -11,9 +11,8 @@ import (
 	"github.com/libp2p/go-libp2p/core/protocol"
 	gcache "github.com/patrickmn/go-cache"
 	"github.com/theQRL/go-zond/common"
-	gethTypes "github.com/theQRL/go-zond/core/types"
+	gzondTypes "github.com/theQRL/go-zond/core/types"
 	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
 	db "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
 	mockExecution "github.com/theQRL/qrysm/v4/beacon-chain/execution/testing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
@@ -26,6 +25,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/v4/network/forks"
 	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
@@ -40,20 +40,62 @@ func TestRecentBeaconBlocksRPCHandler_ReturnsBlocks(t *testing.T) {
 	assert.Equal(t, 1, len(p1.BHost.Network().Peers()), "Expected peers to be connected")
 	d := db.SetupDB(t)
 
+	// Start service with 160 as allowed blocks capacity (and almost zero capacity recovery).
+	parent := bytesutil.PadTo([]byte("parentHash"), fieldparams.RootLength)
+	stateRoot := bytesutil.PadTo([]byte("stateRoot"), fieldparams.RootLength)
+	receiptsRoot := bytesutil.PadTo([]byte("receiptsRoot"), fieldparams.RootLength)
+	logsBloom := bytesutil.PadTo([]byte("logs"), fieldparams.LogsBloomLength)
+	tx := gzondTypes.NewTransaction(
+		0,
+		common.HexToAddress("095e7baea6a6c7c4c2dfeb977efac326af552d87"),
+		big.NewInt(0), 0, big.NewInt(0),
+		nil,
+	)
+	txs := []*gzondTypes.Transaction{tx}
+	encodedBinaryTxs := make([][]byte, 1)
+	var err error
+	encodedBinaryTxs[0], err = txs[0].MarshalBinary()
+	require.NoError(t, err)
+	blockHash := bytesutil.ToBytes32([]byte("foo"))
+	payload := &enginev1.ExecutionPayloadCapella{
+		ParentHash:    parent,
+		FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
+		StateRoot:     stateRoot,
+		ReceiptsRoot:  receiptsRoot,
+		LogsBloom:     logsBloom,
+		PrevRandao:    blockHash[:],
+		BlockNumber:   0,
+		GasLimit:      0,
+		GasUsed:       0,
+		Timestamp:     0,
+		ExtraData:     make([]byte, 0),
+		BlockHash:     blockHash[:],
+		BaseFeePerGas: bytesutil.PadTo([]byte("baseFeePerGas"), fieldparams.RootLength),
+		Transactions:  encodedBinaryTxs,
+	}
+
 	var blkRoots p2pTypes.BeaconBlockByRootsReq
 	// Populate the database with blocks that would match the request.
 	for i := primitives.Slot(1); i < 11; i++ {
-		blk := util.NewBeaconBlock()
+		blk := util.NewBeaconBlockCapella()
 		blk.Block.Slot = i
+		blk.Block.Body.ExecutionPayload = payload
 		root, err := blk.Block.HashTreeRoot()
 		require.NoError(t, err)
 		util.SaveBlock(t, context.Background(), d, blk)
 		blkRoots = append(blkRoots, root)
 	}
 
+	mockEngine := &mockExecution.EngineClient{
+		ExecutionPayloadByBlockHash: map[[32]byte]*enginev1.ExecutionPayloadCapella{
+			blockHash: payload,
+		},
+	}
+
 	r := &Service{cfg: &config{p2p: p1, beaconDB: d, clock: startup.NewClock(time.Unix(0, 0), [32]byte{})}, rateLimiter: newRateLimiter(p1)}
 	r.cfg.chain = &mock.ChainService{ValidatorsRoot: [32]byte{}}
-	pcl := protocol.ID(p2p.RPCBlocksByRootTopicV1)
+	r.cfg.executionPayloadReconstructor = mockEngine
+	pcl := protocol.ID(p2p.RPCBlocksByRootTopicV2)
 	topic := string(pcl)
 	r.rateLimiter.limiterMap[topic] = leakybucket.NewCollector(10000, 10000, time.Second, false)
 
@@ -63,7 +105,9 @@ func TestRecentBeaconBlocksRPCHandler_ReturnsBlocks(t *testing.T) {
 		defer wg.Done()
 		for i := range blkRoots {
 			expectSuccess(t, stream)
-			res := util.NewBeaconBlock()
+			_, err := readContextFromStream(stream)
+			assert.NoError(t, err)
+			res := util.NewBeaconBlockCapella()
 			assert.NoError(t, r.cfg.p2p.Encoding().DecodeWithMaxLength(stream, res))
 			if uint64(res.Block.Slot) != uint64(i+1) {
 				t.Errorf("Received unexpected block slot %d but wanted %d", res.Block.Slot, i+1)
@@ -93,19 +137,19 @@ func TestRecentBeaconBlocksRPCHandler_ReturnsBlocks_ReconstructsPayload(t *testi
 	stateRoot := bytesutil.PadTo([]byte("stateRoot"), fieldparams.RootLength)
 	receiptsRoot := bytesutil.PadTo([]byte("receiptsRoot"), fieldparams.RootLength)
 	logsBloom := bytesutil.PadTo([]byte("logs"), fieldparams.LogsBloomLength)
-	tx := gethTypes.NewTransaction(
+	tx := gzondTypes.NewTransaction(
 		0,
 		common.HexToAddress("095e7baea6a6c7c4c2dfeb977efac326af552d87"),
 		big.NewInt(0), 0, big.NewInt(0),
 		nil,
 	)
-	txs := []*gethTypes.Transaction{tx}
+	txs := []*gzondTypes.Transaction{tx}
 	encodedBinaryTxs := make([][]byte, 1)
 	var err error
 	encodedBinaryTxs[0], err = txs[0].MarshalBinary()
 	require.NoError(t, err)
 	blockHash := bytesutil.ToBytes32([]byte("foo"))
-	payload := &enginev1.ExecutionPayload{
+	payload := &enginev1.ExecutionPayloadCapella{
 		ParentHash:    parent,
 		FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 		StateRoot:     stateRoot,
@@ -121,15 +165,15 @@ func TestRecentBeaconBlocksRPCHandler_ReturnsBlocks_ReconstructsPayload(t *testi
 		BaseFeePerGas: bytesutil.PadTo([]byte("baseFeePerGas"), fieldparams.RootLength),
 		Transactions:  encodedBinaryTxs,
 	}
-	wrappedPayload, err := blocks.WrappedExecutionPayload(payload)
+	wrappedPayload, err := blocks.WrappedExecutionPayloadCapella(payload, 0)
 	require.NoError(t, err)
-	header, err := blocks.PayloadToHeader(wrappedPayload)
+	header, err := blocks.PayloadToHeaderCapella(wrappedPayload)
 	require.NoError(t, err)
 
 	var blkRoots p2pTypes.BeaconBlockByRootsReq
 	// Populate the database with blocks that would match the request.
 	for i := primitives.Slot(1); i < 11; i++ {
-		blk := util.NewBlindedBeaconBlockBellatrix()
+		blk := util.NewBlindedBeaconBlockCapella()
 		blk.Block.Body.ExecutionPayloadHeader = header
 		blk.Block.Slot = i
 		root, err := blk.Block.HashTreeRoot()
@@ -141,7 +185,7 @@ func TestRecentBeaconBlocksRPCHandler_ReturnsBlocks_ReconstructsPayload(t *testi
 	}
 
 	mockEngine := &mockExecution.EngineClient{
-		ExecutionPayloadByBlockHash: map[[32]byte]*enginev1.ExecutionPayload{
+		ExecutionPayloadByBlockHash: map[[32]byte]*enginev1.ExecutionPayloadCapella{
 			blockHash: payload,
 		},
 	}
@@ -152,7 +196,7 @@ func TestRecentBeaconBlocksRPCHandler_ReturnsBlocks_ReconstructsPayload(t *testi
 		chain:                         &mock.ChainService{ValidatorsRoot: [32]byte{}},
 		clock:                         startup.NewClock(time.Unix(0, 0), [32]byte{}),
 	}, rateLimiter: newRateLimiter(p1)}
-	pcl := protocol.ID(p2p.RPCBlocksByRootTopicV1)
+	pcl := protocol.ID(p2p.RPCBlocksByRootTopicV2)
 	topic := string(pcl)
 	r.rateLimiter.limiterMap[topic] = leakybucket.NewCollector(10000, 10000, time.Second, false)
 
@@ -162,7 +206,9 @@ func TestRecentBeaconBlocksRPCHandler_ReturnsBlocks_ReconstructsPayload(t *testi
 		defer wg.Done()
 		for i := range blkRoots {
 			expectSuccess(t, stream)
-			res := util.NewBeaconBlockBellatrix()
+			_, err := readContextFromStream(stream)
+			assert.NoError(t, err)
+			res := util.NewBeaconBlockCapella()
 			assert.NoError(t, r.cfg.p2p.Encoding().DecodeWithMaxLength(stream, res))
 			if uint64(res.Block.Slot) != uint64(i+1) {
 				t.Errorf("Received unexpected block slot %d but wanted %d", res.Block.Slot, i+1)
@@ -186,17 +232,16 @@ func TestRecentBeaconBlocks_RPCRequestSent(t *testing.T) {
 	p2 := p2ptest.NewTestP2P(t)
 	p1.DelaySend = true
 
-	blockA := util.NewBeaconBlock()
+	blockA := util.NewBeaconBlockCapella()
 	blockA.Block.Slot = 111
-	blockB := util.NewBeaconBlock()
+	blockB := util.NewBeaconBlockCapella()
 	blockB.Block.Slot = 40
 	// Set up a head state with data we expect.
 	blockARoot, err := blockA.Block.HashTreeRoot()
 	require.NoError(t, err)
 	blockBRoot, err := blockB.Block.HashTreeRoot()
 	require.NoError(t, err)
-	genesisState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &zondpb.Eth1Data{})
-	require.NoError(t, err)
+	genesisState, _ := util.DeterministicGenesisStateCapella(t, 1)
 	require.NoError(t, genesisState.SetSlot(111))
 	require.NoError(t, genesisState.UpdateBlockRootAtIndex(111%uint64(params.BeaconConfig().SlotsPerHistoricalRoot), blockARoot))
 	finalizedCheckpt := &zondpb.Checkpoint{
@@ -226,7 +271,7 @@ func TestRecentBeaconBlocks_RPCRequestSent(t *testing.T) {
 	}
 
 	// Setup streams
-	pcl := protocol.ID("/eth2/beacon_chain/req/beacon_blocks_by_root/1/ssz_snappy")
+	pcl := protocol.ID("/eth2/beacon_chain/req/beacon_blocks_by_root/2/ssz_snappy")
 	topic := string(pcl)
 	r.rateLimiter.limiterMap[topic] = leakybucket.NewCollector(10000, 10000, time.Second, false)
 
@@ -237,10 +282,14 @@ func TestRecentBeaconBlocks_RPCRequestSent(t *testing.T) {
 		out := new(p2pTypes.BeaconBlockByRootsReq)
 		assert.NoError(t, p2.Encoding().DecodeWithMaxLength(stream, out))
 		assert.DeepEqual(t, &expectedRoots, out, "Did not receive expected message")
-		response := []*zondpb.SignedBeaconBlock{blockB, blockA}
+		response := []*zondpb.SignedBeaconBlockCapella{blockB, blockA}
 		for _, blk := range response {
 			_, err := stream.Write([]byte{responseCodeSuccess})
 			assert.NoError(t, err, "Could not write to stream")
+			vRoot := r.cfg.clock.GenesisValidatorsRoot()
+			digest, err := forks.ForkDigestFromEpoch(params.BeaconConfig().GenesisEpoch, vRoot[:])
+			assert.NoError(t, err)
+			assert.NoError(t, writeContextToStream(digest[:], stream))
 			_, err = p2.Encoding().EncodeWithMaxLength(stream, blk)
 			assert.NoError(t, err, "Could not send response back")
 		}
@@ -263,7 +312,7 @@ func TestRecentBeaconBlocksRPCHandler_HandleZeroBlocks(t *testing.T) {
 	d := db.SetupDB(t)
 
 	r := &Service{cfg: &config{p2p: p1, beaconDB: d}, rateLimiter: newRateLimiter(p1)}
-	pcl := protocol.ID(p2p.RPCBlocksByRootTopicV1)
+	pcl := protocol.ID(p2p.RPCBlocksByRootTopicV2)
 	topic := string(pcl)
 	r.rateLimiter.limiterMap[topic] = leakybucket.NewCollector(1, 1, time.Second, false)
 

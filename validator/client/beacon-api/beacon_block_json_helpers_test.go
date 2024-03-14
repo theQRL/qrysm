@@ -24,7 +24,7 @@ func TestBeaconBlockJsonHelpers_JsonifyTransactions(t *testing.T) {
 	assert.DeepEqual(t, expectedResult, result)
 }
 
-func TestBeaconBlockJsonHelpers_JsonifyBlsToExecutionChanges(t *testing.T) {
+func TestBeaconBlockJsonHelpers_JsonifyDilithiumToExecutionChanges(t *testing.T) {
 	input := []*zondpb.SignedDilithiumToExecutionChange{
 		{
 			Message: &zondpb.DilithiumToExecutionChange{
@@ -101,7 +101,7 @@ func TestBeaconBlockJsonHelpers_JsonifyAttestations(t *testing.T) {
 					Root:  []byte{8},
 				},
 			},
-			Signature: []byte{9},
+			Signatures: [][]byte{{9}},
 		},
 		{
 			AggregationBits: []byte{10},
@@ -118,7 +118,7 @@ func TestBeaconBlockJsonHelpers_JsonifyAttestations(t *testing.T) {
 					Root:  []byte{17},
 				},
 			},
-			Signature: []byte{18},
+			Signatures: [][]byte{{18}},
 		},
 	}
 
@@ -138,7 +138,7 @@ func TestBeaconBlockJsonHelpers_JsonifyAttestations(t *testing.T) {
 					Root:  hexutil.Encode([]byte{8}),
 				},
 			},
-			Signature: hexutil.Encode([]byte{9}),
+			Signatures: []string{hexutil.Encode([]byte{9})},
 		},
 		{
 			AggregationBits: hexutil.Encode([]byte{10}),
@@ -155,7 +155,7 @@ func TestBeaconBlockJsonHelpers_JsonifyAttestations(t *testing.T) {
 					Root:  hexutil.Encode([]byte{17}),
 				},
 			},
-			Signature: hexutil.Encode([]byte{18}),
+			Signatures: []string{hexutil.Encode([]byte{18})},
 		},
 	}
 
@@ -181,7 +181,7 @@ func TestBeaconBlockJsonHelpers_JsonifyAttesterSlashings(t *testing.T) {
 						Root:  []byte{9},
 					},
 				},
-				Signature: []byte{10},
+				Signatures: [][]byte{{10}},
 			},
 			Attestation_2: &zondpb.IndexedAttestation{
 				AttestingIndices: []uint64{11, 12},
@@ -198,7 +198,7 @@ func TestBeaconBlockJsonHelpers_JsonifyAttesterSlashings(t *testing.T) {
 						Root:  []byte{19},
 					},
 				},
-				Signature: []byte{20},
+				Signatures: [][]byte{{20}},
 			},
 		},
 		{
@@ -217,7 +217,7 @@ func TestBeaconBlockJsonHelpers_JsonifyAttesterSlashings(t *testing.T) {
 						Root:  []byte{29},
 					},
 				},
-				Signature: []byte{30},
+				Signatures: [][]byte{{30}},
 			},
 			Attestation_2: &zondpb.IndexedAttestation{
 				AttestingIndices: []uint64{31, 32},
@@ -234,7 +234,7 @@ func TestBeaconBlockJsonHelpers_JsonifyAttesterSlashings(t *testing.T) {
 						Root:  []byte{39},
 					},
 				},
-				Signature: []byte{40},
+				Signatures: [][]byte{{40}},
 			},
 		},
 	}
@@ -256,7 +256,7 @@ func TestBeaconBlockJsonHelpers_JsonifyAttesterSlashings(t *testing.T) {
 						Root:  hexutil.Encode([]byte{9}),
 					},
 				},
-				Signature: hexutil.Encode([]byte{10}),
+				Signatures: []string{hexutil.Encode([]byte{10})},
 			},
 			Attestation_2: &apimiddleware.IndexedAttestationJson{
 				AttestingIndices: []string{"11", "12"},
@@ -273,7 +273,7 @@ func TestBeaconBlockJsonHelpers_JsonifyAttesterSlashings(t *testing.T) {
 						Root:  hexutil.Encode([]byte{19}),
 					},
 				},
-				Signature: hexutil.Encode([]byte{20}),
+				Signatures: []string{hexutil.Encode([]byte{20})},
 			},
 		},
 		{
@@ -292,7 +292,7 @@ func TestBeaconBlockJsonHelpers_JsonifyAttesterSlashings(t *testing.T) {
 						Root:  hexutil.Encode([]byte{29}),
 					},
 				},
-				Signature: hexutil.Encode([]byte{30}),
+				Signatures: []string{hexutil.Encode([]byte{30})},
 			},
 			Attestation_2: &apimiddleware.IndexedAttestationJson{
 				AttestingIndices: []string{"31", "32"},
@@ -309,7 +309,7 @@ func TestBeaconBlockJsonHelpers_JsonifyAttesterSlashings(t *testing.T) {
 						Root:  hexutil.Encode([]byte{39}),
 					},
 				},
-				Signature: hexutil.Encode([]byte{40}),
+				Signatures: []string{hexutil.Encode([]byte{40})},
 			},
 		},
 	}
@@ -555,7 +555,7 @@ func TestBeaconBlockJsonHelpers_JsonifyIndexedAttestation(t *testing.T) {
 				Root:  []byte{9},
 			},
 		},
-		Signature: []byte{10},
+		Signatures: [][]byte{{10}},
 	}
 
 	expectedResult := &apimiddleware.IndexedAttestationJson{
@@ -573,7 +573,7 @@ func TestBeaconBlockJsonHelpers_JsonifyIndexedAttestation(t *testing.T) {
 				Root:  hexutil.Encode([]byte{9}),
 			},
 		},
-		Signature: hexutil.Encode([]byte{10}),
+		Signatures: []string{hexutil.Encode([]byte{10})},
 	}
 
 	result := jsonifyIndexedAttestation(input)

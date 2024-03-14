@@ -12,7 +12,6 @@ import (
 	p2ptypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/time"
-	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 // pingHandler reads the incoming ping rpc message from the peer.
@@ -78,7 +77,7 @@ func (s *Service) sendPingRequest(ctx context.Context, id peer.ID) error {
 	defer cancel()
 
 	metadataSeq := primitives.SSZUint64(s.cfg.p2p.MetadataSeq())
-	topic, err := p2p.TopicFromMessage(p2p.PingMessageName, slots.ToEpoch(s.cfg.clock.CurrentSlot()))
+	topic, err := p2p.TopicFromMessage(p2p.PingMessageName)
 	if err != nil {
 		return err
 	}

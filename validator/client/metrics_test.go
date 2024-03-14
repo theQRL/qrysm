@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/go-qrllib/dilithium"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
@@ -15,14 +15,14 @@ import (
 func TestUpdateLogAggregateStats(t *testing.T) {
 	v := &validator{
 		logValidatorBalances: true,
-		startBalances:        make(map[[dilithium.CryptoPublicKeyBytes]byte]uint64),
-		prevBalance:          make(map[[dilithium.CryptoPublicKeyBytes]byte]uint64),
+		startBalances:        make(map[[field_params.DilithiumPubkeyLength]byte]uint64),
+		prevBalance:          make(map[[field_params.DilithiumPubkeyLength]byte]uint64),
 		voteStats: voteStats{
 			startEpoch: 0, // this would otherwise have been previously set in LogValidatorGainsAndLosses()
 		},
 	}
 
-	pubKeyBytes := [][dilithium.CryptoPublicKeyBytes]byte{
+	pubKeyBytes := [][field_params.DilithiumPubkeyLength]byte{
 		bytesutil.ToBytes2592([]byte("000000000000000000000000000000000000000012345678")),
 		bytesutil.ToBytes2592([]byte("000000000000000000000000000000000000000099999999")),
 		bytesutil.ToBytes2592([]byte("000000000000000000000000000000000000000055555555")),

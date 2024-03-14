@@ -50,8 +50,10 @@ func (vs *Server) ProposeAttestation(ctx context.Context, att *zondpb.Attestatio
 	ctx, span := trace.StartSpan(ctx, "AttesterServer.ProposeAttestation")
 	defer span.End()
 
-	if _, err := dilithium.SignatureFromBytes(att.Signature); err != nil {
-		return nil, status.Error(codes.InvalidArgument, "Incorrect attestation signature")
+	for _, sig := range att.Signatures {
+		if _, err := dilithium.SignatureFromBytes(sig); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "Incorrect attestation signature")
+		}
 	}
 
 	root, err := att.Data.HashTreeRoot()

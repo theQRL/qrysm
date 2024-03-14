@@ -56,39 +56,6 @@ func sendVerifiedBlocks(stream zondpb.BeaconNodeValidator_StreamBlocksAltairServ
 	}
 	b := &zondpb.StreamBlocksResponse{}
 	switch data.SignedBlock.Version() {
-	case version.Phase0:
-		pb, err := data.SignedBlock.Proto()
-		if err != nil {
-			return errors.Wrap(err, "could not get protobuf block")
-		}
-		phBlk, ok := pb.(*zondpb.SignedBeaconBlock)
-		if !ok {
-			log.Warn("Mismatch between version and block type, was expecting SignedBeaconBlock")
-			return nil
-		}
-		b.Block = &zondpb.StreamBlocksResponse_Phase0Block{Phase0Block: phBlk}
-	case version.Altair:
-		pb, err := data.SignedBlock.Proto()
-		if err != nil {
-			return errors.Wrap(err, "could not get protobuf block")
-		}
-		phBlk, ok := pb.(*zondpb.SignedBeaconBlockAltair)
-		if !ok {
-			log.Warn("Mismatch between version and block type, was expecting SignedBeaconBlockAltair")
-			return nil
-		}
-		b.Block = &zondpb.StreamBlocksResponse_AltairBlock{AltairBlock: phBlk}
-	case version.Bellatrix:
-		pb, err := data.SignedBlock.Proto()
-		if err != nil {
-			return errors.Wrap(err, "could not get protobuf block")
-		}
-		phBlk, ok := pb.(*zondpb.SignedBeaconBlockBellatrix)
-		if !ok {
-			log.Warn("Mismatch between version and block type, was expecting SignedBeaconBlockBellatrix")
-			return nil
-		}
-		b.Block = &zondpb.StreamBlocksResponse_BellatrixBlock{BellatrixBlock: phBlk}
 	case version.Capella:
 		pb, err := data.SignedBlock.Proto()
 		if err != nil {
@@ -141,12 +108,6 @@ func (vs *Server) sendBlocks(stream zondpb.BeaconNodeValidator_StreamBlocksAltai
 		return errors.Wrap(err, "could not get protobuf block")
 	}
 	switch p := pb.(type) {
-	case *zondpb.SignedBeaconBlock:
-		b.Block = &zondpb.StreamBlocksResponse_Phase0Block{Phase0Block: p}
-	case *zondpb.SignedBeaconBlockAltair:
-		b.Block = &zondpb.StreamBlocksResponse_AltairBlock{AltairBlock: p}
-	case *zondpb.SignedBeaconBlockBellatrix:
-		b.Block = &zondpb.StreamBlocksResponse_BellatrixBlock{BellatrixBlock: p}
 	case *zondpb.SignedBeaconBlockCapella:
 		b.Block = &zondpb.StreamBlocksResponse_CapellaBlock{CapellaBlock: p}
 	default:

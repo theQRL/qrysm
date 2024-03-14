@@ -12,10 +12,10 @@ import (
 	"github.com/golang/mock/gomock"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/v4/async/event"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/v4/config/features"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
@@ -36,7 +36,7 @@ func TestRequestAttestation_ValidatorDutiesRequestFailure(t *testing.T) {
 	validator.duties = &zondpb.DutiesResponse{CurrentEpochDuties: []*zondpb.DutiesResponse_Duty{}}
 	defer finish()
 
-	var pubKey [dilithium.CryptoPublicKeyBytes]byte
+	var pubKey [field_params.DilithiumPubkeyLength]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.SubmitAttestation(context.Background(), 30, pubKey)
 	require.LogsContain(t, hook, "Could not fetch validator assignment")
@@ -47,7 +47,7 @@ func TestAttestToBlockHead_SubmitAttestation_EmptyCommittee(t *testing.T) {
 
 	validator, _, validatorKey, finish := setup(t)
 	defer finish()
-	var pubKey [dilithium.CryptoPublicKeyBytes]byte
+	var pubKey [field_params.DilithiumPubkeyLength]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.duties = &zondpb.DutiesResponse{CurrentEpochDuties: []*zondpb.DutiesResponse_Duty{
 		{
@@ -89,7 +89,7 @@ func TestAttestToBlockHead_SubmitAttestation_RequestFailure(t *testing.T) {
 		gomock.AssignableToTypeOf(&zondpb.Attestation{}),
 	).Return(nil, errors.New("something went wrong"))
 
-	var pubKey [dilithium.CryptoPublicKeyBytes]byte
+	var pubKey [field_params.DilithiumPubkeyLength]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.SubmitAttestation(context.Background(), 30, pubKey)
 	require.LogsContain(t, hook, "Could not submit attestation to beacon node")
@@ -101,7 +101,7 @@ func TestAttestToBlockHead_AttestsCorrectly(t *testing.T) {
 	hook := logTest.NewGlobal()
 	validatorIndex := primitives.ValidatorIndex(7)
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
-	var pubKey [dilithium.CryptoPublicKeyBytes]byte
+	var pubKey [field_params.DilithiumPubkeyLength]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.duties = &zondpb.DutiesResponse{CurrentEpochDuties: []*zondpb.DutiesResponse_Duty{
 		{
@@ -148,10 +148,7 @@ func TestAttestToBlockHead_AttestsCorrectly(t *testing.T) {
 			Source:          &zondpb.Checkpoint{Root: sourceRoot[:], Epoch: 3},
 		},
 		AggregationBits: aggregationBitfield,
-		Signature:       make([]byte, 4595),
-		// TODO(rgeraldes24): revisit once we review the proto definitions again
-		// attest_test.go:166: modified: .SignatureValidatorIndex = []uint64{0x7}
-		SignatureValidatorIndex: []uint64{0x7},
+		Signatures:      [][]byte{make([]byte, 4595)},
 	}
 
 	root, err := signing.ComputeSigningRoot(expectedAttestation.Data, make([]byte, 32))
@@ -162,7 +159,7 @@ func TestAttestToBlockHead_AttestsCorrectly(t *testing.T) {
 		SigningRoot: root[:],
 	})
 	require.NoError(t, err)
-	expectedAttestation.Signature = sig.Marshal()
+	expectedAttestation.Signatures = [][]byte{sig.Marshal()}
 	if !reflect.DeepEqual(generatedAttestation, expectedAttestation) {
 		t.Errorf("Incorrectly attested head, wanted %v, received %v", expectedAttestation, generatedAttestation)
 		diff, _ := messagediff.PrettyDiff(expectedAttestation, generatedAttestation)
@@ -177,7 +174,7 @@ func TestAttestToBlockHead_BlocksDoubleAtt(t *testing.T) {
 	defer finish()
 	validatorIndex := primitives.ValidatorIndex(7)
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
-	var pubKey [dilithium.CryptoPublicKeyBytes]byte
+	var pubKey [field_params.DilithiumPubkeyLength]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.duties = &zondpb.DutiesResponse{CurrentEpochDuties: []*zondpb.DutiesResponse_Duty{
 		{
@@ -229,7 +226,7 @@ func TestAttestToBlockHead_BlocksSurroundAtt(t *testing.T) {
 	defer finish()
 	validatorIndex := primitives.ValidatorIndex(7)
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
-	var pubKey [dilithium.CryptoPublicKeyBytes]byte
+	var pubKey [field_params.DilithiumPubkeyLength]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.duties = &zondpb.DutiesResponse{CurrentEpochDuties: []*zondpb.DutiesResponse_Duty{
 		{
@@ -280,7 +277,7 @@ func TestAttestToBlockHead_BlocksSurroundedAtt(t *testing.T) {
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
 	validatorIndex := primitives.ValidatorIndex(7)
-	var pubKey [dilithium.CryptoPublicKeyBytes]byte
+	var pubKey [field_params.DilithiumPubkeyLength]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
 	validator.duties = &zondpb.DutiesResponse{CurrentEpochDuties: []*zondpb.DutiesResponse_Duty{
@@ -334,7 +331,7 @@ func TestAttestToBlockHead_DoesNotAttestBeforeDelay(t *testing.T) {
 	validator, m, validatorKey, finish := setup(t)
 	defer finish()
 
-	var pubKey [dilithium.CryptoPublicKeyBytes]byte
+	var pubKey [field_params.DilithiumPubkeyLength]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.genesisTime = uint64(qrysmTime.Now().Unix())
 	m.validatorClient.EXPECT().GetDuties(
@@ -372,7 +369,7 @@ func TestAttestToBlockHead_DoesAttestAfterDelay(t *testing.T) {
 	validator.genesisTime = uint64(qrysmTime.Now().Unix())
 	validatorIndex := primitives.ValidatorIndex(5)
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
-	var pubKey [dilithium.CryptoPublicKeyBytes]byte
+	var pubKey [field_params.DilithiumPubkeyLength]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.duties = &zondpb.DutiesResponse{CurrentEpochDuties: []*zondpb.DutiesResponse_Duty{
 		{
@@ -411,7 +408,7 @@ func TestAttestToBlockHead_CorrectBitfieldLength(t *testing.T) {
 	defer finish()
 	validatorIndex := primitives.ValidatorIndex(2)
 	committee := []primitives.ValidatorIndex{0, 3, 4, 2, validatorIndex, 6, 8, 9, 10}
-	var pubKey [dilithium.CryptoPublicKeyBytes]byte
+	var pubKey [field_params.DilithiumPubkeyLength]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	validator.duties = &zondpb.DutiesResponse{CurrentEpochDuties: []*zondpb.DutiesResponse_Duty{
 		{
@@ -541,8 +538,8 @@ func TestServer_WaitToSlotOneThird_ReceiveBlockSlot(t *testing.T) {
 	go func() {
 		time.Sleep(100 * time.Millisecond)
 		wsb, err := blocks.NewSignedBeaconBlock(
-			&zondpb.SignedBeaconBlock{
-				Block: &zondpb.BeaconBlock{Slot: currentSlot, Body: &zondpb.BeaconBlockBody{}},
+			&zondpb.SignedBeaconBlockCapella{
+				Block: &zondpb.BeaconBlockCapella{Slot: currentSlot, Body: &zondpb.BeaconBlockBodyCapella{}},
 			})
 		require.NoError(t, err)
 		v.blockFeed.Send(wsb)

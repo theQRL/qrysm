@@ -238,7 +238,7 @@ func (s *Service) rejectInvalidContributionSignature(m *zondpb.SignedContributio
 		set := &dilithium.SignatureBatch{
 			Messages:     [][32]byte{root},
 			PublicKeys:   [][]dilithium.PublicKey{{publicKey}},
-			Signatures:   [][]byte{m.Signature},
+			Signatures:   [][][]byte{{m.Signature}},
 			Descriptions: []string{signing.ContributionSignature},
 		}
 		return s.validateWithBatchVerifier(ctx, "sync contribution signature", set)
@@ -287,7 +287,7 @@ func (s *Service) rejectInvalidSyncAggregateSignature(m *zondpb.SignedContributi
 		set := &dilithium.SignatureBatch{
 			Messages:     [][32]byte{sigRoot},
 			PublicKeys:   [][]dilithium.PublicKey{publicKeys},
-			Signatures:   [][]byte{m.Message.Contribution.Signature},
+			Signatures:   [][][]byte{m.Message.Contribution.Signatures},
 			Descriptions: []string{signing.SyncAggregateSignature},
 		}
 		return s.validateWithBatchVerifier(ctx, "sync contribution aggregate signature", set)
@@ -399,7 +399,7 @@ func (s *Service) verifySyncSelectionData(ctx context.Context, m *zondpb.Contrib
 	set := &dilithium.SignatureBatch{
 		Messages:     [][32]byte{root},
 		PublicKeys:   [][]dilithium.PublicKey{{publicKey}},
-		Signatures:   [][]byte{m.SelectionProof},
+		Signatures:   [][][]byte{{m.SelectionProof}},
 		Descriptions: []string{signing.SyncSelectionProof},
 	}
 	valid, err := s.validateWithBatchVerifier(ctx, "sync contribution selection signature", set)

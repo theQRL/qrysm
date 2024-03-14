@@ -14,7 +14,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/qrysm/v4/beacon-chain/builder"
@@ -83,6 +82,11 @@ func (s *Server) GetAggregateAttestation(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	sigs := make([]string, len(bestMatchingAtt.Signatures))
+	for i, sig := range bestMatchingAtt.Signatures {
+		sigs[i] = hexutil.Encode(sig)
+	}
+
 	response := &AggregateAttestationResponse{
 		Data: &shared.Attestation{
 			AggregationBits: hexutil.Encode(bestMatchingAtt.AggregationBits),
@@ -99,7 +103,7 @@ func (s *Server) GetAggregateAttestation(w http.ResponseWriter, r *http.Request)
 					Root:  hexutil.Encode(bestMatchingAtt.Data.Target.Root),
 				},
 			},
-			Signature: hexutil.Encode(bestMatchingAtt.Signature),
+			Signatures: sigs,
 		}}
 	http2.WriteJson(w, response)
 }
@@ -494,9 +498,9 @@ func (s *Server) produceSyncCommitteeContribution(
 		http2.HandleError(w, "No subcommittee messages found", http.StatusNotFound)
 		return nil, false
 	}
-	sig, aggregatedBits, err := s.CoreService.AggregatedSigAndAggregationBits(
+	sigs, aggregatedBits, err := s.CoreService.SignaturesAndAggregationBits(
 		ctx,
-		&zondpbalpha.AggregatedSigAndAggregationBitsRequest{
+		&zondpbalpha.SignaturesAndAggregationBitsRequest{
 			Msgs:      msgs,
 			Slot:      slot,
 			SubnetId:  index,
@@ -508,12 +512,17 @@ func (s *Server) produceSyncCommitteeContribution(
 		return nil, false
 	}
 
+	hexSigs := make([]string, len(sigs))
+	for i, sig := range sigs {
+		hexSigs[i] = hexutil.Encode(sig)
+	}
+
 	return &shared.SyncCommitteeContribution{
 		Slot:              strconv.FormatUint(uint64(slot), 10),
 		BeaconBlockRoot:   hexutil.Encode(blockRoot),
 		SubcommitteeIndex: strconv.FormatUint(index, 10),
 		AggregationBits:   hexutil.Encode(aggregatedBits),
-		Signature:         hexutil.Encode(sig),
+		Signatures:        hexSigs,
 	}, true
 }
 
@@ -695,7 +704,7 @@ func (s *Server) GetAttesterDuties(w http.ResponseWriter, r *http.Request) {
 	duties := make([]*AttesterDuty, 0, len(requestedValIndices))
 	for _, index := range requestedValIndices {
 		pubkey := st.PubkeyAtIndex(index)
-		var zeroPubkey [dilithium2.CryptoPublicKeyBytes]byte
+		var zeroPubkey [fieldparams.DilithiumPubkeyLength]byte
 		if bytes.Equal(pubkey[:], zeroPubkey[:]) {
 			http2.HandleError(w, fmt.Sprintf("Invalid validator index %d", index), http.StatusBadRequest)
 			return
@@ -889,10 +898,7 @@ func (s *Server) GetSyncCommitteeDuties(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	requestedEpoch := primitives.Epoch(requestedEpochUint)
-	if requestedEpoch < params.BeaconConfig().AltairForkEpoch {
-		http2.HandleError(w, "Sync committees are not supported for Phase0", http.StatusBadRequest)
-		return
-	}
+
 	var indices []string
 	err := json.NewDecoder(r.Body).Decode(&indices)
 	switch {
@@ -958,7 +964,7 @@ func (s *Server) GetSyncCommitteeDuties(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 	}
-	committeePubkeys := make(map[[dilithium2.CryptoPublicKeyBytes]byte][]string)
+	committeePubkeys := make(map[[fieldparams.DilithiumPubkeyLength]byte][]string)
 	for j, pubkey := range committee.Pubkeys {
 		pubkey2592 := bytesutil.ToBytes2592(pubkey)
 		committeePubkeys[pubkey2592] = append(committeePubkeys[pubkey2592], strconv.FormatUint(uint64(j), 10))
@@ -1138,7 +1144,7 @@ func syncCommitteeDutiesLastValidEpoch(currentEpoch primitives.Epoch) primitives
 func syncCommitteeDuties(
 	valIndices []primitives.ValidatorIndex,
 	st state.BeaconState,
-	committeePubkeys map[[dilithium2.CryptoPublicKeyBytes]byte][]string,
+	committeePubkeys map[[fieldparams.DilithiumPubkeyLength]byte][]string,
 ) ([]*SyncCommitteeDuty, error) {
 	duties := make([]*SyncCommitteeDuty, 0)
 	for _, index := range valIndices {
@@ -1146,7 +1152,7 @@ func syncCommitteeDuties(
 			ValidatorIndex: strconv.FormatUint(uint64(index), 10),
 		}
 		valPubkey := st.PubkeyAtIndex(index)
-		var zeroPubkey [dilithium2.CryptoPublicKeyBytes]byte
+		var zeroPubkey [fieldparams.DilithiumPubkeyLength]byte
 		if bytes.Equal(valPubkey[:], zeroPubkey[:]) {
 			return nil, errors.Errorf("Invalid validator index %d", index)
 		}

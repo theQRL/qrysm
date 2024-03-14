@@ -14,8 +14,6 @@ import (
 	"github.com/theQRL/qrysm/v4/proto/migration"
 	zondpbalpha "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -138,7 +136,7 @@ func (bs *Server) SubmitProposerSlashing(ctx context.Context, req *zondpbv1.Prop
 
 // SubmitSignedDilithiumToExecutionChanges submits said object to the node's pool
 // if it passes validation the node must broadcast it to the network.
-func (bs *Server) SubmitSignedDilithiumToExecutionChanges(ctx context.Context, req *zondpbv2.SubmitDilithiumToExecutionChangesRequest) (*emptypb.Empty, error) {
+func (bs *Server) SubmitSignedDilithiumToExecutionChanges(ctx context.Context, req *zondpbv1.SubmitDilithiumToExecutionChangesRequest) (*emptypb.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.SubmitSignedDilithiumToExecutionChanges")
 	defer span.End()
 	st, err := bs.ChainInfoFetcher.HeadStateReadOnly(ctx)
@@ -149,7 +147,7 @@ func (bs *Server) SubmitSignedDilithiumToExecutionChanges(ctx context.Context, r
 	var toBroadcast []*zondpbalpha.SignedDilithiumToExecutionChange
 
 	for i, change := range req.GetChanges() {
-		alphaChange := migration.V2SignedDilithiumToExecutionChangeToV1Alpha1(change)
+		alphaChange := migration.V1SignedDilithiumToExecutionChangeToV1Alpha1(change)
 		_, err = blocks.ValidateDilithiumToExecutionChange(st, alphaChange)
 		if err != nil {
 			failures = append(failures, &helpers.SingleIndexedVerificationFailure{
@@ -172,9 +170,7 @@ func (bs *Server) SubmitSignedDilithiumToExecutionChanges(ctx context.Context, r
 			},
 		})
 		bs.DilithiumChangesPool.InsertDilithiumToExecChange(alphaChange)
-		if st.Version() >= version.Capella {
-			toBroadcast = append(toBroadcast, alphaChange)
-		}
+		toBroadcast = append(toBroadcast, alphaChange)
 	}
 	go bs.broadcastDilithiumChanges(ctx, toBroadcast)
 	if len(failures) > 0 {
@@ -241,7 +237,7 @@ func (bs *Server) broadcastDilithiumChanges(ctx context.Context, changes []*zond
 }
 
 // ListDilithiumToExecutionChanges retrieves Dilithium to execution changes known by the node but not necessarily incorporated into any block
-func (bs *Server) ListDilithiumToExecutionChanges(ctx context.Context, _ *emptypb.Empty) (*zondpbv2.DilithiumToExecutionChangesPoolResponse, error) {
+func (bs *Server) ListDilithiumToExecutionChanges(ctx context.Context, _ *emptypb.Empty) (*zondpbv1.DilithiumToExecutionChangesPoolResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "beacon.ListDilithiumToExecutionChanges")
 	defer span.End()
 
@@ -250,12 +246,12 @@ func (bs *Server) ListDilithiumToExecutionChanges(ctx context.Context, _ *emptyp
 		return nil, status.Errorf(codes.Internal, "Could not get Dilithium to execution changes: %v", err)
 	}
 
-	changes := make([]*zondpbv2.SignedDilithiumToExecutionChange, len(sourceChanges))
+	changes := make([]*zondpbv1.SignedDilithiumToExecutionChange, len(sourceChanges))
 	for i, ch := range sourceChanges {
-		changes[i] = migration.V1Alpha1SignedDilithiumToExecChangeToV2(ch)
+		changes[i] = migration.V1Alpha1SignedDilithiumToExecChangeToV1(ch)
 	}
 
-	return &zondpbv2.DilithiumToExecutionChangesPoolResponse{
+	return &zondpbv1.DilithiumToExecutionChangesPoolResponse{
 		Data: changes,
 	}, nil
 }

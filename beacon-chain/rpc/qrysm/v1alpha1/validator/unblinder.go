@@ -34,7 +34,7 @@ func newUnblinder(b interfaces.SignedBeaconBlock, builder builder.BlockBuilder) 
 }
 
 func (u *unblinder) unblindBuilderBlock(ctx context.Context) (interfaces.SignedBeaconBlock, error) {
-	if !u.b.IsBlinded() || u.b.Version() < version.Bellatrix {
+	if !u.b.IsBlinded() {
 		return u.b, nil
 	}
 	if u.b.IsBlinded() && !u.builder.Configured() {
@@ -147,12 +147,6 @@ func copyBlockData(src interfaces.SignedBeaconBlock, dst interfaces.SignedBeacon
 
 func (u *unblinder) blindedProtoBlock() (proto.Message, error) {
 	switch u.b.Version() {
-	case version.Bellatrix:
-		return &zondpb.SignedBlindedBeaconBlockBellatrix{
-			Block: &zondpb.BlindedBeaconBlockBellatrix{
-				Body: &zondpb.BlindedBeaconBlockBodyBellatrix{},
-			},
-		}, nil
 	case version.Capella:
 		return &zondpb.SignedBlindedBeaconBlockCapella{
 			Block: &zondpb.BlindedBeaconBlockCapella{
@@ -166,12 +160,6 @@ func (u *unblinder) blindedProtoBlock() (proto.Message, error) {
 
 func (u *unblinder) protoBlock() (proto.Message, error) {
 	switch u.b.Version() {
-	case version.Bellatrix:
-		return &zondpb.SignedBeaconBlockBellatrix{
-			Block: &zondpb.BeaconBlockBellatrix{
-				Body: &zondpb.BeaconBlockBodyBellatrix{},
-			},
-		}, nil
 	case version.Capella:
 		return &zondpb.SignedBeaconBlockCapella{
 			Block: &zondpb.BeaconBlockCapella{

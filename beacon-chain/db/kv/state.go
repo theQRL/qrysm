@@ -12,7 +12,6 @@ import (
 	statenative "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/v4/config/features"
 	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
@@ -228,63 +227,6 @@ func (s *Store) saveStatesEfficientInternal(ctx context.Context, tx *bolt.Tx, bl
 		// just before Put() and repopulate that state with original validators.
 		// look at issue https://github.com/theQRL/qrysm/issues/9262.
 		switch rawType := states[i].ToProtoUnsafe().(type) {
-		case *zondpb.BeaconState:
-			pbState, err := getPhase0PbState(rawType)
-			if err != nil {
-				return err
-			}
-			valEntries := pbState.Validators
-			pbState.Validators = make([]*zondpb.Validator, 0)
-			encodedState, err := encode(ctx, pbState)
-			if err != nil {
-				return err
-			}
-			pbState.Validators = valEntries
-			if err := bucket.Put(rt[:], encodedState); err != nil {
-				return err
-			}
-			pbState.Validators = valEntries
-			if err := valIdxBkt.Put(rt[:], validatorKeys[i]); err != nil {
-				return err
-			}
-		case *zondpb.BeaconStateAltair:
-			pbState, err := getAltairPbState(rawType)
-			if err != nil {
-				return err
-			}
-			valEntries := pbState.Validators
-			pbState.Validators = make([]*zondpb.Validator, 0)
-			rawObj, err := pbState.MarshalSSZ()
-			if err != nil {
-				return err
-			}
-			encodedState := snappy.Encode(nil, append(altairKey, rawObj...))
-			if err := bucket.Put(rt[:], encodedState); err != nil {
-				return err
-			}
-			pbState.Validators = valEntries
-			if err := valIdxBkt.Put(rt[:], validatorKeys[i]); err != nil {
-				return err
-			}
-		case *zondpb.BeaconStateBellatrix:
-			pbState, err := getBellatrixPbState(rawType)
-			if err != nil {
-				return err
-			}
-			valEntries := pbState.Validators
-			pbState.Validators = make([]*zondpb.Validator, 0)
-			rawObj, err := pbState.MarshalSSZ()
-			if err != nil {
-				return err
-			}
-			encodedState := snappy.Encode(nil, append(bellatrixKey, rawObj...))
-			if err := bucket.Put(rt[:], encodedState); err != nil {
-				return err
-			}
-			pbState.Validators = valEntries
-			if err := valIdxBkt.Put(rt[:], validatorKeys[i]); err != nil {
-				return err
-			}
 		case *zondpb.BeaconStateCapella:
 			pbState, err := getCapellaPbState(rawType)
 			if err != nil {
@@ -310,39 +252,6 @@ func (s *Store) saveStatesEfficientInternal(ctx context.Context, tx *bolt.Tx, bl
 	}
 	// store the validator entries separately to save space.
 	return s.storeValidatorEntriesSeparately(ctx, tx, validatorsEntries)
-}
-
-func getPhase0PbState(rawState interface{}) (*zondpb.BeaconState, error) {
-	pbState, err := statenative.ProtobufBeaconStatePhase0(rawState)
-	if err != nil {
-		return nil, err
-	}
-	if pbState == nil {
-		return nil, errors.New("nil state")
-	}
-	return pbState, nil
-}
-
-func getAltairPbState(rawState interface{}) (*zondpb.BeaconStateAltair, error) {
-	pbState, err := statenative.ProtobufBeaconStateAltair(rawState)
-	if err != nil {
-		return nil, err
-	}
-	if pbState == nil {
-		return nil, errors.New("nil state")
-	}
-	return pbState, nil
-}
-
-func getBellatrixPbState(rawState interface{}) (*zondpb.BeaconStateBellatrix, error) {
-	pbState, err := statenative.ProtobufBeaconStateBellatrix(rawState)
-	if err != nil {
-		return nil, err
-	}
-	if pbState == nil {
-		return nil, errors.New("nil state")
-	}
-	return pbState, nil
 }
 
 func getCapellaPbState(rawState interface{}) (*zondpb.BeaconStateCapella, error) {
@@ -383,7 +292,7 @@ func (s *Store) storeValidatorEntriesSeparately(ctx context.Context, tx *bolt.Tx
 
 // HasState checks if a state by root exists in the db.
 func (s *Store) HasState(ctx context.Context, blockRoot [32]byte) bool {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.HasState")
+	_, span := trace.StartSpan(ctx, "BeaconDB.HasState")
 	defer span.End()
 	hasState := false
 	err := s.db.View(func(tx *bolt.Tx) error {
@@ -504,101 +413,24 @@ func (s *Store) unmarshalState(_ context.Context, enc []byte, validatorEntries [
 		return nil, err
 	}
 
-	switch {
-	case hasCapellaKey(enc):
-		// Marshal state bytes to capella beacon state.
-		protoState := &zondpb.BeaconStateCapella{}
-		if err := protoState.UnmarshalSSZ(enc[len(capellaKey):]); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal encoding for capella")
-		}
-		ok, err := s.isStateValidatorMigrationOver()
-		if err != nil {
-			return nil, err
-		}
-		if ok {
-			protoState.Validators = validatorEntries
-		}
-		return statenative.InitializeFromProtoUnsafeCapella(protoState)
-	case hasBellatrixKey(enc):
-		// Marshal state bytes to bellatrix beacon state.
-		protoState := &zondpb.BeaconStateBellatrix{}
-		if err := protoState.UnmarshalSSZ(enc[len(bellatrixKey):]); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal encoding for bellatrix")
-		}
-		ok, err := s.isStateValidatorMigrationOver()
-		if err != nil {
-			return nil, err
-		}
-		if ok {
-			protoState.Validators = validatorEntries
-		}
-		return statenative.InitializeFromProtoUnsafeBellatrix(protoState)
-	case hasAltairKey(enc):
-		// Marshal state bytes to altair beacon state.
-		protoState := &zondpb.BeaconStateAltair{}
-		if err := protoState.UnmarshalSSZ(enc[len(altairKey):]); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal encoding for altair")
-		}
-		ok, err := s.isStateValidatorMigrationOver()
-		if err != nil {
-			return nil, err
-		}
-		if ok {
-			protoState.Validators = validatorEntries
-		}
-		return statenative.InitializeFromProtoUnsafeAltair(protoState)
-	default:
-		// Marshal state bytes to phase 0 beacon state.
-		protoState := &zondpb.BeaconState{}
-		if err := protoState.UnmarshalSSZ(enc); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal encoding")
-		}
-		ok, err := s.isStateValidatorMigrationOver()
-		if err != nil {
-			return nil, err
-		}
-		if ok {
-			protoState.Validators = validatorEntries
-		}
-		return statenative.InitializeFromProtoUnsafePhase0(protoState)
+	// Marshal state bytes to capella beacon state.
+	protoState := &zondpb.BeaconStateCapella{}
+	if err := protoState.UnmarshalSSZ(enc[len(capellaKey):]); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal encoding for capella")
 	}
+	ok, err := s.isStateValidatorMigrationOver()
+	if err != nil {
+		return nil, err
+	}
+	if ok {
+		protoState.Validators = validatorEntries
+	}
+	return statenative.InitializeFromProtoUnsafeCapella(protoState)
 }
 
 // marshal versioned state from struct type down to bytes.
 func marshalState(ctx context.Context, st state.ReadOnlyBeaconState) ([]byte, error) {
 	switch st.ToProtoUnsafe().(type) {
-	case *zondpb.BeaconState:
-		rState, ok := st.ToProtoUnsafe().(*zondpb.BeaconState)
-		if !ok {
-			return nil, errors.New("non valid inner state")
-		}
-		return encode(ctx, rState)
-	case *zondpb.BeaconStateAltair:
-		rState, ok := st.ToProtoUnsafe().(*zondpb.BeaconStateAltair)
-		if !ok {
-			return nil, errors.New("non valid inner state")
-		}
-		if rState == nil {
-			return nil, errors.New("nil state")
-		}
-		rawObj, err := rState.MarshalSSZ()
-		if err != nil {
-			return nil, err
-		}
-		return snappy.Encode(nil, append(altairKey, rawObj...)), nil
-	case *zondpb.BeaconStateBellatrix:
-		rState, ok := st.ToProtoUnsafe().(*zondpb.BeaconStateBellatrix)
-		if !ok {
-			return nil, errors.New("non valid inner state")
-		}
-		if rState == nil {
-			return nil, errors.New("nil state")
-		}
-		rawObj, err := rState.MarshalSSZ()
-		if err != nil {
-			return nil, err
-		}
-		return snappy.Encode(nil, append(bellatrixKey, rawObj...)), nil
 	case *zondpb.BeaconStateCapella:
 		rState, ok := st.ToProtoUnsafe().(*zondpb.BeaconStateCapella)
 		if !ok {
@@ -687,7 +519,7 @@ func (s *Store) validatorEntries(ctx context.Context, blockRoot [32]byte) ([]*zo
 
 // retrieves and assembles the state information from multiple buckets.
 func (s *Store) stateBytes(ctx context.Context, blockRoot [32]byte) ([]byte, error) {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.stateBytes")
+	_, span := trace.StartSpan(ctx, "BeaconDB.stateBytes")
 	defer span.End()
 	var dst []byte
 	err := s.db.View(func(tx *bolt.Tx) error {
@@ -737,19 +569,8 @@ func (s *Store) slotByBlockRoot(ctx context.Context, tx *bolt.Tx, blockRoot []by
 			}
 			return s.Slot(), nil
 		}
-		b := &zondpb.SignedBeaconBlock{}
-		err := decode(ctx, enc, b)
-		if err != nil {
-			return 0, err
-		}
-		wsb, err := blocks.NewSignedBeaconBlock(b)
-		if err != nil {
-			return 0, err
-		}
-		if err := blocks.BeaconBlockIsNil(wsb); err != nil {
-			return 0, err
-		}
-		return b.Block.Slot, nil
+
+		return primitives.Slot(0), nil
 	}
 	stateSummary := &zondpb.StateSummary{}
 	if err := decode(ctx, enc, stateSummary); err != nil {
@@ -810,7 +631,7 @@ func (s *Store) HighestSlotStatesBelow(ctx context.Context, slot primitives.Slot
 // a map of bolt DB index buckets corresponding to each particular key for indices for
 // data, such as (shard indices bucket -> shard 5).
 func createStateIndicesFromStateSlot(ctx context.Context, slot primitives.Slot) map[string][]byte {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.createStateIndicesFromState")
+	_, span := trace.StartSpan(ctx, "BeaconDB.createStateIndicesFromState")
 	defer span.End()
 	indicesByBucket := make(map[string][]byte)
 	// Every index has a unique bucket for fast, binary-search

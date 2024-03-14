@@ -62,7 +62,6 @@ func RunExecutionPayloadTest(t *testing.T, config string) {
 			require.NoError(t, utils.UnmarshalYaml(file, config), "Failed to Unmarshal")
 
 			if postSSZExists {
-				require.NoError(t, blocks.ValidatePayloadWhenMergeCompletes(preBeaconState, payload))
 				require.NoError(t, blocks.ValidatePayload(preBeaconState, payload))
 				require.NoError(t, preBeaconState.SetLatestExecutionPayloadHeader(payload))
 				postBeaconStateFile, err := os.ReadFile(postSSZFilepath) // #nosec G304
@@ -80,11 +79,10 @@ func RunExecutionPayloadTest(t *testing.T, config string) {
 					t.Fatal("Post state does not match expected")
 				}
 			} else if config.Valid {
-				err1 := blocks.ValidatePayloadWhenMergeCompletes(preBeaconState, payload)
-				err2 := blocks.ValidatePayload(preBeaconState, payload)
+				err1 := blocks.ValidatePayload(preBeaconState, payload)
 				// Note: This doesn't test anything worthwhile. It essentially tests
 				// that *any* error has occurred, not any specific error.
-				if err1 == nil && err2 == nil {
+				if err1 == nil {
 					t.Fatal("Did not fail when expected")
 				}
 				t.Logf("Expected failure; failure reason = %v", err)

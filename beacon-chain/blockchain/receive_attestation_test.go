@@ -40,23 +40,23 @@ func TestVerifyLMDFFGConsistent_NotOK(t *testing.T) {
 	service, tr := minimalTestService(t)
 	ctx := tr.ctx
 
-	b32 := util.NewBeaconBlock()
-	b32.Block.Slot = 32
-	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b32)
-	r32, err := b32.Block.HashTreeRoot()
+	b128 := util.NewBeaconBlockCapella()
+	b128.Block.Slot = 128
+	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b128)
+	r128, err := b128.Block.HashTreeRoot()
 	require.NoError(t, err)
-	b33 := util.NewBeaconBlock()
-	b33.Block.Slot = 33
-	b33.Block.ParentRoot = r32[:]
-	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b33)
-	r33, err := b33.Block.HashTreeRoot()
+	b129 := util.NewBeaconBlockCapella()
+	b129.Block.Slot = 129
+	b129.Block.ParentRoot = r128[:]
+	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b129)
+	r129, err := b129.Block.HashTreeRoot()
 	require.NoError(t, err)
 
 	wanted := "FFG and LMD votes are not consistent"
 	a := util.NewAttestation()
 	a.Data.Target.Epoch = 1
 	a.Data.Target.Root = []byte{'a'}
-	a.Data.BeaconBlockRoot = r33[:]
+	a.Data.BeaconBlockRoot = r129[:]
 	require.ErrorContains(t, wanted, service.VerifyLmdFfgConsistency(context.Background(), a))
 }
 
@@ -64,22 +64,22 @@ func TestVerifyLMDFFGConsistent_OK(t *testing.T) {
 	service, tr := minimalTestService(t)
 	ctx := tr.ctx
 
-	b32 := util.NewBeaconBlock()
-	b32.Block.Slot = 32
-	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b32)
-	r32, err := b32.Block.HashTreeRoot()
+	b128 := util.NewBeaconBlockCapella()
+	b128.Block.Slot = 128
+	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b128)
+	r128, err := b128.Block.HashTreeRoot()
 	require.NoError(t, err)
-	b33 := util.NewBeaconBlock()
-	b33.Block.Slot = 33
-	b33.Block.ParentRoot = r32[:]
-	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b33)
-	r33, err := b33.Block.HashTreeRoot()
+	b129 := util.NewBeaconBlockCapella()
+	b129.Block.Slot = 129
+	b129.Block.ParentRoot = r128[:]
+	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b129)
+	r129, err := b129.Block.HashTreeRoot()
 	require.NoError(t, err)
 
 	a := util.NewAttestation()
 	a.Data.Target.Epoch = 1
-	a.Data.Target.Root = r32[:]
-	a.Data.BeaconBlockRoot = r33[:]
+	a.Data.Target.Root = r128[:]
+	a.Data.BeaconBlockRoot = r129[:]
 	err = service.VerifyLmdFfgConsistency(context.Background(), a)
 	require.NoError(t, err, "Could not verify LMD and FFG votes to be consistent")
 }
@@ -90,7 +90,7 @@ func TestProcessAttestations_Ok(t *testing.T) {
 	ctx := tr.ctx
 
 	service.genesisTime = qrysmTime.Now().Add(-1 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second)
-	genesisState, pks := util.DeterministicGenesisState(t, 64)
+	genesisState, pks := util.DeterministicGenesisStateCapella(t, 256)
 	require.NoError(t, genesisState.SetGenesisTime(uint64(qrysmTime.Now().Unix())-params.BeaconConfig().SecondsPerSlot))
 	require.NoError(t, service.saveGenesisData(ctx, genesisState))
 	atts, err := util.GenerateAttestations(genesisState, pks, 1, 0, false)
@@ -116,13 +116,13 @@ func TestService_ProcessAttestationsAndUpdateHead(t *testing.T) {
 	ctx, fcs := tr.ctx, tr.fcs
 
 	service.genesisTime = qrysmTime.Now().Add(-2 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second)
-	genesisState, pks := util.DeterministicGenesisState(t, 64)
+	genesisState, pks := util.DeterministicGenesisStateCapella(t, 64)
 	require.NoError(t, service.saveGenesisData(ctx, genesisState))
 	ojc := &zondpb.Checkpoint{Epoch: 0, Root: service.originBlockRoot[:]}
 	require.NoError(t, fcs.UpdateJustifiedCheckpoint(ctx, &forkchoicetypes.Checkpoint{Epoch: 0, Root: service.originBlockRoot}))
 	copied := genesisState.Copy()
 	// Generate a new block for attesters to attest
-	blk, err := util.GenerateFullBlock(copied, pks, util.DefaultBlockGenConfig(), 1)
+	blk, err := util.GenerateFullBlockCapella(copied, pks, util.DefaultBlockGenConfig(), 1)
 	require.NoError(t, err)
 	tRoot, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -150,7 +150,7 @@ func TestService_ProcessAttestationsAndUpdateHead(t *testing.T) {
 	require.Equal(t, true, fcs.HasNode(service.originBlockRoot))
 
 	// Insert a new block to forkchoice
-	b, err := util.GenerateFullBlock(genesisState, pks, util.DefaultBlockGenConfig(), 2)
+	b, err := util.GenerateFullBlockCapella(genesisState, pks, util.DefaultBlockGenConfig(), 2)
 	require.NoError(t, err)
 	b.Block.ParentRoot = service.originBlockRoot[:]
 	r, err := b.Block.HashTreeRoot()
@@ -173,12 +173,12 @@ func TestService_UpdateHead_NoAtts(t *testing.T) {
 	ctx, fcs := tr.ctx, tr.fcs
 
 	service.genesisTime = qrysmTime.Now().Add(-2 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second)
-	genesisState, pks := util.DeterministicGenesisState(t, 64)
+	genesisState, pks := util.DeterministicGenesisStateCapella(t, 64)
 	require.NoError(t, service.saveGenesisData(ctx, genesisState))
 	require.NoError(t, fcs.UpdateJustifiedCheckpoint(ctx, &forkchoicetypes.Checkpoint{Epoch: 0, Root: service.originBlockRoot}))
 	copied := genesisState.Copy()
 	// Generate a new block
-	blk, err := util.GenerateFullBlock(copied, pks, util.DefaultBlockGenConfig(), 1)
+	blk, err := util.GenerateFullBlockCapella(copied, pks, util.DefaultBlockGenConfig(), 1)
 	require.NoError(t, err)
 	tRoot, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -197,7 +197,7 @@ func TestService_UpdateHead_NoAtts(t *testing.T) {
 
 	// Insert a new block to forkchoice
 	ojc := &zondpb.Checkpoint{Epoch: 0, Root: params.BeaconConfig().ZeroHash[:]}
-	b, err := util.GenerateFullBlock(genesisState, pks, util.DefaultBlockGenConfig(), 2)
+	b, err := util.GenerateFullBlockCapella(genesisState, pks, util.DefaultBlockGenConfig(), 2)
 	require.NoError(t, err)
 	b.Block.ParentRoot = service.originBlockRoot[:]
 	r, err := b.Block.HashTreeRoot()

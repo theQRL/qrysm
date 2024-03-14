@@ -7,13 +7,13 @@ import (
 	p2pType "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
-func generateSyncAggregate(st state.BeaconState, privs []bls.SecretKey, parentRoot [32]byte) (*zondpb.SyncAggregate, error) {
+func generateSyncAggregate(st state.BeaconState, privs []dilithium.DilithiumKey, parentRoot [32]byte) (*zondpb.SyncAggregate, error) {
 	nextSlotEpoch := slots.ToEpoch(st.Slot() + 1)
 	currEpoch := slots.ToEpoch(st.Slot())
 
@@ -30,7 +30,7 @@ func generateSyncAggregate(st state.BeaconState, privs []bls.SecretKey, parentRo
 			return nil, err
 		}
 	}
-	sigs := make([]bls.Signature, 0, len(syncCommittee.Pubkeys))
+	sigs := make([][]byte, 0, len(syncCommittee.Pubkeys))
 	var bVector []byte
 	currSize := new(zondpb.SyncAggregate).SyncCommitteeBits.Len()
 	switch currSize {
@@ -38,6 +38,8 @@ func generateSyncAggregate(st state.BeaconState, privs []bls.SecretKey, parentRo
 		bVector = bitfield.NewBitvector512()
 	case 32:
 		bVector = bitfield.NewBitvector32()
+	case 16:
+		bVector = bitfield.NewBitvector16()
 	default:
 		return nil, errors.New("invalid bit vector size")
 	}
@@ -56,18 +58,17 @@ func generateSyncAggregate(st state.BeaconState, privs []bls.SecretKey, parentRo
 		if err != nil {
 			return nil, err
 		}
-		sigs = append(sigs, privs[idx].Sign(r[:]))
+		sigs = append(sigs, privs[idx].Sign(r[:]).Marshal())
 		if currSize == 512 {
 			bitfield.Bitvector512(bVector).SetBitAt(uint64(i), true)
 		}
 		if currSize == 32 {
 			bitfield.Bitvector32(bVector).SetBitAt(uint64(i), true)
 		}
+		if currSize == 16 {
+			bitfield.Bitvector16(bVector).SetBitAt(uint64(i), true)
+		}
 	}
-	if len(sigs) == 0 {
-		fakeSig := [96]byte{0xC0}
-		return &zondpb.SyncAggregate{SyncCommitteeSignature: fakeSig[:], SyncCommitteeBits: bVector}, nil
-	}
-	aggSig := bls.AggregateSignatures(sigs)
-	return &zondpb.SyncAggregate{SyncCommitteeSignature: aggSig.Marshal(), SyncCommitteeBits: bVector}, nil
+
+	return &zondpb.SyncAggregate{SyncCommitteeSignatures: sigs, SyncCommitteeBits: bVector}, nil
 }

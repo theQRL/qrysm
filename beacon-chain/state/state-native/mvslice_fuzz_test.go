@@ -16,7 +16,7 @@ func FuzzMultiValueBalances(f *testing.F) {
 	defer resetFn()
 
 	bals := make([]uint64, 65536)
-	firstState, err := InitializeFromProtoPhase0(&zondpb.BeaconState{Balances: bals})
+	firstState, err := InitializeFromProtoCapella(&zondpb.BeaconStateCapella{Balances: bals})
 	require.NoError(f, err)
 
 	f.Fuzz(func(t *testing.T, index uint16, value uint64) {

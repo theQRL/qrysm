@@ -1,14 +1,15 @@
 package attestations
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-bitfield"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation/aggregation"
+	"golang.org/x/exp/slices"
 )
 
 // MaxCoverAttestationAggregation relies on Maximum Coverage greedy algorithm for aggregation.
@@ -16,6 +17,11 @@ import (
 // are overlapping).
 // See https://hackmd.io/@farazdagi/in-place-attagg for design and rationale.
 func MaxCoverAttestationAggregation(atts []*zondpb.Attestation) ([]*zondpb.Attestation, error) {
+	for i, att := range atts {
+		if len(att.Signatures) != len(att.AggregationBits.BitIndices()) {
+			return nil, fmt.Errorf("signatures length %d is not equal to the attesting participants indices length %d for attestation with index %d", len(att.Signatures), len(att.AggregationBits.BitIndices()), i)
+		}
+	}
 	if len(atts) < 2 {
 		return atts, nil
 	}
@@ -120,26 +126,6 @@ func NewMaxCover(atts []*zondpb.Attestation) *aggregation.MaxCoverProblem {
 	return &aggregation.MaxCoverProblem{Candidates: candidates}
 }
 
-// aggregate returns list as an aggregated attestation.
-func (al attList) aggregate(coverage bitfield.Bitlist) (*zondpb.Attestation, error) {
-	if len(al) < 2 {
-		return nil, errors.Wrap(ErrInvalidAttestationCount, "cannot aggregate")
-	}
-	signs := make([]dilithium.Signature, len(al))
-	for i := 0; i < len(al); i++ {
-		sig, err := signatureFromBytes(al[i].Signature)
-		if err != nil {
-			return nil, err
-		}
-		signs[i] = sig
-	}
-	return &zondpb.Attestation{
-		AggregationBits: coverage,
-		Data:            zondpb.CopyAttestationData(al[0].Data),
-		Signature:       aggregateSignatures(signs).Marshal(),
-	}, nil
-}
-
 // padSelectedKeys adds additional value to every key.
 func padSelectedKeys(keys []int, pad int) []int {
 	for i, key := range keys {
@@ -159,39 +145,63 @@ func aggregateAttestations(atts []*zondpb.Attestation, keys []int, coverage *bit
 	}
 
 	var data *zondpb.AttestationData
+	sigs := make([][]byte, 0, len(keys))
+	participants := make([]int, 0, len(keys))
+	duplicates := make(map[int]struct{})
+
 	for i, idx := range keys {
+		newAtt := atts[idx]
+
 		if i == 0 {
-			data = zondpb.CopyAttestationData(atts[idx].Data)
-			targetIdx = idx
-		}
-	}
-	var attsKeys []int
-	attsMap := make(map[int][]byte)
-	sigValidatorIndexMap := make(map[int][]uint64)
-	for _, att := range atts {
-		for i, index := range att.AggregationBits.BitIndices() {
-			attsKeys = append(attsKeys, index)
-			offset := i * dilithium2.CryptoBytes
-			// Ignore if the validator index in committee already exists
-			if _, found := attsMap[index]; found {
-				continue
+			for _, participant := range newAtt.AggregationBits.BitIndices() {
+				duplicates[participant] = struct{}{}
 			}
-			attsMap[index] = append(attsMap[index], att.Signature[offset:offset+dilithium2.CryptoBytes]...)
-			sigValidatorIndexMap[index] = append(sigValidatorIndexMap[index], att.SignatureValidatorIndex[i])
+
+			participants = append(participants, newAtt.AggregationBits.BitIndices()...)
+			sigs = append(sigs, newAtt.Signatures...)
+
+			data = zondpb.CopyAttestationData(newAtt.Data)
+			targetIdx = idx
+
+			continue
 		}
-	}
-	sort.Slice(attsKeys, func(x, y int) bool {
-		return attsKeys[x] < attsKeys[y]
-	})
-	signs := make([]dilithium.Signature, 0, len(keys))
-	signatureValidatorIndex := make([]uint64, 0, len(keys))
-	for _, key := range attsKeys {
-		sig, err := signatureFromBytes(attsMap[key])
-		if err != nil {
-			return key, err
+
+		newParticipants := newAtt.AggregationBits.BitIndices()
+		participantsToAdd := make([]int, 0, len(newParticipants))
+		sigIndex := make(map[int][]byte)
+		for i, newParticipant := range newParticipants {
+			_, ok := duplicates[newParticipant]
+			if !ok {
+				duplicates[newParticipant] = struct{}{}
+				participantsToAdd = append(participantsToAdd, newParticipant)
+				sigIndex[newParticipant] = newAtt.Signatures[i]
+			}
 		}
-		signs = append(signs, sig)
-		signatureValidatorIndex = append(signatureValidatorIndex, sigValidatorIndexMap[key]...)
+
+		if len(participantsToAdd) == 0 {
+			continue
+		}
+
+		initialIdx := 0
+		for i, participant := range participantsToAdd {
+			insertIdx, err := attestation.SearchInsertIdxWithOffset(participants, initialIdx, participant)
+			if err != nil {
+				return 0, err
+			}
+
+			// no need for more index searches
+			if insertIdx > (len(participants) - 1) {
+				for _, missingParticipant := range participantsToAdd[i:] {
+					participants = slices.Insert(participants, insertIdx, participant)
+					sigs = slices.Insert(sigs, insertIdx, sigIndex[missingParticipant])
+				}
+				break
+			}
+
+			participants = slices.Insert(participants, insertIdx, participant)
+			sigs = slices.Insert(sigs, insertIdx, sigIndex[participant])
+			initialIdx = insertIdx + 1
+		}
 	}
 
 	// Put aggregated attestation at a position of the first selected attestation.
@@ -199,9 +209,7 @@ func aggregateAttestations(atts []*zondpb.Attestation, keys []int, coverage *bit
 		// Append size byte, which will be unnecessary on switch to Bitlist64.
 		AggregationBits: coverage.ToBitlist(),
 		Data:            data,
-		//Signature:              aggregateSignatures(signs).Marshal(),
-		Signature:               unaggregatedSignatures(signs),
-		SignatureValidatorIndex: signatureValidatorIndex,
+		Signatures:      sigs,
 	}
 	return
 }

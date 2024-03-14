@@ -9,11 +9,9 @@ iface_mock_path="testing/validator-mock"
 # github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1
 # ------------------------------------------------------
 proto_mocks_v1alpha1=(
-      "$mock_path/beacon_service_mock.go BeaconChainClient,BeaconChain_StreamChainHeadClient,BeaconChain_StreamAttestationsClient,BeaconChain_StreamBlocksClient,BeaconChain_StreamValidatorsInfoClient,BeaconChain_StreamIndexedAttestationsClient"
-      "$mock_path/beacon_chain_service_mock.go BeaconChain_StreamChainHeadServer,BeaconChain_StreamAttestationsServer,BeaconChain_StreamBlocksServer,BeaconChain_StreamValidatorsInfoServer,BeaconChain_StreamIndexedAttestationsServer"
-      "$mock_path/beacon_validator_server_mock.go BeaconNodeValidatorServer,BeaconNodeValidator_WaitForActivationServer,BeaconNodeValidator_WaitForChainStartServer,BeaconNodeValidator_StreamDutiesServer"
-      "$mock_path/beacon_validator_client_mock.go BeaconNodeValidatorClient,BeaconNodeValidator_WaitForChainStartClient,BeaconNodeValidator_WaitForActivationClient,BeaconNodeValidator_StreamDutiesClient"
-      "$mock_path/slasher_client_mock.go SlasherClient"
+      "$mock_path/beacon_service_mock.go BeaconChainClient"
+      "$mock_path/beacon_validator_server_mock.go BeaconNodeValidatorServer,BeaconNodeValidator_WaitForActivationServer,BeaconNodeValidator_WaitForChainStartServer"
+      "$mock_path/beacon_validator_client_mock.go BeaconNodeValidatorClient,BeaconNodeValidator_WaitForChainStartClient,BeaconNodeValidator_WaitForActivationClient"
       "$mock_path/node_service_mock.go NodeClient"
 )
 
@@ -58,7 +56,6 @@ done
 iface_mocks=(
       "$iface_mock_path/beacon_chain_client_mock.go BeaconChainClient"
       "$iface_mock_path/node_client_mock.go NodeClient"
-      "$iface_mock_path/slasher_client_mock.go SlasherClient"
       "$iface_mock_path/validator_client_mock.go ValidatorClient"
 )
 
@@ -93,19 +90,19 @@ done
 goimports -w "$beacon_api_mock_path/."
 gofmt -s -w "$beacon_api_mock_path/."
 
-# github.com/theQRL/qrysm/v4/crypto/bls
+# github.com/theQRL/qrysm/v4/crypto/dilithium
 # --------------------------------------------
-crypto_bls_common_mock_path="crypto/bls/common/mock"
-crypto_bls_common_mocks=(
-      "$crypto_bls_common_mock_path/interface_mock.go interface.go"
+crypto_dilithium_common_mock_path="crypto/dilithium/common/mock"
+crypto_dilithium_common_mocks=(
+      "$crypto_dilithium_common_mock_path/interface_mock.go interface.go"
 )
 
-for ((i = 0; i < ${#crypto_bls_common_mocks[@]}; i++)); do
-    file=${crypto_bls_common_mocks[i]% *};
-    source=${crypto_bls_common_mocks[i]#* };
+for ((i = 0; i < ${#crypto_dilithium_common_mocks[@]}; i++)); do
+    file=${crypto_dilithium_common_mocks[i]% *};
+    source=${crypto_dilithium_common_mocks[i]#* };
     echo "generating $file for file: $source";
-    GO11MODULE=on mockgen -package=mock -source="crypto/bls/common/$source" -destination="$file"
+    GO11MODULE=on mockgen -package=mock -source="crypto/dilithium/common/$source" -destination="$file"
 done
 
-goimports -w "$crypto_bls_common_mock_path/."
-gofmt -s -w "$crypto_bls_common_mock_path/."
+# goimports -w "$crypto_dilithium_common_mock_path/."
+# gofmt -s -w "$crypto_dilithium_common_mock_path/."

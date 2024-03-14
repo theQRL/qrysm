@@ -209,7 +209,7 @@ func TestCreateWallet_WalletAlreadyExists(t *testing.T) {
 	_, err = CreateAndSaveWalletCli(cliCtx)
 	require.ErrorContains(t, "already exists", err)
 
-	// NOTE(rgeraldes24): we don't support more than on key manager kind atm
+	// TODO(theQRL/qrysm/issues/70): we don't support more than on key manager kind atm
 	/*
 		cliCtx = setupWalletCtx(t, &testWalletConfig{
 			walletDir:          walletDir,

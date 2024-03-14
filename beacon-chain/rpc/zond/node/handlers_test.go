@@ -19,7 +19,7 @@ import (
 func TestSyncStatus(t *testing.T) {
 	currentSlot := new(primitives.Slot)
 	*currentSlot = 110
-	state, err := util.NewBeaconState()
+	state, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	err = state.SetSlot(100)
 	require.NoError(t, err)

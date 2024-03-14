@@ -127,8 +127,8 @@ func unmarshalledSSZ(t *testing.T, serializedBytes []byte, folderName string) (i
 	case "LightClientUpdate":
 		t.Skip("not a beacon node type, this is a light node type")
 		return nil, nil
-	case "PowBlock":
-		obj = &zondpb.PowBlock{}
+	// case "PowBlock":
+	// 	obj = &zondpb.PowBlock{}
 	case "Withdrawal":
 		obj = &enginev1.Withdrawal{}
 	case "DilithiumToExecutionChange":

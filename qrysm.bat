@@ -2,7 +2,7 @@
 
 SetLocal EnableDelayedExpansion & REM All variables are set local to this run & expanded at execution time rather than at parse time (tip: echo !output!)
 
-set PRYLABS_SIGNING_KEY=0AE0051D647BA3C1A917AF4072E33E4DF1A5036E
+set THEQRL_SIGNING_KEY=0AE0051D647BA3C1A917AF4072E33E4DF1A5036E
 
 REM Complain if invalid arguments were provided.
 for %%a in (beacon-chain validator client-stats) do (
@@ -47,8 +47,8 @@ if %WinOS%==64BIT (
 mkdir %wrapper_dir%
 
 REM get_qrysm_version - Find the latest Qrysm version available for download.
-:: TODO(rgeraldes24): windows does not support the jq command the way we do for the unix version
-:: (for /f %%i in ('curl -f -s https://prysmaticlabs.com/releases/latest') do set qrysm_version=%%i) || (echo [31mERROR: Starting qrysm requires an internet connection. If you are being blocked by your antivirus, you can download the beacon chain and validator executables from our releases page on Github here https://github.com/theQRL/qrysm/releases/ [0m && exit /b 1)
+:: TODO(theQRL/qrysm/issues/67)
+(for /f %%i in ('curl -f -s https://prysmaticlabs.com/releases/latest') do set qrysm_version=%%i) || (echo [31mERROR: Starting qrysm requires an internet connection. If you are being blocked by your antivirus, you can download the beacon chain and validator executables from our releases page on Github here https://github.com/theQRL/qrysm/releases/ [0m && exit /b 1)
 set qrysm_version="v0.1.1"
 echo [37mLatest qrysm release is %qrysm_version%.[0m
 IF defined USE_QRYSM_VERSION (
@@ -113,6 +113,7 @@ if "%~1"=="client-stats" (
 )
 
 if "%~1"=="slasher" (
+    # TODO(theQRL/qrysm/issues/67)
     echo [31mThe slasher binary is no longer available. Please use the --slasher flag with your beacon node. See: https://docs.prylabs.network/docs/prysm-usage/slasher/[0m
     exit /b 1
 )

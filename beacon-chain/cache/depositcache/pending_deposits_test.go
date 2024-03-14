@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"testing"
 
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
@@ -34,10 +35,10 @@ func TestRemovePendingDeposit_OK(t *testing.T) {
 	proof2 := makeDepositProof()
 	proof2[0] = bytesutil.PadTo([]byte{'A'}, 32)
 	data := &zondpb.Deposit_Data{
-		PublicKey:             make([]byte, 48),
+		PublicKey:             make([]byte, field_params.DilithiumPubkeyLength),
 		WithdrawalCredentials: make([]byte, 32),
 		Amount:                0,
-		Signature:             make([]byte, 96),
+		Signature:             make([]byte, field_params.DilithiumSignatureLength),
 	}
 	depToRemove := &zondpb.Deposit{Proof: proof1, Data: data}
 	otherDep := &zondpb.Deposit{Proof: proof2, Data: data}
@@ -64,10 +65,10 @@ func TestPendingDeposit_RoundTrip(t *testing.T) {
 	proof := makeDepositProof()
 	proof[0] = bytesutil.PadTo([]byte{'A'}, 32)
 	data := &zondpb.Deposit_Data{
-		PublicKey:             make([]byte, 48),
+		PublicKey:             make([]byte, field_params.DilithiumPubkeyLength),
 		WithdrawalCredentials: make([]byte, 32),
 		Amount:                0,
-		Signature:             make([]byte, 96),
+		Signature:             make([]byte, field_params.DilithiumSignatureLength),
 	}
 	dep := &zondpb.Deposit{Proof: proof, Data: data}
 	dc.InsertPendingDeposit(context.Background(), dep, 111, 100, [32]byte{})

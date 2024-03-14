@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	buildertesting "github.com/theQRL/qrysm/v4/api/client/builder/testing"
 	blockchainTesting "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	dbtesting "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
@@ -46,7 +46,7 @@ func Test_RegisterValidator_WithCache(t *testing.T) {
 	builder := buildertesting.NewClient()
 	s, err := NewService(ctx, WithRegistrationCache(), WithHeadFetcher(headFetcher), WithBuilderClient(&builder))
 	require.NoError(t, err)
-	pubkey := bytesutil.ToBytes48([]byte("pubkey"))
+	pubkey := bytesutil.ToBytes2592([]byte("pubkey"))
 	var feeRecipient [20]byte
 	reg := &zond.ValidatorRegistrationV1{Pubkey: pubkey[:], Timestamp: uint64(time.Now().UTC().Unix()), FeeRecipient: feeRecipient[:]}
 	require.NoError(t, s.RegisterValidator(ctx, []*zond.SignedValidatorRegistrationV1{{Message: reg}}))
@@ -60,7 +60,7 @@ func Test_BuilderMethodsWithouClient(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, false, s.Configured())
 
-	_, err = s.GetHeader(context.Background(), 0, [32]byte{}, [dilithium2.CryptoPublicKeyBytes]byte{})
+	_, err = s.GetHeader(context.Background(), 0, [32]byte{}, [field_params.DilithiumPubkeyLength]byte{})
 	assert.ErrorContains(t, ErrNoBuilder.Error(), err)
 
 	_, err = s.SubmitBlindedBlock(context.Background(), nil)

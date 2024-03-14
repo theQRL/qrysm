@@ -33,26 +33,8 @@ func WriteBlockChunk(stream libp2pcore.Stream, tor blockchain.TemporalOracle, en
 
 	valRoot := tor.GenesisValidatorsRoot()
 	switch blk.Version() {
-	case version.Phase0:
-		digest, err := forks.ForkDigestFromEpoch(params.BeaconConfig().GenesisEpoch, valRoot[:])
-		if err != nil {
-			return err
-		}
-		obtainedCtx = digest[:]
-	case version.Altair:
-		digest, err := forks.ForkDigestFromEpoch(params.BeaconConfig().AltairForkEpoch, valRoot[:])
-		if err != nil {
-			return err
-		}
-		obtainedCtx = digest[:]
-	case version.Bellatrix:
-		digest, err := forks.ForkDigestFromEpoch(params.BeaconConfig().BellatrixForkEpoch, valRoot[:])
-		if err != nil {
-			return err
-		}
-		obtainedCtx = digest[:]
 	case version.Capella:
-		digest, err := forks.ForkDigestFromEpoch(params.BeaconConfig().CapellaForkEpoch, valRoot[:])
+		digest, err := forks.ForkDigestFromEpoch(params.BeaconConfig().GenesisEpoch, valRoot[:])
 		if err != nil {
 			return err
 		}

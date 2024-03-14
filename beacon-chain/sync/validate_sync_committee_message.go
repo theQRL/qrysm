@@ -266,7 +266,7 @@ func (s *Service) rejectInvalidSyncCommitteeSignature(m *zondpb.SyncCommitteeMes
 		set := &dilithium.SignatureBatch{
 			Messages:     [][32]byte{sigRoot},
 			PublicKeys:   [][]dilithium.PublicKey{{pKey}},
-			Signatures:   [][]byte{m.Signature},
+			Signatures:   [][][]byte{{m.Signature}},
 			Descriptions: []string{signing.SyncCommitteeSignature},
 		}
 		return s.validateWithBatchVerifier(ctx, "sync committee message", set)

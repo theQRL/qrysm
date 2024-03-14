@@ -1,106 +1,5 @@
 package shared
 
-type SignedBeaconBlock struct {
-	Message   *BeaconBlock `json:"message" validate:"required"`
-	Signature string       `json:"signature" validate:"required"`
-}
-
-type BeaconBlock struct {
-	Slot          string           `json:"slot" validate:"required"`
-	ProposerIndex string           `json:"proposer_index" validate:"required"`
-	ParentRoot    string           `json:"parent_root" validate:"required"`
-	StateRoot     string           `json:"state_root" validate:"required"`
-	Body          *BeaconBlockBody `json:"body" validate:"required"`
-}
-
-type BeaconBlockBody struct {
-	RandaoReveal      string                 `json:"randao_reveal" validate:"required"`
-	Eth1Data          *Eth1Data              `json:"eth1_data" validate:"required"`
-	Graffiti          string                 `json:"graffiti" validate:"required"`
-	ProposerSlashings []*ProposerSlashing    `json:"proposer_slashings" validate:"required"`
-	AttesterSlashings []*AttesterSlashing    `json:"attester_slashings" validate:"required"`
-	Attestations      []*Attestation         `json:"attestations" validate:"required"`
-	Deposits          []*Deposit             `json:"deposits" validate:"required"`
-	VoluntaryExits    []*SignedVoluntaryExit `json:"voluntary_exits" validate:"required"`
-}
-
-type SignedBeaconBlockAltair struct {
-	Message   *BeaconBlockAltair `json:"message" validate:"required"`
-	Signature string             `json:"signature" validate:"required"`
-}
-
-type BeaconBlockAltair struct {
-	Slot          string                 `json:"slot" validate:"required"`
-	ProposerIndex string                 `json:"proposer_index" validate:"required"`
-	ParentRoot    string                 `json:"parent_root" validate:"required"`
-	StateRoot     string                 `json:"state_root" validate:"required"`
-	Body          *BeaconBlockBodyAltair `json:"body" validate:"required"`
-}
-
-type BeaconBlockBodyAltair struct {
-	RandaoReveal      string                 `json:"randao_reveal" validate:"required"`
-	Eth1Data          *Eth1Data              `json:"eth1_data" validate:"required"`
-	Graffiti          string                 `json:"graffiti" validate:"required"`
-	ProposerSlashings []*ProposerSlashing    `json:"proposer_slashings" validate:"required,dive"`
-	AttesterSlashings []*AttesterSlashing    `json:"attester_slashings" validate:"required,dive"`
-	Attestations      []*Attestation         `json:"attestations" validate:"required,dive"`
-	Deposits          []*Deposit             `json:"deposits" validate:"required,dive"`
-	VoluntaryExits    []*SignedVoluntaryExit `json:"voluntary_exits" validate:"required,dive"`
-	SyncAggregate     *SyncAggregate         `json:"sync_aggregate" validate:"required"`
-}
-
-type SignedBeaconBlockBellatrix struct {
-	Message   *BeaconBlockBellatrix `json:"message" validate:"required"`
-	Signature string                `json:"signature" validate:"required"`
-}
-
-type BeaconBlockBellatrix struct {
-	Slot          string                    `json:"slot" validate:"required"`
-	ProposerIndex string                    `json:"proposer_index" validate:"required"`
-	ParentRoot    string                    `json:"parent_root" validate:"required"`
-	StateRoot     string                    `json:"state_root" validate:"required"`
-	Body          *BeaconBlockBodyBellatrix `json:"body" validate:"required"`
-}
-
-type BeaconBlockBodyBellatrix struct {
-	RandaoReveal      string                 `json:"randao_reveal" validate:"required"`
-	Eth1Data          *Eth1Data              `json:"eth1_data" validate:"required"`
-	Graffiti          string                 `json:"graffiti" validate:"required"`
-	ProposerSlashings []*ProposerSlashing    `json:"proposer_slashings" validate:"required,dive"`
-	AttesterSlashings []*AttesterSlashing    `json:"attester_slashings" validate:"required,dive"`
-	Attestations      []*Attestation         `json:"attestations" validate:"required,dive"`
-	Deposits          []*Deposit             `json:"deposits" validate:"required,dive"`
-	VoluntaryExits    []*SignedVoluntaryExit `json:"voluntary_exits" validate:"required,dive"`
-	SyncAggregate     *SyncAggregate         `json:"sync_aggregate" validate:"required"`
-	ExecutionPayload  *ExecutionPayload      `json:"execution_payload" validate:"required"`
-}
-
-type SignedBlindedBeaconBlockBellatrix struct {
-	Message   *BlindedBeaconBlockBellatrix `json:"message" validate:"required"`
-	Signature string                       `json:"signature" validate:"required"`
-}
-
-type BlindedBeaconBlockBellatrix struct {
-	Slot          string                           `json:"slot" validate:"required"`
-	ProposerIndex string                           `json:"proposer_index" validate:"required"`
-	ParentRoot    string                           `json:"parent_root" validate:"required"`
-	StateRoot     string                           `json:"state_root" validate:"required"`
-	Body          *BlindedBeaconBlockBodyBellatrix `json:"body" validate:"required"`
-}
-
-type BlindedBeaconBlockBodyBellatrix struct {
-	RandaoReveal           string                  `json:"randao_reveal" validate:"required"`
-	Eth1Data               *Eth1Data               `json:"eth1_data" validate:"required"`
-	Graffiti               string                  `json:"graffiti" validate:"required"`
-	ProposerSlashings      []*ProposerSlashing     `json:"proposer_slashings" validate:"required,dive"`
-	AttesterSlashings      []*AttesterSlashing     `json:"attester_slashings" validate:"required,dive"`
-	Attestations           []*Attestation          `json:"attestations" validate:"required,dive"`
-	Deposits               []*Deposit              `json:"deposits" validate:"required,dive"`
-	VoluntaryExits         []*SignedVoluntaryExit  `json:"voluntary_exits" validate:"required,dive"`
-	SyncAggregate          *SyncAggregate          `json:"sync_aggregate" validate:"required"`
-	ExecutionPayloadHeader *ExecutionPayloadHeader `json:"execution_payload_header" validate:"required"`
-}
-
 type SignedBeaconBlockCapella struct {
 	Message   *BeaconBlockCapella `json:"message" validate:"required"`
 	Signature string              `json:"signature" validate:"required"`
@@ -205,12 +104,12 @@ type BeaconBlockHeader struct {
 type IndexedAttestation struct {
 	AttestingIndices []string         `json:"attesting_indices" validate:"required,dive"`
 	Data             *AttestationData `json:"data" validate:"required"`
-	Signature        string           `json:"signature" validate:"required"`
+	Signatures       []string         `json:"signatures" validate:"required"`
 }
 
 type SyncAggregate struct {
-	SyncCommitteeBits      string `json:"sync_committee_bits" validate:"required"`
-	SyncCommitteeSignature string `json:"sync_committee_signature" validate:"required"`
+	SyncCommitteeBits       string   `json:"sync_committee_bits" validate:"required"`
+	SyncCommitteeSignatures []string `json:"sync_committee_signatures" validate:"required"`
 }
 
 type ExecutionPayload struct {

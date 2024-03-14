@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
 	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/validator/keymanager"
@@ -46,11 +46,11 @@ func setupCliContext(
 	return cli.NewContext(&app, set, nil)
 }
 
-func createRandomKeystore(t testing.TB, password string) (*keymanager.Keystore, bls.SecretKey) {
+func createRandomKeystore(t testing.TB, password string) (*keymanager.Keystore, dilithium.DilithiumKey) {
 	encryptor := keystorev4.New()
 	id, err := uuid.NewRandom()
 	require.NoError(t, err)
-	validatingKey, err := bls.RandKey()
+	validatingKey, err := dilithium.RandKey()
 	require.NoError(t, err)
 	pubKey := validatingKey.PublicKey().Marshal()
 	cryptoFields, err := encryptor.Encrypt(validatingKey.Marshal(), password)
@@ -111,7 +111,7 @@ func TestDecrypt(t *testing.T) {
 func TestEncrypt(t *testing.T) {
 	keystoresDir := setupRandomDir(t)
 	keystoreFilePath := filepath.Join(keystoresDir, "keystore.json")
-	privKey, err := bls.RandKey()
+	privKey, err := dilithium.RandKey()
 	require.NoError(t, err)
 
 	cliCtx := setupCliContext(t, &cliConfig{

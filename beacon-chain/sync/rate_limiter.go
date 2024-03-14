@@ -47,24 +47,19 @@ func newRateLimiter(p2pProvider p2p.P2P) *limiter {
 	// Goodbye Message
 	topicMap[addEncoding(p2p.RPCGoodByeTopicV1)] = leakybucket.NewCollector(1, 1, leakyBucketPeriod, false /* deleteEmptyBuckets */)
 	// MetadataV0 Message
-	topicMap[addEncoding(p2p.RPCMetaDataTopicV1)] = leakybucket.NewCollector(1, defaultBurstLimit, leakyBucketPeriod, false /* deleteEmptyBuckets */)
 	topicMap[addEncoding(p2p.RPCMetaDataTopicV2)] = leakybucket.NewCollector(1, defaultBurstLimit, leakyBucketPeriod, false /* deleteEmptyBuckets */)
 	// Ping Message
 	topicMap[addEncoding(p2p.RPCPingTopicV1)] = leakybucket.NewCollector(1, defaultBurstLimit, leakyBucketPeriod, false /* deleteEmptyBuckets */)
 	// Status Message
 	topicMap[addEncoding(p2p.RPCStatusTopicV1)] = leakybucket.NewCollector(1, defaultBurstLimit, leakyBucketPeriod, false /* deleteEmptyBuckets */)
 
-	// Use a single collector for block requests
-	blockCollector := leakybucket.NewCollector(allowedBlocksPerSecond, allowedBlocksBurst, blockBucketPeriod, false /* deleteEmptyBuckets */)
 	// Collector for V2
 	blockCollectorV2 := leakybucket.NewCollector(allowedBlocksPerSecond, allowedBlocksBurst, blockBucketPeriod, false /* deleteEmptyBuckets */)
 
 	// BlocksByRoots requests
-	topicMap[addEncoding(p2p.RPCBlocksByRootTopicV1)] = blockCollector
 	topicMap[addEncoding(p2p.RPCBlocksByRootTopicV2)] = blockCollectorV2
 
 	// BlockByRange requests
-	topicMap[addEncoding(p2p.RPCBlocksByRangeTopicV1)] = blockCollector
 	topicMap[addEncoding(p2p.RPCBlocksByRangeTopicV2)] = blockCollectorV2
 
 	// General topic for all rpc requests.

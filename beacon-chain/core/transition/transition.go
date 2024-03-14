@@ -11,10 +11,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/capella"
-	e "github.com/theQRL/qrysm/v4/beacon-chain/core/epoch"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/epoch/precompute"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/execution"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/v4/beacon-chain/state"
 	"github.com/theQRL/qrysm/v4/config/features"
@@ -24,7 +20,6 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/math"
 	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 	"go.opencensus.io/trace"
 )
 
@@ -248,68 +243,20 @@ func ProcessSlots(ctx context.Context, state state.BeaconState, slot primitives.
 			return nil, errors.Wrap(err, "could not process slot")
 		}
 		if time.CanProcessEpoch(state) {
-			if state.Version() == version.Phase0 {
-				state, err = ProcessEpochPrecompute(ctx, state)
-				if err != nil {
-					tracing.AnnotateError(span, err)
-					return nil, errors.Wrap(err, "could not process epoch with optimizations")
-				}
-			} else if state.Version() >= version.Altair {
-				state, err = altair.ProcessEpoch(ctx, state)
-				if err != nil {
-					tracing.AnnotateError(span, err)
-					return nil, errors.Wrap(err, "could not process epoch")
-				}
-			} else {
-				return nil, errors.New("beacon state should have a version")
+			state, err = altair.ProcessEpoch(ctx, state)
+			if err != nil {
+				tracing.AnnotateError(span, err)
+				return nil, errors.Wrap(err, "could not process epoch")
 			}
 		}
 		if err := state.SetSlot(state.Slot() + 1); err != nil {
 			tracing.AnnotateError(span, err)
 			return nil, errors.Wrap(err, "failed to increment state slot")
 		}
-
-		state, err = UpgradeState(ctx, state)
-		if err != nil {
-			tracing.AnnotateError(span, err)
-			return nil, errors.Wrap(err, "failed to upgrade state")
-		}
 	}
 
 	if highestSlot < state.Slot() {
 		SkipSlotCache.Put(ctx, key, state)
-	}
-
-	return state, nil
-}
-
-// UpgradeState upgrades the state to the next version if possible.
-func UpgradeState(ctx context.Context, state state.BeaconState) (state.BeaconState, error) {
-	ctx, span := trace.StartSpan(ctx, "core.state.UpgradeState")
-	defer span.End()
-	var err error
-	if time.CanUpgradeToAltair(state.Slot()) {
-		state, err = altair.UpgradeToAltair(ctx, state)
-		if err != nil {
-			tracing.AnnotateError(span, err)
-			return nil, err
-		}
-	}
-
-	if time.CanUpgradeToBellatrix(state.Slot()) {
-		state, err = execution.UpgradeToBellatrix(state)
-		if err != nil {
-			tracing.AnnotateError(span, err)
-			return nil, err
-		}
-	}
-
-	if time.CanUpgradeToCapella(state.Slot()) {
-		state, err = capella.UpgradeToCapella(state)
-		if err != nil {
-			tracing.AnnotateError(span, err)
-			return nil, err
-		}
 	}
 
 	return state, nil
@@ -367,51 +314,5 @@ func VerifyOperationLengths(_ context.Context, state state.BeaconState, b interf
 			maxDeposits, len(body.Deposits()))
 	}
 
-	return state, nil
-}
-
-// ProcessEpochPrecompute describes the per epoch operations that are performed on the beacon state.
-// It's optimized by pre computing validator attested info and epoch total/attested balances upfront.
-func ProcessEpochPrecompute(ctx context.Context, state state.BeaconState) (state.BeaconState, error) {
-	ctx, span := trace.StartSpan(ctx, "core.state.ProcessEpochPrecompute")
-	defer span.End()
-	span.AddAttributes(trace.Int64Attribute("epoch", int64(time.CurrentEpoch(state)))) // lint:ignore uintcast -- This is OK for tracing.
-
-	if state == nil || state.IsNil() {
-		return nil, errors.New("nil state")
-	}
-	vp, bp, err := precompute.New(ctx, state)
-	if err != nil {
-		return nil, err
-	}
-	vp, bp, err = precompute.ProcessAttestations(ctx, state, vp, bp)
-	if err != nil {
-		return nil, err
-	}
-
-	state, err = precompute.ProcessJustificationAndFinalizationPreCompute(state, bp)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not process justification")
-	}
-
-	state, err = precompute.ProcessRewardsAndPenaltiesPrecompute(state, bp, vp, precompute.AttestationsDelta, precompute.ProposersDelta)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not process rewards and penalties")
-	}
-
-	state, err = e.ProcessRegistryUpdates(ctx, state)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not process registry updates")
-	}
-
-	err = precompute.ProcessSlashingsPrecompute(state, bp)
-	if err != nil {
-		return nil, err
-	}
-
-	state, err = e.ProcessFinalUpdates(state)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not process final updates")
-	}
 	return state, nil
 }

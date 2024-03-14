@@ -9,7 +9,6 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
 )
 
 // SetValidators for the beacon state. Updates the entire
@@ -287,10 +286,6 @@ func (b *BeaconState) AppendBalance(bal uint64) error {
 
 // AppendInactivityScore for the beacon state.
 func (b *BeaconState) AppendInactivityScore(s uint64) error {
-	if b.version == version.Phase0 {
-		return errNotSupported("AppendInactivityScore", b.version)
-	}
-
 	if features.Get().EnableExperimentalState {
 		b.inactivityScoresMultiValue.Append(b, s)
 	} else {
@@ -320,10 +315,6 @@ func (b *BeaconState) AppendInactivityScore(s uint64) error {
 func (b *BeaconState) SetInactivityScores(val []uint64) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
-
-	if b.version == version.Phase0 {
-		return errNotSupported("SetInactivityScores", b.version)
-	}
 
 	if features.Get().EnableExperimentalState {
 		if b.inactivityScoresMultiValue != nil {

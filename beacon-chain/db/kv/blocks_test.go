@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/qrysm/v4/beacon-chain/db/filters"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
 	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
@@ -24,50 +25,6 @@ var blockTests = []struct {
 	name     string
 	newBlock func(primitives.Slot, []byte) (interfaces.ReadOnlySignedBeaconBlock, error)
 }{
-	{
-		name: "phase0",
-		newBlock: func(slot primitives.Slot, root []byte) (interfaces.ReadOnlySignedBeaconBlock, error) {
-			b := util.NewBeaconBlock()
-			b.Block.Slot = slot
-			if root != nil {
-				b.Block.ParentRoot = root
-			}
-			return blocks.NewSignedBeaconBlock(b)
-		},
-	},
-	{
-		name: "altair",
-		newBlock: func(slot primitives.Slot, root []byte) (interfaces.ReadOnlySignedBeaconBlock, error) {
-			b := util.NewBeaconBlockAltair()
-			b.Block.Slot = slot
-			if root != nil {
-				b.Block.ParentRoot = root
-			}
-			return blocks.NewSignedBeaconBlock(b)
-		},
-	},
-	{
-		name: "bellatrix",
-		newBlock: func(slot primitives.Slot, root []byte) (interfaces.ReadOnlySignedBeaconBlock, error) {
-			b := util.NewBeaconBlockBellatrix()
-			b.Block.Slot = slot
-			if root != nil {
-				b.Block.ParentRoot = root
-			}
-			return blocks.NewSignedBeaconBlock(b)
-		},
-	},
-	{
-		name: "bellatrix blind",
-		newBlock: func(slot primitives.Slot, root []byte) (interfaces.ReadOnlySignedBeaconBlock, error) {
-			b := util.NewBlindedBeaconBlockBellatrix()
-			b.Block.Slot = slot
-			if root != nil {
-				b.Block.ParentRoot = root
-			}
-			return blocks.NewSignedBeaconBlock(b)
-		},
-	},
 	{
 		name: "capella",
 		newBlock: func(slot primitives.Slot, root []byte) (interfaces.ReadOnlySignedBeaconBlock, error) {
@@ -163,7 +120,7 @@ func TestStore_BlocksCRUD(t *testing.T) {
 			retrievedBlock, err = db.Block(ctx, blockRoot)
 			require.NoError(t, err)
 			wanted := retrievedBlock
-			if _, err := retrievedBlock.PbBellatrixBlock(); err == nil {
+			if _, err := retrievedBlock.PbCapellaBlock(); err == nil {
 				wanted, err = retrievedBlock.ToBlinded()
 				require.NoError(t, err)
 			}
@@ -233,7 +190,7 @@ func TestStore_DeleteBlock(t *testing.T) {
 	ctx := context.Background()
 
 	require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesisBlockRoot))
-	blks := makeBlocks(t, 0, slotsPerEpoch*4, genesisBlockRoot)
+	blks := makeBlocksCapella(t, 0, slotsPerEpoch*4, genesisBlockRoot)
 	require.NoError(t, db.SaveBlocks(ctx, blks))
 	ss := make([]*zondpb.StateSummary, len(blks))
 	for i, blk := range blks {
@@ -252,7 +209,7 @@ func TestStore_DeleteBlock(t *testing.T) {
 		Epoch: 1,
 		Root:  root[:],
 	}
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, db.SaveState(ctx, st, root))
 	require.NoError(t, db.SaveFinalizedCheckpoint(ctx, cp))
@@ -278,14 +235,14 @@ func TestStore_DeleteBlock(t *testing.T) {
 func TestStore_DeleteJustifiedBlock(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	b.Block.Slot = 1
 	root, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
 	cp := &zondpb.Checkpoint{
 		Root: root[:],
 	}
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	blk, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
@@ -298,13 +255,13 @@ func TestStore_DeleteJustifiedBlock(t *testing.T) {
 func TestStore_DeleteFinalizedBlock(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	root, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
 	cp := &zondpb.Checkpoint{
 		Root: root[:],
 	}
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	blk, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
@@ -317,7 +274,7 @@ func TestStore_DeleteFinalizedBlock(t *testing.T) {
 func TestStore_GenesisBlock(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
-	genesisBlock := util.NewBeaconBlock()
+	genesisBlock := util.NewBeaconBlockCapella()
 	genesisBlock.Block.ParentRoot = bytesutil.PadTo([]byte{1, 2, 3}, 32)
 	blockRoot, err := genesisBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -329,7 +286,11 @@ func TestStore_GenesisBlock(t *testing.T) {
 	require.NoError(t, err)
 	retrievedBlockPb, err := retrievedBlock.Proto()
 	require.NoError(t, err)
-	assert.Equal(t, true, proto.Equal(genesisBlock, retrievedBlockPb), "Wanted: %v, received: %v", genesisBlock, retrievedBlock)
+	wanted, err := wsb.ToBlinded()
+	require.NoError(t, err)
+	wantedPb, err := wanted.Proto()
+	require.NoError(t, err)
+	assert.Equal(t, true, proto.Equal(wantedPb, retrievedBlockPb), "Wanted: %v, received: %v", genesisBlock, retrievedBlock)
 }
 
 func TestStore_BlocksCRUD_NoCache(t *testing.T) {
@@ -351,10 +312,6 @@ func TestStore_BlocksCRUD_NoCache(t *testing.T) {
 			require.NoError(t, err)
 
 			wanted := blk
-			if _, err := blk.PbBellatrixBlock(); err == nil {
-				wanted, err = blk.ToBlinded()
-				require.NoError(t, err)
-			}
 			if _, err := blk.PbCapellaBlock(); err == nil {
 				wanted, err = blk.ToBlinded()
 				require.NoError(t, err)
@@ -574,10 +531,6 @@ func TestStore_SaveBlock_CanGetHighestAt(t *testing.T) {
 			b, err := db.Block(ctx, root)
 			require.NoError(t, err)
 			wanted := block1
-			if _, err := block1.PbBellatrixBlock(); err == nil {
-				wanted, err = wanted.ToBlinded()
-				require.NoError(t, err)
-			}
 			if _, err := block1.PbCapellaBlock(); err == nil {
 				wanted, err = wanted.ToBlinded()
 				require.NoError(t, err)
@@ -596,10 +549,6 @@ func TestStore_SaveBlock_CanGetHighestAt(t *testing.T) {
 			b, err = db.Block(ctx, root)
 			require.NoError(t, err)
 			wanted2 := block2
-			if _, err := block2.PbBellatrixBlock(); err == nil {
-				wanted2, err = block2.ToBlinded()
-				require.NoError(t, err)
-			}
 			if _, err := block2.PbCapellaBlock(); err == nil {
 				wanted2, err = block2.ToBlinded()
 				require.NoError(t, err)
@@ -618,10 +567,6 @@ func TestStore_SaveBlock_CanGetHighestAt(t *testing.T) {
 			b, err = db.Block(ctx, root)
 			require.NoError(t, err)
 			wanted = block3
-			if _, err := block3.PbBellatrixBlock(); err == nil {
-				wanted, err = wanted.ToBlinded()
-				require.NoError(t, err)
-			}
 			if _, err := block3.PbCapellaBlock(); err == nil {
 				wanted, err = wanted.ToBlinded()
 				require.NoError(t, err)
@@ -658,10 +603,6 @@ func TestStore_GenesisBlock_CanGetHighestAt(t *testing.T) {
 			b, err := db.Block(ctx, root)
 			require.NoError(t, err)
 			wanted := block1
-			if _, err := block1.PbBellatrixBlock(); err == nil {
-				wanted, err = block1.ToBlinded()
-				require.NoError(t, err)
-			}
 			if _, err := block1.PbCapellaBlock(); err == nil {
 				wanted, err = block1.ToBlinded()
 				require.NoError(t, err)
@@ -679,10 +620,6 @@ func TestStore_GenesisBlock_CanGetHighestAt(t *testing.T) {
 			b, err = db.Block(ctx, root)
 			require.NoError(t, err)
 			wanted = genesisBlock
-			if _, err := genesisBlock.PbBellatrixBlock(); err == nil {
-				wanted, err = genesisBlock.ToBlinded()
-				require.NoError(t, err)
-			}
 			if _, err := genesisBlock.PbCapellaBlock(); err == nil {
 				wanted, err = genesisBlock.ToBlinded()
 				require.NoError(t, err)
@@ -700,10 +637,6 @@ func TestStore_GenesisBlock_CanGetHighestAt(t *testing.T) {
 			b, err = db.Block(ctx, root)
 			require.NoError(t, err)
 			wanted = genesisBlock
-			if _, err := genesisBlock.PbBellatrixBlock(); err == nil {
-				wanted, err = genesisBlock.ToBlinded()
-				require.NoError(t, err)
-			}
 			if _, err := genesisBlock.PbCapellaBlock(); err == nil {
 				wanted, err = genesisBlock.ToBlinded()
 				require.NoError(t, err)
@@ -800,10 +733,6 @@ func TestStore_BlocksBySlot_BlockRootsBySlot(t *testing.T) {
 			require.NoError(t, err)
 
 			wanted := b1
-			if _, err := b1.PbBellatrixBlock(); err == nil {
-				wanted, err = b1.ToBlinded()
-				require.NoError(t, err)
-			}
 			if _, err := b1.PbCapellaBlock(); err == nil {
 				wanted, err = b1.ToBlinded()
 				require.NoError(t, err)
@@ -820,10 +749,6 @@ func TestStore_BlocksBySlot_BlockRootsBySlot(t *testing.T) {
 				t.Fatalf("Expected 2 blocks, received %d blocks", len(retrievedBlocks))
 			}
 			wanted = b2
-			if _, err := b2.PbBellatrixBlock(); err == nil {
-				wanted, err = b2.ToBlinded()
-				require.NoError(t, err)
-			}
 			if _, err := b2.PbCapellaBlock(); err == nil {
 				wanted, err = b2.ToBlinded()
 				require.NoError(t, err)
@@ -834,10 +759,6 @@ func TestStore_BlocksBySlot_BlockRootsBySlot(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, true, proto.Equal(wantedPb, retrieved0Pb), "Wanted: %v, received: %v", retrievedBlocks[0], wanted)
 			wanted = b3
-			if _, err := b3.PbBellatrixBlock(); err == nil {
-				wanted, err = b3.ToBlinded()
-				require.NoError(t, err)
-			}
 			if _, err := b3.PbCapellaBlock(); err == nil {
 				wanted, err = b3.ToBlinded()
 				require.NoError(t, err)
@@ -893,7 +814,7 @@ func TestStore_FeeRecipientByValidatorID(t *testing.T) {
 			FeeRecipient: bytesutil.PadTo([]byte("a"), 20),
 			GasLimit:     1,
 			Timestamp:    2,
-			Pubkey:       bytesutil.PadTo([]byte("b"), 48),
+			Pubkey:       bytesutil.PadTo([]byte("b"), field_params.DilithiumPubkeyLength),
 		}}
 	require.NoError(t, db.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{3}, regs))
 	f, err = db.FeeRecipientByValidatorID(ctx, 3)
@@ -918,19 +839,19 @@ func TestStore_RegistrationsByValidatorID(t *testing.T) {
 			FeeRecipient: bytesutil.PadTo([]byte("a"), 20),
 			GasLimit:     1,
 			Timestamp:    uint64(timestamp),
-			Pubkey:       bytesutil.PadTo([]byte("b"), 48),
+			Pubkey:       bytesutil.PadTo([]byte("b"), field_params.DilithiumPubkeyLength),
 		},
 		{
 			FeeRecipient: bytesutil.PadTo([]byte("c"), 20),
 			GasLimit:     3,
 			Timestamp:    uint64(timestamp),
-			Pubkey:       bytesutil.PadTo([]byte("d"), 48),
+			Pubkey:       bytesutil.PadTo([]byte("d"), field_params.DilithiumPubkeyLength),
 		},
 		{
 			FeeRecipient: bytesutil.PadTo([]byte("e"), 20),
 			GasLimit:     5,
 			Timestamp:    uint64(timestamp),
-			Pubkey:       bytesutil.PadTo([]byte("f"), 48),
+			Pubkey:       bytesutil.PadTo([]byte("f"), field_params.DilithiumPubkeyLength),
 		},
 	}
 	require.NoError(t, db.SaveRegistrationsByValidatorIDs(ctx, ids, regs))
@@ -940,7 +861,7 @@ func TestStore_RegistrationsByValidatorID(t *testing.T) {
 		FeeRecipient: bytesutil.PadTo([]byte("a"), 20),
 		GasLimit:     1,
 		Timestamp:    uint64(timestamp),
-		Pubkey:       bytesutil.PadTo([]byte("b"), 48),
+		Pubkey:       bytesutil.PadTo([]byte("b"), field_params.DilithiumPubkeyLength),
 	}, f)
 	f, err = db.RegistrationByValidatorID(ctx, 1)
 	require.NoError(t, err)
@@ -948,7 +869,7 @@ func TestStore_RegistrationsByValidatorID(t *testing.T) {
 		FeeRecipient: bytesutil.PadTo([]byte("c"), 20),
 		GasLimit:     3,
 		Timestamp:    uint64(timestamp),
-		Pubkey:       bytesutil.PadTo([]byte("d"), 48),
+		Pubkey:       bytesutil.PadTo([]byte("d"), field_params.DilithiumPubkeyLength),
 	}, f)
 	f, err = db.RegistrationByValidatorID(ctx, 2)
 	require.NoError(t, err)
@@ -956,7 +877,7 @@ func TestStore_RegistrationsByValidatorID(t *testing.T) {
 		FeeRecipient: bytesutil.PadTo([]byte("e"), 20),
 		GasLimit:     5,
 		Timestamp:    uint64(timestamp),
-		Pubkey:       bytesutil.PadTo([]byte("f"), 48),
+		Pubkey:       bytesutil.PadTo([]byte("f"), field_params.DilithiumPubkeyLength),
 	}, f)
 	_, err = db.RegistrationByValidatorID(ctx, 3)
 	want := errors.Wrap(ErrNotFoundFeeRecipient, "validator id 3")

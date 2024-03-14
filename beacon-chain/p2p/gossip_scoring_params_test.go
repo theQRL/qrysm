@@ -6,6 +6,7 @@ import (
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	dbutil "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
@@ -25,11 +26,11 @@ func TestCorrect_ActiveValidatorsCount(t *testing.T) {
 		ctx: context.Background(),
 		cfg: &Config{DB: db},
 	}
-	bState, err := util.NewBeaconState(func(state *zondpb.BeaconState) error {
+	bState, err := util.NewBeaconStateCapella(func(state *zondpb.BeaconStateCapella) error {
 		validators := make([]*zondpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
 		for i := 0; i < len(validators); i++ {
 			validators[i] = &zondpb.Validator{
-				PublicKey:             make([]byte, 48),
+				PublicKey:             make([]byte, field_params.DilithiumPubkeyLength),
 				WithdrawalCredentials: make([]byte, 32),
 				ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 				Slashed:               false,
@@ -46,7 +47,7 @@ func TestCorrect_ActiveValidatorsCount(t *testing.T) {
 	assert.Equal(t, int(params.BeaconConfig().MinGenesisActiveValidatorCount), int(vals), "mainnet genesis active count isn't accurate")
 	for i := 0; i < 100; i++ {
 		require.NoError(t, bState.AppendValidator(&zondpb.Validator{
-			PublicKey:             make([]byte, 48),
+			PublicKey:             make([]byte, field_params.DilithiumPubkeyLength),
 			WithdrawalCredentials: make([]byte, 32),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 			Slashed:               false,

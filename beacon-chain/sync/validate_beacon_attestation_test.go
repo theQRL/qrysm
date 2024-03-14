@@ -63,7 +63,7 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 	digest, err := s.currentForkDigest()
 	require.NoError(t, err)
 
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blk.Block.Slot = 1
 	util.SaveBlock(t, ctx, db, blk)
 
@@ -74,8 +74,8 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 		Epoch: 0,
 	}
 
-	validators := uint64(64)
-	savedState, keys := util.DeterministicGenesisState(t, validators)
+	validators := uint64(256)
+	savedState, keys := util.DeterministicGenesisStateCapella(t, validators)
 	require.NoError(t, savedState.SetSlot(1))
 	require.NoError(t, db.SaveState(context.Background(), savedState, validBlockRoot))
 	chain.State = savedState
@@ -271,12 +271,12 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 				require.NoError(t, err)
 				for i := 0; ; i++ {
 					if tt.msg.AggregationBits.BitAt(uint64(i)) {
-						tt.msg.Signature = keys[com[i]].Sign(attRoot[:]).Marshal()
+						tt.msg.Signatures = [][]byte{keys[com[i]].Sign(attRoot[:]).Marshal()}
 						break
 					}
 				}
 			} else {
-				tt.msg.Signature = make([]byte, 96)
+				tt.msg.Signatures = [][]byte{make([]byte, 4595)}
 			}
 			buf := new(bytes.Buffer)
 			_, err := p.Encoding().EncodeGossip(buf, tt.msg)

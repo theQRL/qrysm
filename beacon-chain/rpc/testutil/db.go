@@ -14,9 +14,9 @@ import (
 	"github.com/theQRL/qrysm/v4/testing/util"
 )
 
-func FillDBWithBlocks(ctx context.Context, t *testing.T, beaconDB db.Database) (*zondpbalpha.SignedBeaconBlock, []*zondpbalpha.BeaconBlockContainer) {
+func FillDBWithBlocks(ctx context.Context, t *testing.T, beaconDB db.Database) (*zondpbalpha.SignedBeaconBlockCapella, []*zondpbalpha.BeaconBlockContainer) {
 	parentRoot := [32]byte{1, 2, 3}
-	genBlk := util.NewBeaconBlock()
+	genBlk := util.NewBeaconBlockCapella()
 	genBlk.Block.ParentRoot = parentRoot[:]
 	root, err := genBlk.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -27,7 +27,7 @@ func FillDBWithBlocks(ctx context.Context, t *testing.T, beaconDB db.Database) (
 	blks := make([]interfaces.ReadOnlySignedBeaconBlock, count)
 	blkContainers := make([]*zondpbalpha.BeaconBlockContainer, count)
 	for i := primitives.Slot(0); i < count; i++ {
-		b := util.NewBeaconBlock()
+		b := util.NewBeaconBlockCapella()
 		b.Block.Slot = i
 		b.Block.ParentRoot = bytesutil.PadTo([]byte{uint8(i)}, 32)
 		root, err := b.Block.HashTreeRoot()
@@ -35,7 +35,7 @@ func FillDBWithBlocks(ctx context.Context, t *testing.T, beaconDB db.Database) (
 		blks[i], err = blocks.NewSignedBeaconBlock(b)
 		require.NoError(t, err)
 		blkContainers[i] = &zondpbalpha.BeaconBlockContainer{
-			Block:     &zondpbalpha.BeaconBlockContainer_Phase0Block{Phase0Block: b},
+			Block:     &zondpbalpha.BeaconBlockContainer_CapellaBlock{CapellaBlock: b},
 			BlockRoot: root[:],
 		}
 	}
@@ -43,7 +43,7 @@ func FillDBWithBlocks(ctx context.Context, t *testing.T, beaconDB db.Database) (
 	headRoot := bytesutil.ToBytes32(blkContainers[len(blks)-1].BlockRoot)
 	summary := &zondpbalpha.StateSummary{
 		Root: headRoot[:],
-		Slot: blkContainers[len(blks)-1].Block.(*zondpbalpha.BeaconBlockContainer_Phase0Block).Phase0Block.Block.Slot,
+		Slot: blkContainers[len(blks)-1].Block.(*zondpbalpha.BeaconBlockContainer_CapellaBlock).CapellaBlock.Block.Slot,
 	}
 	require.NoError(t, beaconDB.SaveStateSummary(ctx, summary))
 	require.NoError(t, beaconDB.SaveHeadBlockRoot(ctx, headRoot))

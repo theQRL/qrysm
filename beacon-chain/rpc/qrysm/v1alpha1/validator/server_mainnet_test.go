@@ -10,9 +10,10 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
 	mockExecution "github.com/theQRL/qrysm/v4/beacon-chain/execution/testing"
 	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/container/trie"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
+	"github.com/theQRL/qrysm/v4/crypto/dilithium"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
@@ -27,15 +28,15 @@ func TestWaitForActivation_ValidatorOriginallyExists(t *testing.T) {
 	params.OverrideBeaconConfig(params.MainnetConfig().Copy())
 	ctx := context.Background()
 
-	priv1, err := bls.RandKey()
+	priv1, err := dilithium.RandKey()
 	require.NoError(t, err)
-	priv2, err := bls.RandKey()
+	priv2, err := dilithium.RandKey()
 	require.NoError(t, err)
 
 	pubKey1 := priv1.PublicKey().Marshal()
 	pubKey2 := priv2.PublicKey().Marshal()
 
-	beaconState := &zondpb.BeaconState{
+	beaconState := &zondpb.BeaconStateCapella{
 		Slot: 4000,
 		Validators: []*zondpb.Validator{
 			{
@@ -46,13 +47,13 @@ func TestWaitForActivation_ValidatorOriginallyExists(t *testing.T) {
 			},
 		},
 	}
-	block := util.NewBeaconBlock()
+	block := util.NewBeaconBlockCapella()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 	depData := &zondpb.Deposit_Data{
 		PublicKey:             pubKey1,
 		WithdrawalCredentials: bytesutil.PadTo([]byte("hey"), 32),
-		Signature:             make([]byte, 96),
+		Signature:             make([]byte, field_params.DilithiumSignatureLength),
 	}
 	domain, err := signing.ComputeDomain(params.BeaconConfig().DomainDeposit, nil, nil)
 	require.NoError(t, err)
@@ -71,7 +72,7 @@ func TestWaitForActivation_ValidatorOriginallyExists(t *testing.T) {
 	root, err := depositTrie.HashTreeRoot()
 	require.NoError(t, err)
 	assert.NoError(t, depositCache.InsertDeposit(ctx, deposit, 10 /*blockNum*/, 0, root))
-	s, err := state_native.InitializeFromProtoUnsafePhase0(beaconState)
+	s, err := state_native.InitializeFromProtoUnsafeCapella(beaconState)
 	require.NoError(t, err)
 	vs := &Server{
 		Ctx:               context.Background(),

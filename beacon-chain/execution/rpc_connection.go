@@ -38,6 +38,7 @@ func (s *Service) setupExecutionClientConnections(ctx context.Context, currEndpo
 	if err := ensureCorrectExecutionChain(ctx, fetcher); err != nil {
 		client.Close()
 		errStr := err.Error()
+		// TODO(theQRL/qrysm/issues/67)
 		if strings.Contains(errStr, "401 Unauthorized") {
 			errStr = "could not verify execution chain ID as your connection is not authenticated. " +
 				"If connecting to your execution client via HTTP, you will need to set up JWT authentication. " +

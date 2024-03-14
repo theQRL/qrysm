@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	mockChain "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
 	opfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
@@ -14,9 +13,11 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/voluntaryexits"
 	mockp2p "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
 	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/theQRL/qrysm/v4/config/params"
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -28,11 +29,11 @@ func TestProposeExit_Notification(t *testing.T) {
 
 	deposits, keys, err := util.DeterministicDepositsAndKeys(params.BeaconConfig().MinGenesisActiveValidatorCount)
 	require.NoError(t, err)
-	beaconState, err := transition.GenesisBeaconState(ctx, deposits, 0, &zondpb.Eth1Data{BlockHash: make([]byte, 32)})
+	beaconState, err := transition.GenesisBeaconStateCapella(ctx, deposits, 0, &zondpb.Eth1Data{BlockHash: make([]byte, 32)}, &enginev1.ExecutionPayloadCapella{})
 	require.NoError(t, err)
 	epoch := primitives.Epoch(2048)
 	require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(uint64(epoch))))
-	block := util.NewBeaconBlock()
+	block := util.NewBeaconBlockCapella()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
@@ -95,11 +96,11 @@ func TestProposeExit_NoPanic(t *testing.T) {
 
 	deposits, keys, err := util.DeterministicDepositsAndKeys(params.BeaconConfig().MinGenesisActiveValidatorCount)
 	require.NoError(t, err)
-	beaconState, err := transition.GenesisBeaconState(ctx, deposits, 0, &zondpb.Eth1Data{BlockHash: make([]byte, 32)})
+	beaconState, err := transition.GenesisBeaconStateCapella(ctx, deposits, 0, &zondpb.Eth1Data{BlockHash: make([]byte, 32)}, &enginev1.ExecutionPayloadCapella{})
 	require.NoError(t, err)
 	epoch := primitives.Epoch(2048)
 	require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(uint64(epoch))))
-	block := util.NewBeaconBlock()
+	block := util.NewBeaconBlockCapella()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
@@ -137,7 +138,7 @@ func TestProposeExit_NoPanic(t *testing.T) {
 
 	_, err = server.ProposeExit(context.Background(), req)
 	require.ErrorContains(t, "invalid signature provided", err, "Expected error for no signature exists")
-	req.Signature = bytesutil.FromBytes2592([dilithium2.CryptoPublicKeyBytes]byte{})
+	req.Signature = bytesutil.FromBytes2592([field_params.DilithiumPubkeyLength]byte{})
 
 	_, err = server.ProposeExit(context.Background(), req)
 	require.ErrorContains(t, "invalid signature provided", err, "Expected error for invalid signature length")

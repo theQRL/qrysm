@@ -11,16 +11,16 @@ import (
 )
 
 func (s *Service) dilithiumToExecutionChangeSubscriber(_ context.Context, msg proto.Message) error {
-	blsMsg, ok := msg.(*zondpb.SignedDilithiumToExecutionChange)
+	dilithiumMsg, ok := msg.(*zondpb.SignedDilithiumToExecutionChange)
 	if !ok {
 		return errors.Errorf("incorrect type of message received, wanted %T but got %T", &zondpb.SignedDilithiumToExecutionChange{}, msg)
 	}
 	s.cfg.operationNotifier.OperationFeed().Send(&feed.Event{
 		Type: opfeed.DilithiumToExecutionChangeReceived,
 		Data: &opfeed.DilithiumToExecutionChangeReceivedData{
-			Change: blsMsg,
+			Change: dilithiumMsg,
 		},
 	})
-	s.cfg.dilithiumToExecPool.InsertDilithiumToExecChange(blsMsg)
+	s.cfg.dilithiumToExecPool.InsertDilithiumToExecChange(dilithiumMsg)
 	return nil
 }

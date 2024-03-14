@@ -70,7 +70,7 @@ func TestEth1DataHasEnoughSupport(t *testing.T) {
 			c.EpochsPerEth1VotingPeriod = tt.votingPeriodLength
 			params.OverrideBeaconConfig(c)
 
-			s, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+			s, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 				Eth1DataVotes: tt.stateVotes,
 			})
 			require.NoError(t, err)
@@ -160,14 +160,14 @@ func TestAreEth1DataEqual(t *testing.T) {
 }
 
 func TestProcessEth1Data_SetsCorrectly(t *testing.T) {
-	beaconState, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Eth1DataVotes: []*zondpb.Eth1Data{},
 	})
 	require.NoError(t, err)
 
-	b := util.NewBeaconBlock()
-	b.Block = &zondpb.BeaconBlock{
-		Body: &zondpb.BeaconBlockBody{
+	b := util.NewBeaconBlockCapella()
+	b.Block = &zondpb.BeaconBlockCapella{
+		Body: &zondpb.BeaconBlockBodyCapella{
 			Eth1Data: &zondpb.Eth1Data{
 				DepositRoot: []byte{2},
 				BlockHash:   []byte{3},
@@ -179,7 +179,7 @@ func TestProcessEth1Data_SetsCorrectly(t *testing.T) {
 	for i := uint64(0); i < period; i++ {
 		processedState, err := blocks.ProcessEth1DataInBlock(context.Background(), beaconState, b.Block.Body.Eth1Data)
 		require.NoError(t, err)
-		require.Equal(t, true, processedState.Version() == version.Phase0)
+		require.Equal(t, true, processedState.Version() == version.Capella)
 	}
 
 	newETH1DataVotes := beaconState.Eth1DataVotes()

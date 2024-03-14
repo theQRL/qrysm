@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpbalpha "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
@@ -24,7 +24,7 @@ import (
 )
 
 func Test_currentCommitteeIndicesFromState(t *testing.T) {
-	st, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().SyncCommitteeSize)
+	st, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().SyncCommitteeSize)
 	vals := st.Validators()
 	wantedCommittee := make([][]byte, params.BeaconConfig().SyncCommitteeSize)
 	wantedIndices := make([]primitives.ValidatorIndex, len(wantedCommittee))
@@ -53,7 +53,7 @@ func Test_currentCommitteeIndicesFromState(t *testing.T) {
 }
 
 func Test_nextCommitteeIndicesFromState(t *testing.T) {
-	st, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().SyncCommitteeSize)
+	st, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().SyncCommitteeSize)
 	vals := st.Validators()
 	wantedCommittee := make([][]byte, params.BeaconConfig().SyncCommitteeSize)
 	wantedIndices := make([]primitives.ValidatorIndex, len(wantedCommittee))
@@ -82,7 +82,7 @@ func Test_nextCommitteeIndicesFromState(t *testing.T) {
 }
 
 func Test_extractSyncSubcommittees(t *testing.T) {
-	st, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().SyncCommitteeSize)
+	st, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().SyncCommitteeSize)
 	vals := st.Validators()
 	syncCommittee := make([][]byte, params.BeaconConfig().SyncCommitteeSize)
 	for i := 0; i < len(syncCommittee); i++ {
@@ -133,7 +133,7 @@ func Test_extractSyncSubcommittees(t *testing.T) {
 
 func TestListSyncCommittees(t *testing.T) {
 	ctx := context.Background()
-	st, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().SyncCommitteeSize)
+	st, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().SyncCommitteeSize)
 	syncCommittee := make([][]byte, params.BeaconConfig().SyncCommitteeSize)
 	vals := st.Validators()
 	for i := 0; i < len(syncCommittee); i++ {
@@ -161,7 +161,7 @@ func TestListSyncCommittees(t *testing.T) {
 		BeaconDB:              db,
 		ChainInfoFetcher:      chainService,
 	}
-	req := &zondpbv2.StateSyncCommitteesRequest{StateId: stRoot[:]}
+	req := &zondpbv1.StateSyncCommitteesRequest{StateId: stRoot[:]}
 	resp, err := s.ListSyncCommittees(ctx, req)
 	require.NoError(t, err)
 	require.NotNil(t, resp.Data)
@@ -185,7 +185,7 @@ func TestListSyncCommittees(t *testing.T) {
 
 	t.Run("execution optimistic", func(t *testing.T) {
 		parentRoot := [32]byte{'a'}
-		blk := util.NewBeaconBlock()
+		blk := util.NewBeaconBlockCapella()
 		blk.Block.ParentRoot = parentRoot[:]
 		root, err := blk.Block.HashTreeRoot()
 		require.NoError(t, err)
@@ -214,7 +214,7 @@ func TestListSyncCommittees(t *testing.T) {
 
 	t.Run("finalized", func(t *testing.T) {
 		parentRoot := [32]byte{'a'}
-		blk := util.NewBeaconBlock()
+		blk := util.NewBeaconBlockCapella()
 		blk.Block.ParentRoot = parentRoot[:]
 		root, err := blk.Block.HashTreeRoot()
 		require.NoError(t, err)
@@ -277,7 +277,7 @@ func (m *futureSyncMockFetcher) StateBySlot(context.Context, primitives.Slot) (s
 
 func TestListSyncCommitteesFuture(t *testing.T) {
 	ctx := context.Background()
-	st, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().SyncCommitteeSize)
+	st, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().SyncCommitteeSize)
 	syncCommittee := make([][]byte, params.BeaconConfig().SyncCommitteeSize)
 	vals := st.Validators()
 	for i := 0; i < len(syncCommittee); i++ {
@@ -301,7 +301,7 @@ func TestListSyncCommitteesFuture(t *testing.T) {
 		FinalizationFetcher:   chainService,
 		BeaconDB:              db,
 	}
-	req := &zondpbv2.StateSyncCommitteesRequest{StateId: []byte("head")}
+	req := &zondpbv1.StateSyncCommitteesRequest{StateId: []byte("head")}
 	epoch := 2 * params.BeaconConfig().EpochsPerSyncCommitteePeriod
 	req.Epoch = &epoch
 	_, err := s.ListSyncCommittees(ctx, req)

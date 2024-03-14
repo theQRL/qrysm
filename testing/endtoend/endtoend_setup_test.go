@@ -50,7 +50,7 @@ func e2eMinimal(t *testing.T, v int, cfgo ...types.E2EConfigOpt) *testRunner {
 		ev.ProcessesDepositsInBlocks,
 		ev.ActivatesDepositedValidators,
 		ev.DepositedValidatorsAreActive,
-		// ev.ValidatorsVoteWithTheMajority, TODO(rgeraldes24): re-enable once the unit tests are complete
+		ev.ValidatorsVoteWithTheMajority,
 		ev.ColdStateCheckpoint,
 		ev.APIMiddlewareVerifyIntegrity,
 		ev.APIGatewayV1Alpha1VerifyIntegrity,

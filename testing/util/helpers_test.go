@@ -18,8 +18,8 @@ import (
 )
 
 func TestBlockSignature(t *testing.T) {
-	beaconState, privKeys := DeterministicGenesisState(t, 100)
-	block, err := GenerateFullBlock(beaconState, privKeys, nil, 0)
+	beaconState, privKeys := DeterministicGenesisStateCapella(t, 100)
+	block, err := GenerateFullBlockCapella(beaconState, privKeys, nil, 0)
 	require.NoError(t, err)
 
 	require.NoError(t, beaconState.SetSlot(beaconState.Slot()+1))
@@ -40,7 +40,7 @@ func TestBlockSignature(t *testing.T) {
 }
 
 func TestRandaoReveal(t *testing.T) {
-	beaconState, privKeys := DeterministicGenesisState(t, 100)
+	beaconState, privKeys := DeterministicGenesisStateCapella(t, 100)
 
 	epoch := time.CurrentEpoch(beaconState)
 	randaoReveal, err := RandaoReveal(beaconState, epoch, privKeys)

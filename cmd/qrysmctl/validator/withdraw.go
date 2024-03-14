@@ -12,10 +12,10 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/qrysm/v4/api/client/beacon"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
+	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
 	"github.com/urfave/cli/v2"
 	"go.opencensus.io/trace"
 )
@@ -56,13 +56,13 @@ func getWithdrawalMessagesFromPathFlag(c *cli.Context) ([]*apimiddleware.SignedD
 		}
 		// verify 0x from file and add if needed
 		for i, obj := range to {
-			if len(obj.Message.FromDilithiumPubkey) == dilithium.CryptoPublicKeyBytes*2 {
+			if len(obj.Message.FromDilithiumPubkey) == field_params.DilithiumPubkeyLength*2 {
 				to[i].Message.FromDilithiumPubkey = fmt.Sprintf("0x%s", obj.Message.FromDilithiumPubkey)
 			}
 			if len(obj.Message.ToExecutionAddress) == common.AddressLength*2 {
 				to[i].Message.ToExecutionAddress = fmt.Sprintf("0x%s", obj.Message.ToExecutionAddress)
 			}
-			if len(obj.Signature) == dilithium.CryptoBytes*2 {
+			if len(obj.Signature) == field_params.DilithiumSignatureLength*2 {
 				to[i].Signature = fmt.Sprintf("0x%s", obj.Signature)
 			}
 			setWithdrawalAddressJsons = append(setWithdrawalAddressJsons, &apimiddleware.SignedDilithiumToExecutionChangeJson{

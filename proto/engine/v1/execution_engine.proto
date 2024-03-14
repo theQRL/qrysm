@@ -24,22 +24,6 @@ option java_outer_classname = "ExecutionEngineProto";
 option java_package = "org.theqrl.engine.v1";
 option php_namespace = "TheQRL\\Engine\\v1";
 
-message ExecutionPayload {
-	bytes parent_hash           = 1 [(theqrl.zond.ext.ssz_size) = "32"];
-	bytes fee_recipient         = 2 [(theqrl.zond.ext.ssz_size) = "20"];
-	bytes state_root            = 3 [(theqrl.zond.ext.ssz_size) = "32"];
-	bytes receipts_root         = 4 [(theqrl.zond.ext.ssz_size) = "32"];
-	bytes logs_bloom            = 5 [(theqrl.zond.ext.ssz_size) = "logs_bloom.size"];
-	bytes prev_randao           = 6 [(theqrl.zond.ext.ssz_size) = "32"];
-	uint64 block_number         = 7;
-	uint64 gas_limit            = 8;
-	uint64 gas_used             = 9;
-	uint64 timestamp            = 10;
-	bytes extra_data            = 11 [(theqrl.zond.ext.ssz_max) = "extra_data.size"];
-	bytes base_fee_per_gas      = 12 [(theqrl.zond.ext.ssz_size) = "32"];
-	bytes block_hash            = 13 [(theqrl.zond.ext.ssz_size) = "32"];
-	repeated bytes transactions = 14 [(theqrl.zond.ext.ssz_size) = "?,?", (theqrl.zond.ext.ssz_max)  = "1048576,1073741824"];
-}
 
 message ExecutionPayloadBodyV1 {
 	repeated bytes transactions = 1;
@@ -70,23 +54,6 @@ message ExecutionPayloadCapellaWithValue {
 	bytes value = 2;
 }
 
-message ExecutionPayloadHeader {
-	bytes parent_hash       = 1 [(theqrl.zond.ext.ssz_size) = "32"];
-	bytes fee_recipient     = 2 [(theqrl.zond.ext.ssz_size) = "20"];
-	bytes state_root        = 3 [(theqrl.zond.ext.ssz_size) = "32"];
-	bytes receipts_root     = 4 [(theqrl.zond.ext.ssz_size) = "32"];
-	bytes logs_bloom        = 5 [(theqrl.zond.ext.ssz_size) = "logs_bloom.size"];
-	bytes prev_randao       = 6 [(theqrl.zond.ext.ssz_size) = "32"];
-	uint64 block_number     = 7;
-	uint64 gas_limit        = 8;
-	uint64 gas_used         = 9;
-	uint64 timestamp        = 10;
-	bytes extra_data        = 11 [(theqrl.zond.ext.ssz_max) = "extra_data.size"];
-	bytes base_fee_per_gas  = 12 [(theqrl.zond.ext.ssz_size) = "32"];
-	bytes block_hash        = 13 [(theqrl.zond.ext.ssz_size) = "32"];
-	bytes transactions_root = 14 [(theqrl.zond.ext.ssz_size) = "32"];
-}
-
 message ExecutionPayloadHeaderCapella {
 	bytes parent_hash       = 1 [(theqrl.zond.ext.ssz_size) = "32"];
 	bytes fee_recipient     = 2 [(theqrl.zond.ext.ssz_size) = "20"];
@@ -102,7 +69,7 @@ message ExecutionPayloadHeaderCapella {
 	bytes base_fee_per_gas  = 12 [(theqrl.zond.ext.ssz_size) = "32"];
 	bytes block_hash        = 13 [(theqrl.zond.ext.ssz_size) = "32"];
 	bytes transactions_root = 14 [(theqrl.zond.ext.ssz_size) = "32"];
-	bytes withdrawals_root  = 15 [(theqrl.zond.ext.ssz_size) = "32"]; // New in Capella.
+	bytes withdrawals_root  = 15 [(theqrl.zond.ext.ssz_size) = "32"];
 }
 
 message TransitionConfiguration {
@@ -111,25 +78,11 @@ message TransitionConfiguration {
 	bytes terminal_block_number      = 3;
 }
 
-message PayloadAttributes {
-	uint64 timestamp              = 1;
-	bytes prev_randao             = 2 [(theqrl.zond.ext.ssz_size) = "32"];
-	bytes suggested_fee_recipient = 3 [(theqrl.zond.ext.ssz_size) = "20"];
-}
-
 message PayloadAttributesV2 {
 	uint64 timestamp                = 1;
 	bytes prev_randao               = 2 [(theqrl.zond.ext.ssz_size) = "32"];
 	bytes suggested_fee_recipient   = 3 [(theqrl.zond.ext.ssz_size) = "20"];
-	repeated Withdrawal withdrawals = 4 [(theqrl.zond.ext.ssz_max) = "withdrawal.size"]; // New in Capella.
-}
-
-message PayloadAttributesV3 {
-	uint64 timestamp                = 1;
-	bytes prev_randao               = 2 [(theqrl.zond.ext.ssz_size) = "32"];
-	bytes suggested_fee_recipient   = 3 [(theqrl.zond.ext.ssz_size) = "20"];
 	repeated Withdrawal withdrawals = 4 [(theqrl.zond.ext.ssz_max) = "withdrawal.size"];
-	bytes parent_beacon_block_root  = 5 [(theqrl.zond.ext.ssz_size) = "32"];
 }
 
 message PayloadStatus {

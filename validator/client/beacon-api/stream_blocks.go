@@ -72,7 +72,7 @@ func (c beaconApiValidatorClient) getHeadSignedBeaconBlock(ctx context.Context) 
 	// Since we don't know yet what the json looks like, we unmarshal into an abstract structure that has only a version
 	// and a blob of data
 	signedBlockResponseJson := abstractSignedBlockResponseJson{}
-	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, "/zond/v2/beacon/blocks/head", &signedBlockResponseJson); err != nil {
+	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, "/zond/v1/beacon/blocks/head", &signedBlockResponseJson); err != nil {
 		return nil, errors.Wrap(err, "failed to query GET REST endpoint")
 	}
 

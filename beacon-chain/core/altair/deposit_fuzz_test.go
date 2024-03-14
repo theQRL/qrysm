@@ -13,7 +13,7 @@ import (
 
 func TestFuzzProcessDeposits_10000(t *testing.T) {
 	fuzzer := fuzz.NewWithSeed(0)
-	state := &zondpb.BeaconStateAltair{}
+	state := &zondpb.BeaconStateCapella{}
 	deposits := make([]*zondpb.Deposit, 100)
 	ctx := context.Background()
 	for i := 0; i < 10000; i++ {
@@ -21,7 +21,7 @@ func TestFuzzProcessDeposits_10000(t *testing.T) {
 		for i := range deposits {
 			fuzzer.Fuzz(deposits[i])
 		}
-		s, err := state_native.InitializeFromProtoUnsafeAltair(state)
+		s, err := state_native.InitializeFromProtoUnsafeCapella(state)
 		require.NoError(t, err)
 		r, err := altair.ProcessDeposits(ctx, s, deposits)
 		if err != nil && r != nil {
@@ -32,13 +32,13 @@ func TestFuzzProcessDeposits_10000(t *testing.T) {
 
 func TestFuzzProcessDeposit_10000(t *testing.T) {
 	fuzzer := fuzz.NewWithSeed(0)
-	state := &zondpb.BeaconStateAltair{}
+	state := &zondpb.BeaconStateCapella{}
 	deposit := &zondpb.Deposit{}
 
 	for i := 0; i < 10000; i++ {
 		fuzzer.Fuzz(state)
 		fuzzer.Fuzz(deposit)
-		s, err := state_native.InitializeFromProtoUnsafeAltair(state)
+		s, err := state_native.InitializeFromProtoUnsafeCapella(state)
 		require.NoError(t, err)
 		r, err := altair.ProcessDeposit(s, deposit, true)
 		if err != nil && r != nil {

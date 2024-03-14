@@ -168,6 +168,7 @@ func (s *Service) Resync() error {
 	genesis := time.Unix(int64(headState.GenesisTime()), 0) // lint:ignore uintcast -- Genesis time will not exceed int64 in your lifetime.
 
 	s.waitForMinimumPeers()
+
 	if err = s.roundRobinSync(genesis); err != nil {
 		log = log.WithError(err)
 	}

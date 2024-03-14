@@ -4,7 +4,10 @@ import (
 	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
 )
 
-const BETANET = "betanet"
+const (
+	BETANET = "betanet"
+	MAINNET = "mainnet"
+)
 
 type Config struct {
 	ChainSettings map[string]*ChainSetting
@@ -28,6 +31,11 @@ func GetConfig() *Config {
 			BETANET: {
 				Name:                  BETANET,
 				GenesisForkVersion:    ToHex("0x20000089"),
+				GenesisValidatorsRoot: ToHex("0x8e0aea32a97da3012c2c158bae29794fd08a098144dfee4ed016272035e0d6da"),
+			},
+			MAINNET: {
+				Name:                  MAINNET,
+				GenesisForkVersion:    ToHex("0x00000000"),
 				GenesisValidatorsRoot: ToHex("0x8e0aea32a97da3012c2c158bae29794fd08a098144dfee4ed016272035e0d6da"),
 			},
 		},

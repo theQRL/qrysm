@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
-	v2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
 	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -113,11 +113,11 @@ func validatorsParticipating(_ *types.EvaluationContext, conns ...*grpc.ClientCo
 		return errors.Wrap(err, "failed to get validator participation")
 	}
 
-	partRate := participation.Participation.GlobalParticipationRate
+	partRate := float32(participation.Participation.PreviousEpochTargetAttestingGwei) / float32(participation.Participation.PreviousEpochActiveGwei)
 	expected := float32(expectedParticipation)
 
 	if partRate < expected {
-		st, err := debugClient.GetBeaconStateV2(context.Background(), &v2.BeaconStateRequestV2{StateId: []byte("head")})
+		st, err := debugClient.GetBeaconState(context.Background(), &v1.BeaconStateRequest{StateId: []byte("head")})
 		if err != nil {
 			return errors.Wrap(err, "failed to get beacon state")
 		}
@@ -125,7 +125,7 @@ func validatorsParticipating(_ *types.EvaluationContext, conns ...*grpc.ClientCo
 		var missTgtVals []uint64
 		var missHeadVals []uint64
 		switch obj := st.Data.State.(type) {
-		case *v2.BeaconStateContainer_CapellaState:
+		case *v1.BeaconStateContainer_CapellaState:
 			missSrcVals, missTgtVals, missHeadVals, err = findMissingValidators(obj.CapellaState.PreviousEpochParticipation)
 			if err != nil {
 				return errors.Wrap(err, "failed to get missing validators")
@@ -164,10 +164,6 @@ func validatorsSyncParticipation(_ *types.EvaluationContext, conns ...*grpc.Clie
 		lowestBound = currEpoch - 1
 	}
 
-	// if lowestBound < helpers.AltairE2EForkEpoch {
-	// 	lowestBound = helpers.AltairE2EForkEpoch
-	// }
-
 	blockCtrs, err := altairClient.ListBeaconBlocks(context.Background(), &zondpb.ListBlocksRequest{QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: lowestBound}})
 	if err != nil {
 		return errors.Wrap(err, "failed to get validator participation")
@@ -201,6 +197,12 @@ func validatorsSyncParticipation(_ *types.EvaluationContext, conns ...*grpc.Clie
 		if err != nil {
 			return err
 		}
+
+		// make sure that the number of signatures matches the number of participants
+		if len(syncAgg.SyncCommitteeBits.BitIndices()) != len(syncAgg.SyncCommitteeSignatures) {
+			return errors.Errorf("In block of slot %d ,the aggregate bitvector with %d participants only got %d signatures", b.Block().Slot(), len(syncAgg.SyncCommitteeBits.BitIndices()), len(syncAgg.SyncCommitteeSignatures))
+		}
+
 		threshold := uint64(float64(syncAgg.SyncCommitteeBits.Len()) * expectedParticipation)
 		if syncAgg.SyncCommitteeBits.Count() < threshold {
 			return errors.Errorf("In block of slot %d ,the aggregate bitvector with length of %d only got a count of %d", b.Block().Slot(), threshold, syncAgg.SyncCommitteeBits.Count())
