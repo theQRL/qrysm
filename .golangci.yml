@@ -1,13 +1,15 @@
 run:
-  skip-files:
+  timeout: 10m
+  go: '1.21'
+
+issues:
+  exclude-files:
     - validator/keymanager/remote-web3signer/v1/web3signer_types.go
     - .*_test.go
     - testing/spectest
-  skip-dirs:
+  exclude-dirs:
     - proto
     - tools/analyzers
-  timeout: 10m
-  go: '1.21'
 
 linters:
   disable-all: true

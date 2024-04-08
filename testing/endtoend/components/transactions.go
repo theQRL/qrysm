@@ -40,7 +40,7 @@ func (t *TransactionGenerator) Start(ctx context.Context) error {
 	ctx, ccl := context.WithCancel(ctx)
 	t.cancel = ccl
 
-	client, err := rpc.DialHTTP(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.GzondExecutionNodeRPCPort))
+	client, err := rpc.Dial(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.GzondExecutionNodeRPCPort))
 	if err != nil {
 		return err
 	}

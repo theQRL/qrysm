@@ -43,15 +43,10 @@ const (
 	headerPath   = "/zond/v1/builder/header/{slot:[0-9]+}/{parent_hash:0x[a-fA-F0-9]+}/{pubkey:0x[a-fA-F0-9]+}"
 	blindedPath  = "/zond/v1/builder/blinded_blocks"
 
-	// ForkchoiceUpdatedMethod v1 request string for JSON-RPC.
-	ForkchoiceUpdatedMethod = "engine_forkchoiceUpdatedV1"
 	// ForkchoiceUpdatedMethodV2 v2 request string for JSON-RPC.
 	ForkchoiceUpdatedMethodV2 = "engine_forkchoiceUpdatedV2"
-	// GetPayloadMethod v1 request string for JSON-RPC.
-	GetPayloadMethod = "engine_getPayloadV1"
 	// GetPayloadMethodV2 v2 request string for JSON-RPC.
 	GetPayloadMethodV2 = "engine_getPayloadV2"
-	// ExchangeTransitionConfigurationMethod v1 request string for JSON-RPC.
 )
 
 var (
@@ -219,7 +214,7 @@ func (p *Builder) handleEngineCalls(req, resp []byte) {
 	}
 	p.cfg.logger.Infof("Received engine call %s", rpcObj.Method)
 	switch rpcObj.Method {
-	case ForkchoiceUpdatedMethod, ForkchoiceUpdatedMethodV2:
+	case ForkchoiceUpdatedMethodV2:
 		result := &ForkchoiceUpdatedResponse{}
 		err = json.Unmarshal(resp, result)
 		if err != nil {

@@ -6,7 +6,6 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/holiman/uint256"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
 	zondtypes "github.com/theQRL/go-zond/core/types"
@@ -74,25 +73,6 @@ func TestJsonMarshalUnmarshal(t *testing.T) {
 		require.DeepEqual(t, head, payloadPb.HeadBlockHash)
 		require.DeepEqual(t, safe, payloadPb.SafeBlockHash)
 		require.DeepEqual(t, finalized, payloadPb.FinalizedBlockHash)
-	})
-
-	t.Run("transition configuration", func(t *testing.T) {
-		blockHash := [32]byte{'h', 'e', 'a', 'd'}
-		ttdNum := new(uint256.Int)
-		ttdNum.SetFromBig(big.NewInt(0))
-		jsonPayload := &enginev1.TransitionConfiguration{
-			TerminalBlockHash:       blockHash[:],
-			TerminalTotalDifficulty: ttdNum.Hex(),
-			TerminalBlockNumber:     big.NewInt(0).Bytes(),
-		}
-		enc, err := json.Marshal(jsonPayload)
-		require.NoError(t, err)
-		payloadPb := &enginev1.TransitionConfiguration{}
-		require.NoError(t, json.Unmarshal(enc, payloadPb))
-		require.DeepEqual(t, blockHash[:], payloadPb.TerminalBlockHash)
-
-		require.DeepEqual(t, ttdNum.Hex(), payloadPb.TerminalTotalDifficulty)
-		require.DeepEqual(t, big.NewInt(0).Bytes(), payloadPb.TerminalBlockNumber)
 	})
 
 	t.Run("execution payload Capella", func(t *testing.T) {

@@ -201,7 +201,6 @@ func (node *ExecutionNode) Start(ctx context.Context) error {
 		"--http.addr=127.0.0.1",
 		"--http.corsdomain=\"*\"",
 		"--http.vhosts=\"*\"",
-		"--rpc.allow-unprotected-txs",
 		"--ws",
 		"--ws.api=net,zond,engine",
 		"--ws.addr=127.0.0.1",
@@ -238,7 +237,7 @@ func (node *ExecutionNode) Start(ctx context.Context) error {
 		log.Infof("execution node started after %d retries", retries)
 
 		if node.index == 0 {
-			client, err := rpc.DialHTTP(e2e.TestParams.ExecutionNodeRPCURL(e2e.ExecutionNodeComponentOffset).String())
+			client, err := rpc.Dial(e2e.TestParams.ExecutionNodeRPCURL(e2e.ExecutionNodeComponentOffset).String())
 			if err != nil {
 				return fmt.Errorf("failed to connect to ipc: %w", err)
 			}

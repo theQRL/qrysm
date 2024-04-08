@@ -72,12 +72,6 @@ message ExecutionPayloadHeaderCapella {
 	bytes withdrawals_root  = 15 [(theqrl.zond.ext.ssz_size) = "32"];
 }
 
-message TransitionConfiguration {
-	string terminal_total_difficulty = 1;
-	bytes terminal_block_hash        = 2;
-	bytes terminal_block_number      = 3;
-}
-
 message PayloadAttributesV2 {
 	uint64 timestamp                = 1;
 	bytes prev_randao               = 2 [(theqrl.zond.ext.ssz_size) = "32"];
@@ -118,8 +112,4 @@ message Withdrawal {
 
 	// The withdrawn amount in Gwei
 	uint64 amount = 4;
-}
-
-message ExchangeCapabilities {
-	repeated string supported_methods = 1;
 }

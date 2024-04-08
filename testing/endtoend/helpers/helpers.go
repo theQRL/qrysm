@@ -382,7 +382,7 @@ func WaitOnNodes(ctx context.Context, nodes []e2etypes.ComponentRunner, nodesSta
 }
 
 func ExecutionNodeRPCClient() (*zondclient.Client, error) {
-	client, err := rpc.DialHTTP(e2e.TestParams.ExecutionNodeRPCURL(e2e.ExecutionNodeComponentOffset).String())
+	client, err := rpc.Dial(e2e.TestParams.ExecutionNodeRPCURL(e2e.ExecutionNodeComponentOffset).String())
 	if err != nil {
 		return nil, err
 	}

@@ -36,7 +36,7 @@ func TestProxy(t *testing.T) {
 		}()
 		time.Sleep(time.Millisecond * 100)
 
-		rpcClient, err := rpc.DialHTTP("http://" + proxy.Address())
+		rpcClient, err := rpc.Dial("http://" + proxy.Address())
 		require.NoError(t, err)
 
 		err = rpcClient.CallContext(ctx, nil, "someEngineMethod")
@@ -72,7 +72,7 @@ func TestProxy(t *testing.T) {
 		time.Sleep(time.Millisecond * 100)
 
 		// Dials the proxy.
-		rpcClient, err := rpc.DialHTTP("http://" + proxy.Address())
+		rpcClient, err := rpc.Dial("http://" + proxy.Address())
 		require.NoError(t, err)
 
 		// Expect the result from the proxy is the same as that one returned
@@ -125,7 +125,7 @@ func TestProxy_CustomInterceptors(t *testing.T) {
 		)
 
 		// Dials the proxy.
-		rpcClient, err := rpc.DialHTTP("http://" + proxy.Address())
+		rpcClient, err := rpc.Dial("http://" + proxy.Address())
 		require.NoError(t, err)
 
 		// Expect the result from the proxy is the same as that one returned
@@ -179,7 +179,7 @@ func TestProxy_CustomInterceptors(t *testing.T) {
 		)
 
 		// Dials the proxy.
-		rpcClient, err := rpc.DialHTTP("http://" + proxy.Address())
+		rpcClient, err := rpc.Dial("http://" + proxy.Address())
 		require.NoError(t, err)
 
 		proxyResult := &engineResponse{}
@@ -246,7 +246,7 @@ func TestProxy_CustomInterceptors(t *testing.T) {
 		)
 
 		// Dials the proxy.
-		rpcClient, err := rpc.DialHTTP("http://" + proxy.Address())
+		rpcClient, err := rpc.Dial("http://" + proxy.Address())
 		require.NoError(t, err)
 
 		proxyResult := &engineResponse{}

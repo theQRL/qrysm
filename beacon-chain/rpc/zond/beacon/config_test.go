@@ -181,8 +181,6 @@ func TestGetSpec(t *testing.T) {
 			assert.Equal(t, "23", v)
 		case "GENESIS_FORK_VERSION":
 			assert.Equal(t, "0x"+hex.EncodeToString([]byte("GenesisForkVersion")), v)
-		case "MIN_ANCHOR_POW_BLOCK_DIFFICULTY":
-			assert.Equal(t, "1000", v)
 		case "DILITHIUM_WITHDRAWAL_PREFIX":
 			assert.Equal(t, "0x62", v)
 		case "ZOND_ADDRESS_WITHDRAWAL_PREFIX":

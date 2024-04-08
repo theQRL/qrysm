@@ -9,7 +9,6 @@ import (
 	_ "github.com/theQRL/go-zond/cmd/utils"         // Required for go-zond e2e.
 	_ "github.com/theQRL/go-zond/common"            // Required for go-zond e2e.
 	_ "github.com/theQRL/go-zond/console"           // Required for go-zond e2e.
-	_ "github.com/theQRL/go-zond/les"               // Required for go-zond e2e.
 	_ "github.com/theQRL/go-zond/log"               // Required for go-zond e2e.
 	_ "github.com/theQRL/go-zond/metrics"           // Required for go-zond e2e.
 	_ "github.com/theQRL/go-zond/node"              // Required for go-zond e2e.

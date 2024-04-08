@@ -11,9 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
-	logTest "github.com/sirupsen/logrus/hooks/test"
 	zond "github.com/theQRL/go-zond"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
@@ -34,7 +32,6 @@ import (
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
 	"github.com/theQRL/qrysm/v4/testing/util"
-	"google.golang.org/protobuf/proto"
 )
 
 var (
@@ -101,12 +98,6 @@ func TestClient_IPC(t *testing.T) {
 		require.NoError(t, err)
 		require.DeepEqual(t, bytesutil.ToBytes32(want.LatestValidHash), bytesutil.ToBytes32(latestValidHash))
 	})
-	t.Run(ExchangeTransitionConfigurationMethod, func(t *testing.T) {
-		want, ok := fix["TransitionConfiguration"].(*pb.TransitionConfiguration)
-		require.Equal(t, true, ok)
-		err := srv.ExchangeTransitionConfiguration(ctx, want)
-		require.NoError(t, err)
-	})
 	t.Run(ExecutionBlockByNumberMethod, func(t *testing.T) {
 		want, ok := fix["ExecutionBlock"].(*pb.ExecutionBlock)
 		require.Equal(t, true, ok)
@@ -160,7 +151,7 @@ func TestClient_HTTP(t *testing.T) {
 		}))
 		defer srv.Close()
 
-		rpcClient, err := rpc.DialHTTP(srv.URL)
+		rpcClient, err := rpc.Dial(srv.URL)
 		require.NoError(t, err)
 		defer rpcClient.Close()
 
@@ -366,7 +357,7 @@ func TestClient_HTTP(t *testing.T) {
 		}))
 		defer srv.Close()
 
-		rpcClient, err := rpc.DialHTTP(srv.URL)
+		rpcClient, err := rpc.Dial(srv.URL)
 		require.NoError(t, err)
 		defer rpcClient.Close()
 
@@ -377,44 +368,6 @@ func TestClient_HTTP(t *testing.T) {
 		resp, err := service.LatestExecutionBlock(ctx)
 		require.NoError(t, err)
 		require.DeepEqual(t, want, resp)
-	})
-	t.Run(ExchangeTransitionConfigurationMethod, func(t *testing.T) {
-		want, ok := fix["TransitionConfiguration"].(*pb.TransitionConfiguration)
-		require.Equal(t, true, ok)
-		encodedReq, err := json.Marshal(want)
-		require.NoError(t, err)
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			defer func() {
-				require.NoError(t, r.Body.Close())
-			}()
-			enc, err := io.ReadAll(r.Body)
-			require.NoError(t, err)
-			jsonRequestString := string(enc)
-			// We expect the JSON string RPC request contains the right arguments.
-			require.Equal(t, true, strings.Contains(
-				jsonRequestString, string(encodedReq),
-			))
-			resp := map[string]interface{}{
-				"jsonrpc": "2.0",
-				"id":      1,
-				"result":  want,
-			}
-			err = json.NewEncoder(w).Encode(resp)
-			require.NoError(t, err)
-		}))
-		defer srv.Close()
-
-		rpcClient, err := rpc.DialHTTP(srv.URL)
-		require.NoError(t, err)
-		defer rpcClient.Close()
-
-		client := &Service{}
-		client.rpcClient = rpcClient
-
-		// We call the RPC method via HTTP and expect a proper result.
-		err = client.ExchangeTransitionConfiguration(ctx, want)
-		require.NoError(t, err)
 	})
 	t.Run(ExecutionBlockByHashMethod, func(t *testing.T) {
 		arg := common.BytesToHash([]byte("foo"))
@@ -442,7 +395,7 @@ func TestClient_HTTP(t *testing.T) {
 		}))
 		defer srv.Close()
 
-		rpcClient, err := rpc.DialHTTP(srv.URL)
+		rpcClient, err := rpc.Dial(srv.URL)
 		require.NoError(t, err)
 		defer rpcClient.Close()
 
@@ -535,7 +488,7 @@ func TestReconstructFullBlock(t *testing.T) {
 		}))
 		defer srv.Close()
 
-		rpcClient, err := rpc.DialHTTP(srv.URL)
+		rpcClient, err := rpc.Dial(srv.URL)
 		require.NoError(t, err)
 		defer rpcClient.Close()
 
@@ -650,7 +603,7 @@ func TestReconstructFullBlockBatch(t *testing.T) {
 		}))
 		defer srv.Close()
 
-		rpcClient, err := rpc.DialHTTP(srv.URL)
+		rpcClient, err := rpc.Dial(srv.URL)
 		require.NoError(t, err)
 		defer rpcClient.Close()
 
@@ -675,98 +628,6 @@ func TestReconstructFullBlockBatch(t *testing.T) {
 		got, err = reconstructed[1].Block().Body().Execution()
 		require.NoError(t, err)
 		require.DeepEqual(t, payload, got.Proto())
-	})
-}
-
-func Test_tDStringToUint256(t *testing.T) {
-	i, err := tDStringToUint256("0x0")
-	require.NoError(t, err)
-	require.DeepEqual(t, uint256.NewInt(0), i)
-
-	i, err = tDStringToUint256("0x10000")
-	require.NoError(t, err)
-	require.DeepEqual(t, uint256.NewInt(65536), i)
-
-	_, err = tDStringToUint256("100")
-	require.ErrorContains(t, "hex string without 0x prefix", err)
-
-	_, err = tDStringToUint256("0xzzzzzz")
-	require.ErrorContains(t, "invalid hex string", err)
-
-	_, err = tDStringToUint256("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF" +
-		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
-	require.ErrorContains(t, "hex number > 256 bits", err)
-}
-
-func TestExchangeTransitionConfiguration(t *testing.T) {
-	fix := fixtures()
-	ctx := context.Background()
-	t.Run("wrong terminal block hash", func(t *testing.T) {
-		request, ok := fix["TransitionConfiguration"].(*pb.TransitionConfiguration)
-		require.Equal(t, true, ok)
-		resp, ok := proto.Clone(request).(*pb.TransitionConfiguration)
-		require.Equal(t, true, ok)
-
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			defer func() {
-				require.NoError(t, r.Body.Close())
-			}()
-
-			// Change the terminal block hash.
-			h := common.BytesToHash([]byte("foo"))
-			resp.TerminalBlockHash = h[:]
-			respJSON := map[string]interface{}{
-				"jsonrpc": "2.0",
-				"id":      1,
-				"result":  resp,
-			}
-			require.NoError(t, json.NewEncoder(w).Encode(respJSON))
-		}))
-		defer srv.Close()
-
-		rpcClient, err := rpc.DialHTTP(srv.URL)
-		require.NoError(t, err)
-		defer rpcClient.Close()
-
-		service := &Service{}
-		service.rpcClient = rpcClient
-
-		err = service.ExchangeTransitionConfiguration(ctx, request)
-		require.Equal(t, true, errors.Is(err, ErrConfigMismatch))
-	})
-	t.Run("wrong terminal total difficulty", func(t *testing.T) {
-		request, ok := fix["TransitionConfiguration"].(*pb.TransitionConfiguration)
-		require.Equal(t, true, ok)
-		resp, ok := proto.Clone(request).(*pb.TransitionConfiguration)
-		require.Equal(t, true, ok)
-
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			defer func() {
-				require.NoError(t, r.Body.Close())
-			}()
-
-			// Change the terminal block hash.
-			resp.TerminalTotalDifficulty = "0x1"
-			respJSON := map[string]interface{}{
-				"jsonrpc": "2.0",
-				"id":      1,
-				"result":  resp,
-			}
-			require.NoError(t, json.NewEncoder(w).Encode(respJSON))
-		}))
-		defer srv.Close()
-
-		rpcClient, err := rpc.DialHTTP(srv.URL)
-		require.NoError(t, err)
-		defer rpcClient.Close()
-
-		service := &Service{}
-		service.rpcClient = rpcClient
-
-		err = service.ExchangeTransitionConfiguration(ctx, request)
-		require.Equal(t, true, errors.Is(err, ErrConfigMismatch))
 	})
 }
 
@@ -994,13 +855,6 @@ func fixtures() map[string]interface{} {
 		},
 		PayloadId: &id,
 	}
-	ttd, _ := uint256.FromBig(big.NewInt(0))
-	tbh := [32]byte{}
-	transitionCfg := &pb.TransitionConfiguration{
-		TerminalBlockHash:       tbh[:],
-		TerminalTotalDifficulty: ttd.Hex(),
-		TerminalBlockNumber:     big.NewInt(0).Bytes(),
-	}
 	validStatus := &pb.PayloadStatus{
 		Status:          pb.PayloadStatus_VALID,
 		LatestValidHash: foo[:],
@@ -1040,7 +894,6 @@ func fixtures() map[string]interface{} {
 		"ForkchoiceUpdatedSyncingResponse":  forkChoiceSyncingResp,
 		"ForkchoiceUpdatedAcceptedResponse": forkChoiceAcceptedResp,
 		"ForkchoiceUpdatedInvalidResponse":  forkChoiceInvalidResp,
-		"TransitionConfiguration":           transitionCfg,
 	}
 }
 
@@ -1214,17 +1067,6 @@ func (*testEngineService) GetPayloadV2(
 	return item
 }
 
-func (*testEngineService) ExchangeTransitionConfigurationV1(
-	_ context.Context, _ *pb.TransitionConfiguration,
-) *pb.TransitionConfiguration {
-	fix := fixtures()
-	item, ok := fix["TransitionConfiguration"].(*pb.TransitionConfiguration)
-	if !ok {
-		panic("not found")
-	}
-	return item
-}
-
 func (*testEngineService) ForkchoiceUpdatedV2(
 	_ context.Context, _ *pb.ForkchoiceState, _ *pb.PayloadAttributesV2,
 ) *ForkchoiceUpdatedResponse {
@@ -1279,7 +1121,7 @@ func forkchoiceUpdateSetupV2(t *testing.T, fcs *pb.ForkchoiceState, att *pb.Payl
 		require.NoError(t, err)
 	}))
 
-	rpcClient, err := rpc.DialHTTP(srv.URL)
+	rpcClient, err := rpc.Dial(srv.URL)
 	require.NoError(t, err)
 
 	service := &Service{}
@@ -1313,7 +1155,7 @@ func newPayloadV2Setup(t *testing.T, status *pb.PayloadStatus, payload *pb.Execu
 		require.NoError(t, err)
 	}))
 
-	rpcClient, err := rpc.DialHTTP(srv.URL)
+	rpcClient, err := rpc.Dial(srv.URL)
 	require.NoError(t, err)
 
 	service := &Service{}
@@ -1343,7 +1185,7 @@ func TestCapella_PayloadBodiesByHash(t *testing.T) {
 		}))
 		ctx := context.Background()
 
-		rpcClient, err := rpc.DialHTTP(srv.URL)
+		rpcClient, err := rpc.Dial(srv.URL)
 		require.NoError(t, err)
 
 		service := &Service{}
@@ -1376,7 +1218,7 @@ func TestCapella_PayloadBodiesByHash(t *testing.T) {
 		}))
 		ctx := context.Background()
 
-		rpcClient, err := rpc.DialHTTP(srv.URL)
+		rpcClient, err := rpc.Dial(srv.URL)
 		require.NoError(t, err)
 
 		service := &Service{}
@@ -1422,7 +1264,7 @@ func TestCapella_PayloadBodiesByHash(t *testing.T) {
 		}))
 		ctx := context.Background()
 
-		rpcClient, err := rpc.DialHTTP(srv.URL)
+		rpcClient, err := rpc.Dial(srv.URL)
 		require.NoError(t, err)
 
 		service := &Service{}
@@ -1463,7 +1305,7 @@ func TestCapella_PayloadBodiesByHash(t *testing.T) {
 		}))
 		ctx := context.Background()
 
-		rpcClient, err := rpc.DialHTTP(srv.URL)
+		rpcClient, err := rpc.Dial(srv.URL)
 		require.NoError(t, err)
 
 		service := &Service{}
@@ -1513,7 +1355,7 @@ func TestCapella_PayloadBodiesByHash(t *testing.T) {
 		}))
 		ctx := context.Background()
 
-		rpcClient, err := rpc.DialHTTP(srv.URL)
+		rpcClient, err := rpc.Dial(srv.URL)
 		require.NoError(t, err)
 
 		service := &Service{}
@@ -1556,7 +1398,7 @@ func TestCapella_PayloadBodiesByHash(t *testing.T) {
 		}))
 		ctx := context.Background()
 
-		rpcClient, err := rpc.DialHTTP(srv.URL)
+		rpcClient, err := rpc.Dial(srv.URL)
 		require.NoError(t, err)
 
 		service := &Service{}
@@ -1594,7 +1436,7 @@ func TestCapella_PayloadBodiesByRange(t *testing.T) {
 		}))
 		ctx := context.Background()
 
-		rpcClient, err := rpc.DialHTTP(srv.URL)
+		rpcClient, err := rpc.Dial(srv.URL)
 		require.NoError(t, err)
 
 		service := &Service{}
@@ -1627,7 +1469,7 @@ func TestCapella_PayloadBodiesByRange(t *testing.T) {
 		}))
 		ctx := context.Background()
 
-		rpcClient, err := rpc.DialHTTP(srv.URL)
+		rpcClient, err := rpc.Dial(srv.URL)
 		require.NoError(t, err)
 
 		service := &Service{}
@@ -1673,7 +1515,7 @@ func TestCapella_PayloadBodiesByRange(t *testing.T) {
 		}))
 		ctx := context.Background()
 
-		rpcClient, err := rpc.DialHTTP(srv.URL)
+		rpcClient, err := rpc.Dial(srv.URL)
 		require.NoError(t, err)
 
 		service := &Service{}
@@ -1714,7 +1556,7 @@ func TestCapella_PayloadBodiesByRange(t *testing.T) {
 		}))
 		ctx := context.Background()
 
-		rpcClient, err := rpc.DialHTTP(srv.URL)
+		rpcClient, err := rpc.Dial(srv.URL)
 		require.NoError(t, err)
 
 		service := &Service{}
@@ -1764,7 +1606,7 @@ func TestCapella_PayloadBodiesByRange(t *testing.T) {
 		}))
 		ctx := context.Background()
 
-		rpcClient, err := rpc.DialHTTP(srv.URL)
+		rpcClient, err := rpc.Dial(srv.URL)
 		require.NoError(t, err)
 
 		service := &Service{}
@@ -1807,87 +1649,13 @@ func TestCapella_PayloadBodiesByRange(t *testing.T) {
 		}))
 		ctx := context.Background()
 
-		rpcClient, err := rpc.DialHTTP(srv.URL)
+		rpcClient, err := rpc.Dial(srv.URL)
 		require.NoError(t, err)
 
 		service := &Service{}
 		service.rpcClient = rpcClient
 
 		results, err := service.GetPayloadBodiesByRange(ctx, uint64(1), uint64(2))
-		require.NoError(t, err)
-		require.Equal(t, 3, len(results))
-
-		for _, item := range results {
-			require.NotNil(t, item)
-		}
-	})
-}
-
-func Test_ExchangeCapabilities(t *testing.T) {
-	resetFn := features.InitWithReset(&features.Flags{
-		EnableOptionalEngineMethods: true,
-	})
-	defer resetFn()
-	t.Run("empty response works", func(t *testing.T) {
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			defer func() {
-				require.NoError(t, r.Body.Close())
-			}()
-			exchangeCapabilities := &pb.ExchangeCapabilities{}
-			resp := map[string]interface{}{
-				"jsonrpc": "2.0",
-				"id":      1,
-				"result":  exchangeCapabilities,
-			}
-			err := json.NewEncoder(w).Encode(resp)
-			require.NoError(t, err)
-		}))
-		ctx := context.Background()
-		logHook := logTest.NewGlobal()
-
-		rpcClient, err := rpc.DialHTTP(srv.URL)
-		require.NoError(t, err)
-
-		service := &Service{}
-		service.rpcClient = rpcClient
-
-		results, err := service.ExchangeCapabilities(ctx)
-		require.NoError(t, err)
-		require.Equal(t, 0, len(results))
-
-		for _, item := range results {
-			require.NotNil(t, item)
-		}
-		assert.LogsContain(t, logHook, "Please update client, detected the following unsupported engine methods:")
-	})
-	t.Run("list of items", func(t *testing.T) {
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			defer func() {
-				require.NoError(t, r.Body.Close())
-			}()
-			exchangeCapabilities := &pb.ExchangeCapabilities{
-				SupportedMethods: []string{"A", "B", "C"},
-			}
-
-			resp := map[string]interface{}{
-				"jsonrpc": "2.0",
-				"id":      1,
-				"result":  exchangeCapabilities,
-			}
-			err := json.NewEncoder(w).Encode(resp)
-			require.NoError(t, err)
-		}))
-		ctx := context.Background()
-
-		rpcClient, err := rpc.DialHTTP(srv.URL)
-		require.NoError(t, err)
-
-		service := &Service{}
-		service.rpcClient = rpcClient
-
-		results, err := service.ExchangeCapabilities(ctx)
 		require.NoError(t, err)
 		require.Equal(t, 3, len(results))
 

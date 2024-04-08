@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/beacon/engine"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
 	pb "github.com/theQRL/qrysm/v4/proto/engine/v1"
@@ -69,47 +68,6 @@ func FuzzForkChoiceResponse(f *testing.F) {
 		if !isNilOrEmpty {
 			assert.DeepEqual(t, *newGethResp.PayloadStatus.ValidationError, *newGethResp2.PayloadStatus.ValidationError)
 		}
-	})
-}
-
-func FuzzExchangeTransitionConfiguration(f *testing.F) {
-	valHash := common.Hash([32]byte{0xFF, 0x01})
-	ttd := hexutil.Big(*big.NewInt(math.MaxInt))
-	seed := &engine.TransitionConfigurationV1{
-		TerminalTotalDifficulty: &ttd,
-		TerminalBlockHash:       valHash,
-		TerminalBlockNumber:     hexutil.Uint64(math.MaxUint64),
-	}
-
-	output, err := json.Marshal(seed)
-	assert.NoError(f, err)
-	f.Add(output)
-	f.Fuzz(func(t *testing.T, jsonBlob []byte) {
-		gethResp := &engine.TransitionConfigurationV1{}
-		prysmResp := &pb.TransitionConfiguration{}
-		gethErr := json.Unmarshal(jsonBlob, gethResp)
-		prysmErr := json.Unmarshal(jsonBlob, prysmResp)
-		assert.Equal(t, gethErr != nil, prysmErr != nil, fmt.Sprintf("geth and prysm unmarshaller return inconsistent errors. %v and %v", gethErr, prysmErr))
-		// Nothing to marshal if we have an error.
-		if gethErr != nil {
-			return
-		}
-		gethBlob, gethErr := json.Marshal(gethResp)
-		prysmBlob, prysmErr := json.Marshal(prysmResp)
-		if gethErr != nil {
-			t.Errorf("%s %s", gethResp.TerminalTotalDifficulty.String(), prysmResp.TerminalTotalDifficulty)
-		}
-		assert.Equal(t, gethErr != nil, prysmErr != nil, fmt.Sprintf("geth and prysm unmarshaller return inconsistent errors. %v and %v", gethErr, prysmErr))
-		if gethErr != nil {
-			t.Errorf("%s %s", gethResp.TerminalTotalDifficulty.String(), prysmResp.TerminalTotalDifficulty)
-		}
-		newGethResp := &engine.TransitionConfigurationV1{}
-		newGethErr := json.Unmarshal(prysmBlob, newGethResp)
-		assert.NoError(t, newGethErr)
-
-		newGethResp2 := &engine.TransitionConfigurationV1{}
-		newGethErr = json.Unmarshal(gethBlob, newGethResp2)
-		assert.NoError(t, newGethErr)
 	})
 }
 
