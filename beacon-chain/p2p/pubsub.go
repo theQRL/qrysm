@@ -168,7 +168,7 @@ func setPubSubParameters() {
 	pubsub.TimeCacheDuration = 550 * gossipSubHeartbeatInterval
 }
 
-// convert from libp2p's internal schema to a compatible prysm protobuf format.
+// convert from libp2p's internal schema to a compatible qrysm protobuf format.
 func convertTopicScores(topicMap map[string]*pubsub.TopicScoreSnapshot) map[string]*pbrpc.TopicScoreSnapshot {
 	newMap := make(map[string]*pbrpc.TopicScoreSnapshot, len(topicMap))
 	for t, s := range topicMap {

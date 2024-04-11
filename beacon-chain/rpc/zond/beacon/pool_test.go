@@ -7,7 +7,7 @@ import (
 
 	blockchainmock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	prysmtime "github.com/theQRL/qrysm/v4/beacon-chain/core/time"
+	qrysmtime "github.com/theQRL/qrysm/v4/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
 	"github.com/theQRL/qrysm/v4/beacon-chain/operations/dilithiumtoexec"
@@ -643,7 +643,7 @@ func TestSubmitSignedDilithiumToExecutionChanges_Ok(t *testing.T) {
 
 	signedChanges := make([]*zondpbv1.SignedDilithiumToExecutionChange, numValidators)
 	for i, message := range dilithiumChanges {
-		signature, err := signing.ComputeDomainAndSign(st, prysmtime.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
+		signature, err := signing.ComputeDomainAndSign(st, qrysmtime.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
 		require.NoError(t, err)
 
 		signed := &zondpbv1.SignedDilithiumToExecutionChange{
@@ -749,7 +749,7 @@ func TestSubmitSignedDilithiumToExecutionChanges_Bellatrix(t *testing.T) {
 
 	signedChanges := make([]*zondpbv1.SignedDilithiumToExecutionChange, numValidators)
 	for i, message := range dilithiumChanges {
-		signature, err := signing.ComputeDomainAndSign(stc, prysmtime.CurrentEpoch(stc), message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
+		signature, err := signing.ComputeDomainAndSign(stc, qrysmtime.CurrentEpoch(stc), message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
 		require.NoError(t, err)
 
 		signed := &zondpbv1.SignedDilithiumToExecutionChange{
@@ -842,7 +842,7 @@ func TestSubmitSignedDilithiumToExecutionChanges_Failures(t *testing.T) {
 
 	signedChanges := make([]*zondpbv1.SignedDilithiumToExecutionChange, numValidators)
 	for i, message := range dilithiumChanges {
-		signature, err := signing.ComputeDomainAndSign(st, prysmtime.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
+		signature, err := signing.ComputeDomainAndSign(st, qrysmtime.CurrentEpoch(st), message, params.BeaconConfig().DomainDilithiumToExecutionChange, privKeys[i])
 		require.NoError(t, err)
 
 		signed := &zondpbv1.SignedDilithiumToExecutionChange{

@@ -413,8 +413,8 @@ func TestBlocksFetcher_findForkWithPeer(t *testing.T) {
 		}()
 		fork, err := fetcher.findForkWithPeer(ctx, p2, 256)
 		require.NoError(t, err)
-		require.Equal(t, 34, len(fork.bwb))
-		assert.Equal(t, forkedSlot, fork.bwb[0].Block.Block().Slot(), "Expected slot %d to be ancestor", forkedSlot)
+		require.Equal(t, 34, len(fork.blks))
+		assert.Equal(t, forkedSlot, fork.blks[0].Block().Slot(), "Expected slot %d to be ancestor", forkedSlot)
 	})
 
 	t.Run("first block is diverging - no common ancestor", func(t *testing.T) {
@@ -441,8 +441,8 @@ func TestBlocksFetcher_findForkWithPeer(t *testing.T) {
 		reqEnd := testForkStartSlot(t, 256) + primitives.Slot(findForkReqRangeSize())
 		expectedLen := reqEnd - forkedSlot
 		// there are 4 blocks that are different before the beginning
-		require.Equal(t, int(expectedLen), len(fork.bwb))
-		assert.Equal(t, primitives.Slot(252), fork.bwb[0].Block.Block().Slot())
+		require.Equal(t, int(expectedLen), len(fork.blks))
+		assert.Equal(t, primitives.Slot(252), fork.blks[0].Block().Slot())
 	})
 }
 

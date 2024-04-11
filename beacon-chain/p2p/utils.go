@@ -18,7 +18,7 @@ import (
 	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/go-zond/p2p/enr"
 	"github.com/theQRL/qrysm/v4/consensus-types/wrapper"
-	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
+	ecdsaqrysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
 	"github.com/theQRL/qrysm/v4/io/file"
 	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/metadata"
@@ -85,7 +85,7 @@ func privKey(cfg *Config) (*ecdsa.PrivateKey, error) {
 		// for the strongest guarantee that the next start will be the same as this one.
 		return privKeyFromFile(defaultKeyPath)
 	}
-	return ecdsaprysm.ConvertFromInterfacePrivKey(priv)
+	return ecdsaqrysm.ConvertFromInterfacePrivKey(priv)
 }
 
 // Retrieves a p2p networking private key from a file path.
@@ -104,7 +104,7 @@ func privKeyFromFile(path string) (*ecdsa.PrivateKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ecdsaprysm.ConvertFromInterfacePrivKey(unmarshalledKey)
+	return ecdsaqrysm.ConvertFromInterfacePrivKey(unmarshalledKey)
 }
 
 // Retrieves node p2p metadata from a set of configuration values

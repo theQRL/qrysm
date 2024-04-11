@@ -1,4 +1,4 @@
-// Package rpc defines a gRPC server implementing the Ethereum consensus API as needed
+// Package rpc defines a gRPC server implementing the Zond consensus API as needed
 // by validator clients and consumers of chain data.
 package rpc
 
@@ -33,7 +33,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/core"
 	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/lookup"
-	nodeprysm "github.com/theQRL/qrysm/v4/beacon-chain/rpc/qrysm/node"
+	nodeqrysm "github.com/theQRL/qrysm/v4/beacon-chain/rpc/qrysm/node"
 	beaconv1alpha1 "github.com/theQRL/qrysm/v4/beacon-chain/rpc/qrysm/v1alpha1/beacon"
 	debugv1alpha1 "github.com/theQRL/qrysm/v4/beacon-chain/rpc/qrysm/v1alpha1/debug"
 	nodev1alpha1 "github.com/theQRL/qrysm/v4/beacon-chain/rpc/qrysm/v1alpha1/node"
@@ -344,7 +344,7 @@ func (s *Service) Start() {
 
 	s.cfg.Router.HandleFunc("/zond/v1/node/syncing", nodeServerZond.GetSyncStatus).Methods(http.MethodGet)
 
-	nodeServerPrysm := &nodeprysm.Server{
+	nodeServerQrysm := &nodeqrysm.Server{
 		BeaconDB:                  s.cfg.BeaconDB,
 		SyncChecker:               s.cfg.SyncService,
 		OptimisticModeFetcher:     s.cfg.OptimisticModeFetcher,
@@ -356,9 +356,9 @@ func (s *Service) Start() {
 		ExecutionChainInfoFetcher: s.cfg.ExecutionChainInfoFetcher,
 	}
 
-	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers", nodeServerPrysm.ListTrustedPeer).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers", nodeServerPrysm.AddTrustedPeer).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers/{peer_id}", nodeServerPrysm.RemoveTrustedPeer).Methods(http.MethodDelete)
+	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers", nodeServerQrysm.ListTrustedPeer).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers", nodeServerQrysm.AddTrustedPeer).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers/{peer_id}", nodeServerQrysm.RemoveTrustedPeer).Methods(http.MethodDelete)
 
 	beaconChainServer := &beaconv1alpha1.Server{
 		Ctx:                         s.ctx,

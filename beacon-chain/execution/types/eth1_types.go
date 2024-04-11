@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
 )
 
-// HeaderInfo specifies the block header information in the ETH 1.0 chain.
+// HeaderInfo specifies the block header information in the Zond execution layer.
 type HeaderInfo struct {
 	Number *big.Int    `json:"number"`
 	Hash   common.Hash `json:"hash"`

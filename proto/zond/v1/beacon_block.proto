@@ -49,7 +49,7 @@ message AttesterSlashing {
     IndexedAttestation attestation_2 = 2;
 }
 
-// Deposit into the Ethereum consensus from the Zond deposit contract.
+// Deposit into the Zond consensus from the Zond deposit contract.
 message Deposit {
     message Data {
         // 2592 byte Dilithium public key of the validator.

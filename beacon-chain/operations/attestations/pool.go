@@ -8,7 +8,7 @@ import (
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 )
 
-// Pool defines the necessary methods for Prysm attestations pool to serve
+// Pool defines the necessary methods for Qrysm attestations pool to serve
 // fork choice and validators. In the current design, aggregated attestations
 // are used by proposer actor. Unaggregated attestations are used by
 // aggregator actor.

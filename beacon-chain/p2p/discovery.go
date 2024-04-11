@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
 	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
+	ecdsaqrysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
@@ -406,7 +406,7 @@ func convertToAddrInfo(node *enode.Node) (*peer.AddrInfo, ma.Multiaddr, error) {
 
 func convertToSingleMultiAddr(node *enode.Node) (ma.Multiaddr, error) {
 	pubkey := node.Pubkey()
-	assertedKey, err := ecdsaprysm.ConvertToInterfacePubkey(pubkey)
+	assertedKey, err := ecdsaqrysm.ConvertToInterfacePubkey(pubkey)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get pubkey")
 	}
@@ -419,7 +419,7 @@ func convertToSingleMultiAddr(node *enode.Node) (ma.Multiaddr, error) {
 
 func convertToUdpMultiAddr(node *enode.Node) ([]ma.Multiaddr, error) {
 	pubkey := node.Pubkey()
-	assertedKey, err := ecdsaprysm.ConvertToInterfacePubkey(pubkey)
+	assertedKey, err := ecdsaqrysm.ConvertToInterfacePubkey(pubkey)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get pubkey")
 	}

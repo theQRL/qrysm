@@ -57,7 +57,7 @@ var casesHandled = map[string]bool{
 	PayloadAttributesTopic:          true,
 }
 
-// StreamEvents allows requesting all events from a set of topics defined in the Ethereum consensus API standard.
+// StreamEvents allows requesting all events from a set of topics defined in the Zond consensus API standard.
 // The topics supported include block events, attestations, chain reorgs, voluntary exits,
 // chain finality, and more.
 func (s *Server) StreamEvents(

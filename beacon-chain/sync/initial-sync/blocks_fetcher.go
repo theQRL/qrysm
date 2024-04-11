@@ -114,7 +114,7 @@ type fetchRequestResponse struct {
 	pid   peer.ID
 	start primitives.Slot
 	count uint64
-	bwb   []blocks2.BlockWithVerifiedBlobs
+	blks  []blocks2.ROBlock
 	err   error
 }
 
@@ -257,7 +257,7 @@ func (f *blocksFetcher) handleRequest(ctx context.Context, start primitives.Slot
 	response := &fetchRequestResponse{
 		start: start,
 		count: count,
-		bwb:   []blocks2.BlockWithVerifiedBlobs{},
+		blks:  []blocks2.ROBlock{},
 		err:   nil,
 	}
 
@@ -281,7 +281,7 @@ func (f *blocksFetcher) handleRequest(ctx context.Context, start primitives.Slot
 			return response
 		}
 	}
-	response.bwb, response.pid, response.err = f.fetchBlocksFromPeer(ctx, start, count, peers)
+	response.blks, response.pid, response.err = f.fetchBlocksFromPeer(ctx, start, count, peers)
 
 	return response
 }
@@ -291,7 +291,7 @@ func (f *blocksFetcher) fetchBlocksFromPeer(
 	ctx context.Context,
 	start primitives.Slot, count uint64,
 	peers []peer.ID,
-) ([]blocks2.BlockWithVerifiedBlobs, peer.ID, error) {
+) ([]blocks2.ROBlock, peer.ID, error) {
 	ctx, span := trace.StartSpan(ctx, "initialsync.fetchBlocksFromPeer")
 	defer span.End()
 
@@ -309,7 +309,7 @@ func (f *blocksFetcher) fetchBlocksFromPeer(
 			continue
 		}
 		f.p2p.Peers().Scorers().BlockProviderScorer().Touch(p)
-		robs, err := sortedBlockWithVerifiedBlobSlice(blocks)
+		robs, err := sortedROBlockSlice(blocks)
 		if err != nil {
 			log.WithField("peer", p).WithError(err).Debug("invalid BeaconBlocksByRange response")
 			continue
@@ -319,16 +319,16 @@ func (f *blocksFetcher) fetchBlocksFromPeer(
 	return nil, "", errNoPeersAvailable
 }
 
-func sortedBlockWithVerifiedBlobSlice(blocks []interfaces.ReadOnlySignedBeaconBlock) ([]blocks2.BlockWithVerifiedBlobs, error) {
-	rb := make([]blocks2.BlockWithVerifiedBlobs, len(blocks))
+func sortedROBlockSlice(blocks []interfaces.ReadOnlySignedBeaconBlock) ([]blocks2.ROBlock, error) {
+	rb := make([]blocks2.ROBlock, len(blocks))
 	for i, b := range blocks {
 		ro, err := blocks2.NewROBlock(b)
 		if err != nil {
 			return nil, err
 		}
-		rb[i] = blocks2.BlockWithVerifiedBlobs{Block: ro}
+		rb[i] = ro
 	}
-	sort.Sort(blocks2.BlockWithVerifiedBlobsSlice(rb))
+	sort.Sort(blocks2.ROBlockSlice(rb))
 	return rb, nil
 }
 

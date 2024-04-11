@@ -50,13 +50,13 @@ type ForkchoiceFetcher interface {
 	ProposerBoost() [32]byte
 }
 
-// TimeFetcher retrieves the Ethereum consensus data that's related to time.
+// TimeFetcher retrieves the Zond consensus data that's related to time.
 type TimeFetcher interface {
 	GenesisTime() time.Time
 	CurrentSlot() primitives.Slot
 }
 
-// GenesisFetcher retrieves the Ethereum consensus data related to its genesis.
+// GenesisFetcher retrieves the Zond consensus data related to its genesis.
 type GenesisFetcher interface {
 	GenesisValidatorsRoot() [32]byte
 }
@@ -79,7 +79,7 @@ type HeadFetcher interface {
 	HeadDomainFetcher
 }
 
-// ForkFetcher retrieves the current fork information of the Ethereum beacon chain.
+// ForkFetcher retrieves the current fork information of the Zond beacon chain.
 type ForkFetcher interface {
 	CurrentFork() *zondpb.Fork
 	GenesisFetcher

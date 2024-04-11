@@ -32,7 +32,7 @@ import (
 	"github.com/theQRL/qrysm/v4/consensus-types/wrapper"
 	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
 	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	prysmNetwork "github.com/theQRL/qrysm/v4/network"
+	qrysmNetwork "github.com/theQRL/qrysm/v4/network"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/v4/runtime/version"
 	"github.com/theQRL/qrysm/v4/testing/assert"
@@ -46,7 +46,7 @@ func init() {
 }
 
 func createAddrAndPrivKey(t *testing.T) (net.IP, *ecdsa.PrivateKey) {
-	ip, err := prysmNetwork.ExternalIPv4()
+	ip, err := qrysmNetwork.ExternalIPv4()
 	require.NoError(t, err, "Could not get ip")
 	ipAddr := net.ParseIP(ip)
 	temp := t.TempDir()

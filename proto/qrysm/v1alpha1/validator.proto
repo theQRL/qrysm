@@ -34,7 +34,7 @@ option php_namespace = "TheQRL\\Zond\\v1alpha1";
 // Beacon node validator API
 //
 // The beacon node validator API enables a validator to connect
-// and perform its obligations on the Ethereum Beacon Chain.
+// and perform its obligations on the Zond Beacon Chain.
 service BeaconNodeValidator {
     // Retrieves validator duties for the requested validators.
     //
@@ -102,7 +102,7 @@ service BeaconNodeValidator {
     // The request can specify either a validator's public key or validator index.
     //
     // The status response can be one of the following:
-    //	DEPOSITED - validator's deposit has been recognized by Ethereum 1, not yet recognized by Ethereum.
+    //	DEPOSITED - validator's deposit has been recognized by Zond's execution layer , not yet recognized by Ethereum.
     //	PENDING - validator is in Ethereum's activation queue.
     //	ACTIVE - validator is active.
     //	EXITING - validator has initiated an an exit request, or has dropped below the ejection balance and is being kicked out.
@@ -659,7 +659,7 @@ message ValidatorInfo {
     // The unix timestamp when the validator enters the next state.
     // This could be in the past.  Some values depend on chain operation and so will vary from epoch to epoch.
     // Specific times for each state are as follows:
-    // - state == DEPOSITED: time at which Ethereum 1 deposit will be stored on-chain by Ethereum (variable, can be 0).
+    // - state == DEPOSITED: time at which Zond execution layer deposit will be stored on-chain by Zond (variable, can be 0).
     // - state == PENDING: time at which validator will be activated (variable).
     // - state == ACTIVE: no value (next transition depends on user and network actions).
     // - state == EXITING: time at which validator will exit.

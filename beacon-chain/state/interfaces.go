@@ -1,5 +1,5 @@
 // Package state defines the actual beacon state interface used
-// by a Prysm beacon node, also containing useful, scoped interfaces such as
+// by a Qrysm beacon node, also containing useful, scoped interfaces such as
 // a ReadOnlyState and WriteOnlyBeaconState.
 package state
 

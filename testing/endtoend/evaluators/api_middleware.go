@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-// APIMiddlewareVerifyIntegrity tests our API Middleware for the official Ethereum API.
+// APIMiddlewareVerifyIntegrity tests our API Middleware for the official Zond API.
 // This ensures our API Middleware returns good data compared to gRPC.
 var APIMiddlewareVerifyIntegrity = e2etypes.Evaluator{
 	Name:       "api_middleware_verify_integrity_epoch_%d",

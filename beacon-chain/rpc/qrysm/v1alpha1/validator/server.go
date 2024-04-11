@@ -156,7 +156,7 @@ func (vs *Server) DomainData(ctx context.Context, request *zondpb.DomainRequest)
 // WaitForChainStart queries the logs of the Deposit Contract in order to verify the beacon chain
 // has started its runtime and validators begin their responsibilities. If it has not, it then
 // subscribes to an event stream triggered by the powchain service whenever the ChainStart log does
-// occur in the Deposit Contract on ETH 1.0.
+// occur in the Deposit Contract on Zond execution layer.
 func (vs *Server) WaitForChainStart(_ *emptypb.Empty, stream zondpb.BeaconNodeValidator_WaitForChainStartServer) error {
 	head, err := vs.HeadFetcher.HeadStateReadOnly(stream.Context())
 	if err != nil {

@@ -1,4 +1,4 @@
-// Package p2p defines the network protocol implementation for Ethereum consensus
+// Package p2p defines the network protocol implementation for Zond consensus
 // used by beacon nodes, including peer discovery using discv5, gossip-sub
 // using libp2p, and handing peer lifecycles + handshakes.
 package p2p
@@ -27,7 +27,7 @@ import (
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
 	"github.com/theQRL/qrysm/v4/config/params"
 	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
-	prysmnetwork "github.com/theQRL/qrysm/v4/network"
+	qrysmnetwork "github.com/theQRL/qrysm/v4/network"
 	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/metadata"
 	"github.com/theQRL/qrysm/v4/runtime"
 	"github.com/theQRL/qrysm/v4/time/slots"
@@ -102,7 +102,7 @@ func NewService(ctx context.Context, cfg *Config) (*Service, error) {
 
 	cfg.Discv5BootStrapAddr = dv5Nodes
 
-	ipAddr := prysmnetwork.IPAddr()
+	ipAddr := qrysmnetwork.IPAddr()
 	s.privKey, err = privKey(s.cfg)
 	if err != nil {
 		log.WithError(err).Error("Failed to generate p2p private key")
@@ -183,7 +183,7 @@ func (s *Service) Start() {
 	}
 
 	if !s.cfg.NoDiscovery {
-		ipAddr := prysmnetwork.IPAddr()
+		ipAddr := qrysmnetwork.IPAddr()
 		listener, err := s.startDiscoveryV5(
 			ipAddr,
 			s.privKey,
@@ -286,7 +286,7 @@ func (s *Service) Started() bool {
 }
 
 // Encoding returns the configured networking encoding.
-func (_ *Service) Encoding() encoder.NetworkEncoding {
+func (*Service) Encoding() encoder.NetworkEncoding {
 	return &encoder.SszNetworkEncoder{}
 }
 

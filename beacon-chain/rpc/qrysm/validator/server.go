@@ -9,7 +9,7 @@ import (
 )
 
 // Server defines a server implementation for HTTP endpoints, providing
-// access data relevant to the Ethereum Beacon Chain.
+// access data relevant to the Zond Beacon Chain.
 type Server struct {
 	GenesisTimeFetcher    blockchain.TimeFetcher
 	SyncChecker           sync.Checker

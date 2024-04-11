@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
-// ENR key used for Ethereum consensus-related fork data.
+// ENR key used for Zond consensus-related fork data.
 var eth2ENRKey = params.BeaconNetworkConfig().ETH2Key
 
 // ForkDigest returns the current fork digest of
@@ -76,7 +76,7 @@ func (s *Service) compareForkENR(record *enr.Record) error {
 	return nil
 }
 
-// Adds a fork entry as an ENR record under the Ethereum consensus EnrKey for
+// Adds a fork entry as an ENR record under the Zond consensus EnrKey for
 // the local node. The fork entry is an ssz-encoded enrForkID type
 // which takes into account the current fork version from the current
 // epoch to create a fork digest, the next fork version,

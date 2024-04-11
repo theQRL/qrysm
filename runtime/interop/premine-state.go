@@ -31,7 +31,7 @@ type PremineGenesisConfig struct {
 	NVals           uint64
 	PregenesisCreds uint64
 	Version         int          // as in "github.com/theQRL/qrysm/v4/runtime/version"
-	GB              *types.Block // geth genesis block
+	GB              *types.Block // gzond genesis block
 	depositEntries  *depositEntries
 }
 

@@ -29,7 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-bitfield"
 	gcrypto "github.com/theQRL/go-zond/crypto"
-	gethlog "github.com/theQRL/go-zond/log"
+	gzondlog "github.com/theQRL/go-zond/log"
 	"github.com/theQRL/go-zond/p2p/discover"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
@@ -80,10 +80,10 @@ func main() {
 	if *debug {
 		logrus.SetLevel(logrus.DebugLevel)
 
-		// Geth specific logging.
-		glogger := gethlog.NewGlogHandler(gethlog.StreamHandler(os.Stderr, gethlog.TerminalFormat(false)))
-		glogger.Verbosity(gethlog.LvlTrace)
-		gethlog.Root().SetHandler(glogger)
+		// Gzond specific logging.
+		glogger := gzondlog.NewGlogHandler(gzondlog.StreamHandler(os.Stderr, gzondlog.TerminalFormat(false)))
+		glogger.Verbosity(gzondlog.LvlTrace)
+		gzondlog.Root().SetHandler(glogger)
 
 		log.Debug("Debug logging enabled.")
 	}

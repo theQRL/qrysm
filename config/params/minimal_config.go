@@ -83,7 +83,7 @@ func MinimalSpecConfig() *BeaconChainConfig {
 	minimalConfig.InactivityScoreBias = 4
 	minimalConfig.EpochsPerSyncCommitteePeriod = 8
 
-	// Ethereum PoW parameters.
+	// Zond execution layer parameters.
 	minimalConfig.DepositChainID = 5
 	minimalConfig.DepositNetworkID = 5
 	minimalConfig.DepositContractAddress = "0x1234567890123456789012345678901234567890"

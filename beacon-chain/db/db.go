@@ -1,5 +1,5 @@
 // Package db defines the ability to create a new database
-// for an Ethereum Beacon Node.
+// for a Zond Beacon Node.
 package db
 
 import (

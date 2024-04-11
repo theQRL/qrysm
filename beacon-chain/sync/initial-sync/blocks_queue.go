@@ -91,8 +91,8 @@ type blocksQueue struct {
 
 // blocksQueueFetchedData is a data container that is returned from a queue on each step.
 type blocksQueueFetchedData struct {
-	pid peer.ID
-	bwb []blocks.BlockWithVerifiedBlobs
+	pid  peer.ID
+	blks []blocks.ROBlock
 }
 
 // newBlocksQueue creates initialized priority queue.
@@ -337,7 +337,7 @@ func (q *blocksQueue) onDataReceivedEvent(ctx context.Context) eventHandlerFn {
 			return m.state, response.err
 		}
 		m.pid = response.pid
-		m.bwb = response.bwb
+		m.blks = response.blks
 		return stateDataParsed, nil
 	}
 }
@@ -352,14 +352,14 @@ func (q *blocksQueue) onReadyToSendEvent(ctx context.Context) eventHandlerFn {
 			return m.state, errInvalidInitialState
 		}
 
-		if len(m.bwb) == 0 {
+		if len(m.blks) == 0 {
 			return stateSkipped, nil
 		}
 
 		send := func() (stateID, error) {
 			data := &blocksQueueFetchedData{
-				pid: m.pid,
-				bwb: m.bwb,
+				pid:  m.pid,
+				blks: m.blks,
 			}
 			select {
 			case <-ctx.Done():
@@ -451,7 +451,7 @@ func (q *blocksQueue) onProcessSkippedEvent(ctx context.Context) eventHandlerFn 
 
 // onCheckStaleEvent is an event that allows to mark stale epochs,
 // so that they can be re-processed.
-func (_ *blocksQueue) onCheckStaleEvent(ctx context.Context) eventHandlerFn {
+func (*blocksQueue) onCheckStaleEvent(ctx context.Context) eventHandlerFn {
 	return func(m *stateMachine, in interface{}) (stateID, error) {
 		if ctx.Err() != nil {
 			return m.state, ctx.Err()

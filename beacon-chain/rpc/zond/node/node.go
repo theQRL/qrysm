@@ -251,7 +251,7 @@ func (*Server) GetVersion(ctx context.Context, _ *emptypb.Empty) (*zondpb.Versio
 	_, span := trace.StartSpan(ctx, "node.GetVersion")
 	defer span.End()
 
-	v := fmt.Sprintf("Prysm/%s (%s %s)", version.SemanticVersion(), runtime.GOOS, runtime.GOARCH)
+	v := fmt.Sprintf("Qrysm/%s (%s %s)", version.SemanticVersion(), runtime.GOOS, runtime.GOARCH)
 	return &zondpb.VersionResponse{
 		Data: &zondpb.NodeVersion{
 			Version: v,

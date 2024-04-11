@@ -55,7 +55,7 @@ func (_ *Server) SetLoggingLevel(_ context.Context, req *pbrpc.LoggingLevelReque
 	if level == logrus.TraceLevel {
 		// Libp2p specific logging.
 		golog.SetAllLoggers(golog.LevelDebug)
-		// Geth specific logging.
+		// Gzond specific logging.
 		glogger := zondlog.NewGlogHandler(zondlog.StreamHandler(os.Stderr, zondlog.TerminalFormat(true)))
 		glogger.Verbosity(zondlog.LvlTrace)
 		zondlog.Root().SetHandler(glogger)

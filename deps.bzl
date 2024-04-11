@@ -3823,8 +3823,8 @@ def qrysm_deps():
     go_repository(
         name = "com_github_spf13_cobra",
         importpath = "github.com/spf13/cobra",
-        sum = "h1:X+jTBEBqF0bHN+9cSMgmfuvv2VHJ9ezmFNf9Y/XstYU=",
-        version = "v1.5.0",
+        sum = "h1:O63eWlXlvyw4YdsuatjRIU6emvJ2fqz+PTdMEoxIT2s=",
+        version = "v1.0.1-0.20201006035406-b97b5ead31f7",
     )
     go_repository(
         name = "com_github_spf13_jwalterweatherman",
@@ -5830,21 +5830,21 @@ def go_dependencies():
     go_repository(
         name = "com_github_rgeraldes24_fuzzyvm",
         importpath = "github.com/rgeraldes24/FuzzyVM",
-        sum = "h1:al7V2iHDJbz1WvW4PjrUA5Okj9UI0UkvFeXHqnTqRc0=",
-        version = "v0.0.0-20240312135609-39cb5a24e4e6",
+        sum = "h1:lMatejndxKUPXShISAb4GpvrCviTc5aMBQvn5raG7Ck=",
+        version = "v0.0.0-20240409132327-bdda31292e1d",
     )
     go_repository(
         name = "com_github_rgeraldes24_goevmlab",
         importpath = "github.com/rgeraldes24/goevmlab",
-        sum = "h1:CqaBAEV8jTqOS2qlhv3EGIf8dQvdU3id14jLNzuzOhY=",
-        version = "v0.0.0-20240312135254-7ab191f8d459",
+        sum = "h1:TDgYW0opYEw2El+dlO7RRhgD7IBaukIGRUeSI9ajszg=",
+        version = "v0.0.0-20240405152946-c986fe335e98",
     )
 
     go_repository(
         name = "com_github_rgeraldes24_tx_fuzz",
         importpath = "github.com/rgeraldes24/tx-fuzz",
-        sum = "h1:utlgNdI4k5aQl0W3XN0GiWKyFL4DleUHGO2RovULWWA=",
-        version = "v0.0.0-20240312135745-3e62fcca6c4e",
+        sum = "h1:dEatz1is/arQi9MTHW55j3ylrOIx08u+OJV3TUCTrok=",
+        version = "v0.0.0-20240409132431-850c1cc8b2af",
     )
 
     go_repository(
@@ -5857,9 +5857,9 @@ def go_dependencies():
         patches = [
             "//third_party:com_github_theqrl_go_zond_secp256k1.patch",
         ],
-        replace = "github.com/cyyber/go-zond",
-        sum = "h1:wJX/I0gNDyuAlgKrklOvW0K3kN5M+vbKzOKlTo+EqUQ=",
-        version = "v0.0.0-20240408174218-ac6fe3f686e0",
+        replace = "github.com/rgeraldes24/go-zond",
+        sum = "h1:Hy80X18hckxZH+7k7Hl/F2c4ak9d1tsgJDp1Qn4F0Os=",
+        version = "v0.0.0-20240410141502-888421df9c48",
     )
     go_repository(
         name = "com_github_theqrl_go_zond_types",

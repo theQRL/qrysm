@@ -303,9 +303,9 @@ func TestBlocksFetcher_RoundRobin(t *testing.T) {
 				fetcher.stop()
 			}()
 
-			processFetchedBlocks := func() ([]blocks.BlockWithVerifiedBlobs, error) {
+			processFetchedBlocks := func() ([]blocks.ROBlock, error) {
 				defer cancel()
-				var unionRespBlocks []blocks.BlockWithVerifiedBlobs
+				var unionRespBlocks []blocks.ROBlock
 
 				for {
 					select {
@@ -317,8 +317,8 @@ func TestBlocksFetcher_RoundRobin(t *testing.T) {
 						if resp.err != nil {
 							log.WithError(resp.err).Debug("Block fetcher returned error")
 						} else {
-							unionRespBlocks = append(unionRespBlocks, resp.bwb...)
-							if len(resp.bwb) == 0 {
+							unionRespBlocks = append(unionRespBlocks, resp.blks...)
+							if len(resp.blks) == 0 {
 								log.WithFields(logrus.Fields{
 									"start": resp.start,
 									"count": resp.count,
@@ -341,27 +341,27 @@ func TestBlocksFetcher_RoundRobin(t *testing.T) {
 				maxExpectedBlocks += requestParams.count
 			}
 
-			bwb, err := processFetchedBlocks()
+			blks, err := processFetchedBlocks()
 			assert.NoError(t, err)
 
-			sort.Sort(blocks.BlockWithVerifiedBlobsSlice(bwb))
-			ss := make([]primitives.Slot, len(bwb))
-			for i, b := range bwb {
-				ss[i] = b.Block.Block().Slot()
+			sort.Sort(blocks.ROBlockSlice(blks))
+			ss := make([]primitives.Slot, len(blks))
+			for i, b := range blks {
+				ss[i] = b.Block().Slot()
 			}
 
 			log.WithFields(logrus.Fields{
-				"blocksLen": len(bwb),
+				"blocksLen": len(blks),
 				"slots":     ss,
 			}).Debug("Finished block fetching")
 
-			if len(bwb) > int(maxExpectedBlocks) {
-				t.Errorf("Too many blocks returned. Wanted %d got %d", maxExpectedBlocks, len(bwb))
+			if len(blks) > int(maxExpectedBlocks) {
+				t.Errorf("Too many blocks returned. Wanted %d got %d", maxExpectedBlocks, len(blks))
 			}
-			assert.Equal(t, len(tt.expectedBlockSlots), len(bwb), "Processes wrong number of blocks")
+			assert.Equal(t, len(tt.expectedBlockSlots), len(blks), "Processes wrong number of blocks")
 			var receivedBlockSlots []primitives.Slot
-			for _, b := range bwb {
-				receivedBlockSlots = append(receivedBlockSlots, b.Block.Block().Slot())
+			for _, b := range blks {
+				receivedBlockSlots = append(receivedBlockSlots, b.Block().Slot())
 			}
 			missing := slice.NotSlot(slice.IntersectionSlot(tt.expectedBlockSlots, receivedBlockSlots), tt.expectedBlockSlots)
 			if len(missing) > 0 {
@@ -451,7 +451,7 @@ func TestBlocksFetcher_handleRequest(t *testing.T) {
 			}
 		}()
 
-		var bwb []blocks.BlockWithVerifiedBlobs
+		var blks []blocks.ROBlock
 		select {
 		case <-ctx.Done():
 			t.Error(ctx.Err())
@@ -459,16 +459,16 @@ func TestBlocksFetcher_handleRequest(t *testing.T) {
 			if resp.err != nil {
 				t.Error(resp.err)
 			} else {
-				bwb = resp.bwb
+				blks = resp.blks
 			}
 		}
-		if uint64(len(bwb)) != uint64(blockBatchLimit) {
-			t.Errorf("incorrect number of blocks returned, expected: %v, got: %v", blockBatchLimit, len(bwb))
+		if uint64(len(blks)) != uint64(blockBatchLimit) {
+			t.Errorf("incorrect number of blocks returned, expected: %v, got: %v", blockBatchLimit, len(blks))
 		}
 
 		var receivedBlockSlots []primitives.Slot
-		for _, b := range bwb {
-			receivedBlockSlots = append(receivedBlockSlots, b.Block.Block().Slot())
+		for _, b := range blks {
+			receivedBlockSlots = append(receivedBlockSlots, b.Block().Slot())
 		}
 		missing := slice.NotSlot(slice.IntersectionSlot(chainConfig.expectedBlockSlots, receivedBlockSlots), chainConfig.expectedBlockSlots)
 		if len(missing) > 0 {

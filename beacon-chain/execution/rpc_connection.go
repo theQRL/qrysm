@@ -131,7 +131,7 @@ func (s *Service) newRPCClientWithAuth(ctx context.Context, endpoint network.End
 }
 
 // Checks the chain ID of the execution client to ensure
-// it matches local parameters of what Prysm expects.
+// it matches local parameters of what Qrysm expects.
 func ensureCorrectExecutionChain(ctx context.Context, client *zondclient.Client) error {
 	cID, err := client.ChainID(ctx)
 	if err != nil {

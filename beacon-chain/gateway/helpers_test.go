@@ -34,7 +34,7 @@ func TestDefaultConfig(t *testing.T) {
 		assert.Equal(t, "/zond/v1alpha2/", cfg.V1AlphaPbMux.Patterns[1])
 		assert.Equal(t, 4, len(cfg.V1AlphaPbMux.Registrations))
 	})
-	t.Run("Without Prysm API", func(t *testing.T) {
+	t.Run("Without Qrysm API", func(t *testing.T) {
 		cfg := DefaultConfig(true, "zond")
 		assert.NotNil(t, cfg.ZondPbMux.Mux)
 		require.Equal(t, 1, len(cfg.ZondPbMux.Patterns))

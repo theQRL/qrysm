@@ -437,7 +437,7 @@ func parseRequestBytes(req *http.Request) ([]byte, error) {
 	return requestBytes, nil
 }
 
-// Checks whether the JSON-RPC request is for the Ethereum engine API.
+// Checks whether the JSON-RPC request is for the Zond engine API.
 func isEngineAPICall(reqBytes []byte) bool {
 	jsonRequest, err := unmarshalRPCObject(reqBytes)
 	if err != nil {
@@ -464,7 +464,7 @@ func modifyExecutionPayload(execPayload engine.ExecutableData, fees *big.Int) (*
 	if err != nil {
 		return &engine.ExecutionPayloadEnvelope{}, err
 	}
-	return engine.BlockToExecutableData(modifiedBlock, fees, nil /*blobs*/), nil
+	return engine.BlockToExecutableData(modifiedBlock, fees), nil
 }
 
 // This modifies the provided payload to imprint the builder's extra data

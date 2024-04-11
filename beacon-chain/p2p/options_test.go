@@ -11,12 +11,12 @@ import (
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/protocol"
-	gethCrypto "github.com/theQRL/go-zond/crypto"
+	gzondCrypto "github.com/theQRL/go-zond/crypto"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
 	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/v4/config/params"
-	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
+	ecdsaqrysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
 	"github.com/theQRL/qrysm/v4/network"
 	"github.com/theQRL/qrysm/v4/testing/assert"
 	"github.com/theQRL/qrysm/v4/testing/require"
@@ -42,7 +42,7 @@ func TestPrivateKeyLoading(t *testing.T) {
 	}
 	pKey, err := privKey(cfg)
 	require.NoError(t, err, "Could not apply option")
-	newPkey, err := ecdsaprysm.ConvertToInterfacePrivkey(pKey)
+	newPkey, err := ecdsaqrysm.ConvertToInterfacePrivkey(pKey)
 	require.NoError(t, err)
 	rawBytes, err := key.Raw()
 	require.NoError(t, err)
@@ -62,12 +62,12 @@ func TestPrivateKeyLoading_StaticPrivateKey(t *testing.T) {
 	pKey, err := privKey(cfg)
 	require.NoError(t, err, "Could not apply option")
 
-	newPkey, err := ecdsaprysm.ConvertToInterfacePrivkey(pKey)
+	newPkey, err := ecdsaqrysm.ConvertToInterfacePrivkey(pKey)
 	require.NoError(t, err)
 
 	retrievedKey, err := privKeyFromFile(path.Join(tempDir, keyPath))
 	require.NoError(t, err)
-	retrievedPKey, err := ecdsaprysm.ConvertToInterfacePrivkey(retrievedKey)
+	retrievedPKey, err := ecdsaqrysm.ConvertToInterfacePrivkey(retrievedKey)
 	require.NoError(t, err)
 
 	rawBytes, err := retrievedPKey.Raw()
@@ -79,7 +79,7 @@ func TestPrivateKeyLoading_StaticPrivateKey(t *testing.T) {
 
 func TestIPV6Support(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
-	key, err := gethCrypto.GenerateKey()
+	key, err := gzondCrypto.GenerateKey()
 	require.NoError(t, err)
 	db, err := enode.OpenDB("")
 	if err != nil {

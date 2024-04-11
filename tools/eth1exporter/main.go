@@ -1,4 +1,4 @@
-// Prometheus exporter for Ethereum address balances.
+// Prometheus exporter for Zond address balances.
 // Forked from https://github.com/hunterlong/ethexporter
 package main
 
@@ -49,7 +49,7 @@ func main() {
 		panic(err)
 	}
 
-	err = ConnectionToGeth(*web3URL)
+	err = ConnectionToGzond(*web3URL)
 	if err != nil {
 		panic(err)
 	}
@@ -91,8 +91,8 @@ type Watching struct {
 	Balance string
 }
 
-// ConnectionToGeth - Connect to remote server.
-func ConnectionToGeth(url string) error {
+// ConnectionToGzond - Connect to remote server.
+func ConnectionToGzond(url string) error {
 	var err error
 	eth, err = zondclient.Dial(url)
 	return err

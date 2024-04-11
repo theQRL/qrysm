@@ -89,7 +89,7 @@ func (s *Store) BackfillBlockRoot(ctx context.Context) ([32]byte, error) {
 	return root, err
 }
 
-// HeadBlock returns the latest canonical block in the Ethereum Beacon Chain.
+// HeadBlock returns the latest canonical block in the Zond Beacon Chain.
 func (s *Store) HeadBlock(ctx context.Context) (interfaces.ReadOnlySignedBeaconBlock, error) {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.HeadBlock")
 	defer span.End()

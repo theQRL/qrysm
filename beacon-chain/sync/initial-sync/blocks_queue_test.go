@@ -274,10 +274,10 @@ func TestBlocksQueue_Loop(t *testing.T) {
 				return mc.ReceiveBlock(ctx, block, root)
 			}
 
-			var blocks []blocks.BlockWithVerifiedBlobs
+			var blocks []blocks.ROBlock
 			for data := range queue.fetchedData {
-				for _, b := range data.bwb {
-					if err := processBlock(b.Block); err != nil {
+				for _, b := range data.blks {
+					if err := processBlock(b); err != nil {
 						continue
 					}
 					blocks = append(blocks, b)
@@ -293,7 +293,7 @@ func TestBlocksQueue_Loop(t *testing.T) {
 			assert.Equal(t, len(tt.expectedBlockSlots), len(blocks), "Processes wrong number of blocks")
 			var receivedBlockSlots []primitives.Slot
 			for _, b := range blocks {
-				receivedBlockSlots = append(receivedBlockSlots, b.Block.Block().Slot())
+				receivedBlockSlots = append(receivedBlockSlots, b.Block().Slot())
 			}
 			missing := slice.NotSlot(slice.IntersectionSlot(tt.expectedBlockSlots, receivedBlockSlots), tt.expectedBlockSlots)
 			if len(missing) > 0 {
@@ -537,21 +537,21 @@ func TestBlocksQueue_onDataReceivedEvent(t *testing.T) {
 		require.NoError(t, err)
 		response := &fetchRequestResponse{
 			pid: "abc",
-			bwb: []blocks.BlockWithVerifiedBlobs{
-				{Block: blocks.ROBlock{ReadOnlySignedBeaconBlock: wsb}},
-				{Block: blocks.ROBlock{ReadOnlySignedBeaconBlock: wsbCopy}},
+			blks: []blocks.ROBlock{
+				blocks.ROBlock{ReadOnlySignedBeaconBlock: wsb},
+				blocks.ROBlock{ReadOnlySignedBeaconBlock: wsbCopy},
 			},
 		}
 		fsm := &stateMachine{
 			state: stateScheduled,
 		}
 		assert.Equal(t, peer.ID(""), fsm.pid)
-		assert.Equal(t, 0, len(fsm.bwb))
+		assert.Equal(t, 0, len(fsm.blks))
 		updatedState, err := handlerFn(fsm, response)
 		assert.NoError(t, err)
 		assert.Equal(t, stateDataParsed, updatedState)
 		assert.Equal(t, response.pid, fsm.pid)
-		assert.DeepSSZEqual(t, response.bwb, fsm.bwb)
+		assert.DeepSSZEqual(t, response.blks, fsm.blks)
 	})
 }
 
@@ -637,8 +637,8 @@ func TestBlocksQueue_onReadyToSendEvent(t *testing.T) {
 		queue.smm.machines[256].pid = pidDataParsed
 		rwsb, err := blocks.NewROBlock(wsb)
 		require.NoError(t, err)
-		queue.smm.machines[256].bwb = []blocks.BlockWithVerifiedBlobs{
-			{Block: rwsb},
+		queue.smm.machines[256].blks = []blocks.ROBlock{
+			rwsb,
 		}
 
 		handlerFn := queue.onReadyToSendEvent(ctx)
@@ -671,8 +671,8 @@ func TestBlocksQueue_onReadyToSendEvent(t *testing.T) {
 		queue.smm.machines[320].pid = pidDataParsed
 		rwsb, err := blocks.NewROBlock(wsb)
 		require.NoError(t, err)
-		queue.smm.machines[320].bwb = []blocks.BlockWithVerifiedBlobs{
-			{Block: rwsb},
+		queue.smm.machines[320].blks = []blocks.ROBlock{
+			rwsb,
 		}
 
 		handlerFn := queue.onReadyToSendEvent(ctx)
@@ -702,8 +702,8 @@ func TestBlocksQueue_onReadyToSendEvent(t *testing.T) {
 		queue.smm.machines[320].pid = pidDataParsed
 		rwsb, err := blocks.NewROBlock(wsb)
 		require.NoError(t, err)
-		queue.smm.machines[320].bwb = []blocks.BlockWithVerifiedBlobs{
-			{Block: rwsb},
+		queue.smm.machines[320].blks = []blocks.ROBlock{
+			rwsb,
 		}
 
 		handlerFn := queue.onReadyToSendEvent(ctx)
@@ -1351,8 +1351,8 @@ func TestBlocksQueue_stuckWhenHeadIsSetToOrphanedBlock(t *testing.T) {
 	case <-time.After(3 * time.Second):
 		t.Fatal("test takes too long to complete")
 	case data := <-queue.fetchedData:
-		for _, b := range data.bwb {
-			blk := b.Block
+		for _, b := range data.blks {
+			blk := b
 			blkRoot, err := blk.Block().HashTreeRoot()
 			require.NoError(t, err)
 			if isProcessedBlock(ctx, blk, blkRoot) {

@@ -11,7 +11,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	prysmP2P "github.com/theQRL/qrysm/v4/beacon-chain/p2p"
+	qrysmP2P "github.com/theQRL/qrysm/v4/beacon-chain/p2p"
 	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
 	p2ptest "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
 	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
@@ -69,10 +69,10 @@ func TestRegisterRPC_ReceivesValidMessage(t *testing.T) {
 
 		return nil
 	}
-	prysmP2P.RPCTopicMappings[topic] = new(zondpb.Fork)
+	qrysmP2P.RPCTopicMappings[topic] = new(zondpb.Fork)
 	// Cleanup Topic mappings
 	defer func() {
-		delete(prysmP2P.RPCTopicMappings, topic)
+		delete(qrysmP2P.RPCTopicMappings, topic)
 	}()
 	r.registerRPC(topic, handler)
 
@@ -105,10 +105,10 @@ func TestRPC_ReceivesInvalidMessage(t *testing.T) {
 		}
 		return nil
 	}
-	prysmP2P.RPCTopicMappings[topic] = new(zondpb.Fork)
+	qrysmP2P.RPCTopicMappings[topic] = new(zondpb.Fork)
 	// Cleanup Topic mappings
 	defer func() {
-		delete(prysmP2P.RPCTopicMappings, topic)
+		delete(qrysmP2P.RPCTopicMappings, topic)
 	}()
 	r.registerRPC(topic, handler)
 

@@ -1,4 +1,4 @@
-// Package slots includes ticker and timer-related functions for Ethereum consensus.
+// Package slots includes ticker and timer-related functions for Zond consensus.
 package slots
 
 import (
