@@ -91,10 +91,8 @@ func TestVerifyVerbosely_VerificationThrowsError(t *testing.T) {
 	goodSet := NewValidSignatureSet(t, "good", 1)
 	badSet := NewInvalidSignatureSet(t, "bad", 1, true)
 	set := NewSet().Join(goodSet).Join(badSet)
-	fmt.Println(set)
 	valid, err := set.VerifyVerbosely()
 	assert.Equal(t, false, valid, "SignatureSet is expected to be invalid")
-	fmt.Println(err)
 	assert.StringContains(t, "signature 'signature of bad0' is invalid", err.Error())
 	assert.StringNotContains(t, "signature 'signature of good0' is invalid", err.Error())
 }

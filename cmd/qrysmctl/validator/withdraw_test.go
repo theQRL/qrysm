@@ -3,7 +3,6 @@ package validator
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -27,7 +26,6 @@ func getHappyPathTestServer(file string, t *testing.T) *httptest.Server {
 		w.WriteHeader(200)
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == http.MethodGet {
-			fmt.Println(r.RequestURI)
 			if r.RequestURI == "/zond/v1/beacon/pool/dilithium_to_execution_changes" {
 				b, err := os.ReadFile(filepath.Clean(file))
 				require.NoError(t, err)

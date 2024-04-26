@@ -1,8 +1,6 @@
 package kv
 
 import (
-	"fmt"
-
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-bitfield"
@@ -30,7 +28,6 @@ func (c *AttCaches) insertSeenBit(att *zondpb.Attestation) error {
 				break
 			}
 		}
-		fmt.Println(alreadyExists)
 		if !alreadyExists {
 			seenBits = append(seenBits, att.AggregationBits)
 		}

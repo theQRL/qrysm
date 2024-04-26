@@ -9,8 +9,6 @@ import (
 	"github.com/theQRL/go-zond/core"
 	"github.com/theQRL/go-zond/params"
 	clparams "github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/time/slots"
 )
 
 // defaultMinerAddress is used to send deposits and test transactions in the e2e test.
@@ -66,41 +64,12 @@ var DefaultDepositContractStorage = map[string]string{
 var bigz = big.NewInt(0)
 var testAccountBalance = big.NewInt(0)
 
-// GzondShanghaiTime calculates the absolute time of the shanghai (aka capella) fork block
-// by adding the relative time of the capella the fork epoch to the given genesis timestamp.
-func GzondShanghaiTime(genesisTime uint64) *uint64 {
-	startSlot := primitives.Slot(0)
-	startTime := slots.StartTime(genesisTime, startSlot)
-	newTime := uint64(startTime.Unix())
-	shanghaiTime := &newTime
-	return shanghaiTime
-}
-
 // GzondTestnetGenesis creates a genesis.json for eth1 clients with a set of defaults suitable for ephemeral testnets,
 // like in an e2e test. The parameters are minimal but the full value is returned unmarshaled so that it can be
 // customized as desired.
 func GzondTestnetGenesis(genesisTime uint64, cfg *clparams.BeaconChainConfig) *core.Genesis {
-	shanghaiTime := GzondShanghaiTime(genesisTime)
 	cc := &params.ChainConfig{
-		ChainID:                       big.NewInt(defaultTestChainId),
-		HomesteadBlock:                bigz,
-		DAOForkBlock:                  bigz,
-		EIP150Block:                   bigz,
-		EIP155Block:                   bigz,
-		EIP158Block:                   bigz,
-		ByzantiumBlock:                bigz,
-		ConstantinopleBlock:           bigz,
-		PetersburgBlock:               bigz,
-		IstanbulBlock:                 bigz,
-		MuirGlacierBlock:              bigz,
-		BerlinBlock:                   bigz,
-		LondonBlock:                   bigz,
-		ArrowGlacierBlock:             bigz,
-		GrayGlacierBlock:              bigz,
-		MergeNetsplitBlock:            bigz,
-		TerminalTotalDifficulty:       bigz,
-		TerminalTotalDifficultyPassed: true,
-		ShanghaiTime:                  shanghaiTime,
+		ChainID: big.NewInt(defaultTestChainId),
 	}
 	da := defaultDepositContractAllocation(cfg.DepositContractAddress)
 	ma := minerAllocation()
