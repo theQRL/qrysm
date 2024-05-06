@@ -796,7 +796,6 @@ func fixtures() map[string]interface{} {
 		BlockValue: "0x11fffffffff",
 	}
 	parent := bytesutil.PadTo([]byte("parentHash"), fieldparams.RootLength)
-	sha3Uncles := bytesutil.PadTo([]byte("sha3Uncles"), fieldparams.RootLength)
 	miner := bytesutil.PadTo([]byte("miner"), fieldparams.FeeRecipientLength)
 	stateRoot := bytesutil.PadTo([]byte("stateRoot"), fieldparams.RootLength)
 	transactionsRoot := bytesutil.PadTo([]byte("transactionsRoot"), fieldparams.RootLength)
@@ -806,20 +805,17 @@ func fixtures() map[string]interface{} {
 		Version: version.Capella,
 		Header: zondtypes.Header{
 			ParentHash:  common.BytesToHash(parent),
-			UncleHash:   common.BytesToHash(sha3Uncles),
 			Coinbase:    common.BytesToAddress(miner),
 			Root:        common.BytesToHash(stateRoot),
 			TxHash:      common.BytesToHash(transactionsRoot),
 			ReceiptHash: common.BytesToHash(receiptsRoot),
 			Bloom:       zondtypes.BytesToBloom(logsBloom),
-			Difficulty:  big.NewInt(1),
 			Number:      big.NewInt(2),
 			GasLimit:    3,
 			GasUsed:     4,
 			Time:        5,
 			Extra:       []byte("extra"),
-			MixDigest:   common.BytesToHash([]byte("mix")),
-			Nonce:       zondtypes.EncodeNonce(6),
+			Random:      common.BytesToHash([]byte("random")),
 			BaseFee:     big.NewInt(7),
 		},
 		Withdrawals: []*pb.Withdrawal{},

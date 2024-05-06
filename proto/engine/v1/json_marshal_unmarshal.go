@@ -32,10 +32,9 @@ func (b PayloadIDBytes) MarshalJSON() ([]byte, error) {
 type ExecutionBlock struct {
 	Version int
 	zondtypes.Header
-	Hash            common.Hash              `json:"hash"`
-	Transactions    []*zondtypes.Transaction `json:"transactions"`
-	TotalDifficulty string                   `json:"totalDifficulty"`
-	Withdrawals     []*Withdrawal            `json:"withdrawals"`
+	Hash         common.Hash              `json:"hash"`
+	Transactions []*zondtypes.Transaction `json:"transactions"`
+	Withdrawals  []*Withdrawal            `json:"withdrawals"`
 }
 
 func (e *ExecutionBlock) MarshalJSON() ([]byte, error) {
@@ -49,7 +48,6 @@ func (e *ExecutionBlock) MarshalJSON() ([]byte, error) {
 	}
 	decoded["hash"] = e.Hash.String()
 	decoded["transactions"] = e.Transactions
-	decoded["totalDifficulty"] = e.TotalDifficulty
 	decoded["withdrawals"] = e.Withdrawals
 
 	return json.Marshal(decoded)
@@ -79,10 +77,6 @@ func (e *ExecutionBlock) UnmarshalJSON(enc []byte) error {
 		return err
 	}
 	e.Hash = common.BytesToHash(decodedHash)
-	e.TotalDifficulty, ok = decoded["totalDifficulty"].(string)
-	if !ok {
-		return errors.New("expected `totalDifficulty` field in JSON response")
-	}
 
 	rawWithdrawals, ok := decoded["withdrawals"]
 	if !ok || rawWithdrawals == nil {

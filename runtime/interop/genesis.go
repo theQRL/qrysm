@@ -75,15 +75,13 @@ func GzondTestnetGenesis(genesisTime uint64, cfg *clparams.BeaconChainConfig) *c
 	ma := minerAllocation()
 	return &core.Genesis{
 		Config:    cc,
-		Nonce:     0,
 		Timestamp: genesisTime,
 		// NOTE(rgeraldes24): required by the genesis generation on the beacon node side
 		// during the e2e tests
-		ExtraData:  make([]byte, 32),
-		GasLimit:   math.MaxUint64 >> 1, // shift 1 back from the max, just in case
-		Difficulty: common.HexToHash(defaultDifficulty).Big(),
-		Mixhash:    common.HexToHash(defaultMixhash),
-		Coinbase:   common.HexToAddress(defaultCoinbase),
+		ExtraData: make([]byte, 32),
+		GasLimit:  math.MaxUint64 >> 1, // shift 1 back from the max, just in case
+		Mixhash:   common.HexToHash(defaultMixhash),
+		Coinbase:  common.HexToAddress(defaultCoinbase),
 		Alloc: core.GenesisAlloc{
 			da.Address: da.Account,
 			ma.Address: ma.Account,

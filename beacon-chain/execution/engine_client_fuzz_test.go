@@ -147,11 +147,9 @@ func FuzzExecutionBlock(f *testing.F) {
 			Time:        100,
 			Extra:       nil,
 			BaseFee:     big.NewInt(math.MaxInt),
-			Difficulty:  big.NewInt(math.MaxInt),
 		},
-		Hash:            common.Hash([32]byte{0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01}),
-		TotalDifficulty: "999999999999999999999999999999999999999",
-		Transactions:    []*types.Transaction{tx, tx},
+		Hash:         common.Hash([32]byte{0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01, 0xFF, 0x01}),
+		Transactions: []*types.Transaction{tx, tx},
 	}
 	output, err := json.Marshal(execBlock)
 	assert.NoError(f, err)

@@ -618,13 +618,11 @@ func Test_NotifyNewPayload(t *testing.T) {
 				Header: zondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("b")),
 				},
-				TotalDifficulty: "0x2",
 			}
 			e.BlockByHashMap[[32]byte{'b'}] = &v1.ExecutionBlock{
 				Header: zondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("3")),
 				},
-				TotalDifficulty: "0x1",
 			}
 			service.cfg.ExecutionEngineCaller = e
 			root := [32]byte{'a'}
@@ -669,13 +667,11 @@ func Test_NotifyNewPayload_SetOptimisticToValid(t *testing.T) {
 		Header: zondtypes.Header{
 			ParentHash: common.BytesToHash([]byte("b")),
 		},
-		TotalDifficulty: "0x2",
 	}
 	e.BlockByHashMap[[32]byte{'b'}] = &v1.ExecutionBlock{
 		Header: zondtypes.Header{
 			ParentHash: common.BytesToHash([]byte("3")),
 		},
-		TotalDifficulty: "0x1",
 	}
 	service.cfg.ExecutionEngineCaller = e
 	_, postHeader, err := getStateVersionAndPayload(capellaState)

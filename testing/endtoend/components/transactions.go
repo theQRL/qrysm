@@ -128,7 +128,7 @@ func SendTransaction(client *rpc.Client, key *dilithium.Dilithium, f *filler.Fil
 				//nolint:nilerr
 				return nil
 			}
-			signedTx, err := types.SignTx(tx, types.NewLondonSigner(chainid), key)
+			signedTx, err := types.SignTx(tx, types.NewShanghaiSigner(chainid), key)
 			if err != nil {
 				// We continue on in the event there is a reason we can't sign this
 				// transaction(unlikely).
