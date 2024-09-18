@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/theQRL/go-zond/common"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/runtime/version"
 )
 
 // BeaconChainConfig contains constant configs for node to participate in beacon chain.

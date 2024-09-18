@@ -9,11 +9,11 @@ import (
 	corenet "github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
-	http2 "github.com/theQRL/qrysm/v4/network/http"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/peerdata"
+	http2 "github.com/theQRL/qrysm/network/http"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // ListTrustedPeer retrieves data about the node's trusted peers.

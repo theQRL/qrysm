@@ -6,15 +6,15 @@ import (
 	"time"
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	testDB "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	mockExecution "github.com/theQRL/qrysm/v4/beacon-chain/execution/testing"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	testDB "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	mockExecution "github.com/theQRL/qrysm/beacon-chain/execution/testing"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestService_isNewProposer(t *testing.T) {

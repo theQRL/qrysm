@@ -3,13 +3,13 @@ package blocks_test
 import (
 	"testing"
 
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	consensus_types "github.com/theQRL/qrysm/consensus-types"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestWrapExecutionPayloadCapella(t *testing.T) {

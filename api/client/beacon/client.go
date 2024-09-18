@@ -16,14 +16,14 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/api/client"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/network/forks"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	"github.com/theQRL/qrysm/api/client"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/network/forks"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	v1 "github.com/theQRL/qrysm/proto/zond/v1"
 )
 
 const (

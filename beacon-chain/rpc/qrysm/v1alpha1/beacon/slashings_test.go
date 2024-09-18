@@ -4,17 +4,17 @@ import (
 	"context"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/util"
 	"google.golang.org/protobuf/proto"
 
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/slashings"
-	mockp2p "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/beacon-chain/operations/slashings"
+	mockp2p "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestServer_SubmitProposerSlashing(t *testing.T) {

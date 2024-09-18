@@ -11,9 +11,9 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
-	qrysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/peerdata"
+	qrysmTime "github.com/theQRL/qrysm/time"
 )
 
 const (

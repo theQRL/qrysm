@@ -1,8 +1,8 @@
 package doublylinkedtree
 
 import (
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 // LastRoot returns the last canonical block root in the given epoch

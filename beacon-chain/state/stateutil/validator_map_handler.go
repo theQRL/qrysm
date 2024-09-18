@@ -3,10 +3,10 @@ package stateutil
 import (
 	"sync"
 
-	coreutils "github.com/theQRL/qrysm/v4/beacon-chain/core/transition/stateutils"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	coreutils "github.com/theQRL/qrysm/beacon-chain/core/transition/stateutils"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // ValidatorMapHandler is a container to hold the map and a reference tracker for how many

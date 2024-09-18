@@ -5,9 +5,9 @@ import (
 	"math"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	mathqrysm "github.com/theQRL/qrysm/v4/math"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	mathqrysm "github.com/theQRL/qrysm/math"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestMaxEpoch(t *testing.T) {

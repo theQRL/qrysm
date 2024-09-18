@@ -1,6 +1,6 @@
 package main
 
-// TODO(theQRL/qrysm/issues/75)
+// TODO(now.youtrack.cloud/issue/TQ-7)
 /*
 import (
 	"bufio"
@@ -15,13 +15,13 @@ import (
 	"github.com/kr/pretty"
 	fssz "github.com/prysmaticlabs/fastssz"
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/encoding/ssz/equality"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	prefixed "github.com/theQRL/qrysm/v4/runtime/logging/logrus-prefixed-formatter"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/encoding/ssz/equality"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	prefixed "github.com/theQRL/qrysm/runtime/logging/logrus-prefixed-formatter"
+	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/d4l3k/messagediff.v1"
 )

@@ -4,12 +4,12 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/cmd/qrysmctl/checkpointsync"
-	"github.com/theQRL/qrysm/v4/cmd/qrysmctl/db"
-	"github.com/theQRL/qrysm/v4/cmd/qrysmctl/p2p"
-	"github.com/theQRL/qrysm/v4/cmd/qrysmctl/testnet"
-	"github.com/theQRL/qrysm/v4/cmd/qrysmctl/validator"
-	"github.com/theQRL/qrysm/v4/cmd/qrysmctl/weaksubjectivity"
+	"github.com/theQRL/qrysm/cmd/qrysmctl/checkpointsync"
+	"github.com/theQRL/qrysm/cmd/qrysmctl/db"
+	"github.com/theQRL/qrysm/cmd/qrysmctl/p2p"
+	"github.com/theQRL/qrysm/cmd/qrysmctl/testnet"
+	"github.com/theQRL/qrysm/cmd/qrysmctl/validator"
+	"github.com/theQRL/qrysm/cmd/qrysmctl/weaksubjectivity"
 	"github.com/urfave/cli/v2"
 )
 

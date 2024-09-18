@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	synccontribution "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation/aggregation/sync_contribution"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	synccontribution "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation/sync_contribution"
 	"go.opencensus.io/trace"
 )
 

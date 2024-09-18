@@ -5,9 +5,9 @@ import (
 	"context"
 
 	"github.com/sirupsen/logrus"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
 )
 
 // DeleteKeystores takes in public keys and removes the accounts from the wallet.

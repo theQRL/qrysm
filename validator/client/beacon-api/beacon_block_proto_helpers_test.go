@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestBeaconBlockProtoHelpers_ConvertProposerSlashingsToProto(t *testing.T) {

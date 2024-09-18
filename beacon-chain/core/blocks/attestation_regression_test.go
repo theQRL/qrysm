@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/config/params"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/config/params"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 // Regression introduced in https://github.com/theQRL/qrysm/pull/8566.

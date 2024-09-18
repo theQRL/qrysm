@@ -9,16 +9,16 @@ import (
 	"path/filepath"
 	"testing"
 
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/accounts/iface"
+	"github.com/theQRL/qrysm/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/keymanager/local"
 )
 
 func TestImportAccounts_NoPassword(t *testing.T) {

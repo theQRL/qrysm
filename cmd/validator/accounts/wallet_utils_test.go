@@ -9,11 +9,11 @@ import (
 
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/accounts"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/accounts"
+	"github.com/theQRL/qrysm/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/keymanager/local"
 )
 
 func TestWalletWithKeymanager(t *testing.T) {

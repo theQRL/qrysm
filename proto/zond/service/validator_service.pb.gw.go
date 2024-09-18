@@ -15,8 +15,8 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/utilities"
-	github_com_theqrl_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	github_com_theqrl_qrysm_consensus_types_primitives "github.com/theQRL/qrysm/consensus-types/primitives"
+	v1 "github.com/theQRL/qrysm/proto/zond/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
@@ -33,7 +33,7 @@ var _ status.Status
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
-var _ = github_com_theqrl_qrysm_v4_consensus_types_primitives.Epoch(0)
+var _ = github_com_theqrl_qrysm_consensus_types_primitives.Epoch(0)
 var _ = emptypb.Empty{}
 
 var (
@@ -60,7 +60,7 @@ func request_BeaconValidator_ProduceBlock_0(ctx context.Context, marshaler runti
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "slot", err)
 	}
-	protoReq.Slot = github_com_theqrl_qrysm_v4_consensus_types_primitives.Slot(slot)
+	protoReq.Slot = github_com_theqrl_qrysm_consensus_types_primitives.Slot(slot)
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -94,7 +94,7 @@ func local_request_BeaconValidator_ProduceBlock_0(ctx context.Context, marshaler
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "slot", err)
 	}
-	protoReq.Slot = github_com_theqrl_qrysm_v4_consensus_types_primitives.Slot(slot)
+	protoReq.Slot = github_com_theqrl_qrysm_consensus_types_primitives.Slot(slot)
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -132,7 +132,7 @@ func request_BeaconValidator_ProduceBlockSSZ_0(ctx context.Context, marshaler ru
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "slot", err)
 	}
-	protoReq.Slot = github_com_theqrl_qrysm_v4_consensus_types_primitives.Slot(slot)
+	protoReq.Slot = github_com_theqrl_qrysm_consensus_types_primitives.Slot(slot)
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -166,7 +166,7 @@ func local_request_BeaconValidator_ProduceBlockSSZ_0(ctx context.Context, marsha
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "slot", err)
 	}
-	protoReq.Slot = github_com_theqrl_qrysm_v4_consensus_types_primitives.Slot(slot)
+	protoReq.Slot = github_com_theqrl_qrysm_consensus_types_primitives.Slot(slot)
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -204,7 +204,7 @@ func request_BeaconValidator_ProduceBlindedBlock_0(ctx context.Context, marshale
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "slot", err)
 	}
-	protoReq.Slot = github_com_theqrl_qrysm_v4_consensus_types_primitives.Slot(slot)
+	protoReq.Slot = github_com_theqrl_qrysm_consensus_types_primitives.Slot(slot)
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -238,7 +238,7 @@ func local_request_BeaconValidator_ProduceBlindedBlock_0(ctx context.Context, ma
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "slot", err)
 	}
-	protoReq.Slot = github_com_theqrl_qrysm_v4_consensus_types_primitives.Slot(slot)
+	protoReq.Slot = github_com_theqrl_qrysm_consensus_types_primitives.Slot(slot)
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -276,7 +276,7 @@ func request_BeaconValidator_ProduceBlindedBlockSSZ_0(ctx context.Context, marsh
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "slot", err)
 	}
-	protoReq.Slot = github_com_theqrl_qrysm_v4_consensus_types_primitives.Slot(slot)
+	protoReq.Slot = github_com_theqrl_qrysm_consensus_types_primitives.Slot(slot)
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -310,7 +310,7 @@ func local_request_BeaconValidator_ProduceBlindedBlockSSZ_0(ctx context.Context,
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "slot", err)
 	}
-	protoReq.Slot = github_com_theqrl_qrysm_v4_consensus_types_primitives.Slot(slot)
+	protoReq.Slot = github_com_theqrl_qrysm_consensus_types_primitives.Slot(slot)
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)

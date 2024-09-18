@@ -1,10 +1,10 @@
 package stakingdeposit
 
 import (
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
-	"github.com/theQRL/qrysm/v4/contracts/deposit"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/misc"
+	"github.com/theQRL/qrysm/contracts/deposit"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 type DepositData struct {

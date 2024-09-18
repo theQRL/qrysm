@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/mohae/deepcopy"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 // NetworkConfig defines the spec based network parameters.

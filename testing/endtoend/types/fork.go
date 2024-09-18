@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/config/params"
 )
 
 func StartAt(v int, c *params.BeaconChainConfig) *params.BeaconChainConfig {

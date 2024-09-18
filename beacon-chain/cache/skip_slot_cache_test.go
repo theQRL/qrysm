@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestSkipSlotCache_RoundTrip(t *testing.T) {

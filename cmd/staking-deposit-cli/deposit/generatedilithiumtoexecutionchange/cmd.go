@@ -2,7 +2,7 @@ package generatedilithiumtoexecutionchange
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/stakingdeposit"
 	"github.com/urfave/cli/v2"
 )
 

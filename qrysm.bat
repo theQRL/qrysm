@@ -47,7 +47,7 @@ if %WinOS%==64BIT (
 mkdir %wrapper_dir%
 
 REM get_qrysm_version - Find the latest Qrysm version available for download.
-:: TODO(theQRL/qrysm/issues/67)
+:: TODO(now.youtrack.cloud/issue/TQ-1)
 (for /f %%i in ('curl -f -s https://prysmaticlabs.com/releases/latest') do set qrysm_version=%%i) || (echo [31mERROR: Starting qrysm requires an internet connection. If you are being blocked by your antivirus, you can download the beacon chain and validator executables from our releases page on Github here https://github.com/theQRL/qrysm/releases/ [0m && exit /b 1)
 set qrysm_version="v0.1.1"
 echo [37mLatest qrysm release is %qrysm_version%.[0m
@@ -113,7 +113,7 @@ if "%~1"=="client-stats" (
 )
 
 if "%~1"=="slasher" (
-    # TODO(theQRL/qrysm/issues/67)
+    # TODO(now.youtrack.cloud/issue/TQ-1)
     echo [31mThe slasher binary is no longer available. Please use the --slasher flag with your beacon node. See: https://docs.prylabs.network/docs/prysm-usage/slasher/[0m
     exit /b 1
 )

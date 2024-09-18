@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 // setupDB instantiates and returns a Store instance.

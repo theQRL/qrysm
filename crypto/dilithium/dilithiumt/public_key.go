@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/theQRL/qrysm/v4/cache/nonblocking"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium/common"
+	"github.com/theQRL/qrysm/cache/nonblocking"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/crypto/dilithium/common"
 )
 
 var maxKeys = 2_000_000

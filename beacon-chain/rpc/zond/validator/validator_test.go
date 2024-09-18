@@ -5,16 +5,16 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	mockChain "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	builderTest "github.com/theQRL/qrysm/v4/beacon-chain/builder/testing"
-	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpbalpha "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/mock"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	mockChain "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	builderTest "github.com/theQRL/qrysm/beacon-chain/builder/testing"
+	mockSync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync/testing"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpbalpha "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/mock"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestProduceBlock(t *testing.T) {

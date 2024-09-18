@@ -3,7 +3,7 @@ package iface
 import (
 	"context"
 
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/keymanager"
 )
 
 // InitKeymanagerConfig defines configuration options for initializing a keymanager.

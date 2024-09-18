@@ -2,8 +2,8 @@ package migration
 
 import (
 	"github.com/pkg/errors"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/proto/zond/v1"
 )
 
 func V1Alpha1ConnectionStateToV1(connState zond.ConnectionState) zondpb.ConnectionState {

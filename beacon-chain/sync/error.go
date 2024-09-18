@@ -7,10 +7,10 @@ import (
 	libp2pcore "github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/config/params"
 )
 
 var ErrNoValidDigest = errors.New("no valid digest matched")

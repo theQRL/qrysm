@@ -3,8 +3,8 @@ package endtoend
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	"github.com/theQRL/qrysm/runtime/version"
+	"github.com/theQRL/qrysm/testing/endtoend/types"
 )
 
 func TestEndToEnd_MinimalConfig_WithBuilder(t *testing.T) {

@@ -7,8 +7,8 @@ import (
 
 	pkgerrors "github.com/pkg/errors"
 	"github.com/theQRL/go-qrllib/dilithium"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium/common"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/crypto/dilithium/common"
 	"golang.org/x/sync/errgroup"
 )
 

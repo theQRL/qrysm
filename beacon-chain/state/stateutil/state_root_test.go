@@ -6,13 +6,13 @@ import (
 	"strconv"
 	"testing"
 
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/interop"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/runtime/interop"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestState_FieldCount(t *testing.T) {

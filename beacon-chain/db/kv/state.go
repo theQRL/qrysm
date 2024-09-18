@@ -7,17 +7,17 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/genesis"
-	statenative "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/time"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/beacon-chain/state/genesis"
+	statenative "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/monitoring/tracing"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time"
+	"github.com/theQRL/qrysm/time/slots"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 )
@@ -225,7 +225,7 @@ func (s *Store) saveStatesEfficientInternal(ctx context.Context, tx *bolt.Tx, bl
 		// thread. But while storing the state object, we should not store the
 		// validator entries.To bring the gap closer, we empty the validators
 		// just before Put() and repopulate that state with original validators.
-		// look at issue https://github.com/theQRL/qrysm/issues/9262.
+		// look at issue https://github.com/prysmaticlabs/prysm/issues/9262.
 		switch rawType := states[i].ToProtoUnsafe().(type) {
 		case *zondpb.BeaconStateCapella:
 			pbState, err := getCapellaPbState(rawType)

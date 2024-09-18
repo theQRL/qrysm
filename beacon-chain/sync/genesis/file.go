@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/io/file"
 )
 
 // Initializer describes a type that is able to obtain the checkpoint sync data (BeaconState and SignedBeaconBlock)

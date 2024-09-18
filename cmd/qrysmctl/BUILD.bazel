@@ -9,7 +9,7 @@ load("//tools:qrysm_image.bzl", "qrysm_image_upload")
 go_library(
     name = "go_default_library",
     srcs = ["main.go"],
-    importpath = "github.com/theQRL/qrysm/v4/cmd/qrysmctl",
+    importpath = "github.com/theQRL/qrysm/cmd/qrysmctl",
     visibility = ["//visibility:private"],
     deps = [
         "//cmd/qrysmctl/checkpointsync:go_default_library",

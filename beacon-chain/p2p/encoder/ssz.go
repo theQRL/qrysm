@@ -9,8 +9,8 @@ import (
 	"github.com/golang/snappy"
 	"github.com/pkg/errors"
 	fastssz "github.com/prysmaticlabs/fastssz"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/math"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/math"
 )
 
 var _ NetworkEncoding = (*SszNetworkEncoder)(nil)

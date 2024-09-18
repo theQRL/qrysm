@@ -5,15 +5,15 @@ import (
 	"testing"
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	testDB "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	doublylinkedtree "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
-	consensusblocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	testDB "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
+	consensusblocks "github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestMigrateToCold_CanSaveFinalizedInfo(t *testing.T) {

@@ -6,12 +6,12 @@ import (
 	"math"
 
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
 

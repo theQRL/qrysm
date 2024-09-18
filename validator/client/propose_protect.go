@@ -6,9 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
 )
 
 var failedBlockSignLocalErr = "attempted to sign a double proposal, block rejected by local protection"

@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	mathutil "github.com/theQRL/qrysm/v4/math"
-	qrysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	mathutil "github.com/theQRL/qrysm/math"
+	qrysmTime "github.com/theQRL/qrysm/time"
 )
 
 // MaxSlotBuffer specifies the max buffer given to slots from

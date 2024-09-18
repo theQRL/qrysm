@@ -8,21 +8,21 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/network"
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	dbtest "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	p2pm "github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	p2pt "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	p2pTypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	dbtest "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	p2pm "github.com/theQRL/qrysm/beacon-chain/p2p"
+	p2pt "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	p2pTypes "github.com/theQRL/qrysm/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	leakybucket "github.com/theQRL/qrysm/container/leaky-bucket"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 func TestBlocksFetcher_nonSkippedSlotAfter(t *testing.T) {
@@ -146,7 +146,7 @@ func TestBlocksFetcher_nonSkippedSlotAfter(t *testing.T) {
 	})
 }
 
-// TODO(rgeraldes24): fix unit test
+// TODO(now.youtrack.cloud/issue/TQ-18)
 /*
 func TestBlocksFetcher_findFork(t *testing.T) {
 	// Chain graph:

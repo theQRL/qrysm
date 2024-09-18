@@ -5,14 +5,14 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	blocktest "github.com/theQRL/qrysm/v4/consensus-types/blocks/testing"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	blocktest "github.com/theQRL/qrysm/consensus-types/blocks/testing"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 var errEmptyMockDBMethod = errors.New("uninitialized mock db method called")

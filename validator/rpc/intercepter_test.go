@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/testing/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )

@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	bitfield "github.com/theQRL/go-bitfield"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation/aggregation"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestAggregate(t *testing.T) {

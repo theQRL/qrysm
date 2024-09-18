@@ -5,9 +5,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/runtime/interop"
-	"github.com/theQRL/qrysm/v4/tools/unencrypted-keys-gen/keygen"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/runtime/interop"
+	"github.com/theQRL/qrysm/tools/unencrypted-keys-gen/keygen"
 )
 
 var (

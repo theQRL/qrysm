@@ -6,8 +6,8 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/api/client"
-	"github.com/theQRL/qrysm/v4/api/client/beacon"
+	"github.com/theQRL/qrysm/api/client"
+	"github.com/theQRL/qrysm/api/client/beacon"
 	"github.com/urfave/cli/v2"
 )
 

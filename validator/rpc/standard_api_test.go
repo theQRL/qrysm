@@ -19,31 +19,31 @@ import (
 	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	validatorserviceconfig "github.com/theQRL/qrysm/v4/config/validator/service"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/consensus-types/validator"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	validatormock "github.com/theQRL/qrysm/v4/testing/validator-mock"
-	"github.com/theQRL/qrysm/v4/validator/accounts"
-	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
-	mock "github.com/theQRL/qrysm/v4/validator/accounts/testing"
-	"github.com/theQRL/qrysm/v4/validator/client"
-	"github.com/theQRL/qrysm/v4/validator/db/kv"
-	dbtest "github.com/theQRL/qrysm/v4/validator/db/testing"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
-	"github.com/theQRL/qrysm/v4/validator/slashing-protection-history/format"
-	mocks "github.com/theQRL/qrysm/v4/validator/testing"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	validatorserviceconfig "github.com/theQRL/qrysm/config/validator/service"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/consensus-types/validator"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
+	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	validatormock "github.com/theQRL/qrysm/testing/validator-mock"
+	"github.com/theQRL/qrysm/validator/accounts"
+	"github.com/theQRL/qrysm/validator/accounts/iface"
+	mock "github.com/theQRL/qrysm/validator/accounts/testing"
+	"github.com/theQRL/qrysm/validator/client"
+	"github.com/theQRL/qrysm/validator/db/kv"
+	dbtest "github.com/theQRL/qrysm/validator/db/testing"
+	"github.com/theQRL/qrysm/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/keymanager/local"
+	"github.com/theQRL/qrysm/validator/slashing-protection-history/format"
+	mocks "github.com/theQRL/qrysm/validator/testing"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -277,7 +277,7 @@ func TestServer_ImportKeystores(t *testing.T) {
 	})
 }
 
-// TODO(theQRL/qrysm/issues/70)
+// TODO(now.youtrack.cloud/issue/TQ-2)
 /*
 func TestServer_ImportKeystores_WrongKeymanagerKind(t *testing.T) {
 	ctx := context.Background()
@@ -512,7 +512,7 @@ func TestServer_DeleteKeystores_FailedSlashingProtectionExport(t *testing.T) {
 	)
 }
 
-// TODO(theQRL/qrysm/issues/70)
+// TODO(now.youtrack.cloud/issue/TQ-2)
 /*
 func TestServer_DeleteKeystores_WrongKeymanagerKind(t *testing.T) {
 	ctx := context.Background()

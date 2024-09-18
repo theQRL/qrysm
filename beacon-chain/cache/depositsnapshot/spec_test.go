@@ -1,6 +1,6 @@
 package depositsnapshot
 
-// TODO(theQRL/qrysm/issues/69)
+// TODO(now.youtrack.cloud/issue/TQ-4)
 /*
 import (
 	"encoding/hex"
@@ -11,11 +11,11 @@ import (
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/container/trie"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/container/trie"
+	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/testing/require"
 	"gopkg.in/yaml.v3"
 )
 

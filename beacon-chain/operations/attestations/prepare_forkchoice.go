@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	attaggregation "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation/aggregation/attestations"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/crypto/hash"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	attaggregation "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation/attestations"
+	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
 

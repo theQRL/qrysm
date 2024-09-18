@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 	"github.com/urfave/cli/v2"
 )
 

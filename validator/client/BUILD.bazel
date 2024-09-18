@@ -19,7 +19,7 @@ go_library(
         "validator.go",
         "wait_for_activation.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/validator/client",
+    importpath = "github.com/theQRL/qrysm/validator/client",
     visibility = [
         "//cmd:__subpackages__",
         "//validator:__subpackages__",

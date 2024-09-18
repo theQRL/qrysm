@@ -2,9 +2,9 @@ package signing
 
 import (
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // Domain returns the domain version for Dilithium private key to sign and verify.

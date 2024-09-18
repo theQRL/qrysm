@@ -3,7 +3,7 @@ package validator
 import (
 	"encoding/json"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
 )
 
 type AggregateAttestationResponse struct {

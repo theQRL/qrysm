@@ -6,15 +6,15 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/beacon-chain/core/time"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 func TestBlockSignature(t *testing.T) {

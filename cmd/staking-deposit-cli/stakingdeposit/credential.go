@@ -9,17 +9,17 @@ import (
 	"time"
 
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/config"
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit/keyhandling"
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit/keyhandling/keyderivation"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/config"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/misc"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/stakingdeposit/keyhandling"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/stakingdeposit/keyhandling/keyderivation"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/hash"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
 )
 
 type Credential struct {

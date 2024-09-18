@@ -12,12 +12,12 @@ import (
 
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/beacon"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 	"github.com/urfave/cli/v2"
 )
 

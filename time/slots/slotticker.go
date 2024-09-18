@@ -4,9 +4,9 @@ package slots
 import (
 	"time"
 
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	qrysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	qrysmTime "github.com/theQRL/qrysm/time"
 )
 
 // The Ticker interface defines a type which can expose a

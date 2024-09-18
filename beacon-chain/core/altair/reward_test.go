@@ -4,13 +4,13 @@ import (
 	"math"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/core/altair"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func Test_BaseReward(t *testing.T) {

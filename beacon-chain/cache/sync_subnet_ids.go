@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"github.com/patrickmn/go-cache"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/container/slice"
-	"github.com/theQRL/qrysm/v4/crypto/rand"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/container/slice"
+	"github.com/theQRL/qrysm/crypto/rand"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 )
 
 type syncSubnetIDs struct {

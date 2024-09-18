@@ -9,12 +9,12 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/beacon"
-	"github.com/theQRL/qrysm/v4/config/params"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
+	"github.com/theQRL/qrysm/config/params"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
 )
 
 func TestComputeWaitElements_LastRecvTimeZero(t *testing.T) {

@@ -3,8 +3,8 @@ package kv
 import (
 	"context"
 
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 )

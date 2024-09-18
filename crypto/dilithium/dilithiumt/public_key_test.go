@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium/dilithiumt"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/crypto/dilithium/dilithiumt"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestPublicKeyFromBytes(t *testing.T) {

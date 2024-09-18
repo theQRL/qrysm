@@ -2,7 +2,7 @@
 package operation
 
 import (
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 const (

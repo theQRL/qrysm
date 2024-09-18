@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	slashertypes "github.com/theQRL/qrysm/v4/beacon-chain/slasher/types"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	slashertypes "github.com/theQRL/qrysm/beacon-chain/slasher/types"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

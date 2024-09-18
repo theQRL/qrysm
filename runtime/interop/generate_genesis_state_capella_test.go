@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/container/trie"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/container/trie"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestGenerateGenesisStateCapella(t *testing.T) {

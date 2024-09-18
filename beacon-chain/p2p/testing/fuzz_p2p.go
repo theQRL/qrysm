@@ -10,10 +10,10 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/theQRL/go-zond/p2p/enr"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/metadata"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/metadata"
 	"google.golang.org/protobuf/proto"
 )
 

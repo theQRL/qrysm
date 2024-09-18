@@ -5,13 +5,13 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/ptypes/empty"
-	mockP2p "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	mockP2p "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
-// TODO(rgeraldes24): fix unit test: fails sometimes
+// TODO(now.youtrack.cloud/issue/TQ-18): fails sometimes
 /*
 func TestDebugServer_GetPeer(t *testing.T) {
 	peersProvider := &mockP2p.MockPeersProvider{}

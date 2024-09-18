@@ -7,7 +7,7 @@ import (
 
 	"contrib.go.opencensus.io/exporter/jaeger"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/runtime/version"
 	"go.opencensus.io/trace"
 )
 

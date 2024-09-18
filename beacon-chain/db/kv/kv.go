@@ -14,11 +14,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	prombolt "github.com/prysmaticlabs/prombbolt"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db/iface"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/beacon-chain/db/iface"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/io/file"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -72,7 +72,7 @@ var BlockCacheSize = int64(1 << 21)
 
 // blockedBuckets represents the buckets that we want to restrict
 // from our metrics fetching for performance reasons. For a detailed
-// summary, it can be read in https://github.com/theQRL/qrysm/issues/8274.
+// summary, it can be read in https://github.com/prysmaticlabs/prysm/issues/8274.
 var blockedBuckets = [][]byte{
 	blocksBucket,
 	stateSummaryBucket,
@@ -274,7 +274,7 @@ func (s *Store) setupBlockStorageType(ctx context.Context) error {
 	// If the user wants to save full execution payloads but their database is saving blinded blocks only,
 	// we then throw an error as the node should not start.
 	if saveFull && saveBlinded {
-		// TODO(theQRL/qrysm/issues/67)
+		// TODO(now.youtrack.cloud/issue/TQ-1)
 		return fmt.Errorf(
 			"cannot use the %s flag with this existing database, as it has already been initialized to only store "+
 				"execution payload headers (aka blinded beacon blocks). If you want to use this flag, you must re-sync your node with a fresh "+

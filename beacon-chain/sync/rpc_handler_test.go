@@ -7,9 +7,9 @@ import (
 
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
-	p2ptest "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	p2ptest "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 type rpcHandlerTest struct {

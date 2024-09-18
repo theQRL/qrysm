@@ -3,7 +3,7 @@ package validator
 import (
 	"bytes"
 
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 type proposerSyncContributions []*zond.SyncCommitteeContribution

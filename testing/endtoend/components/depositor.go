@@ -14,14 +14,14 @@ import (
 	"github.com/theQRL/go-zond/common"
 	gzondtypes "github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/zondclient"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	contracts "github.com/theQRL/qrysm/v4/contracts/deposit"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	contracts "github.com/theQRL/qrysm/contracts/deposit"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
+	"github.com/theQRL/qrysm/testing/endtoend/types"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 var gweiPerEth = big.NewInt(int64(params.BeaconConfig().GweiPerEth))

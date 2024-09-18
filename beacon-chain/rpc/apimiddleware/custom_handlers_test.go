@@ -11,12 +11,12 @@ import (
 	"time"
 
 	"github.com/r3labs/sse/v2"
-	"github.com/theQRL/qrysm/v4/api"
-	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
-	"github.com/theQRL/qrysm/v4/api/grpc"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/events"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/api"
+	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
+	"github.com/theQRL/qrysm/api/grpc"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/events"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 type testSSZResponseJson struct {

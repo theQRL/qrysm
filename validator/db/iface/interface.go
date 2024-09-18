@@ -5,12 +5,12 @@ import (
 	"context"
 	"io"
 
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	validatorServiceConfig "github.com/theQRL/qrysm/v4/config/validator/service"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/monitoring/backup"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/validator/db/kv"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	validatorServiceConfig "github.com/theQRL/qrysm/config/validator/service"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/monitoring/backup"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/validator/db/kv"
 )
 
 // Ensure the kv store implements the interface.

@@ -7,7 +7,7 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
 )
 
 var _ pubsub.SubscriptionFilter = (*Service)(nil)

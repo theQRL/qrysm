@@ -5,7 +5,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 )

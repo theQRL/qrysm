@@ -6,10 +6,10 @@ import (
 	"time"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
-	"github.com/theQRL/qrysm/v4/network/forks"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/network/forks"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestSubTopicHandler_CRUD(t *testing.T) {

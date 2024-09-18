@@ -2,10 +2,10 @@ package stateutil
 
 import (
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/container/trie"
-	"github.com/theQRL/qrysm/v4/crypto/hash/htr"
-	"github.com/theQRL/qrysm/v4/encoding/ssz"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/container/trie"
+	"github.com/theQRL/qrysm/crypto/hash/htr"
+	"github.com/theQRL/qrysm/encoding/ssz"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // SyncCommitteeRoot computes the HashTreeRoot Merkleization of a committee root.

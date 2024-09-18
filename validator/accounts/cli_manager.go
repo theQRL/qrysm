@@ -5,14 +5,14 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	grpcutil "github.com/theQRL/qrysm/v4/api/grpc"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	iface "github.com/theQRL/qrysm/v4/validator/client/iface"
-	nodeClientFactory "github.com/theQRL/qrysm/v4/validator/client/node-client-factory"
-	validatorClientFactory "github.com/theQRL/qrysm/v4/validator/client/validator-client-factory"
-	validatorHelpers "github.com/theQRL/qrysm/v4/validator/helpers"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	grpcutil "github.com/theQRL/qrysm/api/grpc"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	iface "github.com/theQRL/qrysm/validator/client/iface"
+	nodeClientFactory "github.com/theQRL/qrysm/validator/client/node-client-factory"
+	validatorClientFactory "github.com/theQRL/qrysm/validator/client/validator-client-factory"
+	validatorHelpers "github.com/theQRL/qrysm/validator/helpers"
+	"github.com/theQRL/qrysm/validator/keymanager"
 	"google.golang.org/grpc"
 )
 

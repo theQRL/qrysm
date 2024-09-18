@@ -1,9 +1,9 @@
 package mock
 
 import (
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // PoolMock is a fake implementation of PoolManager.

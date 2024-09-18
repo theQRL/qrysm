@@ -7,16 +7,16 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/async/event"
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
-	statefeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/state"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/async/event"
+	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/beacon-chain/core/feed"
+	"github.com/theQRL/qrysm/beacon-chain/core/feed/operation"
+	statefeed "github.com/theQRL/qrysm/beacon-chain/core/feed/state"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 // Error when the context is closed while waiting for sync.

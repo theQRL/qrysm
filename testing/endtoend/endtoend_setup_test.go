@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/config/params"
-	ev "github.com/theQRL/qrysm/v4/testing/endtoend/evaluators"
-	e2eParams "github.com/theQRL/qrysm/v4/testing/endtoend/params"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/config/params"
+	ev "github.com/theQRL/qrysm/testing/endtoend/evaluators"
+	e2eParams "github.com/theQRL/qrysm/testing/endtoend/params"
+	"github.com/theQRL/qrysm/testing/endtoend/types"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func e2eMinimal(t *testing.T, v int, cfgo ...types.E2EConfigOpt) *testRunner {

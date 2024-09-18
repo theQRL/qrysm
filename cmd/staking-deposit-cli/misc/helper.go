@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
 )
 
 func StrSeedToBinSeed(strSeed string) [field_params.DilithiumSeedLength]uint8 {

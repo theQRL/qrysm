@@ -3,7 +3,7 @@ load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["filter.go"],
-    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/db/filters",
+    importpath = "github.com/theQRL/qrysm/beacon-chain/db/filters",
     visibility = [
         "//beacon-chain:__subpackages__",
         "//tools:__subpackages__",

@@ -5,14 +5,14 @@ import (
 	"testing"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/testutil"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/proto/migration"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/testutil"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/proto/migration"
+	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 	"google.golang.org/grpc"
 )
 

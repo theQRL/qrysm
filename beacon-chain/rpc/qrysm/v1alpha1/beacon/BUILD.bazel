@@ -13,7 +13,7 @@ go_library(
         "slashings.go",
         "validators.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/rpc/qrysm/v1alpha1/beacon",
+    importpath = "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/v1alpha1/beacon",
     visibility = ["//beacon-chain:__subpackages__"],
     deps = [
         "//api/pagination:go_default_library",

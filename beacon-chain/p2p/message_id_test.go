@@ -6,12 +6,12 @@ import (
 
 	"github.com/golang/snappy"
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestMessageIDFunction_HashesCorrectlyCapella(t *testing.T) {

@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
 )
 
 // canUpdateAttestedValidator returns true if the validator is tracked and if the

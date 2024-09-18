@@ -4,9 +4,9 @@
 package debug
 
 import (
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/lookup"
+	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/lookup"
 )
 
 // Server defines a server implementation of the gRPC Beacon Chain service,

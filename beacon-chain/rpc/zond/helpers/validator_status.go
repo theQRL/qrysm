@@ -2,10 +2,10 @@ package helpers
 
 import (
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/consensus-types/validator"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/consensus-types/validator"
 )
 
 // ValidatorStatus returns a validator's status at the given epoch.

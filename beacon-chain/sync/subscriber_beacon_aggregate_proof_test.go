@@ -5,14 +5,14 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-bitfield"
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
-	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/beacon-chain/operations/attestations"
+	lruwrpr "github.com/theQRL/qrysm/cache/lru"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestBeaconAggregateProofSubscriber_CanSaveAggregatedAttestation(t *testing.T) {

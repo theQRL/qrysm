@@ -5,13 +5,13 @@ import (
 	"errors"
 	"time"
 
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	validatorserviceconfig "github.com/theQRL/qrysm/v4/config/validator/service"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	validatorserviceconfig "github.com/theQRL/qrysm/config/validator/service"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
+	"github.com/theQRL/qrysm/validator/keymanager"
 )
 
 // ErrConnectionIssue represents a connection problem.

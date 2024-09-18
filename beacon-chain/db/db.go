@@ -5,7 +5,7 @@ package db
 import (
 	"context"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/db/kv"
+	"github.com/theQRL/qrysm/beacon-chain/db/kv"
 )
 
 // NewDB initializes a new DB.

@@ -3,11 +3,11 @@ package util
 import (
 	"testing"
 
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	v1 "github.com/theQRL/qrysm/proto/zond/v1"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestHydrateAttestation(t *testing.T) {

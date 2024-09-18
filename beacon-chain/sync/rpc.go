@@ -8,11 +8,11 @@ import (
 	libp2pcore "github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/network"
 	ssz "github.com/prysmaticlabs/fastssz"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	p2ptypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	"github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	p2ptypes "github.com/theQRL/qrysm/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/monitoring/tracing"
+	"github.com/theQRL/qrysm/time"
 	"go.opencensus.io/trace"
 )
 

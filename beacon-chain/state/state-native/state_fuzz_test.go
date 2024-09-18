@@ -4,14 +4,14 @@ import (
 	"context"
 	"testing"
 
-	coreState "github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/rand"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	coreState "github.com/theQRL/qrysm/beacon-chain/core/transition"
+	native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/rand"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func FuzzCapellaStateHashTreeRoot(f *testing.F) {

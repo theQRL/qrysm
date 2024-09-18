@@ -20,7 +20,7 @@ package theqrl.zond.v1alpha1;
 
 import "protoc-gen-openapiv2/options/annotations.proto";
 
-option go_package = "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1;zond";
+option go_package = "github.com/theQRL/qrysm/proto/qrysm/v1alpha1;zond";
 
 option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
     info: {
@@ -36,7 +36,7 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
         url: "https://github.com/ethereum/consensus-specs";
         description: "Ethereum Consensus Specification on Github";
     };
-    // TODO(theQRL/qrysm/issues/67)
+    // TODO(now.youtrack.cloud/issue/TQ-1)
     host: "api.prylabs.net",
     schemes: HTTPS;
     schemes: WSS;

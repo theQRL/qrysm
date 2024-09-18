@@ -6,10 +6,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/validator"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/validator"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
 )
 
 // ToSettings converts struct to ProposerSettings

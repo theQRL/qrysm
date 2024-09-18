@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-bitfield"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func Test_CapellaToV1Alpha1SignedBlock(t *testing.T) {

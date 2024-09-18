@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	qrysmTime "github.com/theQRL/qrysm/v4/time"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/hash"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmTime "github.com/theQRL/qrysm/time"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 var (

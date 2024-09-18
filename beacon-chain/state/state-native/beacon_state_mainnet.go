@@ -7,14 +7,14 @@ import (
 	"sync"
 
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/fieldtrie"
-	customtypes "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/custom-types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/state/fieldtrie"
+	customtypes "github.com/theQRL/qrysm/beacon-chain/state/state-native/custom-types"
+	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
+	"github.com/theQRL/qrysm/beacon-chain/state/stateutil"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // BeaconState defines a struct containing utilities for the Zond Beacon Chain state, defining

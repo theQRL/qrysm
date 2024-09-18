@@ -44,7 +44,7 @@ if (Test-Path env:USE_QRYSM_VERSION) {
 }
 else {
     try {
-        # TODO(theQRL/qrysm/issues/67)
+        # TODO(now.youtrack.cloud/issue/TQ-1)
         #$response = Invoke-WebRequest -Uri "https://prysmaticlabs.com/releases/latest";
         #$version = $response.Content.Trim();
         $version = "v0.1.1";
@@ -70,7 +70,7 @@ else {
     try {
         Write-Host "Downloading $fileName" -ForegroundColor Green;
         
-        # TODO(theQRL/qrysm/issues/67)
+        # TODO(now.youtrack.cloud/issue/TQ-1)
         #Invoke-WebRequest -Uri "https://prysmaticlabs.com/releases/$fileName" -OutFile "$folderBin";
         #Invoke-WebRequest -Uri "https://prysmaticlabs.com/releases/$fileName.sha256" -OutFile "$folderBin.sha256";
         #Invoke-WebRequest -Uri "https://prysmaticlabs.com/releases/$fileName.sig" -OutFile "$folderBin.sig";

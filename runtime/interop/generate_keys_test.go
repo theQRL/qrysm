@@ -8,9 +8,9 @@ import (
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/go-yaml/yaml"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/runtime/interop"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/runtime/interop"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 type TestCase struct {

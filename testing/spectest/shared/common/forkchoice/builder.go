@@ -8,14 +8,14 @@ import (
 	"time"
 
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/beacon-chain/execution"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 type Builder struct {

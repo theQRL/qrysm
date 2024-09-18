@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
+	"github.com/theQRL/qrysm/validator/accounts/iface"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/keymanager/local"
 )
 
 // WalletCreate creates wallet specified by configuration options.

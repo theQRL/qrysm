@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/components"
-	e2eparams "github.com/theQRL/qrysm/v4/testing/endtoend/params"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/testing/endtoend/components"
+	e2eparams "github.com/theQRL/qrysm/testing/endtoend/params"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestWeb3RemoteSigner_StartsAndReturnsPublicKeys(t *testing.T) {

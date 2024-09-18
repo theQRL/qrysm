@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 func Test_uint64FromString(t *testing.T) {

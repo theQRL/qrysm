@@ -39,7 +39,7 @@ go_library(
         "//config:mainnet": ["beacon_state_mainnet.go"],
         "//config:minimal": ["beacon_state_minimal.go"],
     }),
-    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native",
+    importpath = "github.com/theQRL/qrysm/beacon-chain/state/state-native",
     visibility = ["//visibility:public"],
     deps = [
         "//beacon-chain/core/time:go_default_library",

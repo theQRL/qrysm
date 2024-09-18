@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/qrysm/v4/encoding/ssz"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/encoding/ssz"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 const merkleizingListLimitError = "merkleizing list that is too large, over limit"

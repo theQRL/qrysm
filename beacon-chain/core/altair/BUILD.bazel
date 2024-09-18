@@ -12,7 +12,7 @@ go_library(
         "sync_committee.go",
         "transition.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/core/altair",
+    importpath = "github.com/theQRL/qrysm/beacon-chain/core/altair",
     visibility = ["//visibility:public"],
     deps = [
         "//beacon-chain/core/blocks:go_default_library",

@@ -5,19 +5,19 @@ import (
 	"testing"
 	"time"
 
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	dbtest "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	p2pt "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	dbtest "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	p2pt "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
-// TODO(theQRL/qrysm/issues/76)
+// TODO(now.youtrack.cloud/issue/TQ-15)
 /*
 func TestService_roundRobinSync(t *testing.T) {
 	currentPeriod := blockLimiterPeriod
@@ -499,7 +499,7 @@ func TestService_processBlockBatch(t *testing.T) {
 	})
 }
 
-// TODO(theQRL/qrysm/issues/76)
+// TODO(now.youtrack.cloud/issue/TQ-15)
 /*
 func TestService_blockProviderScoring(t *testing.T) {
 	currentPeriod := blockLimiterPeriod

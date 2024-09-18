@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/qrysm/v4/config/params"
-	aggtesting "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation/aggregation/testing"
+	"github.com/theQRL/qrysm/config/params"
+	aggtesting "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation/testing"
 )
 
 func BenchmarkMaxCoverProblem_MaxCover(b *testing.B) {

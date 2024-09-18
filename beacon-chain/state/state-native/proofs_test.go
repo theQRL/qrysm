@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-zond/common/hexutil"
-	statenative "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/theQRL/qrysm/v4/container/trie"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	statenative "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/container/trie"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestBeaconStateMerkleProofs_capella(t *testing.T) {

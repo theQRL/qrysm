@@ -7,26 +7,26 @@ import (
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-zond/common"
-	zondtypes "github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
-	mockExecution "github.com/theQRL/qrysm/v4/beacon-chain/execution/testing"
-	forkchoicetypes "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/types"
-	bstate "github.com/theQRL/qrysm/v4/beacon-chain/state"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/theQRL/qrysm/v4/config/features"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	consensusblocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	v1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	gzondtypes "github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/execution"
+	mockExecution "github.com/theQRL/qrysm/beacon-chain/execution/testing"
+	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
+	bstate "github.com/theQRL/qrysm/beacon-chain/state"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/config/features"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	consensusblocks "github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	v1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func Test_NotifyForkchoiceUpdate_GetPayloadAttrErrorCanContinue(t *testing.T) {
@@ -615,12 +615,12 @@ func Test_NotifyNewPayload(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			e := &mockExecution.EngineClient{ErrNewPayload: tt.newPayloadErr, BlockByHashMap: map[[32]byte]*v1.ExecutionBlock{}}
 			e.BlockByHashMap[[32]byte{'a'}] = &v1.ExecutionBlock{
-				Header: zondtypes.Header{
+				Header: gzondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("b")),
 				},
 			}
 			e.BlockByHashMap[[32]byte{'b'}] = &v1.ExecutionBlock{
-				Header: zondtypes.Header{
+				Header: gzondtypes.Header{
 					ParentHash: common.BytesToHash([]byte("3")),
 				},
 			}
@@ -664,12 +664,12 @@ func Test_NotifyNewPayload_SetOptimisticToValid(t *testing.T) {
 	require.NoError(t, err)
 	e := &mockExecution.EngineClient{BlockByHashMap: map[[32]byte]*v1.ExecutionBlock{}}
 	e.BlockByHashMap[[32]byte{'a'}] = &v1.ExecutionBlock{
-		Header: zondtypes.Header{
+		Header: gzondtypes.Header{
 			ParentHash: common.BytesToHash([]byte("b")),
 		},
 	}
 	e.BlockByHashMap[[32]byte{'b'}] = &v1.ExecutionBlock{
-		Header: zondtypes.Header{
+		Header: gzondtypes.Header{
 			ParentHash: common.BytesToHash([]byte("3")),
 		},
 	}

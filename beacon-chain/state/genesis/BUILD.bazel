@@ -7,7 +7,7 @@ go_library(
         "genesis_mainnet.go",
     ],
     embedsrcs = ["mainnet.ssz.snappy"],
-    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/state/genesis",
+    importpath = "github.com/theQRL/qrysm/beacon-chain/state/genesis",
     visibility = ["//beacon-chain/db:__subpackages__"],
     deps = [
         "//beacon-chain/state:go_default_library",

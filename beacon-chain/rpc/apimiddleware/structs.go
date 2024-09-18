@@ -3,9 +3,9 @@ package apimiddleware
 import (
 	"strings"
 
-	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
 )
 
 //----------------

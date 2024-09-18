@@ -3,7 +3,7 @@ package params
 import (
 	"math"
 
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 )
 
 // MinimalSpecConfig retrieves the minimal config used in spec tests.

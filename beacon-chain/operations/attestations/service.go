@@ -9,8 +9,8 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
-	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
-	"github.com/theQRL/qrysm/v4/config/params"
+	lruwrpr "github.com/theQRL/qrysm/cache/lru"
+	"github.com/theQRL/qrysm/config/params"
 )
 
 var forkChoiceProcessedRootsSize = 1 << 16

@@ -2,11 +2,11 @@ package state_native
 
 import (
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
-	"github.com/theQRL/qrysm/v4/config/features"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
+	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
+	"github.com/theQRL/qrysm/beacon-chain/state/stateutil"
+	"github.com/theQRL/qrysm/config/features"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	consensus_types "github.com/theQRL/qrysm/consensus-types"
 )
 
 // SetStateRoots for the beacon state. Updates the state roots

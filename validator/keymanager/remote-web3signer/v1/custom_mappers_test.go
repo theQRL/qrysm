@@ -7,11 +7,11 @@ import (
 
 	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/go-qrllib/dilithium"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	v1 "github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer/v1"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer/v1/mock"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	v1 "github.com/theQRL/qrysm/validator/keymanager/remote-web3signer/v1"
+	"github.com/theQRL/qrysm/validator/keymanager/remote-web3signer/v1/mock"
 )
 
 func TestMapAggregateAndProof(t *testing.T) {

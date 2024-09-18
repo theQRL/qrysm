@@ -4,16 +4,16 @@ import (
 	"context"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestExecuteStateTransitionNoVerify_FullProcess(t *testing.T) {
@@ -126,7 +126,7 @@ func TestExecuteStateTransitionNoVerifySignature_CouldNotVerifyStateRoot(t *test
 	require.ErrorContains(t, "could not validate state root", err)
 }
 
-// TODO(rgeraldes24): fix unit test: the createFullCapellaBlockWithOperations func works in a different way
+// TODO(now.youtrack.cloud/issue/TQ-18): the createFullCapellaBlockWithOperations func works in a different way
 // for the block slot. We need to emulate the old version.
 /*
 func TestProcessBlockNoVerify_PassesProcessingConditions(t *testing.T) {
@@ -187,7 +187,7 @@ func TestProcessOperationsNoVerifyAttsSigsCapella_OK(t *testing.T) {
 	require.NoError(t, err)
 }
 
-// TODO(rgeraldes24): fix unit test
+// TODO(now.youtrack.cloud/issue/TQ-18)
 /*
 func TestCalculateStateRootAltair_OK(t *testing.T) {
 	beaconState, block := createFullCapellaBlockWithOperations(t)

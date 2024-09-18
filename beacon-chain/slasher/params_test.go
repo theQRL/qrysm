@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	ssz "github.com/prysmaticlabs/fastssz"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestDefaultParams(t *testing.T) {

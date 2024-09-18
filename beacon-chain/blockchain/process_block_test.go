@@ -11,29 +11,29 @@ import (
 
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
-	testDB "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
-	mockExecution "github.com/theQRL/qrysm/v4/beacon-chain/execution/testing"
-	doublylinkedtree "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
-	forkchoicetypes "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/features"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	consensusblocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
-	qrysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	testDB "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	"github.com/theQRL/qrysm/beacon-chain/execution"
+	mockExecution "github.com/theQRL/qrysm/beacon-chain/execution/testing"
+	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
+	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/features"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	consensusblocks "github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/runtime/version"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
+	qrysmTime "github.com/theQRL/qrysm/time"
 )
 
 func TestStore_OnBlockBatch(t *testing.T) {
@@ -536,7 +536,7 @@ func TestHandleEpochBoundary_UpdateFirstSlot(t *testing.T) {
 	require.NoError(t, service.handleEpochBoundary(ctx, s.Slot(), s, []byte{}))
 }
 
-// TODO(theQRL/qrysm/issues/79)
+// TODO(now.youtrack.cloud/issue/TQ-3)
 func TestOnBlock_CanFinalize_WithOnTick(t *testing.T) {
 	service, tr := minimalTestService(t)
 	ctx, fcs := tr.ctx, tr.fcs
@@ -588,7 +588,7 @@ func TestOnBlock_CanFinalize_WithOnTick(t *testing.T) {
 	require.Equal(t, f.Epoch, cp.Epoch)
 }
 
-// TODO(theQRL/qrysm/issues/79)
+// TODO(now.youtrack.cloud/issue/TQ-3)
 func TestOnBlock_CanFinalize(t *testing.T) {
 	service, tr := minimalTestService(t)
 	ctx := tr.ctx

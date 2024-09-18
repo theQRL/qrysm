@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestDecodeError(t *testing.T) {

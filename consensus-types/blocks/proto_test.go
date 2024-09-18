@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-bitfield"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/runtime/version"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 type fields struct {

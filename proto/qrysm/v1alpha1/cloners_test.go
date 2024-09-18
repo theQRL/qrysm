@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	v1alpha1 "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	v1alpha1 "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestCopyETH1Data(t *testing.T) {

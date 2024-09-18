@@ -25,7 +25,7 @@ go_library(
         "service.go",
         "weak_subjectivity_checks.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/blockchain",
+    importpath = "github.com/theQRL/qrysm/beacon-chain/blockchain",
     visibility = [
         "//beacon-chain:__subpackages__",
         "//cmd/beacon-chain:__subpackages__",

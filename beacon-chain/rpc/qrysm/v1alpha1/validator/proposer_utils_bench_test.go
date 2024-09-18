@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/qrysm/v4/config/params"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	aggtesting "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation/aggregation/testing"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/config/params"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	aggtesting "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation/testing"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func BenchmarkProposerAtts_sortByProfitability(b *testing.B) {

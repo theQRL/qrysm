@@ -5,11 +5,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/config/params"
-	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/config/params"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestVerifyRPCMappings(t *testing.T) {

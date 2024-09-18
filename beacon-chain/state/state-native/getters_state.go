@@ -2,11 +2,11 @@ package state_native
 
 import (
 	"github.com/pkg/errors"
-	customtypes "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/custom-types"
-	"github.com/theQRL/qrysm/v4/config/features"
-	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	customtypes "github.com/theQRL/qrysm/beacon-chain/state/state-native/custom-types"
+	"github.com/theQRL/qrysm/config/features"
+	consensus_types "github.com/theQRL/qrysm/consensus-types"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/runtime/version"
 )
 
 // ToProtoUnsafe returns the pointer value of the underlying

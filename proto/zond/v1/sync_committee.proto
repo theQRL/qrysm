@@ -18,7 +18,7 @@ package theqrl.zond.v1;
 import "proto/zond/ext/options.proto";
 
 option csharp_namespace = "TheQRL.Zond.V1";
-option go_package = "github.com/theQRL/qrysm/v4/proto/zond/v1";
+option go_package = "github.com/theQRL/qrysm/proto/zond/v1";
 option java_multiple_files = true;
 option java_outer_classname = "SyncCommitteeProto";
 option java_package = "org.theqrl.zond.v1";
@@ -36,13 +36,13 @@ message SyncCommittee {
 // Sync committee object to support light client.
 message SyncCommitteeMessage {
   // Slot to which this contribution pertains.
-  uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+  uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
 
   // 32 byte block root for this signature.
   bytes beacon_block_root = 2 [(theqrl.zond.ext.ssz_size) = "32"];
 
   // Index of the validator that produced this signature.
-  uint64 validator_index = 3 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
+  uint64 validator_index = 3 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.ValidatorIndex"];
 
   // Signature by the validator over the block root of `slot`.
   bytes signature = 4 [(theqrl.zond.ext.ssz_size) = "4595"];
@@ -54,7 +54,7 @@ message StateSyncCommitteesRequest {
   bytes state_id = 1;
 
   // The epoch to retrieve the committees of.
-  optional uint64 epoch = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+  optional uint64 epoch = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
 }
 
 message StateSyncCommitteesResponse {
@@ -65,12 +65,12 @@ message StateSyncCommitteesResponse {
 
 message SyncCommitteeValidators {
   // All of the validator indices in the current sync committee.
-  repeated uint64 validators = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
+  repeated uint64 validators = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.ValidatorIndex"];
 
   repeated SyncSubcommitteeValidators validator_aggregates = 2;
 }
 
 message SyncSubcommitteeValidators {
   // Subcommittee slices of the current sync committee.
-  repeated uint64 validators = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
+  repeated uint64 validators = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.ValidatorIndex"];
 }

@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	e "github.com/theQRL/qrysm/v4/beacon-chain/core/epoch"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/epoch/precompute"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	e "github.com/theQRL/qrysm/beacon-chain/core/epoch"
+	"github.com/theQRL/qrysm/beacon-chain/core/epoch/precompute"
+	"github.com/theQRL/qrysm/beacon-chain/state"
 	"go.opencensus.io/trace"
 )
 

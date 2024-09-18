@@ -3,7 +3,7 @@ load("@qrysm//tools/go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["flags.go"],
-    importpath = "github.com/theQRL/qrysm/v4/cmd/client-stats/flags",
+    importpath = "github.com/theQRL/qrysm/cmd/client-stats/flags",
     visibility = ["//visibility:public"],
     deps = ["@com_github_urfave_cli_v2//:go_default_library"],
 )

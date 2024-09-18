@@ -9,13 +9,13 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/api"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	http2 "github.com/theQRL/qrysm/v4/network/http"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/api"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	http2 "github.com/theQRL/qrysm/network/http"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/runtime/version"
 	"go.opencensus.io/trace"
 )
 
@@ -47,7 +47,7 @@ func (s *Server) ProduceBlockV3(w http.ResponseWriter, r *http.Request) {
 
 	var randaoReveal []byte
 	if rawSkipRandaoVerification == "true" {
-		// TODO(theQRL/qrysm/issues/74)
+		// TODO(now.youtrack.cloud/issue/TQ-10)
 		randaoReveal = primitives.PointAtInfinity
 	} else {
 		rr, err := shared.DecodeHexWithLength(rawRandaoReveal, field_params.DilithiumSignatureLength)

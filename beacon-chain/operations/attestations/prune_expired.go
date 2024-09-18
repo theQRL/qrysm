@@ -3,9 +3,9 @@ package attestations
 import (
 	"time"
 
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	qrysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	qrysmTime "github.com/theQRL/qrysm/time"
 )
 
 // pruneAttsPool prunes attestations pool on every slot interval.

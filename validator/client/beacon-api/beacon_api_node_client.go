@@ -9,9 +9,9 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/validator/client/iface"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/validator/client/iface"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

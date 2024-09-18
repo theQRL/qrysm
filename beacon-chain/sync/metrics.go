@@ -7,12 +7,12 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/config/params"
-	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/config/params"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 var (

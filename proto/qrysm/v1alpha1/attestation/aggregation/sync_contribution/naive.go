@@ -3,9 +3,9 @@ package sync_contribution
 import (
 	"fmt"
 
-	v1alpha1 "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation"
-	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation/aggregation"
+	v1alpha1 "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation"
 	"golang.org/x/exp/slices"
 )
 

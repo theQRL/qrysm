@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestStore_GenesisValidatorsRoot_ReadAndWrite(t *testing.T) {

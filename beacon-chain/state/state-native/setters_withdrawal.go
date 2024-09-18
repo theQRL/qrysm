@@ -1,8 +1,8 @@
 package state_native
 
 import (
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 // SetNextWithdrawalIndex sets the index that will be assigned to the next withdrawal.

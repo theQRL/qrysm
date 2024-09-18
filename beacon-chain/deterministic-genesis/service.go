@@ -9,17 +9,17 @@ import (
 	"os"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime"
-	"github.com/theQRL/qrysm/v4/runtime/interop"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/beacon-chain/execution"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/runtime"
+	"github.com/theQRL/qrysm/runtime/interop"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 var _ runtime.Service = (*Service)(nil)

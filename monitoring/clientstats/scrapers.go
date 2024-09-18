@@ -12,7 +12,7 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/prom2json"
 	log "github.com/sirupsen/logrus"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 type beaconNodeScraper struct {

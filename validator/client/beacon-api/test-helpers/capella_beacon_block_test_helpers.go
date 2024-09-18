@@ -1,10 +1,10 @@
 package test_helpers
 
 import (
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 func GenerateProtoCapellaBeaconBlock() *zondpb.BeaconBlockCapella {

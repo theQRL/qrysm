@@ -15,9 +15,9 @@ import (
 	"github.com/theQRL/go-zond/beacon/engine"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
-	pb "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/beacon-chain/execution"
+	pb "github.com/theQRL/qrysm/proto/engine/v1"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func FuzzForkChoiceResponse(f *testing.F) {

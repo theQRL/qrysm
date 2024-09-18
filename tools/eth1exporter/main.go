@@ -18,7 +18,7 @@ import (
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/zondclient"
-	_ "github.com/theQRL/qrysm/v4/runtime/maxprocs"
+	_ "github.com/theQRL/qrysm/runtime/maxprocs"
 )
 
 var (
@@ -30,7 +30,7 @@ var (
 
 var (
 	port = flag.Int("port", 9090, "Port to serve /metrics")
-	// TODO(theQRL/qrysm/issues/67)
+	// TODO(now.youtrack.cloud/issue/TQ-1)
 	web3URL         = flag.String("web3-provider", "https://goerli.prylabs.net", "Web3 URL to access information about ETH1")
 	prefix          = flag.String("prefix", "", "Metrics prefix.")
 	addressFilePath = flag.String("addresses", "", "File path to addresses text file.")

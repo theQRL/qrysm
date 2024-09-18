@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/theQRL/qrysm/v4/async/event"
+	"github.com/theQRL/qrysm/async/event"
 )
 
 // This example demonstrates how SubscriptionScope can be used to control the lifetime of

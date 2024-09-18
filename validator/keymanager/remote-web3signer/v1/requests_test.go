@@ -6,11 +6,11 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-zond/common/hexutil"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	v1 "github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer/v1"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer/v1/mock"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
+	"github.com/theQRL/qrysm/testing/require"
+	v1 "github.com/theQRL/qrysm/validator/keymanager/remote-web3signer/v1"
+	"github.com/theQRL/qrysm/validator/keymanager/remote-web3signer/v1/mock"
 )
 
 func TestGetAggregateAndProofSignRequest(t *testing.T) {

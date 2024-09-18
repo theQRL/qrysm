@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/config"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/config"
+	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
 )
 
 type DilithiumToExecutionChangeMessage struct {

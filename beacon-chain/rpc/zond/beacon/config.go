@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/network/forks"
-	zondpb "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/network/forks"
+	zondpb "github.com/theQRL/qrysm/proto/zond/v1"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

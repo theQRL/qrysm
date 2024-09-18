@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/time/mclock"
+	"github.com/theQRL/qrysm/time/mclock"
 )
 
 // waitQuotient is divided against the max backoff time, in order to have N requests based on the full

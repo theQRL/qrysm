@@ -2,9 +2,9 @@ package db
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/runtime/tos"
-	validatordb "github.com/theQRL/qrysm/v4/validator/db"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/runtime/tos"
+	validatordb "github.com/theQRL/qrysm/validator/db"
 	"github.com/urfave/cli/v2"
 )
 

@@ -1,15 +1,15 @@
 package blocks_test
 
-// TODO(theQRL/qrysm/issues/69)
+// TODO(now.youtrack.cloud/issue/TQ-4)
 /*
 import (
 	"os"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 // Beaconfuzz discovered an issue where a proposer slashing could be produced which would pass

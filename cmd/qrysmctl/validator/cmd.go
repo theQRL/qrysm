@@ -6,11 +6,11 @@ import (
 
 	"github.com/logrusorgru/aurora"
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/validator/accounts"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/runtime/tos"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/validator/accounts"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/runtime/tos"
 	"github.com/urfave/cli/v2"
 )
 
@@ -98,7 +98,7 @@ var Commands = []*cli.Command{
 					if !cliCtx.Bool(cmd.AcceptTosFlag.Name) || !cliCtx.Bool(ConfirmFlag.Name) {
 						fmt.Println(au.Red("===============IMPORTANT==============="))
 						fmt.Println(au.Red("Please read the following carefully"))
-						// TODO(theQRL/qrysm/issues/67)
+						// TODO(now.youtrack.cloud/issue/TQ-1)
 						fmt.Print("This action will allow the partial withdrawal of amounts over the 32 staked Quanta in your active validator balance. \n" +
 							"You will also be entitled to the full withdrawal of the entire validator balance if your validator has exited. \n" +
 							"Please navigate to our website (https://docs.prylabs.network/) and make sure you understand the full implications of setting your withdrawal address. \n")

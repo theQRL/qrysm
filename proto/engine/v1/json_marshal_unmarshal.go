@@ -9,11 +9,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
-	zondtypes "github.com/theQRL/go-zond/core/types"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	gzondtypes "github.com/theQRL/go-zond/core/types"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/runtime/version"
 )
 
 var errExecutionUnmarshal = errors.New("unable to unmarshal execution engine data")
@@ -31,10 +31,10 @@ func (b PayloadIDBytes) MarshalJSON() ([]byte, error) {
 // zomd_getBlockByNumber endpoints via JSON-RPC.
 type ExecutionBlock struct {
 	Version int
-	zondtypes.Header
-	Hash         common.Hash              `json:"hash"`
-	Transactions []*zondtypes.Transaction `json:"transactions"`
-	Withdrawals  []*Withdrawal            `json:"withdrawals"`
+	gzondtypes.Header
+	Hash         common.Hash               `json:"hash"`
+	Transactions []*gzondtypes.Transaction `json:"transactions"`
+	Withdrawals  []*Withdrawal             `json:"withdrawals"`
 }
 
 func (e *ExecutionBlock) MarshalJSON() ([]byte, error) {
@@ -55,7 +55,7 @@ func (e *ExecutionBlock) MarshalJSON() ([]byte, error) {
 
 func (e *ExecutionBlock) UnmarshalJSON(enc []byte) error {
 	type transactionsJson struct {
-		Transactions []*zondtypes.Transaction `json:"transactions"`
+		Transactions []*gzondtypes.Transaction `json:"transactions"`
 	}
 	type withdrawalsJson struct {
 		Withdrawals []*withdrawalJSON `json:"withdrawals"`
@@ -414,12 +414,6 @@ func (p *PayloadStatus) UnmarshalJSON(enc []byte) error {
 		p.ValidationError = *dec.ValidationError
 	}
 	return nil
-}
-
-type transitionConfigurationJSON struct {
-	TerminalTotalDifficulty *hexutil.Big   `json:"terminalTotalDifficulty"`
-	TerminalBlockHash       common.Hash    `json:"terminalBlockHash"`
-	TerminalBlockNumber     hexutil.Uint64 `json:"terminalBlockNumber"`
 }
 
 type forkchoiceStateJSON struct {

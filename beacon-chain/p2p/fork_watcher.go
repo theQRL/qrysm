@@ -1,8 +1,8 @@
 package p2p
 
 import (
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 // A background routine which listens for new and upcoming forks and

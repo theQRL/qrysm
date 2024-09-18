@@ -1,8 +1,8 @@
 package state_native
 
 import (
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
+	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
+	"github.com/theQRL/qrysm/beacon-chain/state/stateutil"
 )
 
 // SetPreviousParticipationBits for the beacon state. Updates the entire

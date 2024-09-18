@@ -16,11 +16,11 @@ import (
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/rpc"
 	"github.com/theQRL/go-zond/zondclient"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/crypto/keystore"
-	"github.com/theQRL/qrysm/v4/crypto/rand"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/crypto/keystore"
+	"github.com/theQRL/qrysm/crypto/rand"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -73,7 +73,8 @@ func (t *TransactionGenerator) Start(ctx context.Context) error {
 	// Broadcast Transactions every 3 blocks
 	txPeriod := time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second
 	ticker := time.NewTicker(txPeriod)
-	gasPrice := big.NewInt(1e11)
+	gasFeeCap := big.NewInt(1e11)
+	gasTipCap := big.NewInt(3e7)
 	key, err := dilithium.NewDilithiumFromSeed(bytesutil.ToBytes48(testKey.SecretKey.Marshal()))
 	if err != nil {
 		return fmt.Errorf("failed to generate the deposit key from the signing seed. reason: %v", err)
@@ -85,7 +86,7 @@ func (t *TransactionGenerator) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			err := SendTransaction(client, key, f, gasPrice, addr.String(), 100, false)
+			err := SendTransaction(client, key, f, gasFeeCap, gasTipCap, addr.String(), 100, false)
 			if err != nil {
 				return err
 			}
@@ -98,7 +99,7 @@ func (s *TransactionGenerator) Started() <-chan struct{} {
 	return s.started
 }
 
-func SendTransaction(client *rpc.Client, key *dilithium.Dilithium, f *filler.Filler, gasPrice *big.Int, addr string, N uint64, al bool) error {
+func SendTransaction(client *rpc.Client, key *dilithium.Dilithium, f *filler.Filler, gasFeeCap *big.Int, gasTipCap *big.Int, addr string, N uint64, al bool) error {
 	backend := zondclient.NewClient(client)
 
 	sender := common.HexToAddress(addr)
@@ -110,18 +111,26 @@ func SendTransaction(client *rpc.Client, key *dilithium.Dilithium, f *filler.Fil
 	if err != nil {
 		return err
 	}
-	expectedPrice, err := backend.SuggestGasPrice(context.Background())
+	expectedGasFeeCap, err := backend.SuggestGasPrice(context.Background())
 	if err != nil {
 		return err
 	}
-	if expectedPrice.Cmp(gasPrice) > 0 {
-		gasPrice = expectedPrice
+	if expectedGasFeeCap.Cmp(gasFeeCap) > 0 {
+		gasFeeCap = expectedGasFeeCap
 	}
+	expectedGasTipCap, err := backend.SuggestGasTipCap(context.Background())
+	if err != nil {
+		return err
+	}
+	if expectedGasTipCap.Cmp(gasTipCap) > 0 {
+		gasTipCap = expectedGasTipCap
+	}
+
 	g, _ := errgroup.WithContext(context.Background())
 	for i := uint64(0); i < N; i++ {
 		index := i
 		g.Go(func() error {
-			tx, err := txfuzz.RandomValidTx(client, f, sender, nonce+index, gasPrice, nil, al)
+			tx, err := txfuzz.RandomValidTx(client, f, sender, nonce+index, gasFeeCap, gasTipCap, nil, al)
 			if err != nil {
 				// In the event the transaction constructed is not valid, we continue with the routine
 				// rather than complete stop it.

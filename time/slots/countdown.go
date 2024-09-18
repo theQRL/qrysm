@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/config/params"
-	qrysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/config/params"
+	qrysmTime "github.com/theQRL/qrysm/time"
 )
 
 var log = logrus.WithField("prefix", "slotutil")

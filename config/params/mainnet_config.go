@@ -4,8 +4,8 @@ import (
 	"math"
 	"time"
 
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 )
 
 // MainnetConfig returns the configuration to be used in the main network.
@@ -36,7 +36,7 @@ var mainnetNetworkConfig = &NetworkConfig{
 	MinimumPeersInSubnetSearch:      20,
 	ContractDeploymentBlock:         11184524, // Note: contract was deployed in block 11052984 but no transactions were sent until 11184524.
 	BootstrapNodes:                  []string{
-		// TODO(theQRL/qrysm/issues/61)
+		// TODO(now.youtrack.cloud/issue/TQ-13)
 		// "enr:-Ku4QImhMc1z8yCiNJ1TyUxdcfNucje3BGwEHzodEZUan8PherEo4sF7pPHPSIB1NNuSg5fZy7qFsjmUKs2ea1Whi0EBh2F0dG5ldHOIAAAAAAAAAACEZXRoMpD1pf1CAAAAAP__________gmlkgnY0gmlwhBLf22SJc2VjcDI1NmsxoQOVphkDqal4QzPMksc5wnpuC3gvSC8AfbFOnZY_On34wIN1ZHCCIyg",
 		// "enr:-Ku4QP2xDnEtUXIjzJ_DhlCRN9SN99RYQPJL92TMlSv7U5C1YnYLjwOQHgZIUXw6c-BvRg2Yc2QsZxxoS_pPRVe0yK8Bh2F0dG5ldHOIAAAAAAAAAACEZXRoMpD1pf1CAAAAAP__________gmlkgnY0gmlwhBLf22SJc2VjcDI1NmsxoQMeFF5GrS7UZpAH2Ly84aLK-TyvH-dRo0JM1i8yygH50YN1ZHCCJxA",
 	},
@@ -87,7 +87,7 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	MinValidatorWithdrawabilityDelay: 16,   // TODO (cyyber) : Re-evaluate the value
 	ShardCommitteePeriod:             16,   // TODO (cyyber) : Re-evaluate the value
 	MinEpochsToInactivityPenalty:     4,
-	Eth1FollowDistance:               0, // TODO(theQRL/qrysm/issues/66)
+	Eth1FollowDistance:               0, // TODO(now.youtrack.cloud/issue/TQ-5)
 
 	// Fork choice algorithm constants.
 	ProposerScoreBoost:              40,
@@ -109,8 +109,8 @@ var mainnetBeaconConfig = &BeaconChainConfig{
 	// order to vote on the correct eth1 blocks.
 	//
 	// Additional context: https://github.com/ethereum/consensus-specs/issues/2132
-	// Bug prompting this change: https://github.com/theQRL/qrysm/issues/7856
-	// Future optimization: https://github.com/theQRL/qrysm/issues/7739
+	// Bug prompting this change: https://github.com/prysmaticlabs/prysm/issues/7856
+	// Future optimization: https://github.com/prysmaticlabs/prysm/issues/7739
 	SecondsPerETH1Block: 60,
 
 	// State list length constants.

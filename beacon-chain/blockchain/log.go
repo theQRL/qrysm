@@ -7,15 +7,15 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/config/params"
-	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	qrysmTime "github.com/theQRL/qrysm/v4/time"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/config/params"
+	consensus_types "github.com/theQRL/qrysm/consensus-types"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/runtime/version"
+	qrysmTime "github.com/theQRL/qrysm/time"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 var log = logrus.WithField("prefix", "blockchain")

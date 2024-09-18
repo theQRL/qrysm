@@ -10,13 +10,13 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/io/prompt"
-	"github.com/theQRL/qrysm/v4/validator/accounts/petnames"
-	"github.com/theQRL/qrysm/v4/validator/accounts/userprompt"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/io/prompt"
+	"github.com/theQRL/qrysm/validator/accounts/petnames"
+	"github.com/theQRL/qrysm/validator/accounts/userprompt"
 	"github.com/urfave/cli/v2"
 )
 
@@ -205,8 +205,8 @@ func FilterExitAccountsFromUserInput(
 	promptHeader := au.Red("===============IMPORTANT===============")
 	promptDescription := "Please navigate to the following website and make sure you understand the current implications " +
 		"of a voluntary exit before making the final decision:"
-	// TODO(theQRL/qrysm/issues/57)
-	// TODO(theQRL/qrysm/issues/67)
+	// TODO(now.youtrack.cloud/issue/TQ-6)
+	// TODO(now.youtrack.cloud/issue/TQ-1)
 	promptURL := au.Blue("https://docs.prylabs.network/docs/wallet/exiting-a-validator")
 	promptQuestion := "If you still want to continue with the voluntary exit, please input a phrase found at the above URL"
 	promptText := fmt.Sprintf("%s\n%s\n%s\n%s", promptHeader, promptDescription, promptURL, promptQuestion)

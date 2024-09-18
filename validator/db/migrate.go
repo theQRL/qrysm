@@ -5,9 +5,9 @@ import (
 	"path"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/validator/db/kv"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/validator/db/kv"
 	"github.com/urfave/cli/v2"
 )
 

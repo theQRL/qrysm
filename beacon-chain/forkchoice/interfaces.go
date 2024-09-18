@@ -3,11 +3,11 @@ package forkchoice
 import (
 	"context"
 
-	forkchoicetypes "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	v1 "github.com/theQRL/qrysm/proto/zond/v1"
 )
 
 // BalancesByRooter is a handler to obtain the effective balances of the state

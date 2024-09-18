@@ -6,7 +6,7 @@ go_library(
         "contribution.go",
         "naive.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation/aggregation/sync_contribution",
+    importpath = "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation/sync_contribution",
     visibility = ["//visibility:public"],
     deps = [
         "//crypto/dilithium:go_default_library",

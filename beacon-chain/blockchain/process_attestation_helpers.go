@@ -6,16 +6,16 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/async"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	forkchoicetypes "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/async"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition"
+	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 // getAttPreState retrieves the att pre state by either from the cache or the DB.

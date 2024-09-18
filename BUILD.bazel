@@ -11,7 +11,7 @@ exports_files([
     "LICENSE.md",
 ])
 
-# gazelle:prefix github.com/theQRL/qrysm/v4
+# gazelle:prefix github.com/theQRL/qrysm
 # gazelle:map_kind go_library go_library @qrysm//tools/go:def.bzl
 # gazelle:map_kind go_test go_test @qrysm//tools/go:def.bzl
 # gazelle:map_kind go_repository go_repository @qrysm//tools/go:def.bzl

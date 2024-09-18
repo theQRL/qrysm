@@ -2,13 +2,13 @@ package validator
 
 import (
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/async/event"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
-	blockfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/block"
-	statefeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/state"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/async/event"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/core/feed"
+	blockfeed "github.com/theQRL/qrysm/beacon-chain/core/feed/block"
+	statefeed "github.com/theQRL/qrysm/beacon-chain/core/feed/state"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/runtime/version"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

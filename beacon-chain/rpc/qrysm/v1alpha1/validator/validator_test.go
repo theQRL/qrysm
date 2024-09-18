@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/config/params"
 )
 
 func TestMain(m *testing.M) {

@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/config/params"
 )
 
 // Test cases can be executed in an arbitrary order. TestOverrideBeaconConfigTestTeardown checks

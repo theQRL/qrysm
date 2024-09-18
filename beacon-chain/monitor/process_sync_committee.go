@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // processSyncCommitteeContribution logs the event when tracked validators' aggregated sync contribution has been processed.

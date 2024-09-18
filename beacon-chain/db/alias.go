@@ -1,6 +1,6 @@
 package db
 
-import "github.com/theQRL/qrysm/v4/beacon-chain/db/iface"
+import "github.com/theQRL/qrysm/beacon-chain/db/iface"
 
 // ReadOnlyDatabase exposes Qrysm's Zond data backend for read access only, no information about
 // head info. For head info, use github.com/theQRL/qrysm/blockchain.HeadFetcher.

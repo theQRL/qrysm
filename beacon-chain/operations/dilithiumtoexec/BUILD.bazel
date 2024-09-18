@@ -6,7 +6,7 @@ go_library(
         "doc.go",
         "pool.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/operations/dilithiumtoexec",
+    importpath = "github.com/theQRL/qrysm/beacon-chain/operations/dilithiumtoexec",
     visibility = [
         "//beacon-chain:__subpackages__",
     ],

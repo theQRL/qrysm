@@ -6,11 +6,11 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
-	customtypes "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/custom-types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
-	pmath "github.com/theQRL/qrysm/v4/math"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	customtypes "github.com/theQRL/qrysm/beacon-chain/state/state-native/custom-types"
+	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
+	"github.com/theQRL/qrysm/beacon-chain/state/stateutil"
+	pmath "github.com/theQRL/qrysm/math"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // ProofFromMerkleLayers creates a proof starting at the leaf index of the state Merkle layers.

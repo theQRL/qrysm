@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 func (c beaconApiValidatorClient) proposeAttestation(ctx context.Context, attestation *zondpb.Attestation) (*zondpb.AttestResponse, error) {

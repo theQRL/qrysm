@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/theQRL/qrysm/v4/proto/zond/service"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/params"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
-	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	"github.com/theQRL/qrysm/proto/zond/service"
+	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
+	"github.com/theQRL/qrysm/testing/endtoend/params"
+	"github.com/theQRL/qrysm/testing/endtoend/policies"
+	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
 	"google.golang.org/grpc"
 )
 

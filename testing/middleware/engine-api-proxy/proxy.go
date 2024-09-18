@@ -18,7 +18,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/network"
+	"github.com/theQRL/qrysm/network"
 )
 
 var (

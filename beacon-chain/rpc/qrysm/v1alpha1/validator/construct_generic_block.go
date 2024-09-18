@@ -3,9 +3,9 @@ package validator
 import (
 	"fmt"
 
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/runtime/version"
 	"google.golang.org/protobuf/proto"
 )
 

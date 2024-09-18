@@ -4,9 +4,9 @@ import (
 	"io"
 
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/theQRL/qrysm/v4/async/event"
-	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
-	"github.com/theQRL/qrysm/v4/crypto/rand"
+	"github.com/theQRL/qrysm/async/event"
+	lruwrpr "github.com/theQRL/qrysm/cache/lru"
+	"github.com/theQRL/qrysm/crypto/rand"
 )
 
 const (

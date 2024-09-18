@@ -8,11 +8,11 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
-	test_helpers "github.com/theQRL/qrysm/v4/validator/client/beacon-api/test-helpers"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
+	test_helpers "github.com/theQRL/qrysm/validator/client/beacon-api/test-helpers"
 )
 
 func TestProposeAttestation(t *testing.T) {

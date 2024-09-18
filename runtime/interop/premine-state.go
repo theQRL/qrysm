@@ -5,23 +5,23 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
-	b "github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/container/trie"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/beacon-chain/core/altair"
+	b "github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/beacon-chain/state/stateutil"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/container/trie"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/runtime/version"
 )
 
 var errUnsupportedVersion = errors.New("schema version not supported by PremineGenesisConfig")
@@ -30,7 +30,7 @@ type PremineGenesisConfig struct {
 	GenesisTime     uint64
 	NVals           uint64
 	PregenesisCreds uint64
-	Version         int          // as in "github.com/theQRL/qrysm/v4/runtime/version"
+	Version         int          // as in "github.com/theQRL/qrysm/runtime/version"
 	GB              *types.Block // gzond genesis block
 	depositEntries  *depositEntries
 }

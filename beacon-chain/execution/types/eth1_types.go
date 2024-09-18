@@ -7,7 +7,7 @@ import (
 
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 )
 
 // HeaderInfo specifies the block header information in the Zond execution layer.

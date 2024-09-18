@@ -8,7 +8,7 @@ import (
 	"github.com/minio/sha256-simd"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 )
 
 const bytesPerChunk = 32

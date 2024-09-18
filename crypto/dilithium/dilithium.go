@@ -1,8 +1,8 @@
 package dilithium
 
 import (
-	"github.com/theQRL/qrysm/v4/crypto/dilithium/common"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium/dilithiumt"
+	"github.com/theQRL/qrysm/crypto/dilithium/common"
+	"github.com/theQRL/qrysm/crypto/dilithium/dilithiumt"
 )
 
 // SecretKeyFromBytes creates a Dilithium private key from a seed.

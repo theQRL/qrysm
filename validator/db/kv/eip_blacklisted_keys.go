@@ -3,7 +3,7 @@ package kv
 import (
 	"context"
 
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 )

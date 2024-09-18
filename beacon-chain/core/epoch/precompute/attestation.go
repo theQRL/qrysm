@@ -1,7 +1,7 @@
 package precompute
 
 import (
-	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/config/params"
 )
 
 // UpdateBalance updates pre computed balance store.

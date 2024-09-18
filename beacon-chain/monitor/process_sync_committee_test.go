@@ -5,10 +5,10 @@ import (
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestProcessSyncCommitteeContribution(t *testing.T) {

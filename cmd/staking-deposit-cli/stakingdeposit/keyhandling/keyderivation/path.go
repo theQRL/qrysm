@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/misc"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"golang.org/x/crypto/sha3"
 )
 

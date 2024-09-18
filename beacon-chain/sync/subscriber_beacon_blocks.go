@@ -3,9 +3,9 @@ package sync
 import (
 	"context"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition/interop"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition/interop"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"google.golang.org/protobuf/proto"
 )
 

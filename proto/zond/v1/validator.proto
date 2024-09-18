@@ -22,7 +22,7 @@ import "proto/zond/v1/beacon_block.proto";
 import "proto/zond/v1/version.proto";
 
 option csharp_namespace = "TheQRL.Zond.V1";
-option go_package = "github.com/theQRL/qrysm/v4/proto/zond/v1";
+option go_package = "github.com/theQRL/qrysm/proto/zond/v1";
 option java_multiple_files = true;
 option java_outer_classname = "ValidatorProto";
 option java_package = "org.theqrl.zond.v1";
@@ -45,24 +45,24 @@ message Validator {
     // Epoch when the validator became eligible for activation. This field may
     // be zero if the validator was present in the Ethereum proof of stake genesis. This
     // field is FAR_FUTURE_EPOCH if the validator has not been activated.
-    uint64 activation_eligibility_epoch = 5 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+    uint64 activation_eligibility_epoch = 5 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
 
     // Epoch when the validator was activated. This field may be zero if the
     // validator was present in the Ethereum proof of stake genesis. This field is
     // FAR_FUTURE_EPOCH if the validator has not been activated.
-    uint64 activation_epoch = 6 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+    uint64 activation_epoch = 6 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
 
     // Epoch when the validator was exited. This field is FAR_FUTURE_EPOCH if
     // the validator has not exited.
     // FAR_FUTURE_EPOCH is a constant defined by the official Ethereum Beacon Chain specification:
     // https://github.com/ethereum/consensus-specs/blob/v0.9.2/specs/core/0_beacon-chain.md#constants
-    uint64 exit_epoch = 7 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+    uint64 exit_epoch = 7 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
 
     // Epoch when the validator is eligible to withdraw their funds. This field
     // is FAR_FUTURE_EPOCH if the validator has not exited.
     // FAR_FUTURE_EPOCH is a constant defined by the official Ethereum Beacon Chain specification:
     // https://github.com/ethereum/consensus-specs/blob/v0.9.2/specs/core/0_beacon-chain.md#constants
-    uint64 withdrawable_epoch = 8 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+    uint64 withdrawable_epoch = 8 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
 }
 
 enum ValidatorStatus {
@@ -83,7 +83,7 @@ enum ValidatorStatus {
 
 message ProduceBlockRequest {
     // The slot to request a block for.
-    uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+    uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
 
     // The validators RANDAO reveal 4595 byte value.
     bytes randao_reveal = 2 [(theqrl.zond.ext.ssz_size) = "4595"];
@@ -106,7 +106,7 @@ message ProduceBlindedBlockResponse {
 // Aggregated sync committee object to support light client.
 message SyncCommitteeContribution {
   // Slot to which this contribution pertains.
-  uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+  uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
 
   // 32 byte block root for this signature.
   bytes beacon_block_root = 2 [(theqrl.zond.ext.ssz_size) = "32"];
@@ -125,7 +125,7 @@ message SyncCommitteeContribution {
 // Aggregated sync committee signature object with selection proof to support light client.
 message ContributionAndProof {
   // Index of the aggregator that produced this proof.
-  uint64 aggregator_index = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
+  uint64 aggregator_index = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.ValidatorIndex"];
 
   SyncCommitteeContribution contribution = 2;
 

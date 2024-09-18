@@ -6,13 +6,13 @@ import (
 
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	p2ptypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	p2ptypes "github.com/theQRL/qrysm/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // ErrInvalidFetchedData is used to signal that an error occurred which should result in peer downscoring.

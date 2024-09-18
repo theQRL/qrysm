@@ -9,10 +9,10 @@ import (
 	"testing"
 
 	"github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/qrysm/v4/api"
-	"github.com/theQRL/qrysm/v4/api/grpc"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/api"
+	"github.com/theQRL/qrysm/api/grpc"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 type testRequestContainer struct {

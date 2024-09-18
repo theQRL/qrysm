@@ -7,9 +7,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	qrysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/testing/require"
+	qrysmTime "github.com/theQRL/qrysm/time"
 )
 
 func TestCountdownToGenesis(t *testing.T) {

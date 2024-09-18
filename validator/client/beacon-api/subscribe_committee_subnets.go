@@ -7,10 +7,10 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 func (c beaconApiValidatorClient) subscribeCommitteeSubnets(ctx context.Context, in *zondpb.CommitteeSubnetsSubscribeRequest, validatorIndices []primitives.ValidatorIndex) error {

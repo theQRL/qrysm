@@ -6,9 +6,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/crypto/rand"
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/crypto/rand"
+	"github.com/theQRL/qrysm/io/file"
 	"github.com/urfave/cli/v2"
 )
 

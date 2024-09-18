@@ -11,7 +11,7 @@ import (
 
 	"github.com/d4l3k/messagediff"
 	"github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/qrysm/v4/encoding/ssz/equality"
+	"github.com/theQRL/qrysm/encoding/ssz/equality"
 	"google.golang.org/protobuf/proto"
 )
 

@@ -16,7 +16,7 @@ go_library(
         "structs.go",
         "sync_committee.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/beacon",
+    importpath = "github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon",
     visibility = ["//visibility:public"],
     deps = [
         "//api:go_default_library",

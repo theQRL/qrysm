@@ -10,10 +10,10 @@ import (
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	pbrpc "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	pbrpc "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 const (

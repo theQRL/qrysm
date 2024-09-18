@@ -2,9 +2,9 @@ package payloadattribute
 
 import (
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	"github.com/theQRL/qrysm/runtime/version"
 )
 
 var (

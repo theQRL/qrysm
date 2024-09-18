@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	testtmpl "github.com/theQRL/qrysm/v4/beacon-chain/state/testing"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	testtmpl "github.com/theQRL/qrysm/beacon-chain/state/testing"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 func TestBeaconState_PreviousJustifiedCheckpointNil_Capella(t *testing.T) {

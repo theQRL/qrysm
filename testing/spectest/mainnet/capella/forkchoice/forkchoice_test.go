@@ -4,8 +4,8 @@ package forkchoice
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/testing/spectest/shared/common/forkchoice"
+	"github.com/theQRL/qrysm/runtime/version"
+	"github.com/theQRL/qrysm/testing/spectest/shared/common/forkchoice"
 )
 
 func TestMainnet_Capella_Forkchoice(t *testing.T) {

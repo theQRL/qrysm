@@ -6,7 +6,7 @@ go_library(
         "constants.go",
         "types.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/validator/keymanager",
+    importpath = "github.com/theQRL/qrysm/validator/keymanager",
     visibility = [
         "//cmd:__subpackages__",
         "//testing/endtoend/components:__subpackages__",

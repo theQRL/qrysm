@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
 )
 
 func FuzzMsgID(f *testing.F) {

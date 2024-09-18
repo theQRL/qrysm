@@ -8,12 +8,12 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/monitoring/progress"
-	"github.com/theQRL/qrysm/v4/validator/db"
-	"github.com/theQRL/qrysm/v4/validator/slashing-protection-history/format"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/monitoring/progress"
+	"github.com/theQRL/qrysm/validator/db"
+	"github.com/theQRL/qrysm/validator/slashing-protection-history/format"
 )
 
 // ExportStandardProtectionJSON extracts all slashing protection data from a validator database
@@ -150,7 +150,7 @@ func signedAttestationsByPubKey(ctx context.Context, validatorDB db.Database, pu
 		// having a target epoch greater than the next entry in the list. If this manifests,
 		// we skip it to protect users. This check is the best trade-off we can make at
 		// the moment without creating any false positive slashable attestation exports.
-		// More information on the bug can found in https://github.com/theQRL/qrysm/issues/8893.
+		// More information on the bug can found in https://github.com/prysmaticlabs/prysm/issues/8893.
 		if i == 0 && len(history) > 1 {
 			nextEntryTargetEpoch := history[1].Target
 			if att.Target > nextEntryTargetEpoch && att.Source == 0 {

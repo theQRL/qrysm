@@ -9,13 +9,13 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
-	test_helpers "github.com/theQRL/qrysm/v4/validator/client/beacon-api/test-helpers"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
+	test_helpers "github.com/theQRL/qrysm/validator/client/beacon-api/test-helpers"
 )
 
 func TestGetBeaconBlock_RequestFailed(t *testing.T) {

@@ -9,12 +9,12 @@ import (
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	mock "github.com/theQRL/qrysm/v4/validator/accounts/testing"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	"github.com/theQRL/qrysm/testing/require"
+	mock "github.com/theQRL/qrysm/validator/accounts/testing"
+	"github.com/theQRL/qrysm/validator/keymanager"
 )
 
 func TestLocalKeymanager_DeleteKeystores(t *testing.T) {

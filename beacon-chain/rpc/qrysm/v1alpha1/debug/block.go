@@ -3,8 +3,8 @@ package debug
 import (
 	"context"
 
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	pbrpc "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	pbrpc "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

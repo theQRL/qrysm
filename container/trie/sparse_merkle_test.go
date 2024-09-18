@@ -5,15 +5,15 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-zond/accounts/abi/bind"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/container/trie"
-	contracts "github.com/theQRL/qrysm/v4/contracts/deposit/mock"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/container/trie"
+	contracts "github.com/theQRL/qrysm/contracts/deposit/mock"
+	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestCreateTrieFromProto_Validation(t *testing.T) {

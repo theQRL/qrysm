@@ -6,7 +6,7 @@ import "proto/qrysm/v1alpha1/beacon_block.proto";
 import "proto/qrysm/v1alpha1/beacon_state.proto";
 
 option csharp_namespace = "TheQRL.Zond.V1alpha1";
-option go_package = "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1;zond";
+option go_package = "github.com/theQRL/qrysm/proto/qrysm/v1alpha1;zond";
 option java_multiple_files = true;
 option java_outer_classname = "PowchainProto";
 option java_package = "org.theqrl.zond.v1alpha1";

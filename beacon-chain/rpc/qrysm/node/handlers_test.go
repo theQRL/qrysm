@@ -14,12 +14,12 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
-	mockp2p "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	http2 "github.com/theQRL/qrysm/v4/network/http"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
+	mockp2p "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	http2 "github.com/theQRL/qrysm/network/http"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 type testIdentity enode.ID

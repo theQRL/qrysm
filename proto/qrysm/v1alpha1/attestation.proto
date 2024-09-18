@@ -18,7 +18,7 @@ package theqrl.zond.v1alpha1;
 import "proto/zond/ext/options.proto";
 
 option csharp_namespace = "TheQRL.Zond.v1alpha1";
-option go_package = "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1;zond";
+option go_package = "github.com/theQRL/qrysm/proto/qrysm/v1alpha1;zond";
 option java_multiple_files = true;
 option java_outer_classname = "AttestationProto";
 option java_package = "org.theqrl.zond.v1alpha1";
@@ -36,7 +36,7 @@ message Attestation {
 
 message AggregateAttestationAndProof {
     // The aggregator index that submitted this aggregated attestation and proof.
-    uint64 aggregator_index = 1  [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
+    uint64 aggregator_index = 1  [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.ValidatorIndex"];
 
     // The aggregated attestation that was submitted.
     Attestation aggregate = 2;
@@ -58,10 +58,10 @@ message AttestationData {
     // See: https://arxiv.org/pdf/1710.09437.pdf
 
     // Slot of the attestation attesting for.
-    uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+    uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
 
     // The committee index that submitted this attestation.
-    uint64 committee_index = 2  [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.CommitteeIndex"];
+    uint64 committee_index = 2  [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.CommitteeIndex"];
 
     // 32 byte root of the LMD GHOST block vote.
     bytes beacon_block_root = 3 [(theqrl.zond.ext.ssz_size) = "32"];
@@ -78,7 +78,7 @@ message Checkpoint {
     // is to link the check points together for justification and finalization.
 
     // Epoch the checkpoint references.
-    uint64 epoch = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+    uint64 epoch = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
 
     // Block root of the checkpoint references.
     bytes root = 2 [(theqrl.zond.ext.ssz_size) = "32"];

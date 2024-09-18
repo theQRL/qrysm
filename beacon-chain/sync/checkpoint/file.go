@@ -7,9 +7,9 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/io/file"
 )
 
 // Initializer describes a type that is able to obtain the checkpoint sync data (BeaconState and SignedBeaconBlock)

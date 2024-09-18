@@ -4,10 +4,10 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	lruwrpr "github.com/theQRL/qrysm/cache/lru"
+	"github.com/theQRL/qrysm/crypto/hash"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 var (

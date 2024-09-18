@@ -19,12 +19,12 @@ import (
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/rpc"
 	"github.com/theQRL/go-zond/zondclient"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/deposit/flags"
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/contracts/deposit"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/deposit/flags"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/stakingdeposit"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/contracts/deposit"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/urfave/cli/v2"
 )
 

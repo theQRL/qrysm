@@ -1,8 +1,8 @@
 package zond
 
 import (
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
 )
 
 // CopyETH1Data copies the provided eth1data object.

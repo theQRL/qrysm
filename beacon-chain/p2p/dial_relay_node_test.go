@@ -7,8 +7,8 @@ import (
 
 	bh "github.com/libp2p/go-libp2p/p2p/host/blank"
 	swarmt "github.com/libp2p/go-libp2p/p2p/net/swarm/testing"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestMakePeer_InvalidMultiaddress(t *testing.T) {

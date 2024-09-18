@@ -2,7 +2,7 @@ package interfaces
 
 import (
 	"github.com/pkg/errors"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // SignedBeaconBlockHeaderFromBlock function to retrieve signed block header from block.

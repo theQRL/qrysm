@@ -8,13 +8,13 @@ import (
 	"testing"
 
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/scorers"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/crypto/rand"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/crypto/rand"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/time"
 )
 
 func TestScorers_BlockProvider_Score(t *testing.T) {

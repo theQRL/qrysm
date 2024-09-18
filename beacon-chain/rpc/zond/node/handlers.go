@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	http2 "github.com/theQRL/qrysm/v4/network/http"
+	http2 "github.com/theQRL/qrysm/network/http"
 	"go.opencensus.io/trace"
 )
 

@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
+	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
 )
 
 // https://ethereum.github.io/beacon-APIs/?urls.primaryName=dev#/Beacon/submitPoolBLSToExecutionChange

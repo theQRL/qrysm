@@ -7,9 +7,9 @@ import (
 
 	"github.com/pkg/errors"
 	fssz "github.com/prysmaticlabs/fastssz"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/encoding/ssz"
-	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/encoding/ssz"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 func FuzzUint64Root(f *testing.F) {

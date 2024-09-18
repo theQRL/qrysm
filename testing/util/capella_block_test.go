@@ -3,12 +3,12 @@ package util
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	"github.com/theQRL/qrysm/v4/encoding/ssz"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/encoding/ssz"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestGenerateDilithiumToExecutionChange(t *testing.T) {

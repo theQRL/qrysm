@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestRoundtrip_HeaderInfo(t *testing.T) {

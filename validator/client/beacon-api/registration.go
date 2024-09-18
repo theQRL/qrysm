@@ -7,8 +7,8 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 func (c *beaconApiValidatorClient) submitValidatorRegistrations(ctx context.Context, registrations []*zondpb.SignedValidatorRegistrationV1) error {

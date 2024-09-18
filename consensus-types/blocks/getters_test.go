@@ -4,17 +4,17 @@ import (
 	"testing"
 
 	ssz "github.com/prysmaticlabs/fastssz"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	pb "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	pb "github.com/theQRL/qrysm/proto/engine/v1"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
+	"github.com/theQRL/qrysm/runtime/version"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func Test_BeaconBlockIsNil(t *testing.T) {

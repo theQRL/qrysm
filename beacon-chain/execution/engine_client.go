@@ -13,15 +13,15 @@ import (
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
 	zondRPC "github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution/types"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	payloadattribute "github.com/theQRL/qrysm/v4/consensus-types/payload-attribute"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	pb "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/beacon-chain/execution/types"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	payloadattribute "github.com/theQRL/qrysm/consensus-types/payload-attribute"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	pb "github.com/theQRL/qrysm/proto/engine/v1"
+	"github.com/theQRL/qrysm/runtime/version"
 	"go.opencensus.io/trace"
 )
 
@@ -567,7 +567,7 @@ func handleRPCError(err error) error {
 	}
 	e, ok := err.(zondRPC.Error)
 	if !ok {
-		// TODO(theQRL/qrysm/issues/67)
+		// TODO(now.youtrack.cloud/issue/TQ-1)
 		if strings.Contains(err.Error(), "401 Unauthorized") {
 			log.Error("HTTP authentication to your execution client is not working. Please ensure " +
 				"you are setting a correct value for the --jwt-secret flag in Qrysm, or use an IPC connection if on " +

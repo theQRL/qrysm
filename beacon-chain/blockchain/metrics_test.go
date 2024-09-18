@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestReportEpochMetrics_BadHeadState(t *testing.T) {

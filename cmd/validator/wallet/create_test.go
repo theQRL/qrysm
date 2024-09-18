@@ -11,15 +11,15 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	cmdacc "github.com/theQRL/qrysm/v4/cmd/validator/accounts"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/accounts"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
+	cmdacc "github.com/theQRL/qrysm/cmd/validator/accounts"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/accounts"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/keymanager/local"
 	"github.com/urfave/cli/v2"
 )
 
@@ -209,7 +209,7 @@ func TestCreateWallet_WalletAlreadyExists(t *testing.T) {
 	_, err = CreateAndSaveWalletCli(cliCtx)
 	require.ErrorContains(t, "already exists", err)
 
-	// TODO(theQRL/qrysm/issues/70): we don't support more than on key manager kind atm
+	// TODO(now.youtrack.cloud/issue/TQ-2): we don't support more than on key manager kind atm
 	/*
 		cliCtx = setupWalletCtx(t, &testWalletConfig{
 			walletDir:          walletDir,

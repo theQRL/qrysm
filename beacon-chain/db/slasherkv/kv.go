@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db/iface"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/beacon-chain/db/iface"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/io/file"
 	bolt "go.etcd.io/bbolt"
 )
 

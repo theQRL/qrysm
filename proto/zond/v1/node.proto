@@ -20,7 +20,7 @@ import "google/protobuf/descriptor.proto";
 import "proto/zond/ext/options.proto";
 
 option csharp_namespace = "TheQRL.Zond.V1";
-option go_package = "github.com/theQRL/qrysm/v4/proto/zond/v1";
+option go_package = "github.com/theQRL/qrysm/proto/zond/v1";
 option java_multiple_files = true;
 option java_outer_classname = "BeaconNodeProto";
 option java_package = "org.theqrl.zond.v1";

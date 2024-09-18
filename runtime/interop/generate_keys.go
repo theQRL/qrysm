@@ -5,10 +5,10 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/async"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
+	"github.com/theQRL/qrysm/async"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/hash"
 )
 
 const (

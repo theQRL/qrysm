@@ -11,11 +11,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"go.opencensus.io/trace"
 	"golang.org/x/sync/errgroup"
 )

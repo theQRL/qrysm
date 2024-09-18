@@ -18,9 +18,9 @@ import (
 	"github.com/sirupsen/logrus"
 	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/monitoring/tracing"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/monitoring/tracing"
 	"go.opencensus.io/trace"
 )
 

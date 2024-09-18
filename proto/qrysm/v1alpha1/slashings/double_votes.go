@@ -1,6 +1,6 @@
 package slashings
 
-import "github.com/theQRL/qrysm/v4/config/params"
+import "github.com/theQRL/qrysm/config/params"
 
 // SigningRootsDiffer verifies that an incoming vs. existing attestation has a different signing root.
 // If the existing signing root is empty, then we consider an attestation as different always.

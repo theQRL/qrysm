@@ -3,8 +3,8 @@ package mock
 import (
 	"context"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // PoolMock is a fake implementation of PoolManager.

@@ -10,14 +10,14 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/theQRL/qrysm/v4/build/bazel"
-	"github.com/theQRL/qrysm/v4/io/file"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	validatormock "github.com/theQRL/qrysm/v4/testing/validator-mock"
-	"github.com/theQRL/qrysm/v4/validator/accounts"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	"github.com/theQRL/qrysm/build/bazel"
+	"github.com/theQRL/qrysm/io/file"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	validatormock "github.com/theQRL/qrysm/testing/validator-mock"
+	"github.com/theQRL/qrysm/validator/accounts"
+	"github.com/theQRL/qrysm/validator/keymanager"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

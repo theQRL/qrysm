@@ -7,7 +7,7 @@ go_library(
         "client.go",
         "doc.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/api/client/beacon",
+    importpath = "github.com/theQRL/qrysm/api/client/beacon",
     visibility = ["//visibility:public"],
     deps = [
         "//api/client:go_default_library",

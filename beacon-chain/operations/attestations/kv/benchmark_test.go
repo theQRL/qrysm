@@ -3,9 +3,9 @@ package kv_test
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations/kv"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/beacon-chain/operations/attestations/kv"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func BenchmarkAttCaches(b *testing.B) {

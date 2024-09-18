@@ -3,7 +3,7 @@ load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["fileutil.go"],
-    importpath = "github.com/theQRL/qrysm/v4/io/file",
+    importpath = "github.com/theQRL/qrysm/io/file",
     visibility = ["//visibility:public"],
     deps = [
         "//config/params:go_default_library",

@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 	ssz "github.com/prysmaticlabs/fastssz"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/monitoring/tracing"
+	"github.com/theQRL/qrysm/monitoring/tracing"
 	"go.opencensus.io/trace"
 )
 

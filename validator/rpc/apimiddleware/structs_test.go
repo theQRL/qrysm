@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/proto/zond/service"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/proto/zond/service"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestListKeystores_JSONisEqual(t *testing.T) {

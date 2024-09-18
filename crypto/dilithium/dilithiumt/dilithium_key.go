@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/theQRL/go-qrllib/dilithium"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium/common"
-	"github.com/theQRL/qrysm/v4/crypto/rand"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/crypto/dilithium/common"
+	"github.com/theQRL/qrysm/crypto/rand"
 )
 
 type dilithiumKey struct {

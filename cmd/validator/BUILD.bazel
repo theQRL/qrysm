@@ -13,7 +13,7 @@ go_library(
         "main.go",
         "usage.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/cmd/validator",
+    importpath = "github.com/theQRL/qrysm/cmd/validator",
     visibility = ["//validator:__subpackages__"],
     deps = [
         "//cmd:go_default_library",

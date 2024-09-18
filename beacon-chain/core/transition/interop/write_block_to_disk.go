@@ -5,9 +5,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/io/file"
 )
 
 // WriteBlockToDisk as a block ssz. Writes to temp directory. Debug!

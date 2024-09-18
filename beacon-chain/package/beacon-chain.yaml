@@ -6,7 +6,7 @@ datadir: /var/lib/qrysm/beacon
 # http-web3provider: ETH1 API endpoint, eg. http://localhost:8545 for a local gzond service on the default port
 http-web3provider: http://localhost:8545
 
-# TODO(theQRL/qrysm/issues/67)
+# TODO(now.youtrack.cloud/issue/TQ-1)
 # Optional tuning parameters
 # For full list, see https://docs.prylabs.network/docs/prysm-usage/parameters
 

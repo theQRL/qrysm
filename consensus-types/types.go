@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 
 	errors2 "github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/runtime/version"
 )
 
 var (

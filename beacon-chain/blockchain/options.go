@@ -1,21 +1,21 @@
 package blockchain
 
 import (
-	"github.com/theQRL/qrysm/v4/async/event"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	statefeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/state"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
-	"github.com/theQRL/qrysm/v4/beacon-chain/forkchoice"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/dilithiumtoexec"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/slashings"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/voluntaryexits"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/async/event"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	statefeed "github.com/theQRL/qrysm/beacon-chain/core/feed/state"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/beacon-chain/execution"
+	"github.com/theQRL/qrysm/beacon-chain/forkchoice"
+	"github.com/theQRL/qrysm/beacon-chain/operations/attestations"
+	"github.com/theQRL/qrysm/beacon-chain/operations/dilithiumtoexec"
+	"github.com/theQRL/qrysm/beacon-chain/operations/slashings"
+	"github.com/theQRL/qrysm/beacon-chain/operations/voluntaryexits"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 type Option func(s *Service) error

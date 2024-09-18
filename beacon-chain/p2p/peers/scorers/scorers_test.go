@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/scorers"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/config/features"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/config/features"
 )
 
 func TestMain(m *testing.M) {

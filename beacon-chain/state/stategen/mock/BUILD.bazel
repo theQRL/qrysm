@@ -7,7 +7,7 @@ go_library(
         "mock.go",
         "replayer.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/state/stategen/mock",
+    importpath = "github.com/theQRL/qrysm/beacon-chain/state/stategen/mock",
     visibility = ["//visibility:public"],
     deps = [
         "//beacon-chain/state:go_default_library",

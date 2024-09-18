@@ -2,7 +2,7 @@ package kv
 
 import (
 	"github.com/pkg/errors"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // SaveForkchoiceAttestation saves an forkchoice attestation in cache.

@@ -4,9 +4,9 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/manifoldco/promptui"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/io/prompt"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/io/prompt"
 	"github.com/urfave/cli/v2"
 )
 

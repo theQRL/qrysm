@@ -7,14 +7,14 @@ import (
 	"testing"
 
 	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	mock "github.com/theQRL/qrysm/v4/validator/accounts/testing"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	mock "github.com/theQRL/qrysm/validator/accounts/testing"
+	"github.com/theQRL/qrysm/validator/keymanager"
 )
 
 func TestLocalKeymanager_FetchValidatingPublicKeys(t *testing.T) {

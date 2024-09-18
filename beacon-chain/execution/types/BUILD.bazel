@@ -3,7 +3,7 @@ load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["eth1_types.go"],
-    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/execution/types",
+    importpath = "github.com/theQRL/qrysm/beacon-chain/execution/types",
     visibility = ["//beacon-chain:__subpackages__"],
     deps = [
         "//encoding/bytesutil:go_default_library",

@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/config"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/config"
 )
 
 type Credentials struct {

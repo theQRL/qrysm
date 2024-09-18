@@ -6,11 +6,11 @@ import (
 	"testing"
 
 	fssz "github.com/prysmaticlabs/fastssz"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	common "github.com/theQRL/qrysm/v4/testing/spectest/shared/common/ssz_static"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
+	common "github.com/theQRL/qrysm/testing/spectest/shared/common/ssz_static"
 )
 
 // RunSSZStaticTests executes "ssz_static" tests.

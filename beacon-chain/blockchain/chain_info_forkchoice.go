@@ -3,9 +3,9 @@ package blockchain
 import (
 	"context"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
 )
 
 // CachedHeadRoot returns the corresponding value from Forkchoice

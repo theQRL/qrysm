@@ -11,13 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer/internal"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer/v1/mock"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
+	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/keymanager/remote-web3signer/internal"
+	"github.com/theQRL/qrysm/validator/keymanager/remote-web3signer/v1/mock"
 )
 
 type MockClient struct {

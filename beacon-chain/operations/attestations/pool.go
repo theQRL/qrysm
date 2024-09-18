@@ -3,9 +3,9 @@ package attestations
 import (
 	"context"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations/kv"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/operations/attestations/kv"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // Pool defines the necessary methods for Qrysm attestations pool to serve

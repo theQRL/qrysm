@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestHistoricalRoots_Casting(t *testing.T) {

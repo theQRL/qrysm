@@ -7,8 +7,8 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/beacon"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 type stateValidatorsProvider interface {

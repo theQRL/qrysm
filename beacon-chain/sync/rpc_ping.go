@@ -8,10 +8,10 @@ import (
 
 	libp2pcore "github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	p2ptypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	p2ptypes "github.com/theQRL/qrysm/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/time"
 )
 
 // pingHandler reads the incoming ping rpc message from the peer.

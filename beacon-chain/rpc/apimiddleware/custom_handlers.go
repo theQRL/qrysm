@@ -12,12 +12,12 @@ import (
 	"strings"
 
 	"github.com/r3labs/sse/v2"
-	"github.com/theQRL/qrysm/v4/api"
-	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
-	"github.com/theQRL/qrysm/v4/api/grpc"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/events"
-	http2 "github.com/theQRL/qrysm/v4/network/http"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/api"
+	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
+	"github.com/theQRL/qrysm/api/grpc"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/events"
+	http2 "github.com/theQRL/qrysm/network/http"
+	"github.com/theQRL/qrysm/runtime/version"
 )
 
 type sszConfig struct {

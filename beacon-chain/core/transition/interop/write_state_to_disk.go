@@ -5,9 +5,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/io/file"
 )
 
 // WriteStateToDisk as a state ssz. Writes to temp directory. Debug!

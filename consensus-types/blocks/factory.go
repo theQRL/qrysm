@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/runtime/version"
 )
 
 var (

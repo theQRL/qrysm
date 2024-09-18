@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 	bolt "go.etcd.io/bbolt"
 )
 

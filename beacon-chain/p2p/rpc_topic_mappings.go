@@ -4,9 +4,9 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
-	p2ptypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	p2ptypes "github.com/theQRL/qrysm/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // SchemaVersionV1 specifies the schema version for our rpc protocol ID.

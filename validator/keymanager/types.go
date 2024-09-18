@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/theQRL/qrysm/v4/async/event"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
+	"github.com/theQRL/qrysm/async/event"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
+	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
 )
 
 // IKeymanager defines a general keymanager interface for Qrysm wallets.

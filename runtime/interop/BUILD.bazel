@@ -9,7 +9,7 @@ go_library(
         "genesis.go",
         "premine-state.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/runtime/interop",
+    importpath = "github.com/theQRL/qrysm/runtime/interop",
     visibility = ["//visibility:public"],
     deps = [
         "//async:go_default_library",

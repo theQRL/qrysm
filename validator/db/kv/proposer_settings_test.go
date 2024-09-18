@@ -6,12 +6,12 @@ import (
 
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	validatorServiceConfig "github.com/theQRL/qrysm/v4/config/validator/service"
-	"github.com/theQRL/qrysm/v4/consensus-types/validator"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	validatorServiceConfig "github.com/theQRL/qrysm/config/validator/service"
+	"github.com/theQRL/qrysm/consensus-types/validator"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestStore_ProposerSettings_ReadAndWrite(t *testing.T) {

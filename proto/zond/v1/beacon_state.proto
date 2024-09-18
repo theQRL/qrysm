@@ -26,7 +26,7 @@ import "proto/zond/v1/version.proto";
 import "proto/engine/v1/execution_engine.proto";
 
 option csharp_namespace = "TheQRL.Zond.V1";
-option go_package = "github.com/theQRL/qrysm/v4/proto/zond/v1";
+option go_package = "github.com/theQRL/qrysm/proto/zond/v1";
 option java_multiple_files = true;
 option java_outer_classname = "BeaconStateProto";
 option java_package = "org.theqrl.zond.v1";
@@ -38,29 +38,29 @@ message PendingAttestation {
   bytes aggregation_bits = 1 [(theqrl.zond.ext.ssz_max) = "128", (theqrl.zond.ext.cast_type) = "github.com/theQRL/go-bitfield.Bitlist"];
   AttestationData data = 2;
   // The difference of when attestation gets created and get included on chain.
-  uint64 inclusion_delay = 3 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+  uint64 inclusion_delay = 3 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
   // The proposer who included the attestation in the block.
-  uint64 proposer_index = 4 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
+  uint64 proposer_index = 4 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.ValidatorIndex"];
 }
 
 message Committee {
-  uint64 index = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.CommitteeIndex"];
-  uint64 slot = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
-  repeated uint64 validators = 3 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
+  uint64 index = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.CommitteeIndex"];
+  uint64 slot = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
+  repeated uint64 validators = 3 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.ValidatorIndex"];
 }
 
 // Fork structure used for indicating beacon chain versioning and forks.
 message Fork {
   bytes previous_version = 1 [(theqrl.zond.ext.ssz_size) = "4"];
   bytes current_version = 2 [(theqrl.zond.ext.ssz_size) = "4"];
-  uint64 epoch = 3 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+  uint64 epoch = 3 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
 }
 
 message BeaconStateCapella {
   // Versioning [1001-2000]
   uint64 genesis_time = 1001;
   bytes genesis_validators_root = 1002 [(theqrl.zond.ext.ssz_size) = "32"];
-  uint64 slot = 1003 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+  uint64 slot = 1003 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
   Fork fork = 1004;
 
   // History [2001-3000]
@@ -105,7 +105,7 @@ message BeaconStateCapella {
 
   // Capella fields [11001-12000]
   uint64 next_withdrawal_index = 11001; // [New in Capella]
-  uint64 next_withdrawal_validator_index = 11002 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"]; // [New in Capella]
+  uint64 next_withdrawal_validator_index = 11002 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.ValidatorIndex"]; // [New in Capella]
 
   repeated HistoricalSummary historical_summaries = 11003 [(theqrl.zond.ext.ssz_max) = "16777216"]; // [New in Capella]
 }
@@ -140,13 +140,13 @@ message ForkChoiceHeadsResponse {
 
 message ForkChoiceHead {
   bytes root = 1 [(theqrl.zond.ext.ssz_size) = "32"];
-  uint64 slot = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+  uint64 slot = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
   bool execution_optimistic = 3;
 }
 
 message RandaoRequest {
   bytes state_id = 1;
-  optional uint64 epoch = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+  optional uint64 epoch = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
 }
 
 message RandaoResponse {

@@ -10,7 +10,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
 option csharp_namespace = "TheQRL.Validator.Accounts.V2";
-option go_package = "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client;validatorpb";
+option go_package = "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client;validatorpb";
 option java_multiple_files = true;
 option java_outer_classname = "KeymanagerProto";
 option java_package = "org.theqrl.validator.accounts.v2";
@@ -64,8 +64,8 @@ message SignRequest {
         theqrl.zond.v1alpha1.AttestationData attestation_data = 101;
         theqrl.zond.v1alpha1.AggregateAttestationAndProof aggregate_attestation_and_proof = 102;
         theqrl.zond.v1alpha1.VoluntaryExit exit = 103;
-        uint64 slot = 104 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
-        uint64 epoch = 105 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+        uint64 slot = 104 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
+        uint64 epoch = 105 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
 
         theqrl.zond.v1alpha1.SyncAggregatorSelectionData sync_aggregator_selection_data = 106;
         theqrl.zond.v1alpha1.ContributionAndProof contribution_and_proof = 107;
@@ -76,7 +76,7 @@ message SignRequest {
         theqrl.zond.v1alpha1.BeaconBlockCapella block_capella = 110;
         theqrl.zond.v1alpha1.BlindedBeaconBlockCapella blinded_block_capella = 111;
     }
-    uint64 signing_slot = 4 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+    uint64 signing_slot = 4 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
 }
 
 // SignResponse returned by a RemoteSigner gRPC service.
@@ -106,7 +106,7 @@ message ProposerOptionPayload {
 // BuilderConfig is a property of ProposerOptionPayload
 message BuilderConfig {
     bool enabled = 1;
-    uint64 gas_limit = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/validator.Uint64"];
+    uint64 gas_limit = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/validator.Uint64"];
     repeated string relays = 3;
 }
 

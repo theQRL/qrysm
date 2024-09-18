@@ -5,7 +5,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
 option csharp_namespace = "TheQRL.Validator.Accounts.V2";
-option go_package = "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client;validatorpb";
+option go_package = "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client;validatorpb";
 option java_multiple_files = true;
 option java_outer_classname = "WebProto";
 option java_package = "org.theqrl.validator.accounts.v2";

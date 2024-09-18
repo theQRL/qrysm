@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"testing"
 
-	p2ptest "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	p2ptest "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestRegularSync_generateErrorResponse(t *testing.T) {

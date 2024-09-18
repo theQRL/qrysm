@@ -6,9 +6,9 @@ package events
 import (
 	"context"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	opfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
-	statefeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/state"
+	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	opfeed "github.com/theQRL/qrysm/beacon-chain/core/feed/operation"
+	statefeed "github.com/theQRL/qrysm/beacon-chain/core/feed/state"
 )
 
 // Server defines a server implementation of the gRPC events service,

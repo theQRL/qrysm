@@ -15,12 +15,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/rpc"
 	"github.com/theQRL/go-zond/zondclient"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/runtime/interop"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
-	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
-	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/runtime/interop"
+	"github.com/theQRL/qrysm/testing/endtoend/helpers"
+	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
+	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
 )
 
 // ExecutionNodeSet represents a set of execution nodes, none of which is a mining node.

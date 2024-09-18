@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestStateRoots_UnmarshalSSZ(t *testing.T) {

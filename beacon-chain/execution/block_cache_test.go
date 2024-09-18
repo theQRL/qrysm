@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution/types"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/execution/types"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestHashKeyFn_OK(t *testing.T) {
@@ -43,7 +43,7 @@ func TestHeightKeyFn_InvalidObj(t *testing.T) {
 }
 
 func TestBlockCache_byHash(t *testing.T) {
-	// TODO(theQRL/qrysm/issues/66)
+	// TODO(now.youtrack.cloud/issue/TQ-5)
 	params.SetupTestConfigCleanup(t)
 	conf := params.BeaconConfig().Copy()
 	conf.Eth1FollowDistance = 2048

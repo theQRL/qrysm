@@ -3,7 +3,7 @@ load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["analyzer.go"],
-    importpath = "github.com/theQRL/qrysm/v4/tools/analyzers/errcheck",
+    importpath = "github.com/theQRL/qrysm/tools/analyzers/errcheck",
     visibility = ["//visibility:public"],
     deps = [
         "@org_golang_x_tools//go/analysis:go_default_library",

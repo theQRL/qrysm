@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/io/file"
 )
 
 // A basic tool to extract genesis.ssz from existing beaconchain.db.

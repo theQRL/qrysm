@@ -8,10 +8,10 @@ import (
 	"github.com/golang/snappy"
 	"github.com/schollz/progressbar/v3"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/encoding/ssz/detect"
-	"github.com/theQRL/qrysm/v4/monitoring/progress"
-	v1alpha1 "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/encoding/ssz/detect"
+	"github.com/theQRL/qrysm/monitoring/progress"
+	v1alpha1 "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	bolt "go.etcd.io/bbolt"
 )
 

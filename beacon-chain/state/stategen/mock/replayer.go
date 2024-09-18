@@ -3,9 +3,9 @@ package mock
 import (
 	"context"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 func NewMockReplayerBuilder(opt ...MockReplayerBuilderOption) *MockReplayerBuilder {

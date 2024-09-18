@@ -9,7 +9,7 @@ go_library(
         "structs.go",
         "validator.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/validator",
+    importpath = "github.com/theQRL/qrysm/beacon-chain/rpc/zond/validator",
     visibility = ["//visibility:public"],
     deps = [
         "//api:go_default_library",

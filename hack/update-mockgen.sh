@@ -6,7 +6,7 @@
 mock_path="testing/mock"
 iface_mock_path="testing/validator-mock"
 
-# github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1
+# github.com/theQRL/qrysm/proto/qrysm/v1alpha1
 # ------------------------------------------------------
 proto_mocks_v1alpha1=(
       "$mock_path/beacon_service_mock.go BeaconChainClient"
@@ -20,10 +20,10 @@ for ((i = 0; i < ${#proto_mocks_v1alpha1[@]}; i++)); do
     interfaces=${proto_mocks_v1alpha1[i]#* };
     echo "generating $file for interfaces: $interfaces";
     echo
-    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1 "$interfaces"
+    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/proto/qrysm/v1alpha1 "$interfaces"
 done
 
-# github.com/theQRL/qrysm/v4/proto/zond/service
+# github.com/theQRL/qrysm/proto/zond/service
 # ---------------------------------------------------
 proto_mocks_service=(
       "$mock_path/event_service_mock.go EventsClient,Events_StreamEventsClient,Events_StreamEventsServer"
@@ -34,10 +34,10 @@ for ((i = 0; i < ${#proto_mocks_service[@]}; i++)); do
     interfaces=${proto_mocks_service[i]#* };
     echo "generating $file for interfaces: $interfaces";
     echo
-    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/v4/proto/zond/service "$interfaces"
+    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/proto/zond/service "$interfaces"
 done
 
-# github.com/theQRL/qrysm/proto/v4/qrysm/v1alpha1/validator-client
+# github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client
 # -----------------------------------------------------------------------
 proto_mocks_v1alpha1_validator_clients=(
     "$mock_path/keymanager_mock.go RemoteSignerClient"
@@ -48,10 +48,10 @@ for ((i = 0; i < ${#proto_mocks_v1alpha1_validator_clients[@]}; i++)); do
     interfaces=${proto_mocks_v1alpha1_validator_clients[i]#* };
     echo "generating $file for interfaces: $interfaces";
     echo
-    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client "$interfaces"
+    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client "$interfaces"
 done
 
-# github.com/theQRL/qrysm/v4/validator/client/iface
+# github.com/theQRL/qrysm/validator/client/iface
 # --------------------------------------------------------
 iface_mocks=(
       "$iface_mock_path/beacon_chain_client_mock.go BeaconChainClient"
@@ -63,13 +63,13 @@ for ((i = 0; i < ${#iface_mocks[@]}; i++)); do
     file=${iface_mocks[i]% *};
     interfaces=${iface_mocks[i]#* };
     echo "generating $file for interfaces: $interfaces";
-    GO11MODULE=on mockgen -package=validator_mock -destination="$file" github.com/theQRL/qrysm/v4/validator/client/iface "$interfaces"
+    GO11MODULE=on mockgen -package=validator_mock -destination="$file" github.com/theQRL/qrysm/validator/client/iface "$interfaces"
 done
 
 goimports -w "$mock_path/."
 gofmt -s -w "$mock_path/."
 
-# github.com/theQRL/qrysm/v4/validator/client/beacon-api
+# github.com/theQRL/qrysm/validator/client/beacon-api
 # -------------------------------------------------------------
 beacon_api_mock_path="validator/client/beacon-api/mock"
 beacon_api_mocks=(
@@ -90,7 +90,7 @@ done
 goimports -w "$beacon_api_mock_path/."
 gofmt -s -w "$beacon_api_mock_path/."
 
-# github.com/theQRL/qrysm/v4/crypto/dilithium
+# github.com/theQRL/qrysm/crypto/dilithium
 # --------------------------------------------
 crypto_dilithium_common_mock_path="crypto/dilithium/common/mock"
 crypto_dilithium_common_mocks=(

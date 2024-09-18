@@ -14,17 +14,17 @@ import (
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	cmdshared "github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/sync/genesis"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/runtime/interop"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
-	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
-	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	cmdshared "github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/sync/genesis"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/runtime/interop"
+	"github.com/theQRL/qrysm/testing/endtoend/helpers"
+	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
+	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
 )
 
 var _ e2etypes.ComponentRunner = (*BeaconNode)(nil)

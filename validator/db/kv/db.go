@@ -10,12 +10,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	prombolt "github.com/prysmaticlabs/prombbolt"
-	"github.com/theQRL/qrysm/v4/async/abool"
-	"github.com/theQRL/qrysm/v4/async/event"
-	"github.com/theQRL/qrysm/v4/config/features"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/async/abool"
+	"github.com/theQRL/qrysm/async/event"
+	"github.com/theQRL/qrysm/config/features"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/io/file"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -40,7 +40,7 @@ var (
 
 // blockedBuckets represents the buckets that we want to restrict
 // from our metrics fetching for performance reasons. For a detailed
-// summary, it can be read in https://github.com/theQRL/qrysm/issues/8274.
+// summary, it can be read in https://github.com/prysmaticlabs/prysm/issues/8274.
 var blockedBuckets = [][]byte{
 	lowestSignedSourceBucket,
 	lowestSignedTargetBucket,

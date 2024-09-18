@@ -9,9 +9,9 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	shared "github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared"
-	validator "github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/validator"
-	primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	shared "github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	validator "github.com/theQRL/qrysm/beacon-chain/rpc/zond/validator"
+	primitives "github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 // MockdutiesProvider is a mock of dutiesProvider interface.

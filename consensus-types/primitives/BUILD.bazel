@@ -12,7 +12,7 @@ go_library(
         "sszuint64.go",
         "validator.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/consensus-types/primitives",
+    importpath = "github.com/theQRL/qrysm/consensus-types/primitives",
     visibility = ["//visibility:public"],
     deps = [
         "//math:go_default_library",

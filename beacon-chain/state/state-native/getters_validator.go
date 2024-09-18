@@ -2,13 +2,13 @@ package state_native
 
 import (
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/features"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/features"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	consensus_types "github.com/theQRL/qrysm/consensus-types"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // Validators participating in consensus on the beacon chain.

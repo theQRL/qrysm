@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/peerdata"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestStore_GetSetDelete(t *testing.T) {

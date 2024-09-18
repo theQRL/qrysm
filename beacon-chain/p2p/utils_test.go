@@ -7,9 +7,9 @@ import (
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-zond/crypto"
 	"github.com/theQRL/go-zond/p2p/enode"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 // Test `verifyConnectivity` function by trying to connect to google.com (successfully)

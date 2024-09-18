@@ -3,7 +3,7 @@ load("@qrysm//tools/go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["flags.go"],
-    importpath = "github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/deposit/flags",
+    importpath = "github.com/theQRL/qrysm/cmd/staking-deposit-cli/deposit/flags",
     visibility = ["//visibility:public"],
     deps = [
         "//config/params:go_default_library",

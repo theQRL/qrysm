@@ -10,25 +10,25 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
 	"github.com/theQRL/go-bitfield"
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	dbtest "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	p2ptest "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
-	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	dbtest "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	"github.com/theQRL/qrysm/beacon-chain/operations/attestations"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	p2ptest "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	mockSync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync/testing"
+	lruwrpr "github.com/theQRL/qrysm/cache/lru"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestVerifyIndexInCommittee_CanVerify(t *testing.T) {
@@ -316,7 +316,7 @@ func TestValidateAggregateAndProof_CanValidate(t *testing.T) {
 	aggBits.SetBitAt(0, true)
 	att := &zondpb.Attestation{
 		Data: &zondpb.AttestationData{
-			// TODO(theQRL/qrysm/issues/80)
+			// TODO(now.youtrack.cloud/issue/TQ-12)
 			// Slot:            1,
 			Slot:            96,
 			BeaconBlockRoot: root[:],

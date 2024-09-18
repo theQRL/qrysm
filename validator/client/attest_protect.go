@@ -6,10 +6,10 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/slashings"
-	"github.com/theQRL/qrysm/v4/validator/db/kv"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/slashings"
+	"github.com/theQRL/qrysm/validator/db/kv"
 	"go.opencensus.io/trace"
 )
 

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
 )
 
 func TestMain(m *testing.M) {

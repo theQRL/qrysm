@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	qrysmTime "github.com/theQRL/qrysm/v4/time"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	qrysmTime "github.com/theQRL/qrysm/time"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 const (

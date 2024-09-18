@@ -22,7 +22,7 @@ import "proto/zond/v1/validator.proto";
 import "proto/zond/v1/ssz.proto";
 
 option csharp_namespace = "TheQRL.Zond.Service";
-option go_package = "github.com/theQRL/qrysm/v4/proto/zond/service";
+option go_package = "github.com/theQRL/qrysm/proto/zond/service";
 option java_multiple_files = true;
 option java_outer_classname = "ValidatorServiceProto";
 option java_package = "org.theqrl.zond.service";

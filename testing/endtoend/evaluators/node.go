@@ -11,11 +11,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
-	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
+	"github.com/theQRL/qrysm/testing/endtoend/policies"
+	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )

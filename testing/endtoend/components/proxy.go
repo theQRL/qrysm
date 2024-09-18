@@ -9,10 +9,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
-	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
-	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
-	proxy "github.com/theQRL/qrysm/v4/testing/middleware/engine-api-proxy"
+	"github.com/theQRL/qrysm/testing/endtoend/helpers"
+	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
+	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
+	proxy "github.com/theQRL/qrysm/testing/middleware/engine-api-proxy"
 )
 
 // ProxySet represents a set of proxies for the engine-api.

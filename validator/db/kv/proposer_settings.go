@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	validatorServiceConfig "github.com/theQRL/qrysm/v4/config/validator/service"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	validatorServiceConfig "github.com/theQRL/qrysm/config/validator/service"
+	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/proto"

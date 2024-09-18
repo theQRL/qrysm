@@ -12,10 +12,10 @@ import (
 	"testing"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 	"gopkg.in/yaml.v2"
 )
 
@@ -160,7 +160,7 @@ func TestModifiedE2E(t *testing.T) {
 }
 
 func TestLoadConfigFile(t *testing.T) {
-	// NOTE(theQRL/qrysm/issues/69)
+	// NOTE(now.youtrack.cloud/issue/TQ-4)
 	/*
 		t.Run("mainnet", func(t *testing.T) {
 			mn := params.MainnetConfig().Copy()

@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
-	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	"github.com/theQRL/qrysm/testing/endtoend/helpers"
+	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
+	"github.com/theQRL/qrysm/testing/endtoend/types"
 )
 
 var _ types.ComponentRunner = &TracingSink{}

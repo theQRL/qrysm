@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/runtime/version"
 )
 
 var configs *configset

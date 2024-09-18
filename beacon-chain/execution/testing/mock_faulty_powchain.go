@@ -6,11 +6,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/qrysm/v4/async/event"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/async/event"
+	"github.com/theQRL/qrysm/beacon-chain/execution/types"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // FaultyExecutionChain defines an incorrectly functioning powchain service.

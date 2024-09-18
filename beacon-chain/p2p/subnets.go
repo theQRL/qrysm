@@ -9,13 +9,13 @@ import (
 	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/consensus-types/wrapper"
-	mathutil "github.com/theQRL/qrysm/v4/math"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/consensus-types/wrapper"
+	mathutil "github.com/theQRL/qrysm/math"
 	"go.opencensus.io/trace"
 
-	"github.com/theQRL/qrysm/v4/config/params"
-	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/config/params"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 var attestationSubnetCount = params.BeaconNetworkConfig().AttestationSubnetCount

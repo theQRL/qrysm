@@ -1,7 +1,7 @@
 // Package testing includes useful mocks for slot tickers in unit tests.
 package testing
 
-import "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+import "github.com/theQRL/qrysm/consensus-types/primitives"
 
 // MockTicker defines a useful struct for mocking the Ticker interface
 // from the slotutil package.

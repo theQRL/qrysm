@@ -8,7 +8,7 @@ go_library(
         "server.go",
         "state.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/rpc/qrysm/v1alpha1/debug",
+    importpath = "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/v1alpha1/debug",
     visibility = ["//beacon-chain:__subpackages__"],
     deps = [
         "//beacon-chain/blockchain:go_default_library",

@@ -17,11 +17,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/go-zond/p2p/enr"
-	"github.com/theQRL/qrysm/v4/consensus-types/wrapper"
-	ecdsaqrysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
-	"github.com/theQRL/qrysm/v4/io/file"
-	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/metadata"
+	"github.com/theQRL/qrysm/consensus-types/wrapper"
+	ecdsaqrysm "github.com/theQRL/qrysm/crypto/ecdsa"
+	"github.com/theQRL/qrysm/io/file"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/metadata"
 	"google.golang.org/protobuf/proto"
 )
 

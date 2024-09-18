@@ -8,11 +8,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	testpb "github.com/theQRL/qrysm/v4/proto/testing"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/assertions"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	testpb "github.com/theQRL/qrysm/proto/testing"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/assertions"
+	"github.com/theQRL/qrysm/testing/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

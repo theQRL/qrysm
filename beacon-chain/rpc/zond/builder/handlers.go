@@ -8,12 +8,12 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	http2 "github.com/theQRL/qrysm/v4/network/http"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	http2 "github.com/theQRL/qrysm/network/http"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
 )
 
 // ExpectedWithdrawals get the withdrawals computed from the specified state, that will be included in the block that gets built on the specified state.

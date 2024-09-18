@@ -8,25 +8,25 @@ import (
 
 	"github.com/libp2p/go-libp2p/core/peer"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	dbtest "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
-	p2pt "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	beaconsync "github.com/theQRL/qrysm/v4/beacon-chain/sync"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
-	"github.com/theQRL/qrysm/v4/container/slice"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
-	qrysmTime "github.com/theQRL/qrysm/v4/time"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	dbtest "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
+	p2pt "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	beaconsync "github.com/theQRL/qrysm/beacon-chain/sync"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	leakybucket "github.com/theQRL/qrysm/container/leaky-bucket"
+	"github.com/theQRL/qrysm/container/slice"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
+	qrysmTime "github.com/theQRL/qrysm/time"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 func TestBlocksQueue_InitStartStop(t *testing.T) {
@@ -713,7 +713,7 @@ func TestBlocksQueue_onReadyToSendEvent(t *testing.T) {
 	})
 }
 
-// TODO(rgeraldes24): fix unit test: the current value of block batch limit(64) causes some of the problems
+// TODO(now.youtrack.cloud/issue/TQ-18): the current value of block batch limit(64) causes some of the problems
 /*
 func TestBlocksQueue_onProcessSkippedEvent(t *testing.T) {
 	blockBatchLimit := flags.Get().BlockBatchLimit
@@ -1049,7 +1049,7 @@ func TestBlocksQueue_onCheckStaleEvent(t *testing.T) {
 	})
 }
 
-// TODO(rgeraldes24): fix unit test
+// TODO(now.youtrack.cloud/issue/TQ-18)
 /*
 func TestBlocksQueue_stuckInUnfavourableFork(t *testing.T) {
 	beaconDB := dbtest.SetupDB(t)

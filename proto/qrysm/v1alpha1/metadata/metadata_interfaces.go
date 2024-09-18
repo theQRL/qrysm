@@ -3,7 +3,7 @@ package metadata
 import (
 	ssz "github.com/prysmaticlabs/fastssz"
 	"github.com/theQRL/go-bitfield"
-	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // Metadata returns the interface of a p2p metadata type.

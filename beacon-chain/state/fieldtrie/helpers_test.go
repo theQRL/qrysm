@@ -7,14 +7,14 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-zond/common/hexutil"
-	customtypes "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/custom-types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	customtypes "github.com/theQRL/qrysm/beacon-chain/state/state-native/custom-types"
+	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
+	"github.com/theQRL/qrysm/beacon-chain/state/stateutil"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func Test_handlePendingAttestation_OutOfRange(t *testing.T) {

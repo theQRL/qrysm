@@ -4,9 +4,9 @@ import (
 	"sync"
 
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	lruwrpr "github.com/theQRL/qrysm/cache/lru"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 // SyncCommitteeHeadStateCache for the latest head state requested by a sync committee participant.

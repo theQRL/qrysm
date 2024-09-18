@@ -7,7 +7,7 @@ go_library(
         "reader.go",
         "writer.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/network/http",
+    importpath = "github.com/theQRL/qrysm/network/http",
     visibility = ["//visibility:public"],
     deps = [
         "//api:go_default_library",

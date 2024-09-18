@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 func (c *beaconApiValidatorClient) submitSignedAggregateSelectionProof(ctx context.Context, in *zondpb.SignedAggregateSubmitRequest) (*zondpb.SignedAggregateSubmitResponse, error) {

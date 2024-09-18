@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/async"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/async"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 var input [][]byte

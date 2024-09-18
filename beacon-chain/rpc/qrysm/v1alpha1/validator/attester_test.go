@@ -7,25 +7,25 @@ import (
 	"testing"
 	"time"
 
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	dbutil "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	doublylinkedtree "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
-	mockp2p "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/core"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
-	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
-	qrysmTime "github.com/theQRL/qrysm/v4/time"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	dbutil "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
+	"github.com/theQRL/qrysm/beacon-chain/operations/attestations"
+	mockp2p "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/core"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
+	mockSync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync/testing"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
+	qrysmTime "github.com/theQRL/qrysm/time"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -277,7 +277,7 @@ func TestServer_GetAttestationData_HeadStateSlotGreaterThanRequestSlot(t *testin
 	// There exists a rare scenario where the validator may request an attestation for a slot less
 	// than the head state's slot. The Ethereum consensus spec constraints require the block root the
 	// attestation is referencing be less than or equal to the attestation data slot.
-	// See: https://github.com/theQRL/qrysm/issues/5164
+	// See: https://github.com/prysmaticlabs/prysm/issues/5164
 	ctx := context.Background()
 	db := dbutil.SetupDB(t)
 

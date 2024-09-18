@@ -6,9 +6,9 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/encoding/ssz"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/encoding/ssz"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 func HistoricalSummariesRoot(summaries []*zondpb.HistoricalSummary) ([32]byte, error) {

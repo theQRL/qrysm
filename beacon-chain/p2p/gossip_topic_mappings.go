@@ -3,7 +3,7 @@ package p2p
 import (
 	"reflect"
 
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"google.golang.org/protobuf/proto"
 )
 

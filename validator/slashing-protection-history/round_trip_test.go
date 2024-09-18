@@ -7,14 +7,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/db/kv"
-	dbtest "github.com/theQRL/qrysm/v4/validator/db/testing"
-	history "github.com/theQRL/qrysm/v4/validator/slashing-protection-history"
-	"github.com/theQRL/qrysm/v4/validator/slashing-protection-history/format"
-	slashtest "github.com/theQRL/qrysm/v4/validator/testing"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/db/kv"
+	dbtest "github.com/theQRL/qrysm/validator/db/testing"
+	history "github.com/theQRL/qrysm/validator/slashing-protection-history"
+	"github.com/theQRL/qrysm/validator/slashing-protection-history/format"
+	slashtest "github.com/theQRL/qrysm/validator/testing"
 )
 
 func TestImportExport_RoundTrip(t *testing.T) {

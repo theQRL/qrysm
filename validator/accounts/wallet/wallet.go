@@ -10,13 +10,13 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/io/prompt"
-	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
-	accountsprompt "github.com/theQRL/qrysm/v4/validator/accounts/userprompt"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/io/prompt"
+	"github.com/theQRL/qrysm/validator/accounts/iface"
+	accountsprompt "github.com/theQRL/qrysm/validator/accounts/userprompt"
+	"github.com/theQRL/qrysm/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/keymanager/local"
 	"github.com/urfave/cli/v2"
 )
 

@@ -2,13 +2,13 @@ package p2p
 
 import (
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/math"
-	"github.com/theQRL/qrysm/v4/network/forks"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/math"
+	"github.com/theQRL/qrysm/network/forks"
 )
 
 // MsgID is a content addressable ID function.

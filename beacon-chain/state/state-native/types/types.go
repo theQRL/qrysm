@@ -2,7 +2,7 @@ package types
 
 import (
 	"github.com/pkg/errors"
-	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
+	consensus_types "github.com/theQRL/qrysm/consensus-types"
 )
 
 // DataType signifies the data type of the field.

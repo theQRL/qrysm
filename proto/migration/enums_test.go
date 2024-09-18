@@ -3,8 +3,8 @@ package migration
 import (
 	"testing"
 
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	v1 "github.com/theQRL/qrysm/proto/zond/v1"
 )
 
 func TestV1Alpha1ConnectionStateToV1(t *testing.T) {

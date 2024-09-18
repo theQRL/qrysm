@@ -21,7 +21,7 @@ import "google/protobuf/empty.proto";
 import "proto/zond/ext/options.proto";
 
 option csharp_namespace = "TheQRL.Zond.Service";
-option go_package = "github.com/theQRL/qrysm/v4/proto/zond/service";
+option go_package = "github.com/theQRL/qrysm/proto/zond/service";
 option java_multiple_files = true;
 option java_outer_classname = "KeyManagementServiceProto";
 option java_package = "org.theqrl.zond.service";
@@ -374,14 +374,14 @@ message DeleteGasLimitRequest {
 
 message SetVoluntaryExitRequest {
   bytes pubkey = 1 [(theqrl.zond.ext.ssz_size) = "2592"];
-  uint64 epoch = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+  uint64 epoch = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
 }
 
 message SetVoluntaryExitResponse {
   message SignedVoluntaryExit {
     message VoluntaryExit {
-      uint64 epoch = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
-      uint64 validator_index = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
+      uint64 epoch = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
+      uint64 validator_index = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.ValidatorIndex"];
     }
     VoluntaryExit message = 1;
     bytes signature = 2;

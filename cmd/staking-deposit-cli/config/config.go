@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/misc"
 )
 
 const (

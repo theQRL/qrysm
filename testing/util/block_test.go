@@ -4,16 +4,16 @@ import (
 	"context"
 	"testing"
 
-	coreBlock "github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition/stateutils"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbalpha "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	coreBlock "github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition/stateutils"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpbalpha "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestGenerateFullBlock_PassesStateTransition(t *testing.T) {
@@ -117,7 +117,7 @@ func TestGenerateFullBlock_ValidAttesterSlashings(t *testing.T) {
 	}
 }
 
-// TODO(theQRL/qrysm/issues/75)
+// TODO(now.youtrack.cloud/issue/TQ-7)
 /*
 func TestGenerateFullBlock_ValidAttestations(t *testing.T) {
 	params.SetupTestConfigCleanup(t)

@@ -20,7 +20,7 @@ go_library(
     data = [
         "//testing/endtoend/static-files/zond:zonddata",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/testing/endtoend/components",
+    importpath = "github.com/theQRL/qrysm/testing/endtoend/components",
     visibility = ["//testing/endtoend:__subpackages__"],
     deps = [
         "//beacon-chain/state:go_default_library",

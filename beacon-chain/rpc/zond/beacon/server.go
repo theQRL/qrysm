@@ -4,21 +4,21 @@
 package beacon
 
 import (
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	blockfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/block"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/dilithiumtoexec"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/slashings"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/voluntaryexits"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/core"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/lookup"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
-	"github.com/theQRL/qrysm/v4/beacon-chain/sync"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	blockfeed "github.com/theQRL/qrysm/beacon-chain/core/feed/block"
+	"github.com/theQRL/qrysm/beacon-chain/core/feed/operation"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/beacon-chain/execution"
+	"github.com/theQRL/qrysm/beacon-chain/operations/attestations"
+	"github.com/theQRL/qrysm/beacon-chain/operations/dilithiumtoexec"
+	"github.com/theQRL/qrysm/beacon-chain/operations/slashings"
+	"github.com/theQRL/qrysm/beacon-chain/operations/voluntaryexits"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/core"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/lookup"
+	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
+	"github.com/theQRL/qrysm/beacon-chain/sync"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // Server defines a server implementation of the gRPC Beacon Chain service,

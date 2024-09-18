@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/validator/accounts/userprompt"
-	"github.com/theQRL/qrysm/v4/validator/db/kv"
-	slashingprotection "github.com/theQRL/qrysm/v4/validator/slashing-protection-history"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/validator/accounts/userprompt"
+	"github.com/theQRL/qrysm/validator/db/kv"
+	slashingprotection "github.com/theQRL/qrysm/validator/slashing-protection-history"
 	"github.com/urfave/cli/v2"
 )
 

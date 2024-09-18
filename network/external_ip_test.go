@@ -5,9 +5,9 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/network"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/network"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestExternalIPv4(t *testing.T) {

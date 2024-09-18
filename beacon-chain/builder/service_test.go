@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	buildertesting "github.com/theQRL/qrysm/v4/api/client/builder/testing"
-	blockchainTesting "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	dbtesting "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	buildertesting "github.com/theQRL/qrysm/api/client/builder/testing"
+	blockchainTesting "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	dbtesting "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func Test_NewServiceWithBuilder(t *testing.T) {

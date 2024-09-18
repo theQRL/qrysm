@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	ma "github.com/multiformats/go-multiaddr"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestRelayAddrs_OnlyFactory(t *testing.T) {

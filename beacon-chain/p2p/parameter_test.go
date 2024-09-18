@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestOverlayParameters(t *testing.T) {

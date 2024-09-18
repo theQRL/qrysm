@@ -2,7 +2,7 @@ package stategen
 
 import (
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	"github.com/theQRL/qrysm/beacon-chain/state"
 )
 
 var ErrNotInCache = errors.New("state not found in cache")

@@ -5,23 +5,23 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache/depositcache"
-	coreTime "github.com/theQRL/qrysm/v4/beacon-chain/core/time"
-	testDB "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	doublylinkedtree "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	payloadattribute "github.com/theQRL/qrysm/v4/consensus-types/payload-attribute"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	pb "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/cache/depositcache"
+	coreTime "github.com/theQRL/qrysm/beacon-chain/core/time"
+	testDB "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
+	"github.com/theQRL/qrysm/beacon-chain/operations/attestations"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	payloadattribute "github.com/theQRL/qrysm/consensus-types/payload-attribute"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	pb "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func startChainService(t testing.TB,
@@ -106,13 +106,10 @@ func (m *engineMock) ExecutionBlockByHash(_ context.Context, hash common.Hash, _
 		return nil, nil
 	}
 
-	td := new(big.Int).SetBytes(bytesutil.ReverseByteOrder(b.TotalDifficulty))
-	tdHex := hexutil.EncodeBig(td)
 	return &pb.ExecutionBlock{
 		Header: zondtypes.Header{
 			ParentHash: common.BytesToHash(b.ParentHash),
 		},
-		TotalDifficulty: tdHex,
 		Hash:            common.BytesToHash(b.BlockHash),
 	}, nil
 }

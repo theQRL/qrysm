@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/validator/db/iface"
-	"github.com/theQRL/qrysm/v4/validator/db/kv"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/validator/db/iface"
+	"github.com/theQRL/qrysm/validator/db/kv"
 )
 
 // SetupDB instantiates and returns a DB instance for the validator client.

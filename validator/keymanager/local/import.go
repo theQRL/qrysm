@@ -11,9 +11,9 @@ import (
 	"github.com/schollz/progressbar/v3"
 	"github.com/sirupsen/logrus"
 	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	"github.com/theQRL/qrysm/validator/keymanager"
 )
 
 // ImportKeystores into the local keymanager from an external source.

@@ -5,8 +5,8 @@ import (
 	"io"
 	"sort"
 
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/client-stats/flags"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/client-stats/flags"
 	"github.com/urfave/cli/v2"
 )
 

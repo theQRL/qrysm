@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	fuzz "github.com/google/gofuzz"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestGenesisBeaconState_1000(t *testing.T) {

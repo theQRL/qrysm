@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	"github.com/theQRL/qrysm/v4/validator/accounts"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	"github.com/theQRL/qrysm/v4/validator/client"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	"github.com/theQRL/qrysm/validator/accounts"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/validator/client"
+	"github.com/theQRL/qrysm/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/keymanager/local"
 	"github.com/urfave/cli/v2"
 )
 

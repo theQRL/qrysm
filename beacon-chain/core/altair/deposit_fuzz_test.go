@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	fuzz "github.com/google/gofuzz"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/core/altair"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestFuzzProcessDeposits_10000(t *testing.T) {

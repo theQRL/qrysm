@@ -10,15 +10,15 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/io/file"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/validator/client"
-	beacon_api "github.com/theQRL/qrysm/v4/validator/client/beacon-api"
-	"github.com/theQRL/qrysm/v4/validator/client/iface"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/io/file"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/validator/client"
+	beacon_api "github.com/theQRL/qrysm/validator/client/beacon-api"
+	"github.com/theQRL/qrysm/validator/client/iface"
+	"github.com/theQRL/qrysm/validator/keymanager"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -153,7 +153,7 @@ func prepareAllKeys(validatingKeys [][field_params.DilithiumPubkeyLength]byte) (
 
 func displayExitInfo(rawExitedKeys [][]byte, trimmedExitedKeys []string) {
 	if len(rawExitedKeys) > 0 {
-		// TODO(theQRL/qrysm/issues/67): include our explorer url when available
+		// TODO(now.youtrack.cloud/issue/TQ-1): include our explorer url when available
 		// urlFormattedPubKeys := make([]string, len(rawExitedKeys))
 		// for i, key := range rawExitedKeys {
 		// 	var baseUrl string

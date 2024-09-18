@@ -10,8 +10,8 @@ import (
 
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/validator/keymanager"
 )
 
 var (

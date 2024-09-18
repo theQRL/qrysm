@@ -8,13 +8,13 @@ import (
 
 	joonix "github.com/joonix/log"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/client-stats/flags"
-	"github.com/theQRL/qrysm/v4/io/logs"
-	"github.com/theQRL/qrysm/v4/monitoring/clientstats"
-	"github.com/theQRL/qrysm/v4/monitoring/journald"
-	prefixed "github.com/theQRL/qrysm/v4/runtime/logging/logrus-prefixed-formatter"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/client-stats/flags"
+	"github.com/theQRL/qrysm/io/logs"
+	"github.com/theQRL/qrysm/monitoring/clientstats"
+	"github.com/theQRL/qrysm/monitoring/journald"
+	prefixed "github.com/theQRL/qrysm/runtime/logging/logrus-prefixed-formatter"
+	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/urfave/cli/v2"
 )
 

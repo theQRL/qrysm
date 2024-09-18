@@ -7,13 +7,13 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	attaggregation "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation/aggregation/attestations"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	attaggregation "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation/attestations"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 	"google.golang.org/protobuf/proto"
 )
 

@@ -7,9 +7,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	slashertypes "github.com/theQRL/qrysm/v4/beacon-chain/slasher/types"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	slashertypes "github.com/theQRL/qrysm/beacon-chain/slasher/types"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 

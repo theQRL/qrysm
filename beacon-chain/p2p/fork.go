@@ -9,11 +9,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/network/forks"
-	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	qrysmTime "github.com/theQRL/qrysm/v4/time"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/network/forks"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmTime "github.com/theQRL/qrysm/time"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 // ENR key used for Zond consensus-related fork data.

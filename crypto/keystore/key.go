@@ -25,8 +25,8 @@ import (
 	"path/filepath"
 
 	"github.com/pborman/uuid"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/io/file"
 )
 
 const (

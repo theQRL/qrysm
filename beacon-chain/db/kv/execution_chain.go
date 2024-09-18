@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	v1alpha1 "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/monitoring/tracing"
+	v1alpha1 "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/proto"

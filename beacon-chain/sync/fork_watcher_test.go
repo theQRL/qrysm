@@ -3,7 +3,7 @@ package sync
 import (
 	"time"
 
-	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/config/params"
 )
 
 // NOTE(rgeraldes24): tests are not valid for now
@@ -13,16 +13,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/async/abool"
-	mockChain "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	p2ptest "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/network/forks"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/async/abool"
+	mockChain "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	p2ptest "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	mockSync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync/testing"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/network/forks"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestService_CheckForNextEpochFork(t *testing.T) {

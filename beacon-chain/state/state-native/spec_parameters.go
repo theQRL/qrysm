@@ -1,8 +1,8 @@
 package state_native
 
 import (
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/runtime/version"
 )
 
 func (b *BeaconState) ProportionalSlashingMultiplier() (uint64, error) {

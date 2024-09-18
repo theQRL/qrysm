@@ -4,16 +4,16 @@ import (
 	"context"
 	"testing"
 
-	chainMock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	dbTest "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/testutil"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zond "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	chainMock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	dbTest "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/testutil"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zond "github.com/theQRL/qrysm/proto/zond/v1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestGetStateRoot(t *testing.T) {

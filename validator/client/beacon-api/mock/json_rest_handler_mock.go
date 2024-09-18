@@ -10,7 +10,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	apimiddleware "github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
+	apimiddleware "github.com/theQRL/qrysm/api/gateway/apimiddleware"
 )
 
 // MockjsonRestHandler is a mock of jsonRestHandler interface.

@@ -1,6 +1,6 @@
 package dilithium
 
-import "github.com/theQRL/qrysm/v4/crypto/dilithium/common"
+import "github.com/theQRL/qrysm/crypto/dilithium/common"
 
 // PublicKey represents a Dilithium public key.
 type PublicKey = common.PublicKey

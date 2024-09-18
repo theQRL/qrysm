@@ -5,9 +5,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation"
-	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation/aggregation"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation"
 	"golang.org/x/exp/slices"
 )
 

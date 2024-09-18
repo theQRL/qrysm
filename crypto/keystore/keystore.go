@@ -35,7 +35,7 @@ import (
 	"github.com/minio/sha256-simd"
 	"github.com/pborman/uuid"
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/dilithium"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
 )

@@ -9,7 +9,7 @@ go_library(
         "slashing.go",
         "standard_api.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/validator/rpc",
+    importpath = "github.com/theQRL/qrysm/validator/rpc",
     visibility = [
         "//cmd/validator:__subpackages__",
         "//validator:__subpackages__",

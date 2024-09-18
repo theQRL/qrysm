@@ -12,25 +12,25 @@ import (
 	gcache "github.com/patrickmn/go-cache"
 	"github.com/theQRL/go-zond/common"
 	gzondTypes "github.com/theQRL/go-zond/core/types"
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	db "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	mockExecution "github.com/theQRL/qrysm/v4/beacon-chain/execution/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	p2ptest "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	p2pTypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/network/forks"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	db "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	mockExecution "github.com/theQRL/qrysm/beacon-chain/execution/testing"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	p2ptest "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	p2pTypes "github.com/theQRL/qrysm/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	leakybucket "github.com/theQRL/qrysm/container/leaky-bucket"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/network/forks"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestRecentBeaconBlocksRPCHandler_ReturnsBlocks(t *testing.T) {
@@ -45,12 +45,16 @@ func TestRecentBeaconBlocksRPCHandler_ReturnsBlocks(t *testing.T) {
 	stateRoot := bytesutil.PadTo([]byte("stateRoot"), fieldparams.RootLength)
 	receiptsRoot := bytesutil.PadTo([]byte("receiptsRoot"), fieldparams.RootLength)
 	logsBloom := bytesutil.PadTo([]byte("logs"), fieldparams.LogsBloomLength)
-	tx := gzondTypes.NewTransaction(
-		0,
-		common.HexToAddress("095e7baea6a6c7c4c2dfeb977efac326af552d87"),
-		big.NewInt(0), 0, big.NewInt(0),
-		nil,
-	)
+	to := common.HexToAddress("095e7baea6a6c7c4c2dfeb977efac326af552d87")
+	tx := gzondTypes.NewTx(&gzondTypes.DynamicFeeTx{
+		Nonce:     0,
+		To:        &to,
+		Value:     big.NewInt(0),
+		Gas:       0,
+		GasFeeCap: big.NewInt(0),
+		GasTipCap: big.NewInt(0),
+		Data:      nil,
+	})
 	txs := []*gzondTypes.Transaction{tx}
 	encodedBinaryTxs := make([][]byte, 1)
 	var err error
@@ -137,12 +141,16 @@ func TestRecentBeaconBlocksRPCHandler_ReturnsBlocks_ReconstructsPayload(t *testi
 	stateRoot := bytesutil.PadTo([]byte("stateRoot"), fieldparams.RootLength)
 	receiptsRoot := bytesutil.PadTo([]byte("receiptsRoot"), fieldparams.RootLength)
 	logsBloom := bytesutil.PadTo([]byte("logs"), fieldparams.LogsBloomLength)
-	tx := gzondTypes.NewTransaction(
-		0,
-		common.HexToAddress("095e7baea6a6c7c4c2dfeb977efac326af552d87"),
-		big.NewInt(0), 0, big.NewInt(0),
-		nil,
-	)
+	to := common.HexToAddress("095e7baea6a6c7c4c2dfeb977efac326af552d87")
+	tx := gzondTypes.NewTx(&gzondTypes.DynamicFeeTx{
+		Nonce:     0,
+		To:        &to,
+		Value:     big.NewInt(0),
+		Gas:       0,
+		GasFeeCap: big.NewInt(0),
+		GasTipCap: big.NewInt(0),
+		Data:      nil,
+	})
 	txs := []*gzondTypes.Transaction{tx}
 	encodedBinaryTxs := make([][]byte, 1)
 	var err error

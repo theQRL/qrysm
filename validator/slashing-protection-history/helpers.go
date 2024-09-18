@@ -8,8 +8,8 @@ import (
 
 	"github.com/k0kubun/go-ansi"
 	"github.com/schollz/progressbar/v3"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 func initializeProgressBar(numItems int, msg string) *progressbar.ProgressBar {

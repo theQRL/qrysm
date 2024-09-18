@@ -1,8 +1,8 @@
 package bytesutil
 
 import (
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 // EpochToBytesLittleEndian conversion.

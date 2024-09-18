@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 

@@ -4,10 +4,10 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/runtime/tos"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/runtime/tos"
 	"github.com/urfave/cli/v2"
 )
 

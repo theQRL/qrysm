@@ -6,10 +6,10 @@ import (
 	"math"
 
 	"github.com/pkg/errors"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	"github.com/theQRL/qrysm/v4/validator/client/iface"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/validator/client/iface"
+	"github.com/theQRL/qrysm/validator/keymanager"
 )
 
 // List pretty-prints accounts in the wallet.

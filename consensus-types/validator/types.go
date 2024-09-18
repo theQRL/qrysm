@@ -1,7 +1,7 @@
 package validator
 
 import (
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 type ValidatorStatus int8

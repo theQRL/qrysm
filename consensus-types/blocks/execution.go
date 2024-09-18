@@ -6,13 +6,13 @@ import (
 	"math/big"
 
 	fastssz "github.com/prysmaticlabs/fastssz"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/encoding/ssz"
-	"github.com/theQRL/qrysm/v4/math"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	consensus_types "github.com/theQRL/qrysm/consensus-types"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/encoding/ssz"
+	"github.com/theQRL/qrysm/math"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
 	"google.golang.org/protobuf/proto"
 )
 

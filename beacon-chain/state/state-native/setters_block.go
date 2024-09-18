@@ -2,12 +2,12 @@ package state_native
 
 import (
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
-	"github.com/theQRL/qrysm/v4/config/features"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
+	"github.com/theQRL/qrysm/beacon-chain/state/stateutil"
+	"github.com/theQRL/qrysm/config/features"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	consensus_types "github.com/theQRL/qrysm/consensus-types"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // SetLatestBlockHeader in the beacon state.

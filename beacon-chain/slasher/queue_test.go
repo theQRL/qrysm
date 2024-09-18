@@ -3,9 +3,9 @@ package slasher
 import (
 	"testing"
 
-	slashertypes "github.com/theQRL/qrysm/v4/beacon-chain/slasher/types"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	slashertypes "github.com/theQRL/qrysm/beacon-chain/slasher/types"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func Test_attestationsQueue(t *testing.T) {

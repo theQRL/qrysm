@@ -8,9 +8,9 @@ import (
 
 	"github.com/golang/snappy"
 	fssz "github.com/prysmaticlabs/fastssz"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/spectest/utils"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/spectest/utils"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 // RunSSZStaticTests executes "ssz_static" tests for the given fork of phase using the provided

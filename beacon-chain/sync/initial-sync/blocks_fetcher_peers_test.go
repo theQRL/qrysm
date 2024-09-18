@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/scorers"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	qrysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	leakybucket "github.com/theQRL/qrysm/container/leaky-bucket"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	qrysmTime "github.com/theQRL/qrysm/time"
 )
 
 func TestBlocksFetcher_selectFailOverPeer(t *testing.T) {

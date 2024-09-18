@@ -10,15 +10,15 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/theQRL/qrysm/v4/api"
-	blockchainTesting "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared"
-	rpctesting "github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared/testing"
-	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	mock2 "github.com/theQRL/qrysm/v4/testing/mock"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/api"
+	blockchainTesting "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	rpctesting "github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared/testing"
+	mockSync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync/testing"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	mock2 "github.com/theQRL/qrysm/testing/mock"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestProduceBlockV3(t *testing.T) {

@@ -7,10 +7,10 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/math"
-	protodb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/math"
+	protodb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // SparseMerkleTrie implements a sparse, general purpose Merkle trie to be used

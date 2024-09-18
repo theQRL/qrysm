@@ -3,7 +3,7 @@
 package cache
 
 import (
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	"github.com/theQRL/qrysm/beacon-chain/state"
 )
 
 // FakeBalanceCache is a fake struct with 1 LRU cache for looking up balance by epoch.

@@ -6,10 +6,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/consensus-types/validator"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/consensus-types/validator"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 type Attestation struct {

@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/lookup"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	http2 "github.com/theQRL/qrysm/v4/network/http"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/lookup"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	http2 "github.com/theQRL/qrysm/network/http"
 )
 
 // DecodeError represents an error resulting from trying to decode an HTTP request.

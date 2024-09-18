@@ -2,9 +2,9 @@ package db
 
 import (
 	"github.com/sirupsen/logrus"
-	beacondb "github.com/theQRL/qrysm/v4/beacon-chain/db"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/runtime/tos"
+	beacondb "github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/runtime/tos"
 	"github.com/urfave/cli/v2"
 )
 

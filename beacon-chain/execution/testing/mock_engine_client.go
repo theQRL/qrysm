@@ -5,13 +5,13 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	payloadattribute "github.com/theQRL/qrysm/v4/consensus-types/payload-attribute"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/math"
-	pb "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	payloadattribute "github.com/theQRL/qrysm/consensus-types/payload-attribute"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/math"
+	pb "github.com/theQRL/qrysm/proto/engine/v1"
 )
 
 // EngineClient --

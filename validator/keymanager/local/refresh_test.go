@@ -7,12 +7,12 @@ import (
 
 	"github.com/google/uuid"
 	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
-	"github.com/theQRL/qrysm/v4/async/event"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	mock "github.com/theQRL/qrysm/v4/validator/accounts/testing"
+	"github.com/theQRL/qrysm/async/event"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	mock "github.com/theQRL/qrysm/validator/accounts/testing"
 )
 
 func TestLocalKeymanager_reloadAccountsFromKeystore_MismatchedNumKeys(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/config/params"
 )
 
 // StartAndEndPage takes in the requested page token, wanted page size, total page size.

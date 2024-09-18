@@ -2,11 +2,11 @@ package state_native
 
 import (
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
-	consensusblocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	_ "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
+	consensusblocks "github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	_ "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // SetLatestExecutionPayloadHeader for the beacon state.

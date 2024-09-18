@@ -6,14 +6,14 @@ import (
 	"github.com/pkg/errors"
 	ssz "github.com/prysmaticlabs/fastssz"
 	log "github.com/sirupsen/logrus"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	consensus_types "github.com/theQRL/qrysm/consensus-types"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
+	"github.com/theQRL/qrysm/runtime/version"
 )
 
 // BeaconBlockIsNil checks if any composite field of input signed beacon block is nil.

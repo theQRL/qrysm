@@ -5,12 +5,12 @@ import (
 	"strconv"
 
 	"github.com/sirupsen/logrus"
-	slashertypes "github.com/theQRL/qrysm/v4/beacon-chain/slasher/types"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/container/slice"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	slashertypes "github.com/theQRL/qrysm/beacon-chain/slasher/types"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/container/slice"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // Group a list of attestations into batches by validator chunk index.

@@ -3,9 +3,9 @@ package precompute_test
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/epoch/precompute"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/beacon-chain/core/epoch/precompute"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestUpdateBalance(t *testing.T) {

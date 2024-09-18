@@ -8,12 +8,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	bytesutil2 "github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/math"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zond "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	bytesutil2 "github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/math"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 var errNilValue = errors.New("nil value")

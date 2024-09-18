@@ -6,13 +6,13 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/ptypes/empty"
-	pb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/validator-client"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/accounts"
-	"github.com/theQRL/qrysm/v4/validator/db/kv"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/slashing-protection-history/format"
-	mocks "github.com/theQRL/qrysm/v4/validator/testing"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/accounts"
+	"github.com/theQRL/qrysm/validator/db/kv"
+	"github.com/theQRL/qrysm/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/slashing-protection-history/format"
+	mocks "github.com/theQRL/qrysm/validator/testing"
 )
 
 func TestImportSlashingProtection_Preconditions(t *testing.T) {

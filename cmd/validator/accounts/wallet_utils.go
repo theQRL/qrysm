@@ -4,10 +4,10 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/validator/accounts"
-	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/accounts"
+	"github.com/theQRL/qrysm/validator/accounts/iface"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/validator/keymanager"
 	"github.com/urfave/cli/v2"
 )
 

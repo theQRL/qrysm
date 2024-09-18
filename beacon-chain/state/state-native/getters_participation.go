@@ -1,9 +1,9 @@
 package state_native
 
 import (
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
-	"github.com/theQRL/qrysm/v4/config/features"
+	"github.com/theQRL/qrysm/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/beacon-chain/state/stateutil"
+	"github.com/theQRL/qrysm/config/features"
 )
 
 // CurrentEpochParticipation corresponding to participation bits on the beacon chain.

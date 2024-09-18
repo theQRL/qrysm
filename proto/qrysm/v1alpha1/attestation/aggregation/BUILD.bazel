@@ -6,7 +6,7 @@ go_library(
         "aggregation.go",
         "maxcover.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/attestation/aggregation",
+    importpath = "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation",
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_pkg_errors//:go_default_library",

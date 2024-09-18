@@ -3,11 +3,11 @@ package validator
 import (
 	"context"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
-	opfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/core/feed"
+	opfeed "github.com/theQRL/qrysm/beacon-chain/core/feed/operation"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

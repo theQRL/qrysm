@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestMeetsMinPlatformReqs(t *testing.T) {

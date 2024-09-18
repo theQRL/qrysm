@@ -1,8 +1,8 @@
 package builder
 
 import (
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/lookup"
+	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/lookup"
 )
 
 type Server struct {

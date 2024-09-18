@@ -7,12 +7,12 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	validatormock "github.com/theQRL/qrysm/v4/testing/validator-mock"
-	"github.com/theQRL/qrysm/v4/validator/client/testutil"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	validatormock "github.com/theQRL/qrysm/testing/validator-mock"
+	"github.com/theQRL/qrysm/validator/client/testutil"
 )
 
 func TestValidator_HandleKeyReload(t *testing.T) {

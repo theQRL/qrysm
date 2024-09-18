@@ -7,9 +7,9 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/beacon-chain/execution"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/io/file"
 	"github.com/urfave/cli/v2"
 )
 
@@ -69,7 +69,7 @@ func parseJWTSecretFromFile(c *cli.Context) ([]byte, error) {
 
 func parseExecutionChainEndpoint(c *cli.Context) (string, error) {
 	if c.String(flags.ExecutionEngineEndpoint.Name) == "" {
-		// TODO(theQRL/qrysm/issues/67)
+		// TODO(now.youtrack.cloud/issue/TQ-1)
 		return "", fmt.Errorf(
 			"you need to specify %s to provide a connection endpoint to an Zond execution client "+
 				"for your Qrysm beacon node. This is a requirement for running a node. You can read more about "+

@@ -25,8 +25,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	qrysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	qrysmTime "github.com/theQRL/qrysm/time"
 )
 
 func aesCTRXOR(key, inText, iv []byte) ([]byte, error) {

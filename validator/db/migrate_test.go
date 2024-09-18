@@ -4,10 +4,10 @@ import (
 	"flag"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	dbtest "github.com/theQRL/qrysm/v4/validator/db/testing"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	dbtest "github.com/theQRL/qrysm/validator/db/testing"
 	"github.com/urfave/cli/v2"
 )
 

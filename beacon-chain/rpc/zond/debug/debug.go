@@ -3,10 +3,10 @@ package debug
 import (
 	"context"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/helpers"
-	"github.com/theQRL/qrysm/v4/proto/migration"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/helpers"
+	"github.com/theQRL/qrysm/proto/migration"
+	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
+	"github.com/theQRL/qrysm/runtime/version"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

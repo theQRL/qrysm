@@ -14,10 +14,10 @@ import (
 	"github.com/theQRL/go-zond/p2p/discover"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	ecdsaqrysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	ecdsaqrysm "github.com/theQRL/qrysm/crypto/ecdsa"
+	"github.com/theQRL/qrysm/runtime/version"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 // Listener defines the discovery V5 network interface that is used

@@ -5,10 +5,10 @@ import (
 	"encoding/binary"
 
 	"github.com/pkg/errors"
-	params "github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/encoding/ssz"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	params "github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/encoding/ssz"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // Eth1DataRootWithHasher returns the hash tree root of input `eth1Data`.

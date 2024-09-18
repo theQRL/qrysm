@@ -5,11 +5,11 @@ import (
 
 	fastssz "github.com/prysmaticlabs/fastssz"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	tracing2 "github.com/theQRL/qrysm/v4/monitoring/tracing"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	tracing2 "github.com/theQRL/qrysm/monitoring/tracing"
 	"github.com/urfave/cli/v2"
 )
 
@@ -148,7 +148,7 @@ func configureInteropConfig(cliCtx *cli.Context) error {
 }
 
 func configureExecutionSetting(cliCtx *cli.Context) error {
-	// TODO(theQRL/qrysm/issues/67)
+	// TODO(now.youtrack.cloud/issue/TQ-1)
 	if !cliCtx.IsSet(flags.SuggestedFeeRecipient.Name) {
 		log.Warnf("In order to receive transaction fees from proposing blocks, " +
 			"you must provide flag --" + flags.SuggestedFeeRecipient.Name + " with a valid zond address when starting your beacon node. " +

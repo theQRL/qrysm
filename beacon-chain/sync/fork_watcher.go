@@ -1,8 +1,8 @@
 package sync
 
 import (
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 // Is a background routine that observes for new incoming forks. Depending on the epoch

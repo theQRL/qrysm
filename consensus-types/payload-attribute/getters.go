@@ -1,7 +1,7 @@
 package payloadattribute
 
 import (
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
 )
 
 // Version returns the version of the payload attribute.

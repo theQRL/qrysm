@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
-	statenative "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	statenative "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestInitializeFromProto_Capella(t *testing.T) {
@@ -79,7 +79,7 @@ func TestInitializeFromProtoUnsafe_Capella(t *testing.T) {
 	}
 }
 
-// TODO(rgeraldes24): this test is also failing in the original repo once we
+// TODO(now.youtrack.cloud/issue/TQ-18): this test is also failing in the original repo once we
 // switch the state to a version > phase0. From debugging, it seems that the
 // root of the prevParticipationRoot(and current) is different in both states.
 /*

@@ -10,8 +10,8 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/tools/unencrypted-keys-gen/keygen"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/tools/unencrypted-keys-gen/keygen"
 	"gopkg.in/yaml.v2"
 )
 

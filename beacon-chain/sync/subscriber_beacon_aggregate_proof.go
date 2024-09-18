@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"google.golang.org/protobuf/proto"
 )
 

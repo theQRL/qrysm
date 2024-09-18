@@ -4,7 +4,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-bitfield"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 func (c *AttCaches) insertSeenBit(att *zondpb.Attestation) error {

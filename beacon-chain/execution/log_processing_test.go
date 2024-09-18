@@ -8,13 +8,13 @@ import (
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	zond "github.com/theQRL/go-zond"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache/depositcache"
-	testDB "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	mockExecution "github.com/theQRL/qrysm/v4/beacon-chain/execution/testing"
-	contracts "github.com/theQRL/qrysm/v4/contracts/deposit"
-	"github.com/theQRL/qrysm/v4/contracts/deposit/mock"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/cache/depositcache"
+	testDB "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	mockExecution "github.com/theQRL/qrysm/beacon-chain/execution/testing"
+	contracts "github.com/theQRL/qrysm/contracts/deposit"
+	"github.com/theQRL/qrysm/contracts/deposit/mock"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestProcessDepositLog_OK(t *testing.T) {

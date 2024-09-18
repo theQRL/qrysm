@@ -3,9 +3,9 @@ package ssz_test
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	"github.com/theQRL/qrysm/v4/encoding/ssz"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/encoding/ssz"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestHash(t *testing.T) {

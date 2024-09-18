@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/config/params"
 )
 
 // SetConfig sets the global params for spec tests depending on the option chosen.

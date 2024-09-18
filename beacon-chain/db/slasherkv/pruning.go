@@ -6,8 +6,8 @@ import (
 	"encoding/binary"
 
 	fssz "github.com/prysmaticlabs/fastssz"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/time/slots"
 	bolt "go.etcd.io/bbolt"
 )
 

@@ -5,13 +5,13 @@ import (
 	"testing"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
-// TODO(theQRL/qrysm/issues/78)
+// TODO(now.youtrack.cloud/issue/TQ-17)
 /*
 func testnetConfigFilePath(t *testing.T, network string) string {
 	fPath, err := bazel.Runfile("external/zond_networks")

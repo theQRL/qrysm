@@ -9,8 +9,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/zondclient"
-	"github.com/theQRL/qrysm/v4/io/file"
-	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	"github.com/theQRL/qrysm/io/file"
+	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
 )
 
 // NetworkId is the ID of the Zond chain.

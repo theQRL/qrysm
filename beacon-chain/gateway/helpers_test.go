@@ -3,9 +3,9 @@ package gateway
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/api/gateway"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/api/gateway"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestDefaultConfig(t *testing.T) {

@@ -14,12 +14,12 @@ import (
 	gzondCrypto "github.com/theQRL/go-zond/crypto"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/config/params"
-	ecdsaqrysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
-	"github.com/theQRL/qrysm/v4/network"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/config/params"
+	ecdsaqrysm "github.com/theQRL/qrysm/crypto/ecdsa"
+	"github.com/theQRL/qrysm/network"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestPrivateKeyLoading(t *testing.T) {

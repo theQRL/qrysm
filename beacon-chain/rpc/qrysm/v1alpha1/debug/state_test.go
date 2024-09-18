@@ -5,16 +5,16 @@ import (
 	"math"
 	"testing"
 
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	dbTest "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	doublylinkedtree "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
-	mockstategen "github.com/theQRL/qrysm/v4/beacon-chain/state/stategen/mock"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	pbrpc "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	dbTest "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
+	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
+	mockstategen "github.com/theQRL/qrysm/beacon-chain/state/stategen/mock"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	pbrpc "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func addDefaultReplayerBuilder(s *Server, h stategen.HistoryAccessor) {

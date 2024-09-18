@@ -1,11 +1,11 @@
 package benchmark
 
-// TODO(theQRL/qrysm/issues/77)
+// TODO(now.youtrack.cloud/issue/TQ-8)
 /*
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestPreGenFullBlock(t *testing.T) {

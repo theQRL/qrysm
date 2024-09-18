@@ -13,9 +13,9 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/qrysm/v4/api/client/beacon"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
+	"github.com/theQRL/qrysm/api/client/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/urfave/cli/v2"
 	"go.opencensus.io/trace"
 )

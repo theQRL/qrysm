@@ -5,9 +5,9 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
-	pmath "github.com/theQRL/qrysm/v4/math"
+	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
+	"github.com/theQRL/qrysm/beacon-chain/state/stateutil"
+	pmath "github.com/theQRL/qrysm/math"
 )
 
 var (

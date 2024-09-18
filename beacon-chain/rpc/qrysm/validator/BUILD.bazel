@@ -7,7 +7,7 @@ go_library(
         "validator_count.go",
         "validator_performance.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/rpc/qrysm/validator",
+    importpath = "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/validator",
     visibility = ["//visibility:public"],
     deps = [
         "//beacon-chain/blockchain:go_default_library",

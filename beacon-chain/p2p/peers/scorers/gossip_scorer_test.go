@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/scorers"
-	pbrpc "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
+	pbrpc "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestScorers_Gossip_Score(t *testing.T) {

@@ -21,7 +21,7 @@ import "proto/qrysm/v1alpha1/withdrawals.proto";
 import "proto/engine/v1/execution_engine.proto";
 
 option csharp_namespace = "TheQRL.Zond.v1alpha1";
-option go_package = "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1;zond";
+option go_package = "github.com/theQRL/qrysm/proto/qrysm/v1alpha1;zond";
 option java_multiple_files = true;
 option java_outer_classname = "BeaconBlockProto";
 option java_package = "org.theqrl.zond.v1alpha1";
@@ -98,10 +98,10 @@ message Deposit {
 // validator signature.
 message VoluntaryExit {
     // The epoch on when exit request becomes valid.
-    uint64 epoch = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+    uint64 epoch = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
 
     // Index of the exiting validator.
-    uint64 validator_index = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
+    uint64 validator_index = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.ValidatorIndex"];
 }
 
 // The signed version of voluntary exit.
@@ -134,10 +134,10 @@ message Eth1Data {
 // a validator signature.
 message BeaconBlockHeader {
     // Beacon chain slot that this block represents.
-    uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+    uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
 
     // Validator index of the validator that proposed the block header.
-    uint64 proposer_index = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
+    uint64 proposer_index = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.ValidatorIndex"];
 
     // 32 byte merkle tree root of the parent ssz encoded block.
     bytes parent_root = 3 [(theqrl.zond.ext.ssz_size) = "32"];
@@ -184,10 +184,10 @@ message SignedBeaconBlockCapella {
 
 message BeaconBlockCapella {
     // Beacon chain slot that this block represents.
-    uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+    uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
 
     // Validator index of the validator that proposed the block header.
-    uint64 proposer_index = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
+    uint64 proposer_index = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.ValidatorIndex"];
 
     // 32 byte root of the parent block.
     bytes parent_root = 3 [(theqrl.zond.ext.ssz_size) = "32"];
@@ -248,10 +248,10 @@ message SignedBlindedBeaconBlockCapella {
 
 message BlindedBeaconBlockCapella {
     // Beacon chain slot that this blinded block represents.
-    uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+    uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
 
     // Validator index of the validator that proposed the block header.
-    uint64 proposer_index = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.ValidatorIndex"];
+    uint64 proposer_index = 2 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.ValidatorIndex"];
 
     // 32 byte root of the parent block.
     bytes parent_root = 3 [(theqrl.zond.ext.ssz_size) = "32"];

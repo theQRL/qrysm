@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	gzondLimit "github.com/theQRL/go-zond/common/fdlimit"
-	"github.com/theQRL/qrysm/v4/runtime/fdlimits"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/runtime/fdlimits"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestSetMaxFdLimits(t *testing.T) {

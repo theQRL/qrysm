@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"testing"
 
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	dbtest "github.com/theQRL/qrysm/v4/validator/db/testing"
-	"github.com/theQRL/qrysm/v4/validator/slashing-protection-history/format"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	dbtest "github.com/theQRL/qrysm/validator/db/testing"
+	"github.com/theQRL/qrysm/validator/slashing-protection-history/format"
 )
 
 func TestExportStandardProtectionJSON_EmptyGenesisRoot(t *testing.T) {

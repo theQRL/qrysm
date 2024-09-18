@@ -9,11 +9,11 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/beacon"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/shared"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/zond/validator"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/validator"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 type dutiesProvider interface {

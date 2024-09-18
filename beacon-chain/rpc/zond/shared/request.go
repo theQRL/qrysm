@@ -10,9 +10,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	"github.com/theQRL/qrysm/v4/beacon-chain/sync"
-	http2 "github.com/theQRL/qrysm/v4/network/http"
+	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/beacon-chain/sync"
+	http2 "github.com/theQRL/qrysm/network/http"
 )
 
 func UintFromQuery(w http.ResponseWriter, r *http.Request, name string) (bool, string, uint64) {

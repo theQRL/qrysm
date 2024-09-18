@@ -8,14 +8,14 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/proto/qrysm/v1alpha1/slashings"
-	"github.com/theQRL/qrysm/v4/validator/db"
-	"github.com/theQRL/qrysm/v4/validator/db/kv"
-	"github.com/theQRL/qrysm/v4/validator/slashing-protection-history/format"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/slashings"
+	"github.com/theQRL/qrysm/validator/db"
+	"github.com/theQRL/qrysm/validator/db/kv"
+	"github.com/theQRL/qrysm/validator/slashing-protection-history/format"
 )
 
 // ImportStandardProtectionJSON takes in EIP-3076 compliant JSON file used for slashing protection
