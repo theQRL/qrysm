@@ -345,14 +345,14 @@ message PubkeyRequest {
 message GetFeeRecipientByPubkeyResponse {
   message FeeRecipient {
     bytes pubkey = 1;
-    bytes ethaddress = 2;
+    bytes zondaddress = 2;
   }
   FeeRecipient data = 1;
 }
 
 message SetFeeRecipientByPubkeyRequest {
   bytes pubkey = 1;
-  bytes ethaddress = 2;
+  bytes zondaddress = 2;
 }
 
 message GetGasLimitResponse {

@@ -84,7 +84,7 @@ echo -n "$IDENTITY" > /tmp/id.key
 
 
 BEACON_FLAGS="--bootstrap-node= \
-  --deposit-contract=0xD775140349E6A5D12524C6ccc3d6A1d4519D4029 \
+  --deposit-contract=ZD775140349E6A5D12524C6ccc3d6A1d4519D4029 \
   --p2p-port=$PORT \
   --grpc-gateway-port=$RPCPORT \
   --peer=$PEERS \

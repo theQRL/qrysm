@@ -19,9 +19,9 @@ import (
 const prepareBeaconProposerTestEndpoint = "/zond/v1/validator/prepare_beacon_proposer"
 
 func TestPrepareBeaconProposer_Valid(t *testing.T) {
-	const feeRecipient1 = "0xca008b199c03a2a2f6bc2ed52d6404c4d8510b35"
-	const feeRecipient2 = "0x8145d80111309e4621ed7632319664ac440b0198"
-	const feeRecipient3 = "0x085f2adb1295821838910be402b3c8cdc118bd86"
+	const feeRecipient1 = "Zca008b199c03a2a2f6bc2ed52d6404c4d8510b35"
+	const feeRecipient2 = "Z8145d80111309e4621ed7632319664ac440b0198"
+	const feeRecipient3 = "Z085f2adb1295821838910be402b3c8cdc118bd86"
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -58,11 +58,11 @@ func TestPrepareBeaconProposer_Valid(t *testing.T) {
 		nil,
 	).Times(1)
 
-	decodedFeeRecipient1, err := hexutil.Decode(feeRecipient1)
+	decodedFeeRecipient1, err := hexutil.DecodeZ(feeRecipient1)
 	require.NoError(t, err)
-	decodedFeeRecipient2, err := hexutil.Decode(feeRecipient2)
+	decodedFeeRecipient2, err := hexutil.DecodeZ(feeRecipient2)
 	require.NoError(t, err)
-	decodedFeeRecipient3, err := hexutil.Decode(feeRecipient3)
+	decodedFeeRecipient3, err := hexutil.DecodeZ(feeRecipient3)
 	require.NoError(t, err)
 
 	protoRecipients := []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{

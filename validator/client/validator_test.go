@@ -1335,8 +1335,14 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 	db := dbTest.SetupDB(t, [][field_params.DilithiumPubkeyLength]byte{})
 	client := validatormock.NewMockValidatorClient(ctrl)
 	nodeClient := validatormock.NewMockNodeClient(ctrl)
-	defaultFeeHex := "0x046Fb65722E7b2455043BFEBf6177F1D2e9738D9"
-	byteValueAddress, err := hexutil.Decode("0x046Fb65722E7b2455043BFEBf6177F1D2e9738D9")
+	defaultFeeStr := "Z046Fb65722E7b2455043BFEBf6177F1D2e9738D9"
+	defaultFeeAddr, err := common.NewAddressFromString(defaultFeeStr)
+	require.NoError(t, err)
+	byteValueAddress, err := hexutil.DecodeZ("Z046Fb65722E7b2455043BFEBf6177F1D2e9738D9")
+	require.NoError(t, err)
+	recipient0, err := common.NewAddressFromString("Z055Fb65722E7b2455043BFEBf6177F1D2e9738D9")
+	require.NoError(t, err)
+	recipient1, err := common.NewAddressFromString("Z0000000000000000000000000000000000000000")
 	require.NoError(t, err)
 
 	type ExpectedValidatorRegistration struct {
@@ -1388,13 +1394,13 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					}, nil)
 				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &zondpb.PrepareBeaconProposerRequest{
 					Recipients: []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
-						{FeeRecipient: common.HexToAddress("0x055Fb65722E7b2455043BFEBf6177F1D2e9738D9").Bytes(), ValidatorIndex: 1},
-						{FeeRecipient: common.HexToAddress(defaultFeeHex).Bytes(), ValidatorIndex: 2},
+						{FeeRecipient: recipient0.Bytes(), ValidatorIndex: 1},
+						{FeeRecipient: defaultFeeAddr.Bytes(), ValidatorIndex: 2},
 					},
 				}).Return(nil, nil)
 				config[keys[0]] = &validatorserviceconfig.ProposerOption{
 					FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-						FeeRecipient: common.HexToAddress("0x055Fb65722E7b2455043BFEBf6177F1D2e9738D9"),
+						FeeRecipient: recipient0,
 					},
 					BuilderConfig: &validatorserviceconfig.BuilderConfig{
 						Enabled:  true,
@@ -1405,7 +1411,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					ProposeConfig: config,
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress(defaultFeeHex),
+							FeeRecipient: defaultFeeAddr,
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
@@ -1421,13 +1427,13 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				return &v
 			},
 			feeRecipientMap: map[primitives.ValidatorIndex]string{
-				1: "0x055Fb65722E7b2455043BFEBf6177F1D2e9738D9",
-				2: defaultFeeHex,
+				1: "Z055Fb65722E7b2455043BFEBf6177F1D2e9738D9",
+				2: defaultFeeStr,
 			},
 			mockExpectedRequests: []ExpectedValidatorRegistration{
 
 				{
-					FeeRecipient: common.HexToAddress("0x055Fb65722E7b2455043BFEBf6177F1D2e9738D9").Bytes(),
+					FeeRecipient: recipient0.Bytes(),
 					GasLimit:     40000000,
 				},
 				{
@@ -1469,13 +1475,13 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					}, nil)
 				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &zondpb.PrepareBeaconProposerRequest{
 					Recipients: []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
-						{FeeRecipient: common.HexToAddress("0x055Fb65722E7b2455043BFEBf6177F1D2e9738D9").Bytes(), ValidatorIndex: 1},
-						{FeeRecipient: common.HexToAddress(defaultFeeHex).Bytes(), ValidatorIndex: 2},
+						{FeeRecipient: recipient0.Bytes(), ValidatorIndex: 1},
+						{FeeRecipient: defaultFeeAddr.Bytes(), ValidatorIndex: 2},
 					},
 				}).Return(nil, nil)
 				config[keys[0]] = &validatorserviceconfig.ProposerOption{
 					FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-						FeeRecipient: common.HexToAddress("0x055Fb65722E7b2455043BFEBf6177F1D2e9738D9"),
+						FeeRecipient: recipient0,
 					},
 					BuilderConfig: &validatorserviceconfig.BuilderConfig{
 						Enabled:  true,
@@ -1486,7 +1492,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					ProposeConfig: config,
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress(defaultFeeHex),
+							FeeRecipient: defaultFeeAddr,
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  false,
@@ -1502,13 +1508,13 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				return &v
 			},
 			feeRecipientMap: map[primitives.ValidatorIndex]string{
-				1: "0x055Fb65722E7b2455043BFEBf6177F1D2e9738D9",
-				2: defaultFeeHex,
+				1: "Z055Fb65722E7b2455043BFEBf6177F1D2e9738D9",
+				2: defaultFeeStr,
 			},
 			mockExpectedRequests: []ExpectedValidatorRegistration{
 
 				{
-					FeeRecipient: common.HexToAddress("0x055Fb65722E7b2455043BFEBf6177F1D2e9738D9").Bytes(),
+					FeeRecipient: recipient0.Bytes(),
 					GasLimit:     uint64(40000000),
 				},
 			},
@@ -1546,20 +1552,20 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					}, nil)
 				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &zondpb.PrepareBeaconProposerRequest{
 					Recipients: []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
-						{FeeRecipient: common.HexToAddress("0x055Fb65722E7b2455043BFEBf6177F1D2e9738D9").Bytes(), ValidatorIndex: 1},
-						{FeeRecipient: common.HexToAddress(defaultFeeHex).Bytes(), ValidatorIndex: 2},
+						{FeeRecipient: recipient0.Bytes(), ValidatorIndex: 1},
+						{FeeRecipient: defaultFeeAddr.Bytes(), ValidatorIndex: 2},
 					},
 				}).Return(nil, nil)
 				config[keys[0]] = &validatorserviceconfig.ProposerOption{
 					FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-						FeeRecipient: common.HexToAddress("0x055Fb65722E7b2455043BFEBf6177F1D2e9738D9"),
+						FeeRecipient: recipient0,
 					},
 				}
 				err = v.SetProposerSettings(context.Background(), &validatorserviceconfig.ProposerSettings{
 					ProposeConfig: config,
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress(defaultFeeHex),
+							FeeRecipient: defaultFeeAddr,
 						},
 					},
 				})
@@ -1567,8 +1573,8 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				return &v
 			},
 			feeRecipientMap: map[primitives.ValidatorIndex]string{
-				1: "0x055Fb65722E7b2455043BFEBf6177F1D2e9738D9",
-				2: defaultFeeHex,
+				1: "Z055Fb65722E7b2455043BFEBf6177F1D2e9738D9",
+				2: defaultFeeStr,
 			},
 			logMessages:       []string{"will not be included in builder validator registration"},
 			doesntContainLogs: true,
@@ -1600,7 +1606,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					ProposeConfig: nil,
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress(defaultFeeHex),
+							FeeRecipient: defaultFeeAddr,
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
@@ -1624,13 +1630,13 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				).Return(&empty.Empty{}, nil)
 				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &zondpb.PrepareBeaconProposerRequest{
 					Recipients: []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
-						{FeeRecipient: common.HexToAddress(defaultFeeHex).Bytes(), ValidatorIndex: 1},
+						{FeeRecipient: defaultFeeAddr.Bytes(), ValidatorIndex: 1},
 					},
 				}).Return(nil, nil)
 				return &v
 			},
 			feeRecipientMap: map[primitives.ValidatorIndex]string{
-				1: defaultFeeHex,
+				1: defaultFeeStr,
 			},
 			mockExpectedRequests: []ExpectedValidatorRegistration{
 				{
@@ -1660,7 +1666,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					ProposeConfig: nil,
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress(defaultFeeHex),
+							FeeRecipient: defaultFeeAddr,
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
@@ -1687,13 +1693,13 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				).Return(&empty.Empty{}, nil)
 				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &zondpb.PrepareBeaconProposerRequest{
 					Recipients: []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
-						{FeeRecipient: common.HexToAddress(defaultFeeHex).Bytes(), ValidatorIndex: 1},
+						{FeeRecipient: defaultFeeAddr.Bytes(), ValidatorIndex: 1},
 					},
 				}).Return(nil, nil)
 				return &v
 			},
 			feeRecipientMap: map[primitives.ValidatorIndex]string{
-				1: defaultFeeHex,
+				1: defaultFeeStr,
 			},
 			mockExpectedRequests: []ExpectedValidatorRegistration{
 				{
@@ -1734,7 +1740,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					}, nil)
 				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &zondpb.PrepareBeaconProposerRequest{
 					Recipients: []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
-						{FeeRecipient: common.HexToAddress("0x0").Bytes(), ValidatorIndex: 1},
+						{FeeRecipient: recipient1.Bytes(), ValidatorIndex: 1},
 					},
 				}).Return(nil, nil)
 				config[keys[0]] = &validatorserviceconfig.ProposerOption{
@@ -1746,7 +1752,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					ProposeConfig: config,
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress(defaultFeeHex),
+							FeeRecipient: defaultFeeAddr,
 						},
 					},
 				})
@@ -1781,14 +1787,14 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				).Return(nil, errors.New("could not find validator index for public key"))
 				config[keys[0]] = &validatorserviceconfig.ProposerOption{
 					FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-						FeeRecipient: common.HexToAddress("0x046Fb65722E7b2455043BFEBf6177F1D2e9738D9"),
+						FeeRecipient: defaultFeeAddr,
 					},
 				}
 				err = v.SetProposerSettings(context.Background(), &validatorserviceconfig.ProposerSettings{
 					ProposeConfig: config,
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress(defaultFeeHex),
+							FeeRecipient: defaultFeeAddr,
 						},
 					},
 				})
@@ -1839,7 +1845,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 					ProposeConfig: config,
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress(defaultFeeHex),
+							FeeRecipient: defaultFeeAddr,
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
@@ -1850,7 +1856,7 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				require.NoError(t, err)
 				client.EXPECT().PrepareBeaconProposer(gomock.Any(), &zondpb.PrepareBeaconProposerRequest{
 					Recipients: []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
-						{FeeRecipient: common.HexToAddress("0x0").Bytes(), ValidatorIndex: 1},
+						{FeeRecipient: recipient1.Bytes(), ValidatorIndex: 1},
 					},
 				}).Return(nil, nil)
 				client.EXPECT().SubmitValidatorRegistrations(
@@ -1876,12 +1882,12 @@ func TestValidator_PushProposerSettings(t *testing.T) {
 				signedRegisterValidatorRequests, err := v.buildSignedRegReqs(ctx, pubkeys, km.Sign)
 				require.NoError(t, err)
 				for _, recipient := range feeRecipients {
-					require.Equal(t, strings.ToLower(tt.feeRecipientMap[recipient.ValidatorIndex]), strings.ToLower(hexutil.Encode(recipient.FeeRecipient)))
+					require.Equal(t, strings.ToLower(tt.feeRecipientMap[recipient.ValidatorIndex]), strings.ToLower(hexutil.EncodeZ(recipient.FeeRecipient)))
 				}
 				require.Equal(t, len(tt.feeRecipientMap), len(feeRecipients))
 				for i, request := range tt.mockExpectedRequests {
 					require.Equal(t, tt.mockExpectedRequests[i].GasLimit, request.GasLimit)
-					require.Equal(t, hexutil.Encode(tt.mockExpectedRequests[i].FeeRecipient), hexutil.Encode(request.FeeRecipient))
+					require.Equal(t, hexutil.EncodeZ(tt.mockExpectedRequests[i].FeeRecipient), hexutil.EncodeZ(request.FeeRecipient))
 				}
 				// check if Pubkeys are always unique
 				var unique = make(map[string]bool)
@@ -1921,7 +1927,7 @@ func getPubkeyFromString(t *testing.T, stringPubkey string) [field_params.Dilith
 }
 
 func getFeeRecipientFromString(t *testing.T, stringFeeRecipient string) common.Address {
-	feeRecipientTemp, err := hexutil.Decode(stringFeeRecipient)
+	feeRecipientTemp, err := hexutil.DecodeZ(stringFeeRecipient)
 	require.NoError(t, err)
 
 	var feeRecipient common.Address
@@ -1943,9 +1949,9 @@ func TestValidator_buildPrepProposerReqs_WithoutDefaultConfig(t *testing.T) {
 	pubkey4 := getPubkeyFromString(t, "0x444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444")
 
 	// Fee recipients
-	feeRecipient1 := getFeeRecipientFromString(t, "0x1111111111111111111111111111111111111111")
-	feeRecipient2 := getFeeRecipientFromString(t, "0x0000000000000000000000000000000000000000")
-	feeRecipient3 := getFeeRecipientFromString(t, "0x3333333333333333333333333333333333333333")
+	feeRecipient1 := getFeeRecipientFromString(t, "Z1111111111111111111111111111111111111111")
+	feeRecipient2 := getFeeRecipientFromString(t, "Z0000000000000000000000000000000000000000")
+	feeRecipient3 := getFeeRecipientFromString(t, "Z3333333333333333333333333333333333333333")
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -2035,11 +2041,11 @@ func TestValidator_buildPrepProposerReqs_WithDefaultConfig(t *testing.T) {
 	pubkey4 := getPubkeyFromString(t, "0x444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444")
 
 	// Fee recipients
-	feeRecipient1 := getFeeRecipientFromString(t, "0x1111111111111111111111111111111111111111")
-	feeRecipient2 := getFeeRecipientFromString(t, "0x0000000000000000000000000000000000000000")
-	feeRecipient3 := getFeeRecipientFromString(t, "0x3333333333333333333333333333333333333333")
+	feeRecipient1 := getFeeRecipientFromString(t, "Z1111111111111111111111111111111111111111")
+	feeRecipient2 := getFeeRecipientFromString(t, "Z0000000000000000000000000000000000000000")
+	feeRecipient3 := getFeeRecipientFromString(t, "Z3333333333333333333333333333333333333333")
 
-	defaultFeeRecipient := getFeeRecipientFromString(t, "0xdddddddddddddddddddddddddddddddddddddddd")
+	defaultFeeRecipient := getFeeRecipientFromString(t, "Zdddddddddddddddddddddddddddddddddddddddd")
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -2147,10 +2153,10 @@ func TestValidator_buildSignedRegReqs_DefaultConfigDisabled(t *testing.T) {
 	pubkey3 := getPubkeyFromString(t, "0x333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333")
 
 	// Fee recipients
-	feeRecipient1 := getFeeRecipientFromString(t, "0x0000000000000000000000000000000000000000")
-	feeRecipient2 := getFeeRecipientFromString(t, "0x2222222222222222222222222222222222222222")
+	feeRecipient1 := getFeeRecipientFromString(t, "Z0000000000000000000000000000000000000000")
+	feeRecipient2 := getFeeRecipientFromString(t, "Z2222222222222222222222222222222222222222")
 
-	defaultFeeRecipient := getFeeRecipientFromString(t, "0xdddddddddddddddddddddddddddddddddddddddd")
+	defaultFeeRecipient := getFeeRecipientFromString(t, "Zdddddddddddddddddddddddddddddddddddddddd")
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -2233,10 +2239,10 @@ func TestValidator_buildSignedRegReqs_DefaultConfigEnabled(t *testing.T) {
 	pubkey3 := getPubkeyFromString(t, "0x333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333")
 
 	// Fee recipients
-	feeRecipient1 := getFeeRecipientFromString(t, "0x0000000000000000000000000000000000000000")
-	feeRecipient2 := getFeeRecipientFromString(t, "0x2222222222222222222222222222222222222222")
+	feeRecipient1 := getFeeRecipientFromString(t, "Z0000000000000000000000000000000000000000")
+	feeRecipient2 := getFeeRecipientFromString(t, "Z2222222222222222222222222222222222222222")
 
-	defaultFeeRecipient := getFeeRecipientFromString(t, "0xdddddddddddddddddddddddddddddddddddddddd")
+	defaultFeeRecipient := getFeeRecipientFromString(t, "Zdddddddddddddddddddddddddddddddddddddddd")
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -2318,7 +2324,7 @@ func TestValidator_buildSignedRegReqs_SignerOnError(t *testing.T) {
 	pubkey1 := getPubkeyFromString(t, "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111")
 
 	// Fee recipients
-	defaultFeeRecipient := getFeeRecipientFromString(t, "0xdddddddddddddddddddddddddddddddddddddddd")
+	defaultFeeRecipient := getFeeRecipientFromString(t, "Zdddddddddddddddddddddddddddddddddddddddd")
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -2359,9 +2365,9 @@ func TestValidator_buildSignedRegReqs_TimestampBeforeGenesis(t *testing.T) {
 	pubkey1 := getPubkeyFromString(t, "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111")
 
 	// Fee recipients
-	feeRecipient1 := getFeeRecipientFromString(t, "0x0000000000000000000000000000000000000000")
+	feeRecipient1 := getFeeRecipientFromString(t, "Z0000000000000000000000000000000000000000")
 
-	defaultFeeRecipient := getFeeRecipientFromString(t, "0xdddddddddddddddddddddddddddddddddddddddd")
+	defaultFeeRecipient := getFeeRecipientFromString(t, "Zdddddddddddddddddddddddddddddddddddddddd")
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

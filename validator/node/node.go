@@ -460,7 +460,8 @@ func proposerSettings(cliCtx *cli.Context, db iface.ValidatorDB) (*validatorServ
 	if fileConfig.DefaultConfig == nil {
 		return nil, errors.New("default fileConfig is required, proposer settings file is either empty or an incorrect format")
 	}
-	if !common.IsHexAddress(fileConfig.DefaultConfig.FeeRecipient) {
+	recipient, err := common.NewAddressFromString(fileConfig.DefaultConfig.FeeRecipient)
+	if err != nil {
 		return nil, errors.New("default fileConfig fee recipient is not a valid zond address")
 	}
 	psExists, err := db.ProposerSettingsExists(cliCtx.Context)
@@ -472,7 +473,7 @@ func proposerSettings(cliCtx *cli.Context, db iface.ValidatorDB) (*validatorServ
 	}
 	vpSettings.DefaultConfig = &validatorServiceConfig.ProposerOption{
 		FeeRecipientConfig: &validatorServiceConfig.FeeRecipientConfig{
-			FeeRecipient: common.HexToAddress(fileConfig.DefaultConfig.FeeRecipient),
+			FeeRecipient: recipient,
 		},
 		BuilderConfig: validatorServiceConfig.ToBuilderConfig(fileConfig.DefaultConfig.Builder),
 	}
@@ -517,9 +518,13 @@ func proposerSettings(cliCtx *cli.Context, db iface.ValidatorDB) (*validatorServ
 			} else if currentBuilderConfig != nil {
 				currentBuilderConfig.GasLimit = reviewGasLimit(currentBuilderConfig.GasLimit)
 			}
+			recipient, err := common.NewAddressFromString(option.FeeRecipient)
+			if err != nil {
+				return nil, err
+			}
 			o := &validatorServiceConfig.ProposerOption{
 				FeeRecipientConfig: &validatorServiceConfig.FeeRecipientConfig{
-					FeeRecipient: common.HexToAddress(option.FeeRecipient),
+					FeeRecipient: recipient,
 				},
 				BuilderConfig: currentBuilderConfig,
 			}
@@ -546,7 +551,7 @@ func verifyOption(key string, option *validatorpb.ProposerOptionPayload) error {
 	if option == nil {
 		return fmt.Errorf("fee recipient is required for proposer %s", key)
 	}
-	if !common.IsHexAddress(option.FeeRecipient) {
+	if !common.IsAddress(option.FeeRecipient) {
 		return errors.New("fee recipient is not a valid zond address")
 	}
 	if err := warnNonChecksummedAddress(option.FeeRecipient); err != nil {

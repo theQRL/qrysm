@@ -103,9 +103,13 @@ func validateDeposit(depositData *DepositData, credential *Credential) bool {
 		if !reflect.DeepEqual(withdrawalCredentials[1:12], zeroBytes11) {
 			panic("withdrawal credentials zero bytes not found for index 1:12")
 		}
-		if !reflect.DeepEqual(withdrawalCredentials[12:], credential.ZondWithdrawalAddress().Bytes()) {
+		withdrawalAddr, err := credential.ZondWithdrawalAddress()
+		if err != nil {
+			panic(fmt.Errorf("failed to read withdrawal address | reason %v", err))
+		}
+		if !reflect.DeepEqual(withdrawalCredentials[12:], withdrawalAddr.Bytes()) {
 			panic(fmt.Errorf("withdrawalCredentials[12:] %x mismatch with credential.ZondWithdrawalAddress %x",
-				withdrawalCredentials[12:], credential.ZondWithdrawalAddress().Bytes()))
+				withdrawalCredentials[12:], withdrawalAddr.Bytes()))
 		}
 	} else if reflect.DeepEqual(withdrawalCredentials[0], params.BeaconConfig().DilithiumWithdrawalPrefixByte) {
 		hashWithdrawalPK := sha256.Sum256(credential.WithdrawalPK())

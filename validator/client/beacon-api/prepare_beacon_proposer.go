@@ -16,7 +16,7 @@ func (c *beaconApiValidatorClient) prepareBeaconProposer(ctx context.Context, re
 	jsonRecipients := make([]*shared.FeeRecipient, len(recipients))
 	for index, recipient := range recipients {
 		jsonRecipients[index] = &shared.FeeRecipient{
-			FeeRecipient:   hexutil.Encode(recipient.FeeRecipient),
+			FeeRecipient:   hexutil.EncodeZ(recipient.FeeRecipient),
 			ValidatorIndex: strconv.FormatUint(uint64(recipient.ValidatorIndex), 10),
 		}
 	}

@@ -86,7 +86,7 @@ func MinimalSpecConfig() *BeaconChainConfig {
 	// Zond execution layer parameters.
 	minimalConfig.DepositChainID = 5
 	minimalConfig.DepositNetworkID = 5
-	minimalConfig.DepositContractAddress = "0x1234567890123456789012345678901234567890"
+	minimalConfig.DepositContractAddress = "Z1234567890123456789012345678901234567890"
 
 	minimalConfig.ConfigName = MinimalName
 	minimalConfig.PresetBase = "minimal"

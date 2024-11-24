@@ -160,7 +160,7 @@ func (s *SignedValidatorRegistration) ToConsensus() (*zond.SignedValidatorRegist
 }
 
 func (s *ValidatorRegistration) ToConsensus() (*zond.ValidatorRegistrationV1, error) {
-	feeRecipient, err := hexutil.Decode(s.FeeRecipient)
+	feeRecipient, err := hexutil.DecodeZ(s.FeeRecipient)
 	if err != nil {
 		return nil, NewDecodeError(err, "FeeRecipient")
 	}
@@ -195,7 +195,7 @@ func ValidatorRegistrationFromConsensus(vr *zond.ValidatorRegistrationV1) (*Vali
 		return nil, errors.New("ValidatorRegistrationV1 is empty")
 	}
 	return &ValidatorRegistration{
-		FeeRecipient: hexutil.Encode(vr.FeeRecipient),
+		FeeRecipient: hexutil.EncodeZ(vr.FeeRecipient),
 		GasLimit:     strconv.FormatUint(vr.GasLimit, 10),
 		Timestamp:    strconv.FormatUint(vr.Timestamp, 10),
 		Pubkey:       hexutil.Encode(vr.Pubkey),

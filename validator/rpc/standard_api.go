@@ -542,14 +542,14 @@ func (s *Server) ListFeeRecipientByPubkey(ctx context.Context, req *zondpbservic
 		proposerOption, found := proposerSettings.ProposeConfig[bytesutil.ToBytes2592(validatorKey)]
 
 		if found && proposerOption.FeeRecipientConfig != nil {
-			finalResp.Data.Ethaddress = proposerOption.FeeRecipientConfig.FeeRecipient.Bytes()
+			finalResp.Data.Zondaddress = proposerOption.FeeRecipientConfig.FeeRecipient.Bytes()
 			return finalResp, nil
 		}
 	}
 
 	// If fee recipient is defined in default configuration, use it
 	if proposerSettings != nil && proposerSettings.DefaultConfig != nil && proposerSettings.DefaultConfig.FeeRecipientConfig != nil {
-		finalResp.Data.Ethaddress = proposerSettings.DefaultConfig.FeeRecipientConfig.FeeRecipient.Bytes()
+		finalResp.Data.Zondaddress = proposerSettings.DefaultConfig.FeeRecipientConfig.FeeRecipient.Bytes()
 		return finalResp, nil
 	}
 
@@ -563,7 +563,7 @@ func (s *Server) ListFeeRecipientByPubkey(ctx context.Context, req *zondpbservic
 	}
 
 	if resp != nil && len(resp.FeeRecipient) != 0 {
-		finalResp.Data.Ethaddress = resp.FeeRecipient
+		finalResp.Data.Zondaddress = resp.FeeRecipient
 		return finalResp, nil
 	}
 
@@ -577,15 +577,15 @@ func (s *Server) SetFeeRecipientByPubkey(ctx context.Context, req *zondpbservice
 	}
 
 	validatorKey := req.Pubkey
-	feeRecipient := common.BytesToAddress(req.Ethaddress)
+	feeRecipient := common.BytesToAddress(req.Zondaddress)
 
 	if err := validatePublicKey(validatorKey); err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	encoded := hexutil.Encode(req.Ethaddress)
+	encoded := hexutil.EncodeZ(req.Zondaddress)
 
-	if !common.IsHexAddress(encoded) {
+	if !common.IsAddress(encoded) {
 		return nil, status.Error(
 			codes.InvalidArgument, "Fee recipient is not a valid Zond address")
 	}

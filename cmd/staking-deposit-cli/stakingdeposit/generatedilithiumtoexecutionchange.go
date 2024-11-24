@@ -146,7 +146,11 @@ func ValidateDilithiumToExecutionChange(dilithiumToExecutionChange *DilithiumToE
 	if !bytes.Equal(fromDilithiumPubkey.Marshal(), credential.WithdrawalPK()) {
 		return false
 	}
-	if !bytes.Equal(toExecutionAddress, credential.ZondWithdrawalAddress().Bytes()) ||
+	execAddr, err := credential.ZondWithdrawalAddress()
+	if err != nil {
+		panic(fmt.Errorf("failed to read withdrawal address | reason %v", err))
+	}
+	if !bytes.Equal(toExecutionAddress, execAddr.Bytes()) ||
 		!bytes.Equal(toExecutionAddress, misc.DecodeHex(inputExecutionAddress)) {
 		return false
 	}

@@ -18,6 +18,8 @@ import (
 func TestGetSpec(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	config := params.BeaconConfig().Copy()
+	defaultFeeRecipient, err := common.NewAddressFromString("Z0000000000000000000000000000000000000001")
+	require.NoError(t, err)
 
 	config.ConfigName = "ConfigName"
 	config.PresetBase = "PresetBase"
@@ -88,7 +90,7 @@ func TestGetSpec(t *testing.T) {
 	config.EpochsPerSyncCommitteePeriod = 66
 	config.InactivityScoreRecoveryRate = 70
 	config.MinSyncCommitteeParticipants = 71
-	config.DefaultFeeRecipient = common.HexToAddress("DefaultFeeRecipient")
+	config.DefaultFeeRecipient = defaultFeeRecipient
 	config.MaxWithdrawalsPerPayload = 74
 	config.MaxDilithiumToExecutionChanges = 75
 	config.MaxValidatorsPerWithdrawalsSweep = 76
@@ -300,7 +302,7 @@ func TestGetSpec(t *testing.T) {
 		case "DOMAIN_APPLICATION_BUILDER":
 			assert.Equal(t, "0x00000001", v)
 		case "DefaultFeeRecipient":
-			assert.Equal(t, common.HexToAddress("DefaultFeeRecipient"), v)
+			assert.Equal(t, defaultFeeRecipient, v)
 		case "PROPORTIONAL_SLASHING_MULTIPLIER":
 			assert.Equal(t, "46", v)
 		case "MIN_SLASHING_PENALTY_QUOTIENT":

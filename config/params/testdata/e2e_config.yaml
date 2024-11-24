@@ -54,7 +54,7 @@ PROPOSER_SCORE_BOOST: 40
 DEPOSIT_CHAIN_ID: 1337 # Override for e2e tests
 DEPOSIT_NETWORK_ID: 1337 # Override for e2e tests
 # Configured on a per testnet basis
-DEPOSIT_CONTRACT_ADDRESS: 0x4242424242424242424242424242424242424242
+DEPOSIT_CONTRACT_ADDRESS: Z4242424242424242424242424242424242424242
 
 # Sync committee
 # ---------------------------------------------------------------

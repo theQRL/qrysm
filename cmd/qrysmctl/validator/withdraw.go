@@ -60,7 +60,7 @@ func getWithdrawalMessagesFromPathFlag(c *cli.Context) ([]*apimiddleware.SignedD
 				to[i].Message.FromDilithiumPubkey = fmt.Sprintf("0x%s", obj.Message.FromDilithiumPubkey)
 			}
 			if len(obj.Message.ToExecutionAddress) == common.AddressLength*2 {
-				to[i].Message.ToExecutionAddress = fmt.Sprintf("0x%s", obj.Message.ToExecutionAddress)
+				to[i].Message.ToExecutionAddress = fmt.Sprintf("Z%s", obj.Message.ToExecutionAddress)
 			}
 			if len(obj.Signature) == field_params.DilithiumSignatureLength*2 {
 				to[i].Signature = fmt.Sprintf("0x%s", obj.Signature)

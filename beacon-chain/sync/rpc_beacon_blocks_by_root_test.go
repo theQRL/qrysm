@@ -45,7 +45,8 @@ func TestRecentBeaconBlocksRPCHandler_ReturnsBlocks(t *testing.T) {
 	stateRoot := bytesutil.PadTo([]byte("stateRoot"), fieldparams.RootLength)
 	receiptsRoot := bytesutil.PadTo([]byte("receiptsRoot"), fieldparams.RootLength)
 	logsBloom := bytesutil.PadTo([]byte("logs"), fieldparams.LogsBloomLength)
-	to := common.HexToAddress("095e7baea6a6c7c4c2dfeb977efac326af552d87")
+	to, err := common.NewAddressFromString("Z095e7baea6a6c7c4c2dfeb977efac326af552d87")
+	require.NoError(t, err)
 	tx := gzondTypes.NewTx(&gzondTypes.DynamicFeeTx{
 		Nonce:     0,
 		To:        &to,
@@ -57,7 +58,6 @@ func TestRecentBeaconBlocksRPCHandler_ReturnsBlocks(t *testing.T) {
 	})
 	txs := []*gzondTypes.Transaction{tx}
 	encodedBinaryTxs := make([][]byte, 1)
-	var err error
 	encodedBinaryTxs[0], err = txs[0].MarshalBinary()
 	require.NoError(t, err)
 	blockHash := bytesutil.ToBytes32([]byte("foo"))
@@ -141,7 +141,8 @@ func TestRecentBeaconBlocksRPCHandler_ReturnsBlocks_ReconstructsPayload(t *testi
 	stateRoot := bytesutil.PadTo([]byte("stateRoot"), fieldparams.RootLength)
 	receiptsRoot := bytesutil.PadTo([]byte("receiptsRoot"), fieldparams.RootLength)
 	logsBloom := bytesutil.PadTo([]byte("logs"), fieldparams.LogsBloomLength)
-	to := common.HexToAddress("095e7baea6a6c7c4c2dfeb977efac326af552d87")
+	to, err := common.NewAddressFromString("Z095e7baea6a6c7c4c2dfeb977efac326af552d87")
+	require.NoError(t, err)
 	tx := gzondTypes.NewTx(&gzondTypes.DynamicFeeTx{
 		Nonce:     0,
 		To:        &to,
@@ -153,7 +154,6 @@ func TestRecentBeaconBlocksRPCHandler_ReturnsBlocks_ReconstructsPayload(t *testi
 	})
 	txs := []*gzondTypes.Transaction{tx}
 	encodedBinaryTxs := make([][]byte, 1)
-	var err error
 	encodedBinaryTxs[0], err = txs[0].MarshalBinary()
 	require.NoError(t, err)
 	blockHash := bytesutil.ToBytes32([]byte("foo"))

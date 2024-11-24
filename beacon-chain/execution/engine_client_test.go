@@ -433,7 +433,8 @@ func TestReconstructFullBlock(t *testing.T) {
 
 		jsonPayload := make(map[string]interface{})
 
-		to := common.HexToAddress("095e7baea6a6c7c4c2dfeb977efac326af552d87")
+		to, err := common.NewAddressFromString("Z095e7baea6a6c7c4c2dfeb977efac326af552d87")
+		require.NoError(t, err)
 		tx := gzondtypes.NewTx(&gzondtypes.DynamicFeeTx{
 			Nonce: 0,
 			To:    &to,
@@ -442,7 +443,6 @@ func TestReconstructFullBlock(t *testing.T) {
 		})
 		txs := []*gzondtypes.Transaction{tx}
 		encodedBinaryTxs := make([][]byte, 1)
-		var err error
 		encodedBinaryTxs[0], err = txs[0].MarshalBinary()
 		require.NoError(t, err)
 		payload.Transactions = encodedBinaryTxs
@@ -529,7 +529,8 @@ func TestReconstructFullBlockBatch(t *testing.T) {
 
 		jsonPayload := make(map[string]interface{})
 
-		to := common.HexToAddress("095e7baea6a6c7c4c2dfeb977efac326af552d87")
+		to, err := common.NewAddressFromString("Z095e7baea6a6c7c4c2dfeb977efac326af552d87")
+		require.NoError(t, err)
 		tx := gzondtypes.NewTx(&gzondtypes.DynamicFeeTx{
 			Nonce: 0,
 			To:    &to,
@@ -538,7 +539,6 @@ func TestReconstructFullBlockBatch(t *testing.T) {
 		})
 		txs := []*gzondtypes.Transaction{tx}
 		encodedBinaryTxs := make([][]byte, 1)
-		var err error
 		encodedBinaryTxs[0], err = txs[0].MarshalBinary()
 		require.NoError(t, err)
 		payload.Transactions = encodedBinaryTxs
@@ -1239,7 +1239,7 @@ func TestCapella_PayloadBodiesByHash(t *testing.T) {
 				Withdrawals: []*pb.Withdrawal{{
 					Index:          1,
 					ValidatorIndex: 1,
-					Address:        hexutil.MustDecode("0xcf8e0d4e9587369b2301d0790347320302cc0943"),
+					Address:        hexutil.MustDecodeZ("Zcf8e0d4e9587369b2301d0790347320302cc0943"),
 					Amount:         1,
 				}},
 			}
@@ -1280,7 +1280,7 @@ func TestCapella_PayloadBodiesByHash(t *testing.T) {
 				Withdrawals: []*pb.Withdrawal{{
 					Index:          1,
 					ValidatorIndex: 1,
-					Address:        hexutil.MustDecode("0xcf8e0d4e9587369b2301d0790347320302cc0943"),
+					Address:        hexutil.MustDecodeZ("Zcf8e0d4e9587369b2301d0790347320302cc0943"),
 					Amount:         1,
 				}},
 			}
@@ -1321,7 +1321,7 @@ func TestCapella_PayloadBodiesByHash(t *testing.T) {
 				Withdrawals: []*pb.Withdrawal{{
 					Index:          1,
 					ValidatorIndex: 1,
-					Address:        hexutil.MustDecode("0xcf8e0d4e9587369b2301d0790347320302cc0943"),
+					Address:        hexutil.MustDecodeZ("Zcf8e0d4e9587369b2301d0790347320302cc0943"),
 					Amount:         1,
 				}},
 			}
@@ -1330,7 +1330,7 @@ func TestCapella_PayloadBodiesByHash(t *testing.T) {
 				Withdrawals: []*pb.Withdrawal{{
 					Index:          2,
 					ValidatorIndex: 1,
-					Address:        hexutil.MustDecode("0xcf8e0d4e9587369b2301d0790347320302cc0943"),
+					Address:        hexutil.MustDecodeZ("Zcf8e0d4e9587369b2301d0790347320302cc0943"),
 					Amount:         1,
 				}},
 			}
@@ -1490,7 +1490,7 @@ func TestCapella_PayloadBodiesByRange(t *testing.T) {
 				Withdrawals: []*pb.Withdrawal{{
 					Index:          1,
 					ValidatorIndex: 1,
-					Address:        hexutil.MustDecode("0xcf8e0d4e9587369b2301d0790347320302cc0943"),
+					Address:        hexutil.MustDecodeZ("Zcf8e0d4e9587369b2301d0790347320302cc0943"),
 					Amount:         1,
 				}},
 			}
@@ -1531,7 +1531,7 @@ func TestCapella_PayloadBodiesByRange(t *testing.T) {
 				Withdrawals: []*pb.Withdrawal{{
 					Index:          1,
 					ValidatorIndex: 1,
-					Address:        hexutil.MustDecode("0xcf8e0d4e9587369b2301d0790347320302cc0943"),
+					Address:        hexutil.MustDecodeZ("Zcf8e0d4e9587369b2301d0790347320302cc0943"),
 					Amount:         1,
 				}},
 			}
@@ -1572,7 +1572,7 @@ func TestCapella_PayloadBodiesByRange(t *testing.T) {
 				Withdrawals: []*pb.Withdrawal{{
 					Index:          1,
 					ValidatorIndex: 1,
-					Address:        hexutil.MustDecode("0xcf8e0d4e9587369b2301d0790347320302cc0943"),
+					Address:        hexutil.MustDecodeZ("Zcf8e0d4e9587369b2301d0790347320302cc0943"),
 					Amount:         1,
 				}},
 			}
@@ -1581,7 +1581,7 @@ func TestCapella_PayloadBodiesByRange(t *testing.T) {
 				Withdrawals: []*pb.Withdrawal{{
 					Index:          2,
 					ValidatorIndex: 1,
-					Address:        hexutil.MustDecode("0xcf8e0d4e9587369b2301d0790347320302cc0943"),
+					Address:        hexutil.MustDecodeZ("Zcf8e0d4e9587369b2301d0790347320302cc0943"),
 					Amount:         1,
 				}},
 			}

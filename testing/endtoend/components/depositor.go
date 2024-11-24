@@ -218,7 +218,10 @@ func (d *Depositor) txops(ctx context.Context) (*bind.TransactOpts, error) {
 // DepositContract is a special-purpose client for calling the deposit contract.
 func (d *Depositor) contractDepositor() (*contracts.DepositContract, error) {
 	if d.cd == nil {
-		addr := common.HexToAddress(params.BeaconConfig().DepositContractAddress)
+		addr, err := common.NewAddressFromString(params.BeaconConfig().DepositContractAddress)
+		if err != nil {
+			return nil, err
+		}
 		contract, err := contracts.NewDepositContract(addr, d.Client)
 		if err != nil {
 			return nil, err

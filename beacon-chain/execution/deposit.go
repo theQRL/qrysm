@@ -17,7 +17,7 @@ func DepositContractAddress() (string, error) {
 		return "", errors.New("valid deposit contract is required")
 	}
 
-	if !common.IsHexAddress(address) {
+	if !common.IsAddress(address) {
 		return "", errors.New("invalid deposit contract address given: " + address)
 	}
 	return address, nil

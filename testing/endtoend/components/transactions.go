@@ -102,7 +102,10 @@ func (s *TransactionGenerator) Started() <-chan struct{} {
 func SendTransaction(client *rpc.Client, key *dilithium.Dilithium, f *filler.Filler, gasFeeCap *big.Int, gasTipCap *big.Int, addr string, N uint64, al bool) error {
 	backend := zondclient.NewClient(client)
 
-	sender := common.HexToAddress(addr)
+	sender, err := common.NewAddressFromString(addr)
+	if err != nil {
+		return err
+	}
 	chainid, err := backend.ChainID(context.Background())
 	if err != nil {
 		return err

@@ -726,7 +726,7 @@ func Test_GetPayloadAttribute_PrepareAllPayloads(t *testing.T) {
 	hasPayload, attr, vId := service.getPayloadAttribute(ctx, st, 0, []byte{})
 	require.Equal(t, true, hasPayload)
 	require.Equal(t, primitives.ValidatorIndex(0), vId)
-	require.Equal(t, params.BeaconConfig().EthBurnAddressHex, common.BytesToAddress(attr.SuggestedFeeRecipient()).String())
+	require.Equal(t, params.BeaconConfig().ZondBurnAddress, common.BytesToAddress(attr.SuggestedFeeRecipient()).String())
 	require.LogsContain(t, hook, "Fee recipient is currently using the burn address")
 }
 
@@ -747,14 +747,15 @@ func Test_GetPayloadAttributeV2(t *testing.T) {
 	hasPayload, attr, vId := service.getPayloadAttribute(ctx, st, slot, params.BeaconConfig().ZeroHash[:])
 	require.Equal(t, true, hasPayload)
 	require.Equal(t, suggestedVid, vId)
-	require.Equal(t, params.BeaconConfig().EthBurnAddressHex, common.BytesToAddress(attr.SuggestedFeeRecipient()).String())
+	require.Equal(t, params.BeaconConfig().ZondBurnAddress, common.BytesToAddress(attr.SuggestedFeeRecipient()).String())
 	require.LogsContain(t, hook, "Fee recipient is currently using the burn address")
 	a, err := attr.Withdrawals()
 	require.NoError(t, err)
 	require.Equal(t, 0, len(a))
 
 	// Cache hit, advance state, has fee recipient
-	suggestedAddr := common.HexToAddress("123")
+	suggestedAddr, err := common.NewAddressFromString("Z0000000000000000000000000000000000000123")
+	require.NoError(t, err)
 	require.NoError(t, service.cfg.BeaconDB.SaveFeeRecipientsByValidatorIDs(ctx, []primitives.ValidatorIndex{suggestedVid}, []common.Address{suggestedAddr}))
 	service.cfg.ProposerSlotIndexCache.SetProposerAndPayloadIDs(slot, suggestedVid, [8]byte{}, [32]byte{})
 	hasPayload, attr, vId = service.getPayloadAttribute(ctx, st, slot, params.BeaconConfig().ZeroHash[:])

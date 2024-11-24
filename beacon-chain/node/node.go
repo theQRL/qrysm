@@ -446,19 +446,22 @@ func (b *BeaconNode) startDB(cliCtx *cli.Context, depositAddress string) error {
 	if err != nil {
 		return err
 	}
-	addr := common.HexToAddress(depositAddress)
+	addr, err := common.NewAddressFromString(depositAddress)
+	if err != nil {
+		return err
+	}
 	if len(knownContract) == 0 {
 		if err := b.db.SaveDepositContractAddress(b.ctx, addr); err != nil {
 			return errors.Wrap(err, "could not save deposit contract")
 		}
 	}
 	if len(knownContract) > 0 && !bytes.Equal(addr.Bytes(), knownContract) {
-		return fmt.Errorf("database contract is %#x but tried to run with %#x. This likely means "+
+		return fmt.Errorf("database contract is Z%#x but tried to run with %#x. This likely means "+
 			"you are trying to run on a different network than what the database contains. You can run once with "+
 			"'--clear-db' to wipe the old database or use an alternative data directory with '--datadir'",
-			knownContract, addr.Bytes())
+			knownContract, addr)
 	}
-	log.Infof("Deposit contract: %#x", addr.Bytes())
+	log.Infof("Deposit contract: %#x", addr)
 	return nil
 }
 
@@ -653,7 +656,11 @@ func (b *BeaconNode) registerPOWChainService() error {
 	if err != nil {
 		return err
 	}
-	depositContractAddr, err := execution.DepositContractAddress()
+	depositContractAddrStr, err := execution.DepositContractAddress()
+	if err != nil {
+		return err
+	}
+	depositContractAddr, err := common.NewAddressFromString(depositContractAddrStr)
 	if err != nil {
 		return err
 	}
@@ -661,7 +668,7 @@ func (b *BeaconNode) registerPOWChainService() error {
 	// skipcq: CRT-D0001
 	opts := append(
 		b.serviceFlagOpts.executionChainFlagOpts,
-		execution.WithDepositContractAddress(common.HexToAddress(depositContractAddr)),
+		execution.WithDepositContractAddress(depositContractAddr),
 		execution.WithDatabase(b.db),
 		execution.WithDepositCache(b.depositCache),
 		execution.WithStateNotifier(b),

@@ -600,7 +600,7 @@ type SetFeeRecipientByPubkeyRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	Pubkey     []byte `protobuf:"bytes,1,opt,name=pubkey,proto3" json:"pubkey,omitempty"`
-	Ethaddress []byte `protobuf:"bytes,2,opt,name=ethaddress,proto3" json:"ethaddress,omitempty"`
+	Zondaddress []byte `protobuf:"bytes,2,opt,name=zondaddress,proto3" json:"zondaddress,omitempty"`
 }
 
 func (x *SetFeeRecipientByPubkeyRequest) Reset() {
@@ -642,9 +642,9 @@ func (x *SetFeeRecipientByPubkeyRequest) GetPubkey() []byte {
 	return nil
 }
 
-func (x *SetFeeRecipientByPubkeyRequest) GetEthaddress() []byte {
+func (x *SetFeeRecipientByPubkeyRequest) GetZondaddress() []byte {
 	if x != nil {
-		return x.Ethaddress
+		return x.Zondaddress
 	}
 	return nil
 }
@@ -953,7 +953,7 @@ type GetFeeRecipientByPubkeyResponse_FeeRecipient struct {
 	unknownFields protoimpl.UnknownFields
 
 	Pubkey     []byte `protobuf:"bytes,1,opt,name=pubkey,proto3" json:"pubkey,omitempty"`
-	Ethaddress []byte `protobuf:"bytes,2,opt,name=ethaddress,proto3" json:"ethaddress,omitempty"`
+	Zondaddress []byte `protobuf:"bytes,2,opt,name=zondaddress,proto3" json:"zondaddress,omitempty"`
 }
 
 func (x *GetFeeRecipientByPubkeyResponse_FeeRecipient) Reset() {
@@ -995,9 +995,9 @@ func (x *GetFeeRecipientByPubkeyResponse_FeeRecipient) GetPubkey() []byte {
 	return nil
 }
 
-func (x *GetFeeRecipientByPubkeyResponse_FeeRecipient) GetEthaddress() []byte {
+func (x *GetFeeRecipientByPubkeyResponse_FeeRecipient) GetZondaddress() []byte {
 	if x != nil {
-		return x.Ethaddress
+		return x.Zondaddress
 	}
 	return nil
 }

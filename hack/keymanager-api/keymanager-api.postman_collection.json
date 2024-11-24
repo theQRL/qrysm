@@ -176,7 +176,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"zondaddress\":\"0x046FB65722E7b2455012bfebF6177F4d2e9738D9\"\n}\n"
+					"raw": "{\n    \"zondaddress\":\"Z046FB65722E7b2455012bfebF6177F4d2e9738D9\"\n}\n"
 				},
 				"url": {
 					"raw": "localhost:7500/zond/v1/validator/0xaf2e7ba294e03438ea819bd4033c6c1bf6b04320ee2075b77273c08d02f8a61bcc303c2c06bd3713cb442072ae591494/feerecipient",

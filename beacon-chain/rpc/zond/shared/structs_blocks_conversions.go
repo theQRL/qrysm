@@ -137,7 +137,7 @@ func (b *BeaconBlockCapella) ToConsensus() (*zond.BeaconBlockCapella, error) {
 	if err != nil {
 		return nil, NewDecodeError(err, "Body.ExecutionPayload.ParentHash")
 	}
-	payloadFeeRecipient, err := DecodeHexWithLength(b.Body.ExecutionPayload.FeeRecipient, fieldparams.FeeRecipientLength)
+	payloadFeeRecipient, err := DecodeAddressWithLength(b.Body.ExecutionPayload.FeeRecipient, fieldparams.FeeRecipientLength)
 	if err != nil {
 		return nil, NewDecodeError(err, "Body.ExecutionPayload.FeeRecipient")
 	}
@@ -210,7 +210,7 @@ func (b *BeaconBlockCapella) ToConsensus() (*zond.BeaconBlockCapella, error) {
 		if err != nil {
 			return nil, NewDecodeError(err, fmt.Sprintf("Body.ExecutionPayload.Withdrawals[%d].ValidatorIndex", i))
 		}
-		address, err := DecodeHexWithLength(w.ExecutionAddress, common.AddressLength)
+		address, err := DecodeAddressWithLength(w.ExecutionAddress, common.AddressLength)
 		if err != nil {
 			return nil, NewDecodeError(err, fmt.Sprintf("Body.ExecutionPayload.Withdrawals[%d].ExecutionAddress", i))
 		}
@@ -393,7 +393,7 @@ func (b *BlindedBeaconBlockCapella) ToConsensus() (*zond.BlindedBeaconBlockCapel
 	if err != nil {
 		return nil, NewDecodeError(err, "Body.ExecutionPayloadHeader.ParentHash")
 	}
-	payloadFeeRecipient, err := DecodeHexWithLength(b.Body.ExecutionPayloadHeader.FeeRecipient, fieldparams.FeeRecipientLength)
+	payloadFeeRecipient, err := DecodeAddressWithLength(b.Body.ExecutionPayloadHeader.FeeRecipient, fieldparams.FeeRecipientLength)
 	if err != nil {
 		return nil, NewDecodeError(err, "Body.ExecutionPayloadHeader.FeeRecipient")
 	}
@@ -566,7 +566,7 @@ func BlindedBeaconBlockCapellaFromConsensus(b *zond.BlindedBeaconBlockCapella) (
 			},
 			ExecutionPayloadHeader: &ExecutionPayloadHeaderCapella{
 				ParentHash:       hexutil.Encode(b.Body.ExecutionPayloadHeader.ParentHash),
-				FeeRecipient:     hexutil.Encode(b.Body.ExecutionPayloadHeader.FeeRecipient),
+				FeeRecipient:     hexutil.EncodeZ(b.Body.ExecutionPayloadHeader.FeeRecipient),
 				StateRoot:        hexutil.Encode(b.Body.ExecutionPayloadHeader.StateRoot),
 				ReceiptsRoot:     hexutil.Encode(b.Body.ExecutionPayloadHeader.ReceiptsRoot),
 				LogsBloom:        hexutil.Encode(b.Body.ExecutionPayloadHeader.LogsBloom),
@@ -631,7 +631,7 @@ func BeaconBlockCapellaFromConsensus(b *zond.BeaconBlockCapella) (*BeaconBlockCa
 		withdrawals[i] = &Withdrawal{
 			WithdrawalIndex:  fmt.Sprintf("%d", w.Index),
 			ValidatorIndex:   fmt.Sprintf("%d", w.ValidatorIndex),
-			ExecutionAddress: hexutil.Encode(w.Address),
+			ExecutionAddress: hexutil.EncodeZ(w.Address),
 			Amount:           fmt.Sprintf("%d", w.Amount),
 		}
 	}
@@ -668,7 +668,7 @@ func BeaconBlockCapellaFromConsensus(b *zond.BeaconBlockCapella) (*BeaconBlockCa
 			},
 			ExecutionPayload: &ExecutionPayloadCapella{
 				ParentHash:    hexutil.Encode(b.Body.ExecutionPayload.ParentHash),
-				FeeRecipient:  hexutil.Encode(b.Body.ExecutionPayload.FeeRecipient),
+				FeeRecipient:  hexutil.EncodeZ(b.Body.ExecutionPayload.FeeRecipient),
 				StateRoot:     hexutil.Encode(b.Body.ExecutionPayload.StateRoot),
 				ReceiptsRoot:  hexutil.Encode(b.Body.ExecutionPayload.ReceiptsRoot),
 				LogsBloom:     hexutil.Encode(b.Body.ExecutionPayload.LogsBloom),
@@ -1129,7 +1129,7 @@ func DilithiumChangesToConsensus(src []*SignedDilithiumToExecutionChange) ([]*zo
 		if err != nil {
 			return nil, NewDecodeError(err, fmt.Sprintf("[%d].Message.FromDilithiumPubkey", i))
 		}
-		address, err := DecodeHexWithLength(ch.Message.ToExecutionAddress, common.AddressLength)
+		address, err := DecodeAddressWithLength(ch.Message.ToExecutionAddress, common.AddressLength)
 		if err != nil {
 			return nil, NewDecodeError(err, fmt.Sprintf("[%d].Message.ToExecutionAddress", i))
 		}
@@ -1152,7 +1152,7 @@ func DilithiumChangesFromConsensus(src []*zond.SignedDilithiumToExecutionChange)
 			Message: &DilithiumToExecutionChange{
 				ValidatorIndex:      fmt.Sprintf("%d", ch.Message.ValidatorIndex),
 				FromDilithiumPubkey: hexutil.Encode(ch.Message.FromDilithiumPubkey),
-				ToExecutionAddress:  hexutil.Encode(ch.Message.ToExecutionAddress),
+				ToExecutionAddress:  hexutil.EncodeZ(ch.Message.ToExecutionAddress),
 			},
 			Signature: hexutil.Encode(ch.Signature),
 		}

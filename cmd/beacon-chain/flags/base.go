@@ -214,7 +214,7 @@ var (
 	SuggestedFeeRecipient = &cli.StringFlag{
 		Name:  "suggested-fee-recipient",
 		Usage: "This address will receive the transaction fees produced by any blocks from this node. Validator client can override this value through the preparebeaconproposer api.",
-		Value: params.BeaconConfig().EthBurnAddressHex,
+		Value: params.BeaconConfig().ZondBurnAddress,
 	}
 	// SlasherDirFlag defines a path on disk where the slasher database is stored.
 	SlasherDirFlag = &cli.StringFlag{

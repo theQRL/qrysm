@@ -25,9 +25,13 @@ func ToSettings(ps *validatorpb.ProposerSettingsPayload) (*ProposerSettings, err
 			if err != nil {
 				return nil, errors.Wrap(err, fmt.Sprintf("cannot decode public key %s", key))
 			}
+			feeRecipient, err := common.NewAddressFromString(optionPayload.FeeRecipient)
+			if err != nil {
+				return nil, err
+			}
 			p := &ProposerOption{
 				FeeRecipientConfig: &FeeRecipientConfig{
-					FeeRecipient: common.HexToAddress(optionPayload.FeeRecipient),
+					FeeRecipient: feeRecipient,
 				},
 			}
 			if optionPayload.Builder != nil {
@@ -39,8 +43,12 @@ func ToSettings(ps *validatorpb.ProposerSettingsPayload) (*ProposerSettings, err
 	if ps.DefaultConfig != nil {
 		d := &ProposerOption{}
 		if ps.DefaultConfig.FeeRecipient != "" {
+			feeRecipient, err := common.NewAddressFromString(ps.DefaultConfig.FeeRecipient)
+			if err != nil {
+				return nil, err
+			}
 			d.FeeRecipientConfig = &FeeRecipientConfig{
-				FeeRecipient: common.HexToAddress(ps.DefaultConfig.FeeRecipient),
+				FeeRecipient: feeRecipient,
 			}
 		}
 		if ps.DefaultConfig.Builder != nil {

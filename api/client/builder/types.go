@@ -218,21 +218,21 @@ type BuilderBidCapella struct {
 
 // ExecutionPayloadHeaderCapella is a field in BuilderBidCapella.
 type ExecutionPayloadHeaderCapella struct {
-	ParentHash       hexutil.Bytes `json:"parent_hash"`
-	FeeRecipient     hexutil.Bytes `json:"fee_recipient"`
-	StateRoot        hexutil.Bytes `json:"state_root"`
-	ReceiptsRoot     hexutil.Bytes `json:"receipts_root"`
-	LogsBloom        hexutil.Bytes `json:"logs_bloom"`
-	PrevRandao       hexutil.Bytes `json:"prev_randao"`
-	BlockNumber      Uint64String  `json:"block_number"`
-	GasLimit         Uint64String  `json:"gas_limit"`
-	GasUsed          Uint64String  `json:"gas_used"`
-	Timestamp        Uint64String  `json:"timestamp"`
-	ExtraData        hexutil.Bytes `json:"extra_data"`
-	BaseFeePerGas    Uint256       `json:"base_fee_per_gas"`
-	BlockHash        hexutil.Bytes `json:"block_hash"`
-	TransactionsRoot hexutil.Bytes `json:"transactions_root"`
-	WithdrawalsRoot  hexutil.Bytes `json:"withdrawals_root"`
+	ParentHash       hexutil.Bytes  `json:"parent_hash"`
+	FeeRecipient     hexutil.BytesZ `json:"fee_recipient"`
+	StateRoot        hexutil.Bytes  `json:"state_root"`
+	ReceiptsRoot     hexutil.Bytes  `json:"receipts_root"`
+	LogsBloom        hexutil.Bytes  `json:"logs_bloom"`
+	PrevRandao       hexutil.Bytes  `json:"prev_randao"`
+	BlockNumber      Uint64String   `json:"block_number"`
+	GasLimit         Uint64String   `json:"gas_limit"`
+	GasUsed          Uint64String   `json:"gas_used"`
+	Timestamp        Uint64String   `json:"timestamp"`
+	ExtraData        hexutil.Bytes  `json:"extra_data"`
+	BaseFeePerGas    Uint256        `json:"base_fee_per_gas"`
+	BlockHash        hexutil.Bytes  `json:"block_hash"`
+	TransactionsRoot hexutil.Bytes  `json:"transactions_root"`
+	WithdrawalsRoot  hexutil.Bytes  `json:"withdrawals_root"`
 	*v1.ExecutionPayloadHeaderCapella
 }
 
@@ -285,7 +285,7 @@ type ExecPayloadResponseCapella struct {
 // ExecutionPayloadCapella is a field of ExecPayloadResponseCapella.
 type ExecutionPayloadCapella struct {
 	ParentHash    hexutil.Bytes   `json:"parent_hash"`
-	FeeRecipient  hexutil.Bytes   `json:"fee_recipient"`
+	FeeRecipient  hexutil.BytesZ  `json:"fee_recipient"`
 	StateRoot     hexutil.Bytes   `json:"state_root"`
 	ReceiptsRoot  hexutil.Bytes   `json:"receipts_root"`
 	LogsBloom     hexutil.Bytes   `json:"logs_bloom"`
@@ -342,10 +342,10 @@ func (p *ExecutionPayloadCapella) ToProto() (*v1.ExecutionPayloadCapella, error)
 
 // Withdrawal is a field of ExecutionPayloadCapella.
 type Withdrawal struct {
-	Index          Uint256       `json:"index"`
-	ValidatorIndex Uint256       `json:"validator_index"`
-	Address        hexutil.Bytes `json:"address"`
-	Amount         Uint256       `json:"amount"`
+	Index          Uint256        `json:"index"`
+	ValidatorIndex Uint256        `json:"validator_index"`
+	Address        hexutil.BytesZ `json:"address"`
+	Amount         Uint256        `json:"amount"`
 }
 
 // ProposerSlashing is a field in BlindedBeaconBlockBodyCapella.
@@ -641,9 +641,9 @@ type DilithiumToExecutionChange struct {
 // MarshalJSON returns a JSON byte array representation of DilithiumToExecutionChange.
 func (ch *DilithiumToExecutionChange) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		ValidatorIndex      string        `json:"validator_index"`
-		FromDilithiumPubkey hexutil.Bytes `json:"from_dilithium_pubkey"`
-		ToExecutionAddress  hexutil.Bytes `json:"to_execution_address"`
+		ValidatorIndex      string         `json:"validator_index"`
+		FromDilithiumPubkey hexutil.Bytes  `json:"from_dilithium_pubkey"`
+		ToExecutionAddress  hexutil.BytesZ `json:"to_execution_address"`
 	}{
 		ValidatorIndex:      fmt.Sprintf("%d", ch.ValidatorIndex),
 		FromDilithiumPubkey: ch.FromDilithiumPubkey,

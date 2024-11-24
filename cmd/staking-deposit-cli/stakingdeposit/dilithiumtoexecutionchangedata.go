@@ -33,7 +33,7 @@ func NewDilithiumToExecutionChangeData(
 		Message: &DilithiumToExecutionChangeMessage{
 			ValidatorIndex:      strconv.FormatUint(uint64(signedDilithiumToExecutionChange.Message.ValidatorIndex), 10),
 			FromDilithiumPubkey: fmt.Sprintf("0x%x", signedDilithiumToExecutionChange.Message.FromDilithiumPubkey),
-			ToExecutionAddress:  fmt.Sprintf("0x%x", signedDilithiumToExecutionChange.Message.ToExecutionAddress),
+			ToExecutionAddress:  fmt.Sprintf("Z%x", signedDilithiumToExecutionChange.Message.ToExecutionAddress),
 		},
 		Signature: fmt.Sprintf("0x%x", signedDilithiumToExecutionChange.Signature),
 		MetaData: &DilithiumToExecutionChangeMetaData{

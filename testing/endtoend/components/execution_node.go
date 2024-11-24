@@ -208,7 +208,7 @@ func (node *ExecutionNode) Start(ctx context.Context) error {
 		"--ipcdisable",
 		"--verbosity=4",
 		"--syncmode=full",
-		// fmt.Sprintf("--txpool.locals=%s", EthAddress),
+		// fmt.Sprintf("--txpool.locals=%s", ZondAddress),
 	}
 
 	// give the miner start a couple of tries, since the p2p networking check is flaky

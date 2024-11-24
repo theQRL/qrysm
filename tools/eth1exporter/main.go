@@ -100,7 +100,12 @@ func ConnectionToGzond(url string) error {
 
 // EthBalance from remote server.
 func EthBalance(address string) *big.Float {
-	balance, err := eth.BalanceAt(context.TODO(), common.HexToAddress(address), nil)
+	addr, err := common.NewAddressFromString(address)
+	if err != nil {
+		fmt.Printf("Error fetching Zond Balance for address: %v\n", address)
+		return nil
+	}
+	balance, err := eth.BalanceAt(context.TODO(), addr, nil)
 	if err != nil {
 		fmt.Printf("Error fetching Zond Balance for address: %v\n", address)
 	}
@@ -173,7 +178,7 @@ func OpenAddresses(filename string) error {
 	allWatching = []*Watching{}
 	for scanner.Scan() {
 		object := strings.Split(scanner.Text(), ":")
-		if common.IsHexAddress(object[1]) {
+		if common.IsAddress(object[1]) {
 			w := &Watching{
 				Name:    object[0],
 				Address: object[1],

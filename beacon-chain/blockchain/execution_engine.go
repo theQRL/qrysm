@@ -278,10 +278,10 @@ func (s *Service) getPayloadAttribute(ctx context.Context, st state.BeaconState,
 	recipient, err := s.cfg.BeaconDB.FeeRecipientByValidatorID(ctx, proposerID)
 	switch {
 	case errors.Is(err, kv.ErrNotFoundFeeRecipient):
-		if feeRecipient.String() == params.BeaconConfig().EthBurnAddressHex {
+		if feeRecipient.String() == params.BeaconConfig().ZondBurnAddress {
 			logrus.WithFields(logrus.Fields{
 				"validatorIndex": proposerID,
-				"burnAddress":    params.BeaconConfig().EthBurnAddressHex,
+				"burnAddress":    params.BeaconConfig().ZondBurnAddress,
 			}).Warn("Fee recipient is currently using the burn address, " +
 				"you will not be rewarded transaction fees on this setting. " +
 				"Please set a different zond address as the fee recipient. " +

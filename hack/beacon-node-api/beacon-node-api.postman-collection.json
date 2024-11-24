@@ -1573,7 +1573,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "[\n  {\n    \"validator_index\": \"1\",\n    \"fee_recipient\": \"0xabcf8e0d4e9587369b2301d0790347320302cc09\"\n  }\n]"
+					"raw": "[\n  {\n    \"validator_index\": \"1\",\n    \"fee_recipient\": \"Zabcf8e0d4e9587369b2301d0790347320302cc09\"\n  }\n]"
 				},
 				"url": {
 					"raw": "/zond/v1/validator/prepare_beacon_proposer",

@@ -333,10 +333,10 @@ type SyncCommitteeContribution struct {
 
 // ValidatorRegistration a sub property of ValidatorRegistrationSignRequest
 type ValidatorRegistration struct {
-	FeeRecipient hexutil.Bytes `json:"fee_recipient" validate:"required"` // 42 hexadecimal string
-	GasLimit     string        `json:"gas_limit" validate:"required"`     // uint64
-	Timestamp    string        `json:"timestamp" validate:"required"`     // uint64
-	Pubkey       hexutil.Bytes `json:"pubkey"  validate:"required"`       // bls hexadecimal string
+	FeeRecipient hexutil.Address `json:"fee_recipient" validate:"required"` // 41 hexadecimal string
+	GasLimit     string          `json:"gas_limit" validate:"required"`     // uint64
+	Timestamp    string          `json:"timestamp" validate:"required"`     // uint64
+	Pubkey       hexutil.Bytes   `json:"pubkey"  validate:"required"`       // bls hexadecimal string
 }
 
 ////////////////////////////////////////////////////////////////////////////////

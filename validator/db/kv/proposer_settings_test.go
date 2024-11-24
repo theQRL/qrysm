@@ -15,6 +15,12 @@ import (
 )
 
 func TestStore_ProposerSettings_ReadAndWrite(t *testing.T) {
+	recipient0, err := common.NewAddressFromString("Z50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3")
+	require.NoError(t, err)
+	recipient1, err := common.NewAddressFromString("Z6e35733c5af9B61374A128e6F85f553aF09ff89A")
+	require.NoError(t, err)
+	recipient2, err := common.NewAddressFromString("Z9995733c5af9B61374A128e6F85f553aF09ff89B")
+	require.NoError(t, err)
 	t.Run("save to db in full", func(t *testing.T) {
 		ctx := context.Background()
 		db := setupDB(t, [][field_params.DilithiumPubkeyLength]byte{})
@@ -24,7 +30,7 @@ func TestStore_ProposerSettings_ReadAndWrite(t *testing.T) {
 			ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorServiceConfig.ProposerOption{
 				bytesutil.ToBytes2592(key1): {
 					FeeRecipientConfig: &validatorServiceConfig.FeeRecipientConfig{
-						FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
+						FeeRecipient: recipient0,
 					},
 					BuilderConfig: &validatorServiceConfig.BuilderConfig{
 						Enabled:  true,
@@ -34,7 +40,7 @@ func TestStore_ProposerSettings_ReadAndWrite(t *testing.T) {
 			},
 			DefaultConfig: &validatorServiceConfig.ProposerOption{
 				FeeRecipientConfig: &validatorServiceConfig.FeeRecipientConfig{
-					FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+					FeeRecipient: recipient1,
 				},
 				BuilderConfig: &validatorServiceConfig.BuilderConfig{
 					Enabled:  false,
@@ -57,7 +63,7 @@ func TestStore_ProposerSettings_ReadAndWrite(t *testing.T) {
 		settings := &validatorServiceConfig.ProposerSettings{
 			DefaultConfig: &validatorServiceConfig.ProposerOption{
 				FeeRecipientConfig: &validatorServiceConfig.FeeRecipientConfig{
-					FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+					FeeRecipient: recipient1,
 				},
 				BuilderConfig: &validatorServiceConfig.BuilderConfig{
 					Enabled:  false,
@@ -69,7 +75,7 @@ func TestStore_ProposerSettings_ReadAndWrite(t *testing.T) {
 		require.NoError(t, err)
 		upatedDefault := &validatorServiceConfig.ProposerOption{
 			FeeRecipientConfig: &validatorServiceConfig.FeeRecipientConfig{
-				FeeRecipient: common.HexToAddress("0x9995733c5af9B61374A128e6F85f553aF09ff89B"),
+				FeeRecipient: recipient2,
 			},
 			BuilderConfig: &validatorServiceConfig.BuilderConfig{
 				Enabled:  true,
@@ -85,7 +91,7 @@ func TestStore_ProposerSettings_ReadAndWrite(t *testing.T) {
 		require.DeepEqual(t, dbSettings.DefaultConfig, upatedDefault)
 		option := &validatorServiceConfig.ProposerOption{
 			FeeRecipientConfig: &validatorServiceConfig.FeeRecipientConfig{
-				FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
+				FeeRecipient: recipient0,
 			},
 			BuilderConfig: &validatorServiceConfig.BuilderConfig{
 				Enabled:  true,

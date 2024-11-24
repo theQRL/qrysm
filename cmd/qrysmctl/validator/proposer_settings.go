@@ -12,7 +12,6 @@ import (
 	"github.com/theQRL/qrysm/cmd/validator/flags"
 	"github.com/theQRL/qrysm/config/params"
 	validatorType "github.com/theQRL/qrysm/consensus-types/validator"
-	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/io/file"
 	"github.com/theQRL/qrysm/io/prompt"
 	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
@@ -105,7 +104,7 @@ func getProposerSettings(c *cli.Context, r io.Reader) error {
 }
 
 func validateIsExecutionAddress(input string) error {
-	if !bytesutil.IsHex([]byte(input)) || !(len(input) == common.AddressLength*2+2) {
+	if !common.IsAddress(input) {
 		return errors.New("no default address entered")
 	}
 	return nil

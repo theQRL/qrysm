@@ -211,6 +211,14 @@ func TestWeb3SignerConfig(t *testing.T) {
 
 func TestProposerSettings(t *testing.T) {
 	hook := logtest.NewGlobal()
+	recipient0, err := common.NewAddressFromString("Zae967917c465db8578ca9024c205720b1a3651A9")
+	require.NoError(t, err)
+	recipient1, err := common.NewAddressFromString("Z50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3")
+	require.NoError(t, err)
+	recipient2, err := common.NewAddressFromString("Z60155530FCE8a85ec7055A5F8b2bE214B3DaeFd4")
+	require.NoError(t, err)
+	recipient3, err := common.NewAddressFromString("Z6e35733c5af9B61374A128e6F85f553aF09ff89A")
+	require.NoError(t, err)
 
 	type proposerSettingsFlag struct {
 		dir        string
@@ -245,7 +253,7 @@ func TestProposerSettings(t *testing.T) {
 				return &validatorserviceconfig.ProposerSettings{
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0xae967917c465db8578ca9024c205720b1a3651A9"),
+							FeeRecipient: recipient0,
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
@@ -271,13 +279,13 @@ func TestProposerSettings(t *testing.T) {
 					ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-								FeeRecipient: common.HexToAddress("0xae967917c465db8578ca9024c205720b1a3651A9"),
+								FeeRecipient: recipient0,
 							},
 						},
 					},
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0xae967917c465db8578ca9024c205720b1a3651A9"),
+							FeeRecipient: recipient0,
 						},
 					},
 				}
@@ -303,7 +311,7 @@ func TestProposerSettings(t *testing.T) {
 					ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
+								FeeRecipient: recipient1,
 							},
 							BuilderConfig: &validatorserviceconfig.BuilderConfig{
 								Enabled:  true,
@@ -312,7 +320,7 @@ func TestProposerSettings(t *testing.T) {
 						},
 						bytesutil.ToBytes2592(key2): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-								FeeRecipient: common.HexToAddress("0x60155530FCE8a85ec7055A5F8b2bE214B3DaeFd4"),
+								FeeRecipient: recipient2,
 							},
 							BuilderConfig: &validatorserviceconfig.BuilderConfig{
 								Enabled:  true,
@@ -322,7 +330,7 @@ func TestProposerSettings(t *testing.T) {
 					},
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+							FeeRecipient: recipient3,
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
@@ -349,13 +357,13 @@ func TestProposerSettings(t *testing.T) {
 					ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
+								FeeRecipient: recipient1,
 							},
 						},
 					},
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+							FeeRecipient: recipient3,
 						},
 					},
 				}
@@ -378,7 +386,7 @@ func TestProposerSettings(t *testing.T) {
 					ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
+								FeeRecipient: recipient1,
 							},
 							BuilderConfig: &validatorserviceconfig.BuilderConfig{
 								Enabled:  true,
@@ -388,7 +396,7 @@ func TestProposerSettings(t *testing.T) {
 					},
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+							FeeRecipient: recipient3,
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  false,
@@ -405,7 +413,7 @@ func TestProposerSettings(t *testing.T) {
 				proposerSettingsFlagValues: &proposerSettingsFlag{
 					dir:        "",
 					url:        "",
-					defaultfee: "0x6e35733c5af9B61374A128e6F85f553aF09ff89A",
+					defaultfee: "Z6e35733c5af9B61374A128e6F85f553aF09ff89A",
 				},
 			},
 			want: func() *validatorserviceconfig.ProposerSettings {
@@ -413,7 +421,7 @@ func TestProposerSettings(t *testing.T) {
 					ProposeConfig: nil,
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+							FeeRecipient: recipient3,
 						},
 					},
 				}
@@ -426,7 +434,7 @@ func TestProposerSettings(t *testing.T) {
 				proposerSettingsFlagValues: &proposerSettingsFlag{
 					dir:        "",
 					url:        "",
-					defaultfee: "0x6e35733c5af9B61374A128e6F85f553aF09ff89A",
+					defaultfee: "Z6e35733c5af9B61374A128e6F85f553aF09ff89A",
 				},
 			},
 			want: func() *validatorserviceconfig.ProposerSettings {
@@ -434,7 +442,7 @@ func TestProposerSettings(t *testing.T) {
 					ProposeConfig: nil,
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+							FeeRecipient: recipient3,
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
@@ -452,7 +460,7 @@ func TestProposerSettings(t *testing.T) {
 				proposerSettingsFlagValues: &proposerSettingsFlag{
 					dir:        "",
 					url:        "",
-					defaultfee: "0x6e35733c5af9B61374A128e6F85f553aF09ff89A",
+					defaultfee: "Z6e35733c5af9B61374A128e6F85f553aF09ff89A",
 					defaultgas: "50000000",
 				},
 			},
@@ -461,7 +469,7 @@ func TestProposerSettings(t *testing.T) {
 					ProposeConfig: nil,
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+							FeeRecipient: recipient3,
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
@@ -479,7 +487,7 @@ func TestProposerSettings(t *testing.T) {
 				proposerSettingsFlagValues: &proposerSettingsFlag{
 					dir:        "./testdata/good-prepare-beacon-proposer-config.json",
 					url:        "",
-					defaultfee: "0x6e35733c5af9B61374A128e6F85f553aF09ff89B",
+					defaultfee: "Z6e35733c5af9B61374A128e6F85f553aF09ff89B",
 				},
 			},
 			want: func() *validatorserviceconfig.ProposerSettings {
@@ -489,13 +497,13 @@ func TestProposerSettings(t *testing.T) {
 					ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
+								FeeRecipient: recipient1,
 							},
 						},
 					},
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+							FeeRecipient: recipient3,
 						},
 					},
 				}
@@ -508,7 +516,7 @@ func TestProposerSettings(t *testing.T) {
 				proposerSettingsFlagValues: &proposerSettingsFlag{
 					dir:        "./testdata/good-prepare-beacon-proposer-config.json",
 					url:        "",
-					defaultfee: "0x6e35733c5af9B61374A128e6F85f553aF09ff89B",
+					defaultfee: "Z6e35733c5af9B61374A128e6F85f553aF09ff89B",
 				},
 			},
 			want: func() *validatorserviceconfig.ProposerSettings {
@@ -518,7 +526,7 @@ func TestProposerSettings(t *testing.T) {
 					ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
+								FeeRecipient: recipient1,
 							},
 							BuilderConfig: &validatorserviceconfig.BuilderConfig{
 								Enabled:  true,
@@ -528,7 +536,7 @@ func TestProposerSettings(t *testing.T) {
 					},
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+							FeeRecipient: recipient3,
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
@@ -556,7 +564,7 @@ func TestProposerSettings(t *testing.T) {
 					ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
+								FeeRecipient: recipient1,
 							},
 							BuilderConfig: &validatorserviceconfig.BuilderConfig{
 								Enabled:  true,
@@ -566,7 +574,7 @@ func TestProposerSettings(t *testing.T) {
 					},
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+							FeeRecipient: recipient3,
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
@@ -593,7 +601,7 @@ func TestProposerSettings(t *testing.T) {
 					ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
+								FeeRecipient: recipient1,
 							},
 							BuilderConfig: &validatorserviceconfig.BuilderConfig{
 								Enabled:  true,
@@ -603,7 +611,7 @@ func TestProposerSettings(t *testing.T) {
 					},
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+							FeeRecipient: recipient3,
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
@@ -651,13 +659,13 @@ func TestProposerSettings(t *testing.T) {
 					ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
+								FeeRecipient: recipient1,
 							},
 						},
 					},
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+							FeeRecipient: recipient3,
 						},
 					},
 				}
@@ -669,7 +677,7 @@ func TestProposerSettings(t *testing.T) {
 					ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
+								FeeRecipient: recipient1,
 							},
 							BuilderConfig: &validatorserviceconfig.BuilderConfig{
 								Enabled:  true,
@@ -679,7 +687,7 @@ func TestProposerSettings(t *testing.T) {
 					},
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+							FeeRecipient: recipient3,
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
@@ -706,7 +714,7 @@ func TestProposerSettings(t *testing.T) {
 					ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
+								FeeRecipient: recipient1,
 							},
 							BuilderConfig: &validatorserviceconfig.BuilderConfig{
 								Enabled:  true,
@@ -716,7 +724,7 @@ func TestProposerSettings(t *testing.T) {
 					},
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+							FeeRecipient: recipient3,
 						},
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
@@ -732,13 +740,13 @@ func TestProposerSettings(t *testing.T) {
 					ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
+								FeeRecipient: recipient1,
 							},
 						},
 					},
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+							FeeRecipient: recipient3,
 						},
 					},
 				}
@@ -762,13 +770,13 @@ func TestProposerSettings(t *testing.T) {
 					ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
+								FeeRecipient: recipient1,
 							},
 						},
 					},
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+							FeeRecipient: recipient3,
 						},
 					},
 				}
@@ -780,13 +788,13 @@ func TestProposerSettings(t *testing.T) {
 					ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 						bytesutil.ToBytes2592(key1): {
 							FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-								FeeRecipient: common.HexToAddress("0x50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3"),
+								FeeRecipient: recipient1,
 							},
 						},
 					},
 					DefaultConfig: &validatorserviceconfig.ProposerOption{
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-							FeeRecipient: common.HexToAddress("0x6e35733c5af9B61374A128e6F85f553aF09ff89A"),
+							FeeRecipient: recipient3,
 						},
 					},
 				}
