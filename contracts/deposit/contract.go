@@ -172,7 +172,7 @@ func (_DepositContract *DepositContractTransactorRaw) Transact(opts *bind.Transa
 
 // GetDepositCount is a free data retrieval call binding the contract method 0x621fd130.
 //
-// Solidity: function get_deposit_count() view returns(bytes)
+// Hyperion: function get_deposit_count() view returns(bytes)
 func (_DepositContract *DepositContractCaller) GetDepositCount(opts *bind.CallOpts) ([]byte, error) {
 	var out []interface{}
 	err := _DepositContract.contract.Call(opts, &out, "get_deposit_count")
@@ -189,21 +189,21 @@ func (_DepositContract *DepositContractCaller) GetDepositCount(opts *bind.CallOp
 
 // GetDepositCount is a free data retrieval call binding the contract method 0x621fd130.
 //
-// Solidity: function get_deposit_count() view returns(bytes)
+// Hyperion: function get_deposit_count() view returns(bytes)
 func (_DepositContract *DepositContractSession) GetDepositCount() ([]byte, error) {
 	return _DepositContract.Contract.GetDepositCount(&_DepositContract.CallOpts)
 }
 
 // GetDepositCount is a free data retrieval call binding the contract method 0x621fd130.
 //
-// Solidity: function get_deposit_count() view returns(bytes)
+// Hyperion: function get_deposit_count() view returns(bytes)
 func (_DepositContract *DepositContractCallerSession) GetDepositCount() ([]byte, error) {
 	return _DepositContract.Contract.GetDepositCount(&_DepositContract.CallOpts)
 }
 
 // GetDepositRoot is a free data retrieval call binding the contract method 0xc5f2892f.
 //
-// Solidity: function get_deposit_root() view returns(bytes32)
+// Hyperion: function get_deposit_root() view returns(bytes32)
 func (_DepositContract *DepositContractCaller) GetDepositRoot(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
 	err := _DepositContract.contract.Call(opts, &out, "get_deposit_root")
@@ -220,21 +220,21 @@ func (_DepositContract *DepositContractCaller) GetDepositRoot(opts *bind.CallOpt
 
 // GetDepositRoot is a free data retrieval call binding the contract method 0xc5f2892f.
 //
-// Solidity: function get_deposit_root() view returns(bytes32)
+// Hyperion: function get_deposit_root() view returns(bytes32)
 func (_DepositContract *DepositContractSession) GetDepositRoot() ([32]byte, error) {
 	return _DepositContract.Contract.GetDepositRoot(&_DepositContract.CallOpts)
 }
 
 // GetDepositRoot is a free data retrieval call binding the contract method 0xc5f2892f.
 //
-// Solidity: function get_deposit_root() view returns(bytes32)
+// Hyperion: function get_deposit_root() view returns(bytes32)
 func (_DepositContract *DepositContractCallerSession) GetDepositRoot() ([32]byte, error) {
 	return _DepositContract.Contract.GetDepositRoot(&_DepositContract.CallOpts)
 }
 
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
 //
-// Solidity: function supportsInterface(bytes4 interfaceId) pure returns(bool)
+// Hyperion: function supportsInterface(bytes4 interfaceId) pure returns(bool)
 func (_DepositContract *DepositContractCaller) SupportsInterface(opts *bind.CallOpts, interfaceId [4]byte) (bool, error) {
 	var out []interface{}
 	err := _DepositContract.contract.Call(opts, &out, "supportsInterface", interfaceId)
@@ -251,35 +251,35 @@ func (_DepositContract *DepositContractCaller) SupportsInterface(opts *bind.Call
 
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
 //
-// Solidity: function supportsInterface(bytes4 interfaceId) pure returns(bool)
+// Hyperion: function supportsInterface(bytes4 interfaceId) pure returns(bool)
 func (_DepositContract *DepositContractSession) SupportsInterface(interfaceId [4]byte) (bool, error) {
 	return _DepositContract.Contract.SupportsInterface(&_DepositContract.CallOpts, interfaceId)
 }
 
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
 //
-// Solidity: function supportsInterface(bytes4 interfaceId) pure returns(bool)
+// Hyperion: function supportsInterface(bytes4 interfaceId) pure returns(bool)
 func (_DepositContract *DepositContractCallerSession) SupportsInterface(interfaceId [4]byte) (bool, error) {
 	return _DepositContract.Contract.SupportsInterface(&_DepositContract.CallOpts, interfaceId)
 }
 
 // Deposit is a paid mutator transaction binding the contract method 0x22895118.
 //
-// Solidity: function deposit(bytes pubkey, bytes withdrawal_credentials, bytes signature, bytes32 deposit_data_root) payable returns()
+// Hyperion: function deposit(bytes pubkey, bytes withdrawal_credentials, bytes signature, bytes32 deposit_data_root) payable returns()
 func (_DepositContract *DepositContractTransactor) Deposit(opts *bind.TransactOpts, pubkey []byte, withdrawal_credentials []byte, signature []byte, deposit_data_root [32]byte) (*types.Transaction, error) {
 	return _DepositContract.contract.Transact(opts, "deposit", pubkey, withdrawal_credentials, signature, deposit_data_root)
 }
 
 // Deposit is a paid mutator transaction binding the contract method 0x22895118.
 //
-// Solidity: function deposit(bytes pubkey, bytes withdrawal_credentials, bytes signature, bytes32 deposit_data_root) payable returns()
+// Hyperion: function deposit(bytes pubkey, bytes withdrawal_credentials, bytes signature, bytes32 deposit_data_root) payable returns()
 func (_DepositContract *DepositContractSession) Deposit(pubkey []byte, withdrawal_credentials []byte, signature []byte, deposit_data_root [32]byte) (*types.Transaction, error) {
 	return _DepositContract.Contract.Deposit(&_DepositContract.TransactOpts, pubkey, withdrawal_credentials, signature, deposit_data_root)
 }
 
 // Deposit is a paid mutator transaction binding the contract method 0x22895118.
 //
-// Solidity: function deposit(bytes pubkey, bytes withdrawal_credentials, bytes signature, bytes32 deposit_data_root) payable returns()
+// Hyperion: function deposit(bytes pubkey, bytes withdrawal_credentials, bytes signature, bytes32 deposit_data_root) payable returns()
 func (_DepositContract *DepositContractTransactorSession) Deposit(pubkey []byte, withdrawal_credentials []byte, signature []byte, deposit_data_root [32]byte) (*types.Transaction, error) {
 	return _DepositContract.Contract.Deposit(&_DepositContract.TransactOpts, pubkey, withdrawal_credentials, signature, deposit_data_root)
 }
@@ -363,7 +363,7 @@ type DepositContractDepositEvent struct {
 
 // FilterDepositEvent is a free log retrieval operation binding the contract event 0x649bbc62d0e31342afea4e5cd82d4049e7e1ee912fc0889aa790803be39038c5.
 //
-// Solidity: event DepositEvent(bytes pubkey, bytes withdrawal_credentials, bytes amount, bytes signature, bytes index)
+// Hyperion: event DepositEvent(bytes pubkey, bytes withdrawal_credentials, bytes amount, bytes signature, bytes index)
 func (_DepositContract *DepositContractFilterer) FilterDepositEvent(opts *bind.FilterOpts) (*DepositContractDepositEventIterator, error) {
 
 	logs, sub, err := _DepositContract.contract.FilterLogs(opts, "DepositEvent")
@@ -375,7 +375,7 @@ func (_DepositContract *DepositContractFilterer) FilterDepositEvent(opts *bind.F
 
 // WatchDepositEvent is a free log subscription operation binding the contract event 0x649bbc62d0e31342afea4e5cd82d4049e7e1ee912fc0889aa790803be39038c5.
 //
-// Solidity: event DepositEvent(bytes pubkey, bytes withdrawal_credentials, bytes amount, bytes signature, bytes index)
+// Hyperion: event DepositEvent(bytes pubkey, bytes withdrawal_credentials, bytes amount, bytes signature, bytes index)
 func (_DepositContract *DepositContractFilterer) WatchDepositEvent(opts *bind.WatchOpts, sink chan<- *DepositContractDepositEvent) (event.Subscription, error) {
 
 	logs, sub, err := _DepositContract.contract.WatchLogs(opts, "DepositEvent")
@@ -412,7 +412,7 @@ func (_DepositContract *DepositContractFilterer) WatchDepositEvent(opts *bind.Wa
 
 // ParseDepositEvent is a log parse operation binding the contract event 0x649bbc62d0e31342afea4e5cd82d4049e7e1ee912fc0889aa790803be39038c5.
 //
-// Solidity: event DepositEvent(bytes pubkey, bytes withdrawal_credentials, bytes amount, bytes signature, bytes index)
+// Hyperion: event DepositEvent(bytes pubkey, bytes withdrawal_credentials, bytes amount, bytes signature, bytes index)
 func (_DepositContract *DepositContractFilterer) ParseDepositEvent(log types.Log) (*DepositContractDepositEvent, error) {
 	event := new(DepositContractDepositEvent)
 	if err := _DepositContract.contract.UnpackLog(event, "DepositEvent", log); err != nil {

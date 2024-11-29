@@ -902,8 +902,8 @@ github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqn
 github.com/rcrowley/go-metrics v0.0.0-20190826022208-cac0b30c2563/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/rgeraldes24/FuzzyVM v0.0.0-20241118080648-66efa6055064 h1:WsFZmhRrdvDlSCbHySr6CA7gvYwkfulVBC/X1OyXRc8=
 github.com/rgeraldes24/FuzzyVM v0.0.0-20241118080648-66efa6055064/go.mod h1:k6pLRExCJ3fU5vRnpFPIEhWfZNwkGSfkjZEdlwHRYeU=
-github.com/rgeraldes24/go-zond v0.0.0-20241119070712-b74b98d939c3 h1:LkDQHtFYV1em5L82RdjW5R3w+0e8oijt51q9VB0cIZc=
-github.com/rgeraldes24/go-zond v0.0.0-20241119070712-b74b98d939c3/go.mod h1:N8aSiLnp1znLhurd3uf0j2tNFG8KgkKBWcTuEUS98n4=
+github.com/rgeraldes24/go-zond v0.0.0-20241129112745-fa2c1e1d66fa h1:3X4GZSGLUCOzkpQtq4pZToc2ETp1iMQdxd5ZQrQ0iws=
+github.com/rgeraldes24/go-zond v0.0.0-20241129112745-fa2c1e1d66fa/go.mod h1:N8aSiLnp1znLhurd3uf0j2tNFG8KgkKBWcTuEUS98n4=
 github.com/rgeraldes24/goevmlab v0.0.0-20241118075001-b9908d7d2e54 h1:/VhpPdr1BWTQc1H2SGDcx3C68p8vDYMLGOzvKJ6rLQw=
 github.com/rgeraldes24/goevmlab v0.0.0-20241118075001-b9908d7d2e54/go.mod h1:WUhxZjU2ysuQodRVvLNycHIfK70pz1qMUd1bBNE4+0U=
 github.com/rgeraldes24/grpc-gateway/v2 v2.0.0-20240827090357-c5e344dc174c h1:yNQlamaNqD9YmBG3q6MpnF0LuYTzoqkHDraL5PX1AIM=
