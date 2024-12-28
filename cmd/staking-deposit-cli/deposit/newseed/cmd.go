@@ -26,7 +26,7 @@ var (
 var Commands = []*cli.Command{
 	{
 		Name:    "new-seed",
-		Aliases: []string{"new-seed"},
+		Aliases: []string{"ns"},
 		Usage:   "",
 		Action: func(cliCtx *cli.Context) error {
 			if err := cliActionNewSeed(cliCtx); err != nil {
