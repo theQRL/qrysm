@@ -102,10 +102,41 @@ http_archive(
 )
 
 http_archive(
+    name = "rules_distroless",
+    sha256 = "e64f06e452cd153aeab81f752ccf4642955b3af319e64f7bc7a7c9252f76b10e",
+    strip_prefix = "rules_distroless-f5e678217b57ce3ad2f1c0204bd4e9d416255773",
+    url = "https://github.com/GoogleContainerTools/rules_distroless/archive/f5e678217b57ce3ad2f1c0204bd4e9d416255773.tar.gz",
+)
+
+load("@rules_distroless//distroless:dependencies.bzl", "rules_distroless_dependencies")
+
+rules_distroless_dependencies()
+
+http_archive(
+    name = "distroless",
+    integrity = "sha256-Cf00kUp1NyXA3LzbdyYy4Kda27wbkB8+A9MliTxq4jE=",
+    strip_prefix = "distroless-9dc924b9fe812eec2fa0061824dcad39eb09d0d6",
+    url = "https://github.com/GoogleContainerTools/distroless/archive/9dc924b9fe812eec2fa0061824dcad39eb09d0d6.tar.gz",  # 2024-01-24
+)
+
+# http_archive(
+#     name = "aspect_bazel_lib",
+#     sha256 = "a272d79bb0ac6b6965aa199b1f84333413452e87f043b53eca7f347a23a478e8",
+#     strip_prefix = "bazel-lib-2.9.3",
+#     url = "https://github.com/bazel-contrib/bazel-lib/releases/download/v2.9.3/bazel-lib-v2.9.3.tar.gz",
+# )
+
+# load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies", "aspect_bazel_lib_register_toolchains")
+
+# aspect_bazel_lib_dependencies()
+
+# aspect_bazel_lib_register_toolchains()
+
+http_archive(
     name = "rules_oci",
-    sha256 = "c71c25ed333a4909d2dd77e0b16c39e9912525a98c7fa85144282be8d04ef54c",
-    strip_prefix = "rules_oci-1.3.4",
-    url = "https://github.com/bazel-contrib/rules_oci/releases/download/v1.3.4/rules_oci-v1.3.4.tar.gz",
+    sha256 = "647f4c6fd092dc7a86a7f79892d4b1b7f1de288bdb4829ca38f74fd430fcd2fe",
+    strip_prefix = "rules_oci-1.7.6",
+    url = "https://github.com/bazel-contrib/rules_oci/releases/download/v1.7.6/rules_oci-v1.7.6.tar.gz",
 )
 
 load("@rules_oci//oci:dependencies.bzl", "rules_oci_dependencies")
@@ -148,57 +179,6 @@ git_repository(
     # gazelle args: -go_prefix github.com/gogo/protobuf -proto legacy
 )
 
-load(
-    "@io_bazel_rules_docker//repositories:repositories.bzl",
-    container_repositories = "repositories",
-)
-
-container_repositories()
-
-load(
-    "@io_bazel_rules_docker//container:container.bzl",
-    "container_pull",
-)
-
-# Pulled gcr.io/distroless/cc-debian11:latest on 2022-02-23
-container_pull(
-    name = "cc_image_base_amd64",
-    digest = "sha256:2a0daf90a7deb78465bfca3ef2eee6e91ce0a5706059f05d79d799a51d339523",
-    registry = "gcr.io",
-    repository = "distroless/cc-debian11",
-)
-
-# Pulled gcr.io/distroless/cc-debian11:debug on 2022-02-23
-container_pull(
-    name = "cc_debug_image_base_amd64",
-    digest = "sha256:7bd596f5f200588f13a69c268eea6ce428b222b67cd7428d6a7fef95e75c052a",
-    registry = "gcr.io",
-    repository = "distroless/cc-debian11",
-)
-
-# Pulled from gcr.io/distroless/base-debian11:latest on 2022-02-23
-container_pull(
-    name = "go_image_base_amd64",
-    digest = "sha256:34e682800774ecbd0954b1663d90238505f1ba5543692dbc75feef7dd4839e90",
-    registry = "gcr.io",
-    repository = "distroless/base-debian11",
-)
-
-# Pulled from gcr.io/distroless/base-debian11:debug on 2022-02-23
-container_pull(
-    name = "go_debug_image_base_amd64",
-    digest = "sha256:0f503c6bfd207793bc416f20a35bf6b75d769a903c48f180ad73f60f7b60d7bd",
-    registry = "gcr.io",
-    repository = "distroless/base-debian11",
-)
-
-container_pull(
-    name = "alpine_cc_linux_amd64",
-    digest = "sha256:752aa0c9a88461ffc50c5267bb7497ef03a303e38b2c8f7f2ded9bebe5f1f00e",
-    registry = "index.docker.io",
-    repository = "pinglamb/alpine-glibc",
-)
-
 load("@rules_oci//oci:pull.bzl", "oci_pull")
 
 # A multi-arch base image
@@ -225,6 +205,10 @@ go_register_toolchains(
     go_version = "1.22.4",
     nogo = "@//:nogo",
 )
+
+load("//:distroless_deps.bzl", "distroless_deps")
+
+distroless_deps()
 
 http_archive(
     name = "io_kubernetes_build",

@@ -7,6 +7,7 @@ import (
 const (
 	BETANET = "betanet"
 	MAINNET = "mainnet"
+	DEV     = "dev"
 )
 
 type Config struct {
@@ -36,6 +37,11 @@ func GetConfig() *Config {
 			MAINNET: {
 				Name:                  MAINNET,
 				GenesisForkVersion:    ToHex("0x00000000"),
+				GenesisValidatorsRoot: ToHex("0x8e0aea32a97da3012c2c158bae29794fd08a098144dfee4ed016272035e0d6da"),
+			},
+			DEV: {
+				Name:                  DEV,
+				GenesisForkVersion:    ToHex("0x10000038"),
 				GenesisValidatorsRoot: ToHex("0x8e0aea32a97da3012c2c158bae29794fd08a098144dfee4ed016272035e0d6da"),
 			},
 		},

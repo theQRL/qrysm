@@ -135,7 +135,7 @@ func (acm *AccountsCLIManager) Import(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		accountsPassword = string(data)
+		accountsPassword = strings.TrimRight(string(data), "\r\n")
 	} else {
 		accountsPassword, err = prompt.PasswordPrompt(
 			"Enter the password for your imported accounts", prompt.NotEmpty,
