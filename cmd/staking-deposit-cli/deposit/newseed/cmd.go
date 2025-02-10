@@ -1,19 +1,17 @@
 package newseed
 
 import (
-	"crypto/sha512"
 	"fmt"
 	"strings"
 	"syscall"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	dilithium_misc "github.com/theQRL/go-qrllib/misc"
 	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/misc"
 	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/stakingdeposit"
-	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/io/file"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/term"
 )
 
@@ -115,7 +113,7 @@ func cliActionNewSeed(cliCtx *cli.Context) error {
 		}
 	}
 
-	seed := bytesutil.ToBytes48(pbkdf2.Key([]byte(newSeedFlags.Mnemonic), []byte("mnemonic"), 2048, 48, sha512.New))
+	seed := dilithium_misc.MnemonicToSeedBin(newSeedFlags.Mnemonic)
 	stakingdeposit.GenerateKeys(newSeedFlags.ValidatorStartIndex,
 		newSeedFlags.NumValidators, misc.EncodeHex(seed[:]), newSeedFlags.Folder,
 		newSeedFlags.ChainName, string(keystorePassword), newSeedFlags.ExecutionAddress)
