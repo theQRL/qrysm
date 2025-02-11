@@ -9,5 +9,16 @@ participants:
     count: 4
 network_params:
   preset: "mainnet"
-  prefunded_accounts: '{"Z25941dC771bB64514Fc8abBce970307Fb9d477e9": {"balance": "10ETH"}, "Z4107be99052d895e3ee461C685b042Aa975ab5c0": {"balance": "1ETH"}}'
+  prefunded_accounts: '{"Z25941dC771bB64514Fc8abBce970307Fb9d477e9": {"balance": "10ETH"}, "Z4107be99052d895e3ee461C685b042Aa975ab5c0": {"balance": "1ETH"}, "Z2099d76d9a34cdd2694c4dc703930a6fbbc1d402": {"balance": "2000000ETH"}}'
 # global_log_level: debug
+
+# additional_services:
+#  - tx_spammer
+
+# tx_spammer_params:
+#   image: theqrl/zond-tx-spammer:latest
+#   scenario: eoatx
+#   throughput: 100
+#   max_pending: 100
+#   max_wallets: 50
+#   tx_spammer_extra_args: []
