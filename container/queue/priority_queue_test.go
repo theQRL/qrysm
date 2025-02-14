@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 // Ensure we satisfy the heap.Interface

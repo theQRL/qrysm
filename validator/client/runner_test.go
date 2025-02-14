@@ -8,16 +8,16 @@ import (
 
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/qrysm/v4/async/event"
-	"github.com/theQRL/qrysm/v4/config/params"
-	validatorserviceconfig "github.com/theQRL/qrysm/v4/config/validator/service"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/client/iface"
-	"github.com/theQRL/qrysm/v4/validator/client/testutil"
+	"github.com/theQRL/qrysm/async/event"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	validatorserviceconfig "github.com/theQRL/qrysm/config/validator/service"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/client/iface"
+	"github.com/theQRL/qrysm/validator/client/testutil"
 )
 
 func cancelledContext() context.Context {
@@ -189,8 +189,8 @@ func TestKeyReload_ActiveKey(t *testing.T) {
 	ctx := context.Background()
 	km := &mockKeymanager{}
 	v := &testutil.FakeValidator{Km: km}
-	ac := make(chan [][dilithium2.CryptoPublicKeyBytes]byte)
-	current := [][dilithium2.CryptoPublicKeyBytes]byte{testutil.ActiveKey}
+	ac := make(chan [][field_params.DilithiumPubkeyLength]byte)
+	current := [][field_params.DilithiumPubkeyLength]byte{testutil.ActiveKey}
 	onAccountsChanged(ctx, v, current, ac)
 	assert.Equal(t, true, v.HandleKeyReloadCalled)
 	// HandleKeyReloadCalled in the FakeValidator returns true if one of the keys is equal to the
@@ -203,8 +203,8 @@ func TestKeyReload_NoActiveKey(t *testing.T) {
 	ctx := context.Background()
 	km := &mockKeymanager{}
 	v := &testutil.FakeValidator{Km: km}
-	ac := make(chan [][dilithium2.CryptoPublicKeyBytes]byte)
-	current := [][dilithium2.CryptoPublicKeyBytes]byte{na}
+	ac := make(chan [][field_params.DilithiumPubkeyLength]byte)
+	current := [][field_params.DilithiumPubkeyLength]byte{na}
 	onAccountsChanged(ctx, v, current, ac)
 	assert.Equal(t, true, v.HandleKeyReloadCalled)
 	// HandleKeyReloadCalled in the FakeValidator returns true if one of the keys is equal to the
@@ -213,8 +213,8 @@ func TestKeyReload_NoActiveKey(t *testing.T) {
 	assert.Equal(t, 1, v.WaitForActivationCalled)
 }
 
-func notActive(t *testing.T) [dilithium2.CryptoPublicKeyBytes]byte {
-	var r [dilithium2.CryptoPublicKeyBytes]byte
+func notActive(t *testing.T) [field_params.DilithiumPubkeyLength]byte {
+	var r [field_params.DilithiumPubkeyLength]byte
 	copy(r[:], testutil.ActiveKey[:])
 	for i := 0; i < len(r); i++ {
 		r[i] = bits.Reverse8(r[i])
@@ -224,11 +224,13 @@ func notActive(t *testing.T) [dilithium2.CryptoPublicKeyBytes]byte {
 }
 
 func TestUpdateProposerSettingsAt_EpochStart(t *testing.T) {
+	feeRecipient, err := common.NewAddressFromString("Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9")
+	require.NoError(t, err)
 	v := &testutil.FakeValidator{Km: &mockKeymanager{accountsChangedFeed: &event.Feed{}}}
-	err := v.SetProposerSettings(context.Background(), &validatorserviceconfig.ProposerSettings{
+	err = v.SetProposerSettings(context.Background(), &validatorserviceconfig.ProposerSettings{
 		DefaultConfig: &validatorserviceconfig.ProposerOption{
 			FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-				FeeRecipient: common.HexToAddress("0x046Fb65722E7b2455012BFEBf6177F1D2e9738D9"),
+				FeeRecipient: feeRecipient,
 			},
 		},
 	})
@@ -249,11 +251,13 @@ func TestUpdateProposerSettingsAt_EpochStart(t *testing.T) {
 }
 
 func TestUpdateProposerSettingsAt_EpochEndOk(t *testing.T) {
+	feeRecipient, err := common.NewAddressFromString("Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9")
+	require.NoError(t, err)
 	v := &testutil.FakeValidator{Km: &mockKeymanager{accountsChangedFeed: &event.Feed{}}, ProposerSettingWait: time.Duration(params.BeaconConfig().SecondsPerSlot-1) * time.Second}
-	err := v.SetProposerSettings(context.Background(), &validatorserviceconfig.ProposerSettings{
+	err = v.SetProposerSettings(context.Background(), &validatorserviceconfig.ProposerSettings{
 		DefaultConfig: &validatorserviceconfig.ProposerOption{
 			FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-				FeeRecipient: common.HexToAddress("0x046Fb65722E7b2455012BFEBf6177F1D2e9738D9"),
+				FeeRecipient: feeRecipient,
 			},
 		},
 	})
@@ -274,15 +278,17 @@ func TestUpdateProposerSettingsAt_EpochEndOk(t *testing.T) {
 }
 
 func TestUpdateProposerSettings_ContinuesAfterValidatorRegistrationFails(t *testing.T) {
+	feeRecipient, err := common.NewAddressFromString("Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9")
+	require.NoError(t, err)
 	errSomeotherError := errors.New("some internal error")
 	v := &testutil.FakeValidator{
 		ProposerSettingsErr: errors.Wrap(ErrBuilderValidatorRegistration, errSomeotherError.Error()),
 		Km:                  &mockKeymanager{accountsChangedFeed: &event.Feed{}},
 	}
-	err := v.SetProposerSettings(context.Background(), &validatorserviceconfig.ProposerSettings{
+	err = v.SetProposerSettings(context.Background(), &validatorserviceconfig.ProposerSettings{
 		DefaultConfig: &validatorserviceconfig.ProposerOption{
 			FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
-				FeeRecipient: common.HexToAddress("0x046Fb65722E7b2455012BFEBf6177F1D2e9738D9"),
+				FeeRecipient: feeRecipient,
 			},
 		},
 	})

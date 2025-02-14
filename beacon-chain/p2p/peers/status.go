@@ -1,4 +1,4 @@
-// Package peers provides information about peers at the Ethereum consensus protocol level.
+// Package peers provides information about peers at the Zond consensus protocol level.
 //
 // "Protocol level" is the level above the network level, so this layer never sees or interacts with
 // (for example) hosts that are uncontactable due to being down, firewalled, etc. Instead, this works
@@ -34,17 +34,17 @@ import (
 	manet "github.com/multiformats/go-multiaddr/net"
 	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/go-zond/p2p/enr"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/scorers"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/rand"
-	pmath "github.com/theQRL/qrysm/v4/math"
-	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/metadata"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/peerdata"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/rand"
+	pmath "github.com/theQRL/qrysm/math"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/metadata"
+	qrysmTime "github.com/theQRL/qrysm/time"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 const (
@@ -322,7 +322,7 @@ func (p *Status) ChainStateLastUpdated(pid peer.ID) (time.Time, error) {
 	if peerData, ok := p.store.PeerData(pid); ok {
 		return peerData.ChainStateLastUpdated, nil
 	}
-	return prysmTime.Now(), peerdata.ErrPeerUnknown
+	return qrysmTime.Now(), peerdata.ErrPeerUnknown
 }
 
 // IsBad states if the peer is to be considered bad (by *any* of the registered scorers).
@@ -352,7 +352,7 @@ func (p *Status) NextValidTime(pid peer.ID) (time.Time, error) {
 	if peerData, ok := p.store.PeerData(pid); ok {
 		return peerData.NextValidTime, nil
 	}
-	return prysmTime.Now(), peerdata.ErrPeerUnknown
+	return qrysmTime.Now(), peerdata.ErrPeerUnknown
 }
 
 // SetNextValidTime sets the earliest possible time we are

@@ -2,9 +2,9 @@ package payloadattribute
 
 import (
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	"github.com/theQRL/qrysm/runtime/version"
 )
 
 var (
@@ -17,7 +17,6 @@ type data struct {
 	prevRandao            []byte
 	suggestedFeeRecipient []byte
 	withdrawals           []*enginev1.Withdrawal
-	parentBeaconBlockRoot []byte
 }
 
 var (
@@ -30,12 +29,8 @@ func New(i interface{}) (Attributer, error) {
 	switch a := i.(type) {
 	case nil:
 		return nil, blocks.ErrNilObject
-	case *enginev1.PayloadAttributes:
-		return initPayloadAttributeFromV1(a)
 	case *enginev1.PayloadAttributesV2:
 		return initPayloadAttributeFromV2(a)
-	case *enginev1.PayloadAttributesV3:
-		return initPayloadAttributeFromV3(a)
 	default:
 		return nil, errors.Wrapf(errUnsupportedPayloadAttribute, "unable to create payload attribute from type %T", i)
 	}
@@ -46,19 +41,6 @@ func EmptyWithVersion(version int) Attributer {
 	return &data{
 		version: version,
 	}
-}
-
-func initPayloadAttributeFromV1(a *enginev1.PayloadAttributes) (Attributer, error) {
-	if a == nil {
-		return nil, errNilPayloadAttribute
-	}
-
-	return &data{
-		version:               version.Bellatrix,
-		prevRandao:            a.PrevRandao,
-		timeStamp:             a.Timestamp,
-		suggestedFeeRecipient: a.SuggestedFeeRecipient,
-	}, nil
 }
 
 func initPayloadAttributeFromV2(a *enginev1.PayloadAttributesV2) (Attributer, error) {
@@ -72,20 +54,5 @@ func initPayloadAttributeFromV2(a *enginev1.PayloadAttributesV2) (Attributer, er
 		timeStamp:             a.Timestamp,
 		suggestedFeeRecipient: a.SuggestedFeeRecipient,
 		withdrawals:           a.Withdrawals,
-	}, nil
-}
-
-func initPayloadAttributeFromV3(a *enginev1.PayloadAttributesV3) (Attributer, error) {
-	if a == nil {
-		return nil, errNilPayloadAttribute
-	}
-
-	return &data{
-		version:               version.Deneb,
-		prevRandao:            a.PrevRandao,
-		timeStamp:             a.Timestamp,
-		suggestedFeeRecipient: a.SuggestedFeeRecipient,
-		withdrawals:           a.Withdrawals,
-		parentBeaconBlockRoot: a.ParentBeaconBlockRoot,
 	}, nil
 }

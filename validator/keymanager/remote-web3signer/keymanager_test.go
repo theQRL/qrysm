@@ -1,5 +1,6 @@
 package remote_web3signer
 
+/*
 import (
 	"context"
 	"encoding/hex"
@@ -8,15 +9,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer/internal"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer/v1/mock"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
+	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/keymanager/remote-web3signer/internal"
+	"github.com/theQRL/qrysm/validator/keymanager/remote-web3signer/v1/mock"
 )
 
 type MockClient struct {
@@ -32,8 +33,8 @@ func (mc *MockClient) Sign(_ context.Context, _ string, _ internal.SignRequestJs
 	}
 	return dilithium.SignatureFromBytes(decoded)
 }
-func (mc *MockClient) GetPublicKeys(_ context.Context, _ string) ([][dilithium2.CryptoPublicKeyBytes]byte, error) {
-	var keys [][dilithium2.CryptoPublicKeyBytes]byte
+func (mc *MockClient) GetPublicKeys(_ context.Context, _ string) ([][field_params.DilithiumPubkeyLength]byte, error) {
+	var keys [][field_params.DilithiumPubkeyLength]byte
 	for _, pk := range mc.PublicKeys {
 		decoded, err := hex.DecodeString(strings.TrimPrefix(pk, "0x"))
 		if err != nil {
@@ -191,7 +192,7 @@ func TestKeymanager_FetchValidatingPublicKeys_HappyPath_WithKeyList(t *testing.T
 	if err != nil {
 		fmt.Printf("error: %v", err)
 	}
-	keys := [][dilithium2.CryptoPublicKeyBytes]byte{
+	keys := [][field_params.DilithiumPubkeyLength]byte{
 		bytesutil.ToBytes2592(decodedKey),
 	}
 	root, err := hexutil.Decode("0x270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69")
@@ -225,7 +226,7 @@ func TestKeymanager_FetchValidatingPublicKeys_HappyPath_WithExternalURL(t *testi
 	if err != nil {
 		fmt.Printf("error: %v", err)
 	}
-	keys := [][dilithium2.CryptoPublicKeyBytes]byte{
+	keys := [][field_params.DilithiumPubkeyLength]byte{
 		bytesutil.ToBytes2592(decodedKey),
 	}
 	root, err := hexutil.Decode("0x270d43e74ce340de4bca2b1936beca0f4f5408d9e78aec4850920baf659d5b69")
@@ -293,7 +294,7 @@ func TestKeymanager_AddPublicKeys(t *testing.T) {
 	}
 	pubkey, err := hexutil.Decode("0xa2b5aaad9c6efefe7bb9b1243a043404f3362937cfb6b31833929833173f476630ea2cfeb0d9ddf15f97ca8685948820")
 	require.NoError(t, err)
-	publicKeys := [][dilithium2.CryptoPublicKeyBytes]byte{
+	publicKeys := [][field_params.DilithiumPubkeyLength]byte{
 		bytesutil.ToBytes2592(pubkey),
 	}
 	statuses, err := km.AddPublicKeys(ctx, publicKeys)
@@ -324,7 +325,7 @@ func TestKeymanager_DeletePublicKeys(t *testing.T) {
 	}
 	pubkey, err := hexutil.Decode("0xa2b5aaad9c6efefe7bb9b1243a043404f3362937cfb6b31833929833173f476630ea2cfeb0d9ddf15f97ca8685948820")
 	require.NoError(t, err)
-	publicKeys := [][dilithium2.CryptoPublicKeyBytes]byte{
+	publicKeys := [][field_params.DilithiumPubkeyLength]byte{
 		bytesutil.ToBytes2592(pubkey),
 	}
 	statuses, err := km.AddPublicKeys(ctx, publicKeys)
@@ -345,3 +346,4 @@ func TestKeymanager_DeletePublicKeys(t *testing.T) {
 		require.Equal(t, zondpbservice.DeletedRemoteKeysStatus_NOT_FOUND, status.Status)
 	}
 }
+*/

@@ -9,12 +9,12 @@ import (
 	"testing"
 
 	gogo "github.com/gogo/protobuf/proto"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
-	"github.com/theQRL/qrysm/v4/config/params"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/config/params"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -107,7 +107,7 @@ func TestSszNetworkEncoder_DecodeWithMaxLength(t *testing.T) {
 
 func TestSszNetworkEncoder_DecodeWithMultipleFrames(t *testing.T) {
 	buf := new(bytes.Buffer)
-	st, _ := util.DeterministicGenesisState(t, 100)
+	st, _ := util.DeterministicGenesisStateCapella(t, 100)
 	e := &encoder.SszNetworkEncoder{}
 	params.SetupTestConfigCleanup(t)
 	c := params.BeaconNetworkConfig()
@@ -115,13 +115,13 @@ func TestSszNetworkEncoder_DecodeWithMultipleFrames(t *testing.T) {
 	maxChunkSize := uint64(1 << 22)
 	encoder.MaxChunkSize = maxChunkSize
 	params.OverrideBeaconNetworkConfig(c)
-	_, err := e.EncodeWithMaxLength(buf, st.ToProtoUnsafe().(*zondpb.BeaconState))
+	_, err := e.EncodeWithMaxLength(buf, st.ToProtoUnsafe().(*zondpb.BeaconStateCapella))
 	require.NoError(t, err)
 	// Max snappy block size
 	if buf.Len() <= 76490 {
 		t.Errorf("buffer smaller than expected, wanted > %d but got %d", 76490, buf.Len())
 	}
-	decoded := new(zondpb.BeaconState)
+	decoded := new(zondpb.BeaconStateCapella)
 	err = e.DecodeWithMaxLength(buf, decoded)
 	assert.NoError(t, err)
 }

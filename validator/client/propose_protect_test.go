@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func Test_slashableProposalCheck_PreventsLowerThanMinProposal(t *testing.T) {
@@ -18,7 +18,7 @@ func Test_slashableProposalCheck_PreventsLowerThanMinProposal(t *testing.T) {
 	validator, _, validatorKey, finish := setup(t)
 	defer finish()
 	lowestSignedSlot := primitives.Slot(10)
-	var pubKeyBytes [dilithium2.CryptoPublicKeyBytes]byte
+	var pubKeyBytes [field_params.DilithiumPubkeyLength]byte
 	copy(pubKeyBytes[:], validatorKey.PublicKey().Marshal())
 
 	// We save a proposal at the lowest signed slot in the DB.
@@ -28,13 +28,13 @@ func Test_slashableProposalCheck_PreventsLowerThanMinProposal(t *testing.T) {
 
 	// We expect the same block with a slot lower than the lowest
 	// signed slot to fail validation.
-	blk := &zondpb.SignedBeaconBlock{
-		Block: &zondpb.BeaconBlock{
+	blk := &zondpb.SignedBeaconBlockCapella{
+		Block: &zondpb.BeaconBlockCapella{
 			Slot:          lowestSignedSlot - 1,
 			ProposerIndex: 0,
-			Body:          &zondpb.BeaconBlockBody{},
+			Body:          &zondpb.BeaconBlockBodyCapella{},
 		},
-		Signature: params.BeaconConfig().EmptySignature[:],
+		Signature: params.BeaconConfig().EmptyDilithiumSignature[:],
 	}
 	wsb, err := blocks.NewSignedBeaconBlock(blk)
 	require.NoError(t, err)
@@ -43,13 +43,13 @@ func Test_slashableProposalCheck_PreventsLowerThanMinProposal(t *testing.T) {
 
 	// We expect the same block with a slot equal to the lowest
 	// signed slot to pass validation if signing roots are equal.
-	blk = &zondpb.SignedBeaconBlock{
-		Block: &zondpb.BeaconBlock{
+	blk = &zondpb.SignedBeaconBlockCapella{
+		Block: &zondpb.BeaconBlockCapella{
 			Slot:          lowestSignedSlot,
 			ProposerIndex: 0,
-			Body:          &zondpb.BeaconBlockBody{},
+			Body:          &zondpb.BeaconBlockBodyCapella{},
 		},
-		Signature: params.BeaconConfig().EmptySignature[:],
+		Signature: params.BeaconConfig().EmptyDilithiumSignature[:],
 	}
 	wsb, err = blocks.NewSignedBeaconBlock(blk)
 	require.NoError(t, err)
@@ -65,13 +65,13 @@ func Test_slashableProposalCheck_PreventsLowerThanMinProposal(t *testing.T) {
 
 	// We expect the same block with a slot > than the lowest
 	// signed slot to pass validation.
-	blk = &zondpb.SignedBeaconBlock{
-		Block: &zondpb.BeaconBlock{
+	blk = &zondpb.SignedBeaconBlockCapella{
+		Block: &zondpb.BeaconBlockCapella{
 			Slot:          lowestSignedSlot + 1,
 			ProposerIndex: 0,
-			Body:          &zondpb.BeaconBlockBody{},
+			Body:          &zondpb.BeaconBlockBodyCapella{},
 		},
-		Signature: params.BeaconConfig().EmptySignature[:],
+		Signature: params.BeaconConfig().EmptyDilithiumSignature[:],
 	}
 
 	wsb, err = blocks.NewSignedBeaconBlock(blk)
@@ -85,16 +85,16 @@ func Test_slashableProposalCheck(t *testing.T) {
 	validator, _, validatorKey, finish := setup(t)
 	defer finish()
 
-	blk := util.HydrateSignedBeaconBlock(&zondpb.SignedBeaconBlock{
-		Block: &zondpb.BeaconBlock{
+	blk := util.HydrateSignedBeaconBlockCapella(&zondpb.SignedBeaconBlockCapella{
+		Block: &zondpb.BeaconBlockCapella{
 			Slot:          10,
 			ProposerIndex: 0,
-			Body:          &zondpb.BeaconBlockBody{},
+			Body:          &zondpb.BeaconBlockBodyCapella{},
 		},
-		Signature: params.BeaconConfig().EmptySignature[:],
+		Signature: params.BeaconConfig().EmptyDilithiumSignature[:],
 	})
 
-	var pubKeyBytes [dilithium2.CryptoPublicKeyBytes]byte
+	var pubKeyBytes [field_params.DilithiumPubkeyLength]byte
 	copy(pubKeyBytes[:], validatorKey.PublicKey().Marshal())
 
 	// We save a proposal at slot 1 as our lowest proposal.
@@ -105,7 +105,7 @@ func Test_slashableProposalCheck(t *testing.T) {
 	dummySigningRoot := [32]byte{1}
 	err = validator.db.SaveProposalHistoryForSlot(ctx, pubKeyBytes, 10, dummySigningRoot[:])
 	require.NoError(t, err)
-	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
+	var pubKey [field_params.DilithiumPubkeyLength]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 	sBlock, err := blocks.NewSignedBeaconBlock(blk)
 	require.NoError(t, err)
@@ -142,10 +142,10 @@ func Test_slashableProposalCheck(t *testing.T) {
 func Test_slashableProposalCheck_RemoteProtection(t *testing.T) {
 	validator, _, validatorKey, finish := setup(t)
 	defer finish()
-	var pubKey [dilithium2.CryptoPublicKeyBytes]byte
+	var pubKey [field_params.DilithiumPubkeyLength]byte
 	copy(pubKey[:], validatorKey.PublicKey().Marshal())
 
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blk.Block.Slot = 10
 	sBlock, err := blocks.NewSignedBeaconBlock(blk)
 	require.NoError(t, err)

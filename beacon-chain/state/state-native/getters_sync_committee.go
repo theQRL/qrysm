@@ -1,19 +1,14 @@
 package state_native
 
 import (
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // CurrentSyncCommittee of the current sync committee in beacon chain state.
 func (b *BeaconState) CurrentSyncCommittee() (*zondpb.SyncCommittee, error) {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
-
-	if b.version == version.Phase0 {
-		return nil, errNotSupported("CurrentSyncCommittee", b.version)
-	}
 
 	if b.currentSyncCommittee == nil {
 		return nil, nil
@@ -32,10 +27,6 @@ func (b *BeaconState) currentSyncCommitteeVal() *zondpb.SyncCommittee {
 func (b *BeaconState) NextSyncCommittee() (*zondpb.SyncCommittee, error) {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
-
-	if b.version == version.Phase0 {
-		return nil, errNotSupported("NextSyncCommittee", b.version)
-	}
 
 	if b.nextSyncCommittee == nil {
 		return nil, nil
@@ -56,7 +47,6 @@ func copySyncCommittee(data *zondpb.SyncCommittee) *zondpb.SyncCommittee {
 		return nil
 	}
 	return &zondpb.SyncCommittee{
-		Pubkeys:         bytesutil.SafeCopy2dBytes(data.Pubkeys),
-		AggregatePubkey: bytesutil.SafeCopyBytes(data.AggregatePubkey),
+		Pubkeys: bytesutil.SafeCopy2dBytes(data.Pubkeys),
 	}
 }

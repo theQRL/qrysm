@@ -12,12 +12,12 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/beacon"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/prysm/validator"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/time/slots"
-	"github.com/theQRL/qrysm/v4/validator/client/iface"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/validator"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
+	"github.com/theQRL/qrysm/validator/client/iface"
 )
 
 type beaconApiBeaconChainClient struct {
@@ -312,15 +312,6 @@ func (c beaconApiBeaconChainClient) ListValidators(ctx context.Context, in *zond
 	}, nil
 }
 
-func (c beaconApiBeaconChainClient) GetValidatorQueue(ctx context.Context, in *empty.Empty) (*zondpb.ValidatorQueue, error) {
-	if c.fallbackClient != nil {
-		return c.fallbackClient.GetValidatorQueue(ctx, in)
-	}
-
-	// TODO: Implement me
-	panic("beaconApiBeaconChainClient.GetValidatorQueue is not implemented. To use a fallback client, pass a fallback client as the last argument of NewBeaconApiBeaconChainClientWithFallback.")
-}
-
 func (c beaconApiBeaconChainClient) GetValidatorPerformance(ctx context.Context, in *zondpb.ValidatorPerformanceRequest) (*zondpb.ValidatorPerformanceResponse, error) {
 	request, err := json.Marshal(validator.ValidatorPerformanceRequest{
 		PublicKeys: in.PublicKeys,
@@ -351,15 +342,6 @@ func (c beaconApiBeaconChainClient) GetValidatorPerformance(ctx context.Context,
 		PublicKeys:                    resp.PublicKeys,
 		InactivityScores:              resp.InactivityScores,
 	}, nil
-}
-
-func (c beaconApiBeaconChainClient) GetValidatorParticipation(ctx context.Context, in *zondpb.GetValidatorParticipationRequest) (*zondpb.ValidatorParticipationResponse, error) {
-	if c.fallbackClient != nil {
-		return c.fallbackClient.GetValidatorParticipation(ctx, in)
-	}
-
-	// TODO: Implement me
-	panic("beaconApiBeaconChainClient.GetValidatorParticipation is not implemented. To use a fallback client, pass a fallback client as the last argument of NewBeaconApiBeaconChainClientWithFallback.")
 }
 
 func NewBeaconApiBeaconChainClientWithFallback(host string, timeout time.Duration, fallbackClient iface.BeaconChainClient) iface.BeaconChainClient {

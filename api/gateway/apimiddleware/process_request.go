@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/api"
-	"github.com/theQRL/qrysm/v4/api/grpc"
+	"github.com/theQRL/qrysm/api"
+	"github.com/theQRL/qrysm/api/grpc"
 )
 
 // DeserializeRequestBodyIntoContainer deserializes the request's body into an endpoint-specific struct.

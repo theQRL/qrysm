@@ -7,12 +7,12 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/beacon"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/shared"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -254,11 +254,11 @@ func TestGetVersion(t *testing.T) {
 			name: "returns proper version response",
 			restEndpointResponse: apimiddleware.VersionResponseJson{
 				Data: &apimiddleware.VersionJson{
-					Version: "prysm/local",
+					Version: "qrysm/local",
 				},
 			},
 			expectedResponse: &zondpb.Version{
-				Version: "prysm/local",
+				Version: "qrysm/local",
 			},
 		},
 	}

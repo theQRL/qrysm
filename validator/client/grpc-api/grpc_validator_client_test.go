@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	mock2 "github.com/theQRL/qrysm/v4/testing/mock"
+	"github.com/theQRL/qrysm/testing/assert"
+	mock2 "github.com/theQRL/qrysm/testing/mock"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 

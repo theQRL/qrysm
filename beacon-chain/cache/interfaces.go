@@ -5,7 +5,7 @@ import (
 	"math/big"
 
 	"github.com/theQRL/go-zond/common"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // DepositCache combines the interfaces for retrieving and inserting deposit information.

@@ -3,15 +3,15 @@ package signing
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestDomain_OK(t *testing.T) {
-	state := &zond.BeaconState{
+	state := &zond.BeaconStateCapella{
 		Fork: &zond.Fork{
 			Epoch:           3,
 			PreviousVersion: []byte{0, 0, 0, 2},

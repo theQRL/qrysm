@@ -1,4 +1,4 @@
-// Package properpermissions implements a static analyzer to ensure that Prysm does not
+// Package properpermissions implements a static analyzer to ensure that Qrysm does not
 // use ioutil.MkdirAll or os.WriteFile as they are unsafe when it comes to guaranteeing
 // file permissions and not overriding existing permissions. Instead, users are warned
 // to utilize shared/file as the canonical solution.
@@ -15,7 +15,7 @@ import (
 )
 
 // Doc explaining the tool.
-const Doc = "Tool to enforce usage of Prysm's internal file-writing utils instead of os.MkdirAll or ioutil.WriteFile"
+const Doc = "Tool to enforce usage of Qrysm's internal file-writing utils instead of os.MkdirAll or ioutil.WriteFile"
 
 var (
 	errUnsafePackage = errors.New(

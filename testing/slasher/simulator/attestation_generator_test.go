@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/slashings"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/slashings"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestGenerateAttestationsForSlot_Slashing(t *testing.T) {

@@ -5,9 +5,9 @@ go_test(
     size = "small",
     srcs = ["random_test.go"],
     data = glob(["*.yaml"]) + [
-        "@consensus_spec_tests_minimal//:test_data",
+        #"@consensus_spec_tests_minimal//:test_data",
     ],
-    eth_network = "minimal",
+    zond_network = "minimal",
     tags = ["spectest"],
     deps = ["//testing/spectest/shared/capella/sanity:go_default_library"],
 )

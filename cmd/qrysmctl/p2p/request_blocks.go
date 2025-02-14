@@ -9,15 +9,15 @@ import (
 	corenet "github.com/libp2p/go-libp2p/core/network"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	p2ptypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/sync"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/config/params"
-	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	p2ptypes "github.com/theQRL/qrysm/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/beacon-chain/sync"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/config/params"
+	consensus_types "github.com/theQRL/qrysm/consensus-types"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -55,8 +55,8 @@ var requestBlocksCmd = &cli.Command{
 			Value:       13001,
 		},
 		&cli.StringFlag{
-			Name:        "prysm-api-endpoints",
-			Usage:       "comma-separated, gRPC API endpoint(s) for Prysm beacon node(s)",
+			Name:        "qrysm-api-endpoints",
+			Usage:       "comma-separated, gRPC API endpoint(s) for Qrysm beacon node(s)",
 			Destination: &requestBlocksFlags.APIEndpoints,
 			Value:       "localhost:4000",
 		},
@@ -124,11 +124,6 @@ func cliActionRequestBlocks(cliCtx *cli.Context) error {
 	}
 	c.registerHandshakeHandlers()
 
-	c.registerRPCHandler(p2p.RPCBlocksByRangeTopicV1, func(
-		ctx context.Context, i interface{}, stream libp2pcore.Stream,
-	) error {
-		return nil
-	})
 	c.registerRPCHandler(p2p.RPCBlocksByRangeTopicV2, func(
 		ctx context.Context, i interface{}, stream libp2pcore.Stream,
 	) error {

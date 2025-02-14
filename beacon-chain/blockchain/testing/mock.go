@@ -10,26 +10,26 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/async/event"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/epoch/precompute"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
-	blockfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/block"
-	opfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
-	statefeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/state"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
-	"github.com/theQRL/qrysm/v4/beacon-chain/forkchoice"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	"github.com/theQRL/qrysm/async/event"
+	"github.com/theQRL/qrysm/beacon-chain/core/epoch/precompute"
+	"github.com/theQRL/qrysm/beacon-chain/core/feed"
+	blockfeed "github.com/theQRL/qrysm/beacon-chain/core/feed/block"
+	opfeed "github.com/theQRL/qrysm/beacon-chain/core/feed/operation"
+	statefeed "github.com/theQRL/qrysm/beacon-chain/core/feed/state"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/beacon-chain/forkchoice"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
 )
 
 var ErrNilState = errors.New("nil state")
@@ -40,7 +40,7 @@ type ChainService struct {
 	Optimistic                  bool
 	ValidAttestation            bool
 	ValidatorsRoot              [32]byte
-	PublicKey                   [dilithium2.CryptoPublicKeyBytes]byte
+	PublicKey                   [field_params.DilithiumPubkeyLength]byte
 	FinalizedCheckPoint         *zondpb.Checkpoint
 	CurrentJustifiedCheckPoint  *zondpb.Checkpoint
 	PreviousJustifiedCheckPoint *zondpb.Checkpoint
@@ -420,12 +420,12 @@ func (_ *ChainService) ChainHeads() ([][32]byte, []primitives.Slot) {
 }
 
 // HeadPublicKeyToValidatorIndex mocks HeadPublicKeyToValidatorIndex and always return 0 and true.
-func (_ *ChainService) HeadPublicKeyToValidatorIndex(_ [dilithium2.CryptoPublicKeyBytes]byte) (primitives.ValidatorIndex, bool) {
+func (_ *ChainService) HeadPublicKeyToValidatorIndex(_ [field_params.DilithiumPubkeyLength]byte) (primitives.ValidatorIndex, bool) {
 	return 0, true
 }
 
 // HeadValidatorIndexToPublicKey mocks HeadValidatorIndexToPublicKey and always return empty and nil.
-func (s *ChainService) HeadValidatorIndexToPublicKey(_ context.Context, _ primitives.ValidatorIndex) ([dilithium2.CryptoPublicKeyBytes]byte, error) {
+func (s *ChainService) HeadValidatorIndexToPublicKey(_ context.Context, _ primitives.ValidatorIndex) ([field_params.DilithiumPubkeyLength]byte, error) {
 	return s.PublicKey, nil
 }
 
@@ -506,11 +506,11 @@ func prepareForkchoiceState(
 		ParentRoot: parentRoot[:],
 	}
 
-	executionHeader := &enginev1.ExecutionPayloadHeader{
+	executionHeader := &enginev1.ExecutionPayloadHeaderCapella{
 		BlockHash: payloadHash[:],
 	}
 
-	base := &zondpb.BeaconStateBellatrix{
+	base := &zondpb.BeaconStateCapella{
 		Slot:                         slot,
 		RandaoMixes:                  make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 		BlockRoots:                   make([][]byte, 1),
@@ -521,7 +521,7 @@ func prepareForkchoiceState(
 	}
 
 	base.BlockRoots[0] = append(base.BlockRoots[0], blockRoot[:]...)
-	st, err := state_native.InitializeFromProtoBellatrix(base)
+	st, err := state_native.InitializeFromProtoCapella(base)
 	return st, blockRoot, err
 }
 
@@ -609,9 +609,4 @@ func (s *ChainService) UnrealizedJustifiedPayloadBlockHash() [32]byte {
 // BlockBeingSynced mocks the same method in the chain service
 func (c *ChainService) BlockBeingSynced(root [32]byte) bool {
 	return root == c.SyncingRoot
-}
-
-// ReceiveBlob implements the same method in the chain service
-func (*ChainService) ReceiveBlob(_ context.Context, _ *zondpb.BlobSidecar) error {
-	return nil
 }

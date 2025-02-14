@@ -3,14 +3,13 @@ package iface
 import (
 	"context"
 
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	remoteweb3signer "github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer"
+	"github.com/theQRL/qrysm/validator/keymanager"
 )
 
 // InitKeymanagerConfig defines configuration options for initializing a keymanager.
 type InitKeymanagerConfig struct {
 	ListenForChanges bool
-	Web3SignerConfig *remoteweb3signer.SetupConfig
+	// Web3SignerConfig *remoteweb3signer.SetupConfig
 }
 
 // Wallet defines a struct which has capabilities and knowledge of how

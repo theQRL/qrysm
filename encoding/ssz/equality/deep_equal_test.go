@@ -3,9 +3,9 @@ package equality_test
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/encoding/ssz/equality"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/encoding/ssz/equality"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestDeepEqualBasicTypes(t *testing.T) {

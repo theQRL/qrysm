@@ -3,16 +3,15 @@ package forkchoice
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestBuilderTick(t *testing.T) {
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
-	blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
+	blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 	require.NoError(t, err)
 	builder := NewBuilder(t, st, blk)
 	builder.Tick(t, 10)
@@ -21,21 +20,23 @@ func TestBuilderTick(t *testing.T) {
 }
 
 func TestBuilderInvalidBlock(t *testing.T) {
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
-	blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
+	blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 	require.NoError(t, err)
 	builder := NewBuilder(t, st, blk)
 	builder.InvalidBlock(t, blk)
 }
 
+/*
 func TestPoWBlock(t *testing.T) {
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
-	blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
+	blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 	require.NoError(t, err)
 	builder := NewBuilder(t, st, blk)
 	builder.PoWBlock(&zondpb.PowBlock{BlockHash: []byte{1, 2, 3}})
 
 	require.Equal(t, 1, len(builder.execMock.powBlocks))
 }
+*/

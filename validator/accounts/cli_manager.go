@@ -5,22 +5,21 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	grpcutil "github.com/theQRL/qrysm/v4/api/grpc"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	iface "github.com/theQRL/qrysm/v4/validator/client/iface"
-	nodeClientFactory "github.com/theQRL/qrysm/v4/validator/client/node-client-factory"
-	validatorClientFactory "github.com/theQRL/qrysm/v4/validator/client/validator-client-factory"
-	validatorHelpers "github.com/theQRL/qrysm/v4/validator/helpers"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/derived"
+	grpcutil "github.com/theQRL/qrysm/api/grpc"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	iface "github.com/theQRL/qrysm/validator/client/iface"
+	nodeClientFactory "github.com/theQRL/qrysm/validator/client/node-client-factory"
+	validatorClientFactory "github.com/theQRL/qrysm/validator/client/validator-client-factory"
+	validatorHelpers "github.com/theQRL/qrysm/validator/helpers"
+	"github.com/theQRL/qrysm/validator/keymanager"
 	"google.golang.org/grpc"
 )
 
 // NewCLIManager allows for managing validator accounts via CLI commands.
 func NewCLIManager(opts ...Option) (*AccountsCLIManager, error) {
 	acc := &AccountsCLIManager{
-		mnemonicLanguage: derived.DefaultMnemonicLanguage,
+		// mnemonicLanguage: derived.DefaultMnemonicLanguage,
 	}
 	for _, opt := range opts {
 		if err := opt(acc); err != nil {
@@ -42,28 +41,28 @@ type AccountsCLIManager struct {
 	deletePublicKeys     bool
 	importPrivateKeys    bool
 	readPasswordFile     bool
-	skipMnemonicConfirm  bool
-	dialOpts             []grpc.DialOption
-	grpcHeaders          []string
-	beaconRPCProvider    string
-	walletKeyCount       int
-	privateKeyFile       string
-	passwordFilePath     string
-	keysDir              string
-	mnemonicLanguage     string
-	backupsDir           string
-	backupsPassword      string
-	filteredPubKeys      []dilithium.PublicKey
-	rawPubKeys           [][]byte
-	formattedPubKeys     []string
-	exitJSONOutputPath   string
-	walletDir            string
-	walletPassword       string
-	mnemonic             string
-	numAccounts          int
-	mnemonic25thWord     string
-	beaconApiEndpoint    string
-	beaconApiTimeout     time.Duration
+	// skipMnemonicConfirm  bool
+	dialOpts          []grpc.DialOption
+	grpcHeaders       []string
+	beaconRPCProvider string
+	walletKeyCount    int
+	privateKeyFile    string
+	passwordFilePath  string
+	keysDir           string
+	// mnemonicLanguage     string
+	backupsDir         string
+	backupsPassword    string
+	filteredPubKeys    []dilithium.PublicKey
+	rawPubKeys         [][]byte
+	formattedPubKeys   []string
+	exitJSONOutputPath string
+	walletDir          string
+	walletPassword     string
+	// mnemonic             string
+	// numAccounts          int
+	// mnemonic25thWord     string
+	beaconApiEndpoint string
+	beaconApiTimeout  time.Duration
 }
 
 func (acm *AccountsCLIManager) prepareBeaconClients(ctx context.Context) (*iface.ValidatorClient, *iface.NodeClient, error) {

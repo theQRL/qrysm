@@ -6,7 +6,7 @@ go_library(
         "generate_genesis.go",
         "testnet.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/cmd/qrysmctl/testnet",
+    importpath = "github.com/theQRL/qrysm/cmd/qrysmctl/testnet",
     visibility = ["//visibility:public"],
     deps = [
         "//beacon-chain/state:go_default_library",
@@ -14,7 +14,7 @@ go_library(
         "//config/params:go_default_library",
         "//container/trie:go_default_library",
         "//io/file:go_default_library",
-        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
         "//runtime/interop:go_default_library",
         "//runtime/version:go_default_library",
         "@com_github_ghodss_yaml//:go_default_library",
@@ -32,9 +32,10 @@ go_test(
     srcs = ["generate_genesis_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//crypto/bls:go_default_library",
+        "//crypto/dilithium:go_default_library",
         "//runtime/interop:go_default_library",
         "//testing/assert:go_default_library",
         "//testing/require:go_default_library",
+        "@com_github_theqrl_go_qrllib//common:go_default_library",
     ],
 )

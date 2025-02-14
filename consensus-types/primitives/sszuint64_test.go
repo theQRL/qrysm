@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 func TestSSZUint64_Limit(t *testing.T) {

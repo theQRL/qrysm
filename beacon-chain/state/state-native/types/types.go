@@ -2,7 +2,7 @@ package types
 
 import (
 	"github.com/pkg/errors"
-	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
+	consensus_types "github.com/theQRL/qrysm/consensus-types"
 )
 
 // DataType signifies the data type of the field.
@@ -58,10 +58,6 @@ func (f FieldIndex) String() string {
 		return "randaoMixes"
 	case Slashings:
 		return "slashings"
-	case PreviousEpochAttestations:
-		return "previousEpochAttestations"
-	case CurrentEpochAttestations:
-		return "currentEpochAttestations"
 	case PreviousEpochParticipationBits:
 		return "previousEpochParticipationBits"
 	case CurrentEpochParticipationBits:
@@ -80,8 +76,6 @@ func (f FieldIndex) String() string {
 		return "currentSyncCommittee"
 	case NextSyncCommittee:
 		return "nextSyncCommittee"
-	case LatestExecutionPayloadHeader:
-		return "latestExecutionPayloadHeader"
 	case LatestExecutionPayloadHeaderCapella:
 		return "LatestExecutionPayloadHeaderCapella"
 	case NextWithdrawalIndex:
@@ -129,9 +123,9 @@ func (f FieldIndex) RealPosition() int {
 		return 13
 	case Slashings:
 		return 14
-	case PreviousEpochAttestations, PreviousEpochParticipationBits:
+	case PreviousEpochParticipationBits:
 		return 15
-	case CurrentEpochAttestations, CurrentEpochParticipationBits:
+	case CurrentEpochParticipationBits:
 		return 16
 	case JustificationBits:
 		return 17
@@ -147,7 +141,7 @@ func (f FieldIndex) RealPosition() int {
 		return 22
 	case NextSyncCommittee:
 		return 23
-	case LatestExecutionPayloadHeader, LatestExecutionPayloadHeaderCapella, LatestExecutionPayloadHeaderDeneb:
+	case LatestExecutionPayloadHeaderCapella:
 		return 24
 	case NextWithdrawalIndex:
 		return 25
@@ -193,8 +187,6 @@ const (
 	Balances
 	RandaoMixes
 	Slashings
-	PreviousEpochAttestations
-	CurrentEpochAttestations
 	PreviousEpochParticipationBits
 	CurrentEpochParticipationBits
 	JustificationBits
@@ -204,9 +196,7 @@ const (
 	InactivityScores
 	CurrentSyncCommittee
 	NextSyncCommittee
-	LatestExecutionPayloadHeader
 	LatestExecutionPayloadHeaderCapella
-	LatestExecutionPayloadHeaderDeneb
 	NextWithdrawalIndex
 	NextWithdrawalValidatorIndex
 	HistoricalSummaries

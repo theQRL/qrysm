@@ -1,17 +1,12 @@
 package state_native
 
 import (
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 // SetNextWithdrawalIndex sets the index that will be assigned to the next withdrawal.
 func (b *BeaconState) SetNextWithdrawalIndex(i uint64) error {
-	if b.version < version.Capella {
-		return errNotSupported("SetNextWithdrawalIndex", b.version)
-	}
-
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
@@ -23,10 +18,6 @@ func (b *BeaconState) SetNextWithdrawalIndex(i uint64) error {
 // SetNextWithdrawalValidatorIndex sets the index of the validator which is
 // next in line for a partial withdrawal.
 func (b *BeaconState) SetNextWithdrawalValidatorIndex(i primitives.ValidatorIndex) error {
-	if b.version < version.Capella {
-		return errNotSupported("SetNextWithdrawalValidatorIndex", b.version)
-	}
-
 	b.lock.Lock()
 	defer b.lock.Unlock()
 

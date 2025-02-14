@@ -27,7 +27,7 @@ Note: You must configured your gcr access credentials to push to gcr.io/prysmati
 3) Download and run [rbe_configs_gen](https://github.com/bazelbuild/bazel-toolchains#rbe_configs_gen---cli-tool-to-generate-configs) CLI tool.
 
 ```bash
-# Run from the root of the Prysm repo.
+# Run from the root of the Qrysm repo.
 rbe_configs_gen \
   --bazel_version=$(cat .bazelversion) \
   --target_os=linux \

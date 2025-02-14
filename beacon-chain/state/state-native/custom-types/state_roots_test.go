@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestStateRoots_UnmarshalSSZ(t *testing.T) {
@@ -62,7 +62,7 @@ func TestStateRoots_MarshalSSZTo(t *testing.T) {
 }
 
 func TestStateRoots_MarshalSSZ(t *testing.T) {
-	d := StateRoots{}
+	d := StateRoots(make([][32]byte, fieldparams.StateRootsLength))
 	d[0] = [32]byte{'f', 'o', 'o'}
 	d[1] = [32]byte{'b', 'a', 'r'}
 	b, err := d.MarshalSSZ()

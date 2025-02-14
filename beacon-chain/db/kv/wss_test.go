@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/genesis"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/state/genesis"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestSaveOrigin(t *testing.T) {
@@ -30,11 +30,11 @@ func TestSaveOrigin(t *testing.T) {
 	// so the genesis root key is never written to the db.
 	require.NoError(t, db.EnsureEmbeddedGenesis(ctx))
 
-	cst, err := util.NewBeaconState()
+	cst, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	csb, err := cst.MarshalSSZ()
 	require.NoError(t, err)
-	cb := util.NewBeaconBlock()
+	cb := util.NewBeaconBlockCapella()
 	scb, err := blocks.NewSignedBeaconBlock(cb)
 	require.NoError(t, err)
 	cbb, err := scb.MarshalSSZ()

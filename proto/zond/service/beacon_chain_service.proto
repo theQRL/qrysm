@@ -21,15 +21,13 @@ import "google/protobuf/empty.proto";
 
 import "proto/zond/v1/beacon_block.proto";
 import "proto/zond/v1/beacon_chain.proto";
-import "proto/zond/v2/beacon_block.proto";
-import "proto/zond/v2/beacon_chain.proto";
-import "proto/zond/v2/beacon_state.proto";
-import "proto/zond/v2/ssz.proto";
-import "proto/zond/v2/sync_committee.proto";
-import "proto/zond/v2/withdrawals.proto";
+import "proto/zond/v1/beacon_state.proto";
+import "proto/zond/v1/ssz.proto";
+import "proto/zond/v1/sync_committee.proto";
+import "proto/zond/v1/withdrawals.proto";
 
 option csharp_namespace = "TheQRL.Zond.Service";
-option go_package = "github.com/theQRL/qrysm/v4/proto/zond/service";
+option go_package = "github.com/theQRL/qrysm/proto/zond/service";
 option java_multiple_files = true;
 option java_outer_classname = "BeaconChainServiceProto";
 option java_package = "org.theqrl.zond.service";
@@ -64,7 +62,7 @@ service BeaconChain {
   // ListSyncCommittees retrieves the sync committees for the given state at the given epoch.
   //
   // Spec: https://ethereum.github.io/beacon-APIs/?urls.primaryName=v2.3.0#/Beacon/getEpochSyncCommittees
-  rpc ListSyncCommittees(v2.StateSyncCommitteesRequest) returns (v2.StateSyncCommitteesResponse) {
+  rpc ListSyncCommittees(v1.StateSyncCommitteesRequest) returns (v1.StateSyncCommitteesResponse) {
     option (google.api.http) = {
       get: "/internal/zond/v1/beacon/states/{state_id}/sync_committees"
     };
@@ -76,7 +74,7 @@ service BeaconChain {
   // Ordinarily states from the same epoch will mutate the RANDAO mix for that epoch as blocks are applied.
   //
   // Spec: https://ethereum.github.io/beacon-APIs/?urls.primaryName=dev#/Beacon/getStateRandao
-  rpc GetRandao(v2.RandaoRequest) returns (v2.RandaoResponse) {
+  rpc GetRandao(v1.RandaoRequest) returns (v1.RandaoResponse) {
     option (google.api.http) = {
       get: "/internal/zond/v1/beacon/states/{state_id}/randao"
     };
@@ -84,39 +82,17 @@ service BeaconChain {
 
   // GetBlock retrieves block details for given block id.
   //
-  // Spec: https://ethereum.github.io/beacon-APIs/?urls.primaryName=v2.3.0#/Beacon/getBlock
-  // DEPRECATED: GetBlock is deprecated in favor of GetBlockV2
+  // Spec: https://ethereum.github.io/beacon-APIs/?urls.primaryName=v2.3.0#/Beacon/getBlockV2
   rpc GetBlock(v1.BlockRequest) returns (v1.BlockResponse) {
-    option deprecated = true;
     option (google.api.http) = {
       get: "/internal/zond/v1/beacon/blocks/{block_id}"
-    };
-  }
-
-  // GetBlockSSZ returns the SSZ-serialized version of block details for given block id.
-  //
-  // Spec: https://ethereum.github.io/beacon-APIs/?urls.primaryName=v2.3.0#/Beacon/getBlock
-  // DEPRECATED: GetBlockSSZ is deprecated in favor of GetBlockV2SSZ
-  rpc GetBlockSSZ(v1.BlockRequest) returns (v1.BlockSSZResponse) {
-    option deprecated = true;
-    option (google.api.http) = {
-      get: "/internal/zond/v1/beacon/blocks/{block_id}/ssz"
-    };
-  }
-
-  // GetBlockV2 retrieves block details for given block id.
-  //
-  // Spec: https://ethereum.github.io/beacon-APIs/?urls.primaryName=v2.3.0#/Beacon/getBlockV2
-  rpc GetBlockV2(v2.BlockRequestV2) returns (v2.BlockResponseV2) {
-    option (google.api.http) = {
-      get: "/internal/zond/v2/beacon/blocks/{block_id}"
     };
   }
 
   // GetBlindedBlock retrieves blinded block for given block id.
   //
   // https://ethereum.github.io/beacon-APIs/?urls.primaryName=dev#/Beacon/getBlindedBlock
-  rpc GetBlindedBlock(v1.BlockRequest) returns (v2.BlindedBlockResponse) {
+  rpc GetBlindedBlock(v1.BlockRequest) returns (v1.BlindedBlockResponse) {
     option (google.api.http) = {
       get: "/internal/zond/v1/beacon/blinded_blocks/{block_id}"
     };
@@ -125,18 +101,18 @@ service BeaconChain {
   // GetBlindedBlockSSZ returns the SSZ-serialized version of blinded block details for given block id.
   //
   // Spec: https://ethereum.github.io/beacon-APIs/?urls.primaryName=dev#/Beacon/getBlindedBlock
-  rpc GetBlindedBlockSSZ(v1.BlockRequest) returns (v2.SSZContainer) {
+  rpc GetBlindedBlockSSZ(v1.BlockRequest) returns (v1.SSZContainer) {
     option (google.api.http) = {
       get: "/internal/zond/v1/beacon/blinded_blocks/{block_id}/ssz"
     };
   }
 
-  // GetBlockSSZV2 returns the SSZ-serialized version of block details for given block id.
+  // GetBlockSSZ returns the SSZ-serialized version of block details for given block id.
   //
   // Spec: https://ethereum.github.io/beacon-APIs/?urls.primaryName=v2.3.0#/Beacon/getBlockV2
-  rpc GetBlockSSZV2(v2.BlockRequestV2) returns (v2.SSZContainer) {
+  rpc GetBlockSSZ(v1.BlockRequest) returns (v1.SSZContainer) {
     option (google.api.http) = {
-      get: "/internal/zond/v2/beacon/blocks/{block_id}/ssz"
+      get: "/internal/zond/v1/beacon/blocks/{block_id}/ssz"
     };
   }
 
@@ -195,17 +171,17 @@ service BeaconChain {
 
   // SubmitSignedDilithiumToExecutionChanges submits said object to node's pool
   // and if passes validation node MUST broadcast it to network.
-  rpc SubmitSignedDilithiumToExecutionChanges(v2.SubmitDilithiumToExecutionChangesRequest) returns (google.protobuf.Empty) {
+  rpc SubmitSignedDilithiumToExecutionChanges(v1.SubmitDilithiumToExecutionChangesRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/internal/zond/v1/beacon/pool/dilithium_to_execution_changes"
       body: "*"
     };
   }
 
-  // ListDilithiumToExecutionChanges retrieves BLS to execution changes known by the node but not necessarily incorporated into any block
+  // ListDilithiumToExecutionChanges retrieves Dilithium to execution changes known by the node but not necessarily incorporated into any block
   //
   // Spec: https://ethereum.github.io/beacon-APIs/?urls.primaryName=dev#/Beacon/getPoolBLSToExecutionChanges
-  rpc ListDilithiumToExecutionChanges(google.protobuf.Empty) returns (v2.DilithiumToExecutionChangesPoolResponse) {
+  rpc ListDilithiumToExecutionChanges(google.protobuf.Empty) returns (v1.DilithiumToExecutionChangesPoolResponse) {
     option (google.api.http) = {
       get: "/internal/zond/v1/beacon/pool/dilithium_to_execution_changes"
     };

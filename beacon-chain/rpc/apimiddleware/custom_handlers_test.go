@@ -11,12 +11,12 @@ import (
 	"time"
 
 	"github.com/r3labs/sse/v2"
-	"github.com/theQRL/qrysm/v4/api"
-	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
-	"github.com/theQRL/qrysm/v4/api/grpc"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/events"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/api"
+	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
+	"github.com/theQRL/qrysm/api/grpc"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/events"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 type testSSZResponseJson struct {
@@ -219,7 +219,7 @@ func TestReceiveEvents_AggregatedAtt(t *testing.T) {
 					Source:          nil,
 					Target:          nil,
 				},
-				Signature: base64Val,
+				Signatures: []string{base64Val},
 			},
 		}
 		bData, err := json.Marshal(data)
@@ -237,7 +237,7 @@ func TestReceiveEvents_AggregatedAtt(t *testing.T) {
 	assert.Equal(t, true, errJson == nil)
 
 	expectedEvent := `event: attestation
-data: {"aggregation_bits":"0x666f6f","data":{"slot":"1","index":"1","beacon_block_root":"0x666f6f","source":null,"target":null},"signature":"0x666f6f"}
+data: {"aggregation_bits":"0x666f6f","data":{"slot":"1","index":"1","beacon_block_root":"0x666f6f","source":null,"target":null},"signatures":["0x666f6f"]}
 
 `
 	assert.DeepEqual(t, expectedEvent, w.Body.String())
@@ -262,7 +262,7 @@ func TestReceiveEvents_UnaggregatedAtt(t *testing.T) {
 				Source:          nil,
 				Target:          nil,
 			},
-			Signature: base64Val,
+			Signatures: []string{base64Val},
 		}
 		bData, err := json.Marshal(data)
 		require.NoError(t, err)
@@ -279,7 +279,7 @@ func TestReceiveEvents_UnaggregatedAtt(t *testing.T) {
 	assert.Equal(t, true, errJson == nil)
 
 	expectedEvent := `event: attestation
-data: {"aggregation_bits":"0x666f6f","data":{"slot":"1","index":"1","beacon_block_root":"0x666f6f","source":null,"target":null},"signature":"0x666f6f"}
+data: {"aggregation_bits":"0x666f6f","data":{"slot":"1","index":"1","beacon_block_root":"0x666f6f","source":null,"target":null},"signatures":["0x666f6f"]}
 
 `
 	assert.DeepEqual(t, expectedEvent, w.Body.String())

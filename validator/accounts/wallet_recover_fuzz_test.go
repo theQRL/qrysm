@@ -2,10 +2,11 @@
 
 package accounts_test
 
+/*
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/validator/accounts"
+	"github.com/theQRL/qrysm/validator/accounts"
 )
 
 func FuzzValidateMnemonic(f *testing.F) {
@@ -17,3 +18,4 @@ func FuzzValidateMnemonic(f *testing.F) {
 		_ = err
 	})
 }
+*/

@@ -1,16 +1,16 @@
-// This code was adapted from https://github.com/theQRL/go-zond/blob/master/cmd/geth/usage.go
+// This code was adapted from https://github.com/theQRL/go-zond/blob/master/cmd/gzond/usage.go
 package main
 
 import (
 	"io"
 	"sort"
 
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/sync/checkpoint"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/sync/genesis"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/runtime/debug"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/sync/checkpoint"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/sync/genesis"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/runtime/debug"
 	"github.com/urfave/cli/v2"
 )
 
@@ -112,8 +112,6 @@ var appHelpFlagGroups = []flagGroup{
 			flags.SlotsPerArchivedPoint,
 			flags.BlockBatchLimit,
 			flags.BlockBatchLimitBurstFactor,
-			flags.BlobBatchLimit,
-			flags.BlobBatchLimitBurstFactor,
 			flags.EnableDebugRPCEndpoints,
 			flags.SubscribeToAllSubnets,
 			flags.HistoricalSlasherNode,
@@ -128,7 +126,6 @@ var appHelpFlagGroups = []flagGroup{
 			flags.EngineEndpointTimeoutSeconds,
 			flags.SlasherDirFlag,
 			flags.LocalBlockValueBoost,
-			flags.BlobRetentionEpoch,
 			checkpoint.BlockPath,
 			checkpoint.StatePath,
 			checkpoint.RemoteURL,
@@ -140,9 +137,6 @@ var appHelpFlagGroups = []flagGroup{
 		Name: "merge",
 		Flags: []cli.Flag{
 			flags.SuggestedFeeRecipient,
-			flags.TerminalTotalDifficultyOverride,
-			flags.TerminalBlockHashOverride,
-			flags.TerminalBlockHashActivationEpochOverride,
 		},
 	},
 	{

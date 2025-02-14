@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/math"
-	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/math"
+	"github.com/theQRL/qrysm/monitoring/tracing"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
 
@@ -22,10 +22,10 @@ import (
 // from the gRPC server.
 //
 // If the channel parameter is nil, WaitForActivation creates and manages its own channel.
-func (v *validator) WaitForActivation(ctx context.Context, accountsChangedChan chan [][dilithium2.CryptoPublicKeyBytes]byte) error {
+func (v *validator) WaitForActivation(ctx context.Context, accountsChangedChan chan [][field_params.DilithiumPubkeyLength]byte) error {
 	// Monitor the key manager for updates.
 	if accountsChangedChan == nil {
-		accountsChangedChan = make(chan [][dilithium2.CryptoPublicKeyBytes]byte, 1)
+		accountsChangedChan = make(chan [][field_params.DilithiumPubkeyLength]byte, 1)
 		km, err := v.Keymanager()
 		if err != nil {
 			return err
@@ -47,7 +47,7 @@ func (v *validator) WaitForActivation(ctx context.Context, accountsChangedChan c
 // the accountsChangedChan. When an event signal is received, restart the internalWaitForActivation routine.
 // 4) If the stream is reset in error, restart the routine.
 // 5) If the stream returns a response indicating one or more validators are active, exit the routine.
-func (v *validator) internalWaitForActivation(ctx context.Context, accountsChangedChan <-chan [][dilithium2.CryptoPublicKeyBytes]byte) error {
+func (v *validator) internalWaitForActivation(ctx context.Context, accountsChangedChan <-chan [][field_params.DilithiumPubkeyLength]byte) error {
 	ctx, span := trace.StartSpan(ctx, "validator.WaitForActivation")
 	defer span.End()
 
@@ -101,7 +101,7 @@ func (v *validator) internalWaitForActivation(ctx context.Context, accountsChang
 	return nil
 }
 
-func (v *validator) handleAccountsChanged(ctx context.Context, accountsChangedChan <-chan [][dilithium2.CryptoPublicKeyBytes]byte, stream *zondpb.BeaconNodeValidator_WaitForActivationClient, span *trace.Span) error {
+func (v *validator) handleAccountsChanged(ctx context.Context, accountsChangedChan <-chan [][field_params.DilithiumPubkeyLength]byte, stream *zondpb.BeaconNodeValidator_WaitForActivationClient, span *trace.Span) error {
 	for {
 		select {
 		case <-accountsChangedChan:

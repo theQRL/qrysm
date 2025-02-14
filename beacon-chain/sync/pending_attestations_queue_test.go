@@ -8,28 +8,28 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-bitfield"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/p2p/enr"
-	"github.com/theQRL/qrysm/v4/async/abool"
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	dbtest "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
-	p2ptest "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/async/abool"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	dbtest "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	"github.com/theQRL/qrysm/beacon-chain/operations/attestations"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
+	p2ptest "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	lruwrpr "github.com/theQRL/qrysm/cache/lru"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
+	qrysmTime "github.com/theQRL/qrysm/time"
 )
 
 func TestProcessPendingAtts_NoBlockRequestBlock(t *testing.T) {
@@ -43,7 +43,7 @@ func TestProcessPendingAtts_NoBlockRequestBlock(t *testing.T) {
 	p1.Peers().SetConnectionState(p2.PeerID(), peers.PeerConnected)
 	p1.Peers().SetChainState(p2.PeerID(), &zondpb.Status{})
 
-	chain := &mock.ChainService{Genesis: prysmTime.Now(), FinalizedCheckPoint: &zondpb.Checkpoint{}}
+	chain := &mock.ChainService{Genesis: qrysmTime.Now(), FinalizedCheckPoint: &zondpb.Checkpoint{}}
 	r := &Service{
 		cfg:                  &config{p2p: p1, beaconDB: db, chain: chain, clock: startup.NewClock(chain.Genesis, chain.ValidatorsRoot)},
 		blkRootToPendingAtts: make(map[[32]byte][]*zondpb.SignedAggregateAttestationAndProof),
@@ -62,14 +62,14 @@ func TestProcessPendingAtts_HasBlockSaveUnAggregatedAtt(t *testing.T) {
 	p1 := p2ptest.NewTestP2P(t)
 	validators := uint64(256)
 
-	beaconState, privKeys := util.DeterministicGenesisState(t, validators)
+	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, validators)
 
-	sb := util.NewBeaconBlock()
+	sb := util.NewBeaconBlockCapella()
 	util.SaveBlock(t, context.Background(), db, sb)
 	root, err := sb.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	aggBits := bitfield.NewBitlist(8)
+	aggBits := bitfield.NewBitlist(2)
 	aggBits.SetBitAt(1, true)
 	att := &zondpb.Attestation{
 		Data: &zondpb.AttestationData{
@@ -89,7 +89,7 @@ func TestProcessPendingAtts_HasBlockSaveUnAggregatedAtt(t *testing.T) {
 	hashTreeRoot, err := signing.ComputeSigningRoot(att.Data, attesterDomain)
 	assert.NoError(t, err)
 	for _, i := range attestingIndices {
-		att.Signature = privKeys[i].Sign(hashTreeRoot[:]).Marshal()
+		att.Signatures = [][]byte{privKeys[i].Sign(hashTreeRoot[:]).Marshal()}
 	}
 
 	// Arbitrary aggregator index for testing purposes.
@@ -130,7 +130,7 @@ func TestProcessPendingAtts_HasBlockSaveUnAggregatedAtt(t *testing.T) {
 	}
 	go r.verifierRoutine()
 
-	s, err := util.NewBeaconState()
+	s, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, r.cfg.beaconDB.SaveState(context.Background(), s, root))
 
@@ -150,10 +150,10 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 	db := dbtest.SetupDB(t)
 	p1 := p2ptest.NewTestP2P(t)
 
-	s, _ := util.DeterministicGenesisState(t, 256)
+	s, _ := util.DeterministicGenesisStateCapella(t, 256)
 	chain := &mock.ChainService{
 		State:   s,
-		Genesis: prysmTime.Now(), FinalizedCheckPoint: &zondpb.Checkpoint{Root: make([]byte, 32)}}
+		Genesis: qrysmTime.Now(), FinalizedCheckPoint: &zondpb.Checkpoint{Root: make([]byte, 32)}}
 	r := &Service{
 		cfg: &config{
 			p2p:      p1,
@@ -165,24 +165,24 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 		blkRootToPendingAtts: make(map[[32]byte][]*zondpb.SignedAggregateAttestationAndProof),
 	}
 
-	priv, err := bls.RandKey()
+	priv, err := dilithium.RandKey()
 	require.NoError(t, err)
 	a := &zondpb.AggregateAttestationAndProof{
 		Aggregate: &zondpb.Attestation{
-			Signature:       priv.Sign([]byte("foo")).Marshal(),
+			Signatures:      [][]byte{priv.Sign([]byte("foo")).Marshal()},
 			AggregationBits: bitfield.Bitlist{0x02},
 			Data:            util.HydrateAttestationData(&zondpb.AttestationData{}),
 		},
-		SelectionProof: make([]byte, dilithium2.CryptoBytes),
+		SelectionProof: make([]byte, field_params.DilithiumSignatureLength),
 	}
 
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	r32, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
 	util.SaveBlock(t, context.Background(), r.cfg.beaconDB, b)
 	require.NoError(t, r.cfg.beaconDB.SaveState(context.Background(), s, r32))
 
-	r.blkRootToPendingAtts[r32] = []*zondpb.SignedAggregateAttestationAndProof{{Message: a, Signature: make([]byte, dilithium2.CryptoBytes)}}
+	r.blkRootToPendingAtts[r32] = []*zondpb.SignedAggregateAttestationAndProof{{Message: a, Signature: make([]byte, field_params.DilithiumSignatureLength)}}
 	require.NoError(t, r.processPendingAtts(context.Background()))
 
 	assert.Equal(t, false, p1.BroadcastCalled, "Broadcasted bad aggregate")
@@ -192,8 +192,8 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 
 	validators := uint64(256)
 
-	_, privKeys := util.DeterministicGenesisState(t, validators)
-	aggBits := bitfield.NewBitlist(8)
+	_, privKeys := util.DeterministicGenesisStateCapella(t, validators)
+	aggBits := bitfield.NewBitlist(2)
 	aggBits.SetBitAt(1, true)
 	att := &zondpb.Attestation{
 		Data: &zondpb.AttestationData{
@@ -212,7 +212,7 @@ func TestProcessPendingAtts_NoBroadcastWithBadSignature(t *testing.T) {
 	hashTreeRoot, err := signing.ComputeSigningRoot(att.Data, attesterDomain)
 	assert.NoError(t, err)
 	for _, i := range attestingIndices {
-		att.Signature = privKeys[i].Sign(hashTreeRoot[:]).Marshal()
+		att.Signatures = [][]byte{privKeys[i].Sign(hashTreeRoot[:]).Marshal()}
 	}
 
 	// Arbitrary aggregator index for testing purposes.
@@ -264,9 +264,9 @@ func TestProcessPendingAtts_HasBlockSaveAggregatedAtt(t *testing.T) {
 	p1 := p2ptest.NewTestP2P(t)
 	validators := uint64(256)
 
-	beaconState, privKeys := util.DeterministicGenesisState(t, validators)
+	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, validators)
 
-	sb := util.NewBeaconBlock()
+	sb := util.NewBeaconBlockCapella()
 	util.SaveBlock(t, context.Background(), db, sb)
 	root, err := sb.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -291,12 +291,12 @@ func TestProcessPendingAtts_HasBlockSaveAggregatedAtt(t *testing.T) {
 	require.NoError(t, err)
 	hashTreeRoot, err := signing.ComputeSigningRoot(att.Data, attesterDomain)
 	assert.NoError(t, err)
-	sigs := make([]bls.Signature, len(attestingIndices))
+	sigs := make([][]byte, len(attestingIndices))
 	for i, indice := range attestingIndices {
-		sig := privKeys[indice].Sign(hashTreeRoot[:])
+		sig := privKeys[indice].Sign(hashTreeRoot[:]).Marshal()
 		sigs[i] = sig
 	}
-	att.Signature = bls.AggregateSignatures(sigs).Marshal()
+	att.Signatures = sigs
 
 	// Arbitrary aggregator index for testing purposes.
 	aggregatorIndex := committee[0]
@@ -335,7 +335,7 @@ func TestProcessPendingAtts_HasBlockSaveAggregatedAtt(t *testing.T) {
 		signatureChan:                  make(chan *signatureVerifier, verifierLimit),
 	}
 	go r.verifierRoutine()
-	s, err := util.NewBeaconState()
+	s, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, r.cfg.beaconDB.SaveState(context.Background(), s, root))
 
@@ -383,14 +383,14 @@ func TestValidatePendingAtts_CanPruneOldAtts(t *testing.T) {
 	assert.Equal(t, 100, len(s.blkRootToPendingAtts[r2]), "Did not save pending atts")
 	assert.Equal(t, 100, len(s.blkRootToPendingAtts[r3]), "Did not save pending atts")
 
-	// Set current slot to 50, it should prune 19 attestations. (50 - 31)
-	s.validatePendingAtts(context.Background(), 50)
+	// Set current slot to 146, it should prune 19 attestations. (146 - 127)
+	s.validatePendingAtts(context.Background(), 146)
 	assert.Equal(t, 81, len(s.blkRootToPendingAtts[r1]), "Did not delete pending atts")
 	assert.Equal(t, 81, len(s.blkRootToPendingAtts[r2]), "Did not delete pending atts")
 	assert.Equal(t, 81, len(s.blkRootToPendingAtts[r3]), "Did not delete pending atts")
 
-	// Set current slot to 100 + slot_duration, it should prune all the attestations.
-	s.validatePendingAtts(context.Background(), 100+params.BeaconConfig().SlotsPerEpoch)
+	// Set current slot to 387 + slot_duration, it should prune all the attestations.
+	s.validatePendingAtts(context.Background(), 387+params.BeaconConfig().SlotsPerEpoch)
 	assert.Equal(t, 0, len(s.blkRootToPendingAtts[r1]), "Did not delete pending atts")
 	assert.Equal(t, 0, len(s.blkRootToPendingAtts[r2]), "Did not delete pending atts")
 	assert.Equal(t, 0, len(s.blkRootToPendingAtts[r3]), "Did not delete pending atts")

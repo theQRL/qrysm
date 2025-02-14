@@ -9,30 +9,29 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/theQRL/go-zond/p2p/enr"
-	"github.com/theQRL/qrysm/v4/async/abool"
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db/kv"
-	testingDB "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
-	p2ptest "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	p2ptypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
-	"github.com/theQRL/qrysm/v4/config/params"
-	consensusblocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/consensus-types/wrapper"
-	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/async/abool"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/beacon-chain/db/kv"
+	testingDB "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
+	p2ptest "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	p2ptypes "github.com/theQRL/qrysm/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	mockSync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync/testing"
+	"github.com/theQRL/qrysm/config/params"
+	consensusblocks "github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/consensus-types/wrapper"
+	leakybucket "github.com/theQRL/qrysm/container/leaky-bucket"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
+	qrysmTime "github.com/theQRL/qrysm/time"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -173,17 +172,16 @@ func TestStatusRPCHandler_ReturnsHelloMessage(t *testing.T) {
 	db := testingDB.SetupDB(t)
 
 	// Set up a head state with data we expect.
-	head := util.NewBeaconBlock()
+	head := util.NewBeaconBlockCapella()
 	head.Block.Slot = 111
 	headRoot, err := head.Block.HashTreeRoot()
 	require.NoError(t, err)
 	blkSlot := 3 * params.BeaconConfig().SlotsPerEpoch
-	finalized := util.NewBeaconBlock()
+	finalized := util.NewBeaconBlockCapella()
 	finalized.Block.Slot = blkSlot
 	finalizedRoot, err := finalized.Block.HashTreeRoot()
 	require.NoError(t, err)
-	genesisState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &zondpb.Eth1Data{})
-	require.NoError(t, err)
+	genesisState, _ := util.DeterministicGenesisStateCapella(t, 1)
 	require.NoError(t, genesisState.SetSlot(111))
 	require.NoError(t, genesisState.UpdateBlockRootAtIndex(111%uint64(params.BeaconConfig().SlotsPerHistoricalRoot), headRoot))
 	util.SaveBlock(t, context.Background(), db, finalized)
@@ -280,11 +278,11 @@ func TestHandshakeHandlers_Roundtrip(t *testing.T) {
 		Attnets:   bytesutil.PadTo([]byte{'C', 'D'}, 8),
 	})
 
-	st, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
+	st, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Slot: 5,
 	})
 	require.NoError(t, err)
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blk.Block.Slot = 0
 	util.SaveBlock(t, ctx, db, blk)
 	finalizedRoot, err := blk.Block.HashTreeRoot()
@@ -419,16 +417,15 @@ func TestStatusRPCRequest_RequestSent(t *testing.T) {
 	p2 := p2ptest.NewTestP2P(t)
 
 	// Set up a head state with data we expect.
-	head := util.NewBeaconBlock()
+	head := util.NewBeaconBlockCapella()
 	head.Block.Slot = 111
 	headRoot, err := head.Block.HashTreeRoot()
 	require.NoError(t, err)
-	finalized := util.NewBeaconBlock()
+	finalized := util.NewBeaconBlockCapella()
 	finalized.Block.Slot = 40
 	finalizedRoot, err := finalized.Block.HashTreeRoot()
 	require.NoError(t, err)
-	genesisState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &zondpb.Eth1Data{})
-	require.NoError(t, err)
+	genesisState, _ := util.DeterministicGenesisStateCapella(t, 1)
 	require.NoError(t, genesisState.SetSlot(111))
 	require.NoError(t, genesisState.UpdateBlockRootAtIndex(111%uint64(params.BeaconConfig().SlotsPerHistoricalRoot), headRoot))
 	finalizedCheckpt := &zondpb.Checkpoint{
@@ -497,20 +494,19 @@ func TestStatusRPCRequest_FinalizedBlockExists(t *testing.T) {
 	db := testingDB.SetupDB(t)
 
 	// Set up a head state with data we expect.
-	head := util.NewBeaconBlock()
+	head := util.NewBeaconBlockCapella()
 	head.Block.Slot = 111
 	headRoot, err := head.Block.HashTreeRoot()
 	require.NoError(t, err)
 	blkSlot := 3 * params.BeaconConfig().SlotsPerEpoch
-	finalized := util.NewBeaconBlock()
+	finalized := util.NewBeaconBlockCapella()
 	finalized.Block.Slot = blkSlot
 	finalizedRoot, err := finalized.Block.HashTreeRoot()
 	require.NoError(t, err)
-	genesisState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &zondpb.Eth1Data{DepositRoot: make([]byte, 32), BlockHash: make([]byte, 32)})
-	require.NoError(t, err)
+	genesisState, _ := util.DeterministicGenesisStateCapella(t, 1)
 	require.NoError(t, genesisState.SetSlot(111))
 	require.NoError(t, genesisState.UpdateBlockRootAtIndex(111%uint64(params.BeaconConfig().SlotsPerHistoricalRoot), headRoot))
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blk.Block.Slot = blkSlot
 	util.SaveBlock(t, context.Background(), db, blk)
 	require.NoError(t, db.SaveGenesisBlockRoot(context.Background(), finalizedRoot))
@@ -594,10 +590,9 @@ func TestStatusRPCRequest_FinalizedBlockExists(t *testing.T) {
 func TestStatusRPCRequest_FinalizedBlockSkippedSlots(t *testing.T) {
 	db, err := kv.NewKVStore(context.Background(), t.TempDir())
 	require.NoError(t, err)
-	bState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &zondpb.Eth1Data{DepositRoot: make([]byte, 32), BlockHash: make([]byte, 32)})
-	require.NoError(t, err)
+	bState, _ := util.DeterministicGenesisStateCapella(t, 1)
 
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blk.Block.Slot = 0
 	genRoot, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -791,15 +786,14 @@ func TestStatusRPCRequest_BadPeerHandshake(t *testing.T) {
 	p2 := p2ptest.NewTestP2P(t)
 
 	// Set up a head state with data we expect.
-	head := util.NewBeaconBlock()
+	head := util.NewBeaconBlockCapella()
 	head.Block.Slot = 111
 	headRoot, err := head.Block.HashTreeRoot()
 	require.NoError(t, err)
-	finalized := util.NewBeaconBlock()
+	finalized := util.NewBeaconBlockCapella()
 	finalizedRoot, err := finalized.Block.HashTreeRoot()
 	require.NoError(t, err)
-	genesisState, err := transition.GenesisBeaconState(ctx, nil, 0, &zondpb.Eth1Data{})
-	require.NoError(t, err)
+	genesisState, _ := util.DeterministicGenesisStateCapella(t, 1)
 	require.NoError(t, genesisState.SetSlot(111))
 	require.NoError(t, genesisState.UpdateBlockRootAtIndex(111%uint64(params.BeaconConfig().SlotsPerHistoricalRoot), headRoot))
 	finalizedCheckpt := &zondpb.Checkpoint{
@@ -876,17 +870,16 @@ func TestStatusRPCRequest_BadPeerHandshake(t *testing.T) {
 
 func TestStatusRPC_ValidGenesisMessage(t *testing.T) {
 	// Set up a head state with data we expect.
-	head := util.NewBeaconBlock()
+	head := util.NewBeaconBlockCapella()
 	head.Block.Slot = 111
 	headRoot, err := head.Block.HashTreeRoot()
 	require.NoError(t, err)
 	blkSlot := 3 * params.BeaconConfig().SlotsPerEpoch
-	finalized := util.NewBeaconBlock()
+	finalized := util.NewBeaconBlockCapella()
 	finalized.Block.Slot = blkSlot
 	finalizedRoot, err := finalized.Block.HashTreeRoot()
 	require.NoError(t, err)
-	genesisState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &zondpb.Eth1Data{})
-	require.NoError(t, err)
+	genesisState, _ := util.DeterministicGenesisStateCapella(t, 1)
 	require.NoError(t, genesisState.SetSlot(111))
 	require.NoError(t, genesisState.UpdateBlockRootAtIndex(111%uint64(params.BeaconConfig().SlotsPerHistoricalRoot), headRoot))
 	finalizedCheckpt := &zondpb.Checkpoint{
@@ -939,8 +932,8 @@ func TestShouldResync(t *testing.T) {
 		{
 			name: "genesis epoch should not resync when syncing is true",
 			args: args{
-				headSlot: 31,
-				genesis:  prysmTime.Now(),
+				headSlot: 127,
+				genesis:  qrysmTime.Now(),
 				syncing:  true,
 			},
 			want: false,
@@ -948,8 +941,8 @@ func TestShouldResync(t *testing.T) {
 		{
 			name: "genesis epoch should not resync when syncing is false",
 			args: args{
-				headSlot: 31,
-				genesis:  prysmTime.Now(),
+				headSlot: 127,
+				genesis:  qrysmTime.Now(),
 				syncing:  false,
 			},
 			want: false,
@@ -957,8 +950,8 @@ func TestShouldResync(t *testing.T) {
 		{
 			name: "two epochs behind, resync ok",
 			args: args{
-				headSlot: 31,
-				genesis:  prysmTime.Now().Add(-1 * 96 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second),
+				headSlot: 127,
+				genesis:  qrysmTime.Now().Add(-1 * 384 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second),
 				syncing:  false,
 			},
 			want: true,
@@ -967,15 +960,14 @@ func TestShouldResync(t *testing.T) {
 			name: "two epochs behind, already syncing",
 			args: args{
 				headSlot: 31,
-				genesis:  prysmTime.Now().Add(-1 * 96 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second),
+				genesis:  qrysmTime.Now().Add(-1 * 384 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second),
 				syncing:  true,
 			},
 			want: false,
 		},
 	}
 	for _, tt := range tests {
-		headState, err := transition.GenesisBeaconState(context.Background(), nil, 0, &zondpb.Eth1Data{})
-		require.NoError(t, err)
+		headState, _ := util.DeterministicGenesisStateCapella(t, 1)
 		require.NoError(t, headState.SetSlot(tt.args.headSlot))
 		chain := &mock.ChainService{
 			State:   headState,
@@ -998,12 +990,12 @@ func TestShouldResync(t *testing.T) {
 }
 
 func makeBlocks(t *testing.T, i, n uint64, previousRoot [32]byte) []interfaces.ReadOnlySignedBeaconBlock {
-	blocks := make([]*zondpb.SignedBeaconBlock, n)
+	blocks := make([]*zondpb.SignedBeaconBlockCapella, n)
 	ifaceBlocks := make([]interfaces.ReadOnlySignedBeaconBlock, n)
 	for j := i; j < n+i; j++ {
 		parentRoot := make([]byte, 32)
 		copy(parentRoot, previousRoot[:])
-		blocks[j-i] = util.NewBeaconBlock()
+		blocks[j-i] = util.NewBeaconBlockCapella()
 		blocks[j-i].Block.Slot = primitives.Slot(j + 1)
 		blocks[j-i].Block.ParentRoot = parentRoot
 		var err error

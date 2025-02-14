@@ -3,7 +3,7 @@ package params
 import (
 	"math"
 
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 )
 
 // MinimalSpecConfig retrieves the minimal config used in spec tests.
@@ -29,9 +29,7 @@ func MinimalSpecConfig() *BeaconChainConfig {
 	minimalConfig.EffectiveBalanceIncrement = 1e9
 
 	// Initial values
-	minimalConfig.BLSWithdrawalPrefixByte = byte(0)
-	minimalConfig.DilithiumWithdrawalPrefixByte = byte(0) // TODO (cyyber): Change it to 1 & check if we should add XMSSWithdrawalPrefixByte
-	minimalConfig.ETH1AddressWithdrawalPrefixByte = byte(1)
+	minimalConfig.DilithiumWithdrawalPrefixByte = byte(0)   // TODO (cyyber): Change it to 1 & check if we should add XMSSWithdrawalPrefixByte
 	minimalConfig.ZondAddressWithdrawalPrefixByte = byte(1) // TODO (cyyber): Change it to 0
 
 	// Time parameters
@@ -59,9 +57,6 @@ func MinimalSpecConfig() *BeaconChainConfig {
 	minimalConfig.BaseRewardFactor = 64
 	minimalConfig.WhistleBlowerRewardQuotient = 512
 	minimalConfig.ProposerRewardQuotient = 8
-	minimalConfig.InactivityPenaltyQuotient = 33554432
-	minimalConfig.MinSlashingPenaltyQuotient = 64
-	minimalConfig.ProportionalSlashingMultiplier = 2
 
 	// Max operations per block
 	minimalConfig.MaxProposerSlashings = 16
@@ -84,25 +79,14 @@ func MinimalSpecConfig() *BeaconChainConfig {
 	minimalConfig.FarFutureEpoch = math.MaxUint64
 	minimalConfig.FarFutureSlot = math.MaxUint64
 
-	// New Altair params
-	minimalConfig.AltairForkVersion = []byte{1, 0, 0, 1} // Highest byte set to 0x01 to avoid collisions with mainnet versioning
-	minimalConfig.AltairForkEpoch = math.MaxUint64
-	minimalConfig.BellatrixForkVersion = []byte{2, 0, 0, 1}
-	minimalConfig.BellatrixForkEpoch = math.MaxUint64
-	minimalConfig.CapellaForkVersion = []byte{3, 0, 0, 1}
-	minimalConfig.CapellaForkEpoch = math.MaxUint64
-	minimalConfig.DenebForkVersion = []byte{4, 0, 0, 1}
-
-	minimalConfig.SyncCommitteeSize = 32
+	minimalConfig.SyncCommitteeSize = 16
 	minimalConfig.InactivityScoreBias = 4
 	minimalConfig.EpochsPerSyncCommitteePeriod = 8
 
-	// Ethereum PoW parameters.
-	minimalConfig.DepositChainID = 5   // Chain ID of eth1 goerli.
-	minimalConfig.DepositNetworkID = 5 // Network ID of eth1 goerli.
-	minimalConfig.DepositContractAddress = "0x1234567890123456789012345678901234567890"
-	// 2**256-2**10 for fake minimal network
-	minimalConfig.TerminalTotalDifficulty = "115792089237316195423570985008687907853269984665640564039457584007913129638912"
+	// Zond execution layer parameters.
+	minimalConfig.DepositChainID = 5
+	minimalConfig.DepositNetworkID = 5
+	minimalConfig.DepositContractAddress = "Z1234567890123456789012345678901234567890"
 
 	minimalConfig.ConfigName = MinimalName
 	minimalConfig.PresetBase = "minimal"

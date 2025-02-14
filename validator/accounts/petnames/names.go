@@ -3,8 +3,8 @@ package petnames
 import (
 	"strings"
 
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	"github.com/theQRL/qrysm/v4/crypto/rand"
+	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/crypto/rand"
 )
 
 var (

@@ -5,14 +5,13 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	mathutil "github.com/theQRL/qrysm/v4/math"
-	"github.com/theQRL/qrysm/v4/proto/zond/service"
-	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	v2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	mathutil "github.com/theQRL/qrysm/math"
+	"github.com/theQRL/qrysm/proto/zond/service"
+	v1 "github.com/theQRL/qrysm/proto/zond/v1"
+	"github.com/theQRL/qrysm/testing/endtoend/policies"
+	"github.com/theQRL/qrysm/testing/endtoend/types"
+	"github.com/theQRL/qrysm/time/slots"
 	"google.golang.org/grpc"
 )
 
@@ -32,13 +31,7 @@ func optimisticSyncEnabled(_ *types.EvaluationContext, conns ...*grpc.ClientConn
 		}
 		headSlot := uint64(0)
 		switch hb := head.Data.Message.(type) {
-		case *v2.SignedBlindedBeaconBlockContainer_Phase0Block:
-			headSlot = uint64(hb.Phase0Block.Slot)
-		case *v2.SignedBlindedBeaconBlockContainer_AltairBlock:
-			headSlot = uint64(hb.AltairBlock.Slot)
-		case *v2.SignedBlindedBeaconBlockContainer_BellatrixBlock:
-			headSlot = uint64(hb.BellatrixBlock.Slot)
-		case *v2.SignedBlindedBeaconBlockContainer_CapellaBlock:
+		case *v1.SignedBlindedBeaconBlockContainer_CapellaBlock:
 			headSlot = uint64(hb.CapellaBlock.Slot)
 		default:
 			return errors.New("no valid block type retrieved")

@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestStore_Backup(t *testing.T) {
@@ -17,7 +17,7 @@ func TestStore_Backup(t *testing.T) {
 	require.NoError(t, err, "Failed to instantiate DB")
 	ctx := context.Background()
 
-	head := util.NewBeaconBlock()
+	head := util.NewBeaconBlockCapella()
 	head.Block.Slot = 5000
 
 	wsb, err := blocks.NewSignedBeaconBlock(head)
@@ -25,7 +25,7 @@ func TestStore_Backup(t *testing.T) {
 	require.NoError(t, db.SaveBlock(ctx, wsb))
 	root, err := head.Block.HashTreeRoot()
 	require.NoError(t, err)
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, db.SaveState(ctx, st, root))
 	require.NoError(t, db.SaveHeadBlockRoot(ctx, root))
@@ -60,14 +60,14 @@ func TestStore_BackupMultipleBuckets(t *testing.T) {
 	startSlot := primitives.Slot(5000)
 
 	for i := startSlot; i < 5200; i++ {
-		head := util.NewBeaconBlock()
+		head := util.NewBeaconBlockCapella()
 		head.Block.Slot = i
 		wsb, err := blocks.NewSignedBeaconBlock(head)
 		require.NoError(t, err)
 		require.NoError(t, db.SaveBlock(ctx, wsb))
 		root, err := head.Block.HashTreeRoot()
 		require.NoError(t, err)
-		st, err := util.NewBeaconState()
+		st, err := util.NewBeaconStateCapella()
 		require.NoError(t, st.SetSlot(i))
 		require.NoError(t, err)
 		require.NoError(t, db.SaveState(ctx, st, root))
@@ -94,7 +94,7 @@ func TestStore_BackupMultipleBuckets(t *testing.T) {
 		require.NoError(t, backedDB.Close(), "Failed to close database")
 	})
 	for i := startSlot; i < 5200; i++ {
-		head := util.NewBeaconBlock()
+		head := util.NewBeaconBlockCapella()
 		head.Block.Slot = i
 		root, err := head.Block.HashTreeRoot()
 		require.NoError(t, err)

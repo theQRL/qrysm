@@ -7,17 +7,16 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/beacon"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/validator"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/validator"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
 )
 
 // Make sure that GetAttestationData() returns the same thing as the internal getAttestationData()
@@ -109,7 +108,7 @@ func TestBeaconApiValidatorClient_GetFeeRecipientByPubKey(t *testing.T) {
 
 func TestBeaconApiValidatorClient_DomainDataValid(t *testing.T) {
 	const genesisValidatorRoot = "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
-	epoch := params.BeaconConfig().AltairForkEpoch
+	epoch := primitives.Epoch(0)
 	domainType := params.BeaconConfig().DomainSyncCommittee[:]
 
 	ctrl := gomock.NewController(t)
@@ -134,7 +133,7 @@ func TestBeaconApiValidatorClient_DomainDataValid(t *testing.T) {
 }
 
 func TestBeaconApiValidatorClient_DomainDataError(t *testing.T) {
-	epoch := params.BeaconConfig().AltairForkEpoch
+	epoch := primitives.Epoch(0)
 	domainType := make([]byte, 3)
 	validatorClient := beaconApiValidatorClient{}
 	_, err := validatorClient.DomainData(context.Background(), &zondpb.DomainRequest{Epoch: epoch, Domain: domainType})
@@ -151,7 +150,7 @@ func TestBeaconApiValidatorClient_ProposeBeaconBlockValid(t *testing.T) {
 	jsonRestHandler.EXPECT().PostRestJson(
 		ctx,
 		"/zond/v1/beacon/blocks",
-		map[string]string{"Eth-Consensus-Version": "phase0"},
+		map[string]string{"Eth-Consensus-Version": "capella"},
 		gomock.Any(),
 		nil,
 	).Return(
@@ -163,14 +162,14 @@ func TestBeaconApiValidatorClient_ProposeBeaconBlockValid(t *testing.T) {
 	expectedResp, expectedErr := validatorClient.proposeBeaconBlock(
 		ctx,
 		&zondpb.GenericSignedBeaconBlock{
-			Block: generateSignedPhase0Block(),
+			Block: generateSignedCapellaBlock(),
 		},
 	)
 
 	resp, err := validatorClient.ProposeBeaconBlock(
 		ctx,
 		&zondpb.GenericSignedBeaconBlock{
-			Block: generateSignedPhase0Block(),
+			Block: generateSignedCapellaBlock(),
 		},
 	)
 
@@ -188,7 +187,7 @@ func TestBeaconApiValidatorClient_ProposeBeaconBlockError(t *testing.T) {
 	jsonRestHandler.EXPECT().PostRestJson(
 		ctx,
 		"/zond/v1/beacon/blocks",
-		map[string]string{"Eth-Consensus-Version": "phase0"},
+		map[string]string{"Eth-Consensus-Version": "capella"},
 		gomock.Any(),
 		nil,
 	).Return(
@@ -200,14 +199,14 @@ func TestBeaconApiValidatorClient_ProposeBeaconBlockError(t *testing.T) {
 	expectedResp, expectedErr := validatorClient.proposeBeaconBlock(
 		ctx,
 		&zondpb.GenericSignedBeaconBlock{
-			Block: generateSignedPhase0Block(),
+			Block: generateSignedCapellaBlock(),
 		},
 	)
 
 	resp, err := validatorClient.ProposeBeaconBlock(
 		ctx,
 		&zondpb.GenericSignedBeaconBlock{
-			Block: generateSignedPhase0Block(),
+			Block: generateSignedCapellaBlock(),
 		},
 	)
 

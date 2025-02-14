@@ -2,11 +2,10 @@ package blocks
 
 import (
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	field_params "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 var (
@@ -38,7 +37,7 @@ var (
 type BeaconBlockBody struct {
 	version                     int
 	isBlinded                   bool
-	randaoReveal                [dilithium2.CryptoBytes]byte
+	randaoReveal                [field_params.DilithiumSignatureLength]byte
 	eth1Data                    *zond.Eth1Data
 	graffiti                    [field_params.RootLength]byte
 	proposerSlashings           []*zond.ProposerSlashing
@@ -50,7 +49,6 @@ type BeaconBlockBody struct {
 	executionPayload            interfaces.ExecutionData
 	executionPayloadHeader      interfaces.ExecutionData
 	dilithiumToExecutionChanges []*zond.SignedDilithiumToExecutionChange
-	blobKzgCommitments          [][]byte
 }
 
 // BeaconBlock is the main beacon block structure. It can represent any block type.
@@ -67,5 +65,5 @@ type BeaconBlock struct {
 type SignedBeaconBlock struct {
 	version   int
 	block     *BeaconBlock
-	signature [dilithium2.CryptoBytes]byte
+	signature [field_params.DilithiumSignatureLength]byte
 }

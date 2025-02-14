@@ -3,18 +3,16 @@ package sync
 import (
 	libp2pcore "github.com/libp2p/go-libp2p/core"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/network/forks"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/network/forks"
+	"github.com/theQRL/qrysm/runtime/version"
 )
 
 // chunkBlockWriter writes the given message as a chunked response to the given network
@@ -35,32 +33,8 @@ func WriteBlockChunk(stream libp2pcore.Stream, tor blockchain.TemporalOracle, en
 
 	valRoot := tor.GenesisValidatorsRoot()
 	switch blk.Version() {
-	case version.Phase0:
-		digest, err := forks.ForkDigestFromEpoch(params.BeaconConfig().GenesisEpoch, valRoot[:])
-		if err != nil {
-			return err
-		}
-		obtainedCtx = digest[:]
-	case version.Altair:
-		digest, err := forks.ForkDigestFromEpoch(params.BeaconConfig().AltairForkEpoch, valRoot[:])
-		if err != nil {
-			return err
-		}
-		obtainedCtx = digest[:]
-	case version.Bellatrix:
-		digest, err := forks.ForkDigestFromEpoch(params.BeaconConfig().BellatrixForkEpoch, valRoot[:])
-		if err != nil {
-			return err
-		}
-		obtainedCtx = digest[:]
 	case version.Capella:
-		digest, err := forks.ForkDigestFromEpoch(params.BeaconConfig().CapellaForkEpoch, valRoot[:])
-		if err != nil {
-			return err
-		}
-		obtainedCtx = digest[:]
-	case version.Deneb:
-		digest, err := forks.ForkDigestFromEpoch(params.BeaconConfig().DenebForkEpoch, valRoot[:])
+		digest, err := forks.ForkDigestFromEpoch(params.BeaconConfig().GenesisEpoch, valRoot[:])
 		if err != nil {
 			return err
 		}
@@ -155,23 +129,4 @@ func extractBlockDataType(digest []byte, tor blockchain.TemporalOracle) (interfa
 		}
 	}
 	return nil, errors.Wrapf(ErrNoValidDigest, "could not extract block data type, saw digest=%#x, genesis=%v, vr=%#x", digest, tor.GenesisTime(), tor.GenesisValidatorsRoot())
-}
-
-// WriteBlobSidecarChunk writes blob chunk object to stream.
-// response_chunk  ::= <result> | <context-bytes> | <encoding-dependent-header> | <encoded-payload>
-func WriteBlobSidecarChunk(stream libp2pcore.Stream, tor blockchain.TemporalOracle, encoding encoder.NetworkEncoding, sidecar *zondpb.BlobSidecar) error {
-	if _, err := stream.Write([]byte{responseCodeSuccess}); err != nil {
-		return err
-	}
-	valRoot := tor.GenesisValidatorsRoot()
-	ctxBytes, err := forks.ForkDigestFromEpoch(slots.ToEpoch(sidecar.GetSlot()), valRoot[:])
-	if err != nil {
-		return err
-	}
-
-	if err := writeContextToStream(ctxBytes[:], stream); err != nil {
-		return err
-	}
-	_, err = encoding.EncodeWithMaxLength(stream, sidecar)
-	return err
 }

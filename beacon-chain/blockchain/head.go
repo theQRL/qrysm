@@ -7,21 +7,20 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
-	statefeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/state"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/forkchoice"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/math"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/core/feed"
+	statefeed "github.com/theQRL/qrysm/beacon-chain/core/feed/state"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/forkchoice"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/math"
+	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
+	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
 
@@ -308,7 +307,7 @@ func (s *Service) headValidatorAtIndex(index primitives.ValidatorIndex) (state.R
 // This returns the validator index referenced by the provided pubkey in
 // the head state.
 // This is a lock free version.
-func (s *Service) headValidatorIndexAtPubkey(pubKey [dilithium2.CryptoPublicKeyBytes]byte) (primitives.ValidatorIndex, bool) {
+func (s *Service) headValidatorIndexAtPubkey(pubKey [field_params.DilithiumPubkeyLength]byte) (primitives.ValidatorIndex, bool) {
 	return s.head.state.ValidatorIndexByPubkey(pubKey)
 }
 
@@ -428,14 +427,12 @@ func (s *Service) saveOrphanedOperations(ctx context.Context, orphanedRoot [32]b
 		for _, v := range orphanedBlk.Block().Body().VoluntaryExits() {
 			s.cfg.ExitPool.InsertVoluntaryExit(v)
 		}
-		if orphanedBlk.Version() >= version.Capella {
-			changes, err := orphanedBlk.Block().Body().DilithiumToExecutionChanges()
-			if err != nil {
-				return errors.Wrap(err, "could not get DilithiumToExecutionChanges")
-			}
-			for _, c := range changes {
-				s.cfg.DilithiumToExecPool.InsertDilithiumToExecChange(c)
-			}
+		changes, err := orphanedBlk.Block().Body().DilithiumToExecutionChanges()
+		if err != nil {
+			return errors.Wrap(err, "could not get DilithiumToExecutionChanges")
+		}
+		for _, c := range changes {
+			s.cfg.DilithiumToExecPool.InsertDilithiumToExecChange(c)
 		}
 		parentRoot := orphanedBlk.Block().ParentRoot()
 		orphanedRoot = bytesutil.ToBytes32(parentRoot[:])

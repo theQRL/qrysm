@@ -4,28 +4,33 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/beacon-chain/core/altair"
+	testDB "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
+	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestProcessSlashings(t *testing.T) {
 	tests := []struct {
 		name      string
-		block     *zondpb.BeaconBlock
+		block     *zondpb.BeaconBlockCapella
 		wantedErr string
 	}{
 		{
 			name: "Proposer slashing a tracked index",
-			block: &zondpb.BeaconBlock{
-				Body: &zondpb.BeaconBlockBody{
+			block: &zondpb.BeaconBlockCapella{
+				Body: &zondpb.BeaconBlockBodyCapella{
 					ProposerSlashings: []*zondpb.ProposerSlashing{
 						{
 							Header_1: &zondpb.SignedBeaconBlockHeader{
@@ -48,8 +53,8 @@ func TestProcessSlashings(t *testing.T) {
 		},
 		{
 			name: "Proposer slashing an untracked index",
-			block: &zondpb.BeaconBlock{
-				Body: &zondpb.BeaconBlockBody{
+			block: &zondpb.BeaconBlockCapella{
+				Body: &zondpb.BeaconBlockBodyCapella{
 					ProposerSlashings: []*zondpb.ProposerSlashing{
 						{
 							Header_1: &zondpb.SignedBeaconBlockHeader{
@@ -72,8 +77,8 @@ func TestProcessSlashings(t *testing.T) {
 		},
 		{
 			name: "Attester slashing a tracked index",
-			block: &zondpb.BeaconBlock{
-				Body: &zondpb.BeaconBlockBody{
+			block: &zondpb.BeaconBlockCapella{
+				Body: &zondpb.BeaconBlockBodyCapella{
 					AttesterSlashings: []*zondpb.AttesterSlashing{
 						{
 							Attestation_1: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
@@ -94,8 +99,8 @@ func TestProcessSlashings(t *testing.T) {
 		},
 		{
 			name: "Attester slashing untracked index",
-			block: &zondpb.BeaconBlock{
-				Body: &zondpb.BeaconBlockBody{
+			block: &zondpb.BeaconBlockCapella{
+				Body: &zondpb.BeaconBlockBodyCapella{
 					AttesterSlashings: []*zondpb.AttesterSlashing{
 						{
 							Attestation_1: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
@@ -138,28 +143,28 @@ func TestProcessSlashings(t *testing.T) {
 func TestProcessProposedBlock(t *testing.T) {
 	tests := []struct {
 		name      string
-		block     *zondpb.BeaconBlock
+		block     *zondpb.BeaconBlockCapella
 		wantedErr string
 	}{
 		{
 			name: "Block proposed by tracked validator",
-			block: &zondpb.BeaconBlock{
+			block: &zondpb.BeaconBlockCapella{
 				Slot:          6,
-				ProposerIndex: 12,
+				ProposerIndex: 86,
 				ParentRoot:    bytesutil.PadTo([]byte("hello-world"), 32),
 				StateRoot:     bytesutil.PadTo([]byte("state-world"), 32),
-				Body:          &zondpb.BeaconBlockBody{},
+				Body:          &zondpb.BeaconBlockBodyCapella{},
 			},
-			wantedErr: "\"Proposed beacon block was included\" BalanceChange=100000000 BlockRoot=0x68656c6c6f2d NewBalance=32000000000 ParentRoot=0x68656c6c6f2d ProposerIndex=12 Slot=6 Version=0 prefix=monitor",
+			wantedErr: "\"Proposed beacon block was included\" BalanceChange=100000000 BlockRoot=0x68656c6c6f2d NewBalance=40000000000000 ParentRoot=0x68656c6c6f2d ProposerIndex=86 Slot=6 Version=3 prefix=monitor",
 		},
 		{
 			name: "Block proposed by untracked validator",
-			block: &zondpb.BeaconBlock{
+			block: &zondpb.BeaconBlockCapella{
 				Slot:          6,
 				ProposerIndex: 13,
 				ParentRoot:    bytesutil.PadTo([]byte("hello-world"), 32),
 				StateRoot:     bytesutil.PadTo([]byte("state-world"), 32),
-				Body:          &zondpb.BeaconBlockBody{},
+				Body:          &zondpb.BeaconBlockBodyCapella{},
 			},
 		},
 	}
@@ -168,7 +173,7 @@ func TestProcessProposedBlock(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			hook := logTest.NewGlobal()
 			s := setupService(t)
-			beaconState, _ := util.DeterministicGenesisState(t, 256)
+			beaconState, _ := util.DeterministicGenesisStateCapella(t, 256)
 			var root [32]byte
 			copy(root[:], "hello-world")
 			wb, err := blocks.NewBeaconBlock(tt.block)
@@ -188,7 +193,7 @@ func TestProcessBlock_AllEventsTrackedVals(t *testing.T) {
 	hook := logTest.NewGlobal()
 	ctx := context.Background()
 
-	genesis, keys := util.DeterministicGenesisStateAltair(t, 64)
+	genesis, keys := util.DeterministicGenesisStateCapella(t, 256)
 	c, err := altair.NextSyncCommittee(ctx, genesis)
 	require.NoError(t, err)
 	require.NoError(t, genesis.SetCurrentSyncCommittee(c))
@@ -196,9 +201,53 @@ func TestProcessBlock_AllEventsTrackedVals(t *testing.T) {
 	genConfig := util.DefaultBlockGenConfig()
 	genConfig.NumProposerSlashings = 1
 	genConfig.FullSyncAggregate = true
-	b, err := util.GenerateFullBlockAltair(genesis, keys, genConfig, 1)
+	b, err := util.GenerateFullBlockCapella(genesis, keys, genConfig, 1)
 	require.NoError(t, err)
-	s := setupService(t)
+
+	beaconDB := testDB.SetupDB(t)
+
+	chainService := &mock.ChainService{
+		Genesis:        time.Now(),
+		DB:             beaconDB,
+		State:          genesis,
+		Root:           []byte("hello-world"),
+		ValidatorsRoot: [32]byte{},
+	}
+
+	trackedVals := map[primitives.ValidatorIndex]bool{
+		185: true,
+		1:   true,
+		2:   true,
+	}
+
+	latestPerformance := map[primitives.ValidatorIndex]ValidatorLatestPerformance{
+		185: {
+			balance: 39999900000000,
+		},
+		1: {
+			balance: 40000000000000,
+		},
+		2: {
+			balance: 40000000000000,
+		},
+	}
+
+	svc := &Service{
+		config: &ValidatorMonitorConfig{
+			StateGen:            stategen.New(beaconDB, doublylinkedtree.New()),
+			StateNotifier:       chainService.StateNotifier(),
+			HeadFetcher:         chainService,
+			AttestationNotifier: chainService.OperationNotifier(),
+			InitialSyncComplete: make(chan struct{}),
+		},
+
+		ctx:                         context.Background(),
+		TrackedValidators:           trackedVals,
+		latestPerformance:           latestPerformance,
+		aggregatedPerformance:       make(map[primitives.ValidatorIndex]ValidatorAggregatedPerformance),
+		trackedSyncCommitteeIndices: make(map[primitives.ValidatorIndex][]primitives.CommitteeIndex),
+		lastSyncedEpoch:             0,
+	}
 
 	pubKeys := make([][]byte, 3)
 	pubKeys[0] = genesis.Validators()[0].PublicKey
@@ -211,53 +260,55 @@ func TestProcessBlock_AllEventsTrackedVals(t *testing.T) {
 	require.NoError(t, genesis.SetCurrentSyncCommittee(currentSyncCommittee))
 
 	idx := b.Block.Body.ProposerSlashings[0].Header_1.Header.ProposerIndex
-	s.RLock()
-	if !s.trackedIndex(idx) {
-		s.TrackedValidators[idx] = true
-		s.latestPerformance[idx] = ValidatorLatestPerformance{
-			balance: 31900000000,
+	svc.RLock()
+	if !svc.trackedIndex(idx) {
+		svc.TrackedValidators[idx] = true
+		svc.latestPerformance[idx] = ValidatorLatestPerformance{
+			balance: 39999900000000,
 		}
-		s.aggregatedPerformance[idx] = ValidatorAggregatedPerformance{}
+		svc.aggregatedPerformance[idx] = ValidatorAggregatedPerformance{}
 	}
-	s.RUnlock()
-	s.updateSyncCommitteeTrackedVals(genesis)
+	svc.RUnlock()
+	svc.updateSyncCommitteeTrackedVals(genesis)
 
 	root, err := b.GetBlock().HashTreeRoot()
 	require.NoError(t, err)
-	require.NoError(t, s.config.StateGen.SaveState(ctx, root, genesis))
-	wanted1 := fmt.Sprintf("\"Proposed beacon block was included\" BalanceChange=100000000 BlockRoot=%#x NewBalance=32000000000 ParentRoot=0xf732eaeb7fae ProposerIndex=15 Slot=1 Version=1 prefix=monitor", bytesutil.Trunc(root[:]))
+	require.NoError(t, svc.config.StateGen.SaveState(ctx, root, genesis))
+	wanted1 := fmt.Sprintf("\"Proposed beacon block was included\" BalanceChange=100000000 BlockRoot=%#x NewBalance=40000000000000 ParentRoot=0x5330430bdbfc ProposerIndex=185 Slot=1 Version=3 prefix=monitor", bytesutil.Trunc(root[:]))
 	wanted2 := fmt.Sprintf("\"Proposer slashing was included\" BodyRoot1=0x000100000000 BodyRoot2=0x000200000000 ProposerIndex=%d SlashingSlot=0 Slot=1 prefix=monitor", idx)
-	wanted3 := "\"Sync committee contribution included\" BalanceChange=0 ContribCount=3 ExpectedContribCount=3 NewBalance=32000000000 ValidatorIndex=1 prefix=monitor"
-	wanted4 := "\"Sync committee contribution included\" BalanceChange=0 ContribCount=1 ExpectedContribCount=1 NewBalance=32000000000 ValidatorIndex=2 prefix=monitor"
+	wanted3 := "\"Sync committee contribution included\" BalanceChange=0 ContribCount=3 ExpectedContribCount=3 NewBalance=40000000000000 ValidatorIndex=1 prefix=monitor"
+	wanted4 := "\"Sync committee contribution included\" BalanceChange=0 ContribCount=1 ExpectedContribCount=1 NewBalance=40000000000000 ValidatorIndex=2 prefix=monitor"
 	wrapped, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
-	s.processBlock(ctx, wrapped)
+	svc.processBlock(ctx, wrapped)
 	require.LogsContain(t, hook, wanted1)
 	require.LogsContain(t, hook, wanted2)
 	require.LogsContain(t, hook, wanted3)
 	require.LogsContain(t, hook, wanted4)
 }
 
+// NOTE(rgeraldes24): the original test is not ok since the map iteration is not ordered and the output
+// will not be printed if any key other than 1(aggregatedPerformance map) is processed first
 func TestLogAggregatedPerformance(t *testing.T) {
 	hook := logTest.NewGlobal()
 	latestPerformance := map[primitives.ValidatorIndex]ValidatorLatestPerformance{
 		1: {
-			balance: 32000000000,
+			balance: 40000000000000,
 		},
-		2: {
-			balance: 32000000000,
-		},
-		12: {
-			balance: 31900000000,
-		},
-		15: {
-			balance: 31900000000,
-		},
+		// 107: {
+		// 	balance: 40000000000000,
+		// },
+		// 86: {
+		// 	balance: 39999900000000,
+		// },
+		// 15: {
+		// 	balance: 39999900000000,
+		// },
 	}
 	aggregatedPerformance := map[primitives.ValidatorIndex]ValidatorAggregatedPerformance{
 		1: {
 			startEpoch:                      0,
-			startBalance:                    31700000000,
+			startBalance:                    39625000000000,
 			totalAttestedCount:              12,
 			totalRequestedCount:             15,
 			totalDistance:                   14,
@@ -268,9 +319,9 @@ func TestLogAggregatedPerformance(t *testing.T) {
 			totalSyncCommitteeContributions: 0,
 			totalSyncCommitteeAggregations:  0,
 		},
-		2:  {},
-		12: {},
-		15: {},
+		// 107: {},
+		// 86:  {},
+		// 15:  {},
 	}
 	s := &Service{
 		latestPerformance:     latestPerformance,
@@ -280,7 +331,7 @@ func TestLogAggregatedPerformance(t *testing.T) {
 	s.logAggregatedPerformance()
 	wanted := "\"Aggregated performance since launch\" AttestationInclusion=\"80.00%\"" +
 		" AverageInclusionDistance=1.2 BalanceChangePct=\"0.95%\" CorrectlyVotedHeadPct=\"66.67%\" " +
-		"CorrectlyVotedSourcePct=\"91.67%\" CorrectlyVotedTargetPct=\"100.00%\" StartBalance=31700000000 " +
+		"CorrectlyVotedSourcePct=\"91.67%\" CorrectlyVotedTargetPct=\"100.00%\" StartBalance=39625000000000 " +
 		"StartEpoch=0 TotalAggregations=0 TotalProposedBlocks=1 TotalRequested=15 TotalSyncContributions=0 " +
 		"ValidatorIndex=1 prefix=monitor"
 	require.LogsContain(t, hook, wanted)

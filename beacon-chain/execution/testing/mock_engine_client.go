@@ -2,21 +2,16 @@ package testing
 
 import (
 	"context"
-	"math/big"
 
-	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	payloadattribute "github.com/theQRL/qrysm/v4/consensus-types/payload-attribute"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/math"
-	pb "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	payloadattribute "github.com/theQRL/qrysm/consensus-types/payload-attribute"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/math"
+	pb "github.com/theQRL/qrysm/proto/engine/v1"
 )
 
 // EngineClient --
@@ -24,9 +19,7 @@ type EngineClient struct {
 	NewPayloadResp              []byte
 	PayloadIDBytes              *pb.PayloadIDBytes
 	ForkChoiceUpdatedResp       []byte
-	ExecutionPayload            *pb.ExecutionPayload
 	ExecutionPayloadCapella     *pb.ExecutionPayloadCapella
-	ExecutionPayloadDeneb       *pb.ExecutionPayloadDeneb
 	ExecutionBlock              *pb.ExecutionBlock
 	Err                         error
 	ErrLatestExecBlock          error
@@ -34,7 +27,7 @@ type EngineClient struct {
 	ErrForkchoiceUpdated        error
 	ErrNewPayload               error
 	ErrGetPayload               error
-	ExecutionPayloadByBlockHash map[[32]byte]*pb.ExecutionPayload
+	ExecutionPayloadByBlockHash map[[32]byte]*pb.ExecutionPayloadCapella
 	BlockByHashMap              map[[32]byte]*pb.ExecutionBlock
 	NumReconstructedPayloads    uint64
 	TerminalBlockHash           []byte
@@ -42,7 +35,6 @@ type EngineClient struct {
 	BuilderOverride             bool
 	OverrideValidHash           [32]byte
 	BlockValue                  uint64
-	BlobsBundle                 *pb.BlobsBundle
 }
 
 // NewPayload --
@@ -61,31 +53,12 @@ func (e *EngineClient) ForkchoiceUpdated(
 }
 
 // GetPayload --
-func (e *EngineClient) GetPayload(_ context.Context, _ [8]byte, s primitives.Slot) (interfaces.ExecutionData, *pb.BlobsBundle, bool, error) {
-	if slots.ToEpoch(s) >= params.BeaconConfig().DenebForkEpoch {
-		ed, err := blocks.WrappedExecutionPayloadDeneb(e.ExecutionPayloadDeneb, math.Gwei(e.BlockValue))
-		if err != nil {
-			return nil, nil, false, err
-		}
-		return ed, e.BlobsBundle, e.BuilderOverride, nil
-	}
-	if slots.ToEpoch(s) >= params.BeaconConfig().CapellaForkEpoch {
-		ed, err := blocks.WrappedExecutionPayloadCapella(e.ExecutionPayloadCapella, math.Gwei(e.BlockValue))
-		if err != nil {
-			return nil, nil, false, err
-		}
-		return ed, nil, e.BuilderOverride, nil
-	}
-	p, err := blocks.WrappedExecutionPayload(e.ExecutionPayload)
+func (e *EngineClient) GetPayload(_ context.Context, _ [8]byte, s primitives.Slot) (interfaces.ExecutionData, bool, error) {
+	ed, err := blocks.WrappedExecutionPayloadCapella(e.ExecutionPayloadCapella, math.Gwei(e.BlockValue))
 	if err != nil {
-		return nil, nil, false, err
+		return nil, false, err
 	}
-	return p, nil, e.BuilderOverride, e.ErrGetPayload
-}
-
-// ExchangeTransitionConfiguration --
-func (e *EngineClient) ExchangeTransitionConfiguration(_ context.Context, _ *pb.TransitionConfiguration) error {
-	return e.Err
+	return ed, e.BuilderOverride, nil
 }
 
 // LatestExecutionBlock --
@@ -121,8 +94,8 @@ func (e *EngineClient) ReconstructFullBlock(
 	return blocks.BuildSignedBeaconBlockFromExecutionPayload(blindedBlock, payload)
 }
 
-// ReconstructFullBellatrixBlockBatch --
-func (e *EngineClient) ReconstructFullBellatrixBlockBatch(
+// ReconstructFullBlockBatch --
+func (e *EngineClient) ReconstructFullBlockBatch(
 	ctx context.Context, blindedBlocks []interfaces.ReadOnlySignedBeaconBlock,
 ) ([]interfaces.SignedBeaconBlock, error) {
 	fullBlocks := make([]interfaces.SignedBeaconBlock, 0, len(blindedBlocks))
@@ -134,56 +107,4 @@ func (e *EngineClient) ReconstructFullBellatrixBlockBatch(
 		fullBlocks = append(fullBlocks, newBlock)
 	}
 	return fullBlocks, nil
-}
-
-// GetTerminalBlockHash --
-func (e *EngineClient) GetTerminalBlockHash(ctx context.Context, transitionTime uint64) ([]byte, bool, error) {
-	ttd := new(big.Int)
-	ttd.SetString(params.BeaconConfig().TerminalTotalDifficulty, 10)
-	terminalTotalDifficulty, overflows := uint256.FromBig(ttd)
-	if overflows {
-		return nil, false, errors.New("could not convert terminal total difficulty to uint256")
-	}
-	blk, err := e.LatestExecutionBlock(ctx)
-	if err != nil {
-		return nil, false, errors.Wrap(err, "could not get latest execution block")
-	}
-	if blk == nil {
-		return nil, false, errors.New("latest execution block is nil")
-	}
-
-	for {
-		b, err := hexutil.DecodeBig(blk.TotalDifficulty)
-		if err != nil {
-			return nil, false, errors.Wrap(err, "could not convert total difficulty to uint256")
-		}
-		currentTotalDifficulty, _ := uint256.FromBig(b)
-		blockReachedTTD := currentTotalDifficulty.Cmp(terminalTotalDifficulty) >= 0
-
-		parentHash := blk.ParentHash
-		if parentHash == params.BeaconConfig().ZeroHash {
-			return nil, false, nil
-		}
-		parentBlk, err := e.ExecutionBlockByHash(ctx, parentHash, false /* with txs */)
-		if err != nil {
-			return nil, false, errors.Wrap(err, "could not get parent execution block")
-		}
-		if blockReachedTTD {
-			b, err := hexutil.DecodeBig(parentBlk.TotalDifficulty)
-			if err != nil {
-				return nil, false, errors.Wrap(err, "could not convert total difficulty to uint256")
-			}
-			parentTotalDifficulty, _ := uint256.FromBig(b)
-			parentReachedTTD := parentTotalDifficulty.Cmp(terminalTotalDifficulty) >= 0
-			if blk.Time >= transitionTime {
-				return nil, false, nil
-			}
-			if !parentReachedTTD {
-				return blk.Hash[:], true, nil
-			}
-		} else {
-			return nil, false, nil
-		}
-		blk = parentBlk
-	}
 }

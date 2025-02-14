@@ -16,17 +16,17 @@ import (
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-zond/p2p/discover"
 	"github.com/theQRL/go-zond/p2p/enode"
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/scorers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/network/forks"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/network/forks"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	qrysmTime "github.com/theQRL/qrysm/time"
 )
 
 type mockListener struct {
@@ -159,9 +159,6 @@ func TestService_Start_NoDiscoverFlag(t *testing.T) {
 	// required params to addForkEntry in s.forkWatcher
 	s.genesisTime = time.Now()
 	beaconCfg := params.BeaconConfig().Copy()
-	beaconCfg.AltairForkEpoch = 0
-	beaconCfg.BellatrixForkEpoch = 0
-	beaconCfg.CapellaForkEpoch = 0
 	beaconCfg.SecondsPerSlot = 1
 	params.OverrideBeaconConfig(beaconCfg)
 
@@ -188,7 +185,7 @@ func TestListenForNewNodes(t *testing.T) {
 	cfg.UDPPort = uint(port)
 	_, pkey := createAddrAndPrivKey(t)
 	ipAddr := net.ParseIP("127.0.0.1")
-	genesisTime := prysmTime.Now()
+	genesisTime := qrysmTime.Now()
 	var gvr [32]byte
 	s := &Service{
 		cfg:                   cfg,
@@ -336,7 +333,7 @@ func TestService_JoinLeaveTopic(t *testing.T) {
 // initializeStateWithForkDigest sets up the state feed initialized event and returns the fork
 // digest associated with that genesis event.
 func initializeStateWithForkDigest(_ context.Context, t *testing.T, gs startup.ClockSetter) [4]byte {
-	gt := prysmTime.Now()
+	gt := qrysmTime.Now()
 	gvr := bytesutil.ToBytes32(bytesutil.PadTo([]byte("genesis validators root"), 32))
 	require.NoError(t, gs.SetClock(startup.NewClock(gt, gvr)))
 

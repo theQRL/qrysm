@@ -9,30 +9,30 @@ import (
 
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/go-zond"
+	zond "github.com/theQRL/go-zond"
 	"github.com/theQRL/go-zond/accounts/abi/bind/backends"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
-	zondTypes "github.com/theQRL/go-zond/core/types"
+	gzondtypes "github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/qrysm/v4/async/event"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache/depositcache"
-	dbutil "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	mockExecution "github.com/theQRL/qrysm/v4/beacon-chain/execution/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution/types"
-	doublylinkedtree "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/container/trie"
-	contracts "github.com/theQRL/qrysm/v4/contracts/deposit"
-	"github.com/theQRL/qrysm/v4/contracts/deposit/mock"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/monitoring/clientstats"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/async/event"
+	"github.com/theQRL/qrysm/beacon-chain/cache/depositcache"
+	dbutil "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	mockExecution "github.com/theQRL/qrysm/beacon-chain/execution/testing"
+	"github.com/theQRL/qrysm/beacon-chain/execution/types"
+	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
+	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/container/trie"
+	contracts "github.com/theQRL/qrysm/contracts/deposit"
+	"github.com/theQRL/qrysm/contracts/deposit/mock"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/monitoring/clientstats"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 var _ ChainStartFetcher = (*Service)(nil)
@@ -46,16 +46,16 @@ type goodLogger struct {
 
 func (_ *goodLogger) Close() {}
 
-func (g *goodLogger) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- zondTypes.Log) (ethereum.Subscription, error) {
+func (g *goodLogger) SubscribeFilterLogs(ctx context.Context, q zond.FilterQuery, ch chan<- gzondtypes.Log) (zond.Subscription, error) {
 	if g.backend == nil {
 		return new(event.Feed).Subscribe(ch), nil
 	}
 	return g.backend.SubscribeFilterLogs(ctx, q, ch)
 }
 
-func (g *goodLogger) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]zondTypes.Log, error) {
+func (g *goodLogger) FilterLogs(ctx context.Context, q zond.FilterQuery) ([]gzondtypes.Log, error) {
 	if g.backend == nil {
-		logs := make([]zondTypes.Log, 3)
+		logs := make([]gzondtypes.Log, 3)
 		for i := 0; i < len(logs); i++ {
 			logs[i].Address = common.Address{}
 			logs[i].Topics = make([]common.Hash, 5)
@@ -145,7 +145,7 @@ func TestStop_OK(t *testing.T) {
 		WithDepositContractAddress(testAcc.ContractAddr),
 		WithDatabase(beaconDB),
 	)
-	require.NoError(t, err, "unable to setup web3 ETH1.0 chain service")
+	require.NoError(t, err, "unable to setup web3 Zond execution chain service")
 	web3Service = setDefaultMocks(web3Service)
 	web3Service.depositContractCaller, err = contracts.NewDepositContractCaller(testAcc.ContractAddr, testAcc.Backend)
 	require.NoError(t, err)
@@ -153,7 +153,7 @@ func TestStop_OK(t *testing.T) {
 	testAcc.Backend.Commit()
 
 	err = web3Service.Stop()
-	require.NoError(t, err, "Unable to stop web3 ETH1.0 chain service")
+	require.NoError(t, err, "Unable to stop web3 Zond execution chain service")
 
 	// The context should have been canceled.
 	assert.NotNil(t, web3Service.ctx.Err(), "Context wasnt canceled")
@@ -175,7 +175,7 @@ func TestService_Eth1Synced(t *testing.T) {
 		WithDepositContractAddress(testAcc.ContractAddr),
 		WithDatabase(beaconDB),
 	)
-	require.NoError(t, err, "unable to setup web3 ETH1.0 chain service")
+	require.NoError(t, err, "unable to setup web3 Zond execution chain service")
 	web3Service = setDefaultMocks(web3Service)
 	web3Service.depositContractCaller, err = contracts.NewDepositContractCaller(testAcc.ContractAddr, testAcc.Backend)
 	require.NoError(t, err)
@@ -200,7 +200,7 @@ func TestFollowBlock_OK(t *testing.T) {
 		WithDepositContractAddress(testAcc.ContractAddr),
 		WithDatabase(beaconDB),
 	)
-	require.NoError(t, err, "unable to setup web3 ETH1.0 chain service")
+	require.NoError(t, err, "unable to setup web3 Zond execution chain service")
 
 	// simulated backend sets eth1 block
 	// time as 10 seconds
@@ -277,61 +277,11 @@ func TestHandlePanic_OK(t *testing.T) {
 		WithHttpEndpoint(endpoint),
 		WithDatabase(beaconDB),
 	)
-	require.NoError(t, err, "unable to setup web3 ETH1.0 chain service")
+	require.NoError(t, err, "unable to setup web3 Zond execution chain service")
 	// nil eth1DataFetcher would panic if cached value not used
 	web3Service.rpcClient = nil
 	web3Service.processBlockHeader(nil)
-	require.LogsContain(t, hook, "Panicked when handling data from ETH 1.0 Chain!")
-}
-
-func TestLogTillGenesis_OK(t *testing.T) {
-	// Reset the var at the end of the test.
-	currPeriod := logPeriod
-	logPeriod = 1 * time.Second
-	defer func() {
-		logPeriod = currPeriod
-	}()
-
-	params.SetupTestConfigCleanup(t)
-	cfg := params.BeaconConfig().Copy()
-	cfg.Eth1FollowDistance = 5
-	params.OverrideBeaconConfig(cfg)
-
-	nCfg := params.BeaconNetworkConfig()
-	nCfg.ContractDeploymentBlock = 0
-	params.OverrideBeaconNetworkConfig(nCfg)
-
-	hook := logTest.NewGlobal()
-	testAcc, err := mock.Setup()
-	require.NoError(t, err, "Unable to set up simulated backend")
-	beaconDB := dbutil.SetupDB(t)
-	server, endpoint, err := mockExecution.SetupRPCServer()
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		server.Stop()
-	})
-	web3Service, err := NewService(context.Background(),
-		WithHttpEndpoint(endpoint),
-		WithDepositContractAddress(testAcc.ContractAddr),
-		WithDatabase(beaconDB),
-	)
-	require.NoError(t, err, "unable to setup web3 ETH1.0 chain service")
-	web3Service.depositContractCaller, err = contracts.NewDepositContractCaller(testAcc.ContractAddr, testAcc.Backend)
-	require.NoError(t, err)
-
-	web3Service.rpcClient = &mockExecution.RPCClient{Backend: testAcc.Backend}
-	web3Service.httpLogger = testAcc.Backend
-	for i := 0; i < 30; i++ {
-		testAcc.Backend.Commit()
-	}
-	web3Service.latestEth1Data = &zondpb.LatestETH1Data{LastRequestedBlock: 0}
-	// Spin off to a separate routine
-	go web3Service.run(web3Service.ctx.Done())
-	// Wait for 2 seconds so that the
-	// info is logged.
-	time.Sleep(2 * time.Second)
-	web3Service.cancel()
-	assert.LogsContain(t, hook, "Currently waiting for chainstart")
+	require.LogsContain(t, hook, "Panicked when handling data from Zond execution chain!")
 }
 
 func TestInitDepositCache_OK(t *testing.T) {
@@ -340,27 +290,23 @@ func TestInitDepositCache_OK(t *testing.T) {
 		{Index: 1, Eth1BlockHeight: 4, Deposit: &zondpb.Deposit{Proof: [][]byte{[]byte("B")}, Data: &zondpb.Deposit_Data{PublicKey: []byte{}}}},
 		{Index: 2, Eth1BlockHeight: 6, Deposit: &zondpb.Deposit{Proof: [][]byte{[]byte("c")}, Data: &zondpb.Deposit_Data{PublicKey: []byte{}}}},
 	}
-	gs, _ := util.DeterministicGenesisState(t, 1)
+	gs, _ := util.DeterministicGenesisStateCapella(t, 1)
 	beaconDB := dbutil.SetupDB(t)
 	s := &Service{
-		chainStartData:  &zondpb.ChainStartData{Chainstarted: false},
+		chainStartData:  &zondpb.ChainStartData{},
 		preGenesisState: gs,
 		cfg:             &config{beaconDB: beaconDB},
 	}
 	var err error
 	s.cfg.depositCache, err = depositcache.New()
 	require.NoError(t, err)
-	require.NoError(t, s.initDepositCaches(context.Background(), ctrs))
-
-	require.Equal(t, 0, len(s.cfg.depositCache.PendingContainers(context.Background(), nil)))
 
 	blockRootA := [32]byte{'a'}
 
-	emptyState, err := util.NewBeaconState()
+	emptyState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, s.cfg.beaconDB.SaveGenesisBlockRoot(context.Background(), blockRootA))
 	require.NoError(t, s.cfg.beaconDB.SaveState(context.Background(), emptyState, blockRootA))
-	s.chainStartData.Chainstarted = true
 	require.NoError(t, s.initDepositCaches(context.Background(), ctrs))
 	require.Equal(t, 3, len(s.cfg.depositCache.PendingContainers(context.Background(), nil)))
 }
@@ -372,9 +318,9 @@ func TestInitDepositCacheWithFinalization_OK(t *testing.T) {
 			Eth1BlockHeight: 2,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{0}, 48),
+					PublicKey:             bytesutil.PadTo([]byte{0}, 2592),
 					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, 96),
+					Signature:             make([]byte, 4595),
 				},
 			},
 		},
@@ -383,9 +329,9 @@ func TestInitDepositCacheWithFinalization_OK(t *testing.T) {
 			Eth1BlockHeight: 4,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{1}, 48),
+					PublicKey:             bytesutil.PadTo([]byte{1}, 2592),
 					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, 96),
+					Signature:             make([]byte, 4595),
 				},
 			},
 		},
@@ -394,33 +340,30 @@ func TestInitDepositCacheWithFinalization_OK(t *testing.T) {
 			Eth1BlockHeight: 6,
 			Deposit: &zondpb.Deposit{
 				Data: &zondpb.Deposit_Data{
-					PublicKey:             bytesutil.PadTo([]byte{2}, 48),
+					PublicKey:             bytesutil.PadTo([]byte{2}, 2592),
 					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, 96),
+					Signature:             make([]byte, 4595),
 				},
 			},
 		},
 	}
-	gs, _ := util.DeterministicGenesisState(t, 1)
+	gs, _ := util.DeterministicGenesisStateCapella(t, 1)
 	beaconDB := dbutil.SetupDB(t)
 	s := &Service{
-		chainStartData:  &zondpb.ChainStartData{Chainstarted: false},
+		chainStartData:  &zondpb.ChainStartData{},
 		preGenesisState: gs,
 		cfg:             &config{beaconDB: beaconDB},
 	}
 	var err error
 	s.cfg.depositCache, err = depositcache.New()
 	require.NoError(t, err)
-	require.NoError(t, s.initDepositCaches(context.Background(), ctrs))
 
-	require.Equal(t, 0, len(s.cfg.depositCache.PendingContainers(context.Background(), nil)))
-
-	headBlock := util.NewBeaconBlock()
+	headBlock := util.NewBeaconBlockCapella()
 	headRoot, err := headBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 	stateGen := stategen.New(beaconDB, doublylinkedtree.New())
 
-	emptyState, err := util.NewBeaconState()
+	emptyState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, s.cfg.beaconDB.SaveGenesisBlockRoot(context.Background(), headRoot))
 	require.NoError(t, s.cfg.beaconDB.SaveState(context.Background(), emptyState, headRoot))
@@ -432,7 +375,6 @@ func TestInitDepositCacheWithFinalization_OK(t *testing.T) {
 	require.NoError(t, beaconDB.SaveFinalizedCheckpoint(ctx, &zondpb.Checkpoint{Epoch: slots.ToEpoch(0), Root: headRoot[:]}))
 	s.cfg.finalizedStateAtStartup = emptyState
 
-	s.chainStartData.Chainstarted = true
 	require.NoError(t, s.initDepositCaches(context.Background(), ctrs))
 	fDeposits, err := s.cfg.depositCache.FinalizedDeposits(ctx)
 	require.NoError(t, err)
@@ -454,7 +396,7 @@ func TestNewService_EarliestVotingBlock(t *testing.T) {
 		WithDepositContractAddress(testAcc.ContractAddr),
 		WithDatabase(beaconDB),
 	)
-	require.NoError(t, err, "unable to setup web3 ETH1.0 chain service")
+	require.NoError(t, err, "unable to setup web3 Zond execution chain service")
 	// simulated backend sets eth1 block
 	// time as 10 seconds
 	params.SetupTestConfigCleanup(t)
@@ -509,7 +451,7 @@ func TestNewService_Eth1HeaderRequLimit(t *testing.T) {
 		WithDepositContractAddress(testAcc.ContractAddr),
 		WithDatabase(beaconDB),
 	)
-	require.NoError(t, err, "unable to setup web3 ETH1.0 chain service")
+	require.NoError(t, err, "unable to setup web3 Zond execution chain service")
 	assert.Equal(t, defaultEth1HeaderReqLimit, s1.cfg.eth1HeaderReqLimit, "default eth1 header request limit not set")
 	s2, err := NewService(context.Background(),
 		WithHttpEndpoint(endpoint),
@@ -517,7 +459,7 @@ func TestNewService_Eth1HeaderRequLimit(t *testing.T) {
 		WithDatabase(beaconDB),
 		WithEth1HeaderRequestLimit(uint64(150)),
 	)
-	require.NoError(t, err, "unable to setup web3 ETH1.0 chain service")
+	require.NoError(t, err, "unable to setup web3 Zond execution chain service")
 	assert.Equal(t, uint64(150), s2.cfg.eth1HeaderReqLimit, "unable to set eth1HeaderRequestLimit")
 }
 
@@ -530,13 +472,6 @@ func (mbs *mockBSUpdater) Update(bs clientstats.BeaconNodeStats) {
 }
 
 var _ BeaconNodeStatsUpdater = &mockBSUpdater{}
-
-func TestDedupEndpoints(t *testing.T) {
-	assert.DeepEqual(t, []string{"A"}, dedupEndpoints([]string{"A"}), "did not dedup correctly")
-	assert.DeepEqual(t, []string{"A", "B"}, dedupEndpoints([]string{"A", "B"}), "did not dedup correctly")
-	assert.DeepEqual(t, []string{"A", "B"}, dedupEndpoints([]string{"A", "A", "A", "B"}), "did not dedup correctly")
-	assert.DeepEqual(t, []string{"A", "B"}, dedupEndpoints([]string{"A", "A", "A", "B", "B"}), "did not dedup correctly")
-}
 
 func Test_batchRequestHeaders_UnderflowChecks(t *testing.T) {
 	srv := &Service{}
@@ -566,7 +501,7 @@ func TestService_EnsureConsistentPowchainData(t *testing.T) {
 		WithDepositCache(cache),
 	)
 	require.NoError(t, err)
-	genState, err := util.NewBeaconState()
+	genState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	assert.NoError(t, genState.SetSlot(1000))
 
@@ -577,7 +512,6 @@ func TestService_EnsureConsistentPowchainData(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NotNil(t, eth1Data)
-	assert.Equal(t, true, eth1Data.ChainstartData.Chainstarted)
 }
 
 func TestService_InitializeCorrectly(t *testing.T) {
@@ -596,7 +530,7 @@ func TestService_InitializeCorrectly(t *testing.T) {
 		WithDepositCache(cache),
 	)
 	require.NoError(t, err)
-	genState, err := util.NewBeaconState()
+	genState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	assert.NoError(t, genState.SetSlot(1000))
 
@@ -625,14 +559,14 @@ func TestService_EnsureValidPowchainData(t *testing.T) {
 		WithDepositCache(cache),
 	)
 	require.NoError(t, err)
-	genState, err := util.NewBeaconState()
+	genState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	assert.NoError(t, genState.SetSlot(1000))
 
 	require.NoError(t, s1.cfg.beaconDB.SaveGenesisData(context.Background(), genState))
 
 	err = s1.cfg.beaconDB.SaveExecutionChainData(context.Background(), &zondpb.ETH1ChainData{
-		ChainstartData:    &zondpb.ChainStartData{Chainstarted: true},
+		ChainstartData:    &zondpb.ChainStartData{},
 		DepositContainers: []*zondpb.DepositContainer{{Index: 1}},
 	})
 	require.NoError(t, err)
@@ -749,11 +683,18 @@ func TestService_CacheBlockHeaders(t *testing.T) {
 }
 
 func TestService_FollowBlock(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	conf := params.BeaconConfig().Copy()
+	// TODO(now.youtrack.cloud/issue/TQ-5)
+	conf.Eth1FollowDistance = 2048
+	conf.SecondsPerETH1Block = 14
+	params.OverrideBeaconConfig(conf)
+
 	followTime := params.BeaconConfig().Eth1FollowDistance * params.BeaconConfig().SecondsPerETH1Block
 	followTime += 10000
 	bMap := make(map[uint64]*types.HeaderInfo)
 	for i := uint64(3000); i > 0; i-- {
-		h := &zondTypes.Header{
+		h := &gzondtypes.Header{
 			Number: big.NewInt(int64(i)),
 			Time:   followTime + (i * 40),
 		}
@@ -794,7 +735,7 @@ func (s *slowRPCClient) BatchCall(b []rpc.BatchElem) error {
 		if err != nil {
 			return err
 		}
-		h := &zondTypes.Header{Number: num}
+		h := &gzondtypes.Header{Number: num}
 		*e.Result.(*types.HeaderInfo) = types.HeaderInfo{Number: h.Number, Hash: h.Hash()}
 	}
 	return nil
@@ -821,7 +762,7 @@ func TestService_migrateOldDepositTree(t *testing.T) {
 	)
 	require.NoError(t, err)
 	eth1Data := &zondpb.ETH1ChainData{
-		BeaconState: &zondpb.BeaconState{
+		BeaconState: &zondpb.BeaconStateCapella{
 			Eth1Data: &zondpb.Eth1Data{
 				DepositCount: 800,
 			},

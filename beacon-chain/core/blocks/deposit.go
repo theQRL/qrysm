@@ -5,16 +5,16 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/container/trie"
-	"github.com/theQRL/qrysm/v4/contracts/deposit"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/math"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/container/trie"
+	"github.com/theQRL/qrysm/contracts/deposit"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/math"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // ProcessPreGenesisDeposits processes a deposit for the beacon state before chainstart.
@@ -67,7 +67,7 @@ func ActivateValidatorWithEffectiveBalance(beaconState state.BeaconState, deposi
 }
 
 // ProcessDeposits is one of the operations performed on each processed
-// beacon block to verify queued validators from the Ethereum 1.0 Deposit Contract
+// beacon block to verify queued validators from the Zond 1.0 Deposit Contract
 // into the beacon chain.
 //
 // Spec pseudocode definition:
@@ -248,8 +248,8 @@ func verifyDepositDataWithDomain(ctx context.Context, deps []*zondpb.Deposit, do
 	if len(deps) == 0 {
 		return nil
 	}
-	pks := make([]bls.PublicKey, len(deps))
-	sigs := make([][]byte, len(deps))
+	pks := make([][]dilithium.PublicKey, len(deps))
+	sigs := make([][][]byte, len(deps))
 	msgs := make([][32]byte, len(deps))
 	for i, dep := range deps {
 		if ctx.Err() != nil {
@@ -258,12 +258,12 @@ func verifyDepositDataWithDomain(ctx context.Context, deps []*zondpb.Deposit, do
 		if dep == nil || dep.Data == nil {
 			return errors.New("nil deposit")
 		}
-		dpk, err := bls.PublicKeyFromBytes(dep.Data.PublicKey)
+		dpk, err := dilithium.PublicKeyFromBytes(dep.Data.PublicKey)
 		if err != nil {
 			return err
 		}
-		pks[i] = dpk
-		sigs[i] = dep.Data.Signature
+		pks[i] = []dilithium.PublicKey{dpk}
+		sigs[i] = [][]byte{dep.Data.Signature}
 		depositMessage := &zondpb.DepositMessage{
 			PublicKey:             dep.Data.PublicKey,
 			WithdrawalCredentials: dep.Data.WithdrawalCredentials,
@@ -275,7 +275,7 @@ func verifyDepositDataWithDomain(ctx context.Context, deps []*zondpb.Deposit, do
 		}
 		msgs[i] = sr
 	}
-	verify, err := bls.VerifyMultipleSignatures(sigs, msgs, pks)
+	verify, err := dilithium.VerifyMultipleSignatures(sigs, msgs, pks)
 	if err != nil {
 		return errors.Errorf("could not verify multiple signatures: %v", err)
 	}

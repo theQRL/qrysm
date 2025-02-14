@@ -3,8 +3,8 @@ package params
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func Test_port(t *testing.T) {
@@ -31,17 +31,7 @@ func TestStandardPorts(t *testing.T) {
 	testPorts := &ports{}
 	assert.NoError(t, initializeStandardPorts(2, 0, testPorts, &existingRegistrations))
 	assert.Equal(t, 16, len(existingRegistrations))
-	assert.NotEqual(t, 0, testPorts.PrysmBeaconNodeGatewayPort)
-	assert.NotEqual(t, 0, testPorts.PrysmBeaconNodeTCPPort)
+	assert.NotEqual(t, 0, testPorts.QrysmBeaconNodeGatewayPort)
+	assert.NotEqual(t, 0, testPorts.QrysmBeaconNodeTCPPort)
 	assert.NotEqual(t, 0, testPorts.JaegerTracingPort)
-}
-
-func TestMulticlientPorts(t *testing.T) {
-	var existingRegistrations []int
-	testPorts := &ports{}
-	assert.NoError(t, initializeMulticlientPorts(2, 0, testPorts, &existingRegistrations))
-	assert.Equal(t, 3, len(existingRegistrations))
-	assert.NotEqual(t, 0, testPorts.LighthouseBeaconNodeHTTPPort)
-	assert.NotEqual(t, 0, testPorts.LighthouseBeaconNodeMetricsPort)
-	assert.NotEqual(t, 0, testPorts.LighthouseBeaconNodeP2PPort)
 }

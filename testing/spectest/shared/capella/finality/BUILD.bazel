@@ -4,7 +4,7 @@ go_library(
     name = "go_default_library",
     testonly = True,
     srcs = ["finality.go"],
-    importpath = "github.com/theQRL/qrysm/v4/testing/spectest/shared/capella/finality",
+    importpath = "github.com/theQRL/qrysm/testing/spectest/shared/capella/finality",
     visibility = ["//visibility:public"],
     deps = [
         "//beacon-chain/core/helpers:go_default_library",
@@ -12,7 +12,7 @@ go_library(
         "//beacon-chain/state:go_default_library",
         "//beacon-chain/state/state-native:go_default_library",
         "//consensus-types/blocks:go_default_library",
-        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
         "//testing/require:go_default_library",
         "//testing/spectest/utils:go_default_library",
         "//testing/util:go_default_library",

@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/io/file"
 )
 
 var (

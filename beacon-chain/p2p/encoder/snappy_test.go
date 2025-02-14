@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/golang/snappy"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestSszNetworkEncoder_BufferedReader(t *testing.T) {

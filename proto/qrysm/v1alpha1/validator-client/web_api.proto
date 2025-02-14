@@ -1,0 +1,55 @@
+syntax = "proto3";
+package theqrl.validator.accounts.v2;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+option csharp_namespace = "TheQRL.Validator.Accounts.V2";
+option go_package = "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client;validatorpb";
+option java_multiple_files = true;
+option java_outer_classname = "WebProto";
+option java_package = "org.theqrl.validator.accounts.v2";
+option php_namespace = "TheQRL\\Validator\\Accounts\\V2";
+
+
+// Slashing Protection imports and exports can be provided through validator CLI command as well as Keymanager API https://ethereum.github.io/keymanager-APIs/ import and delete.
+// DEPRECATED: Qrysm Web UI and associated endpoints will be fully removed in a future hard fork.
+service SlashingProtection {
+    rpc ExportSlashingProtection(google.protobuf.Empty) returns (ExportSlashingProtectionResponse) {
+        option deprecated = true;
+        option (google.api.http) = {
+            get: "/v2/validator/slashing-protection/export"
+        };
+    }
+    rpc ImportSlashingProtection(ImportSlashingProtectionRequest) returns (google.protobuf.Empty) {
+        option deprecated = true;
+        option (google.api.http) = {
+            post: "/v2/validator/slashing-protection/import"
+            body: "*"
+        };
+    }
+}
+
+// Type of key manager for the wallet, either derived, imported, or remote.
+// DEPRECATED: Qrysm Web UI and associated endpoints will be fully removed in a future hard fork.
+enum KeymanagerKind {
+    option deprecated = true;
+    DERIVED = 0;
+    IMPORTED = 1;
+    REMOTE = 2;
+    WEB3SIGNER = 3;
+}
+
+// DEPRECATED: Qrysm Web UI and associated endpoints will be fully removed in a future hard fork.
+message ExportSlashingProtectionResponse {
+    option deprecated = true;
+    // JSON representation of the slash protection
+    string file = 1;
+}
+
+// DEPRECATED: Qrysm Web UI and associated endpoints will be fully removed in a future hard fork.
+message ImportSlashingProtectionRequest {
+    option deprecated = true;
+    // JSON representation of the slash protection
+    string slashing_protection_json = 1;
+}

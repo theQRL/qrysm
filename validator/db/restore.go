@@ -6,17 +6,17 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/io/prompt"
-	"github.com/theQRL/qrysm/v4/validator/db/kv"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/io/prompt"
+	"github.com/theQRL/qrysm/validator/db/kv"
 	"github.com/urfave/cli/v2"
 )
 
 const dbExistsYesNoPrompt = "A database file already exists in the target directory. " +
 	"Are you sure that you want to overwrite it? [y/n]"
 
-// Restore a Prysm validator database.
+// Restore a Qrysm validator database.
 func Restore(cliCtx *cli.Context) error {
 	sourceFile := cliCtx.String(cmd.RestoreSourceFileFlag.Name)
 	targetDir := cliCtx.String(cmd.RestoreTargetDirFlag.Name)

@@ -7,7 +7,7 @@ go_library(
         "bazel.go",
         "data_path.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/build/bazel",
+    importpath = "github.com/theQRL/qrysm/build/bazel",
     visibility = ["//visibility:public"],
     deps = [
         "//testing/require:go_default_library",

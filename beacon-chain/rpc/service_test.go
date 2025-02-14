@@ -10,11 +10,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	mockExecution "github.com/theQRL/qrysm/v4/beacon-chain/execution/testing"
-	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	mockExecution "github.com/theQRL/qrysm/beacon-chain/execution/testing"
+	mockSync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync/testing"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func init() {

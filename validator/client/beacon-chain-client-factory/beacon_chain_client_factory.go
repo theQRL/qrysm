@@ -1,11 +1,11 @@
 package validator_client_factory
 
 import (
-	"github.com/theQRL/qrysm/v4/config/features"
-	beaconApi "github.com/theQRL/qrysm/v4/validator/client/beacon-api"
-	grpcApi "github.com/theQRL/qrysm/v4/validator/client/grpc-api"
-	"github.com/theQRL/qrysm/v4/validator/client/iface"
-	validatorHelpers "github.com/theQRL/qrysm/v4/validator/helpers"
+	"github.com/theQRL/qrysm/config/features"
+	beaconApi "github.com/theQRL/qrysm/validator/client/beacon-api"
+	grpcApi "github.com/theQRL/qrysm/validator/client/grpc-api"
+	"github.com/theQRL/qrysm/validator/client/iface"
+	validatorHelpers "github.com/theQRL/qrysm/validator/helpers"
 )
 
 func NewBeaconChainClient(validatorConn validatorHelpers.NodeConnection) iface.BeaconChainClient {

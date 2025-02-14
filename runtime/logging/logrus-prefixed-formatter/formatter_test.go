@@ -5,13 +5,12 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/pkg/errors"
-	prefixed "github.com/theQRL/qrysm/v4/runtime/logging/logrus-prefixed-formatter"
-	"github.com/theQRL/qrysm/v4/testing/require"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	prefixed "github.com/theQRL/qrysm/runtime/logging/logrus-prefixed-formatter"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 var _ = Describe("Formatter", func() {

@@ -21,25 +21,22 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/rpc"
 	"github.com/theQRL/go-zond/zondclient"
-	"github.com/theQRL/qrysm/v4/config/params"
-	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
-	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/config/params"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
+	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
+	"github.com/theQRL/qrysm/time/slots"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 )
 
 const (
-	maxPollingWaitTime    = 60 * time.Second // A minute so timing out doesn't take very long.
-	filePollingInterval   = 500 * time.Millisecond
-	memoryHeapFileName    = "node_heap_%d.pb.gz"
-	cpuProfileFileName    = "node_cpu_profile_%d.pb.gz"
-	fileBufferSize        = 64 * 1024
-	maxFileBufferSize     = 1024 * 1024
-	AltairE2EForkEpoch    = params.AltairE2EForkEpoch
-	BellatrixE2EForkEpoch = params.BellatrixE2EForkEpoch
-	CapellaE2EForkEpoch   = params.CapellaE2EForkEpoch
+	maxPollingWaitTime  = 60 * time.Second // A minute so timing out doesn't take very long.
+	filePollingInterval = 500 * time.Millisecond
+	memoryHeapFileName  = "node_heap_%d.pb.gz"
+	cpuProfileFileName  = "node_cpu_profile_%d.pb.gz"
+	fileBufferSize      = 64 * 1024
+	maxFileBufferSize   = 1024 * 1024
 )
 
 // Graffiti is a list of sample graffiti strings.
@@ -111,22 +108,27 @@ func WaitForTextInFile(src *os.File, match string) error {
 					errChan <- err
 					return
 				}
-				lineScanner := bufio.NewScanner(f)
-				// Scan will return true until it hits EOF or another error.
-				// If .Close is called on the underlying file, Scan will return false, causing this goroutine to exit.
-				for lineScanner.Scan() {
-					line := lineScanner.Text()
+
+				// NOTE(rgeraldes24): replaced the bufio scanner with ReadString due to the token too long error
+				rd := bufio.NewReader(f)
+				for {
+					line, err := rd.ReadString('\n')
+					if err == io.EOF {
+						break
+					}
+
+					if err != nil {
+						// Bubble the error back up to the parent goroutine.
+						errChan <- err
+						break
+					}
+
 					if strings.Contains(line, match) {
 						// closing foundChan causes the <-foundChan case in the outer select to execute,
 						// ending the function with a nil return (success result).
 						close(foundChan)
 						return
 					}
-				}
-				// If Scan returned false for an error (except EOF), Err will return it.
-				if err = lineScanner.Err(); err != nil {
-					// Bubble the error back up to the parent goroutine.
-					errChan <- err
 				}
 			}
 		}
@@ -247,12 +249,12 @@ func LogErrorOutput(t *testing.T, file io.Reader, title string, index int) {
 
 // WritePprofFiles writes the memory heap and cpu profile files to the test path.
 func WritePprofFiles(testDir string, index int) error {
-	url := fmt.Sprintf("http://127.0.0.1:%d/debug/pprof/heap", e2e.TestParams.Ports.PrysmBeaconNodePprofPort+index)
+	url := fmt.Sprintf("http://127.0.0.1:%d/debug/pprof/heap", e2e.TestParams.Ports.QrysmBeaconNodePprofPort+index)
 	filePath := filepath.Join(testDir, fmt.Sprintf(memoryHeapFileName, index))
 	if err := writeURLRespAtPath(url, filePath); err != nil {
 		return err
 	}
-	url = fmt.Sprintf("http://127.0.0.1:%d/debug/pprof/profile", e2e.TestParams.Ports.PrysmBeaconNodePprofPort+index)
+	url = fmt.Sprintf("http://127.0.0.1:%d/debug/pprof/profile", e2e.TestParams.Ports.QrysmBeaconNodePprofPort+index)
 	filePath = filepath.Join(testDir, fmt.Sprintf(cpuProfileFileName, index))
 	return writeURLRespAtPath(url, filePath)
 }
@@ -301,7 +303,7 @@ func NewLocalConnection(ctx context.Context, port int) (*grpc.ClientConn, error)
 func NewLocalConnections(ctx context.Context, numConns int) ([]*grpc.ClientConn, func(), error) {
 	conns := make([]*grpc.ClientConn, numConns)
 	for i := 0; i < len(conns); i++ {
-		conn, err := NewLocalConnection(ctx, e2e.TestParams.Ports.PrysmBeaconNodeRPCPort+i)
+		conn, err := NewLocalConnection(ctx, e2e.TestParams.Ports.QrysmBeaconNodeRPCPort+i)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -320,7 +322,7 @@ func NewLocalConnections(ctx context.Context, numConns int) ([]*grpc.ClientConn,
 func BeaconAPIHostnames(numConns int) []string {
 	hostnames := make([]string, 0)
 	for i := 0; i < numConns; i++ {
-		port := e2e.TestParams.Ports.PrysmBeaconNodeGatewayPort + i
+		port := e2e.TestParams.Ports.QrysmBeaconNodeGatewayPort + i
 		hostnames = append(hostnames, net.JoinHostPort("127.0.0.1", strconv.Itoa(port)))
 	}
 	return hostnames
@@ -379,8 +381,8 @@ func WaitOnNodes(ctx context.Context, nodes []e2etypes.ComponentRunner, nodesSta
 	return g.Wait()
 }
 
-func MinerRPCClient() (*zondclient.Client, error) {
-	client, err := rpc.DialHTTP(e2e.TestParams.Eth1RPCURL(e2e.MinerComponentOffset).String())
+func ExecutionNodeRPCClient() (*zondclient.Client, error) {
+	client, err := rpc.Dial(e2e.TestParams.ExecutionNodeRPCURL(e2e.ExecutionNodeComponentOffset).String())
 	if err != nil {
 		return nil, err
 	}

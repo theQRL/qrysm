@@ -6,11 +6,11 @@ import (
 	"testing"
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	slashertypes "github.com/theQRL/qrysm/v4/beacon-chain/slasher/types"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	slashertypes "github.com/theQRL/qrysm/beacon-chain/slasher/types"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/time/slots"
 	bolt "go.etcd.io/bbolt"
 )
 

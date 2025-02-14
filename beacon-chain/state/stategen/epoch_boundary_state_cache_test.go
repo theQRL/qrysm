@@ -3,10 +3,10 @@ package stategen
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestEpochBoundaryStateCache_BadSlotKey(t *testing.T) {
@@ -21,7 +21,7 @@ func TestEpochBoundaryStateCache_BadRootKey(t *testing.T) {
 
 func TestEpochBoundaryStateCache_CanSaveAndDelete(t *testing.T) {
 	e := newBoundaryStateCache()
-	s, err := util.NewBeaconState()
+	s, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, s.SetSlot(1))
 	r := [32]byte{'a'}
@@ -63,7 +63,7 @@ func TestEpochBoundaryStateCache_CanTrim(t *testing.T) {
 	e := newBoundaryStateCache()
 	offSet := primitives.Slot(10)
 	for i := primitives.Slot(0); i < offSet.Add(maxCacheSize); i++ {
-		s, err := util.NewBeaconState()
+		s, err := util.NewBeaconStateCapella()
 		require.NoError(t, err)
 		require.NoError(t, s.SetSlot(i))
 		r := [32]byte{byte(i)}

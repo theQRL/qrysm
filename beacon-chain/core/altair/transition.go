@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	e "github.com/theQRL/qrysm/v4/beacon-chain/core/epoch"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/epoch/precompute"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
+	e "github.com/theQRL/qrysm/beacon-chain/core/epoch"
+	"github.com/theQRL/qrysm/beacon-chain/core/epoch/precompute"
+	"github.com/theQRL/qrysm/beacon-chain/state"
 	"go.opencensus.io/trace"
 )
 
@@ -40,7 +40,6 @@ func ProcessEpoch(ctx context.Context, state state.BeaconState) (state.BeaconSta
 		return nil, err
 	}
 
-	// New in Altair.
 	vp, bp, err = ProcessEpochParticipation(ctx, state, bp, vp)
 	if err != nil {
 		return nil, err
@@ -51,13 +50,11 @@ func ProcessEpoch(ctx context.Context, state state.BeaconState) (state.BeaconSta
 		return nil, errors.Wrap(err, "could not process justification")
 	}
 
-	// New in Altair.
 	state, vp, err = ProcessInactivityScores(ctx, state, vp)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not process inactivity updates")
 	}
 
-	// New in Altair.
 	state, err = ProcessRewardsAndPenaltiesPrecompute(state, bp, vp)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not process rewards and penalties")
@@ -68,7 +65,6 @@ func ProcessEpoch(ctx context.Context, state state.BeaconState) (state.BeaconSta
 		return nil, errors.Wrap(err, "could not process registry updates")
 	}
 
-	// Modified in Altair and Bellatrix.
 	proportionalSlashingMultiplier, err := state.ProportionalSlashingMultiplier()
 	if err != nil {
 		return nil, err
@@ -98,13 +94,11 @@ func ProcessEpoch(ctx context.Context, state state.BeaconState) (state.BeaconSta
 		return nil, err
 	}
 
-	// New in Altair.
 	state, err = ProcessParticipationFlagUpdates(state)
 	if err != nil {
 		return nil, err
 	}
 
-	// New in Altair.
 	state, err = ProcessSyncCommitteeUpdates(ctx, state)
 	if err != nil {
 		return nil, err

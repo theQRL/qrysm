@@ -1,5 +1,6 @@
 package internal
 
+/*
 import (
 	"bytes"
 	"context"
@@ -15,11 +16,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/monitoring/tracing"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/monitoring/tracing"
 	"go.opencensus.io/trace"
 )
 
@@ -37,7 +38,7 @@ type SignatureResponse struct {
 // HttpSignerClient defines the interface for interacting with a remote web3signer.
 type HttpSignerClient interface {
 	Sign(ctx context.Context, pubKey string, request SignRequestJson) (dilithium.Signature, error)
-	GetPublicKeys(ctx context.Context, url string) ([][dilithium2.CryptoPublicKeyBytes]byte, error)
+	GetPublicKeys(ctx context.Context, url string) ([][field_params.DilithiumPubkeyLength]byte, error)
 }
 
 // ApiClient a wrapper object around web3signer APIs. Please refer to the docs from Consensys' web3signer project.
@@ -87,8 +88,8 @@ func (client *ApiClient) Sign(ctx context.Context, pubKey string, request SignRe
 }
 
 // GetPublicKeys is a wrapper method around the web3signer publickeys api (this may be removed in the future or moved to another location due to its usage).
-func (client *ApiClient) GetPublicKeys(ctx context.Context, url string) ([][dilithium2.CryptoPublicKeyBytes]byte, error) {
-	resp, err := client.doRequest(ctx, http.MethodGet, url, nil /* no body needed on get request */)
+func (client *ApiClient) GetPublicKeys(ctx context.Context, url string) ([][field_params.DilithiumPubkeyLength]byte, error) {
+	resp, err := client.doRequest(ctx, http.MethodGet, url, nil // no body needed on get request )
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +97,7 @@ func (client *ApiClient) GetPublicKeys(ctx context.Context, url string) ([][dili
 	if err := unmarshalResponse(resp.Body, &publicKeys); err != nil {
 		return nil, err
 	}
-	decodedKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, len(publicKeys))
+	decodedKeys := make([][field_params.DilithiumPubkeyLength]byte, len(publicKeys))
 	var errorKeyPositions string
 	for i, value := range publicKeys {
 		decodedKey, err := hexutil.Decode(value)
@@ -124,7 +125,7 @@ func (client *ApiClient) ReloadSignerKeys(ctx context.Context) error {
 // GetServerStatus is a wrapper method around the web3signer upcheck api
 func (client *ApiClient) GetServerStatus(ctx context.Context) (string, error) {
 	const requestPath = "/upcheck"
-	resp, err := client.doRequest(ctx, http.MethodGet, client.BaseURL.String()+requestPath, nil /* no body needed on get request */)
+	resp, err := client.doRequest(ctx, http.MethodGet, client.BaseURL.String()+requestPath, nil // no body needed on get request )
 	if err != nil {
 		return "", err
 	}
@@ -221,3 +222,4 @@ func closeBody(body io.Closer) {
 		log.WithError(err).Error("could not close response body")
 	}
 }
+*/

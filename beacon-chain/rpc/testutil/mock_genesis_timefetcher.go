@@ -3,8 +3,8 @@ package testutil
 import (
 	"time"
 
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 // MockGenesisTimeFetcher is a fake implementation of the blockchain.TimeFetcher

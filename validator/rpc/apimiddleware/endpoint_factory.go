@@ -2,7 +2,7 @@ package apimiddleware
 
 import (
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
+	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
 )
 
 // ValidatorEndpointFactory creates endpoints used for running validator API calls through the API Middleware.
@@ -17,7 +17,7 @@ func (f *ValidatorEndpointFactory) IsNil() bool {
 func (*ValidatorEndpointFactory) Paths() []string {
 	return []string{
 		"/zond/v1/keystores",
-		"/zond/v1/remotekeys",
+		// "/zond/v1/remotekeys",
 		"/zond/v1/validator/{pubkey}/feerecipient",
 		"/zond/v1/validator/{pubkey}/gas_limit",
 		"/zond/v1/validator/{pubkey}/voluntary_exit",
@@ -34,12 +34,12 @@ func (*ValidatorEndpointFactory) Create(path string) (*apimiddleware.Endpoint, e
 		endpoint.PostResponse = &ImportKeystoresResponseJson{}
 		endpoint.DeleteRequest = &DeleteKeystoresRequestJson{}
 		endpoint.DeleteResponse = &DeleteKeystoresResponseJson{}
-	case "/zond/v1/remotekeys":
-		endpoint.GetResponse = &ListRemoteKeysResponseJson{}
-		endpoint.PostRequest = &ImportRemoteKeysRequestJson{}
-		endpoint.PostResponse = &ImportRemoteKeysResponseJson{}
-		endpoint.DeleteRequest = &DeleteRemoteKeysRequestJson{}
-		endpoint.DeleteResponse = &DeleteRemoteKeysResponseJson{}
+	// case "/zond/v1/remotekeys":
+	// 	endpoint.GetResponse = &ListRemoteKeysResponseJson{}
+	// 	endpoint.PostRequest = &ImportRemoteKeysRequestJson{}
+	// 	endpoint.PostResponse = &ImportRemoteKeysResponseJson{}
+	// 	endpoint.DeleteRequest = &DeleteRemoteKeysRequestJson{}
+	// 	endpoint.DeleteResponse = &DeleteRemoteKeysResponseJson{}
 	case "/zond/v1/validator/{pubkey}/feerecipient":
 		endpoint.GetResponse = &GetFeeRecipientByPubkeyResponseJson{}
 		endpoint.PostRequest = &SetFeeRecipientByPubkeyRequestJson{}

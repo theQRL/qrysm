@@ -7,28 +7,28 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/core/feed"
+	"github.com/theQRL/qrysm/beacon-chain/core/feed/operation"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/monitoring/tracing"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmTime "github.com/theQRL/qrysm/time"
+	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
 
 // validateAggregateAndProof verifies the aggregated signature and the selection proof is valid before forwarding to the
 // network and downstream services.
 func (s *Service) validateAggregateAndProof(ctx context.Context, pid peer.ID, msg *pubsub.Message) (pubsub.ValidationResult, error) {
-	receivedTime := prysmTime.Now()
+	receivedTime := qrysmTime.Now()
 	if pid == s.cfg.p2p.PeerID() {
 		return pubsub.ValidationAccept, nil
 	}
@@ -120,7 +120,7 @@ func (s *Service) validateAggregateAndProof(ctx context.Context, pid peer.ID, ms
 
 	msg.ValidatorData = m
 
-	aggregateAttestationVerificationGossipSummary.Observe(float64(prysmTime.Since(receivedTime).Milliseconds()))
+	aggregateAttestationVerificationGossipSummary.Observe(float64(qrysmTime.Since(receivedTime).Milliseconds()))
 
 	return pubsub.ValidationAccept, nil
 }
@@ -167,7 +167,7 @@ func (s *Service) validateAggregatedAtt(ctx context.Context, signed *zondpb.Sign
 		return pubsub.ValidationReject, wrappedErr
 	}
 
-	// Verify selection signature, aggregator signature and attestation signature are valid.
+	// Verify selection signature, aggregator signature and attestation signatures are valid.
 	// We use batch verify here to save compute.
 	aggregatorSigSet, err := aggSigSet(bs, signed)
 	if err != nil {
@@ -177,7 +177,7 @@ func (s *Service) validateAggregatedAtt(ctx context.Context, signed *zondpb.Sign
 	}
 	attSigSet, err := blocks.AttestationSignatureBatch(ctx, bs, []*zondpb.Attestation{signed.Message.Aggregate})
 	if err != nil {
-		wrappedErr := errors.Wrapf(err, "Could not verify aggregator signature %d", signed.Message.AggregatorIndex)
+		wrappedErr := errors.Wrapf(err, "Could not verify attestation signatures %d", signed.Message.AggregatorIndex)
 		tracing.AnnotateError(span, wrappedErr)
 		return pubsub.ValidationIgnore, wrappedErr
 	}
@@ -285,7 +285,7 @@ func validateSelectionIndex(
 		return nil, err
 	}
 	return &dilithium.SignatureBatch{
-		Signatures:   [][]byte{proof},
+		Signatures:   [][][]byte{{proof}},
 		PublicKeys:   [][]dilithium.PublicKey{{publicKey}},
 		Messages:     [][32]byte{root},
 		Descriptions: []string{signing.SelectionProof},
@@ -313,7 +313,7 @@ func aggSigSet(s state.ReadOnlyBeaconState, a *zondpb.SignedAggregateAttestation
 		return nil, err
 	}
 	return &dilithium.SignatureBatch{
-		Signatures:   [][]byte{a.Signature},
+		Signatures:   [][][]byte{{a.Signature}},
 		PublicKeys:   [][]dilithium.PublicKey{{publicKey}},
 		Messages:     [][32]byte{root},
 		Descriptions: []string{signing.AggregatorSignature},

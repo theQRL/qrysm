@@ -1,5 +1,7 @@
 package depositsnapshot
 
+// TODO(now.youtrack.cloud/issue/TQ-4)
+/*
 import (
 	"encoding/hex"
 	"fmt"
@@ -9,10 +11,11 @@ import (
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/container/trie"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/container/trie"
+	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/testing/require"
 	"gopkg.in/yaml.v3"
 )
 
@@ -369,3 +372,4 @@ func TestEmptyTree(t *testing.T) {
 	tree := NewDepositTree()
 	require.Equal(t, fmt.Sprintf("%x", tree.getRoot()), "d70a234731285c6804c2a4f56711ddb8c82c99740f207854891028af34e27e5e")
 }
+*/

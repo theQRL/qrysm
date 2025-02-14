@@ -10,24 +10,23 @@ import (
 	"github.com/google/uuid"
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
-	common2 "github.com/theQRL/go-qrllib/common"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
-	"github.com/theQRL/qrysm/v4/async/event"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
-	"github.com/theQRL/qrysm/v4/runtime/interop"
-	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
-	"github.com/theQRL/qrysm/v4/validator/accounts/petnames"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	"github.com/theQRL/qrysm/async/event"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
+	"github.com/theQRL/qrysm/runtime/interop"
+	"github.com/theQRL/qrysm/validator/accounts/iface"
+	"github.com/theQRL/qrysm/validator/accounts/petnames"
+	"github.com/theQRL/qrysm/validator/keymanager"
 	"go.opencensus.io/trace"
 )
 
 var (
 	lock               sync.RWMutex
-	orderedPublicKeys  = make([][dilithium2.CryptoPublicKeyBytes]byte, 0)
-	dilithiumKeysCache = make(map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey)
+	orderedPublicKeys  = make([][field_params.DilithiumPubkeyLength]byte, 0)
+	dilithiumKeysCache = make(map[[field_params.DilithiumPubkeyLength]byte]dilithium.DilithiumKey)
 )
 
 const (
@@ -54,7 +53,7 @@ type SetupConfig struct {
 }
 
 // Defines a struct containing 1-to-1 corresponding
-// private keys and public keys for Ethereum validators.
+// private keys and public keys for Zond validators.
 type accountStore struct {
 	Seeds      [][]byte `json:"seeds"`
 	PublicKeys [][]byte `json:"public_keys"`
@@ -68,7 +67,7 @@ func (a *accountStore) Copy() *accountStore {
 	return storeCopy
 }
 
-// AccountsKeystoreRepresentation defines an internal Prysm representation
+// AccountsKeystoreRepresentation defines an internal Qrysm representation
 // of validator accounts, encrypted according to the EIP-2334 standard.
 type AccountsKeystoreRepresentation struct {
 	Crypto  map[string]interface{} `json:"crypto"`
@@ -80,8 +79,8 @@ type AccountsKeystoreRepresentation struct {
 // ResetCaches for the keymanager.
 func ResetCaches() {
 	lock.Lock()
-	orderedPublicKeys = make([][dilithium2.CryptoPublicKeyBytes]byte, 0)
-	dilithiumKeysCache = make(map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey)
+	orderedPublicKeys = make([][field_params.DilithiumPubkeyLength]byte, 0)
+	dilithiumKeysCache = make(map[[field_params.DilithiumPubkeyLength]byte]dilithium.DilithiumKey)
 	lock.Unlock()
 }
 
@@ -126,7 +125,7 @@ func NewInteropKeymanager(_ context.Context, offset, numValidatorKeys uint64) (*
 		return nil, errors.Wrap(err, "could not generate interop keys")
 	}
 	lock.Lock()
-	pubKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, numValidatorKeys)
+	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidatorKeys)
 	for i := uint64(0); i < numValidatorKeys; i++ {
 		publicKey := bytesutil.ToBytes2592(publicKeys[i].Marshal())
 		pubKeys[i] = publicKey
@@ -140,12 +139,12 @@ func NewInteropKeymanager(_ context.Context, offset, numValidatorKeys uint64) (*
 // SubscribeAccountChanges creates an event subscription for a channel
 // to listen for public key changes at runtime, such as when new validator accounts
 // are imported into the keymanager while the validator process is running.
-func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][dilithium2.CryptoPublicKeyBytes]byte) event.Subscription {
+func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][field_params.DilithiumPubkeyLength]byte) event.Subscription {
 	return km.accountsChangedFeed.Subscribe(pubKeysChan)
 }
 
 // ValidatingAccountNames for a local keymanager.
-func (_ *Keymanager) ValidatingAccountNames() ([]string, error) {
+func (*Keymanager) ValidatingAccountNames() ([]string, error) {
 	lock.RLock()
 	names := make([]string, len(orderedPublicKeys))
 	for i, pubKey := range orderedPublicKeys {
@@ -161,12 +160,12 @@ func (km *Keymanager) initializeKeysCachesFromKeystore() error {
 	lock.Lock()
 	defer lock.Unlock()
 	count := len(km.accountsStore.Seeds)
-	orderedPublicKeys = make([][dilithium2.CryptoPublicKeyBytes]byte, count)
-	dilithiumKeysCache = make(map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey, count)
+	orderedPublicKeys = make([][field_params.DilithiumPubkeyLength]byte, count)
+	dilithiumKeysCache = make(map[[field_params.DilithiumPubkeyLength]byte]dilithium.DilithiumKey, count)
 	for i, publicKey := range km.accountsStore.PublicKeys {
 		publicKey2592 := bytesutil.ToBytes2592(publicKey)
 		orderedPublicKeys[i] = publicKey2592
-		secretKey, err := dilithium.SecretKeyFromBytes(km.accountsStore.Seeds[i])
+		secretKey, err := dilithium.SecretKeyFromSeed(km.accountsStore.Seeds[i])
 		if err != nil {
 			return errors.Wrap(err, "failed to initialize keys caches from account keystore")
 		}
@@ -176,23 +175,23 @@ func (km *Keymanager) initializeKeysCachesFromKeystore() error {
 }
 
 // FetchValidatingPublicKeys fetches the list of active public keys from the local account keystores.
-func (_ *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][dilithium2.CryptoPublicKeyBytes]byte, error) {
-	ctx, span := trace.StartSpan(ctx, "keymanager.FetchValidatingPublicKeys")
+func (*Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][field_params.DilithiumPubkeyLength]byte, error) {
+	_, span := trace.StartSpan(ctx, "keymanager.FetchValidatingPublicKeys")
 	defer span.End()
 
 	lock.RLock()
 	keys := orderedPublicKeys
-	result := make([][dilithium2.CryptoPublicKeyBytes]byte, len(keys))
+	result := make([][field_params.DilithiumPubkeyLength]byte, len(keys))
 	copy(result, keys)
 	lock.RUnlock()
 	return result, nil
 }
 
 // FetchValidatingSeeds fetches the list of private keys from the secret keys cache
-func (km *Keymanager) FetchValidatingSeeds(ctx context.Context) ([][common2.SeedSize]byte, error) {
+func (km *Keymanager) FetchValidatingSeeds(ctx context.Context) ([][field_params.DilithiumSeedLength]byte, error) {
 	lock.RLock()
 	defer lock.RUnlock()
-	dilithiumSeed := make([][common2.SeedSize]byte, len(dilithiumKeysCache))
+	dilithiumSeed := make([][field_params.DilithiumSeedLength]byte, len(dilithiumKeysCache))
 	pubKeys, err := km.FetchValidatingPublicKeys(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not retrieve public keys")
@@ -208,7 +207,7 @@ func (km *Keymanager) FetchValidatingSeeds(ctx context.Context) ([][common2.Seed
 }
 
 // Sign signs a message using a validator key.
-func (_ *Keymanager) Sign(ctx context.Context, req *validatorpb.SignRequest) (dilithium.Signature, error) {
+func (*Keymanager) Sign(ctx context.Context, req *validatorpb.SignRequest) (dilithium.Signature, error) {
 	publicKey := req.PublicKey
 	if publicKey == nil {
 		return nil, errors.New("nil public key in request")
@@ -235,7 +234,7 @@ func (km *Keymanager) initializeAccountKeystore(ctx context.Context) error {
 		return errors.Wrapf(err, "could not decode keystore file for accounts %s", AccountsKeystoreFileName)
 	}
 	// We extract the validator signing private key from the keystore
-	// by utilizing the password and initialize a new BLS secret key from
+	// by utilizing the password and initialize a new Dilithium secret key from
 	// its raw bytes.
 	password := km.wallet.Password()
 	decryptor := keystorev4.New()
@@ -386,7 +385,7 @@ func (km *Keymanager) ListKeymanagerAccounts(ctx context.Context, cfg keymanager
 		fmt.Printf("Showing %d validator accounts\n", numAccounts)
 	}
 	fmt.Println(
-		au.BrightRed("View the eth1 deposit transaction data for your accounts " +
+		au.BrightRed("View the zond deposit transaction data for your accounts " +
 			"by running `validator accounts list --show-deposit-data`"),
 	)
 
@@ -394,7 +393,7 @@ func (km *Keymanager) ListKeymanagerAccounts(ctx context.Context, cfg keymanager
 	if err != nil {
 		return errors.Wrap(err, "could not fetch validating public keys")
 	}
-	var seeds [][common2.SeedSize]byte
+	var seeds [][field_params.DilithiumSeedLength]byte
 	if cfg.ShowPrivateKeys {
 		seeds, err = km.FetchValidatingSeeds(ctx)
 		if err != nil {
@@ -415,8 +414,8 @@ func (km *Keymanager) ListKeymanagerAccounts(ctx context.Context, cfg keymanager
 		}
 		fmt.Printf(
 			"%s\n",
-			au.BrightRed("If you imported your account coming from the eth2 launchpad, you will find your "+
-				"deposit_data.json in the eth2.0-deposit-cli's validator_keys folder"),
+			au.BrightRed("If you imported your account coming from the zond launchpad, you will find your "+
+				"deposit_data.json in the staking-deposit-cli's validator_keys folder"),
 		)
 		fmt.Println("")
 	}

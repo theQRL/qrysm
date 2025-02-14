@@ -1,12 +1,12 @@
-// This code was adapted from https://github.com/theQRL/go-zond/blob/master/cmd/geth/usage.go
+// This code was adapted from https://github.com/theQRL/go-zond/blob/master/cmd/gzond/usage.go
 package main
 
 import (
 	"io"
 	"sort"
 
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/client-stats/flags"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/client-stats/flags"
 	"github.com/urfave/cli/v2"
 )
 

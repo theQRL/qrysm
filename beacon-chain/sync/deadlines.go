@@ -6,7 +6,7 @@ import (
 
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/config/params"
 )
 
 var defaultReadDuration = ttfbTimeout

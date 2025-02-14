@@ -6,14 +6,14 @@ import (
 
 	libp2pcore "github.com/libp2p/go-libp2p/core"
 	"github.com/pkg/errors"
-	p2ptypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	p2ptypes "github.com/theQRL/qrysm/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/monitoring/tracing"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 
@@ -47,7 +47,7 @@ func (s *Service) beaconBlocksByRangeRPCHandler(ctx context.Context, msg interfa
 		trace.Int64Attribute("start", int64(rp.start)), // lint:ignore uintcast -- This conversion is OK for tracing.
 		trace.Int64Attribute("end", int64(rp.end)),     // lint:ignore uintcast -- This conversion is OK for tracing.
 		trace.Int64Attribute("count", int64(m.Count)),
-		trace.StringAttribute("peer", stream.Conn().RemotePeer().Pretty()),
+		trace.StringAttribute("peer", stream.Conn().RemotePeer().String()),
 		trace.Int64Attribute("remaining_capacity", remainingBucketCapacity),
 	)
 
@@ -147,7 +147,7 @@ func (s *Service) writeBlockBatchToStream(ctx context.Context, batch blockBatch,
 		return nil
 	}
 
-	reconstructed, err := s.cfg.executionPayloadReconstructor.ReconstructFullBellatrixBlockBatch(ctx, blinded)
+	reconstructed, err := s.cfg.executionPayloadReconstructor.ReconstructFullBlockBatch(ctx, blinded)
 	if err != nil {
 		log.WithError(err).Error("Could not reconstruct full bellatrix block batch from blinded bodies")
 		return err

@@ -5,20 +5,19 @@ import (
 	"encoding/hex"
 	"testing"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestLocalKeymanager_ExtractKeystores(t *testing.T) {
-	dilithiumKeysCache = make(map[[dilithium2.CryptoPublicKeyBytes]byte]dilithium.DilithiumKey)
+	dilithiumKeysCache = make(map[[field_params.DilithiumPubkeyLength]byte]dilithium.DilithiumKey)
 	dr := &Keymanager{}
-	validatingKeys := make([]bls.SecretKey, 10)
+	validatingKeys := make([]dilithium.DilithiumKey, 10)
 	for i := 0; i < len(validatingKeys); i++ {
-		secretKey, err := bls.RandKey()
+		secretKey, err := dilithium.RandKey()
 		require.NoError(t, err)
 		validatingKeys[i] = secretKey
 		dilithiumKeysCache[bytesutil.ToBytes2592(secretKey.PublicKey().Marshal())] = secretKey
@@ -34,7 +33,7 @@ func TestLocalKeymanager_ExtractKeystores(t *testing.T) {
 	// We attempt to extract a few indices.
 	keystores, err = dr.ExtractKeystores(
 		ctx,
-		[]bls.PublicKey{
+		[]dilithium.PublicKey{
 			validatingKeys[3].PublicKey(),
 			validatingKeys[5].PublicKey(),
 			validatingKeys[7].PublicKey(),

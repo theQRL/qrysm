@@ -18,52 +18,52 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/common"
-	apigateway "github.com/theQRL/qrysm/v4/api/gateway"
-	"github.com/theQRL/qrysm/v4/async/event"
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	"github.com/theQRL/qrysm/v4/beacon-chain/builder"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache/depositcache"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache/depositsnapshot"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db/kv"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db/slasherkv"
-	interopcoldstart "github.com/theQRL/qrysm/v4/beacon-chain/deterministic-genesis"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
-	"github.com/theQRL/qrysm/v4/beacon-chain/forkchoice"
-	doublylinkedtree "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
-	"github.com/theQRL/qrysm/v4/beacon-chain/gateway"
-	"github.com/theQRL/qrysm/v4/beacon-chain/monitor"
-	"github.com/theQRL/qrysm/v4/beacon-chain/node/registration"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/blstoexec"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/slashings"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/synccommittee"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/voluntaryexits"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/v4/beacon-chain/slasher"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
-	regularsync "github.com/theQRL/qrysm/v4/beacon-chain/sync"
-	"github.com/theQRL/qrysm/v4/beacon-chain/sync/backfill"
-	"github.com/theQRL/qrysm/v4/beacon-chain/sync/checkpoint"
-	"github.com/theQRL/qrysm/v4/beacon-chain/sync/genesis"
-	initialsync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/container/slice"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/monitoring/prometheus"
-	"github.com/theQRL/qrysm/v4/runtime"
-	"github.com/theQRL/qrysm/v4/runtime/debug"
-	"github.com/theQRL/qrysm/v4/runtime/prereqs"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	apigateway "github.com/theQRL/qrysm/api/gateway"
+	"github.com/theQRL/qrysm/async/event"
+	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/beacon-chain/builder"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/cache/depositcache"
+	"github.com/theQRL/qrysm/beacon-chain/cache/depositsnapshot"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/beacon-chain/db/kv"
+	"github.com/theQRL/qrysm/beacon-chain/db/slasherkv"
+	interopcoldstart "github.com/theQRL/qrysm/beacon-chain/deterministic-genesis"
+	"github.com/theQRL/qrysm/beacon-chain/execution"
+	"github.com/theQRL/qrysm/beacon-chain/forkchoice"
+	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
+	"github.com/theQRL/qrysm/beacon-chain/gateway"
+	"github.com/theQRL/qrysm/beacon-chain/monitor"
+	"github.com/theQRL/qrysm/beacon-chain/node/registration"
+	"github.com/theQRL/qrysm/beacon-chain/operations/attestations"
+	"github.com/theQRL/qrysm/beacon-chain/operations/dilithiumtoexec"
+	"github.com/theQRL/qrysm/beacon-chain/operations/slashings"
+	"github.com/theQRL/qrysm/beacon-chain/operations/synccommittee"
+	"github.com/theQRL/qrysm/beacon-chain/operations/voluntaryexits"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/beacon-chain/rpc"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/beacon-chain/slasher"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
+	regularsync "github.com/theQRL/qrysm/beacon-chain/sync"
+	"github.com/theQRL/qrysm/beacon-chain/sync/backfill"
+	"github.com/theQRL/qrysm/beacon-chain/sync/checkpoint"
+	"github.com/theQRL/qrysm/beacon-chain/sync/genesis"
+	initialsync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/container/slice"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/monitoring/prometheus"
+	"github.com/theQRL/qrysm/runtime"
+	"github.com/theQRL/qrysm/runtime/debug"
+	"github.com/theQRL/qrysm/runtime/prereqs"
+	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/urfave/cli/v2"
 )
 
@@ -94,7 +94,7 @@ type BeaconNode struct {
 	exitPool                voluntaryexits.PoolManager
 	slashingsPool           slashings.PoolManager
 	syncCommitteePool       synccommittee.Pool
-	dilithiumToExecPool     blstoexec.PoolManager
+	dilithiumToExecPool     dilithiumtoexec.PoolManager
 	depositCache            cache.DepositCache
 	proposerIdsCache        *cache.ProposerPayloadIDsCache
 	stateFeed               *event.Feed
@@ -153,9 +153,7 @@ func New(cliCtx *cli.Context, opts ...Option) (*BeaconNode, error) {
 	if err := configureExecutionSetting(cliCtx); err != nil {
 		return nil, err
 	}
-	if err := kv.ConfigureBlobRetentionEpoch(cliCtx); err != nil {
-		return nil, err
-	}
+
 	configureFastSSZHashingAlgorithm()
 
 	// Initializes any forks here.
@@ -177,7 +175,7 @@ func New(cliCtx *cli.Context, opts ...Option) (*BeaconNode, error) {
 		exitPool:                voluntaryexits.NewPool(),
 		slashingsPool:           slashings.NewPool(),
 		syncCommitteePool:       synccommittee.NewPool(),
-		dilithiumToExecPool:     blstoexec.NewPool(),
+		dilithiumToExecPool:     dilithiumtoexec.NewPool(),
 		slasherBlockHeadersFeed: new(event.Feed),
 		slasherAttestationsFeed: new(event.Feed),
 		serviceFlagOpts:         &serviceFlagOpts{},
@@ -217,7 +215,7 @@ func New(cliCtx *cli.Context, opts ...Option) (*BeaconNode, error) {
 	log.Debugln("Starting State Gen")
 	if err := beacon.startStateGen(ctx, bfs, beacon.forkChoicer); err != nil {
 		if errors.Is(err, stategen.ErrNoGenesisBlock) {
-			log.Errorf("No genesis block/state is found. Prysm only provides a mainnet genesis "+
+			log.Errorf("No genesis block/state is found. Qrysm only provides a mainnet genesis "+
 				"state bundled in the application. You must provide the --%s or --%s flag to load "+
 				"a genesis block/state for this network.", "genesis-state", "genesis-beacon-api-url")
 		}
@@ -448,19 +446,22 @@ func (b *BeaconNode) startDB(cliCtx *cli.Context, depositAddress string) error {
 	if err != nil {
 		return err
 	}
-	addr := common.HexToAddress(depositAddress)
+	addr, err := common.NewAddressFromString(depositAddress)
+	if err != nil {
+		return err
+	}
 	if len(knownContract) == 0 {
 		if err := b.db.SaveDepositContractAddress(b.ctx, addr); err != nil {
 			return errors.Wrap(err, "could not save deposit contract")
 		}
 	}
 	if len(knownContract) > 0 && !bytes.Equal(addr.Bytes(), knownContract) {
-		return fmt.Errorf("database contract is %#x but tried to run with %#x. This likely means "+
+		return fmt.Errorf("database contract is Z%#x but tried to run with %#x. This likely means "+
 			"you are trying to run on a different network than what the database contains. You can run once with "+
 			"'--clear-db' to wipe the old database or use an alternative data directory with '--datadir'",
-			knownContract, addr.Bytes())
+			knownContract, addr)
 	}
-	log.Infof("Deposit contract: %#x", addr.Bytes())
+	log.Infof("Deposit contract: %#x", addr)
 	return nil
 }
 
@@ -655,7 +656,11 @@ func (b *BeaconNode) registerPOWChainService() error {
 	if err != nil {
 		return err
 	}
-	depositContractAddr, err := execution.DepositContractAddress()
+	depositContractAddrStr, err := execution.DepositContractAddress()
+	if err != nil {
+		return err
+	}
+	depositContractAddr, err := common.NewAddressFromString(depositContractAddrStr)
 	if err != nil {
 		return err
 	}
@@ -663,7 +668,7 @@ func (b *BeaconNode) registerPOWChainService() error {
 	// skipcq: CRT-D0001
 	opts := append(
 		b.serviceFlagOpts.executionChainFlagOpts,
-		execution.WithDepositContractAddress(common.HexToAddress(depositContractAddr)),
+		execution.WithDepositContractAddress(depositContractAddr),
 		execution.WithDatabase(b.db),
 		execution.WithDepositCache(b.depositCache),
 		execution.WithStateNotifier(b),
@@ -915,8 +920,8 @@ func (b *BeaconNode) registerGRPCGateway(router *mux.Router) error {
 	if gatewayConfig.V1AlphaPbMux != nil {
 		muxs = append(muxs, gatewayConfig.V1AlphaPbMux)
 	}
-	if gatewayConfig.EthPbMux != nil {
-		muxs = append(muxs, gatewayConfig.EthPbMux)
+	if gatewayConfig.ZondPbMux != nil {
+		muxs = append(muxs, gatewayConfig.ZondPbMux)
 	}
 
 	opts := []apigateway.Option{
@@ -930,7 +935,7 @@ func (b *BeaconNode) registerGRPCGateway(router *mux.Router) error {
 		apigateway.WithAllowedOrigins(allowedOrigins),
 		apigateway.WithTimeout(uint64(timeout)),
 	}
-	if flags.EnableHTTPEthAPI(httpModules) {
+	if flags.EnableHTTPZondAPI(httpModules) {
 		opts = append(opts, apigateway.WithApiMiddleware(&apimiddleware.BeaconEndpointFactory{}))
 	}
 	g, err := apigateway.New(b.ctx, opts...)

@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/config/params"
 	"github.com/urfave/cli/v2"
 )
 
@@ -41,7 +41,6 @@ type Flags struct {
 	WriteSSZStateTransitions            bool // WriteSSZStateTransitions to tmp directory.
 	EnablePeerScorer                    bool // EnablePeerScorer enables experimental peer scoring in p2p.
 	DisableReorgLateBlocks              bool // DisableReorgLateBlocks disables reorgs of late blocks.
-	WriteWalletPasswordOnWebOnboarding  bool // WriteWalletPasswordOnWebOnboarding writes the password to disk after Prysm web signup.
 	EnableDoppelGanger                  bool // EnableDoppelGanger enables doppelganger protection on startup for the validator.
 	EnableHistoricalSpaceRepresentation bool // EnableHistoricalSpaceRepresentation enables the saving of registry validators in separate buckets to save space
 	EnableBeaconRESTApi                 bool // EnableBeaconRESTApi enables experimental usage of the beacon REST API by the validator when querying a beacon node
@@ -119,50 +118,16 @@ func InitWithReset(c *Flags) func() {
 
 // configureTestnet sets the config according to specified testnet flag
 func configureTestnet(ctx *cli.Context) error {
-	if ctx.Bool(PraterTestnet.Name) {
-		log.Warn("Running on the Prater Testnet")
-		if err := params.SetActive(params.PraterConfig().Copy()); err != nil {
-			return err
-		}
-		applyPraterFeatureFlags(ctx)
-		params.UsePraterNetworkConfig()
-	} else if ctx.Bool(SepoliaTestnet.Name) {
-		log.Warn("Running on the Sepolia Beacon Chain Testnet")
-		if err := params.SetActive(params.SepoliaConfig().Copy()); err != nil {
-			return err
-		}
-		applySepoliaFeatureFlags(ctx)
-		params.UseSepoliaNetworkConfig()
-	} else if ctx.Bool(HoleskyTestnet.Name) {
-		log.Warn("Running on the Holesky Beacon Chain Testnet")
-		if err := params.SetActive(params.HoleskyConfig().Copy()); err != nil {
-			return err
-		}
-		applyHoleskyFeatureFlags(ctx)
-		params.UseHoleskyNetworkConfig()
+	if ctx.IsSet(cmd.ChainConfigFileFlag.Name) {
+		log.Warn("Running on custom Zond network specified in a chain configuration yaml file")
 	} else {
-		if ctx.IsSet(cmd.ChainConfigFileFlag.Name) {
-			log.Warn("Running on custom Zond network specified in a chain configuration yaml file")
-		} else {
-			log.Warn("Running on Zond Mainnet")
-		}
-		if err := params.SetActive(params.MainnetConfig().Copy()); err != nil {
-			return err
-		}
+		log.Warn("Running on Zond Mainnet")
 	}
+	if err := params.SetActive(params.MainnetConfig().Copy()); err != nil {
+		return err
+	}
+
 	return nil
-}
-
-// Insert feature flags within the function to be enabled for Prater testnet.
-func applyPraterFeatureFlags(ctx *cli.Context) {
-}
-
-// Insert feature flags within the function to be enabled for Sepolia testnet.
-func applySepoliaFeatureFlags(ctx *cli.Context) {
-}
-
-// Insert feature flags within the function to be enabled for Holesky testnet.
-func applyHoleskyFeatureFlags(ctx *cli.Context) {
 }
 
 // ConfigureBeaconChain sets the global config based
@@ -267,10 +232,6 @@ func ConfigureValidator(ctx *cli.Context) error {
 	cfg := &Flags{}
 	if err := configureTestnet(ctx); err != nil {
 		return err
-	}
-	if ctx.Bool(writeWalletPasswordOnWebOnboarding.Name) {
-		logEnabled(writeWalletPasswordOnWebOnboarding)
-		cfg.WriteWalletPasswordOnWebOnboarding = true
 	}
 	if ctx.Bool(attestTimely.Name) {
 		logEnabled(attestTimely)

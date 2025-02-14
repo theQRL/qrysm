@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-zond/accounts/abi/bind"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/container/trie"
-	depositcontract "github.com/theQRL/qrysm/v4/contracts/deposit/mock"
-	"github.com/theQRL/qrysm/v4/runtime/interop"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/container/trie"
+	depositcontract "github.com/theQRL/qrysm/contracts/deposit/mock"
+	"github.com/theQRL/qrysm/runtime/interop"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestDepositTrieRoot_OK(t *testing.T) {

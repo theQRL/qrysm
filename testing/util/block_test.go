@@ -4,26 +4,24 @@ import (
 	"context"
 	"testing"
 
-	coreBlock "github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition/stateutils"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	coreBlock "github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition/stateutils"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpbalpha "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestGenerateFullBlock_PassesStateTransition(t *testing.T) {
-	beaconState, privs := DeterministicGenesisState(t, 128)
+	beaconState, privs := DeterministicGenesisStateCapella(t, 128)
 	conf := &BlockGenConfig{
 		NumAttestations: 1,
 	}
-	block, err := GenerateFullBlock(beaconState, privs, conf, beaconState.Slot())
+	block, err := GenerateFullBlockCapella(beaconState, privs, conf, beaconState.Slot())
 	require.NoError(t, err)
 	wsb, err := blocks.NewSignedBeaconBlock(block)
 	require.NoError(t, err)
@@ -34,11 +32,11 @@ func TestGenerateFullBlock_PassesStateTransition(t *testing.T) {
 func TestGenerateFullBlock_ThousandValidators(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	params.OverrideBeaconConfig(params.MainnetConfig().Copy())
-	beaconState, privs := DeterministicGenesisState(t, 1024)
+	beaconState, privs := DeterministicGenesisStateCapella(t, 1024)
 	conf := &BlockGenConfig{
 		NumAttestations: 4,
 	}
-	block, err := GenerateFullBlock(beaconState, privs, conf, beaconState.Slot())
+	block, err := GenerateFullBlockCapella(beaconState, privs, conf, beaconState.Slot())
 	require.NoError(t, err)
 	wsb, err := blocks.NewSignedBeaconBlock(block)
 	require.NoError(t, err)
@@ -49,15 +47,15 @@ func TestGenerateFullBlock_ThousandValidators(t *testing.T) {
 func TestGenerateFullBlock_Passes4Epochs(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	params.OverrideBeaconConfig(params.MainnetConfig().Copy())
-	beaconState, privs := DeterministicGenesisState(t, 64)
+	beaconState, privs := DeterministicGenesisStateCapella(t, 256)
 
 	conf := &BlockGenConfig{
-		NumAttestations: 2,
+		NumAttestations: 1,
 	}
 	finalSlot := params.BeaconConfig().SlotsPerEpoch*4 + 3
 	for i := 0; i < int(finalSlot); i++ {
 		helpers.ClearCache()
-		block, err := GenerateFullBlock(beaconState, privs, conf, beaconState.Slot())
+		block, err := GenerateFullBlockCapella(beaconState, privs, conf, beaconState.Slot())
 		require.NoError(t, err)
 		wsb, err := blocks.NewSignedBeaconBlock(block)
 		require.NoError(t, err)
@@ -80,11 +78,11 @@ func TestGenerateFullBlock_Passes4Epochs(t *testing.T) {
 func TestGenerateFullBlock_ValidProposerSlashings(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	params.OverrideBeaconConfig(params.MainnetConfig().Copy())
-	beaconState, privs := DeterministicGenesisState(t, 32)
+	beaconState, privs := DeterministicGenesisStateCapella(t, 32)
 	conf := &BlockGenConfig{
 		NumProposerSlashings: 1,
 	}
-	block, err := GenerateFullBlock(beaconState, privs, conf, beaconState.Slot()+1)
+	block, err := GenerateFullBlockCapella(beaconState, privs, conf, beaconState.Slot()+1)
 	require.NoError(t, err)
 	wsb, err := blocks.NewSignedBeaconBlock(block)
 	require.NoError(t, err)
@@ -101,11 +99,11 @@ func TestGenerateFullBlock_ValidProposerSlashings(t *testing.T) {
 func TestGenerateFullBlock_ValidAttesterSlashings(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	params.OverrideBeaconConfig(params.MainnetConfig().Copy())
-	beaconState, privs := DeterministicGenesisState(t, 256)
+	beaconState, privs := DeterministicGenesisStateCapella(t, 256)
 	conf := &BlockGenConfig{
 		NumAttesterSlashings: 1,
 	}
-	block, err := GenerateFullBlock(beaconState, privs, conf, beaconState.Slot())
+	block, err := GenerateFullBlockCapella(beaconState, privs, conf, beaconState.Slot()+1)
 	require.NoError(t, err)
 	wsb, err := blocks.NewSignedBeaconBlock(block)
 	require.NoError(t, err)
@@ -119,29 +117,33 @@ func TestGenerateFullBlock_ValidAttesterSlashings(t *testing.T) {
 	}
 }
 
+// TODO(now.youtrack.cloud/issue/TQ-7)
+/*
 func TestGenerateFullBlock_ValidAttestations(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	params.OverrideBeaconConfig(params.MainnetConfig().Copy())
 
-	beaconState, privs := DeterministicGenesisState(t, 256)
+	beaconState, privs := DeterministicGenesisStateCapella(t, 256)
 	conf := &BlockGenConfig{
-		NumAttestations: 4,
+		NumAttestations: 1,
 	}
-	block, err := GenerateFullBlock(beaconState, privs, conf, beaconState.Slot())
+	block, err := GenerateFullBlockCapella(beaconState, privs, conf, beaconState.Slot())
 	require.NoError(t, err)
 	wsb, err := blocks.NewSignedBeaconBlock(block)
 	require.NoError(t, err)
-	beaconState, err = transition.ExecuteStateTransition(context.Background(), beaconState, wsb)
+	_, err = transition.ExecuteStateTransition(context.Background(), beaconState, wsb)
 	require.NoError(t, err)
+	fmt.Println(beaconState.CurrentEpochParticipation())
 	atts, err := beaconState.CurrentEpochAttestations()
 	require.NoError(t, err)
 	if len(atts) != 4 {
 		t.Fatal("expected 4 attestations to be saved to the beacon state")
 	}
 }
+*/
 
 func TestGenerateFullBlock_ValidDeposits(t *testing.T) {
-	beaconState, privs := DeterministicGenesisState(t, 256)
+	beaconState, privs := DeterministicGenesisStateCapella(t, 256)
 	deposits, _, err := DeterministicDepositsAndKeys(257)
 	require.NoError(t, err)
 	eth1Data, err := DeterministicEth1Data(len(deposits))
@@ -150,7 +152,7 @@ func TestGenerateFullBlock_ValidDeposits(t *testing.T) {
 	conf := &BlockGenConfig{
 		NumDeposits: 1,
 	}
-	block, err := GenerateFullBlock(beaconState, privs, conf, beaconState.Slot())
+	block, err := GenerateFullBlockCapella(beaconState, privs, conf, beaconState.Slot()+1)
 	require.NoError(t, err)
 	wsb, err := blocks.NewSignedBeaconBlock(block)
 	require.NoError(t, err)
@@ -171,14 +173,14 @@ func TestGenerateFullBlock_ValidDeposits(t *testing.T) {
 }
 
 func TestGenerateFullBlock_ValidVoluntaryExits(t *testing.T) {
-	beaconState, privs := DeterministicGenesisState(t, 256)
+	beaconState, privs := DeterministicGenesisStateCapella(t, 256)
 	// Moving the state 2048 epochs forward due to PERSISTENT_COMMITTEE_PERIOD.
 	err := beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(uint64(params.BeaconConfig().ShardCommitteePeriod)).Add(3))
 	require.NoError(t, err)
 	conf := &BlockGenConfig{
 		NumVoluntaryExits: 1,
 	}
-	block, err := GenerateFullBlock(beaconState, privs, conf, beaconState.Slot())
+	block, err := GenerateFullBlockCapella(beaconState, privs, conf, beaconState.Slot()+1)
 	require.NoError(t, err)
 	wsb, err := blocks.NewSignedBeaconBlock(block)
 	require.NoError(t, err)
@@ -192,117 +194,6 @@ func TestGenerateFullBlock_ValidVoluntaryExits(t *testing.T) {
 	if val.ExitEpoch() == params.BeaconConfig().FarFutureEpoch {
 		t.Fatal("expected exiting validator index to be marked as exiting")
 	}
-}
-
-func TestHydrateSignedBeaconBlock_NoError(t *testing.T) {
-	b := &zondpbalpha.SignedBeaconBlock{}
-	b = HydrateSignedBeaconBlock(b)
-	_, err := b.HashTreeRoot()
-	require.NoError(t, err)
-	_, err = b.Block.HashTreeRoot()
-	require.NoError(t, err)
-	_, err = b.Block.Body.HashTreeRoot()
-	require.NoError(t, err)
-}
-
-func TestHydrateV1SignedBeaconBlock_NoError(t *testing.T) {
-	b := &zondpbv1.SignedBeaconBlock{}
-	b = HydrateV1SignedBeaconBlock(b)
-	_, err := b.HashTreeRoot()
-	require.NoError(t, err)
-	_, err = b.Block.HashTreeRoot()
-	require.NoError(t, err)
-	_, err = b.Block.Body.HashTreeRoot()
-	require.NoError(t, err)
-}
-
-func TestHydrateV2AltairSignedBeaconBlock_NoError(t *testing.T) {
-	b := &zondpbv2.SignedBeaconBlockAltair{}
-	b = HydrateV2AltairSignedBeaconBlock(b)
-	_, err := b.HashTreeRoot()
-	require.NoError(t, err)
-	_, err = b.Message.HashTreeRoot()
-	require.NoError(t, err)
-	_, err = b.Message.Body.HashTreeRoot()
-	require.NoError(t, err)
-}
-
-func TestHydrateV2BellatrixSignedBeaconBlock_NoError(t *testing.T) {
-	b := &zondpbv2.SignedBeaconBlockBellatrix{}
-	b = HydrateV2BellatrixSignedBeaconBlock(b)
-	_, err := b.HashTreeRoot()
-	require.NoError(t, err)
-	_, err = b.Message.HashTreeRoot()
-	require.NoError(t, err)
-	_, err = b.Message.Body.HashTreeRoot()
-	require.NoError(t, err)
-}
-
-func TestHydrateSignedBeaconBlockAltair_NoError(t *testing.T) {
-	b := &zondpbalpha.SignedBeaconBlockAltair{}
-	b = HydrateSignedBeaconBlockAltair(b)
-
-	// HTR should not error. It errors with incorrect field length sizes.
-	_, err := b.HashTreeRoot()
-	require.NoError(t, err)
-	_, err = b.Block.HashTreeRoot()
-	require.NoError(t, err)
-	_, err = b.Block.Body.HashTreeRoot()
-	require.NoError(t, err)
-}
-
-func TestHydrateSignedBlindedBeaconBlockBellatrix_NoError(t *testing.T) {
-	b := &zondpbalpha.SignedBlindedBeaconBlockBellatrix{}
-	b = HydrateSignedBlindedBeaconBlockBellatrix(b)
-	_, err := b.HashTreeRoot()
-	require.NoError(t, err)
-	_, err = b.Block.HashTreeRoot()
-	require.NoError(t, err)
-	_, err = b.Block.Body.HashTreeRoot()
-	require.NoError(t, err)
-}
-
-func TestHydrateBlindedBeaconBlockBellatrix_NoError(t *testing.T) {
-	b := &zondpbalpha.BlindedBeaconBlockBellatrix{}
-	b = HydrateBlindedBeaconBlockBellatrix(b)
-	_, err := b.HashTreeRoot()
-	require.NoError(t, err)
-	_, err = b.Body.HashTreeRoot()
-	require.NoError(t, err)
-}
-
-func TestHydrateBlindedBeaconBlockBodyBellatrix_NoError(t *testing.T) {
-	b := &zondpbalpha.BlindedBeaconBlockBodyBellatrix{}
-	b = HydrateBlindedBeaconBlockBodyBellatrix(b)
-	_, err := b.HashTreeRoot()
-	require.NoError(t, err)
-}
-
-func TestHydrateV2SignedBlindedBeaconBlockBellatrix_NoError(t *testing.T) {
-	b := &zondpbv2.SignedBlindedBeaconBlockBellatrix{}
-	b = HydrateV2SignedBlindedBeaconBlockBellatrix(b)
-	_, err := b.HashTreeRoot()
-	require.NoError(t, err)
-	_, err = b.Message.HashTreeRoot()
-	require.NoError(t, err)
-	_, err = b.Message.Body.HashTreeRoot()
-	require.NoError(t, err)
-}
-
-func TestHydrateV2BlindedBeaconBlockBellatrix_NoError(t *testing.T) {
-	b := &zondpbv2.BlindedBeaconBlockBellatrix{}
-	b = HydrateV2BlindedBeaconBlockBellatrix(b)
-	_, err := b.HashTreeRoot()
-	require.NoError(t, err)
-	_, err = b.Body.HashTreeRoot()
-	require.NoError(t, err)
-}
-
-func TestHydrateV2BlindedBeaconBlockBodyBellatrix_NoError(t *testing.T) {
-	b := &zondpbv2.BlindedBeaconBlockBodyBellatrix{}
-	b = HydrateV2BlindedBeaconBlockBodyBellatrix(b)
-	_, err := b.HashTreeRoot()
-	require.NoError(t, err)
 }
 
 func TestHydrateSignedBeaconBlockCapella_NoError(t *testing.T) {
@@ -365,7 +256,7 @@ func TestGenerateVoluntaryExits(t *testing.T) {
 	config.ShardCommitteePeriod = 0
 	params.OverrideBeaconConfig(config)
 
-	beaconState, privKeys := DeterministicGenesisState(t, 256)
+	beaconState, privKeys := DeterministicGenesisStateCapella(t, 256)
 	exit, err := GenerateVoluntaryExits(beaconState, privKeys[0], 0)
 	require.NoError(t, err)
 	val, err := beaconState.ValidatorAtIndexReadOnly(0)

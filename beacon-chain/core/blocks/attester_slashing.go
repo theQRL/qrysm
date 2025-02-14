@@ -5,16 +5,16 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/container/slice"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
-	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/slashings"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/container/slice"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/slashings"
+	"github.com/theQRL/qrysm/runtime/version"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 // ProcessAttesterSlashings is one of the operations performed
@@ -80,12 +80,8 @@ func ProcessAttesterSlashing(
 			cfg := params.BeaconConfig()
 			var slashingQuotient uint64
 			switch {
-			case beaconState.Version() == version.Phase0:
+			case beaconState.Version() == version.Capella:
 				slashingQuotient = cfg.MinSlashingPenaltyQuotient
-			case beaconState.Version() == version.Altair:
-				slashingQuotient = cfg.MinSlashingPenaltyQuotientAltair
-			case beaconState.Version() >= version.Bellatrix:
-				slashingQuotient = cfg.MinSlashingPenaltyQuotientBellatrix
 			default:
 				return nil, errors.New("unknown state version")
 			}

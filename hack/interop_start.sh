@@ -72,7 +72,7 @@ do
 done
 
 
-echo "Converting hex yaml keys to a format that Prysm understands"
+echo "Converting hex yaml keys to a format that Qrysm understands"
 
 # Expect YAML keys in hex encoded format. Convert this into the format the validator already understands.
 ./convert-keys $YAML_KEY_FILE /tmp/keys.json
@@ -84,7 +84,7 @@ echo -n "$IDENTITY" > /tmp/id.key
 
 
 BEACON_FLAGS="--bootstrap-node= \
-  --deposit-contract=0xD775140349E6A5D12524C6ccc3d6A1d4519D4029 \
+  --deposit-contract=ZD775140349E6A5D12524C6ccc3d6A1d4519D4029 \
   --p2p-port=$PORT \
   --grpc-gateway-port=$RPCPORT \
   --peer=$PEERS \

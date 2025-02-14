@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestValidateWithBatchVerifier(t *testing.T) {
@@ -19,13 +19,13 @@ func TestValidateWithBatchVerifier(t *testing.T) {
 	validSet := &dilithium.SignatureBatch{
 		Messages:     [][32]byte{{}},
 		PublicKeys:   [][]dilithium.PublicKey{{keys[0].PublicKey()}},
-		Signatures:   [][]byte{sig.Marshal()},
+		Signatures:   [][][]byte{{sig.Marshal()}},
 		Descriptions: []string{signing.UnknownSignature},
 	}
 	invalidSet := &dilithium.SignatureBatch{
 		Messages:     [][32]byte{{}},
 		PublicKeys:   [][]dilithium.PublicKey{{keys[0].PublicKey()}},
-		Signatures:   [][]byte{badSig.Marshal()},
+		Signatures:   [][][]byte{{badSig.Marshal()}},
 		Descriptions: []string{signing.UnknownSignature},
 	}
 	tests := []struct {

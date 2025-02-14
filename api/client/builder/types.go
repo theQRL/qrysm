@@ -7,14 +7,12 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common/hexutil"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	types "github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/math"
-	v1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	types "github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/math"
+	v1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 var errInvalidUint256 = errors.New("invalid Uint256")
@@ -116,207 +114,6 @@ func (s Uint64String) MarshalText() ([]byte, error) {
 // VersionResponse is a JSON representation of a field in the builder API header response.
 type VersionResponse struct {
 	Version string `json:"version"`
-}
-
-// ExecHeaderResponse is a JSON representation of  the builder API header response for Bellatrix.
-type ExecHeaderResponse struct {
-	Version string `json:"version"`
-	Data    struct {
-		Signature hexutil.Bytes `json:"signature"`
-		Message   *BuilderBid   `json:"message"`
-	} `json:"data"`
-}
-
-// ToProto returns a SignedBuilderBid from ExecHeaderResponse for Bellatrix.
-func (ehr *ExecHeaderResponse) ToProto() (*zond.SignedBuilderBid, error) {
-	bb, err := ehr.Data.Message.ToProto()
-	if err != nil {
-		return nil, err
-	}
-	return &zond.SignedBuilderBid{
-		Message:   bb,
-		Signature: ehr.Data.Signature,
-	}, nil
-}
-
-// ToProto returns a BuilderBid Proto for Bellatrix.
-func (bb *BuilderBid) ToProto() (*zond.BuilderBid, error) {
-	header, err := bb.Header.ToProto()
-	if err != nil {
-		return nil, err
-	}
-	return &zond.BuilderBid{
-		Header: header,
-		Value:  bb.Value.SSZBytes(),
-		Pubkey: bb.Pubkey,
-	}, nil
-}
-
-// ToProto returns a ExecutionPayloadHeader for Bellatrix.
-func (h *ExecutionPayloadHeader) ToProto() (*v1.ExecutionPayloadHeader, error) {
-	return &v1.ExecutionPayloadHeader{
-		ParentHash:       bytesutil.SafeCopyBytes(h.ParentHash),
-		FeeRecipient:     bytesutil.SafeCopyBytes(h.FeeRecipient),
-		StateRoot:        bytesutil.SafeCopyBytes(h.StateRoot),
-		ReceiptsRoot:     bytesutil.SafeCopyBytes(h.ReceiptsRoot),
-		LogsBloom:        bytesutil.SafeCopyBytes(h.LogsBloom),
-		PrevRandao:       bytesutil.SafeCopyBytes(h.PrevRandao),
-		BlockNumber:      uint64(h.BlockNumber),
-		GasLimit:         uint64(h.GasLimit),
-		GasUsed:          uint64(h.GasUsed),
-		Timestamp:        uint64(h.Timestamp),
-		ExtraData:        bytesutil.SafeCopyBytes(h.ExtraData),
-		BaseFeePerGas:    bytesutil.SafeCopyBytes(h.BaseFeePerGas.SSZBytes()),
-		BlockHash:        bytesutil.SafeCopyBytes(h.BlockHash),
-		TransactionsRoot: bytesutil.SafeCopyBytes(h.TransactionsRoot),
-	}, nil
-}
-
-// BuilderBid is part of ExecHeaderResponse for Bellatrix.
-type BuilderBid struct {
-	Header *ExecutionPayloadHeader `json:"header"`
-	Value  Uint256                 `json:"value"`
-	Pubkey hexutil.Bytes           `json:"pubkey"`
-}
-
-// ExecutionPayloadHeader is a field in BuilderBid.
-type ExecutionPayloadHeader struct {
-	ParentHash       hexutil.Bytes `json:"parent_hash"`
-	FeeRecipient     hexutil.Bytes `json:"fee_recipient"`
-	StateRoot        hexutil.Bytes `json:"state_root"`
-	ReceiptsRoot     hexutil.Bytes `json:"receipts_root"`
-	LogsBloom        hexutil.Bytes `json:"logs_bloom"`
-	PrevRandao       hexutil.Bytes `json:"prev_randao"`
-	BlockNumber      Uint64String  `json:"block_number"`
-	GasLimit         Uint64String  `json:"gas_limit"`
-	GasUsed          Uint64String  `json:"gas_used"`
-	Timestamp        Uint64String  `json:"timestamp"`
-	ExtraData        hexutil.Bytes `json:"extra_data"`
-	BaseFeePerGas    Uint256       `json:"base_fee_per_gas"`
-	BlockHash        hexutil.Bytes `json:"block_hash"`
-	TransactionsRoot hexutil.Bytes `json:"transactions_root"`
-	*v1.ExecutionPayloadHeader
-}
-
-// MarshalJSON returns the JSON bytes representation of ExecutionPayloadHeader.
-func (h *ExecutionPayloadHeader) MarshalJSON() ([]byte, error) {
-	type MarshalCaller ExecutionPayloadHeader
-	baseFeePerGas, err := sszBytesToUint256(h.ExecutionPayloadHeader.BaseFeePerGas)
-	if err != nil {
-		return []byte{}, errors.Wrapf(err, "invalid BaseFeePerGas")
-	}
-	return json.Marshal(&MarshalCaller{
-		ParentHash:       h.ExecutionPayloadHeader.ParentHash,
-		FeeRecipient:     h.ExecutionPayloadHeader.FeeRecipient,
-		StateRoot:        h.ExecutionPayloadHeader.StateRoot,
-		ReceiptsRoot:     h.ExecutionPayloadHeader.ReceiptsRoot,
-		LogsBloom:        h.ExecutionPayloadHeader.LogsBloom,
-		PrevRandao:       h.ExecutionPayloadHeader.PrevRandao,
-		BlockNumber:      Uint64String(h.ExecutionPayloadHeader.BlockNumber),
-		GasLimit:         Uint64String(h.ExecutionPayloadHeader.GasLimit),
-		GasUsed:          Uint64String(h.ExecutionPayloadHeader.GasUsed),
-		Timestamp:        Uint64String(h.ExecutionPayloadHeader.Timestamp),
-		ExtraData:        h.ExecutionPayloadHeader.ExtraData,
-		BaseFeePerGas:    baseFeePerGas,
-		BlockHash:        h.ExecutionPayloadHeader.BlockHash,
-		TransactionsRoot: h.ExecutionPayloadHeader.TransactionsRoot,
-	})
-}
-
-// UnmarshalJSON takes in a JSON byte array and sets ExecutionPayloadHeader.
-func (h *ExecutionPayloadHeader) UnmarshalJSON(b []byte) error {
-	type UnmarshalCaller ExecutionPayloadHeader
-	uc := &UnmarshalCaller{}
-	if err := json.Unmarshal(b, uc); err != nil {
-		return err
-	}
-	ep := ExecutionPayloadHeader(*uc)
-	*h = ep
-	var err error
-	h.ExecutionPayloadHeader, err = h.ToProto()
-	return err
-}
-
-// ExecPayloadResponse is the builder API /zond/v1/builder/blinded_blocks for Bellatrix.
-type ExecPayloadResponse struct {
-	Version string           `json:"version"`
-	Data    ExecutionPayload `json:"data"`
-}
-
-// ExecutionPayload is a field of ExecPayloadResponse
-type ExecutionPayload struct {
-	ParentHash    hexutil.Bytes   `json:"parent_hash"`
-	FeeRecipient  hexutil.Bytes   `json:"fee_recipient"`
-	StateRoot     hexutil.Bytes   `json:"state_root"`
-	ReceiptsRoot  hexutil.Bytes   `json:"receipts_root"`
-	LogsBloom     hexutil.Bytes   `json:"logs_bloom"`
-	PrevRandao    hexutil.Bytes   `json:"prev_randao"`
-	BlockNumber   Uint64String    `json:"block_number"`
-	GasLimit      Uint64String    `json:"gas_limit"`
-	GasUsed       Uint64String    `json:"gas_used"`
-	Timestamp     Uint64String    `json:"timestamp"`
-	ExtraData     hexutil.Bytes   `json:"extra_data"`
-	BaseFeePerGas Uint256         `json:"base_fee_per_gas"`
-	BlockHash     hexutil.Bytes   `json:"block_hash"`
-	Transactions  []hexutil.Bytes `json:"transactions"`
-}
-
-// ToProto returns a ExecutionPayload Proto from ExecPayloadResponse
-func (r *ExecPayloadResponse) ToProto() (*v1.ExecutionPayload, error) {
-	return r.Data.ToProto()
-}
-
-// ToProto returns a ExecutionPayload Proto
-func (p *ExecutionPayload) ToProto() (*v1.ExecutionPayload, error) {
-	txs := make([][]byte, len(p.Transactions))
-	for i := range p.Transactions {
-		txs[i] = bytesutil.SafeCopyBytes(p.Transactions[i])
-	}
-	return &v1.ExecutionPayload{
-		ParentHash:    bytesutil.SafeCopyBytes(p.ParentHash),
-		FeeRecipient:  bytesutil.SafeCopyBytes(p.FeeRecipient),
-		StateRoot:     bytesutil.SafeCopyBytes(p.StateRoot),
-		ReceiptsRoot:  bytesutil.SafeCopyBytes(p.ReceiptsRoot),
-		LogsBloom:     bytesutil.SafeCopyBytes(p.LogsBloom),
-		PrevRandao:    bytesutil.SafeCopyBytes(p.PrevRandao),
-		BlockNumber:   uint64(p.BlockNumber),
-		GasLimit:      uint64(p.GasLimit),
-		GasUsed:       uint64(p.GasUsed),
-		Timestamp:     uint64(p.Timestamp),
-		ExtraData:     bytesutil.SafeCopyBytes(p.ExtraData),
-		BaseFeePerGas: bytesutil.SafeCopyBytes(p.BaseFeePerGas.SSZBytes()),
-		BlockHash:     bytesutil.SafeCopyBytes(p.BlockHash),
-		Transactions:  txs,
-	}, nil
-}
-
-// FromProto converts a proto execution payload type to our builder
-// compatible payload type.
-func FromProto(payload *v1.ExecutionPayload) (ExecutionPayload, error) {
-	bFee, err := sszBytesToUint256(payload.BaseFeePerGas)
-	if err != nil {
-		return ExecutionPayload{}, err
-	}
-	txs := make([]hexutil.Bytes, len(payload.Transactions))
-	for i := range payload.Transactions {
-		txs[i] = bytesutil.SafeCopyBytes(payload.Transactions[i])
-	}
-	return ExecutionPayload{
-		ParentHash:    bytesutil.SafeCopyBytes(payload.ParentHash),
-		FeeRecipient:  bytesutil.SafeCopyBytes(payload.FeeRecipient),
-		StateRoot:     bytesutil.SafeCopyBytes(payload.StateRoot),
-		ReceiptsRoot:  bytesutil.SafeCopyBytes(payload.ReceiptsRoot),
-		LogsBloom:     bytesutil.SafeCopyBytes(payload.LogsBloom),
-		PrevRandao:    bytesutil.SafeCopyBytes(payload.PrevRandao),
-		BlockNumber:   Uint64String(payload.BlockNumber),
-		GasLimit:      Uint64String(payload.GasLimit),
-		GasUsed:       Uint64String(payload.GasUsed),
-		Timestamp:     Uint64String(payload.Timestamp),
-		ExtraData:     bytesutil.SafeCopyBytes(payload.ExtraData),
-		BaseFeePerGas: bFee,
-		BlockHash:     bytesutil.SafeCopyBytes(payload.BlockHash),
-		Transactions:  txs,
-	}, nil
 }
 
 // FromProtoCapella converts a proto execution payload type for capella to our
@@ -421,21 +218,21 @@ type BuilderBidCapella struct {
 
 // ExecutionPayloadHeaderCapella is a field in BuilderBidCapella.
 type ExecutionPayloadHeaderCapella struct {
-	ParentHash       hexutil.Bytes `json:"parent_hash"`
-	FeeRecipient     hexutil.Bytes `json:"fee_recipient"`
-	StateRoot        hexutil.Bytes `json:"state_root"`
-	ReceiptsRoot     hexutil.Bytes `json:"receipts_root"`
-	LogsBloom        hexutil.Bytes `json:"logs_bloom"`
-	PrevRandao       hexutil.Bytes `json:"prev_randao"`
-	BlockNumber      Uint64String  `json:"block_number"`
-	GasLimit         Uint64String  `json:"gas_limit"`
-	GasUsed          Uint64String  `json:"gas_used"`
-	Timestamp        Uint64String  `json:"timestamp"`
-	ExtraData        hexutil.Bytes `json:"extra_data"`
-	BaseFeePerGas    Uint256       `json:"base_fee_per_gas"`
-	BlockHash        hexutil.Bytes `json:"block_hash"`
-	TransactionsRoot hexutil.Bytes `json:"transactions_root"`
-	WithdrawalsRoot  hexutil.Bytes `json:"withdrawals_root"`
+	ParentHash       hexutil.Bytes  `json:"parent_hash"`
+	FeeRecipient     hexutil.BytesZ `json:"fee_recipient"`
+	StateRoot        hexutil.Bytes  `json:"state_root"`
+	ReceiptsRoot     hexutil.Bytes  `json:"receipts_root"`
+	LogsBloom        hexutil.Bytes  `json:"logs_bloom"`
+	PrevRandao       hexutil.Bytes  `json:"prev_randao"`
+	BlockNumber      Uint64String   `json:"block_number"`
+	GasLimit         Uint64String   `json:"gas_limit"`
+	GasUsed          Uint64String   `json:"gas_used"`
+	Timestamp        Uint64String   `json:"timestamp"`
+	ExtraData        hexutil.Bytes  `json:"extra_data"`
+	BaseFeePerGas    Uint256        `json:"base_fee_per_gas"`
+	BlockHash        hexutil.Bytes  `json:"block_hash"`
+	TransactionsRoot hexutil.Bytes  `json:"transactions_root"`
+	WithdrawalsRoot  hexutil.Bytes  `json:"withdrawals_root"`
 	*v1.ExecutionPayloadHeaderCapella
 }
 
@@ -488,7 +285,7 @@ type ExecPayloadResponseCapella struct {
 // ExecutionPayloadCapella is a field of ExecPayloadResponseCapella.
 type ExecutionPayloadCapella struct {
 	ParentHash    hexutil.Bytes   `json:"parent_hash"`
-	FeeRecipient  hexutil.Bytes   `json:"fee_recipient"`
+	FeeRecipient  hexutil.BytesZ  `json:"fee_recipient"`
 	StateRoot     hexutil.Bytes   `json:"state_root"`
 	ReceiptsRoot  hexutil.Bytes   `json:"receipts_root"`
 	LogsBloom     hexutil.Bytes   `json:"logs_bloom"`
@@ -545,15 +342,10 @@ func (p *ExecutionPayloadCapella) ToProto() (*v1.ExecutionPayloadCapella, error)
 
 // Withdrawal is a field of ExecutionPayloadCapella.
 type Withdrawal struct {
-	Index          Uint256       `json:"index"`
-	ValidatorIndex Uint256       `json:"validator_index"`
-	Address        hexutil.Bytes `json:"address"`
-	Amount         Uint256       `json:"amount"`
-}
-
-// SignedBlindedBeaconBlockBellatrix is the request object for builder API /zond/v1/builder/blinded_blocks.
-type SignedBlindedBeaconBlockBellatrix struct {
-	*zond.SignedBlindedBeaconBlockBellatrix
+	Index          Uint256        `json:"index"`
+	ValidatorIndex Uint256        `json:"validator_index"`
+	Address        hexutil.BytesZ `json:"address"`
+	Amount         Uint256        `json:"amount"`
 }
 
 // ProposerSlashing is a field in BlindedBeaconBlockBodyCapella.
@@ -621,14 +413,19 @@ func (a *IndexedAttestation) MarshalJSON() ([]byte, error) {
 	for i := range a.IndexedAttestation.AttestingIndices {
 		indices[i] = fmt.Sprintf("%d", a.AttestingIndices[i])
 	}
+	signatures := make([]hexutil.Bytes, len(a.IndexedAttestation.Signatures))
+	for i, sig := range a.IndexedAttestation.Signatures {
+		signatures[i] = sig
+	}
+
 	return json.Marshal(struct {
 		AttestingIndices []string         `json:"attesting_indices"`
 		Data             *AttestationData `json:"data"`
-		Signature        hexutil.Bytes    `json:"signature"`
+		Signatures       []hexutil.Bytes  `json:"signatures"`
 	}{
 		AttestingIndices: indices,
 		Data:             &AttestationData{a.IndexedAttestation.Data},
-		Signature:        a.IndexedAttestation.Signature,
+		Signatures:       signatures,
 	})
 }
 
@@ -693,14 +490,19 @@ type Attestation struct {
 
 // MarshalJSON returns a JSON byte array representation of Attestation.
 func (a *Attestation) MarshalJSON() ([]byte, error) {
+	signatures := make([]hexutil.Bytes, len(a.Attestation.Signatures))
+	for i, sig := range a.Attestation.Signatures {
+		signatures[i] = sig
+	}
+
 	return json.Marshal(struct {
 		AggregationBits hexutil.Bytes    `json:"aggregation_bits"`
 		Data            *AttestationData `json:"data"`
-		Signature       hexutil.Bytes    `json:"signature" ssz-size:"96"`
+		Signatures      []hexutil.Bytes  `json:"signatures"`
 	}{
 		AggregationBits: hexutil.Bytes(a.Attestation.AggregationBits),
 		Data:            &AttestationData{a.Attestation.Data},
-		Signature:       a.Attestation.Signature,
+		Signatures:      signatures,
 	})
 }
 
@@ -783,12 +585,17 @@ type SyncAggregate struct {
 
 // MarshalJSON returns a JSON byte array representation of SyncAggregate.
 func (s *SyncAggregate) MarshalJSON() ([]byte, error) {
+	signatures := make([]hexutil.Bytes, len(s.SyncAggregate.SyncCommitteeSignatures))
+	for i, sig := range s.SyncAggregate.SyncCommitteeSignatures {
+		signatures[i] = sig
+	}
+
 	return json.Marshal(struct {
-		SyncCommitteeBits      hexutil.Bytes `json:"sync_committee_bits"`
-		SyncCommitteeSignature hexutil.Bytes `json:"sync_committee_signature"`
+		SyncCommitteeBits       hexutil.Bytes   `json:"sync_committee_bits"`
+		SyncCommitteeSignatures []hexutil.Bytes `json:"sync_committee_signatures"`
 	}{
-		SyncCommitteeBits:      hexutil.Bytes(s.SyncAggregate.SyncCommitteeBits),
-		SyncCommitteeSignature: s.SyncAggregate.SyncCommitteeSignature,
+		SyncCommitteeBits:       hexutil.Bytes(s.SyncAggregate.SyncCommitteeBits),
+		SyncCommitteeSignatures: signatures,
 	})
 }
 
@@ -834,306 +641,14 @@ type DilithiumToExecutionChange struct {
 // MarshalJSON returns a JSON byte array representation of DilithiumToExecutionChange.
 func (ch *DilithiumToExecutionChange) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		ValidatorIndex      string        `json:"validator_index"`
-		FromDilithiumPubkey hexutil.Bytes `json:"from_dilithium_pubkey"`
-		ToExecutionAddress  hexutil.Bytes `json:"to_execution_address"`
+		ValidatorIndex      string         `json:"validator_index"`
+		FromDilithiumPubkey hexutil.Bytes  `json:"from_dilithium_pubkey"`
+		ToExecutionAddress  hexutil.BytesZ `json:"to_execution_address"`
 	}{
 		ValidatorIndex:      fmt.Sprintf("%d", ch.ValidatorIndex),
 		FromDilithiumPubkey: ch.FromDilithiumPubkey,
 		ToExecutionAddress:  ch.ToExecutionAddress,
 	})
-}
-
-// ExecHeaderResponseDeneb is the header response for builder API /eth/v1/builder/header/{slot}/{parent_hash}/{pubkey}.
-type ExecHeaderResponseDeneb struct {
-	Data struct {
-		Signature hexutil.Bytes    `json:"signature"`
-		Message   *BuilderBidDeneb `json:"message"`
-	} `json:"data"`
-}
-
-// ToProto creates a SignedBuilderBidDeneb Proto from ExecHeaderResponseDeneb.
-func (ehr *ExecHeaderResponseDeneb) ToProto() (*zond.SignedBuilderBidDeneb, error) {
-	bb, err := ehr.Data.Message.ToProto()
-	if err != nil {
-		return nil, err
-	}
-	return &zond.SignedBuilderBidDeneb{
-		Message:   bb,
-		Signature: bytesutil.SafeCopyBytes(ehr.Data.Signature),
-	}, nil
-}
-
-// ToProto creates a BuilderBidDeneb Proto from BuilderBidDeneb.
-func (bb *BuilderBidDeneb) ToProto() (*zond.BuilderBidDeneb, error) {
-	header, err := bb.Header.ToProto()
-	if err != nil {
-		return nil, err
-	}
-	var bundle *v1.BlindedBlobsBundle
-	if bb.BlindedBlobsBundle != nil {
-		bundle, err = bb.BlindedBlobsBundle.ToProto()
-		if err != nil {
-			return nil, err
-		}
-	}
-	return &zond.BuilderBidDeneb{
-		Header:             header,
-		BlindedBlobsBundle: bundle,
-		Value:              bytesutil.SafeCopyBytes(bb.Value.SSZBytes()),
-		Pubkey:             bytesutil.SafeCopyBytes(bb.Pubkey),
-	}, nil
-}
-
-// BuilderBidDeneb is a field of ExecHeaderResponseDeneb.
-type BuilderBidDeneb struct {
-	Header             *ExecutionPayloadHeaderDeneb `json:"header"`
-	BlindedBlobsBundle *BlindedBlobsBundle          `json:"blinded_blobs_bundle"`
-	Value              Uint256                      `json:"value"`
-	Pubkey             hexutil.Bytes                `json:"pubkey"`
-}
-
-// BlindedBlobsBundle is a field of BuilderBidDeneb and represents the blinded blobs of the associated header.
-type BlindedBlobsBundle struct {
-	KzgCommitments []hexutil.Bytes `json:"commitments"`
-	Proofs         []hexutil.Bytes `json:"proofs"`
-	BlobRoots      []hexutil.Bytes `json:"blob_roots"`
-}
-
-// ToProto creates a BlindedBlobsBundle Proto from BlindedBlobsBundle.
-func (r *BlindedBlobsBundle) ToProto() (*v1.BlindedBlobsBundle, error) {
-	kzg := make([][]byte, len(r.KzgCommitments))
-	for i := range kzg {
-		kzg[i] = bytesutil.SafeCopyBytes(r.KzgCommitments[i])
-	}
-
-	proofs := make([][]byte, len(r.Proofs))
-	for i := range proofs {
-		proofs[i] = bytesutil.SafeCopyBytes(r.Proofs[i])
-	}
-
-	blobRoots := make([][]byte, len(r.BlobRoots))
-	for i := range blobRoots {
-		blobRoots[i] = bytesutil.SafeCopyBytes(r.BlobRoots[i])
-	}
-
-	return &v1.BlindedBlobsBundle{
-		KzgCommitments: kzg,
-		Proofs:         proofs,
-		BlobRoots:      blobRoots,
-	}, nil
-}
-
-// ExecutionPayloadHeaderDeneb a field part of the BuilderBidDeneb.
-type ExecutionPayloadHeaderDeneb struct {
-	ParentHash       hexutil.Bytes `json:"parent_hash"`
-	FeeRecipient     hexutil.Bytes `json:"fee_recipient"`
-	StateRoot        hexutil.Bytes `json:"state_root"`
-	ReceiptsRoot     hexutil.Bytes `json:"receipts_root"`
-	LogsBloom        hexutil.Bytes `json:"logs_bloom"`
-	PrevRandao       hexutil.Bytes `json:"prev_randao"`
-	BlockNumber      Uint64String  `json:"block_number"`
-	GasLimit         Uint64String  `json:"gas_limit"`
-	GasUsed          Uint64String  `json:"gas_used"`
-	Timestamp        Uint64String  `json:"timestamp"`
-	ExtraData        hexutil.Bytes `json:"extra_data"`
-	BaseFeePerGas    Uint256       `json:"base_fee_per_gas"`
-	BlockHash        hexutil.Bytes `json:"block_hash"`
-	TransactionsRoot hexutil.Bytes `json:"transactions_root"`
-	WithdrawalsRoot  hexutil.Bytes `json:"withdrawals_root"`
-	BlobGasUsed      Uint64String  `json:"blob_gas_used"`   // new in deneb
-	ExcessBlobGas    Uint64String  `json:"excess_blob_gas"` // new in deneb
-	*v1.ExecutionPayloadHeaderDeneb
-}
-
-// MarshalJSON returns a JSON byte array representing the ExecutionPayloadHeaderDeneb struct.
-func (h *ExecutionPayloadHeaderDeneb) MarshalJSON() ([]byte, error) {
-	type MarshalCaller ExecutionPayloadHeaderDeneb
-	baseFeePerGas, err := sszBytesToUint256(h.ExecutionPayloadHeaderDeneb.BaseFeePerGas)
-	if err != nil {
-		return []byte{}, errors.Wrapf(err, "invalid BaseFeePerGas")
-	}
-	return json.Marshal(&MarshalCaller{
-		ParentHash:       h.ExecutionPayloadHeaderDeneb.ParentHash,
-		FeeRecipient:     h.ExecutionPayloadHeaderDeneb.FeeRecipient,
-		StateRoot:        h.ExecutionPayloadHeaderDeneb.StateRoot,
-		ReceiptsRoot:     h.ExecutionPayloadHeaderDeneb.ReceiptsRoot,
-		LogsBloom:        h.ExecutionPayloadHeaderDeneb.LogsBloom,
-		PrevRandao:       h.ExecutionPayloadHeaderDeneb.PrevRandao,
-		BlockNumber:      Uint64String(h.ExecutionPayloadHeaderDeneb.BlockNumber),
-		GasLimit:         Uint64String(h.ExecutionPayloadHeaderDeneb.GasLimit),
-		GasUsed:          Uint64String(h.ExecutionPayloadHeaderDeneb.GasUsed),
-		Timestamp:        Uint64String(h.ExecutionPayloadHeaderDeneb.Timestamp),
-		ExtraData:        h.ExecutionPayloadHeaderDeneb.ExtraData,
-		BaseFeePerGas:    baseFeePerGas,
-		BlockHash:        h.ExecutionPayloadHeaderDeneb.BlockHash,
-		TransactionsRoot: h.ExecutionPayloadHeaderDeneb.TransactionsRoot,
-		WithdrawalsRoot:  h.ExecutionPayloadHeaderDeneb.WithdrawalsRoot,
-		BlobGasUsed:      Uint64String(h.ExecutionPayloadHeaderDeneb.BlobGasUsed),
-		ExcessBlobGas:    Uint64String(h.ExecutionPayloadHeaderDeneb.ExcessBlobGas),
-	})
-}
-
-// UnmarshalJSON takes in a byte array and unmarshals the value into ExecutionPayloadHeaderDeneb.
-func (h *ExecutionPayloadHeaderDeneb) UnmarshalJSON(b []byte) error {
-	type UnmarshalCaller ExecutionPayloadHeaderDeneb
-	uc := &UnmarshalCaller{}
-	if err := json.Unmarshal(b, uc); err != nil {
-		return err
-	}
-	ep := ExecutionPayloadHeaderDeneb(*uc)
-	*h = ep
-	var err error
-	h.ExecutionPayloadHeaderDeneb, err = h.ToProto()
-	return err
-}
-
-// ToProto returns a ExecutionPayloadHeaderDeneb Proto object.
-func (h *ExecutionPayloadHeaderDeneb) ToProto() (*v1.ExecutionPayloadHeaderDeneb, error) {
-	return &v1.ExecutionPayloadHeaderDeneb{
-		ParentHash:       bytesutil.SafeCopyBytes(h.ParentHash),
-		FeeRecipient:     bytesutil.SafeCopyBytes(h.FeeRecipient),
-		StateRoot:        bytesutil.SafeCopyBytes(h.StateRoot),
-		ReceiptsRoot:     bytesutil.SafeCopyBytes(h.ReceiptsRoot),
-		LogsBloom:        bytesutil.SafeCopyBytes(h.LogsBloom),
-		PrevRandao:       bytesutil.SafeCopyBytes(h.PrevRandao),
-		BlockNumber:      uint64(h.BlockNumber),
-		GasLimit:         uint64(h.GasLimit),
-		GasUsed:          uint64(h.GasUsed),
-		Timestamp:        uint64(h.Timestamp),
-		ExtraData:        bytesutil.SafeCopyBytes(h.ExtraData),
-		BaseFeePerGas:    bytesutil.SafeCopyBytes(h.BaseFeePerGas.SSZBytes()),
-		BlockHash:        bytesutil.SafeCopyBytes(h.BlockHash),
-		TransactionsRoot: bytesutil.SafeCopyBytes(h.TransactionsRoot),
-		WithdrawalsRoot:  bytesutil.SafeCopyBytes(h.WithdrawalsRoot),
-		BlobGasUsed:      uint64(h.BlobGasUsed),
-		ExcessBlobGas:    uint64(h.ExcessBlobGas),
-	}, nil
-}
-
-// ExecPayloadResponseDeneb the response to the build API /eth/v1/builder/blinded_blocks that includes the version, execution payload object , and blobs bundle object.
-type ExecPayloadResponseDeneb struct {
-	Version string                               `json:"version"`
-	Data    *ExecutionPayloadDenebAndBlobsBundle `json:"data"`
-}
-
-// ExecutionPayloadDenebAndBlobsBundle the main field used in ExecPayloadResponseDeneb.
-type ExecutionPayloadDenebAndBlobsBundle struct {
-	ExecutionPayload *ExecutionPayloadDeneb `json:"execution_payload"`
-	BlobsBundle      *BlobsBundle           `json:"blobs_bundle"`
-}
-
-// ExecutionPayloadDeneb is a field used in ExecutionPayloadDenebAndBlobsBundle.
-type ExecutionPayloadDeneb struct {
-	ParentHash    hexutil.Bytes   `json:"parent_hash"`
-	FeeRecipient  hexutil.Bytes   `json:"fee_recipient"`
-	StateRoot     hexutil.Bytes   `json:"state_root"`
-	ReceiptsRoot  hexutil.Bytes   `json:"receipts_root"`
-	LogsBloom     hexutil.Bytes   `json:"logs_bloom"`
-	PrevRandao    hexutil.Bytes   `json:"prev_randao"`
-	BlockNumber   Uint64String    `json:"block_number"`
-	GasLimit      Uint64String    `json:"gas_limit"`
-	GasUsed       Uint64String    `json:"gas_used"`
-	Timestamp     Uint64String    `json:"timestamp"`
-	ExtraData     hexutil.Bytes   `json:"extra_data"`
-	BaseFeePerGas Uint256         `json:"base_fee_per_gas"`
-	BlockHash     hexutil.Bytes   `json:"block_hash"`
-	Transactions  []hexutil.Bytes `json:"transactions"`
-	Withdrawals   []Withdrawal    `json:"withdrawals"`
-	BlobGasUsed   Uint64String    `json:"blob_gas_used"`   // new in deneb
-	ExcessBlobGas Uint64String    `json:"excess_blob_gas"` // new in deneb
-}
-
-// BlobsBundle is a field in ExecutionPayloadDenebAndBlobsBundle.
-type BlobsBundle struct {
-	Commitments []hexutil.Bytes `json:"commitments"`
-	Proofs      []hexutil.Bytes `json:"proofs"`
-	Blobs       []hexutil.Bytes `json:"blobs"`
-}
-
-// ToProto returns a BlobsBundle Proto.
-func (b BlobsBundle) ToProto() (*v1.BlobsBundle, error) {
-	commitments := make([][]byte, len(b.Commitments))
-	for i := range b.Commitments {
-		if len(b.Commitments[i]) != dilithium2.CryptoPublicKeyBytes {
-			return nil, fmt.Errorf("commitment length %d is not %d", len(b.Commitments[i]), dilithium2.CryptoPublicKeyBytes)
-		}
-		commitments[i] = bytesutil.SafeCopyBytes(b.Commitments[i])
-	}
-	proofs := make([][]byte, len(b.Proofs))
-	for i := range b.Proofs {
-		if len(b.Proofs[i]) != dilithium2.CryptoPublicKeyBytes {
-			return nil, fmt.Errorf("proof length %d is not %d", len(b.Proofs[i]), dilithium2.CryptoPublicKeyBytes)
-		}
-		proofs[i] = bytesutil.SafeCopyBytes(b.Proofs[i])
-	}
-	if len(b.Blobs) > fieldparams.MaxBlobsPerBlock {
-		return nil, fmt.Errorf("blobs length %d is more than max %d", len(b.Blobs), fieldparams.MaxBlobsPerBlock)
-	}
-	blobs := make([][]byte, len(b.Blobs))
-	for i := range b.Blobs {
-		if len(b.Blobs[i]) != fieldparams.BlobLength {
-			return nil, fmt.Errorf("blob length %d is not %d", len(b.Blobs[i]), fieldparams.BlobLength)
-		}
-		blobs[i] = bytesutil.SafeCopyBytes(b.Blobs[i])
-	}
-	return &v1.BlobsBundle{
-		KzgCommitments: commitments,
-		Proofs:         proofs,
-		Blobs:          blobs,
-	}, nil
-}
-
-// ToProto returns ExecutionPayloadDeneb Proto and BlobsBundle Proto separately.
-func (r *ExecPayloadResponseDeneb) ToProto() (*v1.ExecutionPayloadDeneb, *v1.BlobsBundle, error) {
-	if r.Data == nil {
-		return nil, nil, errors.New("data field in response is empty")
-	}
-	payload, err := r.Data.ExecutionPayload.ToProto()
-	if err != nil {
-		return nil, nil, err
-	}
-	bundle, err := r.Data.BlobsBundle.ToProto()
-	if err != nil {
-		return nil, nil, err
-	}
-	return payload, bundle, nil
-}
-
-// ToProto returns the ExecutionPayloadDeneb Proto.
-func (p *ExecutionPayloadDeneb) ToProto() (*v1.ExecutionPayloadDeneb, error) {
-	txs := make([][]byte, len(p.Transactions))
-	for i := range p.Transactions {
-		txs[i] = bytesutil.SafeCopyBytes(p.Transactions[i])
-	}
-	withdrawals := make([]*v1.Withdrawal, len(p.Withdrawals))
-	for i, w := range p.Withdrawals {
-		withdrawals[i] = &v1.Withdrawal{
-			Index:          w.Index.Uint64(),
-			ValidatorIndex: types.ValidatorIndex(w.ValidatorIndex.Uint64()),
-			Address:        bytesutil.SafeCopyBytes(w.Address),
-			Amount:         w.Amount.Uint64(),
-		}
-	}
-	return &v1.ExecutionPayloadDeneb{
-		ParentHash:    bytesutil.SafeCopyBytes(p.ParentHash),
-		FeeRecipient:  bytesutil.SafeCopyBytes(p.FeeRecipient),
-		StateRoot:     bytesutil.SafeCopyBytes(p.StateRoot),
-		ReceiptsRoot:  bytesutil.SafeCopyBytes(p.ReceiptsRoot),
-		LogsBloom:     bytesutil.SafeCopyBytes(p.LogsBloom),
-		PrevRandao:    bytesutil.SafeCopyBytes(p.PrevRandao),
-		BlockNumber:   uint64(p.BlockNumber),
-		GasLimit:      uint64(p.GasLimit),
-		GasUsed:       uint64(p.GasUsed),
-		Timestamp:     uint64(p.Timestamp),
-		ExtraData:     bytesutil.SafeCopyBytes(p.ExtraData),
-		BaseFeePerGas: bytesutil.SafeCopyBytes(p.BaseFeePerGas.SSZBytes()),
-		BlockHash:     bytesutil.SafeCopyBytes(p.BlockHash),
-		Transactions:  txs,
-		Withdrawals:   withdrawals,
-		BlobGasUsed:   uint64(p.BlobGasUsed),
-		ExcessBlobGas: uint64(p.ExcessBlobGas),
-	}, nil
 }
 
 // ErrorMessage is a JSON representation of the builder API's returned error message.

@@ -8,11 +8,11 @@ go_library(
         "helpers.go",
         "keystore.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/testing/endtoend/helpers",
+    importpath = "github.com/theQRL/qrysm/testing/endtoend/helpers",
     visibility = ["//testing/endtoend:__subpackages__"],
     deps = [
         "//config/params:go_default_library",
-        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
         "//testing/endtoend/params:go_default_library",
         "//testing/endtoend/types:go_default_library",
         "//time:go_default_library",

@@ -2,19 +2,19 @@ package db
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/runtime/tos"
-	validatordb "github.com/theQRL/qrysm/v4/validator/db"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/runtime/tos"
+	validatordb "github.com/theQRL/qrysm/validator/db"
 	"github.com/urfave/cli/v2"
 )
 
 var log = logrus.WithField("prefix", "db")
 
-// Commands for interacting with the Prysm validator database.
+// Commands for interacting with the Qrysm validator database.
 var Commands = &cli.Command{
 	Name:     "db",
 	Category: "db",
-	Usage:    "defines commands for interacting with the Prysm validator database",
+	Usage:    "defines commands for interacting with the Qrysm validator database",
 	Subcommands: []*cli.Command{
 		{
 			Name:        "restore",

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"path/filepath"
 	"time"
 
 	middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -12,16 +11,14 @@ import (
 	grpcopentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	grpcprometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/async/event"
-	"github.com/theQRL/qrysm/v4/io/logs"
-	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	"github.com/theQRL/qrysm/v4/validator/client"
-	iface "github.com/theQRL/qrysm/v4/validator/client/iface"
-	"github.com/theQRL/qrysm/v4/validator/db"
+	"github.com/theQRL/qrysm/async/event"
+	"github.com/theQRL/qrysm/io/logs"
+	"github.com/theQRL/qrysm/monitoring/tracing"
+	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/validator/client"
+	iface "github.com/theQRL/qrysm/validator/client/iface"
+	"github.com/theQRL/qrysm/validator/db"
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -57,11 +54,8 @@ type Config struct {
 // Server defining a gRPC server for the remote signer API.
 type Server struct {
 	logsStreamer              logs.Streamer
-	streamLogsBufferSize      int
-	beaconChainClient         iface.BeaconChainClient
 	beaconNodeClient          iface.NodeClient
 	beaconNodeValidatorClient iface.ValidatorClient
-	beaconNodeHealthClient    zondpb.HealthClient
 	valDB                     db.Database
 	ctx                       context.Context
 	cancel                    context.CancelFunc
@@ -91,8 +85,6 @@ type Server struct {
 	validatorMonitoringPort   int
 	validatorGatewayHost      string
 	validatorGatewayPort      int
-	beaconApiEndpoint         string
-	beaconApiTimeout          time.Duration
 }
 
 // NewServer instantiates a new gRPC server.
@@ -102,7 +94,6 @@ func NewServer(ctx context.Context, cfg *Config) *Server {
 		ctx:                      ctx,
 		cancel:                   cancel,
 		logsStreamer:             logs.NewStreamServer(),
-		streamLogsBufferSize:     1000, // Enough to handle most bursts of logs in the validator client.
 		host:                     cfg.Host,
 		port:                     cfg.Port,
 		withCert:                 cfg.CertFlag,
@@ -167,20 +158,9 @@ func (s *Server) Start() {
 	}
 	s.grpcServer = grpc.NewServer(opts...)
 
-	// Register a gRPC client to the beacon node.
-	if err := s.registerBeaconClient(); err != nil {
-		log.WithError(err).Fatal("Could not register beacon chain gRPC client")
-	}
-
 	// Register services available for the gRPC server.
 	reflection.Register(s.grpcServer)
-	validatorpb.RegisterAuthServer(s.grpcServer, s)
-	validatorpb.RegisterWalletServer(s.grpcServer, s)
-	validatorpb.RegisterHealthServer(s.grpcServer, s)
-	validatorpb.RegisterBeaconServer(s.grpcServer, s)
-	validatorpb.RegisterAccountsServer(s.grpcServer, s)
 	zondpbservice.RegisterKeyManagementServer(s.grpcServer, s)
-	validatorpb.RegisterSlashingProtectionServer(s.grpcServer, s)
 
 	go func() {
 		if s.listener != nil {
@@ -190,17 +170,6 @@ func (s *Server) Start() {
 		}
 	}()
 	log.WithField("address", address).Info("gRPC server listening on address")
-	if s.walletDir != "" {
-		token, err := s.initializeAuthToken(s.walletDir)
-		if err != nil {
-			log.WithError(err).Error("Could not initialize web auth token")
-			return
-		}
-		validatorWebAddr := fmt.Sprintf("%s:%d", s.validatorGatewayHost, s.validatorGatewayPort)
-		authTokenPath := filepath.Join(s.walletDir, authTokenFileName)
-		logValidatorWebAuth(validatorWebAddr, token, authTokenPath)
-		go s.refreshAuthTokenFromFileChanges(s.ctx, authTokenPath)
-	}
 }
 
 // Stop the gRPC server.

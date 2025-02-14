@@ -9,14 +9,14 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/network/forks"
-	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/network/forks"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmTime "github.com/theQRL/qrysm/time"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
-// ENR key used for Ethereum consensus-related fork data.
+// ENR key used for Zond consensus-related fork data.
 var eth2ENRKey = params.BeaconNetworkConfig().ETH2Key
 
 // ForkDigest returns the current fork digest of
@@ -76,7 +76,7 @@ func (s *Service) compareForkENR(record *enr.Record) error {
 	return nil
 }
 
-// Adds a fork entry as an ENR record under the Ethereum consensus EnrKey for
+// Adds a fork entry as an ENR record under the Zond consensus EnrKey for
 // the local node. The fork entry is an ssz-encoded enrForkID type
 // which takes into account the current fork version from the current
 // epoch to create a fork digest, the next fork version,
@@ -92,7 +92,7 @@ func addForkEntry(
 	}
 	currentSlot := slots.Since(genesisTime)
 	currentEpoch := slots.ToEpoch(currentSlot)
-	if prysmTime.Now().Before(genesisTime) {
+	if qrysmTime.Now().Before(genesisTime) {
 		currentEpoch = 0
 	}
 	nextForkVersion, nextForkEpoch, err := forks.NextForkData(currentEpoch)

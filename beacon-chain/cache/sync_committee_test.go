@@ -3,16 +3,16 @@ package cache_test
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestSyncCommitteeCache_CanUpdateAndRetrieve(t *testing.T) {
 	numValidators := 101
-	deterministicState, _ := util.DeterministicGenesisStateAltair(t, uint64(numValidators))
+	deterministicState, _ := util.DeterministicGenesisStateCapella(t, uint64(numValidators))
 	pubKeys := make([][]byte, deterministicState.NumValidators())
 	for i, val := range deterministicState.Validators() {
 		pubKeys[i] = val.PublicKey
@@ -158,7 +158,7 @@ func TestSyncCommitteeCache_CanUpdateAndRetrieve(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s, _ := util.DeterministicGenesisStateAltair(t, uint64(numValidators))
+			s, _ := util.DeterministicGenesisStateCapella(t, uint64(numValidators))
 			require.NoError(t, s.SetCurrentSyncCommittee(tt.currentSyncCommittee))
 			require.NoError(t, s.SetNextSyncCommittee(tt.nextSyncCommittee))
 			c := cache.NewSyncCommittee()
@@ -186,7 +186,7 @@ func TestSyncCommitteeCache_RootDoesNotExist(t *testing.T) {
 
 func TestSyncCommitteeCache_CanRotate(t *testing.T) {
 	c := cache.NewSyncCommittee()
-	s, _ := util.DeterministicGenesisStateAltair(t, 64)
+	s, _ := util.DeterministicGenesisStateCapella(t, 64)
 	require.NoError(t, s.SetCurrentSyncCommittee(util.ConvertToCommittee([][]byte{{1}})))
 	require.NoError(t, c.UpdatePositionsInCommittee([32]byte{'a'}, s))
 	require.NoError(t, s.SetCurrentSyncCommittee(util.ConvertToCommittee([][]byte{{2}})))

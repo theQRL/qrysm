@@ -2,13 +2,13 @@ package p2p
 
 import (
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/math"
-	"github.com/theQRL/qrysm/v4/network/forks"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/math"
+	"github.com/theQRL/qrysm/network/forks"
 )
 
 // MsgID is a content addressable ID function.
@@ -47,18 +47,8 @@ func MsgID(genesisValidatorsRoot []byte, pmsg *pubsubpb.Message) string {
 		copy(msg, "invalid")
 		return string(msg)
 	}
-	if fEpoch >= params.BeaconConfig().AltairForkEpoch {
-		return postAltairMsgID(pmsg, fEpoch)
-	}
-	decodedData, err := encoder.DecodeSnappy(pmsg.Data, params.BeaconNetworkConfig().GossipMaxSize)
-	if err != nil {
-		combinedData := append(params.BeaconNetworkConfig().MessageDomainInvalidSnappy[:], pmsg.Data...)
-		h := hash.Hash(combinedData)
-		return string(h[:20])
-	}
-	combinedData := append(params.BeaconNetworkConfig().MessageDomainValidSnappy[:], decodedData...)
-	h := hash.Hash(combinedData)
-	return string(h[:20])
+
+	return postAltairMsgID(pmsg, fEpoch)
 }
 
 // Spec:
@@ -77,11 +67,7 @@ func postAltairMsgID(pmsg *pubsubpb.Message, fEpoch primitives.Epoch) string {
 	topicLen := len(topic)
 	topicLenBytes := bytesutil.Uint64ToBytesLittleEndian(uint64(topicLen)) // topicLen cannot be negative
 
-	// beyond Bellatrix epoch, allow 10 Mib gossip data size
 	gossipPubSubSize := params.BeaconNetworkConfig().GossipMaxSize
-	if fEpoch >= params.BeaconConfig().BellatrixForkEpoch {
-		gossipPubSubSize = params.BeaconNetworkConfig().GossipMaxSizeBellatrix
-	}
 
 	decodedData, err := encoder.DecodeSnappy(pmsg.Data, gossipPubSubSize)
 	if err != nil {

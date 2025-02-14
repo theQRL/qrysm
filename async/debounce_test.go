@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/async"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/async"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestDebounce_NoEvents(t *testing.T) {

@@ -14,11 +14,10 @@ import (
 	"github.com/theQRL/go-zond/p2p/discover"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	"github.com/theQRL/qrysm/v4/config/params"
-	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	ecdsaqrysm "github.com/theQRL/qrysm/crypto/ecdsa"
+	"github.com/theQRL/qrysm/runtime/version"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 // Listener defines the discovery V5 network interface that is used
@@ -54,36 +53,26 @@ func (s *Service) RefreshENR() {
 	}
 	// Compare current epoch with our fork epochs
 	currEpoch := slots.ToEpoch(slots.CurrentSlot(uint64(s.genesisTime.Unix())))
-	altairForkEpoch := params.BeaconConfig().AltairForkEpoch
-	switch {
-	// Altair Behaviour
-	case currEpoch >= altairForkEpoch:
-		// Retrieve sync subnets from application level
-		// cache.
-		bitS := bitfield.Bitvector4{byte(0x00)}
-		committees = cache.SyncSubnetIDs.GetAllSubnets(currEpoch)
-		for _, idx := range committees {
-			bitS.SetBitAt(idx, true)
-		}
-		currentBitS, err := syncBitvector(s.dv5Listener.Self().Record())
-		if err != nil {
-			log.WithError(err).Error("Could not retrieve sync bitfield")
-			return
-		}
-		if bytes.Equal(bitV, currentBitV) && bytes.Equal(bitS, currentBitS) &&
-			s.Metadata().Version() == version.Altair {
-			// return early if bitfields haven't changed
-			return
-		}
-		s.updateSubnetRecordWithMetadataV2(bitV, bitS)
-	default:
-		// Phase 0 behaviour.
-		if bytes.Equal(bitV, currentBitV) {
-			// return early if bitfield hasn't changed
-			return
-		}
-		s.updateSubnetRecordWithMetadata(bitV)
+
+	// Retrieve sync subnets from application level
+	// cache.
+	bitS := bitfield.Bitvector4{byte(0x00)}
+	committees = cache.SyncSubnetIDs.GetAllSubnets(currEpoch)
+	for _, idx := range committees {
+		bitS.SetBitAt(idx, true)
 	}
+	currentBitS, err := syncBitvector(s.dv5Listener.Self().Record())
+	if err != nil {
+		log.WithError(err).Error("Could not retrieve sync bitfield")
+		return
+	}
+	if bytes.Equal(bitV, currentBitV) && bytes.Equal(bitS, currentBitS) &&
+		s.Metadata().Version() == version.Altair {
+		// return early if bitfields haven't changed
+		return
+	}
+	s.updateSubnetRecordWithMetadataV2(bitV, bitS)
+
 	// ping all peers to inform them of new metadata
 	s.pingPeers()
 }
@@ -417,7 +406,7 @@ func convertToAddrInfo(node *enode.Node) (*peer.AddrInfo, ma.Multiaddr, error) {
 
 func convertToSingleMultiAddr(node *enode.Node) (ma.Multiaddr, error) {
 	pubkey := node.Pubkey()
-	assertedKey, err := ecdsaprysm.ConvertToInterfacePubkey(pubkey)
+	assertedKey, err := ecdsaqrysm.ConvertToInterfacePubkey(pubkey)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get pubkey")
 	}
@@ -430,7 +419,7 @@ func convertToSingleMultiAddr(node *enode.Node) (ma.Multiaddr, error) {
 
 func convertToUdpMultiAddr(node *enode.Node) ([]ma.Multiaddr, error) {
 	pubkey := node.Pubkey()
-	assertedKey, err := ecdsaprysm.ConvertToInterfacePubkey(pubkey)
+	assertedKey, err := ecdsaqrysm.ConvertToInterfacePubkey(pubkey)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get pubkey")
 	}

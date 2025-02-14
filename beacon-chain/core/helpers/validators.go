@@ -8,15 +8,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
 
@@ -230,16 +230,6 @@ func ValidatorActivationChurnLimit(activeValidatorCount uint64) uint64 {
 // ValidatorExitChurnLimit returns the maximum number of validators that can be exited in a slot.
 func ValidatorExitChurnLimit(activeValidatorCount uint64) uint64 {
 	return calculateChurnLimit(activeValidatorCount)
-}
-
-// ValidatorActivationChurnLimitDeneb returns the maximum number of validators that can be activated in a slot post Deneb.
-func ValidatorActivationChurnLimitDeneb(activeValidatorCount uint64) uint64 {
-	limit := calculateChurnLimit(activeValidatorCount)
-	// New in Deneb.
-	if limit > params.BeaconConfig().MaxPerEpochActivationChurnLimit {
-		return params.BeaconConfig().MaxPerEpochActivationChurnLimit
-	}
-	return limit
 }
 
 // BeaconProposerIndex returns proposer index of a current slot.

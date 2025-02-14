@@ -3,8 +3,8 @@ package params
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestConfigset_Add(t *testing.T) {
@@ -97,7 +97,7 @@ func compareConfigs(t *testing.T, expected, actual *BeaconChainConfig) {
 	require.DeepEqual(t, expected.MaxEffectiveBalance, actual.MaxEffectiveBalance)
 	require.DeepEqual(t, expected.EjectionBalance, actual.EjectionBalance)
 	require.DeepEqual(t, expected.EffectiveBalanceIncrement, actual.EffectiveBalanceIncrement)
-	require.DeepEqual(t, expected.BLSWithdrawalPrefixByte, actual.BLSWithdrawalPrefixByte)
+	require.DeepEqual(t, expected.DilithiumWithdrawalPrefixByte, actual.DilithiumWithdrawalPrefixByte)
 	require.DeepEqual(t, expected.ZeroHash, actual.ZeroHash)
 	require.DeepEqual(t, expected.GenesisDelay, actual.GenesisDelay)
 	require.DeepEqual(t, expected.MinAttestationInclusionDelay, actual.MinAttestationInclusionDelay)
@@ -147,30 +147,19 @@ func compareConfigs(t *testing.T, expected, actual *BeaconChainConfig) {
 	require.DeepEqual(t, expected.DomainSyncCommitteeSelectionProof, actual.DomainSyncCommitteeSelectionProof)
 	require.DeepEqual(t, expected.DomainContributionAndProof, actual.DomainContributionAndProof)
 	require.DeepEqual(t, expected.GweiPerEth, actual.GweiPerEth)
-	require.DeepEqual(t, expected.BLSSecretKeyLength, actual.BLSSecretKeyLength)
-	require.DeepEqual(t, expected.BLSPubkeyLength, actual.BLSPubkeyLength)
 	require.DeepEqual(t, expected.DefaultBufferSize, actual.DefaultBufferSize)
 	require.DeepEqual(t, expected.ValidatorPrivkeyFileName, actual.ValidatorPrivkeyFileName)
 	require.DeepEqual(t, expected.WithdrawalPrivkeyFileName, actual.WithdrawalPrivkeyFileName)
 	require.DeepEqual(t, expected.RPCSyncCheck, actual.RPCSyncCheck)
-	require.DeepEqual(t, expected.EmptySignature, actual.EmptySignature)
 	require.DeepEqual(t, expected.DefaultPageSize, actual.DefaultPageSize)
 	require.DeepEqual(t, expected.MaxPeersToSync, actual.MaxPeersToSync)
 	require.DeepEqual(t, expected.SlotsPerArchivedPoint, actual.SlotsPerArchivedPoint)
 	require.DeepEqual(t, expected.GenesisCountdownInterval, actual.GenesisCountdownInterval)
-	require.DeepEqual(t, expected.BeaconStateFieldCount, actual.BeaconStateFieldCount)
-	require.DeepEqual(t, expected.BeaconStateAltairFieldCount, actual.BeaconStateAltairFieldCount)
-	require.DeepEqual(t, expected.BeaconStateBellatrixFieldCount, actual.BeaconStateBellatrixFieldCount)
 	require.DeepEqual(t, expected.BeaconStateCapellaFieldCount, actual.BeaconStateCapellaFieldCount)
-	require.DeepEqual(t, expected.BeaconStateDenebFieldCount, actual.BeaconStateDenebFieldCount)
 	require.DeepEqual(t, expected.WeakSubjectivityPeriod, actual.WeakSubjectivityPeriod)
 	require.DeepEqual(t, expected.PruneSlasherStoragePeriod, actual.PruneSlasherStoragePeriod)
 	require.DeepEqual(t, expected.SlashingProtectionPruningEpochs, actual.SlashingProtectionPruningEpochs)
 	require.DeepEqual(t, expected.GenesisForkVersion, actual.GenesisForkVersion)
-	require.DeepEqual(t, expected.AltairForkVersion, actual.AltairForkVersion)
-	require.DeepEqual(t, expected.AltairForkEpoch, actual.AltairForkEpoch)
-	require.DeepEqual(t, expected.BellatrixForkVersion, actual.BellatrixForkVersion)
-	require.DeepEqual(t, expected.BellatrixForkEpoch, actual.BellatrixForkEpoch)
 	require.DeepEqual(t, expected.ForkVersionSchedule, actual.ForkVersionSchedule)
 	require.DeepEqual(t, expected.SafetyDecay, actual.SafetyDecay)
 	require.DeepEqual(t, expected.TimelySourceFlagIndex, actual.TimelySourceFlagIndex)
@@ -188,15 +177,9 @@ func compareConfigs(t *testing.T, expected, actual *BeaconChainConfig) {
 	require.DeepEqual(t, expected.InactivityScoreBias, actual.InactivityScoreBias)
 	require.DeepEqual(t, expected.InactivityScoreRecoveryRate, actual.InactivityScoreRecoveryRate)
 	require.DeepEqual(t, expected.EpochsPerSyncCommitteePeriod, actual.EpochsPerSyncCommitteePeriod)
-	require.DeepEqual(t, expected.InactivityPenaltyQuotientAltair, actual.InactivityPenaltyQuotientAltair)
-	require.DeepEqual(t, expected.MinSlashingPenaltyQuotientAltair, actual.MinSlashingPenaltyQuotientAltair)
-	require.DeepEqual(t, expected.ProportionalSlashingMultiplierAltair, actual.ProportionalSlashingMultiplierAltair)
-	require.DeepEqual(t, expected.MinSlashingPenaltyQuotientBellatrix, actual.MinSlashingPenaltyQuotientBellatrix)
-	require.DeepEqual(t, expected.ProportionalSlashingMultiplierBellatrix, actual.ProportionalSlashingMultiplierBellatrix)
-	require.DeepEqual(t, expected.InactivityPenaltyQuotientBellatrix, actual.InactivityPenaltyQuotientBellatrix)
+	require.DeepEqual(t, expected.MinSlashingPenaltyQuotient, actual.MinSlashingPenaltyQuotient)
+	require.DeepEqual(t, expected.ProportionalSlashingMultiplier, actual.ProportionalSlashingMultiplier)
+	require.DeepEqual(t, expected.InactivityPenaltyQuotient, actual.InactivityPenaltyQuotient)
 	require.DeepEqual(t, expected.MinSyncCommitteeParticipants, actual.MinSyncCommitteeParticipants)
-	require.DeepEqual(t, expected.TerminalBlockHash, actual.TerminalBlockHash)
-	require.DeepEqual(t, expected.TerminalBlockHashActivationEpoch, actual.TerminalBlockHashActivationEpoch)
-	require.DeepEqual(t, expected.TerminalTotalDifficulty, actual.TerminalTotalDifficulty)
 	require.DeepEqual(t, expected.DefaultFeeRecipient, actual.DefaultFeeRecipient)
 }

@@ -8,12 +8,12 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/monitoring/progress"
-	"github.com/theQRL/qrysm/v4/validator/db"
-	"github.com/theQRL/qrysm/v4/validator/slashing-protection-history/format"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/monitoring/progress"
+	"github.com/theQRL/qrysm/validator/db"
+	"github.com/theQRL/qrysm/validator/slashing-protection-history/format"
 )
 
 // ExportStandardProtectionJSON extracts all slashing protection data from a validator database
@@ -55,7 +55,7 @@ func ExportStandardProtectionJSON(
 	if err != nil {
 		return nil, errors.Wrap(err, "could not retrieve attested public keys from DB")
 	}
-	dataByPubKey := make(map[[dilithium2.CryptoPublicKeyBytes]byte]*format.ProtectionData)
+	dataByPubKey := make(map[[field_params.DilithiumPubkeyLength]byte]*format.ProtectionData)
 
 	// Extract the signed proposals by public key.
 	bar := progress.InitializeProgressBar(
@@ -131,7 +131,7 @@ func ExportStandardProtectionJSON(
 	return interchangeJSON, nil
 }
 
-func signedAttestationsByPubKey(ctx context.Context, validatorDB db.Database, pubKey [dilithium2.CryptoPublicKeyBytes]byte) ([]*format.SignedAttestation, error) {
+func signedAttestationsByPubKey(ctx context.Context, validatorDB db.Database, pubKey [field_params.DilithiumPubkeyLength]byte) ([]*format.SignedAttestation, error) {
 	// If a key does not have an attestation history in our database, we return nil.
 	// This way, a user will be able to export their slashing protection history
 	// even if one of their keys does not have a history of signed attestations.
@@ -145,12 +145,12 @@ func signedAttestationsByPubKey(ctx context.Context, validatorDB db.Database, pu
 	signedAttestations := make([]*format.SignedAttestation, 0)
 	for i := 0; i < len(history); i++ {
 		att := history[i]
-		// Special edge case due to a bug in Prysm's old slashing protection schema. The bug
+		// Special edge case due to a bug in Qrysm's old slashing protection schema. The bug
 		// manifests itself as the first entry in attester slashing protection history
 		// having a target epoch greater than the next entry in the list. If this manifests,
 		// we skip it to protect users. This check is the best trade-off we can make at
 		// the moment without creating any false positive slashable attestation exports.
-		// More information on the bug can found in https://github.com/theQRL/qrysm/issues/8893.
+		// More information on the bug can found in https://github.com/prysmaticlabs/prysm/issues/8893.
 		if i == 0 && len(history) > 1 {
 			nextEntryTargetEpoch := history[1].Target
 			if att.Target > nextEntryTargetEpoch && att.Source == 0 {
@@ -173,7 +173,7 @@ func signedAttestationsByPubKey(ctx context.Context, validatorDB db.Database, pu
 	return signedAttestations, nil
 }
 
-func signedBlocksByPubKey(ctx context.Context, validatorDB db.Database, pubKey [dilithium2.CryptoPublicKeyBytes]byte) ([]*format.SignedBlock, error) {
+func signedBlocksByPubKey(ctx context.Context, validatorDB db.Database, pubKey [field_params.DilithiumPubkeyLength]byte) ([]*format.SignedBlock, error) {
 	// If a key does not have a lowest or highest signed proposal history
 	// in our database, we return nil. This way, a user will be able to export their
 	// slashing protection history even if one of their keys does not have a history

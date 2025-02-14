@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
-	v2 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	v1alpha1 "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 func TestStore_SavePowchainData(t *testing.T) {
 	type args struct {
-		data *v2.ETH1ChainData
+		data *v1alpha1.ETH1ChainData
 	}
 	tests := []struct {
 		name    string

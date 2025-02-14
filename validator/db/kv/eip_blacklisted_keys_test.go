@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"testing"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestStore_EIPBlacklistedPublicKeys(t *testing.T) {
 	ctx := context.Background()
 	numValidators := 100
-	publicKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, numValidators)
+	publicKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
 	for i := 0; i < numValidators; i++ {
-		var key [dilithium2.CryptoPublicKeyBytes]byte
+		var key [field_params.DilithiumPubkeyLength]byte
 		copy(key[:], fmt.Sprintf("%d", i))
 		publicKeys[i] = key
 	}
@@ -33,7 +33,7 @@ func TestStore_EIPBlacklistedPublicKeys(t *testing.T) {
 	require.NoError(t, err)
 
 	// Keys are not guaranteed to be ordered, so we create a map for comparisons.
-	want := make(map[[dilithium2.CryptoPublicKeyBytes]byte]bool)
+	want := make(map[[field_params.DilithiumPubkeyLength]byte]bool)
 	for _, pubKey := range publicKeys[:50] {
 		want[pubKey] = true
 	}

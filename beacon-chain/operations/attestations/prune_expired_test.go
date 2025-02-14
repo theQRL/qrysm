@@ -6,14 +6,14 @@ import (
 	"time"
 
 	"github.com/theQRL/go-bitfield"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/async"
-	"github.com/theQRL/qrysm/v4/config/params"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/async"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
+	qrysmTime "github.com/theQRL/qrysm/time"
 )
 
 func TestPruneExpired_Ticker(t *testing.T) {
@@ -31,14 +31,14 @@ func TestPruneExpired_Ticker(t *testing.T) {
 	ad2 := util.HydrateAttestationData(&zondpb.AttestationData{Slot: 1})
 
 	atts := []*zondpb.Attestation{
-		{Data: ad1, AggregationBits: bitfield.Bitlist{0b1000, 0b1}, Signature: make([]byte, dilithium2.CryptoBytes)},
-		{Data: ad2, AggregationBits: bitfield.Bitlist{0b1000, 0b1}, Signature: make([]byte, dilithium2.CryptoBytes)},
+		{Data: ad1, AggregationBits: bitfield.Bitlist{0b1000, 0b1}, Signatures: [][]byte{make([]byte, field_params.DilithiumSignatureLength)}},
+		{Data: ad2, AggregationBits: bitfield.Bitlist{0b1000, 0b1}, Signatures: [][]byte{make([]byte, field_params.DilithiumSignatureLength)}},
 	}
 	require.NoError(t, s.cfg.Pool.SaveUnaggregatedAttestations(atts))
 	require.Equal(t, 2, s.cfg.Pool.UnaggregatedAttestationCount(), "Unexpected number of attestations")
 	atts = []*zondpb.Attestation{
-		{Data: ad1, AggregationBits: bitfield.Bitlist{0b1101, 0b1}, Signature: make([]byte, dilithium2.CryptoBytes)},
-		{Data: ad2, AggregationBits: bitfield.Bitlist{0b1101, 0b1}, Signature: make([]byte, dilithium2.CryptoBytes)},
+		{Data: ad1, AggregationBits: bitfield.Bitlist{0b1101, 0b1}, Signatures: [][]byte{make([]byte, field_params.DilithiumSignatureLength), make([]byte, field_params.DilithiumSignatureLength), make([]byte, field_params.DilithiumSignatureLength)}},
+		{Data: ad2, AggregationBits: bitfield.Bitlist{0b1101, 0b1}, Signatures: [][]byte{make([]byte, field_params.DilithiumSignatureLength), make([]byte, field_params.DilithiumSignatureLength), make([]byte, field_params.DilithiumSignatureLength)}},
 	}
 	require.NoError(t, s.cfg.Pool.SaveAggregatedAttestations(atts))
 	assert.Equal(t, 2, s.cfg.Pool.AggregatedAttestationCount())
@@ -47,7 +47,7 @@ func TestPruneExpired_Ticker(t *testing.T) {
 	}
 
 	// Rewind back one epoch worth of time.
-	s.genesisTime = uint64(prysmTime.Now().Unix()) - uint64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))
+	s.genesisTime = uint64(qrysmTime.Now().Unix()) - uint64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))
 
 	go s.pruneAttsPool()
 
@@ -102,7 +102,7 @@ func TestPruneExpired_PruneExpiredAtts(t *testing.T) {
 	}
 
 	// Rewind back one epoch worth of time.
-	s.genesisTime = uint64(prysmTime.Now().Unix()) - uint64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))
+	s.genesisTime = uint64(qrysmTime.Now().Unix()) - uint64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))
 
 	s.pruneExpiredAtts()
 	// All the attestations on slot 0 should be pruned.
@@ -123,7 +123,7 @@ func TestPruneExpired_Expired(t *testing.T) {
 	require.NoError(t, err)
 
 	// Rewind back one epoch worth of time.
-	s.genesisTime = uint64(prysmTime.Now().Unix()) - uint64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))
+	s.genesisTime = uint64(qrysmTime.Now().Unix()) - uint64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))
 	assert.Equal(t, true, s.expired(0), "Should be expired")
 	assert.Equal(t, false, s.expired(1), "Should not be expired")
 }

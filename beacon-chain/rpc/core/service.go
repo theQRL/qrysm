@@ -1,13 +1,13 @@
 package core
 
 import (
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	opfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/synccommittee"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
-	"github.com/theQRL/qrysm/v4/beacon-chain/sync"
+	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	opfeed "github.com/theQRL/qrysm/beacon-chain/core/feed/operation"
+	"github.com/theQRL/qrysm/beacon-chain/operations/synccommittee"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
+	"github.com/theQRL/qrysm/beacon-chain/sync"
 )
 
 type Service struct {

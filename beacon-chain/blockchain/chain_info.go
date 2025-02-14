@@ -6,18 +6,18 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	doublylinkedtree "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
-	forkchoicetypes "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	zondpbv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
+	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
+	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
 
@@ -50,13 +50,13 @@ type ForkchoiceFetcher interface {
 	ProposerBoost() [32]byte
 }
 
-// TimeFetcher retrieves the Ethereum consensus data that's related to time.
+// TimeFetcher retrieves the Zond consensus data that's related to time.
 type TimeFetcher interface {
 	GenesisTime() time.Time
 	CurrentSlot() primitives.Slot
 }
 
-// GenesisFetcher retrieves the Ethereum consensus data related to its genesis.
+// GenesisFetcher retrieves the Zond consensus data related to its genesis.
 type GenesisFetcher interface {
 	GenesisValidatorsRoot() [32]byte
 }
@@ -72,14 +72,14 @@ type HeadFetcher interface {
 	HeadValidatorsIndices(ctx context.Context, epoch primitives.Epoch) ([]primitives.ValidatorIndex, error)
 	HeadGenesisValidatorsRoot() [32]byte
 	HeadETH1Data() *zondpb.Eth1Data
-	HeadPublicKeyToValidatorIndex(pubKey [dilithium2.CryptoPublicKeyBytes]byte) (primitives.ValidatorIndex, bool)
-	HeadValidatorIndexToPublicKey(ctx context.Context, index primitives.ValidatorIndex) ([dilithium2.CryptoPublicKeyBytes]byte, error)
+	HeadPublicKeyToValidatorIndex(pubKey [field_params.DilithiumPubkeyLength]byte) (primitives.ValidatorIndex, bool)
+	HeadValidatorIndexToPublicKey(ctx context.Context, index primitives.ValidatorIndex) ([field_params.DilithiumPubkeyLength]byte, error)
 	ChainHeads() ([][32]byte, []primitives.Slot)
 	HeadSyncCommitteeFetcher
 	HeadDomainFetcher
 }
 
-// ForkFetcher retrieves the current fork information of the Ethereum beacon chain.
+// ForkFetcher retrieves the current fork information of the Zond beacon chain.
 type ForkFetcher interface {
 	CurrentFork() *zondpb.Fork
 	GenesisFetcher
@@ -310,7 +310,7 @@ func (s *Service) IsCanonical(ctx context.Context, blockRoot [32]byte) (bool, er
 }
 
 // HeadPublicKeyToValidatorIndex returns the validator index of the `pubkey` in current head state.
-func (s *Service) HeadPublicKeyToValidatorIndex(pubKey [dilithium2.CryptoPublicKeyBytes]byte) (primitives.ValidatorIndex, bool) {
+func (s *Service) HeadPublicKeyToValidatorIndex(pubKey [field_params.DilithiumPubkeyLength]byte) (primitives.ValidatorIndex, bool) {
 	s.headLock.RLock()
 	defer s.headLock.RUnlock()
 	if !s.hasHeadState() {
@@ -320,25 +320,27 @@ func (s *Service) HeadPublicKeyToValidatorIndex(pubKey [dilithium2.CryptoPublicK
 }
 
 // HeadValidatorIndexToPublicKey returns the pubkey of the validator `index`  in current head state.
-func (s *Service) HeadValidatorIndexToPublicKey(_ context.Context, index primitives.ValidatorIndex) ([dilithium2.CryptoPublicKeyBytes]byte, error) {
+func (s *Service) HeadValidatorIndexToPublicKey(_ context.Context, index primitives.ValidatorIndex) ([field_params.DilithiumPubkeyLength]byte, error) {
 	s.headLock.RLock()
 	defer s.headLock.RUnlock()
 	if !s.hasHeadState() {
-		return [dilithium2.CryptoPublicKeyBytes]byte{}, nil
+		return [field_params.DilithiumPubkeyLength]byte{}, nil
 	}
 	v, err := s.headValidatorAtIndex(index)
 	if err != nil {
-		return [dilithium2.CryptoPublicKeyBytes]byte{}, err
+		return [field_params.DilithiumPubkeyLength]byte{}, err
 	}
 	return v.PublicKey(), nil
 }
 
 // IsOptimistic returns true if the current head is optimistic.
 func (s *Service) IsOptimistic(_ context.Context) (bool, error) {
-	if slots.ToEpoch(s.CurrentSlot()) < params.BeaconConfig().BellatrixForkEpoch {
+	s.headLock.RLock()
+	if s.head == nil {
+		s.headLock.RUnlock()
 		return false, nil
 	}
-	s.headLock.RLock()
+
 	headRoot := s.head.root
 	headSlot := s.head.slot
 	headOptimistic := s.head.optimistic

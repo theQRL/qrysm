@@ -4,9 +4,10 @@ go_library(
     name = "go_default_library",
     testonly = True,
     srcs = ["mock.go"],
-    importpath = "github.com/theQRL/qrysm/v4/contracts/deposit/mock",
+    importpath = "github.com/theQRL/qrysm/contracts/deposit/mock",
     visibility = ["//visibility:public"],
     deps = [
+        "//config/fieldparams:go_default_library",
         "//contracts/deposit:go_default_library",
         "@com_github_theqrl_go_qrllib//dilithium:go_default_library",
         "@com_github_theqrl_go_zond//accounts/abi:go_default_library",
@@ -15,6 +16,6 @@ go_library(
         "@com_github_theqrl_go_zond//common:go_default_library",
         "@com_github_theqrl_go_zond//core:go_default_library",
         "@com_github_theqrl_go_zond//core/types:go_default_library",
-        "@com_github_theqrl_go_zond//pqcrypto:go_default_library",
+        "@com_github_theqrl_go_zond//crypto/pqcrypto:go_default_library",
     ],
 )

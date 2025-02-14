@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/node"
-	"github.com/theQRL/qrysm/v4/beacon-chain/sync/checkpoint"
+	"github.com/theQRL/qrysm/beacon-chain/node"
+	"github.com/theQRL/qrysm/beacon-chain/sync/checkpoint"
 	"github.com/urfave/cli/v2"
 )
 

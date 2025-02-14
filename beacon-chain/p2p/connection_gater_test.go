@@ -9,14 +9,14 @@ import (
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/scorers"
-	mockp2p "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
-	zondpb "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/peerdata"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
+	mockp2p "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	leakybucket "github.com/theQRL/qrysm/container/leaky-bucket"
+	zondpb "github.com/theQRL/qrysm/proto/zond/v1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestPeer_AtMaxLimit(t *testing.T) {

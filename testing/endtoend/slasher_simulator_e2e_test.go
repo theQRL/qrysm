@@ -7,18 +7,18 @@ import (
 	"testing"
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	dbtest "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	mockslashings "github.com/theQRL/qrysm/v4/beacon-chain/operations/slashings/mock"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	mockstategen "github.com/theQRL/qrysm/v4/beacon-chain/state/stategen/mock"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	slashersimulator "github.com/theQRL/qrysm/v4/testing/slasher/simulator"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	dbtest "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	mockslashings "github.com/theQRL/qrysm/beacon-chain/operations/slashings/mock"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	mockstategen "github.com/theQRL/qrysm/beacon-chain/state/stategen/mock"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
+	slashersimulator "github.com/theQRL/qrysm/testing/slasher/simulator"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 type mockSyncChecker struct{}
@@ -65,15 +65,15 @@ func TestEndToEnd_SlasherSimulator(t *testing.T) {
 	}
 
 	slasherDB := dbtest.SetupSlasherDB(t)
-	beaconState, err := util.NewBeaconState()
+	beaconState, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 
 	// We setup validators in the beacon state along with their
 	// private keys used to generate valid signatures in generated objects.
 	validators := make([]*zondpb.Validator, simulatorParams.NumValidators)
-	privKeys := make(map[primitives.ValidatorIndex]bls.SecretKey)
+	privKeys := make(map[primitives.ValidatorIndex]dilithium.DilithiumKey)
 	for valIdx := range validators {
-		privKey, err := bls.RandKey()
+		privKey, err := dilithium.RandKey()
 		require.NoError(t, err)
 		privKeys[primitives.ValidatorIndex(valIdx)] = privKey
 		validators[valIdx] = &zondpb.Validator{

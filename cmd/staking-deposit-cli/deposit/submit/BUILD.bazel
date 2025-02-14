@@ -6,7 +6,7 @@ go_library(
         "cmd.go",
         "deposit.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/deposit/submit",
+    importpath = "github.com/theQRL/qrysm/cmd/staking-deposit-cli/deposit/submit",
     visibility = ["//visibility:public"],
     deps = [
         "//cmd:go_default_library",
@@ -31,5 +31,5 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = ["deposit_test.go"],
+    srcs = [],
 )

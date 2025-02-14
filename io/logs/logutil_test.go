@@ -3,7 +3,7 @@ package logs
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 var urltests = []struct {

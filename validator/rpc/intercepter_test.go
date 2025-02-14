@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/testing/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -66,4 +66,14 @@ func TestServer_JWTInterceptor_InvalidSigningType(t *testing.T) {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.RegisteredClaims{})
 	_, err := ss.validateJWT(token)
 	require.ErrorContains(t, "unexpected JWT signing method", err)
+}
+
+func createTokenString(jwtKey []byte) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{})
+	// Sign and get the complete encoded token as a string using the secret
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		return "", err
+	}
+	return tokenString, nil
 }

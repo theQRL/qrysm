@@ -9,11 +9,11 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
 )
 
 const submitSignedContributionAndProofTestEndpoint = "/zond/v1/validator/contribution_and_proofs"
@@ -31,7 +31,7 @@ func TestSubmitSignedContributionAndProof_Valid(t *testing.T) {
 					BeaconBlockRoot:   hexutil.Encode([]byte{3}),
 					SubcommitteeIndex: "4",
 					AggregationBits:   hexutil.Encode([]byte{5}),
-					Signature:         hexutil.Encode([]byte{6}),
+					Signatures:        []string{hexutil.Encode([]byte{6})},
 				},
 				SelectionProof: hexutil.Encode([]byte{7}),
 			},
@@ -64,7 +64,7 @@ func TestSubmitSignedContributionAndProof_Valid(t *testing.T) {
 				BlockRoot:         []byte{3},
 				SubcommitteeIndex: 4,
 				AggregationBits:   []byte{5},
-				Signature:         []byte{6},
+				Signatures:        [][]byte{{6}},
 			},
 			SelectionProof: []byte{7},
 		},

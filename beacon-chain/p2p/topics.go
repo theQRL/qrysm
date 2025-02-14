@@ -28,8 +28,6 @@ const (
 	GossipContributionAndProofMessage = "sync_committee_contribution_and_proof"
 	// GossipDilithiumToExecutionChangeMessage is the name for the dilithium to execution change message type.
 	GossipDilithiumToExecutionChangeMessage = "dilithium_to_execution_change"
-	// GossipBlobSidecarMessage is the name for the blob sidecar message type.
-	GossipBlobSidecarMessage = "blob_sidecar"
 	// Topic Formats
 	//
 	// AttestationSubnetTopicFormat is the topic format for the attestation subnet.
@@ -50,6 +48,4 @@ const (
 	SyncContributionAndProofSubnetTopicFormat = GossipProtocolAndDigest + GossipContributionAndProofMessage
 	// DilithiumToExecutionChangeSubnetTopicFormat is the topic format for the dilithium to execution change subnet.
 	DilithiumToExecutionChangeSubnetTopicFormat = GossipProtocolAndDigest + GossipDilithiumToExecutionChangeMessage
-	// BlobSubnetTopicFormat is the topic format for the blob subnet.
-	BlobSubnetTopicFormat = GossipProtocolAndDigest + GossipBlobSidecarMessage + "_%d"
 )

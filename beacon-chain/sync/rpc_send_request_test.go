@@ -9,25 +9,24 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/network"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	p2ptest "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	p2pTypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	p2ptest "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	p2pTypes "github.com/theQRL/qrysm/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestSendRequest_SendBeaconBlocksByRangeRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	pcl := fmt.Sprintf("%s/ssz_snappy", p2p.RPCBlocksByRangeTopicV1)
+	pcl := fmt.Sprintf("%s/ssz_snappy", p2p.RPCBlocksByRangeTopicV2)
 
 	t.Run("stream error", func(t *testing.T) {
 		p1 := p2ptest.NewTestP2P(t)
@@ -40,13 +39,13 @@ func TestSendRequest_SendBeaconBlocksByRangeRequest(t *testing.T) {
 		assert.ErrorContains(t, "protocols not supported", err)
 	})
 
-	knownBlocks := make([]*zondpb.SignedBeaconBlock, 0)
-	genesisBlk := util.NewBeaconBlock()
+	knownBlocks := make([]*zondpb.SignedBeaconBlockCapella, 0)
+	genesisBlk := util.NewBeaconBlockCapella()
 	genesisBlkRoot, err := genesisBlk.Block.HashTreeRoot()
 	require.NoError(t, err)
 	parentRoot := genesisBlkRoot
 	for i := 0; i < 255; i++ {
-		blk := util.NewBeaconBlock()
+		blk := util.NewBeaconBlockCapella()
 		blk.Block.Slot = primitives.Slot(i)
 		blk.Block.ParentRoot = parentRoot[:]
 		knownBlocks = append(knownBlocks, blk)
@@ -299,12 +298,12 @@ func TestSendRequest_SendBeaconBlocksByRangeRequest(t *testing.T) {
 func TestSendRequest_SendBeaconBlocksByRootRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	pcl := fmt.Sprintf("%s/ssz_snappy", p2p.RPCBlocksByRootTopicV1)
+	pcl := fmt.Sprintf("%s/ssz_snappy", p2p.RPCBlocksByRootTopicV2)
 
-	knownBlocks := make(map[[32]byte]*zondpb.SignedBeaconBlock)
+	knownBlocks := make(map[[32]byte]*zondpb.SignedBeaconBlockCapella)
 	knownRoots := make([][32]byte, 0)
 	for i := 0; i < 5; i++ {
-		blk := util.NewBeaconBlock()
+		blk := util.NewBeaconBlockCapella()
 		blkRoot, err := blk.Block.HashTreeRoot()
 		require.NoError(t, err)
 		knownRoots = append(knownRoots, blkRoot)
@@ -335,9 +334,9 @@ func TestSendRequest_SendBeaconBlocksByRootRequest(t *testing.T) {
 			}
 			for _, root := range *req {
 				if blk, ok := knownBlocks[root]; ok {
+					wsb, err := blocks.NewSignedBeaconBlock(blk)
+					require.NoError(t, err)
 					if processor != nil {
-						wsb, err := blocks.NewSignedBeaconBlock(blk)
-						require.NoError(t, err)
 						if processorErr := processor(wsb); processorErr != nil {
 							if errors.Is(processorErr, io.EOF) {
 								// Close stream, w/o any errors written.
@@ -351,10 +350,11 @@ func TestSendRequest_SendBeaconBlocksByRootRequest(t *testing.T) {
 							return
 						}
 					}
-					_, err := stream.Write([]byte{0x00})
-					assert.NoError(t, err, "Could not write to stream")
-					_, err = p2pProvider.Encoding().EncodeWithMaxLength(stream, blk)
-					assert.NoError(t, err, "Could not send response back")
+
+					err = WriteBlockChunk(stream, startup.NewClock(time.Now(), [32]byte{}), p2pProvider.Encoding(), wsb)
+					if err != nil && err.Error() != network.ErrReset.Error() {
+						require.NoError(t, err)
+					}
 				}
 			}
 		}
@@ -476,116 +476,4 @@ func TestSendRequest_SendBeaconBlocksByRootRequest(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 3, len(blocks))
 	})
-}
-
-func TestBlobValidatorFromRootReq(t *testing.T) {
-	validRoot := bytesutil.PadTo([]byte("valid"), 32)
-	invalidRoot := bytesutil.PadTo([]byte("invalid"), 32)
-	cases := []struct {
-		name     string
-		ids      []*zondpb.BlobIdentifier
-		response []*zondpb.BlobSidecar
-		err      error
-	}{
-		{
-			name:     "valid",
-			ids:      []*zondpb.BlobIdentifier{{BlockRoot: validRoot}},
-			response: []*zondpb.BlobSidecar{{BlockRoot: validRoot}},
-		},
-		{
-			name:     "invalid",
-			ids:      []*zondpb.BlobIdentifier{{BlockRoot: validRoot}},
-			response: []*zondpb.BlobSidecar{{BlockRoot: invalidRoot}},
-			err:      errUnrequestedRoot,
-		},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			r := p2pTypes.BlobSidecarsByRootReq(c.ids)
-			vf := blobValidatorFromRootReq(&r)
-			for _, sc := range c.response {
-				err := vf(sc)
-				if c.err != nil {
-					require.ErrorIs(t, err, c.err)
-					return
-				}
-				require.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestBlobValidatorFromRangeReq(t *testing.T) {
-	cases := []struct {
-		name     string
-		req      *zondpb.BlobSidecarsByRangeRequest
-		response []*zondpb.BlobSidecar
-		err      error
-	}{
-		{
-			name: "valid - count multi",
-			req: &zondpb.BlobSidecarsByRangeRequest{
-				StartSlot: 10,
-				Count:     10,
-			},
-			response: []*zondpb.BlobSidecar{{Slot: 14}},
-		},
-		{
-			name: "valid - count 1",
-			req: &zondpb.BlobSidecarsByRangeRequest{
-				StartSlot: 10,
-				Count:     1,
-			},
-			response: []*zondpb.BlobSidecar{{Slot: 10}},
-		},
-		{
-			name: "invalid - before",
-			req: &zondpb.BlobSidecarsByRangeRequest{
-				StartSlot: 10,
-				Count:     1,
-			},
-			response: []*zondpb.BlobSidecar{{Slot: 9}},
-			err:      errBlobResponseOutOfBounds,
-		},
-		{
-			name: "invalid - after, count 1",
-			req: &zondpb.BlobSidecarsByRangeRequest{
-				StartSlot: 10,
-				Count:     1,
-			},
-			response: []*zondpb.BlobSidecar{{Slot: 11}},
-			err:      errBlobResponseOutOfBounds,
-		},
-		{
-			name: "invalid - after, multi",
-			req: &zondpb.BlobSidecarsByRangeRequest{
-				StartSlot: 10,
-				Count:     10,
-			},
-			response: []*zondpb.BlobSidecar{{Slot: 23}},
-			err:      errBlobResponseOutOfBounds,
-		},
-		{
-			name: "invalid - after, at boundary, multi",
-			req: &zondpb.BlobSidecarsByRangeRequest{
-				StartSlot: 10,
-				Count:     10,
-			},
-			response: []*zondpb.BlobSidecar{{Slot: 20}},
-			err:      errBlobResponseOutOfBounds,
-		},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			vf := blobValidatorFromRangeReq(c.req)
-			for _, sc := range c.response {
-				err := vf(sc)
-				if c.err != nil {
-					require.ErrorIs(t, err, c.err)
-					return
-				}
-				require.NoError(t, err)
-			}
-		})
-	}
 }

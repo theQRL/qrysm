@@ -2,7 +2,7 @@
 package operation
 
 import (
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 const (
@@ -22,9 +22,6 @@ const (
 
 	// DilithiumToExecutionChangeReceived is sent after a Dilithium to execution change object has been received from gossip or rpc.
 	DilithiumToExecutionChangeReceived
-
-	// BlobSidecarReceived is sent after a blob sidecar is received from gossip or rpc.
-	BlobSidecarReceived = 6
 )
 
 // UnAggregatedAttReceivedData is the data sent with UnaggregatedAttReceived events.
@@ -54,9 +51,4 @@ type SyncCommitteeContributionReceivedData struct {
 // DilithiumToExecutionChangeReceivedData is the data sent with DilithiumToExecutionChangeReceived events.
 type DilithiumToExecutionChangeReceivedData struct {
 	Change *zondpb.SignedDilithiumToExecutionChange
-}
-
-// BlobSidecarReceivedData is the data sent with BlobSidecarReceived events.
-type BlobSidecarReceivedData struct {
-	Blob *zondpb.SignedBlobSidecar
 }

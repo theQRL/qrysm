@@ -10,12 +10,12 @@ import (
 	"github.com/paulbellamy/ratecounter"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	"github.com/theQRL/qrysm/v4/beacon-chain/sync"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition"
+	"github.com/theQRL/qrysm/beacon-chain/sync"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 const (
@@ -91,9 +91,6 @@ func (s *Service) syncToFinalizedEpoch(ctx context.Context, genesis time.Time) e
 	}
 
 	for data := range queue.fetchedData {
-		// If blobs are available. Verify blobs and blocks are consistence.
-		// We can't import a block if there's no associated blob within DA bound.
-		// The blob has to pass aggregated proof check.
 		s.processFetchedData(ctx, genesis, s.cfg.Chain.HeadSlot(), data)
 	}
 
@@ -148,7 +145,7 @@ func (s *Service) processFetchedData(
 	defer s.updatePeerScorerStats(data.pid, startSlot)
 
 	// Use Batch Block Verify to process and verify batches directly.
-	if err := s.processBatchedBlocks(ctx, genesis, data.bwb, s.cfg.Chain.ReceiveBlockBatch); err != nil {
+	if err := s.processBatchedBlocks(ctx, genesis, data.blks, s.cfg.Chain.ReceiveBlockBatch); err != nil {
 		log.WithError(err).Warn("Skip processing batched blocks")
 	}
 }
@@ -161,13 +158,7 @@ func (s *Service) processFetchedDataRegSync(
 	blockReceiver := s.cfg.Chain.ReceiveBlock
 	invalidBlocks := 0
 	blksWithoutParentCount := 0
-	for _, b := range data.bwb {
-		if len(b.Blobs) > 0 {
-			if err := s.cfg.DB.SaveBlobSidecar(ctx, b.Blobs); err != nil {
-				log.WithError(err).Warn("Failed to save blob sidecar")
-			}
-		}
-
+	for _, b := range data.blks {
 		if err := s.processBlock(ctx, genesis, b, blockReceiver); err != nil {
 			switch {
 			case errors.Is(err, errBlockAlreadyProcessed):
@@ -184,13 +175,13 @@ func (s *Service) processFetchedDataRegSync(
 	}
 	if blksWithoutParentCount > 0 {
 		log.WithFields(logrus.Fields{
-			"missingParent": fmt.Sprintf("%#x", data.bwb[0].Block.Block().ParentRoot()),
-			"firstSlot":     data.bwb[0].Block.Block().Slot(),
-			"lastSlot":      data.bwb[blksWithoutParentCount-1].Block.Block().Slot(),
+			"missingParent": fmt.Sprintf("%#x", data.blks[0].Block().ParentRoot()),
+			"firstSlot":     data.blks[0].Block().Slot(),
+			"lastSlot":      data.blks[blksWithoutParentCount-1].Block().Slot(),
 		}).Debug("Could not process batch blocks due to missing parent")
 	}
 	// Add more visible logging if all blocks cannot be processed.
-	if len(data.bwb) == invalidBlocks {
+	if len(data.blks) == invalidBlocks {
 		log.WithField("error", "Range had no valid blocks to process").Warn("Range is not processed")
 	}
 }
@@ -252,10 +243,9 @@ func (s *Service) logBatchSyncStatus(genesis time.Time, firstBlk blocks.ROBlock,
 func (s *Service) processBlock(
 	ctx context.Context,
 	genesis time.Time,
-	bwb blocks.BlockWithVerifiedBlobs,
+	blk blocks.ROBlock,
 	blockReceiver blockReceiverFn,
 ) error {
-	blk := bwb.Block
 	blkRoot := blk.Root()
 	if s.isProcessedBlock(ctx, blk) {
 		return fmt.Errorf("slot: %d , root %#x: %w", blk.Block().Slot(), blkRoot, errBlockAlreadyProcessed)
@@ -270,18 +260,18 @@ func (s *Service) processBlock(
 
 type processedChecker func(context.Context, blocks.ROBlock) bool
 
-func validUnprocessed(ctx context.Context, bwb []blocks.BlockWithVerifiedBlobs, headSlot primitives.Slot, isProc processedChecker) ([]blocks.BlockWithVerifiedBlobs, error) {
+func validUnprocessed(ctx context.Context, blks []blocks.ROBlock, headSlot primitives.Slot, isProc processedChecker) ([]blocks.ROBlock, error) {
 	// use a pointer to avoid confusing the zero-value with the case where the first element is processed.
 	var processed *int
-	for i := range bwb {
-		b := bwb[i].Block
+	for i := range blks {
+		b := blks[i]
 		if headSlot >= b.Block().Slot() && isProc(ctx, b) {
 			val := i
 			processed = &val
 			continue
 		}
 		if i > 0 {
-			parent := bwb[i-1].Block
+			parent := blks[i-1]
 			if parent.Root() != b.Block().ParentRoot() {
 				return nil, fmt.Errorf("expected linear block list with parent root of %#x (slot %d) but received %#x (slot %d)",
 					parent, parent.Block().Slot(), b.Block().ParentRoot(), b.Block().Slot())
@@ -289,57 +279,40 @@ func validUnprocessed(ctx context.Context, bwb []blocks.BlockWithVerifiedBlobs, 
 		}
 	}
 	if processed == nil {
-		return bwb, nil
+		return blks, nil
 	}
-	if *processed+1 == len(bwb) {
-		maxIncoming := bwb[len(bwb)-1].Block
+	if *processed+1 == len(blks) {
+		maxIncoming := blks[len(blks)-1]
 		maxRoot := maxIncoming.Root()
 		return nil, fmt.Errorf("headSlot:%d, blockSlot:%d , root %#x:%w", headSlot, maxIncoming.Block().Slot(), maxRoot, errBlockAlreadyProcessed)
 	}
 	nonProcessedIdx := *processed + 1
-	return bwb[nonProcessedIdx:], nil
+	return blks[nonProcessedIdx:], nil
 }
 
 func (s *Service) processBatchedBlocks(ctx context.Context, genesis time.Time,
-	bwb []blocks.BlockWithVerifiedBlobs, bFunc batchBlockReceiverFn) error {
-	if len(bwb) == 0 {
+	blks []blocks.ROBlock, bFunc batchBlockReceiverFn) error {
+	if len(blks) == 0 {
 		return errors.New("0 blocks provided into method")
 	}
 	headSlot := s.cfg.Chain.HeadSlot()
 	var err error
-	bwb, err = validUnprocessed(ctx, bwb, headSlot, s.isProcessedBlock)
+	blks, err = validUnprocessed(ctx, blks, headSlot, s.isProcessedBlock)
 	if err != nil {
 		return err
 	}
-	if len(bwb) == 0 {
+	if len(blks) == 0 {
 		return nil
 	}
 
-	first := bwb[0].Block
+	first := blks[0]
 	if !s.cfg.Chain.HasBlock(ctx, first.Block().ParentRoot()) {
 		return fmt.Errorf("%w: %#x (in processBatchedBlocks, slot=%d)",
 			errParentDoesNotExist, first.Block().ParentRoot(), first.Block().Slot())
 	}
-	s.logBatchSyncStatus(genesis, first, len(bwb))
-	blobCount := 0
-	for _, bb := range bwb {
-		if len(bb.Blobs) == 0 {
-			continue
-		}
-		if err := s.cfg.DB.SaveBlobSidecar(ctx, bb.Blobs); err != nil {
-			return errors.Wrapf(err, "failed to save blobs for block %#x", bb.Block.Root())
-		}
-		blobCount += len(bb.Blobs)
-	}
-	if blobCount > 0 {
-		log.WithFields(logrus.Fields{
-			"startSlot": bwb[0].Block.Block().Slot(),
-			"endSlot":   bwb[len(bwb)-1].Block.Block().Slot(),
-			"count":     blobCount,
-		}).Info("Processed blob sidecars")
-	}
+	s.logBatchSyncStatus(genesis, first, len(blks))
 
-	return bFunc(ctx, blocks.BlockWithVerifiedBlobsSlice(bwb).ROBlocks())
+	return bFunc(ctx, blocks.ROBlockSlice(blks))
 }
 
 // updatePeerScorerStats adjusts monitored metrics for a peer.

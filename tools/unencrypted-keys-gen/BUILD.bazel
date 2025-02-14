@@ -4,12 +4,12 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary")
 go_library(
     name = "go_default_library",
     srcs = ["main.go"],
-    importpath = "github.com/theQRL/qrysm/v4/tools/unencrypted-keys-gen",
+    importpath = "github.com/theQRL/qrysm/tools/unencrypted-keys-gen",
     visibility = [
         "//tools/interop/convert-keys:__pkg__",
     ],
     deps = [
-        "//crypto/bls:go_default_library",
+        "//crypto/dilithium:go_default_library",
         "//runtime/interop:go_default_library",
         "//tools/unencrypted-keys-gen/keygen:go_default_library",
     ],

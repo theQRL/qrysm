@@ -18,7 +18,7 @@ proto_library(
 go_proto_library(
     name = "zond_testing_go_proto",
     compiler = "//:cast_proto_compiler",
-    importpath = "github.com/theQRL/qrysm/v4/proto/testing",
+    importpath = "github.com/theQRL/qrysm/proto/testing",
     proto = ":testing_proto",
     visibility = ["//visibility:public"],
     deps = [
@@ -35,7 +35,7 @@ go_library(
     name = "go_default_library",
     testonly = True,
     embed = [":zond_testing_go_proto"],
-    importpath = "github.com/theQRL/qrysm/v4/proto/testing",
+    importpath = "github.com/theQRL/qrysm/proto/testing",
     visibility = ["//visibility:public"],
 )
 
@@ -46,8 +46,8 @@ go_test(
         "tags_test.go",
     ],
     data = [
-        "@consensus_spec_tests_mainnet//:test_data",
-        "@consensus_spec_tests_minimal//:test_data",
+        #"@consensus_spec_tests_mainnet//:test_data",
+        #"@consensus_spec_tests_minimal//:test_data",
     ],
     embed = [":go_default_library"],
     tags = ["spectest"],
@@ -56,7 +56,7 @@ go_test(
         "//config/fieldparams:go_default_library",
         "//config/params:go_default_library",
         "//encoding/bytesutil:go_default_library",
-        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
         "//testing/assert:go_default_library",
         "//testing/require:go_default_library",
         "//testing/util:go_default_library",

@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	qrysmTime "github.com/theQRL/qrysm/time"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 const (
@@ -46,7 +46,7 @@ type stateMachine struct {
 	start   primitives.Slot
 	state   stateID
 	pid     peer.ID
-	bwb     []blocks.BlockWithVerifiedBlobs
+	blks    []blocks.ROBlock
 	updated time.Time
 }
 
@@ -78,8 +78,8 @@ func (smm *stateMachineManager) addStateMachine(startSlot primitives.Slot) *stat
 		smm:     smm,
 		start:   startSlot,
 		state:   stateNew,
-		bwb:     []blocks.BlockWithVerifiedBlobs{},
-		updated: prysmTime.Now(),
+		blks:    []blocks.ROBlock{},
+		updated: qrysmTime.Now(),
 	}
 	smm.recalculateMachineAttribs()
 	return smm.machines[startSlot]
@@ -90,7 +90,7 @@ func (smm *stateMachineManager) removeStateMachine(startSlot primitives.Slot) er
 	if _, ok := smm.machines[startSlot]; !ok {
 		return fmt.Errorf("state for machine %v is not found", startSlot)
 	}
-	smm.machines[startSlot].bwb = nil
+	smm.machines[startSlot].blks = nil
 	delete(smm.machines, startSlot)
 	smm.recalculateMachineAttribs()
 	return nil
@@ -158,7 +158,7 @@ func (m *stateMachine) setState(name stateID) {
 		return
 	}
 	m.state = name
-	m.updated = prysmTime.Now()
+	m.updated = qrysmTime.Now()
 }
 
 // trigger invokes the event handler on a given state machine.

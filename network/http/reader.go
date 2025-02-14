@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/theQRL/qrysm/v4/api"
+	"github.com/theQRL/qrysm/api"
 )
 
 // match a number with optional decimals

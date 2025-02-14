@@ -10,12 +10,12 @@ import (
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 	"github.com/urfave/cli/v2"
 )
 
@@ -80,38 +80,31 @@ func TestConfigureExecutionSetting(t *testing.T) {
 	app := cli.App{}
 	set := flag.NewFlagSet("test", 0)
 	set.String(flags.SuggestedFeeRecipient.Name, "", "")
-	set.Uint64(flags.TerminalTotalDifficultyOverride.Name, 0, "")
-	set.String(flags.TerminalBlockHashOverride.Name, "", "")
-	set.Uint64(flags.TerminalBlockHashActivationEpochOverride.Name, 0, "")
 
-	require.NoError(t, set.Set(flags.TerminalTotalDifficultyOverride.Name, strconv.Itoa(100)))
-	require.NoError(t, set.Set(flags.TerminalBlockHashOverride.Name, "0xA"))
-	require.NoError(t, set.Set(flags.TerminalBlockHashActivationEpochOverride.Name, strconv.Itoa(200)))
-	require.NoError(t, set.Set(flags.SuggestedFeeRecipient.Name, "0xB"))
+	require.NoError(t, set.Set(flags.SuggestedFeeRecipient.Name, "ZB"))
 	cliCtx := cli.NewContext(&app, set, nil)
 	err := configureExecutionSetting(cliCtx)
-	assert.LogsContain(t, hook, "0xB is not a valid fee recipient address")
+	assert.LogsContain(t, hook, "ZB is not a valid fee recipient address")
 	require.NoError(t, err)
 
-	require.NoError(t, set.Set(flags.SuggestedFeeRecipient.Name, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"))
+	require.NoError(t, set.Set(flags.SuggestedFeeRecipient.Name, "ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"))
 	cliCtx = cli.NewContext(&app, set, nil)
 	err = configureExecutionSetting(cliCtx)
 	require.NoError(t, err)
-	assert.Equal(t, common.HexToAddress("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), params.BeaconConfig().DefaultFeeRecipient)
+	recipient0, err := common.NewAddressFromString("ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+	require.NoError(t, err)
+	assert.Equal(t, recipient0, params.BeaconConfig().DefaultFeeRecipient)
 
 	assert.LogsContain(t, hook,
 		"is not a checksum Zond address",
 	)
-	require.NoError(t, set.Set(flags.SuggestedFeeRecipient.Name, "0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"))
+	require.NoError(t, set.Set(flags.SuggestedFeeRecipient.Name, "ZaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"))
 	cliCtx = cli.NewContext(&app, set, nil)
 	err = configureExecutionSetting(cliCtx)
 	require.NoError(t, err)
-	assert.Equal(t, common.HexToAddress("0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"), params.BeaconConfig().DefaultFeeRecipient)
-
-	assert.Equal(t, "100", params.BeaconConfig().TerminalTotalDifficulty)
-	assert.Equal(t, common.HexToHash("0xA"), params.BeaconConfig().TerminalBlockHash)
-	assert.Equal(t, primitives.Epoch(200), params.BeaconConfig().TerminalBlockHashActivationEpoch)
-
+	recipient1, err := common.NewAddressFromString("ZaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa")
+	require.NoError(t, err)
+	assert.Equal(t, recipient1, params.BeaconConfig().DefaultFeeRecipient)
 }
 
 func TestConfigureNetwork(t *testing.T) {

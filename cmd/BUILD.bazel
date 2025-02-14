@@ -10,7 +10,7 @@ go_library(
         "password_reader.go",
         "wrap_flags.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/cmd",
+    importpath = "github.com/theQRL/qrysm/cmd",
     visibility = ["//visibility:public"],
     deps = [
         "//config/fieldparams:go_default_library",

@@ -6,24 +6,29 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 type beaconBlockConverter interface {
-	ConvertRESTPhase0BlockToProto(block *apimiddleware.BeaconBlockJson) (*zondpb.BeaconBlock, error)
-	ConvertRESTAltairBlockToProto(block *apimiddleware.BeaconBlockAltairJson) (*zondpb.BeaconBlockAltair, error)
-	ConvertRESTBellatrixBlockToProto(block *apimiddleware.BeaconBlockBellatrixJson) (*zondpb.BeaconBlockBellatrix, error)
 	ConvertRESTCapellaBlockToProto(block *apimiddleware.BeaconBlockCapellaJson) (*zondpb.BeaconBlockCapella, error)
 }
 
 type beaconApiBeaconBlockConverter struct{}
 
-// ConvertRESTPhase0BlockToProto converts a Phase0 JSON beacon block to its protobuf equivalent
-func (c beaconApiBeaconBlockConverter) ConvertRESTPhase0BlockToProto(block *apimiddleware.BeaconBlockJson) (*zondpb.BeaconBlock, error) {
+// ConvertRESTCapellaBlockToProto converts a Capella JSON beacon block to its protobuf equivalent
+func (c beaconApiBeaconBlockConverter) ConvertRESTCapellaBlockToProto(block *apimiddleware.BeaconBlockCapellaJson) (*zondpb.BeaconBlockCapella, error) {
+	if block.Body == nil {
+		return nil, errors.New("block body is nil")
+	}
+
+	if block.Body.ExecutionPayload == nil {
+		return nil, errors.New("execution payload is nil")
+	}
+
 	blockSlot, err := strconv.ParseUint(block.Slot, 10, 64)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse slot `%s`", block.Slot)
@@ -102,56 +107,6 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTPhase0BlockToProto(block *apim
 		return nil, errors.Wrap(err, "failed to get voluntary exits")
 	}
 
-	return &zondpb.BeaconBlock{
-		Slot:          primitives.Slot(blockSlot),
-		ProposerIndex: primitives.ValidatorIndex(blockProposerIndex),
-		ParentRoot:    parentRoot,
-		StateRoot:     stateRoot,
-		Body: &zondpb.BeaconBlockBody{
-			RandaoReveal: randaoReveal,
-			Eth1Data: &zondpb.Eth1Data{
-				DepositRoot:  depositRoot,
-				DepositCount: depositCount,
-				BlockHash:    blockHash,
-			},
-			Graffiti:          graffiti,
-			ProposerSlashings: proposerSlashings,
-			AttesterSlashings: attesterSlashings,
-			Attestations:      attestations,
-			Deposits:          deposits,
-			VoluntaryExits:    voluntaryExits,
-		},
-	}, nil
-}
-
-// ConvertRESTAltairBlockToProto converts an Altair JSON beacon block to its protobuf equivalent
-func (c beaconApiBeaconBlockConverter) ConvertRESTAltairBlockToProto(block *apimiddleware.BeaconBlockAltairJson) (*zondpb.BeaconBlockAltair, error) {
-	if block.Body == nil {
-		return nil, errors.New("block body is nil")
-	}
-
-	// Call convertRESTPhase0BlockToProto to set the phase0 fields because all the error handling and the heavy lifting
-	// has already been done
-	phase0Block, err := c.ConvertRESTPhase0BlockToProto(&apimiddleware.BeaconBlockJson{
-		Slot:          block.Slot,
-		ProposerIndex: block.ProposerIndex,
-		ParentRoot:    block.ParentRoot,
-		StateRoot:     block.StateRoot,
-		Body: &apimiddleware.BeaconBlockBodyJson{
-			RandaoReveal:      block.Body.RandaoReveal,
-			Eth1Data:          block.Body.Eth1Data,
-			Graffiti:          block.Body.Graffiti,
-			ProposerSlashings: block.Body.ProposerSlashings,
-			AttesterSlashings: block.Body.AttesterSlashings,
-			Attestations:      block.Body.Attestations,
-			Deposits:          block.Body.Deposits,
-			VoluntaryExits:    block.Body.VoluntaryExits,
-		},
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get the phase0 fields of the altair block")
-	}
-
 	if block.Body.SyncAggregate == nil {
 		return nil, errors.New("sync aggregate is nil")
 	}
@@ -161,60 +116,12 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTAltairBlockToProto(block *apim
 		return nil, errors.Wrapf(err, "failed to decode sync committee bits `%s`", block.Body.SyncAggregate.SyncCommitteeBits)
 	}
 
-	syncCommitteeSignature, err := hexutil.Decode(block.Body.SyncAggregate.SyncCommitteeSignature)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to decode sync committee signature `%s`", block.Body.SyncAggregate.SyncCommitteeSignature)
-	}
-
-	return &zondpb.BeaconBlockAltair{
-		Slot:          phase0Block.Slot,
-		ProposerIndex: phase0Block.ProposerIndex,
-		ParentRoot:    phase0Block.ParentRoot,
-		StateRoot:     phase0Block.StateRoot,
-		Body: &zondpb.BeaconBlockBodyAltair{
-			RandaoReveal:      phase0Block.Body.RandaoReveal,
-			Eth1Data:          phase0Block.Body.Eth1Data,
-			Graffiti:          phase0Block.Body.Graffiti,
-			ProposerSlashings: phase0Block.Body.ProposerSlashings,
-			AttesterSlashings: phase0Block.Body.AttesterSlashings,
-			Attestations:      phase0Block.Body.Attestations,
-			Deposits:          phase0Block.Body.Deposits,
-			VoluntaryExits:    phase0Block.Body.VoluntaryExits,
-			SyncAggregate: &zondpb.SyncAggregate{
-				SyncCommitteeBits:      syncCommitteeBits,
-				SyncCommitteeSignature: syncCommitteeSignature,
-			},
-		},
-	}, nil
-}
-
-// ConvertRESTBellatrixBlockToProto converts a Bellatrix JSON beacon block to its protobuf equivalent
-func (c beaconApiBeaconBlockConverter) ConvertRESTBellatrixBlockToProto(block *apimiddleware.BeaconBlockBellatrixJson) (*zondpb.BeaconBlockBellatrix, error) {
-	if block.Body == nil {
-		return nil, errors.New("block body is nil")
-	}
-
-	// Call convertRESTAltairBlockToProto to set the altair fields because all the error handling and the heavy lifting
-	// has already been done
-	altairBlock, err := c.ConvertRESTAltairBlockToProto(&apimiddleware.BeaconBlockAltairJson{
-		Slot:          block.Slot,
-		ProposerIndex: block.ProposerIndex,
-		ParentRoot:    block.ParentRoot,
-		StateRoot:     block.StateRoot,
-		Body: &apimiddleware.BeaconBlockBodyAltairJson{
-			RandaoReveal:      block.Body.RandaoReveal,
-			Eth1Data:          block.Body.Eth1Data,
-			Graffiti:          block.Body.Graffiti,
-			ProposerSlashings: block.Body.ProposerSlashings,
-			AttesterSlashings: block.Body.AttesterSlashings,
-			Attestations:      block.Body.Attestations,
-			Deposits:          block.Body.Deposits,
-			VoluntaryExits:    block.Body.VoluntaryExits,
-			SyncAggregate:     block.Body.SyncAggregate,
-		},
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get the altair fields of the bellatrix block")
+	syncCommitteeSignatures := make([][]byte, len(block.Body.SyncAggregate.SyncCommitteeSignatures))
+	for i, sig := range block.Body.SyncAggregate.SyncCommitteeSignatures {
+		syncCommitteeSignatures[i], err = hexutil.Decode(sig)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to decode sync committee signature `%s`", sig)
+		}
 	}
 
 	if block.Body.ExecutionPayload == nil {
@@ -231,7 +138,7 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTBellatrixBlockToProto(block *a
 		return nil, errors.Wrapf(err, "failed to decode execution payload fee recipient `%s`", block.Body.ExecutionPayload.FeeRecipient)
 	}
 
-	stateRoot, err := hexutil.Decode(block.Body.ExecutionPayload.StateRoot)
+	executionStateRoot, err := hexutil.Decode(block.Body.ExecutionPayload.StateRoot)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to decode execution payload state root `%s`", block.Body.ExecutionPayload.StateRoot)
 	}
@@ -281,7 +188,7 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTBellatrixBlockToProto(block *a
 		return nil, errors.Errorf("failed to parse execution payload base fee per gas `%s`", block.Body.ExecutionPayload.BaseFeePerGas)
 	}
 
-	blockHash, err := hexutil.Decode(block.Body.ExecutionPayload.BlockHash)
+	executionBlockHash, err := hexutil.Decode(block.Body.ExecutionPayload.BlockHash)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to decode execution payload block hash `%s`", block.Body.ExecutionPayload.BlockHash)
 	}
@@ -289,90 +196,6 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTBellatrixBlockToProto(block *a
 	transactions, err := convertTransactionsToProto(block.Body.ExecutionPayload.Transactions)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get execution payload transactions")
-	}
-
-	return &zondpb.BeaconBlockBellatrix{
-		Slot:          altairBlock.Slot,
-		ProposerIndex: altairBlock.ProposerIndex,
-		ParentRoot:    altairBlock.ParentRoot,
-		StateRoot:     altairBlock.StateRoot,
-		Body: &zondpb.BeaconBlockBodyBellatrix{
-			RandaoReveal:      altairBlock.Body.RandaoReveal,
-			Eth1Data:          altairBlock.Body.Eth1Data,
-			Graffiti:          altairBlock.Body.Graffiti,
-			ProposerSlashings: altairBlock.Body.ProposerSlashings,
-			AttesterSlashings: altairBlock.Body.AttesterSlashings,
-			Attestations:      altairBlock.Body.Attestations,
-			Deposits:          altairBlock.Body.Deposits,
-			VoluntaryExits:    altairBlock.Body.VoluntaryExits,
-			SyncAggregate:     altairBlock.Body.SyncAggregate,
-			ExecutionPayload: &enginev1.ExecutionPayload{
-				ParentHash:    parentHash,
-				FeeRecipient:  feeRecipient,
-				StateRoot:     stateRoot,
-				ReceiptsRoot:  receiptsRoot,
-				LogsBloom:     logsBloom,
-				PrevRandao:    prevRandao,
-				BlockNumber:   blockNumber,
-				GasLimit:      gasLimit,
-				GasUsed:       gasUsed,
-				Timestamp:     timestamp,
-				ExtraData:     extraData,
-				BaseFeePerGas: bytesutil.PadTo(bytesutil.BigIntToLittleEndianBytes(baseFeePerGas), 32),
-				BlockHash:     blockHash,
-				Transactions:  transactions,
-			},
-		},
-	}, nil
-}
-
-// ConvertRESTCapellaBlockToProto converts a Capella JSON beacon block to its protobuf equivalent
-func (c beaconApiBeaconBlockConverter) ConvertRESTCapellaBlockToProto(block *apimiddleware.BeaconBlockCapellaJson) (*zondpb.BeaconBlockCapella, error) {
-	if block.Body == nil {
-		return nil, errors.New("block body is nil")
-	}
-
-	if block.Body.ExecutionPayload == nil {
-		return nil, errors.New("execution payload is nil")
-	}
-
-	// Call convertRESTBellatrixBlockToProto to set the bellatrix fields because all the error handling and the heavy
-	// lifting has already been done
-	bellatrixBlock, err := c.ConvertRESTBellatrixBlockToProto(&apimiddleware.BeaconBlockBellatrixJson{
-		Slot:          block.Slot,
-		ProposerIndex: block.ProposerIndex,
-		ParentRoot:    block.ParentRoot,
-		StateRoot:     block.StateRoot,
-		Body: &apimiddleware.BeaconBlockBodyBellatrixJson{
-			RandaoReveal:      block.Body.RandaoReveal,
-			Eth1Data:          block.Body.Eth1Data,
-			Graffiti:          block.Body.Graffiti,
-			ProposerSlashings: block.Body.ProposerSlashings,
-			AttesterSlashings: block.Body.AttesterSlashings,
-			Attestations:      block.Body.Attestations,
-			Deposits:          block.Body.Deposits,
-			VoluntaryExits:    block.Body.VoluntaryExits,
-			SyncAggregate:     block.Body.SyncAggregate,
-			ExecutionPayload: &apimiddleware.ExecutionPayloadJson{
-				ParentHash:    block.Body.ExecutionPayload.ParentHash,
-				FeeRecipient:  block.Body.ExecutionPayload.FeeRecipient,
-				StateRoot:     block.Body.ExecutionPayload.StateRoot,
-				ReceiptsRoot:  block.Body.ExecutionPayload.ReceiptsRoot,
-				LogsBloom:     block.Body.ExecutionPayload.LogsBloom,
-				PrevRandao:    block.Body.ExecutionPayload.PrevRandao,
-				BlockNumber:   block.Body.ExecutionPayload.BlockNumber,
-				GasLimit:      block.Body.ExecutionPayload.GasLimit,
-				GasUsed:       block.Body.ExecutionPayload.GasUsed,
-				TimeStamp:     block.Body.ExecutionPayload.TimeStamp,
-				ExtraData:     block.Body.ExecutionPayload.ExtraData,
-				BaseFeePerGas: block.Body.ExecutionPayload.BaseFeePerGas,
-				BlockHash:     block.Body.ExecutionPayload.BlockHash,
-				Transactions:  block.Body.ExecutionPayload.Transactions,
-			},
-		},
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get the bellatrix fields of the capella block")
 	}
 
 	withdrawals, err := convertWithdrawalsToProto(block.Body.ExecutionPayload.Withdrawals)
@@ -386,35 +209,42 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTCapellaBlockToProto(block *api
 	}
 
 	return &zondpb.BeaconBlockCapella{
-		Slot:          bellatrixBlock.Slot,
-		ProposerIndex: bellatrixBlock.ProposerIndex,
-		ParentRoot:    bellatrixBlock.ParentRoot,
-		StateRoot:     bellatrixBlock.StateRoot,
+		Slot:          primitives.Slot(blockSlot),
+		ProposerIndex: primitives.ValidatorIndex(blockProposerIndex),
+		ParentRoot:    parentRoot,
+		StateRoot:     stateRoot,
 		Body: &zondpb.BeaconBlockBodyCapella{
-			RandaoReveal:      bellatrixBlock.Body.RandaoReveal,
-			Eth1Data:          bellatrixBlock.Body.Eth1Data,
-			Graffiti:          bellatrixBlock.Body.Graffiti,
-			ProposerSlashings: bellatrixBlock.Body.ProposerSlashings,
-			AttesterSlashings: bellatrixBlock.Body.AttesterSlashings,
-			Attestations:      bellatrixBlock.Body.Attestations,
-			Deposits:          bellatrixBlock.Body.Deposits,
-			VoluntaryExits:    bellatrixBlock.Body.VoluntaryExits,
-			SyncAggregate:     bellatrixBlock.Body.SyncAggregate,
+			RandaoReveal: randaoReveal,
+			Eth1Data: &zondpb.Eth1Data{
+				DepositRoot:  depositRoot,
+				DepositCount: depositCount,
+				BlockHash:    blockHash,
+			},
+			Graffiti:          graffiti,
+			ProposerSlashings: proposerSlashings,
+			AttesterSlashings: attesterSlashings,
+			Attestations:      attestations,
+			Deposits:          deposits,
+			VoluntaryExits:    voluntaryExits,
+			SyncAggregate: &zondpb.SyncAggregate{
+				SyncCommitteeBits:       syncCommitteeBits,
+				SyncCommitteeSignatures: syncCommitteeSignatures,
+			},
 			ExecutionPayload: &enginev1.ExecutionPayloadCapella{
-				ParentHash:    bellatrixBlock.Body.ExecutionPayload.ParentHash,
-				FeeRecipient:  bellatrixBlock.Body.ExecutionPayload.FeeRecipient,
-				StateRoot:     bellatrixBlock.Body.ExecutionPayload.StateRoot,
-				ReceiptsRoot:  bellatrixBlock.Body.ExecutionPayload.ReceiptsRoot,
-				LogsBloom:     bellatrixBlock.Body.ExecutionPayload.LogsBloom,
-				PrevRandao:    bellatrixBlock.Body.ExecutionPayload.PrevRandao,
-				BlockNumber:   bellatrixBlock.Body.ExecutionPayload.BlockNumber,
-				GasLimit:      bellatrixBlock.Body.ExecutionPayload.GasLimit,
-				GasUsed:       bellatrixBlock.Body.ExecutionPayload.GasUsed,
-				Timestamp:     bellatrixBlock.Body.ExecutionPayload.Timestamp,
-				ExtraData:     bellatrixBlock.Body.ExecutionPayload.ExtraData,
-				BaseFeePerGas: bellatrixBlock.Body.ExecutionPayload.BaseFeePerGas,
-				BlockHash:     bellatrixBlock.Body.ExecutionPayload.BlockHash,
-				Transactions:  bellatrixBlock.Body.ExecutionPayload.Transactions,
+				ParentHash:    parentHash,
+				FeeRecipient:  feeRecipient,
+				StateRoot:     executionStateRoot,
+				ReceiptsRoot:  receiptsRoot,
+				LogsBloom:     logsBloom,
+				PrevRandao:    prevRandao,
+				BlockNumber:   blockNumber,
+				GasLimit:      gasLimit,
+				GasUsed:       gasUsed,
+				Timestamp:     timestamp,
+				ExtraData:     extraData,
+				BaseFeePerGas: bytesutil.PadTo(bytesutil.BigIntToLittleEndianBytes(baseFeePerGas), 32),
+				BlockHash:     executionBlockHash,
+				Transactions:  transactions,
 				Withdrawals:   withdrawals,
 			},
 			DilithiumToExecutionChanges: dilithiumToExecutionChanges,

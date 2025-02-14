@@ -8,23 +8,23 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	corehelpers "github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/encoding/ssz/detect"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
-	v2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
-	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
-	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	corehelpers "github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/encoding/ssz/detect"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	v1 "github.com/theQRL/qrysm/proto/zond/v1"
+	"github.com/theQRL/qrysm/testing/endtoend/helpers"
+	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
+	"github.com/theQRL/qrysm/testing/endtoend/policies"
+	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
+	"github.com/theQRL/qrysm/testing/util"
 	"golang.org/x/exp/rand"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -33,8 +33,11 @@ import (
 var depositValCount = e2e.DepositCount
 var numOfExits = 2
 
+var followDistanceSeconds = params.E2ETestConfig().Eth1FollowDistance * params.E2ETestConfig().SecondsPerETH1Block
+var secondsPerEpoch = params.E2ETestConfig().SecondsPerSlot * uint64(params.E2ETestConfig().SlotsPerEpoch)
+
 // Deposits should be processed in twice the length of the epochs per eth1 voting period.
-var depositsInBlockStart = params.E2ETestConfig().EpochsPerEth1VotingPeriod * 2
+var depositsInBlockStart = primitives.Epoch(2*followDistanceSeconds/secondsPerEpoch) + params.E2ETestConfig().EpochsPerEth1VotingPeriod*2
 
 // deposits included + finalization + MaxSeedLookahead for activation.
 var depositActivationStartEpoch = depositsInBlockStart + 2 + params.E2ETestConfig().MaxSeedLookahead
@@ -85,8 +88,9 @@ var ValidatorsHaveExited = e2etypes.Evaluator{
 
 // SubmitWithdrawal sends a withdrawal from a previously exited validator.
 var SubmitWithdrawal = e2etypes.Evaluator{
-	Name:       "submit_withdrawal_epoch_%d",
-	Policy:     policies.BetweenEpochs(helpers.CapellaE2EForkEpoch-2, helpers.CapellaE2EForkEpoch+1),
+	Name: "submit_withdrawal_epoch_%d",
+	// Policy:     policies.BetweenEpochs(helpers.CapellaE2EForkEpoch-2, helpers.CapellaE2EForkEpoch+1),
+	Policy:     policies.BetweenEpochs(8, 11),
 	Evaluation: submitWithdrawal,
 }
 
@@ -100,7 +104,8 @@ var ValidatorsHaveWithdrawn = e2etypes.Evaluator{
 		validWithdrawnEpoch := exitSubmissionEpoch + 1 + params.BeaconConfig().MaxSeedLookahead
 		// Only run this for minimal setups after capella
 		if params.BeaconConfig().ConfigName == params.EndToEndName {
-			validWithdrawnEpoch = helpers.CapellaE2EForkEpoch + 1
+			// validWithdrawnEpoch = helpers.CapellaE2EForkEpoch + 1
+			validWithdrawnEpoch = 11
 		}
 		requiredPolicy := policies.OnEpoch(validWithdrawnEpoch)
 		return requiredPolicy(currentEpoch)
@@ -116,7 +121,7 @@ var ValidatorsVoteWithTheMajority = e2etypes.Evaluator{
 }
 
 type mismatch struct {
-	k [dilithium2.CryptoPublicKeyBytes]byte
+	k [field_params.DilithiumPubkeyLength]byte
 	e uint64
 	o uint64
 }
@@ -139,7 +144,7 @@ func processesDepositsInBlocks(ec *e2etypes.EvaluationContext, conns ...*grpc.Cl
 	if err != nil {
 		return errors.Wrap(err, "failed to get blocks from beacon-chain")
 	}
-	observed := make(map[[dilithium2.CryptoPublicKeyBytes]byte]uint64)
+	observed := make(map[[field_params.DilithiumPubkeyLength]byte]uint64)
 	for _, blk := range blks.BlockContainers {
 		sb, err := blocks.BeaconBlockContainerToSignedBeaconBlock(blk)
 		if err != nil {
@@ -363,7 +368,7 @@ func proposeVoluntaryExit(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientC
 	}
 	execIndices := []int{}
 	err = st.ReadFromEveryValidator(func(idx int, val state.ReadOnlyValidator) error {
-		if val.WithdrawalCredentials()[0] == params.BeaconConfig().ETH1AddressWithdrawalPrefixByte {
+		if val.WithdrawalCredentials()[0] == params.BeaconConfig().ZondAddressWithdrawalPrefixByte {
 			execIndices = append(execIndices, idx)
 		}
 		return nil
@@ -477,22 +482,6 @@ func validatorsVoteWithTheMajority(ec *e2etypes.EvaluationContext, conns ...*grp
 		var slot primitives.Slot
 		var vote []byte
 		switch blk.Block.(type) {
-		case *zondpb.BeaconBlockContainer_Phase0Block:
-			b := blk.GetPhase0Block().Block
-			slot = b.Slot
-			vote = b.Body.Eth1Data.BlockHash
-		case *zondpb.BeaconBlockContainer_AltairBlock:
-			b := blk.GetAltairBlock().Block
-			slot = b.Slot
-			vote = b.Body.Eth1Data.BlockHash
-		case *zondpb.BeaconBlockContainer_BellatrixBlock:
-			b := blk.GetBellatrixBlock().Block
-			slot = b.Slot
-			vote = b.Body.Eth1Data.BlockHash
-		case *zondpb.BeaconBlockContainer_BlindedBellatrixBlock:
-			b := blk.GetBlindedBellatrixBlock().Block
-			slot = b.Slot
-			vote = b.Body.Eth1Data.BlockHash
 		case *zondpb.BeaconBlockContainer_CapellaBlock:
 			b := blk.GetCapellaBlock().Block
 			slot = b.Slot
@@ -501,16 +490,8 @@ func validatorsVoteWithTheMajority(ec *e2etypes.EvaluationContext, conns ...*grp
 			b := blk.GetBlindedCapellaBlock().Block
 			slot = b.Slot
 			vote = b.Body.Eth1Data.BlockHash
-		case *zondpb.BeaconBlockContainer_DenebBlock:
-			b := blk.GetDenebBlock().Block
-			slot = b.Slot
-			vote = b.Body.Eth1Data.BlockHash
-		case *zondpb.BeaconBlockContainer_BlindedDenebBlock:
-			b := blk.GetBlindedDenebBlock().Message
-			slot = b.Slot
-			vote = b.Body.Eth1Data.BlockHash
 		default:
-			return errors.New("block neither phase0,altair or bellatrix")
+			return errors.New("invalid block type")
 		}
 		ec.SeenVotes[slot] = vote
 
@@ -585,7 +566,7 @@ func submitWithdrawal(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn)
 	if err != nil {
 		return err
 	}
-	changes := make([]*v2.SignedDilithiumToExecutionChange, 0)
+	changes := make([]*v1.SignedDilithiumToExecutionChange, 0)
 	// Only send half the number of changes each time, to allow us to test
 	// at the fork boundary.
 	wantedChanges := numOfExits / 2
@@ -598,13 +579,13 @@ func submitWithdrawal(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn)
 		if err != nil {
 			return err
 		}
-		if val.WithdrawalCredentials[0] == params.BeaconConfig().ETH1AddressWithdrawalPrefixByte {
+		if val.WithdrawalCredentials[0] == params.BeaconConfig().ZondAddressWithdrawalPrefixByte {
 			continue
 		}
 		if !bytes.Equal(val.PublicKey, privKeys[idx].PublicKey().Marshal()) {
 			return errors.Errorf("pubkey is not equal, wanted %#x but received %#x", val.PublicKey, privKeys[idx].PublicKey().Marshal())
 		}
-		message := &v2.DilithiumToExecutionChange{
+		message := &v1.DilithiumToExecutionChange{
 			ValidatorIndex:      idx,
 			FromDilithiumPubkey: privKeys[idx].PublicKey().Marshal(),
 			ToExecutionAddress:  bytesutil.ToBytes(uint64(idx), 20),
@@ -618,13 +599,13 @@ func submitWithdrawal(ec *e2etypes.EvaluationContext, conns ...*grpc.ClientConn)
 			return err
 		}
 		signature := privKeys[idx].Sign(sigRoot[:]).Marshal()
-		change := &v2.SignedDilithiumToExecutionChange{
+		change := &v1.SignedDilithiumToExecutionChange{
 			Message:   message,
 			Signature: signature,
 		}
 		changes = append(changes, change)
 	}
-	_, err = beaconAPIClient.SubmitSignedDilithiumToExecutionChanges(ctx, &v2.SubmitDilithiumToExecutionChangesRequest{Changes: changes})
+	_, err = beaconAPIClient.SubmitSignedDilithiumToExecutionChanges(ctx, &v1.SubmitDilithiumToExecutionChangesRequest{Changes: changes})
 
 	return err
 }

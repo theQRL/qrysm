@@ -2,10 +2,10 @@ package state_native
 
 import (
 	"github.com/pkg/errors"
-	customtypes "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/custom-types"
-	"github.com/theQRL/qrysm/v4/config/features"
-	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	customtypes "github.com/theQRL/qrysm/beacon-chain/state/state-native/custom-types"
+	"github.com/theQRL/qrysm/config/features"
+	consensus_types "github.com/theQRL/qrysm/consensus-types"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // LatestBlockHeader stored within the beacon state.

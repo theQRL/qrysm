@@ -9,13 +9,13 @@ import (
 	"testing"
 
 	ssz "github.com/prysmaticlabs/fastssz"
-	slashertypes "github.com/theQRL/qrysm/v4/beacon-chain/slasher/types"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	slashertypes "github.com/theQRL/qrysm/beacon-chain/slasher/types"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestStore_AttestationRecordForValidator_SaveRetrieve(t *testing.T) {
@@ -522,7 +522,7 @@ func createProposalWrapper(t *testing.T, slot primitives.Slot, proposerIndex pri
 	return &slashertypes.SignedBlockHeaderWrapper{
 		SignedBeaconBlockHeader: &zondpb.SignedBeaconBlockHeader{
 			Header:    header,
-			Signature: params.BeaconConfig().EmptySignature[:],
+			Signature: params.BeaconConfig().EmptyDilithiumSignature[:],
 		},
 		SigningRoot: signRoot,
 	}
@@ -548,7 +548,7 @@ func createAttestationWrapper(source, target primitives.Epoch, indices []uint64,
 		IndexedAttestation: &zondpb.IndexedAttestation{
 			AttestingIndices: indices,
 			Data:             data,
-			Signature:        params.BeaconConfig().EmptySignature[:],
+			Signatures:       [][]byte{params.BeaconConfig().EmptyDilithiumSignature[:]},
 		},
 		SigningRoot: signRoot,
 	}

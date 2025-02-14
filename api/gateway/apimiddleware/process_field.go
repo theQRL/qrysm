@@ -103,8 +103,7 @@ func base64ToHexProcessor(v reflect.Value) error {
 
 func base64ToChecksumAddressProcessor(v reflect.Value) error {
 	if v.String() == "" {
-		// Empty hex values are represented as "0x".
-		v.SetString("0x")
+		v.SetString("Z")
 		return nil
 	}
 	b, err := base64.StdEncoding.DecodeString(v.String())

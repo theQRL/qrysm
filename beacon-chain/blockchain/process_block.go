@@ -7,28 +7,25 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain/kzg"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
-	statefeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/state"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	coreTime "github.com/theQRL/qrysm/v4/beacon-chain/core/time"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
-	forkchoicetypes "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/config/params"
-	consensusblocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/core/feed"
+	statefeed "github.com/theQRL/qrysm/beacon-chain/core/feed/state"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	coreTime "github.com/theQRL/qrysm/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition"
+	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/config/params"
+	consensusblocks "github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/monitoring/tracing"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
+	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
 
@@ -151,13 +148,9 @@ func getStateVersionAndPayload(st state.BeaconState) (int, interfaces.ExecutionD
 	var preStateHeader interfaces.ExecutionData
 	var err error
 	preStateVersion := st.Version()
-	switch preStateVersion {
-	case version.Phase0, version.Altair:
-	default:
-		preStateHeader, err = st.LatestExecutionPayloadHeader()
-		if err != nil {
-			return 0, nil, err
-		}
+	preStateHeader, err = st.LatestExecutionPayloadHeader()
+	if err != nil {
+		return 0, nil, err
 	}
 	return preStateVersion, preStateHeader, nil
 }
@@ -254,20 +247,11 @@ func (s *Service) onBlockBatch(ctx context.Context, blks []consensusblocks.ROBlo
 	for i, b := range blks {
 		root := b.Root()
 		isValidPayload, err = s.notifyNewPayload(ctx,
-			postVersionAndHeaders[i].version,
 			postVersionAndHeaders[i].header, b)
 		if err != nil {
 			return s.handleInvalidExecutionError(ctx, err, root, b.Block().ParentRoot())
 		}
-		if isValidPayload {
-			if err := s.validateMergeTransitionBlock(ctx, preVersionAndHeaders[i].version,
-				preVersionAndHeaders[i].header, b); err != nil {
-				return err
-			}
-		}
-		if err := s.databaseDACheck(ctx, b); err != nil {
-			return errors.Wrap(err, "could not validate blob data availability")
-		}
+
 		args := &forkchoicetypes.BlockAndCheckpoints{Block: b.Block(),
 			JustifiedCheckpoint: jCheckpoints[i],
 			FinalizedCheckpoint: fCheckpoints[i]}
@@ -331,33 +315,6 @@ func (s *Service) onBlockBatch(ctx context.Context, blks []consensusblocks.ROBlo
 		return err
 	}
 	return s.saveHeadNoDB(ctx, lastB, lastBR, preState, !isValidPayload)
-}
-
-func commitmentsToCheck(b consensusblocks.ROBlock, current primitives.Slot) [][]byte {
-	if b.Version() < version.Deneb {
-		return nil
-	}
-	// We are only required to check within MIN_EPOCHS_FOR_BLOB_SIDECARS_REQUESTS
-	if !params.WithinDAPeriod(slots.ToEpoch(b.Block().Slot()), slots.ToEpoch(current)) {
-		return nil
-	}
-	kzgCommitments, err := b.Block().Body().BlobKzgCommitments()
-	if err != nil {
-		return nil
-	}
-	return kzgCommitments
-}
-
-func (s *Service) databaseDACheck(ctx context.Context, b consensusblocks.ROBlock) error {
-	commitments := commitmentsToCheck(b, s.CurrentSlot())
-	if len(commitments) == 0 {
-		return nil
-	}
-	sidecars, err := s.cfg.BeaconDB.BlobSidecarsByRoot(ctx, b.Root())
-	if err != nil {
-		return errors.Wrap(err, "could not get blob sidecars")
-	}
-	return kzg.IsDataAvailable(commitments, sidecars)
 }
 
 func (s *Service) updateEpochBoundaryCaches(ctx context.Context, st state.BeaconState) error {
@@ -470,44 +427,6 @@ func (s *Service) pruneAttsFromPool(headBlock interfaces.ReadOnlySignedBeaconBlo
 	return nil
 }
 
-// validateMergeTransitionBlock validates the merge transition block.
-func (s *Service) validateMergeTransitionBlock(ctx context.Context, stateVersion int, stateHeader interfaces.ExecutionData, blk interfaces.ReadOnlySignedBeaconBlock) error {
-	// Skip validation if block is older than Bellatrix.
-	if blocks.IsPreBellatrixVersion(blk.Block().Version()) {
-		return nil
-	}
-
-	// Skip validation if block has an empty payload.
-	payload, err := blk.Block().Body().Execution()
-	if err != nil {
-		return invalidBlock{error: err}
-	}
-	isEmpty, err := consensusblocks.IsEmptyExecutionData(payload)
-	if err != nil {
-		return err
-	}
-	if isEmpty {
-		return nil
-	}
-
-	// Handle case where pre-state is Altair but block contains payload.
-	// To reach here, the block must have contained a valid payload.
-	if blocks.IsPreBellatrixVersion(stateVersion) {
-		return s.validateMergeBlock(ctx, blk)
-	}
-
-	// Skip validation if the block is not a merge transition block.
-	// To reach here. The payload must be non-empty. If the state header is empty then it's at transition.
-	empty, err := consensusblocks.IsEmptyExecutionData(stateHeader)
-	if err != nil {
-		return err
-	}
-	if !empty {
-		return nil
-	}
-	return s.validateMergeBlock(ctx, blk)
-}
-
 // This routine checks if there is a cached proposer payload ID available for the next slot proposer.
 // If there is not, it will call forkchoice updated with the correct payload attribute then cache the payload ID.
 func (s *Service) runLateBlockTasks() {
@@ -525,81 +444,6 @@ func (s *Service) runLateBlockTasks() {
 		case <-s.ctx.Done():
 			log.Debug("Context closed, exiting routine")
 			return
-		}
-	}
-}
-
-func (s *Service) isDataAvailable(ctx context.Context, root [32]byte, signed interfaces.ReadOnlySignedBeaconBlock) error {
-	if signed.Version() < version.Deneb {
-		return nil
-	}
-	t := time.Now()
-
-	block := signed.Block()
-	if block == nil {
-		return errors.New("invalid nil beacon block")
-	}
-	// We are only required to check within MIN_EPOCHS_FOR_BLOB_SIDECARS_REQUESTS
-	if !params.WithinDAPeriod(slots.ToEpoch(block.Slot()), slots.ToEpoch(s.CurrentSlot())) {
-		return nil
-	}
-
-	body := block.Body()
-	if body == nil {
-		return errors.New("invalid nil beacon block body")
-	}
-	kzgCommitments, err := body.BlobKzgCommitments()
-	if err != nil {
-		return errors.Wrap(err, "could not get KZG commitments")
-	}
-	expected := len(kzgCommitments)
-	if expected == 0 {
-		return nil
-	}
-
-	// Read first from db in case we have the blobs
-	sidecars, err := s.cfg.BeaconDB.BlobSidecarsByRoot(ctx, root)
-	switch {
-	case err == nil:
-		if len(sidecars) >= expected {
-			s.blobNotifiers.delete(root)
-			if err := kzg.IsDataAvailable(kzgCommitments, sidecars); err != nil {
-				return err
-			}
-			logBlobSidecar(sidecars, t)
-			return nil
-		}
-	case errors.Is(err, db.ErrNotFound):
-	// If the blob sidecars haven't arrived yet, the subsequent code will wait for them.
-	// Note: The system will not exit with an error in this scenario.
-	default:
-		log.WithError(err).Error("could not get blob sidecars from DB")
-	}
-
-	found := map[uint64]struct{}{}
-	for _, sc := range sidecars {
-		found[sc.Index] = struct{}{}
-	}
-	nc := s.blobNotifiers.forRoot(root)
-	for {
-		select {
-		case idx := <-nc:
-			found[idx] = struct{}{}
-			if len(found) != expected {
-				continue
-			}
-			s.blobNotifiers.delete(root)
-			sidecars, err := s.cfg.BeaconDB.BlobSidecarsByRoot(ctx, root)
-			if err != nil {
-				return errors.Wrap(err, "could not get blob sidecars")
-			}
-			if err := kzg.IsDataAvailable(kzgCommitments, sidecars); err != nil {
-				return err
-			}
-			logBlobSidecar(sidecars, t)
-			return nil
-		case <-ctx.Done():
-			return errors.Wrap(ctx.Err(), "context deadline waiting for blob sidecars")
 		}
 	}
 }

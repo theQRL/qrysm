@@ -12,12 +12,12 @@ import (
 	"strings"
 
 	"github.com/r3labs/sse/v2"
-	"github.com/theQRL/qrysm/v4/api"
-	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
-	"github.com/theQRL/qrysm/v4/api/grpc"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/events"
-	http2 "github.com/theQRL/qrysm/v4/network/http"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/api"
+	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
+	"github.com/theQRL/qrysm/api/grpc"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/events"
+	http2 "github.com/theQRL/qrysm/network/http"
+	"github.com/theQRL/qrysm/runtime/version"
 )
 
 type sszConfig struct {
@@ -28,28 +28,12 @@ type sszConfig struct {
 func handleGetBeaconStateSSZ(m *apimiddleware.ApiProxyMiddleware, endpoint apimiddleware.Endpoint, w http.ResponseWriter, req *http.Request) (handled bool) {
 	config := sszConfig{
 		fileName:     "beacon_state.ssz",
-		responseJson: &SszResponseJson{},
-	}
-	return handleGetSSZ(m, endpoint, w, req, config)
-}
-
-func handleGetBeaconBlockSSZ(m *apimiddleware.ApiProxyMiddleware, endpoint apimiddleware.Endpoint, w http.ResponseWriter, req *http.Request) (handled bool) {
-	config := sszConfig{
-		fileName:     "beacon_block.ssz",
-		responseJson: &SszResponseJson{},
-	}
-	return handleGetSSZ(m, endpoint, w, req, config)
-}
-
-func handleGetBeaconStateSSZV2(m *apimiddleware.ApiProxyMiddleware, endpoint apimiddleware.Endpoint, w http.ResponseWriter, req *http.Request) (handled bool) {
-	config := sszConfig{
-		fileName:     "beacon_state.ssz",
 		responseJson: &VersionedSSZResponseJson{},
 	}
 	return handleGetSSZ(m, endpoint, w, req, config)
 }
 
-func handleGetBeaconBlockSSZV2(m *apimiddleware.ApiProxyMiddleware, endpoint apimiddleware.Endpoint, w http.ResponseWriter, req *http.Request) (handled bool) {
+func handleGetBeaconBlockSSZ(m *apimiddleware.ApiProxyMiddleware, endpoint apimiddleware.Endpoint, w http.ResponseWriter, req *http.Request) (handled bool) {
 	config := sszConfig{
 		fileName:     "beacon_block.ssz",
 		responseJson: &VersionedSSZResponseJson{},
@@ -308,8 +292,6 @@ func receiveEvents(eventChan <-chan *sse.Event, w http.ResponseWriter, req *http
 				switch dataSubset.Version {
 				case version.String(version.Capella):
 					data = &EventPayloadAttributeStreamV2Json{}
-				case version.String(version.Bellatrix):
-					data = &EventPayloadAttributeStreamV1Json{}
 				default:
 					return apimiddleware.InternalServerError(errors.New("payload version unsupported"))
 				}

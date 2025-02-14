@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	forkchoicetypes "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/types"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestStore_JustifiedEpoch(t *testing.T) {
@@ -334,103 +334,103 @@ func TestForkChoice_ReceivedBlocksLastEpoch(t *testing.T) {
 	require.Equal(t, uint64(1), count)
 	require.Equal(t, primitives.Slot(1), f.HighestReceivedBlockSlot())
 
-	// 64
+	// 256
 	// Received block last epoch is 1
-	_, err = s.insert(context.Background(), 64, [32]byte{'A'}, b, b, 1, 1)
+	_, err = s.insert(context.Background(), 256, [32]byte{'A'}, b, b, 1, 1)
 	require.NoError(t, err)
-	s.genesisTime = uint64(time.Now().Add(time.Duration(-64*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
+	s.genesisTime = uint64(time.Now().Add(time.Duration(-256*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()
 	require.NoError(t, err)
 	require.Equal(t, uint64(1), count)
-	require.Equal(t, primitives.Slot(64), f.HighestReceivedBlockSlot())
+	require.Equal(t, primitives.Slot(256), f.HighestReceivedBlockSlot())
 
-	// 64 65
+	// 256 257
 	// Received block last epoch is 2
-	_, err = s.insert(context.Background(), 65, [32]byte{'B'}, b, b, 1, 1)
+	_, err = s.insert(context.Background(), 257, [32]byte{'B'}, b, b, 1, 1)
 	require.NoError(t, err)
-	s.genesisTime = uint64(time.Now().Add(time.Duration(-65*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
+	s.genesisTime = uint64(time.Now().Add(time.Duration(-257*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()
 	require.NoError(t, err)
 	require.Equal(t, uint64(2), count)
-	require.Equal(t, primitives.Slot(65), f.HighestReceivedBlockSlot())
+	require.Equal(t, primitives.Slot(257), f.HighestReceivedBlockSlot())
 
-	// 64 65 66
+	// 256 257 258
 	// Received block last epoch is 3
-	_, err = s.insert(context.Background(), 66, [32]byte{'C'}, b, b, 1, 1)
+	_, err = s.insert(context.Background(), 258, [32]byte{'C'}, b, b, 1, 1)
 	require.NoError(t, err)
-	s.genesisTime = uint64(time.Now().Add(time.Duration(-66*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
+	s.genesisTime = uint64(time.Now().Add(time.Duration(-258*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()
 	require.NoError(t, err)
 	require.Equal(t, uint64(3), count)
-	require.Equal(t, primitives.Slot(66), f.HighestReceivedBlockSlot())
+	require.Equal(t, primitives.Slot(258), f.HighestReceivedBlockSlot())
 
-	// 64 65 66
-	//       98
+	// 256 257 258
+	//       386
 	// Received block last epoch is 1
-	_, err = s.insert(context.Background(), 98, [32]byte{'D'}, b, b, 1, 1)
+	_, err = s.insert(context.Background(), 386, [32]byte{'D'}, b, b, 1, 1)
 	require.NoError(t, err)
-	s.genesisTime = uint64(time.Now().Add(time.Duration(-98*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
+	s.genesisTime = uint64(time.Now().Add(time.Duration(-386*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()
 	require.NoError(t, err)
 	require.Equal(t, uint64(1), count)
-	require.Equal(t, primitives.Slot(98), f.HighestReceivedBlockSlot())
+	require.Equal(t, primitives.Slot(386), f.HighestReceivedBlockSlot())
 
-	// 64 65 66
-	//       98
-	//              132
+	// 256 257 258
+	//       386
+	//              516
 	// Received block last epoch is 1
-	_, err = s.insert(context.Background(), 132, [32]byte{'E'}, b, b, 1, 1)
+	_, err = s.insert(context.Background(), 516, [32]byte{'E'}, b, b, 1, 1)
 	require.NoError(t, err)
-	s.genesisTime = uint64(time.Now().Add(time.Duration(-132*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
+	s.genesisTime = uint64(time.Now().Add(time.Duration(-516*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()
 	require.NoError(t, err)
 	require.Equal(t, uint64(1), count)
-	require.Equal(t, primitives.Slot(132), f.HighestReceivedBlockSlot())
+	require.Equal(t, primitives.Slot(516), f.HighestReceivedBlockSlot())
 
-	// 64 65 66
-	//       98
-	//              132
-	//       99
-	// Received block last epoch is still 1. 99 is outside the window
-	_, err = s.insert(context.Background(), 99, [32]byte{'F'}, b, b, 1, 1)
+	// 256 257 258
+	//       386
+	//              516
+	//       387
+	// Received block last epoch is still 1. 387 is outside the window
+	_, err = s.insert(context.Background(), 387, [32]byte{'F'}, b, b, 1, 1)
 	require.NoError(t, err)
-	s.genesisTime = uint64(time.Now().Add(time.Duration(-132*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
+	s.genesisTime = uint64(time.Now().Add(time.Duration(-516*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()
 	require.NoError(t, err)
 	require.Equal(t, uint64(1), count)
-	require.Equal(t, primitives.Slot(132), f.HighestReceivedBlockSlot())
+	require.Equal(t, primitives.Slot(516), f.HighestReceivedBlockSlot())
 
-	// 64 65 66
-	//       98
-	//              132
-	//       99 100
-	// Received block last epoch is still 1. 100 is at the same position as 132
-	_, err = s.insert(context.Background(), 100, [32]byte{'G'}, b, b, 1, 1)
+	// 256 257 258
+	//       386
+	//              516
+	//       387 388
+	// Received block last epoch is still 1. 388 is at the same position as 132
+	_, err = s.insert(context.Background(), 388, [32]byte{'G'}, b, b, 1, 1)
 	require.NoError(t, err)
-	s.genesisTime = uint64(time.Now().Add(time.Duration(-132*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
+	s.genesisTime = uint64(time.Now().Add(time.Duration(-516*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()
 	require.NoError(t, err)
 	require.Equal(t, uint64(1), count)
-	require.Equal(t, primitives.Slot(132), f.HighestReceivedBlockSlot())
+	require.Equal(t, primitives.Slot(516), f.HighestReceivedBlockSlot())
 
-	// 64 65 66
-	//       98
-	//              132
-	//       99 100 101
-	// Received block last epoch is 2. 101 is within the window
-	_, err = s.insert(context.Background(), 101, [32]byte{'H'}, b, b, 1, 1)
+	// 256 257 258
+	//       386
+	//              516
+	//       387 388 389
+	// Received block last epoch is 2. 389 is within the window
+	_, err = s.insert(context.Background(), 389, [32]byte{'H'}, b, b, 1, 1)
 	require.NoError(t, err)
-	s.genesisTime = uint64(time.Now().Add(time.Duration(-132*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
+	s.genesisTime = uint64(time.Now().Add(time.Duration(-516*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()
 	require.NoError(t, err)
 	require.Equal(t, uint64(2), count)
-	require.Equal(t, primitives.Slot(132), f.HighestReceivedBlockSlot())
+	require.Equal(t, primitives.Slot(516), f.HighestReceivedBlockSlot())
 
-	s.genesisTime = uint64(time.Now().Add(time.Duration(-134*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
+	s.genesisTime = uint64(time.Now().Add(time.Duration(-518*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()
 	require.NoError(t, err)
 	require.Equal(t, uint64(1), count)
-	s.genesisTime = uint64(time.Now().Add(time.Duration(-165*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
+	s.genesisTime = uint64(time.Now().Add(time.Duration(-645*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()
 	require.NoError(t, err)
 	require.Equal(t, uint64(0), count)

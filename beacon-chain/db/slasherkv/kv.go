@@ -1,5 +1,5 @@
 // Package slasherkv defines a bolt-db, key-value store implementation
-// of the slasher database interface for Prysm.
+// of the slasher database interface for Qrysm.
 package slasherkv
 
 import (
@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db/iface"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/beacon-chain/db/iface"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/io/file"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -25,8 +25,8 @@ const (
 	mmapSize = 536870912
 )
 
-// Store defines an implementation of the Prysm Database interface
-// using BoltDB as the underlying persistent kv-store for Ethereum consensus.
+// Store defines an implementation of the Qrysm Database interface
+// using BoltDB as the underlying persistent kv-store for Zond consensus.
 type Store struct {
 	db           *bolt.DB
 	databasePath string

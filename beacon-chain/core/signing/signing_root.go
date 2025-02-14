@@ -5,13 +5,12 @@ import (
 
 	"github.com/pkg/errors"
 	fssz "github.com/prysmaticlabs/fastssz"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // ForkVersionByteLength length of fork version byte array.
@@ -41,7 +40,7 @@ const (
 	SelectionProof = "selection proof"
 	// AggregatorSignature represents aggregator's signature
 	AggregatorSignature = "aggregator signature"
-	// AttestationSignature represents aggregated attestation signature
+	// AttestationSignature represents attestation signature
 	AttestationSignature = "attestation signature"
 	// DilithiumChangeSignature represents signature to DilithiumToExecutionChange
 	DilithiumChangeSignature = "dilithiumchange signature"
@@ -58,15 +57,19 @@ const (
 // ComputeDomainAndSign computes the domain and signing root and sign it using the passed in private key.
 func ComputeDomainAndSign(st state.ReadOnlyBeaconState, epoch primitives.Epoch, obj fssz.HashRoot, domain [4]byte, key dilithium.DilithiumKey) ([]byte, error) {
 	fork := st.Fork()
+
+	// NOTE(rgeraldes24): important for a future fork
 	// EIP-7044: Beginning in Deneb, fix the fork version to Capella for signed exits.
 	// This allows for signed validator exits to be valid forever.
-	if st.Version() >= version.Deneb && domain == params.BeaconConfig().DomainVoluntaryExit {
-		fork = &zondpb.Fork{
-			PreviousVersion: params.BeaconConfig().CapellaForkVersion,
-			CurrentVersion:  params.BeaconConfig().CapellaForkVersion,
-			Epoch:           params.BeaconConfig().CapellaForkEpoch,
+	/*
+		if st.Version() >= version.Deneb && domain == params.BeaconConfig().DomainVoluntaryExit {
+			fork = &zondpb.Fork{
+				PreviousVersion: params.BeaconConfig().CapellaForkVersion,
+				CurrentVersion:  params.BeaconConfig().CapellaForkVersion,
+				Epoch:           params.BeaconConfig().CapellaForkEpoch,
+			}
 		}
-	}
+	*/
 
 	d, err := Domain(fork, epoch, domain, st.GenesisValidatorsRoot())
 	if err != nil {
@@ -169,7 +172,7 @@ func VerifyBlockSigningRoot(pub, signature, domain []byte, rootFunc func() ([32]
 		return err
 	}
 	// We assume only one signature batch is returned here.
-	sig := set.Signatures[0]
+	sig := set.Signatures[0][0]
 	publicKey := set.PublicKeys[0][0]
 	root := set.Messages[0]
 
@@ -197,14 +200,14 @@ func BlockSignatureBatch(pub, signature, domain []byte, rootFunc func() ([32]byt
 	}
 	desc := BlockSignature
 	return &dilithium.SignatureBatch{
-		Signatures:   [][]byte{signature},
+		Signatures:   [][][]byte{{signature}},
 		PublicKeys:   [][]dilithium.PublicKey{{publicKey}},
 		Messages:     [][32]byte{root},
 		Descriptions: []string{desc},
 	}, nil
 }
 
-// ComputeDomain returns the domain version for BLS private key to sign and verify with a zeroed 4-byte
+// ComputeDomain returns the domain version for Dilithium private key to sign and verify with a zeroed 4-byte
 // array as the fork version.
 //
 // def compute_domain(domain_type: DomainType, fork_version: Version=None, genesis_validators_root: Root=None) -> Domain:
@@ -236,7 +239,7 @@ func ComputeDomain(domainType [DomainByteLength]byte, forkVersion, genesisValida
 	return domain(domainType, forkDataRoot[:]), nil
 }
 
-// This returns the bls domain given by the domain type and fork data root.
+// This returns the dilithium domain given by the domain type and fork data root.
 func domain(domainType [DomainByteLength]byte, forkDataRoot []byte) []byte {
 	var b []byte
 	b = append(b, domainType[:4]...)

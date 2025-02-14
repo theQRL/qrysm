@@ -6,7 +6,7 @@ go_library(
         "list.go",
         "lru.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/cache/nonblocking",
+    importpath = "github.com/theQRL/qrysm/cache/nonblocking",
     visibility = ["//visibility:public"],
 )
 

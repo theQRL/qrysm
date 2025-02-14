@@ -7,9 +7,7 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/network/forks"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
 )
 
 var _ pubsub.SubscriptionFilter = (*Service)(nil)
@@ -37,37 +35,13 @@ func (s *Service) CanSubscribe(topic string) bool {
 	if parts[1] != "eth2" {
 		return false
 	}
-	phase0ForkDigest, err := s.currentForkDigest()
-	if err != nil {
-		log.WithError(err).Error("Could not determine fork digest")
-		return false
-	}
-	altairForkDigest, err := forks.ForkDigestFromEpoch(params.BeaconConfig().AltairForkEpoch, s.genesisValidatorsRoot)
-	if err != nil {
-		log.WithError(err).Error("Could not determine altair fork digest")
-		return false
-	}
-	bellatrixForkDigest, err := forks.ForkDigestFromEpoch(params.BeaconConfig().BellatrixForkEpoch, s.genesisValidatorsRoot)
-	if err != nil {
-		log.WithError(err).Error("Could not determine Bellatrix fork digest")
-		return false
-	}
-	capellaForkDigest, err := forks.ForkDigestFromEpoch(params.BeaconConfig().CapellaForkEpoch, s.genesisValidatorsRoot)
+	capellaForkDigest, err := s.currentForkDigest()
 	if err != nil {
 		log.WithError(err).Error("Could not determine Capella fork digest")
 		return false
 	}
-	denebForkDigest, err := forks.ForkDigestFromEpoch(params.BeaconConfig().DenebForkEpoch, s.genesisValidatorsRoot)
-	if err != nil {
-		log.WithError(err).Error("Could not determine Deneb fork digest")
-		return false
-	}
 	switch parts[2] {
-	case fmt.Sprintf("%x", phase0ForkDigest):
-	case fmt.Sprintf("%x", altairForkDigest):
-	case fmt.Sprintf("%x", bellatrixForkDigest):
 	case fmt.Sprintf("%x", capellaForkDigest):
-	case fmt.Sprintf("%x", denebForkDigest):
 	default:
 		return false
 	}

@@ -1,5 +1,5 @@
 // Package prometheus defines a service which is used for metrics collection
-// and health of a node in Prysm.
+// and health of a node in Qrysm.
 package prometheus
 
 import (
@@ -15,7 +15,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/runtime"
+	"github.com/theQRL/qrysm/runtime"
 )
 
 var log = logrus.WithField("prefix", "prometheus")

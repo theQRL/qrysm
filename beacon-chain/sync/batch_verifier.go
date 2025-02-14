@@ -6,8 +6,8 @@ import (
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/monitoring/tracing"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/monitoring/tracing"
 	"go.opencensus.io/trace"
 )
 
@@ -50,7 +50,7 @@ func (s *Service) verifierRoutine() {
 }
 
 func (s *Service) validateWithBatchVerifier(ctx context.Context, message string, set *dilithium.SignatureBatch) (pubsub.ValidationResult, error) {
-	ctx, span := trace.StartSpan(ctx, "sync.validateWithBatchVerifier")
+	_, span := trace.StartSpan(ctx, "sync.validateWithBatchVerifier")
 	defer span.End()
 
 	resChan := make(chan error)
@@ -89,7 +89,7 @@ func verifyBatch(verifierBatch []*signatureVerifier) {
 	}
 	var verificationErr error
 
-	aggSet, verificationErr = performBatchAggregation(aggSet)
+	aggSet, verificationErr = removeDuplicates(aggSet)
 	if verificationErr == nil {
 		verified, err := aggSet.Verify()
 		switch {
@@ -104,21 +104,12 @@ func verifyBatch(verifierBatch []*signatureVerifier) {
 	}
 }
 
-func performBatchAggregation(aggSet *dilithium.SignatureBatch) (*dilithium.SignatureBatch, error) {
-	currLen := len(aggSet.Signatures)
+func removeDuplicates(aggSet *dilithium.SignatureBatch) (*dilithium.SignatureBatch, error) {
 	num, aggSet, err := aggSet.RemoveDuplicates()
 	if err != nil {
 		return nil, err
 	}
 	duplicatesRemovedCounter.Add(float64(num))
-	// Aggregate batches in the provided signature batch.
-	aggSet, err = aggSet.AggregateBatch()
-	if err != nil {
-		return nil, err
-	}
-	// Record number of signature sets successfully batched.
-	if currLen > len(aggSet.Signatures) {
-		numberOfSetsAggregated.Observe(float64(currLen - len(aggSet.Signatures)))
-	}
+
 	return aggSet, nil
 }

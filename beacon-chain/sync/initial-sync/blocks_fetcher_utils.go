@@ -7,14 +7,14 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	p2pTypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	p2ppb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	p2pTypes "github.com/theQRL/qrysm/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	p2ppb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
 
@@ -23,7 +23,7 @@ import (
 // either in DB or initial sync cache.
 type forkData struct {
 	peer peer.ID
-	bwb  []blocks.BlockWithVerifiedBlobs
+	blks []blocks.ROBlock
 }
 
 // nonSkippedSlotAfter checks slots after the given one in an attempt to find a non-empty future slot.
@@ -274,19 +274,12 @@ func (f *blocksFetcher) findForkWithPeer(ctx context.Context, pid peer.ID, slot 
 			"slot": block.Block().Slot(),
 			"root": fmt.Sprintf("%#x", parentRoot),
 		}).Debug("Block with unknown parent root has been found")
-		altBlocks, err := sortedBlockWithVerifiedBlobSlice(blocks[i-1:])
+		altBlocks, err := sortedROBlockSlice(blocks[i-1:])
 		if err != nil {
 			return nil, errors.Wrap(err, "invalid blocks received in findForkWithPeer")
 		}
-		// We need to fetch the blobs for the given alt-chain if any exist, so that we can try to verify and import
-		// the blocks.
-		bwb, err := f.fetchBlobsFromPeer(ctx, altBlocks, pid)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to retrieve blobs for blocks found in findForkWithPeer")
-		}
-		// The caller will use the BlocksWith VerifiedBlobs in bwb as the starting point for
-		// round-robin syncing the alternate chain.
-		return &forkData{peer: pid, bwb: bwb}, nil
+
+		return &forkData{peer: pid, blks: altBlocks}, nil
 	}
 	return nil, errNoAlternateBlocks
 }
@@ -298,17 +291,14 @@ func (f *blocksFetcher) findAncestor(ctx context.Context, pid peer.ID, b interfa
 		parentRoot := outBlocks[len(outBlocks)-1].Block().ParentRoot()
 		if f.chain.HasBlock(ctx, parentRoot) {
 			// Common ancestor found, forward blocks back to processor.
-			bwb, err := sortedBlockWithVerifiedBlobSlice(outBlocks)
+			blks, err := sortedROBlockSlice(outBlocks)
 			if err != nil {
 				return nil, errors.Wrap(err, "received invalid blocks in findAncestor")
 			}
-			bwb, err = f.fetchBlobsFromPeer(ctx, bwb, pid)
-			if err != nil {
-				return nil, errors.Wrap(err, "unable to retrieve blobs for blocks found in findAncestor")
-			}
+
 			return &forkData{
 				peer: pid,
-				bwb:  bwb,
+				blks: blks,
 			}, nil
 		}
 		// Request block's parent.

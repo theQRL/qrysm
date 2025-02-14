@@ -6,7 +6,7 @@ type ListKeystoresResponseJson struct {
 
 type KeystoreJson struct {
 	ValidatingPubkey string `json:"validating_pubkey" hex:"true"`
-	DerivationPath   string `json:"derivation_path"`
+	// DerivationPath   string `json:"derivation_path"`
 }
 
 type ImportKeystoresRequestJson struct {
@@ -34,7 +34,7 @@ type DeleteKeystoresResponseJson struct {
 }
 
 //remote keymanager api
-
+/*
 type ListRemoteKeysResponseJson struct {
 	Keystores []*RemoteKeysListJson `json:"data"`
 }
@@ -66,10 +66,11 @@ type DeleteRemoteKeysRequestJson struct {
 type DeleteRemoteKeysResponseJson struct {
 	Statuses []*StatusJson `json:"data"`
 }
+*/
 
 type FeeRecipientJson struct {
-	Pubkey     string `json:"pubkey" hex:"true"`
-	Ethaddress string `json:"ethaddress" address:"true"`
+	Pubkey      string `json:"pubkey" hex:"true"`
+	Zondaddress string `json:"zondaddress" address:"true"`
 }
 
 type GasLimitJson struct {
@@ -82,7 +83,7 @@ type GetFeeRecipientByPubkeyResponseJson struct {
 }
 
 type SetFeeRecipientByPubkeyRequestJson struct {
-	Ethaddress string `json:"ethaddress" hex:"true"`
+	Zondaddress string `json:"zondaddress" hex:"true"`
 }
 
 type DeleteFeeRecipientByPubkeyRequestJson struct {

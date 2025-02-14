@@ -1,11 +1,11 @@
 # eth1voting
 
-This tool can be used to query a Prysm node to print eth1voting information.
+This tool can be used to query a Qrysm node to print eth1voting information.
 
 Flags:
 ```
   -beacon string
-        gRPC address of the Prysm beacon node (default "127.0.0.1:4000")
+        gRPC address of the Qrysm beacon node (default "127.0.0.1:4000")
   -genesis uint
         Genesis time. mainnet=1606824023, prater=1616508000 (default 1606824023)
 ```

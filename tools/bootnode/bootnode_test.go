@@ -12,11 +12,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/p2p/discover"
 	"github.com/theQRL/go-zond/p2p/enode"
-	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
-	"github.com/theQRL/qrysm/v4/network"
-	_ "github.com/theQRL/qrysm/v4/runtime/maxprocs"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	ecdsaqrysm "github.com/theQRL/qrysm/crypto/ecdsa"
+	"github.com/theQRL/qrysm/network"
+	_ "github.com/theQRL/qrysm/runtime/maxprocs"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestMain(m *testing.M) {
@@ -68,7 +68,7 @@ func TestPrivateKey_ParsesCorrectly(t *testing.T) {
 
 	extractedKey := extractPrivateKey()
 
-	rawKey, err := ecdsaprysm.ConvertFromInterfacePrivKey(privKey)
+	rawKey, err := ecdsaqrysm.ConvertFromInterfacePrivKey(privKey)
 	require.NoError(t, err)
 
 	r, s, err := ecdsa.Sign(rand.Reader, extractedKey, []byte{'t', 'e', 's', 't'})

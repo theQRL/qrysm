@@ -5,19 +5,19 @@ import (
 	"encoding/binary"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/encoding/ssz"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
+	"github.com/theQRL/qrysm/beacon-chain/state/stateutil"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/encoding/ssz"
+	"github.com/theQRL/qrysm/runtime/version"
 	"go.opencensus.io/trace"
 )
 
 // ComputeFieldRootsWithHasher hashes the provided state and returns its respective field roots.
 func ComputeFieldRootsWithHasher(ctx context.Context, state *BeaconState) ([][]byte, error) {
-	ctx, span := trace.StartSpan(ctx, "ComputeFieldRootsWithHasher")
+	_, span := trace.StartSpan(ctx, "ComputeFieldRootsWithHasher")
 	defer span.End()
 
 	if state == nil {
@@ -25,16 +25,8 @@ func ComputeFieldRootsWithHasher(ctx context.Context, state *BeaconState) ([][]b
 	}
 	var fieldRoots [][]byte
 	switch state.version {
-	case version.Phase0:
-		fieldRoots = make([][]byte, params.BeaconConfig().BeaconStateFieldCount)
-	case version.Altair:
-		fieldRoots = make([][]byte, params.BeaconConfig().BeaconStateAltairFieldCount)
-	case version.Bellatrix:
-		fieldRoots = make([][]byte, params.BeaconConfig().BeaconStateBellatrixFieldCount)
 	case version.Capella:
-		fieldRoots = make([][]byte, params.BeaconConfig().BeaconStateCapellaFieldCount) // Deneb has the same state field count as Capella.
-	case version.Deneb:
-		fieldRoots = make([][]byte, params.BeaconConfig().BeaconStateDenebFieldCount)
+		fieldRoots = make([][]byte, params.BeaconConfig().BeaconStateCapellaFieldCount)
 	}
 
 	// Genesis time root.
@@ -137,37 +129,19 @@ func ComputeFieldRootsWithHasher(ctx context.Context, state *BeaconState) ([][]b
 	}
 	fieldRoots[types.Slashings.RealPosition()] = slashingsRootsRoot[:]
 
-	if state.version == version.Phase0 {
-		// PreviousEpochAttestations slice root.
-		prevAttsRoot, err := stateutil.EpochAttestationsRoot(state.previousEpochAttestations)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not compute previous epoch attestations merkleization")
-		}
-		fieldRoots[types.PreviousEpochAttestations.RealPosition()] = prevAttsRoot[:]
-
-		// CurrentEpochAttestations slice root.
-		currAttsRoot, err := stateutil.EpochAttestationsRoot(state.currentEpochAttestations)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not compute current epoch attestations merkleization")
-		}
-		fieldRoots[types.CurrentEpochAttestations.RealPosition()] = currAttsRoot[:]
+	// PreviousEpochParticipation slice root.
+	prevParticipationRoot, err := stateutil.ParticipationBitsRoot(state.previousEpochParticipation)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not compute previous epoch participation merkleization")
 	}
+	fieldRoots[types.PreviousEpochParticipationBits.RealPosition()] = prevParticipationRoot[:]
 
-	if state.version >= version.Altair {
-		// PreviousEpochParticipation slice root.
-		prevParticipationRoot, err := stateutil.ParticipationBitsRoot(state.previousEpochParticipation)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not compute previous epoch participation merkleization")
-		}
-		fieldRoots[types.PreviousEpochParticipationBits.RealPosition()] = prevParticipationRoot[:]
-
-		// CurrentEpochParticipation slice root.
-		currParticipationRoot, err := stateutil.ParticipationBitsRoot(state.currentEpochParticipation)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not compute current epoch participation merkleization")
-		}
-		fieldRoots[types.CurrentEpochParticipationBits.RealPosition()] = currParticipationRoot[:]
+	// CurrentEpochParticipation slice root.
+	currParticipationRoot, err := stateutil.ParticipationBitsRoot(state.currentEpochParticipation)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not compute current epoch participation merkleization")
 	}
+	fieldRoots[types.CurrentEpochParticipationBits.RealPosition()] = currParticipationRoot[:]
 
 	// JustificationBits root.
 	justifiedBitsRoot := bytesutil.ToBytes32(state.justificationBits)
@@ -194,73 +168,50 @@ func ComputeFieldRootsWithHasher(ctx context.Context, state *BeaconState) ([][]b
 	}
 	fieldRoots[types.FinalizedCheckpoint.RealPosition()] = finalRoot[:]
 
-	if state.version >= version.Altair {
-		// Inactivity scores root.
-		inactivityScoresRoot, err := stateutil.Uint64ListRootWithRegistryLimit(state.inactivityScoresVal())
-		if err != nil {
-			return nil, errors.Wrap(err, "could not compute inactivityScoreRoot")
-		}
-		fieldRoots[types.InactivityScores.RealPosition()] = inactivityScoresRoot[:]
-
-		// Current sync committee root.
-		currentSyncCommitteeRoot, err := stateutil.SyncCommitteeRoot(state.currentSyncCommittee)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not compute sync committee merkleization")
-		}
-		fieldRoots[types.CurrentSyncCommittee.RealPosition()] = currentSyncCommitteeRoot[:]
-
-		// Next sync committee root.
-		nextSyncCommitteeRoot, err := stateutil.SyncCommitteeRoot(state.nextSyncCommittee)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not compute sync committee merkleization")
-		}
-		fieldRoots[types.NextSyncCommittee.RealPosition()] = nextSyncCommitteeRoot[:]
+	// Inactivity scores root.
+	inactivityScoresRoot, err := stateutil.Uint64ListRootWithRegistryLimit(state.inactivityScoresVal())
+	if err != nil {
+		return nil, errors.Wrap(err, "could not compute inactivityScoreRoot")
 	}
+	fieldRoots[types.InactivityScores.RealPosition()] = inactivityScoresRoot[:]
 
-	if state.version == version.Bellatrix {
-		// Execution payload root.
-		executionPayloadRoot, err := state.latestExecutionPayloadHeader.HashTreeRoot()
-		if err != nil {
-			return nil, err
-		}
-		fieldRoots[types.LatestExecutionPayloadHeader.RealPosition()] = executionPayloadRoot[:]
+	// Current sync committee root.
+	currentSyncCommitteeRoot, err := stateutil.SyncCommitteeRoot(state.currentSyncCommittee)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not compute sync committee merkleization")
 	}
+	fieldRoots[types.CurrentSyncCommittee.RealPosition()] = currentSyncCommitteeRoot[:]
 
-	if state.version == version.Capella {
-		// Execution payload root.
-		executionPayloadRoot, err := state.latestExecutionPayloadHeaderCapella.HashTreeRoot()
-		if err != nil {
-			return nil, err
-		}
-		fieldRoots[types.LatestExecutionPayloadHeaderCapella.RealPosition()] = executionPayloadRoot[:]
+	// Next sync committee root.
+	nextSyncCommitteeRoot, err := stateutil.SyncCommitteeRoot(state.nextSyncCommittee)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not compute sync committee merkleization")
 	}
+	fieldRoots[types.NextSyncCommittee.RealPosition()] = nextSyncCommitteeRoot[:]
 
-	if state.version == version.Deneb {
-		// Execution payload root.
-		executionPayloadRoot, err := state.latestExecutionPayloadHeaderDeneb.HashTreeRoot()
-		if err != nil {
-			return nil, err
-		}
-		fieldRoots[types.LatestExecutionPayloadHeaderDeneb.RealPosition()] = executionPayloadRoot[:]
+	// Execution payload root.
+	executionPayloadRoot, err := state.latestExecutionPayloadHeaderCapella.HashTreeRoot()
+	if err != nil {
+		return nil, err
 	}
-	if state.version >= version.Capella {
-		// Next withdrawal index root.
-		nextWithdrawalIndexRoot := make([]byte, 32)
-		binary.LittleEndian.PutUint64(nextWithdrawalIndexRoot, state.nextWithdrawalIndex)
-		fieldRoots[types.NextWithdrawalIndex.RealPosition()] = nextWithdrawalIndexRoot
+	fieldRoots[types.LatestExecutionPayloadHeaderCapella.RealPosition()] = executionPayloadRoot[:]
 
-		// Next partial withdrawal validator index root.
-		nextWithdrawalValidatorIndexRoot := make([]byte, 32)
-		binary.LittleEndian.PutUint64(nextWithdrawalValidatorIndexRoot, uint64(state.nextWithdrawalValidatorIndex))
-		fieldRoots[types.NextWithdrawalValidatorIndex.RealPosition()] = nextWithdrawalValidatorIndexRoot
+	// Next withdrawal index root.
+	nextWithdrawalIndexRoot := make([]byte, 32)
+	binary.LittleEndian.PutUint64(nextWithdrawalIndexRoot, state.nextWithdrawalIndex)
+	fieldRoots[types.NextWithdrawalIndex.RealPosition()] = nextWithdrawalIndexRoot
 
-		// Historical summary root.
-		historicalSummaryRoot, err := stateutil.HistoricalSummariesRoot(state.historicalSummaries)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not compute historical summary merkleization")
-		}
-		fieldRoots[types.HistoricalSummaries.RealPosition()] = historicalSummaryRoot[:]
+	// Next partial withdrawal validator index root.
+	nextWithdrawalValidatorIndexRoot := make([]byte, 32)
+	binary.LittleEndian.PutUint64(nextWithdrawalValidatorIndexRoot, uint64(state.nextWithdrawalValidatorIndex))
+	fieldRoots[types.NextWithdrawalValidatorIndex.RealPosition()] = nextWithdrawalValidatorIndexRoot
+
+	// Historical summary root.
+	historicalSummaryRoot, err := stateutil.HistoricalSummariesRoot(state.historicalSummaries)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not compute historical summary merkleization")
 	}
+	fieldRoots[types.HistoricalSummaries.RealPosition()] = historicalSummaryRoot[:]
 
 	return fieldRoots, nil
 }

@@ -2,24 +2,22 @@ package kv
 
 import (
 	"context"
-	"encoding/hex"
 	"os"
 	"testing"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db/iface"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/db/iface"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestStore_SaveGenesisData(t *testing.T) {
 	ctx := context.Background()
 	db := setupDB(t)
 
-	gs, err := util.NewBeaconState()
+	gs, err := util.NewBeaconStateCapella()
 	assert.NoError(t, err)
 
 	assert.NoError(t, db.SaveGenesisData(ctx, gs))
@@ -48,37 +46,6 @@ func testGenesisDataSaved(t *testing.T, db iface.Database) {
 	headHTR, err := head.Block().HashTreeRoot()
 	require.NoError(t, err)
 	require.Equal(t, gbHTR, headHTR, "head block does not match genesis block")
-}
-
-func TestLoadCapellaFromFile(t *testing.T) {
-	cfg, err := params.ByName(params.MainnetName)
-	require.NoError(t, err)
-	// This state fixture is from a hive testnet, `0a` is the suffix they are using in their fork versions.
-	suffix, err := hex.DecodeString("0a")
-	require.NoError(t, err)
-	require.Equal(t, 1, len(suffix))
-	reversioned := cfg.Copy()
-	params.FillTestVersions(reversioned, suffix[0])
-	reversioned.CapellaForkEpoch = 0
-	require.Equal(t, [4]byte{3, 0, 0, 10}, bytesutil.ToBytes4(reversioned.CapellaForkVersion))
-	reversioned.ConfigName = "capella-genesis-test"
-	undo, err := params.SetActiveWithUndo(reversioned)
-	require.NoError(t, err)
-	defer func() {
-		require.NoError(t, undo())
-	}()
-
-	fp := "testdata/capella_genesis.ssz"
-	rfp, err := bazel.Runfile(fp)
-	if err == nil {
-		fp = rfp
-	}
-	sb, err := os.ReadFile(fp)
-	require.NoError(t, err)
-
-	db := setupDB(t)
-	require.NoError(t, db.LoadGenesis(context.Background(), sb))
-	testGenesisDataSaved(t, db)
 }
 
 func TestLoadGenesisFromFile(t *testing.T) {

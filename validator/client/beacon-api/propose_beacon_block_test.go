@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
+	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
 )
 
 func TestProposeBeaconBlock_Error(t *testing.T) {
@@ -41,35 +41,11 @@ func TestProposeBeaconBlock_Error(t *testing.T) {
 		block            *zondpb.GenericSignedBeaconBlock
 	}{
 		{
-			name:             "phase0",
-			consensusVersion: "phase0",
+			name:             "capella",
+			consensusVersion: "capella",
 			endpoint:         "/zond/v1/beacon/blocks",
 			block: &zondpb.GenericSignedBeaconBlock{
-				Block: generateSignedPhase0Block(),
-			},
-		},
-		{
-			name:             "altair",
-			consensusVersion: "altair",
-			endpoint:         "/zond/v1/beacon/blocks",
-			block: &zondpb.GenericSignedBeaconBlock{
-				Block: generateSignedAltairBlock(),
-			},
-		},
-		{
-			name:             "bellatrix",
-			consensusVersion: "bellatrix",
-			endpoint:         "/zond/v1/beacon/blocks",
-			block: &zondpb.GenericSignedBeaconBlock{
-				Block: generateSignedBellatrixBlock(),
-			},
-		},
-		{
-			name:             "blinded bellatrix",
-			consensusVersion: "bellatrix",
-			endpoint:         "/zond/v1/beacon/blinded_blocks",
-			block: &zondpb.GenericSignedBeaconBlock{
-				Block: generateSignedBlindedBellatrixBlock(),
+				Block: generateSignedCapellaBlock(),
 			},
 		},
 		{

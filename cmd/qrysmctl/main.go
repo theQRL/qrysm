@@ -4,13 +4,12 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/cmd/qrysmctl/checkpointsync"
-	"github.com/theQRL/qrysm/v4/cmd/qrysmctl/db"
-	"github.com/theQRL/qrysm/v4/cmd/qrysmctl/deprecated"
-	"github.com/theQRL/qrysm/v4/cmd/qrysmctl/p2p"
-	"github.com/theQRL/qrysm/v4/cmd/qrysmctl/testnet"
-	"github.com/theQRL/qrysm/v4/cmd/qrysmctl/validator"
-	"github.com/theQRL/qrysm/v4/cmd/qrysmctl/weaksubjectivity"
+	"github.com/theQRL/qrysm/cmd/qrysmctl/checkpointsync"
+	"github.com/theQRL/qrysm/cmd/qrysmctl/db"
+	"github.com/theQRL/qrysm/cmd/qrysmctl/p2p"
+	"github.com/theQRL/qrysm/cmd/qrysmctl/testnet"
+	"github.com/theQRL/qrysm/cmd/qrysmctl/validator"
+	"github.com/theQRL/qrysm/cmd/qrysmctl/weaksubjectivity"
 	"github.com/urfave/cli/v2"
 )
 
@@ -27,10 +26,6 @@ func main() {
 }
 
 func init() {
-	// contains the old checkpoint sync subcommands. these commands should display help/warn messages
-	// pointing to their new locations
-	qrysmctlCommands = append(qrysmctlCommands, deprecated.Commands...)
-
 	qrysmctlCommands = append(qrysmctlCommands, checkpointsync.Commands...)
 	qrysmctlCommands = append(qrysmctlCommands, db.Commands...)
 	qrysmctlCommands = append(qrysmctlCommands, p2p.Commands...)

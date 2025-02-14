@@ -20,11 +20,11 @@ import "google/protobuf/descriptor.proto";
 import "google/protobuf/empty.proto";
 
 import "proto/zond/v1/beacon_chain.proto";
-import "proto/zond/v2/beacon_state.proto";
-import "proto/zond/v2/ssz.proto";
+import "proto/zond/v1/beacon_state.proto";
+import "proto/zond/v1/ssz.proto";
 
 option csharp_namespace = "TheQRL.Zond.Service";
-option go_package = "github.com/theQRL/qrysm/v4/proto/zond/service";
+option go_package = "github.com/theQRL/qrysm/proto/zond/service";
 option java_multiple_files = true;
 option java_outer_classname = "BeaconDebugServiceProto";
 option java_package = "org.theqrl.zond.service";
@@ -36,39 +36,30 @@ option php_namespace = "TheQRL\\Zond\\Service";
 //
 // This service is defined in the upstream Ethereum consensus APIs repository (beacon-apis/apis/debug).
 service BeaconDebug {
+  // GetBeaconState returns full BeaconState object for given stateId.
+  //
+  // Spec: https://ethereum.github.io/beacon-APIs/?urls.primaryName=v2.3.0#/Debug/getStateV2
+  rpc GetBeaconState(v1.BeaconStateRequest) returns (v1.BeaconStateResponse) {
+    option (google.api.http) = {
+      get: "/internal/zond/v1/debug/beacon/states/{state_id}"
+    };
+  }
+
   // GetBeaconStateSSZ returns the SSZ-serialized version of the full BeaconState object for given stateId.
   //
-  // Spec: https://ethereum.github.io/beacon-APIs/?urls.primaryName=v2.3.0#/Debug/getState
-  rpc GetBeaconStateSSZ(v1.StateRequest) returns (v2.SSZContainer) {
+  // Spec: https://ethereum.github.io/beacon-APIs/?urls.primaryName=v2.3.0#/Debug/getStateV2
+  rpc GetBeaconStateSSZ(v1.BeaconStateRequest) returns (v1.SSZContainer) {
     option (google.api.http) = {
       get: "/internal/zond/v1/debug/beacon/states/{state_id}/ssz"
     };
   }
 
-  // GetBeaconStateV2 returns full BeaconState object for given stateId.
-  //
-  // Spec: https://ethereum.github.io/beacon-APIs/?urls.primaryName=v2.3.0#/Debug/getStateV2
-  rpc GetBeaconStateV2(v2.BeaconStateRequestV2) returns (v2.BeaconStateResponseV2) {
-    option (google.api.http) = {
-      get: "/internal/zond/v2/debug/beacon/states/{state_id}"
-    };
-  }
-
-  // GetBeaconStateSSZV2 returns the SSZ-serialized version of the full BeaconState object for given stateId.
-  //
-  // Spec: https://ethereum.github.io/beacon-APIs/?urls.primaryName=v2.3.0#/Debug/getStateV2
-  rpc GetBeaconStateSSZV2(v2.BeaconStateRequestV2) returns (v2.SSZContainer) {
-    option (google.api.http) = {
-      get: "/internal/zond/v2/debug/beacon/states/{state_id}/ssz"
-    };
-  }
-
-  // ListForkChoiceHeadsV2 retrieves all possible chain heads (leaves of fork choice tree).
+  // ListForkChoiceHeads retrieves all possible chain heads (leaves of fork choice tree).
   //
   // Spec: https://ethereum.github.io/beacon-APIs/?urls.primaryName=v2.3.0#/Debug/getDebugChainHeadsV2
-  rpc ListForkChoiceHeadsV2(google.protobuf.Empty) returns (v2.ForkChoiceHeadsResponse) {
+  rpc ListForkChoiceHeads(google.protobuf.Empty) returns (v1.ForkChoiceHeadsResponse) {
     option (google.api.http) = {
-      get: "/internal/zond/v2/debug/beacon/heads"
+      get: "/internal/zond/v1/debug/beacon/heads"
     };
   }
 

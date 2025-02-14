@@ -7,18 +7,17 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/beacon-chain/forkchoice"
-	forkchoicetypes "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/forkchoice"
+	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	v1 "github.com/theQRL/qrysm/proto/zond/v1"
+	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
 
@@ -116,14 +115,12 @@ func (f *ForkChoice) InsertNode(ctx context.Context, state state.BeaconState, ro
 	}
 	parentRoot := bytesutil.ToBytes32(bh.ParentRoot)
 	var payloadHash [32]byte
-	if state.Version() >= version.Bellatrix {
-		ph, err := state.LatestExecutionPayloadHeader()
-		if err != nil {
-			return err
-		}
-		if ph != nil {
-			copy(payloadHash[:], ph.BlockHash())
-		}
+	ph, err := state.LatestExecutionPayloadHeader()
+	if err != nil {
+		return err
+	}
+	if ph != nil {
+		copy(payloadHash[:], ph.BlockHash())
 	}
 	jc := state.CurrentJustifiedCheckpoint()
 	if jc == nil {

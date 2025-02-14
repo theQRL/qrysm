@@ -1,5 +1,6 @@
 package components
 
+/*
 import (
 	"context"
 	"encoding/hex"
@@ -18,12 +19,12 @@ import (
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/runtime/interop"
-	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
-	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/crypto/bls"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/runtime/interop"
+	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
+	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
 	"gopkg.in/yaml.v2"
 )
 
@@ -269,3 +270,4 @@ func createTestnetDir() (string, error) {
 
 	return configPath, nil
 }
+*/

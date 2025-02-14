@@ -4,20 +4,15 @@ import (
 	"io"
 	"strings"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
-	grpcutil "github.com/theQRL/qrysm/v4/api/grpc"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/validator/accounts"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	"github.com/theQRL/qrysm/v4/validator/client"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
-	"github.com/theQRL/qrysm/v4/validator/node"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	"github.com/theQRL/qrysm/validator/accounts"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/validator/client"
+	"github.com/theQRL/qrysm/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/keymanager/local"
 	"github.com/urfave/cli/v2"
-	"google.golang.org/grpc"
 )
 
 func AccountsExit(c *cli.Context, r io.Reader) error {
@@ -32,12 +27,12 @@ func AccountsExit(c *cli.Context, r io.Reader) error {
 	)
 	grpcHeaders := strings.Split(c.String(flags.GrpcHeadersFlag.Name), ",")
 	beaconRPCProvider := c.String(flags.BeaconRPCProviderFlag.Name)
-	if !c.IsSet(flags.Web3SignerURLFlag.Name) && !c.IsSet(flags.WalletDirFlag.Name) && !c.IsSet(flags.InteropNumValidators.Name) {
-		return errors.Errorf("No validators found, please provide a prysm wallet directory via flag --%s "+
-			"or a web3signer location with corresponding public keys via flags --%s and --%s ",
+	if /*!c.IsSet(flags.Web3SignerURLFlag.Name) &&*/ !c.IsSet(flags.WalletDirFlag.Name) && !c.IsSet(flags.InteropNumValidators.Name) {
+		return errors.Errorf("No validators found, please provide a qrysm wallet directory via flag --%s ", /*+
+			"or a web3signer location with corresponding public keys via flags --%s and --%s "*/
 			flags.WalletDirFlag.Name,
-			flags.Web3SignerURLFlag.Name,
-			flags.Web3SignerPublicValidatorKeysFlag,
+			// flags.Web3SignerURLFlag.Name,
+			// flags.Web3SignerPublicValidatorKeysFlag,
 		)
 	}
 	if c.IsSet(flags.InteropNumValidators.Name) {
@@ -46,29 +41,31 @@ func AccountsExit(c *cli.Context, r io.Reader) error {
 			return errors.Wrap(err, "could not generate interop keys for key manager")
 		}
 		w = &wallet.Wallet{}
-	} else if c.IsSet(flags.Web3SignerURLFlag.Name) {
-		ctx := grpcutil.AppendHeaders(c.Context, grpcHeaders)
-		conn, err := grpc.DialContext(ctx, beaconRPCProvider, dialOpts...)
-		if err != nil {
-			return errors.Wrapf(err, "could not dial endpoint %s", beaconRPCProvider)
-		}
-		nodeClient := zondpb.NewNodeClient(conn)
-		resp, err := nodeClient.GetGenesis(c.Context, &empty.Empty{})
-		if err != nil {
-			return errors.Wrapf(err, "failed to get genesis info")
-		}
-		if err := conn.Close(); err != nil {
-			log.WithError(err).Error("Failed to close connection")
-		}
-		config, err := node.Web3SignerConfig(c)
-		if err != nil {
-			return errors.Wrapf(err, "could not configure web3signer")
-		}
-		config.GenesisValidatorsRoot = resp.GenesisValidatorsRoot
-		w, km, err = walletWithWeb3SignerKeymanager(c, config)
-		if err != nil {
-			return err
-		}
+		/*
+			} else if c.IsSet(flags.Web3SignerURLFlag.Name) {
+				ctx := grpcutil.AppendHeaders(c.Context, grpcHeaders)
+				conn, err := grpc.DialContext(ctx, beaconRPCProvider, dialOpts...)
+				if err != nil {
+					return errors.Wrapf(err, "could not dial endpoint %s", beaconRPCProvider)
+				}
+				nodeClient := zondpb.NewNodeClient(conn)
+				resp, err := nodeClient.GetGenesis(c.Context, &empty.Empty{})
+				if err != nil {
+					return errors.Wrapf(err, "failed to get genesis info")
+				}
+				if err := conn.Close(); err != nil {
+					log.WithError(err).Error("Failed to close connection")
+				}
+				config, err := node.Web3SignerConfig(c)
+				if err != nil {
+					return errors.Wrapf(err, "could not configure web3signer")
+				}
+				config.GenesisValidatorsRoot = resp.GenesisValidatorsRoot
+				w, km, err = walletWithWeb3SignerKeymanager(c, config)
+				if err != nil {
+					return err
+				}
+		*/
 	} else {
 		w, km, err = walletWithKeymanager(c)
 		if err != nil {

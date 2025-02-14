@@ -4,16 +4,16 @@ import (
 	"strconv"
 	"testing"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/accounts/abi/bind"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/container/trie"
-	contracts "github.com/theQRL/qrysm/v4/contracts/deposit/mock"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/container/trie"
+	contracts "github.com/theQRL/qrysm/contracts/deposit/mock"
+	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestCreateTrieFromProto_Validation(t *testing.T) {
@@ -95,8 +95,8 @@ func TestMarshalDepositWithProof(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, len(proof), int(params.BeaconConfig().DepositContractTreeDepth)+1)
 	someRoot := [32]byte{1, 2, 3, 4}
-	someSig := [96]byte{1, 2, 3, 4}
-	someKey := [dilithium2.CryptoPublicKeyBytes]byte{1, 2, 3, 4}
+	someSig := [field_params.DilithiumSignatureLength]byte{1, 2, 3, 4}
+	someKey := [field_params.DilithiumPubkeyLength]byte{1, 2, 3, 4}
 	dep := &zondpb.Deposit{
 		Proof: proof,
 		Data: &zondpb.Deposit_Data{

@@ -9,11 +9,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/shared"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 func (c *beaconApiValidatorClient) submitSyncMessage(ctx context.Context, syncMessage *zondpb.SyncCommitteeMessage) error {
@@ -151,9 +151,13 @@ func convertSyncContributionJsonToProto(contribution *apimiddleware.SyncCommitte
 		return nil, errors.Wrapf(err, "failed to decode aggregation bits `%s`", contribution.AggregationBits)
 	}
 
-	signature, err := hexutil.Decode(contribution.Signature)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to decode contribution signature `%s`", contribution.Signature)
+	signatures := make([][]byte, len(contribution.Signatures))
+	for i, sig := range contribution.Signatures {
+		decodedSig, err := hexutil.Decode(sig)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to decode contribution signature `%s`", sig)
+		}
+		signatures[i] = decodedSig
 	}
 
 	return &zondpb.SyncCommitteeContribution{
@@ -161,6 +165,6 @@ func convertSyncContributionJsonToProto(contribution *apimiddleware.SyncCommitte
 		BlockRoot:         blockRoot,
 		SubcommitteeIndex: subcommitteeIdx,
 		AggregationBits:   aggregationBits,
-		Signature:         signature,
+		Signatures:        signatures,
 	}, nil
 }

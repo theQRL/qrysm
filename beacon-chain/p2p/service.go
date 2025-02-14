@@ -1,4 +1,4 @@
-// Package p2p defines the network protocol implementation for Ethereum consensus
+// Package p2p defines the network protocol implementation for Zond consensus
 // used by beacon nodes, including peer discovery using discv5, gossip-sub
 // using libp2p, and handing peer lifecycles + handshakes.
 package p2p
@@ -20,17 +20,17 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
-	"github.com/theQRL/qrysm/v4/async"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/scorers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/config/params"
-	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
-	prysmnetwork "github.com/theQRL/qrysm/v4/network"
-	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/metadata"
-	"github.com/theQRL/qrysm/v4/runtime"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/async"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/config/params"
+	leakybucket "github.com/theQRL/qrysm/container/leaky-bucket"
+	qrysmnetwork "github.com/theQRL/qrysm/network"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/metadata"
+	"github.com/theQRL/qrysm/runtime"
+	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
 
@@ -102,7 +102,7 @@ func NewService(ctx context.Context, cfg *Config) (*Service, error) {
 
 	cfg.Discv5BootStrapAddr = dv5Nodes
 
-	ipAddr := prysmnetwork.IPAddr()
+	ipAddr := qrysmnetwork.IPAddr()
 	s.privKey, err = privKey(s.cfg)
 	if err != nil {
 		log.WithError(err).Error("Failed to generate p2p private key")
@@ -183,7 +183,7 @@ func (s *Service) Start() {
 	}
 
 	if !s.cfg.NoDiscovery {
-		ipAddr := prysmnetwork.IPAddr()
+		ipAddr := qrysmnetwork.IPAddr()
 		listener, err := s.startDiscoveryV5(
 			ipAddr,
 			s.privKey,
@@ -218,10 +218,6 @@ func (s *Service) Start() {
 	// Initialize metadata according to the
 	// current epoch.
 	s.RefreshENR()
-
-	// if the current epoch is beyond bellatrix, increase the
-	// MaxGossipSize and MaxChunkSize to 10Mb.
-	s.increaseMaxMessageSizesForBellatrix()
 
 	// Periodic functions.
 	async.RunEvery(s.ctx, params.BeaconNetworkConfig().TtfbTimeout, func() {
@@ -290,7 +286,7 @@ func (s *Service) Started() bool {
 }
 
 // Encoding returns the configured networking encoding.
-func (_ *Service) Encoding() encoder.NetworkEncoding {
+func (*Service) Encoding() encoder.NetworkEncoding {
 	return &encoder.SszNetworkEncoder{}
 }
 
@@ -476,15 +472,4 @@ func (s *Service) connectToBootnodes() error {
 // required for discovery and pubsub validation.
 func (s *Service) isInitialized() bool {
 	return !s.genesisTime.IsZero() && len(s.genesisValidatorsRoot) == 32
-}
-
-// increaseMaxMessageSizesForBellatrix increases the max sizes of gossip and chunk from 1 Mb to 10Mb,
-// if the current epoch is or above the configured BellatrixForkEpoch.
-func (s *Service) increaseMaxMessageSizesForBellatrix() {
-	currentSlot := slots.Since(s.genesisTime)
-	currentEpoch := slots.ToEpoch(currentSlot)
-	if currentEpoch >= params.BeaconConfig().BellatrixForkEpoch {
-		encoder.SetMaxGossipSizeForBellatrix()
-		encoder.SetMaxChunkSizeForBellatrix()
-	}
 }

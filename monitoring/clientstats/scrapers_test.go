@@ -11,7 +11,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func init() {
@@ -47,7 +47,7 @@ func TestBeaconNodeScraper(t *testing.T) {
 	require.Equal(t, int64(1166630912), bs.MemoryProcessBytes)
 	require.Equal(t, int64(1619586241), bs.ClientBuild)
 	require.Equal(t, "v1.3.8-hotfix+6c0942", bs.ClientVersion)
-	require.Equal(t, "prysm", bs.ClientName)
+	require.Equal(t, "qrysm", bs.ClientName)
 
 	// BeaconNodeStats
 	require.Equal(t, int64(256552), bs.SyncBeaconHeadSlot)
@@ -121,7 +121,7 @@ func TestValidatorScraper(t *testing.T) {
 	require.Equal(t, int64(1166630912), vs.MemoryProcessBytes)
 	require.Equal(t, int64(1619586241), vs.ClientBuild)
 	require.Equal(t, "v1.3.8-hotfix+6c0942", vs.ClientVersion)
-	require.Equal(t, "prysm", vs.ClientName)
+	require.Equal(t, "qrysm", vs.ClientName)
 	require.Equal(t, int64(7), vs.ValidatorTotal)
 	require.Equal(t, int64(1), vs.ValidatorActive)
 }
@@ -202,7 +202,7 @@ func TestBadInput(t *testing.T) {
 	bnScraper.tripper = &mockRT{body: ""}
 	_, err := bnScraper.Scrape()
 	require.NoError(t, err)
-	require.LogsContain(t, hook, "Failed to get prysm_version")
+	require.LogsContain(t, hook, "Failed to get qrysm_version")
 }
 
 var prometheusTestBody = `
@@ -212,9 +212,9 @@ process_cpu_seconds_total 225.09
 # HELP process_resident_memory_bytes Resident memory size in bytes.
 # TYPE process_resident_memory_bytes gauge
 process_resident_memory_bytes 1.166630912e+09
-# HELP prysm_version
-# TYPE prysm_version gauge
-prysm_version{buildDate="1619586241",commit="51eb1540fa838cdbe467bbeb0e36ee667d449377",version="v1.3.8-hotfix+6c0942"} 1
+# HELP qrysm_version
+# TYPE qrysm_version gauge
+qrysm_version{buildDate="1619586241",commit="51eb1540fa838cdbe467bbeb0e36ee667d449377",version="v1.3.8-hotfix+6c0942"} 1
 # HELP validator_count The total number of validators
 # TYPE validator_count gauge
 validator_count{state="Active"} 210301

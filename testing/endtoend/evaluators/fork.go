@@ -1,18 +1,20 @@
 package evaluators
 
+// NOTE(rgeraldes24): re-enable once we have more forks
+/*
 import (
 	"context"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/runtime/version"
+	"github.com/theQRL/qrysm/testing/endtoend/helpers"
+	"github.com/theQRL/qrysm/testing/endtoend/policies"
+	"github.com/theQRL/qrysm/testing/endtoend/types"
+	"github.com/theQRL/qrysm/time/slots"
 	"google.golang.org/grpc"
 )
 
@@ -176,3 +178,4 @@ func capellaForkOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) er
 	}
 	return nil
 }
+*/

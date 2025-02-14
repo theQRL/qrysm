@@ -2,17 +2,15 @@ package beacon_api
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
 	"strconv"
 
 	"github.com/pkg/errors"
 
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 type DoppelGangerInfo struct {
@@ -23,7 +21,6 @@ type DoppelGangerInfo struct {
 func (c *beaconApiValidatorClient) checkDoppelGanger(ctx context.Context, in *zondpb.DoppelGangerRequest) (*zondpb.DoppelGangerResponse, error) {
 	// Check if there is any doppelganger validator for the last 2 epochs.
 	// - Check if the beacon node is synced
-	// - If we are in Phase0, we consider there is no doppelganger.
 	// - If all validators we want to check doppelganger existence were live in local antislashing
 	//   database for the last 2 epochs, we consider there is no doppelganger.
 	//   This is typically the case when we reboot the validator client.
@@ -70,24 +67,6 @@ func (c *beaconApiValidatorClient) checkDoppelGanger(ctx context.Context, in *zo
 
 	if isSyncing {
 		return nil, errors.New("beacon node not synced")
-	}
-
-	// Retrieve fork version -- Return early if we are in phase0.
-	forkResponse, err := c.getFork(ctx)
-	if err != nil || forkResponse == nil || forkResponse.Data == nil {
-		return nil, errors.Wrapf(err, "failed to get fork")
-	}
-
-	forkVersionBytes, err := hexutil.Decode(forkResponse.Data.CurrentVersion)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to decode fork version")
-	}
-
-	forkVersion := binary.LittleEndian.Uint32(forkVersionBytes)
-
-	if forkVersion == version.Phase0 {
-		log.Info("Skipping doppelganger check for Phase 0")
-		return buildResponse(stringPubKeys, stringPubKeyToDoppelGangerInfo), nil
 	}
 
 	// Retrieve current epoch.

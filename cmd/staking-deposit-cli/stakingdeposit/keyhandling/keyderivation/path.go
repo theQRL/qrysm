@@ -4,20 +4,20 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/theQRL/go-qrllib/common"
 	"github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/misc"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"golang.org/x/crypto/sha3"
 )
 
 // SeedAndPathToSeed TODO: (cyyber) algorithm needs to be reviewed in future
 func SeedAndPathToSeed(strSeed, path string) (string, error) {
 	binSeed := misc.DecodeHex(strSeed)
-	if len(binSeed) != common.SeedSize {
+	if len(binSeed) != field_params.DilithiumSeedLength {
 		return "", fmt.Errorf("invalid seed size %d", len(binSeed))
 	}
 
-	var seed [common.SeedSize]uint8
+	var seed [field_params.DilithiumSeedLength]uint8
 	copy(seed[:], binSeed)
 
 	h := sha3.NewShake256()
@@ -28,7 +28,7 @@ func SeedAndPathToSeed(strSeed, path string) (string, error) {
 		return "", fmt.Errorf("shake256 hash write failed %v", err)
 	}
 
-	var newSeed [common.SeedSize]uint8
+	var newSeed [field_params.DilithiumSeedLength]uint8
 	_, err := h.Read(newSeed[:])
 	if err != nil {
 		return "", err

@@ -3,11 +3,11 @@ load("@qrysm//tools/go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["metadata.go"],
-    importpath = "github.com/theQRL/qrysm/v4/consensus-types/wrapper",
+    importpath = "github.com/theQRL/qrysm/consensus-types/wrapper",
     visibility = ["//visibility:public"],
     deps = [
-        "//proto/prysm/v1alpha1:go_default_library",
-        "//proto/prysm/v1alpha1/metadata:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1/metadata:go_default_library",
         "//runtime/version:go_default_library",
         "@com_github_theqrl_go_bitfield//:go_default_library",
         "@org_golang_google_protobuf//proto:go_default_library",

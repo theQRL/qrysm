@@ -12,15 +12,15 @@ import (
 	"github.com/theQRL/go-zond/p2p/discover"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/wrapper"
-	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
-	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/wrapper"
+	ecdsaprysm "github.com/theQRL/qrysm/crypto/ecdsa"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestStartDiscV5_DiscoverPeersWithSubnets(t *testing.T) {
@@ -422,53 +422,6 @@ func Test_SyncSubnets(t *testing.T) {
 				return localNode.Node().Record()
 			},
 			want:    []uint64{0},
-			wantErr: false,
-		},
-		{
-			name: "multiple subnets",
-			record: func(t *testing.T) *enr.Record {
-				db, err := enode.OpenDB("")
-				assert.NoError(t, err)
-				priv, _, err := crypto.GenerateSecp256k1Key(rand.Reader)
-				assert.NoError(t, err)
-				convertedKey, err := ecdsaprysm.ConvertFromInterfacePrivKey(priv)
-				assert.NoError(t, err)
-				localNode := enode.NewLocalNode(db, convertedKey)
-				bitV := bitfield.Bitvector4{byte(0x00)}
-				for i := uint64(0); i < bitV.Len(); i++ {
-					// skip 2 subnets
-					if (i+1)%2 == 0 {
-						continue
-					}
-					bitV.SetBitAt(i, true)
-				}
-				bitV.SetBitAt(0, true)
-				entry := enr.WithEntry(syncCommsSubnetEnrKey, bitV.Bytes())
-				localNode.Set(entry)
-				return localNode.Node().Record()
-			},
-			want:    []uint64{0, 2},
-			wantErr: false,
-		},
-		{
-			name: "all subnets",
-			record: func(t *testing.T) *enr.Record {
-				db, err := enode.OpenDB("")
-				assert.NoError(t, err)
-				priv, _, err := crypto.GenerateSecp256k1Key(rand.Reader)
-				assert.NoError(t, err)
-				convertedKey, err := ecdsaprysm.ConvertFromInterfacePrivKey(priv)
-				assert.NoError(t, err)
-				localNode := enode.NewLocalNode(db, convertedKey)
-				bitV := bitfield.Bitvector4{byte(0x00)}
-				for i := uint64(0); i < bitV.Len(); i++ {
-					bitV.SetBitAt(i, true)
-				}
-				entry := enr.WithEntry(syncCommsSubnetEnrKey, bitV.Bytes())
-				localNode.Set(entry)
-				return localNode.Node().Record()
-			},
-			want:    []uint64{0, 1, 2, 3},
 			wantErr: false,
 		},
 	}

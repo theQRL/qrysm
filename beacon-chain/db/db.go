@@ -1,11 +1,11 @@
 // Package db defines the ability to create a new database
-// for an Ethereum Beacon Node.
+// for a Zond Beacon Node.
 package db
 
 import (
 	"context"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/db/kv"
+	"github.com/theQRL/qrysm/beacon-chain/db/kv"
 )
 
 // NewDB initializes a new DB.

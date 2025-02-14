@@ -4,7 +4,7 @@ load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["main.go"],
-    importpath = "github.com/theQRL/qrysm/v4/tools/interop/split-keys",
+    importpath = "github.com/theQRL/qrysm/tools/interop/split-keys",
     visibility = ["//visibility:private"],
     deps = [
         "//io/file:go_default_library",
@@ -13,7 +13,7 @@ go_library(
         "//validator/keymanager/derived:go_default_library",
         "//validator/keymanager/local:go_default_library",
         "@com_github_tyler_smith_go_bip39//:go_default_library",
-        "@com_github_wealdtech_go_eth2_util//:go_default_library",
+        "@com_github_theqrl_go_zond_wallet_encryptor_keystore//:go_default_library",
     ],
 )
 

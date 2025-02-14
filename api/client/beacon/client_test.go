@@ -4,8 +4,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/api/client"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/api/client"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestParseNodeVersion(t *testing.T) {
@@ -21,8 +21,8 @@ func TestParseNodeVersion(t *testing.T) {
 			err:  client.ErrInvalidNodeVersion,
 		},
 		{
-			name: "Prysm as the version string",
-			v:    "Prysm",
+			name: "Qrysm as the version string",
+			v:    "Qrysm",
 			err:  client.ErrInvalidNodeVersion,
 		},
 		{
@@ -32,38 +32,11 @@ func TestParseNodeVersion(t *testing.T) {
 		},
 		{
 			name: "complete version",
-			v:    "Prysm/v2.0.6 (linux amd64)",
+			v:    "Qrysm/v2.0.6 (linux amd64)",
 			nv: &NodeVersion{
-				implementation: "Prysm",
+				implementation: "Qrysm",
 				semver:         "v2.0.6",
 				systemInfo:     "(linux amd64)",
-			},
-		},
-		{
-			name: "nimbus version",
-			v:    "Nimbus/v22.4.0-039bec-stateofus",
-			nv: &NodeVersion{
-				implementation: "Nimbus",
-				semver:         "v22.4.0-039bec-stateofus",
-				systemInfo:     "",
-			},
-		},
-		{
-			name: "teku version",
-			v:    "teku/v22.3.2/linux-x86_64/oracle-java-11",
-			nv: &NodeVersion{
-				implementation: "teku",
-				semver:         "v22.3.2",
-				systemInfo:     "linux-x86_64/oracle-java-11",
-			},
-		},
-		{
-			name: "lighthouse version",
-			v:    "Lighthouse/v2.1.1-5f628a7/x86_64-linux",
-			nv: &NodeVersion{
-				implementation: "Lighthouse",
-				semver:         "v2.1.1-5f628a7",
-				systemInfo:     "x86_64-linux",
 			},
 		},
 	}

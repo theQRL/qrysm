@@ -12,9 +12,9 @@ import (
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/qrysm/v4/crypto/rand"
-	pb "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/crypto/rand"
+	pb "github.com/theQRL/qrysm/proto/engine/v1"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestProxy(t *testing.T) {
@@ -36,7 +36,7 @@ func TestProxy(t *testing.T) {
 		}()
 		time.Sleep(time.Millisecond * 100)
 
-		rpcClient, err := rpc.DialHTTP("http://" + proxy.Address())
+		rpcClient, err := rpc.Dial("http://" + proxy.Address())
 		require.NoError(t, err)
 
 		err = rpcClient.CallContext(ctx, nil, "someEngineMethod")
@@ -72,7 +72,7 @@ func TestProxy(t *testing.T) {
 		time.Sleep(time.Millisecond * 100)
 
 		// Dials the proxy.
-		rpcClient, err := rpc.DialHTTP("http://" + proxy.Address())
+		rpcClient, err := rpc.Dial("http://" + proxy.Address())
 		require.NoError(t, err)
 
 		// Expect the result from the proxy is the same as that one returned
@@ -111,7 +111,7 @@ func TestProxy_CustomInterceptors(t *testing.T) {
 		}()
 		time.Sleep(time.Millisecond * 100)
 
-		method := "eth_syncing"
+		method := "zond_syncing"
 
 		// RPC method to intercept.
 		proxy.AddRequestInterceptor(
@@ -125,7 +125,7 @@ func TestProxy_CustomInterceptors(t *testing.T) {
 		)
 
 		// Dials the proxy.
-		rpcClient, err := rpc.DialHTTP("http://" + proxy.Address())
+		rpcClient, err := rpc.Dial("http://" + proxy.Address())
 		require.NoError(t, err)
 
 		// Expect the result from the proxy is the same as that one returned
@@ -163,7 +163,7 @@ func TestProxy_CustomInterceptors(t *testing.T) {
 		}()
 		time.Sleep(time.Millisecond * 100)
 
-		method := "engine_newPayloadV1"
+		method := "engine_newPayloadV2"
 
 		// RPC method to intercept.
 		wantInterceptedResponse := func() interface{} {
@@ -179,7 +179,7 @@ func TestProxy_CustomInterceptors(t *testing.T) {
 		)
 
 		// Dials the proxy.
-		rpcClient, err := rpc.DialHTTP("http://" + proxy.Address())
+		rpcClient, err := rpc.Dial("http://" + proxy.Address())
 		require.NoError(t, err)
 
 		proxyResult := &engineResponse{}
@@ -231,7 +231,7 @@ func TestProxy_CustomInterceptors(t *testing.T) {
 		}()
 		time.Sleep(time.Millisecond * 100)
 
-		method := "engine_newPayloadV1"
+		method := "engine_newPayloadV2"
 
 		// RPC method to intercept.
 		wantInterceptedResponse := func() interface{} {
@@ -246,7 +246,7 @@ func TestProxy_CustomInterceptors(t *testing.T) {
 		)
 
 		// Dials the proxy.
-		rpcClient, err := rpc.DialHTTP("http://" + proxy.Address())
+		rpcClient, err := rpc.Dial("http://" + proxy.Address())
 		require.NoError(t, err)
 
 		proxyResult := &engineResponse{}
@@ -273,7 +273,7 @@ func Test_isEngineAPICall(t *testing.T) {
 		{
 			name: "engine method",
 			args: &jsonRPCObject{
-				Method: "engine_newPayloadV1",
+				Method: "engine_newPayloadV2",
 				ID:     1,
 				Result: 5,
 			},
@@ -282,7 +282,7 @@ func Test_isEngineAPICall(t *testing.T) {
 		{
 			name: "non-engine method",
 			args: &jsonRPCObject{
-				Method: "eth_syncing",
+				Method: "zond_syncing",
 				ID:     1,
 				Result: false,
 			},

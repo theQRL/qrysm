@@ -7,15 +7,15 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/config/params"
-	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/config/params"
+	consensus_types "github.com/theQRL/qrysm/consensus-types"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/runtime/version"
+	qrysmTime "github.com/theQRL/qrysm/time"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 var log = logrus.WithField("prefix", "blockchain")
@@ -38,37 +38,26 @@ func logStateTransitionData(b interfaces.ReadOnlyBeaconBlock) error {
 	if len(b.Body().VoluntaryExits()) > 0 {
 		log = log.WithField("voluntaryExits", len(b.Body().VoluntaryExits()))
 	}
-	if b.Version() >= version.Altair {
-		agg, err := b.Body().SyncAggregate()
-		if err != nil {
-			return err
-		}
-		log = log.WithField("syncBitsCount", agg.SyncCommitteeBits.Count())
+	agg, err := b.Body().SyncAggregate()
+	if err != nil {
+		return err
 	}
-	if b.Version() >= version.Bellatrix {
-		p, err := b.Body().Execution()
-		if err != nil {
-			return err
-		}
-		log = log.WithField("payloadHash", fmt.Sprintf("%#x", bytesutil.Trunc(p.BlockHash())))
-		txs, err := p.Transactions()
-		switch {
-		case errors.Is(err, consensus_types.ErrUnsupportedField):
-		case err != nil:
-			return err
-		default:
-			log = log.WithField("txCount", len(txs))
-			txsPerSlotCount.Set(float64(len(txs)))
-		}
+	log = log.WithField("syncBitsCount", agg.SyncCommitteeBits.Count())
+	p, err := b.Body().Execution()
+	if err != nil {
+		return err
 	}
-	if b.Version() >= version.Deneb {
-		kzgs, err := b.Body().BlobKzgCommitments()
-		if err != nil {
-			log.WithError(err).Error("Failed to get blob KZG commitments")
-		} else if len(kzgs) > 0 {
-			log = log.WithField("kzgCommitmentCount", len(kzgs))
-		}
+	log = log.WithField("payloadHash", fmt.Sprintf("%#x", bytesutil.Trunc(p.BlockHash())))
+	txs, err := p.Transactions()
+	switch {
+	case errors.Is(err, consensus_types.ErrUnsupportedField):
+	case err != nil:
+		return err
+	default:
+		log = log.WithField("txCount", len(txs))
+		txsPerSlotCount.Set(float64(len(txs)))
 	}
+
 	log.Info("Finished applying state transition")
 	return nil
 }
@@ -92,8 +81,8 @@ func logBlockSyncStatus(block interfaces.ReadOnlyBeaconBlock, blockRoot [32]byte
 			"finalizedRoot":             fmt.Sprintf("0x%s...", hex.EncodeToString(finalized.Root)[:8]),
 			"parentRoot":                fmt.Sprintf("0x%s...", hex.EncodeToString(parentRoot[:])[:8]),
 			"version":                   version.String(block.Version()),
-			"sinceSlotStartTime":        prysmTime.Now().Sub(startTime),
-			"chainServiceProcessedTime": prysmTime.Now().Sub(receivedTime),
+			"sinceSlotStartTime":        qrysmTime.Now().Sub(startTime),
+			"chainServiceProcessedTime": qrysmTime.Now().Sub(receivedTime),
 			"deposits":                  len(block.Body().Deposits()),
 		}
 		log.WithFields(lf).Debug("Synced new block")
@@ -132,30 +121,16 @@ func logPayload(block interfaces.ReadOnlyBeaconBlock) error {
 		"blockNumber": payload.BlockNumber(),
 		"gasUtilized": fmt.Sprintf("%.2f", gasUtilized),
 	}
-	if block.Version() >= version.Capella {
-		withdrawals, err := payload.Withdrawals()
-		if err != nil {
-			return errors.Wrap(err, "could not get withdrawals")
-		}
-		fields["withdrawals"] = len(withdrawals)
-		changes, err := block.Body().DilithiumToExecutionChanges()
-		if err != nil {
-			return errors.Wrap(err, "could not get DilithiumToExecutionChanges")
-		}
-		fields["dilithiumToExecutionChanges"] = len(changes)
+	withdrawals, err := payload.Withdrawals()
+	if err != nil {
+		return errors.Wrap(err, "could not get withdrawals")
 	}
+	fields["withdrawals"] = len(withdrawals)
+	changes, err := block.Body().DilithiumToExecutionChanges()
+	if err != nil {
+		return errors.Wrap(err, "could not get DilithiumToExecutionChanges")
+	}
+	fields["dilithiumToExecutionChanges"] = len(changes)
 	log.WithFields(fields).Debug("Synced new payload")
 	return nil
-}
-
-func logBlobSidecar(scs []*zondpb.BlobSidecar, startTime time.Time) {
-	if len(scs) == 0 {
-		return
-	}
-	log.WithFields(logrus.Fields{
-		"count":          len(scs),
-		"slot":           scs[0].Slot,
-		"block":          hex.EncodeToString(scs[0].BlockRoot),
-		"validationTime": time.Since(startTime),
-	}).Debug("Synced new blob sidecars")
 }

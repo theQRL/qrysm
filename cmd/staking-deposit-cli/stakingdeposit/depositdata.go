@@ -1,10 +1,10 @@
 package stakingdeposit
 
 import (
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
-	"github.com/theQRL/qrysm/v4/contracts/deposit"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/misc"
+	"github.com/theQRL/qrysm/contracts/deposit"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 type DepositData struct {
@@ -22,13 +22,13 @@ type DepositData struct {
 
 func NewDepositData(c *Credential) (*DepositData, error) {
 	binSigningSeed := misc.StrSeedToBinSeed(c.signingSeed)
-	depositKey, err := dilithium.SecretKeyFromBytes(binSigningSeed[:])
+	depositKey, err := dilithium.SecretKeyFromSeed(binSigningSeed[:])
 	if err != nil {
 		return nil, err
 	}
 
 	binWithdrawalSeed := misc.StrSeedToBinSeed(c.withdrawalSeed)
-	withdrawalKey, err := dilithium.SecretKeyFromBytes(binWithdrawalSeed[:])
+	withdrawalKey, err := dilithium.SecretKeyFromSeed(binWithdrawalSeed[:])
 	if err != nil {
 		return nil, err
 	}

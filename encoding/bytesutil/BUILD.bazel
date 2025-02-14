@@ -7,11 +7,11 @@ go_library(
         "bytes.go",
         "bytes_go120.go",
         "bytes_legacy.go",
-        "eth_types.go",
+        "zond_types.go",
         "hex.go",
         "integers.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/encoding/bytesutil",
+    importpath = "github.com/theQRL/qrysm/encoding/bytesutil",
     visibility = ["//visibility:public"],
     deps = [
         "//config/fieldparams:go_default_library",
@@ -27,7 +27,7 @@ go_test(
     srcs = [
         "bits_test.go",
         "bytes_test.go",
-        "eth_types_test.go",
+        "zond_types_test.go",
         "hex_test.go",
         "integers_test.go",
     ],

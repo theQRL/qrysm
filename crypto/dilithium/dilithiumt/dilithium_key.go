@@ -3,10 +3,10 @@ package dilithiumt
 import (
 	"fmt"
 
-	common2 "github.com/theQRL/go-qrllib/common"
 	"github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/crypto/bls/common"
-	"github.com/theQRL/qrysm/v4/crypto/rand"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/crypto/dilithium/common"
+	"github.com/theQRL/qrysm/crypto/rand"
 )
 
 type dilithiumKey struct {
@@ -14,7 +14,7 @@ type dilithiumKey struct {
 }
 
 func RandKey() (common.SecretKey, error) {
-	var seed [common2.SeedSize]uint8
+	var seed [field_params.DilithiumSeedLength]uint8
 	_, err := rand.NewGenerator().Read(seed[:])
 	if err != nil {
 		return nil, err
@@ -26,11 +26,11 @@ func RandKey() (common.SecretKey, error) {
 	return &dilithiumKey{d: d}, nil
 }
 
-func SecretKeyFromBytes(seed []byte) (common.SecretKey, error) {
-	if len(seed) != common2.SeedSize {
-		return nil, fmt.Errorf("secret key must be %d bytes", common2.SeedSize)
+func SecretKeyFromSeed(seed []byte) (common.SecretKey, error) {
+	if len(seed) != field_params.DilithiumSeedLength {
+		return nil, fmt.Errorf("secret key must be %d bytes", field_params.DilithiumSeedLength)
 	}
-	var sizedSeed [common2.SeedSize]uint8
+	var sizedSeed [field_params.DilithiumSeedLength]uint8
 	copy(sizedSeed[:], seed)
 
 	d, err := dilithium.NewDilithiumFromSeed(sizedSeed)
@@ -40,7 +40,7 @@ func SecretKeyFromBytes(seed []byte) (common.SecretKey, error) {
 	return &dilithiumKey{d: d}, nil
 }
 
-// PublicKey obtains the public key corresponding to the BLS secret key.
+// PublicKey obtains the public key corresponding to the Dilithium secret key.
 func (d *dilithiumKey) PublicKey() common.PublicKey {
 	p := d.d.GetPK()
 	return &PublicKey{p: &p}

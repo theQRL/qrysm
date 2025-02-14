@@ -3,9 +3,9 @@ package pagination_test
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/api/pagination"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/api/pagination"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestStartAndEndPage(t *testing.T) {

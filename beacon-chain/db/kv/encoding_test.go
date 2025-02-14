@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	testpb "github.com/theQRL/qrysm/v4/proto/testing"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	testpb "github.com/theQRL/qrysm/proto/testing"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func Test_encode_handlesNilFromFunction(t *testing.T) {

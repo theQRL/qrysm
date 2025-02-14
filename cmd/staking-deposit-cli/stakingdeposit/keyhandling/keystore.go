@@ -13,9 +13,9 @@ import (
 	"runtime"
 
 	"github.com/google/uuid"
-	"github.com/theQRL/go-qrllib/common"
 	"github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/misc"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -60,7 +60,7 @@ func (k *Keystore) Save(fileFolder string) error {
 	return nil
 }
 
-func (k *Keystore) Decrypt(password string) [common.SeedSize]byte {
+func (k *Keystore) Decrypt(password string) [field_params.DilithiumSeedLength]byte {
 	salt, ok := k.Crypto.KDF.Params["salt"]
 	if !ok {
 		panic("salt not found in KDF Params")
@@ -85,7 +85,7 @@ func (k *Keystore) Decrypt(password string) [common.SeedSize]byte {
 		panic(fmt.Errorf("aes.NewCipher failed | reason %v", err))
 	}
 
-	var seed [common.SeedSize]uint8
+	var seed [field_params.DilithiumSeedLength]uint8
 	cipherText := misc.DecodeHex(k.Crypto.Cipher.Message)
 	if len(cipherText) != len(seed) {
 		panic(fmt.Errorf("invalid cipher text length | expected length %d | actual length %d",
@@ -126,7 +126,7 @@ func NewEmptyKeystore() *Keystore {
 	return k
 }
 
-func Encrypt(seed [common.SeedSize]uint8, password, path string, salt, aesIV []byte) (*Keystore, error) {
+func Encrypt(seed [field_params.DilithiumSeedLength]uint8, password, path string, salt, aesIV []byte) (*Keystore, error) {
 	if salt == nil {
 		salt = make([]uint8, 32)
 		if _, err := io.ReadFull(rand.Reader, salt); err != nil {

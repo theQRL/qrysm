@@ -5,19 +5,17 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-qrllib/common"
-	"github.com/theQRL/qrysm/v4/async"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
+	"github.com/theQRL/qrysm/async"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/hash"
 )
 
 const (
-	blsWithdrawalPrefixByte = byte(0)
+	dilithiumWithdrawalPrefixByte = byte(0)
 )
 
-// DeterministicallyGenerateKeys creates BLS private keys using a fixed curve order according to
-// the algorithm specified in the Ethereum beacon chain specification interop mock start section found here:
-// https://github.com/ethereum/eth2.0-pm/blob/a085c9870f3956d6228ed2a40cd37f0c6580ecd7/interop/mocked_start/README.md
+// DeterministicallyGenerateKeys creates Dilithium private keys.
 func DeterministicallyGenerateKeys(startIndex, numKeys uint64) ([]dilithium.DilithiumKey, []dilithium.PublicKey, error) {
 	dilithiumKeys := make([]dilithium.DilithiumKey, numKeys)
 	pubKeys := make([]dilithium.PublicKey, numKeys)
@@ -52,9 +50,9 @@ func deterministicallyGenerateKeys(startIndex, numKeys uint64) ([]dilithium.Dili
 		binary.LittleEndian.PutUint32(enc, uint32(i))
 		// TODO: (cyyber) Hash returns 32 bytes hash, need to be replaced to get 48 bytes hash
 		h := hash.Hash(enc)
-		var seed [common.SeedSize]uint8
+		var seed [field_params.DilithiumSeedLength]uint8
 		copy(seed[:], h[:])
-		d, err := dilithium.SecretKeyFromBytes(seed[:])
+		d, err := dilithium.SecretKeyFromSeed(seed[:])
 		if err != nil {
 			return nil, nil, err
 		}

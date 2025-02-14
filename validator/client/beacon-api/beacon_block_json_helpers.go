@@ -4,9 +4,9 @@ import (
 	"strconv"
 
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 func jsonifyTransactions(transactions [][]byte) []string {
@@ -113,6 +113,18 @@ func JsonifySignedVoluntaryExits(voluntaryExits []*zondpb.SignedVoluntaryExit) [
 	return jsonSignedVoluntaryExits
 }
 
+// JsonifySyncAggregate converts a sync aggregate struct to a JSON hex string compatible format.
+func JsonifySyncAggregate(syncAggregate *zondpb.SyncAggregate) *apimiddleware.SyncAggregateJson {
+	syncCommitteeSigs := make([]string, len(syncAggregate.SyncCommitteeSignatures))
+	for i, sig := range syncAggregate.SyncCommitteeSignatures {
+		syncCommitteeSigs[i] = hexutil.Encode(sig)
+	}
+	return &apimiddleware.SyncAggregateJson{
+		SyncCommitteeBits:       hexutil.Encode(syncAggregate.SyncCommitteeBits),
+		SyncCommitteeSignatures: syncCommitteeSigs,
+	}
+}
+
 func jsonifySignedBeaconBlockHeader(signedBeaconBlockHeader *zondpb.SignedBeaconBlockHeader) *apimiddleware.SignedBeaconBlockHeaderJson {
 	return &apimiddleware.SignedBeaconBlockHeaderJson{
 		Header: &apimiddleware.BeaconBlockHeaderJson{
@@ -133,10 +145,15 @@ func jsonifyIndexedAttestation(indexedAttestation *zondpb.IndexedAttestation) *a
 		attestingIndices[index] = attestingIndex
 	}
 
+	signatures := make([]string, len(indexedAttestation.Signatures))
+	for i, sig := range indexedAttestation.Signatures {
+		signatures[i] = hexutil.Encode(sig)
+	}
+
 	return &apimiddleware.IndexedAttestationJson{
 		AttestingIndices: attestingIndices,
 		Data:             jsonifyAttestationData(indexedAttestation.Data),
-		Signature:        hexutil.Encode(indexedAttestation.Signature),
+		Signatures:       signatures,
 	}
 }
 
@@ -157,10 +174,15 @@ func jsonifyAttestationData(attestationData *zondpb.AttestationData) *apimiddlew
 }
 
 func jsonifyAttestation(attestation *zondpb.Attestation) *apimiddleware.AttestationJson {
+	signatures := make([]string, len(attestation.Signatures))
+	for i, sig := range attestation.Signatures {
+		signatures[i] = hexutil.Encode(sig)
+	}
+
 	return &apimiddleware.AttestationJson{
 		AggregationBits: hexutil.Encode(attestation.AggregationBits),
 		Data:            jsonifyAttestationData(attestation.Data),
-		Signature:       hexutil.Encode(attestation.Signature),
+		Signatures:      signatures,
 	}
 }
 

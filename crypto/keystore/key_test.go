@@ -7,27 +7,27 @@ import (
 	"testing"
 
 	"github.com/pborman/uuid"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestMarshalAndUnmarshal(t *testing.T) {
 	testID := uuid.NewRandom()
-	blsKey, err := bls.RandKey()
+	dilithiumKey, err := dilithium.RandKey()
 	require.NoError(t, err)
 
 	key := &Key{
 		ID:        testID,
-		SecretKey: blsKey,
-		PublicKey: blsKey.PublicKey(),
+		SecretKey: dilithiumKey,
+		PublicKey: dilithiumKey.PublicKey(),
 	}
 	marshalledObject, err := key.MarshalJSON()
 	require.NoError(t, err)
 	newKey := &Key{
 		ID:        []byte{},
-		SecretKey: blsKey,
-		PublicKey: blsKey.PublicKey(),
+		SecretKey: dilithiumKey,
+		PublicKey: dilithiumKey.PublicKey(),
 	}
 
 	err = newKey.UnmarshalJSON(marshalledObject)
@@ -44,15 +44,15 @@ func TestStoreRandomKey(t *testing.T) {
 	require.NoError(t, storeNewRandomKey(ks, "password"))
 }
 
-func TestNewKeyFromBLS(t *testing.T) {
+func TestNewKeyFromDilithium(t *testing.T) {
 	b := []byte("hi")
-	b32 := bytesutil.ToBytes32(b)
-	blskey, err := bls.SecretKeyFromBytes(b32[:])
+	b48 := bytesutil.ToBytes48(b)
+	dilithiumkey, err := dilithium.SecretKeyFromSeed(b48[:])
 	require.NoError(t, err)
-	key, err := NewKeyFromDilithium(blskey)
+	key, err := NewKeyFromDilithium(dilithiumkey)
 	require.NoError(t, err)
 
-	expected := blskey.Marshal()
+	expected := dilithiumkey.Marshal()
 	require.Equal(t, true, bytes.Equal(expected, key.SecretKey.Marshal()))
 	_, err = NewKey()
 	require.NoError(t, err)

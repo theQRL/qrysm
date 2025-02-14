@@ -4,18 +4,18 @@ go_library(
     name = "go_default_library",
     testonly = 1,
     srcs = ["mock.go"],
-    importpath = "github.com/theQRL/qrysm/v4/validator/accounts/testing",
+    importpath = "github.com/theQRL/qrysm/validator/accounts/testing",
     visibility = [
         "//validator:__pkg__",
         "//validator:__subpackages__",
     ],
     deps = [
+        "//config/fieldparams:go_default_library",
         "//config/validator/service:go_default_library",
         "//consensus-types/primitives:go_default_library",
-        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
         "//validator/accounts/iface:go_default_library",
         "//validator/client/iface:go_default_library",
         "//validator/keymanager:go_default_library",
-        "@com_github_theqrl_go_qrllib//dilithium:go_default_library",
     ],
 )

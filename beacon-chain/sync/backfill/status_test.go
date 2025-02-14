@@ -4,15 +4,15 @@ import (
 	"context"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	blocktest "github.com/theQRL/qrysm/v4/consensus-types/blocks/testing"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	blocktest "github.com/theQRL/qrysm/consensus-types/blocks/testing"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 var errEmptyMockDBMethod = errors.New("uninitialized mock db method called")
@@ -143,7 +143,7 @@ func goodBlockRoot(root [32]byte) func(ctx context.Context) ([32]byte, error) {
 }
 
 func setupTestBlock(slot primitives.Slot) (interfaces.ReadOnlySignedBeaconBlock, error) {
-	bRaw := util.NewBeaconBlock()
+	bRaw := util.NewBeaconBlockCapella()
 	b, err := blocks.NewSignedBeaconBlock(bRaw)
 	if err != nil {
 		return nil, err
@@ -173,7 +173,7 @@ func TestReload(t *testing.T) {
 		err      error
 		expected *Status
 	}{
-		/*{
+		{
 			name: "origin not found, implying genesis sync ",
 			db: &mockBackfillDB{
 				genesisBlockRoot: goodBlockRoot(params.BeaconConfig().ZeroHash),
@@ -316,7 +316,7 @@ func TestReload(t *testing.T) {
 				backfillBlockRoot: goodBlockRoot(backfillRoot),
 			},
 			err: derp,
-		},*/
+		},
 		{
 			name: "complete happy path",
 			db: &mockBackfillDB{

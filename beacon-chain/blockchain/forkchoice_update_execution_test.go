@@ -6,15 +6,15 @@ import (
 	"time"
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	testDB "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	mockExecution "github.com/theQRL/qrysm/v4/beacon-chain/execution/testing"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	testDB "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	mockExecution "github.com/theQRL/qrysm/beacon-chain/execution/testing"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestService_isNewProposer(t *testing.T) {
@@ -48,11 +48,11 @@ func TestService_getHeadStateAndBlock(t *testing.T) {
 	_, _, err := service.getStateAndBlock(context.Background(), [32]byte{})
 	require.ErrorContains(t, "block does not exist", err)
 
-	blk, err := blocks.NewSignedBeaconBlock(util.HydrateSignedBeaconBlock(&zondpb.SignedBeaconBlock{Signature: []byte{1}}))
+	blk, err := blocks.NewSignedBeaconBlock(util.HydrateSignedBeaconBlockCapella(&zondpb.SignedBeaconBlockCapella{Signature: []byte{1}}))
 	require.NoError(t, err)
 	require.NoError(t, service.cfg.BeaconDB.SaveBlock(context.Background(), blk))
 
-	st, _ := util.DeterministicGenesisState(t, 1)
+	st, _ := util.DeterministicGenesisStateCapella(t, 1)
 	r, err := blk.Block().HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, service.cfg.BeaconDB.SaveState(context.Background(), st, r))
@@ -63,7 +63,10 @@ func TestService_getHeadStateAndBlock(t *testing.T) {
 
 	gotBlk, err := service.cfg.BeaconDB.Block(context.Background(), r)
 	require.NoError(t, err)
-	require.DeepEqual(t, blk, gotBlk)
+
+	blindedBlk, err := blk.ToBlinded()
+	require.NoError(t, err)
+	require.DeepEqual(t, blindedBlk, gotBlk)
 }
 
 func TestService_forkchoiceUpdateWithExecution_exceptionalCases(t *testing.T) {
@@ -80,7 +83,7 @@ func TestService_forkchoiceUpdateWithExecution_exceptionalCases(t *testing.T) {
 	invalidStateErr := "could not get state summary: could not find block in DB"
 	require.LogsDoNotContain(t, hook, invalidStateErr)
 	require.LogsDoNotContain(t, hook, hookErr)
-	gb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
+	gb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 	require.NoError(t, err)
 	require.NoError(t, service.saveInitSyncBlock(ctx, [32]byte{'a'}, gb))
 	_, err = service.forkchoiceUpdateWithExecution(ctx, [32]byte{'a'}, service.CurrentSlot()+1)
@@ -94,14 +97,14 @@ func TestService_forkchoiceUpdateWithExecution_exceptionalCases(t *testing.T) {
 	}
 
 	// Block in Cache
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	b.Block.Slot = 2
 	wsb, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
 	r1, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, service.saveInitSyncBlock(ctx, r1, wsb))
-	st, _ := util.DeterministicGenesisState(t, 1)
+	st, _ := util.DeterministicGenesisStateCapella(t, 1)
 	service.head = &head{
 		root:  r1,
 		block: wsb,
@@ -114,12 +117,12 @@ func TestService_forkchoiceUpdateWithExecution_exceptionalCases(t *testing.T) {
 	require.LogsDoNotContain(t, hook, hookErr)
 
 	// Block in DB
-	b = util.NewBeaconBlock()
+	b = util.NewBeaconBlockCapella()
 	b.Block.Slot = 3
 	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b)
 	r1, err = b.Block.HashTreeRoot()
 	require.NoError(t, err)
-	st, _ = util.DeterministicGenesisState(t, 1)
+	st, _ = util.DeterministicGenesisStateCapella(t, 1)
 	service.head = &head{
 		root:  r1,
 		block: wsb,
@@ -146,13 +149,13 @@ func TestService_forkchoiceUpdateWithExecution_SameHeadRootNewProposer(t *testin
 	service, tr := minimalTestService(t)
 	ctx, beaconDB, fcs := tr.ctx, tr.db, tr.fcs
 
-	altairBlk := util.SaveBlock(t, ctx, beaconDB, util.NewBeaconBlockAltair())
+	altairBlk := util.SaveBlock(t, ctx, beaconDB, util.NewBeaconBlockCapella())
 	altairBlkRoot, err := altairBlk.Block().HashTreeRoot()
 	require.NoError(t, err)
-	bellatrixBlk := util.SaveBlock(t, ctx, beaconDB, util.NewBeaconBlockBellatrix())
+	bellatrixBlk := util.SaveBlock(t, ctx, beaconDB, util.NewBeaconBlockCapella())
 	bellatrixBlkRoot, err := bellatrixBlk.Block().HashTreeRoot()
 	require.NoError(t, err)
-	st, _ := util.DeterministicGenesisState(t, 10)
+	st, _ := util.DeterministicGenesisStateCapella(t, 10)
 	service.head = &head{
 		state: st,
 	}
@@ -172,7 +175,7 @@ func TestService_forkchoiceUpdateWithExecution_SameHeadRootNewProposer(t *testin
 	service.cfg.ExecutionEngineCaller = &mockExecution.EngineClient{}
 	require.NoError(t, beaconDB.SaveState(ctx, st, bellatrixBlkRoot))
 	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, bellatrixBlkRoot))
-	sb, err := blocks.NewSignedBeaconBlock(util.HydrateSignedBeaconBlockBellatrix(&zondpb.SignedBeaconBlockBellatrix{}))
+	sb, err := blocks.NewSignedBeaconBlock(util.HydrateSignedBeaconBlockCapella(&zondpb.SignedBeaconBlockCapella{}))
 	require.NoError(t, err)
 	require.NoError(t, beaconDB.SaveBlock(ctx, sb))
 	r, err := sb.Block().HashTreeRoot()
@@ -206,18 +209,18 @@ func TestShouldOverrideFCU(t *testing.T) {
 
 	require.Equal(t, primitives.Slot(2), service.CurrentSlot())
 	require.Equal(t, true, service.shouldOverrideFCU(headRoot, 2))
-	require.LogsDoNotContain(t, hook, "12 seconds")
+	require.LogsDoNotContain(t, hook, "60 seconds")
 	require.Equal(t, false, service.shouldOverrideFCU(parentRoot, 2))
-	require.LogsContain(t, hook, "12 seconds")
+	require.LogsContain(t, hook, "60 seconds")
 
 	head, err := fcs.Head(ctx)
 	require.NoError(t, err)
 	require.Equal(t, headRoot, head)
 
-	fcs.SetGenesisTime(uint64(time.Now().Unix()) - 29)
+	fcs.SetGenesisTime(uint64(time.Now().Unix()) - 125)
 	require.Equal(t, true, service.shouldOverrideFCU(parentRoot, 3))
 	require.LogsDoNotContain(t, hook, "10 seconds")
-	fcs.SetGenesisTime(uint64(time.Now().Unix()) - 24)
+	fcs.SetGenesisTime(uint64(time.Now().Unix()) - 120)
 	service.SetGenesisTime(time.Now().Add(-time.Duration(2*params.BeaconConfig().SecondsPerSlot+10) * time.Second))
 	require.Equal(t, false, service.shouldOverrideFCU(parentRoot, 3))
 	require.LogsContain(t, hook, "10 seconds")

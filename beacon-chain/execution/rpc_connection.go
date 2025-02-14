@@ -10,11 +10,11 @@ import (
 	"github.com/pkg/errors"
 	zondRPC "github.com/theQRL/go-zond/rpc"
 	"github.com/theQRL/go-zond/zondclient"
-	"github.com/theQRL/qrysm/v4/config/params"
-	contracts "github.com/theQRL/qrysm/v4/contracts/deposit"
-	"github.com/theQRL/qrysm/v4/io/logs"
-	"github.com/theQRL/qrysm/v4/network"
-	"github.com/theQRL/qrysm/v4/network/authorization"
+	"github.com/theQRL/qrysm/config/params"
+	contracts "github.com/theQRL/qrysm/contracts/deposit"
+	"github.com/theQRL/qrysm/io/logs"
+	"github.com/theQRL/qrysm/network"
+	"github.com/theQRL/qrysm/network/authorization"
 )
 
 func (s *Service) setupExecutionClientConnections(ctx context.Context, currEndpoint network.Endpoint) error {
@@ -38,6 +38,7 @@ func (s *Service) setupExecutionClientConnections(ctx context.Context, currEndpo
 	if err := ensureCorrectExecutionChain(ctx, fetcher); err != nil {
 		client.Close()
 		errStr := err.Error()
+		// TODO(now.youtrack.cloud/issue/TQ-1)
 		if strings.Contains(errStr, "401 Unauthorized") {
 			errStr = "could not verify execution chain ID as your connection is not authenticated. " +
 				"If connecting to your execution client via HTTP, you will need to set up JWT authentication. " +
@@ -130,7 +131,7 @@ func (s *Service) newRPCClientWithAuth(ctx context.Context, endpoint network.End
 }
 
 // Checks the chain ID of the execution client to ensure
-// it matches local parameters of what Prysm expects.
+// it matches local parameters of what Qrysm expects.
 func ensureCorrectExecutionChain(ctx context.Context, client *zondclient.Client) error {
 	cID, err := client.ChainID(ctx)
 	if err != nil {

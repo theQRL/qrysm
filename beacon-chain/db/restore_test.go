@@ -8,13 +8,13 @@ import (
 	"testing"
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db/kv"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/db/kv"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 	"github.com/urfave/cli/v2"
 )
 
@@ -24,14 +24,14 @@ func TestRestore(t *testing.T) {
 
 	backupDb, err := kv.NewKVStore(context.Background(), t.TempDir())
 	require.NoError(t, err)
-	head := util.NewBeaconBlock()
+	head := util.NewBeaconBlockCapella()
 	head.Block.Slot = 5000
 	wsb, err := blocks.NewSignedBeaconBlock(head)
 	require.NoError(t, err)
 	require.NoError(t, backupDb.SaveBlock(ctx, wsb))
 	root, err := head.Block.HashTreeRoot()
 	require.NoError(t, err)
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, backupDb.SaveState(ctx, st, root))
 	require.NoError(t, backupDb.SaveHeadBlockRoot(ctx, root))

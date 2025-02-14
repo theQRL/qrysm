@@ -6,17 +6,18 @@ import (
 	"strconv"
 	"testing"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/config/params"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/interop"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/runtime/interop"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestState_FieldCount(t *testing.T) {
-	count := params.BeaconConfig().BeaconStateFieldCount
-	typ := reflect.TypeOf(zondpb.BeaconState{})
+	count := params.BeaconConfig().BeaconStateCapellaFieldCount
+	typ := reflect.TypeOf(zondpb.BeaconStateCapella{})
 	numFields := 0
 	for i := 0; i < typ.NumField(); i++ {
 		if typ.Field(i).Name == "state" ||
@@ -59,12 +60,12 @@ func BenchmarkHashTreeRoot_Generic_300000(b *testing.B) {
 	}
 }
 
-func setupGenesisState(tb testing.TB, count uint64) *zondpb.BeaconState {
-	genesisState, _, err := interop.GenerateGenesisState(context.Background(), 0, 1)
+func setupGenesisState(tb testing.TB, count uint64) *zondpb.BeaconStateCapella {
+	genesisState, _, err := interop.GenerateGenesisStateCapella(context.Background(), 0, 1, &enginev1.ExecutionPayloadCapella{}, &zondpb.Eth1Data{})
 	require.NoError(tb, err, "Could not generate genesis beacon state")
 	for i := uint64(1); i < count; i++ {
 		var someRoot [32]byte
-		var someKey [dilithium2.CryptoPublicKeyBytes]byte
+		var someKey [field_params.DilithiumPubkeyLength]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
 		genesisState.Validators = append(genesisState.Validators, &zondpb.Validator{

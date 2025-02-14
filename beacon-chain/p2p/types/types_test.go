@@ -4,81 +4,11 @@ import (
 	"encoding/hex"
 	"testing"
 
-	ssz "github.com/prysmaticlabs/fastssz"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
-
-func generateBlobIdentifiers(n int) []*zond.BlobIdentifier {
-	r := make([]*zond.BlobIdentifier, n)
-	for i := 0; i < n; i++ {
-		r[i] = &zond.BlobIdentifier{
-			BlockRoot: bytesutil.PadTo([]byte{byte(i)}, 32),
-			Index:     0,
-		}
-	}
-	return r
-}
-
-func TestBlobSidecarsByRootReq_MarshalSSZ(t *testing.T) {
-	cases := []struct {
-		name         string
-		ids          []*zond.BlobIdentifier
-		marshalErr   error
-		unmarshalErr error
-		unmarshalMod func([]byte) []byte
-	}{
-		{
-			name: "empty list",
-		},
-		{
-			name: "single item list",
-			ids:  generateBlobIdentifiers(1),
-		},
-		{
-			name: "10 item list",
-			ids:  generateBlobIdentifiers(10),
-		},
-		{
-			name: "wonky unmarshal size",
-			ids:  generateBlobIdentifiers(10),
-			unmarshalMod: func(in []byte) []byte {
-				in = append(in, byte(0))
-				return in
-			},
-			unmarshalErr: ssz.ErrIncorrectByteSize,
-		},
-	}
-
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			r := BlobSidecarsByRootReq(c.ids)
-			by, err := r.MarshalSSZ()
-			if c.marshalErr != nil {
-				require.ErrorIs(t, err, c.marshalErr)
-				return
-			}
-			require.NoError(t, err)
-			if c.unmarshalMod != nil {
-				by = c.unmarshalMod(by)
-			}
-			got := &BlobSidecarsByRootReq{}
-			err = got.UnmarshalSSZ(by)
-			if c.unmarshalErr != nil {
-				require.ErrorIs(t, err, c.unmarshalErr)
-				return
-			}
-			require.NoError(t, err)
-			for i, gid := range *got {
-				require.DeepEqual(t, c.ids[i], gid)
-			}
-		})
-	}
-}
 
 func TestBeaconBlockByRootsReq_Limit(t *testing.T) {
 	fixedRoots := make([][32]byte, 0)

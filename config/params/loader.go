@@ -8,8 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/math"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/math"
 	"gopkg.in/yaml.v2"
 )
 
@@ -172,7 +172,7 @@ func ReplaceHexStringWithYAMLFormat(line string) []string {
 }
 
 // ConfigToYaml takes a provided config and outputs its contents
-// in yaml. This allows prysm's custom configs to be read by other clients.
+// in yaml. This allows qrysm's custom configs to be read by other clients.
 func ConfigToYaml(cfg *BeaconChainConfig) []byte {
 	lines := []string{
 		fmt.Sprintf("PRESET_BASE: '%s'", cfg.PresetBase),
@@ -195,20 +195,9 @@ func ConfigToYaml(cfg *BeaconChainConfig) []byte {
 		fmt.Sprintf("MIN_PER_EPOCH_CHURN_LIMIT: %d", cfg.MinPerEpochChurnLimit),
 		fmt.Sprintf("DEPOSIT_CHAIN_ID: %d", cfg.DepositChainID),
 		fmt.Sprintf("DEPOSIT_NETWORK_ID: %d", cfg.DepositNetworkID),
-		fmt.Sprintf("ALTAIR_FORK_EPOCH: %d", cfg.AltairForkEpoch),
-		fmt.Sprintf("ALTAIR_FORK_VERSION: %#x", cfg.AltairForkVersion),
-		fmt.Sprintf("BELLATRIX_FORK_EPOCH: %d", cfg.BellatrixForkEpoch),
-		fmt.Sprintf("BELLATRIX_FORK_VERSION: %#x", cfg.BellatrixForkVersion),
-		fmt.Sprintf("CAPELLA_FORK_EPOCH: %d", cfg.CapellaForkEpoch),
-		fmt.Sprintf("CAPELLA_FORK_VERSION: %#x", cfg.CapellaForkVersion),
 		fmt.Sprintf("INACTIVITY_SCORE_BIAS: %d", cfg.InactivityScoreBias),
 		fmt.Sprintf("INACTIVITY_SCORE_RECOVERY_RATE: %d", cfg.InactivityScoreRecoveryRate),
-		fmt.Sprintf("TERMINAL_TOTAL_DIFFICULTY: %s", cfg.TerminalTotalDifficulty),
-		fmt.Sprintf("TERMINAL_BLOCK_HASH: %#x", cfg.TerminalBlockHash),
-		fmt.Sprintf("TERMINAL_BLOCK_HASH_ACTIVATION_EPOCH: %d", cfg.TerminalBlockHashActivationEpoch),
 		fmt.Sprintf("DEPOSIT_CONTRACT_ADDRESS: %s", cfg.DepositContractAddress),
-		fmt.Sprintf("DENEB_FORK_EPOCH: %d", cfg.DenebForkEpoch),
-		fmt.Sprintf("DENEB_FORK_VERSION: %#x", cfg.DenebForkVersion),
 	}
 
 	yamlFile := []byte(strings.Join(lines, "\n"))

@@ -10,20 +10,20 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
 	"github.com/theQRL/go-bitfield"
-	mockChain "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	dbtest "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	p2ptest "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
-	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	mockChain "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	dbtest "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	p2ptest "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	mockSync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync/testing"
+	lruwrpr "github.com/theQRL/qrysm/cache/lru"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
@@ -63,7 +63,7 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 	digest, err := s.currentForkDigest()
 	require.NoError(t, err)
 
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blk.Block.Slot = 1
 	util.SaveBlock(t, ctx, db, blk)
 
@@ -74,8 +74,8 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 		Epoch: 0,
 	}
 
-	validators := uint64(64)
-	savedState, keys := util.DeterministicGenesisState(t, validators)
+	validators := uint64(256)
+	savedState, keys := util.DeterministicGenesisStateCapella(t, validators)
 	require.NoError(t, savedState.SetSlot(1))
 	require.NoError(t, db.SaveState(context.Background(), savedState, validBlockRoot))
 	chain.State = savedState
@@ -271,12 +271,12 @@ func TestService_validateCommitteeIndexBeaconAttestation(t *testing.T) {
 				require.NoError(t, err)
 				for i := 0; ; i++ {
 					if tt.msg.AggregationBits.BitAt(uint64(i)) {
-						tt.msg.Signature = keys[com[i]].Sign(attRoot[:]).Marshal()
+						tt.msg.Signatures = [][]byte{keys[com[i]].Sign(attRoot[:]).Marshal()}
 						break
 					}
 				}
 			} else {
-				tt.msg.Signature = make([]byte, 96)
+				tt.msg.Signatures = [][]byte{make([]byte, 4595)}
 			}
 			buf := new(bytes.Buffer)
 			_, err := p.Encoding().EncodeGossip(buf, tt.msg)

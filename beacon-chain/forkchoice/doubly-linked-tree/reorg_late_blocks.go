@@ -3,9 +3,9 @@ package doublylinkedtree
 import (
 	"time"
 
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 // orphanLateBlockProposingEarly determines the maximum threshold that we

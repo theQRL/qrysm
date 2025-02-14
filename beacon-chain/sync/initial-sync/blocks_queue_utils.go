@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 // resetWithBlocks removes all state machines, then re-adds enough machines to contain all provided
@@ -14,10 +14,10 @@ func (q *blocksQueue) resetFromFork(fork *forkData) error {
 	if fork == nil {
 		return errors.New("nil fork data")
 	}
-	if len(fork.bwb) == 0 {
+	if len(fork.blks) == 0 {
 		return errors.New("no blocks to reset from")
 	}
-	firstBlock := fork.bwb[0].Block.Block()
+	firstBlock := fork.blks[0].Block()
 
 	blocksPerRequest := q.blocksFetcher.blocksPerPeriod
 	if err := q.smm.removeAllStateMachines(); err != nil {
@@ -25,11 +25,11 @@ func (q *blocksQueue) resetFromFork(fork *forkData) error {
 	}
 	fsm := q.smm.addStateMachine(firstBlock.Slot())
 	fsm.pid = fork.peer
-	fsm.bwb = fork.bwb
+	fsm.blks = fork.blks
 	fsm.state = stateDataParsed
 
 	// The rest of machines are in skipped state.
-	startSlot := firstBlock.Slot().Add(uint64(len(fork.bwb)))
+	startSlot := firstBlock.Slot().Add(uint64(len(fork.blks)))
 	for i := startSlot; i < startSlot.Add(blocksPerRequest*(lookaheadSteps-1)); i += primitives.Slot(blocksPerRequest) {
 		fsm := q.smm.addStateMachine(i)
 		fsm.state = stateSkipped

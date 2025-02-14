@@ -4,7 +4,7 @@ Web3Signer is a popular remote signer tool by Consensys to allow users to store 
 client and signed without the vc knowing the private keys. Web3Signer Specs are found by
 searching `Consensys' Web3Signer API specification`
 
-issue: https://github.com/theQRL/qrysm/issues/9994
+issue: https://github.com/prysmaticlabs/prysm/issues/9994
 
 ## Support
 
@@ -21,7 +21,7 @@ WIP
 - Get Public keys: returns all public keys currently stored with web3signer excluding newly added keys if reload keys
   was not run.
 - Sign: Signs a message with a given public key. There are several types of messages that can be signed ( web3signer
-  type to prysm type):
+  type to qrysm type):
     - BLOCK <- *validatorpb.SignRequest_Block
     - ATTESTATION <- *validatorpb.SignRequest_AttestationData
     - AGGREGATE_AND_PROOF <- *validatorpb.SignRequest_AggregateAttestationAndProof

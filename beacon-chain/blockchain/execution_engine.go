@@ -2,33 +2,30 @@ package blockchain
 
 import (
 	"context"
-	"crypto/sha256"
 	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db/kv"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/config/params"
-	consensusblocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	payloadattribute "github.com/theQRL/qrysm/v4/consensus-types/payload-attribute"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition"
+	"github.com/theQRL/qrysm/beacon-chain/db/kv"
+	"github.com/theQRL/qrysm/beacon-chain/execution"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/config/params"
+	consensusblocks "github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	payloadattribute "github.com/theQRL/qrysm/consensus-types/payload-attribute"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	"github.com/theQRL/qrysm/runtime/version"
+	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
-
-const blobCommitmentVersionKZG uint8 = 0x01
 
 var defaultLatestValidHash = bytesutil.PadTo([]byte{0xff}, 32)
 
@@ -168,14 +165,10 @@ func (s *Service) notifyForkchoiceUpdate(ctx context.Context, arg *notifyForkcho
 }
 
 // getPayloadHash returns the payload hash given the block root.
-// if the block is before bellatrix fork epoch, it returns the zero hash.
 func (s *Service) getPayloadHash(ctx context.Context, root []byte) ([32]byte, error) {
 	blk, err := s.getBlock(ctx, s.ensureRootNotZeros(bytesutil.ToBytes32(root)))
 	if err != nil {
 		return [32]byte{}, err
-	}
-	if blocks.IsPreBellatrixVersion(blk.Block().Version()) {
-		return params.BeaconConfig().ZeroHash, nil
 	}
 	payload, err := blk.Block().Body().Execution()
 	if err != nil {
@@ -186,18 +179,13 @@ func (s *Service) getPayloadHash(ctx context.Context, root []byte) ([32]byte, er
 
 // notifyNewPayload signals execution engine on a new payload.
 // It returns true if the EL has returned VALID for the block
-func (s *Service) notifyNewPayload(ctx context.Context, preStateVersion int,
+func (s *Service) notifyNewPayload(ctx context.Context,
 	preStateHeader interfaces.ExecutionData, blk interfaces.ReadOnlySignedBeaconBlock) (bool, error) {
 	ctx, span := trace.StartSpan(ctx, "blockChain.notifyNewPayload")
 	defer span.End()
 
-	// Execution payload is only supported in Bellatrix and beyond. Pre
-	// merge blocks are never optimistic
 	if blk == nil {
 		return false, errors.New("signed beacon block can't be nil")
-	}
-	if preStateVersion < version.Bellatrix {
-		return true, nil
 	}
 	if err := consensusblocks.BeaconBlockIsNil(blk); err != nil {
 		return false, err
@@ -215,18 +203,7 @@ func (s *Service) notifyNewPayload(ctx context.Context, preStateVersion int,
 		return false, errors.Wrap(invalidBlock{error: err}, "could not get execution payload")
 	}
 
-	var lastValidHash []byte
-	if blk.Version() >= version.Deneb {
-		var versionedHashes []common.Hash
-		versionedHashes, err = kzgCommitmentsToVersionedHashes(blk.Block().Body())
-		if err != nil {
-			return false, errors.Wrap(err, "could not get versioned hashes to feed the engine")
-		}
-		pr := common.Hash(blk.Block().ParentRoot())
-		lastValidHash, err = s.cfg.ExecutionEngineCaller.NewPayload(ctx, payload, versionedHashes, &pr)
-	} else {
-		lastValidHash, err = s.cfg.ExecutionEngineCaller.NewPayload(ctx, payload, []common.Hash{}, &common.Hash{} /*empty version hashes and root before Deneb*/)
-	}
+	lastValidHash, err := s.cfg.ExecutionEngineCaller.NewPayload(ctx, payload, []common.Hash{}, &common.Hash{} /*empty version hashes and root before Deneb*/)
 	switch err {
 	case nil:
 		newPayloadValidNodeCount.Inc()
@@ -301,10 +278,10 @@ func (s *Service) getPayloadAttribute(ctx context.Context, st state.BeaconState,
 	recipient, err := s.cfg.BeaconDB.FeeRecipientByValidatorID(ctx, proposerID)
 	switch {
 	case errors.Is(err, kv.ErrNotFoundFeeRecipient):
-		if feeRecipient.String() == params.BeaconConfig().EthBurnAddressHex {
+		if feeRecipient.String() == params.BeaconConfig().ZondBurnAddress {
 			logrus.WithFields(logrus.Fields{
 				"validatorIndex": proposerID,
-				"burnAddress":    params.BeaconConfig().EthBurnAddressHex,
+				"burnAddress":    params.BeaconConfig().ZondBurnAddress,
 			}).Warn("Fee recipient is currently using the burn address, " +
 				"you will not be rewarded transaction fees on this setting. " +
 				"Please set a different zond address as the fee recipient. " +
@@ -326,23 +303,6 @@ func (s *Service) getPayloadAttribute(ctx context.Context, st state.BeaconState,
 
 	var attr payloadattribute.Attributer
 	switch st.Version() {
-	case version.Deneb:
-		withdrawals, err := st.ExpectedWithdrawals()
-		if err != nil {
-			log.WithError(err).Error("Could not get expected withdrawals to get payload attribute")
-			return false, emptyAttri, 0
-		}
-		attr, err = payloadattribute.New(&enginev1.PayloadAttributesV3{
-			Timestamp:             uint64(t.Unix()),
-			PrevRandao:            prevRando,
-			SuggestedFeeRecipient: feeRecipient.Bytes(),
-			Withdrawals:           withdrawals,
-			ParentBeaconBlockRoot: headRoot,
-		})
-		if err != nil {
-			log.WithError(err).Error("Could not get payload attribute")
-			return false, emptyAttri, 0
-		}
 	case version.Capella:
 		withdrawals, err := st.ExpectedWithdrawals()
 		if err != nil {
@@ -354,16 +314,6 @@ func (s *Service) getPayloadAttribute(ctx context.Context, st state.BeaconState,
 			PrevRandao:            prevRando,
 			SuggestedFeeRecipient: feeRecipient.Bytes(),
 			Withdrawals:           withdrawals,
-		})
-		if err != nil {
-			log.WithError(err).Error("Could not get payload attribute")
-			return false, emptyAttri, 0
-		}
-	case version.Bellatrix:
-		attr, err = payloadattribute.New(&enginev1.PayloadAttributes{
-			Timestamp:             uint64(t.Unix()),
-			PrevRandao:            prevRando,
-			SuggestedFeeRecipient: feeRecipient.Bytes(),
 		})
 		if err != nil {
 			log.WithError(err).Error("Could not get payload attribute")
@@ -389,29 +339,6 @@ func (s *Service) removeInvalidBlockAndState(ctx context.Context, blkRoots [][32
 			// This is an irreparable condition, it would me a justified or finalized block has become invalid.
 			return err
 		}
-		// No op if the sidecar does not exist.
-		if err := s.cfg.BeaconDB.DeleteBlobSidecar(ctx, root); err != nil {
-			return err
-		}
 	}
 	return nil
-}
-
-func kzgCommitmentsToVersionedHashes(body interfaces.ReadOnlyBeaconBlockBody) ([]common.Hash, error) {
-	commitments, err := body.BlobKzgCommitments()
-	if err != nil {
-		return nil, errors.Wrap(invalidBlock{error: err}, "could not get blob kzg commitments")
-	}
-
-	versionedHashes := make([]common.Hash, len(commitments))
-	for i, commitment := range commitments {
-		versionedHashes[i] = ConvertKzgCommitmentToVersionedHash(commitment)
-	}
-	return versionedHashes, nil
-}
-
-func ConvertKzgCommitmentToVersionedHash(commitment []byte) common.Hash {
-	versionedHash := sha256.Sum256(commitment)
-	versionedHash[0] = blobCommitmentVersionKZG
-	return versionedHash
 }

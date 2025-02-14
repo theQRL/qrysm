@@ -7,8 +7,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestToBytes(t *testing.T) {

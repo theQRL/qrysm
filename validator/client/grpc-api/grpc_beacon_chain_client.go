@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/golang/protobuf/ptypes/empty"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/validator/client/iface"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/validator/client/iface"
 	"google.golang.org/grpc"
 )
 
@@ -25,16 +25,8 @@ func (c *grpcBeaconChainClient) ListValidators(ctx context.Context, in *zondpb.L
 	return c.beaconChainClient.ListValidators(ctx, in)
 }
 
-func (c *grpcBeaconChainClient) GetValidatorQueue(ctx context.Context, in *empty.Empty) (*zondpb.ValidatorQueue, error) {
-	return c.beaconChainClient.GetValidatorQueue(ctx, in)
-}
-
 func (c *grpcBeaconChainClient) GetValidatorPerformance(ctx context.Context, in *zondpb.ValidatorPerformanceRequest) (*zondpb.ValidatorPerformanceResponse, error) {
 	return c.beaconChainClient.GetValidatorPerformance(ctx, in)
-}
-
-func (c *grpcBeaconChainClient) GetValidatorParticipation(ctx context.Context, in *zondpb.GetValidatorParticipationRequest) (*zondpb.ValidatorParticipationResponse, error) {
-	return c.beaconChainClient.GetValidatorParticipation(ctx, in)
 }
 
 func NewGrpcBeaconChainClient(cc grpc.ClientConnInterface) iface.BeaconChainClient {

@@ -9,10 +9,10 @@ import (
 	"testing"
 
 	"github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/qrysm/v4/api"
-	"github.com/theQRL/qrysm/v4/api/grpc"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/api"
+	"github.com/theQRL/qrysm/api/grpc"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 type testRequestContainer struct {
@@ -252,8 +252,8 @@ func TestProcessMiddlewareResponseFields(t *testing.T) {
 		require.Equal(t, true, errJson == nil)
 		assert.Equal(t, "0x666f6f", container.TestHex)
 		assert.Equal(t, "0x", container.TestEmptyHex)
-		assert.Equal(t, "0x0000000000000000000000000000000000666F6f", container.TestAddress)
-		assert.Equal(t, "0x", container.TestEmptyAddress)
+		assert.Equal(t, "Z0000000000000000000000000000000000666F6f", container.TestAddress)
+		assert.Equal(t, "Z", container.TestEmptyAddress)
 		assert.Equal(t, "4196", container.TestUint256)
 		assert.Equal(t, "test enum", container.TestEnum)
 		assert.Equal(t, "1136214245", container.TestTime)

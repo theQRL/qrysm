@@ -1,7 +1,7 @@
 // This tool allows for simple encrypting and decrypting of EIP-2335 compliant, BLS12-381
 // keystore.json files which as password protected. This is helpful in development to inspect
-// the contents of keystores created by Ethereum validator wallets or to easily produce keystores from a
-// specified secret to move them around in a standard format between Ethereum consensus clients.
+// the contents of keystores created by Zond validator wallets or to easily produce keystores from a
+// specified secret to move them around in a standard format between Zond consensus clients.
 package main
 
 import (
@@ -16,12 +16,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/io/prompt"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/io/prompt"
+	"github.com/theQRL/qrysm/validator/keymanager"
 	"github.com/urfave/cli/v2"
-	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 )
 
 var (
@@ -178,11 +178,12 @@ func encrypt(cliCtx *cli.Context) error {
 	if len(privateKeyString) > 2 && strings.Contains(privateKeyString, "0x") {
 		privateKeyString = privateKeyString[2:] // Strip the 0x prefix, if any.
 	}
+	// TODO(now.youtrack.cloud/issue/TQ-7)
 	bytesValue, err := hex.DecodeString(privateKeyString)
 	if err != nil {
 		return errors.Wrapf(err, "could not decode as hex string: %s", privateKeyString)
 	}
-	privKey, err := dilithium.SecretKeyFromBytes(bytesValue)
+	privKey, err := dilithium.SecretKeyFromSeed(bytesValue)
 	if err != nil {
 		return errors.Wrap(err, "not a valid BLS12-381 private key")
 	}
@@ -251,7 +252,7 @@ func readAndDecryptKeystore(fullPath, password string) error {
 			return errors.Wrap(err, "could not decode pubkey from keystore")
 		}
 	} else {
-		privKey, err := dilithium.SecretKeyFromBytes(privKeyBytes)
+		privKey, err := dilithium.SecretKeyFromSeed(privKeyBytes)
 		if err != nil {
 			return errors.Wrap(err, "could not initialize private key from bytes")
 		}

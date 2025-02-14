@@ -2,4 +2,4 @@
 
 set -e
 
-chown prysm-beacon:prysm-beacon /etc/prysm/beacon-chain.yaml
+chown qrysm-beacon:qrysm-beacon /etc/qrysm/beacon-chain.yaml

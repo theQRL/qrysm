@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/crypto/rand"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/peerdata"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/crypto/rand"
+	qrysmTime "github.com/theQRL/qrysm/time"
 )
 
 var _ Scorer = (*BlockProviderScorer)(nil)
@@ -155,7 +155,7 @@ func (s *BlockProviderScorer) touch(pid peer.ID, t ...time.Time) {
 	if len(t) == 1 {
 		peerData.BlockProviderUpdated = t[0]
 	} else {
-		peerData.BlockProviderUpdated = prysmTime.Now()
+		peerData.BlockProviderUpdated = qrysmTime.Now()
 	}
 }
 

@@ -7,22 +7,6 @@ import (
 )
 
 var (
-	// PraterTestnet flag for the multiclient Ethereum consensus testnet.
-	PraterTestnet = &cli.BoolFlag{
-		Name:    "prater",
-		Usage:   "Run Prysm configured for the Prater / Goerli test network",
-		Aliases: []string{"goerli"},
-	}
-	// SepoliaTestnet flag for the multiclient Ethereum consensus testnet.
-	SepoliaTestnet = &cli.BoolFlag{
-		Name:  "sepolia",
-		Usage: "Run Prysm configured for the Sepolia beacon chain test network",
-	}
-	// HoleskyTestnet flag for the multiclient Ethereum consensus testnet.
-	HoleskyTestnet = &cli.BoolFlag{
-		Name:  "holesky",
-		Usage: "Run Prysm configured for the Holesky beacon chain test network",
-	}
 	// Mainnet flag for easier tooling, no-op
 	Mainnet = &cli.BoolFlag{
 		Value: true,
@@ -52,11 +36,6 @@ var (
 	disablePeerScorer = &cli.BoolFlag{
 		Name:  "disable-peer-scorer",
 		Usage: "(Danger): Disables P2P peer scorer. Do NOT use this in production!",
-	}
-	writeWalletPasswordOnWebOnboarding = &cli.BoolFlag{
-		Name: "write-wallet-password-on-web-onboarding",
-		Usage: "(Danger): Writes the wallet password to the wallet directory on completing Prysm web onboarding. " +
-			"We recommend against this flag unless you are an advanced user.",
 	}
 	aggregateFirstInterval = &cli.DurationFlag{
 		Name:   "aggregate-first-interval",
@@ -173,10 +152,6 @@ var devModeFlags = []cli.Flag{
 
 // ValidatorFlags contains a list of all the feature flags that apply to the validator client.
 var ValidatorFlags = append(deprecatedFlags, []cli.Flag{
-	writeWalletPasswordOnWebOnboarding,
-	HoleskyTestnet,
-	PraterTestnet,
-	SepoliaTestnet,
 	Mainnet,
 	dynamicKeyReloadDebounceInterval,
 	attestTimely,
@@ -196,9 +171,6 @@ var BeaconChainFlags = append(deprecatedBeaconFlags, append(deprecatedFlags, []c
 	enableExperimentalState,
 	writeSSZStateTransitionsFlag,
 	disableGRPCConnectionLogging,
-	HoleskyTestnet,
-	PraterTestnet,
-	SepoliaTestnet,
 	Mainnet,
 	disablePeerScorer,
 	disableBroadcastSlashingFlag,
@@ -229,7 +201,4 @@ var E2EBeaconChainFlags = []string{
 // NetworkFlags contains a list of network flags.
 var NetworkFlags = []cli.Flag{
 	Mainnet,
-	PraterTestnet,
-	SepoliaTestnet,
-	HoleskyTestnet,
 }

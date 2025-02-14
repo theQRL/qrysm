@@ -6,19 +6,19 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-bitfield"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/container/slice"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
-	e2eTypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/container/slice"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
+	"github.com/theQRL/qrysm/testing/endtoend/policies"
+	e2eTypes "github.com/theQRL/qrysm/testing/endtoend/types"
+	"github.com/theQRL/qrysm/testing/util"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -149,7 +149,7 @@ func insertDoubleAttestationIntoPool(_ *e2eTypes.EvaluationContext, conns ...*gr
 
 	var committeeIndex primitives.CommitteeIndex
 	var committee []primitives.ValidatorIndex
-	for _, duty := range duties.Duties {
+	for _, duty := range duties.CurrentEpochDuties {
 		if duty.AttesterSlot == chainHead.HeadSlot-1 {
 			committeeIndex = duty.CommitteeIndex
 			committee = duty.Committee
@@ -195,7 +195,7 @@ func insertDoubleAttestationIntoPool(_ *e2eTypes.EvaluationContext, conns ...*gr
 		att := &zond.Attestation{
 			AggregationBits: attBitfield,
 			Data:            attData,
-			Signature:       privKeys[committee[i]].Sign(signingRoot[:]).Marshal(),
+			Signatures:      [][]byte{privKeys[committee[i]].Sign(signingRoot[:]).Marshal()},
 		}
 		// We only broadcast to conns[0] here since we can trust that at least 1 node will be online.
 		// Only broadcasting the attestation to one node also helps test slashing propagation.
@@ -279,24 +279,24 @@ func generateSignedBeaconBlock(
 	chainHead *zond.ChainHead,
 	proposerIndex primitives.ValidatorIndex,
 	valClient zond.BeaconNodeValidatorClient,
-	privKeys []bls.SecretKey,
+	privKeys []dilithium.DilithiumKey,
 	stateRoot string,
 ) (*zond.GenericSignedBeaconBlock, error) {
 	ctx := context.Background()
 
 	hashLen := 32
-	blk := &zond.BeaconBlock{
+	blk := &zond.BeaconBlockCapella{
 		Slot:          chainHead.HeadSlot - 1,
 		ParentRoot:    chainHead.HeadBlockRoot,
 		StateRoot:     bytesutil.PadTo([]byte(stateRoot), hashLen),
 		ProposerIndex: proposerIndex,
-		Body: &zond.BeaconBlockBody{
+		Body: &zond.BeaconBlockBodyCapella{
 			Eth1Data: &zond.Eth1Data{
 				BlockHash:    bytesutil.PadTo([]byte("bad block hash"), hashLen),
 				DepositRoot:  bytesutil.PadTo([]byte("bad deposit root"), hashLen),
 				DepositCount: 1,
 			},
-			RandaoReveal:      bytesutil.PadTo([]byte("bad randao"), dilithium2.CryptoBytes),
+			RandaoReveal:      bytesutil.PadTo([]byte("bad randao"), field_params.DilithiumSignatureLength),
 			Graffiti:          bytesutil.PadTo([]byte("teehee"), hashLen),
 			ProposerSlashings: []*zond.ProposerSlashing{},
 			AttesterSlashings: []*zond.AttesterSlashing{},
@@ -319,7 +319,7 @@ func generateSignedBeaconBlock(
 		return nil, errors.Wrap(err, "could not compute signing root")
 	}
 	sig := privKeys[proposerIndex].Sign(signingRoot[:]).Marshal()
-	signedBlk := &zond.SignedBeaconBlock{
+	signedBlk := &zond.SignedBeaconBlockCapella{
 		Block:     blk,
 		Signature: sig,
 	}

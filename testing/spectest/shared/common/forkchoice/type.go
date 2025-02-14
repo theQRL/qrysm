@@ -3,14 +3,13 @@ package forkchoice
 type Step struct {
 	Tick             *int            `json:"tick"`
 	Block            *string         `json:"block"`
-	Blobs            *string         `json:"blobs"`
 	Proofs           []*string       `json:"proofs"`
 	Valid            *bool           `json:"valid"`
 	Attestation      *string         `json:"attestation"`
 	AttesterSlashing *string         `json:"attester_slashing"`
 	PayloadStatus    *MockEngineResp `json:"payload_status"`
-	PowBlock         *string         `json:"pow_block"`
-	Check            *Check          `json:"checks"`
+	// PowBlock         *string         `json:"pow_block"`
+	Check *Check `json:"checks"`
 }
 
 type Check struct {

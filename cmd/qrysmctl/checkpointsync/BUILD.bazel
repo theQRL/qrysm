@@ -6,7 +6,7 @@ go_library(
         "cmd.go",
         "download.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/cmd/qrysmctl/checkpointsync",
+    importpath = "github.com/theQRL/qrysm/cmd/qrysmctl/checkpointsync",
     visibility = ["//visibility:public"],
     deps = [
         "//api/client:go_default_library",

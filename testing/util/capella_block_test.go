@@ -3,17 +3,17 @@ package util
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	"github.com/theQRL/qrysm/v4/encoding/ssz"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/encoding/ssz"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
-func TestGenerateBLSToExecutionChange(t *testing.T) {
+func TestGenerateDilithiumToExecutionChange(t *testing.T) {
 	st, keys := DeterministicGenesisStateCapella(t, 64)
-	change, err := GenerateBLSToExecutionChange(st, keys[0], 0)
+	change, err := GenerateDilithiumToExecutionChange(st, keys[0], 0)
 	require.NoError(t, err)
 
 	message := change.Message
@@ -21,9 +21,9 @@ func TestGenerateBLSToExecutionChange(t *testing.T) {
 	require.NoError(t, err)
 
 	cred := val.WithdrawalCredentials
-	require.DeepEqual(t, cred[0], params.BeaconConfig().BLSWithdrawalPrefixByte)
+	require.DeepEqual(t, cred[0], params.BeaconConfig().DilithiumWithdrawalPrefixByte)
 
-	fromPubkey := message.FromBlsPubkey
+	fromPubkey := message.FromDilithiumPubkey
 	hashFn := ssz.NewHasherFunc(hash.CustomSHA256Hasher())
 	digest := hashFn.Hash(fromPubkey)
 	require.DeepEqual(t, digest[1:], digest[1:])

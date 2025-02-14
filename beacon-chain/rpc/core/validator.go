@@ -9,25 +9,25 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/epoch/precompute"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
-	opfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	coreTime "github.com/theQRL/qrysm/v4/beacon-chain/core/time"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/consensus-types/validator"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/crypto/rand"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/core/altair"
+	"github.com/theQRL/qrysm/beacon-chain/core/epoch/precompute"
+	"github.com/theQRL/qrysm/beacon-chain/core/feed"
+	opfeed "github.com/theQRL/qrysm/beacon-chain/core/feed/operation"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	coreTime "github.com/theQRL/qrysm/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/consensus-types/validator"
+	"github.com/theQRL/qrysm/crypto/rand"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
+	qrysmTime "github.com/theQRL/qrysm/time"
+	"github.com/theQRL/qrysm/time/slots"
+	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -75,41 +75,23 @@ func (s *Service) ComputeValidatorPerformance(
 		}
 	}
 	var validatorSummary []*precompute.Validator
-	if headState.Version() == version.Phase0 {
-		vp, bp, err := precompute.New(ctx, headState)
-		if err != nil {
-			return nil, &RpcError{Err: err, Reason: Internal}
-		}
-		vp, bp, err = precompute.ProcessAttestations(ctx, headState, vp, bp)
-		if err != nil {
-			return nil, &RpcError{Err: err, Reason: Internal}
-		}
-		headState, err = precompute.ProcessRewardsAndPenaltiesPrecompute(headState, bp, vp, precompute.AttestationsDelta, precompute.ProposersDelta)
-		if err != nil {
-			return nil, &RpcError{Err: err, Reason: Internal}
-		}
-		validatorSummary = vp
-	} else if headState.Version() >= version.Altair {
-		vp, bp, err := altair.InitializePrecomputeValidators(ctx, headState)
-		if err != nil {
-			return nil, &RpcError{Err: err, Reason: Internal}
-		}
-		vp, bp, err = altair.ProcessEpochParticipation(ctx, headState, bp, vp)
-		if err != nil {
-			return nil, &RpcError{Err: err, Reason: Internal}
-		}
-		headState, vp, err = altair.ProcessInactivityScores(ctx, headState, vp)
-		if err != nil {
-			return nil, &RpcError{Err: err, Reason: Internal}
-		}
-		headState, err = altair.ProcessRewardsAndPenaltiesPrecompute(headState, bp, vp)
-		if err != nil {
-			return nil, &RpcError{Err: err, Reason: Internal}
-		}
-		validatorSummary = vp
-	} else {
-		return nil, &RpcError{Err: errors.Wrapf(err, "head state version %d not supported", headState.Version()), Reason: Internal}
+	vp, bp, err := altair.InitializePrecomputeValidators(ctx, headState)
+	if err != nil {
+		return nil, &RpcError{Err: err, Reason: Internal}
 	}
+	vp, bp, err = altair.ProcessEpochParticipation(ctx, headState, bp, vp)
+	if err != nil {
+		return nil, &RpcError{Err: err, Reason: Internal}
+	}
+	headState, vp, err = altair.ProcessInactivityScores(ctx, headState, vp)
+	if err != nil {
+		return nil, &RpcError{Err: err, Reason: Internal}
+	}
+	headState, err = altair.ProcessRewardsAndPenaltiesPrecompute(headState, bp, vp)
+	if err != nil {
+		return nil, &RpcError{Err: err, Reason: Internal}
+	}
+	validatorSummary = vp
 
 	responseCap := len(req.Indices) + len(req.PublicKeys)
 	validatorIndices := make([]primitives.ValidatorIndex, 0, responseCap)
@@ -183,12 +165,8 @@ func (s *Service) ComputeValidatorPerformance(
 		correctlyVotedTarget = append(correctlyVotedTarget, summary.IsPrevEpochTargetAttester)
 		correctlyVotedHead = append(correctlyVotedHead, summary.IsPrevEpochHeadAttester)
 
-		if headState.Version() == version.Phase0 {
-			correctlyVotedSource = append(correctlyVotedSource, summary.IsPrevEpochAttester)
-		} else {
-			correctlyVotedSource = append(correctlyVotedSource, summary.IsPrevEpochSourceAttester)
-			inactivityScores = append(inactivityScores, summary.InactivityScore)
-		}
+		correctlyVotedSource = append(correctlyVotedSource, summary.IsPrevEpochSourceAttester)
+		inactivityScores = append(inactivityScores, summary.InactivityScore)
 	}
 
 	return &zondpb.ValidatorPerformanceResponse{
@@ -246,7 +224,7 @@ func (s *Service) SubmitSignedAggregateSelectionProof(
 		req.SignedAggregateAndProof.Message.Aggregate == nil || req.SignedAggregateAndProof.Message.Aggregate.Data == nil {
 		return &RpcError{Err: errors.New("signed aggregate request can't be nil"), Reason: BadRequest}
 	}
-	emptySig := make([]byte, dilithium2.CryptoBytes)
+	emptySig := make([]byte, field_params.DilithiumSignatureLength)
 	if bytes.Equal(req.SignedAggregateAndProof.Signature, emptySig) ||
 		bytes.Equal(req.SignedAggregateAndProof.Message.SelectionProof, emptySig) {
 		return &RpcError{Err: errors.New("signed signatures can't be zero hashes"), Reason: BadRequest}
@@ -272,16 +250,15 @@ func (s *Service) SubmitSignedAggregateSelectionProof(
 	return nil
 }
 
-// AggregatedSigAndAggregationBits returns the aggregated signature and aggregation bits
+// SignaturesAndAggregationBits returns the signatures and aggregation bits
 // associated with a particular set of sync committee messages.
-func (s *Service) AggregatedSigAndAggregationBits(
+func (s *Service) SignaturesAndAggregationBits(
 	ctx context.Context,
-	req *zondpb.AggregatedSigAndAggregationBitsRequest) ([]byte, []byte, error) {
+	req *zondpb.SignaturesAndAggregationBitsRequest) ([][]byte, []byte, error) {
 	subCommitteeSize := params.BeaconConfig().SyncCommitteeSize / params.BeaconConfig().SyncCommitteeSubnetCount
 	sigs := make([][]byte, 0, subCommitteeSize)
 	bits := zondpb.NewSyncCommitteeAggregationBits()
-	syncCommitteeIndicesSigMap := make(map[primitives.CommitteeIndex]*zondpb.SyncCommitteeMessage)
-	appendedSyncCommitteeIndices := make([]primitives.CommitteeIndex, 0)
+
 	for _, msg := range req.Msgs {
 		if bytes.Equal(req.BlockRoot, msg.BlockRoot) {
 			headSyncCommitteeIndices, err := s.HeadFetcher.HeadSyncCommitteeIndices(ctx, msg.ValidatorIndex, req.Slot)
@@ -293,37 +270,18 @@ func (s *Service) AggregatedSigAndAggregationBits(
 				subnetIndex := i / subCommitteeSize
 				indexMod := i % subCommitteeSize
 				if subnetIndex == req.SubnetId && !bits.BitAt(indexMod) {
+					insertIdx, err := attestation.SearchInsertIdxWithOffset(bits.BitIndices(), 0, int(indexMod))
+					if err != nil {
+						return nil, nil, errors.Wrapf(err, "could not get signature insert index")
+					}
 					bits.SetBitAt(indexMod, true)
-					syncCommitteeIndicesSigMap[index] = msg
-					appendedSyncCommitteeIndices = append(appendedSyncCommitteeIndices, index)
+					sigs = slices.Insert(sigs, insertIdx, msg.Signature)
 				}
 			}
 		}
 	}
 
-	sort.Slice(appendedSyncCommitteeIndices, func(i, j int) bool {
-		return appendedSyncCommitteeIndices[i] < appendedSyncCommitteeIndices[j]
-	})
-
-	for _, syncCommitteeIndex := range appendedSyncCommitteeIndices {
-		msg, ok := syncCommitteeIndicesSigMap[syncCommitteeIndex]
-		if !ok {
-			return []byte{}, nil, errors.Errorf("could not get sync subcommittee index %d "+
-				"in syncCommitteeIndicesSigMap", syncCommitteeIndex)
-		}
-		sigs = append(sigs, msg.Signature)
-	}
-
-	aggregatedSig := make([]byte, dilithium2.CryptoBytes)
-	aggregatedSig[0] = 0xC0
-	if len(sigs) != 0 {
-		uncompressedSigs, err := dilithium.MultipleSignaturesFromBytes(sigs)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "could not decompress signatures")
-		}
-		aggregatedSig = dilithium.UnaggregatedSignatures(uncompressedSigs)
-	}
-	return aggregatedSig, bits, nil
+	return sigs, bits, nil
 }
 
 // AssignValidatorToSubnet checks the status and pubkey of a particular validator
@@ -348,7 +306,7 @@ func AssignValidatorToSubnetProto(pubkey []byte, status zondpb.ValidatorStatus) 
 
 func assignValidatorToSubnet(pubkey []byte) {
 	_, ok, expTime := cache.SubnetIDs.GetPersistentSubnets(pubkey)
-	if ok && expTime.After(prysmTime.Now()) {
+	if ok && expTime.After(qrysmTime.Now()) {
 		return
 	}
 	epochDuration := time.Duration(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))

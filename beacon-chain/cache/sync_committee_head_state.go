@@ -4,10 +4,9 @@ import (
 	"sync"
 
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	lruwrpr "github.com/theQRL/qrysm/cache/lru"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 // SyncCommitteeHeadStateCache for the latest head state requested by a sync committee participant.
@@ -32,10 +31,6 @@ func (c *SyncCommitteeHeadStateCache) Put(slot primitives.Slot, st state.BeaconS
 		return ErrNilValueProvided
 	}
 
-	if st.Version() == version.Phase0 {
-		return ErrIncorrectType
-	}
-
 	c.cache.Add(slot, st)
 	return nil
 }
@@ -52,9 +47,6 @@ func (c *SyncCommitteeHeadStateCache) Get(slot primitives.Slot) (state.BeaconSta
 	if !ok {
 		return nil, ErrIncorrectType
 	}
-	// Sync committee is not supported in phase 0.
-	if st.Version() == version.Phase0 {
-		return nil, ErrIncorrectType
-	}
+
 	return st, nil
 }

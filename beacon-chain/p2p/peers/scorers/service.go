@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
-	"github.com/theQRL/qrysm/v4/config/features"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/peerdata"
+	"github.com/theQRL/qrysm/config/features"
 )
 
 var _ Scorer = (*Service)(nil)

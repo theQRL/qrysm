@@ -1,6 +1,6 @@
 /*
 Package local defines an implementation of an on-disk, EIP-2335 keystore.json
-approach towards defining validator accounts in Prysm. A validating private key is
+approach towards defining validator accounts in Qrysm. A validating private key is
 encrypted using a passphrase and its resulting encrypted file is stored as a
 keystore.json file under a unique, human-readable, account namespace. This local keymanager approach
 relies on storing account information on-disk, making it trivial to import, backup and

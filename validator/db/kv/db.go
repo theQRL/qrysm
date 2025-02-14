@@ -10,12 +10,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	prombolt "github.com/prysmaticlabs/prombbolt"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/async/abool"
-	"github.com/theQRL/qrysm/v4/async/event"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/async/abool"
+	"github.com/theQRL/qrysm/async/event"
+	"github.com/theQRL/qrysm/config/features"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/io/file"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -40,9 +40,8 @@ var (
 
 // blockedBuckets represents the buckets that we want to restrict
 // from our metrics fetching for performance reasons. For a detailed
-// summary, it can be read in https://github.com/theQRL/qrysm/issues/8274.
+// summary, it can be read in https://github.com/prysmaticlabs/prysm/issues/8274.
 var blockedBuckets = [][]byte{
-	deprecatedAttestationHistoryBucket,
 	lowestSignedSourceBucket,
 	lowestSignedTargetBucket,
 	lowestSignedProposalsBucket,
@@ -55,11 +54,11 @@ var blockedBuckets = [][]byte{
 
 // Config represents store's config object.
 type Config struct {
-	PubKeys [][dilithium2.CryptoPublicKeyBytes]byte
+	PubKeys [][field_params.DilithiumPubkeyLength]byte
 }
 
-// Store defines an implementation of the Prysm Database interface
-// using BoltDB as the underlying persistent kv-store for Ethereum consensus nodes.
+// Store defines an implementation of the Qrysm Database interface
+// using BoltDB as the underlying persistent kv-store for Zond consensus nodes.
 type Store struct {
 	db                                 *bolt.DB
 	databasePath                       string
@@ -142,7 +141,6 @@ func NewKVStore(ctx context.Context, dirPath string, config *Config) (*Store, er
 		return createBuckets(
 			tx,
 			genesisInfoBucket,
-			deprecatedAttestationHistoryBucket,
 			historicProposalsBucket,
 			lowestSignedSourceBucket,
 			lowestSignedTargetBucket,
@@ -180,7 +178,7 @@ func NewKVStore(ctx context.Context, dirPath string, config *Config) (*Store, er
 }
 
 // UpdatePublicKeysBuckets for a specified list of keys.
-func (s *Store) UpdatePublicKeysBuckets(pubKeys [][dilithium2.CryptoPublicKeyBytes]byte) error {
+func (s *Store) UpdatePublicKeysBuckets(pubKeys [][field_params.DilithiumPubkeyLength]byte) error {
 	return s.update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(historicProposalsBucket)
 		for _, pubKey := range pubKeys {

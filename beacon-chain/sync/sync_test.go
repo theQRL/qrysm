@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
 )
 
 func TestMain(m *testing.M) {
@@ -16,8 +16,6 @@ func TestMain(m *testing.M) {
 	flags.Init(&flags.GlobalFlags{
 		BlockBatchLimit:            64,
 		BlockBatchLimitBurstFactor: 10,
-		BlobBatchLimit:             8,
-		BlobBatchLimitBurstFactor:  2,
 	})
 	defer func() {
 		flags.Init(resetFlags)

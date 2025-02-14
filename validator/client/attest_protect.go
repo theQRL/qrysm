@@ -6,10 +6,10 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/slashings"
-	"github.com/theQRL/qrysm/v4/validator/db/kv"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/slashings"
+	"github.com/theQRL/qrysm/validator/db/kv"
 	"go.opencensus.io/trace"
 )
 
@@ -21,7 +21,7 @@ var failedAttLocalProtectionErr = "attempted to make slashable attestation, reje
 func (v *validator) slashableAttestationCheck(
 	ctx context.Context,
 	indexedAtt *zondpb.IndexedAttestation,
-	pubKey [dilithium2.CryptoPublicKeyBytes]byte,
+	pubKey [field_params.DilithiumPubkeyLength]byte,
 	signingRoot [32]byte,
 ) error {
 	ctx, span := trace.StartSpan(ctx, "validator.postAttSignUpdate")

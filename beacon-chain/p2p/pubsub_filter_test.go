@@ -9,14 +9,14 @@ import (
 
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/encoder"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/network/forks"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/network/forks"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	qrysmTime "github.com/theQRL/qrysm/time"
 )
 
 func TestService_CanSubscribe(t *testing.T) {
@@ -90,7 +90,7 @@ func TestService_CanSubscribe(t *testing.T) {
 		formatting := []interface{}{digest}
 
 		// Special case for attestation subnets which have a second formatting placeholder.
-		if topic == AttestationSubnetTopicFormat || topic == SyncCommitteeSubnetTopicFormat || topic == BlobSubnetTopicFormat {
+		if topic == AttestationSubnetTopicFormat || topic == SyncCommitteeSubnetTopicFormat {
 			formatting = append(formatting, 0 /* some subnet ID */)
 		}
 
@@ -344,7 +344,7 @@ func TestService_MonitorsStateForkUpdates(t *testing.T) {
 	go s.awaitStateInitialized()
 
 	vr := bytesutil.ToBytes32(bytesutil.PadTo([]byte("genesis"), 32))
-	require.NoError(t, cs.SetClock(startup.NewClock(prysmTime.Now(), vr)))
+	require.NoError(t, cs.SetClock(startup.NewClock(qrysmTime.Now(), vr)))
 
 	time.Sleep(50 * time.Millisecond)
 

@@ -4,12 +4,12 @@ import (
 	"sync"
 	"testing"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func VerifyBeaconStateSlotDataRace(t *testing.T, factory getState) {
@@ -55,22 +55,22 @@ func VerifyBeaconStateMatchPreviousJustifiedCheckptNative(t *testing.T, factory 
 }
 
 func VerifyBeaconStateValidatorByPubkey(t *testing.T, factory getState) {
-	keyCreator := func(input []byte) [dilithium2.CryptoPublicKeyBytes]byte {
-		var nKey [dilithium2.CryptoPublicKeyBytes]byte
+	keyCreator := func(input []byte) [field_params.DilithiumPubkeyLength]byte {
+		var nKey [field_params.DilithiumPubkeyLength]byte
 		copy(nKey[:1], input)
 		return nKey
 	}
 
 	tests := []struct {
 		name            string
-		modifyFunc      func(b state.BeaconState, k [dilithium2.CryptoPublicKeyBytes]byte)
+		modifyFunc      func(b state.BeaconState, k [field_params.DilithiumPubkeyLength]byte)
 		exists          bool
 		expectedIdx     primitives.ValidatorIndex
 		largestIdxInSet primitives.ValidatorIndex
 	}{
 		{
 			name: "retrieve validator",
-			modifyFunc: func(b state.BeaconState, key [dilithium2.CryptoPublicKeyBytes]byte) {
+			modifyFunc: func(b state.BeaconState, key [field_params.DilithiumPubkeyLength]byte) {
 				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key[:]}))
 			},
 			exists:      true,
@@ -78,7 +78,7 @@ func VerifyBeaconStateValidatorByPubkey(t *testing.T, factory getState) {
 		},
 		{
 			name: "retrieve validator with multiple validators from the start",
-			modifyFunc: func(b state.BeaconState, key [dilithium2.CryptoPublicKeyBytes]byte) {
+			modifyFunc: func(b state.BeaconState, key [field_params.DilithiumPubkeyLength]byte) {
 				key1 := keyCreator([]byte{'C'})
 				key2 := keyCreator([]byte{'D'})
 				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key[:]}))
@@ -90,7 +90,7 @@ func VerifyBeaconStateValidatorByPubkey(t *testing.T, factory getState) {
 		},
 		{
 			name: "retrieve validator with multiple validators",
-			modifyFunc: func(b state.BeaconState, key [dilithium2.CryptoPublicKeyBytes]byte) {
+			modifyFunc: func(b state.BeaconState, key [field_params.DilithiumPubkeyLength]byte) {
 				key1 := keyCreator([]byte{'C'})
 				key2 := keyCreator([]byte{'D'})
 				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key1[:]}))
@@ -102,7 +102,7 @@ func VerifyBeaconStateValidatorByPubkey(t *testing.T, factory getState) {
 		},
 		{
 			name: "retrieve validator with multiple validators from the start with shared state",
-			modifyFunc: func(b state.BeaconState, key [dilithium2.CryptoPublicKeyBytes]byte) {
+			modifyFunc: func(b state.BeaconState, key [field_params.DilithiumPubkeyLength]byte) {
 				key1 := keyCreator([]byte{'C'})
 				key2 := keyCreator([]byte{'D'})
 				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key[:]}))
@@ -115,7 +115,7 @@ func VerifyBeaconStateValidatorByPubkey(t *testing.T, factory getState) {
 		},
 		{
 			name: "retrieve validator with multiple validators with shared state",
-			modifyFunc: func(b state.BeaconState, key [dilithium2.CryptoPublicKeyBytes]byte) {
+			modifyFunc: func(b state.BeaconState, key [field_params.DilithiumPubkeyLength]byte) {
 				key1 := keyCreator([]byte{'C'})
 				key2 := keyCreator([]byte{'D'})
 				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key1[:]}))
@@ -129,7 +129,7 @@ func VerifyBeaconStateValidatorByPubkey(t *testing.T, factory getState) {
 		},
 		{
 			name: "retrieve validator with multiple validators with shared state at boundary",
-			modifyFunc: func(b state.BeaconState, key [dilithium2.CryptoPublicKeyBytes]byte) {
+			modifyFunc: func(b state.BeaconState, key [field_params.DilithiumPubkeyLength]byte) {
 				key1 := keyCreator([]byte{'C'})
 				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key1[:]}))
 				n := b.Copy()

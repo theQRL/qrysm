@@ -11,15 +11,15 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	cmdacc "github.com/theQRL/qrysm/v4/cmd/validator/accounts"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/accounts"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
+	cmdacc "github.com/theQRL/qrysm/cmd/validator/accounts"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/accounts"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/keymanager/local"
 	"github.com/urfave/cli/v2"
 )
 
@@ -75,9 +75,9 @@ func setupWalletCtx(
 	set.String(flags.BackupPublicKeysFlag.Name, cfg.backupPublicKeys, "")
 	set.String(flags.WalletPasswordFileFlag.Name, cfg.walletPasswordFile, "")
 	set.String(flags.AccountPasswordFileFlag.Name, cfg.accountPasswordFile, "")
-	set.Int64(flags.NumAccountsFlag.Name, cfg.numAccounts, "")
+	// set.Int64(flags.NumAccountsFlag.Name, cfg.numAccounts, "")
 	set.Bool(flags.SkipDepositConfirmationFlag.Name, cfg.skipDepositConfirm, "")
-	set.Bool(flags.SkipMnemonic25thWordCheckFlag.Name, true, "")
+	// set.Bool(flags.SkipMnemonic25thWordCheckFlag.Name, true, "")
 	set.Bool(flags.ExitAllFlag.Name, cfg.exitAll, "")
 	set.String(flags.GrpcHeadersFlag.Name, cfg.grpcHeaders, "")
 
@@ -86,7 +86,7 @@ func setupWalletCtx(
 		assert.NoError(tb, set.Set(flags.ImportPrivateKeyFileFlag.Name, cfg.privateKeyFile))
 	}
 	assert.NoError(tb, set.Set(flags.WalletDirFlag.Name, cfg.walletDir))
-	assert.NoError(tb, set.Set(flags.SkipMnemonic25thWordCheckFlag.Name, "true"))
+	// assert.NoError(tb, set.Set(flags.SkipMnemonic25thWordCheckFlag.Name, "true"))
 	assert.NoError(tb, set.Set(flags.KeysDirFlag.Name, cfg.keysDir))
 	assert.NoError(tb, set.Set(flags.KeymanagerKindFlag.Name, cfg.keymanagerKind.String()))
 	assert.NoError(tb, set.Set(flags.DeletePublicKeysFlag.Name, cfg.deletePublicKeys))
@@ -96,7 +96,7 @@ func setupWalletCtx(
 	assert.NoError(tb, set.Set(flags.BackupPasswordFile.Name, cfg.backupPasswordFile))
 	assert.NoError(tb, set.Set(flags.WalletPasswordFileFlag.Name, cfg.walletPasswordFile))
 	assert.NoError(tb, set.Set(flags.AccountPasswordFileFlag.Name, cfg.accountPasswordFile))
-	assert.NoError(tb, set.Set(flags.NumAccountsFlag.Name, strconv.Itoa(int(cfg.numAccounts))))
+	// assert.NoError(tb, set.Set(flags.NumAccountsFlag.Name, strconv.Itoa(int(cfg.numAccounts))))
 	assert.NoError(tb, set.Set(flags.SkipDepositConfirmationFlag.Name, strconv.FormatBool(cfg.skipDepositConfirm)))
 	assert.NoError(tb, set.Set(flags.ExitAllFlag.Name, strconv.FormatBool(cfg.exitAll)))
 	assert.NoError(tb, set.Set(flags.GrpcHeadersFlag.Name, cfg.grpcHeaders))
@@ -167,6 +167,7 @@ func TestCreateWallet_Local(t *testing.T) {
 	require.NoError(t, err)
 }
 
+/*
 func TestCreateWallet_Derived(t *testing.T) {
 	walletDir, passwordsDir, passwordFile := setupWalletAndPasswordsDir(t)
 	cliCtx := setupWalletCtx(t, &testWalletConfig{
@@ -187,6 +188,7 @@ func TestCreateWallet_Derived(t *testing.T) {
 	})
 	assert.NoError(t, err)
 }
+*/
 
 // TestCreateWallet_WalletAlreadyExists checks for expected error if trying to create a wallet when there is one already.
 func TestCreateWallet_WalletAlreadyExists(t *testing.T) {
@@ -195,7 +197,7 @@ func TestCreateWallet_WalletAlreadyExists(t *testing.T) {
 		walletDir:          walletDir,
 		passwordsDir:       passwordsDir,
 		walletPasswordFile: passwordFile,
-		keymanagerKind:     keymanager.Derived,
+		keymanagerKind:     keymanager.Local,
 		numAccounts:        1,
 	})
 
@@ -207,16 +209,19 @@ func TestCreateWallet_WalletAlreadyExists(t *testing.T) {
 	_, err = CreateAndSaveWalletCli(cliCtx)
 	require.ErrorContains(t, "already exists", err)
 
-	cliCtx = setupWalletCtx(t, &testWalletConfig{
-		walletDir:          walletDir,
-		passwordsDir:       passwordsDir,
-		walletPasswordFile: passwordFile,
-		keymanagerKind:     keymanager.Local,
-	})
+	// TODO(now.youtrack.cloud/issue/TQ-2): we don't support more than on key manager kind atm
+	/*
+		cliCtx = setupWalletCtx(t, &testWalletConfig{
+			walletDir:          walletDir,
+			passwordsDir:       passwordsDir,
+			walletPasswordFile: passwordFile,
+			keymanagerKind:     keymanager.Local,
+		})
 
-	// We attempt to create another wallet of different type at the same location. We expect an error.
-	_, err = CreateAndSaveWalletCli(cliCtx)
-	require.ErrorContains(t, "already exists", err)
+		// We attempt to create another wallet of different type at the same location. We expect an error.
+		_, err = CreateAndSaveWalletCli(cliCtx)
+		require.ErrorContains(t, "already exists", err)
+	*/
 }
 
 func TestInputKeymanagerKind(t *testing.T) {
@@ -244,12 +249,14 @@ func TestInputKeymanagerKind(t *testing.T) {
 			want:    keymanager.Local,
 			wantErr: false,
 		},
-		{
-			name:    "derived returns derived kind",
-			args:    "derived",
-			want:    keymanager.Derived,
-			wantErr: false,
-		},
+		/*
+			{
+				name:    "derived returns derived kind",
+				args:    "derived",
+				want:    keymanager.Derived,
+				wantErr: false,
+			},
+		*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

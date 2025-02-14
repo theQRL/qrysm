@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/config/params"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/config/params"
+	qrysmTime "github.com/theQRL/qrysm/time"
 )
 
 var log = logrus.WithField("prefix", "slotutil")
@@ -29,7 +29,7 @@ func CountdownToGenesis(ctx context.Context, genesisTime time.Time, genesisValid
 	}
 	secondTimerActivated := false
 	for {
-		currentTime := prysmTime.Now()
+		currentTime := qrysmTime.Now()
 		if currentTime.After(genesisTime) {
 			log.WithFields(logFields).Info("Chain genesis time reached")
 			return

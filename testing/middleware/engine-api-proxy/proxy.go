@@ -18,7 +18,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/network"
+	"github.com/theQRL/qrysm/network"
 )
 
 var (
@@ -39,7 +39,7 @@ type interceptorConfig struct {
 	trigger     func() bool
 }
 
-// Proxy server that sits as a middleware between an Ethereum consensus client and an execution client,
+// Proxy server that sits as a middleware between an Zond consensus client and an execution client,
 // allowing us to modify in-flight requests and responses for testing purposes.
 type Proxy struct {
 	cfg              *config
@@ -272,7 +272,7 @@ func parseRequestBytes(req *http.Request) ([]byte, error) {
 	return requestBytes, nil
 }
 
-// Checks whether the JSON-RPC request is for the Ethereum engine API.
+// Checks whether the JSON-RPC request is for the Zond engine API.
 func isEngineAPICall(reqBytes []byte) bool {
 	jsonRequest, err := unmarshalRPCObject(reqBytes)
 	if err != nil {

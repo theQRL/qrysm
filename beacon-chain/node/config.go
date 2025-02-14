@@ -5,11 +5,11 @@ import (
 
 	fastssz "github.com/prysmaticlabs/fastssz"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	tracing2 "github.com/theQRL/qrysm/v4/monitoring/tracing"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	tracing2 "github.com/theQRL/qrysm/monitoring/tracing"
 	"github.com/urfave/cli/v2"
 )
 
@@ -148,25 +148,7 @@ func configureInteropConfig(cliCtx *cli.Context) error {
 }
 
 func configureExecutionSetting(cliCtx *cli.Context) error {
-	if cliCtx.IsSet(flags.TerminalTotalDifficultyOverride.Name) {
-		c := params.BeaconConfig()
-		c.TerminalTotalDifficulty = cliCtx.String(flags.TerminalTotalDifficultyOverride.Name)
-		log.WithField("terminal block difficult", c.TerminalTotalDifficulty).Warn("Terminal block difficult overridden")
-		params.OverrideBeaconConfig(c)
-	}
-	if cliCtx.IsSet(flags.TerminalBlockHashOverride.Name) {
-		c := params.BeaconConfig()
-		c.TerminalBlockHash = common.HexToHash(cliCtx.String(flags.TerminalBlockHashOverride.Name))
-		log.WithField("terminal block hash", c.TerminalBlockHash.Hex()).Warn("Terminal block hash overridden")
-		params.OverrideBeaconConfig(c)
-	}
-	if cliCtx.IsSet(flags.TerminalBlockHashActivationEpochOverride.Name) {
-		c := params.BeaconConfig()
-		c.TerminalBlockHashActivationEpoch = primitives.Epoch(cliCtx.Uint64(flags.TerminalBlockHashActivationEpochOverride.Name))
-		log.WithField("terminal block hash activation epoch", c.TerminalBlockHashActivationEpoch).Warn("Terminal block hash activation epoch overridden")
-		params.OverrideBeaconConfig(c)
-	}
-
+	// TODO(now.youtrack.cloud/issue/TQ-1)
 	if !cliCtx.IsSet(flags.SuggestedFeeRecipient.Name) {
 		log.Warnf("In order to receive transaction fees from proposing blocks, " +
 			"you must provide flag --" + flags.SuggestedFeeRecipient.Name + " with a valid zond address when starting your beacon node. " +
@@ -176,7 +158,8 @@ func configureExecutionSetting(cliCtx *cli.Context) error {
 
 	c := params.BeaconConfig().Copy()
 	ha := cliCtx.String(flags.SuggestedFeeRecipient.Name)
-	if !common.IsHexAddress(ha) {
+	checksumAddress, err := common.NewAddressFromString(ha)
+	if err != nil {
 		log.Warnf("%s is not a valid fee recipient address, setting suggested-fee-recipient failed", ha)
 		return nil
 	}
@@ -185,7 +168,6 @@ func configureExecutionSetting(cliCtx *cli.Context) error {
 		log.WithError(err).Error(fmt.Sprintf("Could not decode fee recipient %s, setting suggested-fee-recipient failed", ha))
 		return nil
 	}
-	checksumAddress := common.HexToAddress(ha)
 	if !mixedcaseAddress.ValidChecksum() {
 		log.Warnf("Fee recipient %s is not a checksum Zond address. "+
 			"The checksummed address is %s and will be used as the fee recipient. "+

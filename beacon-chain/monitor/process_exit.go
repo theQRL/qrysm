@@ -2,8 +2,8 @@ package monitor
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // processExitsFromBlock logs the event when a tracked validators' exit was included in a block

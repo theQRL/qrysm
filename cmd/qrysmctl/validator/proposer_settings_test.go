@@ -12,16 +12,16 @@ import (
 	"testing"
 
 	logtest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/rpc/apimiddleware"
 	"github.com/urfave/cli/v2"
 )
 
 func getValidatorHappyPathTestServer(t *testing.T) *httptest.Server {
 	key1 := "0x855ae9c6184d6edd46351b375f16f541b2d33b0ed0da9be4571b13938588aee840ba606a946f0e8023ae3a4b2a43b4d4"
 	key2 := "0x844ae9c6184d6edd46351b375f16f541b2d33b0ed0da9be4571b13938588aee840ba606a946f0e8023ae3a4b2a43b4d4"
-	address1 := "0xb698D697092822185bF0311052215d5B5e1F3944"
+	address1 := "Zb698D697092822185bF0311052215d5B5e1F3944"
 	return httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		w.Header().Set("Content-Type", "application/json")
@@ -38,15 +38,17 @@ func getValidatorHappyPathTestServer(t *testing.T) *httptest.Server {
 					},
 				})
 				require.NoError(t, err)
-			} else if r.RequestURI == "/zond/v1/remotekeys" {
-				err := json.NewEncoder(w).Encode(&apimiddleware.ListRemoteKeysResponseJson{
-					Keystores: []*apimiddleware.RemoteKeysListJson{
-						{
-							Pubkey: key1,
-						},
-					},
-				})
-				require.NoError(t, err)
+				/*
+					} else if r.RequestURI == "/zond/v1/remotekeys" {
+						err := json.NewEncoder(w).Encode(&apimiddleware.ListRemoteKeysResponseJson{
+							Keystores: []*apimiddleware.RemoteKeysListJson{
+								{
+									Pubkey: key1,
+								},
+							},
+						})
+						require.NoError(t, err)
+				*/
 			} else if r.RequestURI[strings.LastIndex(r.RequestURI, "/")+1:] == "feerecipient" {
 				pathSeg := strings.Split(r.RequestURI, "/")
 				validatorKey := pathSeg[len(pathSeg)-2]
@@ -58,8 +60,8 @@ func getValidatorHappyPathTestServer(t *testing.T) *httptest.Server {
 				require.Equal(t, ok, true)
 				err := json.NewEncoder(w).Encode(&apimiddleware.GetFeeRecipientByPubkeyResponseJson{
 					Data: &apimiddleware.FeeRecipientJson{
-						Pubkey:     validatorKey,
-						Ethaddress: address,
+						Pubkey:      validatorKey,
+						Zondaddress: address,
 					},
 				})
 				require.NoError(t, err)
@@ -80,7 +82,7 @@ func TestGetProposerSettings(t *testing.T) {
 	srv.Start()
 	defer srv.Close()
 	hook := logtest.NewGlobal()
-	defaultfeerecipient := "0xb698D697092822185bF0311052215d5B5e1F3944"
+	defaultfeerecipient := "Zb698D697092822185bF0311052215d5B5e1F3944"
 	token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.VXjrSItV_Kmwg_XilpscyPm2SPIsstytYLtr_AuJI8I"
 	app := cli.App{}
 	set := flag.NewFlagSet("test", 0)
@@ -107,19 +109,19 @@ func TestGetProposerSettings(t *testing.T) {
 
 func TestValidateValidateIsExecutionAddress(t *testing.T) {
 	t.Run("Happy Path", func(t *testing.T) {
-		err := validateIsExecutionAddress("0xb698D697092822185bF0311052215d5B5e1F3933")
+		err := validateIsExecutionAddress("Zb698D697092822185bF0311052215d5B5e1F3933")
 		require.NoError(t, err)
 	})
 	t.Run("Too Long", func(t *testing.T) {
-		err := validateIsExecutionAddress("0xb698D697092822185bF0311052215d5B5e1F39331")
+		err := validateIsExecutionAddress("Zb698D697092822185bF0311052215d5B5e1F39331")
 		require.ErrorContains(t, "no default address entered", err)
 	})
 	t.Run("Too Short", func(t *testing.T) {
-		err := validateIsExecutionAddress("0xb698D697092822185bF0311052215d5B5e1F393")
+		err := validateIsExecutionAddress("Zb698D697092822185bF0311052215d5B5e1F393")
 		require.ErrorContains(t, "no default address entered", err)
 	})
-	t.Run("Not a hex", func(t *testing.T) {
-		err := validateIsExecutionAddress("b698D697092822185bF0311052215d5B5e1F393310")
+	t.Run("Prefix missing", func(t *testing.T) {
+		err := validateIsExecutionAddress("b698D697092822185bF0311052215d5B5e1F3933")
 		require.ErrorContains(t, "no default address entered", err)
 	})
 }

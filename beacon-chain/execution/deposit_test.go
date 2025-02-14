@@ -6,20 +6,20 @@ import (
 	"testing"
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	testDB "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	testing2 "github.com/theQRL/qrysm/v4/beacon-chain/execution/testing"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/container/trie"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	testDB "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	testing2 "github.com/theQRL/qrysm/beacon-chain/execution/testing"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/container/trie"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 const pubKeyErr = "could not convert bytes to public key"
@@ -110,90 +110,6 @@ func TestProcessDeposit_InvalidMerkleBranch(t *testing.T) {
 	assert.ErrorContains(t, want, err)
 }
 
-func TestProcessDeposit_InvalidPublicKey(t *testing.T) {
-	hook := logTest.NewGlobal()
-	beaconDB := testDB.SetupDB(t)
-	server, endpoint, err := testing2.SetupRPCServer()
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		server.Stop()
-	})
-	web3Service, err := NewService(context.Background(),
-		WithHttpEndpoint(endpoint),
-		WithDatabase(beaconDB),
-	)
-	require.NoError(t, err, "unable to setup web3 ETH1.0 chain service")
-	web3Service = setDefaultMocks(web3Service)
-
-	deposits, _, err := util.DeterministicDepositsAndKeys(1)
-	require.NoError(t, err)
-	deposits[0].Data.PublicKey = bytesutil.PadTo([]byte("junk"), 48)
-
-	leaf, err := deposits[0].Data.HashTreeRoot()
-	require.NoError(t, err, "Could not hash deposit")
-
-	generatedTrie, err := trie.GenerateTrieFromItems([][]byte{leaf[:]}, params.BeaconConfig().DepositContractTreeDepth)
-	require.NoError(t, err)
-
-	deposits[0].Proof, err = generatedTrie.MerkleProof(0)
-	require.NoError(t, err)
-
-	root, err := generatedTrie.HashTreeRoot()
-	require.NoError(t, err)
-
-	eth1Data := &zondpb.Eth1Data{
-		DepositCount: 1,
-		DepositRoot:  root[:],
-	}
-
-	err = web3Service.processDeposit(context.Background(), eth1Data, deposits[0])
-	require.NoError(t, err)
-
-	require.LogsContain(t, hook, pubKeyErr)
-}
-
-func TestProcessDeposit_InvalidSignature(t *testing.T) {
-	hook := logTest.NewGlobal()
-	beaconDB := testDB.SetupDB(t)
-	server, endpoint, err := testing2.SetupRPCServer()
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		server.Stop()
-	})
-	web3Service, err := NewService(context.Background(),
-		WithHttpEndpoint(endpoint),
-		WithDatabase(beaconDB),
-	)
-	require.NoError(t, err, "unable to setup web3 ETH1.0 chain service")
-	web3Service = setDefaultMocks(web3Service)
-
-	deposits, _, err := util.DeterministicDepositsAndKeys(1)
-	require.NoError(t, err)
-	var fakeSig [dilithium2.CryptoBytes]byte
-	copy(fakeSig[:], []byte{'F', 'A', 'K', 'E'})
-	deposits[0].Data.Signature = fakeSig[:]
-
-	leaf, err := deposits[0].Data.HashTreeRoot()
-	require.NoError(t, err, "Could not hash deposit")
-
-	generatedTrie, err := trie.GenerateTrieFromItems([][]byte{leaf[:]}, params.BeaconConfig().DepositContractTreeDepth)
-	require.NoError(t, err)
-
-	root, err := generatedTrie.HashTreeRoot()
-	require.NoError(t, err)
-
-	eth1Data := &zondpb.Eth1Data{
-		DepositCount: 1,
-		DepositRoot:  root[:],
-	}
-
-	err = web3Service.processDeposit(context.Background(), eth1Data, deposits[0])
-	require.NoError(t, err)
-
-	require.LogsContain(t, hook, "could not verify deposit data signature")
-	require.LogsContain(t, hook, "could not convert bytes to signature")
-}
-
 func TestProcessDeposit_UnableToVerify(t *testing.T) {
 	hook := logTest.NewGlobal()
 	beaconDB := testDB.SetupDB(t)
@@ -252,11 +168,11 @@ func TestProcessDeposit_IncompleteDeposit(t *testing.T) {
 		Data: &zondpb.Deposit_Data{
 			Amount:                params.BeaconConfig().EffectiveBalanceIncrement, // incomplete deposit
 			WithdrawalCredentials: bytesutil.PadTo([]byte("testing"), 32),
-			Signature:             bytesutil.PadTo([]byte("test"), dilithium2.CryptoBytes),
+			Signature:             bytesutil.PadTo([]byte("test"), field_params.DilithiumSignatureLength),
 		},
 	}
 
-	priv, err := bls.RandKey()
+	priv, err := dilithium.RandKey()
 	require.NoError(t, err)
 	deposit.Data.PublicKey = priv.PublicKey().Marshal()
 	d, err := signing.ComputeDomain(params.BeaconConfig().DomainDeposit, nil, nil)

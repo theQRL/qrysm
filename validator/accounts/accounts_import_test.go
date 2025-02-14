@@ -2,22 +2,23 @@ package accounts
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/accounts/iface"
+	"github.com/theQRL/qrysm/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/keymanager/local"
 )
 
 func TestImportAccounts_NoPassword(t *testing.T) {
@@ -57,6 +58,7 @@ func TestImportAccounts_NoPassword(t *testing.T) {
 	require.Equal(t, resp[0].Status, zondpbservice.ImportedKeystoreStatus_ERROR)
 }
 
+/*
 func TestImport_SortByDerivationPath(t *testing.T) {
 	local.ResetCaches()
 	type test struct {
@@ -118,6 +120,7 @@ func TestImport_SortByDerivationPath(t *testing.T) {
 		})
 	}
 }
+*/
 
 func Test_importPrivateKeyAsAccount(t *testing.T) {
 	walletDir, _, passwordFilePath := setupWalletAndPasswordsDir(t)
@@ -126,13 +129,17 @@ func Test_importPrivateKeyAsAccount(t *testing.T) {
 	privKeyFileName := filepath.Join(privKeyDir, "privatekey.txt")
 
 	// We create a new private key and save it to a file on disk.
-	privKey, err := bls.RandKey()
+	// We create a new seed and save it to a file on disk.
+	var seed [field_params.DilithiumSeedLength]uint8
+	_, err := rand.Read(seed[:])
 	require.NoError(t, err)
-	privKeyHex := fmt.Sprintf("%x", privKey.Marshal())
+	seedHex := fmt.Sprintf("%x", seed)
 	require.NoError(
 		t,
-		os.WriteFile(privKeyFileName, []byte(privKeyHex), params.BeaconIoConfig().ReadWritePermissions),
+		os.WriteFile(privKeyFileName, []byte(seedHex), params.BeaconIoConfig().ReadWritePermissions),
 	)
+	privKey, err := dilithium.SecretKeyFromSeed(seed[:])
+	require.NoError(t, err)
 
 	// We instantiate a new wallet from a cli context.
 	cliCtx := setupWalletCtx(t, &testWalletConfig{
@@ -173,7 +180,7 @@ func Test_importPrivateKeyAsAccount(t *testing.T) {
 	pubKeys, err := km.FetchValidatingPublicKeys(cliCtx.Context)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(pubKeys))
-	assert.DeepEqual(t, pubKeys[0], bytesutil.ToBytes48(privKey.PublicKey().Marshal()))
+	assert.DeepEqual(t, pubKeys[0], bytesutil.ToBytes2592(privKey.PublicKey().Marshal()))
 }
 
 func Test_NameToDescriptionChangeIsOK(t *testing.T) {

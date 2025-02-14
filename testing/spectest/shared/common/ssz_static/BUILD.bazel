@@ -7,7 +7,7 @@ go_library(
         "ssz_static.go",
         "types.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/testing/spectest/shared/common/ssz_static",
+    importpath = "github.com/theQRL/qrysm/testing/spectest/shared/common/ssz_static",
     visibility = ["//testing/spectest:__subpackages__"],
     deps = [
         "//testing/require:go_default_library",
@@ -25,7 +25,7 @@ go_test(
     deps = [
         ":go_default_library",
         "//beacon-chain/state/state-native:go_default_library",
-        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
         "//testing/require:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
         "@com_github_prysmaticlabs_fastssz//:go_default_library",

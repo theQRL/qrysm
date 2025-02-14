@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 type safeMap struct {

@@ -1,14 +1,14 @@
-// This code was adapted from https://github.com/theQRL/go-zond/blob/master/cmd/geth/usage.go
+// This code was adapted from https://github.com/theQRL/go-zond/blob/master/cmd/gzond/usage.go
 package main
 
 import (
 	"io"
 	"sort"
 
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/runtime/debug"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/runtime/debug"
 	"github.com/urfave/cli/v2"
 )
 
@@ -88,7 +88,6 @@ var appHelpFlagGroups = []flagGroup{
 			flags.BeaconRPCGatewayProviderFlag,
 			flags.BeaconRESTApiProviderFlag,
 			flags.CertFlag,
-			flags.EnableWebFlag,
 			flags.DisablePenaltyRewardLogFlag,
 			flags.GraffitiFlag,
 			flags.EnableRPCFlag,
@@ -106,8 +105,8 @@ var appHelpFlagGroups = []flagGroup{
 			flags.WalletDirFlag,
 			flags.WalletPasswordFileFlag,
 			flags.GraffitiFileFlag,
-			flags.Web3SignerURLFlag,
-			flags.Web3SignerPublicValidatorKeysFlag,
+			// flags.Web3SignerURLFlag,
+			// flags.Web3SignerPublicValidatorKeysFlag,
 			flags.ProposerSettingsFlag,
 			flags.ProposerSettingsURLFlag,
 			flags.SuggestedFeeRecipientFlag,

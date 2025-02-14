@@ -7,25 +7,25 @@ import (
 	"time"
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	blockchainTesting "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/voluntaryexits"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	blockchainTesting "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/beacon-chain/operations/voluntaryexits"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestService_ReceiveBlock(t *testing.T) {
 	ctx := context.Background()
 
-	genesis, keys := util.DeterministicGenesisState(t, 64)
+	genesis, keys := util.DeterministicGenesisStateCapella(t, 64)
 	copiedGen := genesis.Copy()
-	genFullBlock := func(t *testing.T, conf *util.BlockGenConfig, slot primitives.Slot) *zondpb.SignedBeaconBlock {
-		blk, err := util.GenerateFullBlock(copiedGen.Copy(), keys, conf, slot)
+	genFullBlock := func(t *testing.T, conf *util.BlockGenConfig, slot primitives.Slot) *zondpb.SignedBeaconBlockCapella {
+		blk, err := util.GenerateFullBlockCapella(copiedGen.Copy(), keys, conf, slot)
 		require.NoError(t, err)
 		return blk
 	}
@@ -35,7 +35,7 @@ func TestService_ReceiveBlock(t *testing.T) {
 	params.OverrideBeaconConfig(bc)
 
 	type args struct {
-		block *zondpb.SignedBeaconBlock
+		block *zondpb.SignedBeaconBlockCapella
 	}
 	tests := []struct {
 		name      string
@@ -46,7 +46,7 @@ func TestService_ReceiveBlock(t *testing.T) {
 		{
 			name: "applies block with state transition",
 			args: args{
-				block: genFullBlock(t, util.DefaultBlockGenConfig(), 2 /*slot*/),
+				block: genFullBlock(t, util.DefaultBlockGenConfig(), 2),
 			},
 			check: func(t *testing.T, s *Service) {
 				if hs := s.head.state.Slot(); hs != 2 {
@@ -68,7 +68,7 @@ func TestService_ReceiveBlock(t *testing.T) {
 						NumDeposits:          0,
 						NumVoluntaryExits:    0,
 					},
-					1, /*slot*/
+					1,
 				),
 			},
 			check: func(t *testing.T, s *Service) {
@@ -88,7 +88,7 @@ func TestService_ReceiveBlock(t *testing.T) {
 					NumDeposits:          0,
 					NumVoluntaryExits:    3,
 				},
-					1, /*slot*/
+					1,
 				),
 			},
 			check: func(t *testing.T, s *Service) {
@@ -106,7 +106,7 @@ func TestService_ReceiveBlock(t *testing.T) {
 		{
 			name: "notifies block processed on state feed",
 			args: args{
-				block: genFullBlock(t, util.DefaultBlockGenConfig(), 1 /*slot*/),
+				block: genFullBlock(t, util.DefaultBlockGenConfig(), 1),
 			},
 			check: func(t *testing.T, s *Service) {
 				// Hacky sleep, should use a better way to be able to resolve the race
@@ -147,7 +147,7 @@ func TestService_ReceiveBlock(t *testing.T) {
 			if tt.wantedErr != "" {
 				assert.ErrorContains(t, tt.wantedErr, err)
 			} else {
-				wg.Done()
+				require.NoError(t, err)
 				tt.check(t, s)
 			}
 		})
@@ -160,8 +160,8 @@ func TestService_ReceiveBlockUpdateHead(t *testing.T) {
 		WithExitPool(voluntaryexits.NewPool()),
 		WithStateNotifier(&blockchainTesting.MockStateNotifier{RecordEvents: true}))
 	ctx, beaconDB := tr.ctx, tr.db
-	genesis, keys := util.DeterministicGenesisState(t, 64)
-	b, err := util.GenerateFullBlock(genesis, keys, util.DefaultBlockGenConfig(), 1)
+	genesis, keys := util.DeterministicGenesisStateCapella(t, 64)
+	b, err := util.GenerateFullBlockCapella(genesis, keys, util.DefaultBlockGenConfig(), 1)
 	assert.NoError(t, err)
 	genesisBlockRoot := bytesutil.ToBytes32(nil)
 	require.NoError(t, beaconDB.SaveState(ctx, genesis, genesisBlockRoot))
@@ -191,15 +191,15 @@ func TestService_ReceiveBlockUpdateHead(t *testing.T) {
 func TestService_ReceiveBlockBatch(t *testing.T) {
 	ctx := context.Background()
 
-	genesis, keys := util.DeterministicGenesisState(t, 64)
-	genFullBlock := func(t *testing.T, conf *util.BlockGenConfig, slot primitives.Slot) *zondpb.SignedBeaconBlock {
-		blk, err := util.GenerateFullBlock(genesis, keys, conf, slot)
+	genesis, keys := util.DeterministicGenesisStateCapella(t, 64)
+	genFullBlock := func(t *testing.T, conf *util.BlockGenConfig, slot primitives.Slot) *zondpb.SignedBeaconBlockCapella {
+		blk, err := util.GenerateFullBlockCapella(genesis, keys, conf, slot)
 		assert.NoError(t, err)
 		return blk
 	}
 
 	type args struct {
-		block *zondpb.SignedBeaconBlock
+		block *zondpb.SignedBeaconBlockCapella
 	}
 	tests := []struct {
 		name      string
@@ -257,13 +257,13 @@ func TestService_HasBlock(t *testing.T) {
 	if s.HasBlock(context.Background(), r) {
 		t.Error("Should not have block")
 	}
-	wsb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlock())
+	wsb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
 	require.NoError(t, err)
 	require.NoError(t, s.saveInitSyncBlock(context.Background(), r, wsb))
 	if !s.HasBlock(context.Background(), r) {
 		t.Error("Should have block")
 	}
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	b.Block.Slot = 1
 	util.SaveBlock(t, context.Background(), s.cfg.BeaconDB, b)
 	r, err = b.Block.HashTreeRoot()
@@ -307,16 +307,6 @@ func TestCheckSaveHotStateDB_Overflow(t *testing.T) {
 func TestHandleBlockDilithiumToExecutionChanges(t *testing.T) {
 	service, tr := minimalTestService(t)
 	pool := tr.dilithiumPool
-
-	t.Run("pre Capella block", func(t *testing.T) {
-		body := &zondpb.BeaconBlockBodyBellatrix{}
-		pbb := &zondpb.BeaconBlockBellatrix{
-			Body: body,
-		}
-		blk, err := blocks.NewBeaconBlock(pbb)
-		require.NoError(t, err)
-		require.NoError(t, service.markIncludedBlockDilithiumToExecChanges(blk))
-	})
 
 	t.Run("Post Capella no changes", func(t *testing.T) {
 		body := &zondpb.BeaconBlockBodyCapella{}

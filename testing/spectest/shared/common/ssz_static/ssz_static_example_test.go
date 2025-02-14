@@ -7,10 +7,10 @@ import (
 
 	"github.com/pkg/errors"
 	fssz "github.com/prysmaticlabs/fastssz"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	common "github.com/theQRL/qrysm/v4/testing/spectest/shared/common/ssz_static"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
+	common "github.com/theQRL/qrysm/testing/spectest/shared/common/ssz_static"
 )
 
 func ExampleRunSSZStaticTests() {
@@ -22,9 +22,9 @@ func ExampleRunSSZStaticTests() {
 		case "Attestation":
 			obj = &zondpb.Attestation{}
 		case "BeaconState":
-			obj = &zondpb.BeaconState{}
+			obj = &zondpb.BeaconStateCapella{}
 		case "Eth1Block":
-			// Some types may not apply to prysm, but exist in the spec test folders. It is OK to
+			// Some types may not apply to qrysm, but exist in the spec test folders. It is OK to
 			// skip these tests with a valid justification. Otherwise, the test should fail with an
 			// unsupported type.
 			t.Skip("Unused type")
@@ -47,9 +47,9 @@ func ExampleRunSSZStaticTests() {
 	// is used and you want to ensure it passes spectests.
 	customHTR := func(t *testing.T, htrs []common.HTR, object interface{}) []common.HTR {
 		switch object.(type) {
-		case *zondpb.BeaconState:
+		case *zondpb.BeaconBlockBodyCapella:
 			htrs = append(htrs, func(s interface{}) ([32]byte, error) {
-				beaconState, err := state_native.InitializeFromProtoPhase0(s.(*zondpb.BeaconState))
+				beaconState, err := state_native.InitializeFromProtoCapella(s.(*zondpb.BeaconStateCapella))
 				require.NoError(t, err)
 				return beaconState.HashTreeRoot(context.TODO())
 			})
@@ -64,7 +64,7 @@ func ExampleRunSSZStaticTests() {
 	// HTR methods if provided.
 	common.RunSSZStaticTests(t,
 		"mainnet", // Network configuration
-		"phase0",  // Fork or phase
+		"capella", // Fork or phase
 		unmarshaller,
 		customHTR) // nil customHTR is acceptable.
 }

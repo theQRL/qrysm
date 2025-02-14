@@ -4,47 +4,41 @@ import (
 	"context"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
-func validAttesterSlashingForValIdx(t *testing.T, beaconState state.BeaconState, privs []bls.SecretKey, valIdx ...uint64) *zondpb.AttesterSlashing {
+func validAttesterSlashingForValIdx(t *testing.T, beaconState state.BeaconState, privs []dilithium.DilithiumKey, valIdx ...uint64) *zondpb.AttesterSlashing {
 	var slashings []*zondpb.AttesterSlashing
 	for _, idx := range valIdx {
 		slashing, err := util.GenerateAttesterSlashingForValidator(beaconState, privs[idx], primitives.ValidatorIndex(idx))
 		require.NoError(t, err)
 		slashings = append(slashings, slashing)
 	}
-	var allSig1 []bls.Signature
-	var allSig2 []bls.Signature
+	var allSigs1 [][]byte
+	var allSigs2 [][]byte
 	for _, slashing := range slashings {
-		sig1 := slashing.Attestation_1.Signature
-		sig2 := slashing.Attestation_2.Signature
-		sigFromBytes1, err := bls.SignatureFromBytes(sig1)
-		require.NoError(t, err)
-		sigFromBytes2, err := bls.SignatureFromBytes(sig2)
-		require.NoError(t, err)
-		allSig1 = append(allSig1, sigFromBytes1)
-		allSig2 = append(allSig2, sigFromBytes2)
+		sigs1 := slashing.Attestation_1.Signatures
+		sigs2 := slashing.Attestation_2.Signatures
+		allSigs1 = append(allSigs1, sigs1...)
+		allSigs2 = append(allSigs2, sigs2...)
 	}
-	aggSig1 := bls.AggregateSignatures(allSig1)
-	aggSig2 := bls.AggregateSignatures(allSig2)
 	aggSlashing := &zondpb.AttesterSlashing{
 		Attestation_1: &zondpb.IndexedAttestation{
 			AttestingIndices: valIdx,
 			Data:             slashings[0].Attestation_1.Data,
-			Signature:        aggSig1.Marshal(),
+			Signatures:       allSigs1,
 		},
 		Attestation_2: &zondpb.IndexedAttestation{
 			AttestingIndices: valIdx,
 			Data:             slashings[0].Attestation_2.Data,
-			Signature:        aggSig2.Marshal(),
+			Signatures:       allSigs2,
 		},
 	}
 	return aggSlashing
@@ -74,7 +68,7 @@ func TestPool_InsertAttesterSlashing(t *testing.T) {
 		slashings []*zondpb.AttesterSlashing
 	}
 
-	beaconState, privKeys := util.DeterministicGenesisState(t, 64)
+	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 64)
 	pendingSlashings := make([]*PendingAttesterSlashing, 20)
 	slashings := make([]*zondpb.AttesterSlashing, 20)
 	for i := 0; i < len(pendingSlashings); i++ {
@@ -299,7 +293,7 @@ func TestPool_InsertAttesterSlashing_SigFailsVerify_ClearPool(t *testing.T) {
 	conf := params.BeaconConfig()
 	conf.MaxAttesterSlashings = 2
 	params.OverrideBeaconConfig(conf)
-	beaconState, privKeys := util.DeterministicGenesisState(t, 64)
+	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 64)
 	pendingSlashings := make([]*PendingAttesterSlashing, 2)
 	slashings := make([]*zondpb.AttesterSlashing, 2)
 	for i := 0; i < 2; i++ {
@@ -314,8 +308,8 @@ func TestPool_InsertAttesterSlashing_SigFailsVerify_ClearPool(t *testing.T) {
 	// We mess up the signature of the second slashing.
 	badSig := make([]byte, 96)
 	copy(badSig, "muahaha")
-	pendingSlashings[1].attesterSlashing.Attestation_1.Signature = badSig
-	slashings[1].Attestation_1.Signature = badSig
+	pendingSlashings[1].attesterSlashing.Attestation_1.Signatures = [][]byte{badSig}
+	slashings[1].Attestation_1.Signatures = [][]byte{badSig}
 	p := &Pool{
 		pendingAttesterSlashing: make([]*PendingAttesterSlashing, 0),
 	}
@@ -453,7 +447,7 @@ func TestPool_PendingAttesterSlashings(t *testing.T) {
 		all     bool
 	}
 	params.SetupTestConfigCleanup(t)
-	beaconState, privKeys := util.DeterministicGenesisState(t, 64)
+	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 64)
 	pendingSlashings := make([]*PendingAttesterSlashing, 20)
 	slashings := make([]*zondpb.AttesterSlashing, 20)
 	for i := 0; i < len(pendingSlashings); i++ {
@@ -519,7 +513,7 @@ func TestPool_PendingAttesterSlashings_Slashed(t *testing.T) {
 	conf := params.BeaconConfig()
 	conf.MaxAttesterSlashings = 2
 	params.OverrideBeaconConfig(conf)
-	beaconState, privKeys := util.DeterministicGenesisState(t, 64)
+	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 64)
 	val, err := beaconState.ValidatorAtIndex(0)
 	require.NoError(t, err)
 	val.Slashed = true
@@ -586,7 +580,7 @@ func TestPool_PendingAttesterSlashings_NoDuplicates(t *testing.T) {
 	conf := params.BeaconConfig()
 	conf.MaxAttesterSlashings = 2
 	params.OverrideBeaconConfig(conf)
-	beaconState, privKeys := util.DeterministicGenesisState(t, 64)
+	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 64)
 	pendingSlashings := make([]*PendingAttesterSlashing, 3)
 	slashings := make([]*zondpb.AttesterSlashing, 3)
 	for i := 0; i < 2; i++ {

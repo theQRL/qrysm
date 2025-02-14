@@ -2,7 +2,6 @@ package accounts
 
 import (
 	"archive/zip"
-	"encoding/hex"
 	"encoding/json"
 	"io"
 	"os"
@@ -12,17 +11,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/accounts"
-	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/derived"
-	constant "github.com/theQRL/qrysm/v4/validator/testing"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/accounts"
+	"github.com/theQRL/qrysm/validator/keymanager"
 )
 
+/*
 func TestBackupAccounts_Noninteractive_Derived(t *testing.T) {
 	walletDir, _, passwordFilePath := setupWalletAndPasswordsDir(t)
 	// Specify the password locally to this file for convenience.
@@ -128,6 +125,7 @@ func TestBackupAccounts_Noninteractive_Derived(t *testing.T) {
 	sort.Strings(generatedPubKeys)
 	assert.DeepEqual(t, unzippedPublicKeys, generatedPubKeys)
 }
+*/
 
 func TestBackupAccounts_Noninteractive_Imported(t *testing.T) {
 	walletDir, _, passwordFilePath := setupWalletAndPasswordsDir(t)

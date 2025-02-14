@@ -6,16 +6,16 @@ import (
 	"net"
 
 	"github.com/libp2p/go-libp2p"
+	mplex "github.com/libp2p/go-libp2p-mplex"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/libp2p/go-libp2p/p2p/muxer/mplex"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/config/features"
-	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/config/features"
+	ecdsaqrysm "github.com/theQRL/qrysm/crypto/ecdsa"
+	"github.com/theQRL/qrysm/runtime/version"
 )
 
 // MultiAddressBuilder takes in an ip address string and port to produce a go multiaddr format.
@@ -46,7 +46,7 @@ func (s *Service) buildOptions(ip net.IP, priKey *ecdsa.PrivateKey) []libp2p.Opt
 			log.WithError(err).Fatal("Failed to p2p listen")
 		}
 	}
-	ifaceKey, err := ecdsaprysm.ConvertToInterfacePrivkey(priKey)
+	ifaceKey, err := ecdsaqrysm.ConvertToInterfacePrivkey(priKey)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to retrieve private key")
 	}
@@ -126,7 +126,7 @@ func multiAddressBuilderWithID(ipAddr, protocol string, port uint, id peer.ID) (
 // private key contents cannot be marshaled, an exception is thrown.
 func privKeyOption(privkey *ecdsa.PrivateKey) libp2p.Option {
 	return func(cfg *libp2p.Config) error {
-		ifaceKey, err := ecdsaprysm.ConvertToInterfacePrivkey(privkey)
+		ifaceKey, err := ecdsaqrysm.ConvertToInterfacePrivkey(privkey)
 		if err != nil {
 			return err
 		}

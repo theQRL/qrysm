@@ -8,10 +8,10 @@ import (
 	"github.com/golang/snappy"
 	"github.com/schollz/progressbar/v3"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/encoding/ssz/detect"
-	"github.com/theQRL/qrysm/v4/monitoring/progress"
-	v1alpha1 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/encoding/ssz/detect"
+	"github.com/theQRL/qrysm/monitoring/progress"
+	v1alpha1 "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -131,10 +131,6 @@ func performValidatorStateMigration(ctx context.Context, bar *progressbar.Progre
 			}
 			item := enc
 			switch {
-			case hasAltairKey(enc):
-				item = item[len(altairKey):]
-			case hasBellatrixKey(enc):
-				item = item[len(bellatrixKey):]
 			case hasCapellaKey(enc):
 				item = item[len(capellaKey):]
 			}
@@ -170,17 +166,7 @@ func performValidatorStateMigration(ctx context.Context, bar *progressbar.Progre
 			if err != nil {
 				return err
 			}
-			var stateBytes []byte
-			switch {
-			case hasAltairKey(enc):
-				stateBytes = snappy.Encode(nil, append(altairKey, rawObj...))
-			case hasBellatrixKey(enc):
-				stateBytes = snappy.Encode(nil, append(bellatrixKey, rawObj...))
-			case hasCapellaKey(enc):
-				stateBytes = snappy.Encode(nil, append(capellaKey, rawObj...))
-			default:
-				stateBytes = snappy.Encode(nil, rawObj)
-			}
+			stateBytes := snappy.Encode(nil, append(capellaKey, rawObj...))
 			if stateErr := stateBkt.Put(keys[index], stateBytes); stateErr != nil {
 				return stateErr
 			}

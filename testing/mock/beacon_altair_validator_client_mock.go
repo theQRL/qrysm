@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	v2 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	v2 "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	metadata "google.golang.org/grpc/metadata"
 )
 

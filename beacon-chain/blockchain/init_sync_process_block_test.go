@@ -4,20 +4,20 @@ import (
 	"context"
 	"testing"
 
-	testDB "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	testDB "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestService_getBlock(t *testing.T) {
 	ctx := context.Background()
 	beaconDB := testDB.SetupDB(t)
 	s := setupBeaconChain(t, beaconDB)
-	b1 := util.NewBeaconBlock()
+	b1 := util.NewBeaconBlockCapella()
 	r1, err := b1.Block.HashTreeRoot()
 	require.NoError(t, err)
-	b2 := util.NewBeaconBlock()
+	b2 := util.NewBeaconBlockCapella()
 	b2.Block.Slot = 100
 	r2, err := b2.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -45,10 +45,10 @@ func TestService_hasBlockInInitSyncOrDB(t *testing.T) {
 	ctx := context.Background()
 	beaconDB := testDB.SetupDB(t)
 	s := setupBeaconChain(t, beaconDB)
-	b1 := util.NewBeaconBlock()
+	b1 := util.NewBeaconBlockCapella()
 	r1, err := b1.Block.HashTreeRoot()
 	require.NoError(t, err)
-	b2 := util.NewBeaconBlock()
+	b2 := util.NewBeaconBlockCapella()
 	b2.Block.Slot = 100
 	r2, err := b2.Block.HashTreeRoot()
 	require.NoError(t, err)

@@ -8,14 +8,14 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/io/file"
 	"github.com/urfave/cli/v2"
 )
 
 const (
 	// WalletDefaultDirName for accounts.
-	WalletDefaultDirName = "prysm-wallet-v2"
+	WalletDefaultDirName = "qrysm-wallet"
 	// DefaultGatewayHost for the validator client.
 	DefaultGatewayHost = "127.0.0.1"
 )
@@ -51,10 +51,10 @@ var (
 		Name:  "tls-cert",
 		Usage: "Certificate for secure gRPC. Pass this and the tls-key flag in order to use gRPC securely.",
 	}
-	// EnableRPCFlag enables controlling the validator client via gRPC (without web UI).
+	// EnableRPCFlag enables controlling the validator client via gRPC.
 	EnableRPCFlag = &cli.BoolFlag{
 		Name:  "rpc",
-		Usage: "Enables the RPC server for the validator client (without Web UI)",
+		Usage: "Enables the RPC server for the validator client",
 		Value: false,
 	}
 	// RPCHost defines the host on which the RPC server should listen.
@@ -132,10 +132,10 @@ var (
 		Usage: "Port used to listening and respond metrics for prometheus.",
 		Value: 8081,
 	}
-	// WalletDirFlag defines the path to a wallet directory for Prysm accounts.
+	// WalletDirFlag defines the path to a wallet directory for Qrysm accounts.
 	WalletDirFlag = &cli.StringFlag{
 		Name:  "wallet-dir",
-		Usage: "Path to a wallet directory on-disk for Prysm validator accounts",
+		Usage: "Path to a wallet directory on-disk for Qrysm validator accounts",
 		Value: filepath.Join(DefaultValidatorDir(), WalletDefaultDirName),
 	}
 	// AccountPasswordFileFlag is path to a file containing a password for a validator account.
@@ -148,35 +148,39 @@ var (
 		Name:  "wallet-password-file",
 		Usage: "Path to a plain-text, .txt file containing your wallet password",
 	}
-	// Mnemonic25thWordFileFlag defines a path to a file containing a "25th" word mnemonic passphrase for advanced users.
-	Mnemonic25thWordFileFlag = &cli.StringFlag{
-		Name:  "mnemonic-25th-word-file",
-		Usage: "(Advanced) Path to a plain-text, .txt file containing a 25th word passphrase for your mnemonic for HD wallets",
-	}
-	// SkipMnemonic25thWordCheckFlag allows for skipping a check for mnemonic 25th word passphrases for HD wallets.
-	SkipMnemonic25thWordCheckFlag = &cli.StringFlag{
-		Name:  "skip-mnemonic-25th-word-check",
-		Usage: "Allows for skipping the check for a mnemonic 25th word passphrase for HD wallets",
-	}
+	/*
+		// Mnemonic25thWordFileFlag defines a path to a file containing a "25th" word mnemonic passphrase for advanced users.
+		Mnemonic25thWordFileFlag = &cli.StringFlag{
+			Name:  "mnemonic-25th-word-file",
+			Usage: "(Advanced) Path to a plain-text, .txt file containing a 25th word passphrase for your mnemonic for HD wallets",
+		}
+		// SkipMnemonic25thWordCheckFlag allows for skipping a check for mnemonic 25th word passphrases for HD wallets.
+		SkipMnemonic25thWordCheckFlag = &cli.StringFlag{
+			Name:  "skip-mnemonic-25th-word-check",
+			Usage: "Allows for skipping the check for a mnemonic 25th word passphrase for HD wallets",
+		}
+	*/
 	// ImportPrivateKeyFileFlag allows for directly importing a private key hex string as an account.
 	ImportPrivateKeyFileFlag = &cli.StringFlag{
 		Name:  "import-private-key-file",
 		Usage: "Path to a plain-text, .txt file containing a hex string representation of a private key to import",
 	}
-	// MnemonicFileFlag is used to enter a file to mnemonic phrase for new wallet creation, non-interactively.
-	MnemonicFileFlag = &cli.StringFlag{
-		Name:  "mnemonic-file",
-		Usage: "File to retrieve mnemonic for non-interactively passing a mnemonic phrase into wallet recover.",
-	}
-	// MnemonicLanguageFlag is used to specify the language of the mnemonic.
-	MnemonicLanguageFlag = &cli.StringFlag{
-		Name:  "mnemonic-language",
-		Usage: "Allows specifying mnemonic language. Supported languages are: english|chinese_traditional|chinese_simplified|czech|french|japanese|korean|italian|spanish",
-	}
+	/*
+		// MnemonicFileFlag is used to enter a file to mnemonic phrase for new wallet creation, non-interactively.
+		MnemonicFileFlag = &cli.StringFlag{
+			Name:  "mnemonic-file",
+			Usage: "File to retrieve mnemonic for non-interactively passing a mnemonic phrase into wallet recover.",
+		}
+		// MnemonicLanguageFlag is used to specify the language of the mnemonic.
+		MnemonicLanguageFlag = &cli.StringFlag{
+			Name:  "mnemonic-language",
+			Usage: "Allows specifying mnemonic language. Supported languages are: english|chinese_traditional|chinese_simplified|czech|french|japanese|korean|italian|spanish",
+		}
+	*/
 	// ShowDepositDataFlag for accounts.
 	ShowDepositDataFlag = &cli.BoolFlag{
 		Name:  "show-deposit-data",
-		Usage: "Display raw eth1 tx deposit data for validator accounts",
+		Usage: "Display raw zond tx deposit data for validator accounts",
 		Value: false,
 	}
 	// ShowPrivateKeysFlag for accounts.
@@ -191,12 +195,14 @@ var (
 		Usage: "List validator indices",
 		Value: false,
 	}
-	// NumAccountsFlag defines the amount of accounts to generate for derived wallets.
-	NumAccountsFlag = &cli.IntFlag{
-		Name:  "num-accounts",
-		Usage: "Number of accounts to generate for derived wallets",
-		Value: 1,
-	}
+	/*
+		// NumAccountsFlag defines the amount of accounts to generate for derived wallets.
+		NumAccountsFlag = &cli.IntFlag{
+			Name:  "num-accounts",
+			Usage: "Number of accounts to generate for derived wallets",
+			Value: 1,
+		}
+	*/
 	// DeletePublicKeysFlag defines a comma-separated list of hex string public keys
 	// for accounts which a user desires to delete from their wallet.
 	DeletePublicKeysFlag = &cli.StringFlag{
@@ -259,61 +265,59 @@ var (
 		Usage: "Path to a directory where keystores to be imported are stored",
 	}
 
-	// RemoteSignerCertPathFlag defines the path to a client.crt file for a wallet to connect to
-	// a secure signer via TLS and gRPC.
-	RemoteSignerCertPathFlag = &cli.StringFlag{
-		Name:  "remote-signer-crt-path",
-		Usage: "/path/to/client.crt for establishing a secure, TLS gRPC connection to a remote signer server",
-		Value: "",
-	}
-	// RemoteSignerKeyPathFlag defines the path to a client.key file for a wallet to connect to
-	// a secure signer via TLS and gRPC.
-	RemoteSignerKeyPathFlag = &cli.StringFlag{
-		Name:  "remote-signer-key-path",
-		Usage: "/path/to/client.key for establishing a secure, TLS gRPC connection to a remote signer server",
-		Value: "",
-	}
-	// RemoteSignerCACertPathFlag defines the path to a ca.crt file for a wallet to connect to
-	// a secure signer via TLS and gRPC.
-	RemoteSignerCACertPathFlag = &cli.StringFlag{
-		Name:  "remote-signer-ca-crt-path",
-		Usage: "/path/to/ca.crt for establishing a secure, TLS gRPC connection to a remote signer server",
-		Value: "",
-	}
-	// Web3SignerURLFlag defines the URL for a web3signer to connect to.
-	// example:--validators-external-signer-url=http://localhost:9000
-	// web3signer documentation can be found in Consensys' web3signer project docs
-	Web3SignerURLFlag = &cli.StringFlag{
-		Name:  "validators-external-signer-url",
-		Usage: "URL for consensys' web3signer software to use with the Prysm validator client",
-		Value: "",
-	}
+	/*
+		// RemoteSignerCertPathFlag defines the path to a client.crt file for a wallet to connect to
+		// a secure signer via TLS and gRPC.
+		RemoteSignerCertPathFlag = &cli.StringFlag{
+			Name:  "remote-signer-crt-path",
+			Usage: "/path/to/client.crt for establishing a secure, TLS gRPC connection to a remote signer server",
+			Value: "",
+		}
+		// RemoteSignerKeyPathFlag defines the path to a client.key file for a wallet to connect to
+		// a secure signer via TLS and gRPC.
+		RemoteSignerKeyPathFlag = &cli.StringFlag{
+			Name:  "remote-signer-key-path",
+			Usage: "/path/to/client.key for establishing a secure, TLS gRPC connection to a remote signer server",
+			Value: "",
+		}
+		// RemoteSignerCACertPathFlag defines the path to a ca.crt file for a wallet to connect to
+		// a secure signer via TLS and gRPC.
+		RemoteSignerCACertPathFlag = &cli.StringFlag{
+			Name:  "remote-signer-ca-crt-path",
+			Usage: "/path/to/ca.crt for establishing a secure, TLS gRPC connection to a remote signer server",
+			Value: "",
+		}
 
-	// Web3SignerPublicValidatorKeysFlag defines a comma-separated list of hex string public keys or external url for web3signer to use for validator signing.
-	// example with external url: --validators-external-signer-public-keys= https://web3signer.com/api/v1/eth2/publicKeys
-	// example with public key: --validators-external-signer-public-keys=0xa99a...e44c,0xb89b...4a0b
-	// web3signer documentation can be found in Consensys' web3signer project docs```
-	Web3SignerPublicValidatorKeysFlag = &cli.StringSliceFlag{
-		Name:  "validators-external-signer-public-keys",
-		Usage: "comma separated list of public keys OR an external url endpoint for the validator to retrieve public keys from for usage with web3signer",
-	}
+		// Web3SignerURLFlag defines the URL for a web3signer to connect to.
+		// example:--validators-external-signer-url=http://localhost:9000
+		// web3signer documentation can be found in Consensys' web3signer project docs
+		Web3SignerURLFlag = &cli.StringFlag{
+			Name:  "validators-external-signer-url",
+			Usage: "URL for consensys' web3signer software to use with the Qrysm validator client",
+			Value: "",
+		}
+
+		// Web3SignerPublicValidatorKeysFlag defines a comma-separated list of hex string public keys or external url for web3signer to use for validator signing.
+		// example with external url: --validators-external-signer-public-keys= https://web3signer.com/api/v1/eth2/publicKeys
+		// example with public key: --validators-external-signer-public-keys=0xa99a...e44c,0xb89b...4a0b
+		// web3signer documentation can be found in Consensys' web3signer project docs```
+		Web3SignerPublicValidatorKeysFlag = &cli.StringSliceFlag{
+			Name:  "validators-external-signer-public-keys",
+			Usage: "comma separated list of public keys OR an external url endpoint for the validator to retrieve public keys from for usage with web3signer",
+		}
+	*/
 
 	// KeymanagerKindFlag defines the kind of keymanager desired by a user during wallet creation.
 	KeymanagerKindFlag = &cli.StringFlag{
-		Name:  "keymanager-kind",
-		Usage: "Kind of keymanager, either imported, derived, or remote, specified during wallet creation",
+		Name: "keymanager-kind",
+		// Usage: "Kind of keymanager, either imported, derived, or remote, specified during wallet creation",
+		Usage: "Kind of keymanager specified during wallet creation. Only imported is supported at the moment",
 		Value: "",
 	}
 	// SkipDepositConfirmationFlag skips the y/n confirmation userprompt for sending a deposit to the deposit contract.
 	SkipDepositConfirmationFlag = &cli.BoolFlag{
 		Name:  "skip-deposit-confirmation",
 		Usage: "Skips the y/n confirmation userprompt for sending a deposit to the deposit contract",
-		Value: false,
-	}
-	// EnableWebFlag enables controlling the validator client via the Prysm web ui. This is a work in progress.
-	EnableWebFlag = &cli.BoolFlag{
-		Name:  "web",
-		Usage: "Enables the web portal for the validator client (work in progress)",
 		Value: false,
 	}
 	// SlashingProtectionExportDirFlag allows specifying the outpt directory
@@ -331,7 +335,7 @@ var (
 	// ProposerSettingsFlag defines the path or URL to a file with proposer config.
 	ProposerSettingsFlag = &cli.StringFlag{
 		Name:  "proposer-settings-file",
-		Usage: "Set path to a YAML or JSON file containing validator settings used when proposing blocks such as (fee recipient and gas limit) (i.e. --proposer-settings-file=/path/to/proposer.json). File format found in docs",
+		Usage: "Set path to a JSON file containing validator settings used when proposing blocks such as (fee recipient and gas limit) (i.e. --proposer-settings-file=/path/to/proposer.json). File format found in docs",
 		Value: "",
 	}
 	// ProposerSettingsURLFlag defines the path or URL to a file with proposer config.
@@ -347,7 +351,7 @@ var (
 		Usage: "Sets ALL validators' mapping to a suggested zond address to receive gas fees when proposing a block." +
 			" note that this is only a suggestion when integrating with a Builder API, which may choose to specify a different fee recipient as payment for the blocks it builds." +
 			" For additional setting overrides use the --" + ProposerSettingsFlag.Name + " or --" + ProposerSettingsURLFlag.Name + " Flags. ",
-		Value: params.BeaconConfig().EthBurnAddressHex,
+		Value: params.BeaconConfig().ZondBurnAddress,
 	}
 
 	// EnableBuilderFlag enables the periodic validator registration API calls that will update the custom builder with validator settings.
@@ -372,11 +376,11 @@ func DefaultValidatorDir() string {
 	home := file.HomeDir()
 	if home != "" {
 		if runtime.GOOS == "darwin" {
-			return filepath.Join(home, "Library", "Eth2Validators")
+			return filepath.Join(home, "Library", "ZondValidators")
 		} else if runtime.GOOS == "windows" {
-			return filepath.Join(home, "AppData", "Local", "Eth2Validators")
+			return filepath.Join(home, "AppData", "Local", "ZondValidators")
 		} else {
-			return filepath.Join(home, ".eth2validators")
+			return filepath.Join(home, ".zondvalidators")
 		}
 	}
 	// As we cannot guess a stable location, return empty and handle later

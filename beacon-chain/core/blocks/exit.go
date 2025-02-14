@@ -5,15 +5,14 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	v "github.com/theQRL/qrysm/v4/beacon-chain/core/validators"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	v "github.com/theQRL/qrysm/beacon-chain/core/validators"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 // ValidatorAlreadyExitedMsg defines a message saying that a validator has already exited.
@@ -117,15 +116,18 @@ func VerifyExitAndSignature(
 	fork := state.Fork()
 	genesisRoot := state.GenesisValidatorsRoot()
 
-	// EIP-7044: Beginning in Deneb, fix the fork version to Capella.
-	// This allows for signed validator exits to be valid forever.
-	if state.Version() >= version.Deneb {
-		fork = &zondpb.Fork{
-			PreviousVersion: params.BeaconConfig().CapellaForkVersion,
-			CurrentVersion:  params.BeaconConfig().CapellaForkVersion,
-			Epoch:           params.BeaconConfig().CapellaForkEpoch,
+	// NOTE(rgeraldes24): important for a future fork
+	/*
+		// EIP-7044: Beginning in Deneb, fix the fork version to Capella.
+		// This allows for signed validator exits to be valid forever.
+		if state.Version() >= version.Deneb {
+			fork = &zondpb.Fork{
+				PreviousVersion: params.BeaconConfig().CapellaForkVersion,
+				CurrentVersion:  params.BeaconConfig().CapellaForkVersion,
+				Epoch:           params.BeaconConfig().CapellaForkEpoch,
+			}
 		}
-	}
+	*/
 
 	exit := signed.Exit
 	if err := verifyExitConditions(validator, currentSlot, exit); err != nil {

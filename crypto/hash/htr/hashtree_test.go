@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func Test_VectorizedSha256(t *testing.T) {

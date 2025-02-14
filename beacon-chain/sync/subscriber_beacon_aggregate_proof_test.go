@@ -5,14 +5,14 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-bitfield"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
-	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/beacon-chain/operations/attestations"
+	lruwrpr "github.com/theQRL/qrysm/cache/lru"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestBeaconAggregateProofSubscriber_CanSaveAggregatedAttestation(t *testing.T) {
@@ -31,7 +31,7 @@ func TestBeaconAggregateProofSubscriber_CanSaveAggregatedAttestation(t *testing.
 			}),
 			AggregatorIndex: 100,
 		},
-		Signature: make([]byte, dilithium2.CryptoBytes),
+		Signature: make([]byte, field_params.DilithiumSignatureLength),
 	}
 	require.NoError(t, r.beaconAggregateProofSubscriber(context.Background(), a))
 	assert.DeepSSZEqual(t, []*zondpb.Attestation{a.Message.Aggregate}, r.cfg.attPool.AggregatedAttestations(), "Did not save aggregated attestation")
@@ -50,7 +50,7 @@ func TestBeaconAggregateProofSubscriber_CanSaveUnaggregatedAttestation(t *testin
 		Message: &zondpb.AggregateAttestationAndProof{
 			Aggregate: util.HydrateAttestation(&zondpb.Attestation{
 				AggregationBits: bitfield.Bitlist{0x03},
-				Signature:       make([]byte, dilithium2.CryptoBytes),
+				Signatures:      [][]byte{},
 			}),
 			AggregatorIndex: 100,
 		},

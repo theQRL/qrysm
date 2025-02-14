@@ -3,9 +3,9 @@ package accounts
 import (
 	"time"
 
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/validator/keymanager"
 	"google.golang.org/grpc"
 )
 
@@ -126,20 +126,20 @@ func WithImportPrivateKeys(importPrivateKeys bool) Option {
 }
 
 // WithSkipMnemonicConfirm indicates whether to skip the mnemonic confirmation.
-func WithSkipMnemonicConfirm(s bool) Option {
-	return func(acc *AccountsCLIManager) error {
-		acc.skipMnemonicConfirm = s
-		return nil
-	}
-}
+// func WithSkipMnemonicConfirm(s bool) Option {
+// 	return func(acc *AccountsCLIManager) error {
+// 		acc.skipMnemonicConfirm = s
+// 		return nil
+// 	}
+// }
 
 // WithMnemonicLanguage specifies the language used for the mnemonic passphrase.
-func WithMnemonicLanguage(mnemonicLanguage string) Option {
-	return func(acc *AccountsCLIManager) error {
-		acc.mnemonicLanguage = mnemonicLanguage
-		return nil
-	}
-}
+// func WithMnemonicLanguage(mnemonicLanguage string) Option {
+// 	return func(acc *AccountsCLIManager) error {
+// 		acc.mnemonicLanguage = mnemonicLanguage
+// 		return nil
+// 	}
+// }
 
 // WithPrivateKeyFile specifies the private key path.
 func WithPrivateKeyFile(privateKeyFile string) Option {
@@ -229,25 +229,25 @@ func WithWalletPassword(walletPassword string) Option {
 }
 
 // WithMnemonic specifies the password for backups.
-func WithMnemonic(mnemonic string) Option {
-	return func(acc *AccountsCLIManager) error {
-		acc.mnemonic = mnemonic
-		return nil
-	}
-}
+// func WithMnemonic(mnemonic string) Option {
+// 	return func(acc *AccountsCLIManager) error {
+// 		acc.mnemonic = mnemonic
+// 		return nil
+// 	}
+// }
 
 // WithMnemonic25thWord specifies the password for backups.
-func WithMnemonic25thWord(mnemonic25thWord string) Option {
-	return func(acc *AccountsCLIManager) error {
-		acc.mnemonic25thWord = mnemonic25thWord
-		return nil
-	}
-}
+// func WithMnemonic25thWord(mnemonic25thWord string) Option {
+// 	return func(acc *AccountsCLIManager) error {
+// 		acc.mnemonic25thWord = mnemonic25thWord
+// 		return nil
+// 	}
+// }
 
 // WithNumAccounts specifies the number of accounts.
-func WithNumAccounts(numAccounts int) Option {
-	return func(acc *AccountsCLIManager) error {
-		acc.numAccounts = numAccounts
-		return nil
-	}
-}
+// func WithNumAccounts(numAccounts int) Option {
+// 	return func(acc *AccountsCLIManager) error {
+// 		acc.numAccounts = numAccounts
+// 		return nil
+// 	}
+// }

@@ -3,12 +3,12 @@ package helpers
 import (
 	"errors"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	mathutil "github.com/theQRL/qrysm/v4/math"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	mathutil "github.com/theQRL/qrysm/math"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 var balanceCache = cache.NewEffectiveBalanceCache()

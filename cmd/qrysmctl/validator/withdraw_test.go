@@ -3,7 +3,6 @@ package validator
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -13,12 +12,12 @@ import (
 
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/beacon"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/shared"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 	"github.com/urfave/cli/v2"
 )
 
@@ -27,7 +26,6 @@ func getHappyPathTestServer(file string, t *testing.T) *httptest.Server {
 		w.WriteHeader(200)
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == http.MethodGet {
-			fmt.Println(r.RequestURI)
 			if r.RequestURI == "/zond/v1/beacon/pool/dilithium_to_execution_changes" {
 				b, err := os.ReadFile(filepath.Clean(file))
 				require.NoError(t, err)
@@ -41,8 +39,8 @@ func getHappyPathTestServer(file string, t *testing.T) *httptest.Server {
 			} else if r.RequestURI == "/zond/v1/beacon/states/head/fork" {
 				err := json.NewEncoder(w).Encode(&beacon.GetStateForkResponse{
 					Data: &shared.Fork{
-						PreviousVersion: hexutil.Encode(params.BeaconConfig().CapellaForkVersion),
-						CurrentVersion:  hexutil.Encode(params.BeaconConfig().CapellaForkVersion),
+						PreviousVersion: hexutil.Encode(params.BeaconConfig().GenesisForkVersion),
+						CurrentVersion:  hexutil.Encode(params.BeaconConfig().GenesisForkVersion),
 						Epoch:           "1350",
 					},
 					ExecutionOptimistic: false,
@@ -232,9 +230,9 @@ func TestCallWithdrawalEndpoint_Errors(t *testing.T) {
 				w.Header().Set("Content-Type", "application/json")
 				err := json.NewEncoder(w).Encode(&beacon.GetStateForkResponse{
 					Data: &shared.Fork{
-						PreviousVersion: hexutil.Encode(params.BeaconConfig().CapellaForkVersion),
-						CurrentVersion:  hexutil.Encode(params.BeaconConfig().CapellaForkVersion),
-						Epoch:           fmt.Sprintf("%d", params.BeaconConfig().CapellaForkEpoch),
+						PreviousVersion: hexutil.Encode(params.BeaconConfig().GenesisForkVersion),
+						CurrentVersion:  hexutil.Encode(params.BeaconConfig().GenesisForkVersion),
+						Epoch:           "0",
 					},
 					ExecutionOptimistic: false,
 					Finalized:           true,
@@ -276,55 +274,6 @@ func TestCallWithdrawalEndpoint_Errors(t *testing.T) {
 	require.ErrorContains(t, "did not receive 2xx response from API", err)
 
 	assert.LogsContain(t, hook, "Could not validate SignedDilithiumToExecutionChange")
-}
-
-func TestCallWithdrawalEndpoint_ForkBeforeCapella(t *testing.T) {
-	file := "./testdata/change-operations.json"
-	baseurl := "127.0.0.1:3500"
-	l, err := net.Listen("tcp", baseurl)
-	require.NoError(t, err)
-	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-		w.Header().Set("Content-Type", "application/json")
-		if r.RequestURI == "/zond/v1/beacon/states/head/fork" {
-
-			err := json.NewEncoder(w).Encode(&beacon.GetStateForkResponse{
-				Data: &shared.Fork{
-					PreviousVersion: hexutil.Encode(params.BeaconConfig().BellatrixForkVersion),
-					CurrentVersion:  hexutil.Encode(params.BeaconConfig().BellatrixForkVersion),
-					Epoch:           "1000",
-				},
-				ExecutionOptimistic: false,
-				Finalized:           true,
-			})
-			require.NoError(t, err)
-		} else if r.RequestURI == "/zond/v1/config/spec" {
-			m := make(map[string]string)
-			m["CAPELLA_FORK_EPOCH"] = "1350"
-			err := json.NewEncoder(w).Encode(&apimiddleware.SpecResponseJson{
-				Data: m,
-			})
-			require.NoError(t, err)
-		}
-	}))
-	err = srv.Listener.Close()
-	require.NoError(t, err)
-	srv.Listener = l
-	srv.Start()
-	defer srv.Close()
-
-	app := cli.App{}
-	set := flag.NewFlagSet("test", 0)
-	set.String("beacon-node-host", baseurl, "")
-	set.String("path", file, "")
-	set.Bool("confirm", true, "")
-	set.Bool("accept-terms-of-use", true, "")
-	assert.NoError(t, set.Set("beacon-node-host", baseurl))
-	assert.NoError(t, set.Set("path", file))
-	cliCtx := cli.NewContext(&app, set, nil)
-
-	err = setWithdrawalAddresses(cliCtx)
-	require.ErrorContains(t, "setting withdrawals using the DilithiumtoExecutionChange endpoint is only available after the Capella/Shanghai hard fork.", err)
 }
 
 func TestVerifyWithdrawal_Mutiple(t *testing.T) {

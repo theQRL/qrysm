@@ -3,36 +3,15 @@ package cache
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestSyncCommitteeHeadState(t *testing.T) {
-	beaconState, err := state_native.InitializeFromProtoAltair(&zondpb.BeaconStateAltair{
-		Fork: &zondpb.Fork{
-			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
-			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
-		},
-	})
-	require.NoError(t, err)
-	phase0State, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{
-		Fork: &zondpb.Fork{
-			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
-			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
-		},
-	})
-	require.NoError(t, err)
-	bellatrixState, err := state_native.InitializeFromProtoBellatrix(&zondpb.BeaconStateBellatrix{
-		Fork: &zondpb.Fork{
-			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
-			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
-		},
-	})
-	require.NoError(t, err)
 	capellaState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
 		Fork: &zondpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
@@ -63,16 +42,6 @@ func TestSyncCommitteeHeadState(t *testing.T) {
 			wantErr:    true,
 		},
 		{
-			name: "putting invalid state in",
-			key:  primitives.Slot(1),
-			put: &put{
-				slot:  primitives.Slot(1),
-				state: phase0State,
-			},
-			wantPutErr: true,
-			wantErr:    true,
-		},
-		{
 			name:    "not found when empty cache",
 			key:     primitives.Slot(1),
 			wantErr: true,
@@ -82,7 +51,7 @@ func TestSyncCommitteeHeadState(t *testing.T) {
 			key:  primitives.Slot(2),
 			put: &put{
 				slot:  primitives.Slot(1),
-				state: beaconState,
+				state: capellaState,
 			},
 			wantErr: true,
 		},
@@ -91,27 +60,18 @@ func TestSyncCommitteeHeadState(t *testing.T) {
 			key:  primitives.Slot(1),
 			put: &put{
 				slot:  primitives.Slot(1),
-				state: beaconState,
+				state: capellaState,
 			},
-			want: beaconState,
+			want: capellaState,
 		},
 		{
 			name: "not found when non-existent key in non-empty cache (bellatrix state)",
 			key:  primitives.Slot(2),
 			put: &put{
 				slot:  primitives.Slot(1),
-				state: bellatrixState,
+				state: capellaState,
 			},
 			wantErr: true,
-		},
-		{
-			name: "found with key (bellatrix state)",
-			key:  primitives.Slot(100),
-			put: &put{
-				slot:  primitives.Slot(100),
-				state: bellatrixState,
-			},
-			want: bellatrixState,
 		},
 		{
 			name: "found with key (capella state)",

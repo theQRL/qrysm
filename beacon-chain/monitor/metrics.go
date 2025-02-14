@@ -22,40 +22,6 @@ var (
 			"validator_index",
 		},
 	)
-	// timelyHeadCounter used to track attestation timely head flags
-	timelyHeadCounter = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: "monitor",
-			Name:      "timely_head",
-			Help:      "Attestation timely Head flag",
-		},
-		[]string{
-			"validator_index",
-		},
-	)
-	// timelyTargetCounter used to track attestation timely head flags
-	timelyTargetCounter = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: "monitor",
-			Name:      "timely_target",
-			Help:      "Attestation timely Target flag",
-		},
-		[]string{
-			"validator_index",
-		},
-	)
-	// timelySourceCounter used to track attestation timely head flags
-	timelySourceCounter = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Namespace: "monitor",
-			Name:      "timely_source",
-			Help:      "Attestation timely Source flag",
-		},
-		[]string{
-			"validator_index",
-		},
-	)
-
 	// proposedSlotsCounter used to track proposed blocks
 	proposedSlotsCounter = promauto.NewCounterVec(
 		prometheus.CounterOpts{

@@ -3,14 +3,14 @@ package simulator
 import (
 	"context"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	"github.com/theQRL/qrysm/v4/crypto/rand"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/rand"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 func (s *Simulator) generateBlockHeadersForSlot(
@@ -71,7 +71,7 @@ func (s *Simulator) generateBlockHeadersForSlot(
 func (s *Simulator) signBlockHeader(
 	beaconState state.BeaconState,
 	header *zondpb.SignedBeaconBlockHeader,
-) (bls.Signature, error) {
+) (dilithium.Signature, error) {
 	domain, err := signing.Domain(
 		beaconState.Fork(),
 		0,

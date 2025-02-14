@@ -8,14 +8,14 @@ import (
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/golang/snappy"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	blocks2 "github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/spectest/utils"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	blocks2 "github.com/theQRL/qrysm/consensus-types/blocks"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/spectest/utils"
+	"github.com/theQRL/qrysm/testing/util"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -62,7 +62,6 @@ func RunExecutionPayloadTest(t *testing.T, config string) {
 			require.NoError(t, utils.UnmarshalYaml(file, config), "Failed to Unmarshal")
 
 			if postSSZExists {
-				require.NoError(t, blocks.ValidatePayloadWhenMergeCompletes(preBeaconState, payload))
 				require.NoError(t, blocks.ValidatePayload(preBeaconState, payload))
 				require.NoError(t, preBeaconState.SetLatestExecutionPayloadHeader(payload))
 				postBeaconStateFile, err := os.ReadFile(postSSZFilepath) // #nosec G304
@@ -80,11 +79,10 @@ func RunExecutionPayloadTest(t *testing.T, config string) {
 					t.Fatal("Post state does not match expected")
 				}
 			} else if config.Valid {
-				err1 := blocks.ValidatePayloadWhenMergeCompletes(preBeaconState, payload)
-				err2 := blocks.ValidatePayload(preBeaconState, payload)
+				err1 := blocks.ValidatePayload(preBeaconState, payload)
 				// Note: This doesn't test anything worthwhile. It essentially tests
 				// that *any* error has occurred, not any specific error.
-				if err1 == nil && err2 == nil {
+				if err1 == nil {
 					t.Fatal("Did not fail when expected")
 				}
 				t.Logf("Expected failure; failure reason = %v", err)

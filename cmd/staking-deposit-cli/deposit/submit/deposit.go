@@ -19,12 +19,12 @@ import (
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/rpc"
 	"github.com/theQRL/go-zond/zondclient"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/deposit/flags"
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/stakingdeposit"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/contracts/deposit"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/deposit/flags"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/stakingdeposit"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/contracts/deposit"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/urfave/cli/v2"
 )
 
@@ -37,11 +37,11 @@ func submitDeposits(cliCtx *cli.Context) error {
 		return fmt.Errorf("failed to read deposit data. reason: %v", err)
 	}
 
-	contractAddr := cliCtx.String(flags.DepositContractAddressFlag.Name)
+	contractAddrStr := cliCtx.String(flags.DepositContractAddressFlag.Name)
 	if !cliCtx.Bool(flags.SkipDepositConfirmationFlag.Name) {
 		qrlDepositTotal := uint64(len(depositDataList)) * params.BeaconConfig().MaxEffectiveBalance / params.BeaconConfig().GweiPerEth
 		actionText := "This will submit the deposits stored in your deposit data directory. " +
-			fmt.Sprintf("A total of %d QRL will be sent to contract address %s for %d validator accounts. ", qrlDepositTotal, contractAddr, len(depositDataList)) +
+			fmt.Sprintf("A total of %d QRL will be sent to contract address %s for %d validator accounts. ", qrlDepositTotal, contractAddrStr, len(depositDataList)) +
 			"Do you want to proceed? (Y/N)"
 		deniedText := "Deposits will not be submitted. No changes have been made."
 		submitConfirmed, err := cmd.ConfirmAction(actionText, deniedText)
@@ -63,7 +63,11 @@ func submitDeposits(cliCtx *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to retrieve the chain ID. reason: %v", err)
 	}
-	contract, err := deposit.NewDepositContract(common.HexToAddress(contractAddr), zondCli)
+	contractAddr, err := common.NewAddressFromString(contractAddrStr)
+	if err != nil {
+		return err
+	}
+	contract, err := deposit.NewDepositContract(contractAddr, zondCli)
 	if err != nil {
 		return fmt.Errorf("failed to create a new instance of the deposit contract. reason: %v", err)
 	}

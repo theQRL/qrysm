@@ -5,10 +5,11 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution/types"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/execution/types"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestHashKeyFn_OK(t *testing.T) {
@@ -42,6 +43,13 @@ func TestHeightKeyFn_InvalidObj(t *testing.T) {
 }
 
 func TestBlockCache_byHash(t *testing.T) {
+	// TODO(now.youtrack.cloud/issue/TQ-5)
+	params.SetupTestConfigCleanup(t)
+	conf := params.BeaconConfig().Copy()
+	conf.Eth1FollowDistance = 2048
+	params.OverrideBeaconConfig(conf)
+	maxCacheSize = 2 * params.BeaconConfig().Eth1FollowDistance
+
 	cache := newHeaderCache()
 
 	header := &types.HeaderInfo{
@@ -59,7 +67,6 @@ func TestBlockCache_byHash(t *testing.T) {
 	assert.Equal(t, true, exists, "Expected headerInfo to exist")
 	assert.Equal(t, 0, fetchedInfo.Number.Cmp(header.Number), "Expected fetched info number to be equal")
 	assert.Equal(t, header.Hash, fetchedInfo.Hash, "Expected hash to be equal")
-
 }
 
 func TestBlockCache_byHeight(t *testing.T) {

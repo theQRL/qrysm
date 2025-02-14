@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	forkchoicetypes "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/types"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestStore_SetUnrealizedEpochs(t *testing.T) {
@@ -199,27 +199,27 @@ func TestStore_ForkNextEpoch(t *testing.T) {
 	ctx := context.Background()
 
 	// Epoch 1 blocks (D does not arrive)
-	state, blkRoot, err := prepareForkchoiceState(ctx, 92, [32]byte{'a'}, params.BeaconConfig().ZeroHash, [32]byte{'A'}, 1, 0)
+	state, blkRoot, err := prepareForkchoiceState(ctx, 380, [32]byte{'a'}, params.BeaconConfig().ZeroHash, [32]byte{'A'}, 1, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
-	state, blkRoot, err = prepareForkchoiceState(ctx, 93, [32]byte{'b'}, [32]byte{'a'}, [32]byte{'B'}, 1, 0)
+	state, blkRoot, err = prepareForkchoiceState(ctx, 381, [32]byte{'b'}, [32]byte{'a'}, [32]byte{'B'}, 1, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
-	state, blkRoot, err = prepareForkchoiceState(ctx, 94, [32]byte{'c'}, [32]byte{'b'}, [32]byte{'C'}, 1, 0)
+	state, blkRoot, err = prepareForkchoiceState(ctx, 382, [32]byte{'c'}, [32]byte{'b'}, [32]byte{'C'}, 1, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
 
 	// Epoch 2 blocks
-	state, blkRoot, err = prepareForkchoiceState(ctx, 96, [32]byte{'e'}, [32]byte{'c'}, [32]byte{'E'}, 1, 0)
+	state, blkRoot, err = prepareForkchoiceState(ctx, 384, [32]byte{'e'}, [32]byte{'c'}, [32]byte{'E'}, 1, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
-	state, blkRoot, err = prepareForkchoiceState(ctx, 97, [32]byte{'f'}, [32]byte{'e'}, [32]byte{'F'}, 1, 0)
+	state, blkRoot, err = prepareForkchoiceState(ctx, 385, [32]byte{'f'}, [32]byte{'e'}, [32]byte{'F'}, 1, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
-	state, blkRoot, err = prepareForkchoiceState(ctx, 98, [32]byte{'g'}, [32]byte{'f'}, [32]byte{'G'}, 1, 0)
+	state, blkRoot, err = prepareForkchoiceState(ctx, 386, [32]byte{'g'}, [32]byte{'f'}, [32]byte{'G'}, 1, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
-	state, blkRoot, err = prepareForkchoiceState(ctx, 99, [32]byte{'h'}, [32]byte{'g'}, [32]byte{'H'}, 1, 0)
+	state, blkRoot, err = prepareForkchoiceState(ctx, 387, [32]byte{'h'}, [32]byte{'g'}, [32]byte{'H'}, 1, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
 
@@ -232,7 +232,7 @@ func TestStore_ForkNextEpoch(t *testing.T) {
 	require.Equal(t, primitives.Epoch(1), f.JustifiedCheckpoint().Epoch)
 
 	// D arrives late, D is head
-	state, blkRoot, err = prepareForkchoiceState(ctx, 95, [32]byte{'d'}, [32]byte{'c'}, [32]byte{'D'}, 1, 0)
+	state, blkRoot, err = prepareForkchoiceState(ctx, 383, [32]byte{'d'}, [32]byte{'c'}, [32]byte{'D'}, 1, 0)
 	require.NoError(t, err)
 	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
 	require.NoError(t, f.store.setUnrealizedJustifiedEpoch([32]byte{'d'}, 2))
@@ -245,7 +245,7 @@ func TestStore_ForkNextEpoch(t *testing.T) {
 	require.Equal(t, uint64(0), f.store.nodeByRoot[[32]byte{'d'}].weight)
 	require.Equal(t, uint64(100), f.store.nodeByRoot[[32]byte{'h'}].weight)
 	// Set current epoch to 3, and H's unrealized checkpoint. Check it's head
-	driftGenesisTime(f, 99, 0)
+	driftGenesisTime(f, 387, 0)
 	require.NoError(t, f.store.setUnrealizedJustifiedEpoch([32]byte{'h'}, 2))
 	headRoot, err = f.Head(ctx)
 	require.NoError(t, err)
@@ -259,13 +259,13 @@ func TestStore_PullTips_Heuristics(t *testing.T) {
 	ctx := context.Background()
 	t.Run("Current epoch is justified", func(tt *testing.T) {
 		f := setup(1, 1)
-		st, root, err := prepareForkchoiceState(ctx, 65, [32]byte{'p'}, [32]byte{}, [32]byte{}, 1, 1)
+		st, root, err := prepareForkchoiceState(ctx, 257, [32]byte{'p'}, [32]byte{}, [32]byte{}, 1, 1)
 		require.NoError(tt, err)
 		require.NoError(tt, f.InsertNode(ctx, st, root))
 		f.store.nodeByRoot[[32]byte{'p'}].unrealizedJustifiedEpoch = primitives.Epoch(2)
-		driftGenesisTime(f, 66, 0)
+		driftGenesisTime(f, 258, 0)
 
-		st, root, err = prepareForkchoiceState(ctx, 66, [32]byte{'h'}, [32]byte{'p'}, [32]byte{}, 1, 1)
+		st, root, err = prepareForkchoiceState(ctx, 258, [32]byte{'h'}, [32]byte{'p'}, [32]byte{}, 1, 1)
 		require.NoError(tt, err)
 		require.NoError(tt, f.InsertNode(ctx, st, root))
 		require.Equal(tt, primitives.Epoch(2), f.store.nodeByRoot[[32]byte{'h'}].unrealizedJustifiedEpoch)
@@ -274,13 +274,13 @@ func TestStore_PullTips_Heuristics(t *testing.T) {
 
 	t.Run("Previous Epoch is justified and too early for current", func(tt *testing.T) {
 		f := setup(1, 1)
-		st, root, err := prepareForkchoiceState(ctx, 95, [32]byte{'p'}, [32]byte{}, [32]byte{}, 1, 1)
+		st, root, err := prepareForkchoiceState(ctx, 383, [32]byte{'p'}, [32]byte{}, [32]byte{}, 1, 1)
 		require.NoError(tt, err)
 		require.NoError(tt, f.InsertNode(ctx, st, root))
 		f.store.nodeByRoot[[32]byte{'p'}].unrealizedJustifiedEpoch = primitives.Epoch(2)
-		driftGenesisTime(f, 96, 0)
+		driftGenesisTime(f, 384, 0)
 
-		st, root, err = prepareForkchoiceState(ctx, 96, [32]byte{'h'}, [32]byte{'p'}, [32]byte{}, 1, 1)
+		st, root, err = prepareForkchoiceState(ctx, 384, [32]byte{'h'}, [32]byte{'p'}, [32]byte{}, 1, 1)
 		require.NoError(tt, err)
 		require.NoError(tt, f.InsertNode(ctx, st, root))
 		require.Equal(tt, primitives.Epoch(2), f.store.nodeByRoot[[32]byte{'h'}].unrealizedJustifiedEpoch)
@@ -288,13 +288,13 @@ func TestStore_PullTips_Heuristics(t *testing.T) {
 	})
 	t.Run("Previous Epoch is justified and not too early for current", func(tt *testing.T) {
 		f := setup(1, 1)
-		st, root, err := prepareForkchoiceState(ctx, 95, [32]byte{'p'}, [32]byte{}, [32]byte{}, 1, 1)
+		st, root, err := prepareForkchoiceState(ctx, 384, [32]byte{'p'}, [32]byte{}, [32]byte{}, 1, 1)
 		require.NoError(tt, err)
 		require.NoError(tt, f.InsertNode(ctx, st, root))
 		f.store.nodeByRoot[[32]byte{'p'}].unrealizedJustifiedEpoch = primitives.Epoch(2)
-		driftGenesisTime(f, 127, 0)
+		driftGenesisTime(f, 511, 0)
 
-		st, root, err = prepareForkchoiceState(ctx, 127, [32]byte{'h'}, [32]byte{'p'}, [32]byte{}, 1, 1)
+		st, root, err = prepareForkchoiceState(ctx, 511, [32]byte{'h'}, [32]byte{'p'}, [32]byte{}, 1, 1)
 		require.NoError(tt, err)
 		require.NoError(tt, f.InsertNode(ctx, st, root))
 		// Check that the justification point is not the parent's.
@@ -305,13 +305,13 @@ func TestStore_PullTips_Heuristics(t *testing.T) {
 	})
 	t.Run("Block from previous Epoch", func(tt *testing.T) {
 		f := setup(1, 1)
-		st, root, err := prepareForkchoiceState(ctx, 94, [32]byte{'p'}, [32]byte{}, [32]byte{}, 1, 1)
+		st, root, err := prepareForkchoiceState(ctx, 382, [32]byte{'p'}, [32]byte{}, [32]byte{}, 1, 1)
 		require.NoError(tt, err)
 		require.NoError(tt, f.InsertNode(ctx, st, root))
 		f.store.nodeByRoot[[32]byte{'p'}].unrealizedJustifiedEpoch = primitives.Epoch(2)
-		driftGenesisTime(f, 96, 0)
+		driftGenesisTime(f, 384, 0)
 
-		st, root, err = prepareForkchoiceState(ctx, 95, [32]byte{'h'}, [32]byte{'p'}, [32]byte{}, 1, 1)
+		st, root, err = prepareForkchoiceState(ctx, 383, [32]byte{'h'}, [32]byte{'p'}, [32]byte{}, 1, 1)
 		require.NoError(tt, err)
 		require.NoError(tt, f.InsertNode(ctx, st, root))
 		// Check that the justification point is not the parent's.
@@ -322,12 +322,12 @@ func TestStore_PullTips_Heuristics(t *testing.T) {
 	})
 	t.Run("Previous Epoch is not justified", func(tt *testing.T) {
 		f := setup(1, 1)
-		st, root, err := prepareForkchoiceState(ctx, 128, [32]byte{'p'}, [32]byte{}, [32]byte{}, 2, 1)
+		st, root, err := prepareForkchoiceState(ctx, 512, [32]byte{'p'}, [32]byte{}, [32]byte{}, 2, 1)
 		require.NoError(tt, err)
 		require.NoError(tt, f.InsertNode(ctx, st, root))
-		driftGenesisTime(f, 129, 0)
+		driftGenesisTime(f, 513, 0)
 
-		st, root, err = prepareForkchoiceState(ctx, 129, [32]byte{'h'}, [32]byte{'p'}, [32]byte{}, 2, 1)
+		st, root, err = prepareForkchoiceState(ctx, 513, [32]byte{'h'}, [32]byte{'p'}, [32]byte{}, 2, 1)
 		require.NoError(tt, err)
 		require.NoError(tt, f.InsertNode(ctx, st, root))
 		// Check that the justification point is not the parent's.

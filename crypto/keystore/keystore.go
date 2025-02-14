@@ -35,7 +35,7 @@ import (
 	"github.com/minio/sha256-simd"
 	"github.com/pborman/uuid"
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/dilithium"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
 )
@@ -196,7 +196,7 @@ func DecryptKey(keyJSON []byte, password string) (*Key, error) {
 		return nil, err
 	}
 
-	secretKey, err := dilithium.SecretKeyFromBytes(keyBytes)
+	secretKey, err := dilithium.SecretKeyFromSeed(keyBytes)
 	if err != nil {
 		return nil, err
 	}

@@ -1,7 +1,7 @@
 package execution
 
 import (
-	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/config/params"
 )
 
 func init() {

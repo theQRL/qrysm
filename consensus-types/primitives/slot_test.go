@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	mathprysm "github.com/theQRL/qrysm/v4/math"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	mathqrysm "github.com/theQRL/qrysm/math"
 )
 
 func TestSlot_Casting(t *testing.T) {
@@ -49,11 +49,11 @@ func TestSlot_Mul(t *testing.T) {
 		{a: 1 << 32, b: 1, res: 1 << 32},
 		{a: 1 << 32, b: 100, res: 429496729600},
 		{a: 1 << 32, b: 1 << 31, res: 9223372036854775808},
-		{a: 1 << 32, b: 1 << 32, res: 0, panicMsg: mathprysm.ErrMulOverflow.Error()},
+		{a: 1 << 32, b: 1 << 32, res: 0, panicMsg: mathqrysm.ErrMulOverflow.Error()},
 		{a: 1 << 62, b: 2, res: 9223372036854775808},
-		{a: 1 << 62, b: 4, res: 0, panicMsg: mathprysm.ErrMulOverflow.Error()},
+		{a: 1 << 62, b: 4, res: 0, panicMsg: mathqrysm.ErrMulOverflow.Error()},
 		{a: 1 << 63, b: 1, res: 9223372036854775808},
-		{a: 1 << 63, b: 2, res: 0, panicMsg: mathprysm.ErrMulOverflow.Error()},
+		{a: 1 << 63, b: 2, res: 0, panicMsg: mathqrysm.ErrMulOverflow.Error()},
 	}
 
 	for _, tt := range tests {
@@ -103,7 +103,7 @@ func TestSlot_Div(t *testing.T) {
 		panicMsg string
 	}{
 		{a: 0, b: 1, res: 0},
-		{a: 1, b: 0, res: 0, panicMsg: mathprysm.ErrDivByZero.Error()},
+		{a: 1, b: 0, res: 0, panicMsg: mathqrysm.ErrDivByZero.Error()},
 		{a: 1 << 32, b: 1 << 32, res: 1},
 		{a: 429496729600, b: 1 << 32, res: 100},
 		{a: 9223372036854775808, b: 1 << 32, res: 1 << 31},
@@ -162,9 +162,9 @@ func TestSlot_Add(t *testing.T) {
 		{a: 1 << 32, b: 1, res: 4294967297},
 		{a: 1 << 32, b: 100, res: 4294967396},
 		{a: 1 << 31, b: 1 << 31, res: 4294967296},
-		{a: 1 << 63, b: 1 << 63, res: 0, panicMsg: mathprysm.ErrAddOverflow.Error()},
+		{a: 1 << 63, b: 1 << 63, res: 0, panicMsg: mathqrysm.ErrAddOverflow.Error()},
 		{a: 1 << 63, b: 1, res: 9223372036854775809},
-		{a: math.MaxUint64, b: 1, res: 0, panicMsg: mathprysm.ErrAddOverflow.Error()},
+		{a: math.MaxUint64, b: 1, res: 0, panicMsg: mathqrysm.ErrAddOverflow.Error()},
 		{a: math.MaxUint64, b: 0, res: math.MaxUint64},
 		{a: 1 << 63, b: 2, res: 9223372036854775810},
 	}
@@ -216,14 +216,14 @@ func TestSlot_Sub(t *testing.T) {
 		panicMsg string
 	}{
 		{a: 1, b: 0, res: 1},
-		{a: 0, b: 1, res: 0, panicMsg: mathprysm.ErrSubUnderflow.Error()},
+		{a: 0, b: 1, res: 0, panicMsg: mathqrysm.ErrSubUnderflow.Error()},
 		{a: 1 << 32, b: 1, res: 4294967295},
 		{a: 1 << 32, b: 100, res: 4294967196},
 		{a: 1 << 31, b: 1 << 31, res: 0},
 		{a: 1 << 63, b: 1 << 63, res: 0},
 		{a: 1 << 63, b: 1, res: 9223372036854775807},
 		{a: math.MaxUint64, b: math.MaxUint64, res: 0},
-		{a: math.MaxUint64 - 1, b: math.MaxUint64, res: 0, panicMsg: mathprysm.ErrSubUnderflow.Error()},
+		{a: math.MaxUint64 - 1, b: math.MaxUint64, res: 0, panicMsg: mathqrysm.ErrSubUnderflow.Error()},
 		{a: math.MaxUint64, b: 0, res: math.MaxUint64},
 		{a: 1 << 63, b: 2, res: 9223372036854775806},
 	}
@@ -274,7 +274,7 @@ func TestSlot_Mod(t *testing.T) {
 		res      primitives.Slot
 		panicMsg string
 	}{
-		{a: 1, b: 0, res: 0, panicMsg: mathprysm.ErrDivByZero.Error()},
+		{a: 1, b: 0, res: 0, panicMsg: mathqrysm.ErrDivByZero.Error()},
 		{a: 0, b: 1, res: 0},
 		{a: 1 << 32, b: 1 << 32, res: 0},
 		{a: 429496729600, b: 1 << 32, res: 0},

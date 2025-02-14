@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 func (c beaconApiValidatorClient) proposeAttestation(ctx context.Context, attestation *zondpb.Attestation) (*zondpb.AttestResponse, error) {
@@ -49,8 +49,8 @@ func checkNilAttestation(attestation *zondpb.Attestation) error {
 		return errors.New("attestation aggregation bits is empty")
 	}
 
-	if len(attestation.Signature) == 0 {
-		return errors.New("attestation signature is empty")
+	if len(attestation.Signatures) == 0 {
+		return errors.New("attestation signatures slice is empty")
 	}
 
 	return nil

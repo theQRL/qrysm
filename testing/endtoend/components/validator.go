@@ -15,20 +15,20 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
-	cmdshared "github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	"github.com/theQRL/qrysm/v4/config/features"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/io/file"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
-	"github.com/theQRL/qrysm/v4/runtime/interop"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
-	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
-	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	cmdshared "github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	"github.com/theQRL/qrysm/config/features"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/io/file"
+	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
+	"github.com/theQRL/qrysm/runtime/interop"
+	"github.com/theQRL/qrysm/testing/endtoend/helpers"
+	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
+	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
 )
 
-const DefaultFeeRecipientAddress = "0x099FB65722e7b2455043bfebF6177f1D2E9738d9"
+const DefaultFeeRecipientAddress = "Z099FB65722e7b2455043bfebF6177f1D2E9738d9"
 
 var _ e2etypes.ComponentRunner = (*ValidatorNode)(nil)
 var _ e2etypes.ComponentRunner = (*ValidatorNodeSet)(nil)
@@ -54,15 +54,15 @@ func NewValidatorNodeSet(config *e2etypes.E2EConfig) *ValidatorNodeSet {
 func (s *ValidatorNodeSet) Start(ctx context.Context) error {
 	// Always using genesis count since using anything else would be difficult to test for.
 	validatorNum := int(params.BeaconConfig().MinGenesisActiveValidatorCount)
-	prysmBeaconNodeNum := e2e.TestParams.BeaconNodeCount
-	beaconNodeNum := prysmBeaconNodeNum + e2e.TestParams.LighthouseBeaconNodeCount
+	qrysmBeaconNodeNum := e2e.TestParams.BeaconNodeCount
+	beaconNodeNum := qrysmBeaconNodeNum
 	if validatorNum%beaconNodeNum != 0 {
 		return errors.New("validator count is not easily divisible by beacon node count")
 	}
 	validatorsPerNode := validatorNum / beaconNodeNum
 	// Create validator nodes.
-	nodes := make([]e2etypes.ComponentRunner, prysmBeaconNodeNum)
-	for i := 0; i < prysmBeaconNodeNum; i++ {
+	nodes := make([]e2etypes.ComponentRunner, qrysmBeaconNodeNum)
+	for i := 0; i < qrysmBeaconNodeNum; i++ {
 		nodes[i] = NewValidatorNode(s.config, validatorsPerNode, i, validatorsPerNode*i)
 	}
 	s.nodes = nodes
@@ -179,9 +179,9 @@ func (node *ValidatorNode) saveConfig() (string, error) {
 func (v *ValidatorNode) Start(ctx context.Context) error {
 	validatorHexPubKeys := make([]string, 0)
 	var pkg, target string
-	if v.config.UsePrysmShValidator {
+	if v.config.UseQrysmShValidator {
 		pkg = ""
-		target = "prysm_sh"
+		target = "qrysm_sh"
 	} else {
 		pkg = "cmd/validator"
 		target = "validator"
@@ -192,10 +192,10 @@ func (v *ValidatorNode) Start(ctx context.Context) error {
 	}
 
 	config, validatorNum, index, offset := v.config, v.validatorNum, v.index, v.offset
-	beaconRPCPort := e2e.TestParams.Ports.PrysmBeaconNodeRPCPort + index
-	if beaconRPCPort >= e2e.TestParams.Ports.PrysmBeaconNodeRPCPort+e2e.TestParams.BeaconNodeCount {
+	beaconRPCPort := e2e.TestParams.Ports.QrysmBeaconNodeRPCPort + index
+	if beaconRPCPort >= e2e.TestParams.Ports.QrysmBeaconNodeRPCPort+e2e.TestParams.BeaconNodeCount {
 		// Point any extra validator clients to a node we know is running.
-		beaconRPCPort = e2e.TestParams.Ports.PrysmBeaconNodeRPCPort
+		beaconRPCPort = e2e.TestParams.Ports.QrysmBeaconNodeRPCPort
 	}
 
 	file, err := helpers.DeleteAndCreateFile(e2e.TestParams.LogPath, fmt.Sprintf(e2e.ValidatorLogFileName, index))
@@ -222,7 +222,7 @@ func (v *ValidatorNode) Start(ctx context.Context) error {
 		return err
 	}
 	args := []string{
-		fmt.Sprintf("--%s=%s/eth2-val-%d", cmdshared.DataDirFlag.Name, e2e.TestParams.TestPath, index),
+		fmt.Sprintf("--%s=%s/zond-val-%d", cmdshared.DataDirFlag.Name, e2e.TestParams.TestPath, index),
 		fmt.Sprintf("--%s=%s", cmdshared.LogFileName.Name, file.Name()),
 		fmt.Sprintf("--%s=%s", flags.GraffitiFileFlag.Name, gFile),
 		fmt.Sprintf("--%s=%d", flags.MonitoringPortFlag.Name, e2e.TestParams.Ports.ValidatorMetricsPort+index),
@@ -238,10 +238,10 @@ func (v *ValidatorNode) Start(ctx context.Context) error {
 	}
 
 	if v.config.UseBeaconRestApi {
-		beaconRestApiPort := e2e.TestParams.Ports.PrysmBeaconNodeGatewayPort + index
-		if beaconRestApiPort >= e2e.TestParams.Ports.PrysmBeaconNodeGatewayPort+e2e.TestParams.BeaconNodeCount {
+		beaconRestApiPort := e2e.TestParams.Ports.QrysmBeaconNodeGatewayPort + index
+		if beaconRestApiPort >= e2e.TestParams.Ports.QrysmBeaconNodeGatewayPort+e2e.TestParams.BeaconNodeCount {
 			// Point any extra validator clients to a node we know is running.
-			beaconRestApiPort = e2e.TestParams.Ports.PrysmBeaconNodeGatewayPort
+			beaconRestApiPort = e2e.TestParams.Ports.QrysmBeaconNodeGatewayPort
 		}
 
 		args = append(args,
@@ -250,30 +250,42 @@ func (v *ValidatorNode) Start(ctx context.Context) error {
 	}
 
 	// Only apply e2e flags to the current branch. New flags may not exist in previous release.
-	if !v.config.UsePrysmShValidator {
+	if !v.config.UseQrysmShValidator {
 		args = append(args, features.E2EValidatorFlags...)
 	}
-	if v.config.UseWeb3RemoteSigner {
-		// Write the pubkeys as comma separated hex strings with 0x prefix.
-		// See: https://docs.teku.consensys.net/en/latest/HowTo/External-Signer/Use-External-Signer/
-		args = append(args,
-			fmt.Sprintf("--%s=http://localhost:%d", flags.Web3SignerURLFlag.Name, Web3RemoteSignerPort),
-			fmt.Sprintf("--%s=%s", flags.Web3SignerPublicValidatorKeysFlag.Name, strings.Join(validatorHexPubKeys, ",")))
-	} else {
-		// When not using remote key signer, use interop keys.
-		args = append(args,
-			fmt.Sprintf("--%s=%d", flags.InteropNumValidators.Name, validatorNum),
-			fmt.Sprintf("--%s=%d", flags.InteropStartIndex.Name, offset),
-		)
-		if v.config.UseBuilder {
-			args = append(args, fmt.Sprintf("--%s", flags.EnableBuilderFlag.Name))
+	/*
+		if v.config.UseWeb3RemoteSigner {
+			// Write the pubkeys as comma separated hex strings with 0x prefix.
+			// See: https://docs.teku.consensys.net/en/latest/HowTo/External-Signer/Use-External-Signer/
+			args = append(args,
+				fmt.Sprintf("--%s=http://localhost:%d", flags.Web3SignerURLFlag.Name, Web3RemoteSignerPort),
+				fmt.Sprintf("--%s=%s", flags.Web3SignerPublicValidatorKeysFlag.Name, strings.Join(validatorHexPubKeys, ",")))
+		} else {
+			// When not using remote key signer, use interop keys.
+			args = append(args,
+				fmt.Sprintf("--%s=%d", flags.InteropNumValidators.Name, validatorNum),
+				fmt.Sprintf("--%s=%d", flags.InteropStartIndex.Name, offset),
+			)
+			if v.config.UseBuilder {
+				args = append(args, fmt.Sprintf("--%s", flags.EnableBuilderFlag.Name))
+			}
 		}
+	*/
+
+	// When not using remote key signer, use interop keys.
+	args = append(args,
+		fmt.Sprintf("--%s=%d", flags.InteropNumValidators.Name, validatorNum),
+		fmt.Sprintf("--%s=%d", flags.InteropStartIndex.Name, offset),
+	)
+	if v.config.UseBuilder {
+		args = append(args, fmt.Sprintf("--%s", flags.EnableBuilderFlag.Name))
 	}
+
 	args = append(args, config.ValidatorFlags...)
 
-	if v.config.UsePrysmShValidator {
+	if v.config.UseQrysmShValidator {
 		args = append([]string{"validator"}, args...)
-		log.Warning("Using latest release validator via prysm.sh")
+		log.Warning("Using latest release validator via qrysm.sh")
 	}
 
 	cmd := exec.CommandContext(ctx, binaryPath, args...) // #nosec G204 -- Safe
@@ -366,9 +378,9 @@ func createProposerSettingsPath(pubkeys []string, nodeIdx int) (string, error) {
 	return configPath, nil
 }
 
-// FeeRecipientFromPubkey slices, from the beginning of the hex-encoded pubkey string, the 2 character 0x preamble
+// FeeRecipientFromPubkey slices, from the beginning of the hex-encoded pubkey string, the 1 character Z preamble
 // plus enough hex chars to fill out the fee_recipient byte value.
 func FeeRecipientFromPubkey(key string) string {
 	// pubkey[:(2+fieldparams.FeeRecipientLength*2)] slicing 2 (for the 0x preamble) + 2 hex chars for each byte
-	return common.HexToAddress(key[:(2 + fieldparams.FeeRecipientLength*2)]).Hex()
+	return common.BytesToAddress(common.FromHex(key[:(2 + fieldparams.FeeRecipientLength*2)])).Hex()
 }

@@ -3,7 +3,7 @@ package helpers
 import (
 	"time"
 
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	qrysmTime "github.com/theQRL/qrysm/time"
 )
 
 // EpochTicker is a special ticker for timing epoch changes.
@@ -36,7 +36,7 @@ func NewEpochTicker(genesisTime time.Time, secondsPerEpoch uint64) *EpochTicker 
 		c:    make(chan uint64),
 		done: make(chan struct{}),
 	}
-	ticker.start(genesisTime, secondsPerEpoch, prysmTime.Since, prysmTime.Until, time.After)
+	ticker.start(genesisTime, secondsPerEpoch, qrysmTime.Since, qrysmTime.Until, time.After)
 	return ticker
 }
 

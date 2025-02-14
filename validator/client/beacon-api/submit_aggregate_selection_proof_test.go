@@ -10,17 +10,17 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/beacon"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/shared"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/validator"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/time/slots"
-	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
-	test_helpers "github.com/theQRL/qrysm/v4/validator/client/beacon-api/test-helpers"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/validator"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/time/slots"
+	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
+	test_helpers "github.com/theQRL/qrysm/validator/client/beacon-api/test-helpers"
 )
 
 func TestSubmitAggregateSelectionProof(t *testing.T) {
@@ -56,7 +56,7 @@ func TestSubmitAggregateSelectionProof(t *testing.T) {
 	aggregateAttestation := &zondpb.Attestation{
 		AggregationBits: test_helpers.FillByteSlice(4, 74),
 		Data:            attestationDataProto,
-		Signature:       test_helpers.FillByteSlice(96, 82),
+		Signatures:      [][]byte{test_helpers.FillByteSlice(4595, 82)},
 	}
 
 	ctrl := gomock.NewController(t)

@@ -26,10 +26,6 @@ bazel build --config=release \
 bazel run --config=release \
   //cmd/beacon-chain:push_oci_image -- --tag=$TAG
 
-### Beacon chain (blst portable image)
-bazel run --config=release --define=blst_modern=false \
-  //cmd/beacon-chain:push_oci_image -- --tag=$TAG-portable
-
 ### Validator
 bazel run --config=release \
   //cmd/validator:push_oci_image -- --tag=$TAG

@@ -11,33 +11,30 @@ import (
 	"math/big"
 	"net"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
 	gMux "github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/beacon/engine"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
-	zondTypes "github.com/theQRL/go-zond/core/types"
+	gzondtypes "github.com/theQRL/go-zond/core/types"
 	zondRPC "github.com/theQRL/go-zond/rpc"
 	"github.com/theQRL/go-zond/trie"
-	builderAPI "github.com/theQRL/qrysm/v4/api/client/builder"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/shared"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	types "github.com/theQRL/qrysm/v4/consensus-types/primitives"
-
-	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/math"
-	"github.com/theQRL/qrysm/v4/network"
-	"github.com/theQRL/qrysm/v4/network/authorization"
-	v1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	builderAPI "github.com/theQRL/qrysm/api/client/builder"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/math"
+	"github.com/theQRL/qrysm/network"
+	"github.com/theQRL/qrysm/network/authorization"
+	v1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 const (
@@ -46,15 +43,10 @@ const (
 	headerPath   = "/zond/v1/builder/header/{slot:[0-9]+}/{parent_hash:0x[a-fA-F0-9]+}/{pubkey:0x[a-fA-F0-9]+}"
 	blindedPath  = "/zond/v1/builder/blinded_blocks"
 
-	// ForkchoiceUpdatedMethod v1 request string for JSON-RPC.
-	ForkchoiceUpdatedMethod = "engine_forkchoiceUpdatedV1"
 	// ForkchoiceUpdatedMethodV2 v2 request string for JSON-RPC.
 	ForkchoiceUpdatedMethodV2 = "engine_forkchoiceUpdatedV2"
-	// GetPayloadMethod v1 request string for JSON-RPC.
-	GetPayloadMethod = "engine_getPayloadV1"
 	// GetPayloadMethodV2 v2 request string for JSON-RPC.
 	GetPayloadMethodV2 = "engine_getPayloadV2"
-	// ExchangeTransitionConfigurationMethod v1 request string for JSON-RPC.
 )
 
 var (
@@ -79,11 +71,6 @@ type ForkchoiceUpdatedResponse struct {
 		Status    *v1.PayloadStatus  `json:"payloadStatus"`
 		PayloadId *v1.PayloadIDBytes `json:"payloadId"`
 	} `json:"result"`
-}
-
-type ExecPayloadResponse struct {
-	Version string               `json:"version"`
-	Data    *v1.ExecutionPayload `json:"data"`
 }
 
 type ExecHeaderResponseCapella struct {
@@ -227,7 +214,7 @@ func (p *Builder) handleEngineCalls(req, resp []byte) {
 	}
 	p.cfg.logger.Infof("Received engine call %s", rpcObj.Method)
 	switch rpcObj.Method {
-	case ForkchoiceUpdatedMethod, ForkchoiceUpdatedMethodV2:
+	case ForkchoiceUpdatedMethodV2:
 		result := &ForkchoiceUpdatedResponse{}
 		err = json.Unmarshal(resp, result)
 		if err != nil {
@@ -273,90 +260,8 @@ func (p *Builder) handleHeaderRequest(w http.ResponseWriter, req *http.Request) 
 		http.Error(w, "no valid slot provided", http.StatusBadRequest)
 		return
 	}
-	slot, err := strconv.Atoi(reqSlot)
-	if err != nil {
-		http.Error(w, "invalid slot provided", http.StatusBadRequest)
-		return
-	}
-	ax := types.Slot(slot)
-	currEpoch := types.Epoch(ax / params.BeaconConfig().SlotsPerEpoch)
-	if currEpoch >= params.BeaconConfig().CapellaForkEpoch {
-		p.handleHeaderRequestCapella(w)
-		return
-	}
 
-	b, err := p.retrievePendingBlock()
-	if err != nil {
-		p.cfg.logger.WithError(err).Error("Could not retrieve pending block")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	secKey, err := bls.RandKey()
-	if err != nil {
-		p.cfg.logger.WithError(err).Error("Could not retrieve secret key")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	wObj, err := blocks.WrappedExecutionPayload(b)
-	if err != nil {
-		p.cfg.logger.WithError(err).Error("Could not wrap execution payload")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	hdr, err := blocks.PayloadToHeader(wObj)
-	if err != nil {
-		p.cfg.logger.WithError(err).Error("Could not make payload into header")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	gEth := big.NewInt(int64(params.BeaconConfig().GweiPerEth))
-	weiEth := gEth.Mul(gEth, gEth)
-	val := builderAPI.Uint256{Int: weiEth}
-	wrappedHdr := &builderAPI.ExecutionPayloadHeader{ExecutionPayloadHeader: hdr}
-	bid := &builderAPI.BuilderBid{
-		Header: wrappedHdr,
-		Value:  val,
-		Pubkey: secKey.PublicKey().Marshal(),
-	}
-	sszBid := &zond.BuilderBid{
-		Header: hdr,
-		Value:  val.SSZBytes(),
-		Pubkey: secKey.PublicKey().Marshal(),
-	}
-	d, err := signing.ComputeDomain(params.BeaconConfig().DomainApplicationBuilder,
-		nil, /* fork version */
-		nil /* genesis val root */)
-	if err != nil {
-		p.cfg.logger.WithError(err).Error("Could not compute the domain")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	rt, err := signing.ComputeSigningRoot(sszBid, d)
-	if err != nil {
-		p.cfg.logger.WithError(err).Error("Could not compute the signing root")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	sig := secKey.Sign(rt[:])
-	hdrResp := &builderAPI.ExecHeaderResponse{
-		Version: "bellatrix",
-		Data: struct {
-			Signature hexutil.Bytes          `json:"signature"`
-			Message   *builderAPI.BuilderBid `json:"message"`
-		}{
-			Signature: sig.Marshal(),
-			Message:   bid,
-		},
-	}
-
-	err = json.NewEncoder(w).Encode(hdrResp)
-	if err != nil {
-		p.cfg.logger.WithError(err).Error("Could not encode response")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	p.currPayload = wObj
-	w.WriteHeader(http.StatusOK)
+	p.handleHeaderRequestCapella(w)
 }
 
 func (p *Builder) handleHeaderRequestCapella(w http.ResponseWriter) {
@@ -367,7 +272,7 @@ func (p *Builder) handleHeaderRequestCapella(w http.ResponseWriter) {
 		return
 	}
 
-	secKey, err := bls.RandKey()
+	secKey, err := dilithium.RandKey()
 	if err != nil {
 		p.cfg.logger.WithError(err).Error("Could not retrieve secret key")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -441,14 +346,6 @@ func (p *Builder) handleHeaderRequestCapella(w http.ResponseWriter) {
 }
 
 func (p *Builder) handleBlindedBlock(w http.ResponseWriter, req *http.Request) {
-	sb := &builderAPI.SignedBlindedBeaconBlockBellatrix{
-		SignedBlindedBeaconBlockBellatrix: &zond.SignedBlindedBeaconBlockBellatrix{},
-	}
-	err := json.NewDecoder(req.Body).Decode(sb)
-	if err != nil {
-		p.cfg.logger.WithError(err).Error("Could not decode blinded block")
-		// TODO: Allow the method to unmarshal blinded blocks correctly
-	}
 	if p.currPayload == nil {
 		p.cfg.logger.Error("No payload is cached")
 		http.Error(w, "payload not found", http.StatusInternalServerError)
@@ -474,53 +371,6 @@ func (p *Builder) handleBlindedBlock(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	bellPayload, err := p.currPayload.PbBellatrix()
-	if err != nil {
-		p.cfg.logger.WithError(err).Error("Could not retrieve the payload")
-		http.Error(w, "payload not found", http.StatusInternalServerError)
-		return
-	}
-	convertedPayload, err := builderAPI.FromProto(bellPayload)
-	if err != nil {
-		p.cfg.logger.WithError(err).Error("Could not convert the payload")
-		http.Error(w, "payload not found", http.StatusInternalServerError)
-		return
-	}
-	execResp := &builderAPI.ExecPayloadResponse{
-		Version: "bellatrix",
-		Data:    convertedPayload,
-	}
-	err = json.NewEncoder(w).Encode(execResp)
-	if err != nil {
-		p.cfg.logger.WithError(err).Error("Could not encode full payload response")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-}
-
-func (p *Builder) retrievePendingBlock() (*v1.ExecutionPayload, error) {
-	result := &engine.ExecutableData{}
-	if p.currId == nil {
-		return nil, errors.New("no payload id is cached")
-	}
-	err := p.execClient.CallContext(context.Background(), result, GetPayloadMethod, *p.currId)
-	if err != nil {
-		return nil, err
-	}
-	payloadEnv, err := modifyExecutionPayload(*result, big.NewInt(0))
-	if err != nil {
-		return nil, err
-	}
-	marshalledOutput, err := payloadEnv.ExecutionPayload.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	bellatrixPayload := &v1.ExecutionPayload{}
-	if err = json.Unmarshal(marshalledOutput, bellatrixPayload); err != nil {
-		return nil, err
-	}
-	return bellatrixPayload, nil
 }
 
 func (p *Builder) retrievePendingBlockCapella() (*v1.ExecutionPayloadCapellaWithValue, error) {
@@ -587,7 +437,7 @@ func parseRequestBytes(req *http.Request) ([]byte, error) {
 	return requestBytes, nil
 }
 
-// Checks whether the JSON-RPC request is for the Ethereum engine API.
+// Checks whether the JSON-RPC request is for the Zond engine API.
 func isEngineAPICall(reqBytes []byte) bool {
 	jsonRequest, err := unmarshalRPCObject(reqBytes)
 	if err != nil {
@@ -614,11 +464,11 @@ func modifyExecutionPayload(execPayload engine.ExecutableData, fees *big.Int) (*
 	if err != nil {
 		return &engine.ExecutionPayloadEnvelope{}, err
 	}
-	return engine.BlockToExecutableData(modifiedBlock, fees, nil /*blobs*/), nil
+	return engine.BlockToExecutableData(modifiedBlock, fees), nil
 }
 
 // This modifies the provided payload to imprint the builder's extra data
-func executableDataToBlock(params engine.ExecutableData) (*zondTypes.Block, error) {
+func executableDataToBlock(params engine.ExecutableData) (*gzondtypes.Block, error) {
 	txs, err := decodeTransactions(params.Transactions)
 	if err != nil {
 		return nil, err
@@ -628,35 +478,33 @@ func executableDataToBlock(params engine.ExecutableData) (*zondTypes.Block, erro
 	// Withdrawals as the json null value.
 	var withdrawalsRoot *common.Hash
 	if params.Withdrawals != nil {
-		h := zondTypes.DeriveSha(zondTypes.Withdrawals(params.Withdrawals), trie.NewStackTrie(nil))
+		h := gzondtypes.DeriveSha(gzondtypes.Withdrawals(params.Withdrawals), trie.NewStackTrie(nil))
 		withdrawalsRoot = &h
 	}
-	header := &zondTypes.Header{
+	header := &gzondtypes.Header{
 		ParentHash:      params.ParentHash,
-		UncleHash:       zondTypes.EmptyUncleHash,
 		Coinbase:        params.FeeRecipient,
 		Root:            params.StateRoot,
-		TxHash:          zondTypes.DeriveSha(zondTypes.Transactions(txs), trie.NewStackTrie(nil)),
+		TxHash:          gzondtypes.DeriveSha(gzondtypes.Transactions(txs), trie.NewStackTrie(nil)),
 		ReceiptHash:     params.ReceiptsRoot,
-		Bloom:           zondTypes.BytesToBloom(params.LogsBloom),
-		Difficulty:      common.Big0,
+		Bloom:           gzondtypes.BytesToBloom(params.LogsBloom),
 		Number:          new(big.Int).SetUint64(params.Number),
 		GasLimit:        params.GasLimit,
 		GasUsed:         params.GasUsed,
 		Time:            params.Timestamp,
 		BaseFee:         params.BaseFeePerGas,
-		Extra:           []byte("prysm-builder"), // add in extra data
-		MixDigest:       params.Random,
+		Extra:           []byte("qrysm-builder"), // add in extra data
+		Random:          params.Random,
 		WithdrawalsHash: withdrawalsRoot,
 	}
-	block := zondTypes.NewBlockWithHeader(header).WithBody(txs, nil /* uncles */).WithWithdrawals(params.Withdrawals)
+	block := gzondtypes.NewBlockWithHeader(header).WithBody(gzondtypes.Body{Transactions: txs, Withdrawals: params.Withdrawals})
 	return block, nil
 }
 
-func decodeTransactions(enc [][]byte) ([]*zondTypes.Transaction, error) {
-	var txs = make([]*zondTypes.Transaction, len(enc))
+func decodeTransactions(enc [][]byte) ([]*gzondtypes.Transaction, error) {
+	var txs = make([]*gzondtypes.Transaction, len(enc))
 	for i, encTx := range enc {
-		var tx zondTypes.Transaction
+		var tx gzondtypes.Transaction
 		if err := tx.UnmarshalBinary(encTx); err != nil {
 			return nil, fmt.Errorf("invalid transaction %d: %v", i, err)
 		}

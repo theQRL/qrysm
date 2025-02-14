@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 	ssz "github.com/prysmaticlabs/fastssz"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/monitoring/tracing"
+	"github.com/theQRL/qrysm/monitoring/tracing"
 	"go.opencensus.io/trace"
 )
 
@@ -42,7 +42,7 @@ func (s *Service) Send(ctx context.Context, message interface{}, baseTopic strin
 		return nil, err
 	}
 	// do not encode anything if we are sending a metadata request
-	if baseTopic != RPCMetaDataTopicV1 && baseTopic != RPCMetaDataTopicV2 {
+	if baseTopic != RPCMetaDataTopicV2 {
 		castedMsg, ok := message.(ssz.Marshaler)
 		if !ok {
 			return nil, errors.Errorf("%T does not support the ssz marshaller interface", message)

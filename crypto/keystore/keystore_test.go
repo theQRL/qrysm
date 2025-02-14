@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/pborman/uuid"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestStoreAndGetKey(t *testing.T) {
@@ -54,10 +54,10 @@ func TestStoreAndGetKeys(t *testing.T) {
 func TestEncryptDecryptKey(t *testing.T) {
 	newID := uuid.NewRandom()
 	b := []byte("hi")
-	b32 := bytesutil.ToBytes32(b)
+	b48 := bytesutil.ToBytes48(b)
 	password := "test"
 
-	pk, err := dilithium.SecretKeyFromBytes(b32[:])
+	pk, err := dilithium.SecretKeyFromSeed(b48[:])
 	require.NoError(t, err)
 	key := &Key{
 		ID:        newID,

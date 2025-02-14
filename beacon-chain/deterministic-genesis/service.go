@@ -9,16 +9,17 @@ import (
 	"os"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime"
-	"github.com/theQRL/qrysm/v4/runtime/interop"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/beacon-chain/execution"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/runtime"
+	"github.com/theQRL/qrysm/runtime/interop"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 var _ runtime.Service = (*Service)(nil)
@@ -95,11 +96,11 @@ func (s *Service) Start() {
 		if err != nil {
 			log.WithError(err).Fatal("Could not read pre-loaded state")
 		}
-		genesisState := &zondpb.BeaconState{}
+		genesisState := &zondpb.BeaconStateCapella{}
 		if err := genesisState.UnmarshalSSZ(data); err != nil {
 			log.WithError(err).Fatal("Could not unmarshal pre-loaded state")
 		}
-		genesisTrie, err := state_native.InitializeFromProtoPhase0(genesisState)
+		genesisTrie, err := state_native.InitializeFromProtoCapella(genesisState)
 		if err != nil {
 			log.WithError(err).Fatal("Could not get state trie")
 		}
@@ -110,11 +111,21 @@ func (s *Service) Start() {
 	}
 
 	// Save genesis state in db
-	genesisState, _, err := interop.GenerateGenesisState(s.ctx, s.cfg.GenesisTime, s.cfg.NumValidators)
+	ee := &enginev1.ExecutionPayloadCapella{
+		ParentHash:    make([]byte, 32),
+		FeeRecipient:  make([]byte, 20),
+		StateRoot:     make([]byte, 32),
+		ReceiptsRoot:  make([]byte, 32),
+		LogsBloom:     make([]byte, 256),
+		PrevRandao:    make([]byte, 32),
+		BaseFeePerGas: make([]byte, 32),
+		BlockHash:     make([]byte, 32),
+	}
+	genesisState, _, err := interop.GenerateGenesisStateCapella(s.ctx, s.cfg.GenesisTime, s.cfg.NumValidators, ee, &zondpb.Eth1Data{BlockHash: make([]byte, 32)})
 	if err != nil {
 		log.WithError(err).Fatal("Could not generate interop genesis state")
 	}
-	genesisTrie, err := state_native.InitializeFromProtoPhase0(genesisState)
+	genesisTrie, err := state_native.InitializeFromProtoCapella(genesisState)
 	if err != nil {
 		log.WithError(err).Fatal("Could not get state trie")
 	}
@@ -155,7 +166,7 @@ func (_ *Service) ChainStartEth1Data() *zondpb.Eth1Data {
 
 // PreGenesisState returns an empty beacon state.
 func (_ *Service) PreGenesisState() state.BeaconState {
-	s, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{})
+	s, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{})
 	if err != nil {
 		panic("could not initialize state")
 	}

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/proto/zond/service"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/proto/zond/service"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestListKeystores_JSONisEqual(t *testing.T) {
@@ -15,7 +15,7 @@ func TestListKeystores_JSONisEqual(t *testing.T) {
 		Keystores: []*KeystoreJson{
 			{
 				ValidatingPubkey: "0x0",
-				DerivationPath:   "m/44'/60'/0'/0/0",
+				// DerivationPath:   "m/44'/60'/0'/0/0",
 			},
 		},
 	}
@@ -23,8 +23,8 @@ func TestListKeystores_JSONisEqual(t *testing.T) {
 	protoResponse := &service.ListKeystoresResponse{
 		Data: []*service.ListKeystoresResponse_Keystore{
 			{
-				ValidatingPubkey: make([]byte, dilithium2.CryptoPublicKeyBytes),
-				DerivationPath:   "m/44'/60'/0'/0/0",
+				ValidatingPubkey: make([]byte, field_params.DilithiumPubkeyLength),
+				// DerivationPath:   "m/44'/60'/0'/0/0",
 			},
 		},
 	}
@@ -118,6 +118,7 @@ func TestDeleteKeystores_JSONisEqual(t *testing.T) {
 
 }
 
+/*
 func TestListRemoteKeys_JSONisEqual(t *testing.T) {
 	middlewareResponse := &ListRemoteKeysResponseJson{
 		Keystores: []*RemoteKeysListJson{
@@ -132,7 +133,7 @@ func TestListRemoteKeys_JSONisEqual(t *testing.T) {
 	protoResponse := &service.ListRemoteKeysResponse{
 		Data: []*service.ListRemoteKeysResponse_Keystore{
 			{
-				Pubkey:   make([]byte, dilithium2.CryptoPublicKeyBytes),
+				Pubkey:   make([]byte, field_params.DilithiumPubkeyLength),
 				Url:      "http://localhost:8080",
 				Readonly: true,
 			},
@@ -154,7 +155,7 @@ func TestImportRemoteKeys_JSONisEqual(t *testing.T) {
 	protoImportRequest := &service.ImportRemoteKeysRequest{
 		RemoteKeys: []*service.ImportRemoteKeysRequest_Keystore{
 			{
-				Pubkey: make([]byte, dilithium2.CryptoPublicKeyBytes),
+				Pubkey: make([]byte, field_params.DilithiumPubkeyLength),
 				Url:    "http://localhost:8080",
 			},
 		},
@@ -227,6 +228,7 @@ func TestDeleteRemoteKeys_JSONisEqual(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, resp, true)
 }
+*/
 
 // note: this does not do a deep comparison of the structs
 func areJsonPropertyNamesEqual(internal, proto interface{}) (bool, error) {

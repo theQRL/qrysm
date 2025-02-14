@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/api/client/beacon"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
+	"github.com/theQRL/qrysm/api/client/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/db"
 )
 
 // APIInitializer manages initializing the genesis state and block to prepare the beacon node for syncing.

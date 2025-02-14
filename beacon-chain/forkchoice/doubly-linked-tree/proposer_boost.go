@@ -3,8 +3,8 @@ package doublylinkedtree
 import (
 	"fmt"
 
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
 )
 
 // applyProposerBoostScore applies the current proposer boost scores to the

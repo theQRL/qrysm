@@ -6,20 +6,20 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/beacon-chain/core/time"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 func TestBlockSignature(t *testing.T) {
-	beaconState, privKeys := DeterministicGenesisState(t, 100)
-	block, err := GenerateFullBlock(beaconState, privKeys, nil, 0)
+	beaconState, privKeys := DeterministicGenesisStateCapella(t, 100)
+	block, err := GenerateFullBlockCapella(beaconState, privKeys, nil, 0)
 	require.NoError(t, err)
 
 	require.NoError(t, beaconState.SetSlot(beaconState.Slot()+1))
@@ -40,7 +40,7 @@ func TestBlockSignature(t *testing.T) {
 }
 
 func TestRandaoReveal(t *testing.T) {
-	beaconState, privKeys := DeterministicGenesisState(t, 100)
+	beaconState, privKeys := DeterministicGenesisStateCapella(t, 100)
 
 	epoch := time.CurrentEpoch(beaconState)
 	randaoReveal, err := RandaoReveal(beaconState, epoch, privKeys)

@@ -1,15 +1,15 @@
 # Third Party Package Patching
 
-This directory includes local patches to third party dependencies we use in Prysm. Sometimes,
-we need to make a small change to some dependency for ease of use in Prysm without wanting
+This directory includes local patches to third party dependencies we use in Qrysm. Sometimes,
+we need to make a small change to some dependency for ease of use in Qrysm without wanting
 to maintain our own fork of the dependency ourselves. Our build tool, [Bazel](https://bazel.build)
 allows us to include patches in a seamless manner based on simple diff rules.
 
-This README outlines how patching works in Prysm and an explanation of previously
+This README outlines how patching works in Qrysm and an explanation of previously
 created patches. 
 
 **Given maintaining a patch can be difficult and tedious,
-patches are NOT the recommended way of modifying dependencies in Prysm 
+patches are NOT the recommended way of modifying dependencies in Qrysm 
 unless really needed**
 
 ## Table of Contents
@@ -57,5 +57,5 @@ go_repository(
 )
 ```
 
-Now, when used in Prysm, the dependency you patched will have the patched modifications
+Now, when used in Qrysm, the dependency you patched will have the patched modifications
 when you run your code.

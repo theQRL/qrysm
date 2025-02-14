@@ -13,35 +13,34 @@ import (
 	"strconv"
 	"text/template"
 
-	"github.com/theQRL/qrysm/v4/api/client"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/shared"
-	"github.com/theQRL/qrysm/v4/network/forks"
-	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/api/client"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/network/forks"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	v1 "github.com/theQRL/qrysm/proto/zond/v1"
 )
 
 const (
-	getSignedBlockPath             = "/zond/v2/beacon/blocks"
+	getSignedBlockPath             = "/zond/v1/beacon/blocks"
 	getBlockRootPath               = "/zond/v1/beacon/blocks/{{.Id}}/root"
 	getForkForStatePath            = "/zond/v1/beacon/states/{{.Id}}/fork"
 	getWeakSubjectivityPath        = "/zond/v1/beacon/weak_subjectivity"
 	getForkSchedulePath            = "/zond/v1/config/fork_schedule"
 	getConfigSpecPath              = "/zond/v1/config/spec"
-	getStatePath                   = "/zond/v2/debug/beacon/states"
+	getStatePath                   = "/zond/v1/debug/beacon/states"
 	getNodeVersionPath             = "/zond/v1/node/version"
 	changeDilithiumtoExecutionPath = "/zond/v1/beacon/pool/dilithium_to_execution_changes"
 )
 
-// StateOrBlockId represents the block_id / state_id parameters that several of the Eth Beacon API methods accept.
+// StateOrBlockId represents the block_id / state_id parameters that several of the Zond Beacon API methods accept.
 // StateOrBlockId constants are defined for named identifiers, and helper methods are provided
-// for slot and root identifiers. Example text from the Eth Beacon Node API documentation:
+// for slot and root identifiers. Example text from the Zond Beacon Node API documentation:
 //
 // "Block identifier can be one of: "head" (canonical head in node's view), "genesis", "finalized",
 // <slot>, <hex encoded blockRoot with 0x prefix>."
@@ -86,7 +85,7 @@ func renderGetBlockPath(id StateOrBlockId) string {
 	return path.Join(getSignedBlockPath, string(id))
 }
 
-// Client provides a collection of helper methods for calling the Eth Beacon Node API endpoints.
+// Client provides a collection of helper methods for calling the Zond Beacon Node API endpoints.
 type Client struct {
 	*client.Client
 }
@@ -248,7 +247,7 @@ func (c *Client) GetState(ctx context.Context, stateId StateOrBlockId) ([]byte, 
 	return b, nil
 }
 
-// GetWeakSubjectivity calls a proposed API endpoint that is unique to prysm
+// GetWeakSubjectivity calls a proposed API endpoint that is unique to qrysm
 // This api method does the following:
 // - computes weak subjectivity epoch
 // - finds the highest non-skipped block preceding the epoch

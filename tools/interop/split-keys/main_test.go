@@ -1,5 +1,6 @@
 package main
 
+/*
 import (
 	"bufio"
 	"context"
@@ -9,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/keymanager/local"
 )
 
 const testMnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
@@ -95,3 +96,4 @@ func hexDecodeOrDie(str string) []byte {
 	}
 	return decoded
 }
+*/

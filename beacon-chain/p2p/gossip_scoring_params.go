@@ -11,9 +11,9 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	coreTime "github.com/theQRL/qrysm/v4/beacon-chain/core/time"
-	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	coreTime "github.com/theQRL/qrysm/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/config/params"
 )
 
 const (
@@ -121,9 +121,6 @@ func (s *Service) topicScoreParams(topic string) (*pubsub.TopicScoreParams, erro
 		return defaultAttesterSlashingTopicParams(), nil
 	case strings.Contains(topic, GossipDilithiumToExecutionChangeMessage):
 		return defaultDilithiumToExecutionChangeTopicParams(), nil
-	case strings.Contains(topic, GossipBlobSidecarMessage):
-		// TODO(Deneb): Using the default block scoring. But this should be updated.
-		return defaultBlockTopicParams(), nil
 	default:
 		return nil, errors.Errorf("unrecognized topic provided for parameter registration: %s", topic)
 	}

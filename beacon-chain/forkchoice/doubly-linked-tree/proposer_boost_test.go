@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 // Helper function to simulate the block being on time or delayed for proposer
@@ -164,13 +164,13 @@ func TestForkChoice_BoostProposerRoot_PreventsExAnteAttack(t *testing.T) {
 		//		    \--------------->(4: 18)
 		//
 		node1 := f.store.nodeByRoot[indexToHash(1)]
-		require.Equal(t, node1.weight, uint64(48))
+		require.Equal(t, uint64(42), node1.weight)
 		node2 := f.store.nodeByRoot[indexToHash(2)]
-		require.Equal(t, node2.weight, uint64(38))
+		require.Equal(t, uint64(32), node2.weight)
 		node3 := f.store.nodeByRoot[indexToHash(3)]
 		require.Equal(t, node3.weight, uint64(10))
 		node4 := f.store.nodeByRoot[indexToHash(4)]
-		require.Equal(t, node4.weight, uint64(18))
+		require.Equal(t, uint64(12), node4.weight)
 
 		// Regression: process attestations for C, check that it
 		// becomes head, we need two attestations to have C.weight = 30 > 24 = D.weight

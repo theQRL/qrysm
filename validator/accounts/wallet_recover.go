@@ -1,13 +1,14 @@
 package accounts
 
+/*
 import (
 	"context"
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/derived"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/keymanager/derived"
 )
 
 const (
@@ -74,3 +75,4 @@ func ValidateMnemonic(mnemonic string) error {
 	}
 	return nil
 }
+*/

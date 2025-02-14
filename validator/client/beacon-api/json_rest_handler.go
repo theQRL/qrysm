@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/api"
-	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
+	"github.com/theQRL/qrysm/api"
+	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
 )
 
 type jsonRestHandler interface {

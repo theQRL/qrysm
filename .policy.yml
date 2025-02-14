@@ -20,7 +20,7 @@ approval_rules:
     requires:
       count: 1
       teams:
-        - "prysmaticlabs/core-team"
+        - "theqrl/core"
   - name: only proto files are changed
     if:
       only_changed_files:
@@ -34,7 +34,7 @@ approval_rules:
     requires:
       count: 1
       teams:
-        - "prysmaticlabs/core-team"
+        - "theqrl/core"
   - name: touches consensus critical code
     if:
       only_changed_files:

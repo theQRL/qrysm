@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/async"
+	"github.com/theQRL/qrysm/async"
 )
 
 func TestEveryRuns(t *testing.T) {

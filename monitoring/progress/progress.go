@@ -7,7 +7,7 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-// InitializeProgressBar standard for use in Prysm.
+// InitializeProgressBar standard for use in Qrysm.
 func InitializeProgressBar(numItems int, msg string) *progressbar.ProgressBar {
 	return progressbar.NewOptions(
 		numItems,

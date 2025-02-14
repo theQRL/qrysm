@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestArchivedPointIndexRoot_CanSaveRetrieve(t *testing.T) {
@@ -18,7 +18,7 @@ func TestArchivedPointIndexRoot_CanSaveRetrieve(t *testing.T) {
 
 	received := db.ArchivedPointRoot(ctx, i1)
 	require.NotEqual(t, r1, received, "Should not have been saved")
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(i1))
 	require.NoError(t, db.SaveState(ctx, st, r1))
@@ -33,7 +33,7 @@ func TestLastArchivedPoint_CanRetrieve(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, primitives.Slot(0), i, "Did not get correct index")
 
-	st, err := util.NewBeaconState()
+	st, err := util.NewBeaconStateCapella()
 	require.NoError(t, err)
 	assert.NoError(t, db.SaveState(ctx, st, [32]byte{'A'}))
 	assert.Equal(t, [32]byte{'A'}, db.LastArchivedRoot(ctx), "Did not get wanted root")

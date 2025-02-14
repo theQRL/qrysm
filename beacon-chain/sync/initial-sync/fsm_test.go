@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestStateMachineManager_String(t *testing.T) {
@@ -24,13 +24,13 @@ func TestStateMachineManager_String(t *testing.T) {
 		{
 			"newly created state machine",
 			map[primitives.Slot]*stateMachine{
-				0:   {start: 64 * 0, state: stateNew},
-				64:  {start: 64 * 1, state: stateScheduled},
-				128: {start: 64 * 2, state: stateDataParsed},
-				196: {start: 64 * 3, state: stateSkipped},
-				256: {start: 64 * 4, state: stateSent},
+				0:    {start: 256 * 0, state: stateNew},
+				256:  {start: 256 * 1, state: stateScheduled},
+				512:  {start: 256 * 2, state: stateDataParsed},
+				784:  {start: 256 * 3, state: stateSkipped},
+				1024: {start: 256 * 4, state: stateSent},
 			},
-			"map[0:{0:new} 64:{2:scheduled} 128:{4:dataParsed} 196:{6:skipped} 256:{8:sent}]",
+			"map[0:{0:new} 256:{2:scheduled} 512:{4:dataParsed} 784:{6:skipped} 1024:{8:sent}]",
 		},
 	}
 	for _, tt := range tests {

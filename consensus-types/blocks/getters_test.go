@@ -4,17 +4,17 @@ import (
 	"testing"
 
 	ssz "github.com/prysmaticlabs/fastssz"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	pb "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	pb "github.com/theQRL/qrysm/proto/engine/v1"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
+	"github.com/theQRL/qrysm/runtime/version"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func Test_BeaconBlockIsNil(t *testing.T) {
@@ -45,7 +45,7 @@ func Test_BeaconBlockIsNil(t *testing.T) {
 func Test_SignedBeaconBlock_Signature(t *testing.T) {
 	sb := &SignedBeaconBlock{}
 	sb.SetSignature([]byte("signature"))
-	assert.DeepEqual(t, bytesutil.ToBytes96([]byte("signature")), sb.Signature())
+	assert.DeepEqual(t, bytesutil.ToBytes4595([]byte("signature")), sb.Signature())
 }
 
 func Test_SignedBeaconBlock_Block(t *testing.T) {
@@ -74,9 +74,9 @@ func Test_SignedBeaconBlock_IsNil(t *testing.T) {
 }
 
 func Test_SignedBeaconBlock_Copy(t *testing.T) {
-	bb := &BeaconBlockBody{}
-	b := &BeaconBlock{body: bb}
-	sb := &SignedBeaconBlock{block: b}
+	bb := &BeaconBlockBody{version: version.Capella}
+	b := &BeaconBlock{version: version.Capella, body: bb}
+	sb := &SignedBeaconBlock{version: version.Capella, block: b}
 	cp, err := sb.Copy()
 	require.NoError(t, err)
 	assert.NotEqual(t, cp, sb)
@@ -91,18 +91,37 @@ func Test_SignedBeaconBlock_Version(t *testing.T) {
 
 func Test_SignedBeaconBlock_Header(t *testing.T) {
 	bb := &BeaconBlockBody{
-		version:      version.Phase0,
-		randaoReveal: [dilithium2.CryptoBytes]byte{},
+		version:      version.Capella,
+		randaoReveal: [field_params.DilithiumSignatureLength]byte{},
 		eth1Data: &zond.Eth1Data{
 			DepositRoot: make([]byte, 32),
 			BlockHash:   make([]byte, 32),
 		},
 		graffiti: [32]byte{},
+		syncAggregate: &zond.SyncAggregate{
+			SyncCommitteeBits:       make([]byte, 2),
+			SyncCommitteeSignatures: make([][]byte, 0),
+		},
+		executionPayload: executionPayloadCapella{
+			p: &pb.ExecutionPayloadCapella{
+				ParentHash:    make([]byte, 32),
+				FeeRecipient:  make([]byte, 20),
+				StateRoot:     make([]byte, 32),
+				ReceiptsRoot:  make([]byte, 32),
+				LogsBloom:     make([]byte, 256),
+				PrevRandao:    make([]byte, 32),
+				ExtraData:     make([]byte, 32),
+				BaseFeePerGas: make([]byte, 32),
+				BlockHash:     make([]byte, 32),
+				Transactions:  make([][]byte, 0),
+				Withdrawals:   make([]*pb.Withdrawal, 0),
+			},
+		},
 	}
 	sb := &SignedBeaconBlock{
-		version: version.Phase0,
+		version: version.Capella,
 		block: &BeaconBlock{
-			version:       version.Phase0,
+			version:       version.Capella,
 			slot:          128,
 			proposerIndex: 128,
 			parentRoot:    bytesutil.ToBytes32([]byte("parentroot")),
@@ -129,11 +148,11 @@ func Test_SignedBeaconBlock_UnmarshalSSZ(t *testing.T) {
 	require.NoError(t, err)
 	expectedHTR, err := pb.HashTreeRoot()
 	require.NoError(t, err)
-	sb := &SignedBeaconBlock{}
+	sb := &SignedBeaconBlock{version: version.Capella, block: &BeaconBlock{body: &BeaconBlockBody{isBlinded: false}}}
 	require.NoError(t, sb.UnmarshalSSZ(buf))
 	msg, err := sb.Proto()
 	require.NoError(t, err)
-	actualPb, ok := msg.(*zond.SignedBeaconBlock)
+	actualPb, ok := msg.(*zond.SignedBeaconBlockCapella)
 	require.Equal(t, true, ok)
 	actualHTR, err := actualPb.HashTreeRoot()
 	require.NoError(t, err)
@@ -171,27 +190,13 @@ func Test_BeaconBlock_Body(t *testing.T) {
 }
 
 func Test_BeaconBlock_Copy(t *testing.T) {
-	bb := &BeaconBlockBody{randaoReveal: bytesutil.ToBytes4595([]byte{246}), graffiti: bytesutil.ToBytes32([]byte("graffiti"))}
-	b := &BeaconBlock{body: bb, slot: 123, proposerIndex: 456, parentRoot: bytesutil.ToBytes32([]byte("parentroot")), stateRoot: bytesutil.ToBytes32([]byte("stateroot"))}
+	bb := &BeaconBlockBody{version: version.Capella, randaoReveal: bytesutil.ToBytes4595([]byte{246}), graffiti: bytesutil.ToBytes32([]byte("graffiti"))}
+	b := &BeaconBlock{version: version.Capella, body: bb, slot: 123, proposerIndex: 456, parentRoot: bytesutil.ToBytes32([]byte("parentroot")), stateRoot: bytesutil.ToBytes32([]byte("stateroot"))}
 	cp, err := b.Copy()
 	require.NoError(t, err)
 	assert.NotEqual(t, cp, b)
 	assert.NotEqual(t, cp.Body(), bb)
 
-	b.version = version.Altair
-	b.body.version = b.version
-	cp, err = b.Copy()
-	require.NoError(t, err)
-	assert.NotEqual(t, cp, b)
-	assert.NotEqual(t, cp.Body(), bb)
-
-	b.version = version.Bellatrix
-	b.body.version = b.version
-	cp, err = b.Copy()
-	require.NoError(t, err)
-	assert.NotEqual(t, cp, b)
-	assert.NotEqual(t, cp.Body(), bb)
-
 	b.version = version.Capella
 	b.body.version = b.version
 	cp, err = b.Copy()
@@ -199,51 +204,11 @@ func Test_BeaconBlock_Copy(t *testing.T) {
 	assert.NotEqual(t, cp, b)
 	assert.NotEqual(t, cp.Body(), bb)
 
-	b.version = version.Bellatrix
-	b.body.version = b.version
 	b.body.isBlinded = true
 	cp, err = b.Copy()
 	require.NoError(t, err)
 	assert.NotEqual(t, cp, b)
 	assert.NotEqual(t, cp.Body(), bb)
-
-	b.version = version.Capella
-	b.body.version = b.version
-	cp, err = b.Copy()
-	require.NoError(t, err)
-	assert.NotEqual(t, cp, b)
-	assert.NotEqual(t, cp.Body(), bb)
-
-	payload := &pb.ExecutionPayloadDeneb{ExcessBlobGas: 123}
-	header := &pb.ExecutionPayloadHeaderDeneb{ExcessBlobGas: 223}
-	payloadInterface, err := WrappedExecutionPayloadDeneb(payload, 123)
-	require.NoError(t, err)
-	headerInterface, err := WrappedExecutionPayloadHeaderDeneb(header, 123)
-	require.NoError(t, err)
-	bb = &BeaconBlockBody{executionPayload: payloadInterface, executionPayloadHeader: headerInterface, randaoReveal: bytesutil.ToBytes96([]byte{246}), graffiti: bytesutil.ToBytes32([]byte("graffiti"))}
-	b = &BeaconBlock{body: bb, slot: 123, proposerIndex: 456, parentRoot: bytesutil.ToBytes32([]byte("parentroot")), stateRoot: bytesutil.ToBytes32([]byte("stateroot"))}
-	b.version = version.Deneb
-	b.body.version = b.version
-	cp, err = b.Copy()
-	require.NoError(t, err)
-	assert.NotEqual(t, cp, b)
-	assert.NotEqual(t, cp.Body(), bb)
-	e, err := cp.Body().Execution()
-	require.NoError(t, err)
-	gas, err := e.ExcessBlobGas()
-	require.NoError(t, err)
-	require.DeepEqual(t, gas, uint64(123))
-
-	b.body.isBlinded = true
-	cp, err = b.Copy()
-	require.NoError(t, err)
-	assert.NotEqual(t, cp, b)
-	assert.NotEqual(t, cp.Body(), bb)
-	e, err = cp.Body().Execution()
-	require.NoError(t, err)
-	gas, err = e.ExcessBlobGas()
-	require.NoError(t, err)
-	require.DeepEqual(t, gas, uint64(223))
 }
 
 func Test_BeaconBlock_IsNil(t *testing.T) {
@@ -277,7 +242,7 @@ func Test_BeaconBlock_HashTreeRoot(t *testing.T) {
 	pb := hydrateBeaconBlock()
 	expectedHTR, err := pb.HashTreeRoot()
 	require.NoError(t, err)
-	b, err := initBlockFromProtoPhase0(pb)
+	b, err := initBlockFromProtoCapella(pb)
 	require.NoError(t, err)
 	actualHTR, err := b.HashTreeRoot()
 	require.NoError(t, err)
@@ -288,7 +253,7 @@ func Test_BeaconBlock_HashTreeRootWith(t *testing.T) {
 	pb := hydrateBeaconBlock()
 	expectedHTR, err := pb.HashTreeRoot()
 	require.NoError(t, err)
-	b, err := initBlockFromProtoPhase0(pb)
+	b, err := initBlockFromProtoCapella(pb)
 	require.NoError(t, err)
 	h := ssz.DefaultHasherPool.Get()
 	require.NoError(t, b.HashTreeRootWith(h))
@@ -303,11 +268,11 @@ func Test_BeaconBlock_UnmarshalSSZ(t *testing.T) {
 	require.NoError(t, err)
 	expectedHTR, err := pb.HashTreeRoot()
 	require.NoError(t, err)
-	b := &BeaconBlock{}
+	b := &BeaconBlock{version: version.Capella, body: &BeaconBlockBody{isBlinded: false}}
 	require.NoError(t, b.UnmarshalSSZ(buf))
 	msg, err := b.Proto()
 	require.NoError(t, err)
-	actualPb, ok := msg.(*zond.BeaconBlock)
+	actualPb, ok := msg.(*zond.BeaconBlockCapella)
 	require.Equal(t, true, ok)
 	actualHTR, err := actualPb.HashTreeRoot()
 	require.NoError(t, err)
@@ -318,13 +283,13 @@ func Test_BeaconBlock_AsSignRequestObject(t *testing.T) {
 	pb := hydrateBeaconBlock()
 	expectedHTR, err := pb.HashTreeRoot()
 	require.NoError(t, err)
-	b, err := initBlockFromProtoPhase0(pb)
+	b, err := initBlockFromProtoCapella(pb)
 	require.NoError(t, err)
 	signRequestObj, err := b.AsSignRequestObject()
 	require.NoError(t, err)
-	actualSignRequestObj, ok := signRequestObj.(*validatorpb.SignRequest_Block)
+	actualSignRequestObj, ok := signRequestObj.(*validatorpb.SignRequest_BlockCapella)
 	require.Equal(t, true, ok)
-	actualHTR, err := actualSignRequestObj.Block.HashTreeRoot()
+	actualHTR, err := actualSignRequestObj.BlockCapella.HashTreeRoot()
 	require.NoError(t, err)
 	assert.DeepEqual(t, expectedHTR, actualHTR)
 }
@@ -343,7 +308,7 @@ func Test_BeaconBlockBody_IsNil(t *testing.T) {
 func Test_BeaconBlockBody_RandaoReveal(t *testing.T) {
 	bb := &SignedBeaconBlock{block: &BeaconBlock{body: &BeaconBlockBody{}}}
 	bb.SetRandaoReveal([]byte("randaoreveal"))
-	assert.DeepEqual(t, bytesutil.ToBytes96([]byte("randaoreveal")), bb.Block().Body().RandaoReveal())
+	assert.DeepEqual(t, bytesutil.ToBytes4595([]byte("randaoreveal")), bb.Block().Body().RandaoReveal())
 }
 
 func Test_BeaconBlockBody_Eth1Data(t *testing.T) {
@@ -413,21 +378,12 @@ func Test_BeaconBlockBody_DilithiumToExecutionChanges(t *testing.T) {
 }
 
 func Test_BeaconBlockBody_Execution(t *testing.T) {
-	execution := &pb.ExecutionPayload{BlockNumber: 1}
-	e, err := WrappedExecutionPayload(execution)
-	require.NoError(t, err)
-	bb := &SignedBeaconBlock{version: version.Bellatrix, block: &BeaconBlock{body: &BeaconBlockBody{version: version.Bellatrix}}}
-	require.NoError(t, bb.SetExecution(e))
-	result, err := bb.Block().Body().Execution()
-	require.NoError(t, err)
-	assert.DeepEqual(t, result, e)
-
 	executionCapella := &pb.ExecutionPayloadCapella{BlockNumber: 1}
 	eCapella, err := WrappedExecutionPayloadCapella(executionCapella, 0)
 	require.NoError(t, err)
-	bb = &SignedBeaconBlock{version: version.Capella, block: &BeaconBlock{body: &BeaconBlockBody{version: version.Capella}}}
+	bb := &SignedBeaconBlock{version: version.Capella, block: &BeaconBlock{body: &BeaconBlockBody{version: version.Capella}}}
 	require.NoError(t, bb.SetExecution(eCapella))
-	result, err = bb.Block().Body().Execution()
+	result, err := bb.Block().Body().Execution()
 	require.NoError(t, err)
 	assert.DeepEqual(t, result, eCapella)
 
@@ -439,65 +395,58 @@ func Test_BeaconBlockBody_Execution(t *testing.T) {
 	result, err = bb.Block().Body().Execution()
 	require.NoError(t, err)
 	assert.DeepEqual(t, result, eCapellaHeader)
-
-	executionDeneb := &pb.ExecutionPayloadDeneb{BlockNumber: 1, ExcessBlobGas: 123}
-	eDeneb, err := WrappedExecutionPayloadDeneb(executionDeneb, 0)
-	require.NoError(t, err)
-	bb = &SignedBeaconBlock{version: version.Deneb, block: &BeaconBlock{body: &BeaconBlockBody{version: version.Deneb}}}
-	require.NoError(t, bb.SetExecution(eDeneb))
-	result, err = bb.Block().Body().Execution()
-	require.NoError(t, err)
-	assert.DeepEqual(t, result, eDeneb)
-	gas, err := eDeneb.ExcessBlobGas()
-	require.NoError(t, err)
-	require.DeepEqual(t, gas, uint64(123))
-
-	executionDenebHeader := &pb.ExecutionPayloadHeaderDeneb{BlockNumber: 1, ExcessBlobGas: 223}
-	eDenebHeader, err := WrappedExecutionPayloadHeaderDeneb(executionDenebHeader, 0)
-	require.NoError(t, err)
-	bb = &SignedBeaconBlock{version: version.Deneb, block: &BeaconBlock{version: version.Deneb, body: &BeaconBlockBody{version: version.Deneb, isBlinded: true}}}
-	require.NoError(t, bb.SetExecution(eDenebHeader))
-	result, err = bb.Block().Body().Execution()
-	require.NoError(t, err)
-	assert.DeepEqual(t, result, eDenebHeader)
-	gas, err = eDenebHeader.ExcessBlobGas()
-	require.NoError(t, err)
-	require.DeepEqual(t, gas, uint64(223))
 }
 
 func Test_BeaconBlockBody_HashTreeRoot(t *testing.T) {
 	pb := hydrateBeaconBlockBody()
 	expectedHTR, err := pb.HashTreeRoot()
 	require.NoError(t, err)
-	b, err := initBlockBodyFromProtoPhase0(pb)
+	b, err := initBlockBodyFromProtoCapella(pb)
 	require.NoError(t, err)
 	actualHTR, err := b.HashTreeRoot()
 	require.NoError(t, err)
 	assert.DeepEqual(t, expectedHTR, actualHTR)
 }
 
-func hydrateSignedBeaconBlock() *zond.SignedBeaconBlock {
-	return &zond.SignedBeaconBlock{
-		Signature: make([]byte, dilithium2.CryptoBytes),
+func hydrateSignedBeaconBlock() *zond.SignedBeaconBlockCapella {
+	return &zond.SignedBeaconBlockCapella{
+		Signature: make([]byte, field_params.DilithiumSignatureLength),
 		Block:     hydrateBeaconBlock(),
 	}
 }
 
-func hydrateBeaconBlock() *zond.BeaconBlock {
-	return &zond.BeaconBlock{
+func hydrateBeaconBlock() *zond.BeaconBlockCapella {
+	return &zond.BeaconBlockCapella{
 		ParentRoot: make([]byte, fieldparams.RootLength),
 		StateRoot:  make([]byte, fieldparams.RootLength),
 		Body:       hydrateBeaconBlockBody(),
 	}
 }
 
-func hydrateBeaconBlockBody() *zond.BeaconBlockBody {
-	return &zond.BeaconBlockBody{
-		RandaoReveal: make([]byte, dilithium2.CryptoBytes),
+func hydrateBeaconBlockBody() *zond.BeaconBlockBodyCapella {
+	return &zond.BeaconBlockBodyCapella{
+		RandaoReveal: make([]byte, field_params.DilithiumSignatureLength),
 		Graffiti:     make([]byte, fieldparams.RootLength),
 		Eth1Data: &zond.Eth1Data{
 			DepositRoot: make([]byte, fieldparams.RootLength),
 			BlockHash:   make([]byte, fieldparams.RootLength),
+		},
+		SyncAggregate: &zond.SyncAggregate{
+			SyncCommitteeBits:       make([]byte, 2),
+			SyncCommitteeSignatures: make([][]byte, 0),
+		},
+		ExecutionPayload: &pb.ExecutionPayloadCapella{
+			ParentHash:    make([]byte, fieldparams.RootLength),
+			FeeRecipient:  make([]byte, 20),
+			StateRoot:     make([]byte, fieldparams.RootLength),
+			ReceiptsRoot:  make([]byte, fieldparams.RootLength),
+			LogsBloom:     make([]byte, 256),
+			PrevRandao:    make([]byte, fieldparams.RootLength),
+			ExtraData:     make([]byte, fieldparams.RootLength),
+			BaseFeePerGas: make([]byte, fieldparams.RootLength),
+			BlockHash:     make([]byte, fieldparams.RootLength),
+			Transactions:  make([][]byte, 0),
+			Withdrawals:   make([]*pb.Withdrawal, 0),
 		},
 	}
 }

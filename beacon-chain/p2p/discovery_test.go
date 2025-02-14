@@ -21,22 +21,22 @@ import (
 	"github.com/theQRL/go-zond/p2p/discover"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/scorers"
-	testp2p "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/wrapper"
-	leakybucket "github.com/theQRL/qrysm/v4/container/leaky-bucket"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	prysmNetwork "github.com/theQRL/qrysm/v4/network"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/peerdata"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
+	testp2p "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/wrapper"
+	leakybucket "github.com/theQRL/qrysm/container/leaky-bucket"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	qrysmNetwork "github.com/theQRL/qrysm/network"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/runtime/version"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 var discoveryWaitTime = 1 * time.Second
@@ -46,7 +46,7 @@ func init() {
 }
 
 func createAddrAndPrivKey(t *testing.T) (net.IP, *ecdsa.PrivateKey) {
-	ip, err := prysmNetwork.ExternalIPv4()
+	ip, err := qrysmNetwork.ExternalIPv4()
 	require.NoError(t, err, "Could not get ip")
 	ipAddr := net.ParseIP(ip)
 	temp := t.TempDir()
@@ -214,11 +214,12 @@ func TestStaticPeering_PeersAreAdded(t *testing.T) {
 	exitRoutine <- true
 }
 
+// NOTE(rgeraldes24): this test might fail due to a new IP
 func TestHostIsResolved(t *testing.T) {
 	// As defined in RFC 2606 , example.org is a
 	// reserved example domain name.
 	exampleHost := "example.org"
-	exampleIP := "93.184.216.34"
+	exampleIP := "93.184.215.14"
 
 	s := &Service{
 		cfg: &Config{
@@ -403,9 +404,6 @@ func TestRefreshENR_ForkBoundaries(t *testing.T) {
 				assert.NoError(t, err)
 
 				// Update params
-				cfg := params.BeaconConfig().Copy()
-				cfg.AltairForkEpoch = 5
-				params.OverrideBeaconConfig(cfg)
 				params.BeaconConfig().InitializeForkSchedule()
 
 				s.dv5Listener = listener
@@ -434,9 +432,6 @@ func TestRefreshENR_ForkBoundaries(t *testing.T) {
 				assert.NoError(t, err)
 
 				// Update params
-				cfg := params.BeaconConfig().Copy()
-				cfg.AltairForkEpoch = 5
-				params.OverrideBeaconConfig(cfg)
 				params.BeaconConfig().InitializeForkSchedule()
 
 				s.dv5Listener = listener
@@ -464,9 +459,6 @@ func TestRefreshENR_ForkBoundaries(t *testing.T) {
 				assert.NoError(t, err)
 
 				// Update params
-				cfg := params.BeaconConfig().Copy()
-				cfg.AltairForkEpoch = 5
-				params.OverrideBeaconConfig(cfg)
 				params.BeaconConfig().InitializeForkSchedule()
 
 				s.dv5Listener = listener

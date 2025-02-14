@@ -3,7 +3,7 @@ package slice
 import (
 	"strings"
 
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 // SubsetUint64 returns true if the first array is

@@ -3,8 +3,8 @@ package genesis_test
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/genesis"
-	"github.com/theQRL/qrysm/v4/config/params"
+	"github.com/theQRL/qrysm/beacon-chain/state/genesis"
+	"github.com/theQRL/qrysm/config/params"
 )
 
 func TestGenesisState(t *testing.T) {

@@ -3,7 +3,7 @@ load("@qrysm//tools/go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["cmd.go"],
-    importpath = "github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/deposit/generatedilithiumtoexecutionchange",
+    importpath = "github.com/theQRL/qrysm/cmd/staking-deposit-cli/deposit/generatedilithiumtoexecutionchange",
     visibility = ["//visibility:public"],
     deps = [
         "//cmd/staking-deposit-cli/stakingdeposit:go_default_library",

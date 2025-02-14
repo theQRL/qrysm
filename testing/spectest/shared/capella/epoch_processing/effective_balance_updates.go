@@ -4,10 +4,10 @@ import (
 	"path"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/epoch"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/spectest/utils"
+	"github.com/theQRL/qrysm/beacon-chain/core/epoch"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/spectest/utils"
 )
 
 // RunEffectiveBalanceUpdatesTests executes "epoch_processing/effective_balance_updates" tests.

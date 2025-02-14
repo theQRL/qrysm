@@ -9,37 +9,34 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
-	blockfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/block"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/features"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	consensusblocks "github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/core/feed"
+	blockfeed "github.com/theQRL/qrysm/beacon-chain/core/feed/block"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/config/params"
+	consensusblocks "github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/monitoring/tracing"
+	qrysmTime "github.com/theQRL/qrysm/time"
+	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
 
 var (
-	ErrOptimisticParent    = errors.New("parent of the block is optimistic")
-	errRejectCommitmentLen = errors.New("[REJECT] The length of KZG commitments is less than or equal to the limitation defined in Consensus Layer")
+	ErrOptimisticParent = errors.New("parent of the block is optimistic")
 )
 
 // validateBeaconBlockPubSub checks that the incoming block has a valid BLS signature.
 // Blocks that have already been seen are ignored. If the BLS signature is any valid signature,
 // this method rebroadcasts the message.
 func (s *Service) validateBeaconBlockPubSub(ctx context.Context, pid peer.ID, msg *pubsub.Message) (pubsub.ValidationResult, error) {
-	receivedTime := prysmTime.Now()
+	receivedTime := qrysmTime.Now()
 	// Validation runs on publish (not just subscriptions), so we should approve any message from
 	// ourselves.
 	if pid == s.cfg.p2p.PeerID() {
@@ -92,10 +89,6 @@ func (s *Service) validateBeaconBlockPubSub(ctx context.Context, pid peer.ID, ms
 			}
 			s.cfg.slasherBlockHeadersFeed.Send(blockHeader)
 		}()
-	}
-
-	if err := validateDenebBeaconBlock(blk.Block()); err != nil {
-		return pubsub.ValidationReject, err
 	}
 
 	// Verify the block is the first block received for the proposer for the slot.
@@ -209,7 +202,7 @@ func (s *Service) validateBeaconBlockPubSub(ctx context.Context, pid peer.ID, ms
 	graffiti := blk.Block().Body().Graffiti()
 
 	sinceSlotStartTime := receivedTime.Sub(startTime)
-	validationTime := prysmTime.Now().Sub(receivedTime)
+	validationTime := qrysmTime.Now().Sub(receivedTime)
 	log.WithFields(logrus.Fields{
 		"blockSlot":          blk.Block().Slot(),
 		"sinceSlotStartTime": sinceSlotStartTime,
@@ -227,11 +220,6 @@ func (s *Service) validateBeaconBlockPubSub(ctx context.Context, pid peer.ID, ms
 func (s *Service) validateBeaconBlock(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock, blockRoot [32]byte) error {
 	ctx, span := trace.StartSpan(ctx, "sync.validateBeaconBlock")
 	defer span.End()
-
-	if err := validateDenebBeaconBlock(blk.Block()); err != nil {
-		s.setBadBlock(ctx, blockRoot)
-		return err
-	}
 
 	if !s.cfg.chain.InForkchoice(blk.Block().ParentRoot()) {
 		s.setBadBlock(ctx, blockRoot)
@@ -270,22 +258,6 @@ func (s *Service) validateBeaconBlock(ctx context.Context, blk interfaces.ReadOn
 		// for other kinds of errors, set this block as a bad block.
 		s.setBadBlock(ctx, blockRoot)
 		return err
-	}
-	return nil
-}
-
-func validateDenebBeaconBlock(blk interfaces.ReadOnlyBeaconBlock) error {
-	if blk.Version() < version.Deneb {
-		return nil
-	}
-	commits, err := blk.Body().BlobKzgCommitments()
-	if err != nil {
-		return errors.New("unable to read commitments from deneb block")
-	}
-	// [REJECT] The length of KZG commitments is less than or equal to the limitation defined in Consensus Layer
-	// -- i.e. validate that len(body.signed_beacon_block.message.blob_kzg_commitments) <= MAX_BLOBS_PER_BLOCK
-	if len(commits) > fieldparams.MaxBlobsPerBlock {
-		return errors.Wrapf(errRejectCommitmentLen, "%d > %d", len(commits), fieldparams.MaxBlobsPerBlock)
 	}
 	return nil
 }
@@ -385,7 +357,7 @@ func captureArrivalTimeMetric(genesisTime uint64, currentSlot primitives.Slot) e
 	if err != nil {
 		return err
 	}
-	ms := prysmTime.Now().Sub(startTime) / time.Millisecond
+	ms := qrysmTime.Now().Sub(startTime) / time.Millisecond
 	arrivalBlockPropagationHistogram.Observe(float64(ms))
 	arrivalBlockPropagationGauge.Set(float64(ms))
 

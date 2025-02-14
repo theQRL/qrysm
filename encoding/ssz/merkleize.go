@@ -1,8 +1,8 @@
 package ssz
 
 import (
-	"github.com/theQRL/qrysm/v4/container/trie"
-	"github.com/theQRL/qrysm/v4/crypto/hash/htr"
+	"github.com/theQRL/qrysm/container/trie"
+	"github.com/theQRL/qrysm/crypto/hash/htr"
 )
 
 // Merkleize.go is mostly a directly copy of the same filename from

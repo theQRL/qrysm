@@ -4,11 +4,10 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/validator/accounts"
-	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	remote_web3signer "github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer"
+	"github.com/theQRL/qrysm/validator/accounts"
+	"github.com/theQRL/qrysm/validator/accounts/iface"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/validator/keymanager"
 	"github.com/urfave/cli/v2"
 )
 
@@ -29,6 +28,7 @@ func walletWithKeymanager(c *cli.Context) (*wallet.Wallet, keymanager.IKeymanage
 	return w, km, nil
 }
 
+/*
 func walletWithWeb3SignerKeymanager(c *cli.Context, config *remote_web3signer.SetupConfig) (*wallet.Wallet, keymanager.IKeymanager, error) {
 	w := wallet.NewWalletForWeb3Signer()
 	km, err := w.InitializeKeymanager(c.Context, iface.InitKeymanagerConfig{ListenForChanges: false, Web3SignerConfig: config})
@@ -37,3 +37,4 @@ func walletWithWeb3SignerKeymanager(c *cli.Context, config *remote_web3signer.Se
 	}
 	return w, km, nil
 }
+*/

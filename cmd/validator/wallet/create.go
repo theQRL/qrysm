@@ -2,20 +2,19 @@ package wallet
 
 import (
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/manifoldco/promptui"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	"github.com/theQRL/qrysm/v4/io/prompt"
-	"github.com/theQRL/qrysm/v4/validator/accounts"
-	"github.com/theQRL/qrysm/v4/validator/accounts/userprompt"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	"github.com/theQRL/qrysm/io/prompt"
+	"github.com/theQRL/qrysm/validator/accounts"
+	"github.com/theQRL/qrysm/validator/accounts/userprompt"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/validator/keymanager"
 	"github.com/urfave/cli/v2"
 )
 
+/*
 const (
 	// #nosec G101 -- Not sensitive data
 	newMnemonicPassphraseYesNoText = "(Advanced) Do you want to setup a '25th word' passphrase for your mnemonic? [y/n]"
@@ -23,6 +22,7 @@ const (
 	newMnemonicPassphrasePromptText = "(Advanced) Setup a passphrase '25th word' for your mnemonic " +
 		"(WARNING: You cannot recover your keys from your mnemonic if you forget this passphrase!)"
 )
+*/
 
 func walletCreate(c *cli.Context) error {
 	keymanagerKind, err := inputKeymanagerKind(c)
@@ -76,50 +76,52 @@ func ConstructCLIManagerOpts(cliCtx *cli.Context, keymanagerKind keymanager.Kind
 	cliOpts = append(cliOpts, accounts.WithWalletDir(walletDir))
 	cliOpts = append(cliOpts, accounts.WithWalletPassword(walletPassword))
 	cliOpts = append(cliOpts, accounts.WithKeymanagerType(keymanagerKind))
-	cliOpts = append(cliOpts, accounts.WithSkipMnemonicConfirm(cliCtx.Bool(flags.SkipDepositConfirmationFlag.Name)))
-	if cliCtx.IsSet(flags.MnemonicLanguageFlag.Name) {
-		cliOpts = append(cliOpts, accounts.WithMnemonicLanguage(cliCtx.String(flags.MnemonicLanguageFlag.Name)))
-	}
+	// cliOpts = append(cliOpts, accounts.WithSkipMnemonicConfirm(cliCtx.Bool(flags.SkipDepositConfirmationFlag.Name)))
+	// if cliCtx.IsSet(flags.MnemonicLanguageFlag.Name) {
+	// 	cliOpts = append(cliOpts, accounts.WithMnemonicLanguage(cliCtx.String(flags.MnemonicLanguageFlag.Name)))
+	// }
 
-	skipMnemonic25thWord := cliCtx.IsSet(flags.SkipMnemonic25thWordCheckFlag.Name)
-	has25thWordFile := cliCtx.IsSet(flags.Mnemonic25thWordFileFlag.Name)
-	if keymanagerKind == keymanager.Derived {
-		numAccounts, err := inputNumAccounts(cliCtx)
-		if err != nil {
-			return []accounts.Option{}, errors.Wrap(err, "could not get number of accounts to generate")
+	// skipMnemonic25thWord := cliCtx.IsSet(flags.SkipMnemonic25thWordCheckFlag.Name)
+	// has25thWordFile := cliCtx.IsSet(flags.Mnemonic25thWordFileFlag.Name)
+	/*
+		if keymanagerKind == keymanager.Derived {
+			numAccounts, err := inputNumAccounts(cliCtx)
+			if err != nil {
+				return []accounts.Option{}, errors.Wrap(err, "could not get number of accounts to generate")
+			}
+			cliOpts = append(cliOpts, accounts.WithNumAccounts(int(numAccounts)))
 		}
-		cliOpts = append(cliOpts, accounts.WithNumAccounts(int(numAccounts)))
-	}
-	if keymanagerKind == keymanager.Derived && !skipMnemonic25thWord && !has25thWordFile {
-		resp, err := prompt.ValidatePrompt(
-			os.Stdin, newMnemonicPassphraseYesNoText, prompt.ValidateYesOrNo,
-		)
-		if err != nil {
-			return []accounts.Option{}, errors.Wrap(err, "could not validate choice")
-		}
-		if strings.EqualFold(resp, "y") {
-			mnemonicPassphrase, err := prompt.InputPassword(
-				cliCtx,
-				flags.Mnemonic25thWordFileFlag,
-				newMnemonicPassphrasePromptText,
-				"Confirm mnemonic passphrase",
-				true, /* Should confirm password */
-				func(input string) error {
-					if strings.TrimSpace(input) == "" {
-						return errors.New("input cannot be empty")
-					}
-					return nil
-				},
+		if keymanagerKind == keymanager.Derived && !skipMnemonic25thWord && !has25thWordFile {
+			resp, err := prompt.ValidatePrompt(
+				os.Stdin, newMnemonicPassphraseYesNoText, prompt.ValidateYesOrNo,
 			)
 			if err != nil {
-				return []accounts.Option{}, err
+				return []accounts.Option{}, errors.Wrap(err, "could not validate choice")
 			}
-			cliOpts = append(cliOpts, accounts.WithMnemonic25thWord(mnemonicPassphrase))
+			if strings.EqualFold(resp, "y") {
+				mnemonicPassphrase, err := prompt.InputPassword(
+					cliCtx,
+					flags.Mnemonic25thWordFileFlag,
+					newMnemonicPassphrasePromptText,
+					"Confirm mnemonic passphrase",
+					true,
+					func(input string) error {
+						if strings.TrimSpace(input) == "" {
+							return errors.New("input cannot be empty")
+						}
+						return nil
+					},
+				)
+				if err != nil {
+					return []accounts.Option{}, err
+				}
+				cliOpts = append(cliOpts, accounts.WithMnemonic25thWord(mnemonicPassphrase))
+			}
 		}
-	}
-	if keymanagerKind == keymanager.Web3Signer {
-		return []accounts.Option{}, errors.New("web3signer keymanager does not require persistent wallets.")
-	}
+		if keymanagerKind == keymanager.Web3Signer {
+			return []accounts.Option{}, errors.New("web3signer keymanager does not require persistent wallets.")
+		}
+	*/
 	return cliOpts, nil
 }
 
@@ -131,8 +133,8 @@ func inputKeymanagerKind(cliCtx *cli.Context) (keymanager.Kind, error) {
 		Label: "Select a type of wallet",
 		Items: []string{
 			wallet.KeymanagerKindSelections[keymanager.Local],
-			wallet.KeymanagerKindSelections[keymanager.Derived],
-			wallet.KeymanagerKindSelections[keymanager.Web3Signer],
+			// wallet.KeymanagerKindSelections[keymanager.Derived],
+			// wallet.KeymanagerKindSelections[keymanager.Web3Signer],
 		},
 	}
 	selection, _, err := promptSelect.Run()

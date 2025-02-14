@@ -10,18 +10,18 @@ import (
 	"github.com/paulbellamy/ratecounter"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/async/abool"
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	blockfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/block"
-	statefeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/state"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/runtime"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/async/abool"
+	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	blockfeed "github.com/theQRL/qrysm/beacon-chain/core/feed/block"
+	statefeed "github.com/theQRL/qrysm/beacon-chain/core/feed/state"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/runtime"
+	qrysmTime "github.com/theQRL/qrysm/time"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 var _ runtime.Service = (*Service)(nil)
@@ -95,7 +95,7 @@ func (s *Service) Start() {
 		log.WithField("genesisTime", gt).Info("Due to number of peers required for sync being set at 0, entering regular sync immediately.")
 		return
 	}
-	if gt.After(prysmTime.Now()) {
+	if gt.After(qrysmTime.Now()) {
 		s.markSynced()
 		log.WithField("genesisTime", gt).Info("Genesis time has not arrived - not syncing")
 		return
@@ -168,6 +168,7 @@ func (s *Service) Resync() error {
 	genesis := time.Unix(int64(headState.GenesisTime()), 0) // lint:ignore uintcast -- Genesis time will not exceed int64 in your lifetime.
 
 	s.waitForMinimumPeers()
+
 	if err = s.roundRobinSync(genesis); err != nil {
 		log = log.WithError(err)
 	}

@@ -3,12 +3,12 @@ package attestations
 import (
 	"context"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations/kv"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/operations/attestations/kv"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
-// Pool defines the necessary methods for Prysm attestations pool to serve
+// Pool defines the necessary methods for Qrysm attestations pool to serve
 // fork choice and validators. In the current design, aggregated attestations
 // are used by proposer actor. Unaggregated attestations are used by
 // aggregator actor.

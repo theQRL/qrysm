@@ -5,13 +5,12 @@ import (
 	"testing"
 
 	fuzz "github.com/google/gofuzz"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	pb "github.com/theQRL/qrysm/v4/proto/testing"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	pb "github.com/theQRL/qrysm/proto/testing"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestHash(t *testing.T) {
@@ -95,7 +94,7 @@ func BenchmarkHashProto(b *testing.B) {
 			Source:          nil,
 			Target:          nil,
 		},
-		Signature: bls.NewAggregateSignature().Marshal(),
+		Signatures: nil,
 	}
 
 	for i := 0; i < b.N; i++ {

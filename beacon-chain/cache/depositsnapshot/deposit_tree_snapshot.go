@@ -1,11 +1,11 @@
 package depositsnapshot
 
 import (
-	"github.com/theQRL/qrysm/v4/container/trie"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
+	"github.com/theQRL/qrysm/container/trie"
+	"github.com/theQRL/qrysm/crypto/hash"
 
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	protodb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	protodb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // DepositTreeSnapshot represents the data used to create a deposit tree given a snapshot.

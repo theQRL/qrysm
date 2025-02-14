@@ -14,8 +14,8 @@ import (
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/pkg/errors"
 	"github.com/rs/cors"
-	"github.com/theQRL/qrysm/v4/api/gateway/apimiddleware"
-	"github.com/theQRL/qrysm/v4/runtime"
+	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
+	"github.com/theQRL/qrysm/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
@@ -178,7 +178,7 @@ func (g *Gateway) corsMiddleware(h http.Handler) http.Handler {
 	return c.Handler(h)
 }
 
-const swaggerDir = "proto/prysm/v1alpha1/"
+const swaggerDir = "proto/qrysm/v1alpha1/"
 
 // SwaggerServer returns swagger specification files located under "/swagger/"
 func SwaggerServer() http.HandlerFunc {

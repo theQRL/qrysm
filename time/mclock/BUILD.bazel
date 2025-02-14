@@ -3,7 +3,7 @@ load("@qrysm//tools/go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["mclock.go"],
-    importpath = "github.com/theQRL/qrysm/v4/time/mclock",
+    importpath = "github.com/theQRL/qrysm/time/mclock",
     visibility = ["//visibility:public"],
     deps = ["@com_github_aristanetworks_goarista//monotime:go_default_library"],
 )

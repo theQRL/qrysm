@@ -3,7 +3,7 @@ package shadowpredecl
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/build/bazel"
+	"github.com/theQRL/qrysm/build/bazel"
 	"golang.org/x/tools/go/analysis/analysistest"
 )
 

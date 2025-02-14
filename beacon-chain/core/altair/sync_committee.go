@@ -7,17 +7,17 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	coreTime "github.com/theQRL/qrysm/v4/beacon-chain/core/time"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/math"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	coreTime "github.com/theQRL/qrysm/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/math"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 const maxRandomByte = uint64(1<<8 - 1)
@@ -69,13 +69,8 @@ func NextSyncCommittee(ctx context.Context, s state.BeaconState) (*zondpb.SyncCo
 		p := s.PubkeyAtIndex(index)
 		pubkeys[i] = p[:]
 	}
-	appendedPubKeys := make([]byte, 0, len(pubkeys))
-	for _, pubKey := range pubkeys {
-		appendedPubKeys = append(appendedPubKeys, pubKey...)
-	}
 	return &zondpb.SyncCommittee{
-		Pubkeys:         pubkeys,
-		AggregatePubkey: appendedPubKeys,
+		Pubkeys: pubkeys,
 	}, nil
 }
 
@@ -183,7 +178,7 @@ func SyncSubCommitteePubkeys(syncCommittee *zondpb.SyncCommittee, subComIdx prim
 //	modulo = max(1, SYNC_COMMITTEE_SIZE // SYNC_COMMITTEE_SUBNET_COUNT // TARGET_AGGREGATORS_PER_SYNC_SUBCOMMITTEE)
 //	return bytes_to_uint64(hash(signature)[0:8]) % modulo == 0
 func IsSyncCommitteeAggregator(sig []byte) (bool, error) {
-	if len(sig) != dilithium2.CryptoBytes {
+	if len(sig) != field_params.DilithiumSignatureLength {
 		return false, errors.New("incorrect sig length")
 	}
 

@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestFeedPanics(t *testing.T) {

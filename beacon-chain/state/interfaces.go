@@ -1,5 +1,5 @@
 // Package state defines the actual beacon state interface used
-// by a Prysm beacon node, also containing useful, scoped interfaces such as
+// by a Qrysm beacon node, also containing useful, scoped interfaces such as
 // a ReadOnlyState and WriteOnlyBeaconState.
 package state
 
@@ -8,11 +8,11 @@ import (
 	"encoding/json"
 
 	"github.com/theQRL/go-bitfield"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // BeaconState has read and write access to beacon state methods.
@@ -50,7 +50,6 @@ type ReadOnlyBeaconState interface {
 	ReadOnlyValidators
 	ReadOnlyBalances
 	ReadOnlyCheckpoint
-	ReadOnlyAttestations
 	ReadOnlyWithdrawals
 	ReadOnlyParticipation
 	ReadOnlyInactivity
@@ -81,7 +80,6 @@ type WriteOnlyBeaconState interface {
 	WriteOnlyValidators
 	WriteOnlyBalances
 	WriteOnlyCheckpoint
-	WriteOnlyAttestations
 	WriteOnlyParticipation
 	WriteOnlyInactivity
 	WriteOnlySyncCommittee
@@ -93,7 +91,6 @@ type WriteOnlyBeaconState interface {
 	SetHistoricalRoots(val [][]byte) error
 	SetSlashings(val []uint64) error
 	UpdateSlashingsAtIndex(idx, val uint64) error
-	AppendHistoricalRoots(root [32]byte) error
 	AppendHistoricalSummaries(*zondpb.HistoricalSummary) error
 	SetLatestExecutionPayloadHeader(payload interfaces.ExecutionData) error
 	SetNextWithdrawalIndex(i uint64) error
@@ -107,7 +104,7 @@ type ReadOnlyValidator interface {
 	ActivationEpoch() primitives.Epoch
 	WithdrawableEpoch() primitives.Epoch
 	ExitEpoch() primitives.Epoch
-	PublicKey() [dilithium2.CryptoPublicKeyBytes]byte
+	PublicKey() [field_params.DilithiumPubkeyLength]byte
 	WithdrawalCredentials() []byte
 	Slashed() bool
 	IsNil() bool
@@ -118,8 +115,8 @@ type ReadOnlyValidators interface {
 	Validators() []*zondpb.Validator
 	ValidatorAtIndex(idx primitives.ValidatorIndex) (*zondpb.Validator, error)
 	ValidatorAtIndexReadOnly(idx primitives.ValidatorIndex) (ReadOnlyValidator, error)
-	ValidatorIndexByPubkey(key [dilithium2.CryptoPublicKeyBytes]byte) (primitives.ValidatorIndex, bool)
-	PubkeyAtIndex(idx primitives.ValidatorIndex) [dilithium2.CryptoPublicKeyBytes]byte
+	ValidatorIndexByPubkey(key [field_params.DilithiumPubkeyLength]byte) (primitives.ValidatorIndex, bool)
+	PubkeyAtIndex(idx primitives.ValidatorIndex) [field_params.DilithiumPubkeyLength]byte
 	NumValidators() int
 	ReadFromEveryValidator(f func(idx int, val ReadOnlyValidator) error) error
 }
@@ -167,12 +164,6 @@ type ReadOnlyEth1Data interface {
 	Eth1Data() *zondpb.Eth1Data
 	Eth1DataVotes() []*zondpb.Eth1Data
 	Eth1DepositIndex() uint64
-}
-
-// ReadOnlyAttestations defines a struct which only has read access to attestations methods.
-type ReadOnlyAttestations interface {
-	PreviousEpochAttestations() ([]*zondpb.PendingAttestation, error)
-	CurrentEpochAttestations() ([]*zondpb.PendingAttestation, error)
 }
 
 // ReadOnlyWithdrawals defines a struct which only has read access to withdrawal methods.
@@ -246,15 +237,6 @@ type WriteOnlyCheckpoint interface {
 	SetPreviousJustifiedCheckpoint(val *zondpb.Checkpoint) error
 	SetCurrentJustifiedCheckpoint(val *zondpb.Checkpoint) error
 	SetJustificationBits(val bitfield.Bitvector4) error
-}
-
-// WriteOnlyAttestations defines a struct which only has write access to attestations methods.
-type WriteOnlyAttestations interface {
-	AppendCurrentEpochAttestations(val *zondpb.PendingAttestation) error
-	AppendPreviousEpochAttestations(val *zondpb.PendingAttestation) error
-	SetPreviousEpochAttestations([]*zondpb.PendingAttestation) error
-	SetCurrentEpochAttestations([]*zondpb.PendingAttestation) error
-	RotateAttestations() error
 }
 
 // WriteOnlyParticipation defines a struct which only has write access to participation methods.

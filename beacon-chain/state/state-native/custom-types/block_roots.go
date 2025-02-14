@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	fssz "github.com/prysmaticlabs/fastssz"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 )
 
 var _ fssz.HashRoot = (BlockRoots)([][32]byte{})

@@ -12,17 +12,17 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/go-zond/p2p/enr"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/scorers"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/consensus-types/wrapper"
-	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/peerdata"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/consensus-types/wrapper"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	zondpb "github.com/theQRL/qrysm/proto/zond/v1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestStatus(t *testing.T) {
@@ -1048,7 +1048,7 @@ func TestStatus_BestNonFinalized(t *testing.T) {
 		},
 	})
 
-	peerSlots := []primitives.Slot{32, 32, 32, 32, 235, 233, 258, 268, 270}
+	peerSlots := []primitives.Slot{128, 128, 128, 128, 939, 931, 1031, 1071, 1079}
 	for i, headSlot := range peerSlots {
 		p.Add(new(enr.Record), peer.ID(rune(i)), nil, network.DirOutbound)
 		p.SetConnectionState(peer.ID(rune(i)), peers.PeerConnected)
@@ -1108,7 +1108,7 @@ func TestInbound(t *testing.T) {
 
 	result := p.Inbound()
 	require.Equal(t, 1, len(result))
-	assert.Equal(t, inbound.Pretty(), result[0].Pretty())
+	assert.Equal(t, inbound.String(), result[0].String())
 }
 
 func TestOutbound(t *testing.T) {
@@ -1127,7 +1127,7 @@ func TestOutbound(t *testing.T) {
 
 	result := p.Outbound()
 	require.Equal(t, 1, len(result))
-	assert.Equal(t, outbound.Pretty(), result[0].Pretty())
+	assert.Equal(t, outbound.String(), result[0].String())
 }
 
 // addPeer is a helper to add a peer with a given connection state)

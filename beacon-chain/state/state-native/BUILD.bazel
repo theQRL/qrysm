@@ -5,7 +5,6 @@ go_library(
     srcs = [
         "doc.go",
         "error.go",
-        "getters_attestation.go",
         "getters_block.go",
         "getters_checkpoint.go",
         "getters_eth1.go",
@@ -21,7 +20,6 @@ go_library(
         "multi_value_slices.go",
         "proofs.go",
         "readonly_validator.go",
-        "setters_attestation.go",
         "setters_block.go",
         "setters_checkpoint.go",
         "setters_eth1.go",
@@ -41,7 +39,7 @@ go_library(
         "//config:mainnet": ["beacon_state_mainnet.go"],
         "//config:minimal": ["beacon_state_minimal.go"],
     }),
-    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native",
+    importpath = "github.com/theQRL/qrysm/beacon-chain/state/state-native",
     visibility = ["//visibility:public"],
     deps = [
         "//beacon-chain/core/time:go_default_library",
@@ -64,7 +62,7 @@ go_library(
         "//encoding/ssz:go_default_library",
         "//math:go_default_library",
         "//proto/engine/v1:go_default_library",
-        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
         "//runtime/version:go_default_library",
         "//time/slots:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
@@ -81,7 +79,6 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = [
-        "getters_attestation_test.go",
         "getters_block_test.go",
         "getters_checkpoint_test.go",
         "getters_participation_test.go",
@@ -93,7 +90,6 @@ go_test(
         "proofs_test.go",
         "readonly_validator_test.go",
         "references_test.go",
-        "setters_attestation_test.go",
         "setters_eth1_test.go",
         "setters_misc_test.go",
         "setters_participation_test.go",
@@ -121,7 +117,7 @@ go_test(
         "//crypto/rand:go_default_library",
         "//encoding/bytesutil:go_default_library",
         "//proto/engine/v1:go_default_library",
-        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
         "//runtime/interop:go_default_library",
         "//runtime/version:go_default_library",
         "//testing/assert:go_default_library",

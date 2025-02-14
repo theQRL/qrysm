@@ -6,13 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/hash"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmTime "github.com/theQRL/qrysm/time"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 var (
@@ -146,7 +145,7 @@ func ValidateAttestationTime(attSlot primitives.Slot, genesisTime time.Time, clo
 	// so the upper bounds is set to now + clockDisparity(SECONDS_PER_SLOT * 2).
 	// But when sending an attestation, it should not be in future slot.
 	// so the upper bounds is set to now + clockDisparity(MAXIMUM_GOSSIP_CLOCK_DISPARITY).
-	upperBounds := prysmTime.Now().Add(clockDisparity)
+	upperBounds := qrysmTime.Now().Add(clockDisparity)
 
 	// An attestation cannot be older than the current slot - attestation propagation slot range
 	// with a minor tolerance for peer clock disparity.
@@ -172,41 +171,17 @@ func ValidateAttestationTime(attSlot primitives.Slot, genesisTime time.Time, clo
 		return attError
 	}
 
-	attEpoch := slots.ToEpoch(attSlot)
-	if attEpoch < params.BeaconConfig().DenebForkEpoch {
-		if attTime.Before(lowerBounds) {
-			attReceivedTooLateCount.Inc()
-			return errors.Join(ErrTooLate, attError)
-		}
-		return nil
-	}
-
-	// EIP-7045: Starting in Deneb, allow any attestations from the current or previous epoch.
-
-	currentEpoch := slots.ToEpoch(currentSlot)
-	prevEpoch, err := currentEpoch.SafeSub(1)
-	if err != nil {
-		log.WithError(err).Debug("Ignoring underflow for a deneb attestation inclusion check in epoch 0")
-		prevEpoch = 0
-	}
-	attSlotEpoch := slots.ToEpoch(attSlot)
-	if attSlotEpoch != currentEpoch && attSlotEpoch != prevEpoch {
-		attError = fmt.Errorf(
-			"attestation epoch %d not within current epoch %d or previous epoch %d",
-			attSlot/params.BeaconConfig().SlotsPerEpoch,
-			currentEpoch,
-			prevEpoch,
-		)
+	if attTime.Before(lowerBounds) {
+		attReceivedTooLateCount.Inc()
 		return errors.Join(ErrTooLate, attError)
 	}
-
 	return nil
 }
 
 // VerifyCheckpointEpoch is within current epoch and previous epoch
 // with respect to current time. Returns true if it's within, false if it's not.
 func VerifyCheckpointEpoch(c *zondpb.Checkpoint, genesis time.Time) bool {
-	now := uint64(prysmTime.Now().Unix())
+	now := uint64(qrysmTime.Now().Unix())
 	genesisTime := uint64(genesis.Unix())
 	currentSlot := primitives.Slot((now - genesisTime) / params.BeaconConfig().SecondsPerSlot)
 	currentEpoch := slots.ToEpoch(currentSlot)

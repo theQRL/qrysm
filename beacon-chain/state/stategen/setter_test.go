@@ -5,13 +5,13 @@ import (
 	"testing"
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	testDB "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	doublylinkedtree "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	testDB "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestSaveState_HotStateCanBeSaved(t *testing.T) {
@@ -20,7 +20,7 @@ func TestSaveState_HotStateCanBeSaved(t *testing.T) {
 
 	service := New(beaconDB, doublylinkedtree.New())
 	service.slotsPerArchivedPoint = 1
-	beaconState, _ := util.DeterministicGenesisState(t, 32)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	// This goes to hot section, verify it can save on epoch boundary.
 	require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch))
 
@@ -41,7 +41,7 @@ func TestSaveState_HotStateCached(t *testing.T) {
 
 	service := New(beaconDB, doublylinkedtree.New())
 	service.slotsPerArchivedPoint = 1
-	beaconState, _ := util.DeterministicGenesisState(t, 32)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch))
 
 	// Cache the state prior.
@@ -60,7 +60,7 @@ func TestState_ForceCheckpoint_SavesStateToDatabase(t *testing.T) {
 	beaconDB := testDB.SetupDB(t)
 
 	svc := New(beaconDB, doublylinkedtree.New())
-	beaconState, _ := util.DeterministicGenesisState(t, 32)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch))
 
 	r := [32]byte{'a'}
@@ -80,7 +80,7 @@ func TestSaveState_Alreadyhas(t *testing.T) {
 	beaconDB := testDB.SetupDB(t)
 	service := New(beaconDB, doublylinkedtree.New())
 
-	beaconState, _ := util.DeterministicGenesisState(t, 32)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch))
 	r := [32]byte{'A'}
 
@@ -99,7 +99,7 @@ func TestSaveState_CanSaveOnEpochBoundary(t *testing.T) {
 	beaconDB := testDB.SetupDB(t)
 	service := New(beaconDB, doublylinkedtree.New())
 
-	beaconState, _ := util.DeterministicGenesisState(t, 32)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch))
 	r := [32]byte{'A'}
 
@@ -120,10 +120,10 @@ func TestSaveState_NoSaveNotEpochBoundary(t *testing.T) {
 	beaconDB := testDB.SetupDB(t)
 	service := New(beaconDB, doublylinkedtree.New())
 
-	beaconState, _ := util.DeterministicGenesisState(t, 32)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch-1))
 	r := [32]byte{'A'}
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	util.SaveBlock(t, ctx, beaconDB, b)
 	gRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -143,19 +143,19 @@ func TestSaveState_RecoverForEpochBoundary(t *testing.T) {
 	beaconDB := testDB.SetupDB(t)
 	service := New(beaconDB, doublylinkedtree.New())
 
-	beaconState, _ := util.DeterministicGenesisState(t, 32)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch-1))
 	r := [32]byte{'A'}
 	boundaryRoot := [32]byte{'B'}
 	require.NoError(t, beaconState.UpdateBlockRootAtIndex(0, boundaryRoot))
 
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	util.SaveBlock(t, ctx, beaconDB, b)
 	gRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, gRoot))
 	// Save boundary state to the hot state cache.
-	boundaryState, _ := util.DeterministicGenesisState(t, 32)
+	boundaryState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	service.hotStateCache.put(boundaryRoot, boundaryState)
 	require.NoError(t, service.SaveState(ctx, r, beaconState))
 
@@ -172,7 +172,7 @@ func TestSaveState_CanSaveHotStateToDB(t *testing.T) {
 	beaconDB := testDB.SetupDB(t)
 	service := New(beaconDB, doublylinkedtree.New())
 	service.EnableSaveHotStateToDB(ctx)
-	beaconState, _ := util.DeterministicGenesisState(t, 32)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 32)
 	require.NoError(t, beaconState.SetSlot(defaultHotStateDBInterval))
 
 	r := [32]byte{'A'}
@@ -211,7 +211,7 @@ func TestEnableSaveHotStateToDB_Disabled(t *testing.T) {
 	beaconDB := testDB.SetupDB(t)
 	service := New(beaconDB, doublylinkedtree.New())
 	service.saveHotStateDB.enabled = true
-	b := util.NewBeaconBlock()
+	b := util.NewBeaconBlockCapella()
 	util.SaveBlock(t, ctx, beaconDB, b)
 	r, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)

@@ -7,13 +7,13 @@ import (
 	"sync"
 	"time"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	validatorserviceconfig "github.com/theQRL/qrysm/v4/config/validator/service"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
-	iface2 "github.com/theQRL/qrysm/v4/validator/client/iface"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	validatorserviceconfig "github.com/theQRL/qrysm/config/validator/service"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/validator/accounts/iface"
+	iface2 "github.com/theQRL/qrysm/validator/client/iface"
+	"github.com/theQRL/qrysm/validator/keymanager"
 )
 
 // Wallet contains an in-memory, simulated wallet implementation.
@@ -107,7 +107,7 @@ func (_ *MockValidator) WaitForSync(_ context.Context) error {
 	panic("implement me")
 }
 
-func (_ *MockValidator) WaitForActivation(_ context.Context, _ chan [][dilithium2.CryptoPublicKeyBytes]byte) error {
+func (_ *MockValidator) WaitForActivation(_ context.Context, _ chan [][field_params.DilithiumPubkeyLength]byte) error {
 	panic("implement me")
 }
 
@@ -131,27 +131,27 @@ func (_ *MockValidator) UpdateDuties(_ context.Context, _ primitives.Slot) error
 	panic("implement me")
 }
 
-func (_ *MockValidator) RolesAt(_ context.Context, _ primitives.Slot) (map[[dilithium2.CryptoPublicKeyBytes]byte][]iface2.ValidatorRole, error) {
+func (_ *MockValidator) RolesAt(_ context.Context, _ primitives.Slot) (map[[field_params.DilithiumPubkeyLength]byte][]iface2.ValidatorRole, error) {
 	panic("implement me")
 }
 
-func (_ *MockValidator) SubmitAttestation(_ context.Context, _ primitives.Slot, _ [dilithium2.CryptoPublicKeyBytes]byte) {
+func (_ *MockValidator) SubmitAttestation(_ context.Context, _ primitives.Slot, _ [field_params.DilithiumPubkeyLength]byte) {
 	panic("implement me")
 }
 
-func (_ *MockValidator) ProposeBlock(_ context.Context, _ primitives.Slot, _ [dilithium2.CryptoPublicKeyBytes]byte) {
+func (_ *MockValidator) ProposeBlock(_ context.Context, _ primitives.Slot, _ [field_params.DilithiumPubkeyLength]byte) {
 	panic("implement me")
 }
 
-func (_ *MockValidator) SubmitAggregateAndProof(_ context.Context, _ primitives.Slot, _ [dilithium2.CryptoPublicKeyBytes]byte) {
+func (_ *MockValidator) SubmitAggregateAndProof(_ context.Context, _ primitives.Slot, _ [field_params.DilithiumPubkeyLength]byte) {
 	panic("implement me")
 }
 
-func (_ *MockValidator) SubmitSyncCommitteeMessage(_ context.Context, _ primitives.Slot, _ [dilithium2.CryptoPublicKeyBytes]byte) {
+func (_ *MockValidator) SubmitSyncCommitteeMessage(_ context.Context, _ primitives.Slot, _ [field_params.DilithiumPubkeyLength]byte) {
 	panic("implement me")
 }
 
-func (_ *MockValidator) SubmitSignedContributionAndProof(_ context.Context, _ primitives.Slot, _ [dilithium2.CryptoPublicKeyBytes]byte) {
+func (_ *MockValidator) SubmitSignedContributionAndProof(_ context.Context, _ primitives.Slot, _ [field_params.DilithiumPubkeyLength]byte) {
 	panic("implement me")
 }
 
@@ -175,7 +175,7 @@ func (_ *MockValidator) ReceiveBlocks(_ context.Context, _ chan<- error) {
 	panic("implement me")
 }
 
-func (_ *MockValidator) HandleKeyReload(_ context.Context, _ [][dilithium2.CryptoPublicKeyBytes]byte) (bool, error) {
+func (_ *MockValidator) HandleKeyReload(_ context.Context, _ [][field_params.DilithiumPubkeyLength]byte) (bool, error) {
 	panic("implement me")
 }
 

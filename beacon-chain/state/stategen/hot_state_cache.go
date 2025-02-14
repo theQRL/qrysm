@@ -6,8 +6,8 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	lruwrpr "github.com/theQRL/qrysm/cache/lru"
 )
 
 var (

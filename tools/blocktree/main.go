@@ -16,9 +16,9 @@ import (
 	"strconv"
 
 	"github.com/emicklei/dot"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db/filters"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/beacon-chain/db/filters"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 var (

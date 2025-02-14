@@ -8,14 +8,16 @@ import (
 
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
-	zondTypes "github.com/theQRL/go-zond/core/types"
-	dbutil "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	mockExecution "github.com/theQRL/qrysm/v4/beacon-chain/execution/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution/types"
-	contracts "github.com/theQRL/qrysm/v4/contracts/deposit"
-	"github.com/theQRL/qrysm/v4/contracts/deposit/mock"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	gzondtypes "github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/qrysm/beacon-chain/cache/depositcache"
+	dbutil "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	mockExecution "github.com/theQRL/qrysm/beacon-chain/execution/testing"
+	"github.com/theQRL/qrysm/beacon-chain/execution/types"
+	"github.com/theQRL/qrysm/config/params"
+	contracts "github.com/theQRL/qrysm/contracts/deposit"
+	"github.com/theQRL/qrysm/contracts/deposit/mock"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func setDefaultMocks(service *Service) *Service {
@@ -29,15 +31,19 @@ func TestLatestMainchainInfo_OK(t *testing.T) {
 	require.NoError(t, err, "Unable to set up simulated backend")
 
 	beaconDB := dbutil.SetupDB(t)
+	depositCache, err := depositcache.New()
+	require.NoError(t, err)
 	server, endpoint, err := mockExecution.SetupRPCServer()
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		server.Stop()
 	})
+
 	web3Service, err := NewService(context.Background(),
 		WithHttpEndpoint(endpoint),
 		WithDepositContractAddress(testAcc.ContractAddr),
 		WithDatabase(beaconDB),
+		WithDepositCache(depositCache),
 	)
 	require.NoError(t, err, "Unable to setup web3 ETH1.0 chain service")
 
@@ -70,6 +76,13 @@ func TestLatestMainchainInfo_OK(t *testing.T) {
 }
 
 func TestBlockHashByHeight_ReturnsHash(t *testing.T) {
+	// TODO(now.youtrack.cloud/issue/TQ-5)
+	params.SetupTestConfigCleanup(t)
+	conf := params.BeaconConfig().Copy()
+	conf.Eth1FollowDistance = 2048
+	params.OverrideBeaconConfig(conf)
+	maxCacheSize = 2 * params.BeaconConfig().Eth1FollowDistance
+
 	beaconDB := dbutil.SetupDB(t)
 	server, endpoint, err := mockExecution.SetupRPCServer()
 	require.NoError(t, err)
@@ -86,7 +99,7 @@ func TestBlockHashByHeight_ReturnsHash(t *testing.T) {
 	web3Service.rpcClient = &mockExecution.RPCClient{}
 	ctx := context.Background()
 
-	header := &zondTypes.Header{
+	header := &gzondtypes.Header{
 		Number: big.NewInt(15),
 		Time:   150,
 	}
@@ -124,6 +137,13 @@ func TestBlockHashByHeight_ReturnsError_WhenNoEth1Client(t *testing.T) {
 }
 
 func TestBlockExists_ValidHash(t *testing.T) {
+	// TODO(now.youtrack.cloud/issue/TQ-5)
+	params.SetupTestConfigCleanup(t)
+	conf := params.BeaconConfig().Copy()
+	conf.Eth1FollowDistance = 2048
+	params.OverrideBeaconConfig(conf)
+	maxCacheSize = 2 * params.BeaconConfig().Eth1FollowDistance
+
 	beaconDB := dbutil.SetupDB(t)
 	testAcc, err := mock.Setup()
 	require.NoError(t, err, "Unable to set up simulated backend")
@@ -175,6 +195,13 @@ func TestBlockExists_InvalidHash(t *testing.T) {
 }
 
 func TestBlockExists_UsesCachedBlockInfo(t *testing.T) {
+	// TODO(now.youtrack.cloud/issue/TQ-5)
+	params.SetupTestConfigCleanup(t)
+	conf := params.BeaconConfig().Copy()
+	conf.Eth1FollowDistance = 2048
+	params.OverrideBeaconConfig(conf)
+	maxCacheSize = 2 * params.BeaconConfig().Eth1FollowDistance
+
 	beaconDB := dbutil.SetupDB(t)
 	server, endpoint, err := mockExecution.SetupRPCServer()
 	require.NoError(t, err)

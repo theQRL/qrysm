@@ -10,10 +10,10 @@ import (
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	pbrpc "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	pbrpc "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 const (
@@ -140,7 +140,7 @@ func (s *Service) pubsubOptions() []pubsub.Option {
 		}),
 		pubsub.WithSubscriptionFilter(s),
 		pubsub.WithPeerOutboundQueueSize(pubsubQueueSize),
-		pubsub.WithMaxMessageSize(int(params.BeaconNetworkConfig().GossipMaxSizeBellatrix)),
+		pubsub.WithMaxMessageSize(int(params.BeaconNetworkConfig().GossipMaxSize)),
 		pubsub.WithValidateQueueSize(pubsubQueueSize),
 		pubsub.WithPeerScore(peerScoringParams()),
 		pubsub.WithPeerScoreInspect(s.peerInspector, time.Minute),
@@ -168,7 +168,7 @@ func setPubSubParameters() {
 	pubsub.TimeCacheDuration = 550 * gossipSubHeartbeatInterval
 }
 
-// convert from libp2p's internal schema to a compatible prysm protobuf format.
+// convert from libp2p's internal schema to a compatible qrysm protobuf format.
 func convertTopicScores(topicMap map[string]*pubsub.TopicScoreSnapshot) map[string]*pbrpc.TopicScoreSnapshot {
 	newMap := make(map[string]*pbrpc.TopicScoreSnapshot, len(topicMap))
 	for t, s := range topicMap {

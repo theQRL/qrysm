@@ -3,13 +3,13 @@ package state_native_test
 import (
 	"testing"
 
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func BenchmarkAppendBalance(b *testing.B) {
-	st, err := state_native.InitializeFromProtoPhase0(&zondpb.BeaconState{})
+	st, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{})
 	require.NoError(b, err)
 
 	max := uint64(16777216)

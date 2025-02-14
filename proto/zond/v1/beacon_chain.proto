@@ -16,16 +16,15 @@ syntax = "proto3";
 package theqrl.zond.v1;
 
 import "google/protobuf/descriptor.proto";
-import "google/protobuf/timestamp.proto";
 
 import "proto/zond/ext/options.proto";
 import "proto/zond/v1/attestation.proto";
 import "proto/zond/v1/beacon_block.proto";
 import "proto/zond/v1/beacon_state.proto";
-import "proto/zond/v1/validator.proto";
+import "proto/zond/v1/withdrawals.proto";
 
 option csharp_namespace = "TheQRL.Zond.V1";
-option go_package = "github.com/theQRL/qrysm/v4/proto/zond/v1";
+option go_package = "github.com/theQRL/qrysm/proto/zond/v1";
 option java_multiple_files = true;
 option java_outer_classname = "BeaconChainProto";
 option java_package = "org.theqrl.zond.v1";
@@ -53,7 +52,7 @@ message StateRootResponse {
 // Beacon Block API related messages.
 
 message BlockAttestationsResponse {
-    repeated theqrl.zond.v1.Attestation data = 1;
+    repeated Attestation data = 1;
     bool execution_optimistic = 2;
     bool finalized  = 3;
 }
@@ -64,19 +63,8 @@ message BlockRequest {
     bytes block_id = 1;
 }
 
-message BlockResponse {
-    BeaconBlockContainer data = 1;
-}
-
 message BlockSSZResponse {
     bytes data = 1;
-}
-
-message BeaconBlockContainer {
-    BeaconBlock message = 1;
-
-    // 96 byte BLS signature from the validator that produced this block.
-    bytes signature = 2 [(theqrl.zond.ext.ssz_size) = "96"];
 }
 
 // Beacon Pool related API service.
@@ -125,46 +113,45 @@ message WeakSubjectivityResponse {
 // DEPRECATED: GetWeakSubjectivity endpoint is no longer be supported
 message WeakSubjectivityData {
     option deprecated = true;
-    theqrl.zond.v1.Checkpoint ws_checkpoint = 1;
+    Checkpoint ws_checkpoint = 1;
     bytes state_root = 2;
 }
 
 message ForkChoiceDump {
-    reserved 3;
     // Latest justified checkpoint in forkchoice store.
     Checkpoint justified_checkpoint = 1;
     // Latest finalized checkpoint in forkchoice store.
     Checkpoint finalized_checkpoint = 2;
     // Unrealized justified checkpoint in forkchoice store.
-    Checkpoint unrealized_justified_checkpoint = 4;
+    Checkpoint unrealized_justified_checkpoint = 3;
     // Unrealized finalized checkpoint in forkchoice store.
-    Checkpoint unrealized_finalized_checkpoint = 5;
+    Checkpoint unrealized_finalized_checkpoint = 4;
     // Proposer Boost Root in forkchoice store.
-    bytes proposer_boost_root = 6 [(theqrl.zond.ext.ssz_size) = "32"];
+    bytes proposer_boost_root = 5 [(theqrl.zond.ext.ssz_size) = "32"];
     // Previous proposer Boost Root in forkchoice store.
-    bytes previous_proposer_boost_root = 7 [(theqrl.zond.ext.ssz_size) = "32"];
+    bytes previous_proposer_boost_root = 6 [(theqrl.zond.ext.ssz_size) = "32"];
     // Head root in forkchoice store.
-    bytes head_root = 8 [(theqrl.zond.ext.ssz_size) = "32"];
+    bytes head_root = 7 [(theqrl.zond.ext.ssz_size) = "32"];
 
     // The list of the forkchoice nodes in store.
-    repeated ForkChoiceNode fork_choice_nodes = 9;
+    repeated ForkChoiceNode fork_choice_nodes = 8;
 }
 
 message ForkChoiceNode {
     // Slot of the forkchoice node.
-    uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Slot"];
+    uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
     // Root of the forkchoice node.
     bytes block_root = 2 [(theqrl.zond.ext.ssz_size) = "32"];
     // Parent root of the forkchoice node.
     bytes parent_root = 3 [(theqrl.zond.ext.ssz_size) = "32"];
     // Justified epoch of the current forkchoice node.
-    uint64 justified_epoch = 4 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+    uint64 justified_epoch = 4 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
     // finalized epoch of the current forkchoice node.
-    uint64 finalized_epoch = 5 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+    uint64 finalized_epoch = 5 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
     // Unrealized justified epoch of the current forkchoice node.
-    uint64 unrealized_justified_epoch = 6 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+    uint64 unrealized_justified_epoch = 6 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
     // Unrealized finalized epoch of the current forkchoice node.
-    uint64 unrealized_finalized_epoch = 7 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/v4/consensus-types/primitives.Epoch"];
+    uint64 unrealized_finalized_epoch = 7 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
     // Current balance of the current forkchoice node.
     uint64 balance = 8;
     // Current weight of the current forkchoice node.
@@ -183,4 +170,8 @@ enum ForkChoiceNodeValidity {
     VALID = 0;
     INVALID = 1;
     OPTIMISTIC = 2;
+}
+
+message DilithiumToExecutionChangesPoolResponse {
+  repeated SignedDilithiumToExecutionChange data = 1;
 }

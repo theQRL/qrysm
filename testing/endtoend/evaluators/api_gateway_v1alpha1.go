@@ -9,14 +9,14 @@ import (
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/policies"
-	e2etypes "github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
+	"github.com/theQRL/qrysm/testing/endtoend/policies"
+	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
 	"google.golang.org/grpc"
 )
 
-// APIGatewayV1Alpha1VerifyIntegrity of our API gateway for the Prysm v1alpha1 API.
+// APIGatewayV1Alpha1VerifyIntegrity of our API gateway for the Qrysm v1alpha1 API.
 // This ensures our gRPC HTTP gateway returns and processes the same data _for the same endpoints_
 // as using a gRPC connection to interact with the API. Running this in end-to-end tests helps us
 // ensure parity between our HTTP gateway for our API and gRPC never breaks.
@@ -153,7 +153,7 @@ func withCompareListAttestations(beaconNodeIdx int, conn *grpc.ClientConn) error
 	type attestationJSON struct {
 		AggregationBits string               `json:"aggregationBits"`
 		Data            *attestationDataJSON `json:"data"`
-		Signature       string               `json:"signature"`
+		Signatures      []string             `json:"signatures"`
 	}
 	type attestationsResponseJSON struct {
 		Attestations  []*attestationJSON `json:"attestations"`
@@ -260,13 +260,25 @@ func withCompareListAttestations(beaconNodeIdx int, conn *grpc.ClientConn) error
 				grpcData.Target.Root,
 			)
 		}
-		if att.Signature != base64.StdEncoding.EncodeToString(grpcAtt.Signature) {
+		if len(att.Signatures) != len(grpcAtt.Signatures) {
 			return fmt.Errorf(
-				"HTTP gateway attestation %d signature %s does not match gRPC %d",
+				"HTTP gateway attestation %d signatures length %d does not match gRPC %d",
 				i,
-				att.Signature,
-				grpcAtt.Signature,
+				len(att.Signatures),
+				len(grpcAtt.Signatures),
 			)
+		}
+
+		for j, sig := range att.Signatures {
+			if sig != base64.StdEncoding.EncodeToString(grpcAtt.Signatures[j]) {
+				return fmt.Errorf(
+					"HTTP gateway attestation %d signature %d %s does not match gRPC %d",
+					i,
+					j,
+					sig,
+					grpcAtt.Signatures[j],
+				)
+			}
 		}
 	}
 	return nil
@@ -456,7 +468,7 @@ func withCompareChainHead(beaconNodeIdx int, conn *grpc.ClientConn) error {
 }
 
 func doGatewayJSONRequest(requestPath string, beaconNodeIdx int, dst interface{}) error {
-	basePath := fmt.Sprintf(v1Alpha1GatewayPathTemplate, e2e.TestParams.Ports.PrysmBeaconNodeGatewayPort+beaconNodeIdx)
+	basePath := fmt.Sprintf(v1Alpha1GatewayPathTemplate, e2e.TestParams.Ports.QrysmBeaconNodeGatewayPort+beaconNodeIdx)
 	httpResp, err := http.Get(
 		basePath + requestPath,
 	)

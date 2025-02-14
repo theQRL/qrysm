@@ -1,20 +1,15 @@
 package wallet_test
 
 import (
-	"context"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	remoteweb3signer "github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
 )
 
 func init() {
@@ -55,6 +50,7 @@ func Test_IsValid_RandomFiles(t *testing.T) {
 	require.Equal(t, true, valid)
 }
 
+/*
 func TestWallet_InitializeKeymanager_web3Signer_HappyPath(t *testing.T) {
 	w := wallet.NewWalletForWeb3Signer()
 	ctx := context.Background()
@@ -84,3 +80,4 @@ func TestWallet_InitializeKeymanager_web3Signer_nilConfig(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, nil, km)
 }
+*/

@@ -10,16 +10,13 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/io/prompt"
-	"github.com/theQRL/qrysm/v4/validator/accounts/iface"
-	accountsprompt "github.com/theQRL/qrysm/v4/validator/accounts/userprompt"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/derived"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
-	remoteweb3signer "github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/io/prompt"
+	"github.com/theQRL/qrysm/validator/accounts/iface"
+	accountsprompt "github.com/theQRL/qrysm/validator/accounts/userprompt"
+	"github.com/theQRL/qrysm/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/keymanager/local"
 	"github.com/urfave/cli/v2"
 )
 
@@ -32,9 +29,6 @@ const (
 	PasswordPromptText = "Wallet password"
 	// ConfirmPasswordPromptText for confirming a wallet password.
 	ConfirmPasswordPromptText = "Confirm password"
-	// DefaultWalletPasswordFile used to store a wallet password with appropriate permissions
-	// if a user signs up via the Prysm web UI via RPC.
-	DefaultWalletPasswordFile = "walletpassword.txt"
 	// CheckExistsErrMsg for when there is an error while checking for a wallet
 	CheckExistsErrMsg = "could not check if wallet exists"
 	// CheckValidityErrMsg for when there is an error while checking wallet validity
@@ -52,9 +46,9 @@ var (
 	)
 	// KeymanagerKindSelections as friendly text.
 	KeymanagerKindSelections = map[keymanager.Kind]string{
-		keymanager.Local:      "Imported Wallet (Recommended)",
-		keymanager.Derived:    "HD Wallet",
-		keymanager.Web3Signer: "Consensys Web3Signer (Advanced)",
+		keymanager.Local: "Imported Wallet (Recommended)",
+		// keymanager.Derived:    "HD Wallet",
+		// keymanager.Web3Signer: "Consensys Web3Signer (Advanced)",
 	}
 	// ValidateExistingPass checks that an input cannot be empty.
 	ValidateExistingPass = func(input string) error {
@@ -72,9 +66,9 @@ type Config struct {
 	WalletPassword string
 }
 
-// Wallet is a primitive in Prysm's account management which
+// Wallet is a primitive in Qrysm's account management which
 // has the capability of creating new accounts, reading existing accounts,
-// and providing secure access to Ethereum proof of stake secrets depending on an
+// and providing secure access to Zond proof of stake secrets depending on an
 // associated keymanager (either imported, derived, or remote signing enabled).
 type Wallet struct {
 	walletDir      string
@@ -193,6 +187,7 @@ func OpenWalletOrElseCli(cliCtx *cli.Context, otherwise func(cliCtx *cli.Context
 	})
 }
 
+/*
 // NewWalletForWeb3Signer returns a new wallet for web3 signer which is temporary and not stored locally.
 func NewWalletForWeb3Signer() *Wallet {
 	// wallet is just a temporary wallet for web3 signer used to call initialize keymanager.
@@ -203,6 +198,7 @@ func NewWalletForWeb3Signer() *Wallet {
 		walletPassword: "",
 	}
 }
+*/
 
 // OpenWallet instantiates a wallet from a specified path. It checks the
 // type of keymanager associated with the wallet by reading files in the wallet
@@ -277,28 +273,30 @@ func (w *Wallet) InitializeKeymanager(ctx context.Context, cfg iface.InitKeymana
 		if err != nil {
 			return nil, errors.Wrap(err, "could not initialize imported keymanager")
 		}
-	case keymanager.Derived:
-		km, err = derived.NewKeymanager(ctx, &derived.SetupConfig{
-			Wallet:           w,
-			ListenForChanges: cfg.ListenForChanges,
-		})
-		if err != nil {
-			return nil, errors.Wrap(err, "could not initialize derived keymanager")
-		}
-	case keymanager.Web3Signer:
-		config := cfg.Web3SignerConfig
-		if config == nil {
-			return nil, errors.New("web3signer config is nil")
-		}
-		// TODO(9883): future work needs to address how initialize keymanager is called for web3signer.
-		// an error may be thrown for genesis validators root for some InitializeKeymanager calls.
-		if !bytesutil.IsValidRoot(config.GenesisValidatorsRoot) {
-			return nil, errors.New("web3signer requires a genesis validators root value")
-		}
-		km, err = remoteweb3signer.NewKeymanager(ctx, config)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not initialize web3signer keymanager")
-		}
+	/*
+		case keymanager.Derived:
+			km, err = derived.NewKeymanager(ctx, &derived.SetupConfig{
+				Wallet:           w,
+				ListenForChanges: cfg.ListenForChanges,
+			})
+			if err != nil {
+				return nil, errors.Wrap(err, "could not initialize derived keymanager")
+			}
+		case keymanager.Web3Signer:
+			config := cfg.Web3SignerConfig
+			if config == nil {
+				return nil, errors.New("web3signer config is nil")
+			}
+			// TODO(9883): future work needs to address how initialize keymanager is called for web3signer.
+			// an error may be thrown for genesis validators root for some InitializeKeymanager calls.
+			if !bytesutil.IsValidRoot(config.GenesisValidatorsRoot) {
+				return nil, errors.New("web3signer requires a genesis validators root value")
+			}
+			km, err = remoteweb3signer.NewKeymanager(ctx, config)
+			if err != nil {
+				return nil, errors.Wrap(err, "could not initialize web3signer keymanager")
+			}
+	*/
 	default:
 		return nil, fmt.Errorf("keymanager kind not supported: %s", w.keymanagerKind)
 	}
@@ -419,7 +417,8 @@ func readKeymanagerKindFromWalletPath(walletPath string) (keymanager.Kind, error
 			return keymanagerKind, nil
 		}
 	}
-	return 0, errors.New("no keymanager folder (imported, remote, derived) found in wallet path")
+	// return 0, errors.New("no keymanager folder (imported, remote, derived) found in wallet path")
+	return 0, errors.New("no keymanager folder (imported) found in wallet path")
 }
 
 // InputPassword prompts for a password and optionally for password confirmation.

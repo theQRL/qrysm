@@ -3,13 +3,13 @@ load("@qrysm//tools/go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["cmd.go"],
-    importpath = "github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/deposit/newseed",
+    importpath = "github.com/theQRL/qrysm/cmd/staking-deposit-cli/deposit/newseed",
     visibility = ["//visibility:public"],
     deps = [
         "//cmd/staking-deposit-cli/misc:go_default_library",
         "//cmd/staking-deposit-cli/stakingdeposit:go_default_library",
         "@com_github_sirupsen_logrus//:go_default_library",
-        "@com_github_theqrl_go_qrllib//common:go_default_library",
+        "@com_github_theqrl_go_qrllib//misc:go_default_library",
         "@com_github_urfave_cli_v2//:go_default_library",
         "@org_golang_x_term//:go_default_library",
     ],

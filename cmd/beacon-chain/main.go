@@ -1,4 +1,4 @@
-// Package beacon-chain defines the entire runtime of an Ethereum beacon node.
+// Package beacon-chain defines the entire runtime of a Zond beacon node.
 package main
 
 import (
@@ -11,26 +11,26 @@ import (
 	joonix "github.com/joonix/log"
 	"github.com/sirupsen/logrus"
 	zondlog "github.com/theQRL/go-zond/log"
-	"github.com/theQRL/qrysm/v4/beacon-chain/builder"
-	"github.com/theQRL/qrysm/v4/beacon-chain/node"
-	"github.com/theQRL/qrysm/v4/cmd"
-	blockchaincmd "github.com/theQRL/qrysm/v4/cmd/beacon-chain/blockchain"
-	dbcommands "github.com/theQRL/qrysm/v4/cmd/beacon-chain/db"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/execution"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	jwtcommands "github.com/theQRL/qrysm/v4/cmd/beacon-chain/jwt"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/sync/checkpoint"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/sync/genesis"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/io/logs"
-	"github.com/theQRL/qrysm/v4/monitoring/journald"
-	"github.com/theQRL/qrysm/v4/runtime/debug"
-	"github.com/theQRL/qrysm/v4/runtime/fdlimits"
-	prefixed "github.com/theQRL/qrysm/v4/runtime/logging/logrus-prefixed-formatter"
-	_ "github.com/theQRL/qrysm/v4/runtime/maxprocs"
-	"github.com/theQRL/qrysm/v4/runtime/tos"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/beacon-chain/builder"
+	"github.com/theQRL/qrysm/beacon-chain/node"
+	"github.com/theQRL/qrysm/cmd"
+	blockchaincmd "github.com/theQRL/qrysm/cmd/beacon-chain/blockchain"
+	dbcommands "github.com/theQRL/qrysm/cmd/beacon-chain/db"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/execution"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	jwtcommands "github.com/theQRL/qrysm/cmd/beacon-chain/jwt"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/sync/checkpoint"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/sync/genesis"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/io/logs"
+	"github.com/theQRL/qrysm/monitoring/journald"
+	"github.com/theQRL/qrysm/runtime/debug"
+	"github.com/theQRL/qrysm/runtime/fdlimits"
+	prefixed "github.com/theQRL/qrysm/runtime/logging/logrus-prefixed-formatter"
+	_ "github.com/theQRL/qrysm/runtime/maxprocs"
+	"github.com/theQRL/qrysm/runtime/tos"
+	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/urfave/cli/v2"
 )
 
@@ -53,8 +53,6 @@ var appFlags = []cli.Flag{
 	flags.SetGCPercent,
 	flags.BlockBatchLimit,
 	flags.BlockBatchLimitBurstFactor,
-	flags.BlobBatchLimit,
-	flags.BlobBatchLimitBurstFactor,
 	flags.InteropMockEth1DataVotesFlag,
 	flags.InteropNumValidatorsFlag,
 	flags.InteropGenesisTimeFlag,
@@ -68,15 +66,11 @@ var appFlags = []cli.Flag{
 	flags.Eth1HeaderReqLimit,
 	flags.MinPeersPerSubnet,
 	flags.SuggestedFeeRecipient,
-	flags.TerminalTotalDifficultyOverride,
-	flags.TerminalBlockHashOverride,
-	flags.TerminalBlockHashActivationEpochOverride,
 	flags.MevRelayEndpoint,
 	flags.MaxBuilderEpochMissedSlots,
 	flags.MaxBuilderConsecutiveMissedSlots,
 	flags.EngineEndpointTimeoutSeconds,
 	flags.LocalBlockValueBoost,
-	flags.BlobRetentionEpoch,
 	cmd.BackupWebhookOutputDir,
 	cmd.MinimalConfigFlag,
 	cmd.E2EConfigFlag,
@@ -251,7 +245,7 @@ func startNode(ctx *cli.Context) error {
 	if level == logrus.TraceLevel {
 		// libp2p specific logging.
 		golog.SetAllLoggers(golog.LevelDebug)
-		// Geth specific logging.
+		// Gzond specific logging.
 		glogger := zondlog.NewGlogHandler(zondlog.StreamHandler(os.Stderr, zondlog.TerminalFormat(true)))
 		glogger.Verbosity(zondlog.LvlTrace)
 		zondlog.Root().SetHandler(glogger)

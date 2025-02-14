@@ -10,25 +10,24 @@ import (
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
-	mock "github.com/theQRL/qrysm/v4/beacon-chain/blockchain/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	p2ptest "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	mockSync "github.com/theQRL/qrysm/v4/beacon-chain/sync/initial-sync/testing"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/container/slice"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	p2ptest "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	mockSync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync/testing"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/container/slice"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func setupValidAttesterSlashing(t *testing.T) (*zondpb.AttesterSlashing, state.BeaconState) {
-	s, privKeys := util.DeterministicGenesisState(t, 5)
+	s, privKeys := util.DeterministicGenesisStateCapella(t, 5)
 	vals := s.Validators()
 	for _, vv := range vals {
 		vv.WithdrawableEpoch = primitives.Epoch(1 * params.BeaconConfig().SlotsPerEpoch)
@@ -45,20 +44,18 @@ func setupValidAttesterSlashing(t *testing.T) (*zondpb.AttesterSlashing, state.B
 	require.NoError(t, err)
 	hashTreeRoot, err := signing.ComputeSigningRoot(att1.Data, domain)
 	assert.NoError(t, err)
-	sig0 := privKeys[0].Sign(hashTreeRoot[:])
-	sig1 := privKeys[1].Sign(hashTreeRoot[:])
-	aggregateSig := bls.AggregateSignatures([]bls.Signature{sig0, sig1})
-	att1.Signature = aggregateSig.Marshal()
+	sig0 := privKeys[0].Sign(hashTreeRoot[:]).Marshal()
+	sig1 := privKeys[1].Sign(hashTreeRoot[:]).Marshal()
+	att1.Signatures = [][]byte{sig0, sig1}
 
 	att2 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
 		AttestingIndices: []uint64{0, 1},
 	})
 	hashTreeRoot, err = signing.ComputeSigningRoot(att2.Data, domain)
 	assert.NoError(t, err)
-	sig0 = privKeys[0].Sign(hashTreeRoot[:])
-	sig1 = privKeys[1].Sign(hashTreeRoot[:])
-	aggregateSig = bls.AggregateSignatures([]bls.Signature{sig0, sig1})
-	att2.Signature = aggregateSig.Marshal()
+	sig0 = privKeys[0].Sign(hashTreeRoot[:]).Marshal()
+	sig1 = privKeys[1].Sign(hashTreeRoot[:]).Marshal()
+	att2.Signatures = [][]byte{sig0, sig1}
 
 	slashing := &zondpb.AttesterSlashing{
 		Attestation_1: att1,

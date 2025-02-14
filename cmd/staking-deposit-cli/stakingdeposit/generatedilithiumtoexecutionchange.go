@@ -10,14 +10,14 @@ import (
 	"strconv"
 
 	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/config"
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/config"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/misc"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
 )
 
 func GenerateDilithiumToExecutionChange(dilithiumExecutionChangesFolder string,
@@ -146,7 +146,11 @@ func ValidateDilithiumToExecutionChange(dilithiumToExecutionChange *DilithiumToE
 	if !bytes.Equal(fromDilithiumPubkey.Marshal(), credential.WithdrawalPK()) {
 		return false
 	}
-	if !bytes.Equal(toExecutionAddress, credential.ZondWithdrawalAddress().Bytes()) ||
+	execAddr, err := credential.ZondWithdrawalAddress()
+	if err != nil {
+		panic(fmt.Errorf("failed to read withdrawal address | reason %v", err))
+	}
+	if !bytes.Equal(toExecutionAddress, execAddr.Bytes()) ||
 		!bytes.Equal(toExecutionAddress, misc.DecodeHex(inputExecutionAddress)) {
 		return false
 	}
@@ -154,7 +158,7 @@ func ValidateDilithiumToExecutionChange(dilithiumToExecutionChange *DilithiumToE
 		return false
 	}
 
-	message := &zondpbv2.DilithiumToExecutionChange{
+	message := &zondpbv1.DilithiumToExecutionChange{
 		ValidatorIndex:      primitives.ValidatorIndex(uintValidatorIndex),
 		FromDilithiumPubkey: fromDilithiumPubkey.Marshal(),
 		ToExecutionAddress:  toExecutionAddress}

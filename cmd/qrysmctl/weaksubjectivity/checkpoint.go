@@ -6,8 +6,8 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/api/client"
-	"github.com/theQRL/qrysm/v4/api/client/beacon"
+	"github.com/theQRL/qrysm/api/client"
+	"github.com/theQRL/qrysm/api/client/beacon"
 	"github.com/urfave/cli/v2"
 )
 
@@ -56,7 +56,7 @@ func cliActionCheckpoint(_ *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("\nUse the following flag when starting a prysm Beacon Node to ensure the chain history " +
+	fmt.Println("\nUse the following flag when starting a qrysm Beacon Node to ensure the chain history " +
 		"includes the Weak Subjectivity Checkpoint: ")
 	fmt.Printf("--weak-subjectivity-checkpoint=%s\n\n", ws.CheckpointString())
 	return nil

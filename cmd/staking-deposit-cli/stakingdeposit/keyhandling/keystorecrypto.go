@@ -3,7 +3,7 @@ package keyhandling
 import (
 	"crypto/sha256"
 
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/misc"
 )
 
 type KeystoreCrypto struct {

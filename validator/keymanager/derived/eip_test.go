@@ -1,5 +1,6 @@
 package derived
 
+/*
 import (
 	"encoding/hex"
 	"fmt"
@@ -7,9 +8,9 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/crypto/bls"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
 	util "github.com/wealdtech/go-eth2-util"
 )
 
@@ -122,3 +123,4 @@ func secretKeyFromBigNum(s string) (bls.SecretKey, error) {
 	}
 	return bls.SecretKeyFromBytes(bts)
 }
+*/

@@ -2,9 +2,9 @@ package state_native
 
 import (
 	"github.com/pkg/errors"
-	customtypes "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/custom-types"
-	"github.com/theQRL/qrysm/v4/config/features"
-	consensus_types "github.com/theQRL/qrysm/v4/consensus-types"
+	customtypes "github.com/theQRL/qrysm/beacon-chain/state/state-native/custom-types"
+	"github.com/theQRL/qrysm/config/features"
+	consensus_types "github.com/theQRL/qrysm/consensus-types"
 )
 
 // RandaoMixes of block proposers on the beacon chain.

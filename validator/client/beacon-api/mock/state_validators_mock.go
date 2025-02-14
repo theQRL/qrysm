@@ -8,9 +8,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/beacon"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
 	gomock "github.com/golang/mock/gomock"
+	beacon "github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
+	primitives "github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 // MockstateValidatorsProvider is a mock of stateValidatorsProvider interface.

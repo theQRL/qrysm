@@ -16,14 +16,13 @@ import (
 	"github.com/theQRL/go-zond/core"
 	"github.com/theQRL/go-zond/rpc"
 	"github.com/theQRL/go-zond/zondclient"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/cmd/flags"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/container/trie"
-	"github.com/theQRL/qrysm/v4/io/file"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/interop"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/container/trie"
+	"github.com/theQRL/qrysm/io/file"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/runtime/interop"
+	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/urfave/cli/v2"
 )
 
@@ -85,7 +84,7 @@ var (
 			},
 			&cli.StringFlag{
 				Name:        "config-name",
-				Usage:       "Config kind to be used for generating the genesis state. Default: mainnet. Options include mainnet, interop, minimal, prater, sepolia. --chain-config-file will override this flag.",
+				Usage:       "Config kind to be used for generating the genesis state. Default: mainnet. Options include mainnet, interop, minimal. --chain-config-file will override this flag.",
 				Destination: &generateGenesisStateFlags.ConfigName,
 				Value:       params.MainnetName,
 			},
@@ -127,13 +126,14 @@ var (
 				Usage:       "Endpoint to preferred execution client. If unset, defaults to Gzond",
 				Value:       "http://localhost:8545",
 			},
-			flags.EnumValue{
-				Name:        "fork",
-				Usage:       fmt.Sprintf("Name of the BeaconState schema to use in output encoding [%s]", strings.Join(versionNames(), ",")),
-				Enum:        versionNames(),
-				Value:       versionNames()[0],
-				Destination: &generateGenesisStateFlags.ForkName,
-			}.GenericFlag(),
+			// NOTE(rgeraldes24): re-enable once we have more forks
+			// flags.EnumValue{
+			// 	Name:        "fork",
+			// 	Usage:       fmt.Sprintf("Name of the BeaconState schema to use in output encoding [%s]", strings.Join(versionNames(), ",")),
+			// 	Enum:        versionNames(),
+			// 	Value:       versionNames()[0],
+			// 	Destination: &generateGenesisStateFlags.ForkName,
+			// }.GenericFlag(),
 			outputSSZFlag,
 			outputYamlFlag,
 			outputJsonFlag,
@@ -141,14 +141,14 @@ var (
 	}
 )
 
-func versionNames() []string {
-	enum := version.All()
-	names := make([]string, len(enum))
-	for i := range enum {
-		names[i] = version.String(enum[i])
-	}
-	return names
-}
+// func versionNames() []string {
+// 	enum := version.All()
+// 	names := make([]string, len(enum))
+// 	for i := range enum {
+// 		names[i] = version.String(enum[i])
+// 	}
+// 	return names
+// }
 
 // Represents a json object of hex string and uint64 values for
 // validators on Ethereum. This file can be generated using the official staking-deposit-cli.
@@ -233,10 +233,12 @@ func generateGenesis(ctx context.Context) (state.BeaconState, error) {
 	f.GenesisTime += f.GenesisTimeDelay
 	log.Infof("Genesis is now %v", f.GenesisTime)
 
-	v, err := version.FromString(f.ForkName)
-	if err != nil {
-		return nil, err
-	}
+	// v, err := version.FromString(f.ForkName)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	v := version.Capella
+
 	opts := make([]interop.PremineGenesisOpt, 0)
 	nv := f.NumValidators
 	if f.DepositJsonFile != "" {
@@ -244,7 +246,7 @@ func generateGenesis(ctx context.Context) (state.BeaconState, error) {
 		if err != nil {
 			return nil, err
 		}
-		log.Printf("reading deposits from JSON at %s", expanded)
+		log.Printf("Reading deposits from JSON at %s", expanded)
 		b, err := os.ReadFile(expanded) // #nosec G304
 		if err != nil {
 			return nil, err
@@ -271,23 +273,10 @@ func generateGenesis(ctx context.Context) (state.BeaconState, error) {
 		}
 		// set timestamps for genesis and shanghai fork
 		gen.Timestamp = f.GenesisTime
-		gen.Config.ShanghaiTime = interop.GethShanghaiTime(f.GenesisTime, params.BeaconConfig())
-		gen.Config.CancunTime = interop.GethCancunTime(f.GenesisTime, params.BeaconConfig())
 
-		if gen.Config.ShanghaiTime != nil {
-			log.WithField("shanghai", fmt.Sprintf("%d", *gen.Config.ShanghaiTime))
-		}
-		if gen.Config.CancunTime != nil {
-			log.WithField("cancun", fmt.Sprintf("%d", *gen.Config.CancunTime))
-		}
 		log.Info("setting fork zond times")
-		if v > version.Altair {
-			// set ttd to zero so EL goes post-merge immediately
-			gen.Config.TerminalTotalDifficulty = big.NewInt(0)
-			gen.Config.TerminalTotalDifficultyPassed = true
-		}
 	} else {
-		gen = interop.GethTestnetGenesis(f.GenesisTime, params.BeaconConfig())
+		gen = interop.GzondTestnetGenesis(f.GenesisTime, params.BeaconConfig())
 	}
 
 	if f.GzondGenesisJsonOut != "" {

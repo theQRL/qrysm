@@ -6,8 +6,8 @@ package state
 import (
 	"time"
 
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 const (
@@ -15,10 +15,6 @@ const (
 	BlockProcessed = iota + 1
 	// ChainStarted is sent when enough validators are active to start proposing blocks.
 	ChainStarted
-	// deprecated: Initialized is sent when the internal beacon node's state is ready to be accessed.
-	_
-	// deprecated: Synced is sent when the beacon node has completed syncing and is ready to participate in the network.
-	_
 	// Reorg is an event sent when the new head is not a descendant of the previous head.
 	Reorg
 	// FinalizedCheckpoint event.
@@ -37,7 +33,7 @@ type BlockProcessedData struct {
 	BlockRoot [32]byte
 	// SignedBlock is the physical processed block.
 	SignedBlock interfaces.ReadOnlySignedBeaconBlock
-	// Verified is true if the block's BLS contents have been verified.
+	// Verified is true if the block's Dilithium contents have been verified.
 	Verified bool
 	// Optimistic is true if the block is optimistic.
 	Optimistic bool

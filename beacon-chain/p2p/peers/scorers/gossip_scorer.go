@@ -2,8 +2,8 @@ package scorers
 
 import (
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p/peers/peerdata"
-	pbrpc "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/peerdata"
+	pbrpc "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 var _ Scorer = (*GossipScorer)(nil)

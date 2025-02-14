@@ -14,7 +14,7 @@
 //	}
 package filters
 
-import primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+import primitives "github.com/theQRL/qrysm/consensus-types/primitives"
 
 // FilterType defines an enum which is used as the keys in a map that tracks
 // set attribute filters for data as part of the `FilterQuery` struct type.
@@ -52,7 +52,7 @@ type QueryFilter struct {
 }
 
 // NewFilter instantiates a new QueryFilter type used to build filters for
-// certain Ethereum data types by attribute.
+// certain Zond data types by attribute.
 func NewFilter() *QueryFilter {
 	return &QueryFilter{
 		queries: make(map[FilterType]interface{}),

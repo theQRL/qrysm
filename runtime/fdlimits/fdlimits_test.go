@@ -3,18 +3,18 @@ package fdlimits_test
 import (
 	"testing"
 
-	gethLimit "github.com/theQRL/go-zond/common/fdlimit"
-	"github.com/theQRL/qrysm/v4/runtime/fdlimits"
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	gzondLimit "github.com/theQRL/go-zond/common/fdlimit"
+	"github.com/theQRL/qrysm/runtime/fdlimits"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestSetMaxFdLimits(t *testing.T) {
 	assert.NoError(t, fdlimits.SetMaxFdLimits())
 
-	curr, err := gethLimit.Current()
+	curr, err := gzondLimit.Current()
 	assert.NoError(t, err)
 
-	max, err := gethLimit.Maximum()
+	max, err := gzondLimit.Maximum()
 	assert.NoError(t, err)
 
 	assert.Equal(t, max, curr, "current and maximum file descriptor limits do not match up.")

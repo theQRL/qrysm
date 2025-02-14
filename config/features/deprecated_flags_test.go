@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/testing/assert"
+	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestDeprecatedFlags(t *testing.T) {

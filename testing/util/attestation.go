@@ -8,20 +8,21 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/bls"
-	"github.com/theQRL/qrysm/v4/crypto/rand"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	attv1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/rand"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	attv1 "github.com/theQRL/qrysm/proto/zond/v1"
+	"github.com/theQRL/qrysm/runtime/version"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 // NewAttestation creates an attestation block with minimum marshalable fields.
@@ -37,7 +38,7 @@ func NewAttestation() *zondpb.Attestation {
 				Root: make([]byte, fieldparams.RootLength),
 			},
 		},
-		Signature: make([]byte, 96),
+		Signatures: [][]byte{make([]byte, field_params.DilithiumSignatureLength), make([]byte, field_params.DilithiumSignatureLength)},
 	}
 }
 
@@ -49,7 +50,7 @@ func NewAttestation() *zondpb.Attestation {
 //
 // If you request 4 attestations, but there are 8 committees, you will get 4 fully aggregated attestations.
 func GenerateAttestations(
-	bState state.BeaconState, privs []bls.SecretKey, numToGen uint64, slot primitives.Slot, randomRoot bool,
+	bState state.BeaconState, privs []dilithium.DilithiumKey, numToGen uint64, slot primitives.Slot, randomRoot bool,
 ) ([]*zondpb.Attestation, error) {
 	var attestations []*zondpb.Attestation
 	generateHeadState := false
@@ -68,36 +69,6 @@ func GenerateAttestations(
 	if generateHeadState || slot == bState.Slot() {
 		var headState state.BeaconState
 		switch bState.Version() {
-		case version.Phase0:
-			pbState, err := state_native.ProtobufBeaconStatePhase0(bState.ToProto())
-			if err != nil {
-				return nil, err
-			}
-			genState, err := state_native.InitializeFromProtoUnsafePhase0(pbState)
-			if err != nil {
-				return nil, err
-			}
-			headState = genState
-		case version.Altair:
-			pbState, err := state_native.ProtobufBeaconStateAltair(bState.ToProto())
-			if err != nil {
-				return nil, err
-			}
-			genState, err := state_native.InitializeFromProtoUnsafeAltair(pbState)
-			if err != nil {
-				return nil, err
-			}
-			headState = genState
-		case version.Bellatrix:
-			pbState, err := state_native.ProtobufBeaconStateBellatrix(bState.ToProto())
-			if err != nil {
-				return nil, err
-			}
-			genState, err := state_native.InitializeFromProtoUnsafeBellatrix(pbState)
-			if err != nil {
-				return nil, err
-			}
-			headState = genState
 		case version.Capella:
 			pbState, err := state_native.ProtobufBeaconStateCapella(bState.ToProto())
 			if err != nil {
@@ -200,21 +171,16 @@ func GenerateAttestations(
 		bitsPerAtt := committeeSize / uint64(attsPerCommittee)
 		for i := uint64(0); i < committeeSize; i += bitsPerAtt {
 			aggregationBits := bitfield.NewBitlist(committeeSize)
-			var sigs []bls.Signature
+			sigs := make([][]byte, 0)
 			for b := i; b < i+bitsPerAtt; b++ {
 				aggregationBits.SetBitAt(b, true)
-				sigs = append(sigs, privs[committee[b]].Sign(dataRoot[:]))
-			}
-
-			// bls.AggregateSignatures will return nil if sigs is 0.
-			if len(sigs) == 0 {
-				continue
+				sigs = append(sigs, privs[committee[b]].Sign(dataRoot[:]).Marshal())
 			}
 
 			att := &zondpb.Attestation{
 				Data:            attData,
 				AggregationBits: aggregationBits,
-				Signature:       bls.AggregateSignatures(sigs).Marshal(),
+				Signatures:      sigs,
 			}
 			attestations = append(attestations, att)
 		}
@@ -225,8 +191,9 @@ func GenerateAttestations(
 // HydrateAttestation hydrates an attestation object with correct field length sizes
 // to comply with fssz marshalling and unmarshalling rules.
 func HydrateAttestation(a *zondpb.Attestation) *zondpb.Attestation {
-	if a.Signature == nil {
-		a.Signature = make([]byte, 96)
+	if a.Signatures == nil {
+		sig := make([]byte, 4595)
+		a.Signatures = [][]byte{sig}
 	}
 	if a.AggregationBits == nil {
 		a.AggregationBits = make([]byte, 1)
@@ -241,8 +208,9 @@ func HydrateAttestation(a *zondpb.Attestation) *zondpb.Attestation {
 // HydrateV1Attestation hydrates a v1 attestation object with correct field length sizes
 // to comply with fssz marshalling and unmarshalling rules.
 func HydrateV1Attestation(a *attv1.Attestation) *attv1.Attestation {
-	if a.Signature == nil {
-		a.Signature = make([]byte, 96)
+	if a.Signatures == nil {
+		sig := make([]byte, 4595)
+		a.Signatures = [][]byte{sig}
 	}
 	if a.AggregationBits == nil {
 		a.AggregationBits = make([]byte, 1)
@@ -299,8 +267,9 @@ func HydrateV1AttestationData(d *attv1.AttestationData) *attv1.AttestationData {
 // HydrateIndexedAttestation hydrates an indexed attestation with correct field length sizes
 // to comply with fssz marshalling and unmarshalling rules.
 func HydrateIndexedAttestation(a *zondpb.IndexedAttestation) *zondpb.IndexedAttestation {
-	if a.Signature == nil {
-		a.Signature = make([]byte, 96)
+	if a.Signatures == nil {
+		sig := make([]byte, 4595)
+		a.Signatures = [][]byte{sig}
 	}
 	if a.Data == nil {
 		a.Data = &zondpb.AttestationData{}

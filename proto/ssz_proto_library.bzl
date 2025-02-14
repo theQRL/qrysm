@@ -21,11 +21,8 @@ mainnet = {
     "sync_committee_aggregate_bytes.size": "2",
     "sync_committee_aggregate_bits.type": "github.com/theQRL/go-bitfield.Bitvector16",
     "withdrawal.size": "16",
-    "blob.size": "131072",
     "logs_bloom.size": "256",
     "extra_data.size": "32",
-    "max_blobs_per_block.size": "6",
-    "max_blob_commitments.size":"4096",
 }
 
 minimal = {
@@ -36,17 +33,14 @@ minimal = {
     "previous_epoch_attestations.max": "1024",
     "current_epoch_attestations.max": "1024",
     "slashings.size": "64",
-    "sync_committee_bits.size": "32",
-    "sync_committee_bytes.size": "4",
-    "sync_committee_bits.type": "github.com/theQRL/go-bitfield.Bitvector32",
-    "sync_committee_aggregate_bytes.size": "1",
-    "sync_committee_aggregate_bits.type": "github.com/theQRL/go-bitfield.Bitvector8",
+    "sync_committee_bits.size": "16",
+    "sync_committee_bytes.size": "2",
+    "sync_committee_bits.type": "github.com/theQRL/go-bitfield.Bitvector16",
+    "sync_committee_aggregate_bytes.size": "2",
+    "sync_committee_aggregate_bits.type": "github.com/theQRL/go-bitfield.Bitvector16",
     "withdrawal.size": "4",
-    "blob.size": "128",
     "logs_bloom.size": "256",
     "extra_data.size": "32",
-    "max_blobs_per_block.size": "6",
-    "max_blob_commitments.size":"16",
 }
 
 ###### Rules definitions #######

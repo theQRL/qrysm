@@ -6,13 +6,13 @@ go_library(
         "sparse_merkle.go",
         "zerohashes.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/container/trie",
+    importpath = "github.com/theQRL/qrysm/container/trie",
     visibility = ["//visibility:public"],
     deps = [
         "//crypto/hash:go_default_library",
         "//encoding/bytesutil:go_default_library",
         "//math:go_default_library",
-        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
         "@com_github_pkg_errors//:go_default_library",
     ],
 )
@@ -28,14 +28,14 @@ go_test(
     deps = [
         ":go_default_library",
         "//config/params:go_default_library",
+        "//config/fieldparams:go_default_library",
         "//contracts/deposit/mock:go_default_library",
         "//crypto/hash:go_default_library",
         "//encoding/bytesutil:go_default_library",
-        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
         "//testing/assert:go_default_library",
         "//testing/require:go_default_library",
         "@com_github_golang_protobuf//proto:go_default_library",
-        "@com_github_theqrl_go_qrllib//dilithium:go_default_library",
         "@com_github_theqrl_go_zond//accounts/abi/bind:go_default_library",
     ],
 )

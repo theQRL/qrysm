@@ -25,8 +25,8 @@ import (
 	"path/filepath"
 
 	"github.com/pborman/uuid"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/io/file"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/io/file"
 )
 
 const (
@@ -122,7 +122,7 @@ func (k *Key) UnmarshalJSON(j []byte) (err error) {
 	if err != nil {
 		return err
 	}
-	k.SecretKey, err = dilithium.SecretKeyFromBytes(seckey)
+	k.SecretKey, err = dilithium.SecretKeyFromSeed(seckey)
 	if err != nil {
 		return err
 	}

@@ -6,19 +6,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/forkchoice"
-	forkchoicetypes "github.com/theQRL/qrysm/v4/beacon-chain/forkchoice/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	state_native "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	enginev1 "github.com/theQRL/qrysm/v4/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/forkchoice"
+	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/hash"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 // prepareForkchoiceState prepares a beacon State with the given data to mock
@@ -36,7 +36,7 @@ func prepareForkchoiceState(
 		ParentRoot: parentRoot[:],
 	}
 
-	executionHeader := &enginev1.ExecutionPayloadHeader{
+	executionHeader := &enginev1.ExecutionPayloadHeaderCapella{
 		BlockHash: payloadHash[:],
 	}
 
@@ -48,7 +48,7 @@ func prepareForkchoiceState(
 		Epoch: finalizedEpoch,
 	}
 
-	base := &zondpb.BeaconStateBellatrix{
+	base := &zondpb.BeaconStateCapella{
 		Slot:                         slot,
 		RandaoMixes:                  make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 		CurrentJustifiedCheckpoint:   justifiedCheckpoint,
@@ -57,7 +57,7 @@ func prepareForkchoiceState(
 		LatestBlockHeader:            blockHeader,
 	}
 
-	st, err := state_native.InitializeFromProtoBellatrix(base)
+	st, err := state_native.InitializeFromProtoCapella(base)
 	return st, blockRoot, err
 }
 
@@ -581,7 +581,7 @@ func TestStore_CommonAncestor(t *testing.T) {
 func TestStore_InsertChain(t *testing.T) {
 	f := setup(1, 1)
 	blks := make([]*forkchoicetypes.BlockAndCheckpoints, 0)
-	blk := util.NewBeaconBlock()
+	blk := util.NewBeaconBlockCapella()
 	blk.Block.Slot = 1
 	var pr [32]byte
 	blk.Block.ParentRoot = pr[:]
@@ -594,7 +594,7 @@ func TestStore_InsertChain(t *testing.T) {
 		FinalizedCheckpoint: &zondpb.Checkpoint{Epoch: 1, Root: params.BeaconConfig().ZeroHash[:]},
 	})
 	for i := uint64(2); i < 11; i++ {
-		blk := util.NewBeaconBlock()
+		blk := util.NewBeaconBlockCapella()
 		blk.Block.Slot = primitives.Slot(i)
 		copiedRoot := root
 		blk.Block.ParentRoot = copiedRoot[:]
@@ -738,7 +738,7 @@ func TestForkchoice_UpdateJustifiedBalances(t *testing.T) {
 	}
 	require.NoError(t, f.updateJustifiedBalances(context.Background(), [32]byte{}))
 	require.Equal(t, uint64(7), f.numActiveValidators)
-	require.Equal(t, uint64(430)/32, f.store.committeeWeight)
+	require.Equal(t, uint64(430)/128, f.store.committeeWeight)
 	require.DeepEqual(t, balances, f.justifiedBalances)
 }
 

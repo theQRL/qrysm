@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/config"
-	zondpbv2 "github.com/theQRL/qrysm/v4/proto/zond/v2"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/config"
+	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
 )
 
 type DilithiumToExecutionChangeMessage struct {
@@ -27,13 +27,13 @@ type DilithiumToExecutionChangeData struct {
 }
 
 func NewDilithiumToExecutionChangeData(
-	signedDilithiumToExecutionChange *zondpbv2.SignedDilithiumToExecutionChange,
+	signedDilithiumToExecutionChange *zondpbv1.SignedDilithiumToExecutionChange,
 	chainSetting *config.ChainSetting) *DilithiumToExecutionChangeData {
 	return &DilithiumToExecutionChangeData{
 		Message: &DilithiumToExecutionChangeMessage{
 			ValidatorIndex:      strconv.FormatUint(uint64(signedDilithiumToExecutionChange.Message.ValidatorIndex), 10),
 			FromDilithiumPubkey: fmt.Sprintf("0x%x", signedDilithiumToExecutionChange.Message.FromDilithiumPubkey),
-			ToExecutionAddress:  fmt.Sprintf("0x%x", signedDilithiumToExecutionChange.Message.ToExecutionAddress),
+			ToExecutionAddress:  fmt.Sprintf("Z%x", signedDilithiumToExecutionChange.Message.ToExecutionAddress),
 		},
 		Signature: fmt.Sprintf("0x%x", signedDilithiumToExecutionChange.Signature),
 		MetaData: &DilithiumToExecutionChangeMetaData{

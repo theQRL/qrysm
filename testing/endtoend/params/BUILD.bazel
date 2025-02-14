@@ -7,7 +7,7 @@ go_library(
         "const.go",
         "params.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/testing/endtoend/params",
+    importpath = "github.com/theQRL/qrysm/testing/endtoend/params",
     visibility = ["//visibility:public"],
     deps = [
         "//io/file:go_default_library",

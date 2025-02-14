@@ -1,4 +1,4 @@
-// Package hashutil includes all hash-function related helpers for Prysm.
+// Package hashutil includes all hash-function related helpers for Qrysm.
 package hash
 
 import (
@@ -10,7 +10,7 @@ import (
 	"github.com/minio/highwayhash"
 	"github.com/minio/sha256-simd"
 	fastssz "github.com/prysmaticlabs/fastssz"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"golang.org/x/crypto/sha3"
 	"google.golang.org/protobuf/proto"
 )

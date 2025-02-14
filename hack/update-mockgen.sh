@@ -1,19 +1,17 @@
 #!/bin/bash
 
-# Script to update mock files after proto/prysm/v1alpha1/services.proto changes.
+# Script to update mock files after proto/qrysm/v1alpha1/services.proto changes.
 # Use a space to separate mock destination from its interfaces.
 
 mock_path="testing/mock"
 iface_mock_path="testing/validator-mock"
 
-# github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1
+# github.com/theQRL/qrysm/proto/qrysm/v1alpha1
 # ------------------------------------------------------
 proto_mocks_v1alpha1=(
-      "$mock_path/beacon_service_mock.go BeaconChainClient,BeaconChain_StreamChainHeadClient,BeaconChain_StreamAttestationsClient,BeaconChain_StreamBlocksClient,BeaconChain_StreamValidatorsInfoClient,BeaconChain_StreamIndexedAttestationsClient"
-      "$mock_path/beacon_chain_service_mock.go BeaconChain_StreamChainHeadServer,BeaconChain_StreamAttestationsServer,BeaconChain_StreamBlocksServer,BeaconChain_StreamValidatorsInfoServer,BeaconChain_StreamIndexedAttestationsServer"
-      "$mock_path/beacon_validator_server_mock.go BeaconNodeValidatorServer,BeaconNodeValidator_WaitForActivationServer,BeaconNodeValidator_WaitForChainStartServer,BeaconNodeValidator_StreamDutiesServer"
-      "$mock_path/beacon_validator_client_mock.go BeaconNodeValidatorClient,BeaconNodeValidator_WaitForChainStartClient,BeaconNodeValidator_WaitForActivationClient,BeaconNodeValidator_StreamDutiesClient"
-      "$mock_path/slasher_client_mock.go SlasherClient"
+      "$mock_path/beacon_service_mock.go BeaconChainClient"
+      "$mock_path/beacon_validator_server_mock.go BeaconNodeValidatorServer,BeaconNodeValidator_WaitForActivationServer,BeaconNodeValidator_WaitForChainStartServer"
+      "$mock_path/beacon_validator_client_mock.go BeaconNodeValidatorClient,BeaconNodeValidator_WaitForChainStartClient,BeaconNodeValidator_WaitForActivationClient"
       "$mock_path/node_service_mock.go NodeClient"
 )
 
@@ -22,10 +20,10 @@ for ((i = 0; i < ${#proto_mocks_v1alpha1[@]}; i++)); do
     interfaces=${proto_mocks_v1alpha1[i]#* };
     echo "generating $file for interfaces: $interfaces";
     echo
-    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1 "$interfaces"
+    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/proto/qrysm/v1alpha1 "$interfaces"
 done
 
-# github.com/theQRL/qrysm/v4/proto/eth/service
+# github.com/theQRL/qrysm/proto/zond/service
 # ---------------------------------------------------
 proto_mocks_service=(
       "$mock_path/event_service_mock.go EventsClient,Events_StreamEventsClient,Events_StreamEventsServer"
@@ -36,10 +34,10 @@ for ((i = 0; i < ${#proto_mocks_service[@]}; i++)); do
     interfaces=${proto_mocks_service[i]#* };
     echo "generating $file for interfaces: $interfaces";
     echo
-    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/v4/proto/eth/service "$interfaces"
+    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/proto/zond/service "$interfaces"
 done
 
-# github.com/theQRL/qrysm/proto/v4/prysm/v1alpha1/validator-client
+# github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client
 # -----------------------------------------------------------------------
 proto_mocks_v1alpha1_validator_clients=(
     "$mock_path/keymanager_mock.go RemoteSignerClient"
@@ -50,15 +48,14 @@ for ((i = 0; i < ${#proto_mocks_v1alpha1_validator_clients[@]}; i++)); do
     interfaces=${proto_mocks_v1alpha1_validator_clients[i]#* };
     echo "generating $file for interfaces: $interfaces";
     echo
-    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client "$interfaces"
+    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client "$interfaces"
 done
 
-# github.com/theQRL/qrysm/v4/validator/client/iface
+# github.com/theQRL/qrysm/validator/client/iface
 # --------------------------------------------------------
 iface_mocks=(
       "$iface_mock_path/beacon_chain_client_mock.go BeaconChainClient"
       "$iface_mock_path/node_client_mock.go NodeClient"
-      "$iface_mock_path/slasher_client_mock.go SlasherClient"
       "$iface_mock_path/validator_client_mock.go ValidatorClient"
 )
 
@@ -66,13 +63,13 @@ for ((i = 0; i < ${#iface_mocks[@]}; i++)); do
     file=${iface_mocks[i]% *};
     interfaces=${iface_mocks[i]#* };
     echo "generating $file for interfaces: $interfaces";
-    GO11MODULE=on mockgen -package=validator_mock -destination="$file" github.com/theQRL/qrysm/v4/validator/client/iface "$interfaces"
+    GO11MODULE=on mockgen -package=validator_mock -destination="$file" github.com/theQRL/qrysm/validator/client/iface "$interfaces"
 done
 
 goimports -w "$mock_path/."
 gofmt -s -w "$mock_path/."
 
-# github.com/theQRL/qrysm/v4/validator/client/beacon-api
+# github.com/theQRL/qrysm/validator/client/beacon-api
 # -------------------------------------------------------------
 beacon_api_mock_path="validator/client/beacon-api/mock"
 beacon_api_mocks=(
@@ -93,19 +90,19 @@ done
 goimports -w "$beacon_api_mock_path/."
 gofmt -s -w "$beacon_api_mock_path/."
 
-# github.com/theQRL/qrysm/v4/crypto/bls
+# github.com/theQRL/qrysm/crypto/dilithium
 # --------------------------------------------
-crypto_bls_common_mock_path="crypto/bls/common/mock"
-crypto_bls_common_mocks=(
-      "$crypto_bls_common_mock_path/interface_mock.go interface.go"
+crypto_dilithium_common_mock_path="crypto/dilithium/common/mock"
+crypto_dilithium_common_mocks=(
+      "$crypto_dilithium_common_mock_path/interface_mock.go interface.go"
 )
 
-for ((i = 0; i < ${#crypto_bls_common_mocks[@]}; i++)); do
-    file=${crypto_bls_common_mocks[i]% *};
-    source=${crypto_bls_common_mocks[i]#* };
+for ((i = 0; i < ${#crypto_dilithium_common_mocks[@]}; i++)); do
+    file=${crypto_dilithium_common_mocks[i]% *};
+    source=${crypto_dilithium_common_mocks[i]#* };
     echo "generating $file for file: $source";
-    GO11MODULE=on mockgen -package=mock -source="crypto/bls/common/$source" -destination="$file"
+    GO11MODULE=on mockgen -package=mock -source="crypto/dilithium/common/$source" -destination="$file"
 done
 
-goimports -w "$crypto_bls_common_mock_path/."
-gofmt -s -w "$crypto_bls_common_mock_path/."
+# goimports -w "$crypto_dilithium_common_mock_path/."
+# gofmt -s -w "$crypto_dilithium_common_mock_path/."

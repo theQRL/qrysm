@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/time/slots"
-	"github.com/theQRL/qrysm/v4/validator/client/iface"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/time/slots"
+	"github.com/theQRL/qrysm/validator/client/iface"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -47,7 +47,7 @@ func run(ctx context.Context, v iface.Validator) {
 		handleAssignmentError(err, headSlot)
 	}
 
-	accountsChangedChan := make(chan [][dilithium2.CryptoPublicKeyBytes]byte, 1)
+	accountsChangedChan := make(chan [][field_params.DilithiumPubkeyLength]byte, 1)
 	km, err := v.Keymanager()
 	if err != nil {
 		log.WithError(err).Fatal("Could not get keymanager")
@@ -139,7 +139,7 @@ func run(ctx context.Context, v iface.Validator) {
 	}
 }
 
-func onAccountsChanged(ctx context.Context, v iface.Validator, current [][dilithium2.CryptoPublicKeyBytes]byte, ac chan [][dilithium2.CryptoPublicKeyBytes]byte) {
+func onAccountsChanged(ctx context.Context, v iface.Validator, current [][field_params.DilithiumPubkeyLength]byte, ac chan [][field_params.DilithiumPubkeyLength]byte) {
 	anyActive, err := v.HandleKeyReload(ctx, current)
 	if err != nil {
 		log.WithError(err).Error("Could not properly handle reloaded keys")
@@ -219,11 +219,11 @@ func initializeValidatorAndGetHeadSlot(ctx context.Context, v iface.Validator) (
 	return headSlot, nil
 }
 
-func performRoles(slotCtx context.Context, allRoles map[[dilithium2.CryptoPublicKeyBytes]byte][]iface.ValidatorRole, v iface.Validator, slot primitives.Slot, wg *sync.WaitGroup, span *trace.Span) {
+func performRoles(slotCtx context.Context, allRoles map[[field_params.DilithiumPubkeyLength]byte][]iface.ValidatorRole, v iface.Validator, slot primitives.Slot, wg *sync.WaitGroup, span *trace.Span) {
 	for pubKey, roles := range allRoles {
 		wg.Add(len(roles))
 		for _, role := range roles {
-			go func(role iface.ValidatorRole, pubKey [dilithium2.CryptoPublicKeyBytes]byte) {
+			go func(role iface.ValidatorRole, pubKey [field_params.DilithiumPubkeyLength]byte) {
 				defer wg.Done()
 				switch role {
 				case iface.RoleAttester:

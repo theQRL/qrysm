@@ -13,14 +13,14 @@ import (
 	"github.com/theQRL/go-zond/accounts/abi/bind/backends"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
-	zondTypes "github.com/theQRL/go-zond/core/types"
+	gzondtypes "github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/qrysm/v4/async/event"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/async/event"
+	"github.com/theQRL/qrysm/beacon-chain/execution/types"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // Chain defines a properly functioning mock for the powchain service.
@@ -166,7 +166,7 @@ func (r *RPCClient) CallContext(ctx context.Context, obj interface{}, methodName
 		return nil
 	}
 	if r.Backend == nil && methodName == "zond_getBlockByNumber" {
-		h := &zondTypes.Header{
+		h := &gzondtypes.Header{
 			Number: big.NewInt(15),
 			Time:   150,
 		}
@@ -260,10 +260,10 @@ func (m *Chain) InsertBlock(height int, time uint64, hash []byte) *Chain {
 
 func SetupRPCServer() (*rpc.Server, string, error) {
 	srv := rpc.NewServer()
-	if err := srv.RegisterName("eth", &testETHRPC{}); err != nil {
+	if err := srv.RegisterName("zond", &testZONDRPC{}); err != nil {
 		return nil, "", err
 	}
-	if err := srv.RegisterName("net", &testETHRPC{}); err != nil {
+	if err := srv.RegisterName("net", &testZONDRPC{}); err != nil {
 		return nil, "", err
 	}
 	hs := httptest.NewUnstartedServer(srv)
@@ -271,14 +271,14 @@ func SetupRPCServer() (*rpc.Server, string, error) {
 	return srv, hs.URL, nil
 }
 
-type testETHRPC struct{}
+type testZONDRPC struct{}
 
-func (*testETHRPC) NoArgsRets() {}
+func (*testZONDRPC) NoArgsRets() {}
 
-func (*testETHRPC) ChainId(_ context.Context) *hexutil.Big {
+func (*testZONDRPC) ChainId(_ context.Context) *hexutil.Big {
 	return (*hexutil.Big)(big.NewInt(int64(params.BeaconConfig().DepositChainID)))
 }
 
-func (*testETHRPC) Version(_ context.Context) string {
+func (*testZONDRPC) Version(_ context.Context) string {
 	return fmt.Sprintf("%d", params.BeaconConfig().DepositNetworkID)
 }

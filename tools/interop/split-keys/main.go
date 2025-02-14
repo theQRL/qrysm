@@ -1,5 +1,5 @@
 // Package main provides a tool named split-keys which allows for generating any number of Ethereum validator keys
-// from a list of BIP39 mnemonics and spreading them across any number of Prysm wallets. This is useful for creating
+// from a list of BIP39 mnemonics and spreading them across any number of Qrysm wallets. This is useful for creating
 // custom allocations of keys across containers running in a cloud environment, such as for public testnets.
 // An example of why you would use this tool is as follows. Let's say we have 1 mnemonic contained inside of a file.
 // Then, we want to generate 10 keys from the mnemonic, and we want to spread them across 5 different wallets, each
@@ -11,6 +11,7 @@
 // used to encrypt the wallets in a text file using -wallet-password-file.
 package main
 
+/*
 import (
 	"bufio"
 	"context"
@@ -20,11 +21,11 @@ import (
 	"os"
 	"path"
 
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/derived"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/keymanager/derived"
+	"github.com/theQRL/qrysm/validator/keymanager/local"
 	"github.com/tyler-smith/go-bip39"
 	util "github.com/wealdtech/go-eth2-util"
 )
@@ -91,7 +92,7 @@ func generateKeysFromMnemonicList(mnemonicListFile *bufio.Scanner, keysPerMnemon
 	for mnemonicListFile.Scan() {
 		log.Printf("Generating %d keys from mnemonic\n", keysPerMnemonic)
 		mnemonic := mnemonicListFile.Text()
-		seed, err = seedFromMnemonic(mnemonic, "" /* 25th word*/)
+		seed, err = seedFromMnemonic(mnemonic, "")
 		if err != nil {
 			return
 		}
@@ -141,3 +142,4 @@ func spreadKeysAcrossLocalWallets(
 	}
 	return nil
 }
+*/

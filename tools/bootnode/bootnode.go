@@ -29,20 +29,20 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-bitfield"
 	gcrypto "github.com/theQRL/go-zond/crypto"
-	gethlog "github.com/theQRL/go-zond/log"
+	gzondlog "github.com/theQRL/go-zond/log"
 	"github.com/theQRL/go-zond/p2p/discover"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
-	"github.com/theQRL/qrysm/v4/async"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/config/params"
-	ecdsaprysm "github.com/theQRL/qrysm/v4/crypto/ecdsa"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/io/logs"
-	"github.com/theQRL/qrysm/v4/network"
-	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	_ "github.com/theQRL/qrysm/v4/runtime/maxprocs"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/async"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/config/params"
+	ecdsaqrysm "github.com/theQRL/qrysm/crypto/ecdsa"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/io/logs"
+	"github.com/theQRL/qrysm/network"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	_ "github.com/theQRL/qrysm/runtime/maxprocs"
+	"github.com/theQRL/qrysm/runtime/version"
 )
 
 var (
@@ -80,10 +80,10 @@ func main() {
 	if *debug {
 		logrus.SetLevel(logrus.DebugLevel)
 
-		// Geth specific logging.
-		glogger := gethlog.NewGlogHandler(gethlog.StreamHandler(os.Stderr, gethlog.TerminalFormat(false)))
-		glogger.Verbosity(gethlog.LvlTrace)
-		gethlog.Root().SetHandler(glogger)
+		// Gzond specific logging.
+		glogger := gzondlog.NewGlogHandler(gzondlog.StreamHandler(os.Stderr, gzondlog.TerminalFormat(false)))
+		glogger.Verbosity(gzondlog.LvlTrace)
+		gzondlog.Root().SetHandler(glogger)
 
 		log.Debug("Debug logging enabled.")
 	}
@@ -255,7 +255,7 @@ func extractPrivateKey() *ecdsa.PrivateKey {
 			panic(err)
 		}
 
-		privKey, err = ecdsaprysm.ConvertFromInterfacePrivKey(unmarshalledKey)
+		privKey, err = ecdsaqrysm.ConvertFromInterfacePrivKey(unmarshalledKey)
 		if err != nil {
 			panic(err)
 		}
@@ -264,7 +264,7 @@ func extractPrivateKey() *ecdsa.PrivateKey {
 		if err != nil {
 			panic(err)
 		}
-		privKey, err = ecdsaprysm.ConvertFromInterfacePrivKey(privInterfaceKey)
+		privKey, err = ecdsaqrysm.ConvertFromInterfacePrivKey(privInterfaceKey)
 		if err != nil {
 			panic(err)
 		}

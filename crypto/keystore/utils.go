@@ -25,8 +25,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	prysmTime "github.com/theQRL/qrysm/v4/time"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	qrysmTime "github.com/theQRL/qrysm/time"
 )
 
 func aesCTRXOR(key, inText, iv []byte) ([]byte, error) {
@@ -52,7 +52,7 @@ func ensureInt(x interface{}) int {
 // keyFileName implements the naming convention for keyfiles:
 // UTC--<created_at UTC ISO8601>-<first 8 character of address hex>
 func keyFileName(pubkey dilithium.PublicKey) string {
-	ts := prysmTime.Now().UTC()
+	ts := qrysmTime.Now().UTC()
 	return fmt.Sprintf("UTC--%s--%s", toISO8601(ts), hex.EncodeToString(pubkey.Marshal())[:8])
 }
 

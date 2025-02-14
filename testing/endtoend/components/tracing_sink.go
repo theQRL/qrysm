@@ -12,22 +12,22 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/helpers"
-	e2e "github.com/theQRL/qrysm/v4/testing/endtoend/params"
-	"github.com/theQRL/qrysm/v4/testing/endtoend/types"
+	"github.com/theQRL/qrysm/testing/endtoend/helpers"
+	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
+	"github.com/theQRL/qrysm/testing/endtoend/types"
 )
 
 var _ types.ComponentRunner = &TracingSink{}
 
 // TracingSink to capture HTTP requests from opentracing pushes. This is meant
-// to capture all opentracing spans from Prysm during an end-to-end test. Spans
+// to capture all opentracing spans from Qrysm during an end-to-end test. Spans
 // are normally sent to a jaeger (https://www.jaegertracing.io/docs/1.25/getting-started/)
 // endpoint, but here we instead replace that with our own http request sink.
 // The request sink receives any requests, raw marshals them and base64-encodes them,
 // then writes them newline-delimited into a file.
 //
 // The output file from this component can then be used by tools/replay-http in
-// the Prysm repository to replay requests to a jaeger collector endpoint. This
+// the Qrysm repository to replay requests to a jaeger collector endpoint. This
 // can then be used to visualize the spans themselves in the jaeger UI.
 type TracingSink struct {
 	cancel   context.CancelFunc

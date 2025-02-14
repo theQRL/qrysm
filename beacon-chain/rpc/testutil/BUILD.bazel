@@ -10,7 +10,7 @@ go_library(
         "mock_genesis_timefetcher.go",
         "mock_stater.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/beacon-chain/rpc/testutil",
+    importpath = "github.com/theQRL/qrysm/beacon-chain/rpc/testutil",
     visibility = ["//beacon-chain:__subpackages__"],
     deps = [
         "//beacon-chain/db:go_default_library",
@@ -20,7 +20,7 @@ go_library(
         "//consensus-types/interfaces:go_default_library",
         "//consensus-types/primitives:go_default_library",
         "//encoding/bytesutil:go_default_library",
-        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
         "//testing/require:go_default_library",
         "//testing/util:go_default_library",
     ],

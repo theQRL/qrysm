@@ -1,5 +1,6 @@
 package wallet
 
+/*
 import (
 	"fmt"
 	"os"
@@ -8,11 +9,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	"github.com/theQRL/qrysm/v4/io/prompt"
-	"github.com/theQRL/qrysm/v4/validator/accounts"
-	"github.com/theQRL/qrysm/v4/validator/accounts/userprompt"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	"github.com/theQRL/qrysm/io/prompt"
+	"github.com/theQRL/qrysm/validator/accounts"
+	"github.com/theQRL/qrysm/validator/accounts/userprompt"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
 	"github.com/tyler-smith/go-bip39"
 	"github.com/tyler-smith/go-bip39/wordlists"
 	"github.com/urfave/cli/v2"
@@ -49,7 +50,7 @@ func walletRecover(c *cli.Context) error {
 				flags.Mnemonic25thWordFileFlag,
 				mnemonicPassphrasePromptText,
 				"Confirm mnemonic passphrase",
-				false, /* Should confirm password */
+				false,
 				func(input string) error {
 					if strings.TrimSpace(input) == "" {
 						return errors.New("input cannot be empty")
@@ -72,7 +73,7 @@ func walletRecover(c *cli.Context) error {
 		flags.WalletPasswordFileFlag,
 		wallet.NewWalletPasswordPromptText,
 		wallet.ConfirmPasswordPromptText,
-		true, /* Should confirm password */
+		true,
 		prompt.ValidatePasswordInput,
 	)
 	if err != nil {
@@ -173,3 +174,4 @@ func inputNumAccounts(cliCtx *cli.Context) (int64, error) {
 	}
 	return int64(numAccountsInt), nil
 }
+*/

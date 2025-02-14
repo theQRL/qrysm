@@ -1,4 +1,4 @@
-// Package main defines a validator client, a critical actor in Ethereum which manages
+// Package main defines a validator client, a critical actor in Zond which manages
 // a keystore of private keys, connects to a beacon node to receive assignments,
 // and submits blocks/attestations as needed.
 package main
@@ -11,23 +11,22 @@ import (
 
 	joonix "github.com/joonix/log"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/cmd"
-	accountcommands "github.com/theQRL/qrysm/v4/cmd/validator/accounts"
-	dbcommands "github.com/theQRL/qrysm/v4/cmd/validator/db"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	slashingprotectioncommands "github.com/theQRL/qrysm/v4/cmd/validator/slashing-protection"
-	walletcommands "github.com/theQRL/qrysm/v4/cmd/validator/wallet"
-	"github.com/theQRL/qrysm/v4/cmd/validator/web"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/io/logs"
-	"github.com/theQRL/qrysm/v4/monitoring/journald"
-	"github.com/theQRL/qrysm/v4/runtime/debug"
-	prefixed "github.com/theQRL/qrysm/v4/runtime/logging/logrus-prefixed-formatter"
-	_ "github.com/theQRL/qrysm/v4/runtime/maxprocs"
-	"github.com/theQRL/qrysm/v4/runtime/tos"
-	"github.com/theQRL/qrysm/v4/runtime/version"
-	"github.com/theQRL/qrysm/v4/validator/node"
+	"github.com/theQRL/qrysm/cmd"
+	accountcommands "github.com/theQRL/qrysm/cmd/validator/accounts"
+	dbcommands "github.com/theQRL/qrysm/cmd/validator/db"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	slashingprotectioncommands "github.com/theQRL/qrysm/cmd/validator/slashing-protection"
+	walletcommands "github.com/theQRL/qrysm/cmd/validator/wallet"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/io/logs"
+	"github.com/theQRL/qrysm/monitoring/journald"
+	"github.com/theQRL/qrysm/runtime/debug"
+	prefixed "github.com/theQRL/qrysm/runtime/logging/logrus-prefixed-formatter"
+	_ "github.com/theQRL/qrysm/runtime/maxprocs"
+	"github.com/theQRL/qrysm/runtime/tos"
+	"github.com/theQRL/qrysm/runtime/version"
+	"github.com/theQRL/qrysm/validator/node"
 	"github.com/urfave/cli/v2"
 )
 
@@ -69,11 +68,10 @@ var appFlags = []cli.Flag{
 	flags.SlasherCertFlag,
 	flags.WalletPasswordFileFlag,
 	flags.WalletDirFlag,
-	flags.EnableWebFlag,
 	flags.GraffitiFileFlag,
 	// Consensys' Web3Signer flags
-	flags.Web3SignerURLFlag,
-	flags.Web3SignerPublicValidatorKeysFlag,
+	// flags.Web3SignerURLFlag,
+	// flags.Web3SignerPublicValidatorKeysFlag,
 	flags.SuggestedFeeRecipientFlag,
 	flags.ProposerSettingsURLFlag,
 	flags.ProposerSettingsFlag,
@@ -131,7 +129,6 @@ func main() {
 		accountcommands.Commands,
 		slashingprotectioncommands.Commands,
 		dbcommands.Commands,
-		web.Commands,
 	}
 
 	app.Flags = appFlags
@@ -176,7 +173,7 @@ func main() {
 		}
 
 		// Fix data dir for Windows users.
-		outdatedDataDir := filepath.Join(file.HomeDir(), "AppData", "Roaming", "Eth2Validators")
+		outdatedDataDir := filepath.Join(file.HomeDir(), "AppData", "Roaming", "ZondValidators")
 		currentDataDir := flags.DefaultValidatorDir()
 		if err := cmd.FixDefaultDataDir(outdatedDataDir, currentDataDir); err != nil {
 			log.WithError(err).Error("Cannot update data directory")

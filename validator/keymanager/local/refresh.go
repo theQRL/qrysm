@@ -8,14 +8,14 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/async"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
+	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
+	"github.com/theQRL/qrysm/async"
+	"github.com/theQRL/qrysm/config/features"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/validator/keymanager"
 )
 
 // Listen for changes to the all-accounts.keystore.json file in our wallet
@@ -107,9 +107,9 @@ func (km *Keymanager) reloadAccountsFromKeystore(keystore *AccountsKeystoreRepre
 	if len(newAccountsStore.PublicKeys) != len(newAccountsStore.Seeds) {
 		return errors.New("number of public and private keys in keystore do not match")
 	}
-	pubKeys := make([][dilithium2.CryptoPublicKeyBytes]byte, len(newAccountsStore.PublicKeys))
+	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, len(newAccountsStore.PublicKeys))
 	for i := 0; i < len(newAccountsStore.Seeds); i++ {
-		privKey, err := dilithium.SecretKeyFromBytes(newAccountsStore.Seeds[i])
+		privKey, err := dilithium.SecretKeyFromSeed(newAccountsStore.Seeds[i])
 		if err != nil {
 			return errors.Wrap(err, "could not initialize private key")
 		}

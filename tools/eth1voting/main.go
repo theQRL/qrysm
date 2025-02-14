@@ -7,18 +7,18 @@ import (
 	"math"
 	"time"
 
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/blocks"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	v1alpha1 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	v1alpha1 "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 )
 
 var (
-	beacon  = flag.String("beacon", "127.0.0.1:4000", "gRPC address of the Prysm beacon node")
+	beacon  = flag.String("beacon", "127.0.0.1:4000", "gRPC address of the Qrysm beacon node")
 	genesis = flag.Uint64("genesis", 1606824023, "Genesis time. mainnet=1606824023, prater=1616508000")
 )
 
@@ -77,12 +77,6 @@ func wrapBlock(b *v1alpha1.BeaconBlockContainer) interfaces.ReadOnlyBeaconBlock 
 	var err error
 	var wb interfaces.ReadOnlySignedBeaconBlock
 	switch bb := b.Block.(type) {
-	case *v1alpha1.BeaconBlockContainer_Phase0Block:
-		wb, err = blocks.NewSignedBeaconBlock(bb.Phase0Block)
-	case *v1alpha1.BeaconBlockContainer_AltairBlock:
-		wb, err = blocks.NewSignedBeaconBlock(bb.AltairBlock)
-	case *v1alpha1.BeaconBlockContainer_BellatrixBlock:
-		wb, err = blocks.NewSignedBeaconBlock(bb.BellatrixBlock)
 	case *v1alpha1.BeaconBlockContainer_CapellaBlock:
 		wb, err = blocks.NewSignedBeaconBlock(bb.CapellaBlock)
 	case *v1alpha1.BeaconBlockContainer_BlindedCapellaBlock:

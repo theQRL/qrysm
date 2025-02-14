@@ -8,11 +8,11 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/validator/client/beacon-api/mock"
-	test_helpers "github.com/theQRL/qrysm/v4/validator/client/beacon-api/test-helpers"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
+	test_helpers "github.com/theQRL/qrysm/validator/client/beacon-api/test-helpers"
 )
 
 func TestProposeAttestation(t *testing.T) {
@@ -31,7 +31,7 @@ func TestProposeAttestation(t *testing.T) {
 				Root:  test_helpers.FillByteSlice(32, 81),
 			},
 		},
-		Signature: test_helpers.FillByteSlice(96, 82),
+		Signatures: [][]byte{test_helpers.FillByteSlice(4595, 82)},
 	}
 
 	tests := []struct {
@@ -54,7 +54,7 @@ func TestProposeAttestation(t *testing.T) {
 			name: "nil attestation data",
 			attestation: &zondpb.Attestation{
 				AggregationBits: test_helpers.FillByteSlice(4, 74),
-				Signature:       test_helpers.FillByteSlice(96, 82),
+				Signatures:      [][]byte{test_helpers.FillByteSlice(4595, 82)},
 			},
 			expectedErrorMessage: "attestation data is nil",
 		},
@@ -65,7 +65,7 @@ func TestProposeAttestation(t *testing.T) {
 				Data: &zondpb.AttestationData{
 					Target: &zondpb.Checkpoint{},
 				},
-				Signature: test_helpers.FillByteSlice(96, 82),
+				Signatures: [][]byte{test_helpers.FillByteSlice(4595, 82)},
 			},
 			expectedErrorMessage: "source/target in attestation data is nil",
 		},
@@ -76,7 +76,7 @@ func TestProposeAttestation(t *testing.T) {
 				Data: &zondpb.AttestationData{
 					Source: &zondpb.Checkpoint{},
 				},
-				Signature: test_helpers.FillByteSlice(96, 82),
+				Signatures: [][]byte{test_helpers.FillByteSlice(4595, 82)},
 			},
 			expectedErrorMessage: "source/target in attestation data is nil",
 		},
@@ -87,12 +87,12 @@ func TestProposeAttestation(t *testing.T) {
 					Source: &zondpb.Checkpoint{},
 					Target: &zondpb.Checkpoint{},
 				},
-				Signature: test_helpers.FillByteSlice(96, 82),
+				Signatures: [][]byte{test_helpers.FillByteSlice(4595, 82)},
 			},
 			expectedErrorMessage: "attestation aggregation bits is empty",
 		},
 		{
-			name: "nil signature",
+			name: "nil signatures",
 			attestation: &zondpb.Attestation{
 				AggregationBits: test_helpers.FillByteSlice(4, 74),
 				Data: &zondpb.AttestationData{
@@ -100,7 +100,7 @@ func TestProposeAttestation(t *testing.T) {
 					Target: &zondpb.Checkpoint{},
 				},
 			},
-			expectedErrorMessage: "attestation signature is empty",
+			expectedErrorMessage: "attestation signatures slice is empty",
 		},
 		{
 			name:                 "bad request",

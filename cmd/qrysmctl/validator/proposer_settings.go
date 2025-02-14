@@ -7,15 +7,14 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/qrysm/v4/api/client"
-	"github.com/theQRL/qrysm/v4/api/client/validator"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	"github.com/theQRL/qrysm/v4/config/params"
-	validatorType "github.com/theQRL/qrysm/v4/consensus-types/validator"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/io/prompt"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
+	"github.com/theQRL/qrysm/api/client"
+	"github.com/theQRL/qrysm/api/client/validator"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	"github.com/theQRL/qrysm/config/params"
+	validatorType "github.com/theQRL/qrysm/consensus-types/validator"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/io/prompt"
+	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
 	"github.com/urfave/cli/v2"
 	"go.opencensus.io/trace"
 )
@@ -38,7 +37,7 @@ func getProposerSettings(c *cli.Context, r io.Reader) error {
 			}
 			defaultFeeRecipient = recipient
 		} else {
-			promptText := "Please enter a default fee recipient address (an zond address in hex format)"
+			promptText := "Please enter a default fee recipient address (a zond address in hex format)"
 			resp, err := prompt.ValidatePrompt(r, promptText, validateIsExecutionAddress)
 			if err != nil {
 				return err
@@ -105,7 +104,7 @@ func getProposerSettings(c *cli.Context, r io.Reader) error {
 }
 
 func validateIsExecutionAddress(input string) error {
-	if !bytesutil.IsHex([]byte(input)) || !(len(input) == common.AddressLength*2+2) {
+	if !common.IsAddress(input) {
 		return errors.New("no default address entered")
 	}
 	return nil

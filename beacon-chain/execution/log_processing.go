@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -14,21 +13,17 @@ import (
 	"github.com/theQRL/go-zond/accounts/abi/bind"
 	"github.com/theQRL/go-zond/common"
 	gzondtypes "github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache/depositsnapshot"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/feed"
-	statefeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/state"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	coreState "github.com/theQRL/qrysm/v4/beacon-chain/core/transition"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution/types"
-	statenative "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/container/trie"
-	contracts "github.com/theQRL/qrysm/v4/contracts/deposit"
-	"github.com/theQRL/qrysm/v4/crypto/hash"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/cache/depositsnapshot"
+	"github.com/theQRL/qrysm/beacon-chain/execution/types"
+	statenative "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/container/trie"
+	contracts "github.com/theQRL/qrysm/contracts/deposit"
+	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 var (
@@ -81,11 +76,7 @@ func (s *Service) ProcessETH1Block(ctx context.Context, blkNum *big.Int) error {
 			return errors.Wrap(err, "could not process log")
 		}
 	}
-	if !s.chainStartData.Chainstarted {
-		if err := s.processChainStartFromBlockNum(ctx, blkNum); err != nil {
-			return err
-		}
-	}
+
 	return nil
 }
 
@@ -154,14 +145,6 @@ func (s *Service) ProcessDepositLog(ctx context.Context, depositLog *gzondtypes.
 	deposit := &zondpb.Deposit{
 		Data: depositData,
 	}
-	// Only generate the proofs during pre-genesis.
-	if !s.chainStartData.Chainstarted {
-		proof, err := s.depositTrie.MerkleProof(int(index))
-		if err != nil {
-			return errors.Wrap(err, "unable to generate merkle proof for deposit")
-		}
-		deposit.Proof = proof
-	}
 
 	// We always store all historical deposits in the DB.
 	root, err := s.depositTrie.HashTreeRoot()
@@ -172,56 +155,20 @@ func (s *Service) ProcessDepositLog(ctx context.Context, depositLog *gzondtypes.
 	if err != nil {
 		return errors.Wrap(err, "unable to insert deposit into cache")
 	}
-	validData := true
-	if !s.chainStartData.Chainstarted {
-		s.chainStartData.ChainstartDeposits = append(s.chainStartData.ChainstartDeposits, deposit)
-		root, err := s.depositTrie.HashTreeRoot()
-		if err != nil {
-			return errors.Wrap(err, "unable to determine root of deposit trie")
-		}
-		eth1Data := &zondpb.Eth1Data{
-			DepositRoot:  root[:],
-			DepositCount: uint64(len(s.chainStartData.ChainstartDeposits)),
-		}
-		if err := s.processDeposit(ctx, eth1Data, deposit); err != nil {
-			log.WithError(err).Error("Invalid deposit processed")
-			validData = false
-		}
-	} else {
-		root, err := s.depositTrie.HashTreeRoot()
-		if err != nil {
-			return errors.Wrap(err, "unable to determine root of deposit trie")
-		}
-		s.cfg.depositCache.InsertPendingDeposit(ctx, deposit, depositLog.BlockNumber, index, root)
+	root, err = s.depositTrie.HashTreeRoot()
+	if err != nil {
+		return errors.Wrap(err, "unable to determine root of deposit trie")
 	}
-	if validData {
-		log.WithFields(logrus.Fields{
-			"eth1Block":       depositLog.BlockNumber,
-			"publicKey":       fmt.Sprintf("%#x", depositData.PublicKey),
-			"merkleTreeIndex": index,
-		}).Debug("Deposit registered from deposit contract")
-		validDepositsCount.Inc()
-		// Notify users what is going on, from time to time.
-		if !s.chainStartData.Chainstarted {
-			deposits := len(s.chainStartData.ChainstartDeposits)
-			if deposits%512 == 0 {
-				valCount, err := helpers.ActiveValidatorCount(ctx, s.preGenesisState, 0)
-				if err != nil {
-					log.WithError(err).Error("Could not determine active validator count from pre genesis state")
-				}
-				log.WithFields(logrus.Fields{
-					"deposits":          deposits,
-					"genesisValidators": valCount,
-				}).Info("Processing deposits from Zond 1 chain")
-			}
-		}
-	} else {
-		log.WithFields(logrus.Fields{
-			"eth1Block":       depositLog.BlockHash.Hex(),
-			"eth1Tx":          depositLog.TxHash.Hex(),
-			"merkleTreeIndex": index,
-		}).Info("Invalid deposit registered in deposit contract")
-	}
+	s.cfg.depositCache.InsertPendingDeposit(ctx, deposit, depositLog.BlockNumber, index, root)
+
+	log.WithFields(logrus.Fields{
+		"eth1Block":       depositLog.BlockNumber,
+		"publicKey":       fmt.Sprintf("%#x", depositData.PublicKey),
+		"merkleTreeIndex": index,
+	}).Debug("Deposit registered from deposit contract")
+	validDepositsCount.Inc()
+	// Notify users what is going on, from time to time.
+
 	if features.Get().EnableEIP4881 {
 		// We finalize the trie here so that old deposits are not kept around, as they make
 		// deposit tree htr computation expensive.
@@ -235,55 +182,6 @@ func (s *Service) ProcessDepositLog(ctx context.Context, depositLog *gzondtypes.
 	}
 
 	return nil
-}
-
-// ProcessChainStart processes the log which had been received from
-// the eth1 chain by trying to determine when to start the beacon chain.
-func (s *Service) ProcessChainStart(genesisTime uint64, eth1BlockHash [32]byte, blockNumber *big.Int) {
-	s.chainStartData.Chainstarted = true
-	s.chainStartData.GenesisBlock = blockNumber.Uint64()
-
-	chainStartTime := time.Unix(int64(genesisTime), 0) // lint:ignore uintcast -- Genesis time wont exceed int64 in your lifetime.
-
-	for i := range s.chainStartData.ChainstartDeposits {
-		proof, err := s.depositTrie.MerkleProof(i)
-		if err != nil {
-			log.WithError(err).Error("unable to generate deposit proof")
-		}
-		s.chainStartData.ChainstartDeposits[i].Proof = proof
-	}
-
-	root, err := s.depositTrie.HashTreeRoot()
-	if err != nil { // This should never happen.
-		log.WithError(err).Error("unable to determine root of deposit trie, aborting chain start")
-		return
-	}
-	s.chainStartData.Eth1Data = &zondpb.Eth1Data{
-		DepositCount: uint64(len(s.chainStartData.ChainstartDeposits)),
-		DepositRoot:  root[:],
-		BlockHash:    eth1BlockHash[:],
-	}
-
-	log.WithFields(logrus.Fields{
-		"ChainStartTime": chainStartTime,
-	}).Info("Minimum number of validators reached for beacon-chain to start")
-	s.cfg.stateNotifier.StateFeed().Send(&feed.Event{
-		Type: statefeed.ChainStarted,
-		Data: &statefeed.ChainStartedData{
-			StartTime: chainStartTime,
-		},
-	})
-	if err := s.savePowchainData(s.ctx); err != nil {
-		// continue on if the save fails as this will get re-saved
-		// in the next interval.
-		log.Error(err)
-	}
-}
-
-// createGenesisTime adds in the genesis delay to the eth1 block time
-// on which it was triggered.
-func createGenesisTime(timeStamp uint64) uint64 {
-	return timeStamp + params.BeaconConfig().GenesisDelay
 }
 
 // processPastLogs processes all the past logs from the deposit contract and
@@ -356,21 +254,6 @@ func (s *Service) processPastLogs(ctx context.Context) error {
 }
 
 func (s *Service) processBlockInBatch(ctx context.Context, currentBlockNum uint64, latestFollowHeight uint64, batchSize uint64, additiveFactor uint64, logCount uint64, headersMap map[uint64]*types.HeaderInfo) (uint64, uint64, error) {
-	// Batch request the desired headers and store them in a
-	// map for quick access.
-	requestHeaders := func(startBlk uint64, endBlk uint64) error {
-		headers, err := s.batchRequestHeaders(startBlk, endBlk)
-		if err != nil {
-			return err
-		}
-		for _, h := range headers {
-			if h != nil && h.Number != nil {
-				headersMap[h.Number.Uint64()] = h
-			}
-		}
-		return nil
-	}
-
 	start := currentBlockNum
 	end := currentBlockNum + batchSize
 	// Appropriately bound the request, as we do not
@@ -407,13 +290,6 @@ func (s *Service) processBlockInBatch(ctx context.Context, currentBlockNum uint6
 		}
 		return 0, 0, err
 	}
-	// Only request headers before chainstart to correctly determine
-	// genesis.
-	if !s.chainStartData.Chainstarted {
-		if err := requestHeaders(start, end); err != nil {
-			return 0, 0, err
-		}
-	}
 
 	s.latestEth1DataLock.RLock()
 	lastReqBlock := s.latestEth1Data.LastRequestedBlock
@@ -421,9 +297,6 @@ func (s *Service) processBlockInBatch(ctx context.Context, currentBlockNum uint6
 
 	for i, filterLog := range logs {
 		if filterLog.BlockNumber > currentBlockNum {
-			if err := s.checkHeaderRange(ctx, currentBlockNum, filterLog.BlockNumber-1, headersMap, requestHeaders); err != nil {
-				return 0, 0, err
-			}
 			// set new block number after checking for chainstart for previous block.
 			s.latestEth1DataLock.Lock()
 			s.latestEth1Data.LastRequestedBlock = currentBlockNum
@@ -441,9 +314,7 @@ func (s *Service) processBlockInBatch(ctx context.Context, currentBlockNum uint6
 			return 0, 0, err
 		}
 	}
-	if err := s.checkHeaderRange(ctx, currentBlockNum, end, headersMap, requestHeaders); err != nil {
-		return 0, 0, err
-	}
+
 	currentBlockNum = end
 
 	if batchSize < s.cfg.eth1HeaderReqLimit {
@@ -489,82 +360,9 @@ func (s *Service) requestBatchedHeadersAndLogs(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) retrieveBlockHashAndTime(ctx context.Context, blkNum *big.Int) ([32]byte, uint64, error) {
-	bHash, err := s.BlockHashByHeight(ctx, blkNum)
-	if err != nil {
-		return [32]byte{}, 0, errors.Wrap(err, "could not get eth1 block hash")
-	}
-	if bHash == [32]byte{} {
-		return [32]byte{}, 0, errors.Wrap(err, "got empty block hash")
-	}
-	timeStamp, err := s.BlockTimeByHeight(ctx, blkNum)
-	if err != nil {
-		return [32]byte{}, 0, errors.Wrap(err, "could not get block timestamp")
-	}
-	return bHash, timeStamp, nil
-}
-
-func (s *Service) processChainStartFromBlockNum(ctx context.Context, blkNum *big.Int) error {
-	bHash, timeStamp, err := s.retrieveBlockHashAndTime(ctx, blkNum)
-	if err != nil {
-		return err
-	}
-	s.processChainStartIfReady(ctx, bHash, blkNum, timeStamp)
-	return nil
-}
-
-func (s *Service) processChainStartFromHeader(ctx context.Context, header *types.HeaderInfo) {
-	s.processChainStartIfReady(ctx, header.Hash, header.Number, header.Time)
-}
-
-func (s *Service) checkHeaderRange(ctx context.Context, start, end uint64, headersMap map[uint64]*types.HeaderInfo,
-	requestHeaders func(uint64, uint64) error) error {
-	for i := start; i <= end; i++ {
-		if !s.chainStartData.Chainstarted {
-			h, ok := headersMap[i]
-			if !ok {
-				if err := requestHeaders(i, end); err != nil {
-					return err
-				}
-				// Retry this block.
-				i--
-				continue
-			}
-			s.processChainStartFromHeader(ctx, h)
-		}
-	}
-	return nil
-}
-
-// retrieves the current active validator count and genesis time from
-// the provided block time.
-func (s *Service) currentCountAndTime(ctx context.Context, blockTime uint64) (uint64, uint64) {
-	if s.preGenesisState.NumValidators() == 0 {
-		return 0, 0
-	}
-	valCount, err := helpers.ActiveValidatorCount(ctx, s.preGenesisState, 0)
-	if err != nil {
-		log.WithError(err).Error("Could not determine active validator count from pre genesis state")
-		return 0, 0
-	}
-	return valCount, createGenesisTime(blockTime)
-}
-
-func (s *Service) processChainStartIfReady(ctx context.Context, blockHash [32]byte, blockNumber *big.Int, blockTime uint64) {
-	valCount, genesisTime := s.currentCountAndTime(ctx, blockTime)
-	if valCount == 0 {
-		return
-	}
-	triggered := coreState.IsValidGenesisState(valCount, genesisTime)
-	if triggered {
-		s.chainStartData.GenesisTime = genesisTime
-		s.ProcessChainStart(s.chainStartData.GenesisTime, blockHash, blockNumber)
-	}
-}
-
 // savePowchainData saves all powchain related metadata to disk.
 func (s *Service) savePowchainData(ctx context.Context) error {
-	pbState, err := statenative.ProtobufBeaconStatePhase0(s.preGenesisState.ToProtoUnsafe())
+	pbState, err := statenative.ProtobufBeaconStateCapella(s.preGenesisState.ToProtoUnsafe())
 	if err != nil {
 		return err
 	}

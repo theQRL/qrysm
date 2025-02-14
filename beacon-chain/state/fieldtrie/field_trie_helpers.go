@@ -6,11 +6,11 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
-	customtypes "github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/custom-types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/state-native/types"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
-	pmath "github.com/theQRL/qrysm/v4/math"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	customtypes "github.com/theQRL/qrysm/beacon-chain/state/state-native/custom-types"
+	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
+	"github.com/theQRL/qrysm/beacon-chain/state/stateutil"
+	pmath "github.com/theQRL/qrysm/math"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // ProofFromMerkleLayers creates a proof starting at the leaf index of the state Merkle layers.
@@ -73,8 +73,6 @@ func fieldConverters(field types.FieldIndex, indices []uint64, elements interfac
 		return convertEth1DataVotes(indices, elements, convertAll)
 	case types.Validators:
 		return convertValidators(indices, elements, convertAll)
-	case types.PreviousEpochAttestations, types.CurrentEpochAttestations:
-		return convertAttestations(indices, elements, convertAll)
 	case types.Balances:
 		return convertBalances(indices, elements, convertAll)
 	default:
@@ -105,14 +103,6 @@ func convertValidators(indices []uint64, elements interface{}, convertAll bool) 
 		return nil, errors.Errorf("Wanted type of %T but got %T", []*zondpb.Validator{}, elements)
 	}
 	return handleValidatorSlice(val, indices, convertAll)
-}
-
-func convertAttestations(indices []uint64, elements interface{}, convertAll bool) ([][32]byte, error) {
-	val, ok := elements.([]*zondpb.PendingAttestation)
-	if !ok {
-		return nil, errors.Errorf("Wanted type of %T but got %T", []*zondpb.PendingAttestation{}, elements)
-	}
-	return handlePendingAttestationSlice(val, indices, convertAll)
 }
 
 func convertBalances(indices []uint64, elements interface{}, convertAll bool) ([][32]byte, error) {

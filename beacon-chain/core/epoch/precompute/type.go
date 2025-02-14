@@ -1,6 +1,6 @@
 package precompute
 
-import "github.com/theQRL/qrysm/v4/consensus-types/primitives"
+import "github.com/theQRL/qrysm/consensus-types/primitives"
 
 // Validator stores the pre computation of individual validator's attesting records these records
 // consist of attestation votes, block inclusion record. Pre computing and storing such record
@@ -40,7 +40,7 @@ type Validator struct {
 	// AfterEpochTransitionBalance is the validator balance after epoch transition.
 	AfterEpochTransitionBalance uint64
 
-	// InactivityScore of the validator. [New in Altair]
+	// InactivityScore of the validator.
 	InactivityScore uint64
 }
 

@@ -9,16 +9,16 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/blocks"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/io/file"
-	zond "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/validator/client"
-	beacon_api "github.com/theQRL/qrysm/v4/validator/client/beacon-api"
-	"github.com/theQRL/qrysm/v4/validator/client/iface"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/io/file"
+	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/validator/client"
+	beacon_api "github.com/theQRL/qrysm/validator/client/beacon-api"
+	"github.com/theQRL/qrysm/validator/client/iface"
+	"github.com/theQRL/qrysm/validator/keymanager"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -140,7 +140,7 @@ func PerformVoluntaryExit(
 	return rawExitedKeys, formattedExitedKeys, nil
 }
 
-func prepareAllKeys(validatingKeys [][dilithium2.CryptoPublicKeyBytes]byte) (raw [][]byte, formatted []string) {
+func prepareAllKeys(validatingKeys [][field_params.DilithiumPubkeyLength]byte) (raw [][]byte, formatted []string) {
 	raw = make([][]byte, len(validatingKeys))
 	formatted = make([]string, len(validatingKeys))
 	for i, pk := range validatingKeys {
@@ -153,7 +153,7 @@ func prepareAllKeys(validatingKeys [][dilithium2.CryptoPublicKeyBytes]byte) (raw
 
 func displayExitInfo(rawExitedKeys [][]byte, trimmedExitedKeys []string) {
 	if len(rawExitedKeys) > 0 {
-		// TODO(rgeraldes24): include our explorer url when available
+		// TODO(now.youtrack.cloud/issue/TQ-1): include our explorer url when available
 		// urlFormattedPubKeys := make([]string, len(rawExitedKeys))
 		// for i, key := range rawExitedKeys {
 		// 	var baseUrl string

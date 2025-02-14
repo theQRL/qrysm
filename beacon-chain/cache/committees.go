@@ -3,7 +3,7 @@ package cache
 import (
 	"errors"
 
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
 // ErrNotCommittee will be returned when a cache object is not a pointer to

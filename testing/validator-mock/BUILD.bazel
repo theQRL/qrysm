@@ -9,11 +9,11 @@ go_library(
         "node_client_mock.go",
         "validator_client_mock.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/testing/validator-mock",
+    importpath = "github.com/theQRL/qrysm/testing/validator-mock",
     visibility = ["//visibility:public"],
     deps = [
         "//consensus-types/primitives:go_default_library",
-        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
         "@com_github_golang_mock//gomock:go_default_library",
         "@org_golang_google_protobuf//types/known/emptypb:go_default_library",
     ],

@@ -9,10 +9,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/shared"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 type abstractProduceBlockResponseJson struct {
@@ -28,7 +27,7 @@ func (c beaconApiValidatorClient) getBeaconBlock(ctx context.Context, slot primi
 		queryParams.Add("graffiti", hexutil.Encode(graffiti))
 	}
 
-	queryUrl := buildURL(fmt.Sprintf("/zond/v2/validator/blocks/%d", slot), queryParams)
+	queryUrl := buildURL(fmt.Sprintf("/zond/v1/validator/blocks/%d", slot), queryParams)
 
 	// Since we don't know yet what the json looks like, we unmarshal into an abstract structure that has only a version
 	// and a blob of data
@@ -44,48 +43,6 @@ func (c beaconApiValidatorClient) getBeaconBlock(ctx context.Context, slot primi
 	response := &zondpb.GenericBeaconBlock{}
 
 	switch produceBlockResponseJson.Version {
-	case "phase0":
-		jsonPhase0Block := apimiddleware.BeaconBlockJson{}
-		if err := decoder.Decode(&jsonPhase0Block); err != nil {
-			return nil, errors.Wrap(err, "failed to decode phase0 block response json")
-		}
-
-		phase0Block, err := c.beaconBlockConverter.ConvertRESTPhase0BlockToProto(&jsonPhase0Block)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get phase0 block")
-		}
-		response.Block = &zondpb.GenericBeaconBlock_Phase0{
-			Phase0: phase0Block,
-		}
-
-	case "altair":
-		jsonAltairBlock := apimiddleware.BeaconBlockAltairJson{}
-		if err := decoder.Decode(&jsonAltairBlock); err != nil {
-			return nil, errors.Wrap(err, "failed to decode altair block response json")
-		}
-
-		altairBlock, err := c.beaconBlockConverter.ConvertRESTAltairBlockToProto(&jsonAltairBlock)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get altair block")
-		}
-		response.Block = &zondpb.GenericBeaconBlock_Altair{
-			Altair: altairBlock,
-		}
-
-	case "bellatrix":
-		jsonBellatrixBlock := apimiddleware.BeaconBlockBellatrixJson{}
-		if err := decoder.Decode(&jsonBellatrixBlock); err != nil {
-			return nil, errors.Wrap(err, "failed to decode bellatrix block response json")
-		}
-
-		bellatrixBlock, err := c.beaconBlockConverter.ConvertRESTBellatrixBlockToProto(&jsonBellatrixBlock)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get bellatrix block")
-		}
-		response.Block = &zondpb.GenericBeaconBlock_Bellatrix{
-			Bellatrix: bellatrixBlock,
-		}
-
 	case "capella":
 		jsonCapellaBlock := apimiddleware.BeaconBlockCapellaJson{}
 		if err := decoder.Decode(&jsonCapellaBlock); err != nil {
@@ -99,16 +56,6 @@ func (c beaconApiValidatorClient) getBeaconBlock(ctx context.Context, slot primi
 		response.Block = &zondpb.GenericBeaconBlock_Capella{
 			Capella: capellaBlock,
 		}
-	case "deneb":
-		jsonDenebBlockContents := shared.BeaconBlockContentsDeneb{}
-		if err := decoder.Decode(&jsonDenebBlockContents); err != nil {
-			return nil, errors.Wrap(err, "failed to decode deneb block response json")
-		}
-		genericBlock, err := jsonDenebBlockContents.ToGeneric()
-		if err != nil {
-			return nil, errors.Wrap(err, "could not convert deneb block contents to generic block")
-		}
-		response = genericBlock
 	default:
 		return nil, errors.Errorf("unsupported consensus version `%s`", produceBlockResponseJson.Version)
 	}

@@ -10,18 +10,17 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/helpers"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/time"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/validators"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stateutil"
-	fieldparams "github.com/theQRL/qrysm/v4/config/fieldparams"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/math"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/attestation"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/core/time"
+	"github.com/theQRL/qrysm/beacon-chain/core/validators"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/beacon-chain/state/stateutil"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/math"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
 )
 
 // sortableIndices implements the Sort interface to sort newly activated validator indices
@@ -138,10 +137,6 @@ func ProcessRegistryUpdates(ctx context.Context, state state.BeaconState) (state
 	}
 
 	churnLimit := helpers.ValidatorActivationChurnLimit(activeValidatorCount)
-
-	if state.Version() >= version.Deneb {
-		churnLimit = helpers.ValidatorActivationChurnLimitDeneb(activeValidatorCount)
-	}
 
 	// Prevent churn limit cause index out of bound.
 	if churnLimit < limit {
@@ -365,90 +360,17 @@ func ProcessHistoricalDataUpdate(state state.BeaconState) (state.BeaconState, er
 	// Set historical root accumulator.
 	epochsPerHistoricalRoot := params.BeaconConfig().SlotsPerHistoricalRoot.DivSlot(params.BeaconConfig().SlotsPerEpoch)
 	if nextEpoch.Mod(uint64(epochsPerHistoricalRoot)) == 0 {
-		if state.Version() >= version.Capella {
-			br, err := stateutil.ArraysRoot(state.BlockRoots(), fieldparams.BlockRootsLength)
-			if err != nil {
-				return nil, err
-			}
-			sr, err := stateutil.ArraysRoot(state.StateRoots(), fieldparams.StateRootsLength)
-			if err != nil {
-				return nil, err
-			}
-			if err := state.AppendHistoricalSummaries(&zondpb.HistoricalSummary{BlockSummaryRoot: br[:], StateSummaryRoot: sr[:]}); err != nil {
-				return nil, err
-			}
-		} else {
-			historicalBatch := &zondpb.HistoricalBatch{
-				BlockRoots: state.BlockRoots(),
-				StateRoots: state.StateRoots(),
-			}
-			batchRoot, err := historicalBatch.HashTreeRoot()
-			if err != nil {
-				return nil, errors.Wrap(err, "could not hash historical batch")
-			}
-			if err := state.AppendHistoricalRoots(batchRoot); err != nil {
-				return nil, err
-			}
+		br, err := stateutil.ArraysRoot(state.BlockRoots(), fieldparams.BlockRootsLength)
+		if err != nil {
+			return nil, err
 		}
-	}
-
-	return state, nil
-}
-
-// ProcessParticipationRecordUpdates rotates current/previous epoch attestations during epoch processing.
-//
-// nolint:dupword
-// Spec pseudocode definition:
-//
-//	def process_participation_record_updates(state: BeaconState) -> None:
-//	  # Rotate current/previous epoch attestations
-//	  state.previous_epoch_attestations = state.current_epoch_attestations
-//	  state.current_epoch_attestations = []
-func ProcessParticipationRecordUpdates(state state.BeaconState) (state.BeaconState, error) {
-	if err := state.RotateAttestations(); err != nil {
-		return nil, err
-	}
-	return state, nil
-}
-
-// ProcessFinalUpdates processes the final updates during epoch processing.
-func ProcessFinalUpdates(state state.BeaconState) (state.BeaconState, error) {
-	var err error
-
-	// Reset ETH1 data votes.
-	state, err = ProcessEth1DataReset(state)
-	if err != nil {
-		return nil, err
-	}
-
-	// Update effective balances with hysteresis.
-	state, err = ProcessEffectiveBalanceUpdates(state)
-	if err != nil {
-		return nil, err
-	}
-
-	// Set total slashed balances.
-	state, err = ProcessSlashingsReset(state)
-	if err != nil {
-		return nil, err
-	}
-
-	// Set RANDAO mix.
-	state, err = ProcessRandaoMixesReset(state)
-	if err != nil {
-		return nil, err
-	}
-
-	// Set historical root accumulator.
-	state, err = ProcessHistoricalDataUpdate(state)
-	if err != nil {
-		return nil, err
-	}
-
-	// Rotate current and previous epoch attestations.
-	state, err = ProcessParticipationRecordUpdates(state)
-	if err != nil {
-		return nil, err
+		sr, err := stateutil.ArraysRoot(state.StateRoots(), fieldparams.StateRootsLength)
+		if err != nil {
+			return nil, err
+		}
+		if err := state.AppendHistoricalSummaries(&zondpb.HistoricalSummary{BlockSummaryRoot: br[:], StateSummaryRoot: sr[:]}); err != nil {
+			return nil, err
+		}
 	}
 
 	return state, nil

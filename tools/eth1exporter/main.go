@@ -1,4 +1,4 @@
-// Prometheus exporter for Ethereum address balances.
+// Prometheus exporter for Zond address balances.
 // Forked from https://github.com/hunterlong/ethexporter
 package main
 
@@ -18,7 +18,7 @@ import (
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/zondclient"
-	_ "github.com/theQRL/qrysm/v4/runtime/maxprocs"
+	_ "github.com/theQRL/qrysm/runtime/maxprocs"
 )
 
 var (
@@ -29,7 +29,8 @@ var (
 )
 
 var (
-	port            = flag.Int("port", 9090, "Port to serve /metrics")
+	port = flag.Int("port", 9090, "Port to serve /metrics")
+	// TODO(now.youtrack.cloud/issue/TQ-1)
 	web3URL         = flag.String("web3-provider", "https://goerli.prylabs.net", "Web3 URL to access information about ETH1")
 	prefix          = flag.String("prefix", "", "Metrics prefix.")
 	addressFilePath = flag.String("addresses", "", "File path to addresses text file.")
@@ -48,7 +49,7 @@ func main() {
 		panic(err)
 	}
 
-	err = ConnectionToGeth(*web3URL)
+	err = ConnectionToGzond(*web3URL)
 	if err != nil {
 		panic(err)
 	}
@@ -90,8 +91,8 @@ type Watching struct {
 	Balance string
 }
 
-// ConnectionToGeth - Connect to remote server.
-func ConnectionToGeth(url string) error {
+// ConnectionToGzond - Connect to remote server.
+func ConnectionToGzond(url string) error {
 	var err error
 	eth, err = zondclient.Dial(url)
 	return err
@@ -99,7 +100,12 @@ func ConnectionToGeth(url string) error {
 
 // EthBalance from remote server.
 func EthBalance(address string) *big.Float {
-	balance, err := eth.BalanceAt(context.TODO(), common.HexToAddress(address), nil)
+	addr, err := common.NewAddressFromString(address)
+	if err != nil {
+		fmt.Printf("Error fetching Zond Balance for address: %v\n", address)
+		return nil
+	}
+	balance, err := eth.BalanceAt(context.TODO(), addr, nil)
 	if err != nil {
 		fmt.Printf("Error fetching Zond Balance for address: %v\n", address)
 	}
@@ -172,7 +178,7 @@ func OpenAddresses(filename string) error {
 	allWatching = []*Watching{}
 	for scanner.Scan() {
 		object := strings.Split(scanner.Text(), ":")
-		if common.IsHexAddress(object[1]) {
+		if common.IsAddress(object[1]) {
 			w := &Watching{
 				Name:    object[0],
 				Address: object[1],

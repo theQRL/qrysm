@@ -7,13 +7,13 @@ import (
 	"os"
 	"reflect"
 
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/config"
-	"github.com/theQRL/qrysm/v4/cmd/staking-deposit-cli/misc"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/config"
+	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/misc"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 func GenerateKeys(validatorStartIndex, numValidators uint64,
@@ -77,7 +77,7 @@ func VerifyDepositDataJSON(fileFolder string, credentials []*Credential) bool {
 
 func validateDeposit(depositData *DepositData, credential *Credential) bool {
 	signingSeed := misc.StrSeedToBinSeed(credential.signingSeed)
-	depositKey, err := dilithium.SecretKeyFromBytes(signingSeed[:])
+	depositKey, err := dilithium.SecretKeyFromSeed(signingSeed[:])
 	if err != nil {
 		panic(fmt.Errorf("failed to derive dilithium depositKey from signingSeed | reason %v", err))
 	}
@@ -87,7 +87,7 @@ func validateDeposit(depositData *DepositData, credential *Credential) bool {
 
 	signature := misc.DecodeHex(depositData.Signature)
 
-	if len(pubKey) != dilithium2.CryptoPublicKeyBytes {
+	if len(pubKey) != field_params.DilithiumPubkeyLength {
 		return false
 	}
 	if !reflect.DeepEqual(pubKey, depositKey.PublicKey().Marshal()) {
@@ -103,9 +103,13 @@ func validateDeposit(depositData *DepositData, credential *Credential) bool {
 		if !reflect.DeepEqual(withdrawalCredentials[1:12], zeroBytes11) {
 			panic("withdrawal credentials zero bytes not found for index 1:12")
 		}
-		if !reflect.DeepEqual(withdrawalCredentials[12:], credential.ZondWithdrawalAddress().Bytes()) {
+		withdrawalAddr, err := credential.ZondWithdrawalAddress()
+		if err != nil {
+			panic(fmt.Errorf("failed to read withdrawal address | reason %v", err))
+		}
+		if !reflect.DeepEqual(withdrawalCredentials[12:], withdrawalAddr.Bytes()) {
 			panic(fmt.Errorf("withdrawalCredentials[12:] %x mismatch with credential.ZondWithdrawalAddress %x",
-				withdrawalCredentials[12:], credential.ZondWithdrawalAddress().Bytes()))
+				withdrawalCredentials[12:], withdrawalAddr.Bytes()))
 		}
 	} else if reflect.DeepEqual(withdrawalCredentials[0], params.BeaconConfig().DilithiumWithdrawalPrefixByte) {
 		hashWithdrawalPK := sha256.Sum256(credential.WithdrawalPK())
@@ -117,7 +121,7 @@ func validateDeposit(depositData *DepositData, credential *Credential) bool {
 		panic(fmt.Errorf("invalid prefixbyte withdrawalCredentials[0] %x", withdrawalCredentials[0]))
 	}
 
-	if len(signature) != dilithium2.CryptoBytes {
+	if len(signature) != field_params.DilithiumSignatureLength {
 		panic(fmt.Errorf("invalid dilitihium signature length %d", len(signature)))
 	}
 

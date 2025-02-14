@@ -3,10 +3,10 @@ package state_native
 import (
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
 )
 
 func FuzzMultiValueBalances(f *testing.F) {
@@ -16,7 +16,7 @@ func FuzzMultiValueBalances(f *testing.F) {
 	defer resetFn()
 
 	bals := make([]uint64, 65536)
-	firstState, err := InitializeFromProtoPhase0(&zondpb.BeaconState{Balances: bals})
+	firstState, err := InitializeFromProtoCapella(&zondpb.BeaconStateCapella{Balances: bals})
 	require.NoError(f, err)
 
 	f.Fuzz(func(t *testing.T, index uint16, value uint64) {

@@ -1,5 +1,6 @@
 package remote_web3signer
 
+/*
 import (
 	"bytes"
 	"context"
@@ -11,17 +12,17 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
+	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/v4/async/event"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
-	validatorpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1/validator-client"
-	"github.com/theQRL/qrysm/v4/validator/accounts/petnames"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer/internal"
-	web3signerv1 "github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer/v1"
+	"github.com/theQRL/qrysm/async/event"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
+	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	"github.com/theQRL/qrysm/validator/accounts/petnames"
+	"github.com/theQRL/qrysm/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/keymanager/remote-web3signer/internal"
+	web3signerv1 "github.com/theQRL/qrysm/validator/keymanager/remote-web3signer/v1"
 )
 
 // SetupConfig includes configuration values for initializing.
@@ -39,7 +40,7 @@ type SetupConfig struct {
 	// Either URL or keylist must be set.
 	// a static list of public keys to be passed by the user to determine what accounts should sign.
 	// This will provide a layer of safety against slashing if the web3signer is shared across validators.
-	ProvidedPublicKeys [][dilithium2.CryptoPublicKeyBytes]byte
+	ProvidedPublicKeys [][field_params.DilithiumPubkeyLength]byte
 }
 
 // Keymanager defines the web3signer keymanager.
@@ -47,7 +48,7 @@ type Keymanager struct {
 	client                internal.HttpSignerClient
 	genesisValidatorsRoot []byte
 	publicKeysURL         string
-	providedPublicKeys    [][dilithium2.CryptoPublicKeyBytes]byte
+	providedPublicKeys    [][field_params.DilithiumPubkeyLength]byte
 	accountsChangedFeed   *event.Feed
 	validator             *validator.Validate
 	publicKeysUrlCalled   bool
@@ -76,7 +77,7 @@ func NewKeymanager(_ context.Context, cfg *SetupConfig) (*Keymanager, error) {
 // FetchValidatingPublicKeys fetches the validating public keys
 // from the remote server or from the provided keys if there are no existing public keys set
 // or provides the existing keys in the keymanager.
-func (km *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][dilithium2.CryptoPublicKeyBytes]byte, error) {
+func (km *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][field_params.DilithiumPubkeyLength]byte, error) {
 	if km.publicKeysURL != "" && !km.publicKeysUrlCalled {
 		providedPublicKeys, err := km.client.GetPublicKeys(ctx, km.publicKeysURL)
 		if err != nil {
@@ -203,10 +204,10 @@ func getSignRequestJson(ctx context.Context, validator *validator.Validate, requ
 		blindedBlockCapellaSignRequestsTotal.Inc()
 		return json.Marshal(blindedBlockv2CapellaSignRequest)
 	// We do not support "DEPOSIT" type.
-	/*
-		case *validatorpb.:
-		return "DEPOSIT", nil
-	*/
+	//
+	//	case *validatorpb.:
+	//	return "DEPOSIT", nil
+	//
 
 	case *validatorpb.SignRequest_Epoch:
 		randaoRevealSignRequest, err := web3signerv1.GetRandaoRevealSignRequest(request, genesisValidatorsRoot)
@@ -274,7 +275,7 @@ func getSignRequestJson(ctx context.Context, validator *validator.Validate, requ
 }
 
 // SubscribeAccountChanges returns the event subscription for changes to public keys.
-func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][dilithium2.CryptoPublicKeyBytes]byte) event.Subscription {
+func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][field_params.DilithiumPubkeyLength]byte) event.Subscription {
 	return km.accountsChangedFeed.Subscribe(pubKeysChan)
 }
 
@@ -318,7 +319,7 @@ func (km *Keymanager) ListKeymanagerAccounts(ctx context.Context, cfg keymanager
 }
 
 // DisplayRemotePublicKeys prints remote public keys to stdout.
-func DisplayRemotePublicKeys(validatingPubKeys [][dilithium2.CryptoPublicKeyBytes]byte) {
+func DisplayRemotePublicKeys(validatingPubKeys [][field_params.DilithiumPubkeyLength]byte) {
 	au := aurora.NewAurora(true)
 	for i := 0; i < len(validatingPubKeys); i++ {
 		fmt.Println("")
@@ -332,7 +333,7 @@ func DisplayRemotePublicKeys(validatingPubKeys [][dilithium2.CryptoPublicKeyByte
 }
 
 // AddPublicKeys imports a list of public keys into the keymanager for web3signer use. Returns status with message.
-func (km *Keymanager) AddPublicKeys(ctx context.Context, pubKeys [][dilithium2.CryptoPublicKeyBytes]byte) ([]*zondpbservice.ImportedRemoteKeysStatus, error) {
+func (km *Keymanager) AddPublicKeys(ctx context.Context, pubKeys [][field_params.DilithiumPubkeyLength]byte) ([]*zondpbservice.ImportedRemoteKeysStatus, error) {
 	if ctx == nil {
 		return nil, errors.New("context is nil")
 	}
@@ -364,7 +365,7 @@ func (km *Keymanager) AddPublicKeys(ctx context.Context, pubKeys [][dilithium2.C
 }
 
 // DeletePublicKeys removes a list of public keys from the keymanager for web3signer use. Returns status with message.
-func (km *Keymanager) DeletePublicKeys(ctx context.Context, pubKeys [][dilithium2.CryptoPublicKeyBytes]byte) ([]*zondpbservice.DeletedRemoteKeysStatus, error) {
+func (km *Keymanager) DeletePublicKeys(ctx context.Context, pubKeys [][field_params.DilithiumPubkeyLength]byte) ([]*zondpbservice.DeletedRemoteKeysStatus, error) {
 	if ctx == nil {
 		return nil, errors.New("context is nil")
 	}
@@ -400,3 +401,4 @@ func (km *Keymanager) DeletePublicKeys(ctx context.Context, pubKeys [][dilithium
 	km.accountsChangedFeed.Send(km.providedPublicKeys)
 	return deletedRemoteKeysStatuses, nil
 }
+*/

@@ -1,4 +1,4 @@
-// Package rpc defines a gRPC server implementing the Ethereum consensus API as needed
+// Package rpc defines a gRPC server implementing the Zond consensus API as needed
 // by validator clients and consumers of chain data.
 package rpc
 
@@ -16,47 +16,46 @@ import (
 	grpcprometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/beacon-chain/blockchain"
-	"github.com/theQRL/qrysm/v4/beacon-chain/builder"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache/depositcache"
-	blockfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/block"
-	opfeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/operation"
-	statefeed "github.com/theQRL/qrysm/v4/beacon-chain/core/feed/state"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db"
-	"github.com/theQRL/qrysm/v4/beacon-chain/execution"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/attestations"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/blstoexec"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/slashings"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/synccommittee"
-	"github.com/theQRL/qrysm/v4/beacon-chain/operations/voluntaryexits"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/core"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/beacon"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/blob"
-	rpcBuilder "github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/builder"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/debug"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/events"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/node"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/rewards"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/eth/validator"
-	"github.com/theQRL/qrysm/v4/beacon-chain/rpc/lookup"
-	nodeprysm "github.com/theQRL/qrysm/v4/beacon-chain/rpc/prysm/node"
-	beaconv1alpha1 "github.com/theQRL/qrysm/v4/beacon-chain/rpc/prysm/v1alpha1/beacon"
-	debugv1alpha1 "github.com/theQRL/qrysm/v4/beacon-chain/rpc/prysm/v1alpha1/debug"
-	nodev1alpha1 "github.com/theQRL/qrysm/v4/beacon-chain/rpc/prysm/v1alpha1/node"
-	validatorv1alpha1 "github.com/theQRL/qrysm/v4/beacon-chain/rpc/prysm/v1alpha1/validator"
-	httpserver "github.com/theQRL/qrysm/v4/beacon-chain/rpc/prysm/validator"
-	slasherservice "github.com/theQRL/qrysm/v4/beacon-chain/slasher"
-	"github.com/theQRL/qrysm/v4/beacon-chain/startup"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state/stategen"
-	chainSync "github.com/theQRL/qrysm/v4/beacon-chain/sync"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/io/logs"
-	"github.com/theQRL/qrysm/v4/monitoring/tracing"
-	zondpbv1alpha1 "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
+	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/beacon-chain/builder"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/cache/depositcache"
+	blockfeed "github.com/theQRL/qrysm/beacon-chain/core/feed/block"
+	opfeed "github.com/theQRL/qrysm/beacon-chain/core/feed/operation"
+	statefeed "github.com/theQRL/qrysm/beacon-chain/core/feed/state"
+	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/beacon-chain/execution"
+	"github.com/theQRL/qrysm/beacon-chain/operations/attestations"
+	"github.com/theQRL/qrysm/beacon-chain/operations/dilithiumtoexec"
+	"github.com/theQRL/qrysm/beacon-chain/operations/slashings"
+	"github.com/theQRL/qrysm/beacon-chain/operations/synccommittee"
+	"github.com/theQRL/qrysm/beacon-chain/operations/voluntaryexits"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/core"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/lookup"
+	nodeqrysm "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/node"
+	beaconv1alpha1 "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/v1alpha1/beacon"
+	debugv1alpha1 "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/v1alpha1/debug"
+	nodev1alpha1 "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/v1alpha1/node"
+	validatorv1alpha1 "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/v1alpha1/validator"
+	httpserver "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/validator"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
+	rpcBuilder "github.com/theQRL/qrysm/beacon-chain/rpc/zond/builder"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/debug"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/events"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/node"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/rewards"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/validator"
+	slasherservice "github.com/theQRL/qrysm/beacon-chain/slasher"
+	"github.com/theQRL/qrysm/beacon-chain/startup"
+	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
+	chainSync "github.com/theQRL/qrysm/beacon-chain/sync"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/io/logs"
+	"github.com/theQRL/qrysm/monitoring/tracing"
+	zondpbv1alpha1 "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -109,7 +108,7 @@ type Config struct {
 	SlashingsPool                 slashings.PoolManager
 	SlashingChecker               slasherservice.SlashingChecker
 	SyncCommitteeObjectPool       synccommittee.Pool
-	DilithiumChangesPool          blstoexec.PoolManager
+	DilithiumChangesPool          dilithiumtoexec.PoolManager
 	SyncService                   chainSync.Checker
 	Broadcaster                   p2p.Broadcaster
 	PeersFetcher                  p2p.PeersProvider
@@ -177,6 +176,7 @@ func NewService(ctx context.Context, cfg *Config) *Service {
 		}
 		opts = append(opts, grpc.Creds(creds))
 	} else {
+		// TODO(now.youtrack.cloud/issue/TQ-1)
 		log.Warn("You are using an insecure gRPC server. If you are running your beacon node and " +
 			"validator on the same machines, you can ignore this message. If you want to know " +
 			"how to enable secure connections, see: https://docs.prylabs.network/docs/prysm-usage/secure-grpc")
@@ -232,12 +232,6 @@ func (s *Service) Start() {
 		Stater:                stater,
 	}
 	s.cfg.Router.HandleFunc("/zond/v1/builder/states/{state_id}/expected_withdrawals", builderServer.ExpectedWithdrawals).Methods(http.MethodGet)
-
-	blobServer := &blob.Server{
-		ChainInfoFetcher: s.cfg.ChainInfoFetcher,
-		BeaconDB:         s.cfg.BeaconDB,
-	}
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/blob_sidecars/{block_id}", blobServer.Blobs).Methods(http.MethodGet)
 
 	coreService := &core.Service{
 		HeadFetcher:        s.cfg.HeadFetcher,
@@ -324,7 +318,6 @@ func (s *Service) Start() {
 
 	nodeServer := &nodev1alpha1.Server{
 		LogsStreamer:         logs.NewStreamServer(),
-		StreamLogsBufferSize: 1000, // Enough to handle bursts of beacon node logs for gRPC streaming.
 		BeaconDB:             s.cfg.BeaconDB,
 		Server:               s.grpcServer,
 		SyncChecker:          s.cfg.SyncService,
@@ -351,7 +344,7 @@ func (s *Service) Start() {
 
 	s.cfg.Router.HandleFunc("/zond/v1/node/syncing", nodeServerZond.GetSyncStatus).Methods(http.MethodGet)
 
-	nodeServerPrysm := &nodeprysm.Server{
+	nodeServerQrysm := &nodeqrysm.Server{
 		BeaconDB:                  s.cfg.BeaconDB,
 		SyncChecker:               s.cfg.SyncService,
 		OptimisticModeFetcher:     s.cfg.OptimisticModeFetcher,
@@ -363,9 +356,9 @@ func (s *Service) Start() {
 		ExecutionChainInfoFetcher: s.cfg.ExecutionChainInfoFetcher,
 	}
 
-	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers", nodeServerPrysm.ListTrustedPeer).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers", nodeServerPrysm.AddTrustedPeer).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers/{peer_id}", nodeServerPrysm.RemoveTrustedPeer).Methods(http.MethodDelete)
+	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers", nodeServerQrysm.ListTrustedPeer).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers", nodeServerQrysm.AddTrustedPeer).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrysm/node/trusted_peers/{peer_id}", nodeServerQrysm.RemoveTrustedPeer).Methods(http.MethodDelete)
 
 	beaconChainServer := &beaconv1alpha1.Server{
 		Ctx:                         s.ctx,
@@ -434,8 +427,6 @@ func (s *Service) Start() {
 	s.cfg.Router.HandleFunc("/zond/v1/beacon/states/{state_id}/fork", beaconChainServerV1.GetStateFork).Methods(http.MethodGet)
 	s.cfg.Router.HandleFunc("/zond/v1/beacon/blocks", beaconChainServerV1.PublishBlock).Methods(http.MethodPost)
 	s.cfg.Router.HandleFunc("/zond/v1/beacon/blinded_blocks", beaconChainServerV1.PublishBlindedBlock).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v2/beacon/blocks", beaconChainServerV1.PublishBlockV2).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v2/beacon/blinded_blocks", beaconChainServerV1.PublishBlindedBlockV2).Methods(http.MethodPost)
 	s.cfg.Router.HandleFunc("/zond/v1/beacon/blocks/{block_id}/root", beaconChainServerV1.GetBlockRoot).Methods(http.MethodGet)
 	s.cfg.Router.HandleFunc("/zond/v1/beacon/pool/attestations", beaconChainServerV1.ListAttestations).Methods(http.MethodGet)
 	s.cfg.Router.HandleFunc("/zond/v1/beacon/pool/attestations", beaconChainServerV1.SubmitAttestations).Methods(http.MethodPost)
@@ -453,7 +444,6 @@ func (s *Service) Start() {
 
 	zondpbv1alpha1.RegisterNodeServer(s.grpcServer, nodeServer)
 	zondpbservice.RegisterBeaconNodeServer(s.grpcServer, nodeServerZond)
-	zondpbv1alpha1.RegisterHealthServer(s.grpcServer, nodeServer)
 	zondpbv1alpha1.RegisterBeaconChainServer(s.grpcServer, beaconChainServer)
 	zondpbservice.RegisterBeaconChainServer(s.grpcServer, beaconChainServerV1)
 	zondpbservice.RegisterEventsServer(s.grpcServer, &events.Server{

@@ -7,23 +7,21 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
-	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/crypto/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	"github.com/theQRL/qrysm/v4/io/file"
-	"github.com/theQRL/qrysm/v4/io/prompt"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	keystorev4 "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
+	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
+	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/io/file"
+	"github.com/theQRL/qrysm/io/prompt"
+	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	"github.com/theQRL/qrysm/validator/keymanager"
 )
 
+/*
 var derivationPathRegex = regexp.MustCompile(`m_12381_3600_(\d+)_(\d+)_(\d+)`)
 
 // byDerivationPath implements sort.Interface based on a
@@ -66,6 +64,7 @@ func (fileNames byDerivationPath) Less(i, j int) bool {
 func (fileNames byDerivationPath) Swap(i, j int) {
 	fileNames[i], fileNames[j] = fileNames[j], fileNames[i]
 }
+*/
 
 // ImportAccountsConfig defines values to run the import accounts function.
 type ImportAccountsConfig struct {
@@ -75,7 +74,7 @@ type ImportAccountsConfig struct {
 }
 
 // Import can import external, EIP-2335 compliant keystore.json files as
-// new accounts into the Prysm validator wallet. This uses the CLI to extract
+// new accounts into the Qrysm validator wallet. This uses the CLI to extract
 // values necessary to run the function.
 func (acm *AccountsCLIManager) Import(ctx context.Context) error {
 	k, ok := acm.keymanager.(keymanager.Importer)
@@ -84,7 +83,7 @@ func (acm *AccountsCLIManager) Import(ctx context.Context) error {
 	}
 
 	// Check if the user wishes to import a one-off, private key directly
-	// as an account into the Prysm validator.
+	// as an account into the Qrysm validator.
 	if acm.importPrivateKeys {
 		return importPrivateKeyAsAccount(ctx, acm.wallet, k, acm.privateKeyFile)
 	}
@@ -112,7 +111,7 @@ func (acm *AccountsCLIManager) Import(ctx context.Context) error {
 		}
 		// Sort the imported keystores by derivation path if they
 		// specify this value in their filename.
-		sort.Sort(byDerivationPath(filesInDir))
+		// sort.Sort(byDerivationPath(filesInDir))
 		for _, name := range filesInDir {
 			keystore, err := readKeystoreFile(ctx, filepath.Join(acm.keysDir, name))
 			if err != nil && strings.Contains(err.Error(), "could not decode keystore json") {
@@ -136,7 +135,7 @@ func (acm *AccountsCLIManager) Import(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		accountsPassword = string(data)
+		accountsPassword = strings.TrimRight(string(data), "\r\n")
 	} else {
 		accountsPassword, err = prompt.PasswordPrompt(
 			"Enter the password for your imported accounts", prompt.NotEmpty,
@@ -178,7 +177,7 @@ func (acm *AccountsCLIManager) Import(ctx context.Context) error {
 }
 
 // ImportAccounts can import external, EIP-2335 compliant keystore.json files as
-// new accounts into the Prysm validator wallet.
+// new accounts into the Qrysm validator wallet.
 func ImportAccounts(ctx context.Context, cfg *ImportAccountsConfig) ([]*zondpbservice.ImportedKeystoreStatus, error) {
 	if cfg.AccountPassword == "" {
 		statuses := make([]*zondpbservice.ImportedKeystoreStatus, len(cfg.Keystores))
@@ -205,7 +204,7 @@ func ImportAccounts(ctx context.Context, cfg *ImportAccountsConfig) ([]*zondpbse
 }
 
 // Imports a one-off file containing a private key as a hex string into
-// the Prysm validator's accounts.
+// the Qrysm validator's accounts.
 func importPrivateKeyAsAccount(ctx context.Context, wallet *wallet.Wallet, importer keymanager.Importer, privKeyFile string) error {
 	fullPath, err := file.ExpandPath(privKeyFile)
 	if err != nil {
@@ -228,9 +227,9 @@ func importPrivateKeyAsAccount(ctx context.Context, wallet *wallet.Wallet, impor
 			err, "could not decode file as hex string, does the file contain a valid hex string?",
 		)
 	}
-	privKey, err := dilithium.SecretKeyFromBytes(privKeyBytes)
+	privKey, err := dilithium.SecretKeyFromSeed(privKeyBytes)
 	if err != nil {
-		return errors.Wrap(err, "not a valid BLS private key")
+		return errors.Wrap(err, "not a valid Dilithium private key")
 	}
 	keystore, err := createKeystoreFromPrivateKey(privKey, wallet.Password())
 	if err != nil {
@@ -256,9 +255,9 @@ func importPrivateKeyAsAccount(ctx context.Context, wallet *wallet.Wallet, impor
 			)
 			return nil
 		case zondpbservice.ImportedKeystoreStatus_ERROR:
-			return fmt.Errorf("Could not import keystore for %s: %s", keystore.Pubkey, status.Message)
+			return fmt.Errorf("could not import keystore for %s: %s", keystore.Pubkey, status.Message)
 		case zondpbservice.ImportedKeystoreStatus_DUPLICATE:
-			return fmt.Errorf("Duplicate key %s skipped", keystore.Pubkey)
+			return fmt.Errorf("duplicate key %s skipped", keystore.Pubkey)
 		}
 	}
 
@@ -277,9 +276,9 @@ func readKeystoreFile(_ context.Context, keystoreFilePath string) (*keymanager.K
 	if keystoreFile.Pubkey == "" {
 		return nil, errors.New("could not decode keystore json")
 	}
-	if keystoreFile.Description == "" && keystoreFile.Name != "" {
-		keystoreFile.Description = keystoreFile.Name
-	}
+	// if keystoreFile.Description == "" && keystoreFile.Name != "" {
+	// 	keystoreFile.Description = keystoreFile.Name
+	// }
 	return keystoreFile, nil
 }
 
@@ -306,6 +305,7 @@ func createKeystoreFromPrivateKey(dilithiumKey dilithium.DilithiumKey, walletPas
 	}, nil
 }
 
+/*
 // Extracts the account index, j, from a derivation path in a file name
 // with the format m_12381_3600_j_0_0.
 func accountIndexFromFileName(derivationPath string) string {
@@ -313,3 +313,4 @@ func accountIndexFromFileName(derivationPath string) string {
 	accIndexEnd := strings.Index(derivationPath, "_")
 	return derivationPath[:accIndexEnd]
 }
+*/

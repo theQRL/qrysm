@@ -5,9 +5,9 @@ import (
 	"context"
 
 	"github.com/sirupsen/logrus"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
 )
 
 // DeleteKeystores takes in public keys and removes the accounts from the wallet.
@@ -22,7 +22,7 @@ func (km *Keymanager) DeleteKeystores(
 	ctx context.Context, publicKeys [][]byte,
 ) ([]*zondpbservice.DeletedKeystoreStatus, error) {
 	// Check for duplicate keys and filter them out.
-	trackedPublicKeys := make(map[[dilithium2.CryptoPublicKeyBytes]byte]bool)
+	trackedPublicKeys := make(map[[field_params.DilithiumPubkeyLength]byte]bool)
 	statuses := make([]*zondpbservice.DeletedKeystoreStatus, 0, len(publicKeys))
 	deletedKeys := make([][]byte, 0, len(publicKeys))
 	// 1) Copy the in memory keystore

@@ -11,26 +11,25 @@ import (
 	grpcopentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	grpcprometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/pkg/errors"
-	dilithium2 "github.com/theQRL/go-qrllib/dilithium"
-	grpcutil "github.com/theQRL/qrysm/v4/api/grpc"
-	"github.com/theQRL/qrysm/v4/async/event"
-	lruwrpr "github.com/theQRL/qrysm/v4/cache/lru"
-	"github.com/theQRL/qrysm/v4/config/params"
-	validatorserviceconfig "github.com/theQRL/qrysm/v4/config/validator/service"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/validator/accounts/wallet"
-	beaconChainClientFactory "github.com/theQRL/qrysm/v4/validator/client/beacon-chain-client-factory"
-	"github.com/theQRL/qrysm/v4/validator/client/iface"
-	nodeClientFactory "github.com/theQRL/qrysm/v4/validator/client/node-client-factory"
-	validatorClientFactory "github.com/theQRL/qrysm/v4/validator/client/validator-client-factory"
-	"github.com/theQRL/qrysm/v4/validator/db"
-	"github.com/theQRL/qrysm/v4/validator/graffiti"
-	validatorHelpers "github.com/theQRL/qrysm/v4/validator/helpers"
-	"github.com/theQRL/qrysm/v4/validator/keymanager"
-	"github.com/theQRL/qrysm/v4/validator/keymanager/local"
-	remoteweb3signer "github.com/theQRL/qrysm/v4/validator/keymanager/remote-web3signer"
+	grpcutil "github.com/theQRL/qrysm/api/grpc"
+	"github.com/theQRL/qrysm/async/event"
+	lruwrpr "github.com/theQRL/qrysm/cache/lru"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	validatorserviceconfig "github.com/theQRL/qrysm/config/validator/service"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	beaconChainClientFactory "github.com/theQRL/qrysm/validator/client/beacon-chain-client-factory"
+	"github.com/theQRL/qrysm/validator/client/iface"
+	nodeClientFactory "github.com/theQRL/qrysm/validator/client/node-client-factory"
+	validatorClientFactory "github.com/theQRL/qrysm/validator/client/validator-client-factory"
+	"github.com/theQRL/qrysm/validator/db"
+	"github.com/theQRL/qrysm/validator/graffiti"
+	validatorHelpers "github.com/theQRL/qrysm/validator/helpers"
+	"github.com/theQRL/qrysm/validator/keymanager"
+	"github.com/theQRL/qrysm/validator/keymanager/local"
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -52,7 +51,6 @@ type GenesisFetcher interface {
 // ValidatorService represents a service to manage the validator client
 // routine.
 type ValidatorService struct {
-	useWeb                bool
 	emitAccountMetrics    bool
 	logValidatorBalances  bool
 	interopKeysConfig     *local.InteropKeymanagerConfig
@@ -72,13 +70,12 @@ type ValidatorService struct {
 	db                    db.Database
 	grpcHeaders           []string
 	graffiti              []byte
-	Web3SignerConfig      *remoteweb3signer.SetupConfig
-	proposerSettings      *validatorserviceconfig.ProposerSettings
+	// Web3SignerConfig      *remoteweb3signer.SetupConfig
+	proposerSettings *validatorserviceconfig.ProposerSettings
 }
 
 // Config for the validator service.
 type Config struct {
-	UseWeb                     bool
 	LogValidatorBalances       bool
 	EmitAccountMetrics         bool
 	InteropKeysConfig          *local.InteropKeymanagerConfig
@@ -95,10 +92,10 @@ type Config struct {
 	GrpcHeadersFlag            string
 	GraffitiFlag               string
 	Endpoint                   string
-	Web3SignerConfig           *remoteweb3signer.SetupConfig
-	ProposerSettings           *validatorserviceconfig.ProposerSettings
-	BeaconApiEndpoint          string
-	BeaconApiTimeout           time.Duration
+	// Web3SignerConfig           *remoteweb3signer.SetupConfig
+	ProposerSettings  *validatorserviceconfig.ProposerSettings
+	BeaconApiEndpoint string
+	BeaconApiTimeout  time.Duration
 }
 
 // NewValidatorService creates a new validator service for the service
@@ -122,11 +119,10 @@ func NewValidatorService(ctx context.Context, cfg *Config) (*ValidatorService, e
 		db:                    cfg.ValDB,
 		wallet:                cfg.Wallet,
 		walletInitializedFeed: cfg.WalletInitializedFeed,
-		useWeb:                cfg.UseWeb,
 		interopKeysConfig:     cfg.InteropKeysConfig,
 		graffitiStruct:        cfg.GraffitiStruct,
-		Web3SignerConfig:      cfg.Web3SignerConfig,
-		proposerSettings:      cfg.ProposerSettings,
+		// Web3SignerConfig:  cfg.Web3SignerConfig,
+		proposerSettings: cfg.ProposerSettings,
 	}
 
 	dialOpts := ConstructDialOptions(
@@ -176,7 +172,7 @@ func (v *ValidatorService) Start() {
 		log.WithError(err).Error("Could not read slashable public keys from disk")
 		return
 	}
-	slashablePublicKeys := make(map[[dilithium2.CryptoPublicKeyBytes]byte]bool)
+	slashablePublicKeys := make(map[[field_params.DilithiumPubkeyLength]byte]bool)
 	for _, pubKey := range sPubKeys {
 		slashablePublicKeys[pubKey] = true
 	}
@@ -198,16 +194,15 @@ func (v *ValidatorService) Start() {
 		graffiti:                       v.graffiti,
 		logValidatorBalances:           v.logValidatorBalances,
 		emitAccountMetrics:             v.emitAccountMetrics,
-		startBalances:                  make(map[[dilithium2.CryptoPublicKeyBytes]byte]uint64),
-		prevBalance:                    make(map[[dilithium2.CryptoPublicKeyBytes]byte]uint64),
-		pubkeyToValidatorIndex:         make(map[[dilithium2.CryptoPublicKeyBytes]byte]primitives.ValidatorIndex),
-		signedValidatorRegistrations:   make(map[[dilithium2.CryptoPublicKeyBytes]byte]*zondpb.SignedValidatorRegistrationV1),
+		startBalances:                  make(map[[field_params.DilithiumPubkeyLength]byte]uint64),
+		prevBalance:                    make(map[[field_params.DilithiumPubkeyLength]byte]uint64),
+		pubkeyToValidatorIndex:         make(map[[field_params.DilithiumPubkeyLength]byte]primitives.ValidatorIndex),
+		signedValidatorRegistrations:   make(map[[field_params.DilithiumPubkeyLength]byte]*zondpb.SignedValidatorRegistrationV1),
 		attLogs:                        make(map[[32]byte]*attSubmitted),
 		domainDataCache:                cache,
 		aggregatedSlotCommitteeIDCache: aggregatedSlotCommitteeIDCache,
 		voteStats:                      voteStats{startEpoch: primitives.Epoch(^uint64(0))},
 		syncCommitteeStats:             syncCommitteeStats{},
-		useWeb:                         v.useWeb,
 		interopKeysConfig:              v.interopKeysConfig,
 		wallet:                         v.wallet,
 		walletInitializedFeed:          v.walletInitializedFeed,
@@ -215,9 +210,9 @@ func (v *ValidatorService) Start() {
 		graffitiStruct:                 v.graffitiStruct,
 		graffitiOrderedIndex:           graffitiOrderedIndex,
 		eipImportBlacklistedPublicKeys: slashablePublicKeys,
-		Web3SignerConfig:               v.Web3SignerConfig,
-		proposerSettings:               v.proposerSettings,
-		walletInitializedChannel:       make(chan *wallet.Wallet, 1),
+		// Web3SignerConfig:               v.Web3SignerConfig,
+		proposerSettings:         v.proposerSettings,
+		walletInitializedChannel: make(chan *wallet.Wallet, 1),
 	}
 
 	// To resolve a race condition at startup due to the interface
@@ -299,6 +294,7 @@ func ConstructDialOptions(
 		}
 		transportSecurity = grpc.WithTransportCredentials(creds)
 	} else {
+		// TODO(now.youtrack.cloud/issue/TQ-1)
 		transportSecurity = grpc.WithInsecure()
 		log.Warn("You are using an insecure gRPC connection. If you are running your beacon node and " +
 			"validator on the same machines, you can ignore this message. If you want to know " +

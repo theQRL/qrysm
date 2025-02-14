@@ -4,18 +4,25 @@ import (
 	"context"
 	"testing"
 
-	"github.com/theQRL/qrysm/v4/beacon-chain/cache"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/signing"
-	dbTest "github.com/theQRL/qrysm/v4/beacon-chain/db/testing"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
-	"github.com/theQRL/qrysm/v4/time/slots"
+	"github.com/theQRL/qrysm/beacon-chain/cache"
+	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition"
+	dbTest "github.com/theQRL/qrysm/beacon-chain/db/testing"
+	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 func TestService_HeadSyncCommitteeIndices(t *testing.T) {
-	s, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().TargetCommitteeSize)
+	transition.SkipSlotCache.Disable()
+	defer transition.SkipSlotCache.Enable()
+
+	s, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().SyncCommitteeSize)
 	c := &Service{cfg: &config{BeaconDB: dbTest.SetupDB(t)}}
 	c.head = &head{state: s}
 
@@ -38,7 +45,20 @@ func TestService_HeadSyncCommitteeIndices(t *testing.T) {
 }
 
 func TestService_headCurrentSyncCommitteeIndices(t *testing.T) {
-	s, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().TargetCommitteeSize)
+	transition.SkipSlotCache.Disable()
+	defer transition.SkipSlotCache.Enable()
+
+	s, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().SyncCommitteeSize)
+	var pubKeys [][]byte
+	for i := uint64(0); i < params.BeaconConfig().SyncCommitteeSize; i++ {
+		pubKeys = append(pubKeys, bytesutil.PadTo([]byte{}, field_params.DilithiumPubkeyLength))
+	}
+	syncCommittee := &zondpb.SyncCommittee{
+		Pubkeys: pubKeys,
+	}
+	require.NoError(t, s.SetCurrentSyncCommittee(syncCommittee))
+	require.NoError(t, s.SetNextSyncCommittee(syncCommittee))
+
 	c := &Service{cfg: &config{BeaconDB: dbTest.SetupDB(t)}}
 	c.head = &head{state: s}
 
@@ -52,8 +72,21 @@ func TestService_headCurrentSyncCommitteeIndices(t *testing.T) {
 }
 
 func TestService_headNextSyncCommitteeIndices(t *testing.T) {
-	s, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().TargetCommitteeSize)
-	c := &Service{}
+	transition.SkipSlotCache.Disable()
+	defer transition.SkipSlotCache.Enable()
+
+	s, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().SyncCommitteeSize)
+	var pubKeys [][]byte
+	for i := uint64(0); i < params.BeaconConfig().SyncCommitteeSize; i++ {
+		pubKeys = append(pubKeys, bytesutil.PadTo([]byte{}, field_params.DilithiumPubkeyLength))
+	}
+	syncCommittee := &zondpb.SyncCommittee{
+		Pubkeys: pubKeys,
+	}
+	require.NoError(t, s.SetCurrentSyncCommittee(syncCommittee))
+	require.NoError(t, s.SetNextSyncCommittee(syncCommittee))
+
+	c := &Service{cfg: &config{BeaconDB: dbTest.SetupDB(t)}}
 	c.head = &head{state: s}
 
 	// Process slot up to `EpochsPerSyncCommitteePeriod` so it can `ProcessSyncCommitteeUpdates`.
@@ -66,7 +99,7 @@ func TestService_headNextSyncCommitteeIndices(t *testing.T) {
 }
 
 func TestService_HeadSyncCommitteePubKeys(t *testing.T) {
-	s, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().TargetCommitteeSize)
+	s, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().TargetCommitteeSize)
 	c := &Service{cfg: &config{BeaconDB: dbTest.SetupDB(t)}}
 	c.head = &head{state: s}
 
@@ -81,7 +114,7 @@ func TestService_HeadSyncCommitteePubKeys(t *testing.T) {
 }
 
 func TestService_HeadSyncCommitteeDomain(t *testing.T) {
-	s, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().TargetCommitteeSize)
+	s, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().TargetCommitteeSize)
 	c := &Service{cfg: &config{BeaconDB: dbTest.SetupDB(t)}}
 	c.head = &head{state: s}
 
@@ -95,8 +128,8 @@ func TestService_HeadSyncCommitteeDomain(t *testing.T) {
 }
 
 func TestService_HeadSyncContributionProofDomain(t *testing.T) {
-	s, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().TargetCommitteeSize)
-	c := &Service{}
+	s, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().TargetCommitteeSize)
+	c := &Service{cfg: &config{BeaconDB: dbTest.SetupDB(t)}}
 	c.head = &head{state: s}
 
 	wanted, err := signing.Domain(s.Fork(), slots.ToEpoch(s.Slot()), params.BeaconConfig().DomainContributionAndProof, s.GenesisValidatorsRoot())
@@ -109,8 +142,8 @@ func TestService_HeadSyncContributionProofDomain(t *testing.T) {
 }
 
 func TestService_HeadSyncSelectionProofDomain(t *testing.T) {
-	s, _ := util.DeterministicGenesisStateAltair(t, params.BeaconConfig().TargetCommitteeSize)
-	c := &Service{}
+	s, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().TargetCommitteeSize)
+	c := &Service{cfg: &config{BeaconDB: dbTest.SetupDB(t)}}
 	c.head = &head{state: s}
 
 	wanted, err := signing.Domain(s.Fork(), slots.ToEpoch(s.Slot()), params.BeaconConfig().DomainSyncCommitteeSelectionProof, s.GenesisValidatorsRoot())
@@ -127,7 +160,7 @@ func TestSyncCommitteeHeadStateCache_RoundTrip(t *testing.T) {
 	t.Cleanup(func() {
 		syncCommitteeHeadStateCache = cache.NewSyncCommitteeHeadState()
 	})
-	beaconState, _ := util.DeterministicGenesisStateAltair(t, 100)
+	beaconState, _ := util.DeterministicGenesisStateCapella(t, 100)
 	require.NoError(t, beaconState.SetSlot(100))
 	cachedState, err := c.Get(101)
 	require.ErrorContains(t, cache.ErrNotFound.Error(), err)

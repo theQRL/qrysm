@@ -3,18 +3,16 @@ package blockchain
 import (
 	"context"
 
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/altair"
-	"github.com/theQRL/qrysm/v4/beacon-chain/core/epoch/precompute"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/runtime/version"
+	"github.com/theQRL/qrysm/beacon-chain/core/altair"
+	"github.com/theQRL/qrysm/beacon-chain/core/epoch/precompute"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 var (
@@ -327,26 +325,13 @@ func reportEpochMetrics(ctx context.Context, postState, headState state.BeaconSt
 	var v []*precompute.Validator
 	var err error
 
-	if headState.Version() == version.Phase0 {
-		v, b, err = precompute.New(ctx, headState)
-		if err != nil {
-			return err
-		}
-		_, b, err = precompute.ProcessAttestations(ctx, headState, v, b)
-		if err != nil {
-			return err
-		}
-	} else if headState.Version() >= version.Altair {
-		v, b, err = altair.InitializePrecomputeValidators(ctx, headState)
-		if err != nil {
-			return err
-		}
-		_, b, err = altair.ProcessEpochParticipation(ctx, headState, b, v)
-		if err != nil {
-			return err
-		}
-	} else {
-		return errors.Errorf("invalid state type provided: %T", headState.ToProtoUnsafe())
+	v, b, err = altair.InitializePrecomputeValidators(ctx, headState)
+	if err != nil {
+		return err
+	}
+	_, b, err = altair.ProcessEpochParticipation(ctx, headState, b, v)
+	if err != nil {
+		return err
 	}
 
 	prevEpochActiveBalances.Set(float64(b.ActivePrevEpoch))

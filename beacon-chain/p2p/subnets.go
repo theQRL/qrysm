@@ -9,13 +9,13 @@ import (
 	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/go-zond/p2p/enode"
 	"github.com/theQRL/go-zond/p2p/enr"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/v4/consensus-types/wrapper"
-	mathutil "github.com/theQRL/qrysm/v4/math"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	"github.com/theQRL/qrysm/consensus-types/wrapper"
+	mathutil "github.com/theQRL/qrysm/math"
 	"go.opencensus.io/trace"
 
-	"github.com/theQRL/qrysm/v4/config/params"
-	pb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/config/params"
+	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 var attestationSubnetCount = params.BeaconNetworkConfig().AttestationSubnetCount
@@ -30,13 +30,6 @@ var syncCommsSubnetEnrKey = params.BeaconNetworkConfig().SyncCommsSubnetKey
 // sync subnets from attestation subnets. This is deliberately
 // chosen as more than 64(attestation subnet count).
 const syncLockerVal = 100
-
-// The value used with the blob sidecar subnet, in order
-// to create an appropriate key to retrieve
-// the relevant lock. This is used to differentiate
-// blob subnets from others. This is deliberately
-// chosen more than sync and attestation subnet combined.
-const blobSubnetLockerVal = 110
 
 // FindPeersWithSubnet performs a network search for peers
 // subscribed to a particular subnet. Then we try to connect

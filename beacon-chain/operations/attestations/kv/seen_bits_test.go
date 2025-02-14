@@ -2,11 +2,12 @@ package kv
 
 import (
 	"testing"
+	"time"
 
 	"github.com/theQRL/go-bitfield"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestAttCaches_hasSeenBit(t *testing.T) {
@@ -47,10 +48,13 @@ func TestAttCaches_insertSeenBitDuplicates(t *testing.T) {
 	_, expirationTime1, ok := c.seenAtt.GetWithExpiration(string(r[:]))
 	require.Equal(t, true, ok)
 
+	// NOTE(rgeraldes24): required to create a time gap otherwise the last check fails sometimes
+	time.Sleep(2 * time.Second)
+
 	// Make sure that duplicates are not inserted, but expiration time gets updated.
 	require.NoError(t, c.insertSeenBit(att1))
 	require.Equal(t, 1, c.seenAtt.ItemCount())
-	_, expirationprysmTime, ok := c.seenAtt.GetWithExpiration(string(r[:]))
+	_, expirationqrysmTime, ok := c.seenAtt.GetWithExpiration(string(r[:]))
 	require.Equal(t, true, ok)
-	require.Equal(t, true, expirationprysmTime.After(expirationTime1), "Expiration time is not updated")
+	require.Equal(t, true, expirationqrysmTime.After(expirationTime1), "Expiration time is not updated")
 }

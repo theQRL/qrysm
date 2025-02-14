@@ -6,11 +6,11 @@ import (
 
 	"github.com/logrusorgru/aurora"
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/v4/cmd"
-	"github.com/theQRL/qrysm/v4/cmd/validator/accounts"
-	"github.com/theQRL/qrysm/v4/cmd/validator/flags"
-	"github.com/theQRL/qrysm/v4/config/features"
-	"github.com/theQRL/qrysm/v4/runtime/tos"
+	"github.com/theQRL/qrysm/cmd"
+	"github.com/theQRL/qrysm/cmd/validator/accounts"
+	"github.com/theQRL/qrysm/cmd/validator/flags"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/runtime/tos"
 	"github.com/urfave/cli/v2"
 )
 
@@ -75,7 +75,7 @@ var (
 var Commands = []*cli.Command{
 	{
 		Name:    "validator",
-		Aliases: []string{"v", "sign"}, // remove sign command should be depreciated but having as backwards compatibility.
+		Aliases: []string{"v"},
 		Usage:   "commands that affect the state of validators such as exiting or withdrawing",
 		Subcommands: []*cli.Command{
 			{
@@ -98,6 +98,7 @@ var Commands = []*cli.Command{
 					if !cliCtx.Bool(cmd.AcceptTosFlag.Name) || !cliCtx.Bool(ConfirmFlag.Name) {
 						fmt.Println(au.Red("===============IMPORTANT==============="))
 						fmt.Println(au.Red("Please read the following carefully"))
+						// TODO(now.youtrack.cloud/issue/TQ-1)
 						fmt.Print("This action will allow the partial withdrawal of amounts over the 32 staked Quanta in your active validator balance. \n" +
 							"You will also be entitled to the full withdrawal of the entire validator balance if your validator has exited. \n" +
 							"Please navigate to our website (https://docs.prylabs.network/) and make sure you understand the full implications of setting your withdrawal address. \n")
@@ -154,8 +155,8 @@ var Commands = []*cli.Command{
 					flags.AccountPasswordFileFlag,
 					flags.VoluntaryExitPublicKeysFlag,
 					flags.BeaconRPCProviderFlag,
-					flags.Web3SignerURLFlag,
-					flags.Web3SignerPublicValidatorKeysFlag,
+					// flags.Web3SignerURLFlag,
+					// flags.Web3SignerPublicValidatorKeysFlag,
 					flags.InteropNumValidators,
 					flags.InteropStartIndex,
 					cmd.GrpcMaxCallRecvMsgSizeFlag,
@@ -167,9 +168,6 @@ var Commands = []*cli.Command{
 					flags.ForceExitFlag,
 					flags.VoluntaryExitJSONOutputPath,
 					features.Mainnet,
-					features.PraterTestnet,
-					features.SepoliaTestnet,
-					features.HoleskyTestnet,
 					cmd.AcceptTosFlag,
 				}),
 				Before: func(cliCtx *cli.Context) error {

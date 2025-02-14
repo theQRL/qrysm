@@ -20,12 +20,12 @@ import (
 	"github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
 	"github.com/status-im/keycard-go/hexutils"
-	"github.com/theQRL/qrysm/v4/beacon-chain/db/kv"
-	"github.com/theQRL/qrysm/v4/beacon-chain/state"
-	"github.com/theQRL/qrysm/v4/config/params"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	"github.com/theQRL/qrysm/v4/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/db/kv"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/encoding/bytesutil"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -355,10 +355,10 @@ func printStates(stateC <-chan *modifiedState, doneC chan<- bool) {
 		log.Infof("randao_mixes                  : size = %s, count = %d", humanize.Bytes(size), count)
 		size, count = sizeAndCountOfUin64List(st.Slashings())
 		log.Infof("slashings                     : size = %s, count = %d", humanize.Bytes(size), count)
-		size, count = sizeAndCountGeneric(st.PreviousEpochAttestations())
-		log.Infof("previous_epoch_attestations   : sizeSSZ = %s, count = %d", humanize.Bytes(size), count)
-		size, count = sizeAndCountGeneric(st.CurrentEpochAttestations())
-		log.Infof("current_epoch_attestations    : sizeSSZ = %s, count = %d", humanize.Bytes(size), count)
+		size, count = sizeAndCountGeneric(st.PreviousEpochParticipation())
+		log.Infof("previous_epoch_participation   : sizeSSZ = %s, count = %d", humanize.Bytes(size), count)
+		size, count = sizeAndCountGeneric(st.CurrentEpochParticipation())
+		log.Infof("current_epoch_participation    : sizeSSZ = %s, count = %d", humanize.Bytes(size), count)
 		justificationBits := st.JustificationBits()
 		log.Infof("justification_bits            : size =  %s, count = %d", humanize.Bytes(justificationBits.Len()), justificationBits.Count())
 		log.Infof("previous_justified_checkpoint : sizeSSZ = %s", humanize.Bytes(uint64(st.PreviousJustifiedCheckpoint().SizeSSZ())))
@@ -527,11 +527,6 @@ func sizeAndCountGeneric(genericItems interface{}, err error) (uint64, uint64) {
 		}
 		count = uint64(len(items))
 	case []*zondpb.Validator:
-		for _, item := range items {
-			size += uint64(item.SizeSSZ())
-		}
-		count = uint64(len(items))
-	case []*zondpb.PendingAttestation:
 		for _, item := range items {
 			size += uint64(item.SizeSSZ())
 		}

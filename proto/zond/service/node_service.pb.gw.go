@@ -13,18 +13,17 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/golang/protobuf/ptypes/empty"
-	emptypb "github.com/golang/protobuf/ptypes/empty"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/utilities"
-	github_com_theQRL_qrysm_v4_consensus_types_primitives "github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	v1 "github.com/theQRL/qrysm/v4/proto/zond/v1"
+	github_com_theqrl_qrysm_consensus_types_primitives "github.com/theQRL/qrysm/consensus-types/primitives"
+	v1 "github.com/theQRL/qrysm/proto/zond/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // Suppress "imported and not used" errors
@@ -34,9 +33,8 @@ var _ status.Status
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
-var _ = github_com_theQRL_qrysm_v4_consensus_types_primitives.Epoch(0)
+var _ = github_com_theqrl_qrysm_consensus_types_primitives.Epoch(0)
 var _ = emptypb.Empty{}
-var _ = empty.Empty{}
 
 func request_BeaconNode_GetIdentity_0(ctx context.Context, marshaler runtime.Marshaler, client BeaconNodeClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq emptypb.Empty

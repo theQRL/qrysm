@@ -7,7 +7,6 @@ go_library(
     srcs = [
         "beacon_altair_validator_client_mock.go",
         "beacon_altair_validator_server_mock.go",
-        "beacon_chain_service_mock.go",
         "beacon_service_mock.go",
         "beacon_validator_client_mock.go",
         "beacon_validator_server_mock.go",
@@ -15,11 +14,11 @@ go_library(
         "keymanager_mock.go",
         "node_service_mock.go",
     ],
-    importpath = "github.com/theQRL/qrysm/v4/testing/mock",
+    importpath = "github.com/theQRL/qrysm/testing/mock",
     visibility = ["//visibility:public"],
     deps = [
-        "//proto/prysm/v1alpha1:go_default_library",
-        "//proto/prysm/v1alpha1/validator-client:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1/validator-client:go_default_library",
         "//proto/zond/service:go_default_library",
         "//proto/zond/v1:go_default_library",
         "@com_github_golang_mock//gomock:go_default_library",

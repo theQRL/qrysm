@@ -5,7 +5,7 @@ go_library(
     name = "go_default_library",
     testonly = True,
     srcs = ["main.go"],
-    importpath = "github.com/theQRL/qrysm/v4/tools/benchmark-files-gen",
+    importpath = "github.com/theQRL/qrysm/tools/benchmark-files-gen",
     visibility = ["//visibility:private"],
     deps = [
         "//beacon-chain/core/helpers:go_default_library",
@@ -18,7 +18,7 @@ go_library(
         "//consensus-types/blocks:go_default_library",
         "//consensus-types/primitives:go_default_library",
         "//io/file:go_default_library",
-        "//proto/prysm/v1alpha1:go_default_library",
+        "//proto/qrysm/v1alpha1:go_default_library",
         "//runtime/interop:go_default_library",
         "//testing/benchmark:go_default_library",
         "//testing/util:go_default_library",

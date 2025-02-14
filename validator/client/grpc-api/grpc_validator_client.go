@@ -5,9 +5,9 @@ import (
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/v4/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	"github.com/theQRL/qrysm/v4/validator/client/iface"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/validator/client/iface"
 	"google.golang.org/grpc"
 )
 
@@ -127,11 +127,11 @@ func (c *grpcValidatorClient) WaitForChainStart(ctx context.Context, in *empty.E
 func (c *grpcValidatorClient) AssignValidatorToSubnet(ctx context.Context, in *zondpb.AssignValidatorToSubnetRequest) (*empty.Empty, error) {
 	return c.beaconNodeValidatorClient.AssignValidatorToSubnet(ctx, in)
 }
-func (c *grpcValidatorClient) AggregatedSigAndAggregationBits(
+func (c *grpcValidatorClient) SignaturesAndAggregationBits(
 	ctx context.Context,
-	in *zondpb.AggregatedSigAndAggregationBitsRequest,
-) (*zondpb.AggregatedSigAndAggregationBitsResponse, error) {
-	return c.beaconNodeValidatorClient.AggregatedSigAndAggregationBits(ctx, in)
+	in *zondpb.SignaturesAndAggregationBitsRequest,
+) (*zondpb.SignaturesAndAggregationBitsResponse, error) {
+	return c.beaconNodeValidatorClient.SignaturesAndAggregationBits(ctx, in)
 }
 
 func NewGrpcValidatorClient(cc grpc.ClientConnInterface) iface.ValidatorClient {

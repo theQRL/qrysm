@@ -2,29 +2,28 @@ package gateway
 
 import (
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/theQRL/qrysm/v4/api/gateway"
-	"github.com/theQRL/qrysm/v4/cmd/beacon-chain/flags"
-	zondpbalpha "github.com/theQRL/qrysm/v4/proto/prysm/v1alpha1"
-	zondpbservice "github.com/theQRL/qrysm/v4/proto/zond/service"
+	"github.com/theQRL/qrysm/api/gateway"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
+	zondpbalpha "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // MuxConfig contains configuration that should be used when registering the beacon node in the gateway.
 type MuxConfig struct {
 	Handler      gateway.MuxHandler
-	EthPbMux     *gateway.PbMux
+	ZondPbMux    *gateway.PbMux
 	V1AlphaPbMux *gateway.PbMux
 }
 
 // DefaultConfig returns a fully configured MuxConfig with standard gateway behavior.
 func DefaultConfig(enableDebugRPCEndpoints bool, httpModules string) MuxConfig {
-	var v1AlphaPbHandler, ethPbHandler *gateway.PbMux
-	if flags.EnableHTTPPrysmAPI(httpModules) {
+	var v1AlphaPbHandler, zondPbHandler *gateway.PbMux
+	if flags.EnableHTTPQrysmAPI(httpModules) {
 		v1AlphaRegistrations := []gateway.PbHandlerRegistration{
 			zondpbalpha.RegisterNodeHandler,
 			zondpbalpha.RegisterBeaconChainHandler,
 			zondpbalpha.RegisterBeaconNodeValidatorHandler,
-			zondpbalpha.RegisterHealthHandler,
 		}
 		if enableDebugRPCEndpoints {
 			v1AlphaRegistrations = append(v1AlphaRegistrations, zondpbalpha.RegisterDebugHandler)
@@ -50,7 +49,7 @@ func DefaultConfig(enableDebugRPCEndpoints bool, httpModules string) MuxConfig {
 			Mux:           v1AlphaMux,
 		}
 	}
-	if flags.EnableHTTPEthAPI(httpModules) {
+	if flags.EnableHTTPZondAPI(httpModules) {
 		ethRegistrations := []gateway.PbHandlerRegistration{
 			zondpbservice.RegisterBeaconNodeHandler,
 			zondpbservice.RegisterBeaconChainHandler,
@@ -73,15 +72,15 @@ func DefaultConfig(enableDebugRPCEndpoints bool, httpModules string) MuxConfig {
 				},
 			}),
 		)
-		ethPbHandler = &gateway.PbMux{
+		zondPbHandler = &gateway.PbMux{
 			Registrations: ethRegistrations,
-			Patterns:      []string{"/internal/zond/v1/", "/internal/zond/v2/"},
+			Patterns:      []string{"/internal/zond/v1/"},
 			Mux:           ethMux,
 		}
 	}
 
 	return MuxConfig{
-		EthPbMux:     ethPbHandler,
+		ZondPbMux:    zondPbHandler,
 		V1AlphaPbMux: v1AlphaPbHandler,
 	}
 }

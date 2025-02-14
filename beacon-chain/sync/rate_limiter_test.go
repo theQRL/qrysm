@@ -8,17 +8,17 @@ import (
 
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
-	"github.com/theQRL/qrysm/v4/beacon-chain/p2p"
-	mockp2p "github.com/theQRL/qrysm/v4/beacon-chain/p2p/testing"
-	p2ptypes "github.com/theQRL/qrysm/v4/beacon-chain/p2p/types"
-	"github.com/theQRL/qrysm/v4/testing/assert"
-	"github.com/theQRL/qrysm/v4/testing/require"
-	"github.com/theQRL/qrysm/v4/testing/util"
+	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	mockp2p "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	p2ptypes "github.com/theQRL/qrysm/beacon-chain/p2p/types"
+	"github.com/theQRL/qrysm/testing/assert"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestNewRateLimiter(t *testing.T) {
 	rlimiter := newRateLimiter(mockp2p.NewTestP2P(t))
-	assert.Equal(t, len(rlimiter.limiterMap), 12, "correct number of topics not registered")
+	assert.Equal(t, len(rlimiter.limiterMap), 7, "correct number of topics not registered")
 }
 
 func TestNewRateLimiter_FreeCorrectly(t *testing.T) {
@@ -34,7 +34,7 @@ func TestRateLimiter_ExceedCapacity(t *testing.T) {
 	rlimiter := newRateLimiter(p1)
 
 	// BlockByRange
-	topic := p2p.RPCBlocksByRangeTopicV1 + p1.Encoding().ProtocolSuffix()
+	topic := p2p.RPCBlocksByRangeTopicV2 + p1.Encoding().ProtocolSuffix()
 
 	wg := sync.WaitGroup{}
 	p2.BHost.SetStreamHandler(protocol.ID(topic), func(stream network.Stream) {
@@ -71,7 +71,7 @@ func TestRateLimiter_ExceedRawCapacity(t *testing.T) {
 	rlimiter := newRateLimiter(p1)
 
 	// BlockByRange
-	topic := p2p.RPCBlocksByRangeTopicV1 + p1.Encoding().ProtocolSuffix()
+	topic := p2p.RPCBlocksByRangeTopicV2 + p1.Encoding().ProtocolSuffix()
 
 	wg := sync.WaitGroup{}
 	p2.BHost.SetStreamHandler(protocol.ID(topic), func(stream network.Stream) {
