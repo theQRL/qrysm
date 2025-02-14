@@ -97,6 +97,6 @@ if [ "$KEEP_ENCLAVE" = false ]; then
 fi
 
 # TODO(now.youtrack.cloud/issue/TQ-35)
-kurtosis run --enclave $ENCLAVE_NAME github.com/rgeraldes24/zond-package@$ZOND_PKG_VERSION --args-file $NETWORK_PARAMS_FILE
+kurtosis run --enclave $ENCLAVE_NAME github.com/theQRL/zond-package@$ZOND_PKG_VERSION --args-file $NETWORK_PARAMS_FILE
 
 echo "Started!"

@@ -96,8 +96,8 @@ require (
 
 require (
 	github.com/libp2p/go-libp2p-mplex v0.9.0
-	github.com/rgeraldes24/FuzzyVM v0.0.0-20241118080648-66efa6055064
-	github.com/rgeraldes24/tx-fuzz v0.0.0-20241118080837-8c2407dd8040
+	github.com/theQRL/FuzzyVM v0.0.0-20250214181305-992e8723ac88
+	github.com/theQRL/tx-fuzz v0.0.0-20250214181555-d52542df59d6
 )
 
 require (
@@ -206,7 +206,6 @@ require (
 	github.com/quic-go/quic-go v0.39.3 // indirect
 	github.com/quic-go/webtransport-go v0.6.0 // indirect
 	github.com/raulk/go-watchdog v1.3.0 // indirect
-	github.com/rgeraldes24/goevmlab v0.0.0-20241118075001-b9908d7d2e54 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
@@ -214,6 +213,7 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
+	github.com/theQRL/gozvmlab v0.0.0-20250214180526-fa0574ea7bf7 // indirect
 	github.com/tklauser/go-sysconf v0.3.13 // indirect
 	github.com/tklauser/numcpus v0.7.0 // indirect
 	github.com/uber/jaeger-client-go v2.25.0+incompatible // indirect
@@ -254,6 +254,6 @@ require (
 replace github.com/json-iterator/go => github.com/prestonvanloon/go v1.1.7-0.20190722034630-4f2e55fcf87b
 
 // See https://github.com/prysmaticlabs/grpc-gateway/issues/2
-replace github.com/grpc-ecosystem/grpc-gateway/v2 => github.com/rgeraldes24/grpc-gateway/v2 v2.0.0-20240827090357-c5e344dc174c
+replace github.com/grpc-ecosystem/grpc-gateway/v2 => github.com/theQRL/grpc-gateway/v2 v2.0.0-20250214142603-49067762c97f
 
-replace github.com/theQRL/go-zond => github.com/rgeraldes24/go-zond v0.0.0-20241227130350-b68064cef7bc
+replace github.com/theQRL/go-zond => github.com/theQRL/go-zond v0.0.0-20250214175148-2939fb6f666c
