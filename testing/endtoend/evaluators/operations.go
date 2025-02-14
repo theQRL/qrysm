@@ -33,8 +33,11 @@ import (
 var depositValCount = e2e.DepositCount
 var numOfExits = 2
 
+var followDistanceSeconds = params.E2ETestConfig().Eth1FollowDistance * params.E2ETestConfig().SecondsPerETH1Block
+var secondsPerEpoch = params.E2ETestConfig().SecondsPerSlot * uint64(params.E2ETestConfig().SlotsPerEpoch)
+
 // Deposits should be processed in twice the length of the epochs per eth1 voting period.
-var depositsInBlockStart = params.E2ETestConfig().EpochsPerEth1VotingPeriod * 2
+var depositsInBlockStart = primitives.Epoch(2*followDistanceSeconds/secondsPerEpoch) + params.E2ETestConfig().EpochsPerEth1VotingPeriod*2
 
 // deposits included + finalization + MaxSeedLookahead for activation.
 var depositActivationStartEpoch = depositsInBlockStart + 2 + params.E2ETestConfig().MaxSeedLookahead
