@@ -80,7 +80,7 @@ func GzondTestnetGenesis(genesisTime uint64, cfg *clparams.BeaconChainConfig) *c
 		// NOTE(rgeraldes24): required by the genesis generation on the beacon node side
 		// during the e2e tests
 		ExtraData: make([]byte, 32),
-		GasLimit:  math.MaxUint64 >> 1, // shift 1 back from the max, just in case
+		GasLimit:  params.MaxGasLimit, // shift 1 back from the max, just in case
 		Mixhash:   common.HexToHash(defaultMixhash),
 		Coinbase:  defaultCoinbase,
 		Alloc: core.GenesisAlloc{

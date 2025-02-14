@@ -41,7 +41,7 @@ const (
 	// GetPayloadBodiesByRangeV1 v1 request string for JSON-RPC.
 	GetPayloadBodiesByRangeV1 = "engine_getPayloadBodiesByRangeV1"
 	// Defines the seconds before timing out engine endpoints with non-block execution semantics.
-	defaultEngineTimeout = time.Second
+	defaultEngineTimeout = 10 * time.Second
 )
 
 // ForkchoiceUpdatedResponse is the response kind received by the
