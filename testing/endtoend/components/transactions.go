@@ -8,9 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/rgeraldes24/FuzzyVM/filler"
-	txfuzz "github.com/rgeraldes24/tx-fuzz"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/FuzzyVM/filler"
 	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/core/types"
@@ -21,6 +20,7 @@ import (
 	"github.com/theQRL/qrysm/crypto/rand"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
+	txfuzz "github.com/theQRL/tx-fuzz"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -86,7 +86,7 @@ func (t *TransactionGenerator) Start(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			err := SendTransaction(client, key, f, gasFeeCap, gasTipCap, addr.String(), 100, false)
+			err := SendTransaction(client, key, f, gasFeeCap, gasTipCap, addr.String(), 1000, false)
 			if err != nil {
 				return err
 			}
