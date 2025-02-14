@@ -211,7 +211,7 @@ func (r *testRunner) testDepositsAndTx(ctx context.Context, g *errgroup.Group,
 					r.t.Fatal(err)
 				}
 			}
-			// r.testTxGeneration(ctx, g, keystorePath, []e2etypes.ComponentRunner{})
+			r.testTxGeneration(ctx, g, keystorePath, []e2etypes.ComponentRunner{})
 		}()
 		if r.config.TestDeposits {
 			return depositCheckValidator.Start(ctx)
