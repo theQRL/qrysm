@@ -304,6 +304,9 @@ func (s *Service) followedBlockHeight(ctx context.Context) (uint64, error) {
 	latestBlockTime := uint64(0)
 	if s.latestEth1Data.BlockTime > followTime {
 		latestBlockTime = s.latestEth1Data.BlockTime - followTime
+		if latestBlockTime < s.chainStartData.GenesisTime {
+			latestBlockTime = s.chainStartData.GenesisTime
+		}
 		// This should only come into play in testnets - when the chain hasn't advanced past the follow distance,
 		// we don't want to consider any block before the genesis block.
 		if s.latestEth1Data.BlockHeight < params.BeaconConfig().Eth1FollowDistance {
