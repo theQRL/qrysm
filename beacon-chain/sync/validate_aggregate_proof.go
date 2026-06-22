@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -16,10 +17,10 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	qrysmTime "github.com/theQRL/qrysm/time"
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
@@ -47,7 +48,7 @@ func (s *Service) validateAggregateAndProof(ctx context.Context, pid peer.ID, ms
 		tracing.AnnotateError(span, err)
 		return pubsub.ValidationReject, err
 	}
-	m, ok := raw.(*zondpb.SignedAggregateAttestationAndProof)
+	m, ok := raw.(*qrysmpb.SignedAggregateAttestationAndProof)
 	if !ok {
 		return pubsub.ValidationReject, errors.Errorf("invalid message type: %T", raw)
 	}
@@ -116,7 +117,9 @@ func (s *Service) validateAggregateAndProof(ctx context.Context, pid peer.ID, ms
 		return validationRes, err
 	}
 
-	s.setAggregatorIndexEpochSeen(m.Message.Aggregate.Data.Target.Epoch, m.Message.AggregatorIndex)
+	if first := s.setAggregatorIndexEpochSeen(m.Message.Aggregate.Data.Target.Epoch, m.Message.AggregatorIndex); !first {
+		return pubsub.ValidationIgnore, nil
+	}
 
 	msg.ValidatorData = m
 
@@ -125,7 +128,7 @@ func (s *Service) validateAggregateAndProof(ctx context.Context, pid peer.ID, ms
 	return pubsub.ValidationAccept, nil
 }
 
-func (s *Service) validateAggregatedAtt(ctx context.Context, signed *zondpb.SignedAggregateAttestationAndProof) (pubsub.ValidationResult, error) {
+func (s *Service) validateAggregatedAtt(ctx context.Context, signed *qrysmpb.SignedAggregateAttestationAndProof) (pubsub.ValidationResult, error) {
 	ctx, span := trace.StartSpan(ctx, "sync.validateAggregatedAtt")
 	defer span.End()
 
@@ -151,11 +154,14 @@ func (s *Service) validateAggregatedAtt(ctx context.Context, signed *zondpb.Sign
 		return pubsub.ValidationIgnore, err
 	}
 
-	// Verify validator index is within the beacon committee.
-	if err := validateIndexInCommittee(ctx, bs, signed.Message.Aggregate, signed.Message.AggregatorIndex); err != nil {
+	// Verify validator index is within the beacon committee and that the
+	// aggregate satisfies the spec REJECT preconditions (committee index in
+	// range, bitfield length matches committee size, at least one attesting bit).
+	result, err := s.validateIndexInCommittee(ctx, bs, signed.Message.Aggregate, signed.Message.AggregatorIndex)
+	if result != pubsub.ValidationAccept {
 		wrappedErr := errors.Wrapf(err, "Could not validate index in committee")
 		tracing.AnnotateError(span, wrappedErr)
-		return pubsub.ValidationReject, wrappedErr
+		return result, wrappedErr
 	}
 
 	// Verify selection proof reflects to the right validator.
@@ -175,19 +181,19 @@ func (s *Service) validateAggregatedAtt(ctx context.Context, signed *zondpb.Sign
 		tracing.AnnotateError(span, wrappedErr)
 		return pubsub.ValidationIgnore, wrappedErr
 	}
-	attSigSet, err := blocks.AttestationSignatureBatch(ctx, bs, []*zondpb.Attestation{signed.Message.Aggregate})
+	attSigSet, err := blocks.AttestationSignatureBatch(ctx, bs, []*qrysmpb.Attestation{signed.Message.Aggregate})
 	if err != nil {
 		wrappedErr := errors.Wrapf(err, "Could not verify attestation signatures %d", signed.Message.AggregatorIndex)
 		tracing.AnnotateError(span, wrappedErr)
 		return pubsub.ValidationIgnore, wrappedErr
 	}
-	set := dilithium.NewSet()
+	set := ml_dsa_87.NewSet()
 	set.Join(selectionSigSet).Join(aggregatorSigSet).Join(attSigSet)
 
 	return s.validateWithBatchVerifier(ctx, "aggregate", set)
 }
 
-func (s *Service) validateBlockInAttestation(ctx context.Context, satt *zondpb.SignedAggregateAttestationAndProof) bool {
+func (s *Service) validateBlockInAttestation(ctx context.Context, satt *qrysmpb.SignedAggregateAttestationAndProof) bool {
 	a := satt.Message
 	// Verify the block being voted and the processed state is in beaconDB. The block should have passed validation if it's in the beaconDB.
 	blockRoot := bytesutil.ToBytes32(a.Aggregate.Data.BeaconBlockRoot)
@@ -203,40 +209,95 @@ func (s *Service) validateBlockInAttestation(ctx context.Context, satt *zondpb.S
 func (s *Service) hasSeenAggregatorIndexEpoch(epoch primitives.Epoch, aggregatorIndex primitives.ValidatorIndex) bool {
 	s.seenAggregatedAttestationLock.RLock()
 	defer s.seenAggregatedAttestationLock.RUnlock()
-	b := append(bytesutil.Bytes32(uint64(epoch)), bytesutil.Bytes32(uint64(aggregatorIndex))...)
-	_, seen := s.seenAggregatedAttestationCache.Get(string(b))
+	if s.seenAggregatedAttestationByEpoch == nil {
+		return false
+	}
+	byValidator, ok := s.seenAggregatedAttestationByEpoch[epoch]
+	if !ok {
+		return false
+	}
+	_, seen := byValidator[aggregatorIndex]
 	return seen
 }
 
 // Set aggregate's aggregator index target epoch as seen.
-func (s *Service) setAggregatorIndexEpochSeen(epoch primitives.Epoch, aggregatorIndex primitives.ValidatorIndex) {
+// Returns true if this is the first time seeing this aggregator index and epoch.
+func (s *Service) setAggregatorIndexEpochSeen(epoch primitives.Epoch, aggregatorIndex primitives.ValidatorIndex) bool {
 	s.seenAggregatedAttestationLock.Lock()
 	defer s.seenAggregatedAttestationLock.Unlock()
-	b := append(bytesutil.Bytes32(uint64(epoch)), bytesutil.Bytes32(uint64(aggregatorIndex))...)
-	s.seenAggregatedAttestationCache.Add(string(b), true)
+	if s.seenAggregatedAttestationByEpoch == nil {
+		s.seenAggregatedAttestationByEpoch = make(map[primitives.Epoch]map[primitives.ValidatorIndex]struct{})
+		s.seenAggregatedAttestationHasMaxEpoch = false
+	}
+	byValidator, ok := s.seenAggregatedAttestationByEpoch[epoch]
+	if !ok {
+		byValidator = make(map[primitives.ValidatorIndex]struct{})
+		s.seenAggregatedAttestationByEpoch[epoch] = byValidator
+	}
+	if _, seen := byValidator[aggregatorIndex]; seen {
+		return false
+	}
+	byValidator[aggregatorIndex] = struct{}{}
+
+	if !s.seenAggregatedAttestationHasMaxEpoch || epoch > s.seenAggregatedAttestationMaxEpoch {
+		s.seenAggregatedAttestationMaxEpoch = epoch
+		s.seenAggregatedAttestationHasMaxEpoch = true
+	}
+	s.pruneSeenAggregatedAttestationEpochsLocked()
+	return true
 }
 
-// This validates the aggregator's index in state is within the beacon committee.
-func validateIndexInCommittee(ctx context.Context, bs state.ReadOnlyBeaconState, a *zondpb.Attestation, validatorIndex primitives.ValidatorIndex) error {
+// pruneSeenAggregatedAttestationEpochsLocked retains only the latest two epochs
+// (max seen epoch and max-1) so dedup history follows protocol timing rather
+// than cache pressure. Caller must hold seenAggregatedAttestationLock for write.
+func (s *Service) pruneSeenAggregatedAttestationEpochsLocked() {
+	if !s.seenAggregatedAttestationHasMaxEpoch {
+		return
+	}
+	maxSeenEpoch := s.seenAggregatedAttestationMaxEpoch
+	if maxSeenEpoch < 2 {
+		return
+	}
+	minRetainedEpoch := maxSeenEpoch - 1
+	for epoch := range s.seenAggregatedAttestationByEpoch {
+		if epoch < minRetainedEpoch {
+			delete(s.seenAggregatedAttestationByEpoch, epoch)
+		}
+	}
+}
+
+// validateIndexInCommittee validates the bitfield is correct and the
+// aggregator's index is within the beacon committee. Implements the
+// following consensus-spec REJECT conditions:
+//   - committee index < get_committee_count_per_slot
+//   - len(aggregation_bits) == len(beacon_committee)
+//   - aggregate has at least one attesting bit
+//   - aggregator's validator index is within the committee
+//
+// Internal lookup errors return ValidationIgnore so the peer isn't downscored
+// for our own state-access failures.
+func (s *Service) validateIndexInCommittee(ctx context.Context, bs state.ReadOnlyBeaconState, a *qrysmpb.Attestation, validatorIndex primitives.ValidatorIndex) (pubsub.ValidationResult, error) {
 	ctx, span := trace.StartSpan(ctx, "sync.validateIndexInCommittee")
 	defer span.End()
 
-	committee, err := helpers.BeaconCommitteeFromState(ctx, bs, a.Data.Slot, a.Data.CommitteeIndex)
-	if err != nil {
-		return err
+	if _, result, err := s.validateCommitteeIndex(ctx, a, bs); result != pubsub.ValidationAccept {
+		return result, err
 	}
-	var withinCommittee bool
-	for _, i := range committee {
-		if validatorIndex == i {
-			withinCommittee = true
-			break
-		}
+
+	committee, result, err := s.validateBitLength(ctx, a, bs)
+	if result != pubsub.ValidationAccept {
+		return result, err
 	}
-	if !withinCommittee {
-		return fmt.Errorf("validator index %d is not within the committee: %v",
+
+	if a.AggregationBits.Count() == 0 {
+		return pubsub.ValidationReject, errors.New("no attesting indices")
+	}
+
+	if withinCommittee := slices.Contains(committee, validatorIndex); !withinCommittee {
+		return pubsub.ValidationReject, fmt.Errorf("validator index %d is not within the committee: %v",
 			validatorIndex, committee)
 	}
-	return nil
+	return pubsub.ValidationAccept, nil
 }
 
 // This validates selection proof by validating it's from the correct validator index of the slot.
@@ -244,10 +305,10 @@ func validateIndexInCommittee(ctx context.Context, bs state.ReadOnlyBeaconState,
 func validateSelectionIndex(
 	ctx context.Context,
 	bs state.ReadOnlyBeaconState,
-	data *zondpb.AttestationData,
+	data *qrysmpb.AttestationData,
 	validatorIndex primitives.ValidatorIndex,
 	proof []byte,
-) (*dilithium.SignatureBatch, error) {
+) (*ml_dsa_87.SignatureBatch, error) {
 	ctx, span := trace.StartSpan(ctx, "sync.validateSelectionIndex")
 	defer span.End()
 
@@ -270,7 +331,7 @@ func validateSelectionIndex(
 	if err != nil {
 		return nil, err
 	}
-	publicKey, err := dilithium.PublicKeyFromBytes(v.PublicKey)
+	publicKey, err := ml_dsa_87.PublicKeyFromBytes(v.PublicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -284,21 +345,21 @@ func validateSelectionIndex(
 	if err != nil {
 		return nil, err
 	}
-	return &dilithium.SignatureBatch{
+	return &ml_dsa_87.SignatureBatch{
 		Signatures:   [][][]byte{{proof}},
-		PublicKeys:   [][]dilithium.PublicKey{{publicKey}},
+		PublicKeys:   [][]ml_dsa_87.PublicKey{{publicKey}},
 		Messages:     [][32]byte{root},
 		Descriptions: []string{signing.SelectionProof},
 	}, nil
 }
 
 // This returns aggregator signature set which can be used to batch verify.
-func aggSigSet(s state.ReadOnlyBeaconState, a *zondpb.SignedAggregateAttestationAndProof) (*dilithium.SignatureBatch, error) {
+func aggSigSet(s state.ReadOnlyBeaconState, a *qrysmpb.SignedAggregateAttestationAndProof) (*ml_dsa_87.SignatureBatch, error) {
 	v, err := s.ValidatorAtIndex(a.Message.AggregatorIndex)
 	if err != nil {
 		return nil, err
 	}
-	publicKey, err := dilithium.PublicKeyFromBytes(v.PublicKey)
+	publicKey, err := ml_dsa_87.PublicKeyFromBytes(v.PublicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -312,9 +373,9 @@ func aggSigSet(s state.ReadOnlyBeaconState, a *zondpb.SignedAggregateAttestation
 	if err != nil {
 		return nil, err
 	}
-	return &dilithium.SignatureBatch{
+	return &ml_dsa_87.SignatureBatch{
 		Signatures:   [][][]byte{{a.Signature}},
-		PublicKeys:   [][]dilithium.PublicKey{{publicKey}},
+		PublicKeys:   [][]ml_dsa_87.PublicKey{{publicKey}},
 		Messages:     [][32]byte{root},
 		Descriptions: []string{signing.AggregatorSignature},
 	}, nil

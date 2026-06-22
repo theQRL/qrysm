@@ -1,0 +1,11 @@
+load("@qrysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "mutator",
+    srcs = [
+        "mutator.go",
+        "mutators_byteslice.go",
+    ],
+    importpath = "github.com/theQRL/qrysm/pkg/tx-fuzz/mutator",
+    visibility = ["//visibility:public"],
+)

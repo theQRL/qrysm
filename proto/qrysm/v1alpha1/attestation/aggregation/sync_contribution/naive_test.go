@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	bitfield "github.com/theQRL/go-bitfield"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
@@ -21,91 +21,91 @@ func TestAggregate(t *testing.T) {
 	sig15, _ := hex.DecodeString("70f5c97e60dd71005c77a93ba72a0b063d7c1663c08d5467286099c56dd720a08f317595620f794a0c444ac8ea90a1e8772caf3590293c1c890cca010d8e06fe57c33ce1d307449a7183a070ca1f658f811b28d95ac1888ae4ba3fa1cefe64845c0867720e0df5769733e7b195790a6ca6a00ce5d8b142a10a0f0ea35611140f44441d4735fe64c0d0416e5b22e77eec7ef0330c769215d75c7f6b0fa6c069512f720cd588171a9c52db8cdee65bee1a1fdd1b89cd92772a657f0036479f0c2d25d4ca1907ef9ec5b92e1fc6224054fb205ed67f0bd537cde5d338864d4d76b35eeb110ffc371946fff50469bb349e20fd6924af54b7cc871c6051373d691f7b8681d816eef22242cd8e46db30f611960b52490d290d41cc1cc34a16fd92ad0a4287b3121ff8c38052b6ab3ac682b7af44bcd6d66e666eb4c37c72b124bf193332ea022e45b176d956d69d86ae89c2ce4e2ae4f0590d8404497c6ec854d53fe8cbb2ed5ed153ef03ce35594965e6221cb91caacb13cce209c65e66f1c6b5a857947d9f66c21a3457b806f699b34b0e7c0efc09a6f620340db0e8f2a00defb09758b88802c0610e1214bba8621404931b5d617eea354fb53af810cd35963344da8427adc73f20563c0235d04b4b25a602dfaf4edae45510725e9d4504e58c3e58e7094723e97f65e4dfa61e6db0e7d1e2f72cff69376ae2574dbf91239ec2d60f7d89966ee610a22233bb84e2648b4eb3f7d14416cb428871dc6a003d5eaa51a7df5ebac9e42b7368fb9bb78854aca846e933305012613426cd9a617de1e891609bf4a37b612155fa05815c6a3e92c888789372859a4b21b6307da7d15061f322416084c36719be7bd80f730887f284180765d640042c5c05d582cf2db4291c5eb5672d647a59cdda52241094a89ddee1ad4214d6657b69ff8dfb5e48b3256fb6332ff39a975b0526fe15cf58f2b7de6ed997b2933c1dc279bbe1a118091231fdf92713250d7134420f33ded0b4943dc3320a1b4370e25658f52cf875f5a008c964740745cb4d5eb2c41d55b9736a804fa0ecaf7048093ea05775a5e96b42e67c7f03395b1ad5bdf520ad34e21b9f6c575f1922882f530edc248826c3dab2d4140f3218fbd22370b4f76da242344330c019f86346482256fd1bf52b50f03f8da97f8b90b4de02b3e32b257d6e68d3f4d39adba55e058370c2c97200ee07f1850421656c1080522889e9d5f9beab3330fab2e72d4b9f10fa858c01e354b727f8653a70f76588c767427c51125a7bd1504e9a02163819cff949c7699ea2cfe112a9b3be4c752d4a9ebef746ddc56368753ece359593ba11c254fe576165a8d5332593d28959b0203d89b3b3a74afd00c278adc2e8ce496d886432dd250d1fc9c26bad336dcbc8a02682ae4c2441e2b91753a59f63a2c9f7d64308411b35fd1e1f76e441994aef6e4f64676a14625cca4fcf8b9209fa58fc96f16453155b5c696b881526066b8f5d9bd4b5d9cddfb5b307337a9cf46f06a09b37a1e64fe3c85a7656c3656db4d133c109c21203bc0ca55c3bfa047b5d533fc776dc304a80ed6e9e92df601ad120ee5bc55ab2a1b81f33b1e519d0b170eb634cbe694f7ac003bc0cc4d23619fa34e60d5b771fa883fadc618fcc3fb344703c991eb610ca90c7941fc5aef7b713c257ff905e930c3f4263ddbe7e8e60515832f4c388c070ac6732c39840fc217f330ea214fbaa49999d95f1a3cb1c136c07e5cad77b0ff4607ae52c1fbb2202678bd2d3a103c0017091beaf2876476e877569a946ebf9ed8018a9707b4a5e38d11b5ef98637bdc4e79817164f6029dc56fb254b6a051bc63e79fe35151c1908e33c363d02a1a3fd1eeba9f4cb69e91eae080c80f83714804f28db4ac3e273e94b1f01c17d3d002be581fb646e42bf7a1aa394f8671ea93460a7481546469c4723657f4335af31959ba35567039ddeef7c82c9ad5515d654d2455df1ce6b680c525d9b3cab26a37c03a75d77c74aafac1235efe403761c7d554a5341540da348f5673b9a71ecd134b52d6bdc9cd8c6a58b8ebc8a32647adb696361cbfda128b06a2e37b1a18d48732b86d927117daff3b2981267d8314c475e3f9d62b571a7c4457d853968b399c9dc096efa8a28b8d1e5d7ae1b39f63b0d0a10eb76a952fd9018a3333f59e423c44848a787e7749530fc85e77b72eb7fc5c05408b06dad3d7c9d9782fa5e4c4179f0bbd405612e1521653ad12146381e074dceaf4776054061648b5d44f129cf615540ff77d3b5027959818510e29de4dcbe39fbfdfcb8622024592de3113ec4e3e52a4cafbcb68bfd21cb5c71f2b358c02c6f86d76e87d0cf13681f525c8c284cc2dd5b682d523e3942cec3254d73fb9a3177d0df574430dd36d474d53c88b5d917871382207994011d59cc0a356cfa9432aebfba6ca47aad2b7b65b1d6ccabc6756001d89c90d458a251aa36cd97a9717dae3556c40b36121248f33dbdedf6cc16c322713bc6fa946738b976deec0d03421bce3792f3d3ab3061aa6ea99a5fa8fbbdd1d6c50704dfdb9ed76f291da98de4b988bbecf5df3b2b7f88e7c8e43f58d09316e6dc6ca94ab8ad8e9e164e176139fc0b3fadefac87bec179746a1c629cc5951c4328fbbd57ddd6376f1785c81e0f2b3264a8550cc54ee61058a79960e7b535af6cfe1a7c2d657fc14a98a629680b6a055c0d72c899f189951776f122cff7d36df6867bb24b3270cc54a82f88b9a335233d51bdf6ab89f9dd262d0ae2495170b03ce02c582cc925f7cdbceb103b25d4556350db058a62283af4d75bba6fdae2b16e1869b36aa269cfc8a32c7b9d71f1c5036395de140f871ee4162619a7cd036e7ce1bcba27d5501a0c594403fcb4b78980a8a55b92594b8960d1342fe0232d1f082b7d511df886a181ecc4fc03a515681dbcb5823aa769a704137ce78a59830114b0e6eef2224939fe298f2c589d3b1b8ee95dc6add860f65921370dc43d1def983d57f6d8d2a16ec7196e5217df7298e906a3a729529655182ff96e6b93aa2fa7726080dba4810bbcef003cf64385a057f7129448dc1a129ecc480f14681dd295011aeebe0a167806d6ec76760e3c36c5afcdff3bccfd949088bfb804225f0dc34760ef9975075dffa1a4cb6d3c9d269c2a74ae0397b35f0dd7d7850230128cfabecf9c2d5ba32bd43991a65006aa1ee0cdf4953f0085479c22bfe77bdb5365bc150fc932ed45201463e231683c2737198548c6749aa015439aade1936b909409ee1de476c45aa6d73fb17d843ccedf6b5aa9e3bb339fa2394250eb651856f47a161e3f288289c040604d7d269cd13070ca7e23cbaa0492fbdc77c4522617e477aa39d5493d3f0e50adc14e7ab7b3d35c048381c54e839a5e1b2441d53026d480ab9dfe32e1a0a2ce6d30ff6a7d53a07bd9c99728837cf397e9aa20e54cc3b338d37c87ca0dbfc3e39ddc25cb5c47602dbf3adfa5cab67799e1a5e73712c02752e49479c37c581065546e72694a8c2b152f7dfc4c07b0af2588f631f34b68aaf5924fb9e1c8bef32e3e508c17b2ac57ab4a33ed125a4c2d93929bdc9452db3438225918d0fa8f6b5d74a2e14f80201dfb1f528e5f54a319158d81937076ab8ff9d9a1705b6d6a3eb3425f4395d490f2f9dfba4bdbaf3b1ee1f8e1f2f092dd1605f73d5ab70a1f2adbb44728a2176ef4771d379e44f07d048cfa396f195dbfe1531ac4268a3970caec26c0ef7387bbc96b8eedd0b3c7ea5b1f8c4e6b4169878ea8873f77768f480b044fa5d2597d9438a30d1704368e53233cb60551f5c69a89f9f713a87d49324194741dda88f23f1348b7c10e4879465035e420d56acd4ddb4adfcc04eaa2544080a76afe3c677000487bf26845e400f246018d5949223a51435f766df4666fbfd3fe09fd69b9078149abdc20dbe15156760197d8c94b4f32b95f31539679500f5be4539cd5141abb7169bd92edea632d74c9b26917a59e6b66c5f32b9cc3c88a703c7213813b43ee98b2bb7302f2f9f15d1dc27cf770eca4b122ebe5e3620696066838cf8eaa8e087f664f891f7225150db520609ae6110139052451ad6292b5e8fd1675d01a10497456999408d8cb57f8e59d8cb2985b9f68960592356ef50d3188fed4faac46d85c232cffddada2d560b55b8f3ccc206014fcadf31bdcc527851e41903316fb2ffe7d836bc16f779b8d5f3bffeaa4e15954027c3cd126c124ef8cbc9f726e3dcb9c276b4e6ceba59a645f99463737f1a3d31202e5c856ccab972528cfb53920d86f79335f2800c3d418c9b02a2ffe35bf78281e99f1007a3c4ac30fd7a7fccb005deb6aafd55f694b65ae56200c8a2699e1ca39b07dc8dd3a4adfb2fd32d68d9aaf9fd23bb8cedebea7a0e737dbc96714ce15f7ac414446fe34b41715aa3378ed3f6cc6b69411100fd6d4bf6c82f359e807df7ea34d1302590c2693535360eaefe2e02d0ab71d84241beaceaf328c9d427091c6b44ab7381614aaf793c92093f5b90141dee1a1114685ff5ecb4ff760974d9bb2d3e38194c54b10cbfd63aaeba4379d969eea5d3d965a4117e8ade0c35494edf14d74472ee38f43fb74456f9a42469b1daa0c01703bdd81d47f78e0dc49aec3f400d9c6a218c815075717d78689c74d486c62ec19897b7a50b9510fe7ecabddef16d47caba8a9df349345eb6ecdff9524b554eaef56ddb70648ac6b4d2f77a0c02b603a97227afb9de23d4424ef004cf99e0ed976a9d2c6b4a2ad659d354cc55c6ccea97828dc0dbeec03b3bf11d9c471e08082247eff58d20ca37d3e80e5d9783654a40cc07d02d925671e7c18c4cdc4244e1c5223d8dbde289a1b8639f409d52ca165f13fbae010ea2851f7bef8fcb18b53228367ac9bc8b087c058df40009a688c17f6f4f0a46f0158d4c349860faa6e134379e67157746bc5606a6137b601d4de80320348df235d2470a8a02ffff8de5e6e05a5fb90bb766f2164a4badef32ff6f9444be715201393c0b1273b6eb8b368bcfebc6dd8d4a0203f6a81dc7272d570287fc057a6b11d4185bad3ab5380161eafc8d3cbe12ff8d9d7d277cbd0eed319e10c39588d27929680dc00a5cf12cb54167d3a5ea5665a137dc0543d6600e79bfc1010a7104a8da958f362420e5a976a7ba478516df8555ca4fd6fdeab1ccd82ef78f794f36a192a088cec28abd8d1f7c24cb1a79e342e2d453d6eaf5c21465a4b820975d75aed09e3dc6016ea91d8a31a695755853ccc6d9c918f259ce0ca480283e63544e20cf4bd8f8078820fb8442666acde51844567d2a8c60bfe57ee277d6195b5b3a2df0a5baf70ff4c14683bd479455755ad1f1f59fef60a6333bd260ce04035c2088df4c25116172eed863a16136a8b1684c5f1f851ded0487c8409a471a7c5c221187caaf29455d0fa124094bb7092ae8c404faab81e15adcda87d8653d4ebeb5bc281bbb03fbd43ef637ef5e3a9b9b56936a2d46ca1a341cd1427e85e02f6bfbce3060980b12b90693953a2797b59f16300e91e24d39eccc1e6a5004b49d24984a3b4b6fc9c21a43199adda20e82d5442e8dabdce355c4603549afae1a12d5e907fc9c5415a814990f04284c03d9944a3ea26017152cc09466da83fe65153c0fab9c1d7729336ea10d31ade31123ef1ede1a27e02bac43718c453c9d6c940e8ae667cc04cd9151bc972a4b49214f70e8ebf688fe8c893c219e0729a8dd5d98e333354cdfc86c9997bfea9c08b83af3482071bbb49e3d626473561e2618fb38000ff1ebeaea5c2122dd2d8de9967114e953fce399c2fe1e9a036cf4361cc9ca4668a180b97bbecfb91af76c848db9623dc9d52e07430959e0818c86bfb1b27e850acbcae80dca4c29beef6f874f1fabe4a63855cd68e9aada49206fb77e94e69be67930e4ffa67a92e67ba34b4e02d005bc7c65fb451e1b9943cac49d4b0ddb54da2fdc8eec608fac679a5db834bac20845f3ec064433f8ac3b40a6adab46ff0ca8702e63ce6411c73a3a67908bc0d11293df1bc9c35c43615b95daa187b51d039bed34c351894fefa0b25de7a1406ffdbd5a46d4773201a924827d13e2b6d8a0bdd77dcb695bb1994da45ae763d634c60db5d1087ef4b25f95752d3fda1a4a3c0cc94d251e1e68e02cab3df6112922d21087a96786b614208abcd18717868c259b2ecc4b190014d3268d5f0c7914f69cb1b9555383830bc7500b9995b04dc20ba99e0c362eadd447f4d65a40f123d0a14d061707a63bac3ca5d0ee49f96280b1efd77f06d333cecc40d70737d678309ac5a8931694bd9a3d84a42ec25eb984baeb4e71ac3b4fb4c713d05266c4b53680cf033dff06f749c095f1e5e6d863d75077bd5f13a86dea80817454b75b2c5e023a9f907131655a6a9b2c0c6daf1f31a202f49515894a0dcf311185c5d74d640888f256776dd0a0b0e29378caab7000000000000000000000000000000000000000000080b1721272a2e36")
 
 	tests := []struct {
-		a1   *zondpb.SyncCommitteeContribution
-		a2   *zondpb.SyncCommitteeContribution
-		want *zondpb.SyncCommitteeContribution
+		a1   *qrysmpb.SyncCommitteeContribution
+		a2   *qrysmpb.SyncCommitteeContribution
+		want *qrysmpb.SyncCommitteeContribution
 	}{
 		{
-			a1: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x02, 0},
+			a1: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x02, 0},
 				Signatures:      [][]byte{sig1},
 			},
-			a2: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x01, 0},
+			a2: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x01, 0},
 				Signatures:      [][]byte{sig0},
 			},
-			want: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x03, 0},
+			want: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x03, 0},
 				Signatures:      [][]byte{sig0, sig1},
 			},
 		},
 		{
-			a1: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x01, 0},
+			a1: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x01, 0},
 				Signatures:      [][]byte{sig0},
 			},
-			a2: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x02, 0},
+			a2: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x02, 0},
 				Signatures:      [][]byte{sig1},
 			},
-			want: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x03, 0},
+			want: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x03, 0},
 				Signatures:      [][]byte{sig0, sig1},
 			},
 		},
 		{
-			a1: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x01, 0},
+			a1: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x01, 0},
 				Signatures:      [][]byte{sig0},
 			},
-			a2: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x06, 0},
+			a2: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x06, 0},
 				Signatures:      [][]byte{sig1, sig2},
 			},
-			want: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x07, 0},
+			want: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x07, 0},
 				Signatures:      [][]byte{sig0, sig1, sig2},
 			},
 		},
 		{
-			a1: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x06, 0},
+			a1: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x06, 0},
 				Signatures:      [][]byte{sig1, sig2},
 			},
-			a2: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x01, 0},
+			a2: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x01, 0},
 				Signatures:      [][]byte{sig0},
 			},
-			want: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x07, 0},
+			want: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x07, 0},
 				Signatures:      [][]byte{sig0, sig1, sig2},
 			},
 		},
 		{
-			a1: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x01, 0},
+			a1: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x01, 0},
 				Signatures:      [][]byte{sig0},
 			},
-			a2: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x02, 0x01},
+			a2: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x02, 0x01},
 				Signatures:      [][]byte{sig2, sig8},
 			},
-			want: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x03, 0x01},
+			want: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x03, 0x01},
 				Signatures:      [][]byte{sig0, sig2, sig8},
 			},
 		},
 		{
-			a1: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x01, 0},
+			a1: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x01, 0},
 				Signatures:      [][]byte{sig0},
 			},
-			a2: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x02, 0x80},
+			a2: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x02, 0x80},
 				Signatures:      [][]byte{sig2, sig15},
 			},
-			want: &zondpb.SyncCommitteeContribution{
-				AggregationBits: bitfield.Bitvector16{0x03, 0x80},
+			want: &qrysmpb.SyncCommitteeContribution{
+				AggregationBits: bitfield.Bitvector128{0x03, 0x80},
 				Signatures:      [][]byte{sig0, sig2, sig15},
 			},
 		},
@@ -121,16 +121,16 @@ func TestAggregate(t *testing.T) {
 
 func TestAggregate_OverlapFails(t *testing.T) {
 	tests := []struct {
-		a1 *zondpb.SyncCommitteeContribution
-		a2 *zondpb.SyncCommitteeContribution
+		a1 *qrysmpb.SyncCommitteeContribution
+		a2 *qrysmpb.SyncCommitteeContribution
 	}{
 		{
-			a1: &zondpb.SyncCommitteeContribution{AggregationBits: bitfield.Bitvector16{0x1F}},
-			a2: &zondpb.SyncCommitteeContribution{AggregationBits: bitfield.Bitvector16{0x11}},
+			a1: &qrysmpb.SyncCommitteeContribution{AggregationBits: bitfield.Bitvector128{0x1F}},
+			a2: &qrysmpb.SyncCommitteeContribution{AggregationBits: bitfield.Bitvector128{0x11}},
 		},
 		{
-			a1: &zondpb.SyncCommitteeContribution{AggregationBits: bitfield.Bitvector16{0xFF, 0x85}},
-			a2: &zondpb.SyncCommitteeContribution{AggregationBits: bitfield.Bitvector16{0x13, 0x8F}},
+			a1: &qrysmpb.SyncCommitteeContribution{AggregationBits: bitfield.Bitvector128{0xFF, 0x85}},
+			a2: &qrysmpb.SyncCommitteeContribution{AggregationBits: bitfield.Bitvector128{0x13, 0x8F}},
 		},
 	}
 	for _, tt := range tests {
@@ -149,188 +149,188 @@ func TestNaiveSyncContributionAggregation(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		inputs []*zondpb.SyncCommitteeContribution
-		want   []*zondpb.SyncCommitteeContribution
+		inputs []*qrysmpb.SyncCommitteeContribution
+		want   []*qrysmpb.SyncCommitteeContribution
 		err    string
 	}{
 		{
 			name: "invalid contribution - missing one signature",
-			inputs: []*zondpb.SyncCommitteeContribution{
+			inputs: []*qrysmpb.SyncCommitteeContribution{
 				{
-					AggregationBits: bitfield.Bitvector16{0x01, 0},
+					AggregationBits: bitfield.Bitvector128{0x01, 0},
 				},
 			},
-			want: []*zondpb.SyncCommitteeContribution{
+			want: []*qrysmpb.SyncCommitteeContribution{
 				{
-					AggregationBits: bitfield.Bitvector16{},
+					AggregationBits: bitfield.Bitvector128{},
 				},
 			},
 			err: "signatures length 0 is not equal to the attesting participants indices length 1 for contribution with index 0",
 		},
 		{
 			name: "empty list",
-			inputs: []*zondpb.SyncCommitteeContribution{
+			inputs: []*qrysmpb.SyncCommitteeContribution{
 				{
-					AggregationBits: bitfield.Bitvector16{},
+					AggregationBits: bitfield.Bitvector128{},
 				},
 			},
-			want: []*zondpb.SyncCommitteeContribution{
+			want: []*qrysmpb.SyncCommitteeContribution{
 				{
-					AggregationBits: bitfield.Bitvector16{},
+					AggregationBits: bitfield.Bitvector128{},
 				},
 			},
 		},
 		{
 			name: "single attestation",
-			inputs: []*zondpb.SyncCommitteeContribution{
+			inputs: []*qrysmpb.SyncCommitteeContribution{
 				{
-					AggregationBits: bitfield.Bitvector16{0b00000010, 0},
+					AggregationBits: bitfield.Bitvector128{0b00000010, 0},
 					Signatures:      [][]byte{sig1},
 				},
 			},
-			want: []*zondpb.SyncCommitteeContribution{
+			want: []*qrysmpb.SyncCommitteeContribution{
 				{
-					AggregationBits: bitfield.Bitvector16{0b00000010, 0},
+					AggregationBits: bitfield.Bitvector128{0b00000010, 0},
 					Signatures:      [][]byte{sig1},
 				},
 			},
 		},
 		{
 			name: "two attestations with no overlap",
-			inputs: []*zondpb.SyncCommitteeContribution{
+			inputs: []*qrysmpb.SyncCommitteeContribution{
 				{
-					AggregationBits: bitfield.Bitvector16{0b00000001, 0},
+					AggregationBits: bitfield.Bitvector128{0b00000001, 0},
 					Signatures:      [][]byte{sig0},
 				},
 				{
-					AggregationBits: bitfield.Bitvector16{0b00000010, 0},
+					AggregationBits: bitfield.Bitvector128{0b00000010, 0},
 					Signatures:      [][]byte{sig1},
 				},
 			},
-			want: []*zondpb.SyncCommitteeContribution{
+			want: []*qrysmpb.SyncCommitteeContribution{
 				{
-					AggregationBits: bitfield.Bitvector16{0b00000011, 0},
+					AggregationBits: bitfield.Bitvector128{0b00000011, 0},
 					Signatures:      [][]byte{sig0, sig1},
 				},
 			},
 		},
 		{
 			name: "two attestations with overlap",
-			inputs: []*zondpb.SyncCommitteeContribution{
+			inputs: []*qrysmpb.SyncCommitteeContribution{
 				{
-					AggregationBits: bitfield.Bitvector16{0b00000101, 0},
+					AggregationBits: bitfield.Bitvector128{0b00000101, 0},
 					Signatures:      [][]byte{sig0, sig2},
 				},
 				{
-					AggregationBits: bitfield.Bitvector16{0b00000110, 0},
+					AggregationBits: bitfield.Bitvector128{0b00000110, 0},
 					Signatures:      [][]byte{sig1, sig2},
 				},
 			},
-			want: []*zondpb.SyncCommitteeContribution{
+			want: []*qrysmpb.SyncCommitteeContribution{
 				{
-					AggregationBits: bitfield.Bitvector16{0b00000101, 0},
+					AggregationBits: bitfield.Bitvector128{0b00000101, 0},
 					Signatures:      [][]byte{sig0, sig2},
 				},
 				{
-					AggregationBits: bitfield.Bitvector16{0b00000110, 0},
+					AggregationBits: bitfield.Bitvector128{0b00000110, 0},
 					Signatures:      [][]byte{sig1, sig2},
 				},
 			},
 		},
 		{
 			name: "some attestations overlap",
-			inputs: []*zondpb.SyncCommitteeContribution{
+			inputs: []*qrysmpb.SyncCommitteeContribution{
 				{
-					AggregationBits: bitfield.Bitvector16{0b00001001, 0},
+					AggregationBits: bitfield.Bitvector128{0b00001001, 0},
 					Signatures:      [][]byte{sig0, sig3},
 				},
 				{
-					AggregationBits: bitfield.Bitvector16{0b00010110, 0},
+					AggregationBits: bitfield.Bitvector128{0b00010110, 0},
 					Signatures:      [][]byte{sig1, sig2, sig4},
 				},
 				{
-					AggregationBits: bitfield.Bitvector16{0b00001010, 0},
+					AggregationBits: bitfield.Bitvector128{0b00001010, 0},
 					Signatures:      [][]byte{sig1, sig3},
 				},
 				{
-					AggregationBits: bitfield.Bitvector16{0b00110001, 0},
+					AggregationBits: bitfield.Bitvector128{0b00110001, 0},
 					Signatures:      [][]byte{sig0, sig4, sig5},
 				},
 			},
 
-			want: []*zondpb.SyncCommitteeContribution{
+			want: []*qrysmpb.SyncCommitteeContribution{
 				{
-					AggregationBits: bitfield.Bitvector16{0b00011111, 0},
+					AggregationBits: bitfield.Bitvector128{0b00011111, 0},
 					Signatures:      [][]byte{sig0, sig1, sig2, sig3, sig4},
 				},
 				{
-					AggregationBits: bitfield.Bitvector16{0b00111011, 0},
+					AggregationBits: bitfield.Bitvector128{0b00111011, 0},
 					Signatures:      [][]byte{sig0, sig1, sig3, sig4, sig5},
 				},
 			},
 		},
 		{
 			name: "some attestations produce duplicates which are removed",
-			inputs: []*zondpb.SyncCommitteeContribution{
+			inputs: []*qrysmpb.SyncCommitteeContribution{
 				{
-					AggregationBits: bitfield.Bitvector16{0b00000101, 0},
+					AggregationBits: bitfield.Bitvector128{0b00000101, 0},
 					Signatures:      [][]byte{sig0, sig2},
 				},
 				{
-					AggregationBits: bitfield.Bitvector16{0b00000110, 0},
+					AggregationBits: bitfield.Bitvector128{0b00000110, 0},
 					Signatures:      [][]byte{sig1, sig2},
 				},
 				{
-					AggregationBits: bitfield.Bitvector16{0b00001010, 0},
+					AggregationBits: bitfield.Bitvector128{0b00001010, 0},
 					Signatures:      [][]byte{sig1, sig3},
 				},
 				{
-					AggregationBits: bitfield.Bitvector16{0b00001001, 0},
+					AggregationBits: bitfield.Bitvector128{0b00001001, 0},
 					Signatures:      [][]byte{sig0, sig3},
 				},
 			},
-			want: []*zondpb.SyncCommitteeContribution{
+			want: []*qrysmpb.SyncCommitteeContribution{
 				// both 0&1 and 2&3 produce this bitlist
 				{
-					AggregationBits: bitfield.Bitvector16{0b00001111, 0},
+					AggregationBits: bitfield.Bitvector128{0b00001111, 0},
 					Signatures:      [][]byte{sig0, sig1, sig2, sig3},
 				},
 			},
 		},
 		{
 			name: "two attestations where one is fully contained within the other",
-			inputs: []*zondpb.SyncCommitteeContribution{
+			inputs: []*qrysmpb.SyncCommitteeContribution{
 				{
-					AggregationBits: bitfield.Bitvector16{0b00000001, 0},
+					AggregationBits: bitfield.Bitvector128{0b00000001, 0},
 					Signatures:      [][]byte{sig0},
 				},
 				{
-					AggregationBits: bitfield.Bitvector16{0b00000011, 0},
+					AggregationBits: bitfield.Bitvector128{0b00000011, 0},
 					Signatures:      [][]byte{sig0, sig1},
 				},
 			},
-			want: []*zondpb.SyncCommitteeContribution{
+			want: []*qrysmpb.SyncCommitteeContribution{
 				{
-					AggregationBits: bitfield.Bitvector16{0b00000011, 0},
+					AggregationBits: bitfield.Bitvector128{0b00000011, 0},
 					Signatures:      [][]byte{sig0, sig1},
 				},
 			},
 		},
 		{
 			name: "two attestations where one is fully contained within the other reversed",
-			inputs: []*zondpb.SyncCommitteeContribution{
+			inputs: []*qrysmpb.SyncCommitteeContribution{
 				{
-					AggregationBits: bitfield.Bitvector16{0b00000011, 0},
+					AggregationBits: bitfield.Bitvector128{0b00000011, 0},
 					Signatures:      [][]byte{sig0, sig1},
 				},
 				{
-					AggregationBits: bitfield.Bitvector16{0b00000001, 0},
+					AggregationBits: bitfield.Bitvector128{0b00000001, 0},
 					Signatures:      [][]byte{sig0},
 				},
 			},
-			want: []*zondpb.SyncCommitteeContribution{
+			want: []*qrysmpb.SyncCommitteeContribution{
 				{
-					AggregationBits: bitfield.Bitvector16{0b00000011, 0},
+					AggregationBits: bitfield.Bitvector128{0b00000011, 0},
 					Signatures:      [][]byte{sig0, sig1},
 				},
 			},

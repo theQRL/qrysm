@@ -1,21 +1,21 @@
-load("@qrysm//tools/go:def.bzl", "go_library")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "blocktree_lib",
     srcs = ["main.go"],
     importpath = "github.com/theQRL/qrysm/tools/blocktree",
     visibility = ["//visibility:private"],
     deps = [
-        "//beacon-chain/db:go_default_library",
-        "//beacon-chain/db/filters:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "@com_github_emicklei_dot//:go_default_library",
+        "//beacon-chain/db",
+        "//beacon-chain/db/filters",
+        "//consensus-types/primitives",
+        "@com_github_emicklei_dot//:dot",
     ],
 )
 
 go_binary(
     name = "blocktree",
-    embed = [":go_default_library"],
+    embed = [":blocktree_lib"],
     visibility = ["//visibility:public"],
 )

@@ -1,22 +1,22 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "equality",
     srcs = ["deep_equal.go"],
     importpath = "github.com/theQRL/qrysm/encoding/ssz/equality",
     visibility = ["//visibility:public"],
     deps = [
-        "//consensus-types/primitives:go_default_library",
-        "@org_golang_google_protobuf//proto:go_default_library",
+        "//consensus-types/primitives",
+        "@org_golang_google_protobuf//proto",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "equality_test",
     srcs = ["deep_equal_test.go"],
     deps = [
-        ":go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "//testing/assert:go_default_library",
+        ":equality",
+        "//proto/qrysm/v1alpha1",
+        "//testing/assert",
     ],
 )

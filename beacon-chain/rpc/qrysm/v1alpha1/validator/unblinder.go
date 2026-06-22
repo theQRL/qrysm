@@ -7,10 +7,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/beacon-chain/builder"
-	consensus_types "github.com/theQRL/qrysm/consensus-types"
 	consensusblocks "github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 	"google.golang.org/protobuf/proto"
 )
@@ -117,17 +116,13 @@ func copyBlockData(src interfaces.SignedBeaconBlock, dst interfaces.SignedBeacon
 	randaoReveal := src.Block().Body().RandaoReveal()
 	graffiti := src.Block().Body().Graffiti()
 	sig := src.Signature()
-	dilithiumToExecChanges, err := src.Block().Body().DilithiumToExecutionChanges()
-	if err != nil && !errors.Is(err, consensus_types.ErrUnsupportedField) {
-		return errors.Wrap(err, "could not get dilithium to execution changes")
-	}
 
 	dst.SetSlot(src.Block().Slot())
 	dst.SetProposerIndex(src.Block().ProposerIndex())
 	dst.SetParentRoot(parentRoot[:])
 	dst.SetStateRoot(stateRoot[:])
 	dst.SetRandaoReveal(randaoReveal[:])
-	dst.SetEth1Data(src.Block().Body().Eth1Data())
+	dst.SetExecutionData(src.Block().Body().ExecutionData())
 	dst.SetGraffiti(graffiti[:])
 	dst.SetProposerSlashings(src.Block().Body().ProposerSlashings())
 	dst.SetAttesterSlashings(src.Block().Body().AttesterSlashings())
@@ -138,19 +133,16 @@ func copyBlockData(src interfaces.SignedBeaconBlock, dst interfaces.SignedBeacon
 		return errors.Wrap(err, "could not set sync aggregate")
 	}
 	dst.SetSignature(sig[:])
-	if err = dst.SetDilithiumToExecutionChanges(dilithiumToExecChanges); err != nil && !errors.Is(err, consensus_types.ErrUnsupportedField) {
-		return errors.Wrap(err, "could not set dilithium to execution changes")
-	}
 
 	return nil
 }
 
 func (u *unblinder) blindedProtoBlock() (proto.Message, error) {
 	switch u.b.Version() {
-	case version.Capella:
-		return &zondpb.SignedBlindedBeaconBlockCapella{
-			Block: &zondpb.BlindedBeaconBlockCapella{
-				Body: &zondpb.BlindedBeaconBlockBodyCapella{},
+	case version.Zond:
+		return &qrysmpb.SignedBlindedBeaconBlockZond{
+			Block: &qrysmpb.BlindedBeaconBlockZond{
+				Body: &qrysmpb.BlindedBeaconBlockBodyZond{},
 			},
 		}, nil
 	default:
@@ -160,10 +152,10 @@ func (u *unblinder) blindedProtoBlock() (proto.Message, error) {
 
 func (u *unblinder) protoBlock() (proto.Message, error) {
 	switch u.b.Version() {
-	case version.Capella:
-		return &zondpb.SignedBeaconBlockCapella{
-			Block: &zondpb.BeaconBlockCapella{
-				Body: &zondpb.BeaconBlockBodyCapella{},
+	case version.Zond:
+		return &qrysmpb.SignedBeaconBlockZond{
+			Block: &qrysmpb.BeaconBlockZond{
+				Body: &qrysmpb.BeaconBlockBodyZond{},
 			},
 		}, nil
 	default:

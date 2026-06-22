@@ -6,7 +6,7 @@ import (
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/util"
 )
@@ -16,23 +16,23 @@ func TestValidateWithBatchVerifier(t *testing.T) {
 	assert.NoError(t, err)
 	sig := keys[0].Sign(make([]byte, 32))
 	badSig := keys[1].Sign(make([]byte, 32))
-	validSet := &dilithium.SignatureBatch{
+	validSet := &ml_dsa_87.SignatureBatch{
 		Messages:     [][32]byte{{}},
-		PublicKeys:   [][]dilithium.PublicKey{{keys[0].PublicKey()}},
+		PublicKeys:   [][]ml_dsa_87.PublicKey{{keys[0].PublicKey()}},
 		Signatures:   [][][]byte{{sig.Marshal()}},
 		Descriptions: []string{signing.UnknownSignature},
 	}
-	invalidSet := &dilithium.SignatureBatch{
+	invalidSet := &ml_dsa_87.SignatureBatch{
 		Messages:     [][32]byte{{}},
-		PublicKeys:   [][]dilithium.PublicKey{{keys[0].PublicKey()}},
+		PublicKeys:   [][]ml_dsa_87.PublicKey{{keys[0].PublicKey()}},
 		Signatures:   [][][]byte{{badSig.Marshal()}},
 		Descriptions: []string{signing.UnknownSignature},
 	}
 	tests := []struct {
 		name          string
 		message       string
-		set           *dilithium.SignatureBatch
-		preFilledSets []*dilithium.SignatureBatch
+		set           *ml_dsa_87.SignatureBatch
+		preFilledSets []*ml_dsa_87.SignatureBatch
 		want          pubsub.ValidationResult
 	}{
 		{
@@ -51,14 +51,14 @@ func TestValidateWithBatchVerifier(t *testing.T) {
 			name:          "invalid set in routine with valid set",
 			message:       "random",
 			set:           validSet,
-			preFilledSets: []*dilithium.SignatureBatch{invalidSet},
+			preFilledSets: []*ml_dsa_87.SignatureBatch{invalidSet},
 			want:          pubsub.ValidationAccept,
 		},
 		{
 			name:          "valid set in routine with invalid set",
 			message:       "random",
 			set:           invalidSet,
-			preFilledSets: []*dilithium.SignatureBatch{validSet},
+			preFilledSets: []*ml_dsa_87.SignatureBatch{validSet},
 			want:          pubsub.ValidationReject,
 		},
 	}

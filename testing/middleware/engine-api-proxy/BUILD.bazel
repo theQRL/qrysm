@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "engine-api-proxy",
     srcs = [
         "options.go",
         "proxy.go",
@@ -9,23 +9,23 @@ go_library(
     importpath = "github.com/theQRL/qrysm/testing/middleware/engine-api-proxy",
     visibility = ["//visibility:public"],
     deps = [
-        "//network:go_default_library",
-        "@com_github_pkg_errors//:go_default_library",
-        "@com_github_sirupsen_logrus//:go_default_library",
+        "//network",
+        "@com_github_pkg_errors//:errors",
+        "@com_github_sirupsen_logrus//:logrus",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "engine-api-proxy_test",
     srcs = ["proxy_test.go"],
-    embed = [":go_default_library"],
+    embed = [":engine-api-proxy"],
     deps = [
-        "//crypto/rand:go_default_library",
-        "//proto/engine/v1:go_default_library",
-        "//testing/require:go_default_library",
-        "@com_github_sirupsen_logrus//:go_default_library",
-        "@com_github_sirupsen_logrus//hooks/test:go_default_library",
-        "@com_github_theqrl_go_zond//common:go_default_library",
-        "@com_github_theqrl_go_zond//rpc:go_default_library",
+        "//crypto/rand",
+        "//proto/engine/v1:engine",
+        "//testing/require",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_sirupsen_logrus//hooks/test",
+        "@com_github_theqrl_go_qrl//common",
+        "@com_github_theqrl_go_qrl//rpc",
     ],
 )

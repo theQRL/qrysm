@@ -4,43 +4,43 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/theQRL/go-zond/accounts/abi/bind"
+	"github.com/theQRL/go-qrl/accounts/abi/bind"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/container/trie"
 	contracts "github.com/theQRL/qrysm/contracts/deposit/mock"
 	"github.com/theQRL/qrysm/crypto/hash"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestCreateTrieFromProto_Validation(t *testing.T) {
 	h := hash.Hash([]byte("hi"))
-	genValidLayers := func(num int) []*zondpb.TrieLayer {
-		l := make([]*zondpb.TrieLayer, num)
-		for i := 0; i < num; i++ {
-			l[i] = &zondpb.TrieLayer{
+	genValidLayers := func(num int) []*qrysmpb.TrieLayer {
+		l := make([]*qrysmpb.TrieLayer, num)
+		for i := range num {
+			l[i] = &qrysmpb.TrieLayer{
 				Layer: [][]byte{h[:]},
 			}
 		}
 		return l
 	}
 	tests := []struct {
-		trie      *zondpb.SparseMerkleTrie
+		trie      *qrysmpb.SparseMerkleTrie
 		errString string
 	}{
 		{
-			trie: &zondpb.SparseMerkleTrie{
-				Layers: []*zondpb.TrieLayer{},
+			trie: &qrysmpb.SparseMerkleTrie{
+				Layers: []*qrysmpb.TrieLayer{},
 				Depth:  0,
 			},
 			errString: "no branches",
 		},
 		{
-			trie: &zondpb.SparseMerkleTrie{
-				Layers: []*zondpb.TrieLayer{
+			trie: &qrysmpb.SparseMerkleTrie{
+				Layers: []*qrysmpb.TrieLayer{
 					{
 						Layer: [][]byte{h[:]},
 					},
@@ -56,14 +56,14 @@ func TestCreateTrieFromProto_Validation(t *testing.T) {
 			errString: "invalid branches provided",
 		},
 		{
-			trie: &zondpb.SparseMerkleTrie{
+			trie: &qrysmpb.SparseMerkleTrie{
 				Layers: genValidLayers(3),
 				Depth:  12,
 			},
 			errString: "depth is greater than or equal to number of branches",
 		},
 		{
-			trie: &zondpb.SparseMerkleTrie{
+			trie: &qrysmpb.SparseMerkleTrie{
 				Layers: genValidLayers(66),
 				Depth:  63,
 			},
@@ -94,29 +94,29 @@ func TestMarshalDepositWithProof(t *testing.T) {
 	proof, err := m.MerkleProof(2)
 	require.NoError(t, err)
 	require.Equal(t, len(proof), int(params.BeaconConfig().DepositContractTreeDepth)+1)
-	someRoot := [32]byte{1, 2, 3, 4}
-	someSig := [field_params.DilithiumSignatureLength]byte{1, 2, 3, 4}
-	someKey := [field_params.DilithiumPubkeyLength]byte{1, 2, 3, 4}
-	dep := &zondpb.Deposit{
+	someCreds := [field_params.WithdrawalCredentialsLength]byte{1, 2, 3, 4}
+	someSig := [field_params.MLDSA87SignatureLength]byte{1, 2, 3, 4}
+	someKey := [field_params.MLDSA87PubkeyLength]byte{1, 2, 3, 4}
+	dep := &qrysmpb.Deposit{
 		Proof: proof,
-		Data: &zondpb.Deposit_Data{
+		Data: &qrysmpb.Deposit_Data{
 			PublicKey:             someKey[:],
-			WithdrawalCredentials: someRoot[:],
+			WithdrawalCredentials: someCreds[:],
 			Amount:                32,
 			Signature:             someSig[:],
 		},
 	}
 	enc, err := dep.MarshalSSZ()
 	require.NoError(t, err)
-	dec := &zondpb.Deposit{}
+	dec := &qrysmpb.Deposit{}
 	require.NoError(t, dec.UnmarshalSSZ(enc))
 	require.DeepEqual(t, dec, dep)
 }
 
 func TestMerkleTrie_MerkleProofOutOfRange(t *testing.T) {
 	h := hash.Hash([]byte("hi"))
-	m, err := trie.CreateTrieFromProto(&zondpb.SparseMerkleTrie{
-		Layers: []*zondpb.TrieLayer{
+	m, err := trie.CreateTrieFromProto(&qrysmpb.SparseMerkleTrie{
+		Layers: []*qrysmpb.TrieLayer{
 			{
 				Layer: [][]byte{h[:]},
 			},
@@ -339,17 +339,16 @@ func BenchmarkGenerateTrieFromItems(b *testing.B) {
 		[]byte("FFFFFF"),
 		[]byte("GGGGGGG"),
 	}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := trie.GenerateTrieFromItems(items, params.BeaconConfig().DepositContractTreeDepth)
 		require.NoError(b, err, "Could not generate Merkle trie from items")
 	}
 }
 
 func BenchmarkInsertTrie_Optimized(b *testing.B) {
-	b.StopTimer()
 	numDeposits := 16000
 	items := make([][]byte, numDeposits)
-	for i := 0; i < numDeposits; i++ {
+	for i := range numDeposits {
 		someRoot := bytesutil.ToBytes32([]byte(strconv.Itoa(i)))
 		items[i] = someRoot[:]
 	}
@@ -357,14 +356,13 @@ func BenchmarkInsertTrie_Optimized(b *testing.B) {
 	require.NoError(b, err)
 
 	someItem := bytesutil.ToBytes32([]byte("hello-world"))
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
+
+	for i := 0; b.Loop(); i++ {
 		require.NoError(b, tr.Insert(someItem[:], i%numDeposits))
 	}
 }
 
 func BenchmarkGenerateProof(b *testing.B) {
-	b.StopTimer()
 	items := [][]byte{
 		[]byte("A"),
 		[]byte("BB"),
@@ -377,15 +375,13 @@ func BenchmarkGenerateProof(b *testing.B) {
 	normalTrie, err := trie.GenerateTrieFromItems(items, params.BeaconConfig().DepositContractTreeDepth)
 	require.NoError(b, err)
 
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := normalTrie.MerkleProof(3)
 		require.NoError(b, err)
 	}
 }
 
 func BenchmarkVerifyMerkleProofWithDepth(b *testing.B) {
-	b.StopTimer()
 	items := [][]byte{
 		[]byte("A"),
 		[]byte("BB"),
@@ -402,8 +398,7 @@ func BenchmarkVerifyMerkleProofWithDepth(b *testing.B) {
 
 	root, err := m.HashTreeRoot()
 	require.NoError(b, err)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if ok := trie.VerifyMerkleProofWithDepth(root[:], items[2], 2, proof, params.BeaconConfig().DepositContractTreeDepth); !ok {
 			b.Error("Merkle proof did not verify")
 		}

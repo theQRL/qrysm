@@ -5,14 +5,14 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-bitfield"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation"
 	"github.com/theQRL/qrysm/testing/assert"
 )
 
 func TestAggregateAttestations_MaxCover_NewMaxCover(t *testing.T) {
 	type args struct {
-		atts []*zondpb.Attestation
+		atts []*qrysmpb.Attestation
 	}
 	tests := []struct {
 		name string
@@ -29,14 +29,14 @@ func TestAggregateAttestations_MaxCover_NewMaxCover(t *testing.T) {
 		{
 			name: "no attestations",
 			args: args{
-				atts: []*zondpb.Attestation{},
+				atts: []*qrysmpb.Attestation{},
 			},
 			want: &aggregation.MaxCoverProblem{Candidates: []*aggregation.MaxCoverCandidate{}},
 		},
 		{
 			name: "single attestation",
 			args: args{
-				atts: []*zondpb.Attestation{
+				atts: []*qrysmpb.Attestation{
 					{AggregationBits: bitfield.Bitlist{0b00001010, 0b1}},
 				},
 			},
@@ -49,7 +49,7 @@ func TestAggregateAttestations_MaxCover_NewMaxCover(t *testing.T) {
 		{
 			name: "multiple attestations",
 			args: args{
-				atts: []*zondpb.Attestation{
+				atts: []*qrysmpb.Attestation{
 					{AggregationBits: bitfield.Bitlist{0b00001010, 0b1}},
 					{AggregationBits: bitfield.Bitlist{0b00101010, 0b1}},
 					{AggregationBits: bitfield.Bitlist{0b11111010, 0b1}},
@@ -93,39 +93,39 @@ func TestAggregateAttestations_MaxCover_AttList_validate(t *testing.T) {
 		},
 		{
 			name:      "first bitlist is nil",
-			atts:      attList{&zondpb.Attestation{}},
+			atts:      attList{&qrysmpb.Attestation{}},
 			wantedErr: "bitlist cannot be nil or empty",
 		},
 		{
 			name: "non first bitlist is nil",
 			atts: attList{
-				&zondpb.Attestation{AggregationBits: bitfield.NewBitlist(64)},
-				&zondpb.Attestation{},
+				&qrysmpb.Attestation{AggregationBits: bitfield.NewBitlist(64)},
+				&qrysmpb.Attestation{},
 			},
 			wantedErr: "bitlist cannot be nil or empty",
 		},
 		{
 			name: "first bitlist is empty",
 			atts: attList{
-				&zondpb.Attestation{AggregationBits: bitfield.Bitlist{}},
+				&qrysmpb.Attestation{AggregationBits: bitfield.Bitlist{}},
 			},
 			wantedErr: "bitlist cannot be nil or empty",
 		},
 		{
 			name: "non first bitlist is empty",
 			atts: attList{
-				&zondpb.Attestation{AggregationBits: bitfield.NewBitlist(64)},
-				&zondpb.Attestation{AggregationBits: bitfield.Bitlist{}},
+				&qrysmpb.Attestation{AggregationBits: bitfield.NewBitlist(64)},
+				&qrysmpb.Attestation{AggregationBits: bitfield.Bitlist{}},
 			},
 			wantedErr: "bitlist cannot be nil or empty",
 		},
 		{
 			name: "valid bitlists",
 			atts: attList{
-				&zondpb.Attestation{AggregationBits: bitfield.NewBitlist(64)},
-				&zondpb.Attestation{AggregationBits: bitfield.NewBitlist(64)},
-				&zondpb.Attestation{AggregationBits: bitfield.NewBitlist(64)},
-				&zondpb.Attestation{AggregationBits: bitfield.NewBitlist(64)},
+				&qrysmpb.Attestation{AggregationBits: bitfield.NewBitlist(64)},
+				&qrysmpb.Attestation{AggregationBits: bitfield.NewBitlist(64)},
+				&qrysmpb.Attestation{AggregationBits: bitfield.NewBitlist(64)},
+				&qrysmpb.Attestation{AggregationBits: bitfield.NewBitlist(64)},
 			},
 		},
 	}
@@ -144,35 +144,35 @@ func TestAggregateAttestations_MaxCover_AttList_validate(t *testing.T) {
 func TestAggregateAttestations_rearrangeProcessedAttestations(t *testing.T) {
 	tests := []struct {
 		name     string
-		atts     []*zondpb.Attestation
+		atts     []*qrysmpb.Attestation
 		keys     []int
-		wantAtts []*zondpb.Attestation
+		wantAtts []*qrysmpb.Attestation
 	}{
 		{
 			name: "nil attestations",
 		},
 		{
 			name: "single attestation no processed keys",
-			atts: []*zondpb.Attestation{
+			atts: []*qrysmpb.Attestation{
 				{},
 			},
-			wantAtts: []*zondpb.Attestation{
+			wantAtts: []*qrysmpb.Attestation{
 				{},
 			},
 		},
 		{
 			name: "single attestation processed",
-			atts: []*zondpb.Attestation{
+			atts: []*qrysmpb.Attestation{
 				{},
 			},
 			keys: []int{0},
-			wantAtts: []*zondpb.Attestation{
+			wantAtts: []*qrysmpb.Attestation{
 				nil,
 			},
 		},
 		{
 			name: "multiple processed, last attestation marked",
-			atts: []*zondpb.Attestation{
+			atts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0x00}},
 				{AggregationBits: bitfield.Bitlist{0x01}},
 				{AggregationBits: bitfield.Bitlist{0x02}},
@@ -180,7 +180,7 @@ func TestAggregateAttestations_rearrangeProcessedAttestations(t *testing.T) {
 				{AggregationBits: bitfield.Bitlist{0x04}},
 			},
 			keys: []int{1, 4}, // Only attestation at index 1, should be moved, att at 4 is already at the end.
-			wantAtts: []*zondpb.Attestation{
+			wantAtts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0x00}},
 				{AggregationBits: bitfield.Bitlist{0x03}},
 				{AggregationBits: bitfield.Bitlist{0x02}},
@@ -189,7 +189,7 @@ func TestAggregateAttestations_rearrangeProcessedAttestations(t *testing.T) {
 		},
 		{
 			name: "all processed",
-			atts: []*zondpb.Attestation{
+			atts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0x00}},
 				{AggregationBits: bitfield.Bitlist{0x01}},
 				{AggregationBits: bitfield.Bitlist{0x02}},
@@ -197,13 +197,13 @@ func TestAggregateAttestations_rearrangeProcessedAttestations(t *testing.T) {
 				{AggregationBits: bitfield.Bitlist{0x04}},
 			},
 			keys: []int{0, 1, 2, 3, 4},
-			wantAtts: []*zondpb.Attestation{
+			wantAtts: []*qrysmpb.Attestation{
 				nil, nil, nil, nil, nil,
 			},
 		},
 		{
 			name: "operate on slice, single attestation marked",
-			atts: []*zondpb.Attestation{
+			atts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0x00}},
 				{AggregationBits: bitfield.Bitlist{0x01}},
 				{AggregationBits: bitfield.Bitlist{0x02}},
@@ -213,7 +213,7 @@ func TestAggregateAttestations_rearrangeProcessedAttestations(t *testing.T) {
 				nil, nil, nil,
 			},
 			keys: []int{2},
-			wantAtts: []*zondpb.Attestation{
+			wantAtts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0x00}},
 				{AggregationBits: bitfield.Bitlist{0x01}},
 				{AggregationBits: bitfield.Bitlist{0x04}},
@@ -223,7 +223,7 @@ func TestAggregateAttestations_rearrangeProcessedAttestations(t *testing.T) {
 		},
 		{
 			name: "operate on slice, non-last attestation marked",
-			atts: []*zondpb.Attestation{
+			atts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0x00}},
 				{AggregationBits: bitfield.Bitlist{0x01}},
 				{AggregationBits: bitfield.Bitlist{0x02}},
@@ -234,7 +234,7 @@ func TestAggregateAttestations_rearrangeProcessedAttestations(t *testing.T) {
 				nil, nil, nil,
 			},
 			keys: []int{2, 3},
-			wantAtts: []*zondpb.Attestation{
+			wantAtts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0x00}},
 				{AggregationBits: bitfield.Bitlist{0x01}},
 				{AggregationBits: bitfield.Bitlist{0x05}},
@@ -244,7 +244,7 @@ func TestAggregateAttestations_rearrangeProcessedAttestations(t *testing.T) {
 		},
 		{
 			name: "operate on slice, last attestation marked",
-			atts: []*zondpb.Attestation{
+			atts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0x00}},
 				{AggregationBits: bitfield.Bitlist{0x01}},
 				{AggregationBits: bitfield.Bitlist{0x02}},
@@ -254,7 +254,7 @@ func TestAggregateAttestations_rearrangeProcessedAttestations(t *testing.T) {
 				nil, nil, nil,
 			},
 			keys: []int{2, 4},
-			wantAtts: []*zondpb.Attestation{
+			wantAtts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0x00}},
 				{AggregationBits: bitfield.Bitlist{0x01}},
 				{AggregationBits: bitfield.Bitlist{0x03}},
@@ -263,7 +263,7 @@ func TestAggregateAttestations_rearrangeProcessedAttestations(t *testing.T) {
 		},
 		{
 			name: "many items, many selected, keys unsorted",
-			atts: []*zondpb.Attestation{
+			atts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0x00}},
 				{AggregationBits: bitfield.Bitlist{0x01}},
 				{AggregationBits: bitfield.Bitlist{0x02}},
@@ -273,7 +273,7 @@ func TestAggregateAttestations_rearrangeProcessedAttestations(t *testing.T) {
 				{AggregationBits: bitfield.Bitlist{0x06}},
 			},
 			keys: []int{4, 1, 2, 5, 6},
-			wantAtts: []*zondpb.Attestation{
+			wantAtts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0x00}},
 				{AggregationBits: bitfield.Bitlist{0x03}},
 				nil, nil, nil, nil, nil,
@@ -308,8 +308,8 @@ func TestAggregateAttestations_aggregateAttestations(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		atts          []*zondpb.Attestation
-		wantAtts      []*zondpb.Attestation
+		atts          []*qrysmpb.Attestation
+		wantAtts      []*qrysmpb.Attestation
 		keys          []int
 		coverage      *bitfield.Bitlist64
 		wantTargetIdx int
@@ -323,7 +323,7 @@ func TestAggregateAttestations_aggregateAttestations(t *testing.T) {
 		},
 		{
 			name: "single attestation",
-			atts: []*zondpb.Attestation{
+			atts: []*qrysmpb.Attestation{
 				{},
 			},
 			wantTargetIdx: 0,
@@ -337,7 +337,7 @@ func TestAggregateAttestations_aggregateAttestations(t *testing.T) {
 		},
 		{
 			name: "two attestations, none selected",
-			atts: []*zondpb.Attestation{
+			atts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0x00}},
 				{AggregationBits: bitfield.Bitlist{0x01}},
 			},
@@ -347,7 +347,7 @@ func TestAggregateAttestations_aggregateAttestations(t *testing.T) {
 		},
 		{
 			name: "two attestations, one selected",
-			atts: []*zondpb.Attestation{
+			atts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0x00}},
 				{AggregationBits: bitfield.Bitlist{0x01}},
 			},
@@ -357,11 +357,11 @@ func TestAggregateAttestations_aggregateAttestations(t *testing.T) {
 		},
 		{
 			name: "two attestations, both selected, empty coverage",
-			atts: []*zondpb.Attestation{
+			atts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0b00000001, 0b1}, Signatures: [][]byte{}},
 				{AggregationBits: bitfield.Bitlist{0b00000110, 0b1}, Signatures: [][]byte{}},
 			},
-			wantAtts: []*zondpb.Attestation{
+			wantAtts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0b00000111, 0b1}, Signatures: [][]byte{}},
 				{AggregationBits: bitfield.Bitlist{0b00000110, 0b1}, Signatures: [][]byte{}},
 			},
@@ -371,11 +371,11 @@ func TestAggregateAttestations_aggregateAttestations(t *testing.T) {
 		},
 		{
 			name: "two attestations, both selected",
-			atts: []*zondpb.Attestation{
+			atts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0b00000001, 0b1}, Signatures: [][]byte{sig0}},
 				{AggregationBits: bitfield.Bitlist{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0b00000010, 0b1}, Signatures: [][]byte{sig1}},
 			},
-			wantAtts: []*zondpb.Attestation{
+			wantAtts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0b00000011, 0b1}, Signatures: [][]byte{sig0, sig1}},
 				{AggregationBits: bitfield.Bitlist{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0b00000010, 0b1}, Signatures: [][]byte{sig1}},
 			},
@@ -391,7 +391,7 @@ func TestAggregateAttestations_aggregateAttestations(t *testing.T) {
 		},
 		{
 			name: "many attestations, several selected",
-			atts: []*zondpb.Attestation{
+			atts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0b00000001, 0b1}, Signatures: [][]byte{sig0}},
 				{AggregationBits: bitfield.Bitlist{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0b00000010, 0b1}, Signatures: [][]byte{sig1}},
 				{AggregationBits: bitfield.Bitlist{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0b00000100, 0b1}, Signatures: [][]byte{sig2}},
@@ -399,7 +399,7 @@ func TestAggregateAttestations_aggregateAttestations(t *testing.T) {
 				{AggregationBits: bitfield.Bitlist{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0b00010000, 0b1}, Signatures: [][]byte{sig4}},
 				{AggregationBits: bitfield.Bitlist{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0b00100000, 0b1}, Signatures: [][]byte{sig5}},
 			},
-			wantAtts: []*zondpb.Attestation{
+			wantAtts: []*qrysmpb.Attestation{
 				{AggregationBits: bitfield.Bitlist{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0b00000001, 0b1}, Signatures: [][]byte{sig0}},
 				{AggregationBits: bitfield.Bitlist{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0b00010110, 0b1}, Signatures: [][]byte{sig1, sig2, sig4}},
 				{AggregationBits: bitfield.Bitlist{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0b00000100, 0b1}, Signatures: [][]byte{sig2}},
@@ -428,14 +428,14 @@ func TestAggregateAttestations_aggregateAttestations(t *testing.T) {
 				assert.NoError(t, err)
 			}
 			assert.Equal(t, tt.wantTargetIdx, gotTargetIdx)
-			extractBitlists := func(atts []*zondpb.Attestation) []bitfield.Bitlist {
+			extractBitlists := func(atts []*qrysmpb.Attestation) []bitfield.Bitlist {
 				bl := make([]bitfield.Bitlist, len(atts))
 				for i, att := range atts {
 					bl[i] = att.AggregationBits
 				}
 				return bl
 			}
-			extractSignatures := func(atts []*zondpb.Attestation) [][]byte {
+			extractSignatures := func(atts []*qrysmpb.Attestation) [][]byte {
 				sigs := make([][]byte, 0)
 				for _, att := range atts {
 					sigs = append(sigs, att.Signatures...)

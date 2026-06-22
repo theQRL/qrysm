@@ -8,19 +8,19 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/validator"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/shared"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/validator"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/time/slots"
 	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func TestSubmitSyncMessage_Valid(t *testing.T) {
@@ -49,7 +49,7 @@ func TestSubmitSyncMessage_Valid(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().PostRestJson(
 		context.Background(),
-		"/zond/v1/beacon/pool/sync_committees",
+		"/qrl/v1/beacon/pool/sync_committees",
 		nil,
 		bytes.NewBuffer(marshalledJsonRegistrations),
 		nil,
@@ -58,7 +58,7 @@ func TestSubmitSyncMessage_Valid(t *testing.T) {
 		nil,
 	).Times(1)
 
-	protoSyncCommiteeMessage := zondpb.SyncCommitteeMessage{
+	protoSyncCommiteeMessage := qrysmpb.SyncCommitteeMessage{
 		Slot:           primitives.Slot(42),
 		BlockRoot:      decodedBeaconBlockRoot,
 		ValidatorIndex: primitives.ValidatorIndex(12345),
@@ -68,7 +68,7 @@ func TestSubmitSyncMessage_Valid(t *testing.T) {
 	validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
 	res, err := validatorClient.SubmitSyncMessage(context.Background(), &protoSyncCommiteeMessage)
 
-	assert.DeepEqual(t, new(empty.Empty), res)
+	assert.DeepEqual(t, new(emptypb.Empty), res)
 	require.NoError(t, err)
 }
 
@@ -79,7 +79,7 @@ func TestSubmitSyncMessage_BadRequest(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().PostRestJson(
 		context.Background(),
-		"/zond/v1/beacon/pool/sync_committees",
+		"/qrl/v1/beacon/pool/sync_committees",
 		nil,
 		gomock.Any(),
 		nil,
@@ -89,8 +89,8 @@ func TestSubmitSyncMessage_BadRequest(t *testing.T) {
 	).Times(1)
 
 	validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
-	_, err := validatorClient.SubmitSyncMessage(context.Background(), &zondpb.SyncCommitteeMessage{})
-	assert.ErrorContains(t, "failed to send POST data to `/zond/v1/beacon/pool/sync_committees` REST endpoint", err)
+	_, err := validatorClient.SubmitSyncMessage(context.Background(), &qrysmpb.SyncCommitteeMessage{})
+	assert.ErrorContains(t, "failed to send POST data to `/qrl/v1/beacon/pool/sync_committees` REST endpoint", err)
 	assert.ErrorContains(t, "foo error", err)
 }
 
@@ -145,7 +145,7 @@ func TestGetSyncMessageBlockRoot(t *testing.T) {
 			jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/zond/v1/beacon/blocks/head/root",
+				"/qrl/v1/beacon/blocks/head/root",
 				&apimiddleware.BlockRootResponseJson{},
 			).SetArg(
 				2,
@@ -179,7 +179,7 @@ func TestGetSyncCommitteeContribution(t *testing.T) {
 
 	const blockRoot = "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
 
-	request := &zondpb.SyncCommitteeContributionRequest{
+	request := &qrysmpb.SyncCommitteeContributionRequest{
 		Slot:      primitives.Slot(1),
 		PublicKey: nil,
 		SubnetId:  1,
@@ -216,7 +216,7 @@ func TestGetSyncCommitteeContribution(t *testing.T) {
 			jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/zond/v1/beacon/blocks/head/root",
+				"/qrl/v1/beacon/blocks/head/root",
 				&apimiddleware.BlockRootResponseJson{},
 			).SetArg(
 				2,
@@ -232,7 +232,7 @@ func TestGetSyncCommitteeContribution(t *testing.T) {
 
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				fmt.Sprintf("/zond/v1/validator/sync_committee_contribution?beacon_block_root=%s&slot=%d&subcommittee_index=%d",
+				fmt.Sprintf("/qrl/v1/validator/sync_committee_contribution?beacon_block_root=%s&slot=%d&subcommittee_index=%d",
 					blockRoot, uint64(request.Slot), request.SubnetId),
 				&apimiddleware.ProduceSyncCommitteeContributionResponseJson{},
 			).SetArg(
@@ -261,13 +261,13 @@ func TestGetSyncCommitteeContribution(t *testing.T) {
 func TestGetSyncSubCommitteeIndex(t *testing.T) {
 	const (
 		pubkeyStr          = "0x8000091c2ae64ee414a54c1cc1fc67dec663408bc636cb86756e0200e41a75c8f86603f104f02c856983d2783116be13"
-		syncDutiesEndpoint = "/zond/v1/validator/duties/sync"
-		validatorsEndpoint = "/zond/v1/beacon/states/head/validators"
+		syncDutiesEndpoint = "/qrl/v1/validator/duties/sync"
+		validatorsEndpoint = "/qrl/v1/beacon/states/head/validators"
 		validatorIndex     = "55293"
 		slot               = primitives.Slot(123)
 	)
 
-	expectedResponse := &zondpb.SyncSubcommitteeIndexResponse{
+	expectedResponse := &qrysmpb.SyncSubcommitteeIndexResponse{
 		Indices: []primitives.CommitteeIndex{123, 456},
 	}
 
@@ -375,7 +375,7 @@ func TestGetSyncSubCommitteeIndex(t *testing.T) {
 					jsonRestHandler: jsonRestHandler,
 				},
 			}
-			actualResponse, err := validatorClient.getSyncSubcommitteeIndex(ctx, &zondpb.SyncSubcommitteeIndexRequest{
+			actualResponse, err := validatorClient.getSyncSubcommitteeIndex(ctx, &qrysmpb.SyncSubcommitteeIndexRequest{
 				PublicKey: pubkey,
 				Slot:      slot,
 			})

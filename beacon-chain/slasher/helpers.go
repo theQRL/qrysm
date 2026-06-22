@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/container/slice"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // Group a list of attestations into batches by validator chunk index.
@@ -85,7 +85,7 @@ func (s *Service) filterAttestations(
 // the target epoch, which is a precondition for performing slashing detection.
 // This function also checks the attestation source epoch is within the history size
 // we keep track of for slashing detection.
-func validateAttestationIntegrity(att *zondpb.IndexedAttestation) bool {
+func validateAttestationIntegrity(att *qrysmpb.IndexedAttestation) bool {
 	// If an attestation is malformed, we drop it.
 	if att == nil ||
 		att.Data == nil ||
@@ -108,18 +108,18 @@ func validateAttestationIntegrity(att *zondpb.IndexedAttestation) bool {
 }
 
 // Validates the signed beacon block header integrity, ensuring we have no nil values.
-func validateBlockHeaderIntegrity(header *zondpb.SignedBeaconBlockHeader) bool {
+func validateBlockHeaderIntegrity(header *qrysmpb.SignedBeaconBlockHeader) bool {
 	// If a signed block header is malformed, we drop it.
 	if header == nil ||
 		header.Header == nil ||
-		len(header.Signature) != field_params.DilithiumSignatureLength ||
-		bytes.Equal(header.Signature, make([]byte, field_params.DilithiumSignatureLength)) {
+		len(header.Signature) != field_params.MLDSA87SignatureLength ||
+		bytes.Equal(header.Signature, make([]byte, field_params.MLDSA87SignatureLength)) {
 		return false
 	}
 	return true
 }
 
-func logAttesterSlashing(slashing *zondpb.AttesterSlashing) {
+func logAttesterSlashing(slashing *qrysmpb.AttesterSlashing) {
 	indices := slice.IntersectionUint64(slashing.Attestation_1.AttestingIndices, slashing.Attestation_2.AttestingIndices)
 	log.WithFields(logrus.Fields{
 		"validatorIndex":  indices,
@@ -130,7 +130,7 @@ func logAttesterSlashing(slashing *zondpb.AttesterSlashing) {
 	}).Info("Attester slashing detected")
 }
 
-func logProposerSlashing(slashing *zondpb.ProposerSlashing) {
+func logProposerSlashing(slashing *qrysmpb.ProposerSlashing) {
 	log.WithFields(logrus.Fields{
 		"validatorIndex": slashing.Header_1.Header.ProposerIndex,
 		"slot":           slashing.Header_1.Header.Slot,

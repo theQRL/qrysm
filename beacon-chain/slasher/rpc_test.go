@@ -9,7 +9,7 @@ import (
 	slashertypes "github.com/theQRL/qrysm/beacon-chain/slasher/types"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
@@ -94,9 +94,9 @@ func TestIsSlashableAttestation(t *testing.T) {
 	}
 	err := slasherDB.SaveAttestationRecordsForValidators(ctx, prevAtts)
 	require.NoError(t, err)
-	attesterSlashings, err := s.checkSlashableAttestations(ctx, currentEpoch, prevAtts)
+	initialSlashings, err := s.checkSlashableAttestations(ctx, currentEpoch, prevAtts)
 	require.NoError(t, err)
-	require.Equal(t, 0, len(attesterSlashings))
+	require.Equal(t, 0, len(initialSlashings))
 
 	tests := []struct {
 		name         string
@@ -121,21 +121,57 @@ func TestIsSlashableAttestation(t *testing.T) {
 		{
 			name:         "should detect multiple double if multiple same indices",
 			attToCheck:   createAttestationWrapper(t, 0, 3, []uint64{0, 1}, []byte{2}),
-			amtSlashable: 2,
-		},
-		{
-			name:         "should detect multiple surround if multiple same indices",
-			attToCheck:   createAttestationWrapper(t, 1, 4, []uint64{0, 1}, []byte{2}),
-			amtSlashable: 4,
+			amtSlashable: 1, // After dedup: a single AttesterSlashing object covers both validators.
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			attesterSlashings, err = s.IsSlashableAttestation(ctx, tt.attToCheck.IndexedAttestation)
+			attesterSlashings, err := s.IsSlashableAttestation(ctx, tt.attToCheck.IndexedAttestation)
 			require.NoError(t, err)
 			assert.Equal(t, tt.amtSlashable, uint64(len(attesterSlashings)))
 		})
 	}
+}
+
+// Surround detection across multiple validators is exercised in its own test
+// because checkSlashableAttestations now persists attestations to disk between
+// the double-vote and surround checks (upstream PR 13596). Sharing a Service
+// across the double-vote and surround scenarios would let the double-vote
+// subtests overwrite the prev-att records the surround scenario relies on.
+func TestIsSlashableAttestation_MultipleSurround(t *testing.T) {
+	ctx := context.Background()
+	slasherDB := dbtest.SetupSlasherDB(t)
+
+	currentEpoch := primitives.Epoch(4)
+	currentTime := time.Now()
+	totalSlots := uint64(currentEpoch) * uint64(params.BeaconConfig().SlotsPerEpoch)
+	secondsSinceGenesis := time.Duration(totalSlots * params.BeaconConfig().SecondsPerSlot)
+	genesisTime := currentTime.Add(-secondsSinceGenesis * time.Second)
+
+	s := &Service{
+		serviceCfg: &ServiceConfig{
+			Database: slasherDB,
+		},
+		params:                         DefaultParams(),
+		blksQueue:                      newBlocksQueue(),
+		genesisTime:                    genesisTime,
+		latestEpochWrittenForValidator: map[primitives.ValidatorIndex]primitives.Epoch{},
+	}
+	prevAtts := []*slashertypes.IndexedAttestationWrapper{
+		createAttestationWrapper(t, 2, 3, []uint64{0}, []byte{1}),
+		createAttestationWrapper(t, 2, 3, []uint64{1}, []byte{1}),
+	}
+	// Run prevAtts through the slasher so the MinSpan/MaxSpan chunks are
+	// populated; otherwise surround detection has nothing to compare against.
+	_, err := s.checkSlashableAttestations(ctx, currentEpoch, prevAtts)
+	require.NoError(t, err)
+
+	surroundingAtt := createAttestationWrapper(t, 1, 4, []uint64{0, 1}, []byte{2})
+	attesterSlashings, err := s.IsSlashableAttestation(ctx, surroundingAtt.IndexedAttestation)
+	require.NoError(t, err)
+	// After dedup a single AttesterSlashing object covers both validators in
+	// the same surround conflict.
+	assert.Equal(t, uint64(1), uint64(len(attesterSlashings)))
 }
 
 func TestService_HighestAttestations(t *testing.T) {
@@ -171,20 +207,20 @@ func TestService_HighestAttestations(t *testing.T) {
 		atts, err := s.HighestAttestations(ctx, []primitives.ValidatorIndex{1})
 		require.NoError(t, err)
 		require.Equal(t, 1, len(atts))
-		require.DeepEqual(t, &zondpb.HighestAttestation{ValidatorIndex: 1, HighestSourceEpoch: 0, HighestTargetEpoch: 1}, atts[0])
+		require.DeepEqual(t, &qrysmpb.HighestAttestation{ValidatorIndex: 1, HighestSourceEpoch: 0, HighestTargetEpoch: 1}, atts[0])
 	})
 	t.Run("single index case 2", func(t *testing.T) {
 		atts, err := s.HighestAttestations(ctx, []primitives.ValidatorIndex{2})
 		require.NoError(t, err)
 		require.Equal(t, 1, len(atts))
-		require.DeepEqual(t, &zondpb.HighestAttestation{ValidatorIndex: 2, HighestSourceEpoch: 2, HighestTargetEpoch: 3}, atts[0])
+		require.DeepEqual(t, &qrysmpb.HighestAttestation{ValidatorIndex: 2, HighestSourceEpoch: 2, HighestTargetEpoch: 3}, atts[0])
 	})
 	t.Run("multiple indices all found", func(t *testing.T) {
 		atts, err := s.HighestAttestations(ctx, []primitives.ValidatorIndex{1, 2})
 		require.NoError(t, err)
 		require.Equal(t, 2, len(atts))
-		require.DeepEqual(t, &zondpb.HighestAttestation{ValidatorIndex: 1, HighestSourceEpoch: 0, HighestTargetEpoch: 1}, atts[0])
-		require.DeepEqual(t, &zondpb.HighestAttestation{ValidatorIndex: 2, HighestSourceEpoch: 2, HighestTargetEpoch: 3}, atts[1])
+		require.DeepEqual(t, &qrysmpb.HighestAttestation{ValidatorIndex: 1, HighestSourceEpoch: 0, HighestTargetEpoch: 1}, atts[0])
+		require.DeepEqual(t, &qrysmpb.HighestAttestation{ValidatorIndex: 2, HighestSourceEpoch: 2, HighestTargetEpoch: 3}, atts[1])
 	})
 	t.Run("multiple indices all not found", func(t *testing.T) {
 		atts, err := s.HighestAttestations(ctx, []primitives.ValidatorIndex{3, 4})
@@ -195,6 +231,6 @@ func TestService_HighestAttestations(t *testing.T) {
 		atts, err := s.HighestAttestations(ctx, []primitives.ValidatorIndex{1, 4})
 		require.NoError(t, err)
 		require.Equal(t, 1, len(atts))
-		require.DeepEqual(t, &zondpb.HighestAttestation{ValidatorIndex: 1, HighestSourceEpoch: 0, HighestTargetEpoch: 1}, atts[0])
+		require.DeepEqual(t, &qrysmpb.HighestAttestation{ValidatorIndex: 1, HighestSourceEpoch: 0, HighestTargetEpoch: 1}, atts[0])
 	})
 }

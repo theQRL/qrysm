@@ -1,14 +1,14 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "abool",
     srcs = ["abool.go"],
     importpath = "github.com/theQRL/qrysm/async/abool",
     visibility = ["//visibility:public"],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "abool_test",
     srcs = ["abool_test.go"],
-    embed = [":go_default_library"],
+    embed = [":abool"],
 )

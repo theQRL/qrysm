@@ -7,7 +7,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/rpc/core"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
@@ -17,7 +17,7 @@ import (
 // SubmitAggregateSelectionProof is called by a validator when its assigned to be an aggregator.
 // The aggregator submits the selection proof to obtain the aggregated attestation
 // object to sign over.
-func (vs *Server) SubmitAggregateSelectionProof(ctx context.Context, req *zondpb.AggregateSelectionRequest) (*zondpb.AggregateSelectionResponse, error) {
+func (vs *Server) SubmitAggregateSelectionProof(ctx context.Context, req *qrysmpb.AggregateSelectionRequest) (*qrysmpb.AggregateSelectionResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "AggregatorServer.SubmitAggregateSelectionProof")
 	defer span.End()
 	span.AddAttributes(trace.Int64Attribute("slot", int64(req.Slot)))
@@ -99,22 +99,22 @@ func (vs *Server) SubmitAggregateSelectionProof(ctx context.Context, req *zondpb
 			best = aggregatedAtt
 		}
 	}
-	a := &zondpb.AggregateAttestationAndProof{
+	a := &qrysmpb.AggregateAttestationAndProof{
 		Aggregate:       best,
 		SelectionProof:  req.SlotSignature,
 		AggregatorIndex: validatorIndex,
 	}
-	return &zondpb.AggregateSelectionResponse{AggregateAndProof: a}, nil
+	return &qrysmpb.AggregateSelectionResponse{AggregateAndProof: a}, nil
 }
 
 // SubmitSignedAggregateSelectionProof is called by a validator to broadcast a signed
 // aggregated and proof object.
 func (vs *Server) SubmitSignedAggregateSelectionProof(
 	ctx context.Context,
-	req *zondpb.SignedAggregateSubmitRequest,
-) (*zondpb.SignedAggregateSubmitResponse, error) {
+	req *qrysmpb.SignedAggregateSubmitRequest,
+) (*qrysmpb.SignedAggregateSubmitResponse, error) {
 	if err := vs.CoreService.SubmitSignedAggregateSelectionProof(ctx, req); err != nil {
 		return nil, status.Errorf(core.ErrorReasonToGRPC(err.Reason), "Could not submit aggregate: %v", err.Err)
 	}
-	return &zondpb.SignedAggregateSubmitResponse{}, nil
+	return &qrysmpb.SignedAggregateSubmitResponse{}, nil
 }

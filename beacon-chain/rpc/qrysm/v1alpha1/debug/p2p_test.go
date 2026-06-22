@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	mockP2p "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // TODO(now.youtrack.cloud/issue/TQ-18): fails sometimes
@@ -22,12 +22,12 @@ func TestDebugServer_GetPeer(t *testing.T) {
 	}
 	firstPeer := peersProvider.Peers().All()[0]
 
-	res, err := ds.GetPeer(context.Background(), &zondpb.PeerRequest{PeerId: firstPeer.String()})
+	res, err := ds.GetPeer(context.Background(), &qrysmpb.PeerRequest{PeerId: firstPeer.String()})
 	require.NoError(t, err)
 	require.Equal(t, firstPeer.String(), res.PeerId, "Unexpected peer ID")
 
-	assert.Equal(t, int(zondpb.PeerDirection_INBOUND), int(res.Direction), "Expected 1st peer to be an inbound connection")
-	assert.Equal(t, zondpb.ConnectionState_CONNECTED, res.ConnectionState, "Expected peer to be connected")
+	assert.Equal(t, int(qrysmpb.PeerDirection_INBOUND), int(res.Direction), "Expected 1st peer to be an inbound connection")
+	assert.Equal(t, qrysmpb.ConnectionState_CONNECTED, res.ConnectionState, "Expected peer to be connected")
 }
 */
 
@@ -39,7 +39,7 @@ func TestDebugServer_ListPeers(t *testing.T) {
 		PeerManager:  &mockP2p.MockPeerManager{BHost: mP2P.BHost},
 	}
 
-	res, err := ds.ListPeers(context.Background(), &empty.Empty{})
+	res, err := ds.ListPeers(context.Background(), &emptypb.Empty{})
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(res.Responses))
 
@@ -47,11 +47,11 @@ func TestDebugServer_ListPeers(t *testing.T) {
 	direction2 := res.Responses[1].Direction
 	assert.Equal(t,
 		true,
-		direction1 == zondpb.PeerDirection_INBOUND || direction2 == zondpb.PeerDirection_INBOUND,
+		direction1 == qrysmpb.PeerDirection_INBOUND || direction2 == qrysmpb.PeerDirection_INBOUND,
 		"Expected an inbound peer")
 	assert.Equal(t,
 		true,
-		direction1 == zondpb.PeerDirection_OUTBOUND || direction2 == zondpb.PeerDirection_OUTBOUND,
+		direction1 == qrysmpb.PeerDirection_OUTBOUND || direction2 == qrysmpb.PeerDirection_OUTBOUND,
 		"Expected an outbound peer")
 	if len(res.Responses[0].ListeningAddresses) == 0 {
 		t.Errorf("Expected 1st peer to have a multiaddress, instead they have no addresses")

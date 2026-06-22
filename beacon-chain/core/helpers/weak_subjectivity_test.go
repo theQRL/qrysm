@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -82,7 +82,7 @@ func TestWeakSubjectivity_IsWithinWeakSubjectivityPeriod(t *testing.T) {
 			genWsState: func() state.ReadOnlyBeaconState {
 				beaconState := genState(t, 128, 40)
 				require.NoError(t, beaconState.SetSlot(42*params.BeaconConfig().SlotsPerEpoch))
-				err := beaconState.SetLatestBlockHeader(&zondpb.BeaconBlockHeader{
+				err := beaconState.SetLatestBlockHeader(&qrysmpb.BeaconBlockHeader{
 					Slot:      42 * params.BeaconConfig().SlotsPerEpoch,
 					StateRoot: bytesutil.PadTo([]byte("stateroot1"), 32),
 				})
@@ -102,7 +102,7 @@ func TestWeakSubjectivity_IsWithinWeakSubjectivityPeriod(t *testing.T) {
 			genWsState: func() state.ReadOnlyBeaconState {
 				beaconState := genState(t, 128, 40)
 				require.NoError(t, beaconState.SetSlot(42*params.BeaconConfig().SlotsPerEpoch))
-				err := beaconState.SetLatestBlockHeader(&zondpb.BeaconBlockHeader{
+				err := beaconState.SetLatestBlockHeader(&qrysmpb.BeaconBlockHeader{
 					Slot:      42 * params.BeaconConfig().SlotsPerEpoch,
 					StateRoot: bytesutil.PadTo([]byte("stateroot"), 32),
 				})
@@ -121,7 +121,7 @@ func TestWeakSubjectivity_IsWithinWeakSubjectivityPeriod(t *testing.T) {
 			genWsState: func() state.ReadOnlyBeaconState {
 				beaconState := genState(t, 0, 40)
 				require.NoError(t, beaconState.SetSlot(42*params.BeaconConfig().SlotsPerEpoch))
-				err := beaconState.SetLatestBlockHeader(&zondpb.BeaconBlockHeader{
+				err := beaconState.SetLatestBlockHeader(&qrysmpb.BeaconBlockHeader{
 					Slot:      42 * params.BeaconConfig().SlotsPerEpoch,
 					StateRoot: bytesutil.PadTo([]byte("stateroot"), 32),
 				})
@@ -141,7 +141,7 @@ func TestWeakSubjectivity_IsWithinWeakSubjectivityPeriod(t *testing.T) {
 			genWsState: func() state.ReadOnlyBeaconState {
 				beaconState := genState(t, 128, 40)
 				require.NoError(t, beaconState.SetSlot(42*params.BeaconConfig().SlotsPerEpoch))
-				err := beaconState.SetLatestBlockHeader(&zondpb.BeaconBlockHeader{
+				err := beaconState.SetLatestBlockHeader(&qrysmpb.BeaconBlockHeader{
 					Slot:      42 * params.BeaconConfig().SlotsPerEpoch,
 					StateRoot: bytesutil.PadTo([]byte("stateroot"), 32),
 				})
@@ -161,7 +161,7 @@ func TestWeakSubjectivity_IsWithinWeakSubjectivityPeriod(t *testing.T) {
 			genWsState: func() state.ReadOnlyBeaconState {
 				beaconState := genState(t, 128, 40)
 				require.NoError(t, beaconState.SetSlot(42*params.BeaconConfig().SlotsPerEpoch))
-				err := beaconState.SetLatestBlockHeader(&zondpb.BeaconBlockHeader{
+				err := beaconState.SetLatestBlockHeader(&qrysmpb.BeaconBlockHeader{
 					Slot:      42 * params.BeaconConfig().SlotsPerEpoch,
 					StateRoot: bytesutil.PadTo([]byte("stateroot"), 32),
 				})
@@ -195,7 +195,7 @@ func TestWeakSubjectivity_ParseWeakSubjectivityInputString(t *testing.T) {
 	tests := []struct {
 		name      string
 		input     string
-		checkpt   *zondpb.Checkpoint
+		checkpt   *qrysmpb.Checkpoint
 		wantedErr string
 	}{
 		{
@@ -216,7 +216,7 @@ func TestWeakSubjectivity_ParseWeakSubjectivityInputString(t *testing.T) {
 		{
 			name:  "Correct input",
 			input: "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:123456789",
-			checkpt: &zondpb.Checkpoint{
+			checkpt: &qrysmpb.Checkpoint{
 				Root:  []byte{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255},
 				Epoch: primitives.Epoch(123456789),
 			},
@@ -224,7 +224,7 @@ func TestWeakSubjectivity_ParseWeakSubjectivityInputString(t *testing.T) {
 		{
 			name:  "Correct input without 0x",
 			input: "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:123456789",
-			checkpt: &zondpb.Checkpoint{
+			checkpt: &qrysmpb.Checkpoint{
 				Root:  []byte{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255},
 				Epoch: primitives.Epoch(123456789),
 			},
@@ -232,7 +232,7 @@ func TestWeakSubjectivity_ParseWeakSubjectivityInputString(t *testing.T) {
 		{
 			name:  "Correct input",
 			input: "0xF0FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:123456789",
-			checkpt: &zondpb.Checkpoint{
+			checkpt: &qrysmpb.Checkpoint{
 				Root:  []byte{0xf0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255},
 				Epoch: primitives.Epoch(123456789),
 			},
@@ -240,7 +240,7 @@ func TestWeakSubjectivity_ParseWeakSubjectivityInputString(t *testing.T) {
 		{
 			name:  "Correct input without 0x",
 			input: "F0FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF:123456789",
-			checkpt: &zondpb.Checkpoint{
+			checkpt: &qrysmpb.Checkpoint{
 				Root:  []byte{0xf0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255},
 				Epoch: primitives.Epoch(123456789),
 			},
@@ -262,15 +262,15 @@ func TestWeakSubjectivity_ParseWeakSubjectivityInputString(t *testing.T) {
 }
 
 func genState(t *testing.T, valCount, avgBalance uint64) state.BeaconState {
-	beaconState, err := util.NewBeaconStateCapella()
+	beaconState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 
-	validators := make([]*zondpb.Validator, valCount)
+	validators := make([]*qrysmpb.Validator, valCount)
 	balances := make([]uint64, len(validators))
-	for i := uint64(0); i < valCount; i++ {
-		validators[i] = &zondpb.Validator{
-			PublicKey:             make([]byte, field_params.DilithiumPubkeyLength),
-			WithdrawalCredentials: make([]byte, 32),
+	for i := range valCount {
+		validators[i] = &qrysmpb.Validator{
+			PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
+			WithdrawalCredentials: make([]byte, field_params.WithdrawalCredentialsLength),
 			EffectiveBalance:      avgBalance * 1e12,
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 		}

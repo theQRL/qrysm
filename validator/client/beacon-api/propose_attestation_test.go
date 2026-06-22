@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
@@ -16,27 +16,27 @@ import (
 )
 
 func TestProposeAttestation(t *testing.T) {
-	attestation := &zondpb.Attestation{
+	attestation := &qrysmpb.Attestation{
 		AggregationBits: test_helpers.FillByteSlice(4, 74),
-		Data: &zondpb.AttestationData{
+		Data: &qrysmpb.AttestationData{
 			Slot:            75,
 			CommitteeIndex:  76,
 			BeaconBlockRoot: test_helpers.FillByteSlice(32, 38),
-			Source: &zondpb.Checkpoint{
+			Source: &qrysmpb.Checkpoint{
 				Epoch: 78,
 				Root:  test_helpers.FillByteSlice(32, 79),
 			},
-			Target: &zondpb.Checkpoint{
+			Target: &qrysmpb.Checkpoint{
 				Epoch: 80,
 				Root:  test_helpers.FillByteSlice(32, 81),
 			},
 		},
-		Signatures: [][]byte{test_helpers.FillByteSlice(4595, 82)},
+		Signatures: [][]byte{test_helpers.FillByteSlice(4627, 82)},
 	}
 
 	tests := []struct {
 		name                 string
-		attestation          *zondpb.Attestation
+		attestation          *qrysmpb.Attestation
 		expectedErrorMessage string
 		endpointError        error
 		endpointCall         int
@@ -52,52 +52,52 @@ func TestProposeAttestation(t *testing.T) {
 		},
 		{
 			name: "nil attestation data",
-			attestation: &zondpb.Attestation{
+			attestation: &qrysmpb.Attestation{
 				AggregationBits: test_helpers.FillByteSlice(4, 74),
-				Signatures:      [][]byte{test_helpers.FillByteSlice(4595, 82)},
+				Signatures:      [][]byte{test_helpers.FillByteSlice(4627, 82)},
 			},
 			expectedErrorMessage: "attestation data is nil",
 		},
 		{
 			name: "nil source checkpoint",
-			attestation: &zondpb.Attestation{
+			attestation: &qrysmpb.Attestation{
 				AggregationBits: test_helpers.FillByteSlice(4, 74),
-				Data: &zondpb.AttestationData{
-					Target: &zondpb.Checkpoint{},
+				Data: &qrysmpb.AttestationData{
+					Target: &qrysmpb.Checkpoint{},
 				},
-				Signatures: [][]byte{test_helpers.FillByteSlice(4595, 82)},
+				Signatures: [][]byte{test_helpers.FillByteSlice(4627, 82)},
 			},
 			expectedErrorMessage: "source/target in attestation data is nil",
 		},
 		{
 			name: "nil target checkpoint",
-			attestation: &zondpb.Attestation{
+			attestation: &qrysmpb.Attestation{
 				AggregationBits: test_helpers.FillByteSlice(4, 74),
-				Data: &zondpb.AttestationData{
-					Source: &zondpb.Checkpoint{},
+				Data: &qrysmpb.AttestationData{
+					Source: &qrysmpb.Checkpoint{},
 				},
-				Signatures: [][]byte{test_helpers.FillByteSlice(4595, 82)},
+				Signatures: [][]byte{test_helpers.FillByteSlice(4627, 82)},
 			},
 			expectedErrorMessage: "source/target in attestation data is nil",
 		},
 		{
 			name: "nil aggregation bits",
-			attestation: &zondpb.Attestation{
-				Data: &zondpb.AttestationData{
-					Source: &zondpb.Checkpoint{},
-					Target: &zondpb.Checkpoint{},
+			attestation: &qrysmpb.Attestation{
+				Data: &qrysmpb.AttestationData{
+					Source: &qrysmpb.Checkpoint{},
+					Target: &qrysmpb.Checkpoint{},
 				},
-				Signatures: [][]byte{test_helpers.FillByteSlice(4595, 82)},
+				Signatures: [][]byte{test_helpers.FillByteSlice(4627, 82)},
 			},
 			expectedErrorMessage: "attestation aggregation bits is empty",
 		},
 		{
 			name: "nil signatures",
-			attestation: &zondpb.Attestation{
+			attestation: &qrysmpb.Attestation{
 				AggregationBits: test_helpers.FillByteSlice(4, 74),
-				Data: &zondpb.AttestationData{
-					Source: &zondpb.Checkpoint{},
-					Target: &zondpb.Checkpoint{},
+				Data: &qrysmpb.AttestationData{
+					Source: &qrysmpb.Checkpoint{},
+					Target: &qrysmpb.Checkpoint{},
 				},
 			},
 			expectedErrorMessage: "attestation signatures slice is empty",
@@ -118,7 +118,7 @@ func TestProposeAttestation(t *testing.T) {
 
 			var marshalledAttestations []byte
 			if checkNilAttestation(test.attestation) == nil {
-				b, err := json.Marshal(jsonifyAttestations([]*zondpb.Attestation{test.attestation}))
+				b, err := json.Marshal(jsonifyAttestations([]*qrysmpb.Attestation{test.attestation}))
 				require.NoError(t, err)
 				marshalledAttestations = b
 			}
@@ -127,7 +127,7 @@ func TestProposeAttestation(t *testing.T) {
 
 			jsonRestHandler.EXPECT().PostRestJson(
 				ctx,
-				"/zond/v1/beacon/pool/attestations",
+				"/qrl/v1/beacon/pool/attestations",
 				nil,
 				bytes.NewBuffer(marshalledAttestations),
 				nil,

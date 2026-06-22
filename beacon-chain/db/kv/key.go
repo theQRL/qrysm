@@ -2,16 +2,16 @@ package kv
 
 import "bytes"
 
-func hasCapellaKey(enc []byte) bool {
-	if len(capellaKey) >= len(enc) {
+func hasZondKey(enc []byte) bool {
+	if len(zondKey) >= len(enc) {
 		return false
 	}
-	return bytes.Equal(enc[:len(capellaKey)], capellaKey)
+	return bytes.Equal(enc[:len(zondKey)], zondKey)
 }
 
-func hasCapellaBlindKey(enc []byte) bool {
-	if len(capellaBlindKey) >= len(enc) {
+func hasZondBlindKey(enc []byte) bool {
+	if len(zondBlindKey) >= len(enc) {
 		return false
 	}
-	return bytes.Equal(enc[:len(capellaBlindKey)], capellaBlindKey)
+	return bytes.Equal(enc[:len(zondBlindKey)], zondBlindKey)
 }

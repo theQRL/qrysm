@@ -58,8 +58,12 @@ func (s *Service) maintainPeerStatuses() {
 				}
 				if qrysmTime.Now().After(lastUpdated.Add(interval)) {
 					if err := s.reValidatePeer(s.ctx, id); err != nil {
-						log.WithField("peer", id).WithError(err).Debug("Could not revalidate peer")
-						s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(id)
+						// Revalidation can fail for benign reasons (peer is
+						// gracefully shutting down, EOF on stream, transient
+						// network blip). Don't penalize the peer here — only
+						// log. Real failures are caught downstream by the
+						// status / fork-digest validation paths.
+						log.WithField("peer", id).WithError(err).Debug("Cannot re-validate peer")
 					}
 				}
 			}(pid)
@@ -150,19 +154,20 @@ func (s *Service) sendRPCStatusRequest(ctx context.Context, id peer.ID) error {
 	}
 	defer closeStream(stream, log)
 
+	pid := stream.Conn().RemotePeer()
 	code, errMsg, err := ReadStatusCode(stream, s.cfg.p2p.Encoding())
 	if err != nil {
-		s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(stream.Conn().RemotePeer())
+		s.downscorePeer(pid, "statusRequestReadStatusCodeError")
 		return err
 	}
 
 	if code != 0 {
-		s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(id)
+		s.downscorePeer(pid, "statusRequestNonNullStatusCode")
 		return errors.New(errMsg)
 	}
 	msg := &pb.Status{}
 	if err := s.cfg.p2p.Encoding().DecodeWithMaxLength(stream, msg); err != nil {
-		s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(stream.Conn().RemotePeer())
+		s.downscorePeer(pid, "statusRequestDecodeError")
 		return err
 	}
 
@@ -181,7 +186,7 @@ func (s *Service) reValidatePeer(ctx context.Context, id peer.ID) error {
 		return err
 	}
 	// Do not return an error for ping requests.
-	if err := s.sendPingRequest(ctx, id); err != nil {
+	if err := s.sendPingRequest(ctx, id); err != nil && !isUnwantedError(err) {
 		log.WithError(err).Debug("Could not ping peer")
 	}
 	return nil
@@ -189,7 +194,7 @@ func (s *Service) reValidatePeer(ctx context.Context, id peer.ID) error {
 
 // statusRPCHandler reads the incoming Status RPC from the peer and responds with our version of a status message.
 // This handler will disconnect any peer that does not match our fork version.
-func (s *Service) statusRPCHandler(ctx context.Context, msg interface{}, stream libp2pcore.Stream) error {
+func (s *Service) statusRPCHandler(ctx context.Context, msg any, stream libp2pcore.Stream) error {
 	ctx, cancel := context.WithTimeout(ctx, ttfbTimeout)
 	defer cancel()
 	SetRPCStreamDeadlines(stream)
@@ -228,14 +233,14 @@ func (s *Service) statusRPCHandler(ctx context.Context, msg interface{}, stream 
 			return nil
 		default:
 			respCode = responseCodeInvalidRequest
-			s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(remotePeer)
+			s.downscorePeer(remotePeer, "statusRpcHandlerInvalidMessage")
 		}
 
 		originalErr := err
 		resp, err := s.generateErrorResponse(respCode, err.Error())
 		if err != nil {
 			log.WithError(err).Debug("Could not generate a response error")
-		} else if _, err := stream.Write(resp); err != nil {
+		} else if _, err := stream.Write(resp); err != nil && !isUnwantedError(err) {
 			// The peer may already be ignoring us, as we disagree on fork version, so log this as debug only.
 			log.WithError(err).Debug("Could not write to stream")
 		}
@@ -273,7 +278,7 @@ func (s *Service) respondWithStatus(ctx context.Context, stream network.Stream) 
 		HeadSlot:       s.cfg.chain.HeadSlot(),
 	}
 
-	if _, err := stream.Write([]byte{responseCodeSuccess}); err != nil {
+	if _, err := stream.Write([]byte{responseCodeSuccess}); err != nil && !isUnwantedError(err) {
 		log.WithError(err).Debug("Could not write to stream")
 	}
 	_, err = s.cfg.p2p.Encoding().EncodeWithMaxLength(stream, resp)

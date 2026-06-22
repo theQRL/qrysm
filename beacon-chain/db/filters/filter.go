@@ -48,21 +48,21 @@ const (
 // QueryFilter defines a generic interface for type-asserting
 // specific filters to use in querying DB objects.
 type QueryFilter struct {
-	queries map[FilterType]interface{}
+	queries map[FilterType]any
 }
 
 // NewFilter instantiates a new QueryFilter type used to build filters for
-// certain Zond data types by attribute.
+// certain QRL data types by attribute.
 func NewFilter() *QueryFilter {
 	return &QueryFilter{
-		queries: make(map[FilterType]interface{}),
+		queries: make(map[FilterType]any),
 	}
 }
 
-// Filters returns and underlying map of FilterType to interface{}, giving us
+// Filters returns and underlying map of FilterType to any, giving us
 // a copy of the currently set filters which can then be iterated over and type
 // asserted for use anywhere.
-func (q *QueryFilter) Filters() map[FilterType]interface{} {
+func (q *QueryFilter) Filters() map[FilterType]any {
 	return q.queries
 }
 

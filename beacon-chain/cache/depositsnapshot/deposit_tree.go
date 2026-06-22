@@ -7,7 +7,7 @@ import (
 	"encoding/binary"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/qrysm/crypto/hash"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/math"
@@ -81,14 +81,14 @@ func fromSnapshot(snapshot DepositTreeSnapshot) (*DepositTree, error) {
 }
 
 // Finalize marks a deposit as finalized.
-func (d *DepositTree) Finalize(eth1DepositIndex int64, executionHash common.Hash, executionNumber uint64) error {
+func (d *DepositTree) Finalize(executionDepositIndex int64, executionHash common.Hash, executionNumber uint64) error {
 	var blockHash [32]byte
 	copy(blockHash[:], executionHash[:])
 	d.finalizedExecutionBlock = executionBlock{
 		Hash:  blockHash,
 		Depth: executionNumber,
 	}
-	depositCount := uint64(eth1DepositIndex + 1)
+	depositCount := uint64(executionDepositIndex + 1)
 	_, err := d.tree.Finalize(depositCount, DepositContractDepth)
 	if err != nil {
 		return err

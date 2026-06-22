@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/cache"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	bytesutil2 "github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/wealdtech/go-bytesutil"
 	"go.opencensus.io/trace"
 )
@@ -27,10 +27,10 @@ var (
 // Cache stores all in-memory deposit objects. This
 // stores all the deposit related data that is required by the beacon-node.
 type Cache struct {
-	pendingDeposits   []*zondpb.DepositContainer
-	deposits          []*zondpb.DepositContainer
+	pendingDeposits   []*qrysmpb.DepositContainer
+	deposits          []*qrysmpb.DepositContainer
 	finalizedDeposits finalizedDepositsContainer
-	depositsByKey     map[[field_params.DilithiumPubkeyLength]byte][]*zondpb.DepositContainer
+	depositsByKey     map[[field_params.MLDSA87PubkeyLength]byte][]*qrysmpb.DepositContainer
 	depositsLock      sync.RWMutex
 }
 
@@ -48,26 +48,26 @@ func New() (*Cache, error) {
 	// finalizedDeposits.merkleTrieIndex is initialized to -1 because it represents the index of the last trie item.
 	// Inserting the first item into the trie will set the value of the index to 0.
 	return &Cache{
-		pendingDeposits:   []*zondpb.DepositContainer{},
-		deposits:          []*zondpb.DepositContainer{},
-		depositsByKey:     map[[field_params.DilithiumPubkeyLength]byte][]*zondpb.DepositContainer{},
+		pendingDeposits:   []*qrysmpb.DepositContainer{},
+		deposits:          []*qrysmpb.DepositContainer{},
+		depositsByKey:     map[[field_params.MLDSA87PubkeyLength]byte][]*qrysmpb.DepositContainer{},
 		finalizedDeposits: toFinalizedDepositsContainer(finalizedDepositsTrie, -1),
 	}, nil
 }
 
 // AllDeposits returns a list of historical deposits until the given block number
 // (inclusive). If no block is specified then this method returns all historical deposits.
-func (c *Cache) AllDeposits(ctx context.Context, untilBlk *big.Int) []*zondpb.Deposit {
+func (c *Cache) AllDeposits(ctx context.Context, untilBlk *big.Int) []*qrysmpb.Deposit {
 	c.depositsLock.RLock()
 	defer c.depositsLock.RUnlock()
 
 	return c.allDeposits(untilBlk)
 }
 
-func (c *Cache) allDeposits(untilBlk *big.Int) []*zondpb.Deposit {
-	var deposits []*zondpb.Deposit
+func (c *Cache) allDeposits(untilBlk *big.Int) []*qrysmpb.Deposit {
+	var deposits []*qrysmpb.Deposit
 	for _, ctnr := range c.deposits {
-		cBlk := big.NewInt(0).SetUint64(ctnr.Eth1BlockHeight)
+		cBlk := big.NewInt(0).SetUint64(ctnr.ExecutionBlockHeight)
 		if untilBlk == nil || untilBlk.Cmp(cBlk) >= 0 {
 			deposits = append(deposits, ctnr.Deposit)
 		}
@@ -76,7 +76,7 @@ func (c *Cache) allDeposits(untilBlk *big.Int) []*zondpb.Deposit {
 }
 
 // AllDepositContainers returns all historical deposit containers.
-func (c *Cache) AllDepositContainers(ctx context.Context) []*zondpb.DepositContainer {
+func (c *Cache) AllDepositContainers(ctx context.Context) []*qrysmpb.DepositContainer {
 	_, span := trace.StartSpan(ctx, "Cache.AllDepositContainers")
 	defer span.End()
 	c.depositsLock.RLock()
@@ -94,20 +94,20 @@ func (c *Cache) AllDepositContainers(ctx context.Context) []*zondpb.DepositConta
 	// for the caller to modify one of the underlying deposits and modify
 	// the cache, but that's not a race condition. Also, a deep copy would
 	// take too long and use too much memory.
-	deposits := make([]*zondpb.DepositContainer, len(c.deposits))
+	deposits := make([]*qrysmpb.DepositContainer, len(c.deposits))
 	copy(deposits, c.deposits)
 	return deposits
 }
 
 // DepositByPubkey looks through historical deposits and finds one which contains
 // a certain public key within its deposit data.
-func (c *Cache) DepositByPubkey(ctx context.Context, pubKey []byte) (*zondpb.Deposit, *big.Int) {
+func (c *Cache) DepositByPubkey(ctx context.Context, pubKey []byte) (*qrysmpb.Deposit, *big.Int) {
 	_, span := trace.StartSpan(ctx, "Cache.DepositByPubkey")
 	defer span.End()
 	c.depositsLock.RLock()
 	defer c.depositsLock.RUnlock()
 
-	var deposit *zondpb.Deposit
+	var deposit *qrysmpb.Deposit
 	var blockNum *big.Int
 	deps, ok := c.depositsByKey[bytesutil2.ToBytes2592(pubKey)]
 	if !ok || len(deps) == 0 {
@@ -117,7 +117,7 @@ func (c *Cache) DepositByPubkey(ctx context.Context, pubKey []byte) (*zondpb.Dep
 	// validator key has multiple deposits assigned to
 	// it.
 	deposit = deps[0].Deposit
-	blockNum = big.NewInt(int64(deps[0].Eth1BlockHeight))
+	blockNum = big.NewInt(int64(deps[0].ExecutionBlockHeight))
 	return deposit, blockNum
 }
 
@@ -129,10 +129,10 @@ func (c *Cache) DepositsNumberAndRootAtHeight(ctx context.Context, blockHeight *
 	c.depositsLock.RLock()
 	defer c.depositsLock.RUnlock()
 	heightIdx := sort.Search(len(c.deposits), func(i int) bool {
-		dBlkHeight := big.NewInt(0).SetUint64(c.deposits[i].Eth1BlockHeight)
+		dBlkHeight := big.NewInt(0).SetUint64(c.deposits[i].ExecutionBlockHeight)
 		return dBlkHeight.Cmp(blockHeight) > 0
 	})
-	// send the deposit root of the empty trie, if eth1follow distance is greater than the time of the earliest
+	// send the deposit root of the empty trie, if executionfollow distance is greater than the time of the earliest
 	// deposit.
 	if heightIdx == 0 {
 		return 0, [32]byte{}
@@ -159,7 +159,7 @@ func (c *Cache) FinalizedDeposits(ctx context.Context) (cache.FinalizedDeposits,
 
 // NonFinalizedDeposits returns the list of non-finalized deposits until the given block number (inclusive).
 // If no block is specified then this method returns all non-finalized deposits.
-func (c *Cache) NonFinalizedDeposits(ctx context.Context, lastFinalizedIndex int64, untilBlk *big.Int) []*zondpb.Deposit {
+func (c *Cache) NonFinalizedDeposits(ctx context.Context, lastFinalizedIndex int64, untilBlk *big.Int) []*qrysmpb.Deposit {
 	_, span := trace.StartSpan(ctx, "Cache.NonFinalizedDeposits")
 	defer span.End()
 	c.depositsLock.RLock()
@@ -169,9 +169,9 @@ func (c *Cache) NonFinalizedDeposits(ctx context.Context, lastFinalizedIndex int
 		return c.allDeposits(untilBlk)
 	}
 
-	var deposits []*zondpb.Deposit
+	var deposits []*qrysmpb.Deposit
 	for _, d := range c.deposits {
-		if (d.Index > lastFinalizedIndex) && (untilBlk == nil || untilBlk.Uint64() >= d.Eth1BlockHeight) {
+		if (d.Index > lastFinalizedIndex) && (untilBlk == nil || untilBlk.Uint64() >= d.ExecutionBlockHeight) {
 			deposits = append(deposits, d.Deposit)
 		}
 	}
@@ -214,7 +214,7 @@ func (c *Cache) PrunePendingDeposits(ctx context.Context, merkleTreeIndex int64)
 	c.depositsLock.Lock()
 	defer c.depositsLock.Unlock()
 
-	cleanDeposits := make([]*zondpb.DepositContainer, 0, len(c.pendingDeposits))
+	cleanDeposits := make([]*qrysmpb.DepositContainer, 0, len(c.pendingDeposits))
 	for _, dp := range c.pendingDeposits {
 		if dp.Index >= merkleTreeIndex {
 			cleanDeposits = append(cleanDeposits, dp)
@@ -227,7 +227,7 @@ func (c *Cache) PrunePendingDeposits(ctx context.Context, merkleTreeIndex int64)
 
 // InsertPendingDeposit into the database. If deposit or block number are nil
 // then this method does nothing.
-func (c *Cache) InsertPendingDeposit(ctx context.Context, d *zondpb.Deposit, blockNum uint64, index int64, depositRoot [32]byte) {
+func (c *Cache) InsertPendingDeposit(ctx context.Context, d *qrysmpb.Deposit, blockNum uint64, index int64, depositRoot [32]byte) {
 	_, span := trace.StartSpan(ctx, "Cache.InsertPendingDeposit")
 	defer span.End()
 	if d == nil {
@@ -240,7 +240,7 @@ func (c *Cache) InsertPendingDeposit(ctx context.Context, d *zondpb.Deposit, blo
 	c.depositsLock.Lock()
 	defer c.depositsLock.Unlock()
 	c.pendingDeposits = append(c.pendingDeposits,
-		&zondpb.DepositContainer{Deposit: d, Eth1BlockHeight: blockNum, Index: index, DepositRoot: depositRoot[:]})
+		&qrysmpb.DepositContainer{Deposit: d, ExecutionBlockHeight: blockNum, Index: index, DepositRoot: depositRoot[:]})
 	pendingDepositsCount.Set(float64(len(c.pendingDeposits)))
 	span.AddAttributes(trace.Int64Attribute("count", int64(len(c.pendingDeposits))))
 }
@@ -266,13 +266,13 @@ func toFinalizedDepositsContainer(deposits *DepositTree, index int64) finalizedD
 // PendingDeposits returns a list of deposits until the given block number
 // (inclusive). If no block is specified then this method returns all pending
 // deposits.
-func (c *Cache) PendingDeposits(ctx context.Context, untilBlk *big.Int) []*zondpb.Deposit {
+func (c *Cache) PendingDeposits(ctx context.Context, untilBlk *big.Int) []*qrysmpb.Deposit {
 	ctx, span := trace.StartSpan(ctx, "Cache.PendingDeposits")
 	defer span.End()
 
 	depositCntrs := c.PendingContainers(ctx, untilBlk)
 
-	deposits := make([]*zondpb.Deposit, 0, len(depositCntrs))
+	deposits := make([]*qrysmpb.Deposit, 0, len(depositCntrs))
 	for _, dep := range depositCntrs {
 		deposits = append(deposits, dep.Deposit)
 	}
@@ -282,15 +282,15 @@ func (c *Cache) PendingDeposits(ctx context.Context, untilBlk *big.Int) []*zondp
 
 // PendingContainers returns a list of deposit containers until the given block number
 // (inclusive).
-func (c *Cache) PendingContainers(ctx context.Context, untilBlk *big.Int) []*zondpb.DepositContainer {
+func (c *Cache) PendingContainers(ctx context.Context, untilBlk *big.Int) []*qrysmpb.DepositContainer {
 	_, span := trace.StartSpan(ctx, "Cache.PendingContainers")
 	defer span.End()
 	c.depositsLock.RLock()
 	defer c.depositsLock.RUnlock()
 
-	depositCntrs := make([]*zondpb.DepositContainer, 0, len(c.pendingDeposits))
+	depositCntrs := make([]*qrysmpb.DepositContainer, 0, len(c.pendingDeposits))
 	for _, ctnr := range c.pendingDeposits {
-		if untilBlk == nil || untilBlk.Uint64() >= ctnr.Eth1BlockHeight {
+		if untilBlk == nil || untilBlk.Uint64() >= ctnr.ExecutionBlockHeight {
 			depositCntrs = append(depositCntrs, ctnr)
 		}
 	}

@@ -1,0 +1,21 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@qrysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "callbug_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/theQRL/qrysm/pkg/goqrvmlab/examples/callbug",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pkg/goqrvmlab/fuzzing",
+        "//pkg/goqrvmlab/ops",
+        "//pkg/goqrvmlab/program",
+        "@com_github_theqrl_go_qrl//common",
+    ],
+)
+
+go_binary(
+    name = "callbug",
+    embed = [":callbug_lib"],
+    visibility = ["//visibility:public"],
+)

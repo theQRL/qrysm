@@ -9,7 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/beacon-chain/db/kv"
@@ -55,13 +55,13 @@ func (vs *Server) getLocalPayload(ctx context.Context, blk interfaces.ReadOnlyBe
 	case errors.As(err, kv.ErrNotFoundFeeRecipient):
 		// If fee recipient is not found in DB and not set from beacon node CLI,
 		// use the burn address.
-		if feeRecipient.String() == params.BeaconConfig().ZondBurnAddress {
+		if feeRecipient.String() == params.BeaconConfig().QRLBurnAddress {
 			logrus.WithFields(logrus.Fields{
 				"validatorIndex": vIdx,
-				"burnAddress":    params.BeaconConfig().ZondBurnAddress,
+				"burnAddress":    params.BeaconConfig().QRLBurnAddress,
 			}).Warn("Fee recipient is currently using the burn address, " +
 				"you will not be rewarded transaction fees on this setting. " +
-				"Please set a different zond address as the fee recipient. " +
+				"Please set a different qrl address as the fee recipient. " +
 				"Please refer to our documentation for instructions")
 		}
 	default:
@@ -109,7 +109,7 @@ func (vs *Server) getLocalPayload(ctx context.Context, blk interfaces.ReadOnlyBe
 	}
 	var attr payloadattribute.Attributer
 	switch st.Version() {
-	case version.Capella:
+	case version.Zond:
 		withdrawals, err := st.ExpectedWithdrawals()
 		if err != nil {
 			return nil, false, err
@@ -156,7 +156,8 @@ func warnIfFeeRecipientDiffers(payload interfaces.ExecutionData, feeRecipient co
 
 func (vs *Server) getBuilderPayload(ctx context.Context,
 	slot primitives.Slot,
-	vIdx primitives.ValidatorIndex) (interfaces.ExecutionData, error) {
+	vIdx primitives.ValidatorIndex,
+	parentGasLimit uint64) (interfaces.ExecutionData, error) {
 	ctx, span := trace.StartSpan(ctx, "ProposerServer.getBuilderPayload")
 	defer span.End()
 
@@ -169,13 +170,13 @@ func (vs *Server) getBuilderPayload(ctx context.Context,
 		return nil, nil
 	}
 
-	return vs.getPayloadHeaderFromBuilder(ctx, slot, vIdx)
+	return vs.getPayloadHeaderFromBuilder(ctx, slot, vIdx, parentGasLimit)
 }
 
 // getParentBlockHash retrieves the parent block hash of the block at the given slot.
 // The function's behavior varies depending on the state version and whether the merge has been completed.
 //
-// For states of version Capella or later, the block hash is directly retrieved from the state's latest execution payload header.
+// For states of version Zond or later, the block hash is directly retrieved from the state's latest execution payload header.
 //
 // If the merge transition has been completed, the parent block hash is also retrieved from the state's latest execution payload header.
 //
@@ -185,13 +186,13 @@ func (vs *Server) getBuilderPayload(ctx context.Context,
 func (vs *Server) getParentBlockHash(ctx context.Context, st state.BeaconState, slot primitives.Slot) ([]byte, error) {
 	header, err := st.LatestExecutionPayloadHeader()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get post capella payload header")
+		return nil, errors.Wrap(err, "could not get post zond payload header")
 	}
 	return header.BlockHash(), nil
 }
 
-func emptyPayloadCapella() *enginev1.ExecutionPayloadCapella {
-	return &enginev1.ExecutionPayloadCapella{
+func emptyPayloadZond() *enginev1.ExecutionPayloadZond {
+	return &enginev1.ExecutionPayloadZond{
 		ParentHash:    make([]byte, fieldparams.RootLength),
 		FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 		StateRoot:     make([]byte, fieldparams.RootLength),

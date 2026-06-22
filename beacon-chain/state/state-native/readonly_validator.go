@@ -5,7 +5,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 var (
@@ -16,13 +16,13 @@ var (
 // readOnlyValidator returns a wrapper that only allows fields from a validator
 // to be read, and prevents any modification of internal validator fields.
 type readOnlyValidator struct {
-	validator *zondpb.Validator
+	validator *qrysmpb.Validator
 }
 
 var _ = state.ReadOnlyValidator(readOnlyValidator{})
 
 // NewValidator initializes the read only wrapper for validator.
-func NewValidator(v *zondpb.Validator) (state.ReadOnlyValidator, error) {
+func NewValidator(v *qrysmpb.Validator) (state.ReadOnlyValidator, error) {
 	if v == nil {
 		return nil, ErrNilWrappedValidator
 	}
@@ -64,8 +64,8 @@ func (v readOnlyValidator) ExitEpoch() primitives.Epoch {
 
 // PublicKey returns the public key of the
 // read only validator.
-func (v readOnlyValidator) PublicKey() [field_params.DilithiumPubkeyLength]byte {
-	var pubkey [field_params.DilithiumPubkeyLength]byte
+func (v readOnlyValidator) PublicKey() [field_params.MLDSA87PubkeyLength]byte {
+	var pubkey [field_params.MLDSA87PubkeyLength]byte
 	copy(pubkey[:], v.validator.PublicKey)
 	return pubkey
 }

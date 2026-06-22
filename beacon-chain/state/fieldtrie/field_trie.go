@@ -31,7 +31,7 @@ type FieldTrie struct {
 // NewFieldTrie is the constructor for the field trie data structure. It creates the corresponding
 // trie according to the given parameters. Depending on whether the field is a basic/composite array
 // which is either fixed/variable length, it will appropriately determine the trie.
-func NewFieldTrie(field types.FieldIndex, fieldInfo types.DataType, elements interface{}, length uint64) (*FieldTrie, error) {
+func NewFieldTrie(field types.FieldIndex, fieldInfo types.DataType, elements any, length uint64) (*FieldTrie, error) {
 	if elements == nil {
 		return &FieldTrie{
 			field:      field,
@@ -77,14 +77,14 @@ func NewFieldTrie(field types.FieldIndex, fieldInfo types.DataType, elements int
 			numOfElems:  reflect.Indirect(reflect.ValueOf(elements)).Len(),
 		}, nil
 	default:
-		return nil, errors.Errorf("unrecognized data type in field map: %v", reflect.TypeOf(fieldInfo).Name())
+		return nil, errors.Errorf("unrecognized data type in field map: %v", reflect.TypeFor[types.DataType]().Name())
 	}
 }
 
 // RecomputeTrie rebuilds the affected branches in the trie according to the provided
 // changed indices and elements. This recomputes the trie according to the particular
 // field the trie is based on.
-func (f *FieldTrie) RecomputeTrie(indices []uint64, elements interface{}) ([32]byte, error) {
+func (f *FieldTrie) RecomputeTrie(indices []uint64, elements any) ([32]byte, error) {
 	f.Lock()
 	defer f.Unlock()
 	var fieldRoot [32]byte
@@ -145,7 +145,7 @@ func (f *FieldTrie) RecomputeTrie(indices []uint64, elements interface{}) ([32]b
 		f.numOfElems = reflect.Indirect(reflect.ValueOf(elements)).Len()
 		return stateutil.AddInMixin(fieldRoot, uint64(f.numOfElems))
 	default:
-		return [32]byte{}, errors.Errorf("unrecognized data type in field map: %v", reflect.TypeOf(f.dataType).Name())
+		return [32]byte{}, errors.Errorf("unrecognized data type in field map: %v", reflect.TypeFor[types.DataType]().Name())
 	}
 }
 
@@ -168,13 +168,14 @@ func (f *FieldTrie) CopyTrie() *FieldTrie {
 		copy(dstFieldTrie[i], layer)
 	}
 	return &FieldTrie{
-		fieldLayers: dstFieldTrie,
-		field:       f.field,
-		dataType:    f.dataType,
-		reference:   stateutil.NewRef(1),
-		RWMutex:     new(sync.RWMutex),
-		length:      f.length,
-		numOfElems:  f.numOfElems,
+		fieldLayers:   dstFieldTrie,
+		field:         f.field,
+		dataType:      f.dataType,
+		reference:     stateutil.NewRef(1),
+		RWMutex:       new(sync.RWMutex),
+		length:        f.length,
+		numOfElems:    f.numOfElems,
+		isTransferred: f.isTransferred,
 	}
 }
 
@@ -233,7 +234,7 @@ func (f *FieldTrie) TrieRoot() ([32]byte, error) {
 		trieRoot := *f.fieldLayers[len(f.fieldLayers)-1][0]
 		return stateutil.AddInMixin(trieRoot, uint64(f.numOfElems))
 	default:
-		return [32]byte{}, errors.Errorf("unrecognized data type in field map: %v", reflect.TypeOf(f.dataType).Name())
+		return [32]byte{}, errors.Errorf("unrecognized data type in field map: %v", reflect.TypeFor[types.DataType]().Name())
 	}
 }
 

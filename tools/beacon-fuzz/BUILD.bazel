@@ -3,17 +3,15 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 # gazelle:ignore Prevent this tool from using @qrysm//tools/go:def.bzl go_library.
 
 go_library(
-    name = "go_default_library",
+    name = "beacon-fuzz_lib",
     srcs = ["main.go"],
     importpath = "github.com/theQRL/qrysm/tools/beacon-fuzz",
     visibility = ["//visibility:private"],
-    deps = [
-        "//io/file:go_default_library",
-    ],
+    deps = ["//io/file"],
 )
 
 go_binary(
     name = "beacon-fuzz",
-    embed = [":go_default_library"],
+    embed = [":beacon-fuzz_lib"],
     visibility = ["//visibility:public"],
 )

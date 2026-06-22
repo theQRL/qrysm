@@ -8,8 +8,8 @@ import (
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	validatorserviceconfig "github.com/theQRL/qrysm/config/validator/service"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/validator/keymanager"
 )
@@ -38,33 +38,35 @@ const (
 // Validator interface defines the primary methods of a validator client.
 type Validator interface {
 	Done()
+	GenesisTime() uint64
 	WaitForChainStart(ctx context.Context) error
 	WaitForSync(ctx context.Context) error
-	WaitForActivation(ctx context.Context, accountsChangedChan chan [][field_params.DilithiumPubkeyLength]byte) error
+	WaitForActivation(ctx context.Context, accountsChangedChan chan [][field_params.MLDSA87PubkeyLength]byte) error
 	CanonicalHeadSlot(ctx context.Context) (primitives.Slot, error)
 	NextSlot() <-chan primitives.Slot
 	SlotDeadline(slot primitives.Slot) time.Time
 	LogValidatorGainsAndLosses(ctx context.Context, slot primitives.Slot) error
 	UpdateDuties(ctx context.Context, slot primitives.Slot) error
-	RolesAt(ctx context.Context, slot primitives.Slot) (map[[field_params.DilithiumPubkeyLength]byte][]ValidatorRole, error) // validator pubKey -> roles
-	SubmitAttestation(ctx context.Context, slot primitives.Slot, pubKey [field_params.DilithiumPubkeyLength]byte)
-	ProposeBlock(ctx context.Context, slot primitives.Slot, pubKey [field_params.DilithiumPubkeyLength]byte)
-	SubmitAggregateAndProof(ctx context.Context, slot primitives.Slot, pubKey [field_params.DilithiumPubkeyLength]byte)
-	SubmitSyncCommitteeMessage(ctx context.Context, slot primitives.Slot, pubKey [field_params.DilithiumPubkeyLength]byte)
-	SubmitSignedContributionAndProof(ctx context.Context, slot primitives.Slot, pubKey [field_params.DilithiumPubkeyLength]byte)
+	RolesAt(ctx context.Context, slot primitives.Slot) (map[[field_params.MLDSA87PubkeyLength]byte][]ValidatorRole, error) // validator pubKey -> roles
+	SubmitAttestation(ctx context.Context, slot primitives.Slot, pubKey [field_params.MLDSA87PubkeyLength]byte)
+	ProposeBlock(ctx context.Context, slot primitives.Slot, pubKey [field_params.MLDSA87PubkeyLength]byte)
+	SubmitAggregateAndProof(ctx context.Context, slot primitives.Slot, pubKey [field_params.MLDSA87PubkeyLength]byte)
+	SubmitSyncCommitteeMessage(ctx context.Context, slot primitives.Slot, pubKey [field_params.MLDSA87PubkeyLength]byte)
+	SubmitSignedContributionAndProof(ctx context.Context, slot primitives.Slot, pubKey [field_params.MLDSA87PubkeyLength]byte)
 	LogAttestationsSubmitted()
 	LogSyncCommitteeMessagesSubmitted()
 	UpdateDomainDataCaches(ctx context.Context, slot primitives.Slot)
 	WaitForKeymanagerInitialization(ctx context.Context) error
 	Keymanager() (keymanager.IKeymanager, error)
 	ReceiveBlocks(ctx context.Context, connectionErrorChannel chan<- error)
-	HandleKeyReload(ctx context.Context, currentKeys [][field_params.DilithiumPubkeyLength]byte) (bool, error)
+	HandleKeyReload(ctx context.Context, currentKeys [][field_params.MLDSA87PubkeyLength]byte) (bool, error)
 	CheckDoppelGanger(ctx context.Context) error
-	PushProposerSettings(ctx context.Context, km keymanager.IKeymanager, slot primitives.Slot, deadline time.Time) error
-	SignValidatorRegistrationRequest(ctx context.Context, signer SigningFunc, newValidatorRegistration *zondpb.ValidatorRegistrationV1) (*zondpb.SignedValidatorRegistrationV1, error)
+	PushProposerSettings(ctx context.Context, km keymanager.IKeymanager, slot primitives.Slot) error
+	SignValidatorRegistrationRequest(ctx context.Context, signer SigningFunc, newValidatorRegistration *qrysmpb.ValidatorRegistrationV1) (*qrysmpb.SignedValidatorRegistrationV1, error)
 	ProposerSettings() *validatorserviceconfig.ProposerSettings
 	SetProposerSettings(context.Context, *validatorserviceconfig.ProposerSettings) error
+	SetTicker()
 }
 
 // SigningFunc interface defines a type for the a function that signs a message
-type SigningFunc func(context.Context, *validatorpb.SignRequest) (dilithium.Signature, error)
+type SigningFunc func(context.Context, *validatorpb.SignRequest) (ml_dsa_87.Signature, error)

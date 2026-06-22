@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"sort"
+	slices0 "slices"
 	"time"
 
 	"github.com/pkg/errors"
@@ -23,13 +23,15 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/validator"
 	"github.com/theQRL/qrysm/crypto/rand"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
 	qrysmTime "github.com/theQRL/qrysm/time"
 	"github.com/theQRL/qrysm/time/slots"
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
 )
+
+var errOptimisticMode = errors.New("the node is currently optimistic and cannot serve validators")
 
 // AggregateBroadcastFailedError represents an error scenario where
 // broadcasting an aggregate selection proof failed.
@@ -53,8 +55,8 @@ func (e *AggregateBroadcastFailedError) Error() string {
 // rewards and penalties throughout its lifecycle in the beacon chain.
 func (s *Service) ComputeValidatorPerformance(
 	ctx context.Context,
-	req *zondpb.ValidatorPerformanceRequest,
-) (*zondpb.ValidatorPerformanceResponse, *RpcError) {
+	req *qrysmpb.ValidatorPerformanceRequest,
+) (*qrysmpb.ValidatorPerformanceResponse, *RpcError) {
 	if s.SyncChecker.Syncing() {
 		return nil, &RpcError{Reason: Unavailable, Err: errors.New("Syncing to latest head, not ready to respond")}
 	}
@@ -124,9 +126,7 @@ func (s *Service) ComputeValidatorPerformance(
 		}
 	}
 	// Depending on the indices and public keys given, results might not be sorted.
-	sort.Slice(validatorIndices, func(i, j int) bool {
-		return validatorIndices[i] < validatorIndices[j]
-	})
+	slices0.Sort(validatorIndices)
 
 	currentEpoch := coreTime.CurrentEpoch(headState)
 	responseCap = len(validatorIndices)
@@ -169,7 +169,7 @@ func (s *Service) ComputeValidatorPerformance(
 		inactivityScores = append(inactivityScores, summary.InactivityScore)
 	}
 
-	return &zondpb.ValidatorPerformanceResponse{
+	return &qrysmpb.ValidatorPerformanceResponse{
 		PublicKeys:                    pubKeys,
 		CorrectlyVotedSource:          correctlyVotedSource,
 		CorrectlyVotedTarget:          correctlyVotedTarget, // In altair, when this is true then the attestation was definitely included.
@@ -186,7 +186,7 @@ func (s *Service) ComputeValidatorPerformance(
 // to submit signed contribution and proof object.
 func (s *Service) SubmitSignedContributionAndProof(
 	ctx context.Context,
-	req *zondpb.SignedContributionAndProof,
+	req *qrysmpb.SignedContributionAndProof,
 ) *RpcError {
 	errs, ctx := errgroup.WithContext(ctx)
 
@@ -218,13 +218,13 @@ func (s *Service) SubmitSignedContributionAndProof(
 // SubmitSignedAggregateSelectionProof verifies given aggregate and proofs and publishes them on appropriate gossipsub topic.
 func (s *Service) SubmitSignedAggregateSelectionProof(
 	ctx context.Context,
-	req *zondpb.SignedAggregateSubmitRequest,
+	req *qrysmpb.SignedAggregateSubmitRequest,
 ) *RpcError {
 	if req.SignedAggregateAndProof == nil || req.SignedAggregateAndProof.Message == nil ||
 		req.SignedAggregateAndProof.Message.Aggregate == nil || req.SignedAggregateAndProof.Message.Aggregate.Data == nil {
 		return &RpcError{Err: errors.New("signed aggregate request can't be nil"), Reason: BadRequest}
 	}
-	emptySig := make([]byte, field_params.DilithiumSignatureLength)
+	emptySig := make([]byte, field_params.MLDSA87SignatureLength)
 	if bytes.Equal(req.SignedAggregateAndProof.Signature, emptySig) ||
 		bytes.Equal(req.SignedAggregateAndProof.Message.SelectionProof, emptySig) {
 		return &RpcError{Err: errors.New("signed signatures can't be zero hashes"), Reason: BadRequest}
@@ -254,10 +254,10 @@ func (s *Service) SubmitSignedAggregateSelectionProof(
 // associated with a particular set of sync committee messages.
 func (s *Service) SignaturesAndAggregationBits(
 	ctx context.Context,
-	req *zondpb.SignaturesAndAggregationBitsRequest) ([][]byte, []byte, error) {
+	req *qrysmpb.SignaturesAndAggregationBitsRequest) ([][]byte, []byte, error) {
 	subCommitteeSize := params.BeaconConfig().SyncCommitteeSize / params.BeaconConfig().SyncCommitteeSubnetCount
 	sigs := make([][]byte, 0, subCommitteeSize)
-	bits := zondpb.NewSyncCommitteeAggregationBits()
+	bits := qrysmpb.NewSyncCommitteeAggregationBits()
 
 	for _, msg := range req.Msgs {
 		if bytes.Equal(req.BlockRoot, msg.BlockRoot) {
@@ -270,7 +270,7 @@ func (s *Service) SignaturesAndAggregationBits(
 				subnetIndex := i / subCommitteeSize
 				indexMod := i % subCommitteeSize
 				if subnetIndex == req.SubnetId && !bits.BitAt(indexMod) {
-					insertIdx, err := attestation.SearchInsertIdxWithOffset(bits.BitIndices(), 0, int(indexMod))
+					insertIdx, err := attestation.SearchInsertIdxWithOffset(bits.BitIndices(), 0, int(indexMod)) // lint:ignore uintcast -- indexMod is bounded by subCommitteeSize derived from protocol constants.
 					if err != nil {
 						return nil, nil, errors.Wrapf(err, "could not get signature insert index")
 					}
@@ -297,8 +297,8 @@ func AssignValidatorToSubnet(pubkey []byte, status validator.ValidatorStatus) {
 // to discern whether persistent subnets need to be registered for them.
 //
 // It has a Proto suffix because the status is a protobuf type.
-func AssignValidatorToSubnetProto(pubkey []byte, status zondpb.ValidatorStatus) {
-	if status != zondpb.ValidatorStatus_ACTIVE && status != zondpb.ValidatorStatus_EXITING {
+func AssignValidatorToSubnetProto(pubkey []byte, status qrysmpb.ValidatorStatus) {
+	if status != qrysmpb.ValidatorStatus_ACTIVE && status != qrysmpb.ValidatorStatus_EXITING {
 		return
 	}
 	assignValidatorToSubnet(pubkey)
@@ -327,8 +327,8 @@ func assignValidatorToSubnet(pubkey []byte) {
 // GetAttestationData requests that the beacon node produces attestation data for
 // the requested committee index and slot based on the nodes current head.
 func (s *Service) GetAttestationData(
-	ctx context.Context, req *zondpb.AttestationDataRequest,
-) (*zondpb.AttestationData, *RpcError) {
+	ctx context.Context, req *qrysmpb.AttestationDataRequest,
+) (*qrysmpb.AttestationData, *RpcError) {
 	if err := helpers.ValidateAttestationTime(
 		req.Slot,
 		s.GenesisTimeFetcher.GenesisTime(),
@@ -344,6 +344,18 @@ func (s *Service) GetAttestationData(
 	if res != nil {
 		res.CommitteeIndex = req.CommitteeIndex
 		return res, nil
+	}
+
+	// Cache miss: verify the node is not optimistic before producing fresh attestation data.
+	// On cache hit we skip this check because cached entries were already produced from a non-optimistic head.
+	if s.OptimisticModeFetcher != nil {
+		optimistic, err := s.OptimisticModeFetcher.IsOptimistic(ctx)
+		if err != nil {
+			return nil, &RpcError{Reason: Internal, Err: errors.Wrap(err, "could not determine if the node is optimistic")}
+		}
+		if optimistic {
+			return nil, &RpcError{Reason: Unavailable, Err: errOptimisticMode}
+		}
 	}
 
 	if err := s.AttestationCache.MarkInProgress(req); err != nil {
@@ -362,7 +374,7 @@ func (s *Service) GetAttestationData(
 	}
 	defer func() {
 		if err := s.AttestationCache.MarkNotInProgress(req); err != nil {
-			log.WithError(err).Error("could not mark attestation as not-in-progress")
+			log.WithError(err).Error("Could not mark attestation as not-in-progress")
 		}
 	}()
 
@@ -415,26 +427,26 @@ func (s *Service) GetAttestationData(
 		}
 	}
 
-	res = &zondpb.AttestationData{
+	res = &qrysmpb.AttestationData{
 		Slot:            req.Slot,
 		CommitteeIndex:  req.CommitteeIndex,
 		BeaconBlockRoot: headRoot,
 		Source:          headState.CurrentJustifiedCheckpoint(),
-		Target: &zondpb.Checkpoint{
+		Target: &qrysmpb.Checkpoint{
 			Epoch: targetEpoch,
 			Root:  targetRoot,
 		},
 	}
 
 	if err := s.AttestationCache.Put(ctx, req, res); err != nil {
-		log.WithError(err).Error("could not store attestation data in cache")
+		log.WithError(err).Error("Could not store attestation data in cache")
 	}
 	return res, nil
 }
 
 // SubmitSyncMessage submits the sync committee message to the network.
 // It also saves the sync committee message into the pending pool for block inclusion.
-func (s *Service) SubmitSyncMessage(ctx context.Context, msg *zondpb.SyncCommitteeMessage) *RpcError {
+func (s *Service) SubmitSyncMessage(ctx context.Context, msg *qrysmpb.SyncCommitteeMessage) *RpcError {
 	errs, ctx := errgroup.WithContext(ctx)
 
 	headSyncCommitteeIndices, err := s.HeadFetcher.HeadSyncCommitteeIndices(ctx, msg.ValidatorIndex, msg.Slot)

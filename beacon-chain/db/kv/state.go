@@ -12,10 +12,11 @@ import (
 	statenative "github.com/theQRL/qrysm/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/config/features"
 	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time"
 	"github.com/theQRL/qrysm/time/slots"
 	bolt "go.etcd.io/bbolt"
@@ -159,7 +160,7 @@ func (s *Store) SaveStates(ctx context.Context, states []state.ReadOnlyBeaconSta
 }
 
 type withValidators interface {
-	GetValidators() []*zondpb.Validator
+	GetValidators() []*qrysmpb.Validator
 }
 
 // SaveStatesEfficient stores multiple states to the db (new schema) using the provided corresponding roots.
@@ -183,9 +184,9 @@ func (s *Store) SaveStatesEfficient(ctx context.Context, states []state.ReadOnly
 	return nil
 }
 
-func getValidators(states []state.ReadOnlyBeaconState) ([][]byte, map[string]*zondpb.Validator, error) {
-	validatorsEntries := make(map[string]*zondpb.Validator) // It's a map to make sure that you store only new validator entries.
-	validatorKeys := make([][]byte, len(states))            // For every state, this stores a compressed list of validator keys.
+func getValidators(states []state.ReadOnlyBeaconState) ([][]byte, map[string]*qrysmpb.Validator, error) {
+	validatorsEntries := make(map[string]*qrysmpb.Validator) // It's a map to make sure that you store only new validator entries.
+	validatorKeys := make([][]byte, len(states))             // For every state, this stores a compressed list of validator keys.
 	for i, st := range states {
 		pb, ok := st.ToProtoUnsafe().(withValidators)
 		if !ok {
@@ -212,7 +213,7 @@ func getValidators(states []state.ReadOnlyBeaconState) ([][]byte, map[string]*zo
 	return validatorKeys, validatorsEntries, nil
 }
 
-func (s *Store) saveStatesEfficientInternal(ctx context.Context, tx *bolt.Tx, blockRoots [][32]byte, states []state.ReadOnlyBeaconState, validatorKeys [][]byte, validatorsEntries map[string]*zondpb.Validator) error {
+func (s *Store) saveStatesEfficientInternal(ctx context.Context, tx *bolt.Tx, blockRoots [][32]byte, states []state.ReadOnlyBeaconState, validatorKeys [][]byte, validatorsEntries map[string]*qrysmpb.Validator) error {
 	bucket := tx.Bucket(stateBucket)
 	valIdxBkt := tx.Bucket(blockRootValidatorHashesBucket)
 	for i, rt := range blockRoots {
@@ -227,18 +228,18 @@ func (s *Store) saveStatesEfficientInternal(ctx context.Context, tx *bolt.Tx, bl
 		// just before Put() and repopulate that state with original validators.
 		// look at issue https://github.com/prysmaticlabs/prysm/issues/9262.
 		switch rawType := states[i].ToProtoUnsafe().(type) {
-		case *zondpb.BeaconStateCapella:
-			pbState, err := getCapellaPbState(rawType)
+		case *qrysmpb.BeaconStateZond:
+			pbState, err := getZondPbState(rawType)
 			if err != nil {
 				return err
 			}
 			valEntries := pbState.Validators
-			pbState.Validators = make([]*zondpb.Validator, 0)
+			pbState.Validators = make([]*qrysmpb.Validator, 0)
 			rawObj, err := pbState.MarshalSSZ()
 			if err != nil {
 				return err
 			}
-			encodedState := snappy.Encode(nil, append(capellaKey, rawObj...))
+			encodedState := snappy.Encode(nil, append(zondKey, rawObj...))
 			if err := bucket.Put(rt[:], encodedState); err != nil {
 				return err
 			}
@@ -254,8 +255,8 @@ func (s *Store) saveStatesEfficientInternal(ctx context.Context, tx *bolt.Tx, bl
 	return s.storeValidatorEntriesSeparately(ctx, tx, validatorsEntries)
 }
 
-func getCapellaPbState(rawState interface{}) (*zondpb.BeaconStateCapella, error) {
-	pbState, err := statenative.ProtobufBeaconStateCapella(rawState)
+func getZondPbState(rawState any) (*qrysmpb.BeaconStateZond, error) {
+	pbState, err := statenative.ProtobufBeaconStateZond(rawState)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +266,7 @@ func getCapellaPbState(rawState interface{}) (*zondpb.BeaconStateCapella, error)
 	return pbState, nil
 }
 
-func (s *Store) storeValidatorEntriesSeparately(ctx context.Context, tx *bolt.Tx, validatorsEntries map[string]*zondpb.Validator) error {
+func (s *Store) storeValidatorEntriesSeparately(ctx context.Context, tx *bolt.Tx, validatorsEntries map[string]*qrysmpb.Validator) error {
 	valBkt := tx.Bucket(stateValidatorsBucket)
 	for hashStr, validatorEntry := range validatorsEntries {
 		key := []byte(hashStr)
@@ -304,7 +305,7 @@ func (s *Store) HasState(ctx context.Context, blockRoot [32]byte) bool {
 		return nil
 	})
 	if err != nil {
-		panic(err)
+		panic(err) // lint:nopanic
 	}
 	return hasState
 }
@@ -320,17 +321,17 @@ func (s *Store) DeleteState(ctx context.Context, blockRoot [32]byte) error {
 
 		bkt = tx.Bucket(checkpointBucket)
 		enc := bkt.Get(finalizedCheckpointKey)
-		finalized := &zondpb.Checkpoint{}
+		finalized := &qrysmpb.Checkpoint{}
 		if enc == nil {
-			finalized = &zondpb.Checkpoint{Root: genesisBlockRoot}
+			finalized = &qrysmpb.Checkpoint{Root: genesisBlockRoot}
 		} else if err := decode(ctx, enc, finalized); err != nil {
 			return err
 		}
 
 		enc = bkt.Get(justifiedCheckpointKey)
-		justified := &zondpb.Checkpoint{}
+		justified := &qrysmpb.Checkpoint{}
 		if enc == nil {
-			justified = &zondpb.Checkpoint{Root: genesisBlockRoot}
+			justified = &qrysmpb.Checkpoint{Root: genesisBlockRoot}
 		} else if err := decode(ctx, enc, justified); err != nil {
 			return err
 		}
@@ -406,17 +407,17 @@ func (s *Store) DeleteStates(ctx context.Context, blockRoots [][32]byte) error {
 }
 
 // unmarshal state from marshaled proto state bytes to versioned state struct type.
-func (s *Store) unmarshalState(_ context.Context, enc []byte, validatorEntries []*zondpb.Validator) (state.BeaconState, error) {
+func (s *Store) unmarshalState(_ context.Context, enc []byte, validatorEntries []*qrysmpb.Validator) (state.BeaconState, error) {
 	var err error
 	enc, err = snappy.Decode(nil, enc)
 	if err != nil {
 		return nil, err
 	}
 
-	// Marshal state bytes to capella beacon state.
-	protoState := &zondpb.BeaconStateCapella{}
-	if err := protoState.UnmarshalSSZ(enc[len(capellaKey):]); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal encoding for capella")
+	// Marshal state bytes to zond beacon state.
+	protoState := &qrysmpb.BeaconStateZond{}
+	if err := protoState.UnmarshalSSZ(enc[len(zondKey):]); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal encoding for zond")
 	}
 	ok, err := s.isStateValidatorMigrationOver()
 	if err != nil {
@@ -425,14 +426,14 @@ func (s *Store) unmarshalState(_ context.Context, enc []byte, validatorEntries [
 	if ok {
 		protoState.Validators = validatorEntries
 	}
-	return statenative.InitializeFromProtoUnsafeCapella(protoState)
+	return statenative.InitializeFromProtoUnsafeZond(protoState)
 }
 
 // marshal versioned state from struct type down to bytes.
 func marshalState(ctx context.Context, st state.ReadOnlyBeaconState) ([]byte, error) {
 	switch st.ToProtoUnsafe().(type) {
-	case *zondpb.BeaconStateCapella:
-		rState, ok := st.ToProtoUnsafe().(*zondpb.BeaconStateCapella)
+	case *qrysmpb.BeaconStateZond:
+		rState, ok := st.ToProtoUnsafe().(*qrysmpb.BeaconStateZond)
 		if !ok {
 			return nil, errors.New("non valid inner state")
 		}
@@ -443,7 +444,7 @@ func marshalState(ctx context.Context, st state.ReadOnlyBeaconState) ([]byte, er
 		if err != nil {
 			return nil, err
 		}
-		return snappy.Encode(nil, append(capellaKey, rawObj...)), nil
+		return snappy.Encode(nil, append(zondKey, rawObj...)), nil
 	default:
 		return nil, errors.New("invalid inner state")
 	}
@@ -451,17 +452,17 @@ func marshalState(ctx context.Context, st state.ReadOnlyBeaconState) ([]byte, er
 
 // Retrieve the validator entries for a given block root. These entries are stored in a
 // separate bucket to reduce state size.
-func (s *Store) validatorEntries(ctx context.Context, blockRoot [32]byte) ([]*zondpb.Validator, error) {
+func (s *Store) validatorEntries(ctx context.Context, blockRoot [32]byte) ([]*qrysmpb.Validator, error) {
 	ok, err := s.isStateValidatorMigrationOver()
 	if err != nil {
 		return nil, err
 	}
 	if !ok {
-		return make([]*zondpb.Validator, 0), nil
+		return make([]*qrysmpb.Validator, 0), nil
 	}
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.validatorEntries")
 	defer span.End()
-	var validatorEntries []*zondpb.Validator
+	var validatorEntries []*qrysmpb.Validator
 	err = s.db.View(func(tx *bolt.Tx) error {
 		// get the validator keys from the index bucket
 		idxBkt := tx.Bucket(blockRootValidatorHashesBucket)
@@ -486,7 +487,7 @@ func (s *Store) validatorEntries(ctx context.Context, blockRoot [32]byte) ([]*zo
 			// get the entry bytes from the cache or from the DB.
 			v, ok := s.validatorEntryCache.Get(key)
 			if ok {
-				valEntry, vType := v.(*zondpb.Validator)
+				valEntry, vType := v.(*qrysmpb.Validator)
 				if vType {
 					validatorEntries = append(validatorEntries, valEntry)
 					validatorEntryCacheHit.Inc()
@@ -500,7 +501,7 @@ func (s *Store) validatorEntries(ctx context.Context, blockRoot [32]byte) ([]*zo
 				if len(valEntryBytes) == 0 {
 					return errors.New("could not find validator entry")
 				}
-				encValEntry := &zondpb.Validator{}
+				encValEntry := &qrysmpb.Validator{}
 				decodeErr := decode(ctx, valEntryBytes, encValEntry)
 				if decodeErr != nil {
 					return errors.Wrap(decodeErr, "failed to decode validator entry keys")
@@ -570,11 +571,18 @@ func (s *Store) slotByBlockRoot(ctx context.Context, tx *bolt.Tx, blockRoot []by
 			return s.Slot(), nil
 		}
 
-		return primitives.Slot(0), nil
+		blk, err := unmarshalBlock(ctx, enc)
+		if err != nil {
+			return 0, errors.Wrap(err, "could not unmarshal block")
+		}
+		if err := blocks.BeaconBlockIsNil(blk); err != nil {
+			return 0, err
+		}
+		return blk.Block().Slot(), nil
 	}
-	stateSummary := &zondpb.StateSummary{}
+	stateSummary := &qrysmpb.StateSummary{}
 	if err := decode(ctx, enc, stateSummary); err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "could not unmarshal state summary")
 	}
 	return stateSummary.Slot, nil
 }
@@ -643,7 +651,7 @@ func createStateIndicesFromStateSlot(ctx context.Context, slot primitives.Slot) 
 	indices := [][]byte{
 		bytesutil.SlotToBytesBigEndian(slot),
 	}
-	for i := 0; i < len(buckets); i++ {
+	for i := range buckets {
 		indicesByBucket[string(buckets[i])] = indices[i]
 	}
 	return indicesByBucket
@@ -659,6 +667,7 @@ func createStateIndicesFromStateSlot(ctx context.Context, slot primitives.Slot) 
 //
 // 3.) state with current finalized root
 // 4.) unfinalized States
+// 5.) not origin root
 func (s *Store) CleanUpDirtyStates(ctx context.Context, slotsPerArchivedPoint primitives.Slot) error {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB. CleanUpDirtyStates")
 	defer span.End()
@@ -673,6 +682,13 @@ func (s *Store) CleanUpDirtyStates(ctx context.Context, slotsPerArchivedPoint pr
 	}
 	deletedRoots := make([][32]byte, 0)
 
+	oRoot, err := s.OriginCheckpointBlockRoot(ctx)
+	if err != nil && !errors.Is(err, ErrNotFoundOriginBlockRoot) {
+		// If the node did not use checkpoint sync, there will be no origin block root.
+		// Use zero hash which will never match any actual state root.
+		return err
+	}
+
 	err = s.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(stateSlotIndicesBucket)
 		return bkt.ForEach(func(k, v []byte) error {
@@ -680,15 +696,31 @@ func (s *Store) CleanUpDirtyStates(ctx context.Context, slotsPerArchivedPoint pr
 				return ctx.Err()
 			}
 
-			finalizedChkpt := bytesutil.ToBytes32(f.Root) == bytesutil.ToBytes32(v)
+			root := bytesutil.ToBytes32(v)
 			slot := bytesutil.BytesToSlotBigEndian(k)
 			mod := slot % slotsPerArchivedPoint
-			nonFinalized := slot > finalizedSlot
 
-			// The following conditions cover 1, 2, 3 and 4 above.
-			if mod != 0 && mod <= slotsPerArchivedPoint-slotsPerArchivedPoint/3 && !finalizedChkpt && !nonFinalized {
-				deletedRoots = append(deletedRoots, bytesutil.ToBytes32(v))
+			if mod == 0 {
+				return nil
 			}
+
+			if mod > slotsPerArchivedPoint-slotsPerArchivedPoint/3 {
+				return nil
+			}
+
+			if bytesutil.ToBytes32(f.Root) == root {
+				return nil
+			}
+
+			if slot > finalizedSlot {
+				return nil
+			}
+
+			if oRoot == root {
+				return nil
+			}
+
+			deletedRoots = append(deletedRoots, root)
 			return nil
 		})
 	})

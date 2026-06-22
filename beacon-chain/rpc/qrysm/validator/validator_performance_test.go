@@ -20,7 +20,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
@@ -39,16 +39,16 @@ func TestServer_GetValidatorPerformance(t *testing.T) {
 		client := &http.Client{}
 		rawResp, err := client.Post(srv.URL, "application/json", req.Body)
 		require.NoError(t, err)
-		require.Equal(t, http.StatusServiceUnavailable, rawResp.StatusCode)
+		require.Equal(t, http.StatusBadRequest, rawResp.StatusCode)
 	})
 	t.Run("Indices", func(t *testing.T) {
 		ctx := context.Background()
-		publicKeys := [][field_params.DilithiumPubkeyLength]byte{
+		publicKeys := [][field_params.MLDSA87PubkeyLength]byte{
 			bytesutil.ToBytes2592([]byte{1}),
 			bytesutil.ToBytes2592([]byte{2}),
 			bytesutil.ToBytes2592([]byte{3}),
 		}
-		headState, err := util.NewBeaconStateCapella()
+		headState, err := util.NewBeaconStateZond()
 		require.NoError(t, err)
 		headState = setHeadState(t, headState, publicKeys)
 
@@ -72,7 +72,7 @@ func TestServer_GetValidatorPerformance(t *testing.T) {
 		require.NoError(t, err)
 		_, err = altair.ProcessRewardsAndPenaltiesPrecompute(c, bp, vp)
 		require.NoError(t, err)
-		extraBal := params.BeaconConfig().MaxEffectiveBalance + params.BeaconConfig().GweiPerEth
+		extraBal := params.BeaconConfig().MaxEffectiveBalance + params.BeaconConfig().ShorPerQuanta
 
 		want := &ValidatorPerformanceResponse{
 			PublicKeys:                    [][]byte{publicKeys[1][:], publicKeys[2][:]},
@@ -80,7 +80,7 @@ func TestServer_GetValidatorPerformance(t *testing.T) {
 			CorrectlyVotedSource:          []bool{false, false},
 			CorrectlyVotedTarget:          []bool{false, false},
 			CorrectlyVotedHead:            []bool{false, false},
-			BalancesBeforeEpochTransition: []uint64{extraBal, extraBal + params.BeaconConfig().GweiPerEth},
+			BalancesBeforeEpochTransition: []uint64{extraBal, extraBal + params.BeaconConfig().ShorPerQuanta},
 			BalancesAfterEpochTransition:  []uint64{vp[1].AfterEpochTransitionBalance, vp[2].AfterEpochTransitionBalance},
 			MissingValidators:             [][]byte{publicKeys[0][:]},
 			InactivityScores:              []uint64{0, 0},
@@ -111,12 +111,12 @@ func TestServer_GetValidatorPerformance(t *testing.T) {
 	})
 	t.Run("Indices Pubkeys", func(t *testing.T) {
 		ctx := context.Background()
-		publicKeys := [][field_params.DilithiumPubkeyLength]byte{
+		publicKeys := [][field_params.MLDSA87PubkeyLength]byte{
 			bytesutil.ToBytes2592([]byte{1}),
 			bytesutil.ToBytes2592([]byte{2}),
 			bytesutil.ToBytes2592([]byte{3}),
 		}
-		headState, err := util.NewBeaconStateCapella()
+		headState, err := util.NewBeaconStateZond()
 		require.NoError(t, err)
 		headState = setHeadState(t, headState, publicKeys)
 
@@ -140,7 +140,7 @@ func TestServer_GetValidatorPerformance(t *testing.T) {
 		require.NoError(t, err)
 		_, err = altair.ProcessRewardsAndPenaltiesPrecompute(c, bp, vp)
 		require.NoError(t, err)
-		extraBal := params.BeaconConfig().MaxEffectiveBalance + params.BeaconConfig().GweiPerEth
+		extraBal := params.BeaconConfig().MaxEffectiveBalance + params.BeaconConfig().ShorPerQuanta
 
 		want := &ValidatorPerformanceResponse{
 			PublicKeys:                    [][]byte{publicKeys[1][:], publicKeys[2][:]},
@@ -148,7 +148,7 @@ func TestServer_GetValidatorPerformance(t *testing.T) {
 			CorrectlyVotedSource:          []bool{false, false},
 			CorrectlyVotedTarget:          []bool{false, false},
 			CorrectlyVotedHead:            []bool{false, false},
-			BalancesBeforeEpochTransition: []uint64{extraBal, extraBal + params.BeaconConfig().GweiPerEth},
+			BalancesBeforeEpochTransition: []uint64{extraBal, extraBal + params.BeaconConfig().ShorPerQuanta},
 			BalancesAfterEpochTransition:  []uint64{vp[1].AfterEpochTransitionBalance, vp[2].AfterEpochTransitionBalance},
 			MissingValidators:             [][]byte{publicKeys[0][:]},
 			InactivityScores:              []uint64{0, 0},
@@ -182,12 +182,12 @@ func TestServer_GetValidatorPerformance(t *testing.T) {
 		params.SetupTestConfigCleanup(t)
 		params.OverrideBeaconConfig(params.MinimalSpecConfig())
 
-		publicKeys := [][field_params.DilithiumPubkeyLength]byte{
+		publicKeys := [][field_params.MLDSA87PubkeyLength]byte{
 			bytesutil.ToBytes2592([]byte{1}),
 			bytesutil.ToBytes2592([]byte{2}),
 			bytesutil.ToBytes2592([]byte{3}),
 		}
-		headState, _ := util.DeterministicGenesisStateCapella(t, 32)
+		headState, _ := util.DeterministicGenesisStateZond(t, 32)
 		headState = setHeadState(t, headState, publicKeys)
 
 		require.NoError(t, headState.SetInactivityScores([]uint64{0, 0, 0}))
@@ -239,17 +239,17 @@ func TestServer_GetValidatorPerformance(t *testing.T) {
 	})
 }
 
-func setHeadState(t *testing.T, headState state.BeaconState, publicKeys [][field_params.DilithiumPubkeyLength]byte) state.BeaconState {
+func setHeadState(t *testing.T, headState state.BeaconState, publicKeys [][field_params.MLDSA87PubkeyLength]byte) state.BeaconState {
 	epoch := primitives.Epoch(1)
 	require.NoError(t, headState.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(uint64(epoch+1))))
 
 	defaultBal := params.BeaconConfig().MaxEffectiveBalance
-	extraBal := params.BeaconConfig().MaxEffectiveBalance + params.BeaconConfig().GweiPerEth
-	balances := []uint64{defaultBal, extraBal, extraBal + params.BeaconConfig().GweiPerEth}
+	extraBal := params.BeaconConfig().MaxEffectiveBalance + params.BeaconConfig().ShorPerQuanta
+	balances := []uint64{defaultBal, extraBal, extraBal + params.BeaconConfig().ShorPerQuanta}
 	require.NoError(t, headState.SetBalances(balances))
 	require.NoError(t, headState.SetInactivityScores([]uint64{0, 0, 0}))
 
-	validators := []*zondpb.Validator{
+	validators := []*qrysmpb.Validator{
 		{
 			PublicKey:       publicKeys[0][:],
 			ActivationEpoch: 5,

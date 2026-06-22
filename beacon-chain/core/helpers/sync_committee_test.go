@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
@@ -20,18 +20,18 @@ import (
 func TestIsCurrentEpochSyncCommittee_UsingCache(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
-	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{}
-	for i := 0; i < len(validators); i++ {
+	validators := make([]*qrysmpb.Validator, params.BeaconConfig().SyncCommitteeSize)
+	syncCommittee := &qrysmpb.SyncCommittee{}
+	for i := range validators {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
-		validators[i] = &zondpb.Validator{
+		validators[i] = &qrysmpb.Validator{
 			PublicKey: k,
 		}
 		syncCommittee.Pubkeys = append(syncCommittee.Pubkeys, bytesutil.PadTo(k, 48))
 	}
 
-	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: validators,
 	})
 	require.NoError(t, err)
@@ -49,18 +49,18 @@ func TestIsCurrentEpochSyncCommittee_UsingCache(t *testing.T) {
 func TestIsCurrentEpochSyncCommittee_UsingCommittee(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
-	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{}
-	for i := 0; i < len(validators); i++ {
+	validators := make([]*qrysmpb.Validator, params.BeaconConfig().SyncCommitteeSize)
+	syncCommittee := &qrysmpb.SyncCommittee{}
+	for i := range validators {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
-		validators[i] = &zondpb.Validator{
+		validators[i] = &qrysmpb.Validator{
 			PublicKey: k,
 		}
 		syncCommittee.Pubkeys = append(syncCommittee.Pubkeys, bytesutil.PadTo(k, 48))
 	}
 
-	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: validators,
 	})
 	require.NoError(t, err)
@@ -75,18 +75,18 @@ func TestIsCurrentEpochSyncCommittee_UsingCommittee(t *testing.T) {
 func TestIsCurrentEpochSyncCommittee_DoesNotExist(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
-	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{}
-	for i := 0; i < len(validators); i++ {
+	validators := make([]*qrysmpb.Validator, params.BeaconConfig().SyncCommitteeSize)
+	syncCommittee := &qrysmpb.SyncCommittee{}
+	for i := range validators {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
-		validators[i] = &zondpb.Validator{
+		validators[i] = &qrysmpb.Validator{
 			PublicKey: k,
 		}
 		syncCommittee.Pubkeys = append(syncCommittee.Pubkeys, bytesutil.PadTo(k, 48))
 	}
 
-	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: validators,
 	})
 	require.NoError(t, err)
@@ -101,18 +101,18 @@ func TestIsCurrentEpochSyncCommittee_DoesNotExist(t *testing.T) {
 func TestIsNextEpochSyncCommittee_UsingCache(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
-	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{}
-	for i := 0; i < len(validators); i++ {
+	validators := make([]*qrysmpb.Validator, params.BeaconConfig().SyncCommitteeSize)
+	syncCommittee := &qrysmpb.SyncCommittee{}
+	for i := range validators {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
-		validators[i] = &zondpb.Validator{
+		validators[i] = &qrysmpb.Validator{
 			PublicKey: k,
 		}
 		syncCommittee.Pubkeys = append(syncCommittee.Pubkeys, bytesutil.PadTo(k, 48))
 	}
 
-	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: validators,
 	})
 	require.NoError(t, err)
@@ -128,18 +128,18 @@ func TestIsNextEpochSyncCommittee_UsingCache(t *testing.T) {
 }
 
 func TestIsNextEpochSyncCommittee_UsingCommittee(t *testing.T) {
-	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{}
-	for i := 0; i < len(validators); i++ {
+	validators := make([]*qrysmpb.Validator, params.BeaconConfig().SyncCommitteeSize)
+	syncCommittee := &qrysmpb.SyncCommittee{}
+	for i := range validators {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
-		validators[i] = &zondpb.Validator{
+		validators[i] = &qrysmpb.Validator{
 			PublicKey: k,
 		}
 		syncCommittee.Pubkeys = append(syncCommittee.Pubkeys, bytesutil.PadTo(k, 48))
 	}
 
-	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: validators,
 	})
 	require.NoError(t, err)
@@ -152,18 +152,18 @@ func TestIsNextEpochSyncCommittee_UsingCommittee(t *testing.T) {
 }
 
 func TestIsNextEpochSyncCommittee_DoesNotExist(t *testing.T) {
-	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{}
-	for i := 0; i < len(validators); i++ {
+	validators := make([]*qrysmpb.Validator, params.BeaconConfig().SyncCommitteeSize)
+	syncCommittee := &qrysmpb.SyncCommittee{}
+	for i := range validators {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
-		validators[i] = &zondpb.Validator{
+		validators[i] = &qrysmpb.Validator{
 			PublicKey: k,
 		}
 		syncCommittee.Pubkeys = append(syncCommittee.Pubkeys, bytesutil.PadTo(k, 48))
 	}
 
-	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: validators,
 	})
 	require.NoError(t, err)
@@ -178,18 +178,18 @@ func TestIsNextEpochSyncCommittee_DoesNotExist(t *testing.T) {
 func TestCurrentEpochSyncSubcommitteeIndices_UsingCache(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
-	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{}
-	for i := 0; i < len(validators); i++ {
+	validators := make([]*qrysmpb.Validator, params.BeaconConfig().SyncCommitteeSize)
+	syncCommittee := &qrysmpb.SyncCommittee{}
+	for i := range validators {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
-		validators[i] = &zondpb.Validator{
+		validators[i] = &qrysmpb.Validator{
 			PublicKey: k,
 		}
 		syncCommittee.Pubkeys = append(syncCommittee.Pubkeys, bytesutil.PadTo(k, 48))
 	}
 
-	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: validators,
 	})
 	require.NoError(t, err)
@@ -207,18 +207,18 @@ func TestCurrentEpochSyncSubcommitteeIndices_UsingCache(t *testing.T) {
 func TestCurrentEpochSyncSubcommitteeIndices_UsingCommittee(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
-	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{}
-	for i := 0; i < len(validators); i++ {
+	validators := make([]*qrysmpb.Validator, params.BeaconConfig().SyncCommitteeSize)
+	syncCommittee := &qrysmpb.SyncCommittee{}
+	for i := range validators {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
-		validators[i] = &zondpb.Validator{
+		validators[i] = &qrysmpb.Validator{
 			PublicKey: k,
 		}
 		syncCommittee.Pubkeys = append(syncCommittee.Pubkeys, bytesutil.PadTo(k, 48))
 	}
 
-	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: validators,
 	})
 	require.NoError(t, err)
@@ -246,18 +246,18 @@ func TestCurrentEpochSyncSubcommitteeIndices_UsingCommittee(t *testing.T) {
 func TestCurrentEpochSyncSubcommitteeIndices_DoesNotExist(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
-	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{}
-	for i := 0; i < len(validators); i++ {
+	validators := make([]*qrysmpb.Validator, params.BeaconConfig().SyncCommitteeSize)
+	syncCommittee := &qrysmpb.SyncCommittee{}
+	for i := range validators {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
-		validators[i] = &zondpb.Validator{
+		validators[i] = &qrysmpb.Validator{
 			PublicKey: k,
 		}
 		syncCommittee.Pubkeys = append(syncCommittee.Pubkeys, bytesutil.PadTo(k, 48))
 	}
 
-	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: validators,
 	})
 	require.NoError(t, err)
@@ -272,18 +272,18 @@ func TestCurrentEpochSyncSubcommitteeIndices_DoesNotExist(t *testing.T) {
 func TestNextEpochSyncSubcommitteeIndices_UsingCache(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
-	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{}
-	for i := 0; i < len(validators); i++ {
+	validators := make([]*qrysmpb.Validator, params.BeaconConfig().SyncCommitteeSize)
+	syncCommittee := &qrysmpb.SyncCommittee{}
+	for i := range validators {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
-		validators[i] = &zondpb.Validator{
+		validators[i] = &qrysmpb.Validator{
 			PublicKey: k,
 		}
 		syncCommittee.Pubkeys = append(syncCommittee.Pubkeys, bytesutil.PadTo(k, 48))
 	}
 
-	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: validators,
 	})
 	require.NoError(t, err)
@@ -299,18 +299,18 @@ func TestNextEpochSyncSubcommitteeIndices_UsingCache(t *testing.T) {
 }
 
 func TestNextEpochSyncSubcommitteeIndices_UsingCommittee(t *testing.T) {
-	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{}
-	for i := 0; i < len(validators); i++ {
+	validators := make([]*qrysmpb.Validator, params.BeaconConfig().SyncCommitteeSize)
+	syncCommittee := &qrysmpb.SyncCommittee{}
+	for i := range validators {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
-		validators[i] = &zondpb.Validator{
+		validators[i] = &qrysmpb.Validator{
 			PublicKey: k,
 		}
 		syncCommittee.Pubkeys = append(syncCommittee.Pubkeys, bytesutil.PadTo(k, 48))
 	}
 
-	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: validators,
 	})
 	require.NoError(t, err)
@@ -325,18 +325,18 @@ func TestNextEpochSyncSubcommitteeIndices_UsingCommittee(t *testing.T) {
 func TestNextEpochSyncSubcommitteeIndices_DoesNotExist(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
-	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{}
-	for i := 0; i < len(validators); i++ {
+	validators := make([]*qrysmpb.Validator, params.BeaconConfig().SyncCommitteeSize)
+	syncCommittee := &qrysmpb.SyncCommittee{}
+	for i := range validators {
 		k := make([]byte, 48)
 		copy(k, strconv.Itoa(i))
-		validators[i] = &zondpb.Validator{
+		validators[i] = &qrysmpb.Validator{
 			PublicKey: k,
 		}
 		syncCommittee.Pubkeys = append(syncCommittee.Pubkeys, bytesutil.PadTo(k, 48))
 	}
 
-	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: validators,
 	})
 	require.NoError(t, err)
@@ -349,14 +349,14 @@ func TestNextEpochSyncSubcommitteeIndices_DoesNotExist(t *testing.T) {
 }
 
 func TestUpdateSyncCommitteeCache_BadSlot(t *testing.T) {
-	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Slot: 1,
 	})
 	require.NoError(t, err)
 	err = UpdateSyncCommitteeCache(state)
 	require.ErrorContains(t, "not at the end of the epoch to update cache", err)
 
-	state, err = state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	state, err = state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Slot: params.BeaconConfig().SlotsPerEpoch - 1,
 	})
 	require.NoError(t, err)
@@ -365,9 +365,9 @@ func TestUpdateSyncCommitteeCache_BadSlot(t *testing.T) {
 }
 
 func TestUpdateSyncCommitteeCache_BadRoot(t *testing.T) {
-	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Slot:              primitives.Slot(params.BeaconConfig().EpochsPerSyncCommitteePeriod)*params.BeaconConfig().SlotsPerEpoch - 1,
-		LatestBlockHeader: &zondpb.BeaconBlockHeader{StateRoot: params.BeaconConfig().ZeroHash[:]},
+		LatestBlockHeader: &qrysmpb.BeaconBlockHeader{StateRoot: params.BeaconConfig().ZeroHash[:]},
 	})
 	require.NoError(t, err)
 	err = UpdateSyncCommitteeCache(state)
@@ -377,22 +377,22 @@ func TestUpdateSyncCommitteeCache_BadRoot(t *testing.T) {
 func TestIsCurrentEpochSyncCommittee_SameBlockRoot(t *testing.T) {
 	ClearCache()
 	defer ClearCache()
-	validators := make([]*zondpb.Validator, params.BeaconConfig().SyncCommitteeSize)
-	syncCommittee := &zondpb.SyncCommittee{}
-	for i := 0; i < len(validators); i++ {
-		k := make([]byte, field_params.DilithiumPubkeyLength)
+	validators := make([]*qrysmpb.Validator, params.BeaconConfig().SyncCommitteeSize)
+	syncCommittee := &qrysmpb.SyncCommittee{}
+	for i := range validators {
+		k := make([]byte, field_params.MLDSA87PubkeyLength)
 		copy(k, strconv.Itoa(i))
-		validators[i] = &zondpb.Validator{
+		validators[i] = &qrysmpb.Validator{
 			PublicKey: k,
 		}
-		syncCommittee.Pubkeys = append(syncCommittee.Pubkeys, bytesutil.PadTo(k, field_params.DilithiumPubkeyLength))
+		syncCommittee.Pubkeys = append(syncCommittee.Pubkeys, bytesutil.PadTo(k, field_params.MLDSA87PubkeyLength))
 	}
 
 	blockRoots := make([][]byte, params.BeaconConfig().SlotsPerHistoricalRoot)
 	for i := range blockRoots {
 		blockRoots[i] = make([]byte, 32)
 	}
-	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: validators,
 		BlockRoots: blockRoots,
 	})

@@ -182,7 +182,7 @@ func (h *mockHistory) validateRoots() error {
 		b := h.blocks[root]
 		htr, err := b.Block().HashTreeRoot()
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("error computing htr for block at slot %d", s))
+			return errors.Wrapf(err, "error computing htr for block at slot %d", s)
 		}
 		if htr != root {
 			return fmt.Errorf("htr mismatch, expected=%#x, actual=%#x", root, htr)
@@ -208,7 +208,7 @@ func newMockHistory(t *testing.T, hist []mockHistorySpec, current primitives.Slo
 	}
 
 	// genesis state for history
-	gs, _ := util.DeterministicGenesisStateCapella(t, 32)
+	gs, _ := util.DeterministicGenesisStateZond(t, 32)
 	gsr, err := gs.HashTreeRoot(ctx)
 	require.NoError(t, err)
 
@@ -231,7 +231,7 @@ func newMockHistory(t *testing.T, hist []mockHistorySpec, current primitives.Slo
 		require.NoError(t, err)
 
 		// create proposer block, setting values in the order seen in the validator.md spec
-		b, err := consensusblocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
+		b, err := consensusblocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
 		require.NoError(t, err)
 
 		// set slot to mock history spec value

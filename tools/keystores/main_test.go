@@ -11,9 +11,9 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
 	"github.com/theQRL/qrysm/config/params"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	keystorev1 "github.com/theQRL/qrysm/pkg/go-qrl-wallet-encryptor-keystore"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/validator/keymanager"
@@ -25,7 +25,7 @@ const password = "secretPassw0rd$1999"
 type cliConfig struct {
 	keystoresPath string
 	password      string
-	privateKey    string
+	seed          string
 	outputPath    string
 }
 
@@ -37,20 +37,20 @@ func setupCliContext(
 	set := flag.NewFlagSet("test", 0)
 	set.String(keystoresFlag.Name, conf.keystoresPath, "")
 	set.String(passwordFlag.Name, conf.password, "")
-	set.String(privateKeyFlag.Name, conf.privateKey, "")
+	set.String(seedFlag.Name, conf.seed, "")
 	set.String(outputPathFlag.Name, conf.outputPath, "")
 	assert.NoError(tb, set.Set(keystoresFlag.Name, conf.keystoresPath))
 	assert.NoError(tb, set.Set(passwordFlag.Name, conf.password))
-	assert.NoError(tb, set.Set(privateKeyFlag.Name, conf.privateKey))
+	assert.NoError(tb, set.Set(seedFlag.Name, conf.seed))
 	assert.NoError(tb, set.Set(outputPathFlag.Name, conf.outputPath))
 	return cli.NewContext(&app, set, nil)
 }
 
-func createRandomKeystore(t testing.TB, password string) (*keymanager.Keystore, dilithium.DilithiumKey) {
-	encryptor := keystorev4.New()
+func createRandomKeystore(t testing.TB, password string) (*keymanager.Keystore, ml_dsa_87.MLDSA87Key) {
+	encryptor := keystorev1.New()
 	id, err := uuid.NewRandom()
 	require.NoError(t, err)
-	validatingKey, err := dilithium.RandKey()
+	validatingKey, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
 	pubKey := validatingKey.PublicKey().Marshal()
 	cryptoFields, err := encryptor.Encrypt(validatingKey.Marshal(), password)
@@ -111,13 +111,13 @@ func TestDecrypt(t *testing.T) {
 func TestEncrypt(t *testing.T) {
 	keystoresDir := setupRandomDir(t)
 	keystoreFilePath := filepath.Join(keystoresDir, "keystore.json")
-	privKey, err := dilithium.RandKey()
+	privKey, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
 
 	cliCtx := setupCliContext(t, &cliConfig{
 		outputPath: keystoreFilePath,
 		password:   password,
-		privateKey: fmt.Sprintf("%#x", privKey.Marshal()),
+		seed:       fmt.Sprintf("%#x", privKey.Marshal()),
 	})
 
 	rescueStdout := os.Stdout

@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // BeaconState has read and write access to beacon state methods.
@@ -46,7 +46,7 @@ type ReadOnlyBeaconState interface {
 	ReadOnlyBlockRoots
 	ReadOnlyStateRoots
 	ReadOnlyRandaoMixes
-	ReadOnlyEth1Data
+	ReadOnlyExecutionData
 	ReadOnlyValidators
 	ReadOnlyBalances
 	ReadOnlyCheckpoint
@@ -54,15 +54,15 @@ type ReadOnlyBeaconState interface {
 	ReadOnlyParticipation
 	ReadOnlyInactivity
 	ReadOnlySyncCommittee
-	ToProtoUnsafe() interface{}
-	ToProto() interface{}
+	ToProtoUnsafe() any
+	ToProto() any
 	GenesisTime() uint64
 	GenesisValidatorsRoot() []byte
 	Slot() primitives.Slot
-	Fork() *zondpb.Fork
-	LatestBlockHeader() *zondpb.BeaconBlockHeader
+	Fork() *qrysmpb.Fork
+	LatestBlockHeader() *qrysmpb.BeaconBlockHeader
 	HistoricalRoots() ([][]byte, error)
-	HistoricalSummaries() ([]*zondpb.HistoricalSummary, error)
+	HistoricalSummaries() ([]*qrysmpb.HistoricalSummary, error)
 	Slashings() []uint64
 	FieldReferencesCount() map[string]uint64
 	MarshalSSZ() ([]byte, error)
@@ -76,7 +76,7 @@ type WriteOnlyBeaconState interface {
 	WriteOnlyBlockRoots
 	WriteOnlyStateRoots
 	WriteOnlyRandaoMixes
-	WriteOnlyEth1Data
+	WriteOnlyExecutionData
 	WriteOnlyValidators
 	WriteOnlyBalances
 	WriteOnlyCheckpoint
@@ -86,12 +86,12 @@ type WriteOnlyBeaconState interface {
 	SetGenesisTime(val uint64) error
 	SetGenesisValidatorsRoot(val []byte) error
 	SetSlot(val primitives.Slot) error
-	SetFork(val *zondpb.Fork) error
-	SetLatestBlockHeader(val *zondpb.BeaconBlockHeader) error
+	SetFork(val *qrysmpb.Fork) error
+	SetLatestBlockHeader(val *qrysmpb.BeaconBlockHeader) error
 	SetHistoricalRoots(val [][]byte) error
 	SetSlashings(val []uint64) error
 	UpdateSlashingsAtIndex(idx, val uint64) error
-	AppendHistoricalSummaries(*zondpb.HistoricalSummary) error
+	AppendHistoricalSummaries(*qrysmpb.HistoricalSummary) error
 	SetLatestExecutionPayloadHeader(payload interfaces.ExecutionData) error
 	SetNextWithdrawalIndex(i uint64) error
 	SetNextWithdrawalValidatorIndex(i primitives.ValidatorIndex) error
@@ -104,7 +104,7 @@ type ReadOnlyValidator interface {
 	ActivationEpoch() primitives.Epoch
 	WithdrawableEpoch() primitives.Epoch
 	ExitEpoch() primitives.Epoch
-	PublicKey() [field_params.DilithiumPubkeyLength]byte
+	PublicKey() [field_params.MLDSA87PubkeyLength]byte
 	WithdrawalCredentials() []byte
 	Slashed() bool
 	IsNil() bool
@@ -112,11 +112,11 @@ type ReadOnlyValidator interface {
 
 // ReadOnlyValidators defines a struct which only has read access to validators methods.
 type ReadOnlyValidators interface {
-	Validators() []*zondpb.Validator
-	ValidatorAtIndex(idx primitives.ValidatorIndex) (*zondpb.Validator, error)
+	Validators() []*qrysmpb.Validator
+	ValidatorAtIndex(idx primitives.ValidatorIndex) (*qrysmpb.Validator, error)
 	ValidatorAtIndexReadOnly(idx primitives.ValidatorIndex) (ReadOnlyValidator, error)
-	ValidatorIndexByPubkey(key [field_params.DilithiumPubkeyLength]byte) (primitives.ValidatorIndex, bool)
-	PubkeyAtIndex(idx primitives.ValidatorIndex) [field_params.DilithiumPubkeyLength]byte
+	ValidatorIndexByPubkey(key [field_params.MLDSA87PubkeyLength]byte) (primitives.ValidatorIndex, bool)
+	PubkeyAtIndex(idx primitives.ValidatorIndex) [field_params.MLDSA87PubkeyLength]byte
 	NumValidators() int
 	ReadFromEveryValidator(f func(idx int, val ReadOnlyValidator) error) error
 }
@@ -130,11 +130,11 @@ type ReadOnlyBalances interface {
 
 // ReadOnlyCheckpoint defines a struct which only has read access to checkpoint methods.
 type ReadOnlyCheckpoint interface {
-	PreviousJustifiedCheckpoint() *zondpb.Checkpoint
-	CurrentJustifiedCheckpoint() *zondpb.Checkpoint
-	MatchCurrentJustifiedCheckpoint(c *zondpb.Checkpoint) bool
-	MatchPreviousJustifiedCheckpoint(c *zondpb.Checkpoint) bool
-	FinalizedCheckpoint() *zondpb.Checkpoint
+	PreviousJustifiedCheckpoint() *qrysmpb.Checkpoint
+	CurrentJustifiedCheckpoint() *qrysmpb.Checkpoint
+	MatchCurrentJustifiedCheckpoint(c *qrysmpb.Checkpoint) bool
+	MatchPreviousJustifiedCheckpoint(c *qrysmpb.Checkpoint) bool
+	FinalizedCheckpoint() *qrysmpb.Checkpoint
 	FinalizedCheckpointEpoch() primitives.Epoch
 	JustificationBits() bitfield.Bitvector4
 	UnrealizedCheckpointBalances() (uint64, uint64, uint64, error)
@@ -159,11 +159,11 @@ type ReadOnlyRandaoMixes interface {
 	RandaoMixesLength() int
 }
 
-// ReadOnlyEth1Data defines a struct which only has read access to eth1 data methods.
-type ReadOnlyEth1Data interface {
-	Eth1Data() *zondpb.Eth1Data
-	Eth1DataVotes() []*zondpb.Eth1Data
-	Eth1DepositIndex() uint64
+// ReadOnlyExecutionData defines a struct which only has read access to execution data methods.
+type ReadOnlyExecutionData interface {
+	ExecutionData() *qrysmpb.ExecutionData
+	ExecutionDataVotes() []*qrysmpb.ExecutionData
+	ExecutionDepositIndex() uint64
 }
 
 // ReadOnlyWithdrawals defines a struct which only has read access to withdrawal methods.
@@ -186,8 +186,8 @@ type ReadOnlyInactivity interface {
 
 // ReadOnlySyncCommittee defines a struct which only has read access to sync committee methods.
 type ReadOnlySyncCommittee interface {
-	CurrentSyncCommittee() (*zondpb.SyncCommittee, error)
-	NextSyncCommittee() (*zondpb.SyncCommittee, error)
+	CurrentSyncCommittee() (*qrysmpb.SyncCommittee, error)
+	NextSyncCommittee() (*qrysmpb.SyncCommittee, error)
 }
 
 // WriteOnlyBlockRoots defines a struct which only has write access to block roots methods.
@@ -202,20 +202,20 @@ type WriteOnlyStateRoots interface {
 	UpdateStateRootAtIndex(idx uint64, stateRoot [32]byte) error
 }
 
-// WriteOnlyEth1Data defines a struct which only has write access to eth1 data methods.
-type WriteOnlyEth1Data interface {
-	SetEth1Data(val *zondpb.Eth1Data) error
-	SetEth1DataVotes(val []*zondpb.Eth1Data) error
-	AppendEth1DataVotes(val *zondpb.Eth1Data) error
-	SetEth1DepositIndex(val uint64) error
+// WriteOnlyExecutionData defines a struct which only has write access to execution data methods.
+type WriteOnlyExecutionData interface {
+	SetExecutionData(val *qrysmpb.ExecutionData) error
+	SetExecutionDataVotes(val []*qrysmpb.ExecutionData) error
+	AppendExecutionDataVotes(val *qrysmpb.ExecutionData) error
+	SetExecutionDepositIndex(val uint64) error
 }
 
 // WriteOnlyValidators defines a struct which only has write access to validators methods.
 type WriteOnlyValidators interface {
-	SetValidators(val []*zondpb.Validator) error
-	ApplyToEveryValidator(f func(idx int, val *zondpb.Validator) (bool, *zondpb.Validator, error)) error
-	UpdateValidatorAtIndex(idx primitives.ValidatorIndex, val *zondpb.Validator) error
-	AppendValidator(val *zondpb.Validator) error
+	SetValidators(val []*qrysmpb.Validator) error
+	ApplyToEveryValidator(f func(idx int, val *qrysmpb.Validator) (bool, *qrysmpb.Validator, error)) error
+	UpdateValidatorAtIndex(idx primitives.ValidatorIndex, val *qrysmpb.Validator) error
+	AppendValidator(val *qrysmpb.Validator) error
 }
 
 // WriteOnlyBalances defines a struct which only has write access to balances methods.
@@ -233,9 +233,9 @@ type WriteOnlyRandaoMixes interface {
 
 // WriteOnlyCheckpoint defines a struct which only has write access to check point methods.
 type WriteOnlyCheckpoint interface {
-	SetFinalizedCheckpoint(val *zondpb.Checkpoint) error
-	SetPreviousJustifiedCheckpoint(val *zondpb.Checkpoint) error
-	SetCurrentJustifiedCheckpoint(val *zondpb.Checkpoint) error
+	SetFinalizedCheckpoint(val *qrysmpb.Checkpoint) error
+	SetPreviousJustifiedCheckpoint(val *qrysmpb.Checkpoint) error
+	SetCurrentJustifiedCheckpoint(val *qrysmpb.Checkpoint) error
 	SetJustificationBits(val bitfield.Bitvector4) error
 }
 
@@ -257,6 +257,6 @@ type WriteOnlyInactivity interface {
 
 // WriteOnlySyncCommittee defines a struct which only has write access to sync committee methods.
 type WriteOnlySyncCommittee interface {
-	SetCurrentSyncCommittee(val *zondpb.SyncCommittee) error
-	SetNextSyncCommittee(val *zondpb.SyncCommittee) error
+	SetCurrentSyncCommittee(val *qrysmpb.SyncCommittee) error
+	SetNextSyncCommittee(val *qrysmpb.SyncCommittee) error
 }

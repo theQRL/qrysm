@@ -3,7 +3,6 @@
 package blockchain
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"runtime"
@@ -11,27 +10,25 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/async/event"
 	"github.com/theQRL/qrysm/beacon-chain/cache"
 	statefeed "github.com/theQRL/qrysm/beacon-chain/core/feed/state"
 	"github.com/theQRL/qrysm/beacon-chain/db"
 	"github.com/theQRL/qrysm/beacon-chain/execution"
 	f "github.com/theQRL/qrysm/beacon-chain/forkchoice"
-	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
 	"github.com/theQRL/qrysm/beacon-chain/operations/attestations"
-	"github.com/theQRL/qrysm/beacon-chain/operations/dilithiumtoexec"
 	"github.com/theQRL/qrysm/beacon-chain/operations/slashings"
 	"github.com/theQRL/qrysm/beacon-chain/operations/voluntaryexits"
 	"github.com/theQRL/qrysm/beacon-chain/p2p"
 	"github.com/theQRL/qrysm/beacon-chain/startup"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
-	"github.com/theQRL/qrysm/config/features"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	qrysmTime "github.com/theQRL/qrysm/time"
 	"github.com/theQRL/qrysm/time/slots"
 )
@@ -67,7 +64,6 @@ type config struct {
 	AttPool                 attestations.Pool
 	ExitPool                voluntaryexits.PoolManager
 	SlashingPool            slashings.PoolManager
-	DilithiumToExecPool     dilithiumtoexec.PoolManager
 	P2p                     p2p.Broadcaster
 	MaxRoutines             int
 	StateNotifier           statefeed.Notifier
@@ -75,8 +71,8 @@ type config struct {
 	AttService              *attestations.Service
 	StateGen                *stategen.State
 	SlasherAttestationsFeed *event.Feed
-	WeakSubjectivityCheckpt *zondpb.Checkpoint
-	BlockFetcher            execution.POWBlockFetcher
+	WeakSubjectivityCheckpt *qrysmpb.Checkpoint
+	BlockFetcher            execution.ExecutionBlockFetcher
 	FinalizedStateAtStartUp state.BeaconState
 	ExecutionEngineCaller   execution.EngineCaller
 }
@@ -115,6 +111,7 @@ func NewService(ctx context.Context, opts ...Option) (*Service, error) {
 // Start a blockchain service's main event loop.
 func (s *Service) Start() {
 	saved := s.cfg.FinalizedStateAtStartUp
+	defer s.removeStartupState()
 
 	if saved != nil && !saved.IsNil() {
 		if err := s.StartFromSavedState(saved); err != nil {
@@ -179,61 +176,19 @@ func (s *Service) StartFromSavedState(saved state.BeaconState) error {
 		return err
 	}
 	s.originBlockRoot = originRoot
-
-	if err := s.initializeHeadFromDB(s.ctx); err != nil {
-		return errors.Wrap(err, "could not set up chain info")
+	st, err := s.cfg.StateGen.Resume(s.ctx, s.cfg.FinalizedStateAtStartUp)
+	if err != nil {
+		return errors.Wrap(err, "could not get finalized state from db")
 	}
 	spawnCountdownIfPreGenesis(s.ctx, s.genesisTime, s.cfg.BeaconDB)
-
-	justified, err := s.cfg.BeaconDB.JustifiedCheckpoint(s.ctx)
-	if err != nil {
-		return errors.Wrap(err, "could not get justified checkpoint")
-	}
-	if justified == nil {
-		return errNilJustifiedCheckpoint
-	}
-	finalized, err := s.cfg.BeaconDB.FinalizedCheckpoint(s.ctx)
-	if err != nil {
-		return errors.Wrap(err, "could not get finalized checkpoint")
-	}
-	if finalized == nil {
-		return errNilFinalizedCheckpoint
+	if err := s.setupForkchoice(st); err != nil {
+		return errors.Wrap(err, "could not set up forkchoice")
 	}
 
-	fRoot := s.ensureRootNotZeros(bytesutil.ToBytes32(finalized.Root))
-	s.cfg.ForkChoiceStore.Lock()
-	defer s.cfg.ForkChoiceStore.Unlock()
-	if err := s.cfg.ForkChoiceStore.UpdateJustifiedCheckpoint(s.ctx, &forkchoicetypes.Checkpoint{Epoch: justified.Epoch,
-		Root: bytesutil.ToBytes32(justified.Root)}); err != nil {
-		return errors.Wrap(err, "could not update forkchoice's justified checkpoint")
-	}
-	if err := s.cfg.ForkChoiceStore.UpdateFinalizedCheckpoint(&forkchoicetypes.Checkpoint{Epoch: finalized.Epoch,
-		Root: bytesutil.ToBytes32(finalized.Root)}); err != nil {
-		return errors.Wrap(err, "could not update forkchoice's finalized checkpoint")
-	}
-	s.cfg.ForkChoiceStore.SetGenesisTime(uint64(s.genesisTime.Unix()))
-
-	st, err := s.cfg.StateGen.StateByRoot(s.ctx, fRoot)
-	if err != nil {
-		return errors.Wrap(err, "could not get finalized checkpoint state")
-	}
-	if err := s.cfg.ForkChoiceStore.InsertNode(s.ctx, st, fRoot); err != nil {
-		return errors.Wrap(err, "could not insert finalized block to forkchoice")
-	}
-	if !features.Get().EnableStartOptimistic {
-		lastValidatedCheckpoint, err := s.cfg.BeaconDB.LastValidatedCheckpoint(s.ctx)
-		if err != nil {
-			return errors.Wrap(err, "could not get last validated checkpoint")
-		}
-		if bytes.Equal(finalized.Root, lastValidatedCheckpoint.Root) {
-			if err := s.cfg.ForkChoiceStore.SetOptimisticToValid(s.ctx, fRoot); err != nil {
-				return errors.Wrap(err, "could not set finalized block as validated")
-			}
-		}
-	}
 	// not attempting to save initial sync blocks here, because there shouldn't be any until
 	// after the statefeed.Initialized event is fired (below)
-	if err := s.wsVerifier.VerifyWeakSubjectivity(s.ctx, finalized.Epoch); err != nil {
+	cp := s.FinalizedCheckpt()
+	if err := s.wsVerifier.VerifyWeakSubjectivity(s.ctx, cp.Epoch); err != nil {
 		// Exit run time if the node failed to verify weak subjectivity checkpoint.
 		return errors.Wrap(err, "could not verify initial checkpoint provided for chain sync")
 	}
@@ -272,45 +227,36 @@ func (s *Service) originRootFromSavedState(ctx context.Context) ([32]byte, error
 	return genesisBlkRoot, nil
 }
 
-// initializeHeadFromDB uses the finalized checkpoint and head block found in the database to set the current head.
+// initializeHead uses the finalized checkpoint and head block root from forkchoice to set the current head.
 // Note that this may block until stategen replays blocks between the finalized and head blocks
 // if the head sync flag was specified and the gap between the finalized and head blocks is at least 128 epochs long.
-func (s *Service) initializeHeadFromDB(ctx context.Context) error {
-	finalized, err := s.cfg.BeaconDB.FinalizedCheckpoint(ctx)
-	if err != nil {
-		return errors.Wrap(err, "could not get finalized checkpoint from db")
-	}
-	if finalized == nil {
-		// This should never happen. At chain start, the finalized checkpoint
-		// would be the genesis state and block.
-		return errors.New("no finalized epoch in the database")
-	}
-	finalizedRoot := s.ensureRootNotZeros(bytesutil.ToBytes32(finalized.Root))
-	var finalizedState state.BeaconState
-
-	finalizedState, err = s.cfg.StateGen.Resume(ctx, s.cfg.FinalizedStateAtStartUp)
-	if err != nil {
-		return errors.Wrap(err, "could not get finalized state from db")
-	}
-
-	if finalizedState == nil || finalizedState.IsNil() {
+func (s *Service) initializeHead(ctx context.Context, st state.BeaconState) error {
+	cp := s.FinalizedCheckpt()
+	fRoot := s.ensureRootNotZeros([32]byte(cp.Root))
+	if st == nil || st.IsNil() {
 		return errors.New("finalized state can't be nil")
 	}
 
-	finalizedBlock, err := s.getBlock(ctx, finalizedRoot)
+	s.cfg.ForkChoiceStore.RLock()
+	root := s.cfg.ForkChoiceStore.HighestReceivedBlockRoot()
+	s.cfg.ForkChoiceStore.RUnlock()
+	blk, err := s.cfg.BeaconDB.Block(ctx, root)
 	if err != nil {
-		return errors.Wrap(err, "could not get finalized block")
+		return errors.Wrap(err, "could not get head block")
 	}
-	if err := s.setHead(&head{
-		finalizedRoot,
-		finalizedBlock,
-		finalizedState,
-		finalizedBlock.Block().Slot(),
-		false,
-	}); err != nil {
+	if root != fRoot {
+		st, err = s.cfg.StateGen.StateByRoot(ctx, root)
+		if err != nil {
+			return errors.Wrap(err, "could not get head state")
+		}
+	}
+	if err := s.setHead(&head{root, blk, st, blk.Block().Slot(), false}); err != nil {
 		return errors.Wrap(err, "could not set head")
 	}
-
+	log.WithFields(logrus.Fields{
+		"root": fmt.Sprintf("%#x", root),
+		"slot": blk.Block().Slot(),
+	}).Info("Initialized head block from DB")
 	return nil
 }
 
@@ -333,7 +279,11 @@ func (s *Service) saveGenesisData(ctx context.Context, genesisState state.Beacon
 
 	s.cfg.ForkChoiceStore.Lock()
 	defer s.cfg.ForkChoiceStore.Unlock()
-	if err := s.cfg.ForkChoiceStore.InsertNode(ctx, genesisState, genesisBlkRoot); err != nil {
+	gb, err := blocks.NewROBlockWithRoot(genesisBlk, genesisBlkRoot)
+	if err != nil {
+		return err
+	}
+	if err := s.cfg.ForkChoiceStore.InsertNode(ctx, genesisState, gb); err != nil {
 		log.WithError(err).Fatal("Could not process genesis block for fork choice")
 	}
 	s.cfg.ForkChoiceStore.SetOriginRoot(genesisBlkRoot)
@@ -366,6 +316,13 @@ func (s *Service) hasBlock(ctx context.Context, root [32]byte) bool {
 	}
 
 	return s.cfg.BeaconDB.HasBlock(ctx, root)
+}
+
+// removeStartupState releases the (potentially multi-MB) finalized-state
+// reference once the service has finished consuming it during startup, so
+// it can be garbage-collected instead of living for the process lifetime.
+func (s *Service) removeStartupState() {
+	s.cfg.FinalizedStateAtStartUp = nil
 }
 
 func spawnCountdownIfPreGenesis(ctx context.Context, genesisTime time.Time, db db.HeadAccessDatabase) {

@@ -4,10 +4,10 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/accounts/keystore"
+	"github.com/theQRL/go-qrl/accounts/keystore"
 )
 
-// KeyFromPath should only be used in endtoend tests. It is a simple helper to init a gzond keystore.Key from a file.
+// KeyFromPath should only be used in endtoend tests. It is a simple helper to init a gqrl keystore.Key from a file.
 func KeyFromPath(path, pw string) (*keystore.Key, error) {
 	jsonb, err := os.ReadFile(path) // #nosec G304 -- for endtoend use only
 	if err != nil {

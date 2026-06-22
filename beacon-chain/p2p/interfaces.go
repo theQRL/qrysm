@@ -9,10 +9,10 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/metadata"
 	"google.golang.org/protobuf/proto"
 )
@@ -33,8 +33,8 @@ type P2P interface {
 // Broadcaster broadcasts messages to peers over the p2p pubsub protocol.
 type Broadcaster interface {
 	Broadcast(context.Context, proto.Message) error
-	BroadcastAttestation(ctx context.Context, subnet uint64, att *zondpb.Attestation) error
-	BroadcastSyncCommitteeMessage(ctx context.Context, subnet uint64, sMsg *zondpb.SyncCommitteeMessage) error
+	BroadcastAttestation(ctx context.Context, subnet uint64, att *qrysmpb.Attestation) error
+	BroadcastSyncCommitteeMessage(ctx context.Context, subnet uint64, sMsg *qrysmpb.SyncCommitteeMessage) error
 }
 
 // SetStreamHandler configures p2p to handle streams of a certain topic ID.
@@ -79,16 +79,16 @@ type PeerManager interface {
 	Disconnect(peer.ID) error
 	PeerID() peer.ID
 	Host() host.Host
-	ENR() *enr.Record
+	QNR() *qnr.Record
 	DiscoveryAddresses() ([]multiaddr.Multiaddr, error)
-	RefreshENR()
+	RefreshQNR()
 	FindPeersWithSubnet(ctx context.Context, topic string, subIndex uint64, threshold int) (bool, error)
 	AddPingMethod(reqFunc func(ctx context.Context, id peer.ID) error)
 }
 
 // Sender abstracts the sending functionality from libp2p.
 type Sender interface {
-	Send(context.Context, interface{}, string, peer.ID) (network.Stream, error)
+	Send(context.Context, any, string, peer.ID) (network.Stream, error)
 }
 
 // PeersProvider abstracts obtaining our current list of known peers status.

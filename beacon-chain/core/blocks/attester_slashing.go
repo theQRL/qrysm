@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/container/slice"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/slashings"
 	"github.com/theQRL/qrysm/runtime/version"
@@ -40,7 +40,7 @@ import (
 func ProcessAttesterSlashings(
 	ctx context.Context,
 	beaconState state.BeaconState,
-	slashings []*zondpb.AttesterSlashing,
+	slashings []*qrysmpb.AttesterSlashing,
 	slashFunc slashValidatorFunc,
 ) (state.BeaconState, error) {
 	var err error
@@ -53,16 +53,56 @@ func ProcessAttesterSlashings(
 	return beaconState, nil
 }
 
+// ProcessAttesterSlashingsNoVerify processes attester slashings without verifying them.
+// This is useful in scenarios such as block reward calculation, where we can assume the data
+// in the block is valid.
+func ProcessAttesterSlashingsNoVerify(
+	ctx context.Context,
+	beaconState state.BeaconState,
+	slashings []*qrysmpb.AttesterSlashing,
+	slashFunc slashValidatorFunc,
+) (state.BeaconState, error) {
+	var err error
+	for _, slashing := range slashings {
+		beaconState, err = ProcessAttesterSlashingNoVerify(ctx, beaconState, slashing, slashFunc)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return beaconState, nil
+}
+
 // ProcessAttesterSlashing processes individual attester slashing.
 func ProcessAttesterSlashing(
 	ctx context.Context,
 	beaconState state.BeaconState,
-	slashing *zondpb.AttesterSlashing,
+	slashing *qrysmpb.AttesterSlashing,
 	slashFunc slashValidatorFunc,
 ) (state.BeaconState, error) {
 	if err := VerifyAttesterSlashing(ctx, beaconState, slashing); err != nil {
 		return nil, errors.Wrap(err, "could not verify attester slashing")
 	}
+	return processAttesterSlashing(ctx, beaconState, slashing, slashFunc)
+}
+
+// ProcessAttesterSlashingNoVerify processes individual attester slashing without verifying it.
+// This is useful in scenarios such as block reward calculation, where we can assume the data
+// in the block is valid.
+func ProcessAttesterSlashingNoVerify(
+	ctx context.Context,
+	beaconState state.BeaconState,
+	slashing *qrysmpb.AttesterSlashing,
+	slashFunc slashValidatorFunc,
+) (state.BeaconState, error) {
+	return processAttesterSlashing(ctx, beaconState, slashing, slashFunc)
+}
+
+func processAttesterSlashing(
+	ctx context.Context,
+	beaconState state.BeaconState,
+	slashing *qrysmpb.AttesterSlashing,
+	slashFunc slashValidatorFunc,
+) (state.BeaconState, error) {
 	slashableIndices := SlashableAttesterIndices(slashing)
 	sort.SliceStable(slashableIndices, func(i, j int) bool {
 		return slashableIndices[i] < slashableIndices[j]
@@ -80,7 +120,7 @@ func ProcessAttesterSlashing(
 			cfg := params.BeaconConfig()
 			var slashingQuotient uint64
 			switch {
-			case beaconState.Version() == version.Capella:
+			case beaconState.Version() == version.Zond:
 				slashingQuotient = cfg.MinSlashingPenaltyQuotient
 			default:
 				return nil, errors.New("unknown state version")
@@ -100,7 +140,7 @@ func ProcessAttesterSlashing(
 }
 
 // VerifyAttesterSlashing validates the attestation data in both attestations in the slashing object.
-func VerifyAttesterSlashing(ctx context.Context, beaconState state.ReadOnlyBeaconState, slashing *zondpb.AttesterSlashing) error {
+func VerifyAttesterSlashing(ctx context.Context, beaconState state.ReadOnlyBeaconState, slashing *qrysmpb.AttesterSlashing) error {
 	if slashing == nil {
 		return errors.New("nil slashing")
 	}
@@ -140,20 +180,20 @@ func VerifyAttesterSlashing(ctx context.Context, beaconState state.ReadOnlyBeaco
 //	     # Surround vote
 //	     (data_1.source.epoch < data_2.source.epoch and data_2.target.epoch < data_1.target.epoch)
 //	 )
-func IsSlashableAttestationData(data1, data2 *zondpb.AttestationData) bool {
+func IsSlashableAttestationData(data1, data2 *qrysmpb.AttestationData) bool {
 	if data1 == nil || data2 == nil || data1.Target == nil || data2.Target == nil || data1.Source == nil || data2.Source == nil {
 		return false
 	}
 	isDoubleVote := !attestation.AttDataIsEqual(data1, data2) && data1.Target.Epoch == data2.Target.Epoch
-	att1 := &zondpb.IndexedAttestation{Data: data1}
-	att2 := &zondpb.IndexedAttestation{Data: data2}
+	att1 := &qrysmpb.IndexedAttestation{Data: data1}
+	att2 := &qrysmpb.IndexedAttestation{Data: data2}
 	// Check if att1 is surrounding att2.
 	isSurroundVote := slashings.IsSurround(att1, att2)
 	return isDoubleVote || isSurroundVote
 }
 
 // SlashableAttesterIndices returns the intersection of attester indices from both attestations in this slashing.
-func SlashableAttesterIndices(slashing *zondpb.AttesterSlashing) []uint64 {
+func SlashableAttesterIndices(slashing *qrysmpb.AttesterSlashing) []uint64 {
 	if slashing == nil || slashing.Attestation_1 == nil || slashing.Attestation_2 == nil {
 		return nil
 	}

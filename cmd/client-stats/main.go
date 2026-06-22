@@ -75,7 +75,7 @@ func main() {
 		case "json":
 			logrus.SetFormatter(&logrus.JSONFormatter{})
 		case "journald":
-			if err := journald.Enable(); err != nil {
+			if err := journald.Enable(level); err != nil {
 				return err
 			}
 		default:

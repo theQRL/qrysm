@@ -15,7 +15,7 @@ import (
 )
 
 // DeserializeRequestBodyIntoContainer deserializes the request's body into an endpoint-specific struct.
-func DeserializeRequestBodyIntoContainer(body io.Reader, requestContainer interface{}) ErrorJson {
+func DeserializeRequestBodyIntoContainer(body io.Reader, requestContainer any) ErrorJson {
 	decoder := json.NewDecoder(body)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&requestContainer); err != nil {
@@ -32,7 +32,7 @@ func DeserializeRequestBodyIntoContainer(body io.Reader, requestContainer interf
 }
 
 // ProcessRequestContainerFields processes fields of an endpoint-specific container according to field tags.
-func ProcessRequestContainerFields(requestContainer interface{}) ErrorJson {
+func ProcessRequestContainerFields(requestContainer any) ErrorJson {
 	if err := processField(requestContainer, []fieldProcessor{
 		{
 			tag: "hex",
@@ -49,7 +49,7 @@ func ProcessRequestContainerFields(requestContainer interface{}) ErrorJson {
 }
 
 // SetRequestBodyToRequestContainer makes the endpoint-specific container the new body of the request.
-func SetRequestBodyToRequestContainer(requestContainer interface{}, req *http.Request) ErrorJson {
+func SetRequestBodyToRequestContainer(requestContainer any, req *http.Request) ErrorJson {
 	// Serialize the struct, which now includes a base64-encoded value, into JSON.
 	j, err := json.Marshal(requestContainer)
 	if err != nil {
@@ -81,7 +81,10 @@ func (m *ApiProxyMiddleware) PrepareRequestForProxying(endpoint Endpoint, req *h
 // ProxyRequest proxies the request to grpc-gateway.
 func (m *ApiProxyMiddleware) ProxyRequest(req *http.Request) (*http.Response, ErrorJson) {
 	// We do not use http.DefaultClient because it does not have any timeout.
-	netClient := &http.Client{Timeout: m.Timeout}
+	netClient := m.ProxyClient
+	if netClient == nil {
+		netClient = &http.Client{Timeout: m.Timeout}
+	}
 	grpcResp, err := netClient.Do(req)
 	if err != nil {
 		if err, ok := err.(net.Error); ok && err.Timeout() {
@@ -142,7 +145,7 @@ func GrpcResponseIsEmpty(grpcResponseBody []byte) bool {
 }
 
 // DeserializeGrpcResponseBodyIntoContainer deserializes the grpc-gateway's response body into an endpoint-specific struct.
-func DeserializeGrpcResponseBodyIntoContainer(body []byte, responseContainer interface{}) ErrorJson {
+func DeserializeGrpcResponseBodyIntoContainer(body []byte, responseContainer any) ErrorJson {
 	if err := json.Unmarshal(body, &responseContainer); err != nil {
 		return InternalServerErrorWithMessage(err, "could not unmarshal response")
 	}
@@ -150,7 +153,7 @@ func DeserializeGrpcResponseBodyIntoContainer(body []byte, responseContainer int
 }
 
 // ProcessMiddlewareResponseFields processes fields of an endpoint-specific container according to field tags.
-func ProcessMiddlewareResponseFields(responseContainer interface{}) ErrorJson {
+func ProcessMiddlewareResponseFields(responseContainer any) ErrorJson {
 	if err := processField(responseContainer, []fieldProcessor{
 		{
 			tag: "hex",
@@ -179,7 +182,7 @@ func ProcessMiddlewareResponseFields(responseContainer interface{}) ErrorJson {
 }
 
 // SerializeMiddlewareResponseIntoJson serializes the endpoint-specific response struct into a JSON representation.
-func SerializeMiddlewareResponseIntoJson(responseContainer interface{}) (jsonResponse []byte, errJson ErrorJson) {
+func SerializeMiddlewareResponseIntoJson(responseContainer any) (jsonResponse []byte, errJson ErrorJson) {
 	j, err := json.Marshal(responseContainer)
 	if err != nil {
 		return nil, InternalServerErrorWithMessage(err, "could not marshal response")

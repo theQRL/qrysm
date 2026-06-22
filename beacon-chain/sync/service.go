@@ -12,6 +12,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	libp2pcore "github.com/libp2p/go-libp2p/core"
+	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	gcache "github.com/patrickmn/go-cache"
@@ -25,19 +26,22 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/db"
 	"github.com/theQRL/qrysm/beacon-chain/execution"
 	"github.com/theQRL/qrysm/beacon-chain/operations/attestations"
-	"github.com/theQRL/qrysm/beacon-chain/operations/dilithiumtoexec"
 	"github.com/theQRL/qrysm/beacon-chain/operations/slashings"
 	"github.com/theQRL/qrysm/beacon-chain/operations/synccommittee"
 	"github.com/theQRL/qrysm/beacon-chain/operations/voluntaryexits"
 	"github.com/theQRL/qrysm/beacon-chain/p2p"
+	p2ptypes "github.com/theQRL/qrysm/beacon-chain/p2p/types"
 	"github.com/theQRL/qrysm/beacon-chain/startup"
 	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
 	lruwrpr "github.com/theQRL/qrysm/cache/lru"
 	"github.com/theQRL/qrysm/config/params"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime"
 	qrysmTime "github.com/theQRL/qrysm/time"
 	"github.com/theQRL/qrysm/time/slots"
+	"github.com/trailofbits/go-mutexasserts"
 )
 
 var _ runtime.Service = (*Service)(nil)
@@ -45,13 +49,16 @@ var _ runtime.Service = (*Service)(nil)
 const rangeLimit uint64 = 1024
 const seenBlockSize = 1000
 const seenUnaggregatedAttSize = 20000
-const seenAggregatedAttSize = 1024
 const seenSyncMsgSize = 1000         // Maximum of 512 sync committee members, 1000 is a safe amount.
 const seenSyncContributionSize = 512 // Maximum of SYNC_COMMITTEE_SIZE as specified by the spec.
 const seenExitSize = 100
 const seenProposerSlashingSize = 100
 const badBlockSize = 1000
 const syncMetricsInterval = 10 * time.Second
+
+// goodbyeShutdownTimeout bounds the total time Stop() spends sending goodbye
+// messages to peers. Declared as a var so tests can shorten it.
+var goodbyeShutdownTimeout = 10 * time.Second
 
 var (
 	// Seconds in one epoch.
@@ -76,7 +83,6 @@ type config struct {
 	exitPool                      voluntaryexits.PoolManager
 	slashingPool                  slashings.PoolManager
 	syncCommsPool                 synccommittee.Pool
-	dilithiumToExecPool           dilithiumtoexec.PoolManager
 	chain                         blockchainService
 	initialSync                   Checker
 	blockNotifier                 blockfeed.Notifier
@@ -106,46 +112,50 @@ type blockchainService interface {
 // Service is responsible for handling all run time p2p related operations as the
 // main entry point for network messages.
 type Service struct {
-	cfg                              *config
-	ctx                              context.Context
-	cancel                           context.CancelFunc
-	slotToPendingBlocks              *gcache.Cache
-	seenPendingBlocks                map[[32]byte]bool
-	blkRootToPendingAtts             map[[32]byte][]*zondpb.SignedAggregateAttestationAndProof
-	subHandler                       *subTopicHandler
-	pendingAttsLock                  sync.RWMutex
-	pendingQueueLock                 sync.RWMutex
-	chainStarted                     *abool.AtomicBool
-	validateBlockLock                sync.RWMutex
-	rateLimiter                      *limiter
-	seenBlockLock                    sync.RWMutex
-	seenBlockCache                   *lru.Cache
-	seenAggregatedAttestationLock    sync.RWMutex
-	seenAggregatedAttestationCache   *lru.Cache
-	seenUnAggregatedAttestationLock  sync.RWMutex
-	seenUnAggregatedAttestationCache *lru.Cache
-	seenExitLock                     sync.RWMutex
-	seenExitCache                    *lru.Cache
-	seenProposerSlashingLock         sync.RWMutex
-	seenProposerSlashingCache        *lru.Cache
-	seenAttesterSlashingLock         sync.RWMutex
-	seenAttesterSlashingCache        map[uint64]bool
-	seenSyncMessageLock              sync.RWMutex
-	seenSyncMessageCache             *lru.Cache
-	seenSyncContributionLock         sync.RWMutex
-	seenSyncContributionCache        *lru.Cache
-	badBlockCache                    *lru.Cache
-	badBlockLock                     sync.RWMutex
-	syncContributionBitsOverlapLock  sync.RWMutex
-	syncContributionBitsOverlapCache *lru.Cache
-	signatureChan                    chan *signatureVerifier
-	clockWaiter                      startup.ClockWaiter
-	initialSyncComplete              chan struct{}
+	cfg                                  *config
+	ctx                                  context.Context
+	cancel                               context.CancelFunc
+	slotToPendingBlocks                  *gcache.Cache
+	seenPendingBlocks                    map[[32]byte]bool
+	blkRootToPendingAtts                 map[[32]byte][]*qrysmpb.SignedAggregateAttestationAndProof
+	subHandler                           *subTopicHandler
+	pendingAttsLock                      sync.RWMutex
+	pendingQueueLock                     sync.RWMutex
+	chainStarted                         *abool.AtomicBool
+	validateBlockLock                    sync.RWMutex
+	rateLimiter                          *limiter
+	seenBlockLock                        sync.RWMutex
+	seenBlockCache                       *lru.Cache
+	seenAggregatedAttestationLock        sync.RWMutex
+	seenAggregatedAttestationByEpoch     map[primitives.Epoch]map[primitives.ValidatorIndex]struct{}
+	seenAggregatedAttestationMaxEpoch    primitives.Epoch
+	seenAggregatedAttestationHasMaxEpoch bool
+	seenUnAggregatedAttestationLock      sync.RWMutex
+	seenUnAggregatedAttestationCache     *lru.Cache
+	seenExitLock                         sync.RWMutex
+	seenExitCache                        *lru.Cache
+	seenProposerSlashingLock             sync.RWMutex
+	seenProposerSlashingCache            *lru.Cache
+	seenAttesterSlashingLock             sync.RWMutex
+	seenAttesterSlashingCache            map[uint64]bool
+	seenSyncMessageLock                  sync.RWMutex
+	seenSyncMessageCache                 *lru.Cache
+	seenSyncContributionLock             sync.RWMutex
+	seenSyncContributionCache            *lru.Cache
+	badBlockCache                        *lru.Cache
+	badBlockLock                         sync.RWMutex
+	syncContributionBitsOverlapLock      sync.RWMutex
+	syncContributionBitsOverlapCache     *lru.Cache
+	signatureChan                        chan *signatureVerifier
+	clockWaiter                          startup.ClockWaiter
+	initialSyncComplete                  chan struct{}
+	subnetPeerSearchesLock               sync.Mutex
+	subnetPeerSearches                   map[string]struct{}
 }
 
 // NewService initializes new regular sync service.
 func NewService(ctx context.Context, opts ...Option) *Service {
-	c := gcache.New(pendingBlockExpTime /* exp time */, 2*pendingBlockExpTime /* prune time */)
+	c := gcache.New(pendingBlockExpTime /* exp time */, 0 /* disable janitor */)
 	ctx, cancel := context.WithCancel(ctx)
 	r := &Service{
 		ctx:                  ctx,
@@ -154,7 +164,7 @@ func NewService(ctx context.Context, opts ...Option) *Service {
 		cfg:                  &config{clock: startup.NewClock(time.Unix(0, 0), [32]byte{})},
 		slotToPendingBlocks:  c,
 		seenPendingBlocks:    make(map[[32]byte]bool),
-		blkRootToPendingAtts: make(map[[32]byte][]*zondpb.SignedAggregateAttestationAndProof),
+		blkRootToPendingAtts: make(map[[32]byte][]*qrysmpb.SignedAggregateAttestationAndProof),
 		signatureChan:        make(chan *signatureVerifier, verifierLimit),
 	}
 	for _, opt := range opts {
@@ -162,6 +172,24 @@ func NewService(ctx context.Context, opts ...Option) *Service {
 			return nil
 		}
 	}
+	r.slotToPendingBlocks.OnEvicted(func(_ string, i interface{}) {
+		if !mutexasserts.RWMutexLocked(&r.pendingQueueLock) {
+			log.Error("pending queue lock is not locked when evicting block from cache")
+			return
+		}
+		blks, ok := i.([]interfaces.ReadOnlySignedBeaconBlock)
+		if !ok {
+			return
+		}
+		for _, blk := range blks {
+			root, err := blk.Block().HashTreeRoot()
+			if err != nil {
+				log.WithError(err).Error("could not hash block")
+				continue
+			}
+			delete(r.seenPendingBlocks, root)
+		}
+	})
 	r.subHandler = newSubTopicHandler()
 	r.rateLimiter = newRateLimiter(r.cfg.p2p)
 	r.initCaches()
@@ -192,10 +220,49 @@ func (s *Service) Start() {
 // Stop the regular sync service.
 func (s *Service) Stop() error {
 	defer func() {
+		s.cancel()
+
 		if s.rateLimiter != nil {
 			s.rateLimiter.free()
 		}
 	}()
+
+	// Say goodbye to all currently connected peers so they don't penalize us
+	// at restart for an unannounced disconnect. Send in parallel and bound the
+	// total wait — sequential sends previously hung shutdown for minutes on
+	// large peer counts. (upstream PR #15542)
+	goodbyeCtx, cancelGoodbye := context.WithTimeout(s.ctx, goodbyeShutdownTimeout)
+	defer cancelGoodbye()
+
+	var wg sync.WaitGroup
+	for _, peerID := range s.cfg.p2p.Peers().Connected() {
+		if s.cfg.p2p.Host().Network().Connectedness(peerID) != network.Connected {
+			continue
+		}
+		wg.Add(1)
+		go func(pid peer.ID) {
+			defer wg.Done()
+			if err := s.sendGoodByeAndDisconnect(goodbyeCtx, p2ptypes.GoodbyeCodeClientShutdown, pid); err != nil {
+				log.WithError(err).WithField("peerID", pid).Error("Failed to send goodbye message")
+			}
+		}(peerID)
+	}
+	// Bound the wait by goodbyeShutdownTimeout. Stuck per-peer stream reads
+	// (which use respTimeout as their deadline, not ctx) would otherwise still
+	// block here even after goodbyeCtx expires. Goroutines that are still
+	// in-flight will finish on their own terms once respTimeout fires.
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-goodbyeCtx.Done():
+		log.WithField("timeout", goodbyeShutdownTimeout).
+			Debug("Goodbye dispatch did not finish within timeout; proceeding with shutdown")
+	}
+
 	// Removing RPC Stream handlers.
 	for _, p := range s.cfg.p2p.Host().Mux().Protocols() {
 		s.cfg.p2p.Host().RemoveStreamHandler(protocol.ID(p))
@@ -204,7 +271,7 @@ func (s *Service) Stop() error {
 	for _, t := range s.cfg.p2p.PubSub().GetTopics() {
 		s.unSubscribeFromTopic(t)
 	}
-	defer s.cancel()
+
 	return nil
 }
 
@@ -223,7 +290,8 @@ func (s *Service) Status() error {
 // and prevent DoS.
 func (s *Service) initCaches() {
 	s.seenBlockCache = lruwrpr.New(seenBlockSize)
-	s.seenAggregatedAttestationCache = lruwrpr.New(seenAggregatedAttSize)
+	s.seenAggregatedAttestationByEpoch = make(map[primitives.Epoch]map[primitives.ValidatorIndex]struct{})
+	s.seenAggregatedAttestationHasMaxEpoch = false
 	s.seenUnAggregatedAttestationCache = lruwrpr.New(seenUnaggregatedAttSize)
 	s.seenSyncMessageCache = lruwrpr.New(seenSyncMsgSize)
 	s.seenSyncContributionCache = lruwrpr.New(seenSyncContributionSize)
@@ -265,7 +333,8 @@ func (s *Service) registerHandlers() {
 		}
 		currentEpoch := slots.ToEpoch(slots.CurrentSlot(uint64(s.cfg.clock.GenesisTime().Unix())))
 		s.registerSubscribers(currentEpoch, digest)
-		go s.forkWatcher()
+		// NOTE(rgeraldes24): unused for now
+		// go s.forkWatcher()
 		return
 	case <-s.ctx.Done():
 		log.Debug("Context closed, exiting goroutine")

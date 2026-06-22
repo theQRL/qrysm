@@ -1,6 +1,6 @@
 # Simple Local Testnet
 
-These scripts allow for running a small local testnet with a default of 4 beacon nodes, 4 validator clients and 4 gzond execution clients using Kurtosis.
+These scripts allow for running a small local testnet with a default of 4 beacon nodes, 4 validator clients and 4 gqrl execution clients using Kurtosis.
 This setup can be useful for testing and development.
 
 ## Installation
@@ -22,7 +22,7 @@ cd ./scripts/local_testnet
 
 You will see a list of services running and "Started!" at the end. 
 You can also select your own Qrysm docker image to use by specifying it in `network_params.yml` under the `cl_image` key.
-Full configuration reference for kurtosis is specified [here](https://github.com/theQRL/zond-package?tab=readme-ov-file#configuration).
+Full configuration reference for kurtosis is specified [here](https://github.com/theQRL/qrl-package?tab=readme-ov-file#configuration).
 
 To view all running services:
 
@@ -36,12 +36,12 @@ To view the logs:
 kurtosis service logs local-testnet $SERVICE_NAME
 ```
 
-where `$SERVICE_NAME` is obtained by inspecting the running services above. For example, to view the logs of the first beacon node, validator client and gzond:
+where `$SERVICE_NAME` is obtained by inspecting the running services above. For example, to view the logs of the first beacon node, validator client and gqrl:
 
 ```bash
-kurtosis service logs local-testnet -f cl-1-qrysm-gzond 
-kurtosis service logs local-testnet -f vc-1-gzond-qrysm
-kurtosis service logs local-testnet -f el-1-gzond-qrysm
+kurtosis service logs local-testnet -f cl-1-qrysm-gqrl 
+kurtosis service logs local-testnet -f vc-1-gqrl-qrysm
+kurtosis service logs local-testnet -f el-1-gqrl-qrysm
 ```
 
 If you would like to save the logs, use the command:

@@ -11,7 +11,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/beacon-chain/db"
 	dbtest "github.com/theQRL/qrysm/beacon-chain/db/testing"
@@ -28,7 +28,7 @@ import (
 	"github.com/theQRL/qrysm/container/slice"
 	"github.com/theQRL/qrysm/crypto/hash"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -83,16 +83,16 @@ func initializeTestServices(t *testing.T, slots []primitives.Slot, peers []*peer
 	genesisRoot := cache.rootCache[0]
 	cache.RUnlock()
 
-	util.SaveBlock(t, context.Background(), beaconDB, util.NewBeaconBlockCapella())
+	util.SaveBlock(t, context.Background(), beaconDB, util.NewBeaconBlockZond())
 
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 
 	return &mock.ChainService{
 		State: st,
 		Root:  genesisRoot[:],
 		DB:    beaconDB,
-		FinalizedCheckPoint: &zondpb.Checkpoint{
+		FinalizedCheckPoint: &qrysmpb.Checkpoint{
 			Epoch: 0,
 		},
 		Genesis:        time.Now(),
@@ -132,13 +132,13 @@ func (c *testCache) initializeRootCache(reqSlots []primitives.Slot, t *testing.T
 	c.parentSlotCache = make(map[primitives.Slot]primitives.Slot)
 	parentSlot := primitives.Slot(0)
 
-	genesisBlock := util.NewBeaconBlockCapella().Block
+	genesisBlock := util.NewBeaconBlockZond().Block
 	genesisRoot, err := genesisBlock.HashTreeRoot()
 	require.NoError(t, err)
 	c.rootCache[0] = genesisRoot
 	parentRoot := genesisRoot
 	for _, slot := range reqSlots {
-		currentBlock := util.NewBeaconBlockCapella().Block
+		currentBlock := util.NewBeaconBlockZond().Block
 		currentBlock.Slot = slot
 		currentBlock.ParentRoot = parentRoot[:]
 		parentRoot, err = currentBlock.HashTreeRoot()
@@ -166,14 +166,14 @@ func connectPeers(t *testing.T, host *p2pt.TestP2P, data []*peerData, peerStatus
 
 // connectPeer connects a peer to a local host.
 func connectPeer(t *testing.T, host *p2pt.TestP2P, datum *peerData, peerStatus *peers.Status) peer.ID {
-	const topic = "/eth2/beacon_chain/req/beacon_blocks_by_range/2/ssz_snappy"
+	const topic = "/consensus/beacon_chain/req/beacon_blocks_by_range/2/ssz_snappy"
 	p := p2pt.NewTestP2P(t)
 	p.SetStreamHandler(topic, func(stream network.Stream) {
 		defer func() {
 			assert.NoError(t, stream.Close())
 		}()
 
-		req := &zondpb.BeaconBlocksByRangeRequest{}
+		req := &qrysmpb.BeaconBlocksByRangeRequest{}
 		assert.NoError(t, p.Encoding().DecodeWithMaxLength(stream, req))
 
 		requestedBlocks := makeSequence(req.StartSlot, req.StartSlot.Add((req.Count-1)*req.Step))
@@ -191,7 +191,7 @@ func connectPeer(t *testing.T, host *p2pt.TestP2P, datum *peerData, peerStatus *
 		// Determine the correct subset of blocks to return as dictated by the test scenario.
 		ss := slice.IntersectionSlot(datum.blocks, requestedBlocks)
 
-		ret := make([]*zondpb.SignedBeaconBlockCapella, 0)
+		ret := make([]*qrysmpb.SignedBeaconBlockZond, 0)
 		for _, slot := range ss {
 			if (slot - req.StartSlot).Mod(req.Step) != 0 {
 				continue
@@ -199,7 +199,7 @@ func connectPeer(t *testing.T, host *p2pt.TestP2P, datum *peerData, peerStatus *
 			cache.RLock()
 			parentRoot := cache.rootCache[cache.parentSlotCache[slot]]
 			cache.RUnlock()
-			blk := util.NewBeaconBlockCapella()
+			blk := util.NewBeaconBlockZond()
 			blk.Block.Slot = slot
 			blk.Block.ParentRoot = parentRoot[:]
 			// If forked peer, give a different parent root.
@@ -226,11 +226,11 @@ func connectPeer(t *testing.T, host *p2pt.TestP2P, datum *peerData, peerStatus *
 
 	p.Connect(host)
 
-	peerStatus.Add(new(enr.Record), p.PeerID(), nil, network.DirOutbound)
+	peerStatus.Add(new(qnr.Record), p.PeerID(), nil, network.DirOutbound)
 	peerStatus.SetConnectionState(p.PeerID(), peers.PeerConnected)
-	peerStatus.SetChainState(p.PeerID(), &zondpb.Status{
+	peerStatus.SetChainState(p.PeerID(), &qrysmpb.Status{
 		ForkDigest:     params.BeaconConfig().GenesisForkVersion,
-		FinalizedRoot:  []byte(fmt.Sprintf("finalized_root %d", datum.finalizedEpoch)),
+		FinalizedRoot:  fmt.Appendf(nil, "finalized_root %d", datum.finalizedEpoch),
 		FinalizedEpoch: datum.finalizedEpoch,
 		HeadRoot:       bytesutil.PadTo([]byte("head_root"), 32),
 		HeadSlot:       datum.headSlot,
@@ -240,15 +240,15 @@ func connectPeer(t *testing.T, host *p2pt.TestP2P, datum *peerData, peerStatus *
 }
 
 // extendBlockSequence extends block chain sequentially (creating genesis block, if necessary).
-func extendBlockSequence(t *testing.T, inSeq []*zondpb.SignedBeaconBlockCapella, size int) []*zondpb.SignedBeaconBlockCapella {
+func extendBlockSequence(t *testing.T, inSeq []*qrysmpb.SignedBeaconBlockZond, size int) []*qrysmpb.SignedBeaconBlockZond {
 	// Start from the original sequence.
-	outSeq := make([]*zondpb.SignedBeaconBlockCapella, len(inSeq)+size)
+	outSeq := make([]*qrysmpb.SignedBeaconBlockZond, len(inSeq)+size)
 	copy(outSeq, inSeq)
 
 	// See if genesis block needs to be created.
 	startSlot := len(inSeq)
 	if len(inSeq) == 0 {
-		outSeq[0] = util.NewBeaconBlockCapella()
+		outSeq[0] = util.NewBeaconBlockZond()
 		outSeq[0].Block.StateRoot = util.Random32Bytes(t)
 		startSlot++
 		outSeq = append(outSeq, nil)
@@ -256,7 +256,7 @@ func extendBlockSequence(t *testing.T, inSeq []*zondpb.SignedBeaconBlockCapella,
 
 	// Extend block chain sequentially.
 	for slot := startSlot; slot < len(outSeq); slot++ {
-		outSeq[slot] = util.NewBeaconBlockCapella()
+		outSeq[slot] = util.NewBeaconBlockZond()
 		outSeq[slot].Block.Slot = primitives.Slot(slot)
 		parentRoot, err := outSeq[slot-1].Block.HashTreeRoot()
 		require.NoError(t, err)
@@ -271,18 +271,18 @@ func extendBlockSequence(t *testing.T, inSeq []*zondpb.SignedBeaconBlockCapella,
 
 // connectPeerHavingBlocks connect host with a peer having provided blocks.
 func connectPeerHavingBlocks(
-	t *testing.T, host *p2pt.TestP2P, blks []*zondpb.SignedBeaconBlockCapella, finalizedSlot primitives.Slot,
+	t *testing.T, host *p2pt.TestP2P, blks []*qrysmpb.SignedBeaconBlockZond, finalizedSlot primitives.Slot,
 	peerStatus *peers.Status,
 ) peer.ID {
 	p := p2pt.NewTestP2P(t)
 
-	p.SetStreamHandler("/eth2/beacon_chain/req/beacon_blocks_by_range/2/ssz_snappy", func(stream network.Stream) {
+	p.SetStreamHandler("/consensus/beacon_chain/req/beacon_blocks_by_range/2/ssz_snappy", func(stream network.Stream) {
 		defer func() {
 			_err := stream.Close()
 			_ = _err
 		}()
 
-		req := &zondpb.BeaconBlocksByRangeRequest{}
+		req := &qrysmpb.BeaconBlocksByRangeRequest{}
 		assert.NoError(t, p.Encoding().DecodeWithMaxLength(stream, req))
 
 		for i := req.StartSlot; i < req.StartSlot.Add(req.Count*req.Step); i += primitives.Slot(req.Step) {
@@ -295,7 +295,7 @@ func connectPeerHavingBlocks(
 		}
 	})
 
-	p.SetStreamHandler("/eth2/beacon_chain/req/beacon_blocks_by_root/2/ssz_snappy", func(stream network.Stream) {
+	p.SetStreamHandler("/consensus/beacon_chain/req/beacon_blocks_by_root/2/ssz_snappy", func(stream network.Stream) {
 		defer func() {
 			_err := stream.Close()
 			_ = _err
@@ -324,11 +324,11 @@ func connectPeerHavingBlocks(
 	headRoot, err := blks[len(blks)-1].Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	peerStatus.Add(new(enr.Record), p.PeerID(), nil, network.DirOutbound)
+	peerStatus.Add(new(qnr.Record), p.PeerID(), nil, network.DirOutbound)
 	peerStatus.SetConnectionState(p.PeerID(), peers.PeerConnected)
-	peerStatus.SetChainState(p.PeerID(), &zondpb.Status{
+	peerStatus.SetChainState(p.PeerID(), &qrysmpb.Status{
 		ForkDigest:     params.BeaconConfig().GenesisForkVersion,
-		FinalizedRoot:  []byte(fmt.Sprintf("finalized_root %d", finalizedEpoch)),
+		FinalizedRoot:  fmt.Appendf(nil, "finalized_root %d", finalizedEpoch),
 		FinalizedEpoch: finalizedEpoch,
 		HeadRoot:       headRoot[:],
 		HeadSlot:       blks[len(blks)-1].Block.Slot,

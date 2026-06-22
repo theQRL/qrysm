@@ -6,13 +6,32 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/blockchain"
 	"github.com/theQRL/qrysm/beacon-chain/db"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 )
+
+// BlockRootsNotFoundError signals that no block roots were returned from the
+// database for a given slot. It is distinct from a generic database error
+// because callers (such as the optimistic-status check) can map it to a 404.
+type BlockRootsNotFoundError struct {
+	message string
+}
+
+// NewBlockRootsNotFoundError creates a new BlockRootsNotFoundError.
+func NewBlockRootsNotFoundError() *BlockRootsNotFoundError {
+	return &BlockRootsNotFoundError{
+		message: "no block roots returned from the database",
+	}
+}
+
+// Error returns the underlying error message.
+func (e *BlockRootsNotFoundError) Error() string {
+	return e.message
+}
 
 // BlockIdParseError represents an error scenario where a block ID could not be parsed.
 type BlockIdParseError struct {
@@ -61,10 +80,23 @@ func (p *BeaconDbBlocker) Block(ctx context.Context, id []byte) (interfaces.Read
 		}
 	case "finalized":
 		finalized := p.ChainInfoFetcher.FinalizedCheckpt()
+		if finalized == nil {
+			return nil, errors.New("received nil finalized checkpoint")
+		}
 		finalizedRoot := bytesutil.ToBytes32(finalized.Root)
 		blk, err = p.BeaconDB.Block(ctx, finalizedRoot)
 		if err != nil {
 			return nil, errors.New("could not get finalized block from db")
+		}
+	case "justified":
+		justified := p.ChainInfoFetcher.CurrentJustifiedCheckpt()
+		if justified == nil {
+			return nil, errors.New("received nil justified checkpoint")
+		}
+		justifiedRoot := bytesutil.ToBytes32(justified.Root)
+		blk, err = p.BeaconDB.Block(ctx, justifiedRoot)
+		if err != nil {
+			return nil, errors.New("could not get justified block from db")
 		}
 	case "genesis":
 		blk, err = p.BeaconDB.GenesisBlock(ctx)

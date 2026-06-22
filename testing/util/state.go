@@ -4,19 +4,19 @@ import (
 	"fmt"
 
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
-// FillRootsNaturalOptCapella is meant to be used as an option when calling NewBeaconStateCapella.
+// FillRootsNaturalOptZond is meant to be used as an option when calling NewBeaconStateZond.
 // It fills state and block roots with hex representations of natural numbers starting with 0.
 // Example: 16 becomes 0x00...0f.
-func FillRootsNaturalOptCapella(state *zondpb.BeaconStateCapella) error {
+func FillRootsNaturalOptZond(state *qrysmpb.BeaconStateZond) error {
 	roots, err := PrepareRoots(int(params.BeaconConfig().SlotsPerHistoricalRoot))
 	if err != nil {
 		return err
@@ -26,45 +26,45 @@ func FillRootsNaturalOptCapella(state *zondpb.BeaconStateCapella) error {
 	return nil
 }
 
-// NewBeaconStateCapella creates a beacon state with minimum marshalable fields.
-func NewBeaconStateCapella(options ...func(state *zondpb.BeaconStateCapella) error) (state.BeaconState, error) {
+// NewBeaconStateZond creates a beacon state with minimum marshalable fields.
+func NewBeaconStateZond(options ...func(state *qrysmpb.BeaconStateZond) error) (state.BeaconState, error) {
 	pubkeys := make([][]byte, params.BeaconConfig().SyncCommitteeSize)
 	for i := range pubkeys {
-		pubkeys[i] = make([]byte, 2592)
+		pubkeys[i] = make([]byte, fieldparams.MLDSA87PubkeyLength)
 	}
 
-	seed := &zondpb.BeaconStateCapella{
+	seed := &qrysmpb.BeaconStateZond{
 		BlockRoots:                 filledByteSlice2D(uint64(params.BeaconConfig().SlotsPerHistoricalRoot), 32),
 		StateRoots:                 filledByteSlice2D(uint64(params.BeaconConfig().SlotsPerHistoricalRoot), 32),
 		Slashings:                  make([]uint64, params.BeaconConfig().EpochsPerSlashingsVector),
 		RandaoMixes:                filledByteSlice2D(uint64(params.BeaconConfig().EpochsPerHistoricalVector), 32),
-		Validators:                 make([]*zondpb.Validator, 0),
-		CurrentJustifiedCheckpoint: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
-		Eth1Data: &zondpb.Eth1Data{
+		Validators:                 make([]*qrysmpb.Validator, 0),
+		CurrentJustifiedCheckpoint: &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		ExecutionData: &qrysmpb.ExecutionData{
 			DepositRoot: make([]byte, fieldparams.RootLength),
 			BlockHash:   make([]byte, 32),
 		},
-		Fork: &zondpb.Fork{
+		Fork: &qrysmpb.Fork{
 			PreviousVersion: make([]byte, 4),
 			CurrentVersion:  make([]byte, 4),
 		},
-		Eth1DataVotes:               make([]*zondpb.Eth1Data, 0),
-		HistoricalSummaries:         make([]*zondpb.HistoricalSummary, 0),
+		ExecutionDataVotes:          make([]*qrysmpb.ExecutionData, 0),
+		HistoricalSummaries:         make([]*qrysmpb.HistoricalSummary, 0),
 		JustificationBits:           bitfield.Bitvector4{0x0},
-		FinalizedCheckpoint:         &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
-		LatestBlockHeader:           HydrateBeaconHeader(&zondpb.BeaconBlockHeader{}),
-		PreviousJustifiedCheckpoint: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		FinalizedCheckpoint:         &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		LatestBlockHeader:           HydrateBeaconHeader(&qrysmpb.BeaconBlockHeader{}),
+		PreviousJustifiedCheckpoint: &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 		PreviousEpochParticipation:  make([]byte, 0),
 		CurrentEpochParticipation:   make([]byte, 0),
-		CurrentSyncCommittee: &zondpb.SyncCommittee{
+		CurrentSyncCommittee: &qrysmpb.SyncCommittee{
 			Pubkeys: pubkeys,
 		},
-		NextSyncCommittee: &zondpb.SyncCommittee{
+		NextSyncCommittee: &qrysmpb.SyncCommittee{
 			Pubkeys: pubkeys,
 		},
-		LatestExecutionPayloadHeader: &enginev1.ExecutionPayloadHeaderCapella{
+		LatestExecutionPayloadHeader: &enginev1.ExecutionPayloadHeaderZond{
 			ParentHash:       make([]byte, 32),
-			FeeRecipient:     make([]byte, 20),
+			FeeRecipient:     make([]byte, 64),
 			StateRoot:        make([]byte, 32),
 			ReceiptsRoot:     make([]byte, 32),
 			LogsBloom:        make([]byte, 256),
@@ -84,7 +84,7 @@ func NewBeaconStateCapella(options ...func(state *zondpb.BeaconStateCapella) err
 		}
 	}
 
-	var st, err = state_native.InitializeFromProtoUnsafeCapella(seed)
+	var st, err = state_native.InitializeFromProtoUnsafeZond(seed)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func NewBeaconStateCapella(options ...func(state *zondpb.BeaconStateCapella) err
 // trip testing.
 func filledByteSlice2D(length, innerLen uint64) [][]byte {
 	b := make([][]byte, length)
-	for i := uint64(0); i < length; i++ {
+	for i := range length {
 		b[i] = make([]byte, innerLen)
 	}
 	return b
@@ -106,10 +106,10 @@ func filledByteSlice2D(length, innerLen uint64) [][]byte {
 // Example: 16 becomes 0x00...0f.
 func PrepareRoots(size int) ([][]byte, error) {
 	roots := make([][]byte, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		roots[i] = make([]byte, fieldparams.RootLength)
 	}
-	for j := 0; j < len(roots); j++ {
+	for j := range roots {
 		// Remove '0x' prefix and left-pad '0' to have 64 chars in total.
 		s := fmt.Sprintf("%064s", hexutil.EncodeUint64(uint64(j))[2:])
 		h, err := hexutil.Decode("0x" + s)

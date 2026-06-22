@@ -2,11 +2,11 @@ package state_native
 
 import (
 	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // SetCurrentSyncCommittee for the beacon state.
-func (b *BeaconState) SetCurrentSyncCommittee(val *zondpb.SyncCommittee) error {
+func (b *BeaconState) SetCurrentSyncCommittee(val *qrysmpb.SyncCommittee) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
@@ -16,7 +16,7 @@ func (b *BeaconState) SetCurrentSyncCommittee(val *zondpb.SyncCommittee) error {
 }
 
 // SetNextSyncCommittee for the beacon state.
-func (b *BeaconState) SetNextSyncCommittee(val *zondpb.SyncCommittee) error {
+func (b *BeaconState) SetNextSyncCommittee(val *qrysmpb.SyncCommittee) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 

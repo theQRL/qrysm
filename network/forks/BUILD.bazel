@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "forks",
     srcs = [
         "errors.go",
         "fork.go",
@@ -10,30 +10,30 @@ go_library(
     importpath = "github.com/theQRL/qrysm/network/forks",
     visibility = ["//visibility:public"],
     deps = [
-        "//beacon-chain/core/signing:go_default_library",
-        "//config/fieldparams:go_default_library",
-        "//config/params:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//encoding/bytesutil:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "//time/slots:go_default_library",
-        "@com_github_pkg_errors//:go_default_library",
+        "//beacon-chain/core/signing",
+        "//config/fieldparams",
+        "//config/params",
+        "//consensus-types/primitives",
+        "//encoding/bytesutil",
+        "//proto/qrysm/v1alpha1",
+        "//time/slots",
+        "@com_github_pkg_errors//:errors",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "forks_test",
     srcs = [
         "fork_test.go",
         "ordered_test.go",
     ],
-    embed = [":go_default_library"],
+    embed = [":forks"],
     deps = [
-        "//beacon-chain/core/signing:go_default_library",
-        "//config/params:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "//testing/assert:go_default_library",
-        "//testing/require:go_default_library",
+        "//beacon-chain/core/signing",
+        "//config/params",
+        "//consensus-types/primitives",
+        "//proto/qrysm/v1alpha1",
+        "//testing/assert",
+        "//testing/require",
     ],
 )

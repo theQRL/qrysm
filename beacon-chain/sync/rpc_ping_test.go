@@ -8,7 +8,7 @@ import (
 
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/protocol"
-	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
 	db "github.com/theQRL/qrysm/beacon-chain/db/testing"
 	"github.com/theQRL/qrysm/beacon-chain/p2p"
@@ -29,12 +29,12 @@ func TestPingRPCHandler_ReceivesPing(t *testing.T) {
 	p2 := p2ptest.NewTestP2P(t)
 	p1.Connect(p2)
 	assert.Equal(t, 1, len(p1.BHost.Network().Peers()), "Expected peers to be connected")
-	p1.LocalMetadata = wrapper.WrappedMetadataV0(&pb.MetaDataV0{
+	p1.LocalMetadata = wrapper.WrappedMetadataV1(&pb.MetaDataV1{
 		SeqNumber: 2,
 		Attnets:   []byte{'A', 'B'},
 	})
 
-	p2.LocalMetadata = wrapper.WrappedMetadataV0(&pb.MetaDataV0{
+	p2.LocalMetadata = wrapper.WrappedMetadataV1(&pb.MetaDataV1{
 		SeqNumber: 2,
 		Attnets:   []byte{'C', 'D'},
 	})
@@ -49,7 +49,7 @@ func TestPingRPCHandler_ReceivesPing(t *testing.T) {
 		rateLimiter: newRateLimiter(p1),
 	}
 
-	p1.Peers().Add(new(enr.Record), p2.BHost.ID(), p2.BHost.Addrs()[0], network.DirUnknown)
+	p1.Peers().Add(new(qnr.Record), p2.BHost.ID(), p2.BHost.Addrs()[0], network.DirUnknown)
 	p1.Peers().SetMetadata(p2.BHost.ID(), p2.LocalMetadata)
 
 	// Setup streams
@@ -86,12 +86,12 @@ func TestPingRPCHandler_SendsPing(t *testing.T) {
 	p2 := p2ptest.NewTestP2P(t)
 	p1.Connect(p2)
 	assert.Equal(t, 1, len(p1.BHost.Network().Peers()), "Expected peers to be connected")
-	p1.LocalMetadata = wrapper.WrappedMetadataV0(&pb.MetaDataV0{
+	p1.LocalMetadata = wrapper.WrappedMetadataV1(&pb.MetaDataV1{
 		SeqNumber: 2,
 		Attnets:   []byte{'A', 'B'},
 	})
 
-	p2.LocalMetadata = wrapper.WrappedMetadataV0(&pb.MetaDataV0{
+	p2.LocalMetadata = wrapper.WrappedMetadataV1(&pb.MetaDataV1{
 		SeqNumber: 2,
 		Attnets:   []byte{'C', 'D'},
 	})
@@ -109,10 +109,10 @@ func TestPingRPCHandler_SendsPing(t *testing.T) {
 		rateLimiter: newRateLimiter(p1),
 	}
 
-	p1.Peers().Add(new(enr.Record), p2.BHost.ID(), p2.BHost.Addrs()[0], network.DirUnknown)
+	p1.Peers().Add(new(qnr.Record), p2.BHost.ID(), p2.BHost.Addrs()[0], network.DirUnknown)
 	p1.Peers().SetMetadata(p2.BHost.ID(), p2.LocalMetadata)
 
-	p2.Peers().Add(new(enr.Record), p1.BHost.ID(), p1.BHost.Addrs()[0], network.DirUnknown)
+	p2.Peers().Add(new(qnr.Record), p1.BHost.ID(), p1.BHost.Addrs()[0], network.DirUnknown)
 	p2.Peers().SetMetadata(p1.BHost.ID(), p1.LocalMetadata)
 
 	chain2 := &mock.ChainService{ValidatorsRoot: [32]byte{}, Genesis: time.Now()}
@@ -126,7 +126,7 @@ func TestPingRPCHandler_SendsPing(t *testing.T) {
 		rateLimiter: newRateLimiter(p2),
 	}
 	// Setup streams
-	pcl := protocol.ID("/eth2/beacon_chain/req/ping/1/ssz_snappy")
+	pcl := protocol.ID("/consensus/beacon_chain/req/ping/1/ssz_snappy")
 	topic := string(pcl)
 	r.rateLimiter.limiterMap[topic] = leakybucket.NewCollector(1, 1, time.Second, false)
 
@@ -157,12 +157,12 @@ func TestPingRPCHandler_BadSequenceNumber(t *testing.T) {
 	p2 := p2ptest.NewTestP2P(t)
 	p1.Connect(p2)
 	assert.Equal(t, 1, len(p1.BHost.Network().Peers()), "Expected peers to be connected")
-	p1.LocalMetadata = wrapper.WrappedMetadataV0(&pb.MetaDataV0{
+	p1.LocalMetadata = wrapper.WrappedMetadataV1(&pb.MetaDataV1{
 		SeqNumber: 2,
 		Attnets:   []byte{'A', 'B'},
 	})
 
-	p2.LocalMetadata = wrapper.WrappedMetadataV0(&pb.MetaDataV0{
+	p2.LocalMetadata = wrapper.WrappedMetadataV1(&pb.MetaDataV1{
 		SeqNumber: 2,
 		Attnets:   []byte{'C', 'D'},
 	})
@@ -177,13 +177,13 @@ func TestPingRPCHandler_BadSequenceNumber(t *testing.T) {
 		rateLimiter: newRateLimiter(p1),
 	}
 
-	badMetadata := &pb.MetaDataV0{
+	badMetadata := &pb.MetaDataV1{
 		SeqNumber: 3,
 		Attnets:   []byte{'E', 'F'},
 	}
 
-	p1.Peers().Add(new(enr.Record), p2.BHost.ID(), p2.BHost.Addrs()[0], network.DirUnknown)
-	p1.Peers().SetMetadata(p2.BHost.ID(), wrapper.WrappedMetadataV0(badMetadata))
+	p1.Peers().Add(new(qnr.Record), p2.BHost.ID(), p2.BHost.Addrs()[0], network.DirUnknown)
+	p1.Peers().SetMetadata(p2.BHost.ID(), wrapper.WrappedMetadataV1(badMetadata))
 
 	// Setup streams
 	pcl := protocol.ID("/testing")

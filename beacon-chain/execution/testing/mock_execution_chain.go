@@ -1,4 +1,4 @@
-// Package testing provides useful mocks for an eth1 powchain
+// Package testing provides useful mocks for an execution chain
 // service as needed by unit tests for the beacon node.
 package testing
 
@@ -10,33 +10,33 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	gzondtypes "github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	gqrltypes "github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/rpc"
 	"github.com/theQRL/qrysm/async/event"
 	"github.com/theQRL/qrysm/beacon-chain/execution/types"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
-// Chain defines a properly functioning mock for the powchain service.
+// Chain defines a properly functioning mock for the execution chain service.
 type Chain struct {
-	ChainFeed         *event.Feed
-	LatestBlockNumber *big.Int
-	HashesByHeight    map[int][]byte
-	TimesByHeight     map[int]uint64
-	BlockNumberByTime map[uint64]*big.Int
-	Eth1Data          *zondpb.Eth1Data
-	GenesisEth1Block  *big.Int
-	GenesisState      state.BeaconState
-	CurrEndpoint      string
-	CurrError         error
-	Endpoints         []string
-	Errors            []error
+	ChainFeed             *event.Feed
+	LatestBlockNumber     *big.Int
+	HashesByHeight        map[int][]byte
+	TimesByHeight         map[int]uint64
+	BlockNumberByTime     map[uint64]*big.Int
+	ExecutionData         *qrysmpb.ExecutionData
+	GenesisExecutionBlock *big.Int
+	GenesisState          state.BeaconState
+	CurrEndpoint          string
+	CurrError             error
+	Endpoints             []string
+	Errors                []error
 }
 
 // GenesisTime represents a static past date - JAN 01 2000.
@@ -53,7 +53,7 @@ func New() *Chain {
 
 // GenesisExecutionChainInfo --
 func (m *Chain) GenesisExecutionChainInfo() (uint64, *big.Int) {
-	blk := m.GenesisEth1Block
+	blk := m.GenesisExecutionBlock
 	if blk == nil {
 		blk = big.NewInt(GenesisTime)
 	}
@@ -104,19 +104,9 @@ func (m *Chain) BlockByTimestamp(_ context.Context, time uint64) (*types.HeaderI
 	return &types.HeaderInfo{Number: chosenNumber, Time: chosenTime}, nil
 }
 
-// ChainStartEth1Data --
-func (m *Chain) ChainStartEth1Data() *zondpb.Eth1Data {
-	return m.Eth1Data
-}
-
-// PreGenesisState --
-func (m *Chain) PreGenesisState() state.BeaconState {
-	return m.GenesisState
-}
-
-// ClearPreGenesisData --
-func (*Chain) ClearPreGenesisData() {
-	// no-op
+// ChainStartExecutionData --
+func (m *Chain) ChainStartExecutionData() *qrysmpb.ExecutionData {
+	return m.ExecutionData
 }
 
 func (*Chain) ExecutionClientConnected() bool {
@@ -131,11 +121,11 @@ func (m *Chain) ExecutionClientConnectionErr() error {
 	return m.CurrError
 }
 
-func (m *Chain) ETH1Endpoints() []string {
+func (m *Chain) ExecutionEndpoints() []string {
 	return m.Endpoints
 }
 
-func (m *Chain) ETH1ConnectionErrors() []error {
+func (m *Chain) ExecutionConnectionErrors() []error {
 	return m.Errors
 }
 
@@ -147,8 +137,8 @@ type RPCClient struct {
 
 func (*RPCClient) Close() {}
 
-func (r *RPCClient) CallContext(ctx context.Context, obj interface{}, methodName string, args ...interface{}) error {
-	if r.BlockNumMap != nil && methodName == "zond_getBlockByNumber" {
+func (r *RPCClient) CallContext(ctx context.Context, obj any, methodName string, args ...any) error {
+	if r.BlockNumMap != nil && methodName == "qrl_getBlockByNumber" {
 		val, ok := args[0].(string)
 		if !ok {
 			return errors.Errorf("wrong argument type provided: %T", args[0])
@@ -165,8 +155,8 @@ func (r *RPCClient) CallContext(ctx context.Context, obj interface{}, methodName
 		*assertedObj = b
 		return nil
 	}
-	if r.Backend == nil && methodName == "zond_getBlockByNumber" {
-		h := &gzondtypes.Header{
+	if r.Backend == nil && methodName == "qrl_getBlockByNumber" {
+		h := &gqrltypes.Header{
 			Number: big.NewInt(15),
 			Time:   150,
 		}
@@ -182,7 +172,7 @@ func (r *RPCClient) CallContext(ctx context.Context, obj interface{}, methodName
 		return nil
 	}
 	switch methodName {
-	case "zond_getBlockByNumber":
+	case "qrl_getBlockByNumber":
 		val, ok := args[0].(string)
 		if !ok {
 			return errors.Errorf("wrong argument type provided: %T", args[0])
@@ -208,7 +198,7 @@ func (r *RPCClient) CallContext(ctx context.Context, obj interface{}, methodName
 			Number: h.Number,
 			Time:   h.Time,
 		}
-	case "zond_getBlockByHash":
+	case "qrl_getBlockByHash":
 		val, ok := args[0].(common.Hash)
 		if !ok {
 			return errors.Errorf("wrong argument type provided: %T", args[0])
@@ -260,10 +250,10 @@ func (m *Chain) InsertBlock(height int, time uint64, hash []byte) *Chain {
 
 func SetupRPCServer() (*rpc.Server, string, error) {
 	srv := rpc.NewServer()
-	if err := srv.RegisterName("zond", &testZONDRPC{}); err != nil {
+	if err := srv.RegisterName("qrl", &testQRLRPC{}); err != nil {
 		return nil, "", err
 	}
-	if err := srv.RegisterName("net", &testZONDRPC{}); err != nil {
+	if err := srv.RegisterName("net", &testQRLRPC{}); err != nil {
 		return nil, "", err
 	}
 	hs := httptest.NewUnstartedServer(srv)
@@ -271,14 +261,14 @@ func SetupRPCServer() (*rpc.Server, string, error) {
 	return srv, hs.URL, nil
 }
 
-type testZONDRPC struct{}
+type testQRLRPC struct{}
 
-func (*testZONDRPC) NoArgsRets() {}
+func (*testQRLRPC) NoArgsRets() {}
 
-func (*testZONDRPC) ChainId(_ context.Context) *hexutil.Big {
+func (*testQRLRPC) ChainId(_ context.Context) *hexutil.Big {
 	return (*hexutil.Big)(big.NewInt(int64(params.BeaconConfig().DepositChainID)))
 }
 
-func (*testZONDRPC) Version(_ context.Context) string {
+func (*testQRLRPC) Version(_ context.Context) string {
 	return fmt.Sprintf("%d", params.BeaconConfig().DepositNetworkID)
 }

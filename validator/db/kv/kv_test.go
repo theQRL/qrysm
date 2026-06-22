@@ -18,7 +18,7 @@ func TestMain(m *testing.M) {
 }
 
 // setupDB instantiates and returns a DB instance for the validator client.
-func setupDB(t testing.TB, pubkeys [][field_params.DilithiumPubkeyLength]byte) *Store {
+func setupDB(t testing.TB, pubkeys [][field_params.MLDSA87PubkeyLength]byte) *Store {
 	db, err := NewKVStore(context.Background(), t.TempDir(), &Config{
 		PubKeys: pubkeys,
 	})

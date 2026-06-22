@@ -64,6 +64,10 @@ func UnmarshalConfig(yamlFile []byte, conf *BeaconChainConfig) (*BeaconChainConf
 	}
 	// recompute SqrRootSlotsPerEpoch constant to handle non-standard values of SlotsPerEpoch
 	conf.SqrRootSlotsPerEpoch = primitives.Slot(math.IntegerSquareRoot(uint64(conf.SlotsPerEpoch)))
+	// Rebuild ForkVersionSchedule so consumers picking up the config see the
+	// fork epochs / versions from the YAML rather than the defaults inherited
+	// from the seed config.
+	conf.InitializeForkSchedule()
 	log.Debugf("Config file values: %+v", conf)
 	return conf, nil
 }
@@ -184,9 +188,9 @@ func ConfigToYaml(cfg *BeaconChainConfig) []byte {
 		fmt.Sprintf("CHURN_LIMIT_QUOTIENT: %d", cfg.ChurnLimitQuotient),
 		fmt.Sprintf("SECONDS_PER_SLOT: %d", cfg.SecondsPerSlot),
 		fmt.Sprintf("SLOTS_PER_EPOCH: %d", cfg.SlotsPerEpoch),
-		fmt.Sprintf("SECONDS_PER_ETH1_BLOCK: %d", cfg.SecondsPerETH1Block),
-		fmt.Sprintf("ETH1_FOLLOW_DISTANCE: %d", cfg.Eth1FollowDistance),
-		fmt.Sprintf("EPOCHS_PER_ETH1_VOTING_PERIOD: %d", cfg.EpochsPerEth1VotingPeriod),
+		fmt.Sprintf("SECONDS_PER_EXECUTION_BLOCK: %d", cfg.SecondsPerExecutionBlock),
+		fmt.Sprintf("EXECUTION_FOLLOW_DISTANCE: %d", cfg.ExecutionFollowDistance),
+		fmt.Sprintf("EPOCHS_PER_EXECUTION_VOTING_PERIOD: %d", cfg.EpochsPerExecutionVotingPeriod),
 		fmt.Sprintf("SHARD_COMMITTEE_PERIOD: %d", cfg.ShardCommitteePeriod),
 		fmt.Sprintf("MIN_VALIDATOR_WITHDRAWABILITY_DELAY: %d", cfg.MinValidatorWithdrawabilityDelay),
 		fmt.Sprintf("MAX_VALIDATORS_PER_WITHDRAWALS_SWEEP: %d", cfg.MaxValidatorsPerWithdrawalsSweep),

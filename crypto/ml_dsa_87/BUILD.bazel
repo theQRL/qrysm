@@ -1,0 +1,30 @@
+load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "ml_dsa_87",
+    srcs = [
+        "constants.go",
+        "interface.go",
+        "ml_dsa_87.go",
+        "signature_batch.go",
+    ],
+    importpath = "github.com/theQRL/qrysm/crypto/ml_dsa_87",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//crypto/ml_dsa_87/common",
+        "//crypto/ml_dsa_87/ml_dsa_87t",
+        "@com_github_pkg_errors//:errors",
+    ],
+)
+
+go_test(
+    name = "ml_dsa_87_test",
+    srcs = ["signature_batch_test.go"],
+    embed = [":ml_dsa_87"],
+    deps = [
+        "//config/fieldparams",
+        "//crypto/ml_dsa_87/common",
+        "//testing/assert",
+        "//testing/require",
+    ],
+)

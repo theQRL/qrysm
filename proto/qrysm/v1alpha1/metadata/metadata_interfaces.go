@@ -10,12 +10,12 @@ import (
 type Metadata interface {
 	SequenceNumber() uint64
 	AttnetsBitfield() bitfield.Bitvector64
-	InnerObject() interface{}
+	SyncnetsBitfield() bitfield.Bitvector4
+	InnerObject() any
 	IsNil() bool
 	Copy() Metadata
 	ssz.Marshaler
 	ssz.Unmarshaler
-	MetadataObjV0() *pb.MetaDataV0
 	MetadataObjV1() *pb.MetaDataV1
 	Version() int
 }

@@ -5,11 +5,11 @@ import (
 	customtypes "github.com/theQRL/qrysm/beacon-chain/state/state-native/custom-types"
 	"github.com/theQRL/qrysm/config/features"
 	consensus_types "github.com/theQRL/qrysm/consensus-types"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // LatestBlockHeader stored within the beacon state.
-func (b *BeaconState) LatestBlockHeader() *zondpb.BeaconBlockHeader {
+func (b *BeaconState) LatestBlockHeader() *qrysmpb.BeaconBlockHeader {
 	if b.latestBlockHeader == nil {
 		return nil
 	}
@@ -22,12 +22,12 @@ func (b *BeaconState) LatestBlockHeader() *zondpb.BeaconBlockHeader {
 
 // latestBlockHeaderVal stored within the beacon state.
 // This assumes that a lock is already held on BeaconState.
-func (b *BeaconState) latestBlockHeaderVal() *zondpb.BeaconBlockHeader {
+func (b *BeaconState) latestBlockHeaderVal() *qrysmpb.BeaconBlockHeader {
 	if b.latestBlockHeader == nil {
 		return nil
 	}
 
-	hdr := &zondpb.BeaconBlockHeader{
+	hdr := &qrysmpb.BeaconBlockHeader{
 		Slot:          b.latestBlockHeader.Slot,
 		ProposerIndex: b.latestBlockHeader.ProposerIndex,
 	}

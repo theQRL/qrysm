@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/beacon-chain/sync"
+	"github.com/theQRL/qrysm/beacon-chain/verification"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
@@ -91,7 +92,7 @@ func (s *Service) syncToFinalizedEpoch(ctx context.Context, genesis time.Time) e
 	}
 
 	for data := range queue.fetchedData {
-		s.processFetchedData(ctx, genesis, s.cfg.Chain.HeadSlot(), data)
+		s.processFetchedData(ctx, genesis, data)
 	}
 
 	log.WithFields(logrus.Fields{
@@ -126,7 +127,8 @@ func (s *Service) syncToNonFinalizedEpoch(ctx context.Context, genesis time.Time
 		return err
 	}
 	for data := range queue.fetchedData {
-		s.processFetchedDataRegSync(ctx, genesis, s.cfg.Chain.HeadSlot(), data)
+		count, err := s.processFetchedDataRegSync(ctx, genesis, data)
+		s.updatePeerScorerStats(data.pid, count, err)
 	}
 	log.WithFields(logrus.Fields{
 		"syncedSlot":  s.cfg.Chain.HeadSlot(),
@@ -140,22 +142,20 @@ func (s *Service) syncToNonFinalizedEpoch(ctx context.Context, genesis time.Time
 }
 
 // processFetchedData processes data received from queue.
-func (s *Service) processFetchedData(
-	ctx context.Context, genesis time.Time, startSlot primitives.Slot, data *blocksQueueFetchedData) {
-	defer s.updatePeerScorerStats(data.pid, startSlot)
-
+func (s *Service) processFetchedData(ctx context.Context, genesis time.Time, data *blocksQueueFetchedData) {
 	// Use Batch Block Verify to process and verify batches directly.
-	if err := s.processBatchedBlocks(ctx, genesis, data.blks, s.cfg.Chain.ReceiveBlockBatch); err != nil {
+	count, err := s.processBatchedBlocks(ctx, genesis, data.blks, s.cfg.Chain.ReceiveBlockBatch)
+	if err != nil {
 		log.WithError(err).Warn("Skip processing batched blocks")
 	}
+	s.updatePeerScorerStats(data.pid, count, err)
 }
 
-// processFetchedData processes data received from queue.
-func (s *Service) processFetchedDataRegSync(
-	ctx context.Context, genesis time.Time, startSlot primitives.Slot, data *blocksQueueFetchedData) {
-	defer s.updatePeerScorerStats(data.pid, startSlot)
-
+// processFetchedDataRegSync processes data received from queue and returns the
+// number of blocks successfully processed and a terminal error if any.
+func (s *Service) processFetchedDataRegSync(ctx context.Context, genesis time.Time, data *blocksQueueFetchedData) (uint64, error) {
 	blockReceiver := s.cfg.Chain.ReceiveBlock
+	processed := uint64(0)
 	invalidBlocks := 0
 	blksWithoutParentCount := 0
 	for _, b := range data.blks {
@@ -169,9 +169,13 @@ func (s *Service) processFetchedDataRegSync(
 				invalidBlocks++
 			default:
 				log.WithError(err).Warn("Block is not processed")
+				if isPunishableError(err) {
+					return processed, err
+				}
 			}
 			continue
 		}
+		processed++
 	}
 	if blksWithoutParentCount > 0 {
 		log.WithFields(logrus.Fields{
@@ -184,6 +188,7 @@ func (s *Service) processFetchedDataRegSync(
 	if len(data.blks) == invalidBlocks {
 		log.WithField("error", "Range had no valid blocks to process").Warn("Range is not processed")
 	}
+	return processed, nil
 }
 
 // highestFinalizedEpoch returns the absolute highest finalized epoch of all connected peers.
@@ -291,43 +296,57 @@ func validUnprocessed(ctx context.Context, blks []blocks.ROBlock, headSlot primi
 }
 
 func (s *Service) processBatchedBlocks(ctx context.Context, genesis time.Time,
-	blks []blocks.ROBlock, bFunc batchBlockReceiverFn) error {
+	blks []blocks.ROBlock, bFunc batchBlockReceiverFn) (uint64, error) {
 	if len(blks) == 0 {
-		return errors.New("0 blocks provided into method")
+		return 0, errors.New("0 blocks provided into method")
 	}
 	headSlot := s.cfg.Chain.HeadSlot()
 	var err error
 	blks, err = validUnprocessed(ctx, blks, headSlot, s.isProcessedBlock)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if len(blks) == 0 {
-		return nil
+		return 0, nil
 	}
 
 	first := blks[0]
 	if !s.cfg.Chain.HasBlock(ctx, first.Block().ParentRoot()) {
-		return fmt.Errorf("%w: %#x (in processBatchedBlocks, slot=%d)",
+		return 0, fmt.Errorf("%w: %#x (in processBatchedBlocks, slot=%d)",
 			errParentDoesNotExist, first.Block().ParentRoot(), first.Block().Slot())
 	}
 	s.logBatchSyncStatus(genesis, first, len(blks))
 
-	return bFunc(ctx, blocks.ROBlockSlice(blks))
+	if err := bFunc(ctx, blocks.ROBlockSlice(blks)); err != nil {
+		return 0, err
+	}
+	return uint64(len(blks)), nil
 }
 
-// updatePeerScorerStats adjusts monitored metrics for a peer.
-func (s *Service) updatePeerScorerStats(pid peer.ID, startSlot primitives.Slot) {
+// isPunishableError reports whether the supplied error indicates a peer-attributable
+// verification failure that should result in downscoring.
+func isPunishableError(err error) bool {
+	return errors.Is(err, verification.ErrInvalid)
+}
+
+// updatePeerScorerStats adjusts monitored metrics for a peer based on the
+// outcome of processing the batch it provided. Peers that served invalidly
+// verified data are downscored via BadResponsesScorer; otherwise they are
+// credited with the number of blocks we successfully imported from them.
+func (s *Service) updatePeerScorerStats(pid peer.ID, count uint64, err error) {
 	if pid == "" {
 		return
 	}
-	headSlot := s.cfg.Chain.HeadSlot()
-	if startSlot >= headSlot {
+	if isPunishableError(err) {
+		log.WithError(err).WithField("peer_id", pid).Warn("Incrementing peer bad-response count for invalid range-sync data")
+		s.cfg.P2P.Peers().Scorers().BadResponsesScorer().Increment(pid)
 		return
 	}
-	if diff := s.cfg.Chain.HeadSlot() - startSlot; diff > 0 {
-		scorer := s.cfg.P2P.Peers().Scorers().BlockProviderScorer()
-		scorer.IncrementProcessedBlocks(pid, uint64(diff))
+	if count == 0 {
+		return
 	}
+	scorer := s.cfg.P2P.Peers().Scorers().BlockProviderScorer()
+	scorer.IncrementProcessedBlocks(pid, count)
 }
 
 // isProcessedBlock checks DB and local cache for presence of a given block, to avoid duplicates.

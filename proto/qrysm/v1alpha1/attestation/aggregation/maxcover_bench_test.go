@@ -68,7 +68,6 @@ func BenchmarkMaxCoverProblem_MaxCover(b *testing.B) {
 	for _, tt := range tests {
 		name := fmt.Sprintf("%d_attestations_with_%d_bit(s)_set", tt.numCandidates, tt.numMarkedBits)
 		b.Run(fmt.Sprintf("cur_%s", name), func(b *testing.B) {
-			b.StopTimer()
 			var bitlists []bitfield.Bitlist
 			if tt.numMarkedBits == 1 {
 				bitlists = aggtesting.BitlistsWithSingleBitSet(tt.numCandidates, bitlistLen)
@@ -76,8 +75,7 @@ func BenchmarkMaxCoverProblem_MaxCover(b *testing.B) {
 				bitlists = aggtesting.BitlistsWithMultipleBitSet(b, tt.numCandidates, bitlistLen, tt.numMarkedBits)
 
 			}
-			b.StartTimer()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				candidates := make([]*MaxCoverCandidate, len(bitlists))
 				for i := 0; i < len(bitlists); i++ {
 					candidates[i] = NewMaxCoverCandidate(i, &bitlists[i])
@@ -88,7 +86,6 @@ func BenchmarkMaxCoverProblem_MaxCover(b *testing.B) {
 			}
 		})
 		b.Run(fmt.Sprintf("new_%s", name), func(b *testing.B) {
-			b.StopTimer()
 			var bitlists []*bitfield.Bitlist64
 			if tt.numMarkedBits == 1 {
 				bitlists = aggtesting.Bitlists64WithSingleBitSet(tt.numCandidates, bitlistLen)
@@ -96,8 +93,7 @@ func BenchmarkMaxCoverProblem_MaxCover(b *testing.B) {
 				bitlists = aggtesting.Bitlists64WithMultipleBitSet(b, tt.numCandidates, bitlistLen, tt.numMarkedBits)
 
 			}
-			b.StartTimer()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				_, _, err := MaxCover(bitlists, len(bitlists), tt.allowOverlaps)
 				_ = err
 			}

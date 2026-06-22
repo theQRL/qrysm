@@ -28,11 +28,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/go-bitfield"
-	gcrypto "github.com/theQRL/go-zond/crypto"
-	gzondlog "github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/discover"
-	"github.com/theQRL/go-zond/p2p/enode"
-	"github.com/theQRL/go-zond/p2p/enr"
+	gcrypto "github.com/theQRL/go-qrl/crypto"
+	gqrllog "github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/discover"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 	"github.com/theQRL/qrysm/async"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/config/params"
@@ -80,10 +80,8 @@ func main() {
 	if *debug {
 		logrus.SetLevel(logrus.DebugLevel)
 
-		// Gzond specific logging.
-		glogger := gzondlog.NewGlogHandler(gzondlog.StreamHandler(os.Stderr, gzondlog.TerminalFormat(false)))
-		glogger.Verbosity(gzondlog.LvlTrace)
-		gzondlog.Root().SetHandler(glogger)
+		// Gqrl specific logging.
+		gqrllog.SetDefault(gqrllog.NewLogger(gqrllog.NewTerminalHandlerWithLevel(os.Stderr, gqrllog.LvlTrace, true)))
 
 		log.Debug("Debug logging enabled.")
 	}
@@ -93,11 +91,11 @@ func main() {
 	}
 	if *seedNode != "" {
 		log.Debugf("Adding seed node %s", *seedNode)
-		node, err := enode.Parse(enode.ValidSchemes, *seedNode)
+		node, err := qnode.Parse(qnode.ValidSchemes, *seedNode)
 		if err != nil {
 			log.Fatal(err)
 		}
-		cfg.Bootnodes = []*enode.Node{node}
+		cfg.Bootnodes = []*qnode.Node{node}
 	}
 	ipAddr, err := network.ExternalIP()
 	if err != nil {
@@ -180,17 +178,17 @@ func (h *handler) httpHandler(w http.ResponseWriter, _ *http.Request) {
 	allNodes := h.listener.AllNodes()
 	write(w, []byte("Nodes stored in the table:\n"))
 	for i, n := range allNodes {
-		write(w, []byte(fmt.Sprintf("Node %d\n", i)))
+		write(w, fmt.Appendf(nil, "Node %d\n", i))
 		write(w, []byte(n.String()+"\n"))
 		write(w, []byte("Node ID: "+n.ID().String()+"\n"))
 		write(w, []byte("IP: "+n.IP().String()+"\n"))
 		write(w, []byte(fmt.Sprintf("UDP Port: %d", n.UDP())+"\n"))
-		write(w, []byte(fmt.Sprintf("TCP Port: %d", n.UDP())+"\n\n"))
+		write(w, []byte(fmt.Sprintf("TCP Port: %d", n.TCP())+"\n\n"))
 	}
 }
 
-func createLocalNode(privKey *ecdsa.PrivateKey, ipAddr net.IP, port int) (*enode.LocalNode, error) {
-	db, err := enode.OpenDB("")
+func createLocalNode(privKey *ecdsa.PrivateKey, ipAddr net.IP, port int) (*qnode.LocalNode, error) {
+	db, err := qnode.OpenDB("")
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not open node's peer database")
 	}
@@ -224,7 +222,7 @@ func createLocalNode(privKey *ecdsa.PrivateKey, ipAddr net.IP, port int) (*enode
 		return nil, errors.Wrap(err, "Could not compute fork digest")
 	}
 
-	forkID := &pb.ENRForkID{
+	forkID := &pb.QNRForkID{
 		CurrentForkDigest: digest[:],
 		NextForkVersion:   fVersion,
 		NextForkEpoch:     params.BeaconConfig().FarFutureEpoch,
@@ -234,9 +232,9 @@ func createLocalNode(privKey *ecdsa.PrivateKey, ipAddr net.IP, port int) (*enode
 		return nil, errors.Wrap(err, "Could not marshal fork id")
 	}
 
-	localNode := enode.NewLocalNode(db, privKey)
-	localNode.Set(enr.WithEntry("eth2", forkEntry))
-	localNode.Set(enr.WithEntry("attnets", bitfield.NewBitvector64()))
+	localNode := qnode.NewLocalNode(db, privKey)
+	localNode.Set(qnr.WithEntry("consensus", forkEntry))
+	localNode.Set(qnr.WithEntry("attnets", bitfield.NewBitvector64()))
 	localNode.SetFallbackIP(external)
 	localNode.SetFallbackUDP(port)
 
@@ -248,30 +246,30 @@ func extractPrivateKey() *ecdsa.PrivateKey {
 	if *privateKey != "" {
 		dst, err := hex.DecodeString(*privateKey)
 		if err != nil {
-			panic(err)
+			panic(err) // lint:nopanic
 		}
 		unmarshalledKey, err := crypto.UnmarshalSecp256k1PrivateKey(dst)
 		if err != nil {
-			panic(err)
+			panic(err) // lint:nopanic
 		}
 
 		privKey, err = ecdsaqrysm.ConvertFromInterfacePrivKey(unmarshalledKey)
 		if err != nil {
-			panic(err)
+			panic(err) // lint:nopanic
 		}
 	} else {
 		privInterfaceKey, _, err := crypto.GenerateSecp256k1Key(rand.Reader)
 		if err != nil {
-			panic(err)
+			panic(err) // lint:nopanic
 		}
 		privKey, err = ecdsaqrysm.ConvertFromInterfacePrivKey(privInterfaceKey)
 		if err != nil {
-			panic(err)
+			panic(err) // lint:nopanic
 		}
 		log.Warning("No private key was provided. Using default/random private key")
 		b, err := privInterfaceKey.Raw()
 		if err != nil {
-			panic(err)
+			panic(err) // lint:nopanic
 		}
 		log.Debugf("Private key %x", b)
 	}

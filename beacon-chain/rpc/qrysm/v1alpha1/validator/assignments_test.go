@@ -21,7 +21,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -29,26 +29,26 @@ import (
 
 // pubKey is a helper to generate a well-formed public key.
 func pubKey(i uint64) []byte {
-	pubKey := make([]byte, field_params.DilithiumPubkeyLength)
+	pubKey := make([]byte, field_params.MLDSA87PubkeyLength)
 	binary.LittleEndian.PutUint64(pubKey, i)
 	return pubKey
 }
 
 func TestGetDuties_OK(t *testing.T) {
-	genesis := util.NewBeaconBlockCapella()
+	genesis := util.NewBeaconBlockZond()
 	depChainStart := params.BeaconConfig().MinGenesisActiveValidatorCount
 	deposits, _, err := util.DeterministicDepositsAndKeys(depChainStart)
 	require.NoError(t, err)
-	eth1Data, err := util.DeterministicEth1Data(len(deposits))
+	executionData, err := util.DeterministicExecutionData(len(deposits))
 	require.NoError(t, err)
-	bs, err := transition.GenesisBeaconStateCapella(context.Background(), deposits, 0, eth1Data, &enginev1.ExecutionPayloadCapella{})
+	bs, err := transition.GenesisBeaconStateZond(context.Background(), deposits, 0, executionData, &enginev1.ExecutionPayloadZond{})
 	require.NoError(t, err, "Could not setup genesis bs")
 	genesisRoot, err := genesis.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
 	pubKeys := make([][]byte, len(deposits))
 	indices := make([]uint64, len(deposits))
-	for i := 0; i < len(deposits); i++ {
+	for i := range deposits {
 		pubKeys[i] = deposits[i].Data.PublicKey
 		indices[i] = uint64(i)
 	}
@@ -64,7 +64,7 @@ func TestGetDuties_OK(t *testing.T) {
 	}
 
 	// Test the first validator in registry.
-	req := &zondpb.DutiesRequest{
+	req := &qrysmpb.DutiesRequest{
 		PublicKeys: [][]byte{deposits[0].Data.PublicKey},
 	}
 	res, err := vs.GetDuties(context.Background(), req)
@@ -76,7 +76,7 @@ func TestGetDuties_OK(t *testing.T) {
 
 	// Test the last validator in registry.
 	lastValidatorIndex := depChainStart - 1
-	req = &zondpb.DutiesRequest{
+	req = &qrysmpb.DutiesRequest{
 		PublicKeys: [][]byte{deposits[lastValidatorIndex].Data.PublicKey},
 	}
 	res, err = vs.GetDuties(context.Background(), req)
@@ -87,7 +87,7 @@ func TestGetDuties_OK(t *testing.T) {
 	}
 
 	// We request for duties for all validators.
-	req = &zondpb.DutiesRequest{
+	req = &qrysmpb.DutiesRequest{
 		PublicKeys: pubKeys,
 		Epoch:      0,
 	}
@@ -98,18 +98,18 @@ func TestGetDuties_OK(t *testing.T) {
 	}
 }
 
-func TestGetCapellaDuties_SyncCommitteeOK(t *testing.T) {
+func TestGetZondDuties_SyncCommitteeOK(t *testing.T) {
 	helpers.ClearCache()
 	params.SetupTestConfigCleanup(t)
 
-	genesis := util.NewBeaconBlockCapella()
+	genesis := util.NewBeaconBlockZond()
 	deposits, _, err := util.DeterministicDepositsAndKeys(params.BeaconConfig().SyncCommitteeSize)
 	require.NoError(t, err)
-	eth1Data, err := util.DeterministicEth1Data(len(deposits))
+	executionData, err := util.DeterministicExecutionData(len(deposits))
 	require.NoError(t, err)
-	bs, err := util.GenesisBeaconStateCapella(context.Background(), deposits, 0, eth1Data)
+	bs, err := util.GenesisBeaconStateZond(context.Background(), deposits, 0, executionData)
 	require.NoError(t, err, "Could not setup genesis bs")
-	h := &zondpb.BeaconBlockHeader{
+	h := &qrysmpb.BeaconBlockHeader{
 		StateRoot:  bytesutil.PadTo([]byte{'a'}, fieldparams.RootLength),
 		ParentRoot: bytesutil.PadTo([]byte{'b'}, fieldparams.RootLength),
 		BodyRoot:   bytesutil.PadTo([]byte{'c'}, fieldparams.RootLength),
@@ -124,14 +124,14 @@ func TestGetCapellaDuties_SyncCommitteeOK(t *testing.T) {
 
 	var nextSyncCommitteePubKeys [][]byte
 	for i := uint64(0); i < params.BeaconConfig().SyncCommitteeSize; i++ {
-		nextSyncCommitteePubKeys = append(nextSyncCommitteePubKeys, bytesutil.PadTo([]byte{}, field_params.DilithiumPubkeyLength))
+		nextSyncCommitteePubKeys = append(nextSyncCommitteePubKeys, bytesutil.PadTo([]byte{}, field_params.MLDSA87PubkeyLength))
 	}
-	nextSyncCommittee := &zondpb.SyncCommittee{Pubkeys: nextSyncCommitteePubKeys}
+	nextSyncCommittee := &qrysmpb.SyncCommittee{Pubkeys: nextSyncCommitteePubKeys}
 
 	require.NoError(t, bs.SetNextSyncCommittee(nextSyncCommittee))
 	pubKeys := make([][]byte, len(deposits))
 	indices := make([]uint64, len(deposits))
-	for i := 0; i < len(deposits); i++ {
+	for i := range deposits {
 		pubKeys[i] = deposits[i].Data.PublicKey
 		indices[i] = uint64(i)
 	}
@@ -145,13 +145,13 @@ func TestGetCapellaDuties_SyncCommitteeOK(t *testing.T) {
 	vs := &Server{
 		HeadFetcher:            chain,
 		TimeFetcher:            chain,
-		Eth1InfoFetcher:        &mockExecution.Chain{},
+		ExecutionInfoFetcher:   &mockExecution.Chain{},
 		SyncChecker:            &mockSync.Sync{IsSyncing: false},
 		ProposerSlotIndexCache: cache.NewProposerPayloadIDsCache(),
 	}
 
 	// Test the first validator in registry.
-	req := &zondpb.DutiesRequest{
+	req := &qrysmpb.DutiesRequest{
 		PublicKeys: [][]byte{deposits[0].Data.PublicKey},
 	}
 	res, err := vs.GetDuties(context.Background(), req)
@@ -163,7 +163,7 @@ func TestGetCapellaDuties_SyncCommitteeOK(t *testing.T) {
 
 	// Test the last validator in registry.
 	lastValidatorIndex := params.BeaconConfig().SyncCommitteeSize - 1
-	req = &zondpb.DutiesRequest{
+	req = &qrysmpb.DutiesRequest{
 		PublicKeys: [][]byte{deposits[lastValidatorIndex].Data.PublicKey},
 	}
 	res, err = vs.GetDuties(context.Background(), req)
@@ -174,7 +174,7 @@ func TestGetCapellaDuties_SyncCommitteeOK(t *testing.T) {
 	}
 
 	// We request for duties for all validators.
-	req = &zondpb.DutiesRequest{
+	req = &qrysmpb.DutiesRequest{
 		PublicKeys: pubKeys,
 		Epoch:      0,
 	}
@@ -191,7 +191,7 @@ func TestGetCapellaDuties_SyncCommitteeOK(t *testing.T) {
 	}
 
 	// Current epoch and next epoch duties should not be equal at the sync period epoch boundary.
-	req = &zondpb.DutiesRequest{
+	req = &qrysmpb.DutiesRequest{
 		PublicKeys: pubKeys,
 		Epoch:      params.BeaconConfig().EpochsPerSyncCommitteePeriod - 1,
 	}
@@ -205,14 +205,14 @@ func TestGetCapellaDuties_SyncCommitteeOK(t *testing.T) {
 func TestGetAltairDuties_UnknownPubkey(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 
-	genesis := util.NewBeaconBlockCapella()
+	genesis := util.NewBeaconBlockZond()
 	deposits, _, err := util.DeterministicDepositsAndKeys(params.BeaconConfig().SyncCommitteeSize)
 	require.NoError(t, err)
-	eth1Data, err := util.DeterministicEth1Data(len(deposits))
+	executionData, err := util.DeterministicExecutionData(len(deposits))
 	require.NoError(t, err)
-	bs, err := util.GenesisBeaconStateCapella(context.Background(), deposits, 0, eth1Data)
+	bs, err := util.GenesisBeaconStateZond(context.Background(), deposits, 0, executionData)
 	require.NoError(t, err)
-	h := &zondpb.BeaconBlockHeader{
+	h := &qrysmpb.BeaconBlockHeader{
 		StateRoot:  bytesutil.PadTo([]byte{'a'}, fieldparams.RootLength),
 		ParentRoot: bytesutil.PadTo([]byte{'b'}, fieldparams.RootLength),
 		BodyRoot:   bytesutil.PadTo([]byte{'c'}, fieldparams.RootLength),
@@ -235,14 +235,14 @@ func TestGetAltairDuties_UnknownPubkey(t *testing.T) {
 	vs := &Server{
 		HeadFetcher:            chain,
 		TimeFetcher:            chain,
-		Eth1InfoFetcher:        &mockExecution.Chain{},
+		ExecutionInfoFetcher:   &mockExecution.Chain{},
 		SyncChecker:            &mockSync.Sync{IsSyncing: false},
 		DepositFetcher:         depositCache,
 		ProposerSlotIndexCache: cache.NewProposerPayloadIDsCache(),
 	}
 
 	unknownPubkey := bytesutil.PadTo([]byte{'u'}, 48)
-	req := &zondpb.DutiesRequest{
+	req := &qrysmpb.DutiesRequest{
 		PublicKeys: [][]byte{unknownPubkey},
 	}
 	res, err := vs.GetDuties(context.Background(), req)
@@ -258,7 +258,7 @@ func TestGetDuties_SlotOutOfUpperBound(t *testing.T) {
 	vs := &Server{
 		TimeFetcher: chain,
 	}
-	req := &zondpb.DutiesRequest{
+	req := &qrysmpb.DutiesRequest{
 		Epoch: primitives.Epoch(chain.CurrentSlot()/params.BeaconConfig().SlotsPerEpoch + 2),
 	}
 	_, err := vs.duties(context.Background(), req)
@@ -266,13 +266,13 @@ func TestGetDuties_SlotOutOfUpperBound(t *testing.T) {
 }
 
 func TestGetDuties_CurrentEpoch_ShouldNotFail(t *testing.T) {
-	genesis := util.NewBeaconBlockCapella()
+	genesis := util.NewBeaconBlockZond()
 	depChainStart := params.BeaconConfig().MinGenesisActiveValidatorCount
 	deposits, _, err := util.DeterministicDepositsAndKeys(depChainStart)
 	require.NoError(t, err)
-	eth1Data, err := util.DeterministicEth1Data(len(deposits))
+	executionData, err := util.DeterministicExecutionData(len(deposits))
 	require.NoError(t, err)
-	bState, err := transition.GenesisBeaconStateCapella(context.Background(), deposits, 0, eth1Data, &enginev1.ExecutionPayloadCapella{})
+	bState, err := transition.GenesisBeaconStateZond(context.Background(), deposits, 0, executionData, &enginev1.ExecutionPayloadZond{})
 	require.NoError(t, err, "Could not setup genesis state")
 	// Set state to non-epoch start slot.
 	require.NoError(t, bState.SetSlot(5))
@@ -280,9 +280,9 @@ func TestGetDuties_CurrentEpoch_ShouldNotFail(t *testing.T) {
 	genesisRoot, err := genesis.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
-	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, len(deposits))
+	pubKeys := make([][field_params.MLDSA87PubkeyLength]byte, len(deposits))
 	indices := make([]uint64, len(deposits))
-	for i := 0; i < len(deposits); i++ {
+	for i := range deposits {
 		pubKeys[i] = bytesutil.ToBytes2592(deposits[i].Data.PublicKey)
 		indices[i] = uint64(i)
 	}
@@ -298,7 +298,7 @@ func TestGetDuties_CurrentEpoch_ShouldNotFail(t *testing.T) {
 	}
 
 	// Test the first validator in registry.
-	req := &zondpb.DutiesRequest{
+	req := &qrysmpb.DutiesRequest{
 		PublicKeys: [][]byte{deposits[0].Data.PublicKey},
 	}
 	res, err := vs.GetDuties(context.Background(), req)
@@ -307,21 +307,21 @@ func TestGetDuties_CurrentEpoch_ShouldNotFail(t *testing.T) {
 }
 
 func TestGetDuties_MultipleKeys_OK(t *testing.T) {
-	genesis := util.NewBeaconBlockCapella()
+	genesis := util.NewBeaconBlockZond()
 	depChainStart := uint64(64)
 
 	deposits, _, err := util.DeterministicDepositsAndKeys(depChainStart)
 	require.NoError(t, err)
-	eth1Data, err := util.DeterministicEth1Data(len(deposits))
+	executionData, err := util.DeterministicExecutionData(len(deposits))
 	require.NoError(t, err)
-	bs, err := transition.GenesisBeaconStateCapella(context.Background(), deposits, 0, eth1Data, &enginev1.ExecutionPayloadCapella{})
+	bs, err := transition.GenesisBeaconStateZond(context.Background(), deposits, 0, executionData, &enginev1.ExecutionPayloadZond{})
 	require.NoError(t, err, "Could not setup genesis bs")
 	genesisRoot, err := genesis.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
-	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, len(deposits))
+	pubKeys := make([][field_params.MLDSA87PubkeyLength]byte, len(deposits))
 	indices := make([]uint64, len(deposits))
-	for i := 0; i < len(deposits); i++ {
+	for i := range deposits {
 		pubKeys[i] = bytesutil.ToBytes2592(deposits[i].Data.PublicKey)
 		indices[i] = uint64(i)
 	}
@@ -340,28 +340,28 @@ func TestGetDuties_MultipleKeys_OK(t *testing.T) {
 	pubkey1 := deposits[1].Data.PublicKey
 
 	// Test the first validator in registry.
-	req := &zondpb.DutiesRequest{
+	req := &qrysmpb.DutiesRequest{
 		PublicKeys: [][]byte{pubkey0, pubkey1},
 	}
 	res, err := vs.GetDuties(context.Background(), req)
 	require.NoError(t, err, "Could not call epoch committee assignment")
 	assert.Equal(t, 2, len(res.CurrentEpochDuties))
-	assert.Equal(t, primitives.Slot(0), res.CurrentEpochDuties[0].AttesterSlot)
-	assert.Equal(t, primitives.Slot(2), res.CurrentEpochDuties[1].AttesterSlot)
+	assert.Equal(t, primitives.Slot(3), res.CurrentEpochDuties[0].AttesterSlot)
+	assert.Equal(t, primitives.Slot(3), res.CurrentEpochDuties[1].AttesterSlot)
 }
 
 func TestGetDuties_SyncNotReady(t *testing.T) {
 	vs := &Server{
 		SyncChecker: &mockSync.Sync{IsSyncing: true},
 	}
-	_, err := vs.GetDuties(context.Background(), &zondpb.DutiesRequest{})
+	_, err := vs.GetDuties(context.Background(), &qrysmpb.DutiesRequest{})
 	assert.ErrorContains(t, "Syncing to latest head", err)
 }
 
 func TestAssignValidatorToSubnet(t *testing.T) {
 	k := pubKey(3)
 
-	core.AssignValidatorToSubnetProto(k, zondpb.ValidatorStatus_ACTIVE)
+	core.AssignValidatorToSubnetProto(k, qrysmpb.ValidatorStatus_ACTIVE)
 	coms, ok, exp := cache.SubnetIDs.GetPersistentSubnets(k)
 	require.Equal(t, true, ok, "No cache entry found for validator")
 	assert.Equal(t, params.BeaconConfig().RandomSubnetsPerValidator, uint64(len(coms)))
@@ -377,13 +377,13 @@ func TestAssignValidatorToSyncSubnet(t *testing.T) {
 	k := pubKey(3)
 	committee := make([][]byte, 0)
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		committee = append(committee, pubKey(uint64(i)))
 	}
-	sCommittee := &zondpb.SyncCommittee{
+	sCommittee := &qrysmpb.SyncCommittee{
 		Pubkeys: committee,
 	}
-	registerSyncSubnet(0, 0, k, sCommittee, zondpb.ValidatorStatus_ACTIVE)
+	registerSyncSubnet(0, 0, k, sCommittee, qrysmpb.ValidatorStatus_ACTIVE)
 	coms, _, ok, exp := cache.SyncSubnetIDs.GetSyncCommitteeSubnets(k, 0)
 	require.Equal(t, true, ok, "No cache entry found for validator")
 	assert.Equal(t, uint64(1), uint64(len(coms)))
@@ -396,21 +396,20 @@ func TestAssignValidatorToSyncSubnet(t *testing.T) {
 }
 
 func BenchmarkCommitteeAssignment(b *testing.B) {
-
-	genesis := util.NewBeaconBlockCapella()
+	genesis := util.NewBeaconBlockZond()
 	depChainStart := uint64(8192 * 2)
 	deposits, _, err := util.DeterministicDepositsAndKeys(depChainStart)
 	require.NoError(b, err)
-	eth1Data, err := util.DeterministicEth1Data(len(deposits))
+	executionData, err := util.DeterministicExecutionData(len(deposits))
 	require.NoError(b, err)
-	bs, err := transition.GenesisBeaconStateCapella(context.Background(), deposits, 0, eth1Data, &enginev1.ExecutionPayloadCapella{})
+	bs, err := transition.GenesisBeaconStateZond(context.Background(), deposits, 0, executionData, &enginev1.ExecutionPayloadZond{})
 	require.NoError(b, err, "Could not setup genesis bs")
 	genesisRoot, err := genesis.Block.HashTreeRoot()
 	require.NoError(b, err, "Could not get signing root")
 
-	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, len(deposits))
+	pubKeys := make([][field_params.MLDSA87PubkeyLength]byte, len(deposits))
 	indices := make([]uint64, len(deposits))
-	for i := 0; i < len(deposits); i++ {
+	for i := range deposits {
 		pubKeys[i] = bytesutil.ToBytes2592(deposits[i].Data.PublicKey)
 		indices[i] = uint64(i)
 	}
@@ -425,12 +424,12 @@ func BenchmarkCommitteeAssignment(b *testing.B) {
 	for i, deposit := range deposits {
 		pks[i] = deposit.Data.PublicKey
 	}
-	req := &zondpb.DutiesRequest{
+	req := &qrysmpb.DutiesRequest{
 		PublicKeys: pks,
 		Epoch:      0,
 	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		_, err := vs.GetDuties(context.Background(), req)
 		assert.NoError(b, err)
 	}

@@ -1,32 +1,32 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "service",
     srcs = ["proposer_settings.go"],
     importpath = "github.com/theQRL/qrysm/config/validator/service",
     visibility = ["//visibility:public"],
     deps = [
-        "//config/fieldparams:go_default_library",
-        "//consensus-types/validator:go_default_library",
-        "//encoding/bytesutil:go_default_library",
-        "//proto/qrysm/v1alpha1/validator-client:go_default_library",
-        "@com_github_pkg_errors//:go_default_library",
-        "@com_github_theqrl_go_zond//common:go_default_library",
-        "@com_github_theqrl_go_zond//common/hexutil:go_default_library",
+        "//config/fieldparams",
+        "//consensus-types/validator",
+        "//encoding/bytesutil",
+        "//proto/qrysm/v1alpha1/validator-client",
+        "@com_github_pkg_errors//:errors",
+        "@com_github_theqrl_go_qrl//common",
+        "@com_github_theqrl_go_qrl//common/hexutil",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "service_test",
     srcs = ["proposer_settings_test.go"],
-    embed = [":go_default_library"],
+    embed = [":service"],
     deps = [
-        "//config/fieldparams:go_default_library",
-        "//config/params:go_default_library",
-        "//consensus-types/validator:go_default_library",
-        "//encoding/bytesutil:go_default_library",
-        "//testing/require:go_default_library",
-        "@com_github_theqrl_go_zond//common:go_default_library",
-        "@com_github_theqrl_go_zond//common/hexutil:go_default_library",
+        "//config/fieldparams",
+        "//config/params",
+        "//consensus-types/validator",
+        "//encoding/bytesutil",
+        "//testing/require",
+        "@com_github_theqrl_go_qrl//common",
+        "@com_github_theqrl_go_qrl//common/hexutil",
     ],
 )

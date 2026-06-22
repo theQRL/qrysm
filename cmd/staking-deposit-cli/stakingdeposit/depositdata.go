@@ -3,8 +3,8 @@ package stakingdeposit
 import (
 	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/misc"
 	"github.com/theQRL/qrysm/contracts/deposit"
-	"github.com/theQRL/qrysm/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 type DepositData struct {
@@ -22,25 +22,19 @@ type DepositData struct {
 
 func NewDepositData(c *Credential) (*DepositData, error) {
 	binSigningSeed := misc.StrSeedToBinSeed(c.signingSeed)
-	depositKey, err := dilithium.SecretKeyFromSeed(binSigningSeed[:])
+	depositKey, err := ml_dsa_87.SecretKeyFromSeed(binSigningSeed[:])
 	if err != nil {
 		return nil, err
 	}
 
-	binWithdrawalSeed := misc.StrSeedToBinSeed(c.withdrawalSeed)
-	withdrawalKey, err := dilithium.SecretKeyFromSeed(binWithdrawalSeed[:])
+	depositData, dataRoot, err := deposit.DepositInput(depositKey, c.withdrawalAddress, c.amount, c.chainSetting.GenesisForkVersion)
 	if err != nil {
 		return nil, err
 	}
 
-	depositData, dataRoot, err := deposit.DepositInput(depositKey, withdrawalKey, c.amount, c.chainSetting.GenesisForkVersion)
-	if err != nil {
-		return nil, err
-	}
-
-	depositMessage := &zondpb.DepositMessage{
+	depositMessage := &qrysmpb.DepositMessage{
 		PublicKey:             depositKey.PublicKey().Marshal(),
-		WithdrawalCredentials: deposit.WithdrawalCredentialsHash(withdrawalKey),
+		WithdrawalCredentials: depositData.WithdrawalCredentials,
 		Amount:                c.amount,
 	}
 

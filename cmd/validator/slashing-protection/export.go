@@ -43,7 +43,7 @@ func exportSlashingProtectionJSON(cliCtx *cli.Context) error {
 		}
 	}
 	// ensure that the validator.db is found under the specified dir or its subdirectories
-	found, _, err := file.RecursiveFileFind(kv.ProtectionDbFileName, dataDir)
+	found, foundPath, err := file.RecursiveFileFind(kv.ProtectionDbFileName, dataDir)
 	if err != nil {
 		return errors.Wrapf(err, "error finding validator database at path %s", dataDir)
 	}
@@ -53,8 +53,9 @@ func exportSlashingProtectionJSON(cliCtx *cli.Context) error {
 			dataDir,
 		)
 	}
+	foundDir := filepath.Dir(foundPath)
 
-	validatorDB, err := kv.NewKVStore(cliCtx.Context, dataDir, &kv.Config{})
+	validatorDB, err := kv.NewKVStore(cliCtx.Context, foundDir, &kv.Config{})
 	if err != nil {
 		return errors.Wrapf(err, "could not access validator database at path %s", dataDir)
 	}

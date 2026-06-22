@@ -12,9 +12,9 @@ import (
 	slashingsmock "github.com/theQRL/qrysm/beacon-chain/operations/slashings/mock"
 	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
 	"github.com/theQRL/qrysm/config/params"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
@@ -24,15 +24,15 @@ func TestService_processAttesterSlashings(t *testing.T) {
 	slasherDB := dbtest.SetupSlasherDB(t)
 	beaconDB := dbtest.SetupDB(t)
 
-	beaconState, err := util.NewBeaconStateCapella()
+	beaconState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 
-	privKey, err := dilithium.RandKey()
+	privKey, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	validators := make([]*zondpb.Validator, 1)
-	validators[0] = &zondpb.Validator{
+	validators := make([]*qrysmpb.Validator, 1)
+	validators[0] = &qrysmpb.Validator{
 		PublicKey:             privKey.PublicKey().Marshal(),
-		WithdrawalCredentials: make([]byte, 32),
+		WithdrawalCredentials: make([]byte, 64),
 		EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
 	}
 	err = beaconState.SetValidators(validators)
@@ -51,10 +51,10 @@ func TestService_processAttesterSlashings(t *testing.T) {
 		},
 	}
 
-	firstAtt := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+	firstAtt := util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{
 		AttestingIndices: []uint64{0},
 	})
-	secondAtt := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+	secondAtt := util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{
 		AttestingIndices: []uint64{0},
 	})
 
@@ -73,14 +73,15 @@ func TestService_processAttesterSlashings(t *testing.T) {
 		// Use valid signature for the first att, but bad one for the second.
 		signature := privKey.Sign(signingRoot[:])
 		firstAtt.Signatures = [][]byte{signature.Marshal()}
-		secondAtt.Signatures = [][]byte{make([]byte, 4595)}
+		secondAtt.Signatures = [][]byte{make([]byte, 4627)}
 
-		slashings := []*zondpb.AttesterSlashing{
-			{
-				Attestation_1: firstAtt,
-				Attestation_2: secondAtt,
-			},
+		slashing := &qrysmpb.AttesterSlashing{
+			Attestation_1: firstAtt,
+			Attestation_2: secondAtt,
 		}
+		slashingRoot, err := slashing.HashTreeRoot()
+		require.NoError(tt, err)
+		slashings := map[[32]byte]*qrysmpb.AttesterSlashing{slashingRoot: slashing}
 
 		err = s.processAttesterSlashings(ctx, slashings)
 		require.NoError(tt, err)
@@ -91,15 +92,16 @@ func TestService_processAttesterSlashings(t *testing.T) {
 		hook := logTest.NewGlobal()
 		// Use invalid signature for the first att, but valid for the second.
 		signature := privKey.Sign(signingRoot[:])
-		firstAtt.Signatures = [][]byte{make([]byte, 4595)}
+		firstAtt.Signatures = [][]byte{make([]byte, 4627)}
 		secondAtt.Signatures = [][]byte{signature.Marshal()}
 
-		slashings := []*zondpb.AttesterSlashing{
-			{
-				Attestation_1: firstAtt,
-				Attestation_2: secondAtt,
-			},
+		slashing := &qrysmpb.AttesterSlashing{
+			Attestation_1: firstAtt,
+			Attestation_2: secondAtt,
 		}
+		slashingRoot, err := slashing.HashTreeRoot()
+		require.NoError(tt, err)
+		slashings := map[[32]byte]*qrysmpb.AttesterSlashing{slashingRoot: slashing}
 
 		err = s.processAttesterSlashings(ctx, slashings)
 		require.NoError(tt, err)
@@ -113,12 +115,13 @@ func TestService_processAttesterSlashings(t *testing.T) {
 		firstAtt.Signatures = [][]byte{signature.Marshal()}
 		secondAtt.Signatures = [][]byte{signature.Marshal()}
 
-		slashings := []*zondpb.AttesterSlashing{
-			{
-				Attestation_1: firstAtt,
-				Attestation_2: secondAtt,
-			},
+		slashing := &qrysmpb.AttesterSlashing{
+			Attestation_1: firstAtt,
+			Attestation_2: secondAtt,
 		}
+		slashingRoot, err := slashing.HashTreeRoot()
+		require.NoError(tt, err)
+		slashings := map[[32]byte]*qrysmpb.AttesterSlashing{slashingRoot: slashing}
 
 		err = s.processAttesterSlashings(ctx, slashings)
 		require.NoError(tt, err)
@@ -131,15 +134,15 @@ func TestService_processProposerSlashings(t *testing.T) {
 	slasherDB := dbtest.SetupSlasherDB(t)
 	beaconDB := dbtest.SetupDB(t)
 
-	beaconState, err := util.NewBeaconStateCapella()
+	beaconState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 
-	privKey, err := dilithium.RandKey()
+	privKey, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	validators := make([]*zondpb.Validator, 1)
-	validators[0] = &zondpb.Validator{
+	validators := make([]*qrysmpb.Validator, 1)
+	validators[0] = &qrysmpb.Validator{
 		PublicKey:             privKey.PublicKey().Marshal(),
-		WithdrawalCredentials: make([]byte, 32),
+		WithdrawalCredentials: make([]byte, 64),
 		EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
 	}
 	err = beaconState.SetValidators(validators)
@@ -162,15 +165,15 @@ func TestService_processProposerSlashings(t *testing.T) {
 	err = s.serviceCfg.StateGen.SaveState(ctx, parentRoot, beaconState)
 	require.NoError(t, err)
 
-	firstBlockHeader := util.HydrateSignedBeaconHeader(&zondpb.SignedBeaconBlockHeader{
-		Header: &zondpb.BeaconBlockHeader{
+	firstBlockHeader := util.HydrateSignedBeaconHeader(&qrysmpb.SignedBeaconBlockHeader{
+		Header: &qrysmpb.BeaconBlockHeader{
 			Slot:          0,
 			ProposerIndex: 0,
 			ParentRoot:    parentRoot[:],
 		},
 	})
-	secondBlockHeader := util.HydrateSignedBeaconHeader(&zondpb.SignedBeaconBlockHeader{
-		Header: &zondpb.BeaconBlockHeader{
+	secondBlockHeader := util.HydrateSignedBeaconHeader(&qrysmpb.SignedBeaconBlockHeader{
+		Header: &qrysmpb.BeaconBlockHeader{
 			Slot:          0,
 			ProposerIndex: 0,
 			ParentRoot:    parentRoot[:],
@@ -186,7 +189,7 @@ func TestService_processProposerSlashings(t *testing.T) {
 	require.NoError(t, err)
 	htr, err := firstBlockHeader.Header.HashTreeRoot()
 	require.NoError(t, err)
-	container := &zondpb.SigningData{
+	container := &qrysmpb.SigningData{
 		ObjectRoot: htr[:],
 		Domain:     domain,
 	}
@@ -201,7 +204,7 @@ func TestService_processProposerSlashings(t *testing.T) {
 		firstBlockHeader.Signature = signature.Marshal()
 		secondBlockHeader.Signature = make([]byte, 96)
 
-		slashings := []*zondpb.ProposerSlashing{
+		slashings := []*qrysmpb.ProposerSlashing{
 			{
 				Header_1: firstBlockHeader,
 				Header_2: secondBlockHeader,
@@ -220,7 +223,7 @@ func TestService_processProposerSlashings(t *testing.T) {
 		firstBlockHeader.Signature = make([]byte, 96)
 		secondBlockHeader.Signature = signature.Marshal()
 
-		slashings := []*zondpb.ProposerSlashing{
+		slashings := []*qrysmpb.ProposerSlashing{
 			{
 				Header_1: firstBlockHeader,
 				Header_2: secondBlockHeader,
@@ -239,7 +242,7 @@ func TestService_processProposerSlashings(t *testing.T) {
 		firstBlockHeader.Signature = signature.Marshal()
 		secondBlockHeader.Signature = signature.Marshal()
 
-		slashings := []*zondpb.ProposerSlashing{
+		slashings := []*qrysmpb.ProposerSlashing{
 			{
 				Header_1: firstBlockHeader,
 				Header_2: secondBlockHeader,

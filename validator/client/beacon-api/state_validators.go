@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/beacon"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
 
@@ -36,7 +36,7 @@ func (c beaconApiStateValidatorsProvider) GetStateValidators(
 		}
 	}
 
-	return c.getStateValidatorsHelper(ctx, "/zond/v1/beacon/states/head/validators", params, stringPubkeys, statuses)
+	return c.getStateValidatorsHelper(ctx, "/qrl/v1/beacon/states/head/validators", params, stringPubkeys, statuses)
 }
 
 func (c beaconApiStateValidatorsProvider) GetStateValidatorsForSlot(
@@ -47,7 +47,7 @@ func (c beaconApiStateValidatorsProvider) GetStateValidatorsForSlot(
 	statuses []string,
 ) (*beacon.GetValidatorsResponse, error) {
 	params := convertValidatorIndicesToParams(indices)
-	url := fmt.Sprintf("/zond/v1/beacon/states/%d/validators", slot)
+	url := fmt.Sprintf("/qrl/v1/beacon/states/%d/validators", slot)
 	return c.getStateValidatorsHelper(ctx, url, params, stringPubkeys, statuses)
 }
 
@@ -58,7 +58,7 @@ func (c beaconApiStateValidatorsProvider) GetStateValidatorsForHead(
 	statuses []string,
 ) (*beacon.GetValidatorsResponse, error) {
 	params := convertValidatorIndicesToParams(indices)
-	return c.getStateValidatorsHelper(ctx, "/zond/v1/beacon/states/head/validators", params, stringPubkeys, statuses)
+	return c.getStateValidatorsHelper(ctx, "/qrl/v1/beacon/states/head/validators", params, stringPubkeys, statuses)
 }
 
 func convertValidatorIndicesToParams(indices []primitives.ValidatorIndex) neturl.Values {

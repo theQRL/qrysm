@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/testing/require"
@@ -400,29 +400,29 @@ func TestGetBlockV2BlindedSignRequest(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Happy Path Test non blinded Capella",
+			name: "Happy Path Test non blinded Zond",
 			args: args{
-				request:               mock.GetMockSignRequest("BLOCK_V2_CAPELLA"),
+				request:               mock.GetMockSignRequest("BLOCK_V2_ZOND"),
 				genesisValidatorsRoot: make([]byte, fieldparams.RootLength),
 			},
 			want: mock.MockBlockV2BlindedSignRequest(func(t *testing.T) []byte {
 				bytevalue, err := hexutil.Decode("0x74b4bb048d39c75f175fbb2311062eb9867d79b712907f39544fcaf2d7e1b433")
 				require.NoError(t, err)
 				return bytevalue
-			}(t), "CAPELLA"),
+			}(t), "ZOND"),
 			wantErr: false,
 		},
 		{
-			name: "Happy Path Test blinded Capella",
+			name: "Happy Path Test blinded Zond",
 			args: args{
-				request:               mock.GetMockSignRequest("BLOCK_V2_BLINDED_CAPELLA"),
+				request:               mock.GetMockSignRequest("BLOCK_V2_BLINDED_ZOND"),
 				genesisValidatorsRoot: make([]byte, fieldparams.RootLength),
 			},
 			want: mock.MockBlockV2BlindedSignRequest(func(t *testing.T) []byte {
 				bytevalue, err := hexutil.Decode("0x54797f27f45a91d2cf4d73e509c62e464d648ec34e07ddba946adee742039e76")
 				require.NoError(t, err)
 				return bytevalue
-			}(t), "CAPELLA"),
+			}(t), "ZOND"),
 			wantErr: false,
 		},
 	}

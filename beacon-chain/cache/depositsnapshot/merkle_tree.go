@@ -52,7 +52,7 @@ func create(leaves [][32]byte, depth uint64) MerkleTreeNode {
 	if depth == 0 {
 		return &LeafNode{hash: leaves[0]}
 	}
-	split := math.Min(math.PowerOf2(depth-1), length)
+	split := min(math.PowerOf2(depth-1), length)
 	left := create(leaves[0:split], depth-1)
 	right := create(leaves[split:], depth-1)
 	return &InnerNode{left: left, right: right}
@@ -290,7 +290,7 @@ func (z *ZeroNode) GetRoot() [32]byte {
 	return trie.ZeroHashes[z.depth]
 }
 
-// IsFull returns wh   ether there is space left for deposits.
+// IsFull returns whether there is space left for deposits.
 // A ZeroNode will always return false as a ZeroNode is an empty node
 // that gets replaced by a deposit.
 func (_ *ZeroNode) IsFull() bool {

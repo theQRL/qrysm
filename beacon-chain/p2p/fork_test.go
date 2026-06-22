@@ -12,9 +12,9 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/go-zond/p2p/discover"
-	"github.com/theQRL/go-zond/p2p/enode"
-	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/go-qrl/p2p/discover"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
@@ -59,7 +59,7 @@ func TestStartDiscv5_DifferentForkDigests(t *testing.T) {
 
 		// We give every peer a different genesis validators root, which
 		// will cause each peer to have a different ForkDigest, preventing
-		// them from connecting according to our discovery rules for Ethereum consensus.
+		// them from connecting according to our discovery rules for QRL consensus.
 		root := make([]byte, 32)
 		copy(root, strconv.Itoa(port))
 		s = &Service{
@@ -149,7 +149,7 @@ func TestStartDiscv5_SameForkDigests_DifferentNextForkData(t *testing.T) {
 
 		// We give every peer a different genesis validators root, which
 		// will cause each peer to have a different ForkDigest, preventing
-		// them from connecting according to our discovery rules for Ethereum consensus.
+		// them from connecting according to our discovery rules for QRL consensus.
 		s = &Service{
 			cfg:                   cfg,
 			genesisTime:           genesisTime,
@@ -205,7 +205,7 @@ func TestStartDiscv5_SameForkDigests_DifferentNextForkData(t *testing.T) {
 	require.NoError(t, s.Stop())
 }
 
-func TestDiscv5_AddRetrieveForkEntryENR(t *testing.T) {
+func TestDiscv5_AddRetrieveForkEntryQNR(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	c := params.BeaconConfig().Copy()
 	c.ForkVersionSchedule = map[[4]byte]primitives.Epoch{
@@ -220,14 +220,14 @@ func TestDiscv5_AddRetrieveForkEntryENR(t *testing.T) {
 	genesisValidatorsRoot := make([]byte, 32)
 	digest, err := forks.CreateForkDigest(genesisTime, make([]byte, 32))
 	require.NoError(t, err)
-	enrForkID := &pb.ENRForkID{
+	qnrForkID := &pb.QNRForkID{
 		CurrentForkDigest: digest[:],
 		NextForkVersion:   nextForkVersion,
 		NextForkEpoch:     nextForkEpoch,
 	}
-	enc, err := enrForkID.MarshalSSZ()
+	enc, err := qnrForkID.MarshalSSZ()
 	require.NoError(t, err)
-	entry := enr.WithEntry(eth2ENRKey, enc)
+	entry := qnr.WithEntry(consensusQNRKey, enc)
 	// In epoch 1 of current time, the fork version should be
 	// {0, 0, 0, 1} according to the configuration override above.
 	temp := t.TempDir()
@@ -236,9 +236,9 @@ func TestDiscv5_AddRetrieveForkEntryENR(t *testing.T) {
 	require.NoError(t, os.Mkdir(tempPath, 0700))
 	pkey, err := privKey(&Config{DataDir: tempPath})
 	require.NoError(t, err, "Could not get private key")
-	db, err := enode.OpenDB("")
+	db, err := qnode.OpenDB("")
 	require.NoError(t, err)
-	localNode := enode.NewLocalNode(db, pkey)
+	localNode := qnode.NewLocalNode(db, pkey)
 	localNode.Set(entry)
 
 	want, err := signing.ComputeForkDigest([]byte{0, 0, 0, 0}, genesisValidatorsRoot)
@@ -259,7 +259,7 @@ func TestAddForkEntry_Genesis(t *testing.T) {
 	require.NoError(t, os.Mkdir(tempPath, 0700))
 	pkey, err := privKey(&Config{DataDir: tempPath})
 	require.NoError(t, err, "Could not get private key")
-	db, err := enode.OpenDB("")
+	db, err := qnode.OpenDB("")
 	require.NoError(t, err)
 
 	bCfg := params.MainnetConfig().Copy()
@@ -267,7 +267,7 @@ func TestAddForkEntry_Genesis(t *testing.T) {
 	bCfg.ForkVersionSchedule[bytesutil.ToBytes4(params.BeaconConfig().GenesisForkVersion)] = bCfg.GenesisEpoch
 	params.OverrideBeaconConfig(bCfg)
 
-	localNode := enode.NewLocalNode(db, pkey)
+	localNode := qnode.NewLocalNode(db, pkey)
 	localNode, err = addForkEntry(localNode, time.Now().Add(10*time.Second), bytesutil.PadTo([]byte{'A', 'B', 'C', 'D'}, 32))
 	require.NoError(t, err)
 	forkEntry, err := forkEntry(localNode.Node().Record())

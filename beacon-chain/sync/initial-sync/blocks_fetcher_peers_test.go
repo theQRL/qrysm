@@ -252,7 +252,7 @@ func TestBlocksFetcher_filterPeers(t *testing.T) {
 			peerStats := make(map[peer.ID]int, len(tt.want))
 			var filteredPIDs []peer.ID
 			var err error
-			for i := 0; i < 1000; i++ {
+			for range 1000 {
 				filteredPIDs = fetcher.filterPeers(context.Background(), peerIDs, tt.args.peersPercentage)
 				if len(filteredPIDs) <= 1 {
 					break
@@ -399,8 +399,7 @@ func TestBlocksFetcher_removeStalePeerLocks(t *testing.T) {
 		},
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	fetcher := newBlocksFetcher(ctx, &blocksFetcherConfig{})
 
 	for _, tt := range tests {

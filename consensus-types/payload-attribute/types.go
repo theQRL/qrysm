@@ -25,7 +25,7 @@ var (
 )
 
 // New returns a new payload attribute with the given input object.
-func New(i interface{}) (Attributer, error) {
+func New(i any) (Attributer, error) {
 	switch a := i.(type) {
 	case nil:
 		return nil, blocks.ErrNilObject
@@ -49,7 +49,7 @@ func initPayloadAttributeFromV2(a *enginev1.PayloadAttributesV2) (Attributer, er
 	}
 
 	return &data{
-		version:               version.Capella,
+		version:               version.Zond,
 		prevRandao:            a.PrevRandao,
 		timeStamp:             a.Timestamp,
 		suggestedFeeRecipient: a.SuggestedFeeRecipient,

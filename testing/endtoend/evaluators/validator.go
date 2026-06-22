@@ -11,9 +11,9 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
-	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
-	v1 "github.com/theQRL/qrysm/proto/zond/v1"
+	qrlpbservice "github.com/theQRL/qrysm/proto/qrl/service"
+	qrlpb "github.com/theQRL/qrysm/proto/qrl/v1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/endtoend/policies"
 	"github.com/theQRL/qrysm/testing/endtoend/types"
 	"github.com/theQRL/qrysm/time/slots"
@@ -52,9 +52,9 @@ var ValidatorSyncParticipation = types.Evaluator{
 
 func validatorsAreActive(ec *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := zondpb.NewBeaconChainClient(conn)
+	client := qrysmpb.NewBeaconChainClient(conn)
 	// Balances actually fluctuate but we just want to check initial balance.
-	validatorRequest := &zondpb.ListValidatorsRequest{
+	validatorRequest := &qrysmpb.ListValidatorsRequest{
 		PageSize: int32(params.BeaconConfig().MinGenesisActiveValidatorCount),
 		Active:   true,
 	}
@@ -105,19 +105,19 @@ func validatorsAreActive(ec *types.EvaluationContext, conns ...*grpc.ClientConn)
 // validatorsParticipating ensures the validators have an acceptable participation rate.
 func validatorsParticipating(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := zondpb.NewBeaconChainClient(conn)
-	debugClient := zondpbservice.NewBeaconDebugClient(conn)
-	validatorRequest := &zondpb.GetValidatorParticipationRequest{}
+	client := qrysmpb.NewBeaconChainClient(conn)
+	debugClient := qrlpbservice.NewBeaconDebugClient(conn)
+	validatorRequest := &qrysmpb.GetValidatorParticipationRequest{}
 	participation, err := client.GetValidatorParticipation(context.Background(), validatorRequest)
 	if err != nil {
 		return errors.Wrap(err, "failed to get validator participation")
 	}
 
-	partRate := float32(participation.Participation.PreviousEpochTargetAttestingGwei) / float32(participation.Participation.PreviousEpochActiveGwei)
+	partRate := float32(participation.Participation.PreviousEpochTargetAttestingShor) / float32(participation.Participation.PreviousEpochActiveShor)
 	expected := float32(expectedParticipation)
 
 	if partRate < expected {
-		st, err := debugClient.GetBeaconState(context.Background(), &v1.BeaconStateRequest{StateId: []byte("head")})
+		st, err := debugClient.GetBeaconState(context.Background(), &qrlpb.BeaconStateRequest{StateId: []byte("head")})
 		if err != nil {
 			return errors.Wrap(err, "failed to get beacon state")
 		}
@@ -125,8 +125,8 @@ func validatorsParticipating(_ *types.EvaluationContext, conns ...*grpc.ClientCo
 		var missTgtVals []uint64
 		var missHeadVals []uint64
 		switch obj := st.Data.State.(type) {
-		case *v1.BeaconStateContainer_CapellaState:
-			missSrcVals, missTgtVals, missHeadVals, err = findMissingValidators(obj.CapellaState.PreviousEpochParticipation)
+		case *qrlpb.BeaconStateContainer_ZondState:
+			missSrcVals, missTgtVals, missHeadVals, err = findMissingValidators(obj.ZondState.PreviousEpochParticipation)
 			if err != nil {
 				return errors.Wrap(err, "failed to get missing validators")
 			}
@@ -151,8 +151,8 @@ func validatorsParticipating(_ *types.EvaluationContext, conns ...*grpc.ClientCo
 // sync committee assignments.
 func validatorsSyncParticipation(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := zondpb.NewNodeClient(conn)
-	altairClient := zondpb.NewBeaconChainClient(conn)
+	client := qrysmpb.NewNodeClient(conn)
+	altairClient := qrysmpb.NewBeaconChainClient(conn)
 	genesis, err := client.GetGenesis(context.Background(), &emptypb.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "failed to get genesis data")
@@ -164,7 +164,7 @@ func validatorsSyncParticipation(_ *types.EvaluationContext, conns ...*grpc.Clie
 		lowestBound = currEpoch - 1
 	}
 
-	blockCtrs, err := altairClient.ListBeaconBlocks(context.Background(), &zondpb.ListBlocksRequest{QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: lowestBound}})
+	blockCtrs, err := altairClient.ListBeaconBlocks(context.Background(), &qrysmpb.ListBlocksRequest{QueryFilter: &qrysmpb.ListBlocksRequest_Epoch{Epoch: lowestBound}})
 	if err != nil {
 		return errors.Wrap(err, "failed to get validator participation")
 	}
@@ -174,7 +174,7 @@ func validatorsSyncParticipation(_ *types.EvaluationContext, conns ...*grpc.Clie
 			return errors.Wrapf(err, "block type doesn't exist for block at epoch %d", lowestBound)
 		}
 
-		if b.IsNil() {
+		if b == nil || b.IsNil() {
 			return errors.New("nil block provided")
 		}
 		// forkStartSlot, err := slots.EpochStart(helpers.AltairE2EForkEpoch)
@@ -211,7 +211,7 @@ func validatorsSyncParticipation(_ *types.EvaluationContext, conns ...*grpc.Clie
 	if lowestBound == currEpoch {
 		return nil
 	}
-	blockCtrs, err = altairClient.ListBeaconBlocks(context.Background(), &zondpb.ListBlocksRequest{QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: currEpoch}})
+	blockCtrs, err = altairClient.ListBeaconBlocks(context.Background(), &qrysmpb.ListBlocksRequest{QueryFilter: &qrysmpb.ListBlocksRequest_Epoch{Epoch: currEpoch}})
 	if err != nil {
 		return errors.Wrap(err, "failed to get validator participation")
 	}
@@ -221,7 +221,7 @@ func validatorsSyncParticipation(_ *types.EvaluationContext, conns ...*grpc.Clie
 			return errors.Wrapf(err, "block type doesn't exist for block at epoch %d", lowestBound)
 		}
 
-		if b.IsNil() {
+		if b == nil || b.IsNil() {
 			return errors.New("nil block provided")
 		}
 		// forkSlot, err := slots.EpochStart(helpers.AltairE2EForkEpoch)
@@ -251,12 +251,12 @@ func validatorsSyncParticipation(_ *types.EvaluationContext, conns ...*grpc.Clie
 	return nil
 }
 
-func syncCompatibleBlockFromCtr(container *zondpb.BeaconBlockContainer) (interfaces.ReadOnlySignedBeaconBlock, error) {
-	if container.GetCapellaBlock() != nil {
-		return blocks.NewSignedBeaconBlock(container.GetCapellaBlock())
+func syncCompatibleBlockFromCtr(container *qrysmpb.BeaconBlockContainer) (interfaces.ReadOnlySignedBeaconBlock, error) {
+	if container.GetZondBlock() != nil {
+		return blocks.NewSignedBeaconBlock(container.GetZondBlock())
 	}
-	if container.GetBlindedCapellaBlock() != nil {
-		return blocks.NewSignedBeaconBlock(container.GetBlindedCapellaBlock())
+	if container.GetBlindedZondBlock() != nil {
+		return blocks.NewSignedBeaconBlock(container.GetBlindedZondBlock())
 	}
 	return nil, errors.New("no supported block type in container")
 }

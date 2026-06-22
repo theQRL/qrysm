@@ -68,9 +68,10 @@ func Depth(v uint64) (out uint8) {
 }
 
 // Merkleize with log(N) space allocation
+// This method will panic when count > limit.
 func Merkleize(hasher Hasher, count, limit uint64, leaf func(i uint64) []byte) (out [32]byte) {
 	if count > limit {
-		panic("merkleizing list that is too large, over limit")
+		panic("merkleizing list that is too large, over limit") // lint:nopanic -- Panic is communicated in godoc commentary.
 	}
 	if limit == 0 {
 		return
@@ -112,7 +113,7 @@ func Merkleize(hasher Hasher, count, limit uint64, leaf func(i uint64) []byte) (
 	}
 
 	// merge in leaf by leaf.
-	for i := uint64(0); i < count; i++ {
+	for i := range count {
 		copy(h, leaf(i))
 		merge(i)
 	}
@@ -136,10 +137,10 @@ func Merkleize(hasher Hasher, count, limit uint64, leaf func(i uint64) []byte) (
 // for a list of leafs of a balanced binary tree.
 func ConstructProof(hasher Hasher, count, limit uint64, leaf func(i uint64) []byte, index uint64) (branch [][32]byte) {
 	if count > limit {
-		panic("merkleizing list that is too large, over limit")
+		panic("merkleizing list that is too large, over limit") // lint:nopanic
 	}
 	if index >= limit {
-		panic("index out of range, over limit")
+		panic("index out of range, over limit") // lint:nopanic
 	}
 	if limit <= 1 {
 		return
@@ -184,7 +185,7 @@ func ConstructProof(hasher Hasher, count, limit uint64, leaf func(i uint64) []by
 	}
 
 	// merge in leaf by leaf.
-	for i := uint64(0); i < count; i++ {
+	for i := range count {
 		copy(h, leaf(i))
 		merge(i)
 	}
@@ -206,7 +207,7 @@ func MerkleizeVector(elements [][32]byte, length uint64) [32]byte {
 	if len(elements) == 0 {
 		return trie.ZeroHashes[depth]
 	}
-	for i := uint8(0); i < depth; i++ {
+	for i := range depth {
 		layerLen := len(elements)
 		oddNodeLength := layerLen%2 == 1
 		if oddNodeLength {

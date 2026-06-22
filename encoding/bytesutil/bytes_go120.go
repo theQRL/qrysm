@@ -3,7 +3,22 @@
 
 package bytesutil
 
+import "unsafe"
+
 // These methods use go1.20 syntax to convert a byte slice to a fixed size array.
+
+// UnsafeCastToString returns a string aliasing the supplied byte slice's
+// backing memory — no allocation and no copy. The caller MUST guarantee the
+// byte slice is not mutated for the lifetime of the returned string;
+// modifying it afterwards breaks Go's string-immutability invariant. Intended
+// for hot paths where the slice is already final (e.g. a hash output) and
+// will not be touched again.
+func UnsafeCastToString(b []byte) string {
+	if len(b) == 0 {
+		return ""
+	}
+	return unsafe.String(unsafe.SliceData(b), len(b))
+}
 
 // ToBytes4 is a convenience method for converting a byte slice to a fix
 // sized 4 byte array. This method will truncate the input if it is larger
@@ -40,11 +55,11 @@ func ToBytes2592(x []byte) [2592]byte {
 	return [2592]byte(PadTo(x, 2592))
 }
 
-// ToBytes4595 is a convenience method for converting a byte slice to a fix
-// sized 4595 byte array. This method will truncate the input if it is larger
-// than 4595 bytes.
-func ToBytes4595(x []byte) [4595]byte {
-	return [4595]byte(PadTo(x, 4595))
+// ToBytes4627 is a convenience method for converting a byte slice to a fix
+// sized 4627 byte array. This method will truncate the input if it is larger
+// than 4627 bytes.
+func ToBytes4627(x []byte) [4627]byte {
+	return [4627]byte(PadTo(x, 4627))
 }
 
 // ToBytes64 is a convenience method for converting a byte slice to a fix

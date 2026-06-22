@@ -4,43 +4,43 @@ import (
 	"context"
 
 	"github.com/theQRL/qrysm/beacon-chain/state"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // PoolMock is a fake implementation of PoolManager.
 type PoolMock struct {
-	PendingAttSlashings  []*zondpb.AttesterSlashing
-	PendingPropSlashings []*zondpb.ProposerSlashing
+	PendingAttSlashings  []*qrysmpb.AttesterSlashing
+	PendingPropSlashings []*qrysmpb.ProposerSlashing
 }
 
 // PendingAttesterSlashings --
-func (m *PoolMock) PendingAttesterSlashings(_ context.Context, _ state.ReadOnlyBeaconState, _ bool) []*zondpb.AttesterSlashing {
+func (m *PoolMock) PendingAttesterSlashings(_ context.Context, _ state.ReadOnlyBeaconState, _ bool) []*qrysmpb.AttesterSlashing {
 	return m.PendingAttSlashings
 }
 
 // PendingProposerSlashings --
-func (m *PoolMock) PendingProposerSlashings(_ context.Context, _ state.ReadOnlyBeaconState, _ bool) []*zondpb.ProposerSlashing {
+func (m *PoolMock) PendingProposerSlashings(_ context.Context, _ state.ReadOnlyBeaconState, _ bool) []*qrysmpb.ProposerSlashing {
 	return m.PendingPropSlashings
 }
 
 // InsertAttesterSlashing --
-func (m *PoolMock) InsertAttesterSlashing(_ context.Context, _ state.ReadOnlyBeaconState, slashing *zondpb.AttesterSlashing) error {
+func (m *PoolMock) InsertAttesterSlashing(_ context.Context, _ state.ReadOnlyBeaconState, slashing *qrysmpb.AttesterSlashing) error {
 	m.PendingAttSlashings = append(m.PendingAttSlashings, slashing)
 	return nil
 }
 
 // InsertProposerSlashing --
-func (m *PoolMock) InsertProposerSlashing(_ context.Context, _ state.ReadOnlyBeaconState, slashing *zondpb.ProposerSlashing) error {
+func (m *PoolMock) InsertProposerSlashing(_ context.Context, _ state.ReadOnlyBeaconState, slashing *qrysmpb.ProposerSlashing) error {
 	m.PendingPropSlashings = append(m.PendingPropSlashings, slashing)
 	return nil
 }
 
 // MarkIncludedAttesterSlashing --
-func (*PoolMock) MarkIncludedAttesterSlashing(_ *zondpb.AttesterSlashing) {
+func (*PoolMock) MarkIncludedAttesterSlashing(_ *qrysmpb.AttesterSlashing) {
 	panic("implement me")
 }
 
 // MarkIncludedProposerSlashing --
-func (*PoolMock) MarkIncludedProposerSlashing(_ *zondpb.ProposerSlashing) {
+func (*PoolMock) MarkIncludedProposerSlashing(_ *qrysmpb.ProposerSlashing) {
 	panic("implement me")
 }

@@ -11,7 +11,7 @@ import (
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/crypto/hash/htr"
 	"github.com/theQRL/qrysm/encoding/ssz"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 const (
@@ -28,11 +28,11 @@ const (
 // ValidatorRegistryRoot computes the HashTreeRoot Merkleization of
 // a list of validator structs according to the Ethereum
 // Simple Serialize specification.
-func ValidatorRegistryRoot(vals []*zondpb.Validator) ([32]byte, error) {
+func ValidatorRegistryRoot(vals []*qrysmpb.Validator) ([32]byte, error) {
 	return validatorRegistryRoot(vals)
 }
 
-func validatorRegistryRoot(validators []*zondpb.Validator) ([32]byte, error) {
+func validatorRegistryRoot(validators []*qrysmpb.Validator) ([32]byte, error) {
 	roots, err := OptimizedValidatorRoots(validators)
 	if err != nil {
 		return [32]byte{}, err
@@ -54,12 +54,12 @@ func validatorRegistryRoot(validators []*zondpb.Validator) ([32]byte, error) {
 	return res, nil
 }
 
-func hashValidatorHelper(validators []*zondpb.Validator, roots [][32]byte, j int, groupSize int, wg *sync.WaitGroup) {
+func hashValidatorHelper(validators []*qrysmpb.Validator, roots [][32]byte, j int, groupSize int, wg *sync.WaitGroup) {
 	defer wg.Done()
-	for i := 0; i < groupSize; i++ {
+	for i := range groupSize {
 		fRoots, err := ValidatorFieldRoots(validators[j*groupSize+i])
 		if err != nil {
-			logrus.WithError(err).Error("could not get validator field roots")
+			logrus.WithError(err).Error("Could not get validator field roots")
 			return
 		}
 		for k, root := range fRoots {
@@ -70,7 +70,7 @@ func hashValidatorHelper(validators []*zondpb.Validator, roots [][32]byte, j int
 
 // OptimizedValidatorRoots uses an optimized routine with gohashtree in order to
 // derive a list of validator roots from a list of validator objects.
-func OptimizedValidatorRoots(validators []*zondpb.Validator) ([][32]byte, error) {
+func OptimizedValidatorRoots(validators []*qrysmpb.Validator) ([][32]byte, error) {
 	// Exit early if no validators are provided.
 	if len(validators) == 0 {
 		return [][32]byte{}, nil
@@ -81,7 +81,7 @@ func OptimizedValidatorRoots(validators []*zondpb.Validator) ([][32]byte, error)
 	groupSize := len(validators) / n
 	roots := make([][32]byte, rootsSize)
 	wg.Add(n - 1)
-	for j := 0; j < n-1; j++ {
+	for j := range n - 1 {
 		go hashValidatorHelper(validators, roots, j, groupSize, &wg)
 	}
 	for i := (n - 1) * groupSize; i < len(validators); i++ {
@@ -98,7 +98,7 @@ func OptimizedValidatorRoots(validators []*zondpb.Validator) ([][32]byte, error)
 	// A validator's tree can represented with a depth of 3. As log2(8) = 3
 	// Using this property we can lay out all the individual fields of a
 	// validator and hash them in single level using our vectorized routine.
-	for i := 0; i < validatorTreeDepth; i++ {
+	for range validatorTreeDepth {
 		// Overwrite input lists as we are hashing by level
 		// and only need the highest level to proceed.
 		roots = htr.VectorizedSha256(roots)

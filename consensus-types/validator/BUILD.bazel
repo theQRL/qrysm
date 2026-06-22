@@ -1,22 +1,22 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "validator",
     srcs = [
         "custom_types.go",
         "types.go",
     ],
     importpath = "github.com/theQRL/qrysm/consensus-types/validator",
     visibility = ["//visibility:public"],
-    deps = ["//consensus-types/primitives:go_default_library"],
+    deps = ["//consensus-types/primitives"],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "validator_test",
     srcs = ["custom_types_test.go"],
-    embed = [":go_default_library"],
+    embed = [":validator"],
     deps = [
-        "//testing/require:go_default_library",
-        "@io_k8s_apimachinery//pkg/util/yaml:go_default_library",
+        "//testing/require",
+        "@io_k8s_apimachinery//pkg/util/yaml",
     ],
 )

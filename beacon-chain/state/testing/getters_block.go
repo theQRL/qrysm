@@ -6,11 +6,11 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
-type getStateWithLatestBlockHeader func(*zondpb.BeaconBlockHeader) (state.BeaconState, error)
+type getStateWithLatestBlockHeader func(*qrysmpb.BeaconBlockHeader) (state.BeaconState, error)
 
 func VerifyBeaconStateLatestBlockHeader(
 	t *testing.T,
@@ -20,9 +20,9 @@ func VerifyBeaconStateLatestBlockHeader(
 	s, err := factory()
 	require.NoError(t, err)
 	got := s.LatestBlockHeader()
-	require.DeepEqual(t, (*zondpb.BeaconBlockHeader)(nil), got)
+	require.DeepEqual(t, (*qrysmpb.BeaconBlockHeader)(nil), got)
 
-	want := &zondpb.BeaconBlockHeader{Slot: 100}
+	want := &qrysmpb.BeaconBlockHeader{Slot: 100}
 	s, err = factoryLBH(want)
 	require.NoError(t, err)
 	got = s.LatestBlockHeader()

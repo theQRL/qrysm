@@ -1,3 +1,0 @@
-package blocks
-
-var ProcessDilithiumToExecutionChange = processDilithiumToExecutionChange

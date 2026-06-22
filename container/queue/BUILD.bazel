@@ -1,15 +1,15 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "queue",
     srcs = ["priority_queue.go"],
     importpath = "github.com/theQRL/qrysm/container/queue",
     visibility = ["//visibility:public"],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "queue_test",
     srcs = ["priority_queue_test.go"],
-    embed = [":go_default_library"],
-    deps = ["//testing/require:go_default_library"],
+    embed = [":queue"],
+    deps = ["//testing/require"],
 )

@@ -6,7 +6,7 @@ import (
 
 	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/config/params"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	aggtesting "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation/testing"
 	"github.com/theQRL/qrysm/testing/require"
 )
@@ -44,10 +44,10 @@ func BenchmarkProposerAtts_sortByProfitability(b *testing.B) {
 		},
 	}
 
-	runner := func(atts []*zondpb.Attestation) {
+	runner := func(atts []*qrysmpb.Attestation) {
 		attsCopy := make(proposerAtts, len(atts))
 		for i, att := range atts {
-			attsCopy[i] = zondpb.CopyAttestation(att)
+			attsCopy[i] = qrysmpb.CopyAttestation(att)
 		}
 		_, err := attsCopy.sortByProfitability()
 		require.NoError(b, err, "Could not sort attestations by profitability")
@@ -55,10 +55,8 @@ func BenchmarkProposerAtts_sortByProfitability(b *testing.B) {
 
 	for _, tt := range tests {
 		b.Run(fmt.Sprintf("max-cover_%s", tt.name), func(b *testing.B) {
-			b.StopTimer()
 			atts := aggtesting.MakeAttestationsFromBitlists(tt.inputs)
-			b.StartTimer()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				runner(atts)
 			}
 		})

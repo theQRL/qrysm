@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 	slashertypes "github.com/theQRL/qrysm/beacon-chain/slasher/types"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -15,7 +15,7 @@ import (
 // HighestAttestations committed for an input list of validator indices.
 func (s *Service) HighestAttestations(
 	ctx context.Context, validatorIndices []primitives.ValidatorIndex,
-) ([]*zondpb.HighestAttestation, error) {
+) ([]*qrysmpb.HighestAttestation, error) {
 	atts, err := s.serviceCfg.Database.HighestAttestations(ctx, validatorIndices)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get highest attestations from database")
@@ -26,8 +26,8 @@ func (s *Service) HighestAttestations(
 // IsSlashableBlock checks if an input block header is slashable
 // with respect to historical block proposal data.
 func (s *Service) IsSlashableBlock(
-	ctx context.Context, block *zondpb.SignedBeaconBlockHeader,
-) (*zondpb.ProposerSlashing, error) {
+	ctx context.Context, block *qrysmpb.SignedBeaconBlockHeader,
+) (*qrysmpb.ProposerSlashing, error) {
 	dataRoot, err := block.Header.HashTreeRoot()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get block header hash tree root: %v", err)
@@ -49,8 +49,8 @@ func (s *Service) IsSlashableBlock(
 // IsSlashableAttestation checks if an input indexed attestation is slashable
 // with respect to historical attestation data.
 func (s *Service) IsSlashableAttestation(
-	ctx context.Context, attestation *zondpb.IndexedAttestation,
-) ([]*zondpb.AttesterSlashing, error) {
+	ctx context.Context, attestation *qrysmpb.IndexedAttestation,
+) ([]*qrysmpb.AttesterSlashing, error) {
 	dataRoot, err := attestation.Data.HashTreeRoot()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get attestation data hash tree root: %v", err)
@@ -66,14 +66,11 @@ func (s *Service) IsSlashableAttestation(
 		return nil, status.Errorf(codes.Internal, "Could not check if attestation is slashable: %v", err)
 	}
 	if len(attesterSlashings) == 0 {
-		// If the incoming attestations are not slashable, we mark them as saved in
-		// slasher's DB storage to help us with future detection.
-		if err := s.serviceCfg.Database.SaveAttestationRecordsForValidators(
-			ctx, []*slashertypes.IndexedAttestationWrapper{indexedAttWrapper},
-		); err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not save attestation records to DB: %v", err)
-		}
 		return nil, nil
 	}
-	return attesterSlashings, nil
+	out := make([]*qrysmpb.AttesterSlashing, 0, len(attesterSlashings))
+	for _, sl := range attesterSlashings {
+		out = append(out, sl)
+	}
+	return out, nil
 }

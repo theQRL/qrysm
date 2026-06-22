@@ -8,21 +8,21 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestUpdateLogAggregateStats(t *testing.T) {
 	v := &validator{
 		logValidatorBalances: true,
-		startBalances:        make(map[[field_params.DilithiumPubkeyLength]byte]uint64),
-		prevBalance:          make(map[[field_params.DilithiumPubkeyLength]byte]uint64),
+		startBalances:        make(map[[field_params.MLDSA87PubkeyLength]byte]uint64),
+		prevBalance:          make(map[[field_params.MLDSA87PubkeyLength]byte]uint64),
 		voteStats: voteStats{
 			startEpoch: 0, // this would otherwise have been previously set in LogValidatorGainsAndLosses()
 		},
 	}
 
-	pubKeyBytes := [][field_params.DilithiumPubkeyLength]byte{
+	pubKeyBytes := [][field_params.MLDSA87PubkeyLength]byte{
 		bytesutil.ToBytes2592([]byte("000000000000000000000000000000000000000012345678")),
 		bytesutil.ToBytes2592([]byte("000000000000000000000000000000000000000099999999")),
 		bytesutil.ToBytes2592([]byte("000000000000000000000000000000000000000055555555")),
@@ -33,7 +33,7 @@ func TestUpdateLogAggregateStats(t *testing.T) {
 	v.startBalances[pubKeyBytes[2]] = uint64(33000000000)
 
 	// 7 attestations included
-	responses := []*zondpb.ValidatorPerformanceResponse{
+	responses := []*qrysmpb.ValidatorPerformanceResponse{
 		{
 			PublicKeys: [][]byte{
 				bytesutil.FromBytes2592(pubKeyBytes[0]),

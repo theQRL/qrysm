@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/validator"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/shared"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/validator"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
@@ -35,7 +35,7 @@ func TestGetAttestationData_ValidAttestation(t *testing.T) {
 
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		fmt.Sprintf("/zond/v1/validator/attestation_data?committee_index=%d&slot=%d", expectedCommitteeIndex, expectedSlot),
+		fmt.Sprintf("/qrl/v1/validator/attestation_data?committee_index=%d&slot=%d", expectedCommitteeIndex, expectedSlot),
 		&produceAttestationDataResponseJson,
 	).Return(
 		nil,
@@ -186,7 +186,7 @@ func TestGetAttestationData_InvalidData(t *testing.T) {
 			jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/zond/v1/validator/attestation_data?committee_index=2&slot=1",
+				"/qrl/v1/validator/attestation_data?committee_index=2&slot=1",
 				&produceAttestationDataResponseJson,
 			).Return(
 				nil,
@@ -216,7 +216,7 @@ func TestGetAttestationData_JsonResponseError(t *testing.T) {
 	produceAttestationDataResponseJson := validator.GetAttestationDataResponse{}
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		fmt.Sprintf("/zond/v1/validator/attestation_data?committee_index=%d&slot=%d", committeeIndex, slot),
+		fmt.Sprintf("/qrl/v1/validator/attestation_data?committee_index=%d&slot=%d", committeeIndex, slot),
 		&produceAttestationDataResponseJson,
 	).Return(
 		nil,

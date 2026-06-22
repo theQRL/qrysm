@@ -18,7 +18,7 @@ import (
 )
 
 // beaconBlocksByRangeRPCHandler looks up the request blocks from the database from a given start block.
-func (s *Service) beaconBlocksByRangeRPCHandler(ctx context.Context, msg interface{}, stream libp2pcore.Stream) error {
+func (s *Service) beaconBlocksByRangeRPCHandler(ctx context.Context, msg any, stream libp2pcore.Stream) error {
 	ctx, span := trace.StartSpan(ctx, "sync.BeaconBlocksByRangeHandler")
 	defer span.End()
 	ctx, cancel := context.WithTimeout(ctx, respTimeout)
@@ -30,10 +30,11 @@ func (s *Service) beaconBlocksByRangeRPCHandler(ctx context.Context, msg interfa
 		return errors.New("message is not type *pb.BeaconBlockByRangeRequest")
 	}
 	log.WithField("start-slot", m.StartSlot).WithField("count", m.Count).Debug("BeaconBlocksByRangeRequest")
+	pid := stream.Conn().RemotePeer()
 	rp, err := validateRangeRequest(m, s.cfg.clock.CurrentSlot())
 	if err != nil {
 		s.writeErrorResponseToStream(responseCodeInvalidRequest, err.Error(), stream)
-		s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(stream.Conn().RemotePeer())
+		s.downscorePeer(pid, "beaconBlocksByRangeRPCHandlerValidationError")
 		tracing.AnnotateError(span, err)
 		return err
 	}
@@ -42,12 +43,12 @@ func (s *Service) beaconBlocksByRangeRPCHandler(ctx context.Context, msg interfa
 	if err != nil {
 		return err
 	}
-	remainingBucketCapacity := blockLimiter.Remaining(stream.Conn().RemotePeer().String())
+	remainingBucketCapacity := blockLimiter.Remaining(pid.String())
 	span.AddAttributes(
 		trace.Int64Attribute("start", int64(rp.start)), // lint:ignore uintcast -- This conversion is OK for tracing.
 		trace.Int64Attribute("end", int64(rp.end)),     // lint:ignore uintcast -- This conversion is OK for tracing.
 		trace.Int64Attribute("count", int64(m.Count)),
-		trace.StringAttribute("peer", stream.Conn().RemotePeer().String()),
+		trace.StringAttribute("peer", pid.String()),
 		trace.Int64Attribute("remaining_capacity", remainingBucketCapacity),
 	)
 
@@ -56,7 +57,7 @@ func (s *Service) beaconBlocksByRangeRPCHandler(ctx context.Context, msg interfa
 	defer ticker.Stop()
 	batcher, err := newBlockRangeBatcher(rp, s.cfg.beaconDB, s.rateLimiter, s.cfg.chain.IsCanonical, ticker)
 	if err != nil {
-		log.WithError(err).Info("error in BlocksByRange batch")
+		log.WithError(err).Info("Error in BlocksByRange batch")
 		s.writeErrorResponseToStream(responseCodeServerError, p2ptypes.ErrGeneric.Error(), stream)
 		tracing.AnnotateError(span, err)
 		return err
@@ -75,7 +76,7 @@ func (s *Service) beaconBlocksByRangeRPCHandler(ctx context.Context, msg interfa
 		rpcBlocksByRangeResponseLatency.Observe(float64(time.Since(batchStart).Milliseconds()))
 	}
 	if err := batch.error(); err != nil {
-		log.WithError(err).Debug("error in BlocksByRange batch")
+		log.WithError(err).Debug("Error in BlocksByRange batch")
 		s.writeErrorResponseToStream(responseCodeServerError, p2ptypes.ErrGeneric.Error(), stream)
 		tracing.AnnotateError(span, err)
 		return err
@@ -114,10 +115,7 @@ func validateRangeRequest(r *pb.BeaconBlocksByRangeRequest, current primitives.S
 		return rangeParams{}, p2ptypes.ErrInvalidRequest
 	}
 
-	limit := uint64(flags.Get().BlockBatchLimit)
-	if limit > maxRequest {
-		limit = maxRequest
-	}
+	limit := min(uint64(flags.Get().BlockBatchLimit), maxRequest)
 	if rp.size > limit {
 		rp.size = limit
 	}
@@ -125,41 +123,60 @@ func validateRangeRequest(r *pb.BeaconBlocksByRangeRequest, current primitives.S
 	return rp, nil
 }
 
+// writeBlockBatchToStream writes one canonical block batch to the RPC stream in slot order, while handling mixed blinded and full blocks safely.
+// It first scans the canonical batch and reconstructs all blinded blocks in one pass via the execution reconstructor, indexes reconstructed results by slot,
+// and then performs a second pass over the same canonical sequence to stream each block in ascending order: full blocks are written directly,
+// and blinded blocks are replaced with their reconstructed full counterpart when available.
 func (s *Service) writeBlockBatchToStream(ctx context.Context, batch blockBatch, stream libp2pcore.Stream) error {
 	ctx, span := trace.StartSpan(ctx, "sync.WriteBlockRangeToStream")
 	defer span.End()
 
+	canonical := batch.canonical()
+
 	blinded := make([]interfaces.ReadOnlySignedBeaconBlock, 0)
-	for _, b := range batch.canonical() {
+	for _, b := range canonical {
 		if err := blocks.BeaconBlockIsNil(b); err != nil {
 			continue
 		}
 		if b.IsBlinded() {
 			blinded = append(blinded, b.ReadOnlySignedBeaconBlock)
-			continue
 		}
-		if chunkErr := s.chunkBlockWriter(stream, b); chunkErr != nil {
-			log.WithError(chunkErr).Debug("Could not send a chunked response")
-			return chunkErr
-		}
-	}
-	if len(blinded) == 0 {
-		return nil
 	}
 
-	reconstructed, err := s.cfg.executionPayloadReconstructor.ReconstructFullBlockBatch(ctx, blinded)
-	if err != nil {
-		log.WithError(err).Error("Could not reconstruct full bellatrix block batch from blinded bodies")
-		return err
+	reconstructedBySlot := make(map[primitives.Slot]interfaces.SignedBeaconBlock)
+	if len(blinded) > 0 {
+		reconstructed, err := s.cfg.executionPayloadReconstructor.ReconstructFullBlockBatch(ctx, blinded)
+		if err != nil {
+			log.WithError(err).Error("Could not reconstruct full bellatrix block batch from blinded bodies")
+			return err
+		}
+		for _, b := range reconstructed {
+			if err := blocks.BeaconBlockIsNil(b); err != nil {
+				continue
+			}
+			if b.IsBlinded() {
+				continue
+			}
+			reconstructedBySlot[b.Block().Slot()] = b
+		}
 	}
-	for _, b := range reconstructed {
+
+	for _, b := range canonical {
 		if err := blocks.BeaconBlockIsNil(b); err != nil {
 			continue
 		}
+
+		var toWrite interfaces.ReadOnlySignedBeaconBlock
 		if b.IsBlinded() {
-			continue
+			full, ok := reconstructedBySlot[b.Block().Slot()]
+			if !ok {
+				continue
+			}
+			toWrite = full
+		} else {
+			toWrite = b
 		}
-		if chunkErr := s.chunkBlockWriter(stream, b); chunkErr != nil {
+		if chunkErr := s.chunkBlockWriter(stream, toWrite); chunkErr != nil {
 			log.WithError(chunkErr).Debug("Could not send a chunked response")
 			return chunkErr
 		}

@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -25,18 +25,18 @@ func TestStore_IsFinalizedBlock(t *testing.T) {
 
 	require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesisBlockRoot))
 
-	blks := makeBlocksCapella(t, 0, slotsPerEpoch*3, genesisBlockRoot)
+	blks := makeBlocksZond(t, 0, slotsPerEpoch*3, genesisBlockRoot)
 	require.NoError(t, db.SaveBlocks(ctx, blks))
 
 	root, err := blks[slotsPerEpoch].Block().HashTreeRoot()
 	require.NoError(t, err)
 
-	cp := &zondpb.Checkpoint{
+	cp := &qrysmpb.Checkpoint{
 		Epoch: 1,
 		Root:  root[:],
 	}
 
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	// a state is required to save checkpoint
 	require.NoError(t, db.SaveState(ctx, st, root))
@@ -59,7 +59,7 @@ func TestStore_IsFinalizedBlockGenesis(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
 
-	blk := util.NewBeaconBlockCapella()
+	blk := util.NewBeaconBlockZond()
 	blk.Block.Slot = 0
 	root, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -84,12 +84,12 @@ func TestStore_IsFinalizedBlockGenesis(t *testing.T) {
 // it should not be considered "final and canonical" in the view at slot 6.
 func TestStore_IsFinalized_ForkEdgeCase(t *testing.T) {
 	slotsPerEpoch := uint64(params.BeaconConfig().SlotsPerEpoch)
-	blocks0 := makeBlocksCapella(t, slotsPerEpoch*0, slotsPerEpoch, genesisBlockRoot)
+	blocks0 := makeBlocksZond(t, slotsPerEpoch*0, slotsPerEpoch, genesisBlockRoot)
 	blocks1 := append(
-		makeBlocksCapella(t, slotsPerEpoch*1, 1, bytesutil.ToBytes32(sszRootOrDie(t, blocks0[len(blocks0)-1]))), // No block builds off of the first block in epoch.
-		makeBlocksCapella(t, slotsPerEpoch*1+1, slotsPerEpoch-1, bytesutil.ToBytes32(sszRootOrDie(t, blocks0[len(blocks0)-1])))...,
+		makeBlocksZond(t, slotsPerEpoch*1, 1, bytesutil.ToBytes32(sszRootOrDie(t, blocks0[len(blocks0)-1]))), // No block builds off of the first block in epoch.
+		makeBlocksZond(t, slotsPerEpoch*1+1, slotsPerEpoch-1, bytesutil.ToBytes32(sszRootOrDie(t, blocks0[len(blocks0)-1])))...,
 	)
-	blocks2 := makeBlocksCapella(t, slotsPerEpoch*2, slotsPerEpoch, bytesutil.ToBytes32(sszRootOrDie(t, blocks1[len(blocks1)-1])))
+	blocks2 := makeBlocksZond(t, slotsPerEpoch*2, slotsPerEpoch, bytesutil.ToBytes32(sszRootOrDie(t, blocks1[len(blocks1)-1])))
 
 	db := setupDB(t)
 	ctx := context.Background()
@@ -100,12 +100,12 @@ func TestStore_IsFinalized_ForkEdgeCase(t *testing.T) {
 	require.NoError(t, db.SaveBlocks(ctx, blocks2))
 
 	// First checkpoint
-	checkpoint1 := &zondpb.Checkpoint{
+	checkpoint1 := &qrysmpb.Checkpoint{
 		Root:  sszRootOrDie(t, blocks1[0]),
 		Epoch: 1,
 	}
 
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	// A state is required to save checkpoint
 	require.NoError(t, db.SaveState(ctx, st, bytesutil.ToBytes32(checkpoint1.Root)))
@@ -117,7 +117,7 @@ func TestStore_IsFinalized_ForkEdgeCase(t *testing.T) {
 	}
 
 	// Second checkpoint
-	checkpoint2 := &zondpb.Checkpoint{
+	checkpoint2 := &qrysmpb.Checkpoint{
 		Root:  sszRootOrDie(t, blocks2[0]),
 		Epoch: 2,
 	}
@@ -147,19 +147,19 @@ func TestStore_IsFinalizedChildBlock(t *testing.T) {
 		root, err := blks[slotsPerEpoch].Block().HashTreeRoot()
 		require.NoError(t, err)
 
-		cp := &zondpb.Checkpoint{
+		cp := &qrysmpb.Checkpoint{
 			Epoch: 1,
 			Root:  root[:],
 		}
 
-		st, err := util.NewBeaconStateCapella()
+		st, err := util.NewBeaconStateZond()
 		require.NoError(t, err)
 		// a state is required to save checkpoint
 		require.NoError(t, db.SaveState(ctx, st, root))
 		require.NoError(t, db.SaveFinalizedCheckpoint(ctx, cp))
 
 		// All blocks up to slotsPerEpoch should have a finalized child block.
-		for i := uint64(0); i < slotsPerEpoch; i++ {
+		for i := range slotsPerEpoch {
 			root, err := blks[i].Block().HashTreeRoot()
 			require.NoError(t, err)
 			assert.Equal(t, true, db.IsFinalizedBlock(ctx, root), "Block at index %d was not considered finalized in the index", i)
@@ -178,10 +178,10 @@ func TestStore_IsFinalizedChildBlock(t *testing.T) {
 		return db
 	}
 
-	t.Run("capella", func(t *testing.T) {
+	t.Run("zond", func(t *testing.T) {
 		db := setup(t)
 
-		blks := makeBlocksCapella(t, 0, slotsPerEpoch*3, genesisBlockRoot)
+		blks := makeBlocksZond(t, 0, slotsPerEpoch*3, genesisBlockRoot)
 		eval(t, ctx, db, blks)
 	})
 }
@@ -192,13 +192,13 @@ func sszRootOrDie(t *testing.T, block interfaces.ReadOnlySignedBeaconBlock) []by
 	return root[:]
 }
 
-func makeBlocksCapella(t *testing.T, i, n uint64, previousRoot [32]byte) []interfaces.ReadOnlySignedBeaconBlock {
-	blocks := make([]*zondpb.SignedBeaconBlockCapella, n)
+func makeBlocksZond(t *testing.T, i, n uint64, previousRoot [32]byte) []interfaces.ReadOnlySignedBeaconBlock {
+	blocks := make([]*qrysmpb.SignedBeaconBlockZond, n)
 	ifaceBlocks := make([]interfaces.ReadOnlySignedBeaconBlock, n)
 	for j := i; j < n+i; j++ {
 		parentRoot := make([]byte, fieldparams.RootLength)
 		copy(parentRoot, previousRoot[:])
-		blocks[j-i] = util.NewBeaconBlockCapella()
+		blocks[j-i] = util.NewBeaconBlockZond()
 		blocks[j-i].Block.Slot = primitives.Slot(j + 1)
 		blocks[j-i].Block.ParentRoot = parentRoot
 		var err error

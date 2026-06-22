@@ -26,7 +26,7 @@ func TestShuffleList_OK(t *testing.T) {
 	var list1 []primitives.ValidatorIndex
 	seed1 := [32]byte{1, 128, 12}
 	seed2 := [32]byte{2, 128, 12}
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		list1 = append(list1, primitives.ValidatorIndex(i))
 	}
 
@@ -49,7 +49,7 @@ func TestShuffleList_OK(t *testing.T) {
 func TestSplitIndices_OK(t *testing.T) {
 	var l []uint64
 	numValidators := uint64(64000)
-	for i := uint64(0); i < numValidators; i++ {
+	for i := range numValidators {
 		l = append(l, i)
 	}
 	split := SplitIndices(l, uint64(params.BeaconConfig().SlotsPerEpoch))
@@ -112,7 +112,7 @@ func BenchmarkShuffleList(b *testing.B) {
 	seed := [32]byte{123, 42}
 	for _, listSize := range listSizes {
 		testIndices := make([]primitives.ValidatorIndex, listSize)
-		for i := uint64(0); i < listSize; i++ {
+		for i := range listSize {
 			testIndices[i] = primitives.ValidatorIndex(i)
 		}
 		b.Run(fmt.Sprintf("ShuffleList_%d", listSize), func(ib *testing.B) {
@@ -149,12 +149,12 @@ func TestShuffledIndex(t *testing.T) {
 func TestSplitIndicesAndOffset_OK(t *testing.T) {
 	var l []uint64
 	validators := uint64(64000)
-	for i := uint64(0); i < validators; i++ {
+	for i := range validators {
 		l = append(l, i)
 	}
 	chunks := uint64(6)
 	split := SplitIndices(l, chunks)
-	for i := uint64(0); i < chunks; i++ {
+	for i := range chunks {
 		if !reflect.DeepEqual(split[i], l[slice.SplitOffset(uint64(len(l)), chunks, i):slice.SplitOffset(uint64(len(l)), chunks, i+1)]) {
 			t.Errorf("Want: %v got: %v", l[slice.SplitOffset(uint64(len(l)), chunks, i):slice.SplitOffset(uint64(len(l)), chunks, i+1)], split[i])
 			break

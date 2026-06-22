@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "iface",
     srcs = [
         "errors.go",
         "interface.go",
@@ -10,13 +10,13 @@ go_library(
     # Other packages must use github.com/theQRL/qrysm/beacon-chain/db.Database alias.
     visibility = ["//visibility:public"],
     deps = [
-        "//beacon-chain/db/filters:go_default_library",
-        "//beacon-chain/slasher/types:go_default_library",
-        "//beacon-chain/state:go_default_library",
-        "//consensus-types/interfaces:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//monitoring/backup:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "@com_github_theqrl_go_zond//common:go_default_library",
+        "//beacon-chain/db/filters",
+        "//beacon-chain/slasher/types",
+        "//beacon-chain/state",
+        "//consensus-types/interfaces",
+        "//consensus-types/primitives",
+        "//monitoring/backup",
+        "//proto/qrysm/v1alpha1",
+        "@com_github_theqrl_go_qrl//common",
     ],
 )

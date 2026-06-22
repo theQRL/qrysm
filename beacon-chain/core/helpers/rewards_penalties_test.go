@@ -8,13 +8,13 @@ import (
 	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestTotalBalance_OK(t *testing.T) {
-	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{Validators: []*zondpb.Validator{
+	state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{Validators: []*qrysmpb.Validator{
 		{EffectiveBalance: 27 * 1e9}, {EffectiveBalance: 28 * 1e9},
 		{EffectiveBalance: 32 * 1e9}, {EffectiveBalance: 40 * 1e9},
 	}})
@@ -27,7 +27,7 @@ func TestTotalBalance_OK(t *testing.T) {
 }
 
 func TestTotalBalance_ReturnsEffectiveBalanceIncrement(t *testing.T) {
-	state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{Validators: []*zondpb.Validator{}})
+	state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{Validators: []*qrysmpb.Validator{}})
 	require.NoError(t, err)
 
 	balance := TotalBalance(state, []primitives.ValidatorIndex{})
@@ -47,7 +47,7 @@ func TestGetBalance_OK(t *testing.T) {
 		{i: 2, b: []uint64{0, 0, 0}},
 	}
 	for _, test := range tests {
-		state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{Balances: test.b})
+		state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{Balances: test.b})
 		require.NoError(t, err)
 		assert.Equal(t, test.b[test.i], state.Balances()[test.i], "Incorrect Validator balance")
 	}
@@ -62,11 +62,11 @@ func TestTotalActiveBalance(t *testing.T) {
 		{10000},
 	}
 	for _, test := range tests {
-		validators := make([]*zondpb.Validator, 0)
+		validators := make([]*qrysmpb.Validator, 0)
 		for i := 0; i < test.vCount; i++ {
-			validators = append(validators, &zondpb.Validator{EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance, ExitEpoch: 1})
+			validators = append(validators, &qrysmpb.Validator{EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance, ExitEpoch: 1})
 		}
-		state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{Validators: validators})
+		state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{Validators: validators})
 		require.NoError(t, err)
 		bal, err := TotalActiveBalance(state)
 		require.NoError(t, err)
@@ -85,11 +85,11 @@ func TestTotalActiveBal_ReturnMin(t *testing.T) {
 		{10000},
 	}
 	for _, test := range tests {
-		validators := make([]*zondpb.Validator, 0)
+		validators := make([]*qrysmpb.Validator, 0)
 		for i := 0; i < test.vCount; i++ {
-			validators = append(validators, &zondpb.Validator{EffectiveBalance: 1, ExitEpoch: 1})
+			validators = append(validators, &qrysmpb.Validator{EffectiveBalance: 1, ExitEpoch: 1})
 		}
-		state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{Validators: validators})
+		state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{Validators: validators})
 		require.NoError(t, err)
 		bal, err := TotalActiveBalance(state)
 		require.NoError(t, err)
@@ -109,11 +109,11 @@ func TestTotalActiveBalance_WithCache(t *testing.T) {
 		{vCount: 10000, wantCount: 10000},
 	}
 	for _, test := range tests {
-		validators := make([]*zondpb.Validator, 0)
+		validators := make([]*qrysmpb.Validator, 0)
 		for i := 0; i < test.vCount; i++ {
-			validators = append(validators, &zondpb.Validator{EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance, ExitEpoch: 1})
+			validators = append(validators, &qrysmpb.Validator{EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance, ExitEpoch: 1})
 		}
-		state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{Validators: validators})
+		state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{Validators: validators})
 		require.NoError(t, err)
 		bal, err := TotalActiveBalance(state)
 		require.NoError(t, err)
@@ -133,8 +133,8 @@ func TestIncreaseBalance_OK(t *testing.T) {
 		{i: 2, b: []uint64{27 * 1e9, 28 * 1e9, 32 * 1e9}, nb: 33 * 1e9, eb: 65 * 1e9},
 	}
 	for _, test := range tests {
-		state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
-			Validators: []*zondpb.Validator{
+		state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
+			Validators: []*qrysmpb.Validator{
 				{EffectiveBalance: 4}, {EffectiveBalance: 4}, {EffectiveBalance: 4}},
 			Balances: test.b,
 		})
@@ -157,8 +157,8 @@ func TestDecreaseBalance_OK(t *testing.T) {
 		{i: 3, b: []uint64{27 * 1e9, 28 * 1e9, 1, 28 * 1e9}, nb: 28 * 1e9, eb: 0},
 	}
 	for _, test := range tests {
-		state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
-			Validators: []*zondpb.Validator{
+		state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
+			Validators: []*qrysmpb.Validator{
 				{EffectiveBalance: 4}, {EffectiveBalance: 4}, {EffectiveBalance: 4}, {EffectiveBalance: 3}},
 			Balances: test.b,
 		})
@@ -170,8 +170,8 @@ func TestDecreaseBalance_OK(t *testing.T) {
 
 func TestFinalityDelay(t *testing.T) {
 	base := buildState(params.BeaconConfig().SlotsPerEpoch*6, 1)
-	base.FinalizedCheckpoint = &zondpb.Checkpoint{Epoch: 3}
-	beaconState, err := state_native.InitializeFromProtoCapella(base)
+	base.FinalizedCheckpoint = &qrysmpb.Checkpoint{Epoch: 3}
+	beaconState, err := state_native.InitializeFromProtoZond(base)
 	require.NoError(t, err)
 	prevEpoch := primitives.Epoch(0)
 	finalizedEpoch := primitives.Epoch(0)
@@ -185,13 +185,13 @@ func TestFinalityDelay(t *testing.T) {
 	w := time.PrevEpoch(beaconState) - beaconState.FinalizedCheckpointEpoch()
 	assert.Equal(t, w, d, "Did not get wanted finality delay")
 
-	require.NoError(t, beaconState.SetFinalizedCheckpoint(&zondpb.Checkpoint{Epoch: 4}))
+	require.NoError(t, beaconState.SetFinalizedCheckpoint(&qrysmpb.Checkpoint{Epoch: 4}))
 	setVal()
 	d = FinalityDelay(prevEpoch, finalizedEpoch)
 	w = time.PrevEpoch(beaconState) - beaconState.FinalizedCheckpointEpoch()
 	assert.Equal(t, w, d, "Did not get wanted finality delay")
 
-	require.NoError(t, beaconState.SetFinalizedCheckpoint(&zondpb.Checkpoint{Epoch: 5}))
+	require.NoError(t, beaconState.SetFinalizedCheckpoint(&qrysmpb.Checkpoint{Epoch: 5}))
 	setVal()
 	d = FinalityDelay(prevEpoch, finalizedEpoch)
 	w = time.PrevEpoch(beaconState) - beaconState.FinalizedCheckpointEpoch()
@@ -200,8 +200,8 @@ func TestFinalityDelay(t *testing.T) {
 
 func TestIsInInactivityLeak(t *testing.T) {
 	base := buildState(params.BeaconConfig().SlotsPerEpoch*10, 1)
-	base.FinalizedCheckpoint = &zondpb.Checkpoint{Epoch: 3}
-	beaconState, err := state_native.InitializeFromProtoCapella(base)
+	base.FinalizedCheckpoint = &qrysmpb.Checkpoint{Epoch: 3}
+	beaconState, err := state_native.InitializeFromProtoZond(base)
 	require.NoError(t, err)
 	prevEpoch := primitives.Epoch(0)
 	finalizedEpoch := primitives.Epoch(0)
@@ -212,50 +212,50 @@ func TestIsInInactivityLeak(t *testing.T) {
 	}
 	setVal()
 	assert.Equal(t, true, IsInInactivityLeak(prevEpoch, finalizedEpoch), "Wanted inactivity leak true")
-	require.NoError(t, beaconState.SetFinalizedCheckpoint(&zondpb.Checkpoint{Epoch: 4}))
+	require.NoError(t, beaconState.SetFinalizedCheckpoint(&qrysmpb.Checkpoint{Epoch: 4}))
 	setVal()
 	assert.Equal(t, true, IsInInactivityLeak(prevEpoch, finalizedEpoch), "Wanted inactivity leak true")
-	require.NoError(t, beaconState.SetFinalizedCheckpoint(&zondpb.Checkpoint{Epoch: 5}))
+	require.NoError(t, beaconState.SetFinalizedCheckpoint(&qrysmpb.Checkpoint{Epoch: 5}))
 	setVal()
 	assert.Equal(t, false, IsInInactivityLeak(prevEpoch, finalizedEpoch), "Wanted inactivity leak false")
 }
 
-func buildState(slot primitives.Slot, validatorCount uint64) *zondpb.BeaconStateCapella {
-	validators := make([]*zondpb.Validator, validatorCount)
-	for i := 0; i < len(validators); i++ {
-		validators[i] = &zondpb.Validator{
+func buildState(slot primitives.Slot, validatorCount uint64) *qrysmpb.BeaconStateZond {
+	validators := make([]*qrysmpb.Validator, validatorCount)
+	for i := range validators {
+		validators[i] = &qrysmpb.Validator{
 			ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
 			EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance,
 		}
 	}
 	validatorBalances := make([]uint64, len(validators))
-	for i := 0; i < len(validatorBalances); i++ {
+	for i := range validatorBalances {
 		validatorBalances[i] = params.BeaconConfig().MaxEffectiveBalance
 	}
 	latestActiveIndexRoots := make(
 		[][]byte,
 		params.BeaconConfig().EpochsPerHistoricalVector,
 	)
-	for i := 0; i < len(latestActiveIndexRoots); i++ {
+	for i := range latestActiveIndexRoots {
 		latestActiveIndexRoots[i] = params.BeaconConfig().ZeroHash[:]
 	}
 	latestRandaoMixes := make(
 		[][]byte,
 		params.BeaconConfig().EpochsPerHistoricalVector,
 	)
-	for i := 0; i < len(latestRandaoMixes); i++ {
+	for i := range latestRandaoMixes {
 		latestRandaoMixes[i] = params.BeaconConfig().ZeroHash[:]
 	}
-	return &zondpb.BeaconStateCapella{
+	return &qrysmpb.BeaconStateZond{
 		Slot:                        slot,
 		Balances:                    validatorBalances,
 		Validators:                  validators,
 		RandaoMixes:                 make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 		Slashings:                   make([]uint64, params.BeaconConfig().EpochsPerSlashingsVector),
 		BlockRoots:                  make([][]byte, params.BeaconConfig().SlotsPerEpoch*6),
-		FinalizedCheckpoint:         &zondpb.Checkpoint{Root: make([]byte, 32)},
-		PreviousJustifiedCheckpoint: &zondpb.Checkpoint{Root: make([]byte, 32)},
-		CurrentJustifiedCheckpoint:  &zondpb.Checkpoint{Root: make([]byte, 32)},
+		FinalizedCheckpoint:         &qrysmpb.Checkpoint{Root: make([]byte, 32)},
+		PreviousJustifiedCheckpoint: &qrysmpb.Checkpoint{Root: make([]byte, 32)},
+		CurrentJustifiedCheckpoint:  &qrysmpb.Checkpoint{Root: make([]byte, 32)},
 	}
 }
 
@@ -269,8 +269,8 @@ func TestIncreaseBadBalance_NotOK(t *testing.T) {
 		{i: 2, b: []uint64{math.MaxUint64, math.MaxUint64, math.MaxUint64}, nb: 33 * 1e9},
 	}
 	for _, test := range tests {
-		state, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
-			Validators: []*zondpb.Validator{
+		state, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
+			Validators: []*qrysmpb.Validator{
 				{EffectiveBalance: 4}, {EffectiveBalance: 4}, {EffectiveBalance: 4}},
 			Balances: test.b,
 		})

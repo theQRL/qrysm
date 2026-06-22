@@ -16,7 +16,7 @@ import (
 func Test_BaseReward(t *testing.T) {
 	helpers.ClearCache()
 	genState := func(valCount uint64) state.ReadOnlyBeaconState {
-		s, _ := util.DeterministicGenesisStateCapella(t, valCount)
+		s, _ := util.DeterministicGenesisStateZond(t, valCount)
 		return s
 	}
 	tests := []struct {
@@ -34,24 +34,24 @@ func Test_BaseReward(t *testing.T) {
 			errString: "validator index 2 does not exist",
 		},
 		{
-			name:      "active balance is 40000eth",
+			name:      "active balance is 40000qrl",
 			valIdx:    0,
 			st:        genState(1),
-			want:      404760000,
+			want:      12952680000,
 			errString: "",
 		},
 		{
-			name:      "active balance is 40000eth * target committee size",
+			name:      "active balance is 40000qrl * target committee size",
 			valIdx:    0,
 			st:        genState(params.BeaconConfig().TargetCommitteeSize),
-			want:      35760000,
+			want:      1144840000,
 			errString: "",
 		},
 		{
-			name:      "active balance is 40000eth * max validator per  committee size",
+			name:      "active balance is 40000qrl * max validator per  committee size",
 			valIdx:    0,
 			st:        genState(params.BeaconConfig().MaxValidatorsPerCommittee),
-			want:      8920000,
+			want:      286200000,
 			errString: "",
 		},
 	}
@@ -69,7 +69,7 @@ func Test_BaseReward(t *testing.T) {
 
 func Test_BaseRewardWithTotalBalance(t *testing.T) {
 	helpers.ClearCache()
-	s, _ := util.DeterministicGenesisStateCapella(t, 1)
+	s, _ := util.DeterministicGenesisStateZond(t, 1)
 	tests := []struct {
 		name          string
 		valIdx        primitives.ValidatorIndex
@@ -95,35 +95,35 @@ func Test_BaseRewardWithTotalBalance(t *testing.T) {
 			name:          "active balance is 1",
 			valIdx:        0,
 			activeBalance: 1,
-			want:          2560000000000000,
+			want:          81920000000000000,
 			errString:     "",
 		},
 		{
-			name:          "active balance is 1eth",
+			name:          "active balance is 1qrl",
 			valIdx:        0,
 			activeBalance: params.BeaconConfig().EffectiveBalanceIncrement,
-			want:          80956280000,
+			want:          2590601440000,
 			errString:     "",
 		},
 		{
-			name:          "active balance is 40000eth",
+			name:          "active balance is 40000qrl",
 			valIdx:        0,
 			activeBalance: params.BeaconConfig().MaxEffectiveBalance,
-			want:          404760000,
+			want:          12952680000,
 			errString:     "",
 		},
 		{
-			name:          "active balance is 40000eth * 1m validators",
+			name:          "active balance is 40000qrl * 1m validators",
 			valIdx:        0,
 			activeBalance: params.BeaconConfig().MaxEffectiveBalance * 1e9,
-			want:          920000,
+			want:          29960000,
 			errString:     "",
 		},
 		{
 			name:          "active balance is max uint64",
 			valIdx:        0,
 			activeBalance: math.MaxUint64,
-			want:          560000,
+			want:          19040000,
 			errString:     "",
 		},
 	}
@@ -156,31 +156,31 @@ func Test_BaseRewardPerIncrement(t *testing.T) {
 		{
 			name:          "active balance is 1",
 			activeBalance: 1,
-			want:          64000000000,
+			want:          2048000000000,
 			errString:     "",
 		},
 		{
-			name:          "active balance is 1eth",
+			name:          "active balance is 1qrl",
 			activeBalance: params.BeaconConfig().EffectiveBalanceIncrement,
-			want:          2023907,
+			want:          64765036,
 			errString:     "",
 		},
 		{
-			name:          "active balance is 40000eth",
+			name:          "active balance is 40000qrl",
 			activeBalance: params.BeaconConfig().MaxEffectiveBalance,
-			want:          10119,
+			want:          323817,
 			errString:     "",
 		},
 		{
-			name:          "active balance is 40000eth * 1m validators",
+			name:          "active balance is 40000qrl * 1m validators",
 			activeBalance: params.BeaconConfig().MaxEffectiveBalance * 1e9,
-			want:          23,
+			want:          749,
 			errString:     "",
 		},
 		{
 			name:          "active balance is max uint64",
 			activeBalance: math.MaxUint64,
-			want:          14,
+			want:          476,
 			errString:     "",
 		},
 	}

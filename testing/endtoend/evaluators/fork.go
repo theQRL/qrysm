@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/theQRL/qrysm/testing/endtoend/helpers"
 	"github.com/theQRL/qrysm/testing/endtoend/policies"
@@ -42,19 +42,19 @@ var BellatrixForkTransition = types.Evaluator{
 	Evaluation: bellatrixForkOccurs,
 }
 
-// CapellaForkTransition ensures that the Capella hard fork has occurred successfully.
-var CapellaForkTransition = types.Evaluator{
-	Name:       "capella_fork_transition_%d",
-	Policy:     policies.OnEpoch(helpers.CapellaE2EForkEpoch),
-	Evaluation: capellaForkOccurs,
+// ZondForkTransition ensures that the Zond hard fork has occurred successfully.
+var ZondForkTransition = types.Evaluator{
+	Name:       "zond_fork_transition_%d",
+	Policy:     policies.OnEpoch(helpers.ZondE2EForkEpoch),
+	Evaluation: zondForkOccurs,
 }
 
 func altairForkOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := zondpb.NewBeaconNodeValidatorClient(conn)
+	client := qrysmpb.NewBeaconNodeValidatorClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), streamDeadline)
 	defer cancel()
-	stream, err := client.StreamBlocksAltair(ctx, &zondpb.StreamBlocksRequest{VerifiedOnly: true})
+	stream, err := client.StreamBlocksAltair(ctx, &qrysmpb.StreamBlocksRequest{VerifiedOnly: true})
 	if err != nil {
 		return errors.Wrap(err, "failed to get stream")
 	}
@@ -93,10 +93,10 @@ func altairForkOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) err
 
 func bellatrixForkOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := zondpb.NewBeaconNodeValidatorClient(conn)
+	client := qrysmpb.NewBeaconNodeValidatorClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), streamDeadline)
 	defer cancel()
-	stream, err := client.StreamBlocksAltair(ctx, &zondpb.StreamBlocksRequest{VerifiedOnly: true})
+	stream, err := client.StreamBlocksAltair(ctx, &qrysmpb.StreamBlocksRequest{VerifiedOnly: true})
 	if err != nil {
 		return errors.Wrap(err, "failed to get stream")
 	}
@@ -136,16 +136,16 @@ func bellatrixForkOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) 
 	return nil
 }
 
-func capellaForkOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
+func zondForkOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := zondpb.NewBeaconNodeValidatorClient(conn)
+	client := qrysmpb.NewBeaconNodeValidatorClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), streamDeadline)
 	defer cancel()
-	stream, err := client.StreamBlocksAltair(ctx, &zondpb.StreamBlocksRequest{VerifiedOnly: true})
+	stream, err := client.StreamBlocksAltair(ctx, &qrysmpb.StreamBlocksRequest{VerifiedOnly: true})
 	if err != nil {
 		return errors.Wrap(err, "failed to get stream")
 	}
-	fSlot, err := slots.EpochStart(helpers.CapellaE2EForkEpoch)
+	fSlot, err := slots.EpochStart(helpers.ZondE2EForkEpoch)
 	if err != nil {
 		return err
 	}
@@ -163,10 +163,10 @@ func capellaForkOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) er
 	if res.GetBlock() == nil {
 		return errors.New("nil block returned by beacon node")
 	}
-	if res.GetCapellaBlock() == nil {
-		return errors.Errorf("non-capella block returned after the fork with type %T", res.Block)
+	if res.GetZondBlock() == nil {
+		return errors.Errorf("non-zond block returned after the fork with type %T", res.Block)
 	}
-	blk, err := blocks.NewSignedBeaconBlock(res.GetCapellaBlock())
+	blk, err := blocks.NewSignedBeaconBlock(res.GetZondBlock())
 	if err != nil {
 		return err
 	}

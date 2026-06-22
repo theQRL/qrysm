@@ -5,13 +5,13 @@ import (
 
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/encoding/ssz"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // BlockHeaderRoot computes the HashTreeRoot Merkleization of
 // a BeaconBlockHeader struct according to the Ethereum
 // Simple Serialize specification.
-func BlockHeaderRoot(header *zondpb.BeaconBlockHeader) ([32]byte, error) {
+func BlockHeaderRoot(header *qrysmpb.BeaconBlockHeader) ([32]byte, error) {
 	fieldRoots := make([][32]byte, 5)
 	if header != nil {
 		headerSlotBuf := make([]byte, 8)

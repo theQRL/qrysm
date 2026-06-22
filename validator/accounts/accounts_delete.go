@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/io/prompt"
-	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	qrlpbservice "github.com/theQRL/qrysm/proto/qrl/service"
 )
 
 // Delete the accounts that the user requests to be deleted from the wallet.
@@ -76,11 +76,11 @@ func DeleteAccount(ctx context.Context, cfg *DeleteConfig) error {
 	}
 	for i, status := range statuses {
 		switch status.Status {
-		case zondpbservice.DeletedKeystoreStatus_ERROR:
+		case qrlpbservice.DeletedKeystoreStatus_ERROR:
 			log.Errorf("Error deleting key %#x: %s", bytesutil.Trunc(cfg.DeletePublicKeys[i]), status.Message)
-		case zondpbservice.DeletedKeystoreStatus_NOT_ACTIVE:
+		case qrlpbservice.DeletedKeystoreStatus_NOT_ACTIVE:
 			log.Warnf("Duplicate key %#x found in delete request", bytesutil.Trunc(cfg.DeletePublicKeys[i]))
-		case zondpbservice.DeletedKeystoreStatus_NOT_FOUND:
+		case qrlpbservice.DeletedKeystoreStatus_NOT_FOUND:
 			log.Warnf("Could not find keystore for %#x", bytesutil.Trunc(cfg.DeletePublicKeys[i]))
 		}
 	}

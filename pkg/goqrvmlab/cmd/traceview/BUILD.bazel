@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@qrysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "traceview_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/theQRL/qrysm/pkg/goqrvmlab/cmd/traceview",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pkg/goqrvmlab/traces",
+        "//pkg/goqrvmlab/ui",
+    ],
+)
+
+go_binary(
+    name = "traceview",
+    embed = [":traceview_lib"],
+    visibility = ["//visibility:public"],
+)

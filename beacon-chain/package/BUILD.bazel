@@ -40,7 +40,7 @@ pkg_deb(
         "etc/qrysm/beacon-chain.yaml",
     ],
     data = ":debian-data",
-    description = "Qrysm Beacon Chain - Zond consensus network communications",
+    description = "Qrysm Beacon Chain - QRL consensus network communications",
     homepage = "https://theqrl.org/",
     maintainer = "The QRL Foundation <support@theqrl.org>",
     package = "qrysm-beacon-chain",

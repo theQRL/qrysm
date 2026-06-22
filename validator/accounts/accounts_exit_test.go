@@ -13,7 +13,7 @@ import (
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/io/file"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
@@ -44,7 +44,7 @@ func TestDisplayExitInfo_NoKeys(t *testing.T) {
 func TestPrepareAllKeys(t *testing.T) {
 	key1 := bytesutil.ToBytes2592([]byte("key1"))
 	key2 := bytesutil.ToBytes2592([]byte("key2"))
-	raw, formatted := prepareAllKeys([][field_params.DilithiumPubkeyLength]byte{key1, key2})
+	raw, formatted := prepareAllKeys([][field_params.MLDSA87PubkeyLength]byte{key1, key2})
 	require.Equal(t, 2, len(raw))
 	require.Equal(t, 2, len(formatted))
 	assert.DeepEqual(t, bytesutil.ToBytes2592([]byte{107, 101, 121, 49}), bytesutil.ToBytes2592(raw[0]))
@@ -54,8 +54,8 @@ func TestPrepareAllKeys(t *testing.T) {
 }
 
 func TestWriteSignedVoluntaryExitJSON(t *testing.T) {
-	sve := &zond.SignedVoluntaryExit{
-		Exit: &zond.VoluntaryExit{
+	sve := &qrysmpb.SignedVoluntaryExit{
+		Exit: &qrysmpb.VoluntaryExit{
 			Epoch:          5,
 			ValidatorIndex: 300,
 		},

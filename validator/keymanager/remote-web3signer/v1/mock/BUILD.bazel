@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "mock",
     testonly = True,
     srcs = ["mocks.go"],
     importpath = "github.com/theQRL/qrysm/validator/keymanager/remote-web3signer/v1/mock",

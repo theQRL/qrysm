@@ -33,7 +33,7 @@ func (b *BeaconChainConfig) Copy() *BeaconChainConfig {
 	defer cfgrw.RUnlock()
 	config, ok := deepcopy.Copy(*b).(BeaconChainConfig)
 	if !ok {
-		panic("somehow deepcopy produced a BeaconChainConfig that is not of the same type as the original")
+		panic("somehow deepcopy produced a BeaconChainConfig that is not of the same type as the original") // lint:nopanic -- This is just resurfacing the original panic.
 	}
 	return &config
 }

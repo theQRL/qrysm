@@ -6,15 +6,15 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
-func (c *beaconApiValidatorClient) submitAggregateSelectionProof(ctx context.Context, in *zondpb.AggregateSelectionRequest) (*zondpb.AggregateSelectionResponse, error) {
+func (c *beaconApiValidatorClient) submitAggregateSelectionProof(ctx context.Context, in *qrysmpb.AggregateSelectionRequest) (*qrysmpb.AggregateSelectionResponse, error) {
 	isOptimistic, err := c.isOptimistic(ctx)
 	if err != nil {
 		return nil, err
@@ -25,22 +25,22 @@ func (c *beaconApiValidatorClient) submitAggregateSelectionProof(ctx context.Con
 		return nil, errors.New("the node is currently optimistic and cannot serve validators")
 	}
 
-	validatorIndexResponse, err := c.validatorIndex(ctx, &zondpb.ValidatorIndexRequest{PublicKey: in.PublicKey})
+	validatorIndexResponse, err := c.validatorIndex(ctx, &qrysmpb.ValidatorIndexRequest{PublicKey: in.PublicKey})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get validator index")
 	}
 
-	attesterDuties, err := c.dutiesProvider.GetAttesterDuties(ctx, slots.ToEpoch(in.Slot), []primitives.ValidatorIndex{validatorIndexResponse.Index})
+	attesterDutiesResp, err := c.dutiesProvider.GetAttesterDuties(ctx, slots.ToEpoch(in.Slot), []primitives.ValidatorIndex{validatorIndexResponse.Index})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get attester duties")
 	}
 
-	if len(attesterDuties) == 0 {
+	if len(attesterDutiesResp.Data) == 0 {
 		return nil, errors.Errorf("no attester duty for the given slot %d", in.Slot)
 	}
 
 	// First attester duty is required since we requested attester duties for one validator index.
-	attesterDuty := attesterDuties[0]
+	attesterDuty := attesterDutiesResp.Data[0]
 
 	committeeLen, err := strconv.ParseUint(attesterDuty.CommitteeLength, 10, 64)
 	if err != nil {
@@ -75,8 +75,8 @@ func (c *beaconApiValidatorClient) submitAggregateSelectionProof(ctx context.Con
 		return nil, errors.Wrap(err, "failed to convert aggregate attestation json to proto")
 	}
 
-	return &zondpb.AggregateSelectionResponse{
-		AggregateAndProof: &zondpb.AggregateAttestationAndProof{
+	return &qrysmpb.AggregateSelectionResponse{
+		AggregateAndProof: &qrysmpb.AggregateAttestationAndProof{
 			AggregatorIndex: validatorIndexResponse.Index,
 			Aggregate:       aggregatedAttestation,
 			SelectionProof:  in.SlotSignature,
@@ -88,7 +88,7 @@ func (c *beaconApiValidatorClient) getAggregateAttestation(ctx context.Context, 
 	params := url.Values{}
 	params.Add("slot", strconv.FormatUint(uint64(slot), 10))
 	params.Add("attestation_data_root", hexutil.Encode(attestationDataRoot))
-	endpoint := buildURL("/zond/v1/validator/aggregate_attestation", params)
+	endpoint := buildURL("/qrl/v1/validator/aggregate_attestation", params)
 
 	var aggregateAttestationResponse apimiddleware.AggregateAttestationResponseJson
 	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, endpoint, &aggregateAttestationResponse); err != nil {

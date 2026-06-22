@@ -1,14 +1,14 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "gocognit",
     srcs = ["analyzer.go"],
     importpath = "github.com/theQRL/qrysm/tools/analyzers/gocognit",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_uudashr_gocognit//:go_default_library",
-        "@org_golang_x_tools//go/analysis:go_default_library",
-        "@org_golang_x_tools//go/analysis/passes/inspect:go_default_library",
-        "@org_golang_x_tools//go/ast/inspector:go_default_library",
+        "@com_github_uudashr_gocognit//:gocognit",
+        "@org_golang_x_tools//go/analysis",
+        "@org_golang_x_tools//go/analysis/passes/inspect",
+        "@org_golang_x_tools//go/ast/inspector",
     ],
 )

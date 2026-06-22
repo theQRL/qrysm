@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@qrysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "zond_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/theQRL/qrysm/pkg/tx-fuzz/cmd/zond",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pkg/tx-fuzz",
+        "@com_github_theqrl_go_qrl//common",
+        "@com_github_theqrl_go_qrl//core/types",
+        "@com_github_theqrl_go_qrl//crypto/pqcrypto/wallet",
+        "@com_github_theqrl_go_qrl//qrlclient",
+        "@com_github_theqrl_go_qrl//rpc",
+    ],
+)
+
+go_binary(
+    name = "zond",
+    embed = [":zond_lib"],
+    visibility = ["//visibility:public"],
+)

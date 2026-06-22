@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -81,7 +81,7 @@ func (c *componentHandler) setup() {
 	})
 	c.bootnode = bootNode
 
-	// Zond execution nodes.
+	// QRL execution nodes.
 	executionNodes := components.NewExecutionNodeSet()
 	g.Go(func() error {
 		if err := executionNodes.Start(ctx); err != nil {
@@ -137,7 +137,7 @@ func (c *componentHandler) setup() {
 		if err := helpers.ComponentsStarted(ctx, wantedComponents); err != nil {
 			return errors.Wrap(err, "beacon nodes require proxies, execution and boot node to run")
 		}
-		beaconNodes.SetENR(bootNode.ENR())
+		beaconNodes.SetQNR(bootNode.QNR())
 		if err := beaconNodes.Start(ctx); err != nil {
 			return errors.Wrap(err, "failed to start beacon nodes")
 		}
@@ -177,19 +177,20 @@ func (c *componentHandler) required() []e2etypes.ComponentRunner {
 	return requiredComponents
 }
 
-func (c *componentHandler) printPIDs(logger func(string, ...interface{})) {
-	msg := "\nPID of components. Attach a debugger... if you dare!\n\n"
+func (c *componentHandler) printPIDs(logger func(string, ...any)) {
+	var msg strings.Builder
+	msg.WriteString("\nPID of components. Attach a debugger... if you dare!\n\n")
 
-	msg += "This test PID: " + strconv.Itoa(os.Getpid()) + " (parent=" + strconv.Itoa(os.Getppid()) + ")\n"
+	_, _ = fmt.Fprintf(&msg, "This test PID: %d (parent=%d)\n", os.Getpid(), os.Getppid())
 
 	// Beacon chain nodes
-	msg += fmt.Sprintf("Beacon chain nodes: %v\n", PIDsFromMultiComponentRunner(c.beaconNodes))
+	_, _ = fmt.Fprintf(&msg, "Beacon chain nodes: %v\n", PIDsFromMultiComponentRunner(c.beaconNodes))
 	// Validator nodes
-	msg += fmt.Sprintf("Validators: %v\n", PIDsFromMultiComponentRunner(c.validatorNodes))
+	_, _ = fmt.Fprintf(&msg, "Validators: %v\n", PIDsFromMultiComponentRunner(c.validatorNodes))
 	// Execution nodes
-	msg += fmt.Sprintf("Execution nodes: %v\n", PIDsFromMultiComponentRunner(c.executionNodes))
+	_, _ = fmt.Fprintf(&msg, "Execution nodes: %v\n", PIDsFromMultiComponentRunner(c.executionNodes))
 
-	logger(msg)
+	logger(msg.String())
 }
 
 func PIDsFromMultiComponentRunner(runner e2etypes.MultipleComponentRunners) []int {
@@ -208,9 +209,11 @@ func PIDsFromMultiComponentRunner(runner e2etypes.MultipleComponentRunners) []in
 	return pids
 }
 
+/*
 func appendDebugEndpoints(cfg *e2etypes.E2EConfig) {
 	debug := []string{
 		"--enable-debug-rpc-endpoints",
 	}
 	cfg.BeaconFlags = append(cfg.BeaconFlags, debug...)
 }
+*/

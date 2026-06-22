@@ -7,7 +7,7 @@ import (
 	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/time/slots"
@@ -41,7 +41,7 @@ func TestCurrentEpoch_OK(t *testing.T) {
 		{slot: 768, epoch: 6},
 	}
 	for _, tt := range tests {
-		st, err := state_native.InitializeFromProtoCapella(&zond.BeaconStateCapella{Slot: tt.slot})
+		st, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{Slot: tt.slot})
 		require.NoError(t, err)
 		assert.Equal(t, tt.epoch, time.CurrentEpoch(st), "ActiveCurrentEpoch(%d)", st.Slot())
 	}
@@ -57,7 +57,7 @@ func TestPrevEpoch_OK(t *testing.T) {
 		{slot: 2 * params.BeaconConfig().SlotsPerEpoch, epoch: 1},
 	}
 	for _, tt := range tests {
-		st, err := state_native.InitializeFromProtoCapella(&zond.BeaconStateCapella{Slot: tt.slot})
+		st, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{Slot: tt.slot})
 		require.NoError(t, err)
 		assert.Equal(t, tt.epoch, time.PrevEpoch(st), "ActivePrevEpoch(%d)", st.Slot())
 	}
@@ -75,7 +75,7 @@ func TestNextEpoch_OK(t *testing.T) {
 		{slot: 768, epoch: primitives.Epoch(768/params.BeaconConfig().SlotsPerEpoch + 1)},
 	}
 	for _, tt := range tests {
-		st, err := state_native.InitializeFromProtoCapella(&zond.BeaconStateCapella{Slot: tt.slot})
+		st, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{Slot: tt.slot})
 		require.NoError(t, err)
 		assert.Equal(t, tt.epoch, time.NextEpoch(st), "NextEpoch(%d)", st.Slot())
 	}
@@ -106,8 +106,8 @@ func TestCanProcessEpoch_TrueOnEpochsLastSlot(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		b := &zond.BeaconStateCapella{Slot: tt.slot}
-		s, err := state_native.InitializeFromProtoCapella(b)
+		b := &qrysmpb.BeaconStateZond{Slot: tt.slot}
+		s, err := state_native.InitializeFromProtoZond(b)
 		require.NoError(t, err)
 		assert.Equal(t, tt.canProcessEpoch, time.CanProcessEpoch(s), "CanProcessEpoch(%d)", tt.slot)
 	}

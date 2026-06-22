@@ -32,76 +32,94 @@ var backOffPeriod = 10 * time.Second
 // 4 - Update assignments
 // 5 - Determine role at current slot
 // 6 - Perform assigned role, if any
-func run(ctx context.Context, v iface.Validator) {
+func run(ctx context.Context, v iface.Validator) error {
 	cleanup := v.Done
 	defer cleanup()
+	runnerCtx, runnerCancel := context.WithCancel(ctx)
+	defer runnerCancel()
 
-	headSlot, err := initializeValidatorAndGetHeadSlot(ctx, v)
+	currentSlot, err := initializeValidatorAndGetCurrentSlot(runnerCtx, v)
 	if err != nil {
-		return // Exit if context is canceled.
+		if runnerCtx.Err() != nil {
+			return nil
+		}
+		return err
 	}
 
 	connectionErrorChannel := make(chan error, 1)
-	go v.ReceiveBlocks(ctx, connectionErrorChannel)
-	if err := v.UpdateDuties(ctx, headSlot); err != nil {
-		handleAssignmentError(err, headSlot)
+	go v.ReceiveBlocks(runnerCtx, connectionErrorChannel)
+	if err := v.UpdateDuties(runnerCtx, currentSlot); err != nil {
+		if isConnectionError(err) {
+			return err
+		}
+		handleAssignmentError(err, currentSlot)
 	}
 
-	accountsChangedChan := make(chan [][field_params.DilithiumPubkeyLength]byte, 1)
+	accountsChangedChan := make(chan [][field_params.MLDSA87PubkeyLength]byte, 1)
 	km, err := v.Keymanager()
 	if err != nil {
-		log.WithError(err).Fatal("Could not get keymanager")
+		return errors.Wrap(err, "could not get keymanager")
 	}
 	sub := km.SubscribeAccountChanges(accountsChangedChan)
+	defer close(accountsChangedChan)
+	defer sub.Unsubscribe()
 	// check if proposer settings is still nil
 	// Set properties on the beacon node like the fee recipient for validators that are being used & active.
 	if v.ProposerSettings() != nil {
 		log.Infof("Validator client started with provided proposer settings that sets options such as fee recipient"+
 			" and will periodically update the beacon node and custom builder (if --%s)", flags.EnableBuilderFlag.Name)
-		deadline := time.Now().Add(5 * time.Minute)
-		if err := v.PushProposerSettings(ctx, km, headSlot, deadline); err != nil {
-			if errors.Is(err, ErrBuilderValidatorRegistration) {
-				log.WithError(err).Warn("Push proposer settings error")
-			} else {
-				log.WithError(err).Fatal("Failed to update proposer settings") // allow fatal. skipcq
-			}
+		if err := v.PushProposerSettings(runnerCtx, km, currentSlot); err != nil {
+			log.WithError(err).Warn("Failed to update proposer settings on startup, will retry on next epoch")
 		}
 	} else {
 		log.Warn("Validator client started without proposer settings such as fee recipient" +
 			" and will continue to use settings provided in the beacon node.")
 	}
 
+	// Start the slot ticker now that all blocking initialization (chain start,
+	// keymanager init, sync, activation, doppelganger check, duties, proposer
+	// settings) is done. Starting it earlier risks replaying old ticks the
+	// first time the loop reads from v.NextSlot().
+	v.SetTicker()
+
 	for {
-		_, cancel := context.WithCancel(ctx)
-		ctx, span := trace.StartSpan(ctx, "validator.processSlot")
+		_, cancel := context.WithCancel(runnerCtx)
+		ctx, span := trace.StartSpan(runnerCtx, "validator.processSlot")
 
 		select {
 		case <-ctx.Done():
 			log.Info("Context canceled, stopping validator")
 			span.End()
 			cancel()
-			sub.Unsubscribe()
-			close(accountsChangedChan)
-			return // Exit if context is canceled.
+			//nolint:govet
+			return nil // Exit if context is canceled.
 		case blocksError := <-connectionErrorChannel:
+			span.End()
+			cancel()
 			if blocksError != nil {
 				log.WithError(blocksError).Warn("block stream interrupted")
-				go v.ReceiveBlocks(ctx, connectionErrorChannel)
-				continue
+				return blocksError
 			}
 		case currentKeys := <-accountsChangedChan:
+			span.End()
+			cancel()
 			onAccountsChanged(ctx, v, currentKeys, accountsChangedChan)
 		case slot := <-v.NextSlot():
 			span.AddAttributes(trace.Int64Attribute("slot", int64(slot))) // lint:ignore uintcast -- This conversion is OK for tracing.
 
 			deadline := v.SlotDeadline(slot)
-			slotCtx, cancel := context.WithDeadline(ctx, deadline)
+			slotCtx, cancel := context.WithDeadline(ctx, deadline) //nolint:govet
 			log := log.WithField("slot", slot)
 			log.WithField("deadline", deadline).Debug("Set deadline for proposals and attestations")
 
 			// Keep trying to update assignments if they are nil or if we are past an
 			// epoch transition in the beacon node's state.
 			if err := v.UpdateDuties(ctx, slot); err != nil {
+				if isConnectionError(err) {
+					cancel()
+					span.End()
+					return err
+				}
 				handleAssignmentError(err, slot)
 				cancel()
 				span.End()
@@ -112,34 +130,71 @@ func run(ctx context.Context, v iface.Validator) {
 			// proposer is activated at the start of epoch and tries to propose immediately
 			if slots.IsEpochStart(slot) && v.ProposerSettings() != nil {
 				go func() {
-					// deadline set for 1 epoch from call to not overlap.
-					epochDeadline := v.SlotDeadline(slot + params.BeaconConfig().SlotsPerEpoch - 1)
-					if err := v.PushProposerSettings(ctx, km, slot, epochDeadline); err != nil {
+					if err := v.PushProposerSettings(ctx, km, slot); err != nil {
 						log.WithError(err).Warn("Failed to update proposer settings")
 					}
 				}()
 			}
 
-			// Start fetching domain data for the next epoch.
+			// Start fetching domain data for the next epoch on a context
+			// independent of slotCtx but bounded by the slot deadline, so the
+			// 8 RPC fetches self-terminate at the slot boundary instead of
+			// piling up across epochs under network stalls. (upstream PR
+			// #15268)
 			if slots.IsEpochEnd(slot) {
-				go v.UpdateDomainDataCaches(ctx, slot+1)
+				domainCtx, _ := context.WithDeadline(ctx, deadline) //nolint:govet
+				go v.UpdateDomainDataCaches(domainCtx, slot+1)
 			}
 
 			var wg sync.WaitGroup
 
 			allRoles, err := v.RolesAt(ctx, slot)
 			if err != nil {
+				if isConnectionError(err) {
+					cancel()
+					span.End()
+					return err
+				}
 				log.WithError(err).Error("Could not get validator roles")
 				cancel()
 				span.End()
 				continue
 			}
-			performRoles(slotCtx, allRoles, v, slot, &wg, span)
+			performRoles(slotCtx, allRoles, v, slot, &wg, span, cancel)
 		}
 	}
 }
 
-func onAccountsChanged(ctx context.Context, v iface.Validator, current [][field_params.DilithiumPubkeyLength]byte, ac chan [][field_params.DilithiumPubkeyLength]byte) {
+func runWithRecovery(ctx context.Context, v iface.Validator, waitForRecovery func(context.Context) error) {
+	if waitForRecovery == nil {
+		waitForRecovery = waitForRetry
+	}
+	for {
+		if ctx.Err() != nil {
+			return
+		}
+		runnerCtx, cancel := context.WithCancel(ctx)
+		err := run(runnerCtx, v)
+		cancel()
+		if ctx.Err() != nil {
+			return
+		}
+		if err != nil {
+			log.WithError(err).Warn("Validator runner stopped, waiting for recovery")
+		} else {
+			log.Warn("Validator runner stopped unexpectedly, waiting for recovery")
+		}
+		if err := waitForRecovery(ctx); err != nil {
+			if ctx.Err() != nil {
+				return
+			}
+			log.WithError(err).Warn("Could not wait for validator runner recovery")
+			return
+		}
+	}
+}
+
+func onAccountsChanged(ctx context.Context, v iface.Validator, current [][field_params.MLDSA87PubkeyLength]byte, ac chan [][field_params.MLDSA87PubkeyLength]byte) {
 	anyActive, err := v.HandleKeyReload(ctx, current)
 	if err != nil {
 		log.WithError(err).Error("Could not properly handle reloaded keys")
@@ -153,17 +208,16 @@ func onAccountsChanged(ctx context.Context, v iface.Validator, current [][field_
 	}
 }
 
-func initializeValidatorAndGetHeadSlot(ctx context.Context, v iface.Validator) (primitives.Slot, error) {
+func initializeValidatorAndGetCurrentSlot(ctx context.Context, v iface.Validator) (primitives.Slot, error) {
 	ticker := time.NewTicker(backOffPeriod)
 	defer ticker.Stop()
 
-	var headSlot primitives.Slot
 	firstTime := true
 	for {
 		if !firstTime {
 			if ctx.Err() != nil {
 				log.Info("Context canceled, stopping validator")
-				return headSlot, errors.New("context canceled")
+				return 0, errors.New("context canceled")
 			}
 			<-ticker.C
 		} else {
@@ -175,14 +229,12 @@ func initializeValidatorAndGetHeadSlot(ctx context.Context, v iface.Validator) (
 			continue
 		}
 		if err != nil {
-			log.WithError(err).Fatal("Could not determine if beacon chain started")
+			return 0, errors.Wrap(err, "could not determine if beacon chain started")
 		}
 
 		err = v.WaitForKeymanagerInitialization(ctx)
 		if err != nil {
-			// log.Fatal will prevent defer from being called
-			v.Done()
-			log.WithError(err).Fatal("Wallet is not ready")
+			return 0, errors.Wrap(err, "wallet is not ready")
 		}
 
 		err = v.WaitForSync(ctx)
@@ -191,20 +243,11 @@ func initializeValidatorAndGetHeadSlot(ctx context.Context, v iface.Validator) (
 			continue
 		}
 		if err != nil {
-			log.WithError(err).Fatal("Could not determine if beacon node synced")
+			return 0, errors.Wrap(err, "could not determine if beacon node synced")
 		}
 		err = v.WaitForActivation(ctx, nil /* accountsChangedChan */)
 		if err != nil {
-			log.WithError(err).Fatal("Could not wait for validator activation")
-		}
-
-		headSlot, err = v.CanonicalHeadSlot(ctx)
-		if isConnectionError(err) {
-			log.WithError(err).Warn("Could not get current canonical head slot")
-			continue
-		}
-		if err != nil {
-			log.WithError(err).Fatal("Could not get current canonical head slot")
+			return 0, errors.Wrap(err, "could not wait for validator activation")
 		}
 		err = v.CheckDoppelGanger(ctx)
 		if isConnectionError(err) {
@@ -212,18 +255,29 @@ func initializeValidatorAndGetHeadSlot(ctx context.Context, v iface.Validator) (
 			continue
 		}
 		if err != nil {
-			log.WithError(err).Fatal("Could not succeed with doppelganger check")
+			return 0, errors.Wrap(err, "could not succeed with doppelganger check")
 		}
 		break
 	}
-	return headSlot, nil
+	return slots.CurrentSlot(v.GenesisTime()), nil
 }
 
-func performRoles(slotCtx context.Context, allRoles map[[field_params.DilithiumPubkeyLength]byte][]iface.ValidatorRole, v iface.Validator, slot primitives.Slot, wg *sync.WaitGroup, span *trace.Span) {
+func waitForRetry(ctx context.Context) error {
+	timer := time.NewTimer(backOffPeriod)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
+}
+
+func performRoles(slotCtx context.Context, allRoles map[[field_params.MLDSA87PubkeyLength]byte][]iface.ValidatorRole, v iface.Validator, slot primitives.Slot, wg *sync.WaitGroup, span *trace.Span, cancel context.CancelFunc) {
 	for pubKey, roles := range allRoles {
 		wg.Add(len(roles))
 		for _, role := range roles {
-			go func(role iface.ValidatorRole, pubKey [field_params.DilithiumPubkeyLength]byte) {
+			go func(role iface.ValidatorRole, pubKey [field_params.MLDSA87PubkeyLength]byte) {
 				defer wg.Done()
 				switch role {
 				case iface.RoleAttester:
@@ -248,6 +302,7 @@ func performRoles(slotCtx context.Context, allRoles map[[field_params.DilithiumP
 	// Wait for all processes to complete, then report span complete.
 	go func() {
 		wg.Wait()
+		defer cancel()
 		defer span.End()
 		defer func() {
 			if err := recover(); err != nil { // catch any panic in logging

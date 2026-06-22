@@ -16,8 +16,7 @@ unless really needed**
 
 - [Prerequisites](#prerequisites)
 - [Creating a Patch](#creating-a-patch)
-- [Ethereum APIs Patch](#ethereum-apis-patch)
-- [Updating Patches](#updating-patches)
+- [Configuring Bazel](#configuring-bazel)
 
 ## Prerequisites
 
@@ -41,19 +40,15 @@ cd ..
 diff -ur --exclude=".git" a b > $GOPATH/src/github.com/theQRL/qrysm/third_party/YOURPATCH.patch
 ```
 
-Next, we need to tell the Bazel [WORKSPACE](https://github.com/theQRL/qrysm/blob/master/WORKSPACE) to patch the specific dependency.
-Here's an example for a patch we use today for the [Ethereum APIs](https://github.com/prysmaticlabs/ethereumapis)
-dependency:
+## Configuring Bazel
+
+Next, tell Bazel about the patch by updating the dependency definition in `MODULE.bazel`.
+Here's an example using a `go_deps.module_override`:
 
 ```
-go_repository(
-    name = "com_github_prysmaticlabs_ethereumapis",
-    commit = "367ca574419a062ae26818f60bdeb5751a6f538",
-    patch_args = ["-p1"],
-    patches = [
-        "//third_party:com_github_prysmaticlabs_ethereumapis-tags.patch",
-    ],
-    importpath = "github.com/prysmaticlabs/ethereumapis",
+go_deps.module_override(
+    patches = ["//third_party:com_github_libp2p_go_libp2p_pubsub-gogo.patch"],
+    path = "github.com/libp2p/go-libp2p-pubsub",
 )
 ```
 

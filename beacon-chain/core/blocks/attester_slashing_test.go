@@ -11,20 +11,20 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestSlashableAttestationData_CanSlash(t *testing.T) {
-	att1 := util.HydrateAttestationData(&zondpb.AttestationData{
-		Target: &zondpb.Checkpoint{Epoch: 1, Root: make([]byte, 32)},
-		Source: &zondpb.Checkpoint{Root: bytesutil.PadTo([]byte{'A'}, 32)},
+	att1 := util.HydrateAttestationData(&qrysmpb.AttestationData{
+		Target: &qrysmpb.Checkpoint{Epoch: 1, Root: make([]byte, 32)},
+		Source: &qrysmpb.Checkpoint{Root: bytesutil.PadTo([]byte{'A'}, 32)},
 	})
-	att2 := util.HydrateAttestationData(&zondpb.AttestationData{
-		Target: &zondpb.Checkpoint{Epoch: 1, Root: make([]byte, 32)},
-		Source: &zondpb.Checkpoint{Root: bytesutil.PadTo([]byte{'B'}, 32)},
+	att2 := util.HydrateAttestationData(&qrysmpb.AttestationData{
+		Target: &qrysmpb.Checkpoint{Epoch: 1, Root: make([]byte, 32)},
+		Source: &qrysmpb.Checkpoint{Root: bytesutil.PadTo([]byte{'B'}, 32)},
 	})
 	assert.Equal(t, true, blocks.IsSlashableAttestationData(att1, att2), "Atts should have been slashable")
 	att1.Target.Epoch = 4
@@ -34,25 +34,25 @@ func TestSlashableAttestationData_CanSlash(t *testing.T) {
 }
 
 func TestProcessAttesterSlashings_DataNotSlashable(t *testing.T) {
-	slashings := []*zondpb.AttesterSlashing{{
-		Attestation_1: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{}),
-		Attestation_2: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
-			Data: &zondpb.AttestationData{
-				Source: &zondpb.Checkpoint{Epoch: 1},
-				Target: &zondpb.Checkpoint{Epoch: 1}},
+	slashings := []*qrysmpb.AttesterSlashing{{
+		Attestation_1: util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{}),
+		Attestation_2: util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{
+			Data: &qrysmpb.AttestationData{
+				Source: &qrysmpb.Checkpoint{Epoch: 1},
+				Target: &qrysmpb.Checkpoint{Epoch: 1}},
 		})}}
 
-	var registry []*zondpb.Validator
+	var registry []*qrysmpb.Validator
 	currentSlot := primitives.Slot(0)
 
-	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	beaconState, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: registry,
 		Slot:       currentSlot,
 	})
 	require.NoError(t, err)
-	b := util.NewBeaconBlockCapella()
-	b.Block = &zondpb.BeaconBlockCapella{
-		Body: &zondpb.BeaconBlockBodyCapella{
+	b := util.NewBeaconBlockZond()
+	b.Block = &qrysmpb.BeaconBlockZond{
+		Body: &qrysmpb.BeaconBlockBodyZond{
 			AttesterSlashings: slashings,
 		},
 	}
@@ -61,32 +61,32 @@ func TestProcessAttesterSlashings_DataNotSlashable(t *testing.T) {
 }
 
 func TestProcessAttesterSlashings_IndexedAttestationFailedToVerify(t *testing.T) {
-	var registry []*zondpb.Validator
+	var registry []*qrysmpb.Validator
 	currentSlot := primitives.Slot(0)
 
-	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	beaconState, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: registry,
 		Slot:       currentSlot,
 	})
 	require.NoError(t, err)
 
-	slashings := []*zondpb.AttesterSlashing{
+	slashings := []*qrysmpb.AttesterSlashing{
 		{
-			Attestation_1: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
-				Data: &zondpb.AttestationData{
-					Source: &zondpb.Checkpoint{Epoch: 1},
+			Attestation_1: util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{
+				Data: &qrysmpb.AttestationData{
+					Source: &qrysmpb.Checkpoint{Epoch: 1},
 				},
 				AttestingIndices: make([]uint64, params.BeaconConfig().MaxValidatorsPerCommittee+1),
 			}),
-			Attestation_2: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+			Attestation_2: util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{
 				AttestingIndices: make([]uint64, params.BeaconConfig().MaxValidatorsPerCommittee+1),
 			}),
 		},
 	}
 
-	b := util.NewBeaconBlockCapella()
-	b.Block = &zondpb.BeaconBlockCapella{
-		Body: &zondpb.BeaconBlockBodyCapella{
+	b := util.NewBeaconBlockZond()
+	b.Block = &qrysmpb.BeaconBlockZond{
+		Body: &qrysmpb.BeaconBlockBodyZond{
 			AttesterSlashings: slashings,
 		},
 	}
@@ -95,15 +95,15 @@ func TestProcessAttesterSlashings_IndexedAttestationFailedToVerify(t *testing.T)
 	assert.ErrorContains(t, "validator indices count exceeds MAX_VALIDATORS_PER_COMMITTEE", err)
 }
 
-func TestProcessAttesterSlashings_AppliesCorrectStatusCapella(t *testing.T) {
-	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 100)
+func TestProcessAttesterSlashings_AppliesCorrectStatusZond(t *testing.T) {
+	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 100)
 	for _, vv := range beaconState.Validators() {
 		vv.WithdrawableEpoch = primitives.Epoch(params.BeaconConfig().SlotsPerEpoch)
 	}
 
-	att1 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
-		Data: &zondpb.AttestationData{
-			Source: &zondpb.Checkpoint{Epoch: 1},
+	att1 := util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{
+		Data: &qrysmpb.AttestationData{
+			Source: &qrysmpb.Checkpoint{Epoch: 1},
 		},
 		AttestingIndices: []uint64{0, 1},
 	})
@@ -115,7 +115,7 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusCapella(t *testing.T) {
 	sig1 := privKeys[1].Sign(signingRoot[:]).Marshal()
 	att1.Signatures = [][]byte{sig0, sig1}
 
-	att2 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+	att2 := util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{
 		AttestingIndices: []uint64{0, 1},
 	})
 	signingRoot, err = signing.ComputeSigningRoot(att2.Data, domain)
@@ -124,7 +124,7 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusCapella(t *testing.T) {
 	sig1 = privKeys[1].Sign(signingRoot[:]).Marshal()
 	att2.Signatures = [][]byte{sig0, sig1}
 
-	slashings := []*zondpb.AttesterSlashing{
+	slashings := []*qrysmpb.AttesterSlashing{
 		{
 			Attestation_1: att1,
 			Attestation_2: att2,
@@ -134,9 +134,9 @@ func TestProcessAttesterSlashings_AppliesCorrectStatusCapella(t *testing.T) {
 	currentSlot := 2 * params.BeaconConfig().SlotsPerEpoch
 	require.NoError(t, beaconState.SetSlot(currentSlot))
 
-	b := util.NewBeaconBlockCapella()
-	b.Block = &zondpb.BeaconBlockCapella{
-		Body: &zondpb.BeaconBlockBodyCapella{
+	b := util.NewBeaconBlockZond()
+	b.Block = &qrysmpb.BeaconBlockZond{
+		Body: &qrysmpb.BeaconBlockBodyZond{
 			AttesterSlashings: slashings,
 		},
 	}

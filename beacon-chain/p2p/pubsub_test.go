@@ -48,7 +48,7 @@ func TestService_PublishToTopicConcurrentMapWrite(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 	wg.Add(10)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		go func(i int) {
 			assert.NoError(t, s.PublishToTopic(ctx, topic, []byte{}))
 			wg.Done()
@@ -74,7 +74,7 @@ func TestExtractGossipDigest(t *testing.T) {
 		},
 		{
 			name:    "too short topic",
-			topic:   "/eth2/",
+			topic:   "/consensus/",
 			want:    [4]byte{},
 			wantErr: true,
 			error:   errors.New("invalid topic format"),
@@ -88,7 +88,7 @@ func TestExtractGossipDigest(t *testing.T) {
 		},
 		{
 			name:    "invalid digest in topic",
-			topic:   "/eth2/zzxxyyaa/beacon_block" + "/" + encoder.ProtocolSuffixSSZSnappy,
+			topic:   "/consensus/zzxxyyaa/beacon_block" + "/" + encoder.ProtocolSuffixSSZSnappy,
 			want:    [4]byte{},
 			wantErr: true,
 			error:   errors.New("encoding/hex: invalid byte"),
@@ -102,7 +102,7 @@ func TestExtractGossipDigest(t *testing.T) {
 		},
 		{
 			name:    "too short topic, missing suffixes",
-			topic:   "/eth2/b5303f2a",
+			topic:   "/consensus/b5303f2a",
 			want:    [4]byte{},
 			wantErr: true,
 			error:   errors.New("invalid topic format"),
@@ -129,8 +129,8 @@ func TestExtractGossipDigest(t *testing.T) {
 
 func BenchmarkExtractGossipDigest(b *testing.B) {
 	topic := fmt.Sprintf(BlockSubnetTopicFormat, []byte{0xb5, 0x30, 0x3f, 0x2a}) + "/" + encoder.ProtocolSuffixSSZSnappy
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		_, err := ExtractGossipDigest(topic)
 		if err != nil {
 			b.Fatal(err)

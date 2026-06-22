@@ -1,5 +1,5 @@
 // Package db defines the ability to create a new database
-// for a Zond Beacon Node.
+// for a QRL Beacon Node.
 package db
 
 import (

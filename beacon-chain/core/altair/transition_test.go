@@ -10,8 +10,8 @@ import (
 	"github.com/theQRL/qrysm/testing/util"
 )
 
-func TestProcessEpoch_CanProcessCapella(t *testing.T) {
-	st, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+func TestProcessEpoch_CanProcessZond(t *testing.T) {
+	st, _ := util.DeterministicGenesisStateZond(t, params.BeaconConfig().MaxValidatorsPerCommittee)
 	require.NoError(t, st.SetSlot(10*params.BeaconConfig().SlotsPerEpoch))
 	newState, err := altair.ProcessEpoch(context.Background(), st)
 	require.NoError(t, err)
@@ -19,7 +19,7 @@ func TestProcessEpoch_CanProcessCapella(t *testing.T) {
 
 	b := st.Balances()
 	require.Equal(t, params.BeaconConfig().MaxValidatorsPerCommittee, uint64(len(b)))
-	require.Equal(t, uint64(39999992040815), b[0])
+	require.Equal(t, uint64(39999210773438), b[0])
 
 	s, err := st.InactivityScores()
 	require.NoError(t, err)

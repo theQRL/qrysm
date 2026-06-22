@@ -23,27 +23,27 @@ func NewMockService() *MockStateManager {
 
 // StateByRootIfCachedNoCopy --
 func (_ *MockStateManager) StateByRootIfCachedNoCopy(_ [32]byte) state.BeaconState {
-	panic("implement me")
+	panic("implement me") // lint:nopanic
 }
 
 // Resume --
 func (_ *MockStateManager) Resume(_ context.Context, _ state.BeaconState) (state.BeaconState, error) {
-	panic("implement me")
+	panic("implement me") // lint:nopanic
 }
 
 // SaveFinalizedState --
 func (_ *MockStateManager) SaveFinalizedState(_ primitives.Slot, _ [32]byte, _ state.BeaconState) {
-	panic("implement me")
+	panic("implement me") // lint:nopanic
 }
 
 // MigrateToCold --
 func (_ *MockStateManager) MigrateToCold(_ context.Context, _ [32]byte) error {
-	panic("implement me")
+	panic("implement me") // lint:nopanic
 }
 
 // HasState --
 func (_ *MockStateManager) HasState(_ context.Context, _ [32]byte) (bool, error) {
-	panic("implement me")
+	panic("implement me") // lint:nopanic
 }
 
 // StateByRoot --
@@ -58,7 +58,7 @@ func (*MockStateManager) ActiveNonSlashedBalancesByRoot(_ context.Context, _ [32
 
 // StateByRootInitialSync --
 func (_ *MockStateManager) StateByRootInitialSync(_ context.Context, _ [32]byte) (state.BeaconState, error) {
-	panic("implement me")
+	panic("implement me") // lint:nopanic
 }
 
 // StateBySlot --
@@ -68,22 +68,22 @@ func (m *MockStateManager) StateBySlot(_ context.Context, slot primitives.Slot) 
 
 // SaveState --
 func (_ *MockStateManager) SaveState(_ context.Context, _ [32]byte, _ state.BeaconState) error {
-	panic("implement me")
+	panic("implement me") // lint:nopanic
 }
 
 // ForceCheckpoint --
 func (_ *MockStateManager) ForceCheckpoint(_ context.Context, _ []byte) error {
-	panic("implement me")
+	panic("implement me") // lint:nopanic
 }
 
 // EnableSaveHotStateToDB --
 func (_ *MockStateManager) EnableSaveHotStateToDB(_ context.Context) {
-	panic("implement me")
+	panic("implement me") // lint:nopanic
 }
 
 // DisableSaveHotStateToDB --
 func (_ *MockStateManager) DisableSaveHotStateToDB(_ context.Context) error {
-	panic("implement me")
+	panic("implement me") // lint:nopanic
 }
 
 // AddStateForRoot --

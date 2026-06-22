@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "primitives",
     srcs = [
         "committee_index.go",
         "domain.go",
@@ -15,13 +15,13 @@ go_library(
     importpath = "github.com/theQRL/qrysm/consensus-types/primitives",
     visibility = ["//visibility:public"],
     deps = [
-        "//math:go_default_library",
-        "@com_github_prysmaticlabs_fastssz//:go_default_library",
+        "//math",
+        "@com_github_prysmaticlabs_fastssz//:fastssz",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "primitives_test",
     srcs = [
         "committee_index_test.go",
         "domain_test.go",
@@ -31,9 +31,9 @@ go_test(
         "sszuint64_test.go",
         "validator_test.go",
     ],
-    embed = [":go_default_library"],
+    embed = [":primitives"],
     deps = [
-        "//math:go_default_library",
-        "//testing/require:go_default_library",
+        "//math",
+        "//testing/require",
     ],
 )

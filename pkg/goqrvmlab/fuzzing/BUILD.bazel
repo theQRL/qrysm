@@ -1,0 +1,45 @@
+load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "fuzzing",
+    srcs = [
+        "blake.go",
+        "copypasta.go",
+        "eip-2200.go",
+        "eof.go",
+        "factories.go",
+        "gen_genesis_account.go",
+        "gen_stenv.go",
+        "gen_sttransaction.go",
+        "naive.go",
+        "precompiles.go",
+        "randgen.go",
+        "simpleops.go",
+        "statetest_maker.go",
+        "storage.go",
+    ],
+    importpath = "github.com/theQRL/qrysm/pkg/goqrvmlab/fuzzing",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/goqrvmlab/ops",
+        "//pkg/goqrvmlab/program",
+        "@com_github_theqrl_go_qrl//common",
+        "@com_github_theqrl_go_qrl//common/hexutil",
+        "@com_github_theqrl_go_qrl//common/math",
+        "@com_github_theqrl_go_qrl//core/rawdb",
+        "@com_github_theqrl_go_qrl//core/vm",
+        "@com_github_theqrl_go_qrl//qrl/tracers/logger",
+        "@com_github_theqrl_go_qrl//rlp",
+        "@com_github_theqrl_go_qrl//tests",
+        "@org_golang_x_crypto//sha3",
+    ],
+)
+
+go_test(
+    name = "fuzzing_test",
+    srcs = [
+        "randgen_test.go",
+        "storage_test.go",
+    ],
+    embed = [":fuzzing"],
+)

@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	zondRPC "github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/rpc"
 	"github.com/theQRL/qrysm/network/authorization"
 )
 
@@ -22,7 +22,7 @@ type Endpoint struct {
 
 // AuthorizationData holds all information necessary to authorize with HTTP.
 type AuthorizationData struct {
-	Method authorization.AuthorizationMethod
+	Method authorization.Method
 	Value  string
 }
 
@@ -72,7 +72,7 @@ func HttpEndpoint(executionProvider string) Endpoint {
 	endpoint.Url = strings.TrimSpace(authValues[0])
 	if len(authValues) > 2 {
 		log.Errorf(
-			"Zond execution endpoint string can contain one comma for specifying the authorization header to access the provider."+
+			"QRL execution endpoint string can contain one comma for specifying the authorization header to access the provider."+
 				" String contains too many commas: %d. Skipping authorization.", len(authValues)-1)
 	} else if len(authValues) == 2 {
 		switch Method(strings.TrimSpace(authValues[1])) {
@@ -99,8 +99,8 @@ func HttpEndpoint(executionProvider string) Endpoint {
 	return endpoint
 }
 
-// Method returns the authorizationmethod.AuthorizationMethod corresponding with the parameter value.
-func Method(auth string) authorization.AuthorizationMethod {
+// Method returns the authorizationmethod.Method corresponding with the parameter value.
+func Method(auth string) authorization.Method {
 	if strings.HasPrefix(strings.ToLower(auth), "basic") {
 		return authorization.Basic
 	}
@@ -123,21 +123,21 @@ func NewHttpClientWithSecret(secret string) *http.Client {
 	}
 }
 
-func NewExecutionRPCClient(ctx context.Context, endpoint Endpoint, headers http.Header) (*zondRPC.Client, error) {
+func NewExecutionRPCClient(ctx context.Context, endpoint Endpoint, headers http.Header) (*rpc.Client, error) {
 	// Need to handle ipc and http
-	var client *zondRPC.Client
+	var client *rpc.Client
 	u, err := url.Parse(endpoint.Url)
 	if err != nil {
 		return nil, err
 	}
 	switch u.Scheme {
 	case "http", "https":
-		client, err = zondRPC.DialOptions(ctx, endpoint.Url, zondRPC.WithHTTPClient(endpoint.HttpClient()), zondRPC.WithHeaders(headers))
+		client, err = rpc.DialOptions(ctx, endpoint.Url, rpc.WithHTTPClient(endpoint.HttpClient()), rpc.WithHeaders(headers))
 		if err != nil {
 			return nil, err
 		}
 	case "", "ipc":
-		client, err = zondRPC.DialIPC(ctx, endpoint.Url)
+		client, err = rpc.DialIPC(ctx, endpoint.Url)
 		if err != nil {
 			return nil, err
 		}

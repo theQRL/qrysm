@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"strings"
@@ -27,19 +26,19 @@ var (
 )
 
 type jsonRPCObject struct {
-	Jsonrpc string        `json:"jsonrpc"`
-	Method  string        `json:"method"`
-	Params  []interface{} `json:"params"`
-	ID      uint64        `json:"id"`
-	Result  interface{}   `json:"result"`
+	Jsonrpc string `json:"jsonrpc"`
+	Method  string `json:"method"`
+	Params  []any  `json:"params"`
+	ID      uint64 `json:"id"`
+	Result  any    `json:"result"`
 }
 
 type interceptorConfig struct {
-	responseGen func() interface{}
+	responseGen func() any
 	trigger     func() bool
 }
 
-// Proxy server that sits as a middleware between an Zond consensus client and an execution client,
+// Proxy server that sits as a middleware between a QRL consensus client and an execution client,
 // allowing us to modify in-flight requests and responses for testing purposes.
 type Proxy struct {
 	cfg              *config
@@ -129,7 +128,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // AddRequestInterceptor for a desired json-rpc method by specifying a custom response
 // and a function that checks if the interceptor should be triggered.
-func (p *Proxy) AddRequestInterceptor(rpcMethodName string, response func() interface{}, trigger func() bool) {
+func (p *Proxy) AddRequestInterceptor(rpcMethodName string, response func() any, trigger func() bool) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	p.cfg.logger.Infof("Adding in interceptor for method %s", rpcMethodName)
@@ -240,7 +239,7 @@ func (p *Proxy) sendHttpRequest(req *http.Request, requestBytes []byte) (*http.R
 	}
 
 	// Set the modified request as the proxy request body.
-	proxyReq.Body = ioutil.NopCloser(bytes.NewBuffer(requestBytes))
+	proxyReq.Body = io.NopCloser(bytes.NewBuffer(requestBytes))
 
 	// Required proxy headers for forwarding JSON-RPC requests to the execution client.
 	proxyReq.Header.Set("Host", req.Host)
@@ -261,18 +260,18 @@ func (p *Proxy) sendHttpRequest(req *http.Request, requestBytes []byte) (*http.R
 
 // Peek into the bytes of an HTTP request's body.
 func parseRequestBytes(req *http.Request) ([]byte, error) {
-	requestBytes, err := ioutil.ReadAll(req.Body)
+	requestBytes, err := io.ReadAll(req.Body)
 	if err != nil {
 		return nil, err
 	}
 	if err = req.Body.Close(); err != nil {
 		return nil, err
 	}
-	req.Body = ioutil.NopCloser(bytes.NewBuffer(requestBytes))
+	req.Body = io.NopCloser(bytes.NewBuffer(requestBytes))
 	return requestBytes, nil
 }
 
-// Checks whether the JSON-RPC request is for the Zond engine API.
+// Checks whether the JSON-RPC request is for the QRL engine API.
 func isEngineAPICall(reqBytes []byte) bool {
 	jsonRequest, err := unmarshalRPCObject(reqBytes)
 	if err != nil {

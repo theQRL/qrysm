@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "iface",
     srcs = ["wallet.go"],
     importpath = "github.com/theQRL/qrysm/validator/accounts/iface",
     visibility = [
@@ -9,7 +9,5 @@ go_library(
         "//validator:__pkg__",
         "//validator:__subpackages__",
     ],
-    deps = [
-        "//validator/keymanager:go_default_library",
-    ],
+    deps = ["//validator/keymanager"],
 )

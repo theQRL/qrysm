@@ -8,9 +8,9 @@ import (
 	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/config/params"
 	types "github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
-	"github.com/theQRL/qrysm/crypto/dilithium/common"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87/common"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/time/slots"
@@ -25,14 +25,14 @@ func TestPendingExits(t *testing.T) {
 	})
 	t.Run("non-empty pool", func(t *testing.T) {
 		pool := NewPool()
-		pool.InsertVoluntaryExit(&zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		pool.InsertVoluntaryExit(&qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				Epoch:          0,
 				ValidatorIndex: 0,
 			},
 		})
-		pool.InsertVoluntaryExit(&zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		pool.InsertVoluntaryExit(&qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				Epoch:          0,
 				ValidatorIndex: 1,
 			},
@@ -44,8 +44,8 @@ func TestPendingExits(t *testing.T) {
 }
 
 func TestExitsForInclusion(t *testing.T) {
-	spb := &zondpb.BeaconStateCapella{
-		Fork: &zondpb.Fork{
+	spb := &qrysmpb.BeaconStateZond{
+		Fork: &qrysmpb.Fork{
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 		},
@@ -53,25 +53,25 @@ func TestExitsForInclusion(t *testing.T) {
 	stateSlot := types.Slot(uint64(params.BeaconConfig().ShardCommitteePeriod) * uint64(params.BeaconConfig().SlotsPerEpoch))
 	spb.Slot = stateSlot
 	numValidators := 2 * params.BeaconConfig().MaxVoluntaryExits
-	validators := make([]*zondpb.Validator, numValidators)
-	exits := make([]*zondpb.VoluntaryExit, numValidators)
+	validators := make([]*qrysmpb.Validator, numValidators)
+	exits := make([]*qrysmpb.VoluntaryExit, numValidators)
 	privKeys := make([]common.SecretKey, numValidators)
 
 	for i := range validators {
-		v := &zondpb.Validator{}
+		v := &qrysmpb.Validator{}
 		if i == len(validators)-2 {
 			// exit for this validator is invalid
 			v.ExitEpoch = 0
 		} else {
 			v.ExitEpoch = params.BeaconConfig().FarFutureEpoch
 		}
-		priv, err := dilithium.RandKey()
+		priv, err := ml_dsa_87.RandKey()
 		require.NoError(t, err)
 		privKeys[i] = priv
 		pubkey := priv.PublicKey().Marshal()
 		v.PublicKey = pubkey
 
-		message := &zondpb.VoluntaryExit{
+		message := &qrysmpb.VoluntaryExit{
 			ValidatorIndex: types.ValidatorIndex(i),
 		}
 		// exit for future slot
@@ -83,15 +83,15 @@ func TestExitsForInclusion(t *testing.T) {
 		exits[i] = message
 	}
 	spb.Validators = validators
-	st, err := state_native.InitializeFromProtoCapella(spb)
+	st, err := state_native.InitializeFromProtoZond(spb)
 	require.NoError(t, err)
 
-	signedExits := make([]*zondpb.SignedVoluntaryExit, numValidators)
+	signedExits := make([]*qrysmpb.SignedVoluntaryExit, numValidators)
 	for i, message := range exits {
 		signature, err := signing.ComputeDomainAndSign(st, time.CurrentEpoch(st), message, params.BeaconConfig().DomainVoluntaryExit, privKeys[i])
 		require.NoError(t, err)
 
-		signed := &zondpb.SignedVoluntaryExit{
+		signed := &qrysmpb.SignedVoluntaryExit{
 			Exit:      message,
 			Signature: signature,
 		}
@@ -124,7 +124,7 @@ func TestExitsForInclusion(t *testing.T) {
 	})
 	t.Run("more than MaxVoluntaryExits in pool", func(t *testing.T) {
 		pool := NewPool()
-		for i := uint64(0); i < numValidators; i++ {
+		for i := range numValidators {
 			pool.InsertVoluntaryExit(signedExits[i])
 		}
 		exits, err := pool.ExitsForInclusion(st, stateSlot)
@@ -153,8 +153,8 @@ func TestExitsForInclusion(t *testing.T) {
 func TestInsertExit(t *testing.T) {
 	t.Run("empty pool", func(t *testing.T) {
 		pool := NewPool()
-		exit := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		exit := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(0),
 			},
 		}
@@ -169,13 +169,13 @@ func TestInsertExit(t *testing.T) {
 	})
 	t.Run("item in pool", func(t *testing.T) {
 		pool := NewPool()
-		old := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		old := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(0),
 			},
 		}
-		exit := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		exit := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(1),
 			},
 		}
@@ -196,14 +196,14 @@ func TestInsertExit(t *testing.T) {
 	})
 	t.Run("validator index already exists", func(t *testing.T) {
 		pool := NewPool()
-		old := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		old := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(0),
 			},
 			Signature: []byte("old"),
 		}
-		exit := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		exit := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(0),
 			},
 			Signature: []byte("exit"),
@@ -223,8 +223,8 @@ func TestInsertExit(t *testing.T) {
 func TestMarkIncluded(t *testing.T) {
 	t.Run("one element in pool", func(t *testing.T) {
 		pool := NewPool()
-		exit := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		exit := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(0),
 			}}
 		pool.InsertVoluntaryExit(exit)
@@ -235,16 +235,16 @@ func TestMarkIncluded(t *testing.T) {
 	})
 	t.Run("first of multiple elements", func(t *testing.T) {
 		pool := NewPool()
-		first := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		first := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(0),
 			}}
-		second := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		second := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(1),
 			}}
-		third := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		third := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(2),
 			}}
 		pool.InsertVoluntaryExit(first)
@@ -257,16 +257,16 @@ func TestMarkIncluded(t *testing.T) {
 	})
 	t.Run("last of multiple elements", func(t *testing.T) {
 		pool := NewPool()
-		first := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		first := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(0),
 			}}
-		second := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		second := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(1),
 			}}
-		third := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		third := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(2),
 			}}
 		pool.InsertVoluntaryExit(first)
@@ -279,16 +279,16 @@ func TestMarkIncluded(t *testing.T) {
 	})
 	t.Run("in the middle of multiple elements", func(t *testing.T) {
 		pool := NewPool()
-		first := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		first := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(0),
 			}}
-		second := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		second := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(1),
 			}}
-		third := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		third := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(2),
 			}}
 		pool.InsertVoluntaryExit(first)
@@ -301,16 +301,16 @@ func TestMarkIncluded(t *testing.T) {
 	})
 	t.Run("not in pool", func(t *testing.T) {
 		pool := NewPool()
-		first := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		first := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(0),
 			}}
-		second := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		second := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(1),
 			}}
-		exit := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		exit := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				ValidatorIndex: types.ValidatorIndex(2),
 			}}
 		pool.InsertVoluntaryExit(first)

@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "leaky-bucket",
     srcs = [
         "collector.go",
         "heap.go",
@@ -12,11 +12,11 @@ go_library(
 )
 
 go_test(
-    name = "go_default_test",
+    name = "leaky-bucket_test",
     srcs = [
         "collector_test.go",
         "heap_test.go",
         "leakybucket_test.go",
     ],
-    embed = [":go_default_library"],
+    embed = [":leaky-bucket"],
 )

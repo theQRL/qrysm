@@ -7,18 +7,18 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
 type DoppelGangerInfo struct {
 	validatorEpoch primitives.Epoch
-	response       *zondpb.DoppelGangerResponse_ValidatorResponse
+	response       *qrysmpb.DoppelGangerResponse_ValidatorResponse
 }
 
-func (c *beaconApiValidatorClient) checkDoppelGanger(ctx context.Context, in *zondpb.DoppelGangerRequest) (*zondpb.DoppelGangerResponse, error) {
+func (c *beaconApiValidatorClient) checkDoppelGanger(ctx context.Context, in *qrysmpb.DoppelGangerRequest) (*qrysmpb.DoppelGangerResponse, error) {
 	// Check if there is any doppelganger validator for the last 2 epochs.
 	// - Check if the beacon node is synced
 	// - If all validators we want to check doppelganger existence were live in local antislashing
@@ -30,8 +30,8 @@ func (c *beaconApiValidatorClient) checkDoppelGanger(ctx context.Context, in *zo
 
 	// Check inputs are correct.
 	if in == nil || in.ValidatorRequests == nil || len(in.ValidatorRequests) == 0 {
-		return &zondpb.DoppelGangerResponse{
-			Responses: []*zondpb.DoppelGangerResponse_ValidatorResponse{},
+		return &qrysmpb.DoppelGangerResponse{
+			Responses: []*qrysmpb.DoppelGangerResponse_ValidatorResponse{},
 		}, nil
 	}
 
@@ -52,7 +52,7 @@ func (c *beaconApiValidatorClient) checkDoppelGanger(ctx context.Context, in *zo
 
 		stringPubKeyToDoppelGangerInfo[stringPubKey] = DoppelGangerInfo{
 			validatorEpoch: vr.Epoch,
-			response: &zondpb.DoppelGangerResponse_ValidatorResponse{
+			response: &qrysmpb.DoppelGangerResponse_ValidatorResponse{
 				PublicKey:       pubKey,
 				DuplicateExists: false,
 			},
@@ -185,14 +185,14 @@ func (c *beaconApiValidatorClient) checkDoppelGanger(ctx context.Context, in *zo
 func buildResponse(
 	stringPubKeys []string,
 	stringPubKeyToDoppelGangerHelper map[string]DoppelGangerInfo,
-) *zondpb.DoppelGangerResponse {
-	responses := make([]*zondpb.DoppelGangerResponse_ValidatorResponse, len(stringPubKeys))
+) *qrysmpb.DoppelGangerResponse {
+	responses := make([]*qrysmpb.DoppelGangerResponse_ValidatorResponse, len(stringPubKeys))
 
 	for i, spk := range stringPubKeys {
 		responses[i] = stringPubKeyToDoppelGangerHelper[spk].response
 	}
 
-	return &zondpb.DoppelGangerResponse{
+	return &qrysmpb.DoppelGangerResponse{
 		Responses: responses,
 	}
 }
@@ -200,7 +200,7 @@ func buildResponse(
 func (c *beaconApiValidatorClient) getIndexToLiveness(ctx context.Context, epoch primitives.Epoch, indexes []string) (map[string]bool, error) {
 	livenessResponse, err := c.getLiveness(ctx, epoch, indexes)
 	if err != nil || livenessResponse.Data == nil {
-		return nil, errors.Wrapf(err, fmt.Sprintf("failed to get liveness for epoch %d", epoch))
+		return nil, errors.Wrapf(err, "failed to get liveness for epoch %d", epoch)
 	}
 
 	indexToLiveness := make(map[string]bool, len(livenessResponse.Data))

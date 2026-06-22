@@ -2,13 +2,14 @@ package sync
 
 import (
 	"context"
+	"fmt"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 
@@ -35,7 +36,7 @@ func (s *Service) validateProposerSlashing(ctx context.Context, pid peer.ID, msg
 		return pubsub.ValidationReject, err
 	}
 
-	slashing, ok := m.(*zondpb.ProposerSlashing)
+	slashing, ok := m.(*qrysmpb.ProposerSlashing)
 	if !ok {
 		return pubsub.ValidationReject, errWrongMessage
 	}
@@ -50,6 +51,13 @@ func (s *Service) validateProposerSlashing(ctx context.Context, pid peer.ID, msg
 	headState, err := s.cfg.chain.HeadState(ctx)
 	if err != nil {
 		return pubsub.ValidationIgnore, err
+	}
+	rov, err := headState.ValidatorAtIndexReadOnly(slashing.Header_1.Header.ProposerIndex)
+	if err != nil {
+		return pubsub.ValidationReject, err
+	}
+	if rov.Slashed() {
+		return pubsub.ValidationIgnore, fmt.Errorf("proposer is already slashed: %d", slashing.Header_1.Header.ProposerIndex)
 	}
 	if err := blocks.VerifyProposerSlashing(headState, slashing); err != nil {
 		return pubsub.ValidationReject, err

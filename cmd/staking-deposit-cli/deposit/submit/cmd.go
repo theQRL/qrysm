@@ -10,15 +10,15 @@ var log = logrus.WithField("prefix", "deposit")
 
 var Command = &cli.Command{
 	Name: "submit",
-	Description: "Submits deposits to the zond deposit contract for a set of validators by connecting " +
-		"to a zond endpoint to submit the transactions. Requires signing the transactions with a zond private key",
+	Description: "Submits deposits to the qrl deposit contract for a set of validators by connecting " +
+		"to a qrl execution node endpoint to submit the transactions. Requires signing the transactions with a qrl private key",
 	Usage: "",
 	Action: func(cliCtx *cli.Context) error {
 		return submitDeposits(cliCtx)
 	},
 	Flags: []cli.Flag{
 		flags.ValidatorKeysDirFlag,
-		flags.ZondSeedFileFlag,
+		flags.QRLSeedFileFlag,
 		flags.DepositContractAddressFlag,
 		flags.HTTPWeb3ProviderFlag,
 		flags.DepositDelaySecondsFlag,

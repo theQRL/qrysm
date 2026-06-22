@@ -1,14 +1,14 @@
 // Package deposit contains useful functions for dealing
-// with Zond deposit inputs.
+// with QRL deposit inputs.
 package deposit
 
 import (
 	"github.com/pkg/errors"
+	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/config/params"
-	"github.com/theQRL/qrysm/crypto/dilithium"
-	"github.com/theQRL/qrysm/crypto/hash"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // DepositInput for a given key. This input data can be used to when making a
@@ -20,17 +20,17 @@ import (
 //	To submit a deposit:
 //
 //	- Pack the validator's initialization parameters into deposit_data, a Deposit_Data SSZ object.
-//	- Let amount be the amount in Gwei to be deposited by the validator where MIN_DEPOSIT_AMOUNT <= amount <= MAX_EFFECTIVE_BALANCE.
+//	- Let amount be the amount in Shor to be deposited by the validator where MIN_DEPOSIT_AMOUNT <= amount <= MAX_EFFECTIVE_BALANCE.
 //	- Set deposit_data.amount = amount.
 //	- Let signature be the result of bls_sign of the signing_root(deposit_data) with domain=compute_domain(DOMAIN_DEPOSIT). (Deposits are valid regardless of fork version, compute_domain will default to zeroes there).
-//	- Send a transaction on the Zond execution layer to DEPOSIT_CONTRACT_ADDRESS executing `deposit(pubkey: bytes[48], withdrawal_credentials: bytes[32], signature: bytes[96])` along with a deposit of amount Gwei.
+//	- Send a transaction on the QRL execution layer to DEPOSIT_CONTRACT_ADDRESS executing `deposit(pubkey: bytes[48], withdrawal_credentials: bytes[32], signature: bytes[96])` along with a deposit of amount Shor.
 //
 // See: https://github.com/ethereum/consensus-specs/blob/master/specs/validator/0_beacon-chain-validator.md#submit-deposit
-func DepositInput(depositKey, withdrawalKey dilithium.DilithiumKey, amountInGwei uint64, forkVersion []byte) (*zondpb.Deposit_Data, [32]byte, error) {
-	depositMessage := &zondpb.DepositMessage{
+func DepositInput(depositKey ml_dsa_87.MLDSA87Key, withdrawalAddr common.Address, amountInShor uint64, forkVersion []byte) (*qrysmpb.Deposit_Data, [32]byte, error) {
+	depositMessage := &qrysmpb.DepositMessage{
 		PublicKey:             depositKey.PublicKey().Marshal(),
-		WithdrawalCredentials: WithdrawalCredentialsHash(withdrawalKey),
-		Amount:                amountInGwei,
+		WithdrawalCredentials: WithdrawalCredentialsAddress(withdrawalAddr),
+		Amount:                amountInShor,
 	}
 
 	sr, err := depositMessage.HashTreeRoot()
@@ -46,11 +46,11 @@ func DepositInput(depositKey, withdrawalKey dilithium.DilithiumKey, amountInGwei
 	if err != nil {
 		return nil, [32]byte{}, err
 	}
-	root, err := (&zondpb.SigningData{ObjectRoot: sr[:], Domain: domain}).HashTreeRoot()
+	root, err := (&qrysmpb.SigningData{ObjectRoot: sr[:], Domain: domain}).HashTreeRoot()
 	if err != nil {
 		return nil, [32]byte{}, err
 	}
-	di := &zondpb.Deposit_Data{
+	di := &qrysmpb.Deposit_Data{
 		PublicKey:             depositMessage.PublicKey,
 		WithdrawalCredentials: depositMessage.WithdrawalCredentials,
 		Amount:                depositMessage.Amount,
@@ -65,32 +65,24 @@ func DepositInput(depositKey, withdrawalKey dilithium.DilithiumKey, amountInGwei
 	return di, dr, nil
 }
 
-// WithdrawalCredentialsHash forms a 32 byte hash of the withdrawal public
-// address.
-//
-// The specification is as follows:
-//
-//	withdrawal_credentials[:1] == BLS_WITHDRAWAL_PREFIX_BYTE
-//	withdrawal_credentials[1:] == hash(withdrawal_pubkey)[1:]
-//
-// where withdrawal_credentials is of type bytes32.
-func WithdrawalCredentialsHash(withdrawalKey dilithium.DilithiumKey) []byte {
-	h := hash.Hash(withdrawalKey.PublicKey().Marshal())
-	return append([]byte{params.BeaconConfig().DilithiumWithdrawalPrefixByte}, h[1:]...)[:32]
+// WithdrawalCredentialsAddress forms a 64 byte withdrawal credential containing
+// the execution address.
+func WithdrawalCredentialsAddress(addr common.Address) []byte {
+	return addr.Bytes()
 }
 
-// VerifyDepositSignature verifies the correctness of Eth1 deposit BLS signature
-func VerifyDepositSignature(dd *zondpb.Deposit_Data, domain []byte) error {
-	ddCopy := zondpb.CopyDepositData(dd)
-	publicKey, err := dilithium.PublicKeyFromBytes(ddCopy.PublicKey)
+// VerifyDepositSignature verifies the correctness of Execution deposit ML-DSA-87 signature
+func VerifyDepositSignature(dd *qrysmpb.Deposit_Data, domain []byte) error {
+	ddCopy := qrysmpb.CopyDepositData(dd)
+	publicKey, err := ml_dsa_87.PublicKeyFromBytes(ddCopy.PublicKey)
 	if err != nil {
 		return errors.Wrap(err, "could not convert bytes to public key")
 	}
-	sig, err := dilithium.SignatureFromBytes(ddCopy.Signature)
+	sig, err := ml_dsa_87.SignatureFromBytes(ddCopy.Signature)
 	if err != nil {
 		return errors.Wrap(err, "could not convert bytes to signature")
 	}
-	di := &zondpb.DepositMessage{
+	di := &qrysmpb.DepositMessage{
 		PublicKey:             ddCopy.PublicKey,
 		WithdrawalCredentials: ddCopy.WithdrawalCredentials,
 		Amount:                ddCopy.Amount,
@@ -99,7 +91,7 @@ func VerifyDepositSignature(dd *zondpb.Deposit_Data, domain []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "could not get signing root")
 	}
-	signingData := &zondpb.SigningData{
+	signingData := &qrysmpb.SigningData{
 		ObjectRoot: root[:],
 		Domain:     domain,
 	}

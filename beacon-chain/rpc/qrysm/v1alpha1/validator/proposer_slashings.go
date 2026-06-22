@@ -6,12 +6,12 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
 	v "github.com/theQRL/qrysm/beacon-chain/core/validators"
 	"github.com/theQRL/qrysm/beacon-chain/state"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
-func (vs *Server) getSlashings(ctx context.Context, head state.BeaconState) ([]*zondpb.ProposerSlashing, []*zondpb.AttesterSlashing) {
+func (vs *Server) getSlashings(ctx context.Context, head state.BeaconState) ([]*qrysmpb.ProposerSlashing, []*qrysmpb.AttesterSlashing) {
 	proposerSlashings := vs.SlashingsPool.PendingProposerSlashings(ctx, head, false /*noLimit*/)
-	validProposerSlashings := make([]*zondpb.ProposerSlashing, 0, len(proposerSlashings))
+	validProposerSlashings := make([]*qrysmpb.ProposerSlashing, 0, len(proposerSlashings))
 	for _, slashing := range proposerSlashings {
 		_, err := blocks.ProcessProposerSlashing(ctx, head, slashing, v.SlashValidator)
 		if err != nil {
@@ -21,7 +21,7 @@ func (vs *Server) getSlashings(ctx context.Context, head state.BeaconState) ([]*
 		validProposerSlashings = append(validProposerSlashings, slashing)
 	}
 	attSlashings := vs.SlashingsPool.PendingAttesterSlashings(ctx, head, false /*noLimit*/)
-	validAttSlashings := make([]*zondpb.AttesterSlashing, 0, len(attSlashings))
+	validAttSlashings := make([]*qrysmpb.AttesterSlashing, 0, len(attSlashings))
 	for _, slashing := range attSlashings {
 		_, err := blocks.ProcessAttesterSlashing(ctx, head, slashing, v.SlashValidator)
 		if err != nil {

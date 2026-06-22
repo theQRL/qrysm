@@ -5,12 +5,12 @@ import (
 
 	"github.com/theQRL/qrysm/beacon-chain/forkchoice"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
 type mockChain struct {
-	currentFork     *zondpb.Fork
+	currentFork     *qrysmpb.Fork
 	genesisValsRoot [32]byte
 	genesisTime     time.Time
 }
@@ -19,7 +19,7 @@ func (m *mockChain) ForkChoicer() forkchoice.ForkChoicer {
 	return nil
 }
 
-func (m *mockChain) CurrentFork() *zondpb.Fork {
+func (m *mockChain) CurrentFork() *qrysmpb.Fork {
 	return m.currentFork
 }
 

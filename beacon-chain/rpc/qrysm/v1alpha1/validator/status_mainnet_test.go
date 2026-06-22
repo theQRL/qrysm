@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/container/trie"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -30,13 +30,13 @@ func TestValidatorStatus_Active(t *testing.T) {
 
 	pubkey := generatePubkey(1)
 
-	depData := &zondpb.Deposit_Data{
+	depData := &qrysmpb.Deposit_Data{
 		PublicKey:             pubkey,
 		Signature:             bytesutil.PadTo([]byte("hi"), 96),
-		WithdrawalCredentials: bytesutil.PadTo([]byte("hey"), 32),
+		WithdrawalCredentials: bytesutil.PadTo([]byte("hey"), 64),
 	}
 
-	deposit := &zondpb.Deposit{
+	deposit := &qrysmpb.Deposit{
 		Data: depData,
 	}
 	depositTrie, err := trie.NewTrie(params.BeaconConfig().DepositContractTreeDepth)
@@ -51,43 +51,43 @@ func TestValidatorStatus_Active(t *testing.T) {
 	// Active because activation epoch <= current epoch < exit epoch.
 	activeEpoch := helpers.ActivationExitEpoch(0)
 
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
-	st := &zondpb.BeaconStateCapella{
+	st := &qrysmpb.BeaconStateZond{
 		GenesisTime: uint64(time.Unix(0, 0).Unix()),
 		Slot:        10000,
-		Validators: []*zondpb.Validator{{
+		Validators: []*qrysmpb.Validator{{
 			ActivationEpoch:   activeEpoch,
 			ExitEpoch:         params.BeaconConfig().FarFutureEpoch,
 			WithdrawableEpoch: params.BeaconConfig().FarFutureEpoch,
 			PublicKey:         pubkey},
 		}}
-	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(st)
+	stateObj, err := state_native.InitializeFromProtoUnsafeZond(st)
 	require.NoError(t, err)
 
-	timestamp := time.Unix(int64(params.BeaconConfig().Eth1FollowDistance), 0).Unix()
+	timestamp := time.Unix(int64(params.BeaconConfig().ExecutionFollowDistance), 0).Unix()
 	p := &mockExecution.Chain{
 		TimesByHeight: map[int]uint64{
-			int(params.BeaconConfig().Eth1FollowDistance): uint64(timestamp),
+			int(params.BeaconConfig().ExecutionFollowDistance): uint64(timestamp),
 		},
 	}
 	vs := &Server{
-		ChainStartFetcher: p,
-		BlockFetcher:      p,
-		Eth1InfoFetcher:   p,
-		DepositFetcher:    depositCache,
-		HeadFetcher:       &mockChain.ChainService{State: stateObj, Root: genesisRoot[:]},
+		ChainStartFetcher:    p,
+		BlockFetcher:         p,
+		ExecutionInfoFetcher: p,
+		DepositFetcher:       depositCache,
+		HeadFetcher:          &mockChain.ChainService{State: stateObj, Root: genesisRoot[:]},
 	}
-	req := &zondpb.ValidatorStatusRequest{
+	req := &qrysmpb.ValidatorStatusRequest{
 		PublicKey: pubkey,
 	}
 	resp, err := vs.ValidatorStatus(context.Background(), req)
 	require.NoError(t, err, "Could not get validator status")
 
-	expected := &zondpb.ValidatorStatusResponse{
-		Status:          zondpb.ValidatorStatus_ACTIVE,
+	expected := &qrysmpb.ValidatorStatusResponse{
+		Status:          qrysmpb.ValidatorStatus_ACTIVE,
 		ActivationEpoch: 5,
 	}
 	if !proto.Equal(resp, expected) {
@@ -97,7 +97,7 @@ func TestValidatorStatus_Active(t *testing.T) {
 
 // pubKey is a helper to generate a well-formed public key.
 func generatePubkey(i uint64) []byte {
-	pubKey := make([]byte, field_params.DilithiumPubkeyLength)
+	pubKey := make([]byte, field_params.MLDSA87PubkeyLength)
 	binary.LittleEndian.PutUint64(pubKey, i)
 	return pubKey
 }

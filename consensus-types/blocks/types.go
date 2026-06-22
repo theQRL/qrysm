@@ -5,7 +5,7 @@ import (
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 var (
@@ -35,20 +35,19 @@ var (
 
 // BeaconBlockBody is the main beacon block body structure. It can represent any block type.
 type BeaconBlockBody struct {
-	version                     int
-	isBlinded                   bool
-	randaoReveal                [field_params.DilithiumSignatureLength]byte
-	eth1Data                    *zond.Eth1Data
-	graffiti                    [field_params.RootLength]byte
-	proposerSlashings           []*zond.ProposerSlashing
-	attesterSlashings           []*zond.AttesterSlashing
-	attestations                []*zond.Attestation
-	deposits                    []*zond.Deposit
-	voluntaryExits              []*zond.SignedVoluntaryExit
-	syncAggregate               *zond.SyncAggregate
-	executionPayload            interfaces.ExecutionData
-	executionPayloadHeader      interfaces.ExecutionData
-	dilithiumToExecutionChanges []*zond.SignedDilithiumToExecutionChange
+	version                int
+	isBlinded              bool
+	randaoReveal           [field_params.MLDSA87SignatureLength]byte
+	executionData          *qrysmpb.ExecutionData
+	graffiti               [field_params.RootLength]byte
+	proposerSlashings      []*qrysmpb.ProposerSlashing
+	attesterSlashings      []*qrysmpb.AttesterSlashing
+	attestations           []*qrysmpb.Attestation
+	deposits               []*qrysmpb.Deposit
+	voluntaryExits         []*qrysmpb.SignedVoluntaryExit
+	syncAggregate          *qrysmpb.SyncAggregate
+	executionPayload       interfaces.ExecutionData
+	executionPayloadHeader interfaces.ExecutionData
 }
 
 // BeaconBlock is the main beacon block structure. It can represent any block type.
@@ -65,5 +64,5 @@ type BeaconBlock struct {
 type SignedBeaconBlock struct {
 	version   int
 	block     *BeaconBlock
-	signature [field_params.DilithiumSignatureLength]byte
+	signature [field_params.MLDSA87SignatureLength]byte
 }

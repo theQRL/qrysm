@@ -9,7 +9,7 @@ import (
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
@@ -158,7 +158,7 @@ func TestService_filterAttestations(t *testing.T) {
 			name: "Nil attestation data gets dropped",
 			input: []*slashertypes.IndexedAttestationWrapper{
 				{
-					IndexedAttestation: &zondpb.IndexedAttestation{},
+					IndexedAttestation: &qrysmpb.IndexedAttestation{},
 				},
 			},
 			inputEpoch:    0,
@@ -168,8 +168,8 @@ func TestService_filterAttestations(t *testing.T) {
 			name: "Nil attestation source and target gets dropped",
 			input: []*slashertypes.IndexedAttestationWrapper{
 				{
-					IndexedAttestation: &zondpb.IndexedAttestation{
-						Data: &zondpb.AttestationData{},
+					IndexedAttestation: &qrysmpb.IndexedAttestation{
+						Data: &qrysmpb.AttestationData{},
 					},
 				},
 			},
@@ -180,9 +180,9 @@ func TestService_filterAttestations(t *testing.T) {
 			name: "Nil attestation source and good target gets dropped",
 			input: []*slashertypes.IndexedAttestationWrapper{
 				{
-					IndexedAttestation: &zondpb.IndexedAttestation{
-						Data: &zondpb.AttestationData{
-							Target: &zondpb.Checkpoint{},
+					IndexedAttestation: &qrysmpb.IndexedAttestation{
+						Data: &qrysmpb.AttestationData{
+							Target: &qrysmpb.Checkpoint{},
 						},
 					},
 				},
@@ -194,9 +194,9 @@ func TestService_filterAttestations(t *testing.T) {
 			name: "Nil attestation target and good source gets dropped",
 			input: []*slashertypes.IndexedAttestationWrapper{
 				{
-					IndexedAttestation: &zondpb.IndexedAttestation{
-						Data: &zondpb.AttestationData{
-							Source: &zondpb.Checkpoint{},
+					IndexedAttestation: &qrysmpb.IndexedAttestation{
+						Data: &qrysmpb.AttestationData{
+							Source: &qrysmpb.Checkpoint{},
 						},
 					},
 				},
@@ -266,25 +266,25 @@ func TestService_filterAttestations(t *testing.T) {
 func Test_logSlashingEvent(t *testing.T) {
 	tests := []struct {
 		name     string
-		slashing *zondpb.AttesterSlashing
+		slashing *qrysmpb.AttesterSlashing
 	}{
 		{
 			name: "Surrounding vote",
-			slashing: &zondpb.AttesterSlashing{
+			slashing: &qrysmpb.AttesterSlashing{
 				Attestation_1: createAttestationWrapper(t, 0, 0, nil, nil).IndexedAttestation,
 				Attestation_2: createAttestationWrapper(t, 0, 0, nil, nil).IndexedAttestation,
 			},
 		},
 		{
 			name: "Surrounded vote",
-			slashing: &zondpb.AttesterSlashing{
+			slashing: &qrysmpb.AttesterSlashing{
 				Attestation_1: createAttestationWrapper(t, 0, 0, nil, nil).IndexedAttestation,
 				Attestation_2: createAttestationWrapper(t, 0, 0, nil, nil).IndexedAttestation,
 			},
 		},
 		{
 			name: "Double vote",
-			slashing: &zondpb.AttesterSlashing{
+			slashing: &qrysmpb.AttesterSlashing{
 				Attestation_1: createAttestationWrapper(t, 0, 0, nil, nil).IndexedAttestation,
 				Attestation_2: createAttestationWrapper(t, 0, 0, nil, nil).IndexedAttestation,
 			},
@@ -302,7 +302,7 @@ func Test_logSlashingEvent(t *testing.T) {
 func Test_validateAttestationIntegrity(t *testing.T) {
 	tests := []struct {
 		name string
-		att  *zondpb.IndexedAttestation
+		att  *qrysmpb.IndexedAttestation
 		want bool
 	}{
 		{
@@ -312,42 +312,42 @@ func Test_validateAttestationIntegrity(t *testing.T) {
 		},
 		{
 			name: "Nil attestation data returns false",
-			att:  &zondpb.IndexedAttestation{},
+			att:  &qrysmpb.IndexedAttestation{},
 			want: false,
 		},
 		{
 			name: "Nil attestation source and target returns false",
-			att: &zondpb.IndexedAttestation{
-				Data: &zondpb.AttestationData{},
+			att: &qrysmpb.IndexedAttestation{
+				Data: &qrysmpb.AttestationData{},
 			},
 			want: false,
 		},
 		{
 			name: "Nil attestation source and good target returns false",
-			att: &zondpb.IndexedAttestation{
-				Data: &zondpb.AttestationData{
-					Target: &zondpb.Checkpoint{},
+			att: &qrysmpb.IndexedAttestation{
+				Data: &qrysmpb.AttestationData{
+					Target: &qrysmpb.Checkpoint{},
 				},
 			},
 			want: false,
 		},
 		{
 			name: "Nil attestation target and good source returns false",
-			att: &zondpb.IndexedAttestation{
-				Data: &zondpb.AttestationData{
-					Source: &zondpb.Checkpoint{},
+			att: &qrysmpb.IndexedAttestation{
+				Data: &qrysmpb.AttestationData{
+					Source: &qrysmpb.Checkpoint{},
 				},
 			},
 			want: false,
 		},
 		{
 			name: "Source > target returns false",
-			att: &zondpb.IndexedAttestation{
-				Data: &zondpb.AttestationData{
-					Source: &zondpb.Checkpoint{
+			att: &qrysmpb.IndexedAttestation{
+				Data: &qrysmpb.AttestationData{
+					Source: &qrysmpb.Checkpoint{
 						Epoch: 1,
 					},
-					Target: &zondpb.Checkpoint{
+					Target: &qrysmpb.Checkpoint{
 						Epoch: 0,
 					},
 				},
@@ -356,12 +356,12 @@ func Test_validateAttestationIntegrity(t *testing.T) {
 		},
 		{
 			name: "Source == target returns false",
-			att: &zondpb.IndexedAttestation{
-				Data: &zondpb.AttestationData{
-					Source: &zondpb.Checkpoint{
+			att: &qrysmpb.IndexedAttestation{
+				Data: &qrysmpb.AttestationData{
+					Source: &qrysmpb.Checkpoint{
 						Epoch: 1,
 					},
-					Target: &zondpb.Checkpoint{
+					Target: &qrysmpb.Checkpoint{
 						Epoch: 1,
 					},
 				},
@@ -370,12 +370,12 @@ func Test_validateAttestationIntegrity(t *testing.T) {
 		},
 		{
 			name: "Source < target returns true",
-			att: &zondpb.IndexedAttestation{
-				Data: &zondpb.AttestationData{
-					Source: &zondpb.Checkpoint{
+			att: &qrysmpb.IndexedAttestation{
+				Data: &qrysmpb.AttestationData{
+					Source: &qrysmpb.Checkpoint{
 						Epoch: 1,
 					},
-					Target: &zondpb.Checkpoint{
+					Target: &qrysmpb.Checkpoint{
 						Epoch: 2,
 					},
 				},
@@ -384,12 +384,12 @@ func Test_validateAttestationIntegrity(t *testing.T) {
 		},
 		{
 			name: "Source 0 target 0 returns true (genesis epoch attestations)",
-			att: &zondpb.IndexedAttestation{
-				Data: &zondpb.AttestationData{
-					Source: &zondpb.Checkpoint{
+			att: &qrysmpb.IndexedAttestation{
+				Data: &qrysmpb.AttestationData{
+					Source: &qrysmpb.Checkpoint{
 						Epoch: 0,
 					},
-					Target: &zondpb.Checkpoint{
+					Target: &qrysmpb.Checkpoint{
 						Epoch: 0,
 					},
 				},
@@ -408,9 +408,9 @@ func Test_validateAttestationIntegrity(t *testing.T) {
 
 func Test_validateBlockHeaderIntegrity(t *testing.T) {
 	type args struct {
-		header *zondpb.SignedBeaconBlockHeader
+		header *qrysmpb.SignedBeaconBlockHeader
 	}
-	fakeSig := make([]byte, field_params.DilithiumSignatureLength)
+	fakeSig := make([]byte, field_params.MLDSA87SignatureLength)
 	copy(fakeSig, "hi")
 	tests := []struct {
 		name string
@@ -427,23 +427,23 @@ func Test_validateBlockHeaderIntegrity(t *testing.T) {
 		{
 			name: "nil inner header",
 			args: args{
-				header: &zondpb.SignedBeaconBlockHeader{},
+				header: &qrysmpb.SignedBeaconBlockHeader{},
 			},
 			want: false,
 		},
 		{
 			name: "bad signature 1",
 			args: args{
-				header: &zondpb.SignedBeaconBlockHeader{Header: &zondpb.BeaconBlockHeader{}, Signature: []byte("hi")},
+				header: &qrysmpb.SignedBeaconBlockHeader{Header: &qrysmpb.BeaconBlockHeader{}, Signature: []byte("hi")},
 			},
 			want: false,
 		},
 		{
 			name: "bad signature 2",
 			args: args{
-				header: &zondpb.SignedBeaconBlockHeader{
-					Header:    &zondpb.BeaconBlockHeader{},
-					Signature: make([]byte, field_params.DilithiumSignatureLength+1),
+				header: &qrysmpb.SignedBeaconBlockHeader{
+					Header:    &qrysmpb.BeaconBlockHeader{},
+					Signature: make([]byte, field_params.MLDSA87SignatureLength+1),
 				},
 			},
 			want: false,
@@ -451,14 +451,14 @@ func Test_validateBlockHeaderIntegrity(t *testing.T) {
 		{
 			name: "empty signature",
 			args: args{
-				header: &zondpb.SignedBeaconBlockHeader{Header: &zondpb.BeaconBlockHeader{}},
+				header: &qrysmpb.SignedBeaconBlockHeader{Header: &qrysmpb.BeaconBlockHeader{}},
 			},
 			want: false,
 		},
 		{
 			name: "OK",
 			args: args{
-				header: &zondpb.SignedBeaconBlockHeader{Header: &zondpb.BeaconBlockHeader{}, Signature: fakeSig},
+				header: &qrysmpb.SignedBeaconBlockHeader{Header: &qrysmpb.BeaconBlockHeader{}, Signature: fakeSig},
 			},
 			want: true,
 		},

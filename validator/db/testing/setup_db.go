@@ -10,7 +10,7 @@ import (
 )
 
 // SetupDB instantiates and returns a DB instance for the validator client.
-func SetupDB(t testing.TB, pubkeys [][field_params.DilithiumPubkeyLength]byte) iface.ValidatorDB {
+func SetupDB(t testing.TB, pubkeys [][field_params.MLDSA87PubkeyLength]byte) iface.ValidatorDB {
 	db, err := kv.NewKVStore(context.Background(), t.TempDir(), &kv.Config{
 		PubKeys: pubkeys,
 	})

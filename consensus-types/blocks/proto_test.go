@@ -6,56 +6,55 @@ import (
 	"github.com/theQRL/go-bitfield"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
 type fields struct {
-	root                        [32]byte
-	sig                         [field_params.DilithiumSignatureLength]byte
-	deposits                    []*zond.Deposit
-	atts                        []*zond.Attestation
-	proposerSlashings           []*zond.ProposerSlashing
-	attesterSlashings           []*zond.AttesterSlashing
-	voluntaryExits              []*zond.SignedVoluntaryExit
-	syncAggregate               *zond.SyncAggregate
-	execPayloadCapella          *enginev1.ExecutionPayloadCapella
-	execPayloadHeaderCapella    *enginev1.ExecutionPayloadHeaderCapella
-	dilithiumToExecutionChanges []*zond.SignedDilithiumToExecutionChange
+	root                  [32]byte
+	sig                   [field_params.MLDSA87SignatureLength]byte
+	deposits              []*qrysmpb.Deposit
+	atts                  []*qrysmpb.Attestation
+	proposerSlashings     []*qrysmpb.ProposerSlashing
+	attesterSlashings     []*qrysmpb.AttesterSlashing
+	voluntaryExits        []*qrysmpb.SignedVoluntaryExit
+	syncAggregate         *qrysmpb.SyncAggregate
+	execPayloadZond       *enginev1.ExecutionPayloadZond
+	execPayloadHeaderZond *enginev1.ExecutionPayloadHeaderZond
 }
 
 func Test_SignedBeaconBlock_Proto(t *testing.T) {
 	f := getFields()
 
-	t.Run("Capella", func(t *testing.T) {
-		expectedBlock := &zond.SignedBeaconBlockCapella{
-			Block: &zond.BeaconBlockCapella{
+	t.Run("Zond", func(t *testing.T) {
+		expectedBlock := &qrysmpb.SignedBeaconBlockZond{
+			Block: &qrysmpb.BeaconBlockZond{
 				Slot:          128,
 				ProposerIndex: 128,
 				ParentRoot:    f.root[:],
 				StateRoot:     f.root[:],
-				Body:          bodyPbCapella(),
+				Body:          bodyPbZond(),
 			},
 			Signature: f.sig[:],
 		}
 		block := &SignedBeaconBlock{
-			version: version.Capella,
+			version: version.Zond,
 			block: &BeaconBlock{
-				version:       version.Capella,
+				version:       version.Zond,
 				slot:          128,
 				proposerIndex: 128,
 				parentRoot:    f.root,
 				stateRoot:     f.root,
-				body:          bodyCapella(t),
+				body:          bodyZond(t),
 			},
 			signature: f.sig,
 		}
 
 		result, err := block.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*zond.SignedBeaconBlockCapella)
+		resultBlock, ok := result.(*qrysmpb.SignedBeaconBlockZond)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -63,33 +62,33 @@ func Test_SignedBeaconBlock_Proto(t *testing.T) {
 		require.NoError(t, err)
 		assert.DeepEqual(t, expectedHTR, resultHTR)
 	})
-	t.Run("CapellaBlind", func(t *testing.T) {
-		expectedBlock := &zond.SignedBlindedBeaconBlockCapella{
-			Block: &zond.BlindedBeaconBlockCapella{
+	t.Run("ZondBlind", func(t *testing.T) {
+		expectedBlock := &qrysmpb.SignedBlindedBeaconBlockZond{
+			Block: &qrysmpb.BlindedBeaconBlockZond{
 				Slot:          128,
 				ProposerIndex: 128,
 				ParentRoot:    f.root[:],
 				StateRoot:     f.root[:],
-				Body:          bodyPbBlindedCapella(),
+				Body:          bodyPbBlindedZond(),
 			},
 			Signature: f.sig[:],
 		}
 		block := &SignedBeaconBlock{
-			version: version.Capella,
+			version: version.Zond,
 			block: &BeaconBlock{
-				version:       version.Capella,
+				version:       version.Zond,
 				slot:          128,
 				proposerIndex: 128,
 				parentRoot:    f.root,
 				stateRoot:     f.root,
-				body:          bodyBlindedCapella(t),
+				body:          bodyBlindedZond(t),
 			},
 			signature: f.sig,
 		}
 
 		result, err := block.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*zond.SignedBlindedBeaconBlockCapella)
+		resultBlock, ok := result.(*qrysmpb.SignedBlindedBeaconBlockZond)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -102,26 +101,26 @@ func Test_SignedBeaconBlock_Proto(t *testing.T) {
 func Test_BeaconBlock_Proto(t *testing.T) {
 	f := getFields()
 
-	t.Run("Capella", func(t *testing.T) {
-		expectedBlock := &zond.BeaconBlockCapella{
+	t.Run("Zond", func(t *testing.T) {
+		expectedBlock := &qrysmpb.BeaconBlockZond{
 			Slot:          128,
 			ProposerIndex: 128,
 			ParentRoot:    f.root[:],
 			StateRoot:     f.root[:],
-			Body:          bodyPbCapella(),
+			Body:          bodyPbZond(),
 		}
 		block := &BeaconBlock{
-			version:       version.Capella,
+			version:       version.Zond,
 			slot:          128,
 			proposerIndex: 128,
 			parentRoot:    f.root,
 			stateRoot:     f.root,
-			body:          bodyCapella(t),
+			body:          bodyZond(t),
 		}
 
 		result, err := block.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*zond.BeaconBlockCapella)
+		resultBlock, ok := result.(*qrysmpb.BeaconBlockZond)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -129,26 +128,26 @@ func Test_BeaconBlock_Proto(t *testing.T) {
 		require.NoError(t, err)
 		assert.DeepEqual(t, expectedHTR, resultHTR)
 	})
-	t.Run("CapellaBlind", func(t *testing.T) {
-		expectedBlock := &zond.BlindedBeaconBlockCapella{
+	t.Run("ZondBlind", func(t *testing.T) {
+		expectedBlock := &qrysmpb.BlindedBeaconBlockZond{
 			Slot:          128,
 			ProposerIndex: 128,
 			ParentRoot:    f.root[:],
 			StateRoot:     f.root[:],
-			Body:          bodyPbBlindedCapella(),
+			Body:          bodyPbBlindedZond(),
 		}
 		block := &BeaconBlock{
-			version:       version.Capella,
+			version:       version.Zond,
 			slot:          128,
 			proposerIndex: 128,
 			parentRoot:    f.root,
 			stateRoot:     f.root,
-			body:          bodyBlindedCapella(t),
+			body:          bodyBlindedZond(t),
 		}
 
 		result, err := block.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*zond.BlindedBeaconBlockCapella)
+		resultBlock, ok := result.(*qrysmpb.BlindedBeaconBlockZond)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -159,12 +158,12 @@ func Test_BeaconBlock_Proto(t *testing.T) {
 }
 
 func Test_BeaconBlockBody_Proto(t *testing.T) {
-	t.Run("Capella", func(t *testing.T) {
-		expectedBody := bodyPbCapella()
-		body := bodyCapella(t)
+	t.Run("Zond", func(t *testing.T) {
+		expectedBody := bodyPbZond()
+		body := bodyZond(t)
 		result, err := body.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*zond.BeaconBlockBodyCapella)
+		resultBlock, ok := result.(*qrysmpb.BeaconBlockBodyZond)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -172,12 +171,12 @@ func Test_BeaconBlockBody_Proto(t *testing.T) {
 		require.NoError(t, err)
 		assert.DeepEqual(t, expectedHTR, resultHTR)
 	})
-	t.Run("CapellaBlind", func(t *testing.T) {
-		expectedBody := bodyPbBlindedCapella()
-		body := bodyBlindedCapella(t)
+	t.Run("ZondBlind", func(t *testing.T) {
+		expectedBody := bodyPbBlindedZond()
+		body := bodyBlindedZond(t)
 		result, err := body.Proto()
 		require.NoError(t, err)
-		resultBlock, ok := result.(*zond.BlindedBeaconBlockBodyCapella)
+		resultBlock, ok := result.(*qrysmpb.BlindedBeaconBlockBodyZond)
 		require.Equal(t, true, ok)
 		resultHTR, err := resultBlock.HashTreeRoot()
 		require.NoError(t, err)
@@ -185,33 +184,33 @@ func Test_BeaconBlockBody_Proto(t *testing.T) {
 		require.NoError(t, err)
 		assert.DeepEqual(t, expectedHTR, resultHTR)
 	})
-	t.Run("Capella - wrong payload type", func(t *testing.T) {
-		body := bodyCapella(t)
-		body.executionPayload = &executionPayloadHeaderCapella{}
+	t.Run("Zond - wrong payload type", func(t *testing.T) {
+		body := bodyZond(t)
+		body.executionPayload = &executionPayloadHeaderZond{}
 		_, err := body.Proto()
 		require.ErrorIs(t, err, errPayloadWrongType)
 	})
-	t.Run("CapellaBlind - wrong payload type", func(t *testing.T) {
-		body := bodyBlindedCapella(t)
-		body.executionPayloadHeader = &executionPayloadCapella{}
+	t.Run("ZondBlind - wrong payload type", func(t *testing.T) {
+		body := bodyBlindedZond(t)
+		body.executionPayloadHeader = &executionPayloadZond{}
 		_, err := body.Proto()
 		require.ErrorIs(t, err, errPayloadHeaderWrongType)
 	})
 }
 
-func Test_initSignedBlockFromProtoCapella(t *testing.T) {
+func Test_initSignedBlockFromProtoZond(t *testing.T) {
 	f := getFields()
-	expectedBlock := &zond.SignedBeaconBlockCapella{
-		Block: &zond.BeaconBlockCapella{
+	expectedBlock := &qrysmpb.SignedBeaconBlockZond{
+		Block: &qrysmpb.BeaconBlockZond{
 			Slot:          128,
 			ProposerIndex: 128,
 			ParentRoot:    f.root[:],
 			StateRoot:     f.root[:],
-			Body:          bodyPbCapella(),
+			Body:          bodyPbZond(),
 		},
 		Signature: f.sig[:],
 	}
-	resultBlock, err := initSignedBlockFromProtoCapella(expectedBlock)
+	resultBlock, err := initSignedBlockFromProtoZond(expectedBlock)
 	require.NoError(t, err)
 	resultHTR, err := resultBlock.block.HashTreeRoot()
 	require.NoError(t, err)
@@ -221,19 +220,19 @@ func Test_initSignedBlockFromProtoCapella(t *testing.T) {
 	assert.DeepEqual(t, expectedBlock.Signature, resultBlock.signature[:])
 }
 
-func Test_initBlindedSignedBlockFromProtoCapella(t *testing.T) {
+func Test_initBlindedSignedBlockFromProtoZond(t *testing.T) {
 	f := getFields()
-	expectedBlock := &zond.SignedBlindedBeaconBlockCapella{
-		Block: &zond.BlindedBeaconBlockCapella{
+	expectedBlock := &qrysmpb.SignedBlindedBeaconBlockZond{
+		Block: &qrysmpb.BlindedBeaconBlockZond{
 			Slot:          128,
 			ProposerIndex: 128,
 			ParentRoot:    f.root[:],
 			StateRoot:     f.root[:],
-			Body:          bodyPbBlindedCapella(),
+			Body:          bodyPbBlindedZond(),
 		},
 		Signature: f.sig[:],
 	}
-	resultBlock, err := initBlindedSignedBlockFromProtoCapella(expectedBlock)
+	resultBlock, err := initBlindedSignedBlockFromProtoZond(expectedBlock)
 	require.NoError(t, err)
 	resultHTR, err := resultBlock.block.HashTreeRoot()
 	require.NoError(t, err)
@@ -243,16 +242,16 @@ func Test_initBlindedSignedBlockFromProtoCapella(t *testing.T) {
 	assert.DeepEqual(t, expectedBlock.Signature, resultBlock.signature[:])
 }
 
-func Test_initBlockFromProtoCapella(t *testing.T) {
+func Test_initBlockFromProtoZond(t *testing.T) {
 	f := getFields()
-	expectedBlock := &zond.BeaconBlockCapella{
+	expectedBlock := &qrysmpb.BeaconBlockZond{
 		Slot:          128,
 		ProposerIndex: 128,
 		ParentRoot:    f.root[:],
 		StateRoot:     f.root[:],
-		Body:          bodyPbCapella(),
+		Body:          bodyPbZond(),
 	}
-	resultBlock, err := initBlockFromProtoCapella(expectedBlock)
+	resultBlock, err := initBlockFromProtoZond(expectedBlock)
 	require.NoError(t, err)
 	resultHTR, err := resultBlock.HashTreeRoot()
 	require.NoError(t, err)
@@ -261,16 +260,16 @@ func Test_initBlockFromProtoCapella(t *testing.T) {
 	assert.DeepEqual(t, expectedHTR, resultHTR)
 }
 
-func Test_initBlockFromProtoBlindedCapella(t *testing.T) {
+func Test_initBlockFromProtoBlindedZond(t *testing.T) {
 	f := getFields()
-	expectedBlock := &zond.BlindedBeaconBlockCapella{
+	expectedBlock := &qrysmpb.BlindedBeaconBlockZond{
 		Slot:          128,
 		ProposerIndex: 128,
 		ParentRoot:    f.root[:],
 		StateRoot:     f.root[:],
-		Body:          bodyPbBlindedCapella(),
+		Body:          bodyPbBlindedZond(),
 	}
-	resultBlock, err := initBlindedBlockFromProtoCapella(expectedBlock)
+	resultBlock, err := initBlindedBlockFromProtoZond(expectedBlock)
 	require.NoError(t, err)
 	resultHTR, err := resultBlock.HashTreeRoot()
 	require.NoError(t, err)
@@ -279,9 +278,9 @@ func Test_initBlockFromProtoBlindedCapella(t *testing.T) {
 	assert.DeepEqual(t, expectedHTR, resultHTR)
 }
 
-func Test_initBlockBodyFromProtoCapella(t *testing.T) {
-	expectedBody := bodyPbCapella()
-	resultBody, err := initBlockBodyFromProtoCapella(expectedBody)
+func Test_initBlockBodyFromProtoZond(t *testing.T) {
+	expectedBody := bodyPbZond()
+	resultBody, err := initBlockBodyFromProtoZond(expectedBody)
 	require.NoError(t, err)
 	resultHTR, err := resultBody.HashTreeRoot()
 	require.NoError(t, err)
@@ -290,9 +289,9 @@ func Test_initBlockBodyFromProtoCapella(t *testing.T) {
 	assert.DeepEqual(t, expectedHTR, resultHTR)
 }
 
-func Test_initBlockBodyFromProtoBlindedCapella(t *testing.T) {
-	expectedBody := bodyPbBlindedCapella()
-	resultBody, err := initBlindedBlockBodyFromProtoCapella(expectedBody)
+func Test_initBlockBodyFromProtoBlindedZond(t *testing.T) {
+	expectedBody := bodyPbBlindedZond()
+	resultBody, err := initBlindedBlockBodyFromProtoZond(expectedBody)
 	require.NoError(t, err)
 	resultHTR, err := resultBody.HashTreeRoot()
 	require.NoError(t, err)
@@ -301,144 +300,142 @@ func Test_initBlockBodyFromProtoBlindedCapella(t *testing.T) {
 	assert.DeepEqual(t, expectedHTR, resultHTR)
 }
 
-func bodyPbCapella() *zond.BeaconBlockBodyCapella {
+func bodyPbZond() *qrysmpb.BeaconBlockBodyZond {
 	f := getFields()
-	return &zond.BeaconBlockBodyCapella{
+	return &qrysmpb.BeaconBlockBodyZond{
 		RandaoReveal: f.sig[:],
-		Eth1Data: &zond.Eth1Data{
+		ExecutionData: &qrysmpb.ExecutionData{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
 			BlockHash:    f.root[:],
 		},
-		Graffiti:                    f.root[:],
-		ProposerSlashings:           f.proposerSlashings,
-		AttesterSlashings:           f.attesterSlashings,
-		Attestations:                f.atts,
-		Deposits:                    f.deposits,
-		VoluntaryExits:              f.voluntaryExits,
-		SyncAggregate:               f.syncAggregate,
-		ExecutionPayload:            f.execPayloadCapella,
-		DilithiumToExecutionChanges: f.dilithiumToExecutionChanges,
+		Graffiti:          f.root[:],
+		ProposerSlashings: f.proposerSlashings,
+		AttesterSlashings: f.attesterSlashings,
+		Attestations:      f.atts,
+		Deposits:          f.deposits,
+		VoluntaryExits:    f.voluntaryExits,
+		SyncAggregate:     f.syncAggregate,
+		ExecutionPayload:  f.execPayloadZond,
 	}
 }
 
-func bodyPbBlindedCapella() *zond.BlindedBeaconBlockBodyCapella {
+func bodyPbBlindedZond() *qrysmpb.BlindedBeaconBlockBodyZond {
 	f := getFields()
-	return &zond.BlindedBeaconBlockBodyCapella{
+	return &qrysmpb.BlindedBeaconBlockBodyZond{
 		RandaoReveal: f.sig[:],
-		Eth1Data: &zond.Eth1Data{
+		ExecutionData: &qrysmpb.ExecutionData{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
 			BlockHash:    f.root[:],
 		},
-		Graffiti:                    f.root[:],
-		ProposerSlashings:           f.proposerSlashings,
-		AttesterSlashings:           f.attesterSlashings,
-		Attestations:                f.atts,
-		Deposits:                    f.deposits,
-		VoluntaryExits:              f.voluntaryExits,
-		SyncAggregate:               f.syncAggregate,
-		ExecutionPayloadHeader:      f.execPayloadHeaderCapella,
-		DilithiumToExecutionChanges: f.dilithiumToExecutionChanges,
+		Graffiti:               f.root[:],
+		ProposerSlashings:      f.proposerSlashings,
+		AttesterSlashings:      f.attesterSlashings,
+		Attestations:           f.atts,
+		Deposits:               f.deposits,
+		VoluntaryExits:         f.voluntaryExits,
+		SyncAggregate:          f.syncAggregate,
+		ExecutionPayloadHeader: f.execPayloadHeaderZond,
 	}
 }
 
-func bodyCapella(t *testing.T) *BeaconBlockBody {
+func bodyZond(t *testing.T) *BeaconBlockBody {
 	f := getFields()
-	p, err := WrappedExecutionPayloadCapella(f.execPayloadCapella, 0)
+	p, err := WrappedExecutionPayloadZond(f.execPayloadZond, 0)
 	require.NoError(t, err)
 	return &BeaconBlockBody{
-		version:      version.Capella,
+		version:      version.Zond,
 		randaoReveal: f.sig,
-		eth1Data: &zond.Eth1Data{
+		executionData: &qrysmpb.ExecutionData{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
 			BlockHash:    f.root[:],
 		},
-		graffiti:                    f.root,
-		proposerSlashings:           f.proposerSlashings,
-		attesterSlashings:           f.attesterSlashings,
-		attestations:                f.atts,
-		deposits:                    f.deposits,
-		voluntaryExits:              f.voluntaryExits,
-		syncAggregate:               f.syncAggregate,
-		executionPayload:            p,
-		dilithiumToExecutionChanges: f.dilithiumToExecutionChanges,
+		graffiti:          f.root,
+		proposerSlashings: f.proposerSlashings,
+		attesterSlashings: f.attesterSlashings,
+		attestations:      f.atts,
+		deposits:          f.deposits,
+		voluntaryExits:    f.voluntaryExits,
+		syncAggregate:     f.syncAggregate,
+		executionPayload:  p,
 	}
 }
 
-func bodyBlindedCapella(t *testing.T) *BeaconBlockBody {
+func bodyBlindedZond(t *testing.T) *BeaconBlockBody {
 	f := getFields()
-	ph, err := WrappedExecutionPayloadHeaderCapella(f.execPayloadHeaderCapella, 0)
+	ph, err := WrappedExecutionPayloadHeaderZond(f.execPayloadHeaderZond, 0)
 	require.NoError(t, err)
 	return &BeaconBlockBody{
-		version:      version.Capella,
+		version:      version.Zond,
 		isBlinded:    true,
 		randaoReveal: f.sig,
-		eth1Data: &zond.Eth1Data{
+		executionData: &qrysmpb.ExecutionData{
 			DepositRoot:  f.root[:],
 			DepositCount: 128,
 			BlockHash:    f.root[:],
 		},
-		graffiti:                    f.root,
-		proposerSlashings:           f.proposerSlashings,
-		attesterSlashings:           f.attesterSlashings,
-		attestations:                f.atts,
-		deposits:                    f.deposits,
-		voluntaryExits:              f.voluntaryExits,
-		syncAggregate:               f.syncAggregate,
-		executionPayloadHeader:      ph,
-		dilithiumToExecutionChanges: f.dilithiumToExecutionChanges,
+		graffiti:               f.root,
+		proposerSlashings:      f.proposerSlashings,
+		attesterSlashings:      f.attesterSlashings,
+		attestations:           f.atts,
+		deposits:               f.deposits,
+		voluntaryExits:         f.voluntaryExits,
+		syncAggregate:          f.syncAggregate,
+		executionPayloadHeader: ph,
 	}
 }
 
 func getFields() fields {
-	b20 := make([]byte, 20)
+	b64 := make([]byte, field_params.FeeRecipientLength)
 	b2592 := make([]byte, 2592)
 	b256 := make([]byte, 256)
 	var root [32]byte
-	var sig [field_params.DilithiumSignatureLength]byte
-	b20[0], b20[5], b20[10] = 'q', 'u', 'x'
+	var creds [field_params.WithdrawalCredentialsLength]byte
+	var sig [field_params.MLDSA87SignatureLength]byte
+	b64[0], b64[5], b64[10] = 'q', 'u', 'x'
 	b2592[0], b2592[5], b2592[10] = 'b', 'a', 'r'
 	b256[0], b256[5], b256[10] = 'x', 'y', 'z'
 	root[0], root[5], root[10] = 'a', 'b', 'c'
+	creds[0], creds[5], creds[10] = 'a', 'b', 'c'
 	sig[0], sig[5], sig[10] = 'd', 'e', 'f'
-	deposits := make([]*zond.Deposit, 16)
+	deposits := make([]*qrysmpb.Deposit, 16)
 	for i := range deposits {
-		deposits[i] = &zond.Deposit{}
+		deposits[i] = &qrysmpb.Deposit{}
 		deposits[i].Proof = make([][]byte, 33)
 		for j := range deposits[i].Proof {
 			deposits[i].Proof[j] = root[:]
 		}
-		deposits[i].Data = &zond.Deposit_Data{
+		deposits[i].Data = &qrysmpb.Deposit_Data{
 			PublicKey:             b2592,
-			WithdrawalCredentials: root[:],
+			WithdrawalCredentials: creds[:],
 			Amount:                128,
 			Signature:             sig[:],
 		}
 	}
-	atts := make([]*zond.Attestation, 128)
+	atts := make([]*qrysmpb.Attestation, 128)
 	for i := range atts {
-		atts[i] = &zond.Attestation{}
+		atts[i] = &qrysmpb.Attestation{}
 		atts[i].Signatures = [][]byte{sig[:]}
 		atts[i].AggregationBits = bitfield.NewBitlist(1)
-		atts[i].Data = &zond.AttestationData{
+		atts[i].Data = &qrysmpb.AttestationData{
 			Slot:            128,
 			CommitteeIndex:  128,
 			BeaconBlockRoot: root[:],
-			Source: &zond.Checkpoint{
+			Source: &qrysmpb.Checkpoint{
 				Epoch: 128,
 				Root:  root[:],
 			},
-			Target: &zond.Checkpoint{
+			Target: &qrysmpb.Checkpoint{
 				Epoch: 128,
 				Root:  root[:],
 			},
 		}
 	}
-	proposerSlashing := &zond.ProposerSlashing{
-		Header_1: &zond.SignedBeaconBlockHeader{
-			Header: &zond.BeaconBlockHeader{
+	proposerSlashing := &qrysmpb.ProposerSlashing{
+		Header_1: &qrysmpb.SignedBeaconBlockHeader{
+			Header: &qrysmpb.BeaconBlockHeader{
 				Slot:          128,
 				ProposerIndex: 128,
 				ParentRoot:    root[:],
@@ -447,8 +444,8 @@ func getFields() fields {
 			},
 			Signature: sig[:],
 		},
-		Header_2: &zond.SignedBeaconBlockHeader{
-			Header: &zond.BeaconBlockHeader{
+		Header_2: &qrysmpb.SignedBeaconBlockHeader{
+			Header: &qrysmpb.BeaconBlockHeader{
 				Slot:          128,
 				ProposerIndex: 128,
 				ParentRoot:    root[:],
@@ -458,35 +455,35 @@ func getFields() fields {
 			Signature: sig[:],
 		},
 	}
-	attesterSlashing := &zond.AttesterSlashing{
-		Attestation_1: &zond.IndexedAttestation{
+	attesterSlashing := &qrysmpb.AttesterSlashing{
+		Attestation_1: &qrysmpb.IndexedAttestation{
 			AttestingIndices: []uint64{1, 2, 8},
-			Data: &zond.AttestationData{
+			Data: &qrysmpb.AttestationData{
 				Slot:            128,
 				CommitteeIndex:  128,
 				BeaconBlockRoot: root[:],
-				Source: &zond.Checkpoint{
+				Source: &qrysmpb.Checkpoint{
 					Epoch: 128,
 					Root:  root[:],
 				},
-				Target: &zond.Checkpoint{
+				Target: &qrysmpb.Checkpoint{
 					Epoch: 128,
 					Root:  root[:],
 				},
 			},
 			Signatures: [][]byte{sig[:]},
 		},
-		Attestation_2: &zond.IndexedAttestation{
+		Attestation_2: &qrysmpb.IndexedAttestation{
 			AttestingIndices: []uint64{1, 2, 8},
-			Data: &zond.AttestationData{
+			Data: &qrysmpb.AttestationData{
 				Slot:            128,
 				CommitteeIndex:  128,
 				BeaconBlockRoot: root[:],
-				Source: &zond.Checkpoint{
+				Source: &qrysmpb.Checkpoint{
 					Epoch: 128,
 					Root:  root[:],
 				},
-				Target: &zond.Checkpoint{
+				Target: &qrysmpb.Checkpoint{
 					Epoch: 128,
 					Root:  root[:],
 				},
@@ -494,24 +491,24 @@ func getFields() fields {
 			Signatures: [][]byte{sig[:]},
 		},
 	}
-	voluntaryExit := &zond.SignedVoluntaryExit{
-		Exit: &zond.VoluntaryExit{
+	voluntaryExit := &qrysmpb.SignedVoluntaryExit{
+		Exit: &qrysmpb.VoluntaryExit{
 			Epoch:          128,
 			ValidatorIndex: 128,
 		},
 		Signature: sig[:],
 	}
-	syncCommitteeBits := bitfield.NewBitvector16()
+	syncCommitteeBits := bitfield.NewBitvector128()
 	syncCommitteeBits.SetBitAt(1, true)
 	syncCommitteeBits.SetBitAt(2, true)
 	syncCommitteeBits.SetBitAt(8, true)
-	syncAggregate := &zond.SyncAggregate{
+	syncAggregate := &qrysmpb.SyncAggregate{
 		SyncCommitteeBits:       syncCommitteeBits,
 		SyncCommitteeSignatures: [][]byte{sig[:]},
 	}
-	execPayloadCapella := &enginev1.ExecutionPayloadCapella{
+	execPayloadZond := &enginev1.ExecutionPayloadZond{
 		ParentHash:    root[:],
-		FeeRecipient:  b20,
+		FeeRecipient:  b64,
 		StateRoot:     root[:],
 		ReceiptsRoot:  root[:],
 		LogsBloom:     b256,
@@ -531,14 +528,14 @@ func getFields() fields {
 		Withdrawals: []*enginev1.Withdrawal{
 			{
 				Index:   128,
-				Address: b20,
+				Address: b64,
 				Amount:  128,
 			},
 		},
 	}
-	execPayloadHeaderCapella := &enginev1.ExecutionPayloadHeaderCapella{
+	execPayloadHeaderZond := &enginev1.ExecutionPayloadHeaderZond{
 		ParentHash:       root[:],
-		FeeRecipient:     b20,
+		FeeRecipient:     b64,
 		StateRoot:        root[:],
 		ReceiptsRoot:     root[:],
 		LogsBloom:        b256,
@@ -553,26 +550,17 @@ func getFields() fields {
 		TransactionsRoot: root[:],
 		WithdrawalsRoot:  root[:],
 	}
-	dilithiumToExecutionChanges := []*zond.SignedDilithiumToExecutionChange{{
-		Message: &zond.DilithiumToExecutionChange{
-			ValidatorIndex:      128,
-			FromDilithiumPubkey: b2592,
-			ToExecutionAddress:  b20,
-		},
-		Signature: sig[:],
-	}}
 
 	return fields{
-		root:                        root,
-		sig:                         sig,
-		deposits:                    deposits,
-		atts:                        atts,
-		proposerSlashings:           []*zond.ProposerSlashing{proposerSlashing},
-		attesterSlashings:           []*zond.AttesterSlashing{attesterSlashing},
-		voluntaryExits:              []*zond.SignedVoluntaryExit{voluntaryExit},
-		syncAggregate:               syncAggregate,
-		execPayloadCapella:          execPayloadCapella,
-		execPayloadHeaderCapella:    execPayloadHeaderCapella,
-		dilithiumToExecutionChanges: dilithiumToExecutionChanges,
+		root:                  root,
+		sig:                   sig,
+		deposits:              deposits,
+		atts:                  atts,
+		proposerSlashings:     []*qrysmpb.ProposerSlashing{proposerSlashing},
+		attesterSlashings:     []*qrysmpb.AttesterSlashing{attesterSlashing},
+		voluntaryExits:        []*qrysmpb.SignedVoluntaryExit{voluntaryExit},
+		syncAggregate:         syncAggregate,
+		execPayloadZond:       execPayloadZond,
+		execPayloadHeaderZond: execPayloadHeaderZond,
 	}
 }

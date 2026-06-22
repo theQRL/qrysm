@@ -18,7 +18,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -29,11 +29,11 @@ func TestProposeExit_Notification(t *testing.T) {
 
 	deposits, keys, err := util.DeterministicDepositsAndKeys(params.BeaconConfig().MinGenesisActiveValidatorCount)
 	require.NoError(t, err)
-	beaconState, err := transition.GenesisBeaconStateCapella(ctx, deposits, 0, &zondpb.Eth1Data{BlockHash: make([]byte, 32)}, &enginev1.ExecutionPayloadCapella{})
+	beaconState, err := transition.GenesisBeaconStateZond(ctx, deposits, 0, &qrysmpb.ExecutionData{BlockHash: make([]byte, 32)}, &enginev1.ExecutionPayloadZond{})
 	require.NoError(t, err)
 	epoch := primitives.Epoch(2048)
 	require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(uint64(epoch))))
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
@@ -58,8 +58,8 @@ func TestProposeExit_Notification(t *testing.T) {
 
 	// Send the request, expect a result on the state feed.
 	validatorIndex := primitives.ValidatorIndex(0)
-	req := &zondpb.SignedVoluntaryExit{
-		Exit: &zondpb.VoluntaryExit{
+	req := &qrysmpb.SignedVoluntaryExit{
+		Exit: &qrysmpb.VoluntaryExit{
 			Epoch:          epoch,
 			ValidatorIndex: validatorIndex,
 		},
@@ -96,11 +96,11 @@ func TestProposeExit_NoPanic(t *testing.T) {
 
 	deposits, keys, err := util.DeterministicDepositsAndKeys(params.BeaconConfig().MinGenesisActiveValidatorCount)
 	require.NoError(t, err)
-	beaconState, err := transition.GenesisBeaconStateCapella(ctx, deposits, 0, &zondpb.Eth1Data{BlockHash: make([]byte, 32)}, &enginev1.ExecutionPayloadCapella{})
+	beaconState, err := transition.GenesisBeaconStateZond(ctx, deposits, 0, &qrysmpb.ExecutionData{BlockHash: make([]byte, 32)}, &enginev1.ExecutionPayloadZond{})
 	require.NoError(t, err)
 	epoch := primitives.Epoch(2048)
 	require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch.Mul(uint64(epoch))))
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
@@ -123,14 +123,14 @@ func TestProposeExit_NoPanic(t *testing.T) {
 	opSub := server.OperationNotifier.OperationFeed().Subscribe(opChannel)
 	defer opSub.Unsubscribe()
 
-	req := &zondpb.SignedVoluntaryExit{}
+	req := &qrysmpb.SignedVoluntaryExit{}
 	_, err = server.ProposeExit(context.Background(), req)
 	require.ErrorContains(t, "voluntary exit does not exist", err, "Expected error for no exit existing")
 
 	// Send the request, expect a result on the state feed.
 	validatorIndex := primitives.ValidatorIndex(0)
-	req = &zondpb.SignedVoluntaryExit{
-		Exit: &zondpb.VoluntaryExit{
+	req = &qrysmpb.SignedVoluntaryExit{
+		Exit: &qrysmpb.VoluntaryExit{
 			Epoch:          epoch,
 			ValidatorIndex: validatorIndex,
 		},
@@ -138,7 +138,7 @@ func TestProposeExit_NoPanic(t *testing.T) {
 
 	_, err = server.ProposeExit(context.Background(), req)
 	require.ErrorContains(t, "invalid signature provided", err, "Expected error for no signature exists")
-	req.Signature = bytesutil.FromBytes2592([field_params.DilithiumPubkeyLength]byte{})
+	req.Signature = bytesutil.FromBytes2592([field_params.MLDSA87PubkeyLength]byte{})
 
 	_, err = server.ProposeExit(context.Background(), req)
 	require.ErrorContains(t, "invalid signature provided", err, "Expected error for invalid signature length")

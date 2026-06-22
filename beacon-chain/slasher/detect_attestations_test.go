@@ -9,15 +9,16 @@ import (
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	"github.com/theQRL/qrysm/beacon-chain/db"
 	dbtest "github.com/theQRL/qrysm/beacon-chain/db/testing"
 	slashingsmock "github.com/theQRL/qrysm/beacon-chain/operations/slashings/mock"
 	slashertypes "github.com/theQRL/qrysm/beacon-chain/slasher/types"
 	"github.com/theQRL/qrysm/beacon-chain/startup"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -187,7 +188,7 @@ func Test_processQueuedAttestations(t *testing.T) {
 			secondsSinceGenesis := time.Duration(totalSlots * params.BeaconConfig().SecondsPerSlot)
 			genesisTime := currentTime.Add(-secondsSinceGenesis * time.Second)
 
-			beaconState, err := util.NewBeaconStateCapella()
+			beaconState, err := util.NewBeaconStateZond()
 			require.NoError(t, err)
 			slot, err := slots.EpochStart(tt.args.currentEpoch)
 			require.NoError(t, err)
@@ -199,15 +200,15 @@ func Test_processQueuedAttestations(t *testing.T) {
 
 			// Initialize validators in the state.
 			numVals := params.BeaconConfig().MinGenesisActiveValidatorCount
-			validators := make([]*zondpb.Validator, numVals)
-			privKeys := make([]dilithium.DilithiumKey, numVals)
+			validators := make([]*qrysmpb.Validator, numVals)
+			privKeys := make([]ml_dsa_87.MLDSA87Key, numVals)
 			for i := range validators {
-				privKey, err := dilithium.RandKey()
+				privKey, err := ml_dsa_87.RandKey()
 				require.NoError(t, err)
 				privKeys[i] = privKey
-				validators[i] = &zondpb.Validator{
+				validators[i] = &qrysmpb.Validator{
 					PublicKey:             privKey.PublicKey().Marshal(),
-					WithdrawalCredentials: make([]byte, 32),
+					WithdrawalCredentials: make([]byte, 64),
 				}
 			}
 			err = beaconState.SetValidators(validators)
@@ -246,16 +247,15 @@ func Test_processQueuedAttestations(t *testing.T) {
 			s.genesisTime = genesisTime
 
 			currentSlotChan := make(chan primitives.Slot)
-			exitChan := make(chan struct{})
+			s.wg.Add(1)
 			go func() {
 				s.processQueuedAttestations(ctx, currentSlotChan)
-				exitChan <- struct{}{}
 			}()
 			s.attsQueue.extend(tt.args.attestationQueue)
 			currentSlotChan <- slot
 			time.Sleep(time.Millisecond * 200)
 			cancel()
-			<-exitChan
+			s.wg.Wait()
 			if tt.shouldNotBeSlashable {
 				require.LogsDoNotContain(t, hook, "Attester slashing detected")
 			} else {
@@ -285,7 +285,7 @@ func Test_processQueuedAttestations_MultipleChunkIndices(t *testing.T) {
 	secondsSinceGenesis := time.Duration(totalSlots * params.BeaconConfig().SecondsPerSlot)
 	genesisTime := currentTime.Add(-secondsSinceGenesis * time.Second)
 
-	beaconState, err := util.NewBeaconStateCapella()
+	beaconState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	mockChain := &mock.ChainService{
 		State: beaconState,
@@ -304,10 +304,9 @@ func Test_processQueuedAttestations_MultipleChunkIndices(t *testing.T) {
 	s.genesisTime = genesisTime
 
 	currentSlotChan := make(chan primitives.Slot)
-	exitChan := make(chan struct{})
+	s.wg.Add(1)
 	go func() {
 		s.processQueuedAttestations(ctx, currentSlotChan)
-		exitChan <- struct{}{}
 	}()
 
 	for i := startEpoch; i <= endEpoch; i++ {
@@ -331,7 +330,7 @@ func Test_processQueuedAttestations_MultipleChunkIndices(t *testing.T) {
 
 	time.Sleep(time.Millisecond * 200)
 	cancel()
-	<-exitChan
+	s.wg.Wait()
 	require.LogsDoNotContain(t, hook, "Slashable offenses found")
 	require.LogsDoNotContain(t, hook, "Could not detect")
 }
@@ -351,7 +350,7 @@ func Test_processQueuedAttestations_OverlappingChunkIndices(t *testing.T) {
 	secondsSinceGenesis := time.Duration(totalSlots * params.BeaconConfig().SecondsPerSlot)
 	genesisTime := currentTime.Add(-secondsSinceGenesis * time.Second)
 
-	beaconState, err := util.NewBeaconStateCapella()
+	beaconState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	mockChain := &mock.ChainService{
 		State: beaconState,
@@ -370,10 +369,9 @@ func Test_processQueuedAttestations_OverlappingChunkIndices(t *testing.T) {
 	s.genesisTime = genesisTime
 
 	currentSlotChan := make(chan primitives.Slot)
-	exitChan := make(chan struct{})
+	s.wg.Add(1)
 	go func() {
 		s.processQueuedAttestations(ctx, currentSlotChan)
-		exitChan <- struct{}{}
 	}()
 
 	// We create two attestations fully spanning chunk indices 0 and chunk 1
@@ -392,7 +390,7 @@ func Test_processQueuedAttestations_OverlappingChunkIndices(t *testing.T) {
 
 	time.Sleep(time.Millisecond * 200)
 	cancel()
-	<-exitChan
+	s.wg.Wait()
 	require.LogsDoNotContain(t, hook, "Slashable offenses found")
 	require.LogsDoNotContain(t, hook, "Could not detect")
 }
@@ -469,6 +467,73 @@ func Test_epochUpdateForValidators(t *testing.T) {
 		_, ok := updatedChunks[1]
 		require.Equal(t, true, ok)
 	})
+
+	// Regression test for upstream PR #13620 cold-boot bound. When a slasher
+	// restarts after a long downtime, latestEpochWrittenForValidator can be
+	// far behind currentEpoch. Without the bound, the inner loop runs once
+	// per epoch in the gap (potentially thousands per validator). With the
+	// bound, it runs at most `historyLength` times. We instrument the chunk
+	// with a counter on Chunk() calls (which are made once per inner
+	// iteration when writing the neutral element) to assert the cap holds.
+	t.Run("cold-boot bound caps loop at historyLength", func(t *testing.T) {
+		validatorIndex := primitives.ValidatorIndex(1)
+		currentEpoch := primitives.Epoch(20)
+		gap := uint64(currentEpoch) - 2 // latestWritten=2, so unbounded loop would iterate 19 times
+
+		// Pre-populate updatedChunks with counting wrappers around empty min-span chunks.
+		// With chunkSize=2 and historyLength=4, chunkIndex(epoch) is in {0, 1}, so we
+		// supply both. getChunk will hit the cache (no DB load) and return our counters.
+		count0 := &countingChunker{inner: EmptyMinSpanChunksSlice(s.params)}
+		count1 := &countingChunker{inner: EmptyMinSpanChunksSlice(s.params)}
+		updatedChunks := map[uint64]Chunker{0: count0, 1: count1}
+
+		s.latestEpochWrittenForValidator = map[primitives.ValidatorIndex]primitives.Epoch{
+			validatorIndex: 2,
+		}
+		require.NoError(t, s.epochUpdateForValidator(
+			ctx,
+			&chunkUpdateArgs{kind: slashertypes.MinSpan, currentEpoch: currentEpoch},
+			updatedChunks,
+			validatorIndex,
+		))
+
+		totalChunkCalls := count0.n + count1.n
+		// With the bound, totalChunkCalls must be at most historyLength.
+		// Without the bound, it would be `gap + 1` = 19.
+		require.Equal(
+			t, true, totalChunkCalls <= int(s.params.historyLength),
+			"expected at most %d Chunk() calls (historyLength), got %d (unbounded would be %d)",
+			s.params.historyLength, totalChunkCalls, gap+1,
+		)
+	})
+}
+
+// countingChunker wraps a Chunker and counts how many times Chunk() is called.
+// Used by Test_epochUpdateForValidators to assert the cold-boot bound caps the
+// inner-loop iteration count at historyLength.
+type countingChunker struct {
+	inner Chunker
+	n     int
+}
+
+func (c *countingChunker) Chunk() []uint16        { c.n++; return c.inner.Chunk() }
+func (c *countingChunker) NeutralElement() uint16 { return c.inner.NeutralElement() }
+func (c *countingChunker) CheckSlashable(
+	ctx context.Context,
+	db db.SlasherDatabase,
+	v primitives.ValidatorIndex,
+	a *slashertypes.IndexedAttestationWrapper,
+) (*qrysmpb.AttesterSlashing, error) {
+	return c.inner.CheckSlashable(ctx, db, v, a)
+}
+func (c *countingChunker) Update(args *chunkUpdateArgs, v primitives.ValidatorIndex, s, t primitives.Epoch) (bool, error) {
+	return c.inner.Update(args, v, s, t)
+}
+func (c *countingChunker) StartEpoch(s, e primitives.Epoch) (primitives.Epoch, bool) {
+	return c.inner.StartEpoch(s, e)
+}
+func (c *countingChunker) NextChunkStartEpoch(s primitives.Epoch) primitives.Epoch {
+	return c.inner.NextChunkStartEpoch(s)
 }
 
 func Test_applyAttestationForValidator_MinSpanChunk(t *testing.T) {
@@ -612,20 +677,15 @@ func Test_checkDoubleVotes_SlashableInputAttestations(t *testing.T) {
 		})
 	require.NoError(t, err)
 
-	prev1 := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{1})
-	cur1 := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{2})
-	prev2 := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{1})
-	cur2 := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{2})
-	wanted := []*zondpb.AttesterSlashing{
-		{
-			Attestation_1: prev1.IndexedAttestation,
-			Attestation_2: cur1.IndexedAttestation,
-		},
-		{
-			Attestation_1: prev2.IndexedAttestation,
-			Attestation_2: cur2.IndexedAttestation,
-		},
+	prev := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{1})
+	cur := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{2})
+	wantedSlashing := &qrysmpb.AttesterSlashing{
+		Attestation_1: prev.IndexedAttestation,
+		Attestation_2: cur.IndexedAttestation,
 	}
+	wantedRoot, err := wantedSlashing.HashTreeRoot()
+	require.NoError(t, err)
+	wanted := map[[32]byte]*qrysmpb.AttesterSlashing{wantedRoot: wantedSlashing}
 	slashings, err := srv.checkDoubleVotes(ctx, atts)
 	require.NoError(t, err)
 	require.DeepEqual(t, wanted, slashings)
@@ -652,20 +712,15 @@ func Test_checkDoubleVotes_SlashableAttestationsOnDisk(t *testing.T) {
 	err = slasherDB.SaveAttestationRecordsForValidators(ctx, prevAtts)
 	require.NoError(t, err)
 
-	prev1 := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{1})
-	cur1 := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{2})
-	prev2 := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{1})
-	cur2 := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{2})
-	wanted := []*zondpb.AttesterSlashing{
-		{
-			Attestation_1: prev1.IndexedAttestation,
-			Attestation_2: cur1.IndexedAttestation,
-		},
-		{
-			Attestation_1: prev2.IndexedAttestation,
-			Attestation_2: cur2.IndexedAttestation,
-		},
+	prev := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{1})
+	cur := createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{2})
+	wantedSlashing := &qrysmpb.AttesterSlashing{
+		Attestation_1: prev.IndexedAttestation,
+		Attestation_2: cur.IndexedAttestation,
 	}
+	wantedRoot, err := wantedSlashing.HashTreeRoot()
+	require.NoError(t, err)
+	wanted := map[[32]byte]*qrysmpb.AttesterSlashing{wantedRoot: wantedSlashing}
 	newAtts := []*slashertypes.IndexedAttestationWrapper{
 		createAttestationWrapper(t, 0, 2, []uint64{1, 2}, []byte{2}), // Different signing root.
 	}
@@ -763,7 +818,7 @@ func TestService_processQueuedAttestations(t *testing.T) {
 	hook := logTest.NewGlobal()
 	slasherDB := dbtest.SetupSlasherDB(t)
 
-	beaconState, err := util.NewBeaconStateCapella()
+	beaconState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	slot, err := slots.EpochStart(1)
 	require.NoError(t, err)
@@ -787,23 +842,22 @@ func TestService_processQueuedAttestations(t *testing.T) {
 	})
 	ctx, cancel := context.WithCancel(context.Background())
 	tickerChan := make(chan primitives.Slot)
-	exitChan := make(chan struct{})
+	s.wg.Add(1)
 	go func() {
 		s.processQueuedAttestations(ctx, tickerChan)
-		exitChan <- struct{}{}
 	}()
 
 	// Send a value over the ticker.
 	tickerChan <- 1
 	cancel()
-	<-exitChan
+	s.wg.Wait()
 	assert.LogsContain(t, hook, "Processing queued")
 }
 
 func BenchmarkCheckSlashableAttestations(b *testing.B) {
 	slasherDB := dbtest.SetupSlasherDB(b)
 
-	beaconState, err := util.NewBeaconStateCapella()
+	beaconState, err := util.NewBeaconStateZond()
 	require.NoError(b, err)
 	slot := primitives.Slot(0)
 	mockChain := &mock.ChainService{
@@ -861,11 +915,11 @@ func BenchmarkCheckSlashableAttestations(b *testing.B) {
 
 func runAttestationsBenchmark(b *testing.B, s *Service, numAtts, numValidators uint64) {
 	indices := make([]uint64, numValidators)
-	for i := uint64(0); i < numValidators; i++ {
+	for i := range numValidators {
 		indices[i] = i
 	}
 	atts := make([]*slashertypes.IndexedAttestationWrapper, numAtts)
-	for i := uint64(0); i < numAtts; i++ {
+	for i := range numAtts {
 		source := primitives.Epoch(i)
 		target := primitives.Epoch(i + 1)
 		var signingRoot [32]byte
@@ -891,13 +945,13 @@ func runAttestationsBenchmark(b *testing.B, s *Service, numAtts, numValidators u
 }
 
 func createAttestationWrapper(t testing.TB, source, target primitives.Epoch, indices []uint64, signingRoot []byte) *slashertypes.IndexedAttestationWrapper {
-	data := &zondpb.AttestationData{
+	data := &qrysmpb.AttestationData{
 		BeaconBlockRoot: bytesutil.PadTo(signingRoot, 32),
-		Source: &zondpb.Checkpoint{
+		Source: &qrysmpb.Checkpoint{
 			Epoch: source,
 			Root:  params.BeaconConfig().ZeroHash[:],
 		},
-		Target: &zondpb.Checkpoint{
+		Target: &qrysmpb.Checkpoint{
 			Epoch: target,
 			Root:  params.BeaconConfig().ZeroHash[:],
 		},
@@ -907,10 +961,10 @@ func createAttestationWrapper(t testing.TB, source, target primitives.Epoch, ind
 		t.Fatal(err)
 	}
 	return &slashertypes.IndexedAttestationWrapper{
-		IndexedAttestation: &zondpb.IndexedAttestation{
+		IndexedAttestation: &qrysmpb.IndexedAttestation{
 			AttestingIndices: indices,
 			Data:             data,
-			Signatures:       [][]byte{params.BeaconConfig().EmptyDilithiumSignature[:]},
+			Signatures:       [][]byte{params.BeaconConfig().EmptyMLDSA87Signature[:]},
 		},
 		SigningRoot: signRoot,
 	}

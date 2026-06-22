@@ -24,7 +24,7 @@ func TestP2PPreregistration_DefaultDataDir(t *testing.T) {
 }
 
 func TestP2PPreregistration(t *testing.T) {
-	sampleNode := "- enr:-TESTNODE"
+	sampleNode := "- qnr:-TESTNODE"
 	testDataDir := "testDataDir"
 
 	file, err := os.CreateTemp(t.TempDir(), "bootstrapFile*.yaml")
@@ -52,12 +52,12 @@ func TestBootStrapNodeFile(t *testing.T) {
 	file, err := os.CreateTemp(t.TempDir(), "bootstrapFile")
 	require.NoError(t, err)
 
-	sampleNode0 := "- enr:-Ku4QMKVC_MowDsmEa20d5uGjrChI0h8_KsKXDmgVQbIbngZV0i" +
+	sampleNode0 := "- qnr:-Ku4QMKVC_MowDsmEa20d5uGjrChI0h8_KsKXDmgVQbIbngZV0i" +
 		"dV6_RL7fEtZGo-kTNZ5o7_EJI_vCPJ6scrhwX0Z4Bh2F0dG5ldHOIAAAAAAAAAACEZXRoMpD" +
 		"1pf1CAAAAAP__________gmlkgnY0gmlwhBLf22SJc2VjcDI1NmsxoQJxCnE6v_x2ekgY_uo" +
 		"E1rtwzvGy40mq9eD66XfHPBWgIIN1ZHCCD6A"
-	sampleNode1 := "- enr:-TESTNODE2"
-	sampleNode2 := "- enr:-TESTNODE3"
+	sampleNode1 := "- qnr:-TESTNODE2"
+	sampleNode2 := "- qnr:-TESTNODE3"
 	err = os.WriteFile(file.Name(), []byte(sampleNode0+"\n"+sampleNode1+"\n"+sampleNode2), 0644)
 	require.NoError(t, err, "Error in WriteFile call")
 	nodeList, err := readbootNodes(file.Name())

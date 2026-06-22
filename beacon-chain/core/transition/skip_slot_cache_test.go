@@ -19,10 +19,10 @@ import (
 func TestSkipSlotCache_OK(t *testing.T) {
 	transition.SkipSlotCache.Enable()
 	defer transition.SkipSlotCache.Disable()
-	bState, privs := util.DeterministicGenesisStateCapella(t, params.MinimalSpecConfig().MinGenesisActiveValidatorCount)
-	pbState, err := state_native.ProtobufBeaconStateCapella(bState.ToProto())
+	bState, privs := util.DeterministicGenesisStateZond(t, params.MinimalSpecConfig().MinGenesisActiveValidatorCount)
+	pbState, err := state_native.ProtobufBeaconStateZond(bState.ToProto())
 	require.NoError(t, err)
-	originalState, err := state_native.InitializeFromProtoCapella(pbState)
+	originalState, err := state_native.InitializeFromProtoZond(pbState)
 	require.NoError(t, err)
 
 	blkCfg := util.DefaultBlockGenConfig()
@@ -30,13 +30,13 @@ func TestSkipSlotCache_OK(t *testing.T) {
 
 	// First transition will be with an empty cache, so the cache becomes populated
 	// with the state
-	blk, err := util.GenerateFullBlockCapella(bState, privs, blkCfg, originalState.Slot()+10)
+	blk, err := util.GenerateFullBlockZond(bState, privs, blkCfg, originalState.Slot()+10)
 	require.NoError(t, err)
 	wsb, err := blocks.NewSignedBeaconBlock(blk)
 	require.NoError(t, err)
 	executedState, err := transition.ExecuteStateTransition(context.Background(), originalState, wsb)
 	require.NoError(t, err, "Could not run state transition")
-	require.Equal(t, true, executedState.Version() == version.Capella)
+	require.Equal(t, true, executedState.Version() == version.Zond)
 	wsb, err = blocks.NewSignedBeaconBlock(blk)
 	require.NoError(t, err)
 	bState, err = transition.ExecuteStateTransition(context.Background(), bState, wsb)
@@ -46,10 +46,10 @@ func TestSkipSlotCache_OK(t *testing.T) {
 }
 
 func TestSkipSlotCache_ConcurrentMixup(t *testing.T) {
-	bState, privs := util.DeterministicGenesisStateCapella(t, params.MinimalSpecConfig().MinGenesisActiveValidatorCount)
-	pbState, err := state_native.ProtobufBeaconStateCapella(bState.ToProto())
+	bState, privs := util.DeterministicGenesisStateZond(t, params.MinimalSpecConfig().MinGenesisActiveValidatorCount)
+	pbState, err := state_native.ProtobufBeaconStateZond(bState.ToProto())
 	require.NoError(t, err)
-	originalState, err := state_native.InitializeFromProtoCapella(pbState)
+	originalState, err := state_native.InitializeFromProtoZond(pbState)
 	require.NoError(t, err)
 
 	blkCfg := util.DefaultBlockGenConfig()
@@ -59,18 +59,18 @@ func TestSkipSlotCache_ConcurrentMixup(t *testing.T) {
 
 	// First transition will be with an empty cache, so the cache becomes populated
 	// with the state
-	blk, err := util.GenerateFullBlockCapella(bState, privs, blkCfg, originalState.Slot()+10)
+	blk, err := util.GenerateFullBlockZond(bState, privs, blkCfg, originalState.Slot()+10)
 	require.NoError(t, err)
 	wsb, err := blocks.NewSignedBeaconBlock(blk)
 	require.NoError(t, err)
 	executedState, err := transition.ExecuteStateTransition(context.Background(), originalState, wsb)
 	require.NoError(t, err, "Could not run state transition")
-	require.Equal(t, true, executedState.Version() == version.Capella)
+	require.Equal(t, true, executedState.Version() == version.Zond)
 
 	// Create two shallow but different forks
 	var s1, s0 state.BeaconState
 	{
-		blk, err := util.GenerateFullBlockCapella(originalState.Copy(), privs, blkCfg, originalState.Slot()+10)
+		blk, err := util.GenerateFullBlockZond(originalState.Copy(), privs, blkCfg, originalState.Slot()+10)
 		require.NoError(t, err)
 		copy(blk.Block.Body.Graffiti, "block 1")
 		signature, err := util.BlockSignature(originalState, blk.Block, privs)
@@ -83,7 +83,7 @@ func TestSkipSlotCache_ConcurrentMixup(t *testing.T) {
 	}
 
 	{
-		blk, err := util.GenerateFullBlockCapella(originalState.Copy(), privs, blkCfg, originalState.Slot()+10)
+		blk, err := util.GenerateFullBlockZond(originalState.Copy(), privs, blkCfg, originalState.Slot()+10)
 		require.NoError(t, err)
 		copy(blk.Block.Body.Graffiti, "block 2")
 		signature, err := util.BlockSignature(originalState, blk.Block, privs)
@@ -109,7 +109,7 @@ func TestSkipSlotCache_ConcurrentMixup(t *testing.T) {
 
 	// prepare copies for both states
 	var setups []state.BeaconState
-	for i := uint64(0); i < 300; i++ {
+	for i := range 300 {
 		var st state.BeaconState
 		if i%2 == 0 {
 			st = s1

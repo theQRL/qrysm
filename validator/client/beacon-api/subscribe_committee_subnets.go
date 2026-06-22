@@ -9,11 +9,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
-func (c beaconApiValidatorClient) subscribeCommitteeSubnets(ctx context.Context, in *zondpb.CommitteeSubnetsSubscribeRequest, validatorIndices []primitives.ValidatorIndex) error {
+func (c beaconApiValidatorClient) subscribeCommitteeSubnets(ctx context.Context, in *qrysmpb.CommitteeSubnetsSubscribeRequest, validatorIndices []primitives.ValidatorIndex) error {
 	if in == nil {
 		return errors.New("committee subnets subscribe request is nil")
 	}
@@ -34,12 +34,12 @@ func (c beaconApiValidatorClient) subscribeCommitteeSubnets(ctx context.Context,
 		if !foundSlot {
 			// Lazily fetch the committeesAtSlot from the beacon node if they are not already in the map
 			epoch := slots.ToEpoch(subscribeSlot)
-			duties, err := c.dutiesProvider.GetAttesterDuties(ctx, epoch, validatorIndices)
+			dutiesResp, err := c.dutiesProvider.GetAttesterDuties(ctx, epoch, validatorIndices)
 			if err != nil {
 				return errors.Wrapf(err, "failed to get duties for epoch `%d`", epoch)
 			}
 
-			for _, duty := range duties {
+			for _, duty := range dutiesResp.Data {
 				dutySlot, err := strconv.ParseUint(duty.Slot, 10, 64)
 				if err != nil {
 					return errors.Wrapf(err, "failed to parse slot `%s`", duty.Slot)
@@ -73,7 +73,7 @@ func (c beaconApiValidatorClient) subscribeCommitteeSubnets(ctx context.Context,
 		return errors.Wrap(err, "failed to marshal committees subscriptions")
 	}
 
-	if _, err := c.jsonRestHandler.PostRestJson(ctx, "/zond/v1/validator/beacon_committee_subscriptions", nil, bytes.NewBuffer(committeeSubscriptionsBytes), nil); err != nil {
+	if _, err := c.jsonRestHandler.PostRestJson(ctx, "/qrl/v1/validator/beacon_committee_subscriptions", nil, bytes.NewBuffer(committeeSubscriptionsBytes), nil); err != nil {
 		return errors.Wrap(err, "failed to send POST data to REST endpoint")
 	}
 

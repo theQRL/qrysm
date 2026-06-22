@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
@@ -41,21 +41,21 @@ func TestStore_Backup(t *testing.T) {
 }
 
 func TestStore_NestedBackup(t *testing.T) {
-	keys := [][field_params.DilithiumPubkeyLength]byte{{'A'}, {'B'}}
+	keys := [][field_params.MLDSA87PubkeyLength]byte{{'A'}, {'B'}}
 	db := setupDB(t, keys)
 	ctx := context.Background()
 	root := [32]byte{1}
-	idxAtt := &zondpb.IndexedAttestation{
+	idxAtt := &qrysmpb.IndexedAttestation{
 		AttestingIndices: nil,
-		Data: &zondpb.AttestationData{
+		Data: &qrysmpb.AttestationData{
 			Slot:            0,
 			CommitteeIndex:  0,
 			BeaconBlockRoot: root[:],
-			Source: &zondpb.Checkpoint{
+			Source: &qrysmpb.Checkpoint{
 				Epoch: 10,
 				Root:  root[:],
 			},
-			Target: &zondpb.Checkpoint{
+			Target: &qrysmpb.Checkpoint{
 				Epoch: 0,
 				Root:  root[:],
 			},

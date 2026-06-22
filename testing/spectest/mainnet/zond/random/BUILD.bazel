@@ -1,0 +1,15 @@
+load("@qrysm//tools/go:def.bzl", "go_test")
+
+go_test(
+    name = "random_test",
+    size = "medium",
+    timeout = "short",
+    srcs = ["random_test.go"],
+    data = glob(
+        ["*.yaml"],
+        allow_empty = True,
+    ) + [
+        #"@consensus_spec_tests_mainnet//:test_data",
+    ],
+    tags = ["spectest"],
+)

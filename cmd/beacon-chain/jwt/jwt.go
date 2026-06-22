@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/cmd"
 	"github.com/theQRL/qrysm/crypto/rand"
 	"github.com/theQRL/qrysm/io/file"

@@ -1,5 +1,5 @@
 [Unit]
-Description=Qrysm Zond Beacon Chain
+Description=Qrysm QRL Beacon Chain
 Wants=network-online.target
 After=network-online.target
 

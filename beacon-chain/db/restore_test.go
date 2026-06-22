@@ -24,14 +24,14 @@ func TestRestore(t *testing.T) {
 
 	backupDb, err := kv.NewKVStore(context.Background(), t.TempDir())
 	require.NoError(t, err)
-	head := util.NewBeaconBlockCapella()
+	head := util.NewBeaconBlockZond()
 	head.Block.Slot = 5000
 	wsb, err := blocks.NewSignedBeaconBlock(head)
 	require.NoError(t, err)
 	require.NoError(t, backupDb.SaveBlock(ctx, wsb))
 	root, err := head.Block.HashTreeRoot()
 	require.NoError(t, err)
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, backupDb.SaveState(ctx, st, root))
 	require.NoError(t, backupDb.SaveHeadBlockRoot(ctx, root))

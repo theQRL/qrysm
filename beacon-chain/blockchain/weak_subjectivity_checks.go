@@ -3,13 +3,14 @@ package blockchain
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/beacon-chain/db/filters"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
@@ -28,7 +29,7 @@ type WeakSubjectivityVerifier struct {
 }
 
 // NewWeakSubjectivityVerifier validates a checkpoint, and if valid, uses it to initialize a weak subjectivity verifier.
-func NewWeakSubjectivityVerifier(wsc *zondpb.Checkpoint, db weakSubjectivityDB) (*WeakSubjectivityVerifier, error) {
+func NewWeakSubjectivityVerifier(wsc *qrysmpb.Checkpoint, db weakSubjectivityDB) (*WeakSubjectivityVerifier, error) {
 	if wsc == nil || len(wsc.Root) == 0 || wsc.Epoch == 0 {
 		log.Debug("--weak-subjectivity-checkpoint not provided")
 		return &WeakSubjectivityVerifier{
@@ -81,12 +82,11 @@ func (v *WeakSubjectivityVerifier) VerifyWeakSubjectivity(ctx context.Context, f
 	if err != nil {
 		return errors.Wrap(err, "error while retrieving block roots to verify weak subjectivity")
 	}
-	for _, root := range roots {
-		if v.root == root {
-			log.Info("Weak subjectivity check has passed!!")
-			v.verified = true
-			return nil
-		}
+	if slices.Contains(roots, v.root) {
+		log.Info("Weak subjectivity check has passed!!")
+		v.verified = true
+		return nil
 	}
+
 	return errors.Wrap(errWSBlockNotFoundInEpoch, fmt.Sprintf("root=%#x, epoch=%d", v.root, v.epoch))
 }

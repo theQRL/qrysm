@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "startup",
     srcs = [
         "clock.go",
         "synchronizer.go",
@@ -9,23 +9,23 @@ go_library(
     importpath = "github.com/theQRL/qrysm/beacon-chain/startup",
     visibility = ["//visibility:public"],
     deps = [
-        "//consensus-types/primitives:go_default_library",
-        "//time/slots:go_default_library",
-        "@com_github_pkg_errors//:go_default_library",
+        "//consensus-types/primitives",
+        "//time/slots",
+        "@com_github_pkg_errors//:errors",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "startup_test",
     srcs = [
         "clock_test.go",
         "synchronizer_test.go",
     ],
-    embed = [":go_default_library"],
+    embed = [":startup"],
     deps = [
-        "//config/params:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//encoding/bytesutil:go_default_library",
-        "//testing/require:go_default_library",
+        "//config/params",
+        "//consensus-types/primitives",
+        "//encoding/bytesutil",
+        "//testing/require",
     ],
 )

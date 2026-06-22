@@ -1,6 +1,11 @@
 package blockchain
 
-import "github.com/pkg/errors"
+import (
+	stderrors "errors"
+
+	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/beacon-chain/verification"
+)
 
 var (
 	// ErrInvalidPayload is returned when the payload is invalid
@@ -24,10 +29,15 @@ var (
 	// errWSBlockNotFoundInEpoch is returned when a block is not found in the WS cache or DB within epoch.
 	errWSBlockNotFoundInEpoch = errors.New("weak subjectivity root not found in db within epoch")
 	// ErrNotDescendantOfFinalized is returned when a block is not a descendant of the finalized checkpoint
-	ErrNotDescendantOfFinalized = invalidBlock{error: errors.New("not descendant of finalized checkpoint")}
+	ErrNotDescendantOfFinalized = errors.New("not descendant of finalized checkpoint")
 	// ErrNotCheckpoint is returned when a given checkpoint is not a
 	// checkpoint in any chain known to forkchoice
 	ErrNotCheckpoint = errors.New("not a checkpoint in forkchoice")
+	// errBlockBeingSynced is returned when a block is being synced.
+	errBlockBeingSynced = errors.New("block is being synced")
+	// errNotGenesisRoot is returned when the root passed to hashForGenesisBlock
+	// is not the genesis block root.
+	errNotGenesisRoot = errors.New("root is not the genesis block root")
 )
 
 // An invalid block is the block that fails state transition based on the core protocol rules.
@@ -72,6 +82,16 @@ func IsInvalidBlock(e error) bool {
 	}
 	var d invalidBlockError
 	return errors.As(e, &d)
+}
+
+// Unwrap ensures that any error wrapped in invalidBlock satisfies
+// errors.Is(err, verification.ErrInvalid). Sync code uses that check to
+// downscore peers that serve invalid blocks during range sync.
+func (e invalidBlock) Unwrap() error {
+	if !stderrors.Is(e.error, verification.ErrInvalid) {
+		return stderrors.Join(e.error, verification.ErrInvalid)
+	}
+	return e.error
 }
 
 // InvalidBlockLVH returns the invalid block last valid hash root. If the error

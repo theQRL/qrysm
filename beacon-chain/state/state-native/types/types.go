@@ -44,12 +44,12 @@ func (f FieldIndex) String() string {
 		return "stateRoots"
 	case HistoricalRoots:
 		return "historicalRoots"
-	case Eth1Data:
-		return "eth1Data"
-	case Eth1DataVotes:
-		return "eth1DataVotes"
-	case Eth1DepositIndex:
-		return "eth1DepositIndex"
+	case ExecutionData:
+		return "executionData"
+	case ExecutionDataVotes:
+		return "executionDataVotes"
+	case ExecutionDepositIndex:
+		return "executionDepositIndex"
 	case Validators:
 		return "validators"
 	case Balances:
@@ -76,8 +76,8 @@ func (f FieldIndex) String() string {
 		return "currentSyncCommittee"
 	case NextSyncCommittee:
 		return "nextSyncCommittee"
-	case LatestExecutionPayloadHeaderCapella:
-		return "LatestExecutionPayloadHeaderCapella"
+	case LatestExecutionPayloadHeaderZond:
+		return "LatestExecutionPayloadHeaderZond"
 	case NextWithdrawalIndex:
 		return "NextWithdrawalIndex"
 	case NextWithdrawalValidatorIndex:
@@ -109,11 +109,11 @@ func (f FieldIndex) RealPosition() int {
 		return 6
 	case HistoricalRoots:
 		return 7
-	case Eth1Data:
+	case ExecutionData:
 		return 8
-	case Eth1DataVotes:
+	case ExecutionDataVotes:
 		return 9
-	case Eth1DepositIndex:
+	case ExecutionDepositIndex:
 		return 10
 	case Validators:
 		return 11
@@ -141,7 +141,7 @@ func (f FieldIndex) RealPosition() int {
 		return 22
 	case NextSyncCommittee:
 		return 23
-	case LatestExecutionPayloadHeaderCapella:
+	case LatestExecutionPayloadHeaderZond:
 		return 24
 	case NextWithdrawalIndex:
 		return 25
@@ -180,9 +180,9 @@ const (
 	BlockRoots
 	StateRoots
 	HistoricalRoots
-	Eth1Data
-	Eth1DataVotes
-	Eth1DepositIndex
+	ExecutionData
+	ExecutionDataVotes
+	ExecutionDepositIndex
 	Validators
 	Balances
 	RandaoMixes
@@ -196,7 +196,7 @@ const (
 	InactivityScores
 	CurrentSyncCommittee
 	NextSyncCommittee
-	LatestExecutionPayloadHeaderCapella
+	LatestExecutionPayloadHeaderZond
 	NextWithdrawalIndex
 	NextWithdrawalValidatorIndex
 	HistoricalSummaries

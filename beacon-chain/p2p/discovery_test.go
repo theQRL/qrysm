@@ -18,9 +18,9 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/go-zond/p2p/discover"
-	"github.com/theQRL/go-zond/p2p/enode"
-	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/go-qrl/p2p/discover"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/beacon-chain/cache"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
@@ -28,12 +28,13 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
 	testp2p "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
 	"github.com/theQRL/qrysm/beacon-chain/startup"
+	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/wrapper"
 	leakybucket "github.com/theQRL/qrysm/container/leaky-bucket"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	qrysmNetwork "github.com/theQRL/qrysm/network"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
@@ -49,6 +50,14 @@ func createAddrAndPrivKey(t *testing.T) (net.IP, *ecdsa.PrivateKey) {
 	ip, err := qrysmNetwork.ExternalIPv4()
 	require.NoError(t, err, "Could not get ip")
 	ipAddr := net.ParseIP(ip)
+	return createPrivKeyForIP(t, ipAddr)
+}
+
+func createLoopbackAddrAndPrivKey(t *testing.T) (net.IP, *ecdsa.PrivateKey) {
+	return createPrivKeyForIP(t, net.ParseIP("127.0.0.1"))
+}
+
+func createPrivKeyForIP(t *testing.T, ipAddr net.IP) (net.IP, *ecdsa.PrivateKey) {
 	temp := t.TempDir()
 	randNum := rand.Int()
 	tempPath := path.Join(temp, strconv.Itoa(randNum))
@@ -122,11 +131,19 @@ func TestStartDiscV5_DiscoverAllPeers(t *testing.T) {
 		}
 	}()
 
-	// Wait for the nodes to have their local routing tables to be populated with the other nodes
-	time.Sleep(discoveryWaitTime)
-
+	// Wait for the nodes to have their local routing tables populated with
+	// the other nodes. discV5 exposes no event hooks, so we poll up to 10s
+	// rather than relying on a fixed sleep. (upstream PR #16395)
 	lastListener := listeners[len(listeners)-1]
-	nodes := lastListener.Lookup(bootNode.ID())
+	var nodes []*qnode.Node
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
+		nodes = lastListener.Lookup(bootNode.ID())
+		if len(nodes) >= 4 {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 	if len(nodes) < 4 {
 		t.Errorf("The node's local table doesn't have the expected number of nodes. "+
 			"Expected more than or equal to %d but got %d", 4, len(nodes))
@@ -142,7 +159,7 @@ func TestMultiAddrsConversion_InvalidIPAddr(t *testing.T) {
 	}
 	node, err := s.createLocalNode(pkey, addr, 0, 0)
 	require.NoError(t, err)
-	multiAddr := convertToMultiAddr([]*enode.Node{node.Node()})
+	multiAddr := convertToMultiAddr([]*qnode.Node{node.Node()})
 	assert.Equal(t, 0, len(multiAddr), "Invalid ip address converted successfully")
 }
 
@@ -161,7 +178,7 @@ func TestMultiAddrConversion_OK(t *testing.T) {
 	require.NoError(t, err)
 	defer listener.Close()
 
-	_ = convertToMultiAddr([]*enode.Node{listener.Self()})
+	_ = convertToMultiAddr([]*qnode.Node{listener.Self()})
 	require.LogsDoNotContain(t, hook, "Node doesn't have an ip4 address")
 	require.LogsDoNotContain(t, hook, "Invalid port, the tcp port of the node is a reserved port")
 	require.LogsDoNotContain(t, hook, "Could not get multiaddr")
@@ -214,16 +231,18 @@ func TestStaticPeering_PeersAreAdded(t *testing.T) {
 	exitRoutine <- true
 }
 
-// NOTE(rgeraldes24): this test might fail due to a new IP
 func TestHostIsResolved(t *testing.T) {
-	// As defined in RFC 2606 , example.org is a
-	// reserved example domain name.
-	exampleHost := "example.org"
-	exampleIP := "93.184.215.14"
+	host := "dns.google"
+	ips := map[string]bool{
+		"8.8.8.8":              true,
+		"8.8.4.4":              true,
+		"2001:4860:4860::8888": true,
+		"2001:4860:4860::8844": true,
+	}
 
 	s := &Service{
 		cfg: &Config{
-			HostDNS: exampleHost,
+			HostDNS: host,
 		},
 		genesisTime:           time.Now(),
 		genesisValidatorsRoot: bytesutil.PadTo([]byte{'A'}, 32),
@@ -233,7 +252,7 @@ func TestHostIsResolved(t *testing.T) {
 	require.NoError(t, err)
 
 	newIP := list.Self().IP()
-	assert.Equal(t, exampleIP, newIP.String(), "Did not resolve to expected IP")
+	assert.Equal(t, true, ips[newIP.String()], "Did not resolve to expected IP")
 }
 
 func TestInboundPeerLimit(t *testing.T) {
@@ -248,15 +267,15 @@ func TestInboundPeerLimit(t *testing.T) {
 		host: fakePeer.BHost,
 	}
 
-	for i := 0; i < 30; i++ {
-		_ = addPeer(t, s.peers, peerdata.PeerConnectionState(zondpb.ConnectionState_CONNECTED))
+	for range 30 {
+		_ = addPeer(t, s.peers, peerdata.PeerConnectionState(qrysmpb.ConnectionState_CONNECTED))
 	}
 
 	require.Equal(t, true, s.isPeerAtLimit(false), "not at limit for outbound peers")
 	require.Equal(t, false, s.isPeerAtLimit(true), "at limit for inbound peers")
 
-	for i := 0; i < highWatermarkBuffer; i++ {
-		_ = addPeer(t, s.peers, peerdata.PeerConnectionState(zondpb.ConnectionState_CONNECTED))
+	for range highWatermarkBuffer {
+		_ = addPeer(t, s.peers, peerdata.PeerConnectionState(qrysmpb.ConnectionState_CONNECTED))
 	}
 
 	require.Equal(t, true, s.isPeerAtLimit(true), "not at limit for inbound peers")
@@ -285,12 +304,12 @@ func TestUDPMultiAddress(t *testing.T) {
 }
 
 func TestMultipleDiscoveryAddresses(t *testing.T) {
-	db, err := enode.OpenDB(t.TempDir())
+	db, err := qnode.OpenDB(t.TempDir())
 	require.NoError(t, err)
 	_, key := createAddrAndPrivKey(t)
-	node := enode.NewLocalNode(db, key)
-	node.Set(enr.IPv4{127, 0, 0, 1})
-	node.Set(enr.IPv6{0x20, 0x01, 0x48, 0x60, 0, 0, 0x20, 0x01, 0, 0, 0, 0, 0, 0, 0x00, 0x68})
+	node := qnode.NewLocalNode(db, key)
+	node.Set(qnr.IPv4{127, 0, 0, 1})
+	node.Set(qnr.IPv6{0x20, 0x01, 0x48, 0x60, 0, 0, 0x20, 0x01, 0, 0, 0, 0, 0, 0, 0x00, 0x68})
 	s := &Service{dv5Listener: mockListener{localNode: node}}
 
 	multiAddresses, err := s.DiscoveryAddresses()
@@ -328,16 +347,16 @@ func addPeer(t *testing.T, p *peers.Status, state peerdata.PeerConnectionState) 
 	mhBytes = append(mhBytes, idBytes...)
 	id, err := peer.IDFromBytes(mhBytes)
 	require.NoError(t, err)
-	p.Add(new(enr.Record), id, nil, network.DirInbound)
+	p.Add(new(qnr.Record), id, nil, network.DirInbound)
 	p.SetConnectionState(id, state)
-	p.SetMetadata(id, wrapper.WrappedMetadataV0(&zondpb.MetaDataV0{
+	p.SetMetadata(id, wrapper.WrappedMetadataV1(&qrysmpb.MetaDataV1{
 		SeqNumber: 0,
 		Attnets:   bitfield.NewBitvector64(),
 	}))
 	return id
 }
 
-func TestRefreshENR_ForkBoundaries(t *testing.T) {
+func TestRefreshQNR_ForkBoundaries(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	// Clean up caches after usage.
 	defer cache.SubnetIDs.EmptyAllCaches()
@@ -360,8 +379,8 @@ func TestRefreshENR_ForkBoundaries(t *testing.T) {
 				listener, err := s.createListener(ipAddr, pkey)
 				assert.NoError(t, err)
 				s.dv5Listener = listener
-				s.metaData = wrapper.WrappedMetadataV0(new(zondpb.MetaDataV0))
-				s.updateSubnetRecordWithMetadata([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+				s.metaData = wrapper.WrappedMetadataV1(new(qrysmpb.MetaDataV1))
+				s.updateSubnetRecordWithMetadata([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, []byte{})
 				return s
 			},
 			postValidation: func(t *testing.T, s *Service) {
@@ -381,8 +400,8 @@ func TestRefreshENR_ForkBoundaries(t *testing.T) {
 				listener, err := s.createListener(ipAddr, pkey)
 				assert.NoError(t, err)
 				s.dv5Listener = listener
-				s.metaData = wrapper.WrappedMetadataV0(new(zondpb.MetaDataV0))
-				s.updateSubnetRecordWithMetadata([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01})
+				s.metaData = wrapper.WrappedMetadataV1(new(qrysmpb.MetaDataV1))
+				s.updateSubnetRecordWithMetadata([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}, []byte{})
 				cache.SubnetIDs.AddPersistentCommittee([]byte{'A'}, []uint64{1, 2, 3, 23}, 0)
 				return s
 			},
@@ -407,13 +426,13 @@ func TestRefreshENR_ForkBoundaries(t *testing.T) {
 				params.BeaconConfig().InitializeForkSchedule()
 
 				s.dv5Listener = listener
-				s.metaData = wrapper.WrappedMetadataV0(new(zondpb.MetaDataV0))
-				s.updateSubnetRecordWithMetadata([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01})
+				s.metaData = wrapper.WrappedMetadataV1(new(qrysmpb.MetaDataV1))
+				s.updateSubnetRecordWithMetadata([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}, []byte{})
 				cache.SubnetIDs.AddPersistentCommittee([]byte{'A'}, []uint64{1, 2, 3, 23}, 0)
 				return s
 			},
 			postValidation: func(t *testing.T, s *Service) {
-				assert.Equal(t, version.Altair, s.metaData.Version())
+				assert.Equal(t, version.Zond, s.metaData.Version())
 				assert.DeepEqual(t, bitfield.Bitvector4{0x00}, s.metaData.MetadataObjV1().Syncnets)
 				assert.DeepEqual(t, bitfield.Bitvector64{0xe, 0x0, 0x80, 0x0, 0x0, 0x0, 0x0, 0x0}, s.metaData.AttnetsBitfield())
 			},
@@ -435,12 +454,12 @@ func TestRefreshENR_ForkBoundaries(t *testing.T) {
 				params.BeaconConfig().InitializeForkSchedule()
 
 				s.dv5Listener = listener
-				s.metaData = wrapper.WrappedMetadataV0(new(zondpb.MetaDataV0))
-				s.updateSubnetRecordWithMetadata([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+				s.metaData = wrapper.WrappedMetadataV1(new(qrysmpb.MetaDataV1))
+				s.updateSubnetRecordWithMetadata([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, []byte{})
 				return s
 			},
 			postValidation: func(t *testing.T, s *Service) {
-				assert.Equal(t, version.Altair, s.metaData.Version())
+				assert.Equal(t, version.Zond, s.metaData.Version())
 				assert.DeepEqual(t, bitfield.Bitvector4{0x00}, s.metaData.MetadataObjV1().Syncnets)
 				assert.DeepEqual(t, bitfield.Bitvector64{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}, s.metaData.AttnetsBitfield())
 			},
@@ -462,27 +481,82 @@ func TestRefreshENR_ForkBoundaries(t *testing.T) {
 				params.BeaconConfig().InitializeForkSchedule()
 
 				s.dv5Listener = listener
-				s.metaData = wrapper.WrappedMetadataV0(new(zondpb.MetaDataV0))
-				s.updateSubnetRecordWithMetadata([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+				s.metaData = wrapper.WrappedMetadataV1(new(qrysmpb.MetaDataV1))
+				s.updateSubnetRecordWithMetadata([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, []byte{})
 				cache.SubnetIDs.AddPersistentCommittee([]byte{'A'}, []uint64{1, 2, 3, 23}, 0)
 				cache.SyncSubnetIDs.AddSyncCommitteeSubnets([]byte{'A'}, 0, []uint64{0, 1}, 0)
 				return s
 			},
 			postValidation: func(t *testing.T, s *Service) {
-				assert.Equal(t, version.Altair, s.metaData.Version())
+				assert.Equal(t, version.Zond, s.metaData.Version())
 				assert.DeepEqual(t, bitfield.Bitvector4{0x03}, s.metaData.MetadataObjV1().Syncnets)
 				assert.DeepEqual(t, bitfield.Bitvector64{0xe, 0x0, 0x80, 0x0, 0x0, 0x0, 0x0, 0x0}, s.metaData.AttnetsBitfield())
+			},
+		},
+		{
+			name: "subscribe all subnets advertises all bitfields",
+			svcBuilder: func(t *testing.T) *Service {
+				flags.Init(&flags.GlobalFlags{SubscribeToAllSubnets: true})
+				t.Cleanup(func() {
+					flags.Init(new(flags.GlobalFlags))
+				})
+
+				port := 2000
+				ipAddr, pkey := createLoopbackAddrAndPrivKey(t)
+				s := &Service{
+					genesisTime:           time.Now().Add(-6 * oneEpochDuration()),
+					genesisValidatorsRoot: bytesutil.PadTo([]byte{'A'}, 32),
+					cfg:                   &Config{UDPPort: uint(port)},
+				}
+				localNode, err := s.createLocalNode(pkey, ipAddr, port, port)
+				assert.NoError(t, err)
+
+				s.dv5Listener = mockListener{localNode: localNode}
+				s.metaData = wrapper.WrappedMetadataV1(new(qrysmpb.MetaDataV1))
+				return s
+			},
+			postValidation: func(t *testing.T, s *Service) {
+				assert.DeepEqual(t, allAttestationSubnetsBitfield(), s.metaData.AttnetsBitfield())
+				assert.DeepEqual(t, allSyncCommitteeSubnetsBitfield(), s.metaData.MetadataObjV1().Syncnets)
+
+				recordAttnets, err := attBitvector(s.dv5Listener.Self().Record())
+				require.NoError(t, err)
+				recordSyncnets, err := syncBitvector(s.dv5Listener.Self().Record())
+				require.NoError(t, err)
+				assert.DeepEqual(t, allAttestationSubnetsBitfield(), recordAttnets)
+				assert.DeepEqual(t, allSyncCommitteeSubnetsBitfield(), recordSyncnets)
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := tt.svcBuilder(t)
-			s.RefreshENR()
+			s.RefreshQNR()
 			tt.postValidation(t, s)
-			s.dv5Listener.Close()
+			if s.dv5Listener != nil {
+				s.dv5Listener.Close()
+			}
 			cache.SubnetIDs.EmptyAllCaches()
 			cache.SyncSubnetIDs.EmptyAllCaches()
 		})
 	}
+}
+
+func TestRefreshQNR_NoDiscoveryUpdatesMetadataWhenSubscribingAllSubnets(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	flags.Init(&flags.GlobalFlags{SubscribeToAllSubnets: true})
+	t.Cleanup(func() {
+		flags.Init(new(flags.GlobalFlags))
+	})
+
+	s := &Service{
+		genesisTime:           time.Now(),
+		genesisValidatorsRoot: bytesutil.PadTo([]byte{'A'}, 32),
+		metaData:              wrapper.WrappedMetadataV1(new(qrysmpb.MetaDataV1)),
+	}
+
+	s.RefreshQNR()
+
+	assert.DeepEqual(t, allAttestationSubnetsBitfield(), s.metaData.AttnetsBitfield())
+	assert.DeepEqual(t, allSyncCommitteeSubnetsBitfield(), s.metaData.MetadataObjV1().Syncnets)
 }

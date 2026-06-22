@@ -1,10 +1,10 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "mock",
     testonly = True,
     srcs = ["password_reader_mock.go"],
     importpath = "github.com/theQRL/qrysm/cmd/mock",
     visibility = ["//visibility:public"],
-    deps = ["@com_github_golang_mock//gomock:go_default_library"],
+    deps = ["@org_uber_go_mock//gomock"],
 )

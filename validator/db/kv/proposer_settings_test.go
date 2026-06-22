@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	validatorServiceConfig "github.com/theQRL/qrysm/config/validator/service"
@@ -15,19 +15,19 @@ import (
 )
 
 func TestStore_ProposerSettings_ReadAndWrite(t *testing.T) {
-	recipient0, err := common.NewAddressFromString("Z50155530FCE8a85ec7055A5F8b2bE214B3DaeFd3")
+	recipient0, err := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000050155530fCE8A85Ec7055a5F8B2be214B3daEFd3")
 	require.NoError(t, err)
-	recipient1, err := common.NewAddressFromString("Z6e35733c5af9B61374A128e6F85f553aF09ff89A")
+	recipient1, err := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000006e35733c5af9B61374A128e6F85f553aF09ff89A")
 	require.NoError(t, err)
-	recipient2, err := common.NewAddressFromString("Z9995733c5af9B61374A128e6F85f553aF09ff89B")
+	recipient2, err := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000009995733c5af9B61374A128e6F85f553aF09ff89B")
 	require.NoError(t, err)
 	t.Run("save to db in full", func(t *testing.T) {
 		ctx := context.Background()
-		db := setupDB(t, [][field_params.DilithiumPubkeyLength]byte{})
+		db := setupDB(t, [][field_params.MLDSA87PubkeyLength]byte{})
 		key1, err := hexutil.Decode("0xa057816155ad77931185101128655c0191bd0214c201ca48ed887f6c4c6adf334070efcd75140eada5ac83a92506dd7a")
 		require.NoError(t, err)
 		settings := &validatorServiceConfig.ProposerSettings{
-			ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorServiceConfig.ProposerOption{
+			ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorServiceConfig.ProposerOption{
 				bytesutil.ToBytes2592(key1): {
 					FeeRecipientConfig: &validatorServiceConfig.FeeRecipientConfig{
 						FeeRecipient: recipient0,
@@ -57,7 +57,7 @@ func TestStore_ProposerSettings_ReadAndWrite(t *testing.T) {
 	})
 	t.Run("update default settings then update at specific key", func(t *testing.T) {
 		ctx := context.Background()
-		db := setupDB(t, [][field_params.DilithiumPubkeyLength]byte{})
+		db := setupDB(t, [][field_params.MLDSA87PubkeyLength]byte{})
 		key1, err := hexutil.Decode("0xa057816155ad77931185101128655c0191bd0214c201ca48ed887f6c4c6adf334070efcd75140eada5ac83a92506dd7a")
 		require.NoError(t, err)
 		settings := &validatorServiceConfig.ProposerSettings{

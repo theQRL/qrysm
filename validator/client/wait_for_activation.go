@@ -7,12 +7,9 @@ import (
 
 	"github.com/pkg/errors"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
-	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	"github.com/theQRL/qrysm/math"
 	"github.com/theQRL/qrysm/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/time/slots"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 
@@ -22,10 +19,10 @@ import (
 // from the gRPC server.
 //
 // If the channel parameter is nil, WaitForActivation creates and manages its own channel.
-func (v *validator) WaitForActivation(ctx context.Context, accountsChangedChan chan [][field_params.DilithiumPubkeyLength]byte) error {
+func (v *validator) WaitForActivation(ctx context.Context, accountsChangedChan chan [][field_params.MLDSA87PubkeyLength]byte) error {
 	// Monitor the key manager for updates.
 	if accountsChangedChan == nil {
-		accountsChangedChan = make(chan [][field_params.DilithiumPubkeyLength]byte, 1)
+		accountsChangedChan = make(chan [][field_params.MLDSA87PubkeyLength]byte, 1)
 		km, err := v.Keymanager()
 		if err != nil {
 			return err
@@ -41,13 +38,14 @@ func (v *validator) WaitForActivation(ctx context.Context, accountsChangedChan c
 }
 
 // internalWaitForActivation performs the following:
-// 1) While the key manager is empty, poll the key manager until some validator keys exist.
+// 1) While the key manager is empty, wait for account updates or periodically refetch
+// the key manager until some validator keys exist.
 // 2) Open a server side stream for activation events against the given keys.
 // 3) In another go routine, the key manager is monitored for updates and emits an update event on
 // the accountsChangedChan. When an event signal is received, restart the internalWaitForActivation routine.
 // 4) If the stream is reset in error, restart the routine.
 // 5) If the stream returns a response indicating one or more validators are active, exit the routine.
-func (v *validator) internalWaitForActivation(ctx context.Context, accountsChangedChan <-chan [][field_params.DilithiumPubkeyLength]byte) error {
+func (v *validator) internalWaitForActivation(ctx context.Context, accountsChangedChan <-chan [][field_params.MLDSA87PubkeyLength]byte) error {
 	ctx, span := trace.StartSpan(ctx, "validator.WaitForActivation")
 	defer span.End()
 
@@ -62,24 +60,25 @@ func (v *validator) internalWaitForActivation(ctx context.Context, accountsChang
 		defer ticker.Stop()
 		for {
 			select {
+			case <-accountsChangedChan:
 			case <-ticker.C:
-				validatingKeys, err = v.keyManager.FetchValidatingPublicKeys(ctx)
-				if err != nil {
-					return errors.Wrap(err, msgCouldNotFetchKeys)
-				}
-				if len(validatingKeys) == 0 {
-					log.Warn(msgNoKeysFetched)
-					continue
-				}
 			case <-ctx.Done():
 				log.Debug("Context closed, exiting fetching validating keys")
 				return ctx.Err()
+			}
+			validatingKeys, err = v.keyManager.FetchValidatingPublicKeys(ctx)
+			if err != nil {
+				return errors.Wrap(err, msgCouldNotFetchKeys)
+			}
+			if len(validatingKeys) == 0 {
+				log.Warn(msgNoKeysFetched)
+				continue
 			}
 			break
 		}
 	}
 
-	req := &zondpb.ValidatorActivationRequest{
+	req := &qrysmpb.ValidatorActivationRequest{
 		PublicKeys: bytesutil.FromBytes2592Array(validatingKeys),
 	}
 	stream, err := v.validatorClient.WaitForActivation(ctx, req)
@@ -89,7 +88,7 @@ func (v *validator) internalWaitForActivation(ctx context.Context, accountsChang
 		log.WithError(err).WithField("attempts", attempts).
 			Error("Stream broken while waiting for activation. Reconnecting...")
 		// Reconnection attempt backoff, up to 60s.
-		time.Sleep(time.Second * time.Duration(math.Min(uint64(attempts), 60)))
+		time.Sleep(time.Second * time.Duration(min(uint64(attempts), 60)))
 		return v.internalWaitForActivation(incrementRetries(ctx), accountsChangedChan)
 	}
 
@@ -97,11 +96,11 @@ func (v *validator) internalWaitForActivation(ctx context.Context, accountsChang
 		return err
 	}
 
-	v.ticker = slots.NewSlotTicker(time.Unix(int64(v.genesisTime), 0), params.BeaconConfig().SecondsPerSlot)
+	v.SetTicker()
 	return nil
 }
 
-func (v *validator) handleAccountsChanged(ctx context.Context, accountsChangedChan <-chan [][field_params.DilithiumPubkeyLength]byte, stream *zondpb.BeaconNodeValidator_WaitForActivationClient, span *trace.Span) error {
+func (v *validator) handleAccountsChanged(ctx context.Context, accountsChangedChan <-chan [][field_params.MLDSA87PubkeyLength]byte, stream *qrysmpb.BeaconNodeValidator_WaitForActivationClient, span *trace.Span) error {
 	for {
 		select {
 		case <-accountsChangedChan:
@@ -123,7 +122,7 @@ func (v *validator) handleAccountsChanged(ctx context.Context, accountsChangedCh
 				log.WithError(err).WithField("attempts", attempts).
 					Error("Stream broken while waiting for activation. Reconnecting...")
 				// Reconnection attempt backoff, up to 60s.
-				time.Sleep(time.Second * time.Duration(math.Min(uint64(attempts), 60)))
+				time.Sleep(time.Second * time.Duration(min(uint64(attempts), 60)))
 				return v.internalWaitForActivation(incrementRetries(ctx), accountsChangedChan)
 			}
 
@@ -136,7 +135,7 @@ func (v *validator) handleAccountsChanged(ctx context.Context, accountsChangedCh
 				}
 			}
 
-			vals, err := v.beaconClient.ListValidators(ctx, &zondpb.ListValidatorsRequest{Active: true, PageSize: 0})
+			vals, err := v.beaconClient.ListValidators(ctx, &qrysmpb.ListValidatorsRequest{Active: true, PageSize: 0})
 			if err != nil {
 				return errors.Wrap(err, "could not get active validator count")
 			}

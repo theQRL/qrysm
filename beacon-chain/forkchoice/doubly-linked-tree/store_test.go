@@ -133,7 +133,9 @@ func TestStore_Insert(t *testing.T) {
 	fc := &forkchoicetypes.Checkpoint{Epoch: 0}
 	s := &Store{nodeByRoot: nodeByRoot, treeRootNode: treeRootNode, nodeByPayload: nodeByPayload, justifiedCheckpoint: jc, finalizedCheckpoint: fc, highestReceivedNode: &Node{}}
 	payloadHash := [32]byte{'a'}
-	_, err := s.insert(context.Background(), 100, indexToHash(100), indexToHash(0), payloadHash, 1, 1)
+	_, blk, err := prepareForkchoiceState(context.Background(), 100, indexToHash(100), indexToHash(0), payloadHash, 1, 1)
+	require.NoError(t, err)
+	_, err = s.insert(context.Background(), blk, 1, 1)
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(s.nodeByRoot), "Did not insert block")
 	assert.Equal(t, (*Node)(nil), treeRootNode.parent, "Incorrect parent")
@@ -327,7 +329,9 @@ func TestForkChoice_ReceivedBlocksLastEpoch(t *testing.T) {
 
 	// Make sure it doesn't underflow
 	s.genesisTime = uint64(time.Now().Add(time.Duration(-1*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
-	_, err := s.insert(context.Background(), 1, [32]byte{'a'}, b, b, 1, 1)
+	_, blk, err := prepareForkchoiceState(context.Background(), 1, [32]byte{'a'}, b, b, 1, 1)
+	require.NoError(t, err)
+	_, err = s.insert(context.Background(), blk, 1, 1)
 	require.NoError(t, err)
 	count, err := f.ReceivedBlocksLastEpoch()
 	require.NoError(t, err)
@@ -336,7 +340,9 @@ func TestForkChoice_ReceivedBlocksLastEpoch(t *testing.T) {
 
 	// 256
 	// Received block last epoch is 1
-	_, err = s.insert(context.Background(), 256, [32]byte{'A'}, b, b, 1, 1)
+	_, blk, err = prepareForkchoiceState(context.Background(), 256, [32]byte{'A'}, b, b, 1, 1)
+	require.NoError(t, err)
+	_, err = s.insert(context.Background(), blk, 1, 1)
 	require.NoError(t, err)
 	s.genesisTime = uint64(time.Now().Add(time.Duration(-256*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()
@@ -346,7 +352,9 @@ func TestForkChoice_ReceivedBlocksLastEpoch(t *testing.T) {
 
 	// 256 257
 	// Received block last epoch is 2
-	_, err = s.insert(context.Background(), 257, [32]byte{'B'}, b, b, 1, 1)
+	_, blk, err = prepareForkchoiceState(context.Background(), 257, [32]byte{'B'}, b, b, 1, 1)
+	require.NoError(t, err)
+	_, err = s.insert(context.Background(), blk, 1, 1)
 	require.NoError(t, err)
 	s.genesisTime = uint64(time.Now().Add(time.Duration(-257*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()
@@ -356,7 +364,9 @@ func TestForkChoice_ReceivedBlocksLastEpoch(t *testing.T) {
 
 	// 256 257 258
 	// Received block last epoch is 3
-	_, err = s.insert(context.Background(), 258, [32]byte{'C'}, b, b, 1, 1)
+	_, blk, err = prepareForkchoiceState(context.Background(), 258, [32]byte{'C'}, b, b, 1, 1)
+	require.NoError(t, err)
+	_, err = s.insert(context.Background(), blk, 1, 1)
 	require.NoError(t, err)
 	s.genesisTime = uint64(time.Now().Add(time.Duration(-258*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()
@@ -367,7 +377,9 @@ func TestForkChoice_ReceivedBlocksLastEpoch(t *testing.T) {
 	// 256 257 258
 	//       386
 	// Received block last epoch is 1
-	_, err = s.insert(context.Background(), 386, [32]byte{'D'}, b, b, 1, 1)
+	_, blk, err = prepareForkchoiceState(context.Background(), 386, [32]byte{'D'}, b, b, 1, 1)
+	require.NoError(t, err)
+	_, err = s.insert(context.Background(), blk, 1, 1)
 	require.NoError(t, err)
 	s.genesisTime = uint64(time.Now().Add(time.Duration(-386*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()
@@ -379,7 +391,9 @@ func TestForkChoice_ReceivedBlocksLastEpoch(t *testing.T) {
 	//       386
 	//              516
 	// Received block last epoch is 1
-	_, err = s.insert(context.Background(), 516, [32]byte{'E'}, b, b, 1, 1)
+	_, blk, err = prepareForkchoiceState(context.Background(), 516, [32]byte{'E'}, b, b, 1, 1)
+	require.NoError(t, err)
+	_, err = s.insert(context.Background(), blk, 1, 1)
 	require.NoError(t, err)
 	s.genesisTime = uint64(time.Now().Add(time.Duration(-516*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()
@@ -392,7 +406,9 @@ func TestForkChoice_ReceivedBlocksLastEpoch(t *testing.T) {
 	//              516
 	//       387
 	// Received block last epoch is still 1. 387 is outside the window
-	_, err = s.insert(context.Background(), 387, [32]byte{'F'}, b, b, 1, 1)
+	_, blk, err = prepareForkchoiceState(context.Background(), 387, [32]byte{'F'}, b, b, 1, 1)
+	require.NoError(t, err)
+	_, err = s.insert(context.Background(), blk, 1, 1)
 	require.NoError(t, err)
 	s.genesisTime = uint64(time.Now().Add(time.Duration(-516*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()
@@ -405,7 +421,9 @@ func TestForkChoice_ReceivedBlocksLastEpoch(t *testing.T) {
 	//              516
 	//       387 388
 	// Received block last epoch is still 1. 388 is at the same position as 132
-	_, err = s.insert(context.Background(), 388, [32]byte{'G'}, b, b, 1, 1)
+	_, blk, err = prepareForkchoiceState(context.Background(), 388, [32]byte{'G'}, b, b, 1, 1)
+	require.NoError(t, err)
+	_, err = s.insert(context.Background(), blk, 1, 1)
 	require.NoError(t, err)
 	s.genesisTime = uint64(time.Now().Add(time.Duration(-516*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()
@@ -418,7 +436,9 @@ func TestForkChoice_ReceivedBlocksLastEpoch(t *testing.T) {
 	//              516
 	//       387 388 389
 	// Received block last epoch is 2. 389 is within the window
-	_, err = s.insert(context.Background(), 389, [32]byte{'H'}, b, b, 1, 1)
+	_, blk, err = prepareForkchoiceState(context.Background(), 389, [32]byte{'H'}, b, b, 1, 1)
+	require.NoError(t, err)
+	_, err = s.insert(context.Background(), blk, 1, 1)
 	require.NoError(t, err)
 	s.genesisTime = uint64(time.Now().Add(time.Duration(-516*int64(params.BeaconConfig().SecondsPerSlot)) * time.Second).Unix())
 	count, err = f.ReceivedBlocksLastEpoch()

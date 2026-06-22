@@ -19,15 +19,16 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/go-zond/zondclient"
+	"github.com/theQRL/go-qrl/qrlclient"
+	"github.com/theQRL/go-qrl/rpc"
 	"github.com/theQRL/qrysm/config/params"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
 	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
 	"github.com/theQRL/qrysm/time/slots"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 const (
@@ -290,7 +291,7 @@ func writeURLRespAtPath(url, fp string) error {
 func NewLocalConnection(ctx context.Context, port int) (*grpc.ClientConn, error) {
 	endpoint := fmt.Sprintf("127.0.0.1:%d", port)
 	dialOpts := []grpc.DialOption{
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 	conn, err := grpc.DialContext(ctx, endpoint, dialOpts...)
 	if err != nil {
@@ -302,7 +303,7 @@ func NewLocalConnection(ctx context.Context, port int) (*grpc.ClientConn, error)
 // NewLocalConnections returns number of GRPC connections, along with function to close all of them.
 func NewLocalConnections(ctx context.Context, numConns int) ([]*grpc.ClientConn, func(), error) {
 	conns := make([]*grpc.ClientConn, numConns)
-	for i := 0; i < len(conns); i++ {
+	for i := range conns {
 		conn, err := NewLocalConnection(ctx, e2e.TestParams.Ports.QrysmBeaconNodeRPCPort+i)
 		if err != nil {
 			return nil, nil, err
@@ -321,7 +322,7 @@ func NewLocalConnections(ctx context.Context, numConns int) ([]*grpc.ClientConn,
 // BeaconAPIHostnames constructs a hostname:port string for the
 func BeaconAPIHostnames(numConns int) []string {
 	hostnames := make([]string, 0)
-	for i := 0; i < numConns; i++ {
+	for i := range numConns {
 		port := e2e.TestParams.Ports.QrysmBeaconNodeGatewayPort + i
 		hostnames = append(hostnames, net.JoinHostPort("127.0.0.1", strconv.Itoa(port)))
 	}
@@ -342,7 +343,7 @@ func ComponentsStarted(ctx context.Context, comps []e2etypes.ComponentRunner) er
 }
 
 // EpochTickerStartTime calculates the best time to start epoch ticker for a given genesis.
-func EpochTickerStartTime(genesis *zond.Genesis) time.Time {
+func EpochTickerStartTime(genesis *qrysmpb.Genesis) time.Time {
 	epochSeconds := uint64(params.BeaconConfig().SlotsPerEpoch.Mul(params.BeaconConfig().SecondsPerSlot))
 	epochSecondsHalf := time.Duration(int64(epochSeconds*1000)/2) * time.Millisecond
 	// Adding a half slot here to ensure the requests are in the middle of an epoch.
@@ -357,7 +358,6 @@ func WaitOnNodes(ctx context.Context, nodes []e2etypes.ComponentRunner, nodesSta
 	// Start nodes.
 	g, ctx := errgroup.WithContext(ctx)
 	for _, node := range nodes {
-		node := node
 		g.Go(func() error {
 			return node.Start(ctx)
 		})
@@ -381,10 +381,10 @@ func WaitOnNodes(ctx context.Context, nodes []e2etypes.ComponentRunner, nodesSta
 	return g.Wait()
 }
 
-func ExecutionNodeRPCClient() (*zondclient.Client, error) {
+func ExecutionNodeRPCClient() (*qrlclient.Client, error) {
 	client, err := rpc.Dial(e2e.TestParams.ExecutionNodeRPCURL(e2e.ExecutionNodeComponentOffset).String())
 	if err != nil {
 		return nil, err
 	}
-	return zondclient.NewClient(client), nil
+	return qrlclient.NewClient(client), nil
 }

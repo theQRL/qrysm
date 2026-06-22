@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
@@ -138,9 +138,9 @@ func TestStore_SlasherChunk_SaveRetrieve(t *testing.T) {
 	totalChunks := 64
 	chunkKeys := make([][]byte, totalChunks)
 	chunks := make([][]uint16, totalChunks)
-	for i := 0; i < totalChunks; i++ {
+	for i := range totalChunks {
 		chunk := make([]uint16, elemsPerChunk)
-		for j := 0; j < len(chunk); j++ {
+		for j := range chunk {
 			chunk[j] = uint16(0)
 		}
 		chunks[i] = chunk
@@ -190,13 +190,80 @@ func TestStore_SlasherChunk_SaveRetrieve(t *testing.T) {
 	}
 }
 
+// Regression test for upstream PR #13629: chunked Save/Load round-trip across a batch boundary.
+// Uses 2.5x batchSize entries to force multiple bolt transactions per call and ensures every
+// chunk and key survives the chunking unchanged.
+func TestStore_SlasherChunk_SaveRetrieve_AcrossBatchBoundary(t *testing.T) {
+	ctx := context.Background()
+	beaconDB := setupDB(t)
+
+	const totalChunks = batchSize*2 + batchSize/2
+	const elemsPerChunk = 4
+
+	chunkKeys := make([][]byte, totalChunks)
+	chunks := make([][]uint16, totalChunks)
+	for i := range totalChunks {
+		chunk := make([]uint16, elemsPerChunk)
+		for j := range chunk {
+			chunk[j] = uint16(i + j)
+		}
+		chunks[i] = chunk
+		chunkKeys[i] = ssz.MarshalUint64(make([]byte, 0), uint64(i))
+	}
+
+	require.NoError(t, beaconDB.SaveSlasherChunks(ctx, slashertypes.MinSpan, chunkKeys, chunks))
+
+	retrievedChunks, chunksExist, err := beaconDB.LoadSlasherChunks(ctx, slashertypes.MinSpan, chunkKeys)
+	require.NoError(t, err)
+	require.Equal(t, totalChunks, len(retrievedChunks))
+	require.Equal(t, totalChunks, len(chunksExist))
+	for i := range chunksExist {
+		require.Equal(t, true, chunksExist[i])
+		require.DeepEqual(t, chunks[i], retrievedChunks[i])
+	}
+}
+
+func TestStore_SaveAttestationRecordsForValidators_AcrossBatchBoundary(t *testing.T) {
+	ctx := context.Background()
+	beaconDB := setupDB(t)
+
+	const totalAtts = batchSize + 10
+	atts := make([]*slashertypes.IndexedAttestationWrapper, totalAtts)
+	for i := range atts {
+		sr := [32]byte{}
+		// Distinct signing roots so each record gets its own bucket entry.
+		sr[0] = byte(i)
+		sr[1] = byte(i >> 8)
+		atts[i] = createAttestationWrapper(
+			primitives.Epoch(i),
+			primitives.Epoch(i+1),
+			[]uint64{uint64(i)},
+			sr[:],
+		)
+	}
+
+	require.NoError(t, beaconDB.SaveAttestationRecordsForValidators(ctx, atts))
+
+	// Spot-check first, last, and the boundary entry survived.
+	for _, idx := range []int{0, batchSize - 1, batchSize, totalAtts - 1} {
+		got, err := beaconDB.AttestationRecordForValidator(
+			ctx,
+			primitives.ValidatorIndex(idx),
+			primitives.Epoch(idx+1),
+		)
+		require.NoError(t, err)
+		require.NotNil(t, got)
+		require.DeepEqual(t, primitives.Epoch(idx+1), got.IndexedAttestation.Data.Target.Epoch)
+	}
+}
+
 func TestStore_SlasherChunk_PreventsSavingWrongLength(t *testing.T) {
 	ctx := context.Background()
 	beaconDB := setupDB(t)
 	totalChunks := 64
 	chunkKeys := make([][]byte, totalChunks)
 	chunks := make([][]uint16, totalChunks)
-	for i := 0; i < totalChunks; i++ {
+	for i := range totalChunks {
 		chunks[i] = []uint16{}
 		chunkKeys[i] = ssz.MarshalUint64(make([]byte, 0), uint64(i))
 	}
@@ -253,8 +320,8 @@ func Test_encodeDecodeProposalRecord(t *testing.T) {
 		{
 			name: "failing encode/decode",
 			blkHdr: &slashertypes.SignedBlockHeaderWrapper{
-				SignedBeaconBlockHeader: &zondpb.SignedBeaconBlockHeader{
-					Header: &zondpb.BeaconBlockHeader{},
+				SignedBeaconBlockHeader: &qrysmpb.SignedBeaconBlockHeader{
+					Header: &qrysmpb.BeaconBlockHeader{},
 				},
 			},
 			wantErr: true,
@@ -305,8 +372,8 @@ func Test_encodeDecodeAttestationRecord(t *testing.T) {
 		{
 			name: "failing encode/decode",
 			attWrapper: &slashertypes.IndexedAttestationWrapper{
-				IndexedAttestation: &zondpb.IndexedAttestation{
-					Data: &zondpb.AttestationData{},
+				IndexedAttestation: &qrysmpb.IndexedAttestation{
+					Data: &qrysmpb.AttestationData{},
 				},
 			},
 			wantErr: true,
@@ -345,7 +412,7 @@ func TestStore_HighestAttestations(t *testing.T) {
 	tests := []struct {
 		name             string
 		attestationsInDB []*slashertypes.IndexedAttestationWrapper
-		expected         []*zondpb.HighestAttestation
+		expected         []*qrysmpb.HighestAttestation
 		indices          []primitives.ValidatorIndex
 		wantErr          bool
 	}{
@@ -355,7 +422,7 @@ func TestStore_HighestAttestations(t *testing.T) {
 				createAttestationWrapper(0, 3, []uint64{1}, []byte{1}),
 			},
 			indices: []primitives.ValidatorIndex{1},
-			expected: []*zondpb.HighestAttestation{
+			expected: []*qrysmpb.HighestAttestation{
 				{
 					ValidatorIndex:     1,
 					HighestSourceEpoch: 0,
@@ -372,7 +439,7 @@ func TestStore_HighestAttestations(t *testing.T) {
 				createAttestationWrapper(5, 6, []uint64{5}, []byte{4}),
 			},
 			indices: []primitives.ValidatorIndex{2, 3, 4, 5},
-			expected: []*zondpb.HighestAttestation{
+			expected: []*qrysmpb.HighestAttestation{
 				{
 					ValidatorIndex:     2,
 					HighestSourceEpoch: 0,
@@ -404,7 +471,7 @@ func TestStore_HighestAttestations(t *testing.T) {
 				createAttestationWrapper(6, 7, []uint64{5}, []byte{4}),
 			},
 			indices: []primitives.ValidatorIndex{2, 3, 4, 5},
-			expected: []*zondpb.HighestAttestation{
+			expected: []*qrysmpb.HighestAttestation{
 				{
 					ValidatorIndex:     2,
 					HighestSourceEpoch: 4,
@@ -439,11 +506,10 @@ func TestStore_HighestAttestations(t *testing.T) {
 }
 
 func BenchmarkHighestAttestations(b *testing.B) {
-	b.StopTimer()
 	count := 10000
 	valsPerAtt := 100
 	indicesPerAtt := make([][]uint64, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		indicesForAtt := make([]uint64, valsPerAtt)
 		for r := i * count; r < valsPerAtt*(i+1); r++ {
 			indicesForAtt[i] = uint64(r)
@@ -451,7 +517,7 @@ func BenchmarkHighestAttestations(b *testing.B) {
 		indicesPerAtt[i] = indicesForAtt
 	}
 	atts := make([]*slashertypes.IndexedAttestationWrapper, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		atts[i] = createAttestationWrapper(primitives.Epoch(i), primitives.Epoch(i+2), indicesPerAtt[i], []byte{})
 	}
 
@@ -459,28 +525,26 @@ func BenchmarkHighestAttestations(b *testing.B) {
 	beaconDB := setupDB(b)
 	require.NoError(b, beaconDB.SaveAttestationRecordsForValidators(ctx, atts))
 
-	allIndices := make([]primitives.ValidatorIndex, valsPerAtt*count)
-	for i := 0; i < count; i++ {
+	allIndices := make([]primitives.ValidatorIndex, 0, valsPerAtt*count)
+	for i := range count {
 		indicesForAtt := make([]primitives.ValidatorIndex, valsPerAtt)
-		for r := 0; r < valsPerAtt; r++ {
+		for r := range valsPerAtt {
 			indicesForAtt[r] = primitives.ValidatorIndex(atts[i].IndexedAttestation.AttestingIndices[r])
 		}
 		allIndices = append(allIndices, indicesForAtt...)
 	}
 	b.ReportAllocs()
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := beaconDB.HighestAttestations(ctx, allIndices)
 		require.NoError(b, err)
 	}
 }
 
 func BenchmarkStore_CheckDoubleBlockProposals(b *testing.B) {
-	b.StopTimer()
 	count := 10000
 	valsPerAtt := 100
 	indicesPerAtt := make([][]uint64, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		indicesForAtt := make([]uint64, valsPerAtt)
 		for r := i * count; r < valsPerAtt*(i+1); r++ {
 			indicesForAtt[i] = uint64(r)
@@ -488,7 +552,7 @@ func BenchmarkStore_CheckDoubleBlockProposals(b *testing.B) {
 		indicesPerAtt[i] = indicesForAtt
 	}
 	atts := make([]*slashertypes.IndexedAttestationWrapper, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		atts[i] = createAttestationWrapper(primitives.Epoch(i), primitives.Epoch(i+2), indicesPerAtt[i], []byte{})
 	}
 
@@ -500,15 +564,14 @@ func BenchmarkStore_CheckDoubleBlockProposals(b *testing.B) {
 	rand.Shuffle(count, func(i, j int) { atts[i], atts[j] = atts[j], atts[i] })
 
 	b.ReportAllocs()
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := beaconDB.CheckAttesterDoubleVotes(ctx, atts)
 		require.NoError(b, err)
 	}
 }
 
 func createProposalWrapper(t *testing.T, slot primitives.Slot, proposerIndex primitives.ValidatorIndex, signingRoot []byte) *slashertypes.SignedBlockHeaderWrapper {
-	header := &zondpb.BeaconBlockHeader{
+	header := &qrysmpb.BeaconBlockHeader{
 		Slot:          slot,
 		ProposerIndex: proposerIndex,
 		ParentRoot:    params.BeaconConfig().ZeroHash[:],
@@ -520,9 +583,9 @@ func createProposalWrapper(t *testing.T, slot primitives.Slot, proposerIndex pri
 		t.Fatal(err)
 	}
 	return &slashertypes.SignedBlockHeaderWrapper{
-		SignedBeaconBlockHeader: &zondpb.SignedBeaconBlockHeader{
+		SignedBeaconBlockHeader: &qrysmpb.SignedBeaconBlockHeader{
 			Header:    header,
-			Signature: params.BeaconConfig().EmptyDilithiumSignature[:],
+			Signature: params.BeaconConfig().EmptyMLDSA87Signature[:],
 		},
 		SigningRoot: signRoot,
 	}
@@ -533,22 +596,22 @@ func createAttestationWrapper(source, target primitives.Epoch, indices []uint64,
 	if signingRoot == nil {
 		signRoot = params.BeaconConfig().ZeroHash
 	}
-	data := &zondpb.AttestationData{
+	data := &qrysmpb.AttestationData{
 		BeaconBlockRoot: params.BeaconConfig().ZeroHash[:],
-		Source: &zondpb.Checkpoint{
+		Source: &qrysmpb.Checkpoint{
 			Epoch: source,
 			Root:  params.BeaconConfig().ZeroHash[:],
 		},
-		Target: &zondpb.Checkpoint{
+		Target: &qrysmpb.Checkpoint{
 			Epoch: target,
 			Root:  params.BeaconConfig().ZeroHash[:],
 		},
 	}
 	return &slashertypes.IndexedAttestationWrapper{
-		IndexedAttestation: &zondpb.IndexedAttestation{
+		IndexedAttestation: &qrysmpb.IndexedAttestation{
 			AttestingIndices: indices,
 			Data:             data,
-			Signatures:       [][]byte{params.BeaconConfig().EmptyDilithiumSignature[:]},
+			Signatures:       [][]byte{params.BeaconConfig().EmptyMLDSA87Signature[:]},
 		},
 		SigningRoot: signRoot,
 	}

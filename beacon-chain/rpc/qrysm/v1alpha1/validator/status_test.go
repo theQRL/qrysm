@@ -18,9 +18,9 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/container/trie"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -30,7 +30,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func TestValidatorStatus_DepositedEth1(t *testing.T) {
+func TestValidatorStatus_DepositedExecution(t *testing.T) {
 	ctx := context.Background()
 	deposits, _, err := util.DeterministicDepositsAndKeys(1)
 	require.NoError(t, err, "Could not generate deposits and keys")
@@ -44,13 +44,13 @@ func TestValidatorStatus_DepositedEth1(t *testing.T) {
 	root, err := depositTrie.HashTreeRoot()
 	require.NoError(t, err)
 	assert.NoError(t, depositCache.InsertDeposit(ctx, deposit, 0 /*blockNum*/, 0, root))
-	height := time.Unix(int64(params.BeaconConfig().Eth1FollowDistance), 0).Unix()
+	height := time.Unix(int64(params.BeaconConfig().ExecutionFollowDistance), 0).Unix()
 	p := &mockExecution.Chain{
 		TimesByHeight: map[int]uint64{
 			0: uint64(height),
 		},
 	}
-	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{})
+	stateObj, err := state_native.InitializeFromProtoUnsafeZond(&qrysmpb.BeaconStateZond{})
 	require.NoError(t, err)
 	vs := &Server{
 		DepositFetcher: depositCache,
@@ -58,14 +58,14 @@ func TestValidatorStatus_DepositedEth1(t *testing.T) {
 		HeadFetcher: &mockChain.ChainService{
 			State: stateObj,
 		},
-		Eth1InfoFetcher: p,
+		ExecutionInfoFetcher: p,
 	}
-	req := &zondpb.ValidatorStatusRequest{
+	req := &qrysmpb.ValidatorStatusRequest{
 		PublicKey: pubKey1,
 	}
 	resp, err := vs.ValidatorStatus(context.Background(), req)
 	require.NoError(t, err, "Could not get validator status")
-	assert.Equal(t, zondpb.ValidatorStatus_DEPOSITED, resp.Status)
+	assert.Equal(t, qrysmpb.ValidatorStatus_DEPOSITED, resp.Status)
 }
 
 func TestValidatorStatus_Deposited(t *testing.T) {
@@ -75,7 +75,7 @@ func TestValidatorStatus_Deposited(t *testing.T) {
 	require.NoError(t, err)
 	pubKey1 := keys[0].PublicKey().Marshal()
 	depData := deps[0].Data
-	deposit := &zondpb.Deposit{
+	deposit := &qrysmpb.Deposit{
 		Data: depData,
 	}
 	depositTrie, err := trie.NewTrie(params.BeaconConfig().DepositContractTreeDepth)
@@ -86,13 +86,13 @@ func TestValidatorStatus_Deposited(t *testing.T) {
 	root, err := depositTrie.HashTreeRoot()
 	require.NoError(t, err)
 	assert.NoError(t, depositCache.InsertDeposit(ctx, deposit, 0 /*blockNum*/, 0, root))
-	height := time.Unix(int64(params.BeaconConfig().Eth1FollowDistance), 0).Unix()
+	height := time.Unix(int64(params.BeaconConfig().ExecutionFollowDistance), 0).Unix()
 	p := &mockExecution.Chain{
 		TimesByHeight: map[int]uint64{
 			0: uint64(height),
 		},
 	}
-	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{})
+	stateObj, err := state_native.InitializeFromProtoUnsafeZond(&qrysmpb.BeaconStateZond{})
 	require.NoError(t, err)
 	vs := &Server{
 		DepositFetcher: depositCache,
@@ -100,27 +100,27 @@ func TestValidatorStatus_Deposited(t *testing.T) {
 		HeadFetcher: &mockChain.ChainService{
 			State: stateObj,
 		},
-		Eth1InfoFetcher: p,
+		ExecutionInfoFetcher: p,
 	}
-	req := &zondpb.ValidatorStatusRequest{
+	req := &qrysmpb.ValidatorStatusRequest{
 		PublicKey: pubKey1,
 	}
 	resp, err := vs.ValidatorStatus(context.Background(), req)
 	require.NoError(t, err, "Could not get validator status")
-	assert.Equal(t, zondpb.ValidatorStatus_DEPOSITED, resp.Status)
+	assert.Equal(t, qrysmpb.ValidatorStatus_DEPOSITED, resp.Status)
 }
 
 func TestValidatorStatus_PartiallyDeposited(t *testing.T) {
 	ctx := context.Background()
 
 	pubKey1 := pubKey(1)
-	depData := &zondpb.Deposit_Data{
+	depData := &qrysmpb.Deposit_Data{
 		Amount:                params.BeaconConfig().MinDepositAmount,
 		PublicKey:             pubKey1,
 		Signature:             []byte("hi"),
 		WithdrawalCredentials: []byte("hey"),
 	}
-	deposit := &zondpb.Deposit{
+	deposit := &qrysmpb.Deposit{
 		Data: depData,
 	}
 	depositTrie, err := trie.NewTrie(params.BeaconConfig().DepositContractTreeDepth)
@@ -131,14 +131,14 @@ func TestValidatorStatus_PartiallyDeposited(t *testing.T) {
 	root, err := depositTrie.HashTreeRoot()
 	require.NoError(t, err)
 	assert.NoError(t, depositCache.InsertDeposit(ctx, deposit, 0 /*blockNum*/, 0, root))
-	height := time.Unix(int64(params.BeaconConfig().Eth1FollowDistance), 0).Unix()
+	height := time.Unix(int64(params.BeaconConfig().ExecutionFollowDistance), 0).Unix()
 	p := &mockExecution.Chain{
 		TimesByHeight: map[int]uint64{
 			0: uint64(height),
 		},
 	}
-	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
-		Validators: []*zondpb.Validator{
+	stateObj, err := state_native.InitializeFromProtoUnsafeZond(&qrysmpb.BeaconStateZond{
+		Validators: []*qrysmpb.Validator{
 			{
 				PublicKey:                  pubKey1,
 				ActivationEligibilityEpoch: 1,
@@ -153,27 +153,27 @@ func TestValidatorStatus_PartiallyDeposited(t *testing.T) {
 		HeadFetcher: &mockChain.ChainService{
 			State: stateObj,
 		},
-		Eth1InfoFetcher: p,
+		ExecutionInfoFetcher: p,
 	}
-	req := &zondpb.ValidatorStatusRequest{
+	req := &qrysmpb.ValidatorStatusRequest{
 		PublicKey: pubKey1,
 	}
 	resp, err := vs.ValidatorStatus(context.Background(), req)
 	require.NoError(t, err, "Could not get validator status")
-	assert.Equal(t, zondpb.ValidatorStatus_PARTIALLY_DEPOSITED, resp.Status)
+	assert.Equal(t, qrysmpb.ValidatorStatus_PARTIALLY_DEPOSITED, resp.Status)
 }
 
 func TestValidatorStatus_Pending_MultipleDeposits(t *testing.T) {
 	ctx := context.Background()
 
 	pubKey1 := pubKey(1)
-	depData := &zondpb.Deposit_Data{
+	depData := &qrysmpb.Deposit_Data{
 		Amount:                16 * params.BeaconConfig().MinDepositAmount,
 		PublicKey:             pubKey1,
 		Signature:             []byte("hi"),
 		WithdrawalCredentials: []byte("hey"),
 	}
-	deposit := &zondpb.Deposit{
+	deposit := &qrysmpb.Deposit{
 		Data: depData,
 	}
 	depositTrie, err := trie.NewTrie(params.BeaconConfig().DepositContractTreeDepth)
@@ -186,14 +186,14 @@ func TestValidatorStatus_Pending_MultipleDeposits(t *testing.T) {
 	assert.NoError(t, depositCache.InsertDeposit(ctx, deposit, 0 /*blockNum*/, 0, root))
 	assert.NoError(t, depositCache.InsertDeposit(ctx, deposit, 0 /*blockNum*/, 1, root))
 
-	height := time.Unix(int64(params.BeaconConfig().Eth1FollowDistance), 0).Unix()
+	height := time.Unix(int64(params.BeaconConfig().ExecutionFollowDistance), 0).Unix()
 	p := &mockExecution.Chain{
 		TimesByHeight: map[int]uint64{
 			0: uint64(height),
 		},
 	}
-	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
-		Validators: []*zondpb.Validator{
+	stateObj, err := state_native.InitializeFromProtoUnsafeZond(&qrysmpb.BeaconStateZond{
+		Validators: []*qrysmpb.Validator{
 			{
 				PublicKey:                  pubKey1,
 				ActivationEligibilityEpoch: 1,
@@ -212,45 +212,45 @@ func TestValidatorStatus_Pending_MultipleDeposits(t *testing.T) {
 		HeadFetcher: &mockChain.ChainService{
 			State: stateObj,
 		},
-		Eth1InfoFetcher: p,
+		ExecutionInfoFetcher: p,
 	}
-	req := &zondpb.ValidatorStatusRequest{
+	req := &qrysmpb.ValidatorStatusRequest{
 		PublicKey: pubKey1,
 	}
 	resp, err := vs.ValidatorStatus(context.Background(), req)
 	require.NoError(t, err, "Could not get validator status")
-	assert.Equal(t, zondpb.ValidatorStatus_PENDING, resp.Status)
+	assert.Equal(t, qrysmpb.ValidatorStatus_PENDING, resp.Status)
 }
 
 func TestValidatorStatus_Pending(t *testing.T) {
 	ctx := context.Background()
 
 	pubKey := pubKey(1)
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 	// Pending active because activation epoch is still defaulted at far future slot.
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(5000))
-	err = st.SetValidators([]*zondpb.Validator{
+	err = st.SetValidators([]*qrysmpb.Validator{
 		{
 			ActivationEpoch:       params.BeaconConfig().FarFutureEpoch,
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 			WithdrawableEpoch:     params.BeaconConfig().FarFutureEpoch,
 			PublicKey:             pubKey,
-			WithdrawalCredentials: make([]byte, 32),
+			WithdrawalCredentials: make([]byte, 64),
 		},
 	})
 	require.NoError(t, err)
 
-	depData := &zondpb.Deposit_Data{
+	depData := &qrysmpb.Deposit_Data{
 		PublicKey:             pubKey,
 		Signature:             bytesutil.PadTo([]byte("hi"), 96),
-		WithdrawalCredentials: bytesutil.PadTo([]byte("hey"), 32),
+		WithdrawalCredentials: bytesutil.PadTo([]byte("hey"), 64),
 	}
 
-	deposit := &zondpb.Deposit{
+	deposit := &qrysmpb.Deposit{
 		Data: depData,
 	}
 	depositTrie, err := trie.NewTrie(params.BeaconConfig().DepositContractTreeDepth)
@@ -262,25 +262,25 @@ func TestValidatorStatus_Pending(t *testing.T) {
 	require.NoError(t, err)
 	assert.NoError(t, depositCache.InsertDeposit(ctx, deposit, 0 /*blockNum*/, 0, root))
 
-	height := time.Unix(int64(params.BeaconConfig().Eth1FollowDistance), 0).Unix()
+	height := time.Unix(int64(params.BeaconConfig().ExecutionFollowDistance), 0).Unix()
 	p := &mockExecution.Chain{
 		TimesByHeight: map[int]uint64{
 			0: uint64(height),
 		},
 	}
 	vs := &Server{
-		ChainStartFetcher: p,
-		BlockFetcher:      p,
-		Eth1InfoFetcher:   p,
-		DepositFetcher:    depositCache,
-		HeadFetcher:       &mockChain.ChainService{State: st, Root: genesisRoot[:]},
+		ChainStartFetcher:    p,
+		BlockFetcher:         p,
+		ExecutionInfoFetcher: p,
+		DepositFetcher:       depositCache,
+		HeadFetcher:          &mockChain.ChainService{State: st, Root: genesisRoot[:]},
 	}
-	req := &zondpb.ValidatorStatusRequest{
+	req := &qrysmpb.ValidatorStatusRequest{
 		PublicKey: pubKey,
 	}
 	resp, err := vs.ValidatorStatus(context.Background(), req)
 	require.NoError(t, err, "Could not get validator status")
-	assert.Equal(t, zondpb.ValidatorStatus_PENDING, resp.Status)
+	assert.Equal(t, qrysmpb.ValidatorStatus_PENDING, resp.Status)
 }
 
 func TestValidatorStatus_Exiting(t *testing.T) {
@@ -293,27 +293,27 @@ func TestValidatorStatus_Exiting(t *testing.T) {
 	epoch := slots.ToEpoch(slot)
 	exitEpoch := helpers.ActivationExitEpoch(epoch)
 	withdrawableEpoch := exitEpoch + params.BeaconConfig().MinValidatorWithdrawabilityDelay
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
-	st := &zondpb.BeaconStateCapella{
+	st := &qrysmpb.BeaconStateZond{
 		Slot: slot,
-		Validators: []*zondpb.Validator{{
+		Validators: []*qrysmpb.Validator{{
 			PublicKey:         pubKey,
 			ActivationEpoch:   0,
 			ExitEpoch:         exitEpoch,
 			WithdrawableEpoch: withdrawableEpoch},
 		}}
-	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(st)
+	stateObj, err := state_native.InitializeFromProtoUnsafeZond(st)
 	require.NoError(t, err)
-	depData := &zondpb.Deposit_Data{
+	depData := &qrysmpb.Deposit_Data{
 		PublicKey:             pubKey,
 		Signature:             bytesutil.PadTo([]byte("hi"), 96),
-		WithdrawalCredentials: bytesutil.PadTo([]byte("hey"), 32),
+		WithdrawalCredentials: bytesutil.PadTo([]byte("hey"), 64),
 	}
 
-	deposit := &zondpb.Deposit{
+	deposit := &qrysmpb.Deposit{
 		Data: depData,
 	}
 	depositTrie, err := trie.NewTrie(params.BeaconConfig().DepositContractTreeDepth)
@@ -324,25 +324,25 @@ func TestValidatorStatus_Exiting(t *testing.T) {
 	root, err := depositTrie.HashTreeRoot()
 	require.NoError(t, err)
 	assert.NoError(t, depositCache.InsertDeposit(ctx, deposit, 0 /*blockNum*/, 0, root))
-	height := time.Unix(int64(params.BeaconConfig().Eth1FollowDistance), 0).Unix()
+	height := time.Unix(int64(params.BeaconConfig().ExecutionFollowDistance), 0).Unix()
 	p := &mockExecution.Chain{
 		TimesByHeight: map[int]uint64{
 			0: uint64(height),
 		},
 	}
 	vs := &Server{
-		ChainStartFetcher: p,
-		BlockFetcher:      p,
-		Eth1InfoFetcher:   p,
-		DepositFetcher:    depositCache,
-		HeadFetcher:       &mockChain.ChainService{State: stateObj, Root: genesisRoot[:]},
+		ChainStartFetcher:    p,
+		BlockFetcher:         p,
+		ExecutionInfoFetcher: p,
+		DepositFetcher:       depositCache,
+		HeadFetcher:          &mockChain.ChainService{State: stateObj, Root: genesisRoot[:]},
 	}
-	req := &zondpb.ValidatorStatusRequest{
+	req := &qrysmpb.ValidatorStatusRequest{
 		PublicKey: pubKey,
 	}
 	resp, err := vs.ValidatorStatus(context.Background(), req)
 	require.NoError(t, err, "Could not get validator status")
-	assert.Equal(t, zondpb.ValidatorStatus_EXITING, resp.Status)
+	assert.Equal(t, qrysmpb.ValidatorStatus_EXITING, resp.Status)
 }
 
 func TestValidatorStatus_Slashing(t *testing.T) {
@@ -353,26 +353,26 @@ func TestValidatorStatus_Slashing(t *testing.T) {
 	// Exit slashed because slashed is true, exit epoch is =< current epoch and withdrawable epoch > epoch .
 	slot := primitives.Slot(10000)
 	epoch := slots.ToEpoch(slot)
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
-	st := &zondpb.BeaconStateCapella{
+	st := &qrysmpb.BeaconStateZond{
 		Slot: slot,
-		Validators: []*zondpb.Validator{{
+		Validators: []*qrysmpb.Validator{{
 			Slashed:           true,
 			PublicKey:         pubKey,
 			WithdrawableEpoch: epoch + 1},
 		}}
-	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(st)
+	stateObj, err := state_native.InitializeFromProtoUnsafeZond(st)
 	require.NoError(t, err)
-	depData := &zondpb.Deposit_Data{
+	depData := &qrysmpb.Deposit_Data{
 		PublicKey:             pubKey,
 		Signature:             bytesutil.PadTo([]byte("hi"), 96),
-		WithdrawalCredentials: bytesutil.PadTo([]byte("hey"), 32),
+		WithdrawalCredentials: bytesutil.PadTo([]byte("hey"), 64),
 	}
 
-	deposit := &zondpb.Deposit{
+	deposit := &qrysmpb.Deposit{
 		Data: depData,
 	}
 	depositTrie, err := trie.NewTrie(params.BeaconConfig().DepositContractTreeDepth)
@@ -383,25 +383,25 @@ func TestValidatorStatus_Slashing(t *testing.T) {
 	root, err := depositTrie.HashTreeRoot()
 	require.NoError(t, err)
 	assert.NoError(t, depositCache.InsertDeposit(ctx, deposit, 0 /*blockNum*/, 0, root))
-	height := time.Unix(int64(params.BeaconConfig().Eth1FollowDistance), 0).Unix()
+	height := time.Unix(int64(params.BeaconConfig().ExecutionFollowDistance), 0).Unix()
 	p := &mockExecution.Chain{
 		TimesByHeight: map[int]uint64{
 			0: uint64(height),
 		},
 	}
 	vs := &Server{
-		ChainStartFetcher: p,
-		Eth1InfoFetcher:   p,
-		DepositFetcher:    depositCache,
-		BlockFetcher:      p,
-		HeadFetcher:       &mockChain.ChainService{State: stateObj, Root: genesisRoot[:]},
+		ChainStartFetcher:    p,
+		ExecutionInfoFetcher: p,
+		DepositFetcher:       depositCache,
+		BlockFetcher:         p,
+		HeadFetcher:          &mockChain.ChainService{State: stateObj, Root: genesisRoot[:]},
 	}
-	req := &zondpb.ValidatorStatusRequest{
+	req := &qrysmpb.ValidatorStatusRequest{
 		PublicKey: pubKey,
 	}
 	resp, err := vs.ValidatorStatus(context.Background(), req)
 	require.NoError(t, err, "Could not get validator status")
-	assert.Equal(t, zondpb.ValidatorStatus_EXITED, resp.Status)
+	assert.Equal(t, qrysmpb.ValidatorStatus_EXITED, resp.Status)
 }
 
 func TestValidatorStatus_Exited(t *testing.T) {
@@ -412,25 +412,25 @@ func TestValidatorStatus_Exited(t *testing.T) {
 	// Exit because only exit epoch is =< current epoch.
 	slot := primitives.Slot(10000)
 	epoch := slots.ToEpoch(slot)
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(slot))
-	err = st.SetValidators([]*zondpb.Validator{{
+	err = st.SetValidators([]*qrysmpb.Validator{{
 		PublicKey:             pubKey,
 		WithdrawableEpoch:     epoch + 1,
-		WithdrawalCredentials: make([]byte, 32)},
+		WithdrawalCredentials: make([]byte, 64)},
 	})
 	require.NoError(t, err)
-	depData := &zondpb.Deposit_Data{
+	depData := &qrysmpb.Deposit_Data{
 		PublicKey:             pubKey,
 		Signature:             bytesutil.PadTo([]byte("hi"), 96),
-		WithdrawalCredentials: bytesutil.PadTo([]byte("hey"), 32),
+		WithdrawalCredentials: bytesutil.PadTo([]byte("hey"), 64),
 	}
 
-	deposit := &zondpb.Deposit{
+	deposit := &qrysmpb.Deposit{
 		Data: depData,
 	}
 	depositTrie, err := trie.NewTrie(params.BeaconConfig().DepositContractTreeDepth)
@@ -441,25 +441,25 @@ func TestValidatorStatus_Exited(t *testing.T) {
 	root, err := depositTrie.HashTreeRoot()
 	require.NoError(t, err)
 	assert.NoError(t, depositCache.InsertDeposit(ctx, deposit, 0 /*blockNum*/, 0, root))
-	height := time.Unix(int64(params.BeaconConfig().Eth1FollowDistance), 0).Unix()
+	height := time.Unix(int64(params.BeaconConfig().ExecutionFollowDistance), 0).Unix()
 	p := &mockExecution.Chain{
 		TimesByHeight: map[int]uint64{
 			0: uint64(height),
 		},
 	}
 	vs := &Server{
-		ChainStartFetcher: p,
-		Eth1InfoFetcher:   p,
-		BlockFetcher:      p,
-		DepositFetcher:    depositCache,
-		HeadFetcher:       &mockChain.ChainService{State: st, Root: genesisRoot[:]},
+		ChainStartFetcher:    p,
+		ExecutionInfoFetcher: p,
+		BlockFetcher:         p,
+		DepositFetcher:       depositCache,
+		HeadFetcher:          &mockChain.ChainService{State: st, Root: genesisRoot[:]},
 	}
-	req := &zondpb.ValidatorStatusRequest{
+	req := &qrysmpb.ValidatorStatusRequest{
 		PublicKey: pubKey,
 	}
 	resp, err := vs.ValidatorStatus(context.Background(), req)
 	require.NoError(t, err, "Could not get validator status")
-	assert.Equal(t, zondpb.ValidatorStatus_EXITED, resp.Status)
+	assert.Equal(t, qrysmpb.ValidatorStatus_EXITED, resp.Status)
 }
 
 func TestValidatorStatus_UnknownStatus(t *testing.T) {
@@ -467,23 +467,23 @@ func TestValidatorStatus_UnknownStatus(t *testing.T) {
 	depositCache, err := depositcache.New()
 	require.NoError(t, err)
 
-	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
+	stateObj, err := state_native.InitializeFromProtoUnsafeZond(&qrysmpb.BeaconStateZond{
 		Slot: 0,
 	})
 	require.NoError(t, err)
 	vs := &Server{
-		DepositFetcher:  depositCache,
-		Eth1InfoFetcher: &mockExecution.Chain{},
+		DepositFetcher:       depositCache,
+		ExecutionInfoFetcher: &mockExecution.Chain{},
 		HeadFetcher: &mockChain.ChainService{
 			State: stateObj,
 		},
 	}
-	req := &zondpb.ValidatorStatusRequest{
+	req := &qrysmpb.ValidatorStatusRequest{
 		PublicKey: pubKey,
 	}
 	resp, err := vs.ValidatorStatus(context.Background(), req)
 	require.NoError(t, err, "Could not get validator status")
-	assert.Equal(t, zondpb.ValidatorStatus_UNKNOWN_STATUS, resp.Status)
+	assert.Equal(t, qrysmpb.ValidatorStatus_UNKNOWN_STATUS, resp.Status)
 }
 
 func TestActivationStatus_OK(t *testing.T) {
@@ -492,9 +492,9 @@ func TestActivationStatus_OK(t *testing.T) {
 	deposits, _, err := util.DeterministicDepositsAndKeys(4)
 	require.NoError(t, err)
 	pubKeys := [][]byte{deposits[0].Data.PublicKey, deposits[1].Data.PublicKey, deposits[2].Data.PublicKey, deposits[3].Data.PublicKey}
-	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
+	stateObj, err := state_native.InitializeFromProtoUnsafeZond(&qrysmpb.BeaconStateZond{
 		Slot: 4000,
-		Validators: []*zondpb.Validator{
+		Validators: []*qrysmpb.Validator{
 			{
 				ActivationEpoch: 0,
 				ExitEpoch:       params.BeaconConfig().FarFutureEpoch,
@@ -514,7 +514,7 @@ func TestActivationStatus_OK(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 	dep := deposits[0]
@@ -534,17 +534,17 @@ func TestActivationStatus_OK(t *testing.T) {
 	assert.NoError(t, depositCache.InsertDeposit(context.Background(), dep, 0, 1, root))
 
 	vs := &Server{
-		Ctx:               context.Background(),
-		ChainStartFetcher: &mockExecution.Chain{},
-		BlockFetcher:      &mockExecution.Chain{},
-		Eth1InfoFetcher:   &mockExecution.Chain{},
-		DepositFetcher:    depositCache,
-		HeadFetcher:       &mockChain.ChainService{State: stateObj, Root: genesisRoot[:]},
+		Ctx:                  context.Background(),
+		ChainStartFetcher:    &mockExecution.Chain{},
+		BlockFetcher:         &mockExecution.Chain{},
+		ExecutionInfoFetcher: &mockExecution.Chain{},
+		DepositFetcher:       depositCache,
+		HeadFetcher:          &mockChain.ChainService{State: stateObj, Root: genesisRoot[:]},
 	}
 	activeExists, response, err := vs.activationStatus(context.Background(), pubKeys)
 	require.NoError(t, err)
 	require.Equal(t, true, activeExists, "No activated validator exists when there was supposed to be 2")
-	if response[0].Status.Status != zondpb.ValidatorStatus_ACTIVE {
+	if response[0].Status.Status != qrysmpb.ValidatorStatus_ACTIVE {
 		t.Errorf("Validator with pubkey %#x is not activated and instead has this status: %s",
 			response[0].PublicKey, response[0].Status.Status.String())
 	}
@@ -552,7 +552,7 @@ func TestActivationStatus_OK(t *testing.T) {
 		t.Errorf("Validator with pubkey %#x is expected to have index %d, received %d", response[0].PublicKey, 0, response[0].Index)
 	}
 
-	if response[1].Status.Status != zondpb.ValidatorStatus_ACTIVE {
+	if response[1].Status.Status != qrysmpb.ValidatorStatus_ACTIVE {
 		t.Errorf("Validator with pubkey %#x was activated when not supposed to",
 			response[1].PublicKey)
 	}
@@ -560,7 +560,7 @@ func TestActivationStatus_OK(t *testing.T) {
 		t.Errorf("Validator with pubkey %#x is expected to have index %d, received %d", response[1].PublicKey, 1, response[1].Index)
 	}
 
-	if response[2].Status.Status != zondpb.ValidatorStatus_DEPOSITED {
+	if response[2].Status.Status != qrysmpb.ValidatorStatus_DEPOSITED {
 		t.Errorf("Validator with pubkey %#x is not unknown and instead has this status: %s",
 			response[2].PublicKey, response[2].Status.Status.String())
 	}
@@ -568,7 +568,7 @@ func TestActivationStatus_OK(t *testing.T) {
 		t.Errorf("Validator with pubkey %#x is expected to have index %d, received %d", response[2].PublicKey, params.BeaconConfig().FarFutureEpoch, response[2].Index)
 	}
 
-	if response[3].Status.Status != zondpb.ValidatorStatus_DEPOSITED {
+	if response[3].Status.Status != qrysmpb.ValidatorStatus_DEPOSITED {
 		t.Errorf("Validator with pubkey %#x was not deposited and has this status: %s",
 			response[3].PublicKey, response[3].Status.Status.String())
 	}
@@ -599,56 +599,56 @@ func TestValidatorStatus_CorrectActivationQueue(t *testing.T) {
 	ctx := context.Background()
 
 	pbKey := pubKey(5)
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 	currentSlot := primitives.Slot(5000)
 	// Pending active because activation epoch is still defaulted at far future slot.
-	validators := []*zondpb.Validator{
+	validators := []*qrysmpb.Validator{
 		{
 			ActivationEpoch:       0,
 			PublicKey:             pubKey(0),
-			WithdrawalCredentials: make([]byte, 32),
+			WithdrawalCredentials: make([]byte, 64),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 			WithdrawableEpoch:     params.BeaconConfig().FarFutureEpoch,
 		},
 		{
 			ActivationEpoch:       0,
 			PublicKey:             pubKey(1),
-			WithdrawalCredentials: make([]byte, 32),
+			WithdrawalCredentials: make([]byte, 64),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 			WithdrawableEpoch:     params.BeaconConfig().FarFutureEpoch,
 		},
 		{
 			ActivationEpoch:       0,
 			PublicKey:             pubKey(2),
-			WithdrawalCredentials: make([]byte, 32),
+			WithdrawalCredentials: make([]byte, 64),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 			WithdrawableEpoch:     params.BeaconConfig().FarFutureEpoch,
 		},
 		{
 			ActivationEpoch:       0,
 			PublicKey:             pubKey(3),
-			WithdrawalCredentials: make([]byte, 32),
+			WithdrawalCredentials: make([]byte, 64),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 			WithdrawableEpoch:     params.BeaconConfig().FarFutureEpoch,
 		},
 		{
 			ActivationEpoch:       primitives.Epoch(currentSlot/params.BeaconConfig().SlotsPerEpoch + 1),
 			PublicKey:             pbKey,
-			WithdrawalCredentials: make([]byte, 32),
+			WithdrawalCredentials: make([]byte, 64),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 			WithdrawableEpoch:     params.BeaconConfig().FarFutureEpoch,
 		},
 		{
 			ActivationEpoch:       primitives.Epoch(currentSlot/params.BeaconConfig().SlotsPerEpoch + 4),
 			PublicKey:             pubKey(5),
-			WithdrawalCredentials: make([]byte, 32),
+			WithdrawalCredentials: make([]byte, 64),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 			WithdrawableEpoch:     params.BeaconConfig().FarFutureEpoch,
 		},
 	}
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetValidators(validators))
 	require.NoError(t, st.SetSlot(currentSlot))
@@ -658,14 +658,14 @@ func TestValidatorStatus_CorrectActivationQueue(t *testing.T) {
 	depositCache, err := depositcache.New()
 	require.NoError(t, err)
 
-	for i := 0; i < 6; i++ {
-		depData := &zondpb.Deposit_Data{
+	for i := range 6 {
+		depData := &qrysmpb.Deposit_Data{
 			PublicKey:             pubKey(uint64(i)),
 			Signature:             bytesutil.PadTo([]byte("hi"), 96),
-			WithdrawalCredentials: bytesutil.PadTo([]byte("hey"), 32),
+			WithdrawalCredentials: bytesutil.PadTo([]byte("hey"), 64),
 		}
 
-		deposit := &zondpb.Deposit{
+		deposit := &qrysmpb.Deposit{
 			Data: depData,
 		}
 		root, err := depositTrie.HashTreeRoot()
@@ -674,25 +674,25 @@ func TestValidatorStatus_CorrectActivationQueue(t *testing.T) {
 
 	}
 
-	height := time.Unix(int64(params.BeaconConfig().Eth1FollowDistance), 0).Unix()
+	height := time.Unix(int64(params.BeaconConfig().ExecutionFollowDistance), 0).Unix()
 	p := &mockExecution.Chain{
 		TimesByHeight: map[int]uint64{
 			0: uint64(height),
 		},
 	}
 	vs := &Server{
-		ChainStartFetcher: p,
-		BlockFetcher:      p,
-		Eth1InfoFetcher:   p,
-		DepositFetcher:    depositCache,
-		HeadFetcher:       &mockChain.ChainService{State: st, Root: genesisRoot[:]},
+		ChainStartFetcher:    p,
+		BlockFetcher:         p,
+		ExecutionInfoFetcher: p,
+		DepositFetcher:       depositCache,
+		HeadFetcher:          &mockChain.ChainService{State: st, Root: genesisRoot[:]},
 	}
-	req := &zondpb.ValidatorStatusRequest{
+	req := &qrysmpb.ValidatorStatusRequest{
 		PublicKey: pbKey,
 	}
 	resp, err := vs.ValidatorStatus(context.Background(), req)
 	require.NoError(t, err, "Could not get validator status")
-	assert.Equal(t, zondpb.ValidatorStatus_PENDING, resp.Status)
+	assert.Equal(t, qrysmpb.ValidatorStatus_PENDING, resp.Status)
 	assert.Equal(t, uint64(2), resp.PositionInActivationQueue, "Unexpected position in activation queue")
 }
 
@@ -709,9 +709,9 @@ func TestMultipleValidatorStatus_Pubkeys(t *testing.T) {
 		deposits[4].Data.PublicKey,
 		deposits[5].Data.PublicKey,
 	}
-	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
+	stateObj, err := state_native.InitializeFromProtoUnsafeZond(&qrysmpb.BeaconStateZond{
 		Slot: 4000,
-		Validators: []*zondpb.Validator{
+		Validators: []*qrysmpb.Validator{
 			{
 				ActivationEpoch: 0,
 				ExitEpoch:       params.BeaconConfig().FarFutureEpoch,
@@ -742,7 +742,7 @@ func TestMultipleValidatorStatus_Pubkeys(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 	depositTrie, err := trie.NewTrie(params.BeaconConfig().DepositContractTreeDepth)
@@ -761,38 +761,38 @@ func TestMultipleValidatorStatus_Pubkeys(t *testing.T) {
 	assert.NoError(t, depositCache.InsertDeposit(context.Background(), dep, 0, 1, root))
 
 	vs := &Server{
-		Ctx:               context.Background(),
-		ChainStartFetcher: &mockExecution.Chain{},
-		BlockFetcher:      &mockExecution.Chain{},
-		Eth1InfoFetcher:   &mockExecution.Chain{},
-		DepositFetcher:    depositCache,
-		HeadFetcher:       &mockChain.ChainService{State: stateObj, Root: genesisRoot[:]},
-		SyncChecker:       &mockSync.Sync{IsSyncing: false},
+		Ctx:                  context.Background(),
+		ChainStartFetcher:    &mockExecution.Chain{},
+		BlockFetcher:         &mockExecution.Chain{},
+		ExecutionInfoFetcher: &mockExecution.Chain{},
+		DepositFetcher:       depositCache,
+		HeadFetcher:          &mockChain.ChainService{State: stateObj, Root: genesisRoot[:]},
+		SyncChecker:          &mockSync.Sync{IsSyncing: false},
 	}
 
-	want := []*zondpb.ValidatorStatusResponse{
+	want := []*qrysmpb.ValidatorStatusResponse{
 		{
-			Status: zondpb.ValidatorStatus_ACTIVE,
+			Status: qrysmpb.ValidatorStatus_ACTIVE,
 		},
 		{
-			Status: zondpb.ValidatorStatus_ACTIVE,
+			Status: qrysmpb.ValidatorStatus_ACTIVE,
 		},
 		{
-			Status:          zondpb.ValidatorStatus_DEPOSITED,
+			Status:          qrysmpb.ValidatorStatus_DEPOSITED,
 			ActivationEpoch: 18446744073709551615,
 		},
 		{
-			Status: zondpb.ValidatorStatus_DEPOSITED,
+			Status: qrysmpb.ValidatorStatus_DEPOSITED,
 		},
 		{
-			Status: zondpb.ValidatorStatus_PARTIALLY_DEPOSITED,
+			Status: qrysmpb.ValidatorStatus_PARTIALLY_DEPOSITED,
 		},
 		{
-			Status: zondpb.ValidatorStatus_PENDING,
+			Status: qrysmpb.ValidatorStatus_PENDING,
 		},
 	}
 
-	req := &zondpb.MultipleValidatorStatusRequest{PublicKeys: pubKeys}
+	req := &qrysmpb.MultipleValidatorStatusRequest{PublicKeys: pubKeys}
 	response, err := vs.MultipleValidatorStatus(context.Background(), req)
 	require.NoError(t, err)
 
@@ -812,9 +812,9 @@ func TestMultipleValidatorStatus_Indices(t *testing.T) {
 	slot := primitives.Slot(10000)
 	epoch := slots.ToEpoch(slot)
 	pubKeys := [][]byte{pubKey(1), pubKey(2), pubKey(3), pubKey(4), pubKey(5), pubKey(6), pubKey(7)}
-	beaconState := &zondpb.BeaconStateCapella{
+	beaconState := &qrysmpb.BeaconStateZond{
 		Slot: 4000,
-		Validators: []*zondpb.Validator{
+		Validators: []*qrysmpb.Validator{
 			{
 				ActivationEpoch: 0,
 				ExitEpoch:       params.BeaconConfig().FarFutureEpoch,
@@ -849,44 +849,44 @@ func TestMultipleValidatorStatus_Indices(t *testing.T) {
 			},
 		},
 	}
-	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(beaconState)
+	stateObj, err := state_native.InitializeFromProtoUnsafeZond(beaconState)
 	require.NoError(t, err)
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
 	vs := &Server{
-		Ctx:               context.Background(),
-		ChainStartFetcher: &mockExecution.Chain{},
-		BlockFetcher:      &mockExecution.Chain{},
-		Eth1InfoFetcher:   &mockExecution.Chain{},
-		HeadFetcher:       &mockChain.ChainService{State: stateObj, Root: genesisRoot[:]},
-		SyncChecker:       &mockSync.Sync{IsSyncing: false},
+		Ctx:                  context.Background(),
+		ChainStartFetcher:    &mockExecution.Chain{},
+		BlockFetcher:         &mockExecution.Chain{},
+		ExecutionInfoFetcher: &mockExecution.Chain{},
+		HeadFetcher:          &mockChain.ChainService{State: stateObj, Root: genesisRoot[:]},
+		SyncChecker:          &mockSync.Sync{IsSyncing: false},
 	}
 
-	want := []*zondpb.ValidatorStatusResponse{
+	want := []*qrysmpb.ValidatorStatusResponse{
 		{
-			Status: zondpb.ValidatorStatus_ACTIVE,
+			Status: qrysmpb.ValidatorStatus_ACTIVE,
 		},
 		{
-			Status: zondpb.ValidatorStatus_ACTIVE,
+			Status: qrysmpb.ValidatorStatus_ACTIVE,
 		},
 		{
-			Status: zondpb.ValidatorStatus_DEPOSITED,
+			Status: qrysmpb.ValidatorStatus_DEPOSITED,
 		},
 		{
-			Status: zondpb.ValidatorStatus_SLASHING,
+			Status: qrysmpb.ValidatorStatus_SLASHING,
 		},
 		{
-			Status: zondpb.ValidatorStatus_PARTIALLY_DEPOSITED,
+			Status: qrysmpb.ValidatorStatus_PARTIALLY_DEPOSITED,
 		},
 		{
-			Status: zondpb.ValidatorStatus_PENDING,
+			Status: qrysmpb.ValidatorStatus_PENDING,
 		},
 	}
 
 	// Note: Index 6 should be skipped.
-	req := &zondpb.MultipleValidatorStatusRequest{Indices: []int64{0, 1, 2, 3, 4, 5, 6}}
+	req := &qrysmpb.MultipleValidatorStatusRequest{Indices: []int64{0, 1, 2, 3, 4, 5, 6}}
 	response, err := vs.MultipleValidatorStatus(context.Background(), req)
 	require.NoError(t, err)
 
@@ -918,13 +918,13 @@ func TestValidatorStatus_Invalid(t *testing.T) {
 	root, err := depositTrie.HashTreeRoot()
 	require.NoError(t, err)
 	assert.NoError(t, depositCache.InsertDeposit(ctx, deposit, 0 /*blockNum*/, 0, root))
-	height := time.Unix(int64(params.BeaconConfig().Eth1FollowDistance), 0).Unix()
+	height := time.Unix(int64(params.BeaconConfig().ExecutionFollowDistance), 0).Unix()
 	p := &mockExecution.Chain{
 		TimesByHeight: map[int]uint64{
 			0: uint64(height),
 		},
 	}
-	stateObj, err := state_native.InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{})
+	stateObj, err := state_native.InitializeFromProtoUnsafeZond(&qrysmpb.BeaconStateZond{})
 	require.NoError(t, err)
 	vs := &Server{
 		DepositFetcher: depositCache,
@@ -932,34 +932,34 @@ func TestValidatorStatus_Invalid(t *testing.T) {
 		HeadFetcher: &mockChain.ChainService{
 			State: stateObj,
 		},
-		Eth1InfoFetcher: p,
+		ExecutionInfoFetcher: p,
 	}
-	req := &zondpb.ValidatorStatusRequest{
+	req := &qrysmpb.ValidatorStatusRequest{
 		PublicKey: pubKey1,
 	}
 	resp, err := vs.ValidatorStatus(context.Background(), req)
 	require.NoError(t, err, "Could not get validator status")
-	assert.Equal(t, zondpb.ValidatorStatus_INVALID, resp.Status)
+	assert.Equal(t, qrysmpb.ValidatorStatus_INVALID, resp.Status)
 }
 
 func Test_DepositStatus(t *testing.T) {
-	assert.Equal(t, depositStatus(0), zondpb.ValidatorStatus_PENDING)
-	assert.Equal(t, depositStatus(params.BeaconConfig().MinDepositAmount), zondpb.ValidatorStatus_PARTIALLY_DEPOSITED)
-	assert.Equal(t, depositStatus(params.BeaconConfig().MaxEffectiveBalance), zondpb.ValidatorStatus_DEPOSITED)
+	assert.Equal(t, depositStatus(0), qrysmpb.ValidatorStatus_PENDING)
+	assert.Equal(t, depositStatus(params.BeaconConfig().MinDepositAmount), qrysmpb.ValidatorStatus_PARTIALLY_DEPOSITED)
+	assert.Equal(t, depositStatus(params.BeaconConfig().MaxEffectiveBalance), qrysmpb.ValidatorStatus_DEPOSITED)
 }
 
 func TestServer_CheckDoppelGanger(t *testing.T) {
 	tests := []struct {
 		name    string
 		wantErr bool
-		svSetup func(t *testing.T) (*Server, *zondpb.DoppelGangerRequest, *zondpb.DoppelGangerResponse)
+		svSetup func(t *testing.T) (*Server, *qrysmpb.DoppelGangerRequest, *qrysmpb.DoppelGangerResponse)
 	}{
 
 		{
 			name:    "normal doppelganger request",
 			wantErr: false,
-			svSetup: func(t *testing.T) (*Server, *zondpb.DoppelGangerRequest, *zondpb.DoppelGangerResponse) {
-				hs, ps, keys := createStateSetupCapella(t, 3)
+			svSetup: func(t *testing.T) (*Server, *qrysmpb.DoppelGangerRequest, *qrysmpb.DoppelGangerResponse) {
+				hs, ps, keys := createStateSetupZond(t, 3)
 				rb := mockstategen.NewMockReplayerBuilder()
 				rb.SetMockStateForSlot(ps, 23)
 				vs := &Server{
@@ -969,17 +969,17 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 					SyncChecker:     &mockSync.Sync{IsSyncing: false},
 					ReplayerBuilder: rb,
 				}
-				request := &zondpb.DoppelGangerRequest{
-					ValidatorRequests: make([]*zondpb.DoppelGangerRequest_ValidatorRequest, 0),
+				request := &qrysmpb.DoppelGangerRequest{
+					ValidatorRequests: make([]*qrysmpb.DoppelGangerRequest_ValidatorRequest, 0),
 				}
-				response := &zondpb.DoppelGangerResponse{Responses: make([]*zondpb.DoppelGangerResponse_ValidatorResponse, 0)}
-				for i := 0; i < 3; i++ {
-					request.ValidatorRequests = append(request.ValidatorRequests, &zondpb.DoppelGangerRequest_ValidatorRequest{
+				response := &qrysmpb.DoppelGangerResponse{Responses: make([]*qrysmpb.DoppelGangerResponse_ValidatorResponse, 0)}
+				for i := range 3 {
+					request.ValidatorRequests = append(request.ValidatorRequests, &qrysmpb.DoppelGangerRequest_ValidatorRequest{
 						PublicKey:  keys[i].PublicKey().Marshal(),
 						Epoch:      1,
 						SignedRoot: []byte{'A'},
 					})
-					response.Responses = append(response.Responses, &zondpb.DoppelGangerResponse_ValidatorResponse{
+					response.Responses = append(response.Responses, &qrysmpb.DoppelGangerResponse_ValidatorResponse{
 						PublicKey:       keys[i].PublicKey().Marshal(),
 						DuplicateExists: false,
 					})
@@ -990,8 +990,8 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 		{
 			name:    "doppelganger exists current epoch",
 			wantErr: false,
-			svSetup: func(t *testing.T) (*Server, *zondpb.DoppelGangerRequest, *zondpb.DoppelGangerResponse) {
-				hs, ps, keys := createStateSetupCapella(t, 3)
+			svSetup: func(t *testing.T) (*Server, *qrysmpb.DoppelGangerRequest, *qrysmpb.DoppelGangerResponse) {
+				hs, ps, keys := createStateSetupZond(t, 3)
 				rb := mockstategen.NewMockReplayerBuilder()
 				rb.SetMockStateForSlot(ps, 23)
 				currentIndices := make([]byte, 64)
@@ -1005,29 +1005,29 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 					SyncChecker:     &mockSync.Sync{IsSyncing: false},
 					ReplayerBuilder: rb,
 				}
-				request := &zondpb.DoppelGangerRequest{
-					ValidatorRequests: make([]*zondpb.DoppelGangerRequest_ValidatorRequest, 0),
+				request := &qrysmpb.DoppelGangerRequest{
+					ValidatorRequests: make([]*qrysmpb.DoppelGangerRequest_ValidatorRequest, 0),
 				}
-				response := &zondpb.DoppelGangerResponse{Responses: make([]*zondpb.DoppelGangerResponse_ValidatorResponse, 0)}
-				for i := 0; i < 2; i++ {
-					request.ValidatorRequests = append(request.ValidatorRequests, &zondpb.DoppelGangerRequest_ValidatorRequest{
+				response := &qrysmpb.DoppelGangerResponse{Responses: make([]*qrysmpb.DoppelGangerResponse_ValidatorResponse, 0)}
+				for i := range 2 {
+					request.ValidatorRequests = append(request.ValidatorRequests, &qrysmpb.DoppelGangerRequest_ValidatorRequest{
 						PublicKey:  keys[i].PublicKey().Marshal(),
 						Epoch:      1,
 						SignedRoot: []byte{'A'},
 					})
-					response.Responses = append(response.Responses, &zondpb.DoppelGangerResponse_ValidatorResponse{
+					response.Responses = append(response.Responses, &qrysmpb.DoppelGangerResponse_ValidatorResponse{
 						PublicKey:       keys[i].PublicKey().Marshal(),
 						DuplicateExists: false,
 					})
 				}
 
 				// Add in for duplicate validator
-				request.ValidatorRequests = append(request.ValidatorRequests, &zondpb.DoppelGangerRequest_ValidatorRequest{
+				request.ValidatorRequests = append(request.ValidatorRequests, &qrysmpb.DoppelGangerRequest_ValidatorRequest{
 					PublicKey:  keys[2].PublicKey().Marshal(),
 					Epoch:      0,
 					SignedRoot: []byte{'A'},
 				})
-				response.Responses = append(response.Responses, &zondpb.DoppelGangerResponse_ValidatorResponse{
+				response.Responses = append(response.Responses, &qrysmpb.DoppelGangerResponse_ValidatorResponse{
 					PublicKey:       keys[2].PublicKey().Marshal(),
 					DuplicateExists: true,
 				})
@@ -1037,8 +1037,8 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 		{
 			name:    "doppelganger exists previous epoch",
 			wantErr: false,
-			svSetup: func(t *testing.T) (*Server, *zondpb.DoppelGangerRequest, *zondpb.DoppelGangerResponse) {
-				hs, ps, keys := createStateSetupCapella(t, 3)
+			svSetup: func(t *testing.T) (*Server, *qrysmpb.DoppelGangerRequest, *qrysmpb.DoppelGangerResponse) {
+				hs, ps, keys := createStateSetupZond(t, 3)
 				prevIndices := make([]byte, 64)
 				prevIndices[2] = 1
 				require.NoError(t, ps.SetPreviousParticipationBits(prevIndices))
@@ -1052,29 +1052,29 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 					SyncChecker:     &mockSync.Sync{IsSyncing: false},
 					ReplayerBuilder: rb,
 				}
-				request := &zondpb.DoppelGangerRequest{
-					ValidatorRequests: make([]*zondpb.DoppelGangerRequest_ValidatorRequest, 0),
+				request := &qrysmpb.DoppelGangerRequest{
+					ValidatorRequests: make([]*qrysmpb.DoppelGangerRequest_ValidatorRequest, 0),
 				}
-				response := &zondpb.DoppelGangerResponse{Responses: make([]*zondpb.DoppelGangerResponse_ValidatorResponse, 0)}
-				for i := 0; i < 2; i++ {
-					request.ValidatorRequests = append(request.ValidatorRequests, &zondpb.DoppelGangerRequest_ValidatorRequest{
+				response := &qrysmpb.DoppelGangerResponse{Responses: make([]*qrysmpb.DoppelGangerResponse_ValidatorResponse, 0)}
+				for i := range 2 {
+					request.ValidatorRequests = append(request.ValidatorRequests, &qrysmpb.DoppelGangerRequest_ValidatorRequest{
 						PublicKey:  keys[i].PublicKey().Marshal(),
 						Epoch:      1,
 						SignedRoot: []byte{'A'},
 					})
-					response.Responses = append(response.Responses, &zondpb.DoppelGangerResponse_ValidatorResponse{
+					response.Responses = append(response.Responses, &qrysmpb.DoppelGangerResponse_ValidatorResponse{
 						PublicKey:       keys[i].PublicKey().Marshal(),
 						DuplicateExists: false,
 					})
 				}
 
 				// Add in for duplicate validator
-				request.ValidatorRequests = append(request.ValidatorRequests, &zondpb.DoppelGangerRequest_ValidatorRequest{
+				request.ValidatorRequests = append(request.ValidatorRequests, &qrysmpb.DoppelGangerRequest_ValidatorRequest{
 					PublicKey:  keys[2].PublicKey().Marshal(),
 					Epoch:      0,
 					SignedRoot: []byte{'A'},
 				})
-				response.Responses = append(response.Responses, &zondpb.DoppelGangerResponse_ValidatorResponse{
+				response.Responses = append(response.Responses, &qrysmpb.DoppelGangerResponse_ValidatorResponse{
 					PublicKey:       keys[2].PublicKey().Marshal(),
 					DuplicateExists: true,
 				})
@@ -1084,8 +1084,8 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 		{
 			name:    "multiple doppelganger exists",
 			wantErr: false,
-			svSetup: func(t *testing.T) (*Server, *zondpb.DoppelGangerRequest, *zondpb.DoppelGangerResponse) {
-				hs, ps, keys := createStateSetupCapella(t, 3)
+			svSetup: func(t *testing.T) (*Server, *qrysmpb.DoppelGangerRequest, *qrysmpb.DoppelGangerResponse) {
+				hs, ps, keys := createStateSetupZond(t, 3)
 				currentIndices := make([]byte, 64)
 				currentIndices[10] = 1
 				currentIndices[11] = 2
@@ -1106,29 +1106,29 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 					SyncChecker:     &mockSync.Sync{IsSyncing: false},
 					ReplayerBuilder: rb,
 				}
-				request := &zondpb.DoppelGangerRequest{
-					ValidatorRequests: make([]*zondpb.DoppelGangerRequest_ValidatorRequest, 0),
+				request := &qrysmpb.DoppelGangerRequest{
+					ValidatorRequests: make([]*qrysmpb.DoppelGangerRequest_ValidatorRequest, 0),
 				}
-				response := &zondpb.DoppelGangerResponse{Responses: make([]*zondpb.DoppelGangerResponse_ValidatorResponse, 0)}
+				response := &qrysmpb.DoppelGangerResponse{Responses: make([]*qrysmpb.DoppelGangerResponse_ValidatorResponse, 0)}
 				for i := 10; i < 15; i++ {
 					// Add in for duplicate validator
-					request.ValidatorRequests = append(request.ValidatorRequests, &zondpb.DoppelGangerRequest_ValidatorRequest{
+					request.ValidatorRequests = append(request.ValidatorRequests, &qrysmpb.DoppelGangerRequest_ValidatorRequest{
 						PublicKey:  keys[i].PublicKey().Marshal(),
 						Epoch:      0,
 						SignedRoot: []byte{'A'},
 					})
-					response.Responses = append(response.Responses, &zondpb.DoppelGangerResponse_ValidatorResponse{
+					response.Responses = append(response.Responses, &qrysmpb.DoppelGangerResponse_ValidatorResponse{
 						PublicKey:       keys[i].PublicKey().Marshal(),
 						DuplicateExists: true,
 					})
 				}
 				for i := 15; i < 20; i++ {
-					request.ValidatorRequests = append(request.ValidatorRequests, &zondpb.DoppelGangerRequest_ValidatorRequest{
+					request.ValidatorRequests = append(request.ValidatorRequests, &qrysmpb.DoppelGangerRequest_ValidatorRequest{
 						PublicKey:  keys[i].PublicKey().Marshal(),
 						Epoch:      3,
 						SignedRoot: []byte{'A'},
 					})
-					response.Responses = append(response.Responses, &zondpb.DoppelGangerResponse_ValidatorResponse{
+					response.Responses = append(response.Responses, &qrysmpb.DoppelGangerResponse_ValidatorResponse{
 						PublicKey:       keys[i].PublicKey().Marshal(),
 						DuplicateExists: false,
 					})
@@ -1140,8 +1140,8 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 		{
 			name:    "attesters are too recent",
 			wantErr: false,
-			svSetup: func(t *testing.T) (*Server, *zondpb.DoppelGangerRequest, *zondpb.DoppelGangerResponse) {
-				hs, ps, keys := createStateSetupCapella(t, 3)
+			svSetup: func(t *testing.T) (*Server, *qrysmpb.DoppelGangerRequest, *qrysmpb.DoppelGangerResponse) {
+				hs, ps, keys := createStateSetupZond(t, 3)
 				rb := mockstategen.NewMockReplayerBuilder()
 				rb.SetMockStateForSlot(ps, 23)
 				currentIndices := make([]byte, 64)
@@ -1155,17 +1155,17 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 					SyncChecker:     &mockSync.Sync{IsSyncing: false},
 					ReplayerBuilder: rb,
 				}
-				request := &zondpb.DoppelGangerRequest{
-					ValidatorRequests: make([]*zondpb.DoppelGangerRequest_ValidatorRequest, 0),
+				request := &qrysmpb.DoppelGangerRequest{
+					ValidatorRequests: make([]*qrysmpb.DoppelGangerRequest_ValidatorRequest, 0),
 				}
-				response := &zondpb.DoppelGangerResponse{Responses: make([]*zondpb.DoppelGangerResponse_ValidatorResponse, 0)}
-				for i := 0; i < 15; i++ {
-					request.ValidatorRequests = append(request.ValidatorRequests, &zondpb.DoppelGangerRequest_ValidatorRequest{
+				response := &qrysmpb.DoppelGangerResponse{Responses: make([]*qrysmpb.DoppelGangerResponse_ValidatorResponse, 0)}
+				for i := range 15 {
+					request.ValidatorRequests = append(request.ValidatorRequests, &qrysmpb.DoppelGangerRequest_ValidatorRequest{
 						PublicKey:  keys[i].PublicKey().Marshal(),
 						Epoch:      2,
 						SignedRoot: []byte{'A'},
 					})
-					response.Responses = append(response.Responses, &zondpb.DoppelGangerResponse_ValidatorResponse{
+					response.Responses = append(response.Responses, &qrysmpb.DoppelGangerResponse_ValidatorResponse{
 						PublicKey:       keys[i].PublicKey().Marshal(),
 						DuplicateExists: false,
 					})
@@ -1177,8 +1177,8 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 		{
 			name:    "attesters are too recent(previous state)",
 			wantErr: false,
-			svSetup: func(t *testing.T) (*Server, *zondpb.DoppelGangerRequest, *zondpb.DoppelGangerResponse) {
-				hs, ps, keys := createStateSetupCapella(t, 3)
+			svSetup: func(t *testing.T) (*Server, *qrysmpb.DoppelGangerRequest, *qrysmpb.DoppelGangerResponse) {
+				hs, ps, keys := createStateSetupZond(t, 3)
 				rb := mockstategen.NewMockReplayerBuilder()
 				rb.SetMockStateForSlot(ps, 23)
 				currentIndices := make([]byte, 64)
@@ -1192,17 +1192,17 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 					SyncChecker:     &mockSync.Sync{IsSyncing: false},
 					ReplayerBuilder: rb,
 				}
-				request := &zondpb.DoppelGangerRequest{
-					ValidatorRequests: make([]*zondpb.DoppelGangerRequest_ValidatorRequest, 0),
+				request := &qrysmpb.DoppelGangerRequest{
+					ValidatorRequests: make([]*qrysmpb.DoppelGangerRequest_ValidatorRequest, 0),
 				}
-				response := &zondpb.DoppelGangerResponse{Responses: make([]*zondpb.DoppelGangerResponse_ValidatorResponse, 0)}
-				for i := 0; i < 15; i++ {
-					request.ValidatorRequests = append(request.ValidatorRequests, &zondpb.DoppelGangerRequest_ValidatorRequest{
+				response := &qrysmpb.DoppelGangerResponse{Responses: make([]*qrysmpb.DoppelGangerResponse_ValidatorResponse, 0)}
+				for i := range 15 {
+					request.ValidatorRequests = append(request.ValidatorRequests, &qrysmpb.DoppelGangerRequest_ValidatorRequest{
 						PublicKey:  keys[i].PublicKey().Marshal(),
 						Epoch:      1,
 						SignedRoot: []byte{'A'},
 					})
-					response.Responses = append(response.Responses, &zondpb.DoppelGangerResponse_ValidatorResponse{
+					response.Responses = append(response.Responses, &qrysmpb.DoppelGangerResponse_ValidatorResponse{
 						PublicKey:       keys[i].PublicKey().Marshal(),
 						DuplicateExists: false,
 					})
@@ -1214,8 +1214,8 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 		{
 			name:    "exit early for Phase 0",
 			wantErr: false,
-			svSetup: func(t *testing.T) (*Server, *zondpb.DoppelGangerRequest, *zondpb.DoppelGangerResponse) {
-				hs, _, keys := createStateSetupCapella(t, 3)
+			svSetup: func(t *testing.T) (*Server, *qrysmpb.DoppelGangerRequest, *qrysmpb.DoppelGangerResponse) {
+				hs, _, keys := createStateSetupZond(t, 3)
 
 				vs := &Server{
 					HeadFetcher: &mockChain.ChainService{
@@ -1223,8 +1223,8 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 					},
 					SyncChecker: &mockSync.Sync{IsSyncing: false},
 				}
-				request := &zondpb.DoppelGangerRequest{
-					ValidatorRequests: []*zondpb.DoppelGangerRequest_ValidatorRequest{
+				request := &qrysmpb.DoppelGangerRequest{
+					ValidatorRequests: []*qrysmpb.DoppelGangerRequest_ValidatorRequest{
 						{
 							PublicKey:  keys[0].PublicKey().Marshal(),
 							Epoch:      1,
@@ -1232,8 +1232,8 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 						},
 					},
 				}
-				response := &zondpb.DoppelGangerResponse{
-					Responses: []*zondpb.DoppelGangerResponse_ValidatorResponse{
+				response := &qrysmpb.DoppelGangerResponse{
+					Responses: []*qrysmpb.DoppelGangerResponse_ValidatorResponse{
 						{
 							PublicKey:       keys[0].PublicKey().Marshal(),
 							DuplicateExists: false,
@@ -1261,9 +1261,9 @@ func TestServer_CheckDoppelGanger(t *testing.T) {
 	}
 }
 
-func createStateSetupCapella(t *testing.T, head primitives.Epoch) (state.BeaconState,
-	state.BeaconState, []dilithium.DilithiumKey) {
-	gs, keys := util.DeterministicGenesisStateCapella(t, 64)
+func createStateSetupZond(t *testing.T, head primitives.Epoch) (state.BeaconState,
+	state.BeaconState, []ml_dsa_87.MLDSA87Key) {
+	gs, keys := util.DeterministicGenesisStateZond(t, 64)
 	hs := gs.Copy()
 
 	// Head State

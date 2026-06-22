@@ -1,0 +1,29 @@
+load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "nopanic",
+    srcs = ["analyzer.go"],
+    importpath = "github.com/theQRL/qrysm/tools/analyzers/nopanic",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@org_golang_x_tools//go/analysis",
+        "@org_golang_x_tools//go/analysis/passes/inspect",
+        "@org_golang_x_tools//go/ast/inspector",
+    ],
+)
+
+go_test(
+    name = "nopanic_test",
+    srcs = ["analyzer_test.go"],
+    data = glob(
+        ["testdata/**"],
+        allow_empty = True,
+    ) + [
+        "@go_sdk//:files",
+    ],
+    embed = [":nopanic"],
+    deps = [
+        "//build/bazel",
+        "@org_golang_x_tools//go/analysis/analysistest",
+    ],
+)

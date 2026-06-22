@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "testnet",
     srcs = [
         "generate_genesis.go",
         "testnet.go",
@@ -9,31 +9,31 @@ go_library(
     importpath = "github.com/theQRL/qrysm/cmd/qrysmctl/testnet",
     visibility = ["//visibility:public"],
     deps = [
-        "//beacon-chain/state:go_default_library",
-        "//config/params:go_default_library",
-        "//container/trie:go_default_library",
-        "//io/file:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "//runtime/interop:go_default_library",
-        "//runtime/version:go_default_library",
-        "@com_github_ghodss_yaml//:go_default_library",
-        "@com_github_pkg_errors//:go_default_library",
-        "@com_github_sirupsen_logrus//:go_default_library",
-        "@com_github_theqrl_go_zond//core:go_default_library",
-        "@com_github_theqrl_go_zond//rpc:go_default_library",
-        "@com_github_theqrl_go_zond//zondclient:go_default_library",
-        "@com_github_urfave_cli_v2//:go_default_library",
+        "//beacon-chain/state",
+        "//config/params",
+        "//container/trie",
+        "//io/file",
+        "//proto/qrysm/v1alpha1",
+        "//runtime/interop",
+        "//runtime/version",
+        "@com_github_ghodss_yaml//:yaml",
+        "@com_github_pkg_errors//:errors",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_theqrl_go_qrl//core",
+        "@com_github_theqrl_go_qrl//qrlclient",
+        "@com_github_theqrl_go_qrl//rpc",
+        "@com_github_urfave_cli_v2//:cli",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "testnet_test",
     srcs = ["generate_genesis_test.go"],
-    embed = [":go_default_library"],
+    embed = [":testnet"],
     deps = [
-        "//crypto/dilithium:go_default_library",
-        "//runtime/interop:go_default_library",
-        "//testing/assert:go_default_library",
-        "//testing/require:go_default_library",
+        "//crypto/ml_dsa_87",
+        "//runtime/interop",
+        "//testing/assert",
+        "//testing/require",
     ],
 )

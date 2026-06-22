@@ -23,7 +23,7 @@ func (s *Store) setOptimisticToInvalid(ctx context.Context, root, parentRoot, la
 		if node == nil {
 			return invalidRoots, errors.Wrap(ErrNilNode, "could not set node to invalid")
 		}
-		if node.parent.root != parentRoot {
+		if node.parent == nil || node.parent.root != parentRoot {
 			return invalidRoots, errInvalidParentRoot
 		}
 	}

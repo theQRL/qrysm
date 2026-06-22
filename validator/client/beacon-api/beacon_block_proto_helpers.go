@@ -4,15 +4,15 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
-func convertProposerSlashingsToProto(jsonProposerSlashings []*apimiddleware.ProposerSlashingJson) ([]*zondpb.ProposerSlashing, error) {
-	proposerSlashings := make([]*zondpb.ProposerSlashing, len(jsonProposerSlashings))
+func convertProposerSlashingsToProto(jsonProposerSlashings []*apimiddleware.ProposerSlashingJson) ([]*qrysmpb.ProposerSlashing, error) {
+	proposerSlashings := make([]*qrysmpb.ProposerSlashing, len(jsonProposerSlashings))
 
 	for index, jsonProposerSlashing := range jsonProposerSlashings {
 		if jsonProposerSlashing == nil {
@@ -29,7 +29,7 @@ func convertProposerSlashingsToProto(jsonProposerSlashings []*apimiddleware.Prop
 			return nil, errors.Wrap(err, "failed to get proposer header 2")
 		}
 
-		proposerSlashings[index] = &zondpb.ProposerSlashing{
+		proposerSlashings[index] = &qrysmpb.ProposerSlashing{
 			Header_1: header1,
 			Header_2: header2,
 		}
@@ -38,7 +38,7 @@ func convertProposerSlashingsToProto(jsonProposerSlashings []*apimiddleware.Prop
 	return proposerSlashings, nil
 }
 
-func convertProposerSlashingSignedHeaderToProto(signedHeader *apimiddleware.SignedBeaconBlockHeaderJson) (*zondpb.SignedBeaconBlockHeader, error) {
+func convertProposerSlashingSignedHeaderToProto(signedHeader *apimiddleware.SignedBeaconBlockHeaderJson) (*qrysmpb.SignedBeaconBlockHeader, error) {
 	if signedHeader == nil {
 		return nil, errors.New("signed header is nil")
 	}
@@ -77,8 +77,8 @@ func convertProposerSlashingSignedHeaderToProto(signedHeader *apimiddleware.Sign
 		return nil, errors.Wrapf(err, "failed to decode signature `%s`", signedHeader.Signature)
 	}
 
-	return &zondpb.SignedBeaconBlockHeader{
-		Header: &zondpb.BeaconBlockHeader{
+	return &qrysmpb.SignedBeaconBlockHeader{
+		Header: &qrysmpb.BeaconBlockHeader{
 			Slot:          primitives.Slot(slot),
 			ProposerIndex: primitives.ValidatorIndex(proposerIndex),
 			ParentRoot:    parentRoot,
@@ -89,8 +89,8 @@ func convertProposerSlashingSignedHeaderToProto(signedHeader *apimiddleware.Sign
 	}, nil
 }
 
-func convertAttesterSlashingsToProto(jsonAttesterSlashings []*apimiddleware.AttesterSlashingJson) ([]*zondpb.AttesterSlashing, error) {
-	attesterSlashings := make([]*zondpb.AttesterSlashing, len(jsonAttesterSlashings))
+func convertAttesterSlashingsToProto(jsonAttesterSlashings []*apimiddleware.AttesterSlashingJson) ([]*qrysmpb.AttesterSlashing, error) {
+	attesterSlashings := make([]*qrysmpb.AttesterSlashing, len(jsonAttesterSlashings))
 
 	for index, jsonAttesterSlashing := range jsonAttesterSlashings {
 		if jsonAttesterSlashing == nil {
@@ -107,7 +107,7 @@ func convertAttesterSlashingsToProto(jsonAttesterSlashings []*apimiddleware.Atte
 			return nil, errors.Wrap(err, "failed to get attestation 2")
 		}
 
-		attesterSlashings[index] = &zondpb.AttesterSlashing{
+		attesterSlashings[index] = &qrysmpb.AttesterSlashing{
 			Attestation_1: attestation1,
 			Attestation_2: attestation2,
 		}
@@ -116,7 +116,7 @@ func convertAttesterSlashingsToProto(jsonAttesterSlashings []*apimiddleware.Atte
 	return attesterSlashings, nil
 }
 
-func convertIndexedAttestationToProto(jsonAttestation *apimiddleware.IndexedAttestationJson) (*zondpb.IndexedAttestation, error) {
+func convertIndexedAttestationToProto(jsonAttestation *apimiddleware.IndexedAttestationJson) (*qrysmpb.IndexedAttestation, error) {
 	if jsonAttestation == nil {
 		return nil, errors.New("indexed attestation is nil")
 	}
@@ -146,14 +146,14 @@ func convertIndexedAttestationToProto(jsonAttestation *apimiddleware.IndexedAtte
 		return nil, errors.Wrap(err, "failed to get attestation data")
 	}
 
-	return &zondpb.IndexedAttestation{
+	return &qrysmpb.IndexedAttestation{
 		AttestingIndices: attestingIndices,
 		Data:             attestationData,
 		Signatures:       signatures,
 	}, nil
 }
 
-func convertCheckpointToProto(jsonCheckpoint *apimiddleware.CheckpointJson) (*zondpb.Checkpoint, error) {
+func convertCheckpointToProto(jsonCheckpoint *apimiddleware.CheckpointJson) (*qrysmpb.Checkpoint, error) {
 	if jsonCheckpoint == nil {
 		return nil, errors.New("checkpoint is nil")
 	}
@@ -168,13 +168,13 @@ func convertCheckpointToProto(jsonCheckpoint *apimiddleware.CheckpointJson) (*zo
 		return nil, errors.Wrapf(err, "failed to decode checkpoint root `%s`", jsonCheckpoint.Root)
 	}
 
-	return &zondpb.Checkpoint{
+	return &qrysmpb.Checkpoint{
 		Epoch: primitives.Epoch(epoch),
 		Root:  root,
 	}, nil
 }
 
-func convertAttestationToProto(jsonAttestation *apimiddleware.AttestationJson) (*zondpb.Attestation, error) {
+func convertAttestationToProto(jsonAttestation *apimiddleware.AttestationJson) (*qrysmpb.Attestation, error) {
 	if jsonAttestation == nil {
 		return nil, errors.New("json attestation is nil")
 	}
@@ -197,15 +197,15 @@ func convertAttestationToProto(jsonAttestation *apimiddleware.AttestationJson) (
 		}
 	}
 
-	return &zondpb.Attestation{
+	return &qrysmpb.Attestation{
 		AggregationBits: aggregationBits,
 		Data:            attestationData,
 		Signatures:      signatures,
 	}, nil
 }
 
-func convertAttestationsToProto(jsonAttestations []*apimiddleware.AttestationJson) ([]*zondpb.Attestation, error) {
-	var attestations []*zondpb.Attestation
+func convertAttestationsToProto(jsonAttestations []*apimiddleware.AttestationJson) ([]*qrysmpb.Attestation, error) {
+	var attestations []*qrysmpb.Attestation
 	for index, jsonAttestation := range jsonAttestations {
 		if jsonAttestation == nil {
 			return nil, errors.Errorf("attestation at index `%d` is nil", index)
@@ -222,7 +222,7 @@ func convertAttestationsToProto(jsonAttestations []*apimiddleware.AttestationJso
 	return attestations, nil
 }
 
-func convertAttestationDataToProto(jsonAttestationData *apimiddleware.AttestationDataJson) (*zondpb.AttestationData, error) {
+func convertAttestationDataToProto(jsonAttestationData *apimiddleware.AttestationDataJson) (*qrysmpb.AttestationData, error) {
 	if jsonAttestationData == nil {
 		return nil, errors.New("attestation data is nil")
 	}
@@ -252,7 +252,7 @@ func convertAttestationDataToProto(jsonAttestationData *apimiddleware.Attestatio
 		return nil, errors.Wrap(err, "failed to get attestation target checkpoint")
 	}
 
-	return &zondpb.AttestationData{
+	return &qrysmpb.AttestationData{
 		Slot:            primitives.Slot(slot),
 		CommitteeIndex:  primitives.CommitteeIndex(committeeIndex),
 		BeaconBlockRoot: beaconBlockRoot,
@@ -261,8 +261,8 @@ func convertAttestationDataToProto(jsonAttestationData *apimiddleware.Attestatio
 	}, nil
 }
 
-func convertDepositsToProto(jsonDeposits []*apimiddleware.DepositJson) ([]*zondpb.Deposit, error) {
-	deposits := make([]*zondpb.Deposit, len(jsonDeposits))
+func convertDepositsToProto(jsonDeposits []*apimiddleware.DepositJson) ([]*qrysmpb.Deposit, error) {
+	deposits := make([]*qrysmpb.Deposit, len(jsonDeposits))
 
 	for depositIndex, jsonDeposit := range jsonDeposits {
 		if jsonDeposit == nil {
@@ -303,9 +303,9 @@ func convertDepositsToProto(jsonDeposits []*apimiddleware.DepositJson) ([]*zondp
 			return nil, errors.Wrapf(err, "failed to decode signature `%s`", jsonDeposit.Data.Signature)
 		}
 
-		deposits[depositIndex] = &zondpb.Deposit{
+		deposits[depositIndex] = &qrysmpb.Deposit{
 			Proof: proofs,
-			Data: &zondpb.Deposit_Data{
+			Data: &qrysmpb.Deposit_Data{
 				PublicKey:             pubkey,
 				WithdrawalCredentials: withdrawalCredentials,
 				Amount:                amount,
@@ -317,8 +317,8 @@ func convertDepositsToProto(jsonDeposits []*apimiddleware.DepositJson) ([]*zondp
 	return deposits, nil
 }
 
-func convertVoluntaryExitsToProto(jsonVoluntaryExits []*apimiddleware.SignedVoluntaryExitJson) ([]*zondpb.SignedVoluntaryExit, error) {
-	attestingIndices := make([]*zondpb.SignedVoluntaryExit, len(jsonVoluntaryExits))
+func convertVoluntaryExitsToProto(jsonVoluntaryExits []*apimiddleware.SignedVoluntaryExitJson) ([]*qrysmpb.SignedVoluntaryExit, error) {
+	attestingIndices := make([]*qrysmpb.SignedVoluntaryExit, len(jsonVoluntaryExits))
 
 	for index, jsonVoluntaryExit := range jsonVoluntaryExits {
 		if jsonVoluntaryExit == nil {
@@ -344,8 +344,8 @@ func convertVoluntaryExitsToProto(jsonVoluntaryExits []*apimiddleware.SignedVolu
 			return nil, errors.Wrapf(err, "failed to decode signature `%s`", jsonVoluntaryExit.Signature)
 		}
 
-		attestingIndices[index] = &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		attestingIndices[index] = &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				Epoch:          primitives.Epoch(epoch),
 				ValidatorIndex: primitives.ValidatorIndex(validatorIndex),
 			},
@@ -408,49 +408,4 @@ func convertWithdrawalsToProto(jsonWithdrawals []*apimiddleware.WithdrawalJson) 
 	}
 
 	return withdrawals, nil
-}
-
-func convertDilithiumToExecutionChangesToProto(jsonSignedDilithiumToExecutionChanges []*apimiddleware.SignedDilithiumToExecutionChangeJson) ([]*zondpb.SignedDilithiumToExecutionChange, error) {
-	signedDilithiumToExecutionChanges := make([]*zondpb.SignedDilithiumToExecutionChange, len(jsonSignedDilithiumToExecutionChanges))
-
-	for index, jsonDilithiumToExecutionChange := range jsonSignedDilithiumToExecutionChanges {
-		if jsonDilithiumToExecutionChange == nil {
-			return nil, errors.Errorf("dilithium to execution change at index `%d` is nil", index)
-		}
-
-		if jsonDilithiumToExecutionChange.Message == nil {
-			return nil, errors.Errorf("dilithium to execution change message at index `%d` is nil", index)
-		}
-
-		validatorIndex, err := strconv.ParseUint(jsonDilithiumToExecutionChange.Message.ValidatorIndex, 10, 64)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to decode validator index `%s`", jsonDilithiumToExecutionChange.Message.ValidatorIndex)
-		}
-
-		fromDilithiumPubkey, err := hexutil.Decode(jsonDilithiumToExecutionChange.Message.FromDilithiumPubkey)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to decode dilithium pubkey `%s`", jsonDilithiumToExecutionChange.Message.FromDilithiumPubkey)
-		}
-
-		toExecutionAddress, err := hexutil.Decode(jsonDilithiumToExecutionChange.Message.ToExecutionAddress)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to decode execution address `%s`", jsonDilithiumToExecutionChange.Message.ToExecutionAddress)
-		}
-
-		signature, err := hexutil.Decode(jsonDilithiumToExecutionChange.Signature)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to decode signature `%s`", jsonDilithiumToExecutionChange.Signature)
-		}
-
-		signedDilithiumToExecutionChanges[index] = &zondpb.SignedDilithiumToExecutionChange{
-			Message: &zondpb.DilithiumToExecutionChange{
-				ValidatorIndex:      primitives.ValidatorIndex(validatorIndex),
-				FromDilithiumPubkey: fromDilithiumPubkey,
-				ToExecutionAddress:  toExecutionAddress,
-			},
-			Signature: signature,
-		}
-	}
-
-	return signedDilithiumToExecutionChanges, nil
 }

@@ -20,7 +20,7 @@ import (
 	"github.com/theQRL/qrysm/crypto/hash"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
 	qrysmTime "github.com/theQRL/qrysm/time"
 	"github.com/theQRL/qrysm/time/slots"
@@ -32,7 +32,7 @@ import (
 // It fetches the latest beacon block head along with the latest canonical beacon state
 // information in order to sign the block and include information about the validator's
 // participation in voting on the block.
-func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot, pubKey [field_params.DilithiumPubkeyLength]byte) {
+func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot, pubKey [field_params.MLDSA87PubkeyLength]byte) {
 	ctx, span := trace.StartSpan(ctx, "validator.SubmitAttestation")
 	defer span.End()
 	span.AddAttributes(trace.StringAttribute("validator", fmt.Sprintf("%#x", pubKey)))
@@ -71,7 +71,7 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot,
 		return
 	}
 
-	req := &zondpb.AttestationDataRequest{
+	req := &qrysmpb.AttestationDataRequest{
 		Slot:           slot,
 		CommitteeIndex: duty.CommitteeIndex,
 	}
@@ -85,7 +85,7 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot,
 		return
 	}
 
-	indexedAtt := &zondpb.IndexedAttestation{
+	indexedAtt := &qrysmpb.IndexedAttestation{
 		AttestingIndices: []uint64{uint64(duty.ValidatorIndex)},
 		Data:             data,
 	}
@@ -129,7 +129,7 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot,
 
 	aggregationBitfield := bitfield.NewBitlist(uint64(len(duty.Committee)))
 	aggregationBitfield.SetBitAt(indexInCommittee, true)
-	attestation := &zondpb.Attestation{
+	attestation := &qrysmpb.Attestation{
 		Data:            data,
 		AggregationBits: aggregationBitfield,
 		Signatures:      [][]byte{sig},
@@ -181,7 +181,7 @@ func (v *validator) SubmitAttestation(ctx context.Context, slot primitives.Slot,
 }
 
 // Given the validator public key, this gets the validator assignment.
-func (v *validator) duty(pubKey [field_params.DilithiumPubkeyLength]byte) (*zondpb.DutiesResponse_Duty, error) {
+func (v *validator) duty(pubKey [field_params.MLDSA87PubkeyLength]byte) (*qrysmpb.DutiesResponse_Duty, error) {
 	v.dutiesLock.RLock()
 	defer v.dutiesLock.RUnlock()
 	if v.duties == nil {
@@ -198,7 +198,7 @@ func (v *validator) duty(pubKey [field_params.DilithiumPubkeyLength]byte) (*zond
 }
 
 // Given validator's public key, this function returns the signature of an attestation data and its signing root.
-func (v *validator) signAtt(ctx context.Context, pubKey [field_params.DilithiumPubkeyLength]byte, data *zondpb.AttestationData, slot primitives.Slot) ([]byte, [32]byte, error) {
+func (v *validator) signAtt(ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, data *qrysmpb.AttestationData, slot primitives.Slot) ([]byte, [32]byte, error) {
 	domain, root, err := v.getDomainAndSigningRoot(ctx, data)
 	if err != nil {
 		return nil, [32]byte{}, err
@@ -217,7 +217,7 @@ func (v *validator) signAtt(ctx context.Context, pubKey [field_params.DilithiumP
 	return sig.Marshal(), root, nil
 }
 
-func (v *validator) getDomainAndSigningRoot(ctx context.Context, data *zondpb.AttestationData) (*zondpb.DomainResponse, [32]byte, error) {
+func (v *validator) getDomainAndSigningRoot(ctx context.Context, data *qrysmpb.AttestationData) (*qrysmpb.DomainResponse, [32]byte, error) {
 	domain, err := v.domainData(ctx, data.Target.Epoch, params.BeaconConfig().DomainBeaconAttester[:])
 	if err != nil {
 		return nil, [32]byte{}, err
@@ -231,11 +231,11 @@ func (v *validator) getDomainAndSigningRoot(ctx context.Context, data *zondpb.At
 
 // For logging, this saves the last submitted attester index to its attestation data. The purpose of this
 // is to enhance attesting logs to be readable when multiple validator keys ran in a single client.
-func (v *validator) saveAttesterIndexToData(data *zondpb.AttestationData, index primitives.ValidatorIndex) error {
+func (v *validator) saveAttesterIndexToData(data *qrysmpb.AttestationData, index primitives.ValidatorIndex) error {
 	v.attLogsLock.Lock()
 	defer v.attLogsLock.Unlock()
 
-	h, err := hash.HashProto(data)
+	h, err := hash.Proto(data)
 	if err != nil {
 		return err
 	}
@@ -298,7 +298,7 @@ func (v *validator) waitOneThirdOrValidBlock(ctx context.Context, slot primitive
 	}
 }
 
-func attestationLogFields(pubKey [field_params.DilithiumPubkeyLength]byte, indexedAtt *zondpb.IndexedAttestation) logrus.Fields {
+func attestationLogFields(pubKey [field_params.MLDSA87PubkeyLength]byte, indexedAtt *qrysmpb.IndexedAttestation) logrus.Fields {
 	return logrus.Fields{
 		"attesterPublicKey": fmt.Sprintf("%#x", pubKey),
 		"attestationSlot":   indexedAtt.Data.Slot,

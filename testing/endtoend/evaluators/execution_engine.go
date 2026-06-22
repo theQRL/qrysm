@@ -7,8 +7,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	mathutil "github.com/theQRL/qrysm/math"
-	"github.com/theQRL/qrysm/proto/zond/service"
-	v1 "github.com/theQRL/qrysm/proto/zond/v1"
+	"github.com/theQRL/qrysm/proto/qrl/service"
+	qrlpb "github.com/theQRL/qrysm/proto/qrl/v1"
 	"github.com/theQRL/qrysm/testing/endtoend/policies"
 	"github.com/theQRL/qrysm/testing/endtoend/types"
 	"github.com/theQRL/qrysm/time/slots"
@@ -25,14 +25,14 @@ var OptimisticSyncEnabled = types.Evaluator{
 func optimisticSyncEnabled(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 	for _, conn := range conns {
 		client := service.NewBeaconChainClient(conn)
-		head, err := client.GetBlindedBlock(context.Background(), &v1.BlockRequest{BlockId: []byte("head")})
+		head, err := client.GetBlindedBlock(context.Background(), &qrlpb.BlockRequest{BlockId: []byte("head")})
 		if err != nil {
 			return err
 		}
 		headSlot := uint64(0)
 		switch hb := head.Data.Message.(type) {
-		case *v1.SignedBlindedBeaconBlockContainer_CapellaBlock:
-			headSlot = uint64(hb.CapellaBlock.Slot)
+		case *qrlpb.SignedBlindedBeaconBlockContainer_ZondBlock:
+			headSlot = uint64(hb.ZondBlock.Slot)
 		default:
 			return errors.New("no valid block type retrieved")
 		}
@@ -47,7 +47,7 @@ func optimisticSyncEnabled(_ *types.EvaluationContext, conns ...*grpc.ClientConn
 			if err != nil {
 				return err
 			}
-			block, err := client.GetBlindedBlock(context.Background(), &v1.BlockRequest{BlockId: []byte(strconv.Itoa(castI))})
+			block, err := client.GetBlindedBlock(context.Background(), &qrlpb.BlockRequest{BlockId: []byte(strconv.Itoa(castI))})
 			if err != nil {
 				// Continue in the event of non-existent blocks.
 				continue

@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
@@ -48,11 +48,11 @@ func TestService_getHeadStateAndBlock(t *testing.T) {
 	_, _, err := service.getStateAndBlock(context.Background(), [32]byte{})
 	require.ErrorContains(t, "block does not exist", err)
 
-	blk, err := blocks.NewSignedBeaconBlock(util.HydrateSignedBeaconBlockCapella(&zondpb.SignedBeaconBlockCapella{Signature: []byte{1}}))
+	blk, err := blocks.NewSignedBeaconBlock(util.HydrateSignedBeaconBlockZond(&qrysmpb.SignedBeaconBlockZond{Signature: []byte{1}}))
 	require.NoError(t, err)
 	require.NoError(t, service.cfg.BeaconDB.SaveBlock(context.Background(), blk))
 
-	st, _ := util.DeterministicGenesisStateCapella(t, 1)
+	st, _ := util.DeterministicGenesisStateZond(t, 1)
 	r, err := blk.Block().HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, service.cfg.BeaconDB.SaveState(context.Background(), st, r))
@@ -83,7 +83,7 @@ func TestService_forkchoiceUpdateWithExecution_exceptionalCases(t *testing.T) {
 	invalidStateErr := "could not get state summary: could not find block in DB"
 	require.LogsDoNotContain(t, hook, invalidStateErr)
 	require.LogsDoNotContain(t, hook, hookErr)
-	gb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
+	gb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
 	require.NoError(t, err)
 	require.NoError(t, service.saveInitSyncBlock(ctx, [32]byte{'a'}, gb))
 	_, err = service.forkchoiceUpdateWithExecution(ctx, [32]byte{'a'}, service.CurrentSlot()+1)
@@ -97,14 +97,14 @@ func TestService_forkchoiceUpdateWithExecution_exceptionalCases(t *testing.T) {
 	}
 
 	// Block in Cache
-	b := util.NewBeaconBlockCapella()
+	b := util.NewBeaconBlockZond()
 	b.Block.Slot = 2
 	wsb, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
 	r1, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, service.saveInitSyncBlock(ctx, r1, wsb))
-	st, _ := util.DeterministicGenesisStateCapella(t, 1)
+	st, _ := util.DeterministicGenesisStateZond(t, 1)
 	service.head = &head{
 		root:  r1,
 		block: wsb,
@@ -117,12 +117,12 @@ func TestService_forkchoiceUpdateWithExecution_exceptionalCases(t *testing.T) {
 	require.LogsDoNotContain(t, hook, hookErr)
 
 	// Block in DB
-	b = util.NewBeaconBlockCapella()
+	b = util.NewBeaconBlockZond()
 	b.Block.Slot = 3
 	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b)
 	r1, err = b.Block.HashTreeRoot()
 	require.NoError(t, err)
-	st, _ = util.DeterministicGenesisStateCapella(t, 1)
+	st, _ = util.DeterministicGenesisStateZond(t, 1)
 	service.head = &head{
 		root:  r1,
 		block: wsb,
@@ -149,19 +149,19 @@ func TestService_forkchoiceUpdateWithExecution_SameHeadRootNewProposer(t *testin
 	service, tr := minimalTestService(t)
 	ctx, beaconDB, fcs := tr.ctx, tr.db, tr.fcs
 
-	altairBlk := util.SaveBlock(t, ctx, beaconDB, util.NewBeaconBlockCapella())
+	altairBlk := util.SaveBlock(t, ctx, beaconDB, util.NewBeaconBlockZond())
 	altairBlkRoot, err := altairBlk.Block().HashTreeRoot()
 	require.NoError(t, err)
-	bellatrixBlk := util.SaveBlock(t, ctx, beaconDB, util.NewBeaconBlockCapella())
+	bellatrixBlk := util.SaveBlock(t, ctx, beaconDB, util.NewBeaconBlockZond())
 	bellatrixBlkRoot, err := bellatrixBlk.Block().HashTreeRoot()
 	require.NoError(t, err)
-	st, _ := util.DeterministicGenesisStateCapella(t, 10)
+	st, _ := util.DeterministicGenesisStateZond(t, 10)
 	service.head = &head{
 		state: st,
 	}
 
-	ojc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
-	ofc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ojc := &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ofc := &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 	state, blkRoot, err := prepareForkchoiceState(ctx, 0, [32]byte{}, [32]byte{}, params.BeaconConfig().ZeroHash, ojc, ofc)
 	require.NoError(t, err)
 	require.NoError(t, fcs.InsertNode(ctx, state, blkRoot))
@@ -175,7 +175,7 @@ func TestService_forkchoiceUpdateWithExecution_SameHeadRootNewProposer(t *testin
 	service.cfg.ExecutionEngineCaller = &mockExecution.EngineClient{}
 	require.NoError(t, beaconDB.SaveState(ctx, st, bellatrixBlkRoot))
 	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, bellatrixBlkRoot))
-	sb, err := blocks.NewSignedBeaconBlock(util.HydrateSignedBeaconBlockCapella(&zondpb.SignedBeaconBlockCapella{}))
+	sb, err := blocks.NewSignedBeaconBlock(util.HydrateSignedBeaconBlockZond(&qrysmpb.SignedBeaconBlockZond{}))
 	require.NoError(t, err)
 	require.NoError(t, beaconDB.SaveBlock(ctx, sb))
 	r, err := sb.Block().HashTreeRoot()
@@ -199,7 +199,7 @@ func TestShouldOverrideFCU(t *testing.T) {
 	service.SetGenesisTime(time.Now().Add(-time.Duration(2*params.BeaconConfig().SecondsPerSlot) * time.Second))
 	headRoot := [32]byte{'b'}
 	parentRoot := [32]byte{'a'}
-	ojc := &zondpb.Checkpoint{}
+	ojc := &qrysmpb.Checkpoint{}
 	st, root, err := prepareForkchoiceState(ctx, 1, parentRoot, [32]byte{}, [32]byte{}, ojc, ojc)
 	require.NoError(t, err)
 	require.NoError(t, fcs.InsertNode(ctx, st, root))

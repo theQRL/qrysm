@@ -4,6 +4,7 @@ package flags
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/urfave/cli/v2"
@@ -19,11 +20,9 @@ type EnumValue struct {
 }
 
 func (e *EnumValue) Set(value string) error {
-	for _, enum := range e.Enum {
-		if enum == value {
-			*e.Destination = value
-			return nil
-		}
+	if slices.Contains(e.Enum, value) {
+		*e.Destination = value
+		return nil
 	}
 
 	return fmt.Errorf("allowed values are %s", strings.Join(e.Enum, ", "))
@@ -39,7 +38,7 @@ func (e *EnumValue) String() string {
 	return *e.Destination
 }
 
-// Wraps the EnumValue in a GenericFlag value so that it satisfies the cli.Flag interface.
+// GenericFlag wraps the EnumValue in a GenericFlag value so that it satisfies the cli.Flag interface.
 func (e EnumValue) GenericFlag() *cli.GenericFlag {
 	*e.Destination = e.Value
 	var i cli.Generic = &e

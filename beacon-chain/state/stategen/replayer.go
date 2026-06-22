@@ -147,17 +147,17 @@ func (rs *stateReplayer) ReplayToSlot(ctx context.Context, replayTo primitives.S
 		"startSlot": s.Slot(),
 		"endSlot":   replayTo,
 		"diff":      replayTo - s.Slot(),
-	}).Debug("calling process_slots on remaining slots")
+	}).Debug("Calling process_slots on remaining slots")
 
 	// err will be handled after the bookend log
 	s, err = ReplayProcessSlots(ctx, s, replayTo)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("ReplayToSlot failed to seek to slot %d after applying blocks", replayTo))
+		return nil, errors.Wrapf(err, "ReplayToSlot failed to seek to slot %d after applying blocks", replayTo)
 	}
 	duration := time.Since(start)
 	log.WithFields(logrus.Fields{
 		"duration": duration,
-	}).Debug("time spent in process_slots")
+	}).Debug("Time spent in process_slots")
 	replayToSlotSummary.Observe(float64(duration.Milliseconds()))
 
 	return s, nil

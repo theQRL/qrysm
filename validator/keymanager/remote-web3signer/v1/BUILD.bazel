@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "remote-web3signer",
     srcs = [
         "custom_mappers.go",
         "requests.go",
@@ -12,7 +12,7 @@ go_library(
 )
 
 go_test(
-    name = "go_default_test",
+    name = "remote-web3signer_test",
     srcs = [
         "custom_mappers_test.go",
         "requests_test.go",

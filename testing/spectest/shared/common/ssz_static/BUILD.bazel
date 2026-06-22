@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "ssz_static",
     testonly = True,
     srcs = [
         "ssz_static.go",
@@ -10,24 +10,24 @@ go_library(
     importpath = "github.com/theQRL/qrysm/testing/spectest/shared/common/ssz_static",
     visibility = ["//testing/spectest:__subpackages__"],
     deps = [
-        "//testing/require:go_default_library",
-        "//testing/spectest/utils:go_default_library",
-        "//testing/util:go_default_library",
-        "@com_github_golang_snappy//:go_default_library",
-        "@com_github_prysmaticlabs_fastssz//:go_default_library",
+        "//testing/require",
+        "//testing/spectest/utils",
+        "//testing/util",
+        "@com_github_golang_snappy//:snappy",
+        "@com_github_prysmaticlabs_fastssz//:fastssz",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "ssz_static_test",
     size = "small",
     srcs = ["ssz_static_example_test.go"],
     deps = [
-        ":go_default_library",
-        "//beacon-chain/state/state-native:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "//testing/require:go_default_library",
-        "@com_github_pkg_errors//:go_default_library",
-        "@com_github_prysmaticlabs_fastssz//:go_default_library",
+        ":ssz_static",
+        "//beacon-chain/state/state-native",
+        "//proto/qrysm/v1alpha1",
+        "//testing/require",
+        "@com_github_pkg_errors//:errors",
+        "@com_github_prysmaticlabs_fastssz//:fastssz",
     ],
 )

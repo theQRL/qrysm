@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
@@ -11,8 +12,9 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
+	"github.com/theQRL/qrysm/validator/client/iface"
 )
 
 var (
@@ -238,7 +240,7 @@ func (v *validator) LogValidatorGainsAndLosses(ctx context.Context, slot primiti
 		return nil
 	}
 
-	var pks [][field_params.DilithiumPubkeyLength]byte
+	var pks [][field_params.MLDSA87PubkeyLength]byte
 	var err error
 	pks, err = v.keyManager.FetchValidatingPublicKeys(ctx)
 	if err != nil {
@@ -246,11 +248,15 @@ func (v *validator) LogValidatorGainsAndLosses(ctx context.Context, slot primiti
 	}
 	pubKeys := bytesutil.FromBytes2592Array(pks)
 
-	req := &zondpb.ValidatorPerformanceRequest{
+	req := &qrysmpb.ValidatorPerformanceRequest{
 		PublicKeys: pubKeys,
 	}
-	resp, err := v.beaconClient.GetValidatorPerformance(ctx, req)
+	resp, err := v.qrysmBeaconClient.GetValidatorPerformance(ctx, req)
 	if err != nil {
+		if errors.Is(err, iface.ErrNotSupported) {
+			log.WithError(err).Debug("Skipping validator performance metric for non-qrysm beacon node")
+			return nil
+		}
 		return err
 	}
 
@@ -280,7 +286,7 @@ func (v *validator) LogValidatorGainsAndLosses(ctx context.Context, slot primiti
 	return nil
 }
 
-func (v *validator) logForEachValidator(index int, pubKey []byte, resp *zondpb.ValidatorPerformanceResponse, slot primitives.Slot, prevEpoch primitives.Epoch) {
+func (v *validator) logForEachValidator(index int, pubKey []byte, resp *qrysmpb.ValidatorPerformanceResponse, slot primitives.Slot, prevEpoch primitives.Epoch) {
 	truncatedKey := fmt.Sprintf("%#x", bytesutil.Trunc(pubKey))
 	pubKeyBytes := bytesutil.ToBytes2592(pubKey)
 	if slot < params.BeaconConfig().SlotsPerEpoch {
@@ -324,11 +330,11 @@ func (v *validator) logForEachValidator(index int, pubKey []byte, resp *zondpb.V
 	}
 
 	fmtKey := fmt.Sprintf("%#x", pubKey)
-	gweiPerEth := float64(params.BeaconConfig().GweiPerEth)
+	shorPerQuanta := float64(params.BeaconConfig().ShorPerQuanta)
 	if v.prevBalance[pubKeyBytes] > 0 {
-		newBalance := float64(balAfterEpoch) / gweiPerEth
-		prevBalance := float64(balBeforeEpoch) / gweiPerEth
-		startBalance := float64(v.startBalances[pubKeyBytes]) / gweiPerEth
+		newBalance := float64(balAfterEpoch) / shorPerQuanta
+		prevBalance := float64(balBeforeEpoch) / shorPerQuanta
+		startBalance := float64(v.startBalances[pubKeyBytes]) / shorPerQuanta
 		percentNet := (newBalance - prevBalance) / prevBalance
 		percentSinceStart := (newBalance - startBalance) / startBalance
 
@@ -379,7 +385,7 @@ func (v *validator) logForEachValidator(index int, pubKey []byte, resp *zondpb.V
 }
 
 // UpdateLogAggregateStats updates and logs the voteStats struct of a validator using the RPC response obtained from LogValidatorGainsAndLosses.
-func (v *validator) UpdateLogAggregateStats(resp *zondpb.ValidatorPerformanceResponse, slot primitives.Slot) {
+func (v *validator) UpdateLogAggregateStats(resp *qrysmpb.ValidatorPerformanceResponse, slot primitives.Slot) {
 	summary := &v.voteStats
 	currentEpoch := primitives.Epoch(slot / params.BeaconConfig().SlotsPerEpoch)
 	var attested, correctSource, correctTarget, correctHead, inactivityScore int

@@ -1,0 +1,9 @@
+load("@qrysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "testing",
+    testonly = True,
+    srcs = ["json.go"],
+    importpath = "github.com/theQRL/qrysm/beacon-chain/rpc/qrl/shared/testing",
+    visibility = ["//visibility:public"],
+)

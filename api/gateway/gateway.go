@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"path"
-	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -19,6 +17,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var _ runtime.Service = (*Gateway)(nil)
@@ -66,6 +65,13 @@ type Gateway struct {
 	startFailure error
 }
 
+// Event streams are intentionally long-lived and must not inherit the generic API timeout.
+var timeoutExemptPaths = []string{
+	"/qrl/v1/events",
+	"/internal/qrl/v1/events",
+	"/api/qrl/v1/events",
+}
+
 // New returns a new instance of the Gateway.
 func New(ctx context.Context, opts ...Option) (*Gateway, error) {
 	g := &Gateway{
@@ -110,6 +116,7 @@ func (g *Gateway) Start() {
 	}
 
 	corsMux := g.corsMiddleware(g.cfg.router)
+	handler := g.withRequestTimeout(corsMux)
 
 	if g.cfg.apiMiddlewareEndpointFactory != nil && !g.cfg.apiMiddlewareEndpointFactory.IsNil() {
 		g.registerApiMiddleware()
@@ -123,7 +130,7 @@ func (g *Gateway) Start() {
 
 	g.server = &http.Server{
 		Addr:              g.cfg.gatewayAddr,
-		Handler:           corsMux,
+		Handler:           handler,
 		ReadHeaderTimeout: time.Second,
 	}
 
@@ -178,22 +185,28 @@ func (g *Gateway) corsMiddleware(h http.Handler) http.Handler {
 	return c.Handler(h)
 }
 
-const swaggerDir = "proto/qrysm/v1alpha1/"
-
-// SwaggerServer returns swagger specification files located under "/swagger/"
-func SwaggerServer() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if !strings.HasSuffix(r.URL.Path, ".swagger.json") {
-			log.Debugf("Not found: %s", r.URL.Path)
-			http.NotFound(w, r)
+func (g *Gateway) withRequestTimeout(next http.Handler) http.Handler {
+	if g.cfg.timeout == 0 {
+		return next
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if g.isTimeoutExemptPath(req.URL.Path) {
+			next.ServeHTTP(w, req)
 			return
 		}
+		ctx, cancel := context.WithTimeout(req.Context(), g.cfg.timeout)
+		defer cancel()
+		next.ServeHTTP(w, req.WithContext(ctx))
+	})
+}
 
-		log.Debugf("Serving %s\n", r.URL.Path)
-		p := strings.TrimPrefix(r.URL.Path, "/swagger/")
-		p = path.Join(swaggerDir, p)
-		http.ServeFile(w, r, p)
+func (*Gateway) isTimeoutExemptPath(path string) bool {
+	for _, exemptPath := range timeoutExemptPaths {
+		if path == exemptPath {
+			return true
+		}
 	}
+	return false
 }
 
 // dial the gRPC server.
@@ -211,7 +224,7 @@ func (g *Gateway) dial(ctx context.Context, network, addr string) (*grpc.ClientC
 // dialTCP creates a client connection via TCP.
 // "addr" must be a valid TCP address with a port number.
 func (g *Gateway) dialTCP(ctx context.Context, addr string) (*grpc.ClientConn, error) {
-	security := grpc.WithInsecure()
+	security := grpc.WithTransportCredentials(insecure.NewCredentials())
 	if len(g.cfg.remoteCert) > 0 {
 		creds, err := credentials.NewClientTLSFromFile(g.cfg.remoteCert, "")
 		if err != nil {
@@ -240,7 +253,7 @@ func (g *Gateway) dialUnix(ctx context.Context, addr string) (*grpc.ClientConn, 
 		return d(addr, 0)
 	}
 	opts := []grpc.DialOption{
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(f),
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(int(g.cfg.maxCallRecvMsgSize))),
 	}

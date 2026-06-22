@@ -8,8 +8,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/blockchain"
+	"github.com/theQRL/qrysm/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/beacon-chain/db"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
@@ -20,6 +21,34 @@ import (
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
+
+// FetchStateError wraps an error returned from fetching a beacon state. It is
+// used by callers (such as the optimistic-status check) to recognize a failed
+// state lookup and surface the underlying not-found / parse error to the
+// client instead of an opaque 500.
+type FetchStateError struct {
+	message string
+	cause   error
+}
+
+// NewFetchStateError creates a new FetchStateError wrapping the given cause.
+func NewFetchStateError(cause error) *FetchStateError {
+	return &FetchStateError{
+		message: "could not fetch state",
+		cause:   cause,
+	}
+}
+
+// Error returns the underlying error message.
+func (e *FetchStateError) Error() string {
+	if e.cause != nil {
+		return e.message + ": " + e.cause.Error()
+	}
+	return e.message
+}
+
+// Unwrap returns the wrapped cause so errors.Is/As can traverse it.
+func (e *FetchStateError) Unwrap() error { return e.cause }
 
 // StateIdParseError represents an error scenario where a state ID could not be parsed.
 type StateIdParseError struct {
@@ -61,8 +90,8 @@ type StateRootNotFoundError struct {
 }
 
 // NewStateRootNotFoundError creates a new error instance.
-func NewStateRootNotFoundError(stateRootsSize int) StateNotFoundError {
-	return StateNotFoundError{
+func NewStateRootNotFoundError(stateRootsSize int) StateRootNotFoundError {
+	return StateRootNotFoundError{
 		message: fmt.Sprintf("state root not found in the last %d state roots", stateRootsSize),
 	}
 }
@@ -77,6 +106,7 @@ type Stater interface {
 	State(ctx context.Context, id []byte) (state.BeaconState, error)
 	StateRoot(ctx context.Context, id []byte) ([]byte, error)
 	StateBySlot(ctx context.Context, slot primitives.Slot) (state.BeaconState, error)
+	StateByEpoch(ctx context.Context, epoch primitives.Epoch) (state.BeaconState, error)
 }
 
 // BeaconDbStater is an implementation of Stater. It retrieves states from the beacon chain database.
@@ -116,29 +146,19 @@ func (p *BeaconDbStater) State(ctx context.Context, stateId []byte) (state.Beaco
 		}
 	case "finalized":
 		checkpoint := p.ChainInfoFetcher.FinalizedCheckpt()
-		targetSlot, err := slots.EpochStart(checkpoint.Epoch)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not get start slot")
+		if checkpoint == nil {
+			return nil, errors.New("received nil finalized checkpoint")
 		}
-		// We use the stategen replayer to fetch the finalized state and then
-		// replay it to the start slot of our checkpoint's epoch. The replayer
-		// only ever accesses our canonical history, so the state retrieved will
-		// always be the finalized state at that epoch.
-		s, err = p.ReplayerBuilder.ReplayerForSlot(targetSlot).ReplayToSlot(ctx, targetSlot)
+		s, err = p.StateGenService.StateByRoot(ctx, bytesutil.ToBytes32(checkpoint.Root))
 		if err != nil {
 			return nil, errors.Wrap(err, "could not get finalized state")
 		}
 	case "justified":
 		checkpoint := p.ChainInfoFetcher.CurrentJustifiedCheckpt()
-		targetSlot, err := slots.EpochStart(checkpoint.Epoch)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not get start slot")
+		if checkpoint == nil {
+			return nil, errors.New("received nil justified checkpoint")
 		}
-		// We use the stategen replayer to fetch the justified state and then
-		// replay it to the start slot of our checkpoint's epoch. The replayer
-		// only ever accesses our canonical history, so the state retrieved will
-		// always be the justified state at that epoch.
-		s, err = p.ReplayerBuilder.ReplayerForSlot(targetSlot).ReplayToSlot(ctx, targetSlot)
+		s, err = p.StateGenService.StateByRoot(ctx, bytesutil.ToBytes32(checkpoint.Root))
 		if err != nil {
 			return nil, errors.Wrap(err, "could not get justified state")
 		}
@@ -235,6 +255,46 @@ func (p *BeaconDbStater) StateBySlot(ctx context.Context, target primitives.Slot
 	if err != nil {
 		msg := fmt.Sprintf("error while replaying history to slot=%d", target)
 		return nil, errors.Wrap(err, msg)
+	}
+	return st, nil
+}
+
+// StateByEpoch returns the state for the start of the requested epoch.
+// For current or next epoch, it uses the head state and the next-slot cache for
+// efficiency. For past epochs, it replays blocks from the most recent canonical
+// state.
+func (p *BeaconDbStater) StateByEpoch(ctx context.Context, epoch primitives.Epoch) (state.BeaconState, error) {
+	ctx, span := trace.StartSpan(ctx, "statefetcher.StateByEpoch")
+	defer span.End()
+
+	targetSlot, err := slots.EpochStart(epoch)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not get epoch start slot")
+	}
+
+	currentSlot := p.GenesisTimeFetcher.CurrentSlot()
+	currentEpoch := slots.ToEpoch(currentSlot)
+
+	// For past epochs, use the replay mechanism.
+	if epoch < currentEpoch {
+		return p.StateBySlot(ctx, targetSlot)
+	}
+
+	// For current or next epoch, use head state + next slot cache (much faster).
+	headState, err := p.ChainInfoFetcher.HeadState(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not get head state")
+	}
+
+	// If the head state is already at or past the target slot, return it as-is.
+	if headState.Slot() >= targetSlot {
+		return headState, nil
+	}
+
+	headRoot := p.ChainInfoFetcher.CachedHeadRoot()
+	st, err := transition.ProcessSlotsUsingNextSlotCache(ctx, headState, headRoot[:], targetSlot)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not process slots up to %d", targetSlot)
 	}
 	return st, nil
 }

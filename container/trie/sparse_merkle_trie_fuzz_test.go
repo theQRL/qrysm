@@ -3,18 +3,18 @@ package trie_test
 import (
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/container/trie"
 	"github.com/theQRL/qrysm/crypto/hash"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
+	"google.golang.org/protobuf/proto"
 )
 
 func FuzzSparseMerkleTrie_HashTreeRoot(f *testing.F) {
 	h := hash.Hash([]byte("hi"))
-	pb := &zondpb.SparseMerkleTrie{
-		Layers: []*zondpb.TrieLayer{
+	pb := &qrysmpb.SparseMerkleTrie{
+		Layers: []*qrysmpb.TrieLayer{
 			{
 				Layer: [][]byte{h[:]},
 			},
@@ -32,7 +32,7 @@ func FuzzSparseMerkleTrie_HashTreeRoot(f *testing.F) {
 	f.Add(b)
 
 	f.Fuzz(func(t *testing.T, b []byte) {
-		pb := &zondpb.SparseMerkleTrie{}
+		pb := &qrysmpb.SparseMerkleTrie{}
 		if err := proto.Unmarshal(b, pb); err != nil {
 			return
 		}
@@ -48,8 +48,8 @@ func FuzzSparseMerkleTrie_HashTreeRoot(f *testing.F) {
 
 func FuzzSparseMerkleTrie_MerkleProof(f *testing.F) {
 	h := hash.Hash([]byte("hi"))
-	pb := &zondpb.SparseMerkleTrie{
-		Layers: []*zondpb.TrieLayer{
+	pb := &qrysmpb.SparseMerkleTrie{
+		Layers: []*qrysmpb.TrieLayer{
 			{
 				Layer: [][]byte{h[:]},
 			},
@@ -67,7 +67,7 @@ func FuzzSparseMerkleTrie_MerkleProof(f *testing.F) {
 	f.Add(b, 0)
 
 	f.Fuzz(func(t *testing.T, b []byte, i int) {
-		pb := &zondpb.SparseMerkleTrie{}
+		pb := &qrysmpb.SparseMerkleTrie{}
 		if err := proto.Unmarshal(b, pb); err != nil {
 			return
 		}
@@ -83,8 +83,8 @@ func FuzzSparseMerkleTrie_MerkleProof(f *testing.F) {
 
 func FuzzSparseMerkleTrie_Insert(f *testing.F) {
 	h := hash.Hash([]byte("hi"))
-	pb := &zondpb.SparseMerkleTrie{
-		Layers: []*zondpb.TrieLayer{
+	pb := &qrysmpb.SparseMerkleTrie{
+		Layers: []*qrysmpb.TrieLayer{
 			{
 				Layer: [][]byte{h[:]},
 			},
@@ -102,7 +102,7 @@ func FuzzSparseMerkleTrie_Insert(f *testing.F) {
 	f.Add(b, []byte{}, 0)
 
 	f.Fuzz(func(t *testing.T, b, item []byte, i int) {
-		pb := &zondpb.SparseMerkleTrie{}
+		pb := &qrysmpb.SparseMerkleTrie{}
 		if err := proto.Unmarshal(b, pb); err != nil {
 			return
 		}

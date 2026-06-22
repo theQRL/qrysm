@@ -7,13 +7,13 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/validator"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/validator"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
@@ -33,7 +33,7 @@ func TestBeaconApiValidatorClient_GetAttestationDataValid(t *testing.T) {
 	produceAttestationDataResponseJson := validator.GetAttestationDataResponse{}
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		fmt.Sprintf("/zond/v1/validator/attestation_data?committee_index=%d&slot=%d", committeeIndex, slot),
+		fmt.Sprintf("/qrl/v1/validator/attestation_data?committee_index=%d&slot=%d", committeeIndex, slot),
 		&produceAttestationDataResponseJson,
 	).Return(
 		nil,
@@ -48,7 +48,7 @@ func TestBeaconApiValidatorClient_GetAttestationDataValid(t *testing.T) {
 
 	resp, err := validatorClient.GetAttestationData(
 		context.Background(),
-		&zondpb.AttestationDataRequest{Slot: slot, CommitteeIndex: committeeIndex},
+		&qrysmpb.AttestationDataRequest{Slot: slot, CommitteeIndex: committeeIndex},
 	)
 
 	assert.DeepEqual(t, expectedErr, err)
@@ -74,7 +74,7 @@ func TestBeaconApiValidatorClient_GetAttestationDataError(t *testing.T) {
 	produceAttestationDataResponseJson := validator.GetAttestationDataResponse{}
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		fmt.Sprintf("/zond/v1/validator/attestation_data?committee_index=%d&slot=%d", committeeIndex, slot),
+		fmt.Sprintf("/qrl/v1/validator/attestation_data?committee_index=%d&slot=%d", committeeIndex, slot),
 		&produceAttestationDataResponseJson,
 	).Return(
 		nil,
@@ -89,7 +89,7 @@ func TestBeaconApiValidatorClient_GetAttestationDataError(t *testing.T) {
 
 	resp, err := validatorClient.GetAttestationData(
 		context.Background(),
-		&zondpb.AttestationDataRequest{Slot: slot, CommitteeIndex: committeeIndex},
+		&qrysmpb.AttestationDataRequest{Slot: slot, CommitteeIndex: committeeIndex},
 	)
 
 	assert.ErrorContains(t, expectedErr.Error(), err)
@@ -99,7 +99,7 @@ func TestBeaconApiValidatorClient_GetAttestationDataError(t *testing.T) {
 func TestBeaconApiValidatorClient_GetFeeRecipientByPubKey(t *testing.T) {
 	ctx := context.Background()
 	validatorClient := beaconApiValidatorClient{}
-	var expected *zondpb.FeeRecipientByPubKeyResponse = nil
+	var expected *qrysmpb.FeeRecipientByPubKeyResponse = nil
 
 	resp, err := validatorClient.GetFeeRecipientByPubKey(ctx, nil)
 	require.NoError(t, err)
@@ -124,7 +124,7 @@ func TestBeaconApiValidatorClient_DomainDataValid(t *testing.T) {
 	).Times(2)
 
 	validatorClient := beaconApiValidatorClient{genesisProvider: genesisProvider}
-	resp, err := validatorClient.DomainData(context.Background(), &zondpb.DomainRequest{Epoch: epoch, Domain: domainType})
+	resp, err := validatorClient.DomainData(context.Background(), &qrysmpb.DomainRequest{Epoch: epoch, Domain: domainType})
 
 	domainTypeArray := bytesutil.ToBytes4(domainType)
 	expectedResp, expectedErr := validatorClient.getDomainData(ctx, epoch, domainTypeArray)
@@ -136,7 +136,7 @@ func TestBeaconApiValidatorClient_DomainDataError(t *testing.T) {
 	epoch := primitives.Epoch(0)
 	domainType := make([]byte, 3)
 	validatorClient := beaconApiValidatorClient{}
-	_, err := validatorClient.DomainData(context.Background(), &zondpb.DomainRequest{Epoch: epoch, Domain: domainType})
+	_, err := validatorClient.DomainData(context.Background(), &qrysmpb.DomainRequest{Epoch: epoch, Domain: domainType})
 	assert.ErrorContains(t, fmt.Sprintf("invalid domain type: %s", hexutil.Encode(domainType)), err)
 }
 
@@ -149,8 +149,8 @@ func TestBeaconApiValidatorClient_ProposeBeaconBlockValid(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().PostRestJson(
 		ctx,
-		"/zond/v1/beacon/blocks",
-		map[string]string{"Eth-Consensus-Version": "capella"},
+		"/qrl/v1/beacon/blocks",
+		map[string]string{"Qrl-Consensus-Version": "zond"},
 		gomock.Any(),
 		nil,
 	).Return(
@@ -161,15 +161,15 @@ func TestBeaconApiValidatorClient_ProposeBeaconBlockValid(t *testing.T) {
 	validatorClient := beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
 	expectedResp, expectedErr := validatorClient.proposeBeaconBlock(
 		ctx,
-		&zondpb.GenericSignedBeaconBlock{
-			Block: generateSignedCapellaBlock(),
+		&qrysmpb.GenericSignedBeaconBlock{
+			Block: generateSignedZondBlock(),
 		},
 	)
 
 	resp, err := validatorClient.ProposeBeaconBlock(
 		ctx,
-		&zondpb.GenericSignedBeaconBlock{
-			Block: generateSignedCapellaBlock(),
+		&qrysmpb.GenericSignedBeaconBlock{
+			Block: generateSignedZondBlock(),
 		},
 	)
 
@@ -186,8 +186,8 @@ func TestBeaconApiValidatorClient_ProposeBeaconBlockError(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().PostRestJson(
 		ctx,
-		"/zond/v1/beacon/blocks",
-		map[string]string{"Eth-Consensus-Version": "capella"},
+		"/qrl/v1/beacon/blocks",
+		map[string]string{"Qrl-Consensus-Version": "zond"},
 		gomock.Any(),
 		nil,
 	).Return(
@@ -198,15 +198,15 @@ func TestBeaconApiValidatorClient_ProposeBeaconBlockError(t *testing.T) {
 	validatorClient := beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
 	expectedResp, expectedErr := validatorClient.proposeBeaconBlock(
 		ctx,
-		&zondpb.GenericSignedBeaconBlock{
-			Block: generateSignedCapellaBlock(),
+		&qrysmpb.GenericSignedBeaconBlock{
+			Block: generateSignedZondBlock(),
 		},
 	)
 
 	resp, err := validatorClient.ProposeBeaconBlock(
 		ctx,
-		&zondpb.GenericSignedBeaconBlock{
-			Block: generateSignedCapellaBlock(),
+		&qrysmpb.GenericSignedBeaconBlock{
+			Block: generateSignedZondBlock(),
 		},
 	)
 

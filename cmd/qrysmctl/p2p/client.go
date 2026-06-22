@@ -32,6 +32,7 @@ import (
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -72,7 +73,7 @@ func newClient(beaconEndpoints []string, clientPort uint) (*client, error) {
 	if len(beaconEndpoints) == 0 {
 		return nil, errors.New("no specified beacon API endpoints")
 	}
-	conn, err := grpc.Dial(beaconEndpoints[0], grpc.WithInsecure())
+	conn, err := grpc.Dial(beaconEndpoints[0], grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +106,7 @@ func (c *client) MetadataSeq() uint64 {
 // When done, the caller must Close() or Reset() on the stream.
 func (c *client) Send(
 	ctx context.Context,
-	message interface{},
+	message any,
 	baseTopic string,
 	pid peer.ID,
 ) (corenet.Stream, error) {
@@ -153,7 +154,7 @@ func (c *client) retrievePeerAddressesViaRPC(ctx context.Context, beaconEndpoint
 	}
 	peers := make([]string, 0)
 	for i := 0; i < len(beaconEndpoints); i++ {
-		conn, err := grpc.Dial(beaconEndpoints[i], grpc.WithInsecure())
+		conn, err := grpc.Dial(beaconEndpoints[i], grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return nil, err
 		}

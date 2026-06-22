@@ -9,8 +9,8 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
-	"github.com/theQRL/go-zond/p2p/enr"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/go-qrl/p2p/qnr"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/metadata"
 )
 
@@ -24,7 +24,7 @@ var (
 )
 
 // PeerConnectionState is the state of the connection.
-type PeerConnectionState zondpb.ConnectionState
+type PeerConnectionState qrysmpb.ConnectionState
 
 // StoreConfig holds peer store parameters.
 type StoreConfig struct {
@@ -50,11 +50,11 @@ type PeerData struct {
 	Address       ma.Multiaddr
 	Direction     network.Direction
 	ConnState     PeerConnectionState
-	Enr           *enr.Record
+	Qnr           *qnr.Record
 	NextValidTime time.Time
 	// Chain related data.
 	MetaData                  metadata.Metadata
-	ChainState                *zondpb.Status
+	ChainState                *qrysmpb.Status
 	ChainStateLastUpdated     time.Time
 	ChainStateValidationError error
 	// Scorers internal data.
@@ -62,7 +62,7 @@ type PeerData struct {
 	ProcessedBlocks      uint64
 	BlockProviderUpdated time.Time
 	// Gossip Scoring data.
-	TopicScores      map[string]*zondpb.TopicScoreSnapshot
+	TopicScores      map[string]*qrysmpb.TopicScoreSnapshot
 	GossipScore      float64
 	BehaviourPenalty float64
 }

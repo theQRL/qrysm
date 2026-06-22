@@ -7,13 +7,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 var log = logrus.WithField("prefix", "validator")
 
 type attSubmitted struct {
-	data              *zondpb.AttestationData
+	data              *qrysmpb.AttestationData
 	attesterIndices   []primitives.ValidatorIndex
 	aggregatorIndices []primitives.ValidatorIndex
 }

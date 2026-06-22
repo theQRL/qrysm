@@ -1,29 +1,29 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "time",
     srcs = ["slot_epoch.go"],
     importpath = "github.com/theQRL/qrysm/beacon-chain/core/time",
     visibility = ["//visibility:public"],
     deps = [
-        "//beacon-chain/state:go_default_library",
-        "//config/params:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//time/slots:go_default_library",
+        "//beacon-chain/state",
+        "//config/params",
+        "//consensus-types/primitives",
+        "//time/slots",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "time_test",
     srcs = ["slot_epoch_test.go"],
     deps = [
-        ":go_default_library",
-        "//beacon-chain/state/state-native:go_default_library",
-        "//config/params:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "//testing/assert:go_default_library",
-        "//testing/require:go_default_library",
-        "//time/slots:go_default_library",
+        ":time",
+        "//beacon-chain/state/state-native",
+        "//config/params",
+        "//consensus-types/primitives",
+        "//proto/qrysm/v1alpha1",
+        "//testing/assert",
+        "//testing/require",
+        "//time/slots",
     ],
 )

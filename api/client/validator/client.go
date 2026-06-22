@@ -3,7 +3,6 @@ package validator
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -12,9 +11,9 @@ import (
 )
 
 const (
-	localKeysPath = "/zond/v1/keystores"
-	// remoteKeysPath   = "/zond/v1/remotekeys"
-	feeRecipientPath = "/zond/v1/validator/{pubkey}/feerecipient"
+	localKeysPath = "/qrl/v1/keystores"
+	// remoteKeysPath   = "/qrl/v1/remotekeys"
+	feeRecipientPath = "/qrl/v1/validator/{pubkey}/feerecipient"
 )
 
 // Client provides a collection of helper methods for calling the Keymanager API endpoints.
@@ -103,12 +102,12 @@ func (c *Client) GetFeeRecipientAddresses(ctx context.Context, validators []stri
 	for index, validator := range validators {
 		feejson, err := c.GetFeeRecipientAddress(ctx, validator)
 		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("keymanager API failed to retrieve fee recipient for validator %s", validators[index]))
+			return nil, errors.Wrapf(err, "keymanager API failed to retrieve fee recipient for validator %s", validators[index])
 		}
 		if feejson.Data == nil {
 			continue
 		}
-		feeRecipients[index] = feejson.Data.Zondaddress
+		feeRecipients[index] = feejson.Data.QRLaddress
 	}
 	return feeRecipients, nil
 }

@@ -19,7 +19,7 @@ import (
 	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/encoding/ssz/equality"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	prefixed "github.com/theQRL/qrysm/runtime/logging/logrus-prefixed-formatter"
 	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/urfave/cli/v2"
@@ -39,7 +39,7 @@ func main() {
 	log.SetFormatter(customFormatter)
 	app := cli.App{}
 	app.Name = "qcli"
-	app.Usage = "A command line utility to run Zond consensus specific commands"
+	app.Usage = "A command line utility to run QRL consensus specific commands"
 	app.Version = version.Version()
 	app.Commands = []*cli.Command{
 		{
@@ -66,7 +66,7 @@ func main() {
 						"signed_block_header|" +
 						"signed_voluntary_exit|" +
 						"voluntary_exit|" +
-						"state_capella",
+						"state_zond",
 					Required:    true,
 					Destination: &sszType,
 				},
@@ -75,29 +75,29 @@ func main() {
 				var data fssz.Unmarshaler
 				switch sszType {
 				case "block":
-					data = &zondpb.BeaconBlock{}
+					data = &qrysmpb.BeaconBlock{}
 				case "signed_block":
-					data = &zondpb.SignedBeaconBlock{}
+					data = &qrysmpb.SignedBeaconBlock{}
 				case "blinded_block":
-					data = &zondpb.BlindedBeaconBlockBellatrix{}
+					data = &qrysmpb.BlindedBeaconBlockBellatrix{}
 				case "attestation":
-					data = &zondpb.Attestation{}
+					data = &qrysmpb.Attestation{}
 				case "block_header":
-					data = &zondpb.BeaconBlockHeader{}
+					data = &qrysmpb.BeaconBlockHeader{}
 				case "deposit":
-					data = &zondpb.Deposit{}
+					data = &qrysmpb.Deposit{}
 				case "deposit_message":
-					data = &zondpb.DepositMessage{}
+					data = &qrysmpb.DepositMessage{}
 				case "proposer_slashing":
-					data = &zondpb.ProposerSlashing{}
+					data = &qrysmpb.ProposerSlashing{}
 				case "signed_block_header":
-					data = &zondpb.SignedBeaconBlockHeader{}
+					data = &qrysmpb.SignedBeaconBlockHeader{}
 				case "signed_voluntary_exit":
-					data = &zondpb.SignedVoluntaryExit{}
+					data = &qrysmpb.SignedVoluntaryExit{}
 				case "voluntary_exit":
-					data = &zondpb.VoluntaryExit{}
-				case "state_capella":
-					data = &zondpb.BeaconStateCapella{}
+					data = &qrysmpb.VoluntaryExit{}
+				case "state_zond":
+					data = &qrysmpb.BeaconStateZond{}
 				default:
 					log.Fatal("Invalid type")
 				}
@@ -119,9 +119,9 @@ func main() {
 				&cli.StringFlag{
 					Name: "data-type",
 					Usage: "ssz file data type: " +
-						"block_capella|" +
-						"blinded_block_capella|" +
-						"signed_block_capella|" +
+						"block_zond|" +
+						"blinded_block_zond|" +
+						"signed_block_zond|" +
 						"attestation|" +
 						"block_header|" +
 						"deposit|" +
@@ -129,7 +129,7 @@ func main() {
 						"signed_block_header|" +
 						"signed_voluntary_exit|" +
 						"voluntary_exit|" +
-						"state_capella",
+						"state_zond",
 					Required:    true,
 					Destination: &sszType,
 				},
@@ -174,7 +174,7 @@ func main() {
 					}
 					blockPath = text
 				}
-				block := &zondpb.SignedBeaconBlock{}
+				block := &qrysmpb.SignedBeaconBlock{}
 				if err := dataFetcher(blockPath, block); err != nil {
 					log.Fatal(err)
 				}
@@ -195,7 +195,7 @@ func main() {
 					}
 					preStatePath = text
 				}
-				preState := &zondpb.BeaconState{}
+				preState := &qrysmpb.BeaconState{}
 				if err := dataFetcher(preStatePath, preState); err != nil {
 					log.Fatal(err)
 				}
@@ -231,7 +231,7 @@ func main() {
 
 				// Diff the state if a post state is provided.
 				if expectedPostStatePath != "" {
-					expectedState := &zondpb.BeaconState{}
+					expectedState := &qrysmpb.BeaconState{}
 					if err := dataFetcher(expectedPostStatePath, expectedState); err != nil {
 						log.Fatal(err)
 					}
@@ -271,8 +271,8 @@ func prettyPrint(sszPath string, data fssz.Unmarshaler) {
 
 func benchmarkHash(sszPath string, sszType string) {
 	switch sszType {
-	case "state_capella":
-		st := &zondpb.BeaconStateCapella{}
+	case "state_zond":
+		st := &qrysmpb.BeaconStateZond{}
 		rawFile, err := os.ReadFile(sszPath) // #nosec G304
 		if err != nil {
 			log.Fatal(err)
@@ -284,7 +284,7 @@ func benchmarkHash(sszPath string, sszType string) {
 		}
 		deserializeDuration := time.Since(startDeserialize)
 
-		stateTrieState, err := state_native.InitializeFromProtoCapella(st)
+		stateTrieState, err := state_native.InitializeFromProtoZond(st)
 		if err != nil {
 			log.Fatal(err)
 		}

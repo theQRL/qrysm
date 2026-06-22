@@ -8,7 +8,7 @@ import (
 	dbutil "github.com/theQRL/qrysm/beacon-chain/db/testing"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -26,12 +26,12 @@ func TestCorrect_ActiveValidatorsCount(t *testing.T) {
 		ctx: context.Background(),
 		cfg: &Config{DB: db},
 	}
-	bState, err := util.NewBeaconStateCapella(func(state *zondpb.BeaconStateCapella) error {
-		validators := make([]*zondpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
-		for i := 0; i < len(validators); i++ {
-			validators[i] = &zondpb.Validator{
-				PublicKey:             make([]byte, field_params.DilithiumPubkeyLength),
-				WithdrawalCredentials: make([]byte, 32),
+	bState, err := util.NewBeaconStateZond(func(state *qrysmpb.BeaconStateZond) error {
+		validators := make([]*qrysmpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
+		for i := range validators {
+			validators[i] = &qrysmpb.Validator{
+				PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
+				WithdrawalCredentials: make([]byte, 64),
 				ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 				Slashed:               false,
 			}
@@ -45,10 +45,10 @@ func TestCorrect_ActiveValidatorsCount(t *testing.T) {
 	vals, err := s.retrieveActiveValidators()
 	assert.NoError(t, err, "genesis state not retrieved")
 	assert.Equal(t, int(params.BeaconConfig().MinGenesisActiveValidatorCount), int(vals), "mainnet genesis active count isn't accurate")
-	for i := 0; i < 100; i++ {
-		require.NoError(t, bState.AppendValidator(&zondpb.Validator{
-			PublicKey:             make([]byte, field_params.DilithiumPubkeyLength),
-			WithdrawalCredentials: make([]byte, 32),
+	for range 100 {
+		require.NoError(t, bState.AppendValidator(&qrysmpb.Validator{
+			PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
+			WithdrawalCredentials: make([]byte, 64),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 			Slashed:               false,
 		}))

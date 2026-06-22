@@ -1,16 +1,18 @@
-// Package beacon-chain defines the entire runtime of a Zond beacon node.
+// Package beacon-chain defines the entire runtime of a QRL beacon node.
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"path/filepath"
+	"os/signal"
 	runtimeDebug "runtime/debug"
+	"syscall"
 
 	golog "github.com/ipfs/go-log/v2"
 	joonix "github.com/joonix/log"
 	"github.com/sirupsen/logrus"
-	zondlog "github.com/theQRL/go-zond/log"
+	gqrllog "github.com/theQRL/go-qrl/log"
 	"github.com/theQRL/qrysm/beacon-chain/builder"
 	"github.com/theQRL/qrysm/beacon-chain/node"
 	"github.com/theQRL/qrysm/cmd"
@@ -22,7 +24,6 @@ import (
 	"github.com/theQRL/qrysm/cmd/beacon-chain/sync/checkpoint"
 	"github.com/theQRL/qrysm/cmd/beacon-chain/sync/genesis"
 	"github.com/theQRL/qrysm/config/features"
-	"github.com/theQRL/qrysm/io/file"
 	"github.com/theQRL/qrysm/io/logs"
 	"github.com/theQRL/qrysm/monitoring/journald"
 	"github.com/theQRL/qrysm/runtime/debug"
@@ -53,7 +54,7 @@ var appFlags = []cli.Flag{
 	flags.SetGCPercent,
 	flags.BlockBatchLimit,
 	flags.BlockBatchLimitBurstFactor,
-	flags.InteropMockEth1DataVotesFlag,
+	flags.InteropMockExecutionDataVotesFlag,
 	flags.InteropNumValidatorsFlag,
 	flags.InteropGenesisTimeFlag,
 	flags.SlotsPerArchivedPoint,
@@ -63,8 +64,9 @@ var appFlags = []cli.Flag{
 	flags.ChainID,
 	flags.NetworkID,
 	flags.WeakSubjectivityCheckpoint,
-	flags.Eth1HeaderReqLimit,
+	flags.ExecutionHeaderReqLimit,
 	flags.MinPeersPerSubnet,
+	flags.MaxConcurrentDials,
 	flags.SuggestedFeeRecipient,
 	flags.MevRelayEndpoint,
 	flags.MaxBuilderEpochMissedSlots,
@@ -87,7 +89,6 @@ var appFlags = []cli.Flag{
 	cmd.P2PMaxPeers,
 	cmd.P2PPrivKey,
 	cmd.P2PStaticID,
-	cmd.P2PMetadata,
 	cmd.P2PAllowList,
 	cmd.P2PDenyList,
 	cmd.DataDirFlag,
@@ -107,8 +108,6 @@ var appFlags = []cli.Flag{
 	debug.PProfAddrFlag,
 	debug.PProfPortFlag,
 	debug.MemProfileRateFlag,
-	debug.CPUProfileFlag,
-	debug.TraceFlag,
 	debug.BlockProfileRateFlag,
 	debug.MutexProfileFractionFlag,
 	cmd.LogFileName,
@@ -136,7 +135,7 @@ func init() {
 func main() {
 	app := cli.App{}
 	app.Name = "beacon-chain"
-	app.Usage = "this is a beacon chain implementation for Zond"
+	app.Usage = "this is a beacon chain implementation for QRL"
 	app.Action = func(ctx *cli.Context) error {
 		if err := startNode(ctx); err != nil {
 			return cli.Exit(err.Error(), 1)
@@ -157,6 +156,14 @@ func main() {
 			return err
 		}
 
+		// Apply verbosity before installing formatters/hooks so non-text formats and the
+		// journald hook honour --verbosity instead of falling back to logrus' default Info.
+		level, err := logrus.ParseLevel(ctx.String(cmd.VerbosityFlag.Name))
+		if err != nil {
+			return err
+		}
+		logrus.SetLevel(level)
+
 		format := ctx.String(cmd.LogFormat.Name)
 		switch format {
 		case "text":
@@ -176,7 +183,7 @@ func main() {
 		case "json":
 			logrus.SetFormatter(&logrus.JSONFormatter{})
 		case "journald":
-			if err := journald.Enable(); err != nil {
+			if err := journald.Enable(level); err != nil {
 				return err
 			}
 		default:
@@ -211,19 +218,25 @@ func main() {
 		}
 	}()
 
-	if err := app.Run(os.Args); err != nil {
+	// Build a cancellable root context that's cancelled on SIGINT/SIGTERM so
+	// the entire process tree can shut down via context propagation rather
+	// than each subsystem having to wire its own signal handler.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigCh
+		log.Info("Received shutdown signal, cancelling root context")
+		cancel()
+	}()
+
+	if err := app.RunContext(ctx, os.Args); err != nil {
 		log.Error(err.Error())
 	}
 }
 
 func startNode(ctx *cli.Context) error {
-	// Fix data dir for Windows users.
-	outdatedDataDir := filepath.Join(file.HomeDir(), "AppData", "Roaming", "Eth2")
-	currentDataDir := ctx.String(cmd.DataDirFlag.Name)
-	if err := cmd.FixDefaultDataDir(outdatedDataDir, currentDataDir); err != nil {
-		return err
-	}
-
 	// verify if ToS accepted
 	if err := tos.VerifyTosAcceptedOrPrompt(ctx); err != nil {
 		return err
@@ -245,10 +258,8 @@ func startNode(ctx *cli.Context) error {
 	if level == logrus.TraceLevel {
 		// libp2p specific logging.
 		golog.SetAllLoggers(golog.LevelDebug)
-		// Gzond specific logging.
-		glogger := zondlog.NewGlogHandler(zondlog.StreamHandler(os.Stderr, zondlog.TerminalFormat(true)))
-		glogger.Verbosity(zondlog.LvlTrace)
-		zondlog.Root().SetHandler(glogger)
+		// Gqrl specific logging.
+		gqrllog.SetDefault(gqrllog.NewLogger(gqrllog.NewTerminalHandlerWithLevel(os.Stderr, gqrllog.LvlTrace, true)))
 	}
 
 	blockchainFlagOpts, err := blockchaincmd.FlagOptions(ctx)
@@ -273,17 +284,8 @@ func startNode(ctx *cli.Context) error {
 		genesis.BeaconNodeOptions,
 		checkpoint.BeaconNodeOptions,
 	}
-	for _, of := range optFuncs {
-		ofo, err := of(ctx)
-		if err != nil {
-			return err
-		}
-		if ofo != nil {
-			opts = append(opts, ofo)
-		}
-	}
 
-	beacon, err := node.New(ctx, opts...)
+	beacon, err := node.New(ctx, optFuncs, opts...)
 	if err != nil {
 		return fmt.Errorf("unable to start beacon node: %w", err)
 	}

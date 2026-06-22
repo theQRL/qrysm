@@ -3,6 +3,7 @@ package beacon
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 
@@ -19,7 +20,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/theQRL/qrysm/time/slots"
 	"google.golang.org/grpc/codes"
@@ -31,8 +32,8 @@ import (
 // archived, persistent data.
 func (bs *Server) ListValidatorBalances(
 	ctx context.Context,
-	req *zondpb.ListValidatorBalancesRequest,
-) (*zondpb.ValidatorBalances, error) {
+	req *qrysmpb.ListValidatorBalancesRequest,
+) (*qrysmpb.ValidatorBalances, error) {
 	if int(req.PageSize) > cmd.Get().MaxRPCPageSize {
 		return nil, status.Errorf(codes.InvalidArgument, "Requested page size %d can not be greater than max size %d",
 			req.PageSize, cmd.Get().MaxRPCPageSize)
@@ -44,9 +45,9 @@ func (bs *Server) ListValidatorBalances(
 	currentEpoch := slots.ToEpoch(bs.GenesisTimeFetcher.CurrentSlot())
 	requestedEpoch := currentEpoch
 	switch q := req.QueryFilter.(type) {
-	case *zondpb.ListValidatorBalancesRequest_Epoch:
+	case *qrysmpb.ListValidatorBalancesRequest_Epoch:
 		requestedEpoch = q.Epoch
-	case *zondpb.ListValidatorBalancesRequest_Genesis:
+	case *qrysmpb.ListValidatorBalancesRequest_Genesis:
 		requestedEpoch = 0
 	}
 
@@ -58,7 +59,7 @@ func (bs *Server) ListValidatorBalances(
 			requestedEpoch,
 		)
 	}
-	res := make([]*zondpb.ValidatorBalances_Balance, 0)
+	res := make([]*qrysmpb.ValidatorBalances_Balance, 0)
 	filtered := map[primitives.ValidatorIndex]bool{} // Track filtered validators to prevent duplication in the response.
 
 	startSlot, err := slots.EpochStart(requestedEpoch)
@@ -82,7 +83,7 @@ func (bs *Server) ListValidatorBalances(
 		index, ok := requestedState.ValidatorIndexByPubkey(pubkeyBytes)
 		if !ok {
 			// We continue the loop if one validator in the request is not found.
-			res = append(res, &zondpb.ValidatorBalances_Balance{
+			res = append(res, &qrysmpb.ValidatorBalances_Balance{
 				Status: "UNKNOWN",
 			})
 			balancesCount = len(res)
@@ -97,7 +98,7 @@ func (bs *Server) ListValidatorBalances(
 
 		val := vals[index]
 		st := validatorStatus(val, requestedEpoch)
-		res = append(res, &zondpb.ValidatorBalances_Balance{
+		res = append(res, &qrysmpb.ValidatorBalances_Balance{
 			PublicKey: pubKey,
 			Index:     index,
 			Balance:   balances[index],
@@ -115,7 +116,7 @@ func (bs *Server) ListValidatorBalances(
 		if !filtered[index] {
 			val := vals[index]
 			st := validatorStatus(val, requestedEpoch)
-			res = append(res, &zondpb.ValidatorBalances_Balance{
+			res = append(res, &qrysmpb.ValidatorBalances_Balance{
 				PublicKey: vals[index].PublicKey,
 				Index:     index,
 				Balance:   balances[index],
@@ -132,9 +133,9 @@ func (bs *Server) ListValidatorBalances(
 	// If there are no balances, we simply return a response specifying this.
 	// Otherwise, attempting to paginate 0 balances below would result in an error.
 	if balancesCount == 0 {
-		return &zondpb.ValidatorBalances{
+		return &qrysmpb.ValidatorBalances{
 			Epoch:         requestedEpoch,
-			Balances:      make([]*zondpb.ValidatorBalances_Balance, 0),
+			Balances:      make([]*qrysmpb.ValidatorBalances_Balance, 0),
 			TotalSize:     int32(0),
 			NextPageToken: strconv.Itoa(0),
 		}, nil
@@ -155,14 +156,14 @@ func (bs *Server) ListValidatorBalances(
 			pubkey := requestedState.PubkeyAtIndex(primitives.ValidatorIndex(i))
 			val := vals[i]
 			st := validatorStatus(val, requestedEpoch)
-			res = append(res, &zondpb.ValidatorBalances_Balance{
+			res = append(res, &qrysmpb.ValidatorBalances_Balance{
 				PublicKey: pubkey[:],
 				Index:     primitives.ValidatorIndex(i),
 				Balance:   balances[i],
 				Status:    st.String(),
 			})
 		}
-		return &zondpb.ValidatorBalances{
+		return &qrysmpb.ValidatorBalances{
 			Epoch:         requestedEpoch,
 			Balances:      res,
 			TotalSize:     int32(balancesCount),
@@ -174,7 +175,7 @@ func (bs *Server) ListValidatorBalances(
 		return nil, status.Error(codes.OutOfRange, "Request exceeds response length")
 	}
 
-	return &zondpb.ValidatorBalances{
+	return &qrysmpb.ValidatorBalances{
 		Epoch:         requestedEpoch,
 		Balances:      res[start:end],
 		TotalSize:     int32(balancesCount),
@@ -186,8 +187,8 @@ func (bs *Server) ListValidatorBalances(
 // retrieve validator set in time.
 func (bs *Server) ListValidators(
 	ctx context.Context,
-	req *zondpb.ListValidatorsRequest,
-) (*zondpb.Validators, error) {
+	req *qrysmpb.ListValidatorsRequest,
+) (*qrysmpb.Validators, error) {
 	if int(req.PageSize) > cmd.Get().MaxRPCPageSize {
 		return nil, status.Errorf(codes.InvalidArgument, "Requested page size %d can not be greater than max size %d",
 			req.PageSize, cmd.Get().MaxRPCPageSize)
@@ -197,11 +198,11 @@ func (bs *Server) ListValidators(
 	requestedEpoch := currentEpoch
 
 	switch q := req.QueryFilter.(type) {
-	case *zondpb.ListValidatorsRequest_Genesis:
+	case *qrysmpb.ListValidatorsRequest_Genesis:
 		if q.Genesis {
 			requestedEpoch = 0
 		}
-	case *zondpb.ListValidatorsRequest_Epoch:
+	case *qrysmpb.ListValidatorsRequest_Epoch:
 		if q.Epoch > currentEpoch {
 			return nil, status.Errorf(
 				codes.InvalidArgument,
@@ -251,14 +252,14 @@ func (bs *Server) ListValidators(
 		}
 	}
 
-	validatorList := make([]*zondpb.Validators_ValidatorContainer, 0)
+	validatorList := make([]*qrysmpb.Validators_ValidatorContainer, 0)
 
 	for _, index := range req.Indices {
 		val, err := reqState.ValidatorAtIndex(index)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not get validator: %v", err)
 		}
-		validatorList = append(validatorList, &zondpb.Validators_ValidatorContainer{
+		validatorList = append(validatorList, &qrysmpb.Validators_ValidatorContainer{
 			Index:     index,
 			Validator: val,
 		})
@@ -278,7 +279,7 @@ func (bs *Server) ListValidators(
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not get validator: %v", err)
 		}
-		validatorList = append(validatorList, &zondpb.Validators_ValidatorContainer{
+		validatorList = append(validatorList, &qrysmpb.Validators_ValidatorContainer{
 			Index:     index,
 			Validator: val,
 		})
@@ -294,7 +295,7 @@ func (bs *Server) ListValidators(
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "Could not get validator: %v", err)
 			}
-			validatorList = append(validatorList, &zondpb.Validators_ValidatorContainer{
+			validatorList = append(validatorList, &qrysmpb.Validators_ValidatorContainer{
 				Index:     i,
 				Validator: val,
 			})
@@ -304,7 +305,7 @@ func (bs *Server) ListValidators(
 	// Filter active validators if the request specifies it.
 	res := validatorList
 	if req.Active {
-		filteredValidators := make([]*zondpb.Validators_ValidatorContainer, 0)
+		filteredValidators := make([]*qrysmpb.Validators_ValidatorContainer, 0)
 		for _, item := range validatorList {
 			if helpers.IsActiveValidator(item.Validator, requestedEpoch) {
 				filteredValidators = append(filteredValidators, item)
@@ -317,8 +318,8 @@ func (bs *Server) ListValidators(
 	// If there are no items, we simply return a response specifying this.
 	// Otherwise, attempting to paginate 0 validators below would result in an error.
 	if validatorCount == 0 {
-		return &zondpb.Validators{
-			ValidatorList: make([]*zondpb.Validators_ValidatorContainer, 0),
+		return &qrysmpb.Validators{
+			ValidatorList: make([]*qrysmpb.Validators_ValidatorContainer, 0),
 			TotalSize:     int32(0),
 			NextPageToken: strconv.Itoa(0),
 		}, nil
@@ -333,7 +334,7 @@ func (bs *Server) ListValidators(
 		)
 	}
 
-	return &zondpb.Validators{
+	return &qrysmpb.Validators{
 		ValidatorList: res[start:end],
 		TotalSize:     int32(validatorCount),
 		NextPageToken: nextPageToken,
@@ -342,16 +343,16 @@ func (bs *Server) ListValidators(
 
 // GetValidator information from any validator in the registry by index or public key.
 func (bs *Server) GetValidator(
-	ctx context.Context, req *zondpb.GetValidatorRequest,
-) (*zondpb.Validator, error) {
+	ctx context.Context, req *qrysmpb.GetValidatorRequest,
+) (*qrysmpb.Validator, error) {
 	var requestingIndex bool
 	var index primitives.ValidatorIndex
 	var pubKey []byte
 	switch q := req.QueryFilter.(type) {
-	case *zondpb.GetValidatorRequest_Index:
+	case *qrysmpb.GetValidatorRequest_Index:
 		index = q.Index
 		requestingIndex = true
-	case *zondpb.GetValidatorRequest_PublicKey:
+	case *qrysmpb.GetValidatorRequest_PublicKey:
 		pubKey = q.PublicKey
 	default:
 		return nil, status.Error(
@@ -389,15 +390,15 @@ func (bs *Server) GetValidator(
 // This data includes any activations, voluntary exits, and involuntary
 // ejections.
 func (bs *Server) GetValidatorActiveSetChanges(
-	ctx context.Context, req *zondpb.GetValidatorActiveSetChangesRequest,
-) (*zondpb.ActiveSetChanges, error) {
+	ctx context.Context, req *qrysmpb.GetValidatorActiveSetChangesRequest,
+) (*qrysmpb.ActiveSetChanges, error) {
 	currentEpoch := slots.ToEpoch(bs.GenesisTimeFetcher.CurrentSlot())
 
 	var requestedEpoch primitives.Epoch
 	switch q := req.QueryFilter.(type) {
-	case *zondpb.GetValidatorActiveSetChangesRequest_Genesis:
+	case *qrysmpb.GetValidatorActiveSetChangesRequest_Genesis:
 		requestedEpoch = 0
-	case *zondpb.GetValidatorActiveSetChangesRequest_Epoch:
+	case *qrysmpb.GetValidatorActiveSetChangesRequest_Epoch:
 		requestedEpoch = q.Epoch
 	default:
 		requestedEpoch = currentEpoch
@@ -420,18 +421,14 @@ func (bs *Server) GetValidatorActiveSetChanges(
 		return nil, status.Error(codes.Internal, fmt.Sprintf("error replaying blocks for state at slot %d: %v", s, err))
 	}
 
-	activeValidatorCount, err := helpers.ActiveValidatorCount(ctx, requestedState, coreTime.CurrentEpoch(requestedState))
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Could not get active validator count: %v", err)
-	}
 	vs := requestedState.Validators()
 	activatedIndices := validators.ActivatedValidatorIndices(coreTime.CurrentEpoch(requestedState), vs)
-	exitedIndices, err := validators.ExitedValidatorIndices(coreTime.CurrentEpoch(requestedState), vs, activeValidatorCount)
+	exitedIndices, err := validators.ExitedValidatorIndices(coreTime.CurrentEpoch(requestedState), vs)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not determine exited validator indices: %v", err)
 	}
 	slashedIndices := validators.SlashedValidatorIndices(coreTime.CurrentEpoch(requestedState), vs)
-	ejectedIndices, err := validators.EjectedValidatorIndices(coreTime.CurrentEpoch(requestedState), vs, activeValidatorCount)
+	ejectedIndices, err := validators.EjectedValidatorIndices(coreTime.CurrentEpoch(requestedState), vs)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not determine ejected validator indices: %v", err)
 	}
@@ -457,7 +454,7 @@ func (bs *Server) GetValidatorActiveSetChanges(
 		pubkey := requestedState.PubkeyAtIndex(idx)
 		ejectedKeys[i] = pubkey[:]
 	}
-	return &zondpb.ActiveSetChanges{
+	return &qrysmpb.ActiveSetChanges{
 		Epoch:               requestedEpoch,
 		ActivatedPublicKeys: activatedKeys,
 		ActivatedIndices:    activatedIndices,
@@ -474,16 +471,16 @@ func (bs *Server) GetValidatorActiveSetChanges(
 // it returns the information about validator's participation rate in voting on the proof of stake
 // rules based on their balance compared to the total active validator balance.
 func (bs *Server) GetValidatorParticipation(
-	ctx context.Context, req *zondpb.GetValidatorParticipationRequest,
-) (*zondpb.ValidatorParticipationResponse, error) {
+	ctx context.Context, req *qrysmpb.GetValidatorParticipationRequest,
+) (*qrysmpb.ValidatorParticipationResponse, error) {
 	currentSlot := bs.GenesisTimeFetcher.CurrentSlot()
 	currentEpoch := slots.ToEpoch(currentSlot)
 
 	var requestedEpoch primitives.Epoch
 	switch q := req.QueryFilter.(type) {
-	case *zondpb.GetValidatorParticipationRequest_Genesis:
+	case *qrysmpb.GetValidatorParticipationRequest_Genesis:
 		requestedEpoch = 0
-	case *zondpb.GetValidatorParticipationRequest_Epoch:
+	case *qrysmpb.GetValidatorParticipationRequest_Epoch:
 		requestedEpoch = q.Epoch
 	default:
 		requestedEpoch = currentEpoch
@@ -529,17 +526,17 @@ func (bs *Server) GetValidatorParticipation(
 	}
 
 	cp := bs.FinalizationFetcher.FinalizedCheckpt()
-	p := &zondpb.ValidatorParticipationResponse{
+	p := &qrysmpb.ValidatorParticipationResponse{
 		Epoch:     requestedEpoch,
 		Finalized: requestedEpoch <= cp.Epoch,
-		Participation: &zondpb.ValidatorParticipation{
-			CurrentEpochActiveGwei:           b.ActiveCurrentEpoch,
-			CurrentEpochAttestingGwei:        b.CurrentEpochAttested,
-			CurrentEpochTargetAttestingGwei:  b.CurrentEpochTargetAttested,
-			PreviousEpochActiveGwei:          b.ActivePrevEpoch,
-			PreviousEpochAttestingGwei:       b.PrevEpochAttested,
-			PreviousEpochTargetAttestingGwei: b.PrevEpochTargetAttested,
-			PreviousEpochHeadAttestingGwei:   b.PrevEpochHeadAttested,
+		Participation: &qrysmpb.ValidatorParticipation{
+			CurrentEpochActiveShor:           b.ActiveCurrentEpoch,
+			CurrentEpochAttestingShor:        b.CurrentEpochAttested,
+			CurrentEpochTargetAttestingShor:  b.CurrentEpochTargetAttested,
+			PreviousEpochActiveShor:          b.ActivePrevEpoch,
+			PreviousEpochAttestingShor:       b.PrevEpochAttested,
+			PreviousEpochTargetAttestingShor: b.PrevEpochTargetAttested,
+			PreviousEpochHeadAttestingShor:   b.PrevEpochHeadAttested,
 		},
 	}
 
@@ -549,8 +546,8 @@ func (bs *Server) GetValidatorParticipation(
 // GetValidatorPerformance reports the validator's latest balance along with other important metrics on
 // rewards and penalties throughout its lifecycle in the beacon chain.
 func (bs *Server) GetValidatorPerformance(
-	ctx context.Context, req *zondpb.ValidatorPerformanceRequest,
-) (*zondpb.ValidatorPerformanceResponse, error) {
+	ctx context.Context, req *qrysmpb.ValidatorPerformanceRequest,
+) (*qrysmpb.ValidatorPerformanceResponse, error) {
 	response, err := bs.CoreService.ComputeValidatorPerformance(ctx, req)
 	if err != nil {
 		return nil, status.Errorf(core.ErrorReasonToGRPC(err.Reason), "Could not compute validator performance: %v", err.Err)
@@ -561,8 +558,8 @@ func (bs *Server) GetValidatorPerformance(
 // GetIndividualVotes retrieves individual voting status of validators.
 func (bs *Server) GetIndividualVotes(
 	ctx context.Context,
-	req *zondpb.IndividualVotesRequest,
-) (*zondpb.IndividualVotesRespond, error) {
+	req *qrysmpb.IndividualVotesRequest,
+) (*qrysmpb.IndividualVotesRespond, error) {
 	currentEpoch := slots.ToEpoch(bs.GenesisTimeFetcher.CurrentSlot())
 	if req.Epoch > currentEpoch {
 		return nil, status.Errorf(
@@ -584,12 +581,12 @@ func (bs *Server) GetIndividualVotes(
 	// Track filtered validators to prevent duplication in the response.
 	filtered := map[primitives.ValidatorIndex]bool{}
 	filteredIndices := make([]primitives.ValidatorIndex, 0)
-	votes := make([]*zondpb.IndividualVotesRespond_IndividualVote, 0, len(req.Indices)+len(req.PublicKeys))
+	votes := make([]*qrysmpb.IndividualVotesRespond_IndividualVote, 0, len(req.Indices)+len(req.PublicKeys))
 	// Filter out assignments by public keys.
 	for _, pubKey := range req.PublicKeys {
 		index, ok := st.ValidatorIndexByPubkey(bytesutil.ToBytes2592(pubKey))
 		if !ok {
-			votes = append(votes, &zondpb.IndividualVotesRespond_IndividualVote{PublicKey: pubKey, ValidatorIndex: primitives.ValidatorIndex(^uint64(0))})
+			votes = append(votes, &qrysmpb.IndividualVotesRespond_IndividualVote{PublicKey: pubKey, ValidatorIndex: primitives.ValidatorIndex(^uint64(0))})
 			continue
 		}
 		filtered[index] = true
@@ -601,13 +598,11 @@ func (bs *Server) GetIndividualVotes(
 			filteredIndices = append(filteredIndices, index)
 		}
 	}
-	sort.Slice(filteredIndices, func(i, j int) bool {
-		return filteredIndices[i] < filteredIndices[j]
-	})
+	slices.Sort(filteredIndices)
 
 	var v []*precompute.Validator
 	var bal *precompute.Balance
-	if st.Version() == version.Capella {
+	if st.Version() == version.Zond {
 		v, bal, err = altair.InitializePrecomputeValidators(ctx, st)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "Could not set up altair pre compute instance: %v", err)
@@ -622,7 +617,7 @@ func (bs *Server) GetIndividualVotes(
 
 	for _, index := range filteredIndices {
 		if uint64(index) >= uint64(len(v)) {
-			votes = append(votes, &zondpb.IndividualVotesRespond_IndividualVote{ValidatorIndex: index})
+			votes = append(votes, &qrysmpb.IndividualVotesRespond_IndividualVote{ValidatorIndex: index})
 			continue
 		}
 		val, err := st.ValidatorAtIndexReadOnly(index)
@@ -630,7 +625,7 @@ func (bs *Server) GetIndividualVotes(
 			return nil, status.Errorf(codes.Internal, "Could not retrieve validator: %v", err)
 		}
 		pb := val.PublicKey()
-		votes = append(votes, &zondpb.IndividualVotesRespond_IndividualVote{
+		votes = append(votes, &qrysmpb.IndividualVotesRespond_IndividualVote{
 			Epoch:                            req.Epoch,
 			PublicKey:                        pb[:],
 			ValidatorIndex:                   index,
@@ -643,35 +638,35 @@ func (bs *Server) GetIndividualVotes(
 			IsPreviousEpochAttester:          v[index].IsPrevEpochAttester,
 			IsPreviousEpochTargetAttester:    v[index].IsPrevEpochTargetAttester,
 			IsPreviousEpochHeadAttester:      v[index].IsPrevEpochHeadAttester,
-			CurrentEpochEffectiveBalanceGwei: v[index].CurrentEpochEffectiveBalance,
+			CurrentEpochEffectiveBalanceShor: v[index].CurrentEpochEffectiveBalance,
 			InactivityScore:                  v[index].InactivityScore,
 		})
 	}
 
-	return &zondpb.IndividualVotesRespond{
+	return &qrysmpb.IndividualVotesRespond{
 		IndividualVotes: votes,
 	}, nil
 }
 
-func validatorStatus(validator *zondpb.Validator, epoch primitives.Epoch) zondpb.ValidatorStatus {
+func validatorStatus(validator *qrysmpb.Validator, epoch primitives.Epoch) qrysmpb.ValidatorStatus {
 	farFutureEpoch := params.BeaconConfig().FarFutureEpoch
 	if validator == nil {
-		return zondpb.ValidatorStatus_UNKNOWN_STATUS
+		return qrysmpb.ValidatorStatus_UNKNOWN_STATUS
 	}
 	if epoch < validator.ActivationEligibilityEpoch {
-		return zondpb.ValidatorStatus_DEPOSITED
+		return qrysmpb.ValidatorStatus_DEPOSITED
 	}
 	if epoch < validator.ActivationEpoch {
-		return zondpb.ValidatorStatus_PENDING
+		return qrysmpb.ValidatorStatus_PENDING
 	}
 	if validator.ExitEpoch == farFutureEpoch {
-		return zondpb.ValidatorStatus_ACTIVE
+		return qrysmpb.ValidatorStatus_ACTIVE
 	}
 	if epoch < validator.ExitEpoch {
 		if validator.Slashed {
-			return zondpb.ValidatorStatus_SLASHING
+			return qrysmpb.ValidatorStatus_SLASHING
 		}
-		return zondpb.ValidatorStatus_EXITING
+		return qrysmpb.ValidatorStatus_EXITING
 	}
-	return zondpb.ValidatorStatus_EXITED
+	return qrysmpb.ValidatorStatus_EXITED
 }

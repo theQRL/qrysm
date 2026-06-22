@@ -27,17 +27,18 @@ func (pq priorityQueue) Swap(i, j int) {
 	pq[j].index = j
 }
 
-func (pq *priorityQueue) Push(x interface{}) {
+// Push a LeakyBucket to priorityQueue
+func (pq *priorityQueue) Push(x any) {
 	n := len(*pq)
 	b, ok := x.(*LeakyBucket)
 	if !ok {
-		panic(fmt.Sprintf("%T", x))
+		panic(fmt.Sprintf("%T", x)) // lint:nopanic -- This method should be improved. High risk for misuse!
 	}
 	b.index = n
 	*pq = append(*pq, b)
 }
 
-func (pq *priorityQueue) Pop() interface{} {
+func (pq *priorityQueue) Pop() any {
 	old := *pq
 	n := len(old)
 	b := old[n-1]

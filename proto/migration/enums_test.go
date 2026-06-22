@@ -3,35 +3,35 @@ package migration
 import (
 	"testing"
 
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
-	v1 "github.com/theQRL/qrysm/proto/zond/v1"
+	qrlpb "github.com/theQRL/qrysm/proto/qrl/v1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 func TestV1Alpha1ConnectionStateToV1(t *testing.T) {
 	tests := []struct {
 		name      string
-		connState zond.ConnectionState
-		want      v1.ConnectionState
+		connState qrysmpb.ConnectionState
+		want      qrlpb.ConnectionState
 	}{
 		{
 			name:      "DISCONNECTED",
-			connState: zond.ConnectionState_DISCONNECTED,
-			want:      v1.ConnectionState_DISCONNECTED,
+			connState: qrysmpb.ConnectionState_DISCONNECTED,
+			want:      qrlpb.ConnectionState_DISCONNECTED,
 		},
 		{
 			name:      "CONNECTED",
-			connState: zond.ConnectionState_CONNECTED,
-			want:      v1.ConnectionState_CONNECTED,
+			connState: qrysmpb.ConnectionState_CONNECTED,
+			want:      qrlpb.ConnectionState_CONNECTED,
 		},
 		{
 			name:      "CONNECTING",
-			connState: zond.ConnectionState_CONNECTING,
-			want:      v1.ConnectionState_CONNECTING,
+			connState: qrysmpb.ConnectionState_CONNECTING,
+			want:      qrlpb.ConnectionState_CONNECTING,
 		},
 		{
 			name:      "DISCONNECTING",
-			connState: zond.ConnectionState_DISCONNECTING,
-			want:      v1.ConnectionState_DISCONNECTING,
+			connState: qrysmpb.ConnectionState_DISCONNECTING,
+			want:      qrlpb.ConnectionState_DISCONNECTING,
 		},
 	}
 	for _, tt := range tests {
@@ -46,25 +46,25 @@ func TestV1Alpha1ConnectionStateToV1(t *testing.T) {
 func TestV1Alpha1PeerDirectionToV1(t *testing.T) {
 	tests := []struct {
 		name          string
-		peerDirection zond.PeerDirection
-		want          v1.PeerDirection
+		peerDirection qrysmpb.PeerDirection
+		want          qrlpb.PeerDirection
 		wantErr       bool
 	}{
 		{
 			name:          "UNKNOWN",
-			peerDirection: zond.PeerDirection_UNKNOWN,
+			peerDirection: qrysmpb.PeerDirection_UNKNOWN,
 			want:          0,
 			wantErr:       true,
 		},
 		{
 			name:          "INBOUND",
-			peerDirection: zond.PeerDirection_INBOUND,
-			want:          v1.PeerDirection_INBOUND,
+			peerDirection: qrysmpb.PeerDirection_INBOUND,
+			want:          qrlpb.PeerDirection_INBOUND,
 		},
 		{
 			name:          "OUTBOUND",
-			peerDirection: zond.PeerDirection_OUTBOUND,
-			want:          v1.PeerDirection_OUTBOUND,
+			peerDirection: qrysmpb.PeerDirection_OUTBOUND,
+			want:          qrlpb.PeerDirection_OUTBOUND,
 		},
 	}
 	for _, tt := range tests {

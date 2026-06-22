@@ -5,18 +5,19 @@ import (
 	"time"
 
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestVerifyRegistrationSignature(t *testing.T) {
-	sk, err := dilithium.RandKey()
+	sk, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	reg := &zondpb.ValidatorRegistrationV1{
-		FeeRecipient: bytesutil.PadTo([]byte("fee"), 20),
+	reg := &qrysmpb.ValidatorRegistrationV1{
+		FeeRecipient: bytesutil.PadTo([]byte("fee"), fieldparams.FeeRecipientLength),
 		GasLimit:     123456,
 		Timestamp:    uint64(time.Now().Unix()),
 		Pubkey:       sk.PublicKey().Marshal(),
@@ -28,7 +29,7 @@ func TestVerifyRegistrationSignature(t *testing.T) {
 	require.NoError(t, err)
 	sk.Sign(sr[:]).Marshal()
 
-	sReg := &zondpb.SignedValidatorRegistrationV1{
+	sReg := &qrysmpb.SignedValidatorRegistrationV1{
 		Message:   reg,
 		Signature: sk.Sign(sr[:]).Marshal(),
 	}

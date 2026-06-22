@@ -2,7 +2,7 @@ package types
 
 import (
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // ChunkKind to differentiate what kind of span we are working
@@ -17,7 +17,7 @@ const (
 // IndexedAttestationWrapper contains an indexed attestation with its
 // signing root to reduce duplicated computation.
 type IndexedAttestationWrapper struct {
-	IndexedAttestation *zondpb.IndexedAttestation
+	IndexedAttestation *qrysmpb.IndexedAttestation
 	SigningRoot        [32]byte
 }
 
@@ -41,7 +41,7 @@ type DoubleBlockProposal struct {
 // SignedBlockHeaderWrapper contains an signed beacon block header with its
 // signing root to reduce duplicated computation.
 type SignedBlockHeaderWrapper struct {
-	SignedBeaconBlockHeader *zondpb.SignedBeaconBlockHeader
+	SignedBeaconBlockHeader *qrysmpb.SignedBeaconBlockHeader
 	SigningRoot             [32]byte
 }
 

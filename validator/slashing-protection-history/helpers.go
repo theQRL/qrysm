@@ -6,29 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/k0kubun/go-ansi"
-	"github.com/schollz/progressbar/v3"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 )
-
-func initializeProgressBar(numItems int, msg string) *progressbar.ProgressBar {
-	return progressbar.NewOptions(
-		numItems,
-		progressbar.OptionFullWidth(),
-		progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
-		progressbar.OptionEnableColorCodes(true),
-		progressbar.OptionSetTheme(progressbar.Theme{
-			Saucer:        "[green]=[reset]",
-			SaucerHead:    "[green]>[reset]",
-			SaucerPadding: " ",
-			BarStart:      "[",
-			BarEnd:        "]",
-		}),
-		progressbar.OptionOnCompletion(func() { fmt.Println() }),
-		progressbar.OptionSetDescription(msg),
-	)
-}
 
 // Uint64FromString converts a string into a uint64 representation.
 func Uint64FromString(str string) (uint64, error) {
@@ -54,16 +34,16 @@ func SlotFromString(str string) (primitives.Slot, error) {
 }
 
 // PubKeyFromHex takes in a hex string, verifies its length as 2592 bytes, and converts that representation.
-func PubKeyFromHex(str string) ([field_params.DilithiumPubkeyLength]byte, error) {
+func PubKeyFromHex(str string) ([field_params.MLDSA87PubkeyLength]byte, error) {
 	pubKeyBytes, err := hex.DecodeString(strings.TrimPrefix(str, "0x"))
 	if err != nil {
-		return [field_params.DilithiumPubkeyLength]byte{}, err
+		return [field_params.MLDSA87PubkeyLength]byte{}, err
 	}
-	if len(pubKeyBytes) != field_params.DilithiumPubkeyLength {
-		return [field_params.DilithiumPubkeyLength]byte{}, fmt.Errorf("public key is not correct, 2592-byte length: %s", str)
+	if len(pubKeyBytes) != field_params.MLDSA87PubkeyLength {
+		return [field_params.MLDSA87PubkeyLength]byte{}, fmt.Errorf("public key is not correct, 2592-byte length: %s", str)
 	}
-	var pk [field_params.DilithiumPubkeyLength]byte
-	copy(pk[:], pubKeyBytes[:field_params.DilithiumPubkeyLength])
+	var pk [field_params.MLDSA87PubkeyLength]byte
+	copy(pk[:], pubKeyBytes[:field_params.MLDSA87PubkeyLength])
 	return pk, nil
 }
 

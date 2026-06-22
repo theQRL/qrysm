@@ -17,7 +17,7 @@ func TestStore_SaveGenesisData(t *testing.T) {
 	ctx := context.Background()
 	db := setupDB(t)
 
-	gs, err := util.NewBeaconStateCapella()
+	gs, err := util.NewBeaconStateZond()
 	assert.NoError(t, err)
 
 	assert.NoError(t, db.SaveGenesisData(ctx, gs))

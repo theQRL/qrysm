@@ -4,21 +4,21 @@ import (
 	"context"
 
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 )
 
 // SaveStateSummary saves a state summary object to the DB.
-func (s *Store) SaveStateSummary(ctx context.Context, summary *zondpb.StateSummary) error {
+func (s *Store) SaveStateSummary(ctx context.Context, summary *qrysmpb.StateSummary) error {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.SaveStateSummary")
 	defer span.End()
 
-	return s.SaveStateSummaries(ctx, []*zondpb.StateSummary{summary})
+	return s.SaveStateSummaries(ctx, []*qrysmpb.StateSummary{summary})
 }
 
 // SaveStateSummaries saves state summary objects to the DB.
-func (s *Store) SaveStateSummaries(ctx context.Context, summaries []*zondpb.StateSummary) error {
+func (s *Store) SaveStateSummaries(ctx context.Context, summaries []*qrysmpb.StateSummary) error {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.SaveStateSummaries")
 	defer span.End()
 
@@ -38,7 +38,7 @@ func (s *Store) SaveStateSummaries(ctx context.Context, summaries []*zondpb.Stat
 }
 
 // StateSummary returns the state summary object from the db using input block root.
-func (s *Store) StateSummary(ctx context.Context, blockRoot [32]byte) (*zondpb.StateSummary, error) {
+func (s *Store) StateSummary(ctx context.Context, blockRoot [32]byte) (*qrysmpb.StateSummary, error) {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.StateSummary")
 	defer span.End()
 
@@ -47,7 +47,11 @@ func (s *Store) StateSummary(ctx context.Context, blockRoot [32]byte) (*zondpb.S
 	}
 	var enc []byte
 	if err := s.db.View(func(tx *bolt.Tx) error {
-		enc = tx.Bucket(stateSummaryBucket).Get(blockRoot[:])
+		v := tx.Bucket(stateSummaryBucket).Get(blockRoot[:])
+		if len(v) > 0 {
+			enc = make([]byte, len(v))
+			copy(enc, v)
+		}
 		return nil
 	}); err != nil {
 		return nil, err
@@ -55,7 +59,7 @@ func (s *Store) StateSummary(ctx context.Context, blockRoot [32]byte) (*zondpb.S
 	if len(enc) == 0 {
 		return nil, nil
 	}
-	summary := &zondpb.StateSummary{}
+	summary := &qrysmpb.StateSummary{}
 	if err := decode(ctx, enc, summary); err != nil {
 		return nil, err
 	}
@@ -64,7 +68,7 @@ func (s *Store) StateSummary(ctx context.Context, blockRoot [32]byte) (*zondpb.S
 
 // HasStateSummary returns true if a state summary exists in DB.
 func (s *Store) HasStateSummary(ctx context.Context, blockRoot [32]byte) bool {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.HasStateSummary")
+	_, span := trace.StartSpan(ctx, "BeaconDB.HasStateSummary")
 	defer span.End()
 
 	if s.stateSummaryCache.has(blockRoot) {

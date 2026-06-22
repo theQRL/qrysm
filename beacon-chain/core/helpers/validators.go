@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/crypto/hash"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
@@ -35,7 +35,7 @@ var CommitteeCacheInProgressHit = promauto.NewCounter(prometheus.CounterOpts{
 //	  Check if ``validator`` is active.
 //	  """
 //	  return validator.activation_epoch <= epoch < validator.exit_epoch
-func IsActiveValidator(validator *zondpb.Validator, epoch primitives.Epoch) bool {
+func IsActiveValidator(validator *qrysmpb.Validator, epoch primitives.Epoch) bool {
 	return checkValidatorActiveStatus(validator.ActivationEpoch, validator.ExitEpoch, epoch)
 }
 
@@ -136,8 +136,12 @@ func ActiveValidatorIndices(ctx context.Context, s state.ReadOnlyBeaconState, ep
 		return nil, err
 	}
 
+	if len(indices) == 0 {
+		return nil, errors.New("no active validator indices")
+	}
+
 	if err := UpdateCommitteeCache(ctx, s, epoch); err != nil {
-		return nil, errors.Wrap(err, "could not update committee cache")
+		log.WithError(err).Debug("Could not update committee cache")
 	}
 
 	return indices, nil
@@ -186,7 +190,7 @@ func ActiveValidatorCount(ctx context.Context, s state.ReadOnlyBeaconState, epoc
 	}
 
 	if err := UpdateCommitteeCache(ctx, s, epoch); err != nil {
-		return 0, errors.Wrap(err, "could not update committee cache")
+		log.WithError(err).Error("Could not update committee cache")
 	}
 
 	return count, nil
@@ -245,11 +249,25 @@ func ValidatorExitChurnLimit(activeValidatorCount uint64) uint64 {
 //	  indices = get_active_validator_indices(state, epoch)
 //	  return compute_proposer_index(state, indices, seed)
 func BeaconProposerIndex(ctx context.Context, state state.ReadOnlyBeaconState) (primitives.ValidatorIndex, error) {
-	e := time.CurrentEpoch(state)
-	// The cache uses the state root of the previous epoch - minimum_seed_lookahead last slot as key. (e.g. Starting epoch 1, slot 32, the key would be block root at slot 31)
-	// For simplicity, the node will skip caching of genesis epoch.
-	if e > params.BeaconConfig().GenesisEpoch+params.BeaconConfig().MinSeedLookahead {
-		wantedEpoch := time.PrevEpoch(state)
+	return BeaconProposerIndexAtSlot(ctx, state, state.Slot())
+}
+
+// BeaconProposerIndexAtSlot returns the proposer index at the given slot,
+// computed from the perspective of `state` without mutating it. Callers that
+// need to enumerate proposers across multiple slots (e.g. to compute next
+// epoch's duties) can share a single read-only state — unlike
+// BeaconProposerIndex, this does not depend on `state.Slot()`. (upstream
+// PR #15642)
+func BeaconProposerIndexAtSlot(ctx context.Context, state state.ReadOnlyBeaconState, slot primitives.Slot) (primitives.ValidatorIndex, error) {
+	e := slots.ToEpoch(slot)
+	stateEpoch := slots.ToEpoch(state.Slot())
+	// The cache uses the state root at the end of the previous epoch as its
+	// key (e.g. for epoch 1 / slot 32, the key is the state root at slot 31).
+	// We skip the cache lookup when the requested epoch is beyond the state's
+	// current epoch — the state root at end-of-stateEpoch is not yet recorded,
+	// so StateRootAtSlot would error out.
+	if e <= stateEpoch && e > params.BeaconConfig().GenesisEpoch+params.BeaconConfig().MinSeedLookahead {
+		wantedEpoch := e - 1
 		s, err := slots.EpochEnd(wantedEpoch)
 		if err != nil {
 			return 0, err
@@ -267,10 +285,10 @@ func BeaconProposerIndex(ctx context.Context, state state.ReadOnlyBeaconState) (
 				if len(proposerIndices) != int(params.BeaconConfig().SlotsPerEpoch) {
 					return 0, errors.Errorf("length of proposer indices is not equal %d to slots per epoch", len(proposerIndices))
 				}
-				return proposerIndices[state.Slot()%params.BeaconConfig().SlotsPerEpoch], nil
+				return proposerIndices[slot%params.BeaconConfig().SlotsPerEpoch], nil
 			}
 			if err := UpdateProposerIndicesInCache(ctx, state, time.CurrentEpoch(state)); err != nil {
-				return 0, errors.Wrap(err, "could not update committee cache")
+				log.WithError(err).Error("Could not update proposer indices cache")
 			}
 		}
 	}
@@ -280,7 +298,7 @@ func BeaconProposerIndex(ctx context.Context, state state.ReadOnlyBeaconState) (
 		return 0, errors.Wrap(err, "could not generate seed")
 	}
 
-	seedWithSlot := append(seed[:], bytesutil.Bytes8(uint64(state.Slot()))...)
+	seedWithSlot := append(seed[:], bytesutil.Bytes8(uint64(slot))...)
 	seedWithSlotHash := hash.Hash(seedWithSlot)
 
 	indices, err := ActiveValidatorIndices(ctx, state, e)
@@ -355,7 +373,7 @@ func ComputeProposerIndex(bState state.ReadOnlyValidators, activeIndices []primi
 //	      validator.activation_eligibility_epoch == FAR_FUTURE_EPOCH
 //	      and validator.effective_balance == MAX_EFFECTIVE_BALANCE
 //	  )
-func IsEligibleForActivationQueue(validator *zondpb.Validator) bool {
+func IsEligibleForActivationQueue(validator *qrysmpb.Validator) bool {
 	return isEligibileForActivationQueue(validator.ActivationEligibilityEpoch, validator.EffectiveBalance)
 }
 
@@ -385,7 +403,7 @@ func isEligibileForActivationQueue(activationEligibilityEpoch primitives.Epoch, 
 //	      # Has not yet been activated
 //	      and validator.activation_epoch == FAR_FUTURE_EPOCH
 //	  )
-func IsEligibleForActivation(state state.ReadOnlyCheckpoint, validator *zondpb.Validator) bool {
+func IsEligibleForActivation(state state.ReadOnlyCheckpoint, validator *qrysmpb.Validator) bool {
 	finalizedEpoch := state.FinalizedCheckpointEpoch()
 	return isEligibleForActivation(validator.ActivationEligibilityEpoch, validator.ActivationEpoch, finalizedEpoch)
 }

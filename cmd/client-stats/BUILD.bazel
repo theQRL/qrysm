@@ -2,7 +2,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary")
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "client-stats_lib",
     srcs = [
         "log.go",
         "main.go",
@@ -11,21 +11,21 @@ go_library(
     importpath = "github.com/theQRL/qrysm/cmd/client-stats",
     visibility = ["//visibility:private"],
     deps = [
-        "//cmd:go_default_library",
-        "//cmd/client-stats/flags:go_default_library",
-        "//io/logs:go_default_library",
-        "//monitoring/clientstats:go_default_library",
-        "//monitoring/journald:go_default_library",
-        "//runtime/logging/logrus-prefixed-formatter:go_default_library",
-        "//runtime/version:go_default_library",
-        "@com_github_joonix_log//:go_default_library",
-        "@com_github_sirupsen_logrus//:go_default_library",
-        "@com_github_urfave_cli_v2//:go_default_library",
+        "//cmd",
+        "//cmd/client-stats/flags",
+        "//io/logs",
+        "//monitoring/clientstats",
+        "//monitoring/journald",
+        "//runtime/logging/logrus-prefixed-formatter",
+        "//runtime/version",
+        "@com_github_joonix_log//:log",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_urfave_cli_v2//:cli",
     ],
 )
 
 go_binary(
     name = "client-stats",
-    embed = [":go_default_library"],
+    embed = [":client-stats_lib"],
     visibility = ["//visibility:public"],
 )

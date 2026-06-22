@@ -1,10 +1,10 @@
-// Package v1 defines mappings of types as defined by the web3signer official specification for its v1 version i.e. /api/v1/eth2
+// Package v1 defines mappings of types as defined by the web3signer official specification for its v1 version i.e. /api/v1/consensus
 /* Web3Signer Specs are found by searching Consensys' Web3Signer API specification*/
 package v1
 
 /*
 import (
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
 
@@ -49,7 +49,7 @@ type BlockAltairSignRequest struct {
 }
 
 // BlockV2BlindedSignRequest is a request object for web3signer sign api
-// Supports Bellatrix(merge) and Capella
+// Supports Bellatrix(merge) and Zond
 type BlockV2BlindedSignRequest struct {
 	Type        string                `json:"type" validate:"required"`
 	ForkInfo    *ForkInfo             `json:"fork_info" validate:"required"`
@@ -133,7 +133,7 @@ type AggregationSlot struct {
 type AggregateAndProof struct {
 	AggregatorIndex string        `json:"aggregator_index"` // uint64
 	Aggregate       *Attestation  `json:"aggregate"`
-	SelectionProof  hexutil.Bytes `json:"selection_proof"` // 4595 bytes
+	SelectionProof  hexutil.Bytes `json:"selection_proof"` // 4627 bytes
 }
 
 // Attestation a sub property of AggregateAndProofSignRequest.
@@ -170,7 +170,7 @@ type BeaconBlock struct {
 // BeaconBlockBody a sub property of BeaconBlock.
 type BeaconBlockBody struct {
 	RandaoReveal      hexutil.Bytes          `json:"randao_reveal"`
-	Eth1Data          *Eth1Data              `json:"eth1_data"`
+	ExecutionData     *ExecutionData         `json:"execution_data"`
 	Graffiti          hexutil.Bytes          `json:"graffiti"` // 32 bytes
 	ProposerSlashings []*ProposerSlashing    `json:"proposer_slashings"`
 	AttesterSlashings []*AttesterSlashing    `json:"attester_slashings"`
@@ -179,8 +179,8 @@ type BeaconBlockBody struct {
 	VoluntaryExits    []*SignedVoluntaryExit `json:"voluntary_exits"`
 }
 
-// Eth1Data a sub property of BeaconBlockBody.
-type Eth1Data struct {
+// ExecutionData a sub property of BeaconBlockBody.
+type ExecutionData struct {
 	DepositRoot  hexutil.Bytes `json:"deposit_root"`
 	DepositCount string        `json:"deposit_count"` // uint64
 	BlockHash    hexutil.Bytes `json:"block_hash"`
@@ -268,7 +268,7 @@ type BeaconBlockAltair struct {
 // BeaconBlockBodyAltair a sub property of BeaconBlockAltair.
 type BeaconBlockBodyAltair struct {
 	RandaoReveal      hexutil.Bytes          `json:"randao_reveal"`
-	Eth1Data          *Eth1Data              `json:"eth1_data"`
+	ExecutionData     *ExecutionData         `json:"execution_data"`
 	Graffiti          hexutil.Bytes          `json:"graffiti"` // Hash32
 	ProposerSlashings []*ProposerSlashing    `json:"proposer_slashings"`
 	AttesterSlashings []*AttesterSlashing    `json:"attester_slashings"`
@@ -279,7 +279,7 @@ type BeaconBlockBodyAltair struct {
 }
 
 // BeaconBlockV2Blinded a field of BlockV2BlindedSignRequest.
-// Supports Bellatrix(merge) and Capella
+// Supports Bellatrix(merge) and Zond
 type BeaconBlockV2Blinded struct {
 	Version     string             `json:"version" enum:"true"`
 	BlockHeader *BeaconBlockHeader `json:"block_header"`
@@ -288,7 +288,7 @@ type BeaconBlockV2Blinded struct {
 // SyncAggregate is a sub property of BeaconBlockBodyAltair.
 type SyncAggregate struct {
 	SyncCommitteeBits      hexutil.Bytes `json:"sync_committee_bits"`      // SSZ hexadecimal string
-	SyncCommitteeSignature hexutil.Bytes `json:"sync_committee_signature"` // 4595 byte hexadecimal string
+	SyncCommitteeSignature hexutil.Bytes `json:"sync_committee_signature"` // 4627 byte hexadecimal string
 }
 
 // BeaconBlockBlockV2 a sub property of BlockV2SignRequest.
@@ -318,7 +318,7 @@ type SyncAggregatorSelectionData struct {
 // ContributionAndProof a sub property of AggregatorSelectionSignRequest.
 type ContributionAndProof struct {
 	AggregatorIndex string                     `json:"aggregator_index"` // uint64
-	SelectionProof  hexutil.Bytes              `json:"selection_proof"`  // 4595 byte hexadecimal
+	SelectionProof  hexutil.Bytes              `json:"selection_proof"`  // 4627 byte hexadecimal
 	Contribution    *SyncCommitteeContribution `json:"contribution"`
 }
 
@@ -328,7 +328,7 @@ type SyncCommitteeContribution struct {
 	BeaconBlockRoot   hexutil.Bytes `json:"beacon_block_root"`  // Hash32 // Qrysm uses BlockRoot instead of BeaconBlockRoot
 	SubcommitteeIndex string        `json:"subcommittee_index"` // uint64
 	AggregationBits   hexutil.Bytes `json:"aggregation_bits"`   // SSZ hexadecimal string
-	Signature         hexutil.Bytes `json:"signature"`          // 4595 byte hexadecimal string
+	Signature         hexutil.Bytes `json:"signature"`          // 4627 byte hexadecimal string
 }
 
 // ValidatorRegistration a sub property of ValidatorRegistrationSignRequest

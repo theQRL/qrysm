@@ -21,7 +21,7 @@ var _ e2etypes.ComponentRunner = (*BootNode)(nil)
 type BootNode struct {
 	e2etypes.ComponentRunner
 	started chan struct{}
-	enr     string
+	qnr     string
 	cmd     *exec.Cmd
 }
 
@@ -32,9 +32,9 @@ func NewBootNode() *BootNode {
 	}
 }
 
-// ENR exposes node's ENR.
-func (node *BootNode) ENR() string {
-	return node.enr
+// QNR exposes node's QNR.
+func (node *BootNode) QNR() string {
+	return node.qnr
 }
 
 // Start starts a bootnode blocks up until ctx is cancelled.
@@ -62,12 +62,12 @@ func (node *BootNode) Start(ctx context.Context) error {
 	}
 
 	if err = helpers.WaitForTextInFile(stdErrFile, "Running bootnode"); err != nil {
-		return fmt.Errorf("could not find enr for bootnode, this means the bootnode had issues starting: %w", err)
+		return fmt.Errorf("could not find qnr for bootnode, this means the bootnode had issues starting: %w", err)
 	}
 
-	node.enr, err = enrFromLogFile(stdErrFile.Name())
+	node.qnr, err = qnrFromLogFile(stdErrFile.Name())
 	if err != nil {
-		return fmt.Errorf("could not get enr for bootnode: %w", err)
+		return fmt.Errorf("could not get qnr for bootnode: %w", err)
 	}
 
 	// Mark node as ready.
@@ -97,7 +97,7 @@ func (node *BootNode) Stop() error {
 	return node.cmd.Process.Kill()
 }
 
-func enrFromLogFile(name string) (string, error) {
+func qnrFromLogFile(name string) (string, error) {
 	byteContent, err := os.ReadFile(name) // #nosec G304
 	if err != nil {
 		return "", err
@@ -107,12 +107,12 @@ func enrFromLogFile(name string) (string, error) {
 	searchText := "Running bootnode: "
 	startIdx := strings.Index(contents, searchText)
 	if startIdx == -1 {
-		return "", fmt.Errorf("did not find ENR text in %s", contents)
+		return "", fmt.Errorf("did not find QNR text in %s", contents)
 	}
 	startIdx += len(searchText)
 	endIdx := strings.Index(contents[startIdx:], " prefix=bootnode")
 	if endIdx == -1 {
-		return "", fmt.Errorf("did not find ENR text in %s", contents)
+		return "", fmt.Errorf("did not find QNR text in %s", contents)
 	}
 	return contents[startIdx : startIdx+endIdx-1], nil
 }

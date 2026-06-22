@@ -66,7 +66,8 @@
       "rules_go_work-.*": "Third party code",
       "config/params/config.go": "This config struct needs to be organized for now",
       "shared/featureconfig/config.go": "This config struct needs to be organized for now",
-      "proto/.*": "Excluding protobuf objects for now"
+      "proto/.*": "Excluding protobuf objects for now",
+      ".*_mock.go": "Excluding generated mock files"
     }
   },
   "errcheck": {
@@ -77,7 +78,8 @@
       ".*/.*mock\\.go": "Mocks are OK",
       ".*testmain\\.go$": "Fuzz",
       "proto/.*": "Generated protobuf related code",
-      "tools/analyzers/properpermissions/testdata/.*": "Analyzer breaks rules"
+      "tools/analyzers/properpermissions/testdata/.*": "Analyzer breaks rules",
+      "pkg/.*": "Excluded pkg directory"
     }
   },
   "featureconfig": {
@@ -152,7 +154,7 @@
       "external/.*": "Third party code",
       "rules_go_work-.*": "Third party code",
       ".*\\.pb.*.go": "Generated code is ok",
-      ".*generated\\.ssz\\.go": "Generated code is ok"
+      ".*\\.ssz\\.go": "Generated code is ok"
     }
   },
   "properpermissions": {
@@ -172,8 +174,7 @@
       "external/.*": "Third party code",
       "rules_go_work-.*": "Third party code",
       ".*_test\\.go": "Tests are ok",
-      "beacon-chain/rpc/core/validator.go": "This file is ok"
-
+      "pkg/.*": "Excluded pkg directory"
     }
   },
   "gocognit": {
@@ -181,7 +182,7 @@
       "external/.*": "Third party code",
       "rules_go_work-.*": "Third party code",
       ".*\\.pb.*.go": "Generated code is ok",
-      ".*generated\\.ssz\\.go": "Generated code is ok",
+      ".*\\.ssz\\.go": "Generated code is ok",
       ".*_test\\.go": "Tests are ok (for now)",
       "tools/analyzers/ineffassign/ineffassign\\.go": "3rd party code with a massive switch statement"
     }
@@ -190,6 +191,131 @@
     "exclude_files": {
       "external/.*": "Third party code",
       "rules_go_work-.*": "Third party code"
+    }
+  },
+  "reflectvaluecompare": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code"
+    }
+  },
+  "unusedwrite": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code"
+    }
+  },
+  "stringintconv": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code"
+    }
+  },
+  "loopclosure": {
+    "exclude_files": {
+      "external/com_github_ethereum_go_ethereum/.*": "Unsafe third party code",
+      "rules_go_work-.*": "Third party code"
+    }
+  },
+  "buildtag": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "any": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "appendclipped": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "fmtappendf": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "forvar": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "mapsloop": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "minmax": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "newexpr": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "omitzero": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "rangeint": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "reflecttypefor": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "slicescontains": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "slicessort": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "stringsbuilder": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "stringscutprefix": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "stringsseq": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "waitgroup": {
+    "exclude_files": {
+      "external/.*": "Third party code"
+    }
+  },
+  "nopanic": {
+    "exclude_files": {
+      ".*/.*_test\\.go": "Tests are OK",
+      ".*/main\\.go": "main methods are OK",
+      "external/.*": "Third party code",
+      "pkg/.*": "Excluded pkg directory"
+    }
+  },
+  "logcapitalization": {
+    "exclude_files": {
+      "external/.*": "Third party code",
+      "rules_go_work-.*": "Third party code",
+      ".*/.*_test\\.go": "Test logs can be less formal",
+      "tools/analyzers/logcapitalization/testdata/.*": "Analyzer testdata has to break rules"
     }
   }
 }

@@ -2,10 +2,9 @@ package rpc
 
 import (
 	"context"
-	"fmt"
+	"crypto/subtle"
 	"strings"
 
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -13,14 +12,19 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// JWTInterceptor is a gRPC unary interceptor to authorize incoming requests.
+// JWTInterceptor is kept as a wrapper for existing callers.
 func (s *Server) JWTInterceptor() grpc.UnaryServerInterceptor {
+	return s.AuthTokenInterceptor()
+}
+
+// AuthTokenInterceptor is a gRPC unary interceptor to authorize incoming requests.
+func (s *Server) AuthTokenInterceptor() grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
-		req interface{},
+		req any,
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
-	) (interface{}, error) {
+	) (any, error) {
 		if err := s.authorize(ctx); err != nil {
 			return nil, err
 		}
@@ -44,20 +48,21 @@ func (s *Server) authorize(ctx context.Context) error {
 	if !ok {
 		return status.Errorf(codes.Unauthenticated, "Authorization token could not be found")
 	}
-	if len(authHeader) < 1 || !strings.Contains(authHeader[0], "Bearer ") {
+	if len(authHeader) < 1 || !strings.HasPrefix(authHeader[0], "Bearer ") {
 		return status.Error(codes.Unauthenticated, "Invalid auth header, needs Bearer {token}")
 	}
-	token := strings.Split(authHeader[0], "Bearer ")[1]
-	_, err := jwt.Parse(token, s.validateJWT)
-	if err != nil {
-		return status.Errorf(codes.Unauthenticated, "Could not parse JWT token: %v", err)
+	token := strings.TrimSpace(strings.TrimPrefix(authHeader[0], "Bearer "))
+	if token == authHeader[0] {
+		return status.Error(codes.Unauthenticated, "Invalid auth header, needs Bearer {token}")
+	}
+	if token == "" || strings.Contains(token, " ") {
+		return status.Error(codes.Unauthenticated, "Invalid token format")
+	}
+	if s.authToken == "" {
+		return status.Error(codes.Internal, "Authorization token is not initialized")
+	}
+	if subtle.ConstantTimeCompare([]byte(token), []byte(s.authToken)) != 1 {
+		return status.Error(codes.Unauthenticated, "Invalid auth token")
 	}
 	return nil
-}
-
-func (s *Server) validateJWT(token *jwt.Token) (interface{}, error) {
-	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-		return nil, fmt.Errorf("unexpected JWT signing method: %v", token.Header["alg"])
-	}
-	return s.jwtSecret, nil
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
@@ -29,7 +29,7 @@ func TestSubmitSignedAggregateSelectionProof_Valid(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().PostRestJson(
 		ctx,
-		"/zond/v1/validator/aggregate_and_proofs",
+		"/qrl/v1/validator/aggregate_and_proofs",
 		nil,
 		bytes.NewBuffer(marshalledSignedAggregateSignedAndProof),
 		nil,
@@ -42,7 +42,7 @@ func TestSubmitSignedAggregateSelectionProof_Valid(t *testing.T) {
 	require.NoError(t, err)
 
 	validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
-	resp, err := validatorClient.submitSignedAggregateSelectionProof(ctx, &zondpb.SignedAggregateSubmitRequest{
+	resp, err := validatorClient.submitSignedAggregateSelectionProof(ctx, &qrysmpb.SignedAggregateSubmitRequest{
 		SignedAggregateAndProof: signedAggregateAndProof,
 	})
 	require.NoError(t, err)
@@ -61,7 +61,7 @@ func TestSubmitSignedAggregateSelectionProof_BadRequest(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().PostRestJson(
 		ctx,
-		"/zond/v1/validator/aggregate_and_proofs",
+		"/qrl/v1/validator/aggregate_and_proofs",
 		nil,
 		bytes.NewBuffer(marshalledSignedAggregateSignedAndProof),
 		nil,
@@ -71,36 +71,36 @@ func TestSubmitSignedAggregateSelectionProof_BadRequest(t *testing.T) {
 	).Times(1)
 
 	validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
-	_, err = validatorClient.submitSignedAggregateSelectionProof(ctx, &zondpb.SignedAggregateSubmitRequest{
+	_, err = validatorClient.submitSignedAggregateSelectionProof(ctx, &qrysmpb.SignedAggregateSubmitRequest{
 		SignedAggregateAndProof: signedAggregateAndProof,
 	})
 	assert.ErrorContains(t, "failed to send POST data to REST endpoint", err)
 	assert.ErrorContains(t, "bad request", err)
 }
 
-func generateSignedAggregateAndProofJson() *zondpb.SignedAggregateAttestationAndProof {
-	return &zondpb.SignedAggregateAttestationAndProof{
-		Message: &zondpb.AggregateAttestationAndProof{
+func generateSignedAggregateAndProofJson() *qrysmpb.SignedAggregateAttestationAndProof {
+	return &qrysmpb.SignedAggregateAttestationAndProof{
+		Message: &qrysmpb.AggregateAttestationAndProof{
 			AggregatorIndex: 72,
-			Aggregate: &zondpb.Attestation{
+			Aggregate: &qrysmpb.Attestation{
 				AggregationBits: test_helpers.FillByteSlice(4, 74),
-				Data: &zondpb.AttestationData{
+				Data: &qrysmpb.AttestationData{
 					Slot:            75,
 					CommitteeIndex:  76,
 					BeaconBlockRoot: test_helpers.FillByteSlice(32, 38),
-					Source: &zondpb.Checkpoint{
+					Source: &qrysmpb.Checkpoint{
 						Epoch: 78,
 						Root:  test_helpers.FillByteSlice(32, 79),
 					},
-					Target: &zondpb.Checkpoint{
+					Target: &qrysmpb.Checkpoint{
 						Epoch: 80,
 						Root:  test_helpers.FillByteSlice(32, 81),
 					},
 				},
-				Signatures: [][]byte{test_helpers.FillByteSlice(4595, 82)},
+				Signatures: [][]byte{test_helpers.FillByteSlice(4627, 82)},
 			},
-			SelectionProof: test_helpers.FillByteSlice(4595, 82),
+			SelectionProof: test_helpers.FillByteSlice(4627, 82),
 		},
-		Signature: test_helpers.FillByteSlice(4595, 82),
+		Signature: test_helpers.FillByteSlice(4627, 82),
 	}
 }

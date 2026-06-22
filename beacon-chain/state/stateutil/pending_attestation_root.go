@@ -7,12 +7,12 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/encoding/ssz"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // PendingAttRootWithHasher describes a method from which the hash tree root
 // of a pending attestation is returned.
-func PendingAttRootWithHasher(att *zondpb.PendingAttestation) ([32]byte, error) {
+func PendingAttRootWithHasher(att *qrysmpb.PendingAttestation) ([32]byte, error) {
 	var fieldRoots [][32]byte
 
 	// Bitfield.
@@ -40,7 +40,7 @@ func PendingAttRootWithHasher(att *zondpb.PendingAttestation) ([32]byte, error) 
 	return ssz.BitwiseMerkleize(fieldRoots, uint64(len(fieldRoots)), uint64(len(fieldRoots)))
 }
 
-func attDataRootWithHasher(data *zondpb.AttestationData) ([32]byte, error) {
+func attDataRootWithHasher(data *qrysmpb.AttestationData) ([32]byte, error) {
 	fieldRoots := make([][32]byte, 5)
 
 	if data != nil {

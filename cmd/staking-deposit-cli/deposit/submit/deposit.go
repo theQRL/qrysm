@@ -1,7 +1,6 @@
 package submit
 
 import (
-	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -11,20 +10,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/k0kubun/go-ansi"
-	"github.com/schollz/progressbar/v3"
 	"github.com/sirupsen/logrus"
-	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/go-zond/accounts/abi/bind"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/go-zond/zondclient"
+	"github.com/theQRL/go-qrl/accounts/abi/bind"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrl/qrlclient"
+	"github.com/theQRL/go-qrl/rpc"
 	"github.com/theQRL/qrysm/cmd"
 	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/deposit/flags"
 	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/stakingdeposit"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/contracts/deposit"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/monitoring/progress"
 	"github.com/urfave/cli/v2"
 )
 
@@ -39,7 +37,7 @@ func submitDeposits(cliCtx *cli.Context) error {
 
 	contractAddrStr := cliCtx.String(flags.DepositContractAddressFlag.Name)
 	if !cliCtx.Bool(flags.SkipDepositConfirmationFlag.Name) {
-		qrlDepositTotal := uint64(len(depositDataList)) * params.BeaconConfig().MaxEffectiveBalance / params.BeaconConfig().GweiPerEth
+		qrlDepositTotal := uint64(len(depositDataList)) * params.BeaconConfig().MaxEffectiveBalance / params.BeaconConfig().ShorPerQuanta
 		actionText := "This will submit the deposits stored in your deposit data directory. " +
 			fmt.Sprintf("A total of %d QRL will be sent to contract address %s for %d validator accounts. ", qrlDepositTotal, contractAddrStr, len(depositDataList)) +
 			"Do you want to proceed? (Y/N)"
@@ -56,10 +54,10 @@ func submitDeposits(cliCtx *cli.Context) error {
 	web3Provider := cliCtx.String(flags.HTTPWeb3ProviderFlag.Name)
 	rpcClient, err := rpc.Dial(web3Provider)
 	if err != nil {
-		return fmt.Errorf("failed to connect to the zond provider. reason: %v", err)
+		return fmt.Errorf("failed to connect to the qrl provider. reason: %v", err)
 	}
-	zondCli := zondclient.NewClient(rpcClient)
-	chainID, err := zondCli.ChainID(cliCtx.Context)
+	qrlCli := qrlclient.NewClient(rpcClient)
+	chainID, err := qrlCli.ChainID(cliCtx.Context)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve the chain ID. reason: %v", err)
 	}
@@ -67,34 +65,23 @@ func submitDeposits(cliCtx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	contract, err := deposit.NewDepositContract(contractAddr, zondCli)
+	contract, err := deposit.NewDepositContract(contractAddr, qrlCli)
 	if err != nil {
 		return fmt.Errorf("failed to create a new instance of the deposit contract. reason: %v", err)
 	}
 
-	signingSeedFile := cliCtx.String(flags.ZondSeedFileFlag.Name)
-	signingSeedHex, err := os.ReadFile(signingSeedFile)
+	signingSeedFile := cliCtx.String(flags.QRLSeedFileFlag.Name)
+	wallet, err := wallet.RestoreFromFile(signingSeedFile)
 	if err != nil {
-		return fmt.Errorf("failed to read seed file. reason: %v", err)
-	}
-	signingSeedHex = bytes.TrimSpace(signingSeedHex)
-	signingSeed := make([]byte, hex.DecodedLen(len(signingSeedHex)))
-	_, err = hex.Decode(signingSeed, signingSeedHex)
-	if err != nil {
-		return fmt.Errorf("failed to read seed. reason: %v", err)
+		return fmt.Errorf("failed to restore wallet from file: %v", err)
 	}
 
-	depositKey, err := dilithiumlib.NewDilithiumFromSeed(bytesutil.ToBytes48(signingSeed))
-	if err != nil {
-		return fmt.Errorf("failed to generate the deposit key from the signing seed. reason: %v", err)
-	}
-
-	gasTip, err := zondCli.SuggestGasTipCap(cliCtx.Context)
+	gasTip, err := qrlCli.SuggestGasTipCap(cliCtx.Context)
 	if err != nil {
 		return fmt.Errorf("failed to get gas tip suggestion. reason: %v", err)
 	}
 
-	txOpts, err := bind.NewKeyedTransactorWithChainID(depositKey, chainID)
+	txOpts, err := bind.NewKeyedTransactorWithChainID(wallet, chainID)
 	if err != nil {
 		return err
 	}
@@ -104,9 +91,9 @@ func submitDeposits(cliCtx *cli.Context) error {
 
 	depositDelaySeconds := cliCtx.Int(flags.DepositDelaySecondsFlag.Name)
 	depositDelay := time.Duration(depositDelaySeconds) * time.Second
-	bar := initializeProgressBar(len(depositDataList), "Sending deposit transactions...")
+	bar := progress.InitializeProgressBar(len(depositDataList), "Sending deposit transactions...")
 	for i, depositData := range depositDataList {
-		txOpts.Value = new(big.Int).Mul(new(big.Int).SetUint64(depositData.Amount), big.NewInt(1e9)) // value in wei
+		txOpts.Value = new(big.Int).Mul(new(big.Int).SetUint64(depositData.Amount), big.NewInt(1e9)) // value in planck
 
 		if err := sendDepositTx(contract, depositData, txOpts); err != nil {
 			log.WithError(err).Errorf("Unable to send transaction to contract: deposit data index: %d", i)
@@ -195,22 +182,4 @@ func importDepositDataJSON(folder string) ([]*stakingdeposit.DepositData, error)
 	}
 
 	return depositDataList, nil
-}
-
-func initializeProgressBar(numItems int, msg string) *progressbar.ProgressBar {
-	return progressbar.NewOptions(
-		numItems,
-		progressbar.OptionFullWidth(),
-		progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
-		progressbar.OptionEnableColorCodes(true),
-		progressbar.OptionSetTheme(progressbar.Theme{
-			Saucer:        "[green]=[reset]",
-			SaucerHead:    "[green]>[reset]",
-			SaucerPadding: " ",
-			BarStart:      "[",
-			BarEnd:        "]",
-		}),
-		progressbar.OptionOnCompletion(func() { fmt.Println() }),
-		progressbar.OptionSetDescription(msg),
-	)
 }

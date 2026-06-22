@@ -8,14 +8,16 @@ import (
 	"github.com/sirupsen/logrus"
 	slashertypes "github.com/theQRL/qrysm/beacon-chain/slasher/types"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
 // Receive indexed attestations from some source event feed,
 // validating their integrity before appending them to an attestation queue
 // for batch processing in a separate routine.
-func (s *Service) receiveAttestations(ctx context.Context, indexedAttsChan chan *zondpb.IndexedAttestation) {
+func (s *Service) receiveAttestations(ctx context.Context, indexedAttsChan chan *qrysmpb.IndexedAttestation) {
+	defer s.wg.Done()
+
 	sub := s.serviceCfg.IndexedAttestationsFeed.Subscribe(indexedAttsChan)
 	defer sub.Unsubscribe()
 	for {
@@ -44,7 +46,9 @@ func (s *Service) receiveAttestations(ctx context.Context, indexedAttsChan chan 
 }
 
 // Receive beacon blocks from some source event feed,
-func (s *Service) receiveBlocks(ctx context.Context, beaconBlockHeadersChan chan *zondpb.SignedBeaconBlockHeader) {
+func (s *Service) receiveBlocks(ctx context.Context, beaconBlockHeadersChan chan *qrysmpb.SignedBeaconBlockHeader) {
+	defer s.wg.Done()
+
 	sub := s.serviceCfg.BeaconBlockHeadersFeed.Subscribe(beaconBlockHeadersChan)
 	defer sub.Unsubscribe()
 	for {
@@ -77,6 +81,8 @@ func (s *Service) receiveBlocks(ctx context.Context, beaconBlockHeadersChan chan
 // This grouping will allow us to perform detection on batches of attestations
 // per validator chunk index which can be done concurrently.
 func (s *Service) processQueuedAttestations(ctx context.Context, slotTicker <-chan primitives.Slot) {
+	defer s.wg.Done()
+
 	for {
 		select {
 		case currentSlot := <-slotTicker:
@@ -100,15 +106,10 @@ func (s *Service) processQueuedAttestations(ctx context.Context, slotTicker <-ch
 				"numDroppedAtts":  numDropped,
 			}).Info("Processing queued attestations for slashing detection")
 
-			// Save the attestation records to our database.
-			if err := s.serviceCfg.Database.SaveAttestationRecordsForValidators(
-				ctx, validAtts,
-			); err != nil {
-				log.WithError(err).Error("Could not save attestation records to DB")
-				continue
-			}
-
-			// Check for slashings.
+			// Check for slashings. Attestation records are saved to disk inside
+			// checkSlashableAttestations between the double-vote and surround
+			// checks so that on-disk double-vote detection compares against
+			// previously saved batches rather than the current one.
 			slashings, err := s.checkSlashableAttestations(ctx, currentEpoch, validAtts)
 			if err != nil {
 				log.WithError(err).Error("Could not check slashable attestations")
@@ -132,6 +133,8 @@ func (s *Service) processQueuedAttestations(ctx context.Context, slotTicker <-ch
 // Process queued blocks every time an epoch ticker fires. We retrieve
 // these blocks from a queue, then perform double proposal detection.
 func (s *Service) processQueuedBlocks(ctx context.Context, slotTicker <-chan primitives.Slot) {
+	defer s.wg.Done()
+
 	for {
 		select {
 		case currentSlot := <-slotTicker:
@@ -172,6 +175,8 @@ func (s *Service) processQueuedBlocks(ctx context.Context, slotTicker <-chan pri
 
 // Prunes slasher data on each slot tick to prevent unnecessary build-up of disk space usage.
 func (s *Service) pruneSlasherData(ctx context.Context, slotTicker <-chan primitives.Slot) {
+	defer s.wg.Done()
+
 	for {
 		select {
 		case <-slotTicker:

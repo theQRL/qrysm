@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "forkchecker_lib",
     srcs = ["forkchecker.go"],
     importpath = "github.com/theQRL/qrysm/tools/forkchecker",
     visibility = ["//visibility:private"],

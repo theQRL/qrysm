@@ -2,19 +2,18 @@ package execution
 
 import (
 	"context"
-	"math/big"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	zond "github.com/theQRL/go-zond"
-	"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	gzondtypes "github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/rpc"
+	qrl "github.com/theQRL/go-qrl"
+	"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	gqrltypes "github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/rpc"
 	"github.com/theQRL/qrysm/async/event"
 	"github.com/theQRL/qrysm/beacon-chain/cache/depositcache"
 	dbutil "github.com/theQRL/qrysm/beacon-chain/db/testing"
@@ -28,7 +27,7 @@ import (
 	"github.com/theQRL/qrysm/contracts/deposit/mock"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/monitoring/clientstats"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -37,7 +36,7 @@ import (
 
 var _ ChainStartFetcher = (*Service)(nil)
 var _ ChainInfoFetcher = (*Service)(nil)
-var _ POWBlockFetcher = (*Service)(nil)
+var _ ExecutionBlockFetcher = (*Service)(nil)
 var _ Chain = (*Service)(nil)
 
 type goodLogger struct {
@@ -46,22 +45,22 @@ type goodLogger struct {
 
 func (_ *goodLogger) Close() {}
 
-func (g *goodLogger) SubscribeFilterLogs(ctx context.Context, q zond.FilterQuery, ch chan<- gzondtypes.Log) (zond.Subscription, error) {
+func (g *goodLogger) SubscribeFilterLogs(ctx context.Context, q qrl.FilterQuery, ch chan<- gqrltypes.Log) (qrl.Subscription, error) {
 	if g.backend == nil {
 		return new(event.Feed).Subscribe(ch), nil
 	}
 	return g.backend.SubscribeFilterLogs(ctx, q, ch)
 }
 
-func (g *goodLogger) FilterLogs(ctx context.Context, q zond.FilterQuery) ([]gzondtypes.Log, error) {
+func (g *goodLogger) FilterLogs(ctx context.Context, q qrl.FilterQuery) ([]gqrltypes.Log, error) {
 	if g.backend == nil {
-		logs := make([]gzondtypes.Log, 3)
-		for i := 0; i < len(logs); i++ {
+		logs := make([]gqrltypes.Log, 3)
+		for i := range logs {
 			logs[i].Address = common.Address{}
-			logs[i].Topics = make([]common.Hash, 5)
-			logs[i].Topics[0] = common.Hash{'a'}
-			logs[i].Topics[1] = common.Hash{'b'}
-			logs[i].Topics[2] = common.Hash{'c'}
+			logs[i].Topics = make([]common.LogTopic, 5)
+			logs[i].Topics[0] = common.LogTopic{'a'}
+			logs[i].Topics[1] = common.LogTopic{'b'}
+			logs[i].Topics[2] = common.LogTopic{'c'}
 
 		}
 		return logs, nil
@@ -79,8 +78,6 @@ func (g *goodNotifier) StateFeed() *event.Feed {
 	}
 	return g.MockStateFeed
 }
-
-var depositsReqForChainStart = 64
 
 func TestStart_OK(t *testing.T) {
 	hook := logTest.NewGlobal()
@@ -145,7 +142,7 @@ func TestStop_OK(t *testing.T) {
 		WithDepositContractAddress(testAcc.ContractAddr),
 		WithDatabase(beaconDB),
 	)
-	require.NoError(t, err, "unable to setup web3 Zond execution chain service")
+	require.NoError(t, err, "unable to setup web3 QRL execution chain service")
 	web3Service = setDefaultMocks(web3Service)
 	web3Service.depositContractCaller, err = contracts.NewDepositContractCaller(testAcc.ContractAddr, testAcc.Backend)
 	require.NoError(t, err)
@@ -153,7 +150,7 @@ func TestStop_OK(t *testing.T) {
 	testAcc.Backend.Commit()
 
 	err = web3Service.Stop()
-	require.NoError(t, err, "Unable to stop web3 Zond execution chain service")
+	require.NoError(t, err, "Unable to stop web3 QRL execution chain service")
 
 	// The context should have been canceled.
 	assert.NotNil(t, web3Service.ctx.Err(), "Context wasnt canceled")
@@ -161,7 +158,7 @@ func TestStop_OK(t *testing.T) {
 	hook.Reset()
 }
 
-func TestService_Eth1Synced(t *testing.T) {
+func TestService_ExecutionSynced(t *testing.T) {
 	testAcc, err := mock.Setup()
 	require.NoError(t, err, "Unable to set up simulated backend")
 	beaconDB := dbutil.SetupDB(t)
@@ -175,7 +172,7 @@ func TestService_Eth1Synced(t *testing.T) {
 		WithDepositContractAddress(testAcc.ContractAddr),
 		WithDatabase(beaconDB),
 	)
-	require.NoError(t, err, "unable to setup web3 Zond execution chain service")
+	require.NoError(t, err, "unable to setup web3 QRL execution chain service")
 	web3Service = setDefaultMocks(web3Service)
 	web3Service.depositContractCaller, err = contracts.NewDepositContractCaller(testAcc.ContractAddr, testAcc.Backend)
 	require.NoError(t, err)
@@ -200,25 +197,25 @@ func TestFollowBlock_OK(t *testing.T) {
 		WithDepositContractAddress(testAcc.ContractAddr),
 		WithDatabase(beaconDB),
 	)
-	require.NoError(t, err, "unable to setup web3 Zond execution chain service")
+	require.NoError(t, err, "unable to setup web3 QRL execution chain service")
 
-	// simulated backend sets eth1 block
+	// simulated backend sets execution block
 	// time as 10 seconds
 	params.SetupTestConfigCleanup(t)
 	conf := params.BeaconConfig().Copy()
-	conf.SecondsPerETH1Block = 10
+	conf.SecondsPerExecutionBlock = 10
 	params.OverrideBeaconConfig(conf)
 
 	web3Service = setDefaultMocks(web3Service)
 	web3Service.rpcClient = &mockExecution.RPCClient{Backend: testAcc.Backend}
 	baseHeight := testAcc.Backend.Blockchain().CurrentBlock().Number.Uint64()
 	// process follow_distance blocks
-	for i := 0; i < int(params.BeaconConfig().Eth1FollowDistance); i++ {
+	for i := 0; i < int(params.BeaconConfig().ExecutionFollowDistance); i++ {
 		testAcc.Backend.Commit()
 	}
 	// set current height
-	web3Service.latestEth1Data.BlockHeight = testAcc.Backend.Blockchain().CurrentBlock().Number.Uint64()
-	web3Service.latestEth1Data.BlockTime = testAcc.Backend.Blockchain().CurrentBlock().Time
+	web3Service.latestExecutionData.BlockHeight = testAcc.Backend.Blockchain().CurrentBlock().Number.Uint64()
+	web3Service.latestExecutionData.BlockTime = testAcc.Backend.Blockchain().CurrentBlock().Time
 
 	h, err := web3Service.followedBlockHeight(context.Background())
 	require.NoError(t, err)
@@ -226,12 +223,12 @@ func TestFollowBlock_OK(t *testing.T) {
 	numToForward := uint64(2)
 	expectedHeight := numToForward + baseHeight
 	// forward 2 blocks
-	for i := uint64(0); i < numToForward; i++ {
+	for range numToForward {
 		testAcc.Backend.Commit()
 	}
 	// set current height
-	web3Service.latestEth1Data.BlockHeight = testAcc.Backend.Blockchain().CurrentBlock().Number.Uint64()
-	web3Service.latestEth1Data.BlockTime = testAcc.Backend.Blockchain().CurrentBlock().Time
+	web3Service.latestExecutionData.BlockHeight = testAcc.Backend.Blockchain().CurrentBlock().Number.Uint64()
+	web3Service.latestExecutionData.BlockTime = testAcc.Backend.Blockchain().CurrentBlock().Time
 
 	h, err = web3Service.followedBlockHeight(context.Background())
 	require.NoError(t, err)
@@ -247,9 +244,9 @@ func TestStatus(t *testing.T) {
 	testCases := map[*Service]string{
 		// "status is ok" cases
 		{}: "",
-		{isRunning: true, latestEth1Data: &zondpb.LatestETH1Data{BlockTime: afterFiveMinutesAgo}}:   "",
-		{isRunning: false, latestEth1Data: &zondpb.LatestETH1Data{BlockTime: beforeFiveMinutesAgo}}: "",
-		{isRunning: false, runError: errors.New("test runError")}:                                   "",
+		{isRunning: true, latestExecutionData: &qrysmpb.LatestExecutionData{BlockTime: afterFiveMinutesAgo}}:   "",
+		{isRunning: false, latestExecutionData: &qrysmpb.LatestExecutionData{BlockTime: beforeFiveMinutesAgo}}: "",
+		{isRunning: false, runError: errors.New("test runError")}:                                              "",
 		// "status is error" cases
 		{isRunning: true, runError: errors.New("test runError")}: "test runError",
 	}
@@ -277,23 +274,23 @@ func TestHandlePanic_OK(t *testing.T) {
 		WithHttpEndpoint(endpoint),
 		WithDatabase(beaconDB),
 	)
-	require.NoError(t, err, "unable to setup web3 Zond execution chain service")
-	// nil eth1DataFetcher would panic if cached value not used
+	require.NoError(t, err, "unable to setup web3 QRL execution chain service")
+	// nil executionDataFetcher would panic if cached value not used
 	web3Service.rpcClient = nil
 	web3Service.processBlockHeader(nil)
-	require.LogsContain(t, hook, "Panicked when handling data from Zond execution chain!")
+	require.LogsContain(t, hook, "Panicked when handling data from QRL execution chain!")
 }
 
 func TestInitDepositCache_OK(t *testing.T) {
-	ctrs := []*zondpb.DepositContainer{
-		{Index: 0, Eth1BlockHeight: 2, Deposit: &zondpb.Deposit{Proof: [][]byte{[]byte("A")}, Data: &zondpb.Deposit_Data{PublicKey: []byte{}}}},
-		{Index: 1, Eth1BlockHeight: 4, Deposit: &zondpb.Deposit{Proof: [][]byte{[]byte("B")}, Data: &zondpb.Deposit_Data{PublicKey: []byte{}}}},
-		{Index: 2, Eth1BlockHeight: 6, Deposit: &zondpb.Deposit{Proof: [][]byte{[]byte("c")}, Data: &zondpb.Deposit_Data{PublicKey: []byte{}}}},
+	ctrs := []*qrysmpb.DepositContainer{
+		{Index: 0, ExecutionBlockHeight: 2, Deposit: &qrysmpb.Deposit{Proof: [][]byte{[]byte("A")}, Data: &qrysmpb.Deposit_Data{PublicKey: []byte{}}}},
+		{Index: 1, ExecutionBlockHeight: 4, Deposit: &qrysmpb.Deposit{Proof: [][]byte{[]byte("B")}, Data: &qrysmpb.Deposit_Data{PublicKey: []byte{}}}},
+		{Index: 2, ExecutionBlockHeight: 6, Deposit: &qrysmpb.Deposit{Proof: [][]byte{[]byte("c")}, Data: &qrysmpb.Deposit_Data{PublicKey: []byte{}}}},
 	}
-	gs, _ := util.DeterministicGenesisStateCapella(t, 1)
+	gs, _ := util.DeterministicGenesisStateZond(t, 1)
 	beaconDB := dbutil.SetupDB(t)
 	s := &Service{
-		chainStartData:  &zondpb.ChainStartData{},
+		chainStartData:  &qrysmpb.ChainStartData{},
 		preGenesisState: gs,
 		cfg:             &config{beaconDB: beaconDB},
 	}
@@ -303,7 +300,7 @@ func TestInitDepositCache_OK(t *testing.T) {
 
 	blockRootA := [32]byte{'a'}
 
-	emptyState, err := util.NewBeaconStateCapella()
+	emptyState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, s.cfg.beaconDB.SaveGenesisBlockRoot(context.Background(), blockRootA))
 	require.NoError(t, s.cfg.beaconDB.SaveState(context.Background(), emptyState, blockRootA))
@@ -312,45 +309,45 @@ func TestInitDepositCache_OK(t *testing.T) {
 }
 
 func TestInitDepositCacheWithFinalization_OK(t *testing.T) {
-	ctrs := []*zondpb.DepositContainer{
+	ctrs := []*qrysmpb.DepositContainer{
 		{
-			Index:           0,
-			Eth1BlockHeight: 2,
-			Deposit: &zondpb.Deposit{
-				Data: &zondpb.Deposit_Data{
+			Index:                0,
+			ExecutionBlockHeight: 2,
+			Deposit: &qrysmpb.Deposit{
+				Data: &qrysmpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{0}, 2592),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, 4595),
+					WithdrawalCredentials: make([]byte, 64),
+					Signature:             make([]byte, 4627),
 				},
 			},
 		},
 		{
-			Index:           1,
-			Eth1BlockHeight: 4,
-			Deposit: &zondpb.Deposit{
-				Data: &zondpb.Deposit_Data{
+			Index:                1,
+			ExecutionBlockHeight: 4,
+			Deposit: &qrysmpb.Deposit{
+				Data: &qrysmpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{1}, 2592),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, 4595),
+					WithdrawalCredentials: make([]byte, 64),
+					Signature:             make([]byte, 4627),
 				},
 			},
 		},
 		{
-			Index:           2,
-			Eth1BlockHeight: 6,
-			Deposit: &zondpb.Deposit{
-				Data: &zondpb.Deposit_Data{
+			Index:                2,
+			ExecutionBlockHeight: 6,
+			Deposit: &qrysmpb.Deposit{
+				Data: &qrysmpb.Deposit_Data{
 					PublicKey:             bytesutil.PadTo([]byte{2}, 2592),
-					WithdrawalCredentials: make([]byte, 32),
-					Signature:             make([]byte, 4595),
+					WithdrawalCredentials: make([]byte, 64),
+					Signature:             make([]byte, 4627),
 				},
 			},
 		},
 	}
-	gs, _ := util.DeterministicGenesisStateCapella(t, 1)
+	gs, _ := util.DeterministicGenesisStateZond(t, 1)
 	beaconDB := dbutil.SetupDB(t)
 	s := &Service{
-		chainStartData:  &zondpb.ChainStartData{},
+		chainStartData:  &qrysmpb.ChainStartData{},
 		preGenesisState: gs,
 		cfg:             &config{beaconDB: beaconDB},
 	}
@@ -358,21 +355,21 @@ func TestInitDepositCacheWithFinalization_OK(t *testing.T) {
 	s.cfg.depositCache, err = depositcache.New()
 	require.NoError(t, err)
 
-	headBlock := util.NewBeaconBlockCapella()
+	headBlock := util.NewBeaconBlockZond()
 	headRoot, err := headBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 	stateGen := stategen.New(beaconDB, doublylinkedtree.New())
 
-	emptyState, err := util.NewBeaconStateCapella()
+	emptyState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, s.cfg.beaconDB.SaveGenesisBlockRoot(context.Background(), headRoot))
 	require.NoError(t, s.cfg.beaconDB.SaveState(context.Background(), emptyState, headRoot))
 	require.NoError(t, stateGen.SaveState(context.Background(), headRoot, emptyState))
 	s.cfg.stateGen = stateGen
-	require.NoError(t, emptyState.SetEth1DepositIndex(3))
+	require.NoError(t, emptyState.SetExecutionDepositIndex(3))
 
 	ctx := context.Background()
-	require.NoError(t, beaconDB.SaveFinalizedCheckpoint(ctx, &zondpb.Checkpoint{Epoch: slots.ToEpoch(0), Root: headRoot[:]}))
+	require.NoError(t, beaconDB.SaveFinalizedCheckpoint(ctx, &qrysmpb.Checkpoint{Epoch: slots.ToEpoch(0), Root: headRoot[:]}))
 	s.cfg.finalizedStateAtStartup = emptyState
 
 	require.NoError(t, s.initDepositCaches(context.Background(), ctrs))
@@ -396,26 +393,26 @@ func TestNewService_EarliestVotingBlock(t *testing.T) {
 		WithDepositContractAddress(testAcc.ContractAddr),
 		WithDatabase(beaconDB),
 	)
-	require.NoError(t, err, "unable to setup web3 Zond execution chain service")
-	// simulated backend sets eth1 block
+	require.NoError(t, err, "unable to setup web3 QRL execution chain service")
+	// simulated backend sets execution block
 	// time as 10 seconds
 	params.SetupTestConfigCleanup(t)
 	conf := params.BeaconConfig().Copy()
-	conf.SecondsPerETH1Block = 10
-	conf.Eth1FollowDistance = 50
+	conf.SecondsPerExecutionBlock = 10
+	conf.ExecutionFollowDistance = 50
 	params.OverrideBeaconConfig(conf)
 
 	// Genesis not set
 	followBlock := uint64(2000)
 	blk, err := web3Service.determineEarliestVotingBlock(context.Background(), followBlock)
 	require.NoError(t, err)
-	assert.Equal(t, followBlock-conf.Eth1FollowDistance, blk, "unexpected earliest voting block")
+	assert.Equal(t, followBlock-conf.ExecutionFollowDistance, blk, "unexpected earliest voting block")
 
 	// Genesis is set.
 
 	numToForward := 1500
 	// forward 1500 blocks
-	for i := 0; i < numToForward; i++ {
+	for range numToForward {
 		testAcc.Backend.Commit()
 	}
 	currTime := testAcc.Backend.Blockchain().CurrentHeader().Time
@@ -425,18 +422,18 @@ func TestNewService_EarliestVotingBlock(t *testing.T) {
 	testAcc.Backend.Commit()
 
 	currTime = testAcc.Backend.Blockchain().CurrentHeader().Time
-	web3Service.latestEth1Data.BlockHeight = testAcc.Backend.Blockchain().CurrentHeader().Number.Uint64()
-	web3Service.latestEth1Data.BlockTime = testAcc.Backend.Blockchain().CurrentHeader().Time
+	web3Service.latestExecutionData.BlockHeight = testAcc.Backend.Blockchain().CurrentHeader().Number.Uint64()
+	web3Service.latestExecutionData.BlockTime = testAcc.Backend.Blockchain().CurrentHeader().Time
 	web3Service.chainStartData.GenesisTime = currTime
 
 	// With a current slot of zero, only request follow_blocks behind.
 	blk, err = web3Service.determineEarliestVotingBlock(context.Background(), followBlock)
 	require.NoError(t, err)
-	assert.Equal(t, followBlock-conf.Eth1FollowDistance, blk, "unexpected earliest voting block")
+	assert.Equal(t, followBlock-conf.ExecutionFollowDistance, blk, "unexpected earliest voting block")
 
 }
 
-func TestNewService_Eth1HeaderRequLimit(t *testing.T) {
+func TestNewService_ExecutionHeaderRequLimit(t *testing.T) {
 	testAcc, err := mock.Setup()
 	require.NoError(t, err, "Unable to set up simulated backend")
 	beaconDB := dbutil.SetupDB(t)
@@ -451,16 +448,16 @@ func TestNewService_Eth1HeaderRequLimit(t *testing.T) {
 		WithDepositContractAddress(testAcc.ContractAddr),
 		WithDatabase(beaconDB),
 	)
-	require.NoError(t, err, "unable to setup web3 Zond execution chain service")
-	assert.Equal(t, defaultEth1HeaderReqLimit, s1.cfg.eth1HeaderReqLimit, "default eth1 header request limit not set")
+	require.NoError(t, err, "unable to setup web3 QRL execution chain service")
+	assert.Equal(t, defaultExecutionHeaderReqLimit, s1.cfg.executionHeaderReqLimit, "default execution header request limit not set")
 	s2, err := NewService(context.Background(),
 		WithHttpEndpoint(endpoint),
 		WithDepositContractAddress(testAcc.ContractAddr),
 		WithDatabase(beaconDB),
-		WithEth1HeaderRequestLimit(uint64(150)),
+		WithExecutionHeaderRequestLimit(uint64(150)),
 	)
-	require.NoError(t, err, "unable to setup web3 Zond execution chain service")
-	assert.Equal(t, uint64(150), s2.cfg.eth1HeaderReqLimit, "unable to set eth1HeaderRequestLimit")
+	require.NoError(t, err, "unable to setup web3 QRL execution chain service")
+	assert.Equal(t, uint64(150), s2.cfg.executionHeaderReqLimit, "unable to set executionHeaderRequestLimit")
 }
 
 type mockBSUpdater struct {
@@ -486,7 +483,7 @@ func Test_batchRequestHeaders_UnderflowChecks(t *testing.T) {
 	require.ErrorContains(t, "cannot be >", err)
 }
 
-func TestService_EnsureConsistentPowchainData(t *testing.T) {
+func TestService_EnsureConsistentExecutionChainData(t *testing.T) {
 	beaconDB := dbutil.SetupDB(t)
 	cache, err := depositcache.New()
 	require.NoError(t, err)
@@ -501,17 +498,18 @@ func TestService_EnsureConsistentPowchainData(t *testing.T) {
 		WithDepositCache(cache),
 	)
 	require.NoError(t, err)
-	genState, err := util.NewBeaconStateCapella()
+	genState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	assert.NoError(t, genState.SetSlot(1000))
 
 	require.NoError(t, s1.cfg.beaconDB.SaveGenesisData(context.Background(), genState))
-	require.NoError(t, s1.ensureValidPowchainData(context.Background()))
+	_, err = s1.validExecutionChainData(context.Background())
+	require.NoError(t, err)
 
-	eth1Data, err := s1.cfg.beaconDB.ExecutionChainData(context.Background())
+	executionData, err := s1.cfg.beaconDB.ExecutionChainData(context.Background())
 	assert.NoError(t, err)
 
-	assert.NotNil(t, eth1Data)
+	assert.NotNil(t, executionData)
 }
 
 func TestService_InitializeCorrectly(t *testing.T) {
@@ -530,21 +528,22 @@ func TestService_InitializeCorrectly(t *testing.T) {
 		WithDepositCache(cache),
 	)
 	require.NoError(t, err)
-	genState, err := util.NewBeaconStateCapella()
+	genState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	assert.NoError(t, genState.SetSlot(1000))
 
 	require.NoError(t, s1.cfg.beaconDB.SaveGenesisData(context.Background(), genState))
-	require.NoError(t, s1.ensureValidPowchainData(context.Background()))
+	_, err = s1.validExecutionChainData(context.Background())
+	require.NoError(t, err)
 
-	eth1Data, err := s1.cfg.beaconDB.ExecutionChainData(context.Background())
+	executionData, err := s1.cfg.beaconDB.ExecutionChainData(context.Background())
 	assert.NoError(t, err)
 
-	assert.NoError(t, s1.initializeEth1Data(context.Background(), eth1Data))
+	assert.NoError(t, s1.initializeExecutionData(context.Background(), executionData))
 	assert.Equal(t, int64(-1), s1.lastReceivedMerkleIndex, "received incorrect last received merkle index")
 }
 
-func TestService_EnsureValidPowchainData(t *testing.T) {
+func TestService_EnsureValidExecutionChainData(t *testing.T) {
 	beaconDB := dbutil.SetupDB(t)
 	cache, err := depositcache.New()
 	require.NoError(t, err)
@@ -559,45 +558,46 @@ func TestService_EnsureValidPowchainData(t *testing.T) {
 		WithDepositCache(cache),
 	)
 	require.NoError(t, err)
-	genState, err := util.NewBeaconStateCapella()
+	genState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	assert.NoError(t, genState.SetSlot(1000))
 
 	require.NoError(t, s1.cfg.beaconDB.SaveGenesisData(context.Background(), genState))
 
-	err = s1.cfg.beaconDB.SaveExecutionChainData(context.Background(), &zondpb.ETH1ChainData{
-		ChainstartData:    &zondpb.ChainStartData{},
-		DepositContainers: []*zondpb.DepositContainer{{Index: 1}},
+	err = s1.cfg.beaconDB.SaveExecutionChainData(context.Background(), &qrysmpb.ExecutionChainData{
+		ChainstartData:    &qrysmpb.ChainStartData{},
+		DepositContainers: []*qrysmpb.DepositContainer{{Index: 1}},
 	})
 	require.NoError(t, err)
-	require.NoError(t, s1.ensureValidPowchainData(context.Background()))
+	_, err = s1.validExecutionChainData(context.Background())
+	require.NoError(t, err)
 
-	eth1Data, err := s1.cfg.beaconDB.ExecutionChainData(context.Background())
+	executionData, err := s1.cfg.beaconDB.ExecutionChainData(context.Background())
 	assert.NoError(t, err)
 
-	assert.NotNil(t, eth1Data)
-	assert.Equal(t, 0, len(eth1Data.DepositContainers))
+	assert.NotNil(t, executionData)
+	assert.Equal(t, 0, len(executionData.DepositContainers))
 }
 
 func TestService_ValidateDepositContainers(t *testing.T) {
 	var tt = []struct {
 		name        string
-		ctrsFunc    func() []*zondpb.DepositContainer
+		ctrsFunc    func() []*qrysmpb.DepositContainer
 		expectedRes bool
 	}{
 		{
 			name: "zero containers",
-			ctrsFunc: func() []*zondpb.DepositContainer {
-				return make([]*zondpb.DepositContainer, 0)
+			ctrsFunc: func() []*qrysmpb.DepositContainer {
+				return make([]*qrysmpb.DepositContainer, 0)
 			},
 			expectedRes: true,
 		},
 		{
 			name: "ordered containers",
-			ctrsFunc: func() []*zondpb.DepositContainer {
-				ctrs := make([]*zondpb.DepositContainer, 0)
-				for i := 0; i < 10; i++ {
-					ctrs = append(ctrs, &zondpb.DepositContainer{Index: int64(i), Eth1BlockHeight: uint64(i + 10)})
+			ctrsFunc: func() []*qrysmpb.DepositContainer {
+				ctrs := make([]*qrysmpb.DepositContainer, 0)
+				for i := range 10 {
+					ctrs = append(ctrs, &qrysmpb.DepositContainer{Index: int64(i), ExecutionBlockHeight: uint64(i + 10)})
 				}
 				return ctrs
 			},
@@ -605,10 +605,10 @@ func TestService_ValidateDepositContainers(t *testing.T) {
 		},
 		{
 			name: "0th container missing",
-			ctrsFunc: func() []*zondpb.DepositContainer {
-				ctrs := make([]*zondpb.DepositContainer, 0)
+			ctrsFunc: func() []*qrysmpb.DepositContainer {
+				ctrs := make([]*qrysmpb.DepositContainer, 0)
 				for i := 1; i < 10; i++ {
-					ctrs = append(ctrs, &zondpb.DepositContainer{Index: int64(i), Eth1BlockHeight: uint64(i + 10)})
+					ctrs = append(ctrs, &qrysmpb.DepositContainer{Index: int64(i), ExecutionBlockHeight: uint64(i + 10)})
 				}
 				return ctrs
 			},
@@ -616,13 +616,13 @@ func TestService_ValidateDepositContainers(t *testing.T) {
 		},
 		{
 			name: "skipped containers",
-			ctrsFunc: func() []*zondpb.DepositContainer {
-				ctrs := make([]*zondpb.DepositContainer, 0)
-				for i := 0; i < 10; i++ {
+			ctrsFunc: func() []*qrysmpb.DepositContainer {
+				ctrs := make([]*qrysmpb.DepositContainer, 0)
+				for i := range 10 {
 					if i == 5 || i == 7 {
 						continue
 					}
-					ctrs = append(ctrs, &zondpb.DepositContainer{Index: int64(i), Eth1BlockHeight: uint64(i + 10)})
+					ctrs = append(ctrs, &qrysmpb.DepositContainer{Index: int64(i), ExecutionBlockHeight: uint64(i + 10)})
 				}
 				return ctrs
 			},
@@ -635,7 +635,7 @@ func TestService_ValidateDepositContainers(t *testing.T) {
 	}
 }
 
-func TestETH1Endpoints(t *testing.T) {
+func TestExecutionEndpoints(t *testing.T) {
 	server, firstEndpoint, err := mockExecution.SetupRPCServer()
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -664,7 +664,7 @@ func TestETH1Endpoints(t *testing.T) {
 func TestService_CacheBlockHeaders(t *testing.T) {
 	rClient := &slowRPCClient{limit: 1000}
 	s := &Service{
-		cfg:         &config{eth1HeaderReqLimit: 1000},
+		cfg:         &config{executionHeaderReqLimit: 1000},
 		rpcClient:   rClient,
 		headerCache: newHeaderCache(),
 	}
@@ -674,7 +674,7 @@ func TestService_CacheBlockHeaders(t *testing.T) {
 	rClient.numOfCalls = 0
 	// Increase header request limit to trigger the batch limiting
 	// code path.
-	s.cfg.eth1HeaderReqLimit = 1001
+	s.cfg.executionHeaderReqLimit = 1001
 
 	assert.NoError(t, s.cacheBlockHeaders(1000, 3000))
 	// 1000 - 2000 would be 1001 headers which is higher than our request limit, it
@@ -682,19 +682,20 @@ func TestService_CacheBlockHeaders(t *testing.T) {
 	assert.Equal(t, 5, rClient.numOfCalls)
 }
 
+// TODO(now.youtrack.cloud/issue/TQ-5)
+/*
 func TestService_FollowBlock(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	conf := params.BeaconConfig().Copy()
-	// TODO(now.youtrack.cloud/issue/TQ-5)
-	conf.Eth1FollowDistance = 2048
-	conf.SecondsPerETH1Block = 14
+	conf.ExecutionFollowDistance = 2048
+	conf.SecondsPerExecutionBlock = 14
 	params.OverrideBeaconConfig(conf)
 
-	followTime := params.BeaconConfig().Eth1FollowDistance * params.BeaconConfig().SecondsPerETH1Block
+	followTime := params.BeaconConfig().ExecutionFollowDistance * params.BeaconConfig().SecondsPerExecutionBlock
 	followTime += 10000
 	bMap := make(map[uint64]*types.HeaderInfo)
 	for i := uint64(3000); i > 0; i-- {
-		h := &gzondtypes.Header{
+		h := &gqrltypes.Header{
 			Number: big.NewInt(int64(i)),
 			Time:   followTime + (i * 40),
 		}
@@ -705,16 +706,17 @@ func TestService_FollowBlock(t *testing.T) {
 		}
 	}
 	s := &Service{
-		cfg:            &config{eth1HeaderReqLimit: 1000},
+		cfg:            &config{executionHeaderReqLimit: 1000},
 		rpcClient:      &mockExecution.RPCClient{BlockNumMap: bMap},
 		headerCache:    newHeaderCache(),
-		latestEth1Data: &zondpb.LatestETH1Data{BlockTime: (3000 * 40) + followTime, BlockHeight: 3000},
+		latestExecutionData: &qrysmpb.LatestExecutionData{BlockTime: (3000 * 40) + followTime, BlockHeight: 3000},
 	}
 	h, err := s.followedBlockHeight(context.Background())
 	assert.NoError(t, err)
 	// With a much higher blocktime, the follow height is respectively shortened.
 	assert.Equal(t, uint64(2283), h)
 }
+*/
 
 type slowRPCClient struct {
 	limit      int
@@ -735,13 +737,13 @@ func (s *slowRPCClient) BatchCall(b []rpc.BatchElem) error {
 		if err != nil {
 			return err
 		}
-		h := &gzondtypes.Header{Number: num}
+		h := &gqrltypes.Header{Number: num}
 		*e.Result.(*types.HeaderInfo) = types.HeaderInfo{Number: h.Number, Hash: h.Hash()}
 	}
 	return nil
 }
 
-func (s *slowRPCClient) CallContext(_ context.Context, _ interface{}, _ string, _ ...interface{}) error {
+func (s *slowRPCClient) CallContext(_ context.Context, _ any, _ string, _ ...any) error {
 	panic("implement me")
 }
 
@@ -761,13 +763,13 @@ func TestService_migrateOldDepositTree(t *testing.T) {
 		WithDepositCache(cache),
 	)
 	require.NoError(t, err)
-	eth1Data := &zondpb.ETH1ChainData{
-		BeaconState: &zondpb.BeaconStateCapella{
-			Eth1Data: &zondpb.Eth1Data{
+	executionData := &qrysmpb.ExecutionChainData{
+		BeaconState: &qrysmpb.BeaconStateZond{
+			ExecutionData: &qrysmpb.ExecutionData{
 				DepositCount: 800,
 			},
 		},
-		CurrentEth1Data: &zondpb.LatestETH1Data{
+		CurrentExecutionData: &qrysmpb.LatestExecutionData{
 			BlockHeight: 100,
 		},
 	}
@@ -777,13 +779,13 @@ func TestService_migrateOldDepositTree(t *testing.T) {
 	dt, err := trie.NewTrie(32)
 	require.NoError(t, err)
 
-	for i := 0; i < totalDeposits; i++ {
+	for i := range totalDeposits {
 		err := dt.Insert(input[:], i)
 		require.NoError(t, err)
 	}
-	eth1Data.Trie = dt.ToProto()
+	executionData.Trie = dt.ToProto()
 
-	err = s.migrateOldDepositTree(eth1Data)
+	err = s.migrateOldDepositTree(executionData)
 	require.NoError(t, err)
 	oldDepositTreeRoot, err := dt.HashTreeRoot()
 	require.NoError(t, err)

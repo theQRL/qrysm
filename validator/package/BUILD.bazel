@@ -40,7 +40,7 @@ pkg_deb(
         "etc/qrysm/validator.yaml",
     ],
     data = ":debian-data",
-    description = "Qrysm Validator Client - Zond consensus",
+    description = "Qrysm Validator Client - QRL consensus",
     homepage = "https://theqrl.org/",
     maintainer = "The QRL Foundation <support@theqrl.org>",
     package = "qrysm-validator",

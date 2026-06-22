@@ -7,13 +7,13 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/core/feed"
 	opfeed "github.com/theQRL/qrysm/beacon-chain/core/feed/operation"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 // ProposeExit proposes an exit for a validator.
-func (vs *Server) ProposeExit(ctx context.Context, req *zondpb.SignedVoluntaryExit) (*zondpb.ProposeExitResponse, error) {
+func (vs *Server) ProposeExit(ctx context.Context, req *qrysmpb.SignedVoluntaryExit) (*qrysmpb.ProposeExitResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "nil request")
 	}
@@ -24,7 +24,7 @@ func (vs *Server) ProposeExit(ctx context.Context, req *zondpb.SignedVoluntaryEx
 	if req.Exit == nil {
 		return nil, status.Error(codes.InvalidArgument, "voluntary exit does not exist")
 	}
-	if req.Signature == nil || len(req.Signature) != field_params.DilithiumSignatureLength {
+	if req.Signature == nil || len(req.Signature) != field_params.MLDSA87SignatureLength {
 		return nil, status.Error(codes.InvalidArgument, "invalid signature provided")
 	}
 
@@ -52,7 +52,7 @@ func (vs *Server) ProposeExit(ctx context.Context, req *zondpb.SignedVoluntaryEx
 		return nil, status.Errorf(codes.Internal, "Could not get tree hash of exit: %v", err)
 	}
 
-	return &zondpb.ProposeExitResponse{
+	return &qrysmpb.ProposeExitResponse{
 		ExitRoot: r[:],
 	}, vs.P2P.Broadcast(ctx, req)
 }

@@ -1,8 +1,10 @@
 package sync
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
+	"slices"
 	"sync"
 
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -14,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/crypto/rand"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
@@ -22,6 +24,16 @@ import (
 // This defines how often a node cleans up and processes pending attestations in the queue.
 var processPendingAttsPeriod = slots.DivideSlotBy(2 /* twice per slot */)
 var pendingAttsLimit = 10000
+
+// aggregatorIndexFilter defines how aggregator index should be handled in equality checks.
+type aggregatorIndexFilter int
+
+const (
+	// ignoreAggregatorIndex means aggregates differing only by aggregator index are considered equal.
+	ignoreAggregatorIndex aggregatorIndexFilter = iota
+	// includeAggregatorIndex means aggregator index must also match for aggregates to be considered equal.
+	includeAggregatorIndex
+)
 
 // This processes pending attestation queues on every `processPendingAttsPeriod`.
 func (s *Service) processPendingAttsQueue() {
@@ -59,41 +71,84 @@ func (s *Service) processPendingAtts(ctx context.Context) error {
 	var pendingRoots [][32]byte
 	randGen := rand.NewGenerator()
 	for _, bRoot := range roots {
-		s.pendingAttsLock.RLock()
-		attestations := s.blkRootToPendingAtts[bRoot]
-		s.pendingAttsLock.RUnlock()
 		// has the pending attestation's missing block arrived and the node processed block yet?
-		if s.cfg.beaconDB.HasBlock(ctx, bRoot) && (s.cfg.beaconDB.HasState(ctx, bRoot) || s.cfg.beaconDB.HasStateSummary(ctx, bRoot)) {
-			s.processAttestations(ctx, attestations)
-			log.WithFields(logrus.Fields{
-				"blockRoot":        hex.EncodeToString(bytesutil.Trunc(bRoot[:])),
-				"pendingAttsCount": len(attestations),
-			}).Debug("Verified and saved pending attestations to pool")
-
-			// Delete the missing block root key from pending attestation queue so a node will not request for the block again.
-			s.pendingAttsLock.Lock()
-			delete(s.blkRootToPendingAtts, bRoot)
-			s.pendingAttsLock.Unlock()
+		// Also require the block to still be in fork choice — attestations for blocks pruned
+		// out of forkchoice can never enter the pool, so decoding/sig-verifying them is wasted work.
+		if s.cfg.beaconDB.HasBlock(ctx, bRoot) &&
+			(s.cfg.beaconDB.HasState(ctx, bRoot) || s.cfg.beaconDB.HasStateSummary(ctx, bRoot)) &&
+			s.cfg.chain.InForkchoice(bRoot) {
+			if err := s.processPendingAttsForBlock(ctx, bRoot); err != nil {
+				log.WithError(err).Debug("Failed to process pending attestations for block")
+			}
 		} else {
-			// Pending attestation's missing block has not arrived yet.
-			log.WithFields(logrus.Fields{
-				"currentSlot": s.cfg.clock.CurrentSlot(),
-				"attSlot":     attestations[0].Message.Aggregate.Data.Slot,
-				"attCount":    len(attestations),
-				"blockRoot":   hex.EncodeToString(bytesutil.Trunc(bRoot[:])),
-			}).Debug("Requesting block for pending attestation")
-			pendingRoots = append(pendingRoots, bRoot)
+			s.pendingAttsLock.RLock()
+			attestations := s.blkRootToPendingAtts[bRoot]
+			s.pendingAttsLock.RUnlock()
+			s.pendingQueueLock.RLock()
+			seen := s.seenPendingBlocks[bRoot]
+			s.pendingQueueLock.RUnlock()
+			if !seen && len(attestations) > 0 {
+				// Pending attestation's missing block has not arrived yet.
+				log.WithFields(logrus.Fields{
+					"currentSlot": s.cfg.clock.CurrentSlot(),
+					"attSlot":     attestations[0].Message.Aggregate.Data.Slot,
+					"attCount":    len(attestations),
+					"blockRoot":   hex.EncodeToString(bytesutil.Trunc(bRoot[:])),
+				}).Debug("Requesting block for pending attestation")
+				pendingRoots = append(pendingRoots, bRoot)
+			}
 		}
 	}
 	return s.sendBatchRootRequest(ctx, pendingRoots, randGen)
 }
 
-func (s *Service) processAttestations(ctx context.Context, attestations []*zondpb.SignedAggregateAttestationAndProof) {
+// processPendingAttsForBlock drains the pending-attestation queue for a single
+// block root. Called both from the periodic processPendingAtts ticker and from
+// pending_blocks_queue.go immediately after a pending block lands in the DB,
+// so attestations referencing that block don't have to wait for the next tick.
+// The caller must have already verified the block (and state) is in the DB.
+func (s *Service) processPendingAttsForBlock(ctx context.Context, blkRoot [32]byte) error {
+	s.pendingAttsLock.RLock()
+	attestations := s.blkRootToPendingAtts[blkRoot]
+	s.pendingAttsLock.RUnlock()
+
+	if len(attestations) == 0 {
+		return nil
+	}
+
+	s.processAttestations(ctx, attestations)
+	log.WithFields(logrus.Fields{
+		"blockRoot":        hex.EncodeToString(bytesutil.Trunc(blkRoot[:])),
+		"pendingAttsCount": len(attestations),
+	}).Debug("Verified and saved pending attestations to pool")
+
+	// Delete the missing block root key from pending attestation queue so a node
+	// will not request the block again.
+	s.pendingAttsLock.Lock()
+	delete(s.blkRootToPendingAtts, blkRoot)
+	s.pendingAttsLock.Unlock()
+	return nil
+}
+
+func (s *Service) processAttestations(ctx context.Context, attestations []*qrysmpb.SignedAggregateAttestationAndProof) {
+	validAggregates := make([]*qrysmpb.SignedAggregateAttestationAndProof, 0, len(attestations))
 	for _, signedAtt := range attestations {
 		att := signedAtt.Message
 		// The pending attestations can arrive in both aggregated and unaggregated forms,
 		// each from has distinct validation steps.
 		if helpers.IsAggregated(att.Aggregate) {
+			// Avoid processing multiple aggregates only differing by aggregator index;
+			// validating and broadcasting more than one would be wasted work.
+			if slices.ContainsFunc(validAggregates, func(other *qrysmpb.SignedAggregateAttestationAndProof) bool {
+				return pendingAggregatesAreEqual(signedAtt, other, ignoreAggregatorIndex)
+			}) {
+				continue
+			}
+			// Skip if we've already processed an aggregate from this aggregator
+			// in this target epoch — avoids redundant validation and broadcast.
+			if s.hasSeenAggregatorIndexEpoch(att.Aggregate.Data.Target.Epoch, att.AggregatorIndex) {
+				continue
+			}
 			// Save the pending aggregated attestation to the pool if it passes the aggregated
 			// validation steps.
 			valRes, err := s.validateAggregatedAtt(ctx, signedAtt)
@@ -106,12 +161,15 @@ func (s *Service) processAttestations(ctx context.Context, attestations []*zondp
 					log.WithError(err).Debug("Could not save aggregate attestation")
 					continue
 				}
-				s.setAggregatorIndexEpochSeen(att.Aggregate.Data.Target.Epoch, att.AggregatorIndex)
+				if first := s.setAggregatorIndexEpochSeen(att.Aggregate.Data.Target.Epoch, att.AggregatorIndex); !first {
+					continue
+				}
 
 				// Broadcasting the signed attestation again once a node is able to process it.
 				if err := s.cfg.p2p.Broadcast(ctx, signedAtt); err != nil {
 					log.WithError(err).Debug("Could not broadcast")
 				}
+				validAggregates = append(validAggregates, signedAtt)
 			}
 		} else {
 			// This is an important validation before retrieving attestation pre state to defend against
@@ -141,7 +199,7 @@ func (s *Service) processAttestations(ctx context.Context, attestations []*zondp
 					log.WithError(err).Debug("Could not save unaggregated attestation")
 					continue
 				}
-				s.setSeenCommitteeIndicesSlot(att.Aggregate.Data.Slot, att.Aggregate.Data.CommitteeIndex, att.Aggregate.AggregationBits)
+				_ = s.setSeenCommitteeIndicesSlot(att.Aggregate.Data.Slot, att.Aggregate.Data.CommitteeIndex, att.Aggregate.AggregationBits)
 
 				valCount, err := helpers.ActiveValidatorCount(ctx, preState, slots.ToEpoch(att.Aggregate.Data.Slot))
 				if err != nil {
@@ -160,7 +218,7 @@ func (s *Service) processAttestations(ctx context.Context, attestations []*zondp
 // This defines how pending attestations is saved in the map. The key is the
 // root of the missing block. The value is the list of pending attestations
 // that voted for that block root.
-func (s *Service) savePendingAtt(att *zondpb.SignedAggregateAttestationAndProof) {
+func (s *Service) savePendingAtt(att *qrysmpb.SignedAggregateAttestationAndProof) {
 	root := bytesutil.ToBytes32(att.Message.Aggregate.Data.BeaconBlockRoot)
 
 	s.pendingAttsLock.Lock()
@@ -177,18 +235,38 @@ func (s *Service) savePendingAtt(att *zondpb.SignedAggregateAttestationAndProof)
 
 	_, ok := s.blkRootToPendingAtts[root]
 	if !ok {
-		s.blkRootToPendingAtts[root] = []*zondpb.SignedAggregateAttestationAndProof{att}
+		s.blkRootToPendingAtts[root] = []*qrysmpb.SignedAggregateAttestationAndProof{att}
 		return
 	}
 
-	// Skip if the attestation from the same aggregator already exists in the pending queue.
+	// Skip if the attestation from the same aggregator already exists in
+	// the pending queue.
 	for _, a := range s.blkRootToPendingAtts[root] {
-		if a.Message.AggregatorIndex == att.Message.AggregatorIndex {
+		if pendingAggregatesAreEqual(att, a, includeAggregatorIndex) {
 			return
 		}
 	}
-
 	s.blkRootToPendingAtts[root] = append(s.blkRootToPendingAtts[root], att)
+}
+
+// pendingAggregatesAreEqual checks if two pending aggregate attestations are equal.
+// The filter parameter controls whether aggregator index is considered in the equality check.
+func pendingAggregatesAreEqual(a, b *qrysmpb.SignedAggregateAttestationAndProof, filter aggregatorIndexFilter) bool {
+	if filter == includeAggregatorIndex {
+		if a.Signature != nil {
+			return b.Signature != nil && a.Message.AggregatorIndex == b.Message.AggregatorIndex
+		}
+		if b.Signature != nil {
+			return false
+		}
+	}
+	if a.Message.Aggregate.Data.Slot != b.Message.Aggregate.Data.Slot {
+		return false
+	}
+	if a.Message.Aggregate.Data.CommitteeIndex != b.Message.Aggregate.Data.CommitteeIndex {
+		return false
+	}
+	return bytes.Equal(a.Message.Aggregate.AggregationBits, b.Message.Aggregate.AggregationBits)
 }
 
 // This validates the pending attestations in the queue are still valid.
@@ -196,7 +274,7 @@ func (s *Service) savePendingAtt(att *zondpb.SignedAggregateAttestationAndProof)
 // check specifies the pending attestation could not fall one epoch behind
 // of the current slot.
 func (s *Service) validatePendingAtts(ctx context.Context, slot primitives.Slot) {
-	ctx, span := trace.StartSpan(ctx, "validatePendingAtts")
+	_, span := trace.StartSpan(ctx, "validatePendingAtts")
 	defer span.End()
 
 	s.pendingAttsLock.Lock()

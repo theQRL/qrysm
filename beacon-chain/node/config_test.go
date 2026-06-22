@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/qrysm/cmd"
 	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
 	"github.com/theQRL/qrysm/config/params"
@@ -39,6 +39,14 @@ func TestConfigureHistoricalSlasher(t *testing.T) {
 	)
 }
 
+func TestSlotsPerArchivedPointDefault(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+
+	assert.Equal(t, 1048576, flags.SlotsPerArchivedPoint.Value)
+	assert.Equal(t, primitives.Slot(flags.SlotsPerArchivedPoint.Value), params.MainnetConfig().SlotsPerArchivedPoint)
+	assert.Equal(t, params.MainnetConfig().SlotsPerArchivedPoint, params.BeaconConfig().SlotsPerArchivedPoint)
+}
+
 func TestConfigureSlotsPerArchivedPoint(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 
@@ -66,7 +74,7 @@ func TestConfigureProofOfWork(t *testing.T) {
 	require.NoError(t, set.Set(flags.DepositContractFlag.Name, "deposit-contract"))
 	cliCtx := cli.NewContext(&app, set, nil)
 
-	require.NoError(t, configureEth1Config(cliCtx))
+	require.NoError(t, configureExecutionConfig(cliCtx))
 
 	assert.Equal(t, uint64(100), params.BeaconConfig().DepositChainID)
 	assert.Equal(t, uint64(200), params.BeaconConfig().DepositNetworkID)
@@ -87,22 +95,19 @@ func TestConfigureExecutionSetting(t *testing.T) {
 	assert.LogsContain(t, hook, "ZB is not a valid fee recipient address")
 	require.NoError(t, err)
 
-	require.NoError(t, set.Set(flags.SuggestedFeeRecipient.Name, "ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"))
+	require.NoError(t, set.Set(flags.SuggestedFeeRecipient.Name, "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"))
 	cliCtx = cli.NewContext(&app, set, nil)
 	err = configureExecutionSetting(cliCtx)
 	require.NoError(t, err)
-	recipient0, err := common.NewAddressFromString("ZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+	recipient0, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 	require.NoError(t, err)
 	assert.Equal(t, recipient0, params.BeaconConfig().DefaultFeeRecipient)
 
-	assert.LogsContain(t, hook,
-		"is not a checksum Zond address",
-	)
-	require.NoError(t, set.Set(flags.SuggestedFeeRecipient.Name, "ZaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"))
+	require.NoError(t, set.Set(flags.SuggestedFeeRecipient.Name, "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa"))
 	cliCtx = cli.NewContext(&app, set, nil)
 	err = configureExecutionSetting(cliCtx)
 	require.NoError(t, err)
-	recipient1, err := common.NewAddressFromString("ZaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa")
+	recipient1, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa")
 	require.NoError(t, err)
 	assert.Equal(t, recipient1, params.BeaconConfig().DefaultFeeRecipient)
 }
@@ -131,9 +136,9 @@ func TestConfigureNetwork_ConfigFile(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	context := cli.NewContext(&app, set, nil)
 
-	require.NoError(t, os.WriteFile("flags_test.yaml", []byte(fmt.Sprintf("%s:\n - %s\n - %s\n", cmd.BootstrapNode.Name,
+	require.NoError(t, os.WriteFile("flags_test.yaml", fmt.Appendf(nil, "%s:\n - %s\n - %s\n", cmd.BootstrapNode.Name,
 		"node1",
-		"node2")), 0666))
+		"node2"), 0666))
 
 	require.NoError(t, set.Parse([]string{"test-command", "--" + cmd.ConfigFileFlag.Name, "flags_test.yaml"}))
 	comFlags := cmd.WrapFlags([]cli.Flag{
@@ -184,8 +189,8 @@ func TestConfigureInterop(t *testing.T) {
 			func() *cli.Context {
 				app := cli.App{}
 				set := flag.NewFlagSet("test", 0)
-				set.Bool(flags.InteropMockEth1DataVotesFlag.Name, false, "")
-				assert.NoError(t, set.Set(flags.InteropMockEth1DataVotesFlag.Name, "true"))
+				set.Bool(flags.InteropMockExecutionDataVotesFlag.Name, false, "")
+				assert.NoError(t, set.Set(flags.InteropMockExecutionDataVotesFlag.Name, "true"))
 				return cli.NewContext(&app, set, nil)
 			},
 			"interop",

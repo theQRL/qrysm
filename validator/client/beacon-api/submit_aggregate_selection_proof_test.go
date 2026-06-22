@@ -9,13 +9,13 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/validator"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/shared"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/validator"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/time/slots"
@@ -26,11 +26,11 @@ import (
 func TestSubmitAggregateSelectionProof(t *testing.T) {
 	const (
 		pubkeyStr                    = "0x8000091c2ae64ee414a54c1cc1fc67dec663408bc636cb86756e0200e41a75c8f86603f104f02c856983d2783116be13"
-		syncingEndpoint              = "/zond/v1/node/syncing"
-		attesterDutiesEndpoint       = "/zond/v1/validator/duties/attester"
-		validatorsEndpoint           = "/zond/v1/beacon/states/head/validators"
-		attestationDataEndpoint      = "/zond/v1/validator/attestation_data"
-		aggregateAttestationEndpoint = "/zond/v1/validator/aggregate_attestation"
+		syncingEndpoint              = "/qrl/v1/node/syncing"
+		attesterDutiesEndpoint       = "/qrl/v1/validator/duties/attester"
+		validatorsEndpoint           = "/qrl/v1/beacon/states/head/validators"
+		attestationDataEndpoint      = "/qrl/v1/validator/attestation_data"
+		aggregateAttestationEndpoint = "/qrl/v1/validator/aggregate_attestation"
 		validatorIndex               = "55293"
 		slotSignature                = "0x8776a37d6802c4797d113169c5fcfda50e68a32058eb6356a6f00d06d7da64c841a00c7c38b9b94a204751eca53707bd03523ce4797827d9bacff116a6e776a20bbccff4b683bf5201b610797ed0502557a58a65c8395f8a1649b976c3112d15"
 		slot                         = primitives.Slot(123)
@@ -53,10 +53,10 @@ func TestSubmitAggregateSelectionProof(t *testing.T) {
 	attestationDataRootBytes, err := attestationDataProto.HashTreeRoot()
 	require.NoError(t, err)
 
-	aggregateAttestation := &zondpb.Attestation{
+	aggregateAttestation := &qrysmpb.Attestation{
 		AggregationBits: test_helpers.FillByteSlice(4, 74),
 		Data:            attestationDataProto,
-		Signatures:      [][]byte{test_helpers.FillByteSlice(4595, 82)},
+		Signatures:      [][]byte{test_helpers.FillByteSlice(4627, 82)},
 	}
 
 	ctrl := gomock.NewController(t)
@@ -250,8 +250,8 @@ func TestSubmitAggregateSelectionProof(t *testing.T) {
 			slotSignatureBytes, err := hexutil.Decode(slotSignature)
 			require.NoError(t, err)
 
-			expectedResponse := &zondpb.AggregateSelectionResponse{
-				AggregateAndProof: &zondpb.AggregateAttestationAndProof{
+			expectedResponse := &qrysmpb.AggregateSelectionResponse{
+				AggregateAndProof: &qrysmpb.AggregateAttestationAndProof{
 					AggregatorIndex: primitives.ValidatorIndex(55293),
 					Aggregate:       aggregateAttestation,
 					SelectionProof:  slotSignatureBytes,
@@ -267,7 +267,7 @@ func TestSubmitAggregateSelectionProof(t *testing.T) {
 					jsonRestHandler: jsonRestHandler,
 				},
 			}
-			actualResponse, err := validatorClient.submitAggregateSelectionProof(ctx, &zondpb.AggregateSelectionRequest{
+			actualResponse, err := validatorClient.submitAggregateSelectionProof(ctx, &qrysmpb.AggregateSelectionRequest{
 				Slot:           slot,
 				CommitteeIndex: committeeIndex,
 				PublicKey:      pubkey,

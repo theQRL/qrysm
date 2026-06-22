@@ -2,12 +2,12 @@ package kv
 
 import (
 	"github.com/pkg/errors"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // SaveForkchoiceAttestation saves an forkchoice attestation in cache.
-func (c *AttCaches) SaveForkchoiceAttestation(att *zondpb.Attestation) error {
-	if att == nil {
+func (c *AttCaches) SaveForkchoiceAttestation(att *qrysmpb.Attestation) error {
+	if att == nil || att.Data == nil {
 		return nil
 	}
 	r, err := hashFn(att)
@@ -15,7 +15,7 @@ func (c *AttCaches) SaveForkchoiceAttestation(att *zondpb.Attestation) error {
 		return errors.Wrap(err, "could not tree hash attestation")
 	}
 
-	att = zondpb.CopyAttestation(att)
+	att = qrysmpb.CopyAttestation(att)
 	c.forkchoiceAttLock.Lock()
 	defer c.forkchoiceAttLock.Unlock()
 	c.forkchoiceAtt[r] = att
@@ -24,7 +24,7 @@ func (c *AttCaches) SaveForkchoiceAttestation(att *zondpb.Attestation) error {
 }
 
 // SaveForkchoiceAttestations saves a list of forkchoice attestations in cache.
-func (c *AttCaches) SaveForkchoiceAttestations(atts []*zondpb.Attestation) error {
+func (c *AttCaches) SaveForkchoiceAttestations(atts []*qrysmpb.Attestation) error {
 	for _, att := range atts {
 		if err := c.SaveForkchoiceAttestation(att); err != nil {
 			return err
@@ -35,21 +35,21 @@ func (c *AttCaches) SaveForkchoiceAttestations(atts []*zondpb.Attestation) error
 }
 
 // ForkchoiceAttestations returns the forkchoice attestations in cache.
-func (c *AttCaches) ForkchoiceAttestations() []*zondpb.Attestation {
+func (c *AttCaches) ForkchoiceAttestations() []*qrysmpb.Attestation {
 	c.forkchoiceAttLock.RLock()
 	defer c.forkchoiceAttLock.RUnlock()
 
-	atts := make([]*zondpb.Attestation, 0, len(c.forkchoiceAtt))
+	atts := make([]*qrysmpb.Attestation, 0, len(c.forkchoiceAtt))
 	for _, att := range c.forkchoiceAtt {
-		atts = append(atts, zondpb.CopyAttestation(att) /* Copied */)
+		atts = append(atts, qrysmpb.CopyAttestation(att) /* Copied */)
 	}
 
 	return atts
 }
 
 // DeleteForkchoiceAttestation deletes a forkchoice attestation in cache.
-func (c *AttCaches) DeleteForkchoiceAttestation(att *zondpb.Attestation) error {
-	if att == nil {
+func (c *AttCaches) DeleteForkchoiceAttestation(att *qrysmpb.Attestation) error {
+	if att == nil || att.Data == nil {
 		return nil
 	}
 	r, err := hashFn(att)

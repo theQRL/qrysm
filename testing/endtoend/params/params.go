@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-qrl/core/types"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/theQRL/qrysm/io/file"
@@ -22,57 +22,56 @@ import (
 
 // params struct defines the parameters needed for running E2E tests to properly handle test sharding.
 type params struct {
-	TestPath               string
-	LogPath                string
-	TestShardIndex         int
-	BeaconNodeCount        int
-	Ports                  *ports
-	Paths                  *paths
-	ELGenesisBlock         *types.Block
-	ELGenesisTime          uint64
-	StartTime              time.Time
-	CLGenesisTime          uint64
-	NumberOfExecutionCreds uint64
+	TestPath        string
+	LogPath         string
+	TestShardIndex  int
+	BeaconNodeCount int
+	Ports           *ports
+	Paths           *paths
+	ELGenesisBlock  *types.Block
+	ELGenesisTime   uint64
+	StartTime       time.Time
+	CLGenesisTime   uint64
 }
 
 type ports struct {
-	BootNodePort                  int
-	BootNodeMetricsPort           int
-	GzondExecutionNodePort        int
-	GzondExecutionNodeRPCPort     int
-	GzondExecutionNodeAuthRPCPort int
-	GzondExecutionNodeWSPort      int
-	ProxyPort                     int
-	QrysmBeaconNodeRPCPort        int
-	QrysmBeaconNodeUDPPort        int
-	QrysmBeaconNodeTCPPort        int
-	QrysmBeaconNodeGatewayPort    int
-	QrysmBeaconNodeMetricsPort    int
-	QrysmBeaconNodePprofPort      int
-	ValidatorMetricsPort          int
-	ValidatorGatewayPort          int
-	JaegerTracingPort             int
+	BootNodePort                 int
+	BootNodeMetricsPort          int
+	GqrlExecutionNodePort        int
+	GqrlExecutionNodeRPCPort     int
+	GqrlExecutionNodeAuthRPCPort int
+	GqrlExecutionNodeWSPort      int
+	ProxyPort                    int
+	QrysmBeaconNodeRPCPort       int
+	QrysmBeaconNodeUDPPort       int
+	QrysmBeaconNodeTCPPort       int
+	QrysmBeaconNodeGatewayPort   int
+	QrysmBeaconNodeMetricsPort   int
+	QrysmBeaconNodePprofPort     int
+	ValidatorMetricsPort         int
+	ValidatorGatewayPort         int
+	JaegerTracingPort            int
 }
 
 type paths struct{}
 
-// ZondStaticFile abstracts the location of the zond static file folder in the e2e directory, so that
+// QRLStaticFile abstracts the location of the qrl static file folder in the e2e directory, so that
 // a relative path can be used.
 // The relative path is specified as a variadic slice of path parts, in the same way as path.Join.
-func (*paths) ZondStaticFile(rel ...string) string {
+func (*paths) QRLStaticFile(rel ...string) string {
 	parts := append([]string{StaticFilesPath}, rel...)
 	return path.Join(parts...)
 }
 
-// ZondRunfile returns the full path to a file in the zond static directory, within bazel's run context.
+// QRLRunfile returns the full path to a file in the qrl static directory, within bazel's run context.
 // The relative path is specified as a variadic slice of path parts, in the same style as path.Join.
-func (p *paths) ZondRunfile(rel ...string) (string, error) {
-	return bazel.Runfile(p.ZondStaticFile(rel...))
+func (p *paths) QRLRunfile(rel ...string) (string, error) {
+	return bazel.Runfile(p.QRLStaticFile(rel...))
 }
 
 // TestKeyPath returns the full path to the file containing the test cryptographic keys.
 func (p *paths) TestKeyPath() (string, error) {
-	return p.ZondRunfile(keyFilename)
+	return p.QRLRunfile(keyFilename)
 }
 
 // TestParams is the globally accessible var for getting config elements.
@@ -85,13 +84,13 @@ func (p *params) Logfile(rel ...string) string {
 }
 
 // ExecutionNodeRPCURL gives the full url to use to connect to the given execution client's RPC endpoint.
-// The `index` param corresponds to the `index` field of the `zond.ExecutionNode` e2e component.
+// The `index` param corresponds to the `index` field of the `qrl.ExecutionNode` e2e component.
 // These are off by one compared to corresponding beacon nodes, because the miner is assigned index 0.
 // eg instance the index of the EL instance associated with beacon node index `0` would typically be `1`.
 func (p *params) ExecutionNodeRPCURL(index int) *url.URL {
 	return &url.URL{
 		Scheme: baseELScheme,
-		Host:   net.JoinHostPort(baseELHost, fmt.Sprintf("%d", p.Ports.GzondExecutionNodeRPCPort+index)),
+		Host:   net.JoinHostPort(baseELHost, fmt.Sprintf("%d", p.Ports.GqrlExecutionNodeRPCPort+index)),
 	}
 }
 
@@ -113,9 +112,6 @@ var StandardBeaconCount = 2
 // DepositCount is the number of deposits the E2E runner should make to evaluate post-genesis deposit processing.
 var DepositCount = uint64(64)
 
-// PregenesisExecCreds is the number of withdrawal credentials of genesis validators which use an execution address.
-var PregenesisExecCreds = uint64(8)
-
 // NumOfExecEngineTxs is the number of transaction sent to the execution engine.
 var NumOfExecEngineTxs = uint64(200)
 
@@ -129,11 +125,11 @@ const (
 	BootNodePort        = 2150
 	BootNodeMetricsPort = BootNodePort + portSpan
 
-	GzondExecutionNodePort        = 3150
-	GzondExecutionNodeRPCPort     = GzondExecutionNodePort + portSpan
-	GzondExecutionNodeWSPort      = GzondExecutionNodePort + 2*portSpan
-	GzondExecutionNodeAuthRPCPort = GzondExecutionNodePort + 3*portSpan
-	ExecutionNodeProxyPort        = GzondExecutionNodePort + 4*portSpan
+	GqrlExecutionNodePort        = 3150
+	GqrlExecutionNodeRPCPort     = GqrlExecutionNodePort + portSpan
+	GqrlExecutionNodeWSPort      = GqrlExecutionNodePort + 2*portSpan
+	GqrlExecutionNodeAuthRPCPort = GqrlExecutionNodePort + 3*portSpan
+	ExecutionNodeProxyPort       = GqrlExecutionNodePort + 4*portSpan
 
 	QrysmBeaconNodeRPCPort     = 4150
 	QrysmBeaconNodeUDPPort     = QrysmBeaconNodeRPCPort + portSpan
@@ -199,14 +195,13 @@ func Init(t *testing.T, beaconNodeCount int) error {
 
 	genTime := uint64(time.Now().Unix()) + StartupBufferSecs
 	TestParams = &params{
-		TestPath:               filepath.Join(testPath, fmt.Sprintf("shard-%d", testShardIndex)),
-		LogPath:                logPath,
-		TestShardIndex:         testShardIndex,
-		BeaconNodeCount:        beaconNodeCount,
-		Ports:                  testPorts,
-		CLGenesisTime:          genTime,
-		ELGenesisTime:          genTime,
-		NumberOfExecutionCreds: PregenesisExecCreds,
+		TestPath:        filepath.Join(testPath, fmt.Sprintf("shard-%d", testShardIndex)),
+		LogPath:         logPath,
+		TestShardIndex:  testShardIndex,
+		BeaconNodeCount: beaconNodeCount,
+		Ports:           testPorts,
+		CLGenesisTime:   genTime,
+		ELGenesisTime:   genTime,
 	}
 	return nil
 }
@@ -237,19 +232,19 @@ func initializeStandardPorts(shardCount, shardIndex int, ports *ports, existingR
 	if err != nil {
 		return err
 	}
-	executionNodePort, err := port(GzondExecutionNodePort, shardCount, shardIndex, existingRegistrations)
+	executionNodePort, err := port(GqrlExecutionNodePort, shardCount, shardIndex, existingRegistrations)
 	if err != nil {
 		return err
 	}
-	executionNodeRPCPort, err := port(GzondExecutionNodeRPCPort, shardCount, shardIndex, existingRegistrations)
+	executionNodeRPCPort, err := port(GqrlExecutionNodeRPCPort, shardCount, shardIndex, existingRegistrations)
 	if err != nil {
 		return err
 	}
-	executionNodeWSPort, err := port(GzondExecutionNodeWSPort, shardCount, shardIndex, existingRegistrations)
+	executionNodeWSPort, err := port(GqrlExecutionNodeWSPort, shardCount, shardIndex, existingRegistrations)
 	if err != nil {
 		return err
 	}
-	executionNodeAuthPort, err := port(GzondExecutionNodeAuthRPCPort, shardCount, shardIndex, existingRegistrations)
+	executionNodeAuthPort, err := port(GqrlExecutionNodeAuthRPCPort, shardCount, shardIndex, existingRegistrations)
 	if err != nil {
 		return err
 	}
@@ -295,10 +290,10 @@ func initializeStandardPorts(shardCount, shardIndex int, ports *ports, existingR
 	}
 	ports.BootNodePort = bootnodePort
 	ports.BootNodeMetricsPort = bootnodeMetricsPort
-	ports.GzondExecutionNodePort = executionNodePort
-	ports.GzondExecutionNodeRPCPort = executionNodeRPCPort
-	ports.GzondExecutionNodeAuthRPCPort = executionNodeAuthPort
-	ports.GzondExecutionNodeWSPort = executionNodeWSPort
+	ports.GqrlExecutionNodePort = executionNodePort
+	ports.GqrlExecutionNodeRPCPort = executionNodeRPCPort
+	ports.GqrlExecutionNodeAuthRPCPort = executionNodeAuthPort
+	ports.GqrlExecutionNodeWSPort = executionNodeWSPort
 	ports.ProxyPort = executionNodeProxyPort
 	ports.QrysmBeaconNodeRPCPort = beaconNodeRPCPort
 	ports.QrysmBeaconNodeUDPPort = beaconNodeUDPPort

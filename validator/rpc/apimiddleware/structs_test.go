@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
-	"github.com/theQRL/qrysm/proto/zond/service"
+	"github.com/theQRL/qrysm/proto/qrl/service"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
@@ -23,7 +23,7 @@ func TestListKeystores_JSONisEqual(t *testing.T) {
 	protoResponse := &service.ListKeystoresResponse{
 		Data: []*service.ListKeystoresResponse_Keystore{
 			{
-				ValidatingPubkey: make([]byte, field_params.DilithiumPubkeyLength),
+				ValidatingPubkey: make([]byte, field_params.MLDSA87PubkeyLength),
 				// DerivationPath:   "m/44'/60'/0'/0/0",
 			},
 		},
@@ -133,7 +133,7 @@ func TestListRemoteKeys_JSONisEqual(t *testing.T) {
 	protoResponse := &service.ListRemoteKeysResponse{
 		Data: []*service.ListRemoteKeysResponse_Keystore{
 			{
-				Pubkey:   make([]byte, field_params.DilithiumPubkeyLength),
+				Pubkey:   make([]byte, field_params.MLDSA87PubkeyLength),
 				Url:      "http://localhost:8080",
 				Readonly: true,
 			},
@@ -155,7 +155,7 @@ func TestImportRemoteKeys_JSONisEqual(t *testing.T) {
 	protoImportRequest := &service.ImportRemoteKeysRequest{
 		RemoteKeys: []*service.ImportRemoteKeysRequest_Keystore{
 			{
-				Pubkey: make([]byte, field_params.DilithiumPubkeyLength),
+				Pubkey: make([]byte, field_params.MLDSA87PubkeyLength),
 				Url:    "http://localhost:8080",
 			},
 		},
@@ -231,7 +231,7 @@ func TestDeleteRemoteKeys_JSONisEqual(t *testing.T) {
 */
 
 // note: this does not do a deep comparison of the structs
-func areJsonPropertyNamesEqual(internal, proto interface{}) (bool, error) {
+func areJsonPropertyNamesEqual(internal, proto any) (bool, error) {
 	internalJSON, err := json.Marshal(internal)
 	if err != nil {
 		return false, err

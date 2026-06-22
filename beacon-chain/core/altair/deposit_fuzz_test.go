@@ -7,21 +7,21 @@ import (
 	fuzz "github.com/google/gofuzz"
 	"github.com/theQRL/qrysm/beacon-chain/core/altair"
 	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestFuzzProcessDeposits_10000(t *testing.T) {
 	fuzzer := fuzz.NewWithSeed(0)
-	state := &zondpb.BeaconStateCapella{}
-	deposits := make([]*zondpb.Deposit, 100)
+	state := &qrysmpb.BeaconStateZond{}
+	deposits := make([]*qrysmpb.Deposit, 100)
 	ctx := context.Background()
-	for i := 0; i < 10000; i++ {
+	for range 10000 {
 		fuzzer.Fuzz(state)
 		for i := range deposits {
 			fuzzer.Fuzz(deposits[i])
 		}
-		s, err := state_native.InitializeFromProtoUnsafeCapella(state)
+		s, err := state_native.InitializeFromProtoUnsafeZond(state)
 		require.NoError(t, err)
 		r, err := altair.ProcessDeposits(ctx, s, deposits)
 		if err != nil && r != nil {
@@ -32,13 +32,13 @@ func TestFuzzProcessDeposits_10000(t *testing.T) {
 
 func TestFuzzProcessDeposit_10000(t *testing.T) {
 	fuzzer := fuzz.NewWithSeed(0)
-	state := &zondpb.BeaconStateCapella{}
-	deposit := &zondpb.Deposit{}
+	state := &qrysmpb.BeaconStateZond{}
+	deposit := &qrysmpb.Deposit{}
 
-	for i := 0; i < 10000; i++ {
+	for range 10000 {
 		fuzzer.Fuzz(state)
 		fuzzer.Fuzz(deposit)
-		s, err := state_native.InitializeFromProtoUnsafeCapella(state)
+		s, err := state_native.InitializeFromProtoUnsafeZond(state)
 		require.NoError(t, err)
 		r, err := altair.ProcessDeposit(s, deposit, true)
 		if err != nil && r != nil {

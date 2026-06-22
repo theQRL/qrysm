@@ -7,7 +7,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/qrysm/beacon-chain/execution/types"
 	"github.com/theQRL/qrysm/config/params"
 	"k8s.io/client-go/tools/cache"
@@ -20,26 +20,26 @@ var (
 
 	// maxCacheSize is 2x of the follow distance for additional cache padding.
 	// Requests should be only accessing blocks within recent blocks within the
-	// Eth1FollowDistance.
-	maxCacheSize = 2 * params.BeaconConfig().Eth1FollowDistance
+	// ExecutionFollowDistance.
+	maxCacheSize = 2 * params.BeaconConfig().ExecutionFollowDistance
 
 	// Metrics
 	headerCacheMiss = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "powchain_header_cache_miss",
+		Name: "execution_chain_header_cache_miss",
 		Help: "The number of header requests that aren't present in the cache.",
 	})
 	headerCacheHit = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "powchain_header_cache_hit",
+		Name: "execution_chain_header_cache_hit",
 		Help: "The number of header requests that are present in the cache.",
 	})
 	headerCacheSize = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "powchain_header_cache_size",
+		Name: "execution_chain_header_cache_size",
 		Help: "The number of headers in the header cache",
 	})
 )
 
 // hashKeyFn takes the hex string representation as the key for a headerInfo.
-func hashKeyFn(obj interface{}) (string, error) {
+func hashKeyFn(obj any) (string, error) {
 	hInfo, ok := obj.(*types.HeaderInfo)
 	if !ok {
 		return "", ErrNotAHeaderInfo
@@ -50,7 +50,7 @@ func hashKeyFn(obj interface{}) (string, error) {
 
 // heightKeyFn takes the string representation of the block header number as the key
 // for a headerInfo.
-func heightKeyFn(obj interface{}) (string, error) {
+func heightKeyFn(obj any) (string, error) {
 	hInfo, ok := obj.(*types.HeaderInfo)
 	if !ok {
 		return "", ErrNotAHeaderInfo
@@ -158,12 +158,12 @@ func trim(queue *cache.FIFO, maxSize uint64) {
 	for s := uint64(len(queue.ListKeys())); s > maxSize; s-- {
 		// #nosec G104 popProcessNoopFunc never returns an error
 		if _, err := queue.Pop(popProcessNoopFunc); err != nil { // This never returns an error, but we'll handle anyway for sanity.
-			panic(err)
+			panic(err) // lint:nopanic
 		}
 	}
 }
 
 // popProcessNoopFunc is a no-op function that never returns an error.
-func popProcessNoopFunc(_ interface{}) error {
+func popProcessNoopFunc(_ any, _ bool) error {
 	return nil
 }

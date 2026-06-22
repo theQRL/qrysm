@@ -9,13 +9,13 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/crypto/rand"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/util"
 )
 
-func FuzzCapellaStateHashTreeRoot(f *testing.F) {
-	gState, _ := util.DeterministicGenesisStateCapella(f, 100)
+func FuzzZondStateHashTreeRoot(f *testing.F) {
+	gState, _ := util.DeterministicGenesisStateZond(f, 100)
 	output, err := gState.MarshalSSZ()
 	assert.NoError(f, err)
 	randPool := make([]byte, 100)
@@ -33,18 +33,18 @@ func FuzzCapellaStateHashTreeRoot(f *testing.F) {
 			// Perform a XOR on the byte of the selected index.
 			stateSSZ[num] ^= diffBuffer[i+8]
 		}
-		pbState := &zondpb.BeaconStateCapella{}
+		pbState := &qrysmpb.BeaconStateZond{}
 		err := pbState.UnmarshalSSZ(stateSSZ)
 		if err != nil {
 			return
 		}
-		nativeState, err := native.InitializeFromProtoCapella(pbState)
+		nativeState, err := native.InitializeFromProtoZond(pbState)
 		if err != nil {
 			return
 		}
 
 		slotsToTransition %= 100
-		stateObj, err := native.InitializeFromProtoUnsafeCapella(pbState)
+		stateObj, err := native.InitializeFromProtoUnsafeZond(pbState)
 		assert.NoError(t, err)
 		for stateObj.Slot() < primitives.Slot(slotsToTransition) {
 			stateObj, err = coreState.ProcessSlots(context.Background(), stateObj, stateObj.Slot()+1)
@@ -57,9 +57,9 @@ func FuzzCapellaStateHashTreeRoot(f *testing.F) {
 		}
 		assert.NoError(t, err)
 		// Perform a cold HTR calculation by initializing a new state.
-		innerState, ok := stateObj.ToProtoUnsafe().(*zondpb.BeaconStateCapella)
-		assert.Equal(t, true, ok, "inner state is a not a beacon state capella proto")
-		newState, err := native.InitializeFromProtoUnsafeCapella(innerState)
+		innerState, ok := stateObj.ToProtoUnsafe().(*qrysmpb.BeaconStateZond)
+		assert.Equal(t, true, ok, "inner state is a not a beacon state zond proto")
+		newState, err := native.InitializeFromProtoUnsafeZond(innerState)
 		assert.NoError(t, err)
 
 		newRt, newErr := newState.HashTreeRoot(context.Background())

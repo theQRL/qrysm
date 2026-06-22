@@ -25,7 +25,7 @@ import (
 
 func setupService(t *testing.T) *Service {
 	beaconDB := testDB.SetupDB(t)
-	state, _ := util.DeterministicGenesisStateCapella(t, 256)
+	state, _ := util.DeterministicGenesisStateZond(t, 256)
 
 	pubKeys := make([][]byte, 3)
 	pubKeys[0] = state.Validators()[0].PublicKey
@@ -48,8 +48,11 @@ func setupService(t *testing.T) *Service {
 	trackedVals := map[primitives.ValidatorIndex]bool{
 		1:   true,
 		15:  true,
-		86:  true,
-		107: true,
+		44:  true,
+		67:  true,
+		73:  true,
+		117: true,
+		227: true,
 	}
 	latestPerformance := map[primitives.ValidatorIndex]ValidatorLatestPerformance{
 		1: {
@@ -58,14 +61,29 @@ func setupService(t *testing.T) *Service {
 		15: {
 			balance: 39999900000000,
 		},
-		86: {
+		44: {
 			balance:      39999900000000,
 			timelyHead:   true,
 			timelySource: true,
 			timelyTarget: true,
 		},
-		107: {
+		117: {
 			balance:      40000000000000,
+			timelyHead:   true,
+			timelySource: true,
+			timelyTarget: true,
+		},
+		67: {
+			balance: 40000000000000,
+		},
+		73: {
+			balance:      40000000000000,
+			timelyHead:   true,
+			timelySource: true,
+			timelyTarget: true,
+		},
+		227: {
+			balance:      39999900000000,
 			timelyHead:   true,
 			timelySource: true,
 			timelyTarget: true,
@@ -85,13 +103,16 @@ func setupService(t *testing.T) *Service {
 			totalSyncCommitteeContributions: 0,
 			totalSyncCommitteeAggregations:  0,
 		},
-		86:  {},
-		107: {},
+		44:  {},
+		67:  {},
+		117: {},
+		73:  {},
+		227: {},
 		15:  {},
 	}
 	trackedSyncCommitteeIndices := map[primitives.ValidatorIndex][]primitives.CommitteeIndex{
 		1:  {0, 1, 2, 3},
-		86: {4, 5},
+		44: {4, 5},
 	}
 	return &Service{
 		config: &ValidatorMonitorConfig{
@@ -126,7 +147,7 @@ func TestUpdateSyncCommitteeTrackedVals(t *testing.T) {
 	hook := logTest.NewGlobal()
 
 	beaconDB := testDB.SetupDB(t)
-	state, _ := util.DeterministicGenesisStateCapella(t, 1024)
+	state, _ := util.DeterministicGenesisStateZond(t, 1024)
 
 	pubKeys := make([][]byte, 3)
 	pubKeys[0] = state.Validators()[0].PublicKey
@@ -196,7 +217,7 @@ func TestStart(t *testing.T) {
 	// wait for Logrus
 	time.Sleep(1000 * time.Millisecond)
 	require.LogsContain(t, hook, "Synced to head epoch, starting reporting performance")
-	require.LogsContain(t, hook, "\"Starting service\" ValidatorIndices=\"[1 15 86 107]\"")
+	require.LogsContain(t, hook, "\"Starting service\" ValidatorIndices=\"[1 15 44 67 73 117 227]\"")
 	s.Lock()
 	require.Equal(t, s.isLogging, true, "monitor is not running")
 	s.Unlock()
@@ -218,10 +239,19 @@ func TestInitializePerformanceStructures(t *testing.T) {
 		15: {
 			balance: 40000000000000,
 		},
-		86: {
+		44: {
 			balance: 40000000000000,
 		},
-		107: {
+		67: {
+			balance: 40000000000000,
+		},
+		73: {
+			balance: 40000000000000,
+		},
+		117: {
+			balance: 40000000000000,
+		},
+		227: {
 			balance: 40000000000000,
 		},
 	}
@@ -232,10 +262,19 @@ func TestInitializePerformanceStructures(t *testing.T) {
 		15: {
 			startBalance: 40000000000000,
 		},
-		86: {
+		44: {
 			startBalance: 40000000000000,
 		},
-		107: {
+		67: {
+			startBalance: 40000000000000,
+		},
+		73: {
+			startBalance: 40000000000000,
+		},
+		117: {
+			startBalance: 40000000000000,
+		},
+		227: {
 			startBalance: 40000000000000,
 		},
 	}
@@ -249,7 +288,7 @@ func TestMonitorRoutine(t *testing.T) {
 	hook := logTest.NewGlobal()
 
 	beaconDB := testDB.SetupDB(t)
-	state, _ := util.DeterministicGenesisStateCapella(t, 256)
+	state, _ := util.DeterministicGenesisStateZond(t, 256)
 
 	pubKeys := make([][]byte, 3)
 	pubKeys[0] = state.Validators()[0].PublicKey
@@ -270,10 +309,11 @@ func TestMonitorRoutine(t *testing.T) {
 	}
 
 	trackedVals := map[primitives.ValidatorIndex]bool{
-		1: true,
+		22: true,
 	}
+
 	latestPerformance := map[primitives.ValidatorIndex]ValidatorLatestPerformance{
-		1: {
+		22: {
 			balance: 39999900000000,
 		},
 	}
@@ -298,21 +338,21 @@ func TestMonitorRoutine(t *testing.T) {
 	stateSub := svc.config.StateNotifier.StateFeed().Subscribe(stateChannel)
 
 	wg := &sync.WaitGroup{}
-	wg.Add(1)
 
-	go func() {
+	wg.Go(func() {
 		svc.monitorRoutine(stateChannel, stateSub)
-		wg.Done()
-	}()
+	})
 
-	genesis, keys := util.DeterministicGenesisStateCapella(t, 64)
+	genesis, keys := util.DeterministicGenesisStateZond(t, 64)
 	c, err := altair.NextSyncCommittee(ctx, genesis)
 	require.NoError(t, err)
 	require.NoError(t, genesis.SetCurrentSyncCommittee(c))
 
 	genConfig := util.DefaultBlockGenConfig()
-	block, err := util.GenerateFullBlockCapella(genesis, keys, genConfig, 1)
+	block, err := util.GenerateFullBlockZond(genesis, keys, genConfig, 1)
 	require.NoError(t, err)
+	trackedVals[block.Block.ProposerIndex] = true
+	latestPerformance[block.Block.ProposerIndex] = ValidatorLatestPerformance{balance: 39999900000000}
 	root, err := block.GetBlock().HashTreeRoot()
 	require.NoError(t, err)
 	require.NoError(t, svc.config.StateGen.SaveState(ctx, root, genesis))
@@ -331,7 +371,7 @@ func TestMonitorRoutine(t *testing.T) {
 
 	// wait for Logrus
 	time.Sleep(1000 * time.Millisecond)
-	wanted1 := fmt.Sprintf("\"Proposed beacon block was included\" BalanceChange=100000000 BlockRoot=%#x NewBalance=40000000000000 ParentRoot=0x7e1ac7288839 ProposerIndex=1 Slot=1 Version=3 prefix=monitor", bytesutil.Trunc(root[:]))
+	wanted1 := fmt.Sprintf("\"Proposed beacon block was included\" BalanceChange=100000000 BlockRoot=%#x NewBalance=40000000000000 ParentRoot=%#x ProposerIndex=%d Slot=1 Version=0 prefix=monitor", bytesutil.Trunc(root[:]), bytesutil.Trunc(block.Block.ParentRoot), block.Block.ProposerIndex)
 	require.LogsContain(t, hook, wanted1)
 
 }

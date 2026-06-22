@@ -1,0 +1,58 @@
+--- a/private/remote/debian_archive.bzl
++++ b/private/remote/debian_archive.bzl
+@@ -7,12 +7,12 @@
+ 
+ alias(
+     name = "control",
+-    actual = "@{name}_sources//:control",
++    actual = "@{public_name}_sources//:control",
+     visibility = ["//visibility:public"]
+ )
+ alias(
+     name = "data",
+-    actual = "@{name}_sources//:data",
++    actual = "@{public_name}_sources//:data",
+     visibility = ["//visibility:public"]
+ )
+ 
+@@ -47,6 +47,7 @@
+     srcs = [":data_with_dpkg_status", ":spdx"],
+     visibility = ["//visibility:public"],
+ )
++{public_alias}
+ """
+ 
+ _attrs = {
+@@ -86,14 +87,30 @@
+ )
+ 
+ def _debian_archive_impl(rctx):
++    canonical_name = rctx.attr.name
++    public_name = canonical_name.split("+")[-1]
++    public_alias = ""
++    if public_name != canonical_name:
++        public_alias = """\
++alias(
++    name = "{public_name}",
++    actual = ":{canonical_name}",
++    visibility = ["//visibility:public"],
++)
++""".format(
++            public_name = public_name,
++            canonical_name = canonical_name,
++        )
+     rctx.file(
+         "BUILD.bazel",
+         content = BUILD_TMPL.format(
+-            name = rctx.attr.name,
++            name = canonical_name,
+             package_name = rctx.attr.package_name,
+-            spdx_id = rctx.attr.name,
++            spdx_id = canonical_name,
+             urls = ",".join(['"%s"' % url for url in rctx.attr.urls]),
+             sha256 = rctx.attr.sha256,
++            public_name = public_name,
++            public_alias = public_alias,
+         ),
+     )
+ 

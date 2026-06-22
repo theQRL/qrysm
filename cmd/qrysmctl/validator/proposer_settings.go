@@ -6,7 +6,7 @@ import (
 	"io"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/qrysm/api/client"
 	"github.com/theQRL/qrysm/api/client/validator"
 	"github.com/theQRL/qrysm/cmd/validator/flags"
@@ -37,7 +37,7 @@ func getProposerSettings(c *cli.Context, r io.Reader) error {
 			}
 			defaultFeeRecipient = recipient
 		} else {
-			promptText := "Please enter a default fee recipient address (a zond address in hex format)"
+			promptText := "Please enter a default fee recipient address (a qrl address in Q-prefixed hex format)"
 			resp, err := prompt.ValidatePrompt(r, promptText, validateIsExecutionAddress)
 			if err != nil {
 				return err

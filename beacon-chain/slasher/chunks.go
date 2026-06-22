@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/db"
 	slashertypes "github.com/theQRL/qrysm/beacon-chain/slasher/types"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // A struct encapsulating input arguments to
@@ -34,7 +34,7 @@ type Chunker interface {
 		slasherDB db.SlasherDatabase,
 		validatorIdx primitives.ValidatorIndex,
 		attestation *slashertypes.IndexedAttestationWrapper,
-	) (*zondpb.AttesterSlashing, error)
+	) (*qrysmpb.AttesterSlashing, error)
 	Update(
 		args *chunkUpdateArgs,
 		validatorIndex primitives.ValidatorIndex,
@@ -103,7 +103,7 @@ func EmptyMinSpanChunksSlice(params *Parameters) *MinSpanChunksSlice {
 		params: params,
 	}
 	data := make([]uint16, params.chunkSize*params.validatorChunkSize)
-	for i := 0; i < len(data); i++ {
+	for i := range data {
 		data[i] = m.NeutralElement()
 	}
 	m.data = data
@@ -118,7 +118,7 @@ func EmptyMaxSpanChunksSlice(params *Parameters) *MaxSpanChunksSlice {
 		params: params,
 	}
 	data := make([]uint16, params.chunkSize*params.validatorChunkSize)
-	for i := 0; i < len(data); i++ {
+	for i := range data {
 		data[i] = m.NeutralElement()
 	}
 	m.data = data
@@ -188,7 +188,7 @@ func (m *MinSpanChunksSlice) CheckSlashable(
 	slasherDB db.SlasherDatabase,
 	validatorIdx primitives.ValidatorIndex,
 	attestation *slashertypes.IndexedAttestationWrapper,
-) (*zondpb.AttesterSlashing, error) {
+) (*qrysmpb.AttesterSlashing, error) {
 	sourceEpoch := attestation.IndexedAttestation.Data.Source.Epoch
 	targetEpoch := attestation.IndexedAttestation.Data.Target.Epoch
 	minTarget, err := chunkDataAtEpoch(m.params, m.data, validatorIdx, sourceEpoch)
@@ -209,7 +209,7 @@ func (m *MinSpanChunksSlice) CheckSlashable(
 		if existingAttRecord != nil {
 			if sourceEpoch < existingAttRecord.IndexedAttestation.Data.Source.Epoch {
 				surroundingVotesTotal.Inc()
-				return &zondpb.AttesterSlashing{
+				return &qrysmpb.AttesterSlashing{
 					Attestation_1: attestation.IndexedAttestation,
 					Attestation_2: existingAttRecord.IndexedAttestation,
 				}, nil
@@ -235,7 +235,7 @@ func (m *MaxSpanChunksSlice) CheckSlashable(
 	slasherDB db.SlasherDatabase,
 	validatorIdx primitives.ValidatorIndex,
 	attestation *slashertypes.IndexedAttestationWrapper,
-) (*zondpb.AttesterSlashing, error) {
+) (*qrysmpb.AttesterSlashing, error) {
 	sourceEpoch := attestation.IndexedAttestation.Data.Source.Epoch
 	targetEpoch := attestation.IndexedAttestation.Data.Target.Epoch
 	maxTarget, err := chunkDataAtEpoch(m.params, m.data, validatorIdx, sourceEpoch)
@@ -256,7 +256,7 @@ func (m *MaxSpanChunksSlice) CheckSlashable(
 		if existingAttRecord != nil {
 			if existingAttRecord.IndexedAttestation.Data.Source.Epoch < sourceEpoch {
 				surroundedVotesTotal.Inc()
-				return &zondpb.AttesterSlashing{
+				return &qrysmpb.AttesterSlashing{
 					Attestation_1: existingAttRecord.IndexedAttestation,
 					Attestation_2: attestation.IndexedAttestation,
 				}, nil

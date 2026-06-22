@@ -9,9 +9,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 
@@ -25,8 +25,8 @@ var (
 
 // InsertDeposit into the database. If deposit or block number are nil
 // then this method does nothing.
-func (c *Cache) InsertDeposit(ctx context.Context, d *zondpb.Deposit, blockNum uint64, index int64, depositRoot [32]byte) error {
-	ctx, span := trace.StartSpan(ctx, "Cache.InsertDeposit")
+func (c *Cache) InsertDeposit(ctx context.Context, d *qrysmpb.Deposit, blockNum uint64, index int64, depositRoot [32]byte) error {
+	_, span := trace.StartSpan(ctx, "Cache.InsertDeposit")
 	defer span.End()
 	if d == nil {
 		log.WithFields(logrus.Fields{
@@ -45,9 +45,9 @@ func (c *Cache) InsertDeposit(ctx context.Context, d *zondpb.Deposit, blockNum u
 	}
 	// Keep the slice sorted on insertion in order to avoid costly sorting on retrieval.
 	heightIdx := sort.Search(len(c.deposits), func(i int) bool { return c.deposits[i].Index >= index })
-	depCtr := &zondpb.DepositContainer{Deposit: d, Eth1BlockHeight: blockNum, DepositRoot: depositRoot[:], Index: index}
+	depCtr := &qrysmpb.DepositContainer{Deposit: d, ExecutionBlockHeight: blockNum, DepositRoot: depositRoot[:], Index: index}
 	newDeposits := append(
-		[]*zondpb.DepositContainer{depCtr},
+		[]*qrysmpb.DepositContainer{depCtr},
 		c.deposits[heightIdx:]...)
 	c.deposits = append(c.deposits[:heightIdx], newDeposits...)
 	// Append the deposit to our map, in the event no deposits
@@ -59,15 +59,15 @@ func (c *Cache) InsertDeposit(ctx context.Context, d *zondpb.Deposit, blockNum u
 }
 
 // InsertDepositContainers inserts a set of deposit containers into our deposit cache.
-func (c *Cache) InsertDepositContainers(ctx context.Context, ctrs []*zondpb.DepositContainer) {
-	ctx, span := trace.StartSpan(ctx, "Cache.InsertDepositContainers")
+func (c *Cache) InsertDepositContainers(ctx context.Context, ctrs []*qrysmpb.DepositContainer) {
+	_, span := trace.StartSpan(ctx, "Cache.InsertDepositContainers")
 	defer span.End()
 	c.depositsLock.Lock()
 	defer c.depositsLock.Unlock()
 
 	// Initialize slice if nil object provided.
 	if ctrs == nil {
-		ctrs = make([]*zondpb.DepositContainer, 0)
+		ctrs = make([]*qrysmpb.DepositContainer, 0)
 	}
 	sort.SliceStable(ctrs, func(i int, j int) bool { return ctrs[i].Index < ctrs[j].Index })
 	c.deposits = ctrs
@@ -81,10 +81,10 @@ func (c *Cache) InsertDepositContainers(ctx context.Context, ctrs []*zondpb.Depo
 	historicalDepositsCount.Add(float64(len(ctrs)))
 }
 
-// InsertFinalizedDeposits inserts deposits up to eth1DepositIndex (inclusive) into the finalized deposits cache.
-func (c *Cache) InsertFinalizedDeposits(ctx context.Context, eth1DepositIndex int64,
+// InsertFinalizedDeposits inserts deposits up to executionDepositIndex (inclusive) into the finalized deposits cache.
+func (c *Cache) InsertFinalizedDeposits(ctx context.Context, executionDepositIndex int64,
 	executionHash common.Hash, executionNumber uint64) error {
-	ctx, span := trace.StartSpan(ctx, "Cache.InsertFinalizedDeposits")
+	_, span := trace.StartSpan(ctx, "Cache.InsertFinalizedDeposits")
 	defer span.End()
 	c.depositsLock.Lock()
 	defer c.depositsLock.Unlock()
@@ -99,19 +99,19 @@ func (c *Cache) InsertFinalizedDeposits(ctx context.Context, eth1DepositIndex in
 	}
 	// In the event we have less deposits than we need to
 	// finalize we finalize till the index on which we do have it.
-	if len(c.deposits) <= int(eth1DepositIndex) {
-		eth1DepositIndex = int64(len(c.deposits)) - 1
+	if len(c.deposits) <= int(executionDepositIndex) {
+		executionDepositIndex = int64(len(c.deposits)) - 1
 	}
 	// If we finalize to some lower deposit index, we
 	// ignore it.
-	if int(eth1DepositIndex) < insertIndex {
+	if int(executionDepositIndex) < insertIndex {
 		return nil
 	}
 	currIdx := int64(depositTrie.depositCount) - 1
 
 	// Insert deposits into deposit trie.
 	for _, ctr := range c.deposits {
-		if ctr.Index > currIdx && ctr.Index <= eth1DepositIndex {
+		if ctr.Index > currIdx && ctr.Index <= executionDepositIndex {
 			rt, err := ctr.Deposit.Data.HashTreeRoot()
 			if err != nil {
 				return err
@@ -122,13 +122,13 @@ func (c *Cache) InsertFinalizedDeposits(ctx context.Context, eth1DepositIndex in
 		}
 	}
 
-	if err := depositTrie.Finalize(eth1DepositIndex, executionHash, executionNumber); err != nil {
+	if err := depositTrie.Finalize(executionDepositIndex, executionHash, executionNumber); err != nil {
 		return err
 	}
 
 	c.finalizedDeposits = finalizedDepositsContainer{
 		depositTree:     depositTrie,
-		merkleTrieIndex: eth1DepositIndex,
+		merkleTrieIndex: executionDepositIndex,
 	}
 	return nil
 }

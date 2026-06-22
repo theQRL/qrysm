@@ -1,4 +1,4 @@
-// Package rpc defines a gRPC server implementing the Zond consensus API as needed
+// Package rpc defines a gRPC server implementing the QRL consensus API as needed
 // by validator clients and consumers of chain data.
 package rpc
 
@@ -26,26 +26,25 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/db"
 	"github.com/theQRL/qrysm/beacon-chain/execution"
 	"github.com/theQRL/qrysm/beacon-chain/operations/attestations"
-	"github.com/theQRL/qrysm/beacon-chain/operations/dilithiumtoexec"
 	"github.com/theQRL/qrysm/beacon-chain/operations/slashings"
 	"github.com/theQRL/qrysm/beacon-chain/operations/synccommittee"
 	"github.com/theQRL/qrysm/beacon-chain/operations/voluntaryexits"
 	"github.com/theQRL/qrysm/beacon-chain/p2p"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/core"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/lookup"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/beacon"
+	rpcBuilder "github.com/theQRL/qrysm/beacon-chain/rpc/qrl/builder"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/debug"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/events"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/node"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/rewards"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/validator"
 	nodeqrysm "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/node"
 	beaconv1alpha1 "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/v1alpha1/beacon"
 	debugv1alpha1 "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/v1alpha1/debug"
 	nodev1alpha1 "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/v1alpha1/node"
 	validatorv1alpha1 "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/v1alpha1/validator"
 	httpserver "github.com/theQRL/qrysm/beacon-chain/rpc/qrysm/validator"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
-	rpcBuilder "github.com/theQRL/qrysm/beacon-chain/rpc/zond/builder"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/debug"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/events"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/node"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/rewards"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/validator"
 	slasherservice "github.com/theQRL/qrysm/beacon-chain/slasher"
 	"github.com/theQRL/qrysm/beacon-chain/startup"
 	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
@@ -54,8 +53,8 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/io/logs"
 	"github.com/theQRL/qrysm/monitoring/tracing"
-	zondpbv1alpha1 "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
-	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	qrlpbservice "github.com/theQRL/qrysm/proto/qrl/service"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -72,7 +71,7 @@ type Service struct {
 	cancel               context.CancelFunc
 	listener             net.Listener
 	grpcServer           *grpc.Server
-	incomingAttestation  chan *zondpbv1alpha1.Attestation
+	incomingAttestation  chan *qrysmpb.Attestation
 	credentialError      error
 	connectedRPCClients  map[net.Addr]bool
 	clientConnectionLock sync.Mutex
@@ -102,13 +101,12 @@ type Config struct {
 	GenesisTimeFetcher            blockchain.TimeFetcher
 	GenesisFetcher                blockchain.GenesisFetcher
 	EnableDebugRPCEndpoints       bool
-	MockEth1Votes                 bool
+	MockExecutionVotes            bool
 	AttestationsPool              attestations.Pool
 	ExitPool                      voluntaryexits.PoolManager
 	SlashingsPool                 slashings.PoolManager
 	SlashingChecker               slasherservice.SlashingChecker
 	SyncCommitteeObjectPool       synccommittee.Pool
-	DilithiumChangesPool          dilithiumtoexec.PoolManager
 	SyncService                   chainSync.Checker
 	Broadcaster                   p2p.Broadcaster
 	PeersFetcher                  p2p.PeersProvider
@@ -137,7 +135,7 @@ func NewService(ctx context.Context, cfg *Config) *Service {
 		cfg:                 cfg,
 		ctx:                 ctx,
 		cancel:              cancel,
-		incomingAttestation: make(chan *zondpbv1alpha1.Attestation, params.BeaconConfig().DefaultBufferSize),
+		incomingAttestation: make(chan *qrysmpb.Attestation, params.BeaconConfig().DefaultBufferSize),
 		connectedRPCClients: make(map[net.Addr]bool),
 	}
 
@@ -183,17 +181,12 @@ func NewService(ctx context.Context, cfg *Config) *Service {
 	}
 	s.grpcServer = grpc.NewServer(opts...)
 
-	return s
-}
-
-// paranoid build time check to ensure ChainInfoFetcher implements required interfaces
-var _ stategen.CanonicalChecker = blockchain.ChainInfoFetcher(nil)
-var _ stategen.CurrentSlotter = blockchain.ChainInfoFetcher(nil)
-
-// Start the gRPC server.
-func (s *Service) Start() {
-	grpcprometheus.EnableHandlingTimeHistogram()
-
+	// Register HTTP routes and gRPC services here (rather than in Start) so that
+	// any consumer holding s.cfg.Router after NewService returns sees a fully-
+	// populated router. Doing this in Start created a race window with the
+	// grpc-gateway service that consumes the same router: requests that arrived
+	// before Start finished could hit gorilla/mux while routes were still being
+	// added and panic on a nil-deref. See upstream PR #13676.
 	var stateCache stategen.CachedGetter
 	if s.cfg.StateGen != nil {
 		stateCache = s.cfg.StateGen.CombinedCache()
@@ -222,27 +215,28 @@ func (s *Service) Start() {
 		HeadFetcher:           s.cfg.HeadFetcher,
 	}
 
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/rewards/blocks/{block_id}", rewardsServer.BlockRewards).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/rewards/attestations/{epoch}", rewardsServer.AttestationRewards).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/rewards/sync_committee/{block_id}", rewardsServer.SyncCommitteeRewards).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/rewards/blocks/{block_id}", rewardsServer.BlockRewards).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/rewards/attestations/{epoch}", rewardsServer.AttestationRewards).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/rewards/sync_committee/{block_id}", rewardsServer.SyncCommitteeRewards).Methods(http.MethodPost)
 
 	builderServer := &rpcBuilder.Server{
 		FinalizationFetcher:   s.cfg.FinalizationFetcher,
 		OptimisticModeFetcher: s.cfg.OptimisticModeFetcher,
 		Stater:                stater,
 	}
-	s.cfg.Router.HandleFunc("/zond/v1/builder/states/{state_id}/expected_withdrawals", builderServer.ExpectedWithdrawals).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/builder/states/{state_id}/expected_withdrawals", builderServer.ExpectedWithdrawals).Methods(http.MethodGet)
 
 	coreService := &core.Service{
-		HeadFetcher:        s.cfg.HeadFetcher,
-		GenesisTimeFetcher: s.cfg.GenesisTimeFetcher,
-		SyncChecker:        s.cfg.SyncService,
-		Broadcaster:        s.cfg.Broadcaster,
-		SyncCommitteePool:  s.cfg.SyncCommitteeObjectPool,
-		OperationNotifier:  s.cfg.OperationNotifier,
-		AttestationCache:   cache.NewAttestationCache(),
-		StateGen:           s.cfg.StateGen,
-		P2P:                s.cfg.Broadcaster,
+		HeadFetcher:           s.cfg.HeadFetcher,
+		GenesisTimeFetcher:    s.cfg.GenesisTimeFetcher,
+		SyncChecker:           s.cfg.SyncService,
+		Broadcaster:           s.cfg.Broadcaster,
+		SyncCommitteePool:     s.cfg.SyncCommitteeObjectPool,
+		OperationNotifier:     s.cfg.OperationNotifier,
+		AttestationCache:      cache.NewAttestationCache(),
+		StateGen:              s.cfg.StateGen,
+		P2P:                   s.cfg.Broadcaster,
+		OptimisticModeFetcher: s.cfg.OptimisticModeFetcher,
 	}
 
 	validatorServer := &validatorv1alpha1.Server{
@@ -258,7 +252,7 @@ func (s *Service) Start() {
 		BlockFetcher:           s.cfg.ExecutionChainService,
 		DepositFetcher:         s.cfg.DepositFetcher,
 		ChainStartFetcher:      s.cfg.ChainStartFetcher,
-		Eth1InfoFetcher:        s.cfg.ExecutionChainService,
+		ExecutionInfoFetcher:   s.cfg.ExecutionChainService,
 		OptimisticModeFetcher:  s.cfg.OptimisticModeFetcher,
 		SyncChecker:            s.cfg.SyncService,
 		StateNotifier:          s.cfg.StateNotifier,
@@ -266,8 +260,8 @@ func (s *Service) Start() {
 		OperationNotifier:      s.cfg.OperationNotifier,
 		P2P:                    s.cfg.Broadcaster,
 		BlockReceiver:          s.cfg.BlockReceiver,
-		MockEth1Votes:          s.cfg.MockEth1Votes,
-		Eth1BlockFetcher:       s.cfg.ExecutionChainService,
+		MockExecutionVotes:     s.cfg.MockExecutionVotes,
+		ExecutionBlockFetcher:  s.cfg.ExecutionChainService,
 		PendingDepositsFetcher: s.cfg.PendingDepositFetcher,
 		SlashingsPool:          s.cfg.SlashingsPool,
 		StateGen:               s.cfg.StateGen,
@@ -277,7 +271,6 @@ func (s *Service) Start() {
 		BeaconDB:               s.cfg.BeaconDB,
 		ProposerSlotIndexCache: s.cfg.ProposerIdsCache,
 		BlockBuilder:           s.cfg.BlockBuilder,
-		DilithiumChangesPool:   s.cfg.DilithiumChangesPool,
 		ClockWaiter:            s.cfg.ClockWaiter,
 		CoreService:            coreService,
 	}
@@ -300,36 +293,36 @@ func (s *Service) Start() {
 		CoreService:            coreService,
 	}
 
-	s.cfg.Router.HandleFunc("/zond/v1/validator/aggregate_attestation", validatorServerV1.GetAggregateAttestation).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/validator/contribution_and_proofs", validatorServerV1.SubmitContributionAndProofs).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v1/validator/aggregate_and_proofs", validatorServerV1.SubmitAggregateAndProofs).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v1/validator/sync_committee_contribution", validatorServerV1.ProduceSyncCommitteeContribution).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/validator/sync_committee_subscriptions", validatorServerV1.SubmitSyncCommitteeSubscription).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v1/validator/beacon_committee_subscriptions", validatorServerV1.SubmitBeaconCommitteeSubscription).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v1/validator/attestation_data", validatorServerV1.GetAttestationData).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/validator/register_validator", validatorServerV1.RegisterValidator).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v1/validator/duties/attester/{epoch}", validatorServerV1.GetAttesterDuties).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v1/validator/duties/proposer/{epoch}", validatorServerV1.GetProposerDuties).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/validator/duties/sync/{epoch}", validatorServerV1.GetSyncCommitteeDuties).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v1/validator/prepare_beacon_proposer", validatorServerV1.PrepareBeaconProposer).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v1/validator/liveness/{epoch}", validatorServerV1.GetLiveness).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrl/v1/validator/aggregate_attestation", validatorServerV1.GetAggregateAttestation).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/validator/contribution_and_proofs", validatorServerV1.SubmitContributionAndProofs).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrl/v1/validator/aggregate_and_proofs", validatorServerV1.SubmitAggregateAndProofs).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrl/v1/validator/sync_committee_contribution", validatorServerV1.ProduceSyncCommitteeContribution).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/validator/sync_committee_subscriptions", validatorServerV1.SubmitSyncCommitteeSubscription).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrl/v1/validator/beacon_committee_subscriptions", validatorServerV1.SubmitBeaconCommitteeSubscription).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrl/v1/validator/attestation_data", validatorServerV1.GetAttestationData).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/validator/register_validator", validatorServerV1.RegisterValidator).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrl/v1/validator/duties/attester/{epoch}", validatorServerV1.GetAttesterDuties).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrl/v1/validator/duties/proposer/{epoch}", validatorServerV1.GetProposerDuties).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/validator/duties/sync/{epoch}", validatorServerV1.GetSyncCommitteeDuties).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrl/v1/validator/prepare_beacon_proposer", validatorServerV1.PrepareBeaconProposer).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrl/v1/validator/liveness/{epoch}", validatorServerV1.GetLiveness).Methods(http.MethodPost)
 
-	s.cfg.Router.HandleFunc("/zond/v3/validator/blocks/{slot}", validatorServerV1.ProduceBlockV3).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v3/validator/blocks/{slot}", validatorServerV1.ProduceBlockV3).Methods(http.MethodGet)
 
 	nodeServer := &nodev1alpha1.Server{
-		LogsStreamer:         logs.NewStreamServer(),
-		BeaconDB:             s.cfg.BeaconDB,
-		Server:               s.grpcServer,
-		SyncChecker:          s.cfg.SyncService,
-		GenesisTimeFetcher:   s.cfg.GenesisTimeFetcher,
-		PeersFetcher:         s.cfg.PeersFetcher,
-		PeerManager:          s.cfg.PeerManager,
-		GenesisFetcher:       s.cfg.GenesisFetcher,
-		POWChainInfoFetcher:  s.cfg.ExecutionChainInfoFetcher,
-		BeaconMonitoringHost: s.cfg.BeaconMonitoringHost,
-		BeaconMonitoringPort: s.cfg.BeaconMonitoringPort,
+		LogsStreamer:              logs.NewStreamServer(),
+		BeaconDB:                  s.cfg.BeaconDB,
+		Server:                    s.grpcServer,
+		SyncChecker:               s.cfg.SyncService,
+		GenesisTimeFetcher:        s.cfg.GenesisTimeFetcher,
+		PeersFetcher:              s.cfg.PeersFetcher,
+		PeerManager:               s.cfg.PeerManager,
+		GenesisFetcher:            s.cfg.GenesisFetcher,
+		ExecutionChainInfoFetcher: s.cfg.ExecutionChainInfoFetcher,
+		BeaconMonitoringHost:      s.cfg.BeaconMonitoringHost,
+		BeaconMonitoringPort:      s.cfg.BeaconMonitoringPort,
 	}
-	nodeServerZond := &node.Server{
+	nodeServerQRL := &node.Server{
 		BeaconDB:                  s.cfg.BeaconDB,
 		Server:                    s.grpcServer,
 		SyncChecker:               s.cfg.SyncService,
@@ -342,7 +335,7 @@ func (s *Service) Start() {
 		ExecutionChainInfoFetcher: s.cfg.ExecutionChainInfoFetcher,
 	}
 
-	s.cfg.Router.HandleFunc("/zond/v1/node/syncing", nodeServerZond.GetSyncStatus).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/node/syncing", nodeServerQRL.GetSyncStatus).Methods(http.MethodGet)
 
 	nodeServerQrysm := &nodeqrysm.Server{
 		BeaconDB:                  s.cfg.BeaconDB,
@@ -379,8 +372,8 @@ func (s *Service) Start() {
 		Broadcaster:                 s.cfg.Broadcaster,
 		StateGen:                    s.cfg.StateGen,
 		SyncChecker:                 s.cfg.SyncService,
-		ReceivedAttestationsBuffer:  make(chan *zondpbv1alpha1.Attestation, attestationBufferSize),
-		CollectedAttestationsBuffer: make(chan []*zondpbv1alpha1.Attestation, attestationBufferSize),
+		ReceivedAttestationsBuffer:  make(chan *qrysmpb.Attestation, attestationBufferSize),
+		CollectedAttestationsBuffer: make(chan []*qrysmpb.Attestation, attestationBufferSize),
 		ReplayerBuilder:             ch,
 		CoreService:                 coreService,
 	}
@@ -405,7 +398,6 @@ func (s *Service) Start() {
 		V1Alpha1ValidatorServer:       validatorServer,
 		SyncChecker:                   s.cfg.SyncService,
 		ExecutionPayloadReconstructor: s.cfg.ExecutionPayloadReconstructor,
-		DilithiumChangesPool:          s.cfg.DilithiumChangesPool,
 		FinalizationFetcher:           s.cfg.FinalizationFetcher,
 		ForkchoiceFetcher:             s.cfg.ForkchoiceFetcher,
 		CoreService:                   coreService,
@@ -422,36 +414,37 @@ func (s *Service) Start() {
 		FinalizationFetcher:   s.cfg.FinalizationFetcher,
 	}
 	s.cfg.Router.HandleFunc("/qrysm/validators/performance", httpServer.GetValidatorPerformance).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/states/{state_id}/validator_count", httpServer.GetValidatorCount).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/states/{state_id}/committees", beaconChainServerV1.GetCommittees).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/states/{state_id}/fork", beaconChainServerV1.GetStateFork).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/blocks", beaconChainServerV1.PublishBlock).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/blinded_blocks", beaconChainServerV1.PublishBlindedBlock).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/blocks/{block_id}/root", beaconChainServerV1.GetBlockRoot).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/pool/attestations", beaconChainServerV1.ListAttestations).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/pool/attestations", beaconChainServerV1.SubmitAttestations).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/pool/voluntary_exits", beaconChainServerV1.ListVoluntaryExits).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/pool/voluntary_exits", beaconChainServerV1.SubmitVoluntaryExit).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/pool/sync_committees", beaconChainServerV1.SubmitSyncCommitteeSignatures).Methods(http.MethodPost)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/headers", beaconChainServerV1.GetBlockHeaders).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/headers/{block_id}", beaconChainServerV1.GetBlockHeader).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/config/deposit_contract", beaconChainServerV1.GetDepositContract).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/genesis", beaconChainServerV1.GetGenesis).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/states/{state_id}/finality_checkpoints", beaconChainServerV1.GetFinalityCheckpoints).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/states/{state_id}/validators", beaconChainServerV1.GetValidators).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/states/{state_id}/validators/{validator_id}", beaconChainServerV1.GetValidator).Methods(http.MethodGet)
-	s.cfg.Router.HandleFunc("/zond/v1/beacon/states/{state_id}/validator_balances", beaconChainServerV1.GetValidatorBalances).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/states/{state_id}/validator_count", httpServer.GetValidatorCount).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/states/{state_id}/committees", beaconChainServerV1.GetCommittees).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/states/{state_id}/fork", beaconChainServerV1.GetStateFork).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/blocks", beaconChainServerV1.PublishBlock).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/blinded_blocks", beaconChainServerV1.PublishBlindedBlock).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/blocks/{block_id}/root", beaconChainServerV1.GetBlockRoot).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/pool/attestations", beaconChainServerV1.ListAttestations).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/pool/attestations", beaconChainServerV1.SubmitAttestations).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/pool/voluntary_exits", beaconChainServerV1.ListVoluntaryExits).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/pool/voluntary_exits", beaconChainServerV1.SubmitVoluntaryExit).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/pool/sync_committees", beaconChainServerV1.SubmitSyncCommitteeSignatures).Methods(http.MethodPost)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/headers", beaconChainServerV1.GetBlockHeaders).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/headers/{block_id}", beaconChainServerV1.GetBlockHeader).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/config/deposit_contract", beaconChainServerV1.GetDepositContract).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/genesis", beaconChainServerV1.GetGenesis).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/states/{state_id}/finality_checkpoints", beaconChainServerV1.GetFinalityCheckpoints).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/states/{state_id}/validators", beaconChainServerV1.GetValidators).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/states/{state_id}/validators/{validator_id}", beaconChainServerV1.GetValidator).Methods(http.MethodGet)
+	s.cfg.Router.HandleFunc("/qrl/v1/beacon/states/{state_id}/validator_balances", beaconChainServerV1.GetValidatorBalances).Methods(http.MethodGet)
 
-	zondpbv1alpha1.RegisterNodeServer(s.grpcServer, nodeServer)
-	zondpbservice.RegisterBeaconNodeServer(s.grpcServer, nodeServerZond)
-	zondpbv1alpha1.RegisterBeaconChainServer(s.grpcServer, beaconChainServer)
-	zondpbservice.RegisterBeaconChainServer(s.grpcServer, beaconChainServerV1)
-	zondpbservice.RegisterEventsServer(s.grpcServer, &events.Server{
+	qrysmpb.RegisterNodeServer(s.grpcServer, nodeServer)
+	qrlpbservice.RegisterBeaconNodeServer(s.grpcServer, nodeServerQRL)
+	qrysmpb.RegisterBeaconChainServer(s.grpcServer, beaconChainServer)
+	qrlpbservice.RegisterBeaconChainServer(s.grpcServer, beaconChainServerV1)
+	qrlpbservice.RegisterEventsServer(s.grpcServer, &events.Server{
 		Ctx:               s.ctx,
 		StateNotifier:     s.cfg.StateNotifier,
 		OperationNotifier: s.cfg.OperationNotifier,
 		HeadFetcher:       s.cfg.HeadFetcher,
 		ChainInfoFetcher:  s.cfg.ChainInfoFetcher,
+		BlockBuilder:      s.cfg.BlockBuilder,
 	})
 	if s.cfg.EnableDebugRPCEndpoints {
 		log.Info("Enabled debug gRPC endpoints")
@@ -474,13 +467,25 @@ func (s *Service) Start() {
 			FinalizationFetcher:   s.cfg.FinalizationFetcher,
 			ChainInfoFetcher:      s.cfg.ChainInfoFetcher,
 		}
-		zondpbv1alpha1.RegisterDebugServer(s.grpcServer, debugServer)
-		zondpbservice.RegisterBeaconDebugServer(s.grpcServer, debugServerV1)
+		qrysmpb.RegisterDebugServer(s.grpcServer, debugServer)
+		qrlpbservice.RegisterBeaconDebugServer(s.grpcServer, debugServerV1)
 	}
-	zondpbv1alpha1.RegisterBeaconNodeValidatorServer(s.grpcServer, validatorServer)
-	zondpbservice.RegisterBeaconValidatorServer(s.grpcServer, validatorServerV1)
+	qrysmpb.RegisterBeaconNodeValidatorServer(s.grpcServer, validatorServer)
+	qrlpbservice.RegisterBeaconValidatorServer(s.grpcServer, validatorServerV1)
 	// Register reflection service on gRPC server.
 	reflection.Register(s.grpcServer)
+
+	return s
+}
+
+// paranoid build time check to ensure ChainInfoFetcher implements required interfaces
+var _ stategen.CanonicalChecker = blockchain.ChainInfoFetcher(nil)
+var _ stategen.CurrentSlotter = blockchain.ChainInfoFetcher(nil)
+
+// Start the gRPC server. Routes and gRPC services were registered in NewService;
+// here we just enable Prometheus histograms and launch the listener goroutine.
+func (s *Service) Start() {
+	grpcprometheus.EnableHandlingTimeHistogram()
 
 	go func() {
 		if s.listener != nil {
@@ -522,7 +527,7 @@ func (s *Service) Status() error {
 
 // Stream interceptor for new validator client connections to the beacon node.
 func (s *Service) validatorStreamConnectionInterceptor(
-	srv interface{},
+	srv any,
 	ss grpc.ServerStream,
 	_ *grpc.StreamServerInfo,
 	handler grpc.StreamHandler,
@@ -534,10 +539,10 @@ func (s *Service) validatorStreamConnectionInterceptor(
 // Unary interceptor for new validator client connections to the beacon node.
 func (s *Service) validatorUnaryConnectionInterceptor(
 	ctx context.Context,
-	req interface{},
+	req any,
 	_ *grpc.UnaryServerInfo,
 	handler grpc.UnaryHandler,
-) (interface{}, error) {
+) (any, error) {
 	s.logNewClientConnection(ctx)
 	return handler(ctx, req)
 }

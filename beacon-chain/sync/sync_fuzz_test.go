@@ -25,28 +25,28 @@ import (
 	mockSync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync/testing"
 	lruwrpr "github.com/theQRL/qrysm/cache/lru"
 	"github.com/theQRL/qrysm/config/params"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
 
-func FuzzValidateBeaconBlockPubSub_Capella(f *testing.F) {
+func FuzzValidateBeaconBlockPubSub_Zond(f *testing.F) {
 	db := dbtest.SetupDB(f)
 	p := p2ptest.NewFuzzTestP2P()
 	ctx := context.Background()
-	beaconState, privKeys := util.DeterministicGenesisStateCapella(f, 100)
-	parentBlock := util.NewBeaconBlockCapella()
+	beaconState, privKeys := util.DeterministicGenesisStateZond(f, 100)
+	parentBlock := util.NewBeaconBlockZond()
 	util.SaveBlock(f, ctx, db, parentBlock)
 	bRoot, err := parentBlock.Block.HashTreeRoot()
 	require.NoError(f, err)
 	require.NoError(f, db.SaveState(ctx, beaconState, bRoot))
-	require.NoError(f, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: bRoot[:]}))
+	require.NoError(f, db.SaveStateSummary(ctx, &qrysmpb.StateSummary{Root: bRoot[:]}))
 	copied := beaconState.Copy()
 	require.NoError(f, copied.SetSlot(1))
 	proposerIdx, err := helpers.BeaconProposerIndex(ctx, copied)
 	require.NoError(f, err)
-	msg := util.NewBeaconBlockCapella()
+	msg := util.NewBeaconBlockZond()
 	msg.Block.ParentRoot = bRoot[:]
 	msg.Block.Slot = 1
 	msg.Block.ProposerIndex = proposerIdx
@@ -56,7 +56,7 @@ func FuzzValidateBeaconBlockPubSub_Capella(f *testing.F) {
 	stateGen := stategen.New(db, doublylinkedtree.New())
 	chainService := &mock.ChainService{Genesis: time.Unix(time.Now().Unix()-int64(params.BeaconConfig().SecondsPerSlot), 0),
 		State: beaconState,
-		FinalizedCheckPoint: &zondpb.Checkpoint{
+		FinalizedCheckPoint: &qrysmpb.Checkpoint{
 			Epoch: 0,
 			Root:  make([]byte, 32),
 		},
@@ -80,7 +80,7 @@ func FuzzValidateBeaconBlockPubSub_Capella(f *testing.F) {
 	buf := new(bytes.Buffer)
 	_, err = p.Encoding().EncodeGossip(buf, msg)
 	require.NoError(f, err)
-	topic := p2p.GossipTypeMapping[reflect.TypeOf(msg)]
+	topic := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.SignedBeaconBlockZond]()]
 	digest, err := r.currentForkDigest()
 	assert.NoError(f, err)
 	topic = r.addDigestToTopic(topic, digest)
@@ -92,7 +92,7 @@ func FuzzValidateBeaconBlockPubSub_Capella(f *testing.F) {
 		cService := &mock.ChainService{
 			Genesis: time.Unix(time.Now().Unix()-int64(params.BeaconConfig().SecondsPerSlot*10000000), 0),
 			State:   beaconState,
-			FinalizedCheckPoint: &zondpb.Checkpoint{
+			FinalizedCheckPoint: &qrysmpb.Checkpoint{
 				Epoch: 0,
 				Root:  make([]byte, 32),
 			},

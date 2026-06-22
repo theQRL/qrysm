@@ -6,7 +6,7 @@ import (
 
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // PoolInserter is capable of inserting new slashing objects into the operations pool.
@@ -14,12 +14,12 @@ type PoolInserter interface {
 	InsertAttesterSlashing(
 		ctx context.Context,
 		state state.ReadOnlyBeaconState,
-		slashing *zondpb.AttesterSlashing,
+		slashing *qrysmpb.AttesterSlashing,
 	) error
 	InsertProposerSlashing(
 		ctx context.Context,
 		state state.ReadOnlyBeaconState,
-		slashing *zondpb.ProposerSlashing,
+		slashing *qrysmpb.ProposerSlashing,
 	) error
 }
 
@@ -27,16 +27,16 @@ type PoolInserter interface {
 // This pool is used by proposers to insert data into new blocks.
 type PoolManager interface {
 	PoolInserter
-	PendingAttesterSlashings(ctx context.Context, state state.ReadOnlyBeaconState, noLimit bool) []*zondpb.AttesterSlashing
-	PendingProposerSlashings(ctx context.Context, state state.ReadOnlyBeaconState, noLimit bool) []*zondpb.ProposerSlashing
-	MarkIncludedAttesterSlashing(as *zondpb.AttesterSlashing)
-	MarkIncludedProposerSlashing(ps *zondpb.ProposerSlashing)
+	PendingAttesterSlashings(ctx context.Context, state state.ReadOnlyBeaconState, noLimit bool) []*qrysmpb.AttesterSlashing
+	PendingProposerSlashings(ctx context.Context, state state.ReadOnlyBeaconState, noLimit bool) []*qrysmpb.ProposerSlashing
+	MarkIncludedAttesterSlashing(as *qrysmpb.AttesterSlashing)
+	MarkIncludedProposerSlashing(ps *qrysmpb.ProposerSlashing)
 }
 
 // Pool is a concrete implementation of PoolManager.
 type Pool struct {
 	lock                    sync.RWMutex
-	pendingProposerSlashing []*zondpb.ProposerSlashing
+	pendingProposerSlashing []*qrysmpb.ProposerSlashing
 	pendingAttesterSlashing []*PendingAttesterSlashing
 	included                map[primitives.ValidatorIndex]bool
 }
@@ -44,6 +44,6 @@ type Pool struct {
 // PendingAttesterSlashing represents an attester slashing in the operation pool.
 // Allows for easy binary searching of included validator indexes.
 type PendingAttesterSlashing struct {
-	attesterSlashing *zondpb.AttesterSlashing
+	attesterSlashing *qrysmpb.AttesterSlashing
 	validatorToSlash primitives.ValidatorIndex
 }

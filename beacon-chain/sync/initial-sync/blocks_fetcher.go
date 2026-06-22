@@ -120,8 +120,9 @@ type fetchRequestResponse struct {
 
 // newBlocksFetcher creates ready to use fetcher.
 func newBlocksFetcher(ctx context.Context, cfg *blocksFetcherConfig) *blocksFetcher {
-	blocksPerPeriod := flags.Get().BlockBatchLimit
-	allowedBlocksBurst := flags.Get().BlockBatchLimitBurstFactor * flags.Get().BlockBatchLimit
+	blockBatchLimit := maxBatchLimit()
+	blocksPerPeriod := blockBatchLimit
+	allowedBlocksBurst := flags.Get().BlockBatchLimitBurstFactor * blockBatchLimit
 	// Allow fetcher to go almost to the full burst capacity (less a single batch).
 	rateLimiter := leakybucket.NewCollector(
 		float64(blocksPerPeriod), int64(allowedBlocksBurst-blocksPerPeriod),
@@ -151,6 +152,25 @@ func newBlocksFetcher(ctx context.Context, cfg *blocksFetcherConfig) *blocksFetc
 		mode:            cfg.mode,
 		quit:            make(chan struct{}),
 	}
+}
+
+// maxBatchLimit returns the block batch limit the initial-sync fetcher should use.
+// If the user-supplied --block-batch-limit exceeds the network's MaxRequestBlocks,
+// it is lowered to the spec limit so peers don't reject our BlocksByRange requests.
+func maxBatchLimit() int {
+	currLimit := flags.Get().BlockBatchLimit
+	maxLimit := params.BeaconNetworkConfig().MaxRequestBlocks
+	castedMaxLimit, err := math.Int(maxLimit)
+	if err != nil {
+		// Should be impossible to hit this case.
+		log.WithError(err).Error("Unable to calculate the max batch limit")
+		return currLimit
+	}
+	if currLimit > castedMaxLimit {
+		log.Warnf("Specified batch size exceeds the block limit of the network, lowering from %d to %d", currLimit, maxLimit)
+		currLimit = castedMaxLimit
+	}
+	return currLimit
 }
 
 // start boots up the fetcher, which starts listening for incoming fetch requests.
@@ -218,14 +238,12 @@ func (f *blocksFetcher) loop() {
 			log.Debug("Context closed, exiting goroutine (blocks fetcher)")
 			return
 		case req := <-f.fetchRequests:
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				select {
 				case <-f.ctx.Done():
 				case f.fetchResponses <- f.handleRequest(req.ctx, req.start, req.count):
 				}
-			}()
+			})
 		}
 	}
 }
@@ -306,12 +324,23 @@ func (f *blocksFetcher) fetchBlocksFromPeer(
 		blocks, err := f.requestBlocks(ctx, req, p)
 		if err != nil {
 			log.WithField("peer", p).WithError(err).Debug("Could not request blocks by range from peer")
+			// Downscore the offending peer directly: when we have multiple
+			// candidates we keep iterating, so the queue-level handler may
+			// never see this error against this specific pid.
+			if errors.Is(err, qrysmsync.ErrInvalidFetchedData) {
+				newScore := f.p2p.Peers().Scorers().BadResponsesScorer().Increment(p)
+				log.WithFields(logrus.Fields{
+					"peer":     p,
+					"reason":   "invalidFetchedData",
+					"newScore": newScore,
+				}).Debug("Downscore peer for invalid fetched data")
+			}
 			continue
 		}
 		f.p2p.Peers().Scorers().BlockProviderScorer().Touch(p)
 		robs, err := sortedROBlockSlice(blocks)
 		if err != nil {
-			log.WithField("peer", p).WithError(err).Debug("invalid BeaconBlocksByRange response")
+			log.WithField("peer", p).WithError(err).Debug("Invalid BeaconBlocksByRange response")
 			continue
 		}
 		return robs, p, err

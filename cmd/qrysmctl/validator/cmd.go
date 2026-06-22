@@ -1,10 +1,8 @@
 package validator
 
 import (
-	"fmt"
 	"os"
 
-	"github.com/logrusorgru/aurora"
 	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/cmd"
 	"github.com/theQRL/qrysm/cmd/validator/accounts"
@@ -68,7 +66,7 @@ var (
 	TokenFlag = &cli.StringFlag{
 		Name:    "token",
 		Aliases: []string{"t"},
-		Usage:   "keymanager API bearer token, note: currently required but may be removed in the future, this is the same token as the web ui token.",
+		Usage:   "keymanager API bearer token read from <wallet-dir>/auth-token on the validator host.",
 	}
 )
 
@@ -78,52 +76,6 @@ var Commands = []*cli.Command{
 		Aliases: []string{"v"},
 		Usage:   "commands that affect the state of validators such as exiting or withdrawing",
 		Subcommands: []*cli.Command{
-			{
-				Name:    "withdraw",
-				Aliases: []string{"w"},
-				Usage:   "Assign Zond withdrawal addresses to validator keys. WARNING: once set values are included they can no longer be updated.",
-				Flags: []cli.Flag{
-					BeaconHostFlag,
-					PathFlag,
-					ConfirmFlag,
-					VerifyOnlyFlag,
-					cmd.ConfigFileFlag,
-					cmd.AcceptTosFlag,
-				},
-				Before: func(cliCtx *cli.Context) error {
-					if err := cmd.LoadFlagsFromConfig(cliCtx, cliCtx.Command.Flags); err != nil {
-						return err
-					}
-					au := aurora.NewAurora(true)
-					if !cliCtx.Bool(cmd.AcceptTosFlag.Name) || !cliCtx.Bool(ConfirmFlag.Name) {
-						fmt.Println(au.Red("===============IMPORTANT==============="))
-						fmt.Println(au.Red("Please read the following carefully"))
-						// TODO(now.youtrack.cloud/issue/TQ-1)
-						fmt.Print("This action will allow the partial withdrawal of amounts over the 32 staked Quanta in your active validator balance. \n" +
-							"You will also be entitled to the full withdrawal of the entire validator balance if your validator has exited. \n" +
-							"Please navigate to our website (https://docs.prylabs.network/) and make sure you understand the full implications of setting your withdrawal address. \n")
-						fmt.Println(au.Red("THIS ACTION WILL NOT BE REVERSIBLE ONCE INCLUDED. "))
-						fmt.Println(au.Red("You will NOT be able to change the address again once changed. "))
-						return fmt.Errorf("both the `--%s` and `--%s` flags are required to run this command. \n"+
-							"By providing these flags the user has read and accepts the TERMS AND CONDITIONS: https://github.com/theQRL/qrysm/blob/master/TERMS_OF_SERVICE.md "+
-							"and confirms the action of setting withdrawals addresses", cmd.AcceptTosFlag.Name, ConfirmFlag.Name)
-					} else {
-						return nil
-					}
-				},
-				Action: func(cliCtx *cli.Context) error {
-					if cliCtx.Bool(VerifyOnlyFlag.Name) {
-						if err := verifyWithdrawalsInPool(cliCtx); err != nil {
-							log.WithError(err).Fatal("Could not verify withdrawal addresses")
-						}
-					} else {
-						if err := setWithdrawalAddresses(cliCtx); err != nil {
-							log.WithError(err).Fatal("Could not set withdrawal addresses")
-						}
-					}
-					return nil
-				},
-			},
 			{
 				Name:    "proposer-settings",
 				Aliases: []string{"w"},

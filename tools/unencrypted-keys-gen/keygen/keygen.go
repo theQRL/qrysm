@@ -15,8 +15,7 @@ type UnencryptedKeysContainer struct {
 
 // UnencryptedKeys is the inner struct of the JSON file.
 type UnencryptedKeys struct {
-	ValidatorKey  []byte `json:"validator_key"`
-	WithdrawalKey []byte `json:"withdrawal_key"`
+	ValidatorKey []byte `json:"validator_key"`
 }
 
 // SaveUnencryptedKeysToFile JSON encodes the container and writes to the writer.

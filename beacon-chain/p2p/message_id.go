@@ -29,7 +29,7 @@ func MsgID(genesisValidatorsRoot []byte, pmsg *pubsubpb.Message) string {
 		// never be hit.
 		msg := make([]byte, 20)
 		copy(msg, "invalid")
-		return string(msg)
+		return bytesutil.UnsafeCastToString(msg)
 	}
 	digest, err := ExtractGossipDigest(*pmsg.Topic)
 	if err != nil {
@@ -37,7 +37,7 @@ func MsgID(genesisValidatorsRoot []byte, pmsg *pubsubpb.Message) string {
 		// never be hit.
 		msg := make([]byte, 20)
 		copy(msg, "invalid")
-		return string(msg)
+		return bytesutil.UnsafeCastToString(msg)
 	}
 	_, fEpoch, err := forks.RetrieveForkDataFromDigest(digest, genesisValidatorsRoot)
 	if err != nil {
@@ -45,7 +45,7 @@ func MsgID(genesisValidatorsRoot []byte, pmsg *pubsubpb.Message) string {
 		// never be hit.
 		msg := make([]byte, 20)
 		copy(msg, "invalid")
-		return string(msg)
+		return bytesutil.UnsafeCastToString(msg)
 	}
 
 	return postAltairMsgID(pmsg, fEpoch)
@@ -69,6 +69,16 @@ func postAltairMsgID(pmsg *pubsubpb.Message, fEpoch primitives.Epoch) string {
 
 	gossipPubSubSize := params.BeaconNetworkConfig().GossipMaxSize
 
+	// Reject oversized compressed frames before doing any snappy work. Any
+	// payload that could legally decompress to <= GossipMaxSize fits within
+	// the snappy worst-case bound — anything larger cannot be a valid gossip
+	// message and is therefore treated as an invalid-snappy frame.
+	if encoder.MaxGossipCompressedSize > 0 && len(pmsg.Data) > encoder.MaxGossipCompressedSize {
+		msg := make([]byte, 20)
+		copy(msg, "invalid")
+		return bytesutil.UnsafeCastToString(msg)
+	}
+
 	decodedData, err := encoder.DecodeSnappy(pmsg.Data, gossipPubSubSize)
 	if err != nil {
 		totalLength, err := math.AddInt(
@@ -82,13 +92,13 @@ func postAltairMsgID(pmsg *pubsubpb.Message, fEpoch primitives.Epoch) string {
 			// should never happen
 			msg := make([]byte, 20)
 			copy(msg, "invalid")
-			return string(msg)
+			return bytesutil.UnsafeCastToString(msg)
 		}
 		if uint64(totalLength) > gossipPubSubSize {
 			// this should never happen
 			msg := make([]byte, 20)
 			copy(msg, "invalid")
-			return string(msg)
+			return bytesutil.UnsafeCastToString(msg)
 		}
 		combinedData := make([]byte, 0, totalLength)
 		combinedData = append(combinedData, params.BeaconNetworkConfig().MessageDomainInvalidSnappy[:]...)
@@ -96,7 +106,7 @@ func postAltairMsgID(pmsg *pubsubpb.Message, fEpoch primitives.Epoch) string {
 		combinedData = append(combinedData, topic...)
 		combinedData = append(combinedData, pmsg.Data...)
 		h := hash.Hash(combinedData)
-		return string(h[:20])
+		return bytesutil.UnsafeCastToString(h[:20])
 	}
 	totalLength, err := math.AddInt(
 		len(params.BeaconNetworkConfig().MessageDomainValidSnappy),
@@ -109,7 +119,7 @@ func postAltairMsgID(pmsg *pubsubpb.Message, fEpoch primitives.Epoch) string {
 		// should never happen
 		msg := make([]byte, 20)
 		copy(msg, "invalid")
-		return string(msg)
+		return bytesutil.UnsafeCastToString(msg)
 	}
 	combinedData := make([]byte, 0, totalLength)
 	combinedData = append(combinedData, params.BeaconNetworkConfig().MessageDomainValidSnappy[:]...)
@@ -117,5 +127,5 @@ func postAltairMsgID(pmsg *pubsubpb.Message, fEpoch primitives.Epoch) string {
 	combinedData = append(combinedData, topic...)
 	combinedData = append(combinedData, decodedData...)
 	h := hash.Hash(combinedData)
-	return string(h[:20])
+	return bytesutil.UnsafeCastToString(h[:20])
 }

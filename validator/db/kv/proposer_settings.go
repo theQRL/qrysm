@@ -17,7 +17,7 @@ import (
 var NoProposerSettingsFound = errors.New("no proposer settings found in bucket")
 
 // UpdateProposerSettingsForPubkey updates the existing settings for an internal representation of the proposers settings file at a particular public key
-func (s *Store) UpdateProposerSettingsForPubkey(ctx context.Context, pubkey [field_params.DilithiumPubkeyLength]byte, options *validatorServiceConfig.ProposerOption) error {
+func (s *Store) UpdateProposerSettingsForPubkey(ctx context.Context, pubkey [field_params.MLDSA87PubkeyLength]byte, options *validatorServiceConfig.ProposerOption) error {
 	_, span := trace.StartSpan(ctx, "validator.db.UpdateProposerSettingsForPubkey")
 	defer span.End()
 	err := s.db.Update(func(tx *bolt.Tx) error {
@@ -35,7 +35,7 @@ func (s *Store) UpdateProposerSettingsForPubkey(ctx context.Context, pubkey [fie
 			return errors.Wrap(err, "failed to convert payload to proposer settings")
 		}
 		if settings.ProposeConfig == nil {
-			settings.ProposeConfig = make(map[[field_params.DilithiumPubkeyLength]byte]*validatorServiceConfig.ProposerOption)
+			settings.ProposeConfig = make(map[[field_params.MLDSA87PubkeyLength]byte]*validatorServiceConfig.ProposerOption)
 		}
 		settings.ProposeConfig[pubkey] = options
 		m, err := proto.Marshal(settings.ToPayload())

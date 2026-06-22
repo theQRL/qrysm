@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "internal",
     srcs = [
         "client.go",
         "log.go",
@@ -12,6 +12,6 @@ go_library(
 )
 
 go_test(
-    name = "go_default_test",
+    name = "internal_test",
     srcs = ["client_test.go"],
 )

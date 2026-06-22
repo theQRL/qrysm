@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package theqrl.qrl.v1alpha1;
+
+import "proto/qrysm/v1alpha1/beacon_block.proto";
+import "proto/qrysm/v1alpha1/beacon_state.proto";
+
+option csharp_namespace = "TheQRL.QRL.V1alpha1";
+option go_package = "github.com/theQRL/qrysm/proto/qrysm/v1alpha1;qrl";
+option java_multiple_files = true;
+option java_outer_classname = "ExecutionChainProto";
+option java_package = "org.theqrl.qrl.v1alpha1";
+option php_namespace = "TheQRL\\QRL\\v1alpha1";
+
+// ExecutionChainData is a container which holds all the relevant execution
+// information
+message ExecutionChainData {
+    LatestExecutionData current_execution_data = 1 ;
+    ChainStartData chainstart_data = 2;
+    BeaconStateZond beacon_state = 3;
+    SparseMerkleTrie trie = 4;
+    repeated DepositContainer deposit_containers = 5;
+    DepositSnapshot deposit_snapshot = 6;
+}
+
+// DepositSnapshot represents an EIP-4881 deposit snapshot
+message DepositSnapshot {
+    repeated bytes finalized = 1;
+    bytes deposit_root = 2;
+    uint64 deposit_count = 3;
+    bytes execution_hash = 4;
+    uint64 execution_depth = 5;
+}
+// LatestExecutionData contains the current state of the execution chain.
+message LatestExecutionData {
+    uint64 block_height = 1;
+    uint64 block_time = 2;
+    bytes block_hash = 3;
+    uint64 last_requested_block = 4;
+}
+
+// ChainStartData contains all the information related to chainstart.
+message ChainStartData {
+    uint64 genesis_time = 1;
+    uint64 genesis_block = 2;
+    ExecutionData execution_data = 3;
+}
+
+// SparseMerkleTrie is used to describe the model of our deposit trie.
+message SparseMerkleTrie {
+    uint64 depth = 1;
+    repeated TrieLayer layers = 2;
+    repeated bytes original_items = 3;
+}
+
+// TrieLayer is used to represent each layer in the deposit tree due to
+// the lack of protobuf support for multi-dimensional arrays.(Ex: 3d,4d,...)
+message TrieLayer {
+    repeated bytes layer = 1;
+}
+
+// DepositContainer defines a container that can be used to store
+// deposit related information for a particular deposit.
+message DepositContainer {
+    int64 index = 1;
+    uint64 execution_block_height = 2;
+    Deposit deposit = 3;
+    bytes deposit_root = 4;
+}

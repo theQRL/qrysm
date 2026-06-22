@@ -25,8 +25,8 @@ import (
 	"github.com/pkg/errors"
 	fastssz "github.com/prysmaticlabs/fastssz"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/api/gateway"
 	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
 	"github.com/theQRL/qrysm/async/event"
@@ -42,10 +42,9 @@ import (
 	"github.com/theQRL/qrysm/monitoring/backup"
 	"github.com/theQRL/qrysm/monitoring/prometheus"
 	tracing2 "github.com/theQRL/qrysm/monitoring/tracing"
+	qrlpbservice "github.com/theQRL/qrysm/proto/qrl/service"
 	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
-	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
 	"github.com/theQRL/qrysm/runtime"
-	"github.com/theQRL/qrysm/runtime/debug"
 	"github.com/theQRL/qrysm/runtime/prereqs"
 	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/theQRL/qrysm/validator/accounts/wallet"
@@ -60,7 +59,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-// ValidatorClient defines an instance of a Zond validator that manages
+// ValidatorClient defines an instance of a QRL validator that manages
 // the entire lifecycle of services attached to it participating in proof of stake.
 type ValidatorClient struct {
 	cliCtx            *cli.Context
@@ -68,6 +67,7 @@ type ValidatorClient struct {
 	cancel            context.CancelFunc
 	db                *kv.Store
 	services          *runtime.ServiceRegistry // Lifecycle and service store.
+	closeOnce         sync.Once
 	lock              sync.RWMutex
 	wallet            *wallet.Wallet
 	walletInitialized *event.Feed
@@ -150,7 +150,6 @@ func (c *ValidatorClient) Start() {
 		defer signal.Stop(sigc)
 		<-sigc
 		log.Info("Got interrupt, shutting down...")
-		debug.Exit(c.cliCtx) // Ensure trace and CPU profile data are flushed.
 		go c.Close()
 		for i := 10; i > 0; i-- {
 			<-sigc
@@ -158,7 +157,7 @@ func (c *ValidatorClient) Start() {
 				log.WithField("times", i-1).Info("Already shutting down, interrupt more to panic.")
 			}
 		}
-		panic("Panic closing the validator client")
+		panic("Panic closing the validator client") // lint:nopanic -- This is just resurfacing the original panic.
 	}()
 
 	// Wait for stop channel to be closed.
@@ -167,13 +166,21 @@ func (c *ValidatorClient) Start() {
 
 // Close handles graceful shutdown of the system.
 func (c *ValidatorClient) Close() {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	c.closeOnce.Do(func() {
+		c.lock.Lock()
+		defer c.lock.Unlock()
 
-	c.services.StopAll()
-	log.Info("Stopping Qrysm validator")
-	c.cancel()
-	close(c.stop)
+		if c.services != nil {
+			c.services.StopAll()
+		}
+		log.Info("Stopping Qrysm validator")
+		if c.cancel != nil {
+			c.cancel()
+		}
+		if c.stop != nil {
+			close(c.stop)
+		}
+	})
 }
 
 func (c *ValidatorClient) initializeFromCLI(cliCtx *cli.Context) error {
@@ -281,7 +288,7 @@ func (c *ValidatorClient) registerPrometheusService(cliCtx *cli.Context) error {
 			additionalHandlers,
 			prometheus.Handler{
 				Path:    "/db/backup",
-				Handler: backup.BackupHandler(c.db, cliCtx.String(cmd.BackupWebhookOutputDir.Name)),
+				Handler: backup.Handler(c.db, cliCtx.String(cmd.BackupWebhookOutputDir.Name)),
 			},
 		)
 	}
@@ -396,7 +403,7 @@ func Web3SignerConfig(cliCtx *cli.Context) (*remoteweb3signer.SetupConfig, error
 			}
 			if len(pks) > 0 {
 				pks = slice.Unique[string](pks)
-				var validatorKeys [][field_params.DilithiumPubkeyLength]byte
+				var validatorKeys [][field_params.MLDSA87PubkeyLength]byte
 				for _, key := range pks {
 					decodedKey, decodeErr := hexutil.Decode(key)
 					if decodeErr != nil {
@@ -462,7 +469,7 @@ func proposerSettings(cliCtx *cli.Context, db iface.ValidatorDB) (*validatorServ
 	}
 	recipient, err := common.NewAddressFromString(fileConfig.DefaultConfig.FeeRecipient)
 	if err != nil {
-		return nil, errors.New("default fileConfig fee recipient is not a valid zond address")
+		return nil, errors.New("default fileConfig fee recipient is not a valid qrl address")
 	}
 	psExists, err := db.ProposerSettingsExists(cliCtx.Context)
 	if err != nil {
@@ -496,14 +503,14 @@ func proposerSettings(cliCtx *cli.Context, db iface.ValidatorDB) (*validatorServ
 	}
 
 	if fileConfig.ProposerConfig != nil && len(fileConfig.ProposerConfig) != 0 {
-		vpSettings.ProposeConfig = make(map[[field_params.DilithiumPubkeyLength]byte]*validatorServiceConfig.ProposerOption)
+		vpSettings.ProposeConfig = make(map[[field_params.MLDSA87PubkeyLength]byte]*validatorServiceConfig.ProposerOption)
 		for key, option := range fileConfig.ProposerConfig {
 			decodedKey, err := hexutil.Decode(key)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not decode public key %s", key)
 			}
-			if len(decodedKey) != field_params.DilithiumPubkeyLength {
-				return nil, fmt.Errorf("%v  is not a dilithium public key", key)
+			if len(decodedKey) != field_params.MLDSA87PubkeyLength {
+				return nil, fmt.Errorf("%v  is not a ml-dsa-87 public key", key)
 			}
 			if err := verifyOption(key, option); err != nil {
 				return nil, err
@@ -552,7 +559,7 @@ func verifyOption(key string, option *validatorpb.ProposerOptionPayload) error {
 		return fmt.Errorf("fee recipient is required for proposer %s", key)
 	}
 	if !common.IsAddress(option.FeeRecipient) {
-		return errors.New("fee recipient is not a valid zond address")
+		return errors.New("fee recipient is not a valid qrl address")
 	}
 	if err := warnNonChecksummedAddress(option.FeeRecipient); err != nil {
 		return err
@@ -563,17 +570,17 @@ func verifyOption(key string, option *validatorpb.ProposerOptionPayload) error {
 func handleNoProposerSettingsFlagsProvided(cliCtx *cli.Context,
 	db iface.ValidatorDB,
 	builderConfigFromFlag *validatorServiceConfig.BuilderConfig) (*validatorServiceConfig.ProposerSettings, error) {
-	log.Info("no proposer settings files have been provided, attempting to load from db.")
+	log.Info("No proposer settings files have been provided, attempting to load from db.")
 	// checks db if proposer settings exist if none is provided.
 	settings, err := db.ProposerSettings(cliCtx.Context)
 	if err == nil {
 		// process any overrides to builder settings
 		overrideBuilderSettings(settings, builderConfigFromFlag)
 		// if settings are empty
-		log.Info("successfully loaded proposer settings from db.")
+		log.Info("Successfully loaded proposer settings from db.")
 		return settings, nil
 	} else {
-		log.WithError(err).Warn("no proposer settings will be loaded from the db")
+		log.WithError(err).Warn("No proposer settings will be loaded from the db")
 	}
 
 	if cliCtx.Bool(flags.EnableBuilderFlag.Name) {
@@ -591,7 +598,7 @@ func handleNoProposerSettingsFlagsProvided(cliCtx *cli.Context,
 func overrideBuilderSettings(settings *validatorServiceConfig.ProposerSettings, builderConfigFromFlag *validatorServiceConfig.BuilderConfig) {
 	// override the db settings with the results based on whether the --enable-builder flag is provided.
 	if builderConfigFromFlag == nil {
-		log.Infof("proposer settings loaded from db. validator registration to builder is not enabled, please use the --%s flag if you wish to use a builder.", flags.EnableBuilderFlag.Name)
+		log.Infof("Proposer settings loaded from db. validator registration to builder is not enabled, please use the --%s flag if you wish to use a builder.", flags.EnableBuilderFlag.Name)
 	}
 	if settings.ProposeConfig != nil {
 		for key := range settings.ProposeConfig {
@@ -629,10 +636,10 @@ func warnNonChecksummedAddress(feeRecipient string) error {
 		return errors.Wrapf(err, "could not decode fee recipient %s", feeRecipient)
 	}
 	if !mixedcaseAddress.ValidChecksum() {
-		log.Warnf("Fee recipient %s is not a checksum Zond address. "+
+		log.Warnf("Fee recipient %s is not a checksum QRL address. "+
 			"The checksummed address is %s and will be used as the fee recipient. "+
 			"We recommend using a mixed-case address (checksum) "+
-			"to prevent spelling mistakes in your fee recipient Zond address", feeRecipient, mixedcaseAddress.Address().Hex())
+			"to prevent spelling mistakes in your fee recipient QRL address", feeRecipient, mixedcaseAddress.Address().Hex())
 	}
 	return nil
 }
@@ -686,6 +693,8 @@ func (c *ValidatorClient) registerRPCService(cliCtx *cli.Context) error {
 		ClientGrpcRetryDelay:     grpcRetryDelay,
 		ClientGrpcHeaders:        strings.Split(grpcHeaders, ","),
 		ClientWithCert:           clientCert,
+		BeaconApiTimeout:         time.Second * 30,
+		BeaconApiEndpoint:        cliCtx.String(flags.BeaconRESTApiProviderFlag.Name),
 	})
 	return c.services.RegisterService(server)
 }
@@ -713,7 +722,7 @@ func (c *ValidatorClient) registerRPCGatewayService(cliCtx *cli.Context) error {
 	maxCallSize := cliCtx.Uint64(cmd.GrpcMaxCallRecvMsgSizeFlag.Name)
 
 	registrations := []gateway.PbHandlerRegistration{
-		zondpbservice.RegisterKeyManagementHandler,
+		qrlpbservice.RegisterKeyManagementHandler,
 	}
 	gwmux := gwruntime.NewServeMux(
 		gwruntime.WithMarshalerOption(gwruntime.MIMEWildcard, &gwruntime.HTTPBodyMarshaler{
@@ -734,11 +743,11 @@ func (c *ValidatorClient) registerRPCGatewayService(cliCtx *cli.Context) error {
 	)
 	muxHandler := func(apiMware *apimiddleware.ApiProxyMiddleware, h http.HandlerFunc, w http.ResponseWriter, req *http.Request) {
 		// The validator gateway handler requires this special logic as it serves two kinds of APIs, namely
-		// the standard validator keymanager API under the /zond namespace, and the Qrysm internal
+		// the standard validator keymanager API under the /qrl namespace, and the Qrysm internal
 		// validator API under the /api namespace. Finally, it also serves requests to host the validator web UI.
-		if strings.HasPrefix(req.URL.Path, "/api/zond/") {
+		if strings.HasPrefix(req.URL.Path, "/api/qrl/") {
 			req.URL.Path = strings.Replace(req.URL.Path, "/api", "", 1)
-			// If the prefix has /zond/, we handle it with the standard API gateway middleware.
+			// If the prefix has /qrl/, we handle it with the standard API gateway middleware.
 			apiMware.ServeHTTP(w, req)
 		} else if strings.HasPrefix(req.URL.Path, "/api") {
 			req.URL.Path = strings.Replace(req.URL.Path, "/api", "", 1)
@@ -749,7 +758,7 @@ func (c *ValidatorClient) registerRPCGatewayService(cliCtx *cli.Context) error {
 
 	pbHandler := &gateway.PbMux{
 		Registrations: registrations,
-		Patterns:      []string{"/internal/zond/v1/"},
+		Patterns:      []string{"/internal/qrl/v1/"},
 		Mux:           gwmux,
 	}
 	opts := []gateway.Option{
@@ -802,7 +811,7 @@ func clearDB(ctx context.Context, dataDir string, force bool) error {
 	return nil
 }
 
-func unmarshalFromURL(ctx context.Context, from string, to interface{}) error {
+func unmarshalFromURL(ctx context.Context, from string, to any) error {
 	u, err := url.ParseRequestURI(from)
 	if err != nil {
 		return err
@@ -822,7 +831,7 @@ func unmarshalFromURL(ctx context.Context, from string, to interface{}) error {
 	defer func(Body io.ReadCloser) {
 		err = Body.Close()
 		if err != nil {
-			log.WithError(err).Error("failed to close response body")
+			log.WithError(err).Error("Failed to close response body")
 		}
 	}(resp.Body)
 	if resp.StatusCode != http.StatusOK {
@@ -834,7 +843,7 @@ func unmarshalFromURL(ctx context.Context, from string, to interface{}) error {
 	return nil
 }
 
-func unmarshalFromFile(ctx context.Context, from string, to interface{}) error {
+func unmarshalFromFile(ctx context.Context, from string, to any) error {
 	if ctx == nil {
 		return errors.New("node: nil context passed to unmarshalFromFile")
 	}

@@ -1,19 +1,19 @@
-load("@qrysm//tools/go:def.bzl", "go_library")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "export-genesis_lib",
     srcs = ["main.go"],
     importpath = "github.com/theQRL/qrysm/tools/interop/export-genesis",
     visibility = ["//visibility:private"],
     deps = [
-        "//beacon-chain/db:go_default_library",
-        "//io/file:go_default_library",
+        "//beacon-chain/db",
+        "//io/file",
     ],
 )
 
 go_binary(
     name = "export-genesis",
-    embed = [":go_default_library"],
+    embed = [":export-genesis_lib"],
     visibility = ["//visibility:public"],
 )

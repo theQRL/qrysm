@@ -1,5 +1,5 @@
 // Package interopcoldstart allows for spinning up a deterministic-genesis
-// local chain without the need for eth1 deposits useful for
+// local chain without the need for execution deposits useful for
 // local client development and interoperability testing.
 package interopcoldstart
 
@@ -14,9 +14,10 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/execution"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime"
 	"github.com/theQRL/qrysm/runtime/interop"
 	"github.com/theQRL/qrysm/time/slots"
@@ -32,26 +33,26 @@ type Service struct {
 	cfg                *Config
 	ctx                context.Context
 	cancel             context.CancelFunc
-	chainStartDeposits []*zondpb.Deposit
+	chainStartDeposits []*qrysmpb.Deposit
 }
 
 // All of these methods are stubs as they are not used by a node running with deterministic-genesis.
 
-func (s *Service) AllDepositContainers(ctx context.Context) []*zondpb.DepositContainer {
+func (s *Service) AllDepositContainers(ctx context.Context) []*qrysmpb.DepositContainer {
 	log.Errorf("AllDepositContainers should not be called")
 	return nil
 }
 
-func (s *Service) InsertPendingDeposit(ctx context.Context, d *zondpb.Deposit, blockNum uint64, index int64, depositRoot [32]byte) {
+func (s *Service) InsertPendingDeposit(ctx context.Context, d *qrysmpb.Deposit, blockNum uint64, index int64, depositRoot [32]byte) {
 	log.Errorf("InsertPendingDeposit should not be called")
 }
 
-func (s *Service) PendingDeposits(ctx context.Context, untilBlk *big.Int) []*zondpb.Deposit {
+func (s *Service) PendingDeposits(ctx context.Context, untilBlk *big.Int) []*qrysmpb.Deposit {
 	log.Errorf("PendingDeposits should not be called")
 	return nil
 }
 
-func (s *Service) PendingContainers(ctx context.Context, untilBlk *big.Int) []*zondpb.DepositContainer {
+func (s *Service) PendingContainers(ctx context.Context, untilBlk *big.Int) []*qrysmpb.DepositContainer {
 	log.Errorf("PendingContainers should not be called")
 	return nil
 }
@@ -96,11 +97,11 @@ func (s *Service) Start() {
 		if err != nil {
 			log.WithError(err).Fatal("Could not read pre-loaded state")
 		}
-		genesisState := &zondpb.BeaconStateCapella{}
+		genesisState := &qrysmpb.BeaconStateZond{}
 		if err := genesisState.UnmarshalSSZ(data); err != nil {
 			log.WithError(err).Fatal("Could not unmarshal pre-loaded state")
 		}
-		genesisTrie, err := state_native.InitializeFromProtoCapella(genesisState)
+		genesisTrie, err := state_native.InitializeFromProtoZond(genesisState)
 		if err != nil {
 			log.WithError(err).Fatal("Could not get state trie")
 		}
@@ -111,9 +112,9 @@ func (s *Service) Start() {
 	}
 
 	// Save genesis state in db
-	ee := &enginev1.ExecutionPayloadCapella{
+	ee := &enginev1.ExecutionPayloadZond{
 		ParentHash:    make([]byte, 32),
-		FeeRecipient:  make([]byte, 20),
+		FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 		StateRoot:     make([]byte, 32),
 		ReceiptsRoot:  make([]byte, 32),
 		LogsBloom:     make([]byte, 256),
@@ -121,11 +122,11 @@ func (s *Service) Start() {
 		BaseFeePerGas: make([]byte, 32),
 		BlockHash:     make([]byte, 32),
 	}
-	genesisState, _, err := interop.GenerateGenesisStateCapella(s.ctx, s.cfg.GenesisTime, s.cfg.NumValidators, ee, &zondpb.Eth1Data{BlockHash: make([]byte, 32)})
+	genesisState, _, err := interop.GenerateGenesisStateZond(s.ctx, s.cfg.GenesisTime, s.cfg.NumValidators, ee, &qrysmpb.ExecutionData{BlockHash: make([]byte, 32)})
 	if err != nil {
 		log.WithError(err).Fatal("Could not generate interop genesis state")
 	}
-	genesisTrie, err := state_native.InitializeFromProtoCapella(genesisState)
+	genesisTrie, err := state_native.InitializeFromProtoZond(genesisState)
 	if err != nil {
 		log.WithError(err).Fatal("Could not get state trie")
 	}
@@ -155,32 +156,18 @@ func (_ *Service) Status() error {
 }
 
 // AllDeposits mocks out the deposit cache functionality for interop.
-func (_ *Service) AllDeposits(_ context.Context, _ *big.Int) []*zondpb.Deposit {
-	return []*zondpb.Deposit{}
+func (_ *Service) AllDeposits(_ context.Context, _ *big.Int) []*qrysmpb.Deposit {
+	return []*qrysmpb.Deposit{}
 }
 
-// ChainStartEth1Data mocks out the powchain functionality for interop.
-func (_ *Service) ChainStartEth1Data() *zondpb.Eth1Data {
-	return &zondpb.Eth1Data{}
-}
-
-// PreGenesisState returns an empty beacon state.
-func (_ *Service) PreGenesisState() state.BeaconState {
-	s, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{})
-	if err != nil {
-		panic("could not initialize state")
-	}
-	return s
-}
-
-// ClearPreGenesisData --
-func (_ *Service) ClearPreGenesisData() {
-	// no-op
+// ChainStartExecutionData mocks out the execution chain functionality for interop.
+func (_ *Service) ChainStartExecutionData() *qrysmpb.ExecutionData {
+	return &qrysmpb.ExecutionData{}
 }
 
 // DepositByPubkey mocks out the deposit cache functionality for interop.
-func (_ *Service) DepositByPubkey(_ context.Context, _ []byte) (*zondpb.Deposit, *big.Int) {
-	return &zondpb.Deposit{}, nil
+func (_ *Service) DepositByPubkey(_ context.Context, _ []byte) (*qrysmpb.Deposit, *big.Int) {
+	return &qrysmpb.Deposit{}, nil
 }
 
 // DepositsNumberAndRootAtHeight mocks out the deposit cache functionality for interop.
@@ -194,8 +181,8 @@ func (_ *Service) FinalizedDeposits(ctx context.Context) (cache.FinalizedDeposit
 }
 
 // NonFinalizedDeposits mocks out the deposit cache functionality for interop.
-func (_ *Service) NonFinalizedDeposits(_ context.Context, _ int64, _ *big.Int) []*zondpb.Deposit {
-	return []*zondpb.Deposit{}
+func (_ *Service) NonFinalizedDeposits(_ context.Context, _ int64, _ *big.Int) []*qrysmpb.Deposit {
+	return []*qrysmpb.Deposit{}
 }
 
 func (s *Service) saveGenesisState(ctx context.Context, genesisState state.BeaconState) error {
@@ -203,12 +190,12 @@ func (s *Service) saveGenesisState(ctx context.Context, genesisState state.Beaco
 		return err
 	}
 
-	s.chainStartDeposits = make([]*zondpb.Deposit, genesisState.NumValidators())
+	s.chainStartDeposits = make([]*qrysmpb.Deposit, genesisState.NumValidators())
 
 	for i := primitives.ValidatorIndex(0); uint64(i) < uint64(genesisState.NumValidators()); i++ {
 		pk := genesisState.PubkeyAtIndex(i)
-		s.chainStartDeposits[i] = &zondpb.Deposit{
-			Data: &zondpb.Deposit_Data{
+		s.chainStartDeposits[i] = &qrysmpb.Deposit{
+			Data: &qrysmpb.Deposit_Data{
 				PublicKey: pk[:],
 			},
 		}

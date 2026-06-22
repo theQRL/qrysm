@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/theQRL/go-bitfield"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
@@ -13,20 +13,20 @@ import (
 func TestAttCaches_hasSeenBit(t *testing.T) {
 	c := NewAttCaches()
 
-	seenA1 := util.HydrateAttestation(&zondpb.Attestation{AggregationBits: bitfield.Bitlist{0b10000011}})
-	seenA2 := util.HydrateAttestation(&zondpb.Attestation{AggregationBits: bitfield.Bitlist{0b11100000}})
+	seenA1 := util.HydrateAttestation(&qrysmpb.Attestation{AggregationBits: bitfield.Bitlist{0b10000011}})
+	seenA2 := util.HydrateAttestation(&qrysmpb.Attestation{AggregationBits: bitfield.Bitlist{0b11100000}})
 	require.NoError(t, c.insertSeenBit(seenA1))
 	require.NoError(t, c.insertSeenBit(seenA2))
 	tests := []struct {
-		att  *zondpb.Attestation
+		att  *qrysmpb.Attestation
 		want bool
 	}{
-		{att: util.HydrateAttestation(&zondpb.Attestation{AggregationBits: bitfield.Bitlist{0b10000000}}), want: true},
-		{att: util.HydrateAttestation(&zondpb.Attestation{AggregationBits: bitfield.Bitlist{0b10000001}}), want: true},
-		{att: util.HydrateAttestation(&zondpb.Attestation{AggregationBits: bitfield.Bitlist{0b11100000}}), want: true},
-		{att: util.HydrateAttestation(&zondpb.Attestation{AggregationBits: bitfield.Bitlist{0b10000011}}), want: true},
-		{att: util.HydrateAttestation(&zondpb.Attestation{AggregationBits: bitfield.Bitlist{0b10001000}}), want: false},
-		{att: util.HydrateAttestation(&zondpb.Attestation{AggregationBits: bitfield.Bitlist{0b11110111}}), want: false},
+		{att: util.HydrateAttestation(&qrysmpb.Attestation{AggregationBits: bitfield.Bitlist{0b10000000}}), want: true},
+		{att: util.HydrateAttestation(&qrysmpb.Attestation{AggregationBits: bitfield.Bitlist{0b10000001}}), want: true},
+		{att: util.HydrateAttestation(&qrysmpb.Attestation{AggregationBits: bitfield.Bitlist{0b11100000}}), want: true},
+		{att: util.HydrateAttestation(&qrysmpb.Attestation{AggregationBits: bitfield.Bitlist{0b10000011}}), want: true},
+		{att: util.HydrateAttestation(&qrysmpb.Attestation{AggregationBits: bitfield.Bitlist{0b10001000}}), want: false},
+		{att: util.HydrateAttestation(&qrysmpb.Attestation{AggregationBits: bitfield.Bitlist{0b11110111}}), want: false},
 	}
 	for _, tt := range tests {
 		got, err := c.hasSeenBit(tt.att)
@@ -39,7 +39,7 @@ func TestAttCaches_hasSeenBit(t *testing.T) {
 
 func TestAttCaches_insertSeenBitDuplicates(t *testing.T) {
 	c := NewAttCaches()
-	att1 := util.HydrateAttestation(&zondpb.Attestation{AggregationBits: bitfield.Bitlist{0b10000011}})
+	att1 := util.HydrateAttestation(&qrysmpb.Attestation{AggregationBits: bitfield.Bitlist{0b10000011}})
 	r, err := hashFn(att1.Data)
 	require.NoError(t, err)
 	require.NoError(t, c.insertSeenBit(att1))

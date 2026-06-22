@@ -19,8 +19,9 @@ import (
 	validatorserviceconfig "github.com/theQRL/qrysm/config/validator/service"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/validator/accounts/wallet"
+	beaconApi "github.com/theQRL/qrysm/validator/client/beacon-api"
 	beaconChainClientFactory "github.com/theQRL/qrysm/validator/client/beacon-chain-client-factory"
 	"github.com/theQRL/qrysm/validator/client/iface"
 	nodeClientFactory "github.com/theQRL/qrysm/validator/client/node-client-factory"
@@ -33,6 +34,7 @@ import (
 	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -45,7 +47,7 @@ type SyncChecker interface {
 // GenesisFetcher can retrieve genesis information such as
 // the genesis time and the validator deposit contract address.
 type GenesisFetcher interface {
-	GenesisInfo(ctx context.Context) (*zondpb.Genesis, error)
+	GenesisInfo(ctx context.Context) (*qrysmpb.Genesis, error)
 }
 
 // ValidatorService represents a service to manage the validator client
@@ -137,7 +139,7 @@ func NewValidatorService(ctx context.Context, cfg *Config) (*ValidatorService, e
 
 	s.ctx = grpcutil.AppendHeaders(ctx, s.grpcHeaders)
 
-	grpcConn, err := grpc.DialContext(ctx, s.endpoint, dialOpts...)
+	grpcConn, err := newGrpcConnectionProvider(s.ctx, s.endpoint, dialOpts)
 	if err != nil {
 		return s, err
 	}
@@ -148,6 +150,7 @@ func NewValidatorService(ctx context.Context, cfg *Config) (*ValidatorService, e
 		grpcConn,
 		cfg.BeaconApiEndpoint,
 		cfg.BeaconApiTimeout,
+		grpcConn.Close,
 	)
 
 	return s, nil
@@ -162,7 +165,7 @@ func (v *ValidatorService) Start() {
 		BufferItems: 64,   // number of keys per Get buffer.
 	})
 	if err != nil {
-		panic(err)
+		panic(err) // lint:nopanic
 	}
 
 	aggregatedSlotCommitteeIDCache := lruwrpr.New(int(params.BeaconConfig().MaxCommitteesPerSlot))
@@ -172,7 +175,7 @@ func (v *ValidatorService) Start() {
 		log.WithError(err).Error("Could not read slashable public keys from disk")
 		return
 	}
-	slashablePublicKeys := make(map[[field_params.DilithiumPubkeyLength]byte]bool)
+	slashablePublicKeys := make(map[[field_params.MLDSA87PubkeyLength]byte]bool)
 	for _, pubKey := range sPubKeys {
 		slashablePublicKeys[pubKey] = true
 	}
@@ -185,19 +188,27 @@ func (v *ValidatorService) Start() {
 
 	validatorClient := validatorClientFactory.NewValidatorClient(v.conn)
 	beaconClient := beaconChainClientFactory.NewBeaconChainClient(v.conn)
+	nodeClient := nodeClientFactory.NewNodeClient(v.conn)
+	qrysmBeaconClient := beaconChainClientFactory.NewQrysmChainClient(v.conn, nodeClient)
+	dutyDependentRootTimeout := v.conn.GetBeaconApiTimeout()
+	if dutyDependentRootTimeout == 0 || dutyDependentRootTimeout > time.Second {
+		dutyDependentRootTimeout = time.Second
+	}
 
 	valStruct := &validator{
 		db:                             v.db,
 		validatorClient:                validatorClient,
+		dutyDependentRootProvider:      beaconApi.NewDutyDependentRootsProvider(v.conn.GetBeaconApiUrl(), dutyDependentRootTimeout),
 		beaconClient:                   beaconClient,
-		node:                           nodeClientFactory.NewNodeClient(v.conn),
+		qrysmBeaconClient:              qrysmBeaconClient,
+		node:                           nodeClient,
 		graffiti:                       v.graffiti,
 		logValidatorBalances:           v.logValidatorBalances,
 		emitAccountMetrics:             v.emitAccountMetrics,
-		startBalances:                  make(map[[field_params.DilithiumPubkeyLength]byte]uint64),
-		prevBalance:                    make(map[[field_params.DilithiumPubkeyLength]byte]uint64),
-		pubkeyToValidatorIndex:         make(map[[field_params.DilithiumPubkeyLength]byte]primitives.ValidatorIndex),
-		signedValidatorRegistrations:   make(map[[field_params.DilithiumPubkeyLength]byte]*zondpb.SignedValidatorRegistrationV1),
+		startBalances:                  make(map[[field_params.MLDSA87PubkeyLength]byte]uint64),
+		prevBalance:                    make(map[[field_params.MLDSA87PubkeyLength]byte]uint64),
+		pubkeyToValidatorIndex:         make(map[[field_params.MLDSA87PubkeyLength]byte]primitives.ValidatorIndex),
+		signedValidatorRegistrations:   make(map[[field_params.MLDSA87PubkeyLength]byte]*qrysmpb.SignedValidatorRegistrationV1),
 		attLogs:                        make(map[[32]byte]*attSubmitted),
 		domainDataCache:                cache,
 		aggregatedSlotCommitteeIDCache: aggregatedSlotCommitteeIDCache,
@@ -214,6 +225,9 @@ func (v *ValidatorService) Start() {
 		proposerSettings:         v.proposerSettings,
 		walletInitializedChannel: make(chan *wallet.Wallet, 1),
 	}
+	if tracker, ok := v.conn.GetGrpcClientConn().(grpcHealthTracker); ok {
+		valStruct.grpcHealthTracker = tracker
+	}
 
 	// To resolve a race condition at startup due to the interface
 	// nature of the abstracted block type. We initialize
@@ -226,7 +240,7 @@ func (v *ValidatorService) Start() {
 	close(tempChan)
 
 	v.validator = valStruct
-	go run(v.ctx, v.validator)
+	go runWithRecovery(v.ctx, v.validator, v.waitForRunnerRecovery)
 }
 
 // Stop the validator service.
@@ -234,7 +248,7 @@ func (v *ValidatorService) Stop() error {
 	v.cancel()
 	log.Info("Stopping service")
 	if v.conn != nil {
-		return v.conn.GetGrpcClientConn().Close()
+		return v.conn.Close()
 	}
 	return nil
 }
@@ -245,6 +259,30 @@ func (v *ValidatorService) Status() error {
 		return errors.New("no connection to beacon RPC")
 	}
 	return nil
+}
+
+func (v *ValidatorService) waitForRunnerRecovery(ctx context.Context) error {
+	if err := waitForRetry(ctx); err != nil {
+		return err
+	}
+	for {
+		if tracker, ok := v.conn.GetGrpcClientConn().(grpcHealthTracker); ok {
+			if err := tracker.EnsureHealthy(ctx); err == nil {
+				return nil
+			} else {
+				log.WithError(err).Warn("Validator service health check failed, waiting for healthy beacon node...")
+			}
+		} else if syncing, err := v.Syncing(ctx); err == nil && !syncing {
+			return nil
+		} else if err != nil {
+			log.WithError(err).Warn("Validator service health check failed, waiting for healthy beacon node...")
+		} else {
+			log.Warn("Validator service health check failed, waiting for healthy beacon node...")
+		}
+		if err := waitForRetry(ctx); err != nil {
+			return err
+		}
+	}
 }
 
 // InteropKeysConfig returns the useInteropKeys flag.
@@ -295,7 +333,7 @@ func ConstructDialOptions(
 		transportSecurity = grpc.WithTransportCredentials(creds)
 	} else {
 		// TODO(now.youtrack.cloud/issue/TQ-1)
-		transportSecurity = grpc.WithInsecure()
+		transportSecurity = grpc.WithTransportCredentials(insecure.NewCredentials())
 		log.Warn("You are using an insecure gRPC connection. If you are running your beacon node and " +
 			"validator on the same machines, you can ignore this message. If you want to know " +
 			"how to enable secure connections, see: https://docs.prylabs.network/docs/prysm-usage/secure-grpc")
@@ -334,7 +372,7 @@ func ConstructDialOptions(
 
 // Syncing returns whether or not the beacon node is currently synchronizing the chain.
 func (v *ValidatorService) Syncing(ctx context.Context) (bool, error) {
-	nc := zondpb.NewNodeClient(v.conn.GetGrpcClientConn())
+	nc := qrysmpb.NewNodeClient(v.conn.GetGrpcClientConn())
 	resp, err := nc.GetSyncStatus(ctx, &emptypb.Empty{})
 	if err != nil {
 		return false, err
@@ -344,7 +382,7 @@ func (v *ValidatorService) Syncing(ctx context.Context) (bool, error) {
 
 // GenesisInfo queries the beacon node for the chain genesis info containing
 // the genesis time along with the validator deposit contract address.
-func (v *ValidatorService) GenesisInfo(ctx context.Context) (*zondpb.Genesis, error) {
-	nc := zondpb.NewNodeClient(v.conn.GetGrpcClientConn())
+func (v *ValidatorService) GenesisInfo(ctx context.Context) (*qrysmpb.Genesis, error) {
+	nc := qrysmpb.NewNodeClient(v.conn.GetGrpcClientConn())
 	return nc.GetGenesis(ctx, &emptypb.Empty{})
 }

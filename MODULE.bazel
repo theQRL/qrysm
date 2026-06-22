@@ -1,0 +1,660 @@
+module(
+    name = "qrysm",
+    version = "0.0.0",
+    bazel_compatibility = [">=8.5.0"],
+)
+
+bazel_dep(name = "rules_go", version = "0.57.0", repo_name = "io_bazel_rules_go")
+bazel_dep(name = "gazelle", version = "0.36.0", repo_name = "bazel_gazelle")
+bazel_dep(name = "rules_proto", version = "7.1.0")
+bazel_dep(name = "rules_cc", version = "0.1.1")
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_pkg", version = "1.2.0")
+bazel_dep(name = "rules_oci", version = "1.7.4")
+bazel_dep(name = "protobuf", version = "29.1", repo_name = "com_google_protobuf")
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "toolchains_protoc", version = "0.3.6")
+bazel_dep(name = "hermetic_cc_toolchain", version = "3.0.1")
+bazel_dep(name = "rules_distroless", version = "0.0.0")
+
+archive_override(
+    module_name = "rules_go",
+    patch_args = ["-p1"],
+    patches = [
+        "//third_party:io_bazel_rules_go_bzlmod_facts.patch",
+        "//third_party:io_bazel_rules_go_test.patch",
+    ],
+    sha256 = "a729c8ed2447c90fe140077689079ca0acfb7580ec41637f312d650ce9d93d96",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazel-contrib/rules_go/releases/download/v0.57.0/rules_go-v0.57.0.zip",
+        "https://github.com/bazel-contrib/rules_go/releases/download/v0.57.0/rules_go-v0.57.0.zip",
+    ],
+)
+
+archive_override(
+    module_name = "rules_distroless",
+    sha256 = "e64f06e452cd153aeab81f752ccf4642955b3af319e64f7bc7a7c9252f76b10e",
+    strip_prefix = "rules_distroless-f5e678217b57ce3ad2f1c0204bd4e9d416255773",
+    urls = ["https://github.com/GoogleContainerTools/rules_distroless/archive/f5e678217b57ce3ad2f1c0204bd4e9d416255773.tar.gz"],
+)
+
+archive_override(
+    module_name = "rules_oci",
+    patch_args = ["-p1"],
+    patches = [
+        "//third_party:rules_oci-multiarch-pull.patch",
+        "//third_party:rules_oci-tar-no-xattrs.patch",
+    ],
+    sha256 = "4a276e9566c03491649eef63f27c2816cc222f41ccdebd97d2c5159e84917c3b",
+    strip_prefix = "rules_oci-1.7.4",
+    urls = ["https://github.com/bazel-contrib/rules_oci/releases/download/v1.7.4/rules_oci-v1.7.4.tar.gz"],
+)
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+go_repository = use_repo_rule("@bazel_gazelle//:deps.bzl", "go_repository")
+
+http_archive(
+    name = "distroless",
+    patch_args = ["-p1"],
+    patches = ["//third_party:distroless-debian_archive-bzlmod-alias.patch"],
+    sha256 = "465ae9bb1ab812c35fc0352bbb8e1807b1bdc38057f7248a2819995c903616fe",
+    strip_prefix = "distroless-16dc4a6a33838006fe956e4c19f049ece9c18a8d",
+    urls = ["https://github.com/GoogleContainerTools/distroless/archive/16dc4a6a33838006fe956e4c19f049ece9c18a8d.tar.gz"],
+)
+
+http_archive(
+    name = "com_github_atlassian_bazel_tools",
+    patch_args = ["-p1"],
+    patches = ["//third_party:com_github_atlassian_bazel_tools-gometalinter-depset.patch"],
+    sha256 = "60821f298a7399450b51b9020394904bbad477c18718d2ad6c789f231e5b8b45",
+    strip_prefix = "bazel-tools-a2138311856f55add11cd7009a5abc8d4fd6f163",
+    urls = ["https://github.com/atlassian/bazel-tools/archive/a2138311856f55add11cd7009a5abc8d4fd6f163.tar.gz"],
+)
+
+http_archive(
+    name = "com_github_bazelbuild_buildtools",
+    sha256 = "f3ef44916e6be705ae862c0520bac6834dd2ff1d4ac7e5abc61fe9f12ce7a865",
+    strip_prefix = "buildtools-0.29.0",
+    urls = ["https://github.com/bazelbuild/buildtools/archive/0.29.0.tar.gz"],
+)
+
+_gometalinter_download = use_repo_rule(
+    "@com_github_atlassian_bazel_tools//gometalinter:deps.bzl",
+    "_gometalinter_download",
+)
+
+_gometalinter_download(name = "com_github_atlassian_bazel_tools_gometalinter")
+
+go_repository(
+    name = "com_github_ulikunitz_xz",
+    importpath = "github.com/ulikunitz/xz",
+    sum = "h1:kpFauv27b6ynzBNT/Xy+1k+fK4WswhN/6PN5WhFAGw8=",
+    version = "v0.5.11",
+)
+
+go_repository(
+    name = "com_github_spdx_tools_golang",
+    importpath = "github.com/spdx/tools-golang",
+    sum = "h1:9B623Cfs+mclYK6dsae7gLSwuIBHvlgmEup87qpqsAQ=",
+    version = "v0.3.1-0.20230104082527-d6f58551be3f",
+)
+
+http_archive(
+    name = "googleapis",
+    sha256 = "9d1a930e767c93c825398b8f8692eca3fe353b9aaadedfbcf1fca2282c85df88",
+    strip_prefix = "googleapis-64926d52febbf298cb82a8f472ade4a3969ba922",
+    urls = ["https://github.com/googleapis/googleapis/archive/64926d52febbf298cb82a8f472ade4a3969ba922.zip"],
+)
+
+http_archive(
+    name = "io_kubernetes_build",
+    sha256 = "b84fbd1173acee9d02a7d3698ad269fdf4f7aa081e9cecd40e012ad0ad8cfa2a",
+    strip_prefix = "repo-infra-6537f2101fb432b679f3d103ee729dd8ac5d30a0",
+    urls = ["https://github.com/kubernetes/repo-infra/archive/6537f2101fb432b679f3d103ee729dd8ac5d30a0.tar.gz"],
+)
+
+_debian_sources = use_repo_rule("@distroless//private/remote:debian_archive.bzl", "_debian_sources")
+
+_debian_archive = use_repo_rule("@distroless//private/remote:debian_archive.bzl", "_debian_archive")
+
+# Debian 11 .deb layers used by tools/qrysm_image.bzl.
+_debian_sources(
+    name = "amd64_debian11_bash_sources",
+    package_name = "bash",
+    sha256 = "f702ef058e762d7208a9c83f6f6bbf02645533bfd615c54e8cdcce842cd57377",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/b/bash/bash_5.1-2+deb11u1_amd64.deb",
+        "https://prysmaticlabs.com/uploads/bash_5.1-2+deb11u1_amd64.deb",
+    ],
+)
+
+_debian_archive(
+    name = "amd64_debian11_bash",
+    package_name = "bash",
+    sha256 = "f702ef058e762d7208a9c83f6f6bbf02645533bfd615c54e8cdcce842cd57377",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/b/bash/bash_5.1-2+deb11u1_amd64.deb",
+        "https://prysmaticlabs.com/uploads/bash_5.1-2+deb11u1_amd64.deb",
+    ],
+)
+
+_debian_sources(
+    name = "arm64_debian11_bash_sources",
+    package_name = "bash",
+    sha256 = "d7c7af5d86f43a885069408a89788f67f248e8124c682bb73936f33874e0611b",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/b/bash/bash_5.1-2+deb11u1_arm64.deb",
+        "https://prysmaticlabs.com/uploads/bash_5.1-2+deb11u1_arm64.deb",
+    ],
+)
+
+_debian_archive(
+    name = "arm64_debian11_bash",
+    package_name = "bash",
+    sha256 = "d7c7af5d86f43a885069408a89788f67f248e8124c682bb73936f33874e0611b",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/b/bash/bash_5.1-2+deb11u1_arm64.deb",
+        "https://prysmaticlabs.com/uploads/bash_5.1-2+deb11u1_arm64.deb",
+    ],
+)
+
+_debian_sources(
+    name = "amd64_debian11_libtinfo6_sources",
+    package_name = "libtinfo6",  # Required by: bash
+    sha256 = "96ed58b8fd656521e08549c763cd18da6cff1b7801a3a22f29678701a95d7e7b",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/n/ncurses/libtinfo6_6.2+20201114-2+deb11u2_amd64.deb",
+        "https://prysmaticlabs.com/uploads/libtinfo6_6.2+20201114-2+deb11u2_amd64.deb",
+    ],
+)
+
+_debian_archive(
+    name = "amd64_debian11_libtinfo6",
+    package_name = "libtinfo6",  # Required by: bash
+    sha256 = "96ed58b8fd656521e08549c763cd18da6cff1b7801a3a22f29678701a95d7e7b",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/n/ncurses/libtinfo6_6.2+20201114-2+deb11u2_amd64.deb",
+        "https://prysmaticlabs.com/uploads/libtinfo6_6.2+20201114-2+deb11u2_amd64.deb",
+    ],
+)
+
+_debian_sources(
+    name = "arm64_debian11_libtinfo6_sources",
+    package_name = "libtinfo6",  # Required by: bash
+    sha256 = "58027c991756930a2abb2f87a829393d3fdbfb76f4eca9795ef38ea2b0510e27",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/n/ncurses/libtinfo6_6.2+20201114-2+deb11u1_arm64.deb",
+        "https://prysmaticlabs.com/uploads/libtinfo6_6.2+20201114-2+deb11u2_arm64.deb",
+    ],
+)
+
+_debian_archive(
+    name = "arm64_debian11_libtinfo6",
+    package_name = "libtinfo6",  # Required by: bash
+    sha256 = "58027c991756930a2abb2f87a829393d3fdbfb76f4eca9795ef38ea2b0510e27",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/n/ncurses/libtinfo6_6.2+20201114-2+deb11u1_arm64.deb",
+        "https://prysmaticlabs.com/uploads/libtinfo6_6.2+20201114-2+deb11u2_arm64.deb",
+    ],
+)
+
+_debian_sources(
+    name = "amd64_debian11_coreutils_sources",
+    package_name = "coreutils",
+    sha256 = "3558a412ab51eee4b60641327cb145bb91415f127769823b68f9335585b308d4",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/c/coreutils/coreutils_8.32-4+b1_amd64.deb",
+        "https://prysmaticlabs.com/uploads/coreutils_8.32-4+b1_amd64.deb",
+    ],
+)
+
+_debian_archive(
+    name = "amd64_debian11_coreutils",
+    package_name = "coreutils",
+    sha256 = "3558a412ab51eee4b60641327cb145bb91415f127769823b68f9335585b308d4",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/c/coreutils/coreutils_8.32-4+b1_amd64.deb",
+        "https://prysmaticlabs.com/uploads/coreutils_8.32-4+b1_amd64.deb",
+    ],
+)
+
+_debian_sources(
+    name = "arm64_debian11_coreutils_sources",
+    package_name = "coreutils",
+    sha256 = "6210c84d6ff84b867dc430f661f22f536e1704c27bdb79de38e26f75b853d9c0",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/c/coreutils/coreutils_8.32-4_arm64.deb",
+        "https://prysmaticlabs.com/uploads/coreutils_8.32-4_arm64.deb",
+    ],
+)
+
+_debian_archive(
+    name = "arm64_debian11_coreutils",
+    package_name = "coreutils",
+    sha256 = "6210c84d6ff84b867dc430f661f22f536e1704c27bdb79de38e26f75b853d9c0",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/c/coreutils/coreutils_8.32-4_arm64.deb",
+        "https://prysmaticlabs.com/uploads/coreutils_8.32-4_arm64.deb",
+    ],
+)
+
+_debian_sources(
+    name = "amd64_debian11_libselinux_sources",
+    package_name = "libselinux",  # Required by: coreutils
+    sha256 = "339f5ede10500c16dd7192d73169c31c4b27ab12130347275f23044ec8c7d897",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/libs/libselinux/libselinux1_3.1-3_amd64.deb",
+        "https://prysmaticlabs.com/uploads/libselinux1_3.1-3_amd64.deb",
+    ],
+)
+
+_debian_archive(
+    name = "amd64_debian11_libselinux",
+    package_name = "libselinux",  # Required by: coreutils
+    sha256 = "339f5ede10500c16dd7192d73169c31c4b27ab12130347275f23044ec8c7d897",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/libs/libselinux/libselinux1_3.1-3_amd64.deb",
+        "https://prysmaticlabs.com/uploads/libselinux1_3.1-3_amd64.deb",
+    ],
+)
+
+_debian_sources(
+    name = "arm64_debian11_libselinux_sources",
+    package_name = "libselinux",  # Required by: coreutils
+    sha256 = "da98279a47dabaa46a83514142f5c691c6a71fa7e582661a3a3db6887ad3e9d1",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/libs/libselinux/libselinux1_3.1-3_arm64.deb",
+        "https://prysmaticlabs.com/uploads/libselinux1_3.1-3_arm64.deb",
+    ],
+)
+
+_debian_archive(
+    name = "arm64_debian11_libselinux",
+    package_name = "libselinux",  # Required by: coreutils
+    sha256 = "da98279a47dabaa46a83514142f5c691c6a71fa7e582661a3a3db6887ad3e9d1",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/libs/libselinux/libselinux1_3.1-3_arm64.deb",
+        "https://prysmaticlabs.com/uploads/libselinux1_3.1-3_arm64.deb",
+    ],
+)
+
+_debian_sources(
+    name = "amd64_debian11_libpcre2_sources",
+    package_name = "libpcre2",  # Required by: coreutils
+    sha256 = "ee192c8d22624eb9d0a2ae95056bad7fb371e5abc17e23e16b1de3ddb17a1064",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/p/pcre2/libpcre2-8-0_10.36-2+deb11u1_amd64.deb",
+        "https://prysmaticlabs.com/uploads/libpcre2-8-0_10.36-2+deb11u1_amd64.deb",
+    ],
+)
+
+_debian_archive(
+    name = "amd64_debian11_libpcre2",
+    package_name = "libpcre2",  # Required by: coreutils
+    sha256 = "ee192c8d22624eb9d0a2ae95056bad7fb371e5abc17e23e16b1de3ddb17a1064",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/p/pcre2/libpcre2-8-0_10.36-2+deb11u1_amd64.deb",
+        "https://prysmaticlabs.com/uploads/libpcre2-8-0_10.36-2+deb11u1_amd64.deb",
+    ],
+)
+
+_debian_sources(
+    name = "arm64_debian11_libpcre2_sources",
+    package_name = "libpcre2",  # Required by: coreutils
+    sha256 = "27a4362a4793cb67a8ae571bd8c3f7e8654dc2e56d99088391b87af1793cca9c",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/p/pcre2/libpcre2-8-0_10.36-2+deb11u1_arm64.deb",
+        "https://prysmaticlabs.com/uploads/libpcre2-8-0_10.36-2+deb11u1_arm64.deb",
+    ],
+)
+
+_debian_archive(
+    name = "arm64_debian11_libpcre2",
+    package_name = "libpcre2",  # Required by: coreutils
+    sha256 = "27a4362a4793cb67a8ae571bd8c3f7e8654dc2e56d99088391b87af1793cca9c",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/p/pcre2/libpcre2-8-0_10.36-2+deb11u1_arm64.deb",
+        "https://prysmaticlabs.com/uploads/libpcre2-8-0_10.36-2+deb11u1_arm64.deb",
+    ],
+)
+
+_debian_sources(
+    name = "amd64_debian11_libattr1_sources",
+    package_name = "libattr1",  # Required by: coreutils
+    sha256 = "af3c3562eb2802481a2b9558df1b389f3c6d9b1bf3b4219e000e05131372ebaf",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/a/attr/libattr1_2.4.48-6_amd64.deb",
+        "https://prysmaticlabs.com/uploads/libattr1_2.4.48-6_amd64.deb",
+    ],
+)
+
+_debian_archive(
+    name = "amd64_debian11_libattr1",
+    package_name = "libattr1",  # Required by: coreutils
+    sha256 = "af3c3562eb2802481a2b9558df1b389f3c6d9b1bf3b4219e000e05131372ebaf",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/a/attr/libattr1_2.4.48-6_amd64.deb",
+        "https://prysmaticlabs.com/uploads/libattr1_2.4.48-6_amd64.deb",
+    ],
+)
+
+_debian_sources(
+    name = "arm64_debian11_libattr1_sources",
+    package_name = "libattr1",  # Required by: coreutils
+    sha256 = "cb9b59be719a6fdbaabaa60e22aa6158b2de7a68c88ccd7c3fb7f41a25fb43d0",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/a/attr/libattr1_2.4.48-6_arm64.deb",
+        "https://prysmaticlabs.com/uploads/libattr1_2.4.48-6_arm64.deb",
+    ],
+)
+
+_debian_archive(
+    name = "arm64_debian11_libattr1",
+    package_name = "libattr1",  # Required by: coreutils
+    sha256 = "cb9b59be719a6fdbaabaa60e22aa6158b2de7a68c88ccd7c3fb7f41a25fb43d0",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/a/attr/libattr1_2.4.48-6_arm64.deb",
+        "https://prysmaticlabs.com/uploads/libattr1_2.4.48-6_arm64.deb",
+    ],
+)
+
+_debian_sources(
+    name = "amd64_debian11_libacl1_sources",
+    package_name = "libacl1",  # Required by: coreutils
+    sha256 = "aa18d721be8aea50fbdb32cd9a319cb18a3f111ea6ad17399aa4ba9324c8e26a",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/a/acl/libacl1_2.2.53-10_amd64.deb",
+        "https://prysmaticlabs.com/uploads/libacl1_2.2.53-10_amd64.deb",
+    ],
+)
+
+_debian_archive(
+    name = "amd64_debian11_libacl1",
+    package_name = "libacl1",  # Required by: coreutils
+    sha256 = "aa18d721be8aea50fbdb32cd9a319cb18a3f111ea6ad17399aa4ba9324c8e26a",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/a/acl/libacl1_2.2.53-10_amd64.deb",
+        "https://prysmaticlabs.com/uploads/libacl1_2.2.53-10_amd64.deb",
+    ],
+)
+
+_debian_sources(
+    name = "arm64_debian11_libacl1_sources",
+    package_name = "libacl1",  # Required by: coreutils
+    sha256 = "f164c48192cb47746101de6c59afa3f97777c8fc821e5a30bb890df1f4cb4cfd",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/a/acl/libacl1_2.2.53-10_arm64.deb",
+        "https://prysmaticlabs.com/uploads/libacl1_2.2.53-10_arm64.deb",
+    ],
+)
+
+_debian_archive(
+    name = "arm64_debian11_libacl1",
+    package_name = "libacl1",  # Required by: coreutils
+    sha256 = "f164c48192cb47746101de6c59afa3f97777c8fc821e5a30bb890df1f4cb4cfd",
+    urls = [
+        "https://snapshot.debian.org/archive/debian/20231214T085654Z/pool/main/a/acl/libacl1_2.2.53-10_arm64.deb",
+        "https://prysmaticlabs.com/uploads/libacl1_2.2.53-10_arm64.deb",
+    ],
+)
+
+switched_rules = use_repo_rule("@googleapis//:repository_rules.bzl", "switched_rules")
+
+switched_rules(
+    name = "com_google_googleapis_imports",
+    rules = {
+        "proto_library_with_info": [
+            "",
+            "",
+        ],
+        "moved_proto_library": [
+            "",
+            "",
+        ],
+        "java_proto_library": [
+            "",
+            "",
+        ],
+        "java_grpc_library": [
+            "",
+            "",
+        ],
+        "java_gapic_library": [
+            "",
+            "",
+        ],
+        "java_gapic_test": [
+            "",
+            "",
+        ],
+        "java_gapic_assembly_gradle_pkg": [
+            "",
+            "",
+        ],
+        "py_proto_library": [
+            "",
+            "",
+        ],
+        "py_grpc_library": [
+            "",
+            "",
+        ],
+        "py_gapic_library": [
+            "",
+            "",
+        ],
+        "py_test": [
+            "",
+            "",
+        ],
+        "py_gapic_assembly_pkg": [
+            "",
+            "",
+        ],
+        "go_proto_library": [
+            "@io_bazel_rules_go//proto:def.bzl",
+            "",
+        ],
+        "go_library": [
+            "@io_bazel_rules_go//go:def.bzl",
+            "",
+        ],
+        "go_test": [
+            "@io_bazel_rules_go//go:def.bzl",
+            "",
+        ],
+        "go_gapic_library": [
+            "",
+            "",
+        ],
+        "go_gapic_assembly_pkg": [
+            "",
+            "",
+        ],
+        "cc_proto_library": [
+            "",
+            "",
+        ],
+        "cc_grpc_library": [
+            "",
+            "",
+        ],
+        "cc_gapic_library": [
+            "",
+            "",
+        ],
+        "php_proto_library": [
+            "",
+            "",
+        ],
+        "php_grpc_library": [
+            "",
+            "",
+        ],
+        "php_gapic_library": [
+            "",
+            "",
+        ],
+        "php_gapic_assembly_pkg": [
+            "",
+            "",
+        ],
+        "nodejs_gapic_library": [
+            "",
+            "",
+        ],
+        "nodejs_gapic_assembly_pkg": [
+            "",
+            "",
+        ],
+        "ruby_proto_library": [
+            "",
+            "",
+        ],
+        "ruby_grpc_library": [
+            "",
+            "",
+        ],
+        "ruby_ads_gapic_library": [
+            "",
+            "",
+        ],
+        "ruby_cloud_gapic_library": [
+            "",
+            "",
+        ],
+        "ruby_gapic_assembly_pkg": [
+            "",
+            "",
+        ],
+        "csharp_proto_library": [
+            "",
+            "",
+        ],
+        "csharp_grpc_library": [
+            "",
+            "",
+        ],
+        "csharp_gapic_library": [
+            "",
+            "",
+        ],
+        "csharp_gapic_assembly_pkg": [
+            "",
+            "",
+        ],
+    },
+)
+
+go_sdk = use_extension("@io_bazel_rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.from_file(
+    name = "go_sdk",
+    go_mod = "//:go.mod",
+)
+go_sdk.nogo(
+    nogo = "//:nogo",
+)
+use_repo(
+    go_sdk,
+    "go_host_compatible_sdk_label",
+    "go_sdk",
+    "go_toolchains",
+)
+
+register_toolchains("@go_toolchains//:all")
+
+protoc = use_extension("@toolchains_protoc//protoc:extensions.bzl", "protoc")
+protoc.toolchain(
+    version = "v25.3",
+)
+use_repo(protoc, "toolchains_protoc_hub")
+
+register_toolchains("@toolchains_protoc_hub//:all")
+
+oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
+oci.toolchains(crane_version = "v0.18.0")
+oci.pull(
+    name = "linux_debian11_multiarch_base",  # Debian bullseye
+    digest = "sha256:55a5e011b2c4246b4c51e01fcc2b452d151e03df052e357465f0392fcd59fddf",
+    image = "gcr.io/prysmaticlabs/distroless/cc-debian11",
+    platforms = [
+        "linux/amd64",
+        "linux/arm64/v8",
+    ],
+    reproducible = True,
+)
+use_repo(
+    oci,
+    "linux_debian11_multiarch_base",
+    "linux_debian11_multiarch_base_linux_amd64",
+    "linux_debian11_multiarch_base_linux_arm64_v8",
+    "oci_crane_registry_toolchains",
+    "oci_crane_toolchains",
+)
+
+register_toolchains("@oci_crane_toolchains//:all", "@oci_crane_registry_toolchains//:all")
+
+zig_toolchains = use_extension("@hermetic_cc_toolchain//toolchain:ext.bzl", "toolchains")
+use_repo(zig_toolchains, "zig_sdk")
+
+register_toolchains(
+    "@zig_sdk//toolchain:linux_amd64_gnu.2.31",
+    "@zig_sdk//toolchain:linux_arm64_gnu.2.31",
+)
+
+cc_autoconf_toolchains = use_repo_rule("//tools/cross-toolchain:darwin_cc_hack.bzl", "cc_autoconf_toolchains")
+
+cc_autoconf = use_repo_rule("//tools/cross-toolchain:darwin_cc_hack.bzl", "cc_autoconf")
+
+cc_autoconf_toolchains(name = "local_config_cc_toolchains")
+
+cc_autoconf(name = "local_config_cc")
+
+register_toolchains("@local_config_cc_toolchains//:all")
+
+qrysm_toolchains = use_repo_rule("//tools/cross-toolchain:qrysm_toolchains.bzl", "qrysm_toolchains")
+
+qrysm_toolchains(name = "qrysm_toolchains")
+
+register_toolchains("@qrysm_toolchains//:cc-toolchain-multiarch")
+
+go_deps = use_extension("@bazel_gazelle//:extensions.bzl", "go_deps")
+go_deps.config(check_direct_dependencies = "off")
+go_deps.from_file(go_mod = "//:go.mod")
+go_deps.gazelle_override(
+    directives = ["gazelle:proto disable"],
+    path = "github.com/containerd/cgroups",
+)
+go_deps.archive_override(
+    path = "google.golang.org/genproto",
+    sha256 = "633fcd820fee5514aa0188cdc758f8930a9e4c5e5d139355017f04ebc5963493",
+    strip_prefix = "go-genproto-9b19f0bdc514e8e17b318e96c13a8713d368af75",
+    urls = ["https://github.com/googleapis/go-genproto/archive/9b19f0bdc514e8e17b318e96c13a8713d368af75.tar.gz"],
+)
+go_deps.module_override(
+    patch_strip = 1,
+    patches = ["//third_party:com_github_theqrl_go_bitfield-alias.patch"],
+    path = "github.com/theQRL/go-bitfield",
+)
+go_deps.module_override(
+    patch_strip = 1,
+    patches = ["//third_party:com_github_prysmaticlabs_prombbolt-alias.patch"],
+    path = "github.com/prysmaticlabs/prombbolt",
+)
+go_deps.module_override(
+    patch_strip = 1,
+    patches = ["//third_party:com_github_theqrl_go_qrl_secp256k1.patch"],
+    path = "github.com/theQRL/go-qrl",
+)
+go_deps.module_override(
+    patch_strip = 1,
+    patches = ["//third_party:com_github_grpc_ecosystem_grpc_gateway_v2-googleapis.patch"],
+    path = "github.com/grpc-ecosystem/grpc-gateway/v2",
+)
+go_deps.module_override(
+    patch_strip = 1,
+    patches = ["//third_party:com_github_libp2p_go_libp2p_pubsub-gogo.patch"],
+    path = "github.com/libp2p/go-libp2p-pubsub",
+)
+use_repo(go_deps, "co_honnef_go_tools", "com_github_aristanetworks_goarista", "com_github_btcsuite_btcd_btcec_v2", "com_github_coreos_go_systemd", "com_github_d4l3k_messagediff", "com_github_dgraph_io_ristretto", "com_github_dustin_go_humanize", "com_github_emicklei_dot", "com_github_fsnotify_fsnotify", "com_github_gdamore_tcell_v2", "com_github_ghodss_yaml", "com_github_go_yaml_yaml", "com_github_gogo_protobuf", "com_github_golang_gddo", "com_github_golang_glog", "com_github_golang_jwt_jwt_v4", "com_github_golang_mock", "com_github_golang_snappy", "com_github_google_gofuzz", "com_github_google_uuid", "com_github_gorilla_mux", "com_github_gostaticanalysis_comment", "com_github_grpc_ecosystem_go_grpc_middleware", "com_github_grpc_ecosystem_go_grpc_prometheus", "com_github_grpc_ecosystem_grpc_gateway_v2", "com_github_hashicorp_golang_lru", "com_github_holiman_uint256", "com_github_ianlancetaylor_cgosymbolizer", "com_github_ipfs_go_log_v2", "com_github_jedisct1_go_minisign", "com_github_joonix_log", "com_github_json_iterator_go", "com_github_k0kubun_go_ansi", "com_github_kisielk_errcheck", "com_github_korovkin_limiter", "com_github_kr_pretty", "com_github_libp2p_go_libp2p", "com_github_libp2p_go_libp2p_mplex", "com_github_libp2p_go_libp2p_pubsub", "com_github_libp2p_go_mplex", "com_github_logrusorgru_aurora", "com_github_manifoldco_promptui", "com_github_mgutz_ansi", "com_github_minio_highwayhash", "com_github_minio_sha256_simd", "com_github_mohae_deepcopy", "com_github_multiformats_go_multiaddr", "com_github_naoina_toml", "com_github_onsi_ginkgo", "com_github_onsi_gomega", "com_github_patrickmn_go_cache", "com_github_paulbellamy_ratecounter", "com_github_pkg_errors", "com_github_prometheus_client_golang", "com_github_prometheus_client_model", "com_github_prometheus_prom2json", "com_github_prysmaticlabs_fastssz", "com_github_prysmaticlabs_gohashtree", "com_github_prysmaticlabs_prombbolt", "com_github_prysmaticlabs_protoc_gen_go_cast", "com_github_r3labs_sse_v2", "com_github_rivo_tview", "com_github_rs_cors", "com_github_schollz_progressbar_v3", "com_github_sirupsen_logrus", "com_github_status_im_keycard_go", "com_github_stretchr_testify", "com_github_theqrl_go_bitfield", "com_github_theqrl_go_qrl", "com_github_theqrl_go_qrllib", "com_github_thomaso_mirodin_intmath", "com_github_trailofbits_go_mutexasserts", "com_github_urfave_cli_v2", "com_github_uudashr_gocognit", "com_github_wealdtech_go_bytesutil", "in_gopkg_d4l3k_messagediff_v1", "in_gopkg_yaml_v2", "io_etcd_go_bbolt", "io_k8s_apimachinery", "io_k8s_client_go", "io_opencensus_go", "io_opencensus_go_contrib_exporter_jaeger", "org_golang_google_genproto", "org_golang_google_grpc", "org_golang_google_protobuf", "org_golang_x_crypto", "org_golang_x_exp", "org_golang_x_sync", "org_golang_x_term", "org_golang_x_text", "org_golang_x_tools", "org_uber_go_automaxprocs", "org_uber_go_mock")

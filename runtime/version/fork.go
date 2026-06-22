@@ -3,19 +3,11 @@ package version
 import "github.com/pkg/errors"
 
 const (
-	Phase0 = iota
-	Altair
-	Bellatrix
-	Capella
-	Deneb
+	Zond = iota
 )
 
 var versionToString = map[int]string{
-	Phase0:    "phase0",
-	Altair:    "altair",
-	Bellatrix: "bellatrix",
-	Capella:   "capella",
-	Deneb:     "deneb",
+	Zond: "zond",
 }
 
 // stringToVersion and allVersions are populated in init()

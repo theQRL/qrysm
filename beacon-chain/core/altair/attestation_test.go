@@ -18,28 +18,28 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/math"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestProcessAttestations_InclusionDelayFailure(t *testing.T) {
-	attestations := []*zondpb.Attestation{
-		util.HydrateAttestation(&zondpb.Attestation{
-			Data: &zondpb.AttestationData{
-				Target: &zondpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
+	attestations := []*qrysmpb.Attestation{
+		util.HydrateAttestation(&qrysmpb.Attestation{
+			Data: &qrysmpb.AttestationData{
+				Target: &qrysmpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
 				Slot:   5,
 			},
 		}),
 	}
-	b := util.NewBeaconBlockCapella()
-	b.Block = &zondpb.BeaconBlockCapella{
-		Body: &zondpb.BeaconBlockBodyCapella{
+	b := util.NewBeaconBlockZond()
+	b.Block = &qrysmpb.BeaconBlockZond{
+		Body: &qrysmpb.BeaconBlockBodyZond{
 			Attestations: attestations,
 		},
 	}
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, 100)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 100)
 
 	want := fmt.Sprintf(
 		"attestation slot %d + inclusion delay %d > state slot %d",
@@ -54,18 +54,18 @@ func TestProcessAttestations_InclusionDelayFailure(t *testing.T) {
 }
 
 func TestProcessAttestations_NeitherCurrentNorPrevEpoch(t *testing.T) {
-	att := util.HydrateAttestation(&zondpb.Attestation{
-		Data: &zondpb.AttestationData{
-			Source: &zondpb.Checkpoint{Epoch: 0, Root: []byte("hello-world")},
-			Target: &zondpb.Checkpoint{Epoch: 0}}})
+	att := util.HydrateAttestation(&qrysmpb.Attestation{
+		Data: &qrysmpb.AttestationData{
+			Source: &qrysmpb.Checkpoint{Epoch: 0, Root: []byte("hello-world")},
+			Target: &qrysmpb.Checkpoint{Epoch: 0}}})
 
-	b := util.NewBeaconBlockCapella()
-	b.Block = &zondpb.BeaconBlockCapella{
-		Body: &zondpb.BeaconBlockBodyCapella{
-			Attestations: []*zondpb.Attestation{att},
+	b := util.NewBeaconBlockZond()
+	b.Block = &qrysmpb.BeaconBlockZond{
+		Body: &qrysmpb.BeaconBlockBodyZond{
+			Attestations: []*qrysmpb.Attestation{att},
 		},
 	}
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, 100)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 100)
 	err := beaconState.SetSlot(beaconState.Slot() + params.BeaconConfig().SlotsPerEpoch*4 + params.BeaconConfig().MinAttestationInclusionDelay)
 	require.NoError(t, err)
 	pfc := beaconState.PreviousJustifiedCheckpoint()
@@ -85,22 +85,22 @@ func TestProcessAttestations_NeitherCurrentNorPrevEpoch(t *testing.T) {
 }
 
 func TestProcessAttestations_CurrentEpochFFGDataMismatches(t *testing.T) {
-	attestations := []*zondpb.Attestation{
+	attestations := []*qrysmpb.Attestation{
 		{
-			Data: &zondpb.AttestationData{
-				Target: &zondpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
-				Source: &zondpb.Checkpoint{Epoch: 1, Root: make([]byte, fieldparams.RootLength)},
+			Data: &qrysmpb.AttestationData{
+				Target: &qrysmpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
+				Source: &qrysmpb.Checkpoint{Epoch: 1, Root: make([]byte, fieldparams.RootLength)},
 			},
 			AggregationBits: bitfield.Bitlist{0x09},
 		},
 	}
-	b := util.NewBeaconBlockCapella()
-	b.Block = &zondpb.BeaconBlockCapella{
-		Body: &zondpb.BeaconBlockBodyCapella{
+	b := util.NewBeaconBlockZond()
+	b.Block = &qrysmpb.BeaconBlockZond{
+		Body: &qrysmpb.BeaconBlockBodyZond{
 			Attestations: attestations,
 		},
 	}
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, 100)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 100)
 	require.NoError(t, beaconState.SetSlot(beaconState.Slot()+params.BeaconConfig().MinAttestationInclusionDelay))
 	cfc := beaconState.CurrentJustifiedCheckpoint()
 	cfc.Root = []byte("hello-world")
@@ -120,23 +120,23 @@ func TestProcessAttestations_CurrentEpochFFGDataMismatches(t *testing.T) {
 }
 
 func TestProcessAttestations_PrevEpochFFGDataMismatches(t *testing.T) {
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, 100)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 100)
 
 	aggBits := bitfield.NewBitlist(3)
 	aggBits.SetBitAt(0, true)
-	attestations := []*zondpb.Attestation{
+	attestations := []*qrysmpb.Attestation{
 		{
-			Data: &zondpb.AttestationData{
-				Source: &zondpb.Checkpoint{Epoch: 1, Root: make([]byte, fieldparams.RootLength)},
-				Target: &zondpb.Checkpoint{Epoch: 1, Root: make([]byte, fieldparams.RootLength)},
+			Data: &qrysmpb.AttestationData{
+				Source: &qrysmpb.Checkpoint{Epoch: 1, Root: make([]byte, fieldparams.RootLength)},
+				Target: &qrysmpb.Checkpoint{Epoch: 1, Root: make([]byte, fieldparams.RootLength)},
 				Slot:   params.BeaconConfig().SlotsPerEpoch,
 			},
 			AggregationBits: aggBits,
 		},
 	}
-	b := util.NewBeaconBlockCapella()
-	b.Block = &zondpb.BeaconBlockCapella{
-		Body: &zondpb.BeaconBlockBodyCapella{
+	b := util.NewBeaconBlockZond()
+	b.Block = &qrysmpb.BeaconBlockZond{
+		Body: &qrysmpb.BeaconBlockBodyZond{
 			Attestations: attestations,
 		},
 	}
@@ -162,20 +162,20 @@ func TestProcessAttestations_PrevEpochFFGDataMismatches(t *testing.T) {
 }
 
 func TestProcessAttestations_InvalidAggregationBitsLength(t *testing.T) {
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, 256)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 256)
 
 	aggBits := bitfield.NewBitlist(4)
-	att := &zondpb.Attestation{
-		Data: &zondpb.AttestationData{
-			Source: &zondpb.Checkpoint{Epoch: 0, Root: []byte("hello-world")},
-			Target: &zondpb.Checkpoint{Epoch: 0}},
+	att := &qrysmpb.Attestation{
+		Data: &qrysmpb.AttestationData{
+			Source: &qrysmpb.Checkpoint{Epoch: 0, Root: []byte("hello-world")},
+			Target: &qrysmpb.Checkpoint{Epoch: 0}},
 		AggregationBits: aggBits,
 	}
 
-	b := util.NewBeaconBlockCapella()
-	b.Block = &zondpb.BeaconBlockCapella{
-		Body: &zondpb.BeaconBlockBodyCapella{
-			Attestations: []*zondpb.Attestation{att},
+	b := util.NewBeaconBlockZond()
+	b.Block = &qrysmpb.BeaconBlockZond{
+		Body: &qrysmpb.BeaconBlockBodyZond{
+			Attestations: []*qrysmpb.Attestation{att},
 		},
 	}
 
@@ -194,16 +194,16 @@ func TestProcessAttestations_InvalidAggregationBitsLength(t *testing.T) {
 }
 
 func TestProcessAttestations_OK(t *testing.T) {
-	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 256)
+	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 256)
 
 	aggBits := bitfield.NewBitlist(2)
 	aggBits.SetBitAt(0, true)
 	var mockRoot [32]byte
 	copy(mockRoot[:], "hello-world")
-	att := util.HydrateAttestation(&zondpb.Attestation{
-		Data: &zondpb.AttestationData{
-			Source: &zondpb.Checkpoint{Root: mockRoot[:]},
-			Target: &zondpb.Checkpoint{Root: mockRoot[:]},
+	att := util.HydrateAttestation(&qrysmpb.Attestation{
+		Data: &qrysmpb.AttestationData{
+			Source: &qrysmpb.Checkpoint{Root: mockRoot[:]},
+			Target: &qrysmpb.Checkpoint{Root: mockRoot[:]},
 		},
 		AggregationBits: aggBits,
 	})
@@ -224,8 +224,8 @@ func TestProcessAttestations_OK(t *testing.T) {
 	}
 	att.Signatures = sigs
 
-	block := util.NewBeaconBlockCapella()
-	block.Block.Body.Attestations = []*zondpb.Attestation{att}
+	block := util.NewBeaconBlockZond()
+	block.Block.Body.Attestations = []*qrysmpb.Attestation{att}
 
 	err = beaconState.SetSlot(beaconState.Slot() + params.BeaconConfig().MinAttestationInclusionDelay)
 	require.NoError(t, err)
@@ -236,7 +236,7 @@ func TestProcessAttestations_OK(t *testing.T) {
 }
 
 func TestProcessAttestationNoVerify_SourceTargetHead(t *testing.T) {
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, 256)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 256)
 	err := beaconState.SetSlot(beaconState.Slot() + params.BeaconConfig().MinAttestationInclusionDelay)
 	require.NoError(t, err)
 
@@ -245,15 +245,15 @@ func TestProcessAttestationNoVerify_SourceTargetHead(t *testing.T) {
 	aggBits.SetBitAt(1, true)
 	r, err := helpers.BlockRootAtSlot(beaconState, 0)
 	require.NoError(t, err)
-	att := &zondpb.Attestation{
-		Data: &zondpb.AttestationData{
+	att := &qrysmpb.Attestation{
+		Data: &qrysmpb.AttestationData{
 			BeaconBlockRoot: r,
-			Source:          &zondpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
-			Target:          &zondpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
+			Source:          &qrysmpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
+			Target:          &qrysmpb.Checkpoint{Epoch: 0, Root: make([]byte, fieldparams.RootLength)},
 		},
 		AggregationBits: aggBits,
 	}
-	var zeroSig [4595]byte
+	var zeroSig [4627]byte
 	att.Signatures = [][]byte{zeroSig[:], zeroSig[:]}
 
 	ckp := beaconState.CurrentJustifiedCheckpoint()
@@ -408,15 +408,15 @@ func TestValidatorFlag_Add_ExceedsLength(t *testing.T) {
 
 func TestFuzzProcessAttestationsNoVerify_10000(t *testing.T) {
 	fuzzer := fuzz.NewWithSeed(0)
-	st := &zondpb.BeaconStateCapella{}
-	b := &zondpb.SignedBeaconBlockCapella{Block: &zondpb.BeaconBlockCapella{}}
-	for i := 0; i < 10000; i++ {
+	st := &qrysmpb.BeaconStateZond{}
+	b := &qrysmpb.SignedBeaconBlockZond{Block: &qrysmpb.BeaconBlockZond{}}
+	for range 10000 {
 		fuzzer.Fuzz(st)
 		fuzzer.Fuzz(b)
 		if b.Block == nil {
-			b.Block = &zondpb.BeaconBlockCapella{}
+			b.Block = &qrysmpb.BeaconBlockZond{}
 		}
-		s, err := state_native.InitializeFromProtoUnsafeCapella(st)
+		s, err := state_native.InitializeFromProtoUnsafeZond(st)
 		require.NoError(t, err)
 		if b.Block == nil || b.Block.Body == nil {
 			continue
@@ -469,7 +469,7 @@ func TestSetParticipationAndRewardProposer(t *testing.T) {
 				headFlagIndex:   false,
 			},
 			wantedParticipation: []byte{3, 3, 3, 3, 0, 0, 0, 0},
-			wantedBalance:       40000003185714,
+			wantedBalance:       40000102214285,
 		},
 		{name: "all participated with some flags",
 			indices: []uint64{0, 1, 2, 3, 4, 5, 6, 7}, epochParticipation: []byte{0, 0, 0, 0, 0, 0, 0, 0}, participatedFlags: map[uint8]bool{
@@ -478,7 +478,7 @@ func TestSetParticipationAndRewardProposer(t *testing.T) {
 				headFlagIndex:   false,
 			},
 			wantedParticipation: []byte{1, 1, 1, 1, 1, 1, 1, 1},
-			wantedBalance:       40000002230000,
+			wantedBalance:       40000071550000,
 		},
 		{name: "all participated with all flags",
 			indices: []uint64{0, 1, 2, 3, 4, 5, 6, 7}, epochParticipation: []byte{0, 0, 0, 0, 0, 0, 0, 0}, participatedFlags: map[uint8]bool{
@@ -487,12 +487,12 @@ func TestSetParticipationAndRewardProposer(t *testing.T) {
 				headFlagIndex:   true,
 			},
 			wantedParticipation: []byte{7, 7, 7, 7, 7, 7, 7, 7},
-			wantedBalance:       40000008601428,
+			wantedBalance:       40000275978571,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			beaconState, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+			beaconState, _ := util.DeterministicGenesisStateZond(t, params.BeaconConfig().MaxValidatorsPerCommittee)
 			require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch))
 
 			currentEpoch := time.CurrentEpoch(beaconState)
@@ -527,7 +527,7 @@ func TestSetParticipationAndRewardProposer(t *testing.T) {
 }
 
 func TestEpochParticipation(t *testing.T) {
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, params.BeaconConfig().MaxValidatorsPerCommittee)
 	cfg := params.BeaconConfig()
 	sourceFlagIndex := cfg.TimelySourceFlagIndex
 	targetFlagIndex := cfg.TimelyTargetFlagIndex
@@ -564,7 +564,7 @@ func TestEpochParticipation(t *testing.T) {
 				targetFlagIndex: true,
 				headFlagIndex:   false,
 			},
-			wantedNumerator:          1427200000,
+			wantedNumerator:          45792000000,
 			wantedEpochParticipation: []byte{3, 3, 3, 3, 0, 0, 0, 0},
 		},
 		{name: "all participated with some flags",
@@ -573,7 +573,7 @@ func TestEpochParticipation(t *testing.T) {
 				targetFlagIndex: false,
 				headFlagIndex:   false,
 			},
-			wantedNumerator:          999040000,
+			wantedNumerator:          32054400000,
 			wantedEpochParticipation: []byte{1, 1, 1, 1, 1, 1, 1, 1},
 		},
 		{name: "all participated with all flags",
@@ -582,7 +582,7 @@ func TestEpochParticipation(t *testing.T) {
 				targetFlagIndex: true,
 				headFlagIndex:   true,
 			},
-			wantedNumerator:          3853440000,
+			wantedNumerator:          123638400000,
 			wantedEpochParticipation: []byte{7, 7, 7, 7, 7, 7, 7, 7},
 		},
 	}
@@ -597,7 +597,7 @@ func TestEpochParticipation(t *testing.T) {
 }
 
 func TestRewardProposer(t *testing.T) {
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, params.BeaconConfig().MaxValidatorsPerCommittee)
 	require.NoError(t, beaconState.SetSlot(1))
 	tests := []struct {
 		rewardNumerator uint64
@@ -620,7 +620,7 @@ func TestRewardProposer(t *testing.T) {
 }
 
 func TestAttestationParticipationFlagIndices(t *testing.T) {
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, params.BeaconConfig().MaxValidatorsPerCommittee)
 	require.NoError(t, beaconState.SetSlot(1))
 	cfg := params.BeaconConfig()
 	sourceFlagIndex := cfg.TimelySourceFlagIndex
@@ -630,7 +630,7 @@ func TestAttestationParticipationFlagIndices(t *testing.T) {
 	tests := []struct {
 		name                 string
 		inputState           state.BeaconState
-		inputData            *zondpb.AttestationData
+		inputData            *qrysmpb.AttestationData
 		inputDelay           primitives.Slot
 		participationIndices map[uint8]bool
 	}{
@@ -639,9 +639,9 @@ func TestAttestationParticipationFlagIndices(t *testing.T) {
 			inputState: func() state.BeaconState {
 				return beaconState
 			}(),
-			inputData: &zondpb.AttestationData{
-				Source: &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
-				Target: &zondpb.Checkpoint{},
+			inputData: &qrysmpb.AttestationData{
+				Source: &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+				Target: &qrysmpb.Checkpoint{},
 			},
 			inputDelay:           params.BeaconConfig().SlotsPerEpoch,
 			participationIndices: map[uint8]bool{},
@@ -651,9 +651,9 @@ func TestAttestationParticipationFlagIndices(t *testing.T) {
 			inputState: func() state.BeaconState {
 				return beaconState
 			}(),
-			inputData: &zondpb.AttestationData{
-				Source: &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
-				Target: &zondpb.Checkpoint{},
+			inputData: &qrysmpb.AttestationData{
+				Source: &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+				Target: &qrysmpb.Checkpoint{},
 			},
 			inputDelay: primitives.Slot(math.IntegerSquareRoot(uint64(cfg.SlotsPerEpoch)) - 1),
 			participationIndices: map[uint8]bool{
@@ -665,9 +665,9 @@ func TestAttestationParticipationFlagIndices(t *testing.T) {
 			inputState: func() state.BeaconState {
 				return beaconState
 			}(),
-			inputData: &zondpb.AttestationData{
-				Source: &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
-				Target: &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+			inputData: &qrysmpb.AttestationData{
+				Source: &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+				Target: &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
 			},
 			inputDelay: primitives.Slot(math.IntegerSquareRoot(uint64(cfg.SlotsPerEpoch)) - 1),
 			participationIndices: map[uint8]bool{
@@ -680,9 +680,9 @@ func TestAttestationParticipationFlagIndices(t *testing.T) {
 			inputState: func() state.BeaconState {
 				return beaconState
 			}(),
-			inputData: &zondpb.AttestationData{
-				Source: &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
-				Target: &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+			inputData: &qrysmpb.AttestationData{
+				Source: &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+				Target: &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
 			},
 			inputDelay: params.BeaconConfig().SlotsPerEpoch + 1,
 			participationIndices: map[uint8]bool{
@@ -694,10 +694,10 @@ func TestAttestationParticipationFlagIndices(t *testing.T) {
 			inputState: func() state.BeaconState {
 				return beaconState
 			}(),
-			inputData: &zondpb.AttestationData{
+			inputData: &qrysmpb.AttestationData{
 				BeaconBlockRoot: params.BeaconConfig().ZeroHash[:],
-				Source:          &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
-				Target:          &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+				Source:          &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+				Target:          &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
 			},
 			inputDelay: 1,
 			participationIndices: map[uint8]bool{
@@ -715,13 +715,13 @@ func TestAttestationParticipationFlagIndices(t *testing.T) {
 }
 
 func TestMatchingStatus(t *testing.T) {
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, params.BeaconConfig().MaxValidatorsPerCommittee)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, params.BeaconConfig().MaxValidatorsPerCommittee)
 	require.NoError(t, beaconState.SetSlot(1))
 	tests := []struct {
 		name          string
 		inputState    state.BeaconState
-		inputData     *zondpb.AttestationData
-		inputCheckpt  *zondpb.Checkpoint
+		inputData     *qrysmpb.AttestationData
+		inputCheckpt  *qrysmpb.Checkpoint
 		matchedSource bool
 		matchedTarget bool
 		matchedHead   bool
@@ -729,52 +729,52 @@ func TestMatchingStatus(t *testing.T) {
 		{
 			name:       "non matched",
 			inputState: beaconState,
-			inputData: &zondpb.AttestationData{
-				Source: &zondpb.Checkpoint{Epoch: 1},
-				Target: &zondpb.Checkpoint{},
+			inputData: &qrysmpb.AttestationData{
+				Source: &qrysmpb.Checkpoint{Epoch: 1},
+				Target: &qrysmpb.Checkpoint{},
 			},
-			inputCheckpt: &zondpb.Checkpoint{},
+			inputCheckpt: &qrysmpb.Checkpoint{},
 		},
 		{
 			name:       "source matched",
 			inputState: beaconState,
-			inputData: &zondpb.AttestationData{
-				Source: &zondpb.Checkpoint{},
-				Target: &zondpb.Checkpoint{},
+			inputData: &qrysmpb.AttestationData{
+				Source: &qrysmpb.Checkpoint{},
+				Target: &qrysmpb.Checkpoint{},
 			},
-			inputCheckpt:  &zondpb.Checkpoint{},
+			inputCheckpt:  &qrysmpb.Checkpoint{},
 			matchedSource: true,
 		},
 		{
 			name:       "target matched",
 			inputState: beaconState,
-			inputData: &zondpb.AttestationData{
-				Source: &zondpb.Checkpoint{Epoch: 1},
-				Target: &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+			inputData: &qrysmpb.AttestationData{
+				Source: &qrysmpb.Checkpoint{Epoch: 1},
+				Target: &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
 			},
-			inputCheckpt:  &zondpb.Checkpoint{},
+			inputCheckpt:  &qrysmpb.Checkpoint{},
 			matchedTarget: true,
 		},
 		{
 			name:       "head matched",
 			inputState: beaconState,
-			inputData: &zondpb.AttestationData{
-				Source:          &zondpb.Checkpoint{Epoch: 1},
-				Target:          &zondpb.Checkpoint{},
+			inputData: &qrysmpb.AttestationData{
+				Source:          &qrysmpb.Checkpoint{Epoch: 1},
+				Target:          &qrysmpb.Checkpoint{},
 				BeaconBlockRoot: params.BeaconConfig().ZeroHash[:],
 			},
-			inputCheckpt: &zondpb.Checkpoint{},
+			inputCheckpt: &qrysmpb.Checkpoint{},
 			matchedHead:  true,
 		},
 		{
 			name:       "everything matched",
 			inputState: beaconState,
-			inputData: &zondpb.AttestationData{
-				Source:          &zondpb.Checkpoint{},
-				Target:          &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
+			inputData: &qrysmpb.AttestationData{
+				Source:          &qrysmpb.Checkpoint{},
+				Target:          &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]},
 				BeaconBlockRoot: params.BeaconConfig().ZeroHash[:],
 			},
-			inputCheckpt:  &zondpb.Checkpoint{},
+			inputCheckpt:  &qrysmpb.Checkpoint{},
 			matchedSource: true,
 			matchedTarget: true,
 			matchedHead:   true,

@@ -23,22 +23,34 @@ func init() {
 func TestLifecycle(t *testing.T) {
 	prometheusService := NewService(":2112", nil)
 	prometheusService.Start()
-	// Give service time to start.
-	time.Sleep(time.Second)
 
-	// Query the service to ensure it really started.
-	resp, err := http.Get("http://localhost:2112/metrics")
-	require.NoError(t, err)
+	// Poll until the service responds, rather than sleeping a fixed second.
+	var resp *http.Response
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		r, err := http.Get("http://localhost:2112/metrics")
+		if err == nil {
+			resp = r
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	require.NotNil(t, resp, "service did not start in time")
 	assert.NotEqual(t, uint64(0), resp.ContentLength, "Unexpected content length 0")
 
-	err = prometheusService.Stop()
-	require.NoError(t, err)
-	// Give service time to stop.
-	time.Sleep(time.Second)
+	require.NoError(t, prometheusService.Stop())
 
-	// Query the service to ensure it really stopped.
-	_, err = http.Get("http://localhost:2112/metrics")
-	assert.NotNil(t, err, "Service still running after Stop()")
+	// Poll until the service stops accepting connections.
+	stopped := false
+	deadline = time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if _, err := http.Get("http://localhost:2112/metrics"); err != nil {
+			stopped = true
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	assert.Equal(t, true, stopped, "Service still running after Stop()")
 }
 
 type mockService struct {

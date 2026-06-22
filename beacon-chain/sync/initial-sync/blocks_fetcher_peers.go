@@ -11,7 +11,6 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
 	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
 	"github.com/theQRL/qrysm/config/params"
-	mathutil "github.com/theQRL/qrysm/math"
 	qrysmTime "github.com/theQRL/qrysm/time"
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
@@ -63,10 +62,7 @@ func (f *blocksFetcher) selectFailOverPeer(excludedPID peer.ID, peers []peer.ID)
 
 // waitForMinimumPeers spins and waits up until enough peers are available.
 func (f *blocksFetcher) waitForMinimumPeers(ctx context.Context) ([]peer.ID, error) {
-	required := params.BeaconConfig().MaxPeersToSync
-	if flags.Get().MinimumSyncPeers < required {
-		required = flags.Get().MinimumSyncPeers
-	}
+	required := min(flags.Get().MinimumSyncPeers, params.BeaconConfig().MaxPeersToSync)
 	for {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
@@ -93,7 +89,7 @@ func (f *blocksFetcher) waitForMinimumPeers(ctx context.Context) ([]peer.ID, err
 // filterPeers returns transformed list of peers, weight sorted by scores and capacity remaining.
 // List can be further constrained using peersPercentage, where only percentage of peers are returned.
 func (f *blocksFetcher) filterPeers(ctx context.Context, peers []peer.ID, peersPercentage float64) []peer.ID {
-	ctx, span := trace.StartSpan(ctx, "initialsync.filterPeers")
+	_, span := trace.StartSpan(ctx, "initialsync.filterPeers")
 	defer span.End()
 
 	if len(peers) == 0 {
@@ -124,15 +120,12 @@ func (f *blocksFetcher) filterPeers(ctx context.Context, peers []peer.ID, peersP
 // trimPeers limits peer list, returning only specified percentage of peers.
 // Takes system constraints into account (min/max peers to sync).
 func trimPeers(peers []peer.ID, peersPercentage float64) []peer.ID {
-	required := params.BeaconConfig().MaxPeersToSync
-	if flags.Get().MinimumSyncPeers < required {
-		required = flags.Get().MinimumSyncPeers
-	}
+	required := min(flags.Get().MinimumSyncPeers, params.BeaconConfig().MaxPeersToSync)
 	// Weak/slow peers will be pushed down the list and trimmed since only percentage of peers is selected.
 	limit := uint64(math.Round(float64(len(peers)) * peersPercentage))
 	// Limit cannot be less that minimum peers required by sync mechanism.
-	limit = mathutil.Max(limit, uint64(required))
+	limit = max(limit, uint64(required))
 	// Limit cannot be higher than number of peers available (safe-guard).
-	limit = mathutil.Min(limit, uint64(len(peers)))
+	limit = min(limit, uint64(len(peers)))
 	return peers[:limit]
 }

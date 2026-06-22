@@ -1,7 +1,6 @@
-# Prysmatic Labs Beacon Chain Implementation
+# QRL Beacon Chain Implementation
 
-// TODO(now.youtrack.cloud/issue/TQ-1)
-This is the main project folder for the beacon chain implementation of Ethereum written in Go by [Prysmatic Labs](https://prysmaticlabs.com).
+This is the main project folder for the beacon chain implementation of QRL written in Go by [the QRL team](https://theqrl.org).
 
 You can also read our main [README](https://github.com/theQRL/qrysm/blob/master/README.md) and join our active chat room on Discord.
 

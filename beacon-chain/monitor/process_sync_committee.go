@@ -6,12 +6,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // processSyncCommitteeContribution logs the event when tracked validators' aggregated sync contribution has been processed.
 // TODO: We do not log if a sync contribution was included in an aggregate (we log them when they are included in blocks)
-func (s *Service) processSyncCommitteeContribution(contribution *zondpb.SignedContributionAndProof) {
+func (s *Service) processSyncCommitteeContribution(contribution *qrysmpb.SignedContributionAndProof) {
 	idx := contribution.Message.AggregatorIndex
 	s.Lock()
 	defer s.Unlock()

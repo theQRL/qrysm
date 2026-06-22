@@ -237,7 +237,7 @@ func (s *BlockProviderScorer) WeightSorted(
 
 	scores, _ := s.mapScoresAndPeers(pids, scoreFn)
 	peers := make([]peer.ID, 0)
-	for i := 0; i < len(pids); i++ {
+	for range pids {
 		if pid := nextPID(scores); pid != "" {
 			peers = append(peers, pid)
 			delete(scores, pid)

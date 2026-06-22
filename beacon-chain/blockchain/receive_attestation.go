@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
@@ -26,18 +26,18 @@ const reorgLateBlockCountAttestations = 2 * time.Second
 // AttestationStateFetcher allows for retrieving a beacon state corresponding to the block
 // root of an attestation's target checkpoint.
 type AttestationStateFetcher interface {
-	AttestationTargetState(ctx context.Context, target *zondpb.Checkpoint) (state.ReadOnlyBeaconState, error)
+	AttestationTargetState(ctx context.Context, target *qrysmpb.Checkpoint) (state.ReadOnlyBeaconState, error)
 }
 
 // AttestationReceiver interface defines the methods of chain service receive and processing new attestations.
 type AttestationReceiver interface {
 	AttestationStateFetcher
-	VerifyLmdFfgConsistency(ctx context.Context, att *zondpb.Attestation) error
+	VerifyLmdFfgConsistency(ctx context.Context, att *qrysmpb.Attestation) error
 	InForkchoice([32]byte) bool
 }
 
 // AttestationTargetState returns the pre state of attestation.
-func (s *Service) AttestationTargetState(ctx context.Context, target *zondpb.Checkpoint) (state.ReadOnlyBeaconState, error) {
+func (s *Service) AttestationTargetState(ctx context.Context, target *qrysmpb.Checkpoint) (state.ReadOnlyBeaconState, error) {
 	ss, err := slots.EpochStart(target.Epoch)
 	if err != nil {
 		return nil, err
@@ -52,16 +52,19 @@ func (s *Service) AttestationTargetState(ctx context.Context, target *zondpb.Che
 }
 
 // VerifyLmdFfgConsistency verifies that attestation's LMD and FFG votes are consistency to each other.
-func (s *Service) VerifyLmdFfgConsistency(ctx context.Context, a *zondpb.Attestation) error {
-	targetSlot, err := slots.EpochStart(a.Data.Target.Epoch)
+//
+// Uses forkchoice's TargetRootForEpoch (which returns the canonical target
+// for the requested epoch on the requested block's chain) rather than an
+// Ancestor walk to the epoch-start slot. The Ancestor approach can return an
+// incorrect target near reorgs or on skip-slot sparse chains because the
+// epoch-start slot may not be a finalized point of reference; forkchoice's
+// per-epoch target is authoritative.
+func (s *Service) VerifyLmdFfgConsistency(ctx context.Context, a *qrysmpb.Attestation) error {
+	r, err := s.cfg.ForkChoiceStore.TargetRootForEpoch(bytesutil.ToBytes32(a.Data.BeaconBlockRoot), a.Data.Target.Epoch)
 	if err != nil {
 		return err
 	}
-	r, err := s.Ancestor(ctx, a.Data.BeaconBlockRoot, targetSlot)
-	if err != nil {
-		return err
-	}
-	if !bytes.Equal(a.Data.Target.Root, r) {
+	if !bytes.Equal(a.Data.Target.Root, r[:]) {
 		return fmt.Errorf("FFG and LMD votes are not consistent, block root: %#x, target root: %#x, canonical target root: %#x", a.Data.BeaconBlockRoot, a.Data.Target.Root, r)
 	}
 	return nil
@@ -72,7 +75,7 @@ func (s *Service) spawnProcessAttestationsRoutine() {
 	go func() {
 		_, err := s.clockWaiter.WaitForClock(s.ctx)
 		if err != nil {
-			log.WithError(err).Error("spawnProcessAttestationsRoutine failed to receive genesis data")
+			log.WithError(err).Error("SpawnProcessAttestationsRoutine failed to receive genesis data")
 			return
 		}
 		if s.genesisTime.IsZero() {
@@ -97,6 +100,7 @@ func (s *Service) spawnProcessAttestationsRoutine() {
 		for {
 			select {
 			case <-s.ctx.Done():
+				ticker.Done()
 				return
 			case slotInterval := <-ticker.C():
 				if slotInterval.Interval > 0 {
@@ -104,7 +108,7 @@ func (s *Service) spawnProcessAttestationsRoutine() {
 				} else {
 					s.cfg.ForkChoiceStore.Lock()
 					if err := s.cfg.ForkChoiceStore.NewSlot(s.ctx, slotInterval.Slot); err != nil {
-						log.WithError(err).Error("could not process new slot")
+						log.WithError(err).Error("Could not process new slot")
 					}
 					s.cfg.ForkChoiceStore.Unlock()
 
@@ -146,7 +150,7 @@ func (s *Service) UpdateHead(ctx context.Context, proposingSlot primitives.Slot)
 
 	changed, err := s.forkchoiceUpdateWithExecution(s.ctx, newHeadRoot, proposingSlot)
 	if err != nil {
-		log.WithError(err).Error("could not update forkchoice")
+		log.WithError(err).Error("Could not update forkchoice")
 	}
 	if changed {
 		s.headLock.RLock()
@@ -201,7 +205,7 @@ func (s *Service) processAttestations(ctx context.Context, disparity time.Durati
 //  1. Validate attestation, update validator's latest vote
 //  2. Apply fork choice to the processed attestation
 //  3. Save latest head info
-func (s *Service) receiveAttestationNoPubsub(ctx context.Context, att *zondpb.Attestation, disparity time.Duration) error {
+func (s *Service) receiveAttestationNoPubsub(ctx context.Context, att *qrysmpb.Attestation, disparity time.Duration) error {
 	ctx, span := trace.StartSpan(ctx, "beacon-chain.blockchain.receiveAttestationNoPubsub")
 	defer span.End()
 

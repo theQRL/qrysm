@@ -1,0 +1,9 @@
+load("@qrysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "bloop",
+    srcs = ["analyzer.go"],
+    importpath = "github.com/theQRL/qrysm/tools/analyzers/modernize/bloop",
+    visibility = ["//visibility:public"],
+    deps = ["@org_golang_x_tools//go/analysis/passes/modernize"],
+)

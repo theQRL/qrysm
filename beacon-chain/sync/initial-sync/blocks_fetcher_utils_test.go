@@ -18,7 +18,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	leakybucket "github.com/theQRL/qrysm/container/leaky-bucket"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -32,7 +32,7 @@ func TestBlocksFetcher_nonSkippedSlotAfter(t *testing.T) {
 		blocks = append(blocks, 55000)
 		blocks = append(blocks, makeSequence(57000, 57256)...)
 		var peersData []*peerData
-		for i := 0; i < size; i++ {
+		for range size {
 			peersData = append(peersData, &peerData{
 				blocks:         blocks,
 				finalizedEpoch: 1800,
@@ -48,8 +48,7 @@ func TestBlocksFetcher_nonSkippedSlotAfter(t *testing.T) {
 	}
 
 	mc, p2p, _ := initializeTestServices(t, []primitives.Slot{}, chainConfig.peers)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	fetcher := newBlocksFetcher(
 		ctx,
@@ -128,7 +127,7 @@ func TestBlocksFetcher_nonSkippedSlotAfter(t *testing.T) {
 				p2p:   p2p,
 			},
 		)
-		mc.FinalizedCheckPoint = &zondpb.Checkpoint{
+		mc.FinalizedCheckPoint = &qrysmpb.Checkpoint{
 			Epoch: 10,
 		}
 		require.NoError(t, mc.State.SetSlot(12*params.BeaconConfig().SlotsPerEpoch))
@@ -159,7 +158,7 @@ func TestBlocksFetcher_findFork(t *testing.T) {
 	p2p := p2pt.NewTestP2P(t)
 
 	// Chain contains blocks from 8 epochs (from 0 to 7, 1024 is the start slot of epoch8).
-	chain1 := extendBlockSequence(t, []*zondpb.SignedBeaconBlockCapella{}, 1000)
+	chain1 := extendBlockSequence(t, []*qrysmpb.SignedBeaconBlockZond{}, 1000)
 	finalizedSlot := primitives.Slot(255)
 	finalizedEpoch := slots.ToEpoch(finalizedSlot)
 
@@ -168,22 +167,21 @@ func TestBlocksFetcher_findFork(t *testing.T) {
 	genesisRoot, err := genesisBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	mc := &mock.ChainService{
 		State: st,
 		Root:  genesisRoot[:],
 		DB:    beaconDB,
-		FinalizedCheckPoint: &zondpb.Checkpoint{
+		FinalizedCheckPoint: &qrysmpb.Checkpoint{
 			Epoch: finalizedEpoch,
-			Root:  []byte(fmt.Sprintf("finalized_root %d", finalizedEpoch)),
+			Root:  fmt.Appendf(nil, "finalized_root %d", finalizedEpoch),
 		},
 		Genesis:        time.Now(),
 		ValidatorsRoot: [32]byte{},
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	fetcher := newBlocksFetcher(
 		ctx,
 		&blocksFetcherConfig{
@@ -198,14 +196,14 @@ func TestBlocksFetcher_findFork(t *testing.T) {
 	// Consume all chain1 blocks from many peers (alternative fork will be featured by a single peer,
 	// and should still be enough to explore alternative paths).
 	peers := make([]peer.ID, 0)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		peers = append(peers, connectPeerHavingBlocks(t, p2p, chain1, finalizedSlot, p2p.Peers()))
 	}
 
 	blockBatchLimit := uint64(flags.Get().BlockBatchLimit) * 2
 	pidInd := 0
 	for i := uint64(1); i < uint64(len(chain1)); i += blockBatchLimit {
-		req := &zondpb.BeaconBlocksByRangeRequest{
+		req := &qrysmpb.BeaconBlocksByRangeRequest{
 			StartSlot: primitives.Slot(i),
 			Step:      1,
 			Count:     blockBatchLimit,
@@ -228,7 +226,7 @@ func TestBlocksFetcher_findFork(t *testing.T) {
 	assert.Equal(t, primitives.Slot(1000), mc.HeadSlot())
 
 	// Assert no blocks on further requests, disallowing to progress.
-	req := &zondpb.BeaconBlocksByRangeRequest{
+	req := &qrysmpb.BeaconBlocksByRangeRequest{
 		StartSlot: 1001,
 		Step:      1,
 		Count:     blockBatchLimit,
@@ -244,7 +242,7 @@ func TestBlocksFetcher_findFork(t *testing.T) {
 
 	// Add peer that has blocks after 1000, but those blocks are orphaned i.e. they do not have common
 	// ancestor with what we already have. So, error is expected.
-	chain1a := extendBlockSequence(t, []*zondpb.SignedBeaconBlockCapella{}, 1060)
+	chain1a := extendBlockSequence(t, []*qrysmpb.SignedBeaconBlockZond{}, 1060)
 	connectPeerHavingBlocks(t, p2p, chain1a, finalizedSlot, p2p.Peers())
 	fork, err = fetcher.findFork(ctx, 1001)
 	require.ErrorContains(t, errNoPeersWithAltBlocks.Error(), err)
@@ -337,13 +335,13 @@ func TestBlocksFetcher_findForkWithPeer(t *testing.T) {
 	beaconDB := dbtest.SetupDB(t)
 	p1 := p2pt.NewTestP2P(t)
 
-	knownBlocks := extendBlockSequence(t, []*zondpb.SignedBeaconBlockCapella{}, 512)
+	knownBlocks := extendBlockSequence(t, []*qrysmpb.SignedBeaconBlockZond{}, 512)
 	genesisBlock := knownBlocks[0]
 	util.SaveBlock(t, context.Background(), beaconDB, genesisBlock)
 	genesisRoot, err := genesisBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	mc := &mock.ChainService{
 		State:          st,
@@ -353,8 +351,7 @@ func TestBlocksFetcher_findForkWithPeer(t *testing.T) {
 		ValidatorsRoot: [32]byte{},
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	fetcher := newBlocksFetcher(
 		ctx,
 		&blocksFetcherConfig{
@@ -387,7 +384,7 @@ func TestBlocksFetcher_findForkWithPeer(t *testing.T) {
 		defer func() {
 			assert.NoError(t, p1.Disconnect(p2.PeerID()))
 		}()
-		p1.Peers().SetChainState(p2.PeerID(), &zondpb.Status{
+		p1.Peers().SetChainState(p2.PeerID(), &qrysmpb.Status{
 			HeadRoot: nil,
 			HeadSlot: 0,
 		})
@@ -418,7 +415,7 @@ func TestBlocksFetcher_findForkWithPeer(t *testing.T) {
 	})
 
 	t.Run("first block is diverging - no common ancestor", func(t *testing.T) {
-		altBlocks := extendBlockSequence(t, []*zondpb.SignedBeaconBlockCapella{}, 512)
+		altBlocks := extendBlockSequence(t, []*qrysmpb.SignedBeaconBlockZond{}, 512)
 		p2 := connectPeerHavingBlocks(t, p1, altBlocks, 512, p1.Peers())
 		time.Sleep(100 * time.Millisecond)
 		defer func() {
@@ -467,7 +464,7 @@ func TestBlocksFetcher_findAncestor(t *testing.T) {
 	beaconDB := dbtest.SetupDB(t)
 	p2p := p2pt.NewTestP2P(t)
 
-	knownBlocks := extendBlockSequence(t, []*zondpb.SignedBeaconBlockCapella{}, 128)
+	knownBlocks := extendBlockSequence(t, []*qrysmpb.SignedBeaconBlockZond{}, 128)
 	finalizedSlot := primitives.Slot(63)
 	finalizedEpoch := slots.ToEpoch(finalizedSlot)
 
@@ -476,22 +473,21 @@ func TestBlocksFetcher_findAncestor(t *testing.T) {
 	genesisRoot, err := genesisBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	mc := &mock.ChainService{
 		State: st,
 		Root:  genesisRoot[:],
 		DB:    beaconDB,
-		FinalizedCheckPoint: &zondpb.Checkpoint{
+		FinalizedCheckPoint: &qrysmpb.Checkpoint{
 			Epoch: finalizedEpoch,
-			Root:  []byte(fmt.Sprintf("finalized_root %d", finalizedEpoch)),
+			Root:  fmt.Appendf(nil, "finalized_root %d", finalizedEpoch),
 		},
 		Genesis:        time.Now(),
 		ValidatorsRoot: [32]byte{},
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	fetcher := newBlocksFetcher(
 		ctx,
 		&blocksFetcherConfig{
@@ -609,8 +605,7 @@ func TestBlocksFetcher_currentHeadAndTargetEpochs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mc, p2p, _ := initializeTestServices(t, []primitives.Slot{}, tt.peers)
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			ctx := t.Context()
 			fetcher := newBlocksFetcher(
 				ctx,
 				&blocksFetcherConfig{
@@ -618,7 +613,7 @@ func TestBlocksFetcher_currentHeadAndTargetEpochs(t *testing.T) {
 					p2p:   p2p,
 				},
 			)
-			mc.FinalizedCheckPoint = &zondpb.Checkpoint{
+			mc.FinalizedCheckPoint = &qrysmpb.Checkpoint{
 				Epoch: tt.ourFinalizedEpoch,
 			}
 			require.NoError(t, mc.State.SetSlot(tt.ourHeadSlot))

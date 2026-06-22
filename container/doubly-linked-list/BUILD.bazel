@@ -1,19 +1,19 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "doubly-linked-list",
     srcs = ["list.go"],
     importpath = "github.com/theQRL/qrysm/container/doubly-linked-list",
     visibility = ["//visibility:public"],
-    deps = ["@com_github_pkg_errors//:go_default_library"],
+    deps = ["@com_github_pkg_errors//:errors"],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "doubly-linked-list_test",
     srcs = ["list_test.go"],
-    embed = [":go_default_library"],
+    embed = [":doubly-linked-list"],
     deps = [
-        "//testing/assert:go_default_library",
-        "//testing/require:go_default_library",
+        "//testing/assert",
+        "//testing/require",
     ],
 )

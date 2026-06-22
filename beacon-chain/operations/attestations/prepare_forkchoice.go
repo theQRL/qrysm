@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/config/features"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/crypto/hash"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	attaggregation "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation/attestations"
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
@@ -49,6 +49,7 @@ func (s *Service) prepareForkChoiceAtts() {
 			}
 		case <-s.ctx.Done():
 			log.Debug("Context closed, exiting routine")
+			ticker.Done()
 			return
 		}
 	}
@@ -67,7 +68,7 @@ func (s *Service) batchForkChoiceAtts(ctx context.Context) error {
 	atts := append(s.cfg.Pool.AggregatedAttestations(), s.cfg.Pool.BlockAttestations()...)
 	atts = append(atts, s.cfg.Pool.ForkchoiceAttestations()...)
 
-	attsByDataRoot := make(map[[32]byte][]*zondpb.Attestation, len(atts))
+	attsByDataRoot := make(map[[32]byte][]*qrysmpb.Attestation, len(atts))
 
 	// Consolidate attestations by aggregating them by similar data root.
 	for _, att := range atts {
@@ -103,10 +104,10 @@ func (s *Service) batchForkChoiceAtts(ctx context.Context) error {
 
 // This aggregates a list of attestations using the aggregation algorithm defined in AggregateAttestations
 // and saves the attestations for fork choice.
-func (s *Service) aggregateAndSaveForkChoiceAtts(atts []*zondpb.Attestation) error {
-	clonedAtts := make([]*zondpb.Attestation, len(atts))
+func (s *Service) aggregateAndSaveForkChoiceAtts(atts []*qrysmpb.Attestation) error {
+	clonedAtts := make([]*qrysmpb.Attestation, len(atts))
 	for i, a := range atts {
-		clonedAtts[i] = zondpb.CopyAttestation(a)
+		clonedAtts[i] = qrysmpb.CopyAttestation(a)
 	}
 	aggregatedAtts, err := attaggregation.Aggregate(clonedAtts)
 	if err != nil {
@@ -118,8 +119,8 @@ func (s *Service) aggregateAndSaveForkChoiceAtts(atts []*zondpb.Attestation) err
 
 // This checks if the attestation has previously been aggregated for fork choice
 // return true if yes, false if no.
-func (s *Service) seen(att *zondpb.Attestation) (bool, error) {
-	attRoot, err := hash.HashProto(att.Data)
+func (s *Service) seen(att *qrysmpb.Attestation) (bool, error) {
+	attRoot, err := hash.Proto(att.Data)
 	if err != nil {
 		return false, err
 	}

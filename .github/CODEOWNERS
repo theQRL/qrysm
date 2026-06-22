@@ -1,5 +1,2 @@
 # Automatically require code review from QRL core team.
 * @theqrl/core
-
-# Anyone on QRL core team can approve dependency updates.
-deps.bzl @theqrl/core

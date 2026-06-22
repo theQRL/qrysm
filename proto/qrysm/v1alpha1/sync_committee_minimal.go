@@ -1,6 +1,6 @@
 //go:build minimal
 
-package zond
+package qrl
 
 import (
 	"github.com/theQRL/go-bitfield"

@@ -8,20 +8,20 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/shared"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
 )
 
-const prepareBeaconProposerTestEndpoint = "/zond/v1/validator/prepare_beacon_proposer"
+const prepareBeaconProposerTestEndpoint = "/qrl/v1/validator/prepare_beacon_proposer"
 
 func TestPrepareBeaconProposer_Valid(t *testing.T) {
-	const feeRecipient1 = "Zca008b199c03a2a2f6bc2ed52d6404c4d8510b35"
-	const feeRecipient2 = "Z8145d80111309e4621ed7632319664ac440b0198"
-	const feeRecipient3 = "Z085f2adb1295821838910be402b3c8cdc118bd86"
+	const feeRecipient1 = "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ca008b199c03a2a2f6bc2ed52d6404c4d8510b35"
+	const feeRecipient2 = "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000008145d80111309e4621ed7632319664ac440b0198"
+	const feeRecipient3 = "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000085f2adb1295821838910be402b3c8cdc118bd86"
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -58,14 +58,14 @@ func TestPrepareBeaconProposer_Valid(t *testing.T) {
 		nil,
 	).Times(1)
 
-	decodedFeeRecipient1, err := hexutil.DecodeZ(feeRecipient1)
+	decodedFeeRecipient1, err := hexutil.DecodeQ(feeRecipient1)
 	require.NoError(t, err)
-	decodedFeeRecipient2, err := hexutil.DecodeZ(feeRecipient2)
+	decodedFeeRecipient2, err := hexutil.DecodeQ(feeRecipient2)
 	require.NoError(t, err)
-	decodedFeeRecipient3, err := hexutil.DecodeZ(feeRecipient3)
+	decodedFeeRecipient3, err := hexutil.DecodeQ(feeRecipient3)
 	require.NoError(t, err)
 
-	protoRecipients := []*zondpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
+	protoRecipients := []*qrysmpb.PrepareBeaconProposerRequest_FeeRecipientContainer{
 		{
 			ValidatorIndex: 1,
 			FeeRecipient:   decodedFeeRecipient1,

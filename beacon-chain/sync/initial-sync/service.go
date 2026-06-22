@@ -78,7 +78,7 @@ func (s *Service) Start() {
 	log.Info("Waiting for state to be initialized")
 	clock, err := s.cfg.ClockWaiter.WaitForClock(s.ctx)
 	if err != nil {
-		log.WithError(err).Error("initial-sync failed to receive startup event")
+		log.WithError(err).Error("Initial-sync failed to receive startup event")
 		return
 	}
 	s.clock = clock
@@ -108,8 +108,10 @@ func (s *Service) Start() {
 	}
 	s.chainStarted.Set()
 	log.Info("Starting initial chain sync...")
-	// Are we already in sync, or close to it?
-	if slots.ToEpoch(s.cfg.Chain.HeadSlot()) == slots.ToEpoch(currentSlot) {
+	// Initial sync completion must be slot-precise. Being in the same epoch can still
+	// leave the node several slots behind the current head — using an epoch-granular
+	// comparison races the hand-off to regular sync.
+	if s.cfg.Chain.HeadSlot() >= currentSlot {
 		log.Info("Already synced to the current chain head")
 		s.markSynced()
 		return
@@ -119,7 +121,7 @@ func (s *Service) Start() {
 		if errors.Is(s.ctx.Err(), context.Canceled) {
 			return
 		}
-		panic(err)
+		panic(err) // lint:nopanic
 	}
 	log.Infof("Synced up to slot %d", s.cfg.Chain.HeadSlot())
 	s.markSynced()
@@ -169,18 +171,16 @@ func (s *Service) Resync() error {
 
 	s.waitForMinimumPeers()
 
+	l := log
 	if err = s.roundRobinSync(genesis); err != nil {
-		log = log.WithError(err)
+		l = log.WithError(err)
 	}
-	log.WithField("slot", s.cfg.Chain.HeadSlot()).Info("Resync attempt complete")
+	l.WithField("slot", s.cfg.Chain.HeadSlot()).Info("Resync attempt complete")
 	return nil
 }
 
 func (s *Service) waitForMinimumPeers() {
-	required := params.BeaconConfig().MaxPeersToSync
-	if flags.Get().MinimumSyncPeers < required {
-		required = flags.Get().MinimumSyncPeers
-	}
+	required := min(flags.Get().MinimumSyncPeers, params.BeaconConfig().MaxPeersToSync)
 	for {
 		cp := s.cfg.Chain.FinalizedCheckpt()
 		_, peers := s.cfg.P2P.Peers().BestNonFinalized(flags.Get().MinimumSyncPeers, cp.Epoch)

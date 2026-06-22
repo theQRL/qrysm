@@ -8,10 +8,10 @@ import (
 	"testing"
 
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	keystorev1 "github.com/theQRL/qrysm/pkg/go-qrl-wallet-encryptor-keystore"
+	qrlpbservice "github.com/theQRL/qrysm/proto/qrl/service"
 	"github.com/theQRL/qrysm/testing/require"
 	mock "github.com/theQRL/qrysm/validator/accounts/testing"
 	"github.com/theQRL/qrysm/validator/keymanager"
@@ -31,7 +31,7 @@ func TestLocalKeymanager_DeleteKeystores(t *testing.T) {
 	ctx := context.Background()
 	keystores := make([]*keymanager.Keystore, numAccounts)
 	passwords := make([]string, numAccounts)
-	for i := 0; i < numAccounts; i++ {
+	for i := range numAccounts {
 		keystores[i] = createRandomKeystore(t, password)
 		passwords[i] = password
 	}
@@ -42,13 +42,13 @@ func TestLocalKeymanager_DeleteKeystores(t *testing.T) {
 	require.Equal(t, numAccounts, len(accounts))
 
 	t.Run("keys not found", func(t *testing.T) {
-		notFoundPubKey := [field_params.DilithiumPubkeyLength]byte{1, 2, 3}
-		notFoundPubKey2 := [field_params.DilithiumPubkeyLength]byte{4, 5, 6}
+		notFoundPubKey := [field_params.MLDSA87PubkeyLength]byte{1, 2, 3}
+		notFoundPubKey2 := [field_params.MLDSA87PubkeyLength]byte{4, 5, 6}
 		statuses, err := dr.DeleteKeystores(ctx, [][]byte{notFoundPubKey[:], notFoundPubKey2[:]})
 		require.NoError(t, err)
 		require.Equal(t, 2, len(statuses))
-		require.Equal(t, zondpbservice.DeletedKeystoreStatus_NOT_FOUND, statuses[0].Status)
-		require.Equal(t, zondpbservice.DeletedKeystoreStatus_NOT_FOUND, statuses[1].Status)
+		require.Equal(t, qrlpbservice.DeletedKeystoreStatus_NOT_FOUND, statuses[0].Status)
+		require.Equal(t, qrlpbservice.DeletedKeystoreStatus_NOT_FOUND, statuses[1].Status)
 	})
 	t.Run("file write errors should not lead to updated local keystore or cache", func(t *testing.T) {
 		wallet.HasWriteFileError = true
@@ -68,7 +68,7 @@ func TestLocalKeymanager_DeleteKeystores(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, 1, len(statuses))
-		require.Equal(t, zondpbservice.DeletedKeystoreStatus_DELETED, statuses[0].Status)
+		require.Equal(t, qrlpbservice.DeletedKeystoreStatus_DELETED, statuses[0].Status)
 
 		// Ensure the keystore file was written to the wallet
 		// and ensure we can decrypt it using the EIP-2335 standard.
@@ -83,7 +83,7 @@ func TestLocalKeymanager_DeleteKeystores(t *testing.T) {
 		require.NoError(t, json.Unmarshal(encodedKeystore, keystoreFile))
 
 		// We extract the accounts from the keystore.
-		decryptor := keystorev4.New()
+		decryptor := keystorev1.New()
 		encodedAccounts, err := decryptor.Decrypt(keystoreFile.Crypto, password)
 		require.NoError(t, err, "Could not decrypt validator accounts")
 		store := &accountStore{}
@@ -109,9 +109,9 @@ func TestLocalKeymanager_DeleteKeystores(t *testing.T) {
 		require.Equal(t, 4, len(statuses))
 		for i, st := range statuses {
 			if i == 0 {
-				require.Equal(t, zondpbservice.DeletedKeystoreStatus_DELETED, st.Status)
+				require.Equal(t, qrlpbservice.DeletedKeystoreStatus_DELETED, st.Status)
 			} else {
-				require.Equal(t, zondpbservice.DeletedKeystoreStatus_NOT_ACTIVE, st.Status)
+				require.Equal(t, qrlpbservice.DeletedKeystoreStatus_NOT_ACTIVE, st.Status)
 			}
 		}
 
@@ -128,7 +128,7 @@ func TestLocalKeymanager_DeleteKeystores(t *testing.T) {
 		require.NoError(t, json.Unmarshal(encodedKeystore, keystoreFile))
 
 		// We extract the accounts from the keystore.
-		decryptor := keystorev4.New()
+		decryptor := keystorev1.New()
 		encodedAccounts, err := decryptor.Decrypt(keystoreFile.Crypto, password)
 		require.NoError(t, err, "Could not decrypt validator accounts")
 		store := &accountStore{}

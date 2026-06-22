@@ -6,7 +6,7 @@ import (
 
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
@@ -16,7 +16,7 @@ func TestStateSummary_CanSaveRetrieve(t *testing.T) {
 	ctx := context.Background()
 	r1 := bytesutil.ToBytes32([]byte{'A'})
 	r2 := bytesutil.ToBytes32([]byte{'B'})
-	s1 := &zondpb.StateSummary{Slot: 1, Root: r1[:]}
+	s1 := &qrysmpb.StateSummary{Slot: 1, Root: r1[:]}
 
 	// State summary should not exist yet.
 	require.Equal(t, false, db.HasStateSummary(ctx, r1), "State summary should not be saved")
@@ -28,7 +28,7 @@ func TestStateSummary_CanSaveRetrieve(t *testing.T) {
 	assert.DeepEqual(t, s1, saved, "State summary does not equal")
 
 	// Save a new state summary.
-	s2 := &zondpb.StateSummary{Slot: 2, Root: r2[:]}
+	s2 := &qrysmpb.StateSummary{Slot: 2, Root: r2[:]}
 
 	// State summary should not exist yet.
 	require.Equal(t, false, db.HasStateSummary(ctx, r2), "State summary should not be saved")
@@ -43,18 +43,18 @@ func TestStateSummary_CanSaveRetrieve(t *testing.T) {
 func TestStateSummary_CacheToDB(t *testing.T) {
 	db := setupDB(t)
 
-	summaries := make([]*zondpb.StateSummary, stateSummaryCachePruneCount-1)
+	summaries := make([]*qrysmpb.StateSummary, stateSummaryCachePruneCount-1)
 	for i := range summaries {
-		summaries[i] = &zondpb.StateSummary{Slot: primitives.Slot(i), Root: bytesutil.PadTo(bytesutil.Uint64ToBytesLittleEndian(uint64(i)), 32)}
+		summaries[i] = &qrysmpb.StateSummary{Slot: primitives.Slot(i), Root: bytesutil.PadTo(bytesutil.Uint64ToBytesLittleEndian(uint64(i)), 32)}
 	}
 
 	require.NoError(t, db.SaveStateSummaries(context.Background(), summaries))
 	require.Equal(t, db.stateSummaryCache.len(), stateSummaryCachePruneCount-1)
 
-	require.NoError(t, db.SaveStateSummary(context.Background(), &zondpb.StateSummary{Slot: 1000, Root: []byte{'a', 'b'}}))
+	require.NoError(t, db.SaveStateSummary(context.Background(), &qrysmpb.StateSummary{Slot: 1000, Root: []byte{'a', 'b'}}))
 	require.Equal(t, db.stateSummaryCache.len(), stateSummaryCachePruneCount)
 
-	require.NoError(t, db.SaveStateSummary(context.Background(), &zondpb.StateSummary{Slot: 1001, Root: []byte{'c', 'd'}}))
+	require.NoError(t, db.SaveStateSummary(context.Background(), &qrysmpb.StateSummary{Slot: 1001, Root: []byte{'c', 'd'}}))
 	require.Equal(t, db.stateSummaryCache.len(), 1)
 
 	for i := range summaries {
@@ -67,7 +67,7 @@ func TestStateSummary_CanDelete(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
 	r1 := bytesutil.ToBytes32([]byte{'A'})
-	s1 := &zondpb.StateSummary{Slot: 1, Root: r1[:]}
+	s1 := &qrysmpb.StateSummary{Slot: 1, Root: r1[:]}
 
 	require.Equal(t, false, db.HasStateSummary(ctx, r1), "State summary should not be saved")
 	require.NoError(t, db.SaveStateSummary(ctx, s1))

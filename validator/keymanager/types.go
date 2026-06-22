@@ -7,9 +7,9 @@ import (
 
 	"github.com/theQRL/qrysm/async/event"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	qrlpbservice "github.com/theQRL/qrysm/proto/qrl/service"
 	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
-	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
 )
 
 // IKeymanager defines a general keymanager interface for Qrysm wallets.
@@ -24,50 +24,50 @@ type IKeymanager interface {
 
 // KeysFetcher for validating private and public keys.
 type KeysFetcher interface {
-	FetchValidatingSeeds(ctx context.Context) ([][field_params.DilithiumSeedLength]byte, error)
+	FetchValidatingSeeds(ctx context.Context) ([][field_params.MLDSA87SeedLength]byte, error)
 	PublicKeysFetcher
 }
 
 // PublicKeysFetcher for validating public keys.
 type PublicKeysFetcher interface {
-	FetchValidatingPublicKeys(ctx context.Context) ([][field_params.DilithiumPubkeyLength]byte, error)
+	FetchValidatingPublicKeys(ctx context.Context) ([][field_params.MLDSA87PubkeyLength]byte, error)
 }
 
 // Signer allows signing messages using a validator private key.
 type Signer interface {
-	Sign(context.Context, *validatorpb.SignRequest) (dilithium.Signature, error)
+	Sign(context.Context, *validatorpb.SignRequest) (ml_dsa_87.Signature, error)
 }
 
 // Importer can import new keystores into the keymanager.
 type Importer interface {
 	ImportKeystores(
 		ctx context.Context, keystores []*Keystore, passwords []string,
-	) ([]*zondpbservice.ImportedKeystoreStatus, error)
+	) ([]*qrlpbservice.ImportedKeystoreStatus, error)
 }
 
 // Deleter can delete keystores from the keymanager.
 type Deleter interface {
-	DeleteKeystores(ctx context.Context, publicKeys [][]byte) ([]*zondpbservice.DeletedKeystoreStatus, error)
+	DeleteKeystores(ctx context.Context, publicKeys [][]byte) ([]*qrlpbservice.DeletedKeystoreStatus, error)
 }
 
 // KeyChangeSubscriber allows subscribing to changes made to the underlying keys.
 type KeyChangeSubscriber interface {
-	SubscribeAccountChanges(pubKeysChan chan [][field_params.DilithiumPubkeyLength]byte) event.Subscription
+	SubscribeAccountChanges(pubKeysChan chan [][field_params.MLDSA87PubkeyLength]byte) event.Subscription
 }
 
 // KeyStoreExtractor allows keys to be extracted from the keymanager.
 type KeyStoreExtractor interface {
-	ExtractKeystores(ctx context.Context, publicKeys []dilithium.PublicKey, password string) ([]*Keystore, error)
+	ExtractKeystores(ctx context.Context, publicKeys []ml_dsa_87.PublicKey, password string) ([]*Keystore, error)
 }
 
 // PublicKeyAdder allows adding public keys to the keymanager.
 // type PublicKeyAdder interface {
-// 	AddPublicKeys(ctx context.Context, publicKeys [][field_params.DilithiumPubkeyLength]byte) ([]*zondpbservice.ImportedRemoteKeysStatus, error)
+// 	AddPublicKeys(ctx context.Context, publicKeys [][field_params.MLDSA87PubkeyLength]byte) ([]*qrlpbservice.ImportedRemoteKeysStatus, error)
 // }
 
 // PublicKeyDeleter allows deleting public keys set in keymanager.
 // type PublicKeyDeleter interface {
-// 	DeletePublicKeys(ctx context.Context, publicKeys [][field_params.DilithiumPubkeyLength]byte) ([]*zondpbservice.DeletedRemoteKeysStatus, error)
+// 	DeletePublicKeys(ctx context.Context, publicKeys [][field_params.MLDSA87PubkeyLength]byte) ([]*qrlpbservice.DeletedRemoteKeysStatus, error)
 // }
 
 type ListKeymanagerAccountConfig struct {
@@ -83,12 +83,12 @@ type AccountLister interface {
 
 // Keystore json file representation as a Go struct.
 type Keystore struct {
-	Crypto      map[string]interface{} `json:"crypto"`
-	ID          string                 `json:"uuid"`
-	Pubkey      string                 `json:"pubkey"`
-	Version     uint                   `json:"version"`
-	Description string                 `json:"description"`
-	Path        string                 `json:"path"`
+	Crypto      map[string]any `json:"crypto"`
+	ID          string         `json:"uuid"`
+	Pubkey      string         `json:"pubkey"`
+	Version     uint           `json:"version"`
+	Description string         `json:"description"`
+	Path        string         `json:"path"`
 }
 
 // Kind defines an enum for either local, derived, or remote-signing
@@ -104,13 +104,9 @@ const (
 	// Web3Signer
 )
 
-// @NOTE(rgeraldes24):
-// QRL Version - https://github.com/theQRL/go-zond-wallet-encryptor-keystore/blob/main/decrypt.go#L87
-// Eth Version - https://github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4/blob/master/decrypt.go#L168
 // IncorrectPasswordErrMsg defines a common error string representing an EIP-2335
 // keystore password was incorrect.
-// const IncorrectPasswordErrMsg = "invalid checksum"
-const IncorrectPasswordErrMsg = "checksum mismatch"
+const IncorrectPasswordErrMsg = "failed to decrypt and authenticate ciphertext: cipher: message authentication failed"
 
 // String marshals a keymanager kind to a string value.
 func (k Kind) String() string {

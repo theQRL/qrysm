@@ -11,7 +11,7 @@ import (
 	opfeed "github.com/theQRL/qrysm/beacon-chain/core/feed/operation"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"go.opencensus.io/trace"
 )
 
@@ -38,7 +38,7 @@ func (s *Service) validateVoluntaryExit(ctx context.Context, pid peer.ID, msg *p
 		return pubsub.ValidationReject, err
 	}
 
-	exit, ok := m.(*zondpb.SignedVoluntaryExit)
+	exit, ok := m.(*qrysmpb.SignedVoluntaryExit)
 	if !ok {
 		return pubsub.ValidationReject, errWrongMessage
 	}
@@ -50,7 +50,7 @@ func (s *Service) validateVoluntaryExit(ctx context.Context, pid peer.ID, msg *p
 		return pubsub.ValidationIgnore, nil
 	}
 
-	headState, err := s.cfg.chain.HeadState(ctx)
+	headState, err := s.cfg.chain.HeadStateReadOnly(ctx)
 	if err != nil {
 		return pubsub.ValidationIgnore, err
 	}

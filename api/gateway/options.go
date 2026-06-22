@@ -82,7 +82,8 @@ func WithApiMiddleware(endpointFactory apimiddleware.EndpointFactory) Option {
 func WithTimeout(seconds uint64) Option {
 	return func(g *Gateway) error {
 		g.cfg.timeout = time.Second * time.Duration(seconds)
-		gwruntime.DefaultContextTimeout = time.Second * time.Duration(seconds)
+		// Keep grpc-gateway's process-global default disabled and enforce timeouts per request instead.
+		gwruntime.DefaultContextTimeout = 0
 		return nil
 	}
 }

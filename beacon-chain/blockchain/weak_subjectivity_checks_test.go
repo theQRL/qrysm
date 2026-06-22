@@ -11,7 +11,7 @@ import (
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 	"github.com/theQRL/qrysm/time/slots"
@@ -20,7 +20,7 @@ import (
 func TestService_VerifyWeakSubjectivityRoot(t *testing.T) {
 	beaconDB := testDB.SetupDB(t)
 
-	b := util.NewBeaconBlockCapella()
+	b := util.NewBeaconBlockZond()
 	b.Block.Slot = 1792480
 	util.SaveBlock(t, context.Background(), beaconDB, b)
 	r, err := b.Block.HashTreeRoot()
@@ -31,7 +31,7 @@ func TestService_VerifyWeakSubjectivityRoot(t *testing.T) {
 		wsVerified     bool
 		disabled       bool
 		wantErr        error
-		checkpt        *zondpb.Checkpoint
+		checkpt        *qrysmpb.Checkpoint
 		finalizedEpoch primitives.Epoch
 		name           string
 	}{
@@ -41,29 +41,29 @@ func TestService_VerifyWeakSubjectivityRoot(t *testing.T) {
 		},
 		{
 			name:           "not yet to verify, ws epoch higher than finalized epoch",
-			checkpt:        &zondpb.Checkpoint{Root: bytesutil.PadTo([]byte{'a'}, 32), Epoch: blockEpoch},
+			checkpt:        &qrysmpb.Checkpoint{Root: bytesutil.PadTo([]byte{'a'}, 32), Epoch: blockEpoch},
 			finalizedEpoch: blockEpoch - 1,
 		},
 		{
 			name:           "can't find the block in DB",
-			checkpt:        &zondpb.Checkpoint{Root: bytesutil.PadTo([]byte{'a'}, fieldparams.RootLength), Epoch: 1},
+			checkpt:        &qrysmpb.Checkpoint{Root: bytesutil.PadTo([]byte{'a'}, fieldparams.RootLength), Epoch: 1},
 			finalizedEpoch: blockEpoch + 1,
 			wantErr:        errWSBlockNotFound,
 		},
 		{
 			name:           "can't find the block corresponds to ws epoch in DB",
-			checkpt:        &zondpb.Checkpoint{Root: r[:], Epoch: blockEpoch - 2}, // Root belongs in epoch 1.
+			checkpt:        &qrysmpb.Checkpoint{Root: r[:], Epoch: blockEpoch - 2}, // Root belongs in epoch 1.
 			finalizedEpoch: blockEpoch - 1,
 			wantErr:        errWSBlockNotFoundInEpoch,
 		},
 		{
 			name:           "can verify and pass",
-			checkpt:        &zondpb.Checkpoint{Root: r[:], Epoch: blockEpoch},
+			checkpt:        &qrysmpb.Checkpoint{Root: r[:], Epoch: blockEpoch},
 			finalizedEpoch: blockEpoch + 1,
 		},
 		{
 			name:           "equal epoch",
-			checkpt:        &zondpb.Checkpoint{Root: r[:], Epoch: blockEpoch},
+			checkpt:        &qrysmpb.Checkpoint{Root: r[:], Epoch: blockEpoch},
 			finalizedEpoch: blockEpoch,
 		},
 	}

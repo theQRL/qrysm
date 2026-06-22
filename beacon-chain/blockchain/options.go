@@ -8,14 +8,13 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/execution"
 	"github.com/theQRL/qrysm/beacon-chain/forkchoice"
 	"github.com/theQRL/qrysm/beacon-chain/operations/attestations"
-	"github.com/theQRL/qrysm/beacon-chain/operations/dilithiumtoexec"
 	"github.com/theQRL/qrysm/beacon-chain/operations/slashings"
 	"github.com/theQRL/qrysm/beacon-chain/operations/voluntaryexits"
 	"github.com/theQRL/qrysm/beacon-chain/p2p"
 	"github.com/theQRL/qrysm/beacon-chain/startup"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 type Option func(s *Service) error
@@ -29,7 +28,7 @@ func WithMaxGoroutines(x int) Option {
 }
 
 // WithWeakSubjectivityCheckpoint for checkpoint sync.
-func WithWeakSubjectivityCheckpoint(c *zondpb.Checkpoint) Option {
+func WithWeakSubjectivityCheckpoint(c *qrysmpb.Checkpoint) Option {
 	return func(s *Service) error {
 		s.cfg.WeakSubjectivityCheckpt = c
 		return nil
@@ -96,14 +95,6 @@ func WithExitPool(p voluntaryexits.PoolManager) Option {
 func WithSlashingPool(p slashings.PoolManager) Option {
 	return func(s *Service) error {
 		s.cfg.SlashingPool = p
-		return nil
-	}
-}
-
-// WithDilithiumToExecPool to keep track of Dilithium to Execution address changes.
-func WithDilithiumToExecPool(p dilithiumtoexec.PoolManager) Option {
-	return func(s *Service) error {
-		s.cfg.DilithiumToExecPool = p
 		return nil
 	}
 }

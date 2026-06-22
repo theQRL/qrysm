@@ -13,9 +13,9 @@ import (
 func TestStore_EIPBlacklistedPublicKeys(t *testing.T) {
 	ctx := context.Background()
 	numValidators := 100
-	publicKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
-	for i := 0; i < numValidators; i++ {
-		var key [field_params.DilithiumPubkeyLength]byte
+	publicKeys := make([][field_params.MLDSA87PubkeyLength]byte, numValidators)
+	for i := range numValidators {
+		var key [field_params.MLDSA87PubkeyLength]byte
 		copy(key[:], fmt.Sprintf("%d", i))
 		publicKeys[i] = key
 	}
@@ -33,7 +33,7 @@ func TestStore_EIPBlacklistedPublicKeys(t *testing.T) {
 	require.NoError(t, err)
 
 	// Keys are not guaranteed to be ordered, so we create a map for comparisons.
-	want := make(map[[field_params.DilithiumPubkeyLength]byte]bool)
+	want := make(map[[field_params.MLDSA87PubkeyLength]byte]bool)
 	for _, pubKey := range publicKeys[:50] {
 		want[pubKey] = true
 	}

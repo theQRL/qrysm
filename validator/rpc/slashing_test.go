@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/validator/accounts"
@@ -13,6 +12,7 @@ import (
 	"github.com/theQRL/qrysm/validator/keymanager"
 	"github.com/theQRL/qrysm/validator/slashing-protection-history/format"
 	mocks "github.com/theQRL/qrysm/validator/testing"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func TestImportSlashingProtection_Preconditions(t *testing.T) {
@@ -69,7 +69,7 @@ func TestImportSlashingProtection_Preconditions(t *testing.T) {
 	// Generate mock slashing history.
 	attestingHistory := make([][]*kv.AttestationRecord, 0)
 	proposalHistory := make([]kv.ProposalHistoryForPubkey, len(pubKeys))
-	for i := 0; i < len(pubKeys); i++ {
+	for i := range pubKeys {
 		proposalHistory[i].Proposals = make([]kv.Proposal, 0)
 	}
 	mockJSON, err := mocks.MockSlashingProtectionJSON(pubKeys, attestingHistory, proposalHistory)
@@ -93,7 +93,7 @@ func TestExportSlashingProtection_Preconditions(t *testing.T) {
 		walletDir: defaultWalletPath,
 	}
 	// No validator DB provided.
-	_, err := s.ExportSlashingProtection(ctx, &empty.Empty{})
+	_, err := s.ExportSlashingProtection(ctx, &emptypb.Empty{})
 	require.ErrorContains(t, "err finding validator database at path", err)
 
 	numValidators := 10
@@ -116,7 +116,7 @@ func TestExportSlashingProtection_Preconditions(t *testing.T) {
 	err = validatorDB.SaveGenesisValidatorsRoot(ctx, genesisValidatorsRoot[:])
 	require.NoError(t, err)
 
-	_, err = s.ExportSlashingProtection(ctx, &empty.Empty{})
+	_, err = s.ExportSlashingProtection(ctx, &emptypb.Empty{})
 	require.NoError(t, err)
 }
 
@@ -149,7 +149,7 @@ func TestImportExportSlashingProtection_RoundTrip(t *testing.T) {
 	// Generate mock slashing history.
 	attestingHistory := make([][]*kv.AttestationRecord, 0)
 	proposalHistory := make([]kv.ProposalHistoryForPubkey, len(pubKeys))
-	for i := 0; i < len(pubKeys); i++ {
+	for i := range pubKeys {
 		proposalHistory[i].Proposals = make([]kv.Proposal, 0)
 	}
 	mockJSON, err := mocks.MockSlashingProtectionJSON(pubKeys, attestingHistory, proposalHistory)
@@ -165,7 +165,7 @@ func TestImportExportSlashingProtection_RoundTrip(t *testing.T) {
 	_, err = s.ImportSlashingProtection(ctx, req)
 	require.NoError(t, err)
 
-	reqE, err := s.ExportSlashingProtection(ctx, &empty.Empty{})
+	reqE, err := s.ExportSlashingProtection(ctx, &emptypb.Empty{})
 	require.NoError(t, err)
 
 	// Attempt to read the exported data and convert from string to EIP-3076.

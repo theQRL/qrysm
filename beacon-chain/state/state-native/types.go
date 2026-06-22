@@ -20,7 +20,7 @@ func init() {
 	fieldMap[types.RandaoMixes] = types.BasicArray
 
 	// Initialize the composite arrays.
-	fieldMap[types.Eth1DataVotes] = types.CompositeArray
+	fieldMap[types.ExecutionDataVotes] = types.CompositeArray
 	fieldMap[types.Validators] = types.CompositeArray
 	fieldMap[types.Balances] = types.CompressedArray
 }

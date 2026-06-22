@@ -11,6 +11,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
+	qrlparams "github.com/theQRL/go-qrl/params"
 	"github.com/theQRL/qrysm/api/client/builder"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
@@ -39,6 +40,7 @@ var emptyTransactionsRoot = [32]byte{127, 254, 36, 30, 166, 1, 135, 253, 176, 24
 // blockBuilderTimeout is the maximum amount of time allowed for a block builder to respond to a
 // block request. This value is known as `BUILDER_PROPOSAL_DELAY_TOLERANCE` in builder spec.
 const blockBuilderTimeout = 1 * time.Second
+const gasLimitAdjustmentFactor = 1024
 
 // Sets the execution data for the block. Execution data can come from local EL client or remote builder depends on validator registration and circuit breaker conditions.
 func setExecutionData(ctx context.Context, blk interfaces.SignedBeaconBlock, localPayload, builderPayload interfaces.ExecutionData) error {
@@ -55,11 +57,11 @@ func setExecutionData(ctx context.Context, blk interfaces.SignedBeaconBlock, loc
 	}
 
 	// Compare payload values between local and builder. Default to the local value if it is higher.
-	localValueGwei, err := localPayload.ValueInGwei()
+	localValueShor, err := localPayload.ValueInShor()
 	if err != nil {
 		return errors.Wrap(err, "failed to get local payload value")
 	}
-	builderValueGwei, err := builderPayload.ValueInGwei()
+	builderValueShor, err := builderPayload.ValueInShor()
 	if err != nil {
 		log.WithError(err).Warn("Proposer: failed to get builder payload value") // Default to local if can't get builder value.
 		return blk.SetExecution(localPayload)
@@ -75,7 +77,7 @@ func setExecutionData(ctx context.Context, blk interfaces.SignedBeaconBlock, loc
 	// Use builder payload if the following in true:
 	// builder_bid_value * 100 > local_block_value * (local-block-value-boost + 100)
 	boost := params.BeaconConfig().LocalBlockValueBoost
-	higherValueBuilder := builderValueGwei*100 > localValueGwei*(100+boost)
+	higherValueBuilder := builderValueShor*100 > localValueShor*(100+boost)
 
 	// If we can't get the builder value, just use local block.
 	if higherValueBuilder && withdrawalsMatched { // Builder value is higher and withdrawals match.
@@ -90,23 +92,27 @@ func setExecutionData(ctx context.Context, blk interfaces.SignedBeaconBlock, loc
 	}
 	if !higherValueBuilder {
 		log.WithFields(logrus.Fields{
-			"localGweiValue":       localValueGwei,
+			"localShorValue":       localValueShor,
 			"localBoostPercentage": boost,
-			"builderGweiValue":     builderValueGwei,
+			"builderShorValue":     builderValueShor,
 		}).Warn("Proposer: using local execution payload because higher value")
 	}
 	span.AddAttributes(
 		trace.BoolAttribute("higherValueBuilder", higherValueBuilder),
-		trace.Int64Attribute("localGweiValue", int64(localValueGwei)),     // lint:ignore uintcast -- This is OK for tracing.
+		trace.Int64Attribute("localShorValue", int64(localValueShor)),     // lint:ignore uintcast -- This is OK for tracing.
 		trace.Int64Attribute("localBoostPercentage", int64(boost)),        // lint:ignore uintcast -- This is OK for tracing.
-		trace.Int64Attribute("builderGweiValue", int64(builderValueGwei)), // lint:ignore uintcast -- This is OK for tracing.
+		trace.Int64Attribute("builderShorValue", int64(builderValueShor)), // lint:ignore uintcast -- This is OK for tracing.
 	)
 	return blk.SetExecution(localPayload)
 }
 
 // This function retrieves the payload header given the slot number and the validator index.
 // It's a no-op if the latest head block is not versioned bellatrix.
-func (vs *Server) getPayloadHeaderFromBuilder(ctx context.Context, slot primitives.Slot, idx primitives.ValidatorIndex) (interfaces.ExecutionData, error) {
+func (vs *Server) getPayloadHeaderFromBuilder(
+	ctx context.Context,
+	slot primitives.Slot,
+	idx primitives.ValidatorIndex,
+	parentGasLimit uint64) (interfaces.ExecutionData, error) {
 	ctx, span := trace.StartSpan(ctx, "ProposerServer.getPayloadHeaderFromBuilder")
 	defer span.End()
 
@@ -131,7 +137,7 @@ func (vs *Server) getPayloadHeaderFromBuilder(ctx context.Context, slot primitiv
 	if err != nil {
 		return nil, err
 	}
-	if signedBid.IsNil() {
+	if signedBid == nil || signedBid.IsNil() {
 		return nil, errors.New("builder returned nil bid")
 	}
 	fork, err := forks.Fork(slots.ToEpoch(slot))
@@ -150,7 +156,7 @@ func (vs *Server) getPayloadHeaderFromBuilder(ctx context.Context, slot primitiv
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get bid")
 	}
-	if bid.IsNil() {
+	if bid == nil || bid.IsNil() {
 		return nil, errors.New("builder returned nil bid")
 	}
 
@@ -173,6 +179,16 @@ func (vs *Server) getPayloadHeaderFromBuilder(ctx context.Context, slot primitiv
 
 	if !bytes.Equal(header.ParentHash(), h.BlockHash()) {
 		return nil, fmt.Errorf("incorrect parent hash %#x != %#x", header.ParentHash(), h.BlockHash())
+	}
+
+	reg, err := vs.BlockBuilder.RegistrationByValidatorID(ctx, idx)
+	if err != nil {
+		log.WithError(err).Warn("Proposer: failed to get registration by validator ID, could not check gas limit")
+	} else {
+		gasLimit := expectedGasLimit(parentGasLimit, reg.GasLimit)
+		if gasLimit != header.GasLimit() {
+			return nil, fmt.Errorf("incorrect header gas limit %d != %d", gasLimit, header.GasLimit())
+		}
 	}
 
 	t, err := slots.ToTime(uint64(vs.TimeFetcher.GenesisTime().Unix()), slot)
@@ -213,14 +229,14 @@ func validateBuilderSignature(signedBid builder.SignedBid) error {
 	if err != nil {
 		return err
 	}
-	if signedBid.IsNil() {
+	if signedBid == nil || signedBid.IsNil() {
 		return errors.New("nil builder bid")
 	}
 	bid, err := signedBid.Message()
 	if err != nil {
 		return errors.Wrap(err, "could not get bid")
 	}
-	if bid.IsNil() {
+	if bid == nil || bid.IsNil() {
 		return errors.New("builder returned nil bid")
 	}
 	return signing.VerifySigningRoot(bid, bid.Pubkey(), signedBid.Signature(), d)
@@ -248,4 +264,45 @@ func matchingWithdrawalsRoot(local, builder interfaces.ExecutionData) (bool, err
 		return false, nil
 	}
 	return true, nil
+}
+
+// expectedGasLimit calculates the expected gas limit for the next block based
+// on the parent block's gas limit and the validator's registered target gas
+// limit, subject to the 1024x adjustment factor defined in the engine API spec.
+// The result is also capped at qrlparams.MaxGasLimit (the QRL execution-layer
+// hard cap of 20M), so a registered preference that exceeds the network max
+// cannot drift the per-block limit past it.
+//
+//	def expected_gas_limit(parent_gas_limit, target_gas_limit, adjustment_factor):
+//	  max_gas_limit_difference = (parent_gas_limit // adjustment_factor) - 1
+//	  if target_gas_limit > parent_gas_limit:
+//	      gas_diff = target_gas_limit - parent_gas_limit
+//	      return parent_gas_limit + min(gas_diff, max_gas_limit_difference)
+//	  else:
+//	      gas_diff = parent_gas_limit - target_gas_limit
+//	      return parent_gas_limit - min(gas_diff, max_gas_limit_difference)
+func expectedGasLimit(parentGasLimit, proposerGasLimit uint64) uint64 {
+	var result uint64
+	maxGasLimitDiff := uint64(0)
+	if parentGasLimit > gasLimitAdjustmentFactor {
+		maxGasLimitDiff = parentGasLimit/gasLimitAdjustmentFactor - 1
+	}
+	switch {
+	case proposerGasLimit > parentGasLimit:
+		if proposerGasLimit-parentGasLimit > maxGasLimitDiff {
+			result = parentGasLimit + maxGasLimitDiff
+		} else {
+			result = proposerGasLimit
+		}
+	default:
+		if parentGasLimit-proposerGasLimit > maxGasLimitDiff {
+			result = parentGasLimit - maxGasLimitDiff
+		} else {
+			result = proposerGasLimit
+		}
+	}
+	if result > qrlparams.MaxGasLimit {
+		result = qrlparams.MaxGasLimit
+	}
+	return result
 }

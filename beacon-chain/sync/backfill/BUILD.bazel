@@ -1,32 +1,32 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "backfill",
     srcs = ["status.go"],
     importpath = "github.com/theQRL/qrysm/beacon-chain/sync/backfill",
     visibility = ["//visibility:public"],
     deps = [
-        "//beacon-chain/db:go_default_library",
-        "//consensus-types/blocks:go_default_library",
-        "//consensus-types/interfaces:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "@com_github_pkg_errors//:go_default_library",
+        "//beacon-chain/db",
+        "//consensus-types/blocks",
+        "//consensus-types/interfaces",
+        "//consensus-types/primitives",
+        "@com_github_pkg_errors//:errors",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "backfill_test",
     srcs = ["status_test.go"],
-    embed = [":go_default_library"],
+    embed = [":backfill"],
     deps = [
-        "//beacon-chain/db:go_default_library",
-        "//config/params:go_default_library",
-        "//consensus-types/blocks:go_default_library",
-        "//consensus-types/blocks/testing:go_default_library",
-        "//consensus-types/interfaces:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//testing/require:go_default_library",
-        "//testing/util:go_default_library",
-        "@com_github_pkg_errors//:go_default_library",
+        "//beacon-chain/db",
+        "//config/params",
+        "//consensus-types/blocks",
+        "//consensus-types/blocks/testing",
+        "//consensus-types/interfaces",
+        "//consensus-types/primitives",
+        "//testing/require",
+        "//testing/util",
+        "@com_github_pkg_errors//:errors",
     ],
 )

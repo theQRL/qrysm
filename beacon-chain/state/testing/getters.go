@@ -7,7 +7,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
@@ -30,11 +30,11 @@ func VerifyBeaconStateSlotDataRace(t *testing.T, factory getState) {
 	wg.Wait()
 }
 
-type getStateWithCurrentJustifiedCheckpoint func(*zondpb.Checkpoint) (state.BeaconState, error)
+type getStateWithCurrentJustifiedCheckpoint func(*qrysmpb.Checkpoint) (state.BeaconState, error)
 
 func VerifyBeaconStateMatchCurrentJustifiedCheckptNative(t *testing.T, factory getStateWithCurrentJustifiedCheckpoint) {
-	c1 := &zondpb.Checkpoint{Epoch: 1}
-	c2 := &zondpb.Checkpoint{Epoch: 2}
+	c1 := &qrysmpb.Checkpoint{Epoch: 1}
+	c2 := &qrysmpb.Checkpoint{Epoch: 2}
 	beaconState, err := factory(c1)
 	require.NoError(t, err)
 	require.Equal(t, true, beaconState.MatchCurrentJustifiedCheckpoint(c1))
@@ -44,8 +44,8 @@ func VerifyBeaconStateMatchCurrentJustifiedCheckptNative(t *testing.T, factory g
 }
 
 func VerifyBeaconStateMatchPreviousJustifiedCheckptNative(t *testing.T, factory getStateWithCurrentJustifiedCheckpoint) {
-	c1 := &zondpb.Checkpoint{Epoch: 1}
-	c2 := &zondpb.Checkpoint{Epoch: 2}
+	c1 := &qrysmpb.Checkpoint{Epoch: 1}
+	c2 := &qrysmpb.Checkpoint{Epoch: 2}
 	beaconState, err := factory(c1)
 	require.NoError(t, err)
 	require.Equal(t, false, beaconState.MatchCurrentJustifiedCheckpoint(c1))
@@ -55,86 +55,86 @@ func VerifyBeaconStateMatchPreviousJustifiedCheckptNative(t *testing.T, factory 
 }
 
 func VerifyBeaconStateValidatorByPubkey(t *testing.T, factory getState) {
-	keyCreator := func(input []byte) [field_params.DilithiumPubkeyLength]byte {
-		var nKey [field_params.DilithiumPubkeyLength]byte
+	keyCreator := func(input []byte) [field_params.MLDSA87PubkeyLength]byte {
+		var nKey [field_params.MLDSA87PubkeyLength]byte
 		copy(nKey[:1], input)
 		return nKey
 	}
 
 	tests := []struct {
 		name            string
-		modifyFunc      func(b state.BeaconState, k [field_params.DilithiumPubkeyLength]byte)
+		modifyFunc      func(b state.BeaconState, k [field_params.MLDSA87PubkeyLength]byte)
 		exists          bool
 		expectedIdx     primitives.ValidatorIndex
 		largestIdxInSet primitives.ValidatorIndex
 	}{
 		{
 			name: "retrieve validator",
-			modifyFunc: func(b state.BeaconState, key [field_params.DilithiumPubkeyLength]byte) {
-				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key[:]}))
+			modifyFunc: func(b state.BeaconState, key [field_params.MLDSA87PubkeyLength]byte) {
+				assert.NoError(t, b.AppendValidator(&qrysmpb.Validator{PublicKey: key[:]}))
 			},
 			exists:      true,
 			expectedIdx: 0,
 		},
 		{
 			name: "retrieve validator with multiple validators from the start",
-			modifyFunc: func(b state.BeaconState, key [field_params.DilithiumPubkeyLength]byte) {
+			modifyFunc: func(b state.BeaconState, key [field_params.MLDSA87PubkeyLength]byte) {
 				key1 := keyCreator([]byte{'C'})
 				key2 := keyCreator([]byte{'D'})
-				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key[:]}))
-				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key1[:]}))
-				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key2[:]}))
+				assert.NoError(t, b.AppendValidator(&qrysmpb.Validator{PublicKey: key[:]}))
+				assert.NoError(t, b.AppendValidator(&qrysmpb.Validator{PublicKey: key1[:]}))
+				assert.NoError(t, b.AppendValidator(&qrysmpb.Validator{PublicKey: key2[:]}))
 			},
 			exists:      true,
 			expectedIdx: 0,
 		},
 		{
 			name: "retrieve validator with multiple validators",
-			modifyFunc: func(b state.BeaconState, key [field_params.DilithiumPubkeyLength]byte) {
+			modifyFunc: func(b state.BeaconState, key [field_params.MLDSA87PubkeyLength]byte) {
 				key1 := keyCreator([]byte{'C'})
 				key2 := keyCreator([]byte{'D'})
-				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key1[:]}))
-				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key2[:]}))
-				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key[:]}))
+				assert.NoError(t, b.AppendValidator(&qrysmpb.Validator{PublicKey: key1[:]}))
+				assert.NoError(t, b.AppendValidator(&qrysmpb.Validator{PublicKey: key2[:]}))
+				assert.NoError(t, b.AppendValidator(&qrysmpb.Validator{PublicKey: key[:]}))
 			},
 			exists:      true,
 			expectedIdx: 2,
 		},
 		{
 			name: "retrieve validator with multiple validators from the start with shared state",
-			modifyFunc: func(b state.BeaconState, key [field_params.DilithiumPubkeyLength]byte) {
+			modifyFunc: func(b state.BeaconState, key [field_params.MLDSA87PubkeyLength]byte) {
 				key1 := keyCreator([]byte{'C'})
 				key2 := keyCreator([]byte{'D'})
-				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key[:]}))
+				assert.NoError(t, b.AppendValidator(&qrysmpb.Validator{PublicKey: key[:]}))
 				_ = b.Copy()
-				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key1[:]}))
-				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key2[:]}))
+				assert.NoError(t, b.AppendValidator(&qrysmpb.Validator{PublicKey: key1[:]}))
+				assert.NoError(t, b.AppendValidator(&qrysmpb.Validator{PublicKey: key2[:]}))
 			},
 			exists:      true,
 			expectedIdx: 0,
 		},
 		{
 			name: "retrieve validator with multiple validators with shared state",
-			modifyFunc: func(b state.BeaconState, key [field_params.DilithiumPubkeyLength]byte) {
+			modifyFunc: func(b state.BeaconState, key [field_params.MLDSA87PubkeyLength]byte) {
 				key1 := keyCreator([]byte{'C'})
 				key2 := keyCreator([]byte{'D'})
-				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key1[:]}))
-				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key2[:]}))
+				assert.NoError(t, b.AppendValidator(&qrysmpb.Validator{PublicKey: key1[:]}))
+				assert.NoError(t, b.AppendValidator(&qrysmpb.Validator{PublicKey: key2[:]}))
 				n := b.Copy()
 				// Append to another state
-				assert.NoError(t, n.AppendValidator(&zondpb.Validator{PublicKey: key[:]}))
+				assert.NoError(t, n.AppendValidator(&qrysmpb.Validator{PublicKey: key[:]}))
 			},
 			exists:      false,
 			expectedIdx: 0,
 		},
 		{
 			name: "retrieve validator with multiple validators with shared state at boundary",
-			modifyFunc: func(b state.BeaconState, key [field_params.DilithiumPubkeyLength]byte) {
+			modifyFunc: func(b state.BeaconState, key [field_params.MLDSA87PubkeyLength]byte) {
 				key1 := keyCreator([]byte{'C'})
-				assert.NoError(t, b.AppendValidator(&zondpb.Validator{PublicKey: key1[:]}))
+				assert.NoError(t, b.AppendValidator(&qrysmpb.Validator{PublicKey: key1[:]}))
 				n := b.Copy()
 				// Append to another state
-				assert.NoError(t, n.AppendValidator(&zondpb.Validator{PublicKey: key[:]}))
+				assert.NoError(t, n.AppendValidator(&qrysmpb.Validator{PublicKey: key[:]}))
 			},
 			exists:      false,
 			expectedIdx: 0,

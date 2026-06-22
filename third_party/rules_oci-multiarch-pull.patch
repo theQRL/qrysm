@@ -1,0 +1,21 @@
+diff --git a/MODULE.bazel b/MODULE.bazel
+--- a/MODULE.bazel
++++ b/MODULE.bazel
+@@ -5,1 +5,1 @@
+-    version = "0.0.0",
++    version = "1.7.4",
+diff --git a/oci/private/pull.bzl b/oci/private/pull.bzl
+--- a/oci/private/pull.bzl
++++ b/oci/private/pull.bzl
+@@ -204,1 +204,2 @@
+-    manifest, size, digest = downloader.download_manifest(rctx.attr.identifier, "manifest.json")
++    manifest_file = "manifest.json"
++    manifest, size, digest = downloader.download_manifest(rctx.attr.identifier, manifest_file)
+@@ -224,1 +225,3 @@
+-        manifest, size, digest = downloader.download_manifest(matching_manifest["digest"], "manifest.json")
++        # Avoid overwriting the initial manifest file, which can be read-only when served from cache.
++        manifest_file = "platform-manifest.json"
++        manifest, size, digest = downloader.download_manifest(matching_manifest["digest"], manifest_file)
+@@ -229,1 +232,1 @@
+-    rctx.template(_digest_into_blob_path(digest), "manifest.json")
++    rctx.template(_digest_into_blob_path(digest), manifest_file)

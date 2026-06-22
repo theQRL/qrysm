@@ -20,7 +20,7 @@ type rpcHandlerTest struct {
 	s       *Service
 }
 
-func (rt *rpcHandlerTest) testHandler(nh network.StreamHandler, rh rpcHandler, rhi interface{}) {
+func (rt *rpcHandlerTest) testHandler(nh network.StreamHandler, rh rpcHandler, rhi any) {
 	ctx, cancel := context.WithTimeout(context.Background(), rt.timeout)
 	defer func() {
 		cancel()

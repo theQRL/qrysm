@@ -8,17 +8,17 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // MockClient is a mock implementation of BuilderClient.
 type MockClient struct {
-	RegisteredVals map[[2592]byte]bool
+	RegisteredVals map[[field_params.MLDSA87PubkeyLength]byte]bool
 }
 
 // NewClient creates a new, correctly initialized mock.
 func NewClient() MockClient {
-	return MockClient{RegisteredVals: map[[2592]byte]bool{}}
+	return MockClient{RegisteredVals: map[[field_params.MLDSA87PubkeyLength]byte]bool{}}
 }
 
 // NodeURL --
@@ -27,12 +27,12 @@ func (MockClient) NodeURL() string {
 }
 
 // GetHeader --
-func (MockClient) GetHeader(_ context.Context, _ primitives.Slot, _ [32]byte, _ [field_params.DilithiumPubkeyLength]byte) (builder.SignedBid, error) {
+func (MockClient) GetHeader(_ context.Context, _ primitives.Slot, _ [32]byte, _ [field_params.MLDSA87PubkeyLength]byte) (builder.SignedBid, error) {
 	return nil, nil
 }
 
 // RegisterValidator --
-func (m MockClient) RegisterValidator(_ context.Context, svr []*zondpb.SignedValidatorRegistrationV1) error {
+func (m MockClient) RegisterValidator(_ context.Context, svr []*qrysmpb.SignedValidatorRegistrationV1) error {
 	for _, r := range svr {
 		b := bytesutil.ToBytes2592(r.Message.Pubkey)
 		m.RegisteredVals[b] = true

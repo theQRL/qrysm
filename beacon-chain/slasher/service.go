@@ -1,4 +1,4 @@
-// Package slasher implements slashing detection for eth2, able to catch slashable attestations
+// Package slasher implements slashing detection for qrl, able to catch slashable attestations
 // and proposals that it receives via two event feeds, respectively. Any found slashings
 // are then submitted to the beacon node's slashing operations pool. See the design document
 // here https://hackmd.io/@prysmaticlabs/slasher.
@@ -6,6 +6,7 @@ package slasher
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/theQRL/qrysm/async/event"
@@ -15,10 +16,10 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/operations/slashings"
 	"github.com/theQRL/qrysm/beacon-chain/startup"
 	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
-	"github.com/theQRL/qrysm/beacon-chain/sync"
+	beaconChainSync "github.com/theQRL/qrysm/beacon-chain/sync"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
@@ -38,26 +39,26 @@ type ServiceConfig struct {
 	StateGen                stategen.StateManager
 	SlashingPoolInserter    slashings.PoolInserter
 	HeadStateFetcher        blockchain.HeadFetcher
-	SyncChecker             sync.Checker
+	SyncChecker             beaconChainSync.Checker
 	ClockWaiter             startup.ClockWaiter
 }
 
 // SlashingChecker is an interface for defining services that the beacon node may interact with to provide slashing data.
 type SlashingChecker interface {
-	IsSlashableBlock(ctx context.Context, proposal *zondpb.SignedBeaconBlockHeader) (*zondpb.ProposerSlashing, error)
-	IsSlashableAttestation(ctx context.Context, attestation *zondpb.IndexedAttestation) ([]*zondpb.AttesterSlashing, error)
+	IsSlashableBlock(ctx context.Context, proposal *qrysmpb.SignedBeaconBlockHeader) (*qrysmpb.ProposerSlashing, error)
+	IsSlashableAttestation(ctx context.Context, attestation *qrysmpb.IndexedAttestation) ([]*qrysmpb.AttesterSlashing, error)
 	HighestAttestations(
 		ctx context.Context, indices []primitives.ValidatorIndex,
-	) ([]*zondpb.HighestAttestation, error)
+	) ([]*qrysmpb.HighestAttestation, error)
 }
 
 // Service defining a slasher implementation as part of
-// the beacon node, able to detect eth2 slashable offenses.
+// the beacon node, able to detect consensus slashable offenses.
 type Service struct {
 	params                         *Parameters
 	serviceCfg                     *ServiceConfig
-	indexedAttsChan                chan *zondpb.IndexedAttestation
-	beaconBlockHeadersChan         chan *zondpb.SignedBeaconBlockHeader
+	indexedAttsChan                chan *qrysmpb.IndexedAttestation
+	beaconBlockHeadersChan         chan *qrysmpb.SignedBeaconBlockHeader
 	attsQueue                      *attestationsQueue
 	blksQueue                      *blocksQueue
 	ctx                            context.Context
@@ -67,6 +68,7 @@ type Service struct {
 	blocksSlotTicker               *slots.SlotTicker
 	pruningSlotTicker              *slots.SlotTicker
 	latestEpochWrittenForValidator map[primitives.ValidatorIndex]primitives.Epoch
+	wg                             sync.WaitGroup
 }
 
 // New instantiates a new slasher from configuration values.
@@ -75,8 +77,8 @@ func New(ctx context.Context, srvCfg *ServiceConfig) (*Service, error) {
 	return &Service{
 		params:                         DefaultParams(),
 		serviceCfg:                     srvCfg,
-		indexedAttsChan:                make(chan *zondpb.IndexedAttestation, 1),
-		beaconBlockHeadersChan:         make(chan *zondpb.SignedBeaconBlockHeader, 1),
+		indexedAttsChan:                make(chan *qrysmpb.IndexedAttestation, 1),
+		beaconBlockHeadersChan:         make(chan *qrysmpb.SignedBeaconBlockHeader, 1),
 		attsQueue:                      newAttestationsQueue(),
 		blksQueue:                      newBlocksQueue(),
 		ctx:                            ctx,
@@ -105,7 +107,7 @@ func (s *Service) run() {
 	}
 	numVals := headState.NumValidators()
 	validatorIndices := make([]primitives.ValidatorIndex, numVals)
-	for i := 0; i < numVals; i++ {
+	for i := range numVals {
 		validatorIndices[i] = primitives.ValidatorIndex(i)
 	}
 	start := time.Now()
@@ -124,23 +126,35 @@ func (s *Service) run() {
 		"Finished retrieving last epoch written per validator",
 	)
 
-	indexedAttsChan := make(chan *zondpb.IndexedAttestation, 1)
-	beaconBlockHeadersChan := make(chan *zondpb.SignedBeaconBlockHeader, 1)
+	indexedAttsChan := make(chan *qrysmpb.IndexedAttestation, 1)
+	beaconBlockHeadersChan := make(chan *qrysmpb.SignedBeaconBlockHeader, 1)
+
+	s.wg.Add(1)
 	go s.receiveAttestations(s.ctx, indexedAttsChan)
+
+	s.wg.Add(1)
 	go s.receiveBlocks(s.ctx, beaconBlockHeadersChan)
 
 	secondsPerSlot := params.BeaconConfig().SecondsPerSlot
 	s.attsSlotTicker = slots.NewSlotTicker(s.genesisTime, secondsPerSlot)
 	s.blocksSlotTicker = slots.NewSlotTicker(s.genesisTime, secondsPerSlot)
 	s.pruningSlotTicker = slots.NewSlotTicker(s.genesisTime, secondsPerSlot)
+
+	s.wg.Add(1)
 	go s.processQueuedAttestations(s.ctx, s.attsSlotTicker.C())
+
+	s.wg.Add(1)
 	go s.processQueuedBlocks(s.ctx, s.blocksSlotTicker.C())
+
+	s.wg.Add(1)
 	go s.pruneSlasherData(s.ctx, s.pruningSlotTicker.C())
 }
 
 // Stop the slasher service.
 func (s *Service) Stop() error {
 	s.cancel()
+	s.wg.Wait()
+
 	if s.attsSlotTicker != nil {
 		s.attsSlotTicker.Done()
 	}

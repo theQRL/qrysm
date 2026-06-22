@@ -3,15 +3,15 @@ package validator
 import (
 	"bytes"
 
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
-type proposerSyncContributions []*zond.SyncCommitteeContribution
+type proposerSyncContributions []*qrysmpb.SyncCommitteeContribution
 
 // filterByBlockRoot separates sync aggregate list into a valid group.
 // The valid group contains the input block root.
 func (cs proposerSyncContributions) filterByBlockRoot(r [32]byte) proposerSyncContributions {
-	matchedSyncContributions := make([]*zond.SyncCommitteeContribution, 0, len(cs))
+	matchedSyncContributions := make([]*qrysmpb.SyncCommitteeContribution, 0, len(cs))
 	for _, c := range cs {
 		if bytes.Equal(c.BlockRoot, r[:]) {
 			matchedSyncContributions = append(matchedSyncContributions, c)
@@ -23,7 +23,7 @@ func (cs proposerSyncContributions) filterByBlockRoot(r [32]byte) proposerSyncCo
 // filterBySubIndex separates sync aggregate list into a valid group.
 // The valid group contains the matching sub committee index.
 func (cs proposerSyncContributions) filterBySubIndex(i uint64) proposerSyncContributions {
-	matchedSyncContributions := make([]*zond.SyncCommitteeContribution, 0, len(cs))
+	matchedSyncContributions := make([]*qrysmpb.SyncCommitteeContribution, 0, len(cs))
 	for _, c := range cs {
 		if c.SubcommitteeIndex == i {
 			matchedSyncContributions = append(matchedSyncContributions, c)
@@ -39,12 +39,12 @@ func (cs proposerSyncContributions) dedup() (proposerSyncContributions, error) {
 	if len(cs) < 2 {
 		return cs, nil
 	}
-	contributionsBySubIdx := make(map[uint64][]*zond.SyncCommitteeContribution, len(cs))
+	contributionsBySubIdx := make(map[uint64][]*qrysmpb.SyncCommitteeContribution, len(cs))
 	for _, c := range cs {
 		contributionsBySubIdx[c.SubcommitteeIndex] = append(contributionsBySubIdx[c.SubcommitteeIndex], c)
 	}
 
-	uniqContributions := make([]*zond.SyncCommitteeContribution, 0, len(cs))
+	uniqContributions := make([]*qrysmpb.SyncCommitteeContribution, 0, len(cs))
 	for _, cs := range contributionsBySubIdx {
 		for i := 0; i < len(cs); i++ {
 			a := cs[i]
@@ -77,7 +77,7 @@ func (cs proposerSyncContributions) dedup() (proposerSyncContributions, error) {
 
 // mostProfitable returns the most profitable sync contribution, the one with the most
 // votes (ie. aggregation bits count)
-func (cs proposerSyncContributions) mostProfitable() *zond.SyncCommitteeContribution {
+func (cs proposerSyncContributions) mostProfitable() *qrysmpb.SyncCommitteeContribution {
 	if len(cs) == 0 {
 		return nil
 	}

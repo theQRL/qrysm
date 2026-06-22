@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
@@ -16,9 +16,9 @@ func TestRegistrationCache(t *testing.T) {
 	require.NoError(t, err)
 	validatorIndex := primitives.ValidatorIndex(1)
 	cache := NewRegistrationCache()
-	m := make(map[primitives.ValidatorIndex]*zondpb.ValidatorRegistrationV1)
+	m := make(map[primitives.ValidatorIndex]*qrysmpb.ValidatorRegistrationV1)
 
-	m[validatorIndex] = &zondpb.ValidatorRegistrationV1{
+	m[validatorIndex] = &qrysmpb.ValidatorRegistrationV1{
 		FeeRecipient: []byte{},
 		GasLimit:     100,
 		Timestamp:    uint64(time.Now().Unix()),
@@ -32,7 +32,7 @@ func TestRegistrationCache(t *testing.T) {
 		pubkey, err := hexutil.Decode("0x88247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a")
 		require.NoError(t, err)
 		validatorIndex2 := primitives.ValidatorIndex(2)
-		m[validatorIndex2] = &zondpb.ValidatorRegistrationV1{
+		m[validatorIndex2] = &qrysmpb.ValidatorRegistrationV1{
 			FeeRecipient: []byte{},
 			GasLimit:     100,
 			Timestamp:    uint64(time.Now().Unix()),

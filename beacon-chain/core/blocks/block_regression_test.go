@@ -9,7 +9,7 @@ import (
 	v "github.com/theQRL/qrysm/beacon-chain/core/validators"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -17,7 +17,7 @@ import (
 
 func TestProcessAttesterSlashings_RegressionSlashableIndices(t *testing.T) {
 
-	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 5500)
+	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 5500)
 	for _, vv := range beaconState.Validators() {
 		vv.WithdrawableEpoch = primitives.Epoch(params.BeaconConfig().SlotsPerEpoch)
 	}
@@ -38,10 +38,10 @@ func TestProcessAttesterSlashings_RegressionSlashableIndices(t *testing.T) {
 	expectedSlashedVal := 2800
 
 	root1 := [32]byte{'d', 'o', 'u', 'b', 'l', 'e', '1'}
-	att1 := &zondpb.IndexedAttestation{
-		Data:             util.HydrateAttestationData(&zondpb.AttestationData{Target: &zondpb.Checkpoint{Epoch: 0, Root: root1[:]}}),
+	att1 := &qrysmpb.IndexedAttestation{
+		Data:             util.HydrateAttestationData(&qrysmpb.AttestationData{Target: &qrysmpb.Checkpoint{Epoch: 0, Root: root1[:]}}),
 		AttestingIndices: setA,
-		Signatures:       [][]byte{make([]byte, 4595)},
+		Signatures:       [][]byte{make([]byte, 4627)},
 	}
 	domain, err := signing.Domain(beaconState.Fork(), 0, params.BeaconConfig().DomainBeaconAttester, beaconState.GenesisValidatorsRoot())
 	require.NoError(t, err)
@@ -55,12 +55,12 @@ func TestProcessAttesterSlashings_RegressionSlashableIndices(t *testing.T) {
 	att1.Signatures = sigs
 
 	root2 := [32]byte{'d', 'o', 'u', 'b', 'l', 'e', '2'}
-	att2 := &zondpb.IndexedAttestation{
-		Data: util.HydrateAttestationData(&zondpb.AttestationData{
-			Target: &zondpb.Checkpoint{Root: root2[:]},
+	att2 := &qrysmpb.IndexedAttestation{
+		Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
+			Target: &qrysmpb.Checkpoint{Root: root2[:]},
 		}),
 		AttestingIndices: setB,
-		Signatures:       [][]byte{make([]byte, 4595)},
+		Signatures:       [][]byte{make([]byte, 4627)},
 	}
 	signingRoot, err = signing.ComputeSigningRoot(att2.Data, domain)
 	assert.NoError(t, err, "Could not get signing root of beacon block header")
@@ -71,7 +71,7 @@ func TestProcessAttesterSlashings_RegressionSlashableIndices(t *testing.T) {
 	}
 	att2.Signatures = sigs
 
-	slashings := []*zondpb.AttesterSlashing{
+	slashings := []*qrysmpb.AttesterSlashing{
 		{
 			Attestation_1: att1,
 			Attestation_2: att2,
@@ -81,9 +81,9 @@ func TestProcessAttesterSlashings_RegressionSlashableIndices(t *testing.T) {
 	currentSlot := 2 * params.BeaconConfig().SlotsPerEpoch
 	require.NoError(t, beaconState.SetSlot(currentSlot))
 
-	b := util.NewBeaconBlockCapella()
-	b.Block = &zondpb.BeaconBlockCapella{
-		Body: &zondpb.BeaconBlockBodyCapella{
+	b := util.NewBeaconBlockZond()
+	b.Block = &qrysmpb.BeaconBlockZond{
+		Body: &qrysmpb.BeaconBlockBodyZond{
 			AttesterSlashings: slashings,
 		},
 	}

@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "slashings",
     srcs = [
         "double_votes.go",
         "surround_votes.go",
@@ -9,21 +9,21 @@ go_library(
     importpath = "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/slashings",
     visibility = ["//visibility:public"],
     deps = [
-        "//config/params:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
+        "//config/params",
+        "//proto/qrysm/v1alpha1",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "slashings_test",
     srcs = [
         "double_votes_test.go",
         "surround_votes_test.go",
     ],
-    embed = [":go_default_library"],
+    embed = [":slashings"],
     deps = [
-        "//config/params:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
+        "//config/params",
+        "//consensus-types/primitives",
+        "//proto/qrysm/v1alpha1",
     ],
 )

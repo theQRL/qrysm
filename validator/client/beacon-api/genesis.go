@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/beacon"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 type genesisProvider interface {
@@ -21,7 +21,7 @@ type beaconApiGenesisProvider struct {
 	jsonRestHandler jsonRestHandler
 }
 
-func (c beaconApiValidatorClient) waitForChainStart(ctx context.Context) (*zondpb.ChainStartResponse, error) {
+func (c beaconApiValidatorClient) waitForChainStart(ctx context.Context) (*qrysmpb.ChainStartResponse, error) {
 	genesis, httpError, err := c.genesisProvider.GetGenesis(ctx)
 
 	for err != nil {
@@ -43,7 +43,7 @@ func (c beaconApiValidatorClient) waitForChainStart(ctx context.Context) (*zondp
 		return nil, errors.Wrapf(err, "failed to parse genesis time: %s", genesis.GenesisTime)
 	}
 
-	chainStartResponse := &zondpb.ChainStartResponse{}
+	chainStartResponse := &qrysmpb.ChainStartResponse{}
 	chainStartResponse.Started = true
 	chainStartResponse.GenesisTime = genesisTime
 
@@ -60,10 +60,10 @@ func (c beaconApiValidatorClient) waitForChainStart(ctx context.Context) (*zondp
 	return chainStartResponse, nil
 }
 
-// GetGenesis gets the genesis information from the beacon node via the /zond/v1/beacon/genesis endpoint
+// GetGenesis gets the genesis information from the beacon node via the /qrl/v1/beacon/genesis endpoint
 func (c beaconApiGenesisProvider) GetGenesis(ctx context.Context) (*beacon.Genesis, *apimiddleware.DefaultErrorJson, error) {
 	genesisJson := &beacon.GetGenesisResponse{}
-	errorJson, err := c.jsonRestHandler.GetRestJsonResponse(ctx, "/zond/v1/beacon/genesis", genesisJson)
+	errorJson, err := c.jsonRestHandler.GetRestJsonResponse(ctx, "/qrl/v1/beacon/genesis", genesisJson)
 	if err != nil {
 		return nil, errorJson, errors.Wrap(err, "failed to get json response")
 	}

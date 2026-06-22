@@ -8,15 +8,15 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
 )
 
-const proposeExitTestEndpoint = "/zond/v1/beacon/pool/voluntary_exits"
+const proposeExitTestEndpoint = "/qrl/v1/beacon/pool/voluntary_exits"
 
 func TestProposeExit_Valid(t *testing.T) {
 	const signature = "0xd0a030a1d6b4f8217062ccc98088fbd908797f107aaa825f2366f090445fa79a6417789aa1d232c4f9b1e56671165bde25eb5586f94fc5677df593b99369684e8f413b1bfbd3fa6f20615244f9381895c71d4f7136c528092a3d03294a98be2d"
@@ -52,8 +52,8 @@ func TestProposeExit_Valid(t *testing.T) {
 	decodedSignature, err := hexutil.Decode(signature)
 	require.NoError(t, err)
 
-	protoSignedVoluntaryExit := &zondpb.SignedVoluntaryExit{
-		Exit: &zondpb.VoluntaryExit{
+	protoSignedVoluntaryExit := &qrysmpb.SignedVoluntaryExit{
+		Exit: &qrysmpb.VoluntaryExit{
 			Epoch:          1,
 			ValidatorIndex: 2,
 		},
@@ -77,7 +77,7 @@ func TestProposeExit_NilSignedVoluntaryExit(t *testing.T) {
 
 func TestProposeExit_NilExit(t *testing.T) {
 	validatorClient := &beaconApiValidatorClient{}
-	_, err := validatorClient.proposeExit(context.Background(), &zondpb.SignedVoluntaryExit{})
+	_, err := validatorClient.proposeExit(context.Background(), &qrysmpb.SignedVoluntaryExit{})
 	assert.ErrorContains(t, "exit is nil", err)
 }
 
@@ -99,8 +99,8 @@ func TestProposeExit_BadRequest(t *testing.T) {
 		errors.New("foo error"),
 	).Times(1)
 
-	protoSignedVoluntaryExit := &zondpb.SignedVoluntaryExit{
-		Exit: &zondpb.VoluntaryExit{
+	protoSignedVoluntaryExit := &qrysmpb.SignedVoluntaryExit{
+		Exit: &qrysmpb.VoluntaryExit{
 			Epoch:          1,
 			ValidatorIndex: 2,
 		},

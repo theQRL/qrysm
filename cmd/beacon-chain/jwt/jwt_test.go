@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/cmd"
 	"github.com/theQRL/qrysm/io/file"
 	"github.com/theQRL/qrysm/testing/require"

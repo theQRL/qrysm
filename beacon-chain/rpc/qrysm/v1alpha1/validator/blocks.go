@@ -7,14 +7,14 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/core/feed"
 	blockfeed "github.com/theQRL/qrysm/beacon-chain/core/feed/block"
 	statefeed "github.com/theQRL/qrysm/beacon-chain/core/feed/state"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 // StreamBlocksAltair to clients every single time a block is received by the beacon node.
-func (vs *Server) StreamBlocksAltair(req *zondpb.StreamBlocksRequest, stream zondpb.BeaconNodeValidator_StreamBlocksAltairServer) error {
+func (vs *Server) StreamBlocksAltair(req *qrysmpb.StreamBlocksRequest, stream qrysmpb.BeaconNodeValidator_StreamBlocksAltairServer) error {
 	blocksChannel := make(chan *feed.Event, 1)
 	var blockSub event.Subscription
 	if req.VerifiedOnly {
@@ -46,7 +46,7 @@ func (vs *Server) StreamBlocksAltair(req *zondpb.StreamBlocksRequest, stream zon
 	}
 }
 
-func sendVerifiedBlocks(stream zondpb.BeaconNodeValidator_StreamBlocksAltairServer, blockEvent *feed.Event) error {
+func sendVerifiedBlocks(stream qrysmpb.BeaconNodeValidator_StreamBlocksAltairServer, blockEvent *feed.Event) error {
 	if blockEvent.Type != statefeed.BlockProcessed {
 		return nil
 	}
@@ -54,19 +54,19 @@ func sendVerifiedBlocks(stream zondpb.BeaconNodeValidator_StreamBlocksAltairServ
 	if !ok || data == nil {
 		return nil
 	}
-	b := &zondpb.StreamBlocksResponse{}
+	b := &qrysmpb.StreamBlocksResponse{}
 	switch data.SignedBlock.Version() {
-	case version.Capella:
+	case version.Zond:
 		pb, err := data.SignedBlock.Proto()
 		if err != nil {
 			return errors.Wrap(err, "could not get protobuf block")
 		}
-		phBlk, ok := pb.(*zondpb.SignedBeaconBlockCapella)
+		phBlk, ok := pb.(*qrysmpb.SignedBeaconBlockZond)
 		if !ok {
-			log.Warn("Mismatch between version and block type, was expecting SignedBeaconBlockCapella")
+			log.Warn("Mismatch between version and block type, was expecting SignedBeaconBlockZond")
 			return nil
 		}
-		b.Block = &zondpb.StreamBlocksResponse_CapellaBlock{CapellaBlock: phBlk}
+		b.Block = &qrysmpb.StreamBlocksResponse_ZondBlock{ZondBlock: phBlk}
 	}
 
 	if err := stream.Send(b); err != nil {
@@ -76,7 +76,7 @@ func sendVerifiedBlocks(stream zondpb.BeaconNodeValidator_StreamBlocksAltairServ
 	return nil
 }
 
-func (vs *Server) sendBlocks(stream zondpb.BeaconNodeValidator_StreamBlocksAltairServer, blockEvent *feed.Event) error {
+func (vs *Server) sendBlocks(stream qrysmpb.BeaconNodeValidator_StreamBlocksAltairServer, blockEvent *feed.Event) error {
 	if blockEvent.Type != blockfeed.ReceivedBlock {
 		return nil
 	}
@@ -102,14 +102,14 @@ func (vs *Server) sendBlocks(stream zondpb.BeaconNodeValidator_StreamBlocksAltai
 		log.WithError(err).Error("Could not verify block signature")
 		return nil
 	}
-	b := &zondpb.StreamBlocksResponse{}
+	b := &qrysmpb.StreamBlocksResponse{}
 	pb, err := data.SignedBlock.Proto()
 	if err != nil {
 		return errors.Wrap(err, "could not get protobuf block")
 	}
 	switch p := pb.(type) {
-	case *zondpb.SignedBeaconBlockCapella:
-		b.Block = &zondpb.StreamBlocksResponse_CapellaBlock{CapellaBlock: p}
+	case *qrysmpb.SignedBeaconBlockZond:
+		b.Block = &qrysmpb.StreamBlocksResponse_ZondBlock{ZondBlock: p}
 	default:
 		log.Errorf("Unknown block type %T", p)
 	}

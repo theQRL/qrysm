@@ -15,7 +15,7 @@ import (
 const backupsDirectoryName = "backups"
 
 // Backup the database to the datadir backup directory.
-// Example for backup at slot 345: $DATADIR/backups/prysm_beacondb_at_slot_0000345.backup
+// Example for backup at slot 345: $DATADIR/backups/qrysm_beacondb_at_slot_0000345.backup
 func (s *Store) Backup(ctx context.Context, outputDir string, permissionOverride bool) error {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.Backup")
 	defer span.End()
@@ -41,7 +41,7 @@ func (s *Store) Backup(ctx context.Context, outputDir string, permissionOverride
 	if err := file.HandleBackupDir(backupsDir, permissionOverride); err != nil {
 		return err
 	}
-	backupPath := path.Join(backupsDir, fmt.Sprintf("prysm_beacondb_at_slot_%07d.backup", head.Block().Slot()))
+	backupPath := path.Join(backupsDir, fmt.Sprintf("qrysm_beacondb_at_slot_%07d.backup", head.Block().Slot()))
 	log.WithField("backup", backupPath).Info("Writing backup database.")
 
 	copyDB, err := bolt.Open(

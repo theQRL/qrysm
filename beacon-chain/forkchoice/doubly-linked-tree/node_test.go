@@ -6,7 +6,7 @@ import (
 
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	v1 "github.com/theQRL/qrysm/proto/zond/v1"
+	qrlpb "github.com/theQRL/qrysm/proto/qrl/v1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
@@ -146,7 +146,9 @@ func TestNode_ViableForHead(t *testing.T) {
 		{&Node{}, 1, false},
 		{&Node{finalizedEpoch: 1, justifiedEpoch: 1}, 1, true},
 		{&Node{finalizedEpoch: 1, justifiedEpoch: 1}, 2, false},
-		{&Node{finalizedEpoch: 3, justifiedEpoch: 4}, 4, true},
+		{&Node{finalizedEpoch: 1, justifiedEpoch: 2}, 3, false},
+		{&Node{finalizedEpoch: 1, justifiedEpoch: 2}, 4, false},
+		{&Node{finalizedEpoch: 1, justifiedEpoch: 3}, 4, true},
 	}
 	for _, tc := range tests {
 		got := tc.n.viableForHead(tc.justifiedEpoch, 5)
@@ -190,28 +192,28 @@ func TestNode_SetFullyValidated(t *testing.T) {
 	//               \
 	//                 -- 5 (true)
 	//
-	state, blkRoot, err := prepareForkchoiceState(ctx, 1, indexToHash(1), params.BeaconConfig().ZeroHash, params.BeaconConfig().ZeroHash, 1, 1)
+	state, blk, err := prepareForkchoiceState(ctx, 1, indexToHash(1), params.BeaconConfig().ZeroHash, params.BeaconConfig().ZeroHash, 1, 1)
 	require.NoError(t, err)
-	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
-	storeNodes[1] = f.store.nodeByRoot[blkRoot]
+	require.NoError(t, f.InsertNode(ctx, state, blk))
+	storeNodes[1] = f.store.nodeByRoot[blk.Root()]
 	require.NoError(t, f.SetOptimisticToValid(ctx, params.BeaconConfig().ZeroHash))
-	state, blkRoot, err = prepareForkchoiceState(ctx, 2, indexToHash(2), indexToHash(1), params.BeaconConfig().ZeroHash, 1, 1)
+	state, blk, err = prepareForkchoiceState(ctx, 2, indexToHash(2), indexToHash(1), params.BeaconConfig().ZeroHash, 1, 1)
 	require.NoError(t, err)
-	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
-	storeNodes[2] = f.store.nodeByRoot[blkRoot]
+	require.NoError(t, f.InsertNode(ctx, state, blk))
+	storeNodes[2] = f.store.nodeByRoot[blk.Root()]
 	require.NoError(t, f.SetOptimisticToValid(ctx, indexToHash(1)))
-	state, blkRoot, err = prepareForkchoiceState(ctx, 3, indexToHash(3), indexToHash(2), params.BeaconConfig().ZeroHash, 1, 1)
+	state, blk, err = prepareForkchoiceState(ctx, 3, indexToHash(3), indexToHash(2), params.BeaconConfig().ZeroHash, 1, 1)
 	require.NoError(t, err)
-	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
-	storeNodes[3] = f.store.nodeByRoot[blkRoot]
-	state, blkRoot, err = prepareForkchoiceState(ctx, 4, indexToHash(4), indexToHash(3), params.BeaconConfig().ZeroHash, 1, 1)
+	require.NoError(t, f.InsertNode(ctx, state, blk))
+	storeNodes[3] = f.store.nodeByRoot[blk.Root()]
+	state, blk, err = prepareForkchoiceState(ctx, 4, indexToHash(4), indexToHash(3), params.BeaconConfig().ZeroHash, 1, 1)
 	require.NoError(t, err)
-	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
-	storeNodes[4] = f.store.nodeByRoot[blkRoot]
-	state, blkRoot, err = prepareForkchoiceState(ctx, 5, indexToHash(5), indexToHash(1), params.BeaconConfig().ZeroHash, 1, 1)
+	require.NoError(t, f.InsertNode(ctx, state, blk))
+	storeNodes[4] = f.store.nodeByRoot[blk.Root()]
+	state, blk, err = prepareForkchoiceState(ctx, 5, indexToHash(5), indexToHash(1), params.BeaconConfig().ZeroHash, 1, 1)
 	require.NoError(t, err)
-	require.NoError(t, f.InsertNode(ctx, state, blkRoot))
-	storeNodes[5] = f.store.nodeByRoot[blkRoot]
+	require.NoError(t, f.InsertNode(ctx, state, blk))
+	storeNodes[5] = f.store.nodeByRoot[blk.Root()]
 
 	opt, err := f.IsOptimistic(indexToHash(5))
 	require.NoError(t, err)
@@ -237,7 +239,7 @@ func TestNode_SetFullyValidated(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, false, opt)
 
-	respNodes := make([]*v1.ForkChoiceNode, 0)
+	respNodes := make([]*qrlpb.ForkChoiceNode, 0)
 	respNodes, err = f.store.treeRootNode.nodeTreeDump(ctx, respNodes)
 	require.NoError(t, err)
 	require.Equal(t, len(respNodes), f.NodeCount())
@@ -277,6 +279,7 @@ func TestNode_TimeStampsChecks(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, false, late)
 
+	orphanLateBlockFirstThreshold := params.BeaconConfig().SecondsPerSlot / params.BeaconConfig().IntervalsPerSlot
 	// late block
 	driftGenesisTime(f, 2, orphanLateBlockFirstThreshold+1)
 	root = [32]byte{'b'}
@@ -322,5 +325,28 @@ func TestNode_TimeStampsChecks(t *testing.T) {
 	require.Equal(t, true, early)
 	late, err = f.store.headNode.arrivedAfterOrphanCheck(f.store.genesisTime)
 	require.ErrorContains(t, "invalid timestamp", err)
+	require.Equal(t, false, late)
+}
+
+// TestNode_TimeStampsChecks_TreeRoot verifies that arrivedEarly and
+// arrivedAfterOrphanCheck do not error when called on the tree root node, even
+// if the node was inserted with a timestamp before the slot start time. This
+// can happen on a fresh beacon node that starts up before MIN_GENESIS_TIME:
+// the tree root's timestamp is sourced from time.Now() at insertion rather
+// than the real arrival time, and can land before genesisTime.
+func TestNode_TimeStampsChecks_TreeRoot(t *testing.T) {
+	f := setup(0, 0)
+
+	// Simulate a beacon node that started before genesis by setting the tree
+	// root's timestamp earlier than the forkchoice genesis time.
+	treeRoot := f.store.treeRootNode
+	require.Equal(t, true, treeRoot.parent == nil)
+	f.store.genesisTime = treeRoot.timestamp + 24
+
+	early, err := treeRoot.arrivedEarly(f.store.genesisTime)
+	require.NoError(t, err)
+	require.Equal(t, true, early)
+	late, err := treeRoot.arrivedAfterOrphanCheck(f.store.genesisTime)
+	require.NoError(t, err)
 	require.Equal(t, false, late)
 }

@@ -7,11 +7,12 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/beacon"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
@@ -45,8 +46,8 @@ func TestGetRestJsonResponse_Valid(t *testing.T) {
 	defer server.Close()
 
 	jsonRestHandler := beaconApiJsonRestHandler{
-		httpClient: http.Client{Timeout: time.Second * 5},
-		host:       server.URL,
+		timeout: time.Second * 5,
+		host:    server.URL,
 	}
 
 	responseJson := &beacon.GetGenesisResponse{}
@@ -64,7 +65,7 @@ func TestGetRestJsonResponse_Error(t *testing.T) {
 		expectedErrorJson    *apimiddleware.DefaultErrorJson
 		expectedErrorMessage string
 		timeout              time.Duration
-		responseJson         interface{}
+		responseJson         any
 	}{
 		{
 			name:                 "nil response json",
@@ -118,9 +119,12 @@ func TestGetRestJsonResponse_Error(t *testing.T) {
 			responseJson: &beacon.GetGenesisResponse{},
 		},
 		{
-			name:                 "bad error json formatting",
+			// Regression: when the error body is not JSON (e.g. an HTML 502
+			// from a reverse proxy), the wrapped error must surface the raw
+			// body and status code instead of "failed to decode error json".
+			name:                 "non-JSON error body",
 			funcHandler:          invalidJsonErrHandler,
-			expectedErrorMessage: "failed to decode error json",
+			expectedErrorMessage: "unsuccessful (404: foo)",
 			timeout:              time.Second * 5,
 			responseJson:         &beacon.GetGenesisResponse{},
 		},
@@ -150,8 +154,8 @@ func TestGetRestJsonResponse_Error(t *testing.T) {
 			ctx := context.Background()
 
 			jsonRestHandler := beaconApiJsonRestHandler{
-				httpClient: http.Client{Timeout: testCase.timeout},
-				host:       server.URL,
+				timeout: testCase.timeout,
+				host:    server.URL,
 			}
 			errorJson, err := jsonRestHandler.GetRestJsonResponse(ctx, endpoint, testCase.responseJson)
 			assert.ErrorContains(t, testCase.expectedErrorMessage, err)
@@ -176,7 +180,7 @@ func TestPostRestJson_Valid(t *testing.T) {
 		name         string
 		headers      map[string]string
 		data         *bytes.Buffer
-		responseJson interface{}
+		responseJson any
 	}{
 		{
 			name:         "nil headers",
@@ -208,10 +212,8 @@ func TestPostRestJson_Valid(t *testing.T) {
 				}
 
 				// Make sure the data matches
-				receivedBytes := make([]byte, len(dataBytes))
-				numBytes, err := r.Body.Read(receivedBytes)
-				assert.Equal(t, io.EOF, err)
-				assert.Equal(t, len(dataBytes), numBytes)
+				receivedBytes, err := io.ReadAll(r.Body)
+				require.NoError(t, err)
 				assert.DeepEqual(t, dataBytes, receivedBytes)
 
 				marshalledJson, err := json.Marshal(genesisJson)
@@ -226,8 +228,8 @@ func TestPostRestJson_Valid(t *testing.T) {
 			ctx := context.Background()
 
 			jsonRestHandler := beaconApiJsonRestHandler{
-				httpClient: http.Client{Timeout: time.Second * 5},
-				host:       server.URL,
+				timeout: time.Second * 5,
+				host:    server.URL,
 			}
 
 			_, err := jsonRestHandler.PostRestJson(
@@ -312,9 +314,12 @@ func TestPostRestJson_Error(t *testing.T) {
 			data:    &bytes.Buffer{},
 		},
 		{
-			name:                 "bad error json formatting",
+			// Regression: when the error body is not JSON (e.g. an HTML 502
+			// from a reverse proxy), the wrapped error must surface the raw
+			// body and status code instead of "failed to decode error json".
+			name:                 "non-JSON error body",
 			funcHandler:          invalidJsonErrHandler,
-			expectedErrorMessage: "failed to decode error json",
+			expectedErrorMessage: "unsuccessful (404: foo)",
 			timeout:              time.Second * 5,
 			data:                 &bytes.Buffer{},
 		},
@@ -345,8 +350,8 @@ func TestPostRestJson_Error(t *testing.T) {
 			ctx := context.Background()
 
 			jsonRestHandler := beaconApiJsonRestHandler{
-				httpClient: http.Client{Timeout: testCase.timeout},
-				host:       server.URL,
+				timeout: testCase.timeout,
+				host:    server.URL,
 			}
 
 			errorJson, err := jsonRestHandler.PostRestJson(
@@ -363,6 +368,106 @@ func TestPostRestJson_Error(t *testing.T) {
 	}
 }
 
+func TestGetRestJsonResponse_FailsOverToHealthyHost(t *testing.T) {
+	const endpoint = "/example/rest/api/endpoint"
+
+	genesisJSON := &beacon.GetGenesisResponse{
+		Data: &beacon.Genesis{
+			GenesisTime:           "123",
+			GenesisValidatorsRoot: "0x456",
+			GenesisForkVersion:    "0x789",
+		},
+	}
+
+	var primaryCount atomic.Int32
+	var secondaryCount atomic.Int32
+
+	restoreDefaultClient := setDefaultClient(&http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			switch req.URL.Host {
+			case "primary.example":
+				primaryCount.Add(1)
+				return jsonHTTPErrorResponse(req, http.StatusServiceUnavailable, "primary unavailable"), nil
+			case "secondary.example":
+				secondaryCount.Add(1)
+				return jsonHTTPResponse(req, genesisJSON), nil
+			default:
+				t.Fatalf("unexpected host %q", req.URL.Host)
+				return nil, nil
+			}
+		}),
+	})
+	defer restoreDefaultClient()
+
+	jsonRestHandler := newBeaconAPIJSONRestHandler("http://primary.example,http://secondary.example", 5*time.Second)
+
+	firstResponse := &beacon.GetGenesisResponse{}
+	_, err := jsonRestHandler.GetRestJsonResponse(context.Background(), endpoint, firstResponse)
+	require.NoError(t, err)
+	assert.DeepEqual(t, genesisJSON, firstResponse)
+	assert.Equal(t, int32(1), primaryCount.Load())
+	assert.Equal(t, int32(1), secondaryCount.Load())
+
+	secondResponse := &beacon.GetGenesisResponse{}
+	_, err = jsonRestHandler.GetRestJsonResponse(context.Background(), endpoint, secondResponse)
+	require.NoError(t, err)
+	assert.DeepEqual(t, genesisJSON, secondResponse)
+	assert.Equal(t, int32(1), primaryCount.Load())
+	assert.Equal(t, int32(2), secondaryCount.Load())
+}
+
+func TestPostRestJson_FailsOverToHealthyHost(t *testing.T) {
+	const endpoint = "/example/rest/api/endpoint"
+
+	genesisJSON := &beacon.GetGenesisResponse{
+		Data: &beacon.Genesis{
+			GenesisTime:           "123",
+			GenesisValidatorsRoot: "0x456",
+			GenesisForkVersion:    "0x789",
+		},
+	}
+	payload := []byte{1, 2, 3, 4, 5}
+
+	var primaryCount atomic.Int32
+	var secondaryCount atomic.Int32
+
+	restoreDefaultClient := setDefaultClient(&http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			switch req.URL.Host {
+			case "primary.example":
+				primaryCount.Add(1)
+				return jsonHTTPErrorResponse(req, http.StatusServiceUnavailable, "primary unavailable"), nil
+			case "secondary.example":
+				secondaryCount.Add(1)
+				receivedPayload, err := io.ReadAll(req.Body)
+				require.NoError(t, err)
+				assert.DeepEqual(t, payload, receivedPayload)
+				return jsonHTTPResponse(req, genesisJSON), nil
+			default:
+				t.Fatalf("unexpected host %q", req.URL.Host)
+				return nil, nil
+			}
+		}),
+	})
+	defer restoreDefaultClient()
+
+	jsonRestHandler := newBeaconAPIJSONRestHandler("http://primary.example,http://secondary.example", 5*time.Second)
+
+	firstResponse := &beacon.GetGenesisResponse{}
+	_, err := jsonRestHandler.PostRestJson(context.Background(), endpoint, map[string]string{}, bytes.NewBuffer(payload), firstResponse)
+	require.NoError(t, err)
+	assert.DeepEqual(t, genesisJSON, firstResponse)
+	assert.Equal(t, int32(1), primaryCount.Load())
+	assert.Equal(t, int32(1), secondaryCount.Load())
+
+	secondResponse := &beacon.GetGenesisResponse{}
+	_, err = jsonRestHandler.PostRestJson(context.Background(), endpoint, map[string]string{}, bytes.NewBuffer(payload), secondResponse)
+	require.NoError(t, err)
+	assert.DeepEqual(t, genesisJSON, secondResponse)
+	assert.Equal(t, int32(1), primaryCount.Load())
+	assert.Equal(t, int32(2), secondaryCount.Load())
+}
+
 func TestJsonHandler_ContextError(t *testing.T) {
 	const endpoint = "/example/rest/api/endpoint"
 	mux := http.NewServeMux()
@@ -377,8 +482,8 @@ func TestJsonHandler_ContextError(t *testing.T) {
 	cancel()
 
 	jsonRestHandler := beaconApiJsonRestHandler{
-		httpClient: http.Client{},
-		host:       server.URL,
+		timeout: time.Second * 30,
+		host:    server.URL,
 	}
 
 	_, err := jsonRestHandler.PostRestJson(
@@ -398,6 +503,81 @@ func TestJsonHandler_ContextError(t *testing.T) {
 	)
 
 	assert.ErrorContains(t, context.Canceled.Error(), err)
+}
+
+func TestGetRestJsonResponse_ContextDeadlineOverridesDefaultTimeout(t *testing.T) {
+	genesisJSON := &beacon.GetGenesisResponse{
+		Data: &beacon.Genesis{
+			GenesisTime:           "123",
+			GenesisValidatorsRoot: "0x456",
+			GenesisForkVersion:    "0x789",
+		},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	jsonRestHandler := beaconApiJsonRestHandler{
+		timeout: 5 * time.Millisecond,
+		host:    "http://example.com",
+	}
+
+	restoreDefaultClient := setDefaultClient(&http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			time.Sleep(20 * time.Millisecond)
+			return jsonHTTPResponse(req, genesisJSON), nil
+		}),
+	})
+	defer restoreDefaultClient()
+
+	responseJSON := &beacon.GetGenesisResponse{}
+	_, err := jsonRestHandler.GetRestJsonResponse(ctx, "/example/rest/api/endpoint", responseJSON)
+	require.NoError(t, err)
+	assert.DeepEqual(t, genesisJSON, responseJSON)
+}
+
+func TestPostRestJson_ContextDeadlineOverridesDefaultTimeout(t *testing.T) {
+	dataBytes := []byte{1, 2, 3, 4, 5}
+
+	genesisJSON := &beacon.GetGenesisResponse{
+		Data: &beacon.Genesis{
+			GenesisTime:           "123",
+			GenesisValidatorsRoot: "0x456",
+			GenesisForkVersion:    "0x789",
+		},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	jsonRestHandler := beaconApiJsonRestHandler{
+		timeout: 5 * time.Millisecond,
+		host:    "http://example.com",
+	}
+
+	restoreDefaultClient := setDefaultClient(&http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			time.Sleep(20 * time.Millisecond)
+
+			receivedBytes, err := io.ReadAll(req.Body)
+			require.NoError(t, err)
+			assert.DeepEqual(t, dataBytes, receivedBytes)
+
+			return jsonHTTPResponse(req, genesisJSON), nil
+		}),
+	})
+	defer restoreDefaultClient()
+
+	responseJSON := &beacon.GetGenesisResponse{}
+	_, err := jsonRestHandler.PostRestJson(
+		ctx,
+		"/example/rest/api/endpoint",
+		map[string]string{},
+		bytes.NewBuffer(dataBytes),
+		responseJSON,
+	)
+	require.NoError(t, err)
+	assert.DeepEqual(t, genesisJSON, responseJSON)
 }
 
 func httpErrorJsonHandler(statusCode int, errorMessage string) func(w http.ResponseWriter, r *http.Request) {
@@ -425,6 +605,51 @@ func invalidJsonErrHandler(w http.ResponseWriter, _ *http.Request) {
 	_, err := w.Write([]byte("foo"))
 	if err != nil {
 		panic(err)
+	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func setDefaultClient(client *http.Client) func() {
+	oldClient := http.DefaultClient
+	http.DefaultClient = client
+	return func() {
+		http.DefaultClient = oldClient
+	}
+}
+
+func jsonHTTPResponse(req *http.Request, responseJSON any) *http.Response {
+	bodyBytes, err := json.Marshal(responseJSON)
+	if err != nil {
+		panic(err)
+	}
+
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewReader(bodyBytes)),
+		Header:     make(http.Header),
+		Request:    req,
+	}
+}
+
+func jsonHTTPErrorResponse(req *http.Request, statusCode int, message string) *http.Response {
+	bodyBytes, err := json.Marshal(&apimiddleware.DefaultErrorJson{
+		Code:    statusCode,
+		Message: message,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	return &http.Response{
+		StatusCode: statusCode,
+		Body:       io.NopCloser(bytes.NewReader(bodyBytes)),
+		Header:     make(http.Header),
+		Request:    req,
 	}
 }
 

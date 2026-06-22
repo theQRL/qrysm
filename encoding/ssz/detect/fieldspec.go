@@ -28,14 +28,14 @@ func (f fieldType) String() string {
 	}
 }
 
-func (f fieldType) Size() int {
+func (f fieldType) Size() (int, error) {
 	switch f {
 	case typeUint64:
-		return 8
+		return 8, nil
 	case typeBytes4:
-		return 4
+		return 4, nil
 	default:
-		panic("can't determine size for unrecognizedtype ")
+		return 0, errors.Errorf("cannot determine size for fieldType=%s", f)
 	}
 }
 
@@ -71,7 +71,10 @@ func (f *fieldSpec) bytes4(state []byte) ([4]byte, error) {
 }
 
 func (f *fieldSpec) slice(value []byte) ([]byte, error) {
-	size := f.t.Size()
+	size, err := f.t.Size()
+	if err != nil {
+		return nil, err
+	}
 	if len(value) < f.offset+size {
 		return nil, errors.Wrapf(errIndexOutOfRange, "offset=%d, size=%d, byte len=%d", f.offset, size, len(value))
 	}

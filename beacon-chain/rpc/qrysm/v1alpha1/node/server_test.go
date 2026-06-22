@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/p2p/enode"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
 	dbutil "github.com/theQRL/qrysm/beacon-chain/db/testing"
 	"github.com/theQRL/qrysm/beacon-chain/p2p"
@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/rpc/testutil"
 	mockSync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync/testing"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
@@ -46,7 +46,7 @@ func TestNodeServer_GetGenesis(t *testing.T) {
 	ctx := context.Background()
 	addr := common.Address{1, 2, 3}
 	require.NoError(t, db.SaveDepositContractAddress(ctx, addr))
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	genValRoot := bytesutil.ToBytes32([]byte("I am root"))
 	ns := &Server{
@@ -84,13 +84,14 @@ func TestNodeServer_GetImplementedServices(t *testing.T) {
 	ns := &Server{
 		Server: server,
 	}
-	zondpb.RegisterNodeServer(server, ns)
+	qrysmpb.RegisterNodeServer(server, ns)
 	reflection.Register(server)
 
 	res, err := ns.ListImplementedServices(context.Background(), &emptypb.Empty{})
 	require.NoError(t, err)
-	// We verify the services include the node service + the registered reflection service.
-	assert.Equal(t, 2, len(res.Services))
+	// Expecting node service and Server reflect. As of grpc, v1.65.0, there are two version of server reflection
+	// Services: [qrl.qrl.v1alpha1.Node grpc.reflection.v1.ServerReflection grpc.reflection.v1alpha.ServerReflection]
+	assert.Equal(t, 3, len(res.Services))
 }
 
 func TestNodeServer_GetHost(t *testing.T) {
@@ -99,22 +100,22 @@ func TestNodeServer_GetHost(t *testing.T) {
 	mP2P := mockP2p.NewTestP2P(t)
 	key, err := crypto.GenerateKey()
 	require.NoError(t, err)
-	db, err := enode.OpenDB("")
+	db, err := qnode.OpenDB("")
 	require.NoError(t, err)
-	lNode := enode.NewLocalNode(db, key)
+	lNode := qnode.NewLocalNode(db, key)
 	record := lNode.Node().Record()
-	stringENR, err := p2p.SerializeENR(record)
+	stringQNR, err := p2p.SerializeQNR(record)
 	require.NoError(t, err)
 	ns := &Server{
-		PeerManager:  &mockP2p.MockPeerManager{BHost: mP2P.BHost, Enr: record, PID: mP2P.BHost.ID()},
+		PeerManager:  &mockP2p.MockPeerManager{BHost: mP2P.BHost, Qnr: record, PID: mP2P.BHost.ID()},
 		PeersFetcher: peersProvider,
 	}
-	zondpb.RegisterNodeServer(server, ns)
+	qrysmpb.RegisterNodeServer(server, ns)
 	reflection.Register(server)
 	h, err := ns.GetHost(context.Background(), &emptypb.Empty{})
 	require.NoError(t, err)
 	assert.Equal(t, mP2P.PeerID().String(), h.PeerId)
-	assert.Equal(t, stringENR, h.Enr)
+	assert.Equal(t, stringQNR, h.Qnr)
 }
 
 func TestNodeServer_GetPeer(t *testing.T) {
@@ -123,15 +124,15 @@ func TestNodeServer_GetPeer(t *testing.T) {
 	ns := &Server{
 		PeersFetcher: peersProvider,
 	}
-	zondpb.RegisterNodeServer(server, ns)
+	qrysmpb.RegisterNodeServer(server, ns)
 	reflection.Register(server)
 	firstPeer := peersProvider.Peers().All()[0]
 
-	res, err := ns.GetPeer(context.Background(), &zondpb.PeerRequest{PeerId: firstPeer.String()})
+	res, err := ns.GetPeer(context.Background(), &qrysmpb.PeerRequest{PeerId: firstPeer.String()})
 	require.NoError(t, err)
 	assert.Equal(t, firstPeer.String(), res.PeerId, "Unexpected peer ID")
-	assert.Equal(t, int(zondpb.PeerDirection_INBOUND), int(res.Direction), "Expected 1st peer to be an inbound connection")
-	assert.Equal(t, zondpb.ConnectionState_CONNECTED, res.ConnectionState, "Expected peer to be connected")
+	assert.Equal(t, int(qrysmpb.PeerDirection_INBOUND), int(res.Direction), "Expected 1st peer to be an inbound connection")
+	assert.Equal(t, qrysmpb.ConnectionState_CONNECTED, res.ConnectionState, "Expected peer to be connected")
 }
 
 func TestNodeServer_ListPeers(t *testing.T) {
@@ -140,17 +141,17 @@ func TestNodeServer_ListPeers(t *testing.T) {
 	ns := &Server{
 		PeersFetcher: peersProvider,
 	}
-	zondpb.RegisterNodeServer(server, ns)
+	qrysmpb.RegisterNodeServer(server, ns)
 	reflection.Register(server)
 
 	res, err := ns.ListPeers(context.Background(), &emptypb.Empty{})
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(res.Peers))
-	assert.Equal(t, int(zondpb.PeerDirection_INBOUND), int(res.Peers[0].Direction))
-	assert.Equal(t, zondpb.PeerDirection_OUTBOUND, res.Peers[1].Direction)
+	assert.Equal(t, int(qrysmpb.PeerDirection_INBOUND), int(res.Peers[0].Direction))
+	assert.Equal(t, qrysmpb.PeerDirection_OUTBOUND, res.Peers[1].Direction)
 }
 
-func TestNodeServer_GetETH1ConnectionStatus(t *testing.T) {
+func TestNodeServer_GetExecutionConnectionStatus(t *testing.T) {
 	server := grpc.NewServer()
 	ep := "foo"
 	err := errors.New("error1")
@@ -160,12 +161,12 @@ func TestNodeServer_GetETH1ConnectionStatus(t *testing.T) {
 		CurrError:    err,
 	}
 	ns := &Server{
-		POWChainInfoFetcher: mockFetcher,
+		ExecutionChainInfoFetcher: mockFetcher,
 	}
-	zondpb.RegisterNodeServer(server, ns)
+	qrysmpb.RegisterNodeServer(server, ns)
 	reflection.Register(server)
 
-	res, err := ns.GetETH1ConnectionStatus(context.Background(), &emptypb.Empty{})
+	res, err := ns.GetExecutionConnectionStatus(context.Background(), &emptypb.Empty{})
 	require.NoError(t, err)
 	assert.Equal(t, ep, res.CurrentAddress)
 	assert.Equal(t, errStr, res.CurrentConnectionError)

@@ -7,18 +7,18 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
-func headerFromBlock(b interfaces.ReadOnlySignedBeaconBlock) (*zondpb.BeaconBlockHeader, error) {
+func headerFromBlock(b interfaces.ReadOnlySignedBeaconBlock) (*qrysmpb.BeaconBlockHeader, error) {
 	bodyRoot, err := b.Block().Body().HashTreeRoot()
 	if err != nil {
 		return nil, err
 	}
 	stateRoot := b.Block().StateRoot()
 	parentRoot := b.Block().ParentRoot()
-	return &zondpb.BeaconBlockHeader{
+	return &qrysmpb.BeaconBlockHeader{
 		Slot:          b.Block().Slot(),
 		StateRoot:     stateRoot[:],
 		ProposerIndex: b.Block().ProposerIndex(),

@@ -6,8 +6,9 @@ import (
 	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
+	consensus_blocks "github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	v1 "github.com/theQRL/qrysm/proto/zond/v1"
+	qrlpb "github.com/theQRL/qrysm/proto/qrl/v1"
 )
 
 // BalancesByRooter is a handler to obtain the effective balances of the state
@@ -36,7 +37,7 @@ type HeadRetriever interface {
 
 // BlockProcessor processes the block that's used for accounting fork choice.
 type BlockProcessor interface {
-	InsertNode(context.Context, state.BeaconState, [32]byte) error
+	InsertNode(context.Context, state.BeaconState, consensus_blocks.ROBlock) error
 	InsertChain(context.Context, []*forkchoicetypes.BlockAndCheckpoints) error
 }
 
@@ -60,15 +61,17 @@ type Getter interface {
 	JustifiedPayloadBlockHash() [32]byte
 	UnrealizedJustifiedPayloadBlockHash() [32]byte
 	NodeCount() int
+	HighestReceivedBlockRoot() [32]byte
 	HighestReceivedBlockSlot() primitives.Slot
 	ReceivedBlocksLastEpoch() (uint64, error)
-	ForkChoiceDump(context.Context) (*v1.ForkChoiceDump, error)
+	ForkChoiceDump(context.Context) (*qrlpb.ForkChoiceDump, error)
 	Weight(root [32]byte) (uint64, error)
 	Tips() ([][32]byte, []primitives.Slot)
 	IsOptimistic(root [32]byte) (bool, error)
 	ShouldOverrideFCU() bool
 	Slot([32]byte) (primitives.Slot, error)
 	LastRoot(primitives.Epoch) [32]byte
+	TargetRootForEpoch(root [32]byte, epoch primitives.Epoch) ([32]byte, error)
 }
 
 // Setter allows to set forkchoice information

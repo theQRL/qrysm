@@ -33,7 +33,7 @@ func NewProxySet() *ProxySet {
 func (s *ProxySet) Start(ctx context.Context) error {
 	totalNodeCount := e2e.TestParams.BeaconNodeCount
 	nodes := make([]e2etypes.ComponentRunner, totalNodeCount)
-	for i := 0; i < totalNodeCount; i++ {
+	for i := range totalNodeCount {
 		nodes[i] = NewProxy(i)
 	}
 	s.proxies = nodes
@@ -136,14 +136,14 @@ func (node *Proxy) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	jwtPath := path.Join(e2e.TestParams.TestPath, "zonddata/"+strconv.Itoa(node.index)+"/")
-	jwtPath = path.Join(jwtPath, "gzond/jwtsecret")
+	jwtPath := path.Join(e2e.TestParams.TestPath, "qrldata/"+strconv.Itoa(node.index)+"/")
+	jwtPath = path.Join(jwtPath, "gqrl/jwtsecret")
 	secret, err := parseJWTSecretFromFile(jwtPath)
 	if err != nil {
 		return err
 	}
 	opts := []proxy.Option{
-		proxy.WithDestinationAddress(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.GzondExecutionNodeAuthRPCPort+node.index)),
+		proxy.WithDestinationAddress(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.GqrlExecutionNodeAuthRPCPort+node.index)),
 		proxy.WithPort(e2e.TestParams.Ports.ProxyPort + node.index),
 		proxy.WithLogger(logrus.New()),
 		proxy.WithLogFile(f),
@@ -153,7 +153,7 @@ func (node *Proxy) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("Starting zond proxy %d with port: %d and file %s", node.index, e2e.TestParams.Ports.ProxyPort+node.index, f.Name())
+	log.Infof("Starting qrl proxy %d with port: %d and file %s", node.index, e2e.TestParams.Ports.ProxyPort+node.index, f.Name())
 
 	// Set cancel into context.
 	ctx, cancel := context.WithCancel(ctx)
@@ -164,7 +164,7 @@ func (node *Proxy) Start(ctx context.Context) error {
 	return nProxy.Start(ctx)
 }
 
-// Started checks whether the zond proxy is started and ready to be queried.
+// Started checks whether the qrl proxy is started and ready to be queried.
 func (node *Proxy) Started() <-chan struct{} {
 	return node.started
 }
@@ -188,7 +188,7 @@ func (node *Proxy) Stop() error {
 }
 
 // AddRequestInterceptor adds in a json-rpc request interceptor.
-func (node *Proxy) AddRequestInterceptor(rpcMethodName string, responseGen func() interface{}, trigger func() bool) {
+func (node *Proxy) AddRequestInterceptor(rpcMethodName string, responseGen func() any, trigger func() bool) {
 	node.engineProxy.AddRequestInterceptor(rpcMethodName, responseGen, trigger)
 }
 

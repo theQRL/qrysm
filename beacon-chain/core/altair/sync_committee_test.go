@@ -11,8 +11,8 @@ import (
 	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	qrysmTime "github.com/theQRL/qrysm/time"
@@ -20,18 +20,18 @@ import (
 
 func TestSyncCommitteeIndices_CanGet(t *testing.T) {
 	getState := func(t *testing.T, count uint64) state.BeaconState {
-		validators := make([]*zondpb.Validator, count)
-		for i := 0; i < len(validators); i++ {
-			validators[i] = &zondpb.Validator{
+		validators := make([]*qrysmpb.Validator, count)
+		for i := range validators {
+			validators[i] = &qrysmpb.Validator{
 				ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
 				EffectiveBalance: params.BeaconConfig().MinDepositAmount,
 			}
 		}
-		st, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
-			Validators:  validators,
+		st, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 			RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 		})
 		require.NoError(t, err)
+		require.NoError(t, st.SetValidators(validators))
 		return st
 	}
 
@@ -69,6 +69,15 @@ func TestSyncCommitteeIndices_CanGet(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "no active validators, epoch 100",
+			args: args{
+				state: getState(t, 0), // Regression test for divide by zero. prysmaticlabs/prysm#13051.
+				epoch: 100,
+			},
+			wantErr:   true,
+			errString: "no active validator indices",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -87,14 +96,14 @@ func TestSyncCommitteeIndices_CanGet(t *testing.T) {
 func TestSyncCommitteeIndices_DifferentPeriods(t *testing.T) {
 	helpers.ClearCache()
 	getState := func(t *testing.T, count uint64) state.BeaconState {
-		validators := make([]*zondpb.Validator, count)
-		for i := 0; i < len(validators); i++ {
-			validators[i] = &zondpb.Validator{
+		validators := make([]*qrysmpb.Validator, count)
+		for i := range validators {
+			validators[i] = &qrysmpb.Validator{
 				ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
 				EffectiveBalance: params.BeaconConfig().MinDepositAmount,
 			}
 		}
-		st, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+		st, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 			Validators:  validators,
 			RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 		})
@@ -121,17 +130,17 @@ func TestSyncCommitteeIndices_DifferentPeriods(t *testing.T) {
 
 func TestSyncCommittee_CanGet(t *testing.T) {
 	getState := func(t *testing.T, count uint64) state.BeaconState {
-		validators := make([]*zondpb.Validator, count)
-		for i := 0; i < len(validators); i++ {
-			dilithiumKey, err := dilithium.RandKey()
+		validators := make([]*qrysmpb.Validator, count)
+		for i := range validators {
+			mlDSA87Key, err := ml_dsa_87.RandKey()
 			require.NoError(t, err)
-			validators[i] = &zondpb.Validator{
+			validators[i] = &qrysmpb.Validator{
 				ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
 				EffectiveBalance: params.BeaconConfig().MinDepositAmount,
-				PublicKey:        dilithiumKey.PublicKey().Marshal(),
+				PublicKey:        mlDSA87Key.PublicKey().Marshal(),
 			}
 		}
-		st, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+		st, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 			Validators:  validators,
 			RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 		})
@@ -194,7 +203,7 @@ func TestSyncCommittee_CanGet(t *testing.T) {
 func TestValidateNilSyncContribution(t *testing.T) {
 	tests := []struct {
 		name    string
-		s       *zondpb.SignedContributionAndProof
+		s       *qrysmpb.SignedContributionAndProof
 		wantErr bool
 	}{
 		{
@@ -204,27 +213,27 @@ func TestValidateNilSyncContribution(t *testing.T) {
 		},
 		{
 			name:    "nil message",
-			s:       &zondpb.SignedContributionAndProof{},
+			s:       &qrysmpb.SignedContributionAndProof{},
 			wantErr: true,
 		},
 		{
 			name:    "nil contribution",
-			s:       &zondpb.SignedContributionAndProof{Message: &zondpb.ContributionAndProof{}},
+			s:       &qrysmpb.SignedContributionAndProof{Message: &qrysmpb.ContributionAndProof{}},
 			wantErr: true,
 		},
 		{
 			name: "nil bitfield",
-			s: &zondpb.SignedContributionAndProof{
-				Message: &zondpb.ContributionAndProof{
-					Contribution: &zondpb.SyncCommitteeContribution{},
+			s: &qrysmpb.SignedContributionAndProof{
+				Message: &qrysmpb.ContributionAndProof{
+					Contribution: &qrysmpb.SyncCommitteeContribution{},
 				}},
 			wantErr: true,
 		},
 		{
 			name: "non nil sync contribution",
-			s: &zondpb.SignedContributionAndProof{
-				Message: &zondpb.ContributionAndProof{
-					Contribution: &zondpb.SyncCommitteeContribution{
+			s: &qrysmpb.SignedContributionAndProof{
+				Message: &qrysmpb.ContributionAndProof{
+					Contribution: &qrysmpb.SyncCommitteeContribution{
 						AggregationBits: []byte{},
 					},
 				}},
@@ -354,17 +363,17 @@ func Test_ValidateSyncMessageTime(t *testing.T) {
 }
 
 func getState(t *testing.T, count uint64) state.BeaconState {
-	validators := make([]*zondpb.Validator, count)
-	for i := 0; i < len(validators); i++ {
-		dilithiumKey, err := dilithium.RandKey()
+	validators := make([]*qrysmpb.Validator, count)
+	for i := range validators {
+		mlDSA87Key, err := ml_dsa_87.RandKey()
 		require.NoError(t, err)
-		validators[i] = &zondpb.Validator{
+		validators[i] = &qrysmpb.Validator{
 			ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
 			EffectiveBalance: params.BeaconConfig().MinDepositAmount,
-			PublicKey:        dilithiumKey.PublicKey().Marshal(),
+			PublicKey:        mlDSA87Key.PublicKey().Marshal(),
 		}
 	}
-	st, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	st, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators:  validators,
 		RandaoMixes: make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 	})

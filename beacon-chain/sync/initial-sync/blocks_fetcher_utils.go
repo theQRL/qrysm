@@ -287,7 +287,7 @@ func (f *blocksFetcher) findForkWithPeer(ctx context.Context, pid peer.ID, slot 
 // findAncestor tries to figure out common ancestor slot that connects a given root to known block.
 func (f *blocksFetcher) findAncestor(ctx context.Context, pid peer.ID, b interfaces.ReadOnlySignedBeaconBlock) (*forkData, error) {
 	outBlocks := []interfaces.ReadOnlySignedBeaconBlock{b}
-	for i := uint64(0); i < backtrackingMaxHops; i++ {
+	for range backtrackingMaxHops {
 		parentRoot := outBlocks[len(outBlocks)-1].Block().ParentRoot()
 		if f.chain.HasBlock(ctx, parentRoot) {
 			// Common ancestor found, forward blocks back to processor.
@@ -326,8 +326,28 @@ func (f *blocksFetcher) bestFinalizedSlot() primitives.Slot {
 // bestNonFinalizedSlot returns the highest non-finalized slot of enough number of connected peers.
 func (f *blocksFetcher) bestNonFinalizedSlot() primitives.Slot {
 	headEpoch := slots.ToEpoch(f.chain.HeadSlot())
-	targetEpoch, _ := f.p2p.Peers().BestNonFinalized(flags.Get().MinimumSyncPeers*2, headEpoch)
-	return params.BeaconConfig().SlotsPerEpoch.Mul(uint64(targetEpoch))
+	targetEpoch, peers := f.p2p.Peers().BestNonFinalized(flags.Get().MinimumSyncPeers*2, headEpoch)
+	if targetEpoch == 0 {
+		return 0
+	}
+
+	// Preserve slot precision within the quorum-backed target epoch so the queue does
+	// not stop early after converting peer progress to an epoch boundary.
+	targetSlot := params.BeaconConfig().SlotsPerEpoch.Mul(uint64(targetEpoch))
+	for _, pid := range peers {
+		peerChainState, err := f.p2p.Peers().ChainState(pid)
+		if err != nil || peerChainState == nil {
+			continue
+		}
+		if slots.ToEpoch(peerChainState.HeadSlot) != targetEpoch {
+			continue
+		}
+		if peerChainState.HeadSlot > targetSlot {
+			targetSlot = peerChainState.HeadSlot
+		}
+	}
+
+	return targetSlot
 }
 
 // calculateHeadAndTargetEpochs return node's current head epoch, along with the best known target

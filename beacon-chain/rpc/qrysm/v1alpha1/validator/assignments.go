@@ -7,14 +7,13 @@ import (
 
 	"github.com/theQRL/qrysm/beacon-chain/cache"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
-	coreTime "github.com/theQRL/qrysm/beacon-chain/core/time"
 	"github.com/theQRL/qrysm/beacon-chain/core/transition"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/core"
 	beaconState "github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	qrysmTime "github.com/theQRL/qrysm/time"
 	"github.com/theQRL/qrysm/time/slots"
 	"google.golang.org/grpc/codes"
@@ -24,7 +23,7 @@ import (
 
 // GetDuties returns the duties assigned to a list of validators specified
 // in the request object.
-func (vs *Server) GetDuties(ctx context.Context, req *zondpb.DutiesRequest) (*zondpb.DutiesResponse, error) {
+func (vs *Server) GetDuties(ctx context.Context, req *qrysmpb.DutiesRequest) (*qrysmpb.DutiesResponse, error) {
 	if vs.SyncChecker.Syncing() {
 		return nil, status.Error(codes.Unavailable, "Syncing to latest head, not ready to respond")
 	}
@@ -33,7 +32,7 @@ func (vs *Server) GetDuties(ctx context.Context, req *zondpb.DutiesRequest) (*zo
 
 // Compute the validator duties from the head state's corresponding epoch
 // for validators public key / indices requested.
-func (vs *Server) duties(ctx context.Context, req *zondpb.DutiesRequest) (*zondpb.DutiesResponse, error) {
+func (vs *Server) duties(ctx context.Context, req *qrysmpb.DutiesRequest) (*qrysmpb.DutiesResponse, error) {
 	currentEpoch := slots.ToEpoch(vs.TimeFetcher.CurrentSlot())
 	if req.Epoch > currentEpoch+1 {
 		return nil, status.Errorf(codes.Unavailable, "Request epoch %d can not be greater than next epoch %d", req.Epoch, currentEpoch+1)
@@ -59,27 +58,45 @@ func (vs *Server) duties(ctx context.Context, req *zondpb.DutiesRequest) (*zondp
 			return nil, status.Errorf(codes.Internal, "Could not process slots up to %d: %v", epochStartSlot, err)
 		}
 	}
-	committeeAssignments, proposerIndexToSlots, err := helpers.CommitteeAssignments(ctx, s, req.Epoch)
+	requestIndices := make([]primitives.ValidatorIndex, 0, len(req.PublicKeys))
+	for _, pubKey := range req.PublicKeys {
+		idx, ok := s.ValidatorIndexByPubkey(bytesutil.ToBytes2592(pubKey))
+		if !ok {
+			continue
+		}
+		requestIndices = append(requestIndices, idx)
+	}
+
+	committeeAssignments, err := helpers.CommitteeAssignments(ctx, s, req.Epoch, requestIndices)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not compute committee assignments: %v", err)
 	}
 	// Query the next epoch assignments for committee subnet subscriptions.
-	nextCommitteeAssignments, nextProposerIndexToSlots, err := helpers.CommitteeAssignments(ctx, s, req.Epoch+1)
+	nextCommitteeAssignments, err := helpers.CommitteeAssignments(ctx, s, req.Epoch+1, requestIndices)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not compute next committee assignments: %v", err)
 	}
 
-	validatorAssignments := make([]*zondpb.DutiesResponse_Duty, 0, len(req.PublicKeys))
-	nextValidatorAssignments := make([]*zondpb.DutiesResponse_Duty, 0, len(req.PublicKeys))
+	proposerIndexToSlots, err := helpers.ProposerAssignments(ctx, s, req.Epoch)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Could not compute proposer slots: %v", err)
+	}
+	nextProposerIndexToSlots, err := helpers.ProposerAssignments(ctx, s, req.Epoch+1)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Could not compute next proposer slots: %v", err)
+	}
+
+	validatorAssignments := make([]*qrysmpb.DutiesResponse_Duty, 0, len(req.PublicKeys))
+	nextValidatorAssignments := make([]*qrysmpb.DutiesResponse_Duty, 0, len(req.PublicKeys))
 
 	for _, pubKey := range req.PublicKeys {
 		if ctx.Err() != nil {
 			return nil, status.Errorf(codes.Aborted, "Could not continue fetching assignments: %v", ctx.Err())
 		}
-		assignment := &zondpb.DutiesResponse_Duty{
+		assignment := &qrysmpb.DutiesResponse_Duty{
 			PublicKey: pubKey,
 		}
-		nextAssignment := &zondpb.DutiesResponse_Duty{
+		nextAssignment := &qrysmpb.DutiesResponse_Duty{
 			PublicKey: pubKey,
 		}
 		idx, ok := s.ValidatorIndexByPubkey(bytesutil.ToBytes2592(pubKey))
@@ -139,9 +156,7 @@ func (vs *Server) duties(ctx context.Context, req *zondpb.DutiesRequest) (*zondp
 			// Next epoch sync committee duty is assigned with next period sync committee only during
 			// sync period epoch boundary (ie. EPOCHS_PER_SYNC_COMMITTEE_PERIOD - 1). Else wise
 			// next epoch sync committee duty is the same as current epoch.
-			nextSlotToEpoch := slots.ToEpoch(s.Slot() + 1)
-			currentEpoch := coreTime.CurrentEpoch(s)
-			if slots.SyncCommitteePeriod(nextSlotToEpoch) == slots.SyncCommitteePeriod(currentEpoch)+1 {
+			if slots.SyncCommitteePeriod(req.Epoch+1) == slots.SyncCommitteePeriod(req.Epoch)+1 {
 				nextAssignment.IsSyncCommittee, err = helpers.IsNextPeriodSyncCommittee(s, idx)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "Could not determine next epoch sync committee: %v", err)
@@ -163,20 +178,74 @@ func (vs *Server) duties(ctx context.Context, req *zondpb.DutiesRequest) (*zondp
 	// Prune payload ID cache for any slots before request slot.
 	vs.ProposerSlotIndexCache.PrunePayloadIDs(epochStartSlot)
 
-	return &zondpb.DutiesResponse{
-		CurrentEpochDuties: validatorAssignments,
-		NextEpochDuties:    nextValidatorAssignments,
+	previousDutyDependentRoot, err := attestationDutyDependentRoot(s, req.Epoch)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Could not compute previous duty dependent root: %v", err)
+	}
+	currentDutyDependentRoot, err := proposalDutyDependentRoot(s, req.Epoch)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Could not compute current duty dependent root: %v", err)
+	}
+
+	return &qrysmpb.DutiesResponse{
+		CurrentEpochDuties:        validatorAssignments,
+		NextEpochDuties:           nextValidatorAssignments,
+		PreviousDutyDependentRoot: previousDutyDependentRoot,
+		CurrentDutyDependentRoot:  currentDutyDependentRoot,
 	}, nil
+}
+
+// attestationDutyDependentRoot returns get_block_root_at_slot(state, compute_start_slot_at_epoch(epoch - 1) - 1),
+// or zero bytes when the requested slot is before the state's earliest tracked block root (genesis).
+// Used as the attester-duty dependent root for the given epoch.
+func attestationDutyDependentRoot(s beaconState.BeaconState, epoch primitives.Epoch) ([]byte, error) {
+	var dependentRootSlot primitives.Slot
+	if epoch <= 1 {
+		dependentRootSlot = 0
+	} else {
+		prevEpochStartSlot, err := slots.EpochStart(epoch.Sub(1))
+		if err != nil {
+			return nil, err
+		}
+		dependentRootSlot = prevEpochStartSlot.Sub(1)
+	}
+	return blockRootAtSlotOrGenesis(s, dependentRootSlot)
+}
+
+// proposalDutyDependentRoot returns get_block_root_at_slot(state, compute_start_slot_at_epoch(epoch) - 1),
+// or zero bytes when the requested slot is before the state's earliest tracked block root (genesis).
+// Used as the proposer-duty dependent root for the given epoch.
+func proposalDutyDependentRoot(s beaconState.BeaconState, epoch primitives.Epoch) ([]byte, error) {
+	var dependentRootSlot primitives.Slot
+	if epoch == 0 {
+		dependentRootSlot = 0
+	} else {
+		epochStartSlot, err := slots.EpochStart(epoch)
+		if err != nil {
+			return nil, err
+		}
+		dependentRootSlot = epochStartSlot.Sub(1)
+	}
+	return blockRootAtSlotOrGenesis(s, dependentRootSlot)
+}
+
+// blockRootAtSlotOrGenesis returns the block root at the given slot, or 32 zero bytes when the
+// slot is before the state's earliest tracked block root (i.e. genesis-era queries on a fresh state).
+func blockRootAtSlotOrGenesis(s beaconState.BeaconState, slot primitives.Slot) ([]byte, error) {
+	if slot >= s.Slot() {
+		return make([]byte, 32), nil
+	}
+	return helpers.BlockRootAtSlot(s, slot)
 }
 
 // AssignValidatorToSubnet checks the status and pubkey of a particular validator
 // to discern whether persistent subnets need to be registered for them.
-func (vs *Server) AssignValidatorToSubnet(_ context.Context, req *zondpb.AssignValidatorToSubnetRequest) (*emptypb.Empty, error) {
+func (vs *Server) AssignValidatorToSubnet(_ context.Context, req *qrysmpb.AssignValidatorToSubnetRequest) (*emptypb.Empty, error) {
 	core.AssignValidatorToSubnetProto(req.PublicKey, req.Status)
 	return &emptypb.Empty{}, nil
 }
 
-func registerSyncSubnetCurrentPeriod(s beaconState.BeaconState, epoch primitives.Epoch, pubKey []byte, status zondpb.ValidatorStatus) error {
+func registerSyncSubnetCurrentPeriod(s beaconState.BeaconState, epoch primitives.Epoch, pubKey []byte, status qrysmpb.ValidatorStatus) error {
 	committee, err := s.CurrentSyncCommittee()
 	if err != nil {
 		return err
@@ -186,7 +255,7 @@ func registerSyncSubnetCurrentPeriod(s beaconState.BeaconState, epoch primitives
 	return nil
 }
 
-func registerSyncSubnetNextPeriod(s beaconState.BeaconState, epoch primitives.Epoch, pubKey []byte, status zondpb.ValidatorStatus) error {
+func registerSyncSubnetNextPeriod(s beaconState.BeaconState, epoch primitives.Epoch, pubKey []byte, status qrysmpb.ValidatorStatus) error {
 	committee, err := s.NextSyncCommittee()
 	if err != nil {
 		return err
@@ -199,8 +268,8 @@ func registerSyncSubnetNextPeriod(s beaconState.BeaconState, epoch primitives.Ep
 // registerSyncSubnet checks the status and pubkey of a particular validator
 // to discern whether persistent subnets need to be registered for them.
 func registerSyncSubnet(currEpoch primitives.Epoch, syncPeriod uint64, pubkey []byte,
-	syncCommittee *zondpb.SyncCommittee, status zondpb.ValidatorStatus) {
-	if status != zondpb.ValidatorStatus_ACTIVE && status != zondpb.ValidatorStatus_EXITING {
+	syncCommittee *qrysmpb.SyncCommittee, status qrysmpb.ValidatorStatus) {
+	if status != qrysmpb.ValidatorStatus_ACTIVE && status != qrysmpb.ValidatorStatus_EXITING {
 		return
 	}
 	startEpoch := primitives.Epoch(syncPeriod * uint64(params.BeaconConfig().EpochsPerSyncCommitteePeriod))
@@ -234,7 +303,7 @@ func registerSyncSubnet(currEpoch primitives.Epoch, syncPeriod uint64, pubkey []
 }
 
 // subnetsFromCommittee retrieves the relevant subnets for the chosen validator.
-func subnetsFromCommittee(pubkey []byte, comm *zondpb.SyncCommittee) []uint64 {
+func subnetsFromCommittee(pubkey []byte, comm *qrysmpb.SyncCommittee) []uint64 {
 	positions := make([]uint64, 0)
 	for i, pkey := range comm.Pubkeys {
 		if bytes.Equal(pubkey, pkey) {

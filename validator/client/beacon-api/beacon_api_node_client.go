@@ -2,16 +2,15 @@ package beacon_api
 
 import (
 	"context"
-	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/validator/client/iface"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -21,9 +20,9 @@ type beaconApiNodeClient struct {
 	genesisProvider genesisProvider
 }
 
-func (c *beaconApiNodeClient) GetSyncStatus(ctx context.Context, _ *empty.Empty) (*zondpb.SyncStatus, error) {
+func (c *beaconApiNodeClient) GetSyncStatus(ctx context.Context, _ *emptypb.Empty) (*qrysmpb.SyncStatus, error) {
 	syncingResponse := apimiddleware.SyncingResponseJson{}
-	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, "/zond/v1/node/syncing", &syncingResponse); err != nil {
+	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, "/qrl/v1/node/syncing", &syncingResponse); err != nil {
 		return nil, errors.Wrap(err, "failed to get sync status")
 	}
 
@@ -31,12 +30,12 @@ func (c *beaconApiNodeClient) GetSyncStatus(ctx context.Context, _ *empty.Empty)
 		return nil, errors.New("syncing data is nil")
 	}
 
-	return &zondpb.SyncStatus{
+	return &qrysmpb.SyncStatus{
 		Syncing: syncingResponse.Data.IsSyncing,
 	}, nil
 }
 
-func (c *beaconApiNodeClient) GetGenesis(ctx context.Context, _ *empty.Empty) (*zondpb.Genesis, error) {
+func (c *beaconApiNodeClient) GetGenesis(ctx context.Context, _ *emptypb.Empty) (*qrysmpb.Genesis, error) {
 	genesisJson, _, err := c.genesisProvider.GetGenesis(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get genesis")
@@ -53,7 +52,7 @@ func (c *beaconApiNodeClient) GetGenesis(ctx context.Context, _ *empty.Empty) (*
 	}
 
 	depositContractJson := apimiddleware.DepositContractResponseJson{}
-	if _, err = c.jsonRestHandler.GetRestJsonResponse(ctx, "/zond/v1/config/deposit_contract", &depositContractJson); err != nil {
+	if _, err = c.jsonRestHandler.GetRestJsonResponse(ctx, "/qrl/v1/config/deposit_contract", &depositContractJson); err != nil {
 		return nil, errors.Wrapf(err, "failed to query deposit contract information")
 	}
 
@@ -66,7 +65,7 @@ func (c *beaconApiNodeClient) GetGenesis(ctx context.Context, _ *empty.Empty) (*
 		return nil, errors.Wrapf(err, "failed to decode deposit contract address `%s`", depositContractJson.Data.Address)
 	}
 
-	return &zondpb.Genesis{
+	return &qrysmpb.Genesis{
 		GenesisTime: &timestamppb.Timestamp{
 			Seconds: genesisTime,
 		},
@@ -75,9 +74,9 @@ func (c *beaconApiNodeClient) GetGenesis(ctx context.Context, _ *empty.Empty) (*
 	}, nil
 }
 
-func (c *beaconApiNodeClient) GetVersion(ctx context.Context, _ *empty.Empty) (*zondpb.Version, error) {
+func (c *beaconApiNodeClient) GetVersion(ctx context.Context, _ *emptypb.Empty) (*qrysmpb.Version, error) {
 	var versionResponse apimiddleware.VersionResponseJson
-	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, "/zond/v1/node/version", &versionResponse); err != nil {
+	if _, err := c.jsonRestHandler.GetRestJsonResponse(ctx, "/qrl/v1/node/version", &versionResponse); err != nil {
 		return nil, errors.Wrapf(err, "failed to query node version")
 	}
 
@@ -85,25 +84,22 @@ func (c *beaconApiNodeClient) GetVersion(ctx context.Context, _ *empty.Empty) (*
 		return nil, errors.New("empty version response")
 	}
 
-	return &zondpb.Version{
+	return &qrysmpb.Version{
 		Version: versionResponse.Data.Version,
 	}, nil
 }
 
-func (c *beaconApiNodeClient) ListPeers(ctx context.Context, in *empty.Empty) (*zondpb.Peers, error) {
+func (c *beaconApiNodeClient) ListPeers(ctx context.Context, in *emptypb.Empty) (*qrysmpb.Peers, error) {
 	if c.fallbackClient != nil {
 		return c.fallbackClient.ListPeers(ctx, in)
 	}
 
 	// TODO: Implement me
-	panic("beaconApiNodeClient.ListPeers is not implemented. To use a fallback client, pass a fallback client as the last argument of NewBeaconApiNodeClientWithFallback.")
+	panic("beaconApiNodeClient.ListPeers is not implemented. To use a fallback client, pass a fallback client as the last argument of NewBeaconApiNodeClientWithFallback.") // lint:nopanic
 }
 
 func NewNodeClientWithFallback(host string, timeout time.Duration, fallbackClient iface.NodeClient) iface.NodeClient {
-	jsonRestHandler := beaconApiJsonRestHandler{
-		httpClient: http.Client{Timeout: timeout},
-		host:       host,
-	}
+	jsonRestHandler := newBeaconAPIJSONRestHandler(host, timeout)
 
 	return &beaconApiNodeClient{
 		jsonRestHandler: jsonRestHandler,

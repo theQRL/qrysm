@@ -6,16 +6,16 @@ import (
 	"fmt"
 
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"google.golang.org/protobuf/proto"
 )
 
 // beaconAggregateProofSubscriber forwards the incoming validated aggregated attestation and proof to the
 // attestation pool for processing.
 func (s *Service) beaconAggregateProofSubscriber(_ context.Context, msg proto.Message) error {
-	a, ok := msg.(*zondpb.SignedAggregateAttestationAndProof)
+	a, ok := msg.(*qrysmpb.SignedAggregateAttestationAndProof)
 	if !ok {
-		return fmt.Errorf("message was not type *zondpb.SignedAggregateAttestationAndProof, type=%T", msg)
+		return fmt.Errorf("message was not type *qrysmpb.SignedAggregateAttestationAndProof, type=%T", msg)
 	}
 
 	if a.Message.Aggregate == nil || a.Message.Aggregate.Data == nil {

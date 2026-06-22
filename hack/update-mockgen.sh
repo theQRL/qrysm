@@ -23,7 +23,7 @@ for ((i = 0; i < ${#proto_mocks_v1alpha1[@]}; i++)); do
     GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/proto/qrysm/v1alpha1 "$interfaces"
 done
 
-# github.com/theQRL/qrysm/proto/zond/service
+# github.com/theQRL/qrysm/proto/qrl/service
 # ---------------------------------------------------
 proto_mocks_service=(
       "$mock_path/event_service_mock.go EventsClient,Events_StreamEventsClient,Events_StreamEventsServer"
@@ -34,7 +34,7 @@ for ((i = 0; i < ${#proto_mocks_service[@]}; i++)); do
     interfaces=${proto_mocks_service[i]#* };
     echo "generating $file for interfaces: $interfaces";
     echo
-    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/proto/zond/service "$interfaces"
+    GO11MODULE=on mockgen -package=mock -destination="$file" github.com/theQRL/qrysm/proto/qrl/service "$interfaces"
 done
 
 # github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client
@@ -90,19 +90,19 @@ done
 goimports -w "$beacon_api_mock_path/."
 gofmt -s -w "$beacon_api_mock_path/."
 
-# github.com/theQRL/qrysm/crypto/dilithium
+# github.com/theQRL/qrysm/crypto/ml_dsa_87
 # --------------------------------------------
-crypto_dilithium_common_mock_path="crypto/dilithium/common/mock"
-crypto_dilithium_common_mocks=(
-      "$crypto_dilithium_common_mock_path/interface_mock.go interface.go"
+crypto_ml_dsa_87_common_mock_path="crypto/ml_dsa_87/common/mock"
+crypto_ml_dsa_87_common_mocks=(
+      "$crypto_ml_dsa_87_common_mock_path/interface_mock.go interface.go"
 )
 
-for ((i = 0; i < ${#crypto_dilithium_common_mocks[@]}; i++)); do
-    file=${crypto_dilithium_common_mocks[i]% *};
-    source=${crypto_dilithium_common_mocks[i]#* };
+for ((i = 0; i < ${#crypto_ml_dsa_87_common_mocks[@]}; i++)); do
+    file=${crypto_ml_dsa_87_common_mocks[i]% *};
+    source=${crypto_ml_dsa_87_common_mocks[i]#* };
     echo "generating $file for file: $source";
-    GO11MODULE=on mockgen -package=mock -source="crypto/dilithium/common/$source" -destination="$file"
+    GO11MODULE=on mockgen -package=mock -source="crypto/ml_dsa_87/common/$source" -destination="$file"
 done
 
-# goimports -w "$crypto_dilithium_common_mock_path/."
-# gofmt -s -w "$crypto_dilithium_common_mock_path/."
+# goimports -w "$crypto_ml_dsa_87_common_mock_path/."
+# gofmt -s -w "$crypto_ml_dsa_87_common_mock_path/."

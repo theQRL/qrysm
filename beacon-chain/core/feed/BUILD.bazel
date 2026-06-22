@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "feed",
     srcs = ["event.go"],
     importpath = "github.com/theQRL/qrysm/beacon-chain/core/feed",
     visibility = [

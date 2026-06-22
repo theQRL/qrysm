@@ -6,7 +6,7 @@ import (
 
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -17,11 +17,11 @@ func TestStore_LastValidatedCheckpoint_CanSaveRetrieve(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
 	root := bytesutil.ToBytes32([]byte{'A'})
-	cp := &zondpb.Checkpoint{
+	cp := &qrysmpb.Checkpoint{
 		Epoch: 10,
 		Root:  root[:],
 	}
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(1))
 	require.NoError(t, db.SaveState(ctx, st, root))
@@ -35,10 +35,10 @@ func TestStore_LastValidatedCheckpoint_CanSaveRetrieve(t *testing.T) {
 func TestStore_LastValidatedCheckpoint_Recover(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
-	blk := util.HydrateSignedBeaconBlockCapella(&zondpb.SignedBeaconBlockCapella{})
+	blk := util.HydrateSignedBeaconBlockZond(&qrysmpb.SignedBeaconBlockZond{})
 	r, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
-	cp := &zondpb.Checkpoint{
+	cp := &qrysmpb.Checkpoint{
 		Epoch: 2,
 		Root:  r[:],
 	}
@@ -55,18 +55,17 @@ func BenchmarkStore_SaveLastValidatedCheckpoint(b *testing.B) {
 	db := setupDB(b)
 	ctx := context.Background()
 	root := bytesutil.ToBytes32([]byte{'A'})
-	cp := &zondpb.Checkpoint{
+	cp := &qrysmpb.Checkpoint{
 		Epoch: 10,
 		Root:  root[:],
 	}
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(b, err)
 	require.NoError(b, st.SetSlot(1))
 	require.NoError(b, db.SaveState(ctx, st, root))
 	db.stateSummaryCache.clear()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		require.NoError(b, db.SaveLastValidatedCheckpoint(ctx, cp))
 	}
 }
@@ -78,14 +77,14 @@ func TestStore_LastValidatedCheckpoint_DefaultIsFinalized(t *testing.T) {
 	genesis := bytesutil.ToBytes32([]byte{'G', 'E', 'N', 'E', 'S', 'I', 'S'})
 	require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesis))
 
-	blk := util.NewBeaconBlockCapella()
+	blk := util.NewBeaconBlockZond()
 	blk.Block.ParentRoot = genesis[:]
 	blk.Block.Slot = 40
 
 	root, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	cp := &zondpb.Checkpoint{
+	cp := &qrysmpb.Checkpoint{
 		Epoch: 5,
 		Root:  root[:],
 	}
@@ -94,7 +93,7 @@ func TestStore_LastValidatedCheckpoint_DefaultIsFinalized(t *testing.T) {
 	wsb, err := blocks.NewSignedBeaconBlock(blk)
 	require.NoError(t, err)
 	require.NoError(t, db.SaveBlock(ctx, wsb))
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(1))
 	// a state is required to save checkpoint
@@ -105,4 +104,22 @@ func TestStore_LastValidatedCheckpoint_DefaultIsFinalized(t *testing.T) {
 	retrieved, err := db.LastValidatedCheckpoint(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, true, proto.Equal(cp, retrieved), "Wanted %v, received %v", cp, retrieved)
+}
+
+// Regression test for upstream prysm#15021: when no validated checkpoint is
+// stored and the finalized checkpoint root is the zero hash (the pre-finality
+// startup case), LastValidatedCheckpoint must substitute the genesis block
+// root so that callers like setup_forkchoice's SetOptimisticToValid see a
+// real root rather than zero.
+func TestStore_LastValidatedCheckpoint_FallsBackToGenesisRootWhenZero(t *testing.T) {
+	db := setupDB(t)
+	ctx := context.Background()
+
+	genesis := bytesutil.ToBytes32([]byte{'G', 'E', 'N', 'E', 'S', 'I', 'S'})
+	require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesis))
+
+	retrieved, err := db.LastValidatedCheckpoint(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, retrieved)
+	assert.DeepEqual(t, genesis[:], retrieved.Root)
 }

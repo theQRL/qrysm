@@ -12,9 +12,9 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/container/slice"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
 	"github.com/theQRL/qrysm/testing/endtoend/policies"
 	e2eTypes "github.com/theQRL/qrysm/testing/endtoend/types"
@@ -64,13 +64,13 @@ var slashedIndices []uint64
 func validatorsSlashed(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
 	ctx := context.Background()
-	client := zond.NewBeaconChainClient(conn)
+	client := qrysmpb.NewBeaconChainClient(conn)
 
 	actualSlashedIndices := 0
 
 	for _, slashedIndex := range slashedIndices {
-		req := &zond.GetValidatorRequest{
-			QueryFilter: &zond.GetValidatorRequest_Index{
+		req := &qrysmpb.GetValidatorRequest{
+			QueryFilter: &qrysmpb.GetValidatorRequest_Index{
 				Index: primitives.ValidatorIndex(slashedIndex),
 			},
 		}
@@ -93,11 +93,11 @@ func validatorsSlashed(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientConn)
 func validatorsLoseBalance(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
 	ctx := context.Background()
-	client := zond.NewBeaconChainClient(conn)
+	client := qrysmpb.NewBeaconChainClient(conn)
 
 	for i, slashedIndex := range slashedIndices {
-		req := &zond.GetValidatorRequest{
-			QueryFilter: &zond.GetValidatorRequest_Index{
+		req := &qrysmpb.GetValidatorRequest{
+			QueryFilter: &qrysmpb.GetValidatorRequest_Index{
 				Index: primitives.ValidatorIndex(slashedIndex),
 			},
 		}
@@ -122,8 +122,8 @@ func validatorsLoseBalance(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientC
 
 func insertDoubleAttestationIntoPool(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	valClient := zond.NewBeaconNodeValidatorClient(conn)
-	beaconClient := zond.NewBeaconChainClient(conn)
+	valClient := qrysmpb.NewBeaconNodeValidatorClient(conn)
+	beaconClient := qrysmpb.NewBeaconChainClient(conn)
 
 	ctx := context.Background()
 	chainHead, err := beaconClient.GetChainHead(ctx, &emptypb.Empty{})
@@ -139,7 +139,7 @@ func insertDoubleAttestationIntoPool(_ *e2eTypes.EvaluationContext, conns ...*gr
 	for i, priv := range privKeys {
 		pubKeys[i] = priv.PublicKey().Marshal()
 	}
-	duties, err := valClient.GetDuties(ctx, &zond.DutiesRequest{
+	duties, err := valClient.GetDuties(ctx, &qrysmpb.DutiesRequest{
 		Epoch:      chainHead.HeadEpoch,
 		PublicKeys: pubKeys,
 	})
@@ -157,7 +157,7 @@ func insertDoubleAttestationIntoPool(_ *e2eTypes.EvaluationContext, conns ...*gr
 		}
 	}
 
-	attDataReq := &zond.AttestationDataRequest{
+	attDataReq := &qrysmpb.AttestationDataRequest{
 		CommitteeIndex: committeeIndex,
 		Slot:           chainHead.HeadSlot - 1,
 	}
@@ -169,7 +169,7 @@ func insertDoubleAttestationIntoPool(_ *e2eTypes.EvaluationContext, conns ...*gr
 	blockRoot := bytesutil.ToBytes32([]byte("muahahahaha I'm an evil validator"))
 	attData.BeaconBlockRoot = blockRoot[:]
 
-	req := &zond.DomainRequest{
+	req := &qrysmpb.DomainRequest{
 		Epoch:  chainHead.HeadEpoch,
 		Domain: params.BeaconConfig().DomainBeaconAttester[:],
 	}
@@ -192,14 +192,14 @@ func insertDoubleAttestationIntoPool(_ *e2eTypes.EvaluationContext, conns ...*gr
 		attBitfield := bitfield.NewBitlist(uint64(len(committee)))
 		attBitfield.SetBitAt(i, true)
 
-		att := &zond.Attestation{
+		att := &qrysmpb.Attestation{
 			AggregationBits: attBitfield,
 			Data:            attData,
 			Signatures:      [][]byte{privKeys[committee[i]].Sign(signingRoot[:]).Marshal()},
 		}
 		// We only broadcast to conns[0] here since we can trust that at least 1 node will be online.
 		// Only broadcasting the attestation to one node also helps test slashing propagation.
-		client := zond.NewBeaconNodeValidatorClient(conns[0])
+		client := qrysmpb.NewBeaconNodeValidatorClient(conns[0])
 		if _, err = client.ProposeAttestation(ctx, att); err != nil {
 			return errors.Wrap(err, "could not propose attestation")
 		}
@@ -210,8 +210,8 @@ func insertDoubleAttestationIntoPool(_ *e2eTypes.EvaluationContext, conns ...*gr
 
 func proposeDoubleBlock(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	valClient := zond.NewBeaconNodeValidatorClient(conn)
-	beaconClient := zond.NewBeaconChainClient(conn)
+	valClient := qrysmpb.NewBeaconNodeValidatorClient(conn)
+	beaconClient := qrysmpb.NewBeaconChainClient(conn)
 
 	ctx := context.Background()
 	chainHead, err := beaconClient.GetChainHead(ctx, &emptypb.Empty{})
@@ -226,7 +226,7 @@ func proposeDoubleBlock(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientConn
 	for i, priv := range privKeys {
 		pubKeys[i] = priv.PublicKey().Marshal()
 	}
-	duties, err := valClient.GetDuties(ctx, &zond.DutiesRequest{
+	duties, err := valClient.GetDuties(ctx, &qrysmpb.DutiesRequest{
 		Epoch:      chainHead.HeadEpoch,
 		PublicKeys: pubKeys,
 	})
@@ -252,7 +252,7 @@ func proposeDoubleBlock(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientConn
 	// If the proposer index is in the second validator client, we connect to
 	// the corresponding beacon node instead.
 	if proposerIndex >= primitives.ValidatorIndex(uint64(validatorsPerNode)) {
-		valClient = zond.NewBeaconNodeValidatorClient(conns[1])
+		valClient = qrysmpb.NewBeaconNodeValidatorClient(conns[1])
 	}
 
 	b, err := generateSignedBeaconBlock(chainHead, proposerIndex, valClient, privKeys, "bad state root")
@@ -276,37 +276,37 @@ func proposeDoubleBlock(_ *e2eTypes.EvaluationContext, conns ...*grpc.ClientConn
 }
 
 func generateSignedBeaconBlock(
-	chainHead *zond.ChainHead,
+	chainHead *qrysmpb.ChainHead,
 	proposerIndex primitives.ValidatorIndex,
-	valClient zond.BeaconNodeValidatorClient,
-	privKeys []dilithium.DilithiumKey,
+	valClient qrysmpb.BeaconNodeValidatorClient,
+	privKeys []ml_dsa_87.MLDSA87Key,
 	stateRoot string,
-) (*zond.GenericSignedBeaconBlock, error) {
+) (*qrysmpb.GenericSignedBeaconBlock, error) {
 	ctx := context.Background()
 
 	hashLen := 32
-	blk := &zond.BeaconBlockCapella{
+	blk := &qrysmpb.BeaconBlockZond{
 		Slot:          chainHead.HeadSlot - 1,
 		ParentRoot:    chainHead.HeadBlockRoot,
 		StateRoot:     bytesutil.PadTo([]byte(stateRoot), hashLen),
 		ProposerIndex: proposerIndex,
-		Body: &zond.BeaconBlockBodyCapella{
-			Eth1Data: &zond.Eth1Data{
+		Body: &qrysmpb.BeaconBlockBodyZond{
+			ExecutionData: &qrysmpb.ExecutionData{
 				BlockHash:    bytesutil.PadTo([]byte("bad block hash"), hashLen),
 				DepositRoot:  bytesutil.PadTo([]byte("bad deposit root"), hashLen),
 				DepositCount: 1,
 			},
-			RandaoReveal:      bytesutil.PadTo([]byte("bad randao"), field_params.DilithiumSignatureLength),
+			RandaoReveal:      bytesutil.PadTo([]byte("bad randao"), field_params.MLDSA87SignatureLength),
 			Graffiti:          bytesutil.PadTo([]byte("teehee"), hashLen),
-			ProposerSlashings: []*zond.ProposerSlashing{},
-			AttesterSlashings: []*zond.AttesterSlashing{},
-			Attestations:      []*zond.Attestation{},
-			Deposits:          []*zond.Deposit{},
-			VoluntaryExits:    []*zond.SignedVoluntaryExit{},
+			ProposerSlashings: []*qrysmpb.ProposerSlashing{},
+			AttesterSlashings: []*qrysmpb.AttesterSlashing{},
+			Attestations:      []*qrysmpb.Attestation{},
+			Deposits:          []*qrysmpb.Deposit{},
+			VoluntaryExits:    []*qrysmpb.SignedVoluntaryExit{},
 		},
 	}
 
-	req := &zond.DomainRequest{
+	req := &qrysmpb.DomainRequest{
 		Epoch:  chainHead.HeadEpoch,
 		Domain: params.BeaconConfig().DomainBeaconProposer[:],
 	}
@@ -319,7 +319,7 @@ func generateSignedBeaconBlock(
 		return nil, errors.Wrap(err, "could not compute signing root")
 	}
 	sig := privKeys[proposerIndex].Sign(signingRoot[:]).Marshal()
-	signedBlk := &zond.SignedBeaconBlockCapella{
+	signedBlk := &qrysmpb.SignedBeaconBlockZond{
 		Block:     blk,
 		Signature: sig,
 	}

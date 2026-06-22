@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -22,10 +22,10 @@ import (
 func TestService_ReceiveBlock(t *testing.T) {
 	ctx := context.Background()
 
-	genesis, keys := util.DeterministicGenesisStateCapella(t, 64)
+	genesis, keys := util.DeterministicGenesisStateZond(t, 64)
 	copiedGen := genesis.Copy()
-	genFullBlock := func(t *testing.T, conf *util.BlockGenConfig, slot primitives.Slot) *zondpb.SignedBeaconBlockCapella {
-		blk, err := util.GenerateFullBlockCapella(copiedGen.Copy(), keys, conf, slot)
+	genFullBlock := func(t *testing.T, conf *util.BlockGenConfig, slot primitives.Slot) *qrysmpb.SignedBeaconBlockZond {
+		blk, err := util.GenerateFullBlockZond(copiedGen.Copy(), keys, conf, slot)
 		require.NoError(t, err)
 		return blk
 	}
@@ -35,7 +35,7 @@ func TestService_ReceiveBlock(t *testing.T) {
 	params.OverrideBeaconConfig(bc)
 
 	type args struct {
-		block *zondpb.SignedBeaconBlockCapella
+		block *qrysmpb.SignedBeaconBlockZond
 	}
 	tests := []struct {
 		name      string
@@ -109,12 +109,16 @@ func TestService_ReceiveBlock(t *testing.T) {
 				block: genFullBlock(t, util.DefaultBlockGenConfig(), 1),
 			},
 			check: func(t *testing.T, s *Service) {
-				// Hacky sleep, should use a better way to be able to resolve the race
-				// between event being sent out and processed.
-				time.Sleep(100 * time.Millisecond)
-				if recvd := len(s.cfg.StateNotifier.(*blockchainTesting.MockStateNotifier).ReceivedEvents()); recvd < 1 {
-					t.Errorf("Received %d state notifications, expected at least 1", recvd)
+				// Poll until the state-feed event arrives, rather than sleeping
+				// for a fixed 100ms (which is racy on slow CI).
+				deadline := time.Now().Add(5 * time.Second)
+				for time.Now().Before(deadline) {
+					if recvd := len(s.cfg.StateNotifier.(*blockchainTesting.MockStateNotifier).ReceivedEvents()); recvd >= 1 {
+						return
+					}
+					time.Sleep(10 * time.Millisecond)
 				}
+				t.Errorf("Did not receive any state notifications within 5s")
 			},
 		},
 	}
@@ -160,8 +164,8 @@ func TestService_ReceiveBlockUpdateHead(t *testing.T) {
 		WithExitPool(voluntaryexits.NewPool()),
 		WithStateNotifier(&blockchainTesting.MockStateNotifier{RecordEvents: true}))
 	ctx, beaconDB := tr.ctx, tr.db
-	genesis, keys := util.DeterministicGenesisStateCapella(t, 64)
-	b, err := util.GenerateFullBlockCapella(genesis, keys, util.DefaultBlockGenConfig(), 1)
+	genesis, keys := util.DeterministicGenesisStateZond(t, 64)
+	b, err := util.GenerateFullBlockZond(genesis, keys, util.DefaultBlockGenConfig(), 1)
 	assert.NoError(t, err)
 	genesisBlockRoot := bytesutil.ToBytes32(nil)
 	require.NoError(t, beaconDB.SaveState(ctx, genesis, genesisBlockRoot))
@@ -172,34 +176,75 @@ func TestService_ReceiveBlockUpdateHead(t *testing.T) {
 	root, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		wsb, err := blocks.NewSignedBeaconBlock(b)
 		require.NoError(t, err)
 		require.NoError(t, s.ReceiveBlock(ctx, wsb, root))
-		wg.Done()
-	}()
+	})
 	wg.Wait()
-	time.Sleep(100 * time.Millisecond)
-	if recvd := len(s.cfg.StateNotifier.(*blockchainTesting.MockStateNotifier).ReceivedEvents()); recvd < 1 {
-		t.Errorf("Received %d state notifications, expected at least 1", recvd)
+	// Poll for the state-feed event instead of sleeping.
+	deadline := time.Now().Add(5 * time.Second)
+	got := false
+	for time.Now().Before(deadline) {
+		if recvd := len(s.cfg.StateNotifier.(*blockchainTesting.MockStateNotifier).ReceivedEvents()); recvd >= 1 {
+			got = true
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if !got {
+		t.Errorf("Did not receive any state notifications within 5s")
 	}
 	// Verify fork choice has processed the block. (Genesis block and the new block)
 	assert.Equal(t, 2, s.cfg.ForkChoiceStore.NodeCount())
 }
 
+// A rebroadcast of an already-imported block must short-circuit before
+// running prestate fetch / block copy / state-transition validation.
+func TestService_ReceiveBlock_AlreadyInForkchoiceShortCircuits(t *testing.T) {
+	s, tr := minimalTestService(t,
+		WithExitPool(voluntaryexits.NewPool()),
+		WithStateNotifier(&blockchainTesting.MockStateNotifier{RecordEvents: true}))
+	ctx, beaconDB := tr.ctx, tr.db
+	genesis, keys := util.DeterministicGenesisStateZond(t, 64)
+	b, err := util.GenerateFullBlockZond(genesis, keys, util.DefaultBlockGenConfig(), 1)
+	require.NoError(t, err)
+	genesisBlockRoot := bytesutil.ToBytes32(nil)
+	require.NoError(t, beaconDB.SaveState(ctx, genesis, genesisBlockRoot))
+	_ = s.cfg.StateNotifier.StateFeed()
+	require.NoError(t, s.saveGenesisData(ctx, genesis))
+
+	root, err := b.Block.HashTreeRoot()
+	require.NoError(t, err)
+	wsb, err := blocks.NewSignedBeaconBlock(b)
+	require.NoError(t, err)
+
+	// First receive: full import. Forkchoice ends with genesis + new block.
+	require.NoError(t, s.ReceiveBlock(ctx, wsb, root))
+	require.Equal(t, true, s.InForkchoice(root))
+	require.Equal(t, 2, s.cfg.ForkChoiceStore.NodeCount())
+
+	// Second receive of the same block: must early-return via the new
+	// InForkchoice short-circuit and emit its debug log.
+	hook := logTest.NewGlobal()
+	require.NoError(t, s.ReceiveBlock(ctx, wsb, root))
+	require.LogsContain(t, hook, "Ignoring block already in forkchoice")
+	// Forkchoice unchanged — the second call did not re-import.
+	require.Equal(t, 2, s.cfg.ForkChoiceStore.NodeCount())
+}
+
 func TestService_ReceiveBlockBatch(t *testing.T) {
 	ctx := context.Background()
 
-	genesis, keys := util.DeterministicGenesisStateCapella(t, 64)
-	genFullBlock := func(t *testing.T, conf *util.BlockGenConfig, slot primitives.Slot) *zondpb.SignedBeaconBlockCapella {
-		blk, err := util.GenerateFullBlockCapella(genesis, keys, conf, slot)
+	genesis, keys := util.DeterministicGenesisStateZond(t, 64)
+	genFullBlock := func(t *testing.T, conf *util.BlockGenConfig, slot primitives.Slot) *qrysmpb.SignedBeaconBlockZond {
+		blk, err := util.GenerateFullBlockZond(genesis, keys, conf, slot)
 		assert.NoError(t, err)
 		return blk
 	}
 
 	type args struct {
-		block *zondpb.SignedBeaconBlockCapella
+		block *qrysmpb.SignedBeaconBlockZond
 	}
 	tests := []struct {
 		name      string
@@ -257,18 +302,20 @@ func TestService_HasBlock(t *testing.T) {
 	if s.HasBlock(context.Background(), r) {
 		t.Error("Should not have block")
 	}
-	wsb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
+	wsb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
 	require.NoError(t, err)
 	require.NoError(t, s.saveInitSyncBlock(context.Background(), r, wsb))
 	if !s.HasBlock(context.Background(), r) {
 		t.Error("Should have block")
 	}
-	b := util.NewBeaconBlockCapella()
+	b := util.NewBeaconBlockZond()
 	b.Block.Slot = 1
 	util.SaveBlock(t, context.Background(), s.cfg.BeaconDB, b)
 	r, err = b.Block.HashTreeRoot()
 	require.NoError(t, err)
 	require.Equal(t, true, s.HasBlock(context.Background(), r))
+	require.NoError(t, s.blockBeingSynced.set(r))
+	require.Equal(t, false, s.HasBlock(context.Background(), r))
 }
 
 func TestCheckSaveHotStateDB_Enabling(t *testing.T) {
@@ -302,42 +349,4 @@ func TestCheckSaveHotStateDB_Overflow(t *testing.T) {
 
 	require.NoError(t, s.checkSaveHotStateDB(context.Background()))
 	assert.LogsDoNotContain(t, hook, "Entering mode to save hot states in DB")
-}
-
-func TestHandleBlockDilithiumToExecutionChanges(t *testing.T) {
-	service, tr := minimalTestService(t)
-	pool := tr.dilithiumPool
-
-	t.Run("Post Capella no changes", func(t *testing.T) {
-		body := &zondpb.BeaconBlockBodyCapella{}
-		pbb := &zondpb.BeaconBlockCapella{
-			Body: body,
-		}
-		blk, err := blocks.NewBeaconBlock(pbb)
-		require.NoError(t, err)
-		require.NoError(t, service.markIncludedBlockDilithiumToExecChanges(blk))
-	})
-
-	t.Run("Post Capella some changes", func(t *testing.T) {
-		idx := primitives.ValidatorIndex(123)
-		change := &zondpb.DilithiumToExecutionChange{
-			ValidatorIndex: idx,
-		}
-		signedChange := &zondpb.SignedDilithiumToExecutionChange{
-			Message: change,
-		}
-		body := &zondpb.BeaconBlockBodyCapella{
-			DilithiumToExecutionChanges: []*zondpb.SignedDilithiumToExecutionChange{signedChange},
-		}
-		pbb := &zondpb.BeaconBlockCapella{
-			Body: body,
-		}
-		blk, err := blocks.NewBeaconBlock(pbb)
-		require.NoError(t, err)
-
-		pool.InsertDilithiumToExecChange(signedChange)
-		require.Equal(t, true, pool.ValidatorExists(idx))
-		require.NoError(t, service.markIncludedBlockDilithiumToExecChanges(blk))
-		require.Equal(t, false, pool.ValidatorExists(idx))
-	})
 }

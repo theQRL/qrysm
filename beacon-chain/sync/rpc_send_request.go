@@ -37,8 +37,14 @@ func SendBeaconBlocksByRangeRequest(
 	}
 	defer closeStream(stream, log)
 
+	// Cap the slice capacity to MaxRequestBlocks to prevent panic from invalid Count values
+	// (e.g., due to unsigned integer underflow).
+	sliceCap := req.Count
+	if sliceCap > params.BeaconNetworkConfig().MaxRequestBlocks {
+		sliceCap = params.BeaconNetworkConfig().MaxRequestBlocks
+	}
 	// Augment block processing function, if non-nil block processor is provided.
-	blocks := make([]interfaces.ReadOnlySignedBeaconBlock, 0, req.Count)
+	blocks := make([]interfaces.ReadOnlySignedBeaconBlock, 0, sliceCap)
 	process := func(blk interfaces.ReadOnlySignedBeaconBlock) error {
 		blocks = append(blocks, blk)
 		if blockProcessor != nil {

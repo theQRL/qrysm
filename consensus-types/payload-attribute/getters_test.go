@@ -16,12 +16,12 @@ func TestPayloadAttributeGetters(t *testing.T) {
 		{
 			name: "Get version",
 			tc: func(t *testing.T) {
-				a := EmptyWithVersion(version.Capella)
-				require.Equal(t, version.Capella, a.Version())
+				a := EmptyWithVersion(version.Zond)
+				require.Equal(t, version.Zond, a.Version())
 			},
 		},
 		{
-			name: "Get prev randao (capella)",
+			name: "Get prev randao (zond)",
 			tc: func(t *testing.T) {
 				r := []byte{1, 2, 3}
 				a, err := New(&enginev1.PayloadAttributesV2{PrevRandao: r})
@@ -30,7 +30,7 @@ func TestPayloadAttributeGetters(t *testing.T) {
 			},
 		},
 		{
-			name: "Get suggested fee recipient (capella)",
+			name: "Get suggested fee recipient (zond)",
 			tc: func(t *testing.T) {
 				r := []byte{4, 5, 6}
 				a, err := New(&enginev1.PayloadAttributesV2{SuggestedFeeRecipient: r})
@@ -39,7 +39,7 @@ func TestPayloadAttributeGetters(t *testing.T) {
 			},
 		},
 		{
-			name: "Get timestamp (capella)",
+			name: "Get timestamp (zond)",
 			tc: func(t *testing.T) {
 				r := uint64(123)
 				a, err := New(&enginev1.PayloadAttributesV2{Timestamp: r})
@@ -48,7 +48,7 @@ func TestPayloadAttributeGetters(t *testing.T) {
 			},
 		},
 		{
-			name: "Get withdrawals (capella)",
+			name: "Get withdrawals (zond)",
 			tc: func(t *testing.T) {
 				wd := []*enginev1.Withdrawal{{Index: 1}, {Index: 2}, {Index: 3}}
 				a, err := New(&enginev1.PayloadAttributesV2{Withdrawals: wd})
@@ -59,7 +59,7 @@ func TestPayloadAttributeGetters(t *testing.T) {
 			},
 		},
 		{
-			name: "Get PbCapella (nil)",
+			name: "Get PbZond (nil)",
 			tc: func(t *testing.T) {
 				a, err := New(&enginev1.PayloadAttributesV2{})
 				require.NoError(t, err)
@@ -69,7 +69,7 @@ func TestPayloadAttributeGetters(t *testing.T) {
 			},
 		},
 		{
-			name: "Get PbCapella",
+			name: "Get PbZond",
 			tc: func(t *testing.T) {
 				p := &enginev1.PayloadAttributesV2{
 					Timestamp:             1,

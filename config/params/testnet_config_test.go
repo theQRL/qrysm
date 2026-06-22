@@ -11,16 +11,6 @@ import (
 	"github.com/theQRL/qrysm/testing/require"
 )
 
-// TODO(now.youtrack.cloud/issue/TQ-17)
-/*
-func testnetConfigFilePath(t *testing.T, network string) string {
-	fPath, err := bazel.Runfile("external/zond_networks")
-	require.NoError(t, err)
-	configFilePath := path.Join(fPath, "shared", network, "config.yaml")
-	return configFilePath
-}
-*/
-
 func TestE2EConfigParity(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	testDir := bazel.TestTmpDir()
@@ -63,7 +53,6 @@ func compareConfigs(t *testing.T, expected, actual *params.BeaconChainConfig) {
 	require.DeepEqual(t, expected.MaxEffectiveBalance, actual.MaxEffectiveBalance)
 	require.DeepEqual(t, expected.EjectionBalance, actual.EjectionBalance)
 	require.DeepEqual(t, expected.EffectiveBalanceIncrement, actual.EffectiveBalanceIncrement)
-	require.DeepEqual(t, expected.DilithiumWithdrawalPrefixByte, actual.DilithiumWithdrawalPrefixByte)
 	require.DeepEqual(t, expected.ZeroHash, actual.ZeroHash)
 	require.DeepEqual(t, expected.GenesisDelay, actual.GenesisDelay)
 	require.DeepEqual(t, expected.MinAttestationInclusionDelay, actual.MinAttestationInclusionDelay)
@@ -72,14 +61,14 @@ func compareConfigs(t *testing.T, expected, actual *params.BeaconChainConfig) {
 	require.DeepEqual(t, expected.SqrRootSlotsPerEpoch, actual.SqrRootSlotsPerEpoch)
 	require.DeepEqual(t, expected.MinSeedLookahead, actual.MinSeedLookahead)
 	require.DeepEqual(t, expected.MaxSeedLookahead, actual.MaxSeedLookahead)
-	require.DeepEqual(t, expected.EpochsPerEth1VotingPeriod, actual.EpochsPerEth1VotingPeriod)
+	require.DeepEqual(t, expected.EpochsPerExecutionVotingPeriod, actual.EpochsPerExecutionVotingPeriod)
 	require.DeepEqual(t, expected.SlotsPerHistoricalRoot, actual.SlotsPerHistoricalRoot)
 	require.DeepEqual(t, expected.MinValidatorWithdrawabilityDelay, actual.MinValidatorWithdrawabilityDelay)
 	require.DeepEqual(t, expected.ShardCommitteePeriod, actual.ShardCommitteePeriod)
 	require.DeepEqual(t, expected.MinEpochsToInactivityPenalty, actual.MinEpochsToInactivityPenalty)
-	require.DeepEqual(t, expected.Eth1FollowDistance, actual.Eth1FollowDistance)
+	require.DeepEqual(t, expected.ExecutionFollowDistance, actual.ExecutionFollowDistance)
 	require.DeepEqual(t, expected.DeprecatedSafeSlotsToUpdateJustified, actual.DeprecatedSafeSlotsToUpdateJustified)
-	require.DeepEqual(t, expected.SecondsPerETH1Block, actual.SecondsPerETH1Block)
+	require.DeepEqual(t, expected.SecondsPerExecutionBlock, actual.SecondsPerExecutionBlock)
 	require.DeepEqual(t, expected.ProposerScoreBoost, actual.ProposerScoreBoost)
 	require.DeepEqual(t, expected.IntervalsPerSlot, actual.IntervalsPerSlot)
 	require.DeepEqual(t, expected.DepositChainID, actual.DepositChainID)
@@ -110,16 +99,14 @@ func compareConfigs(t *testing.T, expected, actual *params.BeaconChainConfig) {
 	require.DeepEqual(t, expected.DomainSyncCommittee, actual.DomainSyncCommittee)
 	require.DeepEqual(t, expected.DomainSyncCommitteeSelectionProof, actual.DomainSyncCommitteeSelectionProof)
 	require.DeepEqual(t, expected.DomainContributionAndProof, actual.DomainContributionAndProof)
-	require.DeepEqual(t, expected.GweiPerEth, actual.GweiPerEth)
+	require.DeepEqual(t, expected.ShorPerQuanta, actual.ShorPerQuanta)
 	require.DeepEqual(t, expected.DefaultBufferSize, actual.DefaultBufferSize)
-	require.DeepEqual(t, expected.ValidatorPrivkeyFileName, actual.ValidatorPrivkeyFileName)
-	require.DeepEqual(t, expected.WithdrawalPrivkeyFileName, actual.WithdrawalPrivkeyFileName)
 	require.DeepEqual(t, expected.RPCSyncCheck, actual.RPCSyncCheck)
 	require.DeepEqual(t, expected.DefaultPageSize, actual.DefaultPageSize)
 	require.DeepEqual(t, expected.MaxPeersToSync, actual.MaxPeersToSync)
 	require.DeepEqual(t, expected.SlotsPerArchivedPoint, actual.SlotsPerArchivedPoint)
 	require.DeepEqual(t, expected.GenesisCountdownInterval, actual.GenesisCountdownInterval)
-	require.DeepEqual(t, expected.BeaconStateCapellaFieldCount, actual.BeaconStateCapellaFieldCount)
+	require.DeepEqual(t, expected.BeaconStateZondFieldCount, actual.BeaconStateZondFieldCount)
 	require.DeepEqual(t, expected.WeakSubjectivityPeriod, actual.WeakSubjectivityPeriod)
 	require.DeepEqual(t, expected.PruneSlasherStoragePeriod, actual.PruneSlasherStoragePeriod)
 	require.DeepEqual(t, expected.SlashingProtectionPruningEpochs, actual.SlashingProtectionPruningEpochs)

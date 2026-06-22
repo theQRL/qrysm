@@ -9,7 +9,7 @@ import (
 )
 
 func TestEndToEnd_MultiScenarioRun(t *testing.T) {
-	runner := e2eMainnet(t, false, types.StartAt(version.Capella, params.E2EMainnetTestConfig()), types.WithEpochs(24))
+	runner := e2eMainnet(t, false, types.StartAt(version.Zond, params.E2EMainnetTestConfig()), types.WithEpochs(24))
 	runner.config.Evaluators = scenarioEvals()
 	runner.config.EvalInterceptor = runner.multiScenario
 	runner.scenarioRunner()

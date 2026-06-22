@@ -79,10 +79,21 @@ func (f *ForkChoice) ShouldOverrideFCU() (override bool) {
 	// }
 
 	// Only orphan a block if the head LMD vote is weak
-	if head.weight*100 > f.store.committeeWeight*params.BeaconConfig().ReorgWeightThreshold {
+	if head.weight*100 > f.store.committeeWeight*params.BeaconConfig().ReorgHeadWeightThreshold {
 		return
 	}
 
+	// Return early if we are checking before attestations for the current slot
+	// have been processed. The parent LMD weight check below relies on those
+	// attestations and would otherwise veto legitimate reorgs of late blocks.
+	secs, err := slots.SecondsSinceSlotStart(head.slot, f.store.genesisTime, uint64(time.Now().Unix()))
+	if err != nil {
+		log.WithError(err).Error("could not check current slot")
+		return true
+	}
+	if secs < ProcessAttestationsThreshold {
+		return true
+	}
 	// Only orphan a block if the parent LMD vote is strong
 	if parent.weight*100 < f.store.committeeWeight*params.BeaconConfig().ReorgParentWeightThreshold {
 		return
@@ -138,7 +149,7 @@ func (f *ForkChoice) GetProposerHead() [32]byte {
 	}
 
 	// Only orphan a block if the head LMD vote is weak
-	if head.weight*100 > f.store.committeeWeight*params.BeaconConfig().ReorgWeightThreshold {
+	if head.weight*100 > f.store.committeeWeight*params.BeaconConfig().ReorgHeadWeightThreshold {
 		return head.root
 	}
 

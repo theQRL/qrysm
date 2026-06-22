@@ -14,7 +14,7 @@ import (
 var failedBlockSignLocalErr = "attempted to sign a double proposal, block rejected by local protection"
 
 func (v *validator) slashableProposalCheck(
-	ctx context.Context, pubKey [field_params.DilithiumPubkeyLength]byte, signedBlock interfaces.ReadOnlySignedBeaconBlock, signingRoot [32]byte,
+	ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, signedBlock interfaces.ReadOnlySignedBeaconBlock, signingRoot [32]byte,
 ) error {
 	fmtKey := fmt.Sprintf("%#x", pubKey[:])
 
@@ -65,7 +65,7 @@ func (v *validator) slashableProposalCheck(
 	return nil
 }
 
-func blockLogFields(pubKey [field_params.DilithiumPubkeyLength]byte, blk interfaces.ReadOnlyBeaconBlock, sig []byte) logrus.Fields {
+func blockLogFields(pubKey [field_params.MLDSA87PubkeyLength]byte, blk interfaces.ReadOnlyBeaconBlock, sig []byte) logrus.Fields {
 	fields := logrus.Fields{
 		"proposerPublicKey": fmt.Sprintf("%#x", pubKey),
 		"proposerIndex":     blk.ProposerIndex(),

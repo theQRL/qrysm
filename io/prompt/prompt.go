@@ -12,14 +12,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/io/file"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 var au = aurora.NewAurora(true)
 
-// PasswordReaderFunc takes in a *file and returns a password using the terminal package
+// PasswordReaderFunc takes in a *file and returns a password using the term package
 func passwordReaderFunc(file *os.File) ([]byte, error) {
-	pass, err := terminal.ReadPassword(int(file.Fd()))
+	pass, err := term.ReadPassword(int(file.Fd()))
 	return pass, err
 }
 

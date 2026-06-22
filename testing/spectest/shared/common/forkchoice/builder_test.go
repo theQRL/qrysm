@@ -9,9 +9,9 @@ import (
 )
 
 func TestBuilderTick(t *testing.T) {
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
-	blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
+	blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
 	require.NoError(t, err)
 	builder := NewBuilder(t, st, blk)
 	builder.Tick(t, 10)
@@ -20,9 +20,9 @@ func TestBuilderTick(t *testing.T) {
 }
 
 func TestBuilderInvalidBlock(t *testing.T) {
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
-	blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
+	blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
 	require.NoError(t, err)
 	builder := NewBuilder(t, st, blk)
 	builder.InvalidBlock(t, blk)
@@ -30,12 +30,12 @@ func TestBuilderInvalidBlock(t *testing.T) {
 
 /*
 func TestPoWBlock(t *testing.T) {
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
-	blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
+	blk, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
 	require.NoError(t, err)
 	builder := NewBuilder(t, st, blk)
-	builder.PoWBlock(&zondpb.PowBlock{BlockHash: []byte{1, 2, 3}})
+	builder.PoWBlock(&qrlpb.PowBlock{BlockHash: []byte{1, 2, 3}})
 
 	require.Equal(t, 1, len(builder.execMock.powBlocks))
 }

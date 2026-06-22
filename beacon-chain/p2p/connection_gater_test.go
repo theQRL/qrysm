@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
 	mockp2p "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
 	leakybucket "github.com/theQRL/qrysm/container/leaky-bucket"
-	zondpb "github.com/theQRL/qrysm/proto/zond/v1"
+	qrlpb "github.com/theQRL/qrysm/proto/qrl/v1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
@@ -40,7 +40,7 @@ func TestPeer_AtMaxLimit(t *testing.T) {
 	s.cfg = &Config{MaxPeers: 0}
 	s.addrFilter, err = configureFilter(&Config{})
 	require.NoError(t, err)
-	s.started = true
+	s.started.Store(true)
 	h1, err := libp2p.New([]libp2p.Option{privKeyOption(pkey), libp2p.ListenAddrs(listen), libp2p.ConnectionGater(s)}...)
 	require.NoError(t, err)
 	s.host = h1
@@ -49,7 +49,7 @@ func TestPeer_AtMaxLimit(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	for i := 0; i < highWatermarkBuffer; i++ {
+	for range highWatermarkBuffer {
 		addPeer(t, s.peers, peers.PeerConnected)
 	}
 
@@ -84,9 +84,9 @@ func TestService_InterceptBannedIP(t *testing.T) {
 	ip := "212.67.10.122"
 	multiAddress, err := ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", ip, 3000))
 	require.NoError(t, err)
-	s.started = true
+	s.started.Store(true)
 
-	for i := 0; i < ipBurst; i++ {
+	for range ipBurst {
 		valid := s.validateDial(multiAddress)
 		if !valid {
 			t.Errorf("Expected multiaddress with ip %s to not be rejected", ip)
@@ -122,7 +122,7 @@ func TestService_RejectInboundConnectionBeforeStarted(t *testing.T) {
 		t.Errorf("Expected multiaddress with ip %s to be rejected as p2p service is not ready", ip)
 	}
 
-	s.started = true
+	s.started.Store(true)
 	valid = s.InterceptAccept(&maEndpoints{raddr: multiAddress})
 	if !valid {
 		t.Errorf("Expected multiaddress with ip %s to be accepted after service is started", ip)
@@ -146,7 +146,7 @@ func TestService_RejectInboundPeersBeyondLimit(t *testing.T) {
 	ip := "212.67.10.122"
 	multiAddress, err := ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", ip, 3000))
 	require.NoError(t, err)
-	s.started = true
+	s.started.Store(true)
 
 	valid := s.InterceptAccept(&maEndpoints{raddr: multiAddress})
 	if !valid {
@@ -159,7 +159,7 @@ func TestService_RejectInboundPeersBeyondLimit(t *testing.T) {
 	inboundLimit += 1
 	// Add in up to inbound peer limit.
 	for i := 0; i < int(inboundLimit); i++ {
-		addPeer(t, s.peers, peerdata.PeerConnectionState(zondpb.ConnectionState_CONNECTED))
+		addPeer(t, s.peers, peerdata.PeerConnectionState(qrlpb.ConnectionState_CONNECTED))
 	}
 	valid = s.InterceptAccept(&maEndpoints{raddr: multiAddress})
 	if valid {
@@ -191,7 +191,7 @@ func TestPeer_BelowMaxLimit(t *testing.T) {
 	h1, err := libp2p.New([]libp2p.Option{privKeyOption(pkey), libp2p.ListenAddrs(listen), libp2p.ConnectionGater(s)}...)
 	require.NoError(t, err)
 	s.host = h1
-	s.started = true
+	s.started.Store(true)
 	defer func() {
 		err := h1.Close()
 		require.NoError(t, err)
@@ -237,7 +237,7 @@ func TestPeerAllowList(t *testing.T) {
 	h1, err := libp2p.New([]libp2p.Option{privKeyOption(pkey), libp2p.ListenAddrs(listen), libp2p.ConnectionGater(s)}...)
 	require.NoError(t, err)
 	s.host = h1
-	s.started = true
+	s.started.Store(true)
 	defer func() {
 		err := h1.Close()
 		require.NoError(t, err)
@@ -284,7 +284,7 @@ func TestPeerDenyList(t *testing.T) {
 	h1, err := libp2p.New([]libp2p.Option{privKeyOption(pkey), libp2p.ListenAddrs(listen), libp2p.ConnectionGater(s)}...)
 	require.NoError(t, err)
 	s.host = h1
-	s.started = true
+	s.started.Store(true)
 	defer func() {
 		err := h1.Close()
 		require.NoError(t, err)

@@ -7,7 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/beacon"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
@@ -23,7 +23,7 @@ func TestGetGenesis_ValidGenesis(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		"/zond/v1/beacon/genesis",
+		"/qrl/v1/beacon/genesis",
 		&genesisResponseJson,
 	).Return(
 		nil,
@@ -57,7 +57,7 @@ func TestGetGenesis_NilData(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		"/zond/v1/beacon/genesis",
+		"/qrl/v1/beacon/genesis",
 		&genesisResponseJson,
 	).Return(
 		nil,
@@ -88,7 +88,7 @@ func TestGetGenesis_JsonResponseError(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		"/zond/v1/beacon/genesis",
+		"/qrl/v1/beacon/genesis",
 		&genesisResponseJson,
 	).Return(
 		expectedHttpErrorJson,

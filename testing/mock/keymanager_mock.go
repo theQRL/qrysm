@@ -40,7 +40,7 @@ func (m *MockRemoteSignerClient) EXPECT() *MockRemoteSignerClientMockRecorder {
 // ListValidatingPublicKeys mocks base method.
 func (m *MockRemoteSignerClient) ListValidatingPublicKeys(arg0 context.Context, arg1 *emptypb.Empty, arg2 ...grpc.CallOption) (*validatorpb.ListPublicKeysResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0, arg1}
+	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
@@ -51,16 +51,16 @@ func (m *MockRemoteSignerClient) ListValidatingPublicKeys(arg0 context.Context, 
 }
 
 // ListValidatingPublicKeys indicates an expected call of ListValidatingPublicKeys.
-func (mr *MockRemoteSignerClientMockRecorder) ListValidatingPublicKeys(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+func (mr *MockRemoteSignerClientMockRecorder) ListValidatingPublicKeys(arg0, arg1 any, arg2 ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	varargs := append([]any{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListValidatingPublicKeys", reflect.TypeOf((*MockRemoteSignerClient)(nil).ListValidatingPublicKeys), varargs...)
 }
 
 // Sign mocks base method.
 func (m *MockRemoteSignerClient) Sign(arg0 context.Context, arg1 *validatorpb.SignRequest, arg2 ...grpc.CallOption) (*validatorpb.SignResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0, arg1}
+	varargs := []any{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
@@ -71,8 +71,8 @@ func (m *MockRemoteSignerClient) Sign(arg0 context.Context, arg1 *validatorpb.Si
 }
 
 // Sign indicates an expected call of Sign.
-func (mr *MockRemoteSignerClientMockRecorder) Sign(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+func (mr *MockRemoteSignerClientMockRecorder) Sign(arg0, arg1 any, arg2 ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	varargs := append([]any{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Sign", reflect.TypeOf((*MockRemoteSignerClient)(nil).Sign), varargs...)
 }

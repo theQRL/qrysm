@@ -1,7 +1,7 @@
 // This tool allows for simple encrypting and decrypting of EIP-2335 compliant, BLS12-381
 // keystore.json files which as password protected. This is helpful in development to inspect
-// the contents of keystores created by Zond validator wallets or to easily produce keystores from a
-// specified secret to move them around in a standard format between Zond consensus clients.
+// the contents of keystores created by QRL validator wallets or to easily produce keystores from a
+// specified secret to move them around in a standard format between QRL consensus clients.
 package main
 
 import (
@@ -16,10 +16,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
-	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/io/file"
 	"github.com/theQRL/qrysm/io/prompt"
+	keystorev1 "github.com/theQRL/qrysm/pkg/go-qrl-wallet-encryptor-keystore"
 	"github.com/theQRL/qrysm/validator/keymanager"
 	"github.com/urfave/cli/v2"
 )
@@ -36,10 +36,10 @@ var (
 		Value: "",
 		Usage: "Password for the keystore(s)",
 	}
-	privateKeyFlag = &cli.StringFlag{
-		Name:     "private-key",
+	seedFlag = &cli.StringFlag{
+		Name:     "seed",
 		Value:    "",
-		Usage:    "Hex string for the BLS12-381 private key you wish encrypt into a keystore file",
+		Usage:    "Hex string for the private key seed you wish encrypt into a keystore file",
 		Required: true,
 	}
 	outputPathFlag = &cli.StringFlag{
@@ -54,7 +54,7 @@ var (
 func main() {
 	app := &cli.App{
 		Name:        "Keystore utility",
-		Description: "Utility to encrypt and decrypt EIP-2335 compliant keystore.json files for BLS12-381 private keys",
+		Description: "Utility to encrypt and decrypt EIP-2335 compliant keystore.json files for private key seeds",
 		Usage:       "",
 		Commands: []*cli.Command{
 			{
@@ -68,10 +68,10 @@ func main() {
 			},
 			{
 				Name:  "encrypt",
-				Usage: "encrypt a specified hex value of a BLS12-381 private key into a keystore file",
+				Usage: "encrypt a specified hex value of a private key seed into a keystore file",
 				Flags: []cli.Flag{
 					passwordFlag,
-					privateKeyFlag,
+					seedFlag,
 					outputPathFlag,
 				},
 				Action: encrypt,
@@ -127,10 +127,10 @@ func decrypt(cliCtx *cli.Context) error {
 	return readAndDecryptKeystore(fullPath, password)
 }
 
-// Attempts to encrypt a passed-in BLS12-3381 private key into the EIP-2335
+// Attempts to encrypt a passed-in private key seed into the EIP-2335
 // keystore.json format. If a file at the specified output path exists, asks the user
-// to confirm overwriting its contents. If the value passed in is not a valid BLS12-381
-// private key, the function will fail.
+// to confirm overwriting its contents. If the value passed in is not a valid
+// private key seed, the function will fail.
 func encrypt(cliCtx *cli.Context) error {
 	var err error
 	password := cliCtx.String(passwordFlag.Name)
@@ -144,9 +144,9 @@ func encrypt(cliCtx *cli.Context) error {
 			return err
 		}
 	}
-	privateKeyString := cliCtx.String(privateKeyFlag.Name)
-	if privateKeyString == "" {
-		return errors.New("--private-key must not be empty")
+	seedString := cliCtx.String(seedFlag.Name)
+	if seedString == "" {
+		return errors.New("--seed must not be empty")
 	}
 	outputPath := cliCtx.String(outputPathFlag.Name)
 	if outputPath == "" {
@@ -175,20 +175,19 @@ func encrypt(cliCtx *cli.Context) error {
 			return nil
 		}
 	}
-	if len(privateKeyString) > 2 && strings.Contains(privateKeyString, "0x") {
-		privateKeyString = privateKeyString[2:] // Strip the 0x prefix, if any.
+	if len(seedString) > 2 && strings.Contains(seedString, "0x") {
+		seedString = seedString[2:] // Strip the 0x prefix, if any.
 	}
-	// TODO(now.youtrack.cloud/issue/TQ-7)
-	bytesValue, err := hex.DecodeString(privateKeyString)
+	bytesValue, err := hex.DecodeString(seedString)
 	if err != nil {
-		return errors.Wrapf(err, "could not decode as hex string: %s", privateKeyString)
+		return errors.Wrapf(err, "could not decode as hex string: %s", seedString)
 	}
-	privKey, err := dilithium.SecretKeyFromSeed(bytesValue)
+	privKey, err := ml_dsa_87.SecretKeyFromSeed(bytesValue)
 	if err != nil {
-		return errors.Wrap(err, "not a valid BLS12-381 private key")
+		return errors.Wrap(err, "not a valid private key seed")
 	}
 	pubKey := fmt.Sprintf("%x", privKey.PublicKey().Marshal())
-	encryptor := keystorev4.New()
+	encryptor := keystorev1.New()
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return errors.Wrap(err, "could not generate new random uuid")
@@ -228,16 +227,16 @@ func readAndDecryptKeystore(fullPath, password string) error {
 	if err != nil {
 		return errors.Wrapf(err, "could not read file at path: %s", fullPath)
 	}
-	decryptor := keystorev4.New()
+	decryptor := keystorev1.New()
 	keystoreFile := &keymanager.Keystore{}
 	if err := json.Unmarshal(f, keystoreFile); err != nil {
 		return errors.Wrap(err, "could not JSON unmarshal keystore file")
 	}
-	// We extract the validator signing private key from the keystore
+	// We extract the validator signing private key seed from the keystore
 	// by utilizing the password.
-	privKeyBytes, err := decryptor.Decrypt(keystoreFile.Crypto, password)
+	seedBytes, err := decryptor.Decrypt(keystoreFile.Crypto, password)
 	if err != nil {
-		if strings.Contains(err.Error(), "invalid checksum") {
+		if strings.Contains(err.Error(), keymanager.IncorrectPasswordErrMsg) {
 			return fmt.Errorf("incorrect password for keystore at path: %s", fullPath)
 		}
 		return err
@@ -252,14 +251,14 @@ func readAndDecryptKeystore(fullPath, password string) error {
 			return errors.Wrap(err, "could not decode pubkey from keystore")
 		}
 	} else {
-		privKey, err := dilithium.SecretKeyFromSeed(privKeyBytes)
+		privKey, err := ml_dsa_87.SecretKeyFromSeed(seedBytes)
 		if err != nil {
 			return errors.Wrap(err, "could not initialize private key from bytes")
 		}
 		pubKeyBytes = privKey.PublicKey().Marshal()
 	}
 	fmt.Printf("\nDecrypted keystore %s\n", au.BrightMagenta(fullPath))
-	fmt.Printf("Privkey: %#x\n", au.BrightGreen(privKeyBytes))
+	fmt.Printf("Seed: %#x\n", au.BrightGreen(seedBytes))
 	fmt.Printf("Pubkey: %#x\n", au.BrightGreen(pubKeyBytes))
 	return nil
 }

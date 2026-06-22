@@ -7,12 +7,12 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 )
 
 // MockPeerManager is mock of the PeerManager interface.
 type MockPeerManager struct {
-	Enr               *enr.Record
+	Qnr               *qnr.Record
 	PID               peer.ID
 	BHost             host.Host
 	DiscoveryAddr     []multiaddr.Multiaddr
@@ -34,9 +34,9 @@ func (m *MockPeerManager) Host() host.Host {
 	return m.BHost
 }
 
-// ENR .
-func (m MockPeerManager) ENR() *enr.Record {
-	return m.Enr
+// QNR .
+func (m MockPeerManager) QNR() *qnr.Record {
+	return m.Qnr
 }
 
 // DiscoveryAddresses .
@@ -47,8 +47,8 @@ func (m MockPeerManager) DiscoveryAddresses() ([]multiaddr.Multiaddr, error) {
 	return m.DiscoveryAddr, nil
 }
 
-// RefreshENR .
-func (_ MockPeerManager) RefreshENR() {}
+// RefreshQNR .
+func (_ MockPeerManager) RefreshQNR() {}
 
 // FindPeersWithSubnet .
 func (_ MockPeerManager) FindPeersWithSubnet(_ context.Context, _ string, _ uint64, _ int) (bool, error) {

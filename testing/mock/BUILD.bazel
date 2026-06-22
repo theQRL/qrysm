@@ -3,7 +3,7 @@ load("@qrysm//tools/go:def.bzl", "go_library")
 package(default_testonly = True)
 
 go_library(
-    name = "go_default_library",
+    name = "mock",
     srcs = [
         "beacon_altair_validator_client_mock.go",
         "beacon_altair_validator_server_mock.go",
@@ -17,14 +17,14 @@ go_library(
     importpath = "github.com/theQRL/qrysm/testing/mock",
     visibility = ["//visibility:public"],
     deps = [
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "//proto/qrysm/v1alpha1/validator-client:go_default_library",
-        "//proto/zond/service:go_default_library",
-        "//proto/zond/v1:go_default_library",
-        "@com_github_golang_mock//gomock:go_default_library",
-        "@com_github_grpc_ecosystem_grpc_gateway_v2//proto/gateway:go_default_library",
+        "//proto/qrl/service",
+        "//proto/qrl/v1:qrl",
+        "//proto/qrysm/v1alpha1",
+        "//proto/qrysm/v1alpha1/validator-client",
+        "@com_github_golang_mock//gomock",
+        "@com_github_grpc_ecosystem_grpc_gateway_v2//proto/gateway",
         "@org_golang_google_grpc//:go_default_library",
-        "@org_golang_google_grpc//metadata:go_default_library",
-        "@org_golang_google_protobuf//types/known/emptypb:go_default_library",
+        "@org_golang_google_grpc//metadata",
+        "@org_golang_google_protobuf//types/known/emptypb",
     ],
 )

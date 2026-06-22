@@ -15,17 +15,17 @@ func (b *BeaconState) SetLatestExecutionPayloadHeader(val interfaces.ExecutionDa
 	defer b.lock.Unlock()
 
 	switch header := val.Proto().(type) {
-	case *enginev1.ExecutionPayloadCapella:
-		latest, err := consensusblocks.PayloadToHeaderCapella(val)
+	case *enginev1.ExecutionPayloadZond:
+		latest, err := consensusblocks.PayloadToHeaderZond(val)
 		if err != nil {
 			return errors.Wrap(err, "could not convert payload to header")
 		}
-		b.latestExecutionPayloadHeaderCapella = latest
-		b.markFieldAsDirty(types.LatestExecutionPayloadHeaderCapella)
+		b.latestExecutionPayloadHeaderZond = latest
+		b.markFieldAsDirty(types.LatestExecutionPayloadHeaderZond)
 		return nil
-	case *enginev1.ExecutionPayloadHeaderCapella:
-		b.latestExecutionPayloadHeaderCapella = header
-		b.markFieldAsDirty(types.LatestExecutionPayloadHeaderCapella)
+	case *enginev1.ExecutionPayloadHeaderZond:
+		b.latestExecutionPayloadHeaderZond = header
+		b.markFieldAsDirty(types.LatestExecutionPayloadHeaderZond)
 		return nil
 	default:
 		return errors.New("value must be an execution payload header")

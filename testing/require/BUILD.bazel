@@ -1,13 +1,13 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "require",
     testonly = True,
     srcs = ["requires.go"],
     importpath = "github.com/theQRL/qrysm/testing/require",
     visibility = ["//visibility:public"],
     deps = [
-        "//testing/assertions:go_default_library",
-        "@com_github_sirupsen_logrus//hooks/test:go_default_library",
+        "//testing/assertions",
+        "@com_github_sirupsen_logrus//hooks/test",
     ],
 )

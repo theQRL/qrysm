@@ -6,23 +6,20 @@ import (
 	libp2pcore "github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/beacon-chain/blockchain"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/beacon-chain/p2p"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/types"
 	"github.com/theQRL/qrysm/config/params"
-	"github.com/theQRL/qrysm/consensus-types/wrapper"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/network/forks"
-	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/metadata"
 	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
 // metaDataHandler reads the incoming metadata rpc request from the peer.
-func (s *Service) metaDataHandler(_ context.Context, _ interface{}, stream libp2pcore.Stream) error {
+func (s *Service) metaDataHandler(_ context.Context, _ any, stream libp2pcore.Stream) error {
 	SetRPCStreamDeadlines(stream)
 
 	if err := s.rateLimiter.validateRequest(stream, 1); err != nil {
@@ -40,48 +37,55 @@ func (s *Service) metaDataHandler(_ context.Context, _ interface{}, stream libp2
 		}
 		return nilErr
 	}
-	_, _, streamVersion, err := p2p.TopicDeconstructor(string(stream.Protocol()))
-	if err != nil {
-		resp, genErr := s.generateErrorResponse(responseCodeServerError, types.ErrGeneric.Error())
-		if genErr != nil {
-			log.WithError(genErr).Debug("Could not generate a response error")
-		} else if _, wErr := stream.Write(resp); wErr != nil {
-			log.WithError(wErr).Debug("Could not write to stream")
+	// NOTE(rgeraldes24): unused for now
+	/*
+		_, _, streamVersion, err := p2p.TopicDeconstructor(string(stream.Protocol()))
+		if err != nil {
+			resp, genErr := s.generateErrorResponse(responseCodeServerError, types.ErrGeneric.Error())
+			if genErr != nil {
+				log.WithError(genErr).Debug("Could not generate a response error")
+			} else if _, wErr := stream.Write(resp); wErr != nil {
+				log.WithError(wErr).Debug("Could not write to stream")
+			}
+			return err
 		}
-		return err
-	}
+		currMd := s.cfg.p2p.Metadata()
+		switch streamVersion {
+		case p2p.SchemaVersionV1:
+			// We have a v1 metadata object saved locally, so we
+			// convert it back to a v0 metadata object.
+			if currMd.Version() != version.Zond {
+				currMd = wrapper.WrappedMetadataV0(
+					&pb.MetaDataV0{
+						Attnets:   currMd.AttnetsBitfield(),
+						SeqNumber: currMd.SequenceNumber(),
+					})
+			}
+		case p2p.SchemaVersionV2:
+			// We have a v0 metadata object saved locally, so we
+			// convert it to a v1 metadata object.
+			if currMd.Version() != version.Zond {
+				currMd = wrapper.WrappedMetadataV1(
+					&pb.MetaDataV1{
+						Attnets:   currMd.AttnetsBitfield(),
+						SeqNumber: currMd.SequenceNumber(),
+						Syncnets:  bitfield.Bitvector4{byte(0x00)},
+					})
+			}
+		}
+	*/
 	currMd := s.cfg.p2p.Metadata()
-	switch streamVersion {
-	case p2p.SchemaVersionV1:
-		// We have a v1 metadata object saved locally, so we
-		// convert it back to a v0 metadata object.
-		if currMd.Version() != version.Phase0 {
-			currMd = wrapper.WrappedMetadataV0(
-				&pb.MetaDataV0{
-					Attnets:   currMd.AttnetsBitfield(),
-					SeqNumber: currMd.SequenceNumber(),
-				})
-		}
-	case p2p.SchemaVersionV2:
-		// We have a v0 metadata object saved locally, so we
-		// convert it to a v1 metadata object.
-		if currMd.Version() != version.Altair {
-			currMd = wrapper.WrappedMetadataV1(
-				&pb.MetaDataV1{
-					Attnets:   currMd.AttnetsBitfield(),
-					SeqNumber: currMd.SequenceNumber(),
-					Syncnets:  bitfield.Bitvector4{byte(0x00)},
-				})
-		}
-	}
 	if _, err := stream.Write([]byte{responseCodeSuccess}); err != nil {
 		return err
 	}
-	_, err = s.cfg.p2p.Encoding().EncodeWithMaxLength(stream, currMd)
+	_, err := s.cfg.p2p.Encoding().EncodeWithMaxLength(stream, currMd)
 	if err != nil {
 		return err
 	}
-	closeStream(stream, log)
+	// Close the write side and wait for the peer to ack so they observe a
+	// clean EOF rather than a reset — keeps their connection-quality
+	// heuristics from drifting against us.
+	closeStreamAndWait(stream, log)
 	return nil
 }
 
@@ -93,18 +97,21 @@ func (s *Service) sendMetaDataRequest(ctx context.Context, id peer.ID) (metadata
 	if err != nil {
 		return nil, err
 	}
-	stream, err := s.cfg.p2p.Send(ctx, new(interface{}), topic, id)
+	stream, err := s.cfg.p2p.Send(ctx, new(any), topic, id)
 	if err != nil {
 		return nil, err
 	}
-	defer closeStream(stream, log)
+	// Use closeStreamAndWait so the remote sees a clean EOF instead of a
+	// reset when we're done reading the metadata response.
+	defer closeStreamAndWait(stream, log)
+	pid := stream.Conn().RemotePeer()
 	code, errMsg, err := ReadStatusCode(stream, s.cfg.p2p.Encoding())
 	if err != nil {
-		s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(stream.Conn().RemotePeer())
+		s.downscorePeer(pid, "metadataReadStatusCodeError")
 		return nil, err
 	}
 	if code != 0 {
-		s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(stream.Conn().RemotePeer())
+		s.downscorePeer(pid, "metadataNonNullStatusCode")
 		return nil, errors.New(errMsg)
 	}
 	valRoot := s.cfg.clock.GenesisValidatorsRoot()
@@ -119,16 +126,14 @@ func (s *Service) sendMetaDataRequest(ctx context.Context, id peer.ID) (metadata
 	// Defensive check to ensure valid objects are being sent.
 	topicVersion := ""
 	switch msg.Version() {
-	case version.Phase0:
-		topicVersion = p2p.SchemaVersionV1
-	case version.Altair:
+	case version.Zond:
 		topicVersion = p2p.SchemaVersionV2
 	}
 	if err := validateVersion(topicVersion, stream); err != nil {
 		return nil, err
 	}
 	if err := s.cfg.p2p.Encoding().DecodeWithMaxLength(stream, msg); err != nil {
-		s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(stream.Conn().RemotePeer())
+		s.downscorePeer(pid, "metadataDecodeError")
 		return nil, err
 	}
 	return msg, nil

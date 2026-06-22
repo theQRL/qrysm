@@ -11,7 +11,7 @@ var (
 	Mainnet = &cli.BoolFlag{
 		Value: true,
 		Name:  "mainnet",
-		Usage: "Run on Zond Beacon Chain Main Net. This is the default and can be omitted.",
+		Usage: "Run on QRL Beacon Chain Main Net. This is the default and can be omitted.",
 	}
 	devModeFlag = &cli.BoolFlag{
 		Name:  "dev",
@@ -111,9 +111,9 @@ var (
 		Name:  "enable-beacon-rest-api",
 		Usage: "Experimental enable of the beacon REST API when querying a beacon node",
 	}
-	enableVerboseSigVerification = &cli.BoolFlag{
-		Name:  "enable-verbose-sig-verification",
-		Usage: "Enables identifying invalid signatures if batch verification fails when processing block",
+	disableVerboseSigVerification = &cli.BoolFlag{
+		Name:  "disable-verbose-sig-verification",
+		Usage: "Disables identifying invalid signatures if batch verification fails when processing block. Verbose verification is on by default.",
 	}
 	disableOptionalEngineMethods = &cli.BoolFlag{
 		Name:  "disable-optional-engine-methods",
@@ -123,7 +123,7 @@ var (
 		Name:  "prepare-all-payloads",
 		Usage: "Informs the engine to prepare all local payloads. Useful for relayers and builders",
 	}
-	enableEIP4881 = &cli.BoolFlag{
+	EnableEIP4881 = &cli.BoolFlag{
 		Name:  "enable-eip-4881",
 		Usage: "Enables the deposit tree specified in EIP4881",
 	}
@@ -142,12 +142,21 @@ var (
 		Name:  "disable-aggregate-parallel",
 		Usage: "Disables parallel aggregation of attestations",
 	}
+	forceHeadFlag = &cli.StringFlag{
+		Name: "sync-from",
+		Usage: "Forces the head of the beacon chain to a specific block root. Values can be 'head' or a block root." +
+			" The block root has to be known to the beacon node and correspond to a block newer than the current finalized checkpoint.",
+	}
+	disableLastEpochTargets = &cli.BoolFlag{
+		Name:  "disable-last-epoch-targets",
+		Usage: "Disables treating blocks from the previous epoch as viable checkpoint roots when computing attestation pre-state.",
+	}
 )
 
 // devModeFlags holds list of flags that are set when development mode is on.
 var devModeFlags = []cli.Flag{
-	enableVerboseSigVerification,
-	enableEIP4881,
+	disableVerboseSigVerification,
+	EnableEIP4881,
 }
 
 // ValidatorFlags contains a list of all the feature flags that apply to the validator client.
@@ -181,16 +190,18 @@ var BeaconChainFlags = append(deprecatedBeaconFlags, append(deprecatedFlags, []c
 	SaveFullExecutionPayloads,
 	enableStartupOptimistic,
 	enableFullSSZDataLogging,
-	enableVerboseSigVerification,
+	disableVerboseSigVerification,
 	disableOptionalEngineMethods,
 	prepareAllPayloads,
 	aggregateFirstInterval,
 	aggregateSecondInterval,
 	aggregateThirdInterval,
-	enableEIP4881,
+	EnableEIP4881,
 	disableResourceManager,
 	DisableRegistrationCache,
 	disableAggregateParallel,
+	forceHeadFlag,
+	disableLastEpochTargets,
 }...)...)
 
 // E2EBeaconChainFlags contains a list of the beacon chain feature flags to be tested in E2E.

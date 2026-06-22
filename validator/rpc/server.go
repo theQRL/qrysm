@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/async/event"
 	"github.com/theQRL/qrysm/io/logs"
 	"github.com/theQRL/qrysm/monitoring/tracing"
-	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	qrlpbservice "github.com/theQRL/qrysm/proto/qrl/service"
 	"github.com/theQRL/qrysm/validator/accounts/wallet"
 	"github.com/theQRL/qrysm/validator/client"
 	iface "github.com/theQRL/qrysm/validator/client/iface"
@@ -48,6 +48,8 @@ type Config struct {
 	GenesisFetcher           client.GenesisFetcher
 	WalletInitializedFeed    *event.Feed
 	NodeGatewayEndpoint      string
+	BeaconApiEndpoint        string
+	BeaconApiTimeout         time.Duration
 	Wallet                   *wallet.Wallet
 }
 
@@ -72,7 +74,8 @@ type Server struct {
 	withKey                   string
 	credentialError           error
 	grpcServer                *grpc.Server
-	jwtSecret                 []byte
+	authToken                 string
+	authTokenPath             string
 	validatorService          *client.ValidatorService
 	syncChecker               client.SyncChecker
 	genesisFetcher            client.GenesisFetcher
@@ -85,6 +88,8 @@ type Server struct {
 	validatorMonitoringPort   int
 	validatorGatewayHost      string
 	validatorGatewayPort      int
+	beaconApiEndpoint         string
+	beaconApiTimeout          time.Duration
 }
 
 // NewServer instantiates a new gRPC server.
@@ -117,11 +122,19 @@ func NewServer(ctx context.Context, cfg *Config) *Server {
 		validatorMonitoringPort:  cfg.ValidatorMonitoringPort,
 		validatorGatewayHost:     cfg.ValidatorGatewayHost,
 		validatorGatewayPort:     cfg.ValidatorGatewayPort,
+		beaconApiEndpoint:        cfg.BeaconApiEndpoint,
+		beaconApiTimeout:         cfg.BeaconApiTimeout,
 	}
 }
 
 // Start the gRPC server.
 func (s *Server) Start() {
+	if err := s.initializeAuthToken(); err != nil {
+		s.credentialError = err
+		log.WithError(err).Error("Could not initialize validator auth token")
+		return
+	}
+
 	// Setup the gRPC server options and TLS configuration.
 	address := fmt.Sprintf("%s:%s", s.host, s.port)
 	lis, err := net.Listen("tcp", address)
@@ -131,7 +144,7 @@ func (s *Server) Start() {
 	s.listener = lis
 
 	// Register interceptors for metrics gathering as well as our
-	// own, custom JWT unary interceptor.
+	// auth token unary interceptor.
 	opts := []grpc.ServerOption{
 		grpc.StatsHandler(&ocgrpc.ServerHandler{}),
 		grpc.UnaryInterceptor(middleware.ChainUnaryServer(
@@ -140,7 +153,7 @@ func (s *Server) Start() {
 			),
 			grpcprometheus.UnaryServerInterceptor,
 			grpcopentracing.UnaryServerInterceptor(),
-			s.JWTInterceptor(),
+			s.AuthTokenInterceptor(),
 		)),
 	}
 	grpcprometheus.EnableHandlingTimeHistogram()
@@ -160,7 +173,7 @@ func (s *Server) Start() {
 
 	// Register services available for the gRPC server.
 	reflection.Register(s.grpcServer)
-	zondpbservice.RegisterKeyManagementServer(s.grpcServer, s)
+	qrlpbservice.RegisterKeyManagementServer(s.grpcServer, s)
 
 	go func() {
 		if s.listener != nil {

@@ -20,7 +20,8 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/monitoring/tracing"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/network/forks"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
@@ -55,7 +56,7 @@ func (s *Service) validateCommitteeIndexBeaconAttestation(ctx context.Context, p
 		return pubsub.ValidationReject, err
 	}
 
-	att, ok := m.(*zond.Attestation)
+	att, ok := m.(*qrysmpb.Attestation)
 	if !ok {
 		return pubsub.ValidationReject, errWrongMessage
 	}
@@ -87,35 +88,6 @@ func (s *Service) validateCommitteeIndexBeaconAttestation(ctx context.Context, p
 		return pubsub.ValidationReject, err
 	}
 
-	if features.Get().EnableSlasher {
-		// Feed the indexed attestation to slasher if enabled. This action
-		// is done in the background to avoid adding more load to this critical code path.
-		go func() {
-			// Using a different context to prevent timeouts as this operation can be expensive
-			// and we want to avoid affecting the critical code path.
-			ctx := context.TODO()
-			preState, err := s.cfg.chain.AttestationTargetState(ctx, att.Data.Target)
-			if err != nil {
-				log.WithError(err).Error("Could not retrieve pre state")
-				tracing.AnnotateError(span, err)
-				return
-			}
-			committee, err := helpers.BeaconCommitteeFromState(ctx, preState, att.Data.Slot, att.Data.CommitteeIndex)
-			if err != nil {
-				log.WithError(err).Error("Could not get attestation committee")
-				tracing.AnnotateError(span, err)
-				return
-			}
-			indexedAtt, err := attestation.ConvertToIndexed(ctx, att, committee)
-			if err != nil {
-				log.WithError(err).Error("Could not convert to indexed attestation")
-				tracing.AnnotateError(span, err)
-				return
-			}
-			s.cfg.slasherAttestationsFeed.Send(indexedAtt)
-		}()
-	}
-
 	// Verify this the first attestation received for the participating validator for the slot.
 	if s.hasSeenCommitteeIndicesSlot(att.Data.Slot, att.Data.CommitteeIndex, att.AggregationBits) {
 		return pubsub.ValidationIgnore, nil
@@ -133,7 +105,7 @@ func (s *Service) validateCommitteeIndexBeaconAttestation(ctx context.Context, p
 	blockRoot := bytesutil.ToBytes32(att.Data.BeaconBlockRoot)
 	if !s.hasBlockAndState(ctx, blockRoot) {
 		// A node doesn't have the block, it'll request from peer while saving the pending attestation to a queue.
-		s.savePendingAtt(&zond.SignedAggregateAttestationAndProof{Message: &zond.AggregateAttestationAndProof{Aggregate: att}})
+		s.savePendingAtt(&qrysmpb.SignedAggregateAttestationAndProof{Message: &qrysmpb.AggregateAttestationAndProof{Aggregate: att}})
 		return pubsub.ValidationIgnore, nil
 	}
 
@@ -163,7 +135,34 @@ func (s *Service) validateCommitteeIndexBeaconAttestation(ctx context.Context, p
 		return validationRes, err
 	}
 
-	s.setSeenCommitteeIndicesSlot(att.Data.Slot, att.Data.CommitteeIndex, att.AggregationBits)
+	if features.Get().EnableSlasher {
+		// Feed the indexed attestation to slasher if enabled. This is done
+		// only after the cheap-and-mid validation steps have passed, so we
+		// don't waste slasher CPU on attestations that are about to be
+		// rejected. Run in the background to keep this critical path fast.
+		go func() {
+			// Using a different context to prevent timeouts as this operation
+			// can be expensive and we want to avoid affecting the critical path.
+			ctx := context.TODO()
+			committee, err := helpers.BeaconCommitteeFromState(ctx, preState, att.Data.Slot, att.Data.CommitteeIndex)
+			if err != nil {
+				log.WithError(err).Error("Could not get attestation committee")
+				tracing.AnnotateError(span, err)
+				return
+			}
+			indexedAtt, err := attestation.ConvertToIndexed(ctx, att, committee)
+			if err != nil {
+				log.WithError(err).Error("Could not convert to indexed attestation")
+				tracing.AnnotateError(span, err)
+				return
+			}
+			s.cfg.slasherAttestationsFeed.Send(indexedAtt)
+		}()
+	}
+
+	if first := s.setSeenCommitteeIndicesSlot(att.Data.Slot, att.Data.CommitteeIndex, att.AggregationBits); !first {
+		return pubsub.ValidationIgnore, nil
+	}
 
 	msg.ValidatorData = att
 
@@ -171,22 +170,18 @@ func (s *Service) validateCommitteeIndexBeaconAttestation(ctx context.Context, p
 }
 
 // This validates beacon unaggregated attestation has correct topic string.
-func (s *Service) validateUnaggregatedAttTopic(ctx context.Context, a *zond.Attestation, bs state.ReadOnlyBeaconState, t string) (pubsub.ValidationResult, error) {
+func (s *Service) validateUnaggregatedAttTopic(ctx context.Context, a *qrysmpb.Attestation, bs state.ReadOnlyBeaconState, t string) (pubsub.ValidationResult, error) {
 	ctx, span := trace.StartSpan(ctx, "sync.validateUnaggregatedAttTopic")
 	defer span.End()
 
-	valCount, err := helpers.ActiveValidatorCount(ctx, bs, slots.ToEpoch(a.Data.Slot))
-	if err != nil {
-		tracing.AnnotateError(span, err)
-		return pubsub.ValidationIgnore, err
-	}
-	count := helpers.SlotCommitteeCount(valCount)
-	if uint64(a.Data.CommitteeIndex) > count {
-		return pubsub.ValidationReject, errors.Errorf("committee index %d > %d", a.Data.CommitteeIndex, count)
+	valCount, result, err := s.validateCommitteeIndex(ctx, a, bs)
+	if result != pubsub.ValidationAccept {
+		return result, err
 	}
 	subnet := helpers.ComputeSubnetForAttestation(valCount, a)
-	format := p2p.GossipTypeMapping[reflect.TypeOf(&zond.Attestation{})]
-	digest, err := s.currentForkDigest()
+	format := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.Attestation]()]
+	genRoot := s.cfg.clock.GenesisValidatorsRoot()
+	digest, err := forks.ForkDigestFromEpoch(slots.ToEpoch(a.Data.Slot), genRoot[:])
 	if err != nil {
 		tracing.AnnotateError(span, err)
 		return pubsub.ValidationIgnore, err
@@ -198,21 +193,44 @@ func (s *Service) validateUnaggregatedAttTopic(ctx context.Context, a *zond.Atte
 	return pubsub.ValidationAccept, nil
 }
 
+// validateCommitteeIndex checks that the attestation's committee index is
+// within the expected range for the slot. Internal lookup errors return
+// ValidationIgnore (not Reject) so we don't penalise the peer.
+func (s *Service) validateCommitteeIndex(ctx context.Context, a *qrysmpb.Attestation, bs state.ReadOnlyBeaconState) (uint64, pubsub.ValidationResult, error) {
+	valCount, err := helpers.ActiveValidatorCount(ctx, bs, slots.ToEpoch(a.Data.Slot))
+	if err != nil {
+		return 0, pubsub.ValidationIgnore, err
+	}
+	count := helpers.SlotCommitteeCount(valCount)
+	if uint64(a.Data.CommitteeIndex) >= count {
+		return 0, pubsub.ValidationReject, errors.Errorf("committee index %d >= %d", a.Data.CommitteeIndex, count)
+	}
+	return valCount, pubsub.ValidationAccept, nil
+}
+
+// validateBitLength looks up the committee for the attestation and verifies
+// the aggregation bitfield length matches the committee size. Internal lookup
+// errors return ValidationIgnore (not Reject).
+func (s *Service) validateBitLength(ctx context.Context, a *qrysmpb.Attestation, bs state.ReadOnlyBeaconState) ([]primitives.ValidatorIndex, pubsub.ValidationResult, error) {
+	committee, err := helpers.BeaconCommitteeFromState(ctx, bs, a.Data.Slot, a.Data.CommitteeIndex)
+	if err != nil {
+		return nil, pubsub.ValidationIgnore, err
+	}
+	if err := helpers.VerifyBitfieldLength(a.AggregationBits, uint64(len(committee))); err != nil {
+		return nil, pubsub.ValidationReject, err
+	}
+	return committee, pubsub.ValidationAccept, nil
+}
+
 // This validates beacon unaggregated attestation using the given state, the validation consists of bitfield length and count consistency
 // and signature verification.
-func (s *Service) validateUnaggregatedAttWithState(ctx context.Context, a *zond.Attestation, bs state.ReadOnlyBeaconState) (pubsub.ValidationResult, error) {
+func (s *Service) validateUnaggregatedAttWithState(ctx context.Context, a *qrysmpb.Attestation, bs state.ReadOnlyBeaconState) (pubsub.ValidationResult, error) {
 	ctx, span := trace.StartSpan(ctx, "sync.validateUnaggregatedAttWithState")
 	defer span.End()
 
-	committee, err := helpers.BeaconCommitteeFromState(ctx, bs, a.Data.Slot, a.Data.CommitteeIndex)
-	if err != nil {
-		tracing.AnnotateError(span, err)
-		return pubsub.ValidationIgnore, err
-	}
-
-	// Verify number of aggregation bits matches the committee size.
-	if err := helpers.VerifyBitfieldLength(a.AggregationBits, uint64(len(committee))); err != nil {
-		return pubsub.ValidationReject, err
+	committee, result, err := s.validateBitLength(ctx, a, bs)
+	if result != pubsub.ValidationAccept {
+		return result, err
 	}
 
 	// Attestation must be unaggregated and the bit index must exist in the range of committee indices.
@@ -222,7 +240,7 @@ func (s *Service) validateUnaggregatedAttWithState(ctx context.Context, a *zond.
 		return pubsub.ValidationReject, errors.New("attestation bitfield is invalid")
 	}
 
-	set, err := blocks.AttestationSignatureBatch(ctx, bs, []*zond.Attestation{a})
+	set, err := blocks.AttestationSignatureBatch(ctx, bs, []*qrysmpb.Attestation{a})
 	if err != nil {
 		tracing.AnnotateError(span, err)
 		attBadSignatureBatchCount.Inc()
@@ -242,12 +260,18 @@ func (s *Service) hasSeenCommitteeIndicesSlot(slot primitives.Slot, committeeID 
 }
 
 // Set committee's indices and slot as seen for incoming attestations.
-func (s *Service) setSeenCommitteeIndicesSlot(slot primitives.Slot, committeeID primitives.CommitteeIndex, aggregateBits []byte) {
+// Returns true if this is the first time seeing this attestation.
+func (s *Service) setSeenCommitteeIndicesSlot(slot primitives.Slot, committeeID primitives.CommitteeIndex, aggregateBits []byte) bool {
 	s.seenUnAggregatedAttestationLock.Lock()
 	defer s.seenUnAggregatedAttestationLock.Unlock()
 	b := append(bytesutil.Bytes32(uint64(slot)), bytesutil.Bytes32(uint64(committeeID))...)
 	b = append(b, bytesutil.SafeCopyBytes(aggregateBits)...)
+	_, seen := s.seenUnAggregatedAttestationCache.Get(string(b))
+	if seen {
+		return false
+	}
 	s.seenUnAggregatedAttestationCache.Add(string(b), true)
+	return true
 }
 
 // hasBlockAndState returns true if the beacon node knows about a block and associated state in the

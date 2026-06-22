@@ -6,16 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	validatorServiceConfig "github.com/theQRL/qrysm/config/validator/service"
 	"github.com/theQRL/qrysm/consensus-types/validator"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
-	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	qrlpbservice "github.com/theQRL/qrysm/proto/qrl/service"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/validator/client"
 	"github.com/theQRL/qrysm/validator/keymanager"
 	slashingprotection "github.com/theQRL/qrysm/validator/slashing-protection-history"
@@ -29,8 +28,8 @@ import (
 
 // ListKeystores implements the standard validator key management API.
 func (s *Server) ListKeystores(
-	ctx context.Context, _ *empty.Empty,
-) (*zondpbservice.ListKeystoresResponse, error) {
+	ctx context.Context, _ *emptypb.Empty,
+) (*qrlpbservice.ListKeystoresResponse, error) {
 	if !s.walletInitialized {
 		return nil, status.Error(codes.FailedPrecondition, "Qrysm Wallet not initialized. Please create a new wallet.")
 	}
@@ -42,15 +41,21 @@ func (s *Server) ListKeystores(
 		return nil, status.Errorf(codes.Internal, "Could not get Qrysm keymanager (possibly due to beacon node unavailable): %v", err)
 	}
 	if /*s.wallet.KeymanagerKind() != keymanager.Derived &&*/ s.wallet.KeymanagerKind() != keymanager.Local {
-		return nil, status.Errorf(codes.FailedPrecondition, "Qrysm validator keys are not stored locally with this keymanager type.")
+		// Per the keymanager API spec, return an empty list rather than an
+		// error when the wallet's keymanager kind doesn't store local keys.
+		log.Debugf("ListKeystores: expected wallet kind %s but got %s; returning empty list",
+			keymanager.Local.String(), s.wallet.KeymanagerKind().String())
+		return &qrlpbservice.ListKeystoresResponse{
+			Data: []*qrlpbservice.ListKeystoresResponse_Keystore{},
+		}, nil
 	}
 	pubKeys, err := km.FetchValidatingPublicKeys(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not retrieve keystores: %v", err)
 	}
-	keystoreResponse := make([]*zondpbservice.ListKeystoresResponse_Keystore, len(pubKeys))
-	for i := 0; i < len(pubKeys); i++ {
-		keystoreResponse[i] = &zondpbservice.ListKeystoresResponse_Keystore{
+	keystoreResponse := make([]*qrlpbservice.ListKeystoresResponse_Keystore, len(pubKeys))
+	for i := range pubKeys {
+		keystoreResponse[i] = &qrlpbservice.ListKeystoresResponse_Keystore{
 			ValidatingPubkey: pubKeys[i][:],
 		}
 		/*
@@ -59,22 +64,22 @@ func (s *Server) ListKeystores(
 			}
 		*/
 	}
-	return &zondpbservice.ListKeystoresResponse{
+	return &qrlpbservice.ListKeystoresResponse{
 		Data: keystoreResponse,
 	}, nil
 }
 
 // ImportKeystores allows for importing keystores into Qrysm with their slashing protection history.
 func (s *Server) ImportKeystores(
-	ctx context.Context, req *zondpbservice.ImportKeystoresRequest,
-) (*zondpbservice.ImportKeystoresResponse, error) {
+	ctx context.Context, req *qrlpbservice.ImportKeystoresRequest,
+) (*qrlpbservice.ImportKeystoresResponse, error) {
 	if !s.walletInitialized {
 		statuses := groupImportErrors(req, "Qrysm Wallet not initialized. Please create a new wallet.")
-		return &zondpbservice.ImportKeystoresResponse{Data: statuses}, nil
+		return &qrlpbservice.ImportKeystoresResponse{Data: statuses}, nil
 	}
 	if s.validatorService == nil {
 		statuses := groupImportErrors(req, "Validator service not ready. Please try again once validator is ready.")
-		return &zondpbservice.ImportKeystoresResponse{Data: statuses}, nil
+		return &qrlpbservice.ImportKeystoresResponse{Data: statuses}, nil
 	}
 	km, err := s.validatorService.Keymanager()
 	if err != nil {
@@ -83,10 +88,10 @@ func (s *Server) ImportKeystores(
 	importer, ok := km.(keymanager.Importer)
 	if !ok {
 		statuses := groupImportErrors(req, "Keymanager kind cannot import keys")
-		return &zondpbservice.ImportKeystoresResponse{Data: statuses}, nil
+		return &qrlpbservice.ImportKeystoresResponse{Data: statuses}, nil
 	}
 	if len(req.Keystores) == 0 {
-		return &zondpbservice.ImportKeystoresResponse{}, nil
+		return &qrlpbservice.ImportKeystoresResponse{}, nil
 	}
 	keystores := make([]*keymanager.Keystore, len(req.Keystores))
 	for i := 0; i < len(req.Keystores); i++ {
@@ -105,14 +110,14 @@ func (s *Server) ImportKeystores(
 		if err := slashingprotection.ImportStandardProtectionJSON(
 			ctx, s.valDB, bytes.NewBuffer([]byte(req.SlashingProtection)),
 		); err != nil {
-			statuses := make([]*zondpbservice.ImportedKeystoreStatus, len(req.Keystores))
+			statuses := make([]*qrlpbservice.ImportedKeystoreStatus, len(req.Keystores))
 			for i := range statuses {
-				statuses[i] = &zondpbservice.ImportedKeystoreStatus{
-					Status:  zondpbservice.ImportedKeystoreStatus_ERROR,
+				statuses[i] = &qrlpbservice.ImportedKeystoreStatus{
+					Status:  qrlpbservice.ImportedKeystoreStatus_ERROR,
 					Message: fmt.Sprintf("could not import slashing protection: %v", err),
 				}
 			}
-			return &zondpbservice.ImportKeystoresResponse{Data: statuses}, nil
+			return &qrlpbservice.ImportKeystoresResponse{Data: statuses}, nil
 		}
 	}
 	if len(req.Passwords) == 0 {
@@ -136,14 +141,14 @@ func (s *Server) ImportKeystores(
 
 	// If any of the keys imported had a slashing protection history before, we
 	// stop marking them as deleted from our validator database.
-	return &zondpbservice.ImportKeystoresResponse{Data: statuses}, nil
+	return &qrlpbservice.ImportKeystoresResponse{Data: statuses}, nil
 }
 
-func groupImportErrors(req *zondpbservice.ImportKeystoresRequest, errorMessage string) []*zondpbservice.ImportedKeystoreStatus {
-	statuses := make([]*zondpbservice.ImportedKeystoreStatus, len(req.Keystores))
+func groupImportErrors(req *qrlpbservice.ImportKeystoresRequest, errorMessage string) []*qrlpbservice.ImportedKeystoreStatus {
+	statuses := make([]*qrlpbservice.ImportedKeystoreStatus, len(req.Keystores))
 	for i := 0; i < len(req.Keystores); i++ {
-		statuses[i] = &zondpbservice.ImportedKeystoreStatus{
-			Status:  zondpbservice.ImportedKeystoreStatus_ERROR,
+		statuses[i] = &qrlpbservice.ImportedKeystoreStatus{
+			Status:  qrlpbservice.ImportedKeystoreStatus_ERROR,
 			Message: errorMessage,
 		}
 	}
@@ -152,22 +157,22 @@ func groupImportErrors(req *zondpbservice.ImportKeystoresRequest, errorMessage s
 
 // DeleteKeystores allows for deleting specified public keys from Qrysm.
 func (s *Server) DeleteKeystores(
-	ctx context.Context, req *zondpbservice.DeleteKeystoresRequest,
-) (*zondpbservice.DeleteKeystoresResponse, error) {
+	ctx context.Context, req *qrlpbservice.DeleteKeystoresRequest,
+) (*qrlpbservice.DeleteKeystoresResponse, error) {
 	if !s.walletInitialized {
 		statuses := groupExportErrors(req, "Qrysm Wallet not initialized. Please create a new wallet.")
-		return &zondpbservice.DeleteKeystoresResponse{Data: statuses}, nil
+		return &qrlpbservice.DeleteKeystoresResponse{Data: statuses}, nil
 	}
 	if s.validatorService == nil {
 		statuses := groupExportErrors(req, "Validator service not ready")
-		return &zondpbservice.DeleteKeystoresResponse{Data: statuses}, nil
+		return &qrlpbservice.DeleteKeystoresResponse{Data: statuses}, nil
 	}
 	km, err := s.validatorService.Keymanager()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get keymanager (possibly due to beacon node unavailable): %v", err)
 	}
 	if len(req.Pubkeys) == 0 {
-		return &zondpbservice.DeleteKeystoresResponse{Data: make([]*zondpbservice.DeletedKeystoreStatus, 0)}, nil
+		return &qrlpbservice.DeleteKeystoresResponse{Data: make([]*qrlpbservice.DeletedKeystoreStatus, 0)}, nil
 	}
 	statuses, err := km.DeleteKeystores(ctx, req.Pubkeys)
 	if err != nil {
@@ -183,7 +188,7 @@ func (s *Server) DeleteKeystores(
 	if err != nil {
 		log.WithError(err).Warn("Could not get slashing protection history for deleted keys")
 		statuses := groupExportErrors(req, "Non duplicate keys that were existing were deleted, but could not export slashing protection history.")
-		return &zondpbservice.DeleteKeystoresResponse{Data: statuses}, nil
+		return &qrlpbservice.DeleteKeystoresResponse{Data: statuses}, nil
 	}
 	jsonHist, err := json.Marshal(exportedHistory)
 	if err != nil {
@@ -193,17 +198,17 @@ func (s *Server) DeleteKeystores(
 			err,
 		)
 	}
-	return &zondpbservice.DeleteKeystoresResponse{
+	return &qrlpbservice.DeleteKeystoresResponse{
 		Data:               statuses,
 		SlashingProtection: string(jsonHist),
 	}, nil
 }
 
-func groupExportErrors(req *zondpbservice.DeleteKeystoresRequest, errorMessage string) []*zondpbservice.DeletedKeystoreStatus {
-	statuses := make([]*zondpbservice.DeletedKeystoreStatus, len(req.Pubkeys))
+func groupExportErrors(req *qrlpbservice.DeleteKeystoresRequest, errorMessage string) []*qrlpbservice.DeletedKeystoreStatus {
+	statuses := make([]*qrlpbservice.DeletedKeystoreStatus, len(req.Pubkeys))
 	for i := 0; i < len(req.Pubkeys); i++ {
-		statuses[i] = &zondpbservice.DeletedKeystoreStatus{
-			Status:  zondpbservice.DeletedKeystoreStatus_ERROR,
+		statuses[i] = &qrlpbservice.DeletedKeystoreStatus{
+			Status:  qrlpbservice.DeletedKeystoreStatus_ERROR,
 			Message: errorMessage,
 		}
 	}
@@ -215,17 +220,17 @@ func groupExportErrors(req *zondpbservice.DeleteKeystoresRequest, errorMessage s
 // to NOT_ACTIVE, as we do have slashing protection history for it and should not mark it
 // as NOT_FOUND when returning a response to the caller.
 func (s *Server) transformDeletedKeysStatuses(
-	ctx context.Context, pubKeys [][]byte, statuses []*zondpbservice.DeletedKeystoreStatus,
-) ([]*zondpbservice.DeletedKeystoreStatus, error) {
+	ctx context.Context, pubKeys [][]byte, statuses []*qrlpbservice.DeletedKeystoreStatus,
+) ([]*qrlpbservice.DeletedKeystoreStatus, error) {
 	pubKeysInDB, err := s.publicKeysInDB(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not get public keys from DB: %v", err)
 	}
 	if len(pubKeysInDB) > 0 {
-		for i := 0; i < len(pubKeys); i++ {
+		for i := range pubKeys {
 			keyExistsInDB := pubKeysInDB[bytesutil.ToBytes2592(pubKeys[i])]
-			if keyExistsInDB && statuses[i].Status == zondpbservice.DeletedKeystoreStatus_NOT_FOUND {
-				statuses[i].Status = zondpbservice.DeletedKeystoreStatus_NOT_ACTIVE
+			if keyExistsInDB && statuses[i].Status == qrlpbservice.DeletedKeystoreStatus_NOT_FOUND {
+				statuses[i].Status = qrlpbservice.DeletedKeystoreStatus_NOT_ACTIVE
 			}
 		}
 	}
@@ -233,8 +238,8 @@ func (s *Server) transformDeletedKeysStatuses(
 }
 
 // Gets a map of all public keys in the database, useful for O(1) lookups.
-func (s *Server) publicKeysInDB(ctx context.Context) (map[[field_params.DilithiumPubkeyLength]byte]bool, error) {
-	pubKeysInDB := make(map[[field_params.DilithiumPubkeyLength]byte]bool)
+func (s *Server) publicKeysInDB(ctx context.Context) (map[[field_params.MLDSA87PubkeyLength]byte]bool, error) {
+	pubKeysInDB := make(map[[field_params.MLDSA87PubkeyLength]byte]bool)
 	attestedPublicKeys, err := s.valDB.AttestedPublicKeys(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("could not get attested public keys from DB: %v", err)
@@ -252,14 +257,14 @@ func (s *Server) publicKeysInDB(ctx context.Context) (map[[field_params.Dilithiu
 // Exports slashing protection data for a list of DELETED or NOT_ACTIVE keys only to be used
 // as part of the DeleteKeystores endpoint.
 func (s *Server) slashingProtectionHistoryForDeletedKeys(
-	ctx context.Context, pubKeys [][]byte, statuses []*zondpbservice.DeletedKeystoreStatus,
+	ctx context.Context, pubKeys [][]byte, statuses []*qrlpbservice.DeletedKeystoreStatus,
 ) (*format.EIPSlashingProtectionFormat, error) {
 	// We select the keys that were DELETED or NOT_ACTIVE from the previous action
 	// and use that to filter our slashing protection export.
 	filteredKeys := make([][]byte, 0, len(pubKeys))
 	for i, pk := range pubKeys {
-		if statuses[i].Status == zondpbservice.DeletedKeystoreStatus_DELETED ||
-			statuses[i].Status == zondpbservice.DeletedKeystoreStatus_NOT_ACTIVE {
+		if statuses[i].Status == qrlpbservice.DeletedKeystoreStatus_DELETED ||
+			statuses[i].Status == qrlpbservice.DeletedKeystoreStatus_NOT_ACTIVE {
 			filteredKeys = append(filteredKeys, pk)
 		}
 	}
@@ -268,7 +273,7 @@ func (s *Server) slashingProtectionHistoryForDeletedKeys(
 
 /*
 // ListRemoteKeys returns a list of all public keys defined for web3signer keymanager type.
-func (s *Server) ListRemoteKeys(ctx context.Context, _ *empty.Empty) (*zondpbservice.ListRemoteKeysResponse, error) {
+func (s *Server) ListRemoteKeys(ctx context.Context, _ *empty.Empty) (*qrlpbservice.ListRemoteKeysResponse, error) {
 	if !s.walletInitialized {
 		return nil, status.Error(codes.FailedPrecondition, "Qrysm Wallet not initialized. Please create a new wallet.")
 	}
@@ -286,21 +291,21 @@ func (s *Server) ListRemoteKeys(ctx context.Context, _ *empty.Empty) (*zondpbser
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not retrieve keystores: %v", err)
 	}
-	keystoreResponse := make([]*zondpbservice.ListRemoteKeysResponse_Keystore, len(pubKeys))
-	for i := 0; i < len(pubKeys); i++ {
-		keystoreResponse[i] = &zondpbservice.ListRemoteKeysResponse_Keystore{
+	keystoreResponse := make([]*qrlpbservice.ListRemoteKeysResponse_Keystore, len(pubKeys))
+	for i := range pubKeys {
+		keystoreResponse[i] = &qrlpbservice.ListRemoteKeysResponse_Keystore{
 			Pubkey:   pubKeys[i][:],
 			Url:      s.validatorService.Web3SignerConfig.BaseEndpoint,
 			Readonly: true,
 		}
 	}
-	return &zondpbservice.ListRemoteKeysResponse{
+	return &qrlpbservice.ListRemoteKeysResponse{
 		Data: keystoreResponse,
 	}, nil
 }
 
 // ImportRemoteKeys imports a list of public keys defined for web3signer keymanager type.
-func (s *Server) ImportRemoteKeys(ctx context.Context, req *zondpbservice.ImportRemoteKeysRequest) (*zondpbservice.ImportRemoteKeysResponse, error) {
+func (s *Server) ImportRemoteKeys(ctx context.Context, req *qrlpbservice.ImportRemoteKeysRequest) (*qrlpbservice.ImportRemoteKeysResponse, error) {
 	if !s.walletInitialized {
 		return nil, status.Error(codes.FailedPrecondition, "Qrysm Wallet not initialized. Please create a new wallet.")
 	}
@@ -317,10 +322,10 @@ func (s *Server) ImportRemoteKeys(ctx context.Context, req *zondpbservice.Import
 	adder, ok := km.(keymanager.PublicKeyAdder)
 	if !ok {
 		statuses := groupImportRemoteKeysErrors(req, "Keymanager kind cannot import public keys for web3signer keymanager type.")
-		return &zondpbservice.ImportRemoteKeysResponse{Data: statuses}, nil
+		return &qrlpbservice.ImportRemoteKeysResponse{Data: statuses}, nil
 	}
 
-	remoteKeys := make([][field_params.DilithiumPubkeyLength]byte, len(req.RemoteKeys))
+	remoteKeys := make([][field_params.MLDSA87PubkeyLength]byte, len(req.RemoteKeys))
 	isUrlUsed := false
 	for i, obj := range req.RemoteKeys {
 		remoteKeys[i] = bytesutil.ToBytes2592(obj.Pubkey)
@@ -335,18 +340,18 @@ func (s *Server) ImportRemoteKeys(ctx context.Context, req *zondpbservice.Import
 	statuses, err := adder.AddPublicKeys(ctx, remoteKeys)
 	if err != nil {
 		sts := groupImportRemoteKeysErrors(req, fmt.Sprintf("Could not add keys;error: %v", err))
-		return &zondpbservice.ImportRemoteKeysResponse{Data: sts}, nil
+		return &qrlpbservice.ImportRemoteKeysResponse{Data: sts}, nil
 	}
-	return &zondpbservice.ImportRemoteKeysResponse{
+	return &qrlpbservice.ImportRemoteKeysResponse{
 		Data: statuses,
 	}, nil
 }
 
-func groupImportRemoteKeysErrors(req *zondpbservice.ImportRemoteKeysRequest, errorMessage string) []*zondpbservice.ImportedRemoteKeysStatus {
-	statuses := make([]*zondpbservice.ImportedRemoteKeysStatus, len(req.RemoteKeys))
+func groupImportRemoteKeysErrors(req *qrlpbservice.ImportRemoteKeysRequest, errorMessage string) []*qrlpbservice.ImportedRemoteKeysStatus {
+	statuses := make([]*qrlpbservice.ImportedRemoteKeysStatus, len(req.RemoteKeys))
 	for i := 0; i < len(req.RemoteKeys); i++ {
-		statuses[i] = &zondpbservice.ImportedRemoteKeysStatus{
-			Status:  zondpbservice.ImportedRemoteKeysStatus_ERROR,
+		statuses[i] = &qrlpbservice.ImportedRemoteKeysStatus{
+			Status:  qrlpbservice.ImportedRemoteKeysStatus_ERROR,
 			Message: errorMessage,
 		}
 	}
@@ -354,7 +359,7 @@ func groupImportRemoteKeysErrors(req *zondpbservice.ImportRemoteKeysRequest, err
 }
 
 // DeleteRemoteKeys deletes a list of public keys defined for web3signer keymanager type.
-func (s *Server) DeleteRemoteKeys(ctx context.Context, req *zondpbservice.DeleteRemoteKeysRequest) (*zondpbservice.DeleteRemoteKeysResponse, error) {
+func (s *Server) DeleteRemoteKeys(ctx context.Context, req *qrlpbservice.DeleteRemoteKeysRequest) (*qrlpbservice.DeleteRemoteKeysResponse, error) {
 	if !s.walletInitialized {
 		return nil, status.Error(codes.FailedPrecondition, "Qrysm Wallet not initialized. Please create a new wallet.")
 	}
@@ -371,29 +376,29 @@ func (s *Server) DeleteRemoteKeys(ctx context.Context, req *zondpbservice.Delete
 	deleter, ok := km.(keymanager.PublicKeyDeleter)
 	if !ok {
 		statuses := groupDeleteRemoteKeysErrors(req, "Keymanager kind cannot delete public keys for web3signer keymanager type.")
-		return &zondpbservice.DeleteRemoteKeysResponse{Data: statuses}, nil
+		return &qrlpbservice.DeleteRemoteKeysResponse{Data: statuses}, nil
 	}
-	remoteKeys := make([][field_params.DilithiumPubkeyLength]byte, len(req.Pubkeys))
+	remoteKeys := make([][field_params.MLDSA87PubkeyLength]byte, len(req.Pubkeys))
 	for i, key := range req.Pubkeys {
 		remoteKeys[i] = bytesutil.ToBytes2592(key)
 	}
 	statuses, err := deleter.DeletePublicKeys(ctx, remoteKeys)
 	if err != nil {
 		sts := groupDeleteRemoteKeysErrors(req, fmt.Sprintf("Could not delete keys;error: %v", err))
-		return &zondpbservice.DeleteRemoteKeysResponse{Data: sts}, nil
+		return &qrlpbservice.DeleteRemoteKeysResponse{Data: sts}, nil
 	}
-	return &zondpbservice.DeleteRemoteKeysResponse{
+	return &qrlpbservice.DeleteRemoteKeysResponse{
 		Data: statuses,
 	}, nil
 }
 */
 
 /*
-func groupDeleteRemoteKeysErrors(req *zondpbservice.DeleteRemoteKeysRequest, errorMessage string) []*zondpbservice.DeletedRemoteKeysStatus {
-	statuses := make([]*zondpbservice.DeletedRemoteKeysStatus, len(req.Pubkeys))
+func groupDeleteRemoteKeysErrors(req *qrlpbservice.DeleteRemoteKeysRequest, errorMessage string) []*qrlpbservice.DeletedRemoteKeysStatus {
+	statuses := make([]*qrlpbservice.DeletedRemoteKeysStatus, len(req.Pubkeys))
 	for i := 0; i < len(req.Pubkeys); i++ {
-		statuses[i] = &zondpbservice.DeletedRemoteKeysStatus{
-			Status:  zondpbservice.DeletedRemoteKeysStatus_ERROR,
+		statuses[i] = &qrlpbservice.DeletedRemoteKeysStatus{
+			Status:  qrlpbservice.DeletedRemoteKeysStatus_ERROR,
 			Message: errorMessage,
 		}
 	}
@@ -401,7 +406,7 @@ func groupDeleteRemoteKeysErrors(req *zondpbservice.DeleteRemoteKeysRequest, err
 }
 */
 
-func (s *Server) GetGasLimit(_ context.Context, req *zondpbservice.PubkeyRequest) (*zondpbservice.GetGasLimitResponse, error) {
+func (s *Server) GetGasLimit(_ context.Context, req *qrlpbservice.PubkeyRequest) (*qrlpbservice.GetGasLimitResponse, error) {
 	if s.validatorService == nil {
 		return nil, status.Error(codes.FailedPrecondition, "Validator service not ready")
 	}
@@ -409,8 +414,8 @@ func (s *Server) GetGasLimit(_ context.Context, req *zondpbservice.PubkeyRequest
 	if err := validatePublicKey(validatorKey); err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
-	resp := &zondpbservice.GetGasLimitResponse{
-		Data: &zondpbservice.GetGasLimitResponse_GasLimit{
+	resp := &qrlpbservice.GetGasLimitResponse{
+		Data: &qrlpbservice.GetGasLimitResponse_GasLimit{
 			Pubkey: validatorKey,
 		},
 	}
@@ -432,7 +437,7 @@ func (s *Server) GetGasLimit(_ context.Context, req *zondpbservice.PubkeyRequest
 }
 
 // SetGasLimit updates GasLimt of the public key.
-func (s *Server) SetGasLimit(ctx context.Context, req *zondpbservice.SetGasLimitRequest) (*empty.Empty, error) {
+func (s *Server) SetGasLimit(ctx context.Context, req *qrlpbservice.SetGasLimitRequest) (*emptypb.Empty, error) {
 	if s.validatorService == nil {
 		return nil, status.Error(codes.FailedPrecondition, "Validator service not ready")
 	}
@@ -443,12 +448,12 @@ func (s *Server) SetGasLimit(ctx context.Context, req *zondpbservice.SetGasLimit
 	}
 	settings := s.validatorService.ProposerSettings()
 	if settings == nil {
-		return &empty.Empty{}, status.Errorf(codes.FailedPrecondition, "no proposer settings were found to update")
+		return &emptypb.Empty{}, status.Errorf(codes.FailedPrecondition, "no proposer settings were found to update")
 	} else if settings.ProposeConfig == nil {
 		if settings.DefaultConfig == nil || settings.DefaultConfig.BuilderConfig == nil || !settings.DefaultConfig.BuilderConfig.Enabled {
-			return &empty.Empty{}, status.Errorf(codes.FailedPrecondition, "gas limit changes only apply when builder is enabled")
+			return &emptypb.Empty{}, status.Errorf(codes.FailedPrecondition, "gas limit changes only apply when builder is enabled")
 		}
-		settings.ProposeConfig = make(map[[field_params.DilithiumPubkeyLength]byte]*validatorServiceConfig.ProposerOption)
+		settings.ProposeConfig = make(map[[field_params.MLDSA87PubkeyLength]byte]*validatorServiceConfig.ProposerOption)
 		option := settings.DefaultConfig.Clone()
 		option.BuilderConfig.GasLimit = validator.Uint64(req.GasLimit)
 		settings.ProposeConfig[bytesutil.ToBytes2592(validatorKey)] = option
@@ -456,13 +461,13 @@ func (s *Server) SetGasLimit(ctx context.Context, req *zondpbservice.SetGasLimit
 		proposerOption, found := settings.ProposeConfig[bytesutil.ToBytes2592(validatorKey)]
 		if found {
 			if proposerOption.BuilderConfig == nil || !proposerOption.BuilderConfig.Enabled {
-				return &empty.Empty{}, status.Errorf(codes.FailedPrecondition, "gas limit changes only apply when builder is enabled")
+				return &emptypb.Empty{}, status.Errorf(codes.FailedPrecondition, "gas limit changes only apply when builder is enabled")
 			} else {
 				proposerOption.BuilderConfig.GasLimit = validator.Uint64(req.GasLimit)
 			}
 		} else {
 			if settings.DefaultConfig == nil {
-				return &empty.Empty{}, status.Errorf(codes.FailedPrecondition, "gas limit changes only apply when builder is enabled")
+				return &emptypb.Empty{}, status.Errorf(codes.FailedPrecondition, "gas limit changes only apply when builder is enabled")
 			}
 			option := settings.DefaultConfig.Clone()
 			option.BuilderConfig.GasLimit = validator.Uint64(req.GasLimit)
@@ -471,17 +476,17 @@ func (s *Server) SetGasLimit(ctx context.Context, req *zondpbservice.SetGasLimit
 	}
 	// save the settings
 	if err := s.validatorService.SetProposerSettings(ctx, settings); err != nil {
-		return &empty.Empty{}, status.Errorf(codes.Internal, "Could not set proposer settings: %v", err)
+		return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not set proposer settings: %v", err)
 	}
 	// override the 200 success with 202 according to the specs
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", "202")); err != nil {
-		return &empty.Empty{}, status.Errorf(codes.Internal, "Could not set custom success code header: %v", err)
+		return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not set custom success code header: %v", err)
 	}
 
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
-func (s *Server) DeleteGasLimit(ctx context.Context, req *zondpbservice.DeleteGasLimitRequest) (*empty.Empty, error) {
+func (s *Server) DeleteGasLimit(ctx context.Context, req *qrlpbservice.DeleteGasLimitRequest) (*emptypb.Empty, error) {
 	if s.validatorService == nil {
 		return nil, status.Error(codes.FailedPrecondition, "Validator service not ready")
 	}
@@ -503,14 +508,14 @@ func (s *Server) DeleteGasLimit(ctx context.Context, req *zondpbservice.DeleteGa
 			}
 			// save the settings
 			if err := s.validatorService.SetProposerSettings(ctx, proposerSettings); err != nil {
-				return &empty.Empty{}, status.Errorf(codes.Internal, "Could not set proposer settings: %v", err)
+				return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not set proposer settings: %v", err)
 			}
 			// Successfully deleted gas limit (reset to proposer config default or global default).
 			// Return with success http code "204".
 			if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", "204")); err != nil {
-				return &empty.Empty{}, status.Errorf(codes.Internal, "Could not set custom http code 204 header: %v", err)
+				return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not set custom http code 204 header: %v", err)
 			}
-			return &empty.Empty{}, nil
+			return &emptypb.Empty{}, nil
 		}
 	}
 	// Otherwise, either no proposerOption is found for the pubkey or proposerOption.BuilderConfig is not enabled at all,
@@ -518,8 +523,8 @@ func (s *Server) DeleteGasLimit(ctx context.Context, req *zondpbservice.DeleteGa
 	return nil, status.Error(codes.NotFound, fmt.Sprintf("no gaslimt found for pubkey: %q", hexutil.Encode(validatorKey)))
 }
 
-// ListFeeRecipientByPubkey returns the public key to zond address mapping object to the end user.
-func (s *Server) ListFeeRecipientByPubkey(ctx context.Context, req *zondpbservice.PubkeyRequest) (*zondpbservice.GetFeeRecipientByPubkeyResponse, error) {
+// ListFeeRecipientByPubkey returns the public key to qrl address mapping object to the end user.
+func (s *Server) ListFeeRecipientByPubkey(ctx context.Context, req *qrlpbservice.PubkeyRequest) (*qrlpbservice.GetFeeRecipientByPubkeyResponse, error) {
 	if s.validatorService == nil {
 		return nil, status.Error(codes.FailedPrecondition, "Validator service not ready")
 	}
@@ -529,8 +534,8 @@ func (s *Server) ListFeeRecipientByPubkey(ctx context.Context, req *zondpbservic
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	finalResp := &zondpbservice.GetFeeRecipientByPubkeyResponse{
-		Data: &zondpbservice.GetFeeRecipientByPubkeyResponse_FeeRecipient{
+	finalResp := &qrlpbservice.GetFeeRecipientByPubkeyResponse{
+		Data: &qrlpbservice.GetFeeRecipientByPubkeyResponse_FeeRecipient{
 			Pubkey: validatorKey,
 		},
 	}
@@ -542,19 +547,19 @@ func (s *Server) ListFeeRecipientByPubkey(ctx context.Context, req *zondpbservic
 		proposerOption, found := proposerSettings.ProposeConfig[bytesutil.ToBytes2592(validatorKey)]
 
 		if found && proposerOption.FeeRecipientConfig != nil {
-			finalResp.Data.Zondaddress = proposerOption.FeeRecipientConfig.FeeRecipient.Bytes()
+			finalResp.Data.Qrladdress = proposerOption.FeeRecipientConfig.FeeRecipient.Bytes()
 			return finalResp, nil
 		}
 	}
 
 	// If fee recipient is defined in default configuration, use it
 	if proposerSettings != nil && proposerSettings.DefaultConfig != nil && proposerSettings.DefaultConfig.FeeRecipientConfig != nil {
-		finalResp.Data.Zondaddress = proposerSettings.DefaultConfig.FeeRecipientConfig.FeeRecipient.Bytes()
+		finalResp.Data.Qrladdress = proposerSettings.DefaultConfig.FeeRecipientConfig.FeeRecipient.Bytes()
 		return finalResp, nil
 	}
 
 	// Else, use the one defined in beacon node TODO: remove this with db removal
-	resp, err := s.beaconNodeValidatorClient.GetFeeRecipientByPubKey(ctx, &zond.FeeRecipientByPubKeyRequest{
+	resp, err := s.beaconNodeValidatorClient.GetFeeRecipientByPubKey(ctx, &qrysmpb.FeeRecipientByPubKeyRequest{
 		PublicKey: validatorKey,
 	})
 
@@ -563,37 +568,37 @@ func (s *Server) ListFeeRecipientByPubkey(ctx context.Context, req *zondpbservic
 	}
 
 	if resp != nil && len(resp.FeeRecipient) != 0 {
-		finalResp.Data.Zondaddress = resp.FeeRecipient
+		finalResp.Data.Qrladdress = resp.FeeRecipient
 		return finalResp, nil
 	}
 
 	return nil, status.Error(codes.InvalidArgument, "No fee recipient set")
 }
 
-// SetFeeRecipientByPubkey updates the zond address mapped to the public key.
-func (s *Server) SetFeeRecipientByPubkey(ctx context.Context, req *zondpbservice.SetFeeRecipientByPubkeyRequest) (*empty.Empty, error) {
+// SetFeeRecipientByPubkey updates the qrl address mapped to the public key.
+func (s *Server) SetFeeRecipientByPubkey(ctx context.Context, req *qrlpbservice.SetFeeRecipientByPubkeyRequest) (*emptypb.Empty, error) {
 	if s.validatorService == nil {
 		return nil, status.Error(codes.FailedPrecondition, "Validator service not ready")
 	}
 
 	validatorKey := req.Pubkey
-	feeRecipient := common.BytesToAddress(req.Zondaddress)
+	feeRecipient := common.BytesToAddress(req.Qrladdress)
 
 	if err := validatePublicKey(validatorKey); err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	encoded := hexutil.EncodeZ(req.Zondaddress)
+	encoded := hexutil.EncodeQ(req.Qrladdress)
 
 	if !common.IsAddress(encoded) {
 		return nil, status.Error(
-			codes.InvalidArgument, "Fee recipient is not a valid Zond address")
+			codes.InvalidArgument, "Fee recipient is not a valid QRL address")
 	}
 	settings := s.validatorService.ProposerSettings()
 	switch {
 	case settings == nil:
 		settings = &validatorServiceConfig.ProposerSettings{
-			ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorServiceConfig.ProposerOption{
+			ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorServiceConfig.ProposerOption{
 				bytesutil.ToBytes2592(validatorKey): {
 					FeeRecipientConfig: &validatorServiceConfig.FeeRecipientConfig{
 						FeeRecipient: feeRecipient,
@@ -608,7 +613,7 @@ func (s *Server) SetFeeRecipientByPubkey(ctx context.Context, req *zondpbservice
 		if settings.DefaultConfig != nil && settings.DefaultConfig.BuilderConfig != nil {
 			builderConfig = settings.DefaultConfig.BuilderConfig.Clone()
 		}
-		settings.ProposeConfig = map[[field_params.DilithiumPubkeyLength]byte]*validatorServiceConfig.ProposerOption{
+		settings.ProposeConfig = map[[field_params.MLDSA87PubkeyLength]byte]*validatorServiceConfig.ProposerOption{
 			bytesutil.ToBytes2592(validatorKey): {
 				FeeRecipientConfig: &validatorServiceConfig.FeeRecipientConfig{
 					FeeRecipient: feeRecipient,
@@ -637,17 +642,17 @@ func (s *Server) SetFeeRecipientByPubkey(ctx context.Context, req *zondpbservice
 	}
 	// save the settings
 	if err := s.validatorService.SetProposerSettings(ctx, settings); err != nil {
-		return &empty.Empty{}, status.Errorf(codes.Internal, "Could not set proposer settings: %v", err)
+		return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not set proposer settings: %v", err)
 	}
 	// override the 200 success with 202 according to the specs
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", "202")); err != nil {
-		return &empty.Empty{}, status.Errorf(codes.Internal, "Could not set custom success code header: %v", err)
+		return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not set custom success code header: %v", err)
 	}
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
-// DeleteFeeRecipientByPubkey updates the zond address mapped to the public key to the default fee recipient listed
-func (s *Server) DeleteFeeRecipientByPubkey(ctx context.Context, req *zondpbservice.PubkeyRequest) (*empty.Empty, error) {
+// DeleteFeeRecipientByPubkey updates the qrl address mapped to the public key to the default fee recipient listed
+func (s *Server) DeleteFeeRecipientByPubkey(ctx context.Context, req *qrlpbservice.PubkeyRequest) (*emptypb.Empty, error) {
 	if s.validatorService == nil {
 		return nil, status.Error(codes.FailedPrecondition, "Validator service not ready")
 	}
@@ -669,26 +674,26 @@ func (s *Server) DeleteFeeRecipientByPubkey(ctx context.Context, req *zondpbserv
 
 	// save the settings
 	if err := s.validatorService.SetProposerSettings(ctx, settings); err != nil {
-		return &empty.Empty{}, status.Errorf(codes.Internal, "Could not set proposer settings: %v", err)
+		return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not set proposer settings: %v", err)
 	}
 
 	// override the 200 success with 204 according to the specs
 	if err := grpc.SetHeader(ctx, metadata.Pairs("x-http-code", "204")); err != nil {
-		return &empty.Empty{}, status.Errorf(codes.Internal, "Could not set custom success code header: %v", err)
+		return &emptypb.Empty{}, status.Errorf(codes.Internal, "Could not set custom success code header: %v", err)
 	}
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
 func validatePublicKey(pubkey []byte) error {
-	if len(pubkey) != field_params.DilithiumPubkeyLength {
+	if len(pubkey) != field_params.MLDSA87PubkeyLength {
 		return status.Errorf(
-			codes.InvalidArgument, "Provided public key in path is not byte length %d and not a valid dilithium public key", field_params.DilithiumPubkeyLength)
+			codes.InvalidArgument, "Provided public key in path is not byte length %d and not a valid ml-dsa-87 public key", field_params.MLDSA87PubkeyLength)
 	}
 	return nil
 }
 
 // SetVoluntaryExit creates a signed voluntary exit message and returns a VoluntaryExit object.
-func (s *Server) SetVoluntaryExit(ctx context.Context, req *zondpbservice.SetVoluntaryExitRequest) (*zondpbservice.SetVoluntaryExitResponse, error) {
+func (s *Server) SetVoluntaryExit(ctx context.Context, req *qrlpbservice.SetVoluntaryExitRequest) (*qrlpbservice.SetVoluntaryExitResponse, error) {
 	if s.validatorService == nil {
 		return nil, status.Error(codes.FailedPrecondition, "Validator service not ready")
 	}
@@ -724,9 +729,9 @@ func (s *Server) SetVoluntaryExit(ctx context.Context, req *zondpbservice.SetVol
 		return nil, status.Errorf(codes.Internal, "Could not create voluntary exit: %v", err)
 	}
 
-	return &zondpbservice.SetVoluntaryExitResponse{
-		Data: &zondpbservice.SetVoluntaryExitResponse_SignedVoluntaryExit{
-			Message: &zondpbservice.SetVoluntaryExitResponse_SignedVoluntaryExit_VoluntaryExit{
+	return &qrlpbservice.SetVoluntaryExitResponse{
+		Data: &qrlpbservice.SetVoluntaryExitResponse_SignedVoluntaryExit{
+			Message: &qrlpbservice.SetVoluntaryExitResponse_SignedVoluntaryExit_VoluntaryExit{
 				Epoch:          uint64(sve.Exit.Epoch),
 				ValidatorIndex: uint64(sve.Exit.ValidatorIndex),
 			},

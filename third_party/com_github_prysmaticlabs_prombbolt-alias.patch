@@ -1,0 +1,13 @@
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -33,3 +33,10 @@
+         "@io_etcd_go_bbolt//:go_default_library",
+     ],
+ )
++
++
++alias(
++    name = "prombbolt",
++    actual = ":go_default_library",
++    visibility = ["//visibility:public"],
++)

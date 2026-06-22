@@ -1,0 +1,41 @@
+package operations
+
+import (
+	"context"
+	"path"
+	"testing"
+
+	"github.com/golang/snappy"
+	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
+	"github.com/theQRL/qrysm/beacon-chain/core/validators"
+	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/consensus-types/interfaces"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/spectest/utils"
+	"github.com/theQRL/qrysm/testing/util"
+)
+
+func RunProposerSlashingTest(t *testing.T, config string) {
+	require.NoError(t, utils.SetConfig(t, config))
+	testFolders, testsFolderPath := utils.TestFolders(t, config, "zond", "operations/proposer_slashing/pyspec_tests")
+	if len(testFolders) == 0 {
+		t.Fatalf("No test folders found for %s/%s/%s", config, "zond", "operations/proposer_slashing/pyspec_tests")
+	}
+	for _, folder := range testFolders {
+		t.Run(folder.Name(), func(t *testing.T) {
+			folderPath := path.Join(testsFolderPath, folder.Name())
+			proposerSlashingFile, err := util.BazelFileBytes(folderPath, "proposer_slashing.ssz_snappy")
+			require.NoError(t, err)
+			proposerSlashingSSZ, err := snappy.Decode(nil /* dst */, proposerSlashingFile)
+			require.NoError(t, err, "Failed to decompress")
+			proposerSlashing := &qrysmpb.ProposerSlashing{}
+			require.NoError(t, proposerSlashing.UnmarshalSSZ(proposerSlashingSSZ), "Failed to unmarshal")
+
+			body := &qrysmpb.BeaconBlockBodyZond{ProposerSlashings: []*qrysmpb.ProposerSlashing{proposerSlashing}}
+			RunBlockOperationTest(t, folderPath, body, func(ctx context.Context, s state.BeaconState, b interfaces.ReadOnlySignedBeaconBlock) (state.BeaconState, error) {
+				return blocks.ProcessProposerSlashings(ctx, s, b.Block().Body().ProposerSlashings(), validators.SlashValidator)
+			})
+		})
+	}
+}

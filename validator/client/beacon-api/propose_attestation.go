@@ -6,20 +6,20 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
-func (c beaconApiValidatorClient) proposeAttestation(ctx context.Context, attestation *zondpb.Attestation) (*zondpb.AttestResponse, error) {
+func (c beaconApiValidatorClient) proposeAttestation(ctx context.Context, attestation *qrysmpb.Attestation) (*qrysmpb.AttestResponse, error) {
 	if err := checkNilAttestation(attestation); err != nil {
 		return nil, err
 	}
 
-	marshalledAttestation, err := json.Marshal(jsonifyAttestations([]*zondpb.Attestation{attestation}))
+	marshalledAttestation, err := json.Marshal(jsonifyAttestations([]*qrysmpb.Attestation{attestation}))
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := c.jsonRestHandler.PostRestJson(ctx, "/zond/v1/beacon/pool/attestations", nil, bytes.NewBuffer(marshalledAttestation), nil); err != nil {
+	if _, err := c.jsonRestHandler.PostRestJson(ctx, "/qrl/v1/beacon/pool/attestations", nil, bytes.NewBuffer(marshalledAttestation), nil); err != nil {
 		return nil, errors.Wrap(err, "failed to send POST data to REST endpoint")
 	}
 
@@ -28,11 +28,11 @@ func (c beaconApiValidatorClient) proposeAttestation(ctx context.Context, attest
 		return nil, errors.Wrap(err, "failed to compute attestation data root")
 	}
 
-	return &zondpb.AttestResponse{AttestationDataRoot: attestationDataRoot[:]}, nil
+	return &qrysmpb.AttestResponse{AttestationDataRoot: attestationDataRoot[:]}, nil
 }
 
 // checkNilAttestation returns error if attestation or any field of attestation is nil.
-func checkNilAttestation(attestation *zondpb.Attestation) error {
+func checkNilAttestation(attestation *qrysmpb.Attestation) error {
 	if attestation == nil {
 		return errors.New("attestation is nil")
 	}

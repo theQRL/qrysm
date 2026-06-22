@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 	qrysmTime "github.com/theQRL/qrysm/time"
@@ -32,56 +32,81 @@ func TestAttestationCheckPtState_FarFutureSlot(t *testing.T) {
 	service.genesisTime = time.Now()
 
 	e := primitives.Epoch(slots.MaxSlotBuffer/uint64(params.BeaconConfig().SlotsPerEpoch) + 1)
-	_, err := service.AttestationTargetState(context.Background(), &zondpb.Checkpoint{Epoch: e})
+	_, err := service.AttestationTargetState(context.Background(), &qrysmpb.Checkpoint{Epoch: e})
 	require.ErrorContains(t, "exceeds max allowed value relative to the local clock", err)
 }
 
-func TestVerifyLMDFFGConsistent_NotOK(t *testing.T) {
+func TestVerifyLMDFFGConsistent(t *testing.T) {
 	service, tr := minimalTestService(t)
 	ctx := tr.ctx
 
-	b128 := util.NewBeaconBlockCapella()
-	b128.Block.Slot = 128
-	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b128)
-	r128, err := b128.Block.HashTreeRoot()
+	f := service.cfg.ForkChoiceStore
+	fc := &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	state, ro128, err := prepareForkchoiceState(ctx, 128, [32]byte{'a'}, params.BeaconConfig().ZeroHash, params.BeaconConfig().ZeroHash, fc, fc)
 	require.NoError(t, err)
-	b129 := util.NewBeaconBlockCapella()
-	b129.Block.Slot = 129
-	b129.Block.ParentRoot = r128[:]
-	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b129)
-	r129, err := b129.Block.HashTreeRoot()
-	require.NoError(t, err)
+	require.NoError(t, f.InsertNode(ctx, state, ro128))
+	r128 := ro128.Root()
 
+	state, ro129, err := prepareForkchoiceState(ctx, 129, [32]byte{'b'}, r128, params.BeaconConfig().ZeroHash, fc, fc)
+	require.NoError(t, err)
+	require.NoError(t, f.InsertNode(ctx, state, ro129))
+	r129 := ro129.Root()
+
+	// FFG/LMD mismatch: claimed target differs from canonical.
 	wanted := "FFG and LMD votes are not consistent"
 	a := util.NewAttestation()
 	a.Data.Target.Epoch = 1
-	a.Data.Target.Root = []byte{'a'}
+	a.Data.Target.Root = []byte{'c'}
 	a.Data.BeaconBlockRoot = r129[:]
 	require.ErrorContains(t, wanted, service.VerifyLmdFfgConsistency(context.Background(), a))
+
+	// Consistent: claimed target matches forkchoice TargetRootForEpoch.
+	a.Data.Target.Root = r128[:]
+	err = service.VerifyLmdFfgConsistency(context.Background(), a)
+	require.NoError(t, err, "Could not verify LMD and FFG votes to be consistent")
 }
 
-func TestVerifyLMDFFGConsistent_OK(t *testing.T) {
+// TestVerifyLMDFFGConsistent_TargetEpochExceedsBlockSlot is a regression test
+// for the FFG/LMD consistency bug that affected Prysm before PRs #13257 / #13258.
+//
+// Scenario: an attester is asked to produce an attestation in a new epoch before
+// any block has been produced in that epoch. Per the Ethereum spec the attester
+// votes with BeaconBlockRoot == Target.Root == head_root, and Target.Epoch is the
+// current (new) epoch - so Target.Epoch's start slot is strictly greater than the
+// head block's slot.
+//
+// Prysm introduced a cached per-node target field that returned the head's own
+// target (pointing at an earlier epoch's checkpoint block), which spuriously
+// failed the consistency check in this edge case; #13258 fixed it by making the
+// lookup epoch-aware. qrysm never adopted that cache - it still walks the chain
+// via Ancestor(), which returns the input block when the requested slot is at or
+// after the block's own slot. This test locks that spec-correct behavior in so
+// any future refactor that caches per-block target roots will be caught.
+func TestVerifyLMDFFGConsistent_TargetEpochExceedsBlockSlot(t *testing.T) {
 	service, tr := minimalTestService(t)
 	ctx := tr.ctx
 
-	b128 := util.NewBeaconBlockCapella()
-	b128.Block.Slot = 128
-	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b128)
-	r128, err := b128.Block.HashTreeRoot()
+	// Head block is the first block of epoch 1. Deliberately produce no
+	// block in epoch 2 so that the requested target epoch's start slot is
+	// strictly greater than the head block's slot.
+	f := service.cfg.ForkChoiceStore
+	fc := &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	state, roHead, err := prepareForkchoiceState(ctx, params.BeaconConfig().SlotsPerEpoch, [32]byte{'a'}, params.BeaconConfig().ZeroHash, params.BeaconConfig().ZeroHash, fc, fc)
 	require.NoError(t, err)
-	b129 := util.NewBeaconBlockCapella()
-	b129.Block.Slot = 129
-	b129.Block.ParentRoot = r128[:]
-	util.SaveBlock(t, ctx, service.cfg.BeaconDB, b129)
-	r129, err := b129.Block.HashTreeRoot()
-	require.NoError(t, err)
+	require.NoError(t, f.InsertNode(ctx, state, roHead))
+	headRoot := roHead.Root()
 
+	// Attestation produced during epoch 2 before any epoch-2 block exists:
+	// spec says vote with BeaconBlockRoot == Target.Root == head_root, with
+	// Target.Epoch being the current (new) epoch. TargetRootForEpoch should
+	// return the head root for this case (no later canonical block exists).
 	a := util.NewAttestation()
-	a.Data.Target.Epoch = 1
-	a.Data.Target.Root = r128[:]
-	a.Data.BeaconBlockRoot = r129[:]
+	a.Data.Target.Epoch = 2
+	a.Data.Target.Root = headRoot[:]
+	a.Data.BeaconBlockRoot = headRoot[:]
+
 	err = service.VerifyLmdFfgConsistency(context.Background(), a)
-	require.NoError(t, err, "Could not verify LMD and FFG votes to be consistent")
+	require.NoError(t, err, "Could not verify LMD and FFG votes when target epoch start slot exceeds block slot")
 }
 
 func TestProcessAttestations_Ok(t *testing.T) {
@@ -90,7 +115,7 @@ func TestProcessAttestations_Ok(t *testing.T) {
 	ctx := tr.ctx
 
 	service.genesisTime = qrysmTime.Now().Add(-1 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second)
-	genesisState, pks := util.DeterministicGenesisStateCapella(t, 256)
+	genesisState, pks := util.DeterministicGenesisStateZond(t, 256)
 	require.NoError(t, genesisState.SetGenesisTime(uint64(qrysmTime.Now().Unix())-params.BeaconConfig().SecondsPerSlot))
 	require.NoError(t, service.saveGenesisData(ctx, genesisState))
 	atts, err := util.GenerateAttestations(genesisState, pks, 1, 0, false)
@@ -100,8 +125,8 @@ func TestProcessAttestations_Ok(t *testing.T) {
 	copied, err = transition.ProcessSlots(ctx, copied, 1)
 	require.NoError(t, err)
 	require.NoError(t, service.cfg.BeaconDB.SaveState(ctx, copied, tRoot))
-	ofc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
-	ojc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ofc := &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ojc := &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 	state, blkRoot, err := prepareForkchoiceState(ctx, 0, tRoot, tRoot, params.BeaconConfig().ZeroHash, ojc, ofc)
 	require.NoError(t, err)
 	require.NoError(t, service.cfg.ForkChoiceStore.InsertNode(ctx, state, blkRoot))
@@ -116,13 +141,13 @@ func TestService_ProcessAttestationsAndUpdateHead(t *testing.T) {
 	ctx, fcs := tr.ctx, tr.fcs
 
 	service.genesisTime = qrysmTime.Now().Add(-2 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second)
-	genesisState, pks := util.DeterministicGenesisStateCapella(t, 64)
+	genesisState, pks := util.DeterministicGenesisStateZond(t, 64)
 	require.NoError(t, service.saveGenesisData(ctx, genesisState))
-	ojc := &zondpb.Checkpoint{Epoch: 0, Root: service.originBlockRoot[:]}
+	ojc := &qrysmpb.Checkpoint{Epoch: 0, Root: service.originBlockRoot[:]}
 	require.NoError(t, fcs.UpdateJustifiedCheckpoint(ctx, &forkchoicetypes.Checkpoint{Epoch: 0, Root: service.originBlockRoot}))
 	copied := genesisState.Copy()
 	// Generate a new block for attesters to attest
-	blk, err := util.GenerateFullBlockCapella(copied, pks, util.DefaultBlockGenConfig(), 1)
+	blk, err := util.GenerateFullBlockZond(copied, pks, util.DefaultBlockGenConfig(), 1)
 	require.NoError(t, err)
 	tRoot, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -134,7 +159,9 @@ func TestService_ProcessAttestationsAndUpdateHead(t *testing.T) {
 	postState, err := service.validateStateTransition(ctx, preState, wsb)
 	require.NoError(t, err)
 	require.NoError(t, service.savePostStateInfo(ctx, tRoot, wsb, postState))
-	require.NoError(t, service.postBlockProcess(ctx, wsb, tRoot, postState, false))
+	roblock, err := blocks.NewROBlockWithRoot(wsb, tRoot)
+	require.NoError(t, err)
+	require.NoError(t, service.postBlockProcess(ctx, roblock, postState, false))
 	copied, err = service.cfg.StateGen.StateByRoot(ctx, tRoot)
 	require.NoError(t, err)
 	require.Equal(t, 2, fcs.NodeCount())
@@ -150,7 +177,7 @@ func TestService_ProcessAttestationsAndUpdateHead(t *testing.T) {
 	require.Equal(t, true, fcs.HasNode(service.originBlockRoot))
 
 	// Insert a new block to forkchoice
-	b, err := util.GenerateFullBlockCapella(genesisState, pks, util.DefaultBlockGenConfig(), 2)
+	b, err := util.GenerateFullBlockZond(genesisState, pks, util.DefaultBlockGenConfig(), 2)
 	require.NoError(t, err)
 	b.Block.ParentRoot = service.originBlockRoot[:]
 	r, err := b.Block.HashTreeRoot()
@@ -173,12 +200,12 @@ func TestService_UpdateHead_NoAtts(t *testing.T) {
 	ctx, fcs := tr.ctx, tr.fcs
 
 	service.genesisTime = qrysmTime.Now().Add(-2 * time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second)
-	genesisState, pks := util.DeterministicGenesisStateCapella(t, 64)
+	genesisState, pks := util.DeterministicGenesisStateZond(t, 64)
 	require.NoError(t, service.saveGenesisData(ctx, genesisState))
 	require.NoError(t, fcs.UpdateJustifiedCheckpoint(ctx, &forkchoicetypes.Checkpoint{Epoch: 0, Root: service.originBlockRoot}))
 	copied := genesisState.Copy()
 	// Generate a new block
-	blk, err := util.GenerateFullBlockCapella(copied, pks, util.DefaultBlockGenConfig(), 1)
+	blk, err := util.GenerateFullBlockZond(copied, pks, util.DefaultBlockGenConfig(), 1)
 	require.NoError(t, err)
 	tRoot, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -190,14 +217,16 @@ func TestService_UpdateHead_NoAtts(t *testing.T) {
 	postState, err := service.validateStateTransition(ctx, preState, wsb)
 	require.NoError(t, err)
 	require.NoError(t, service.savePostStateInfo(ctx, tRoot, wsb, postState))
-	require.NoError(t, service.postBlockProcess(ctx, wsb, tRoot, postState, false))
+	roblock, err := blocks.NewROBlockWithRoot(wsb, tRoot)
+	require.NoError(t, err)
+	require.NoError(t, service.postBlockProcess(ctx, roblock, postState, false))
 	require.Equal(t, 2, fcs.NodeCount())
 	require.NoError(t, service.cfg.BeaconDB.SaveBlock(ctx, wsb))
 	require.Equal(t, tRoot, service.head.root)
 
 	// Insert a new block to forkchoice
-	ojc := &zondpb.Checkpoint{Epoch: 0, Root: params.BeaconConfig().ZeroHash[:]}
-	b, err := util.GenerateFullBlockCapella(genesisState, pks, util.DefaultBlockGenConfig(), 2)
+	ojc := &qrysmpb.Checkpoint{Epoch: 0, Root: params.BeaconConfig().ZeroHash[:]}
+	b, err := util.GenerateFullBlockZond(genesisState, pks, util.DefaultBlockGenConfig(), 2)
 	require.NoError(t, err)
 	b.Block.ParentRoot = service.originBlockRoot[:]
 	r, err := b.Block.HashTreeRoot()

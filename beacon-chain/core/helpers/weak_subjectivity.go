@@ -14,7 +14,6 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	"github.com/theQRL/qrysm/math"
 	v1alpha1 "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
@@ -36,8 +35,8 @@ import (
 //	"""
 //	ws_period = MIN_VALIDATOR_WITHDRAWABILITY_DELAY
 //	N = len(get_active_validator_indices(state, get_current_epoch(state)))
-//	t = get_total_active_balance(state) // N // ETH_TO_GWEI
-//	T = MAX_EFFECTIVE_BALANCE // ETH_TO_GWEI
+//	t = get_total_active_balance(state) // N // QUANTA_TO_SHOR
+//	T = MAX_EFFECTIVE_BALANCE // QUANTA_TO_SHOR
 //	delta = get_validator_churn_limit(state)
 //	Delta = MAX_DEPOSITS * SLOTS_PER_EPOCH
 //	D = SAFETY_DECAY
@@ -69,15 +68,15 @@ func ComputeWeakSubjectivityPeriod(ctx context.Context, st state.ReadOnlyBeaconS
 		return 0, errors.New("no active validators found")
 	}
 
-	// Average effective balance in the given validator set, in Ether.
+	// Average effective balance in the given validator set, in Quanta.
 	t, err := TotalActiveBalance(st)
 	if err != nil {
 		return 0, fmt.Errorf("cannot find total active balance of validators: %w", err)
 	}
-	t = t / N / cfg.GweiPerEth
+	t = t / N / cfg.ShorPerQuanta
 
 	// Maximum effective balance per validator.
-	T := cfg.MaxEffectiveBalance / cfg.GweiPerEth
+	T := cfg.MaxEffectiveBalance / cfg.ShorPerQuanta
 
 	// Validator churn limit.
 	delta := ValidatorExitChurnLimit(N)
@@ -95,7 +94,7 @@ func ComputeWeakSubjectivityPeriod(ctx context.Context, st state.ReadOnlyBeaconS
 	if T*(200+3*D) < t*(200+12*D) {
 		epochsForValidatorSetChurn := N * (t*(200+12*D) - T*(200+3*D)) / (600 * delta * (2*t + T))
 		epochsForBalanceTopUps := N * (200 + 3*D) / (600 * Delta)
-		wsp += math.Max(epochsForValidatorSetChurn, epochsForBalanceTopUps)
+		wsp += max(epochsForValidatorSetChurn, epochsForBalanceTopUps)
 	} else {
 		wsp += 3 * N * D * t / (200 * Delta * (T - t))
 	}

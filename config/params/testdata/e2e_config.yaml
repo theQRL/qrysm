@@ -20,13 +20,13 @@ GENESIS_DELAY: 10 # Override for e2e tests
 # [customized] Faster for testing purposes
 SECONDS_PER_SLOT: 10 # Override for e2e tests
 # 14 (estimate from Eth1 mainnet)
-SECONDS_PER_ETH1_BLOCK: 2 # Override for e2e tests
+SECONDS_PER_EXECUTION_BLOCK: 2 # Override for e2e tests
 # [customized] faster time for withdrawals
 MIN_VALIDATOR_WITHDRAWABILITY_DELAY: 1
 # [customized] higher frequency of committee turnover and faster time to acceptable voluntary exit
 SHARD_COMMITTEE_PERIOD: 4 # Override for e2e tests
 # [customized] process deposits more quickly, but insecure
-ETH1_FOLLOW_DISTANCE: 8 # Override for e2e tests
+EXECUTION_FOLLOW_DISTANCE: 8 # Override for e2e tests
 
 
 # Validator cycle
@@ -35,7 +35,7 @@ ETH1_FOLLOW_DISTANCE: 8 # Override for e2e tests
 INACTIVITY_SCORE_BIAS: 4
 # 2**4 (= 16)
 INACTIVITY_SCORE_RECOVERY_RATE: 16
-# 2**4 * 10**9 (= 16,000,000,000) Gwei
+# 2**4 * 10**9 (= 16,000,000,000) Shor
 EJECTION_BALANCE: 20000000000000
 # 2**1 (= 2)
 MIN_PER_EPOCH_CHURN_LIMIT: 2
@@ -54,7 +54,7 @@ PROPOSER_SCORE_BOOST: 40
 DEPOSIT_CHAIN_ID: 1337 # Override for e2e tests
 DEPOSIT_NETWORK_ID: 1337 # Override for e2e tests
 # Configured on a per testnet basis
-DEPOSIT_CONTRACT_ADDRESS: Z4242424242424242424242424242424242424242
+DEPOSIT_CONTRACT_ADDRESS: Q42424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242
 
 # Sync committee
 # ---------------------------------------------------------------
@@ -73,7 +73,6 @@ MIN_SYNC_COMMITTEE_PARTICIPANTS: 1
 # ---------------------------------------------------------------
 CONFIG_NAME: "end-to-end"
 SLOTS_PER_EPOCH: 6
-EPOCHS_PER_ETH1_VOTING_PERIOD: 2
+EPOCHS_PER_EXECUTION_VOTING_PERIOD: 2
 MAX_SEED_LOOKAHEAD: 1
-
 

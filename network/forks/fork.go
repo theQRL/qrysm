@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
@@ -84,7 +84,7 @@ func CreateForkDigest(
 // returns the active fork version during this epoch.
 func Fork(
 	targetEpoch primitives.Epoch,
-) (*zondpb.Fork, error) {
+) (*qrysmpb.Fork, error) {
 	currentForkVersion := bytesutil.ToBytes4(params.BeaconConfig().GenesisForkVersion)
 	previousForkVersion := bytesutil.ToBytes4(params.BeaconConfig().GenesisForkVersion)
 	fSchedule := params.BeaconConfig().ForkVersionSchedule
@@ -101,7 +101,7 @@ func Fork(
 			forkEpoch = epoch
 		}
 	}
-	return &zondpb.Fork{
+	return &qrysmpb.Fork{
 		PreviousVersion: previousForkVersion[:],
 		CurrentVersion:  currentForkVersion[:],
 		Epoch:           forkEpoch,

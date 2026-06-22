@@ -8,15 +8,12 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	cmdacc "github.com/theQRL/qrysm/cmd/validator/accounts"
 	"github.com/theQRL/qrysm/cmd/validator/flags"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
-	"github.com/theQRL/qrysm/validator/accounts"
 	"github.com/theQRL/qrysm/validator/accounts/wallet"
 	"github.com/theQRL/qrysm/validator/keymanager"
 	"github.com/theQRL/qrysm/validator/keymanager/local"
@@ -117,29 +114,11 @@ func TestCreateOrOpenWallet(t *testing.T) {
 		keymanagerKind:     keymanager.Local,
 		walletPasswordFile: walletPasswordFile,
 	})
-	createLocalWallet := func(cliCtx *cli.Context) (*wallet.Wallet, error) {
-		cfg, err := cmdacc.ExtractWalletDirPassword(cliCtx)
-		if err != nil {
-			return nil, err
-		}
-		w := wallet.New(&wallet.Config{
-			KeymanagerKind: keymanager.Local,
-			WalletDir:      cfg.Dir,
-			WalletPassword: cfg.Password,
-		})
-		if err = accounts.CreateLocalKeymanagerWallet(cliCtx.Context, w); err != nil {
-			return nil, errors.Wrap(err, "could not create keymanager")
-		}
-		log.WithField("wallet-path", cfg.Dir).Info(
-			"Successfully created new wallet",
-		)
-		return w, nil
-	}
-	createdWallet, err := wallet.OpenWalletOrElseCli(cliCtx, createLocalWallet)
+	createdWallet, err := wallet.OpenWalletOrElseCli(cliCtx, wallet.OpenOrCreateNewWallet)
 	require.NoError(t, err)
 	require.LogsContain(t, hook, "Successfully created new wallet")
 
-	openedWallet, err := wallet.OpenWalletOrElseCli(cliCtx, createLocalWallet)
+	openedWallet, err := wallet.OpenWalletOrElseCli(cliCtx, wallet.OpenOrCreateNewWallet)
 	require.NoError(t, err)
 	assert.Equal(t, createdWallet.KeymanagerKind(), openedWallet.KeymanagerKind())
 	assert.Equal(t, createdWallet.AccountsDir(), openedWallet.AccountsDir())

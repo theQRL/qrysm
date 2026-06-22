@@ -1,0 +1,6 @@
+# Ignore VI/Vim swapfiles
+.*.sw?
+
+# IntelliJ
+.idea
+.ijwb

@@ -17,7 +17,7 @@ var log = logrus.WithField("prefix", "accounts")
 var Commands = &cli.Command{
 	Name:     "accounts",
 	Category: "accounts",
-	Usage:    "defines commands for interacting with Zond validator accounts",
+	Usage:    "defines commands for interacting with QRL validator accounts",
 	Subcommands: []*cli.Command{
 		{
 			Name:        "delete",
@@ -112,7 +112,7 @@ var Commands = &cli.Command{
 		},
 		{
 			Name:        "import",
-			Description: `imports Zond validator accounts stored in EIP-2335 keystore.json files from an external directory`,
+			Description: `imports QRL validator accounts stored in EIP-2335 keystore.json files from an external directory`,
 			Flags: cmd.WrapFlags([]cli.Flag{
 				flags.WalletDirFlag,
 				flags.KeysDirFlag,

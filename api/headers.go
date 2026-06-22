@@ -1,9 +1,9 @@
 package api
 
 const (
-	VersionHeader                 = "Eth-Consensus-Version"
-	ExecutionPayloadBlindedHeader = "Eth-Execution-Payload-Blinded"
-	ExecutionPayloadValueHeader   = "Eth-Execution-Payload-Value"
+	VersionHeader                 = "Qrl-Consensus-Version"
+	ExecutionPayloadBlindedHeader = "Qrl-Execution-Payload-Blinded"
+	ExecutionPayloadValueHeader   = "Qrl-Execution-Payload-Value"
 	JsonMediaType                 = "application/json"
 	OctetStreamMediaType          = "application/octet-stream"
 )

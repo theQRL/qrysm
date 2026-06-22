@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	grpcutil "github.com/theQRL/qrysm/api/grpc"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/validator/accounts/wallet"
 	iface "github.com/theQRL/qrysm/validator/client/iface"
 	nodeClientFactory "github.com/theQRL/qrysm/validator/client/node-client-factory"
@@ -52,7 +52,7 @@ type AccountsCLIManager struct {
 	// mnemonicLanguage     string
 	backupsDir         string
 	backupsPassword    string
-	filteredPubKeys    []dilithium.PublicKey
+	filteredPubKeys    []ml_dsa_87.PublicKey
 	rawPubKeys         [][]byte
 	formattedPubKeys   []string
 	exitJSONOutputPath string
@@ -80,6 +80,7 @@ func (acm *AccountsCLIManager) prepareBeaconClients(ctx context.Context) (*iface
 		grpcConn,
 		acm.beaconApiEndpoint,
 		acm.beaconApiTimeout,
+		grpcConn.Close,
 	)
 
 	validatorClient := validatorClientFactory.NewValidatorClient(conn)

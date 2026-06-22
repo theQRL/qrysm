@@ -5,10 +5,9 @@ import (
 	"fmt"
 
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/testing/util"
 	v1 "github.com/theQRL/qrysm/validator/keymanager/remote-web3signer/v1"
@@ -19,7 +18,7 @@ import (
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 func MockSyncComitteeBits() []byte {
-	currSize := new(zond.SyncAggregate).SyncCommitteeBits.Len()
+	currSize := new(qrysmpb.SyncAggregate).SyncCommitteeBits.Len()
 	switch currSize {
 	case 512:
 		return bitfield.NewBitvector512()
@@ -31,7 +30,7 @@ func MockSyncComitteeBits() []byte {
 }
 
 func MockAggregationBits() []byte {
-	currSize := new(zond.SyncCommitteeContribution).AggregationBits.Len()
+	currSize := new(qrysmpb.SyncCommitteeContribution).AggregationBits.Len()
 	switch currSize {
 	case 128:
 		return bitfield.NewBitvector128()
@@ -47,7 +46,7 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 	switch t {
 	case "AGGREGATION_SLOT":
 		return &validatorpb.SignRequest{
-			PublicKey:       make([]byte, field_params.DilithiumPubkeyLength),
+			PublicKey:       make([]byte, field_params.MLDSA87PubkeyLength),
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_Slot{
@@ -57,42 +56,42 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 		}
 	case "AGGREGATE_AND_PROOF":
 		return &validatorpb.SignRequest{
-			PublicKey:       make([]byte, field_params.DilithiumPubkeyLength),
+			PublicKey:       make([]byte, field_params.MLDSA87PubkeyLength),
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_AggregateAttestationAndProof{
-				AggregateAttestationAndProof: &zond.AggregateAttestationAndProof{
+				AggregateAttestationAndProof: &qrysmpb.AggregateAttestationAndProof{
 					AggregatorIndex: 0,
-					Aggregate: &zond.Attestation{
+					Aggregate: &qrysmpb.Attestation{
 						AggregationBits: bitfield.Bitlist{0b1101},
-						Data: &zond.AttestationData{
+						Data: &qrysmpb.AttestationData{
 							BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-							Source: &zond.Checkpoint{
+							Source: &qrysmpb.Checkpoint{
 								Root: make([]byte, fieldparams.RootLength),
 							},
-							Target: &zond.Checkpoint{
+							Target: &qrysmpb.Checkpoint{
 								Root: make([]byte, fieldparams.RootLength),
 							},
 						},
-						Signature: make([]byte, 4595),
+						Signature: make([]byte, 4627),
 					},
-					SelectionProof: make([]byte, field_params.DilithiumSignatureLength),
+					SelectionProof: make([]byte, field_params.MLDSA87SignatureLength),
 				},
 			},
 			SigningSlot: 0,
 		}
 	case "ATTESTATION":
 		return &validatorpb.SignRequest{
-			PublicKey:       make([]byte, field_params.DilithiumPubkeyLength),
+			PublicKey:       make([]byte, field_params.MLDSA87PubkeyLength),
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_AttestationData{
-				AttestationData: &zond.AttestationData{
+				AttestationData: &qrysmpb.AttestationData{
 					BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-					Source: &zond.Checkpoint{
+					Source: &qrysmpb.Checkpoint{
 						Root: make([]byte, fieldparams.RootLength),
 					},
-					Target: &zond.Checkpoint{
+					Target: &qrysmpb.Checkpoint{
 						Root: make([]byte, fieldparams.RootLength),
 					},
 				},
@@ -101,110 +100,110 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 		}
 	case "BLOCK":
 		return &validatorpb.SignRequest{
-			PublicKey:       make([]byte, field_params.DilithiumPubkeyLength),
+			PublicKey:       make([]byte, field_params.MLDSA87PubkeyLength),
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_Block{
-				Block: &zond.BeaconBlock{
+				Block: &qrysmpb.BeaconBlock{
 					Slot:          0,
 					ProposerIndex: 0,
 					ParentRoot:    make([]byte, fieldparams.RootLength),
 					StateRoot:     make([]byte, fieldparams.RootLength),
-					Body: &zond.BeaconBlockBody{
+					Body: &qrysmpb.BeaconBlockBody{
 						RandaoReveal: make([]byte, 32),
-						Eth1Data: &zond.Eth1Data{
+						ExecutionData: &qrysmpb.ExecutionData{
 							DepositRoot:  make([]byte, fieldparams.RootLength),
 							DepositCount: 0,
 							BlockHash:    make([]byte, 32),
 						},
 						Graffiti: make([]byte, 32),
-						ProposerSlashings: []*zond.ProposerSlashing{
+						ProposerSlashings: []*qrysmpb.ProposerSlashing{
 							{
-								Header_1: &zond.SignedBeaconBlockHeader{
-									Header: &zond.BeaconBlockHeader{
+								Header_1: &qrysmpb.SignedBeaconBlockHeader{
+									Header: &qrysmpb.BeaconBlockHeader{
 										Slot:          0,
 										ProposerIndex: 0,
 										ParentRoot:    make([]byte, fieldparams.RootLength),
 										StateRoot:     make([]byte, fieldparams.RootLength),
 										BodyRoot:      make([]byte, fieldparams.RootLength),
 									},
-									Signature: make([]byte, field_params.DilithiumSignatureLength),
+									Signature: make([]byte, field_params.MLDSA87SignatureLength),
 								},
-								Header_2: &zond.SignedBeaconBlockHeader{
-									Header: &zond.BeaconBlockHeader{
+								Header_2: &qrysmpb.SignedBeaconBlockHeader{
+									Header: &qrysmpb.BeaconBlockHeader{
 										Slot:          0,
 										ProposerIndex: 0,
 										ParentRoot:    make([]byte, fieldparams.RootLength),
 										StateRoot:     make([]byte, fieldparams.RootLength),
 										BodyRoot:      make([]byte, fieldparams.RootLength),
 									},
-									Signature: make([]byte, field_params.DilithiumSignatureLength),
+									Signature: make([]byte, field_params.MLDSA87SignatureLength),
 								},
 							},
 						},
-						AttesterSlashings: []*zond.AttesterSlashing{
+						AttesterSlashings: []*qrysmpb.AttesterSlashing{
 							{
-								Attestation_1: &zond.IndexedAttestation{
+								Attestation_1: &qrysmpb.IndexedAttestation{
 									AttestingIndices: []uint64{0, 1, 2},
-									Data: &zond.AttestationData{
+									Data: &qrysmpb.AttestationData{
 										BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-										Source: &zond.Checkpoint{
+										Source: &qrysmpb.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
-										Target: &zond.Checkpoint{
+										Target: &qrysmpb.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
 									},
-									Signature: make([]byte, field_params.DilithiumSignatureLength),
+									Signature: make([]byte, field_params.MLDSA87SignatureLength),
 								},
-								Attestation_2: &zond.IndexedAttestation{
+								Attestation_2: &qrysmpb.IndexedAttestation{
 									AttestingIndices: []uint64{0, 1, 2},
-									Data: &zond.AttestationData{
+									Data: &qrysmpb.AttestationData{
 										BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-										Source: &zond.Checkpoint{
+										Source: &qrysmpb.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
-										Target: &zond.Checkpoint{
+										Target: &qrysmpb.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
 									},
-									Signature: make([]byte, field_params.DilithiumSignatureLength),
+									Signature: make([]byte, field_params.MLDSA87SignatureLength),
 								},
 							},
 						},
-						Attestations: []*zond.Attestation{
+						Attestations: []*qrysmpb.Attestation{
 							{
 								AggregationBits: bitfield.Bitlist{0b1101},
-								Data: &zond.AttestationData{
+								Data: &qrysmpb.AttestationData{
 									BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-									Source: &zond.Checkpoint{
+									Source: &qrysmpb.Checkpoint{
 										Root: make([]byte, fieldparams.RootLength),
 									},
-									Target: &zond.Checkpoint{
+									Target: &qrysmpb.Checkpoint{
 										Root: make([]byte, fieldparams.RootLength),
 									},
 								},
-								Signature: make([]byte, 4595),
+								Signature: make([]byte, 4627),
 							},
 						},
-						Deposits: []*zond.Deposit{
+						Deposits: []*qrysmpb.Deposit{
 							{
 								Proof: [][]byte{[]byte("A")},
-								Data: &zond.Deposit_Data{
-									PublicKey:             make([]byte, field_params.DilithiumPubkeyLength),
-									WithdrawalCredentials: make([]byte, 32),
+								Data: &qrysmpb.Deposit_Data{
+									PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
+									WithdrawalCredentials: make([]byte, 64),
 									Amount:                0,
-									Signature:             make([]byte, field_params.DilithiumSignatureLength),
+									Signature:             make([]byte, field_params.MLDSA87SignatureLength),
 								},
 							},
 						},
-						VoluntaryExits: []*zond.SignedVoluntaryExit{
+						VoluntaryExits: []*qrysmpb.SignedVoluntaryExit{
 							{
-								Exit: &zond.VoluntaryExit{
+								Exit: &qrysmpb.VoluntaryExit{
 									Epoch:          0,
 									ValidatorIndex: 0,
 								},
-								Signature: make([]byte, field_params.DilithiumSignatureLength),
+								Signature: make([]byte, field_params.MLDSA87SignatureLength),
 							},
 						},
 					},
@@ -214,114 +213,114 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 		}
 	case "BLOCK_V2", "BLOCK_V2_ALTAIR":
 		return &validatorpb.SignRequest{
-			PublicKey:       make([]byte, field_params.DilithiumPubkeyLength),
+			PublicKey:       make([]byte, field_params.MLDSA87PubkeyLength),
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_BlockAltair{
-				BlockAltair: &zond.BeaconBlockAltair{
+				BlockAltair: &qrysmpb.BeaconBlockAltair{
 					Slot:          0,
 					ProposerIndex: 0,
 					ParentRoot:    make([]byte, fieldparams.RootLength),
 					StateRoot:     make([]byte, fieldparams.RootLength),
-					Body: &zond.BeaconBlockBodyAltair{
+					Body: &qrysmpb.BeaconBlockBodyAltair{
 						RandaoReveal: make([]byte, 32),
-						Eth1Data: &zond.Eth1Data{
+						ExecutionData: &qrysmpb.ExecutionData{
 							DepositRoot:  make([]byte, fieldparams.RootLength),
 							DepositCount: 0,
 							BlockHash:    make([]byte, 32),
 						},
 						Graffiti: make([]byte, 32),
-						ProposerSlashings: []*zond.ProposerSlashing{
+						ProposerSlashings: []*qrysmpb.ProposerSlashing{
 							{
-								Header_1: &zond.SignedBeaconBlockHeader{
-									Header: &zond.BeaconBlockHeader{
+								Header_1: &qrysmpb.SignedBeaconBlockHeader{
+									Header: &qrysmpb.BeaconBlockHeader{
 										Slot:          0,
 										ProposerIndex: 0,
 										ParentRoot:    make([]byte, fieldparams.RootLength),
 										StateRoot:     make([]byte, fieldparams.RootLength),
 										BodyRoot:      make([]byte, fieldparams.RootLength),
 									},
-									Signature: make([]byte, field_params.DilithiumSignatureLength),
+									Signature: make([]byte, field_params.MLDSA87SignatureLength),
 								},
-								Header_2: &zond.SignedBeaconBlockHeader{
-									Header: &zond.BeaconBlockHeader{
+								Header_2: &qrysmpb.SignedBeaconBlockHeader{
+									Header: &qrysmpb.BeaconBlockHeader{
 										Slot:          0,
 										ProposerIndex: 0,
 										ParentRoot:    make([]byte, fieldparams.RootLength),
 										StateRoot:     make([]byte, fieldparams.RootLength),
 										BodyRoot:      make([]byte, fieldparams.RootLength),
 									},
-									Signature: make([]byte, field_params.DilithiumSignatureLength),
+									Signature: make([]byte, field_params.MLDSA87SignatureLength),
 								},
 							},
 						},
-						AttesterSlashings: []*zond.AttesterSlashing{
+						AttesterSlashings: []*qrysmpb.AttesterSlashing{
 							{
-								Attestation_1: &zond.IndexedAttestation{
+								Attestation_1: &qrysmpb.IndexedAttestation{
 									AttestingIndices: []uint64{0, 1, 2},
-									Data: &zond.AttestationData{
+									Data: &qrysmpb.AttestationData{
 										BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-										Source: &zond.Checkpoint{
+										Source: &qrysmpb.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
-										Target: &zond.Checkpoint{
+										Target: &qrysmpb.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
 									},
-									Signature: make([]byte, field_params.DilithiumSignatureLength),
+									Signature: make([]byte, field_params.MLDSA87SignatureLength),
 								},
-								Attestation_2: &zond.IndexedAttestation{
+								Attestation_2: &qrysmpb.IndexedAttestation{
 									AttestingIndices: []uint64{0, 1, 2},
-									Data: &zond.AttestationData{
+									Data: &qrysmpb.AttestationData{
 										BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-										Source: &zond.Checkpoint{
+										Source: &qrysmpb.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
-										Target: &zond.Checkpoint{
+										Target: &qrysmpb.Checkpoint{
 											Root: make([]byte, fieldparams.RootLength),
 										},
 									},
-									Signature: make([]byte, field_params.DilithiumSignatureLength),
+									Signature: make([]byte, field_params.MLDSA87SignatureLength),
 								},
 							},
 						},
-						Attestations: []*zond.Attestation{
+						Attestations: []*qrysmpb.Attestation{
 							{
 								AggregationBits: bitfield.Bitlist{0b1101},
-								Data: &zond.AttestationData{
+								Data: &qrysmpb.AttestationData{
 									BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-									Source: &zond.Checkpoint{
+									Source: &qrysmpb.Checkpoint{
 										Root: make([]byte, fieldparams.RootLength),
 									},
-									Target: &zond.Checkpoint{
+									Target: &qrysmpb.Checkpoint{
 										Root: make([]byte, fieldparams.RootLength),
 									},
 								},
-								Signature: make([]byte, 4595),
+								Signature: make([]byte, 4627),
 							},
 						},
-						Deposits: []*zond.Deposit{
+						Deposits: []*qrysmpb.Deposit{
 							{
 								Proof: [][]byte{[]byte("A")},
-								Data: &zond.Deposit_Data{
-									PublicKey:             make([]byte, field_params.DilithiumPubkeyLength),
-									WithdrawalCredentials: make([]byte, 32),
+								Data: &qrysmpb.Deposit_Data{
+									PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
+									WithdrawalCredentials: make([]byte, 64),
 									Amount:                0,
-									Signature:             make([]byte, field_params.DilithiumSignatureLength),
+									Signature:             make([]byte, field_params.MLDSA87SignatureLength),
 								},
 							},
 						},
-						VoluntaryExits: []*zond.SignedVoluntaryExit{
+						VoluntaryExits: []*qrysmpb.SignedVoluntaryExit{
 							{
-								Exit: &zond.VoluntaryExit{
+								Exit: &qrysmpb.VoluntaryExit{
 									Epoch:          0,
 									ValidatorIndex: 0,
 								},
-								Signature: make([]byte, field_params.DilithiumSignatureLength),
+								Signature: make([]byte, field_params.MLDSA87SignatureLength),
 							},
 						},
-						SyncAggregate: &zond.SyncAggregate{
-							SyncCommitteeSignature: make([]byte, field_params.DilithiumSignatureLength),
+						SyncAggregate: &qrysmpb.SyncAggregate{
+							SyncCommitteeSignature: make([]byte, field_params.MLDSA87SignatureLength),
 							SyncCommitteeBits:      MockSyncComitteeBits(),
 						},
 					},
@@ -331,43 +330,43 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 		}
 	case "BLOCK_V2_BELLATRIX":
 		return &validatorpb.SignRequest{
-			PublicKey:       make([]byte, field_params.DilithiumPubkeyLength),
+			PublicKey:       make([]byte, field_params.MLDSA87PubkeyLength),
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_BlockBellatrix{
-				BlockBellatrix: util.HydrateBeaconBlockBellatrix(&zond.BeaconBlockBellatrix{}),
+				BlockBellatrix: util.HydrateBeaconBlockBellatrix(&qrysmpb.BeaconBlockBellatrix{}),
 			},
 		}
 	case "BLOCK_V2_BLINDED_BELLATRIX":
 		return &validatorpb.SignRequest{
-			PublicKey:       make([]byte, field_params.DilithiumPubkeyLength),
+			PublicKey:       make([]byte, field_params.MLDSA87PubkeyLength),
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_BlindedBlockBellatrix{
-				BlindedBlockBellatrix: util.HydrateBlindedBeaconBlockBellatrix(&zond.BlindedBeaconBlockBellatrix{}),
+				BlindedBlockBellatrix: util.HydrateBlindedBeaconBlockBellatrix(&qrysmpb.BlindedBeaconBlockBellatrix{}),
 			},
 		}
-	case "BLOCK_V2_CAPELLA":
+	case "BLOCK_V2_ZOND":
 		return &validatorpb.SignRequest{
-			PublicKey:       make([]byte, field_params.DilithiumPubkeyLength),
+			PublicKey:       make([]byte, field_params.MLDSA87PubkeyLength),
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
-			Object: &validatorpb.SignRequest_BlockCapella{
-				BlockCapella: util.HydrateBeaconBlockCapella(&zond.BeaconBlockCapella{}),
+			Object: &validatorpb.SignRequest_BlockZond{
+				BlockZond: util.HydrateBeaconBlockZond(&qrysmpb.BeaconBlockZond{}),
 			},
 		}
-	case "BLOCK_V2_BLINDED_CAPELLA":
+	case "BLOCK_V2_BLINDED_ZOND":
 		return &validatorpb.SignRequest{
-			PublicKey:       make([]byte, field_params.DilithiumPubkeyLength),
+			PublicKey:       make([]byte, field_params.MLDSA87PubkeyLength),
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
-			Object: &validatorpb.SignRequest_BlindedBlockCapella{
-				BlindedBlockCapella: util.HydrateBlindedBeaconBlockCapella(&zond.BlindedBeaconBlockCapella{}),
+			Object: &validatorpb.SignRequest_BlindedBlockZond{
+				BlindedBlockZond: util.HydrateBlindedBeaconBlockZond(&qrysmpb.BlindedBeaconBlockZond{}),
 			},
 		}
 	case "RANDAO_REVEAL":
 		return &validatorpb.SignRequest{
-			PublicKey:       make([]byte, field_params.DilithiumPubkeyLength),
+			PublicKey:       make([]byte, field_params.MLDSA87PubkeyLength),
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_Epoch{
@@ -377,27 +376,27 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 		}
 	case "SYNC_COMMITTEE_CONTRIBUTION_AND_PROOF":
 		return &validatorpb.SignRequest{
-			PublicKey:       make([]byte, field_params.DilithiumPubkeyLength),
+			PublicKey:       make([]byte, field_params.MLDSA87PubkeyLength),
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_ContributionAndProof{
-				ContributionAndProof: &zond.ContributionAndProof{
+				ContributionAndProof: &qrysmpb.ContributionAndProof{
 					AggregatorIndex: 0,
-					Contribution: &zond.SyncCommitteeContribution{
+					Contribution: &qrysmpb.SyncCommitteeContribution{
 						Slot:              0,
 						BlockRoot:         make([]byte, fieldparams.RootLength),
 						SubcommitteeIndex: 0,
 						AggregationBits:   MockAggregationBits(),
-						Signature:         make([]byte, field_params.DilithiumSignatureLength),
+						Signature:         make([]byte, field_params.MLDSA87SignatureLength),
 					},
-					SelectionProof: make([]byte, field_params.DilithiumSignatureLength),
+					SelectionProof: make([]byte, field_params.MLDSA87SignatureLength),
 				},
 			},
 			SigningSlot: 0,
 		}
 	case "SYNC_COMMITTEE_MESSAGE":
 		return &validatorpb.SignRequest{
-			PublicKey:       make([]byte, field_params.DilithiumPubkeyLength),
+			PublicKey:       make([]byte, field_params.MLDSA87PubkeyLength),
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_SyncMessageBlockRoot{
@@ -407,11 +406,11 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 		}
 	case "SYNC_COMMITTEE_SELECTION_PROOF":
 		return &validatorpb.SignRequest{
-			PublicKey:       make([]byte, field_params.DilithiumPubkeyLength),
+			PublicKey:       make([]byte, field_params.MLDSA87PubkeyLength),
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_SyncAggregatorSelectionData{
-				SyncAggregatorSelectionData: &zond.SyncAggregatorSelectionData{
+				SyncAggregatorSelectionData: &qrysmpb.SyncAggregatorSelectionData{
 					Slot:              0,
 					SubcommitteeIndex: 0,
 				},
@@ -420,11 +419,11 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 		}
 	case "VOLUNTARY_EXIT":
 		return &validatorpb.SignRequest{
-			PublicKey:       make([]byte, field_params.DilithiumPubkeyLength),
+			PublicKey:       make([]byte, field_params.MLDSA87PubkeyLength),
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_Exit{
-				Exit: &zond.VoluntaryExit{
+				Exit: &qrysmpb.VoluntaryExit{
 					Epoch:          0,
 					ValidatorIndex: 0,
 				},
@@ -433,15 +432,15 @@ func GetMockSignRequest(t string) *validatorpb.SignRequest {
 		}
 	case "VALIDATOR_REGISTRATION":
 		return &validatorpb.SignRequest{
-			PublicKey:       make([]byte, field_params.DilithiumPubkeyLength),
+			PublicKey:       make([]byte, field_params.MLDSA87PubkeyLength),
 			SigningRoot:     make([]byte, fieldparams.RootLength),
 			SignatureDomain: make([]byte, 4),
 			Object: &validatorpb.SignRequest_Registration{
-				Registration: &zond.ValidatorRegistrationV1{
+				Registration: &qrysmpb.ValidatorRegistrationV1{
 					FeeRecipient: make([]byte, fieldparams.FeeRecipientLength),
 					GasLimit:     uint64(0),
 					Timestamp:    uint64(0),
-					Pubkey:       make([]byte, field_params.DilithiumSignatureLength),
+					Pubkey:       make([]byte, field_params.MLDSA87SignatureLength),
 				},
 			},
 			SigningSlot: 0,
@@ -471,7 +470,7 @@ func MockAggregateAndProofSignRequest() *v1.AggregateAndProofSignRequest {
 		AggregateAndProof: &v1.AggregateAndProof{
 			AggregatorIndex: "0",
 			Aggregate:       MockAttestation(),
-			SelectionProof:  make([]byte, field_params.DilithiumSignatureLength),
+			SelectionProof:  make([]byte, field_params.MLDSA87SignatureLength),
 		},
 	}
 }
@@ -603,7 +602,7 @@ func MockValidatorRegistrationSignRequest() *v1.ValidatorRegistrationSignRequest
 			FeeRecipient: make([]byte, fieldparams.FeeRecipientLength),
 			GasLimit:     fmt.Sprint(0),
 			Timestamp:    fmt.Sprint(0),
-			Pubkey:       make([]byte, field_params.DilithiumSignatureLength),
+			Pubkey:       make([]byte, field_params.MLDSA87SignatureLength),
 		},
 	}
 }
@@ -641,7 +640,7 @@ func MockAttestation() *v1.Attestation {
 				Root:  hexutil.Encode(make([]byte, fieldparams.RootLength)),
 			},
 		},
-		Signature: make([]byte, field_params.DilithiumSignatureLength),
+		Signature: make([]byte, field_params.MLDSA87SignatureLength),
 	}
 }
 
@@ -661,7 +660,7 @@ func MockIndexedAttestation() *v1.IndexedAttestation {
 				Root:  hexutil.Encode(make([]byte, fieldparams.RootLength)),
 			},
 		},
-		Signature: make([]byte, field_params.DilithiumSignatureLength),
+		Signature: make([]byte, field_params.MLDSA87SignatureLength),
 	}
 }
 
@@ -673,7 +672,7 @@ func MockBeaconBlockAltair() *v1.BeaconBlockAltair {
 		StateRoot:     make([]byte, fieldparams.RootLength),
 		Body: &v1.BeaconBlockBodyAltair{
 			RandaoReveal: make([]byte, 32),
-			Eth1Data: &v1.Eth1Data{
+			ExecutionData: &v1.ExecutionData{
 				DepositRoot:  make([]byte, fieldparams.RootLength),
 				DepositCount: "0",
 				BlockHash:    make([]byte, 32),
@@ -689,7 +688,7 @@ func MockBeaconBlockAltair() *v1.BeaconBlockAltair {
 							StateRoot:     make([]byte, fieldparams.RootLength),
 							BodyRoot:      make([]byte, fieldparams.RootLength),
 						},
-						Signature: make([]byte, field_params.DilithiumSignatureLength),
+						Signature: make([]byte, field_params.MLDSA87SignatureLength),
 					},
 					Signedheader2: &v1.SignedBeaconBlockHeader{
 						Message: &v1.BeaconBlockHeader{
@@ -699,7 +698,7 @@ func MockBeaconBlockAltair() *v1.BeaconBlockAltair {
 							StateRoot:     make([]byte, fieldparams.RootLength),
 							BodyRoot:      make([]byte, fieldparams.RootLength),
 						},
-						Signature: make([]byte, field_params.DilithiumSignatureLength),
+						Signature: make([]byte, field_params.MLDSA87SignatureLength),
 					},
 				},
 			},
@@ -716,10 +715,10 @@ func MockBeaconBlockAltair() *v1.BeaconBlockAltair {
 				{
 					Proof: []string{"0x41"},
 					Data: &v1.DepositData{
-						PublicKey:             make([]byte, field_params.DilithiumPubkeyLength),
-						WithdrawalCredentials: make([]byte, 32),
+						PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
+						WithdrawalCredentials: make([]byte, 64),
 						Amount:                "0",
-						Signature:             make([]byte, field_params.DilithiumSignatureLength),
+						Signature:             make([]byte, field_params.MLDSA87SignatureLength),
 					},
 				},
 			},
@@ -729,11 +728,11 @@ func MockBeaconBlockAltair() *v1.BeaconBlockAltair {
 						Epoch:          "0",
 						ValidatorIndex: "0",
 					},
-					Signature: make([]byte, field_params.DilithiumSignatureLength),
+					Signature: make([]byte, field_params.MLDSA87SignatureLength),
 				},
 			},
 			SyncAggregate: &v1.SyncAggregate{
-				SyncCommitteeSignature: make([]byte, field_params.DilithiumSignatureLength),
+				SyncCommitteeSignature: make([]byte, field_params.MLDSA87SignatureLength),
 				SyncCommitteeBits:      MockSyncComitteeBits(),
 			},
 		},
@@ -743,7 +742,7 @@ func MockBeaconBlockAltair() *v1.BeaconBlockAltair {
 func MockBeaconBlockBody() *v1.BeaconBlockBody {
 	return &v1.BeaconBlockBody{
 		RandaoReveal: make([]byte, 32),
-		Eth1Data: &v1.Eth1Data{
+		ExecutionData: &v1.ExecutionData{
 			DepositRoot:  make([]byte, fieldparams.RootLength),
 			DepositCount: "0",
 			BlockHash:    make([]byte, 32),
@@ -759,7 +758,7 @@ func MockBeaconBlockBody() *v1.BeaconBlockBody {
 						StateRoot:     make([]byte, fieldparams.RootLength),
 						BodyRoot:      make([]byte, fieldparams.RootLength),
 					},
-					Signature: make([]byte, field_params.DilithiumSignatureLength),
+					Signature: make([]byte, field_params.MLDSA87SignatureLength),
 				},
 				Signedheader2: &v1.SignedBeaconBlockHeader{
 					Message: &v1.BeaconBlockHeader{
@@ -769,7 +768,7 @@ func MockBeaconBlockBody() *v1.BeaconBlockBody {
 						StateRoot:     make([]byte, fieldparams.RootLength),
 						BodyRoot:      make([]byte, fieldparams.RootLength),
 					},
-					Signature: make([]byte, field_params.DilithiumSignatureLength),
+					Signature: make([]byte, field_params.MLDSA87SignatureLength),
 				},
 			},
 		},
@@ -786,10 +785,10 @@ func MockBeaconBlockBody() *v1.BeaconBlockBody {
 			{
 				Proof: []string{"0x41"},
 				Data: &v1.DepositData{
-					PublicKey:             make([]byte, field_params.DilithiumPubkeyLength),
-					WithdrawalCredentials: make([]byte, 32),
+					PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
+					WithdrawalCredentials: make([]byte, 64),
 					Amount:                "0",
-					Signature:             make([]byte, field_params.DilithiumSignatureLength),
+					Signature:             make([]byte, field_params.MLDSA87SignatureLength),
 				},
 			},
 		},
@@ -799,7 +798,7 @@ func MockBeaconBlockBody() *v1.BeaconBlockBody {
 					Epoch:          "0",
 					ValidatorIndex: "0",
 				},
-				Signature: make([]byte, field_params.DilithiumSignatureLength),
+				Signature: make([]byte, field_params.MLDSA87SignatureLength),
 			},
 		},
 	}
@@ -813,9 +812,9 @@ func MockContributionAndProof() *v1.ContributionAndProof {
 			BeaconBlockRoot:   make([]byte, fieldparams.RootLength),
 			SubcommitteeIndex: "0",
 			AggregationBits:   MockAggregationBits(),
-			Signature:         make([]byte, field_params.DilithiumSignatureLength),
+			Signature:         make([]byte, field_params.MLDSA87SignatureLength),
 		},
-		SelectionProof: make([]byte, field_params.DilithiumSignatureLength),
+		SelectionProof: make([]byte, field_params.MLDSA87SignatureLength),
 	}
 }
 */

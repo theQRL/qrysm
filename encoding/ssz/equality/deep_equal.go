@@ -294,7 +294,7 @@ func deepValueBaseTypeEqual(v1, v2 reflect.Value) bool {
 //
 // Credits go to the Go team as this is an extension of the official Go source code's
 // reflect.DeepEqual function to handle special SSZ edge cases.
-func DeepEqual(x, y interface{}) bool {
+func DeepEqual(x, y any) bool {
 	if x == nil || y == nil {
 		return x == y
 	}
@@ -310,7 +310,7 @@ func DeepEqual(x, y interface{}) bool {
 	return deepValueEqual(v1, v2, make(map[visit]bool), 0)
 }
 
-func IsProto(item interface{}) bool {
+func IsProto(item any) bool {
 	typ := reflect.TypeOf(item)
 	kind := typ.Kind()
 	if kind != reflect.Slice && kind != reflect.Array && kind != reflect.Map {
@@ -318,6 +318,6 @@ func IsProto(item interface{}) bool {
 		return ok
 	}
 	elemTyp := typ.Elem()
-	modelType := reflect.TypeOf((*proto.Message)(nil)).Elem()
+	modelType := reflect.TypeFor[proto.Message]()
 	return elemTyp.Implements(modelType)
 }

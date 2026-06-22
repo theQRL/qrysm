@@ -5,13 +5,13 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
-func (c *beaconApiValidatorClient) validatorStatus(ctx context.Context, in *zondpb.ValidatorStatusRequest) (*zondpb.ValidatorStatusResponse, error) {
+func (c *beaconApiValidatorClient) validatorStatus(ctx context.Context, in *qrysmpb.ValidatorStatusRequest) (*qrysmpb.ValidatorStatusResponse, error) {
 	_, _, validatorsStatusResponse, err := c.getValidatorsStatusResponse(ctx, [][]byte{in.PublicKey}, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get validator status response")
@@ -26,13 +26,13 @@ func (c *beaconApiValidatorClient) validatorStatus(ctx context.Context, in *zond
 	return validatorStatusResponse, nil
 }
 
-func (c *beaconApiValidatorClient) multipleValidatorStatus(ctx context.Context, in *zondpb.MultipleValidatorStatusRequest) (*zondpb.MultipleValidatorStatusResponse, error) {
+func (c *beaconApiValidatorClient) multipleValidatorStatus(ctx context.Context, in *qrysmpb.MultipleValidatorStatusRequest) (*qrysmpb.MultipleValidatorStatusResponse, error) {
 	publicKeys, indices, statuses, err := c.getValidatorsStatusResponse(ctx, in.PublicKeys, in.Indices)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get validators status response")
 	}
 
-	return &zondpb.MultipleValidatorStatusResponse{
+	return &qrysmpb.MultipleValidatorStatusResponse{
 		PublicKeys: publicKeys,
 		Indices:    indices,
 		Statuses:   statuses,
@@ -42,9 +42,14 @@ func (c *beaconApiValidatorClient) multipleValidatorStatus(ctx context.Context, 
 func (c *beaconApiValidatorClient) getValidatorsStatusResponse(ctx context.Context, inPubKeys [][]byte, inIndexes []int64) (
 	[][]byte,
 	[]primitives.ValidatorIndex,
-	[]*zondpb.ValidatorStatusResponse,
+	[]*qrysmpb.ValidatorStatusResponse,
 	error,
 ) {
+	// if no parameters are provided we should just return an empty response
+	if len(inPubKeys) == 0 && len(inIndexes) == 0 {
+		return [][]byte{}, []primitives.ValidatorIndex{}, []*qrysmpb.ValidatorStatusResponse{}, nil
+	}
+
 	// Represents the target set of keys
 	stringTargetPubKeysToPubKeys := make(map[string][]byte, len(inPubKeys))
 	stringTargetPubKeys := make([]string, len(inPubKeys))
@@ -59,7 +64,7 @@ func (c *beaconApiValidatorClient) getValidatorsStatusResponse(ctx context.Conte
 
 	outPubKeys := make([][]byte, totalLen)
 	outIndexes := make([]primitives.ValidatorIndex, totalLen)
-	outValidatorsStatuses := make([]*zondpb.ValidatorStatusResponse, totalLen)
+	outValidatorsStatuses := make([]*qrysmpb.ValidatorStatusResponse, totalLen)
 
 	for index, publicKey := range inPubKeys {
 		stringPubKey := hexutil.Encode(publicKey)
@@ -98,7 +103,7 @@ func (c *beaconApiValidatorClient) getValidatorsStatusResponse(ctx context.Conte
 		outPubKeys[i] = pubKey
 		outIndexes[i] = primitives.ValidatorIndex(validatorIndex)
 
-		validatorStatus := &zondpb.ValidatorStatusResponse{}
+		validatorStatus := &qrysmpb.ValidatorStatusResponse{}
 
 		// Set Status
 		status, ok := beaconAPITogRPCValidatorStatus[validatorContainer.Status]
@@ -118,7 +123,7 @@ func (c *beaconApiValidatorClient) getValidatorsStatusResponse(ctx context.Conte
 
 		// Set PositionInActivationQueue
 		switch status {
-		case zondpb.ValidatorStatus_PENDING, zondpb.ValidatorStatus_PARTIALLY_DEPOSITED, zondpb.ValidatorStatus_DEPOSITED:
+		case qrysmpb.ValidatorStatus_PENDING, qrysmpb.ValidatorStatus_PARTIALLY_DEPOSITED, qrysmpb.ValidatorStatus_DEPOSITED:
 			if !isLastActivatedValidatorIndexRetrieved {
 				isLastActivatedValidatorIndexRetrieved = true
 				// TODO: double check this due to potential of PENDING STATE being active..
@@ -159,8 +164,8 @@ func (c *beaconApiValidatorClient) getValidatorsStatusResponse(ctx context.Conte
 		outPubKeys[nbStringRetrievedPubKeys+i] = missingPubKey
 		outIndexes[nbStringRetrievedPubKeys+i] = primitives.ValidatorIndex(^uint64(0))
 
-		outValidatorsStatuses[nbStringRetrievedPubKeys+i] = &zondpb.ValidatorStatusResponse{
-			Status:          zondpb.ValidatorStatus_UNKNOWN_STATUS,
+		outValidatorsStatuses[nbStringRetrievedPubKeys+i] = &qrysmpb.ValidatorStatusResponse{
+			Status:          qrysmpb.ValidatorStatus_UNKNOWN_STATUS,
 			ActivationEpoch: params.BeaconConfig().FarFutureEpoch,
 		}
 	}

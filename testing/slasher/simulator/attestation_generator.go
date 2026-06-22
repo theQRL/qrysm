@@ -12,15 +12,15 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/crypto/rand"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
 func (s *Simulator) generateAttestationsForSlot(
 	ctx context.Context, slot primitives.Slot,
-) ([]*zondpb.IndexedAttestation, []*zondpb.AttesterSlashing, error) {
-	attestations := make([]*zondpb.IndexedAttestation, 0)
-	slashings := make([]*zondpb.AttesterSlashing, 0)
+) ([]*qrysmpb.IndexedAttestation, []*qrysmpb.AttesterSlashing, error) {
+	attestations := make([]*qrysmpb.IndexedAttestation, 0)
+	slashings := make([]*qrysmpb.AttesterSlashing, 0)
 	currentEpoch := slots.ToEpoch(slot)
 
 	committeesPerSlot := helpers.SlotCommitteeCount(s.srvConfig.Params.NumValidators)
@@ -37,15 +37,15 @@ func (s *Simulator) generateAttestationsForSlot(
 	startIdx := valsPerSlot * uint64(slot%s.srvConfig.Params.SlotsPerEpoch)
 	endIdx := startIdx + valsPerCommittee
 	for c := primitives.CommitteeIndex(0); uint64(c) < committeesPerSlot; c++ {
-		attData := &zondpb.AttestationData{
+		attData := &qrysmpb.AttestationData{
 			Slot:            slot,
 			CommitteeIndex:  c,
 			BeaconBlockRoot: bytesutil.PadTo([]byte("block"), 32),
-			Source: &zondpb.Checkpoint{
+			Source: &qrysmpb.Checkpoint{
 				Epoch: sourceEpoch,
 				Root:  bytesutil.PadTo([]byte("source"), 32),
 			},
-			Target: &zondpb.Checkpoint{
+			Target: &qrysmpb.Checkpoint{
 				Epoch: currentEpoch,
 				Root:  bytesutil.PadTo([]byte("target"), 32),
 			},
@@ -53,15 +53,12 @@ func (s *Simulator) generateAttestationsForSlot(
 
 		valsPerAttestation := uint64(math.Floor(s.srvConfig.Params.AggregationPercent * float64(valsPerCommittee)))
 		for i := startIdx; i < endIdx; i += valsPerAttestation {
-			attEndIdx := i + valsPerAttestation
-			if attEndIdx >= endIdx {
-				attEndIdx = endIdx
-			}
+			attEndIdx := min(i+valsPerAttestation, endIdx)
 			indices := make([]uint64, 0, valsPerAttestation)
 			for idx := i; idx < attEndIdx; idx++ {
 				indices = append(indices, idx)
 			}
-			att := &zondpb.IndexedAttestation{
+			att := &qrysmpb.IndexedAttestation{
 				AttestingIndices: indices,
 				Data:             attData,
 				Signatures:       [][]byte{},
@@ -87,7 +84,7 @@ func (s *Simulator) generateAttestationsForSlot(
 				}
 				slashableAtt.Signatures = sigs
 				slashedIndices = append(slashedIndices, slashableAtt.AttestingIndices...)
-				slashings = append(slashings, &zondpb.AttesterSlashing{
+				slashings = append(slashings, &qrysmpb.AttesterSlashing{
 					Attestation_1: att,
 					Attestation_2: slashableAtt,
 				})
@@ -107,7 +104,7 @@ func (s *Simulator) generateAttestationsForSlot(
 }
 
 func (s *Simulator) sigsForAttestation(
-	beaconState state.ReadOnlyBeaconState, att *zondpb.IndexedAttestation,
+	beaconState state.ReadOnlyBeaconState, att *qrysmpb.IndexedAttestation,
 ) ([][]byte, error) {
 	domain, err := signing.Domain(
 		beaconState.Fork(),
@@ -131,47 +128,47 @@ func (s *Simulator) sigsForAttestation(
 	return sigs, nil
 }
 
-func makeSlashableFromAtt(att *zondpb.IndexedAttestation, indices []uint64) *zondpb.IndexedAttestation {
+func makeSlashableFromAtt(att *qrysmpb.IndexedAttestation, indices []uint64) *qrysmpb.IndexedAttestation {
 	if att.Data.Source.Epoch <= 2 {
 		return makeDoubleVoteFromAtt(att, indices)
 	}
-	attData := &zondpb.AttestationData{
+	attData := &qrysmpb.AttestationData{
 		Slot:            att.Data.Slot,
 		CommitteeIndex:  att.Data.CommitteeIndex,
 		BeaconBlockRoot: att.Data.BeaconBlockRoot,
-		Source: &zondpb.Checkpoint{
+		Source: &qrysmpb.Checkpoint{
 			Epoch: att.Data.Source.Epoch - 3,
 			Root:  att.Data.Source.Root,
 		},
-		Target: &zondpb.Checkpoint{
+		Target: &qrysmpb.Checkpoint{
 			Epoch: att.Data.Target.Epoch,
 			Root:  att.Data.Target.Root,
 		},
 	}
-	return &zondpb.IndexedAttestation{
+	return &qrysmpb.IndexedAttestation{
 		AttestingIndices: indices,
 		Data:             attData,
-		Signatures:       [][]byte{params.BeaconConfig().EmptyDilithiumSignature[:]},
+		Signatures:       [][]byte{params.BeaconConfig().EmptyMLDSA87Signature[:]},
 	}
 }
 
-func makeDoubleVoteFromAtt(att *zondpb.IndexedAttestation, indices []uint64) *zondpb.IndexedAttestation {
-	attData := &zondpb.AttestationData{
+func makeDoubleVoteFromAtt(att *qrysmpb.IndexedAttestation, indices []uint64) *qrysmpb.IndexedAttestation {
+	attData := &qrysmpb.AttestationData{
 		Slot:            att.Data.Slot,
 		CommitteeIndex:  att.Data.CommitteeIndex,
 		BeaconBlockRoot: bytesutil.PadTo([]byte("slash me"), 32),
-		Source: &zondpb.Checkpoint{
+		Source: &qrysmpb.Checkpoint{
 			Epoch: att.Data.Source.Epoch,
 			Root:  att.Data.Source.Root,
 		},
-		Target: &zondpb.Checkpoint{
+		Target: &qrysmpb.Checkpoint{
 			Epoch: att.Data.Target.Epoch,
 			Root:  att.Data.Target.Root,
 		},
 	}
-	return &zondpb.IndexedAttestation{
+	return &qrysmpb.IndexedAttestation{
 		AttestingIndices: indices,
 		Data:             attData,
-		Signatures:       [][]byte{params.BeaconConfig().EmptyDilithiumSignature[:]},
+		Signatures:       [][]byte{params.BeaconConfig().EmptyMLDSA87Signature[:]},
 	}
 }

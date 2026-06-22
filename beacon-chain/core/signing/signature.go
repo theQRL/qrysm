@@ -3,14 +3,14 @@ package signing
 import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/config/params"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 var ErrNilRegistration = errors.New("nil signed registration")
 
 // VerifyRegistrationSignature verifies the signature of a validator's registration.
 func VerifyRegistrationSignature(
-	sr *zondpb.SignedValidatorRegistrationV1,
+	sr *qrysmpb.SignedValidatorRegistrationV1,
 ) error {
 	if sr == nil || sr.Message == nil {
 		return ErrNilRegistration

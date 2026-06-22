@@ -31,7 +31,7 @@ var (
 	// BeaconRPCProviderFlag defines a beacon node RPC endpoint.
 	BeaconRPCProviderFlag = &cli.StringFlag{
 		Name:  "beacon-rpc-provider",
-		Usage: "Beacon node RPC provider endpoint",
+		Usage: "Beacon node RPC provider endpoint(s). Use comma-separated endpoints for failover",
 		Value: "127.0.0.1:4000",
 	}
 	// BeaconRPCGatewayProviderFlag defines a beacon node JSON-RPC endpoint.
@@ -43,7 +43,7 @@ var (
 	// BeaconRESTApiProviderFlag defines a beacon node REST API endpoint.
 	BeaconRESTApiProviderFlag = &cli.StringFlag{
 		Name:  "beacon-rest-api-provider",
-		Usage: "Beacon node REST API provider endpoint",
+		Usage: "Beacon node REST API provider endpoint(s). Use comma-separated URLs for failover",
 		Value: "http://127.0.0.1:3500",
 	}
 	// CertFlag defines a flag for the node's TLS certificate.
@@ -180,7 +180,7 @@ var (
 	// ShowDepositDataFlag for accounts.
 	ShowDepositDataFlag = &cli.BoolFlag{
 		Name:  "show-deposit-data",
-		Usage: "Display raw zond tx deposit data for validator accounts",
+		Usage: "Display raw qrl tx deposit data for validator accounts",
 		Value: false,
 	}
 	// ShowPrivateKeysFlag for accounts.
@@ -348,10 +348,10 @@ var (
 	// SuggestedFeeRecipientFlag defines the address of the fee recipient.
 	SuggestedFeeRecipientFlag = &cli.StringFlag{
 		Name: "suggested-fee-recipient",
-		Usage: "Sets ALL validators' mapping to a suggested zond address to receive gas fees when proposing a block." +
+		Usage: "Sets ALL validators' mapping to a suggested qrl address to receive gas fees when proposing a block." +
 			" note that this is only a suggestion when integrating with a Builder API, which may choose to specify a different fee recipient as payment for the blocks it builds." +
 			" For additional setting overrides use the --" + ProposerSettingsFlag.Name + " or --" + ProposerSettingsURLFlag.Name + " Flags. ",
-		Value: params.BeaconConfig().ZondBurnAddress,
+		Value: params.BeaconConfig().QRLBurnAddress,
 	}
 
 	// EnableBuilderFlag enables the periodic validator registration API calls that will update the custom builder with validator settings.
@@ -376,11 +376,11 @@ func DefaultValidatorDir() string {
 	home := file.HomeDir()
 	if home != "" {
 		if runtime.GOOS == "darwin" {
-			return filepath.Join(home, "Library", "ZondValidators")
+			return filepath.Join(home, "Library", "QRLValidators")
 		} else if runtime.GOOS == "windows" {
-			return filepath.Join(home, "AppData", "Local", "ZondValidators")
+			return filepath.Join(home, "AppData", "Local", "QRLValidators")
 		} else {
-			return filepath.Join(home, ".zondvalidators")
+			return filepath.Join(home, ".qrlvalidators")
 		}
 	}
 	// As we cannot guess a stable location, return empty and handle later

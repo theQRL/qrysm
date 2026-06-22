@@ -51,7 +51,7 @@ func (mr *MockBeaconNodeValidatorAltair_StreamBlocksServerMockRecorder) Context(
 }
 
 // RecvMsg mocks base method
-func (m *MockBeaconNodeValidatorAltair_StreamBlocksServer) RecvMsg(arg0 interface{}) error {
+func (m *MockBeaconNodeValidatorAltair_StreamBlocksServer) RecvMsg(arg0 any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RecvMsg", arg0)
 	ret0, _ := ret[0].(error)
@@ -59,7 +59,7 @@ func (m *MockBeaconNodeValidatorAltair_StreamBlocksServer) RecvMsg(arg0 interfac
 }
 
 // RecvMsg indicates an expected call of RecvMsg
-func (mr *MockBeaconNodeValidatorAltair_StreamBlocksServerMockRecorder) RecvMsg(arg0 interface{}) *gomock.Call {
+func (mr *MockBeaconNodeValidatorAltair_StreamBlocksServerMockRecorder) RecvMsg(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockBeaconNodeValidatorAltair_StreamBlocksServer)(nil).RecvMsg), arg0)
 }
@@ -73,7 +73,7 @@ func (m *MockBeaconNodeValidatorAltair_StreamBlocksServer) Send(arg0 *v2.StreamB
 }
 
 // Send indicates an expected call of Send
-func (mr *MockBeaconNodeValidatorAltair_StreamBlocksServerMockRecorder) Send(arg0 interface{}) *gomock.Call {
+func (mr *MockBeaconNodeValidatorAltair_StreamBlocksServerMockRecorder) Send(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockBeaconNodeValidatorAltair_StreamBlocksServer)(nil).Send), arg0)
 }
@@ -87,13 +87,13 @@ func (m *MockBeaconNodeValidatorAltair_StreamBlocksServer) SendHeader(arg0 metad
 }
 
 // SendHeader indicates an expected call of SendHeader
-func (mr *MockBeaconNodeValidatorAltair_StreamBlocksServerMockRecorder) SendHeader(arg0 interface{}) *gomock.Call {
+func (mr *MockBeaconNodeValidatorAltair_StreamBlocksServerMockRecorder) SendHeader(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendHeader", reflect.TypeOf((*MockBeaconNodeValidatorAltair_StreamBlocksServer)(nil).SendHeader), arg0)
 }
 
 // SendMsg mocks base method
-func (m *MockBeaconNodeValidatorAltair_StreamBlocksServer) SendMsg(arg0 interface{}) error {
+func (m *MockBeaconNodeValidatorAltair_StreamBlocksServer) SendMsg(arg0 any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendMsg", arg0)
 	ret0, _ := ret[0].(error)
@@ -101,7 +101,7 @@ func (m *MockBeaconNodeValidatorAltair_StreamBlocksServer) SendMsg(arg0 interfac
 }
 
 // SendMsg indicates an expected call of SendMsg
-func (mr *MockBeaconNodeValidatorAltair_StreamBlocksServerMockRecorder) SendMsg(arg0 interface{}) *gomock.Call {
+func (mr *MockBeaconNodeValidatorAltair_StreamBlocksServerMockRecorder) SendMsg(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockBeaconNodeValidatorAltair_StreamBlocksServer)(nil).SendMsg), arg0)
 }
@@ -115,7 +115,7 @@ func (m *MockBeaconNodeValidatorAltair_StreamBlocksServer) SetHeader(arg0 metada
 }
 
 // SetHeader indicates an expected call of SetHeader
-func (mr *MockBeaconNodeValidatorAltair_StreamBlocksServerMockRecorder) SetHeader(arg0 interface{}) *gomock.Call {
+func (mr *MockBeaconNodeValidatorAltair_StreamBlocksServerMockRecorder) SetHeader(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHeader", reflect.TypeOf((*MockBeaconNodeValidatorAltair_StreamBlocksServer)(nil).SetHeader), arg0)
 }
@@ -127,7 +127,7 @@ func (m *MockBeaconNodeValidatorAltair_StreamBlocksServer) SetTrailer(arg0 metad
 }
 
 // SetTrailer indicates an expected call of SetTrailer
-func (mr *MockBeaconNodeValidatorAltair_StreamBlocksServerMockRecorder) SetTrailer(arg0 interface{}) *gomock.Call {
+func (mr *MockBeaconNodeValidatorAltair_StreamBlocksServerMockRecorder) SetTrailer(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTrailer", reflect.TypeOf((*MockBeaconNodeValidatorAltair_StreamBlocksServer)(nil).SetTrailer), arg0)
 }

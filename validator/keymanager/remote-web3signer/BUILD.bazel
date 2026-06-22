@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "remote-web3signer",
     srcs = [
         "keymanager.go",
         "metrics.go",
@@ -14,7 +14,7 @@ go_library(
 )
 
 go_test(
-    name = "go_default_test",
+    name = "remote-web3signer_test",
     srcs = ["keymanager_test.go"],
-    embed = [":go_default_library"],
+    embed = [":remote-web3signer"],
 )

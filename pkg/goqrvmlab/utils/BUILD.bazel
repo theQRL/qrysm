@@ -1,0 +1,8 @@
+load("@qrysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "utils",
+    srcs = ["wma.go"],
+    importpath = "github.com/theQRL/qrysm/pkg/goqrvmlab/utils",
+    visibility = ["//visibility:public"],
+)

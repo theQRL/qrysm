@@ -5,13 +5,13 @@ import (
 	customtypes "github.com/theQRL/qrysm/beacon-chain/state/state-native/custom-types"
 	"github.com/theQRL/qrysm/config/features"
 	consensus_types "github.com/theQRL/qrysm/consensus-types"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 )
 
 // ToProtoUnsafe returns the pointer value of the underlying
 // beacon state proto object, bypassing immutability. Use with care.
-func (b *BeaconState) ToProtoUnsafe() interface{} {
+func (b *BeaconState) ToProtoUnsafe() any {
 	if b == nil {
 		return nil
 	}
@@ -20,7 +20,7 @@ func (b *BeaconState) ToProtoUnsafe() interface{} {
 	br := b.blockRootsVal().Slice()
 	sr := b.stateRootsVal().Slice()
 	rm := b.randaoMixesVal().Slice()
-	var vals []*zondpb.Validator
+	var vals []*qrysmpb.Validator
 	var bals []uint64
 	if features.Get().EnableExperimentalState {
 		vals = b.validatorsVal()
@@ -31,8 +31,8 @@ func (b *BeaconState) ToProtoUnsafe() interface{} {
 	}
 
 	switch b.version {
-	case version.Capella:
-		return &zondpb.BeaconStateCapella{
+	case version.Zond:
+		return &qrysmpb.BeaconStateZond{
 			GenesisTime:                  b.genesisTime,
 			GenesisValidatorsRoot:        gvrCopy[:],
 			Slot:                         b.slot,
@@ -41,9 +41,9 @@ func (b *BeaconState) ToProtoUnsafe() interface{} {
 			BlockRoots:                   br,
 			StateRoots:                   sr,
 			HistoricalRoots:              b.historicalRoots.Slice(),
-			Eth1Data:                     b.eth1Data,
-			Eth1DataVotes:                b.eth1DataVotes,
-			Eth1DepositIndex:             b.eth1DepositIndex,
+			ExecutionData:                b.executionData,
+			ExecutionDataVotes:           b.executionDataVotes,
+			ExecutionDepositIndex:        b.executionDepositIndex,
 			Validators:                   vals,
 			Balances:                     bals,
 			RandaoMixes:                  rm,
@@ -57,7 +57,7 @@ func (b *BeaconState) ToProtoUnsafe() interface{} {
 			InactivityScores:             b.inactivityScoresVal(),
 			CurrentSyncCommittee:         b.currentSyncCommittee,
 			NextSyncCommittee:            b.nextSyncCommittee,
-			LatestExecutionPayloadHeader: b.latestExecutionPayloadHeaderCapella,
+			LatestExecutionPayloadHeader: b.latestExecutionPayloadHeaderZond,
 			NextWithdrawalIndex:          b.nextWithdrawalIndex,
 			NextWithdrawalValidatorIndex: b.nextWithdrawalValidatorIndex,
 			HistoricalSummaries:          b.historicalSummaries,
@@ -68,7 +68,7 @@ func (b *BeaconState) ToProtoUnsafe() interface{} {
 }
 
 // ToProto the beacon state into a protobuf for usage.
-func (b *BeaconState) ToProto() interface{} {
+func (b *BeaconState) ToProto() any {
 	if b == nil {
 		return nil
 	}
@@ -84,8 +84,8 @@ func (b *BeaconState) ToProto() interface{} {
 	inactivityScores := b.inactivityScoresVal()
 
 	switch b.version {
-	case version.Capella:
-		return &zondpb.BeaconStateCapella{
+	case version.Zond:
+		return &qrysmpb.BeaconStateZond{
 			GenesisTime:                  b.genesisTime,
 			GenesisValidatorsRoot:        gvrCopy[:],
 			Slot:                         b.slot,
@@ -94,9 +94,9 @@ func (b *BeaconState) ToProto() interface{} {
 			BlockRoots:                   br,
 			StateRoots:                   sr,
 			HistoricalRoots:              b.historicalRoots.Slice(),
-			Eth1Data:                     b.eth1DataVal(),
-			Eth1DataVotes:                b.eth1DataVotesVal(),
-			Eth1DepositIndex:             b.eth1DepositIndex,
+			ExecutionData:                b.executionDataVal(),
+			ExecutionDataVotes:           b.executionDataVotesVal(),
+			ExecutionDepositIndex:        b.executionDepositIndex,
 			Validators:                   b.validatorsVal(),
 			Balances:                     b.balancesVal(),
 			RandaoMixes:                  rm,
@@ -110,7 +110,7 @@ func (b *BeaconState) ToProto() interface{} {
 			InactivityScores:             inactivityScores,
 			CurrentSyncCommittee:         b.currentSyncCommitteeVal(),
 			NextSyncCommittee:            b.nextSyncCommitteeVal(),
-			LatestExecutionPayloadHeader: b.latestExecutionPayloadHeaderCapellaVal(),
+			LatestExecutionPayloadHeader: b.latestExecutionPayloadHeaderZondVal(),
 			NextWithdrawalIndex:          b.nextWithdrawalIndex,
 			NextWithdrawalValidatorIndex: b.nextWithdrawalValidatorIndex,
 			HistoricalSummaries:          b.historicalSummariesVal(),
@@ -181,12 +181,12 @@ func (b *BeaconState) stateRootAtIndex(idx uint64) ([32]byte, error) {
 	return b.stateRoots[idx], nil
 }
 
-// ProtobufBeaconStateCapella transforms an input into beacon state Capella in the form of protobuf.
+// ProtobufBeaconStateZond transforms an input into beacon state Zond in the form of protobuf.
 // Error is returned if the input is not type protobuf beacon state.
-func ProtobufBeaconStateCapella(s interface{}) (*zondpb.BeaconStateCapella, error) {
-	pbState, ok := s.(*zondpb.BeaconStateCapella)
+func ProtobufBeaconStateZond(s any) (*qrysmpb.BeaconStateZond, error) {
+	pbState, ok := s.(*qrysmpb.BeaconStateZond)
 	if !ok {
-		return nil, errors.New("input is not type pb.BeaconStateCapella")
+		return nil, errors.New("input is not type pb.BeaconStateZond")
 	}
 	return pbState, nil
 }

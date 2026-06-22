@@ -12,8 +12,8 @@ import (
 	"github.com/theQRL/qrysm/testing/require"
 )
 
-func TestWrapExecutionPayloadCapella(t *testing.T) {
-	data := &enginev1.ExecutionPayloadCapella{
+func TestWrapExecutionPayloadZond(t *testing.T) {
+	data := &enginev1.ExecutionPayloadZond{
 		ParentHash:    []byte("parenthash"),
 		FeeRecipient:  []byte("feerecipient"),
 		StateRoot:     []byte("stateroot"),
@@ -35,17 +35,17 @@ func TestWrapExecutionPayloadCapella(t *testing.T) {
 			Amount:         77,
 		}},
 	}
-	payload, err := blocks.WrappedExecutionPayloadCapella(data, 10)
+	payload, err := blocks.WrappedExecutionPayloadZond(data, 10)
 	require.NoError(t, err)
-	v, err := payload.ValueInGwei()
+	v, err := payload.ValueInShor()
 	require.NoError(t, err)
 	assert.Equal(t, uint64(10), v)
 
 	assert.DeepEqual(t, data, payload.Proto())
 }
 
-func TestWrapExecutionPayloadHeaderCapella(t *testing.T) {
-	data := &enginev1.ExecutionPayloadHeaderCapella{
+func TestWrapExecutionPayloadHeaderZond(t *testing.T) {
+	data := &enginev1.ExecutionPayloadHeaderZond{
 		ParentHash:       []byte("parenthash"),
 		FeeRecipient:     []byte("feerecipient"),
 		StateRoot:        []byte("stateroot"),
@@ -62,10 +62,10 @@ func TestWrapExecutionPayloadHeaderCapella(t *testing.T) {
 		TransactionsRoot: []byte("transactionsroot"),
 		WithdrawalsRoot:  []byte("withdrawalsroot"),
 	}
-	payload, err := blocks.WrappedExecutionPayloadHeaderCapella(data, 10)
+	payload, err := blocks.WrappedExecutionPayloadHeaderZond(data, 10)
 	require.NoError(t, err)
 
-	v, err := payload.ValueInGwei()
+	v, err := payload.ValueInShor()
 	require.NoError(t, err)
 	assert.Equal(t, uint64(10), v)
 
@@ -80,30 +80,30 @@ func TestWrapExecutionPayloadHeaderCapella(t *testing.T) {
 	require.DeepEqual(t, wrRoot, data.WithdrawalsRoot)
 }
 
-func TestWrapExecutionPayloadCapella_IsNil(t *testing.T) {
-	_, err := blocks.WrappedExecutionPayloadCapella(nil, 0)
+func TestWrapExecutionPayloadZond_IsNil(t *testing.T) {
+	_, err := blocks.WrappedExecutionPayloadZond(nil, 0)
 	require.Equal(t, consensus_types.ErrNilObjectWrapped, err)
 
-	data := &enginev1.ExecutionPayloadCapella{GasUsed: 54}
-	payload, err := blocks.WrappedExecutionPayloadCapella(data, 0)
+	data := &enginev1.ExecutionPayloadZond{GasUsed: 54}
+	payload, err := blocks.WrappedExecutionPayloadZond(data, 0)
 	require.NoError(t, err)
 
 	assert.Equal(t, false, payload.IsNil())
 }
 
-func TestWrapExecutionPayloadHeaderCapella_IsNil(t *testing.T) {
-	_, err := blocks.WrappedExecutionPayloadHeaderCapella(nil, 0)
+func TestWrapExecutionPayloadHeaderZond_IsNil(t *testing.T) {
+	_, err := blocks.WrappedExecutionPayloadHeaderZond(nil, 0)
 	require.Equal(t, consensus_types.ErrNilObjectWrapped, err)
 
-	data := &enginev1.ExecutionPayloadHeaderCapella{GasUsed: 54}
-	payload, err := blocks.WrappedExecutionPayloadHeaderCapella(data, 0)
+	data := &enginev1.ExecutionPayloadHeaderZond{GasUsed: 54}
+	payload, err := blocks.WrappedExecutionPayloadHeaderZond(data, 0)
 	require.NoError(t, err)
 
 	assert.Equal(t, false, payload.IsNil())
 }
 
-func TestWrapExecutionPayloadCapella_SSZ(t *testing.T) {
-	payload := createWrappedPayloadCapella(t)
+func TestWrapExecutionPayloadZond_SSZ(t *testing.T) {
+	payload := createWrappedPayloadZond(t)
 	rt, err := payload.HashTreeRoot()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, rt)
@@ -118,8 +118,8 @@ func TestWrapExecutionPayloadCapella_SSZ(t *testing.T) {
 	assert.NoError(t, payload.UnmarshalSSZ(encoded))
 }
 
-func TestWrapExecutionPayloadHeaderCapella_SSZ(t *testing.T) {
-	payload := createWrappedPayloadHeaderCapella(t)
+func TestWrapExecutionPayloadHeaderZond_SSZ(t *testing.T) {
+	payload := createWrappedPayloadHeaderZond(t)
 	rt, err := payload.HashTreeRoot()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, rt)
@@ -134,22 +134,22 @@ func TestWrapExecutionPayloadHeaderCapella_SSZ(t *testing.T) {
 	assert.NoError(t, payload.UnmarshalSSZ(encoded))
 }
 
-func Test_executionPayloadCapella_Pb(t *testing.T) {
-	payload := createWrappedPayloadCapella(t)
-	pb, err := payload.PbCapella()
+func Test_executionPayloadZond_Pb(t *testing.T) {
+	payload := createWrappedPayloadZond(t)
+	pb, err := payload.PbZond()
 	require.NoError(t, err)
 	assert.DeepEqual(t, payload.Proto(), pb)
 }
 
-func Test_executionPayloadHeaderCapella_Pb(t *testing.T) {
-	payload := createWrappedPayloadHeaderCapella(t)
+func Test_executionPayloadHeaderZond_Pb(t *testing.T) {
+	payload := createWrappedPayloadHeaderZond(t)
 
-	_, err := payload.PbCapella()
+	_, err := payload.PbZond()
 	require.ErrorIs(t, err, consensus_types.ErrUnsupportedField)
 }
 
-func createWrappedPayloadCapella(t testing.TB) interfaces.ExecutionData {
-	payload, err := blocks.WrappedExecutionPayloadCapella(&enginev1.ExecutionPayloadCapella{
+func createWrappedPayloadZond(t testing.TB) interfaces.ExecutionData {
+	payload, err := blocks.WrappedExecutionPayloadZond(&enginev1.ExecutionPayloadZond{
 		ParentHash:    make([]byte, fieldparams.RootLength),
 		FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 		StateRoot:     make([]byte, fieldparams.RootLength),
@@ -170,8 +170,8 @@ func createWrappedPayloadCapella(t testing.TB) interfaces.ExecutionData {
 	return payload
 }
 
-func createWrappedPayloadHeaderCapella(t testing.TB) interfaces.ExecutionData {
-	payload, err := blocks.WrappedExecutionPayloadHeaderCapella(&enginev1.ExecutionPayloadHeaderCapella{
+func createWrappedPayloadHeaderZond(t testing.TB) interfaces.ExecutionData {
+	payload, err := blocks.WrappedExecutionPayloadHeaderZond(&enginev1.ExecutionPayloadHeaderZond{
 		ParentHash:       make([]byte, fieldparams.RootLength),
 		FeeRecipient:     make([]byte, fieldparams.FeeRecipientLength),
 		StateRoot:        make([]byte, fieldparams.RootLength),

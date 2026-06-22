@@ -11,7 +11,7 @@ import (
 	mockSync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync/testing"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 	"github.com/theQRL/qrysm/time/slots"
@@ -34,13 +34,13 @@ func TestAttestationDataAtSlot_HandlesFarAwayJustifiedEpoch(t *testing.T) {
 	cfg.HistoricalRootsLimit = 8192
 	params.OverrideBeaconConfig(cfg)
 
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	block.Block.Slot = 40000
-	epochBoundaryBlock := util.NewBeaconBlockCapella()
+	epochBoundaryBlock := util.NewBeaconBlockZond()
 	var err error
 	epochBoundaryBlock.Block.Slot, err = slots.EpochStart(slots.ToEpoch(40000))
 	require.NoError(t, err)
-	justifiedBlock := util.NewBeaconBlockCapella()
+	justifiedBlock := util.NewBeaconBlockZond()
 	justifiedBlock.Block.Slot, err = slots.EpochStart(slots.ToEpoch(1500))
 	require.NoError(t, err)
 	justifiedBlock.Block.Slot -= 2 // Imagine two skip block
@@ -52,10 +52,10 @@ func TestAttestationDataAtSlot_HandlesFarAwayJustifiedEpoch(t *testing.T) {
 	require.NoError(t, err, "Could not hash justified block")
 	slot := primitives.Slot(40000)
 
-	beaconState, err := util.NewBeaconStateCapella()
+	beaconState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetSlot(slot))
-	err = beaconState.SetCurrentJustifiedCheckpoint(&zondpb.Checkpoint{
+	err = beaconState.SetCurrentJustifiedCheckpoint(&qrysmpb.Checkpoint{
 		Epoch: slots.ToEpoch(1500),
 		Root:  justifiedBlockRoot[:],
 	})
@@ -77,21 +77,21 @@ func TestAttestationDataAtSlot_HandlesFarAwayJustifiedEpoch(t *testing.T) {
 		},
 	}
 
-	req := &zondpb.AttestationDataRequest{
+	req := &qrysmpb.AttestationDataRequest{
 		CommitteeIndex: 0,
 		Slot:           40000,
 	}
 	res, err := attesterServer.GetAttestationData(context.Background(), req)
 	require.NoError(t, err, "Could not get attestation info at slot")
 
-	expectedInfo := &zondpb.AttestationData{
+	expectedInfo := &qrysmpb.AttestationData{
 		Slot:            req.Slot,
 		BeaconBlockRoot: blockRoot[:],
-		Source: &zondpb.Checkpoint{
+		Source: &qrysmpb.Checkpoint{
 			Epoch: slots.ToEpoch(1500),
 			Root:  justifiedBlockRoot[:],
 		},
-		Target: &zondpb.Checkpoint{
+		Target: &qrysmpb.Checkpoint{
 			Epoch: 312,
 			Root:  blockRoot[:],
 		},

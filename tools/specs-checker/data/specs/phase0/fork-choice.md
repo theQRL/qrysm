@@ -40,10 +40,10 @@ def get_ancestor(store: Store, root: Root, slot: Slot) -> Root:
         return root
 ```
 ```python
-def get_latest_attesting_balance(store: Store, root: Root) -> Gwei:
+def get_latest_attesting_balance(store: Store, root: Root) -> Shor:
     state = store.checkpoint_states[store.justified_checkpoint]
     active_indices = get_active_validator_indices(state, get_current_epoch(state))
-    return Gwei(sum(
+    return Shor(sum(
         state.validators[i].effective_balance for i in active_indices
         if (i in store.latest_messages
             and get_ancestor(store, store.latest_messages[i].root, store.blocks[root].slot) == root)

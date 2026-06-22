@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "fieldtrie",
     srcs = [
         "field_trie.go",
         "field_trie_helpers.go",
@@ -9,34 +9,34 @@ go_library(
     importpath = "github.com/theQRL/qrysm/beacon-chain/state/fieldtrie",
     visibility = ["//visibility:public"],
     deps = [
-        "//beacon-chain/state/state-native/custom-types:go_default_library",
-        "//beacon-chain/state/state-native/types:go_default_library",
-        "//beacon-chain/state/stateutil:go_default_library",
-        "//math:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "@com_github_pkg_errors//:go_default_library",
+        "//beacon-chain/state/state-native/custom-types",
+        "//beacon-chain/state/state-native/types",
+        "//beacon-chain/state/stateutil",
+        "//math",
+        "//proto/qrysm/v1alpha1",
+        "@com_github_pkg_errors//:errors",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "fieldtrie_test",
     srcs = [
         "field_trie_test.go",
         "helpers_test.go",
     ],
     data = glob(["testdata/**"]),
-    embed = [":go_default_library"],
+    embed = [":fieldtrie"],
     deps = [
-        "//beacon-chain/state/state-native/custom-types:go_default_library",
-        "//beacon-chain/state/state-native/types:go_default_library",
-        "//beacon-chain/state/stateutil:go_default_library",
-        "//config/fieldparams:go_default_library",
-        "//config/params:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "//testing/assert:go_default_library",
-        "//testing/require:go_default_library",
-        "//testing/util:go_default_library",
-        "@com_github_theqrl_go_zond//common/hexutil:go_default_library",
+        "//beacon-chain/state/state-native/custom-types",
+        "//beacon-chain/state/state-native/types",
+        "//beacon-chain/state/stateutil",
+        "//config/fieldparams",
+        "//config/params",
+        "//consensus-types/primitives",
+        "//proto/qrysm/v1alpha1",
+        "//testing/assert",
+        "//testing/require",
+        "//testing/util",
+        "@com_github_theqrl_go_qrl//common/hexutil",
     ],
 )

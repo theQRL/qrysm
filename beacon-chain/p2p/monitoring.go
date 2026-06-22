@@ -145,7 +145,7 @@ func (s *Service) updateMetrics() {
 	store := s.Host().Peerstore()
 	numConnectedPeersByClient := make(map[string]float64)
 	peerScoresByClient := make(map[string][]float64)
-	for i := 0; i < len(connectedPeers); i++ {
+	for i := range connectedPeers {
 		p := connectedPeers[i]
 		pid, err := peer.Decode(p.String())
 		if err != nil {
@@ -160,9 +160,11 @@ func (s *Service) updateMetrics() {
 		overallScore := s.peers.Scorers().Score(pid)
 		peerScoresByClient[foundName] = append(peerScoresByClient[foundName], overallScore)
 	}
+	connectedPeersCount.Reset() // Clear out previous results.
 	for agent, total := range numConnectedPeersByClient {
 		connectedPeersCount.WithLabelValues(agent).Set(total)
 	}
+	avgScoreConnectedClients.Reset() // Clear out previous results.
 	for agent, scoringData := range peerScoresByClient {
 		avgScore := average(scoringData)
 		avgScoreConnectedClients.WithLabelValues(agent).Set(avgScore)

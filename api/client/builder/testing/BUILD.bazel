@@ -1,16 +1,16 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "testing",
     srcs = ["mock.go"],
     importpath = "github.com/theQRL/qrysm/api/client/builder/testing",
     visibility = ["//visibility:public"],
     deps = [
-        "//api/client/builder:go_default_library",
-        "//config/fieldparams:go_default_library",
-        "//consensus-types/interfaces:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//encoding/bytesutil:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
+        "//api/client/builder",
+        "//config/fieldparams",
+        "//consensus-types/interfaces",
+        "//consensus-types/primitives",
+        "//encoding/bytesutil",
+        "//proto/qrysm/v1alpha1",
     ],
 )

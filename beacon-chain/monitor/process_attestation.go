@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
 )
 
@@ -29,7 +29,7 @@ func (s *Service) canUpdateAttestedValidator(idx primitives.ValidatorIndex, slot
 }
 
 // attestingIndices returns the indices of validators that participated in the given aggregated attestation.
-func attestingIndices(ctx context.Context, state state.BeaconState, att *zondpb.Attestation) ([]uint64, error) {
+func attestingIndices(ctx context.Context, state state.BeaconState, att *qrysmpb.Attestation) ([]uint64, error) {
 	committee, err := helpers.BeaconCommitteeFromState(ctx, state, att.Data.Slot, att.Data.CommitteeIndex)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func attestingIndices(ctx context.Context, state state.BeaconState, att *zondpb.
 }
 
 // logMessageTimelyFlagsForIndex returns the log message with performance info for the attestation (head, source, target)
-func logMessageTimelyFlagsForIndex(idx primitives.ValidatorIndex, data *zondpb.AttestationData) logrus.Fields {
+func logMessageTimelyFlagsForIndex(idx primitives.ValidatorIndex, data *qrysmpb.AttestationData) logrus.Fields {
 	return logrus.Fields{
 		"ValidatorIndex": idx,
 		"Slot":           data.Slot,
@@ -59,7 +59,7 @@ func (s *Service) processAttestations(ctx context.Context, state state.BeaconSta
 }
 
 // processIncludedAttestation logs in the event for the tracked validators' and their latest attestation gets processed.
-func (s *Service) processIncludedAttestation(ctx context.Context, state state.BeaconState, att *zondpb.Attestation) {
+func (s *Service) processIncludedAttestation(ctx context.Context, state state.BeaconState, att *qrysmpb.Attestation) {
 	attestingIndices, err := attestingIndices(ctx, state, att)
 	if err != nil {
 		log.WithError(err).Error("Could not get attesting indices")
@@ -104,7 +104,7 @@ func (s *Service) processIncludedAttestation(ctx context.Context, state state.Be
 }
 
 // processUnaggregatedAttestation logs when the beacon node observes an unaggregated attestation from tracked validator.
-func (s *Service) processUnaggregatedAttestation(ctx context.Context, att *zondpb.Attestation) {
+func (s *Service) processUnaggregatedAttestation(ctx context.Context, att *qrysmpb.Attestation) {
 	s.RLock()
 	defer s.RUnlock()
 	root := bytesutil.ToBytes32(att.Data.BeaconBlockRoot)
@@ -128,7 +128,7 @@ func (s *Service) processUnaggregatedAttestation(ctx context.Context, att *zondp
 }
 
 // processUnaggregatedAttestation logs when the beacon node observes an aggregated attestation from tracked validator.
-func (s *Service) processAggregatedAttestation(ctx context.Context, att *zondpb.AggregateAttestationAndProof) {
+func (s *Service) processAggregatedAttestation(ctx context.Context, att *qrysmpb.AggregateAttestationAndProof) {
 	s.Lock()
 	defer s.Unlock()
 	if s.trackedIndex(att.AggregatorIndex) {

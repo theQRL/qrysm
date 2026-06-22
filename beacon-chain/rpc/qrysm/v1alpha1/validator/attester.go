@@ -9,8 +9,8 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/core"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc/codes"
@@ -20,7 +20,7 @@ import (
 
 // GetAttestationData requests that the beacon node produce an attestation data object,
 // which the validator acting as an attester will then sign.
-func (vs *Server) GetAttestationData(ctx context.Context, req *zondpb.AttestationDataRequest) (*zondpb.AttestationData, error) {
+func (vs *Server) GetAttestationData(ctx context.Context, req *qrysmpb.AttestationDataRequest) (*qrysmpb.AttestationData, error) {
 	ctx, span := trace.StartSpan(ctx, "AttesterServer.RequestAttestation")
 	defer span.End()
 	span.AddAttributes(
@@ -33,10 +33,7 @@ func (vs *Server) GetAttestationData(ctx context.Context, req *zondpb.Attestatio
 	}
 
 	// An optimistic validator MUST NOT participate in attestation. (i.e., sign across the DOMAIN_BEACON_ATTESTER, DOMAIN_SELECTION_PROOF or DOMAIN_AGGREGATE_AND_PROOF domains).
-	if err := vs.optimisticStatus(ctx); err != nil {
-		return nil, err
-	}
-
+	// The optimistic check is performed inside CoreService.GetAttestationData (after the cache lookup) so it is skipped on cache hit.
 	res, err := vs.CoreService.GetAttestationData(ctx, req)
 	if err != nil {
 		return nil, status.Errorf(core.ErrorReasonToGRPC(err.Reason), "Could not get attestation data: %v", err.Err)
@@ -46,12 +43,16 @@ func (vs *Server) GetAttestationData(ctx context.Context, req *zondpb.Attestatio
 
 // ProposeAttestation is a function called by an attester to vote
 // on a block via an attestation object as defined in the Ethereum Serenity specification.
-func (vs *Server) ProposeAttestation(ctx context.Context, att *zondpb.Attestation) (*zondpb.AttestResponse, error) {
+func (vs *Server) ProposeAttestation(ctx context.Context, att *qrysmpb.Attestation) (*qrysmpb.AttestResponse, error) {
 	ctx, span := trace.StartSpan(ctx, "AttesterServer.ProposeAttestation")
 	defer span.End()
 
+	if vs.SyncChecker.Syncing() {
+		return nil, status.Errorf(codes.Unavailable, "Syncing to latest head, not ready to respond")
+	}
+
 	for _, sig := range att.Signatures {
-		if _, err := dilithium.SignatureFromBytes(sig); err != nil {
+		if _, err := ml_dsa_87.SignatureFromBytes(sig); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "Incorrect attestation signature")
 		}
 	}
@@ -85,20 +86,20 @@ func (vs *Server) ProposeAttestation(ctx context.Context, att *zondpb.Attestatio
 
 	go func() {
 		ctx = trace.NewContext(context.Background(), trace.FromContext(ctx))
-		attCopy := zondpb.CopyAttestation(att)
+		attCopy := qrysmpb.CopyAttestation(att)
 		if err := vs.AttPool.SaveUnaggregatedAttestation(attCopy); err != nil {
 			log.WithError(err).Error("Could not handle attestation in operations service")
 			return
 		}
 	}()
 
-	return &zondpb.AttestResponse{
+	return &qrysmpb.AttestResponse{
 		AttestationDataRoot: root[:],
 	}, nil
 }
 
 // SubscribeCommitteeSubnets subscribes to the committee ID subnet given subscribe request.
-func (vs *Server) SubscribeCommitteeSubnets(ctx context.Context, req *zondpb.CommitteeSubnetsSubscribeRequest) (*emptypb.Empty, error) {
+func (vs *Server) SubscribeCommitteeSubnets(ctx context.Context, req *qrysmpb.CommitteeSubnetsSubscribeRequest) (*emptypb.Empty, error) {
 	ctx, span := trace.StartSpan(ctx, "AttesterServer.SubscribeCommitteeSubnets")
 	defer span.End()
 

@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
 	"google.golang.org/grpc"
 )
@@ -24,11 +24,11 @@ var ColdStateCheckpoint = e2etypes.Evaluator{
 // Checks the first node for an old checkpoint using cold state storage.
 func checkColdStateCheckpoint(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	ctx := context.Background()
-	client := zond.NewBeaconChainClient(conns[0])
+	client := qrysmpb.NewBeaconChainClient(conns[0])
 
-	for i := primitives.Epoch(0); i < epochToCheck; i++ {
-		res, err := client.ListValidatorAssignments(ctx, &zond.ListValidatorAssignmentsRequest{
-			QueryFilter: &zond.ListValidatorAssignmentsRequest_Epoch{Epoch: i},
+	for i := range primitives.Epoch(epochToCheck) {
+		res, err := client.ListValidatorAssignments(ctx, &qrysmpb.ListValidatorAssignmentsRequest{
+			QueryFilter: &qrysmpb.ListValidatorAssignmentsRequest_Epoch{Epoch: i},
 		})
 		if err != nil {
 			return err

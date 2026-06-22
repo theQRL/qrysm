@@ -20,11 +20,11 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/rpc/core"
 	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
 	"github.com/theQRL/qrysm/beacon-chain/sync"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // Server defines a server implementation of the gRPC Beacon Chain service,
-// providing RPC endpoints to access data relevant to the Zond beacon chain.
+// providing RPC endpoints to access data relevant to the QRL beacon chain.
 type Server struct {
 	BeaconDB                    db.ReadOnlyDatabase
 	Ctx                         context.Context
@@ -33,7 +33,7 @@ type Server struct {
 	CanonicalFetcher            blockchain.CanonicalFetcher
 	FinalizationFetcher         blockchain.FinalizationFetcher
 	DepositFetcher              cache.DepositFetcher
-	BlockFetcher                execution.POWBlockFetcher
+	BlockFetcher                execution.ExecutionBlockFetcher
 	GenesisTimeFetcher          blockchain.TimeFetcher
 	StateNotifier               statefeed.Notifier
 	BlockNotifier               blockfeed.Notifier
@@ -42,8 +42,8 @@ type Server struct {
 	AttestationsPool            attestations.Pool
 	SlashingsPool               slashings.PoolManager
 	ChainStartChan              chan time.Time
-	ReceivedAttestationsBuffer  chan *zondpb.Attestation
-	CollectedAttestationsBuffer chan []*zondpb.Attestation
+	ReceivedAttestationsBuffer  chan *qrysmpb.Attestation
+	CollectedAttestationsBuffer chan []*qrysmpb.Attestation
 	StateGen                    stategen.StateManager
 	SyncChecker                 sync.Checker
 	ReplayerBuilder             stategen.ReplayerBuilder

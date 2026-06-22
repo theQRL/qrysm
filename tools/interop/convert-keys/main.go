@@ -48,8 +48,7 @@ func main() {
 		}
 
 		out.Keys = append(out.Keys, &keygen.UnencryptedKeys{
-			ValidatorKey:  pk,
-			WithdrawalKey: pk,
+			ValidatorKey: pk,
 		})
 	}
 

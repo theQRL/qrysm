@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/beacon-chain/core/time"
@@ -48,7 +48,6 @@ func (s *Service) notifyForkchoiceUpdate(ctx context.Context, arg *notifyForkcho
 		log.Error("Head block is nil")
 		return nil, nil
 	}
-	// Must not call fork choice updated until the transition conditions are met on the Pow network.
 	isExecutionBlk, err := blocks.IsExecutionBlock(headBlk.Body())
 	if err != nil {
 		log.WithError(err).Error("Could not determine if head block is execution block")
@@ -68,6 +67,22 @@ func (s *Service) notifyForkchoiceUpdate(ctx context.Context, arg *notifyForkcho
 		HeadBlockHash:      headPayload.BlockHash(),
 		SafeBlockHash:      justifiedHash[:],
 		FinalizedBlockHash: finalizedHash[:],
+	}
+	// Guard against sending an FCU with a zero/empty HeadBlockHash at genesis.
+	// When proposing the first non-genesis block, the head payload's BlockHash
+	// can resolve to all-zeros; the EL rejects that and the resulting error
+	// can cascade into forkchoice marking genesis invalid. Fall back to the
+	// hash recorded in the genesis state's LatestExecutionPayloadHeader.
+	if len(fcs.HeadBlockHash) != 32 || [32]byte(fcs.HeadBlockHash) == [32]byte{} {
+		hash, err := s.hashForGenesisBlock(ctx, arg.headRoot)
+		if errors.Is(err, errNotGenesisRoot) {
+			log.Error("Sending nil head block hash to execution engine")
+			return nil, nil
+		}
+		if err != nil {
+			return nil, errors.Wrap(err, "could not get head block hash")
+		}
+		fcs.HeadBlockHash = hash
 	}
 
 	nextSlot := s.CurrentSlot() + 1 // Cache payload ID for next slot proposer.
@@ -129,7 +144,7 @@ func (s *Service) notifyForkchoiceUpdate(ctx context.Context, arg *notifyForkcho
 			}
 
 			if err := s.saveHead(ctx, r, b, st); err != nil {
-				log.WithError(err).Error("could not save head after pruning invalid blocks")
+				log.WithError(err).Error("Could not save head after pruning invalid blocks")
 			}
 
 			log.WithFields(logrus.Fields{
@@ -278,13 +293,13 @@ func (s *Service) getPayloadAttribute(ctx context.Context, st state.BeaconState,
 	recipient, err := s.cfg.BeaconDB.FeeRecipientByValidatorID(ctx, proposerID)
 	switch {
 	case errors.Is(err, kv.ErrNotFoundFeeRecipient):
-		if feeRecipient.String() == params.BeaconConfig().ZondBurnAddress {
+		if feeRecipient.String() == params.BeaconConfig().QRLBurnAddress {
 			logrus.WithFields(logrus.Fields{
 				"validatorIndex": proposerID,
-				"burnAddress":    params.BeaconConfig().ZondBurnAddress,
+				"burnAddress":    params.BeaconConfig().QRLBurnAddress,
 			}).Warn("Fee recipient is currently using the burn address, " +
 				"you will not be rewarded transaction fees on this setting. " +
-				"Please set a different zond address as the fee recipient. " +
+				"Please set a different qrl address as the fee recipient. " +
 				"Please refer to our documentation for instructions")
 		}
 	case err != nil:
@@ -303,7 +318,7 @@ func (s *Service) getPayloadAttribute(ctx context.Context, st state.BeaconState,
 
 	var attr payloadattribute.Attributer
 	switch st.Version() {
-	case version.Capella:
+	case version.Zond:
 		withdrawals, err := st.ExpectedWithdrawals()
 		if err != nil {
 			log.WithError(err).Error("Could not get expected withdrawals to get payload attribute")

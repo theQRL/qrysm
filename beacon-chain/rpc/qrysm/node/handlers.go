@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/peerdata"
 	http2 "github.com/theQRL/qrysm/network/http"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // ListTrustedPeer retrieves data about the node's trusted peers.
@@ -35,10 +35,10 @@ func (s *Server) ListTrustedPeer(w http.ResponseWriter, r *http.Request) {
 		if p == nil {
 			p = &Peer{
 				PeerID:             id.String(),
-				Enr:                "",
+				Qnr:                "",
 				LastSeenP2PAddress: "",
-				State:              zond.ConnectionState(corenet.NotConnected).String(),
-				Direction:          zond.PeerDirection(corenet.DirUnknown).String(),
+				State:              qrysmpb.ConnectionState(corenet.NotConnected).String(),
+				Direction:          qrysmpb.PeerDirection(corenet.DirUnknown).String(),
 			}
 		}
 		allPeers = append(allPeers, p)
@@ -121,18 +121,18 @@ func (s *Server) RemoveTrustedPeer(w http.ResponseWriter, r *http.Request) {
 // httpPeerInfo does the same thing as peerInfo function in node.go but returns the
 // http peer response.
 func httpPeerInfo(peerStatus *peers.Status, id peer.ID) (*Peer, error) {
-	enr, err := peerStatus.ENR(id)
+	qnr, err := peerStatus.QNR(id)
 	if err != nil {
 		if errors.Is(err, peerdata.ErrPeerUnknown) {
 			return nil, nil
 		}
-		return nil, errors.Wrap(err, "could not obtain ENR")
+		return nil, errors.Wrap(err, "could not obtain QNR")
 	}
-	var serializedEnr string
-	if enr != nil {
-		serializedEnr, err = p2p.SerializeENR(enr)
+	var serializedQnr string
+	if qnr != nil {
+		serializedQnr, err = p2p.SerializeQNR(qnr)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not serialize ENR")
+			return nil, errors.Wrap(err, "could not serialize QNR")
 		}
 	}
 	address, err := peerStatus.Address(id)
@@ -156,11 +156,11 @@ func httpPeerInfo(peerStatus *peers.Status, id peer.ID) (*Peer, error) {
 		}
 		return nil, errors.Wrap(err, "could not obtain direction")
 	}
-	if zond.PeerDirection(direction) == zond.PeerDirection_UNKNOWN {
+	if qrysmpb.PeerDirection(direction) == qrysmpb.PeerDirection_UNKNOWN {
 		return nil, nil
 	}
-	v1ConnState := zond.ConnectionState(connectionState).String()
-	v1PeerDirection := zond.PeerDirection(direction).String()
+	v1ConnState := qrysmpb.ConnectionState(connectionState).String()
+	v1PeerDirection := qrysmpb.PeerDirection(direction).String()
 	p := Peer{
 		PeerID:    id.String(),
 		State:     v1ConnState,
@@ -169,8 +169,8 @@ func httpPeerInfo(peerStatus *peers.Status, id peer.ID) (*Peer, error) {
 	if address != nil {
 		p.LastSeenP2PAddress = address.String()
 	}
-	if serializedEnr != "" {
-		p.Enr = "enr:" + serializedEnr
+	if serializedQnr != "" {
+		p.Qnr = "qnr:" + serializedQnr
 	}
 
 	return &p, nil

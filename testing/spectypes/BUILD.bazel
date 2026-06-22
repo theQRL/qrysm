@@ -1,1 +1,0 @@
-load("@qrysm//tools/go:def.bzl", "go_library")

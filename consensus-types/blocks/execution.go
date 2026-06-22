@@ -16,17 +16,17 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// executionPayloadCapella is a convenience wrapper around a beacon block body's execution payload data structure
+// executionPayloadZond is a convenience wrapper around a beacon block body's execution payload data structure
 // This wrapper allows us to conform to a common interface so that beacon
 // blocks for future forks can also be applied across Qrysm without issues.
-type executionPayloadCapella struct {
-	p     *enginev1.ExecutionPayloadCapella
+type executionPayloadZond struct {
+	p     *enginev1.ExecutionPayloadZond
 	value uint64
 }
 
-// WrappedExecutionPayloadCapella is a constructor which wraps a protobuf execution payload into an interface.
-func WrappedExecutionPayloadCapella(p *enginev1.ExecutionPayloadCapella, value math.Gwei) (interfaces.ExecutionData, error) {
-	w := executionPayloadCapella{p: p, value: uint64(value)}
+// WrappedExecutionPayloadZond is a constructor which wraps a protobuf execution payload into an interface.
+func WrappedExecutionPayloadZond(p *enginev1.ExecutionPayloadZond, value math.Shor) (interfaces.ExecutionData, error) {
+	w := executionPayloadZond{p: p, value: uint64(value)}
 	if w.IsNil() {
 		return nil, consensus_types.ErrNilObjectWrapped
 	}
@@ -34,156 +34,156 @@ func WrappedExecutionPayloadCapella(p *enginev1.ExecutionPayloadCapella, value m
 }
 
 // IsNil checks if the underlying data is nil.
-func (e executionPayloadCapella) IsNil() bool {
+func (e executionPayloadZond) IsNil() bool {
 	return e.p == nil
 }
 
 // IsBlinded returns true if the underlying data is blinded.
-func (executionPayloadCapella) IsBlinded() bool {
+func (executionPayloadZond) IsBlinded() bool {
 	return false
 }
 
 // MarshalSSZ --
-func (e executionPayloadCapella) MarshalSSZ() ([]byte, error) {
+func (e executionPayloadZond) MarshalSSZ() ([]byte, error) {
 	return e.p.MarshalSSZ()
 }
 
 // MarshalSSZTo --
-func (e executionPayloadCapella) MarshalSSZTo(dst []byte) ([]byte, error) {
+func (e executionPayloadZond) MarshalSSZTo(dst []byte) ([]byte, error) {
 	return e.p.MarshalSSZTo(dst)
 }
 
 // SizeSSZ --
-func (e executionPayloadCapella) SizeSSZ() int {
+func (e executionPayloadZond) SizeSSZ() int {
 	return e.p.SizeSSZ()
 }
 
 // UnmarshalSSZ --
-func (e executionPayloadCapella) UnmarshalSSZ(buf []byte) error {
+func (e executionPayloadZond) UnmarshalSSZ(buf []byte) error {
 	return e.p.UnmarshalSSZ(buf)
 }
 
 // HashTreeRoot --
-func (e executionPayloadCapella) HashTreeRoot() ([32]byte, error) {
+func (e executionPayloadZond) HashTreeRoot() ([32]byte, error) {
 	return e.p.HashTreeRoot()
 }
 
 // HashTreeRootWith --
-func (e executionPayloadCapella) HashTreeRootWith(hh *fastssz.Hasher) error {
+func (e executionPayloadZond) HashTreeRootWith(hh *fastssz.Hasher) error {
 	return e.p.HashTreeRootWith(hh)
 }
 
 // Proto --
-func (e executionPayloadCapella) Proto() proto.Message {
+func (e executionPayloadZond) Proto() proto.Message {
 	return e.p
 }
 
 // ParentHash --
-func (e executionPayloadCapella) ParentHash() []byte {
+func (e executionPayloadZond) ParentHash() []byte {
 	return e.p.ParentHash
 }
 
 // FeeRecipient --
-func (e executionPayloadCapella) FeeRecipient() []byte {
+func (e executionPayloadZond) FeeRecipient() []byte {
 	return e.p.FeeRecipient
 }
 
 // StateRoot --
-func (e executionPayloadCapella) StateRoot() []byte {
+func (e executionPayloadZond) StateRoot() []byte {
 	return e.p.StateRoot
 }
 
 // ReceiptsRoot --
-func (e executionPayloadCapella) ReceiptsRoot() []byte {
+func (e executionPayloadZond) ReceiptsRoot() []byte {
 	return e.p.ReceiptsRoot
 }
 
 // LogsBloom --
-func (e executionPayloadCapella) LogsBloom() []byte {
+func (e executionPayloadZond) LogsBloom() []byte {
 	return e.p.LogsBloom
 }
 
 // PrevRandao --
-func (e executionPayloadCapella) PrevRandao() []byte {
+func (e executionPayloadZond) PrevRandao() []byte {
 	return e.p.PrevRandao
 }
 
 // BlockNumber --
-func (e executionPayloadCapella) BlockNumber() uint64 {
+func (e executionPayloadZond) BlockNumber() uint64 {
 	return e.p.BlockNumber
 }
 
 // GasLimit --
-func (e executionPayloadCapella) GasLimit() uint64 {
+func (e executionPayloadZond) GasLimit() uint64 {
 	return e.p.GasLimit
 }
 
 // GasUsed --
-func (e executionPayloadCapella) GasUsed() uint64 {
+func (e executionPayloadZond) GasUsed() uint64 {
 	return e.p.GasUsed
 }
 
 // Timestamp --
-func (e executionPayloadCapella) Timestamp() uint64 {
+func (e executionPayloadZond) Timestamp() uint64 {
 	return e.p.Timestamp
 }
 
 // ExtraData --
-func (e executionPayloadCapella) ExtraData() []byte {
+func (e executionPayloadZond) ExtraData() []byte {
 	return e.p.ExtraData
 }
 
 // BaseFeePerGas --
-func (e executionPayloadCapella) BaseFeePerGas() []byte {
+func (e executionPayloadZond) BaseFeePerGas() []byte {
 	return e.p.BaseFeePerGas
 }
 
 // BlockHash --
-func (e executionPayloadCapella) BlockHash() []byte {
+func (e executionPayloadZond) BlockHash() []byte {
 	return e.p.BlockHash
 }
 
 // Transactions --
-func (e executionPayloadCapella) Transactions() ([][]byte, error) {
+func (e executionPayloadZond) Transactions() ([][]byte, error) {
 	return e.p.Transactions, nil
 }
 
 // TransactionsRoot --
-func (executionPayloadCapella) TransactionsRoot() ([]byte, error) {
+func (executionPayloadZond) TransactionsRoot() ([]byte, error) {
 	return nil, consensus_types.ErrUnsupportedField
 }
 
 // Withdrawals --
-func (e executionPayloadCapella) Withdrawals() ([]*enginev1.Withdrawal, error) {
+func (e executionPayloadZond) Withdrawals() ([]*enginev1.Withdrawal, error) {
 	return e.p.Withdrawals, nil
 }
 
 // WithdrawalsRoot --
-func (executionPayloadCapella) WithdrawalsRoot() ([]byte, error) {
+func (executionPayloadZond) WithdrawalsRoot() ([]byte, error) {
 	return nil, consensus_types.ErrUnsupportedField
 }
 
 // PbV2 --
-func (e executionPayloadCapella) PbCapella() (*enginev1.ExecutionPayloadCapella, error) {
+func (e executionPayloadZond) PbZond() (*enginev1.ExecutionPayloadZond, error) {
 	return e.p, nil
 }
 
-// ValueInGwei --
-func (e executionPayloadCapella) ValueInGwei() (uint64, error) {
+// ValueInShor --
+func (e executionPayloadZond) ValueInShor() (uint64, error) {
 	return e.value, nil
 }
 
-// executionPayloadHeaderCapella is a convenience wrapper around a blinded beacon block body's execution header data structure
+// executionPayloadHeaderZond is a convenience wrapper around a blinded beacon block body's execution header data structure
 // This wrapper allows us to conform to a common interface so that beacon
 // blocks for future forks can also be applied across Qrysm without issues.
-type executionPayloadHeaderCapella struct {
-	p     *enginev1.ExecutionPayloadHeaderCapella
+type executionPayloadHeaderZond struct {
+	p     *enginev1.ExecutionPayloadHeaderZond
 	value uint64
 }
 
-// WrappedExecutionPayloadHeaderCapella is a constructor which wraps a protobuf execution header into an interface.
-func WrappedExecutionPayloadHeaderCapella(p *enginev1.ExecutionPayloadHeaderCapella, value math.Gwei) (interfaces.ExecutionData, error) {
-	w := executionPayloadHeaderCapella{p: p, value: uint64(value)}
+// WrappedExecutionPayloadHeaderZond is a constructor which wraps a protobuf execution header into an interface.
+func WrappedExecutionPayloadHeaderZond(p *enginev1.ExecutionPayloadHeaderZond, value math.Shor) (interfaces.ExecutionData, error) {
+	w := executionPayloadHeaderZond{p: p, value: uint64(value)}
 	if w.IsNil() {
 		return nil, consensus_types.ErrNilObjectWrapped
 	}
@@ -191,147 +191,147 @@ func WrappedExecutionPayloadHeaderCapella(p *enginev1.ExecutionPayloadHeaderCape
 }
 
 // IsNil checks if the underlying data is nil.
-func (e executionPayloadHeaderCapella) IsNil() bool {
+func (e executionPayloadHeaderZond) IsNil() bool {
 	return e.p == nil
 }
 
 // IsBlinded returns true if the underlying data is blinded.
-func (executionPayloadHeaderCapella) IsBlinded() bool {
+func (executionPayloadHeaderZond) IsBlinded() bool {
 	return true
 }
 
 // MarshalSSZ --
-func (e executionPayloadHeaderCapella) MarshalSSZ() ([]byte, error) {
+func (e executionPayloadHeaderZond) MarshalSSZ() ([]byte, error) {
 	return e.p.MarshalSSZ()
 }
 
 // MarshalSSZTo --
-func (e executionPayloadHeaderCapella) MarshalSSZTo(dst []byte) ([]byte, error) {
+func (e executionPayloadHeaderZond) MarshalSSZTo(dst []byte) ([]byte, error) {
 	return e.p.MarshalSSZTo(dst)
 }
 
 // SizeSSZ --
-func (e executionPayloadHeaderCapella) SizeSSZ() int {
+func (e executionPayloadHeaderZond) SizeSSZ() int {
 	return e.p.SizeSSZ()
 }
 
 // UnmarshalSSZ --
-func (e executionPayloadHeaderCapella) UnmarshalSSZ(buf []byte) error {
+func (e executionPayloadHeaderZond) UnmarshalSSZ(buf []byte) error {
 	return e.p.UnmarshalSSZ(buf)
 }
 
 // HashTreeRoot --
-func (e executionPayloadHeaderCapella) HashTreeRoot() ([32]byte, error) {
+func (e executionPayloadHeaderZond) HashTreeRoot() ([32]byte, error) {
 	return e.p.HashTreeRoot()
 }
 
 // HashTreeRootWith --
-func (e executionPayloadHeaderCapella) HashTreeRootWith(hh *fastssz.Hasher) error {
+func (e executionPayloadHeaderZond) HashTreeRootWith(hh *fastssz.Hasher) error {
 	return e.p.HashTreeRootWith(hh)
 }
 
 // Proto --
-func (e executionPayloadHeaderCapella) Proto() proto.Message {
+func (e executionPayloadHeaderZond) Proto() proto.Message {
 	return e.p
 }
 
 // ParentHash --
-func (e executionPayloadHeaderCapella) ParentHash() []byte {
+func (e executionPayloadHeaderZond) ParentHash() []byte {
 	return e.p.ParentHash
 }
 
 // FeeRecipient --
-func (e executionPayloadHeaderCapella) FeeRecipient() []byte {
+func (e executionPayloadHeaderZond) FeeRecipient() []byte {
 	return e.p.FeeRecipient
 }
 
 // StateRoot --
-func (e executionPayloadHeaderCapella) StateRoot() []byte {
+func (e executionPayloadHeaderZond) StateRoot() []byte {
 	return e.p.StateRoot
 }
 
 // ReceiptsRoot --
-func (e executionPayloadHeaderCapella) ReceiptsRoot() []byte {
+func (e executionPayloadHeaderZond) ReceiptsRoot() []byte {
 	return e.p.ReceiptsRoot
 }
 
 // LogsBloom --
-func (e executionPayloadHeaderCapella) LogsBloom() []byte {
+func (e executionPayloadHeaderZond) LogsBloom() []byte {
 	return e.p.LogsBloom
 }
 
 // PrevRandao --
-func (e executionPayloadHeaderCapella) PrevRandao() []byte {
+func (e executionPayloadHeaderZond) PrevRandao() []byte {
 	return e.p.PrevRandao
 }
 
 // BlockNumber --
-func (e executionPayloadHeaderCapella) BlockNumber() uint64 {
+func (e executionPayloadHeaderZond) BlockNumber() uint64 {
 	return e.p.BlockNumber
 }
 
 // GasLimit --
-func (e executionPayloadHeaderCapella) GasLimit() uint64 {
+func (e executionPayloadHeaderZond) GasLimit() uint64 {
 	return e.p.GasLimit
 }
 
 // GasUsed --
-func (e executionPayloadHeaderCapella) GasUsed() uint64 {
+func (e executionPayloadHeaderZond) GasUsed() uint64 {
 	return e.p.GasUsed
 }
 
 // Timestamp --
-func (e executionPayloadHeaderCapella) Timestamp() uint64 {
+func (e executionPayloadHeaderZond) Timestamp() uint64 {
 	return e.p.Timestamp
 }
 
 // ExtraData --
-func (e executionPayloadHeaderCapella) ExtraData() []byte {
+func (e executionPayloadHeaderZond) ExtraData() []byte {
 	return e.p.ExtraData
 }
 
 // BaseFeePerGas --
-func (e executionPayloadHeaderCapella) BaseFeePerGas() []byte {
+func (e executionPayloadHeaderZond) BaseFeePerGas() []byte {
 	return e.p.BaseFeePerGas
 }
 
 // BlockHash --
-func (e executionPayloadHeaderCapella) BlockHash() []byte {
+func (e executionPayloadHeaderZond) BlockHash() []byte {
 	return e.p.BlockHash
 }
 
 // Transactions --
-func (executionPayloadHeaderCapella) Transactions() ([][]byte, error) {
+func (executionPayloadHeaderZond) Transactions() ([][]byte, error) {
 	return nil, consensus_types.ErrUnsupportedField
 }
 
 // TransactionsRoot --
-func (e executionPayloadHeaderCapella) TransactionsRoot() ([]byte, error) {
+func (e executionPayloadHeaderZond) TransactionsRoot() ([]byte, error) {
 	return e.p.TransactionsRoot, nil
 }
 
 // Withdrawals --
-func (executionPayloadHeaderCapella) Withdrawals() ([]*enginev1.Withdrawal, error) {
+func (executionPayloadHeaderZond) Withdrawals() ([]*enginev1.Withdrawal, error) {
 	return nil, consensus_types.ErrUnsupportedField
 }
 
 // WithdrawalsRoot --
-func (e executionPayloadHeaderCapella) WithdrawalsRoot() ([]byte, error) {
+func (e executionPayloadHeaderZond) WithdrawalsRoot() ([]byte, error) {
 	return e.p.WithdrawalsRoot, nil
 }
 
 // PbV2 --
-func (executionPayloadHeaderCapella) PbCapella() (*enginev1.ExecutionPayloadCapella, error) {
+func (executionPayloadHeaderZond) PbZond() (*enginev1.ExecutionPayloadZond, error) {
 	return nil, consensus_types.ErrUnsupportedField
 }
 
-// ValueInGwei --
-func (e executionPayloadHeaderCapella) ValueInGwei() (uint64, error) {
+// ValueInShor --
+func (e executionPayloadHeaderZond) ValueInShor() (uint64, error) {
 	return e.value, nil
 }
 
-// PayloadToHeaderCapella converts `payload` into execution payload header format.
-func PayloadToHeaderCapella(payload interfaces.ExecutionData) (*enginev1.ExecutionPayloadHeaderCapella, error) {
+// PayloadToHeaderZond converts `payload` into execution payload header format.
+func PayloadToHeaderZond(payload interfaces.ExecutionData) (*enginev1.ExecutionPayloadHeaderZond, error) {
 	txs, err := payload.Transactions()
 	if err != nil {
 		return nil, err
@@ -349,7 +349,7 @@ func PayloadToHeaderCapella(payload interfaces.ExecutionData) (*enginev1.Executi
 		return nil, err
 	}
 
-	return &enginev1.ExecutionPayloadHeaderCapella{
+	return &enginev1.ExecutionPayloadHeaderZond{
 		ParentHash:       bytesutil.SafeCopyBytes(payload.ParentHash()),
 		FeeRecipient:     bytesutil.SafeCopyBytes(payload.FeeRecipient()),
 		StateRoot:        bytesutil.SafeCopyBytes(payload.StateRoot()),
@@ -425,9 +425,9 @@ func IsEmptyExecutionData(data interfaces.ExecutionData) (bool, error) {
 	return true, nil
 }
 
-// PayloadValueToGwei returns a Gwei value given the payload's value
-func PayloadValueToGwei(value []byte) math.Gwei {
+// PayloadValueToShor returns a Shor value given the payload's value
+func PayloadValueToShor(value []byte) math.Shor {
 	// We have to convert big endian to little endian because the value is coming from the execution layer.
 	v := big.NewInt(0).SetBytes(bytesutil.ReverseByteOrder(value))
-	return math.WeiToGwei(v)
+	return math.PlanckToShor(v)
 }

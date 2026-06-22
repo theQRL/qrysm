@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "bazel",
     testonly = True,
     srcs = [
         "bazel.go",
@@ -10,14 +10,14 @@ go_library(
     importpath = "github.com/theQRL/qrysm/build/bazel",
     visibility = ["//visibility:public"],
     deps = [
-        "//testing/require:go_default_library",
+        "//testing/require",
         "@io_bazel_rules_go//go/tools/bazel:go_default_library",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "bazel_test",
     size = "small",
     srcs = ["bazel_test.go"],
-    deps = [":go_default_library"],
+    deps = [":bazel"],
 )

@@ -3,15 +3,18 @@ package client
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	httputil "github.com/theQRL/qrysm/network/http"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
 	qrysmTime "github.com/theQRL/qrysm/time"
 	"github.com/theQRL/qrysm/time/slots"
@@ -24,7 +27,7 @@ import (
 // via gRPC. Beacon node will verify the slot signature and determine if the validator is also
 // an aggregator. If yes, then beacon node will broadcast aggregated signature and
 // proof on the validator's behalf.
-func (v *validator) SubmitAggregateAndProof(ctx context.Context, slot primitives.Slot, pubKey [field_params.DilithiumPubkeyLength]byte) {
+func (v *validator) SubmitAggregateAndProof(ctx context.Context, slot primitives.Slot, pubKey [field_params.MLDSA87PubkeyLength]byte) {
 	ctx, span := trace.StartSpan(ctx, "validator.SubmitAggregateAndProof")
 	defer span.End()
 
@@ -64,18 +67,24 @@ func (v *validator) SubmitAggregateAndProof(ctx context.Context, slot primitives
 	// https://github.com/ethereum/consensus-specs/blob/v0.9.3/specs/validator/0_beacon-chain-validator.md#broadcast-aggregate
 	v.waitToSlotTwoThirds(ctx, slot)
 
-	res, err := v.validatorClient.SubmitAggregateSelectionProof(ctx, &zondpb.AggregateSelectionRequest{
+	res, err := v.validatorClient.SubmitAggregateSelectionProof(ctx, &qrysmpb.AggregateSelectionRequest{
 		Slot:           slot,
 		CommitteeIndex: duty.CommitteeIndex,
 		PublicKey:      pubKey[:],
 		SlotSignature:  slotSig,
 	})
 	if err != nil {
+		// handle grpc not found
 		s, ok := status.FromError(err)
-		if ok && s.Code() == codes.NotFound {
+		grpcNotFound := ok && s.Code() == codes.NotFound
+		// handle http not found
+		jsonErr := &httputil.DefaultErrorJson{}
+		httpNotFound := errors.As(err, &jsonErr) && jsonErr.Code == http.StatusNotFound
+
+		if grpcNotFound || httpNotFound {
 			log.WithField("slot", slot).WithError(err).Warn("No attestations to aggregate")
 		} else {
-			log.WithField("slot", slot).WithError(err).Error("Could not submit slot signature to beacon node")
+			log.WithField("slot", slot).WithError(err).Error("Could not submit aggregate selection proof to beacon node")
 			if v.emitAccountMetrics {
 				ValidatorAggFailVec.WithLabelValues(fmtKey).Inc()
 			}
@@ -89,8 +98,8 @@ func (v *validator) SubmitAggregateAndProof(ctx context.Context, slot primitives
 		log.WithError(err).Error("Could not sign aggregate and proof")
 		return
 	}
-	_, err = v.validatorClient.SubmitSignedAggregateSelectionProof(ctx, &zondpb.SignedAggregateSubmitRequest{
-		SignedAggregateAndProof: &zondpb.SignedAggregateAttestationAndProof{
+	_, err = v.validatorClient.SubmitSignedAggregateSelectionProof(ctx, &qrysmpb.SignedAggregateSubmitRequest{
+		SignedAggregateAndProof: &qrysmpb.SignedAggregateAttestationAndProof{
 			Message:   res.AggregateAndProof,
 			Signature: sig,
 		},
@@ -116,13 +125,13 @@ func (v *validator) SubmitAggregateAndProof(ctx context.Context, slot primitives
 }
 
 // Signs input slot with domain selection proof. This is used to create the signature for aggregator selection.
-func (v *validator) signSlotWithSelectionProof(ctx context.Context, pubKey [field_params.DilithiumPubkeyLength]byte, slot primitives.Slot) (signature []byte, err error) {
+func (v *validator) signSlotWithSelectionProof(ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, slot primitives.Slot) (signature []byte, err error) {
 	domain, err := v.domainData(ctx, slots.ToEpoch(slot), params.BeaconConfig().DomainSelectionProof[:])
 	if err != nil {
 		return nil, err
 	}
 
-	var sig dilithium.Signature
+	var sig ml_dsa_87.Signature
 	sszUint := primitives.SSZUint64(slot)
 	root, err := signing.ComputeSigningRoot(&sszUint, domain.SignatureDomain)
 	if err != nil {
@@ -172,12 +181,12 @@ func (v *validator) waitToSlotTwoThirds(ctx context.Context, slot primitives.Slo
 
 // This returns the signature of validator signing over aggregate and
 // proof object.
-func (v *validator) aggregateAndProofSig(ctx context.Context, pubKey [field_params.DilithiumPubkeyLength]byte, agg *zondpb.AggregateAttestationAndProof, slot primitives.Slot) ([]byte, error) {
+func (v *validator) aggregateAndProofSig(ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, agg *qrysmpb.AggregateAttestationAndProof, slot primitives.Slot) ([]byte, error) {
 	d, err := v.domainData(ctx, slots.ToEpoch(agg.Aggregate.Data.Slot), params.BeaconConfig().DomainAggregateAndProof[:])
 	if err != nil {
 		return nil, err
 	}
-	var sig dilithium.Signature
+	var sig ml_dsa_87.Signature
 	root, err := signing.ComputeSigningRoot(agg, d.SignatureDomain)
 	if err != nil {
 		return nil, err
@@ -196,7 +205,7 @@ func (v *validator) aggregateAndProofSig(ctx context.Context, pubKey [field_para
 	return sig.Marshal(), nil
 }
 
-func (v *validator) addIndicesToLog(duty *zondpb.DutiesResponse_Duty) error {
+func (v *validator) addIndicesToLog(duty *qrysmpb.DutiesResponse_Duty) error {
 	v.attLogsLock.Lock()
 	defer v.attLogsLock.Unlock()
 

@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/cmd/validator/flags"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/io/prompt"
 	"github.com/theQRL/qrysm/validator/accounts/petnames"
@@ -21,7 +21,7 @@ import (
 )
 
 // selectAccounts Ask user to select accounts via an interactive user prompt.
-func selectAccounts(selectionPrompt string, pubKeys [][field_params.DilithiumPubkeyLength]byte) (filteredPubKeys []dilithium.PublicKey, err error) {
+func selectAccounts(selectionPrompt string, pubKeys [][field_params.MLDSA87PubkeyLength]byte) (filteredPubKeys []ml_dsa_87.PublicKey, err error) {
 	pubKeyStrings := make([]string, len(pubKeys))
 	for i, pk := range pubKeys {
 		name := petnames.DeterministicName(pk[:], "-")
@@ -60,7 +60,7 @@ func selectAccounts(selectionPrompt string, pubKeys [][field_params.DilithiumPub
 		}
 		if result == allAccountsText {
 			fmt.Printf("%s\n", au.BrightRed("[Selected all accounts]").Bold())
-			for i := 0; i < len(pubKeys); i++ {
+			for i := range pubKeys {
 				results = append(results, i)
 			}
 			break
@@ -84,9 +84,9 @@ func selectAccounts(selectionPrompt string, pubKeys [][field_params.DilithiumPub
 	}
 
 	// Filter the public keys based on user input.
-	filteredPubKeys = make([]dilithium.PublicKey, 0)
+	filteredPubKeys = make([]ml_dsa_87.PublicKey, 0)
 	for selectedIndex := range seen {
-		pk, err := dilithium.PublicKeyFromBytes(pubKeys[selectedIndex][:])
+		pk, err := ml_dsa_87.PublicKeyFromBytes(pubKeys[selectedIndex][:])
 		if err != nil {
 			return nil, err
 		}
@@ -100,9 +100,9 @@ func selectAccounts(selectionPrompt string, pubKeys [][field_params.DilithiumPub
 func FilterPublicKeysFromUserInput(
 	cliCtx *cli.Context,
 	publicKeysFlag *cli.StringFlag,
-	validatingPublicKeys [][field_params.DilithiumPubkeyLength]byte,
+	validatingPublicKeys [][field_params.MLDSA87PubkeyLength]byte,
 	selectionPrompt string,
-) ([]dilithium.PublicKey, error) {
+) ([]ml_dsa_87.PublicKey, error) {
 	if cliCtx.IsSet(publicKeysFlag.Name) {
 		pubKeyStrings := strings.Split(cliCtx.String(publicKeysFlag.Name), ",")
 		if len(pubKeyStrings) == 0 {
@@ -116,8 +116,8 @@ func FilterPublicKeysFromUserInput(
 	return selectAccounts(selectionPrompt, validatingPublicKeys)
 }
 
-func filterPublicKeys(pubKeyStrings []string) ([]dilithium.PublicKey, error) {
-	var filteredPubKeys []dilithium.PublicKey
+func filterPublicKeys(pubKeyStrings []string) ([]ml_dsa_87.PublicKey, error) {
+	var filteredPubKeys []ml_dsa_87.PublicKey
 	for _, str := range pubKeyStrings {
 		pkString := str
 		if strings.Contains(pkString, "0x") {
@@ -127,11 +127,11 @@ func filterPublicKeys(pubKeyStrings []string) ([]dilithium.PublicKey, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not decode string %s as hex", pkString)
 		}
-		dilithiumPublicKey, err := dilithium.PublicKeyFromBytes(pubKeyBytes)
+		mlDSA87PublicKey, err := ml_dsa_87.PublicKeyFromBytes(pubKeyBytes)
 		if err != nil {
-			return nil, errors.Wrapf(err, "%#x is not a valid Dilithium public key", pubKeyBytes)
+			return nil, errors.Wrapf(err, "%#x is not a valid ml-dsa-87 public key", pubKeyBytes)
 		}
-		filteredPubKeys = append(filteredPubKeys, dilithiumPublicKey)
+		filteredPubKeys = append(filteredPubKeys, mlDSA87PublicKey)
 	}
 	return filteredPubKeys, nil
 }
@@ -140,7 +140,7 @@ func filterPublicKeys(pubKeyStrings []string) ([]dilithium.PublicKey, error) {
 func FilterExitAccountsFromUserInput(
 	cliCtx *cli.Context,
 	r io.Reader,
-	validatingPublicKeys [][field_params.DilithiumPubkeyLength]byte,
+	validatingPublicKeys [][field_params.MLDSA87PubkeyLength]byte,
 	forceExit bool,
 ) (rawPubKeys [][]byte, formattedPubKeys []string, err error) {
 	if !cliCtx.IsSet(flags.ExitAllFlag.Name) {

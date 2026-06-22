@@ -3,10 +3,10 @@ package beacon_api
 import (
 	"strconv"
 
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 func jsonifyTransactions(transactions [][]byte) []string {
@@ -18,32 +18,15 @@ func jsonifyTransactions(transactions [][]byte) []string {
 	return jsonTransactions
 }
 
-func jsonifyDilithiumToExecutionChanges(dilithiumToExecutionChanges []*zondpb.SignedDilithiumToExecutionChange) []*apimiddleware.SignedDilithiumToExecutionChangeJson {
-	jsonDilithiumToExecutionChanges := make([]*apimiddleware.SignedDilithiumToExecutionChangeJson, len(dilithiumToExecutionChanges))
-	for index, signedDilithiumToExecutionChange := range dilithiumToExecutionChanges {
-		dilithiumToExecutionChangeJson := &apimiddleware.DilithiumToExecutionChangeJson{
-			ValidatorIndex:      uint64ToString(signedDilithiumToExecutionChange.Message.ValidatorIndex),
-			FromDilithiumPubkey: hexutil.Encode(signedDilithiumToExecutionChange.Message.FromDilithiumPubkey),
-			ToExecutionAddress:  hexutil.Encode(signedDilithiumToExecutionChange.Message.ToExecutionAddress),
-		}
-		signedJson := &apimiddleware.SignedDilithiumToExecutionChangeJson{
-			Message:   dilithiumToExecutionChangeJson,
-			Signature: hexutil.Encode(signedDilithiumToExecutionChange.Signature),
-		}
-		jsonDilithiumToExecutionChanges[index] = signedJson
-	}
-	return jsonDilithiumToExecutionChanges
-}
-
-func jsonifyEth1Data(eth1Data *zondpb.Eth1Data) *apimiddleware.Eth1DataJson {
-	return &apimiddleware.Eth1DataJson{
-		BlockHash:    hexutil.Encode(eth1Data.BlockHash),
-		DepositCount: uint64ToString(eth1Data.DepositCount),
-		DepositRoot:  hexutil.Encode(eth1Data.DepositRoot),
+func jsonifyExecutionData(executionData *qrysmpb.ExecutionData) *apimiddleware.ExecutionDataJson {
+	return &apimiddleware.ExecutionDataJson{
+		BlockHash:    hexutil.Encode(executionData.BlockHash),
+		DepositCount: uint64ToString(executionData.DepositCount),
+		DepositRoot:  hexutil.Encode(executionData.DepositRoot),
 	}
 }
 
-func jsonifyAttestations(attestations []*zondpb.Attestation) []*apimiddleware.AttestationJson {
+func jsonifyAttestations(attestations []*qrysmpb.Attestation) []*apimiddleware.AttestationJson {
 	jsonAttestations := make([]*apimiddleware.AttestationJson, len(attestations))
 	for index, attestation := range attestations {
 		jsonAttestations[index] = jsonifyAttestation(attestation)
@@ -51,7 +34,7 @@ func jsonifyAttestations(attestations []*zondpb.Attestation) []*apimiddleware.At
 	return jsonAttestations
 }
 
-func jsonifyAttesterSlashings(attesterSlashings []*zondpb.AttesterSlashing) []*apimiddleware.AttesterSlashingJson {
+func jsonifyAttesterSlashings(attesterSlashings []*qrysmpb.AttesterSlashing) []*apimiddleware.AttesterSlashingJson {
 	jsonAttesterSlashings := make([]*apimiddleware.AttesterSlashingJson, len(attesterSlashings))
 	for index, attesterSlashing := range attesterSlashings {
 		jsonAttesterSlashing := &apimiddleware.AttesterSlashingJson{
@@ -63,7 +46,7 @@ func jsonifyAttesterSlashings(attesterSlashings []*zondpb.AttesterSlashing) []*a
 	return jsonAttesterSlashings
 }
 
-func jsonifyDeposits(deposits []*zondpb.Deposit) []*apimiddleware.DepositJson {
+func jsonifyDeposits(deposits []*qrysmpb.Deposit) []*apimiddleware.DepositJson {
 	jsonDeposits := make([]*apimiddleware.DepositJson, len(deposits))
 	for depositIndex, deposit := range deposits {
 		proofs := make([]string, len(deposit.Proof))
@@ -85,7 +68,7 @@ func jsonifyDeposits(deposits []*zondpb.Deposit) []*apimiddleware.DepositJson {
 	return jsonDeposits
 }
 
-func jsonifyProposerSlashings(proposerSlashings []*zondpb.ProposerSlashing) []*apimiddleware.ProposerSlashingJson {
+func jsonifyProposerSlashings(proposerSlashings []*qrysmpb.ProposerSlashing) []*apimiddleware.ProposerSlashingJson {
 	jsonProposerSlashings := make([]*apimiddleware.ProposerSlashingJson, len(proposerSlashings))
 	for index, proposerSlashing := range proposerSlashings {
 		jsonProposerSlashing := &apimiddleware.ProposerSlashingJson{
@@ -98,7 +81,7 @@ func jsonifyProposerSlashings(proposerSlashings []*zondpb.ProposerSlashing) []*a
 }
 
 // JsonifySignedVoluntaryExits converts an array of voluntary exit structs to a JSON hex string compatible format.
-func JsonifySignedVoluntaryExits(voluntaryExits []*zondpb.SignedVoluntaryExit) []*apimiddleware.SignedVoluntaryExitJson {
+func JsonifySignedVoluntaryExits(voluntaryExits []*qrysmpb.SignedVoluntaryExit) []*apimiddleware.SignedVoluntaryExitJson {
 	jsonSignedVoluntaryExits := make([]*apimiddleware.SignedVoluntaryExitJson, len(voluntaryExits))
 	for index, signedVoluntaryExit := range voluntaryExits {
 		jsonSignedVoluntaryExit := &apimiddleware.SignedVoluntaryExitJson{
@@ -114,7 +97,7 @@ func JsonifySignedVoluntaryExits(voluntaryExits []*zondpb.SignedVoluntaryExit) [
 }
 
 // JsonifySyncAggregate converts a sync aggregate struct to a JSON hex string compatible format.
-func JsonifySyncAggregate(syncAggregate *zondpb.SyncAggregate) *apimiddleware.SyncAggregateJson {
+func JsonifySyncAggregate(syncAggregate *qrysmpb.SyncAggregate) *apimiddleware.SyncAggregateJson {
 	syncCommitteeSigs := make([]string, len(syncAggregate.SyncCommitteeSignatures))
 	for i, sig := range syncAggregate.SyncCommitteeSignatures {
 		syncCommitteeSigs[i] = hexutil.Encode(sig)
@@ -125,7 +108,7 @@ func JsonifySyncAggregate(syncAggregate *zondpb.SyncAggregate) *apimiddleware.Sy
 	}
 }
 
-func jsonifySignedBeaconBlockHeader(signedBeaconBlockHeader *zondpb.SignedBeaconBlockHeader) *apimiddleware.SignedBeaconBlockHeaderJson {
+func jsonifySignedBeaconBlockHeader(signedBeaconBlockHeader *qrysmpb.SignedBeaconBlockHeader) *apimiddleware.SignedBeaconBlockHeaderJson {
 	return &apimiddleware.SignedBeaconBlockHeaderJson{
 		Header: &apimiddleware.BeaconBlockHeaderJson{
 			BodyRoot:      hexutil.Encode(signedBeaconBlockHeader.Header.BodyRoot),
@@ -138,7 +121,7 @@ func jsonifySignedBeaconBlockHeader(signedBeaconBlockHeader *zondpb.SignedBeacon
 	}
 }
 
-func jsonifyIndexedAttestation(indexedAttestation *zondpb.IndexedAttestation) *apimiddleware.IndexedAttestationJson {
+func jsonifyIndexedAttestation(indexedAttestation *qrysmpb.IndexedAttestation) *apimiddleware.IndexedAttestationJson {
 	attestingIndices := make([]string, len(indexedAttestation.AttestingIndices))
 	for index, attestingIndex := range indexedAttestation.AttestingIndices {
 		attestingIndex := uint64ToString(attestingIndex)
@@ -157,7 +140,7 @@ func jsonifyIndexedAttestation(indexedAttestation *zondpb.IndexedAttestation) *a
 	}
 }
 
-func jsonifyAttestationData(attestationData *zondpb.AttestationData) *apimiddleware.AttestationDataJson {
+func jsonifyAttestationData(attestationData *qrysmpb.AttestationData) *apimiddleware.AttestationDataJson {
 	return &apimiddleware.AttestationDataJson{
 		BeaconBlockRoot: hexutil.Encode(attestationData.BeaconBlockRoot),
 		CommitteeIndex:  uint64ToString(attestationData.CommitteeIndex),
@@ -173,7 +156,7 @@ func jsonifyAttestationData(attestationData *zondpb.AttestationData) *apimiddlew
 	}
 }
 
-func jsonifyAttestation(attestation *zondpb.Attestation) *apimiddleware.AttestationJson {
+func jsonifyAttestation(attestation *qrysmpb.Attestation) *apimiddleware.AttestationJson {
 	signatures := make([]string, len(attestation.Signatures))
 	for i, sig := range attestation.Signatures {
 		signatures[i] = hexutil.Encode(sig)
@@ -186,7 +169,7 @@ func jsonifyAttestation(attestation *zondpb.Attestation) *apimiddleware.Attestat
 	}
 }
 
-func jsonifySignedAggregateAndProof(signedAggregateAndProof *zondpb.SignedAggregateAttestationAndProof) *apimiddleware.SignedAggregateAttestationAndProofJson {
+func jsonifySignedAggregateAndProof(signedAggregateAndProof *qrysmpb.SignedAggregateAttestationAndProof) *apimiddleware.SignedAggregateAttestationAndProofJson {
 	return &apimiddleware.SignedAggregateAttestationAndProofJson{
 		Message: &apimiddleware.AggregateAttestationAndProofJson{
 			AggregatorIndex: uint64ToString(signedAggregateAndProof.Message.AggregatorIndex),

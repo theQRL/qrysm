@@ -19,7 +19,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/ssz/detect"
 	"github.com/theQRL/qrysm/network/forks"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -39,7 +39,7 @@ func (rt *testRT) RoundTrip(req *http.Request) (*http.Response, error) {
 
 var _ http.RoundTripper = &testRT{}
 
-func marshalToEnvelope(val interface{}) ([]byte, error) {
+func marshalToEnvelope(val any) ([]byte, error) {
 	raw, err := json.Marshal(val)
 	if err != nil {
 		return nil, errors.Wrap(err, "error marshaling value to place in data envelope")
@@ -67,22 +67,22 @@ func TestMarshalToEnvelope(t *testing.T) {
 func TestFname(t *testing.T) {
 	vu := &detect.VersionedUnmarshaler{
 		Config: params.MainnetConfig(),
-		Fork:   version.Capella,
+		Fork:   version.Zond,
 	}
 	slot := primitives.Slot(23)
 	prefix := "block"
 	var root [32]byte
 	copy(root[:], []byte{0x23, 0x23, 0x23})
-	expected := "block_mainnet_capella_23-0x2323230000000000000000000000000000000000000000000000000000000000.ssz"
+	expected := "block_mainnet_zond_23-0x2323230000000000000000000000000000000000000000000000000000000000.ssz"
 	actual := fname(prefix, vu, slot, root)
 	require.Equal(t, expected, actual)
 
 	vu.Config = params.MinimalSpecConfig()
-	vu.Fork = version.Capella
+	vu.Fork = version.Zond
 	slot = 17
 	prefix = "state"
 	copy(root[29:], []byte{0x17, 0x17, 0x17})
-	expected = "state_minimal_capella_17-0x2323230000000000000000000000000000000000000000000000000000171717.ssz"
+	expected = "state_minimal_zond_17-0x2323230000000000000000000000000000000000000000000000000000171717.ssz"
 	actual = fname(prefix, vu, slot, root)
 	require.Equal(t, expected, actual)
 }
@@ -95,14 +95,14 @@ func TestDownloadWeakSubjectivityCheckpoint(t *testing.T) {
 	// set up checkpoint state, using the epoch that will be computed as the ws checkpoint state based on the head state
 	wSlot, err := slots.EpochStart(epoch)
 	require.NoError(t, err)
-	wst, err := util.NewBeaconStateCapella()
+	wst, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	fork, err := forkForEpoch(cfg, epoch)
 	require.NoError(t, err)
 	require.NoError(t, wst.SetFork(fork))
 
 	// set up checkpoint block
-	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
+	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
 	require.NoError(t, err)
 	b, err = blocktest.SetBlockParentRoot(b, cfg.ZeroHash)
 	require.NoError(t, err)
@@ -151,8 +151,8 @@ func TestDownloadWeakSubjectivityCheckpoint(t *testing.T) {
 				Root:  fmt.Sprintf("%#x", bRoot),
 			}
 			wsr := struct {
-				Checkpoint interface{} `json:"ws_checkpoint"`
-				StateRoot  string      `json:"state_root"`
+				Checkpoint any    `json:"ws_checkpoint"`
+				StateRoot  string `json:"state_root"`
 			}{
 				Checkpoint: cp,
 				StateRoot:  fmt.Sprintf("%#x", wRoot),
@@ -200,7 +200,7 @@ func TestGetWeakSubjectivityEpochFromHead(t *testing.T) {
 	require.Equal(t, expectedEpoch, actualEpoch)
 }
 
-func forkForEpoch(cfg *params.BeaconChainConfig, epoch primitives.Epoch) (*zondpb.Fork, error) {
+func forkForEpoch(cfg *params.BeaconChainConfig, epoch primitives.Epoch) (*qrysmpb.Fork, error) {
 	os := forks.NewOrderedSchedule(cfg)
 	currentVersion, err := os.VersionForEpoch(epoch)
 	if err != nil {
@@ -215,7 +215,7 @@ func forkForEpoch(cfg *params.BeaconChainConfig, epoch primitives.Epoch) (*zondp
 		prevVersion = currentVersion
 	}
 	forkEpoch := cfg.ForkVersionSchedule[currentVersion]
-	return &zondpb.Fork{
+	return &qrysmpb.Fork{
 		PreviousVersion: prevVersion[:],
 		CurrentVersion:  currentVersion[:],
 		Epoch:           forkEpoch,
@@ -223,7 +223,7 @@ func forkForEpoch(cfg *params.BeaconChainConfig, epoch primitives.Epoch) (*zondp
 }
 
 func defaultTestHeadState(t *testing.T, cfg *params.BeaconChainConfig) (state.BeaconState, primitives.Epoch) {
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 
 	epoch := primitives.Epoch(500)
@@ -233,7 +233,7 @@ func defaultTestHeadState(t *testing.T, cfg *params.BeaconChainConfig) (state.Be
 
 	var validatorCount, avgBalance uint64 = 100, 35
 	require.NoError(t, populateValidators(cfg, st, validatorCount, avgBalance))
-	require.NoError(t, st.SetFinalizedCheckpoint(&zondpb.Checkpoint{
+	require.NoError(t, st.SetFinalizedCheckpoint(&qrysmpb.Checkpoint{
 		Epoch: epoch - 10,
 		Root:  make([]byte, 32),
 	}))
@@ -243,12 +243,12 @@ func defaultTestHeadState(t *testing.T, cfg *params.BeaconChainConfig) (state.Be
 
 // TODO(10429): refactor beacon state options in testing/util to take a state.BeaconState so this can become an option
 func populateValidators(cfg *params.BeaconChainConfig, st state.BeaconState, valCount, avgBalance uint64) error {
-	validators := make([]*zondpb.Validator, valCount)
+	validators := make([]*qrysmpb.Validator, valCount)
 	balances := make([]uint64, len(validators))
-	for i := uint64(0); i < valCount; i++ {
-		validators[i] = &zondpb.Validator{
-			PublicKey:             make([]byte, field_params.DilithiumPubkeyLength),
-			WithdrawalCredentials: make([]byte, 32),
+	for i := range valCount {
+		validators[i] = &qrysmpb.Validator{
+			PublicKey:             make([]byte, field_params.MLDSA87PubkeyLength),
+			WithdrawalCredentials: make([]byte, field_params.WithdrawalCredentialsLength),
 			EffectiveBalance:      avgBalance * 1e9,
 			ExitEpoch:             cfg.FarFutureEpoch,
 		}
@@ -270,7 +270,7 @@ func TestDownloadFinalizedData(t *testing.T) {
 	// set up checkpoint state, using the epoch that will be computed as the ws checkpoint state based on the head state
 	slot, err := slots.EpochStart(epoch)
 	require.NoError(t, err)
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	fork, err := forkForEpoch(cfg, epoch)
 	require.NoError(t, err)
@@ -278,7 +278,7 @@ func TestDownloadFinalizedData(t *testing.T) {
 	require.NoError(t, st.SetSlot(slot))
 
 	// set up checkpoint block
-	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
+	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
 	require.NoError(t, err)
 	b, err = blocktest.SetBlockParentRoot(b, cfg.ZeroHash)
 	require.NoError(t, err)

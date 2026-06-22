@@ -11,13 +11,12 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/encoding/ssz"
 	v1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
 
 func Test_unblindBuilderBlock(t *testing.T) {
-	p := emptyPayloadCapella()
+	p := emptyPayloadZond()
 	p.GasLimit = 123
 
 	tests := []struct {
@@ -30,12 +29,12 @@ func Test_unblindBuilderBlock(t *testing.T) {
 		{
 			name: "old block version",
 			blk: func() interfaces.SignedBeaconBlock {
-				wb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
+				wb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
 				require.NoError(t, err)
 				return wb
 			}(),
 			returnedBlk: func() interfaces.SignedBeaconBlock {
-				wb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
+				wb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
 				require.NoError(t, err)
 				return wb
 			}(),
@@ -43,7 +42,7 @@ func Test_unblindBuilderBlock(t *testing.T) {
 		{
 			name: "blinded without configured builder",
 			blk: func() interfaces.SignedBeaconBlock {
-				wb, err := blocks.NewSignedBeaconBlock(util.NewBlindedBeaconBlockCapella())
+				wb, err := blocks.NewSignedBeaconBlock(util.NewBlindedBeaconBlockZond())
 				require.NoError(t, err)
 				return wb
 			}(),
@@ -55,10 +54,10 @@ func Test_unblindBuilderBlock(t *testing.T) {
 		{
 			name: "non-blinded without configured builder",
 			blk: func() interfaces.SignedBeaconBlock {
-				b := util.NewBeaconBlockCapella()
+				b := util.NewBeaconBlockZond()
 				b.Block.Slot = 1
 				b.Block.ProposerIndex = 2
-				b.Block.Body.ExecutionPayload = &v1.ExecutionPayloadCapella{
+				b.Block.Body.ExecutionPayload = &v1.ExecutionPayloadZond{
 					ParentHash:    make([]byte, fieldparams.RootLength),
 					FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 					StateRoot:     make([]byte, fieldparams.RootLength),
@@ -76,11 +75,11 @@ func Test_unblindBuilderBlock(t *testing.T) {
 				return wb
 			}(),
 			mock: &builderTest.MockBuilderService{
-				HasConfigured:  false,
-				PayloadCapella: p,
+				HasConfigured: false,
+				PayloadZond:   p,
 			},
 			returnedBlk: func() interfaces.SignedBeaconBlock {
-				b := util.NewBeaconBlockCapella()
+				b := util.NewBeaconBlockZond()
 				b.Block.Slot = 1
 				b.Block.ProposerIndex = 2
 				b.Block.Body.ExecutionPayload = p
@@ -92,7 +91,7 @@ func Test_unblindBuilderBlock(t *testing.T) {
 		{
 			name: "submit blind block error",
 			blk: func() interfaces.SignedBeaconBlock {
-				b := util.NewBlindedBeaconBlockCapella()
+				b := util.NewBlindedBeaconBlockZond()
 				b.Block.Slot = 1
 				b.Block.ProposerIndex = 2
 				wb, err := blocks.NewSignedBeaconBlock(b)
@@ -100,7 +99,7 @@ func Test_unblindBuilderBlock(t *testing.T) {
 				return wb
 			}(),
 			mock: &builderTest.MockBuilderService{
-				PayloadCapella:        &v1.ExecutionPayloadCapella{},
+				PayloadZond:           &v1.ExecutionPayloadZond{},
 				HasConfigured:         true,
 				ErrSubmitBlindedBlock: errors.New("can't submit"),
 			},
@@ -109,7 +108,7 @@ func Test_unblindBuilderBlock(t *testing.T) {
 		{
 			name: "head and payload root mismatch",
 			blk: func() interfaces.SignedBeaconBlock {
-				b := util.NewBlindedBeaconBlockCapella()
+				b := util.NewBlindedBeaconBlockZond()
 				b.Block.Slot = 1
 				b.Block.ProposerIndex = 2
 				wb, err := blocks.NewSignedBeaconBlock(b)
@@ -117,11 +116,11 @@ func Test_unblindBuilderBlock(t *testing.T) {
 				return wb
 			}(),
 			mock: &builderTest.MockBuilderService{
-				HasConfigured:  true,
-				PayloadCapella: p,
+				HasConfigured: true,
+				PayloadZond:   p,
 			},
 			returnedBlk: func() interfaces.SignedBeaconBlock {
-				b := util.NewBeaconBlockCapella()
+				b := util.NewBeaconBlockZond()
 				b.Block.Slot = 1
 				b.Block.ProposerIndex = 2
 				b.Block.Body.ExecutionPayload = p
@@ -132,34 +131,16 @@ func Test_unblindBuilderBlock(t *testing.T) {
 			err: "header and payload root do not match",
 		},
 		{
-			name: "can get payload Capella",
+			name: "can get payload Zond",
 			blk: func() interfaces.SignedBeaconBlock {
-				b := util.NewBlindedBeaconBlockCapella()
+				b := util.NewBlindedBeaconBlockZond()
 				b.Block.Slot = 1
 				b.Block.ProposerIndex = 2
-				b.Block.Body.DilithiumToExecutionChanges = []*zond.SignedDilithiumToExecutionChange{
-					{
-						Message: &zond.DilithiumToExecutionChange{
-							ValidatorIndex:      123,
-							FromDilithiumPubkey: []byte{'a'},
-							ToExecutionAddress:  []byte{'a'},
-						},
-						Signature: []byte("sig123"),
-					},
-					{
-						Message: &zond.DilithiumToExecutionChange{
-							ValidatorIndex:      456,
-							FromDilithiumPubkey: []byte{'b'},
-							ToExecutionAddress:  []byte{'b'},
-						},
-						Signature: []byte("sig456"),
-					},
-				}
 				txRoot, err := ssz.TransactionsRoot([][]byte{})
 				require.NoError(t, err)
 				withdrawalsRoot, err := ssz.WithdrawalSliceRoot([]*v1.Withdrawal{}, fieldparams.MaxWithdrawalsPerPayload)
 				require.NoError(t, err)
-				b.Block.Body.ExecutionPayloadHeader = &v1.ExecutionPayloadHeaderCapella{
+				b.Block.Body.ExecutionPayloadHeader = &v1.ExecutionPayloadHeaderZond{
 					ParentHash:       make([]byte, fieldparams.RootLength),
 					FeeRecipient:     make([]byte, fieldparams.FeeRecipientLength),
 					StateRoot:        make([]byte, fieldparams.RootLength),
@@ -177,31 +158,13 @@ func Test_unblindBuilderBlock(t *testing.T) {
 				return wb
 			}(),
 			mock: &builderTest.MockBuilderService{
-				HasConfigured:  true,
-				PayloadCapella: p,
+				HasConfigured: true,
+				PayloadZond:   p,
 			},
 			returnedBlk: func() interfaces.SignedBeaconBlock {
-				b := util.NewBeaconBlockCapella()
+				b := util.NewBeaconBlockZond()
 				b.Block.Slot = 1
 				b.Block.ProposerIndex = 2
-				b.Block.Body.DilithiumToExecutionChanges = []*zond.SignedDilithiumToExecutionChange{
-					{
-						Message: &zond.DilithiumToExecutionChange{
-							ValidatorIndex:      123,
-							FromDilithiumPubkey: []byte{'a'},
-							ToExecutionAddress:  []byte{'a'},
-						},
-						Signature: []byte("sig123"),
-					},
-					{
-						Message: &zond.DilithiumToExecutionChange{
-							ValidatorIndex:      456,
-							FromDilithiumPubkey: []byte{'b'},
-							ToExecutionAddress:  []byte{'b'},
-						},
-						Signature: []byte("sig456"),
-					},
-				}
 				b.Block.Body.ExecutionPayload = p
 				wb, err := blocks.NewSignedBeaconBlock(b)
 				require.NoError(t, err)

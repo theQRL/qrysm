@@ -4,7 +4,7 @@ import (
 	"math/big"
 )
 
-// MockExecutionChainInfoFetcher is a fake implementation of the powchain.ChainInfoFetcher
+// MockExecutionChainInfoFetcher is a fake implementation of the executionChain.ChainInfoFetcher
 type MockExecutionChainInfoFetcher struct {
 	CurrEndpoint string
 	CurrError    error

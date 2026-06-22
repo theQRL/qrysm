@@ -1,7 +1,7 @@
 package keyhandling
 
 type KeystoreModule struct {
-	Function string                 `json:"function"`
-	Params   map[string]interface{} `json:"params"`
-	Message  string                 `json:"message"`
+	Function string         `json:"function"`
+	Params   map[string]any `json:"params"`
+	Message  string         `json:"message"`
 }

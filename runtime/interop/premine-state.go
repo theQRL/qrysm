@@ -4,45 +4,43 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/qrysm/beacon-chain/core/altair"
 	b "github.com/theQRL/qrysm/beacon-chain/core/blocks"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/beacon-chain/state/stateutil"
-	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/container/trie"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 )
 
 var errUnsupportedVersion = errors.New("schema version not supported by PremineGenesisConfig")
 
 type PremineGenesisConfig struct {
-	GenesisTime     uint64
-	NVals           uint64
-	PregenesisCreds uint64
-	Version         int          // as in "github.com/theQRL/qrysm/runtime/version"
-	GB              *types.Block // gzond genesis block
-	depositEntries  *depositEntries
+	GenesisTime    uint64
+	NVals          uint64
+	Version        int          // as in "github.com/theQRL/qrysm/runtime/version"
+	GB             *types.Block // gqrl genesis block
+	depositEntries *depositEntries
 }
 
 type depositEntries struct {
-	dds   []*zondpb.Deposit_Data
+	dds   []*qrysmpb.Deposit_Data
 	roots [][]byte
 }
 
 type PremineGenesisOpt func(*PremineGenesisConfig)
 
-func WithDepositData(dds []*zondpb.Deposit_Data, roots [][]byte) PremineGenesisOpt {
+func WithDepositData(dds []*qrysmpb.Deposit_Data, roots [][]byte) PremineGenesisOpt {
 	return func(cfg *PremineGenesisConfig) {
 		cfg.depositEntries = &depositEntries{
 			dds:   dds,
@@ -52,13 +50,12 @@ func WithDepositData(dds []*zondpb.Deposit_Data, roots [][]byte) PremineGenesisO
 }
 
 // NewPreminedGenesis creates a genesis BeaconState at the given fork version, suitable for using as an e2e genesis.
-func NewPreminedGenesis(ctx context.Context, t, nvals, pCreds uint64, version int, gb *types.Block, opts ...PremineGenesisOpt) (state.BeaconState, error) {
+func NewPreminedGenesis(ctx context.Context, t, nvals uint64, version int, gb *types.Block, opts ...PremineGenesisOpt) (state.BeaconState, error) {
 	cfg := &PremineGenesisConfig{
-		GenesisTime:     t,
-		NVals:           nvals,
-		PregenesisCreds: pCreds,
-		Version:         version,
-		GB:              gb,
+		GenesisTime: t,
+		NVals:       nvals,
+		Version:     version,
+		GB:          gb,
 	}
 	for _, o := range opts {
 		o(cfg)
@@ -68,7 +65,7 @@ func NewPreminedGenesis(ctx context.Context, t, nvals, pCreds uint64, version in
 
 func (s *PremineGenesisConfig) prepare(ctx context.Context) (state.BeaconState, error) {
 	switch s.Version {
-	case version.Capella:
+	case version.Zond:
 	default:
 		return nil, errors.Wrapf(errUnsupportedVersion, "version=%s", version.String(s.Version))
 	}
@@ -105,14 +102,14 @@ func (s *PremineGenesisConfig) empty() (state.BeaconState, error) {
 	}
 
 	switch s.Version {
-	case version.Capella:
-		e, err = state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	case version.Zond:
+		e, err = state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 			BlockRoots:       bRoots,
 			StateRoots:       sRoots,
 			RandaoMixes:      mixes,
 			Balances:         []uint64{},
 			InactivityScores: []uint64{},
-			Validators:       []*zondpb.Validator{},
+			Validators:       []*qrysmpb.Validator{},
 		})
 		if err != nil {
 			return nil, err
@@ -129,7 +126,7 @@ func (s *PremineGenesisConfig) empty() (state.BeaconState, error) {
 	if err = e.SetHistoricalRoots([][]byte{}); err != nil {
 		return nil, err
 	}
-	zcp := &zondpb.Checkpoint{
+	zcp := &qrysmpb.Checkpoint{
 		Epoch: 0,
 		Root:  params.BeaconConfig().ZeroHash[:],
 	}
@@ -142,7 +139,7 @@ func (s *PremineGenesisConfig) empty() (state.BeaconState, error) {
 	if err = e.SetFinalizedCheckpoint(zcp); err != nil {
 		return nil, err
 	}
-	if err = e.SetEth1DataVotes([]*zondpb.Eth1Data{}); err != nil {
+	if err = e.SetExecutionDataVotes([]*qrysmpb.ExecutionData{}); err != nil {
 		return nil, err
 	}
 	return e.Copy(), nil
@@ -153,10 +150,10 @@ func (s *PremineGenesisConfig) processDeposits(ctx context.Context, g state.Beac
 	if err != nil {
 		return err
 	}
-	if err = s.setEth1Data(g); err != nil {
+	if err = s.setExecutionData(g); err != nil {
 		return err
 	}
-	if _, err = helpers.UpdateGenesisEth1Data(g, deposits, g.Eth1Data()); err != nil {
+	if _, err = helpers.UpdateGenesisExecutionData(g, deposits, g.ExecutionData()); err != nil {
 		return err
 	}
 	_, err = b.ProcessPreGenesisDeposits(ctx, g, deposits)
@@ -166,13 +163,13 @@ func (s *PremineGenesisConfig) processDeposits(ctx context.Context, g state.Beac
 	return nil
 }
 
-func (s *PremineGenesisConfig) deposits() ([]*zondpb.Deposit, error) {
+func (s *PremineGenesisConfig) deposits() ([]*qrysmpb.Deposit, error) {
 	if s.depositEntries == nil {
 		prv, pub, err := s.keys()
 		if err != nil {
 			return nil, err
 		}
-		dds, roots, err := DepositDataFromKeysWithExecCreds(prv, pub, s.PregenesisCreds)
+		dds, roots, err := DepositDataFromKeys(prv, pub)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not generate deposit data from keys")
 		}
@@ -192,7 +189,7 @@ func (s *PremineGenesisConfig) deposits() ([]*zondpb.Deposit, error) {
 	return deposits, nil
 }
 
-func (s *PremineGenesisConfig) keys() ([]dilithium.DilithiumKey, []dilithium.PublicKey, error) {
+func (s *PremineGenesisConfig) keys() ([]ml_dsa_87.MLDSA87Key, []ml_dsa_87.PublicKey, error) {
 	prv, pub, err := DeterministicallyGenerateKeys(0, s.NVals)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "could not deterministically generate keys for %d validators", s.NVals)
@@ -200,15 +197,15 @@ func (s *PremineGenesisConfig) keys() ([]dilithium.DilithiumKey, []dilithium.Pub
 	return prv, pub, nil
 }
 
-func (s *PremineGenesisConfig) setEth1Data(g state.BeaconState) error {
-	if err := g.SetEth1DepositIndex(0); err != nil {
+func (s *PremineGenesisConfig) setExecutionData(g state.BeaconState) error {
+	if err := g.SetExecutionDepositIndex(0); err != nil {
 		return err
 	}
 	dr, err := emptyDepositRoot()
 	if err != nil {
 		return err
 	}
-	return g.SetEth1Data(&zondpb.Eth1Data{DepositRoot: dr[:], BlockHash: s.GB.Hash().Bytes()})
+	return g.SetExecutionData(&qrysmpb.ExecutionData{DepositRoot: dr[:], BlockHash: s.GB.Hash().Bytes()})
 }
 
 func emptyDepositRoot() ([32]byte, error) {
@@ -262,8 +259,8 @@ func (s *PremineGenesisConfig) populate(g state.BeaconState) error {
 	}
 
 	// For pre-mined genesis, we want to keep the deposit root set to the root of an empty trie.
-	// This needs to be set again because the methods used by processDeposits mutate the state's eth1data.
-	return s.setEth1Data(g)
+	// This needs to be set again because the methods used by processDeposits mutate the state's executionData.
+	return s.setExecutionData(g)
 }
 
 func (s *PremineGenesisConfig) setGenesisValidatorsRoot(g state.BeaconState) error {
@@ -277,12 +274,12 @@ func (s *PremineGenesisConfig) setGenesisValidatorsRoot(g state.BeaconState) err
 func (s *PremineGenesisConfig) setFork(g state.BeaconState) error {
 	var pv, cv []byte
 	switch s.Version {
-	case version.Capella:
+	case version.Zond:
 		pv, cv = params.BeaconConfig().GenesisForkVersion, params.BeaconConfig().GenesisForkVersion
 	default:
 		return errUnsupportedVersion
 	}
-	fork := &zondpb.Fork{
+	fork := &qrysmpb.Fork{
 		PreviousVersion: pv,
 		CurrentVersion:  cv,
 		Epoch:           0,
@@ -297,7 +294,7 @@ func (s *PremineGenesisConfig) setInactivityScores(g state.BeaconState) error {
 	}
 	scoresMissing := len(g.Validators()) - len(scores)
 	if scoresMissing > 0 {
-		for i := 0; i < scoresMissing; i++ {
+		for range scoresMissing {
 			scores = append(scores, 0)
 		}
 	}
@@ -311,7 +308,7 @@ func (s *PremineGenesisConfig) setCurrentEpochParticipation(g state.BeaconState)
 	}
 	missing := len(g.Validators()) - len(p)
 	if missing > 0 {
-		for i := 0; i < missing; i++ {
+		for range missing {
 			p = append(p, 0)
 		}
 	}
@@ -325,7 +322,7 @@ func (s *PremineGenesisConfig) setPrevEpochParticipation(g state.BeaconState) er
 	}
 	missing := len(g.Validators()) - len(p)
 	if missing > 0 {
-		for i := 0; i < missing; i++ {
+		for range missing {
 			p = append(p, 0)
 		}
 	}
@@ -350,21 +347,21 @@ type rooter interface {
 func (s *PremineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 	var body rooter
 	switch s.Version {
-	case version.Capella:
-		body = &zondpb.BeaconBlockBodyCapella{
-			RandaoReveal: make([]byte, field_params.DilithiumSignatureLength),
-			Eth1Data: &zondpb.Eth1Data{
+	case version.Zond:
+		body = &qrysmpb.BeaconBlockBodyZond{
+			RandaoReveal: make([]byte, fieldparams.MLDSA87SignatureLength),
+			ExecutionData: &qrysmpb.ExecutionData{
 				DepositRoot: make([]byte, 32),
 				BlockHash:   make([]byte, 32),
 			},
 			Graffiti: make([]byte, 32),
-			SyncAggregate: &zondpb.SyncAggregate{
+			SyncAggregate: &qrysmpb.SyncAggregate{
 				SyncCommitteeBits:       make([]byte, fieldparams.SyncCommitteeLength/8),
 				SyncCommitteeSignatures: [][]byte{},
 			},
-			ExecutionPayload: &enginev1.ExecutionPayloadCapella{
+			ExecutionPayload: &enginev1.ExecutionPayloadZond{
 				ParentHash:    make([]byte, 32),
-				FeeRecipient:  make([]byte, 20),
+				FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 				StateRoot:     make([]byte, 32),
 				ReceiptsRoot:  make([]byte, 32),
 				LogsBloom:     make([]byte, 256),
@@ -374,7 +371,6 @@ func (s *PremineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 				Transactions:  make([][]byte, 0),
 				Withdrawals:   make([]*enginev1.Withdrawal, 0),
 			},
-			DilithiumToExecutionChanges: make([]*zondpb.SignedDilithiumToExecutionChange, 0),
 		}
 	default:
 		return errUnsupportedVersion
@@ -384,7 +380,7 @@ func (s *PremineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 	if err != nil {
 		return errors.Wrap(err, "could not hash tree root empty block body")
 	}
-	lbh := &zondpb.BeaconBlockHeader{
+	lbh := &qrysmpb.BeaconBlockHeader{
 		ParentRoot: params.BeaconConfig().ZeroHash[:],
 		StateRoot:  params.BeaconConfig().ZeroHash[:],
 		BodyRoot:   root[:],
@@ -394,11 +390,15 @@ func (s *PremineGenesisConfig) setLatestBlockHeader(g state.BeaconState) error {
 
 func (s *PremineGenesisConfig) setExecutionPayload(g state.BeaconState) error {
 	gb := s.GB
+	extraData := gb.Extra()
+	if len(extraData) > 32 {
+		extraData = extraData[:32]
+	}
 
 	var ed interfaces.ExecutionData
 	switch s.Version {
-	case version.Capella:
-		payload := &enginev1.ExecutionPayloadCapella{
+	case version.Zond:
+		payload := &enginev1.ExecutionPayloadZond{
 			ParentHash:    gb.ParentHash().Bytes(),
 			FeeRecipient:  gb.Coinbase().Bytes(),
 			StateRoot:     gb.Root().Bytes(),
@@ -409,21 +409,21 @@ func (s *PremineGenesisConfig) setExecutionPayload(g state.BeaconState) error {
 			GasLimit:      gb.GasLimit(),
 			GasUsed:       gb.GasUsed(),
 			Timestamp:     gb.Time(),
-			ExtraData:     gb.Extra()[:32],
+			ExtraData:     extraData,
 			BaseFeePerGas: bytesutil.PadTo(bytesutil.ReverseByteOrder(gb.BaseFee().Bytes()), fieldparams.RootLength),
 			BlockHash:     gb.Hash().Bytes(),
 			Transactions:  make([][]byte, 0),
 			Withdrawals:   make([]*enginev1.Withdrawal, 0),
 		}
-		wep, err := blocks.WrappedExecutionPayloadCapella(payload, 0)
+		wep, err := blocks.WrappedExecutionPayloadZond(payload, 0)
 		if err != nil {
 			return err
 		}
-		eph, err := blocks.PayloadToHeaderCapella(wep)
+		eph, err := blocks.PayloadToHeaderZond(wep)
 		if err != nil {
 			return err
 		}
-		ed, err = blocks.WrappedExecutionPayloadHeaderCapella(eph, 0)
+		ed, err = blocks.WrappedExecutionPayloadHeaderZond(eph, 0)
 		if err != nil {
 			return err
 		}
@@ -436,7 +436,7 @@ func (s *PremineGenesisConfig) setExecutionPayload(g state.BeaconState) error {
 func nZeroRoots(n uint64) [][]byte {
 	roots := make([][]byte, n)
 	zh := params.BeaconConfig().ZeroHash[:]
-	for i := uint64(0); i < n; i++ {
+	for i := range n {
 		roots[i] = zh
 	}
 	return roots
@@ -444,7 +444,7 @@ func nZeroRoots(n uint64) [][]byte {
 
 func nSetRoots(n uint64, r []byte) [][]byte {
 	roots := make([][]byte, n)
-	for i := uint64(0); i < n; i++ {
+	for i := range n {
 		h := make([]byte, 32)
 		copy(h, r)
 		roots[i] = h

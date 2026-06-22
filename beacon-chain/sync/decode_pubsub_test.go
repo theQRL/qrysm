@@ -19,7 +19,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
@@ -31,7 +31,7 @@ func TestService_decodePubsubMessage(t *testing.T) {
 		name    string
 		topic   string
 		input   *pubsub.Message
-		want    interface{}
+		want    any
 		wantErr error
 	}{
 		{
@@ -55,17 +55,17 @@ func TestService_decodePubsubMessage(t *testing.T) {
 		},
 		{
 			name:    "topic not mapped to any message type",
-			topic:   "/eth2/abababab/foo/ssz_snappy",
+			topic:   "/consensus/abababab/foo/ssz_snappy",
 			wantErr: p2p.ErrMessageNotMapped,
 		},
 		{
 			name:  "valid message -- beacon block",
-			topic: fmt.Sprintf(p2p.GossipTypeMapping[reflect.TypeOf(&zondpb.SignedBeaconBlockCapella{})], digest),
+			topic: fmt.Sprintf(p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.SignedBeaconBlockZond]()], digest),
 			input: &pubsub.Message{
 				Message: &pb.Message{
 					Data: func() []byte {
 						buf := new(bytes.Buffer)
-						if _, err := p2ptesting.NewTestP2P(t).Encoding().EncodeGossip(buf, util.NewBeaconBlockCapella()); err != nil {
+						if _, err := p2ptesting.NewTestP2P(t).Encoding().EncodeGossip(buf, util.NewBeaconBlockZond()); err != nil {
 							t.Fatal(err)
 						}
 						return buf.Bytes()
@@ -74,7 +74,7 @@ func TestService_decodePubsubMessage(t *testing.T) {
 			},
 			wantErr: nil,
 			want: func() interfaces.ReadOnlySignedBeaconBlock {
-				wsb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
+				wsb, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
 				require.NoError(t, err)
 				return wsb
 			}(),

@@ -1,35 +1,41 @@
+version: "2"
 run:
-  timeout: 10m
-  go: '1.21'
-
-issues:
-  exclude-files:
-    - validator/keymanager/remote-web3signer/v1/web3signer_types.go
-    - .*_test.go
-    - testing/spectest
-  exclude-dirs:
-    - proto
-    - tools/analyzers
-
+  go: 1.23.5
 linters:
-  disable-all: true
+  enable:
+    - errcheck
+    - ineffassign
+    - govet
+  disable:
+    - staticcheck
+    - unused
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - .*_test.go
+      - proto
+      - tools/analyzers
+      - third_party$
+      - builtin$
+      - examples$
+      - pkg/FuzzyVM
+      - pkg/tx-fuzz
+
+formatters:
   enable:
     - gofmt
     - goimports
-    - unused
-    - errcheck
-    - gosimple
-    - gocognit
-    - dupword
-    - nilerr
-    - whitespace
-    - misspell
-
-linters-settings:
-  gocognit:
-    # TODO: We should target for < 50
-    min-complexity: 65
-
-output:
-  print-issued-lines: true
-  sort-results: true
+  exclusions:
+    generated: lax
+    paths:
+      - .*_test.go
+      - proto
+      - tools/analyzers
+      - third_party$
+      - builtin$
+      - examples$

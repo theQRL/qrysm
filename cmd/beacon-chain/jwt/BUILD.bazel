@@ -1,29 +1,29 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "jwt",
     srcs = ["jwt.go"],
     importpath = "github.com/theQRL/qrysm/cmd/beacon-chain/jwt",
     visibility = ["//visibility:public"],
     deps = [
-        "//cmd:go_default_library",
-        "//crypto/rand:go_default_library",
-        "//io/file:go_default_library",
-        "@com_github_sirupsen_logrus//:go_default_library",
-        "@com_github_theqrl_go_zond//common/hexutil:go_default_library",
-        "@com_github_urfave_cli_v2//:go_default_library",
+        "//cmd",
+        "//crypto/rand",
+        "//io/file",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_theqrl_go_qrl//common/hexutil",
+        "@com_github_urfave_cli_v2//:cli",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "jwt_test",
     srcs = ["jwt_test.go"],
-    embed = [":go_default_library"],
+    embed = [":jwt"],
     deps = [
-        "//cmd:go_default_library",
-        "//io/file:go_default_library",
-        "//testing/require:go_default_library",
-        "@com_github_theqrl_go_zond//common/hexutil:go_default_library",
-        "@com_github_urfave_cli_v2//:go_default_library",
+        "//cmd",
+        "//io/file",
+        "//testing/require",
+        "@com_github_theqrl_go_qrl//common/hexutil",
+        "@com_github_urfave_cli_v2//:cli",
     ],
 )

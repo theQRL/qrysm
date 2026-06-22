@@ -49,7 +49,7 @@ func main() {
 	flag.Parse()
 
 	for _, endpt := range endpts {
-		conn, err := grpc.Dial(endpt, grpc.WithInsecure())
+		conn, err := grpc.Dial(endpt, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			log.WithError(err).Fatal("fail to dial")
 		}
@@ -137,8 +137,8 @@ func logHead(endpt string, head *pb.ChainHead) {
 func logParticipation(endpt string, p *pb.ValidatorParticipation) {
 	log.WithFields(
 		logrus.Fields{
-			"VotedEther":        p.VotedEther,
-			"TotalEther":        p.EligibleEther,
+			"VotedQuanta":        p.VotedQuanta,
+			"TotalQuanta":        p.EligibleQuanta,
 			"ParticipationRate": p.GlobalParticipationRate,
 		}).Info("Participation rate from beacon node ", endpt)
 }

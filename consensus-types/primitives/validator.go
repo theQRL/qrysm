@@ -10,13 +10,14 @@ var _ fssz.HashRoot = (ValidatorIndex)(0)
 var _ fssz.Marshaler = (*ValidatorIndex)(nil)
 var _ fssz.Unmarshaler = (*ValidatorIndex)(nil)
 
-// ValidatorIndex in zond.
+// ValidatorIndex in qrl.
 type ValidatorIndex uint64
 
 // Div divides validator index by x.
+// This method panics if dividing by zero!
 func (v ValidatorIndex) Div(x uint64) ValidatorIndex {
 	if x == 0 {
-		panic("divbyzero")
+		panic("divbyzero") // lint:nopanic -- Panic is communicated in the godoc commentary.
 	}
 	return ValidatorIndex(uint64(v) / x)
 }
@@ -27,9 +28,10 @@ func (v ValidatorIndex) Add(x uint64) ValidatorIndex {
 }
 
 // Sub subtracts x from the validator index.
+// This method panics if causing an underflow!
 func (v ValidatorIndex) Sub(x uint64) ValidatorIndex {
 	if uint64(v) < x {
-		panic("underflow")
+		panic("underflow") // lint:nopanic -- Panic is communicated in the godoc commentary.
 	}
 	return ValidatorIndex(uint64(v) - x)
 }

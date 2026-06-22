@@ -17,20 +17,20 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestValidatorMap_DistinctCopy(t *testing.T) {
 	count := uint64(100)
-	vals := make([]*zondpb.Validator, 0, count)
+	vals := make([]*qrysmpb.Validator, 0, count)
 	for i := uint64(1); i < count; i++ {
 		var someRoot [32]byte
-		var someKey [field_params.DilithiumPubkeyLength]byte
+		var someKey [field_params.MLDSA87PubkeyLength]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
-		vals = append(vals, &zondpb.Validator{
+		vals = append(vals, &qrysmpb.Validator{
 			PublicKey:                  someKey[:],
 			WithdrawalCredentials:      someRoot[:],
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,
@@ -50,15 +50,15 @@ func TestValidatorMap_DistinctCopy(t *testing.T) {
 	assert.NotEqual(t, val1, val2, "Values are supposed to be unequal due to copy")
 }
 
-func TestBeaconState_NoDeadlock_Capella(t *testing.T) {
+func TestBeaconState_NoDeadlock_Zond(t *testing.T) {
 	count := uint64(100)
-	vals := make([]*zondpb.Validator, 0, count)
+	vals := make([]*qrysmpb.Validator, 0, count)
 	for i := uint64(1); i < count; i++ {
 		var someRoot [32]byte
-		var someKey [field_params.DilithiumPubkeyLength]byte
+		var someKey [field_params.MLDSA87PubkeyLength]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
-		vals = append(vals, &zondpb.Validator{
+		vals = append(vals, &qrysmpb.Validator{
 			PublicKey:                  someKey[:],
 			WithdrawalCredentials:      someRoot[:],
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,
@@ -69,7 +69,7 @@ func TestBeaconState_NoDeadlock_Capella(t *testing.T) {
 			WithdrawableEpoch:          1,
 		})
 	}
-	st, err := InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
+	st, err := InitializeFromProtoUnsafeZond(&qrysmpb.BeaconStateZond{
 		Validators: vals,
 	})
 	assert.NoError(t, err)
@@ -78,11 +78,10 @@ func TestBeaconState_NoDeadlock_Capella(t *testing.T) {
 
 	wg := new(sync.WaitGroup)
 
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		// Continuously lock and unlock the state
 		// by acquiring the lock.
-		for i := 0; i < 1000; i++ {
+		for range 1000 {
 			for _, f := range s.stateFieldLeaves {
 				f.Lock()
 				if f.Empty() {
@@ -92,12 +91,11 @@ func TestBeaconState_NoDeadlock_Capella(t *testing.T) {
 				f.FieldReference().AddRef()
 			}
 		}
-		wg.Done()
-	}()
+	})
 	// Constantly read from the offending portion
 	// of the code to ensure there is no possible
 	// recursive read locking.
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		go func() {
 			_ = st.FieldReferencesCount()
 		}()
@@ -113,7 +111,7 @@ func TestBeaconState_AppendBalanceWithTrie(t *testing.T) {
 	_, err := st.HashTreeRoot(context.Background())
 	assert.NoError(t, err)
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		if i%2 == 0 {
 			assert.NoError(t, st.UpdateBalancesAtIndex(primitives.ValidatorIndex(i), 1000))
 		}
@@ -179,14 +177,14 @@ func TestCopyAllTries(t *testing.T) {
 
 func generateState(t *testing.T) state.BeaconState {
 	count := uint64(100)
-	vals := make([]*zondpb.Validator, 0, count)
+	vals := make([]*qrysmpb.Validator, 0, count)
 	bals := make([]uint64, 0, count)
 	for i := uint64(1); i < count; i++ {
 		var someRoot [32]byte
-		var someKey [field_params.DilithiumPubkeyLength]byte
+		var someKey [field_params.MLDSA87PubkeyLength]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
-		vals = append(vals, &zondpb.Validator{
+		vals = append(vals, &qrysmpb.Validator{
 			PublicKey:                  someKey[:],
 			WithdrawalCredentials:      someRoot[:],
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,
@@ -200,34 +198,34 @@ func generateState(t *testing.T) state.BeaconState {
 	}
 	zeroHash := params.BeaconConfig().ZeroHash
 	mockblockRoots := make([][]byte, params.BeaconConfig().SlotsPerHistoricalRoot)
-	for i := 0; i < len(mockblockRoots); i++ {
+	for i := range mockblockRoots {
 		mockblockRoots[i] = zeroHash[:]
 	}
 
 	mockstateRoots := make([][]byte, params.BeaconConfig().SlotsPerHistoricalRoot)
-	for i := 0; i < len(mockstateRoots); i++ {
+	for i := range mockstateRoots {
 		mockstateRoots[i] = zeroHash[:]
 	}
 	mockrandaoMixes := make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector)
-	for i := 0; i < len(mockrandaoMixes); i++ {
+	for i := range mockrandaoMixes {
 		mockrandaoMixes[i] = zeroHash[:]
 	}
-	newState, err := InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	newState, err := InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Slot:                  1,
 		GenesisValidatorsRoot: make([]byte, 32),
-		Fork: &zondpb.Fork{
+		Fork: &qrysmpb.Fork{
 			PreviousVersion: make([]byte, 4),
 			CurrentVersion:  make([]byte, 4),
 			Epoch:           0,
 		},
-		LatestBlockHeader: &zondpb.BeaconBlockHeader{
+		LatestBlockHeader: &qrysmpb.BeaconBlockHeader{
 			ParentRoot: make([]byte, fieldparams.RootLength),
 			StateRoot:  make([]byte, fieldparams.RootLength),
 			BodyRoot:   make([]byte, fieldparams.RootLength),
 		},
 		Validators: vals,
 		Balances:   bals,
-		Eth1Data: &zondpb.Eth1Data{
+		ExecutionData: &qrysmpb.ExecutionData{
 			DepositRoot: make([]byte, 32),
 			BlockHash:   make([]byte, 32),
 		},
@@ -235,13 +233,13 @@ func generateState(t *testing.T) state.BeaconState {
 		StateRoots:                  mockstateRoots,
 		RandaoMixes:                 mockrandaoMixes,
 		JustificationBits:           bitfield.NewBitvector4(),
-		PreviousJustifiedCheckpoint: &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
-		CurrentJustifiedCheckpoint:  &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
-		FinalizedCheckpoint:         &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		PreviousJustifiedCheckpoint: &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		CurrentJustifiedCheckpoint:  &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		FinalizedCheckpoint:         &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
 		Slashings:                   make([]uint64, params.BeaconConfig().EpochsPerSlashingsVector),
-		LatestExecutionPayloadHeader: &enginev1.ExecutionPayloadHeaderCapella{
+		LatestExecutionPayloadHeader: &enginev1.ExecutionPayloadHeaderZond{
 			ParentHash:       make([]byte, 32),
-			FeeRecipient:     make([]byte, 20),
+			FeeRecipient:     make([]byte, fieldparams.FeeRecipientLength),
 			StateRoot:        make([]byte, fieldparams.RootLength),
 			ReceiptsRoot:     make([]byte, fieldparams.RootLength),
 			LogsBloom:        make([]byte, 256),

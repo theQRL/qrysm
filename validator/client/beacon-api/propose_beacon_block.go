@@ -7,13 +7,13 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
-func (c beaconApiValidatorClient) proposeBeaconBlock(ctx context.Context, in *zondpb.GenericSignedBeaconBlock) (*zondpb.ProposeResponse, error) {
+func (c beaconApiValidatorClient) proposeBeaconBlock(ctx context.Context, in *qrysmpb.GenericSignedBeaconBlock) (*qrysmpb.ProposeResponse, error) {
 	var consensusVersion string
 	var beaconBlockRoot [32]byte
 
@@ -22,28 +22,28 @@ func (c beaconApiValidatorClient) proposeBeaconBlock(ctx context.Context, in *zo
 	blinded := false
 
 	switch blockType := in.Block.(type) {
-	case *zondpb.GenericSignedBeaconBlock_Capella:
-		consensusVersion = "capella"
-		beaconBlockRoot, err = blockType.Capella.Block.HashTreeRoot()
+	case *qrysmpb.GenericSignedBeaconBlock_Zond:
+		consensusVersion = "zond"
+		beaconBlockRoot, err = blockType.Zond.Block.HashTreeRoot()
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to compute block root for capella beacon block")
+			return nil, errors.Wrap(err, "failed to compute block root for zond beacon block")
 		}
 
-		marshalledSignedBeaconBlockJson, err = marshallBeaconBlockCapella(blockType.Capella)
+		marshalledSignedBeaconBlockJson, err = marshallBeaconBlockZond(blockType.Zond)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshall capella beacon block")
+			return nil, errors.Wrap(err, "failed to marshall zond beacon block")
 		}
-	case *zondpb.GenericSignedBeaconBlock_BlindedCapella:
+	case *qrysmpb.GenericSignedBeaconBlock_BlindedZond:
 		blinded = true
-		consensusVersion = "capella"
-		beaconBlockRoot, err = blockType.BlindedCapella.Block.HashTreeRoot()
+		consensusVersion = "zond"
+		beaconBlockRoot, err = blockType.BlindedZond.Block.HashTreeRoot()
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to compute block root for blinded capella beacon block")
+			return nil, errors.Wrap(err, "failed to compute block root for blinded zond beacon block")
 		}
 
-		marshalledSignedBeaconBlockJson, err = marshallBeaconBlockBlindedCapella(blockType.BlindedCapella)
+		marshalledSignedBeaconBlockJson, err = marshallBeaconBlockBlindedZond(blockType.BlindedZond)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshall blinded capella beacon block")
+			return nil, errors.Wrap(err, "failed to marshall blinded zond beacon block")
 		}
 	default:
 		return nil, errors.Errorf("unsupported block type %T", in.Block)
@@ -52,12 +52,12 @@ func (c beaconApiValidatorClient) proposeBeaconBlock(ctx context.Context, in *zo
 	var endpoint string
 
 	if blinded {
-		endpoint = "/zond/v1/beacon/blinded_blocks"
+		endpoint = "/qrl/v1/beacon/blinded_blocks"
 	} else {
-		endpoint = "/zond/v1/beacon/blocks"
+		endpoint = "/qrl/v1/beacon/blocks"
 	}
 
-	headers := map[string]string{"Eth-Consensus-Version": consensusVersion}
+	headers := map[string]string{"Qrl-Consensus-Version": consensusVersion}
 	if httpError, err := c.jsonRestHandler.PostRestJson(ctx, endpoint, headers, bytes.NewBuffer(marshalledSignedBeaconBlockJson), nil); err != nil {
 		if httpError != nil && httpError.Code == http.StatusAccepted {
 			// Error 202 means that the block was successfully broadcasted, but validation failed
@@ -67,28 +67,28 @@ func (c beaconApiValidatorClient) proposeBeaconBlock(ctx context.Context, in *zo
 		return nil, errors.Wrap(err, "failed to send POST data to REST endpoint")
 	}
 
-	return &zondpb.ProposeResponse{BlockRoot: beaconBlockRoot[:]}, nil
+	return &qrysmpb.ProposeResponse{BlockRoot: beaconBlockRoot[:]}, nil
 }
 
-func marshallBeaconBlockCapella(block *zondpb.SignedBeaconBlockCapella) ([]byte, error) {
-	signedBeaconBlockCapellaJson := &apimiddleware.SignedBeaconBlockCapellaJson{
+func marshallBeaconBlockZond(block *qrysmpb.SignedBeaconBlockZond) ([]byte, error) {
+	signedBeaconBlockZondJson := &apimiddleware.SignedBeaconBlockZondJson{
 		Signature: hexutil.Encode(block.Signature),
-		Message: &apimiddleware.BeaconBlockCapellaJson{
+		Message: &apimiddleware.BeaconBlockZondJson{
 			ParentRoot:    hexutil.Encode(block.Block.ParentRoot),
 			ProposerIndex: uint64ToString(block.Block.ProposerIndex),
 			Slot:          uint64ToString(block.Block.Slot),
 			StateRoot:     hexutil.Encode(block.Block.StateRoot),
-			Body: &apimiddleware.BeaconBlockBodyCapellaJson{
+			Body: &apimiddleware.BeaconBlockBodyZondJson{
 				Attestations:      jsonifyAttestations(block.Block.Body.Attestations),
 				AttesterSlashings: jsonifyAttesterSlashings(block.Block.Body.AttesterSlashings),
 				Deposits:          jsonifyDeposits(block.Block.Body.Deposits),
-				Eth1Data:          jsonifyEth1Data(block.Block.Body.Eth1Data),
+				ExecutionData:     jsonifyExecutionData(block.Block.Body.ExecutionData),
 				Graffiti:          hexutil.Encode(block.Block.Body.Graffiti),
 				ProposerSlashings: jsonifyProposerSlashings(block.Block.Body.ProposerSlashings),
 				RandaoReveal:      hexutil.Encode(block.Block.Body.RandaoReveal),
 				VoluntaryExits:    JsonifySignedVoluntaryExits(block.Block.Body.VoluntaryExits),
 				SyncAggregate:     JsonifySyncAggregate(block.Block.Body.SyncAggregate),
-				ExecutionPayload: &apimiddleware.ExecutionPayloadCapellaJson{
+				ExecutionPayload: &apimiddleware.ExecutionPayloadZondJson{
 					BaseFeePerGas: bytesutil.LittleEndianBytesToBigInt(block.Block.Body.ExecutionPayload.BaseFeePerGas).String(),
 					BlockHash:     hexutil.Encode(block.Block.Body.ExecutionPayload.BlockHash),
 					BlockNumber:   uint64ToString(block.Block.Body.ExecutionPayload.BlockNumber),
@@ -105,33 +105,32 @@ func marshallBeaconBlockCapella(block *zondpb.SignedBeaconBlockCapella) ([]byte,
 					Transactions:  jsonifyTransactions(block.Block.Body.ExecutionPayload.Transactions),
 					Withdrawals:   jsonifyWithdrawals(block.Block.Body.ExecutionPayload.Withdrawals),
 				},
-				DilithiumToExecutionChanges: jsonifyDilithiumToExecutionChanges(block.Block.Body.DilithiumToExecutionChanges),
 			},
 		},
 	}
 
-	return json.Marshal(signedBeaconBlockCapellaJson)
+	return json.Marshal(signedBeaconBlockZondJson)
 }
 
-func marshallBeaconBlockBlindedCapella(block *zondpb.SignedBlindedBeaconBlockCapella) ([]byte, error) {
-	signedBeaconBlockCapellaJson := &apimiddleware.SignedBlindedBeaconBlockCapellaJson{
+func marshallBeaconBlockBlindedZond(block *qrysmpb.SignedBlindedBeaconBlockZond) ([]byte, error) {
+	signedBeaconBlockZondJson := &apimiddleware.SignedBlindedBeaconBlockZondJson{
 		Signature: hexutil.Encode(block.Signature),
-		Message: &apimiddleware.BlindedBeaconBlockCapellaJson{
+		Message: &apimiddleware.BlindedBeaconBlockZondJson{
 			ParentRoot:    hexutil.Encode(block.Block.ParentRoot),
 			ProposerIndex: uint64ToString(block.Block.ProposerIndex),
 			Slot:          uint64ToString(block.Block.Slot),
 			StateRoot:     hexutil.Encode(block.Block.StateRoot),
-			Body: &apimiddleware.BlindedBeaconBlockBodyCapellaJson{
+			Body: &apimiddleware.BlindedBeaconBlockBodyZondJson{
 				Attestations:      jsonifyAttestations(block.Block.Body.Attestations),
 				AttesterSlashings: jsonifyAttesterSlashings(block.Block.Body.AttesterSlashings),
 				Deposits:          jsonifyDeposits(block.Block.Body.Deposits),
-				Eth1Data:          jsonifyEth1Data(block.Block.Body.Eth1Data),
+				ExecutionData:     jsonifyExecutionData(block.Block.Body.ExecutionData),
 				Graffiti:          hexutil.Encode(block.Block.Body.Graffiti),
 				ProposerSlashings: jsonifyProposerSlashings(block.Block.Body.ProposerSlashings),
 				RandaoReveal:      hexutil.Encode(block.Block.Body.RandaoReveal),
 				VoluntaryExits:    JsonifySignedVoluntaryExits(block.Block.Body.VoluntaryExits),
 				SyncAggregate:     JsonifySyncAggregate(block.Block.Body.SyncAggregate),
-				ExecutionPayloadHeader: &apimiddleware.ExecutionPayloadHeaderCapellaJson{
+				ExecutionPayloadHeader: &apimiddleware.ExecutionPayloadHeaderZondJson{
 					BaseFeePerGas:    bytesutil.LittleEndianBytesToBigInt(block.Block.Body.ExecutionPayloadHeader.BaseFeePerGas).String(),
 					BlockHash:        hexutil.Encode(block.Block.Body.ExecutionPayloadHeader.BlockHash),
 					BlockNumber:      uint64ToString(block.Block.Body.ExecutionPayloadHeader.BlockNumber),
@@ -148,10 +147,9 @@ func marshallBeaconBlockBlindedCapella(block *zondpb.SignedBlindedBeaconBlockCap
 					TransactionsRoot: hexutil.Encode(block.Block.Body.ExecutionPayloadHeader.TransactionsRoot),
 					WithdrawalsRoot:  hexutil.Encode(block.Block.Body.ExecutionPayloadHeader.WithdrawalsRoot),
 				},
-				DilithiumToExecutionChanges: jsonifyDilithiumToExecutionChanges(block.Block.Body.DilithiumToExecutionChanges),
 			},
 		},
 	}
 
-	return json.Marshal(signedBeaconBlockCapellaJson)
+	return json.Marshal(signedBeaconBlockZondJson)
 }

@@ -12,13 +12,12 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/async/event"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
-	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	qrlpbservice "github.com/theQRL/qrysm/proto/qrl/service"
 	"github.com/theQRL/qrysm/validator/accounts/petnames"
 	"github.com/theQRL/qrysm/validator/keymanager"
 	"github.com/theQRL/qrysm/validator/keymanager/remote-web3signer/internal"
@@ -40,7 +39,7 @@ type SetupConfig struct {
 	// Either URL or keylist must be set.
 	// a static list of public keys to be passed by the user to determine what accounts should sign.
 	// This will provide a layer of safety against slashing if the web3signer is shared across validators.
-	ProvidedPublicKeys [][field_params.DilithiumPubkeyLength]byte
+	ProvidedPublicKeys [][field_params.MLDSA87PubkeyLength]byte
 }
 
 // Keymanager defines the web3signer keymanager.
@@ -48,7 +47,7 @@ type Keymanager struct {
 	client                internal.HttpSignerClient
 	genesisValidatorsRoot []byte
 	publicKeysURL         string
-	providedPublicKeys    [][field_params.DilithiumPubkeyLength]byte
+	providedPublicKeys    [][field_params.MLDSA87PubkeyLength]byte
 	accountsChangedFeed   *event.Feed
 	validator             *validator.Validate
 	publicKeysUrlCalled   bool
@@ -77,12 +76,12 @@ func NewKeymanager(_ context.Context, cfg *SetupConfig) (*Keymanager, error) {
 // FetchValidatingPublicKeys fetches the validating public keys
 // from the remote server or from the provided keys if there are no existing public keys set
 // or provides the existing keys in the keymanager.
-func (km *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][field_params.DilithiumPubkeyLength]byte, error) {
+func (km *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][field_params.MLDSA87PubkeyLength]byte, error) {
 	if km.publicKeysURL != "" && !km.publicKeysUrlCalled {
 		providedPublicKeys, err := km.client.GetPublicKeys(ctx, km.publicKeysURL)
 		if err != nil {
 			erroredResponsesTotal.Inc()
-			return nil, errors.Wrap(err, fmt.Sprintf("could not get public keys from remote server url: %v", km.publicKeysURL))
+			return nil, errors.Wrapf(err, could not get public keys from remote server url: %v", km.publicKeysURL)
 		}
 		// makes sure that if the public keys are deleted the validator does not call URL again.
 		km.publicKeysUrlCalled = true
@@ -92,7 +91,7 @@ func (km *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][field_p
 }
 
 // Sign signs the message by using a remote web3signer server.
-func (km *Keymanager) Sign(ctx context.Context, request *validatorpb.SignRequest) (dilithium.Signature, error) {
+func (km *Keymanager) Sign(ctx context.Context, request *validatorpb.SignRequest) (ml_dsa_87.Signature, error) {
 	signRequest, err := getSignRequestJson(ctx, km.validator, request, km.genesisValidatorsRoot)
 	if err != nil {
 		erroredResponsesTotal.Inc()
@@ -183,26 +182,26 @@ func getSignRequestJson(ctx context.Context, validator *validator.Validate, requ
 		}
 		blindedBlockBellatrixSignRequestsTotal.Inc()
 		return json.Marshal(blindedBlockv2SignRequest)
-	case *validatorpb.SignRequest_BlockCapella:
-		blockv2CapellaSignRequest, err := web3signerv1.GetBlockV2BlindedSignRequest(request, genesisValidatorsRoot)
+	case *validatorpb.SignRequest_BlockZond:
+		blockv2ZondSignRequest, err := web3signerv1.GetBlockV2BlindedSignRequest(request, genesisValidatorsRoot)
 		if err != nil {
 			return nil, err
 		}
-		if err = validator.StructCtx(ctx, blockv2CapellaSignRequest); err != nil {
+		if err = validator.StructCtx(ctx, blockv2ZondSignRequest); err != nil {
 			return nil, err
 		}
-		blockCapellaSignRequestsTotal.Inc()
-		return json.Marshal(blockv2CapellaSignRequest)
-	case *validatorpb.SignRequest_BlindedBlockCapella:
-		blindedBlockv2CapellaSignRequest, err := web3signerv1.GetBlockV2BlindedSignRequest(request, genesisValidatorsRoot)
+		blockZondSignRequestsTotal.Inc()
+		return json.Marshal(blockv2ZondSignRequest)
+	case *validatorpb.SignRequest_BlindedBlockZond:
+		blindedBlockv2ZondSignRequest, err := web3signerv1.GetBlockV2BlindedSignRequest(request, genesisValidatorsRoot)
 		if err != nil {
 			return nil, err
 		}
-		if err = validator.StructCtx(ctx, blindedBlockv2CapellaSignRequest); err != nil {
+		if err = validator.StructCtx(ctx, blindedBlockv2ZondSignRequest); err != nil {
 			return nil, err
 		}
-		blindedBlockCapellaSignRequestsTotal.Inc()
-		return json.Marshal(blindedBlockv2CapellaSignRequest)
+		blindedBlockZondSignRequestsTotal.Inc()
+		return json.Marshal(blindedBlockv2ZondSignRequest)
 	// We do not support "DEPOSIT" type.
 	//
 	//	case *validatorpb.:
@@ -275,19 +274,19 @@ func getSignRequestJson(ctx context.Context, validator *validator.Validate, requ
 }
 
 // SubscribeAccountChanges returns the event subscription for changes to public keys.
-func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][field_params.DilithiumPubkeyLength]byte) event.Subscription {
+func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][field_params.MLDSA87PubkeyLength]byte) event.Subscription {
 	return km.accountsChangedFeed.Subscribe(pubKeysChan)
 }
 
 // ExtractKeystores is not supported for the remote-web3signer keymanager type.
 func (*Keymanager) ExtractKeystores(
-	_ context.Context, _ []dilithium.PublicKey, _ string,
+	_ context.Context, _ []ml_dsa_87.PublicKey, _ string,
 ) ([]*keymanager.Keystore, error) {
 	return nil, errors.New("extracting keys is not supported for a web3signer keymanager")
 }
 
 // DeleteKeystores is not supported for the remote-web3signer keymanager type.
-func (km *Keymanager) DeleteKeystores(context.Context, [][]byte) ([]*zondpbservice.DeletedKeystoreStatus, error) {
+func (km *Keymanager) DeleteKeystores(context.Context, [][]byte) ([]*qrlpbservice.DeletedKeystoreStatus, error) {
 	return nil, errors.New("Wrong wallet type: web3-signer. Only Imported or Derived wallets can delete accounts")
 }
 
@@ -319,7 +318,7 @@ func (km *Keymanager) ListKeymanagerAccounts(ctx context.Context, cfg keymanager
 }
 
 // DisplayRemotePublicKeys prints remote public keys to stdout.
-func DisplayRemotePublicKeys(validatingPubKeys [][field_params.DilithiumPubkeyLength]byte) {
+func DisplayRemotePublicKeys(validatingPubKeys [][field_params.MLDSA87PubkeyLength]byte) {
 	au := aurora.NewAurora(true)
 	for i := 0; i < len(validatingPubKeys); i++ {
 		fmt.Println("")
@@ -333,11 +332,11 @@ func DisplayRemotePublicKeys(validatingPubKeys [][field_params.DilithiumPubkeyLe
 }
 
 // AddPublicKeys imports a list of public keys into the keymanager for web3signer use. Returns status with message.
-func (km *Keymanager) AddPublicKeys(ctx context.Context, pubKeys [][field_params.DilithiumPubkeyLength]byte) ([]*zondpbservice.ImportedRemoteKeysStatus, error) {
+func (km *Keymanager) AddPublicKeys(ctx context.Context, pubKeys [][field_params.MLDSA87PubkeyLength]byte) ([]*qrlpbservice.ImportedRemoteKeysStatus, error) {
 	if ctx == nil {
 		return nil, errors.New("context is nil")
 	}
-	importedRemoteKeysStatuses := make([]*zondpbservice.ImportedRemoteKeysStatus, len(pubKeys))
+	importedRemoteKeysStatuses := make([]*qrlpbservice.ImportedRemoteKeysStatus, len(pubKeys))
 	for i, pubKey := range pubKeys {
 		found := false
 		for _, key := range km.providedPublicKeys {
@@ -347,15 +346,15 @@ func (km *Keymanager) AddPublicKeys(ctx context.Context, pubKeys [][field_params
 			}
 		}
 		if found {
-			importedRemoteKeysStatuses[i] = &zondpbservice.ImportedRemoteKeysStatus{
-				Status:  zondpbservice.ImportedRemoteKeysStatus_DUPLICATE,
+			importedRemoteKeysStatuses[i] = &qrlpbservice.ImportedRemoteKeysStatus{
+				Status:  qrlpbservice.ImportedRemoteKeysStatus_DUPLICATE,
 				Message: fmt.Sprintf("Duplicate pubkey: %v, already in use", hexutil.Encode(pubKey[:])),
 			}
 			continue
 		}
 		km.providedPublicKeys = append(km.providedPublicKeys, pubKey)
-		importedRemoteKeysStatuses[i] = &zondpbservice.ImportedRemoteKeysStatus{
-			Status:  zondpbservice.ImportedRemoteKeysStatus_IMPORTED,
+		importedRemoteKeysStatuses[i] = &qrlpbservice.ImportedRemoteKeysStatus{
+			Status:  qrlpbservice.ImportedRemoteKeysStatus_IMPORTED,
 			Message: fmt.Sprintf("Successfully added pubkey: %v", hexutil.Encode(pubKey[:])),
 		}
 		log.Debug("Added pubkey to keymanager for web3signer", "pubkey", hexutil.Encode(pubKey[:]))
@@ -365,15 +364,15 @@ func (km *Keymanager) AddPublicKeys(ctx context.Context, pubKeys [][field_params
 }
 
 // DeletePublicKeys removes a list of public keys from the keymanager for web3signer use. Returns status with message.
-func (km *Keymanager) DeletePublicKeys(ctx context.Context, pubKeys [][field_params.DilithiumPubkeyLength]byte) ([]*zondpbservice.DeletedRemoteKeysStatus, error) {
+func (km *Keymanager) DeletePublicKeys(ctx context.Context, pubKeys [][field_params.MLDSA87PubkeyLength]byte) ([]*qrlpbservice.DeletedRemoteKeysStatus, error) {
 	if ctx == nil {
 		return nil, errors.New("context is nil")
 	}
-	deletedRemoteKeysStatuses := make([]*zondpbservice.DeletedRemoteKeysStatus, len(pubKeys))
+	deletedRemoteKeysStatuses := make([]*qrlpbservice.DeletedRemoteKeysStatus, len(pubKeys))
 	if len(km.providedPublicKeys) == 0 {
 		for i := range deletedRemoteKeysStatuses {
-			deletedRemoteKeysStatuses[i] = &zondpbservice.DeletedRemoteKeysStatus{
-				Status:  zondpbservice.DeletedRemoteKeysStatus_NOT_FOUND,
+			deletedRemoteKeysStatuses[i] = &qrlpbservice.DeletedRemoteKeysStatus{
+				Status:  qrlpbservice.DeletedRemoteKeysStatus_NOT_FOUND,
 				Message: "No pubkeys are set in validator",
 			}
 		}
@@ -383,8 +382,8 @@ func (km *Keymanager) DeletePublicKeys(ctx context.Context, pubKeys [][field_par
 		for in, key := range km.providedPublicKeys {
 			if bytes.Equal(key[:], pubkey[:]) {
 				km.providedPublicKeys = append(km.providedPublicKeys[:in], km.providedPublicKeys[in+1:]...)
-				deletedRemoteKeysStatuses[i] = &zondpbservice.DeletedRemoteKeysStatus{
-					Status:  zondpbservice.DeletedRemoteKeysStatus_DELETED,
+				deletedRemoteKeysStatuses[i] = &qrlpbservice.DeletedRemoteKeysStatus{
+					Status:  qrlpbservice.DeletedRemoteKeysStatus_DELETED,
 					Message: fmt.Sprintf("Successfully deleted pubkey: %v", hexutil.Encode(pubkey[:])),
 				}
 				log.Debug("Deleted pubkey from keymanager for web3signer", "pubkey", hexutil.Encode(pubkey[:]))
@@ -392,8 +391,8 @@ func (km *Keymanager) DeletePublicKeys(ctx context.Context, pubKeys [][field_par
 			}
 		}
 		if deletedRemoteKeysStatuses[i] == nil {
-			deletedRemoteKeysStatuses[i] = &zondpbservice.DeletedRemoteKeysStatus{
-				Status:  zondpbservice.DeletedRemoteKeysStatus_NOT_FOUND,
+			deletedRemoteKeysStatuses[i] = &qrlpbservice.DeletedRemoteKeysStatus{
+				Status:  qrlpbservice.DeletedRemoteKeysStatus_NOT_FOUND,
 				Message: fmt.Sprintf("Pubkey: %v not found", hexutil.Encode(pubkey[:])),
 			}
 		}

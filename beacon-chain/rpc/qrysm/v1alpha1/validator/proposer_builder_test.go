@@ -16,10 +16,12 @@ import (
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
+	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
+	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
 	v1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
@@ -39,8 +41,8 @@ func TestServer_circuitBreakBuilder(t *testing.T) {
 	require.Equal(t, true, b)
 	require.LogsContain(t, hook, "Circuit breaker activated due to missing consecutive slot. Ignore if mev-boost is not used")
 
-	ojc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
-	ofc := &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ojc := &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+	ofc := &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 	ctx := context.Background()
 	st, blkRoot, err := createState(1, [32]byte{'a'}, [32]byte{}, params.BeaconConfig().ZeroHash, ojc, ofc)
 	require.NoError(t, err)
@@ -92,9 +94,9 @@ func TestServer_validatorRegistered(t *testing.T) {
 	require.Equal(t, false, reg)
 
 	f := bytesutil.PadTo([]byte{}, fieldparams.FeeRecipientLength)
-	p := bytesutil.PadTo([]byte{}, field_params.DilithiumPubkeyLength)
+	p := bytesutil.PadTo([]byte{}, field_params.MLDSA87PubkeyLength)
 	require.NoError(t, db.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{0, 1},
-		[]*zondpb.ValidatorRegistrationV1{{FeeRecipient: f, Timestamp: uint64(time.Now().Unix()), Pubkey: p}, {FeeRecipient: f, Timestamp: uint64(time.Now().Unix()), Pubkey: p}}))
+		[]*qrysmpb.ValidatorRegistrationV1{{FeeRecipient: f, Timestamp: uint64(time.Now().Unix()), Pubkey: p}, {FeeRecipient: f, Timestamp: uint64(time.Now().Unix()), Pubkey: p}}))
 
 	reg, err = proposerServer.validatorRegistered(ctx, 0)
 	require.NoError(t, err)
@@ -134,9 +136,9 @@ func TestServer_canUseBuilder(t *testing.T) {
 	require.Equal(t, false, reg)
 
 	f := bytesutil.PadTo([]byte{}, fieldparams.FeeRecipientLength)
-	p := bytesutil.PadTo([]byte{}, field_params.DilithiumPubkeyLength)
+	p := bytesutil.PadTo([]byte{}, field_params.MLDSA87PubkeyLength)
 	require.NoError(t, db.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{0},
-		[]*zondpb.ValidatorRegistrationV1{{FeeRecipient: f, Timestamp: uint64(time.Now().Unix()), Pubkey: p}}))
+		[]*qrysmpb.ValidatorRegistrationV1{{FeeRecipient: f, Timestamp: uint64(time.Now().Unix()), Pubkey: p}}))
 
 	reg, err = proposerServer.canUseBuilder(ctx, params.BeaconConfig().MaxBuilderConsecutiveMissedSlots-1, 0)
 	require.NoError(t, err)
@@ -148,25 +150,45 @@ func createState(
 	blockRoot [32]byte,
 	parentRoot [32]byte,
 	payloadHash [32]byte,
-	justified *zondpb.Checkpoint,
-	finalized *zondpb.Checkpoint,
-) (state.BeaconState, [32]byte, error) {
+	justified *qrysmpb.Checkpoint,
+	finalized *qrysmpb.Checkpoint,
+) (state.BeaconState, blocks.ROBlock, error) {
 
-	base := &zondpb.BeaconStateCapella{
+	base := &qrysmpb.BeaconStateZond{
 		Slot:                       slot,
 		RandaoMixes:                make([][]byte, params.BeaconConfig().EpochsPerHistoricalVector),
 		BlockRoots:                 make([][]byte, 1),
 		CurrentJustifiedCheckpoint: justified,
 		FinalizedCheckpoint:        finalized,
-		LatestExecutionPayloadHeader: &v1.ExecutionPayloadHeaderCapella{
+		LatestExecutionPayloadHeader: &v1.ExecutionPayloadHeaderZond{
 			BlockHash: payloadHash[:],
 		},
-		LatestBlockHeader: &zondpb.BeaconBlockHeader{
+		LatestBlockHeader: &qrysmpb.BeaconBlockHeader{
 			ParentRoot: parentRoot[:],
 		},
 	}
 
 	base.BlockRoots[0] = append(base.BlockRoots[0], blockRoot[:]...)
-	st, err := state_native.InitializeFromProtoCapella(base)
-	return st, blockRoot, err
+	st, err := state_native.InitializeFromProtoZond(base)
+	if err != nil {
+		return nil, blocks.ROBlock{}, err
+	}
+
+	blk := &qrysmpb.SignedBeaconBlockZond{
+		Block: &qrysmpb.BeaconBlockZond{
+			Slot:       slot,
+			ParentRoot: parentRoot[:],
+			Body: &qrysmpb.BeaconBlockBodyZond{
+				ExecutionPayload: &enginev1.ExecutionPayloadZond{
+					BlockHash: payloadHash[:],
+				},
+			},
+		},
+	}
+	signed, err := blocks.NewSignedBeaconBlock(blk)
+	if err != nil {
+		return nil, blocks.ROBlock{}, err
+	}
+	roblock, err := blocks.NewROBlockWithRoot(signed, blockRoot)
+	return st, roblock, err
 }

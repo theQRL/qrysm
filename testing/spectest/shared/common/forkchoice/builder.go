@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/qrysm/beacon-chain/blockchain"
 	"github.com/theQRL/qrysm/beacon-chain/execution"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
@@ -26,7 +26,7 @@ type Builder struct {
 
 func NewBuilder(t testing.TB, initialState state.BeaconState, initialBlock interfaces.ReadOnlySignedBeaconBlock) *Builder {
 	execMock := &engineMock{
-		// powBlocks: make(map[[32]byte]*zondpb.PowBlock),
+		// powBlocks: make(map[[32]byte]*qrysmpb.PowBlock),
 	}
 	service := startChainService(t, initialState, initialBlock, execMock)
 	return &Builder{
@@ -102,19 +102,19 @@ func (bb *Builder) ValidBlock(t testing.TB, b interfaces.ReadOnlySignedBeaconBlo
 
 /*
 // PoWBlock receives the block and notifies a mocked execution engine.
-func (bb *Builder) PoWBlock(pb *zondpb.PowBlock) {
+func (bb *Builder) PoWBlock(pb *qrysmpb.PowBlock) {
 	bb.execMock.powBlocks[bytesutil.ToBytes32(pb.BlockHash)] = pb
 }
 */
 
 // Attestation receives the attestation and updates forkchoice.
-func (bb *Builder) Attestation(t testing.TB, a *zondpb.Attestation) {
+func (bb *Builder) Attestation(t testing.TB, a *qrysmpb.Attestation) {
 	require.NoError(t, bb.service.OnAttestation(context.TODO(), a, params.BeaconNetworkConfig().MaximumGossipClockDisparity))
 }
 
 // AttesterSlashing receives an attester slashing and feeds it to forkchoice.
-func (bb *Builder) AttesterSlashing(s *zondpb.AttesterSlashing) {
-	slashings := []*zondpb.AttesterSlashing{s}
+func (bb *Builder) AttesterSlashing(s *qrysmpb.AttesterSlashing) {
+	slashings := []*qrysmpb.AttesterSlashing{s}
 	bb.service.InsertSlashingsToForkChoiceStore(context.TODO(), slashings)
 }
 
@@ -132,7 +132,7 @@ func (bb *Builder) Check(t testing.TB, c *Check) {
 		require.Equal(t, primitives.Slot(c.Head.Slot), bb.service.HeadSlot())
 	}
 	if c.JustifiedCheckPoint != nil {
-		cp := &zondpb.Checkpoint{
+		cp := &qrysmpb.Checkpoint{
 			Epoch: primitives.Epoch(c.JustifiedCheckPoint.Epoch),
 			Root:  common.FromHex(c.JustifiedCheckPoint.Root),
 		}
@@ -140,7 +140,7 @@ func (bb *Builder) Check(t testing.TB, c *Check) {
 		require.DeepEqual(t, cp, got)
 	}
 	if c.FinalizedCheckPoint != nil {
-		cp := &zondpb.Checkpoint{
+		cp := &qrysmpb.Checkpoint{
 			Epoch: primitives.Epoch(c.FinalizedCheckPoint.Epoch),
 			Root:  common.FromHex(c.FinalizedCheckPoint.Root),
 		}

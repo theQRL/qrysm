@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -35,7 +35,7 @@ func TestState_CanSaveRetrieve(t *testing.T) {
 
 	require.Equal(t, false, db.HasState(context.Background(), r))
 
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(100))
 
@@ -66,7 +66,7 @@ func TestState_CanSaveRetrieveValidatorEntries(t *testing.T) {
 	require.Equal(t, false, db.HasState(context.Background(), r))
 
 	stateValidators := validators(10)
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(100))
 	require.NoError(t, st.SetValidators(stateValidators))
@@ -119,7 +119,7 @@ func TestState_CanSaveRetrieveValidatorEntriesFromCache(t *testing.T) {
 	require.Equal(t, false, db.HasState(context.Background(), r))
 
 	stateValidators := validators(10)
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(100))
 	require.NoError(t, st.SetValidators(stateValidators))
@@ -129,7 +129,7 @@ func TestState_CanSaveRetrieveValidatorEntriesFromCache(t *testing.T) {
 	assert.Equal(t, true, db.HasState(context.Background(), r))
 
 	// check if the state is in cache
-	for i := 0; i < len(stateValidators); i++ {
+	for i := range stateValidators {
 		hash, hashErr := stateValidators[i].HashTreeRoot()
 		assert.NoError(t, hashErr)
 
@@ -137,7 +137,7 @@ func TestState_CanSaveRetrieveValidatorEntriesFromCache(t *testing.T) {
 		assert.Equal(t, true, ok)
 		require.NotNil(t, data)
 
-		valEntry, vType := data.(*zondpb.Validator)
+		valEntry, vType := data.(*qrysmpb.Validator)
 		assert.Equal(t, true, vType)
 		require.NotNil(t, valEntry)
 
@@ -175,7 +175,7 @@ func TestState_CanSaveRetrieveValidatorEntriesWithoutCache(t *testing.T) {
 	require.Equal(t, false, db.HasState(context.Background(), r))
 
 	stateValidators := validators(10)
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(100))
 	require.NoError(t, st.SetValidators(stateValidators))
@@ -233,12 +233,12 @@ func TestState_DeleteState(t *testing.T) {
 
 	// create two states with the same set of validators.
 	stateValidators := validators(10)
-	st1, err := util.NewBeaconStateCapella()
+	st1, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st1.SetSlot(100))
 	require.NoError(t, st1.SetValidators(stateValidators))
 
-	st2, err := util.NewBeaconStateCapella()
+	st2, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st2.SetSlot(101))
 	require.NoError(t, st2.SetValidators(stateValidators))
@@ -301,7 +301,7 @@ func TestGenesisState_CanSaveRetrieve(t *testing.T) {
 
 	headRoot := [32]byte{'B'}
 
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(1))
 	require.NoError(t, db.SaveGenesisBlockRoot(context.Background(), headRoot))
@@ -320,15 +320,15 @@ func TestStore_StatesBatchDelete(t *testing.T) {
 	totalBlocks := make([]interfaces.ReadOnlySignedBeaconBlock, numBlocks)
 	blockRoots := make([][32]byte, 0)
 	evenBlockRoots := make([][32]byte, 0)
-	for i := 0; i < len(totalBlocks); i++ {
-		b := util.NewBeaconBlockCapella()
+	for i := range totalBlocks {
+		b := util.NewBeaconBlockZond()
 		b.Block.Slot = primitives.Slot(i)
 		var err error
 		totalBlocks[i], err = blocks.NewSignedBeaconBlock(b)
 		require.NoError(t, err)
 		r, err := totalBlocks[i].Block().HashTreeRoot()
 		require.NoError(t, err)
-		st, err := util.NewBeaconStateCapella()
+		st, err := util.NewBeaconStateZond()
 		require.NoError(t, err)
 		require.NoError(t, st.SetSlot(primitives.Slot(i)))
 		require.NoError(t, db.SaveState(context.Background(), st, r))
@@ -357,7 +357,7 @@ func TestStore_DeleteGenesisState(t *testing.T) {
 
 	genesisBlockRoot := [32]byte{'A'}
 	require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesisBlockRoot))
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(100))
 	require.NoError(t, db.SaveState(ctx, st, genesisBlockRoot))
@@ -372,7 +372,7 @@ func TestStore_DeleteFinalizedState(t *testing.T) {
 	genesis := bytesutil.ToBytes32([]byte{'G', 'E', 'N', 'E', 'S', 'I', 'S'})
 	require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesis))
 
-	blk := util.NewBeaconBlockCapella()
+	blk := util.NewBeaconBlockZond()
 	blk.Block.ParentRoot = genesis[:]
 	blk.Block.Slot = 100
 
@@ -383,11 +383,11 @@ func TestStore_DeleteFinalizedState(t *testing.T) {
 	finalizedBlockRoot, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	finalizedState, err := util.NewBeaconStateCapella()
+	finalizedState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, finalizedState.SetSlot(100))
 	require.NoError(t, db.SaveState(ctx, finalizedState, finalizedBlockRoot))
-	finalizedCheckpoint := &zondpb.Checkpoint{Root: finalizedBlockRoot[:]}
+	finalizedCheckpoint := &qrysmpb.Checkpoint{Root: finalizedBlockRoot[:]}
 	require.NoError(t, db.SaveFinalizedCheckpoint(ctx, finalizedCheckpoint))
 	wantedErr := "cannot delete finalized block or state"
 	assert.ErrorContains(t, wantedErr, db.DeleteState(ctx, finalizedBlockRoot))
@@ -400,7 +400,7 @@ func TestStore_DeleteHeadState(t *testing.T) {
 	genesis := bytesutil.ToBytes32([]byte{'G', 'E', 'N', 'E', 'S', 'I', 'S'})
 	require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesis))
 
-	blk := util.NewBeaconBlockCapella()
+	blk := util.NewBeaconBlockZond()
 	blk.Block.ParentRoot = genesis[:]
 	blk.Block.Slot = 100
 	wsb, err := blocks.NewSignedBeaconBlock(blk)
@@ -409,7 +409,7 @@ func TestStore_DeleteHeadState(t *testing.T) {
 
 	headBlockRoot, err := blk.Block.HashTreeRoot()
 	require.NoError(t, err)
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(100))
 	require.NoError(t, db.SaveState(ctx, st, headBlockRoot))
@@ -420,14 +420,14 @@ func TestStore_DeleteHeadState(t *testing.T) {
 func TestStore_SaveDeleteState_CanGetHighestBelow(t *testing.T) {
 	db := setupDB(t)
 
-	b := util.NewBeaconBlockCapella()
+	b := util.NewBeaconBlockZond()
 	b.Block.Slot = 1
 	r, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
 	wsb, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
 	require.NoError(t, db.SaveBlock(context.Background(), wsb))
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(1))
 	s0 := st.ToProtoUnsafe()
@@ -439,7 +439,7 @@ func TestStore_SaveDeleteState_CanGetHighestBelow(t *testing.T) {
 	wsb, err = blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
 	require.NoError(t, db.SaveBlock(context.Background(), wsb))
-	st, err = util.NewBeaconStateCapella()
+	st, err = util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(100))
 	s1 := st.ToProtoUnsafe()
@@ -451,7 +451,7 @@ func TestStore_SaveDeleteState_CanGetHighestBelow(t *testing.T) {
 	wsb, err = blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
 	require.NoError(t, db.SaveBlock(context.Background(), wsb))
-	st, err = util.NewBeaconStateCapella()
+	st, err = util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(1000))
 	s2 := st.ToProtoUnsafe()
@@ -474,13 +474,13 @@ func TestStore_SaveDeleteState_CanGetHighestBelow(t *testing.T) {
 func TestStore_GenesisState_CanGetHighestBelow(t *testing.T) {
 	db := setupDB(t)
 
-	genesisState, err := util.NewBeaconStateCapella()
+	genesisState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	genesisRoot := [32]byte{'a'}
 	require.NoError(t, db.SaveGenesisBlockRoot(context.Background(), genesisRoot))
 	require.NoError(t, db.SaveState(context.Background(), genesisState, genesisRoot))
 
-	b := util.NewBeaconBlockCapella()
+	b := util.NewBeaconBlockZond()
 	b.Block.Slot = 1
 	r, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -488,7 +488,7 @@ func TestStore_GenesisState_CanGetHighestBelow(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, db.SaveBlock(context.Background(), wsb))
 
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(1))
 	require.NoError(t, db.SaveState(context.Background(), st, r))
@@ -508,17 +508,18 @@ func TestStore_GenesisState_CanGetHighestBelow(t *testing.T) {
 func TestStore_CleanUpDirtyStates_AboveThreshold(t *testing.T) {
 	db := setupDB(t)
 
-	genesisState, err := util.NewBeaconStateCapella()
+	genesisState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	genesisRoot := [32]byte{'a'}
 	require.NoError(t, db.SaveGenesisBlockRoot(context.Background(), genesisRoot))
 	require.NoError(t, db.SaveState(context.Background(), genesisState, genesisRoot))
+	require.NoError(t, db.SaveOriginCheckpointBlockRoot(context.Background(), [32]byte{'a'}))
 
 	bRoots := make([][32]byte, 0)
 	slotsPerArchivedPoint := primitives.Slot(128)
 	prevRoot := genesisRoot
 	for i := primitives.Slot(1); i <= slotsPerArchivedPoint; i++ {
-		b := util.NewBeaconBlockCapella()
+		b := util.NewBeaconBlockZond()
 		b.Block.Slot = i
 		b.Block.ParentRoot = prevRoot[:]
 		r, err := b.Block.HashTreeRoot()
@@ -529,13 +530,13 @@ func TestStore_CleanUpDirtyStates_AboveThreshold(t *testing.T) {
 		bRoots = append(bRoots, r)
 		prevRoot = r
 
-		st, err := util.NewBeaconStateCapella()
+		st, err := util.NewBeaconStateZond()
 		require.NoError(t, err)
 		require.NoError(t, st.SetSlot(i))
 		require.NoError(t, db.SaveState(context.Background(), st, r))
 	}
 
-	require.NoError(t, db.SaveFinalizedCheckpoint(context.Background(), &zondpb.Checkpoint{
+	require.NoError(t, db.SaveFinalizedCheckpoint(context.Background(), &qrysmpb.Checkpoint{
 		Root:  bRoots[len(bRoots)-1][:],
 		Epoch: primitives.Epoch(slotsPerArchivedPoint / params.BeaconConfig().SlotsPerEpoch),
 	}))
@@ -550,17 +551,70 @@ func TestStore_CleanUpDirtyStates_AboveThreshold(t *testing.T) {
 	}
 }
 
-func TestStore_CleanUpDirtyStates_Finalized(t *testing.T) {
+// TestStore_CleanUpDirtyStates_NoOriginRoot exercises the genesis-start
+// path (no checkpoint sync, so no origin block root saved). Prior to
+// upstream PR 15808, CleanUpDirtyStates returned an error on every call,
+// silently aborting state pruning for nodes that never checkpoint-synced.
+func TestStore_CleanUpDirtyStates_NoOriginRoot(t *testing.T) {
 	db := setupDB(t)
-
-	genesisState, err := util.NewBeaconStateCapella()
+	genesisState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	genesisRoot := [32]byte{'a'}
 	require.NoError(t, db.SaveGenesisBlockRoot(context.Background(), genesisRoot))
 	require.NoError(t, db.SaveState(context.Background(), genesisState, genesisRoot))
+	// Deliberately do NOT call SaveOriginCheckpointBlockRoot — simulates a
+	// node started from genesis rather than via checkpoint sync.
+
+	slotsPerArchivedPoint := primitives.Slot(128)
+	bRoots := make([][32]byte, 0)
+	prevRoot := genesisRoot
+	for i := primitives.Slot(1); i <= slotsPerArchivedPoint; i++ {
+		b := util.NewBeaconBlockZond()
+		b.Block.Slot = i
+		b.Block.ParentRoot = prevRoot[:]
+		r, err := b.Block.HashTreeRoot()
+		require.NoError(t, err)
+		wsb, err := blocks.NewSignedBeaconBlock(b)
+		require.NoError(t, err)
+		require.NoError(t, db.SaveBlock(context.Background(), wsb))
+		bRoots = append(bRoots, r)
+		prevRoot = r
+
+		st, err := util.NewBeaconStateZond()
+		require.NoError(t, err)
+		require.NoError(t, st.SetSlot(i))
+		require.NoError(t, db.SaveState(context.Background(), st, r))
+	}
+
+	require.NoError(t, db.SaveFinalizedCheckpoint(context.Background(), &qrysmpb.Checkpoint{
+		Root:  bRoots[len(bRoots)-1][:],
+		Epoch: primitives.Epoch(slotsPerArchivedPoint / params.BeaconConfig().SlotsPerEpoch),
+	}))
+	// Must not fail even though origin block root is not set.
+	require.NoError(t, db.CleanUpDirtyStates(context.Background(), slotsPerArchivedPoint))
+
+	// Cleanup still works: only the "above threshold" tail of recent states is kept.
+	for i, root := range bRoots {
+		if primitives.Slot(i) >= slotsPerArchivedPoint.SubSlot(slotsPerArchivedPoint.Div(3)) {
+			require.Equal(t, true, db.HasState(context.Background(), root))
+		} else {
+			require.Equal(t, false, db.HasState(context.Background(), root))
+		}
+	}
+}
+
+func TestStore_CleanUpDirtyStates_Finalized(t *testing.T) {
+	db := setupDB(t)
+
+	genesisState, err := util.NewBeaconStateZond()
+	require.NoError(t, err)
+	genesisRoot := [32]byte{'a'}
+	require.NoError(t, db.SaveGenesisBlockRoot(context.Background(), genesisRoot))
+	require.NoError(t, db.SaveState(context.Background(), genesisState, genesisRoot))
+	require.NoError(t, db.SaveOriginCheckpointBlockRoot(context.Background(), [32]byte{'a'}))
 
 	for i := primitives.Slot(1); i <= params.BeaconConfig().SlotsPerEpoch; i++ {
-		b := util.NewBeaconBlockCapella()
+		b := util.NewBeaconBlockZond()
 		b.Block.Slot = i
 		r, err := b.Block.HashTreeRoot()
 		require.NoError(t, err)
@@ -568,29 +622,59 @@ func TestStore_CleanUpDirtyStates_Finalized(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, db.SaveBlock(context.Background(), wsb))
 
-		st, err := util.NewBeaconStateCapella()
+		st, err := util.NewBeaconStateZond()
 		require.NoError(t, err)
 		require.NoError(t, st.SetSlot(i))
 		require.NoError(t, db.SaveState(context.Background(), st, r))
 	}
 
-	require.NoError(t, db.SaveFinalizedCheckpoint(context.Background(), &zondpb.Checkpoint{Root: genesisRoot[:]}))
+	require.NoError(t, db.SaveFinalizedCheckpoint(context.Background(), &qrysmpb.Checkpoint{Root: genesisRoot[:]}))
 	require.NoError(t, db.CleanUpDirtyStates(context.Background(), params.BeaconConfig().SlotsPerEpoch))
 	require.Equal(t, true, db.HasState(context.Background(), genesisRoot))
+}
+
+func TestStore_CleanUpDirtyStates_OriginRoot(t *testing.T) {
+	db := setupDB(t)
+
+	genesisState, err := util.NewBeaconStateZond()
+	require.NoError(t, err)
+	r := [32]byte{'a'}
+	require.NoError(t, db.SaveGenesisBlockRoot(context.Background(), r))
+	require.NoError(t, db.SaveState(context.Background(), genesisState, r))
+
+	for i := primitives.Slot(1); i <= params.BeaconConfig().SlotsPerEpoch; i++ {
+		b := util.NewBeaconBlockZond()
+		b.Block.Slot = i
+		r, err := b.Block.HashTreeRoot()
+		require.NoError(t, err)
+		wsb, err := blocks.NewSignedBeaconBlock(b)
+		require.NoError(t, err)
+		require.NoError(t, db.SaveBlock(context.Background(), wsb))
+
+		st, err := util.NewBeaconStateZond()
+		require.NoError(t, err)
+		require.NoError(t, st.SetSlot(i))
+		require.NoError(t, db.SaveState(context.Background(), st, r))
+	}
+
+	require.NoError(t, db.SaveOriginCheckpointBlockRoot(context.Background(), r))
+	require.NoError(t, db.CleanUpDirtyStates(context.Background(), params.BeaconConfig().SlotsPerEpoch))
+	require.Equal(t, true, db.HasState(context.Background(), r))
 }
 
 func TestStore_CleanUpDirtyStates_DontDeleteNonFinalized(t *testing.T) {
 	db := setupDB(t)
 
-	genesisState, err := util.NewBeaconStateCapella()
+	genesisState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	genesisRoot := [32]byte{'a'}
 	require.NoError(t, db.SaveGenesisBlockRoot(context.Background(), genesisRoot))
 	require.NoError(t, db.SaveState(context.Background(), genesisState, genesisRoot))
+	require.NoError(t, db.SaveOriginCheckpointBlockRoot(context.Background(), [32]byte{'a'}))
 
 	var unfinalizedRoots [][32]byte
 	for i := primitives.Slot(1); i <= params.BeaconConfig().SlotsPerEpoch; i++ {
-		b := util.NewBeaconBlockCapella()
+		b := util.NewBeaconBlockZond()
 		b.Block.Slot = i
 		r, err := b.Block.HashTreeRoot()
 		require.NoError(t, err)
@@ -599,13 +683,13 @@ func TestStore_CleanUpDirtyStates_DontDeleteNonFinalized(t *testing.T) {
 		require.NoError(t, db.SaveBlock(context.Background(), wsb))
 		unfinalizedRoots = append(unfinalizedRoots, r)
 
-		st, err := util.NewBeaconStateCapella()
+		st, err := util.NewBeaconStateZond()
 		require.NoError(t, err)
 		require.NoError(t, st.SetSlot(i))
 		require.NoError(t, db.SaveState(context.Background(), st, r))
 	}
 
-	require.NoError(t, db.SaveFinalizedCheckpoint(context.Background(), &zondpb.Checkpoint{Root: genesisRoot[:]}))
+	require.NoError(t, db.SaveFinalizedCheckpoint(context.Background(), &qrysmpb.Checkpoint{Root: genesisRoot[:]}))
 	require.NoError(t, db.CleanUpDirtyStates(context.Background(), params.BeaconConfig().SlotsPerEpoch))
 
 	for _, rt := range unfinalizedRoots {
@@ -613,14 +697,14 @@ func TestStore_CleanUpDirtyStates_DontDeleteNonFinalized(t *testing.T) {
 	}
 }
 
-func validators(limit int) []*zondpb.Validator {
-	var vals []*zondpb.Validator
-	for i := 0; i < limit; i++ {
-		pubKey := make([]byte, field_params.DilithiumPubkeyLength)
+func validators(limit int) []*qrysmpb.Validator {
+	var vals []*qrysmpb.Validator
+	for i := range limit {
+		pubKey := make([]byte, field_params.MLDSA87PubkeyLength)
 		binary.LittleEndian.PutUint64(pubKey, rand.Uint64())
-		val := &zondpb.Validator{
+		val := &qrysmpb.Validator{
 			PublicKey:                  pubKey,
-			WithdrawalCredentials:      bytesutil.ToBytes(rand.Uint64(), 32),
+			WithdrawalCredentials:      bytesutil.ToBytes(rand.Uint64(), field_params.WithdrawalCredentialsLength),
 			EffectiveBalance:           rand.Uint64(),
 			Slashed:                    i%2 != 0,
 			ActivationEligibilityEpoch: primitives.Epoch(rand.Uint64()),
@@ -634,17 +718,15 @@ func validators(limit int) []*zondpb.Validator {
 }
 
 func checkStateSaveTime(b *testing.B, saveCount int) {
-	b.StopTimer()
-
 	db := setupDB(b)
 	initialSetOfValidators := validators(100000)
 
 	// construct some states and save to randomize benchmark.
-	for i := 0; i < saveCount; i++ {
+	for range saveCount {
 		key := make([]byte, 32)
 		_, err := rand.Read(key)
 		require.NoError(b, err)
-		st, err := util.NewBeaconStateCapella()
+		st, err := util.NewBeaconStateZond()
 		require.NoError(b, err)
 
 		// Add some more new validator to the base validator.
@@ -661,36 +743,33 @@ func checkStateSaveTime(b *testing.B, saveCount int) {
 
 	// create a state to save in benchmark
 	r := [32]byte{'A'}
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(b, err)
 	require.NoError(b, st.SetValidators(initialSetOfValidators))
 
 	b.ReportAllocs()
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		require.NoError(b, db.SaveState(context.Background(), st, r))
 	}
 }
 
 func checkStateReadTime(b *testing.B, saveCount int) {
-	b.StopTimer()
-
 	db := setupDB(b)
 	initialSetOfValidators := validators(100000)
 
 	// Save a state to read in benchmark
 	r := [32]byte{'A'}
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(b, err)
 	require.NoError(b, st.SetValidators(initialSetOfValidators))
 	require.NoError(b, db.SaveState(context.Background(), st, r))
 
 	// construct some states and save to randomize benchmark.
-	for i := 0; i < saveCount; i++ {
+	for range saveCount {
 		key := make([]byte, 32)
 		_, err := rand.Read(key)
 		require.NoError(b, err)
-		st, err = util.NewBeaconStateCapella()
+		st, err = util.NewBeaconStateZond()
 		require.NoError(b, err)
 
 		// Add some more new validator to the base validator.
@@ -706,14 +785,13 @@ func checkStateReadTime(b *testing.B, saveCount int) {
 	}
 
 	b.ReportAllocs()
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := db.State(context.Background(), r)
 		require.NoError(b, err)
 	}
 }
 
-func TestStateCapella_CanSaveRetrieveValidatorEntries(t *testing.T) {
+func TestStateZond_CanSaveRetrieveValidatorEntries(t *testing.T) {
 	db := setupDB(t)
 
 	// enable historical state representation flag to test this
@@ -727,7 +805,7 @@ func TestStateCapella_CanSaveRetrieveValidatorEntries(t *testing.T) {
 	require.Equal(t, false, db.HasState(context.Background(), r))
 
 	stateValidators := validators(10)
-	st, _ := util.DeterministicGenesisStateCapella(t, 20)
+	st, _ := util.DeterministicGenesisStateZond(t, 20)
 	require.NoError(t, st.SetSlot(100))
 	require.NoError(t, st.SetValidators(stateValidators))
 
@@ -765,14 +843,14 @@ func TestStateCapella_CanSaveRetrieveValidatorEntries(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCapellaState_CanSaveRetrieve(t *testing.T) {
+func TestZondState_CanSaveRetrieve(t *testing.T) {
 	db := setupDB(t)
 
 	r := [32]byte{'A'}
 
 	require.Equal(t, false, db.HasState(context.Background(), r))
 
-	st, _ := util.DeterministicGenesisStateCapella(t, 1)
+	st, _ := util.DeterministicGenesisStateZond(t, 1)
 	require.NoError(t, st.SetSlot(100))
 
 	require.NoError(t, db.SaveState(context.Background(), st, r))
@@ -788,14 +866,14 @@ func TestCapellaState_CanSaveRetrieve(t *testing.T) {
 	require.Equal(t, state.ReadOnlyBeaconState(nil), savedS, "Unsaved state should've been nil")
 }
 
-func TestCapellaState_CanDelete(t *testing.T) {
+func TestZondState_CanDelete(t *testing.T) {
 	db := setupDB(t)
 
 	r := [32]byte{'A'}
 
 	require.Equal(t, false, db.HasState(context.Background(), r))
 
-	st, _ := util.DeterministicGenesisStateCapella(t, 1)
+	st, _ := util.DeterministicGenesisStateZond(t, 1)
 	require.NoError(t, st.SetSlot(100))
 
 	require.NoError(t, db.SaveState(context.Background(), st, r))

@@ -6,7 +6,6 @@ package properpermissions
 
 import (
 	"errors"
-	"fmt"
 	"go/ast"
 
 	"golang.org/x/tools/go/analysis"
@@ -32,7 +31,7 @@ var Analyzer = &analysis.Analyzer{
 	Run:      run,
 }
 
-func run(pass *analysis.Pass) (interface{}, error) {
+func run(pass *analysis.Pass) (any, error) {
 	inspection, ok := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 	if !ok {
 		return nil, errors.New("analyzer is not type *inspector.Inspector")
@@ -75,13 +74,11 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					if isPkgDot(stmt.Fun, alias, fn) {
 						pass.Reportf(
 							node.Pos(),
-							fmt.Sprintf(
-								"%v: %s.%s() (from %s)",
-								errUnsafePackage,
-								alias,
-								fn,
-								pkg,
-							),
+							"%v: %s.%s() (from %s)",
+							errUnsafePackage,
+							alias,
+							fn,
+							pkg,
 						)
 					}
 				}

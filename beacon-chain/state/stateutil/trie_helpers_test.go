@@ -8,14 +8,14 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestReturnTrieLayer_OK(t *testing.T) {
-	newState, _ := util.DeterministicGenesisStateCapella(t, 32)
+	newState, _ := util.DeterministicGenesisStateZond(t, 32)
 	root, err := stateutil.RootsArrayHashTreeRoot(newState.BlockRoots(), uint64(params.BeaconConfig().SlotsPerHistoricalRoot))
 	require.NoError(t, err)
 	roots := retrieveBlockRoots(newState)
@@ -31,13 +31,12 @@ func TestReturnTrieLayer_OK(t *testing.T) {
 }
 
 func BenchmarkReturnTrieLayer_NormalAlgorithm(b *testing.B) {
-	newState, _ := util.DeterministicGenesisStateCapella(b, 32)
+	newState, _ := util.DeterministicGenesisStateZond(b, 32)
 	root, err := stateutil.RootsArrayHashTreeRoot(newState.BlockRoots(), uint64(params.BeaconConfig().SlotsPerHistoricalRoot))
 	require.NoError(b, err)
 	roots := retrieveBlockRoots(newState)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		layers, err := stateutil.ReturnTrieLayer(roots, uint64(len(roots)))
 		assert.NoError(b, err)
 		newRoot := *layers[len(layers)-1][0]
@@ -46,13 +45,12 @@ func BenchmarkReturnTrieLayer_NormalAlgorithm(b *testing.B) {
 }
 
 func BenchmarkReturnTrieLayer_VectorizedAlgorithm(b *testing.B) {
-	newState, _ := util.DeterministicGenesisStateCapella(b, 32)
+	newState, _ := util.DeterministicGenesisStateZond(b, 32)
 	root, err := stateutil.RootsArrayHashTreeRoot(newState.BlockRoots(), uint64(params.BeaconConfig().SlotsPerHistoricalRoot))
 	require.NoError(b, err)
 	roots := retrieveBlockRoots(newState)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		layers, err := stateutil.ReturnTrieLayer(roots, uint64(len(roots)))
 		assert.NoError(b, err)
 		newRoot := *layers[len(layers)-1][0]
@@ -61,7 +59,7 @@ func BenchmarkReturnTrieLayer_VectorizedAlgorithm(b *testing.B) {
 }
 
 func TestReturnTrieLayerVariable_OK(t *testing.T) {
-	newState, _ := util.DeterministicGenesisStateCapella(t, 32)
+	newState, _ := util.DeterministicGenesisStateZond(t, 32)
 	root, err := stateutil.ValidatorRegistryRoot(newState.Validators())
 	require.NoError(t, err)
 	validators := newState.Validators()
@@ -86,7 +84,7 @@ func TestReturnTrieLayerVariable_OK(t *testing.T) {
 }
 
 func BenchmarkReturnTrieLayerVariable_NormalAlgorithm(b *testing.B) {
-	newState, _ := util.DeterministicGenesisStateCapella(b, 16000)
+	newState, _ := util.DeterministicGenesisStateZond(b, 16000)
 	root, err := stateutil.ValidatorRegistryRoot(newState.Validators())
 	require.NoError(b, err)
 	validators := newState.Validators()
@@ -96,8 +94,8 @@ func BenchmarkReturnTrieLayerVariable_NormalAlgorithm(b *testing.B) {
 		require.NoError(b, err)
 		roots = append(roots, rt)
 	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		layers := stateutil.ReturnTrieLayerVariable(roots, params.BeaconConfig().ValidatorRegistryLimit)
 		newRoot := *layers[len(layers)-1][0]
 		newRoot, err = stateutil.AddInMixin(newRoot, uint64(len(validators)))
@@ -107,8 +105,7 @@ func BenchmarkReturnTrieLayerVariable_NormalAlgorithm(b *testing.B) {
 }
 
 func BenchmarkReturnTrieLayerVariable_VectorizedAlgorithm(b *testing.B) {
-
-	newState, _ := util.DeterministicGenesisStateCapella(b, 16000)
+	newState, _ := util.DeterministicGenesisStateZond(b, 16000)
 	root, err := stateutil.ValidatorRegistryRoot(newState.Validators())
 	require.NoError(b, err)
 	validators := newState.Validators()
@@ -118,8 +115,8 @@ func BenchmarkReturnTrieLayerVariable_VectorizedAlgorithm(b *testing.B) {
 		require.NoError(b, err)
 		roots = append(roots, rt)
 	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		layers := stateutil.ReturnTrieLayerVariable(roots, params.BeaconConfig().ValidatorRegistryLimit)
 		newRoot := *layers[len(layers)-1][0]
 		newRoot, err = stateutil.AddInMixin(newRoot, uint64(len(validators)))
@@ -129,7 +126,7 @@ func BenchmarkReturnTrieLayerVariable_VectorizedAlgorithm(b *testing.B) {
 }
 
 func TestRecomputeFromLayer_FixedSizedArray(t *testing.T) {
-	newState, _ := util.DeterministicGenesisStateCapella(t, 32)
+	newState, _ := util.DeterministicGenesisStateZond(t, 32)
 	roots := retrieveBlockRoots(newState)
 
 	layers, err := stateutil.ReturnTrieLayer(roots, uint64(len(roots)))
@@ -148,7 +145,7 @@ func TestRecomputeFromLayer_FixedSizedArray(t *testing.T) {
 }
 
 func TestRecomputeFromLayer_VariableSizedArray(t *testing.T) {
-	newState, _ := util.DeterministicGenesisStateCapella(t, 32)
+	newState, _ := util.DeterministicGenesisStateZond(t, 32)
 	validators := newState.Validators()
 	roots := make([][32]byte, 0, len(validators))
 	for _, val := range validators {
@@ -169,7 +166,7 @@ func TestRecomputeFromLayer_VariableSizedArray(t *testing.T) {
 	val2.Slashed = true
 	val2.ExitEpoch = 40
 
-	changedVals := []*zondpb.Validator{val1, val2}
+	changedVals := []*qrysmpb.Validator{val1, val2}
 	require.NoError(t, newState.UpdateValidatorAtIndex(primitives.ValidatorIndex(changedIdx[0]), changedVals[0]))
 	require.NoError(t, newState.UpdateValidatorAtIndex(primitives.ValidatorIndex(changedIdx[1]), changedVals[1]))
 

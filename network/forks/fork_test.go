@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 )
 
@@ -20,14 +20,14 @@ func TestFork(t *testing.T) {
 	tests := []struct {
 		name        string
 		targetEpoch primitives.Epoch
-		want        *zondpb.Fork
+		want        *qrysmpb.Fork
 		wantErr     bool
 		setConfg    func()
 	}{
 		{
 			name:        "no fork",
 			targetEpoch: 0,
-			want: &zondpb.Fork{
+			want: &qrysmpb.Fork{
 				Epoch:           0,
 				CurrentVersion:  []byte{'A', 'B', 'C', 'D'},
 				PreviousVersion: []byte{'A', 'B', 'C', 'D'},
@@ -43,7 +43,7 @@ func TestFork(t *testing.T) {
 		{
 			name:        "genesis fork",
 			targetEpoch: 0,
-			want: &zondpb.Fork{
+			want: &qrysmpb.Fork{
 				Epoch:           0,
 				CurrentVersion:  []byte{'A', 'B', 'C', 'D'},
 				PreviousVersion: []byte{'A', 'B', 'C', 'D'},
@@ -61,7 +61,7 @@ func TestFork(t *testing.T) {
 		{
 			name:        "3 forks, pre-fork",
 			targetEpoch: 20,
-			want: &zondpb.Fork{
+			want: &qrysmpb.Fork{
 				Epoch:           10,
 				CurrentVersion:  []byte{'A', 'B', 'C', 'F'},
 				PreviousVersion: []byte{'A', 'B', 'C', 'D'},
@@ -81,7 +81,7 @@ func TestFork(t *testing.T) {
 		{
 			name:        "3 forks, on fork",
 			targetEpoch: 100,
-			want: &zondpb.Fork{
+			want: &qrysmpb.Fork{
 				Epoch:           100,
 				CurrentVersion:  []byte{'A', 'B', 'C', 'Z'},
 				PreviousVersion: []byte{'A', 'B', 'C', 'F'},

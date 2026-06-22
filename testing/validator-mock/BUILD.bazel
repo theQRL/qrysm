@@ -3,7 +3,7 @@ load("@qrysm//tools/go:def.bzl", "go_library")
 package(default_testonly = True)
 
 go_library(
-    name = "go_default_library",
+    name = "validator-mock",
     srcs = [
         "beacon_chain_client_mock.go",
         "node_client_mock.go",
@@ -12,9 +12,9 @@ go_library(
     importpath = "github.com/theQRL/qrysm/testing/validator-mock",
     visibility = ["//visibility:public"],
     deps = [
-        "//consensus-types/primitives:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "@com_github_golang_mock//gomock:go_default_library",
-        "@org_golang_google_protobuf//types/known/emptypb:go_default_library",
+        "//consensus-types/primitives",
+        "//proto/qrysm/v1alpha1",
+        "@com_github_golang_mock//gomock",
+        "@org_golang_google_protobuf//types/known/emptypb",
     ],
 )

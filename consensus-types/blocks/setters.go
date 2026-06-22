@@ -3,7 +3,7 @@ package blocks
 import (
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // SetSignature sets the signature of the signed beacon block.
@@ -54,45 +54,45 @@ func (b *SignedBeaconBlock) SetGraffiti(g []byte) {
 	copy(b.block.body.graffiti[:], g)
 }
 
-// SetEth1Data sets the eth1 data in the block.
+// SetExecutionData sets the execution data in the block.
 // This function is not thread safe, it is only used during block creation.
-func (b *SignedBeaconBlock) SetEth1Data(e *zond.Eth1Data) {
-	b.block.body.eth1Data = e
+func (b *SignedBeaconBlock) SetExecutionData(e *qrysmpb.ExecutionData) {
+	b.block.body.executionData = e
 }
 
 // SetProposerSlashings sets the proposer slashings in the block.
 // This function is not thread safe, it is only used during block creation.
-func (b *SignedBeaconBlock) SetProposerSlashings(p []*zond.ProposerSlashing) {
+func (b *SignedBeaconBlock) SetProposerSlashings(p []*qrysmpb.ProposerSlashing) {
 	b.block.body.proposerSlashings = p
 }
 
 // SetAttesterSlashings sets the attester slashings in the block.
 // This function is not thread safe, it is only used during block creation.
-func (b *SignedBeaconBlock) SetAttesterSlashings(a []*zond.AttesterSlashing) {
+func (b *SignedBeaconBlock) SetAttesterSlashings(a []*qrysmpb.AttesterSlashing) {
 	b.block.body.attesterSlashings = a
 }
 
 // SetAttestations sets the attestations in the block.
 // This function is not thread safe, it is only used during block creation.
-func (b *SignedBeaconBlock) SetAttestations(a []*zond.Attestation) {
+func (b *SignedBeaconBlock) SetAttestations(a []*qrysmpb.Attestation) {
 	b.block.body.attestations = a
 }
 
 // SetDeposits sets the deposits in the block.
 // This function is not thread safe, it is only used during block creation.
-func (b *SignedBeaconBlock) SetDeposits(d []*zond.Deposit) {
+func (b *SignedBeaconBlock) SetDeposits(d []*qrysmpb.Deposit) {
 	b.block.body.deposits = d
 }
 
 // SetVoluntaryExits sets the voluntary exits in the block.
 // This function is not thread safe, it is only used during block creation.
-func (b *SignedBeaconBlock) SetVoluntaryExits(v []*zond.SignedVoluntaryExit) {
+func (b *SignedBeaconBlock) SetVoluntaryExits(v []*qrysmpb.SignedVoluntaryExit) {
 	b.block.body.voluntaryExits = v
 }
 
 // SetSyncAggregate sets the sync aggregate in the block.
 // This function is not thread safe, it is only used during block creation.
-func (b *SignedBeaconBlock) SetSyncAggregate(s *zond.SyncAggregate) error {
+func (b *SignedBeaconBlock) SetSyncAggregate(s *qrysmpb.SyncAggregate) error {
 	b.block.body.syncAggregate = s
 	return nil
 }
@@ -105,12 +105,5 @@ func (b *SignedBeaconBlock) SetExecution(e interfaces.ExecutionData) error {
 		return nil
 	}
 	b.block.body.executionPayload = e
-	return nil
-}
-
-// SetDilithiumToExecutionChanges sets the Dilithium to execution changes in the block.
-// This function is not thread safe, it is only used during block creation.
-func (b *SignedBeaconBlock) SetDilithiumToExecutionChanges(dilithiumToExecutionChanges []*zond.SignedDilithiumToExecutionChange) error {
-	b.block.body.dilithiumToExecutionChanges = dilithiumToExecutionChanges
 	return nil
 }

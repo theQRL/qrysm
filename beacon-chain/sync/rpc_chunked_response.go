@@ -33,7 +33,7 @@ func WriteBlockChunk(stream libp2pcore.Stream, tor blockchain.TemporalOracle, en
 
 	valRoot := tor.GenesisValidatorsRoot()
 	switch blk.Version() {
-	case version.Capella:
+	case version.Zond:
 		digest, err := forks.ForkDigestFromEpoch(params.BeaconConfig().GenesisEpoch, valRoot[:])
 		if err != nil {
 			return err

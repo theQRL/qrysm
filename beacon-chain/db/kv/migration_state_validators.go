@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/schollz/progressbar/v3"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/config/features"
 	"github.com/theQRL/qrysm/encoding/ssz/detect"
 	"github.com/theQRL/qrysm/monitoring/progress"
@@ -131,8 +131,8 @@ func performValidatorStateMigration(ctx context.Context, bar *progressbar.Progre
 			}
 			item := enc
 			switch {
-			case hasCapellaKey(enc):
-				item = item[len(capellaKey):]
+			case hasZondKey(enc):
+				item = item[len(zondKey):]
 			}
 
 			detector, err := detect.FromState(item)
@@ -166,7 +166,7 @@ func performValidatorStateMigration(ctx context.Context, bar *progressbar.Progre
 			if err != nil {
 				return err
 			}
-			stateBytes := snappy.Encode(nil, append(capellaKey, rawObj...))
+			stateBytes := snappy.Encode(nil, append(zondKey, rawObj...))
 			if stateErr := stateBkt.Put(keys[index], stateBytes); stateErr != nil {
 				return stateErr
 			}
@@ -185,7 +185,7 @@ func performValidatorStateMigration(ctx context.Context, bar *progressbar.Progre
 func stateBucketKeys(stateBucket *bolt.Bucket) ([][]byte, error) {
 	var keys [][]byte
 	if err := stateBucket.ForEach(func(pubKey, v []byte) error {
-		keys = append(keys, pubKey)
+		keys = append(keys, bytes.Clone(pubKey))
 		return nil
 	}); err != nil {
 		return nil, err

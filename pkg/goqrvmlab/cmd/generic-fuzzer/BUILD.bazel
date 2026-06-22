@@ -1,0 +1,21 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@qrysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "generic-fuzzer_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/theQRL/qrysm/pkg/goqrvmlab/cmd/generic-fuzzer",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pkg/goqrvmlab/common",
+        "//pkg/goqrvmlab/fuzzing",
+        "@com_github_theqrl_go_qrl//log",
+        "@com_github_urfave_cli_v2//:cli",
+    ],
+)
+
+go_binary(
+    name = "generic-fuzzer",
+    embed = [":generic-fuzzer_lib"],
+    visibility = ["//visibility:public"],
+)

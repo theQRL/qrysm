@@ -7,13 +7,13 @@ import (
 	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestSyncCommitteeHeadState(t *testing.T) {
-	capellaState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
-		Fork: &zondpb.Fork{
+	zondState, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
+		Fork: &qrysmpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 		},
@@ -51,7 +51,7 @@ func TestSyncCommitteeHeadState(t *testing.T) {
 			key:  primitives.Slot(2),
 			put: &put{
 				slot:  primitives.Slot(1),
-				state: capellaState,
+				state: zondState,
 			},
 			wantErr: true,
 		},
@@ -60,27 +60,27 @@ func TestSyncCommitteeHeadState(t *testing.T) {
 			key:  primitives.Slot(1),
 			put: &put{
 				slot:  primitives.Slot(1),
-				state: capellaState,
+				state: zondState,
 			},
-			want: capellaState,
+			want: zondState,
 		},
 		{
 			name: "not found when non-existent key in non-empty cache (bellatrix state)",
 			key:  primitives.Slot(2),
 			put: &put{
 				slot:  primitives.Slot(1),
-				state: capellaState,
+				state: zondState,
 			},
 			wantErr: true,
 		},
 		{
-			name: "found with key (capella state)",
+			name: "found with key (zond state)",
 			key:  primitives.Slot(200),
 			put: &put{
 				slot:  primitives.Slot(200),
-				state: capellaState,
+				state: zondState,
 			},
-			want: capellaState,
+			want: zondState,
 		},
 	}
 	for _, tt := range tests {

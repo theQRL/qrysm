@@ -32,9 +32,9 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -50,16 +50,16 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 		Genesis:        time.Now(),
 		ValidatorsRoot: [32]byte{'A'},
 	}
-	var emptySig [field_params.DilithiumSignatureLength]byte
+	var emptySig [field_params.MLDSA87SignatureLength]byte
 	type args struct {
 		pid   peer.ID
-		msg   *zondpb.SignedContributionAndProof
+		msg   *qrysmpb.SignedContributionAndProof
 		topic string
 	}
 	tests := []struct {
 		name     string
 		svcopts  []Option
-		setupSvc func(s *Service, msg *zondpb.SignedContributionAndProof) (*Service, *startup.Clock)
+		setupSvc func(s *Service, msg *qrysmpb.SignedContributionAndProof) (*Service, *startup.Clock)
 		clock    *startup.Clock
 		args     args
 		want     pubsub.ValidationResult
@@ -72,7 +72,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *zondpb.SignedContributionAndProof) (*Service, *startup.Clock) {
+			setupSvc: func(s *Service, msg *qrysmpb.SignedContributionAndProof) (*Service, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(database, doublylinkedtree.New())
 				msg.Message.Contribution.BlockRoot = headRoot[:]
 				s.cfg.beaconDB = database
@@ -82,14 +82,14 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: "junk",
-				msg: &zondpb.SignedContributionAndProof{
-					Message: &zondpb.ContributionAndProof{
+				msg: &qrysmpb.SignedContributionAndProof{
+					Message: &qrysmpb.ContributionAndProof{
 						AggregatorIndex: 1,
-						Contribution: &zondpb.SyncCommitteeContribution{
+						Contribution: &qrysmpb.SyncCommitteeContribution{
 							Slot:              1,
 							SubcommitteeIndex: 1,
 							BlockRoot:         params.BeaconConfig().ZeroHash[:],
-							AggregationBits:   bitfield.NewBitvector16(),
+							AggregationBits:   bitfield.NewBitvector128(),
 							Signatures:        [][]byte{emptySig[:]},
 						},
 						SelectionProof: emptySig[:],
@@ -106,7 +106,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *zondpb.SignedContributionAndProof) (*Service, *startup.Clock) {
+			setupSvc: func(s *Service, msg *qrysmpb.SignedContributionAndProof) (*Service, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(database, doublylinkedtree.New())
 				msg.Message.Contribution.BlockRoot = headRoot[:]
 				s.cfg.beaconDB = database
@@ -116,14 +116,14 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: "junk",
-				msg: &zondpb.SignedContributionAndProof{
-					Message: &zondpb.ContributionAndProof{
+				msg: &qrysmpb.SignedContributionAndProof{
+					Message: &qrysmpb.ContributionAndProof{
 						AggregatorIndex: 1,
-						Contribution: &zondpb.SyncCommitteeContribution{
+						Contribution: &qrysmpb.SyncCommitteeContribution{
 							Slot:              1,
 							SubcommitteeIndex: 1,
 							BlockRoot:         params.BeaconConfig().ZeroHash[:],
-							AggregationBits:   bitfield.NewBitvector16(),
+							AggregationBits:   bitfield.NewBitvector128(),
 							Signatures:        [][]byte{emptySig[:]},
 						},
 						SelectionProof: emptySig[:],
@@ -140,7 +140,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *zondpb.SignedContributionAndProof) (*Service, *startup.Clock) {
+			setupSvc: func(s *Service, msg *qrysmpb.SignedContributionAndProof) (*Service, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(database, doublylinkedtree.New())
 				s.cfg.beaconDB = database
 				s.initCaches()
@@ -149,14 +149,14 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: defaultTopic,
-				msg: &zondpb.SignedContributionAndProof{
-					Message: &zondpb.ContributionAndProof{
+				msg: &qrysmpb.SignedContributionAndProof{
+					Message: &qrysmpb.ContributionAndProof{
 						AggregatorIndex: 1,
-						Contribution: &zondpb.SyncCommitteeContribution{
+						Contribution: &qrysmpb.SyncCommitteeContribution{
 							Slot:              30,
 							SubcommitteeIndex: 1,
 							BlockRoot:         params.BeaconConfig().ZeroHash[:],
-							AggregationBits:   bitfield.NewBitvector16(),
+							AggregationBits:   bitfield.NewBitvector128(),
 							Signatures:        [][]byte{emptySig[:]},
 						},
 						SelectionProof: emptySig[:],
@@ -165,7 +165,6 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 				}},
 			want: pubsub.ValidationIgnore,
 		},
-
 		{
 			name: "Already Seen Message",
 			svcopts: []Option{
@@ -174,7 +173,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *zondpb.SignedContributionAndProof) (*Service, *startup.Clock) {
+			setupSvc: func(s *Service, msg *qrysmpb.SignedContributionAndProof) (*Service, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(database, doublylinkedtree.New())
 				s.cfg.beaconDB = database
 				s.initCaches()
@@ -189,14 +188,14 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: defaultTopic,
-				msg: &zondpb.SignedContributionAndProof{
-					Message: &zondpb.ContributionAndProof{
+				msg: &qrysmpb.SignedContributionAndProof{
+					Message: &qrysmpb.ContributionAndProof{
 						AggregatorIndex: 1,
-						Contribution: &zondpb.SyncCommitteeContribution{
+						Contribution: &qrysmpb.SyncCommitteeContribution{
 							Slot:              1,
 							SubcommitteeIndex: 0,
 							BlockRoot:         params.BeaconConfig().ZeroHash[:],
-							AggregationBits:   bitfield.NewBitvector16(),
+							AggregationBits:   bitfield.NewBitvector128(),
 							Signatures:        [][]byte{emptySig[:]},
 						},
 						SelectionProof: emptySig[:],
@@ -213,7 +212,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *zondpb.SignedContributionAndProof) (*Service, *startup.Clock) {
+			setupSvc: func(s *Service, msg *qrysmpb.SignedContributionAndProof) (*Service, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(database, doublylinkedtree.New())
 				s.cfg.beaconDB = database
 				s.initCaches()
@@ -228,14 +227,14 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: defaultTopic,
-				msg: &zondpb.SignedContributionAndProof{
-					Message: &zondpb.ContributionAndProof{
+				msg: &qrysmpb.SignedContributionAndProof{
+					Message: &qrysmpb.ContributionAndProof{
 						AggregatorIndex: 1,
-						Contribution: &zondpb.SyncCommitteeContribution{
+						Contribution: &qrysmpb.SyncCommitteeContribution{
 							Slot:              1,
 							SubcommitteeIndex: 1,
 							BlockRoot:         params.BeaconConfig().ZeroHash[:],
-							AggregationBits:   bitfield.NewBitvector16(),
+							AggregationBits:   bitfield.NewBitvector128(),
 							Signatures:        [][]byte{emptySig[:]},
 						},
 						SelectionProof: emptySig[:],
@@ -252,13 +251,13 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *zondpb.SignedContributionAndProof) (*Service, *startup.Clock) {
+			setupSvc: func(s *Service, msg *qrysmpb.SignedContributionAndProof) (*Service, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(database, doublylinkedtree.New())
 				s.cfg.beaconDB = database
 				s.initCaches()
 				s.cfg.chain = &mockChain.ChainService{}
 				msg.Message.Contribution.BlockRoot = headRoot[:]
-				incorrectProof := [field_params.DilithiumSignatureLength]byte{0xBB}
+				incorrectProof := [field_params.MLDSA87SignatureLength]byte{0xBB}
 				msg.Message.SelectionProof = incorrectProof[:]
 				msg.Message.Contribution.AggregationBits.SetBitAt(1, true)
 
@@ -268,14 +267,14 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: defaultTopic,
-				msg: &zondpb.SignedContributionAndProof{
-					Message: &zondpb.ContributionAndProof{
+				msg: &qrysmpb.SignedContributionAndProof{
+					Message: &qrysmpb.ContributionAndProof{
 						AggregatorIndex: 1,
-						Contribution: &zondpb.SyncCommitteeContribution{
+						Contribution: &qrysmpb.SyncCommitteeContribution{
 							Slot:              1,
 							SubcommitteeIndex: 1,
 							BlockRoot:         params.BeaconConfig().ZeroHash[:],
-							AggregationBits:   bitfield.NewBitvector16(),
+							AggregationBits:   bitfield.NewBitvector128(),
 							Signatures:        [][]byte{emptySig[:]},
 						},
 						SelectionProof: emptySig[:],
@@ -292,7 +291,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *zondpb.SignedContributionAndProof) (*Service, *startup.Clock) {
+			setupSvc: func(s *Service, msg *qrysmpb.SignedContributionAndProof) (*Service, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(database, doublylinkedtree.New())
 				s.cfg.beaconDB = database
 				s.initCaches()
@@ -326,14 +325,14 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: defaultTopic,
-				msg: &zondpb.SignedContributionAndProof{
-					Message: &zondpb.ContributionAndProof{
+				msg: &qrysmpb.SignedContributionAndProof{
+					Message: &qrysmpb.ContributionAndProof{
 						AggregatorIndex: 1,
-						Contribution: &zondpb.SyncCommitteeContribution{
+						Contribution: &qrysmpb.SyncCommitteeContribution{
 							Slot:              1,
 							SubcommitteeIndex: 1,
 							BlockRoot:         params.BeaconConfig().ZeroHash[:],
-							AggregationBits:   bitfield.NewBitvector16(),
+							AggregationBits:   bitfield.NewBitvector128(),
 							Signatures:        [][]byte{emptySig[:]},
 						},
 						SelectionProof: emptySig[:],
@@ -350,7 +349,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *zondpb.SignedContributionAndProof) (*Service, *startup.Clock) {
+			setupSvc: func(s *Service, msg *qrysmpb.SignedContributionAndProof) (*Service, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(database, doublylinkedtree.New())
 				s.cfg.beaconDB = database
 				msg.Message.Contribution.BlockRoot = headRoot[:]
@@ -388,14 +387,14 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: defaultTopic,
-				msg: &zondpb.SignedContributionAndProof{
-					Message: &zondpb.ContributionAndProof{
+				msg: &qrysmpb.SignedContributionAndProof{
+					Message: &qrysmpb.ContributionAndProof{
 						AggregatorIndex: 1,
-						Contribution: &zondpb.SyncCommitteeContribution{
+						Contribution: &qrysmpb.SyncCommitteeContribution{
 							Slot:              1,
 							SubcommitteeIndex: 1,
 							BlockRoot:         params.BeaconConfig().ZeroHash[:],
-							AggregationBits:   bitfield.NewBitvector16(),
+							AggregationBits:   bitfield.NewBitvector128(),
 							Signatures:        [][]byte{emptySig[:]},
 						},
 						SelectionProof: emptySig[:],
@@ -404,7 +403,6 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 				}},
 			want: pubsub.ValidationReject,
 		},
-
 		{
 			name: "Invalid Proof Signature",
 			svcopts: []Option{
@@ -413,7 +411,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *zondpb.SignedContributionAndProof) (*Service, *startup.Clock) {
+			setupSvc: func(s *Service, msg *qrysmpb.SignedContributionAndProof) (*Service, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(database, doublylinkedtree.New())
 				s.cfg.beaconDB = database
 				s.cfg.chain = chainService
@@ -435,7 +433,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 						isAggregator, err := altair.IsSyncCommitteeAggregator(sig.Marshal())
 						require.NoError(t, err)
 						if isAggregator {
-							infiniteSig := [field_params.DilithiumSignatureLength]byte{0xC0}
+							infiniteSig := [field_params.MLDSA87SignatureLength]byte{0xC0}
 							pubkey = keys[idx].PublicKey().Marshal()
 							msg.Message.AggregatorIndex = idx
 							msg.Message.SelectionProof = sig.Marshal()
@@ -443,7 +441,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 							msg.Message.Contribution.SubcommitteeIndex = i
 							msg.Message.Contribution.Signatures = [][]byte{infiniteSig[:]}
 							msg.Message.Contribution.BlockRoot = headRoot[:]
-							msg.Message.Contribution.AggregationBits = bitfield.NewBitvector16()
+							msg.Message.Contribution.AggregationBits = bitfield.NewBitvector128()
 							msg.Message.Contribution.AggregationBits.SetBitAt(1, true)
 							msg.Signature = infiniteSig[:]
 							break
@@ -466,14 +464,14 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: defaultTopic,
-				msg: &zondpb.SignedContributionAndProof{
-					Message: &zondpb.ContributionAndProof{
+				msg: &qrysmpb.SignedContributionAndProof{
+					Message: &qrysmpb.ContributionAndProof{
 						AggregatorIndex: 1,
-						Contribution: &zondpb.SyncCommitteeContribution{
+						Contribution: &qrysmpb.SyncCommitteeContribution{
 							Slot:              1,
 							SubcommitteeIndex: 1,
 							BlockRoot:         params.BeaconConfig().ZeroHash[:],
-							AggregationBits:   bitfield.NewBitvector16(),
+							AggregationBits:   bitfield.NewBitvector128(),
 							Signatures:        [][]byte{emptySig[:]},
 						},
 						SelectionProof: emptySig[:],
@@ -490,7 +488,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *zondpb.SignedContributionAndProof) (*Service, *startup.Clock) {
+			setupSvc: func(s *Service, msg *qrysmpb.SignedContributionAndProof) (*Service, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(database, doublylinkedtree.New())
 				s.cfg.beaconDB = database
 				msg.Message.Contribution.BlockRoot = headRoot[:]
@@ -510,7 +508,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 						isAggregator, err := altair.IsSyncCommitteeAggregator(sig.Marshal())
 						require.NoError(t, err)
 						if isAggregator {
-							infiniteSig := [4595]byte{0xC0}
+							infiniteSig := [4627]byte{0xC0}
 							junkRoot := [32]byte{'A'}
 							badSig := keys[idx].Sign(junkRoot[:])
 							msg.Message.AggregatorIndex = idx
@@ -519,7 +517,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 							msg.Message.Contribution.SubcommitteeIndex = i
 							msg.Message.Contribution.Signatures = [][]byte{badSig.Marshal()}
 							msg.Message.Contribution.BlockRoot = headRoot[:]
-							msg.Message.Contribution.AggregationBits = bitfield.NewBitvector16()
+							msg.Message.Contribution.AggregationBits = bitfield.NewBitvector128()
 							msg.Message.Contribution.AggregationBits.SetBitAt(1, true)
 							msg.Signature = infiniteSig[:]
 
@@ -545,14 +543,14 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: defaultTopic,
-				msg: &zondpb.SignedContributionAndProof{
-					Message: &zondpb.ContributionAndProof{
+				msg: &qrysmpb.SignedContributionAndProof{
+					Message: &qrysmpb.ContributionAndProof{
 						AggregatorIndex: 1,
-						Contribution: &zondpb.SyncCommitteeContribution{
+						Contribution: &qrysmpb.SyncCommitteeContribution{
 							Slot:              1,
 							SubcommitteeIndex: 1,
 							BlockRoot:         params.BeaconConfig().ZeroHash[:],
-							AggregationBits:   bitfield.NewBitvector16(),
+							AggregationBits:   bitfield.NewBitvector128(),
 							Signatures:        [][]byte{emptySig[:]},
 						},
 						SelectionProof: emptySig[:],
@@ -569,7 +567,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *zondpb.SignedContributionAndProof) (*Service, *startup.Clock) {
+			setupSvc: func(s *Service, msg *qrysmpb.SignedContributionAndProof) (*Service, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(database, doublylinkedtree.New())
 				msg.Message.Contribution.BlockRoot = headRoot[:]
 				s.cfg.beaconDB = database
@@ -591,14 +589,14 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 						isAggregator, err := altair.IsSyncCommitteeAggregator(sig.Marshal())
 						require.NoError(t, err)
 						if isAggregator {
-							infiniteSig := [field_params.DilithiumSignatureLength]byte{0xC0}
+							infiniteSig := [field_params.MLDSA87SignatureLength]byte{0xC0}
 							msg.Message.AggregatorIndex = idx
 							msg.Message.SelectionProof = sig.Marshal()
 							msg.Message.Contribution.Slot = slots.PrevSlot(hState.Slot())
 							msg.Message.Contribution.SubcommitteeIndex = i
 							msg.Message.Contribution.Signatures = [][]byte{infiniteSig[:]}
 							msg.Message.Contribution.BlockRoot = headRoot[:]
-							msg.Message.Contribution.AggregationBits = bitfield.NewBitvector16()
+							msg.Message.Contribution.AggregationBits = bitfield.NewBitvector128()
 							sigRoot, err := signing.ComputeSigningRoot(msg.Message, cd)
 							assert.NoError(t, err)
 							contrSig := keys[idx].Sign(sigRoot[:])
@@ -626,14 +624,14 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: defaultTopic,
-				msg: &zondpb.SignedContributionAndProof{
-					Message: &zondpb.ContributionAndProof{
+				msg: &qrysmpb.SignedContributionAndProof{
+					Message: &qrysmpb.ContributionAndProof{
 						AggregatorIndex: 1,
-						Contribution: &zondpb.SyncCommitteeContribution{
+						Contribution: &qrysmpb.SyncCommitteeContribution{
 							Slot:              1,
 							SubcommitteeIndex: 1,
 							BlockRoot:         params.BeaconConfig().ZeroHash[:],
-							AggregationBits:   bitfield.NewBitvector16(),
+							AggregationBits:   bitfield.NewBitvector128(),
 							Signatures:        [][]byte{emptySig[:]},
 						},
 						SelectionProof: emptySig[:],
@@ -650,7 +648,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *zondpb.SignedContributionAndProof) (*Service, *startup.Clock) {
+			setupSvc: func(s *Service, msg *qrysmpb.SignedContributionAndProof) (*Service, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(database, doublylinkedtree.New())
 				msg.Message.Contribution.BlockRoot = headRoot[:]
 				s.cfg.beaconDB = database
@@ -681,7 +679,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 							msg.Message.Contribution.Slot = slots.PrevSlot(hState.Slot())
 							msg.Message.Contribution.SubcommitteeIndex = i
 							msg.Message.Contribution.BlockRoot = headRoot[:]
-							msg.Message.Contribution.AggregationBits = bitfield.NewBitvector16()
+							msg.Message.Contribution.AggregationBits = bitfield.NewBitvector128()
 							// Only Sign for 1 validator.
 							rawBytes := p2ptypes.SSZBytes(headRoot[:])
 							sigRoot, err := signing.ComputeSigningRoot(&rawBytes, d)
@@ -719,14 +717,14 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: defaultTopic,
-				msg: &zondpb.SignedContributionAndProof{
-					Message: &zondpb.ContributionAndProof{
+				msg: &qrysmpb.SignedContributionAndProof{
+					Message: &qrysmpb.ContributionAndProof{
 						AggregatorIndex: 1,
-						Contribution: &zondpb.SyncCommitteeContribution{
+						Contribution: &qrysmpb.SyncCommitteeContribution{
 							Slot:              1,
 							SubcommitteeIndex: 1,
 							BlockRoot:         params.BeaconConfig().ZeroHash[:],
-							AggregationBits:   bitfield.NewBitvector16(),
+							AggregationBits:   bitfield.NewBitvector128(),
 							Signatures:        [][]byte{emptySig[:]},
 						},
 						SelectionProof: emptySig[:],
@@ -743,7 +741,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 				WithChainService(chainService),
 				WithOperationNotifier(chainService.OperationNotifier()),
 			},
-			setupSvc: func(s *Service, msg *zondpb.SignedContributionAndProof) (*Service, *startup.Clock) {
+			setupSvc: func(s *Service, msg *qrysmpb.SignedContributionAndProof) (*Service, *startup.Clock) {
 				s.cfg.stateGen = stategen.New(database, doublylinkedtree.New())
 				msg.Message.Contribution.BlockRoot = headRoot[:]
 				s.cfg.beaconDB = database
@@ -774,7 +772,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 							msg.Message.Contribution.Slot = slots.PrevSlot(hState.Slot())
 							msg.Message.Contribution.SubcommitteeIndex = i
 							msg.Message.Contribution.BlockRoot = headRoot[:]
-							msg.Message.Contribution.AggregationBits = bitfield.NewBitvector16()
+							msg.Message.Contribution.AggregationBits = bitfield.NewBitvector128()
 							rawBytes := p2ptypes.SSZBytes(headRoot[:])
 							sigRoot, err := signing.ComputeSigningRoot(&rawBytes, d)
 							assert.NoError(t, err)
@@ -815,14 +813,14 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 			args: args{
 				pid:   "random",
 				topic: defaultTopic,
-				msg: &zondpb.SignedContributionAndProof{
-					Message: &zondpb.ContributionAndProof{
+				msg: &qrysmpb.SignedContributionAndProof{
+					Message: &qrysmpb.ContributionAndProof{
 						AggregatorIndex: 1,
-						Contribution: &zondpb.SyncCommitteeContribution{
+						Contribution: &qrysmpb.SyncCommitteeContribution{
 							Slot:              1,
 							SubcommitteeIndex: 1,
 							BlockRoot:         params.BeaconConfig().ZeroHash[:],
-							AggregationBits:   bitfield.NewBitvector16(),
+							AggregationBits:   bitfield.NewBitvector128(),
 							Signatures:        [][]byte{emptySig[:]},
 						},
 						SelectionProof: emptySig[:],
@@ -857,7 +855,7 @@ func TestService_ValidateSyncContributionAndProof(t *testing.T) {
 			// a lot happens in the chain service after SetClock is called,
 			// give it a moment before calling internal methods that would typically
 			// only execute after waitFor
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				if !svc.chainIsStarted() {
 					time.Sleep(100 * time.Millisecond)
 				}
@@ -880,14 +878,14 @@ func TestValidateSyncContributionAndProof(t *testing.T) {
 	defaultTopic = defaultTopic + "/" + encoder.ProtocolSuffixSSZSnappy
 	var emptySig [96]byte
 	pid := peer.ID("random")
-	msg := &zondpb.SignedContributionAndProof{
-		Message: &zondpb.ContributionAndProof{
+	msg := &qrysmpb.SignedContributionAndProof{
+		Message: &qrysmpb.ContributionAndProof{
 			AggregatorIndex: 1,
-			Contribution: &zondpb.SyncCommitteeContribution{
+			Contribution: &qrysmpb.SyncCommitteeContribution{
 				Slot:              0,
 				SubcommitteeIndex: 1,
 				BlockRoot:         params.BeaconConfig().ZeroHash[:],
-				AggregationBits:   bitfield.NewBitvector16(),
+				AggregationBits:   bitfield.NewBitvector128(),
 				Signatures:        [][]byte{emptySig[:]},
 			},
 			SelectionProof: emptySig[:],
@@ -936,7 +934,7 @@ func TestValidateSyncContributionAndProof(t *testing.T) {
 				msg.Message.Contribution.Slot = slots.PrevSlot(hState.Slot())
 				msg.Message.Contribution.SubcommitteeIndex = i
 				msg.Message.Contribution.BlockRoot = headRoot[:]
-				msg.Message.Contribution.AggregationBits = bitfield.NewBitvector16()
+				msg.Message.Contribution.AggregationBits = bitfield.NewBitvector128()
 				// Only Sign for 1 validator.
 				rawBytes := p2ptypes.SSZBytes(headRoot[:])
 				sigRoot, err := signing.ComputeSigningRoot(&rawBytes, d)
@@ -1009,8 +1007,8 @@ func TestValidateSyncContributionAndProof(t *testing.T) {
 	}
 }
 
-func fillUpBlocksAndState(ctx context.Context, t *testing.T, beaconDB db.Database) ([32]byte, []dilithium.DilithiumKey) {
-	gs, keys := util.DeterministicGenesisStateCapella(t, 64)
+func fillUpBlocksAndState(ctx context.Context, t *testing.T, beaconDB db.Database) ([32]byte, []ml_dsa_87.MLDSA87Key) {
+	gs, keys := util.DeterministicGenesisStateZond(t, 64)
 	sCom, err := altair.NextSyncCommittee(ctx, gs)
 	assert.NoError(t, err)
 	assert.NoError(t, gs.SetCurrentSyncCommittee(sCom))
@@ -1019,7 +1017,7 @@ func fillUpBlocksAndState(ctx context.Context, t *testing.T, beaconDB db.Databas
 	testState := gs.Copy()
 	var hRoot [32]byte
 	for i := primitives.Slot(1); i <= params.BeaconConfig().SlotsPerEpoch; i++ {
-		blk, err := util.GenerateFullBlockCapella(testState, keys, util.DefaultBlockGenConfig(), i)
+		blk, err := util.GenerateFullBlockZond(testState, keys, util.DefaultBlockGenConfig(), i)
 		require.NoError(t, err)
 		r, err := blk.Block.HashTreeRoot()
 		require.NoError(t, err)
@@ -1028,7 +1026,7 @@ func fillUpBlocksAndState(ctx context.Context, t *testing.T, beaconDB db.Databas
 		_, testState, err = transition.ExecuteStateTransitionNoVerifyAnySig(ctx, testState, wsb)
 		assert.NoError(t, err)
 		assert.NoError(t, beaconDB.SaveBlock(ctx, wsb))
-		assert.NoError(t, beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Slot: i, Root: r[:]}))
+		assert.NoError(t, beaconDB.SaveStateSummary(ctx, &qrysmpb.StateSummary{Slot: i, Root: r[:]}))
 		assert.NoError(t, beaconDB.SaveState(ctx, testState, r))
 		require.NoError(t, beaconDB.SaveHeadBlockRoot(ctx, r))
 		hRoot = r
@@ -1041,7 +1039,7 @@ func syncSelectionProofSigningRoot(st state.BeaconState, slot primitives.Slot, c
 	if err != nil {
 		return [32]byte{}, err
 	}
-	selectionData := &zondpb.SyncAggregatorSelectionData{Slot: slot, SubcommitteeIndex: uint64(comIdx)}
+	selectionData := &qrysmpb.SyncAggregatorSelectionData{Slot: slot, SubcommitteeIndex: uint64(comIdx)}
 	return signing.ComputeSigningRoot(selectionData, dom)
 }
 
@@ -1050,40 +1048,40 @@ func TestService_setSyncContributionIndexSlotSeen(t *testing.T) {
 	s.initCaches()
 
 	// Empty cache
-	b0 := bitfield.NewBitvector16()
+	b0 := bitfield.NewBitvector128()
 	b0.SetBitAt(0, true)
-	has, err := s.hasSeenSyncContributionBits(&zondpb.SyncCommitteeContribution{
+	has, err := s.hasSeenSyncContributionBits(&qrysmpb.SyncCommitteeContribution{
 		AggregationBits: b0,
 	})
 	require.NoError(t, err)
 	require.Equal(t, false, has)
 
 	// Cache with entries but same key
-	require.NoError(t, s.setSyncContributionBits(&zondpb.SyncCommitteeContribution{
+	require.NoError(t, s.setSyncContributionBits(&qrysmpb.SyncCommitteeContribution{
 		AggregationBits: b0,
 	}))
-	has, err = s.hasSeenSyncContributionBits(&zondpb.SyncCommitteeContribution{
+	has, err = s.hasSeenSyncContributionBits(&qrysmpb.SyncCommitteeContribution{
 		AggregationBits: b0,
 	})
 	require.NoError(t, err)
 	require.Equal(t, true, has)
-	b1 := bitfield.NewBitvector16()
+	b1 := bitfield.NewBitvector128()
 	b1.SetBitAt(1, true)
-	has, err = s.hasSeenSyncContributionBits(&zondpb.SyncCommitteeContribution{
+	has, err = s.hasSeenSyncContributionBits(&qrysmpb.SyncCommitteeContribution{
 		AggregationBits: b1,
 	})
 	require.NoError(t, err)
 	require.Equal(t, false, has)
-	b2 := bitfield.NewBitvector16()
+	b2 := bitfield.NewBitvector128()
 	b2.SetBitAt(1, true)
 	b2.SetBitAt(2, true)
-	has, err = s.hasSeenSyncContributionBits(&zondpb.SyncCommitteeContribution{
+	has, err = s.hasSeenSyncContributionBits(&qrysmpb.SyncCommitteeContribution{
 		AggregationBits: b2,
 	})
 	require.NoError(t, err)
 	require.Equal(t, false, has)
 	b2.SetBitAt(0, true)
-	has, err = s.hasSeenSyncContributionBits(&zondpb.SyncCommitteeContribution{
+	has, err = s.hasSeenSyncContributionBits(&qrysmpb.SyncCommitteeContribution{
 		AggregationBits: b2,
 	})
 	require.NoError(t, err)
@@ -1093,7 +1091,7 @@ func TestService_setSyncContributionIndexSlotSeen(t *testing.T) {
 	require.Equal(t, 1, s.syncContributionBitsOverlapCache.Len())
 
 	// Cache with entries but different key
-	has, err = s.hasSeenSyncContributionBits(&zondpb.SyncCommitteeContribution{
+	has, err = s.hasSeenSyncContributionBits(&qrysmpb.SyncCommitteeContribution{
 		Slot:              1,
 		SubcommitteeIndex: 2,
 		BlockRoot:         []byte{'A'},
@@ -1101,13 +1099,13 @@ func TestService_setSyncContributionIndexSlotSeen(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, false, has)
-	require.NoError(t, s.setSyncContributionBits(&zondpb.SyncCommitteeContribution{
+	require.NoError(t, s.setSyncContributionBits(&qrysmpb.SyncCommitteeContribution{
 		Slot:              1,
 		SubcommitteeIndex: 2,
 		BlockRoot:         []byte{'A'},
 		AggregationBits:   b2,
 	}))
-	has, err = s.hasSeenSyncContributionBits(&zondpb.SyncCommitteeContribution{
+	has, err = s.hasSeenSyncContributionBits(&qrysmpb.SyncCommitteeContribution{
 		Slot:              1,
 		SubcommitteeIndex: 2,
 		BlockRoot:         []byte{'A'},
@@ -1115,7 +1113,7 @@ func TestService_setSyncContributionIndexSlotSeen(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, true, has)
-	has, err = s.hasSeenSyncContributionBits(&zondpb.SyncCommitteeContribution{
+	has, err = s.hasSeenSyncContributionBits(&qrysmpb.SyncCommitteeContribution{
 		Slot:              1,
 		SubcommitteeIndex: 2,
 		BlockRoot:         []byte{'A'},
@@ -1123,7 +1121,7 @@ func TestService_setSyncContributionIndexSlotSeen(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, true, has)
-	has, err = s.hasSeenSyncContributionBits(&zondpb.SyncCommitteeContribution{
+	has, err = s.hasSeenSyncContributionBits(&qrysmpb.SyncCommitteeContribution{
 		Slot:              1,
 		SubcommitteeIndex: 2,
 		BlockRoot:         []byte{'A'},
@@ -1133,7 +1131,7 @@ func TestService_setSyncContributionIndexSlotSeen(t *testing.T) {
 	require.Equal(t, true, has)
 
 	// Check invariant with the keys
-	has, err = s.hasSeenSyncContributionBits(&zondpb.SyncCommitteeContribution{
+	has, err = s.hasSeenSyncContributionBits(&qrysmpb.SyncCommitteeContribution{
 		Slot:              2,
 		SubcommitteeIndex: 2,
 		BlockRoot:         []byte{'A'},
@@ -1141,7 +1139,7 @@ func TestService_setSyncContributionIndexSlotSeen(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, false, has)
-	has, err = s.hasSeenSyncContributionBits(&zondpb.SyncCommitteeContribution{
+	has, err = s.hasSeenSyncContributionBits(&qrysmpb.SyncCommitteeContribution{
 		Slot:              1,
 		SubcommitteeIndex: 2,
 		BlockRoot:         []byte{'B'},
@@ -1149,7 +1147,7 @@ func TestService_setSyncContributionIndexSlotSeen(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, false, has)
-	has, err = s.hasSeenSyncContributionBits(&zondpb.SyncCommitteeContribution{
+	has, err = s.hasSeenSyncContributionBits(&qrysmpb.SyncCommitteeContribution{
 		Slot:              1,
 		SubcommitteeIndex: 3,
 		BlockRoot:         []byte{'A'},

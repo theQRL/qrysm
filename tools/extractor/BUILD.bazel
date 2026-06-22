@@ -1,21 +1,21 @@
-load("@qrysm//tools/go:def.bzl", "go_library")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "extractor_lib",
     srcs = ["main.go"],
     importpath = "github.com/theQRL/qrysm/tools/extractor",
     visibility = ["//visibility:public"],
     deps = [
-        "//beacon-chain/core/transition/interop:go_default_library",
-        "//beacon-chain/db:go_default_library",
-        "//config/features:go_default_library",
-        "//consensus-types/primitives:go_default_library",
+        "//beacon-chain/core/transition/interop",
+        "//beacon-chain/db",
+        "//config/features",
+        "//consensus-types/primitives",
     ],
 )
 
 go_binary(
     name = "extractor",
-    embed = [":go_default_library"],
+    embed = [":extractor_lib"],
     visibility = ["//visibility:public"],
 )

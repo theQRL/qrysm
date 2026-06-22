@@ -20,23 +20,23 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/container/slice"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
 
-func setupValidAttesterSlashing(t *testing.T) (*zondpb.AttesterSlashing, state.BeaconState) {
-	s, privKeys := util.DeterministicGenesisStateCapella(t, 5)
+func setupValidAttesterSlashing(t *testing.T) (*qrysmpb.AttesterSlashing, state.BeaconState) {
+	s, privKeys := util.DeterministicGenesisStateZond(t, 5)
 	vals := s.Validators()
 	for _, vv := range vals {
 		vv.WithdrawableEpoch = primitives.Epoch(1 * params.BeaconConfig().SlotsPerEpoch)
 	}
 	require.NoError(t, s.SetValidators(vals))
 
-	att1 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
-		Data: &zondpb.AttestationData{
-			Source: &zondpb.Checkpoint{Epoch: 1},
+	att1 := util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{
+		Data: &qrysmpb.AttestationData{
+			Source: &qrysmpb.Checkpoint{Epoch: 1},
 		},
 		AttestingIndices: []uint64{0, 1},
 	})
@@ -48,7 +48,7 @@ func setupValidAttesterSlashing(t *testing.T) (*zondpb.AttesterSlashing, state.B
 	sig1 := privKeys[1].Sign(hashTreeRoot[:]).Marshal()
 	att1.Signatures = [][]byte{sig0, sig1}
 
-	att2 := util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+	att2 := util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{
 		AttestingIndices: []uint64{0, 1},
 	})
 	hashTreeRoot, err = signing.ComputeSigningRoot(att2.Data, domain)
@@ -57,7 +57,7 @@ func setupValidAttesterSlashing(t *testing.T) (*zondpb.AttesterSlashing, state.B
 	sig1 = privKeys[1].Sign(hashTreeRoot[:]).Marshal()
 	att2.Signatures = [][]byte{sig0, sig1}
 
-	slashing := &zondpb.AttesterSlashing{
+	slashing := &qrysmpb.AttesterSlashing{
 		Attestation_1: att1,
 		Attestation_2: att2,
 	}
@@ -94,7 +94,7 @@ func TestValidateAttesterSlashing_ValidSlashing(t *testing.T) {
 	_, err := p.Encoding().EncodeGossip(buf, slashing)
 	require.NoError(t, err)
 
-	topic := p2p.GossipTypeMapping[reflect.TypeOf(slashing)]
+	topic := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.AttesterSlashing]()]
 	d, err := r.currentForkDigest()
 	assert.NoError(t, err)
 	topic = r.addDigestToTopic(topic, d)
@@ -110,6 +110,49 @@ func TestValidateAttesterSlashing_ValidSlashing(t *testing.T) {
 
 	assert.Equal(t, true, valid, "Failed Validation")
 	assert.NotNil(t, msg.ValidatorData, "Decoded message was not set on the message validator data")
+}
+
+func TestValidateAttesterSlashing_ValidOldSlashing(t *testing.T) {
+	p := p2ptest.NewTestP2P(t)
+	ctx := context.Background()
+
+	slashing, s := setupValidAttesterSlashing(t)
+	vals := s.Validators()
+	for _, v := range vals {
+		v.Slashed = true
+	}
+	require.NoError(t, s.SetValidators(vals))
+	chain := &mock.ChainService{State: s, Genesis: time.Now()}
+	r := &Service{
+		cfg: &config{
+			p2p:         p,
+			chain:       chain,
+			clock:       startup.NewClock(chain.Genesis, chain.ValidatorsRoot),
+			initialSync: &mockSync.Sync{IsSyncing: false},
+		},
+		seenAttesterSlashingCache: make(map[uint64]bool),
+		subHandler:                newSubTopicHandler(),
+	}
+
+	buf := new(bytes.Buffer)
+	_, err := p.Encoding().EncodeGossip(buf, slashing)
+	require.NoError(t, err)
+
+	topic := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.AttesterSlashing]()]
+	d, err := r.currentForkDigest()
+	assert.NoError(t, err)
+	topic = r.addDigestToTopic(topic, d)
+	msg := &pubsub.Message{
+		Message: &pubsubpb.Message{
+			Data:  buf.Bytes(),
+			Topic: &topic,
+		},
+	}
+	res, err := r.validateAttesterSlashing(ctx, "foobar", msg)
+	assert.ErrorContains(t, "validators were previously slashed", err)
+	valid := res == pubsub.ValidationIgnore
+
+	assert.Equal(t, true, valid, "Incorrect Validation")
 }
 
 func TestValidateAttesterSlashing_InvalidSlashing_WithdrawableEpoch(t *testing.T) {
@@ -139,7 +182,7 @@ func TestValidateAttesterSlashing_InvalidSlashing_WithdrawableEpoch(t *testing.T
 	_, err := p.Encoding().EncodeGossip(buf, slashing)
 	require.NoError(t, err)
 
-	topic := p2p.GossipTypeMapping[reflect.TypeOf(slashing)]
+	topic := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.AttesterSlashing]()]
 	d, err := r.currentForkDigest()
 	assert.NoError(t, err)
 	topic = r.addDigestToTopic(topic, d)
@@ -188,16 +231,16 @@ func TestValidateAttesterSlashing_CanFilter(t *testing.T) {
 	r.setAttesterSlashingIndicesSeen([]uint64{1, 2, 3, 4}, []uint64{3, 4, 5, 6})
 
 	// The below attestations should be filtered hence bad signature is ok.
-	topic := p2p.GossipTypeMapping[reflect.TypeOf(&zondpb.AttesterSlashing{})]
+	topic := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.AttesterSlashing]()]
 	d, err := r.currentForkDigest()
 	assert.NoError(t, err)
 	topic = r.addDigestToTopic(topic, d)
 	buf := new(bytes.Buffer)
-	_, err = p.Encoding().EncodeGossip(buf, &zondpb.AttesterSlashing{
-		Attestation_1: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+	_, err = p.Encoding().EncodeGossip(buf, &qrysmpb.AttesterSlashing{
+		Attestation_1: util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{
 			AttestingIndices: []uint64{3},
 		}),
-		Attestation_2: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+		Attestation_2: util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{
 			AttestingIndices: []uint64{3},
 		}),
 	})
@@ -214,11 +257,11 @@ func TestValidateAttesterSlashing_CanFilter(t *testing.T) {
 	assert.Equal(t, true, ignored)
 
 	buf = new(bytes.Buffer)
-	_, err = p.Encoding().EncodeGossip(buf, &zondpb.AttesterSlashing{
-		Attestation_1: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+	_, err = p.Encoding().EncodeGossip(buf, &qrysmpb.AttesterSlashing{
+		Attestation_1: util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{
 			AttestingIndices: []uint64{4, 3},
 		}),
-		Attestation_2: util.HydrateIndexedAttestation(&zondpb.IndexedAttestation{
+		Attestation_2: util.HydrateIndexedAttestation(&qrysmpb.IndexedAttestation{
 			AttestingIndices: []uint64{3, 4},
 		}),
 	})
@@ -259,7 +302,7 @@ func TestValidateAttesterSlashing_ContextTimeout(t *testing.T) {
 	_, err := p.Encoding().EncodeGossip(buf, slashing)
 	require.NoError(t, err)
 
-	topic := p2p.GossipTypeMapping[reflect.TypeOf(slashing)]
+	topic := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.AttesterSlashing]()]
 	msg := &pubsub.Message{
 		Message: &pubsubpb.Message{
 			Data:  buf.Bytes(),
@@ -290,7 +333,7 @@ func TestValidateAttesterSlashing_Syncing(t *testing.T) {
 	_, err := p.Encoding().EncodeGossip(buf, slashing)
 	require.NoError(t, err)
 
-	topic := p2p.GossipTypeMapping[reflect.TypeOf(slashing)]
+	topic := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.AttesterSlashing]()]
 	msg := &pubsub.Message{
 		Message: &pubsubpb.Message{
 			Data:  buf.Bytes(),

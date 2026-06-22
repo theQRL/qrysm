@@ -11,7 +11,7 @@ import (
 
 func TestStore_GenesisValidatorsRoot_ReadAndWrite(t *testing.T) {
 	ctx := context.Background()
-	db := setupDB(t, [][field_params.DilithiumPubkeyLength]byte{})
+	db := setupDB(t, [][field_params.MLDSA87PubkeyLength]byte{})
 	tests := []struct {
 		name    string
 		want    []byte

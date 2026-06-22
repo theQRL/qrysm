@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	chainMock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
 	testDB "github.com/theQRL/qrysm/beacon-chain/db/testing"
 	statenative "github.com/theQRL/qrysm/beacon-chain/state/state-native"
@@ -17,7 +17,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -27,11 +27,11 @@ func TestGetState(t *testing.T) {
 	ctx := context.Background()
 
 	headSlot := primitives.Slot(123)
-	fillSlot := func(state *zondpb.BeaconStateCapella) error {
+	fillSlot := func(state *qrysmpb.BeaconStateZond) error {
 		state.Slot = headSlot
 		return nil
 	}
-	newBeaconState, err := util.NewBeaconStateCapella(util.FillRootsNaturalOptCapella, fillSlot)
+	newBeaconState, err := util.NewBeaconStateZond(util.FillRootsNaturalOptZond, fillSlot)
 	require.NoError(t, err)
 	stateRoot, err := newBeaconState.HashTreeRoot(ctx)
 	require.NoError(t, err)
@@ -55,13 +55,13 @@ func TestGetState(t *testing.T) {
 		params.OverrideBeaconConfig(cfg)
 
 		db := testDB.SetupDB(t)
-		b := util.NewBeaconBlockCapella()
+		b := util.NewBeaconBlockZond()
 		b.Block.StateRoot = bytesutil.PadTo([]byte("foo"), 32)
 		util.SaveBlock(t, ctx, db, b)
 		r, err := b.Block.HashTreeRoot()
 		require.NoError(t, err)
 
-		bs, err := util.NewBeaconStateCapella(func(state *zondpb.BeaconStateCapella) error {
+		bs, err := util.NewBeaconStateZond(func(state *qrysmpb.BeaconStateZond) error {
 			state.BlockRoots[0] = r[:]
 			return nil
 		})
@@ -69,7 +69,7 @@ func TestGetState(t *testing.T) {
 		newStateRoot, err := bs.HashTreeRoot(ctx)
 		require.NoError(t, err)
 
-		require.NoError(t, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: r[:]}))
+		require.NoError(t, db.SaveStateSummary(ctx, &qrysmpb.StateSummary{Root: r[:]}))
 		require.NoError(t, db.SaveGenesisBlockRoot(ctx, r))
 		require.NoError(t, db.SaveState(ctx, bs, r))
 
@@ -92,20 +92,20 @@ func TestGetState(t *testing.T) {
 	})
 
 	t.Run("finalized", func(t *testing.T) {
+		// Use a block root distinct from the state root to verify
+		// we look up by checkpoint root, not by state root.
+		blockRoot := bytesutil.ToBytes32([]byte("finalized-block-root"))
 		stateGen := mockstategen.NewMockService()
-		replayer := mockstategen.NewMockReplayerBuilder()
-		replayer.SetMockStateForSlot(newBeaconState, params.BeaconConfig().SlotsPerEpoch*10)
-		stateGen.StatesByRoot[stateRoot] = newBeaconState
+		stateGen.StatesByRoot[blockRoot] = newBeaconState
 
 		p := BeaconDbStater{
 			ChainInfoFetcher: &chainMock.ChainService{
-				FinalizedCheckPoint: &zondpb.Checkpoint{
-					Root:  stateRoot[:],
+				FinalizedCheckPoint: &qrysmpb.Checkpoint{
+					Root:  blockRoot[:],
 					Epoch: 10,
 				},
 			},
 			StateGenService: stateGen,
-			ReplayerBuilder: replayer,
 		}
 
 		s, err := p.State(ctx, []byte("finalized"))
@@ -116,20 +116,18 @@ func TestGetState(t *testing.T) {
 	})
 
 	t.Run("justified", func(t *testing.T) {
+		blockRoot := bytesutil.ToBytes32([]byte("justified-block-root"))
 		stateGen := mockstategen.NewMockService()
-		replayer := mockstategen.NewMockReplayerBuilder()
-		replayer.SetMockStateForSlot(newBeaconState, params.BeaconConfig().SlotsPerEpoch*10)
-		stateGen.StatesByRoot[stateRoot] = newBeaconState
+		stateGen.StatesByRoot[blockRoot] = newBeaconState
 
 		p := BeaconDbStater{
 			ChainInfoFetcher: &chainMock.ChainService{
-				CurrentJustifiedCheckPoint: &zondpb.Checkpoint{
-					Root:  stateRoot[:],
+				CurrentJustifiedCheckPoint: &qrysmpb.Checkpoint{
+					Root:  blockRoot[:],
 					Epoch: 10,
 				},
 			},
 			StateGenService: stateGen,
-			ReplayerBuilder: replayer,
 		}
 
 		s, err := p.State(ctx, []byte("justified"))
@@ -137,6 +135,24 @@ func TestGetState(t *testing.T) {
 		sRoot, err := s.HashTreeRoot(ctx)
 		require.NoError(t, err)
 		assert.DeepEqual(t, stateRoot, sRoot)
+	})
+
+	t.Run("nil finalized checkpoint", func(t *testing.T) {
+		p := BeaconDbStater{
+			ChainInfoFetcher: &chainMock.ChainService{},
+			StateGenService:  mockstategen.NewMockService(),
+		}
+		_, err := p.State(ctx, []byte("finalized"))
+		require.ErrorContains(t, "received nil finalized checkpoint", err)
+	})
+
+	t.Run("nil justified checkpoint", func(t *testing.T) {
+		p := BeaconDbStater{
+			ChainInfoFetcher: &chainMock.ChainService{},
+			StateGenService:  mockstategen.NewMockService(),
+		}
+		_, err := p.State(ctx, []byte("justified"))
+		require.ErrorContains(t, "received nil justified checkpoint", err)
 	})
 
 	t.Run("hex", func(t *testing.T) {
@@ -216,17 +232,17 @@ func TestGetStateRoot(t *testing.T) {
 	ctx := context.Background()
 
 	headSlot := primitives.Slot(123)
-	fillSlot := func(state *zondpb.BeaconStateCapella) error {
+	fillSlot := func(state *qrysmpb.BeaconStateZond) error {
 		state.Slot = headSlot
 		return nil
 	}
-	newBeaconState, err := util.NewBeaconStateCapella(util.FillRootsNaturalOptCapella, fillSlot)
+	newBeaconState, err := util.NewBeaconStateZond(util.FillRootsNaturalOptZond, fillSlot)
 	require.NoError(t, err)
 	stateRoot, err := newBeaconState.HashTreeRoot(ctx)
 	require.NoError(t, err)
 
 	t.Run("head", func(t *testing.T) {
-		b := util.NewBeaconBlockCapella()
+		b := util.NewBeaconBlockZond()
 		b.Block.StateRoot = stateRoot[:]
 		wsb, err := blocks.NewSignedBeaconBlock(b)
 		require.NoError(t, err)
@@ -244,18 +260,18 @@ func TestGetStateRoot(t *testing.T) {
 
 	t.Run("genesis", func(t *testing.T) {
 		db := testDB.SetupDB(t)
-		b := util.NewBeaconBlockCapella()
+		b := util.NewBeaconBlockZond()
 		util.SaveBlock(t, ctx, db, b)
 		r, err := b.Block.HashTreeRoot()
 		require.NoError(t, err)
 
-		bs, err := util.NewBeaconStateCapella(func(state *zondpb.BeaconStateCapella) error {
+		bs, err := util.NewBeaconStateZond(func(state *qrysmpb.BeaconStateZond) error {
 			state.BlockRoots[0] = r[:]
 			return nil
 		})
 		require.NoError(t, err)
 
-		require.NoError(t, db.SaveStateSummary(ctx, &zondpb.StateSummary{Root: r[:]}))
+		require.NoError(t, db.SaveStateSummary(ctx, &qrysmpb.StateSummary{Root: r[:]}))
 		require.NoError(t, db.SaveGenesisBlockRoot(ctx, r))
 		require.NoError(t, db.SaveState(ctx, bs, r))
 
@@ -275,18 +291,18 @@ func TestGetStateRoot(t *testing.T) {
 		db := testDB.SetupDB(t)
 		genesis := bytesutil.ToBytes32([]byte("genesis"))
 		require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesis))
-		blk := util.NewBeaconBlockCapella()
+		blk := util.NewBeaconBlockZond()
 		blk.Block.ParentRoot = genesis[:]
 		blk.Block.Slot = 40
 		root, err := blk.Block.HashTreeRoot()
 		require.NoError(t, err)
-		cp := &zondpb.Checkpoint{
+		cp := &qrysmpb.Checkpoint{
 			Epoch: 5,
 			Root:  root[:],
 		}
 		// a valid chain is required to save finalized checkpoint.
 		util.SaveBlock(t, ctx, db, blk)
-		st, err := util.NewBeaconStateCapella()
+		st, err := util.NewBeaconStateZond()
 		require.NoError(t, err)
 		require.NoError(t, st.SetSlot(1))
 		// a state is required to save checkpoint
@@ -306,18 +322,18 @@ func TestGetStateRoot(t *testing.T) {
 		db := testDB.SetupDB(t)
 		genesis := bytesutil.ToBytes32([]byte("genesis"))
 		require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesis))
-		blk := util.NewBeaconBlockCapella()
+		blk := util.NewBeaconBlockZond()
 		blk.Block.ParentRoot = genesis[:]
 		blk.Block.Slot = 40
 		root, err := blk.Block.HashTreeRoot()
 		require.NoError(t, err)
-		cp := &zondpb.Checkpoint{
+		cp := &qrysmpb.Checkpoint{
 			Epoch: 5,
 			Root:  root[:],
 		}
 		// a valid chain is required to save finalized checkpoint.
 		util.SaveBlock(t, ctx, db, blk)
-		st, err := util.NewBeaconStateCapella()
+		st, err := util.NewBeaconStateZond()
 		require.NoError(t, err)
 		require.NoError(t, st.SetSlot(1))
 		// a state is required to save checkpoint
@@ -360,13 +376,13 @@ func TestGetStateRoot(t *testing.T) {
 		db := testDB.SetupDB(t)
 		genesis := bytesutil.ToBytes32([]byte("genesis"))
 		require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesis))
-		blk := util.NewBeaconBlockCapella()
+		blk := util.NewBeaconBlockZond()
 		blk.Block.ParentRoot = genesis[:]
 		blk.Block.Slot = 40
 		root, err := blk.Block.HashTreeRoot()
 		require.NoError(t, err)
 		util.SaveBlock(t, ctx, db, blk)
-		st, err := util.NewBeaconStateCapella()
+		st, err := util.NewBeaconStateZond()
 		require.NoError(t, err)
 		require.NoError(t, st.SetSlot(1))
 		// a state is required to save checkpoint
@@ -413,9 +429,9 @@ func TestStateBySlot_FutureSlot(t *testing.T) {
 }
 
 func TestStateBySlot_AfterHeadSlot(t *testing.T) {
-	headSt, err := statenative.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{Slot: 100})
+	headSt, err := statenative.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{Slot: 100})
 	require.NoError(t, err)
-	slotSt, err := statenative.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{Slot: 101})
+	slotSt, err := statenative.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{Slot: 101})
 	require.NoError(t, err)
 	currentSlot := primitives.Slot(102)
 	mock := &chainMock.ChainService{State: headSt, Slot: &currentSlot}

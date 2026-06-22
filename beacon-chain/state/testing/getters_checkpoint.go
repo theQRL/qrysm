@@ -5,7 +5,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 
 	"testing"
@@ -31,13 +31,13 @@ func VerifyBeaconStatePreviousJustifiedCheckpointNil(t *testing.T, factory getSt
 	require.NoError(t, err)
 
 	checkpoint := s.PreviousJustifiedCheckpoint()
-	require.Equal(t, (*zondpb.Checkpoint)(nil), checkpoint)
+	require.Equal(t, (*qrysmpb.Checkpoint)(nil), checkpoint)
 }
 
-type getStateWithCheckpoint = func(checkpoint *zondpb.Checkpoint) (state.BeaconState, error)
+type getStateWithCheckpoint = func(checkpoint *qrysmpb.Checkpoint) (state.BeaconState, error)
 
 func VerifyBeaconStatePreviousJustifiedCheckpoint(t *testing.T, factory getStateWithCheckpoint) {
-	orgCheckpoint := &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)}
+	orgCheckpoint := &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)}
 	orgCheckpoint.Root[1] = 1
 	orgCheckpoint.Root[2] = 2
 	orgCheckpoint.Root[3] = 3
@@ -55,11 +55,11 @@ func VerifyBeaconStateCurrentJustifiedCheckpointNil(t *testing.T, factory getSta
 	require.NoError(t, err)
 
 	checkpoint := s.CurrentJustifiedCheckpoint()
-	require.Equal(t, (*zondpb.Checkpoint)(nil), checkpoint)
+	require.Equal(t, (*qrysmpb.Checkpoint)(nil), checkpoint)
 }
 
 func VerifyBeaconStateCurrentJustifiedCheckpoint(t *testing.T, factory getStateWithCheckpoint) {
-	orgCheckpoint := &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)}
+	orgCheckpoint := &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)}
 	orgCheckpoint.Root[1] = 1
 	orgCheckpoint.Root[2] = 2
 	orgCheckpoint.Root[3] = 3
@@ -77,13 +77,13 @@ func VerifyBeaconStateFinalizedCheckpointNil(t *testing.T, factory getState) {
 	require.NoError(t, err)
 
 	checkpoint := s.FinalizedCheckpoint()
-	require.Equal(t, (*zondpb.Checkpoint)(nil), checkpoint)
+	require.Equal(t, (*qrysmpb.Checkpoint)(nil), checkpoint)
 	epoch := s.FinalizedCheckpointEpoch()
 	require.Equal(t, primitives.Epoch(0), epoch)
 }
 
 func VerifyBeaconStateFinalizedCheckpoint(t *testing.T, factory getStateWithCheckpoint) {
-	orgCheckpoint := &zondpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)}
+	orgCheckpoint := &qrysmpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)}
 	orgCheckpoint.Root[1] = 1
 	orgCheckpoint.Root[2] = 2
 	orgCheckpoint.Root[3] = 3

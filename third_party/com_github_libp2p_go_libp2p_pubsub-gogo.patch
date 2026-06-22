@@ -1,0 +1,27 @@
+diff --git a/pb/BUILD.bazel b/pb/BUILD.bazel
+index 4efc1d1..d7682ee 100644
+--- a/pb/BUILD.bazel
++++ b/pb/BUILD.bazel
+@@ -1,3 +1,2 @@
+ load("@io_bazel_rules_go//go:def.bzl", "go_library")
+-load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+ load("@rules_proto//proto:defs.bzl", "proto_library")
+@@ -14,13 +13,10 @@
+-go_proto_library(
+-    name = "pubsub_pb_go_proto",
+-    importpath = "github.com/libp2p/go-libp2p-pubsub/pb",
+-    proto = ":pubsub_pb_proto",
+-    visibility = ["//visibility:public"],
+-)
+-
+ go_library(
+     name = "pb",
+-    embed = [":pubsub_pb_go_proto"],
++    srcs = [
++        "rpc.pb.go",
++        "trace.pb.go",
++    ],
+     importpath = "github.com/libp2p/go-libp2p-pubsub/pb",
+     visibility = ["//visibility:public"],
++    deps = ["@com_github_gogo_protobuf//proto"],
+ )

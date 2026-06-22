@@ -4,23 +4,22 @@ import (
 	"context"
 	"testing"
 
-	"github.com/theQRL/qrysm/config/features"
-	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/testing/util"
-	"google.golang.org/protobuf/proto"
-
 	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/beacon-chain/operations/slashings"
 	mockp2p "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
+	"github.com/theQRL/qrysm/config/features"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
+	"github.com/theQRL/qrysm/testing/util"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestServer_SubmitProposerSlashing(t *testing.T) {
 	ctx := context.Background()
 
-	st, privs := util.DeterministicGenesisStateCapella(t, 64)
+	st, privs := util.DeterministicGenesisStateZond(t, 64)
 	slashedVal, err := st.ValidatorAtIndex(5)
 	require.NoError(t, err)
 	// We mark the validator at index 5 as already slashed.
@@ -49,7 +48,7 @@ func TestServer_SubmitProposerSlashing(t *testing.T) {
 func TestServer_SubmitAttesterSlashing(t *testing.T) {
 	ctx := context.Background()
 	// We mark the validators at index 5, 6 as already slashed.
-	st, privs := util.DeterministicGenesisStateCapella(t, 64)
+	st, privs := util.DeterministicGenesisStateZond(t, 64)
 	slashedVal, err := st.ValidatorAtIndex(5)
 	require.NoError(t, err)
 
@@ -81,7 +80,7 @@ func TestServer_SubmitProposerSlashing_DontBroadcast(t *testing.T) {
 	resetCfg := features.InitWithReset(&features.Flags{DisableBroadcastSlashings: true})
 	defer resetCfg()
 	ctx := context.Background()
-	st, privs := util.DeterministicGenesisStateCapella(t, 64)
+	st, privs := util.DeterministicGenesisStateZond(t, 64)
 	slashedVal, err := st.ValidatorAtIndex(5)
 	require.NoError(t, err)
 	// We mark the validator at index 5 as already slashed.
@@ -99,7 +98,7 @@ func TestServer_SubmitProposerSlashing_DontBroadcast(t *testing.T) {
 
 	// We want a proposer slashing for validator with index 2 to
 	// be included in the pool.
-	wanted := &zondpb.SubmitSlashingResponse{
+	wanted := &qrysmpb.SubmitSlashingResponse{
 		SlashedIndices: []primitives.ValidatorIndex{2},
 	}
 	slashing, err := util.GenerateProposerSlashingForValidator(st, privs[2], primitives.ValidatorIndex(2))
@@ -127,7 +126,7 @@ func TestServer_SubmitAttesterSlashing_DontBroadcast(t *testing.T) {
 	defer resetCfg()
 	ctx := context.Background()
 	// We mark the validators at index 5, 6 as already slashed.
-	st, privs := util.DeterministicGenesisStateCapella(t, 64)
+	st, privs := util.DeterministicGenesisStateZond(t, 64)
 	slashedVal, err := st.ValidatorAtIndex(5)
 	require.NoError(t, err)
 
@@ -150,7 +149,7 @@ func TestServer_SubmitAttesterSlashing_DontBroadcast(t *testing.T) {
 	// We want the intersection of the slashing attesting indices
 	// to be slashed, so we expect validators 2 and 3 to be in the response
 	// slashed indices.
-	wanted := &zondpb.SubmitSlashingResponse{
+	wanted := &qrysmpb.SubmitSlashingResponse{
 		SlashedIndices: []primitives.ValidatorIndex{2},
 	}
 	res, err := bs.SubmitAttesterSlashing(ctx, slashing)

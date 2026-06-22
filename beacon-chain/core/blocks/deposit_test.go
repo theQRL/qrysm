@@ -11,9 +11,9 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/container/trie"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -24,27 +24,27 @@ func TestProcessDeposits_SameValidatorMultipleDepositsSameBlock(t *testing.T) {
 
 	dep, _, err := util.DeterministicDepositsAndKeysSameValidator(3)
 	require.NoError(t, err)
-	eth1Data, err := util.DeterministicEth1Data(len(dep))
+	executionData, err := util.DeterministicExecutionData(len(dep))
 	require.NoError(t, err)
-	b := util.NewBeaconBlockCapella()
-	b.Block = &zondpb.BeaconBlockCapella{
-		Body: &zondpb.BeaconBlockBodyCapella{
+	b := util.NewBeaconBlockZond()
+	b.Block = &qrysmpb.BeaconBlockZond{
+		Body: &qrysmpb.BeaconBlockBodyZond{
 			// 3 deposits from the same validator
-			Deposits: []*zondpb.Deposit{dep[0], dep[1], dep[2]},
+			Deposits: []*qrysmpb.Deposit{dep[0], dep[1], dep[2]},
 		},
 	}
-	registry := []*zondpb.Validator{
+	registry := []*qrysmpb.Validator{
 		{
 			PublicKey:             []byte{1},
 			WithdrawalCredentials: []byte{1, 2, 3},
 		},
 	}
 	balances := []uint64{0}
-	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
-		Validators: registry,
-		Balances:   balances,
-		Eth1Data:   eth1Data,
-		Fork: &zondpb.Fork{
+	beaconState, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
+		Validators:    registry,
+		Balances:      balances,
+		ExecutionData: executionData,
+		Fork: &qrysmpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 		},
@@ -57,11 +57,11 @@ func TestProcessDeposits_SameValidatorMultipleDepositsSameBlock(t *testing.T) {
 }
 
 func TestProcessDeposits_MerkleBranchFailsVerification(t *testing.T) {
-	deposit := &zondpb.Deposit{
-		Data: &zondpb.Deposit_Data{
-			PublicKey:             bytesutil.PadTo([]byte{1, 2, 3}, field_params.DilithiumPubkeyLength),
-			WithdrawalCredentials: make([]byte, 32),
-			Signature:             make([]byte, field_params.DilithiumSignatureLength),
+	deposit := &qrysmpb.Deposit{
+		Data: &qrysmpb.Deposit_Data{
+			PublicKey:             bytesutil.PadTo([]byte{1, 2, 3}, field_params.MLDSA87PubkeyLength),
+			WithdrawalCredentials: make([]byte, 64),
+			Signature:             make([]byte, field_params.MLDSA87SignatureLength),
 		},
 	}
 	leaf, err := deposit.Data.HashTreeRoot()
@@ -74,14 +74,14 @@ func TestProcessDeposits_MerkleBranchFailsVerification(t *testing.T) {
 	require.NoError(t, err, "Could not generate proof")
 
 	deposit.Proof = proof
-	b := util.NewBeaconBlockCapella()
-	b.Block = &zondpb.BeaconBlockCapella{
-		Body: &zondpb.BeaconBlockBodyCapella{
-			Deposits: []*zondpb.Deposit{deposit},
+	b := util.NewBeaconBlockZond()
+	b.Block = &qrysmpb.BeaconBlockZond{
+		Body: &qrysmpb.BeaconBlockBodyZond{
+			Deposits: []*qrysmpb.Deposit{deposit},
 		},
 	}
-	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
-		Eth1Data: &zondpb.Eth1Data{
+	beaconState, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
+		ExecutionData: &qrysmpb.ExecutionData{
 			DepositRoot: []byte{0},
 			BlockHash:   []byte{1},
 		},
@@ -95,27 +95,27 @@ func TestProcessDeposits_MerkleBranchFailsVerification(t *testing.T) {
 func TestProcessDeposits_AddsNewValidatorDeposit(t *testing.T) {
 	dep, _, err := util.DeterministicDepositsAndKeys(1)
 	require.NoError(t, err)
-	eth1Data, err := util.DeterministicEth1Data(len(dep))
+	executionData, err := util.DeterministicExecutionData(len(dep))
 	require.NoError(t, err)
 
-	b := util.NewBeaconBlockCapella()
-	b.Block = &zondpb.BeaconBlockCapella{
-		Body: &zondpb.BeaconBlockBodyCapella{
-			Deposits: []*zondpb.Deposit{dep[0]},
+	b := util.NewBeaconBlockZond()
+	b.Block = &qrysmpb.BeaconBlockZond{
+		Body: &qrysmpb.BeaconBlockBodyZond{
+			Deposits: []*qrysmpb.Deposit{dep[0]},
 		},
 	}
-	registry := []*zondpb.Validator{
+	registry := []*qrysmpb.Validator{
 		{
 			PublicKey:             []byte{1},
 			WithdrawalCredentials: []byte{1, 2, 3},
 		},
 	}
 	balances := []uint64{0}
-	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
-		Validators: registry,
-		Balances:   balances,
-		Eth1Data:   eth1Data,
-		Fork: &zondpb.Fork{
+	beaconState, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
+		Validators:    registry,
+		Balances:      balances,
+		ExecutionData: executionData,
+		Fork: &qrysmpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 		},
@@ -133,14 +133,14 @@ func TestProcessDeposits_AddsNewValidatorDeposit(t *testing.T) {
 }
 
 func TestProcessDeposits_RepeatedDeposit_IncreasesValidatorBalance(t *testing.T) {
-	sk, err := dilithium.RandKey()
+	sk, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	deposit := &zondpb.Deposit{
-		Data: &zondpb.Deposit_Data{
+	deposit := &qrysmpb.Deposit{
+		Data: &qrysmpb.Deposit_Data{
 			PublicKey:             sk.PublicKey().Marshal(),
 			Amount:                1000,
-			WithdrawalCredentials: make([]byte, 32),
-			Signature:             make([]byte, field_params.DilithiumSignatureLength),
+			WithdrawalCredentials: make([]byte, 64),
+			Signature:             make([]byte, field_params.MLDSA87SignatureLength),
 		},
 	}
 	sr, err := signing.ComputeSigningRoot(deposit.Data, bytesutil.ToBytes(3, 32))
@@ -157,13 +157,13 @@ func TestProcessDeposits_RepeatedDeposit_IncreasesValidatorBalance(t *testing.T)
 	require.NoError(t, err, "Could not generate proof")
 
 	deposit.Proof = proof
-	b := util.NewBeaconBlockCapella()
-	b.Block = &zondpb.BeaconBlockCapella{
-		Body: &zondpb.BeaconBlockBodyCapella{
-			Deposits: []*zondpb.Deposit{deposit},
+	b := util.NewBeaconBlockZond()
+	b.Block = &qrysmpb.BeaconBlockZond{
+		Body: &qrysmpb.BeaconBlockBodyZond{
+			Deposits: []*qrysmpb.Deposit{deposit},
 		},
 	}
-	registry := []*zondpb.Validator{
+	registry := []*qrysmpb.Validator{
 		{
 			PublicKey: []byte{1, 2, 3},
 		},
@@ -175,10 +175,10 @@ func TestProcessDeposits_RepeatedDeposit_IncreasesValidatorBalance(t *testing.T)
 	balances := []uint64{0, 50}
 	root, err := depositTrie.HashTreeRoot()
 	require.NoError(t, err)
-	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	beaconState, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: registry,
 		Balances:   balances,
-		Eth1Data: &zondpb.Eth1Data{
+		ExecutionData: &qrysmpb.ExecutionData{
 			DepositRoot: root[:],
 			BlockHash:   root[:],
 		},
@@ -193,21 +193,21 @@ func TestProcessDeposit_AddsNewValidatorDeposit(t *testing.T) {
 	// Similar to TestProcessDeposits_AddsNewValidatorDeposit except that this test directly calls ProcessDeposit
 	dep, _, err := util.DeterministicDepositsAndKeys(1)
 	require.NoError(t, err)
-	eth1Data, err := util.DeterministicEth1Data(len(dep))
+	executionData, err := util.DeterministicExecutionData(len(dep))
 	require.NoError(t, err)
 
-	registry := []*zondpb.Validator{
+	registry := []*qrysmpb.Validator{
 		{
 			PublicKey:             []byte{1},
 			WithdrawalCredentials: []byte{1, 2, 3},
 		},
 	}
 	balances := []uint64{0}
-	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
-		Validators: registry,
-		Balances:   balances,
-		Eth1Data:   eth1Data,
-		Fork: &zondpb.Fork{
+	beaconState, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
+		Validators:    registry,
+		Balances:      balances,
+		ExecutionData: executionData,
+		Fork: &qrysmpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 		},
@@ -231,27 +231,27 @@ func TestProcessDeposit_SkipsInvalidDeposit(t *testing.T) {
 	// Same test settings as in TestProcessDeposit_AddsNewValidatorDeposit, except that we use an invalid signature
 	dep, _, err := util.DeterministicDepositsAndKeys(1)
 	require.NoError(t, err)
-	dep[0].Data.Signature = make([]byte, field_params.DilithiumSignatureLength)
+	dep[0].Data.Signature = make([]byte, field_params.MLDSA87SignatureLength)
 	dt, _, err := util.DepositTrieFromDeposits(dep)
 	require.NoError(t, err)
 	root, err := dt.HashTreeRoot()
 	require.NoError(t, err)
-	eth1Data := &zondpb.Eth1Data{
+	executionData := &qrysmpb.ExecutionData{
 		DepositRoot:  root[:],
 		DepositCount: 1,
 	}
-	registry := []*zondpb.Validator{
+	registry := []*qrysmpb.Validator{
 		{
 			PublicKey:             []byte{1},
 			WithdrawalCredentials: []byte{1, 2, 3},
 		},
 	}
 	balances := []uint64{0}
-	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
-		Validators: registry,
-		Balances:   balances,
-		Eth1Data:   eth1Data,
-		Fork: &zondpb.Fork{
+	beaconState, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
+		Validators:    registry,
+		Balances:      balances,
+		ExecutionData: executionData,
+		Fork: &qrysmpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 		},
@@ -261,10 +261,10 @@ func TestProcessDeposit_SkipsInvalidDeposit(t *testing.T) {
 	require.NoError(t, err, "Expected invalid block deposit to be ignored without error")
 	assert.Equal(t, false, isNewValidator, "Expected isNewValidator to be false")
 
-	if newState.Eth1DepositIndex() != 1 {
+	if newState.ExecutionDepositIndex() != 1 {
 		t.Errorf(
-			"Expected Eth1DepositIndex to be increased by 1 after processing an invalid deposit, received change: %v",
-			newState.Eth1DepositIndex(),
+			"Expected ExecutionDepositIndex to be increased by 1 after processing an invalid deposit, received change: %v",
+			newState.ExecutionDepositIndex(),
 		)
 	}
 	if len(newState.Validators()) != 1 {
@@ -282,7 +282,8 @@ func TestPreGenesisDeposits_SkipInvalidDeposit(t *testing.T) {
 
 	dep, _, err := util.DeterministicDepositsAndKeys(100)
 	require.NoError(t, err)
-	dep[0].Data.Signature = make([]byte, field_params.DilithiumSignatureLength)
+	dep[0].Data.WithdrawalCredentials[0] ^= 0xff
+	dep[0].Data.Signature = make([]byte, field_params.MLDSA87SignatureLength)
 	dt, _, err := util.DepositTrieFromDeposits(dep)
 	require.NoError(t, err)
 
@@ -294,22 +295,22 @@ func TestPreGenesisDeposits_SkipInvalidDeposit(t *testing.T) {
 	root, err := dt.HashTreeRoot()
 	require.NoError(t, err)
 
-	eth1Data := &zondpb.Eth1Data{
+	executionData := &qrysmpb.ExecutionData{
 		DepositRoot:  root[:],
 		DepositCount: 1,
 	}
-	registry := []*zondpb.Validator{
+	registry := []*qrysmpb.Validator{
 		{
 			PublicKey:             []byte{1},
 			WithdrawalCredentials: []byte{1, 2, 3},
 		},
 	}
 	balances := []uint64{0}
-	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
-		Validators: registry,
-		Balances:   balances,
-		Eth1Data:   eth1Data,
-		Fork: &zondpb.Fork{
+	beaconState, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
+		Validators:    registry,
+		Balances:      balances,
+		ExecutionData: executionData,
+		Fork: &qrysmpb.Fork{
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 		},
@@ -328,10 +329,10 @@ func TestPreGenesisDeposits_SkipInvalidDeposit(t *testing.T) {
 		require.Equal(t, primitives.Epoch(0), val.ActivationEpoch)
 		require.Equal(t, primitives.Epoch(0), val.ActivationEligibilityEpoch)
 	}
-	if newState.Eth1DepositIndex() != 100 {
+	if newState.ExecutionDepositIndex() != 100 {
 		t.Errorf(
-			"Expected Eth1DepositIndex to be increased by 99 after processing an invalid deposit, received change: %v",
-			newState.Eth1DepositIndex(),
+			"Expected ExecutionDepositIndex to be increased by 99 after processing an invalid deposit, received change: %v",
+			newState.ExecutionDepositIndex(),
 		)
 	}
 	if len(newState.Validators()) != 100 {
@@ -346,14 +347,14 @@ func TestPreGenesisDeposits_SkipInvalidDeposit(t *testing.T) {
 }
 
 func TestProcessDeposit_RepeatedDeposit_IncreasesValidatorBalance(t *testing.T) {
-	sk, err := dilithium.RandKey()
+	sk, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	deposit := &zondpb.Deposit{
-		Data: &zondpb.Deposit_Data{
+	deposit := &qrysmpb.Deposit{
+		Data: &qrysmpb.Deposit_Data{
 			PublicKey:             sk.PublicKey().Marshal(),
 			Amount:                1000,
-			WithdrawalCredentials: make([]byte, 32),
-			Signature:             make([]byte, field_params.DilithiumSignatureLength),
+			WithdrawalCredentials: make([]byte, 64),
+			Signature:             make([]byte, field_params.MLDSA87SignatureLength),
 		},
 	}
 	sr, err := signing.ComputeSigningRoot(deposit.Data, bytesutil.ToBytes(3, 32))
@@ -370,7 +371,7 @@ func TestProcessDeposit_RepeatedDeposit_IncreasesValidatorBalance(t *testing.T) 
 	require.NoError(t, err, "Could not generate proof")
 
 	deposit.Proof = proof
-	registry := []*zondpb.Validator{
+	registry := []*qrysmpb.Validator{
 		{
 			PublicKey: []byte{1, 2, 3},
 		},
@@ -383,10 +384,10 @@ func TestProcessDeposit_RepeatedDeposit_IncreasesValidatorBalance(t *testing.T) 
 	root, err := depositTrie.HashTreeRoot()
 	require.NoError(t, err)
 
-	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	beaconState, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: registry,
 		Balances:   balances,
-		Eth1Data: &zondpb.Eth1Data{
+		ExecutionData: &qrysmpb.ExecutionData{
 			DepositRoot: root[:],
 			BlockHash:   root[:],
 		},

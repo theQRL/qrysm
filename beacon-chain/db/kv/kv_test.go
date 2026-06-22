@@ -7,7 +7,7 @@ import (
 
 	"github.com/theQRL/qrysm/config/features"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 	bolt "go.etcd.io/bbolt"
@@ -32,14 +32,14 @@ func Test_setupBlockStorageType(t *testing.T) {
 		defer resetFn()
 		store := setupDB(t)
 
-		blk := util.NewBeaconBlockCapella()
+		blk := util.NewBeaconBlockZond()
 		blk.Block.Body.ExecutionPayload.BlockNumber = 1
 		wrappedBlock, err := blocks.NewSignedBeaconBlock(blk)
 		require.NoError(t, err)
 		root, err := wrappedBlock.Block().HashTreeRoot()
 		require.NoError(t, err)
 		require.NoError(t, store.SaveBlock(ctx, wrappedBlock))
-		require.NoError(t, store.SaveStateSummary(ctx, &zondpb.StateSummary{Root: root[:]}))
+		require.NoError(t, store.SaveStateSummary(ctx, &qrysmpb.StateSummary{Root: root[:]}))
 		require.NoError(t, store.SaveHeadBlockRoot(ctx, root))
 		retrievedBlk, err := store.Block(ctx, root)
 		require.NoError(t, err)
@@ -53,14 +53,14 @@ func Test_setupBlockStorageType(t *testing.T) {
 		defer resetFn()
 		store := setupDB(t)
 
-		blk := util.NewBeaconBlockCapella()
+		blk := util.NewBeaconBlockZond()
 		blk.Block.Body.ExecutionPayload.BlockNumber = 1
 		wrappedBlock, err := blocks.NewSignedBeaconBlock(blk)
 		require.NoError(t, err)
 		root, err := wrappedBlock.Block().HashTreeRoot()
 		require.NoError(t, err)
 		require.NoError(t, store.SaveBlock(ctx, wrappedBlock))
-		require.NoError(t, store.SaveStateSummary(ctx, &zondpb.StateSummary{Root: root[:]}))
+		require.NoError(t, store.SaveStateSummary(ctx, &qrysmpb.StateSummary{Root: root[:]}))
 		require.NoError(t, store.SaveHeadBlockRoot(ctx, root))
 		retrievedBlk, err := store.Block(ctx, root)
 		require.NoError(t, err)
@@ -76,14 +76,14 @@ func Test_setupBlockStorageType(t *testing.T) {
 			return tx.Bucket(chainMetadataBucket).Put(saveBlindedBeaconBlocksKey, []byte{1})
 		}))
 
-		blk := util.NewBlindedBeaconBlockCapella()
+		blk := util.NewBlindedBeaconBlockZond()
 		blk.Block.Body.ExecutionPayloadHeader.BlockNumber = 1
 		wrappedBlock, err := blocks.NewSignedBeaconBlock(blk)
 		require.NoError(t, err)
 		root, err := wrappedBlock.Block().HashTreeRoot()
 		require.NoError(t, err)
 		require.NoError(t, store.SaveBlock(ctx, wrappedBlock))
-		require.NoError(t, store.SaveStateSummary(ctx, &zondpb.StateSummary{Root: root[:]}))
+		require.NoError(t, store.SaveStateSummary(ctx, &qrysmpb.StateSummary{Root: root[:]}))
 		require.NoError(t, store.SaveHeadBlockRoot(ctx, root))
 		retrievedBlk, err := store.Block(ctx, root)
 		require.NoError(t, err)
@@ -109,7 +109,7 @@ func Test_setupBlockStorageType(t *testing.T) {
 		// Should have set the chain metadata bucket to save blinded
 		require.Equal(t, true, shouldSaveBlinded)
 
-		blkFull := util.NewBeaconBlockCapella()
+		blkFull := util.NewBeaconBlockZond()
 		blkFull.Block.Body.ExecutionPayload.BlockNumber = 2
 		wrappedBlock, err = blocks.NewSignedBeaconBlock(blkFull)
 		require.NoError(t, err)
@@ -130,14 +130,14 @@ func Test_setupBlockStorageType(t *testing.T) {
 			return tx.Bucket(chainMetadataBucket).Delete(saveBlindedBeaconBlocksKey)
 		}))
 
-		blk := util.NewBeaconBlockCapella()
+		blk := util.NewBeaconBlockZond()
 		blk.Block.Body.ExecutionPayload.BlockNumber = 1
 		wrappedBlock, err := blocks.NewSignedBeaconBlock(blk)
 		require.NoError(t, err)
 		root, err := wrappedBlock.Block().HashTreeRoot()
 		require.NoError(t, err)
 		require.NoError(t, store.SaveBlock(ctx, wrappedBlock))
-		require.NoError(t, store.SaveStateSummary(ctx, &zondpb.StateSummary{Root: root[:]}))
+		require.NoError(t, store.SaveStateSummary(ctx, &qrysmpb.StateSummary{Root: root[:]}))
 		require.NoError(t, store.SaveHeadBlockRoot(ctx, root))
 		retrievedBlk, err := store.Block(ctx, root)
 		require.NoError(t, err)
@@ -148,7 +148,7 @@ func Test_setupBlockStorageType(t *testing.T) {
 		err = store.setupBlockStorageType(ctx)
 		require.NoError(t, err)
 
-		blk = util.NewBeaconBlockCapella()
+		blk = util.NewBeaconBlockZond()
 		blk.Block.Body.ExecutionPayload.BlockNumber = 2
 		wrappedBlock, err = blocks.NewSignedBeaconBlock(blk)
 		require.NoError(t, err)
@@ -163,14 +163,14 @@ func Test_setupBlockStorageType(t *testing.T) {
 	t.Run("existing database with blinded blocks type should error if user enables full blocks feature flag", func(t *testing.T) {
 		store := setupDB(t)
 
-		blk := util.NewBeaconBlockCapella()
+		blk := util.NewBeaconBlockZond()
 		blk.Block.Body.ExecutionPayload.BlockNumber = 1
 		wrappedBlock, err := blocks.NewSignedBeaconBlock(blk)
 		require.NoError(t, err)
 		root, err := wrappedBlock.Block().HashTreeRoot()
 		require.NoError(t, err)
 		require.NoError(t, store.SaveBlock(ctx, wrappedBlock))
-		require.NoError(t, store.SaveStateSummary(ctx, &zondpb.StateSummary{Root: root[:]}))
+		require.NoError(t, store.SaveStateSummary(ctx, &qrysmpb.StateSummary{Root: root[:]}))
 		require.NoError(t, store.SaveHeadBlockRoot(ctx, root))
 		retrievedBlk, err := store.Block(ctx, root)
 		require.NoError(t, err)

@@ -4,8 +4,8 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
 	"github.com/theQRL/qrysm/crypto/hash"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 )
 
@@ -19,7 +19,7 @@ import (
 //	  """
 //	  mix = get_randao_mix(state, Epoch(epoch + EPOCHS_PER_HISTORICAL_VECTOR - MIN_SEED_LOOKAHEAD - 1))  # Avoid underflow
 //	  return hash(domain_type + uint_to_bytes(epoch) + mix)
-func Seed(state state.ReadOnlyBeaconState, epoch primitives.Epoch, domain [dilithium.DomainByteLength]byte) ([32]byte, error) {
+func Seed(state state.ReadOnlyBeaconState, epoch primitives.Epoch, domain [ml_dsa_87.DomainByteLength]byte) ([32]byte, error) {
 	// See https://github.com/ethereum/consensus-specs/pull/1296 for
 	// rationale on why offset has to look down by 1.
 	lookAheadEpoch := epoch + params.BeaconConfig().EpochsPerHistoricalVector -

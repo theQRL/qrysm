@@ -14,7 +14,7 @@ import (
 
 	"github.com/mgutz/ansi"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 const defaultTimestampFormat = time.RFC3339
@@ -155,7 +155,7 @@ func (f *TextFormatter) init(entry *logrus.Entry) {
 func (f *TextFormatter) checkIfTerminal(w io.Writer) bool {
 	switch v := w.(type) {
 	case *os.File:
-		return terminal.IsTerminal(int(v.Fd()))
+		return term.IsTerminal(int(v.Fd()))
 	default:
 		return false
 	}
@@ -343,7 +343,7 @@ func extractPrefix(msg string) (string, string) {
 	return prefix, msg
 }
 
-func (f *TextFormatter) appendKeyValue(b *bytes.Buffer, key string, value interface{}, appendSpace bool) error {
+func (f *TextFormatter) appendKeyValue(b *bytes.Buffer, key string, value any, appendSpace bool) error {
 	b.WriteString(key)
 	b.WriteByte('=')
 	if err := f.appendValue(b, value); err != nil {
@@ -356,7 +356,7 @@ func (f *TextFormatter) appendKeyValue(b *bytes.Buffer, key string, value interf
 	return nil
 }
 
-func (f *TextFormatter) appendValue(b *bytes.Buffer, value interface{}) (err error) {
+func (f *TextFormatter) appendValue(b *bytes.Buffer, value any) (err error) {
 	switch value := value.(type) {
 	case string:
 		if !f.needsQuoting(value) {

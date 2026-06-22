@@ -2,12 +2,12 @@ package fdlimits
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/go-zond/common/fdlimit"
+	"github.com/theQRL/go-qrl/common/fdlimit"
 )
 
 var log = logrus.WithField("prefix", "fdlimits")
 
-// SetMaxFdLimits is a wrapper around a few go-zond methods to allow qrysm to
+// SetMaxFdLimits is a wrapper around a few go-qrl methods to allow qrysm to
 // set its file descriptor limits at the maximum possible value.
 func SetMaxFdLimits() error {
 	curr, err := fdlimit.Current()

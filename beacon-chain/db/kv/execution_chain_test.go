@@ -7,9 +7,9 @@ import (
 	v1alpha1 "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
-func TestStore_SavePowchainData(t *testing.T) {
+func TestStore_SaveExecutionChainData(t *testing.T) {
 	type args struct {
-		data *v1alpha1.ETH1ChainData
+		data *v1alpha1.ExecutionChainData
 	}
 	tests := []struct {
 		name    string

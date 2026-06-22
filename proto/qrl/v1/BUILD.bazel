@@ -1,0 +1,134 @@
+##############################################################################
+# Common
+##############################################################################
+
+load("@rules_proto//proto:defs.bzl", "proto_library")
+
+# gazelle:ignore
+proto_library(
+    name = "proto",
+    srcs = [
+        "attestation.proto",
+        "beacon_chain.proto",
+        "events.proto",
+        "node.proto",
+        "ssz.proto",
+        "version.proto",
+        ":ssz_proto_files",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//proto/qrl/ext:proto",
+        "//proto/engine/v1:proto",
+        "@com_google_protobuf//:descriptor_proto",
+        "@com_google_protobuf//:timestamp_proto",
+    ],
+)
+
+##############################################################################
+# Go
+##############################################################################
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load("//proto:ssz_proto_library.bzl", "ssz_proto_files")
+load("//tools:ssz.bzl", "SSZ_DEPS", "ssz_gen_marshal")
+
+ssz_gen_marshal(
+    name = "ssz_generated_files",
+    go_proto = ":go_proto",
+    includes = [
+        "//consensus-types/primitives",
+        "//proto/engine/v1:engine",
+    ],
+    objs = [
+        "AggregateAttestationAndProof",
+        "Attestation",
+        "AttestationData",
+        "AttesterSlashing",
+        "BeaconBlock",
+        "BeaconBlockHeader",
+        "Checkpoint",
+        "Deposit",
+        "DepositData",
+        "ExecutionData",
+        "IndexedAttestation",
+        "ProposerSlashing",
+        "SignedAggregateAttestationAndProof",
+        "SignedBeaconBlock",
+        "SignedBeaconBlockZond",
+        "SignedBlindedBeaconBlockZond",
+        "SignedBeaconBlockHeader",
+        "SignedVoluntaryExit",
+        "SyncAggregate",
+        "SyncCommittee",
+        "Validator",
+        "VoluntaryExit",
+    ],
+)
+
+go_proto_library(
+    name = "go_proto",
+    compilers = [
+        "@com_github_prysmaticlabs_protoc_gen_go_cast//:go_cast_grpc",
+    ],
+    importpath = "github.com/theQRL/qrysm/proto/qrl/v1",
+    proto = ":proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//proto/qrl/ext",
+        "//proto/engine/v1:engine",
+        "@io_bazel_rules_go//proto/wkt:descriptor_go_proto",
+        "@com_github_theqrl_go_bitfield//:go-bitfield", 
+        "//consensus-types/primitives",
+        "@io_bazel_rules_go//proto/wkt:timestamp_go_proto",
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_google_protobuf//types/known/timestamppb",
+        "@org_golang_google_protobuf//types/descriptorpb",
+    ],
+)
+
+go_proto_library(
+    name = "go_grpc_gateway_library",
+    compilers = [
+        "@com_github_grpc_ecosystem_grpc_gateway_v2//protoc-gen-grpc-gateway:go_gen_grpc_gateway",
+    ],
+    embed = [":go_proto"],
+    importpath = "github.com/theQRL/qrysm/proto/qrl/v1",
+    protos = [":proto"],
+    visibility = ["//proto:__subpackages__"],
+)
+
+go_library(
+    name = "qrl",
+    srcs = [
+        ":ssz_generated_files",
+    ],
+    embed = [
+        ":go_grpc_gateway_library",
+    ],
+    importpath = "github.com/theQRL/qrysm/proto/qrl/v1",
+    visibility = ["//visibility:public"],
+    deps = SSZ_DEPS
+)
+
+alias(
+    name = "v1",
+    actual = ":qrl",
+    visibility = ["//visibility:public"],
+)
+
+ssz_proto_files(
+    name = "ssz_proto_files",
+    srcs = [
+        "beacon_block.proto",
+        "beacon_lightclient.proto",
+        "beacon_state.proto",
+        "sync_committee.proto",
+        "validator.proto",
+    ],
+    config = select({
+        "//conditions:default": "mainnet",
+        "//proto:ssz_mainnet": "mainnet",
+        "//proto:ssz_minimal": "minimal",
+    }),
+)

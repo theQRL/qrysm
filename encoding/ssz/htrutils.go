@@ -8,7 +8,7 @@ import (
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // Uint64Root computes the HashTreeRoot Merkleization of
@@ -24,7 +24,7 @@ func Uint64Root(val uint64) [32]byte {
 // ForkRoot computes the HashTreeRoot Merkleization of
 // a Fork struct value according to the Ethereum
 // Simple Serialize specification.
-func ForkRoot(fork *zondpb.Fork) ([32]byte, error) {
+func ForkRoot(fork *qrysmpb.Fork) ([32]byte, error) {
 	fieldRoots := make([][32]byte, 3)
 	if fork != nil {
 		fieldRoots[0] = bytesutil.ToBytes32(fork.PreviousVersion)
@@ -39,7 +39,7 @@ func ForkRoot(fork *zondpb.Fork) ([32]byte, error) {
 // CheckpointRoot computes the HashTreeRoot Merkleization of
 // a InitWithReset struct value according to the Ethereum
 // Simple Serialize specification.
-func CheckpointRoot(checkpoint *zondpb.Checkpoint) ([32]byte, error) {
+func CheckpointRoot(checkpoint *qrysmpb.Checkpoint) ([32]byte, error) {
 	fieldRoots := make([][32]byte, 2)
 	if checkpoint != nil {
 		epochBuf := make([]byte, 8)
@@ -95,7 +95,7 @@ func SlashingsRoot(slashings []uint64) ([32]byte, error) {
 // ExecutionPayload.
 func TransactionsRoot(txs [][]byte) ([32]byte, error) {
 	txRoots := make([][32]byte, 0)
-	for i := 0; i < len(txs); i++ {
+	for i := range txs {
 		rt, err := transactionRoot(txs[i])
 		if err != nil {
 			return [32]byte{}, err
@@ -120,7 +120,7 @@ func TransactionsRoot(txs [][]byte) ([32]byte, error) {
 // The limit parameter is used as input to the bitwise merkleization algorithm.
 func WithdrawalSliceRoot(withdrawals []*enginev1.Withdrawal, limit uint64) ([32]byte, error) {
 	roots := make([][32]byte, len(withdrawals))
-	for i := 0; i < len(withdrawals); i++ {
+	for i := range withdrawals {
 		r, err := withdrawalRoot(withdrawals[i])
 		if err != nil {
 			return [32]byte{}, err
@@ -162,14 +162,8 @@ func transactionRoot(tx []byte) ([32]byte, error) {
 }
 
 func withdrawalRoot(w *enginev1.Withdrawal) ([32]byte, error) {
-	fieldRoots := make([][32]byte, 4)
-	if w != nil {
-		binary.LittleEndian.PutUint64(fieldRoots[0][:], w.Index)
-
-		binary.LittleEndian.PutUint64(fieldRoots[1][:], uint64(w.ValidatorIndex))
-
-		fieldRoots[2] = bytesutil.ToBytes32(w.Address)
-		binary.LittleEndian.PutUint64(fieldRoots[3][:], w.Amount)
+	if w == nil {
+		return BitwiseMerkleize(make([][32]byte, 4), 4, 4)
 	}
-	return BitwiseMerkleize(fieldRoots, uint64(len(fieldRoots)), uint64(len(fieldRoots)))
+	return w.HashTreeRoot()
 }

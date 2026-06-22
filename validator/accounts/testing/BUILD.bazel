@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "testing",
     testonly = 1,
     srcs = ["mock.go"],
     importpath = "github.com/theQRL/qrysm/validator/accounts/testing",
@@ -10,12 +10,12 @@ go_library(
         "//validator:__subpackages__",
     ],
     deps = [
-        "//config/fieldparams:go_default_library",
-        "//config/validator/service:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "//validator/accounts/iface:go_default_library",
-        "//validator/client/iface:go_default_library",
-        "//validator/keymanager:go_default_library",
+        "//config/fieldparams",
+        "//config/validator/service",
+        "//consensus-types/primitives",
+        "//proto/qrysm/v1alpha1",
+        "//validator/accounts/iface",
+        "//validator/client/iface",
+        "//validator/keymanager",
     ],
 )

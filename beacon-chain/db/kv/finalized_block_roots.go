@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 )
@@ -37,7 +37,7 @@ var containerFinalizedButNotCanonical = []byte("recent block needs reindexing to
 //
 // This method ensures that all blocks from the current finalized epoch are considered "final" while
 // maintaining only canonical and finalized blocks older than the current finalized epoch.
-func (s *Store) updateFinalizedBlockRoots(ctx context.Context, tx *bolt.Tx, checkpoint *zondpb.Checkpoint) error {
+func (s *Store) updateFinalizedBlockRoots(ctx context.Context, tx *bolt.Tx, checkpoint *qrysmpb.Checkpoint) error {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.updateFinalizedBlockRoots")
 	defer span.End()
 
@@ -49,7 +49,7 @@ func (s *Store) updateFinalizedBlockRoots(ctx context.Context, tx *bolt.Tx, chec
 	initCheckpointRoot := tx.Bucket(blocksBucket).Get(originCheckpointBlockRootKey)
 
 	// De-index recent finalized block roots, to be re-indexed.
-	previousFinalizedCheckpoint := &zondpb.Checkpoint{}
+	previousFinalizedCheckpoint := &qrysmpb.Checkpoint{}
 	if b := bkt.Get(previousFinalizedCheckpointKey); b != nil {
 		if err := decode(ctx, b, previousFinalizedCheckpoint); err != nil {
 			tracing.AnnotateError(span, err)
@@ -91,7 +91,7 @@ func (s *Store) updateFinalizedBlockRoots(ctx context.Context, tx *bolt.Tx, chec
 		block := signedBlock.Block()
 
 		parentRoot := block.ParentRoot()
-		container := &zondpb.FinalizedBlockRootContainer{
+		container := &qrysmpb.FinalizedBlockRootContainer{
 			ParentRoot: parentRoot[:],
 			ChildRoot:  previousRoot,
 		}
@@ -115,7 +115,7 @@ func (s *Store) updateFinalizedBlockRoots(ctx context.Context, tx *bolt.Tx, chec
 		// Found parent, loop exit condition.
 		pr := block.ParentRoot()
 		if parentBytes := bkt.Get(pr[:]); parentBytes != nil {
-			parent := &zondpb.FinalizedBlockRootContainer{}
+			parent := &qrysmpb.FinalizedBlockRootContainer{}
 			if err := decode(ctx, parentBytes, parent); err != nil {
 				tracing.AnnotateError(span, err)
 				return err
@@ -168,7 +168,7 @@ func (s *Store) updateFinalizedBlockRoots(ctx context.Context, tx *bolt.Tx, chec
 // Note: beacon blocks from the latest finalized epoch return true, whether or not they are
 // considered canonical in the "head view" of the beacon node.
 func (s *Store) IsFinalizedBlock(ctx context.Context, blockRoot [32]byte) bool {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.IsFinalizedBlock")
+	_, span := trace.StartSpan(ctx, "BeaconDB.IsFinalizedBlock")
 	defer span.End()
 
 	var exists bool
@@ -203,7 +203,7 @@ func (s *Store) FinalizedChildBlock(ctx context.Context, blockRoot [32]byte) (in
 		if bytes.Equal(blkBytes, containerFinalizedButNotCanonical) {
 			return nil
 		}
-		ctr := &zondpb.FinalizedBlockRootContainer{}
+		ctr := &qrysmpb.FinalizedBlockRootContainer{}
 		if err := decode(ctx, blkBytes, ctr); err != nil {
 			tracing.AnnotateError(span, err)
 			return err

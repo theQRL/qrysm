@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "benchmark-files-gen_lib",
     testonly = True,
     srcs = ["main.go"],
     importpath = "github.com/theQRL/qrysm/tools/benchmark-files-gen",

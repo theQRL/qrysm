@@ -1,0 +1,13 @@
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -87,3 +87,10 @@
+     embed = [":go_default_library"],
+     race = "on",
+ )
++
++
++alias(
++    name = "go-bitfield",
++    actual = ":go_default_library",
++    visibility = ["//visibility:public"],
++)

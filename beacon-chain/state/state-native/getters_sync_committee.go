@@ -2,11 +2,11 @@ package state_native
 
 import (
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // CurrentSyncCommittee of the current sync committee in beacon chain state.
-func (b *BeaconState) CurrentSyncCommittee() (*zondpb.SyncCommittee, error) {
+func (b *BeaconState) CurrentSyncCommittee() (*qrysmpb.SyncCommittee, error) {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
@@ -19,12 +19,12 @@ func (b *BeaconState) CurrentSyncCommittee() (*zondpb.SyncCommittee, error) {
 
 // currentSyncCommitteeVal of the current sync committee in beacon chain state.
 // This assumes that a lock is already held on BeaconState.
-func (b *BeaconState) currentSyncCommitteeVal() *zondpb.SyncCommittee {
+func (b *BeaconState) currentSyncCommitteeVal() *qrysmpb.SyncCommittee {
 	return copySyncCommittee(b.currentSyncCommittee)
 }
 
 // NextSyncCommittee of the next sync committee in beacon chain state.
-func (b *BeaconState) NextSyncCommittee() (*zondpb.SyncCommittee, error) {
+func (b *BeaconState) NextSyncCommittee() (*qrysmpb.SyncCommittee, error) {
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
@@ -37,16 +37,16 @@ func (b *BeaconState) NextSyncCommittee() (*zondpb.SyncCommittee, error) {
 
 // nextSyncCommitteeVal of the next sync committee in beacon chain state.
 // This assumes that a lock is already held on BeaconState.
-func (b *BeaconState) nextSyncCommitteeVal() *zondpb.SyncCommittee {
+func (b *BeaconState) nextSyncCommitteeVal() *qrysmpb.SyncCommittee {
 	return copySyncCommittee(b.nextSyncCommittee)
 }
 
 // copySyncCommittee copies the provided sync committee object.
-func copySyncCommittee(data *zondpb.SyncCommittee) *zondpb.SyncCommittee {
+func copySyncCommittee(data *qrysmpb.SyncCommittee) *qrysmpb.SyncCommittee {
 	if data == nil {
 		return nil
 	}
-	return &zondpb.SyncCommittee{
+	return &qrysmpb.SyncCommittee{
 		Pubkeys: bytesutil.SafeCopy2dBytes(data.Pubkeys),
 	}
 }

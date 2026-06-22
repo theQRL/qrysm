@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/network/forks"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
@@ -30,7 +30,7 @@ func MapForkInfo(slot primitives.Slot, genesisValidatorsRoot []byte) (*ForkInfo,
 }
 
 // MapAggregateAndProof maps the eth2.AggregateAndProof proto to the Web3Signer spec.
-func MapAggregateAndProof(from *zondpb.AggregateAttestationAndProof) (*AggregateAndProof, error) {
+func MapAggregateAndProof(from *qrysmpb.AggregateAttestationAndProof) (*AggregateAndProof, error) {
 	if from == nil {
 		return nil, fmt.Errorf("AggregateAttestationAndProof is nil")
 	}
@@ -46,7 +46,7 @@ func MapAggregateAndProof(from *zondpb.AggregateAttestationAndProof) (*Aggregate
 }
 
 // MapAttestation maps the eth2.Attestation proto to the Web3Signer spec.
-func MapAttestation(attestation *zondpb.Attestation) (*Attestation, error) {
+func MapAttestation(attestation *qrysmpb.Attestation) (*Attestation, error) {
 	if attestation == nil {
 		return nil, fmt.Errorf("attestation is nil")
 	}
@@ -65,7 +65,7 @@ func MapAttestation(attestation *zondpb.Attestation) (*Attestation, error) {
 }
 
 // MapAttestationData maps the eth2.AttestationData proto to the Web3Signer spec.
-func MapAttestationData(data *zondpb.AttestationData) (*AttestationData, error) {
+func MapAttestationData(data *qrysmpb.AttestationData) (*AttestationData, error) {
 	if data == nil {
 		return nil, fmt.Errorf("attestation data is nil")
 	}
@@ -87,7 +87,7 @@ func MapAttestationData(data *zondpb.AttestationData) (*AttestationData, error) 
 }
 
 // MapCheckPoint maps the eth2.Checkpoint proto to the Web3Signer spec.
-func MapCheckPoint(checkpoint *zondpb.Checkpoint) (*Checkpoint, error) {
+func MapCheckPoint(checkpoint *qrysmpb.Checkpoint) (*Checkpoint, error) {
 	if checkpoint == nil {
 		return nil, fmt.Errorf("checkpoint is nil")
 	}
@@ -98,19 +98,19 @@ func MapCheckPoint(checkpoint *zondpb.Checkpoint) (*Checkpoint, error) {
 }
 
 // MapBeaconBlockBody maps the eth2.BeaconBlockBody proto to the Web3Signer spec.
-func MapBeaconBlockBody(body *zondpb.BeaconBlockBody) (*BeaconBlockBody, error) {
+func MapBeaconBlockBody(body *qrysmpb.BeaconBlockBody) (*BeaconBlockBody, error) {
 	if body == nil {
 		return nil, fmt.Errorf("beacon block body is nil")
 	}
-	if body.Eth1Data == nil {
-		return nil, fmt.Errorf("eth1 data in Beacon Block Body is nil")
+	if body.ExecutionData == nil {
+		return nil, fmt.Errorf("execution data in Beacon Block Body is nil")
 	}
 	block := &BeaconBlockBody{
 		RandaoReveal: body.RandaoReveal,
-		Eth1Data: &Eth1Data{
-			DepositRoot:  body.Eth1Data.DepositRoot,
-			DepositCount: fmt.Sprint(body.Eth1Data.DepositCount),
-			BlockHash:    body.Eth1Data.BlockHash,
+		ExecutionData: &ExecutionData{
+			DepositRoot:  body.ExecutionData.DepositRoot,
+			DepositCount: fmt.Sprint(body.ExecutionData.DepositCount),
+			BlockHash:    body.ExecutionData.BlockHash,
 		},
 		Graffiti:          body.Graffiti,
 		ProposerSlashings: make([]*ProposerSlashing, len(body.ProposerSlashings)),
@@ -158,7 +158,7 @@ func MapBeaconBlockBody(body *zondpb.BeaconBlockBody) (*BeaconBlockBody, error) 
 }
 
 // MapProposerSlashing maps the eth2.ProposerSlashing proto to the Web3Signer spec.
-func MapProposerSlashing(slashing *zondpb.ProposerSlashing) (*ProposerSlashing, error) {
+func MapProposerSlashing(slashing *qrysmpb.ProposerSlashing) (*ProposerSlashing, error) {
 	if slashing == nil {
 		return nil, fmt.Errorf("proposer slashing is nil")
 	}
@@ -177,7 +177,7 @@ func MapProposerSlashing(slashing *zondpb.ProposerSlashing) (*ProposerSlashing, 
 }
 
 // MapSignedBeaconBlockHeader maps the eth2.AttesterSlashing proto to the Web3Signer spec.
-func MapSignedBeaconBlockHeader(signedHeader *zondpb.SignedBeaconBlockHeader) (*SignedBeaconBlockHeader, error) {
+func MapSignedBeaconBlockHeader(signedHeader *qrysmpb.SignedBeaconBlockHeader) (*SignedBeaconBlockHeader, error) {
 	if signedHeader == nil {
 		return nil, fmt.Errorf("signed beacon block header is nil")
 	}
@@ -197,7 +197,7 @@ func MapSignedBeaconBlockHeader(signedHeader *zondpb.SignedBeaconBlockHeader) (*
 }
 
 // MapAttesterSlashing maps the eth2.AttesterSlashing proto to the Web3Signer spec.
-func MapAttesterSlashing(slashing *zondpb.AttesterSlashing) (*AttesterSlashing, error) {
+func MapAttesterSlashing(slashing *qrysmpb.AttesterSlashing) (*AttesterSlashing, error) {
 	if slashing == nil {
 		return nil, fmt.Errorf("attester slashing is nil")
 	}
@@ -216,7 +216,7 @@ func MapAttesterSlashing(slashing *zondpb.AttesterSlashing) (*AttesterSlashing, 
 }
 
 // MapIndexedAttestation maps the eth2.IndexedAttestation proto to the Web3Signer spec.
-func MapIndexedAttestation(attestation *zondpb.IndexedAttestation) (*IndexedAttestation, error) {
+func MapIndexedAttestation(attestation *qrysmpb.IndexedAttestation) (*IndexedAttestation, error) {
 	if attestation == nil {
 		return nil, fmt.Errorf("indexed attestation is nil")
 	}
@@ -236,7 +236,7 @@ func MapIndexedAttestation(attestation *zondpb.IndexedAttestation) (*IndexedAtte
 }
 
 // MapDeposit maps the eth2.Deposit proto to the Web3Signer spec.
-func MapDeposit(deposit *zondpb.Deposit) (*Deposit, error) {
+func MapDeposit(deposit *qrysmpb.Deposit) (*Deposit, error) {
 	if deposit == nil {
 		return nil, fmt.Errorf("deposit is nil")
 	}
@@ -256,7 +256,7 @@ func MapDeposit(deposit *zondpb.Deposit) (*Deposit, error) {
 }
 
 // MapSignedVoluntaryExit maps the eth2.SignedVoluntaryExit proto to the Web3Signer spec.
-func MapSignedVoluntaryExit(signedVoluntaryExit *zondpb.SignedVoluntaryExit) (*SignedVoluntaryExit, error) {
+func MapSignedVoluntaryExit(signedVoluntaryExit *qrysmpb.SignedVoluntaryExit) (*SignedVoluntaryExit, error) {
 	if signedVoluntaryExit == nil {
 		return nil, fmt.Errorf("signed voluntary exit is nil")
 	}
@@ -273,7 +273,7 @@ func MapSignedVoluntaryExit(signedVoluntaryExit *zondpb.SignedVoluntaryExit) (*S
 }
 
 // MapBeaconBlockAltair maps the eth2.BeaconBlockAltair proto to the Web3Signer spec.
-func MapBeaconBlockAltair(block *zondpb.BeaconBlockAltair) (*BeaconBlockAltair, error) {
+func MapBeaconBlockAltair(block *qrysmpb.BeaconBlockAltair) (*BeaconBlockAltair, error) {
 	if block == nil {
 		return nil, fmt.Errorf("beacon block altair is nil")
 	}
@@ -291,7 +291,7 @@ func MapBeaconBlockAltair(block *zondpb.BeaconBlockAltair) (*BeaconBlockAltair, 
 }
 
 // MapBeaconBlockBodyAltair maps the eth2.BeaconBlockBodyAltair proto to the Web3Signer spec.
-func MapBeaconBlockBodyAltair(body *zondpb.BeaconBlockBodyAltair) (*BeaconBlockBodyAltair, error) {
+func MapBeaconBlockBodyAltair(body *qrysmpb.BeaconBlockBodyAltair) (*BeaconBlockBodyAltair, error) {
 	if body == nil {
 		return nil, fmt.Errorf("beacon block body altair is nil")
 	}
@@ -304,10 +304,10 @@ func MapBeaconBlockBodyAltair(body *zondpb.BeaconBlockBodyAltair) (*BeaconBlockB
 
 	block := &BeaconBlockBodyAltair{
 		RandaoReveal: body.RandaoReveal,
-		Eth1Data: &Eth1Data{
-			DepositRoot:  body.Eth1Data.DepositRoot,
-			DepositCount: fmt.Sprint(body.Eth1Data.DepositCount),
-			BlockHash:    body.Eth1Data.BlockHash,
+		ExecutionData: &ExecutionData{
+			DepositRoot:  body.ExecutionData.DepositRoot,
+			DepositCount: fmt.Sprint(body.ExecutionData.DepositCount),
+			BlockHash:    body.ExecutionData.BlockHash,
 		},
 		Graffiti:          body.Graffiti,
 		ProposerSlashings: make([]*ProposerSlashing, len(body.ProposerSlashings)),
@@ -359,7 +359,7 @@ func MapBeaconBlockBodyAltair(body *zondpb.BeaconBlockBodyAltair) (*BeaconBlockB
 }
 
 // MapSyncAggregatorSelectionData maps the eth2.SyncAggregatorSelectionData proto to the Web3Signer spec.
-func MapSyncAggregatorSelectionData(data *zondpb.SyncAggregatorSelectionData) (*SyncAggregatorSelectionData, error) {
+func MapSyncAggregatorSelectionData(data *qrysmpb.SyncAggregatorSelectionData) (*SyncAggregatorSelectionData, error) {
 	if data == nil {
 		return nil, fmt.Errorf("sync aggregator selection data is nil")
 	}
@@ -370,7 +370,7 @@ func MapSyncAggregatorSelectionData(data *zondpb.SyncAggregatorSelectionData) (*
 }
 
 // MapContributionAndProof maps the eth2.ContributionAndProof proto to the Web3Signer spec.
-func MapContributionAndProof(contribution *zondpb.ContributionAndProof) (*ContributionAndProof, error) {
+func MapContributionAndProof(contribution *qrysmpb.ContributionAndProof) (*ContributionAndProof, error) {
 	if contribution == nil {
 		return nil, fmt.Errorf("contribution and proof is nil")
 	}

@@ -38,6 +38,20 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+type blockingSubnetSearchP2P struct {
+	*p2ptest.FakeP2P
+	searchContexts chan context.Context
+}
+
+func (p *blockingSubnetSearchP2P) FindPeersWithSubnet(ctx context.Context, _ string, _ uint64, _ int) (bool, error) {
+	select {
+	case p.searchContexts <- ctx:
+	default:
+	}
+	<-ctx.Done()
+	return false, ctx.Err()
+}
+
 func TestSubscribe_ReceivesValidMessage(t *testing.T) {
 	p2pService := p2ptest.NewTestP2P(t)
 	gt := time.Now()
@@ -59,7 +73,7 @@ func TestSubscribe_ReceivesValidMessage(t *testing.T) {
 	var err error
 	p2pService.Digest, err = r.currentForkDigest()
 	require.NoError(t, err)
-	topic := "/eth2/%x/voluntary_exit"
+	topic := "/consensus/%x/voluntary_exit"
 	var wg sync.WaitGroup
 	wg.Add(1)
 
@@ -74,7 +88,7 @@ func TestSubscribe_ReceivesValidMessage(t *testing.T) {
 	}, p2pService.Digest)
 	r.markForChainStart()
 
-	p2pService.ReceivePubSub(topic, &pb.SignedVoluntaryExit{Exit: &pb.VoluntaryExit{Epoch: 55}, Signature: make([]byte, field_params.DilithiumSignatureLength)})
+	p2pService.ReceivePubSub(topic, &pb.SignedVoluntaryExit{Exit: &pb.VoluntaryExit{Epoch: 55}, Signature: make([]byte, field_params.MLDSA87SignatureLength)})
 
 	if util.WaitTimeout(&wg, time.Second) {
 		t.Fatal("Did not receive PubSub in 1 second")
@@ -102,7 +116,7 @@ func TestSubscribe_UnsubscribeTopic(t *testing.T) {
 	var err error
 	p2pService.Digest, err = r.currentForkDigest()
 	require.NoError(t, err)
-	topic := "/eth2/%x/voluntary_exit"
+	topic := "/consensus/%x/voluntary_exit"
 
 	r.subscribe(topic, r.noopValidator, func(_ context.Context, msg proto.Message) error {
 		return nil
@@ -150,7 +164,7 @@ func TestSubscribe_ReceivesAttesterSlashing(t *testing.T) {
 		chainStarted:              abool.New(),
 		subHandler:                newSubTopicHandler(),
 	}
-	topic := "/eth2/%x/attester_slashing"
+	topic := "/consensus/%x/attester_slashing"
 	var wg sync.WaitGroup
 	wg.Add(1)
 	var err error
@@ -161,7 +175,7 @@ func TestSubscribe_ReceivesAttesterSlashing(t *testing.T) {
 		wg.Done()
 		return nil
 	}, p2pService.Digest)
-	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 64)
+	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 64)
 	chainService.State = beaconState
 	r.markForChainStart()
 	attesterSlashing, err := util.GenerateAttesterSlashingForValidator(
@@ -203,7 +217,7 @@ func TestSubscribe_ReceivesProposerSlashing(t *testing.T) {
 		chainStarted:              abool.New(),
 		subHandler:                newSubTopicHandler(),
 	}
-	topic := "/eth2/%x/proposer_slashing"
+	topic := "/consensus/%x/proposer_slashing"
 	var wg sync.WaitGroup
 	wg.Add(1)
 	params.SetupTestConfigCleanup(t)
@@ -216,7 +230,7 @@ func TestSubscribe_ReceivesProposerSlashing(t *testing.T) {
 		wg.Done()
 		return nil
 	}, p2pService.Digest)
-	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 64)
+	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 64)
 	chainService.State = beaconState
 	r.markForChainStart()
 	proposerSlashing, err := util.GenerateProposerSlashingForValidator(
@@ -255,7 +269,7 @@ func TestSubscribe_HandlesPanic(t *testing.T) {
 	p.Digest, err = r.currentForkDigest()
 	require.NoError(t, err)
 
-	topic := p2p.GossipTypeMapping[reflect.TypeOf(&pb.SignedVoluntaryExit{})]
+	topic := p2p.GossipTypeMapping[reflect.TypeFor[*pb.SignedVoluntaryExit]()]
 	var wg sync.WaitGroup
 	wg.Add(1)
 
@@ -264,7 +278,7 @@ func TestSubscribe_HandlesPanic(t *testing.T) {
 		panic("bad")
 	}, p.Digest)
 	r.markForChainStart()
-	p.ReceivePubSub(topic, &pb.SignedVoluntaryExit{Exit: &pb.VoluntaryExit{Epoch: 55}, Signature: make([]byte, field_params.DilithiumSignatureLength)})
+	p.ReceivePubSub(topic, &pb.SignedVoluntaryExit{Exit: &pb.VoluntaryExit{Epoch: 55}, Signature: make([]byte, field_params.MLDSA87SignatureLength)})
 
 	if util.WaitTimeout(&wg, time.Second) {
 		t.Fatal("Did not receive PubSub in 1 second")
@@ -292,7 +306,7 @@ func TestRevalidateSubscription_CorrectlyFormatsTopic(t *testing.T) {
 	require.NoError(t, err)
 	subscriptions := make(map[uint64]*pubsub.Subscription, params.BeaconConfig().MaxCommitteesPerSlot)
 
-	defaultTopic := "/eth2/testing/%#x/committee%d"
+	defaultTopic := "/consensus/testing/%#x/committee%d"
 	// committee index 1
 	fullTopic := fmt.Sprintf(defaultTopic, digest, 1) + r.cfg.p2p.Encoding().ProtocolSuffix()
 	_, topVal := r.wrapAndReportValidation(fullTopic, r.noopValidator)
@@ -329,7 +343,7 @@ func TestStaticSubnets(t *testing.T) {
 		chainStarted: abool.New(),
 		subHandler:   newSubTopicHandler(),
 	}
-	defaultTopic := "/eth2/%x/beacon_attestation_%d"
+	defaultTopic := "/consensus/%x/beacon_attestation_%d"
 	d, err := r.currentForkDigest()
 	assert.NoError(t, err)
 	r.subscribeStaticWithSubnets(defaultTopic, r.noopValidator, func(_ context.Context, msg proto.Message) error {
@@ -341,6 +355,47 @@ func TestStaticSubnets(t *testing.T) {
 		t.Errorf("Wanted the number of subnet topics registered to be %d but got %d", params.BeaconNetworkConfig().AttestationSubnetCount, len(topics))
 	}
 	cancel()
+}
+
+func TestSubscribeAggregatorSubnet_SearchDoesNotBlockWantedUpdates(t *testing.T) {
+	currentTimeout := subnetPeerSearchTimeout
+	subnetPeerSearchTimeout = 20 * time.Millisecond
+	defer func() {
+		subnetPeerSearchTimeout = currentTimeout
+	}()
+
+	p2pService := &blockingSubnetSearchP2P{
+		FakeP2P:        p2ptest.NewFuzzTestP2P(),
+		searchContexts: make(chan context.Context, 4),
+	}
+	r := Service{
+		ctx: context.Background(),
+		cfg: &config{
+			p2p: p2pService,
+		},
+	}
+
+	start := time.Now()
+	r.findPeersWithSubnetAsync("topic", 1)
+	require.Equal(t, true, time.Since(start) < 100*time.Millisecond)
+
+	var searchCtx context.Context
+	select {
+	case searchCtx = <-p2pService.searchContexts:
+	case <-time.After(time.Second):
+		t.Fatal("did not start subnet search")
+	}
+
+	deadline, ok := searchCtx.Deadline()
+	require.Equal(t, true, ok)
+	require.Equal(t, true, time.Until(deadline) <= 50*time.Millisecond)
+
+	r.findPeersWithSubnetAsync("topic", 1)
+	select {
+	case <-p2pService.searchContexts:
+		t.Fatal("started duplicate subnet search while one was already running")
+	case <-time.After(40 * time.Millisecond):
+	}
 }
 
 func Test_wrapAndReportValidation(t *testing.T) {
@@ -469,8 +524,7 @@ func TestFilterSubnetPeers(t *testing.T) {
 	// Reset config.
 	defer flags.Init(new(flags.GlobalFlags))
 	p := p2ptest.NewTestP2P(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	currSlot := primitives.Slot(100)
 
 	gt := time.Now()
@@ -500,7 +554,7 @@ func TestFilterSubnetPeers(t *testing.T) {
 	defer cache.SubnetIDs.EmptyAllCaches()
 	digest, err := r.currentForkDigest()
 	assert.NoError(t, err)
-	defaultTopic := "/eth2/%x/beacon_attestation_%d" + r.cfg.p2p.Encoding().ProtocolSuffix()
+	defaultTopic := "/consensus/%x/beacon_attestation_%d" + r.cfg.p2p.Encoding().ProtocolSuffix()
 	subnet10 := r.addDigestAndIndexToTopic(defaultTopic, digest, 10)
 	cache.SubnetIDs.AddAggregatorSubnetID(currSlot, 10)
 

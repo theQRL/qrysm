@@ -10,38 +10,15 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
-	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
+	qrlpb "github.com/theQRL/qrysm/proto/qrl/v1"
 )
 
-// https://ethereum.github.io/beacon-APIs/?urls.primaryName=dev#/Beacon/submitPoolBLSToExecutionChange
-// expects posting a top-level array. We make it more proto-friendly by wrapping it in a struct.
-func wrapDilithiumChangesArray(
-	endpoint *apimiddleware.Endpoint,
-	_ http.ResponseWriter,
-	req *http.Request,
-) (apimiddleware.RunDefault, apimiddleware.ErrorJson) {
-	if _, ok := endpoint.PostRequest.(*SubmitDilithiumToExecutionChangesRequest); !ok {
-		return true, nil
-	}
-	changes := make([]*SignedDilithiumToExecutionChangeJson, 0)
-	if err := json.NewDecoder(req.Body).Decode(&changes); err != nil {
-		return false, apimiddleware.InternalServerErrorWithMessage(err, "could not decode body")
-	}
-	j := &SubmitDilithiumToExecutionChangesRequest{Changes: changes}
-	b, err := json.Marshal(j)
-	if err != nil {
-		return false, apimiddleware.InternalServerErrorWithMessage(err, "could not marshal wrapped body")
-	}
-	req.Body = io.NopCloser(bytes.NewReader(b))
-	return true, nil
+type zondPublishBlockRequestJson struct {
+	ZondBlock *SignedBeaconBlockZondJson `json:"zond_block"`
 }
 
-type capellaPublishBlockRequestJson struct {
-	CapellaBlock *SignedBeaconBlockCapellaJson `json:"capella_block"`
-}
-
-type capellaPublishBlindedBlockRequestJson struct {
-	CapellaBlock *SignedBlindedBeaconBlockCapellaJson `json:"capella_block"`
+type zondPublishBlindedBlockRequestJson struct {
+	ZondBlock *SignedBlindedBeaconBlockZondJson `json:"zond_block"`
 }
 
 // setInitialPublishBlockPostRequest is triggered before we deserialize the request JSON into a struct.
@@ -84,7 +61,7 @@ func setInitialPublishBlockPostRequest(endpoint *apimiddleware.Endpoint,
 		return false, &apimiddleware.DefaultErrorJson{Message: "could not parse slot from request", Code: http.StatusInternalServerError}
 	}
 
-	endpoint.PostRequest = &SignedBeaconBlockCapellaJson{}
+	endpoint.PostRequest = &SignedBeaconBlockZondJson{}
 
 	req.Body = io.NopCloser(bytes.NewBuffer(buf))
 	return true, nil
@@ -95,10 +72,10 @@ func setInitialPublishBlockPostRequest(endpoint *apimiddleware.Endpoint,
 // We do a simple conversion depending on the type of endpoint.PostRequest
 // (which was filled out previously in setInitialPublishBlockPostRequest).
 func preparePublishedBlock(endpoint *apimiddleware.Endpoint, _ http.ResponseWriter, _ *http.Request) apimiddleware.ErrorJson {
-	if block, ok := endpoint.PostRequest.(*SignedBeaconBlockCapellaJson); ok {
+	if block, ok := endpoint.PostRequest.(*SignedBeaconBlockZondJson); ok {
 		// Prepare post request that can be properly decoded on gRPC side.
-		endpoint.PostRequest = &capellaPublishBlockRequestJson{
-			CapellaBlock: block,
+		endpoint.PostRequest = &zondPublishBlockRequestJson{
+			ZondBlock: block,
 		}
 		return nil
 	}
@@ -145,7 +122,7 @@ func setInitialPublishBlindedBlockPostRequest(endpoint *apimiddleware.Endpoint,
 		return false, &apimiddleware.DefaultErrorJson{Message: "could not parse slot from request", Code: http.StatusInternalServerError}
 	}
 
-	endpoint.PostRequest = &SignedBlindedBeaconBlockCapellaJson{}
+	endpoint.PostRequest = &SignedBlindedBeaconBlockZondJson{}
 
 	req.Body = io.NopCloser(bytes.NewBuffer(buf))
 	return true, nil
@@ -156,10 +133,10 @@ func setInitialPublishBlindedBlockPostRequest(endpoint *apimiddleware.Endpoint,
 // We do a simple conversion depending on the type of endpoint.PostRequest
 // (which was filled out previously in setInitialPublishBlockPostRequest).
 func preparePublishedBlindedBlock(endpoint *apimiddleware.Endpoint, _ http.ResponseWriter, _ *http.Request) apimiddleware.ErrorJson {
-	if block, ok := endpoint.PostRequest.(*SignedBlindedBeaconBlockCapellaJson); ok {
+	if block, ok := endpoint.PostRequest.(*SignedBlindedBeaconBlockZondJson); ok {
 		// Prepare post request that can be properly decoded on gRPC side.
-		actualPostReq := &capellaPublishBlindedBlockRequestJson{
-			CapellaBlock: &SignedBlindedBeaconBlockCapellaJson{
+		actualPostReq := &zondPublishBlindedBlockRequestJson{
+			ZondBlock: &SignedBlindedBeaconBlockZondJson{
 				Message:   block.Message,
 				Signature: block.Signature,
 			},
@@ -185,7 +162,7 @@ type tempSyncSubcommitteeValidatorsJson struct {
 
 // https://ethereum.github.io/beacon-APIs/?urls.primaryName=v2.0.0#/Beacon/getEpochSyncCommittees returns validator_aggregates as a nested array.
 // grpc-gateway returns a struct with nested fields which we have to transform into a plain 2D array.
-func prepareValidatorAggregates(body []byte, responseContainer interface{}) (apimiddleware.RunDefault, apimiddleware.ErrorJson) {
+func prepareValidatorAggregates(body []byte, responseContainer any) (apimiddleware.RunDefault, apimiddleware.ErrorJson) {
 	tempContainer := &tempSyncCommitteesResponseJson{}
 	if err := json.Unmarshal(body, tempContainer); err != nil {
 		return false, apimiddleware.InternalServerErrorWithMessage(err, "could not unmarshal response into temp container")
@@ -207,33 +184,33 @@ func prepareValidatorAggregates(body []byte, responseContainer interface{}) (api
 	return false, nil
 }
 
-type capellaBlockResponseJson struct {
-	Version             string                        `json:"version"`
-	Data                *SignedBeaconBlockCapellaJson `json:"data"`
-	ExecutionOptimistic bool                          `json:"execution_optimistic"`
-	Finalized           bool                          `json:"finalized"`
+type zondBlockResponseJson struct {
+	Version             string                     `json:"version"`
+	Data                *SignedBeaconBlockZondJson `json:"data"`
+	ExecutionOptimistic bool                       `json:"execution_optimistic"`
+	Finalized           bool                       `json:"finalized"`
 }
 
-type capellaBlindedBlockResponseJson struct {
-	Version             string                               `json:"version" enum:"true"`
-	Data                *SignedBlindedBeaconBlockCapellaJson `json:"data"`
-	ExecutionOptimistic bool                                 `json:"execution_optimistic"`
-	Finalized           bool                                 `json:"finalized"`
+type zondBlindedBlockResponseJson struct {
+	Version             string                            `json:"version" enum:"true"`
+	Data                *SignedBlindedBeaconBlockZondJson `json:"data"`
+	ExecutionOptimistic bool                              `json:"execution_optimistic"`
+	Finalized           bool                              `json:"finalized"`
 }
 
-func serializeBlock(response interface{}) (apimiddleware.RunDefault, []byte, apimiddleware.ErrorJson) {
+func serializeBlock(response any) (apimiddleware.RunDefault, []byte, apimiddleware.ErrorJson) {
 	respContainer, ok := response.(*BlockResponseJson)
 	if !ok {
 		return false, nil, apimiddleware.InternalServerError(errors.New("container is not of the correct type"))
 	}
 
-	var actualRespContainer interface{}
+	var actualRespContainer any
 	switch {
-	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv1.Version_CAPELLA.String())):
-		actualRespContainer = &capellaBlockResponseJson{
+	case strings.EqualFold(respContainer.Version, strings.ToLower(qrlpb.Version_ZOND.String())):
+		actualRespContainer = &zondBlockResponseJson{
 			Version: respContainer.Version,
-			Data: &SignedBeaconBlockCapellaJson{
-				Message:   respContainer.Data.CapellaBlock,
+			Data: &SignedBeaconBlockZondJson{
+				Message:   respContainer.Data.ZondBlock,
 				Signature: respContainer.Data.Signature,
 			},
 			ExecutionOptimistic: respContainer.ExecutionOptimistic,
@@ -250,19 +227,19 @@ func serializeBlock(response interface{}) (apimiddleware.RunDefault, []byte, api
 	return false, j, nil
 }
 
-func serializeBlindedBlock(response interface{}) (apimiddleware.RunDefault, []byte, apimiddleware.ErrorJson) {
+func serializeBlindedBlock(response any) (apimiddleware.RunDefault, []byte, apimiddleware.ErrorJson) {
 	respContainer, ok := response.(*BlindedBlockResponseJson)
 	if !ok {
 		return false, nil, apimiddleware.InternalServerError(errors.New("container is not of the correct type"))
 	}
 
-	var actualRespContainer interface{}
+	var actualRespContainer any
 	switch {
-	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv1.Version_CAPELLA.String())):
-		actualRespContainer = &capellaBlindedBlockResponseJson{
+	case strings.EqualFold(respContainer.Version, strings.ToLower(qrlpb.Version_ZOND.String())):
+		actualRespContainer = &zondBlindedBlockResponseJson{
 			Version: respContainer.Version,
-			Data: &SignedBlindedBeaconBlockCapellaJson{
-				Message:   respContainer.Data.CapellaBlock,
+			Data: &SignedBlindedBeaconBlockZondJson{
+				Message:   respContainer.Data.ZondBlock,
 				Signature: respContainer.Data.Signature,
 			},
 			ExecutionOptimistic: respContainer.ExecutionOptimistic,
@@ -279,23 +256,23 @@ func serializeBlindedBlock(response interface{}) (apimiddleware.RunDefault, []by
 	return false, j, nil
 }
 
-type capellaStateResponseJson struct {
-	Version string                  `json:"version" enum:"true"`
-	Data    *BeaconStateCapellaJson `json:"data"`
+type zondStateResponseJson struct {
+	Version string               `json:"version" enum:"true"`
+	Data    *BeaconStateZondJson `json:"data"`
 }
 
-func serializeState(response interface{}) (apimiddleware.RunDefault, []byte, apimiddleware.ErrorJson) {
+func serializeState(response any) (apimiddleware.RunDefault, []byte, apimiddleware.ErrorJson) {
 	respContainer, ok := response.(*BeaconStateResponseJson)
 	if !ok {
 		return false, nil, apimiddleware.InternalServerError(errors.New("container is not of the correct type"))
 	}
 
-	var actualRespContainer interface{}
+	var actualRespContainer any
 	switch {
-	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv1.Version_CAPELLA.String())):
-		actualRespContainer = &capellaStateResponseJson{
+	case strings.EqualFold(respContainer.Version, strings.ToLower(qrlpb.Version_ZOND.String())):
+		actualRespContainer = &zondStateResponseJson{
 			Version: respContainer.Version,
-			Data:    respContainer.Data.CapellaState,
+			Data:    respContainer.Data.ZondState,
 		}
 	default:
 		return false, nil, apimiddleware.InternalServerError(fmt.Errorf("unsupported state version '%s'", respContainer.Version))
@@ -308,28 +285,28 @@ func serializeState(response interface{}) (apimiddleware.RunDefault, []byte, api
 	return false, j, nil
 }
 
-type capellaProduceBlockResponseJson struct {
-	Version string                  `json:"version" enum:"true"`
-	Data    *BeaconBlockCapellaJson `json:"data"`
+type zondProduceBlockResponseJson struct {
+	Version string               `json:"version" enum:"true"`
+	Data    *BeaconBlockZondJson `json:"data"`
 }
 
-type capellaProduceBlindedBlockResponseJson struct {
-	Version string                         `json:"version" enum:"true"`
-	Data    *BlindedBeaconBlockCapellaJson `json:"data"`
+type zondProduceBlindedBlockResponseJson struct {
+	Version string                      `json:"version" enum:"true"`
+	Data    *BlindedBeaconBlockZondJson `json:"data"`
 }
 
-func serializeProducedBlock(response interface{}) (apimiddleware.RunDefault, []byte, apimiddleware.ErrorJson) {
+func serializeProducedBlock(response any) (apimiddleware.RunDefault, []byte, apimiddleware.ErrorJson) {
 	respContainer, ok := response.(*ProduceBlockResponseJson)
 	if !ok {
 		return false, nil, apimiddleware.InternalServerError(errors.New("container is not of the correct type"))
 	}
 
-	var actualRespContainer interface{}
+	var actualRespContainer any
 	switch {
-	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv1.Version_CAPELLA.String())):
-		actualRespContainer = &capellaProduceBlockResponseJson{
+	case strings.EqualFold(respContainer.Version, strings.ToLower(qrlpb.Version_ZOND.String())):
+		actualRespContainer = &zondProduceBlockResponseJson{
 			Version: respContainer.Version,
-			Data:    respContainer.Data.CapellaBlock,
+			Data:    respContainer.Data.ZondBlock,
 		}
 	default:
 		return false, nil, apimiddleware.InternalServerError(fmt.Errorf("unsupported block version '%s'", respContainer.Version))
@@ -342,18 +319,18 @@ func serializeProducedBlock(response interface{}) (apimiddleware.RunDefault, []b
 	return false, j, nil
 }
 
-func serializeProducedBlindedBlock(response interface{}) (apimiddleware.RunDefault, []byte, apimiddleware.ErrorJson) {
+func serializeProducedBlindedBlock(response any) (apimiddleware.RunDefault, []byte, apimiddleware.ErrorJson) {
 	respContainer, ok := response.(*ProduceBlindedBlockResponseJson)
 	if !ok {
 		return false, nil, apimiddleware.InternalServerError(errors.New("container is not of the correct type"))
 	}
 
-	var actualRespContainer interface{}
+	var actualRespContainer any
 	switch {
-	case strings.EqualFold(respContainer.Version, strings.ToLower(zondpbv1.Version_CAPELLA.String())):
-		actualRespContainer = &capellaProduceBlindedBlockResponseJson{
+	case strings.EqualFold(respContainer.Version, strings.ToLower(qrlpb.Version_ZOND.String())):
+		actualRespContainer = &zondProduceBlindedBlockResponseJson{
 			Version: respContainer.Version,
-			Data:    respContainer.Data.CapellaBlock,
+			Data:    respContainer.Data.ZondBlock,
 		}
 	default:
 		return false, nil, apimiddleware.InternalServerError(fmt.Errorf("unsupported block version '%s'", respContainer.Version))
@@ -366,7 +343,7 @@ func serializeProducedBlindedBlock(response interface{}) (apimiddleware.RunDefau
 	return false, j, nil
 }
 
-func prepareForkChoiceResponse(response interface{}) (apimiddleware.RunDefault, []byte, apimiddleware.ErrorJson) {
+func prepareForkChoiceResponse(response any) (apimiddleware.RunDefault, []byte, apimiddleware.ErrorJson) {
 	dump, ok := response.(*ForkChoiceDumpJson)
 	if !ok {
 		return false, nil, apimiddleware.InternalServerError(errors.New("response is not of the correct type"))

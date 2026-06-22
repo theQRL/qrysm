@@ -10,11 +10,11 @@ import (
 	"github.com/pkg/errors"
 	ssz "github.com/prysmaticlabs/fastssz"
 	"github.com/theQRL/qrysm/beacon-chain/core/altair"
+	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/crypto/hash"
 	"github.com/theQRL/qrysm/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
-	"github.com/theQRL/qrysm/time/slots"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/proto"
 )
@@ -22,6 +22,10 @@ import (
 // ErrMessageNotMapped occurs on a Broadcast attempt when a message has not been defined in the
 // GossipTypeMapping.
 var ErrMessageNotMapped = errors.New("message type is not mapped to a PubSub topic")
+
+const minimumPeersPerSubnetForBroadcast = 1
+
+var broadcastSubnetSearchTimeout = 2 * time.Second
 
 // Broadcast a message to the p2p network, the message is assumed to be
 // broadcasted to the current fork.
@@ -54,7 +58,7 @@ func (s *Service) Broadcast(ctx context.Context, msg proto.Message) error {
 
 // BroadcastAttestation broadcasts an attestation to the p2p network, the message is assumed to be
 // broadcasted to the current fork.
-func (s *Service) BroadcastAttestation(ctx context.Context, subnet uint64, att *zondpb.Attestation) error {
+func (s *Service) BroadcastAttestation(ctx context.Context, subnet uint64, att *qrysmpb.Attestation) error {
 	if att == nil {
 		return errors.New("attempted to broadcast nil attestation")
 	}
@@ -75,7 +79,7 @@ func (s *Service) BroadcastAttestation(ctx context.Context, subnet uint64, att *
 
 // BroadcastSyncCommitteeMessage broadcasts a sync committee message to the p2p network, the message is assumed to be
 // broadcasted to the current fork.
-func (s *Service) BroadcastSyncCommitteeMessage(ctx context.Context, subnet uint64, sMsg *zondpb.SyncCommitteeMessage) error {
+func (s *Service) BroadcastSyncCommitteeMessage(ctx context.Context, subnet uint64, sMsg *qrysmpb.SyncCommitteeMessage) error {
 	if sMsg == nil {
 		return errors.New("attempted to broadcast nil sync committee message")
 	}
@@ -94,8 +98,28 @@ func (s *Service) BroadcastSyncCommitteeMessage(ctx context.Context, subnet uint
 	return nil
 }
 
-func (s *Service) broadcastAttestation(ctx context.Context, subnet uint64, att *zondpb.Attestation, forkDigest [4]byte) {
-	ctx, span := trace.StartSpan(ctx, "p2p.broadcastAttestation")
+func findPeersForBroadcast(
+	ctx context.Context,
+	finder func(context.Context, string, uint64, int) (bool, error),
+	topic string,
+	subnet uint64,
+) error {
+	searchCtx, cancel := context.WithTimeout(ctx, broadcastSubnetSearchTimeout)
+	defer cancel()
+
+	ok, err := finder(searchCtx, topic, subnet, minimumPeersPerSubnetForBroadcast)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("failed to find peers for subnet")
+	}
+
+	return nil
+}
+
+func (s *Service) broadcastAttestation(ctx context.Context, subnet uint64, att *qrysmpb.Attestation, forkDigest [4]byte) {
+	_, span := trace.StartSpan(ctx, "p2p.broadcastAttestation")
 	defer span.End()
 	ctx = trace.NewContext(context.Background(), span) // clear parent context / deadline.
 
@@ -119,25 +143,20 @@ func (s *Service) broadcastAttestation(ctx context.Context, subnet uint64, att *
 		if err := func() error {
 			s.subnetLocker(subnet).Lock()
 			defer s.subnetLocker(subnet).Unlock()
-			ok, err := s.FindPeersWithSubnet(ctx, attestationToTopic(subnet, forkDigest), subnet, 1)
-			if err != nil {
+			if err := findPeersForBroadcast(ctx, s.FindPeersWithSubnet, attestationToTopic(subnet, forkDigest), subnet); err != nil {
 				return err
 			}
-			if ok {
-				savedAttestationBroadcasts.Inc()
-				return nil
-			}
-			return errors.New("failed to find peers for subnet")
+			savedAttestationBroadcasts.Inc()
+			return nil
 		}(); err != nil {
 			log.WithError(err).Error("Failed to find peers")
 			tracing.AnnotateError(span, err)
 		}
 	}
 	// In the event our attestation is outdated and beyond the
-	// acceptable threshold, we exit early and do not broadcast it.
-	currSlot := slots.CurrentSlot(uint64(s.genesisTime.Unix()))
-	if att.Data.Slot+params.BeaconConfig().SlotsPerEpoch < currSlot {
-		log.Warnf("Attestation is too old to broadcast, discarding it. Current Slot: %d , Attestation Slot: %d", currSlot, att.Data.Slot)
+	// acceptable gossip propagation window, exit early without broadcasting.
+	if err := helpers.ValidateAttestationTime(att.Data.Slot, s.genesisTime, params.BeaconNetworkConfig().MaximumGossipClockDisparity); err != nil {
+		log.WithError(err).Debug("Attestation is not within gossip propagation window, discarding it")
 		return
 	}
 
@@ -147,8 +166,8 @@ func (s *Service) broadcastAttestation(ctx context.Context, subnet uint64, att *
 	}
 }
 
-func (s *Service) broadcastSyncCommittee(ctx context.Context, subnet uint64, sMsg *zondpb.SyncCommitteeMessage, forkDigest [4]byte) {
-	ctx, span := trace.StartSpan(ctx, "p2p.broadcastSyncCommittee")
+func (s *Service) broadcastSyncCommittee(ctx context.Context, subnet uint64, sMsg *qrysmpb.SyncCommitteeMessage, forkDigest [4]byte) {
+	_, span := trace.StartSpan(ctx, "p2p.broadcastSyncCommittee")
 	defer span.End()
 	ctx = trace.NewContext(context.Background(), span) // clear parent context / deadline.
 
@@ -175,15 +194,11 @@ func (s *Service) broadcastSyncCommittee(ctx context.Context, subnet uint64, sMs
 		if err := func() error {
 			s.subnetLocker(wrappedSubIdx).Lock()
 			defer s.subnetLocker(wrappedSubIdx).Unlock()
-			ok, err := s.FindPeersWithSubnet(ctx, syncCommitteeToTopic(subnet, forkDigest), subnet, 1)
-			if err != nil {
+			if err := findPeersForBroadcast(ctx, s.FindPeersWithSubnet, syncCommitteeToTopic(subnet, forkDigest), subnet); err != nil {
 				return err
 			}
-			if ok {
-				savedSyncCommitteeBroadcasts.Inc()
-				return nil
-			}
-			return errors.New("failed to find peers for subnet")
+			savedSyncCommitteeBroadcasts.Inc()
+			return nil
 		}(); err != nil {
 			log.WithError(err).Error("Failed to find peers")
 			tracing.AnnotateError(span, err)

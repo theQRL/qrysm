@@ -1,0 +1,30 @@
+--- a/oci/private/tarball.sh.tpl
++++ b/oci/private/tarball.sh.tpl
+@@ -10,6 +10,12 @@
+ readonly REPOTAGS=($(cat "{{tags}}"))
+ readonly INDEX_FILE="${IMAGE_DIR}/index.json"
+ 
++TAR_CREATE_ARGS=()
++if tar --version 2>/dev/null | grep -qi bsdtar; then
++  # macOS bsdtar archives xattrs like com.apple.provenance by default, which breaks `docker load`.
++  TAR_CREATE_ARGS+=(--no-xattrs)
++fi
++
+ cp_f_with_mkdir() {
+   SRC="$1"
+   DST="$2"
+@@ -112,7 +118,7 @@
+   # }
+   repo_tags="${REPOTAGS[@]}" "${YQ}" -o json eval "(.manifests = ${MANIFEST_COPIES}) *d {\"manifests\": (env(repo_tags) | split \" \" | map {\"annotations\": {\"org.opencontainers.image.ref.name\": .}})}" "${INDEX_FILE}" > "${STAGING_DIR}/index.json"
+ 
+-  tar -C "${STAGING_DIR}" -cf "${TARBALL_PATH}" index.json blobs oci-layout
++  tar "${TAR_CREATE_ARGS[@]}" -C "${STAGING_DIR}" -cf "${TARBALL_PATH}" index.json blobs oci-layout
+   exit 0
+ fi
+ 
+@@ -137,4 +143,4 @@
+         --output-format json > "${STAGING_DIR}/manifest.json"
+ 
+ # TODO: https://github.com/bazel-contrib/rules_oci/issues/217
+-tar -C "${STAGING_DIR}" -cf "${TARBALL_PATH}" manifest.json blobs
++tar "${TAR_CREATE_ARGS[@]}" -C "${STAGING_DIR}" -cf "${TARBALL_PATH}" manifest.json blobs

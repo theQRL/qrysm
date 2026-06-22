@@ -1,11 +1,9 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "misc",
     srcs = ["helper.go"],
     importpath = "github.com/theQRL/qrysm/cmd/staking-deposit-cli/misc",
     visibility = ["//visibility:public"],
-    deps = [
-        "//config/fieldparams:go_default_library",
-    ],
+    deps = ["//config/fieldparams"],
 )

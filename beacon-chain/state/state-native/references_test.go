@@ -10,15 +10,15 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
 	"github.com/theQRL/qrysm/config/features"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
-func TestStateReferenceSharing_Finalizer_Capella(t *testing.T) {
+func TestStateReferenceSharing_Finalizer_Zond(t *testing.T) {
 	// This test showcases the logic on the RandaoMixes field with the GC finalizer.
 
-	s, err := InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{RandaoMixes: [][]byte{[]byte("foo")}})
+	s, err := InitializeFromProtoUnsafeZond(&qrysmpb.BeaconStateZond{RandaoMixes: [][]byte{[]byte("foo")}})
 	require.NoError(t, err)
 	a, ok := s.(*BeaconState)
 	require.Equal(t, true, ok)
@@ -44,9 +44,9 @@ func TestStateReferenceSharing_Finalizer_Capella(t *testing.T) {
 	}
 }
 
-func TestStateReferenceCopy_NoUnexpectedRootsMutation_Capella(t *testing.T) {
+func TestStateReferenceCopy_NoUnexpectedRootsMutation_Zond(t *testing.T) {
 	root1, root2 := bytesutil.ToBytes32([]byte("foo")), bytesutil.ToBytes32([]byte("bar"))
-	s, err := InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
+	s, err := InitializeFromProtoUnsafeZond(&qrysmpb.BeaconStateZond{
 		BlockRoots: [][]byte{
 			root1[:],
 		},
@@ -103,9 +103,9 @@ func TestStateReferenceCopy_NoUnexpectedRootsMutation_Capella(t *testing.T) {
 	assertRefCount(t, b, types.StateRoots, 1)
 }
 
-func TestStateReferenceCopy_NoUnexpectedRandaoMutation_Capella(t *testing.T) {
+func TestStateReferenceCopy_NoUnexpectedRandaoMutation_Zond(t *testing.T) {
 	val1, val2 := bytesutil.ToBytes32([]byte("foo")), bytesutil.ToBytes32([]byte("bar"))
-	s, err := InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
+	s, err := InitializeFromProtoUnsafeZond(&qrysmpb.BeaconStateZond{
 		RandaoMixes: [][]byte{
 			val1[:],
 		},
@@ -147,9 +147,9 @@ func TestStateReferenceCopy_NoUnexpectedRandaoMutation_Capella(t *testing.T) {
 	assertRefCount(t, b, types.RandaoMixes, 1)
 }
 
-func TestValidatorReferences_RemainsConsistent_Capella(t *testing.T) {
-	s, err := InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
-		Validators: []*zondpb.Validator{
+func TestValidatorReferences_RemainsConsistent_Zond(t *testing.T) {
+	s, err := InitializeFromProtoUnsafeZond(&qrysmpb.BeaconStateZond{
+		Validators: []*qrysmpb.Validator{
 			{PublicKey: []byte{'A'}},
 			{PublicKey: []byte{'B'}},
 			{PublicKey: []byte{'C'}},
@@ -167,12 +167,12 @@ func TestValidatorReferences_RemainsConsistent_Capella(t *testing.T) {
 	require.Equal(t, true, ok)
 
 	// Update First Validator.
-	assert.NoError(t, a.UpdateValidatorAtIndex(0, &zondpb.Validator{PublicKey: []byte{'Z'}}))
+	assert.NoError(t, a.UpdateValidatorAtIndex(0, &qrysmpb.Validator{PublicKey: []byte{'Z'}}))
 
 	assert.DeepNotEqual(t, a.Validators()[0], b.Validators()[0], "validators are equal when they are supposed to be different")
 	// Modify all validators from copied state.
-	assert.NoError(t, b.ApplyToEveryValidator(func(idx int, val *zondpb.Validator) (bool, *zondpb.Validator, error) {
-		return true, &zondpb.Validator{PublicKey: []byte{'V'}}, nil
+	assert.NoError(t, b.ApplyToEveryValidator(func(idx int, val *qrysmpb.Validator) (bool, *qrysmpb.Validator, error) {
+		return true, &qrysmpb.Validator{PublicKey: []byte{'V'}}, nil
 	}))
 
 	// Ensure reference is properly accounted for.
@@ -187,8 +187,8 @@ func TestValidatorReferences_ApplyValidator_BalancesRead(t *testing.T) {
 		EnableExperimentalState: true,
 	})
 	defer resetCfg()
-	s, err := InitializeFromProtoUnsafeCapella(&zondpb.BeaconStateCapella{
-		Validators: []*zondpb.Validator{
+	s, err := InitializeFromProtoUnsafeZond(&qrysmpb.BeaconStateZond{
+		Validators: []*qrysmpb.Validator{
 			{PublicKey: []byte{'A'}},
 			{PublicKey: []byte{'B'}},
 			{PublicKey: []byte{'C'}},
@@ -207,12 +207,12 @@ func TestValidatorReferences_ApplyValidator_BalancesRead(t *testing.T) {
 	require.Equal(t, true, ok)
 
 	// Modify all validators from copied state, it should not deadlock.
-	assert.NoError(t, b.ApplyToEveryValidator(func(idx int, val *zondpb.Validator) (bool, *zondpb.Validator, error) {
+	assert.NoError(t, b.ApplyToEveryValidator(func(idx int, val *qrysmpb.Validator) (bool, *qrysmpb.Validator, error) {
 		b, err := b.BalanceAtIndex(0)
 		if err != nil {
 			return false, nil, err
 		}
-		newVal := zondpb.CopyValidator(val)
+		newVal := qrysmpb.CopyValidator(val)
 		newVal.EffectiveBalance += b
 		val.EffectiveBalance += b
 		return true, val, nil

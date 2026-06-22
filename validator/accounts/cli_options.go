@@ -3,7 +3,7 @@ package accounts
 import (
 	"time"
 
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/validator/accounts/wallet"
 	"github.com/theQRL/qrysm/validator/keymanager"
 	"google.golang.org/grpc"
@@ -182,7 +182,7 @@ func WithBackupsPassword(backupsPassword string) Option {
 }
 
 // WithFilteredPubKeys adds public key strings parsed from CLI.
-func WithFilteredPubKeys(filteredPubKeys []dilithium.PublicKey) Option {
+func WithFilteredPubKeys(filteredPubKeys []ml_dsa_87.PublicKey) Option {
 	return func(acc *AccountsCLIManager) error {
 		acc.filteredPubKeys = filteredPubKeys
 		return nil

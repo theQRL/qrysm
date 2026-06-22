@@ -83,12 +83,12 @@ func (s *Service) forkchoiceUpdateWithExecution(ctx context.Context, newHeadRoot
 	}
 
 	if err := s.saveHead(ctx, newHeadRoot, headBlock, headState); err != nil {
-		log.WithError(err).Error("could not save head")
+		log.WithError(err).Error("Could not save head")
 	}
 
 	// Only need to prune attestations from pool if the head has changed.
 	if err := s.pruneAttsFromPool(headBlock); err != nil {
-		log.WithError(err).Error("could not prune attestations from pool")
+		log.WithError(err).Error("Could not prune attestations from pool")
 	}
 	return true, nil
 }
@@ -98,7 +98,7 @@ func (s *Service) forkchoiceUpdateWithExecution(ctx context.Context, newHeadRoot
 func (s *Service) shouldOverrideFCU(newHeadRoot [32]byte, proposingSlot primitives.Slot) bool {
 	headWeight, err := s.cfg.ForkChoiceStore.Weight(newHeadRoot)
 	if err != nil {
-		log.WithError(err).WithField("root", fmt.Sprintf("%#x", newHeadRoot)).Warn("could not determine node weight")
+		log.WithError(err).WithField("root", fmt.Sprintf("%#x", newHeadRoot)).Warn("Could not determine node weight")
 	}
 	currentSlot := s.CurrentSlot()
 	if proposingSlot == currentSlot {
@@ -119,7 +119,7 @@ func (s *Service) shouldOverrideFCU(newHeadRoot [32]byte, proposingSlot primitiv
 		secs, err := slots.SecondsSinceSlotStart(currentSlot,
 			uint64(s.genesisTime.Unix()), uint64(time.Now().Unix()))
 		if err != nil {
-			log.WithError(err).Error("could not compute seconds since slot start")
+			log.WithError(err).Error("Could not compute seconds since slot start")
 		}
 		if secs >= doublylinkedtree.ProcessAttestationsThreshold {
 			log.WithFields(logrus.Fields{

@@ -6,7 +6,7 @@ import (
 	statenative "github.com/theQRL/qrysm/beacon-chain/state/state-native"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
@@ -19,55 +19,55 @@ func TestReadOnlyValidator_ReturnsErrorOnNil(t *testing.T) {
 
 func TestReadOnlyValidator_EffectiveBalance(t *testing.T) {
 	bal := uint64(234)
-	v, err := statenative.NewValidator(&zondpb.Validator{EffectiveBalance: bal})
+	v, err := statenative.NewValidator(&qrysmpb.Validator{EffectiveBalance: bal})
 	require.NoError(t, err)
 	assert.Equal(t, bal, v.EffectiveBalance())
 }
 
 func TestReadOnlyValidator_ActivationEligibilityEpoch(t *testing.T) {
 	epoch := primitives.Epoch(234)
-	v, err := statenative.NewValidator(&zondpb.Validator{ActivationEligibilityEpoch: epoch})
+	v, err := statenative.NewValidator(&qrysmpb.Validator{ActivationEligibilityEpoch: epoch})
 	require.NoError(t, err)
 	assert.Equal(t, epoch, v.ActivationEligibilityEpoch())
 }
 
 func TestReadOnlyValidator_ActivationEpoch(t *testing.T) {
 	epoch := primitives.Epoch(234)
-	v, err := statenative.NewValidator(&zondpb.Validator{ActivationEpoch: epoch})
+	v, err := statenative.NewValidator(&qrysmpb.Validator{ActivationEpoch: epoch})
 	require.NoError(t, err)
 	assert.Equal(t, epoch, v.ActivationEpoch())
 }
 
 func TestReadOnlyValidator_WithdrawableEpoch(t *testing.T) {
 	epoch := primitives.Epoch(234)
-	v, err := statenative.NewValidator(&zondpb.Validator{WithdrawableEpoch: epoch})
+	v, err := statenative.NewValidator(&qrysmpb.Validator{WithdrawableEpoch: epoch})
 	require.NoError(t, err)
 	assert.Equal(t, epoch, v.WithdrawableEpoch())
 }
 
 func TestReadOnlyValidator_ExitEpoch(t *testing.T) {
 	epoch := primitives.Epoch(234)
-	v, err := statenative.NewValidator(&zondpb.Validator{ExitEpoch: epoch})
+	v, err := statenative.NewValidator(&qrysmpb.Validator{ExitEpoch: epoch})
 	require.NoError(t, err)
 	assert.Equal(t, epoch, v.ExitEpoch())
 }
 
 func TestReadOnlyValidator_PublicKey(t *testing.T) {
-	key := [field_params.DilithiumPubkeyLength]byte{0xFA, 0xCC}
-	v, err := statenative.NewValidator(&zondpb.Validator{PublicKey: key[:]})
+	key := [field_params.MLDSA87PubkeyLength]byte{0xFA, 0xCC}
+	v, err := statenative.NewValidator(&qrysmpb.Validator{PublicKey: key[:]})
 	require.NoError(t, err)
 	assert.Equal(t, key, v.PublicKey())
 }
 
 func TestReadOnlyValidator_WithdrawalCredentials(t *testing.T) {
 	creds := []byte{0xFA, 0xCC}
-	v, err := statenative.NewValidator(&zondpb.Validator{WithdrawalCredentials: creds})
+	v, err := statenative.NewValidator(&qrysmpb.Validator{WithdrawalCredentials: creds})
 	require.NoError(t, err)
 	assert.DeepEqual(t, creds, v.WithdrawalCredentials())
 }
 
 func TestReadOnlyValidator_Slashed(t *testing.T) {
-	v, err := statenative.NewValidator(&zondpb.Validator{Slashed: true})
+	v, err := statenative.NewValidator(&qrysmpb.Validator{Slashed: true})
 	require.NoError(t, err)
 	assert.Equal(t, true, v.Slashed())
 }

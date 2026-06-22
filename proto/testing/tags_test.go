@@ -14,11 +14,11 @@ import (
 )
 
 func TestSSZTagSize(t *testing.T) {
-	sigSize := field_params.DilithiumSignatureLength
-	pubKeySize := field_params.DilithiumPubkeyLength
+	sigSize := field_params.MLDSA87SignatureLength
+	pubKeySize := field_params.MLDSA87PubkeyLength
 	rootSize := 32
 
-	sizes, err := sszTagSizes(pb.SignedBeaconBlockCapella{}, "Signature")
+	sizes, err := sszTagSizes(pb.SignedBeaconBlockZond{}, "Signature")
 	require.NoError(t, err)
 	assert.Equal(t, sigSize, sizes[0], "Unexpected signature size")
 
@@ -31,7 +31,7 @@ func TestSSZTagSize(t *testing.T) {
 	assert.Equal(t, pubKeySize, sizes[0], "Unexpected signature size")
 }
 
-func sszTagSizes(i interface{}, fName string) ([]int, error) {
+func sszTagSizes(i any, fName string) ([]int, error) {
 	v := reflect.ValueOf(i)
 	field, exists := v.Type().FieldByName(fName)
 	if !exists {
@@ -45,7 +45,7 @@ func sszTagSizes(i interface{}, fName string) ([]int, error) {
 	items := strings.Split(tag[start+1:], ",")
 	sizes := make([]int, len(items))
 	var err error
-	for i := 0; i < len(items); i++ {
+	for i := range items {
 		if items[i] == "?" {
 			sizes[i] = 0
 			continue

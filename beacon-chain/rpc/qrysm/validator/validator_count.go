@@ -8,14 +8,14 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/helpers"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/shared"
 	statenative "github.com/theQRL/qrysm/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/consensus-types/validator"
 	http2 "github.com/theQRL/qrysm/network/http"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
-	zondpb "github.com/theQRL/qrysm/proto/zond/v1"
+	qrlpb "github.com/theQRL/qrysm/proto/qrl/v1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
@@ -67,11 +67,7 @@ func (vs *Server) GetValidatorCount(w http.ResponseWriter, r *http.Request) {
 
 	isOptimistic, err := helpers.IsOptimistic(ctx, []byte(stateID), vs.OptimisticModeFetcher, vs.Stater, vs.ChainInfoFetcher, vs.BeaconDB)
 	if err != nil {
-		errJson := &http2.DefaultErrorJson{
-			Message: fmt.Sprintf("could not check if slot's block is optimistic: %v", err),
-			Code:    http.StatusInternalServerError,
-		}
-		http2.WriteError(w, errJson)
+		helpers.HandleIsOptimisticError(w, err)
 		return
 	}
 
@@ -95,7 +91,7 @@ func (vs *Server) GetValidatorCount(w http.ResponseWriter, r *http.Request) {
 
 	var statusVals []validator.ValidatorStatus
 	for _, status := range r.URL.Query()["status"] {
-		statusVal, ok := zondpb.ValidatorStatus_value[strings.ToUpper(status)]
+		statusVal, ok := qrlpb.ValidatorStatus_value[strings.ToUpper(status)]
 		if !ok {
 			errJson := &http2.DefaultErrorJson{
 				Message: fmt.Sprintf("invalid status query parameter: %v", status),
@@ -110,7 +106,7 @@ func (vs *Server) GetValidatorCount(w http.ResponseWriter, r *http.Request) {
 
 	// If no status was provided then consider all the statuses to return validator count for each status.
 	if len(statusVals) == 0 {
-		for _, val := range zondpb.ValidatorStatus_value {
+		for _, val := range qrlpb.ValidatorStatus_value {
 			statusVals = append(statusVals, validator.ValidatorStatus(val))
 		}
 	}
@@ -136,7 +132,7 @@ func (vs *Server) GetValidatorCount(w http.ResponseWriter, r *http.Request) {
 }
 
 // validatorCountByStatus returns a slice of validator count for each status in the given epoch.
-func validatorCountByStatus(validators []*zond.Validator, statuses []validator.ValidatorStatus, epoch primitives.Epoch) ([]*ValidatorCount, error) {
+func validatorCountByStatus(validators []*qrysmpb.Validator, statuses []validator.ValidatorStatus, epoch primitives.Epoch) ([]*ValidatorCount, error) {
 	countByStatus := make(map[validator.ValidatorStatus]uint64)
 	for _, val := range validators {
 		readOnlyVal, err := statenative.NewValidator(val)
@@ -162,7 +158,7 @@ func validatorCountByStatus(validators []*zond.Validator, statuses []validator.V
 	var resp []*ValidatorCount
 	for status, count := range countByStatus {
 		resp = append(resp, &ValidatorCount{
-			Status: strings.ToLower(zondpb.ValidatorStatus_name[int32(status)]),
+			Status: strings.ToLower(qrlpb.ValidatorStatus_name[int32(status)]),
 			Count:  strconv.FormatUint(count, 10),
 		})
 	}

@@ -11,9 +11,9 @@ import (
 	p2pType "github.com/theQRL/qrysm/beacon-chain/p2p/types"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/params"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 	"golang.org/x/sync/errgroup"
 )
@@ -33,10 +33,10 @@ import (
 //
 //	# Compute participant and proposer rewards
 //	total_active_increments = get_total_active_balance(state) // EFFECTIVE_BALANCE_INCREMENT
-//	total_base_rewards = Gwei(get_base_reward_per_increment(state) * total_active_increments)
-//	max_participant_rewards = Gwei(total_base_rewards * SYNC_REWARD_WEIGHT // WEIGHT_DENOMINATOR // SLOTS_PER_EPOCH)
-//	participant_reward = Gwei(max_participant_rewards // SYNC_COMMITTEE_SIZE)
-//	proposer_reward = Gwei(participant_reward * PROPOSER_WEIGHT // (WEIGHT_DENOMINATOR - PROPOSER_WEIGHT))
+//	total_base_rewards = Shor(get_base_reward_per_increment(state) * total_active_increments)
+//	max_participant_rewards = Shor(total_base_rewards * SYNC_REWARD_WEIGHT // WEIGHT_DENOMINATOR // SLOTS_PER_EPOCH)
+//	participant_reward = Shor(max_participant_rewards // SYNC_COMMITTEE_SIZE)
+//	proposer_reward = Shor(participant_reward * PROPOSER_WEIGHT // (WEIGHT_DENOMINATOR - PROPOSER_WEIGHT))
 //
 //	# Apply participant and proposer rewards
 //	all_pubkeys = [v.pubkey for v in state.validators]
@@ -47,7 +47,7 @@ import (
 //	        increase_balance(state, get_beacon_proposer_index(state), proposer_reward)
 //	    else:
 //	        decrease_balance(state, participant_index, participant_reward)
-func ProcessSyncAggregate(ctx context.Context, s state.BeaconState, sync *zondpb.SyncAggregate) (state.BeaconState, uint64, error) {
+func ProcessSyncAggregate(ctx context.Context, s state.BeaconState, sync *qrysmpb.SyncAggregate) (state.BeaconState, uint64, error) {
 	s, votedKeys, reward, err := processSyncAggregate(ctx, s, sync)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "could not filter sync committee votes")
@@ -59,13 +59,23 @@ func ProcessSyncAggregate(ctx context.Context, s state.BeaconState, sync *zondpb
 	return s, reward, nil
 }
 
+// ProcessSyncAggregateNoVerifySig processes the sync aggregate without verifying the sync committee signatures.
+// This is useful in scenarios such as block reward calculation, where we can assume the data in the block is valid.
+func ProcessSyncAggregateNoVerifySig(ctx context.Context, s state.BeaconState, sync *qrysmpb.SyncAggregate) (state.BeaconState, uint64, error) {
+	s, _, reward, err := processSyncAggregate(ctx, s, sync)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "could not filter sync committee votes")
+	}
+	return s, reward, nil
+}
+
 // processSyncAggregate applies all the logic in the spec function `process_sync_aggregate` except
-// verifying the Dilithium signatures. It returns the modified beacons state, the list of validators'
+// verifying the ML-DSA-87 signatures. It returns the modified beacons state, the list of validators'
 // public keys that voted (for future signature verification) and the proposer reward for including
 // sync aggregate messages.
-func processSyncAggregate(ctx context.Context, s state.BeaconState, sync *zondpb.SyncAggregate) (
+func processSyncAggregate(ctx context.Context, s state.BeaconState, sync *qrysmpb.SyncAggregate) (
 	state.BeaconState,
-	[]dilithium.PublicKey,
+	[]ml_dsa_87.PublicKey,
 	uint64,
 	error) {
 	currentSyncCommittee, err := s.CurrentSyncCommittee()
@@ -79,7 +89,7 @@ func processSyncAggregate(ctx context.Context, s state.BeaconState, sync *zondpb
 	if sync.SyncCommitteeBits.Len() > uint64(len(committeeKeys)) {
 		return nil, nil, 0, errors.New("bits length exceeds committee length")
 	}
-	votedKeys := make([]dilithium.PublicKey, 0, len(committeeKeys))
+	votedKeys := make([]ml_dsa_87.PublicKey, 0, len(committeeKeys))
 
 	activeBalance, err := helpers.TotalActiveBalance(s)
 	if err != nil {
@@ -103,7 +113,7 @@ func processSyncAggregate(ctx context.Context, s state.BeaconState, sync *zondpb
 		}
 
 		if sync.SyncCommitteeBits.BitAt(i) {
-			pubKey, err := dilithium.PublicKeyFromBytes(committeeKeys[i])
+			pubKey, err := ml_dsa_87.PublicKeyFromBytes(committeeKeys[i])
 			if err != nil {
 				return nil, nil, 0, err
 			}
@@ -125,7 +135,7 @@ func processSyncAggregate(ctx context.Context, s state.BeaconState, sync *zondpb
 }
 
 // VerifySyncCommitteeSigs verifies sync committee signatures `syncSigs` is valid with respect to public keys `syncKeys`.
-func VerifySyncCommitteeSigs(s state.BeaconState, syncKeys []dilithium.PublicKey, syncSigs [][]byte) error {
+func VerifySyncCommitteeSigs(s state.BeaconState, syncKeys []ml_dsa_87.PublicKey, syncSigs [][]byte) error {
 	if len(syncSigs) != len(syncKeys) {
 		return fmt.Errorf("provided signatures and pubkeys have differing lengths. S: %d, P: %d",
 			len(syncSigs), len(syncKeys))
@@ -146,14 +156,14 @@ func VerifySyncCommitteeSigs(s state.BeaconState, syncKeys []dilithium.PublicKey
 		return err
 	}
 
-	maxProcs := runtime.GOMAXPROCS(0) - 1
+	maxProcs := max(runtime.GOMAXPROCS(0)-1, 1)
 	grp := errgroup.Group{}
 	grp.SetLimit(maxProcs)
 
 	for i := range syncSigs {
 		index := i
 		grp.Go(func() error {
-			sig, err := dilithium.SignatureFromBytes(syncSigs[index])
+			sig, err := ml_dsa_87.SignatureFromBytes(syncSigs[index])
 			if err != nil {
 				return err
 			}

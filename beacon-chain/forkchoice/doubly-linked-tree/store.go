@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
+	consensus_blocks "github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
@@ -63,11 +64,21 @@ func (s *Store) head(ctx context.Context) ([32]byte, error) {
 // insert registers a new block node to the fork choice store's node list.
 // It then updates the new node's parent with best child and descendant node.
 func (s *Store) insert(ctx context.Context,
-	slot primitives.Slot,
-	root, parentRoot, payloadHash [fieldparams.RootLength]byte,
+	roblock consensus_blocks.ROBlock,
 	justifiedEpoch, finalizedEpoch primitives.Epoch) (*Node, error) {
 	ctx, span := trace.StartSpan(ctx, "doublyLinkedForkchoice.insert")
 	defer span.End()
+
+	root := roblock.Root()
+	block := roblock.Block()
+	slot := block.Slot()
+	parentRoot := block.ParentRoot()
+	var payloadHash [32]byte
+	execution, err := block.Body().Execution()
+	if err != nil {
+		return nil, err
+	}
+	copy(payloadHash[:], execution.BlockHash())
 
 	// Return if the block has been inserted into Store before.
 	if n, ok := s.nodeByRoot[root]; ok {
@@ -97,6 +108,8 @@ func (s *Store) insert(ctx context.Context,
 			s.headNode = n
 			s.highestReceivedNode = n
 		} else {
+			delete(s.nodeByRoot, root)
+			delete(s.nodeByPayload, payloadHash)
 			return n, errInvalidParentRoot
 		}
 	} else {
@@ -118,7 +131,11 @@ func (s *Store) insert(ctx context.Context,
 		jEpoch := s.justifiedCheckpoint.Epoch
 		fEpoch := s.finalizedCheckpoint.Epoch
 		if err := s.treeRootNode.updateBestDescendant(ctx, jEpoch, fEpoch, slots.ToEpoch(currentSlot)); err != nil {
-			return n, err
+			_, remErr := s.removeNode(ctx, n)
+			if remErr != nil {
+				log.WithError(remErr).Error("could not remove node")
+			}
+			return nil, errors.Wrap(err, "could not update best descendants")
 		}
 	}
 	// Update metrics.
@@ -176,6 +193,11 @@ func (s *Store) prune(ctx context.Context) error {
 		return nil
 	}
 
+	// Refresh the cached finalized payload hash now, before nodeByRoot is
+	// mutated below. After prune, looking up the finalized node by root may
+	// return nil because the node has been removed.
+	s.finalizedPayloadBlockHash = finalizedNode.payloadHash
+
 	// Prune nodeByRoot starting from root
 	if err := s.pruneFinalizedNodeByRootMap(ctx, s.treeRootNode, finalizedNode); err != nil {
 		return err
@@ -194,13 +216,20 @@ func (s *Store) prune(ctx context.Context) error {
 		return nil
 	}
 
+	// Rebuild finalizedNode.children to drop the entries we just removed
+	// from nodeByRoot — otherwise subsequent forkchoice traversals walk
+	// stale child pointers and can panic.
+	remaining := finalizedNode.children[:0]
 	for _, child := range finalizedNode.children {
 		if child != nil && child.slot <= checkpointMaxSlot {
 			if err := s.pruneFinalizedNodeByRootMap(ctx, child, finalizedNode); err != nil {
 				return errors.Wrap(err, "could not prune incompatible finalized child")
 			}
+			continue
 		}
+		remaining = append(remaining, child)
 	}
+	finalizedNode.children = remaining
 	return nil
 }
 
@@ -217,6 +246,13 @@ func (s *Store) tips() ([][32]byte, []primitives.Slot) {
 		}
 	}
 	return roots, slots
+}
+
+func (f *ForkChoice) HighestReceivedBlockRoot() [32]byte {
+	if f.store.highestReceivedNode == nil {
+		return [32]byte{}
+	}
+	return f.store.highestReceivedNode.root
 }
 
 // HighestReceivedBlockSlot returns the highest slot received by the forkchoice

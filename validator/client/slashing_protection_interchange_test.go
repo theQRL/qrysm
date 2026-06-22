@@ -11,10 +11,9 @@ import (
 	"testing"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
-	"github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/io/file"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 	history "github.com/theQRL/qrysm/validator/slashing-protection-history"
@@ -144,13 +143,13 @@ func TestEIP3076SpecTests(t *testing.T) {
 					require.NoError(t, err)
 					pk, err := history.PubKeyFromHex(sa.Pubkey)
 					require.NoError(t, err)
-					ia := &zondpb.IndexedAttestation{
-						Data: &zondpb.AttestationData{
+					ia := &qrysmpb.IndexedAttestation{
+						Data: &qrysmpb.AttestationData{
 							BeaconBlockRoot: make([]byte, 32),
-							Target:          &zondpb.Checkpoint{Epoch: target, Root: make([]byte, 32)},
-							Source:          &zondpb.Checkpoint{Epoch: source, Root: make([]byte, 32)},
+							Target:          &qrysmpb.Checkpoint{Epoch: target, Root: make([]byte, 32)},
+							Source:          &qrysmpb.Checkpoint{Epoch: source, Root: make([]byte, 32)},
 						},
-						Signature: make([]byte, field_params.DilithiumSignatureLength),
+						Signature: make([]byte, field_params.MLDSA87SignatureLength),
 					}
 
 					var signingRoot [32]byte

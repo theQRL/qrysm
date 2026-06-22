@@ -8,7 +8,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	bolt "go.etcd.io/bbolt"
 	"go.opencensus.io/trace"
 )
@@ -16,43 +16,43 @@ import (
 var errMissingStateForCheckpoint = errors.New("missing state summary for checkpoint root")
 
 // JustifiedCheckpoint returns the latest justified checkpoint in beacon chain.
-func (s *Store) JustifiedCheckpoint(ctx context.Context) (*zondpb.Checkpoint, error) {
+func (s *Store) JustifiedCheckpoint(ctx context.Context) (*qrysmpb.Checkpoint, error) {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.JustifiedCheckpoint")
 	defer span.End()
-	var checkpoint *zondpb.Checkpoint
+	var checkpoint *qrysmpb.Checkpoint
 	err := s.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(checkpointBucket)
 		enc := bkt.Get(justifiedCheckpointKey)
 		if enc == nil {
-			checkpoint = &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+			checkpoint = &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 			return nil
 		}
-		checkpoint = &zondpb.Checkpoint{}
+		checkpoint = &qrysmpb.Checkpoint{}
 		return decode(ctx, enc, checkpoint)
 	})
 	return checkpoint, err
 }
 
 // FinalizedCheckpoint returns the latest finalized checkpoint in beacon chain.
-func (s *Store) FinalizedCheckpoint(ctx context.Context) (*zondpb.Checkpoint, error) {
+func (s *Store) FinalizedCheckpoint(ctx context.Context) (*qrysmpb.Checkpoint, error) {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.FinalizedCheckpoint")
 	defer span.End()
-	var checkpoint *zondpb.Checkpoint
+	var checkpoint *qrysmpb.Checkpoint
 	err := s.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(checkpointBucket)
 		enc := bkt.Get(finalizedCheckpointKey)
 		if enc == nil {
-			checkpoint = &zondpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
+			checkpoint = &qrysmpb.Checkpoint{Root: params.BeaconConfig().ZeroHash[:]}
 			return nil
 		}
-		checkpoint = &zondpb.Checkpoint{}
+		checkpoint = &qrysmpb.Checkpoint{}
 		return decode(ctx, enc, checkpoint)
 	})
 	return checkpoint, err
 }
 
 // SaveJustifiedCheckpoint saves justified checkpoint in beacon chain.
-func (s *Store) SaveJustifiedCheckpoint(ctx context.Context, checkpoint *zondpb.Checkpoint) error {
+func (s *Store) SaveJustifiedCheckpoint(ctx context.Context, checkpoint *qrysmpb.Checkpoint) error {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.SaveJustifiedCheckpoint")
 	defer span.End()
 
@@ -60,7 +60,7 @@ func (s *Store) SaveJustifiedCheckpoint(ctx context.Context, checkpoint *zondpb.
 }
 
 // SaveFinalizedCheckpoint saves finalized checkpoint in beacon chain.
-func (s *Store) SaveFinalizedCheckpoint(ctx context.Context, checkpoint *zondpb.Checkpoint) error {
+func (s *Store) SaveFinalizedCheckpoint(ctx context.Context, checkpoint *qrysmpb.Checkpoint) error {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.SaveFinalizedCheckpoint")
 	defer span.End()
 
@@ -89,7 +89,7 @@ func (s *Store) SaveFinalizedCheckpoint(ctx context.Context, checkpoint *zondpb.
 	return err
 }
 
-func (s *Store) saveCheckpoint(ctx context.Context, key []byte, checkpoint *zondpb.Checkpoint) error {
+func (s *Store) saveCheckpoint(ctx context.Context, key []byte, checkpoint *qrysmpb.Checkpoint) error {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.saveCheckpoint")
 	defer span.End()
 
@@ -125,13 +125,13 @@ func recoverStateSummary(ctx context.Context, tx *bolt.Tx, root []byte) error {
 	if err != nil {
 		return errors.Wrapf(err, "Could not unmarshal block: %#x", bytesutil.Trunc(root))
 	}
-	summaryEnc, err := encode(ctx, &zondpb.StateSummary{
+	summaryEnc, err := encode(ctx, &qrysmpb.StateSummary{
 		Slot: blk.Block().Slot(),
 		Root: root,
 	})
 	if err != nil {
 		return err
 	}
-	summaryBucket := tx.Bucket(stateBucket)
+	summaryBucket := tx.Bucket(stateSummaryBucket)
 	return summaryBucket.Put(root, summaryEnc)
 }

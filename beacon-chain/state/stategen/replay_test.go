@@ -12,7 +12,7 @@ import (
 	consensusblocks "github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -22,11 +22,11 @@ import (
 func TestReplayBlocks_AllSkipSlots(t *testing.T) {
 	beaconDB := testDB.SetupDB(t)
 
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, 32)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 32)
 	genesisBlock := blocks.NewGenesisBlock([]byte{})
 	bodyRoot, err := genesisBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
-	err = beaconState.SetLatestBlockHeader(&zondpb.BeaconBlockHeader{
+	err = beaconState.SetLatestBlockHeader(&qrysmpb.BeaconBlockHeader{
 		Slot:       genesisBlock.Block.Slot,
 		ParentRoot: genesisBlock.Block.ParentRoot,
 		StateRoot:  params.BeaconConfig().ZeroHash[:],
@@ -50,11 +50,11 @@ func TestReplayBlocks_AllSkipSlots(t *testing.T) {
 func TestReplayBlocks_SameSlot(t *testing.T) {
 	beaconDB := testDB.SetupDB(t)
 
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, 32)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 32)
 	genesisBlock := blocks.NewGenesisBlock([]byte{})
 	bodyRoot, err := genesisBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
-	err = beaconState.SetLatestBlockHeader(&zondpb.BeaconBlockHeader{
+	err = beaconState.SetLatestBlockHeader(&qrysmpb.BeaconBlockHeader{
 		Slot:       genesisBlock.Block.Slot,
 		ParentRoot: genesisBlock.Block.ParentRoot,
 		StateRoot:  params.BeaconConfig().ZeroHash[:],
@@ -78,12 +78,12 @@ func TestReplayBlocks_SameSlot(t *testing.T) {
 func TestReplayBlocks_LowerSlotBlock(t *testing.T) {
 	beaconDB := testDB.SetupDB(t)
 
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, 32)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 32)
 	require.NoError(t, beaconState.SetSlot(1))
 	genesisBlock := blocks.NewGenesisBlock([]byte{})
 	bodyRoot, err := genesisBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
-	err = beaconState.SetLatestBlockHeader(&zondpb.BeaconBlockHeader{
+	err = beaconState.SetLatestBlockHeader(&qrysmpb.BeaconBlockHeader{
 		Slot:       genesisBlock.Block.Slot,
 		ParentRoot: genesisBlock.Block.ParentRoot,
 		StateRoot:  params.BeaconConfig().ZeroHash[:],
@@ -99,7 +99,7 @@ func TestReplayBlocks_LowerSlotBlock(t *testing.T) {
 
 	service := New(beaconDB, doublylinkedtree.New())
 	targetSlot := beaconState.Slot()
-	b := util.NewBeaconBlockCapella()
+	b := util.NewBeaconBlockZond()
 	b.Block.Slot = beaconState.Slot() - 1
 	wsb, err := consensusblocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
@@ -110,14 +110,14 @@ func TestReplayBlocks_LowerSlotBlock(t *testing.T) {
 
 // NOTE(rgeraldes24): test is not valid atm: re-enable once we have a fork boundary
 /*
-func TestReplayBlocks_ThroughCapellaForkBoundary(t *testing.T) {
+func TestReplayBlocks_ThroughZondForkBoundary(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, 32)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 32)
 	genesisBlock := blocks.NewGenesisBlock([]byte{})
 	bodyRoot, err := genesisBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
-	err = beaconState.SetLatestBlockHeader(&zondpb.BeaconBlockHeader{
+	err = beaconState.SetLatestBlockHeader(&qrysmpb.BeaconBlockHeader{
 		Slot:       genesisBlock.Block.Slot,
 		ParentRoot: genesisBlock.Block.ParentRoot,
 		StateRoot:  params.BeaconConfig().ZeroHash[:],
@@ -131,14 +131,14 @@ func TestReplayBlocks_ThroughCapellaForkBoundary(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify state is version Bellatrix.
-	assert.Equal(t, version.Capella, newState.Version())
+	assert.Equal(t, version.Zond, newState.Version())
 
 	targetSlot = params.BeaconConfig().SlotsPerEpoch * 3
 	newState, err = service.replayBlocks(context.Background(), newState, []interfaces.ReadOnlySignedBeaconBlock{}, targetSlot)
 	require.NoError(t, err)
 
-	// Verify state is version Capella.
-	assert.Equal(t, version.Capella, newState.Version())
+	// Verify state is version Zond.
+	assert.Equal(t, version.Zond, newState.Version())
 }
 */
 
@@ -155,7 +155,7 @@ func TestLoadBlocks_FirstBranch(t *testing.T) {
 	filteredBlocks, err := s.loadBlocks(ctx, 0, 8, roots[len(roots)-1])
 	require.NoError(t, err)
 
-	wanted := []*zondpb.SignedBeaconBlockCapella{
+	wanted := []*qrysmpb.SignedBeaconBlockZond{
 		savedBlocks[8],
 		savedBlocks[6],
 		savedBlocks[4],
@@ -193,7 +193,7 @@ func TestLoadBlocks_SecondBranch(t *testing.T) {
 	filteredBlocks, err := s.loadBlocks(ctx, 0, 5, roots[5])
 	require.NoError(t, err)
 
-	wanted := []*zondpb.SignedBeaconBlockCapella{
+	wanted := []*qrysmpb.SignedBeaconBlockZond{
 		savedBlocks[5],
 		savedBlocks[3],
 		savedBlocks[1],
@@ -229,7 +229,7 @@ func TestLoadBlocks_ThirdBranch(t *testing.T) {
 	filteredBlocks, err := s.loadBlocks(ctx, 0, 7, roots[7])
 	require.NoError(t, err)
 
-	wanted := []*zondpb.SignedBeaconBlockCapella{
+	wanted := []*qrysmpb.SignedBeaconBlockZond{
 		savedBlocks[7],
 		savedBlocks[6],
 		savedBlocks[4],
@@ -267,7 +267,7 @@ func TestLoadBlocks_SameSlots(t *testing.T) {
 	filteredBlocks, err := s.loadBlocks(ctx, 0, 3, roots[6])
 	require.NoError(t, err)
 
-	wanted := []*zondpb.SignedBeaconBlockCapella{
+	wanted := []*qrysmpb.SignedBeaconBlockZond{
 		savedBlocks[6],
 		savedBlocks[5],
 		savedBlocks[1],
@@ -303,7 +303,7 @@ func TestLoadBlocks_SameEndSlots(t *testing.T) {
 	filteredBlocks, err := s.loadBlocks(ctx, 0, 2, roots[2])
 	require.NoError(t, err)
 
-	wanted := []*zondpb.SignedBeaconBlockCapella{
+	wanted := []*qrysmpb.SignedBeaconBlockZond{
 		savedBlocks[2],
 		savedBlocks[1],
 		savedBlocks[0],
@@ -338,7 +338,7 @@ func TestLoadBlocks_SameEndSlotsWith2blocks(t *testing.T) {
 	filteredBlocks, err := s.loadBlocks(ctx, 0, 2, roots[1])
 	require.NoError(t, err)
 
-	wanted := []*zondpb.SignedBeaconBlockCapella{
+	wanted := []*qrysmpb.SignedBeaconBlockZond{
 		savedBlocks[1],
 		savedBlocks[0],
 	}
@@ -377,76 +377,76 @@ func TestLoadBlocks_BadStart(t *testing.T) {
 //
 //	\- B2 -- B4 -- B6 ----- B8
 //	                 \- B7
-func tree1(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, []*zondpb.SignedBeaconBlockCapella, error) {
-	b0 := util.NewBeaconBlockCapella()
+func tree1(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, []*qrysmpb.SignedBeaconBlockZond, error) {
+	b0 := util.NewBeaconBlockZond()
 	b0.Block.Slot = 0
 	b0.Block.ParentRoot = genesisRoot
 	r0, err := b0.Block.HashTreeRoot()
 	if err != nil {
 		return nil, nil, err
 	}
-	b1 := util.NewBeaconBlockCapella()
+	b1 := util.NewBeaconBlockZond()
 	b1.Block.Slot = 1
 	b1.Block.ParentRoot = r0[:]
 	r1, err := b1.Block.HashTreeRoot()
 	if err != nil {
 		return nil, nil, err
 	}
-	b2 := util.NewBeaconBlockCapella()
+	b2 := util.NewBeaconBlockZond()
 	b2.Block.Slot = 2
 	b2.Block.ParentRoot = r1[:]
 	r2, err := b2.Block.HashTreeRoot()
 	if err != nil {
 		return nil, nil, err
 	}
-	b3 := util.NewBeaconBlockCapella()
+	b3 := util.NewBeaconBlockZond()
 	b3.Block.Slot = 3
 	b3.Block.ParentRoot = r1[:]
 	r3, err := b3.Block.HashTreeRoot()
 	if err != nil {
 		return nil, nil, err
 	}
-	b4 := util.NewBeaconBlockCapella()
+	b4 := util.NewBeaconBlockZond()
 	b4.Block.Slot = 4
 	b4.Block.ParentRoot = r2[:]
 	r4, err := b4.Block.HashTreeRoot()
 	if err != nil {
 		return nil, nil, err
 	}
-	b5 := util.NewBeaconBlockCapella()
+	b5 := util.NewBeaconBlockZond()
 	b5.Block.Slot = 5
 	b5.Block.ParentRoot = r3[:]
 	r5, err := b5.Block.HashTreeRoot()
 	if err != nil {
 		return nil, nil, err
 	}
-	b6 := util.NewBeaconBlockCapella()
+	b6 := util.NewBeaconBlockZond()
 	b6.Block.Slot = 6
 	b6.Block.ParentRoot = r4[:]
 	r6, err := b6.Block.HashTreeRoot()
 	if err != nil {
 		return nil, nil, err
 	}
-	b7 := util.NewBeaconBlockCapella()
+	b7 := util.NewBeaconBlockZond()
 	b7.Block.Slot = 7
 	b7.Block.ParentRoot = r6[:]
 	r7, err := b7.Block.HashTreeRoot()
 	if err != nil {
 		return nil, nil, err
 	}
-	b8 := util.NewBeaconBlockCapella()
+	b8 := util.NewBeaconBlockZond()
 	b8.Block.Slot = 8
 	b8.Block.ParentRoot = r6[:]
 	r8, err := b8.Block.HashTreeRoot()
 	if err != nil {
 		return nil, nil, err
 	}
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 
-	returnedBlocks := make([]*zondpb.SignedBeaconBlockCapella, 0)
-	for _, b := range []*zondpb.SignedBeaconBlockCapella{b0, b1, b2, b3, b4, b5, b6, b7, b8} {
-		beaconBlock := util.NewBeaconBlockCapella()
+	returnedBlocks := make([]*qrysmpb.SignedBeaconBlockZond, 0)
+	for _, b := range []*qrysmpb.SignedBeaconBlockZond{b0, b1, b2, b3, b4, b5, b6, b7, b8} {
+		beaconBlock := util.NewBeaconBlockZond()
 		beaconBlock.Block.Slot = b.Block.Slot
 		beaconBlock.Block.ParentRoot = bytesutil.PadTo(b.Block.ParentRoot, 32)
 		wsb, err := consensusblocks.NewSignedBeaconBlock(beaconBlock)
@@ -469,22 +469,22 @@ func tree1(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, 
 //	\- B2
 //	\- B2
 //	\- B2 -- B3
-func tree2(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, []*zondpb.SignedBeaconBlockCapella, error) {
-	b0 := util.NewBeaconBlockCapella()
+func tree2(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, []*qrysmpb.SignedBeaconBlockZond, error) {
+	b0 := util.NewBeaconBlockZond()
 	b0.Block.Slot = 0
 	b0.Block.ParentRoot = genesisRoot
 	r0, err := b0.Block.HashTreeRoot()
 	if err != nil {
 		return nil, nil, err
 	}
-	b1 := util.NewBeaconBlockCapella()
+	b1 := util.NewBeaconBlockZond()
 	b1.Block.Slot = 1
 	b1.Block.ParentRoot = r0[:]
 	r1, err := b1.Block.HashTreeRoot()
 	if err != nil {
 		return nil, nil, err
 	}
-	b21 := util.NewBeaconBlockCapella()
+	b21 := util.NewBeaconBlockZond()
 	b21.Block.Slot = 2
 	b21.Block.ParentRoot = r1[:]
 	b21.Block.StateRoot = bytesutil.PadTo([]byte{'A'}, 32)
@@ -492,7 +492,7 @@ func tree2(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, 
 	if err != nil {
 		return nil, nil, err
 	}
-	b22 := util.NewBeaconBlockCapella()
+	b22 := util.NewBeaconBlockZond()
 	b22.Block.Slot = 2
 	b22.Block.ParentRoot = r1[:]
 	b22.Block.StateRoot = bytesutil.PadTo([]byte{'B'}, 32)
@@ -500,7 +500,7 @@ func tree2(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, 
 	if err != nil {
 		return nil, nil, err
 	}
-	b23 := util.NewBeaconBlockCapella()
+	b23 := util.NewBeaconBlockZond()
 	b23.Block.Slot = 2
 	b23.Block.ParentRoot = r1[:]
 	b23.Block.StateRoot = bytesutil.PadTo([]byte{'C'}, 32)
@@ -508,7 +508,7 @@ func tree2(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, 
 	if err != nil {
 		return nil, nil, err
 	}
-	b24 := util.NewBeaconBlockCapella()
+	b24 := util.NewBeaconBlockZond()
 	b24.Block.Slot = 2
 	b24.Block.ParentRoot = r1[:]
 	b24.Block.StateRoot = bytesutil.PadTo([]byte{'D'}, 32)
@@ -516,19 +516,19 @@ func tree2(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, 
 	if err != nil {
 		return nil, nil, err
 	}
-	b3 := util.NewBeaconBlockCapella()
+	b3 := util.NewBeaconBlockZond()
 	b3.Block.Slot = 3
 	b3.Block.ParentRoot = r24[:]
 	r3, err := b3.Block.HashTreeRoot()
 	if err != nil {
 		return nil, nil, err
 	}
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 
-	returnedBlocks := make([]*zondpb.SignedBeaconBlockCapella, 0)
-	for _, b := range []*zondpb.SignedBeaconBlockCapella{b0, b1, b21, b22, b23, b24, b3} {
-		beaconBlock := util.NewBeaconBlockCapella()
+	returnedBlocks := make([]*qrysmpb.SignedBeaconBlockZond, 0)
+	for _, b := range []*qrysmpb.SignedBeaconBlockZond{b0, b1, b21, b22, b23, b24, b3} {
+		beaconBlock := util.NewBeaconBlockZond()
 		beaconBlock.Block.Slot = b.Block.Slot
 		beaconBlock.Block.ParentRoot = bytesutil.PadTo(b.Block.ParentRoot, 32)
 		beaconBlock.Block.StateRoot = bytesutil.PadTo(b.Block.StateRoot, 32)
@@ -552,22 +552,22 @@ func tree2(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, 
 //	\- B2
 //	\- B2
 //	\- B2
-func tree3(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, []*zondpb.SignedBeaconBlockCapella, error) {
-	b0 := util.NewBeaconBlockCapella()
+func tree3(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, []*qrysmpb.SignedBeaconBlockZond, error) {
+	b0 := util.NewBeaconBlockZond()
 	b0.Block.Slot = 0
 	b0.Block.ParentRoot = genesisRoot
 	r0, err := b0.Block.HashTreeRoot()
 	if err != nil {
 		return nil, nil, err
 	}
-	b1 := util.NewBeaconBlockCapella()
+	b1 := util.NewBeaconBlockZond()
 	b1.Block.Slot = 1
 	b1.Block.ParentRoot = r0[:]
 	r1, err := b1.Block.HashTreeRoot()
 	if err != nil {
 		return nil, nil, err
 	}
-	b21 := util.NewBeaconBlockCapella()
+	b21 := util.NewBeaconBlockZond()
 	b21.Block.Slot = 2
 	b21.Block.ParentRoot = r1[:]
 	b21.Block.StateRoot = bytesutil.PadTo([]byte{'A'}, 32)
@@ -575,7 +575,7 @@ func tree3(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, 
 	if err != nil {
 		return nil, nil, err
 	}
-	b22 := util.NewBeaconBlockCapella()
+	b22 := util.NewBeaconBlockZond()
 	b22.Block.Slot = 2
 	b22.Block.ParentRoot = r1[:]
 	b22.Block.StateRoot = bytesutil.PadTo([]byte{'B'}, 32)
@@ -583,7 +583,7 @@ func tree3(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, 
 	if err != nil {
 		return nil, nil, err
 	}
-	b23 := util.NewBeaconBlockCapella()
+	b23 := util.NewBeaconBlockZond()
 	b23.Block.Slot = 2
 	b23.Block.ParentRoot = r1[:]
 	b23.Block.StateRoot = bytesutil.PadTo([]byte{'C'}, 32)
@@ -591,7 +591,7 @@ func tree3(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, 
 	if err != nil {
 		return nil, nil, err
 	}
-	b24 := util.NewBeaconBlockCapella()
+	b24 := util.NewBeaconBlockZond()
 	b24.Block.Slot = 2
 	b24.Block.ParentRoot = r1[:]
 	b24.Block.StateRoot = bytesutil.PadTo([]byte{'D'}, 32)
@@ -599,12 +599,12 @@ func tree3(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, 
 	if err != nil {
 		return nil, nil, err
 	}
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 
-	returnedBlocks := make([]*zondpb.SignedBeaconBlockCapella, 0)
-	for _, b := range []*zondpb.SignedBeaconBlockCapella{b0, b1, b21, b22, b23, b24} {
-		beaconBlock := util.NewBeaconBlockCapella()
+	returnedBlocks := make([]*qrysmpb.SignedBeaconBlockZond, 0)
+	for _, b := range []*qrysmpb.SignedBeaconBlockZond{b0, b1, b21, b22, b23, b24} {
+		beaconBlock := util.NewBeaconBlockZond()
 		beaconBlock.Block.Slot = b.Block.Slot
 		beaconBlock.Block.ParentRoot = bytesutil.PadTo(b.Block.ParentRoot, 32)
 		beaconBlock.Block.StateRoot = bytesutil.PadTo(b.Block.StateRoot, 32)
@@ -629,15 +629,15 @@ func tree3(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, 
 //	\- B2
 //	\- B2
 //	\- B2
-func tree4(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, []*zondpb.SignedBeaconBlockCapella, error) {
-	b0 := util.NewBeaconBlockCapella()
+func tree4(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, []*qrysmpb.SignedBeaconBlockZond, error) {
+	b0 := util.NewBeaconBlockZond()
 	b0.Block.Slot = 0
 	b0.Block.ParentRoot = genesisRoot
 	r0, err := b0.Block.HashTreeRoot()
 	if err != nil {
 		return nil, nil, err
 	}
-	b21 := util.NewBeaconBlockCapella()
+	b21 := util.NewBeaconBlockZond()
 	b21.Block.Slot = 2
 	b21.Block.ParentRoot = r0[:]
 	b21.Block.StateRoot = bytesutil.PadTo([]byte{'A'}, 32)
@@ -645,7 +645,7 @@ func tree4(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, 
 	if err != nil {
 		return nil, nil, err
 	}
-	b22 := util.NewBeaconBlockCapella()
+	b22 := util.NewBeaconBlockZond()
 	b22.Block.Slot = 2
 	b22.Block.ParentRoot = r0[:]
 	b22.Block.StateRoot = bytesutil.PadTo([]byte{'B'}, 32)
@@ -653,7 +653,7 @@ func tree4(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, 
 	if err != nil {
 		return nil, nil, err
 	}
-	b23 := util.NewBeaconBlockCapella()
+	b23 := util.NewBeaconBlockZond()
 	b23.Block.Slot = 2
 	b23.Block.ParentRoot = r0[:]
 	b23.Block.StateRoot = bytesutil.PadTo([]byte{'C'}, 32)
@@ -661,7 +661,7 @@ func tree4(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, 
 	if err != nil {
 		return nil, nil, err
 	}
-	b24 := util.NewBeaconBlockCapella()
+	b24 := util.NewBeaconBlockZond()
 	b24.Block.Slot = 2
 	b24.Block.ParentRoot = r0[:]
 	b24.Block.StateRoot = bytesutil.PadTo([]byte{'D'}, 32)
@@ -669,12 +669,12 @@ func tree4(t *testing.T, beaconDB db.Database, genesisRoot []byte) ([][32]byte, 
 	if err != nil {
 		return nil, nil, err
 	}
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 
-	returnedBlocks := make([]*zondpb.SignedBeaconBlockCapella, 0)
-	for _, b := range []*zondpb.SignedBeaconBlockCapella{b0, b21, b22, b23, b24} {
-		beaconBlock := util.NewBeaconBlockCapella()
+	returnedBlocks := make([]*qrysmpb.SignedBeaconBlockZond, 0)
+	for _, b := range []*qrysmpb.SignedBeaconBlockZond{b0, b21, b22, b23, b24} {
+		beaconBlock := util.NewBeaconBlockZond()
 		beaconBlock.Block.Slot = b.Block.Slot
 		beaconBlock.Block.ParentRoot = bytesutil.PadTo(b.Block.ParentRoot, 32)
 		beaconBlock.Block.StateRoot = bytesutil.PadTo(b.Block.StateRoot, 32)
@@ -698,7 +698,7 @@ func TestLoadFinalizedBlocks(t *testing.T) {
 	s := &State{
 		beaconDB: beaconDB,
 	}
-	gBlock := util.NewBeaconBlockCapella()
+	gBlock := util.NewBeaconBlockZond()
 	gRoot, err := gBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
 	util.SaveBlock(t, ctx, beaconDB, gBlock)
@@ -709,9 +709,9 @@ func TestLoadFinalizedBlocks(t *testing.T) {
 	filteredBlocks, err := s.loadFinalizedBlocks(ctx, 0, 8)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(filteredBlocks))
-	require.NoError(t, beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Root: roots[8][:]}))
+	require.NoError(t, beaconDB.SaveStateSummary(ctx, &qrysmpb.StateSummary{Root: roots[8][:]}))
 
-	require.NoError(t, s.beaconDB.SaveFinalizedCheckpoint(ctx, &zondpb.Checkpoint{Root: roots[8][:]}))
+	require.NoError(t, s.beaconDB.SaveFinalizedCheckpoint(ctx, &qrysmpb.Checkpoint{Root: roots[8][:]}))
 	filteredBlocks, err = s.loadFinalizedBlocks(ctx, 0, 8)
 	require.NoError(t, err)
 	require.Equal(t, 10, len(filteredBlocks))

@@ -2,7 +2,7 @@
 package operation
 
 import (
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 const (
@@ -19,36 +19,28 @@ const (
 
 	// SyncCommitteeContributionReceived is sent after a sync committee contribution object has been received.
 	SyncCommitteeContributionReceived
-
-	// DilithiumToExecutionChangeReceived is sent after a Dilithium to execution change object has been received from gossip or rpc.
-	DilithiumToExecutionChangeReceived
 )
 
 // UnAggregatedAttReceivedData is the data sent with UnaggregatedAttReceived events.
 type UnAggregatedAttReceivedData struct {
 	// Attestation is the unaggregated attestation object.
-	Attestation *zondpb.Attestation
+	Attestation *qrysmpb.Attestation
 }
 
 // AggregatedAttReceivedData is the data sent with AggregatedAttReceived events.
 type AggregatedAttReceivedData struct {
 	// Attestation is the aggregated attestation object.
-	Attestation *zondpb.AggregateAttestationAndProof
+	Attestation *qrysmpb.AggregateAttestationAndProof
 }
 
 // ExitReceivedData is the data sent with ExitReceived events.
 type ExitReceivedData struct {
 	// Exit is the voluntary exit object.
-	Exit *zondpb.SignedVoluntaryExit
+	Exit *qrysmpb.SignedVoluntaryExit
 }
 
 // SyncCommitteeContributionReceivedData is the data sent with SyncCommitteeContributionReceived objects.
 type SyncCommitteeContributionReceivedData struct {
 	// Contribution is the sync committee contribution object.
-	Contribution *zondpb.SignedContributionAndProof
-}
-
-// DilithiumToExecutionChangeReceivedData is the data sent with DilithiumToExecutionChangeReceived events.
-type DilithiumToExecutionChangeReceivedData struct {
-	Change *zondpb.SignedDilithiumToExecutionChange
+	Contribution *qrysmpb.SignedContributionAndProof
 }

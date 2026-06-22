@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/beacon"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
@@ -25,7 +25,7 @@ func TestWaitForChainStart_ValidGenesis(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		"/zond/v1/beacon/genesis",
+		"/qrl/v1/beacon/genesis",
 		&genesisResponseJson,
 	).Return(
 		nil,
@@ -93,7 +93,7 @@ func TestWaitForChainStart_BadGenesis(t *testing.T) {
 			jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 			jsonRestHandler.EXPECT().GetRestJsonResponse(
 				ctx,
-				"/zond/v1/beacon/genesis",
+				"/qrl/v1/beacon/genesis",
 				&genesisResponseJson,
 			).Return(
 				nil,
@@ -122,7 +122,7 @@ func TestWaitForChainStart_JsonResponseError(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		"/zond/v1/beacon/genesis",
+		"/qrl/v1/beacon/genesis",
 		&genesisResponseJson,
 	).Return(
 		nil,
@@ -148,7 +148,7 @@ func TestWaitForChainStart_JsonResponseError404(t *testing.T) {
 	// First, mock a request that receives a 404 error (which means that the genesis data is not available yet)
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		"/zond/v1/beacon/genesis",
+		"/qrl/v1/beacon/genesis",
 		&genesisResponseJson,
 	).Return(
 		&apimiddleware.DefaultErrorJson{
@@ -161,7 +161,7 @@ func TestWaitForChainStart_JsonResponseError404(t *testing.T) {
 	// After receiving a 404 error, mock a request that actually has genesis data available
 	jsonRestHandler.EXPECT().GetRestJsonResponse(
 		ctx,
-		"/zond/v1/beacon/genesis",
+		"/qrl/v1/beacon/genesis",
 		&genesisResponseJson,
 	).Return(
 		nil,

@@ -1,0 +1,13 @@
+load("@qrysm//tools/go:def.bzl", "go_test")
+
+go_test(
+    name = "finality_test",
+    size = "medium",
+    timeout = "short",
+    srcs = ["finality_test.go"],
+    data = [
+        #"@consensus_spec_tests_mainnet//:test_data",
+    ],
+    shard_count = 1,
+    tags = ["spectest"],
+)

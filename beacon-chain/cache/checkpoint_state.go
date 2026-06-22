@@ -6,8 +6,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	lruwrpr "github.com/theQRL/qrysm/cache/lru"
+	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/crypto/hash"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
 var (
@@ -41,8 +43,8 @@ func NewCheckpointStateCache() *CheckpointStateCache {
 
 // StateByCheckpoint fetches state by checkpoint. Returns true with a
 // reference to the CheckpointState info, if exists. Otherwise returns false, nil.
-func (c *CheckpointStateCache) StateByCheckpoint(cp *zondpb.Checkpoint) (state.BeaconState, error) {
-	h, err := hash.HashProto(cp)
+func (c *CheckpointStateCache) StateByCheckpoint(cp *qrysmpb.Checkpoint) (state.BeaconState, error) {
+	h, err := hash.Proto(cp)
 	if err != nil {
 		return nil, err
 	}
@@ -61,11 +63,31 @@ func (c *CheckpointStateCache) StateByCheckpoint(cp *zondpb.Checkpoint) (state.B
 
 // AddCheckpointState adds CheckpointState object to the cache. This method also trims the least
 // recently added CheckpointState object if the cache size has ready the max cache size limit.
-func (c *CheckpointStateCache) AddCheckpointState(cp *zondpb.Checkpoint, s state.ReadOnlyBeaconState) error {
-	h, err := hash.HashProto(cp)
+func (c *CheckpointStateCache) AddCheckpointState(cp *qrysmpb.Checkpoint, s state.ReadOnlyBeaconState) error {
+	h, err := hash.Proto(cp)
 	if err != nil {
 		return err
 	}
 	c.cache.Add(h, s)
 	return nil
+}
+
+// EvictUpTo removes all cache entries whose state epoch is finalized.
+func (c *CheckpointStateCache) EvictUpTo(epoch primitives.Epoch) int {
+	evicted := 0
+	for _, key := range c.cache.Keys() {
+		item, ok := c.cache.Peek(key)
+		if !ok || item == nil {
+			continue
+		}
+		st, ok := item.(state.ReadOnlyBeaconState)
+		if !ok {
+			continue
+		}
+		if slots.ToEpoch(st.Slot()) <= epoch {
+			c.cache.Remove(key)
+			evicted++
+		}
+	}
+	return evicted
 }

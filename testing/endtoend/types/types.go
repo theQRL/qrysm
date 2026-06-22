@@ -72,7 +72,7 @@ type E2EConfig struct {
 }
 
 func GenesisFork() int {
-	return version.Capella
+	return version.Zond
 }
 
 // Evaluator defines the structure of the evaluators used to
@@ -99,22 +99,22 @@ const (
 
 // DepositBalancer represents a type that can sum, by validator, all deposits made in E2E prior to the function call.
 type DepositBalancer interface {
-	Balances(DepositBatch) map[[field_params.DilithiumPubkeyLength]byte]uint64
+	Balances(DepositBatch) map[[field_params.MLDSA87PubkeyLength]byte]uint64
 }
 
 // EvaluationContext allows for additional data to be provided to evaluators that need extra state.
 type EvaluationContext struct {
 	DepositBalancer
-	ExitedVals           map[[field_params.DilithiumPubkeyLength]byte]bool
-	SeenVotes            map[primitives.Slot][]byte
-	ExpectedEth1DataVote []byte
+	ExitedVals                map[[field_params.MLDSA87PubkeyLength]byte]bool
+	SeenVotes                 map[primitives.Slot][]byte
+	ExpectedExecutionDataVote []byte
 }
 
 // NewEvaluationContext handles initializing internal datastructures (like maps) provided by the EvaluationContext.
 func NewEvaluationContext(d DepositBalancer) *EvaluationContext {
 	return &EvaluationContext{
 		DepositBalancer: d,
-		ExitedVals:      make(map[[field_params.DilithiumPubkeyLength]byte]bool),
+		ExitedVals:      make(map[[field_params.MLDSA87PubkeyLength]byte]bool),
 		SeenVotes:       make(map[primitives.Slot][]byte),
 	}
 }
@@ -150,7 +150,7 @@ type MultipleComponentRunners interface {
 type EngineProxy interface {
 	ComponentRunner
 	// AddRequestInterceptor adds in a json-rpc request interceptor.
-	AddRequestInterceptor(rpcMethodName string, responseGen func() interface{}, trigger func() bool)
+	AddRequestInterceptor(rpcMethodName string, responseGen func() any, trigger func() bool)
 	// RemoveRequestInterceptor removes the request interceptor for the provided method.
 	RemoveRequestInterceptor(rpcMethodName string)
 	// ReleaseBackedUpRequests releases backed up http requests.
@@ -161,6 +161,6 @@ type EngineProxy interface {
 // of a group of beacon nodes.
 type BeaconNodeSet interface {
 	ComponentRunner
-	// SetENR provides the relevant bootnode's enr to the beacon nodes.
-	SetENR(enr string)
+	// SetQNR provides the relevant bootnode's qnr to the beacon nodes.
+	SetQNR(qnr string)
 }

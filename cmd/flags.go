@@ -12,12 +12,12 @@ import (
 )
 
 var (
-	// MinimalConfigFlag declares to use the minimal config for running Zond consensus.
+	// MinimalConfigFlag declares to use the minimal config for running QRL consensus.
 	MinimalConfigFlag = &cli.BoolFlag{
 		Name:  "minimal-config",
 		Usage: "Use minimal config with parameters as defined in the spec.",
 	}
-	// E2EConfigFlag declares to use a testing specific config for running Zond consensus in end-to-end testing.
+	// E2EConfigFlag declares to use a testing specific config for running QRL consensus in end-to-end testing.
 	E2EConfigFlag = &cli.BoolFlag{
 		Name:  "e2e-config",
 		Usage: "Use the E2E testing config, only for use within end-to-end testing.",
@@ -148,12 +148,6 @@ var (
 		Name:  "p2p-static-id",
 		Usage: "Enables the peer id of the node to be fixed by saving the generated network key to the default key path.",
 		Value: false,
-	}
-	// P2PMetadata defines a flag to specify the location of the peer metadata file.
-	P2PMetadata = &cli.StringFlag{
-		Name:  "p2p-metadata",
-		Usage: "The file containing the metadata to communicate with other peers.",
-		Value: "",
 	}
 	// P2PMaxPeers defines a flag to specify the max number of peers in libp2p.
 	P2PMaxPeers = &cli.IntFlag{

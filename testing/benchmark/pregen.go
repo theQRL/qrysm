@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/config/params"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // ValidatorCount is for declaring how many validators the benchmarks will be
@@ -49,11 +49,11 @@ func PreGenState1Epoch() (state.BeaconState, error) {
 	if err != nil {
 		return nil, err
 	}
-	beaconState := &zondpb.BeaconStateCapella{}
+	beaconState := &qrysmpb.BeaconStateZond{}
 	if err := beaconState.UnmarshalSSZ(beaconBytes); err != nil {
 		return nil, err
 	}
-	return state_native.InitializeFromProtoCapella(beaconState)
+	return state_native.InitializeFromProtoZond(beaconState)
 }
 
 // PreGenstateFullEpochs unmarshals the pre-generated beacon state after 2 epoch of full block processing and returns it.
@@ -66,15 +66,15 @@ func PreGenstateFullEpochs() (state.BeaconState, error) {
 	if err != nil {
 		return nil, err
 	}
-	beaconState := &zondpb.BeaconStateCapella{}
+	beaconState := &qrysmpb.BeaconStateZond{}
 	if err := beaconState.UnmarshalSSZ(beaconBytes); err != nil {
 		return nil, err
 	}
-	return state_native.InitializeFromProtoCapella(beaconState)
+	return state_native.InitializeFromProtoZond(beaconState)
 }
 
 // PreGenFullBlock unmarshals the pre-generated signed beacon block containing an epochs worth of attestations and returns it.
-func PreGenFullBlock() (*zondpb.SignedBeaconBlockCapella, error) {
+func PreGenFullBlock() (*qrysmpb.SignedBeaconBlockZond, error) {
 	path, err := bazel.Runfile(filePath(FullBlockFileName))
 	if err != nil {
 		return nil, err
@@ -83,7 +83,7 @@ func PreGenFullBlock() (*zondpb.SignedBeaconBlockCapella, error) {
 	if err != nil {
 		return nil, err
 	}
-	beaconBlock := &zondpb.SignedBeaconBlockCapella{}
+	beaconBlock := &qrysmpb.SignedBeaconBlockZond{}
 	if err := beaconBlock.UnmarshalSSZ(blockBytes); err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func SetBenchmarkConfig() (func(), error) {
 	undo, err := params.SetActiveWithUndo(c)
 	return func() {
 		if err := undo(); err != nil {
-			panic(err)
+			panic(err) // lint:nopanic
 		}
 	}, err
 }

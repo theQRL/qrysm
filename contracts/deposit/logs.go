@@ -4,7 +4,7 @@ import (
 	"bytes"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/accounts/abi"
+	"github.com/theQRL/go-qrl/accounts/abi"
 )
 
 // UnpackDepositLogData unpacks the data from a deposit log using the ABI decoder.

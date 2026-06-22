@@ -1,8 +1,7 @@
 package scorers_test
 
 import (
-	"context"
-	"sort"
+	"slices"
 	"testing"
 
 	"github.com/libp2p/go-libp2p/core/network"
@@ -15,8 +14,7 @@ import (
 )
 
 func TestScorers_BadResponses_Score(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	peerStatuses := peers.NewStatus(ctx, &peers.StatusConfig{
 		PeerLimit: 30,
@@ -40,8 +38,7 @@ func TestScorers_BadResponses_Score(t *testing.T) {
 }
 
 func TestScorers_BadResponses_ParamsThreshold(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	maxBadResponses := 2
 	peerStatuses := peers.NewStatus(ctx, &peers.StatusConfig{
@@ -57,8 +54,7 @@ func TestScorers_BadResponses_ParamsThreshold(t *testing.T) {
 }
 
 func TestScorers_BadResponses_Count(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	peerStatuses := peers.NewStatus(ctx, &peers.StatusConfig{
 		PeerLimit:    30,
@@ -77,8 +73,7 @@ func TestScorers_BadResponses_Count(t *testing.T) {
 }
 
 func TestScorers_BadResponses_Decay(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	maxBadResponses := 2
 	peerStatuses := peers.NewStatus(ctx, &peers.StatusConfig{
@@ -133,8 +128,7 @@ func TestScorers_BadResponses_Decay(t *testing.T) {
 }
 
 func TestScorers_BadResponses_IsBadPeer(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	peerStatuses := peers.NewStatus(ctx, &peers.StatusConfig{
 		PeerLimit:    30,
@@ -147,7 +141,7 @@ func TestScorers_BadResponses_IsBadPeer(t *testing.T) {
 	peerStatuses.Add(nil, pid, nil, network.DirUnknown)
 	assert.Equal(t, false, scorer.IsBadPeer(pid))
 
-	for i := 0; i < scorers.DefaultBadResponsesThreshold; i++ {
+	for i := range scorers.DefaultBadResponsesThreshold {
 		scorer.Increment(pid)
 		if i == scorers.DefaultBadResponsesThreshold-1 {
 			assert.Equal(t, true, scorer.IsBadPeer(pid), "Unexpected peer status")
@@ -158,8 +152,7 @@ func TestScorers_BadResponses_IsBadPeer(t *testing.T) {
 }
 
 func TestScorers_BadResponses_BadPeers(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	peerStatuses := peers.NewStatus(ctx, &peers.StatusConfig{
 		PeerLimit:    30,
@@ -167,10 +160,10 @@ func TestScorers_BadResponses_BadPeers(t *testing.T) {
 	})
 	scorer := peerStatuses.Scorers().BadResponsesScorer()
 	pids := []peer.ID{peer.ID("peer1"), peer.ID("peer2"), peer.ID("peer3"), peer.ID("peer4"), peer.ID("peer5")}
-	for i := 0; i < len(pids); i++ {
+	for i := range pids {
 		peerStatuses.Add(nil, pids[i], nil, network.DirUnknown)
 	}
-	for i := 0; i < scorers.DefaultBadResponsesThreshold; i++ {
+	for range scorers.DefaultBadResponsesThreshold {
 		scorer.Increment(pids[1])
 		scorer.Increment(pids[2])
 		scorer.Increment(pids[4])
@@ -182,8 +175,6 @@ func TestScorers_BadResponses_BadPeers(t *testing.T) {
 	assert.Equal(t, true, scorer.IsBadPeer(pids[4]), "Invalid peer status")
 	want := []peer.ID{pids[1], pids[2], pids[4]}
 	badPeers := scorer.BadPeers()
-	sort.Slice(badPeers, func(i, j int) bool {
-		return badPeers[i] < badPeers[j]
-	})
+	slices.Sort(badPeers)
 	assert.DeepEqual(t, want, badPeers, "Unexpected list of bad peers")
 }

@@ -16,7 +16,7 @@ var (
 	voluntaryExitsBucket    = []byte("voluntary-exits")
 	chainMetadataBucket     = []byte("chain-metadata")
 	checkpointBucket        = []byte("check-point")
-	powchainBucket          = []byte("powchain")
+	executionChainBucket    = []byte("execution-chain")
 	stateValidatorsBucket   = []byte("state-validators")
 	feeRecipientBucket      = []byte("fee-recipient")
 	registrationBucket      = []byte("registration")
@@ -39,13 +39,14 @@ var (
 	depositContractAddressKey  = []byte("deposit-contract")
 	justifiedCheckpointKey     = []byte("justified-checkpoint")
 	finalizedCheckpointKey     = []byte("finalized-checkpoint")
-	powchainDataKey            = []byte("powchain-data")
+	executionChainDataKey      = []byte("execution-chain-data")
 	lastValidatedCheckpointKey = []byte("last-validated-checkpoint")
+	metadataSequenceNumberKey  = []byte("metadata-seq-number")
 
 	// Below keys are used to identify objects are to be fork compatible.
 	// Objects that are only compatible with specific forks should be prefixed with such keys.
-	capellaKey                 = []byte("capella")
-	capellaBlindKey            = []byte("blind-capella")
+	zondKey                    = []byte("zond")
+	zondBlindKey               = []byte("blind-zond")
 	saveBlindedBeaconBlocksKey = []byte("save-blinded-beacon-blocks")
 
 	// block root included in the beacon state used by weak subjectivity initial sync

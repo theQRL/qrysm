@@ -9,12 +9,12 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/core/blocks"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/io/file"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/validator/client"
 	beacon_api "github.com/theQRL/qrysm/validator/client/beacon-api"
 	"github.com/theQRL/qrysm/validator/client/iface"
@@ -140,7 +140,7 @@ func PerformVoluntaryExit(
 	return rawExitedKeys, formattedExitedKeys, nil
 }
 
-func prepareAllKeys(validatingKeys [][field_params.DilithiumPubkeyLength]byte) (raw [][]byte, formatted []string) {
+func prepareAllKeys(validatingKeys [][field_params.MLDSA87PubkeyLength]byte) (raw [][]byte, formatted []string) {
 	raw = make([][]byte, len(validatingKeys))
 	formatted = make([]string, len(validatingKeys))
 	for i, pk := range validatingKeys {
@@ -166,12 +166,12 @@ func displayExitInfo(rawExitedKeys [][]byte, trimmedExitedKeys []string) {
 		// 	urlFormattedPubKeys[i] = baseUrl + hexutil.Encode(key)[2:]
 		// }
 
-		// ifaceKeys := make([]interface{}, len(urlFormattedPubKeys))
+		// ifaceKeys := make([]any, len(urlFormattedPubKeys))
 		// for i, k := range urlFormattedPubKeys {
 		// 	ifaceKeys[i] = k
 		// }
 
-		ifaceKeys := make([]interface{}, len(rawExitedKeys))
+		ifaceKeys := make([]any, len(rawExitedKeys))
 		for i, k := range rawExitedKeys {
 			ifaceKeys[i] = hexutil.Encode(k)
 		}
@@ -185,12 +185,12 @@ func displayExitInfo(rawExitedKeys [][]byte, trimmedExitedKeys []string) {
 	}
 }
 
-func writeSignedVoluntaryExitJSON(ctx context.Context, sve *zond.SignedVoluntaryExit, outputDirectory string) error {
+func writeSignedVoluntaryExitJSON(ctx context.Context, sve *qrysmpb.SignedVoluntaryExit, outputDirectory string) error {
 	if err := file.MkdirAll(outputDirectory); err != nil {
 		return err
 	}
 
-	jsve := beacon_api.JsonifySignedVoluntaryExits([]*zond.SignedVoluntaryExit{sve})[0]
+	jsve := beacon_api.JsonifySignedVoluntaryExits([]*qrysmpb.SignedVoluntaryExit{sve})[0]
 	b, err := json.Marshal(jsve)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal JSON signed voluntary exit")

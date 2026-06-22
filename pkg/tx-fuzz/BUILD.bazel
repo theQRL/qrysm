@@ -1,0 +1,24 @@
+load("@qrysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "tx-fuzz",
+    srcs = [
+        "accesslist.go",
+        "main.go",
+        "random.go",
+        "transactions.go",
+    ],
+    importpath = "github.com/theQRL/qrysm/pkg/tx-fuzz",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/FuzzyVM/filler",
+        "//pkg/FuzzyVM/generator",
+        "@com_github_theqrl_go_qrl//:go-qrl",
+        "@com_github_theqrl_go_qrl//common",
+        "@com_github_theqrl_go_qrl//core/types",
+        "@com_github_theqrl_go_qrl//params",
+        "@com_github_theqrl_go_qrl//qrlclient",
+        "@com_github_theqrl_go_qrl//qrlclient/gqrlclient",
+        "@com_github_theqrl_go_qrl//rpc",
+    ],
+)

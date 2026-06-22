@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "petnames",
     srcs = ["names.go"],
     importpath = "github.com/theQRL/qrysm/validator/accounts/petnames",
     visibility = [
@@ -9,7 +9,7 @@ go_library(
         "//validator:__subpackages__",
     ],
     deps = [
-        "//crypto/hash:go_default_library",
-        "//crypto/rand:go_default_library",
+        "//crypto/hash",
+        "//crypto/rand",
     ],
 )

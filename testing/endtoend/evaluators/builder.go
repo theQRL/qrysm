@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/endtoend/policies"
 	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
 	"github.com/theQRL/qrysm/time/slots"
@@ -23,8 +23,8 @@ var BuilderIsActive = e2etypes.Evaluator{
 
 func builderActive(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := zondpb.NewNodeClient(conn)
-	beaconClient := zondpb.NewBeaconChainClient(conn)
+	client := qrysmpb.NewNodeClient(conn)
+	beaconClient := qrysmpb.NewBeaconChainClient(conn)
 	genesis, err := client.GetGenesis(context.Background(), &emptypb.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "failed to get genesis data")
@@ -40,7 +40,7 @@ func builderActive(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) err
 	// 	lowestBound = helpers.BellatrixE2EForkEpoch
 	// }
 
-	blockCtrs, err := beaconClient.ListBeaconBlocks(context.Background(), &zondpb.ListBlocksRequest{QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: lowestBound}})
+	blockCtrs, err := beaconClient.ListBeaconBlocks(context.Background(), &qrysmpb.ListBlocksRequest{QueryFilter: &qrysmpb.ListBlocksRequest_Epoch{Epoch: lowestBound}})
 	if err != nil {
 		return errors.Wrap(err, "failed to get beacon blocks")
 	}
@@ -50,7 +50,7 @@ func builderActive(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) err
 			return errors.Wrapf(err, "block type doesn't exist for block at epoch %d", lowestBound)
 		}
 
-		if b.IsNil() {
+		if b == nil || b.IsNil() {
 			return errors.New("nil block provided")
 		}
 		// forkStartSlot, err := slots.EpochStart(helpers.BellatrixE2EForkEpoch)
@@ -76,7 +76,7 @@ func builderActive(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) err
 	if lowestBound == currEpoch {
 		return nil
 	}
-	blockCtrs, err = beaconClient.ListBeaconBlocks(context.Background(), &zondpb.ListBlocksRequest{QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: currEpoch}})
+	blockCtrs, err = beaconClient.ListBeaconBlocks(context.Background(), &qrysmpb.ListBlocksRequest{QueryFilter: &qrysmpb.ListBlocksRequest_Epoch{Epoch: currEpoch}})
 	if err != nil {
 		return errors.Wrap(err, "failed to get validator participation")
 	}
@@ -85,7 +85,7 @@ func builderActive(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) err
 		if err != nil {
 			return errors.Wrapf(err, "block type doesn't exist for block at epoch %d", lowestBound)
 		}
-		if b.IsNil() {
+		if b == nil || b.IsNil() {
 			return errors.New("nil block provided")
 		}
 		// forkStartSlot, err := slots.EpochStart(helpers.BellatrixE2EForkEpoch)

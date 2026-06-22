@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "http",
     srcs = [
         "error.go",
         "reader.go",
@@ -10,14 +10,14 @@ go_library(
     importpath = "github.com/theQRL/qrysm/network/http",
     visibility = ["//visibility:public"],
     deps = [
-        "//api:go_default_library",
-        "@com_github_sirupsen_logrus//:go_default_library",
+        "//api",
+        "@com_github_sirupsen_logrus//:logrus",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "http_test",
     srcs = ["reader_test.go"],
-    embed = [":go_default_library"],
-    deps = ["//testing/assert:go_default_library"],
+    embed = [":http"],
+    deps = ["//testing/assert"],
 )

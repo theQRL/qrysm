@@ -9,18 +9,18 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/FuzzyVM/filler"
-	"github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/go-zond/zondclient"
+	"github.com/theQRL/go-qrl/accounts/keystore"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrl/qrlclient"
+	"github.com/theQRL/go-qrl/rpc"
 	"github.com/theQRL/qrysm/config/params"
-	"github.com/theQRL/qrysm/crypto/keystore"
 	"github.com/theQRL/qrysm/crypto/rand"
-	"github.com/theQRL/qrysm/encoding/bytesutil"
+	"github.com/theQRL/qrysm/pkg/FuzzyVM/filler"
+	txfuzz "github.com/theQRL/qrysm/pkg/tx-fuzz"
 	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
-	txfuzz "github.com/theQRL/tx-fuzz"
+
 	"golang.org/x/sync/errgroup"
 )
 
@@ -31,6 +31,8 @@ type TransactionGenerator struct {
 	cancel   context.CancelFunc
 }
 
+const transactionGeneratorBatchSize = 250
+
 func NewTransactionGenerator(keystore string, seed int64) *TransactionGenerator {
 	return &TransactionGenerator{keystore: keystore, seed: seed}
 }
@@ -40,7 +42,7 @@ func (t *TransactionGenerator) Start(ctx context.Context) error {
 	ctx, ccl := context.WithCancel(ctx)
 	t.cancel = ccl
 
-	client, err := rpc.Dial(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.GzondExecutionNodeRPCPort))
+	client, err := rpc.Dial(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.GqrlExecutionNodeRPCPort))
 	if err != nil {
 		return err
 	}
@@ -73,22 +75,23 @@ func (t *TransactionGenerator) Start(ctx context.Context) error {
 	// Broadcast Transactions every 3 blocks
 	txPeriod := time.Duration(params.BeaconConfig().SecondsPerSlot) * time.Second
 	ticker := time.NewTicker(txPeriod)
+	defer ticker.Stop()
 	gasFeeCap := big.NewInt(1e11)
 	gasTipCap := big.NewInt(3e7)
-	key, err := dilithium.NewDilithiumFromSeed(bytesutil.ToBytes48(testKey.SecretKey.Marshal()))
-	if err != nil {
-		return fmt.Errorf("failed to generate the deposit key from the signing seed. reason: %v", err)
-	}
-	addr := common.Address(key.GetAddress())
+	wallet := testKey.Wallet
+	addr := common.Address(wallet.GetAddress())
 
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			err := SendTransaction(client, key, f, gasFeeCap, gasTipCap, addr.String(), 1000, false)
+			err := SendTransaction(ctx, client, wallet, f, gasFeeCap, gasTipCap, addr.String(), transactionGeneratorBatchSize, false)
 			if err != nil {
-				return err
+				if ctx.Err() != nil {
+					return nil
+				}
+				logrus.WithError(err).Warn("Transaction generator batch failed")
 			}
 		}
 	}
@@ -99,29 +102,29 @@ func (s *TransactionGenerator) Started() <-chan struct{} {
 	return s.started
 }
 
-func SendTransaction(client *rpc.Client, key *dilithium.Dilithium, f *filler.Filler, gasFeeCap *big.Int, gasTipCap *big.Int, addr string, N uint64, al bool) error {
-	backend := zondclient.NewClient(client)
+func SendTransaction(ctx context.Context, client *rpc.Client, wallet wallet.Wallet, f *filler.Filler, gasFeeCap *big.Int, gasTipCap *big.Int, addr string, N uint64, al bool) error {
+	backend := qrlclient.NewClient(client)
 
 	sender, err := common.NewAddressFromString(addr)
 	if err != nil {
 		return err
 	}
-	chainid, err := backend.ChainID(context.Background())
+	chainid, err := backend.ChainID(ctx)
 	if err != nil {
 		return err
 	}
-	nonce, err := backend.PendingNonceAt(context.Background(), sender)
+	nonce, err := backend.PendingNonceAt(ctx, sender)
 	if err != nil {
 		return err
 	}
-	expectedGasFeeCap, err := backend.SuggestGasPrice(context.Background())
+	expectedGasFeeCap, err := backend.SuggestGasPrice(ctx)
 	if err != nil {
 		return err
 	}
 	if expectedGasFeeCap.Cmp(gasFeeCap) > 0 {
 		gasFeeCap = expectedGasFeeCap
 	}
-	expectedGasTipCap, err := backend.SuggestGasTipCap(context.Background())
+	expectedGasTipCap, err := backend.SuggestGasTipCap(ctx)
 	if err != nil {
 		return err
 	}
@@ -129,8 +132,8 @@ func SendTransaction(client *rpc.Client, key *dilithium.Dilithium, f *filler.Fil
 		gasTipCap = expectedGasTipCap
 	}
 
-	g, _ := errgroup.WithContext(context.Background())
-	for i := uint64(0); i < N; i++ {
+	g, ctx := errgroup.WithContext(ctx)
+	for i := range N {
 		index := i
 		g.Go(func() error {
 			tx, err := txfuzz.RandomValidTx(client, f, sender, nonce+index, gasFeeCap, gasTipCap, nil, al)
@@ -140,14 +143,14 @@ func SendTransaction(client *rpc.Client, key *dilithium.Dilithium, f *filler.Fil
 				//nolint:nilerr
 				return nil
 			}
-			signedTx, err := types.SignTx(tx, types.NewShanghaiSigner(chainid), key)
+			signedTx, err := types.SignTx(tx, types.NewZondSigner(chainid), wallet)
 			if err != nil {
 				// We continue on in the event there is a reason we can't sign this
 				// transaction(unlikely).
 				//nolint:nilerr
 				return nil
 			}
-			err = backend.SendTransaction(context.Background(), signedTx)
+			err = backend.SendTransaction(ctx, signedTx)
 			if err != nil {
 				// We continue on if the constructed transaction is invalid
 				// and can't be submitted on chain.

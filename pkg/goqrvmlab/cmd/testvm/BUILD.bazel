@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@qrysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "testvm_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/theQRL/qrysm/pkg/goqrvmlab/cmd/testvm",
+    visibility = ["//visibility:private"],
+)
+
+go_binary(
+    name = "testvm",
+    embed = [":testvm_lib"],
+    visibility = ["//visibility:public"],
+)

@@ -11,11 +11,14 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/theQRL/qrysm/time/slots"
 	"google.golang.org/protobuf/proto"
 )
+
+// ErrCouldNotVerifyBlockHeader is returned when a block header's signature cannot be verified.
+var ErrCouldNotVerifyBlockHeader = errors.New("could not verify beacon block header")
 
 type slashValidatorFunc func(ctx context.Context, st state.BeaconState, vid primitives.ValidatorIndex, penaltyQuotient, proposerRewardQuotient uint64) (state.BeaconState, error)
 
@@ -48,7 +51,7 @@ type slashValidatorFunc func(ctx context.Context, st state.BeaconState, vid prim
 func ProcessProposerSlashings(
 	ctx context.Context,
 	beaconState state.BeaconState,
-	slashings []*zondpb.ProposerSlashing,
+	slashings []*qrysmpb.ProposerSlashing,
 	slashFunc slashValidatorFunc,
 ) (state.BeaconState, error) {
 	var err error
@@ -61,29 +64,71 @@ func ProcessProposerSlashings(
 	return beaconState, nil
 }
 
+// ProcessProposerSlashingsNoVerify processes proposer slashings without verifying them.
+// This is useful in scenarios such as block reward calculation, where we can assume the data
+// in the block is valid.
+func ProcessProposerSlashingsNoVerify(
+	ctx context.Context,
+	beaconState state.BeaconState,
+	slashings []*qrysmpb.ProposerSlashing,
+	slashFunc slashValidatorFunc,
+) (state.BeaconState, error) {
+	var err error
+	for _, slashing := range slashings {
+		beaconState, err = ProcessProposerSlashingNoVerify(ctx, beaconState, slashing, slashFunc)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return beaconState, nil
+}
+
 // ProcessProposerSlashing processes individual proposer slashing.
 func ProcessProposerSlashing(
 	ctx context.Context,
 	beaconState state.BeaconState,
-	slashing *zondpb.ProposerSlashing,
+	slashing *qrysmpb.ProposerSlashing,
 	slashFunc slashValidatorFunc,
 ) (state.BeaconState, error) {
-	var err error
 	if slashing == nil {
 		return nil, errors.New("nil proposer slashings in block body")
 	}
-	if err = VerifyProposerSlashing(beaconState, slashing); err != nil {
+	if err := VerifyProposerSlashing(beaconState, slashing); err != nil {
 		return nil, errors.Wrap(err, "could not verify proposer slashing")
 	}
+	return processProposerSlashing(ctx, beaconState, slashing, slashFunc)
+}
+
+// ProcessProposerSlashingNoVerify processes individual proposer slashing without verifying it.
+// This is useful in scenarios such as block reward calculation, where we can assume the data
+// in the block is valid.
+func ProcessProposerSlashingNoVerify(
+	ctx context.Context,
+	beaconState state.BeaconState,
+	slashing *qrysmpb.ProposerSlashing,
+	slashFunc slashValidatorFunc,
+) (state.BeaconState, error) {
+	if slashing == nil {
+		return nil, errors.New("nil proposer slashings in block body")
+	}
+	return processProposerSlashing(ctx, beaconState, slashing, slashFunc)
+}
+
+func processProposerSlashing(
+	ctx context.Context,
+	beaconState state.BeaconState,
+	slashing *qrysmpb.ProposerSlashing,
+	slashFunc slashValidatorFunc,
+) (state.BeaconState, error) {
 	cfg := params.BeaconConfig()
 	var slashingQuotient uint64
 	switch {
-	case beaconState.Version() == version.Capella:
+	case beaconState.Version() == version.Zond:
 		slashingQuotient = cfg.MinSlashingPenaltyQuotient
 	default:
 		return nil, errors.New("unknown state version")
 	}
-	beaconState, err = slashFunc(ctx, beaconState, slashing.Header_1.Header.ProposerIndex, slashingQuotient, cfg.ProposerRewardQuotient)
+	beaconState, err := slashFunc(ctx, beaconState, slashing.Header_1.Header.ProposerIndex, slashingQuotient, cfg.ProposerRewardQuotient)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not slash proposer index %d", slashing.Header_1.Header.ProposerIndex)
 	}
@@ -93,7 +138,7 @@ func ProcessProposerSlashing(
 // VerifyProposerSlashing verifies that the data provided from slashing is valid.
 func VerifyProposerSlashing(
 	beaconState state.ReadOnlyBeaconState,
-	slashing *zondpb.ProposerSlashing,
+	slashing *qrysmpb.ProposerSlashing,
 ) error {
 	if slashing.Header_1 == nil || slashing.Header_1.Header == nil || slashing.Header_2 == nil || slashing.Header_2.Header == nil {
 		return errors.New("nil header cannot be verified")
@@ -116,11 +161,11 @@ func VerifyProposerSlashing(
 	if !helpers.IsSlashableValidatorUsingTrie(proposer, time.CurrentEpoch(beaconState)) {
 		return fmt.Errorf("validator with key %#x is not slashable", proposer.PublicKey())
 	}
-	headers := []*zondpb.SignedBeaconBlockHeader{slashing.Header_1, slashing.Header_2}
+	headers := []*qrysmpb.SignedBeaconBlockHeader{slashing.Header_1, slashing.Header_2}
 	for _, header := range headers {
 		if err := signing.ComputeDomainVerifySigningRoot(beaconState, pIdx, slots.ToEpoch(hSlot),
 			header.Header, params.BeaconConfig().DomainBeaconProposer, header.Signature); err != nil {
-			return errors.Wrap(err, "could not verify beacon block header")
+			return errors.Wrap(ErrCouldNotVerifyBlockHeader, err.Error())
 		}
 	}
 	return nil

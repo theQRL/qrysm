@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 var (
@@ -71,15 +71,15 @@ var (
 	}, []string{"state"})
 	validatorsBalance = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "validators_total_balance",
-		Help: "The total balance of validators, in GWei",
+		Help: "The total balance of validators, in Shor",
 	}, []string{"state"})
 	validatorsEffectiveBalance = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "validators_total_effective_balance",
-		Help: "The total effective balance of validators, in GWei",
+		Help: "The total effective balance of validators, in Shor",
 	}, []string{"state"})
-	currentEth1DataDepositCount = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "current_eth1_data_deposit_count",
-		Help: "The current eth1 deposit count in the last processed state eth1data field.",
+	currentExecutionDataDepositCount = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "current_execution_data_deposit_count",
+		Help: "The current execution deposit count in the last processed state executionData field.",
 	})
 	processedDepositsCount = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "beacon_processed_deposits_total",
@@ -90,20 +90,20 @@ var (
 		Help: "The number of states a particular field is shared with.",
 	}, []string{"state"})
 	prevEpochActiveBalances = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "beacon_prev_epoch_active_gwei",
-		Help: "The total amount of ether, in gwei, that was active for voting of previous epoch",
+		Name: "beacon_prev_epoch_active_shor",
+		Help: "The total amount of quanta, in shor, that was active for voting of previous epoch",
 	})
 	prevEpochSourceBalances = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "beacon_prev_epoch_source_gwei",
-		Help: "The total amount of ether, in gwei, that has been used in voting attestation source of previous epoch",
+		Name: "beacon_prev_epoch_source_shor",
+		Help: "The total amount of quanta, in shor, that has been used in voting attestation source of previous epoch",
 	})
 	prevEpochTargetBalances = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "beacon_prev_epoch_target_gwei",
-		Help: "The total amount of ether, in gwei, that has been used in voting attestation target of previous epoch",
+		Name: "beacon_prev_epoch_target_shor",
+		Help: "The total amount of quanta, in shor, that has been used in voting attestation target of previous epoch",
 	})
 	prevEpochHeadBalances = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "beacon_prev_epoch_head_gwei",
-		Help: "The total amount of ether, in gwei, that has been used in voting attestation head of previous epoch",
+		Name: "beacon_prev_epoch_head_shor",
+		Help: "The total amount of quanta, in shor, that has been used in voting attestation head of previous epoch",
 	})
 	reorgCount = promauto.NewCounter(prometheus.CounterOpts{
 		Name: "beacon_reorgs_total",
@@ -218,7 +218,7 @@ var (
 )
 
 // reportSlotMetrics reports slot related metrics.
-func reportSlotMetrics(stateSlot, headSlot, clockSlot primitives.Slot, finalizedCheckpoint *zondpb.Checkpoint) {
+func reportSlotMetrics(stateSlot, headSlot, clockSlot primitives.Slot, finalizedCheckpoint *qrysmpb.Checkpoint) {
 	clockTimeSlot.Set(float64(clockSlot))
 	beaconSlot.Set(float64(stateSlot))
 	beaconHeadSlot.Set(float64(headSlot))
@@ -318,8 +318,8 @@ func reportEpochMetrics(ctx context.Context, postState, headState state.BeaconSt
 	// Last finalized slot
 	beaconFinalizedEpoch.Set(float64(postState.FinalizedCheckpointEpoch()))
 	beaconFinalizedRoot.Set(float64(bytesutil.ToLowInt64(postState.FinalizedCheckpoint().Root)))
-	currentEth1DataDepositCount.Set(float64(postState.Eth1Data().DepositCount))
-	processedDepositsCount.Set(float64(postState.Eth1DepositIndex() + 1))
+	currentExecutionDataDepositCount.Set(float64(postState.ExecutionData().DepositCount))
+	processedDepositsCount.Set(float64(postState.ExecutionDepositIndex() + 1))
 
 	var b *precompute.Balance
 	var v []*precompute.Validator

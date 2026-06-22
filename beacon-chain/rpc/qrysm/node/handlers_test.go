@@ -12,8 +12,8 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	libp2ptest "github.com/libp2p/go-libp2p/p2p/host/peerstore/test"
 	ma "github.com/multiformats/go-multiaddr"
-	"github.com/theQRL/go-zond/p2p/enode"
-	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 	"github.com/theQRL/qrysm/beacon-chain/p2p"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
 	mockp2p "github.com/theQRL/qrysm/beacon-chain/p2p/testing"
@@ -22,10 +22,10 @@ import (
 	"github.com/theQRL/qrysm/testing/require"
 )
 
-type testIdentity enode.ID
+type testIdentity qnode.ID
 
-func (_ testIdentity) Verify(_ *enr.Record, _ []byte) error { return nil }
-func (id testIdentity) NodeAddr(_ *enr.Record) []byte       { return id[:] }
+func (_ testIdentity) Verify(_ *qnr.Record, _ []byte) error { return nil }
+func (id testIdentity) NodeAddr(_ *qnr.Record) []byte       { return id[:] }
 
 func TestListTrustedPeer(t *testing.T) {
 	ids := libp2ptest.GeneratePeerIDs(9)
@@ -41,11 +41,11 @@ func TestListTrustedPeer(t *testing.T) {
 			peerStatus.Add(nil, id, p2pMultiAddr, corenet.DirUnknown)
 			continue
 		}
-		enrRecord := &enr.Record{}
-		err := enrRecord.SetSig(testIdentity{1}, []byte{42})
+		qnrRecord := &qnr.Record{}
+		err := qnrRecord.SetSig(testIdentity{1}, []byte{42})
 		require.NoError(t, err)
-		enrRecord.Set(enr.IPv4{127, 0, 0, byte(i)})
-		err = enrRecord.SetSig(testIdentity{}, []byte{})
+		qnrRecord.Set(qnr.IPv4{127, 0, 0, byte(i)})
+		err = qnrRecord.SetSig(testIdentity{}, []byte{})
 		require.NoError(t, err)
 		var p2pAddr = "/ip4/127.0.0." + strconv.Itoa(i) + "/udp/12000/p2p/16Uiu2HAm7yD5fhhw1Kihg5pffaGbvKV3k7sqxRGHMZzkb7u9UUxQ"
 		p2pMultiAddr, err := ma.NewMultiaddr(p2pAddr)
@@ -57,7 +57,7 @@ func TestListTrustedPeer(t *testing.T) {
 		} else {
 			direction = corenet.DirOutbound
 		}
-		peerStatus.Add(enrRecord, id, p2pMultiAddr, direction)
+		peerStatus.Add(qnrRecord, id, p2pMultiAddr, direction)
 
 		switch i {
 		case 0, 1:
@@ -90,21 +90,21 @@ func TestListTrustedPeer(t *testing.T) {
 		// assert number of trusted peer is right
 		assert.Equal(t, 9, len(peers))
 
-		for i := 0; i < 9; i++ {
+		for i := range 9 {
 			pid, err := peer.Decode(peers[i].PeerID)
 			require.NoError(t, err)
 			if pid == ids[8] {
-				assert.Equal(t, "", peers[i].Enr)
+				assert.Equal(t, "", peers[i].Qnr)
 				assert.Equal(t, "", peers[i].LastSeenP2PAddress)
 				assert.Equal(t, "DISCONNECTED", peers[i].State)
 				assert.Equal(t, "UNKNOWN", peers[i].Direction)
 				continue
 			}
-			expectedEnr, err := peerStatus.ENR(pid)
+			expectedQnr, err := peerStatus.QNR(pid)
 			require.NoError(t, err)
-			serializeENR, err := p2p.SerializeENR(expectedEnr)
+			serializeQNR, err := p2p.SerializeQNR(expectedQnr)
 			require.NoError(t, err)
-			assert.Equal(t, "enr:"+serializeENR, peers[i].Enr)
+			assert.Equal(t, "qnr:"+serializeQNR, peers[i].Qnr)
 			expectedP2PAddr, err := peerStatus.Address(pid)
 			require.NoError(t, err)
 			assert.Equal(t, expectedP2PAddr.String(), peers[i].LastSeenP2PAddress)

@@ -13,29 +13,29 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // NewGenesisBlock returns the canonical, genesis block for the beacon chain protocol.
-func NewGenesisBlock(stateRoot []byte) *zondpb.SignedBeaconBlockCapella {
+func NewGenesisBlock(stateRoot []byte) *qrysmpb.SignedBeaconBlockZond {
 	zeroHash := params.BeaconConfig().ZeroHash[:]
-	block := &zondpb.SignedBeaconBlockCapella{
-		Block: &zondpb.BeaconBlockCapella{
+	block := &qrysmpb.SignedBeaconBlockZond{
+		Block: &qrysmpb.BeaconBlockZond{
 			ParentRoot: zeroHash,
 			StateRoot:  bytesutil.PadTo(stateRoot, 32),
-			Body: &zondpb.BeaconBlockBodyCapella{
-				RandaoReveal: make([]byte, fieldparams.DilithiumSignatureLength),
-				Eth1Data: &zondpb.Eth1Data{
+			Body: &qrysmpb.BeaconBlockBodyZond{
+				RandaoReveal: make([]byte, fieldparams.MLDSA87SignatureLength),
+				ExecutionData: &qrysmpb.ExecutionData{
 					DepositRoot: make([]byte, 32),
 					BlockHash:   make([]byte, 32),
 				},
 				Graffiti: make([]byte, 32),
-				SyncAggregate: &zondpb.SyncAggregate{
+				SyncAggregate: &qrysmpb.SyncAggregate{
 					SyncCommitteeBits: make([]byte, fieldparams.SyncCommitteeLength/8),
 				},
-				ExecutionPayload: &enginev1.ExecutionPayloadCapella{
+				ExecutionPayload: &enginev1.ExecutionPayloadZond{
 					ParentHash:    make([]byte, 32),
-					FeeRecipient:  make([]byte, 20),
+					FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 					StateRoot:     make([]byte, 32),
 					ReceiptsRoot:  make([]byte, 32),
 					LogsBloom:     make([]byte, 256),
@@ -45,7 +45,7 @@ func NewGenesisBlock(stateRoot []byte) *zondpb.SignedBeaconBlockCapella {
 				},
 			},
 		},
-		Signature: params.BeaconConfig().EmptyDilithiumSignature[:],
+		Signature: params.BeaconConfig().EmptyMLDSA87Signature[:],
 	}
 	return block
 }
@@ -59,25 +59,25 @@ func NewGenesisBlockForState(ctx context.Context, st state.BeaconState) (interfa
 	}
 	ps := st.ToProto()
 	switch ps.(type) {
-	case *zondpb.BeaconStateCapella:
-		return blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockCapella{
-			Block: &zondpb.BeaconBlockCapella{
+	case *qrysmpb.BeaconStateZond:
+		return blocks.NewSignedBeaconBlock(&qrysmpb.SignedBeaconBlockZond{
+			Block: &qrysmpb.BeaconBlockZond{
 				ParentRoot: params.BeaconConfig().ZeroHash[:],
 				StateRoot:  root[:],
-				Body: &zondpb.BeaconBlockBodyCapella{
-					RandaoReveal: make([]byte, fieldparams.DilithiumSignatureLength),
-					Eth1Data: &zondpb.Eth1Data{
+				Body: &qrysmpb.BeaconBlockBodyZond{
+					RandaoReveal: make([]byte, fieldparams.MLDSA87SignatureLength),
+					ExecutionData: &qrysmpb.ExecutionData{
 						DepositRoot: make([]byte, 32),
 						BlockHash:   make([]byte, 32),
 					},
 					Graffiti: make([]byte, 32),
-					SyncAggregate: &zondpb.SyncAggregate{
+					SyncAggregate: &qrysmpb.SyncAggregate{
 						SyncCommitteeBits:       make([]byte, fieldparams.SyncCommitteeLength/8),
 						SyncCommitteeSignatures: [][]byte{},
 					},
-					ExecutionPayload: &enginev1.ExecutionPayloadCapella{
+					ExecutionPayload: &enginev1.ExecutionPayloadZond{
 						ParentHash:    make([]byte, 32),
-						FeeRecipient:  make([]byte, 20),
+						FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 						StateRoot:     make([]byte, 32),
 						ReceiptsRoot:  make([]byte, 32),
 						LogsBloom:     make([]byte, 256),
@@ -89,7 +89,7 @@ func NewGenesisBlockForState(ctx context.Context, st state.BeaconState) (interfa
 					},
 				},
 			},
-			Signature: params.BeaconConfig().EmptyDilithiumSignature[:],
+			Signature: params.BeaconConfig().EmptyMLDSA87Signature[:],
 		})
 	default:
 		return nil, ErrUnrecognizedState

@@ -5,7 +5,7 @@ import (
 	consensus_types "github.com/theQRL/qrysm/consensus-types"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 )
 
@@ -28,13 +28,13 @@ type Bid interface {
 	HashTreeRootWith(hh *ssz.Hasher) error
 }
 
-type signedBuilderBidCapella struct {
-	p *zondpb.SignedBuilderBidCapella
+type signedBuilderBidZond struct {
+	p *qrysmpb.SignedBuilderBidZond
 }
 
-// WrappedSignedBuilderBidCapella is a constructor which wraps a protobuf signed bit into an interface.
-func WrappedSignedBuilderBidCapella(p *zondpb.SignedBuilderBidCapella) (SignedBid, error) {
-	w := signedBuilderBidCapella{p: p}
+// WrappedSignedBuilderBidZond is a constructor which wraps a protobuf signed bit into an interface.
+func WrappedSignedBuilderBidZond(p *qrysmpb.SignedBuilderBidZond) (SignedBid, error) {
+	w := signedBuilderBidZond{p: p}
 	if w.IsNil() {
 		return nil, consensus_types.ErrNilObjectWrapped
 	}
@@ -42,32 +42,32 @@ func WrappedSignedBuilderBidCapella(p *zondpb.SignedBuilderBidCapella) (SignedBi
 }
 
 // Message --
-func (b signedBuilderBidCapella) Message() (Bid, error) {
-	return WrappedBuilderBidCapella(b.p.Message)
+func (b signedBuilderBidZond) Message() (Bid, error) {
+	return WrappedBuilderBidZond(b.p.Message)
 }
 
 // Signature --
-func (b signedBuilderBidCapella) Signature() []byte {
+func (b signedBuilderBidZond) Signature() []byte {
 	return b.p.Signature
 }
 
 // Version --
-func (b signedBuilderBidCapella) Version() int {
-	return version.Capella
+func (b signedBuilderBidZond) Version() int {
+	return version.Zond
 }
 
 // IsNil --
-func (b signedBuilderBidCapella) IsNil() bool {
+func (b signedBuilderBidZond) IsNil() bool {
 	return b.p == nil
 }
 
-type builderBidCapella struct {
-	p *zondpb.BuilderBidCapella
+type builderBidZond struct {
+	p *qrysmpb.BuilderBidZond
 }
 
-// WrappedBuilderBidCapella is a constructor which wraps a protobuf bid into an interface.
-func WrappedBuilderBidCapella(p *zondpb.BuilderBidCapella) (Bid, error) {
-	w := builderBidCapella{p: p}
+// WrappedBuilderBidZond is a constructor which wraps a protobuf bid into an interface.
+func WrappedBuilderBidZond(p *qrysmpb.BuilderBidZond) (Bid, error) {
+	w := builderBidZond{p: p}
 	if w.IsNil() {
 		return nil, consensus_types.ErrNilObjectWrapped
 	}
@@ -75,37 +75,37 @@ func WrappedBuilderBidCapella(p *zondpb.BuilderBidCapella) (Bid, error) {
 }
 
 // Header returns the execution data interface.
-func (b builderBidCapella) Header() (interfaces.ExecutionData, error) {
+func (b builderBidZond) Header() (interfaces.ExecutionData, error) {
 	// We have to convert big endian to little endian because the value is coming from the execution layer.
-	return blocks.WrappedExecutionPayloadHeaderCapella(b.p.Header, blocks.PayloadValueToGwei(b.p.Value))
+	return blocks.WrappedExecutionPayloadHeaderZond(b.p.Header, blocks.PayloadValueToShor(b.p.Value))
 }
 
 // Version --
-func (b builderBidCapella) Version() int {
-	return version.Capella
+func (b builderBidZond) Version() int {
+	return version.Zond
 }
 
 // Value --
-func (b builderBidCapella) Value() []byte {
+func (b builderBidZond) Value() []byte {
 	return b.p.Value
 }
 
 // Pubkey --
-func (b builderBidCapella) Pubkey() []byte {
+func (b builderBidZond) Pubkey() []byte {
 	return b.p.Pubkey
 }
 
 // IsNil --
-func (b builderBidCapella) IsNil() bool {
+func (b builderBidZond) IsNil() bool {
 	return b.p == nil
 }
 
 // HashTreeRoot --
-func (b builderBidCapella) HashTreeRoot() ([32]byte, error) {
+func (b builderBidZond) HashTreeRoot() ([32]byte, error) {
 	return b.p.HashTreeRoot()
 }
 
 // HashTreeRootWith --
-func (b builderBidCapella) HashTreeRootWith(hh *ssz.Hasher) error {
+func (b builderBidZond) HashTreeRootWith(hh *ssz.Hasher) error {
 	return b.p.HashTreeRootWith(hh)
 }

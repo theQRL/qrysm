@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
 	"github.com/theQRL/qrysm/config/features"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	attaggregation "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation/attestations"
 	"go.opencensus.io/trace"
 )
@@ -29,11 +29,11 @@ func (c *AttCaches) AggregateUnaggregatedAttestations(ctx context.Context) error
 	return c.aggregateUnaggregatedAtts(ctx, unaggregatedAtts)
 }
 
-func (c *AttCaches) aggregateUnaggregatedAtts(ctx context.Context, unaggregatedAtts []*zondpb.Attestation) error {
+func (c *AttCaches) aggregateUnaggregatedAtts(ctx context.Context, unaggregatedAtts []*qrysmpb.Attestation) error {
 	_, span := trace.StartSpan(ctx, "operations.attestations.kv.aggregateUnaggregatedAtts")
 	defer span.End()
 
-	attsByDataRoot := make(map[[32]byte][]*zondpb.Attestation, len(unaggregatedAtts))
+	attsByDataRoot := make(map[[32]byte][]*qrysmpb.Attestation, len(unaggregatedAtts))
 	for _, att := range unaggregatedAtts {
 		attDataRoot, err := att.Data.HashTreeRoot()
 		if err != nil {
@@ -58,7 +58,7 @@ func (c *AttCaches) aggregateUnaggregatedAtts(ctx context.Context, unaggregatedA
 				return errors.New("could not aggregate unaggregated attestations")
 			}
 			if helpers.IsAggregated(aggregated) {
-				if err := c.SaveAggregatedAttestations([]*zondpb.Attestation{aggregated}); err != nil {
+				if err := c.SaveAggregatedAttestations([]*qrysmpb.Attestation{aggregated}); err != nil {
 					return err
 				}
 			} else {
@@ -90,35 +90,35 @@ func (c *AttCaches) aggregateUnaggregatedAtts(ctx context.Context, unaggregatedA
 // aggregateParallel aggregates attestations in parallel for `atts` and saves them in the pool,
 // returns the unaggregated attestations that weren't able to aggregate.
 // Given `n` CPU cores, it creates a channel of size `n` and spawns `n` goroutines to aggregate attestations
-func (c *AttCaches) aggregateParallel(atts map[[32]byte][]*zondpb.Attestation, leftOver map[[32]byte]bool) map[[32]byte]bool {
+func (c *AttCaches) aggregateParallel(atts map[[32]byte][]*qrysmpb.Attestation, leftOver map[[32]byte]bool) map[[32]byte]bool {
 	var leftoverLock sync.Mutex
 	wg := sync.WaitGroup{}
 
 	n := runtime.GOMAXPROCS(0) // defaults to the value of runtime.NumCPU
-	ch := make(chan []*zondpb.Attestation, n)
+	ch := make(chan []*qrysmpb.Attestation, n)
 	wg.Add(n)
-	for i := 0; i < n; i++ {
+	for range n {
 		go func() {
 			defer wg.Done()
 			for as := range ch {
 				aggregated, err := attaggregation.AggregateDisjointOneBitAtts(as)
 				if err != nil {
-					log.WithError(err).Error("could not aggregate unaggregated attestations")
+					log.WithError(err).Error("Could not aggregate unaggregated attestations")
 					continue
 				}
 				if aggregated == nil {
-					log.Error("nil aggregated attestation")
+					log.Error("Nil aggregated attestation")
 					continue
 				}
 				if helpers.IsAggregated(aggregated) {
-					if err := c.SaveAggregatedAttestations([]*zondpb.Attestation{aggregated}); err != nil {
-						log.WithError(err).Error("could not save aggregated attestation")
+					if err := c.SaveAggregatedAttestations([]*qrysmpb.Attestation{aggregated}); err != nil {
+						log.WithError(err).Error("Could not save aggregated attestation")
 						continue
 					}
 				} else {
 					h, err := hashFn(aggregated)
 					if err != nil {
-						log.WithError(err).Error("could not hash attestation")
+						log.WithError(err).Error("Could not hash attestation")
 						continue
 					}
 					leftoverLock.Lock()
@@ -140,7 +140,7 @@ func (c *AttCaches) aggregateParallel(atts map[[32]byte][]*zondpb.Attestation, l
 }
 
 // SaveAggregatedAttestation saves an aggregated attestation in cache.
-func (c *AttCaches) SaveAggregatedAttestation(att *zondpb.Attestation) error {
+func (c *AttCaches) SaveAggregatedAttestation(att *qrysmpb.Attestation) error {
 	if err := helpers.ValidateNilAttestation(att); err != nil {
 		return err
 	}
@@ -167,12 +167,12 @@ func (c *AttCaches) SaveAggregatedAttestation(att *zondpb.Attestation) error {
 	if err != nil {
 		return errors.Wrap(err, "could not tree hash attestation")
 	}
-	copiedAtt := zondpb.CopyAttestation(att)
+	copiedAtt := qrysmpb.CopyAttestation(att)
 	c.aggregatedAttLock.Lock()
 	defer c.aggregatedAttLock.Unlock()
 	atts, ok := c.aggregatedAtt[r]
 	if !ok {
-		atts := []*zondpb.Attestation{copiedAtt}
+		atts := []*qrysmpb.Attestation{copiedAtt}
 		c.aggregatedAtt[r] = atts
 		return nil
 	}
@@ -187,7 +187,7 @@ func (c *AttCaches) SaveAggregatedAttestation(att *zondpb.Attestation) error {
 }
 
 // SaveAggregatedAttestations saves a list of aggregated attestations in cache.
-func (c *AttCaches) SaveAggregatedAttestations(atts []*zondpb.Attestation) error {
+func (c *AttCaches) SaveAggregatedAttestations(atts []*qrysmpb.Attestation) error {
 	for _, att := range atts {
 		if err := c.SaveAggregatedAttestation(att); err != nil {
 			log.WithError(err).Debug("Could not save aggregated attestation")
@@ -200,11 +200,11 @@ func (c *AttCaches) SaveAggregatedAttestations(atts []*zondpb.Attestation) error
 }
 
 // AggregatedAttestations returns the aggregated attestations in cache.
-func (c *AttCaches) AggregatedAttestations() []*zondpb.Attestation {
+func (c *AttCaches) AggregatedAttestations() []*qrysmpb.Attestation {
 	c.aggregatedAttLock.RLock()
 	defer c.aggregatedAttLock.RUnlock()
 
-	atts := make([]*zondpb.Attestation, 0)
+	atts := make([]*qrysmpb.Attestation, 0)
 
 	for _, a := range c.aggregatedAtt {
 		atts = append(atts, a...)
@@ -215,11 +215,11 @@ func (c *AttCaches) AggregatedAttestations() []*zondpb.Attestation {
 
 // AggregatedAttestationsBySlotIndex returns the aggregated attestations in cache,
 // filtered by committee index and slot.
-func (c *AttCaches) AggregatedAttestationsBySlotIndex(ctx context.Context, slot primitives.Slot, committeeIndex primitives.CommitteeIndex) []*zondpb.Attestation {
+func (c *AttCaches) AggregatedAttestationsBySlotIndex(ctx context.Context, slot primitives.Slot, committeeIndex primitives.CommitteeIndex) []*qrysmpb.Attestation {
 	_, span := trace.StartSpan(ctx, "operations.attestations.kv.AggregatedAttestationsBySlotIndex")
 	defer span.End()
 
-	atts := make([]*zondpb.Attestation, 0)
+	atts := make([]*qrysmpb.Attestation, 0)
 
 	c.aggregatedAttLock.RLock()
 	defer c.aggregatedAttLock.RUnlock()
@@ -233,7 +233,7 @@ func (c *AttCaches) AggregatedAttestationsBySlotIndex(ctx context.Context, slot 
 }
 
 // DeleteAggregatedAttestation deletes the aggregated attestations in cache.
-func (c *AttCaches) DeleteAggregatedAttestation(att *zondpb.Attestation) error {
+func (c *AttCaches) DeleteAggregatedAttestation(att *qrysmpb.Attestation) error {
 	if err := helpers.ValidateNilAttestation(att); err != nil {
 		return err
 	}
@@ -248,6 +248,9 @@ func (c *AttCaches) DeleteAggregatedAttestation(att *zondpb.Attestation) error {
 	if err := c.insertSeenBit(att); err != nil {
 		return err
 	}
+	if err := c.insertSeenAggregatedBit(att); err != nil {
+		return err
+	}
 
 	c.aggregatedAttLock.Lock()
 	defer c.aggregatedAttLock.Unlock()
@@ -256,7 +259,7 @@ func (c *AttCaches) DeleteAggregatedAttestation(att *zondpb.Attestation) error {
 		return nil
 	}
 
-	filtered := make([]*zondpb.Attestation, 0)
+	filtered := make([]*qrysmpb.Attestation, 0)
 	for _, a := range attList {
 		if c, err := att.AggregationBits.Contains(a.AggregationBits); err != nil {
 			return err
@@ -274,7 +277,7 @@ func (c *AttCaches) DeleteAggregatedAttestation(att *zondpb.Attestation) error {
 }
 
 // HasAggregatedAttestation checks if the input attestations has already existed in cache.
-func (c *AttCaches) HasAggregatedAttestation(att *zondpb.Attestation) (bool, error) {
+func (c *AttCaches) HasAggregatedAttestation(att *qrysmpb.Attestation) (bool, error) {
 	if err := helpers.ValidateNilAttestation(att); err != nil {
 		return false, err
 	}
@@ -305,6 +308,14 @@ func (c *AttCaches) HasAggregatedAttestation(att *zondpb.Attestation) (bool, err
 				return true, nil
 			}
 		}
+	}
+
+	seen, err := c.hasSeenAggregatedBit(att)
+	if err != nil {
+		return false, err
+	}
+	if seen {
+		return true, nil
 	}
 
 	return false, nil

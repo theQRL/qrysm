@@ -5,7 +5,7 @@ import (
 
 	"github.com/theQRL/qrysm/config/features"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
@@ -16,7 +16,7 @@ func FuzzMultiValueBalances(f *testing.F) {
 	defer resetFn()
 
 	bals := make([]uint64, 65536)
-	firstState, err := InitializeFromProtoCapella(&zondpb.BeaconStateCapella{Balances: bals})
+	firstState, err := InitializeFromProtoZond(&qrysmpb.BeaconStateZond{Balances: bals})
 	require.NoError(f, err)
 
 	f.Fuzz(func(t *testing.T, index uint16, value uint64) {

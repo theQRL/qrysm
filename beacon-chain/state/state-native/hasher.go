@@ -25,8 +25,8 @@ func ComputeFieldRootsWithHasher(ctx context.Context, state *BeaconState) ([][]b
 	}
 	var fieldRoots [][]byte
 	switch state.version {
-	case version.Capella:
-		fieldRoots = make([][]byte, params.BeaconConfig().BeaconStateCapellaFieldCount)
+	case version.Zond:
+		fieldRoots = make([][]byte, params.BeaconConfig().BeaconStateZondFieldCount)
 	}
 
 	// Genesis time root.
@@ -81,25 +81,25 @@ func ComputeFieldRootsWithHasher(ctx context.Context, state *BeaconState) ([][]b
 	}
 	fieldRoots[types.HistoricalRoots.RealPosition()] = historicalRootsRt[:]
 
-	// Eth1Data data structure root.
-	eth1HashTreeRoot, err := stateutil.Eth1Root(state.eth1Data)
+	// ExecutionData data structure root.
+	executionHashTreeRoot, err := stateutil.ExecutionRoot(state.executionData)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not compute eth1data merkleization")
+		return nil, errors.Wrap(err, "could not compute executiondata merkleization")
 	}
-	fieldRoots[types.Eth1Data.RealPosition()] = eth1HashTreeRoot[:]
+	fieldRoots[types.ExecutionData.RealPosition()] = executionHashTreeRoot[:]
 
-	// Eth1DataVotes slice root.
-	eth1VotesRoot, err := stateutil.Eth1DataVotesRoot(state.eth1DataVotes)
+	// ExecutionDataVotes slice root.
+	executionVotesRoot, err := stateutil.ExecutionDataVotesRoot(state.executionDataVotes)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not compute eth1data votes merkleization")
+		return nil, errors.Wrap(err, "could not compute executiondata votes merkleization")
 	}
-	fieldRoots[types.Eth1DataVotes.RealPosition()] = eth1VotesRoot[:]
+	fieldRoots[types.ExecutionDataVotes.RealPosition()] = executionVotesRoot[:]
 
-	// Eth1DepositIndex root.
-	eth1DepositIndexBuf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(eth1DepositIndexBuf, state.eth1DepositIndex)
-	eth1DepositBuf := bytesutil.ToBytes32(eth1DepositIndexBuf)
-	fieldRoots[types.Eth1DepositIndex.RealPosition()] = eth1DepositBuf[:]
+	// ExecutionDepositIndex root.
+	executionDepositIndexBuf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(executionDepositIndexBuf, state.executionDepositIndex)
+	executionDepositBuf := bytesutil.ToBytes32(executionDepositIndexBuf)
+	fieldRoots[types.ExecutionDepositIndex.RealPosition()] = executionDepositBuf[:]
 
 	// Validators slice root.
 	validatorsRoot, err := stateutil.ValidatorRegistryRoot(state.validatorsVal())
@@ -190,11 +190,11 @@ func ComputeFieldRootsWithHasher(ctx context.Context, state *BeaconState) ([][]b
 	fieldRoots[types.NextSyncCommittee.RealPosition()] = nextSyncCommitteeRoot[:]
 
 	// Execution payload root.
-	executionPayloadRoot, err := state.latestExecutionPayloadHeaderCapella.HashTreeRoot()
+	executionPayloadRoot, err := state.latestExecutionPayloadHeaderZond.HashTreeRoot()
 	if err != nil {
 		return nil, err
 	}
-	fieldRoots[types.LatestExecutionPayloadHeaderCapella.RealPosition()] = executionPayloadRoot[:]
+	fieldRoots[types.LatestExecutionPayloadHeaderZond.RealPosition()] = executionPayloadRoot[:]
 
 	// Next withdrawal index root.
 	nextWithdrawalIndexRoot := make([]byte, 32)

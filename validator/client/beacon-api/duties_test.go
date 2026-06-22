@@ -7,25 +7,26 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/validator"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/shared"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/validator"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
 )
 
-const getAttesterDutiesTestEndpoint = "/zond/v1/validator/duties/attester"
-const getProposerDutiesTestEndpoint = "/zond/v1/validator/duties/proposer"
-const getSyncDutiesTestEndpoint = "/zond/v1/validator/duties/sync"
-const getCommitteesTestEndpoint = "/zond/v1/beacon/states/head/committees"
+const getAttesterDutiesTestEndpoint = "/qrl/v1/validator/duties/attester"
+const getProposerDutiesTestEndpoint = "/qrl/v1/validator/duties/proposer"
+const getSyncDutiesTestEndpoint = "/qrl/v1/validator/duties/sync"
+const getCommitteesTestEndpoint = "/qrl/v1/beacon/states/head/committees"
 
 func TestGetAttesterDuties_Valid(t *testing.T) {
 	stringValidatorIndices := []string{"2", "9"}
@@ -81,7 +82,7 @@ func TestGetAttesterDuties_Valid(t *testing.T) {
 	dutiesProvider := &beaconApiDutiesProvider{jsonRestHandler: jsonRestHandler}
 	attesterDuties, err := dutiesProvider.GetAttesterDuties(ctx, epoch, validatorIndices)
 	require.NoError(t, err)
-	assert.DeepEqual(t, expectedAttesterDuties.Data, attesterDuties)
+	assert.DeepEqual(t, expectedAttesterDuties.Data, attesterDuties.Data)
 }
 
 func TestGetAttesterDuties_HttpError(t *testing.T) {
@@ -179,7 +180,7 @@ func TestGetProposerDuties_Valid(t *testing.T) {
 	dutiesProvider := &beaconApiDutiesProvider{jsonRestHandler: jsonRestHandler}
 	proposerDuties, err := dutiesProvider.GetProposerDuties(ctx, epoch)
 	require.NoError(t, err)
-	assert.DeepEqual(t, expectedProposerDuties.Data, proposerDuties)
+	assert.DeepEqual(t, expectedProposerDuties.Data, proposerDuties.Data)
 }
 
 func TestGetProposerDuties_HttpError(t *testing.T) {
@@ -709,7 +710,7 @@ func TestGetDutiesForEpoch_Error(t *testing.T) {
 				epoch,
 				gomock.Any(),
 			).Return(
-				attesterDuties,
+				&validator.GetAttesterDutiesResponse{Data: attesterDuties, DependentRoot: "0x" + strings.Repeat("aa", 32)},
 				testCase.fetchAttesterDutiesError,
 			).AnyTimes()
 
@@ -717,7 +718,7 @@ func TestGetDutiesForEpoch_Error(t *testing.T) {
 				ctx,
 				epoch,
 			).Return(
-				proposerDuties,
+				&validator.GetProposerDutiesResponse{Data: proposerDuties, DependentRoot: "0x" + strings.Repeat("bb", 32)},
 				testCase.fetchProposerDutiesError,
 			).AnyTimes()
 
@@ -739,25 +740,25 @@ func TestGetDutiesForEpoch_Error(t *testing.T) {
 			).AnyTimes()
 
 			validatorClient := &beaconApiValidatorClient{dutiesProvider: dutiesProvider}
-			_, err := validatorClient.getDutiesForEpoch(
+			_, _, _, err := validatorClient.getDutiesForEpoch(
 				ctx,
 				epoch,
-				&zondpb.MultipleValidatorStatusResponse{
+				&qrysmpb.MultipleValidatorStatusResponse{
 					PublicKeys: pubkeys,
 					Indices:    validatorIndices,
-					Statuses: []*zondpb.ValidatorStatusResponse{
-						{Status: zondpb.ValidatorStatus_UNKNOWN_STATUS},
-						{Status: zondpb.ValidatorStatus_DEPOSITED},
-						{Status: zondpb.ValidatorStatus_PENDING},
-						{Status: zondpb.ValidatorStatus_ACTIVE},
-						{Status: zondpb.ValidatorStatus_EXITING},
-						{Status: zondpb.ValidatorStatus_SLASHING},
-						{Status: zondpb.ValidatorStatus_EXITED},
-						{Status: zondpb.ValidatorStatus_INVALID},
-						{Status: zondpb.ValidatorStatus_PARTIALLY_DEPOSITED},
-						{Status: zondpb.ValidatorStatus_UNKNOWN_STATUS},
-						{Status: zondpb.ValidatorStatus_DEPOSITED},
-						{Status: zondpb.ValidatorStatus_PENDING},
+					Statuses: []*qrysmpb.ValidatorStatusResponse{
+						{Status: qrysmpb.ValidatorStatus_UNKNOWN_STATUS},
+						{Status: qrysmpb.ValidatorStatus_DEPOSITED},
+						{Status: qrysmpb.ValidatorStatus_PENDING},
+						{Status: qrysmpb.ValidatorStatus_ACTIVE},
+						{Status: qrysmpb.ValidatorStatus_EXITING},
+						{Status: qrysmpb.ValidatorStatus_SLASHING},
+						{Status: qrysmpb.ValidatorStatus_EXITED},
+						{Status: qrysmpb.ValidatorStatus_INVALID},
+						{Status: qrysmpb.ValidatorStatus_PARTIALLY_DEPOSITED},
+						{Status: qrysmpb.ValidatorStatus_UNKNOWN_STATUS},
+						{Status: qrysmpb.ValidatorStatus_DEPOSITED},
+						{Status: qrysmpb.ValidatorStatus_PENDING},
 					},
 				},
 			)
@@ -784,25 +785,25 @@ func TestGetDutiesForEpoch_Valid(t *testing.T) {
 			committeeSlots := []primitives.Slot{28, 29, 30}
 			proposerSlots := []primitives.Slot{31, 32, 33, 34, 35, 36, 37, 38}
 
-			statuses := []zondpb.ValidatorStatus{
-				zondpb.ValidatorStatus_UNKNOWN_STATUS,
-				zondpb.ValidatorStatus_DEPOSITED,
-				zondpb.ValidatorStatus_PENDING,
-				zondpb.ValidatorStatus_ACTIVE,
-				zondpb.ValidatorStatus_EXITING,
-				zondpb.ValidatorStatus_SLASHING,
-				zondpb.ValidatorStatus_EXITED,
-				zondpb.ValidatorStatus_INVALID,
-				zondpb.ValidatorStatus_PARTIALLY_DEPOSITED,
-				zondpb.ValidatorStatus_UNKNOWN_STATUS,
-				zondpb.ValidatorStatus_DEPOSITED,
-				zondpb.ValidatorStatus_PENDING,
+			statuses := []qrysmpb.ValidatorStatus{
+				qrysmpb.ValidatorStatus_UNKNOWN_STATUS,
+				qrysmpb.ValidatorStatus_DEPOSITED,
+				qrysmpb.ValidatorStatus_PENDING,
+				qrysmpb.ValidatorStatus_ACTIVE,
+				qrysmpb.ValidatorStatus_EXITING,
+				qrysmpb.ValidatorStatus_SLASHING,
+				qrysmpb.ValidatorStatus_EXITED,
+				qrysmpb.ValidatorStatus_INVALID,
+				qrysmpb.ValidatorStatus_PARTIALLY_DEPOSITED,
+				qrysmpb.ValidatorStatus_UNKNOWN_STATUS,
+				qrysmpb.ValidatorStatus_DEPOSITED,
+				qrysmpb.ValidatorStatus_PENDING,
 			}
 
-			multipleValidatorStatus := &zondpb.MultipleValidatorStatusResponse{
+			multipleValidatorStatus := &qrysmpb.MultipleValidatorStatusResponse{
 				PublicKeys: pubkeys,
 				Indices:    validatorIndices,
-				Statuses: []*zondpb.ValidatorStatusResponse{
+				Statuses: []*qrysmpb.ValidatorStatusResponse{
 					{Status: statuses[0]},
 					{Status: statuses[1]},
 					{Status: statuses[2]},
@@ -837,7 +838,10 @@ func TestGetDutiesForEpoch_Valid(t *testing.T) {
 				epoch,
 				multipleValidatorStatus.Indices,
 			).Return(
-				generateValidAttesterDuties(pubkeys, validatorIndices, committeeIndices, committeeSlots),
+				&validator.GetAttesterDutiesResponse{
+					Data:          generateValidAttesterDuties(pubkeys, validatorIndices, committeeIndices, committeeSlots),
+					DependentRoot: "0x" + strings.Repeat("aa", 32),
+				},
 				nil,
 			).Times(1)
 
@@ -845,7 +849,10 @@ func TestGetDutiesForEpoch_Valid(t *testing.T) {
 				ctx,
 				epoch,
 			).Return(
-				generateValidProposerDuties(pubkeys, validatorIndices, proposerSlots),
+				&validator.GetProposerDutiesResponse{
+					Data:          generateValidProposerDuties(pubkeys, validatorIndices, proposerSlots),
+					DependentRoot: "0x" + strings.Repeat("bb", 32),
+				},
 				nil,
 			).Times(1)
 
@@ -883,7 +890,7 @@ func TestGetDutiesForEpoch_Valid(t *testing.T) {
 				proposerSlots[7],
 			}
 
-			expectedDuties := []*zondpb.DutiesResponse_Duty{
+			expectedDuties := []*qrysmpb.DutiesResponse_Duty{
 				{
 					Committee: []primitives.ValidatorIndex{
 						validatorIndices[0],
@@ -992,7 +999,7 @@ func TestGetDutiesForEpoch_Valid(t *testing.T) {
 			}
 
 			validatorClient := &beaconApiValidatorClient{dutiesProvider: dutiesProvider}
-			duties, err := validatorClient.getDutiesForEpoch(
+			duties, _, _, err := validatorClient.getDutiesForEpoch(
 				ctx,
 				epoch,
 				multipleValidatorStatus,
@@ -1022,25 +1029,25 @@ func TestGetDuties_Valid(t *testing.T) {
 			committeeSlots := []primitives.Slot{28, 29, 30}
 			proposerSlots := []primitives.Slot{31, 32, 33, 34, 35, 36, 37, 38}
 
-			statuses := []zondpb.ValidatorStatus{
-				zondpb.ValidatorStatus_DEPOSITED,
-				zondpb.ValidatorStatus_PENDING,
-				zondpb.ValidatorStatus_ACTIVE,
-				zondpb.ValidatorStatus_EXITING,
-				zondpb.ValidatorStatus_SLASHING,
-				zondpb.ValidatorStatus_EXITED,
-				zondpb.ValidatorStatus_EXITED,
-				zondpb.ValidatorStatus_EXITED,
-				zondpb.ValidatorStatus_EXITED,
-				zondpb.ValidatorStatus_DEPOSITED,
-				zondpb.ValidatorStatus_PENDING,
-				zondpb.ValidatorStatus_ACTIVE,
+			statuses := []qrysmpb.ValidatorStatus{
+				qrysmpb.ValidatorStatus_DEPOSITED,
+				qrysmpb.ValidatorStatus_PENDING,
+				qrysmpb.ValidatorStatus_ACTIVE,
+				qrysmpb.ValidatorStatus_EXITING,
+				qrysmpb.ValidatorStatus_SLASHING,
+				qrysmpb.ValidatorStatus_EXITED,
+				qrysmpb.ValidatorStatus_EXITED,
+				qrysmpb.ValidatorStatus_EXITED,
+				qrysmpb.ValidatorStatus_EXITED,
+				qrysmpb.ValidatorStatus_DEPOSITED,
+				qrysmpb.ValidatorStatus_PENDING,
+				qrysmpb.ValidatorStatus_ACTIVE,
 			}
 
-			multipleValidatorStatus := &zondpb.MultipleValidatorStatusResponse{
+			multipleValidatorStatus := &qrysmpb.MultipleValidatorStatusResponse{
 				PublicKeys: pubkeys,
 				Indices:    validatorIndices,
-				Statuses: []*zondpb.ValidatorStatusResponse{
+				Statuses: []*qrysmpb.ValidatorStatusResponse{
 					{Status: statuses[0]},
 					{Status: statuses[1]},
 					{Status: statuses[2]},
@@ -1075,7 +1082,10 @@ func TestGetDuties_Valid(t *testing.T) {
 				testCase.epoch,
 				multipleValidatorStatus.Indices,
 			).Return(
-				generateValidAttesterDuties(pubkeys, validatorIndices, committeeIndices, committeeSlots),
+				&validator.GetAttesterDutiesResponse{
+					Data:          generateValidAttesterDuties(pubkeys, validatorIndices, committeeIndices, committeeSlots),
+					DependentRoot: "0x" + strings.Repeat("aa", 32),
+				},
 				nil,
 			).Times(2)
 
@@ -1083,7 +1093,10 @@ func TestGetDuties_Valid(t *testing.T) {
 				ctx,
 				testCase.epoch,
 			).Return(
-				generateValidProposerDuties(pubkeys, validatorIndices, proposerSlots),
+				&validator.GetProposerDutiesResponse{
+					Data:          generateValidProposerDuties(pubkeys, validatorIndices, proposerSlots),
+					DependentRoot: "0x" + strings.Repeat("bb", 32),
+				},
 				nil,
 			).Times(2)
 
@@ -1109,7 +1122,10 @@ func TestGetDuties_Valid(t *testing.T) {
 				testCase.epoch+1,
 				validatorIndices,
 			).Return(
-				reverseSlice(generateValidAttesterDuties(pubkeys, validatorIndices, committeeIndices, committeeSlots)),
+				&validator.GetAttesterDutiesResponse{
+					Data:          reverseSlice(generateValidAttesterDuties(pubkeys, validatorIndices, committeeIndices, committeeSlots)),
+					DependentRoot: "0x" + strings.Repeat("aa", 32),
+				},
 				nil,
 			).Times(2)
 
@@ -1117,7 +1133,10 @@ func TestGetDuties_Valid(t *testing.T) {
 				ctx,
 				testCase.epoch+1,
 			).Return(
-				generateValidProposerDuties(pubkeys, validatorIndices, proposerSlots),
+				&validator.GetProposerDutiesResponse{
+					Data:          generateValidProposerDuties(pubkeys, validatorIndices, proposerSlots),
+					DependentRoot: "0x" + strings.Repeat("bb", 32),
+				},
 				nil,
 			).Times(2)
 
@@ -1246,26 +1265,28 @@ func TestGetDuties_Valid(t *testing.T) {
 				stateValidatorsProvider: stateValidatorsProvider,
 			}
 
-			expectedCurrentEpochDuties, err := validatorClient.getDutiesForEpoch(
+			expectedCurrentEpochDuties, expectedPrevDependentRoot, expectedCurrDependentRoot, err := validatorClient.getDutiesForEpoch(
 				ctx,
 				testCase.epoch,
 				multipleValidatorStatus,
 			)
 			require.NoError(t, err)
 
-			expectedNextEpochDuties, err := validatorClient.getDutiesForEpoch(
+			expectedNextEpochDuties, _, _, err := validatorClient.getDutiesForEpoch(
 				ctx,
 				testCase.epoch+1,
 				multipleValidatorStatus,
 			)
 			require.NoError(t, err)
 
-			expectedDuties := &zondpb.DutiesResponse{
-				CurrentEpochDuties: expectedCurrentEpochDuties,
-				NextEpochDuties:    expectedNextEpochDuties,
+			expectedDuties := &qrysmpb.DutiesResponse{
+				CurrentEpochDuties:        expectedCurrentEpochDuties,
+				NextEpochDuties:           expectedNextEpochDuties,
+				PreviousDutyDependentRoot: expectedPrevDependentRoot,
+				CurrentDutyDependentRoot:  expectedCurrDependentRoot,
 			}
 
-			duties, err := validatorClient.getDuties(ctx, &zondpb.DutiesRequest{
+			duties, err := validatorClient.getDuties(ctx, &qrysmpb.DutiesRequest{
 				Epoch:      testCase.epoch,
 				PublicKeys: pubkeys,
 			})
@@ -1297,9 +1318,9 @@ func TestGetDuties_GetValidatorStatusFailed(t *testing.T) {
 		stateValidatorsProvider: stateValidatorsProvider,
 	}
 
-	_, err := validatorClient.getDuties(ctx, &zondpb.DutiesRequest{
+	_, err := validatorClient.getDuties(ctx, &qrysmpb.DutiesRequest{
 		Epoch:      1,
-		PublicKeys: [][]byte{},
+		PublicKeys: [][]byte{{1}},
 	})
 	assert.ErrorContains(t, "failed to get validator status", err)
 	assert.ErrorContains(t, "foo error", err)
@@ -1339,9 +1360,9 @@ func TestGetDuties_GetDutiesForEpochFailed(t *testing.T) {
 		dutiesProvider:          dutiesProvider,
 	}
 
-	_, err := validatorClient.getDuties(ctx, &zondpb.DutiesRequest{
+	_, err := validatorClient.getDuties(ctx, &qrysmpb.DutiesRequest{
 		Epoch:      1,
-		PublicKeys: [][]byte{},
+		PublicKeys: [][]byte{{1}},
 	})
 	assert.ErrorContains(t, "failed to get duties for current epoch `1`", err)
 	assert.ErrorContains(t, "foo error", err)
@@ -1489,7 +1510,7 @@ func generateValidSyncDuties(pubkeys [][]byte, validatorIndices []primitives.Val
 
 // We will use a reverse function to easily make sure that the current epoch and next epoch data returned by getDutiesForEpoch
 // are not the same
-func reverseSlice[T interface{}](slice []T) []T {
+func reverseSlice[T any](slice []T) []T {
 	reversedSlice := make([]T, len(slice))
 	for i := range slice {
 		reversedSlice[len(reversedSlice)-1-i] = slice[i]

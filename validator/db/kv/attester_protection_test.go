@@ -11,7 +11,7 @@ import (
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	bolt "go.etcd.io/bbolt"
@@ -22,7 +22,7 @@ func TestPendingAttestationRecords_Flush(t *testing.T) {
 
 	// Add 5 atts
 	num := 5
-	for i := 0; i < num; i++ {
+	for i := range num {
 		queue.Append(&AttestationRecord{
 			Target: primitives.Epoch(i),
 		})
@@ -45,13 +45,13 @@ func TestPendingAttestationRecords_Len(t *testing.T) {
 func TestStore_CheckSlashableAttestation_DoubleVote(t *testing.T) {
 	ctx := context.Background()
 	numValidators := 1
-	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
+	pubKeys := make([][field_params.MLDSA87PubkeyLength]byte, numValidators)
 	validatorDB := setupDB(t, pubKeys)
 	tests := []struct {
 		name                string
-		existingAttestation *zondpb.IndexedAttestation
+		existingAttestation *qrysmpb.IndexedAttestation
 		existingSigningRoot [32]byte
-		incomingAttestation *zondpb.IndexedAttestation
+		incomingAttestation *qrysmpb.IndexedAttestation
 		incomingSigningRoot [32]byte
 		want                bool
 	}{
@@ -116,7 +116,7 @@ func TestStore_CheckSlashableAttestation_DoubleVote(t *testing.T) {
 func TestStore_CheckSlashableAttestation_SurroundVote_MultipleTargetsPerSource(t *testing.T) {
 	ctx := context.Background()
 	numValidators := 1
-	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
+	pubKeys := make([][field_params.MLDSA87PubkeyLength]byte, numValidators)
 	validatorDB := setupDB(t, pubKeys)
 
 	// Create an attestation with source 1 and target 50, save it.
@@ -142,7 +142,7 @@ func TestStore_CheckSlashableAttestation_SurroundVote_54kEpochs(t *testing.T) {
 	ctx := context.Background()
 	numValidators := 1
 	numEpochs := primitives.Epoch(54000)
-	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
+	pubKeys := make([][field_params.MLDSA87PubkeyLength]byte, numValidators)
 	validatorDB := setupDB(t, pubKeys)
 
 	// Attest to every (source = epoch, target = epoch + 1) sequential pair
@@ -172,7 +172,7 @@ func TestStore_CheckSlashableAttestation_SurroundVote_54kEpochs(t *testing.T) {
 	tests := []struct {
 		name        string
 		signingRoot [32]byte
-		attestation *zondpb.IndexedAttestation
+		attestation *qrysmpb.IndexedAttestation
 		want        SlashingKind
 	}{
 		{
@@ -219,8 +219,8 @@ func TestLowestSignedSourceEpoch_SaveRetrieve(t *testing.T) {
 		require.NoError(t, validatorDB.Close(), "Failed to close database")
 		require.NoError(t, validatorDB.ClearDB(), "Failed to clear database")
 	})
-	p0 := [field_params.DilithiumPubkeyLength]byte{0}
-	p1 := [field_params.DilithiumPubkeyLength]byte{1}
+	p0 := [field_params.MLDSA87PubkeyLength]byte{0}
+	p1 := [field_params.MLDSA87PubkeyLength]byte{1}
 	// Can save.
 	require.NoError(
 		t,
@@ -278,8 +278,8 @@ func TestLowestSignedTargetEpoch_SaveRetrieveReplace(t *testing.T) {
 		require.NoError(t, validatorDB.Close(), "Failed to close database")
 		require.NoError(t, validatorDB.ClearDB(), "Failed to clear database")
 	})
-	p0 := [field_params.DilithiumPubkeyLength]byte{0}
-	p1 := [field_params.DilithiumPubkeyLength]byte{1}
+	p0 := [field_params.MLDSA87PubkeyLength]byte{0}
+	p1 := [field_params.MLDSA87PubkeyLength]byte{1}
 	// Can save.
 	require.NoError(
 		t,
@@ -332,9 +332,9 @@ func TestLowestSignedTargetEpoch_SaveRetrieveReplace(t *testing.T) {
 func TestStore_SaveAttestationsForPubKey(t *testing.T) {
 	ctx := context.Background()
 	numValidators := 1
-	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
+	pubKeys := make([][field_params.MLDSA87PubkeyLength]byte, numValidators)
 	validatorDB := setupDB(t, pubKeys)
-	atts := make([]*zondpb.IndexedAttestation, 0)
+	atts := make([]*qrysmpb.IndexedAttestation, 0)
 	signingRoots := make([][32]byte, 0)
 	for i := primitives.Epoch(1); i < 10; i++ {
 		atts = append(atts, createAttestation(i-1, i))
@@ -371,17 +371,16 @@ func TestStore_SaveAttestationsForPubKey(t *testing.T) {
 
 func TestSaveAttestationForPubKey_BatchWrites_FullCapacity(t *testing.T) {
 	hook := logTest.NewGlobal()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	numValidators := attestationBatchCapacity
-	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
+	pubKeys := make([][field_params.MLDSA87PubkeyLength]byte, numValidators)
 	validatorDB := setupDB(t, pubKeys)
 
 	// For each public key, we attempt to save an attestation with signing root.
 	var wg sync.WaitGroup
 	for i, pubKey := range pubKeys {
 		wg.Add(1)
-		go func(j primitives.Epoch, pk [field_params.DilithiumPubkeyLength]byte, w *sync.WaitGroup) {
+		go func(j primitives.Epoch, pk [field_params.MLDSA87PubkeyLength]byte, w *sync.WaitGroup) {
 			defer w.Done()
 			var signingRoot [32]byte
 			copy(signingRoot[:], fmt.Sprintf("%d", j))
@@ -424,21 +423,20 @@ func TestSaveAttestationForPubKey_BatchWrites_FullCapacity(t *testing.T) {
 
 func TestSaveAttestationForPubKey_BatchWrites_LowCapacity_TimerReached(t *testing.T) {
 	hook := logTest.NewGlobal()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	// Number of validators equal to half the total capacity
 	// of batch attestation processing. This will allow us to
 	// test force flushing to the DB based on a timer instead
 	// of the max capacity being reached.
 	numValidators := attestationBatchCapacity / 2
-	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
+	pubKeys := make([][field_params.MLDSA87PubkeyLength]byte, numValidators)
 	validatorDB := setupDB(t, pubKeys)
 
 	// For each public key, we attempt to save an attestation with signing root.
 	var wg sync.WaitGroup
 	for i, pubKey := range pubKeys {
 		wg.Add(1)
-		go func(j primitives.Epoch, pk [field_params.DilithiumPubkeyLength]byte, w *sync.WaitGroup) {
+		go func(j primitives.Epoch, pk [field_params.MLDSA87PubkeyLength]byte, w *sync.WaitGroup) {
 			defer w.Done()
 			var signingRoot [32]byte
 			copy(signingRoot[:], fmt.Sprintf("%d", j))
@@ -482,20 +480,20 @@ func TestSaveAttestationForPubKey_BatchWrites_LowCapacity_TimerReached(t *testin
 func BenchmarkStore_CheckSlashableAttestation_Surround_SafeAttestation_54kEpochs(b *testing.B) {
 	numValidators := 1
 	numEpochs := primitives.Epoch(54000)
-	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
+	pubKeys := make([][field_params.MLDSA87PubkeyLength]byte, numValidators)
 	benchCheckSurroundVote(b, pubKeys, numEpochs, false /* surround */)
 }
 
 func BenchmarkStore_CheckSurroundVote_Surround_Slashable_54kEpochs(b *testing.B) {
 	numValidators := 1
 	numEpochs := primitives.Epoch(54000)
-	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, numValidators)
+	pubKeys := make([][field_params.MLDSA87PubkeyLength]byte, numValidators)
 	benchCheckSurroundVote(b, pubKeys, numEpochs, true /* surround */)
 }
 
 func benchCheckSurroundVote(
 	b *testing.B,
-	pubKeys [][field_params.DilithiumPubkeyLength]byte,
+	pubKeys [][field_params.MLDSA87PubkeyLength]byte,
 	numEpochs primitives.Epoch,
 	shouldSurround bool,
 ) {
@@ -535,14 +533,14 @@ func benchCheckSurroundVote(
 	require.NoError(b, err)
 
 	// Will surround many attestations.
-	var surroundingVote *zondpb.IndexedAttestation
+	var surroundingVote *qrysmpb.IndexedAttestation
 	if shouldSurround {
 		surroundingVote = createAttestation(numEpochs/2, numEpochs)
 	} else {
 		surroundingVote = createAttestation(numEpochs+1, numEpochs+2)
 	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		for _, pubKey := range pubKeys {
 			slashingKind, err := validatorDB.CheckSlashableAttestation(ctx, pubKey, [32]byte{}, surroundingVote)
 			if shouldSurround {
@@ -555,13 +553,13 @@ func benchCheckSurroundVote(
 	}
 }
 
-func createAttestation(source, target primitives.Epoch) *zondpb.IndexedAttestation {
-	return &zondpb.IndexedAttestation{
-		Data: &zondpb.AttestationData{
-			Source: &zondpb.Checkpoint{
+func createAttestation(source, target primitives.Epoch) *qrysmpb.IndexedAttestation {
+	return &qrysmpb.IndexedAttestation{
+		Data: &qrysmpb.AttestationData{
+			Source: &qrysmpb.Checkpoint{
 				Epoch: source,
 			},
-			Target: &zondpb.Checkpoint{
+			Target: &qrysmpb.Checkpoint{
 				Epoch: target,
 			},
 		},

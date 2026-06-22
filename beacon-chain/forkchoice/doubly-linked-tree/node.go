@@ -7,17 +7,15 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	v1 "github.com/theQRL/qrysm/proto/zond/v1"
+	qrlpb "github.com/theQRL/qrysm/proto/qrl/v1"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
-// orphanLateBlockFirstThreshold is the number of seconds after which we
-// consider a block to be late, and thus a candidate to being reorged.
-const orphanLateBlockFirstThreshold = 4
-
-// ProcessAttestationsThreshold  is the number of seconds after which we
-// process attestations for the current slot
-const ProcessAttestationsThreshold = 10
+// ProcessAttestationsThreshold returns the number of seconds after which we
+// process attestations for the current slot. It is derived from the slot
+// duration as SecondsPerSlot * 5 / 6, matching the upstream Ethereum value of
+// 10 for a 12-second slot and yielding 50 for qrysm's 60-second slot.
+const ProcessAttestationsThreshold = 50
 
 // applyWeightChanges recomputes the weight of the node passed as an argument and all of its descendants,
 // using the current balance stored in each node.
@@ -97,13 +95,13 @@ func (n *Node) updateBestDescendant(ctx context.Context, justifiedEpoch, finaliz
 // Any node with different finalized or justified epoch than
 // the ones in fork choice store should not be viable to head.
 func (n *Node) viableForHead(justifiedEpoch, currentEpoch primitives.Epoch) bool {
-	justified := justifiedEpoch == n.justifiedEpoch || justifiedEpoch == 0
-	if !justified && justifiedEpoch+1 == currentEpoch {
-		if n.unrealizedJustifiedEpoch+1 >= currentEpoch && n.justifiedEpoch+2 >= currentEpoch {
-			justified = true
-		}
+	if justifiedEpoch == 0 {
+		return true
 	}
-	return justified
+	// We use n.justifiedEpoch as the voting source because:
+	//   1. if this node is from current epoch, n.justifiedEpoch is the realized justification epoch.
+	//   2. if this node is from a previous epoch, n.justifiedEpoch has already been updated to the unrealized justification epoch.
+	return n.justifiedEpoch == justifiedEpoch || n.justifiedEpoch+2 >= currentEpoch
 }
 
 func (n *Node) leadsToViableHead(justifiedEpoch, currentEpoch primitives.Epoch) bool {
@@ -133,11 +131,19 @@ func (n *Node) setNodeAndParentValidated(ctx context.Context) error {
 // arrivedEarly returns whether this node was inserted before the first
 // threshold to orphan a block.
 // Note that genesisTime has seconds granularity, therefore we use a strict
-// inequality < here. For example a block that arrives 3.9999 seconds into the
-// slot will have secs = 3 below.
+// inequality < here. For example a block that arrives at exactly the voting
+// window boundary will still be considered early.
 func (n *Node) arrivedEarly(genesisTime uint64) (bool, error) {
+	// The tree root node (genesis or the finalized checkpoint on
+	// checkpoint-sync) carries an insertion timestamp sourced from time.Now()
+	// at process startup, not actual network arrival time. It can never be a
+	// reorg target anyway, so treat it as always having arrived early.
+	if n.parent == nil {
+		return true, nil
+	}
 	secs, err := slots.SecondsSinceSlotStart(n.slot, genesisTime, n.timestamp)
-	return secs < orphanLateBlockFirstThreshold, err
+	votingWindow := params.BeaconConfig().SecondsPerSlot / params.BeaconConfig().IntervalsPerSlot
+	return secs < votingWindow, err
 }
 
 // arrivedAfterOrphanCheck returns whether this block was inserted after the
@@ -146,12 +152,16 @@ func (n *Node) arrivedEarly(genesisTime uint64) (bool, error) {
 // inequality >= here. For example a block that arrives 10.00001 seconds into the
 // slot will have secs = 10 below.
 func (n *Node) arrivedAfterOrphanCheck(genesisTime uint64) (bool, error) {
+	// See arrivedEarly: the tree root's timestamp is not meaningful here.
+	if n.parent == nil {
+		return false, nil
+	}
 	secs, err := slots.SecondsSinceSlotStart(n.slot, genesisTime, n.timestamp)
 	return secs >= ProcessAttestationsThreshold, err
 }
 
 // nodeTreeDump appends to the given list all the nodes descending from this one
-func (n *Node) nodeTreeDump(ctx context.Context, nodes []*v1.ForkChoiceNode) ([]*v1.ForkChoiceNode, error) {
+func (n *Node) nodeTreeDump(ctx context.Context, nodes []*qrlpb.ForkChoiceNode) ([]*qrlpb.ForkChoiceNode, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -159,7 +169,7 @@ func (n *Node) nodeTreeDump(ctx context.Context, nodes []*v1.ForkChoiceNode) ([]
 	if n.parent != nil {
 		parentRoot = n.parent.root
 	}
-	thisNode := &v1.ForkChoiceNode{
+	thisNode := &qrlpb.ForkChoiceNode{
 		Slot:                     n.slot,
 		BlockRoot:                n.root[:],
 		ParentRoot:               parentRoot[:],
@@ -174,9 +184,9 @@ func (n *Node) nodeTreeDump(ctx context.Context, nodes []*v1.ForkChoiceNode) ([]
 		Timestamp:                n.timestamp,
 	}
 	if n.optimistic {
-		thisNode.Validity = v1.ForkChoiceNodeValidity_OPTIMISTIC
+		thisNode.Validity = qrlpb.ForkChoiceNodeValidity_OPTIMISTIC
 	} else {
-		thisNode.Validity = v1.ForkChoiceNodeValidity_VALID
+		thisNode.Validity = qrlpb.ForkChoiceNodeValidity_VALID
 	}
 
 	nodes = append(nodes, thisNode)

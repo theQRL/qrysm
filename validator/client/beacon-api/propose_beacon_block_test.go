@@ -8,7 +8,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
 )
@@ -38,22 +38,22 @@ func TestProposeBeaconBlock_Error(t *testing.T) {
 		name             string
 		consensusVersion string
 		endpoint         string
-		block            *zondpb.GenericSignedBeaconBlock
+		block            *qrysmpb.GenericSignedBeaconBlock
 	}{
 		{
-			name:             "capella",
-			consensusVersion: "capella",
-			endpoint:         "/zond/v1/beacon/blocks",
-			block: &zondpb.GenericSignedBeaconBlock{
-				Block: generateSignedCapellaBlock(),
+			name:             "zond",
+			consensusVersion: "zond",
+			endpoint:         "/qrl/v1/beacon/blocks",
+			block: &qrysmpb.GenericSignedBeaconBlock{
+				Block: generateSignedZondBlock(),
 			},
 		},
 		{
-			name:             "blinded capella",
-			consensusVersion: "capella",
-			endpoint:         "/zond/v1/beacon/blinded_blocks",
-			block: &zondpb.GenericSignedBeaconBlock{
-				Block: generateSignedBlindedCapellaBlock(),
+			name:             "blinded zond",
+			consensusVersion: "zond",
+			endpoint:         "/qrl/v1/beacon/blinded_blocks",
+			block: &qrysmpb.GenericSignedBeaconBlock{
+				Block: generateSignedBlindedZondBlock(),
 			},
 		},
 	}
@@ -67,7 +67,7 @@ func TestProposeBeaconBlock_Error(t *testing.T) {
 				ctx := context.Background()
 				jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 
-				headers := map[string]string{"Eth-Consensus-Version": testCase.consensusVersion}
+				headers := map[string]string{"Qrl-Consensus-Version": testCase.consensusVersion}
 				jsonRestHandler.EXPECT().PostRestJson(
 					ctx,
 					testCase.endpoint,
@@ -90,6 +90,6 @@ func TestProposeBeaconBlock_Error(t *testing.T) {
 
 func TestProposeBeaconBlock_UnsupportedBlockType(t *testing.T) {
 	validatorClient := &beaconApiValidatorClient{}
-	_, err := validatorClient.proposeBeaconBlock(context.Background(), &zondpb.GenericSignedBeaconBlock{})
+	_, err := validatorClient.proposeBeaconBlock(context.Background(), &qrysmpb.GenericSignedBeaconBlock{})
 	assert.ErrorContains(t, "unsupported block type", err)
 }

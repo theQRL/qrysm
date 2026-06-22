@@ -22,7 +22,7 @@ var Analyzer = &analysis.Analyzer{
 	Run:      run,
 }
 
-func run(pass *analysis.Pass) (interface{}, error) {
+func run(pass *analysis.Pass) (any, error) {
 	inspection, ok := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 	if !ok {
 		return nil, errors.New("analyzer is not type *inspector.Inspector")
@@ -35,7 +35,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	inspection.Preorder(nodeFilter, func(node ast.Node) {
 		if s, ok := node.(*ast.StructType); ok {
 			if err := malign(node.Pos(), pass.TypesInfo.Types[s].Type.(*types.Struct)); err != nil {
-				pass.Reportf(node.Pos(), err.Error())
+				pass.Reportf(node.Pos(), "error=%s", err)
 			}
 		}
 	})

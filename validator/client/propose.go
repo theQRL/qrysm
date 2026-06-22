@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/async"
@@ -16,16 +15,17 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/crypto/rand"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/runtime/version"
 	qrysmTime "github.com/theQRL/qrysm/time"
 	"github.com/theQRL/qrysm/time/slots"
 	"github.com/theQRL/qrysm/validator/client/iface"
 	"go.opencensus.io/trace"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const domainDataErr = "could not get domain data"
@@ -33,11 +33,11 @@ const signingRootErr = "could not get signing root"
 const signExitErr = "could not sign voluntary exit proposal"
 
 // ProposeBlock proposes a new beacon block for a given slot. This method collects the
-// previous beacon block, any pending deposits, and ETH1 data from the beacon
+// previous beacon block, any pending deposits, and execution data from the beacon
 // chain node to construct the new block. The new block is then processed with
 // the state root computation, and finally signed by the validator before being
 // sent back to the beacon node for broadcasting.
-func (v *validator) ProposeBlock(ctx context.Context, slot primitives.Slot, pubKey [field_params.DilithiumPubkeyLength]byte) {
+func (v *validator) ProposeBlock(ctx context.Context, slot primitives.Slot, pubKey [field_params.MLDSA87PubkeyLength]byte) {
 	if slot == 0 {
 		log.Debug("Assigned to genesis slot, skipping proposal")
 		return
@@ -73,7 +73,7 @@ func (v *validator) ProposeBlock(ctx context.Context, slot primitives.Slot, pubK
 	}
 
 	// Request block from beacon node
-	b, err := v.validatorClient.GetBeaconBlock(ctx, &zondpb.BlockRequest{
+	b, err := v.validatorClient.GetBeaconBlock(ctx, &qrysmpb.BlockRequest{
 		Slot:         slot,
 		RandaoReveal: randaoReveal,
 		Graffiti:     g,
@@ -150,7 +150,7 @@ func (v *validator) ProposeBlock(ctx context.Context, slot primitives.Slot, pubK
 		log.WithError(err).Error("Failed to get execution payload")
 		return
 	}
-	log = log.WithFields(logrus.Fields{
+	l := log.WithFields(logrus.Fields{
 		"payloadHash": fmt.Sprintf("%#x", bytesutil.Trunc(p.BlockHash())),
 		"parentHash":  fmt.Sprintf("%#x", bytesutil.Trunc(p.ParentHash())),
 		"blockNumber": p.BlockNumber,
@@ -161,10 +161,10 @@ func (v *validator) ProposeBlock(ctx context.Context, slot primitives.Slot, pubK
 			log.WithError(err).Error("Failed to get execution payload transactions")
 			return
 		}
-		log = log.WithField("txCount", len(txs))
+		l = l.WithField("txCount", len(txs))
 	}
 	if p.GasLimit() != 0 {
-		log = log.WithField("gasUtilized", float64(p.GasUsed())/float64(p.GasLimit()))
+		l = l.WithField("gasUtilized", float64(p.GasUsed())/float64(p.GasLimit()))
 	}
 	if !blk.IsBlinded() {
 		withdrawals, err := p.Withdrawals()
@@ -172,12 +172,12 @@ func (v *validator) ProposeBlock(ctx context.Context, slot primitives.Slot, pubK
 			log.WithError(err).Error("Failed to get execution payload withdrawals")
 			return
 		}
-		log = log.WithField("withdrawalCount", len(withdrawals))
+		l = l.WithField("withdrawalCount", len(withdrawals))
 	}
 
 	blkRoot := fmt.Sprintf("%#x", bytesutil.Trunc(blkResp.BlockRoot))
 	graffiti := blk.Block().Body().Graffiti()
-	log.WithFields(logrus.Fields{
+	l.WithFields(logrus.Fields{
 		"slot":            blk.Block().Slot(),
 		"blockRoot":       blkRoot,
 		"numAttestations": len(blk.Block().Body().Attestations()),
@@ -218,7 +218,7 @@ func ProposeExit(
 	return nil
 }
 
-func CurrentEpoch(genesisTime *timestamp.Timestamp) (primitives.Epoch, error) {
+func CurrentEpoch(genesisTime *timestamppb.Timestamp) (primitives.Epoch, error) {
 	totalSecondsPassed := qrysmTime.Now().Unix() - genesisTime.Seconds
 	currentSlot := primitives.Slot((uint64(totalSecondsPassed)) / params.BeaconConfig().SecondsPerSlot)
 	currentEpoch := slots.ToEpoch(currentSlot)
@@ -231,15 +231,15 @@ func CreateSignedVoluntaryExit(
 	signer iface.SigningFunc,
 	pubKey []byte,
 	epoch primitives.Epoch,
-) (*zondpb.SignedVoluntaryExit, error) {
+) (*qrysmpb.SignedVoluntaryExit, error) {
 	ctx, span := trace.StartSpan(ctx, "validator.CreateSignedVoluntaryExit")
 	defer span.End()
 
-	indexResponse, err := validatorClient.ValidatorIndex(ctx, &zondpb.ValidatorIndexRequest{PublicKey: pubKey})
+	indexResponse, err := validatorClient.ValidatorIndex(ctx, &qrysmpb.ValidatorIndexRequest{PublicKey: pubKey})
 	if err != nil {
 		return nil, errors.Wrap(err, "gRPC call to get validator index failed")
 	}
-	exit := &zondpb.VoluntaryExit{Epoch: epoch, ValidatorIndex: indexResponse.Index}
+	exit := &qrysmpb.VoluntaryExit{Epoch: epoch, ValidatorIndex: indexResponse.Index}
 	slot, err := slots.EpochStart(epoch)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve slot")
@@ -249,11 +249,11 @@ func CreateSignedVoluntaryExit(
 		return nil, errors.Wrap(err, "failed to sign voluntary exit")
 	}
 
-	return &zondpb.SignedVoluntaryExit{Exit: exit, Signature: sig}, nil
+	return &qrysmpb.SignedVoluntaryExit{Exit: exit, Signature: sig}, nil
 }
 
 // Sign randao reveal with randao domain and private key.
-func (v *validator) signRandaoReveal(ctx context.Context, pubKey [field_params.DilithiumPubkeyLength]byte, epoch primitives.Epoch, slot primitives.Slot) ([]byte, error) {
+func (v *validator) signRandaoReveal(ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, epoch primitives.Epoch, slot primitives.Slot) ([]byte, error) {
 	domain, err := v.domainData(ctx, epoch, params.BeaconConfig().DomainRandao[:])
 	if err != nil {
 		return nil, errors.Wrap(err, domainDataErr)
@@ -262,7 +262,7 @@ func (v *validator) signRandaoReveal(ctx context.Context, pubKey [field_params.D
 		return nil, errors.New(domainDataErr)
 	}
 
-	var randaoReveal dilithium.Signature
+	var randaoReveal ml_dsa_87.Signature
 	sszUint := primitives.SSZUint64(epoch)
 	root, err := signing.ComputeSigningRoot(&sszUint, domain.SignatureDomain)
 	if err != nil {
@@ -283,7 +283,7 @@ func (v *validator) signRandaoReveal(ctx context.Context, pubKey [field_params.D
 
 // Sign block with proposer domain and private key.
 // Returns the signature, block signing root, and any error.
-func (v *validator) signBlock(ctx context.Context, pubKey [field_params.DilithiumPubkeyLength]byte, epoch primitives.Epoch, slot primitives.Slot, b interfaces.ReadOnlyBeaconBlock) ([]byte, [32]byte, error) {
+func (v *validator) signBlock(ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, epoch primitives.Epoch, slot primitives.Slot, b interfaces.ReadOnlyBeaconBlock) ([]byte, [32]byte, error) {
 	domain, err := v.domainData(ctx, epoch, params.BeaconConfig().DomainBeaconProposer[:])
 	if err != nil {
 		return nil, [32]byte{}, errors.Wrap(err, domainDataErr)
@@ -319,10 +319,10 @@ func signVoluntaryExit(
 	validatorClient iface.ValidatorClient,
 	signer iface.SigningFunc,
 	pubKey []byte,
-	exit *zondpb.VoluntaryExit,
+	exit *qrysmpb.VoluntaryExit,
 	slot primitives.Slot,
 ) ([]byte, error) {
-	req := &zondpb.DomainRequest{
+	req := &qrysmpb.DomainRequest{
 		Epoch:  exit.Epoch,
 		Domain: params.BeaconConfig().DomainVoluntaryExit[:],
 	}
@@ -354,7 +354,7 @@ func signVoluntaryExit(
 }
 
 // Gets the graffiti from cli or file for the validator public key.
-func (v *validator) getGraffiti(ctx context.Context, pubKey [field_params.DilithiumPubkeyLength]byte) ([]byte, error) {
+func (v *validator) getGraffiti(ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte) ([]byte, error) {
 	// When specified, default graffiti from the command line takes the first priority.
 	if len(v.graffiti) != 0 {
 		return v.graffiti, nil
@@ -365,7 +365,7 @@ func (v *validator) getGraffiti(ctx context.Context, pubKey [field_params.Dilith
 	}
 
 	// When specified, individual validator specified graffiti takes the second priority.
-	idx, err := v.validatorClient.ValidatorIndex(ctx, &zondpb.ValidatorIndexRequest{PublicKey: pubKey[:]})
+	idx, err := v.validatorClient.ValidatorIndex(ctx, &qrysmpb.ValidatorIndexRequest{PublicKey: pubKey[:]})
 	if err != nil {
 		return []byte{}, err
 	}

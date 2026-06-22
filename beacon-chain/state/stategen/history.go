@@ -58,7 +58,7 @@ func (c *CanonicalHistory) BlockRootForSlot(ctx context.Context, target primitiv
 		}
 		slot, roots, err := c.h.HighestRootsBelowSlot(ctx, slotAbove)
 		if err != nil {
-			return [32]byte{}, errors.Wrap(err, fmt.Sprintf("error finding highest block w/ slot < %d", slotAbove))
+			return [32]byte{}, errors.Wrapf(err, "error finding highest block w/ slot < %d", slotAbove)
 		}
 		if len(roots) == 0 {
 			return [32]byte{}, errors.Wrap(ErrNoBlocksBelowSlot, fmt.Sprintf("slot=%d", slotAbove))
@@ -169,7 +169,7 @@ func (c *CanonicalHistory) ancestorChain(ctx context.Context, tail interfaces.Re
 		}
 		// ErrNotFoundState errors are fine, but other errors mean something is wrong with the db
 		if err != nil && !errors.Is(err, db.ErrNotFoundState) {
-			return nil, nil, errors.Wrap(err, fmt.Sprintf("error querying database for state w/ block root = %#x", root))
+			return nil, nil, errors.Wrapf(err, "error querying database for state w/ block root = %#x", root)
 		}
 		parent, err := c.h.Block(ctx, b.ParentRoot())
 		if err != nil {
@@ -188,7 +188,7 @@ func (c *CanonicalHistory) ancestorChain(ctx context.Context, tail interfaces.Re
 func reverseChain(c []interfaces.ReadOnlySignedBeaconBlock) {
 	last := len(c) - 1
 	swaps := (last + 1) / 2
-	for i := 0; i < swaps; i++ {
+	for i := range swaps {
 		c[i], c[last-i] = c[last-i], c[i]
 	}
 }

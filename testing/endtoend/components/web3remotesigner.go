@@ -18,7 +18,7 @@ import (
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/crypto/bls"
 	"github.com/theQRL/qrysm/io/file"
@@ -89,7 +89,7 @@ func (w *Web3RemoteSigner) Start(ctx context.Context) error {
 		fmt.Sprintf("--http-listen-port=%d", Web3RemoteSignerPort),
 		"--logging=ALL",
 		// Command
-		"eth2",
+		"consensus",
 		// Command flags
 		"--network=" + network,
 		"--slashing-protection-enabled=false", // Otherwise, a postgres DB is required.
@@ -173,7 +173,7 @@ func (w *Web3RemoteSigner) PublicKeys(ctx context.Context) ([]bls.PublicKey, err
 	w.wait(ctx)
 
 	client := &http.Client{}
-	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("http://localhost:%d/api/v1/eth2/publicKeys", Web3RemoteSignerPort), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("http://localhost:%d/api/v1/consensus/publicKeys", Web3RemoteSignerPort), nil)
 	if err != nil {
 		return nil, err
 	}

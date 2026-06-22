@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "checkpointsync",
     srcs = [
         "cmd.go",
         "download.go",
@@ -9,9 +9,9 @@ go_library(
     importpath = "github.com/theQRL/qrysm/cmd/qrysmctl/checkpointsync",
     visibility = ["//visibility:public"],
     deps = [
-        "//api/client:go_default_library",
-        "//api/client/beacon:go_default_library",
-        "@com_github_sirupsen_logrus//:go_default_library",
-        "@com_github_urfave_cli_v2//:go_default_library",
+        "//api/client",
+        "//api/client/beacon",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_urfave_cli_v2//:cli",
     ],
 )

@@ -16,7 +16,7 @@ const SchemaVersionV1 = "/1"
 const SchemaVersionV2 = "/2"
 
 // Specifies the protocol prefix for all our Req/Resp topics.
-const protocolPrefix = "/eth2/beacon_chain/req"
+const protocolPrefix = "/consensus/beacon_chain/req"
 
 // StatusMessageName specifies the name for the status message topic.
 const StatusMessageName = "/status"
@@ -60,7 +60,7 @@ const (
 )
 
 // RPCTopicMappings map the base message type to the rpc request.
-var RPCTopicMappings = map[string]interface{}{
+var RPCTopicMappings = map[string]any{
 	// RPC Status Message
 	RPCStatusTopicV1: new(pb.Status),
 	// RPC Goodbye Message
@@ -72,7 +72,7 @@ var RPCTopicMappings = map[string]interface{}{
 	// RPC Ping Message
 	RPCPingTopicV1: new(primitives.SSZUint64),
 	// RPC Metadata Message
-	RPCMetaDataTopicV2: new(interface{}),
+	RPCMetaDataTopicV2: new(any),
 }
 
 // Maps all registered protocol prefixes.
@@ -118,7 +118,7 @@ var OmitContextBytesV1 = map[string]bool{
 
 // VerifyTopicMapping verifies that the topic and its accompanying
 // message type is correct.
-func VerifyTopicMapping(topic string, msg interface{}) error {
+func VerifyTopicMapping(topic string, msg any) error {
 	msgType, ok := RPCTopicMappings[topic]
 	if !ok {
 		return errors.New("rpc topic is not registered currently")

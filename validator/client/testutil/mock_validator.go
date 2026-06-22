@@ -3,13 +3,14 @@ package testutil
 import (
 	"bytes"
 	"context"
+	"errors"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	validatorserviceconfig "github.com/theQRL/qrysm/config/validator/service"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	qrysmTime "github.com/theQRL/qrysm/time"
 	"github.com/theQRL/qrysm/validator/client/iface"
 	"github.com/theQRL/qrysm/validator/keymanager"
@@ -20,6 +21,7 @@ var _ iface.Validator = (*FakeValidator)(nil)
 // FakeValidator for mocking.
 type FakeValidator struct {
 	DoneCalled                        bool
+	SetTickerCalled                   bool
 	WaitForWalletInitializationCalled bool
 	SlasherReadyCalled                bool
 	NextSlotCalled                    bool
@@ -38,28 +40,46 @@ type FakeValidator struct {
 	WaitForActivationCalled           int
 	CanonicalHeadSlotCalled           int
 	ReceiveBlocksCalled               int
+	KeymanagerCalled                  int
+	PushProposerSettingsCalled        int
 	RetryTillSuccess                  int
+	ReceiveBlocksRetryTillSuccess     int
+	KeymanagerFailures                int
 	ProposeBlockArg1                  uint64
 	AttestToBlockHeadArg1             uint64
 	RoleAtArg1                        uint64
 	UpdateDutiesArg1                  uint64
+	PushProposerSettingsArg1          uint64
+	GenesisT                          uint64
 	NextSlotRet                       <-chan primitives.Slot
 	PublicKey                         string
 	UpdateDutiesRet                   error
 	ProposerSettingsErr               error
 	RolesAtRet                        []iface.ValidatorRole
-	Balances                          map[[field_params.DilithiumPubkeyLength]byte]uint64
-	IndexToPubkeyMap                  map[uint64][field_params.DilithiumPubkeyLength]byte
-	PubkeyToIndexMap                  map[[field_params.DilithiumPubkeyLength]byte]uint64
-	PubkeysToStatusesMap              map[[field_params.DilithiumPubkeyLength]byte]zondpb.ValidatorStatus
+	Balances                          map[[field_params.MLDSA87PubkeyLength]byte]uint64
+	IndexToPubkeyMap                  map[uint64][field_params.MLDSA87PubkeyLength]byte
+	PubkeyToIndexMap                  map[[field_params.MLDSA87PubkeyLength]byte]uint64
+	PubkeysToStatusesMap              map[[field_params.MLDSA87PubkeyLength]byte]qrysmpb.ValidatorStatus
 	proposerSettings                  *validatorserviceconfig.ProposerSettings
 	ProposerSettingWait               time.Duration
+	KeymanagerErr                     error
 	Km                                keymanager.IKeymanager
+	AttSubmitted                      chan interface{}
+	BlockProposed                     chan interface{}
 }
 
 // Done for mocking.
 func (fv *FakeValidator) Done() {
 	fv.DoneCalled = true
+}
+
+// SetTicker for mocking.
+func (fv *FakeValidator) SetTicker() {
+	fv.SetTickerCalled = true
+}
+
+func (fv *FakeValidator) GenesisTime() uint64 {
+	return fv.GenesisT
 }
 
 // WaitForKeymanagerInitialization for mocking.
@@ -81,7 +101,7 @@ func (fv *FakeValidator) WaitForChainStart(_ context.Context) error {
 }
 
 // WaitForActivation for mocking.
-func (fv *FakeValidator) WaitForActivation(_ context.Context, accountChan chan [][field_params.DilithiumPubkeyLength]byte) error {
+func (fv *FakeValidator) WaitForActivation(_ context.Context, accountChan chan [][field_params.MLDSA87PubkeyLength]byte) error {
 	fv.WaitForActivationCalled++
 	if accountChan == nil {
 		return nil
@@ -153,32 +173,40 @@ func (fv *FakeValidator) ResetAttesterProtectionData() {
 }
 
 // RolesAt for mocking.
-func (fv *FakeValidator) RolesAt(_ context.Context, slot primitives.Slot) (map[[field_params.DilithiumPubkeyLength]byte][]iface.ValidatorRole, error) {
+func (fv *FakeValidator) RolesAt(_ context.Context, slot primitives.Slot) (map[[field_params.MLDSA87PubkeyLength]byte][]iface.ValidatorRole, error) {
 	fv.RoleAtCalled = true
 	fv.RoleAtArg1 = uint64(slot)
-	vr := make(map[[field_params.DilithiumPubkeyLength]byte][]iface.ValidatorRole)
-	vr[[field_params.DilithiumPubkeyLength]byte{1}] = fv.RolesAtRet
+	vr := make(map[[field_params.MLDSA87PubkeyLength]byte][]iface.ValidatorRole)
+	vr[[field_params.MLDSA87PubkeyLength]byte{1}] = fv.RolesAtRet
 	return vr, nil
 }
 
 // SubmitAttestation for mocking.
-func (fv *FakeValidator) SubmitAttestation(_ context.Context, slot primitives.Slot, _ [field_params.DilithiumPubkeyLength]byte) {
+func (fv *FakeValidator) SubmitAttestation(_ context.Context, slot primitives.Slot, _ [field_params.MLDSA87PubkeyLength]byte) {
 	fv.AttestToBlockHeadCalled = true
 	fv.AttestToBlockHeadArg1 = uint64(slot)
+	if fv.AttSubmitted != nil {
+		close(fv.AttSubmitted)
+		fv.AttSubmitted = nil
+	}
 }
 
 // ProposeBlock for mocking.
-func (fv *FakeValidator) ProposeBlock(_ context.Context, slot primitives.Slot, _ [field_params.DilithiumPubkeyLength]byte) {
+func (fv *FakeValidator) ProposeBlock(_ context.Context, slot primitives.Slot, _ [field_params.MLDSA87PubkeyLength]byte) {
 	fv.ProposeBlockCalled = true
 	fv.ProposeBlockArg1 = uint64(slot)
+	if fv.BlockProposed != nil {
+		close(fv.BlockProposed)
+		fv.BlockProposed = nil
+	}
 }
 
 // SubmitAggregateAndProof for mocking.
-func (*FakeValidator) SubmitAggregateAndProof(_ context.Context, _ primitives.Slot, _ [field_params.DilithiumPubkeyLength]byte) {
+func (*FakeValidator) SubmitAggregateAndProof(_ context.Context, _ primitives.Slot, _ [field_params.MLDSA87PubkeyLength]byte) {
 }
 
 // SubmitSyncCommitteeMessage for mocking.
-func (*FakeValidator) SubmitSyncCommitteeMessage(_ context.Context, _ primitives.Slot, _ [field_params.DilithiumPubkeyLength]byte) {
+func (*FakeValidator) SubmitSyncCommitteeMessage(_ context.Context, _ primitives.Slot, _ [field_params.MLDSA87PubkeyLength]byte) {
 }
 
 // LogAttestationsSubmitted for mocking.
@@ -188,27 +216,35 @@ func (*FakeValidator) LogAttestationsSubmitted() {}
 func (*FakeValidator) UpdateDomainDataCaches(context.Context, primitives.Slot) {}
 
 // BalancesByPubkeys for mocking.
-func (fv *FakeValidator) BalancesByPubkeys(_ context.Context) map[[field_params.DilithiumPubkeyLength]byte]uint64 {
+func (fv *FakeValidator) BalancesByPubkeys(_ context.Context) map[[field_params.MLDSA87PubkeyLength]byte]uint64 {
 	return fv.Balances
 }
 
 // IndicesToPubkeys for mocking.
-func (fv *FakeValidator) IndicesToPubkeys(_ context.Context) map[uint64][field_params.DilithiumPubkeyLength]byte {
+func (fv *FakeValidator) IndicesToPubkeys(_ context.Context) map[uint64][field_params.MLDSA87PubkeyLength]byte {
 	return fv.IndexToPubkeyMap
 }
 
 // PubkeysToIndices for mocking.
-func (fv *FakeValidator) PubkeysToIndices(_ context.Context) map[[field_params.DilithiumPubkeyLength]byte]uint64 {
+func (fv *FakeValidator) PubkeysToIndices(_ context.Context) map[[field_params.MLDSA87PubkeyLength]byte]uint64 {
 	return fv.PubkeyToIndexMap
 }
 
 // PubkeysToStatuses for mocking.
-func (fv *FakeValidator) PubkeysToStatuses(_ context.Context) map[[field_params.DilithiumPubkeyLength]byte]zondpb.ValidatorStatus {
+func (fv *FakeValidator) PubkeysToStatuses(_ context.Context) map[[field_params.MLDSA87PubkeyLength]byte]qrysmpb.ValidatorStatus {
 	return fv.PubkeysToStatusesMap
 }
 
 // Keymanager for mocking
 func (fv *FakeValidator) Keymanager() (keymanager.IKeymanager, error) {
+	fv.KeymanagerCalled++
+	if fv.KeymanagerFailures > 0 {
+		fv.KeymanagerFailures--
+		if fv.KeymanagerErr != nil {
+			return nil, fv.KeymanagerErr
+		}
+		return nil, errors.New("keymanager unavailable")
+	}
 	return fv.Km, nil
 }
 
@@ -220,13 +256,13 @@ func (*FakeValidator) CheckDoppelGanger(_ context.Context) error {
 // ReceiveBlocks for mocking
 func (fv *FakeValidator) ReceiveBlocks(_ context.Context, connectionErrorChannel chan<- error) {
 	fv.ReceiveBlocksCalled++
-	if fv.RetryTillSuccess > fv.ReceiveBlocksCalled {
+	if fv.ReceiveBlocksRetryTillSuccess >= fv.ReceiveBlocksCalled && fv.ReceiveBlocksRetryTillSuccess > 0 {
 		connectionErrorChannel <- iface.ErrConnectionIssue
 	}
 }
 
 // HandleKeyReload for mocking
-func (fv *FakeValidator) HandleKeyReload(_ context.Context, newKeys [][field_params.DilithiumPubkeyLength]byte) (anyActive bool, err error) {
+func (fv *FakeValidator) HandleKeyReload(_ context.Context, newKeys [][field_params.MLDSA87PubkeyLength]byte) (anyActive bool, err error) {
 	fv.HandleKeyReloadCalled = true
 	for _, key := range newKeys {
 		if bytes.Equal(key[:], ActiveKey[:]) {
@@ -237,7 +273,7 @@ func (fv *FakeValidator) HandleKeyReload(_ context.Context, newKeys [][field_par
 }
 
 // SubmitSignedContributionAndProof for mocking
-func (*FakeValidator) SubmitSignedContributionAndProof(_ context.Context, _ primitives.Slot, _ [field_params.DilithiumPubkeyLength]byte) {
+func (*FakeValidator) SubmitSignedContributionAndProof(_ context.Context, _ primitives.Slot, _ [field_params.MLDSA87PubkeyLength]byte) {
 }
 
 // HasProposerSettings for mocking
@@ -246,14 +282,13 @@ func (*FakeValidator) HasProposerSettings() bool {
 }
 
 // PushProposerSettings for mocking
-func (fv *FakeValidator) PushProposerSettings(ctx context.Context, km keymanager.IKeymanager, slot primitives.Slot, deadline time.Time) error {
-	nctx, cancel := context.WithDeadline(ctx, deadline)
-	ctx = nctx
-	defer cancel()
+func (fv *FakeValidator) PushProposerSettings(ctx context.Context, km keymanager.IKeymanager, slot primitives.Slot) error {
+	fv.PushProposerSettingsCalled++
+	fv.PushProposerSettingsArg1 = uint64(slot)
 	time.Sleep(fv.ProposerSettingWait)
-	if ctx.Err() == context.DeadlineExceeded {
-		log.Error("deadline exceeded")
-		// can't return error or it will trigger a log.fatal
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		log.Error("Deadline exceeded")
+		// can't return error as it will trigger a log.fatal
 		return nil
 	}
 
@@ -271,7 +306,7 @@ func (*FakeValidator) SetPubKeyToValidatorIndexMap(_ context.Context, _ keymanag
 }
 
 // SignValidatorRegistrationRequest for mocking
-func (*FakeValidator) SignValidatorRegistrationRequest(_ context.Context, _ iface.SigningFunc, _ *zondpb.ValidatorRegistrationV1) (*zondpb.SignedValidatorRegistrationV1, error) {
+func (*FakeValidator) SignValidatorRegistrationRequest(_ context.Context, _ iface.SigningFunc, _ *qrysmpb.ValidatorRegistrationV1) (*qrysmpb.SignedValidatorRegistrationV1, error) {
 	return nil, nil
 }
 

@@ -8,7 +8,7 @@ import (
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	multi_value_slice "github.com/theQRL/qrysm/container/multi-value-slice"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 var (
@@ -109,10 +109,10 @@ func NewMultiValueInactivityScores(scores []uint64) *MultiValueInactivityScores 
 }
 
 // MultiValueValidators is a multi-value slice of validator references.
-type MultiValueValidators = multi_value_slice.Slice[*zondpb.Validator, *BeaconState]
+type MultiValueValidators = multi_value_slice.Slice[*qrysmpb.Validator, *BeaconState]
 
 // NewMultiValueValidators creates a new slice whose shared items will be populated with input values.
-func NewMultiValueValidators(vals []*zondpb.Validator) *MultiValueValidators {
+func NewMultiValueValidators(vals []*qrysmpb.Validator) *MultiValueValidators {
 	mv := &MultiValueValidators{}
 	mv.Init(vals)
 	multiValueValidatorsCountGauge.Inc()

@@ -10,8 +10,8 @@ import (
 	fssz "github.com/prysmaticlabs/fastssz"
 	"github.com/theQRL/go-bitfield"
 	"github.com/theQRL/qrysm/config/features"
-	"github.com/theQRL/qrysm/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -24,19 +24,19 @@ func TestKV_Aggregated_AggregateUnaggregatedAttestations(t *testing.T) {
 	defer resetFn()
 
 	cache := NewAttCaches()
-	priv, err := dilithium.RandKey()
+	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
 	sig1 := priv.Sign([]byte{'a'})
 	sig2 := priv.Sign([]byte{'b'})
-	att1 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1001}, Signatures: [][]byte{sig1.Marshal()}})
-	att2 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1010}, Signatures: [][]byte{sig1.Marshal()}})
-	att3 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1100}, Signatures: [][]byte{sig1.Marshal()}})
-	att4 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1001}, Signatures: [][]byte{sig2.Marshal()}})
-	att5 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1001}, Signatures: [][]byte{sig1.Marshal()}})
-	att6 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1010}, Signatures: [][]byte{sig1.Marshal()}})
-	att7 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1100}, Signatures: [][]byte{sig1.Marshal()}})
-	att8 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1001}, Signatures: [][]byte{sig2.Marshal()}})
-	atts := []*zondpb.Attestation{att1, att2, att3, att4, att5, att6, att7, att8}
+	att1 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1001}, Signatures: [][]byte{sig1.Marshal()}})
+	att2 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1010}, Signatures: [][]byte{sig1.Marshal()}})
+	att3 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1100}, Signatures: [][]byte{sig1.Marshal()}})
+	att4 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1001}, Signatures: [][]byte{sig2.Marshal()}})
+	att5 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1001}, Signatures: [][]byte{sig1.Marshal()}})
+	att6 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1010}, Signatures: [][]byte{sig1.Marshal()}})
+	att7 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1100}, Signatures: [][]byte{sig1.Marshal()}})
+	att8 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1001}, Signatures: [][]byte{sig2.Marshal()}})
+	atts := []*qrysmpb.Attestation{att1, att2, att3, att4, att5, att6, att7, att8}
 	require.NoError(t, cache.SaveUnaggregatedAttestations(atts))
 	require.NoError(t, cache.AggregateUnaggregatedAttestations(context.Background()))
 
@@ -47,7 +47,7 @@ func TestKV_Aggregated_AggregateUnaggregatedAttestations(t *testing.T) {
 func TestKV_Aggregated_SaveAggregatedAttestation(t *testing.T) {
 	tests := []struct {
 		name          string
-		att           *zondpb.Attestation
+		att           *qrysmpb.Attestation
 		count         int
 		wantErrString string
 	}{
@@ -58,19 +58,19 @@ func TestKV_Aggregated_SaveAggregatedAttestation(t *testing.T) {
 		},
 		{
 			name:          "nil attestation data",
-			att:           &zondpb.Attestation{},
+			att:           &qrysmpb.Attestation{},
 			wantErrString: "attestation's data can't be nil",
 		},
 		{
 			name: "not aggregated",
-			att: util.HydrateAttestation(&zondpb.Attestation{
-				Data: &zondpb.AttestationData{}, AggregationBits: bitfield.Bitlist{0b10100}}),
+			att: util.HydrateAttestation(&qrysmpb.Attestation{
+				Data: &qrysmpb.AttestationData{}, AggregationBits: bitfield.Bitlist{0b10100}}),
 			wantErrString: "attestation is not aggregated",
 		},
 		{
 			name: "invalid hash",
-			att: &zondpb.Attestation{
-				Data: util.HydrateAttestationData(&zondpb.AttestationData{
+			att: &qrysmpb.Attestation{
+				Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 					BeaconBlockRoot: []byte{0b0},
 				}),
 				AggregationBits: bitfield.Bitlist{0b10111},
@@ -79,8 +79,8 @@ func TestKV_Aggregated_SaveAggregatedAttestation(t *testing.T) {
 		},
 		{
 			name: "already seen",
-			att: util.HydrateAttestation(&zondpb.Attestation{
-				Data: &zondpb.AttestationData{
+			att: util.HydrateAttestation(&qrysmpb.Attestation{
+				Data: &qrysmpb.AttestationData{
 					Slot: 100,
 				},
 				AggregationBits: bitfield.Bitlist{0b11101001},
@@ -89,8 +89,8 @@ func TestKV_Aggregated_SaveAggregatedAttestation(t *testing.T) {
 		},
 		{
 			name: "normal save",
-			att: util.HydrateAttestation(&zondpb.Attestation{
-				Data: &zondpb.AttestationData{
+			att: util.HydrateAttestation(&qrysmpb.Attestation{
+				Data: &qrysmpb.AttestationData{
 					Slot: 1,
 				},
 				AggregationBits: bitfield.Bitlist{0b1101},
@@ -98,7 +98,7 @@ func TestKV_Aggregated_SaveAggregatedAttestation(t *testing.T) {
 			count: 1,
 		},
 	}
-	r, err := hashFn(util.HydrateAttestationData(&zondpb.AttestationData{
+	r, err := hashFn(util.HydrateAttestationData(&qrysmpb.AttestationData{
 		Slot: 100,
 	}))
 	require.NoError(t, err)
@@ -124,16 +124,16 @@ func TestKV_Aggregated_SaveAggregatedAttestation(t *testing.T) {
 func TestKV_Aggregated_SaveAggregatedAttestations(t *testing.T) {
 	tests := []struct {
 		name          string
-		atts          []*zondpb.Attestation
+		atts          []*qrysmpb.Attestation
 		count         int
 		wantErrString string
 	}{
 		{
 			name: "no duplicates",
-			atts: []*zondpb.Attestation{
-				util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1},
+			atts: []*qrysmpb.Attestation{
+				util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1},
 					AggregationBits: bitfield.Bitlist{0b1101}}),
-				util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1},
+				util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1},
 					AggregationBits: bitfield.Bitlist{0b1101}}),
 			},
 			count: 1,
@@ -159,16 +159,16 @@ func TestKV_Aggregated_SaveAggregatedAttestations(t *testing.T) {
 func TestKV_Aggregated_SaveAggregatedAttestations_SomeGoodSomeBad(t *testing.T) {
 	tests := []struct {
 		name          string
-		atts          []*zondpb.Attestation
+		atts          []*qrysmpb.Attestation
 		count         int
 		wantErrString string
 	}{
 		{
 			name: "the first attestation is bad",
-			atts: []*zondpb.Attestation{
-				util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1},
+			atts: []*qrysmpb.Attestation{
+				util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1},
 					AggregationBits: bitfield.Bitlist{0b1100}}),
-				util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1},
+				util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1},
 					AggregationBits: bitfield.Bitlist{0b1101}}),
 			},
 			count: 1,
@@ -194,10 +194,10 @@ func TestKV_Aggregated_SaveAggregatedAttestations_SomeGoodSomeBad(t *testing.T) 
 func TestKV_Aggregated_AggregatedAttestations(t *testing.T) {
 	cache := NewAttCaches()
 
-	att1 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1101}})
-	att2 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1101}})
-	att3 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 3}, AggregationBits: bitfield.Bitlist{0b1101}})
-	atts := []*zondpb.Attestation{att1, att2, att3}
+	att1 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1101}})
+	att2 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b1101}})
+	att3 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 3}, AggregationBits: bitfield.Bitlist{0b1101}})
+	atts := []*qrysmpb.Attestation{att1, att2, att3}
 
 	for _, att := range atts {
 		require.NoError(t, cache.SaveAggregatedAttestation(att))
@@ -214,25 +214,25 @@ func TestKV_Aggregated_DeleteAggregatedAttestation(t *testing.T) {
 	t.Run("nil attestation", func(t *testing.T) {
 		cache := NewAttCaches()
 		assert.ErrorContains(t, "attestation can't be nil", cache.DeleteAggregatedAttestation(nil))
-		att := util.HydrateAttestation(&zondpb.Attestation{AggregationBits: bitfield.Bitlist{0b10101}, Data: &zondpb.AttestationData{Slot: 2}})
+		att := util.HydrateAttestation(&qrysmpb.Attestation{AggregationBits: bitfield.Bitlist{0b10101}, Data: &qrysmpb.AttestationData{Slot: 2}})
 		assert.NoError(t, cache.DeleteAggregatedAttestation(att))
 	})
 
 	t.Run("non aggregated attestation", func(t *testing.T) {
 		cache := NewAttCaches()
-		att := util.HydrateAttestation(&zondpb.Attestation{AggregationBits: bitfield.Bitlist{0b1001}, Data: &zondpb.AttestationData{Slot: 2}})
+		att := util.HydrateAttestation(&qrysmpb.Attestation{AggregationBits: bitfield.Bitlist{0b1001}, Data: &qrysmpb.AttestationData{Slot: 2}})
 		err := cache.DeleteAggregatedAttestation(att)
 		assert.ErrorContains(t, "attestation is not aggregated", err)
 	})
 
 	t.Run("invalid hash", func(t *testing.T) {
 		cache := NewAttCaches()
-		att := &zondpb.Attestation{
+		att := &qrysmpb.Attestation{
 			AggregationBits: bitfield.Bitlist{0b1111},
-			Data: &zondpb.AttestationData{
+			Data: &qrysmpb.AttestationData{
 				Slot:   2,
-				Source: &zondpb.Checkpoint{},
-				Target: &zondpb.Checkpoint{},
+				Source: &qrysmpb.Checkpoint{},
+				Target: &qrysmpb.Checkpoint{},
 			},
 		}
 		err := cache.DeleteAggregatedAttestation(att)
@@ -242,40 +242,40 @@ func TestKV_Aggregated_DeleteAggregatedAttestation(t *testing.T) {
 
 	t.Run("nonexistent attestation", func(t *testing.T) {
 		cache := NewAttCaches()
-		att := util.HydrateAttestation(&zondpb.Attestation{AggregationBits: bitfield.Bitlist{0b1111}, Data: &zondpb.AttestationData{Slot: 2}})
+		att := util.HydrateAttestation(&qrysmpb.Attestation{AggregationBits: bitfield.Bitlist{0b1111}, Data: &qrysmpb.AttestationData{Slot: 2}})
 		assert.NoError(t, cache.DeleteAggregatedAttestation(att))
 	})
 
 	t.Run("non-filtered deletion", func(t *testing.T) {
 		cache := NewAttCaches()
-		att1 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b11010}})
-		att2 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b11010}})
-		att3 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 3}, AggregationBits: bitfield.Bitlist{0b11010}})
-		att4 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 3}, AggregationBits: bitfield.Bitlist{0b10101}})
-		atts := []*zondpb.Attestation{att1, att2, att3, att4}
+		att1 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b11010}})
+		att2 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b11010}})
+		att3 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 3}, AggregationBits: bitfield.Bitlist{0b11010}})
+		att4 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 3}, AggregationBits: bitfield.Bitlist{0b10101}})
+		atts := []*qrysmpb.Attestation{att1, att2, att3, att4}
 		require.NoError(t, cache.SaveAggregatedAttestations(atts))
 		require.NoError(t, cache.DeleteAggregatedAttestation(att1))
 		require.NoError(t, cache.DeleteAggregatedAttestation(att3))
 
 		returned := cache.AggregatedAttestations()
-		wanted := []*zondpb.Attestation{att2}
+		wanted := []*qrysmpb.Attestation{att2}
 		assert.DeepEqual(t, wanted, returned)
 	})
 
 	t.Run("filtered deletion", func(t *testing.T) {
 		cache := NewAttCaches()
-		att1 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b110101}})
-		att2 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b110111}})
-		att3 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b110100}})
-		att4 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b110101}})
-		atts := []*zondpb.Attestation{att1, att2, att3, att4}
+		att1 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b110101}})
+		att2 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b110111}})
+		att3 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b110100}})
+		att4 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 2}, AggregationBits: bitfield.Bitlist{0b110101}})
+		atts := []*qrysmpb.Attestation{att1, att2, att3, att4}
 		require.NoError(t, cache.SaveAggregatedAttestations(atts))
 
 		assert.Equal(t, 2, cache.AggregatedAttestationCount(), "Unexpected number of atts")
 		require.NoError(t, cache.DeleteAggregatedAttestation(att4))
 
 		returned := cache.AggregatedAttestations()
-		wanted := []*zondpb.Attestation{att1, att2}
+		wanted := []*qrysmpb.Attestation{att1, att2}
 		sort.Slice(returned, func(i, j int) bool {
 			return string(returned[i].AggregationBits) < string(returned[j].AggregationBits)
 		})
@@ -286,8 +286,8 @@ func TestKV_Aggregated_DeleteAggregatedAttestation(t *testing.T) {
 func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 	tests := []struct {
 		name     string
-		existing []*zondpb.Attestation
-		input    *zondpb.Attestation
+		existing []*qrysmpb.Attestation
+		input    *qrysmpb.Attestation
 		want     bool
 		err      error
 	}{
@@ -299,7 +299,7 @@ func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 		},
 		{
 			name: "nil attestation data",
-			input: &zondpb.Attestation{
+			input: &qrysmpb.Attestation{
 				AggregationBits: bitfield.Bitlist{0b1111},
 			},
 			want: false,
@@ -307,8 +307,8 @@ func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 		},
 		{
 			name: "empty cache aggregated",
-			input: util.HydrateAttestation(&zondpb.Attestation{
-				Data: &zondpb.AttestationData{
+			input: util.HydrateAttestation(&qrysmpb.Attestation{
+				Data: &qrysmpb.AttestationData{
 					Slot: 1,
 				},
 				AggregationBits: bitfield.Bitlist{0b1111}}),
@@ -316,8 +316,8 @@ func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 		},
 		{
 			name: "empty cache unaggregated",
-			input: util.HydrateAttestation(&zondpb.Attestation{
-				Data: &zondpb.AttestationData{
+			input: util.HydrateAttestation(&qrysmpb.Attestation{
+				Data: &qrysmpb.AttestationData{
 					Slot: 1,
 				},
 				AggregationBits: bitfield.Bitlist{0b1001}}),
@@ -325,14 +325,14 @@ func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 		},
 		{
 			name: "single attestation in cache with exact match",
-			existing: []*zondpb.Attestation{{
-				Data: util.HydrateAttestationData(&zondpb.AttestationData{
+			existing: []*qrysmpb.Attestation{{
+				Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 					Slot: 1,
 				}),
 				AggregationBits: bitfield.Bitlist{0b1111}},
 			},
-			input: &zondpb.Attestation{
-				Data: util.HydrateAttestationData(&zondpb.AttestationData{
+			input: &qrysmpb.Attestation{
+				Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 					Slot: 1,
 				}),
 				AggregationBits: bitfield.Bitlist{0b1111}},
@@ -340,14 +340,14 @@ func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 		},
 		{
 			name: "single attestation in cache with subset aggregation",
-			existing: []*zondpb.Attestation{{
-				Data: util.HydrateAttestationData(&zondpb.AttestationData{
+			existing: []*qrysmpb.Attestation{{
+				Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 					Slot: 1,
 				}),
 				AggregationBits: bitfield.Bitlist{0b1111}},
 			},
-			input: &zondpb.Attestation{
-				Data: util.HydrateAttestationData(&zondpb.AttestationData{
+			input: &qrysmpb.Attestation{
+				Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 					Slot: 1,
 				}),
 				AggregationBits: bitfield.Bitlist{0b1110}},
@@ -355,14 +355,14 @@ func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 		},
 		{
 			name: "single attestation in cache with superset aggregation",
-			existing: []*zondpb.Attestation{{
-				Data: util.HydrateAttestationData(&zondpb.AttestationData{
+			existing: []*qrysmpb.Attestation{{
+				Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 					Slot: 1,
 				}),
 				AggregationBits: bitfield.Bitlist{0b1110}},
 			},
-			input: &zondpb.Attestation{
-				Data: util.HydrateAttestationData(&zondpb.AttestationData{
+			input: &qrysmpb.Attestation{
+				Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 					Slot: 1,
 				}),
 				AggregationBits: bitfield.Bitlist{0b1111}},
@@ -370,22 +370,22 @@ func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 		},
 		{
 			name: "multiple attestations with same data in cache with overlapping aggregation, input is subset",
-			existing: []*zondpb.Attestation{
+			existing: []*qrysmpb.Attestation{
 				{
-					Data: util.HydrateAttestationData(&zondpb.AttestationData{
+					Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 						Slot: 1,
 					}),
 					AggregationBits: bitfield.Bitlist{0b1111000},
 				},
 				{
-					Data: util.HydrateAttestationData(&zondpb.AttestationData{
+					Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 						Slot: 1,
 					}),
 					AggregationBits: bitfield.Bitlist{0b1100111},
 				},
 			},
-			input: &zondpb.Attestation{
-				Data: util.HydrateAttestationData(&zondpb.AttestationData{
+			input: &qrysmpb.Attestation{
+				Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 					Slot: 1,
 				}),
 				AggregationBits: bitfield.Bitlist{0b1100000}},
@@ -393,22 +393,22 @@ func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 		},
 		{
 			name: "multiple attestations with same data in cache with overlapping aggregation and input is superset",
-			existing: []*zondpb.Attestation{
+			existing: []*qrysmpb.Attestation{
 				{
-					Data: util.HydrateAttestationData(&zondpb.AttestationData{
+					Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 						Slot: 1,
 					}),
 					AggregationBits: bitfield.Bitlist{0b1111000},
 				},
 				{
-					Data: util.HydrateAttestationData(&zondpb.AttestationData{
+					Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 						Slot: 1,
 					}),
 					AggregationBits: bitfield.Bitlist{0b1100111},
 				},
 			},
-			input: &zondpb.Attestation{
-				Data: util.HydrateAttestationData(&zondpb.AttestationData{
+			input: &qrysmpb.Attestation{
+				Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 					Slot: 1,
 				}),
 				AggregationBits: bitfield.Bitlist{0b1111111}},
@@ -416,22 +416,22 @@ func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 		},
 		{
 			name: "multiple attestations with different data in cache",
-			existing: []*zondpb.Attestation{
+			existing: []*qrysmpb.Attestation{
 				{
-					Data: util.HydrateAttestationData(&zondpb.AttestationData{
+					Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 						Slot: 2,
 					}),
 					AggregationBits: bitfield.Bitlist{0b1111000},
 				},
 				{
-					Data: util.HydrateAttestationData(&zondpb.AttestationData{
+					Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 						Slot: 3,
 					}),
 					AggregationBits: bitfield.Bitlist{0b1100111},
 				},
 			},
-			input: &zondpb.Attestation{
-				Data: util.HydrateAttestationData(&zondpb.AttestationData{
+			input: &qrysmpb.Attestation{
+				Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 					Slot: 1,
 				}),
 				AggregationBits: bitfield.Bitlist{0b1111111}},
@@ -439,16 +439,16 @@ func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 		},
 		{
 			name: "attestations with different bitlist lengths",
-			existing: []*zondpb.Attestation{
+			existing: []*qrysmpb.Attestation{
 				{
-					Data: util.HydrateAttestationData(&zondpb.AttestationData{
+					Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 						Slot: 2,
 					}),
 					AggregationBits: bitfield.Bitlist{0b1111000},
 				},
 			},
-			input: &zondpb.Attestation{
-				Data: util.HydrateAttestationData(&zondpb.AttestationData{
+			input: &qrysmpb.Attestation{
+				Data: util.HydrateAttestationData(&qrysmpb.AttestationData{
 					Slot: 2,
 				}),
 				AggregationBits: bitfield.Bitlist{0b1111},
@@ -491,13 +491,13 @@ func TestKV_Aggregated_HasAggregatedAttestation(t *testing.T) {
 
 func TestKV_Aggregated_DuplicateAggregatedAttestations(t *testing.T) {
 	cache := NewAttCaches()
-	priv, err := dilithium.RandKey()
+	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
 	sig := priv.Sign([]byte{'a'}).Marshal()
 
-	att1 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1101}, Signatures: [][]byte{sig, sig}})
-	att2 := util.HydrateAttestation(&zondpb.Attestation{Data: &zondpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1111}, Signatures: [][]byte{sig, sig, sig}})
-	atts := []*zondpb.Attestation{att1, att2}
+	att1 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1101}, Signatures: [][]byte{sig, sig}})
+	att2 := util.HydrateAttestation(&qrysmpb.Attestation{Data: &qrysmpb.AttestationData{Slot: 1}, AggregationBits: bitfield.Bitlist{0b1111}, Signatures: [][]byte{sig, sig, sig}})
+	atts := []*qrysmpb.Attestation{att1, att2}
 
 	for _, att := range atts {
 		require.NoError(t, cache.SaveAggregatedAttestation(att))
@@ -508,4 +508,32 @@ func TestKV_Aggregated_DuplicateAggregatedAttestations(t *testing.T) {
 	// It should have only returned att2.
 	assert.DeepSSZEqual(t, att2, returned[0], "Did not receive correct aggregated atts")
 	assert.Equal(t, 1, len(returned), "Did not receive correct aggregated atts")
+}
+
+func TestKV_Aggregated_HasAggregatedAttestation_AfterBlockDeletion(t *testing.T) {
+	cache := NewAttCaches()
+
+	att1 := util.HydrateAttestation(&qrysmpb.Attestation{
+		Data:            &qrysmpb.AttestationData{Slot: 1},
+		AggregationBits: bitfield.Bitlist{0b1111000},
+	})
+	att2 := util.HydrateAttestation(&qrysmpb.Attestation{
+		Data:            &qrysmpb.AttestationData{Slot: 1},
+		AggregationBits: bitfield.Bitlist{0b1100111},
+	})
+	query := util.HydrateAttestation(&qrysmpb.Attestation{
+		Data:            &qrysmpb.AttestationData{Slot: 1},
+		AggregationBits: bitfield.Bitlist{0b1100111},
+	})
+
+	require.NoError(t, cache.SaveBlockAttestation(att1))
+	require.NoError(t, cache.SaveBlockAttestation(att2))
+	require.NoError(t, cache.DeleteBlockAttestation(att1))
+
+	result, err := cache.HasAggregatedAttestation(query)
+	require.NoError(t, err)
+	assert.Equal(t, true, result)
+
+	require.NoError(t, cache.SaveAggregatedAttestation(query))
+	assert.Equal(t, 0, cache.AggregatedAttestationCount())
 }

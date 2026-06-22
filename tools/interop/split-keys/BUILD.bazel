@@ -1,14 +1,14 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "split-keys_lib",
     srcs = ["main.go"],
     importpath = "github.com/theQRL/qrysm/tools/interop/split-keys",
     visibility = ["//visibility:private"],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "split-keys_test",
     srcs = ["main_test.go"],
-    embed = [":go_default_library"],
+    embed = [":split-keys_lib"],
 )

@@ -6,7 +6,7 @@ import (
 	"github.com/theQRL/qrysm/config/features"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/container/slice"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -16,8 +16,8 @@ import (
 // Submission into this pool does not guarantee inclusion into a beacon block.
 func (bs *Server) SubmitProposerSlashing(
 	ctx context.Context,
-	req *zondpb.ProposerSlashing,
-) (*zondpb.SubmitSlashingResponse, error) {
+	req *qrysmpb.ProposerSlashing,
+) (*qrysmpb.SubmitSlashingResponse, error) {
 	beaconState, err := bs.HeadFetcher.HeadStateReadOnly(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not retrieve head state: %v", err)
@@ -31,7 +31,7 @@ func (bs *Server) SubmitProposerSlashing(
 		}
 	}
 
-	return &zondpb.SubmitSlashingResponse{
+	return &qrysmpb.SubmitSlashingResponse{
 		SlashedIndices: []primitives.ValidatorIndex{req.Header_1.Header.ProposerIndex},
 	}, nil
 }
@@ -41,8 +41,8 @@ func (bs *Server) SubmitProposerSlashing(
 // Submission into this pool does not guarantee inclusion into a beacon block.
 func (bs *Server) SubmitAttesterSlashing(
 	ctx context.Context,
-	req *zondpb.AttesterSlashing,
-) (*zondpb.SubmitSlashingResponse, error) {
+	req *qrysmpb.AttesterSlashing,
+) (*qrysmpb.SubmitSlashingResponse, error) {
 	beaconState, err := bs.HeadFetcher.HeadStateReadOnly(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Could not retrieve head state: %v", err)
@@ -60,7 +60,7 @@ func (bs *Server) SubmitAttesterSlashing(
 	for i, index := range indices {
 		slashedIndices[i] = primitives.ValidatorIndex(index)
 	}
-	return &zondpb.SubmitSlashingResponse{
+	return &qrysmpb.SubmitSlashingResponse{
 		SlashedIndices: slashedIndices,
 	}, nil
 }

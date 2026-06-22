@@ -31,7 +31,7 @@ func LogThis(err error) {
 
 	log.WithError(err).Error("Something bad happened, but this log statement is OK :)")
 
-	_ = fmt.Errorf("this is ok: %v", err)
+	_ = fmt.Errorf("this is ok: %w", err)
 }
 
 func do() (bool, error) {
@@ -44,31 +44,31 @@ func do2() error {
 
 type logger struct{}
 
-func (*logger) Debugf(format string, args ...interface{}) {
+func (*logger) Debugf(format string, args ...any) {
 }
 
-func (*logger) Infof(format string, args ...interface{}) {
+func (*logger) Infof(format string, args ...any) {
 }
 
-func (*logger) Printf(format string, args ...interface{}) {
+func (*logger) Printf(format string, args ...any) {
 }
 
-func (*logger) Warnf(format string, args ...interface{}) {
+func (*logger) Warnf(format string, args ...any) {
 }
 
-func (*logger) Warningf(format string, args ...interface{}) {
+func (*logger) Warningf(format string, args ...any) {
 }
 
-func (*logger) Errorf(format string, args ...interface{}) {
+func (*logger) Errorf(format string, args ...any) {
 }
 
 func (*logger) Error(msg string) {
 }
 
-func (*logger) Fatalf(format string, args ...interface{}) {
+func (*logger) Fatalf(format string, args ...any) {
 }
 
-func (*logger) Panicf(format string, args ...interface{}) {
+func (*logger) Panicf(format string, args ...any) {
 }
 
 func (l *logger) WithError(err error) *logger {

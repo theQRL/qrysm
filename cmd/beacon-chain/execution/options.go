@@ -26,7 +26,7 @@ func FlagOptions(c *cli.Context) ([]execution.Option, error) {
 	headers := strings.Split(c.String(flags.ExecutionEngineHeaders.Name), ",")
 	opts := []execution.Option{
 		execution.WithHttpEndpoint(endpoint),
-		execution.WithEth1HeaderRequestLimit(c.Uint64(flags.Eth1HeaderReqLimit.Name)),
+		execution.WithExecutionHeaderRequestLimit(c.Uint64(flags.ExecutionHeaderReqLimit.Name)),
 		execution.WithHeaders(headers),
 	}
 	if len(jwtSecret) > 0 {
@@ -42,7 +42,7 @@ func FlagOptions(c *cli.Context) ([]execution.Option, error) {
 //
 // The secret must be stored as a hex-encoded string within a file in the filesystem.
 // If the --jwt-secret flag is provided to Qrysm, but the file cannot be read, or does not contain a hex-encoded
-// key of at least 256 bits, the client should treat this as an error and abort the startup.
+// key of 256 bits, the client should treat this as an error and abort the startup.
 func parseJWTSecretFromFile(c *cli.Context) ([]byte, error) {
 	jwtSecretFile := c.String(flags.ExecutionJWTSecretFlag.Name)
 	if jwtSecretFile == "" {
@@ -60,8 +60,8 @@ func parseJWTSecretFromFile(c *cli.Context) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(secret) < 32 {
-		return nil, errors.New("provided JWT secret should be a hex string of at least 32 bytes")
+	if len(secret) != 32 {
+		return nil, errors.New("provided JWT secret should be a hex string of 32 bytes")
 	}
 	log.Infof("Finished reading JWT secret from %s", jwtSecretFile)
 	return secret, nil
@@ -71,7 +71,7 @@ func parseExecutionChainEndpoint(c *cli.Context) (string, error) {
 	if c.String(flags.ExecutionEngineEndpoint.Name) == "" {
 		// TODO(now.youtrack.cloud/issue/TQ-1)
 		return "", fmt.Errorf(
-			"you need to specify %s to provide a connection endpoint to an Zond execution client "+
+			"you need to specify %s to provide a connection endpoint to a QRL execution client "+
 				"for your Qrysm beacon node. This is a requirement for running a node. You can read more about "+
 				"how to configure this execution client connection in our docs here "+
 				"https://docs.prylabs.network/docs/install/install-with-script",

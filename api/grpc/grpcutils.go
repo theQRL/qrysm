@@ -17,7 +17,7 @@ import (
 func LogRequests(
 	ctx context.Context,
 	method string, req,
-	reply interface{},
+	reply any,
 	cc *grpc.ClientConn,
 	invoker grpc.UnaryInvoker,
 	opts ...grpc.CallOption,
@@ -84,7 +84,7 @@ func AppendHeaders(parent context.Context, headers []string) context.Context {
 
 // AppendCustomErrorHeader sets a CustomErrorMetadataKey gRPC header on the passed in context,
 // using the passed in error data as the header's value. The data is serialized as JSON.
-func AppendCustomErrorHeader(ctx context.Context, errorData interface{}) error {
+func AppendCustomErrorHeader(ctx context.Context, errorData any) error {
 	j, err := json.Marshal(errorData)
 	if err != nil {
 		return fmt.Errorf("could not marshal error data into JSON: %w", err)

@@ -62,9 +62,10 @@ type Flags struct {
 
 	DisableResourceManager     bool // Disables running the node with libp2p's resource manager.
 	DisableStakinContractCheck bool // Disables check for deposit contract when proposing blocks
+	DisableLastEpochTargets    bool // Disables treating blocks from the previous epoch as viable checkpoint roots when computing attestation pre-state.
 
 	EnableVerboseSigVerification bool // EnableVerboseSigVerification specifies whether to verify individual signature if batch verification fails
-	EnableOptionalEngineMethods  bool // EnableOptionalEngineMethods specifies whether to activate capella specific engine methods
+	EnableOptionalEngineMethods  bool // EnableOptionalEngineMethods specifies whether to activate zond specific engine methods
 	EnableEIP4881                bool // EnableEIP4881 specifies whether to use the deposit tree from EIP4881
 
 	PrepareAllPayloads bool // PrepareAllPayloads informs the engine to prepare a block on every slot.
@@ -77,6 +78,9 @@ type Flags struct {
 
 	// AggregateIntervals specifies the time durations at which we aggregate attestations preparing for forkchoice.
 	AggregateIntervals [3]time.Duration
+
+	// Feature related flags (alignment forced in the end)
+	ForceHead string // ForceHead forces the head block to be a specific block root, the last head block, or the last finalized block.
 }
 
 var featureConfig *Flags
@@ -119,9 +123,9 @@ func InitWithReset(c *Flags) func() {
 // configureTestnet sets the config according to specified testnet flag
 func configureTestnet(ctx *cli.Context) error {
 	if ctx.IsSet(cmd.ChainConfigFileFlag.Name) {
-		log.Warn("Running on custom Zond network specified in a chain configuration yaml file")
+		log.Warn("Running on custom QRL network specified in a chain configuration yaml file")
 	} else {
-		log.Warn("Running on Zond Mainnet")
+		log.Warn("Running on QRL Mainnet")
 	}
 	if err := params.SetActive(params.MainnetConfig().Copy()); err != nil {
 		return err
@@ -194,9 +198,13 @@ func ConfigureBeaconChain(ctx *cli.Context) error {
 		logEnabled(enableFullSSZDataLogging)
 		cfg.EnableFullSSZDataLogging = true
 	}
-	if ctx.IsSet(enableVerboseSigVerification.Name) {
-		logEnabled(enableVerboseSigVerification)
-		cfg.EnableVerboseSigVerification = true
+	// Verbose signature verification is on by default; allow operators to
+	// disable it via --disable-verbose-sig-verification if the per-signature
+	// fallback path becomes a perf concern.
+	cfg.EnableVerboseSigVerification = true
+	if ctx.IsSet(disableVerboseSigVerification.Name) {
+		logEnabled(disableVerboseSigVerification)
+		cfg.EnableVerboseSigVerification = false
 	}
 	cfg.EnableOptionalEngineMethods = true
 	if ctx.IsSet(disableOptionalEngineMethods.Name) {
@@ -216,9 +224,17 @@ func ConfigureBeaconChain(ctx *cli.Context) error {
 		logEnabled(disableResourceManager)
 		cfg.DisableResourceManager = true
 	}
-	if ctx.IsSet(enableEIP4881.Name) {
-		logEnabled(enableEIP4881)
+	if ctx.IsSet(EnableEIP4881.Name) {
+		logEnabled(EnableEIP4881)
 		cfg.EnableEIP4881 = true
+	}
+	if ctx.IsSet(forceHeadFlag.Name) {
+		logEnabled(forceHeadFlag)
+		cfg.ForceHead = ctx.String(forceHeadFlag.Name)
+	}
+	if ctx.IsSet(disableLastEpochTargets.Name) {
+		logEnabled(disableLastEpochTargets)
+		cfg.DisableLastEpochTargets = true
 	}
 	cfg.AggregateIntervals = [3]time.Duration{aggregateFirstInterval.Value, aggregateSecondInterval.Value, aggregateThirdInterval.Value}
 	Init(cfg)

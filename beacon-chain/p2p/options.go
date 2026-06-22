@@ -4,19 +4,35 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/libp2p/go-libp2p"
 	mplex "github.com/libp2p/go-libp2p-mplex"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
+	gomplex "github.com/libp2p/go-mplex"
 	ma "github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/config/features"
 	ecdsaqrysm "github.com/theQRL/qrysm/crypto/ecdsa"
 	"github.com/theQRL/qrysm/runtime/version"
 )
+
+// setConnManagerOption returns a libp2p.ConnectionManager option whose high-water mark is the
+// larger of the libp2p default and MaxPeers + 32. This prevents the manager from pruning peers
+// that the operator opted in to via --p2p-max-peers — without it, libp2p's default high-water
+// mark (192) prunes connections whenever MaxPeers > 192.
+func setConnManagerOption(cfg *Config) libp2p.Option {
+	low, high := cfg.connManagerLowHigh()
+	cm, err := connmgr.NewConnManager(low, high)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to create libp2p connection manager")
+	}
+	return libp2p.ConnectionManager(cm)
+}
 
 // MultiAddressBuilder takes in an ip address string and port to produce a go multiaddr format.
 func MultiAddressBuilder(ipAddr string, port uint) (ma.Multiaddr, error) {
@@ -67,6 +83,7 @@ func (s *Service) buildOptions(ip net.IP, priKey *ecdsa.PrivateKey) []libp2p.Opt
 	}
 
 	options = append(options, libp2p.Security(noise.ID, noise.New))
+	options = append(options, setConnManagerOption(cfg))
 
 	if cfg.EnableUPnP {
 		options = append(options, libp2p.NATPortMap()) // Allow to use UPnP
@@ -133,4 +150,10 @@ func privKeyOption(privkey *ecdsa.PrivateKey) libp2p.Option {
 		log.Debug("ECDSA private key generated")
 		return cfg.Apply(libp2p.Identity(ifaceKey))
 	}
+}
+
+// configureMplex caps how long a half-closed mplex stream can hang around,
+// limiting resource use from misbehaving or slow peers.
+func configureMplex() {
+	gomplex.ResetStreamTimeout = 5 * time.Second
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	qrlpbservice "github.com/theQRL/qrysm/proto/qrl/service"
 )
 
 // DeleteKeystores takes in public keys and removes the accounts from the wallet.
@@ -20,18 +20,18 @@ import (
 // 5) Return API response
 func (km *Keymanager) DeleteKeystores(
 	ctx context.Context, publicKeys [][]byte,
-) ([]*zondpbservice.DeletedKeystoreStatus, error) {
+) ([]*qrlpbservice.DeletedKeystoreStatus, error) {
 	// Check for duplicate keys and filter them out.
-	trackedPublicKeys := make(map[[field_params.DilithiumPubkeyLength]byte]bool)
-	statuses := make([]*zondpbservice.DeletedKeystoreStatus, 0, len(publicKeys))
+	trackedPublicKeys := make(map[[field_params.MLDSA87PubkeyLength]byte]bool)
+	statuses := make([]*qrlpbservice.DeletedKeystoreStatus, 0, len(publicKeys))
 	deletedKeys := make([][]byte, 0, len(publicKeys))
 	// 1) Copy the in memory keystore
 	storeCopy := km.accountsStore.Copy()
 	for _, publicKey := range publicKeys {
 		// Check if the key in the request is a duplicate or not found
 		if _, ok := trackedPublicKeys[bytesutil.ToBytes2592(publicKey)]; ok {
-			statuses = append(statuses, &zondpbservice.DeletedKeystoreStatus{
-				Status: zondpbservice.DeletedKeystoreStatus_NOT_ACTIVE,
+			statuses = append(statuses, &qrlpbservice.DeletedKeystoreStatus{
+				Status: qrlpbservice.DeletedKeystoreStatus_NOT_ACTIVE,
 			})
 			continue
 		}
@@ -45,8 +45,8 @@ func (km *Keymanager) DeleteKeystores(
 			}
 		}
 		if !found {
-			statuses = append(statuses, &zondpbservice.DeletedKeystoreStatus{
-				Status: zondpbservice.DeletedKeystoreStatus_NOT_FOUND,
+			statuses = append(statuses, &qrlpbservice.DeletedKeystoreStatus{
+				Status: qrlpbservice.DeletedKeystoreStatus_NOT_FOUND,
 			})
 			continue
 		}
@@ -55,8 +55,8 @@ func (km *Keymanager) DeleteKeystores(
 		deletedKeys = append(deletedKeys, deletedPublicKey)
 		storeCopy.Seeds = append(storeCopy.Seeds[:index], storeCopy.Seeds[index+1:]...)
 		storeCopy.PublicKeys = append(storeCopy.PublicKeys[:index], storeCopy.PublicKeys[index+1:]...)
-		statuses = append(statuses, &zondpbservice.DeletedKeystoreStatus{
-			Status: zondpbservice.DeletedKeystoreStatus_DELETED,
+		statuses = append(statuses, &qrlpbservice.DeletedKeystoreStatus{
+			Status: qrlpbservice.DeletedKeystoreStatus_DELETED,
 		})
 		trackedPublicKeys[bytesutil.ToBytes2592(publicKey)] = true
 	}

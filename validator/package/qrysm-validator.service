@@ -1,5 +1,5 @@
 [Unit]
-Description=Qrysm Zond Validator Client
+Description=Qrysm QRL Validator Client
 Wants=network-online.target
 After=network-online.target
 Requires=qrysm-beacon-chain.service

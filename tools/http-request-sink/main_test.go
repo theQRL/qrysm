@@ -15,15 +15,15 @@ import (
 
 type sampleRPCRequest struct {
 	Name      string `json:"name"`
-	ETHMethod string `json:"eth_method"`
+	QRLMethod string `json:"qrl_method"`
 	Address   string `json:"address"`
 }
 
 func Test_parseAndCaptureRequest(t *testing.T) {
 	tmpFile := filepath.Join(t.TempDir(), "faketest.log")
 	body := &sampleRPCRequest{
-		Name:      "eth2",
-		ETHMethod: "eth2_produceBlock",
+		Name:      "qrl",
+		QRLMethod: "qrl_produceBlock",
 		Address:   "0x0923920930923",
 	}
 	enc, err := json.Marshal(body)
@@ -31,7 +31,7 @@ func Test_parseAndCaptureRequest(t *testing.T) {
 	httpReq, err := http.NewRequest("GET", "/", bytes.NewBuffer(enc))
 	require.NoError(t, err)
 
-	reqContent := map[string]interface{}{}
+	reqContent := map[string]any{}
 	err = parseRequest(httpReq, &reqContent)
 	require.NoError(t, err)
 
@@ -52,7 +52,7 @@ func Test_parseAndCaptureRequest(t *testing.T) {
 	fileContents, err := io.ReadAll(f)
 	require.NoError(t, err)
 
-	receivedContent := map[string]interface{}{}
+	receivedContent := map[string]any{}
 	err = json.Unmarshal(fileContents, &receivedContent)
 	require.NoError(t, err)
 

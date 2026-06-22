@@ -199,7 +199,7 @@ func ReplayProcessSlots(ctx context.Context, state state.BeaconState, slot primi
 		}
 		if qrysmtime.CanProcessEpoch(state) {
 			switch state.Version() {
-			case version.Capella:
+			case version.Zond:
 				state, err = altair.ProcessEpoch(ctx, state)
 				if err != nil {
 					tracing.AnnotateError(span, err)

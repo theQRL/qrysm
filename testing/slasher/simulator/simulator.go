@@ -17,8 +17,8 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/sync"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
@@ -33,7 +33,7 @@ type ServiceConfig struct {
 	HeadStateFetcher            blockchain.HeadFetcher
 	StateGen                    stategen.StateManager
 	SlashingsPool               slashings.PoolManager
-	PrivateKeysByValidatorIndex map[primitives.ValidatorIndex]dilithium.DilithiumKey
+	PrivateKeysByValidatorIndex map[primitives.ValidatorIndex]ml_dsa_87.MLDSA87Key
 	SyncChecker                 sync.Checker
 	ClockWaiter                 startup.ClockWaiter
 	ClockSetter                 startup.ClockSetter
@@ -60,8 +60,8 @@ type Simulator struct {
 	beaconBlocksFeed      *event.Feed
 	sentAttSlashingFeed   *event.Feed
 	sentBlockSlashingFeed *event.Feed
-	sentProposerSlashings map[[32]byte]*zondpb.ProposerSlashing
-	sentAttesterSlashings map[[32]byte]*zondpb.AttesterSlashing
+	sentProposerSlashings map[[32]byte]*qrysmpb.ProposerSlashing
+	sentAttesterSlashings map[[32]byte]*qrysmpb.AttesterSlashing
 	genesisTime           time.Time
 }
 
@@ -109,8 +109,8 @@ func New(ctx context.Context, srvConfig *ServiceConfig) (*Simulator, error) {
 		beaconBlocksFeed:      beaconBlocksFeed,
 		sentAttSlashingFeed:   sentAttSlashingFeed,
 		sentBlockSlashingFeed: sentBlockSlashingFeed,
-		sentProposerSlashings: make(map[[32]byte]*zondpb.ProposerSlashing),
-		sentAttesterSlashings: make(map[[32]byte]*zondpb.AttesterSlashing),
+		sentProposerSlashings: make(map[[32]byte]*qrysmpb.ProposerSlashing),
+		sentAttesterSlashings: make(map[[32]byte]*qrysmpb.AttesterSlashing),
 	}, nil
 }
 
@@ -130,11 +130,11 @@ func (s *Simulator) Start() {
 	config.SlotsPerEpoch = s.srvConfig.Params.SlotsPerEpoch
 	undo, err := params.SetActiveWithUndo(config)
 	if err != nil {
-		panic(err)
+		panic(err) // lint:nopanic
 	}
 	defer func() {
 		if err := undo(); err != nil {
-			panic(err)
+			panic(err) // lint:nopanic
 		}
 	}()
 
@@ -147,7 +147,7 @@ func (s *Simulator) Start() {
 	s.genesisTime = time.Now()
 	var vr [32]byte
 	if err := s.srvConfig.ClockSetter.SetClock(startup.NewClock(s.genesisTime, vr)); err != nil {
-		panic(err)
+		panic(err) // lint:nopanic
 	}
 
 	// We simulate blocks and attestations for N epochs.
@@ -236,8 +236,8 @@ func (s *Simulator) verifySlashingsWereDetected(ctx context.Context) {
 	poolAttesterSlashings := s.srvConfig.SlashingsPool.PendingAttesterSlashings(
 		ctx, nil, true, /* no limit */
 	)
-	detectedProposerSlashings := make(map[[32]byte]*zondpb.ProposerSlashing)
-	detectedAttesterSlashings := make(map[[32]byte]*zondpb.AttesterSlashing)
+	detectedProposerSlashings := make(map[[32]byte]*qrysmpb.ProposerSlashing)
+	detectedAttesterSlashings := make(map[[32]byte]*qrysmpb.AttesterSlashing)
 	for _, slashing := range poolProposerSlashings {
 		slashingRoot, err := slashing.HashTreeRoot()
 		if err != nil {

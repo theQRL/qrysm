@@ -5,14 +5,14 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"google.golang.org/protobuf/proto"
 )
 
 func (s *Service) voluntaryExitSubscriber(_ context.Context, msg proto.Message) error {
-	ve, ok := msg.(*zondpb.SignedVoluntaryExit)
+	ve, ok := msg.(*qrysmpb.SignedVoluntaryExit)
 	if !ok {
-		return fmt.Errorf("wrong type, expected: *zondpb.SignedVoluntaryExit got: %T", msg)
+		return fmt.Errorf("wrong type, expected: *qrysmpb.SignedVoluntaryExit got: %T", msg)
 	}
 
 	if ve.Exit == nil {
@@ -25,9 +25,9 @@ func (s *Service) voluntaryExitSubscriber(_ context.Context, msg proto.Message) 
 }
 
 func (s *Service) attesterSlashingSubscriber(ctx context.Context, msg proto.Message) error {
-	aSlashing, ok := msg.(*zondpb.AttesterSlashing)
+	aSlashing, ok := msg.(*qrysmpb.AttesterSlashing)
 	if !ok {
-		return fmt.Errorf("wrong type, expected: *zondpb.AttesterSlashing got: %T", msg)
+		return fmt.Errorf("wrong type, expected: *qrysmpb.AttesterSlashing got: %T", msg)
 	}
 	// Do some nil checks to prevent easy DoS'ing of this handler.
 	aSlashing1IsNil := aSlashing == nil || aSlashing.Attestation_1 == nil || aSlashing.Attestation_1.AttestingIndices == nil
@@ -46,9 +46,9 @@ func (s *Service) attesterSlashingSubscriber(ctx context.Context, msg proto.Mess
 }
 
 func (s *Service) proposerSlashingSubscriber(ctx context.Context, msg proto.Message) error {
-	pSlashing, ok := msg.(*zondpb.ProposerSlashing)
+	pSlashing, ok := msg.(*qrysmpb.ProposerSlashing)
 	if !ok {
-		return fmt.Errorf("wrong type, expected: *zondpb.ProposerSlashing got: %T", msg)
+		return fmt.Errorf("wrong type, expected: *qrysmpb.ProposerSlashing got: %T", msg)
 	}
 	// Do some nil checks to prevent easy DoS'ing of this handler.
 	header1IsNil := pSlashing == nil || pSlashing.Header_1 == nil || pSlashing.Header_1.Header == nil

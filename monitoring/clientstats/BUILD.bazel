@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "clientstats",
     srcs = [
         "interfaces.go",
         "scrapers.go",
@@ -11,20 +11,20 @@ go_library(
     importpath = "github.com/theQRL/qrysm/monitoring/clientstats",
     visibility = ["//visibility:public"],
     deps = [
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "@com_github_prometheus_client_model//go:go_default_library",
-        "@com_github_prometheus_prom2json//:go_default_library",
-        "@com_github_sirupsen_logrus//:go_default_library",
+        "//proto/qrysm/v1alpha1",
+        "@com_github_prometheus_client_model//go",
+        "@com_github_prometheus_prom2json//:prom2json",
+        "@com_github_sirupsen_logrus//:logrus",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "clientstats_test",
     srcs = ["scrapers_test.go"],
-    embed = [":go_default_library"],
+    embed = [":clientstats"],
     deps = [
-        "//testing/require:go_default_library",
-        "@com_github_sirupsen_logrus//:go_default_library",
-        "@com_github_sirupsen_logrus//hooks/test:go_default_library",
+        "//testing/require",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_sirupsen_logrus//hooks/test",
     ],
 )

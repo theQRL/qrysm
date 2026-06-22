@@ -14,7 +14,7 @@ import (
 //
 // Spec code:
 //
-//	def get_base_reward(state: BeaconState, index: ValidatorIndex) -> Gwei:
+//	def get_base_reward(state: BeaconState, index: ValidatorIndex) -> Shor:
 //	  """
 //	  Return the base reward for the validator defined by ``index`` with respect to the current ``state``.
 //
@@ -23,7 +23,7 @@ import (
 //	  and sync committees).
 //	  """
 //	  increments = state.validators[index].effective_balance // EFFECTIVE_BALANCE_INCREMENT
-//	  return Gwei(increments * get_base_reward_per_increment(state))
+//	  return Shor(increments * get_base_reward_per_increment(state))
 func BaseReward(s state.ReadOnlyBeaconState, index primitives.ValidatorIndex) (uint64, error) {
 	totalBalance, err := helpers.TotalActiveBalance(s)
 	if err != nil {
@@ -50,9 +50,9 @@ func BaseRewardWithTotalBalance(s state.ReadOnlyBeaconState, index primitives.Va
 // BaseRewardPerIncrement of the beacon state
 //
 // Spec code:
-// def get_base_reward_per_increment(state: BeaconState) -> Gwei:
+// def get_base_reward_per_increment(state: BeaconState) -> Shor:
 //
-//	return Gwei(EFFECTIVE_BALANCE_INCREMENT * BASE_REWARD_FACTOR // integer_squareroot(get_total_active_balance(state)))
+//	return Shor(EFFECTIVE_BALANCE_INCREMENT * BASE_REWARD_FACTOR // integer_squareroot(get_total_active_balance(state)))
 func BaseRewardPerIncrement(activeBalance uint64) (uint64, error) {
 	if activeBalance == 0 {
 		return 0, errors.New("active balance can't be 0")

@@ -14,12 +14,12 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/crypto/rand"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
-	v1 "github.com/theQRL/qrysm/proto/zond/v1"
+	qrlpb "github.com/theQRL/qrysm/proto/qrl/v1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assertions"
 	"github.com/theQRL/qrysm/testing/require"
 )
@@ -34,7 +34,6 @@ type BlockGenConfig struct {
 	NumVoluntaryExits    uint64
 	NumTransactions      uint64
 	FullSyncAggregate    bool
-	NumDilithiumChanges  uint64
 }
 
 // DefaultBlockGenConfig returns the block config that utilizes the
@@ -47,18 +46,17 @@ func DefaultBlockGenConfig() *BlockGenConfig {
 		NumDeposits:          0,
 		NumVoluntaryExits:    0,
 		NumTransactions:      0,
-		NumDilithiumChanges:  0,
 	}
 }
 
 // GenerateProposerSlashingForValidator for a specific validator index.
 func GenerateProposerSlashingForValidator(
 	bState state.BeaconState,
-	priv dilithium.DilithiumKey,
+	priv ml_dsa_87.MLDSA87Key,
 	idx primitives.ValidatorIndex,
-) (*zondpb.ProposerSlashing, error) {
-	header1 := HydrateSignedBeaconHeader(&zondpb.SignedBeaconBlockHeader{
-		Header: &zondpb.BeaconBlockHeader{
+) (*qrysmpb.ProposerSlashing, error) {
+	header1 := HydrateSignedBeaconHeader(&qrysmpb.SignedBeaconBlockHeader{
+		Header: &qrysmpb.BeaconBlockHeader{
 			ProposerIndex: idx,
 			Slot:          bState.Slot(),
 			BodyRoot:      bytesutil.PadTo([]byte{0, 1, 0}, fieldparams.RootLength),
@@ -71,8 +69,8 @@ func GenerateProposerSlashingForValidator(
 		return nil, err
 	}
 
-	header2 := &zondpb.SignedBeaconBlockHeader{
-		Header: &zondpb.BeaconBlockHeader{
+	header2 := &qrysmpb.SignedBeaconBlockHeader{
+		Header: &qrysmpb.BeaconBlockHeader{
 			ProposerIndex: idx,
 			Slot:          bState.Slot(),
 			BodyRoot:      bytesutil.PadTo([]byte{0, 2, 0}, fieldparams.RootLength),
@@ -85,7 +83,7 @@ func GenerateProposerSlashingForValidator(
 		return nil, err
 	}
 
-	return &zondpb.ProposerSlashing{
+	return &qrysmpb.ProposerSlashing{
 		Header_1: header1,
 		Header_2: header2,
 	}, nil
@@ -93,11 +91,11 @@ func GenerateProposerSlashingForValidator(
 
 func generateProposerSlashings(
 	bState state.BeaconState,
-	privs []dilithium.DilithiumKey,
+	privs []ml_dsa_87.MLDSA87Key,
 	numSlashings uint64,
-) ([]*zondpb.ProposerSlashing, error) {
-	proposerSlashings := make([]*zondpb.ProposerSlashing, numSlashings)
-	for i := uint64(0); i < numSlashings; i++ {
+) ([]*qrysmpb.ProposerSlashing, error) {
+	proposerSlashings := make([]*qrysmpb.ProposerSlashing, numSlashings)
+	for i := range numSlashings {
 		proposerIndex, err := randValIndex(bState)
 		if err != nil {
 			return nil, err
@@ -114,21 +112,21 @@ func generateProposerSlashings(
 // GenerateAttesterSlashingForValidator for a specific validator index.
 func GenerateAttesterSlashingForValidator(
 	bState state.BeaconState,
-	priv dilithium.DilithiumKey,
+	priv ml_dsa_87.MLDSA87Key,
 	idx primitives.ValidatorIndex,
-) (*zondpb.AttesterSlashing, error) {
+) (*qrysmpb.AttesterSlashing, error) {
 	currentEpoch := time.CurrentEpoch(bState)
 
-	att1 := &zondpb.IndexedAttestation{
-		Data: &zondpb.AttestationData{
+	att1 := &qrysmpb.IndexedAttestation{
+		Data: &qrysmpb.AttestationData{
 			Slot:            bState.Slot(),
 			CommitteeIndex:  0,
 			BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-			Target: &zondpb.Checkpoint{
+			Target: &qrysmpb.Checkpoint{
 				Epoch: currentEpoch,
 				Root:  params.BeaconConfig().ZeroHash[:],
 			},
-			Source: &zondpb.Checkpoint{
+			Source: &qrysmpb.Checkpoint{
 				Epoch: currentEpoch + 1,
 				Root:  params.BeaconConfig().ZeroHash[:],
 			},
@@ -141,16 +139,16 @@ func GenerateAttesterSlashingForValidator(
 	}
 	att1.Signatures = [][]byte{sig}
 
-	att2 := &zondpb.IndexedAttestation{
-		Data: &zondpb.AttestationData{
+	att2 := &qrysmpb.IndexedAttestation{
+		Data: &qrysmpb.AttestationData{
 			Slot:            bState.Slot(),
 			CommitteeIndex:  0,
 			BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-			Target: &zondpb.Checkpoint{
+			Target: &qrysmpb.Checkpoint{
 				Epoch: currentEpoch,
 				Root:  params.BeaconConfig().ZeroHash[:],
 			},
-			Source: &zondpb.Checkpoint{
+			Source: &qrysmpb.Checkpoint{
 				Epoch: currentEpoch,
 				Root:  params.BeaconConfig().ZeroHash[:],
 			},
@@ -163,7 +161,7 @@ func GenerateAttesterSlashingForValidator(
 	}
 	att2.Signatures = [][]byte{sig2}
 
-	return &zondpb.AttesterSlashing{
+	return &qrysmpb.AttesterSlashing{
 		Attestation_1: att1,
 		Attestation_2: att2,
 	}, nil
@@ -171,12 +169,12 @@ func GenerateAttesterSlashingForValidator(
 
 func generateAttesterSlashings(
 	bState state.BeaconState,
-	privs []dilithium.DilithiumKey,
+	privs []ml_dsa_87.MLDSA87Key,
 	numSlashings uint64,
-) ([]*zondpb.AttesterSlashing, error) {
-	attesterSlashings := make([]*zondpb.AttesterSlashing, numSlashings)
+) ([]*qrysmpb.AttesterSlashing, error) {
+	attesterSlashings := make([]*qrysmpb.AttesterSlashing, numSlashings)
 	randGen := rand.NewDeterministicGenerator()
-	for i := uint64(0); i < numSlashings; i++ {
+	for i := range numSlashings {
 		committeeIndex := randGen.Uint64() % helpers.SlotCommitteeCount(uint64(bState.NumValidators()))
 		committee, err := helpers.BeaconCommitteeFromState(context.Background(), bState, bState.Slot(), primitives.CommitteeIndex(committeeIndex))
 		if err != nil {
@@ -193,30 +191,30 @@ func generateAttesterSlashings(
 	return attesterSlashings, nil
 }
 
-func generateDepositsAndEth1Data(
+func generateDepositsAndExecutionData(
 	bState state.BeaconState,
 	numDeposits uint64,
 ) (
-	[]*zondpb.Deposit,
-	*zondpb.Eth1Data,
+	[]*qrysmpb.Deposit,
+	*qrysmpb.ExecutionData,
 	error,
 ) {
-	previousDepsLen := bState.Eth1DepositIndex()
+	previousDepsLen := bState.ExecutionDepositIndex()
 	currentDeposits, _, err := DeterministicDepositsAndKeys(previousDepsLen + numDeposits)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "could not get deposits")
 	}
-	eth1Data, err := DeterministicEth1Data(len(currentDeposits))
+	executionData, err := DeterministicExecutionData(len(currentDeposits))
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "could not get eth1data")
+		return nil, nil, errors.Wrap(err, "could not get executiondata")
 	}
-	return currentDeposits[previousDepsLen:], eth1Data, nil
+	return currentDeposits[previousDepsLen:], executionData, nil
 }
 
-func GenerateVoluntaryExits(bState state.BeaconState, k dilithium.DilithiumKey, idx primitives.ValidatorIndex) (*zondpb.SignedVoluntaryExit, error) {
+func GenerateVoluntaryExits(bState state.BeaconState, k ml_dsa_87.MLDSA87Key, idx primitives.ValidatorIndex) (*qrysmpb.SignedVoluntaryExit, error) {
 	currentEpoch := time.CurrentEpoch(bState)
-	exit := &zondpb.SignedVoluntaryExit{
-		Exit: &zondpb.VoluntaryExit{
+	exit := &qrysmpb.SignedVoluntaryExit{
+		Exit: &qrysmpb.VoluntaryExit{
 			Epoch:          time.PrevEpoch(bState),
 			ValidatorIndex: idx,
 		},
@@ -231,12 +229,12 @@ func GenerateVoluntaryExits(bState state.BeaconState, k dilithium.DilithiumKey, 
 
 func generateVoluntaryExits(
 	bState state.BeaconState,
-	privs []dilithium.DilithiumKey,
+	privs []ml_dsa_87.MLDSA87Key,
 	numExits uint64,
-) ([]*zondpb.SignedVoluntaryExit, error) {
+) ([]*qrysmpb.SignedVoluntaryExit, error) {
 	currentEpoch := time.CurrentEpoch(bState)
 
-	voluntaryExits := make([]*zondpb.SignedVoluntaryExit, numExits)
+	voluntaryExits := make([]*qrysmpb.SignedVoluntaryExit, numExits)
 	valMap := map[primitives.ValidatorIndex]bool{}
 	for i := 0; i < len(voluntaryExits); i++ {
 		valIndex, err := randValIndex(bState)
@@ -248,8 +246,8 @@ func generateVoluntaryExits(
 			i--
 			continue
 		}
-		exit := &zondpb.SignedVoluntaryExit{
-			Exit: &zondpb.VoluntaryExit{
+		exit := &qrysmpb.SignedVoluntaryExit{
+			Exit: &qrysmpb.VoluntaryExit{
 				Epoch:          time.PrevEpoch(bState),
 				ValidatorIndex: valIndex,
 			},
@@ -274,9 +272,9 @@ func randValIndex(bState state.BeaconState) (primitives.ValidatorIndex, error) {
 
 // HydrateSignedBeaconHeader hydrates a signed beacon block header with correct field length sizes
 // to comply with fssz marshalling and unmarshalling rules.
-func HydrateSignedBeaconHeader(h *zondpb.SignedBeaconBlockHeader) *zondpb.SignedBeaconBlockHeader {
+func HydrateSignedBeaconHeader(h *qrysmpb.SignedBeaconBlockHeader) *qrysmpb.SignedBeaconBlockHeader {
 	if h.Signature == nil {
-		h.Signature = make([]byte, fieldparams.DilithiumSignatureLength)
+		h.Signature = make([]byte, fieldparams.MLDSA87SignatureLength)
 	}
 	h.Header = HydrateBeaconHeader(h.Header)
 	return h
@@ -284,9 +282,9 @@ func HydrateSignedBeaconHeader(h *zondpb.SignedBeaconBlockHeader) *zondpb.Signed
 
 // HydrateBeaconHeader hydrates a beacon block header with correct field length sizes
 // to comply with fssz marshalling and unmarshalling rules.
-func HydrateBeaconHeader(h *zondpb.BeaconBlockHeader) *zondpb.BeaconBlockHeader {
+func HydrateBeaconHeader(h *qrysmpb.BeaconBlockHeader) *qrysmpb.BeaconBlockHeader {
 	if h == nil {
-		h = &zondpb.BeaconBlockHeader{}
+		h = &qrysmpb.BeaconBlockHeader{}
 	}
 	if h.BodyRoot == nil {
 		h.BodyRoot = make([]byte, fieldparams.RootLength)
@@ -300,21 +298,21 @@ func HydrateBeaconHeader(h *zondpb.BeaconBlockHeader) *zondpb.BeaconBlockHeader 
 	return h
 }
 
-// HydrateSignedBeaconBlockCapella hydrates a signed beacon block with correct field length sizes
+// HydrateSignedBeaconBlockZond hydrates a signed beacon block with correct field length sizes
 // to comply with fssz marshalling and unmarshalling rules.
-func HydrateSignedBeaconBlockCapella(b *zondpb.SignedBeaconBlockCapella) *zondpb.SignedBeaconBlockCapella {
+func HydrateSignedBeaconBlockZond(b *qrysmpb.SignedBeaconBlockZond) *qrysmpb.SignedBeaconBlockZond {
 	if b.Signature == nil {
-		b.Signature = make([]byte, fieldparams.DilithiumSignatureLength)
+		b.Signature = make([]byte, fieldparams.MLDSA87SignatureLength)
 	}
-	b.Block = HydrateBeaconBlockCapella(b.Block)
+	b.Block = HydrateBeaconBlockZond(b.Block)
 	return b
 }
 
-// HydrateBeaconBlockCapella hydrates a beacon block with correct field length sizes
+// HydrateBeaconBlockZond hydrates a beacon block with correct field length sizes
 // to comply with fssz marshalling and unmarshalling rules.
-func HydrateBeaconBlockCapella(b *zondpb.BeaconBlockCapella) *zondpb.BeaconBlockCapella {
+func HydrateBeaconBlockZond(b *qrysmpb.BeaconBlockZond) *qrysmpb.BeaconBlockZond {
 	if b == nil {
-		b = &zondpb.BeaconBlockCapella{}
+		b = &qrysmpb.BeaconBlockZond{}
 	}
 	if b.ParentRoot == nil {
 		b.ParentRoot = make([]byte, fieldparams.RootLength)
@@ -322,38 +320,38 @@ func HydrateBeaconBlockCapella(b *zondpb.BeaconBlockCapella) *zondpb.BeaconBlock
 	if b.StateRoot == nil {
 		b.StateRoot = make([]byte, fieldparams.RootLength)
 	}
-	b.Body = HydrateBeaconBlockBodyCapella(b.Body)
+	b.Body = HydrateBeaconBlockBodyZond(b.Body)
 	return b
 }
 
-// HydrateBeaconBlockBodyCapella hydrates a beacon block body with correct field length sizes
+// HydrateBeaconBlockBodyZond hydrates a beacon block body with correct field length sizes
 // to comply with fssz marshalling and unmarshalling rules.
-func HydrateBeaconBlockBodyCapella(b *zondpb.BeaconBlockBodyCapella) *zondpb.BeaconBlockBodyCapella {
+func HydrateBeaconBlockBodyZond(b *qrysmpb.BeaconBlockBodyZond) *qrysmpb.BeaconBlockBodyZond {
 	if b == nil {
-		b = &zondpb.BeaconBlockBodyCapella{}
+		b = &qrysmpb.BeaconBlockBodyZond{}
 	}
 	if b.RandaoReveal == nil {
-		b.RandaoReveal = make([]byte, fieldparams.DilithiumSignatureLength)
+		b.RandaoReveal = make([]byte, fieldparams.MLDSA87SignatureLength)
 	}
 	if b.Graffiti == nil {
 		b.Graffiti = make([]byte, fieldparams.RootLength)
 	}
-	if b.Eth1Data == nil {
-		b.Eth1Data = &zondpb.Eth1Data{
+	if b.ExecutionData == nil {
+		b.ExecutionData = &qrysmpb.ExecutionData{
 			DepositRoot: make([]byte, fieldparams.RootLength),
 			BlockHash:   make([]byte, fieldparams.RootLength),
 		}
 	}
 	if b.SyncAggregate == nil {
-		b.SyncAggregate = &zondpb.SyncAggregate{
+		b.SyncAggregate = &qrysmpb.SyncAggregate{
 			SyncCommitteeBits:       make([]byte, fieldparams.SyncAggregateSyncCommitteeBytesLength),
 			SyncCommitteeSignatures: make([][]byte, 0),
 		}
 	}
 	if b.ExecutionPayload == nil {
-		b.ExecutionPayload = &enginev1.ExecutionPayloadCapella{
+		b.ExecutionPayload = &enginev1.ExecutionPayloadZond{
 			ParentHash:    make([]byte, fieldparams.RootLength),
-			FeeRecipient:  make([]byte, 20),
+			FeeRecipient:  make([]byte, 64),
 			StateRoot:     make([]byte, fieldparams.RootLength),
 			ReceiptsRoot:  make([]byte, fieldparams.RootLength),
 			LogsBloom:     make([]byte, 256),
@@ -367,47 +365,43 @@ func HydrateBeaconBlockBodyCapella(b *zondpb.BeaconBlockBodyCapella) *zondpb.Bea
 	}
 
 	if b.ProposerSlashings == nil {
-		b.ProposerSlashings = make([]*zondpb.ProposerSlashing, 0)
+		b.ProposerSlashings = make([]*qrysmpb.ProposerSlashing, 0)
 	}
 
 	if b.AttesterSlashings == nil {
-		b.AttesterSlashings = make([]*zondpb.AttesterSlashing, 0)
+		b.AttesterSlashings = make([]*qrysmpb.AttesterSlashing, 0)
 	}
 
 	if b.VoluntaryExits == nil {
-		b.VoluntaryExits = make([]*zondpb.SignedVoluntaryExit, 0)
+		b.VoluntaryExits = make([]*qrysmpb.SignedVoluntaryExit, 0)
 	}
 
 	if b.Deposits == nil {
-		b.Deposits = make([]*zondpb.Deposit, 0)
+		b.Deposits = make([]*qrysmpb.Deposit, 0)
 	}
 
 	if b.Attestations == nil {
-		b.Attestations = make([]*zondpb.Attestation, 0)
-	}
-
-	if b.DilithiumToExecutionChanges == nil {
-		b.DilithiumToExecutionChanges = make([]*zondpb.SignedDilithiumToExecutionChange, 0)
+		b.Attestations = make([]*qrysmpb.Attestation, 0)
 	}
 
 	return b
 }
 
-// HydrateSignedBlindedBeaconBlockCapella hydrates a signed blinded beacon block with correct field length sizes
+// HydrateSignedBlindedBeaconBlockZond hydrates a signed blinded beacon block with correct field length sizes
 // to comply with fssz marshalling and unmarshalling rules.
-func HydrateSignedBlindedBeaconBlockCapella(b *zondpb.SignedBlindedBeaconBlockCapella) *zondpb.SignedBlindedBeaconBlockCapella {
+func HydrateSignedBlindedBeaconBlockZond(b *qrysmpb.SignedBlindedBeaconBlockZond) *qrysmpb.SignedBlindedBeaconBlockZond {
 	if b.Signature == nil {
-		b.Signature = make([]byte, fieldparams.DilithiumSignatureLength)
+		b.Signature = make([]byte, fieldparams.MLDSA87SignatureLength)
 	}
-	b.Block = HydrateBlindedBeaconBlockCapella(b.Block)
+	b.Block = HydrateBlindedBeaconBlockZond(b.Block)
 	return b
 }
 
-// HydrateBlindedBeaconBlockCapella hydrates a blinded beacon block with correct field length sizes
+// HydrateBlindedBeaconBlockZond hydrates a blinded beacon block with correct field length sizes
 // to comply with fssz marshalling and unmarshalling rules.
-func HydrateBlindedBeaconBlockCapella(b *zondpb.BlindedBeaconBlockCapella) *zondpb.BlindedBeaconBlockCapella {
+func HydrateBlindedBeaconBlockZond(b *qrysmpb.BlindedBeaconBlockZond) *qrysmpb.BlindedBeaconBlockZond {
 	if b == nil {
-		b = &zondpb.BlindedBeaconBlockCapella{}
+		b = &qrysmpb.BlindedBeaconBlockZond{}
 	}
 	if b.ParentRoot == nil {
 		b.ParentRoot = make([]byte, fieldparams.RootLength)
@@ -415,38 +409,38 @@ func HydrateBlindedBeaconBlockCapella(b *zondpb.BlindedBeaconBlockCapella) *zond
 	if b.StateRoot == nil {
 		b.StateRoot = make([]byte, fieldparams.RootLength)
 	}
-	b.Body = HydrateBlindedBeaconBlockBodyCapella(b.Body)
+	b.Body = HydrateBlindedBeaconBlockBodyZond(b.Body)
 	return b
 }
 
-// HydrateBlindedBeaconBlockBodyCapella hydrates a blinded beacon block body with correct field length sizes
+// HydrateBlindedBeaconBlockBodyZond hydrates a blinded beacon block body with correct field length sizes
 // to comply with fssz marshalling and unmarshalling rules.
-func HydrateBlindedBeaconBlockBodyCapella(b *zondpb.BlindedBeaconBlockBodyCapella) *zondpb.BlindedBeaconBlockBodyCapella {
+func HydrateBlindedBeaconBlockBodyZond(b *qrysmpb.BlindedBeaconBlockBodyZond) *qrysmpb.BlindedBeaconBlockBodyZond {
 	if b == nil {
-		b = &zondpb.BlindedBeaconBlockBodyCapella{}
+		b = &qrysmpb.BlindedBeaconBlockBodyZond{}
 	}
 	if b.RandaoReveal == nil {
-		b.RandaoReveal = make([]byte, fieldparams.DilithiumSignatureLength)
+		b.RandaoReveal = make([]byte, fieldparams.MLDSA87SignatureLength)
 	}
 	if b.Graffiti == nil {
 		b.Graffiti = make([]byte, 32)
 	}
-	if b.Eth1Data == nil {
-		b.Eth1Data = &zondpb.Eth1Data{
+	if b.ExecutionData == nil {
+		b.ExecutionData = &qrysmpb.ExecutionData{
 			DepositRoot: make([]byte, fieldparams.RootLength),
 			BlockHash:   make([]byte, 32),
 		}
 	}
 	if b.SyncAggregate == nil {
-		b.SyncAggregate = &zondpb.SyncAggregate{
+		b.SyncAggregate = &qrysmpb.SyncAggregate{
 			SyncCommitteeBits:       make([]byte, fieldparams.SyncAggregateSyncCommitteeBytesLength),
 			SyncCommitteeSignatures: [][]byte{},
 		}
 	}
 	if b.ExecutionPayloadHeader == nil {
-		b.ExecutionPayloadHeader = &enginev1.ExecutionPayloadHeaderCapella{
+		b.ExecutionPayloadHeader = &enginev1.ExecutionPayloadHeaderZond{
 			ParentHash:       make([]byte, 32),
-			FeeRecipient:     make([]byte, 20),
+			FeeRecipient:     make([]byte, 64),
 			StateRoot:        make([]byte, fieldparams.RootLength),
 			ReceiptsRoot:     make([]byte, fieldparams.RootLength),
 			LogsBloom:        make([]byte, 256),
@@ -460,47 +454,43 @@ func HydrateBlindedBeaconBlockBodyCapella(b *zondpb.BlindedBeaconBlockBodyCapell
 	}
 
 	if b.ProposerSlashings == nil {
-		b.ProposerSlashings = make([]*zondpb.ProposerSlashing, 0)
+		b.ProposerSlashings = make([]*qrysmpb.ProposerSlashing, 0)
 	}
 
 	if b.AttesterSlashings == nil {
-		b.AttesterSlashings = make([]*zondpb.AttesterSlashing, 0)
+		b.AttesterSlashings = make([]*qrysmpb.AttesterSlashing, 0)
 	}
 
 	if b.VoluntaryExits == nil {
-		b.VoluntaryExits = make([]*zondpb.SignedVoluntaryExit, 0)
+		b.VoluntaryExits = make([]*qrysmpb.SignedVoluntaryExit, 0)
 	}
 
 	if b.Deposits == nil {
-		b.Deposits = make([]*zondpb.Deposit, 0)
+		b.Deposits = make([]*qrysmpb.Deposit, 0)
 	}
 
 	if b.Attestations == nil {
-		b.Attestations = make([]*zondpb.Attestation, 0)
-	}
-
-	if b.DilithiumToExecutionChanges == nil {
-		b.DilithiumToExecutionChanges = make([]*zondpb.SignedDilithiumToExecutionChange, 0)
+		b.Attestations = make([]*qrysmpb.Attestation, 0)
 	}
 
 	return b
 }
 
-// HydrateV1SignedBlindedBeaconBlockCapella hydrates a signed blinded beacon block with correct field length sizes
+// HydrateV1SignedBlindedBeaconBlockZond hydrates a signed blinded beacon block with correct field length sizes
 // to comply with fssz marshalling and unmarshalling rules.
-func HydrateV1SignedBlindedBeaconBlockCapella(b *v1.SignedBlindedBeaconBlockCapella) *v1.SignedBlindedBeaconBlockCapella {
+func HydrateV1SignedBlindedBeaconBlockZond(b *qrlpb.SignedBlindedBeaconBlockZond) *qrlpb.SignedBlindedBeaconBlockZond {
 	if b.Signature == nil {
-		b.Signature = make([]byte, fieldparams.DilithiumSignatureLength)
+		b.Signature = make([]byte, fieldparams.MLDSA87SignatureLength)
 	}
-	b.Message = HydrateV1BlindedBeaconBlockCapella(b.Message)
+	b.Message = HydrateV1BlindedBeaconBlockZond(b.Message)
 	return b
 }
 
-// HydrateV1BlindedBeaconBlockCapella hydrates a blinded beacon block with correct field length sizes
+// HydrateV1BlindedBeaconBlockZond hydrates a blinded beacon block with correct field length sizes
 // to comply with fssz marshalling and unmarshalling rules.
-func HydrateV1BlindedBeaconBlockCapella(b *v1.BlindedBeaconBlockCapella) *v1.BlindedBeaconBlockCapella {
+func HydrateV1BlindedBeaconBlockZond(b *qrlpb.BlindedBeaconBlockZond) *qrlpb.BlindedBeaconBlockZond {
 	if b == nil {
-		b = &v1.BlindedBeaconBlockCapella{}
+		b = &qrlpb.BlindedBeaconBlockZond{}
 	}
 	if b.ParentRoot == nil {
 		b.ParentRoot = make([]byte, fieldparams.RootLength)
@@ -508,38 +498,38 @@ func HydrateV1BlindedBeaconBlockCapella(b *v1.BlindedBeaconBlockCapella) *v1.Bli
 	if b.StateRoot == nil {
 		b.StateRoot = make([]byte, fieldparams.RootLength)
 	}
-	b.Body = HydrateV1BlindedBeaconBlockBodyCapella(b.Body)
+	b.Body = HydrateV1BlindedBeaconBlockBodyZond(b.Body)
 	return b
 }
 
-// HydrateV1BlindedBeaconBlockBodyCapella hydrates a blinded beacon block body with correct field length sizes
+// HydrateV1BlindedBeaconBlockBodyZond hydrates a blinded beacon block body with correct field length sizes
 // to comply with fssz marshalling and unmarshalling rules.
-func HydrateV1BlindedBeaconBlockBodyCapella(b *v1.BlindedBeaconBlockBodyCapella) *v1.BlindedBeaconBlockBodyCapella {
+func HydrateV1BlindedBeaconBlockBodyZond(b *qrlpb.BlindedBeaconBlockBodyZond) *qrlpb.BlindedBeaconBlockBodyZond {
 	if b == nil {
-		b = &v1.BlindedBeaconBlockBodyCapella{}
+		b = &qrlpb.BlindedBeaconBlockBodyZond{}
 	}
 	if b.RandaoReveal == nil {
-		b.RandaoReveal = make([]byte, fieldparams.DilithiumSignatureLength)
+		b.RandaoReveal = make([]byte, fieldparams.MLDSA87SignatureLength)
 	}
 	if b.Graffiti == nil {
 		b.Graffiti = make([]byte, 32)
 	}
-	if b.Eth1Data == nil {
-		b.Eth1Data = &v1.Eth1Data{
+	if b.ExecutionData == nil {
+		b.ExecutionData = &qrlpb.ExecutionData{
 			DepositRoot: make([]byte, fieldparams.RootLength),
 			BlockHash:   make([]byte, 32),
 		}
 	}
 	if b.SyncAggregate == nil {
-		b.SyncAggregate = &v1.SyncAggregate{
+		b.SyncAggregate = &qrlpb.SyncAggregate{
 			SyncCommitteeBits:       make([]byte, 64),
 			SyncCommitteeSignatures: [][]byte{},
 		}
 	}
 	if b.ExecutionPayloadHeader == nil {
-		b.ExecutionPayloadHeader = &enginev1.ExecutionPayloadHeaderCapella{
+		b.ExecutionPayloadHeader = &enginev1.ExecutionPayloadHeaderZond{
 			ParentHash:       make([]byte, 32),
-			FeeRecipient:     make([]byte, 20),
+			FeeRecipient:     make([]byte, 64),
 			StateRoot:        make([]byte, fieldparams.RootLength),
 			ReceiptsRoot:     make([]byte, fieldparams.RootLength),
 			LogsBloom:        make([]byte, 256),
@@ -553,21 +543,21 @@ func HydrateV1BlindedBeaconBlockBodyCapella(b *v1.BlindedBeaconBlockBodyCapella)
 	return b
 }
 
-// HydrateV1CapellaSignedBeaconBlock hydrates a signed beacon block with correct field length sizes
+// HydrateV1ZondSignedBeaconBlock hydrates a signed beacon block with correct field length sizes
 // to comply with fssz marshalling and unmarshalling rules.
-func HydrateV1CapellaSignedBeaconBlock(b *v1.SignedBeaconBlockCapella) *v1.SignedBeaconBlockCapella {
+func HydrateV1ZondSignedBeaconBlock(b *qrlpb.SignedBeaconBlockZond) *qrlpb.SignedBeaconBlockZond {
 	if b.Signature == nil {
-		b.Signature = make([]byte, fieldparams.DilithiumSignatureLength)
+		b.Signature = make([]byte, fieldparams.MLDSA87SignatureLength)
 	}
-	b.Message = HydrateV1CapellaBeaconBlock(b.Message)
+	b.Message = HydrateV1ZondBeaconBlock(b.Message)
 	return b
 }
 
-// HydrateV1CapellaBeaconBlock hydrates a beacon block with correct field length sizes
+// HydrateV1ZondBeaconBlock hydrates a beacon block with correct field length sizes
 // to comply with fssz marshalling and unmarshalling rules.
-func HydrateV1CapellaBeaconBlock(b *v1.BeaconBlockCapella) *v1.BeaconBlockCapella {
+func HydrateV1ZondBeaconBlock(b *qrlpb.BeaconBlockZond) *qrlpb.BeaconBlockZond {
 	if b == nil {
-		b = &v1.BeaconBlockCapella{}
+		b = &qrlpb.BeaconBlockZond{}
 	}
 	if b.ParentRoot == nil {
 		b.ParentRoot = make([]byte, fieldparams.RootLength)
@@ -575,38 +565,38 @@ func HydrateV1CapellaBeaconBlock(b *v1.BeaconBlockCapella) *v1.BeaconBlockCapell
 	if b.StateRoot == nil {
 		b.StateRoot = make([]byte, fieldparams.RootLength)
 	}
-	b.Body = HydrateV1CapellaBeaconBlockBody(b.Body)
+	b.Body = HydrateV1ZondBeaconBlockBody(b.Body)
 	return b
 }
 
-// HydrateV1CapellaBeaconBlockBody hydrates a beacon block body with correct field length sizes
+// HydrateV1ZondBeaconBlockBody hydrates a beacon block body with correct field length sizes
 // to comply with fssz marshalling and unmarshalling rules.
-func HydrateV1CapellaBeaconBlockBody(b *v1.BeaconBlockBodyCapella) *v1.BeaconBlockBodyCapella {
+func HydrateV1ZondBeaconBlockBody(b *qrlpb.BeaconBlockBodyZond) *qrlpb.BeaconBlockBodyZond {
 	if b == nil {
-		b = &v1.BeaconBlockBodyCapella{}
+		b = &qrlpb.BeaconBlockBodyZond{}
 	}
 	if b.RandaoReveal == nil {
-		b.RandaoReveal = make([]byte, fieldparams.DilithiumSignatureLength)
+		b.RandaoReveal = make([]byte, fieldparams.MLDSA87SignatureLength)
 	}
 	if b.Graffiti == nil {
 		b.Graffiti = make([]byte, fieldparams.RootLength)
 	}
-	if b.Eth1Data == nil {
-		b.Eth1Data = &v1.Eth1Data{
+	if b.ExecutionData == nil {
+		b.ExecutionData = &qrlpb.ExecutionData{
 			DepositRoot: make([]byte, fieldparams.RootLength),
 			BlockHash:   make([]byte, fieldparams.RootLength),
 		}
 	}
 	if b.SyncAggregate == nil {
-		b.SyncAggregate = &v1.SyncAggregate{
+		b.SyncAggregate = &qrlpb.SyncAggregate{
 			SyncCommitteeBits:       make([]byte, 64),
 			SyncCommitteeSignatures: [][]byte{},
 		}
 	}
 	if b.ExecutionPayload == nil {
-		b.ExecutionPayload = &enginev1.ExecutionPayloadCapella{
+		b.ExecutionPayload = &enginev1.ExecutionPayloadZond{
 			ParentHash:    make([]byte, fieldparams.RootLength),
-			FeeRecipient:  make([]byte, 20),
+			FeeRecipient:  make([]byte, 64),
 			StateRoot:     make([]byte, fieldparams.RootLength),
 			ReceiptsRoot:  make([]byte, fieldparams.RootLength),
 			LogsBloom:     make([]byte, 256),
@@ -619,7 +609,7 @@ func HydrateV1CapellaBeaconBlockBody(b *v1.BeaconBlockBodyCapella) *v1.BeaconBlo
 	return b
 }
 
-func SaveBlock(tb assertions.AssertionTestingTB, ctx context.Context, db iface.NoHeadAccessDatabase, b interface{}) interfaces.SignedBeaconBlock {
+func SaveBlock(tb assertions.AssertionTestingTB, ctx context.Context, db iface.NoHeadAccessDatabase, b any) interfaces.SignedBeaconBlock {
 	wsb, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(tb, err)
 	require.NoError(tb, db.SaveBlock(ctx, wsb))

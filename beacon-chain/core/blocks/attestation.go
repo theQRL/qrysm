@@ -11,8 +11,8 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
 	"go.opencensus.io/trace"
 )
@@ -22,7 +22,7 @@ import (
 func VerifyAttestationNoVerifySignatures(
 	ctx context.Context,
 	beaconState state.ReadOnlyBeaconState,
-	att *zondpb.Attestation,
+	att *qrysmpb.Attestation,
 ) error {
 	ctx, span := trace.StartSpan(ctx, "core.VerifyAttestationNoVerifySignatures")
 	defer span.End()
@@ -104,7 +104,7 @@ func VerifyAttestationNoVerifySignatures(
 
 // VerifyAttestationSignatures converts and attestation into an indexed attestation and verifies
 // the signatures in that attestation.
-func VerifyAttestationSignatures(ctx context.Context, beaconState state.ReadOnlyBeaconState, att *zondpb.Attestation) error {
+func VerifyAttestationSignatures(ctx context.Context, beaconState state.ReadOnlyBeaconState, att *qrysmpb.Attestation) error {
 	if err := helpers.ValidateNilAttestation(att); err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func VerifyAttestationSignatures(ctx context.Context, beaconState state.ReadOnly
 //	  domain = get_domain(state, DOMAIN_BEACON_ATTESTER, indexed_attestation.data.target.epoch)
 //	  signing_root = compute_signing_root(indexed_attestation.data, domain)
 //	  return bls.FastAggregateVerify(pubkeys, signing_root, indexed_attestation.signature)
-func VerifyIndexedAttestation(ctx context.Context, beaconState state.ReadOnlyBeaconState, indexedAtt *zondpb.IndexedAttestation) error {
+func VerifyIndexedAttestation(ctx context.Context, beaconState state.ReadOnlyBeaconState, indexedAtt *qrysmpb.IndexedAttestation) error {
 	ctx, span := trace.StartSpan(ctx, "core.VerifyIndexedAttestation")
 	defer span.End()
 
@@ -153,10 +153,10 @@ func VerifyIndexedAttestation(ctx context.Context, beaconState state.ReadOnlyBea
 		return err
 	}
 	indices := indexedAtt.AttestingIndices
-	var pubkeys []dilithium.PublicKey
-	for i := 0; i < len(indices); i++ {
+	var pubkeys []ml_dsa_87.PublicKey
+	for i := range indices {
 		pubkeyAtIdx := beaconState.PubkeyAtIndex(primitives.ValidatorIndex(indices[i]))
-		pk, err := dilithium.PublicKeyFromBytes(pubkeyAtIdx[:])
+		pk, err := ml_dsa_87.PublicKeyFromBytes(pubkeyAtIdx[:])
 		if err != nil {
 			return errors.Wrap(err, "could not deserialize validator public key")
 		}

@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "derived",
     srcs = [
         "keymanager.go",
         "log.go",
@@ -16,11 +16,11 @@ go_library(
 )
 
 go_test(
-    name = "go_default_test",
+    name = "derived_test",
     srcs = [
         "eip_test.go",
         "keymanager_test.go",
         "mnemonic_test.go",
     ],
-    embed = [":go_default_library"],
+    embed = [":derived"],
 )

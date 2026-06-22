@@ -1,0 +1,33 @@
+load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "traces",
+    srcs = [
+        "calls.go",
+        "hexview.go",
+        "reader.go",
+    ],
+    importpath = "github.com/theQRL/qrysm/pkg/goqrvmlab/traces",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/goqrvmlab/ops",
+        "@com_github_gdamore_tcell_v2//:tcell",
+        "@com_github_golang_snappy//:snappy",
+        "@com_github_rivo_tview//:tview",
+        "@com_github_theqrl_go_qrl//common",
+        "@com_github_theqrl_go_qrl//common/uint512",
+        "@com_github_theqrl_go_qrl//core/vm",
+        "@com_github_theqrl_go_qrl//qrl/tracers/logger",
+    ],
+)
+
+go_test(
+    name = "traces_test",
+    srcs = ["reader_test.go"],
+    data = glob(["testdata/**"]),
+    embed = [":traces"],
+    deps = [
+        "//pkg/goqrvmlab/ops",
+        "@com_github_theqrl_go_qrl//common",
+    ],
+)

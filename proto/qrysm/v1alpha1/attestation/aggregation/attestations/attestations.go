@@ -5,14 +5,14 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation/aggregation"
 	"golang.org/x/exp/slices"
 )
 
 // attList represents list of attestations, defined for easier en masse operations (filtering, sorting).
-type attList []*zondpb.Attestation
+type attList []*qrysmpb.Attestation
 
 var _ = logrus.WithField("prefix", "aggregation.attestations")
 
@@ -24,18 +24,18 @@ var ErrInvalidAttestationCount = errors.New("invalid number of attestations")
 // Aggregation occurs in-place i.e. contents of input array will be modified. Should you need to
 // preserve input attestations, clone them before aggregating:
 //
-//	clonedAtts := make([]*zondpb.Attestation, len(atts))
+//	clonedAtts := make([]*qrysmpb.Attestation, len(atts))
 //	for i, a := range atts {
 //	    clonedAtts[i] = stateTrie.CopyAttestation(a)
 //	}
 //	aggregatedAtts, err := attaggregation.Aggregate(clonedAtts)
-func Aggregate(atts []*zondpb.Attestation) ([]*zondpb.Attestation, error) {
+func Aggregate(atts []*qrysmpb.Attestation) ([]*qrysmpb.Attestation, error) {
 	return MaxCoverAttestationAggregation(atts)
 }
 
 // AggregateDisjointOneBitAtts aggregates unaggregated attestations with the
 // exact same attestation data.
-func AggregateDisjointOneBitAtts(atts []*zondpb.Attestation) (*zondpb.Attestation, error) {
+func AggregateDisjointOneBitAtts(atts []*qrysmpb.Attestation) (*qrysmpb.Attestation, error) {
 	if len(atts) == 0 {
 		return nil, nil
 	}
@@ -63,7 +63,7 @@ func AggregateDisjointOneBitAtts(atts []*zondpb.Attestation) (*zondpb.Attestatio
 		}
 	}
 	keys := make([]int, len(atts))
-	for i := 0; i < len(atts); i++ {
+	for i := range atts {
 		keys[i] = i
 	}
 	idx, err := aggregateAttestations(atts, keys, coverage)
@@ -77,7 +77,7 @@ func AggregateDisjointOneBitAtts(atts []*zondpb.Attestation) (*zondpb.Attestatio
 }
 
 // AggregatePair aggregates pair of attestations a1 and a2 together.
-func AggregatePair(a1, a2 *zondpb.Attestation) (*zondpb.Attestation, error) {
+func AggregatePair(a1, a2 *qrysmpb.Attestation) (*qrysmpb.Attestation, error) {
 	if len(a1.AggregationBits.BitIndices()) != len(a1.Signatures) {
 		return nil, fmt.Errorf("att1: signatures length %d is not equal to the attesting participants indices length %d", len(a1.Signatures), len(a1.AggregationBits.BitIndices()))
 	}
@@ -93,8 +93,8 @@ func AggregatePair(a1, a2 *zondpb.Attestation) (*zondpb.Attestation, error) {
 		return nil, aggregation.ErrBitsOverlap
 	}
 
-	baseAtt := zondpb.CopyAttestation(a1)
-	newAtt := zondpb.CopyAttestation(a2)
+	baseAtt := qrysmpb.CopyAttestation(a1)
+	newAtt := qrysmpb.CopyAttestation(a2)
 	if newAtt.AggregationBits.Count() > baseAtt.AggregationBits.Count() {
 		baseAtt, newAtt = newAtt, baseAtt
 	}

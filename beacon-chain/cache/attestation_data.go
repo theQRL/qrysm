@@ -10,7 +10,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -57,7 +57,7 @@ func NewAttestationCache() *AttestationCache {
 
 // Get waits for any in progress calculation to complete before returning a
 // cached response, if any.
-func (c *AttestationCache) Get(ctx context.Context, req *zondpb.AttestationDataRequest) (*zondpb.AttestationData, error) {
+func (c *AttestationCache) Get(ctx context.Context, req *qrysmpb.AttestationDataRequest) (*qrysmpb.AttestationData, error) {
 	if req == nil {
 		return nil, errors.New("nil attestation data request")
 	}
@@ -97,7 +97,7 @@ func (c *AttestationCache) Get(ctx context.Context, req *zondpb.AttestationDataR
 
 	if exists && item != nil && item.(*attestationReqResWrapper).res != nil {
 		attestationCacheHit.Inc()
-		return zondpb.CopyAttestationData(item.(*attestationReqResWrapper).res), nil
+		return qrysmpb.CopyAttestationData(item.(*attestationReqResWrapper).res), nil
 	}
 	attestationCacheMiss.Inc()
 	return nil, nil
@@ -105,7 +105,7 @@ func (c *AttestationCache) Get(ctx context.Context, req *zondpb.AttestationDataR
 
 // MarkInProgress a request so that any other similar requests will block on
 // Get until MarkNotInProgress is called.
-func (c *AttestationCache) MarkInProgress(req *zondpb.AttestationDataRequest) error {
+func (c *AttestationCache) MarkInProgress(req *qrysmpb.AttestationDataRequest) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	s, e := reqToKey(req)
@@ -121,7 +121,7 @@ func (c *AttestationCache) MarkInProgress(req *zondpb.AttestationDataRequest) er
 
 // MarkNotInProgress will release the lock on a given request. This should be
 // called after put.
-func (c *AttestationCache) MarkNotInProgress(req *zondpb.AttestationDataRequest) error {
+func (c *AttestationCache) MarkNotInProgress(req *qrysmpb.AttestationDataRequest) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	s, e := reqToKey(req)
@@ -133,7 +133,7 @@ func (c *AttestationCache) MarkNotInProgress(req *zondpb.AttestationDataRequest)
 }
 
 // Put the response in the cache.
-func (c *AttestationCache) Put(_ context.Context, req *zondpb.AttestationDataRequest, res *zondpb.AttestationData) error {
+func (c *AttestationCache) Put(_ context.Context, req *qrysmpb.AttestationDataRequest, res *qrysmpb.AttestationData) error {
 	data := &attestationReqResWrapper{
 		req,
 		res,
@@ -147,7 +147,7 @@ func (c *AttestationCache) Put(_ context.Context, req *zondpb.AttestationDataReq
 	return nil
 }
 
-func wrapperToKey(i interface{}) (string, error) {
+func wrapperToKey(i any) (string, error) {
 	w, ok := i.(*attestationReqResWrapper)
 	if !ok {
 		return "", errors.New("key is not of type *attestationReqResWrapper")
@@ -161,11 +161,11 @@ func wrapperToKey(i interface{}) (string, error) {
 	return reqToKey(w.req)
 }
 
-func reqToKey(req *zondpb.AttestationDataRequest) (string, error) {
+func reqToKey(req *qrysmpb.AttestationDataRequest) (string, error) {
 	return fmt.Sprintf("%d", req.Slot), nil
 }
 
 type attestationReqResWrapper struct {
-	req *zondpb.AttestationDataRequest
-	res *zondpb.AttestationData
+	req *qrysmpb.AttestationDataRequest
+	res *qrysmpb.AttestationData
 }

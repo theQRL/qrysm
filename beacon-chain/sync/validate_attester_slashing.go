@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/container/slice"
 	"github.com/theQRL/qrysm/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
@@ -38,7 +38,7 @@ func (s *Service) validateAttesterSlashing(ctx context.Context, pid peer.ID, msg
 		tracing.AnnotateError(span, err)
 		return pubsub.ValidationReject, err
 	}
-	slashing, ok := m.(*zondpb.AttesterSlashing)
+	slashing, ok := m.(*qrysmpb.AttesterSlashing)
 	if !ok {
 		return pubsub.ValidationReject, errWrongMessage
 	}
@@ -59,10 +59,15 @@ func (s *Service) validateAttesterSlashing(ctx context.Context, pid peer.ID, msg
 		return pubsub.ValidationReject, err
 	}
 	isSlashable := false
+	previouslySlashed := false
 	for _, v := range slashedVals {
 		val, err := headState.ValidatorAtIndexReadOnly(primitives.ValidatorIndex(v))
 		if err != nil {
 			return pubsub.ValidationIgnore, err
+		}
+		if val.Slashed() {
+			previouslySlashed = true
+			continue
 		}
 		if helpers.IsSlashableValidator(val.ActivationEpoch(), val.WithdrawableEpoch(), val.Slashed(), slots.ToEpoch(headState.Slot())) {
 			isSlashable = true
@@ -70,6 +75,9 @@ func (s *Service) validateAttesterSlashing(ctx context.Context, pid peer.ID, msg
 		}
 	}
 	if !isSlashable {
+		if previouslySlashed {
+			return pubsub.ValidationIgnore, errors.Errorf("validators were previously slashed: %v", slashedVals)
+		}
 		return pubsub.ValidationReject, errors.Errorf("none of the validators are slashable: %v", slashedVals)
 	}
 	s.cfg.chain.ReceiveAttesterSlashing(ctx, slashing)

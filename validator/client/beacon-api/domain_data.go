@@ -4,14 +4,14 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/network/forks"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
-func (c beaconApiValidatorClient) getDomainData(ctx context.Context, epoch primitives.Epoch, domainType [4]byte) (*zondpb.DomainResponse, error) {
+func (c beaconApiValidatorClient) getDomainData(ctx context.Context, epoch primitives.Epoch, domainType [4]byte) (*qrysmpb.DomainResponse, error) {
 	// Get the fork version from the given epoch
 	fork, err := forks.Fork(epoch)
 	if err != nil {
@@ -38,5 +38,5 @@ func (c beaconApiValidatorClient) getDomainData(ctx context.Context, epoch primi
 		return nil, errors.Wrap(err, "failed to compute signature domain")
 	}
 
-	return &zondpb.DomainResponse{SignatureDomain: signatureDomain}, nil
+	return &qrysmpb.DomainResponse{SignatureDomain: signatureDomain}, nil
 }

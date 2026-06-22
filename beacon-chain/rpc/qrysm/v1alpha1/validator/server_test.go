@@ -17,9 +17,9 @@ import (
 	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/mock"
 	"github.com/theQRL/qrysm/testing/require"
@@ -28,19 +28,19 @@ import (
 )
 
 func TestValidatorIndex_OK(t *testing.T) {
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 
 	pubKey := pubKey(1)
 
-	err = st.SetValidators([]*zondpb.Validator{{PublicKey: pubKey}})
+	err = st.SetValidators([]*qrysmpb.Validator{{PublicKey: pubKey}})
 	require.NoError(t, err)
 
 	Server := &Server{
 		HeadFetcher: &mockChain.ChainService{State: st},
 	}
 
-	req := &zondpb.ValidatorIndexRequest{
+	req := &qrysmpb.ValidatorIndexRequest{
 		PublicKey: pubKey,
 	}
 	_, err = Server.ValidatorIndex(context.Background(), req)
@@ -52,7 +52,7 @@ func TestValidatorIndex_StateEmpty(t *testing.T) {
 		HeadFetcher: &mockChain.ChainService{},
 	}
 	pubKey := pubKey(1)
-	req := &zondpb.ValidatorIndexRequest{
+	req := &qrysmpb.ValidatorIndexRequest{
 		PublicKey: pubKey,
 	}
 	_, err := Server.ValidatorIndex(context.Background(), req)
@@ -60,12 +60,12 @@ func TestValidatorIndex_StateEmpty(t *testing.T) {
 }
 
 func TestWaitForActivation_ContextClosed(t *testing.T) {
-	beaconState, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	beaconState, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Slot:       0,
-		Validators: []*zondpb.Validator{},
+		Validators: []*qrysmpb.Validator{},
 	})
 	require.NoError(t, err)
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
 
@@ -74,14 +74,14 @@ func TestWaitForActivation_ContextClosed(t *testing.T) {
 	require.NoError(t, err)
 
 	vs := &Server{
-		Ctx:               ctx,
-		ChainStartFetcher: &mockExecution.Chain{},
-		BlockFetcher:      &mockExecution.Chain{},
-		Eth1InfoFetcher:   &mockExecution.Chain{},
-		DepositFetcher:    depositCache,
-		HeadFetcher:       &mockChain.ChainService{State: beaconState, Root: genesisRoot[:]},
+		Ctx:                  ctx,
+		ChainStartFetcher:    &mockExecution.Chain{},
+		BlockFetcher:         &mockExecution.Chain{},
+		ExecutionInfoFetcher: &mockExecution.Chain{},
+		DepositFetcher:       depositCache,
+		HeadFetcher:          &mockChain.ChainService{State: beaconState, Root: genesisRoot[:]},
 	}
-	req := &zondpb.ValidatorActivationRequest{
+	req := &qrysmpb.ValidatorActivationRequest{
 		PublicKeys: [][]byte{pubKey(1)},
 	}
 
@@ -102,20 +102,20 @@ func TestWaitForActivation_ContextClosed(t *testing.T) {
 }
 
 func TestWaitForActivation_MultipleStatuses(t *testing.T) {
-	priv1, err := dilithium.RandKey()
+	priv1, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	priv2, err := dilithium.RandKey()
+	priv2, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
-	priv3, err := dilithium.RandKey()
+	priv3, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
 
 	pubKey1 := priv1.PublicKey().Marshal()
 	pubKey2 := priv2.PublicKey().Marshal()
 	pubKey3 := priv3.PublicKey().Marshal()
 
-	beaconState := &zondpb.BeaconStateCapella{
+	beaconState := &qrysmpb.BeaconStateZond{
 		Slot: 4000,
-		Validators: []*zondpb.Validator{
+		Validators: []*qrysmpb.Validator{
 			{
 				PublicKey:       pubKey1,
 				ActivationEpoch: 1,
@@ -135,17 +135,17 @@ func TestWaitForActivation_MultipleStatuses(t *testing.T) {
 			},
 		},
 	}
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
-	s, err := state_native.InitializeFromProtoUnsafeCapella(beaconState)
+	s, err := state_native.InitializeFromProtoUnsafeZond(beaconState)
 	require.NoError(t, err)
 	vs := &Server{
 		Ctx:               context.Background(),
 		ChainStartFetcher: &mockExecution.Chain{},
 		HeadFetcher:       &mockChain.ChainService{State: s, Root: genesisRoot[:]},
 	}
-	req := &zondpb.ValidatorActivationRequest{
+	req := &qrysmpb.ValidatorActivationRequest{
 		PublicKeys: [][]byte{pubKey1, pubKey2, pubKey3},
 	}
 	ctrl := gomock.NewController(t)
@@ -154,20 +154,20 @@ func TestWaitForActivation_MultipleStatuses(t *testing.T) {
 	mockChainStream := mock.NewMockBeaconNodeValidator_WaitForActivationServer(ctrl)
 	mockChainStream.EXPECT().Context().Return(context.Background())
 	mockChainStream.EXPECT().Send(
-		&zondpb.ValidatorActivationResponse{
-			Statuses: []*zondpb.ValidatorActivationResponse_Status{
+		&qrysmpb.ValidatorActivationResponse{
+			Statuses: []*qrysmpb.ValidatorActivationResponse_Status{
 				{
 					PublicKey: pubKey1,
-					Status: &zondpb.ValidatorStatusResponse{
-						Status:          zondpb.ValidatorStatus_ACTIVE,
+					Status: &qrysmpb.ValidatorStatusResponse{
+						Status:          qrysmpb.ValidatorStatus_ACTIVE,
 						ActivationEpoch: 1,
 					},
 					Index: 0,
 				},
 				{
 					PublicKey: pubKey2,
-					Status: &zondpb.ValidatorStatusResponse{
-						Status:                    zondpb.ValidatorStatus_PENDING,
+					Status: &qrysmpb.ValidatorStatusResponse{
+						Status:                    qrysmpb.ValidatorStatus_PENDING,
 						ActivationEpoch:           params.BeaconConfig().FarFutureEpoch,
 						PositionInActivationQueue: 1,
 					},
@@ -175,8 +175,8 @@ func TestWaitForActivation_MultipleStatuses(t *testing.T) {
 				},
 				{
 					PublicKey: pubKey3,
-					Status: &zondpb.ValidatorStatusResponse{
-						Status: zondpb.ValidatorStatus_EXITED,
+					Status: &qrysmpb.ValidatorStatusResponse{
+						Status: qrysmpb.ValidatorStatus_EXITED,
 					},
 					Index: 2,
 				},
@@ -215,7 +215,7 @@ func TestWaitForChainStart_ContextClosed(t *testing.T) {
 }
 
 func TestWaitForChainStart_AlreadyStarted(t *testing.T) {
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetSlot(3))
 	genesisValidatorsRoot := bytesutil.ToBytes32([]byte("validators"))
@@ -234,7 +234,7 @@ func TestWaitForChainStart_AlreadyStarted(t *testing.T) {
 	defer ctrl.Finish()
 	mockStream := mock.NewMockBeaconNodeValidator_WaitForChainStartServer(ctrl)
 	mockStream.EXPECT().Send(
-		&zondpb.ChainStartResponse{
+		&qrysmpb.ChainStartResponse{
 			Started:               true,
 			GenesisTime:           uint64(time.Unix(0, 0).Unix()),
 			GenesisValidatorsRoot: genesisValidatorsRoot[:],
@@ -263,11 +263,9 @@ func TestWaitForChainStart_HeadStateDoesNotExist(t *testing.T) {
 	mockStream.EXPECT().Context().Return(context.Background())
 
 	wg := new(sync.WaitGroup)
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		assert.NoError(t, Server.WaitForChainStart(&emptypb.Empty{}, mockStream), "Could not call RPC method")
-		wg.Done()
-	}()
+	})
 
 	util.WaitTimeout(wg, time.Second)
 }
@@ -293,7 +291,7 @@ func TestWaitForChainStart_NotStartedThenLogFired(t *testing.T) {
 	defer ctrl.Finish()
 	mockStream := mock.NewMockBeaconNodeValidator_WaitForChainStartServer(ctrl)
 	mockStream.EXPECT().Send(
-		&zondpb.ChainStartResponse{
+		&qrysmpb.ChainStartResponse{
 			Started:               true,
 			GenesisTime:           uint64(time.Unix(0, 0).Unix()),
 			GenesisValidatorsRoot: genesisValidatorsRoot[:],
@@ -320,13 +318,13 @@ func TestServer_DomainData_Exits(t *testing.T) {
 	}
 
 	params.OverrideBeaconConfig(cfg)
-	beaconState := &zondpb.BeaconStateCapella{
+	beaconState := &qrysmpb.BeaconStateZond{
 		Slot: 4000,
 	}
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	genesisRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root")
-	s, err := state_native.InitializeFromProtoUnsafeCapella(beaconState)
+	s, err := state_native.InitializeFromProtoUnsafeZond(beaconState)
 	require.NoError(t, err)
 	vs := &Server{
 		Ctx:               context.Background(),
@@ -334,7 +332,7 @@ func TestServer_DomainData_Exits(t *testing.T) {
 		HeadFetcher:       &mockChain.ChainService{State: s, Root: genesisRoot[:]},
 	}
 
-	reqDomain, err := vs.DomainData(context.Background(), &zondpb.DomainRequest{
+	reqDomain, err := vs.DomainData(context.Background(), &qrysmpb.DomainRequest{
 		Epoch:  100,
 		Domain: params.BeaconConfig().DomainDeposit[:],
 	})
@@ -343,14 +341,14 @@ func TestServer_DomainData_Exits(t *testing.T) {
 	assert.NoError(t, err)
 	assert.DeepEqual(t, reqDomain.SignatureDomain, wantedDomain)
 
-	beaconStateNew := &zondpb.BeaconStateCapella{
+	beaconStateNew := &qrysmpb.BeaconStateZond{
 		Slot: 4000,
 	}
-	s, err = state_native.InitializeFromProtoUnsafeCapella(beaconStateNew)
+	s, err = state_native.InitializeFromProtoUnsafeZond(beaconStateNew)
 	require.NoError(t, err)
 	vs.HeadFetcher = &mockChain.ChainService{State: s, Root: genesisRoot[:]}
 
-	reqDomain, err = vs.DomainData(context.Background(), &zondpb.DomainRequest{
+	reqDomain, err = vs.DomainData(context.Background(), &qrysmpb.DomainRequest{
 		Epoch:  100,
 		Domain: params.BeaconConfig().DomainVoluntaryExit[:],
 	})

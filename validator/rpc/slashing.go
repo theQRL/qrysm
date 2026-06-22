@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
 	slashing "github.com/theQRL/qrysm/validator/slashing-protection-history"
@@ -16,7 +15,7 @@ import (
 
 // ExportSlashingProtection handles the rpc call returning the json slashing history.
 // The format of the export follows the EIP-3076 standard which makes it
-// easy to migrate machines or Zond consensus clients.
+// easy to migrate machines or QRL consensus clients.
 //
 // Steps:
 //  1. Call the function which exports the data from
@@ -24,7 +23,7 @@ import (
 //  2. Format and send JSON in the response.
 //
 // DEPRECATED: Qrysm Web UI and associated endpoints will be fully removed in a future hard fork. Use the Keymanager APIs if an API is required.
-func (s *Server) ExportSlashingProtection(ctx context.Context, _ *empty.Empty) (*pb.ExportSlashingProtectionResponse, error) {
+func (s *Server) ExportSlashingProtection(ctx context.Context, _ *emptypb.Empty) (*pb.ExportSlashingProtectionResponse, error) {
 	if s.valDB == nil {
 		return nil, errors.New("err finding validator database at path")
 	}
@@ -65,5 +64,5 @@ func (s *Server) ImportSlashingProtection(ctx context.Context, req *pb.ImportSla
 		return nil, err
 	}
 	log.Info("Slashing protection JSON successfully imported")
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }

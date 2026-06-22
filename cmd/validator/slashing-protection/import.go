@@ -3,6 +3,7 @@ package historycmd
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/cmd"
@@ -33,19 +34,21 @@ func importSlashingProtectionJSON(cliCtx *cli.Context) error {
 		}
 	}
 	// ensure that the validator.db is found under the specified dir or its subdirectories
-	found, _, err := file.RecursiveFileFind(kv.ProtectionDbFileName, dataDir)
+	found, foundPath, err := file.RecursiveFileFind(kv.ProtectionDbFileName, dataDir)
 	if err != nil {
 		return errors.Wrapf(err, "error finding validator database at path %s", dataDir)
 	}
+	foundDir := dataDir
 	if !found {
 		log.Infof(
 			"Did not find existing validator.db inside of %s, creating a new one",
 			dataDir,
 		)
 	} else {
-		log.Infof("Found existing validator.db inside of %s", dataDir)
+		foundDir = filepath.Dir(foundPath)
+		log.Infof("Found existing validator.db inside of %s", foundDir)
 	}
-	valDB, err := kv.NewKVStore(cliCtx.Context, dataDir, &kv.Config{})
+	valDB, err := kv.NewKVStore(cliCtx.Context, foundDir, &kv.Config{})
 	if err != nil {
 		return errors.Wrapf(err, "could not access validator database at path: %s", dataDir)
 	}

@@ -5,22 +5,22 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 type beaconBlockConverter interface {
-	ConvertRESTCapellaBlockToProto(block *apimiddleware.BeaconBlockCapellaJson) (*zondpb.BeaconBlockCapella, error)
+	ConvertRESTZondBlockToProto(block *apimiddleware.BeaconBlockZondJson) (*qrysmpb.BeaconBlockZond, error)
 }
 
 type beaconApiBeaconBlockConverter struct{}
 
-// ConvertRESTCapellaBlockToProto converts a Capella JSON beacon block to its protobuf equivalent
-func (c beaconApiBeaconBlockConverter) ConvertRESTCapellaBlockToProto(block *apimiddleware.BeaconBlockCapellaJson) (*zondpb.BeaconBlockCapella, error) {
+// ConvertRESTZondBlockToProto converts a Zond JSON beacon block to its protobuf equivalent
+func (c beaconApiBeaconBlockConverter) ConvertRESTZondBlockToProto(block *apimiddleware.BeaconBlockZondJson) (*qrysmpb.BeaconBlockZond, error) {
 	if block.Body == nil {
 		return nil, errors.New("block body is nil")
 	}
@@ -58,23 +58,23 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTCapellaBlockToProto(block *api
 		return nil, errors.Wrapf(err, "failed to decode randao reveal `%s`", block.Body.RandaoReveal)
 	}
 
-	if block.Body.Eth1Data == nil {
-		return nil, errors.New("eth1 data is nil")
+	if block.Body.ExecutionData == nil {
+		return nil, errors.New("execution data is nil")
 	}
 
-	depositRoot, err := hexutil.Decode(block.Body.Eth1Data.DepositRoot)
+	depositRoot, err := hexutil.Decode(block.Body.ExecutionData.DepositRoot)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to decode deposit root `%s`", block.Body.Eth1Data.DepositRoot)
+		return nil, errors.Wrapf(err, "failed to decode deposit root `%s`", block.Body.ExecutionData.DepositRoot)
 	}
 
-	depositCount, err := strconv.ParseUint(block.Body.Eth1Data.DepositCount, 10, 64)
+	depositCount, err := strconv.ParseUint(block.Body.ExecutionData.DepositCount, 10, 64)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse deposit count `%s`", block.Body.Eth1Data.DepositCount)
+		return nil, errors.Wrapf(err, "failed to parse deposit count `%s`", block.Body.ExecutionData.DepositCount)
 	}
 
-	blockHash, err := hexutil.Decode(block.Body.Eth1Data.BlockHash)
+	blockHash, err := hexutil.Decode(block.Body.ExecutionData.BlockHash)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to decode block hash `%s`", block.Body.Eth1Data.BlockHash)
+		return nil, errors.Wrapf(err, "failed to decode block hash `%s`", block.Body.ExecutionData.BlockHash)
 	}
 
 	graffiti, err := hexutil.Decode(block.Body.Graffiti)
@@ -203,19 +203,14 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTCapellaBlockToProto(block *api
 		return nil, errors.Wrap(err, "failed to get withdrawals")
 	}
 
-	dilithiumToExecutionChanges, err := convertDilithiumToExecutionChangesToProto(block.Body.DilithiumToExecutionChanges)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get dilithium to execution changes")
-	}
-
-	return &zondpb.BeaconBlockCapella{
+	return &qrysmpb.BeaconBlockZond{
 		Slot:          primitives.Slot(blockSlot),
 		ProposerIndex: primitives.ValidatorIndex(blockProposerIndex),
 		ParentRoot:    parentRoot,
 		StateRoot:     stateRoot,
-		Body: &zondpb.BeaconBlockBodyCapella{
+		Body: &qrysmpb.BeaconBlockBodyZond{
 			RandaoReveal: randaoReveal,
-			Eth1Data: &zondpb.Eth1Data{
+			ExecutionData: &qrysmpb.ExecutionData{
 				DepositRoot:  depositRoot,
 				DepositCount: depositCount,
 				BlockHash:    blockHash,
@@ -226,11 +221,11 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTCapellaBlockToProto(block *api
 			Attestations:      attestations,
 			Deposits:          deposits,
 			VoluntaryExits:    voluntaryExits,
-			SyncAggregate: &zondpb.SyncAggregate{
+			SyncAggregate: &qrysmpb.SyncAggregate{
 				SyncCommitteeBits:       syncCommitteeBits,
 				SyncCommitteeSignatures: syncCommitteeSignatures,
 			},
-			ExecutionPayload: &enginev1.ExecutionPayloadCapella{
+			ExecutionPayload: &enginev1.ExecutionPayloadZond{
 				ParentHash:    parentHash,
 				FeeRecipient:  feeRecipient,
 				StateRoot:     executionStateRoot,
@@ -247,7 +242,6 @@ func (c beaconApiBeaconBlockConverter) ConvertRESTCapellaBlockToProto(block *api
 				Transactions:  transactions,
 				Withdrawals:   withdrawals,
 			},
-			DilithiumToExecutionChanges: dilithiumToExecutionChanges,
 		},
 	}, nil
 }

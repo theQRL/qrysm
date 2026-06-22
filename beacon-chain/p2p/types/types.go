@@ -71,7 +71,7 @@ func (r *BeaconBlockByRootsReq) UnmarshalSSZ(buf []byte) error {
 	}
 	numOfRoots := bufLen / rootLength
 	roots := make([][rootLength]byte, 0, numOfRoots)
-	for i := 0; i < numOfRoots; i++ {
+	for i := range numOfRoots {
 		var rt [rootLength]byte
 		copy(rt[:], buf[i*rootLength:(i+1)*rootLength])
 		roots = append(roots, rt)

@@ -1,33 +1,33 @@
-load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "unencrypted-keys-gen_lib",
     srcs = ["main.go"],
     importpath = "github.com/theQRL/qrysm/tools/unencrypted-keys-gen",
     visibility = [
         "//tools/interop/convert-keys:__pkg__",
     ],
     deps = [
-        "//crypto/dilithium:go_default_library",
-        "//runtime/interop:go_default_library",
-        "//tools/unencrypted-keys-gen/keygen:go_default_library",
+        "//crypto/ml_dsa_87",
+        "//runtime/interop",
+        "//tools/unencrypted-keys-gen/keygen",
     ],
 )
 
 go_binary(
     name = "unencrypted-keys-gen",
-    embed = [":go_default_library"],
+    embed = [":unencrypted-keys-gen_lib"],
     visibility = ["//visibility:public"],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "unencrypted-keys-gen_test",
     srcs = ["main_test.go"],
-    embed = [":go_default_library"],
+    embed = [":unencrypted-keys-gen_lib"],
     deps = [
-        "//testing/assert:go_default_library",
-        "//testing/require:go_default_library",
-        "//tools/unencrypted-keys-gen/keygen:go_default_library",
+        "//testing/assert",
+        "//testing/require",
+        "//tools/unencrypted-keys-gen/keygen",
     ],
 )

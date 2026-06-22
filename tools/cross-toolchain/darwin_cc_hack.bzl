@@ -1,9 +1,9 @@
-load("@bazel_tools//tools/cpp:unix_cc_configure.bzl", "configure_unix_toolchain")
+load("@rules_cc//cc/private/toolchain:unix_cc_configure.bzl", "configure_unix_toolchain")  # buildifier: disable=bzl-visibility
 load(
-    "@bazel_tools//tools/cpp:lib_cc_configure.bzl",
+    "@rules_cc//cc/private/toolchain:lib_cc_configure.bzl",
     "get_cpu_value",
     "resolve_labels",
-)
+)  # buildifier: disable=bzl-visibility
 
 """
 This file is a copy of https://github.com/bazelbuild/bazel/blob/master/tools/cpp/cc_configure.bzl
@@ -24,36 +24,36 @@ def cc_autoconf_toolchains_impl(repository_ctx):
 
     if cpu_value.startswith("darwin"):
         paths = resolve_labels(repository_ctx, [
-            "@bazel_tools//tools/cpp:BUILD.toolchains.tpl",
+            "@rules_cc//cc/private/toolchain:BUILD.toolchains.tpl",
         ])
         repository_ctx.template(
             "BUILD",
-            paths["@bazel_tools//tools/cpp:BUILD.toolchains.tpl"],
+            paths["@rules_cc//cc/private/toolchain:BUILD.toolchains.tpl"],
             {"%{name}": get_cpu_value(repository_ctx)},
         )
     else:
         repository_ctx.file("BUILD", "# C++ toolchain autoconfiguration was disabled by BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN env variable.")
 
-def cc_autoconf_impl(repository_ctx, overriden_tools = dict()):
+def cc_autoconf_impl(repository_ctx, overridden_tools = dict()):
     """Generate BUILD file with 'cc_toolchain' targets for the local host C++ toolchain.
 
     Args:
        repository_ctx: repository context
-       overriden_tools: dict of tool paths to use instead of autoconfigured tools
+       overridden_tools: dict of tool paths to use instead of autoconfigured tools
     """
     cpu_value = get_cpu_value(repository_ctx)
 
     if cpu_value.startswith("darwin"):
         print("Configuring local C++ toolchain for Darwin. This is non-hermetic and builds may " +
               "not be reproducible. Consider building on linux for a hermetic build.")
-        configure_unix_toolchain(repository_ctx, cpu_value, overriden_tools)
+        configure_unix_toolchain(repository_ctx, cpu_value, overridden_tools)
     else:
         paths = resolve_labels(repository_ctx, [
-            "@bazel_tools//tools/cpp:BUILD.empty.tpl",
-            "@bazel_tools//tools/cpp:empty_cc_toolchain_config.bzl",
+            "@rules_cc//cc/private/toolchain:BUILD.empty.tpl",
+            "@rules_cc//cc/private/toolchain:empty_cc_toolchain_config.bzl",
         ])
-        repository_ctx.symlink(paths["@bazel_tools//tools/cpp:empty_cc_toolchain_config.bzl"], "cc_toolchain_config.bzl")
-        repository_ctx.template("BUILD", paths["@bazel_tools//tools/cpp:BUILD.empty.tpl"], {
+        repository_ctx.symlink(paths["@rules_cc//cc/private/toolchain:empty_cc_toolchain_config.bzl"], "cc_toolchain_config.bzl")
+        repository_ctx.template("BUILD", paths["@rules_cc//cc/private/toolchain:BUILD.empty.tpl"], {
             "%{cpu}": get_cpu_value(repository_ctx),
         })
 

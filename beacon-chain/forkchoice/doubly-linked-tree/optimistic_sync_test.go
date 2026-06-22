@@ -279,6 +279,28 @@ func TestSetOptimisticToInvalid_CorrectChildren(t *testing.T) {
 
 }
 
+// Regression test for the upstream startup crash reported in #14892:
+// setOptimisticToInvalid must not panic when the looked-up node has no parent.
+func TestSetOptimisticToInvalid_NilParent(t *testing.T) {
+	f := setup(1, 1)
+	root := [32]byte{'n'}
+	parentRoot := [32]byte{'p'}
+
+	f.store.nodeByRoot[root] = &Node{
+		root:       root,
+		optimistic: true,
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("setOptimisticToInvalid panicked with nil parent: %v", r)
+		}
+	}()
+
+	_, err := f.store.setOptimisticToInvalid(context.Background(), root, parentRoot, [32]byte{'L'})
+	require.ErrorIs(t, err, errInvalidParentRoot)
+}
+
 // Pow       |      Pos
 //
 //	CA -- A -- B -- C-----D

@@ -1,0 +1,44 @@
+load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "debug",
+    srcs = [
+        "debug.go",
+        "server.go",
+    ],
+    importpath = "github.com/theQRL/qrysm/beacon-chain/rpc/qrl/debug",
+    visibility = ["//beacon-chain:__subpackages__"],
+    deps = [
+        "//beacon-chain/blockchain",
+        "//beacon-chain/db",
+        "//beacon-chain/rpc/lookup",
+        "//beacon-chain/rpc/qrl/helpers",
+        "//proto/migration",
+        "//proto/qrl/v1:qrl",
+        "//runtime/version",
+        "@io_opencensus_go//trace",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//status",
+        "@org_golang_google_protobuf//types/known/emptypb",
+    ],
+)
+
+go_test(
+    name = "debug_test",
+    srcs = ["debug_test.go"],
+    embed = [":debug"],
+    deps = [
+        "//beacon-chain/blockchain/testing",
+        "//beacon-chain/db/testing",
+        "//beacon-chain/forkchoice/doubly-linked-tree",
+        "//beacon-chain/forkchoice/types",
+        "//beacon-chain/rpc/testutil",
+        "//consensus-types/primitives",
+        "//encoding/bytesutil",
+        "//proto/qrl/v1:qrl",
+        "//testing/assert",
+        "//testing/require",
+        "//testing/util",
+        "@org_golang_google_protobuf//types/known/emptypb",
+    ],
+)

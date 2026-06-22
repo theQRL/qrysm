@@ -19,9 +19,9 @@ import (
 	mockSync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync/testing"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -37,37 +37,38 @@ func TestProposeAttestation_OK(t *testing.T) {
 		P2P:               &mockp2p.MockBroadcaster{},
 		AttPool:           attestations.NewPool(),
 		OperationNotifier: (&mock.ChainService{}).OperationNotifier(),
+		SyncChecker:       &mockSync.Sync{IsSyncing: false},
 	}
-	head := util.NewBeaconBlockCapella()
+	head := util.NewBeaconBlockZond()
 	head.Block.Slot = 999
 	head.Block.ParentRoot = bytesutil.PadTo([]byte{'a'}, 32)
 	root, err := head.Block.HashTreeRoot()
 	require.NoError(t, err)
 
-	validators := make([]*zondpb.Validator, 64)
-	for i := 0; i < len(validators); i++ {
-		validators[i] = &zondpb.Validator{
+	validators := make([]*qrysmpb.Validator, 64)
+	for i := range validators {
+		validators[i] = &qrysmpb.Validator{
 			PublicKey:             make([]byte, 48),
-			WithdrawalCredentials: make([]byte, 32),
+			WithdrawalCredentials: make([]byte, 64),
 			ExitEpoch:             params.BeaconConfig().FarFutureEpoch,
 			EffectiveBalance:      params.BeaconConfig().MaxEffectiveBalance,
 		}
 	}
 
-	state, err := util.NewBeaconStateCapella()
+	state, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, state.SetSlot(params.BeaconConfig().SlotsPerEpoch+1))
 	require.NoError(t, state.SetValidators(validators))
 
-	sk, err := dilithium.RandKey()
+	sk, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
 	sig := sk.Sign([]byte("dummy_test_data"))
-	req := &zondpb.Attestation{
+	req := &qrysmpb.Attestation{
 		Signatures: [][]byte{sig.Marshal()},
-		Data: &zondpb.AttestationData{
+		Data: &qrysmpb.AttestationData{
 			BeaconBlockRoot: root[:],
-			Source:          &zondpb.Checkpoint{Root: make([]byte, 32)},
-			Target:          &zondpb.Checkpoint{Root: make([]byte, 32)},
+			Source:          &qrysmpb.Checkpoint{Root: make([]byte, 32)},
+			Target:          &qrysmpb.Checkpoint{Root: make([]byte, 32)},
 		},
 	}
 	_, err = attesterServer.ProposeAttestation(context.Background(), req)
@@ -80,20 +81,34 @@ func TestProposeAttestation_IncorrectSignature(t *testing.T) {
 		P2P:               &mockp2p.MockBroadcaster{},
 		AttPool:           attestations.NewPool(),
 		OperationNotifier: (&mock.ChainService{}).OperationNotifier(),
+		SyncChecker:       &mockSync.Sync{IsSyncing: false},
 	}
 
-	req := util.HydrateAttestation(&zondpb.Attestation{Signatures: [][]byte{make([]byte, 999)}})
+	req := util.HydrateAttestation(&qrysmpb.Attestation{Signatures: [][]byte{make([]byte, 999)}})
 	wanted := "Incorrect attestation signature"
 	_, err := attesterServer.ProposeAttestation(context.Background(), req)
 	assert.ErrorContains(t, wanted, err)
 }
 
+func TestProposeAttestation_Syncing(t *testing.T) {
+	attesterServer := &Server{
+		SyncChecker: &mockSync.Sync{IsSyncing: true},
+	}
+
+	req := util.HydrateAttestation(&qrysmpb.Attestation{})
+	_, err := attesterServer.ProposeAttestation(context.Background(), req)
+	assert.ErrorContains(t, "Syncing to latest head", err)
+	s, ok := status.FromError(err)
+	require.Equal(t, true, ok)
+	assert.Equal(t, codes.Unavailable, s.Code())
+}
+
 func TestGetAttestationData_OK(t *testing.T) {
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	block.Block.Slot = 3*params.BeaconConfig().SlotsPerEpoch + 1
-	targetBlock := util.NewBeaconBlockCapella()
+	targetBlock := util.NewBeaconBlockZond()
 	targetBlock.Block.Slot = 1 * params.BeaconConfig().SlotsPerEpoch
-	justifiedBlock := util.NewBeaconBlockCapella()
+	justifiedBlock := util.NewBeaconBlockZond()
 	justifiedBlock.Block.Slot = 2 * params.BeaconConfig().SlotsPerEpoch
 	blockRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not hash beacon block")
@@ -102,10 +117,10 @@ func TestGetAttestationData_OK(t *testing.T) {
 	targetRoot, err := targetBlock.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root for target block")
 	slot := 3*params.BeaconConfig().SlotsPerEpoch + 1
-	beaconState, err := util.NewBeaconStateCapella()
+	beaconState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetSlot(slot))
-	err = beaconState.SetCurrentJustifiedCheckpoint(&zondpb.Checkpoint{
+	err = beaconState.SetCurrentJustifiedCheckpoint(&qrysmpb.Checkpoint{
 		Epoch: 2,
 		Root:  justifiedRoot[:],
 	})
@@ -132,21 +147,21 @@ func TestGetAttestationData_OK(t *testing.T) {
 		},
 	}
 
-	req := &zondpb.AttestationDataRequest{
+	req := &qrysmpb.AttestationDataRequest{
 		CommitteeIndex: 0,
 		Slot:           3*params.BeaconConfig().SlotsPerEpoch + 1,
 	}
 	res, err := attesterServer.GetAttestationData(context.Background(), req)
 	require.NoError(t, err, "Could not get attestation info at slot")
 
-	expectedInfo := &zondpb.AttestationData{
+	expectedInfo := &qrysmpb.AttestationData{
 		Slot:            3*params.BeaconConfig().SlotsPerEpoch + 1,
 		BeaconBlockRoot: blockRoot[:],
-		Source: &zondpb.Checkpoint{
+		Source: &qrysmpb.Checkpoint{
 			Epoch: 2,
 			Root:  justifiedRoot[:],
 		},
-		Target: &zondpb.Checkpoint{
+		Target: &qrysmpb.Checkpoint{
 			Epoch: 3,
 			Root:  blockRoot[:],
 		},
@@ -161,7 +176,7 @@ func TestGetAttestationData_SyncNotReady(t *testing.T) {
 	as := Server{
 		SyncChecker: &mockSync.Sync{IsSyncing: true},
 	}
-	_, err := as.GetAttestationData(context.Background(), &zondpb.AttestationDataRequest{})
+	_, err := as.GetAttestationData(context.Background(), &qrysmpb.AttestationDataRequest{})
 	assert.ErrorContains(t, "Syncing to latest head", err)
 }
 
@@ -172,36 +187,39 @@ func TestGetAttestationData_Optimistic(t *testing.T) {
 		SyncChecker: &mockSync.Sync{},
 		TimeFetcher: &mock.ChainService{Genesis: time.Now()},
 		CoreService: &core.Service{
-			GenesisTimeFetcher: &mock.ChainService{Genesis: time.Now()},
-			HeadFetcher:        &mock.ChainService{},
+			GenesisTimeFetcher:    &mock.ChainService{Genesis: time.Now()},
+			HeadFetcher:           &mock.ChainService{},
+			AttestationCache:      cache.NewAttestationCache(),
+			OptimisticModeFetcher: &mock.ChainService{Optimistic: true},
 		},
 		OptimisticModeFetcher: &mock.ChainService{Optimistic: true},
 	}
-	_, err := as.GetAttestationData(context.Background(), &zondpb.AttestationDataRequest{})
+	_, err := as.GetAttestationData(context.Background(), &qrysmpb.AttestationDataRequest{})
 	s, ok := status.FromError(err)
 	require.Equal(t, true, ok)
 	require.DeepEqual(t, codes.Unavailable, s.Code())
 	require.ErrorContains(t, errOptimisticMode.Error(), err)
 
-	beaconState, err := util.NewBeaconStateCapella()
+	beaconState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	as = &Server{
 		SyncChecker:           &mockSync.Sync{},
 		OptimisticModeFetcher: &mock.ChainService{Optimistic: false},
 		TimeFetcher:           &mock.ChainService{Genesis: time.Now()},
 		CoreService: &core.Service{
-			GenesisTimeFetcher: &mock.ChainService{Genesis: time.Now()},
-			HeadFetcher:        &mock.ChainService{Optimistic: false, State: beaconState},
-			AttestationCache:   cache.NewAttestationCache(),
+			GenesisTimeFetcher:    &mock.ChainService{Genesis: time.Now()},
+			HeadFetcher:           &mock.ChainService{Optimistic: false, State: beaconState},
+			AttestationCache:      cache.NewAttestationCache(),
+			OptimisticModeFetcher: &mock.ChainService{Optimistic: false},
 		},
 	}
-	_, err = as.GetAttestationData(context.Background(), &zondpb.AttestationDataRequest{})
+	_, err = as.GetAttestationData(context.Background(), &qrysmpb.AttestationDataRequest{})
 	require.NoError(t, err)
 }
 
 func TestAttestationDataSlot_handlesInProgressRequest(t *testing.T) {
-	s := &zondpb.BeaconStateCapella{Slot: 100}
-	state, err := state_native.InitializeFromProtoCapella(s)
+	s := &qrysmpb.BeaconStateZond{Slot: 100}
+	state, err := state_native.InitializeFromProtoZond(s)
 	require.NoError(t, err)
 	ctx := context.Background()
 	slot := primitives.Slot(2)
@@ -217,37 +235,33 @@ func TestAttestationDataSlot_handlesInProgressRequest(t *testing.T) {
 		},
 	}
 
-	req := &zondpb.AttestationDataRequest{
+	req := &qrysmpb.AttestationDataRequest{
 		CommitteeIndex: 1,
 		Slot:           slot,
 	}
 
-	res := &zondpb.AttestationData{
+	res := &qrysmpb.AttestationData{
 		CommitteeIndex: 1,
-		Target:         &zondpb.Checkpoint{Epoch: 55, Root: make([]byte, 32)},
+		Target:         &qrysmpb.Checkpoint{Epoch: 55, Root: make([]byte, 32)},
 	}
 
 	require.NoError(t, server.CoreService.AttestationCache.MarkInProgress(req))
 
 	var wg sync.WaitGroup
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		response, err := server.GetAttestationData(ctx, req)
 		require.NoError(t, err)
 		if !proto.Equal(res, response) {
 			t.Error("Expected  equal responses from cache")
 		}
-	}()
+	})
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 
 		assert.NoError(t, server.CoreService.AttestationCache.Put(ctx, req, res))
 		assert.NoError(t, server.CoreService.AttestationCache.MarkNotInProgress(req))
-	}()
+	})
 
 	wg.Wait()
 }
@@ -266,7 +280,7 @@ func TestServer_GetAttestationData_InvalidRequestSlot(t *testing.T) {
 		},
 	}
 
-	req := &zondpb.AttestationDataRequest{
+	req := &qrysmpb.AttestationDataRequest{
 		Slot: 1000000000000,
 	}
 	_, err := attesterServer.GetAttestationData(ctx, req)
@@ -282,13 +296,13 @@ func TestServer_GetAttestationData_HeadStateSlotGreaterThanRequestSlot(t *testin
 	db := dbutil.SetupDB(t)
 
 	slot := 3*params.BeaconConfig().SlotsPerEpoch + 1
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	block.Block.Slot = slot
-	block2 := util.NewBeaconBlockCapella()
+	block2 := util.NewBeaconBlockZond()
 	block2.Block.Slot = slot - 1
-	targetBlock := util.NewBeaconBlockCapella()
+	targetBlock := util.NewBeaconBlockZond()
 	targetBlock.Block.Slot = 1 * params.BeaconConfig().SlotsPerEpoch
-	justifiedBlock := util.NewBeaconBlockCapella()
+	justifiedBlock := util.NewBeaconBlockZond()
 	justifiedBlock.Block.Slot = 2 * params.BeaconConfig().SlotsPerEpoch
 	blockRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not hash beacon block")
@@ -300,16 +314,16 @@ func TestServer_GetAttestationData_HeadStateSlotGreaterThanRequestSlot(t *testin
 	targetRoot, err := targetBlock.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root for target block")
 
-	beaconState, err := util.NewBeaconStateCapella()
+	beaconState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetSlot(slot))
 	offset := int64(slot.Mul(params.BeaconConfig().SecondsPerSlot))
 	require.NoError(t, beaconState.SetGenesisTime(uint64(time.Now().Unix()-offset)))
-	err = beaconState.SetLatestBlockHeader(util.HydrateBeaconHeader(&zondpb.BeaconBlockHeader{
+	err = beaconState.SetLatestBlockHeader(util.HydrateBeaconHeader(&qrysmpb.BeaconBlockHeader{
 		ParentRoot: blockRoot2[:],
 	}))
 	require.NoError(t, err)
-	err = beaconState.SetCurrentJustifiedCheckpoint(&zondpb.Checkpoint{
+	err = beaconState.SetCurrentJustifiedCheckpoint(&qrysmpb.Checkpoint{
 		Epoch: 2,
 		Root:  justifiedRoot[:],
 	})
@@ -340,21 +354,21 @@ func TestServer_GetAttestationData_HeadStateSlotGreaterThanRequestSlot(t *testin
 	util.SaveBlock(t, ctx, db, block)
 	require.NoError(t, db.SaveHeadBlockRoot(ctx, blockRoot))
 
-	req := &zondpb.AttestationDataRequest{
+	req := &qrysmpb.AttestationDataRequest{
 		CommitteeIndex: 0,
 		Slot:           slot - 1,
 	}
 	res, err := attesterServer.GetAttestationData(ctx, req)
 	require.NoError(t, err, "Could not get attestation info at slot")
 
-	expectedInfo := &zondpb.AttestationData{
+	expectedInfo := &qrysmpb.AttestationData{
 		Slot:            slot - 1,
 		BeaconBlockRoot: blockRoot2[:],
-		Source: &zondpb.Checkpoint{
+		Source: &qrysmpb.Checkpoint{
 			Epoch: 2,
 			Root:  justifiedRoot[:],
 		},
-		Target: &zondpb.Checkpoint{
+		Target: &qrysmpb.Checkpoint{
 			Epoch: 3,
 			Root:  blockRoot2[:],
 		},
@@ -367,11 +381,11 @@ func TestServer_GetAttestationData_HeadStateSlotGreaterThanRequestSlot(t *testin
 
 func TestGetAttestationData_SucceedsInFirstEpoch(t *testing.T) {
 	slot := primitives.Slot(5)
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	block.Block.Slot = slot
-	targetBlock := util.NewBeaconBlockCapella()
+	targetBlock := util.NewBeaconBlockZond()
 	targetBlock.Block.Slot = 0
-	justifiedBlock := util.NewBeaconBlockCapella()
+	justifiedBlock := util.NewBeaconBlockZond()
 	justifiedBlock.Block.Slot = 0
 	blockRoot, err := block.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not hash beacon block")
@@ -380,10 +394,10 @@ func TestGetAttestationData_SucceedsInFirstEpoch(t *testing.T) {
 	targetRoot, err := targetBlock.Block.HashTreeRoot()
 	require.NoError(t, err, "Could not get signing root for target block")
 
-	beaconState, err := util.NewBeaconStateCapella()
+	beaconState, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetSlot(slot))
-	err = beaconState.SetCurrentJustifiedCheckpoint(&zondpb.Checkpoint{
+	err = beaconState.SetCurrentJustifiedCheckpoint(&qrysmpb.Checkpoint{
 		Epoch: 0,
 		Root:  justifiedRoot[:],
 	})
@@ -407,21 +421,21 @@ func TestGetAttestationData_SucceedsInFirstEpoch(t *testing.T) {
 		},
 	}
 
-	req := &zondpb.AttestationDataRequest{
+	req := &qrysmpb.AttestationDataRequest{
 		CommitteeIndex: 0,
 		Slot:           5,
 	}
 	res, err := attesterServer.GetAttestationData(context.Background(), req)
 	require.NoError(t, err, "Could not get attestation info at slot")
 
-	expectedInfo := &zondpb.AttestationData{
+	expectedInfo := &qrysmpb.AttestationData{
 		Slot:            slot,
 		BeaconBlockRoot: blockRoot[:],
-		Source: &zondpb.Checkpoint{
+		Source: &qrysmpb.Checkpoint{
 			Epoch: 0,
 			Root:  justifiedRoot[:],
 		},
-		Target: &zondpb.Checkpoint{
+		Target: &qrysmpb.Checkpoint{
 			Epoch: 0,
 			Root:  blockRoot[:],
 		},
@@ -440,7 +454,7 @@ func TestServer_SubscribeCommitteeSubnets_NoSlots(t *testing.T) {
 		OperationNotifier: (&mock.ChainService{}).OperationNotifier(),
 	}
 
-	_, err := attesterServer.SubscribeCommitteeSubnets(context.Background(), &zondpb.CommitteeSubnetsSubscribeRequest{
+	_, err := attesterServer.SubscribeCommitteeSubnets(context.Background(), &qrysmpb.CommitteeSubnetsSubscribeRequest{
 		Slots:        nil,
 		CommitteeIds: nil,
 		IsAggregator: nil,
@@ -473,7 +487,7 @@ func TestServer_SubscribeCommitteeSubnets_DifferentLengthSlots(t *testing.T) {
 
 	ss = append(ss, 321)
 
-	_, err := attesterServer.SubscribeCommitteeSubnets(context.Background(), &zondpb.CommitteeSubnetsSubscribeRequest{
+	_, err := attesterServer.SubscribeCommitteeSubnets(context.Background(), &qrysmpb.CommitteeSubnetsSubscribeRequest{
 		Slots:        ss,
 		CommitteeIds: comIdxs,
 		IsAggregator: isAggregator,
@@ -486,15 +500,15 @@ func TestServer_SubscribeCommitteeSubnets_MultipleSlots(t *testing.T) {
 	s := rand.NewSource(10)
 	randGen := rand.New(s)
 
-	validators := make([]*zondpb.Validator, 64)
-	for i := 0; i < len(validators); i++ {
-		validators[i] = &zondpb.Validator{
+	validators := make([]*qrysmpb.Validator, 64)
+	for i := range validators {
+		validators[i] = &qrysmpb.Validator{
 			ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
 			EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance,
 		}
 	}
 
-	state, err := util.NewBeaconStateCapella()
+	state, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, state.SetValidators(validators))
 
@@ -516,7 +530,7 @@ func TestServer_SubscribeCommitteeSubnets_MultipleSlots(t *testing.T) {
 		isAggregator = append(isAggregator, boolVal)
 	}
 
-	_, err = attesterServer.SubscribeCommitteeSubnets(context.Background(), &zondpb.CommitteeSubnetsSubscribeRequest{
+	_, err = attesterServer.SubscribeCommitteeSubnets(context.Background(), &qrysmpb.CommitteeSubnetsSubscribeRequest{
 		Slots:        ss,
 		CommitteeIds: comIdxs,
 		IsAggregator: isAggregator,

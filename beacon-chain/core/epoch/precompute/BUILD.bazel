@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "precompute",
     srcs = [
         "attestation.go",
         "justification_finalization.go",
@@ -14,36 +14,36 @@ go_library(
         "//testing/spectest:__subpackages__",
     ],
     deps = [
-        "//beacon-chain/core/helpers:go_default_library",
-        "//beacon-chain/core/time:go_default_library",
-        "//beacon-chain/state:go_default_library",
-        "//config/params:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "//time/slots:go_default_library",
-        "@com_github_pkg_errors//:go_default_library",
-        "@com_github_theqrl_go_bitfield//:go_default_library",
+        "//beacon-chain/core/helpers",
+        "//beacon-chain/core/time",
+        "//beacon-chain/state",
+        "//config/params",
+        "//consensus-types/primitives",
+        "//proto/qrysm/v1alpha1",
+        "//time/slots",
+        "@com_github_pkg_errors//:errors",
+        "@com_github_theqrl_go_bitfield//:go-bitfield",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "precompute_test",
     srcs = [
         "attestation_test.go",
         "justification_finalization_test.go",
         "precompute_test.go",
         "reward_penalty_test.go",
     ],
-    embed = [":go_default_library"],
+    embed = [":precompute"],
     deps = [
-        "//beacon-chain/core/altair:go_default_library",
-        "//beacon-chain/state/state-native:go_default_library",
-        "//config/fieldparams:go_default_library",
-        "//config/params:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "//testing/assert:go_default_library",
-        "//testing/require:go_default_library",
-        "@com_github_theqrl_go_bitfield//:go_default_library",
+        "//beacon-chain/core/altair",
+        "//beacon-chain/state/state-native",
+        "//config/fieldparams",
+        "//config/params",
+        "//consensus-types/primitives",
+        "//proto/qrysm/v1alpha1",
+        "//testing/assert",
+        "//testing/require",
+        "@com_github_theqrl_go_bitfield//:go-bitfield",
     ],
 )

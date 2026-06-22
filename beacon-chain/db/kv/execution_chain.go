@@ -12,41 +12,41 @@ import (
 )
 
 // SaveExecutionChainData saves the execution chain data.
-func (s *Store) SaveExecutionChainData(ctx context.Context, data *v1alpha1.ETH1ChainData) error {
+func (s *Store) SaveExecutionChainData(ctx context.Context, data *v1alpha1.ExecutionChainData) error {
 	_, span := trace.StartSpan(ctx, "BeaconDB.SaveExecutionChainData")
 	defer span.End()
 
 	if data == nil {
-		err := errors.New("cannot save nil eth1data")
+		err := errors.New("cannot save nil executionData")
 		tracing.AnnotateError(span, err)
 		return err
 	}
 
 	err := s.db.Update(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(powchainBucket)
+		bkt := tx.Bucket(executionChainBucket)
 		enc, err := proto.Marshal(data)
 		if err != nil {
 			return err
 		}
-		return bkt.Put(powchainDataKey, enc)
+		return bkt.Put(executionChainDataKey, enc)
 	})
 	tracing.AnnotateError(span, err)
 	return err
 }
 
 // ExecutionChainData retrieves the execution chain data.
-func (s *Store) ExecutionChainData(ctx context.Context) (*v1alpha1.ETH1ChainData, error) {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.ExecutionChainData")
+func (s *Store) ExecutionChainData(ctx context.Context) (*v1alpha1.ExecutionChainData, error) {
+	_, span := trace.StartSpan(ctx, "BeaconDB.ExecutionChainData")
 	defer span.End()
 
-	var data *v1alpha1.ETH1ChainData
+	var data *v1alpha1.ExecutionChainData
 	err := s.db.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(powchainBucket)
-		enc := bkt.Get(powchainDataKey)
+		bkt := tx.Bucket(executionChainBucket)
+		enc := bkt.Get(executionChainDataKey)
 		if len(enc) == 0 {
 			return nil
 		}
-		data = &v1alpha1.ETH1ChainData{}
+		data = &v1alpha1.ExecutionChainData{}
 		return proto.Unmarshal(enc, data)
 	})
 	return data, err

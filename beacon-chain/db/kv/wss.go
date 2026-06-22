@@ -8,7 +8,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/ssz/detect"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 )
 
@@ -65,7 +65,7 @@ func (s *Store) SaveOrigin(ctx context.Context, serState, serBlock []byte) error
 	if err = s.SaveState(ctx, state, blockRoot); err != nil {
 		return errors.Wrap(err, "could not save state")
 	}
-	if err = s.SaveStateSummary(ctx, &zondpb.StateSummary{
+	if err = s.SaveStateSummary(ctx, &qrysmpb.StateSummary{
 		Slot: state.Slot(),
 		Root: blockRoot[:],
 	}); err != nil {
@@ -89,7 +89,7 @@ func (s *Store) SaveOrigin(ctx context.Context, serState, serBlock []byte) error
 	if err != nil {
 		return err
 	}
-	chkpt := &zondpb.Checkpoint{
+	chkpt := &qrysmpb.Checkpoint{
 		Epoch: primitives.Epoch(slotEpoch),
 		Root:  blockRoot[:],
 	}

@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "mock",
     testonly = True,
     srcs = [
         "mock.go",
@@ -10,8 +10,8 @@ go_library(
     importpath = "github.com/theQRL/qrysm/beacon-chain/state/stategen/mock",
     visibility = ["//visibility:public"],
     deps = [
-        "//beacon-chain/state:go_default_library",
-        "//beacon-chain/state/stategen:go_default_library",
-        "//consensus-types/primitives:go_default_library",
+        "//beacon-chain/state",
+        "//beacon-chain/state/stategen",
+        "//consensus-types/primitives",
     ],
 )

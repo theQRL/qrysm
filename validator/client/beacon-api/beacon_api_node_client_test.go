@@ -6,11 +6,11 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/shared"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -25,7 +25,7 @@ func TestGetGenesis(t *testing.T) {
 		depositContractResponse apimiddleware.DepositContractResponseJson
 		depositContractError    error
 		queriesDepositContract  bool
-		expectedResponse        *zondpb.Genesis
+		expectedResponse        *qrysmpb.Genesis
 		expectedError           string
 	}{
 		{
@@ -97,7 +97,7 @@ func TestGetGenesis(t *testing.T) {
 					Address: hexutil.Encode([]byte{3}),
 				},
 			},
-			expectedResponse: &zondpb.Genesis{
+			expectedResponse: &qrysmpb.Genesis{
 				GenesisTime: &timestamppb.Timestamp{
 					Seconds: 654812,
 				},
@@ -128,7 +128,7 @@ func TestGetGenesis(t *testing.T) {
 			if testCase.queriesDepositContract {
 				jsonRestHandler.EXPECT().GetRestJsonResponse(
 					ctx,
-					"/zond/v1/config/deposit_contract",
+					"/qrl/v1/config/deposit_contract",
 					&depositContractJson,
 				).Return(
 					nil,
@@ -155,13 +155,13 @@ func TestGetGenesis(t *testing.T) {
 }
 
 func TestGetSyncStatus(t *testing.T) {
-	const syncingEndpoint = "/zond/v1/node/syncing"
+	const syncingEndpoint = "/qrl/v1/node/syncing"
 
 	testCases := []struct {
 		name                 string
 		restEndpointResponse apimiddleware.SyncingResponseJson
 		restEndpointError    error
-		expectedResponse     *zondpb.SyncStatus
+		expectedResponse     *qrysmpb.SyncStatus
 		expectedError        string
 	}{
 		{
@@ -181,7 +181,7 @@ func TestGetSyncStatus(t *testing.T) {
 					IsSyncing: false,
 				},
 			},
-			expectedResponse: &zondpb.SyncStatus{
+			expectedResponse: &qrysmpb.SyncStatus{
 				Syncing: false,
 			},
 		},
@@ -192,7 +192,7 @@ func TestGetSyncStatus(t *testing.T) {
 					IsSyncing: true,
 				},
 			},
-			expectedResponse: &zondpb.SyncStatus{
+			expectedResponse: &qrysmpb.SyncStatus{
 				Syncing: true,
 			},
 		},
@@ -231,13 +231,13 @@ func TestGetSyncStatus(t *testing.T) {
 }
 
 func TestGetVersion(t *testing.T) {
-	const versionEndpoint = "/zond/v1/node/version"
+	const versionEndpoint = "/qrl/v1/node/version"
 
 	testCases := []struct {
 		name                 string
 		restEndpointResponse apimiddleware.VersionResponseJson
 		restEndpointError    error
-		expectedResponse     *zondpb.Version
+		expectedResponse     *qrysmpb.Version
 		expectedError        string
 	}{
 		{
@@ -257,7 +257,7 @@ func TestGetVersion(t *testing.T) {
 					Version: "qrysm/local",
 				},
 			},
-			expectedResponse: &zondpb.Version{
+			expectedResponse: &qrysmpb.Version{
 				Version: "qrysm/local",
 			},
 		},

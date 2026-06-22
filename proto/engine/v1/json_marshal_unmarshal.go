@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	gzondtypes "github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	gqrltypes "github.com/theQRL/go-qrl/core/types"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
@@ -27,18 +27,18 @@ func (b PayloadIDBytes) MarshalJSON() ([]byte, error) {
 	return json.Marshal(hexutil.Bytes(b[:]))
 }
 
-// ExecutionBlock is the response kind received by the zond_getBlockByHash and
+// ExecutionBlock is the response kind received by the qrl_getBlockByHash and
 // zomd_getBlockByNumber endpoints via JSON-RPC.
 type ExecutionBlock struct {
 	Version int
-	gzondtypes.Header
-	Hash         common.Hash               `json:"hash"`
-	Transactions []*gzondtypes.Transaction `json:"transactions"`
-	Withdrawals  []*Withdrawal             `json:"withdrawals"`
+	gqrltypes.Header
+	Hash         common.Hash              `json:"hash"`
+	Transactions []*gqrltypes.Transaction `json:"transactions"`
+	Withdrawals  []*Withdrawal            `json:"withdrawals"`
 }
 
 func (e *ExecutionBlock) MarshalJSON() ([]byte, error) {
-	decoded := make(map[string]interface{})
+	decoded := make(map[string]any)
 	encodedHeader, err := e.Header.MarshalJSON()
 	if err != nil {
 		return nil, err
@@ -55,7 +55,7 @@ func (e *ExecutionBlock) MarshalJSON() ([]byte, error) {
 
 func (e *ExecutionBlock) UnmarshalJSON(enc []byte) error {
 	type transactionsJson struct {
-		Transactions []*gzondtypes.Transaction `json:"transactions"`
+		Transactions []*gqrltypes.Transaction `json:"transactions"`
 	}
 	type withdrawalsJson struct {
 		Withdrawals []*withdrawalJSON `json:"withdrawals"`
@@ -64,7 +64,7 @@ func (e *ExecutionBlock) UnmarshalJSON(enc []byte) error {
 	if err := e.Header.UnmarshalJSON(enc); err != nil {
 		return err
 	}
-	decoded := make(map[string]interface{})
+	decoded := make(map[string]any)
 	if err := json.Unmarshal(enc, &decoded); err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func (e *ExecutionBlock) UnmarshalJSON(enc []byte) error {
 	if !ok || rawWithdrawals == nil {
 		return errors.New("expected `withdrawals` field in JSON response")
 	}
-	e.Version = version.Capella
+	e.Version = version.Zond
 	j := &withdrawalsJson{}
 	if err := json.Unmarshal(enc, j); err != nil {
 		return err
@@ -101,7 +101,7 @@ func (e *ExecutionBlock) UnmarshalJSON(enc []byte) error {
 		// Exit early if there are no transactions stored in the json payload.
 		return nil
 	}
-	txsList, ok := rawTxList.([]interface{})
+	txsList, ok := rawTxList.([]any)
 	if !ok {
 		return errors.Errorf("expected transaction list to be of a slice interface type.")
 	}
@@ -113,7 +113,7 @@ func (e *ExecutionBlock) UnmarshalJSON(enc []byte) error {
 		}
 	}
 	// If the block contains a list of transactions, we JSON unmarshal
-	// them into a list of gzond transaction objects.
+	// them into a list of gqrl transaction objects.
 	txJson := &transactionsJson{}
 	if err := json.Unmarshal(enc, txJson); err != nil {
 		return err
@@ -125,7 +125,7 @@ func (e *ExecutionBlock) UnmarshalJSON(enc []byte) error {
 // UnmarshalJSON --
 func (b *PayloadIDBytes) UnmarshalJSON(enc []byte) error {
 	var res [8]byte
-	if err := hexutil.UnmarshalFixedJSON(reflect.TypeOf(b), enc, res[:]); err != nil {
+	if err := hexutil.UnmarshalFixedJSON(reflect.TypeFor[*PayloadIDBytes](), enc, res[:]); err != nil {
 		return err
 	}
 	*b = res
@@ -154,13 +154,13 @@ func (j *withdrawalJSON) ToWithdrawal() (*Withdrawal, error) {
 func (w *Withdrawal) MarshalJSON() ([]byte, error) {
 	index := hexutil.Uint64(w.Index)
 	validatorIndex := hexutil.Uint64(w.ValidatorIndex)
-	gwei := hexutil.Uint64(w.Amount)
+	shor := hexutil.Uint64(w.Amount)
 	address := common.BytesToAddress(w.Address)
 	return json.Marshal(withdrawalJSON{
 		Index:     &index,
 		Validator: &validatorIndex,
 		Address:   &address,
-		Amount:    &gwei,
+		Amount:    &shor,
 	})
 }
 
@@ -190,11 +190,11 @@ func (w *Withdrawal) UnmarshalJSON(enc []byte) error {
 }
 
 type GetPayloadV2ResponseJson struct {
-	ExecutionPayload *ExecutionPayloadCapellaJSON `json:"executionPayload"`
-	BlockValue       string                       `json:"blockValue"`
+	ExecutionPayload *ExecutionPayloadZondJSON `json:"executionPayload"`
+	BlockValue       string                    `json:"blockValue"`
 }
 
-type ExecutionPayloadCapellaJSON struct {
+type ExecutionPayloadZondJSON struct {
 	ParentHash    *common.Hash    `json:"parentHash"`
 	FeeRecipient  *common.Address `json:"feeRecipient"`
 	StateRoot     *common.Hash    `json:"stateRoot"`
@@ -213,7 +213,7 @@ type ExecutionPayloadCapellaJSON struct {
 }
 
 // MarshalJSON --
-func (e *ExecutionPayloadCapella) MarshalJSON() ([]byte, error) {
+func (e *ExecutionPayloadZond) MarshalJSON() ([]byte, error) {
 	transactions := make([]hexutil.Bytes, len(e.Transactions))
 	for i, tx := range e.Transactions {
 		transactions[i] = tx
@@ -231,10 +231,11 @@ func (e *ExecutionPayloadCapella) MarshalJSON() ([]byte, error) {
 	timeStamp := hexutil.Uint64(e.Timestamp)
 	recipient := common.BytesToAddress(e.FeeRecipient)
 	logsBloom := hexutil.Bytes(e.LogsBloom)
-	if e.Withdrawals == nil {
-		e.Withdrawals = make([]*Withdrawal, 0)
+	withdrawals := e.Withdrawals
+	if withdrawals == nil {
+		withdrawals = make([]*Withdrawal, 0)
 	}
-	return json.Marshal(ExecutionPayloadCapellaJSON{
+	return json.Marshal(ExecutionPayloadZondJSON{
 		ParentHash:    &pHash,
 		FeeRecipient:  &recipient,
 		StateRoot:     &sRoot,
@@ -249,12 +250,12 @@ func (e *ExecutionPayloadCapella) MarshalJSON() ([]byte, error) {
 		BaseFeePerGas: baseFeeHex,
 		BlockHash:     &bHash,
 		Transactions:  transactions,
-		Withdrawals:   e.Withdrawals,
+		Withdrawals:   withdrawals,
 	})
 }
 
 // UnmarshalJSON --
-func (e *ExecutionPayloadCapellaWithValue) UnmarshalJSON(enc []byte) error {
+func (e *ExecutionPayloadZondWithValue) UnmarshalJSON(enc []byte) error {
 	dec := GetPayloadV2ResponseJson{}
 	if err := json.Unmarshal(enc, &dec); err != nil {
 		return err
@@ -303,7 +304,7 @@ func (e *ExecutionPayloadCapellaWithValue) UnmarshalJSON(enc []byte) error {
 		return errors.New("missing required field 'gasLimit' for ExecutionPayload")
 	}
 
-	*e = ExecutionPayloadCapellaWithValue{Payload: &ExecutionPayloadCapella{}}
+	*e = ExecutionPayloadZondWithValue{Payload: &ExecutionPayloadZond{}}
 	e.Payload.ParentHash = dec.ExecutionPayload.ParentHash.Bytes()
 	e.Payload.FeeRecipient = dec.ExecutionPayload.FeeRecipient.Bytes()
 	e.Payload.StateRoot = dec.ExecutionPayload.StateRoot.Bytes()
@@ -343,7 +344,7 @@ func (e *ExecutionPayloadCapellaWithValue) UnmarshalJSON(enc []byte) error {
 type payloadAttributesV2JSON struct {
 	Timestamp             hexutil.Uint64 `json:"timestamp"`
 	PrevRandao            hexutil.Bytes  `json:"prevRandao"`
-	SuggestedFeeRecipient hexutil.BytesZ `json:"suggestedFeeRecipient"`
+	SuggestedFeeRecipient hexutil.BytesQ `json:"suggestedFeeRecipient"`
 	Withdrawals           []*Withdrawal  `json:"withdrawals"`
 }
 
@@ -454,12 +455,13 @@ func (b *ExecutionPayloadBodyV1) MarshalJSON() ([]byte, error) {
 	for i, tx := range b.Transactions {
 		transactions[i] = tx
 	}
-	if len(b.Withdrawals) == 0 {
-		b.Withdrawals = make([]*Withdrawal, 0)
+	withdrawals := b.Withdrawals
+	if len(withdrawals) == 0 {
+		withdrawals = make([]*Withdrawal, 0)
 	}
 	return json.Marshal(executionPayloadBodyV1JSON{
 		Transactions: transactions,
-		Withdrawals:  b.Withdrawals,
+		Withdrawals:  withdrawals,
 	})
 }
 

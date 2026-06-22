@@ -5,7 +5,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/deposit/existingseed"
-	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/deposit/generatedilithiumtoexecutionchange"
 	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/deposit/newseed"
 	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/deposit/submit"
 	"github.com/theQRL/qrysm/runtime/version"
@@ -28,6 +27,5 @@ func main() {
 func init() {
 	depositCommands = append(depositCommands, existingseed.Commands...)
 	depositCommands = append(depositCommands, newseed.Commands...)
-	depositCommands = append(depositCommands, generatedilithiumtoexecutionchange.Commands...)
 	depositCommands = append(depositCommands, submit.Command)
 }

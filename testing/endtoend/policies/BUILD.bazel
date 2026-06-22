@@ -1,9 +1,9 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "policies",
     srcs = ["policies.go"],
     importpath = "github.com/theQRL/qrysm/testing/endtoend/policies",
     visibility = ["//visibility:public"],
-    deps = ["//consensus-types/primitives:go_default_library"],
+    deps = ["//consensus-types/primitives"],
 )

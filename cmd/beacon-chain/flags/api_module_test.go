@@ -16,14 +16,14 @@ func TestEnableHTTPQrysmAPI(t *testing.T) {
 	assert.Equal(t, false, EnableHTTPQrysmAPI(""))
 }
 
-func TestEnableHTTPZondAPI(t *testing.T) {
-	assert.Equal(t, true, EnableHTTPZondAPI("zond"))
-	assert.Equal(t, true, EnableHTTPZondAPI("zond,foo"))
-	assert.Equal(t, true, EnableHTTPZondAPI("foo,zond"))
-	assert.Equal(t, true, EnableHTTPZondAPI("zond,zond"))
-	assert.Equal(t, true, EnableHTTPZondAPI("ZonD"))
-	assert.Equal(t, false, EnableHTTPZondAPI("foo"))
-	assert.Equal(t, false, EnableHTTPZondAPI(""))
+func TestEnableHTTPQRLAPI(t *testing.T) {
+	assert.Equal(t, true, EnableHTTPQRLAPI("qrl"))
+	assert.Equal(t, true, EnableHTTPQRLAPI("qrl,foo"))
+	assert.Equal(t, true, EnableHTTPQRLAPI("foo,qrl"))
+	assert.Equal(t, true, EnableHTTPQRLAPI("qrl,qrl"))
+	assert.Equal(t, true, EnableHTTPQRLAPI("qRL"))
+	assert.Equal(t, false, EnableHTTPQRLAPI("foo"))
+	assert.Equal(t, false, EnableHTTPQRLAPI(""))
 }
 
 func TestEnableApi(t *testing.T) {

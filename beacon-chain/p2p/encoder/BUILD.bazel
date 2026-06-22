@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "encoder",
     srcs = [
         "doc.go",
         "network_encoding.go",
@@ -14,31 +14,31 @@ go_library(
         "//cmd:__subpackages__",
     ],
     deps = [
-        "//config/params:go_default_library",
-        "//math:go_default_library",
-        "@com_github_gogo_protobuf//proto:go_default_library",
-        "@com_github_golang_snappy//:go_default_library",
-        "@com_github_pkg_errors//:go_default_library",
-        "@com_github_prysmaticlabs_fastssz//:go_default_library",
+        "//config/params",
+        "//math",
+        "@com_github_gogo_protobuf//proto",
+        "@com_github_golang_snappy//:snappy",
+        "@com_github_pkg_errors//:errors",
+        "@com_github_prysmaticlabs_fastssz//:fastssz",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "encoder_test",
     srcs = [
         "snappy_test.go",
         "ssz_test.go",
         "varint_test.go",
     ],
-    embed = [":go_default_library"],
+    embed = [":encoder"],
     deps = [
-        "//config/params:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "//testing/assert:go_default_library",
-        "//testing/require:go_default_library",
-        "//testing/util:go_default_library",
-        "@com_github_gogo_protobuf//proto:go_default_library",
-        "@com_github_golang_snappy//:go_default_library",
-        "@org_golang_google_protobuf//proto:go_default_library",
+        "//config/params",
+        "//proto/qrysm/v1alpha1",
+        "//testing/assert",
+        "//testing/require",
+        "//testing/util",
+        "@com_github_gogo_protobuf//proto",
+        "@com_github_golang_snappy//:snappy",
+        "@org_golang_google_protobuf//proto",
     ],
 )

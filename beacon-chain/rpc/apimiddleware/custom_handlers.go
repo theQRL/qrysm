@@ -15,7 +15,7 @@ import (
 	"github.com/theQRL/qrysm/api"
 	"github.com/theQRL/qrysm/api/gateway/apimiddleware"
 	"github.com/theQRL/qrysm/api/grpc"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/events"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/events"
 	http2 "github.com/theQRL/qrysm/network/http"
 	"github.com/theQRL/qrysm/runtime/version"
 )
@@ -82,7 +82,7 @@ func handleGetSSZ(
 	req *http.Request,
 	config sszConfig,
 ) (handled bool) {
-	ssz := http2.SszRequested(req)
+	ssz := http2.RespondWithSsz(req)
 	if !ssz {
 		return false
 	}
@@ -234,7 +234,7 @@ func receiveEvents(eventChan <-chan *sse.Event, w http.ResponseWriter, req *http
 	for {
 		select {
 		case msg := <-eventChan:
-			var data interface{}
+			var data any
 
 			// The message's event comes to us with trailing whitespace. Remove it here for
 			// ease of future processing.
@@ -282,15 +282,13 @@ func receiveEvents(eventChan <-chan *sse.Event, w http.ResponseWriter, req *http
 				data = &EventChainReorgJson{}
 			case events.SyncCommitteeContributionTopic:
 				data = &SignedContributionAndProofJson{}
-			case events.DilithiumToExecutionChangeTopic:
-				data = &SignedDilithiumToExecutionChangeJson{}
 			case events.PayloadAttributesTopic:
 				dataSubset := &dataSubset{}
 				if err := json.Unmarshal(msg.Data, dataSubset); err != nil {
 					return apimiddleware.InternalServerError(err)
 				}
 				switch dataSubset.Version {
-				case version.String(version.Capella):
+				case version.String(version.Zond):
 					data = &EventPayloadAttributeStreamV2Json{}
 				default:
 					return apimiddleware.InternalServerError(errors.New("payload version unsupported"))
@@ -316,7 +314,7 @@ func receiveEvents(eventChan <-chan *sse.Event, w http.ResponseWriter, req *http
 	}
 }
 
-func writeEvent(msg *sse.Event, w http.ResponseWriter, data interface{}) apimiddleware.ErrorJson {
+func writeEvent(msg *sse.Event, w http.ResponseWriter, data any) apimiddleware.ErrorJson {
 	if err := json.Unmarshal(msg.Data, data); err != nil {
 		return apimiddleware.InternalServerError(err)
 	}

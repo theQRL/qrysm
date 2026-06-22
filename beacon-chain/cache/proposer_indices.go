@@ -35,7 +35,7 @@ type ProposerIndicesCache struct {
 }
 
 // proposerIndicesKeyFn takes the block root as the key to retrieve proposer indices in a given epoch.
-func proposerIndicesKeyFn(obj interface{}) (string, error) {
+func proposerIndicesKeyFn(obj any) (string, error) {
 	info, ok := obj.(*ProposerIndices)
 	if !ok {
 		return "", ErrNotProposerIndices

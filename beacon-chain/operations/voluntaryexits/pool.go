@@ -10,40 +10,40 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	types "github.com/theQRL/qrysm/consensus-types/primitives"
 	doublylinkedlist "github.com/theQRL/qrysm/container/doubly-linked-list"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
 // PoolManager maintains pending and seen voluntary exits.
 // This pool is used by proposers to insert voluntary exits into new blocks.
 type PoolManager interface {
-	PendingExits() ([]*zondpb.SignedVoluntaryExit, error)
-	ExitsForInclusion(state state.ReadOnlyBeaconState, slot types.Slot) ([]*zondpb.SignedVoluntaryExit, error)
-	InsertVoluntaryExit(exit *zondpb.SignedVoluntaryExit)
-	MarkIncluded(exit *zondpb.SignedVoluntaryExit)
+	PendingExits() ([]*qrysmpb.SignedVoluntaryExit, error)
+	ExitsForInclusion(state state.ReadOnlyBeaconState, slot types.Slot) ([]*qrysmpb.SignedVoluntaryExit, error)
+	InsertVoluntaryExit(exit *qrysmpb.SignedVoluntaryExit)
+	MarkIncluded(exit *qrysmpb.SignedVoluntaryExit)
 }
 
 // Pool is a concrete implementation of PoolManager.
 type Pool struct {
 	lock    sync.RWMutex
-	pending doublylinkedlist.List[*zondpb.SignedVoluntaryExit]
-	m       map[types.ValidatorIndex]*doublylinkedlist.Node[*zondpb.SignedVoluntaryExit]
+	pending doublylinkedlist.List[*qrysmpb.SignedVoluntaryExit]
+	m       map[types.ValidatorIndex]*doublylinkedlist.Node[*qrysmpb.SignedVoluntaryExit]
 }
 
 // NewPool returns an initialized pool.
 func NewPool() *Pool {
 	return &Pool{
-		pending: doublylinkedlist.List[*zondpb.SignedVoluntaryExit]{},
-		m:       make(map[types.ValidatorIndex]*doublylinkedlist.Node[*zondpb.SignedVoluntaryExit]),
+		pending: doublylinkedlist.List[*qrysmpb.SignedVoluntaryExit]{},
+		m:       make(map[types.ValidatorIndex]*doublylinkedlist.Node[*qrysmpb.SignedVoluntaryExit]),
 	}
 }
 
 // PendingExits returns all objects from the pool.
-func (p *Pool) PendingExits() ([]*zondpb.SignedVoluntaryExit, error) {
+func (p *Pool) PendingExits() ([]*qrysmpb.SignedVoluntaryExit, error) {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
 
-	result := make([]*zondpb.SignedVoluntaryExit, p.pending.Len())
+	result := make([]*qrysmpb.SignedVoluntaryExit, p.pending.Len())
 	node := p.pending.First()
 	var err error
 	for i := 0; node != nil; i++ {
@@ -61,10 +61,10 @@ func (p *Pool) PendingExits() ([]*zondpb.SignedVoluntaryExit, error) {
 
 // ExitsForInclusion returns objects that are ready for inclusion at the given slot. This method will not
 // return more than the block enforced MaxVoluntaryExits.
-func (p *Pool) ExitsForInclusion(state state.ReadOnlyBeaconState, slot types.Slot) ([]*zondpb.SignedVoluntaryExit, error) {
+func (p *Pool) ExitsForInclusion(state state.ReadOnlyBeaconState, slot types.Slot) ([]*qrysmpb.SignedVoluntaryExit, error) {
 	p.lock.RLock()
 	length := int(math.Min(float64(params.BeaconConfig().MaxVoluntaryExits), float64(p.pending.Len())))
-	result := make([]*zondpb.SignedVoluntaryExit, 0, length)
+	result := make([]*qrysmpb.SignedVoluntaryExit, 0, length)
 	node := p.pending.First()
 	for node != nil && len(result) < length {
 		exit, err := node.Value()
@@ -110,7 +110,7 @@ func (p *Pool) ExitsForInclusion(state state.ReadOnlyBeaconState, slot types.Slo
 }
 
 // InsertVoluntaryExit into the pool.
-func (p *Pool) InsertVoluntaryExit(exit *zondpb.SignedVoluntaryExit) {
+func (p *Pool) InsertVoluntaryExit(exit *qrysmpb.SignedVoluntaryExit) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
@@ -125,7 +125,7 @@ func (p *Pool) InsertVoluntaryExit(exit *zondpb.SignedVoluntaryExit) {
 
 // MarkIncluded is used when an exit has been included in a beacon block. Every block seen by this
 // node should call this method to include the exit. This will remove the exit from the pool.
-func (p *Pool) MarkIncluded(exit *zondpb.SignedVoluntaryExit) {
+func (p *Pool) MarkIncluded(exit *qrysmpb.SignedVoluntaryExit) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 

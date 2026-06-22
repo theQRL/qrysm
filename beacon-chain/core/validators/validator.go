@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
@@ -124,10 +124,10 @@ func InitiateValidatorExit(ctx context.Context, s state.BeaconState, idx primiti
 //	  proposer_index = get_beacon_proposer_index(state)
 //	  if whistleblower_index is None:
 //	      whistleblower_index = proposer_index
-//	  whistleblower_reward = Gwei(validator.effective_balance // WHISTLEBLOWER_REWARD_QUOTIENT)
-//	  proposer_reward = Gwei(whistleblower_reward // PROPOSER_REWARD_QUOTIENT)
+//	  whistleblower_reward = Shor(validator.effective_balance // WHISTLEBLOWER_REWARD_QUOTIENT)
+//	  proposer_reward = Shor(whistleblower_reward // PROPOSER_REWARD_QUOTIENT)
 //	  increase_balance(state, proposer_index, proposer_reward)
-//	  increase_balance(state, whistleblower_index, Gwei(whistleblower_reward - proposer_reward))
+//	  increase_balance(state, whistleblower_index, Shor(whistleblower_reward - proposer_reward))
 func SlashValidator(
 	ctx context.Context,
 	s state.BeaconState,
@@ -184,9 +184,9 @@ func SlashValidator(
 }
 
 // ActivatedValidatorIndices determines the indices activated during the given epoch.
-func ActivatedValidatorIndices(epoch primitives.Epoch, validators []*zondpb.Validator) []primitives.ValidatorIndex {
+func ActivatedValidatorIndices(epoch primitives.Epoch, validators []*qrysmpb.Validator) []primitives.ValidatorIndex {
 	activations := make([]primitives.ValidatorIndex, 0)
-	for i := 0; i < len(validators); i++ {
+	for i := range validators {
 		val := validators[i]
 		if val.ActivationEpoch <= epoch && epoch < val.ExitEpoch {
 			activations = append(activations, primitives.ValidatorIndex(i))
@@ -196,9 +196,9 @@ func ActivatedValidatorIndices(epoch primitives.Epoch, validators []*zondpb.Vali
 }
 
 // SlashedValidatorIndices determines the indices slashed during the given epoch.
-func SlashedValidatorIndices(epoch primitives.Epoch, validators []*zondpb.Validator) []primitives.ValidatorIndex {
+func SlashedValidatorIndices(epoch primitives.Epoch, validators []*qrysmpb.Validator) []primitives.ValidatorIndex {
 	slashed := make([]primitives.ValidatorIndex, 0)
-	for i := 0; i < len(validators); i++ {
+	for i := range validators {
 		val := validators[i]
 		maxWithdrawableEpoch := primitives.MaxEpoch(val.WithdrawableEpoch, epoch+params.BeaconConfig().EpochsPerSlashingsVector)
 		if val.WithdrawableEpoch == maxWithdrawableEpoch && val.Slashed {
@@ -208,76 +208,37 @@ func SlashedValidatorIndices(epoch primitives.Epoch, validators []*zondpb.Valida
 	return slashed
 }
 
-// ExitedValidatorIndices determines the indices exited during the current epoch.
-func ExitedValidatorIndices(epoch primitives.Epoch, validators []*zondpb.Validator, activeValidatorCount uint64) ([]primitives.ValidatorIndex, error) {
+// ExitedValidatorIndices returns the indices of validators who exited during the specified epoch.
+//
+// A validator is considered to have exited during an epoch if their ExitEpoch equals the epoch and
+// their EffectiveBalance is above the EjectionBalance (validators with balance at or below
+// EjectionBalance are reported by EjectedValidatorIndices instead).
+//
+// Direct ExitEpoch comparison avoids the inaccuracies of recomputing a global withdrawable epoch
+// from the exit queue, which can silently drop validators whose ExitEpoch matches the queried
+// epoch but whose WithdrawableEpoch differs because they were placed in an earlier exit-queue
+// slot than the current maximum.
+func ExitedValidatorIndices(epoch primitives.Epoch, validators []*qrysmpb.Validator) ([]primitives.ValidatorIndex, error) {
 	exited := make([]primitives.ValidatorIndex, 0)
-	exitEpochs := make([]primitives.Epoch, 0)
-	for i := 0; i < len(validators); i++ {
-		val := validators[i]
-		if val.ExitEpoch != params.BeaconConfig().FarFutureEpoch {
-			exitEpochs = append(exitEpochs, val.ExitEpoch)
-		}
-	}
-	exitQueueEpoch := primitives.Epoch(0)
-	for _, i := range exitEpochs {
-		if exitQueueEpoch < i {
-			exitQueueEpoch = i
-		}
-	}
-
-	// We use the exit queue churn to determine if we have passed a churn limit.
-	exitQueueChurn := uint64(0)
-	for _, val := range validators {
-		if val.ExitEpoch == exitQueueEpoch {
-			exitQueueChurn++
-		}
-	}
-	churn := helpers.ValidatorExitChurnLimit(activeValidatorCount)
-	if churn < exitQueueChurn {
-		exitQueueEpoch++
-	}
-	withdrawableEpoch := exitQueueEpoch + params.BeaconConfig().MinValidatorWithdrawabilityDelay
 	for i, val := range validators {
-		if val.ExitEpoch == epoch && val.WithdrawableEpoch == withdrawableEpoch &&
-			val.EffectiveBalance > params.BeaconConfig().EjectionBalance {
+		if val.ExitEpoch == epoch && val.EffectiveBalance > params.BeaconConfig().EjectionBalance {
 			exited = append(exited, primitives.ValidatorIndex(i))
 		}
 	}
 	return exited, nil
 }
 
-// EjectedValidatorIndices determines the indices ejected during the given epoch.
-func EjectedValidatorIndices(epoch primitives.Epoch, validators []*zondpb.Validator, activeValidatorCount uint64) ([]primitives.ValidatorIndex, error) {
+// EjectedValidatorIndices returns the indices of validators who were ejected during the specified
+// epoch. A validator is considered ejected when:
+//   - their ExitEpoch equals the epoch, and
+//   - their EffectiveBalance is at or below the EjectionBalance threshold.
+//
+// Like ExitedValidatorIndices, this avoids the global-withdrawable-epoch heuristic that could
+// silently drop validators whose ExitEpoch matches the epoch but whose WithdrawableEpoch differs.
+func EjectedValidatorIndices(epoch primitives.Epoch, validators []*qrysmpb.Validator) ([]primitives.ValidatorIndex, error) {
 	ejected := make([]primitives.ValidatorIndex, 0)
-	exitEpochs := make([]primitives.Epoch, 0)
-	for i := 0; i < len(validators); i++ {
-		val := validators[i]
-		if val.ExitEpoch != params.BeaconConfig().FarFutureEpoch {
-			exitEpochs = append(exitEpochs, val.ExitEpoch)
-		}
-	}
-	exitQueueEpoch := primitives.Epoch(0)
-	for _, i := range exitEpochs {
-		if exitQueueEpoch < i {
-			exitQueueEpoch = i
-		}
-	}
-
-	// We use the exit queue churn to determine if we have passed a churn limit.
-	exitQueueChurn := uint64(0)
-	for _, val := range validators {
-		if val.ExitEpoch == exitQueueEpoch {
-			exitQueueChurn++
-		}
-	}
-	churn := helpers.ValidatorExitChurnLimit(activeValidatorCount)
-	if churn < exitQueueChurn {
-		exitQueueEpoch++
-	}
-	withdrawableEpoch := exitQueueEpoch + params.BeaconConfig().MinValidatorWithdrawabilityDelay
 	for i, val := range validators {
-		if val.ExitEpoch == epoch && val.WithdrawableEpoch == withdrawableEpoch &&
-			val.EffectiveBalance <= params.BeaconConfig().EjectionBalance {
+		if val.ExitEpoch == epoch && val.EffectiveBalance <= params.BeaconConfig().EjectionBalance {
 			ejected = append(ejected, primitives.ValidatorIndex(i))
 		}
 	}

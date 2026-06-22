@@ -10,7 +10,7 @@ import (
 	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
 	consensusblocks "github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -20,8 +20,8 @@ func TestMigrateToCold_CanSaveFinalizedInfo(t *testing.T) {
 	ctx := context.Background()
 	beaconDB := testDB.SetupDB(t)
 	service := New(beaconDB, doublylinkedtree.New())
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, 32)
-	b := util.NewBeaconBlockCapella()
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 32)
+	b := util.NewBeaconBlockZond()
 	b.Block.Slot = 1
 	br, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -46,10 +46,10 @@ func TestMigrateToCold_HappyPath(t *testing.T) {
 
 	service := New(beaconDB, doublylinkedtree.New())
 	service.slotsPerArchivedPoint = 1
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, 32)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 32)
 	stateSlot := primitives.Slot(1)
 	require.NoError(t, beaconState.SetSlot(stateSlot))
-	b := util.NewBeaconBlockCapella()
+	b := util.NewBeaconBlockZond()
 	b.Block.Slot = 2
 	fRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -76,7 +76,7 @@ func TestMigrateToCold_RegeneratePath(t *testing.T) {
 
 	service := New(beaconDB, doublylinkedtree.New())
 	service.slotsPerArchivedPoint = 1
-	beaconState, pks := util.DeterministicGenesisStateCapella(t, 32)
+	beaconState, pks := util.DeterministicGenesisStateZond(t, 32)
 	genesisStateRoot, err := beaconState.HashTreeRoot(ctx)
 	require.NoError(t, err)
 	genesis := blocks.NewGenesisBlock(genesisStateRoot[:])
@@ -86,19 +86,19 @@ func TestMigrateToCold_RegeneratePath(t *testing.T) {
 	assert.NoError(t, beaconDB.SaveState(ctx, beaconState, gRoot))
 	assert.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, gRoot))
 
-	b1, err := util.GenerateFullBlockCapella(beaconState, pks, util.DefaultBlockGenConfig(), 1)
+	b1, err := util.GenerateFullBlockZond(beaconState, pks, util.DefaultBlockGenConfig(), 1)
 	require.NoError(t, err)
 	r1, err := b1.Block.HashTreeRoot()
 	require.NoError(t, err)
 	util.SaveBlock(t, ctx, service.beaconDB, b1)
-	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Slot: 1, Root: r1[:]}))
+	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &qrysmpb.StateSummary{Slot: 1, Root: r1[:]}))
 
-	b4, err := util.GenerateFullBlockCapella(beaconState, pks, util.DefaultBlockGenConfig(), 4)
+	b4, err := util.GenerateFullBlockZond(beaconState, pks, util.DefaultBlockGenConfig(), 4)
 	require.NoError(t, err)
 	r4, err := b4.Block.HashTreeRoot()
 	require.NoError(t, err)
 	util.SaveBlock(t, ctx, service.beaconDB, b4)
-	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Slot: 4, Root: r4[:]}))
+	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &qrysmpb.StateSummary{Slot: 4, Root: r4[:]}))
 	service.finalizedInfo = &finalizedInfo{
 		slot:  0,
 		root:  genesisStateRoot,
@@ -126,10 +126,10 @@ func TestMigrateToCold_StateExistsInDB(t *testing.T) {
 
 	service := New(beaconDB, doublylinkedtree.New())
 	service.slotsPerArchivedPoint = 1
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, 32)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 32)
 	stateSlot := primitives.Slot(1)
 	require.NoError(t, beaconState.SetSlot(stateSlot))
-	b := util.NewBeaconBlockCapella()
+	b := util.NewBeaconBlockZond()
 	b.Block.Slot = 2
 	fRoot, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -150,7 +150,7 @@ func TestMigrateToCold_ParallelCalls(t *testing.T) {
 
 	service := New(beaconDB, doublylinkedtree.New())
 	service.slotsPerArchivedPoint = 1
-	beaconState, pks := util.DeterministicGenesisStateCapella(t, 32)
+	beaconState, pks := util.DeterministicGenesisStateZond(t, 32)
 	genState := beaconState.Copy()
 	genesisStateRoot, err := beaconState.HashTreeRoot(ctx)
 	require.NoError(t, err)
@@ -161,7 +161,7 @@ func TestMigrateToCold_ParallelCalls(t *testing.T) {
 	assert.NoError(t, beaconDB.SaveState(ctx, beaconState, gRoot))
 	assert.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, gRoot))
 
-	b1, err := util.GenerateFullBlockCapella(beaconState, pks, util.DefaultBlockGenConfig(), 1)
+	b1, err := util.GenerateFullBlockZond(beaconState, pks, util.DefaultBlockGenConfig(), 1)
 	require.NoError(t, err)
 	wB1, err := consensusblocks.NewSignedBeaconBlock(b1)
 	require.NoError(t, err)
@@ -170,9 +170,9 @@ func TestMigrateToCold_ParallelCalls(t *testing.T) {
 	r1, err := b1.Block.HashTreeRoot()
 	require.NoError(t, err)
 	util.SaveBlock(t, ctx, service.beaconDB, b1)
-	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Slot: 1, Root: r1[:]}))
+	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &qrysmpb.StateSummary{Slot: 1, Root: r1[:]}))
 
-	b4, err := util.GenerateFullBlockCapella(beaconState, pks, util.DefaultBlockGenConfig(), 4)
+	b4, err := util.GenerateFullBlockZond(beaconState, pks, util.DefaultBlockGenConfig(), 4)
 	require.NoError(t, err)
 	wB4, err := consensusblocks.NewSignedBeaconBlock(b4)
 	require.NoError(t, err)
@@ -181,9 +181,9 @@ func TestMigrateToCold_ParallelCalls(t *testing.T) {
 	r4, err := b4.Block.HashTreeRoot()
 	require.NoError(t, err)
 	util.SaveBlock(t, ctx, service.beaconDB, b4)
-	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Slot: 4, Root: r4[:]}))
+	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &qrysmpb.StateSummary{Slot: 4, Root: r4[:]}))
 
-	b7, err := util.GenerateFullBlockCapella(beaconState, pks, util.DefaultBlockGenConfig(), 7)
+	b7, err := util.GenerateFullBlockZond(beaconState, pks, util.DefaultBlockGenConfig(), 7)
 	require.NoError(t, err)
 	wB7, err := consensusblocks.NewSignedBeaconBlock(b7)
 	require.NoError(t, err)
@@ -192,7 +192,7 @@ func TestMigrateToCold_ParallelCalls(t *testing.T) {
 	r7, err := b7.Block.HashTreeRoot()
 	require.NoError(t, err)
 	util.SaveBlock(t, ctx, service.beaconDB, b7)
-	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &zondpb.StateSummary{Slot: 7, Root: r7[:]}))
+	require.NoError(t, service.beaconDB.SaveStateSummary(ctx, &qrysmpb.StateSummary{Slot: 7, Root: r7[:]}))
 
 	service.finalizedInfo = &finalizedInfo{
 		slot:  0,

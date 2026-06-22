@@ -1,0 +1,12 @@
+load("@qrysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "mock",
+    srcs = ["interface_mock.go"],
+    importpath = "github.com/theQRL/qrysm/crypto/ml_dsa_87/common/mock",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//crypto/ml_dsa_87/common",
+        "@com_github_golang_mock//gomock",
+    ],
+)

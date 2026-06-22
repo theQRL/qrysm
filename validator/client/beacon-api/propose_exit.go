@@ -7,12 +7,12 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
-func (c beaconApiValidatorClient) proposeExit(ctx context.Context, signedVoluntaryExit *zondpb.SignedVoluntaryExit) (*zondpb.ProposeExitResponse, error) {
+func (c beaconApiValidatorClient) proposeExit(ctx context.Context, signedVoluntaryExit *qrysmpb.SignedVoluntaryExit) (*qrysmpb.ProposeExitResponse, error) {
 	if signedVoluntaryExit == nil {
 		return nil, errors.New("signed voluntary exit is nil")
 	}
@@ -34,7 +34,7 @@ func (c beaconApiValidatorClient) proposeExit(ctx context.Context, signedVolunta
 		return nil, errors.Wrap(err, "failed to marshal signed voluntary exit")
 	}
 
-	if _, err := c.jsonRestHandler.PostRestJson(ctx, "/zond/v1/beacon/pool/voluntary_exits", nil, bytes.NewBuffer(marshalledSignedVoluntaryExit), nil); err != nil {
+	if _, err := c.jsonRestHandler.PostRestJson(ctx, "/qrl/v1/beacon/pool/voluntary_exits", nil, bytes.NewBuffer(marshalledSignedVoluntaryExit), nil); err != nil {
 		return nil, errors.Wrap(err, "failed to send POST data to REST endpoint")
 	}
 
@@ -43,7 +43,7 @@ func (c beaconApiValidatorClient) proposeExit(ctx context.Context, signedVolunta
 		return nil, errors.Wrap(err, "failed to compute exit root")
 	}
 
-	return &zondpb.ProposeExitResponse{
+	return &qrysmpb.ProposeExitResponse{
 		ExitRoot: exitRoot[:],
 	}, nil
 }

@@ -12,7 +12,7 @@ import (
 
 // P2PPreregistration prepares data for p2p.Service's registration.
 func P2PPreregistration(cliCtx *cli.Context) (bootstrapNodeAddrs []string, dataDir string, err error) {
-	// Bootnode ENR may be a filepath to a YAML file
+	// Bootnode QNR may be a filepath to a YAML file
 	bootnodesTemp := params.BeaconNetworkConfig().BootstrapNodes // actual CLI values
 	bootstrapNodeAddrs = make([]string, 0)                       // dest of final list of nodes
 	for _, addr := range bootnodesTemp {

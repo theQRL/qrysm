@@ -8,17 +8,17 @@ import (
 	"github.com/pkg/errors"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/encoding/ssz"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
-func HistoricalSummariesRoot(summaries []*zondpb.HistoricalSummary) ([32]byte, error) {
+func HistoricalSummariesRoot(summaries []*qrysmpb.HistoricalSummary) ([32]byte, error) {
 	max := uint64(fieldparams.HistoricalRootsLength)
 	if uint64(len(summaries)) > max {
 		return [32]byte{}, fmt.Errorf("historical summary exceeds max length %d", max)
 	}
 
 	roots := make([][32]byte, len(summaries))
-	for i := 0; i < len(summaries); i++ {
+	for i := range summaries {
 		r, err := summaries[i].HashTreeRoot()
 		if err != nil {
 			return [32]byte{}, errors.Wrap(err, "could not merkleize historical summary")

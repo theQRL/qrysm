@@ -6,15 +6,15 @@ def _go_test_transition_impl(settings, attr):
     """Edge transition to add minimal or mainnet build tags"""
     settings = dict(settings)
 
-    if attr.zond_network == "minimal":
+    if attr.qrl_network == "minimal":
         settings["//proto:network"] = "minimal"
-        settings["@io_bazel_rules_go//go/config:tags"] += ["minimal"]
-    elif attr.zond_network == "mainnet":  # Default / optional
+        settings["@io_bazel_rules_go//go/config:tags"] = ["minimal"] + settings["@io_bazel_rules_go//go/config:tags"] 
+    elif attr.qrl_network == "mainnet":  # Default / optional
         settings["//proto:network"] = "mainnet"
-        settings["@io_bazel_rules_go//go/config:tags"] += ["mainnet"]
+        settings["@io_bazel_rules_go//go/config:tags"] = ["mainnet"] + settings["@io_bazel_rules_go//go/config:tags"] 
 
     if attr.gotags:
-        settings["@io_bazel_rules_go//go/config:tags"] += attr.gotags
+        settings["@io_bazel_rules_go//go/config:tags"] = attr.gotags + settings["@io_bazel_rules_go//go/config:tags"]
 
     if str(settings["//command_line_option:compilation_mode"]) == "dbg":
         settings["@io_bazel_rules_go//go/config:debug"] = True
@@ -37,14 +37,11 @@ go_test_transition = transition(
 )
 
 def _go_test_transition_rule(**kwargs):
-    """A wrapper around go_test to add an zond_network attribute and incoming edge transition to support compile time configuration"""
+    """A wrapper around go_test to add an qrl_network attribute and incoming edge transition to support compile time configuration"""
     kwargs = dict(kwargs)
     attrs = dict(kwargs["attrs"])
     attrs.update({
-        "zond_network": attr.string(values = ["mainnet", "minimal"]),
-        "_whitelist_function_transition": attr.label(
-            default = "@bazel_tools//tools/whitelists/function_transition_whitelist",
-        ),
+        "qrl_network": attr.string(values = ["mainnet", "minimal"]),
     })
     kwargs["attrs"] = attrs
     kwargs["cfg"] = go_test_transition

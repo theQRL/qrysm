@@ -8,15 +8,15 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
 )
 
-const submitSignedContributionAndProofTestEndpoint = "/zond/v1/validator/contribution_and_proofs"
+const submitSignedContributionAndProofTestEndpoint = "/qrl/v1/validator/contribution_and_proofs"
 
 func TestSubmitSignedContributionAndProof_Valid(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -56,10 +56,10 @@ func TestSubmitSignedContributionAndProof_Valid(t *testing.T) {
 		nil,
 	).Times(1)
 
-	contributionAndProof := &zondpb.SignedContributionAndProof{
-		Message: &zondpb.ContributionAndProof{
+	contributionAndProof := &qrysmpb.SignedContributionAndProof{
+		Message: &qrysmpb.ContributionAndProof{
 			AggregatorIndex: 1,
-			Contribution: &zondpb.SyncCommitteeContribution{
+			Contribution: &qrysmpb.SyncCommitteeContribution{
 				Slot:              2,
 				BlockRoot:         []byte{3},
 				SubcommitteeIndex: 4,
@@ -79,7 +79,7 @@ func TestSubmitSignedContributionAndProof_Valid(t *testing.T) {
 func TestSubmitSignedContributionAndProof_Error(t *testing.T) {
 	testCases := []struct {
 		name                 string
-		data                 *zondpb.SignedContributionAndProof
+		data                 *qrysmpb.SignedContributionAndProof
 		expectedErrorMessage string
 		httpRequestExpected  bool
 	}{
@@ -90,21 +90,21 @@ func TestSubmitSignedContributionAndProof_Error(t *testing.T) {
 		},
 		{
 			name:                 "nil message",
-			data:                 &zondpb.SignedContributionAndProof{},
+			data:                 &qrysmpb.SignedContributionAndProof{},
 			expectedErrorMessage: "signed contribution and proof message is nil",
 		},
 		{
 			name: "nil contribution",
-			data: &zondpb.SignedContributionAndProof{
-				Message: &zondpb.ContributionAndProof{},
+			data: &qrysmpb.SignedContributionAndProof{
+				Message: &qrysmpb.ContributionAndProof{},
 			},
 			expectedErrorMessage: "signed contribution and proof contribution is nil",
 		},
 		{
 			name: "bad request",
-			data: &zondpb.SignedContributionAndProof{
-				Message: &zondpb.ContributionAndProof{
-					Contribution: &zondpb.SyncCommitteeContribution{},
+			data: &qrysmpb.SignedContributionAndProof{
+				Message: &qrysmpb.ContributionAndProof{
+					Contribution: &qrysmpb.SyncCommitteeContribution{},
 				},
 			},
 			httpRequestExpected:  true,

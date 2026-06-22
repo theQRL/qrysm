@@ -51,10 +51,10 @@ func TestBeaconNodeScraper(t *testing.T) {
 
 	// BeaconNodeStats
 	require.Equal(t, int64(256552), bs.SyncBeaconHeadSlot)
-	require.Equal(t, true, bs.SyncEth2Synced)
+	require.Equal(t, true, bs.SyncConsensusSynced)
 	require.Equal(t, int64(7365341184), bs.DiskBeaconchainBytesTotal)
 	require.Equal(t, int64(37), bs.NetworkPeersConnected)
-	require.Equal(t, true, bs.SyncEth1Connected)
+	require.Equal(t, true, bs.SyncExecutionConnected)
 }
 
 // helper function to wrap up all the scrape logic so tests can focus on data cases and assertions
@@ -73,17 +73,17 @@ func scrapeBeaconNodeStats(body string) (*BeaconNodeStats, error) {
 	return bs, err
 }
 
-func TestInvertEth1Metrics(t *testing.T) {
+func TestInvertExecutionMetrics(t *testing.T) {
 	cases := []struct {
 		key  string
 		body string
 		test func(*BeaconNodeStats) bool
 	}{
 		{
-			key:  "SyncEth1Connected",
-			body: strings.Replace(prometheusTestBody, "powchain_sync_eth1_connected 1", "powchain_sync_eth1_connected 0", 1),
+			key:  "SyncExecutionConnected",
+			body: strings.Replace(prometheusTestBody, "execution_chain_sync_execution_connected 1", "execution_chain_sync_execution_connected 0", 1),
 			test: func(bs *BeaconNodeStats) bool {
-				return bs.SyncEth1Connected == false
+				return bs.SyncExecutionConnected == false
 			},
 		},
 	}
@@ -94,10 +94,10 @@ func TestInvertEth1Metrics(t *testing.T) {
 	}
 }
 
-func TestFalseEth2Synced(t *testing.T) {
+func TestFalseConsensusSynced(t *testing.T) {
 	bnScraper := beaconNodeScraper{}
-	eth2NotSynced := strings.Replace(prometheusTestBody, "beacon_head_slot 256552", "beacon_head_slot 256559", 1)
-	bnScraper.tripper = &mockRT{body: eth2NotSynced}
+	consensusNotSynced := strings.Replace(prometheusTestBody, "beacon_head_slot 256552", "beacon_head_slot 256559", 1)
+	bnScraper.tripper = &mockRT{body: consensusNotSynced}
 	r, err := bnScraper.Scrape()
 	require.NoError(t, err, "Unexpected error calling beaconNodeScraper.Scrape")
 
@@ -105,7 +105,7 @@ func TestFalseEth2Synced(t *testing.T) {
 	err = json.NewDecoder(r).Decode(bs)
 	require.NoError(t, err, "Unexpected error decoding result of beaconNodeScraper.Scrape")
 
-	require.Equal(t, false, bs.SyncEth2Synced)
+	require.Equal(t, false, bs.SyncConsensusSynced)
 }
 
 func TestValidatorScraper(t *testing.T) {
@@ -239,15 +239,15 @@ p2p_peer_count{state="Connected"} 37
 p2p_peer_count{state="Connecting"} 0
 p2p_peer_count{state="Disconnected"} 62
 p2p_peer_count{state="Disconnecting"} 0
-# HELP powchain_sync_eth1_connected Boolean indicating whether a fallback eth1 endpoint is currently connected: 0=false, 1=true.
-# TYPE powchain_sync_eth1_connected gauge
-powchain_sync_eth1_connected 1
-# HELP powchain_sync_eth1_fallback_configured Boolean recording whether a fallback eth1 endpoint was configured: 0=false, 1=true.
-# TYPE powchain_sync_eth1_fallback_configured gauge
-powchain_sync_eth1_fallback_configured 1
-# HELP powchain_sync_eth1_fallback_connected Boolean indicating whether a fallback eth1 endpoint is currently connected: 0=false, 1=true.
-# TYPE powchain_sync_eth1_fallback_connected gauge
-powchain_sync_eth1_fallback_connected 1
+# HELP execution_chain_sync_execution_connected Boolean indicating whether a fallback execution endpoint is currently connected: 0=false, 1=true.
+# TYPE execution_chain_sync_execution_connected gauge
+execution_chain_sync_execution_connected 1
+# HELP execution_chain_sync_execution_fallback_configured Boolean recording whether a fallback execution endpoint was configured: 0=false, 1=true.
+# TYPE execution_chain_sync_execution_fallback_configured gauge
+execution_chain_sync_execution_fallback_configured 1
+# HELP execution_chain_sync_execution_fallback_connected Boolean indicating whether a fallback execution endpoint is currently connected: 0=false, 1=true.
+# TYPE execution_chain_sync_execution_fallback_connected gauge
+execution_chain_sync_execution_fallback_connected 1
 `
 
 var statusFixtureOneOfEach = `# HELP validator_statuses validator statuses: 0 UNKNOWN, 1 DEPOSITED, 2 PENDING, 3 ACTIVE, 4 EXITING, 5 SLASHING, 6 EXITED

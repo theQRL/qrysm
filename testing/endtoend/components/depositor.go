@@ -9,26 +9,26 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/accounts/abi/bind"
-	"github.com/theQRL/go-zond/accounts/keystore"
-	"github.com/theQRL/go-zond/common"
-	gzondtypes "github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/zondclient"
+	"github.com/theQRL/go-qrl/accounts/abi/bind"
+	"github.com/theQRL/go-qrl/accounts/keystore"
+	"github.com/theQRL/go-qrl/common"
+	gqrltypes "github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/qrlclient"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	contracts "github.com/theQRL/qrysm/contracts/deposit"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
 	"github.com/theQRL/qrysm/testing/endtoend/types"
 	"github.com/theQRL/qrysm/testing/util"
 )
 
-var gweiPerEth = big.NewInt(int64(params.BeaconConfig().GweiPerEth))
+var shorPerQuanta = big.NewInt(int64(params.BeaconConfig().ShorPerQuanta))
 
-func amtInGwei(deposit *zond.Deposit) *big.Int {
+func amtInShor(deposit *qrysmpb.Deposit) *big.Int {
 	amt := big.NewInt(0).SetUint64(deposit.Data.Amount)
-	return amt.Mul(amt, gweiPerEth)
+	return amt.Mul(amt, shorPerQuanta)
 }
 
 // computeDeposits uses the deterministic validator generator to generate deposits for `nvals` (number of validators).
@@ -36,7 +36,7 @@ func amtInGwei(deposit *zond.Deposit) *big.Int {
 // the `offset` parameter skips the first N validators in the deterministic list.
 // In order to test the requirement that our deposit follower is able to handle multiple partial deposits,
 // the `partial` flag specifies that half of the deposits should be broken up into 2 transactions.
-func computeDeposits(offset, nvals int, partial bool) ([]*zond.Deposit, error) {
+func computeDeposits(offset, nvals int, partial bool) ([]*qrysmpb.Deposit, error) {
 	balances := make([]uint64, offset+nvals)
 	partialIndex := len(balances) // set beyond loop invariant so by default nothing gets partial
 	if partial {
@@ -57,7 +57,7 @@ func computeDeposits(offset, nvals int, partial bool) ([]*zond.Deposit, error) {
 	}
 	deposits, _, err := util.DepositsWithBalance(balances)
 	if err != nil {
-		return []*zond.Deposit{}, err
+		return []*qrysmpb.Deposit{}, err
 	}
 
 	// if partial = false, these will be a no-op (partialIndex == len(deposits)),
@@ -72,7 +72,7 @@ type Depositor struct {
 	// This allows other components or e2e set up code to block until its Start method has been called.
 	types.EmptyComponent
 	Key       *keystore.Key
-	Client    *zondclient.Client
+	Client    *qrlclient.Client
 	ChainID   *big.Int
 	NetworkId *big.Int
 	cd        *contracts.DepositContract
@@ -112,8 +112,8 @@ func (h *DepositHistory) updateByBatch(sd *SentDeposit) {
 
 // Balances sums, by validator, all deposit amounts that were sent as part of the given batch.
 // This can be used in e2e evaluators to check that the results of deposit transactions are visible on chain.
-func (h *DepositHistory) Balances(batch types.DepositBatch) map[[field_params.DilithiumPubkeyLength]byte]uint64 {
-	balances := make(map[[field_params.DilithiumPubkeyLength]byte]uint64)
+func (h *DepositHistory) Balances(batch types.DepositBatch) map[[field_params.MLDSA87PubkeyLength]byte]uint64 {
+	balances := make(map[[field_params.MLDSA87PubkeyLength]byte]uint64)
 	h.RLock()
 	defer h.RUnlock()
 	for _, d := range h.byBatch[batch] {
@@ -130,8 +130,8 @@ func (h *DepositHistory) Balances(batch types.DepositBatch) map[[field_params.Di
 // SentDeposit is the record of an individual deposit which has been successfully submitted as a transaction.
 type SentDeposit struct {
 	root    [32]byte
-	deposit *zond.Deposit
-	tx      *gzondtypes.Transaction
+	deposit *qrysmpb.Deposit
+	tx      *gqrltypes.Transaction
 	time    time.Time
 	batch   types.DepositBatch
 }
@@ -143,7 +143,7 @@ type SentDeposit struct {
 // the `partial` flag specifies that half of the deposits should be broken up into 2 transactions.
 // Once the set of deposits has been generated, it submits a transaction for each deposit
 // (using 2 transactions for partial deposits) and then uses WaitForBlocks (which spams the miner node with transactions
-// to and from its own address) to advance the chain until it has moved forward ETH1_FOLLOW_DISTANCE blocks.
+// to and from its own address) to advance the chain until it has moved forward EXECUTION_FOLLOW_DISTANCE blocks.
 func (d *Depositor) SendAndMine(ctx context.Context, offset, nvals int, batch types.DepositBatch, partial bool) error {
 	balance, err := d.Client.BalanceAt(ctx, d.Key.Address, nil)
 	if err != nil {
@@ -170,7 +170,7 @@ func (d *Depositor) SendAndMine(ctx context.Context, offset, nvals int, batch ty
 
 	// This is the "AndMine" part of the function. WaitForBlocks will spam transactions to/from the given key
 	// to advance the EL chain and until the chain has advanced the requested amount.
-	if err = WaitForBlocks(d.Client, params.BeaconConfig().Eth1FollowDistance); err != nil {
+	if err = WaitForBlocks(ctx, d.Client, params.BeaconConfig().ExecutionFollowDistance); err != nil {
 		return fmt.Errorf("failed to mine blocks %w", err)
 	}
 	return nil
@@ -178,12 +178,12 @@ func (d *Depositor) SendAndMine(ctx context.Context, offset, nvals int, batch ty
 
 // SendDeposit sends a single deposit. A record of this deposit will be tracked for the life of the Depositor,
 // allowing evaluators to use the deposit history to make assertions about those deposits.
-func (d *Depositor) SendDeposit(dep *zond.Deposit, txo *bind.TransactOpts, batch types.DepositBatch) error {
+func (d *Depositor) SendDeposit(dep *qrysmpb.Deposit, txo *bind.TransactOpts, batch types.DepositBatch) error {
 	contract, err := d.contractDepositor()
 	if err != nil {
 		return err
 	}
-	txo.Value = amtInGwei(dep)
+	txo.Value = amtInShor(dep)
 	root, err := dep.Data.HashTreeRoot()
 	if err != nil {
 		return err
@@ -200,7 +200,7 @@ func (d *Depositor) SendDeposit(dep *zond.Deposit, txo *bind.TransactOpts, batch
 
 // txops is a little helper method that creates a TransactOpts (type encapsulating auth/meta data needed to make a tx).
 func (d *Depositor) txops(ctx context.Context) (*bind.TransactOpts, error) {
-	txo, err := bind.NewKeyedTransactorWithChainID(d.Key.Dilithium, d.NetworkId)
+	txo, err := bind.NewKeyedTransactorWithChainID(d.Key.Wallet, d.NetworkId)
 	if err != nil {
 		return nil, err
 	}

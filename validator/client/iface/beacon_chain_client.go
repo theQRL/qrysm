@@ -3,13 +3,13 @@ package iface
 import (
 	"context"
 
-	"github.com/golang/protobuf/ptypes/empty"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type BeaconChainClient interface {
-	GetChainHead(ctx context.Context, in *empty.Empty) (*zondpb.ChainHead, error)
-	ListValidatorBalances(ctx context.Context, in *zondpb.ListValidatorBalancesRequest) (*zondpb.ValidatorBalances, error)
-	ListValidators(ctx context.Context, in *zondpb.ListValidatorsRequest) (*zondpb.Validators, error)
-	GetValidatorPerformance(ctx context.Context, in *zondpb.ValidatorPerformanceRequest) (*zondpb.ValidatorPerformanceResponse, error)
+	GetChainHead(ctx context.Context, in *emptypb.Empty) (*qrysmpb.ChainHead, error)
+	ListValidatorBalances(ctx context.Context, in *qrysmpb.ListValidatorBalancesRequest) (*qrysmpb.ValidatorBalances, error)
+	ListValidators(ctx context.Context, in *qrysmpb.ListValidatorsRequest) (*qrysmpb.Validators, error)
+	GetValidatorPerformance(ctx context.Context, in *qrysmpb.ValidatorPerformanceRequest) (*qrysmpb.ValidatorPerformanceResponse, error)
 }

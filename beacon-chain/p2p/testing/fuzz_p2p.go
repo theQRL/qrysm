@@ -9,10 +9,10 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/metadata"
 	"google.golang.org/protobuf/proto"
 )
@@ -50,9 +50,9 @@ func (_ *FakeP2P) PeerID() peer.ID {
 	return "fake"
 }
 
-// ENR returns the enr of the local peer.
-func (_ *FakeP2P) ENR() *enr.Record {
-	return new(enr.Record)
+// QNR returns the qnr of the local peer.
+func (_ *FakeP2P) QNR() *qnr.Record {
+	return new(qnr.Record)
 }
 
 // DiscoveryAddresses -- fake
@@ -65,8 +65,8 @@ func (_ *FakeP2P) FindPeersWithSubnet(_ context.Context, _ string, _ uint64, _ i
 	return false, nil
 }
 
-// RefreshENR mocks the p2p func.
-func (_ *FakeP2P) RefreshENR() {}
+// RefreshQNR mocks the p2p func.
+func (_ *FakeP2P) RefreshQNR() {}
 
 // LeaveTopic -- fake.
 func (_ *FakeP2P) LeaveTopic(_ string) error {
@@ -89,7 +89,7 @@ func (_ *FakeP2P) PublishToTopic(_ context.Context, _ string, _ []byte, _ ...pub
 }
 
 // Send -- fake.
-func (_ *FakeP2P) Send(_ context.Context, _ interface{}, _ string, _ peer.ID) (network.Stream, error) {
+func (_ *FakeP2P) Send(_ context.Context, _ any, _ string, _ peer.ID) (network.Stream, error) {
 	return nil, nil
 }
 
@@ -134,12 +134,12 @@ func (_ *FakeP2P) Broadcast(_ context.Context, _ proto.Message) error {
 }
 
 // BroadcastAttestation -- fake.
-func (_ *FakeP2P) BroadcastAttestation(_ context.Context, _ uint64, _ *zondpb.Attestation) error {
+func (_ *FakeP2P) BroadcastAttestation(_ context.Context, _ uint64, _ *qrysmpb.Attestation) error {
 	return nil
 }
 
 // BroadcastSyncCommitteeMessage -- fake.
-func (_ *FakeP2P) BroadcastSyncCommitteeMessage(_ context.Context, _ uint64, _ *zondpb.SyncCommitteeMessage) error {
+func (_ *FakeP2P) BroadcastSyncCommitteeMessage(_ context.Context, _ uint64, _ *qrysmpb.SyncCommitteeMessage) error {
 	return nil
 }
 

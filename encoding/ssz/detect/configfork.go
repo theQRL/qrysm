@@ -15,7 +15,7 @@ import (
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/theQRL/qrysm/time/slots"
 )
@@ -61,7 +61,7 @@ func FromForkVersion(cv [fieldparams.VersionLength]byte) (*VersionedUnmarshaler,
 	var fork int
 	switch cv {
 	case bytesutil.ToBytes4(cfg.GenesisForkVersion):
-		fork = version.Capella
+		fork = version.Zond
 	default:
 		return nil, errors.Wrapf(ErrForkNotFound, "version=%#x", cv)
 	}
@@ -77,13 +77,13 @@ func FromForkVersion(cv [fieldparams.VersionLength]byte) (*VersionedUnmarshaler,
 func (cf *VersionedUnmarshaler) UnmarshalBeaconState(marshaled []byte) (s state.BeaconState, err error) {
 	forkName := version.String(cf.Fork)
 	switch fork := cf.Fork; fork {
-	case version.Capella:
-		st := &zondpb.BeaconStateCapella{}
+	case version.Zond:
+		st := &qrysmpb.BeaconStateZond{}
 		err = st.UnmarshalSSZ(marshaled)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal state, detected fork=%s", forkName)
 		}
-		s, err = state_native.InitializeFromProtoUnsafeCapella(st)
+		s, err = state_native.InitializeFromProtoUnsafeZond(st)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to init state trie from state, detected fork=%s", forkName)
 		}
@@ -97,8 +97,8 @@ func (cf *VersionedUnmarshaler) UnmarshalBeaconState(marshaled []byte) (s state.
 var beaconBlockSlot = fieldSpec{
 	// ssz variable length offset (not to be confused with the fieldSpec offset) is a uint32
 	// variable length. Offsets come before fixed length data, so that's 4 bytes at the beginning
-	// then signature is 96 bytes, 4+4595 = 4599
-	offset: 4599,
+	// then signature is 96 bytes, 4+4627 = 4631
+	offset: 4631,
 	t:      typeUint64,
 }
 
@@ -125,8 +125,8 @@ func (cf *VersionedUnmarshaler) UnmarshalBeaconBlock(marshaled []byte) (interfac
 
 	var blk ssz.Unmarshaler
 	switch cf.Fork {
-	case version.Capella:
-		blk = &zondpb.SignedBeaconBlockCapella{}
+	case version.Zond:
+		blk = &qrysmpb.SignedBeaconBlockZond{}
 	default:
 		forkName := version.String(cf.Fork)
 		return nil, fmt.Errorf("unable to initialize ReadOnlyBeaconBlock for fork version=%s at slot=%d", forkName, slot)
@@ -151,8 +151,8 @@ func (cf *VersionedUnmarshaler) UnmarshalBlindedBeaconBlock(marshaled []byte) (i
 
 	var blk ssz.Unmarshaler
 	switch cf.Fork {
-	case version.Capella:
-		blk = &zondpb.SignedBlindedBeaconBlockCapella{}
+	case version.Zond:
+		blk = &qrysmpb.SignedBlindedBeaconBlockZond{}
 	default:
 		forkName := version.String(cf.Fork)
 		return nil, fmt.Errorf("unable to initialize ReadOnlyBeaconBlock for fork version=%s at slot=%d", forkName, slot)

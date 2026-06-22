@@ -4,18 +4,18 @@ import (
 	"testing"
 
 	"github.com/theQRL/qrysm/config/params"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestState_UnrealizedCheckpointBalances(t *testing.T) {
-	validators := make([]*zondpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
+	validators := make([]*qrysmpb.Validator, params.BeaconConfig().MinGenesisActiveValidatorCount)
 	targetFlag := params.BeaconConfig().TimelyTargetFlagIndex
 	expectedActive := params.BeaconConfig().MinGenesisActiveValidatorCount * params.BeaconConfig().MaxEffectiveBalance
 
 	balances := make([]uint64, params.BeaconConfig().MinGenesisActiveValidatorCount)
-	for i := 0; i < len(validators); i++ {
-		validators[i] = &zondpb.Validator{
+	for i := range validators {
+		validators[i] = &qrysmpb.Validator{
 			ExitEpoch:        params.BeaconConfig().FarFutureEpoch,
 			EffectiveBalance: params.BeaconConfig().MaxEffectiveBalance,
 		}
@@ -28,8 +28,8 @@ func TestState_UnrealizedCheckpointBalances(t *testing.T) {
 		active, previous, current, err := UnrealizedCheckpointBalances(cp, pp, validators, 0)
 		require.NoError(tt, err)
 		require.Equal(tt, expectedActive, active)
-		require.Equal(tt, uint64(0), current)
-		require.Equal(tt, uint64(0), previous)
+		require.Equal(tt, params.BeaconConfig().EffectiveBalanceIncrement, current)
+		require.Equal(tt, params.BeaconConfig().EffectiveBalanceIncrement, previous)
 	})
 
 	t.Run("bad votes in last two epochs", func(tt *testing.T) {
@@ -38,8 +38,8 @@ func TestState_UnrealizedCheckpointBalances(t *testing.T) {
 		active, previous, current, err := UnrealizedCheckpointBalances(cp, pp, validators, 1)
 		require.NoError(tt, err)
 		require.Equal(tt, expectedActive, active)
-		require.Equal(tt, uint64(0), current)
-		require.Equal(tt, uint64(0), previous)
+		require.Equal(tt, params.BeaconConfig().EffectiveBalanceIncrement, current)
+		require.Equal(tt, params.BeaconConfig().EffectiveBalanceIncrement, previous)
 	})
 
 	t.Run("two votes in last epoch", func(tt *testing.T) {
@@ -49,7 +49,7 @@ func TestState_UnrealizedCheckpointBalances(t *testing.T) {
 		require.NoError(tt, err)
 		require.Equal(tt, expectedActive, active)
 		require.Equal(tt, 2*params.BeaconConfig().MaxEffectiveBalance, current)
-		require.Equal(tt, uint64(0), previous)
+		require.Equal(tt, params.BeaconConfig().EffectiveBalanceIncrement, previous)
 	})
 
 	t.Run("two votes in previous epoch", func(tt *testing.T) {
@@ -58,7 +58,7 @@ func TestState_UnrealizedCheckpointBalances(t *testing.T) {
 		active, previous, current, err := UnrealizedCheckpointBalances(cp, pp, validators, 1)
 		require.NoError(tt, err)
 		require.Equal(tt, expectedActive, active)
-		require.Equal(tt, uint64(0), current)
+		require.Equal(tt, params.BeaconConfig().EffectiveBalanceIncrement, current)
 		require.Equal(tt, 2*params.BeaconConfig().MaxEffectiveBalance, previous)
 	})
 
@@ -78,7 +78,6 @@ func TestState_UnrealizedCheckpointBalances(t *testing.T) {
 		validators[1].Slashed = true
 		active, previous, current, err := UnrealizedCheckpointBalances(cp, pp, validators, 1)
 		require.NoError(tt, err)
-		expectedActive -= params.BeaconConfig().MaxEffectiveBalance
 		require.Equal(tt, expectedActive, active)
 		require.Equal(tt, params.BeaconConfig().MaxEffectiveBalance-params.BeaconConfig().MinDepositAmount, current)
 		require.Equal(tt, 2*params.BeaconConfig().MaxEffectiveBalance, previous)

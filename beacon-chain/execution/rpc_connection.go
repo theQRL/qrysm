@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	zondRPC "github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/go-zond/zondclient"
+	"github.com/theQRL/go-qrl/qrlclient"
+	"github.com/theQRL/go-qrl/rpc"
 	"github.com/theQRL/qrysm/config/params"
 	contracts "github.com/theQRL/qrysm/contracts/deposit"
 	"github.com/theQRL/qrysm/io/logs"
@@ -23,7 +23,7 @@ func (s *Service) setupExecutionClientConnections(ctx context.Context, currEndpo
 		return errors.Wrap(err, "could not dial execution node")
 	}
 	// Attach the clients to the service struct.
-	fetcher := zondclient.NewClient(client)
+	fetcher := qrlclient.NewClient(client)
 	s.rpcClient = client
 	s.httpLogger = fetcher
 
@@ -46,7 +46,7 @@ func (s *Service) setupExecutionClientConnections(ctx context.Context, currEndpo
 		}
 		return errors.Wrap(err, errStr)
 	}
-	s.updateConnectedETH1(true)
+	s.updateConnectedExecution(true)
 	s.runError = nil
 	return nil
 }
@@ -81,7 +81,7 @@ func (s *Service) pollConnectionStatus(ctx context.Context) {
 			log.Infof("Connected to new endpoint: %s", logs.MaskCredentialsLogging(s.cfg.currHttpEndpoint.Url))
 			return
 		case <-s.ctx.Done():
-			log.Debug("Received cancelled context,closing existing powchain service")
+			log.Debug("Received cancelled context,closing existing execution chain service")
 			return
 		}
 	}
@@ -90,7 +90,7 @@ func (s *Service) pollConnectionStatus(ctx context.Context) {
 // Forces to retry an execution client connection.
 func (s *Service) retryExecutionClientConnection(ctx context.Context, err error) {
 	s.runError = errors.Wrap(err, "retryExecutionClientConnection")
-	s.updateConnectedETH1(false)
+	s.updateConnectedExecution(false)
 	// Back off for a while before redialing.
 	time.Sleep(backOffPeriod)
 	currClient := s.rpcClient
@@ -107,7 +107,7 @@ func (s *Service) retryExecutionClientConnection(ctx context.Context, err error)
 }
 
 // Initializes an RPC connection with authentication headers.
-func (s *Service) newRPCClientWithAuth(ctx context.Context, endpoint network.Endpoint) (*zondRPC.Client, error) {
+func (s *Service) newRPCClientWithAuth(ctx context.Context, endpoint network.Endpoint) (*rpc.Client, error) {
 	headers := http.Header{}
 	if endpoint.Auth.Method != authorization.None {
 		header, err := endpoint.Auth.ToHeaderValue()
@@ -132,7 +132,7 @@ func (s *Service) newRPCClientWithAuth(ctx context.Context, endpoint network.End
 
 // Checks the chain ID of the execution client to ensure
 // it matches local parameters of what Qrysm expects.
-func ensureCorrectExecutionChain(ctx context.Context, client *zondclient.Client) error {
+func ensureCorrectExecutionChain(ctx context.Context, client *qrlclient.Client) error {
 	cID, err := client.ChainID(ctx)
 	if err != nil {
 		return err

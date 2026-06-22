@@ -1,7 +1,7 @@
 package test_helpers
 
 import (
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
 func FillByteSlice(sliceLength int, value byte) []byte {

@@ -1,0 +1,14 @@
+load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "filler",
+    srcs = ["fill.go"],
+    importpath = "github.com/theQRL/qrysm/pkg/FuzzyVM/filler",
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "filler_test",
+    srcs = ["fill_test.go"],
+    embed = [":filler"],
+)

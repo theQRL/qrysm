@@ -7,13 +7,13 @@ import (
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // ValidatorIndexMap builds a lookup map for quickly determining the index of
 // a validator by their public key.
-func ValidatorIndexMap(validators []*zondpb.Validator) map[[field_params.DilithiumPubkeyLength]byte]primitives.ValidatorIndex {
-	m := make(map[[field_params.DilithiumPubkeyLength]byte]primitives.ValidatorIndex, len(validators))
+func ValidatorIndexMap(validators []*qrysmpb.Validator) map[[field_params.MLDSA87PubkeyLength]byte]primitives.ValidatorIndex {
+	m := make(map[[field_params.MLDSA87PubkeyLength]byte]primitives.ValidatorIndex, len(validators))
 	if validators == nil {
 		return m
 	}

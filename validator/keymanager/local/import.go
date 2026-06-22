@@ -6,13 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/k0kubun/go-ansi"
 	"github.com/pkg/errors"
-	"github.com/schollz/progressbar/v3"
 	"github.com/sirupsen/logrus"
-	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
-	"github.com/theQRL/qrysm/crypto/dilithium"
-	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	"github.com/theQRL/qrysm/monitoring/progress"
+	keystorev1 "github.com/theQRL/qrysm/pkg/go-qrl-wallet-encryptor-keystore"
+	qrlpbservice "github.com/theQRL/qrysm/proto/qrl/service"
 	"github.com/theQRL/qrysm/validator/keymanager"
 )
 
@@ -26,17 +25,17 @@ func (km *Keymanager) ImportKeystores(
 	ctx context.Context,
 	keystores []*keymanager.Keystore,
 	passwords []string,
-) ([]*zondpbservice.ImportedKeystoreStatus, error) {
+) ([]*qrlpbservice.ImportedKeystoreStatus, error) {
 	if len(passwords) == 0 {
 		return nil, ErrNoPasswords
 	}
 	if len(passwords) != len(keystores) {
 		return nil, ErrMismatchedNumPasswords
 	}
-	enc := keystorev4.New()
-	bar := initializeProgressBar(len(keystores), "Importing accounts...")
+	enc := keystorev1.New()
+	bar := progress.InitializeProgressBar(len(keystores), "Importing accounts...")
 	keys := map[string]string{}
-	statuses := make([]*zondpbservice.ImportedKeystoreStatus, len(keystores))
+	statuses := make([]*qrlpbservice.ImportedKeystoreStatus, len(keystores))
 	var err error
 	// 1) Copy the in memory keystore
 	storeCopy := km.accountsStore.Copy()
@@ -45,13 +44,13 @@ func (km *Keymanager) ImportKeystores(
 	for i := 0; i < len(storeCopy.Seeds); i++ {
 		existingPubKeys[string(storeCopy.PublicKeys[i])] = true
 	}
-	for i := 0; i < len(keystores); i++ {
-		var privKeyBytes []byte
+	for i := range keystores {
+		var seedBytes []byte
 		var pubKeyBytes []byte
-		privKeyBytes, pubKeyBytes, _, err = km.attemptDecryptKeystore(enc, keystores[i], passwords[i])
+		seedBytes, pubKeyBytes, _, err = km.attemptDecryptKeystore(enc, keystores[i], passwords[i])
 		if err != nil {
-			statuses[i] = &zondpbservice.ImportedKeystoreStatus{
-				Status:  zondpbservice.ImportedKeystoreStatus_ERROR,
+			statuses[i] = &qrlpbservice.ImportedKeystoreStatus{
+				Status:  qrlpbservice.ImportedKeystoreStatus_ERROR,
 				Message: err.Error(),
 			}
 			continue
@@ -64,20 +63,20 @@ func (km *Keymanager) ImportKeystores(
 		_, isDuplicateInExisting := existingPubKeys[string(pubKeyBytes)]
 		if isDuplicateInArray || isDuplicateInExisting {
 			log.Warnf("Duplicate key in import will be ignored: %#x", pubKeyBytes)
-			statuses[i] = &zondpbservice.ImportedKeystoreStatus{
-				Status: zondpbservice.ImportedKeystoreStatus_DUPLICATE,
+			statuses[i] = &qrlpbservice.ImportedKeystoreStatus{
+				Status: qrlpbservice.ImportedKeystoreStatus_DUPLICATE,
 			}
 			continue
 		}
 
-		keys[string(pubKeyBytes)] = string(privKeyBytes)
+		keys[string(pubKeyBytes)] = string(seedBytes)
 		importedKeys = append(importedKeys, pubKeyBytes)
-		statuses[i] = &zondpbservice.ImportedKeystoreStatus{
-			Status: zondpbservice.ImportedKeystoreStatus_IMPORTED,
+		statuses[i] = &qrlpbservice.ImportedKeystoreStatus{
+			Status: qrlpbservice.ImportedKeystoreStatus_IMPORTED,
 		}
 	}
 	if len(importedKeys) == 0 {
-		log.Warn("no keys were imported")
+		log.Warn("No keys were imported")
 		return statuses, nil
 	}
 	// 2) Update copied keystore with new keys,clear duplicates in existing set
@@ -127,12 +126,12 @@ func (km *Keymanager) ImportKeypairs(ctx context.Context, privKeys, pubKeys [][]
 // by decrypting using a specified password. If the password fails,
 // it prompts the user for the correct password until it confirms.
 func (*Keymanager) attemptDecryptKeystore(
-	enc *keystorev4.Encryptor, keystore *keymanager.Keystore, password string,
+	enc *keystorev1.Encryptor, keystore *keymanager.Keystore, password string,
 ) ([]byte, []byte, string, error) {
 	// Attempt to decrypt the keystore with the specifies password.
-	var privKeyBytes []byte
+	var seedBytes []byte
 	var err error
-	privKeyBytes, err = enc.Decrypt(keystore.Crypto, password)
+	seedBytes, err = enc.Decrypt(keystore.Crypto, password)
 	doesNotDecrypt := err != nil && strings.Contains(err.Error(), keymanager.IncorrectPasswordErrMsg)
 	if doesNotDecrypt {
 		return nil, nil, "", fmt.Errorf(
@@ -152,29 +151,11 @@ func (*Keymanager) attemptDecryptKeystore(
 			return nil, nil, "", errors.Wrap(err, "could not decode pubkey from keystore")
 		}
 	} else {
-		privKey, err := dilithium.SecretKeyFromSeed(privKeyBytes)
+		privKey, err := ml_dsa_87.SecretKeyFromSeed(seedBytes)
 		if err != nil {
 			return nil, nil, "", errors.Wrap(err, "could not initialize private key from bytes")
 		}
 		pubKeyBytes = privKey.PublicKey().Marshal()
 	}
-	return privKeyBytes, pubKeyBytes, password, nil
-}
-
-func initializeProgressBar(numItems int, msg string) *progressbar.ProgressBar {
-	return progressbar.NewOptions(
-		numItems,
-		progressbar.OptionFullWidth(),
-		progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
-		progressbar.OptionEnableColorCodes(true),
-		progressbar.OptionSetTheme(progressbar.Theme{
-			Saucer:        "[green]=[reset]",
-			SaucerHead:    "[green]>[reset]",
-			SaucerPadding: " ",
-			BarStart:      "[",
-			BarEnd:        "]",
-		}),
-		progressbar.OptionOnCompletion(func() { fmt.Println() }),
-		progressbar.OptionSetDescription(msg),
-	)
+	return seedBytes, pubKeyBytes, password, nil
 }

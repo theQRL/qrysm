@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/theQRL/go-zond/accounts/abi/bind"
+	"github.com/theQRL/go-qrl/accounts/abi/bind"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/container/trie"
 	depositcontract "github.com/theQRL/qrysm/contracts/deposit/mock"
@@ -32,9 +32,9 @@ func TestDepositTrieRoot_OK(t *testing.T) {
 	depositDataItems, depositDataRoots, err := interop.DepositDataFromKeys(privKeys, pubKeys)
 	require.NoError(t, err)
 
-	testAcc.TxOpts.Value = depositcontract.Amount40000Eth()
+	testAcc.TxOpts.Value = depositcontract.Amount40000Quanta()
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		data := depositDataItems[i]
 		var dataRoot [32]byte
 		copy(dataRoot[:], depositDataRoots[i])
@@ -73,9 +73,9 @@ func TestDepositTrieRoot_Fail(t *testing.T) {
 	require.NoError(t, err)
 	depositDataItems, depositDataRoots, err := interop.DepositDataFromKeys(privKeys, pubKeys)
 	require.NoError(t, err)
-	testAcc.TxOpts.Value = depositcontract.Amount40000Eth()
+	testAcc.TxOpts.Value = depositcontract.Amount40000Quanta()
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		data := depositDataItems[i]
 		var dataRoot [32]byte
 		copy(dataRoot[:], depositDataRoots[i])

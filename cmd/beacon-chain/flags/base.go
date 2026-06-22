@@ -1,5 +1,5 @@
 // Package flags defines beacon-node specific runtime flags for
-// setting important values such as ports, eth1 endpoints, and more.
+// setting important values such as ports, execution endpoints, and more.
 package flags
 
 import (
@@ -92,8 +92,8 @@ var (
 	// HTTPModules define the set of enabled HTTP APIs.
 	HTTPModules = &cli.StringFlag{
 		Name:  "http-modules",
-		Usage: "Comma-separated list of API module names. Possible values: `" + QrysmAPIModule + `,` + ZondAPIModule + "`.",
-		Value: QrysmAPIModule + `,` + ZondAPIModule,
+		Usage: "Comma-separated list of API module names. Possible values: `" + QrysmAPIModule + `,` + QRLAPIModule + "`.",
+		Value: QrysmAPIModule + `,` + QRLAPIModule,
 	}
 	// DisableGRPCGateway for JSON-HTTP requests to the beacon node.
 	DisableGRPCGateway = &cli.BoolFlag{
@@ -126,10 +126,10 @@ var (
 		Usage: "The required number of valid peers to connect with before syncing.",
 		Value: 3,
 	}
-	// ContractDeploymentBlock is the block in which the eth1 deposit contract was deployed.
+	// ContractDeploymentBlock is the block in which the execution deposit contract was deployed.
 	ContractDeploymentBlock = &cli.IntFlag{
 		Name:  "contract-deployment-block",
-		Usage: "The eth1 block in which the deposit contract was deployed.",
+		Usage: "The execution block in which the deposit contract was deployed.",
 		Value: 11184524,
 	}
 	// SetGCPercent is the percentage of current live allocations at which the garbage collector is to run.
@@ -142,8 +142,8 @@ var (
 	// section of beaconDB.
 	SlotsPerArchivedPoint = &cli.IntFlag{
 		Name:  "slots-per-archive-point",
-		Usage: "The slot durations of when an archived state gets saved in the beaconDB.",
-		Value: 2048,
+		Usage: "The slot durations of when an archived state gets saved in the beaconDB. Lower values increase archive migration cost and database pressure.",
+		Value: int(params.MainnetConfig().SlotsPerArchivedPoint),
 	}
 	// BlockBatchLimit specifies the requested block batch size.
 	BlockBatchLimit = &cli.IntFlag{
@@ -160,7 +160,7 @@ var (
 	// EnableDebugRPCEndpoints as /v1/beacon/state.
 	EnableDebugRPCEndpoints = &cli.BoolFlag{
 		Name:  "enable-debug-rpc-endpoints",
-		Usage: "Enables the debug rpc service, containing utility endpoints such as /zond/v1alpha1/beacon/state.",
+		Usage: "Enables the debug rpc service, containing utility endpoints such as /qrl/v1alpha1/beacon/state.",
 	}
 	// SubscribeToAllSubnets defines a flag to specify whether to subscribe to all possible attestation/sync subnets or not.
 	SubscribeToAllSubnets = &cli.BoolFlag{
@@ -189,9 +189,9 @@ var (
 		Name:  "engine-endpoint-timeout-seconds",
 		Usage: "Sets the execution engine timeout (seconds) for execution payload semantics (forkchoiceUpdated, newPayload)",
 	}
-	// Eth1HeaderReqLimit defines a flag to set the maximum number of headers that a deposit log query can fetch. If none is set, 1000 will be the limit.
-	Eth1HeaderReqLimit = &cli.Uint64Flag{
-		Name:  "eth1-header-req-limit",
+	// ExecutionHeaderReqLimit defines a flag to set the maximum number of headers that a deposit log query can fetch. If none is set, 1000 will be the limit.
+	ExecutionHeaderReqLimit = &cli.Uint64Flag{
+		Name:  "execution-header-req-limit",
 		Usage: "Sets the maximum number of headers that a deposit log query can fetch.",
 		Value: uint64(1000),
 	}
@@ -210,11 +210,17 @@ var (
 		Usage: "Sets the minimum number of peers that a node will attempt to peer with that are subscribed to a subnet.",
 		Value: 6,
 	}
+	// MaxConcurrentDials defines a flag to set the maximum number of peers that a node will attempt to dial with from discovery.
+	MaxConcurrentDials = &cli.Uint64Flag{
+		Name: "max-concurrent-dials",
+		Usage: "Sets the maximum number of peers that a node will attempt to dial with from discovery. By default we will dial as " +
+			"many peers as possible.",
+	}
 	// SuggestedFeeRecipient specifies the fee recipient for the transaction fees.
 	SuggestedFeeRecipient = &cli.StringFlag{
 		Name:  "suggested-fee-recipient",
 		Usage: "This address will receive the transaction fees produced by any blocks from this node. Validator client can override this value through the preparebeaconproposer api.",
-		Value: params.BeaconConfig().ZondBurnAddress,
+		Value: params.BeaconConfig().QRLBurnAddress,
 	}
 	// SlasherDirFlag defines a path on disk where the slasher database is stored.
 	SlasherDirFlag = &cli.StringFlag{

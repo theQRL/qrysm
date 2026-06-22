@@ -13,7 +13,7 @@ import (
 	dbTest "github.com/theQRL/qrysm/beacon-chain/db/testing"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/mock"
 	"github.com/theQRL/qrysm/testing/require"
@@ -37,7 +37,7 @@ func TestServer_StreamAltairBlocksVerified_ContextCanceled(t *testing.T) {
 	mockStream := mock.NewMockBeaconNodeValidatorAltair_StreamBlocksServer(ctrl)
 	mockStream.EXPECT().Context().Return(ctx)
 	go func(tt *testing.T) {
-		assert.ErrorContains(tt, "Context canceled", server.StreamBlocksAltair(&zondpb.StreamBlocksRequest{
+		assert.ErrorContains(tt, "Context canceled", server.StreamBlocksAltair(&qrysmpb.StreamBlocksRequest{
 			VerifiedOnly: true,
 		}, mockStream))
 		<-exitRoutine
@@ -63,7 +63,7 @@ func TestServer_StreamAltairBlocks_ContextCanceled(t *testing.T) {
 	mockStream := mock.NewMockBeaconNodeValidatorAltair_StreamBlocksServer(ctrl)
 	mockStream.EXPECT().Context().Return(ctx)
 	go func(tt *testing.T) {
-		assert.ErrorContains(tt, "Context canceled", server.StreamBlocksAltair(&zondpb.StreamBlocksRequest{}, mockStream))
+		assert.ErrorContains(tt, "Context canceled", server.StreamBlocksAltair(&qrysmpb.StreamBlocksRequest{}, mockStream))
 		<-exitRoutine
 	}(t)
 	cancel()
@@ -74,12 +74,12 @@ func TestServer_StreamAltairBlocks_OnHeadUpdated(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	params.OverrideBeaconConfig(params.BeaconConfig())
 	ctx := context.Background()
-	beaconState, privs := util.DeterministicGenesisStateCapella(t, 64)
+	beaconState, privs := util.DeterministicGenesisStateZond(t, 64)
 	c, err := altair.NextSyncCommittee(ctx, beaconState)
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetCurrentSyncCommittee(c))
 
-	b, err := util.GenerateFullBlockCapella(beaconState, privs, util.DefaultBlockGenConfig(), 1)
+	b, err := util.GenerateFullBlockZond(beaconState, privs, util.DefaultBlockGenConfig(), 1)
 	require.NoError(t, err)
 	chainService := &chainMock.ChainService{State: beaconState}
 	server := &Server{
@@ -92,13 +92,13 @@ func TestServer_StreamAltairBlocks_OnHeadUpdated(t *testing.T) {
 	defer ctrl.Finish()
 	mockStream := mock.NewMockBeaconNodeValidatorAltair_StreamBlocksServer(ctrl)
 
-	mockStream.EXPECT().Send(&zondpb.StreamBlocksResponse{Block: &zondpb.StreamBlocksResponse_CapellaBlock{CapellaBlock: b}}).Do(func(arg0 interface{}) {
+	mockStream.EXPECT().Send(&qrysmpb.StreamBlocksResponse{Block: &qrysmpb.StreamBlocksResponse_ZondBlock{ZondBlock: b}}).Do(func(arg0 any) {
 		exitRoutine <- true
 	})
 	mockStream.EXPECT().Context().Return(ctx).AnyTimes()
 
 	go func(tt *testing.T) {
-		assert.NoError(tt, server.StreamBlocksAltair(&zondpb.StreamBlocksRequest{}, mockStream), "Could not call RPC method")
+		assert.NoError(tt, server.StreamBlocksAltair(&qrysmpb.StreamBlocksRequest{}, mockStream), "Could not call RPC method")
 	}(t)
 	wrappedBlk, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
@@ -112,16 +112,16 @@ func TestServer_StreamAltairBlocks_OnHeadUpdated(t *testing.T) {
 	<-exitRoutine
 }
 
-func TestServer_StreamCapellaBlocks_OnHeadUpdated(t *testing.T) {
+func TestServer_StreamZondBlocks_OnHeadUpdated(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	params.OverrideBeaconConfig(params.BeaconConfig())
 	ctx := context.Background()
-	beaconState, privs := util.DeterministicGenesisStateCapella(t, 64)
+	beaconState, privs := util.DeterministicGenesisStateZond(t, 64)
 	c, err := altair.NextSyncCommittee(ctx, beaconState)
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetCurrentSyncCommittee(c))
 
-	b, err := util.GenerateFullBlockCapella(beaconState, privs, util.DefaultBlockGenConfig(), 1)
+	b, err := util.GenerateFullBlockZond(beaconState, privs, util.DefaultBlockGenConfig(), 1)
 	require.NoError(t, err)
 	chainService := &chainMock.ChainService{State: beaconState}
 	server := &Server{
@@ -134,13 +134,13 @@ func TestServer_StreamCapellaBlocks_OnHeadUpdated(t *testing.T) {
 	defer ctrl.Finish()
 	mockStream := mock.NewMockBeaconNodeValidatorAltair_StreamBlocksServer(ctrl)
 
-	mockStream.EXPECT().Send(&zondpb.StreamBlocksResponse{Block: &zondpb.StreamBlocksResponse_CapellaBlock{CapellaBlock: b}}).Do(func(arg0 interface{}) {
+	mockStream.EXPECT().Send(&qrysmpb.StreamBlocksResponse{Block: &qrysmpb.StreamBlocksResponse_ZondBlock{ZondBlock: b}}).Do(func(arg0 any) {
 		exitRoutine <- true
 	})
 	mockStream.EXPECT().Context().Return(ctx).AnyTimes()
 
 	go func(tt *testing.T) {
-		assert.NoError(tt, server.StreamBlocksAltair(&zondpb.StreamBlocksRequest{}, mockStream), "Could not call RPC method")
+		assert.NoError(tt, server.StreamBlocksAltair(&qrysmpb.StreamBlocksRequest{}, mockStream), "Could not call RPC method")
 	}(t)
 	wrappedBlk, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
@@ -157,12 +157,12 @@ func TestServer_StreamCapellaBlocks_OnHeadUpdated(t *testing.T) {
 func TestServer_StreamAltairBlocksVerified_OnHeadUpdated(t *testing.T) {
 	db := dbTest.SetupDB(t)
 	ctx := context.Background()
-	beaconState, privs := util.DeterministicGenesisStateCapella(t, 32)
+	beaconState, privs := util.DeterministicGenesisStateZond(t, 32)
 	c, err := altair.NextSyncCommittee(ctx, beaconState)
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetCurrentSyncCommittee(c))
 
-	b, err := util.GenerateFullBlockCapella(beaconState, privs, util.DefaultBlockGenConfig(), 1)
+	b, err := util.GenerateFullBlockZond(beaconState, privs, util.DefaultBlockGenConfig(), 1)
 	require.NoError(t, err)
 	r, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -177,13 +177,13 @@ func TestServer_StreamAltairBlocksVerified_OnHeadUpdated(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockStream := mock.NewMockBeaconNodeValidatorAltair_StreamBlocksServer(ctrl)
-	mockStream.EXPECT().Send(&zondpb.StreamBlocksResponse{Block: &zondpb.StreamBlocksResponse_CapellaBlock{CapellaBlock: b}}).Do(func(arg0 interface{}) {
+	mockStream.EXPECT().Send(&qrysmpb.StreamBlocksResponse{Block: &qrysmpb.StreamBlocksResponse_ZondBlock{ZondBlock: b}}).Do(func(arg0 any) {
 		exitRoutine <- true
 	})
 	mockStream.EXPECT().Context().Return(ctx).AnyTimes()
 
 	go func(tt *testing.T) {
-		assert.NoError(tt, server.StreamBlocksAltair(&zondpb.StreamBlocksRequest{
+		assert.NoError(tt, server.StreamBlocksAltair(&qrysmpb.StreamBlocksRequest{
 			VerifiedOnly: true,
 		}, mockStream), "Could not call RPC method")
 	}(t)
@@ -197,15 +197,15 @@ func TestServer_StreamAltairBlocksVerified_OnHeadUpdated(t *testing.T) {
 	<-exitRoutine
 }
 
-func TestServer_StreamCapellaBlocksVerified_OnHeadUpdated(t *testing.T) {
+func TestServer_StreamZondBlocksVerified_OnHeadUpdated(t *testing.T) {
 	db := dbTest.SetupDB(t)
 	ctx := context.Background()
-	beaconState, privs := util.DeterministicGenesisStateCapella(t, 32)
+	beaconState, privs := util.DeterministicGenesisStateZond(t, 32)
 	c, err := altair.NextSyncCommittee(ctx, beaconState)
 	require.NoError(t, err)
 	require.NoError(t, beaconState.SetCurrentSyncCommittee(c))
 
-	b, err := util.GenerateFullBlockCapella(beaconState, privs, util.DefaultBlockGenConfig(), 1)
+	b, err := util.GenerateFullBlockZond(beaconState, privs, util.DefaultBlockGenConfig(), 1)
 	require.NoError(t, err)
 	r, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -220,13 +220,13 @@ func TestServer_StreamCapellaBlocksVerified_OnHeadUpdated(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockStream := mock.NewMockBeaconNodeValidatorAltair_StreamBlocksServer(ctrl)
-	mockStream.EXPECT().Send(&zondpb.StreamBlocksResponse{Block: &zondpb.StreamBlocksResponse_CapellaBlock{CapellaBlock: b}}).Do(func(arg0 interface{}) {
+	mockStream.EXPECT().Send(&qrysmpb.StreamBlocksResponse{Block: &qrysmpb.StreamBlocksResponse_ZondBlock{ZondBlock: b}}).Do(func(arg0 any) {
 		exitRoutine <- true
 	})
 	mockStream.EXPECT().Context().Return(ctx).AnyTimes()
 
 	go func(tt *testing.T) {
-		assert.NoError(tt, server.StreamBlocksAltair(&zondpb.StreamBlocksRequest{
+		assert.NoError(tt, server.StreamBlocksAltair(&qrysmpb.StreamBlocksRequest{
 			VerifiedOnly: true,
 		}, mockStream), "Could not call RPC method")
 	}(t)

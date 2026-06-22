@@ -8,13 +8,13 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
-	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
 	"github.com/theQRL/qrysm/async"
 	"github.com/theQRL/qrysm/config/features"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/io/file"
+	keystorev1 "github.com/theQRL/qrysm/pkg/go-qrl-wallet-encryptor-keystore"
 	"github.com/theQRL/qrysm/validator/keymanager"
 )
 
@@ -44,13 +44,13 @@ func (km *Keymanager) listenForAccountChanges(ctx context.Context) {
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	fileChangesChan := make(chan interface{}, 100)
+	fileChangesChan := make(chan any, 100)
 	defer close(fileChangesChan)
 
 	// We debounce events sent over the file changes channel by an interval
 	// to ensure we are not overwhelmed by a ton of events fired over the channel in
 	// a short span of time.
-	go async.Debounce(ctx, debounceFileChangesInterval, fileChangesChan, func(event interface{}) {
+	go async.Debounce(ctx, debounceFileChangesInterval, fileChangesChan, func(event any) {
 		ev, ok := event.(fsnotify.Event)
 		if !ok {
 			log.Errorf("Type %T is not a valid file system event", event)
@@ -95,7 +95,7 @@ func (km *Keymanager) listenForAccountChanges(ctx context.Context) {
 // Replaces the accounts store struct in the local keymanager with
 // the contents of a keystore file by decrypting it with the accounts password.
 func (km *Keymanager) reloadAccountsFromKeystore(keystore *AccountsKeystoreRepresentation) error {
-	decryptor := keystorev4.New()
+	decryptor := keystorev1.New()
 	encodedAccounts, err := decryptor.Decrypt(keystore.Crypto, km.wallet.Password())
 	if err != nil {
 		return errors.Wrap(err, "could not decrypt keystore file")
@@ -107,9 +107,9 @@ func (km *Keymanager) reloadAccountsFromKeystore(keystore *AccountsKeystoreRepre
 	if len(newAccountsStore.PublicKeys) != len(newAccountsStore.Seeds) {
 		return errors.New("number of public and private keys in keystore do not match")
 	}
-	pubKeys := make([][field_params.DilithiumPubkeyLength]byte, len(newAccountsStore.PublicKeys))
+	pubKeys := make([][field_params.MLDSA87PubkeyLength]byte, len(newAccountsStore.PublicKeys))
 	for i := 0; i < len(newAccountsStore.Seeds); i++ {
-		privKey, err := dilithium.SecretKeyFromSeed(newAccountsStore.Seeds[i])
+		privKey, err := ml_dsa_87.SecretKeyFromSeed(newAccountsStore.Seeds[i])
 		if err != nil {
 			return errors.Wrap(err, "could not initialize private key")
 		}

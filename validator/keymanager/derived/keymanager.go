@@ -8,11 +8,10 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/pkg/errors"
 	common2 "github.com/theQRL/go-qrllib/common"
-	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
 	"github.com/theQRL/qrysm/async/event"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
-	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	qrlpbservice "github.com/theQRL/qrysm/proto/qrl/service"
 	"github.com/theQRL/qrysm/validator/accounts/iface"
 	"github.com/theQRL/qrysm/validator/keymanager"
 	"github.com/theQRL/qrysm/validator/keymanager/local"
@@ -21,10 +20,10 @@ import (
 
 const (
 	// DerivationPathFormat describes the structure of how keys are derived from a master key.
-	DerivationPathFormat = "m / purpose / coin_type / account_index / withdrawal_key / validating_key"
+	DerivationPathFormat = "m / purpose / coin_type / account_index / validating_key"
 	// ValidatingKeyDerivationPathTemplate defining the hierarchical path for validating
-	// keys for Qrysm Zond validators. According to EIP-2334, the format is as follows:
-	// m / purpose / coin_type / account_index / withdrawal_key / validating_key
+	// keys for Qrysm QRL validators. According to EIP-2334, the format is as follows:
+	// m / purpose / coin_type / account_index / validating_key
 	ValidatingKeyDerivationPathTemplate = "m/12381/3600/%d/0/0"
 )
 
@@ -69,7 +68,7 @@ func (km *Keymanager) RecoverAccountsFromMnemonic(
 	}
 	privKeys := make([][]byte, numAccounts)
 	pubKeys := make([][]byte, numAccounts)
-	for i := 0; i < numAccounts; i++ {
+	for i := range numAccounts {
 		privKey, err := util.PrivateKeyFromSeedAndPath(
 			seed, fmt.Sprintf(ValidatingKeyDerivationPathTemplate, i),
 		)
@@ -86,7 +85,7 @@ func (km *Keymanager) RecoverAccountsFromMnemonic(
 // in the function input, encrypts them using the specified password,
 // and returns their respective EIP-2335 keystores.
 func (km *Keymanager) ExtractKeystores(
-	ctx context.Context, publicKeys []dilithium.PublicKey, password string,
+	ctx context.Context, publicKeys []ml_dsa_87.PublicKey, password string,
 ) ([]*keymanager.Keystore, error) {
 	return km.localKM.ExtractKeystores(ctx, publicKeys, password)
 }
@@ -97,12 +96,12 @@ func (km *Keymanager) ValidatingAccountNames(_ context.Context) ([]string, error
 }
 
 // Sign signs a message using a validator key.
-func (km *Keymanager) Sign(ctx context.Context, req *validatorpb.SignRequest) (dilithium.Signature, error) {
+func (km *Keymanager) Sign(ctx context.Context, req *validatorpb.SignRequest) (ml_dsa_87.Signature, error) {
 	return km.localKM.Sign(ctx, req)
 }
 
 // FetchValidatingPublicKeys fetches the list of validating public keys from the keymanager.
-func (km *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][field_params.DilithiumPubkeyLength]byte, error) {
+func (km *Keymanager) FetchValidatingPublicKeys(ctx context.Context) ([][field_params.MLDSA87PubkeyLength]byte, error) {
 	return km.localKM.FetchValidatingPublicKeys(ctx)
 }
 
@@ -114,21 +113,21 @@ func (km *Keymanager) FetchValidatingSeeds(ctx context.Context) ([][common2.Seed
 // ImportKeystores for a derived keymanager.
 func (km *Keymanager) ImportKeystores(
 	ctx context.Context, keystores []*keymanager.Keystore, passwords []string,
-) ([]*zondpbservice.ImportedKeystoreStatus, error) {
+) ([]*qrlpbservice.ImportedKeystoreStatus, error) {
 	return km.localKM.ImportKeystores(ctx, keystores, passwords)
 }
 
 // DeleteKeystores for a derived keymanager.
 func (km *Keymanager) DeleteKeystores(
 	ctx context.Context, publicKeys [][]byte,
-) ([]*zondpbservice.DeletedKeystoreStatus, error) {
+) ([]*qrlpbservice.DeletedKeystoreStatus, error) {
 	return km.localKM.DeleteKeystores(ctx, publicKeys)
 }
 
 // SubscribeAccountChanges creates an event subscription for a channel
 // to listen for public key changes at runtime, such as when new validator accounts
 // are imported into the keymanager while the validator process is running.
-func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][field_params.DilithiumPubkeyLength]byte) event.Subscription {
+func (km *Keymanager) SubscribeAccountChanges(pubKeysChan chan [][field_params.MLDSA87PubkeyLength]byte) event.Subscription {
 	return km.localKM.SubscribeAccountChanges(pubKeysChan)
 }
 
@@ -159,7 +158,7 @@ func (km *Keymanager) ListKeymanagerAccounts(ctx context.Context, cfg keymanager
 	} else {
 		fmt.Printf("Showing %d validator accounts\n", len(accountNames))
 	}
-	for i := 0; i < len(accountNames); i++ {
+	for i := range accountNames {
 		fmt.Println("")
 		validatingKeyPath := fmt.Sprintf(ValidatingKeyDerivationPathTemplate, i)
 

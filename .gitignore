@@ -38,3 +38,6 @@ jwt.hex
 
 # manual testing
 tmp
+
+# Local upstream-backport audit (tracking only, not source)
+.backports/

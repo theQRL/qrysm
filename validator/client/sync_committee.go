@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	emptypb "github.com/golang/protobuf/ptypes/empty"
 	"github.com/sirupsen/logrus"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/core/altair"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
@@ -15,14 +15,15 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // SubmitSyncCommitteeMessage submits the sync committee message to the beacon chain.
-func (v *validator) SubmitSyncCommitteeMessage(ctx context.Context, slot primitives.Slot, pubKey [field_params.DilithiumPubkeyLength]byte) {
+func (v *validator) SubmitSyncCommitteeMessage(ctx context.Context, slot primitives.Slot, pubKey [field_params.MLDSA87PubkeyLength]byte) {
 	ctx, span := trace.StartSpan(ctx, "validator.SubmitSyncCommitteeMessage")
 	defer span.End()
 	span.AddAttributes(trace.StringAttribute("validator", fmt.Sprintf("%#x", pubKey)))
@@ -68,7 +69,7 @@ func (v *validator) SubmitSyncCommitteeMessage(ctx context.Context, slot primiti
 		return
 	}
 
-	msg := &zondpb.SyncCommitteeMessage{
+	msg := &qrysmpb.SyncCommitteeMessage{
 		Slot:           slot,
 		BlockRoot:      res.Root,
 		ValidatorIndex: duty.ValidatorIndex,
@@ -92,7 +93,7 @@ func (v *validator) SubmitSyncCommitteeMessage(ctx context.Context, slot primiti
 }
 
 // SubmitSignedContributionAndProof submits the signed sync committee contribution and proof to the beacon chain.
-func (v *validator) SubmitSignedContributionAndProof(ctx context.Context, slot primitives.Slot, pubKey [field_params.DilithiumPubkeyLength]byte) {
+func (v *validator) SubmitSignedContributionAndProof(ctx context.Context, slot primitives.Slot, pubKey [field_params.MLDSA87PubkeyLength]byte) {
 	ctx, span := trace.StartSpan(ctx, "validator.SubmitSignedContributionAndProof")
 	defer span.End()
 	span.AddAttributes(trace.StringAttribute("validator", fmt.Sprintf("%#x", pubKey)))
@@ -103,7 +104,7 @@ func (v *validator) SubmitSignedContributionAndProof(ctx context.Context, slot p
 		return
 	}
 
-	indexRes, err := v.validatorClient.GetSyncSubcommitteeIndex(ctx, &zondpb.SyncSubcommitteeIndexRequest{
+	indexRes, err := v.validatorClient.GetSyncSubcommitteeIndex(ctx, &qrysmpb.SyncSubcommitteeIndexRequest{
 		PublicKey: pubKey[:],
 		Slot:      slot,
 	})
@@ -124,6 +125,7 @@ func (v *validator) SubmitSignedContributionAndProof(ctx context.Context, slot p
 
 	v.waitToSlotTwoThirds(ctx, slot)
 
+	coveredSubnets := make(map[uint64]bool)
 	for i, comIdx := range indexRes.Indices {
 		isAggregator, err := altair.IsSyncCommitteeAggregator(selectionProofs[i])
 		if err != nil {
@@ -135,7 +137,10 @@ func (v *validator) SubmitSignedContributionAndProof(ctx context.Context, slot p
 		}
 		subCommitteeSize := params.BeaconConfig().SyncCommitteeSize / params.BeaconConfig().SyncCommitteeSubnetCount
 		subnet := uint64(comIdx) / subCommitteeSize
-		contribution, err := v.validatorClient.GetSyncCommitteeContribution(ctx, &zondpb.SyncCommitteeContributionRequest{
+		if coveredSubnets[subnet] {
+			continue
+		}
+		contribution, err := v.validatorClient.GetSyncCommitteeContribution(ctx, &qrysmpb.SyncCommitteeContributionRequest{
 			Slot:      slot,
 			PublicKey: pubKey[:],
 			SubnetId:  subnet,
@@ -147,13 +152,13 @@ func (v *validator) SubmitSignedContributionAndProof(ctx context.Context, slot p
 		if contribution.AggregationBits.Count() == 0 {
 			log.WithFields(logrus.Fields{
 				"slot":   slot,
-				"pubkey": pubKey,
+				"pubkey": hexutil.Encode(pubKey[:]),
 				"subnet": subnet,
 			}).Warn("Sync contribution for validator has no bits set.")
 			continue
 		}
 
-		contributionAndProof := &zondpb.ContributionAndProof{
+		contributionAndProof := &qrysmpb.ContributionAndProof{
 			AggregatorIndex: duty.ValidatorIndex,
 			Contribution:    contribution,
 			SelectionProof:  selectionProofs[i],
@@ -164,13 +169,15 @@ func (v *validator) SubmitSignedContributionAndProof(ctx context.Context, slot p
 			return
 		}
 
-		if _, err := v.validatorClient.SubmitSignedContributionAndProof(ctx, &zondpb.SignedContributionAndProof{
+		if _, err := v.validatorClient.SubmitSignedContributionAndProof(ctx, &qrysmpb.SignedContributionAndProof{
 			Message:   contributionAndProof,
 			Signature: sig,
 		}); err != nil {
 			log.WithError(err).Error("Could not submit signed contribution and proof")
 			return
 		}
+
+		coveredSubnets[subnet] = true
 
 		contributionSlot := contributionAndProof.Contribution.Slot
 		slotTime := time.Unix(int64(v.genesisTime+uint64(contributionSlot)*params.BeaconConfig().SecondsPerSlot), 0)
@@ -187,7 +194,7 @@ func (v *validator) SubmitSignedContributionAndProof(ctx context.Context, slot p
 }
 
 // Signs and returns selection proofs per validator for slot and pub key.
-func (v *validator) selectionProofs(ctx context.Context, slot primitives.Slot, pubKey [field_params.DilithiumPubkeyLength]byte, indexRes *zondpb.SyncSubcommitteeIndexResponse) ([][]byte, error) {
+func (v *validator) selectionProofs(ctx context.Context, slot primitives.Slot, pubKey [field_params.MLDSA87PubkeyLength]byte, indexRes *qrysmpb.SyncSubcommitteeIndexResponse) ([][]byte, error) {
 	selectionProofs := make([][]byte, len(indexRes.Indices))
 	cfg := params.BeaconConfig()
 	size := cfg.SyncCommitteeSize
@@ -205,12 +212,12 @@ func (v *validator) selectionProofs(ctx context.Context, slot primitives.Slot, p
 }
 
 // Signs input slot with domain sync committee selection proof. This is used to create the signature for sync committee selection.
-func (v *validator) signSyncSelectionData(ctx context.Context, pubKey [field_params.DilithiumPubkeyLength]byte, index uint64, slot primitives.Slot) (signature []byte, err error) {
+func (v *validator) signSyncSelectionData(ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, index uint64, slot primitives.Slot) (signature []byte, err error) {
 	domain, err := v.domainData(ctx, slots.ToEpoch(slot), params.BeaconConfig().DomainSyncCommitteeSelectionProof[:])
 	if err != nil {
 		return nil, err
 	}
-	data := &zondpb.SyncAggregatorSelectionData{
+	data := &qrysmpb.SyncAggregatorSelectionData{
 		Slot:              slot,
 		SubcommitteeIndex: index,
 	}
@@ -232,7 +239,7 @@ func (v *validator) signSyncSelectionData(ctx context.Context, pubKey [field_par
 }
 
 // This returns the signature of validator signing over sync committee contribution and proof object.
-func (v *validator) signContributionAndProof(ctx context.Context, pubKey [field_params.DilithiumPubkeyLength]byte, c *zondpb.ContributionAndProof, slot primitives.Slot) ([]byte, error) {
+func (v *validator) signContributionAndProof(ctx context.Context, pubKey [field_params.MLDSA87PubkeyLength]byte, c *qrysmpb.ContributionAndProof, slot primitives.Slot) ([]byte, error) {
 	d, err := v.domainData(ctx, slots.ToEpoch(c.Contribution.Slot), params.BeaconConfig().DomainContributionAndProof[:])
 	if err != nil {
 		return nil, err

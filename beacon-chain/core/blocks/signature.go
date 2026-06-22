@@ -3,6 +3,7 @@ package blocks
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/beacon-chain/core/helpers"
@@ -11,20 +12,20 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/network/forks"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/attestation"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
 // retrieves the signature batch from the raw data, public key,signature and domain provided.
-func signatureBatch(signedData, pub, signature, domain []byte, desc string) (*dilithium.SignatureBatch, error) {
-	publicKey, err := dilithium.PublicKeyFromBytes(pub)
+func signatureBatch(signedData, pub, signature, domain []byte, desc string) (*ml_dsa_87.SignatureBatch, error) {
+	publicKey, err := ml_dsa_87.PublicKeyFromBytes(pub)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not convert bytes to public key")
 	}
-	signingData := &zondpb.SigningData{
+	signingData := &qrysmpb.SigningData{
 		ObjectRoot: signedData,
 		Domain:     domain,
 	}
@@ -32,9 +33,9 @@ func signatureBatch(signedData, pub, signature, domain []byte, desc string) (*di
 	if err != nil {
 		return nil, errors.Wrap(err, "could not hash container")
 	}
-	return &dilithium.SignatureBatch{
+	return &ml_dsa_87.SignatureBatch{
 		Signatures:   [][][]byte{{signature}},
-		PublicKeys:   [][]dilithium.PublicKey{{publicKey}},
+		PublicKeys:   [][]ml_dsa_87.PublicKey{{publicKey}},
 		Messages:     [][32]byte{root},
 		Descriptions: []string{desc},
 	}, nil
@@ -53,7 +54,7 @@ func verifySignature(signedData, pub, signature, domain []byte) error {
 	sig := set.Signatures[0][0]
 	publicKey := set.PublicKeys[0][0]
 	root := set.Messages[0]
-	rSig, err := dilithium.SignatureFromBytes(sig)
+	rSig, err := ml_dsa_87.SignatureFromBytes(sig)
 	if err != nil {
 		return err
 	}
@@ -82,7 +83,7 @@ func VerifyBlockSignature(beaconState state.ReadOnlyBeaconState,
 }
 
 // VerifyBlockHeaderSignature verifies the proposer signature of a beacon block header.
-func VerifyBlockHeaderSignature(beaconState state.BeaconState, header *zondpb.SignedBeaconBlockHeader) error {
+func VerifyBlockHeaderSignature(beaconState state.BeaconState, header *qrysmpb.SignedBeaconBlockHeader) error {
 	currentEpoch := slots.ToEpoch(beaconState.Slot())
 	domain, err := signing.Domain(beaconState.Fork(), currentEpoch, params.BeaconConfig().DomainBeaconProposer, beaconState.GenesisValidatorsRoot())
 	if err != nil {
@@ -96,10 +97,15 @@ func VerifyBlockHeaderSignature(beaconState state.BeaconState, header *zondpb.Si
 	return signing.VerifyBlockHeaderSigningRoot(header.Header, proposerPubKey, header.Signature, domain)
 }
 
+// ErrInvalidSignature is returned when a block's proposer signature fails verification.
+// Callers can use errors.Is to distinguish this from transient errors (state lookup,
+// fork resolution, etc.) so that only true signature failures mark the block as bad.
+var ErrInvalidSignature = errors.New("invalid signature")
+
 // VerifyBlockSignatureUsingCurrentFork verifies the proposer signature of a beacon block. This differs
 // from the above method by not using fork data from the state and instead retrieving it
 // via the respective epoch.
-func VerifyBlockSignatureUsingCurrentFork(beaconState state.ReadOnlyBeaconState, blk interfaces.ReadOnlySignedBeaconBlock) error {
+func VerifyBlockSignatureUsingCurrentFork(beaconState state.ReadOnlyBeaconState, blk interfaces.ReadOnlySignedBeaconBlock, blkRoot [32]byte) error {
 	currentEpoch := slots.ToEpoch(blk.Block().Slot())
 	fork, err := forks.Fork(currentEpoch)
 	if err != nil {
@@ -115,14 +121,19 @@ func VerifyBlockSignatureUsingCurrentFork(beaconState state.ReadOnlyBeaconState,
 	}
 	proposerPubKey := proposer.PublicKey
 	sig := blk.Signature()
-	return signing.VerifyBlockSigningRoot(proposerPubKey, sig[:], domain, blk.Block().HashTreeRoot)
+	if err := signing.VerifyBlockSigningRoot(proposerPubKey, sig[:], domain, func() ([32]byte, error) {
+		return blkRoot, nil
+	}); err != nil {
+		return fmt.Errorf("%w: %w", ErrInvalidSignature, err)
+	}
+	return nil
 }
 
 // BlockSignatureBatch retrieves the block signature batch from the provided block and its corresponding state.
 func BlockSignatureBatch(beaconState state.ReadOnlyBeaconState,
 	proposerIndex primitives.ValidatorIndex,
 	sig []byte,
-	rootFunc func() ([32]byte, error)) (*dilithium.SignatureBatch, error) {
+	rootFunc func() ([32]byte, error)) (*ml_dsa_87.SignatureBatch, error) {
 	currentEpoch := slots.ToEpoch(beaconState.Slot())
 	domain, err := signing.Domain(beaconState.Fork(), currentEpoch, params.BeaconConfig().DomainBeaconProposer, beaconState.GenesisValidatorsRoot())
 	if err != nil {
@@ -142,7 +153,7 @@ func RandaoSignatureBatch(
 	ctx context.Context,
 	beaconState state.ReadOnlyBeaconState,
 	reveal []byte,
-) (*dilithium.SignatureBatch, error) {
+) (*ml_dsa_87.SignatureBatch, error) {
 	buf, proposerPub, domain, err := randaoSigningData(ctx, beaconState)
 	if err != nil {
 		return nil, err
@@ -177,15 +188,15 @@ func randaoSigningData(ctx context.Context, beaconState state.ReadOnlyBeaconStat
 func createAttestationSignatureBatch(
 	ctx context.Context,
 	beaconState state.ReadOnlyBeaconState,
-	atts []*zondpb.Attestation,
+	atts []*qrysmpb.Attestation,
 	domain []byte,
-) (*dilithium.SignatureBatch, error) {
+) (*ml_dsa_87.SignatureBatch, error) {
 	if len(atts) == 0 {
 		return nil, nil
 	}
 
 	sigs := make([][][]byte, len(atts))
-	pks := make([][]dilithium.PublicKey, len(atts))
+	pks := make([][]ml_dsa_87.PublicKey, len(atts))
 	msgs := make([][32]byte, len(atts))
 	descs := make([]string, len(atts))
 	for i, a := range atts {
@@ -203,11 +214,11 @@ func createAttestationSignatureBatch(
 		sigs[i] = ia.Signatures
 		indices := ia.AttestingIndices
 		pubkeys := make([][]byte, len(indices))
-		for j := 0; j < len(indices); j++ {
+		for j := range indices {
 			pubkeyAtIdx := beaconState.PubkeyAtIndex(primitives.ValidatorIndex(indices[j]))
 			pubkeys[j] = pubkeyAtIdx[:]
 
-			pubKey, err := dilithium.PublicKeyFromBytes(pubkeys[j])
+			pubKey, err := ml_dsa_87.PublicKeyFromBytes(pubkeys[j])
 			if err != nil {
 				return nil, errors.Wrap(err, "could not convert bytes to public key")
 			}
@@ -222,7 +233,7 @@ func createAttestationSignatureBatch(
 
 		descs[i] = signing.AttestationSignature
 	}
-	return &dilithium.SignatureBatch{
+	return &ml_dsa_87.SignatureBatch{
 		Signatures:   sigs,
 		PublicKeys:   pks,
 		Messages:     msgs,
@@ -232,9 +243,9 @@ func createAttestationSignatureBatch(
 
 // AttestationSignatureBatch retrieves all the related attestation signature data such as the relevant public keys,
 // signatures and attestation signing data and collate it into a signature batch object.
-func AttestationSignatureBatch(ctx context.Context, beaconState state.ReadOnlyBeaconState, atts []*zondpb.Attestation) (*dilithium.SignatureBatch, error) {
+func AttestationSignatureBatch(ctx context.Context, beaconState state.ReadOnlyBeaconState, atts []*qrysmpb.Attestation) (*ml_dsa_87.SignatureBatch, error) {
 	if len(atts) == 0 {
-		return dilithium.NewSet(), nil
+		return ml_dsa_87.NewSet(), nil
 	}
 
 	fork := beaconState.Fork()
@@ -242,8 +253,8 @@ func AttestationSignatureBatch(ctx context.Context, beaconState state.ReadOnlyBe
 	dt := params.BeaconConfig().DomainBeaconAttester
 
 	// Split attestations by fork. Note: the signature domain will differ based on the fork.
-	var preForkAtts []*zondpb.Attestation
-	var postForkAtts []*zondpb.Attestation
+	var preForkAtts []*qrysmpb.Attestation
+	var postForkAtts []*qrysmpb.Attestation
 	for _, a := range atts {
 		if slots.ToEpoch(a.Data.Slot) < fork.Epoch {
 			preForkAtts = append(preForkAtts, a)
@@ -251,7 +262,7 @@ func AttestationSignatureBatch(ctx context.Context, beaconState state.ReadOnlyBe
 			postForkAtts = append(postForkAtts, a)
 		}
 	}
-	set := dilithium.NewSet()
+	set := ml_dsa_87.NewSet()
 
 	// Check attestations from before the fork.
 	if fork.Epoch > 0 && len(preForkAtts) > 0 { // Check to prevent underflow and there is valid attestations to create sig batch.

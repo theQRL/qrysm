@@ -7,14 +7,14 @@ import (
 	"context"
 	"io"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/qrysm/beacon-chain/db/filters"
 	slashertypes "github.com/theQRL/qrysm/beacon-chain/slasher/types"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/monitoring/backup"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // ReadOnlyDatabase defines a struct which only has read access to database methods.
@@ -36,28 +36,40 @@ type ReadOnlyDatabase interface {
 	StateOrError(ctx context.Context, blockRoot [32]byte) (state.BeaconState, error)
 	GenesisState(ctx context.Context) (state.BeaconState, error)
 	HasState(ctx context.Context, blockRoot [32]byte) bool
-	StateSummary(ctx context.Context, blockRoot [32]byte) (*zondpb.StateSummary, error)
+	StateSummary(ctx context.Context, blockRoot [32]byte) (*qrysmpb.StateSummary, error)
 	HasStateSummary(ctx context.Context, blockRoot [32]byte) bool
 	HighestSlotStatesBelow(ctx context.Context, slot primitives.Slot) ([]state.ReadOnlyBeaconState, error)
 	// Checkpoint operations.
-	JustifiedCheckpoint(ctx context.Context) (*zondpb.Checkpoint, error)
-	FinalizedCheckpoint(ctx context.Context) (*zondpb.Checkpoint, error)
+	JustifiedCheckpoint(ctx context.Context) (*qrysmpb.Checkpoint, error)
+	FinalizedCheckpoint(ctx context.Context) (*qrysmpb.Checkpoint, error)
 	ArchivedPointRoot(ctx context.Context, slot primitives.Slot) [32]byte
 	HasArchivedPoint(ctx context.Context, slot primitives.Slot) bool
 	LastArchivedRoot(ctx context.Context) [32]byte
 	LastArchivedSlot(ctx context.Context) (primitives.Slot, error)
-	LastValidatedCheckpoint(ctx context.Context) (*zondpb.Checkpoint, error)
+	LastValidatedCheckpoint(ctx context.Context) (*qrysmpb.Checkpoint, error)
 	// Deposit contract related handlers.
 	DepositContractAddress(ctx context.Context) ([]byte, error)
 	// ExecutionChainData operations.
-	ExecutionChainData(ctx context.Context) (*zondpb.ETH1ChainData, error)
+	ExecutionChainData(ctx context.Context) (*qrysmpb.ExecutionChainData, error)
 	// Fee recipients operations.
 	FeeRecipientByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (common.Address, error)
-	RegistrationByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (*zondpb.ValidatorRegistrationV1, error)
+	RegistrationByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (*qrysmpb.ValidatorRegistrationV1, error)
 
 	// origin checkpoint sync support
 	OriginCheckpointBlockRoot(ctx context.Context) ([32]byte, error)
 	BackfillBlockRoot(ctx context.Context) ([32]byte, error)
+
+	// P2P Metadata operations.
+	MetadataSeqNum(ctx context.Context) (uint64, error)
+}
+
+// ReadOnlyDatabaseWithSeqNum defines a struct which has read access to database methods
+// and also has read/write access to the p2p metadata sequence number.
+// Only used for the p2p service.
+type ReadOnlyDatabaseWithSeqNum interface {
+	ReadOnlyDatabase
+
+	SaveMetadataSeqNum(ctx context.Context, seqNum uint64) error
 }
 
 // NoHeadAccessDatabase defines a struct without access to chain head data.
@@ -74,23 +86,26 @@ type NoHeadAccessDatabase interface {
 	SaveStates(ctx context.Context, states []state.ReadOnlyBeaconState, blockRoots [][32]byte) error
 	DeleteState(ctx context.Context, blockRoot [32]byte) error
 	DeleteStates(ctx context.Context, blockRoots [][32]byte) error
-	SaveStateSummary(ctx context.Context, summary *zondpb.StateSummary) error
-	SaveStateSummaries(ctx context.Context, summaries []*zondpb.StateSummary) error
+	SaveStateSummary(ctx context.Context, summary *qrysmpb.StateSummary) error
+	SaveStateSummaries(ctx context.Context, summaries []*qrysmpb.StateSummary) error
 	// Checkpoint operations.
-	SaveJustifiedCheckpoint(ctx context.Context, checkpoint *zondpb.Checkpoint) error
-	SaveFinalizedCheckpoint(ctx context.Context, checkpoint *zondpb.Checkpoint) error
-	SaveLastValidatedCheckpoint(ctx context.Context, checkpoint *zondpb.Checkpoint) error
+	SaveJustifiedCheckpoint(ctx context.Context, checkpoint *qrysmpb.Checkpoint) error
+	SaveFinalizedCheckpoint(ctx context.Context, checkpoint *qrysmpb.Checkpoint) error
+	SaveLastValidatedCheckpoint(ctx context.Context, checkpoint *qrysmpb.Checkpoint) error
 	// Deposit contract related handlers.
 	SaveDepositContractAddress(ctx context.Context, addr common.Address) error
-	// SaveExecutionChainData operations.
-	SaveExecutionChainData(ctx context.Context, data *zondpb.ETH1ChainData) error
+	// SaveExecutioChainData operations.
+	SaveExecutionChainData(ctx context.Context, data *qrysmpb.ExecutionChainData) error
 	// Run any required database migrations.
 	RunMigrations(ctx context.Context) error
 	// Fee recipients operations.
 	SaveFeeRecipientsByValidatorIDs(ctx context.Context, ids []primitives.ValidatorIndex, addrs []common.Address) error
-	SaveRegistrationsByValidatorIDs(ctx context.Context, ids []primitives.ValidatorIndex, regs []*zondpb.ValidatorRegistrationV1) error
+	SaveRegistrationsByValidatorIDs(ctx context.Context, ids []primitives.ValidatorIndex, regs []*qrysmpb.ValidatorRegistrationV1) error
 
 	CleanUpDirtyStates(ctx context.Context, slotsPerArchivedPoint primitives.Slot) error
+
+	// P2P Metadata operations.
+	SaveMetadataSeqNum(ctx context.Context, seqNum uint64) error
 }
 
 // HeadAccessDatabase defines a struct with access to reading chain head data.
@@ -99,6 +114,7 @@ type HeadAccessDatabase interface {
 
 	// Block related methods.
 	HeadBlock(ctx context.Context) (interfaces.ReadOnlySignedBeaconBlock, error)
+	HeadBlockRoot() ([32]byte, error)
 	SaveHeadBlockRoot(ctx context.Context, blockRoot [32]byte) error
 
 	// Genesis operations.
@@ -144,7 +160,7 @@ type SlasherDatabase interface {
 	) ([][]uint16, []bool, error)
 	CheckDoubleBlockProposals(
 		ctx context.Context, proposals []*slashertypes.SignedBlockHeaderWrapper,
-	) ([]*zondpb.ProposerSlashing, error)
+	) ([]*qrysmpb.ProposerSlashing, error)
 	PruneAttestationsAtEpoch(
 		ctx context.Context, maxEpoch primitives.Epoch,
 	) (numPruned uint, err error)
@@ -154,7 +170,7 @@ type SlasherDatabase interface {
 	HighestAttestations(
 		ctx context.Context,
 		indices []primitives.ValidatorIndex,
-	) ([]*zondpb.HighestAttestation, error)
+	) ([]*qrysmpb.HighestAttestation, error)
 	DatabasePath() string
 	ClearDB() error
 }
@@ -162,7 +178,7 @@ type SlasherDatabase interface {
 // Database interface with full access.
 type Database interface {
 	io.Closer
-	backup.BackupExporter
+	backup.Exporter
 	HeadAccessDatabase
 
 	DatabasePath() string

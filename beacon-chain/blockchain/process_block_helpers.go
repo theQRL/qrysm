@@ -3,22 +3,28 @@ package blockchain
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
 	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/params"
+	consensus_blocks "github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	mathutil "github.com/theQRL/qrysm/math"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time"
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
+
+// ErrInvalidCheckpointArgs may be returned when the finalized checkpoint has an epoch greater than the justified checkpoint epoch.
+// If you are seeing this error, make sure you haven't mixed up the order of the arguments in the method you are calling.
+var ErrInvalidCheckpointArgs = errors.New("finalized checkpoint cannot be greater than justified checkpoint")
 
 // CurrentSlot returns the current slot based on time.
 func (s *Service) CurrentSlot() primitives.Slot {
@@ -102,7 +108,7 @@ func (s *Service) verifyBlkFinalizedSlot(b interfaces.ReadOnlyBeaconBlock) error
 // updateFinalized saves the init sync blocks, finalized checkpoint, migrates
 // to cold old states and saves the last validated checkpoint to DB. It returns
 // early if the new checkpoint is older than the one on db.
-func (s *Service) updateFinalized(ctx context.Context, cp *zondpb.Checkpoint) error {
+func (s *Service) updateFinalized(ctx context.Context, cp *qrysmpb.Checkpoint) error {
 	ctx, span := trace.StartSpan(ctx, "blockChain.updateFinalized")
 	defer span.End()
 
@@ -124,6 +130,9 @@ func (s *Service) updateFinalized(ctx context.Context, cp *zondpb.Checkpoint) er
 
 	if err := s.cfg.BeaconDB.SaveFinalizedCheckpoint(ctx, cp); err != nil {
 		return err
+	}
+	if s.checkpointStateCache != nil {
+		s.checkpointStateCache.EvictUpTo(cp.Epoch)
 	}
 
 	fRoot := bytesutil.ToBytes32(cp.Root)
@@ -175,7 +184,10 @@ func (s *Service) ancestorByDB(ctx context.Context, r [32]byte, slot primitives.
 // This retrieves missing blocks from DB (ie. the blocks that couldn't be received over sync) and inserts them to fork choice store.
 // This is useful for block tree visualizer and additional vote accounting.
 func (s *Service) fillInForkChoiceMissingBlocks(ctx context.Context, blk interfaces.ReadOnlyBeaconBlock,
-	fCheckpoint, jCheckpoint *zondpb.Checkpoint) error {
+	fCheckpoint, jCheckpoint *qrysmpb.Checkpoint) error {
+	if fCheckpoint.Epoch > jCheckpoint.Epoch {
+		return ErrInvalidCheckpointArgs
+	}
 	pendingNodes := make([]*forkchoicetypes.BlockAndCheckpoints, 0)
 
 	// Fork choice only matters from last finalized slot.
@@ -184,10 +196,8 @@ func (s *Service) fillInForkChoiceMissingBlocks(ctx context.Context, blk interfa
 	if err != nil {
 		return err
 	}
-	pendingNodes = append(pendingNodes, &forkchoicetypes.BlockAndCheckpoints{Block: blk,
-		JustifiedCheckpoint: jCheckpoint, FinalizedCheckpoint: fCheckpoint})
-	// As long as parent node is not in fork choice store, and parent node is in DB.
 	root := blk.ParentRoot()
+	// As long as parent node is not in fork choice store, and parent node is in DB.
 	for !s.cfg.ForkChoiceStore.HasNode(root) && s.cfg.BeaconDB.HasBlock(ctx, root) {
 		b, err := s.getBlock(ctx, root)
 		if err != nil {
@@ -196,18 +206,23 @@ func (s *Service) fillInForkChoiceMissingBlocks(ctx context.Context, blk interfa
 		if b.Block().Slot() <= fSlot {
 			break
 		}
+		roblock, err := consensus_blocks.NewROBlockWithRoot(b, root)
+		if err != nil {
+			return err
+		}
 		root = b.Block().ParentRoot()
-		args := &forkchoicetypes.BlockAndCheckpoints{Block: b.Block(),
+		args := &forkchoicetypes.BlockAndCheckpoints{Block: roblock,
 			JustifiedCheckpoint: jCheckpoint,
 			FinalizedCheckpoint: fCheckpoint}
 		pendingNodes = append(pendingNodes, args)
 	}
-	if len(pendingNodes) == 1 {
+	if len(pendingNodes) == 0 {
 		return nil
 	}
 	if root != s.ensureRootNotZeros(finalized.Root) && !s.cfg.ForkChoiceStore.HasNode(root) {
 		return ErrNotDescendantOfFinalized
 	}
+	slices.Reverse(pendingNodes)
 	return s.cfg.ForkChoiceStore.InsertChain(ctx, pendingNodes)
 }
 
@@ -226,30 +241,30 @@ func (s *Service) insertFinalizedDeposits(ctx context.Context, fRoot [32]byte) {
 	}
 	// We update the cache up to the last deposit index in the finalized block's state.
 	// We can be confident that these deposits will be included in some block
-	// because the Eth1 follow distance makes such long-range reorgs extremely unlikely.
-	eth1DepositIndex, err := mathutil.Int(finalizedState.Eth1DepositIndex())
+	// because the execution follow distance makes such long-range reorgs extremely unlikely.
+	executionDepositIndex, err := mathutil.Int(finalizedState.ExecutionDepositIndex())
 	if err != nil {
-		log.WithError(err).Error("could not cast eth1 deposit index")
+		log.WithError(err).Error("could not cast execution deposit index")
 		return
 	}
 	// The deposit index in the state is always the index of the next deposit
 	// to be included(rather than the last one to be processed). This was most likely
 	// done as the state cannot represent signed integers.
-	finalizedEth1DepIdx := eth1DepositIndex - 1
-	if err = s.cfg.DepositCache.InsertFinalizedDeposits(ctx, int64(finalizedEth1DepIdx), common.Hash(finalizedState.Eth1Data().BlockHash),
+	finalizedExecutionDepIdx := executionDepositIndex - 1
+	if err = s.cfg.DepositCache.InsertFinalizedDeposits(ctx, int64(finalizedExecutionDepIdx), common.Hash(finalizedState.ExecutionData().BlockHash),
 		0 /* Setting a zero value as we have no access to block height */); err != nil {
 		log.WithError(err).Error("could not insert finalized deposits")
 		return
 	}
 	// Deposit proofs are only used during state transition and can be safely removed to save space.
-	if err = s.cfg.DepositCache.PruneProofs(ctx, int64(finalizedEth1DepIdx)); err != nil {
+	if err = s.cfg.DepositCache.PruneProofs(ctx, int64(finalizedExecutionDepIdx)); err != nil {
 		log.WithError(err).Error("could not prune deposit proofs")
 	}
 	// Prune deposits which have already been finalized, the below method prunes all pending deposits (non-inclusive) up
-	// to the provided eth1 deposit index.
-	s.cfg.DepositCache.PrunePendingDeposits(ctx, int64(eth1DepositIndex)) // lint:ignore uintcast -- Deposit index should not exceed int64 in your lifetime.
+	// to the provided execution deposit index.
+	s.cfg.DepositCache.PrunePendingDeposits(ctx, int64(executionDepositIndex)) // lint:ignore uintcast -- Deposit index should not exceed int64 in your lifetime.
 
-	log.WithField("duration", time.Since(startTime).String()).Debugf("Finalized deposit insertion completed at index %d", finalizedEth1DepIdx)
+	log.WithField("duration", time.Since(startTime).String()).Debugf("Finalized deposit insertion completed at index %d", finalizedExecutionDepIdx)
 }
 
 // This ensures that the input root defaults to using genesis root instead of zero hashes. This is needed for handling

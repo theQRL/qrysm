@@ -7,7 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	goqrllib_misc "github.com/theQRL/go-qrllib/misc"
+	"github.com/theQRL/go-qrl/common"
+	goqrllib_misc "github.com/theQRL/go-qrllib/wallet/misc"
 	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/misc"
 	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/stakingdeposit"
 	"github.com/theQRL/qrysm/cmd/staking-deposit-cli/stakingdeposit/keyhandling/keyderivation"
@@ -24,6 +25,7 @@ var (
 		ChainName           string
 		ExecutionAddress    string
 		Mnemonic            string
+		LightKDF            bool
 	}{}
 	log = logrus.WithField("prefix", "deposit")
 
@@ -74,12 +76,18 @@ var Commands = []*cli.Command{
 				Usage:       "",
 				Destination: &newSeedFlags.ExecutionAddress,
 				Value:       "",
+				Required:    true,
 			},
 			&cli.StringFlag{
 				Name:        "mnemonic",
 				Usage:       "",
 				Destination: &newSeedFlags.Mnemonic,
 				Value:       "",
+			},
+			&cli.BoolFlag{
+				Name:        "lightkdf",
+				Usage:       "Reduce key-derivation RAM & CPU usage at some expense of KDF strength",
+				Destination: &newSeedFlags.LightKDF,
 			},
 			KeystorePasswordFile,
 		},
@@ -97,7 +105,7 @@ func cliActionNewSeed(cliCtx *cli.Context) error {
 		keystorePassword = strings.TrimRight(string(data), "\r\n")
 	} else {
 		fmt.Println("Create a password that secures your validator keystore(s). " +
-			"You will need to re-enter this to decrypt them when you setup your Zond validators.")
+			"You will need to re-enter this to decrypt them when you setup your QRL validators.")
 		password, err := term.ReadPassword(int(syscall.Stdin))
 		if err != nil {
 			return err
@@ -120,10 +128,20 @@ func cliActionNewSeed(cliCtx *cli.Context) error {
 		mnemonic = keyderivation.GetRandomMnemonic()
 	}
 
-	seed := goqrllib_misc.MnemonicToSeedBin(mnemonic)
+	seed, err := goqrllib_misc.MnemonicToBin(mnemonic)
+	if err != nil {
+		return err
+	}
+
+	executionAddr, err := common.NewAddressFromString(newSeedFlags.ExecutionAddress)
+	if err != nil {
+		return err
+	}
+
 	stakingdeposit.GenerateKeys(newSeedFlags.ValidatorStartIndex,
 		newSeedFlags.NumValidators, misc.EncodeHex(seed[:]), newSeedFlags.Folder,
-		newSeedFlags.ChainName, keystorePassword, newSeedFlags.ExecutionAddress)
+		newSeedFlags.ChainName, keystorePassword, executionAddr,
+		newSeedFlags.LightKDF)
 
 	return nil
 }

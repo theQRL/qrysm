@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	state_native "github.com/theQRL/qrysm/beacon-chain/state/state-native"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
 func BenchmarkParticipationBits(b *testing.B) {
-	st, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{})
+	st, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{})
 	require.NoError(b, err)
 
 	max := uint64(16777216)
@@ -18,9 +18,8 @@ func BenchmarkParticipationBits(b *testing.B) {
 	}
 
 	ref := st.Copy()
-	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		require.NoError(b, ref.AppendCurrentParticipationBits(byte(2)))
 		ref = st.Copy()
 	}

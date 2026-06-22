@@ -7,17 +7,17 @@ import (
 	p2pType "github.com/theQRL/qrysm/beacon-chain/p2p/types"
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/params"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
-func generateSyncAggregate(st state.BeaconState, privs []dilithium.DilithiumKey, parentRoot [32]byte) (*zondpb.SyncAggregate, error) {
+func generateSyncAggregate(st state.BeaconState, privs []ml_dsa_87.MLDSA87Key, parentRoot [32]byte) (*qrysmpb.SyncAggregate, error) {
 	nextSlotEpoch := slots.ToEpoch(st.Slot() + 1)
 	currEpoch := slots.ToEpoch(st.Slot())
 
-	var syncCommittee *zondpb.SyncCommittee
+	var syncCommittee *qrysmpb.SyncCommittee
 	var err error
 	if slots.SyncCommitteePeriod(currEpoch) == slots.SyncCommitteePeriod(nextSlotEpoch) {
 		syncCommittee, err = st.CurrentSyncCommittee()
@@ -32,10 +32,12 @@ func generateSyncAggregate(st state.BeaconState, privs []dilithium.DilithiumKey,
 	}
 	sigs := make([][]byte, 0, len(syncCommittee.Pubkeys))
 	var bVector []byte
-	currSize := new(zondpb.SyncAggregate).SyncCommitteeBits.Len()
+	currSize := new(qrysmpb.SyncAggregate).SyncCommitteeBits.Len()
 	switch currSize {
 	case 512:
 		bVector = bitfield.NewBitvector512()
+	case 128:
+		bVector = bitfield.NewBitvector128()
 	case 32:
 		bVector = bitfield.NewBitvector32()
 	case 16:
@@ -62,6 +64,9 @@ func generateSyncAggregate(st state.BeaconState, privs []dilithium.DilithiumKey,
 		if currSize == 512 {
 			bitfield.Bitvector512(bVector).SetBitAt(uint64(i), true)
 		}
+		if currSize == 128 {
+			bitfield.Bitvector128(bVector).SetBitAt(uint64(i), true)
+		}
 		if currSize == 32 {
 			bitfield.Bitvector32(bVector).SetBitAt(uint64(i), true)
 		}
@@ -70,5 +75,5 @@ func generateSyncAggregate(st state.BeaconState, privs []dilithium.DilithiumKey,
 		}
 	}
 
-	return &zondpb.SyncAggregate{SyncCommitteeSignatures: sigs, SyncCommitteeBits: bVector}, nil
+	return &qrysmpb.SyncAggregate{SyncCommitteeSignatures: sigs, SyncCommitteeBits: bVector}, nil
 }

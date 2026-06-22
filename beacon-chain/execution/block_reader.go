@@ -6,7 +6,7 @@ import (
 	"math/big"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/qrysm/beacon-chain/execution/types"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/monitoring/tracing"
@@ -20,11 +20,11 @@ const searchThreshold = 5
 // amount of times we repeat a failed search till is satisfies the conditional.
 const repeatedSearches = 2 * searchThreshold
 
-var errBlockTimeTooLate = errors.New("provided time is later than the current eth1 head")
+var errBlockTimeTooLate = errors.New("provided time is later than the current execution head")
 
 // BlockExists returns true if the block exists, its height and any possible error encountered.
 func (s *Service) BlockExists(ctx context.Context, hash common.Hash) (bool, *big.Int, error) {
-	ctx, span := trace.StartSpan(ctx, "powchain.BlockExists")
+	ctx, span := trace.StartSpan(ctx, "execution-chain.BlockExists")
 	defer span.End()
 
 	if exists, hdrInfo, err := s.headerCache.HeaderInfoByHash(hash); exists || err != nil {
@@ -49,7 +49,7 @@ func (s *Service) BlockExists(ctx context.Context, hash common.Hash) (bool, *big
 
 // BlockHashByHeight returns the block hash of the block at the given height.
 func (s *Service) BlockHashByHeight(ctx context.Context, height *big.Int) (common.Hash, error) {
-	ctx, span := trace.StartSpan(ctx, "powchain.BlockHashByHeight")
+	ctx, span := trace.StartSpan(ctx, "execution-chain.BlockHashByHeight")
 	defer span.End()
 
 	if exists, hInfo, err := s.headerCache.HeaderInfoByHeight(height); exists || err != nil {
@@ -69,7 +69,7 @@ func (s *Service) BlockHashByHeight(ctx context.Context, height *big.Int) (commo
 
 	header, err := s.HeaderByNumber(ctx, height)
 	if err != nil {
-		return [32]byte{}, errors.Wrap(err, fmt.Sprintf("could not query header with height %d", height.Uint64()))
+		return [32]byte{}, errors.Wrapf(err, "could not query header with height %d", height.Uint64())
 	}
 	if err := s.headerCache.AddHeader(header); err != nil {
 		return [32]byte{}, err
@@ -77,9 +77,9 @@ func (s *Service) BlockHashByHeight(ctx context.Context, height *big.Int) (commo
 	return header.Hash, nil
 }
 
-// BlockTimeByHeight fetches an eth1 block timestamp by its height.
+// BlockTimeByHeight fetches an execution block timestamp by its height.
 func (s *Service) BlockTimeByHeight(ctx context.Context, height *big.Int) (uint64, error) {
-	ctx, span := trace.StartSpan(ctx, "powchain.BlockTimeByHeight")
+	ctx, span := trace.StartSpan(ctx, "execution-chain.BlockTimeByHeight")
 	defer span.End()
 	if s.rpcClient == nil {
 		err := errors.New("nil rpc client")
@@ -89,7 +89,7 @@ func (s *Service) BlockTimeByHeight(ctx context.Context, height *big.Int) (uint6
 
 	header, err := s.HeaderByNumber(ctx, height)
 	if err != nil {
-		return 0, errors.Wrap(err, fmt.Sprintf("could not query block with height %d", height.Uint64()))
+		return 0, errors.Wrapf(err, "could not query block with height %d", height.Uint64())
 	}
 	return header.Time, nil
 }
@@ -98,32 +98,32 @@ func (s *Service) BlockTimeByHeight(ctx context.Context, height *big.Int) (uint6
 // This is an optimized version with the worst case being O(2*repeatedSearches) number of calls
 // while in best case search for the block is performed in O(1).
 func (s *Service) BlockByTimestamp(ctx context.Context, time uint64) (*types.HeaderInfo, error) {
-	ctx, span := trace.StartSpan(ctx, "powchain.BlockByTimestamp")
+	ctx, span := trace.StartSpan(ctx, "execution-chain.BlockByTimestamp")
 	defer span.End()
 
-	s.latestEth1DataLock.RLock()
-	latestBlkHeight := s.latestEth1Data.BlockHeight
-	latestBlkTime := s.latestEth1Data.BlockTime
-	s.latestEth1DataLock.RUnlock()
+	s.latestExecutionDataLock.RLock()
+	latestBlkHeight := s.latestExecutionData.BlockHeight
+	latestBlkTime := s.latestExecutionData.BlockTime
+	s.latestExecutionDataLock.RUnlock()
 
 	if time > latestBlkTime {
 		return nil, errors.Wrap(errBlockTimeTooLate, fmt.Sprintf("(%d > %d)", time, latestBlkTime))
 	}
-	// Initialize a pointer to eth1 chain's history to start our search from.
+	// Initialize a pointer to execution chain's history to start our search from.
 	cursorNum := big.NewInt(0).SetUint64(latestBlkHeight)
 	cursorTime := latestBlkTime
 
 	numOfBlocks := uint64(0)
 	estimatedBlk := cursorNum.Uint64()
-	maxTimeBuffer := searchThreshold * params.BeaconConfig().SecondsPerETH1Block
+	maxTimeBuffer := searchThreshold * params.BeaconConfig().SecondsPerExecutionBlock
 	// Terminate if we can't find an acceptable block after
 	// repeated searches.
-	for i := 0; i < repeatedSearches; i++ {
+	for range repeatedSearches {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
 		if time > cursorTime+maxTimeBuffer {
-			numOfBlocks = (time - cursorTime) / params.BeaconConfig().SecondsPerETH1Block
+			numOfBlocks = (time - cursorTime) / params.BeaconConfig().SecondsPerExecutionBlock
 			// In the event we have an infeasible estimated block, this is a defensive
 			// check to ensure it does not exceed rational bounds.
 			if cursorNum.Uint64()+numOfBlocks > latestBlkHeight {
@@ -131,7 +131,7 @@ func (s *Service) BlockByTimestamp(ctx context.Context, time uint64) (*types.Hea
 			}
 			estimatedBlk = cursorNum.Uint64() + numOfBlocks
 		} else if time+maxTimeBuffer < cursorTime {
-			numOfBlocks = (cursorTime - time) / params.BeaconConfig().SecondsPerETH1Block
+			numOfBlocks = (cursorTime - time) / params.BeaconConfig().SecondsPerExecutionBlock
 			// In the event we have an infeasible number of blocks
 			// we exit early.
 			if numOfBlocks >= cursorNum.Uint64() {
@@ -156,14 +156,14 @@ func (s *Service) BlockByTimestamp(ctx context.Context, time uint64) (*types.Hea
 		return s.retrieveHeaderInfo(ctx, cursorNum.Uint64())
 	}
 	if cursorTime > time {
-		return s.findMaxTargetEth1Block(ctx, big.NewInt(0).SetUint64(estimatedBlk), time)
+		return s.findMaxTargetExecutionBlock(ctx, big.NewInt(0).SetUint64(estimatedBlk), time)
 	}
-	return s.findMinTargetEth1Block(ctx, big.NewInt(0).SetUint64(estimatedBlk), time)
+	return s.findMinTargetExecutionBlock(ctx, big.NewInt(0).SetUint64(estimatedBlk), time)
 }
 
-// Performs a search to find a target eth1 block which is earlier than or equal to the
+// Performs a search to find a target execution block which is earlier than or equal to the
 // target time. This method is used when head.time > targetTime
-func (s *Service) findMaxTargetEth1Block(ctx context.Context, upperBoundBlk *big.Int, targetTime uint64) (*types.HeaderInfo, error) {
+func (s *Service) findMaxTargetExecutionBlock(ctx context.Context, upperBoundBlk *big.Int, targetTime uint64) (*types.HeaderInfo, error) {
 	for bn := upperBoundBlk; ; bn = big.NewInt(0).Sub(bn, big.NewInt(1)) {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
@@ -178,9 +178,9 @@ func (s *Service) findMaxTargetEth1Block(ctx context.Context, upperBoundBlk *big
 	}
 }
 
-// Performs a search to find a target eth1 block which is just earlier than or equal to the
+// Performs a search to find a target execution block which is just earlier than or equal to the
 // target time. This method is used when head.time < targetTime
-func (s *Service) findMinTargetEth1Block(ctx context.Context, lowerBoundBlk *big.Int, targetTime uint64) (*types.HeaderInfo, error) {
+func (s *Service) findMinTargetExecutionBlock(ctx context.Context, lowerBoundBlk *big.Int, targetTime uint64) (*types.HeaderInfo, error) {
 	for bn := lowerBoundBlk; ; bn = big.NewInt(0).Add(bn, big.NewInt(1)) {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()

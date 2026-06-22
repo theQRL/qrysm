@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/qrysm/beacon-chain/db/filters"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
@@ -14,7 +14,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -26,9 +26,9 @@ var blockTests = []struct {
 	newBlock func(primitives.Slot, []byte) (interfaces.ReadOnlySignedBeaconBlock, error)
 }{
 	{
-		name: "capella",
+		name: "zond",
 		newBlock: func(slot primitives.Slot, root []byte) (interfaces.ReadOnlySignedBeaconBlock, error) {
-			b := util.NewBeaconBlockCapella()
+			b := util.NewBeaconBlockZond()
 			b.Block.Slot = slot
 			if root != nil {
 				b.Block.ParentRoot = root
@@ -37,9 +37,9 @@ var blockTests = []struct {
 		},
 	},
 	{
-		name: "capella blind",
+		name: "zond blind",
 		newBlock: func(slot primitives.Slot, root []byte) (interfaces.ReadOnlySignedBeaconBlock, error) {
-			b := util.NewBlindedBeaconBlockCapella()
+			b := util.NewBlindedBeaconBlockZond()
 			b.Block.Slot = slot
 			if root != nil {
 				b.Block.ParentRoot = root
@@ -85,7 +85,7 @@ func TestStore_SaveBlock_NoDuplicates(t *testing.T) {
 
 			// Even with a full cache, saving new blocks should not cause
 			// duplicated blocks in the DB.
-			for i := 0; i < 100; i++ {
+			for range 100 {
 				require.NoError(t, db.SaveBlock(ctx, blk))
 			}
 
@@ -120,7 +120,7 @@ func TestStore_BlocksCRUD(t *testing.T) {
 			retrievedBlock, err = db.Block(ctx, blockRoot)
 			require.NoError(t, err)
 			wanted := retrievedBlock
-			if _, err := retrievedBlock.PbCapellaBlock(); err == nil {
+			if _, err := retrievedBlock.PbZondBlock(); err == nil {
 				wanted, err = retrievedBlock.ToBlinded()
 				require.NoError(t, err)
 			}
@@ -140,7 +140,7 @@ func TestStore_BlocksHandleZeroCase(t *testing.T) {
 			ctx := context.Background()
 			numBlocks := 10
 			totalBlocks := make([]interfaces.ReadOnlySignedBeaconBlock, numBlocks)
-			for i := 0; i < len(totalBlocks); i++ {
+			for i := range totalBlocks {
 				b, err := tt.newBlock(primitives.Slot(i), bytesutil.PadTo([]byte("parent"), 32))
 				require.NoError(t, err)
 				totalBlocks[i] = b
@@ -164,7 +164,7 @@ func TestStore_BlocksHandleInvalidEndSlot(t *testing.T) {
 			numBlocks := 10
 			totalBlocks := make([]interfaces.ReadOnlySignedBeaconBlock, numBlocks)
 			// Save blocks from slot 1 onwards.
-			for i := 0; i < len(totalBlocks); i++ {
+			for i := range totalBlocks {
 				b, err := tt.newBlock(primitives.Slot(i+1), bytesutil.PadTo([]byte("parent"), 32))
 				require.NoError(t, err)
 				totalBlocks[i] = b
@@ -190,13 +190,13 @@ func TestStore_DeleteBlock(t *testing.T) {
 	ctx := context.Background()
 
 	require.NoError(t, db.SaveGenesisBlockRoot(ctx, genesisBlockRoot))
-	blks := makeBlocksCapella(t, 0, slotsPerEpoch*4, genesisBlockRoot)
+	blks := makeBlocksZond(t, 0, slotsPerEpoch*4, genesisBlockRoot)
 	require.NoError(t, db.SaveBlocks(ctx, blks))
-	ss := make([]*zondpb.StateSummary, len(blks))
+	ss := make([]*qrysmpb.StateSummary, len(blks))
 	for i, blk := range blks {
 		r, err := blk.Block().HashTreeRoot()
 		require.NoError(t, err)
-		ss[i] = &zondpb.StateSummary{
+		ss[i] = &qrysmpb.StateSummary{
 			Slot: blk.Block().Slot(),
 			Root: r[:],
 		}
@@ -205,11 +205,11 @@ func TestStore_DeleteBlock(t *testing.T) {
 
 	root, err := blks[slotsPerEpoch].Block().HashTreeRoot()
 	require.NoError(t, err)
-	cp := &zondpb.Checkpoint{
+	cp := &qrysmpb.Checkpoint{
 		Epoch: 1,
 		Root:  root[:],
 	}
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	require.NoError(t, db.SaveState(ctx, st, root))
 	require.NoError(t, db.SaveFinalizedCheckpoint(ctx, cp))
@@ -235,14 +235,14 @@ func TestStore_DeleteBlock(t *testing.T) {
 func TestStore_DeleteJustifiedBlock(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
-	b := util.NewBeaconBlockCapella()
+	b := util.NewBeaconBlockZond()
 	b.Block.Slot = 1
 	root, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
-	cp := &zondpb.Checkpoint{
+	cp := &qrysmpb.Checkpoint{
 		Root: root[:],
 	}
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	blk, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
@@ -255,13 +255,13 @@ func TestStore_DeleteJustifiedBlock(t *testing.T) {
 func TestStore_DeleteFinalizedBlock(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
-	b := util.NewBeaconBlockCapella()
+	b := util.NewBeaconBlockZond()
 	root, err := b.Block.HashTreeRoot()
 	require.NoError(t, err)
-	cp := &zondpb.Checkpoint{
+	cp := &qrysmpb.Checkpoint{
 		Root: root[:],
 	}
-	st, err := util.NewBeaconStateCapella()
+	st, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
 	blk, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
@@ -274,7 +274,7 @@ func TestStore_DeleteFinalizedBlock(t *testing.T) {
 func TestStore_GenesisBlock(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
-	genesisBlock := util.NewBeaconBlockCapella()
+	genesisBlock := util.NewBeaconBlockZond()
 	genesisBlock.Block.ParentRoot = bytesutil.PadTo([]byte{1, 2, 3}, 32)
 	blockRoot, err := genesisBlock.Block.HashTreeRoot()
 	require.NoError(t, err)
@@ -312,7 +312,7 @@ func TestStore_BlocksCRUD_NoCache(t *testing.T) {
 			require.NoError(t, err)
 
 			wanted := blk
-			if _, err := blk.PbCapellaBlock(); err == nil {
+			if _, err := blk.PbZondBlock(); err == nil {
 				wanted, err = blk.ToBlinded()
 				require.NoError(t, err)
 			}
@@ -444,7 +444,7 @@ func TestStore_Blocks_Retrieve_SlotRange(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db := setupDB(t)
 			totalBlocks := make([]interfaces.ReadOnlySignedBeaconBlock, 500)
-			for i := 0; i < 500; i++ {
+			for i := range 500 {
 				b, err := tt.newBlock(primitives.Slot(i), bytesutil.PadTo([]byte("parent"), 32))
 				require.NoError(t, err)
 				totalBlocks[i] = b
@@ -464,7 +464,7 @@ func TestStore_Blocks_Retrieve_Epoch(t *testing.T) {
 			db := setupDB(t)
 			slots := params.BeaconConfig().SlotsPerEpoch.Mul(7)
 			totalBlocks := make([]interfaces.ReadOnlySignedBeaconBlock, slots)
-			for i := primitives.Slot(0); i < slots; i++ {
+			for i := range slots {
 				b, err := tt.newBlock(i, bytesutil.PadTo([]byte("parent"), 32))
 				require.NoError(t, err)
 				totalBlocks[i] = b
@@ -488,7 +488,7 @@ func TestStore_Blocks_Retrieve_SlotRangeWithStep(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db := setupDB(t)
 			totalBlocks := make([]interfaces.ReadOnlySignedBeaconBlock, 500)
-			for i := 0; i < 500; i++ {
+			for i := range 500 {
 				b, err := tt.newBlock(primitives.Slot(i), bytesutil.PadTo([]byte("parent"), 32))
 				require.NoError(t, err)
 				totalBlocks[i] = b
@@ -531,7 +531,7 @@ func TestStore_SaveBlock_CanGetHighestAt(t *testing.T) {
 			b, err := db.Block(ctx, root)
 			require.NoError(t, err)
 			wanted := block1
-			if _, err := block1.PbCapellaBlock(); err == nil {
+			if _, err := block1.PbZondBlock(); err == nil {
 				wanted, err = wanted.ToBlinded()
 				require.NoError(t, err)
 			}
@@ -549,7 +549,7 @@ func TestStore_SaveBlock_CanGetHighestAt(t *testing.T) {
 			b, err = db.Block(ctx, root)
 			require.NoError(t, err)
 			wanted2 := block2
-			if _, err := block2.PbCapellaBlock(); err == nil {
+			if _, err := block2.PbZondBlock(); err == nil {
 				wanted2, err = block2.ToBlinded()
 				require.NoError(t, err)
 			}
@@ -567,7 +567,7 @@ func TestStore_SaveBlock_CanGetHighestAt(t *testing.T) {
 			b, err = db.Block(ctx, root)
 			require.NoError(t, err)
 			wanted = block3
-			if _, err := block3.PbCapellaBlock(); err == nil {
+			if _, err := block3.PbZondBlock(); err == nil {
 				wanted, err = wanted.ToBlinded()
 				require.NoError(t, err)
 			}
@@ -603,7 +603,7 @@ func TestStore_GenesisBlock_CanGetHighestAt(t *testing.T) {
 			b, err := db.Block(ctx, root)
 			require.NoError(t, err)
 			wanted := block1
-			if _, err := block1.PbCapellaBlock(); err == nil {
+			if _, err := block1.PbZondBlock(); err == nil {
 				wanted, err = block1.ToBlinded()
 				require.NoError(t, err)
 			}
@@ -620,7 +620,7 @@ func TestStore_GenesisBlock_CanGetHighestAt(t *testing.T) {
 			b, err = db.Block(ctx, root)
 			require.NoError(t, err)
 			wanted = genesisBlock
-			if _, err := genesisBlock.PbCapellaBlock(); err == nil {
+			if _, err := genesisBlock.PbZondBlock(); err == nil {
 				wanted, err = genesisBlock.ToBlinded()
 				require.NoError(t, err)
 			}
@@ -637,7 +637,7 @@ func TestStore_GenesisBlock_CanGetHighestAt(t *testing.T) {
 			b, err = db.Block(ctx, root)
 			require.NoError(t, err)
 			wanted = genesisBlock
-			if _, err := genesisBlock.PbCapellaBlock(); err == nil {
+			if _, err := genesisBlock.PbZondBlock(); err == nil {
 				wanted, err = genesisBlock.ToBlinded()
 				require.NoError(t, err)
 			}
@@ -657,7 +657,7 @@ func TestStore_SaveBlocks_HasCachedBlocks(t *testing.T) {
 			ctx := context.Background()
 
 			b := make([]interfaces.ReadOnlySignedBeaconBlock, 500)
-			for i := 0; i < 500; i++ {
+			for i := range 500 {
 				blk, err := tt.newBlock(primitives.Slot(i), bytesutil.PadTo([]byte("parent"), 32))
 				require.NoError(t, err)
 				b[i] = blk
@@ -681,7 +681,7 @@ func TestStore_SaveBlocks_HasRootsMatched(t *testing.T) {
 			ctx := context.Background()
 
 			b := make([]interfaces.ReadOnlySignedBeaconBlock, 500)
-			for i := 0; i < 500; i++ {
+			for i := range 500 {
 				blk, err := tt.newBlock(primitives.Slot(i), bytesutil.PadTo([]byte("parent"), 32))
 				require.NoError(t, err)
 				b[i] = blk
@@ -733,7 +733,7 @@ func TestStore_BlocksBySlot_BlockRootsBySlot(t *testing.T) {
 			require.NoError(t, err)
 
 			wanted := b1
-			if _, err := b1.PbCapellaBlock(); err == nil {
+			if _, err := b1.PbZondBlock(); err == nil {
 				wanted, err = b1.ToBlinded()
 				require.NoError(t, err)
 			}
@@ -749,7 +749,7 @@ func TestStore_BlocksBySlot_BlockRootsBySlot(t *testing.T) {
 				t.Fatalf("Expected 2 blocks, received %d blocks", len(retrievedBlocks))
 			}
 			wanted = b2
-			if _, err := b2.PbCapellaBlock(); err == nil {
+			if _, err := b2.PbZondBlock(); err == nil {
 				wanted, err = b2.ToBlinded()
 				require.NoError(t, err)
 			}
@@ -759,7 +759,7 @@ func TestStore_BlocksBySlot_BlockRootsBySlot(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, true, proto.Equal(wantedPb, retrieved0Pb), "Wanted: %v, received: %v", retrievedBlocks[0], wanted)
 			wanted = b3
-			if _, err := b3.PbCapellaBlock(); err == nil {
+			if _, err := b3.PbZondBlock(); err == nil {
 				wanted, err = b3.ToBlinded()
 				require.NoError(t, err)
 			}
@@ -809,12 +809,12 @@ func TestStore_FeeRecipientByValidatorID(t *testing.T) {
 	want := errors.Wrap(ErrNotFoundFeeRecipient, "validator id 3")
 	require.Equal(t, want.Error(), err.Error())
 
-	regs := []*zondpb.ValidatorRegistrationV1{
+	regs := []*qrysmpb.ValidatorRegistrationV1{
 		{
-			FeeRecipient: bytesutil.PadTo([]byte("a"), 20),
+			FeeRecipient: bytesutil.PadTo([]byte("a"), 64),
 			GasLimit:     1,
 			Timestamp:    2,
-			Pubkey:       bytesutil.PadTo([]byte("b"), field_params.DilithiumPubkeyLength),
+			Pubkey:       bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
 		}}
 	require.NoError(t, db.SaveRegistrationsByValidatorIDs(ctx, []primitives.ValidatorIndex{3}, regs))
 	f, err = db.FeeRecipientByValidatorID(ctx, 3)
@@ -830,54 +830,54 @@ func TestStore_RegistrationsByValidatorID(t *testing.T) {
 	db := setupDB(t)
 	ctx := context.Background()
 	ids := []primitives.ValidatorIndex{0, 0, 0}
-	regs := []*zondpb.ValidatorRegistrationV1{{}, {}, {}, {}}
+	regs := []*qrysmpb.ValidatorRegistrationV1{{}, {}, {}, {}}
 	require.ErrorContains(t, "ids and registrations must be the same length", db.SaveRegistrationsByValidatorIDs(ctx, ids, regs))
 	timestamp := time.Now().Unix()
 	ids = []primitives.ValidatorIndex{0, 1, 2}
-	regs = []*zondpb.ValidatorRegistrationV1{
+	regs = []*qrysmpb.ValidatorRegistrationV1{
 		{
-			FeeRecipient: bytesutil.PadTo([]byte("a"), 20),
+			FeeRecipient: bytesutil.PadTo([]byte("a"), 64),
 			GasLimit:     1,
 			Timestamp:    uint64(timestamp),
-			Pubkey:       bytesutil.PadTo([]byte("b"), field_params.DilithiumPubkeyLength),
+			Pubkey:       bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
 		},
 		{
-			FeeRecipient: bytesutil.PadTo([]byte("c"), 20),
+			FeeRecipient: bytesutil.PadTo([]byte("c"), 64),
 			GasLimit:     3,
 			Timestamp:    uint64(timestamp),
-			Pubkey:       bytesutil.PadTo([]byte("d"), field_params.DilithiumPubkeyLength),
+			Pubkey:       bytesutil.PadTo([]byte("d"), field_params.MLDSA87PubkeyLength),
 		},
 		{
-			FeeRecipient: bytesutil.PadTo([]byte("e"), 20),
+			FeeRecipient: bytesutil.PadTo([]byte("e"), 64),
 			GasLimit:     5,
 			Timestamp:    uint64(timestamp),
-			Pubkey:       bytesutil.PadTo([]byte("f"), field_params.DilithiumPubkeyLength),
+			Pubkey:       bytesutil.PadTo([]byte("f"), field_params.MLDSA87PubkeyLength),
 		},
 	}
 	require.NoError(t, db.SaveRegistrationsByValidatorIDs(ctx, ids, regs))
 	f, err := db.RegistrationByValidatorID(ctx, 0)
 	require.NoError(t, err)
-	require.DeepEqual(t, &zondpb.ValidatorRegistrationV1{
-		FeeRecipient: bytesutil.PadTo([]byte("a"), 20),
+	require.DeepEqual(t, &qrysmpb.ValidatorRegistrationV1{
+		FeeRecipient: bytesutil.PadTo([]byte("a"), 64),
 		GasLimit:     1,
 		Timestamp:    uint64(timestamp),
-		Pubkey:       bytesutil.PadTo([]byte("b"), field_params.DilithiumPubkeyLength),
+		Pubkey:       bytesutil.PadTo([]byte("b"), field_params.MLDSA87PubkeyLength),
 	}, f)
 	f, err = db.RegistrationByValidatorID(ctx, 1)
 	require.NoError(t, err)
-	require.DeepEqual(t, &zondpb.ValidatorRegistrationV1{
-		FeeRecipient: bytesutil.PadTo([]byte("c"), 20),
+	require.DeepEqual(t, &qrysmpb.ValidatorRegistrationV1{
+		FeeRecipient: bytesutil.PadTo([]byte("c"), 64),
 		GasLimit:     3,
 		Timestamp:    uint64(timestamp),
-		Pubkey:       bytesutil.PadTo([]byte("d"), field_params.DilithiumPubkeyLength),
+		Pubkey:       bytesutil.PadTo([]byte("d"), field_params.MLDSA87PubkeyLength),
 	}, f)
 	f, err = db.RegistrationByValidatorID(ctx, 2)
 	require.NoError(t, err)
-	require.DeepEqual(t, &zondpb.ValidatorRegistrationV1{
-		FeeRecipient: bytesutil.PadTo([]byte("e"), 20),
+	require.DeepEqual(t, &qrysmpb.ValidatorRegistrationV1{
+		FeeRecipient: bytesutil.PadTo([]byte("e"), 64),
 		GasLimit:     5,
 		Timestamp:    uint64(timestamp),
-		Pubkey:       bytesutil.PadTo([]byte("f"), field_params.DilithiumPubkeyLength),
+		Pubkey:       bytesutil.PadTo([]byte("f"), field_params.MLDSA87PubkeyLength),
 	}, f)
 	_, err = db.RegistrationByValidatorID(ctx, 3)
 	want := errors.Wrap(ErrNotFoundFeeRecipient, "validator id 3")

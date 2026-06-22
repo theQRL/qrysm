@@ -1,18 +1,18 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "multi-value-slice",
     srcs = ["multi_value_slice.go"],
     importpath = "github.com/theQRL/qrysm/container/multi-value-slice",
     visibility = ["//visibility:public"],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "multi-value-slice_test",
     srcs = ["multi_value_slice_test.go"],
-    embed = [":go_default_library"],
+    embed = [":multi-value-slice"],
     deps = [
-        "//testing/assert:go_default_library",
-        "//testing/require:go_default_library",
+        "//testing/assert",
+        "//testing/require",
     ],
 )

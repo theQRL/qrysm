@@ -1,4 +1,4 @@
-// Package peers provides information about peers at the Zond consensus protocol level.
+// Package peers provides information about peers at the QRL consensus protocol level.
 //
 // "Protocol level" is the level above the network level, so this layer never sees or interacts with
 // (for example) hosts that are uncontactable due to being down, firewalled, etc. Instead, this works
@@ -25,6 +25,7 @@ package peers
 import (
 	"context"
 	"math"
+	"slices"
 	"sort"
 	"time"
 
@@ -33,7 +34,7 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr/net"
 	"github.com/theQRL/go-bitfield"
-	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/peerdata"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
 	"github.com/theQRL/qrysm/config/features"
@@ -119,9 +120,19 @@ func (p *Status) MaxPeerLimit() int {
 	return p.store.Config().MaxPeers
 }
 
+// UpdateENR updates the QNR record stored for a peer if one is already tracked.
+func (p *Status) UpdateENR(record *qnr.Record, pid peer.ID) {
+	p.store.Lock()
+	defer p.store.Unlock()
+
+	if peerData, ok := p.store.PeerData(pid); ok {
+		peerData.Qnr = record
+	}
+}
+
 // Add adds a peer.
 // If a peer already exists with this ID its address and direction are updated with the supplied data.
-func (p *Status) Add(record *enr.Record, pid peer.ID, address ma.Multiaddr, direction network.Direction) {
+func (p *Status) Add(record *qnr.Record, pid peer.ID, address ma.Multiaddr, direction network.Direction) {
 	p.store.Lock()
 	defer p.store.Unlock()
 
@@ -131,7 +142,7 @@ func (p *Status) Add(record *enr.Record, pid peer.ID, address ma.Multiaddr, dire
 		peerData.Address = address
 		peerData.Direction = direction
 		if record != nil {
-			peerData.Enr = record
+			peerData.Qnr = record
 		}
 		if !sameIP(prevAddress, address) {
 			p.addIpToTracker(pid)
@@ -145,7 +156,7 @@ func (p *Status) Add(record *enr.Record, pid peer.ID, address ma.Multiaddr, dire
 		ConnState: PeerDisconnected,
 	}
 	if record != nil {
-		peerData.Enr = record
+		peerData.Qnr = record
 	}
 	p.store.SetPeerData(pid, peerData)
 	p.addIpToTracker(pid)
@@ -175,13 +186,13 @@ func (p *Status) Direction(pid peer.ID) (network.Direction, error) {
 	return network.DirUnknown, peerdata.ErrPeerUnknown
 }
 
-// ENR returns the enr for the corresponding peer id.
-func (p *Status) ENR(pid peer.ID) (*enr.Record, error) {
+// QNR returns the qnr for the corresponding peer id.
+func (p *Status) QNR(pid peer.ID) (*qnr.Record, error) {
 	p.store.RLock()
 	defer p.store.RUnlock()
 
 	if peerData, ok := p.store.PeerData(pid); ok {
-		return peerData.Enr, nil
+		return peerData.Qnr, nil
 	}
 	return nil, peerdata.ErrPeerUnknown
 }
@@ -261,7 +272,7 @@ func (p *Status) CommitteeIndices(pid peer.ID) ([]uint64, error) {
 	defer p.store.RUnlock()
 
 	if peerData, ok := p.store.PeerData(pid); ok {
-		if peerData.Enr == nil || peerData.MetaData == nil || peerData.MetaData.IsNil() {
+		if peerData.Qnr == nil || peerData.MetaData == nil || peerData.MetaData.IsNil() {
 			return []uint64{}, nil
 		}
 		return indicesFromBitfield(peerData.MetaData.AttnetsBitfield()), nil
@@ -281,11 +292,9 @@ func (p *Status) SubscribedToSubnet(index uint64) []peer.ID {
 		connectedStatus := peerData.ConnState == PeerConnecting || peerData.ConnState == PeerConnected
 		if connectedStatus && peerData.MetaData != nil && !peerData.MetaData.IsNil() && peerData.MetaData.AttnetsBitfield() != nil {
 			indices := indicesFromBitfield(peerData.MetaData.AttnetsBitfield())
-			for _, idx := range indices {
-				if idx == index {
-					peers = append(peers, pid)
-					break
-				}
+			if slices.Contains(indices, index) {
+				peers = append(peers, pid)
+
 			}
 		}
 	}
@@ -1034,7 +1043,7 @@ func sameIP(firstAddr, secondAddr ma.Multiaddr) bool {
 
 func indicesFromBitfield(bitV bitfield.Bitvector64) []uint64 {
 	committeeIdxs := make([]uint64, 0, bitV.Count())
-	for i := uint64(0); i < 64; i++ {
+	for i := range uint64(64) {
 		if bitV.BitAt(i) {
 			committeeIdxs = append(committeeIdxs, i)
 		}

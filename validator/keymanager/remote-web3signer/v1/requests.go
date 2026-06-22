@@ -273,7 +273,7 @@ func GetSyncCommitteeContributionAndProofSignRequest(request *validatorpb.SignRe
 }
 
 // GetBlockV2BlindedSignRequest maps the request for signing types
-// Supports Bellatrix and Capella
+// Supports Bellatrix and Zond
 func GetBlockV2BlindedSignRequest(request *validatorpb.SignRequest, genesisValidatorsRoot []byte) (*BlockV2BlindedSignRequest, error) {
 	if request == nil {
 		return nil, errors.New("nil sign request provided")
@@ -310,30 +310,30 @@ func GetBlockV2BlindedSignRequest(request *validatorpb.SignRequest, genesisValid
 			return nil, err
 		}
 		b = beaconBlock
-	case *validatorpb.SignRequest_BlockCapella:
-		version = "CAPELLA"
-		blockCapella, ok := request.Object.(*validatorpb.SignRequest_BlockCapella)
+	case *validatorpb.SignRequest_BlockZond:
+		version = "ZOND"
+		blockZond, ok := request.Object.(*validatorpb.SignRequest_BlockZond)
 		if !ok {
-			return nil, errors.New("failed to cast request object to capella block")
+			return nil, errors.New("failed to cast request object to zond block")
 		}
-		if blockCapella == nil {
-			return nil, errors.New("invalid sign request: capella block is nil")
+		if blockZond == nil {
+			return nil, errors.New("invalid sign request: zond block is nil")
 		}
-		beaconBlock, err := blocks.NewBeaconBlock(blockCapella.BlockCapella)
+		beaconBlock, err := blocks.NewBeaconBlock(blockZond.BlockZond)
 		if err != nil {
 			return nil, err
 		}
 		b = beaconBlock
-	case *validatorpb.SignRequest_BlindedBlockCapella:
-		version = "CAPELLA"
-		blindedBlockCapella, ok := request.Object.(*validatorpb.SignRequest_BlindedBlockCapella)
+	case *validatorpb.SignRequest_BlindedBlockZond:
+		version = "ZOND"
+		blindedBlockZond, ok := request.Object.(*validatorpb.SignRequest_BlindedBlockZond)
 		if !ok {
-			return nil, errors.New("failed to cast request object to blinded capella block")
+			return nil, errors.New("failed to cast request object to blinded zond block")
 		}
-		if blindedBlockCapella == nil {
-			return nil, errors.New("invalid sign request: blinded capella block is nil")
+		if blindedBlockZond == nil {
+			return nil, errors.New("invalid sign request: blinded zond block is nil")
 		}
-		beaconBlock, err := blocks.NewBeaconBlock(blindedBlockCapella.BlindedBlockCapella)
+		beaconBlock, err := blocks.NewBeaconBlock(blindedBlockZond.BlindedBlockZond)
 		if err != nil {
 			return nil, err
 		}

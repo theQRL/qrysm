@@ -4,7 +4,7 @@ package bytesutil
 import (
 	"fmt"
 
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
 // ToBytes48Array is a convenience method for converting an array of

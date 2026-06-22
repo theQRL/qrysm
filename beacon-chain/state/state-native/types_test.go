@@ -12,7 +12,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	enginev1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/interop"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
@@ -23,16 +23,16 @@ func TestBeaconState_ProtoBeaconStateCompatibility(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	ctx := context.Background()
 	genesis := setupGenesisState(t, 64)
-	customState, err := statenative.InitializeFromProtoCapella(genesis)
+	customState, err := statenative.InitializeFromProtoZond(genesis)
 	require.NoError(t, err)
-	cloned, ok := proto.Clone(genesis).(*zondpb.BeaconStateCapella)
-	assert.Equal(t, true, ok, "Object is not of type *zondpb.BeaconState")
+	cloned, ok := proto.Clone(genesis).(*qrysmpb.BeaconStateZond)
+	assert.Equal(t, true, ok, "Object is not of type *qrysmpb.BeaconState")
 	custom := customState.ToProto()
 	assert.DeepSSZEqual(t, cloned, custom)
 
 	r1, err := customState.HashTreeRoot(ctx)
 	require.NoError(t, err)
-	beaconState, err := statenative.InitializeFromProtoCapella(genesis)
+	beaconState, err := statenative.InitializeFromProtoZond(genesis)
 	require.NoError(t, err)
 	r2, err := beaconState.HashTreeRoot(context.Background())
 	require.NoError(t, err)
@@ -45,22 +45,22 @@ func TestBeaconState_ProtoBeaconStateCompatibility(t *testing.T) {
 	r1, err = customState.HashTreeRoot(ctx)
 	require.NoError(t, err)
 	genesis.Balances = balances
-	beaconState, err = statenative.InitializeFromProtoCapella(genesis)
+	beaconState, err = statenative.InitializeFromProtoZond(genesis)
 	require.NoError(t, err)
 	r2, err = beaconState.HashTreeRoot(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, r1, r2, "Mismatched roots")
 }
 
-func setupGenesisState(tb testing.TB, count uint64) *zondpb.BeaconStateCapella {
-	genesisState, _, err := interop.GenerateGenesisStateCapella(context.Background(), 0, count, &enginev1.ExecutionPayloadCapella{}, &zondpb.Eth1Data{})
+func setupGenesisState(tb testing.TB, count uint64) *qrysmpb.BeaconStateZond {
+	genesisState, _, err := interop.GenerateGenesisStateZond(context.Background(), 0, count, &enginev1.ExecutionPayloadZond{}, &qrysmpb.ExecutionData{})
 	require.NoError(tb, err, "Could not generate genesis beacon state")
 	for i := uint64(1); i < count; i++ {
-		var someRoot [32]byte
-		var someKey [field_params.DilithiumPubkeyLength]byte
+		var someRoot [field_params.WithdrawalCredentialsLength]byte
+		var someKey [field_params.MLDSA87PubkeyLength]byte
 		copy(someRoot[:], strconv.Itoa(int(i)))
 		copy(someKey[:], strconv.Itoa(int(i)))
-		genesisState.Validators = append(genesisState.Validators, &zondpb.Validator{
+		genesisState.Validators = append(genesisState.Validators, &qrysmpb.Validator{
 			PublicKey:                  someKey[:],
 			WithdrawalCredentials:      someRoot[:],
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,
@@ -71,9 +71,9 @@ func setupGenesisState(tb testing.TB, count uint64) *zondpb.BeaconStateCapella {
 			WithdrawableEpoch:          1,
 		})
 		genesisState.Balances = append(genesisState.Balances, params.BeaconConfig().MaxEffectiveBalance)
-		genesisState.LatestExecutionPayloadHeader = &enginev1.ExecutionPayloadHeaderCapella{
+		genesisState.LatestExecutionPayloadHeader = &enginev1.ExecutionPayloadHeaderZond{
 			ParentHash:       make([]byte, 32),
-			FeeRecipient:     make([]byte, 20),
+			FeeRecipient:     make([]byte, field_params.FeeRecipientLength),
 			StateRoot:        make([]byte, 32),
 			ReceiptsRoot:     make([]byte, 32),
 			LogsBloom:        make([]byte, 256),
@@ -88,12 +88,11 @@ func setupGenesisState(tb testing.TB, count uint64) *zondpb.BeaconStateCapella {
 }
 
 func BenchmarkCloneValidators_Proto(b *testing.B) {
-	b.StopTimer()
-	validators := make([]*zondpb.Validator, 16384)
-	somePubKey := [field_params.DilithiumPubkeyLength]byte{1, 2, 3}
-	someRoot := [32]byte{3, 4, 5}
-	for i := 0; i < len(validators); i++ {
-		validators[i] = &zondpb.Validator{
+	validators := make([]*qrysmpb.Validator, 16384)
+	somePubKey := [field_params.MLDSA87PubkeyLength]byte{1, 2, 3}
+	someRoot := [field_params.WithdrawalCredentialsLength]byte{3, 4, 5}
+	for i := range validators {
+		validators[i] = &qrysmpb.Validator{
 			PublicKey:                  somePubKey[:],
 			WithdrawalCredentials:      someRoot[:],
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,
@@ -104,19 +103,17 @@ func BenchmarkCloneValidators_Proto(b *testing.B) {
 			WithdrawableEpoch:          5,
 		}
 	}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		cloneValidatorsWithProto(validators)
 	}
 }
 
 func BenchmarkCloneValidators_Manual(b *testing.B) {
-	b.StopTimer()
-	validators := make([]*zondpb.Validator, 16384)
-	somePubKey := [field_params.DilithiumPubkeyLength]byte{1, 2, 3}
-	someRoot := [32]byte{3, 4, 5}
-	for i := 0; i < len(validators); i++ {
-		validators[i] = &zondpb.Validator{
+	validators := make([]*qrysmpb.Validator, 16384)
+	somePubKey := [field_params.MLDSA87PubkeyLength]byte{1, 2, 3}
+	someRoot := [field_params.WithdrawalCredentialsLength]byte{3, 4, 5}
+	for i := range validators {
+		validators[i] = &qrysmpb.Validator{
 			PublicKey:                  somePubKey[:],
 			WithdrawalCredentials:      someRoot[:],
 			EffectiveBalance:           params.BeaconConfig().MaxEffectiveBalance,
@@ -127,54 +124,49 @@ func BenchmarkCloneValidators_Manual(b *testing.B) {
 			WithdrawableEpoch:          5,
 		}
 	}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		cloneValidatorsManually(validators)
 	}
 }
 
 func BenchmarkStateClone_Proto(b *testing.B) {
-	b.StopTimer()
 	params.SetupTestConfigCleanup(b)
 	params.OverrideBeaconConfig(params.MinimalSpecConfig())
 	genesis := setupGenesisState(b, 64)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		_, ok := proto.Clone(genesis).(*zondpb.BeaconStateCapella)
-		assert.Equal(b, true, ok, "Entity is not of type *zondpb.BeaconState")
+	for b.Loop() {
+		_, ok := proto.Clone(genesis).(*qrysmpb.BeaconStateZond)
+		assert.Equal(b, true, ok, "Entity is not of type *qrysmpb.BeaconState")
 	}
 }
 
 func BenchmarkStateClone_Manual(b *testing.B) {
-	b.StopTimer()
 	params.SetupTestConfigCleanup(b)
 	params.OverrideBeaconConfig(params.MinimalSpecConfig())
 	genesis := setupGenesisState(b, 64)
-	st, err := statenative.InitializeFromProtoCapella(genesis)
+	st, err := statenative.InitializeFromProtoZond(genesis)
 	require.NoError(b, err)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = st.ToProto()
 	}
 }
 
-func cloneValidatorsWithProto(vals []*zondpb.Validator) []*zondpb.Validator {
+func cloneValidatorsWithProto(vals []*qrysmpb.Validator) []*qrysmpb.Validator {
 	var ok bool
-	res := make([]*zondpb.Validator, len(vals))
-	for i := 0; i < len(res); i++ {
-		res[i], ok = proto.Clone(vals[i]).(*zondpb.Validator)
+	res := make([]*qrysmpb.Validator, len(vals))
+	for i := range res {
+		res[i], ok = proto.Clone(vals[i]).(*qrysmpb.Validator)
 		if !ok {
-			log.Debug("Entity is not of type *zondpb.Validator")
+			log.Debug("Entity is not of type *qrysmpb.Validator")
 		}
 	}
 	return res
 }
 
-func cloneValidatorsManually(vals []*zondpb.Validator) []*zondpb.Validator {
-	res := make([]*zondpb.Validator, len(vals))
-	for i := 0; i < len(res); i++ {
+func cloneValidatorsManually(vals []*qrysmpb.Validator) []*qrysmpb.Validator {
+	res := make([]*qrysmpb.Validator, len(vals))
+	for i := range res {
 		val := vals[i]
-		res[i] = &zondpb.Validator{
+		res[i] = &qrysmpb.Validator{
 			PublicKey:                  val.PublicKey,
 			WithdrawalCredentials:      val.WithdrawalCredentials,
 			EffectiveBalance:           val.EffectiveBalance,
@@ -192,7 +184,7 @@ func TestBeaconState_ImmutabilityWithSharedResources(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	params.OverrideBeaconConfig(params.MinimalSpecConfig())
 	genesis := setupGenesisState(t, 64)
-	a, err := statenative.InitializeFromProtoCapella(genesis)
+	a, err := statenative.InitializeFromProtoZond(genesis)
 	require.NoError(t, err)
 	b := a.Copy()
 
@@ -205,7 +197,7 @@ func TestBeaconState_ImmutabilityWithSharedResources(t *testing.T) {
 
 	// Validators
 	require.DeepEqual(t, a.Validators(), b.Validators(), "Test precondition failed, fields are not equal")
-	require.NoError(t, a.UpdateValidatorAtIndex(1, &zondpb.Validator{Slashed: true}))
+	require.NoError(t, a.UpdateValidatorAtIndex(1, &qrysmpb.Validator{Slashed: true}))
 	if reflect.DeepEqual(a.Validators(), b.Validators()) {
 		t.Error("Expect a.Validators() to be different from b.Validators()")
 	}
@@ -229,16 +221,16 @@ func TestForkManualCopy_OK(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
 	params.OverrideBeaconConfig(params.MinimalSpecConfig())
 	genesis := setupGenesisState(t, 64)
-	a, err := statenative.InitializeFromProtoCapella(genesis)
+	a, err := statenative.InitializeFromProtoZond(genesis)
 	require.NoError(t, err)
-	wantedFork := &zondpb.Fork{
+	wantedFork := &qrysmpb.Fork{
 		PreviousVersion: []byte{'a', 'b', 'c'},
 		CurrentVersion:  []byte{'d', 'e', 'f'},
 		Epoch:           0,
 	}
 	require.NoError(t, a.SetFork(wantedFork))
 
-	pbState, err := statenative.ProtobufBeaconStateCapella(a.ToProtoUnsafe())
+	pbState, err := statenative.ProtobufBeaconStateZond(a.ToProtoUnsafe())
 	require.NoError(t, err)
 	require.DeepEqual(t, pbState.Fork, wantedFork)
 }

@@ -7,18 +7,18 @@ import (
 	"testing"
 
 	mathutil "github.com/theQRL/qrysm/math"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestValidatorConstants(t *testing.T) {
-	v := &zondpb.Validator{}
+	v := &qrysmpb.Validator{}
 	refV := reflect.ValueOf(v).Elem()
 	numFields := refV.NumField()
 	numOfValFields := 0
 
-	for i := 0; i < numFields; i++ {
+	for i := range numFields {
 		if strings.Contains(refV.Type().Field(i).Name, "state") ||
 			strings.Contains(refV.Type().Field(i).Name, "sizeCache") ||
 			strings.Contains(refV.Type().Field(i).Name, "unknownFields") {
@@ -29,27 +29,27 @@ func TestValidatorConstants(t *testing.T) {
 	assert.Equal(t, validatorFieldRoots, numOfValFields)
 	assert.Equal(t, uint64(validatorFieldRoots), mathutil.PowerOf2(validatorTreeDepth))
 
-	_, err := ValidatorRegistryRoot([]*zondpb.Validator{v})
+	_, err := ValidatorRegistryRoot([]*qrysmpb.Validator{v})
 	assert.NoError(t, err)
 }
 
 func TestHashValidatorHelper(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	v := &zondpb.Validator{}
-	valList := make([]*zondpb.Validator, 10*validatorFieldRoots)
+	v := &qrysmpb.Validator{}
+	valList := make([]*qrysmpb.Validator, 10*validatorFieldRoots)
 	for i := range valList {
 		valList[i] = v
 	}
 	roots := make([][32]byte, len(valList))
 	hashValidatorHelper(valList, roots, 2, 2, &wg)
-	for i := 0; i < 4*validatorFieldRoots; i++ {
+	for i := range 4 * validatorFieldRoots {
 		require.Equal(t, [32]byte{}, roots[i])
 	}
 	emptyValRoots, err := ValidatorFieldRoots(v)
 	require.NoError(t, err)
 	for i := 4; i < 6; i++ {
-		for j := 0; j < validatorFieldRoots; j++ {
+		for j := range validatorFieldRoots {
 			require.Equal(t, emptyValRoots[j], roots[i*validatorFieldRoots+j])
 		}
 	}

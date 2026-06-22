@@ -5,13 +5,13 @@ import (
 	"log"
 	"os"
 
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/runtime/interop"
 	"github.com/theQRL/qrysm/tools/unencrypted-keys-gen/keygen"
 )
 
 var (
-	numKeys    = flag.Int("num-keys", 0, "Number of validator private/withdrawal keys to generate")
+	numKeys    = flag.Int("num-keys", 0, "Number of validator private keys to generate")
 	startIndex = flag.Uint64("start-index", 0, "Start index for the determinstic keygen algorithm")
 	random     = flag.Bool("random", false, "Randomly generate keys")
 	outputJSON = flag.String("output-json", "", "JSON file to write output to")
@@ -67,14 +67,13 @@ func generateRandomKeys(num int) (*keygen.UnencryptedKeysContainer, error) {
 		Keys: make([]*keygen.UnencryptedKeys, num),
 	}
 
-	for i := 0; i < num; i++ {
-		sk, err := dilithium.RandKey()
+	for i := range num {
+		sk, err := ml_dsa_87.RandKey()
 		if err != nil {
 			return nil, err
 		}
 		ctnr.Keys[i] = &keygen.UnencryptedKeys{
-			ValidatorKey:  sk.Marshal(),
-			WithdrawalKey: sk.Marshal(),
+			ValidatorKey: sk.Marshal(),
 		}
 	}
 
@@ -94,8 +93,7 @@ func generateUnencryptedKeys(startIndex uint64) *keygen.UnencryptedKeysContainer
 
 	for i, sk := range sks {
 		ctnr.Keys[i] = &keygen.UnencryptedKeys{
-			ValidatorKey:  sk.Marshal(),
-			WithdrawalKey: sk.Marshal(),
+			ValidatorKey: sk.Marshal(),
 		}
 	}
 	return ctnr

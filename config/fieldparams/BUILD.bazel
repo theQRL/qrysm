@@ -1,25 +1,29 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "fieldparams",
     srcs = select({
         "//config:mainnet": ["mainnet.go"],
         "//config:minimal": ["minimal.go"],
     }),
     importpath = "github.com/theQRL/qrysm/config/fieldparams",
     visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_theqrl_go_qrllib//crypto/ml_dsa_87",
+        "@com_github_theqrl_go_qrllib//wallet/common",
+    ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "fieldparams_test",
     srcs = [
         "common_test.go",
         "mainnet_test.go",
     ],
     deps = [
-        ":go_default_library",
-        "//config/params:go_default_library",
-        "//testing/require:go_default_library",
+        ":fieldparams",
+        "//config/params",
+        "//testing/require",
     ],
 )
 
@@ -29,11 +33,11 @@ go_test(
         "common_test.go",
         "minimal_test.go",
     ],
+    qrl_network = "minimal",
     tags = ["minimal"],
-    zond_network = "minimal",
     deps = [
-        ":go_default_library",
-        "//config/params:go_default_library",
-        "//testing/require:go_default_library",
+        ":fieldparams",
+        "//config/params",
+        "//testing/require",
     ],
 )

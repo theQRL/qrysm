@@ -13,7 +13,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/execution"
 	"github.com/theQRL/qrysm/beacon-chain/operations/attestations"
 	lruwrpr "github.com/theQRL/qrysm/cache/lru"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -21,11 +21,11 @@ import (
 )
 
 func TestService_beaconBlockSubscriber(t *testing.T) {
-	pooledAttestations := []*zondpb.Attestation{
+	pooledAttestations := []*qrysmpb.Attestation{
 		// Aggregated.
-		util.HydrateAttestation(&zondpb.Attestation{AggregationBits: bitfield.Bitlist{0b00011111}}),
+		util.HydrateAttestation(&qrysmpb.Attestation{AggregationBits: bitfield.Bitlist{0b00011111}}),
 		// Unaggregated.
-		util.HydrateAttestation(&zondpb.Attestation{AggregationBits: bitfield.Bitlist{0b00010001}}),
+		util.HydrateAttestation(&qrysmpb.Attestation{AggregationBits: bitfield.Bitlist{0b00010001}}),
 	}
 
 	type args struct {
@@ -40,8 +40,8 @@ func TestService_beaconBlockSubscriber(t *testing.T) {
 		{
 			name: "invalid block does not remove attestations",
 			args: args{
-				msg: func() *zondpb.SignedBeaconBlockCapella {
-					b := util.NewBeaconBlockCapella()
+				msg: func() *qrysmpb.SignedBeaconBlockZond {
+					b := util.NewBeaconBlockZond()
 					b.Block.Body.Attestations = pooledAttestations
 					return b
 				}(),
@@ -102,7 +102,7 @@ func TestService_BeaconBlockSubscribe_ExecutionEngineTimesOut(t *testing.T) {
 		seenBlockCache: lruwrpr.New(10),
 		badBlockCache:  lruwrpr.New(10),
 	}
-	require.ErrorIs(t, execution.ErrHTTPTimeout, s.beaconBlockSubscriber(context.Background(), util.NewBeaconBlockCapella()))
+	require.ErrorIs(t, execution.ErrHTTPTimeout, s.beaconBlockSubscriber(context.Background(), util.NewBeaconBlockZond()))
 	require.Equal(t, 0, len(s.badBlockCache.Keys()))
 	require.Equal(t, 1, len(s.seenBlockCache.Keys()))
 }
@@ -120,7 +120,7 @@ func TestService_BeaconBlockSubscribe_UndefinedEeError(t *testing.T) {
 		seenBlockCache: lruwrpr.New(10),
 		badBlockCache:  lruwrpr.New(10),
 	}
-	require.ErrorIs(t, s.beaconBlockSubscriber(context.Background(), util.NewBeaconBlockCapella()), blockchain.ErrUndefinedExecutionEngineError)
+	require.ErrorIs(t, s.beaconBlockSubscriber(context.Background(), util.NewBeaconBlockZond()), blockchain.ErrUndefinedExecutionEngineError)
 	require.Equal(t, 0, len(s.badBlockCache.Keys()))
 	require.Equal(t, 1, len(s.seenBlockCache.Keys()))
 }

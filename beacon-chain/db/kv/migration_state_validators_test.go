@@ -17,7 +17,7 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-func Test_migrateCapellaStateValidators(t *testing.T) {
+func Test_migrateZondStateValidators(t *testing.T) {
 	tests := []struct {
 		name  string
 		setup func(t *testing.T, dbStore *Store, state state.BeaconState, vals []*v1alpha1.Validator)
@@ -76,7 +76,7 @@ func Test_migrateCapellaStateValidators(t *testing.T) {
 
 				// create a new state and save it
 				blockRoot := [32]byte{'B'}
-				st, err := util.NewBeaconStateCapella()
+				st, err := util.NewBeaconStateZond()
 				newValidators := validators(10)
 				assert.NoError(t, err)
 				assert.NoError(t, st.SetSlot(101))
@@ -92,7 +92,7 @@ func Test_migrateCapellaStateValidators(t *testing.T) {
 					assert.NoError(t, hashErr)
 					individualHashes = append(individualHashes, hash[:])
 				}
-				pbState, err := state_native.ProtobufBeaconStateCapella(st.ToProtoUnsafe())
+				pbState, err := state_native.ProtobufBeaconStateZond(st.ToProtoUnsafe())
 				assert.NoError(t, err)
 				validatorsFoundCount := 0
 				for _, val := range pbState.Validators {
@@ -151,7 +151,7 @@ func Test_migrateCapellaStateValidators(t *testing.T) {
 				}
 
 				// check if all the validators that were in the state, are stored properly in the validator bucket
-				pbState, err := state_native.ProtobufBeaconStateCapella(rcvdState.ToProtoUnsafe())
+				pbState, err := state_native.ProtobufBeaconStateZond(rcvdState.ToProtoUnsafe())
 				assert.NoError(t, err)
 				validatorsFoundCount := 0
 				for _, val := range pbState.Validators {
@@ -187,7 +187,7 @@ func Test_migrateCapellaStateValidators(t *testing.T) {
 			// add a state with the given validators
 			vals := validators(10)
 			blockRoot := [32]byte{'A'}
-			st, _ := util.DeterministicGenesisStateCapella(t, 20)
+			st, _ := util.DeterministicGenesisStateZond(t, 20)
 			err := st.SetFork(&v1alpha1.Fork{
 				PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 				CurrentVersion:  params.BeaconConfig().GenesisForkVersion,

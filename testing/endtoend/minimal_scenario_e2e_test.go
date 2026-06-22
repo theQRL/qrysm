@@ -8,7 +8,7 @@ import (
 )
 
 func TestEndToEnd_MultiScenarioRun_Minimal(t *testing.T) {
-	runner := e2eMinimal(t, version.Capella, types.WithEpochs(24))
+	runner := e2eMinimal(t, version.Zond, types.WithEpochs(24))
 
 	runner.config.Evaluators = scenarioEvals()
 	runner.config.EvalInterceptor = runner.multiScenario
@@ -17,10 +17,10 @@ func TestEndToEnd_MultiScenarioRun_Minimal(t *testing.T) {
 
 /*
 func TestEndToEnd_MinimalConfig_Web3Signer(t *testing.T) {
-	e2eMinimal(t, version.Capella, types.WithRemoteSigner()).run()
+	e2eMinimal(t, version.Zond, types.WithRemoteSigner()).run()
 }
 */
 
 func TestEndToEnd_MinimalConfig_ValidatorRESTApi(t *testing.T) {
-	e2eMinimal(t, version.Capella /*types.WithCheckpointSync(),*/, types.WithValidatorRESTApi()).run()
+	e2eMinimal(t, version.Zond /*types.WithCheckpointSync(),*/, types.WithValidatorRESTApi()).run()
 }

@@ -23,16 +23,16 @@ import (
 	lruwrpr "github.com/theQRL/qrysm/cache/lru"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
-func setupValidProposerSlashing(t *testing.T) (*zondpb.ProposerSlashing, state.BeaconState) {
-	validators := make([]*zondpb.Validator, 100)
-	for i := 0; i < len(validators); i++ {
-		validators[i] = &zondpb.Validator{
+func setupValidProposerSlashing(t *testing.T) (*qrysmpb.ProposerSlashing, state.BeaconState) {
+	validators := make([]*qrysmpb.Validator, 100)
+	for i := range validators {
+		validators[i] = &qrysmpb.Validator{
 			EffectiveBalance:  params.BeaconConfig().MaxEffectiveBalance,
 			Slashed:           false,
 			ExitEpoch:         params.BeaconConfig().FarFutureEpoch,
@@ -41,16 +41,16 @@ func setupValidProposerSlashing(t *testing.T) (*zondpb.ProposerSlashing, state.B
 		}
 	}
 	validatorBalances := make([]uint64, len(validators))
-	for i := 0; i < len(validatorBalances); i++ {
+	for i := range validatorBalances {
 		validatorBalances[i] = params.BeaconConfig().MaxEffectiveBalance
 	}
 
 	currentSlot := primitives.Slot(0)
-	st, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	st, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: validators,
 		Slot:       currentSlot,
 		Balances:   validatorBalances,
-		Fork: &zondpb.Fork{
+		Fork: &qrysmpb.Fork{
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 			Epoch:           0,
@@ -60,16 +60,16 @@ func setupValidProposerSlashing(t *testing.T) (*zondpb.ProposerSlashing, state.B
 
 		StateRoots:        make([][]byte, params.BeaconConfig().SlotsPerHistoricalRoot),
 		BlockRoots:        make([][]byte, params.BeaconConfig().SlotsPerHistoricalRoot),
-		LatestBlockHeader: &zondpb.BeaconBlockHeader{},
+		LatestBlockHeader: &qrysmpb.BeaconBlockHeader{},
 	})
 	require.NoError(t, err)
 
-	privKey, err := dilithium.RandKey()
+	privKey, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
 	someRoot := [32]byte{1, 2, 3}
 	someRoot2 := [32]byte{4, 5, 6}
-	header1 := &zondpb.SignedBeaconBlockHeader{
-		Header: &zondpb.BeaconBlockHeader{
+	header1 := &qrysmpb.SignedBeaconBlockHeader{
+		Header: &qrysmpb.BeaconBlockHeader{
 			ProposerIndex: 1,
 			Slot:          0,
 			ParentRoot:    someRoot[:],
@@ -80,8 +80,8 @@ func setupValidProposerSlashing(t *testing.T) (*zondpb.ProposerSlashing, state.B
 	header1.Signature, err = signing.ComputeDomainAndSign(st, coreTime.CurrentEpoch(st), header1.Header, params.BeaconConfig().DomainBeaconProposer, privKey)
 	require.NoError(t, err)
 
-	header2 := &zondpb.SignedBeaconBlockHeader{
-		Header: &zondpb.BeaconBlockHeader{
+	header2 := &qrysmpb.SignedBeaconBlockHeader{
+		Header: &qrysmpb.BeaconBlockHeader{
 			ProposerIndex: 1,
 			Slot:          0,
 			ParentRoot:    someRoot2[:],
@@ -92,7 +92,7 @@ func setupValidProposerSlashing(t *testing.T) (*zondpb.ProposerSlashing, state.B
 	header2.Signature, err = signing.ComputeDomainAndSign(st, coreTime.CurrentEpoch(st), header2.Header, params.BeaconConfig().DomainBeaconProposer, privKey)
 	require.NoError(t, err)
 
-	slashing := &zondpb.ProposerSlashing{
+	slashing := &qrysmpb.ProposerSlashing{
 		Header_1: header1,
 		Header_2: header2,
 	}
@@ -128,7 +128,7 @@ func TestValidateProposerSlashing_ValidSlashing(t *testing.T) {
 	buf := new(bytes.Buffer)
 	_, err := p.Encoding().EncodeGossip(buf, slashing)
 	require.NoError(t, err)
-	topic := p2p.GossipTypeMapping[reflect.TypeOf(slashing)]
+	topic := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.ProposerSlashing]()]
 	d, err := r.currentForkDigest()
 	assert.NoError(t, err)
 	topic = r.addDigestToTopic(topic, d)
@@ -146,6 +146,47 @@ func TestValidateProposerSlashing_ValidSlashing(t *testing.T) {
 	assert.NotNil(t, m.ValidatorData, "Decoded message was not set on the message validator data")
 }
 
+func TestValidateProposerSlashing_ValidOldSlashing(t *testing.T) {
+	p := p2ptest.NewTestP2P(t)
+	ctx := context.Background()
+
+	slashing, s := setupValidProposerSlashing(t)
+	val, err := s.ValidatorAtIndex(slashing.Header_2.Header.ProposerIndex)
+	require.NoError(t, err)
+	val.Slashed = true
+	assert.NoError(t, s.UpdateValidatorAtIndex(slashing.Header_2.Header.ProposerIndex, val))
+
+	chain := &mock.ChainService{State: s, Genesis: time.Now()}
+	r := &Service{
+		cfg: &config{
+			p2p:         p,
+			chain:       chain,
+			clock:       startup.NewClock(chain.Genesis, chain.ValidatorsRoot),
+			initialSync: &mockSync.Sync{IsSyncing: false},
+		},
+		seenProposerSlashingCache: lruwrpr.New(10),
+	}
+
+	buf := new(bytes.Buffer)
+	_, err = p.Encoding().EncodeGossip(buf, slashing)
+	require.NoError(t, err)
+	topic := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.ProposerSlashing]()]
+	d, err := r.currentForkDigest()
+	assert.NoError(t, err)
+	topic = r.addDigestToTopic(topic, d)
+	m := &pubsub.Message{
+		Message: &pubsubpb.Message{
+			Data:  buf.Bytes(),
+			Topic: &topic,
+		},
+	}
+
+	res, err := r.validateProposerSlashing(ctx, "", m)
+	assert.ErrorContains(t, "proposer is already slashed", err)
+	valid := res == pubsub.ValidationIgnore
+	assert.Equal(t, true, valid, "Failed validation")
+}
+
 func TestValidateProposerSlashing_ContextTimeout(t *testing.T) {
 	p := p2ptest.NewTestP2P(t)
 
@@ -153,7 +194,7 @@ func TestValidateProposerSlashing_ContextTimeout(t *testing.T) {
 	slashing.Header_1.Header.Slot = 100000000
 	err := st.SetJustificationBits(bitfield.Bitvector4{0x0F}) // 0b1111
 	require.NoError(t, err)
-	err = st.SetPreviousJustifiedCheckpoint(&zondpb.Checkpoint{Epoch: 0, Root: []byte{}})
+	err = st.SetPreviousJustifiedCheckpoint(&qrysmpb.Checkpoint{Epoch: 0, Root: []byte{}})
 	require.NoError(t, err)
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
@@ -170,7 +211,7 @@ func TestValidateProposerSlashing_ContextTimeout(t *testing.T) {
 	buf := new(bytes.Buffer)
 	_, err = p.Encoding().EncodeGossip(buf, slashing)
 	require.NoError(t, err)
-	topic := p2p.GossipTypeMapping[reflect.TypeOf(slashing)]
+	topic := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.ProposerSlashing]()]
 	m := &pubsub.Message{
 		Message: &pubsubpb.Message{
 			Data:  buf.Bytes(),
@@ -200,7 +241,7 @@ func TestValidateProposerSlashing_Syncing(t *testing.T) {
 	buf := new(bytes.Buffer)
 	_, err := p.Encoding().EncodeGossip(buf, slashing)
 	require.NoError(t, err)
-	topic := p2p.GossipTypeMapping[reflect.TypeOf(slashing)]
+	topic := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.ProposerSlashing]()]
 	m := &pubsub.Message{
 		Message: &pubsubpb.Message{
 			Data:  buf.Bytes(),

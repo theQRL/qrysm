@@ -7,7 +7,9 @@ import (
 
 	libp2pcore "github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
 	ssz "github.com/prysmaticlabs/fastssz"
+	"github.com/sirupsen/logrus"
 	"github.com/theQRL/qrysm/beacon-chain/p2p"
 	p2ptypes "github.com/theQRL/qrysm/beacon-chain/p2p/types"
 	"github.com/theQRL/qrysm/config/params"
@@ -27,7 +29,7 @@ var respTimeout = params.BeaconNetworkConfig().RespTimeout
 // rpcHandler is responsible for handling and responding to any incoming message.
 // This method may return an error to internal monitoring, but the error will
 // not be relayed to the peer.
-type rpcHandler func(context.Context, interface{}, libp2pcore.Stream) error
+type rpcHandler func(context.Context, any, libp2pcore.Stream) error
 
 // registerRPCHandlers for p2p RPC.
 func (s *Service) registerRPCHandlers() {
@@ -92,18 +94,19 @@ func (s *Service) registerRPC(baseTopic string, handle rpcHandler) {
 		ctx, span := trace.StartSpan(ctx, "sync.rpc")
 		defer span.End()
 		span.AddAttributes(trace.StringAttribute("topic", topic))
-		span.AddAttributes(trace.StringAttribute("peer", stream.Conn().RemotePeer().String()))
-		log := log.WithField("peer", stream.Conn().RemotePeer().String()).WithField("topic", string(stream.Protocol()))
+		pid := stream.Conn().RemotePeer()
+		span.AddAttributes(trace.StringAttribute("peer", pid.String()))
+		log := log.WithField("peer", pid.String()).WithField("topic", string(stream.Protocol()))
 
 		// Check before hand that peer is valid.
-		if s.cfg.p2p.Peers().IsBad(stream.Conn().RemotePeer()) {
-			if err := s.sendGoodByeAndDisconnect(ctx, p2ptypes.GoodbyeCodeBanned, stream.Conn().RemotePeer()); err != nil {
+		if s.cfg.p2p.Peers().IsBad(pid) {
+			if err := s.sendGoodByeAndDisconnect(ctx, p2ptypes.GoodbyeCodeBanned, pid); err != nil {
 				log.WithError(err).Debug("Could not disconnect from peer")
 			}
 			return
 		}
 		// Validate request according to peer limits.
-		if err := s.rateLimiter.validateRawRpcRequest(stream); err != nil {
+		if err := s.rateLimiter.validateRawRpcRequest(stream, 1); err != nil {
 			log.WithError(err).Debug("Could not validate rpc request from peer")
 			return
 		}
@@ -151,7 +154,7 @@ func (s *Service) registerRPC(baseTopic string, handle rpcHandler) {
 			if err := s.cfg.p2p.Encoding().DecodeWithMaxLength(stream, msg); err != nil {
 				log.WithError(err).WithField("topic", topic).Debug("Could not decode stream message")
 				tracing.AnnotateError(span, err)
-				s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(stream.Conn().RemotePeer())
+				s.downscorePeer(pid, "registerRpcDecodeError")
 				return
 			}
 			if err := handle(ctx, msg, stream); err != nil {
@@ -171,7 +174,7 @@ func (s *Service) registerRPC(baseTopic string, handle rpcHandler) {
 			if err := s.cfg.p2p.Encoding().DecodeWithMaxLength(stream, msg); err != nil {
 				log.WithError(err).WithField("topic", topic).Debug("Could not decode stream message")
 				tracing.AnnotateError(span, err)
-				s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(stream.Conn().RemotePeer())
+				s.downscorePeer(pid, "registerRpcDecodeError")
 				return
 			}
 			if err := handle(ctx, nTyp.Elem().Interface(), stream); err != nil {
@@ -183,4 +186,15 @@ func (s *Service) registerRPC(baseTopic string, handle rpcHandler) {
 			}
 		}
 	})
+}
+
+// downscorePeer increments the bad-responses counter for the peer and emits a single
+// debug log carrying the new score. Reasons should be stable identifiers so logs are greppable.
+func (s *Service) downscorePeer(peerID peer.ID, reason string) {
+	newScore := s.cfg.p2p.Peers().Scorers().BadResponsesScorer().Increment(peerID)
+	log.WithFields(logrus.Fields{
+		"peerID":   peerID,
+		"reason":   reason,
+		"newScore": newScore,
+	}).Debug("Downscore peer")
 }

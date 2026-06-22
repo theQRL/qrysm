@@ -1,0 +1,13 @@
+load("@qrysm//tools/go:def.bzl", "go_library")
+
+go_library(
+    name = "london_lib",
+    srcs = ["london.go"],
+    importpath = "github.com/theQRL/qrysm/pkg/tx-fuzz/cmd/london",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/goqrvmlab/ops",
+        "//pkg/goqrvmlab/program",
+        "@com_github_theqrl_go_qrl//core/vm",
+    ],
+)

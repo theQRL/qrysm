@@ -3,7 +3,7 @@ package node
 import (
 	"net/http"
 
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/helpers"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/helpers"
 )
 
 func middleware(next http.Handler) http.Handler {

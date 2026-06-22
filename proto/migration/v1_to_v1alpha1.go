@@ -2,31 +2,31 @@ package migration
 
 import (
 	"github.com/pkg/errors"
-	zondpbalpha "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
-	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
+	qrlpb "github.com/theQRL/qrysm/proto/qrl/v1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"google.golang.org/protobuf/proto"
 )
 
-// CapellaToV1Alpha1SignedBlock converts a v1 SignedBeaconBlockCapella proto to a v1alpha1 proto.
-func CapellaToV1Alpha1SignedBlock(capellaBlk *zondpbv1.SignedBeaconBlockCapella) (*zondpbalpha.SignedBeaconBlockCapella, error) {
-	marshaledBlk, err := proto.Marshal(capellaBlk)
+// ZondToV1Alpha1SignedBlock converts a v1 SignedBeaconBlockZond proto to a v1alpha1 proto.
+func ZondToV1Alpha1SignedBlock(zondBlk *qrlpb.SignedBeaconBlockZond) (*qrysmpb.SignedBeaconBlockZond, error) {
+	marshaledBlk, err := proto.Marshal(zondBlk)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal block")
 	}
-	v1alpha1Block := &zondpbalpha.SignedBeaconBlockCapella{}
+	v1alpha1Block := &qrysmpb.SignedBeaconBlockZond{}
 	if err := proto.Unmarshal(marshaledBlk, v1alpha1Block); err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal block")
 	}
 	return v1alpha1Block, nil
 }
 
-// BlindedCapellaToV1Alpha1SignedBlock converts a v1 SignedBlindedBeaconBlockCapella proto to a v1alpha1 proto.
-func BlindedCapellaToV1Alpha1SignedBlock(capellaBlk *zondpbv1.SignedBlindedBeaconBlockCapella) (*zondpbalpha.SignedBlindedBeaconBlockCapella, error) {
-	marshaledBlk, err := proto.Marshal(capellaBlk)
+// BlindedZondToV1Alpha1SignedBlock converts a v1 SignedBlindedBeaconBlockZond proto to a v1alpha1 proto.
+func BlindedZondToV1Alpha1SignedBlock(zondBlk *qrlpb.SignedBlindedBeaconBlockZond) (*qrysmpb.SignedBlindedBeaconBlockZond, error) {
+	marshaledBlk, err := proto.Marshal(zondBlk)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal block")
 	}
-	v1alpha1Block := &zondpbalpha.SignedBlindedBeaconBlockCapella{}
+	v1alpha1Block := &qrysmpb.SignedBlindedBeaconBlockZond{}
 	if err := proto.Unmarshal(marshaledBlk, v1alpha1Block); err != nil {
 		return nil, errors.Wrap(err, "could not unmarshal block")
 	}

@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
 	"github.com/theQRL/qrysm/async/event"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
+	keystorev1 "github.com/theQRL/qrysm/pkg/go-qrl-wallet-encryptor-keystore"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	mock "github.com/theQRL/qrysm/validator/accounts/testing"
@@ -31,7 +31,7 @@ func TestLocalKeymanager_reloadAccountsFromKeystore_MismatchedNumKeys(t *testing
 	}
 	encodedStore, err := json.MarshalIndent(accountsStore, "", "\t")
 	require.NoError(t, err)
-	encryptor := keystorev4.New()
+	encryptor := keystorev1.New()
 	cryptoFields, err := encryptor.Encrypt(encodedStore, dr.wallet.Password())
 	require.NoError(t, err)
 	id, err := uuid.NewRandom()
@@ -61,8 +61,8 @@ func TestLocalKeymanager_reloadAccountsFromKeystore(t *testing.T) {
 	numAccounts := 20
 	privKeys := make([][]byte, numAccounts)
 	pubKeys := make([][]byte, numAccounts)
-	for i := 0; i < numAccounts; i++ {
-		privKey, err := dilithium.RandKey()
+	for i := range numAccounts {
+		privKey, err := ml_dsa_87.RandKey()
 		require.NoError(t, err)
 		privKeys[i] = privKey.Marshal()
 		pubKeys[i] = privKey.PublicKey().Marshal()
@@ -81,7 +81,7 @@ func TestLocalKeymanager_reloadAccountsFromKeystore(t *testing.T) {
 	lock.RLock()
 	defer lock.RUnlock()
 	for i, keyBytes := range privKeys {
-		privKey, ok := dilithiumKeysCache[bytesutil.ToBytes2592(pubKeys[i])]
+		privKey, ok := mlDSA87KeysCache[bytesutil.ToBytes2592(pubKeys[i])]
 		require.Equal(t, true, ok)
 		require.Equal(t, bytesutil.ToBytes2592(keyBytes), bytesutil.ToBytes2592(privKey.Marshal()))
 	}

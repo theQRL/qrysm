@@ -7,7 +7,7 @@ import (
 
 func (b *BeaconState) ProportionalSlashingMultiplier() (uint64, error) {
 	switch b.version {
-	case version.Capella:
+	case version.Zond:
 		return params.BeaconConfig().ProportionalSlashingMultiplier, nil
 	}
 	return 0, errNotSupported("ProportionalSlashingMultiplier()", b.version)
@@ -15,7 +15,7 @@ func (b *BeaconState) ProportionalSlashingMultiplier() (uint64, error) {
 
 func (b *BeaconState) InactivityPenaltyQuotient() (uint64, error) {
 	switch b.version {
-	case version.Capella:
+	case version.Zond:
 		return params.BeaconConfig().InactivityPenaltyQuotient, nil
 	}
 	return 0, errNotSupported("InactivityPenaltyQuotient()", b.version)

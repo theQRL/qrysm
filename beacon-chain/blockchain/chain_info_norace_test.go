@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
@@ -19,9 +19,9 @@ func TestHeadSlot_DataRace(t *testing.T) {
 	s := &Service{
 		cfg: &config{BeaconDB: beaconDB},
 	}
-	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
+	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
 	require.NoError(t, err)
-	st, _ := util.DeterministicGenesisStateCapella(t, 1)
+	st, _ := util.DeterministicGenesisStateZond(t, 1)
 	wait := make(chan struct{})
 	go func() {
 		defer close(wait)
@@ -37,10 +37,10 @@ func TestHeadRoot_DataRace(t *testing.T) {
 		cfg:  &config{BeaconDB: beaconDB, StateGen: stategen.New(beaconDB, doublylinkedtree.New())},
 		head: &head{root: [32]byte{'A'}},
 	}
-	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
+	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
 	require.NoError(t, err)
 	wait := make(chan struct{})
-	st, _ := util.DeterministicGenesisStateCapella(t, 1)
+	st, _ := util.DeterministicGenesisStateZond(t, 1)
 	go func() {
 		defer close(wait)
 		require.NoError(t, s.saveHead(context.Background(), [32]byte{}, b, st))
@@ -53,16 +53,16 @@ func TestHeadRoot_DataRace(t *testing.T) {
 
 func TestHeadBlock_DataRace(t *testing.T) {
 	beaconDB := testDB.SetupDB(t)
-	wsb, err := blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockCapella{Block: &zondpb.BeaconBlockCapella{Body: &zondpb.BeaconBlockBodyCapella{}}})
+	wsb, err := blocks.NewSignedBeaconBlock(&qrysmpb.SignedBeaconBlockZond{Block: &qrysmpb.BeaconBlockZond{Body: &qrysmpb.BeaconBlockBodyZond{}}})
 	require.NoError(t, err)
 	s := &Service{
 		cfg:  &config{BeaconDB: beaconDB, StateGen: stategen.New(beaconDB, doublylinkedtree.New())},
 		head: &head{block: wsb},
 	}
-	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
+	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
 	require.NoError(t, err)
 	wait := make(chan struct{})
-	st, _ := util.DeterministicGenesisStateCapella(t, 1)
+	st, _ := util.DeterministicGenesisStateZond(t, 1)
 	go func() {
 		defer close(wait)
 		require.NoError(t, s.saveHead(context.Background(), [32]byte{}, b, st))
@@ -78,10 +78,10 @@ func TestHeadState_DataRace(t *testing.T) {
 	s := &Service{
 		cfg: &config{BeaconDB: beaconDB, StateGen: stategen.New(beaconDB, doublylinkedtree.New())},
 	}
-	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockCapella())
+	b, err := blocks.NewSignedBeaconBlock(util.NewBeaconBlockZond())
 	require.NoError(t, err)
 	wait := make(chan struct{})
-	st, _ := util.DeterministicGenesisStateCapella(t, 1)
+	st, _ := util.DeterministicGenesisStateZond(t, 1)
 	root := bytesutil.ToBytes32(bytesutil.PadTo([]byte{'s'}, 32))
 	require.NoError(t, beaconDB.SaveGenesisBlockRoot(context.Background(), root))
 	require.NoError(t, beaconDB.SaveState(context.Background(), st, root))

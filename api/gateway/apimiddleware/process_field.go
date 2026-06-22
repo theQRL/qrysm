@@ -10,14 +10,14 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/wealdtech/go-bytesutil"
 )
 
 // processField calls each processor function on any field that has the matching tag set.
 // It is a recursive function.
-func processField(s interface{}, processors []fieldProcessor) error {
+func processField(s any, processors []fieldProcessor) error {
 	kind := reflect.TypeOf(s).Kind()
 	if kind != reflect.Ptr && kind != reflect.Slice && kind != reflect.Array {
 		return fmt.Errorf("processing fields of kind '%v' is unsupported", kind)
@@ -103,7 +103,7 @@ func base64ToHexProcessor(v reflect.Value) error {
 
 func base64ToChecksumAddressProcessor(v reflect.Value) error {
 	if v.String() == "" {
-		v.SetString("Z")
+		v.SetString("Q")
 		return nil
 	}
 	b, err := base64.StdEncoding.DecodeString(v.String())
@@ -130,7 +130,7 @@ func base64ToUint256Processor(v reflect.Value) error {
 	// big.Int expects big-endian. So we need to reverse
 	// the byte order before decoding.
 	var bigEndian [32]byte
-	for i := 0; i < len(littleEndian); i++ {
+	for i := range littleEndian {
 		bigEndian[i] = littleEndian[len(littleEndian)-1-i]
 	}
 	var uint256 big.Int
@@ -156,7 +156,7 @@ func uint256ToBase64Processor(v reflect.Value) error {
 	// big.Int gives big-endian. So we need to reverse
 	// the byte order before encoding.
 	var littleEndian [32]byte
-	for i := 0; i < len(bigEndian); i++ {
+	for i := range bigEndian {
 		littleEndian[i] = bigEndian[len(bigEndian)-1-i]
 	}
 	v.SetString(base64.StdEncoding.EncodeToString(littleEndian[:]))

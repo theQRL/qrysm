@@ -1,19 +1,19 @@
 syntax = "proto3";
 
-package theqrl.zond.v1alpha1;
+package theqrl.qrl.v1alpha1;
 
-import "proto/zond/ext/options.proto";
+import "proto/qrl/ext/options.proto";
 import "proto/qrysm/v1alpha1/node.proto";
 import "proto/qrysm/v1alpha1/p2p_messages.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
-option csharp_namespace = "TheQRL.Zond.V1alpha1";
-option go_package = "github.com/theQRL/qrysm/proto/qrysm/v1alpha1;zond";
+option csharp_namespace = "TheQRL.QRL.V1alpha1";
+option go_package = "github.com/theQRL/qrysm/proto/qrysm/v1alpha1;qrl";
 option java_multiple_files = true;
 option java_outer_classname = "DebugProto";
-option java_package = "org.theqrl.zond.v1alpha1";
-option php_namespace = "TheQRL\\Zond\\v1alpha1";
+option java_package = "org.theqrl.qrl.v1alpha1";
+option php_namespace = "TheQRL\\QRL\\v1alpha1";
 
 // Debug service API
 //
@@ -24,31 +24,31 @@ service Debug {
     // Returns a beacon state by filter criteria from the beacon node.
     rpc GetBeaconState(BeaconStateRequest) returns (SSZResponse) {
         option (google.api.http) = {
-            get: "/zond/v1alpha1/debug/state"
+            get: "/qrl/v1alpha1/debug/state"
         };
     }
     // Returns a beacon state by filter criteria from the beacon node.
     rpc GetBlock(BlockRequestByRoot) returns (SSZResponse) {
         option (google.api.http) = {
-            get: "/zond/v1alpha1/debug/block"
+            get: "/qrl/v1alpha1/debug/block"
         };
     }
     // SetLoggingLevel sets the log-level of the beacon node programmatically.
     rpc SetLoggingLevel(LoggingLevelRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
-            post: "/zond/v1alpha1/debug/logging"
+            post: "/qrl/v1alpha1/debug/logging"
         };
     }
     // Returns all the related data for every peer tracked by the host node.
     rpc ListPeers(google.protobuf.Empty) returns (DebugPeerResponses){
         option (google.api.http) = {
-            get: "/zond/v1alpha1/debug/peers"
+            get: "/qrl/v1alpha1/debug/peers"
         };
     }
     // Returns requested peer with specified peer id if it exists.
-    rpc GetPeer(theqrl.zond.v1alpha1.PeerRequest) returns (DebugPeerResponse) {
+    rpc GetPeer(theqrl.qrl.v1alpha1.PeerRequest) returns (DebugPeerResponse) {
         option (google.api.http) = {
-            get: "/zond/v1alpha1/debug/peer"
+            get: "/qrl/v1alpha1/debug/peer"
         };
     }
 }
@@ -56,7 +56,7 @@ service Debug {
 message BeaconStateRequest {
     oneof query_filter {
         // The slot corresponding to a desired beacon state.
-        uint64 slot = 1 [(theqrl.zond.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
+        uint64 slot = 1 [(theqrl.qrl.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Slot"];
 
         // The block root corresponding to a desired beacon state.
         bytes block_root = 2;
@@ -91,29 +91,28 @@ message DebugPeerResponse {
     message PeerInfo {
         // Metadata of the peer, containing their bitfield
         // and sequence number.
-        MetaDataV0 metadataV0 = 1;
-        MetaDataV1 metadataV1 = 2;
+        MetaDataV1 metadataV1 = 1;
         // List of protocols the peer supports.
-        repeated string protocols = 3;
+        repeated string protocols = 2;
         // Number of times peer has been penalised.
-        uint64 fault_count = 4;
+        uint64 fault_count = 3;
         // Protocol Version peer is running.
-        string protocol_version = 5;
+        string protocol_version = 4;
         // Agent Version peer is running.
-        string agent_version = 6;
+        string agent_version = 5;
         // Latency of responses from peer(in ms).
-        uint64 peer_latency = 7;
+        uint64 peer_latency = 6;
     }
     // Listening addresses know of the peer.
     repeated string listening_addresses = 1;
     // Direction of current connection.
-    theqrl.zond.v1alpha1.PeerDirection direction = 2;
+    theqrl.qrl.v1alpha1.PeerDirection direction = 2;
     // Current connection between host and peer.
-    theqrl.zond.v1alpha1.ConnectionState connection_state = 3;
+    theqrl.qrl.v1alpha1.ConnectionState connection_state = 3;
     // Peer ID of peer.
     string peer_id = 4;
-    // ENR of peer at the current moment.
-    string enr = 5;
+    // QNR of peer at the current moment.
+    string qnr = 5;
     // Peer Info of the peer containing all relevant metadata.
     PeerInfo peer_info = 6;
     // Peer Status of the peer.

@@ -2,15 +2,35 @@ package beacon_api
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
-func (c beaconApiValidatorClient) validatorIndex(ctx context.Context, in *zondpb.ValidatorIndexRequest) (*zondpb.ValidatorIndexResponse, error) {
+// IndexNotFoundError represents an error scenario where no validator index
+// matches a public key, distinct from generic transport / decode failures.
+// Callers can use errors.As to handle it as a "not yet active" non-fatal case.
+type IndexNotFoundError struct {
+	message string
+}
+
+// NewIndexNotFoundError creates a new error instance.
+func NewIndexNotFoundError(pubkey string) IndexNotFoundError {
+	return IndexNotFoundError{
+		message: fmt.Sprintf("could not find validator index for public key `%s`", pubkey),
+	}
+}
+
+// Error returns the underlying error message.
+func (e *IndexNotFoundError) Error() string {
+	return e.message
+}
+
+func (c beaconApiValidatorClient) validatorIndex(ctx context.Context, in *qrysmpb.ValidatorIndexRequest) (*qrysmpb.ValidatorIndexResponse, error) {
 	stringPubKey := hexutil.Encode(in.PublicKey)
 
 	stateValidator, err := c.stateValidatorsProvider.GetStateValidators(ctx, []string{stringPubKey}, nil, nil)
@@ -19,7 +39,8 @@ func (c beaconApiValidatorClient) validatorIndex(ctx context.Context, in *zondpb
 	}
 
 	if len(stateValidator.Data) == 0 {
-		return nil, errors.Errorf("could not find validator index for public key `%s`", stringPubKey)
+		e := NewIndexNotFoundError(stringPubKey)
+		return nil, &e
 	}
 
 	stringValidatorIndex := stateValidator.Data[0].Index
@@ -29,5 +50,5 @@ func (c beaconApiValidatorClient) validatorIndex(ctx context.Context, in *zondpb
 		return nil, errors.Wrap(err, "failed to parse validator index")
 	}
 
-	return &zondpb.ValidatorIndexResponse{Index: primitives.ValidatorIndex(index)}, nil
+	return &qrysmpb.ValidatorIndexResponse{Index: primitives.ValidatorIndex(index)}, nil
 }

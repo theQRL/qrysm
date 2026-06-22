@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
+
+# gazelle:exclude hack.go
+
+go_library(
+    name = "nogo_config_lib",
+    srcs = [
+        "config.go",
+        "config_exclusion.go",
+        "main.go",
+    ],
+    importpath = "github.com/theQRL/qrysm/tools/nogo_config",
+    visibility = ["//visibility:private"],
+)
+
+go_binary(
+    name = "nogo_config",
+    embed = [":nogo_config_lib"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "nogo_config_test",
+    srcs = ["config_exclusion_test.go"],
+    embed = [":nogo_config_lib"],
+)

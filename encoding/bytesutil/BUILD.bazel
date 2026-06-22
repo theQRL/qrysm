@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "bytesutil",
     srcs = [
         "bits.go",
         "bytes.go",
@@ -9,33 +9,33 @@ go_library(
         "bytes_legacy.go",
         "hex.go",
         "integers.go",
-        "zond_types.go",
+        "qrl_types.go",
     ],
     importpath = "github.com/theQRL/qrysm/encoding/bytesutil",
     visibility = ["//visibility:public"],
     deps = [
-        "//config/fieldparams:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "@com_github_pkg_errors//:go_default_library",
-        "@com_github_theqrl_go_zond//common/hexutil:go_default_library",
+        "//config/fieldparams",
+        "//consensus-types/primitives",
+        "@com_github_pkg_errors//:errors",
+        "@com_github_theqrl_go_qrl//common/hexutil",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "bytesutil_test",
     size = "small",
     srcs = [
         "bits_test.go",
         "bytes_test.go",
         "hex_test.go",
         "integers_test.go",
-        "zond_types_test.go",
+        "qrl_types_test.go",
     ],
     deps = [
-        ":go_default_library",
-        "//config/fieldparams:go_default_library",
-        "//testing/assert:go_default_library",
-        "//testing/require:go_default_library",
-        "@com_github_theqrl_go_zond//common/hexutil:go_default_library",
+        ":bytesutil",
+        "//config/fieldparams",
+        "//testing/assert",
+        "//testing/require",
+        "@com_github_theqrl_go_qrl//common/hexutil",
     ],
 )

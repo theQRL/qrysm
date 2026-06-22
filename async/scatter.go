@@ -9,14 +9,14 @@ import (
 // WorkerResults are the results of a scatter worker.
 type WorkerResults struct {
 	Offset int
-	Extent interface{}
+	Extent any
 }
 
 // Scatter scatters a computation across multiple goroutines.
 // This breaks the task in to a number of chunks and executes those chunks in parallel with the function provided.
-// Results returned are collected and presented a set of WorkerResults, which can be reassembled by the calling function.
+// Results returned are collected and presented as a set of WorkerResults, which can be reassembled by the calling function.
 // Any error that occurs in the workers will be passed back to the calling function.
-func Scatter(inputLen int, sFunc func(int, int, *sync.RWMutex) (interface{}, error)) ([]*WorkerResults, error) {
+func Scatter(inputLen int, sFunc func(int, int, *sync.RWMutex) (any, error)) ([]*WorkerResults, error) {
 	if inputLen <= 0 {
 		return nil, errors.New("input length must be greater than 0")
 	}
@@ -63,7 +63,7 @@ func Scatter(inputLen int, sFunc func(int, int, *sync.RWMutex) (interface{}, err
 	return results, nil
 }
 
-// calculateChunkSize calculates a suitable chunk size for the purposes of parallelisation.
+// calculateChunkSize calculates a suitable chunk size for the purposes of parallelization.
 func calculateChunkSize(items int) int {
 	// Start with a simple even split
 	chunkSize := items / runtime.GOMAXPROCS(0)

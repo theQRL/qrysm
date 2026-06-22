@@ -23,28 +23,28 @@ import (
 	mockSync "github.com/theQRL/qrysm/beacon-chain/sync/initial-sync/testing"
 	lruwrpr "github.com/theQRL/qrysm/cache/lru"
 	"github.com/theQRL/qrysm/config/params"
-	"github.com/theQRL/qrysm/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
-func setupValidExit(t *testing.T) (*zondpb.SignedVoluntaryExit, state.BeaconState) {
-	exit := &zondpb.SignedVoluntaryExit{
-		Exit: &zondpb.VoluntaryExit{
+func setupValidExit(t *testing.T) (*qrysmpb.SignedVoluntaryExit, state.BeaconState) {
+	exit := &qrysmpb.SignedVoluntaryExit{
+		Exit: &qrysmpb.VoluntaryExit{
 			ValidatorIndex: 0,
 			Epoch:          1 + params.BeaconConfig().ShardCommitteePeriod,
 		},
 	}
-	registry := []*zondpb.Validator{
+	registry := []*qrysmpb.Validator{
 		{
 			ExitEpoch:       params.BeaconConfig().FarFutureEpoch,
 			ActivationEpoch: 0,
 		},
 	}
-	st, err := state_native.InitializeFromProtoCapella(&zondpb.BeaconStateCapella{
+	st, err := state_native.InitializeFromProtoZond(&qrysmpb.BeaconStateZond{
 		Validators: registry,
-		Fork: &zondpb.Fork{
+		Fork: &qrysmpb.Fork{
 			CurrentVersion:  params.BeaconConfig().GenesisForkVersion,
 			PreviousVersion: params.BeaconConfig().GenesisForkVersion,
 		},
@@ -54,7 +54,7 @@ func setupValidExit(t *testing.T) (*zondpb.SignedVoluntaryExit, state.BeaconStat
 	err = st.SetSlot(st.Slot() + params.BeaconConfig().SlotsPerEpoch.Mul(uint64(params.BeaconConfig().ShardCommitteePeriod)))
 	require.NoError(t, err)
 
-	priv, err := dilithium.RandKey()
+	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
 	exit.Signature, err = signing.ComputeDomainAndSign(st, coreTime.CurrentEpoch(st), exit.Exit, params.BeaconConfig().DomainVoluntaryExit, priv)
 	require.NoError(t, err)
@@ -95,7 +95,7 @@ func TestValidateVoluntaryExit_ValidExit(t *testing.T) {
 	buf := new(bytes.Buffer)
 	_, err := p.Encoding().EncodeGossip(buf, exit)
 	require.NoError(t, err)
-	topic := p2p.GossipTypeMapping[reflect.TypeOf(exit)]
+	topic := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.SignedVoluntaryExit]()]
 	d, err := r.currentForkDigest()
 	assert.NoError(t, err)
 	topic = r.addDigestToTopic(topic, d)
@@ -155,7 +155,7 @@ func TestValidateVoluntaryExit_InvalidExitSlot(t *testing.T) {
 	buf := new(bytes.Buffer)
 	_, err := p.Encoding().EncodeGossip(buf, exit)
 	require.NoError(t, err)
-	topic := p2p.GossipTypeMapping[reflect.TypeOf(exit)]
+	topic := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.SignedVoluntaryExit]()]
 	m := &pubsub.Message{
 		Message: &pubsubpb.Message{
 			Data:  buf.Bytes(),
@@ -186,7 +186,7 @@ func TestValidateVoluntaryExit_ValidExit_Syncing(t *testing.T) {
 	buf := new(bytes.Buffer)
 	_, err := p.Encoding().EncodeGossip(buf, exit)
 	require.NoError(t, err)
-	topic := p2p.GossipTypeMapping[reflect.TypeOf(exit)]
+	topic := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.SignedVoluntaryExit]()]
 	m := &pubsub.Message{
 		Message: &pubsubpb.Message{
 			Data:  buf.Bytes(),

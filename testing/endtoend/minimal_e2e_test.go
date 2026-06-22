@@ -7,5 +7,5 @@ import (
 )
 
 func TestEndToEnd_MinimalConfig(t *testing.T) {
-	e2eMinimal(t, version.Capella /*,types.WithCheckpointSync()*/).run()
+	e2eMinimal(t, version.Zond /*,types.WithCheckpointSync()*/).run()
 }

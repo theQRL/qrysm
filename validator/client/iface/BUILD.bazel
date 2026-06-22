@@ -1,23 +1,25 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "iface",
     srcs = [
         "beacon_chain_client.go",
         "node_client.go",
+        "qrysm_chain_client.go",
         "validator.go",
         "validator_client.go",
     ],
     importpath = "github.com/theQRL/qrysm/validator/client/iface",
     visibility = ["//validator:__subpackages__"],
     deps = [
-        "//config/fieldparams:go_default_library",
-        "//config/validator/service:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//crypto/dilithium:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "//proto/qrysm/v1alpha1/validator-client:go_default_library",
-        "//validator/keymanager:go_default_library",
-        "@com_github_golang_protobuf//ptypes/empty",
+        "//config/fieldparams",
+        "//config/validator/service",
+        "//consensus-types/primitives",
+        "//crypto/ml_dsa_87",
+        "//proto/qrysm/v1alpha1",
+        "//proto/qrysm/v1alpha1/validator-client",
+        "//validator/keymanager",
+        "@com_github_pkg_errors//:errors",
+        "@org_golang_google_protobuf//types/known/emptypb",
     ],
 )

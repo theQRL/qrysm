@@ -8,14 +8,15 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// ApiProxyMiddleware is a proxy between an Zond consensus API HTTP client and grpc-gateway.
+// ApiProxyMiddleware is a proxy between an QRL consensus API HTTP client and grpc-gateway.
 // The purpose of the proxy is to handle HTTP requests and gRPC responses in such a way that:
-//   - Zond consensus API requests can be handled by grpc-gateway correctly
-//   - gRPC responses can be returned as spec-compliant Zond consensus API responses
+//   - QRL consensus API requests can be handled by grpc-gateway correctly
+//   - gRPC responses can be returned as spec-compliant QRL consensus API responses
 type ApiProxyMiddleware struct {
 	GatewayAddress  string
 	EndpointCreator EndpointFactory
 	Timeout         time.Duration
+	ProxyClient     *http.Client
 	router          *mux.Router
 }
 
@@ -29,11 +30,11 @@ type EndpointFactory interface {
 // Endpoint is a representation of an API HTTP endpoint that should be proxied by the middleware.
 type Endpoint struct {
 	Path               string          // The path of the HTTP endpoint.
-	GetResponse        interface{}     // The struct corresponding to the JSON structure used in a GET response.
-	PostRequest        interface{}     // The struct corresponding to the JSON structure used in a POST request.
-	PostResponse       interface{}     // The struct corresponding to the JSON structure used in a POST response.
-	DeleteRequest      interface{}     // The struct corresponding to the JSON structure used in a DELETE request.
-	DeleteResponse     interface{}     // The struct corresponding to the JSON structure used in a DELETE response.
+	GetResponse        any             // The struct corresponding to the JSON structure used in a GET response.
+	PostRequest        any             // The struct corresponding to the JSON structure used in a POST request.
+	PostResponse       any             // The struct corresponding to the JSON structure used in a POST response.
+	DeleteRequest      any             // The struct corresponding to the JSON structure used in a DELETE request.
+	DeleteResponse     any             // The struct corresponding to the JSON structure used in a DELETE response.
 	RequestURLLiterals []string        // Names of URL parameters that should not be base64-encoded.
 	RequestQueryParams []QueryParam    // Query parameters of the request.
 	Err                ErrorJson       // The struct corresponding to the error that should be returned in case of a request failure.
@@ -66,8 +67,8 @@ type CustomHandler = func(m *ApiProxyMiddleware, endpoint Endpoint, w http.Respo
 type HookCollection struct {
 	OnPreDeserializeRequestBodyIntoContainer      func(endpoint *Endpoint, w http.ResponseWriter, req *http.Request) (RunDefault, ErrorJson)
 	OnPostDeserializeRequestBodyIntoContainer     func(endpoint *Endpoint, w http.ResponseWriter, req *http.Request) ErrorJson
-	OnPreDeserializeGrpcResponseBodyIntoContainer func([]byte, interface{}) (RunDefault, ErrorJson)
-	OnPreSerializeMiddlewareResponseIntoJson      func(interface{}) (RunDefault, []byte, ErrorJson)
+	OnPreDeserializeGrpcResponseBodyIntoContainer func([]byte, any) (RunDefault, ErrorJson)
+	OnPreSerializeMiddlewareResponseIntoJson      func(any) (RunDefault, []byte, ErrorJson)
 }
 
 // fieldProcessor applies the processing function f to a value when the tag is present on the field.
@@ -144,7 +145,7 @@ func (m *ApiProxyMiddleware) WithMiddleware(path string) http.HandlerFunc {
 				return
 			}
 
-			var resp interface{}
+			var resp any
 			if req.Method == "GET" {
 				resp = endpoint.GetResponse
 			} else if req.Method == "DELETE" {
@@ -223,7 +224,7 @@ func deserializeRequestBodyIntoContainerWrapped(endpoint *Endpoint, req *http.Re
 	return nil
 }
 
-func deserializeGrpcResponseBodyIntoContainerWrapped(endpoint *Endpoint, grpcResponseBody []byte, resp interface{}) ErrorJson {
+func deserializeGrpcResponseBodyIntoContainerWrapped(endpoint *Endpoint, grpcResponseBody []byte, resp any) ErrorJson {
 	runDefault := true
 	if endpoint.Hooks.OnPreDeserializeGrpcResponseBodyIntoContainer != nil {
 		run, errJson := endpoint.Hooks.OnPreDeserializeGrpcResponseBodyIntoContainer(grpcResponseBody, resp)
@@ -242,7 +243,7 @@ func deserializeGrpcResponseBodyIntoContainerWrapped(endpoint *Endpoint, grpcRes
 	return nil
 }
 
-func serializeMiddlewareResponseIntoJsonWrapped(endpoint *Endpoint, respJson []byte, resp interface{}) ([]byte, ErrorJson) {
+func serializeMiddlewareResponseIntoJsonWrapped(endpoint *Endpoint, respJson []byte, resp any) ([]byte, ErrorJson) {
 	runDefault := true
 	var errJson ErrorJson
 	if endpoint.Hooks.OnPreSerializeMiddlewareResponseIntoJson != nil {

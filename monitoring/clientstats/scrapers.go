@@ -12,7 +12,7 @@ import (
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/prom2json"
 	log "github.com/sirupsen/logrus"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 type beaconNodeScraper struct {
@@ -91,7 +91,7 @@ func scrapeProm(url string, tripper http.RoundTripper) (map[string]*dto.MetricFa
 	for {
 		select {
 		case fam, chanOpen := <-mfChan:
-			// FetchMetricFamiles will close the channel when done
+			// FetchMetricFamilies will close the channel when done
 			// at which point we want to stop the goroutine
 			if fam == nil && !chanOpen {
 				return result, nil
@@ -198,7 +198,7 @@ func populateBeaconNodeStats(pf metricMap) BeaconNodeStats {
 	} else {
 		m = f.Metric[0]
 		if int64(m.Gauge.GetValue()) == bs.SyncBeaconHeadSlot {
-			bs.SyncEth2Synced = true
+			bs.SyncConsensusSynced = true
 		}
 	}
 
@@ -225,14 +225,14 @@ func populateBeaconNodeStats(pf metricMap) BeaconNodeStats {
 		}
 	}
 
-	f, err = pf.getFamily("powchain_sync_eth1_connected")
+	f, err = pf.getFamily("execution_chain_sync_execution_connected")
 	if err != nil {
-		log.WithError(err).Debug("Failed to get powchain_sync_eth1_connected")
+		log.WithError(err).Debug("Failed to get execution_chain_sync_execution_connected")
 	} else {
 		m = f.Metric[0]
-		bs.SyncEth1Connected = false
+		bs.SyncExecutionConnected = false
 		if int64(m.Gauge.GetValue()) == 1 {
-			bs.SyncEth1Connected = true
+			bs.SyncExecutionConnected = true
 		}
 	}
 
@@ -240,7 +240,7 @@ func populateBeaconNodeStats(pf metricMap) BeaconNodeStats {
 }
 
 func statusIsActive(statusCode int64) bool {
-	s := zond.ValidatorStatus(statusCode)
+	s := qrysmpb.ValidatorStatus(statusCode)
 	return s.String() == "ACTIVE"
 }
 

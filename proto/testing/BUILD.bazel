@@ -16,53 +16,43 @@ proto_library(
 )
 
 go_proto_library(
-    name = "zond_testing_go_proto",
+    name = "testing_go_proto",
     compiler = "//:cast_proto_compiler",
     importpath = "github.com/theQRL/qrysm/proto/testing",
     proto = ":testing_proto",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_golang_protobuf//proto:go_default_library",
         "@io_bazel_rules_go//proto/wkt:timestamp_go_proto",
-        "@org_golang_google_protobuf//reflect/protoreflect:go_default_library",
-        "@org_golang_google_protobuf//runtime/protoimpl:go_default_library",
-        "@org_golang_google_protobuf//types/descriptorpb:go_default_library",
-        "@org_golang_google_protobuf//types/known/timestamppb:go_default_library",
+        "@org_golang_google_protobuf//proto",
+        "@org_golang_google_protobuf//reflect/protoreflect",
+        "@org_golang_google_protobuf//runtime/protoimpl",
+        "@org_golang_google_protobuf//types/descriptorpb",
+        "@org_golang_google_protobuf//types/known/timestamppb",
     ],
 )
 
 go_library(
-    name = "go_default_library",
+    name = "testing",
     testonly = True,
-    embed = [":zond_testing_go_proto"],
+    embed = [":testing_go_proto"],
     importpath = "github.com/theQRL/qrysm/proto/testing",
     visibility = ["//visibility:public"],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "testing_test",
     size = "small",
-    srcs = [
-        "tags_test.go",
-    ],
+    srcs = ["tags_test.go"],
     data = [
         #"@consensus_spec_tests_mainnet//:test_data",
         #"@consensus_spec_tests_minimal//:test_data",
     ],
-    embed = [":go_default_library"],
+    embed = [":testing"],
     tags = ["spectest"],
     deps = [
-        "//beacon-chain/state/stateutil:go_default_library",
-        "//config/fieldparams:go_default_library",
-        "//config/params:go_default_library",
-        "//encoding/bytesutil:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "//testing/assert:go_default_library",
-        "//testing/require:go_default_library",
-        "//testing/util:go_default_library",
-        "@com_github_ghodss_yaml//:go_default_library",
-        "@com_github_golang_snappy//:go_default_library",
-        "@com_github_prysmaticlabs_fastssz//:go_default_library",
-        "@io_bazel_rules_go//go/tools/bazel:go_default_library",
+        "//config/fieldparams",
+        "//proto/qrysm/v1alpha1",
+        "//testing/assert",
+        "//testing/require",
     ],
 )

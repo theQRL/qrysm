@@ -11,14 +11,14 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestSlotFromBlock(t *testing.T) {
-	b := util.NewBeaconBlockCapella()
+	b := util.NewBeaconBlockZond()
 	var slot primitives.Slot = 3
 	b.Block.Slot = slot
 	bb, err := b.MarshalSSZ()
@@ -38,7 +38,7 @@ func TestByState(t *testing.T) {
 	}{
 		{
 			name:        "genesis",
-			version:     version.Capella,
+			version:     version.Zond,
 			slot:        0,
 			forkversion: bytesutil.ToBytes4(bc.GenesisForkVersion),
 		},
@@ -46,7 +46,7 @@ func TestByState(t *testing.T) {
 	for _, c := range cases {
 		st, err := stateForVersion(c.version)
 		require.NoError(t, err)
-		require.NoError(t, st.SetFork(&zondpb.Fork{
+		require.NoError(t, st.SetFork(&qrysmpb.Fork{
 			PreviousVersion: make([]byte, 4),
 			CurrentVersion:  c.forkversion[:],
 			Epoch:           0,
@@ -64,8 +64,8 @@ func TestByState(t *testing.T) {
 
 func stateForVersion(v int) (state.BeaconState, error) {
 	switch v {
-	case version.Capella:
-		return util.NewBeaconStateCapella()
+	case version.Zond:
+		return util.NewBeaconStateZond()
 	default:
 		return nil, fmt.Errorf("unrecognized version %d", v)
 	}
@@ -84,7 +84,7 @@ func TestUnmarshalState(t *testing.T) {
 	}{
 		{
 			name:        "genesis",
-			version:     version.Capella,
+			version:     version.Zond,
 			slot:        0,
 			forkversion: bytesutil.ToBytes4(bc.GenesisForkVersion),
 		},
@@ -92,7 +92,7 @@ func TestUnmarshalState(t *testing.T) {
 	for _, c := range cases {
 		st, err := stateForVersion(c.version)
 		require.NoError(t, err)
-		require.NoError(t, st.SetFork(&zondpb.Fork{
+		require.NoError(t, st.SetFork(&qrysmpb.Fork{
 			PreviousVersion: make([]byte, 4),
 			CurrentVersion:  c.forkversion[:],
 			Epoch:           0,
@@ -124,7 +124,7 @@ func TestUnmarshalBlock(t *testing.T) {
 	}{
 		{
 			name:    "genesis - slot 0",
-			b:       signedTestBlockCapella,
+			b:       signedTestBlockZond,
 			version: genv,
 		},
 	}
@@ -161,7 +161,7 @@ func TestUnmarshalBlindedBlock(t *testing.T) {
 	}{
 		{
 			name:    "genesis - slot 0",
-			b:       signedTestBlindedBlockCapella,
+			b:       signedTestBlindedBlockZond,
 			version: genv,
 		},
 	}
@@ -187,16 +187,16 @@ func TestUnmarshalBlindedBlock(t *testing.T) {
 	}
 }
 
-func signedTestBlockCapella(t *testing.T, slot primitives.Slot) interfaces.ReadOnlySignedBeaconBlock {
-	b := util.NewBeaconBlockCapella()
+func signedTestBlockZond(t *testing.T, slot primitives.Slot) interfaces.ReadOnlySignedBeaconBlock {
+	b := util.NewBeaconBlockZond()
 	b.Block.Slot = slot
 	s, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)
 	return s
 }
 
-func signedTestBlindedBlockCapella(t *testing.T, slot primitives.Slot) interfaces.ReadOnlySignedBeaconBlock {
-	b := util.NewBlindedBeaconBlockCapella()
+func signedTestBlindedBlockZond(t *testing.T, slot primitives.Slot) interfaces.ReadOnlySignedBeaconBlock {
+	b := util.NewBlindedBeaconBlockZond()
 	b.Block.Slot = slot
 	s, err := blocks.NewSignedBeaconBlock(b)
 	require.NoError(t, err)

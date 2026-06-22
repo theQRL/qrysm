@@ -7,10 +7,10 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/beacon"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
@@ -19,7 +19,7 @@ import (
 const stringPubKey = "0x8000091c2ae64ee414a54c1cc1fc67dec663408bc636cb86756e0200e41a75c8f86603f104f02c856983d2783116be13"
 
 func getPubKeyAndURL(t *testing.T) ([]byte, string) {
-	baseUrl := "/zond/v1/beacon/states/head/validators"
+	baseUrl := "/qrl/v1/beacon/states/head/validators"
 	url := fmt.Sprintf("%s?id=%s", baseUrl, stringPubKey)
 
 	pubKey, err := hexutil.Decode(stringPubKey)
@@ -68,7 +68,7 @@ func TestIndex_Nominal(t *testing.T) {
 
 	validatorIndex, err := validatorClient.ValidatorIndex(
 		ctx,
-		&zondpb.ValidatorIndexRequest{
+		&qrysmpb.ValidatorIndexRequest{
 			PublicKey: pubKey,
 		},
 	)
@@ -109,7 +109,7 @@ func TestIndex_UnexistingValidator(t *testing.T) {
 
 	_, err := validatorClient.ValidatorIndex(
 		ctx,
-		&zondpb.ValidatorIndexRequest{
+		&qrysmpb.ValidatorIndexRequest{
 			PublicKey: pubKey,
 		},
 	)
@@ -158,7 +158,7 @@ func TestIndex_BadIndexError(t *testing.T) {
 
 	_, err := validatorClient.ValidatorIndex(
 		ctx,
-		&zondpb.ValidatorIndexRequest{
+		&qrysmpb.ValidatorIndexRequest{
 			PublicKey: pubKey,
 		},
 	)
@@ -193,7 +193,7 @@ func TestIndex_JsonResponseError(t *testing.T) {
 
 	_, err := validatorClient.ValidatorIndex(
 		ctx,
-		&zondpb.ValidatorIndexRequest{
+		&qrysmpb.ValidatorIndexRequest{
 			PublicKey: pubKey,
 		},
 	)

@@ -2,7 +2,7 @@ package state_native
 
 import (
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // Id is the identifier of the beacon state.
@@ -42,7 +42,7 @@ func (b *BeaconState) Slot() primitives.Slot {
 }
 
 // Fork version of the beacon chain.
-func (b *BeaconState) Fork() *zondpb.Fork {
+func (b *BeaconState) Fork() *qrysmpb.Fork {
 	if b.fork == nil {
 		return nil
 	}
@@ -55,7 +55,7 @@ func (b *BeaconState) Fork() *zondpb.Fork {
 
 // forkVal version of the beacon chain.
 // This assumes that a lock is already held on BeaconState.
-func (b *BeaconState) forkVal() *zondpb.Fork {
+func (b *BeaconState) forkVal() *qrysmpb.Fork {
 	if b.fork == nil {
 		return nil
 	}
@@ -64,7 +64,7 @@ func (b *BeaconState) forkVal() *zondpb.Fork {
 	copy(prevVersion, b.fork.PreviousVersion)
 	currVersion := make([]byte, len(b.fork.CurrentVersion))
 	copy(currVersion, b.fork.CurrentVersion)
-	return &zondpb.Fork{
+	return &qrysmpb.Fork{
 		PreviousVersion: prevVersion,
 		CurrentVersion:  currVersion,
 		Epoch:           b.fork.Epoch,
@@ -84,7 +84,7 @@ func (b *BeaconState) HistoricalRoots() ([][]byte, error) {
 }
 
 // HistoricalSummaries of the beacon state.
-func (b *BeaconState) HistoricalSummaries() ([]*zondpb.HistoricalSummary, error) {
+func (b *BeaconState) HistoricalSummaries() ([]*qrysmpb.HistoricalSummary, error) {
 	if b.historicalSummaries == nil {
 		return nil, nil
 	}
@@ -97,6 +97,6 @@ func (b *BeaconState) HistoricalSummaries() ([]*zondpb.HistoricalSummary, error)
 
 // historicalSummariesVal of the beacon state.
 // This assumes that a lock is already held on BeaconState.
-func (b *BeaconState) historicalSummariesVal() []*zondpb.HistoricalSummary {
-	return zondpb.CopyHistoricalSummaries(b.historicalSummaries)
+func (b *BeaconState) historicalSummariesVal() []*qrysmpb.HistoricalSummary {
+	return qrysmpb.CopyHistoricalSummaries(b.historicalSummaries)
 }

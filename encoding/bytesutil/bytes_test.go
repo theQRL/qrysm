@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/testing/assert"
 )
@@ -219,7 +219,7 @@ func TestToBytes20(t *testing.T) {
 
 func BenchmarkToBytes32(b *testing.B) {
 	x := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		bytesutil.ToBytes32(x)
 	}
 }
@@ -274,7 +274,7 @@ func TestSafeCopyBytes_Copy(t *testing.T) {
 
 func BenchmarkSafeCopyBytes(b *testing.B) {
 	dSlice := make([][]byte, 900000)
-	for i := 0; i < 900000; i++ {
+	for i := range 900000 {
 		slice := make([]byte, 32)
 		slice[0] = 'A'
 		dSlice[i] = slice

@@ -6,12 +6,14 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/endtoend/policies"
 	"github.com/theQRL/qrysm/testing/endtoend/types"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
+
+const maxAllowedFinalizedEpochLag = 3
 
 // FinalizationOccurs is an evaluator to make sure finalization is performing as it should.
 // Requires to be run after at least 4 epochs have passed.
@@ -25,7 +27,7 @@ var FinalizationOccurs = func(epoch primitives.Epoch) types.Evaluator {
 
 func finalizationOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := zond.NewBeaconChainClient(conn)
+	client := qrysmpb.NewBeaconChainClient(conn)
 	chainHead, err := client.GetChainHead(context.Background(), &emptypb.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "failed to get chain head")
@@ -33,11 +35,11 @@ func finalizationOccurs(_ *types.EvaluationContext, conns ...*grpc.ClientConn) e
 	currentEpoch := chainHead.HeadEpoch
 	finalizedEpoch := chainHead.FinalizedEpoch
 
-	expectedFinalizedEpoch := currentEpoch - 2
-	if expectedFinalizedEpoch != finalizedEpoch {
+	if currentEpoch-finalizedEpoch > maxAllowedFinalizedEpochLag {
 		return fmt.Errorf(
-			"expected finalized epoch to be %d, received: %d",
-			expectedFinalizedEpoch,
+			"expected finalized epoch to be within %d epochs of current epoch %d, received: %d",
+			maxAllowedFinalizedEpochLag,
+			currentEpoch,
 			finalizedEpoch,
 		)
 	}

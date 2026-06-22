@@ -11,7 +11,7 @@ import (
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	mock2 "github.com/stretchr/testify/mock"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/mock"
 	"github.com/theQRL/qrysm/testing/require"
@@ -33,12 +33,12 @@ func TestWaitActivation_ContextCanceled(t *testing.T) {
 
 	validatorClient.EXPECT().WaitForActivation(
 		gomock.Any(),
-		&zondpb.ValidatorActivationRequest{
+		&qrysmpb.ValidatorActivationRequest{
 			PublicKeys: [][]byte{kp.pub[:]},
 		},
 	).Return(clientStream, nil)
 	clientStream.EXPECT().Recv().Return(
-		&zondpb.ValidatorActivationResponse{},
+		&qrysmpb.ValidatorActivationResponse{},
 		nil,
 	)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -60,13 +60,13 @@ func TestWaitActivation_StreamSetupFails_AttemptsToReconnect(t *testing.T) {
 	clientStream := mock.NewMockBeaconNodeValidator_WaitForActivationClient(ctrl)
 	validatorClient.EXPECT().WaitForActivation(
 		gomock.Any(),
-		&zondpb.ValidatorActivationRequest{
+		&qrysmpb.ValidatorActivationRequest{
 			PublicKeys: [][]byte{kp.pub[:]},
 		},
 	).Return(clientStream, errors.New("failed stream")).Return(clientStream, nil)
-	beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&zondpb.Validators{}, nil)
+	beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&qrysmpb.Validators{}, nil)
 	resp := generateMockStatusResponse([][]byte{kp.pub[:]})
-	resp.Statuses[0].Status.Status = zondpb.ValidatorStatus_ACTIVE
+	resp.Statuses[0].Status.Status = qrysmpb.ValidatorStatus_ACTIVE
 	clientStream.EXPECT().Recv().Return(resp, nil)
 	assert.NoError(t, v.WaitForActivation(context.Background(), nil))
 }
@@ -85,14 +85,14 @@ func TestWaitForActivation_ReceiveErrorFromStream_AttemptsReconnection(t *testin
 	clientStream := mock.NewMockBeaconNodeValidator_WaitForActivationClient(ctrl)
 	validatorClient.EXPECT().WaitForActivation(
 		gomock.Any(),
-		&zondpb.ValidatorActivationRequest{
+		&qrysmpb.ValidatorActivationRequest{
 			PublicKeys: [][]byte{kp.pub[:]},
 		},
 	).Return(clientStream, nil)
-	beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&zondpb.Validators{}, nil)
+	beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&qrysmpb.Validators{}, nil)
 	// A stream fails the first time, but succeeds the second time.
 	resp := generateMockStatusResponse([][]byte{kp.pub[:]})
-	resp.Statuses[0].Status.Status = zondpb.ValidatorStatus_ACTIVE
+	resp.Statuses[0].Status.Status = qrysmpb.ValidatorStatus_ACTIVE
 	clientStream.EXPECT().Recv().Return(
 		nil,
 		errors.New("fails"),
@@ -114,15 +114,15 @@ func TestWaitActivation_LogsActivationEpochOK(t *testing.T) {
 		beaconClient:    beaconClient,
 	}
 	resp := generateMockStatusResponse([][]byte{kp.pub[:]})
-	resp.Statuses[0].Status.Status = zondpb.ValidatorStatus_ACTIVE
+	resp.Statuses[0].Status.Status = qrysmpb.ValidatorStatus_ACTIVE
 	clientStream := mock.NewMockBeaconNodeValidator_WaitForActivationClient(ctrl)
 	validatorClient.EXPECT().WaitForActivation(
 		gomock.Any(),
-		&zondpb.ValidatorActivationRequest{
+		&qrysmpb.ValidatorActivationRequest{
 			PublicKeys: [][]byte{kp.pub[:]},
 		},
 	).Return(clientStream, nil)
-	beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&zondpb.Validators{}, nil)
+	beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&qrysmpb.Validators{}, nil)
 	clientStream.EXPECT().Recv().Return(
 		resp,
 		nil,
@@ -143,15 +143,15 @@ func TestWaitForActivation_Exiting(t *testing.T) {
 		beaconClient:    beaconClient,
 	}
 	resp := generateMockStatusResponse([][]byte{kp.pub[:]})
-	resp.Statuses[0].Status.Status = zondpb.ValidatorStatus_EXITING
+	resp.Statuses[0].Status.Status = qrysmpb.ValidatorStatus_EXITING
 	clientStream := mock.NewMockBeaconNodeValidator_WaitForActivationClient(ctrl)
 	validatorClient.EXPECT().WaitForActivation(
 		gomock.Any(),
-		&zondpb.ValidatorActivationRequest{
+		&qrysmpb.ValidatorActivationRequest{
 			PublicKeys: [][]byte{kp.pub[:]},
 		},
 	).Return(clientStream, nil)
-	beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&zondpb.Validators{}, nil)
+	beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&qrysmpb.Validators{}, nil)
 	clientStream.EXPECT().Recv().Return(
 		resp,
 		nil,
@@ -182,19 +182,65 @@ func TestWaitForActivation_RefetchKeys(t *testing.T) {
 		beaconClient:    beaconClient,
 	}
 	resp := generateMockStatusResponse([][]byte{kp.pub[:]})
-	resp.Statuses[0].Status.Status = zondpb.ValidatorStatus_ACTIVE
+	resp.Statuses[0].Status.Status = qrysmpb.ValidatorStatus_ACTIVE
 	clientStream := mock.NewMockBeaconNodeValidator_WaitForActivationClient(ctrl)
 	validatorClient.EXPECT().WaitForActivation(
 		gomock.Any(),
-		&zondpb.ValidatorActivationRequest{
+		&qrysmpb.ValidatorActivationRequest{
 			PublicKeys: [][]byte{kp.pub[:]},
 		},
 	).Return(clientStream, nil)
-	beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&zondpb.Validators{}, nil)
+	beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&qrysmpb.Validators{}, nil)
 	clientStream.EXPECT().Recv().Return(
 		resp,
 		nil)
-	assert.NoError(t, v.internalWaitForActivation(context.Background(), make(chan [][field_params.DilithiumPubkeyLength]byte)), "Could not wait for activation")
+	assert.NoError(t, v.internalWaitForActivation(context.Background(), make(chan [][field_params.MLDSA87PubkeyLength]byte)), "Could not wait for activation")
+	assert.LogsContain(t, hook, msgNoKeysFetched)
+	assert.LogsContain(t, hook, "Validator activated")
+}
+
+func TestWaitForActivation_AccountsChangedWhileNoKeysFetched(t *testing.T) {
+	originalPeriod := keyRefetchPeriod
+	defer func() {
+		keyRefetchPeriod = originalPeriod
+	}()
+	keyRefetchPeriod = time.Hour
+
+	hook := logTest.NewGlobal()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	validatorClient := validatormock.NewMockValidatorClient(ctrl)
+	beaconClient := validatormock.NewMockBeaconChainClient(ctrl)
+
+	kp := randKeypair(t)
+	km := newMockKeymanager(t, kp)
+	km.fetchNoKeys = true
+
+	v := validator{
+		validatorClient: validatorClient,
+		keyManager:      km,
+		beaconClient:    beaconClient,
+	}
+	resp := generateMockStatusResponse([][]byte{kp.pub[:]})
+	resp.Statuses[0].Status.Status = qrysmpb.ValidatorStatus_ACTIVE
+	clientStream := mock.NewMockBeaconNodeValidator_WaitForActivationClient(ctrl)
+	validatorClient.EXPECT().WaitForActivation(
+		gomock.Any(),
+		&qrysmpb.ValidatorActivationRequest{
+			PublicKeys: [][]byte{kp.pub[:]},
+		},
+	).Return(clientStream, nil)
+	beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&qrysmpb.Validators{}, nil)
+	clientStream.EXPECT().Recv().Return(
+		resp,
+		nil)
+
+	accountsChangedChan := make(chan [][field_params.MLDSA87PubkeyLength]byte, 1)
+	accountsChangedChan <- nil
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	assert.NoError(t, v.internalWaitForActivation(ctx, accountsChangedChan), "Could not wait for activation")
 	assert.LogsContain(t, hook, msgNoKeysFetched)
 	assert.LogsContain(t, hook, "Validator activated")
 }
@@ -217,27 +263,27 @@ func TestWaitForActivation_AccountsChanged(t *testing.T) {
 			beaconClient:    beaconClient,
 		}
 		inactiveResp := generateMockStatusResponse([][]byte{inactive.pub[:]})
-		inactiveResp.Statuses[0].Status.Status = zondpb.ValidatorStatus_UNKNOWN_STATUS
+		inactiveResp.Statuses[0].Status.Status = qrysmpb.ValidatorStatus_UNKNOWN_STATUS
 		inactiveClientStream := mock.NewMockBeaconNodeValidator_WaitForActivationClient(ctrl)
 		validatorClient.EXPECT().WaitForActivation(
 			gomock.Any(),
-			&zondpb.ValidatorActivationRequest{
+			&qrysmpb.ValidatorActivationRequest{
 				PublicKeys: [][]byte{inactive.pub[:]},
 			},
 		).Return(inactiveClientStream, nil)
-		beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&zondpb.Validators{}, nil).AnyTimes()
+		beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&qrysmpb.Validators{}, nil).AnyTimes()
 		inactiveClientStream.EXPECT().Recv().Return(
 			inactiveResp,
 			nil,
 		).AnyTimes()
 
 		activeResp := generateMockStatusResponse([][]byte{inactive.pub[:], active.pub[:]})
-		activeResp.Statuses[0].Status.Status = zondpb.ValidatorStatus_UNKNOWN_STATUS
-		activeResp.Statuses[1].Status.Status = zondpb.ValidatorStatus_ACTIVE
+		activeResp.Statuses[0].Status.Status = qrysmpb.ValidatorStatus_UNKNOWN_STATUS
+		activeResp.Statuses[1].Status.Status = qrysmpb.ValidatorStatus_ACTIVE
 		activeClientStream := mock.NewMockBeaconNodeValidator_WaitForActivationClient(ctrl)
 		validatorClient.EXPECT().WaitForActivation(
 			gomock.Any(),
-			mock2.MatchedBy(func(req *zondpb.ValidatorActivationRequest) bool {
+			mock2.MatchedBy(func(req *qrysmpb.ValidatorActivationRequest) bool {
 				found := 0
 				for _, pk := range req.PublicKeys {
 					if bytes.Equal(pk, active.pub[:]) || bytes.Equal(pk, inactive.pub[:]) {
@@ -256,7 +302,7 @@ func TestWaitForActivation_AccountsChanged(t *testing.T) {
 			// We add the active key into the keymanager and simulate a key refresh.
 			time.Sleep(time.Second * 1)
 			require.NoError(t, km.add(active))
-			km.SimulateAccountChanges(make([][field_params.DilithiumPubkeyLength]byte, 0))
+			km.SimulateAccountChanges(make([][field_params.MLDSA87PubkeyLength]byte, 0))
 		}()
 
 		assert.NoError(t, v.WaitForActivation(context.Background(), nil))
@@ -269,12 +315,12 @@ func TestWaitForActivation_AccountsChanged(t *testing.T) {
 			inactivePrivKey, err :=
 				util.PrivateKeyFromSeedAndPath(seed, fmt.Sprintf(derived.ValidatingKeyDerivationPathTemplate, 0))
 			require.NoError(t, err)
-			var inactivePubKey [field_params.DilithiumPubkeyLength]byte
+			var inactivePubKey [field_params.MLDSA87PubkeyLength]byte
 			copy(inactivePubKey[:], inactivePrivKey.PublicKey().Marshal())
 			activePrivKey, err :=
 				util.PrivateKeyFromSeedAndPath(seed, fmt.Sprintf(derived.ValidatingKeyDerivationPathTemplate, 1))
 			require.NoError(t, err)
-			var activePubKey [field_params.DilithiumPubkeyLength]byte
+			var activePubKey [field_params.MLDSA87PubkeyLength]byte
 			copy(activePubKey[:], activePrivKey.PublicKey().Marshal())
 			wallet := &walletMock.Wallet{
 				Files:            make(map[string]map[string][]byte),
@@ -299,27 +345,27 @@ func TestWaitForActivation_AccountsChanged(t *testing.T) {
 			}
 
 			inactiveResp := generateMockStatusResponse([][]byte{inactivePubKey[:]})
-			inactiveResp.Statuses[0].Status.Status = zondpb.ValidatorStatus_UNKNOWN_STATUS
+			inactiveResp.Statuses[0].Status.Status = qrysmpb.ValidatorStatus_UNKNOWN_STATUS
 			inactiveClientStream := mock.NewMockBeaconNodeValidator_WaitForActivationClient(ctrl)
 			validatorClient.EXPECT().WaitForActivation(
 				gomock.Any(),
-				&zondpb.ValidatorActivationRequest{
+				&qrysmpb.ValidatorActivationRequest{
 					PublicKeys: [][]byte{inactivePubKey[:]},
 				},
 			).Return(inactiveClientStream, nil)
-			beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&zondpb.Validators{}, nil).AnyTimes()
+			beaconClient.EXPECT().ListValidators(gomock.Any(), gomock.Any()).Return(&qrysmpb.Validators{}, nil).AnyTimes()
 			inactiveClientStream.EXPECT().Recv().Return(
 				inactiveResp,
 				nil,
 			).AnyTimes()
 
 			activeResp := generateMockStatusResponse([][]byte{inactivePubKey[:], activePubKey[:]})
-			activeResp.Statuses[0].Status.Status = zondpb.ValidatorStatus_UNKNOWN_STATUS
-			activeResp.Statuses[1].Status.Status = zondpb.ValidatorStatus_ACTIVE
+			activeResp.Statuses[0].Status.Status = qrysmpb.ValidatorStatus_UNKNOWN_STATUS
+			activeResp.Statuses[1].Status.Status = qrysmpb.ValidatorStatus_ACTIVE
 			activeClientStream := mock.NewMockBeaconNodeValidator_WaitForActivationClient(ctrl)
 			validatorClient.EXPECT().WaitForActivation(
 				gomock.Any(),
-				&zondpb.ValidatorActivationRequest{
+				&qrysmpb.ValidatorActivationRequest{
 					PublicKeys: [][]byte{inactivePubKey[:], activePubKey[:]},
 				},
 			).Return(activeClientStream, nil)
@@ -328,13 +374,13 @@ func TestWaitForActivation_AccountsChanged(t *testing.T) {
 				nil,
 			)
 
-			channel := make(chan [][field_params.DilithiumPubkeyLength]byte)
+			channel := make(chan [][field_params.MLDSA87PubkeyLength]byte)
 			go func() {
 				// We add the active key into the keymanager and simulate a key refresh.
 				time.Sleep(time.Second * 1)
 				err = km.RecoverAccountsFromMnemonic(ctx, constant.TestMnemonic, derived.DefaultMnemonicLanguage, "", 2)
 				require.NoError(t, err)
-				channel <- [][field_params.DilithiumPubkeyLength]byte{}
+				channel <- [][field_params.MLDSA87PubkeyLength]byte{}
 			}()
 
 			assert.NoError(t, v.internalWaitForActivation(context.Background(), channel))

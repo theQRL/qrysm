@@ -1,7 +1,6 @@
 package util
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"testing"
@@ -12,14 +11,15 @@ import (
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
 func TestBlockSignature(t *testing.T) {
-	beaconState, privKeys := DeterministicGenesisStateCapella(t, 100)
-	block, err := GenerateFullBlockCapella(beaconState, privKeys, nil, 0)
+	beaconState, privKeys := DeterministicGenesisStateZond(t, 100)
+	block, err := GenerateFullBlockZond(beaconState, privKeys, nil, 0)
 	require.NoError(t, err)
 
 	require.NoError(t, beaconState.SetSlot(beaconState.Slot()+1))
@@ -28,19 +28,23 @@ func TestBlockSignature(t *testing.T) {
 
 	assert.NoError(t, beaconState.SetSlot(beaconState.Slot()-1))
 	epoch := slots.ToEpoch(block.Block.Slot)
-	blockSig, err := signing.ComputeDomainAndSign(beaconState, epoch, block.Block, params.BeaconConfig().DomainBeaconProposer, privKeys[proposerIdx])
+	domain, err := signing.Domain(beaconState.Fork(), epoch, params.BeaconConfig().DomainBeaconProposer, beaconState.GenesisValidatorsRoot())
 	require.NoError(t, err)
 
 	signature, err := BlockSignature(beaconState, block.Block, privKeys)
 	assert.NoError(t, err)
+	signingRoot, err := signing.ComputeSigningRoot(block.Block, domain)
+	require.NoError(t, err)
 
-	if !bytes.Equal(blockSig, signature.Marshal()) {
-		t.Errorf("Expected block signatures to be equal, received %#x != %#x", blockSig, signature.Marshal())
-	}
+	pubKey, err := ml_dsa_87.PublicKeyFromBytes(privKeys[proposerIdx].PublicKey().Marshal())
+	require.NoError(t, err)
+	ok, err := ml_dsa_87.VerifySignature(signature.Marshal(), signingRoot, pubKey)
+	require.NoError(t, err)
+	assert.Equal(t, true, ok)
 }
 
 func TestRandaoReveal(t *testing.T) {
-	beaconState, privKeys := DeterministicGenesisStateCapella(t, 100)
+	beaconState, privKeys := DeterministicGenesisStateZond(t, 100)
 
 	epoch := time.CurrentEpoch(beaconState)
 	randaoReveal, err := RandaoReveal(beaconState, epoch, privKeys)
@@ -52,10 +56,14 @@ func TestRandaoReveal(t *testing.T) {
 	binary.LittleEndian.PutUint64(buf, uint64(epoch))
 	// We make the previous validator's index sign the message instead of the proposer.
 	sszUint := primitives.SSZUint64(epoch)
-	epochSignature, err := signing.ComputeDomainAndSign(beaconState, epoch, &sszUint, params.BeaconConfig().DomainRandao, privKeys[proposerIdx])
+	domain, err := signing.Domain(beaconState.Fork(), epoch, params.BeaconConfig().DomainRandao, beaconState.GenesisValidatorsRoot())
+	require.NoError(t, err)
+	signingRoot, err := signing.ComputeSigningRoot(&sszUint, domain)
 	require.NoError(t, err)
 
-	if !bytes.Equal(randaoReveal, epochSignature) {
-		t.Errorf("Expected randao reveals to be equal, received %#x != %#x", randaoReveal, epochSignature)
-	}
+	pubKey, err := ml_dsa_87.PublicKeyFromBytes(privKeys[proposerIdx].PublicKey().Marshal())
+	require.NoError(t, err)
+	ok, err := ml_dsa_87.VerifySignature(randaoReveal, signingRoot, pubKey)
+	require.NoError(t, err)
+	assert.Equal(t, true, ok)
 }

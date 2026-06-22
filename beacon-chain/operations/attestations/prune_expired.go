@@ -6,15 +6,19 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	qrysmTime "github.com/theQRL/qrysm/time"
+	"github.com/theQRL/qrysm/time/slots"
 )
 
-// pruneAttsPool prunes attestations pool on every slot interval.
+// pruneAttsPool prunes attestations pool on every slot, firing near the end of
+// the slot so the deletes don't race with slot-boundary metric updates.
 func (s *Service) pruneAttsPool() {
-	ticker := time.NewTicker(s.cfg.pruneInterval)
-	defer ticker.Stop()
+	secondsPerSlot := params.BeaconConfig().SecondsPerSlot
+	offset := time.Duration(secondsPerSlot-1) * time.Second
+	slotTicker := slots.NewSlotTickerWithOffset(time.Unix(int64(s.genesisTime), 0), offset, secondsPerSlot)
+	defer slotTicker.Done()
 	for {
 		select {
-		case <-ticker.C:
+		case <-slotTicker.C():
 			s.pruneExpiredAtts()
 			s.updateMetrics()
 		case <-s.ctx.Done():
@@ -65,9 +69,10 @@ func (s *Service) pruneExpiredAtts() {
 }
 
 // Return true if the input slot has been expired.
-// Expired is defined as one epoch behind than current time.
+// Post EIP-7045, attestations from the previous epoch can still be included
+// in the current epoch's blocks, so the inclusion window is two epochs.
 func (s *Service) expired(slot primitives.Slot) bool {
-	expirationSlot := slot + params.BeaconConfig().SlotsPerEpoch
+	expirationSlot := slot + params.BeaconConfig().SlotsPerEpoch*2
 	expirationTime := s.genesisTime + uint64(expirationSlot.Mul(params.BeaconConfig().SecondsPerSlot))
 	currentTime := uint64(qrysmTime.Now().Unix())
 	return currentTime >= expirationTime

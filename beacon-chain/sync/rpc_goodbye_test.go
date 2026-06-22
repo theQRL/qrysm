@@ -167,7 +167,7 @@ func TestSendGoodbye_SendsMessage(t *testing.T) {
 	failureCode := p2ptypes.GoodbyeCodeClientShutdown
 
 	// Setup streams
-	pcl := protocol.ID("/eth2/beacon_chain/req/goodbye/1/ssz_snappy")
+	pcl := protocol.ID("/consensus/beacon_chain/req/goodbye/1/ssz_snappy")
 	topic := string(pcl)
 	r.rateLimiter.limiterMap[topic] = leakybucket.NewCollector(1, 1, time.Second, false)
 	var wg sync.WaitGroup
@@ -214,7 +214,7 @@ func TestSendGoodbye_DisconnectWithPeer(t *testing.T) {
 	failureCode := p2ptypes.GoodbyeCodeClientShutdown
 
 	// Setup streams
-	pcl := protocol.ID("/eth2/beacon_chain/req/goodbye/1/ssz_snappy")
+	pcl := protocol.ID("/consensus/beacon_chain/req/goodbye/1/ssz_snappy")
 	topic := string(pcl)
 	r.rateLimiter.limiterMap[topic] = leakybucket.NewCollector(1, 1, time.Second, false)
 	var wg sync.WaitGroup

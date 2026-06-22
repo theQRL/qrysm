@@ -14,7 +14,9 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	"github.com/theQRL/qrysm/api"
+	"github.com/theQRL/qrysm/api/client"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/shared"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
@@ -23,16 +25,16 @@ import (
 	"github.com/theQRL/qrysm/monitoring/tracing"
 	"github.com/theQRL/qrysm/network"
 	"github.com/theQRL/qrysm/network/authorization"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 	"go.opencensus.io/trace"
 )
 
 const (
-	getExecHeaderPath          = "/zond/v1/builder/header/{{.Slot}}/{{.ParentHash}}/{{.Pubkey}}"
-	getStatus                  = "/zond/v1/builder/status"
-	postBlindedBeaconBlockPath = "/zond/v1/builder/blinded_blocks"
-	postRegisterValidatorPath  = "/zond/v1/builder/validators"
+	getExecHeaderPath          = "/qrl/v1/builder/header/{{.Slot}}/{{.ParentHash}}/{{.Pubkey}}"
+	getStatus                  = "/qrl/v1/builder/status"
+	postBlindedBeaconBlockPath = "/qrl/v1/builder/blinded_blocks"
+	postRegisterValidatorPath  = "/qrl/v1/builder/validators"
 )
 
 var errMalformedHostname = errors.New("hostname must include port, separated by one colon, like example.com:3500")
@@ -60,7 +62,7 @@ func (*requestLogger) observe(r *http.Request) (e error) {
 		log.WithFields(log.Fields{
 			"body-base64": "(nil value)",
 			"url":         r.URL.String(),
-		}).Info("builder http request")
+		}).Info("Builder http request")
 		return nil
 	}
 	t := io.TeeReader(r.Body, b)
@@ -77,7 +79,7 @@ func (*requestLogger) observe(r *http.Request) (e error) {
 	log.WithFields(log.Fields{
 		"body-base64": string(body),
 		"url":         r.URL.String(),
-	}).Info("builder http request")
+	}).Info("Builder http request")
 
 	return nil
 }
@@ -87,8 +89,8 @@ var _ observer = &requestLogger{}
 // BuilderClient provides a collection of helper methods for calling Builder API endpoints.
 type BuilderClient interface {
 	NodeURL() string
-	GetHeader(ctx context.Context, slot primitives.Slot, parentHash [32]byte, pubkey [field_params.DilithiumPubkeyLength]byte) (SignedBid, error)
-	RegisterValidator(ctx context.Context, svr []*zondpb.SignedValidatorRegistrationV1) error
+	GetHeader(ctx context.Context, slot primitives.Slot, parentHash [32]byte, pubkey [field_params.MLDSA87PubkeyLength]byte) (SignedBid, error)
+	RegisterValidator(ctx context.Context, svr []*qrysmpb.SignedValidatorRegistrationV1) error
 	SubmitBlindedBlock(ctx context.Context, sb interfaces.ReadOnlySignedBeaconBlock) (interfaces.ExecutionData, error)
 	Status(ctx context.Context) error
 }
@@ -157,6 +159,10 @@ func (c *Client) do(ctx context.Context, method string, path string, body io.Rea
 	if err != nil {
 		return
 	}
+	if method == http.MethodPost {
+		req.Header.Set("Content-Type", api.JsonMediaType)
+	}
+	req.Header.Set("Accept", api.JsonMediaType)
 	req.Header.Add("User-Agent", version.BuildData())
 	for _, o := range opts {
 		o(req)
@@ -180,7 +186,7 @@ func (c *Client) do(ctx context.Context, method string, path string, body io.Rea
 		err = non200Err(r)
 		return
 	}
-	res, err = io.ReadAll(r.Body)
+	res, err = io.ReadAll(io.LimitReader(r.Body, client.MaxBodySize))
 	if err != nil {
 		err = errors.Wrap(err, "error reading http response body from builder server")
 		return
@@ -190,7 +196,7 @@ func (c *Client) do(ctx context.Context, method string, path string, body io.Rea
 
 var execHeaderTemplate = template.Must(template.New("").Parse(getExecHeaderPath))
 
-func execHeaderPath(slot primitives.Slot, parentHash [32]byte, pubkey [field_params.DilithiumPubkeyLength]byte) (string, error) {
+func execHeaderPath(slot primitives.Slot, parentHash [32]byte, pubkey [field_params.MLDSA87PubkeyLength]byte) (string, error) {
 	v := struct {
 		Slot       primitives.Slot
 		ParentHash string
@@ -209,7 +215,7 @@ func execHeaderPath(slot primitives.Slot, parentHash [32]byte, pubkey [field_par
 }
 
 // GetHeader is used by a proposing validator to request an execution payload header from the Builder node.
-func (c *Client) GetHeader(ctx context.Context, slot primitives.Slot, parentHash [32]byte, pubkey [field_params.DilithiumPubkeyLength]byte) (SignedBid, error) {
+func (c *Client) GetHeader(ctx context.Context, slot primitives.Slot, parentHash [32]byte, pubkey [field_params.MLDSA87PubkeyLength]byte) (SignedBid, error) {
 	path, err := execHeaderPath(slot, parentHash, pubkey)
 	if err != nil {
 		return nil, err
@@ -223,8 +229,8 @@ func (c *Client) GetHeader(ctx context.Context, slot primitives.Slot, parentHash
 		return nil, errors.Wrapf(err, "error unmarshaling the builder GetHeader response, using slot=%d, parentHash=%#x, pubkey=%#x", slot, parentHash, pubkey)
 	}
 	switch strings.ToLower(v.Version) {
-	case strings.ToLower(version.String(version.Capella)):
-		hr := &ExecHeaderResponseCapella{}
+	case strings.ToLower(version.String(version.Zond)):
+		hr := &ExecHeaderResponseZond{}
 		if err := json.Unmarshal(hb, hr); err != nil {
 			return nil, errors.Wrapf(err, "error unmarshaling the builder GetHeader response, using slot=%d, parentHash=%#x, pubkey=%#x", slot, parentHash, pubkey)
 		}
@@ -232,7 +238,7 @@ func (c *Client) GetHeader(ctx context.Context, slot primitives.Slot, parentHash
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not extract proto message from header")
 		}
-		return WrappedSignedBuilderBidCapella(p)
+		return WrappedSignedBuilderBidZond(p)
 	default:
 		return nil, fmt.Errorf("unsupported header version %s", strings.ToLower(v.Version))
 	}
@@ -240,7 +246,7 @@ func (c *Client) GetHeader(ctx context.Context, slot primitives.Slot, parentHash
 
 // RegisterValidator encodes the SignedValidatorRegistrationV1 message to json (including hex-encoding the byte
 // fields with 0x prefixes) and posts to the builder validator registration endpoint.
-func (c *Client) RegisterValidator(ctx context.Context, svr []*zondpb.SignedValidatorRegistrationV1) error {
+func (c *Client) RegisterValidator(ctx context.Context, svr []*qrysmpb.SignedValidatorRegistrationV1) error {
 	ctx, span := trace.StartSpan(ctx, "builder.client.RegisterValidator")
 	defer span.End()
 	span.AddAttributes(trace.Int64Attribute("num_reqs", int64(len(svr))))
@@ -251,10 +257,10 @@ func (c *Client) RegisterValidator(ctx context.Context, svr []*zondpb.SignedVali
 		return err
 	}
 	vs := make([]*shared.SignedValidatorRegistration, len(svr))
-	for i := 0; i < len(svr); i++ {
+	for i := range svr {
 		svrJson, err := shared.SignedValidatorRegistrationFromConsensus(svr[i])
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("failed to encode to SignedValidatorRegistration at index %d", i))
+			return errors.Wrapf(err, "failed to encode to SignedValidatorRegistration at index %d", i)
 		}
 		vs[i] = svrJson
 	}
@@ -276,39 +282,41 @@ func (c *Client) SubmitBlindedBlock(ctx context.Context, sb interfaces.ReadOnlyS
 		return nil, errNotBlinded
 	}
 	switch sb.Version() {
-	case version.Capella:
-		psb, err := sb.PbBlindedCapellaBlock()
+	case version.Zond:
+		psb, err := sb.PbBlindedZondBlock()
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not get protobuf block")
 		}
-		b, err := shared.SignedBlindedBeaconBlockCapellaFromConsensus(&zondpb.SignedBlindedBeaconBlockCapella{Block: psb.Block, Signature: bytesutil.SafeCopyBytes(psb.Signature)})
+		b, err := shared.SignedBlindedBeaconBlockZondFromConsensus(&qrysmpb.SignedBlindedBeaconBlockZond{Block: psb.Block, Signature: bytesutil.SafeCopyBytes(psb.Signature)})
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not convert SignedBlindedBeaconBlockCapella to json marshalable type")
+			return nil, errors.Wrapf(err, "could not convert SignedBlindedBeaconBlockZond to json marshalable type")
 		}
 		body, err := json.Marshal(b)
 		if err != nil {
-			return nil, errors.Wrap(err, "error encoding the SignedBlindedBeaconBlockCapella value body in SubmitBlindedBlockCapella")
+			return nil, errors.Wrap(err, "error encoding the SignedBlindedBeaconBlockZond value body in SubmitBlindedBlockZond")
 		}
 		versionOpt := func(r *http.Request) {
-			r.Header.Add("Eth-Consensus-Version", version.String(version.Capella))
+			r.Header.Add("Qrl-Consensus-Version", version.String(version.Zond))
+			r.Header.Set("Content-Type", "application/json")
+			r.Header.Set("Accept", "application/json")
 		}
 		rb, err := c.do(ctx, http.MethodPost, postBlindedBeaconBlockPath, bytes.NewBuffer(body), versionOpt)
 
 		if err != nil {
-			return nil, errors.Wrap(err, "error posting the SignedBlindedBeaconBlockCapella to the builder api")
+			return nil, errors.Wrap(err, "error posting the SignedBlindedBeaconBlockZond to the builder api")
 		}
-		ep := &ExecPayloadResponseCapella{}
+		ep := &ExecPayloadResponseZond{}
 		if err := json.Unmarshal(rb, ep); err != nil {
-			return nil, errors.Wrap(err, "error unmarshaling the builder SubmitBlindedBlockCapella response")
+			return nil, errors.Wrap(err, "error unmarshaling the builder SubmitBlindedBlockZond response")
 		}
-		if strings.ToLower(ep.Version) != version.String(version.Capella) {
-			return nil, errors.New("not a capella payload")
+		if strings.ToLower(ep.Version) != version.String(version.Zond) {
+			return nil, errors.New("not a zond payload")
 		}
 		p, err := ep.ToProto()
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not extract proto message from payload")
 		}
-		payload, err := blocks.WrappedExecutionPayloadCapella(p, 0)
+		payload, err := blocks.WrappedExecutionPayloadZond(p, 0)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not wrap execution payload in interface")
 		}
@@ -327,7 +335,7 @@ func (c *Client) Status(ctx context.Context) error {
 }
 
 func non200Err(response *http.Response) error {
-	bodyBytes, err := io.ReadAll(response.Body)
+	bodyBytes, err := io.ReadAll(io.LimitReader(response.Body, client.MaxErrBodySize))
 	var errMessage ErrorMessage
 	var body string
 	if err != nil {

@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/big"
 	"net"
 	"net/http"
@@ -16,32 +15,32 @@ import (
 
 	gMux "github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/go-zond/beacon/engine"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	gzondtypes "github.com/theQRL/go-zond/core/types"
-	zondRPC "github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/go-zond/trie"
+	"github.com/theQRL/go-qrl/beacon/engine"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	gqrltypes "github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/rpc"
+	"github.com/theQRL/go-qrl/trie"
 	builderAPI "github.com/theQRL/qrysm/api/client/builder"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/shared"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/math"
 	"github.com/theQRL/qrysm/network"
 	"github.com/theQRL/qrysm/network/authorization"
 	v1 "github.com/theQRL/qrysm/proto/engine/v1"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 const (
-	statusPath   = "/zond/v1/builder/status"
-	registerPath = "/zond/v1/builder/validators"
-	headerPath   = "/zond/v1/builder/header/{slot:[0-9]+}/{parent_hash:0x[a-fA-F0-9]+}/{pubkey:0x[a-fA-F0-9]+}"
-	blindedPath  = "/zond/v1/builder/blinded_blocks"
+	statusPath   = "/qrl/v1/builder/status"
+	registerPath = "/qrl/v1/builder/validators"
+	headerPath   = "/qrl/v1/builder/header/{slot:[0-9]+}/{parent_hash:0x[a-fA-F0-9]+}/{pubkey:0x[a-fA-F0-9]+}"
+	blindedPath  = "/qrl/v1/builder/blinded_blocks"
 
 	// ForkchoiceUpdatedMethodV2 v2 request string for JSON-RPC.
 	ForkchoiceUpdatedMethodV2 = "engine_forkchoiceUpdatedV2"
@@ -55,40 +54,40 @@ var (
 )
 
 type jsonRPCObject struct {
-	Jsonrpc string        `json:"jsonrpc"`
-	Method  string        `json:"method"`
-	Params  []interface{} `json:"params"`
-	ID      uint64        `json:"id"`
-	Result  interface{}   `json:"result"`
+	Jsonrpc string `json:"jsonrpc"`
+	Method  string `json:"method"`
+	Params  []any  `json:"params"`
+	ID      uint64 `json:"id"`
+	Result  any    `json:"result"`
 }
 
 type ForkchoiceUpdatedResponse struct {
-	Jsonrpc string        `json:"jsonrpc"`
-	Method  string        `json:"method"`
-	Params  []interface{} `json:"params"`
-	ID      uint64        `json:"id"`
+	Jsonrpc string `json:"jsonrpc"`
+	Method  string `json:"method"`
+	Params  []any  `json:"params"`
+	ID      uint64 `json:"id"`
 	Result  struct {
 		Status    *v1.PayloadStatus  `json:"payloadStatus"`
 		PayloadId *v1.PayloadIDBytes `json:"payloadId"`
 	} `json:"result"`
 }
 
-type ExecHeaderResponseCapella struct {
+type ExecHeaderResponseZond struct {
 	Version string `json:"version"`
 	Data    struct {
-		Signature hexutil.Bytes                 `json:"signature"`
-		Message   *builderAPI.BuilderBidCapella `json:"message"`
+		Signature hexutil.Bytes              `json:"signature"`
+		Message   *builderAPI.BuilderBidZond `json:"message"`
 	} `json:"data"`
 }
 
 type Builder struct {
 	cfg          *config
 	address      string
-	execClient   *zondRPC.Client
+	execClient   *rpc.Client
 	currId       *v1.PayloadIDBytes
 	currPayload  interfaces.ExecutionData
 	mux          *gMux.Router
-	validatorMap map[string]*zond.ValidatorRegistrationV1
+	validatorMap map[string]*qrysmpb.ValidatorRegistrationV1
 	srv          *http.Server
 }
 
@@ -134,7 +133,7 @@ func New(opts ...Option) (*Builder, error) {
 	p.address = addr
 	p.srv = srv
 	p.execClient = execClient
-	p.validatorMap = map[string]*zond.ValidatorRegistrationV1{}
+	p.validatorMap = map[string]*qrysmpb.ValidatorRegistrationV1{}
 	p.mux = router
 	return p, nil
 }
@@ -227,7 +226,7 @@ func (p *Builder) handleEngineCalls(req, resp []byte) {
 }
 
 func (p *Builder) isBuilderCall(req *http.Request) bool {
-	return strings.Contains(req.URL.Path, "/zond/v1/builder/")
+	return strings.Contains(req.URL.Path, "/qrl/v1/builder/")
 }
 
 func (p *Builder) registerValidators(w http.ResponseWriter, req *http.Request) {
@@ -261,18 +260,18 @@ func (p *Builder) handleHeaderRequest(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	p.handleHeaderRequestCapella(w)
+	p.handleHeaderRequestZond(w)
 }
 
-func (p *Builder) handleHeaderRequestCapella(w http.ResponseWriter) {
-	b, err := p.retrievePendingBlockCapella()
+func (p *Builder) handleHeaderRequestZond(w http.ResponseWriter) {
+	b, err := p.retrievePendingBlockZond()
 	if err != nil {
 		p.cfg.logger.WithError(err).Error("Could not retrieve pending block")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	secKey, err := dilithium.RandKey()
+	secKey, err := ml_dsa_87.RandKey()
 	if err != nil {
 		p.cfg.logger.WithError(err).Error("Could not retrieve secret key")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -282,29 +281,29 @@ func (p *Builder) handleHeaderRequestCapella(w http.ResponseWriter) {
 	// we set the payload value as twice its actual one so that it always chooses builder payloads vs local payloads
 	v = v.Mul(v, big.NewInt(2))
 	// Is used as the helper modifies the big.Int
-	weiVal := big.NewInt(0).SetBytes(bytesutil.ReverseByteOrder(b.Value))
+	planckVal := big.NewInt(0).SetBytes(bytesutil.ReverseByteOrder(b.Value))
 	// we set the payload value as twice its actual one so that it always chooses builder payloads vs local payloads
-	weiVal = weiVal.Mul(weiVal, big.NewInt(2))
-	wObj, err := blocks.WrappedExecutionPayloadCapella(b.Payload, math.WeiToGwei(weiVal))
+	planckVal = planckVal.Mul(planckVal, big.NewInt(2))
+	wObj, err := blocks.WrappedExecutionPayloadZond(b.Payload, math.PlanckToShor(planckVal))
 	if err != nil {
 		p.cfg.logger.WithError(err).Error("Could not wrap execution payload")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	hdr, err := blocks.PayloadToHeaderCapella(wObj)
+	hdr, err := blocks.PayloadToHeaderZond(wObj)
 	if err != nil {
 		p.cfg.logger.WithError(err).Error("Could not make payload into header")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	val := builderAPI.Uint256{Int: v}
-	wrappedHdr := &builderAPI.ExecutionPayloadHeaderCapella{ExecutionPayloadHeaderCapella: hdr}
-	bid := &builderAPI.BuilderBidCapella{
+	wrappedHdr := &builderAPI.ExecutionPayloadHeaderZond{ExecutionPayloadHeaderZond: hdr}
+	bid := &builderAPI.BuilderBidZond{
 		Header: wrappedHdr,
 		Value:  val,
 		Pubkey: secKey.PublicKey().Marshal(),
 	}
-	sszBid := &zond.BuilderBidCapella{
+	sszBid := &qrysmpb.BuilderBidZond{
 		Header: hdr,
 		Value:  val.SSZBytes(),
 		Pubkey: secKey.PublicKey().Marshal(),
@@ -324,11 +323,11 @@ func (p *Builder) handleHeaderRequestCapella(w http.ResponseWriter) {
 		return
 	}
 	sig := secKey.Sign(rt[:])
-	hdrResp := &ExecHeaderResponseCapella{
-		Version: "capella",
+	hdrResp := &ExecHeaderResponseZond{
+		Version: "zond",
 		Data: struct {
-			Signature hexutil.Bytes                 `json:"signature"`
-			Message   *builderAPI.BuilderBidCapella `json:"message"`
+			Signature hexutil.Bytes              `json:"signature"`
+			Message   *builderAPI.BuilderBidZond `json:"message"`
 		}{
 			Signature: sig.Marshal(),
 			Message:   bid,
@@ -351,15 +350,15 @@ func (p *Builder) handleBlindedBlock(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "payload not found", http.StatusInternalServerError)
 		return
 	}
-	if payload, err := p.currPayload.PbCapella(); err == nil {
-		convertedPayload, err := builderAPI.FromProtoCapella(payload)
+	if payload, err := p.currPayload.PbZond(); err == nil {
+		convertedPayload, err := builderAPI.FromProtoZond(payload)
 		if err != nil {
 			p.cfg.logger.WithError(err).Error("Could not convert the payload")
 			http.Error(w, "payload not found", http.StatusInternalServerError)
 			return
 		}
-		execResp := &builderAPI.ExecPayloadResponseCapella{
-			Version: "capella",
+		execResp := &builderAPI.ExecPayloadResponseZond{
+			Version: "zond",
 			Data:    convertedPayload,
 		}
 		err = json.NewEncoder(w).Encode(execResp)
@@ -373,7 +372,7 @@ func (p *Builder) handleBlindedBlock(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (p *Builder) retrievePendingBlockCapella() (*v1.ExecutionPayloadCapellaWithValue, error) {
+func (p *Builder) retrievePendingBlockZond() (*v1.ExecutionPayloadZondWithValue, error) {
 	result := &engine.ExecutionPayloadEnvelope{}
 	if p.currId == nil {
 		return nil, errors.New("no payload id is cached")
@@ -390,11 +389,11 @@ func (p *Builder) retrievePendingBlockCapella() (*v1.ExecutionPayloadCapellaWith
 	if err != nil {
 		return nil, err
 	}
-	capellaPayload := &v1.ExecutionPayloadCapellaWithValue{}
-	if err = json.Unmarshal(marshalledOutput, capellaPayload); err != nil {
+	zondPayload := &v1.ExecutionPayloadZondWithValue{}
+	if err = json.Unmarshal(marshalledOutput, zondPayload); err != nil {
 		return nil, err
 	}
-	return capellaPayload, nil
+	return zondPayload, nil
 }
 
 func (p *Builder) sendHttpRequest(req *http.Request, requestBytes []byte) (*http.Response, error) {
@@ -405,7 +404,7 @@ func (p *Builder) sendHttpRequest(req *http.Request, requestBytes []byte) (*http
 	}
 
 	// Set the modified request as the proxy request body.
-	proxyReq.Body = ioutil.NopCloser(bytes.NewBuffer(requestBytes))
+	proxyReq.Body = io.NopCloser(bytes.NewBuffer(requestBytes))
 
 	// Required proxy headers for forwarding JSON-RPC requests to the execution client.
 	proxyReq.Header.Set("Host", req.Host)
@@ -426,18 +425,18 @@ func (p *Builder) sendHttpRequest(req *http.Request, requestBytes []byte) (*http
 
 // Peek into the bytes of an HTTP request's body.
 func parseRequestBytes(req *http.Request) ([]byte, error) {
-	requestBytes, err := ioutil.ReadAll(req.Body)
+	requestBytes, err := io.ReadAll(req.Body)
 	if err != nil {
 		return nil, err
 	}
 	if err = req.Body.Close(); err != nil {
 		return nil, err
 	}
-	req.Body = ioutil.NopCloser(bytes.NewBuffer(requestBytes))
+	req.Body = io.NopCloser(bytes.NewBuffer(requestBytes))
 	return requestBytes, nil
 }
 
-// Checks whether the JSON-RPC request is for the Zond engine API.
+// Checks whether the JSON-RPC request is for the QRL engine API.
 func isEngineAPICall(reqBytes []byte) bool {
 	jsonRequest, err := unmarshalRPCObject(reqBytes)
 	if err != nil {
@@ -468,7 +467,7 @@ func modifyExecutionPayload(execPayload engine.ExecutableData, fees *big.Int) (*
 }
 
 // This modifies the provided payload to imprint the builder's extra data
-func executableDataToBlock(params engine.ExecutableData) (*gzondtypes.Block, error) {
+func executableDataToBlock(params engine.ExecutableData) (*gqrltypes.Block, error) {
 	txs, err := decodeTransactions(params.Transactions)
 	if err != nil {
 		return nil, err
@@ -478,16 +477,16 @@ func executableDataToBlock(params engine.ExecutableData) (*gzondtypes.Block, err
 	// Withdrawals as the json null value.
 	var withdrawalsRoot *common.Hash
 	if params.Withdrawals != nil {
-		h := gzondtypes.DeriveSha(gzondtypes.Withdrawals(params.Withdrawals), trie.NewStackTrie(nil))
+		h := gqrltypes.DeriveSha(gqrltypes.Withdrawals(params.Withdrawals), trie.NewStackTrie(nil))
 		withdrawalsRoot = &h
 	}
-	header := &gzondtypes.Header{
+	header := &gqrltypes.Header{
 		ParentHash:      params.ParentHash,
 		Coinbase:        params.FeeRecipient,
 		Root:            params.StateRoot,
-		TxHash:          gzondtypes.DeriveSha(gzondtypes.Transactions(txs), trie.NewStackTrie(nil)),
+		TxHash:          gqrltypes.DeriveSha(gqrltypes.Transactions(txs), trie.NewStackTrie(nil)),
 		ReceiptHash:     params.ReceiptsRoot,
-		Bloom:           gzondtypes.BytesToBloom(params.LogsBloom),
+		Bloom:           gqrltypes.BytesToBloom(params.LogsBloom),
 		Number:          new(big.Int).SetUint64(params.Number),
 		GasLimit:        params.GasLimit,
 		GasUsed:         params.GasUsed,
@@ -497,14 +496,14 @@ func executableDataToBlock(params engine.ExecutableData) (*gzondtypes.Block, err
 		Random:          params.Random,
 		WithdrawalsHash: withdrawalsRoot,
 	}
-	block := gzondtypes.NewBlockWithHeader(header).WithBody(gzondtypes.Body{Transactions: txs, Withdrawals: params.Withdrawals})
+	block := gqrltypes.NewBlockWithHeader(header).WithBody(gqrltypes.Body{Transactions: txs, Withdrawals: params.Withdrawals})
 	return block, nil
 }
 
-func decodeTransactions(enc [][]byte) ([]*gzondtypes.Transaction, error) {
-	var txs = make([]*gzondtypes.Transaction, len(enc))
+func decodeTransactions(enc [][]byte) ([]*gqrltypes.Transaction, error) {
+	var txs = make([]*gqrltypes.Transaction, len(enc))
 	for i, encTx := range enc {
-		var tx gzondtypes.Transaction
+		var tx gqrltypes.Transaction
 		if err := tx.UnmarshalBinary(encTx); err != nil {
 			return nil, fmt.Errorf("invalid transaction %d: %v", i, err)
 		}

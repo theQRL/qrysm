@@ -7,26 +7,26 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/shared"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func TestRegistration_Valid(t *testing.T) {
-	const feeRecipient1 = "Zca008b199c03a2a2f6bc2ed52d6404c4d8510b35"
+	const feeRecipient1 = "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ca008b199c03a2a2f6bc2ed52d6404c4d8510b35"
 	const pubKey1 = "0x8000091c2ae64ee414a54c1cc1fc67dec663408bc636cb86756e0200e41a75c8f86603f104f02c856983d2783116be13"
 	const signature1 = "0xb459ef852bd4e0cb96e6723d67cacc8215406dd9ba663f8874a083167ebf428b28b746431bdbc1820a25289377b2610881e52b3a05c3548c5e99c08c8a36342573be5962d7510c03dcba8ddfb8ae419e59d222ddcf31cc512e704ef2cc3cf8"
 
-	const feeRecipient2 = "Z8145d80111309e4621ed7632319664ac440b0198"
+	const feeRecipient2 = "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000008145d80111309e4621ed7632319664ac440b0198"
 	const pubKey2 = "0x800015473bdc3a7f45ef8eb8abc598bc20021e55ad6e6ad1d745aaef9730dd2c28ec08bf42df18451de94dd4a6d24ec5"
 	const signature2 = "0xc459ef852bd4e0cb96e6723d67cacc8215406dd9ba663f8874a083167ebf428b28b746431bdbc1820a25289377b2610881e52b3a05c3548c5e99c08c8a36342573be5962d7510c03dcba8ddfb8ae419e59d222ddcf31cc512e704ef2cc3cf8"
 
-	const feeRecipient3 = "Z085f2adb1295821838910be402b3c8cdc118bd86"
+	const feeRecipient3 = "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000085f2adb1295821838910be402b3c8cdc118bd86"
 	const pubKey3 = "0x80006dbd87090ce8d611ffb8d2c700901d7a07a73607e18c6dc5ff39e44dae317816387b61fa9008de3cbe07583c0358"
 	const signature3 = "0xd459ef852bd4e0cb96e6723d67cacc8215406dd9ba663f8874a083167ebf428b28b746431bdbc1820a25289377b2610881e52b3a05c3548c5e99c08c8a36342573be5962d7510c03dcba8ddfb8ae419e59d222ddcf31cc512e704ef2cc3cf8"
 
@@ -69,7 +69,7 @@ func TestRegistration_Valid(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().PostRestJson(
 		context.Background(),
-		"/zond/v1/validator/register_validator",
+		"/qrl/v1/validator/register_validator",
 		nil,
 		bytes.NewBuffer(marshalledJsonRegistrations),
 		nil,
@@ -78,11 +78,11 @@ func TestRegistration_Valid(t *testing.T) {
 		nil,
 	).Times(1)
 
-	decodedFeeRecipient1, err := hexutil.DecodeZ(feeRecipient1)
+	decodedFeeRecipient1, err := hexutil.DecodeQ(feeRecipient1)
 	require.NoError(t, err)
-	decodedFeeRecipient2, err := hexutil.DecodeZ(feeRecipient2)
+	decodedFeeRecipient2, err := hexutil.DecodeQ(feeRecipient2)
 	require.NoError(t, err)
-	decodedFeeRecipient3, err := hexutil.DecodeZ(feeRecipient3)
+	decodedFeeRecipient3, err := hexutil.DecodeQ(feeRecipient3)
 	require.NoError(t, err)
 
 	decodedPubkey1, err := hexutil.Decode(pubKey1)
@@ -99,10 +99,10 @@ func TestRegistration_Valid(t *testing.T) {
 	decodedSignature3, err := hexutil.Decode(signature3)
 	require.NoError(t, err)
 
-	protoRegistrations := zondpb.SignedValidatorRegistrationsV1{
-		Messages: []*zondpb.SignedValidatorRegistrationV1{
+	protoRegistrations := qrysmpb.SignedValidatorRegistrationsV1{
+		Messages: []*qrysmpb.SignedValidatorRegistrationV1{
 			{
-				Message: &zondpb.ValidatorRegistrationV1{
+				Message: &qrysmpb.ValidatorRegistrationV1{
 					FeeRecipient: decodedFeeRecipient1,
 					GasLimit:     100,
 					Timestamp:    1000,
@@ -111,7 +111,7 @@ func TestRegistration_Valid(t *testing.T) {
 				Signature: decodedSignature1,
 			},
 			{
-				Message: &zondpb.ValidatorRegistrationV1{
+				Message: &qrysmpb.ValidatorRegistrationV1{
 					FeeRecipient: decodedFeeRecipient2,
 					GasLimit:     200,
 					Timestamp:    2000,
@@ -120,7 +120,7 @@ func TestRegistration_Valid(t *testing.T) {
 				Signature: decodedSignature2,
 			},
 			{
-				Message: &zondpb.ValidatorRegistrationV1{
+				Message: &qrysmpb.ValidatorRegistrationV1{
 					FeeRecipient: decodedFeeRecipient3,
 					GasLimit:     300,
 					Timestamp:    3000,
@@ -134,7 +134,7 @@ func TestRegistration_Valid(t *testing.T) {
 	validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
 	res, err := validatorClient.SubmitValidatorRegistrations(context.Background(), &protoRegistrations)
 
-	assert.DeepEqual(t, new(empty.Empty), res)
+	assert.DeepEqual(t, new(emptypb.Empty), res)
 	require.NoError(t, err)
 }
 
@@ -145,7 +145,7 @@ func TestRegistration_BadRequest(t *testing.T) {
 	jsonRestHandler := mock.NewMockjsonRestHandler(ctrl)
 	jsonRestHandler.EXPECT().PostRestJson(
 		context.Background(),
-		"/zond/v1/validator/register_validator",
+		"/qrl/v1/validator/register_validator",
 		nil,
 		gomock.Any(),
 		nil,
@@ -155,7 +155,7 @@ func TestRegistration_BadRequest(t *testing.T) {
 	).Times(1)
 
 	validatorClient := &beaconApiValidatorClient{jsonRestHandler: jsonRestHandler}
-	_, err := validatorClient.SubmitValidatorRegistrations(context.Background(), &zondpb.SignedValidatorRegistrationsV1{})
-	assert.ErrorContains(t, "failed to send POST data to `/zond/v1/validator/register_validator` REST endpoint", err)
+	_, err := validatorClient.SubmitValidatorRegistrations(context.Background(), &qrysmpb.SignedValidatorRegistrationsV1{})
+	assert.ErrorContains(t, "failed to send POST data to `/qrl/v1/validator/register_validator` REST endpoint", err)
 	assert.ErrorContains(t, "foo error", err)
 }

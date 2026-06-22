@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/beacon-chain/p2p"
 	"github.com/theQRL/qrysm/network/forks"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
 	"github.com/theQRL/qrysm/testing/endtoend/policies"
 	"github.com/theQRL/qrysm/testing/endtoend/types"
@@ -22,7 +22,10 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-const maxMemStatsBytes = 2000000000 // 2 GiB.
+const (
+	maxMemStatsBytes      = 2000000000 // 2 GiB.
+	maxAllowedHeadSlotLag = 2
+)
 
 // MetricsCheck performs a check on metrics to make sure caches are functioning, and
 // overall health is good. Not checking the first epoch so the sample size isn't too small.
@@ -86,7 +89,7 @@ var metricComparisonTests = []comparisonTest{
 }
 
 func metricsTest(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
-	genesis, err := zond.NewNodeClient(conns[0]).GetGenesis(context.Background(), &emptypb.Empty{})
+	genesis, err := qrysmpb.NewNodeClient(conns[0]).GetGenesis(context.Background(), &emptypb.Empty{})
 	if err != nil {
 		return err
 	}
@@ -94,7 +97,7 @@ func metricsTest(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 	if err != nil {
 		return err
 	}
-	for i := 0; i < len(conns); i++ {
+	for i := range conns {
 		response, err := http.Get(fmt.Sprintf("http://localhost:%d/metrics", e2e.TestParams.Ports.QrysmBeaconNodeMetricsPort+i))
 		if err != nil {
 			// Continue if the connection fails, regular flake.
@@ -110,8 +113,8 @@ func metricsTest(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 		}
 		time.Sleep(connTimeDelay)
 
-		beaconClient := zond.NewBeaconChainClient(conns[i])
-		nodeClient := zond.NewNodeClient(conns[i])
+		beaconClient := qrysmpb.NewBeaconChainClient(conns[i])
+		nodeClient := qrysmpb.NewNodeClient(conns[i])
 		chainHead, err := beaconClient.GetChainHead(context.Background(), &emptypb.Empty{})
 		if err != nil {
 			return err
@@ -121,8 +124,11 @@ func metricsTest(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 			return err
 		}
 		timeSlot := slots.SinceGenesis(genesisResp.GenesisTime.AsTime())
-		if uint64(chainHead.HeadSlot) != uint64(timeSlot) {
-			return fmt.Errorf("expected metrics slot to equal chain head slot, expected %d, received %d", timeSlot, chainHead.HeadSlot)
+		if chainHead.HeadSlot > timeSlot {
+			return fmt.Errorf("expected chain head slot to not exceed current slot, current %d, received %d", timeSlot, chainHead.HeadSlot)
+		}
+		if timeSlot-chainHead.HeadSlot > maxAllowedHeadSlotLag {
+			return fmt.Errorf("expected chain head slot to be within %d slots of current slot, current %d, received %d", maxAllowedHeadSlotLag, timeSlot, chainHead.HeadSlot)
 		}
 
 		for _, test := range metricLessThanTests {

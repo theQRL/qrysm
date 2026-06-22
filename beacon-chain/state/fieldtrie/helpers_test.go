@@ -6,34 +6,34 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	customtypes "github.com/theQRL/qrysm/beacon-chain/state/state-native/custom-types"
 	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
 	"github.com/theQRL/qrysm/beacon-chain/state/stateutil"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
 func Test_handlePendingAttestation_OutOfRange(t *testing.T) {
-	items := make([]*zondpb.PendingAttestation, 1)
+	items := make([]*qrysmpb.PendingAttestation, 1)
 	indices := []uint64{3}
 	_, err := handlePendingAttestationSlice(items, indices, false)
 	assert.ErrorContains(t, "index 3 greater than number of pending attestations 1", err)
 }
 
-func Test_handleEth1DataSlice_OutOfRange(t *testing.T) {
-	items := make([]*zondpb.Eth1Data, 1)
+func Test_handleExecutionDataSlice_OutOfRange(t *testing.T) {
+	items := make([]*qrysmpb.ExecutionData, 1)
 	indices := []uint64{3}
-	_, err := handleEth1DataSlice(items, indices, false)
-	assert.ErrorContains(t, "index 3 greater than number of items in eth1 data slice 1", err)
+	_, err := handleExecutionDataSlice(items, indices, false)
+	assert.ErrorContains(t, "index 3 greater than number of items in execution data slice 1", err)
 
 }
 
 func Test_handleValidatorSlice_OutOfRange(t *testing.T) {
-	vals := make([]*zondpb.Validator, 1)
+	vals := make([]*qrysmpb.Validator, 1)
 	indices := []uint64{3}
 	_, err := handleValidatorSlice(vals, indices, false)
 	assert.ErrorContains(t, "index 3 greater than number of validators 1", err)
@@ -93,7 +93,7 @@ func TestFieldTrie_NativeState_fieldConvertersNative(t *testing.T) {
 	type args struct {
 		field      types.FieldIndex
 		indices    []uint64
-		elements   interface{}
+		elements   any
 		convertAll bool
 	}
 	tests := []struct {
@@ -181,11 +181,11 @@ func TestFieldTrie_NativeState_fieldConvertersNative(t *testing.T) {
 			errMsg:  "Wanted type of customtypes.RandaoMixes",
 		},
 		{
-			name: "Eth1DataVotes type not found",
+			name: "ExecutionDataVotes type not found",
 			args: &args{
 				field:   types.FieldIndex(9),
 				indices: []uint64{},
-				elements: []*zondpb.Eth1Data{
+				elements: []*qrysmpb.ExecutionData{
 					{
 						DepositRoot:  make([]byte, fieldparams.RootLength),
 						DepositCount: 1,
@@ -196,11 +196,11 @@ func TestFieldTrie_NativeState_fieldConvertersNative(t *testing.T) {
 			wantHex: []string{"0x4833912e1264aef8a18392d795f3f2eed17cf5c0e8471cb0c0db2ec5aca10231"},
 		},
 		{
-			name: "Eth1DataVotes convertAll false",
+			name: "ExecutionDataVotes convertAll false",
 			args: &args{
 				field:   types.FieldIndex(9),
 				indices: []uint64{1},
-				elements: []*zondpb.Eth1Data{
+				elements: []*qrysmpb.ExecutionData{
 					{
 						DepositRoot:  make([]byte, fieldparams.RootLength),
 						DepositCount: 2,
@@ -215,7 +215,7 @@ func TestFieldTrie_NativeState_fieldConvertersNative(t *testing.T) {
 			wantHex: []string{"0x4833912e1264aef8a18392d795f3f2eed17cf5c0e8471cb0c0db2ec5aca10231"},
 		},
 		{
-			name: "Eth1DataVotes type not found",
+			name: "ExecutionDataVotes type not found",
 			args: &args{
 				field:      types.FieldIndex(9),
 				indices:    []uint64{},
@@ -223,7 +223,7 @@ func TestFieldTrie_NativeState_fieldConvertersNative(t *testing.T) {
 				convertAll: true,
 			},
 			wantHex: nil,
-			errMsg:  fmt.Sprintf("Wanted type of %T", []*zondpb.Eth1Data{}),
+			errMsg:  fmt.Sprintf("Wanted type of %T", []*qrysmpb.ExecutionData{}),
 		},
 		{
 			name: "Balance",
@@ -240,14 +240,14 @@ func TestFieldTrie_NativeState_fieldConvertersNative(t *testing.T) {
 			args: &args{
 				field:   types.FieldIndex(11),
 				indices: []uint64{},
-				elements: []*zondpb.Validator{
+				elements: []*qrysmpb.Validator{
 					{
 						ActivationEpoch: 1,
 					},
 				},
 				convertAll: true,
 			},
-			wantHex: []string{"0x467db8ae2800ecb5fa427aba49c1c41a8200a1863570520f9a029a73231d0bec"},
+			wantHex: []string{"0xff1ba3f93fa97e9e75b5bd1bf92bd721115b35fff9f37d999c9ee19a5b608e28"},
 		},
 		{
 			name: "Validators not found",
@@ -258,14 +258,14 @@ func TestFieldTrie_NativeState_fieldConvertersNative(t *testing.T) {
 				convertAll: true,
 			},
 			wantHex: nil,
-			errMsg:  fmt.Sprintf("Wanted type of %T", []*zondpb.Validator{}),
+			errMsg:  fmt.Sprintf("Wanted type of %T", []*qrysmpb.Validator{}),
 		},
 		{
 			name: "Type not found",
 			args: &args{
 				field:   types.FieldIndex(999),
 				indices: []uint64{},
-				elements: []*zondpb.PendingAttestation{
+				elements: []*qrysmpb.PendingAttestation{
 					{
 						ProposerIndex: 1,
 					},

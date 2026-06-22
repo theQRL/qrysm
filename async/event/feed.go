@@ -34,10 +34,10 @@ var errBadChannel = errors.New("event: Subscribe argument does not have sendable
 //
 // The zero value is ready to use.
 type Feed struct {
-	once      sync.Once        // ensures that init only runs once
-	sendLock  chan struct{}    // sendLock has a one-element buffer and is empty when held.It protects sendCases.
-	removeSub chan interface{} // interrupts Send
-	sendCases caseList         // the active set of select cases used by Send
+	once      sync.Once     // ensures that init only runs once
+	sendLock  chan struct{} // sendLock has a one-element buffer and is empty when held.It protects sendCases.
+	removeSub chan any      // interrupts Send
+	sendCases caseList      // the active set of select cases used by Send
 
 	// The inbox holds newly subscribed channels until they are added to sendCases.
 	mu    sync.Mutex
@@ -59,7 +59,7 @@ func (e feedTypeError) Error() string {
 }
 
 func (f *Feed) init() {
-	f.removeSub = make(chan interface{})
+	f.removeSub = make(chan any)
 	f.sendLock = make(chan struct{}, 1)
 	f.sendLock <- struct{}{}
 	f.sendCases = caseList{{Chan: reflect.ValueOf(f.removeSub), Dir: reflect.SelectRecv}}
@@ -70,20 +70,20 @@ func (f *Feed) init() {
 //
 // The channel should have ample buffer space to avoid blocking other subscribers.
 // Slow subscribers are not dropped.
-func (f *Feed) Subscribe(channel interface{}) Subscription {
+func (f *Feed) Subscribe(channel any) Subscription {
 	f.once.Do(f.init)
 
 	chanval := reflect.ValueOf(channel)
 	chantyp := chanval.Type()
 	if chantyp.Kind() != reflect.Chan || chantyp.ChanDir()&reflect.SendDir == 0 {
-		panic(errBadChannel)
+		panic(errBadChannel) // lint:nopanic -- This is just resurfacing the original panic.
 	}
 	sub := &feedSub{feed: f, channel: chanval, err: make(chan error, 1)}
 
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if !f.typecheck(chantyp.Elem()) {
-		panic(feedTypeError{op: "Subscribe", got: chantyp, want: reflect.ChanOf(reflect.SendDir, f.etype)})
+		panic(feedTypeError{op: "Subscribe", got: chantyp, want: reflect.ChanOf(reflect.SendDir, f.etype)}) // lint:nopanic -- This is just resurfacing the original panic.
 	}
 	// Add the select case to the inbox.
 	// The next Send will add it to f.sendCases.
@@ -131,7 +131,7 @@ func (f *Feed) remove(sub *feedSub) {
 
 // Send delivers to all subscribed channels simultaneously.
 // It returns the number of subscribers that the value was sent to.
-func (f *Feed) Send(value interface{}) (nsent int) {
+func (f *Feed) Send(value any) (nsent int) {
 	rvalue := reflect.ValueOf(value)
 
 	f.once.Do(f.init)
@@ -145,7 +145,7 @@ func (f *Feed) Send(value interface{}) (nsent int) {
 	if !f.typecheck(rvalue.Type()) {
 		f.sendLock <- struct{}{}
 		f.mu.Unlock()
-		panic(feedTypeError{op: "Send", got: rvalue.Type(), want: f.etype})
+		panic(feedTypeError{op: "Send", got: rvalue.Type(), want: f.etype}) // lint:nopanic -- This is just resurfacing the original panic.
 	}
 	f.mu.Unlock()
 
@@ -218,7 +218,7 @@ func (sub *feedSub) Err() <-chan error {
 type caseList []reflect.SelectCase
 
 // find returns the index of a case containing the given channel.
-func (cs caseList) find(channel interface{}) int {
+func (cs caseList) find(channel any) int {
 	for i, cas := range cs {
 		if cas.Chan.Interface() == channel {
 			return i

@@ -1,7 +1,6 @@
 package rpc
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
 	"encoding/json"
@@ -13,12 +12,10 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/uuid"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	keystorev4 "github.com/theQRL/go-zond-wallet-encryptor-keystore"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/cmd/validator/flags"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
@@ -26,11 +23,12 @@ import (
 	validatorserviceconfig "github.com/theQRL/qrysm/config/validator/service"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/consensus-types/validator"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	keystorev1 "github.com/theQRL/qrysm/pkg/go-qrl-wallet-encryptor-keystore"
+	qrlpbservice "github.com/theQRL/qrysm/proto/qrl/service"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
-	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	validatormock "github.com/theQRL/qrysm/testing/validator-mock"
@@ -63,7 +61,7 @@ func setupWalletDir(t testing.TB) string {
 func TestServer_ListKeystores(t *testing.T) {
 	t.Run("wallet not ready", func(t *testing.T) {
 		s := Server{}
-		_, err := s.ListKeystores(context.Background(), &empty.Empty{})
+		_, err := s.ListKeystores(context.Background(), &emptypb.Empty{})
 		require.ErrorContains(t, "Qrysm Wallet not initialized. Please create a new wallet.", err)
 	})
 	ctx := context.Background()
@@ -102,7 +100,7 @@ func TestServer_ListKeystores(t *testing.T) {
 	// err = dr.RecoverAccountsFromMnemonic(ctx, mocks.TestMnemonic, derived.DefaultMnemonicLanguage, "", numAccounts)
 	keystores := make([]*keymanager.Keystore, numAccounts)
 	passwords := make([]string, numAccounts)
-	for i := 0; i < numAccounts; i++ {
+	for i := range numAccounts {
 		keystores[i] = createRandomKeystore(t, password)
 		passwords[i] = password
 	}
@@ -112,10 +110,10 @@ func TestServer_ListKeystores(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("returns proper data with existing keystores", func(t *testing.T) {
-		resp, err := s.ListKeystores(context.Background(), &empty.Empty{})
+		resp, err := s.ListKeystores(context.Background(), &emptypb.Empty{})
 		require.NoError(t, err)
 		require.Equal(t, numAccounts, len(resp.Data))
-		for i := 0; i < numAccounts; i++ {
+		for i := range numAccounts {
 			require.DeepEqual(t, expectedKeys[i][:], resp.Data[i].ValidatingPubkey)
 			// require.Equal(
 			// 	t,
@@ -129,7 +127,7 @@ func TestServer_ListKeystores(t *testing.T) {
 func TestServer_ImportKeystores(t *testing.T) {
 	t.Run("wallet not ready", func(t *testing.T) {
 		s := Server{}
-		response, err := s.ImportKeystores(context.Background(), &zondpbservice.ImportKeystoresRequest{})
+		response, err := s.ImportKeystores(context.Background(), &qrlpbservice.ImportKeystoresRequest{})
 		require.NoError(t, err)
 		require.Equal(t, 0, len(response.Data))
 	})
@@ -162,53 +160,53 @@ func TestServer_ImportKeystores(t *testing.T) {
 		validatorService:  vs,
 	}
 	t.Run("200 response even if faulty keystore in request", func(t *testing.T) {
-		response, err := s.ImportKeystores(context.Background(), &zondpbservice.ImportKeystoresRequest{
+		response, err := s.ImportKeystores(context.Background(), &qrlpbservice.ImportKeystoresRequest{
 			Keystores: []string{"hi"},
 			Passwords: []string{"hi"},
 		})
 		require.NoError(t, err)
 		require.Equal(t, 1, len(response.Data))
-		require.Equal(t, zondpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
+		require.Equal(t, qrlpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
 	})
 	t.Run("200 response even if  no passwords in request", func(t *testing.T) {
-		response, err := s.ImportKeystores(context.Background(), &zondpbservice.ImportKeystoresRequest{
+		response, err := s.ImportKeystores(context.Background(), &qrlpbservice.ImportKeystoresRequest{
 			Keystores: []string{"hi"},
 			Passwords: []string{},
 		})
 		require.NoError(t, err)
 		require.Equal(t, 1, len(response.Data))
-		require.Equal(t, zondpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
+		require.Equal(t, qrlpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
 	})
 	t.Run("200 response even if  keystores more than passwords in request", func(t *testing.T) {
-		response, err := s.ImportKeystores(context.Background(), &zondpbservice.ImportKeystoresRequest{
+		response, err := s.ImportKeystores(context.Background(), &qrlpbservice.ImportKeystoresRequest{
 			Keystores: []string{"hi", "hi"},
 			Passwords: []string{"hi"},
 		})
 		require.NoError(t, err)
 		require.Equal(t, 2, len(response.Data))
-		require.Equal(t, zondpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
+		require.Equal(t, qrlpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
 	})
 	t.Run("200 response even if number of passwords does not match number of keystores", func(t *testing.T) {
-		response, err := s.ImportKeystores(context.Background(), &zondpbservice.ImportKeystoresRequest{
+		response, err := s.ImportKeystores(context.Background(), &qrlpbservice.ImportKeystoresRequest{
 			Keystores: []string{"hi"},
 			Passwords: []string{"hi", "hi"},
 		})
 		require.NoError(t, err)
 		require.Equal(t, 1, len(response.Data))
-		require.Equal(t, zondpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
+		require.Equal(t, qrlpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
 	})
 	t.Run("200 response even if faulty slashing protection data", func(t *testing.T) {
 		numKeystores := 5
 		password := "12345678"
 		encodedKeystores := make([]string, numKeystores)
 		passwords := make([]string, numKeystores)
-		for i := 0; i < numKeystores; i++ {
+		for i := range numKeystores {
 			enc, err := json.Marshal(createRandomKeystore(t, password))
 			encodedKeystores[i] = string(enc)
 			require.NoError(t, err)
 			passwords[i] = password
 		}
-		resp, err := s.ImportKeystores(context.Background(), &zondpbservice.ImportKeystoresRequest{
+		resp, err := s.ImportKeystores(context.Background(), &qrlpbservice.ImportKeystoresRequest{
 			Keystores:          encodedKeystores,
 			Passwords:          passwords,
 			SlashingProtection: "foobar",
@@ -216,7 +214,7 @@ func TestServer_ImportKeystores(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, numKeystores, len(resp.Data))
 		for _, st := range resp.Data {
-			require.Equal(t, zondpbservice.ImportedKeystoreStatus_ERROR, st.Status)
+			require.Equal(t, qrlpbservice.ImportedKeystoreStatus_ERROR, st.Status)
 		}
 	})
 	t.Run("returns proper statuses for keystores in request", func(t *testing.T) {
@@ -224,8 +222,8 @@ func TestServer_ImportKeystores(t *testing.T) {
 		password := "12345678"
 		keystores := make([]*keymanager.Keystore, numKeystores)
 		passwords := make([]string, numKeystores)
-		publicKeys := make([][field_params.DilithiumPubkeyLength]byte, numKeystores)
-		for i := 0; i < numKeystores; i++ {
+		publicKeys := make([][field_params.MLDSA87PubkeyLength]byte, numKeystores)
+		for i := range numKeystores {
 			keystores[i] = createRandomKeystore(t, password)
 			pubKey, err := hex.DecodeString(keystores[i].Pubkey)
 			require.NoError(t, err)
@@ -245,7 +243,7 @@ func TestServer_ImportKeystores(t *testing.T) {
 			require.NoError(t, validatorDB.Close())
 		}()
 		encodedKeystores := make([]string, numKeystores)
-		for i := 0; i < numKeystores; i++ {
+		for i := range numKeystores {
 			enc, err := json.Marshal(keystores[i])
 			require.NoError(t, err)
 			encodedKeystores[i] = string(enc)
@@ -254,7 +252,7 @@ func TestServer_ImportKeystores(t *testing.T) {
 		// Generate mock slashing history.
 		attestingHistory := make([][]*kv.AttestationRecord, 0)
 		proposalHistory := make([]kv.ProposalHistoryForPubkey, len(publicKeys))
-		for i := 0; i < len(publicKeys); i++ {
+		for i := range publicKeys {
 			proposalHistory[i].Proposals = make([]kv.Proposal, 0)
 		}
 		mockJSON, err := mocks.MockSlashingProtectionJSON(publicKeys, attestingHistory, proposalHistory)
@@ -264,7 +262,7 @@ func TestServer_ImportKeystores(t *testing.T) {
 		encodedSlashingProtection, err := json.Marshal(mockJSON)
 		require.NoError(t, err)
 
-		resp, err := s.ImportKeystores(context.Background(), &zondpbservice.ImportKeystoresRequest{
+		resp, err := s.ImportKeystores(context.Background(), &qrlpbservice.ImportKeystoresRequest{
 			Keystores:          encodedKeystores,
 			Passwords:          passwords,
 			SlashingProtection: string(encodedSlashingProtection),
@@ -272,7 +270,7 @@ func TestServer_ImportKeystores(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, numKeystores, len(resp.Data))
 		for _, status := range resp.Data {
-			require.Equal(t, zondpbservice.ImportedKeystoreStatus_IMPORTED, status.Status)
+			require.Equal(t, qrlpbservice.ImportedKeystoreStatus_IMPORTED, status.Status)
 		}
 	})
 }
@@ -302,13 +300,13 @@ func TestServer_ImportKeystores_WrongKeymanagerKind(t *testing.T) {
 		wallet:            w,
 		validatorService:  vs,
 	}
-	response, err := s.ImportKeystores(context.Background(), &zondpbservice.ImportKeystoresRequest{
+	response, err := s.ImportKeystores(context.Background(), &qrlpbservice.ImportKeystoresRequest{
 		Keystores: []string{"hi"},
 		Passwords: []string{"hi"},
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(response.Data))
-	require.Equal(t, zondpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
+	require.Equal(t, qrlpbservice.ImportedKeystoreStatus_ERROR, response.Data[0].Status)
 	require.Equal(t, "Keymanager kind cannot import keys", response.Data[0].Message)
 }
 */
@@ -316,7 +314,7 @@ func TestServer_ImportKeystores_WrongKeymanagerKind(t *testing.T) {
 func TestServer_DeleteKeystores(t *testing.T) {
 	t.Run("wallet not ready", func(t *testing.T) {
 		s := Server{}
-		response, err := s.DeleteKeystores(context.Background(), &zondpbservice.DeleteKeystoresRequest{})
+		response, err := s.DeleteKeystores(context.Background(), &qrlpbservice.DeleteKeystoresRequest{})
 		require.NoError(t, err)
 		require.Equal(t, 0, len(response.Data))
 	})
@@ -334,7 +332,7 @@ func TestServer_DeleteKeystores(t *testing.T) {
 	password := "test"
 	keystores := make([]*keymanager.Keystore, numAccounts)
 	passwords := make([]string, numAccounts)
-	for i := 0; i < numAccounts; i++ {
+	for i := range numAccounts {
 		keystores[i] = createRandomKeystore(t, password)
 		passwords[i] = password
 	}
@@ -358,7 +356,7 @@ func TestServer_DeleteKeystores(t *testing.T) {
 	// Generate mock slashing history.
 	attestingHistory := make([][]*kv.AttestationRecord, 0)
 	proposalHistory := make([]kv.ProposalHistoryForPubkey, len(publicKeys))
-	for i := 0; i < len(publicKeys); i++ {
+	for i := range publicKeys {
 		proposalHistory[i].Proposals = make([]kv.Proposal, 0)
 	}
 	mockJSON, err := mocks.MockSlashingProtectionJSON(publicKeys, attestingHistory, proposalHistory)
@@ -374,7 +372,7 @@ func TestServer_DeleteKeystores(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("no slashing protection response if no keys in request even if we have a history in DB", func(t *testing.T) {
-		resp, err := srv.DeleteKeystores(context.Background(), &zondpbservice.DeleteKeystoresRequest{
+		resp, err := srv.DeleteKeystores(context.Background(), &qrlpbservice.DeleteKeystoresRequest{
 			Pubkeys: nil,
 		})
 		require.NoError(t, err)
@@ -382,7 +380,7 @@ func TestServer_DeleteKeystores(t *testing.T) {
 	})
 
 	// For ease of test setup, we'll give each public key a string identifier.
-	publicKeysWithId := map[string][field_params.DilithiumPubkeyLength]byte{
+	publicKeysWithId := map[string][field_params.MLDSA87PubkeyLength]byte{
 		"a": publicKeys[0],
 		"b": publicKeys[1],
 		"c": publicKeys[2],
@@ -394,7 +392,7 @@ func TestServer_DeleteKeystores(t *testing.T) {
 	}
 	tests := []struct {
 		keys         []*keyCase
-		wantStatuses []zondpbservice.DeletedKeystoreStatus_Status
+		wantStatuses []qrlpbservice.DeletedKeystoreStatus_Status
 	}{
 		{
 			keys: []*keyCase{
@@ -403,11 +401,11 @@ func TestServer_DeleteKeystores(t *testing.T) {
 				{id: "d"},
 				{id: "c", wantProtectionData: true},
 			},
-			wantStatuses: []zondpbservice.DeletedKeystoreStatus_Status{
-				zondpbservice.DeletedKeystoreStatus_DELETED,
-				zondpbservice.DeletedKeystoreStatus_NOT_ACTIVE,
-				zondpbservice.DeletedKeystoreStatus_NOT_FOUND,
-				zondpbservice.DeletedKeystoreStatus_DELETED,
+			wantStatuses: []qrlpbservice.DeletedKeystoreStatus_Status{
+				qrlpbservice.DeletedKeystoreStatus_DELETED,
+				qrlpbservice.DeletedKeystoreStatus_NOT_ACTIVE,
+				qrlpbservice.DeletedKeystoreStatus_NOT_FOUND,
+				qrlpbservice.DeletedKeystoreStatus_DELETED,
 			},
 		},
 		{
@@ -415,17 +413,17 @@ func TestServer_DeleteKeystores(t *testing.T) {
 				{id: "a", wantProtectionData: true},
 				{id: "c", wantProtectionData: true},
 			},
-			wantStatuses: []zondpbservice.DeletedKeystoreStatus_Status{
-				zondpbservice.DeletedKeystoreStatus_NOT_ACTIVE,
-				zondpbservice.DeletedKeystoreStatus_NOT_ACTIVE,
+			wantStatuses: []qrlpbservice.DeletedKeystoreStatus_Status{
+				qrlpbservice.DeletedKeystoreStatus_NOT_ACTIVE,
+				qrlpbservice.DeletedKeystoreStatus_NOT_ACTIVE,
 			},
 		},
 		{
 			keys: []*keyCase{
 				{id: "x"},
 			},
-			wantStatuses: []zondpbservice.DeletedKeystoreStatus_Status{
-				zondpbservice.DeletedKeystoreStatus_NOT_FOUND,
+			wantStatuses: []qrlpbservice.DeletedKeystoreStatus_Status{
+				qrlpbservice.DeletedKeystoreStatus_NOT_FOUND,
 			},
 		},
 	}
@@ -435,7 +433,7 @@ func TestServer_DeleteKeystores(t *testing.T) {
 			pk := publicKeysWithId[tc.keys[i].id]
 			keys[i] = pk[:]
 		}
-		resp, err := srv.DeleteKeystores(ctx, &zondpbservice.DeleteKeystoresRequest{Pubkeys: keys})
+		resp, err := srv.DeleteKeystores(ctx, &qrlpbservice.DeleteKeystoresRequest{Pubkeys: keys})
 		require.NoError(t, err)
 		require.Equal(t, len(keys), len(resp.Data))
 		slashingProtectionData := &format.EIPSlashingProtectionFormat{}
@@ -480,7 +478,7 @@ func TestServer_DeleteKeystores_FailedSlashingProtectionExport(t *testing.T) {
 	password := "test"
 	keystores := make([]*keymanager.Keystore, numAccounts)
 	passwords := make([]string, numAccounts)
-	for i := 0; i < numAccounts; i++ {
+	for i := range numAccounts {
 		keystores[i] = createRandomKeystore(t, password)
 		passwords[i] = password
 	}
@@ -501,12 +499,12 @@ func TestServer_DeleteKeystores_FailedSlashingProtectionExport(t *testing.T) {
 		require.NoError(t, validatorDB.Close())
 	}()
 
-	response, err := srv.DeleteKeystores(context.Background(), &zondpbservice.DeleteKeystoresRequest{
+	response, err := srv.DeleteKeystores(context.Background(), &qrlpbservice.DeleteKeystoresRequest{
 		Pubkeys: [][]byte{[]byte("a")},
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(response.Data))
-	require.Equal(t, zondpbservice.DeletedKeystoreStatus_ERROR, response.Data[0].Status)
+	require.Equal(t, qrlpbservice.DeletedKeystoreStatus_ERROR, response.Data[0].Status)
 	require.Equal(t, "Non duplicate keys that were existing were deleted, but could not export slashing protection history.",
 		response.Data[0].Message,
 	)
@@ -538,7 +536,7 @@ func TestServer_DeleteKeystores_WrongKeymanagerKind(t *testing.T) {
 		wallet:            w,
 		validatorService:  vs,
 	}
-	_, err = s.DeleteKeystores(ctx, &zondpbservice.DeleteKeystoresRequest{Pubkeys: [][]byte{[]byte("a")}})
+	_, err = s.DeleteKeystores(ctx, &qrlpbservice.DeleteKeystoresRequest{Pubkeys: [][]byte{[]byte("a")}})
 	require.ErrorContains(t, "Wrong wallet type", err)
 	require.ErrorContains(t, "Only Imported or Derived wallets can delete accounts", err)
 }
@@ -577,10 +575,10 @@ func setupServerWithWallet(t testing.TB) *Server {
 }
 
 func createRandomKeystore(t testing.TB, password string) *keymanager.Keystore {
-	encryptor := keystorev4.New()
+	encryptor := keystorev1.New()
 	id, err := uuid.NewRandom()
 	require.NoError(t, err)
-	validatingKey, err := dilithium.RandKey()
+	validatingKey, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
 	pubKey := validatingKey.PublicKey().Marshal()
 	cryptoFields, err := encryptor.Encrypt(validatingKey.Marshal(), password)
@@ -607,7 +605,7 @@ func TestServer_ListRemoteKeys(t *testing.T) {
 	root[0] = 1
 	bytevalue, err := hexutil.Decode("0xe0a586bb51db522c31abcbce14e6cbf6a5bbc7b3331cdb76378ca1b98acff048c11099c2713f229c349c430a6aa5623fab8d39ec266e0e7d81543fc2e4b905ec7fba75b9ab3aae53e18e2a018297ebe4bb2d0a22bd13b60b938461d922ec81dfe152224c51abcccd4105799ee2b70b53cf2401a3c01664c20ab368c4c3ccc764be5063488750f79480adcac444e274fb46500aeb2449d2a81e44c3528c70554a9ecd5b25b39550d469a43f5ec2afce668aa6598aa1c5618e569bdf08ec700a21950d6d2df3337ff196b6fcb53de94e7e127dbd7edf9c5df70c41c715b48cf4e5ab5d0e1bc4d9ead578150f98244ea47dba29af25b12a72054618d0341ebbae8e5c61cf6583c0151fdcf1323ee3cd65f8f739dc621f2aa77f8dfe36a7cef15162972c25a193bd306918deb8d6395367586ee6a534340c07caf6496dc393a0189cf81325499132a012a2b8a6152be3d3d010aadba896af83d9d447741a66100f72da46c9282a8a9af5bfec0d84d88882ce0a090147dbcef2f100f8744094a8e3712c26d875996f56a92fd99a39537197f0bbe58bb706061426e62406a300626f64b7dd813c756c159cea82a6cf82b9890be40284720b9aa9c6f1a3a78bfb8607b438ec3665225fe21370770cfdbbc20ef6525362d413ab23e85d5f6ef38a43b44874828137ab977dd9a145913ecffe2700a225042b766158d26288434511014928efdb857df4217430e18bd6c370c8327b4451611c66a118193f1155ffeef32d9b26b02d04cd083964f53b59b5ffd02789be6e8aeae4f615afb39e53f5cfbf3d9ec23640fea711fc6751abe9b3606959ac12aeb827a76a515f27d0e0f1e003e00a91a1d20b97ecde53202d6f9d61a1d4b0bd7d4f0622c2a90d67ba40f59a450191aa340bcc7b3b3107830ce1fb791a97930fd68c6b9ea0848c0591edb0a6302e0984d7f096ccb980803bbeaae3550d8996a001ecba956d3c2bb20eaa33094071e639983693f64809e449c29b59bc0b4f1530ec273f366db337bc64d95a9e26cc21ed0685cb2c606b994505bdd6237dfdb414df7eee7544f34cdf5f0e6ca1e5280b493446cb883413e26e06a00354bced7a5fd410fd92ffc39443d9e8f208aec8d81d958c060203bbe75db0cb2b982524b5e91135d4ef671ebe6c55c24bdb00d89b78c7d8fed674d1fac6d6d61bb671a996d3efe27a254e40967cb60c3c7ac5814ca5e5768f268c7002ba200da9200fc5498d07833c4b25a111d35f64cd26b108a897616d4324984e0833937344b904b964d5f292eeba6075987b5cc092bd40697ef9b2ea95cbc1eed5bf3f6337145351e98291853c3bf75eb1a533817cab5dc8d87abf034696e8dc9ad20089d79086b8608cb07101b62ae744beba3cc71e75701d46c35f317ecd1f3bb6d6078bd8cf25a55bbd200d7bfb5c9e3e2167a6abe8a6636ca82bdd63c3007b39d9a57b9f258ee4bb94325b20744087ba3a2bbda513ed067b003a0d6a4197bae5776cb25899911f92e3cdd779931e98cb11846dac49480af3c2fc3596825ccbb7a7dfa3e714d8fc809acc57577dd448e477bff03a907f8410f2ae12a9ab4a3d7738315c07f42e5af416560aafa035ae4d4b72d5e59a45dcd4c91000cd8cef454c7a157276cb2610d2d08a7bc90550c85e317fdb2d83ee26f49198dd035bbe39d6eedfbc91a1cffb5682f0410204c281f3cb8d702258c77214d77e92f1e5f4db2a6be18911c5f3950a3228d1850722f4ce0a5d56a8acf2e0311290e1334a2bfbf1251d6cb46f2a028aaa7be144f38fdb222e8a2d6320f98796731847b2449774c025a452c72dfbb9f05959c88ed86256f5fcea5458c3e22340d8ad3c3ff548f03346c55f74d6ab3aff1311a302bb8c5cd55b44528fd08ecab030c1e47385ed27de5819fd798ada8858462de7fd55aa7239e03079d976669e52ff22bf9ab6fa4860064dd5033ca6ae1fec5c628e5bc2b190ae5483514d841a25b04d127d9c536e32f3bada7b46cbb14b5718c88ed826a8c19d1fd43a7f7ff6860a88adf9fcf1415eb2c56e12a7dc6a73e24bd7cbcc7fa39ce7358f20736adc11842e72a5107bcbe78f56bb56fe403d51ea531d7d4f2681fd05f5326d7e5dd7e889a3380f9dfe8124d8f258d6f9ba6f0f6467e787d996da6310196a70f551e64d1a9dc51fe907227f43a1fb54a572db183edb726375a7a1096daeb8d7b069bf8886d282dabdb7e9101fadcdfb23c57be75a193cc3459401d14836d250b197e6ae0e4818b2bea75db388bf36f311eff18ac14b9f0fe1a354d8d397439fd202d61d545f430676eb16c6ecc4c3f583fa8767d65cdc4f3155af47629cf1b0b833a12391b02b1781f1c31cb6b05160241b1e02c5889db631ad2fa905d608b2831b45529dd7550d5ff91d4b7ae23533b1f6875b38be0f26f4479cb75579d8612ff2cfec981344598c76054584f6350d296c2436e2d43f184556d4e6208483e010ba8bcdf413d659fab3353bb8f53f085dfe24910f28b82ae382047383e81922f2d05b13d073b3fbb8042c9c1dd6a073109afffac32117a6b4162387949a9c2b21661eb321a340978b4c43dcb8ce264d6e30751c1e91551f4c2efec349bf0f083db63f3bbbbc83be7eb044b17a7fbfdeedbdd80e76580a5082d7534cea34620997ee593fc0c725a9cc41f192cdcb85d2021f2dafea48f14f63d01329845c0533210075ac3d1b674a5535d37c5c5acbd8fdee0ef9d3dc66b9fdec661f3ed53d1c70c825937716af2d44510d07876b3d52c063e7ddca41faee15d3b81940dd50d41ad5791b4b37f44cecc11db9ce58c7555491ee822e8ff1d8b0dac3eb409f8b827561ea6b7d88af82892a53ff2d239c76a8a1a717b101c7b9d7db85a84a508276b8d1ba972d31089cce5dba3ed722ead0849d336b1002f41f1b1b93d2a7e56e5c222d21327d872534aae80e8f7020c4fda6fd4765bd94df4aa38c51924b356412ae0ceff6adfdad9b9c793ee6aec73a902f658ffd6af25abf374368e38a8b9e91b34d2eeca566eb39ffa67978077870b21279afc7760f38639ad6fa152af670f25de919fcecc16755bafff466a0b8d9910bf84bc5917a33ed76fd62c47a9a2ca68055668a13f11616b7f95cda26c2b09bbe8c83609af99ec41470bda5b12524a849950caf6fb96d908dabca97187858c83a54cb2dee7fcabbc0fea8d3ca1b860d1d7b5eb1dc2a687330d2fb237f55d97fbab4694e4037355548f1c20122da77eb0b7b90205989bb9ef52f76f88770eabf56f5d9ccaf572b3eadb7c9810e93b675e7e9ea26f8d8749fcb23c63993d62406db2a53996dc053e698e70360492e2c467e1baf2d76a9dc74f23c3be3d27685c5fd07a30d2aab3f2cd7fde563e29a3434ee6a51f795a5e114a3d6259732362126da789d82ee54dae91c3e2c060a4f79943068cb6a3ee5692587a67816aa5a9c5ff3805173c72a5ad2b0ebd8588253bae50da117d938901f8ffbf725ced16a76f9f53d782ebe1f0d6f6dfdaa4fe8f93ec6246b66e561c740fc7eaf6c771659e90f545b9e89221fc9450543424f0a14ad7484253251f658e56cf1cb161b4cee63c6c5b96cf8c06e6aa524c8209205de7fdbf1e233135755ed6300ed4c096764fe4dd4855f421d272cd63150db47bc6f47bf624798")
 	require.NoError(t, err)
-	pubkeys := [][field_params.DilithiumPubkeyLength]byte{bytesutil.ToBytes2592(bytevalue)}
+	pubkeys := [][field_params.MLDSA87PubkeyLength]byte{bytesutil.ToBytes2592(bytevalue)}
 	config := &remoteweb3signer.SetupConfig{
 		BaseEndpoint:          "http://example.com",
 		GenesisValidatorsRoot: root,
@@ -673,19 +671,19 @@ func TestServer_ImportRemoteKeys(t *testing.T) {
 	}
 	bytevalue, err := hexutil.Decode("0xe0a586bb51db522c31abcbce14e6cbf6a5bbc7b3331cdb76378ca1b98acff048c11099c2713f229c349c430a6aa5623fab8d39ec266e0e7d81543fc2e4b905ec7fba75b9ab3aae53e18e2a018297ebe4bb2d0a22bd13b60b938461d922ec81dfe152224c51abcccd4105799ee2b70b53cf2401a3c01664c20ab368c4c3ccc764be5063488750f79480adcac444e274fb46500aeb2449d2a81e44c3528c70554a9ecd5b25b39550d469a43f5ec2afce668aa6598aa1c5618e569bdf08ec700a21950d6d2df3337ff196b6fcb53de94e7e127dbd7edf9c5df70c41c715b48cf4e5ab5d0e1bc4d9ead578150f98244ea47dba29af25b12a72054618d0341ebbae8e5c61cf6583c0151fdcf1323ee3cd65f8f739dc621f2aa77f8dfe36a7cef15162972c25a193bd306918deb8d6395367586ee6a534340c07caf6496dc393a0189cf81325499132a012a2b8a6152be3d3d010aadba896af83d9d447741a66100f72da46c9282a8a9af5bfec0d84d88882ce0a090147dbcef2f100f8744094a8e3712c26d875996f56a92fd99a39537197f0bbe58bb706061426e62406a300626f64b7dd813c756c159cea82a6cf82b9890be40284720b9aa9c6f1a3a78bfb8607b438ec3665225fe21370770cfdbbc20ef6525362d413ab23e85d5f6ef38a43b44874828137ab977dd9a145913ecffe2700a225042b766158d26288434511014928efdb857df4217430e18bd6c370c8327b4451611c66a118193f1155ffeef32d9b26b02d04cd083964f53b59b5ffd02789be6e8aeae4f615afb39e53f5cfbf3d9ec23640fea711fc6751abe9b3606959ac12aeb827a76a515f27d0e0f1e003e00a91a1d20b97ecde53202d6f9d61a1d4b0bd7d4f0622c2a90d67ba40f59a450191aa340bcc7b3b3107830ce1fb791a97930fd68c6b9ea0848c0591edb0a6302e0984d7f096ccb980803bbeaae3550d8996a001ecba956d3c2bb20eaa33094071e639983693f64809e449c29b59bc0b4f1530ec273f366db337bc64d95a9e26cc21ed0685cb2c606b994505bdd6237dfdb414df7eee7544f34cdf5f0e6ca1e5280b493446cb883413e26e06a00354bced7a5fd410fd92ffc39443d9e8f208aec8d81d958c060203bbe75db0cb2b982524b5e91135d4ef671ebe6c55c24bdb00d89b78c7d8fed674d1fac6d6d61bb671a996d3efe27a254e40967cb60c3c7ac5814ca5e5768f268c7002ba200da9200fc5498d07833c4b25a111d35f64cd26b108a897616d4324984e0833937344b904b964d5f292eeba6075987b5cc092bd40697ef9b2ea95cbc1eed5bf3f6337145351e98291853c3bf75eb1a533817cab5dc8d87abf034696e8dc9ad20089d79086b8608cb07101b62ae744beba3cc71e75701d46c35f317ecd1f3bb6d6078bd8cf25a55bbd200d7bfb5c9e3e2167a6abe8a6636ca82bdd63c3007b39d9a57b9f258ee4bb94325b20744087ba3a2bbda513ed067b003a0d6a4197bae5776cb25899911f92e3cdd779931e98cb11846dac49480af3c2fc3596825ccbb7a7dfa3e714d8fc809acc57577dd448e477bff03a907f8410f2ae12a9ab4a3d7738315c07f42e5af416560aafa035ae4d4b72d5e59a45dcd4c91000cd8cef454c7a157276cb2610d2d08a7bc90550c85e317fdb2d83ee26f49198dd035bbe39d6eedfbc91a1cffb5682f0410204c281f3cb8d702258c77214d77e92f1e5f4db2a6be18911c5f3950a3228d1850722f4ce0a5d56a8acf2e0311290e1334a2bfbf1251d6cb46f2a028aaa7be144f38fdb222e8a2d6320f98796731847b2449774c025a452c72dfbb9f05959c88ed86256f5fcea5458c3e22340d8ad3c3ff548f03346c55f74d6ab3aff1311a302bb8c5cd55b44528fd08ecab030c1e47385ed27de5819fd798ada8858462de7fd55aa7239e03079d976669e52ff22bf9ab6fa4860064dd5033ca6ae1fec5c628e5bc2b190ae5483514d841a25b04d127d9c536e32f3bada7b46cbb14b5718c88ed826a8c19d1fd43a7f7ff6860a88adf9fcf1415eb2c56e12a7dc6a73e24bd7cbcc7fa39ce7358f20736adc11842e72a5107bcbe78f56bb56fe403d51ea531d7d4f2681fd05f5326d7e5dd7e889a3380f9dfe8124d8f258d6f9ba6f0f6467e787d996da6310196a70f551e64d1a9dc51fe907227f43a1fb54a572db183edb726375a7a1096daeb8d7b069bf8886d282dabdb7e9101fadcdfb23c57be75a193cc3459401d14836d250b197e6ae0e4818b2bea75db388bf36f311eff18ac14b9f0fe1a354d8d397439fd202d61d545f430676eb16c6ecc4c3f583fa8767d65cdc4f3155af47629cf1b0b833a12391b02b1781f1c31cb6b05160241b1e02c5889db631ad2fa905d608b2831b45529dd7550d5ff91d4b7ae23533b1f6875b38be0f26f4479cb75579d8612ff2cfec981344598c76054584f6350d296c2436e2d43f184556d4e6208483e010ba8bcdf413d659fab3353bb8f53f085dfe24910f28b82ae382047383e81922f2d05b13d073b3fbb8042c9c1dd6a073109afffac32117a6b4162387949a9c2b21661eb321a340978b4c43dcb8ce264d6e30751c1e91551f4c2efec349bf0f083db63f3bbbbc83be7eb044b17a7fbfdeedbdd80e76580a5082d7534cea34620997ee593fc0c725a9cc41f192cdcb85d2021f2dafea48f14f63d01329845c0533210075ac3d1b674a5535d37c5c5acbd8fdee0ef9d3dc66b9fdec661f3ed53d1c70c825937716af2d44510d07876b3d52c063e7ddca41faee15d3b81940dd50d41ad5791b4b37f44cecc11db9ce58c7555491ee822e8ff1d8b0dac3eb409f8b827561ea6b7d88af82892a53ff2d239c76a8a1a717b101c7b9d7db85a84a508276b8d1ba972d31089cce5dba3ed722ead0849d336b1002f41f1b1b93d2a7e56e5c222d21327d872534aae80e8f7020c4fda6fd4765bd94df4aa38c51924b356412ae0ceff6adfdad9b9c793ee6aec73a902f658ffd6af25abf374368e38a8b9e91b34d2eeca566eb39ffa67978077870b21279afc7760f38639ad6fa152af670f25de919fcecc16755bafff466a0b8d9910bf84bc5917a33ed76fd62c47a9a2ca68055668a13f11616b7f95cda26c2b09bbe8c83609af99ec41470bda5b12524a849950caf6fb96d908dabca97187858c83a54cb2dee7fcabbc0fea8d3ca1b860d1d7b5eb1dc2a687330d2fb237f55d97fbab4694e4037355548f1c20122da77eb0b7b90205989bb9ef52f76f88770eabf56f5d9ccaf572b3eadb7c9810e93b675e7e9ea26f8d8749fcb23c63993d62406db2a53996dc053e698e70360492e2c467e1baf2d76a9dc74f23c3be3d27685c5fd07a30d2aab3f2cd7fde563e29a3434ee6a51f795a5e114a3d6259732362126da789d82ee54dae91c3e2c060a4f79943068cb6a3ee5692587a67816aa5a9c5ff3805173c72a5ad2b0ebd8588253bae50da117d938901f8ffbf725ced16a76f9f53d782ebe1f0d6f6dfdaa4fe8f93ec6246b66e561c740fc7eaf6c771659e90f545b9e89221fc9450543424f0a14ad7484253251f658e56cf1cb161b4cee63c6c5b96cf8c06e6aa524c8209205de7fdbf1e233135755ed6300ed4c096764fe4dd4855f421d272cd63150db47bc6f47bf624798")
 	require.NoError(t, err)
-	remoteKeys := []*zondpbservice.ImportRemoteKeysRequest_Keystore{
+	remoteKeys := []*qrlpbservice.ImportRemoteKeysRequest_Keystore{
 		{
 			Pubkey: bytevalue,
 		},
 	}
 
 	t.Run("returns proper data with existing pub keystores", func(t *testing.T) {
-		resp, err := s.ImportRemoteKeys(context.Background(), &zondpbservice.ImportRemoteKeysRequest{
+		resp, err := s.ImportRemoteKeys(context.Background(), &qrlpbservice.ImportRemoteKeysRequest{
 			RemoteKeys: remoteKeys,
 		})
-		expectedStatuses := []*zondpbservice.ImportedRemoteKeysStatus{
+		expectedStatuses := []*qrlpbservice.ImportedRemoteKeysStatus{
 			{
-				Status:  zondpbservice.ImportedRemoteKeysStatus_IMPORTED,
+				Status:  qrlpbservice.ImportedRemoteKeysStatus_IMPORTED,
 				Message: fmt.Sprintf("Successfully added pubkey: %v", hexutil.Encode(bytevalue)),
 			},
 		}
@@ -708,7 +706,7 @@ func TestServer_DeleteRemoteKeys(t *testing.T) {
 	root[0] = 1
 	bytevalue, err := hexutil.Decode("0xe0a586bb51db522c31abcbce14e6cbf6a5bbc7b3331cdb76378ca1b98acff048c11099c2713f229c349c430a6aa5623fab8d39ec266e0e7d81543fc2e4b905ec7fba75b9ab3aae53e18e2a018297ebe4bb2d0a22bd13b60b938461d922ec81dfe152224c51abcccd4105799ee2b70b53cf2401a3c01664c20ab368c4c3ccc764be5063488750f79480adcac444e274fb46500aeb2449d2a81e44c3528c70554a9ecd5b25b39550d469a43f5ec2afce668aa6598aa1c5618e569bdf08ec700a21950d6d2df3337ff196b6fcb53de94e7e127dbd7edf9c5df70c41c715b48cf4e5ab5d0e1bc4d9ead578150f98244ea47dba29af25b12a72054618d0341ebbae8e5c61cf6583c0151fdcf1323ee3cd65f8f739dc621f2aa77f8dfe36a7cef15162972c25a193bd306918deb8d6395367586ee6a534340c07caf6496dc393a0189cf81325499132a012a2b8a6152be3d3d010aadba896af83d9d447741a66100f72da46c9282a8a9af5bfec0d84d88882ce0a090147dbcef2f100f8744094a8e3712c26d875996f56a92fd99a39537197f0bbe58bb706061426e62406a300626f64b7dd813c756c159cea82a6cf82b9890be40284720b9aa9c6f1a3a78bfb8607b438ec3665225fe21370770cfdbbc20ef6525362d413ab23e85d5f6ef38a43b44874828137ab977dd9a145913ecffe2700a225042b766158d26288434511014928efdb857df4217430e18bd6c370c8327b4451611c66a118193f1155ffeef32d9b26b02d04cd083964f53b59b5ffd02789be6e8aeae4f615afb39e53f5cfbf3d9ec23640fea711fc6751abe9b3606959ac12aeb827a76a515f27d0e0f1e003e00a91a1d20b97ecde53202d6f9d61a1d4b0bd7d4f0622c2a90d67ba40f59a450191aa340bcc7b3b3107830ce1fb791a97930fd68c6b9ea0848c0591edb0a6302e0984d7f096ccb980803bbeaae3550d8996a001ecba956d3c2bb20eaa33094071e639983693f64809e449c29b59bc0b4f1530ec273f366db337bc64d95a9e26cc21ed0685cb2c606b994505bdd6237dfdb414df7eee7544f34cdf5f0e6ca1e5280b493446cb883413e26e06a00354bced7a5fd410fd92ffc39443d9e8f208aec8d81d958c060203bbe75db0cb2b982524b5e91135d4ef671ebe6c55c24bdb00d89b78c7d8fed674d1fac6d6d61bb671a996d3efe27a254e40967cb60c3c7ac5814ca5e5768f268c7002ba200da9200fc5498d07833c4b25a111d35f64cd26b108a897616d4324984e0833937344b904b964d5f292eeba6075987b5cc092bd40697ef9b2ea95cbc1eed5bf3f6337145351e98291853c3bf75eb1a533817cab5dc8d87abf034696e8dc9ad20089d79086b8608cb07101b62ae744beba3cc71e75701d46c35f317ecd1f3bb6d6078bd8cf25a55bbd200d7bfb5c9e3e2167a6abe8a6636ca82bdd63c3007b39d9a57b9f258ee4bb94325b20744087ba3a2bbda513ed067b003a0d6a4197bae5776cb25899911f92e3cdd779931e98cb11846dac49480af3c2fc3596825ccbb7a7dfa3e714d8fc809acc57577dd448e477bff03a907f8410f2ae12a9ab4a3d7738315c07f42e5af416560aafa035ae4d4b72d5e59a45dcd4c91000cd8cef454c7a157276cb2610d2d08a7bc90550c85e317fdb2d83ee26f49198dd035bbe39d6eedfbc91a1cffb5682f0410204c281f3cb8d702258c77214d77e92f1e5f4db2a6be18911c5f3950a3228d1850722f4ce0a5d56a8acf2e0311290e1334a2bfbf1251d6cb46f2a028aaa7be144f38fdb222e8a2d6320f98796731847b2449774c025a452c72dfbb9f05959c88ed86256f5fcea5458c3e22340d8ad3c3ff548f03346c55f74d6ab3aff1311a302bb8c5cd55b44528fd08ecab030c1e47385ed27de5819fd798ada8858462de7fd55aa7239e03079d976669e52ff22bf9ab6fa4860064dd5033ca6ae1fec5c628e5bc2b190ae5483514d841a25b04d127d9c536e32f3bada7b46cbb14b5718c88ed826a8c19d1fd43a7f7ff6860a88adf9fcf1415eb2c56e12a7dc6a73e24bd7cbcc7fa39ce7358f20736adc11842e72a5107bcbe78f56bb56fe403d51ea531d7d4f2681fd05f5326d7e5dd7e889a3380f9dfe8124d8f258d6f9ba6f0f6467e787d996da6310196a70f551e64d1a9dc51fe907227f43a1fb54a572db183edb726375a7a1096daeb8d7b069bf8886d282dabdb7e9101fadcdfb23c57be75a193cc3459401d14836d250b197e6ae0e4818b2bea75db388bf36f311eff18ac14b9f0fe1a354d8d397439fd202d61d545f430676eb16c6ecc4c3f583fa8767d65cdc4f3155af47629cf1b0b833a12391b02b1781f1c31cb6b05160241b1e02c5889db631ad2fa905d608b2831b45529dd7550d5ff91d4b7ae23533b1f6875b38be0f26f4479cb75579d8612ff2cfec981344598c76054584f6350d296c2436e2d43f184556d4e6208483e010ba8bcdf413d659fab3353bb8f53f085dfe24910f28b82ae382047383e81922f2d05b13d073b3fbb8042c9c1dd6a073109afffac32117a6b4162387949a9c2b21661eb321a340978b4c43dcb8ce264d6e30751c1e91551f4c2efec349bf0f083db63f3bbbbc83be7eb044b17a7fbfdeedbdd80e76580a5082d7534cea34620997ee593fc0c725a9cc41f192cdcb85d2021f2dafea48f14f63d01329845c0533210075ac3d1b674a5535d37c5c5acbd8fdee0ef9d3dc66b9fdec661f3ed53d1c70c825937716af2d44510d07876b3d52c063e7ddca41faee15d3b81940dd50d41ad5791b4b37f44cecc11db9ce58c7555491ee822e8ff1d8b0dac3eb409f8b827561ea6b7d88af82892a53ff2d239c76a8a1a717b101c7b9d7db85a84a508276b8d1ba972d31089cce5dba3ed722ead0849d336b1002f41f1b1b93d2a7e56e5c222d21327d872534aae80e8f7020c4fda6fd4765bd94df4aa38c51924b356412ae0ceff6adfdad9b9c793ee6aec73a902f658ffd6af25abf374368e38a8b9e91b34d2eeca566eb39ffa67978077870b21279afc7760f38639ad6fa152af670f25de919fcecc16755bafff466a0b8d9910bf84bc5917a33ed76fd62c47a9a2ca68055668a13f11616b7f95cda26c2b09bbe8c83609af99ec41470bda5b12524a849950caf6fb96d908dabca97187858c83a54cb2dee7fcabbc0fea8d3ca1b860d1d7b5eb1dc2a687330d2fb237f55d97fbab4694e4037355548f1c20122da77eb0b7b90205989bb9ef52f76f88770eabf56f5d9ccaf572b3eadb7c9810e93b675e7e9ea26f8d8749fcb23c63993d62406db2a53996dc053e698e70360492e2c467e1baf2d76a9dc74f23c3be3d27685c5fd07a30d2aab3f2cd7fde563e29a3434ee6a51f795a5e114a3d6259732362126da789d82ee54dae91c3e2c060a4f79943068cb6a3ee5692587a67816aa5a9c5ff3805173c72a5ad2b0ebd8588253bae50da117d938901f8ffbf725ced16a76f9f53d782ebe1f0d6f6dfdaa4fe8f93ec6246b66e561c740fc7eaf6c771659e90f545b9e89221fc9450543424f0a14ad7484253251f658e56cf1cb161b4cee63c6c5b96cf8c06e6aa524c8209205de7fdbf1e233135755ed6300ed4c096764fe4dd4855f421d272cd63150db47bc6f47bf624798")
 	require.NoError(t, err)
-	pubkeys := [][field_params.DilithiumPubkeyLength]byte{bytesutil.ToBytes2592(bytevalue)}
+	pubkeys := [][field_params.MLDSA87PubkeyLength]byte{bytesutil.ToBytes2592(bytevalue)}
 	config := &remoteweb3signer.SetupConfig{
 		BaseEndpoint:          "http://example.com",
 		GenesisValidatorsRoot: root,
@@ -731,12 +729,12 @@ func TestServer_DeleteRemoteKeys(t *testing.T) {
 	}
 
 	t.Run("returns proper data with existing pub keystores", func(t *testing.T) {
-		resp, err := s.DeleteRemoteKeys(context.Background(), &zondpbservice.DeleteRemoteKeysRequest{
+		resp, err := s.DeleteRemoteKeys(context.Background(), &qrlpbservice.DeleteRemoteKeysRequest{
 			Pubkeys: [][]byte{bytevalue},
 		})
-		expectedStatuses := []*zondpbservice.DeletedRemoteKeysStatus{
+		expectedStatuses := []*qrlpbservice.DeletedRemoteKeysStatus{
 			{
-				Status:  zondpbservice.DeletedRemoteKeysStatus_DELETED,
+				Status:  qrlpbservice.DeletedRemoteKeysStatus_DELETED,
 				Message: fmt.Sprintf("Successfully deleted pubkey: %v", hexutil.Encode(bytevalue)),
 			},
 		}
@@ -756,25 +754,25 @@ func TestServer_ListFeeRecipientByPubkey(t *testing.T) {
 	ctx := context.Background()
 	byteval, err := hexutil.Decode("0xa375ef0deba74124a22dd4f4574ab2affc8b1383d3e81ce9e37193992ea309c25b32b675954d03d1effdf720866aa802ae6ab63eef4d3b07f1908fab4e77393089883f5e004e8f9910cb4a1f4dcef862b35011eda1224619a0a5dd71a0575e6edaa2209d0e3ac40268371be06b65b29c32ee66d0762f33dab89a98d3fac30dfeca2f3fb403289b5bcfb10d957345b6ab5b0379daf7f1fa49f4f9d4ed272ffde8e083ee818b389d968ac7098ab2c3cdecae71dc4c9b7b8621d938bde950e67fe1e2168c611682c17794c58c25def2b6d0c0c30ec0a2594116377643eab8748dee9195e89d98b017638cfec4803492038a8470cab9da0ff7f4e8cf9bc5b5a713d48a12c822816a7af6f4dd84737af34e1c3773a345c236970e6e6da0309358cbb0a2fefcc078629c6dcefb0773839b76f7984f2c12517050111296709fa46edd7a2ad9afc91b6734e524f812f7e84c0e2054bd0a0963a473210ae38ed65d6e0cc331cd7b657e67f757c92567a57d7210e61497f4bf75d457f026e2157b980f089bbeff76c75c6e2ad40a0b1fa0772fb7dc7caec457c374e121865efda2009a168af2ec262e0a2abdcab890f3d0e65b6802a08c9bccc9e8bc07eb4ad36188eb936deeb41288741001c1308ab7d087e3b573667ff074edbfbb2c13f44cfc6fee9629afe8d03e720d2a46694e8135ddd29a6e1c31376b87d8280542b76b51f169c99f833dedcd26d0bf22f164c869690d7da774f1d8b2c558f1d62ad1723dabad575a5e80d994d16ae50c6ac8b11a90ceefa720865361d4fa5fd6b8a7db26684896619ad31760a96d247b137e6ffb0f7944ade85d287beb1fcb14219d2628c4c7f173f8fe442460d8de4a490a44a55f91eaf2a9996c7268b1f3050a50a792e3ba4caecfecb9475ca52835de7a5dac4aa6b39a3cfa505ab9f5a6aa9d1f0e2cd522d67be4c96ca63989f4b51e061638ca99dd865826fcc2f283035ded49412b34cf0a08870b7e23fa190edf99f2975f77ae604001c5989498ecc329ce69263bf70565549d6389a754e60e9ddc7f504985c32d1d5ad2e87795fd0f4feaaf47e279bd66b27f673790d77cd8e5fb059d98508bb8f50bc6586ced9082e2ca7145983e2a688c4d13a8574fce5f4b36c7931cee07867016aaa1417be98521e4d306fd02eeee0b2c4525dcfadb93a56bda02a537d58518a42981209948ff101caed8cce1e9200a31541601652e27280ea64da769b812d5c6e9226f82afdfd496917b892d371735dea17e04bc3d3f1bbe58dc723a154b494c7829b449244cc5b27d986475c3309df1cd3878fd3ffae0173b00ed4e412c5b592da3237500a6f3a463bc67055e0d7ebfad7aa52d424a4e449856b404633921325fffc3296532cb3f1a1e839bbefad1215ad89992de1ced86d1195b28fb9eb32fd59a7c4c21be2e1804c2ef98b1f1514fb3aab4c523e937f976655d0d17b22f07ac42514abeae5c2e7581fa566b559a864793b6c0bb321bf95d6b55a088f66c6452f32698ec20a74a42c623eab6f633b7f7fdadec5fcd8029d9d52ba5095ba1922cca59eb53b1dd984980404a9e957182fe6b94d2573ce63099c136a47949320d8e0fdefedcb4cdda25a3bb8f46dca234162d4ff5f841f4fcafbb5a801699176425b8be28712af5d2ce6e4d1202754c6529ef2b29f0e9fa6874213a2665947a74864ed8735bbedfbd16eb950e147104d6a414c37b9d2810f97214625c97171aa83f42f948ab8b31fef51644584ec438bb3a68f0ba88b96ccfcd860424363b171810b5ea59680ca762e89ef785482a8ecdbeede9f31040d24365e9d38cfa0c194c3054f5070897bda5da8881176666f21f5a73940187f87e91c154c1f5e4d66c791d055dd0e9330967522e6acfac511642d7500e6c004bc58c9a17d8607df8b3942ccf57c85b9e6f3ae59669e3eb44c57bf45453dd93df273a5ba7e985ae283a53cbdedb562ed5cc8cab9d81ba507d63e55a398eab58a3c9789b0b6b1983380cf779598340ed3c06c8744fffc679aa29bfbcce00713637fefe21e6e4a72f52fb997ff2f7bd9cfb48de0746b0aa613fda708cafdf52b20924acacef459802dcdee4da4e059f0712c9b5e77ffdfdefc3ac46c44fa4b7ed8daaa8ec3c18b0de2acc93f405adf0a6a3e6aebda14ce3932ffc5c2d5bd36fab8d4760a697bee4859be9fcfa496c56ed20517a539ba50aef0cc23426649c14fa6e3fe475ac3be4bc7173ce64f5fb78581bd52a703e0966930d9d8cf5436e82577dae757e3ecc32097ddf3df0cc60d81ff0d3adf8ef8f4d7e274defeec687717b76f5027c939cda3148c7e21d9c73bb71c7ef8b2cb5a508c08995c4974228e53535989a0220ab945babba304851971ef9934760b0bb2bbb8dfac9462a63d15b60c77994e821c9dde88b89fa371214c30e3f7838ac3a653360e05fedf59472e63020bbdcb5e38171b35793eb7213b0dd086f04027ef6354cb66e9a99d172d63e009c532575251bf7cbf50ebbf1458c194dddd3a52d0296c804e88f5654bc2fce6eb669756410c23b975a281c0230990f8b89e3a0a64383db1e0bf0f527bb0aef2d539095374be8248378af311562bf2eb00066a1374a24c547e64cb7d23827a906a1f396afcba9afe21aaf638749b334955d699386f7984f230979fda02954b82ae8b367341a27d858d3ae0566ed0e1e66f0fadfa97240ebc6e991151a239fa6dcc8ba9c6dc9f7f34390cf90153c07f5701e31203dbc350dc08c0e3715f8698a71f975cdced652642170bf5d6566d08390e0457842c8f7ae6dd4d10c2c58f8d3207b11a48a01dc6b80a57b2a539c3824ba52ea6ec25e36733f83236c24e025e611e62a5638375e419e90dd30bbd3648302d73dcfd6ec51f0ab568f564881789650f199b69b18f8a20c5508a84f09dea451f7db55992f0bdd4298fb53e2bdf45abcef685b81f0a861ee24dbe8f5eed012a148f55ee40f0d503e35c5f812f8c9a97d98478779312c16a6c40974da6add7b7122a4795fc809e3168926645eb2dcefbbd6a246564df0a6e806222f6fc947f76f67c941124f017475ac2c6fbd5d4ef7659eadf7a0754e9ea6118f5801049895b3f7137322f4a0a856b61c0528cc5516d51eaf91727ae91ccfca0a07cf486b268f39df21c409dcb71e081fd78694042d68593f0a853fcec1956863dd246fab44e3ee10df5bf7b6634674cc8ed0ab1bc26f6f773c4583c1d5ccdb7bd94026ef0a4f5d92942712e6f9e053330807a9e6e4fe2ed197079944a8825c996f16322ebfe76a00e69cdbdd4a7c91569cb545c8fa022277d0cdef61c4b64b000775acba1787f9723b9123c95e18120e15d34e1e95e42900cc6d1233169727d80a20b86e140e6877dff2f76dfd1f344fd1069fc4aa22101fd6865bf0c5d437656a13fa3699993221a183ff2440f1b390c3f54025ee2daebed9fb86eeea8d83999c58bb1b4f6d9e665e5987e970fe1dbf7a4f64e1663dbbc3d42d1f425b242462fe1709ccee918e18d6058f0c501b4ae04a0690139c6e38c7bfcb0e32461fdd6b6d9464d18cb4ccc26672ccfafd4b615457639fb14367b120112e2a426426b9ebc80841cb385103073026382aad0dd566e14c589ce7e7476f65c44fa172d94c83110664ff7995b14bce8f95b1f1474bdc")
 	require.NoError(t, err)
-	recipient0, err := common.NewAddressFromString("Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9")
+	recipient0, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046fb65722e7b2455012bfebf6177f1d2e9738d9")
 	require.NoError(t, err)
-	recipient1, err := common.NewAddressFromString("ZFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+	recipient1, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffffffffffff")
 	require.NoError(t, err)
 
 	type want struct {
-		ZondAddress string
+		QRLAddress string
 	}
 
 	tests := []struct {
 		name   string
 		args   *validatorserviceconfig.ProposerSettings
 		want   *want
-		cached *zond.FeeRecipientByPubKeyResponse
+		cached *qrysmpb.FeeRecipientByPubKeyResponse
 	}{
 		{
 			name: "ProposerSettings.ProposeConfig.FeeRecipientConfig defined for pubkey (and ProposerSettings.DefaultConfig.FeeRecipientConfig defined)",
 			args: &validatorserviceconfig.ProposerSettings{
-				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
+				ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 					bytesutil.ToBytes2592(byteval): {
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
 							FeeRecipient: recipient0,
@@ -788,13 +786,13 @@ func TestServer_ListFeeRecipientByPubkey(t *testing.T) {
 				},
 			},
 			want: &want{
-				ZondAddress: recipient0.Hex(),
+				QRLAddress: recipient0.Hex(),
 			},
 		},
 		{
 			name: "ProposerSettings.ProposeConfig.FeeRecipientConfig NOT defined for pubkey and ProposerSettings.DefaultConfig.FeeRecipientConfig defined",
 			args: &validatorserviceconfig.ProposerSettings{
-				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{},
+				ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorserviceconfig.ProposerOption{},
 				DefaultConfig: &validatorserviceconfig.ProposerOption{
 					FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
 						FeeRecipient: recipient0,
@@ -802,16 +800,16 @@ func TestServer_ListFeeRecipientByPubkey(t *testing.T) {
 				},
 			},
 			want: &want{
-				ZondAddress: recipient0.Hex(),
+				QRLAddress: recipient0.Hex(),
 			},
 		},
 		{
 			name: "ProposerSettings is nil and beacon node response is correct",
 			args: nil,
 			want: &want{
-				ZondAddress: "Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9",
+				QRLAddress: "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046fb65722e7b2455012bfebf6177f1d2e9738d9",
 			},
-			cached: &zond.FeeRecipientByPubKeyResponse{
+			cached: &qrysmpb.FeeRecipientByPubKeyResponse{
 				FeeRecipient: recipient0.Bytes(),
 			},
 		},
@@ -839,10 +837,10 @@ func TestServer_ListFeeRecipientByPubkey(t *testing.T) {
 				beaconNodeValidatorClient: mockValidatorClient,
 			}
 
-			got, err := s.ListFeeRecipientByPubkey(ctx, &zondpbservice.PubkeyRequest{Pubkey: byteval})
+			got, err := s.ListFeeRecipientByPubkey(ctx, &qrlpbservice.PubkeyRequest{Pubkey: byteval})
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.want.ZondAddress, common.BytesToAddress(got.Data.Zondaddress).Hex())
+			assert.Equal(t, tt.want.QRLAddress, common.BytesToAddress(got.Data.Qrladdress).Hex())
 		})
 	}
 }
@@ -867,7 +865,7 @@ func TestServer_ListFeeRecipientByPubKey_BeaconNodeError(t *testing.T) {
 		beaconNodeValidatorClient: mockValidatorClient,
 	}
 
-	_, err = s.ListFeeRecipientByPubkey(ctx, &zondpbservice.PubkeyRequest{Pubkey: byteval})
+	_, err = s.ListFeeRecipientByPubkey(ctx, &qrlpbservice.PubkeyRequest{Pubkey: byteval})
 	require.ErrorContains(t, "Failed to retrieve default fee recipient from beacon node", err)
 }
 
@@ -891,7 +889,7 @@ func TestServer_ListFeeRecipientByPubKey_NoFeeRecipientSet(t *testing.T) {
 		beaconNodeValidatorClient: mockValidatorClient,
 	}
 
-	_, err = s.ListFeeRecipientByPubkey(ctx, &zondpbservice.PubkeyRequest{Pubkey: byteval})
+	_, err = s.ListFeeRecipientByPubkey(ctx, &qrlpbservice.PubkeyRequest{Pubkey: byteval})
 	require.ErrorContains(t, "No fee recipient set", err)
 }
 
@@ -910,12 +908,12 @@ func TestServer_ListFeeRecipientByPubkey_InvalidPubKey(t *testing.T) {
 		validatorService: &client.ValidatorService{},
 	}
 
-	req := &zondpbservice.PubkeyRequest{
+	req := &qrlpbservice.PubkeyRequest{
 		Pubkey: []byte{},
 	}
 
 	_, err := s.ListFeeRecipientByPubkey(ctx, req)
-	require.ErrorContains(t, "not a valid dilithium public key", err)
+	require.ErrorContains(t, "not a valid ml-dsa-87 public key", err)
 }
 
 func TestServer_FeeRecipientByPubkey(t *testing.T) {
@@ -929,11 +927,11 @@ func TestServer_FeeRecipientByPubkey(t *testing.T) {
 	require.NoError(t, err)
 
 	type want struct {
-		valZondAddress string
+		valQRLAddress string
 		// defaultEthaddress string
 	}
 	type beaconResp struct {
-		resp  *zond.FeeRecipientByPubKeyResponse
+		resp  *qrysmpb.FeeRecipientByPubKeyResponse
 		error error
 	}
 	tests := []struct {
@@ -946,10 +944,10 @@ func TestServer_FeeRecipientByPubkey(t *testing.T) {
 	}{
 		{
 			name:             "ProposerSetting is nil",
-			args:             "Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9",
+			args:             "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046fb65722e7b2455012bfebf6177f1d2e9738d9",
 			proposerSettings: nil,
 			want: &want{
-				valZondAddress: "Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9",
+				valQRLAddress: "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046fb65722e7b2455012bfebf6177f1d2e9738d9",
 			},
 			wantErr: false,
 			beaconReturn: &beaconResp{
@@ -959,12 +957,12 @@ func TestServer_FeeRecipientByPubkey(t *testing.T) {
 		},
 		{
 			name: "ProposerSetting.ProposeConfig is nil",
-			args: "Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9",
+			args: "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046fb65722e7b2455012bfebf6177f1d2e9738d9",
 			proposerSettings: &validatorserviceconfig.ProposerSettings{
 				ProposeConfig: nil,
 			},
 			want: &want{
-				valZondAddress: "Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9",
+				valQRLAddress: "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046fb65722e7b2455012bfebf6177f1d2e9738d9",
 			},
 			wantErr: false,
 			beaconReturn: &beaconResp{
@@ -974,13 +972,13 @@ func TestServer_FeeRecipientByPubkey(t *testing.T) {
 		},
 		{
 			name: "ProposerSetting.ProposeConfig is nil AND ProposerSetting.Defaultconfig is defined",
-			args: "Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9",
+			args: "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046fb65722e7b2455012bfebf6177f1d2e9738d9",
 			proposerSettings: &validatorserviceconfig.ProposerSettings{
 				ProposeConfig: nil,
 				DefaultConfig: &validatorserviceconfig.ProposerOption{},
 			},
 			want: &want{
-				valZondAddress: "Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9",
+				valQRLAddress: "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046fb65722e7b2455012bfebf6177f1d2e9738d9",
 			},
 			wantErr: false,
 			beaconReturn: &beaconResp{
@@ -990,14 +988,14 @@ func TestServer_FeeRecipientByPubkey(t *testing.T) {
 		},
 		{
 			name: "ProposerSetting.ProposeConfig is defined for pubkey",
-			args: "Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9",
+			args: "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046fb65722e7b2455012bfebf6177f1d2e9738d9",
 			proposerSettings: &validatorserviceconfig.ProposerSettings{
-				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
+				ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 					bytesutil.ToBytes2592(byteval): {},
 				},
 			},
 			want: &want{
-				valZondAddress: "Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9",
+				valQRLAddress: "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046fb65722e7b2455012bfebf6177f1d2e9738d9",
 			},
 			wantErr: false,
 			beaconReturn: &beaconResp{
@@ -1007,12 +1005,12 @@ func TestServer_FeeRecipientByPubkey(t *testing.T) {
 		},
 		{
 			name: "ProposerSetting.ProposeConfig not defined for pubkey",
-			args: "Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9",
+			args: "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046fb65722e7b2455012bfebf6177f1d2e9738d9",
 			proposerSettings: &validatorserviceconfig.ProposerSettings{
-				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{},
+				ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorserviceconfig.ProposerOption{},
 			},
 			want: &want{
-				valZondAddress: "Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9",
+				valQRLAddress: "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046fb65722e7b2455012bfebf6177f1d2e9738d9",
 			},
 			wantErr: false,
 			beaconReturn: &beaconResp{
@@ -1022,14 +1020,14 @@ func TestServer_FeeRecipientByPubkey(t *testing.T) {
 		},
 		{
 			name: "ProposerSetting.ProposeConfig is nil for pubkey",
-			args: "Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9",
+			args: "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046fb65722e7b2455012bfebf6177f1d2e9738d9",
 			proposerSettings: &validatorserviceconfig.ProposerSettings{
-				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
+				ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 					bytesutil.ToBytes2592(byteval): nil,
 				},
 			},
 			want: &want{
-				valZondAddress: "Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9",
+				valQRLAddress: "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046fb65722e7b2455012bfebf6177f1d2e9738d9",
 			},
 			wantErr: false,
 			beaconReturn: &beaconResp{
@@ -1039,15 +1037,15 @@ func TestServer_FeeRecipientByPubkey(t *testing.T) {
 		},
 		{
 			name: "ProposerSetting.ProposeConfig is nil for pubkey AND DefaultConfig is not nil",
-			args: "Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9",
+			args: "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046fb65722e7b2455012bfebf6177f1d2e9738d9",
 			proposerSettings: &validatorserviceconfig.ProposerSettings{
-				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
+				ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 					bytesutil.ToBytes2592(byteval): nil,
 				},
 				DefaultConfig: &validatorserviceconfig.ProposerOption{},
 			},
 			want: &want{
-				valZondAddress: "Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9",
+				valQRLAddress: "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046fb65722e7b2455012bfebf6177f1d2e9738d9",
 			},
 			wantErr: false,
 			beaconReturn: &beaconResp{
@@ -1061,7 +1059,7 @@ func TestServer_FeeRecipientByPubkey(t *testing.T) {
 			m := &mock.MockValidator{}
 			err := m.SetProposerSettings(ctx, tt.proposerSettings)
 			require.NoError(t, err)
-			validatorDB := dbtest.SetupDB(t, [][field_params.DilithiumPubkeyLength]byte{})
+			validatorDB := dbtest.SetupDB(t, [][field_params.MLDSA87PubkeyLength]byte{})
 
 			// save a default here
 			vs, err := client.NewValidatorService(ctx, &client.Config{
@@ -1075,12 +1073,12 @@ func TestServer_FeeRecipientByPubkey(t *testing.T) {
 				valDB:                     validatorDB,
 			}
 
-			zondAddr, err := common.NewAddressFromString(tt.args)
+			qrlAddr, err := common.NewAddressFromString(tt.args)
 			require.NoError(t, err)
-			_, err = s.SetFeeRecipientByPubkey(ctx, &zondpbservice.SetFeeRecipientByPubkeyRequest{Pubkey: byteval, Zondaddress: zondAddr.Bytes()})
+			_, err = s.SetFeeRecipientByPubkey(ctx, &qrlpbservice.SetFeeRecipientByPubkeyRequest{Pubkey: byteval, Qrladdress: qrlAddr.Bytes()})
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.want.valZondAddress, s.validatorService.ProposerSettings().ProposeConfig[bytesutil.ToBytes2592(byteval)].FeeRecipientConfig.FeeRecipient.Hex())
+			assert.Equal(t, tt.want.valQRLAddress, s.validatorService.ProposerSettings().ProposeConfig[bytesutil.ToBytes2592(byteval)].FeeRecipientConfig.FeeRecipient.Hex())
 		})
 	}
 }
@@ -1100,12 +1098,12 @@ func TestServer_SetFeeRecipientByPubkey_InvalidPubKey(t *testing.T) {
 		validatorService: &client.ValidatorService{},
 	}
 
-	req := &zondpbservice.SetFeeRecipientByPubkeyRequest{
+	req := &qrlpbservice.SetFeeRecipientByPubkeyRequest{
 		Pubkey: []byte{},
 	}
 
 	_, err := s.SetFeeRecipientByPubkey(ctx, req)
-	require.ErrorContains(t, "not a valid dilithium public key", err)
+	require.ErrorContains(t, "not a valid ml-dsa-87 public key", err)
 }
 
 func TestServer_SetGasLimit_InvalidFeeRecipient(t *testing.T) {
@@ -1118,24 +1116,24 @@ func TestServer_SetGasLimit_InvalidFeeRecipient(t *testing.T) {
 		validatorService: &client.ValidatorService{},
 	}
 
-	req := &zondpbservice.SetFeeRecipientByPubkeyRequest{
+	req := &qrlpbservice.SetFeeRecipientByPubkeyRequest{
 		Pubkey: byteval,
 	}
 
 	_, err = s.SetFeeRecipientByPubkey(ctx, req)
-	require.ErrorContains(t, "Fee recipient is not a valid Zond address", err)
+	require.ErrorContains(t, "Fee recipient is not a valid QRL address", err)
 }
 
 func TestServer_DeleteFeeRecipientByPubkey(t *testing.T) {
 	ctx := grpc.NewContextWithServerTransportStream(context.Background(), &runtime.ServerTransportStream{})
 	byteval, err := hexutil.Decode("0xf6c41c2d6baa52105e65c3c128fa7b3cbb67b2c5a30af6f984fdb144739b534585fbc683a6800dbfe777dd4ae8af54bbcfa894e56513279cad5b978d6faf0a6d9ea2646ecdf1337223210803b948d83ef3a45aeb5b7f9c88bc43dc0655d878dbf578e9d4a2eb83ca3d300d30ce21c6756f5a15d589592b61f295669ea8e55c95a5c494517b9f27c335fd760ab6358034bce0089ed377c13314eac650b9e70d24e165f05acc9f7cd51dad6c216ea5b0bbabb5941fc17d59a1b9ad4d6cdf01768aa4513cf3444ad7a23823e892be4c85e8024706a03e0878fc005c52ed08ef41e56192459093ac82ebf9189e8199997977a336c4fc97da1ecdc6e76da090f35e93aee367c1457998963266e59338c2c241d113dbb5a48be82c9e3a3ea7b90d84dbbc65b76d833a54e522cdc41db212f7aa2f741502ca9d567ab64574454206c33a72effb676007a4dfdbcd358865df822d52fe2e74684122dfa0a8b7382b69256543408ea42785cd4f7d93d26fd7df702680bba33558170549c162d1bf69493e33970aa33b741a553902dda80a76bac4e38bf849b30ab436f6be48018889ad7be38ae4907c52e81f94a129a841d7f82d2dd2058d4f9c6cf0c914f245445397da1e6dbedf110e0bc5cbfa71cb7d8abcd542968fee270bb3be39f6aa6fead4d35ac63213be8f194902d5b6a85f1c29d7a16fdb9a2d6675048d7672d45021eaca3a742672524bd77937f5e4881abff9046375cc6245abb688a6387a515661a3c5d077c630b5883d9fb0f50e804a8ff368413db048e1bddafd563841d113ad54c12fbfe02b6f8901fef312e0fa921a435c103338582fa310c3cbe5e26319e04d1493c46d6216f5b7455d9567640739d4abd9d3897634faa612b0f2054a5da2379ab374da50f406bfd82762f9191e90173d346af7ec6b43026b556edd4e7c3d5e85ea089961bba7a1e441e21a96c6b34a74bca18788376ac3e27cd24443716d98a9953c24e4f60aa36846cc1a06dfbfa5e7eb6c389a6a687dc2919b6944320a7a7960274db334bc2263a8e46fe78eb9f3d6f59fd1e908d74e28283bafea01f528bf1b475f23cd75725de3e34a3354abd6f4896787b7238673acf362969548dc5ef8de5e8aecf20b29ae329935536df1c547e8047f94f12d05142ed1b27a331d101b307ec61d34fc226c3fee2aef9e9a3beb99c37d8ce186579a27301fdec54a620ab037ddb28d316c8467120203977e24b6fa801d8524910e0a849da79efd54600da1ebfd2beb3ce35ca5161ace13fef5bdfe8a5a415e0943b4ed27fb2f6182aea57871b9a43d6d7e48e1c667db6c2b5ba58348b6e5ace49bd2a6a662813eec2aeb40feaf6a2f513262adfcc226c0d853be7cbd981a925dd77f3aa42bf055b550470c94ef1d1e4cf2f3e0c89f3ba74ed4ef2e49478158873c71e4993b31ab73c16b084a66abe789c9b5059cfae7f41a3b3c2ad0925976d342ef3703f0ef37bb8acbdaa4753d921b6c94e5206b981a33e0ffa42e8edc578ed980fbaa0b12c75a149c4ab1dfa9d1c84a99a9b9bcc92fe2cb7bfea289d21068719cdaeddfed24f472af45110999fec25e20ebd5912f9a46a86c476c4218a264c5c600280d1f5ffb6422c9e052f56b18f2c072b0e32a1e1c5280c7fb387e2b869da701e73359907a5ff402e3f8a0e0d3689726a96f4e17e89ea2697e08a124fcb04ab235c954dd3a971a7bfa55a454e30ba1b650488d7c38fdc594d7e3421703dff2b9c4f89839b786c54a7a771afbc7d2c08f3dd780bb144aa7ed6db5834e818f1d05544e3c593c10b918d1f6a2819e142edac44d5a7c0124a7db677281e71a88c8da8c56aff7a38ec6cc85fb1a394fe7cc047a67cd40b1831bdede39b47269916dd7d2ae0f44ce18ebc5be2704a048bd39456810f38970634179ba8b7cb791e43c0ce55569180f1405272af483219c90bd55451353e87bea6f0b3268a7c3a0db2e7fc7ef09ee39c758b08a200aa9f7826ded60f4087ec4f008bdb9ebe071ca1929b49a756b369fe2e33a9b478aec17d0f6b5f3d53f550434e5ffdc1f42362865871d53e1ad10a9566804f56b7fb6d31d11b748cb18a014d05361a0eac3da43108904aaae0effe61ce65d999587f3514f609c8e9dd2c334eea7514fbb3877113e1802c1d5b1ea628e6a3c74a34f0e280e8f3b0cb878c6a14519b7c6ec4fa5c6f181e93b90a3bb937372c7bae60f87f4cdca74ff455b7aad4c347606b8c92662d00665ff766eafc95018c79d78f3198333323b507f9cb2cd661e3d01201c213e85a461f3ab02c7abd4524fc3762912c483f7cf6d4fae58720af67ad3ec70112f90d02e2d4170a582ec5f1015b89b8eaebab00321efe4e1d2e72aa43212c7720f6369a9e557aafadc77686f5ba77321220acc84e44aabb32bb56a821a34264fd44223a9cbbf04a37a270d4910de736da028d3e543adb12ae1860e3efb281d6763607f919e82a135d5cdb2976ef6993c22c842932478fe3e1101794be57e55af788e5a994c65f5e17a8d3df930a05dfd9344927b6808742751e14c5ac1fdf31573678134740d43c49904d18a501d14105846802dca4333225ff39ab76238e4239bb0bb82e54ae7bd5b9a3b148abdb915953dc9d5eb2bf9a3fc401d4adc7c96f4fb12c5c9f691ba67ebbb82311e6c1a53904361e1220deb23ac3b474c35994a545a55b7cddab72d6b15b28d2c6a19c65e1d11eb465ea69533a82d25e5f1d59d87f80eecd7e2d27cc6020cd17c460bf2a3865530f892a7713f7345b6585c4a99b833b86440fb81e2649429b10e2d5a5f868043d794b75eea4ec4cb4dfe35b54659271f12a00877dc394d33e76c9262d98d8a4a0b24c0b24eeba8a7c3982ae1b946acf4d332c414c7d99e375287f5529b2d03921da76ec37d42f7622246d8af8d5d8227124c01c62beb79b96c0c0b13a34ad07fe256b234cf3859843a7fcb81360fac6d196fbd044b4627027412c7779a26e4fc5ed655428b3bbd5fc04960638db48c539205d6804b43ac9909fe4706f0a9b4d90d5087f899b15bbba8e3560573ee2ff8cfd103022f6b26ead55d98b5e2b58ec884d1b724f7bbd5254eb6740009e4541663a29f062b1e7281a5bca4d5456fb8feedb5d24df137a6c62ce4b2add9e2bb682acca91d403b477bfb61f28525840d0b37367573391efa6d003286cd4fda89e17e109005b217e2e63b1c7d581480e779941ea3facc87b1995ee177b62530d480723fab9a233404855f55295c461ee471d4467009e7e768271f498c16826a316c7fbedbf1c55c95f1e8ffc154e58c02d826080bfd71c8bcd95b160b378af4f6e8ffc246a1a7fbae3508aeddac603e1ec1960db30fe0fe751c9c72f33e9a1abfff9a78b545e88603de5aed94ab3d86417d3561e5f48debefdd5c94b0760eb3d106969c6836e8b56853cf34a909c9e9e099c48b149df2381667a7ef103292bd2a79fe543f6706e563e858e84ae741381cc89fbb6ce40d9f2838739c53fdcdcb783736ebccdfcdacf1049315eb3b57d96d39a0361a69e4c20d493dbb4ad4468ccaae0c0674ecef4e9bdef2d9f2aa04e1938bd1ac1f07bb9acd71cd811874242a19cd86d52a70aa1cd190ae2800127e545a7230c8f0bdcf5f0b7d627304fbcd85d47e995a992fd6134377b975d9")
 	require.NoError(t, err)
-	recipient0, err := common.NewAddressFromString("Z055Fb65722E7b2455012BFEBf6177F1D2e9738D5")
+	recipient0, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000055fb65722e7b2455012bfebf6177f1d2e9738d5")
 	require.NoError(t, err)
-	recipient1, err := common.NewAddressFromString("Z046Fb65722E7b2455012BFEBf6177F1D2e9738D9")
+	recipient1, err := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046fb65722e7b2455012bfebf6177f1d2e9738d9")
 	require.NoError(t, err)
 	type want struct {
-		ZondAddress string
+		QRLAddress string
 	}
 	tests := []struct {
 		name             string
@@ -1146,7 +1144,7 @@ func TestServer_DeleteFeeRecipientByPubkey(t *testing.T) {
 		{
 			name: "Happy Path Test",
 			proposerSettings: &validatorserviceconfig.ProposerSettings{
-				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
+				ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 					bytesutil.ToBytes2592(byteval): {
 						FeeRecipientConfig: &validatorserviceconfig.FeeRecipientConfig{
 							FeeRecipient: recipient0,
@@ -1160,7 +1158,7 @@ func TestServer_DeleteFeeRecipientByPubkey(t *testing.T) {
 				},
 			},
 			want: &want{
-				ZondAddress: recipient1.Hex(),
+				QRLAddress: recipient1.Hex(),
 			},
 			wantErr: false,
 		},
@@ -1170,7 +1168,7 @@ func TestServer_DeleteFeeRecipientByPubkey(t *testing.T) {
 			m := &mock.MockValidator{}
 			err := m.SetProposerSettings(ctx, tt.proposerSettings)
 			require.NoError(t, err)
-			validatorDB := dbtest.SetupDB(t, [][field_params.DilithiumPubkeyLength]byte{})
+			validatorDB := dbtest.SetupDB(t, [][field_params.MLDSA87PubkeyLength]byte{})
 			vs, err := client.NewValidatorService(ctx, &client.Config{
 				Validator: m,
 				ValDB:     validatorDB,
@@ -1180,7 +1178,7 @@ func TestServer_DeleteFeeRecipientByPubkey(t *testing.T) {
 				validatorService: vs,
 				valDB:            validatorDB,
 			}
-			_, err = s.DeleteFeeRecipientByPubkey(ctx, &zondpbservice.PubkeyRequest{Pubkey: byteval})
+			_, err = s.DeleteFeeRecipientByPubkey(ctx, &qrlpbservice.PubkeyRequest{Pubkey: byteval})
 			require.NoError(t, err)
 
 			assert.Equal(t, true, s.validatorService.ProposerSettings().ProposeConfig[bytesutil.ToBytes2592(byteval)].FeeRecipientConfig == nil)
@@ -1203,12 +1201,12 @@ func TestServer_DeleteFeeRecipientByPubkey_InvalidPubKey(t *testing.T) {
 		validatorService: &client.ValidatorService{},
 	}
 
-	req := &zondpbservice.PubkeyRequest{
+	req := &qrlpbservice.PubkeyRequest{
 		Pubkey: []byte{},
 	}
 
 	_, err := s.DeleteFeeRecipientByPubkey(ctx, req)
-	require.ErrorContains(t, "not a valid dilithium public key", err)
+	require.ErrorContains(t, "not a valid ml-dsa-87 public key", err)
 }
 
 func TestServer_GetGasLimit(t *testing.T) {
@@ -1221,13 +1219,13 @@ func TestServer_GetGasLimit(t *testing.T) {
 	tests := []struct {
 		name   string
 		args   *validatorserviceconfig.ProposerSettings
-		pubkey [field_params.DilithiumPubkeyLength]byte
+		pubkey [field_params.MLDSA87PubkeyLength]byte
 		want   uint64
 	}{
 		{
 			name: "ProposerSetting for specific pubkey exists",
 			args: &validatorserviceconfig.ProposerSettings{
-				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
+				ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 					bytesutil.ToBytes2592(byteval): {
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{GasLimit: 123456789},
 					},
@@ -1242,7 +1240,7 @@ func TestServer_GetGasLimit(t *testing.T) {
 		{
 			name: "ProposerSetting for specific pubkey does not exist",
 			args: &validatorserviceconfig.ProposerSettings{
-				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
+				ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 					bytesutil.ToBytes2592(byteval): {
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{GasLimit: 123456789},
 					},
@@ -1274,7 +1272,7 @@ func TestServer_GetGasLimit(t *testing.T) {
 			s := &Server{
 				validatorService: vs,
 			}
-			got, err := s.GetGasLimit(ctx, &zondpbservice.PubkeyRequest{Pubkey: tt.pubkey[:]})
+			got, err := s.GetGasLimit(ctx, &qrlpbservice.PubkeyRequest{Pubkey: tt.pubkey[:]})
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got.Data.GasLimit)
 		})
@@ -1293,7 +1291,7 @@ func TestServer_SetGasLimit(t *testing.T) {
 	require.NoError(t, err2)
 
 	type beaconResp struct {
-		resp  *zond.FeeRecipientByPubKeyResponse
+		resp  *qrysmpb.FeeRecipientByPubKeyResponse
 		error error
 	}
 
@@ -1345,7 +1343,7 @@ func TestServer_SetGasLimit(t *testing.T) {
 			pubkey:      pubkey1,
 			newGasLimit: 9999,
 			proposerSettings: &validatorserviceconfig.ProposerSettings{
-				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
+				ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 					bytesutil.ToBytes2592(pubkey1): {
 						BuilderConfig: nil,
 					},
@@ -1359,7 +1357,7 @@ func TestServer_SetGasLimit(t *testing.T) {
 			pubkey:      pubkey1,
 			newGasLimit: 9999,
 			proposerSettings: &validatorserviceconfig.ProposerSettings{
-				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
+				ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 					bytesutil.ToBytes2592(pubkey1): {
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{},
 					},
@@ -1373,7 +1371,7 @@ func TestServer_SetGasLimit(t *testing.T) {
 			pubkey:      pubkey2,
 			newGasLimit: 9999,
 			proposerSettings: &validatorserviceconfig.ProposerSettings{
-				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
+				ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 					bytesutil.ToBytes2592(pubkey2): {
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{
 							Enabled:  true,
@@ -1394,7 +1392,7 @@ func TestServer_SetGasLimit(t *testing.T) {
 			pubkey:      pubkey1,
 			newGasLimit: 9999,
 			proposerSettings: &validatorserviceconfig.ProposerSettings{
-				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
+				ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 					bytesutil.ToBytes2592(pubkey2): {
 						BuilderConfig: nil,
 					},
@@ -1417,7 +1415,7 @@ func TestServer_SetGasLimit(t *testing.T) {
 			m := &mock.MockValidator{}
 			err := m.SetProposerSettings(ctx, tt.proposerSettings)
 			require.NoError(t, err)
-			validatorDB := dbtest.SetupDB(t, [][field_params.DilithiumPubkeyLength]byte{})
+			validatorDB := dbtest.SetupDB(t, [][field_params.MLDSA87PubkeyLength]byte{})
 			vs, err := client.NewValidatorService(ctx, &client.Config{
 				Validator: m,
 				ValDB:     validatorDB,
@@ -1437,7 +1435,7 @@ func TestServer_SetGasLimit(t *testing.T) {
 				).Return(tt.beaconReturn.resp, tt.beaconReturn.error)
 			}
 
-			_, err = s.SetGasLimit(ctx, &zondpbservice.SetGasLimitRequest{Pubkey: tt.pubkey, GasLimit: tt.newGasLimit})
+			_, err = s.SetGasLimit(ctx, &qrlpbservice.SetGasLimitRequest{Pubkey: tt.pubkey, GasLimit: tt.newGasLimit})
 			if tt.wantErr != "" {
 				require.ErrorContains(t, tt.wantErr, err)
 			} else {
@@ -1465,12 +1463,12 @@ func TestServer_SetGasLimit_InvalidPubKey(t *testing.T) {
 		validatorService: &client.ValidatorService{},
 	}
 
-	req := &zondpbservice.SetGasLimitRequest{
+	req := &qrlpbservice.SetGasLimitRequest{
 		Pubkey: []byte{},
 	}
 
 	_, err := s.SetGasLimit(ctx, req)
-	require.ErrorContains(t, "not a valid dilithium public key", err)
+	require.ErrorContains(t, "not a valid ml-dsa-87 public key", err)
 }
 
 func TestServer_DeleteGasLimit(t *testing.T) {
@@ -1505,7 +1503,7 @@ func TestServer_DeleteGasLimit(t *testing.T) {
 			name:   "delete existing gas limit with default config",
 			pubkey: pubkey1,
 			proposerSettings: &validatorserviceconfig.ProposerSettings{
-				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
+				ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 					bytesutil.ToBytes2592(pubkey1): {
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{GasLimit: validator.Uint64(987654321)},
 					},
@@ -1534,7 +1532,7 @@ func TestServer_DeleteGasLimit(t *testing.T) {
 			name:   "delete existing gas limit with no default config",
 			pubkey: pubkey1,
 			proposerSettings: &validatorserviceconfig.ProposerSettings{
-				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
+				ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 					bytesutil.ToBytes2592(pubkey1): {
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{GasLimit: validator.Uint64(987654321)},
 					},
@@ -1560,7 +1558,7 @@ func TestServer_DeleteGasLimit(t *testing.T) {
 			name:   "delete nonexist gas limit",
 			pubkey: pubkey2,
 			proposerSettings: &validatorserviceconfig.ProposerSettings{
-				ProposeConfig: map[[field_params.DilithiumPubkeyLength]byte]*validatorserviceconfig.ProposerOption{
+				ProposeConfig: map[[field_params.MLDSA87PubkeyLength]byte]*validatorserviceconfig.ProposerOption{
 					bytesutil.ToBytes2592(pubkey1): {
 						BuilderConfig: &validatorserviceconfig.BuilderConfig{GasLimit: validator.Uint64(987654321)},
 					},
@@ -1587,7 +1585,7 @@ func TestServer_DeleteGasLimit(t *testing.T) {
 			m := &mock.MockValidator{}
 			err := m.SetProposerSettings(ctx, tt.proposerSettings)
 			require.NoError(t, err)
-			validatorDB := dbtest.SetupDB(t, [][field_params.DilithiumPubkeyLength]byte{})
+			validatorDB := dbtest.SetupDB(t, [][field_params.MLDSA87PubkeyLength]byte{})
 			vs, err := client.NewValidatorService(ctx, &client.Config{
 				Validator: m,
 				ValDB:     validatorDB,
@@ -1599,7 +1597,7 @@ func TestServer_DeleteGasLimit(t *testing.T) {
 			}
 			// Set up global default value for builder gas limit.
 			params.BeaconConfig().DefaultBuilderGasLimit = uint64(globalDefaultGasLimit)
-			_, err = s.DeleteGasLimit(ctx, &zondpbservice.DeleteGasLimitRequest{Pubkey: tt.pubkey})
+			_, err = s.DeleteGasLimit(ctx, &qrlpbservice.DeleteGasLimitRequest{Pubkey: tt.pubkey})
 			if tt.wantError != nil {
 				assert.ErrorContains(t, fmt.Sprintf("code = %s", tt.wantError.Error()), err)
 			} else {
@@ -1643,12 +1641,12 @@ func TestServer_SetVoluntaryExit(t *testing.T) {
 	require.Equal(t, true, ok)
 	// err = dr.RecoverAccountsFromMnemonic(ctx, mocks.TestMnemonic, derived.DefaultMnemonicLanguage, "", 1)
 	password := "test"
-	encryptor := keystorev4.New()
+	encryptor := keystorev1.New()
 	id, err := uuid.NewRandom()
 	require.NoError(t, err)
 	seed, err := hex.DecodeString(mocks.TestHexSeed)
 	require.NoError(t, err)
-	validatingKey, err := dilithium.SecretKeyFromSeed(seed)
+	validatingKey, err := ml_dsa_87.SecretKeyFromSeed(seed)
 	require.NoError(t, err)
 	pubKey := validatingKey.PublicKey().Marshal()
 	cryptoFields, err := encryptor.Encrypt(validatingKey.Marshal(), password)
@@ -1674,20 +1672,20 @@ func TestServer_SetVoluntaryExit(t *testing.T) {
 		Seconds: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC).Unix(),
 	}
 
-	beaconClient.EXPECT().ValidatorIndex(gomock.Any(), &zond.ValidatorIndexRequest{PublicKey: pubKeys[0][:]}).
-		Times(3).
-		Return(&zond.ValidatorIndexResponse{Index: 2}, nil)
+	beaconClient.EXPECT().ValidatorIndex(gomock.Any(), &qrysmpb.ValidatorIndexRequest{PublicKey: pubKeys[0][:]}).
+		Times(2).
+		Return(&qrysmpb.ValidatorIndexResponse{Index: 2}, nil)
 
 	beaconClient.EXPECT().DomainData(
 		gomock.Any(), // ctx
 		gomock.Any(), // epoch
-	).Times(3).
-		Return(&zond.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
+	).Times(2).
+		Return(&qrysmpb.DomainResponse{SignatureDomain: make([]byte, 32)}, nil /*err*/)
 
 	mockNodeClient.EXPECT().
 		GetGenesis(gomock.Any(), gomock.Any()).
-		Times(3).
-		Return(&zond.Genesis{GenesisTime: genesisTime}, nil)
+		Times(2).
+		Return(&qrysmpb.Genesis{GenesisTime: genesisTime}, nil)
 
 	s := &Server{
 		validatorService:          vs,
@@ -1714,7 +1712,7 @@ func TestServer_SetVoluntaryExit(t *testing.T) {
 			w: want{
 				epoch:          30000000,
 				validatorIndex: 2,
-				signature:      []uint8{153, 180, 78, 74, 96, 179, 101, 32, 152, 59, 195, 54, 68, 61, 133, 65, 161, 254, 156, 253, 36, 63, 245, 7, 212, 68, 133, 77, 77, 21, 133, 176, 151, 27, 149, 236, 87, 11, 105, 110, 243, 93, 87, 2, 26, 246, 223, 126, 187, 250, 43, 172, 65, 61, 42, 173, 3, 238, 177, 92, 72, 165, 48, 153, 254, 231, 113, 212, 89, 133, 229, 9, 126, 111, 222, 47, 208, 51, 134, 91, 78, 128, 249, 174, 144, 102, 171, 157, 187, 82, 245, 112, 218, 223, 213, 182, 122, 158, 188, 99, 11, 219, 254, 123, 178, 106, 201, 163, 254, 44, 31, 144, 135, 172, 99, 169, 246, 56, 24, 16, 128, 17, 88, 185, 63, 29, 68, 181, 25, 244, 156, 143, 78, 179, 222, 214, 132, 14, 64, 179, 124, 58, 23, 211, 157, 29, 251, 141, 167, 33, 113, 154, 235, 77, 73, 60, 177, 157, 236, 127, 6, 212, 247, 153, 58, 25, 198, 150, 141, 252, 18, 167, 216, 64, 227, 140, 214, 87, 45, 51, 221, 223, 8, 155, 55, 79, 209, 137, 80, 36, 140, 157, 154, 220, 11, 23, 140, 54, 68, 33, 195, 180, 1, 9, 170, 123, 184, 127, 229, 38, 208, 102, 50, 230, 14, 204, 254, 123, 80, 66, 62, 232, 114, 155, 102, 160, 221, 11, 116, 140, 154, 106, 166, 186, 119, 85, 166, 211, 204, 21, 42, 169, 191, 135, 87, 54, 95, 226, 180, 41, 41, 64, 176, 222, 215, 253, 245, 247, 172, 196, 150, 57, 12, 70, 196, 8, 91, 204, 210, 32, 88, 193, 112, 2, 16, 94, 195, 175, 139, 197, 132, 164, 176, 132, 174, 73, 123, 226, 42, 82, 92, 55, 9, 143, 145, 100, 35, 65, 104, 227, 43, 153, 240, 203, 66, 241, 201, 94, 178, 136, 179, 70, 100, 12, 2, 91, 221, 63, 240, 230, 214, 4, 132, 37, 233, 151, 48, 197, 95, 8, 219, 178, 202, 85, 67, 68, 171, 170, 124, 182, 117, 31, 152, 74, 11, 185, 48, 12, 92, 159, 206, 17, 212, 111, 41, 177, 14, 31, 212, 107, 200, 218, 230, 176, 136, 99, 128, 205, 231, 144, 140, 186, 149, 254, 133, 156, 135, 198, 85, 77, 76, 77, 219, 50, 208, 23, 165, 224, 128, 168, 245, 187, 55, 173, 135, 184, 236, 237, 210, 66, 154, 4, 182, 177, 19, 6, 129, 107, 50, 20, 8, 245, 154, 245, 212, 37, 44, 45, 183, 224, 96, 183, 130, 241, 2, 131, 186, 213, 92, 177, 69, 232, 106, 12, 68, 75, 243, 205, 127, 175, 91, 44, 17, 147, 185, 191, 107, 13, 178, 198, 107, 218, 138, 0, 98, 251, 76, 194, 141, 92, 140, 107, 138, 92, 247, 61, 39, 150, 8, 45, 224, 133, 191, 200, 224, 139, 199, 160, 52, 220, 200, 53, 164, 0, 212, 147, 191, 61, 58, 174, 64, 211, 192, 158, 33, 225, 215, 140, 125, 98, 16, 20, 236, 102, 15, 23, 17, 251, 35, 176, 78, 67, 252, 144, 101, 60, 244, 65, 232, 100, 130, 158, 102, 124, 164, 62, 36, 207, 216, 85, 118, 143, 70, 148, 65, 215, 73, 116, 12, 50, 175, 197, 2, 227, 84, 112, 254, 109, 169, 255, 71, 136, 171, 193, 95, 48, 252, 82, 129, 227, 225, 27, 135, 231, 46, 52, 7, 211, 63, 51, 201, 170, 199, 214, 58, 209, 202, 55, 4, 234, 81, 149, 83, 7, 6, 187, 109, 106, 44, 111, 27, 159, 90, 135, 52, 142, 65, 174, 175, 78, 168, 25, 130, 172, 167, 151, 111, 121, 67, 104, 136, 107, 155, 231, 162, 58, 174, 172, 207, 114, 38, 107, 54, 56, 135, 118, 121, 3, 150, 227, 190, 76, 254, 70, 159, 241, 9, 153, 40, 147, 186, 2, 32, 211, 238, 182, 250, 65, 177, 105, 112, 20, 164, 126, 15, 55, 247, 71, 85, 243, 103, 33, 82, 30, 113, 211, 91, 5, 108, 220, 211, 9, 49, 31, 189, 135, 153, 253, 243, 17, 47, 165, 148, 125, 78, 240, 177, 113, 251, 212, 238, 144, 142, 195, 18, 220, 223, 68, 237, 51, 109, 59, 122, 163, 113, 53, 81, 245, 153, 179, 181, 4, 16, 194, 218, 114, 126, 76, 193, 22, 214, 103, 174, 174, 0, 95, 174, 172, 160, 179, 31, 29, 203, 106, 100, 61, 7, 0, 190, 125, 194, 0, 59, 232, 8, 107, 31, 137, 203, 153, 155, 52, 116, 144, 174, 251, 220, 68, 21, 154, 121, 216, 107, 155, 203, 76, 136, 251, 25, 160, 110, 119, 77, 9, 5, 154, 74, 217, 230, 157, 36, 217, 163, 34, 211, 66, 251, 171, 119, 131, 38, 38, 38, 154, 28, 178, 207, 13, 146, 38, 186, 211, 171, 165, 96, 21, 216, 14, 83, 17, 90, 31, 130, 21, 32, 199, 173, 85, 70, 223, 7, 215, 21, 205, 64, 201, 73, 208, 138, 212, 222, 212, 129, 41, 3, 81, 165, 9, 82, 67, 49, 2, 93, 108, 197, 238, 88, 128, 46, 185, 212, 152, 15, 145, 11, 30, 159, 107, 51, 66, 65, 195, 232, 169, 36, 87, 79, 9, 177, 9, 151, 234, 114, 189, 129, 61, 9, 78, 211, 26, 255, 183, 167, 211, 254, 184, 50, 22, 199, 215, 58, 212, 23, 80, 216, 176, 73, 137, 234, 168, 169, 229, 255, 164, 227, 56, 52, 99, 211, 59, 219, 182, 3, 223, 189, 140, 201, 93, 11, 84, 21, 67, 136, 217, 25, 210, 126, 143, 232, 250, 75, 77, 98, 9, 38, 34, 167, 176, 24, 152, 194, 49, 76, 10, 145, 120, 186, 107, 223, 233, 212, 163, 207, 251, 100, 245, 181, 149, 180, 187, 170, 20, 98, 230, 229, 208, 154, 38, 161, 247, 159, 13, 164, 178, 49, 103, 228, 251, 11, 37, 67, 0, 75, 66, 109, 26, 18, 150, 48, 132, 72, 96, 218, 17, 78, 240, 28, 145, 201, 170, 219, 0, 187, 59, 176, 240, 1, 122, 43, 147, 234, 101, 245, 63, 149, 86, 13, 82, 36, 235, 129, 244, 13, 109, 134, 34, 38, 128, 74, 78, 175, 189, 238, 0, 126, 184, 228, 152, 242, 66, 214, 40, 158, 96, 74, 205, 39, 12, 166, 178, 253, 174, 60, 139, 126, 216, 104, 180, 203, 84, 140, 7, 248, 210, 98, 252, 119, 213, 26, 6, 99, 221, 14, 6, 9, 68, 216, 212, 251, 59, 61, 144, 163, 32, 181, 226, 243, 160, 25, 225, 253, 211, 57, 252, 224, 199, 232, 235, 56, 36, 100, 52, 162, 60, 207, 188, 100, 6, 60, 96, 173, 97, 23, 132, 59, 202, 116, 215, 243, 161, 207, 213, 17, 140, 230, 238, 114, 96, 6, 247, 178, 128, 132, 38, 169, 48, 30, 93, 112, 127, 62, 27, 58, 84, 155, 253, 34, 100, 133, 18, 150, 144, 124, 192, 29, 6, 142, 56, 189, 212, 181, 47, 95, 31, 64, 102, 64, 131, 199, 199, 98, 99, 4, 228, 56, 237, 210, 140, 177, 96, 182, 157, 82, 99, 117, 139, 78, 11, 69, 70, 97, 122, 241, 33, 8, 86, 219, 107, 64, 31, 201, 11, 237, 125, 55, 16, 197, 189, 250, 251, 80, 41, 124, 163, 210, 74, 46, 73, 77, 133, 210, 88, 209, 204, 93, 60, 167, 217, 89, 108, 23, 5, 51, 175, 18, 155, 51, 255, 86, 2, 205, 38, 196, 242, 132, 155, 88, 182, 176, 122, 254, 39, 74, 125, 75, 33, 200, 116, 115, 131, 191, 89, 120, 0, 189, 156, 232, 205, 212, 222, 209, 25, 199, 228, 240, 80, 48, 162, 132, 83, 28, 20, 169, 53, 145, 189, 236, 4, 108, 204, 119, 187, 78, 196, 219, 31, 131, 59, 128, 191, 218, 157, 56, 188, 53, 39, 162, 163, 19, 103, 73, 164, 19, 117, 225, 232, 32, 100, 171, 255, 235, 37, 193, 241, 224, 240, 217, 98, 21, 115, 110, 166, 29, 12, 250, 160, 2, 112, 136, 174, 131, 83, 162, 24, 195, 13, 129, 1, 166, 172, 40, 195, 151, 249, 206, 152, 247, 87, 75, 28, 173, 165, 118, 239, 158, 153, 35, 53, 225, 53, 51, 227, 99, 197, 11, 194, 32, 19, 145, 125, 126, 226, 156, 53, 143, 161, 170, 11, 116, 49, 151, 235, 179, 251, 233, 87, 33, 96, 76, 171, 159, 119, 183, 104, 165, 181, 149, 14, 239, 178, 142, 225, 140, 87, 36, 62, 209, 30, 23, 2, 246, 236, 56, 11, 207, 75, 146, 243, 210, 36, 85, 76, 54, 4, 177, 218, 169, 56, 199, 225, 88, 251, 195, 132, 68, 50, 201, 232, 24, 202, 80, 147, 184, 94, 161, 107, 83, 135, 182, 148, 173, 91, 161, 222, 248, 15, 123, 38, 52, 220, 11, 158, 136, 46, 217, 53, 59, 222, 147, 224, 226, 102, 253, 122, 8, 107, 222, 75, 133, 190, 255, 99, 208, 180, 234, 230, 28, 124, 87, 70, 184, 152, 34, 118, 151, 45, 254, 132, 197, 230, 42, 95, 131, 140, 105, 198, 200, 239, 135, 183, 11, 255, 143, 151, 42, 113, 214, 46, 159, 75, 68, 139, 177, 177, 91, 110, 158, 53, 226, 93, 17, 186, 101, 139, 189, 70, 24, 149, 126, 24, 173, 4, 101, 85, 99, 154, 2, 25, 176, 218, 253, 187, 173, 99, 109, 84, 61, 142, 197, 93, 58, 153, 210, 112, 251, 160, 172, 212, 139, 19, 241, 213, 240, 30, 101, 148, 17, 147, 57, 124, 129, 227, 22, 137, 168, 67, 87, 139, 64, 8, 99, 141, 41, 120, 42, 235, 187, 230, 176, 140, 204, 170, 50, 95, 231, 89, 52, 103, 222, 192, 34, 93, 231, 126, 71, 169, 6, 59, 140, 130, 79, 237, 93, 95, 101, 59, 55, 235, 170, 238, 109, 77, 19, 214, 231, 209, 231, 223, 51, 8, 58, 1, 71, 147, 213, 4, 134, 86, 170, 94, 156, 108, 186, 125, 140, 134, 6, 72, 85, 125, 206, 89, 112, 25, 135, 99, 49, 178, 235, 115, 189, 54, 168, 78, 231, 57, 190, 189, 193, 90, 140, 22, 168, 61, 71, 156, 172, 2, 236, 136, 255, 95, 156, 165, 206, 20, 105, 206, 227, 223, 179, 82, 19, 11, 13, 21, 154, 175, 245, 72, 116, 22, 208, 199, 214, 53, 104, 110, 80, 201, 235, 208, 171, 124, 54, 64, 51, 171, 200, 11, 179, 101, 55, 54, 186, 73, 208, 142, 214, 67, 210, 106, 167, 201, 93, 251, 200, 129, 26, 240, 35, 175, 112, 222, 162, 113, 149, 161, 3, 144, 173, 64, 31, 89, 90, 48, 65, 240, 42, 192, 149, 112, 18, 202, 167, 176, 116, 0, 236, 225, 87, 128, 246, 183, 196, 249, 127, 12, 62, 188, 44, 57, 45, 171, 199, 248, 179, 128, 96, 226, 252, 70, 171, 75, 73, 115, 201, 111, 223, 202, 216, 6, 102, 67, 201, 107, 52, 187, 9, 180, 90, 44, 63, 117, 35, 218, 27, 176, 219, 62, 10, 87, 125, 236, 153, 204, 37, 22, 181, 88, 181, 74, 8, 57, 176, 223, 254, 114, 100, 14, 238, 179, 227, 72, 10, 122, 96, 164, 75, 161, 3, 61, 154, 118, 138, 229, 116, 124, 219, 182, 160, 86, 128, 241, 118, 85, 54, 244, 233, 5, 48, 96, 30, 253, 172, 224, 169, 48, 248, 158, 103, 32, 220, 51, 65, 148, 106, 43, 137, 201, 129, 62, 104, 228, 145, 131, 222, 152, 121, 50, 18, 99, 42, 102, 163, 121, 122, 100, 162, 84, 152, 45, 175, 59, 181, 180, 136, 236, 227, 79, 100, 245, 65, 76, 216, 84, 103, 90, 85, 86, 94, 37, 172, 87, 79, 52, 213, 3, 178, 186, 131, 236, 11, 93, 50, 191, 41, 222, 26, 98, 149, 94, 145, 164, 111, 42, 83, 91, 230, 29, 84, 228, 101, 23, 124, 28, 82, 161, 193, 88, 81, 252, 227, 187, 167, 158, 207, 94, 114, 173, 161, 96, 126, 127, 29, 129, 84, 57, 151, 123, 41, 22, 108, 41, 87, 220, 145, 236, 189, 192, 203, 32, 195, 83, 190, 35, 27, 74, 74, 249, 205, 8, 6, 178, 211, 169, 19, 18, 34, 176, 223, 234, 248, 85, 96, 147, 51, 15, 100, 31, 65, 143, 165, 224, 232, 191, 211, 69, 183, 51, 198, 82, 20, 131, 147, 240, 211, 44, 93, 46, 245, 66, 137, 70, 105, 38, 184, 118, 128, 163, 26, 136, 97, 56, 248, 105, 37, 17, 44, 36, 202, 214, 56, 157, 242, 237, 145, 179, 23, 222, 115, 32, 13, 1, 105, 233, 164, 254, 250, 17, 212, 147, 30, 230, 0, 99, 148, 120, 226, 15, 233, 178, 69, 86, 7, 27, 223, 220, 158, 162, 226, 250, 226, 26, 241, 172, 34, 118, 236, 85, 185, 172, 235, 120, 10, 246, 148, 8, 35, 77, 3, 11, 130, 174, 220, 48, 177, 133, 76, 31, 42, 97, 102, 141, 214, 87, 217, 13, 5, 1, 253, 162, 49, 84, 236, 229, 162, 140, 29, 17, 183, 23, 38, 143, 35, 25, 175, 143, 55, 159, 139, 95, 30, 159, 50, 186, 14, 26, 218, 15, 245, 62, 245, 149, 8, 216, 59, 88, 115, 21, 254, 43, 162, 27, 0, 132, 28, 207, 213, 136, 126, 39, 81, 152, 58, 216, 105, 155, 120, 248, 142, 45, 188, 206, 190, 77, 132, 20, 58, 97, 56, 83, 166, 42, 235, 87, 25, 88, 119, 228, 86, 71, 92, 218, 77, 110, 22, 235, 241, 135, 48, 70, 174, 98, 246, 145, 254, 109, 219, 88, 192, 44, 175, 91, 43, 91, 131, 181, 175, 140, 120, 223, 36, 98, 159, 248, 80, 147, 23, 44, 31, 197, 105, 169, 111, 50, 254, 243, 64, 15, 82, 57, 77, 66, 206, 163, 36, 14, 119, 56, 94, 15, 114, 32, 174, 239, 197, 165, 16, 144, 195, 117, 252, 117, 227, 101, 71, 14, 167, 226, 156, 162, 153, 120, 247, 197, 120, 34, 47, 6, 103, 32, 128, 129, 177, 248, 192, 236, 87, 236, 75, 141, 180, 229, 227, 121, 16, 248, 117, 198, 58, 56, 136, 39, 244, 130, 82, 158, 198, 235, 202, 41, 54, 44, 46, 107, 111, 26, 123, 206, 71, 65, 247, 113, 239, 254, 25, 104, 208, 13, 249, 166, 77, 55, 18, 125, 136, 77, 242, 92, 74, 223, 180, 19, 79, 223, 39, 114, 19, 188, 33, 35, 235, 126, 30, 96, 106, 122, 150, 114, 238, 206, 127, 242, 55, 0, 49, 188, 95, 209, 4, 118, 177, 90, 55, 245, 6, 202, 156, 147, 177, 13, 199, 45, 137, 142, 170, 30, 17, 20, 66, 50, 120, 122, 78, 186, 177, 135, 150, 37, 224, 84, 67, 36, 108, 68, 232, 73, 37, 245, 198, 120, 30, 49, 240, 212, 53, 212, 215, 148, 10, 144, 51, 11, 167, 84, 65, 200, 251, 12, 123, 111, 60, 94, 160, 99, 173, 26, 130, 197, 135, 246, 97, 136, 191, 151, 204, 132, 228, 170, 32, 205, 89, 9, 97, 142, 244, 175, 24, 196, 64, 168, 132, 92, 217, 160, 219, 12, 185, 221, 223, 235, 48, 22, 14, 167, 28, 19, 203, 131, 54, 175, 135, 103, 215, 123, 176, 251, 24, 66, 239, 255, 248, 229, 135, 81, 235, 83, 159, 21, 99, 14, 66, 192, 224, 76, 24, 21, 51, 112, 84, 146, 207, 197, 75, 86, 215, 128, 157, 195, 100, 97, 77, 70, 209, 189, 127, 119, 58, 214, 30, 22, 24, 203, 46, 19, 148, 102, 11, 123, 24, 72, 90, 45, 4, 226, 86, 63, 16, 181, 111, 135, 208, 76, 216, 115, 71, 111, 106, 136, 42, 168, 48, 179, 223, 43, 216, 94, 13, 178, 129, 167, 94, 178, 83, 199, 84, 18, 125, 11, 49, 249, 12, 226, 106, 92, 118, 3, 106, 196, 52, 23, 22, 89, 123, 66, 201, 233, 177, 49, 180, 195, 120, 96, 236, 82, 241, 240, 74, 179, 240, 232, 69, 199, 112, 2, 163, 148, 212, 66, 174, 145, 106, 169, 216, 40, 85, 35, 171, 44, 106, 2, 124, 10, 134, 3, 28, 118, 48, 209, 140, 164, 152, 0, 104, 205, 186, 212, 212, 52, 104, 210, 243, 211, 5, 7, 244, 147, 49, 171, 6, 154, 194, 60, 3, 140, 0, 20, 26, 32, 99, 248, 255, 7, 98, 119, 122, 78, 194, 32, 30, 197, 34, 104, 246, 248, 49, 70, 183, 166, 18, 136, 54, 109, 121, 110, 61, 87, 115, 113, 103, 160, 97, 196, 235, 142, 11, 93, 116, 134, 254, 143, 135, 141, 240, 98, 220, 85, 55, 95, 212, 221, 21, 31, 231, 5, 38, 81, 200, 46, 245, 219, 139, 192, 117, 126, 229, 229, 41, 25, 171, 119, 130, 177, 47, 148, 72, 43, 255, 14, 108, 20, 171, 167, 69, 92, 210, 215, 224, 90, 159, 162, 128, 22, 134, 202, 83, 192, 233, 188, 14, 83, 251, 150, 205, 226, 122, 12, 120, 132, 45, 62, 1, 59, 62, 45, 65, 249, 51, 158, 95, 23, 30, 0, 92, 48, 145, 170, 222, 39, 88, 84, 200, 168, 66, 231, 192, 7, 24, 192, 168, 211, 131, 20, 111, 82, 71, 218, 12, 173, 26, 195, 117, 127, 80, 54, 245, 128, 16, 202, 204, 89, 2, 60, 235, 26, 13, 30, 178, 105, 255, 68, 205, 4, 186, 145, 52, 252, 190, 101, 80, 43, 188, 112, 28, 205, 92, 73, 58, 59, 46, 145, 190, 179, 237, 97, 39, 6, 221, 186, 43, 80, 249, 131, 228, 181, 244, 199, 208, 165, 150, 150, 99, 148, 174, 208, 44, 253, 248, 203, 232, 52, 102, 16, 79, 172, 201, 158, 114, 86, 37, 53, 232, 77, 254, 176, 165, 94, 206, 228, 135, 147, 20, 60, 43, 160, 72, 105, 137, 237, 164, 99, 177, 52, 212, 107, 214, 187, 134, 230, 151, 59, 210, 138, 253, 206, 87, 187, 42, 231, 109, 248, 101, 117, 220, 115, 217, 132, 102, 204, 48, 197, 231, 32, 104, 123, 37, 211, 82, 88, 78, 186, 58, 183, 40, 245, 167, 116, 178, 76, 206, 89, 143, 15, 154, 188, 228, 98, 172, 156, 213, 225, 181, 46, 127, 106, 245, 195, 27, 135, 173, 51, 31, 198, 221, 247, 63, 225, 152, 158, 138, 204, 92, 45, 161, 156, 157, 121, 133, 168, 97, 208, 40, 121, 140, 248, 211, 104, 86, 109, 82, 190, 79, 36, 210, 20, 173, 37, 47, 190, 45, 229, 173, 8, 107, 166, 236, 204, 140, 48, 69, 217, 51, 149, 93, 218, 137, 54, 21, 247, 95, 170, 122, 158, 110, 126, 183, 94, 44, 148, 122, 25, 167, 58, 162, 33, 207, 174, 177, 28, 61, 215, 254, 206, 230, 228, 84, 116, 131, 187, 46, 251, 241, 153, 26, 170, 37, 216, 64, 35, 69, 166, 98, 141, 21, 69, 222, 197, 244, 102, 17, 248, 123, 174, 228, 211, 210, 187, 200, 57, 6, 4, 163, 1, 247, 168, 174, 99, 246, 66, 217, 32, 199, 109, 46, 13, 115, 177, 190, 47, 247, 135, 84, 188, 157, 35, 17, 44, 104, 111, 228, 151, 114, 197, 90, 179, 155, 10, 242, 119, 201, 132, 244, 34, 44, 200, 87, 46, 25, 152, 97, 168, 0, 67, 95, 41, 7, 143, 10, 198, 71, 100, 207, 37, 12, 52, 201, 56, 158, 70, 59, 85, 42, 29, 84, 197, 166, 45, 135, 149, 143, 31, 31, 194, 155, 27, 139, 114, 72, 110, 168, 121, 179, 132, 216, 214, 127, 225, 220, 144, 208, 162, 60, 122, 1, 74, 215, 188, 104, 145, 169, 157, 103, 55, 162, 67, 147, 193, 207, 25, 41, 238, 24, 145, 60, 157, 143, 32, 45, 92, 151, 236, 39, 217, 247, 21, 69, 109, 3, 131, 234, 51, 166, 252, 72, 86, 154, 181, 188, 65, 136, 126, 139, 228, 93, 76, 159, 43, 52, 69, 12, 77, 69, 74, 246, 45, 82, 122, 167, 171, 80, 82, 57, 140, 165, 214, 36, 203, 37, 179, 175, 67, 236, 134, 90, 227, 109, 79, 242, 215, 197, 38, 213, 71, 77, 109, 107, 1, 138, 83, 51, 85, 70, 171, 168, 210, 194, 92, 238, 79, 16, 250, 125, 72, 49, 151, 189, 137, 120, 29, 223, 238, 169, 246, 16, 158, 209, 162, 135, 15, 73, 198, 217, 203, 204, 71, 180, 40, 95, 68, 243, 206, 93, 73, 234, 205, 50, 169, 157, 128, 174, 221, 24, 20, 168, 46, 51, 51, 102, 132, 150, 244, 206, 233, 176, 232, 116, 142, 180, 71, 21, 204, 228, 56, 139, 86, 18, 0, 24, 42, 192, 20, 4, 82, 106, 249, 224, 236, 44, 114, 22, 213, 158, 214, 77, 216, 214, 26, 127, 151, 83, 59, 207, 170, 179, 187, 17, 107, 125, 26, 213, 21, 11, 126, 114, 24, 196, 176, 247, 224, 130, 50, 34, 246, 132, 13, 27, 202, 142, 31, 23, 210, 247, 160, 2, 18, 14, 251, 60, 253, 11, 69, 194, 32, 92, 199, 133, 5, 184, 144, 166, 202, 95, 192, 224, 238, 68, 22, 16, 22, 32, 187, 4, 143, 75, 199, 241, 38, 50, 230, 8, 156, 232, 56, 168, 96, 26, 212, 67, 112, 86, 31, 11, 95, 64, 130, 202, 167, 88, 146, 15, 21, 212, 114, 128, 15, 233, 246, 233, 8, 63, 174, 125, 218, 81, 27, 220, 48, 86, 254, 82, 41, 47, 84, 68, 22, 27, 185, 105, 255, 173, 92, 36, 184, 252, 111, 164, 57, 104, 246, 49, 7, 145, 25, 20, 231, 182, 121, 42, 55, 115, 76, 113, 254, 182, 180, 195, 115, 20, 153, 225, 50, 199, 197, 159, 132, 162, 32, 90, 107, 217, 232, 13, 176, 49, 125, 52, 217, 6, 143, 156, 201, 196, 188, 97, 127, 213, 240, 35, 206, 67, 93, 129, 64, 240, 98, 124, 168, 133, 52, 37, 70, 104, 212, 39, 89, 146, 124, 40, 97, 185, 116, 1, 179, 131, 132, 95, 1, 214, 204, 241, 244, 228, 117, 66, 152, 192, 107, 72, 200, 2, 223, 105, 157, 76, 254, 217, 188, 170, 10, 196, 221, 31, 64, 38, 68, 249, 219, 229, 65, 33, 8, 28, 105, 31, 214, 25, 125, 84, 13, 37, 27, 92, 75, 202, 134, 157, 252, 168, 120, 118, 200, 23, 169, 148, 151, 84, 109, 113, 232, 250, 126, 115, 179, 231, 162, 196, 168, 250, 165, 210, 188, 241, 59, 77, 69, 252, 103, 169, 29, 243, 116, 162, 136, 14, 233, 179, 179, 198, 132, 163, 32, 31, 248, 125, 117, 24, 216, 115, 131, 201, 59, 81, 236, 200, 18, 190, 23, 43, 20, 213, 201, 66, 63, 98, 224, 81, 22, 38, 171, 76, 213, 148, 170, 90, 29, 144, 206, 159, 174, 142, 75, 150, 146, 53, 110, 235, 138, 144, 126, 43, 46, 170, 108, 207, 72, 158, 208, 21, 12, 140, 155, 85, 193, 129, 157, 48, 145, 86, 223, 189, 117, 11, 5, 177, 205, 181, 108, 43, 5, 135, 91, 140, 248, 176, 131, 124, 180, 184, 34, 157, 250, 210, 40, 205, 212, 220, 177, 139, 187, 183, 255, 233, 166, 18, 73, 109, 117, 45, 246, 124, 162, 63, 174, 44, 59, 93, 237, 46, 119, 124, 91, 187, 93, 205, 239, 201, 131, 66, 82, 2, 249, 94, 153, 9, 239, 163, 185, 43, 253, 221, 142, 165, 207, 254, 211, 112, 240, 48, 26, 47, 216, 141, 183, 241, 133, 138, 21, 87, 136, 65, 95, 196, 154, 53, 189, 37, 244, 97, 195, 158, 250, 69, 40, 167, 174, 49, 143, 10, 55, 236, 183, 117, 57, 201, 49, 116, 142, 143, 214, 252, 7, 59, 88, 52, 154, 38, 206, 251, 235, 209, 15, 200, 168, 129, 221, 243, 104, 93, 190, 118, 38, 65, 181, 71, 87, 149, 115, 115, 64, 187, 180, 104, 1, 125, 97, 202, 208, 35, 0, 117, 26, 125, 49, 59, 162, 8, 253, 39, 255, 53, 185, 123, 188, 166, 211, 166, 71, 160, 106, 64, 135, 117, 65, 53, 153, 241, 189, 77, 234, 245, 98, 62, 104, 197, 25, 70, 76, 146, 86, 10, 143, 79, 107, 171, 220, 115, 162, 50, 155, 149, 246, 3, 200, 219, 51, 65, 249, 216, 127, 239, 153, 161, 108, 213, 64, 107, 176, 99, 240, 137, 24, 182, 18, 50, 238, 163, 54, 239, 200, 10, 132, 233, 32, 228, 90, 100, 195, 43, 169, 150, 52, 120, 235, 212, 204, 82, 86, 232, 252, 178, 70, 236, 93, 194, 188, 86, 247, 223, 174, 166, 34, 221, 70, 71, 180, 97, 11, 101, 72, 32, 207, 248, 198, 57, 177, 35, 231, 133, 116, 170, 53, 75, 101, 184, 219, 225, 76, 143, 134, 225, 154, 34, 129, 121, 67, 206, 15, 82, 181, 217, 82, 23, 59, 128, 121, 236, 27, 96, 0, 216, 49, 115, 228, 140, 234, 120, 1, 207, 105, 79, 183, 95, 240, 139, 170, 123, 73, 131, 192, 19, 104, 221, 218, 191, 179, 229, 80, 84, 119, 30, 238, 41, 222, 19, 245, 99, 212, 238, 187, 19, 100, 77, 193, 113, 147, 138, 174, 120, 71, 175, 118, 131, 111, 164, 59, 181, 150, 22, 114, 17, 142, 100, 94, 233, 220, 199, 14, 116, 216, 104, 170, 144, 162, 238, 247, 96, 52, 238, 57, 113, 115, 100, 192, 79, 111, 176, 26, 217, 99, 50, 69, 218, 60, 46, 65, 66, 194, 124, 31, 190, 158, 178, 251, 125, 27, 162, 60, 242, 184, 64, 142, 71, 205, 54, 31, 5, 116, 190, 83, 228, 135, 122, 210, 40, 98, 149, 212, 124, 234, 233, 186, 36, 71, 116, 136, 119, 197, 226, 156, 178, 91, 217, 250, 147, 44, 197, 56, 209, 127, 177, 130, 209, 86, 198, 37, 95, 170, 239, 146, 85, 157, 120, 147, 223, 214, 224, 243, 195, 138, 185, 217, 167, 255, 34, 100, 5, 145, 176, 97, 144, 79, 16, 54, 106, 41, 130, 35, 96, 12, 9, 217, 81, 123, 31, 181, 215, 72, 200, 91, 83, 8, 211, 59, 153, 57, 209, 164, 255, 26, 77, 159, 206, 5, 133, 194, 67, 175, 201, 44, 145, 199, 202, 73, 230, 37, 168, 141, 70, 115, 157, 22, 203, 49, 61, 13, 121, 221, 193, 34, 204, 146, 87, 3, 71, 189, 12, 110, 107, 15, 18, 46, 234, 73, 192, 227, 72, 250, 108, 88, 38, 210, 50, 131, 151, 149, 68, 200, 93, 23, 11, 102, 100, 193, 145, 98, 225, 17, 48, 77, 179, 15, 14, 112, 182, 186, 237, 225, 4, 136, 38, 223, 233, 78, 50, 195, 179, 92, 27, 22, 102, 17, 150, 237, 178, 70, 21, 152, 87, 224, 100, 50, 178, 107, 83, 137, 91, 85, 224, 99, 191, 10, 65, 15, 95, 95, 102, 47, 118, 20, 103, 21, 9, 118, 17, 33, 35, 29, 72, 72, 7, 98, 40, 157, 201, 170, 155, 87, 223, 21, 89, 99, 34, 78, 100, 112, 113, 135, 160, 215, 234, 34, 37, 38, 117, 132, 174, 232, 238, 49, 55, 82, 121, 161, 199, 208, 255, 1, 23, 24, 25, 66, 165, 182, 186, 199, 234, 247, 33, 57, 105, 199, 206, 221, 248, 52, 145, 186, 214, 228, 38, 75, 82, 104, 118, 141, 144, 214, 254, 2, 54, 60, 141, 182, 209, 249, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 17, 25, 36, 43, 48, 57, 64},
+				signature:      []uint8{88, 156, 20, 184, 129, 195, 166, 45, 30, 118, 216, 159, 247, 255, 24, 228, 243, 46, 98, 146, 207, 175, 177, 219, 21, 21, 80, 41, 58, 174, 50, 10, 52, 38, 21, 251, 170, 29, 68, 28, 139, 49, 223, 215, 164, 14, 237, 183, 12, 37, 181, 210, 106, 226, 75, 119, 115, 178, 0, 193, 214, 230, 170, 110, 123, 222, 37, 113, 226, 5, 90, 61, 14, 160, 94, 153, 188, 124, 188, 251, 232, 241, 89, 4, 90, 127, 164, 35, 225, 220, 248, 15, 105, 36, 123, 156, 163, 137, 42, 87, 137, 188, 200, 109, 29, 143, 243, 31, 254, 165, 218, 117, 6, 170, 167, 155, 174, 66, 154, 219, 165, 151, 43, 227, 150, 92, 206, 167, 189, 173, 117, 199, 60, 155, 46, 229, 96, 104, 70, 162, 236, 26, 242, 34, 154, 138, 252, 125, 141, 226, 76, 137, 212, 0, 193, 12, 228, 88, 225, 74, 162, 159, 108, 215, 139, 236, 135, 162, 149, 183, 25, 235, 114, 171, 66, 127, 43, 12, 165, 248, 123, 102, 96, 63, 33, 123, 87, 183, 193, 14, 217, 208, 187, 146, 138, 89, 206, 41, 236, 125, 16, 4, 143, 83, 8, 70, 168, 134, 165, 29, 136, 103, 243, 147, 254, 86, 224, 115, 116, 105, 24, 239, 74, 143, 3, 244, 145, 12, 110, 7, 124, 147, 93, 90, 15, 29, 154, 118, 39, 41, 96, 41, 208, 100, 249, 143, 177, 175, 157, 31, 47, 45, 198, 27, 50, 156, 104, 127, 41, 21, 17, 67, 182, 39, 232, 172, 245, 159, 102, 208, 212, 250, 95, 132, 178, 20, 4, 231, 38, 236, 44, 125, 158, 63, 235, 34, 62, 219, 197, 158, 90, 149, 50, 160, 152, 57, 155, 251, 51, 232, 136, 182, 130, 227, 71, 137, 225, 182, 97, 184, 136, 160, 75, 73, 202, 77, 122, 54, 252, 207, 224, 239, 200, 2, 134, 233, 108, 146, 239, 2, 12, 203, 50, 150, 246, 129, 63, 34, 2, 88, 128, 107, 122, 77, 135, 14, 53, 126, 40, 233, 230, 44, 104, 194, 111, 117, 210, 102, 252, 93, 33, 170, 199, 19, 179, 151, 125, 86, 1, 44, 179, 197, 235, 240, 92, 67, 24, 131, 248, 129, 134, 69, 233, 42, 251, 20, 160, 203, 193, 81, 31, 227, 119, 58, 87, 206, 4, 28, 227, 234, 105, 9, 122, 129, 20, 144, 194, 45, 129, 112, 94, 86, 237, 137, 15, 181, 225, 155, 52, 78, 182, 135, 31, 84, 76, 242, 120, 32, 89, 102, 83, 136, 14, 67, 218, 24, 75, 195, 245, 65, 127, 54, 7, 52, 74, 195, 164, 243, 6, 228, 230, 250, 76, 146, 243, 74, 176, 201, 86, 33, 191, 221, 72, 218, 182, 136, 239, 42, 14, 69, 25, 122, 144, 64, 190, 250, 203, 172, 233, 231, 55, 86, 159, 188, 36, 146, 41, 118, 156, 109, 158, 253, 58, 252, 68, 12, 120, 42, 121, 239, 101, 205, 186, 101, 131, 192, 253, 105, 41, 22, 249, 124, 100, 156, 248, 125, 84, 85, 141, 134, 27, 231, 112, 97, 144, 113, 65, 53, 168, 165, 195, 163, 86, 248, 129, 22, 96, 171, 188, 165, 179, 139, 204, 76, 172, 8, 4, 78, 77, 28, 217, 145, 88, 249, 26, 76, 23, 196, 156, 207, 118, 198, 225, 229, 175, 124, 13, 244, 88, 64, 62, 14, 88, 82, 1, 163, 70, 180, 178, 214, 246, 167, 137, 140, 118, 163, 24, 131, 91, 116, 65, 125, 184, 2, 217, 20, 166, 74, 154, 180, 193, 16, 155, 16, 107, 118, 58, 21, 123, 113, 33, 144, 225, 248, 152, 79, 138, 134, 205, 224, 185, 37, 246, 26, 60, 4, 122, 233, 68, 165, 214, 21, 205, 249, 71, 103, 40, 11, 120, 71, 177, 203, 212, 160, 50, 252, 235, 55, 110, 24, 147, 152, 54, 124, 184, 213, 240, 86, 48, 179, 193, 149, 66, 203, 231, 35, 20, 148, 111, 122, 194, 69, 36, 15, 52, 29, 255, 66, 70, 234, 87, 26, 240, 140, 133, 190, 159, 67, 239, 246, 164, 54, 159, 156, 169, 119, 58, 242, 141, 195, 32, 89, 67, 195, 133, 220, 175, 205, 79, 155, 24, 142, 35, 3, 187, 0, 92, 201, 104, 213, 104, 91, 56, 228, 71, 172, 180, 118, 246, 143, 100, 169, 242, 236, 134, 145, 98, 134, 89, 181, 25, 114, 155, 82, 156, 135, 76, 142, 125, 178, 210, 61, 221, 230, 80, 75, 57, 21, 85, 33, 0, 105, 26, 148, 189, 156, 173, 48, 157, 212, 151, 60, 242, 47, 146, 153, 247, 50, 228, 132, 177, 7, 23, 174, 124, 80, 105, 5, 171, 199, 148, 185, 69, 157, 184, 140, 30, 146, 236, 99, 199, 66, 135, 163, 14, 93, 225, 84, 23, 109, 2, 11, 121, 137, 204, 228, 16, 34, 1, 87, 54, 148, 55, 202, 251, 231, 220, 111, 155, 193, 167, 201, 161, 194, 128, 14, 19, 1, 29, 184, 88, 234, 249, 167, 38, 129, 243, 187, 163, 150, 55, 24, 165, 95, 143, 217, 150, 120, 21, 124, 252, 181, 232, 137, 16, 56, 166, 222, 44, 250, 41, 80, 245, 10, 96, 185, 68, 155, 136, 44, 213, 179, 114, 0, 65, 73, 137, 75, 27, 10, 143, 56, 175, 211, 187, 254, 202, 8, 57, 200, 41, 18, 103, 64, 181, 25, 37, 39, 214, 110, 196, 21, 17, 96, 222, 96, 156, 73, 61, 122, 183, 5, 243, 65, 146, 21, 124, 112, 60, 56, 202, 136, 167, 54, 60, 204, 41, 75, 183, 118, 126, 63, 208, 53, 26, 110, 245, 117, 189, 230, 202, 188, 60, 82, 93, 145, 145, 235, 244, 96, 7, 156, 216, 63, 167, 61, 56, 104, 159, 112, 222, 11, 109, 233, 133, 34, 26, 230, 99, 186, 239, 16, 187, 50, 36, 215, 20, 62, 110, 11, 110, 63, 241, 22, 54, 74, 53, 1, 13, 65, 78, 67, 116, 255, 162, 210, 193, 129, 104, 155, 187, 99, 70, 127, 255, 54, 120, 195, 63, 206, 165, 186, 71, 238, 109, 184, 143, 48, 182, 228, 89, 135, 171, 136, 44, 131, 74, 89, 64, 25, 162, 197, 31, 85, 159, 191, 176, 11, 83, 70, 67, 221, 36, 174, 45, 159, 43, 82, 124, 178, 254, 241, 90, 214, 155, 153, 191, 42, 59, 252, 65, 220, 41, 227, 178, 237, 199, 238, 110, 188, 124, 219, 206, 187, 233, 23, 161, 161, 245, 192, 21, 213, 53, 50, 46, 192, 12, 30, 117, 31, 34, 213, 21, 142, 136, 173, 51, 130, 69, 99, 203, 193, 234, 3, 119, 114, 153, 22, 254, 231, 107, 185, 11, 248, 176, 35, 82, 174, 91, 149, 117, 85, 213, 136, 23, 148, 248, 232, 234, 47, 196, 128, 130, 162, 127, 55, 117, 239, 131, 222, 101, 175, 153, 108, 127, 207, 2, 160, 123, 14, 105, 73, 233, 6, 226, 200, 207, 179, 108, 12, 146, 112, 54, 31, 191, 187, 95, 188, 218, 17, 189, 7, 139, 14, 4, 1, 234, 18, 206, 7, 116, 10, 72, 79, 1, 22, 3, 32, 122, 208, 107, 179, 62, 193, 237, 72, 231, 191, 246, 71, 143, 139, 96, 85, 127, 153, 239, 141, 172, 138, 7, 34, 165, 88, 5, 178, 37, 217, 134, 69, 105, 142, 205, 127, 118, 142, 130, 11, 229, 169, 56, 100, 249, 226, 49, 185, 17, 254, 138, 41, 237, 196, 126, 151, 98, 179, 90, 8, 143, 89, 124, 134, 82, 166, 216, 84, 59, 248, 38, 63, 154, 14, 250, 109, 175, 139, 225, 171, 11, 115, 188, 74, 245, 180, 2, 128, 1, 64, 236, 134, 198, 222, 20, 37, 182, 118, 249, 191, 29, 211, 144, 97, 148, 157, 220, 246, 119, 238, 221, 240, 109, 100, 220, 147, 134, 124, 8, 226, 47, 142, 47, 154, 165, 91, 216, 246, 222, 20, 184, 0, 212, 37, 183, 116, 112, 210, 85, 62, 249, 186, 152, 82, 66, 24, 101, 140, 179, 158, 140, 242, 226, 175, 180, 34, 165, 171, 111, 139, 169, 240, 142, 73, 196, 53, 21, 116, 210, 160, 86, 67, 20, 222, 141, 205, 89, 49, 253, 136, 248, 91, 190, 219, 213, 4, 230, 61, 183, 104, 35, 51, 143, 46, 186, 79, 126, 137, 243, 106, 90, 155, 33, 213, 40, 113, 155, 244, 205, 169, 115, 8, 16, 59, 178, 23, 217, 132, 171, 248, 216, 16, 13, 210, 97, 195, 164, 228, 176, 124, 94, 200, 239, 248, 248, 122, 63, 170, 207, 68, 2, 42, 213, 168, 152, 89, 68, 53, 255, 41, 19, 30, 71, 42, 217, 130, 192, 57, 7, 123, 19, 46, 156, 238, 250, 141, 104, 3, 187, 60, 21, 28, 232, 211, 54, 16, 41, 138, 62, 251, 159, 162, 221, 126, 132, 204, 235, 168, 23, 80, 149, 22, 7, 225, 26, 49, 220, 60, 235, 115, 138, 115, 77, 218, 67, 172, 58, 153, 176, 168, 46, 139, 204, 52, 111, 176, 33, 126, 251, 210, 65, 107, 147, 142, 168, 222, 239, 176, 243, 88, 235, 151, 114, 152, 7, 2, 69, 129, 44, 172, 112, 52, 13, 216, 162, 179, 76, 172, 31, 112, 12, 199, 96, 81, 27, 50, 72, 208, 69, 215, 189, 92, 248, 27, 91, 198, 25, 163, 106, 246, 166, 108, 199, 159, 147, 9, 10, 12, 103, 35, 187, 58, 10, 183, 188, 117, 36, 104, 7, 141, 121, 76, 228, 163, 139, 66, 241, 103, 33, 159, 152, 59, 17, 239, 100, 129, 180, 95, 244, 202, 59, 211, 181, 188, 52, 15, 108, 235, 69, 59, 36, 138, 65, 104, 163, 112, 11, 24, 225, 72, 71, 172, 252, 68, 96, 14, 165, 7, 51, 124, 104, 127, 31, 142, 191, 165, 42, 155, 156, 65, 194, 100, 89, 27, 61, 182, 156, 104, 50, 28, 246, 214, 197, 235, 24, 131, 18, 80, 238, 175, 39, 212, 67, 129, 105, 18, 196, 145, 207, 55, 39, 112, 82, 135, 179, 53, 201, 208, 152, 25, 85, 248, 72, 91, 95, 93, 171, 100, 63, 251, 189, 144, 54, 68, 72, 22, 198, 175, 192, 199, 5, 227, 1, 25, 46, 248, 216, 84, 170, 253, 58, 219, 233, 212, 108, 184, 240, 34, 118, 227, 67, 21, 94, 90, 125, 121, 222, 41, 179, 41, 220, 52, 171, 187, 179, 47, 128, 44, 158, 194, 168, 141, 153, 210, 151, 83, 9, 152, 104, 154, 39, 55, 44, 114, 234, 180, 151, 235, 68, 147, 79, 108, 90, 109, 169, 248, 153, 241, 162, 107, 212, 147, 218, 196, 35, 128, 39, 161, 178, 134, 28, 228, 105, 218, 234, 41, 41, 22, 49, 144, 213, 39, 108, 86, 82, 136, 85, 98, 33, 102, 39, 112, 9, 15, 107, 12, 75, 193, 243, 157, 130, 15, 122, 76, 118, 164, 116, 151, 97, 94, 154, 57, 40, 83, 199, 1, 40, 121, 160, 156, 180, 165, 114, 231, 58, 155, 227, 96, 219, 92, 228, 232, 65, 160, 59, 93, 154, 164, 15, 16, 154, 142, 57, 36, 51, 238, 76, 184, 226, 110, 77, 60, 28, 23, 59, 113, 146, 148, 185, 139, 173, 239, 235, 154, 146, 26, 201, 22, 116, 158, 143, 44, 65, 229, 135, 26, 108, 31, 24, 194, 34, 190, 36, 186, 77, 32, 180, 94, 52, 72, 89, 221, 108, 205, 41, 59, 124, 71, 132, 35, 219, 24, 244, 118, 195, 192, 22, 114, 60, 50, 202, 31, 127, 189, 28, 24, 102, 49, 155, 191, 3, 20, 249, 184, 114, 14, 144, 94, 65, 240, 166, 77, 199, 173, 71, 81, 162, 12, 8, 208, 213, 88, 207, 93, 114, 167, 29, 62, 204, 219, 193, 138, 215, 141, 178, 56, 43, 70, 61, 239, 109, 227, 2, 0, 34, 54, 86, 116, 242, 95, 92, 158, 231, 14, 167, 9, 208, 20, 253, 81, 94, 239, 26, 134, 212, 130, 80, 170, 68, 141, 254, 67, 73, 16, 3, 165, 153, 253, 100, 162, 173, 232, 56, 173, 0, 216, 40, 219, 67, 231, 39, 164, 184, 197, 13, 109, 108, 24, 206, 120, 190, 90, 197, 239, 128, 65, 103, 149, 123, 187, 184, 127, 213, 24, 147, 167, 117, 174, 69, 146, 87, 241, 211, 191, 24, 174, 106, 3, 226, 92, 175, 112, 120, 97, 244, 43, 79, 25, 26, 48, 241, 101, 101, 125, 201, 12, 220, 40, 170, 208, 146, 26, 234, 195, 14, 57, 171, 211, 209, 68, 51, 211, 77, 203, 128, 164, 107, 201, 200, 215, 39, 247, 10, 42, 74, 238, 44, 176, 107, 53, 18, 234, 147, 19, 198, 250, 33, 142, 219, 240, 125, 197, 120, 244, 59, 63, 197, 97, 99, 177, 45, 46, 69, 211, 38, 44, 117, 119, 122, 86, 164, 6, 128, 125, 241, 82, 243, 157, 124, 130, 204, 17, 83, 157, 1, 139, 226, 180, 61, 173, 144, 166, 233, 174, 85, 160, 192, 186, 158, 161, 167, 77, 95, 86, 92, 74, 114, 29, 136, 90, 133, 98, 106, 104, 231, 243, 42, 141, 92, 185, 36, 62, 29, 180, 157, 146, 9, 68, 159, 154, 250, 120, 107, 35, 22, 32, 41, 115, 243, 195, 62, 52, 164, 167, 231, 152, 111, 133, 199, 111, 188, 115, 245, 179, 172, 238, 107, 224, 171, 11, 181, 26, 81, 19, 155, 255, 205, 249, 167, 64, 32, 140, 101, 192, 103, 239, 173, 107, 168, 46, 118, 12, 49, 254, 43, 125, 183, 164, 116, 139, 68, 13, 197, 21, 108, 69, 125, 58, 21, 61, 178, 228, 50, 82, 52, 73, 196, 129, 123, 53, 202, 182, 43, 78, 171, 168, 191, 212, 81, 45, 0, 41, 230, 105, 199, 3, 108, 231, 185, 232, 146, 12, 172, 212, 230, 239, 170, 8, 157, 217, 100, 164, 230, 88, 195, 156, 86, 210, 27, 106, 104, 96, 190, 136, 149, 30, 190, 178, 5, 224, 8, 220, 171, 25, 78, 125, 25, 224, 157, 51, 69, 232, 216, 62, 156, 47, 28, 226, 206, 208, 76, 166, 67, 237, 224, 49, 200, 38, 49, 1, 127, 155, 220, 172, 157, 250, 35, 111, 118, 254, 149, 226, 168, 249, 229, 65, 61, 231, 140, 224, 66, 232, 131, 43, 53, 47, 114, 33, 50, 242, 104, 11, 112, 228, 56, 113, 127, 45, 13, 124, 186, 114, 21, 174, 123, 45, 209, 181, 235, 146, 232, 115, 129, 239, 221, 74, 11, 137, 39, 120, 160, 244, 213, 248, 170, 133, 35, 35, 231, 221, 119, 166, 138, 253, 100, 248, 251, 15, 54, 250, 194, 164, 154, 70, 160, 155, 225, 153, 79, 205, 92, 159, 247, 180, 109, 77, 9, 11, 202, 146, 153, 220, 164, 80, 221, 47, 73, 244, 223, 128, 209, 69, 15, 23, 85, 120, 135, 69, 77, 204, 183, 66, 194, 90, 123, 32, 58, 14, 52, 73, 55, 118, 105, 51, 35, 10, 131, 103, 121, 243, 76, 254, 197, 143, 141, 63, 6, 99, 14, 255, 116, 67, 18, 147, 134, 161, 35, 198, 144, 150, 208, 208, 149, 85, 111, 3, 174, 116, 53, 176, 244, 159, 137, 212, 60, 170, 204, 94, 25, 107, 185, 252, 160, 68, 253, 147, 65, 125, 81, 153, 131, 20, 82, 24, 157, 16, 6, 27, 176, 123, 213, 154, 128, 177, 164, 76, 73, 63, 1, 204, 50, 72, 116, 85, 72, 155, 38, 222, 156, 1, 75, 29, 64, 25, 35, 241, 242, 76, 50, 55, 14, 124, 121, 164, 188, 157, 96, 224, 244, 22, 177, 225, 242, 237, 128, 226, 113, 151, 67, 70, 88, 160, 150, 249, 237, 249, 241, 224, 3, 166, 19, 235, 147, 249, 254, 104, 188, 11, 57, 218, 138, 107, 160, 94, 28, 236, 49, 22, 210, 190, 174, 44, 207, 50, 214, 188, 225, 162, 172, 49, 171, 123, 42, 241, 49, 208, 103, 78, 22, 132, 100, 207, 29, 247, 237, 127, 248, 212, 137, 189, 176, 77, 207, 19, 163, 63, 31, 44, 23, 5, 52, 92, 50, 136, 196, 101, 177, 197, 236, 222, 78, 156, 168, 57, 192, 83, 168, 173, 55, 105, 153, 224, 9, 90, 206, 159, 188, 19, 124, 163, 240, 94, 136, 2, 34, 175, 178, 9, 81, 101, 201, 142, 180, 82, 120, 62, 66, 86, 81, 229, 186, 221, 232, 201, 236, 66, 124, 50, 222, 95, 228, 164, 149, 109, 229, 241, 202, 2, 4, 166, 143, 57, 177, 23, 124, 166, 42, 161, 103, 37, 242, 241, 156, 131, 88, 47, 178, 76, 253, 95, 27, 167, 105, 52, 105, 59, 202, 179, 29, 128, 214, 46, 204, 166, 176, 207, 109, 117, 5, 202, 89, 129, 48, 180, 91, 48, 124, 220, 229, 239, 92, 66, 193, 222, 223, 49, 250, 119, 61, 115, 182, 51, 64, 131, 233, 192, 28, 68, 5, 106, 252, 158, 80, 87, 46, 213, 150, 4, 134, 55, 170, 132, 60, 61, 20, 165, 146, 197, 110, 113, 210, 229, 236, 233, 90, 229, 196, 42, 119, 24, 65, 250, 8, 61, 107, 216, 246, 250, 30, 171, 190, 90, 81, 209, 50, 51, 57, 0, 181, 13, 232, 39, 57, 47, 152, 3, 92, 23, 80, 136, 23, 42, 103, 108, 199, 173, 189, 136, 28, 27, 214, 56, 33, 88, 62, 194, 51, 113, 253, 70, 253, 232, 248, 200, 106, 154, 114, 118, 59, 195, 39, 220, 121, 98, 99, 47, 225, 247, 104, 251, 173, 38, 57, 72, 125, 166, 146, 98, 32, 245, 246, 167, 182, 158, 116, 118, 170, 17, 165, 117, 48, 99, 9, 113, 97, 24, 247, 6, 167, 20, 94, 203, 224, 211, 120, 119, 17, 239, 112, 238, 50, 87, 17, 138, 244, 209, 112, 65, 64, 129, 93, 58, 81, 167, 158, 129, 229, 32, 148, 221, 71, 130, 175, 78, 229, 229, 21, 207, 91, 244, 14, 71, 109, 190, 239, 211, 92, 225, 210, 92, 19, 234, 219, 32, 243, 43, 171, 67, 254, 111, 175, 65, 243, 247, 182, 84, 86, 164, 241, 169, 158, 180, 84, 111, 90, 90, 134, 31, 64, 237, 95, 222, 159, 34, 114, 35, 40, 72, 167, 135, 75, 119, 143, 64, 181, 233, 4, 164, 45, 35, 5, 35, 145, 131, 16, 159, 227, 155, 85, 99, 171, 255, 87, 200, 51, 254, 158, 228, 218, 116, 2, 109, 32, 91, 232, 117, 140, 223, 158, 109, 125, 93, 166, 225, 160, 90, 118, 196, 229, 138, 225, 144, 185, 130, 197, 164, 2, 90, 156, 184, 24, 91, 157, 242, 102, 245, 129, 36, 23, 58, 36, 254, 201, 14, 226, 111, 90, 87, 240, 185, 47, 155, 230, 72, 83, 3, 204, 205, 163, 180, 33, 163, 210, 147, 45, 182, 45, 175, 59, 235, 34, 17, 155, 118, 202, 87, 249, 67, 55, 137, 137, 42, 248, 110, 26, 95, 22, 246, 112, 108, 33, 136, 47, 115, 0, 33, 74, 218, 81, 0, 181, 100, 55, 34, 197, 199, 40, 132, 24, 107, 117, 181, 68, 188, 137, 86, 35, 185, 238, 27, 23, 181, 0, 132, 63, 141, 47, 252, 174, 88, 244, 25, 152, 164, 133, 17, 7, 102, 109, 40, 126, 155, 64, 108, 211, 137, 148, 128, 78, 179, 227, 123, 215, 89, 161, 181, 45, 163, 57, 13, 211, 239, 16, 92, 160, 37, 206, 32, 96, 105, 145, 79, 10, 249, 69, 53, 10, 34, 239, 138, 245, 26, 37, 204, 157, 145, 245, 136, 138, 131, 37, 148, 118, 207, 93, 33, 222, 65, 72, 88, 212, 247, 199, 43, 42, 35, 94, 95, 128, 117, 54, 179, 145, 34, 154, 13, 119, 9, 54, 220, 209, 67, 219, 42, 243, 242, 135, 203, 178, 243, 88, 26, 71, 106, 191, 200, 41, 6, 27, 69, 104, 82, 96, 24, 29, 90, 151, 7, 71, 224, 25, 50, 3, 10, 48, 68, 232, 135, 3, 242, 126, 228, 187, 139, 207, 244, 54, 98, 81, 247, 140, 250, 54, 234, 56, 135, 97, 22, 250, 152, 129, 38, 27, 186, 107, 105, 75, 206, 135, 188, 239, 180, 187, 50, 219, 154, 228, 128, 225, 162, 42, 244, 139, 245, 78, 202, 50, 140, 142, 126, 80, 36, 166, 65, 7, 199, 243, 180, 210, 228, 13, 183, 104, 77, 157, 243, 46, 102, 124, 131, 126, 29, 37, 157, 119, 43, 91, 152, 143, 127, 42, 80, 220, 159, 141, 4, 126, 250, 111, 96, 105, 135, 119, 70, 55, 162, 83, 31, 61, 129, 80, 20, 36, 40, 153, 41, 78, 142, 70, 121, 82, 14, 90, 82, 144, 38, 61, 203, 43, 14, 13, 251, 69, 7, 131, 177, 215, 145, 45, 30, 171, 50, 111, 30, 138, 111, 127, 54, 135, 246, 83, 184, 80, 119, 153, 49, 137, 5, 202, 124, 116, 235, 162, 226, 59, 9, 57, 190, 195, 87, 244, 232, 96, 47, 160, 210, 139, 73, 101, 36, 200, 10, 220, 170, 68, 211, 247, 144, 215, 55, 219, 90, 49, 157, 230, 82, 56, 86, 182, 68, 215, 174, 78, 169, 216, 39, 46, 214, 19, 147, 104, 145, 73, 14, 49, 210, 232, 227, 172, 67, 39, 57, 102, 181, 27, 34, 190, 49, 149, 223, 214, 192, 191, 248, 14, 147, 114, 122, 201, 88, 40, 146, 90, 167, 143, 185, 173, 129, 83, 137, 118, 226, 68, 117, 49, 182, 74, 75, 17, 150, 44, 69, 40, 188, 244, 232, 167, 21, 206, 199, 92, 169, 215, 237, 113, 15, 220, 203, 47, 177, 183, 56, 249, 67, 69, 170, 148, 96, 146, 175, 122, 96, 192, 186, 196, 56, 86, 240, 214, 12, 200, 229, 173, 196, 169, 58, 173, 189, 102, 189, 154, 196, 150, 223, 29, 34, 15, 178, 116, 250, 84, 244, 7, 115, 120, 239, 53, 32, 116, 165, 206, 1, 97, 2, 136, 81, 99, 139, 210, 205, 154, 216, 181, 98, 90, 107, 125, 229, 252, 49, 50, 193, 245, 186, 14, 108, 117, 138, 146, 160, 242, 86, 119, 56, 193, 179, 24, 135, 221, 218, 76, 38, 126, 73, 27, 212, 98, 148, 212, 42, 12, 251, 217, 209, 68, 170, 5, 162, 26, 195, 95, 0, 48, 230, 204, 167, 50, 53, 216, 228, 25, 80, 138, 241, 133, 59, 169, 219, 185, 135, 109, 154, 106, 182, 205, 176, 19, 94, 231, 243, 132, 209, 96, 77, 70, 90, 215, 146, 105, 180, 7, 60, 39, 131, 108, 90, 183, 247, 229, 228, 157, 168, 63, 6, 78, 70, 66, 212, 122, 36, 0, 232, 14, 192, 137, 210, 250, 112, 148, 90, 63, 175, 243, 180, 235, 248, 84, 56, 195, 192, 172, 139, 222, 135, 137, 168, 167, 185, 72, 180, 95, 145, 162, 247, 200, 45, 42, 229, 59, 18, 131, 182, 215, 176, 15, 95, 92, 85, 214, 214, 29, 145, 77, 223, 49, 109, 106, 134, 67, 10, 152, 162, 32, 120, 21, 35, 145, 87, 131, 168, 171, 225, 20, 57, 42, 123, 87, 43, 158, 40, 126, 8, 121, 67, 165, 110, 253, 91, 21, 182, 97, 240, 112, 14, 62, 54, 152, 211, 186, 239, 210, 173, 48, 95, 155, 48, 189, 66, 32, 136, 5, 49, 11, 77, 204, 253, 80, 26, 137, 181, 24, 187, 33, 42, 89, 191, 153, 195, 96, 18, 140, 20, 138, 199, 90, 163, 83, 175, 18, 175, 150, 244, 91, 118, 215, 235, 54, 116, 202, 202, 244, 161, 31, 13, 81, 41, 69, 112, 243, 186, 221, 255, 187, 161, 58, 181, 141, 58, 53, 40, 212, 242, 91, 50, 11, 219, 14, 109, 48, 3, 136, 130, 194, 188, 222, 12, 248, 237, 249, 191, 192, 44, 140, 161, 116, 212, 115, 162, 146, 65, 82, 198, 238, 99, 220, 172, 115, 0, 249, 5, 195, 166, 120, 172, 193, 184, 225, 43, 3, 192, 199, 30, 3, 247, 244, 201, 17, 80, 98, 153, 165, 84, 118, 221, 190, 122, 21, 39, 59, 244, 93, 228, 97, 149, 71, 74, 37, 181, 253, 106, 254, 137, 52, 54, 210, 255, 88, 78, 149, 176, 224, 63, 28, 12, 196, 110, 20, 88, 102, 184, 131, 153, 125, 133, 176, 216, 7, 140, 68, 114, 105, 48, 48, 197, 115, 16, 26, 159, 133, 97, 112, 208, 239, 29, 152, 105, 230, 245, 148, 20, 94, 247, 246, 105, 240, 154, 139, 194, 234, 43, 106, 140, 47, 78, 29, 84, 27, 219, 95, 65, 39, 86, 32, 227, 123, 6, 108, 109, 133, 27, 162, 148, 206, 164, 159, 175, 148, 104, 133, 35, 223, 136, 75, 152, 129, 126, 251, 1, 28, 231, 186, 134, 125, 233, 89, 252, 231, 230, 114, 89, 204, 34, 169, 198, 24, 107, 178, 133, 171, 238, 165, 26, 204, 248, 132, 101, 230, 95, 210, 110, 151, 71, 68, 205, 110, 74, 63, 195, 167, 195, 11, 121, 183, 93, 23, 71, 82, 82, 254, 171, 92, 130, 43, 86, 145, 244, 179, 47, 56, 171, 219, 84, 82, 173, 24, 206, 241, 149, 172, 14, 150, 238, 94, 191, 177, 49, 52, 18, 161, 210, 113, 42, 123, 177, 173, 21, 232, 202, 181, 113, 172, 186, 242, 181, 110, 37, 28, 146, 1, 207, 73, 43, 136, 171, 43, 115, 217, 65, 5, 19, 41, 29, 132, 18, 54, 38, 30, 46, 99, 132, 89, 170, 92, 48, 200, 245, 29, 219, 159, 225, 88, 144, 15, 242, 61, 32, 56, 49, 57, 237, 6, 5, 214, 224, 178, 82, 228, 110, 144, 22, 155, 178, 218, 108, 60, 19, 209, 33, 231, 219, 121, 123, 245, 96, 144, 8, 31, 36, 75, 158, 131, 40, 167, 211, 66, 87, 97, 30, 90, 45, 65, 152, 43, 174, 181, 245, 231, 232, 179, 213, 121, 236, 77, 17, 130, 27, 87, 24, 112, 152, 30, 181, 67, 17, 208, 197, 158, 237, 137, 199, 226, 4, 54, 116, 162, 110, 116, 216, 252, 226, 14, 32, 70, 190, 17, 0, 44, 194, 18, 223, 81, 66, 88, 29, 60, 54, 90, 19, 182, 197, 221, 194, 207, 149, 254, 199, 251, 159, 177, 140, 63, 142, 153, 85, 5, 152, 160, 122, 14, 202, 228, 81, 231, 215, 178, 45, 98, 45, 40, 185, 200, 62, 162, 28, 93, 66, 86, 28, 11, 88, 131, 130, 78, 158, 163, 167, 12, 195, 1, 224, 215, 106, 218, 14, 10, 156, 171, 253, 243, 101, 182, 86, 192, 22, 195, 95, 11, 89, 241, 89, 154, 3, 181, 7, 45, 228, 236, 17, 32, 102, 116, 149, 113, 240, 91, 54, 5, 14, 244, 126, 43, 17, 236, 35, 58, 46, 29, 34, 170, 246, 126, 69, 166, 151, 233, 124, 146, 87, 215, 12, 233, 87, 187, 148, 231, 12, 35, 156, 229, 165, 166, 46, 53, 189, 76, 233, 17, 5, 158, 230, 111, 159, 51, 40, 2, 197, 75, 177, 0, 224, 239, 82, 239, 80, 122, 252, 100, 208, 134, 172, 32, 227, 105, 157, 148, 163, 196, 4, 48, 38, 214, 71, 0, 193, 40, 254, 155, 151, 58, 199, 83, 35, 220, 106, 221, 241, 46, 109, 122, 126, 134, 167, 185, 205, 69, 83, 142, 147, 202, 225, 8, 19, 72, 127, 219, 225, 228, 16, 126, 145, 157, 216, 221, 231, 234, 244, 90, 110, 202, 229, 47, 72, 77, 170, 175, 181, 196, 206, 230, 85, 97, 202, 206, 228, 234, 36, 53, 109, 128, 183, 211, 241, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 14, 21, 30, 34, 43, 49, 56},
 			},
 		},
 		{
@@ -1728,22 +1726,17 @@ func TestServer_SetVoluntaryExit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := s.SetVoluntaryExit(ctx, &zondpbservice.SetVoluntaryExitRequest{Pubkey: pubKeys[0][:], Epoch: tt.epoch})
+			resp, err := s.SetVoluntaryExit(ctx, &qrlpbservice.SetVoluntaryExitRequest{Pubkey: pubKeys[0][:], Epoch: tt.epoch})
 			require.NoError(t, err)
 			if tt.w.epoch == 0 {
 				genesisResponse, err := s.beaconNodeClient.GetGenesis(ctx, &emptypb.Empty{})
 				require.NoError(t, err)
 				tt.w.epoch, err = client.CurrentEpoch(genesisResponse.GenesisTime)
 				require.NoError(t, err)
-				resp2, err := s.SetVoluntaryExit(ctx, &zondpbservice.SetVoluntaryExitRequest{Pubkey: pubKeys[0][:], Epoch: tt.epoch})
-				require.NoError(t, err)
-				tt.w.signature = resp2.Data.Signature
 			}
 			require.Equal(t, uint64(tt.w.epoch), resp.Data.Message.Epoch)
 			require.Equal(t, tt.w.validatorIndex, resp.Data.Message.ValidatorIndex)
 			require.NotEmpty(t, resp.Data.Signature)
-			ok = bytes.Equal(tt.w.signature, resp.Data.Signature)
-			require.Equal(t, true, ok)
 		})
 	}
 }

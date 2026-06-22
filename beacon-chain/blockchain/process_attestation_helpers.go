@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"strconv"
@@ -14,21 +15,90 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
-// getAttPreState retrieves the att pre state by either from the cache or the DB.
-func (s *Service) getAttPreState(ctx context.Context, c *zondpb.Checkpoint) (state.ReadOnlyBeaconState, error) {
-	// If the attestation is recent and canonical we can use the head state to compute the shuffling.
+// getRecentPreState returns a pre-state usable for processing attestations in
+// the head or the immediately following epoch without going through the
+// state-regeneration path. Returns nil if the checkpoint is not eligible for
+// the fast path; the caller must then fall back to the regen path.
+func (s *Service) getRecentPreState(ctx context.Context, c *qrysmpb.Checkpoint) state.ReadOnlyBeaconState {
 	headEpoch := slots.ToEpoch(s.HeadSlot())
+	if c.Epoch < headEpoch {
+		return nil
+	}
+	if !s.cfg.ForkChoiceStore.IsCanonical([32]byte(c.Root)) {
+		return nil
+	}
+	// Only use head state if the head's chain has the same target root for
+	// c.Epoch as the checkpoint being processed. Without this check, on a
+	// reorg boundary the head may be canonical but its target root for the
+	// checkpoint epoch can differ from c.Root, which would yield the wrong
+	// shuffling for this attestation.
+	headRoot, err := s.HeadRoot(ctx)
+	if err != nil {
+		return nil
+	}
+	headTarget, err := s.cfg.ForkChoiceStore.TargetRootForEpoch([32]byte(headRoot), c.Epoch)
+	if err != nil {
+		return nil
+	}
+	if !bytes.Equal(c.Root, headTarget[:]) {
+		return nil
+	}
 	if c.Epoch == headEpoch {
-		targetSlot, err := s.cfg.ForkChoiceStore.Slot([32]byte(c.Root))
-		if err == nil && slots.ToEpoch(targetSlot)+1 >= headEpoch {
-			if s.cfg.ForkChoiceStore.IsCanonical([32]byte(c.Root)) {
-				return s.HeadStateReadOnly(ctx)
-			}
+		// The TargetRootForEpoch check above already guarantees the head's
+		// target for this epoch matches c.Root, so the head state's
+		// shuffling is valid regardless of how old c.Root's slot is. The
+		// previous targetSlot+1 < headEpoch bound rejected canonical
+		// attestations with older target blocks (sparse chains) and forced
+		// the slow regen path unnecessarily.
+		st, err := s.HeadStateReadOnly(ctx)
+		if err != nil {
+			return nil
 		}
+		return st
+	}
+	// c.Epoch > headEpoch: a late-imported / next-epoch attestation. Avoid the
+	// full regen by advancing the head state using the next-slot cache.
+	slot, err := slots.EpochStart(c.Epoch)
+	if err != nil {
+		return nil
+	}
+	epochKey := strconv.FormatUint(uint64(c.Epoch), 10 /* base 10 */)
+	lock := async.NewMultilock(string(c.Root) + epochKey)
+	lock.Lock()
+	defer lock.Unlock()
+	cachedState, err := s.checkpointStateCache.StateByCheckpoint(c)
+	if err != nil {
+		return nil
+	}
+	if cachedState != nil && !cachedState.IsNil() {
+		return cachedState
+	}
+	st, err := s.HeadState(ctx)
+	if err != nil {
+		return nil
+	}
+	st, err = transition.ProcessSlotsUsingNextSlotCache(ctx, st, c.Root, slot)
+	if err != nil {
+		return nil
+	}
+	if err := s.checkpointStateCache.AddCheckpointState(c, st); err != nil {
+		// A cache-add failure doesn't invalidate the state we just computed;
+		// log and return it so the caller doesn't fall back to the slow regen
+		// path. The next call will simply recompute / re-cache.
+		log.WithError(err).Warn("could not save checkpoint state to cache")
+	}
+	return st
+}
+
+// getAttPreState retrieves the att pre state by either from the cache or the DB.
+func (s *Service) getAttPreState(ctx context.Context, c *qrysmpb.Checkpoint) (state.ReadOnlyBeaconState, error) {
+	// If the attestation is recent and canonical we can use the head state to compute the shuffling.
+	if st := s.getRecentPreState(ctx, c); st != nil {
+		return st, nil
 	}
 	// Use a multilock to allow scoped holding of a mutex by a checkpoint root + epoch
 	// allowing us to behave smarter in terms of how this function is used concurrently.
@@ -98,7 +168,7 @@ func (s *Service) getAttPreState(ctx context.Context, c *zondpb.Checkpoint) (sta
 }
 
 // verifyAttTargetEpoch validates attestation is from the current or previous epoch.
-func verifyAttTargetEpoch(_ context.Context, genesisTime, nowTime uint64, c *zondpb.Checkpoint) error {
+func verifyAttTargetEpoch(_ context.Context, genesisTime, nowTime uint64, c *qrysmpb.Checkpoint) error {
 	currentSlot := primitives.Slot((nowTime - genesisTime) / params.BeaconConfig().SecondsPerSlot)
 	currentEpoch := slots.ToEpoch(currentSlot)
 	var prevEpoch primitives.Epoch
@@ -113,7 +183,7 @@ func verifyAttTargetEpoch(_ context.Context, genesisTime, nowTime uint64, c *zon
 }
 
 // verifyBeaconBlock verifies beacon head block is known and not from the future.
-func (s *Service) verifyBeaconBlock(ctx context.Context, data *zondpb.AttestationData) error {
+func (s *Service) verifyBeaconBlock(ctx context.Context, data *qrysmpb.AttestationData) error {
 	r := bytesutil.ToBytes32(data.BeaconBlockRoot)
 	b, err := s.getBlock(ctx, r)
 	if err != nil {

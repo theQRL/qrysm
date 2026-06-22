@@ -10,28 +10,28 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestExecuteStateTransitionNoVerify_FullProcess(t *testing.T) {
-	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 100)
+	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 100)
 
-	eth1Data := &zondpb.Eth1Data{
+	executionData := &qrysmpb.ExecutionData{
 		DepositCount: 100,
 		DepositRoot:  bytesutil.PadTo([]byte{2}, 32),
 		BlockHash:    make([]byte, 32),
 	}
 	require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch-1))
-	e := beaconState.Eth1Data()
+	e := beaconState.ExecutionData()
 	e.DepositCount = 100
-	require.NoError(t, beaconState.SetEth1Data(e))
+	require.NoError(t, beaconState.SetExecutionData(e))
 	bh := beaconState.LatestBlockHeader()
 	bh.Slot = beaconState.Slot()
 	require.NoError(t, beaconState.SetLatestBlockHeader(bh))
-	require.NoError(t, beaconState.SetEth1DataVotes([]*zondpb.Eth1Data{eth1Data}))
+	require.NoError(t, beaconState.SetExecutionDataVotes([]*qrysmpb.ExecutionData{executionData}))
 
 	require.NoError(t, beaconState.SetSlot(beaconState.Slot()+1))
 	epoch := time.CurrentEpoch(beaconState)
@@ -45,12 +45,12 @@ func TestExecuteStateTransitionNoVerify_FullProcess(t *testing.T) {
 	require.NoError(t, err)
 	proposerIdx, err := helpers.BeaconProposerIndex(context.Background(), nextSlotState)
 	require.NoError(t, err)
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	block.Block.ProposerIndex = proposerIdx
 	block.Block.Slot = beaconState.Slot() + 1
 	block.Block.ParentRoot = parentRoot[:]
 	block.Block.Body.RandaoReveal = randaoReveal
-	block.Block.Body.Eth1Data = eth1Data
+	block.Block.Body.ExecutionData = executionData
 
 	wsb, err := blocks.NewSignedBeaconBlock(block)
 	require.NoError(t, err)
@@ -73,21 +73,21 @@ func TestExecuteStateTransitionNoVerify_FullProcess(t *testing.T) {
 }
 
 func TestExecuteStateTransitionNoVerifySignature_CouldNotVerifyStateRoot(t *testing.T) {
-	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 100)
+	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 100)
 
-	eth1Data := &zondpb.Eth1Data{
+	executionData := &qrysmpb.ExecutionData{
 		DepositCount: 100,
 		DepositRoot:  bytesutil.PadTo([]byte{2}, 32),
 		BlockHash:    make([]byte, 32),
 	}
 	require.NoError(t, beaconState.SetSlot(params.BeaconConfig().SlotsPerEpoch-1))
-	e := beaconState.Eth1Data()
+	e := beaconState.ExecutionData()
 	e.DepositCount = 100
-	require.NoError(t, beaconState.SetEth1Data(e))
+	require.NoError(t, beaconState.SetExecutionData(e))
 	bh := beaconState.LatestBlockHeader()
 	bh.Slot = beaconState.Slot()
 	require.NoError(t, beaconState.SetLatestBlockHeader(bh))
-	require.NoError(t, beaconState.SetEth1DataVotes([]*zondpb.Eth1Data{eth1Data}))
+	require.NoError(t, beaconState.SetExecutionDataVotes([]*qrysmpb.ExecutionData{executionData}))
 
 	require.NoError(t, beaconState.SetSlot(beaconState.Slot()+1))
 	epoch := time.CurrentEpoch(beaconState)
@@ -101,12 +101,12 @@ func TestExecuteStateTransitionNoVerifySignature_CouldNotVerifyStateRoot(t *test
 	require.NoError(t, err)
 	proposerIdx, err := helpers.BeaconProposerIndex(context.Background(), nextSlotState)
 	require.NoError(t, err)
-	block := util.NewBeaconBlockCapella()
+	block := util.NewBeaconBlockZond()
 	block.Block.ProposerIndex = proposerIdx
 	block.Block.Slot = beaconState.Slot() + 1
 	block.Block.ParentRoot = parentRoot[:]
 	block.Block.Body.RandaoReveal = randaoReveal
-	block.Block.Body.Eth1Data = eth1Data
+	block.Block.Body.ExecutionData = executionData
 
 	wsb, err := blocks.NewSignedBeaconBlock(block)
 	require.NoError(t, err)
@@ -126,11 +126,11 @@ func TestExecuteStateTransitionNoVerifySignature_CouldNotVerifyStateRoot(t *test
 	require.ErrorContains(t, "could not validate state root", err)
 }
 
-// TODO(now.youtrack.cloud/issue/TQ-18): the createFullCapellaBlockWithOperations func works in a different way
+// TODO(now.youtrack.cloud/issue/TQ-18): the createFullZondBlockWithOperations func works in a different way
 // for the block slot. We need to emulate the old version.
 /*
 func TestProcessBlockNoVerify_PassesProcessingConditions(t *testing.T) {
-	beaconState, block := createFullCapellaBlockWithOperations(t)
+	beaconState, block := createFullZondBlockWithOperations(t)
 	wsb, err := blocks.NewSignedBeaconBlock(block)
 	require.NoError(t, err)
 	set, _, err := transition.ProcessBlockNoVerifyAnySig(context.Background(), beaconState, wsb)
@@ -142,7 +142,7 @@ func TestProcessBlockNoVerify_PassesProcessingConditions(t *testing.T) {
 }
 
 func TestProcessBlockNoVerifyAnySigAltair_OK(t *testing.T) {
-	beaconState, block := createFullCapellaBlockWithOperations(t)
+	beaconState, block := createFullZondBlockWithOperations(t)
 	wsb, err := blocks.NewSignedBeaconBlock(block)
 	require.NoError(t, err)
 	beaconState, err = transition.ProcessSlots(context.Background(), beaconState, wsb.Block().Slot())
@@ -155,7 +155,7 @@ func TestProcessBlockNoVerifyAnySigAltair_OK(t *testing.T) {
 }
 
 func TestProcessBlockNoVerify_SigSetContainsDescriptions(t *testing.T) {
-	beaconState, block := createFullCapellaBlockWithOperations(t)
+	beaconState, block := createFullZondBlockWithOperations(t)
 	wsb, err := blocks.NewSignedBeaconBlock(block)
 	require.NoError(t, err)
 	set, _, err := transition.ProcessBlockNoVerifyAnySig(context.Background(), beaconState, wsb)
@@ -168,7 +168,7 @@ func TestProcessBlockNoVerify_SigSetContainsDescriptions(t *testing.T) {
 */
 
 func TestProcessOperationsNoVerifyAttsSigs_OK(t *testing.T) {
-	beaconState, block := createFullCapellaBlockWithOperations(t)
+	beaconState, block := createFullZondBlockWithOperations(t)
 	wsb, err := blocks.NewSignedBeaconBlock(block)
 	require.NoError(t, err)
 	beaconState, err = transition.ProcessSlots(context.Background(), beaconState, wsb.Block().Slot())
@@ -177,8 +177,8 @@ func TestProcessOperationsNoVerifyAttsSigs_OK(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestProcessOperationsNoVerifyAttsSigsCapella_OK(t *testing.T) {
-	beaconState, block := createFullCapellaBlockWithOperations(t)
+func TestProcessOperationsNoVerifyAttsSigsZond_OK(t *testing.T) {
+	beaconState, block := createFullZondBlockWithOperations(t)
 	wsb, err := blocks.NewSignedBeaconBlock(block)
 	require.NoError(t, err)
 	beaconState, err = transition.ProcessSlots(context.Background(), beaconState, wsb.Block().Slot())
@@ -190,7 +190,7 @@ func TestProcessOperationsNoVerifyAttsSigsCapella_OK(t *testing.T) {
 // TODO(now.youtrack.cloud/issue/TQ-18)
 /*
 func TestCalculateStateRootAltair_OK(t *testing.T) {
-	beaconState, block := createFullCapellaBlockWithOperations(t)
+	beaconState, block := createFullZondBlockWithOperations(t)
 	wsb, err := blocks.NewSignedBeaconBlock(block)
 	require.NoError(t, err)
 	r, err := transition.CalculateStateRoot(context.Background(), beaconState, wsb)
@@ -202,8 +202,8 @@ func TestCalculateStateRootAltair_OK(t *testing.T) {
 // NOTE(rgeraldes24): test is not valid atm: re-enable once have more block versions
 /*
 func TestProcessBlockDifferentVersion(t *testing.T) {
-	beaconState, _ := util.DeterministicGenesisStateCapella(t, 64) // Phase 0 state
-	_, block := createFullCapellaBlockWithOperations(t)
+	beaconState, _ := util.DeterministicGenesisStateZond(t, 64) // Phase 0 state
+	_, block := createFullZondBlockWithOperations(t)
 	wsb, err := blocks.NewSignedBeaconBlock(block) // Altair block
 	require.NoError(t, err)
 	_, _, err = transition.ProcessBlockNoVerifyAnySig(context.Background(), beaconState, wsb)

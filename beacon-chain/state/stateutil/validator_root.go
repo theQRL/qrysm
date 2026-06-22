@@ -7,12 +7,12 @@ import (
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/encoding/ssz"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // ValidatorRootWithHasher describes a method from which the hash tree root
 // of a validator is returned.
-func ValidatorRootWithHasher(validator *zondpb.Validator) ([32]byte, error) {
+func ValidatorRootWithHasher(validator *qrysmpb.Validator) ([32]byte, error) {
 	fieldRoots, err := ValidatorFieldRoots(validator)
 	if err != nil {
 		return [32]byte{}, err
@@ -22,11 +22,11 @@ func ValidatorRootWithHasher(validator *zondpb.Validator) ([32]byte, error) {
 
 // ValidatorFieldRoots describes a method from which the hash tree root
 // of a validator is returned.
-func ValidatorFieldRoots(validator *zondpb.Validator) ([][32]byte, error) {
+func ValidatorFieldRoots(validator *qrysmpb.Validator) ([][32]byte, error) {
 	var fieldRoots [][32]byte
 	if validator != nil {
 		pubkey := bytesutil.ToBytes2592(validator.PublicKey)
-		withdrawCreds := bytesutil.ToBytes32(validator.WithdrawalCredentials)
+		credsBuf := bytesutil.ToBytes64(validator.WithdrawalCredentials)
 		var effectiveBalanceBuf [32]byte
 		binary.LittleEndian.PutUint64(effectiveBalanceBuf[:8], validator.EffectiveBalance)
 		// Slashed.
@@ -53,7 +53,15 @@ func ValidatorFieldRoots(validator *zondpb.Validator) ([][32]byte, error) {
 		if err != nil {
 			return [][32]byte{}, err
 		}
-		fieldRoots = [][32]byte{pubKeyRoot, withdrawCreds, effectiveBalanceBuf, slashBuf, activationEligibilityBuf,
+		// Withdrawal credentials are 64 bytes: merkleize two 32-byte chunks into one root.
+		var credsChunk0, credsChunk1 [32]byte
+		copy(credsChunk0[:], credsBuf[:32])
+		copy(credsChunk1[:], credsBuf[32:])
+		credsRoot, err := ssz.BitwiseMerkleize([][32]byte{credsChunk0, credsChunk1}, 2, 2)
+		if err != nil {
+			return [][32]byte{}, err
+		}
+		fieldRoots = [][32]byte{pubKeyRoot, credsRoot, effectiveBalanceBuf, slashBuf, activationEligibilityBuf,
 			activationBuf, exitBuf, withdrawalBuf}
 	}
 	return fieldRoots, nil

@@ -12,7 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
 	"github.com/theQRL/qrysm/testing/endtoend/policies"
 	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
@@ -54,7 +54,7 @@ var AllNodesHaveSameHead = e2etypes.Evaluator{
 
 func healthzCheck(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	count := len(conns)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/healthz", e2e.TestParams.Ports.QrysmBeaconNodeMetricsPort+i))
 		if err != nil {
 			// Continue if the connection fails, regular flake.
@@ -73,7 +73,7 @@ func healthzCheck(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) erro
 		time.Sleep(connTimeDelay)
 	}
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/healthz", e2e.TestParams.Ports.ValidatorMetricsPort+i))
 		if err != nil {
 			// Continue if the connection fails, regular flake.
@@ -100,7 +100,7 @@ func peersConnect(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) erro
 	}
 	ctx := context.Background()
 	for _, conn := range conns {
-		nodeClient := zond.NewNodeClient(conn)
+		nodeClient := qrysmpb.NewNodeClient(conn)
 		peersResp, err := nodeClient.ListPeers(ctx, &emptypb.Empty{})
 		if err != nil {
 			return err
@@ -116,7 +116,7 @@ func peersConnect(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) erro
 
 func finishedSyncing(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	syncNodeClient := zond.NewNodeClient(conn)
+	syncNodeClient := qrysmpb.NewNodeClient(conn)
 	syncStatus, err := syncNodeClient.GetSyncStatus(context.Background(), &emptypb.Empty{})
 	if err != nil {
 		return err
@@ -133,7 +133,7 @@ func allNodesHaveSameHead(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientCo
 	prevJustifiedRoots := make([][]byte, len(conns))
 	finalizedRoots := make([][]byte, len(conns))
 	for i, conn := range conns {
-		beaconClient := zond.NewBeaconChainClient(conn)
+		beaconClient := qrysmpb.NewBeaconChainClient(conn)
 		chainHead, err := beaconClient.GetChainHead(context.Background(), &emptypb.Empty{})
 		if err != nil {
 			return errors.Wrapf(err, "connection number=%d", i)
@@ -145,7 +145,7 @@ func allNodesHaveSameHead(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientCo
 		time.Sleep(connTimeDelay)
 	}
 
-	for i := 0; i < len(conns); i++ {
+	for i := range conns {
 		if headEpochs[0] != headEpochs[i] {
 			return fmt.Errorf(
 				"received conflicting head epochs on node %d, expected %d, received %d",

@@ -1,8 +1,6 @@
 package doublylinkedtree
 
 import (
-	"fmt"
-
 	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
 )
@@ -15,16 +13,21 @@ func (f *ForkChoice) applyProposerBoostScore() error {
 	if s.previousProposerBoostRoot != params.BeaconConfig().ZeroHash {
 		previousNode, ok := s.nodeByRoot[s.previousProposerBoostRoot]
 		if !ok || previousNode == nil {
-			log.WithError(errInvalidProposerBoostRoot).Errorf(fmt.Sprintf("invalid prev root %#x", s.previousProposerBoostRoot))
+			log.WithError(errInvalidProposerBoostRoot).Errorf("invalid prev root %#x", s.previousProposerBoostRoot)
 		} else {
-			previousNode.balance -= s.previousProposerBoostScore
+			if previousNode.balance < s.previousProposerBoostScore {
+				log.Errorf("invalid proposer boost score %d for node balance %d", s.previousProposerBoostScore, previousNode.balance)
+				previousNode.balance = 0
+			} else {
+				previousNode.balance -= s.previousProposerBoostScore
+			}
 		}
 	}
 
 	if s.proposerBoostRoot != params.BeaconConfig().ZeroHash {
 		currentNode, ok := s.nodeByRoot[s.proposerBoostRoot]
 		if !ok || currentNode == nil {
-			log.WithError(errInvalidProposerBoostRoot).Errorf(fmt.Sprintf("invalid current root %#x", s.proposerBoostRoot))
+			log.WithError(errInvalidProposerBoostRoot).Errorf("invalid current root %#x", s.proposerBoostRoot)
 		} else {
 			proposerScore = (s.committeeWeight * params.BeaconConfig().ProposerScoreBoost) / 100
 			currentNode.balance += proposerScore

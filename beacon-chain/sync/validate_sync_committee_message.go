@@ -15,10 +15,12 @@ import (
 	p2ptypes "github.com/theQRL/qrysm/beacon-chain/p2p/types"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/monitoring/tracing"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/network/forks"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
 
@@ -89,7 +91,7 @@ func (s *Service) validateSyncCommitteeMessage(
 	if result, err := validationPipeline(
 		ctx,
 		ignoreEmptyCommittee(committeeIndices),
-		s.rejectIncorrectSyncCommittee(committeeIndices, *msg.Topic),
+		s.rejectIncorrectSyncCommittee(committeeIndices, m.Slot, *msg.Topic),
 		s.ignoreHasSeenSyncMsg(ctx, m, committeeIndices),
 		s.rejectInvalidSyncCommitteeSignature(m),
 	); result != pubsub.ValidationAccept {
@@ -103,12 +105,12 @@ func (s *Service) validateSyncCommitteeMessage(
 }
 
 // Parse a sync committee message from a pubsub message.
-func (s *Service) readSyncCommitteeMessage(msg *pubsub.Message) (*zondpb.SyncCommitteeMessage, error) {
+func (s *Service) readSyncCommitteeMessage(msg *pubsub.Message) (*qrysmpb.SyncCommitteeMessage, error) {
 	raw, err := s.decodePubsubMessage(msg)
 	if err != nil {
 		return nil, err
 	}
-	m, ok := raw.(*zondpb.SyncCommitteeMessage)
+	m, ok := raw.(*qrysmpb.SyncCommitteeMessage)
 	if !ok {
 		return nil, errWrongMessage
 	}
@@ -119,7 +121,7 @@ func (s *Service) readSyncCommitteeMessage(msg *pubsub.Message) (*zondpb.SyncCom
 }
 
 // Mark all a slot and validator index as seen for every index in a committee and subnet.
-func (s *Service) markSyncCommitteeMessagesSeen(committeeIndices []primitives.CommitteeIndex, m *zondpb.SyncCommitteeMessage) {
+func (s *Service) markSyncCommitteeMessagesSeen(committeeIndices []primitives.CommitteeIndex, m *qrysmpb.SyncCommitteeMessage) {
 	subCommitteeSize := params.BeaconConfig().SyncCommitteeSize / params.BeaconConfig().SyncCommitteeSubnetCount
 	for _, idx := range committeeIndices {
 		subnet := uint64(idx) / subCommitteeSize
@@ -128,7 +130,7 @@ func (s *Service) markSyncCommitteeMessagesSeen(committeeIndices []primitives.Co
 }
 
 // Returns true if the node has received sync committee for the validator with index and slot.
-func (s *Service) hasSeenSyncMessageIndexSlot(ctx context.Context, m *zondpb.SyncCommitteeMessage, subCommitteeIndex uint64) bool {
+func (s *Service) hasSeenSyncMessageIndexSlot(ctx context.Context, m *qrysmpb.SyncCommitteeMessage, subCommitteeIndex uint64) bool {
 	s.seenSyncMessageLock.RLock()
 	defer s.seenSyncMessageLock.RUnlock()
 	rt, seen := s.seenSyncMessageCache.Get(seenSyncCommitteeKey(m.Slot, m.ValidatorIndex, subCommitteeIndex))
@@ -157,7 +159,7 @@ func (s *Service) hasSeenSyncMessageIndexSlot(ctx context.Context, m *zondpb.Syn
 }
 
 // Set sync committee message validator index and slot as seen.
-func (s *Service) setSeenSyncMessageIndexSlot(m *zondpb.SyncCommitteeMessage, subCommitteeIndex uint64) {
+func (s *Service) setSeenSyncMessageIndexSlot(m *qrysmpb.SyncCommitteeMessage, subCommitteeIndex uint64) {
 	s.seenSyncMessageLock.Lock()
 	defer s.seenSyncMessageLock.Unlock()
 	key := seenSyncCommitteeKey(m.Slot, m.ValidatorIndex, subCommitteeIndex)
@@ -168,24 +170,25 @@ func (s *Service) setSeenSyncMessageIndexSlot(m *zondpb.SyncCommitteeMessage, su
 // current sync committee along with the correct subcommittee.
 // We are trying to validate that whatever committee indices that were retrieved from our state for this
 // particular validator are indeed valid for this particular topic. Ex: the topic name can be
-// /eth2/b5303f2a/sync_committee_2/ssz_snappy
+// /consensus/b5303f2a/sync_committee_2/ssz_snappy
 // This would mean that only messages meant for subnet 2 are valid. If a validator creates this sync
 // message and broadcasts it into subnet 2, we need to make sure that whatever committee index and
 // resultant subnet that the validator has is valid for this particular topic.
 func (s *Service) rejectIncorrectSyncCommittee(
-	committeeIndices []primitives.CommitteeIndex, topic string,
+	committeeIndices []primitives.CommitteeIndex, slot primitives.Slot, topic string,
 ) validationFn {
 	return func(ctx context.Context) (pubsub.ValidationResult, error) {
-		ctx, span := trace.StartSpan(ctx, "sync.rejectIncorrectSyncCommittee")
+		_, span := trace.StartSpan(ctx, "sync.rejectIncorrectSyncCommittee")
 		defer span.End()
 		isValid := false
-		digest, err := s.currentForkDigest()
+		genRoot := s.cfg.clock.GenesisValidatorsRoot()
+		digest, err := forks.ForkDigestFromEpoch(slots.ToEpoch(slot), genRoot[:])
 		if err != nil {
 			tracing.AnnotateError(span, err)
 			return pubsub.ValidationIgnore, err
 		}
 
-		format := p2p.GossipTypeMapping[reflect.TypeOf(&zondpb.SyncCommitteeMessage{})]
+		format := p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.SyncCommitteeMessage]()]
 		// Validate that the validator is in the correct committee.
 		subCommitteeSize := params.BeaconConfig().SyncCommitteeSize / params.BeaconConfig().SyncCommitteeSubnetCount
 		for _, idx := range committeeIndices {
@@ -206,7 +209,7 @@ func (s *Service) rejectIncorrectSyncCommittee(
 // and `subcommittee_index`. In the event of `validator_index` belongs to multiple subnets, as long
 // as one subnet has not been seen, we should let it in.
 func (s *Service) ignoreHasSeenSyncMsg(ctx context.Context,
-	m *zondpb.SyncCommitteeMessage, committeeIndices []primitives.CommitteeIndex,
+	m *qrysmpb.SyncCommitteeMessage, committeeIndices []primitives.CommitteeIndex,
 ) validationFn {
 	return func(ctx context.Context) (pubsub.ValidationResult, error) {
 		var isValid bool
@@ -225,7 +228,7 @@ func (s *Service) ignoreHasSeenSyncMsg(ctx context.Context,
 	}
 }
 
-func (s *Service) rejectInvalidSyncCommitteeSignature(m *zondpb.SyncCommitteeMessage) validationFn {
+func (s *Service) rejectInvalidSyncCommitteeSignature(m *qrysmpb.SyncCommitteeMessage) validationFn {
 	return func(ctx context.Context) (pubsub.ValidationResult, error) {
 		ctx, span := trace.StartSpan(ctx, "sync.rejectInvalidSyncCommitteeSignature")
 		defer span.End()
@@ -254,7 +257,7 @@ func (s *Service) rejectInvalidSyncCommitteeSignature(m *zondpb.SyncCommitteeMes
 		}
 
 		// Ignore a malformed public key from bytes according to the p2p specification.
-		pKey, err := dilithium.PublicKeyFromBytes(pubKey[:])
+		pKey, err := ml_dsa_87.PublicKeyFromBytes(pubKey[:])
 		if err != nil {
 			tracing.AnnotateError(span, err)
 			return pubsub.ValidationIgnore, err
@@ -263,9 +266,9 @@ func (s *Service) rejectInvalidSyncCommitteeSignature(m *zondpb.SyncCommitteeMes
 		// Batch verify message signature before unmarshalling
 		// the signature to a G2 point if batch verification is
 		// enabled.
-		set := &dilithium.SignatureBatch{
+		set := &ml_dsa_87.SignatureBatch{
 			Messages:     [][32]byte{sigRoot},
-			PublicKeys:   [][]dilithium.PublicKey{{pKey}},
+			PublicKeys:   [][]ml_dsa_87.PublicKey{{pKey}},
 			Signatures:   [][][]byte{{m.Signature}},
 			Descriptions: []string{signing.SyncCommitteeSignature},
 		}

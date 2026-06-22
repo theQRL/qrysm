@@ -4,11 +4,11 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	field_params "github.com/theQRL/qrysm/config/fieldparams"
+	fieldparams "github.com/theQRL/qrysm/config/fieldparams"
 )
 
-func StrSeedToBinSeed(strSeed string) [field_params.DilithiumSeedLength]uint8 {
-	var seed [field_params.DilithiumSeedLength]uint8
+func StrSeedToBinSeed(strSeed string) [fieldparams.MLDSA87SeedLength]uint8 {
+	var seed [fieldparams.MLDSA87SeedLength]uint8
 
 	unSizedSeed := DecodeHex(strSeed)
 
@@ -17,10 +17,10 @@ func StrSeedToBinSeed(strSeed string) [field_params.DilithiumSeedLength]uint8 {
 }
 
 func DecodeHex(hexString string) []byte {
-	if hexString[:2] != "0x" {
-		panic(fmt.Errorf("invalid hex string prefix %s", hexString[:2]))
+	if hexString[:2] == "0x" {
+		hexString = hexString[2:]
 	}
-	hexBytes, err := hex.DecodeString(hexString[2:])
+	hexBytes, err := hex.DecodeString(hexString)
 	if err != nil {
 		panic(fmt.Errorf("failed to decode string %s | reason %v",
 			hexString, err))
@@ -32,20 +32,20 @@ func EncodeHex(hexBytes []byte) string {
 	return fmt.Sprintf("0x%x", hexBytes)
 }
 
-func ToSizedDilithiumSignature(sig []byte) [field_params.DilithiumSignatureLength]byte {
-	if len(sig) != field_params.DilithiumSignatureLength {
-		panic(fmt.Errorf("cannot convert sig to sized dilithium sig, invalid sig length %d", len(sig)))
+func ToSizedMLDSA87Signature(sig []byte) [fieldparams.MLDSA87SignatureLength]byte {
+	if len(sig) != fieldparams.MLDSA87SignatureLength {
+		panic(fmt.Errorf("cannot convert sig to sized ml-dsa-87 sig, invalid sig length %d", len(sig)))
 	}
-	var sizedSig [field_params.DilithiumSignatureLength]byte
+	var sizedSig [fieldparams.MLDSA87SignatureLength]byte
 	copy(sizedSig[:], sig)
 	return sizedSig
 }
 
-func ToSizedDilithiumPublicKey(pk []byte) [field_params.DilithiumPubkeyLength]byte {
-	if len(pk) != field_params.DilithiumPubkeyLength {
-		panic(fmt.Errorf("cannot convert pk to sized dilithium pk, invalid pk length %d", len(pk)))
+func ToSizedMLDSA87PublicKey(pk []byte) [fieldparams.MLDSA87PubkeyLength]byte {
+	if len(pk) != fieldparams.MLDSA87PubkeyLength {
+		panic(fmt.Errorf("cannot convert pk to sized ml-dsa-87 pk, invalid pk length %d", len(pk)))
 	}
-	var sizedPK [field_params.DilithiumPubkeyLength]byte
+	var sizedPK [fieldparams.MLDSA87PubkeyLength]byte
 	copy(sizedPK[:], pk)
 	return sizedPK
 }

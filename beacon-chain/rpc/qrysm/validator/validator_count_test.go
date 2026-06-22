@@ -20,13 +20,13 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	http2 "github.com/theQRL/qrysm/network/http"
-	zond "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
 
 func TestGetValidatorCountInvalidRequest(t *testing.T) {
-	st, _ := util.DeterministicGenesisStateCapella(t, 10)
+	st, _ := util.DeterministicGenesisStateZond(t, 10)
 	stateIdCheckerStateFunc := func(_ context.Context, stateId []byte) (state.BeaconState, error) {
 		stateIdString := strings.ToLower(string(stateId))
 		switch stateIdString {
@@ -85,13 +85,13 @@ func TestGetValidatorCountInvalidRequest(t *testing.T) {
 			}
 
 			testRouter := mux.NewRouter()
-			testRouter.HandleFunc("/zond/v1/beacon/states/{state_id}/validator_count", server.GetValidatorCount)
+			testRouter.HandleFunc("/qrl/v1/beacon/states/{state_id}/validator_count", server.GetValidatorCount)
 			s := httptest.NewServer(testRouter)
 			defer s.Close()
 
 			queryParams := neturl.Values{}
 			queryParams.Add("status", test.status)
-			resp, err := http.Get(s.URL + fmt.Sprintf("/zond/v1/beacon/states/%s/validator_count?%s",
+			resp, err := http.Get(s.URL + fmt.Sprintf("/qrl/v1/beacon/states/%s/validator_count?%s",
 				test.stateID, queryParams.Encode()))
 			require.NoError(t, err)
 			require.Equal(t, http.StatusBadRequest, resp.StatusCode)
@@ -109,9 +109,9 @@ func TestGetValidatorCountInvalidRequest(t *testing.T) {
 }
 
 func TestGetValidatorCount(t *testing.T) {
-	st, _ := util.DeterministicGenesisStateCapella(t, 10)
+	st, _ := util.DeterministicGenesisStateZond(t, 10)
 	farFutureEpoch := params.BeaconConfig().FarFutureEpoch
-	validators := []*zond.Validator{
+	validators := []*qrysmpb.Validator{
 		// Pending initialized.
 		{
 			ActivationEpoch:            farFutureEpoch,
@@ -465,7 +465,7 @@ func TestGetValidatorCount(t *testing.T) {
 			}
 
 			testRouter := mux.NewRouter()
-			testRouter.HandleFunc("/zond/v1/beacon/states/{state_id}/validator_count", server.GetValidatorCount)
+			testRouter.HandleFunc("/qrl/v1/beacon/states/{state_id}/validator_count", server.GetValidatorCount)
 			s := httptest.NewServer(testRouter)
 			defer s.Close()
 
@@ -473,7 +473,7 @@ func TestGetValidatorCount(t *testing.T) {
 			for _, status := range test.statuses {
 				queryParams.Add("status", status)
 			}
-			resp, err := http.Get(s.URL + fmt.Sprintf("/zond/v1/beacon/states/%s/validator_count?%s",
+			resp, err := http.Get(s.URL + fmt.Sprintf("/qrl/v1/beacon/states/%s/validator_count?%s",
 				test.stateID, queryParams.Encode()))
 			require.NoError(t, err)
 			require.Equal(t, http.StatusOK, resp.StatusCode)

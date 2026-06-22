@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	dilithiumlib "github.com/theQRL/go-qrllib/dilithium"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/crypto/rand"
 	validatorpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1/validator-client"
 	"github.com/theQRL/qrysm/testing/assert"
@@ -100,11 +99,11 @@ func TestDerivedKeymanager_FetchValidatingPublicKeys(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, numAccounts, len(publicKeys))
 
-	wantedPubKeys := make([][field_params.DilithiumPubkeyLength]byte, numAccounts)
-	for i := 0; i < numAccounts; i++ {
+	wantedPubKeys := make([][field_params.MLDSA87PubkeyLength]byte, numAccounts)
+	for i := range numAccounts {
 		privKey, err := util.PrivateKeyFromSeedAndPath(derivedSeed, fmt.Sprintf(ValidatingKeyDerivationPathTemplate, i))
 		require.NoError(t, err)
-		var pubKey [field_params.DilithiumPubkeyLength]byte
+		var pubKey [field_params.MLDSA87PubkeyLength]byte
 		copy(pubKey[:], privKey.PublicKey().Marshal())
 		wantedPubKeys[i] = pubKey
 	}
@@ -140,7 +139,7 @@ func TestDerivedKeymanager_FetchValidatingSeeds(t *testing.T) {
 	require.Equal(t, numAccounts, len(privateKeys))
 
 	wantedPrivKeys := make([][32]byte, numAccounts)
-	for i := 0; i < numAccounts; i++ {
+	for i := range numAccounts {
 		privKey, err := util.PrivateKeyFromSeedAndPath(derivedSeed, fmt.Sprintf(ValidatingKeyDerivationPathTemplate, i))
 		require.NoError(t, err)
 		var privKeyBytes [32]byte
@@ -174,16 +173,16 @@ func TestDerivedKeymanager_Sign(t *testing.T) {
 	pubKeys, err := dr.FetchValidatingPublicKeys(ctx)
 	require.NoError(t, err)
 	// We prepare naive data to sign.
-	data := []byte("eth2data")
+	data := []byte("consensusdata")
 	signRequest := &validatorpb.SignRequest{
 		PublicKey:   pubKeys[0][:],
 		SigningRoot: data,
 	}
 	sig, err := dr.Sign(ctx, signRequest)
 	require.NoError(t, err)
-	pubKey, err := dilithium.PublicKeyFromBytes(pubKeys[0][:])
+	pubKey, err := ml_dsa_87.PublicKeyFromBytes(pubKeys[0][:])
 	require.NoError(t, err)
-	wrongPubKey, err := dilithium.PublicKeyFromBytes(pubKeys[1][:])
+	wrongPubKey, err := ml_dsa_87.PublicKeyFromBytes(pubKeys[1][:])
 	require.NoError(t, err)
 
 	// Check if the signature verifies.

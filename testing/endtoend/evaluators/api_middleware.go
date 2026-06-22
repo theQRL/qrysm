@@ -6,15 +6,15 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/theQRL/qrysm/proto/zond/service"
-	zondpbv1 "github.com/theQRL/qrysm/proto/zond/v1"
+	"github.com/theQRL/qrysm/proto/qrl/service"
+	qrlpb "github.com/theQRL/qrysm/proto/qrl/v1"
 	"github.com/theQRL/qrysm/testing/endtoend/params"
 	"github.com/theQRL/qrysm/testing/endtoend/policies"
 	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
 	"google.golang.org/grpc"
 )
 
-// APIMiddlewareVerifyIntegrity tests our API Middleware for the official Zond API.
+// APIMiddlewareVerifyIntegrity tests our API Middleware for the official QRL API.
 // This ensures our API Middleware returns good data compared to gRPC.
 var APIMiddlewareVerifyIntegrity = e2etypes.Evaluator{
 	Name:       "api_middleware_verify_integrity_epoch_%d",
@@ -23,7 +23,7 @@ var APIMiddlewareVerifyIntegrity = e2etypes.Evaluator{
 }
 
 const (
-	v1MiddlewarePathTemplate = "http://localhost:%d/zond/v1"
+	v1MiddlewarePathTemplate = "http://localhost:%d/qrl/v1"
 )
 
 func apiMiddlewareVerify(_ *e2etypes.EvaluationContext, conns ...*grpc.ClientConn) error {
@@ -49,7 +49,7 @@ func withCompareSyncCommittee(beaconNodeIdx int, conn *grpc.ClientConn) error {
 	}
 	ctx := context.Background()
 	beaconClient := service.NewBeaconChainClient(conn)
-	resp, err := beaconClient.ListSyncCommittees(ctx, &zondpbv1.StateSyncCommitteesRequest{
+	resp, err := beaconClient.ListSyncCommittees(ctx, &qrlpb.StateSyncCommitteesRequest{
 		StateId: []byte("head"),
 	})
 	if err != nil {
@@ -80,7 +80,7 @@ func withCompareSyncCommittee(beaconNodeIdx int, conn *grpc.ClientConn) error {
 	return nil
 }
 
-func doMiddlewareJSONGetRequestV1(requestPath string, beaconNodeIdx int, dst interface{}) error {
+func doMiddlewareJSONGetRequestV1(requestPath string, beaconNodeIdx int, dst any) error {
 	basePath := fmt.Sprintf(v1MiddlewarePathTemplate, params.TestParams.Ports.QrysmBeaconNodeGatewayPort+beaconNodeIdx)
 	httpResp, err := http.Get(
 		basePath + requestPath,

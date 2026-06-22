@@ -1,14 +1,14 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "rand",
     srcs = ["rand.go"],
     importpath = "github.com/theQRL/qrysm/crypto/rand",
     visibility = ["//visibility:public"],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "rand_test",
     srcs = ["rand_test.go"],
-    embed = [":go_default_library"],
+    embed = [":rand"],
 )

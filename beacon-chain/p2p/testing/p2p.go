@@ -6,34 +6,37 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/libp2p/go-libp2p"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	"github.com/libp2p/go-libp2p/config"
 	core "github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/control"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
-	bhost "github.com/libp2p/go-libp2p/p2p/host/blank"
-	swarmt "github.com/libp2p/go-libp2p/p2p/net/swarm/testing"
+	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"github.com/multiformats/go-multiaddr"
 	ssz "github.com/prysmaticlabs/fastssz"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/proto/qrysm/v1alpha1/metadata"
+	"github.com/theQRL/qrysm/testing/require"
 	"google.golang.org/protobuf/proto"
 )
 
 // We have to declare this again here to prevent a circular dependency
 // with the main p2p package.
-const metatadataV1Topic = "/eth2/beacon_chain/req/metadata/1"
-const metatadataV2Topic = "/eth2/beacon_chain/req/metadata/2"
+const metatadataV1Topic = "/consensus/beacon_chain/req/metadata/1"
+const metatadataV2Topic = "/consensus/beacon_chain/req/metadata/2"
 
 // TestP2P represents a p2p implementation that can be used for testing.
 type TestP2P struct {
@@ -41,7 +44,7 @@ type TestP2P struct {
 	BHost           host.Host
 	pubsub          *pubsub.PubSub
 	joinedTopics    map[string]*pubsub.Topic
-	BroadcastCalled bool
+	BroadcastCalled atomic.Bool
 	DelaySend       bool
 	Digest          [4]byte
 	peers           *peers.Status
@@ -49,9 +52,21 @@ type TestP2P struct {
 }
 
 // NewTestP2P initializes a new p2p test service.
-func NewTestP2P(t *testing.T) *TestP2P {
+func NewTestP2P(t *testing.T, userOptions ...config.Option) *TestP2P {
 	ctx := context.Background()
-	h := bhost.NewBlankHost(swarmt.GenSwarm(t, swarmt.OptDisableQUIC))
+	options := []config.Option{
+		libp2p.ResourceManager(&network.NullResourceManager{}),
+		libp2p.Transport(tcp.NewTCPTransport),
+		libp2p.DefaultListenAddrs,
+	}
+
+	// Favour user options if provided.
+	if len(userOptions) > 0 {
+		options = append(userOptions, options...)
+	}
+
+	h, err := libp2p.New(options...)
+	require.NoError(t, err)
 	ps, err := pubsub.NewFloodSub(ctx, h,
 		pubsub.WithMessageSigning(false),
 		pubsub.WithStrictSignatureVerification(false),
@@ -85,13 +100,20 @@ func (p *TestP2P) Connect(b *TestP2P) {
 }
 
 func connect(a, b host.Host) error {
-	pinfo := b.Peerstore().PeerInfo(b.ID())
+	pinfo := peer.AddrInfo{
+		ID:    b.ID(),
+		Addrs: b.Addrs(),
+	}
 	return a.Connect(context.Background(), pinfo)
 }
 
 // ReceiveRPC simulates an incoming RPC.
 func (p *TestP2P) ReceiveRPC(topic string, msg proto.Message) {
-	h := bhost.NewBlankHost(swarmt.GenSwarm(p.t))
+	h, err := libp2p.New(libp2p.ResourceManager(&network.NullResourceManager{}))
+	require.NoError(p.t, err)
+	p.t.Cleanup(func() {
+		require.NoError(p.t, h.Close())
+	})
 	if err := connect(h, p.BHost); err != nil {
 		p.t.Fatalf("Failed to connect two peers for RPC: %v", err)
 	}
@@ -121,7 +143,11 @@ func (p *TestP2P) ReceiveRPC(topic string, msg proto.Message) {
 
 // ReceivePubSub simulates an incoming message over pubsub on a given topic.
 func (p *TestP2P) ReceivePubSub(topic string, msg proto.Message) {
-	h := bhost.NewBlankHost(swarmt.GenSwarm(p.t))
+	h, err := libp2p.New(libp2p.ResourceManager(&network.NullResourceManager{}))
+	require.NoError(p.t, err)
+	p.t.Cleanup(func() {
+		require.NoError(p.t, h.Close())
+	})
 	ps, err := pubsub.NewFloodSub(context.Background(), h,
 		pubsub.WithMessageSigning(false),
 		pubsub.WithStrictSignatureVerification(false),
@@ -160,19 +186,19 @@ func (p *TestP2P) ReceivePubSub(topic string, msg proto.Message) {
 
 // Broadcast a message.
 func (p *TestP2P) Broadcast(_ context.Context, _ proto.Message) error {
-	p.BroadcastCalled = true
+	p.BroadcastCalled.Store(true)
 	return nil
 }
 
 // BroadcastAttestation broadcasts an attestation.
-func (p *TestP2P) BroadcastAttestation(_ context.Context, _ uint64, _ *zondpb.Attestation) error {
-	p.BroadcastCalled = true
+func (p *TestP2P) BroadcastAttestation(_ context.Context, _ uint64, _ *qrysmpb.Attestation) error {
+	p.BroadcastCalled.Store(true)
 	return nil
 }
 
 // BroadcastSyncCommitteeMessage broadcasts a sync committee message.
-func (p *TestP2P) BroadcastSyncCommitteeMessage(_ context.Context, _ uint64, _ *zondpb.SyncCommitteeMessage) error {
-	p.BroadcastCalled = true
+func (p *TestP2P) BroadcastSyncCommitteeMessage(_ context.Context, _ uint64, _ *qrysmpb.SyncCommitteeMessage) error {
+	p.BroadcastCalled.Store(true)
 	return nil
 }
 
@@ -251,9 +277,9 @@ func (p *TestP2P) Host() host.Host {
 	return p.BHost
 }
 
-// ENR returns the enr of the local peer.
-func (_ *TestP2P) ENR() *enr.Record {
-	return new(enr.Record)
+// QNR returns the qnr of the local peer.
+func (_ *TestP2P) QNR() *qnr.Record {
+	return new(qnr.Record)
 }
 
 // DiscoveryAddresses --
@@ -267,7 +293,7 @@ func (p *TestP2P) AddConnectionHandler(f, _ func(ctx context.Context, id peer.ID
 		ConnectedF: func(net network.Network, conn network.Conn) {
 			// Must be handled in a goroutine as this callback cannot be blocking.
 			go func() {
-				p.peers.Add(new(enr.Record), conn.RemotePeer(), conn.RemoteMultiaddr(), conn.Stat().Direction)
+				p.peers.Add(new(qnr.Record), conn.RemotePeer(), conn.RemoteMultiaddr(), conn.Stat().Direction)
 				ctx := context.Background()
 
 				p.peers.SetConnectionState(conn.RemotePeer(), peers.PeerConnecting)
@@ -302,7 +328,7 @@ func (p *TestP2P) AddDisconnectionHandler(f func(ctx context.Context, id peer.ID
 }
 
 // Send a message to a specific peer.
-func (p *TestP2P) Send(ctx context.Context, msg interface{}, topic string, pid peer.ID) (network.Stream, error) {
+func (p *TestP2P) Send(ctx context.Context, msg any, topic string, pid peer.ID) (network.Stream, error) {
 	t := topic
 	if t == "" {
 		return nil, fmt.Errorf("protocol doesn't exist for proto message: %v", msg)
@@ -353,8 +379,8 @@ func (_ *TestP2P) FindPeersWithSubnet(_ context.Context, _ string, _ uint64, _ i
 	return false, nil
 }
 
-// RefreshENR mocks the p2p func.
-func (_ *TestP2P) RefreshENR() {}
+// RefreshQNR mocks the p2p func.
+func (_ *TestP2P) RefreshQNR() {}
 
 // ForkDigest mocks the p2p func.
 func (p *TestP2P) ForkDigest() ([4]byte, error) {

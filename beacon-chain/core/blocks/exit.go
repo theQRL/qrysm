@@ -11,7 +11,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/time/slots"
 )
 
@@ -48,7 +48,7 @@ var ValidatorCannotExitYetMsg = "validator has not been active long enough to ex
 func ProcessVoluntaryExits(
 	ctx context.Context,
 	beaconState state.BeaconState,
-	exits []*zondpb.SignedVoluntaryExit,
+	exits []*qrysmpb.SignedVoluntaryExit,
 ) (state.BeaconState, error) {
 	// Avoid calculating the epoch churn if no exits exist.
 	if len(exits) == 0 {
@@ -106,7 +106,7 @@ func ProcessVoluntaryExits(
 func VerifyExitAndSignature(
 	validator state.ReadOnlyValidator,
 	state state.ReadOnlyBeaconState,
-	signed *zondpb.SignedVoluntaryExit,
+	signed *qrysmpb.SignedVoluntaryExit,
 ) error {
 	if signed == nil || signed.Exit == nil {
 		return errors.New("nil exit")
@@ -118,13 +118,13 @@ func VerifyExitAndSignature(
 
 	// NOTE(rgeraldes24): important for a future fork
 	/*
-		// EIP-7044: Beginning in Deneb, fix the fork version to Capella.
+		// EIP-7044: Beginning in Deneb, fix the fork version to Zond.
 		// This allows for signed validator exits to be valid forever.
 		if state.Version() >= version.Deneb {
-			fork = &zondpb.Fork{
-				PreviousVersion: params.BeaconConfig().CapellaForkVersion,
-				CurrentVersion:  params.BeaconConfig().CapellaForkVersion,
-				Epoch:           params.BeaconConfig().CapellaForkEpoch,
+			fork = &qrysmpb.Fork{
+				PreviousVersion: params.BeaconConfig().ZondForkVersion,
+				CurrentVersion:  params.BeaconConfig().ZondForkVersion,
+				Epoch:           params.BeaconConfig().ZondForkEpoch,
 			}
 		}
 	*/
@@ -165,7 +165,7 @@ func VerifyExitAndSignature(
 //	 assert bls.Verify(validator.pubkey, signing_root, signed_voluntary_exit.signature)
 //	 # Initiate exit
 //	 initiate_validator_exit(state, voluntary_exit.validator_index)
-func verifyExitConditions(validator state.ReadOnlyValidator, currentSlot primitives.Slot, exit *zondpb.VoluntaryExit) error {
+func verifyExitConditions(validator state.ReadOnlyValidator, currentSlot primitives.Slot, exit *qrysmpb.VoluntaryExit) error {
 	currentEpoch := slots.ToEpoch(currentSlot)
 	// Verify the validator is active.
 	if !helpers.IsActiveValidatorUsingTrie(validator, currentEpoch) {

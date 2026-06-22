@@ -291,7 +291,7 @@ func waitHighestExpectedSlot(q *blocksQueue) bool {
 
 // onScheduleEvent is an event called on newly arrived epochs. Transforms state to scheduled.
 func (q *blocksQueue) onScheduleEvent(ctx context.Context) eventHandlerFn {
-	return func(m *stateMachine, in interface{}) (stateID, error) {
+	return func(m *stateMachine, in any) (stateID, error) {
 		if m.state != stateNew {
 			return m.state, errInvalidInitialState
 		}
@@ -309,7 +309,7 @@ func (q *blocksQueue) onScheduleEvent(ctx context.Context) eventHandlerFn {
 
 // onDataReceivedEvent is an event called when data is received from fetcher.
 func (q *blocksQueue) onDataReceivedEvent(ctx context.Context) eventHandlerFn {
-	return func(m *stateMachine, in interface{}) (stateID, error) {
+	return func(m *stateMachine, in any) (stateID, error) {
 		if ctx.Err() != nil {
 			return m.state, ctx.Err()
 		}
@@ -330,9 +330,10 @@ func (q *blocksQueue) onDataReceivedEvent(ctx context.Context) eventHandlerFn {
 				}
 			}
 			if errors.Is(response.err, beaconsync.ErrInvalidFetchedData) {
-				// Peer returned invalid data, penalize.
-				q.blocksFetcher.p2p.Peers().Scorers().BadResponsesScorer().Increment(m.pid)
-				log.WithField("pid", response.pid).Debug("Peer is penalized for invalid blocks")
+				// Penalize the peer that actually returned the bad batch
+				// (response.pid), not the state machine's pid which may
+				// be empty before the response is recorded.
+				q.downscorePeer(response.pid, "invalidBlocks")
 			}
 			return m.state, response.err
 		}
@@ -344,7 +345,7 @@ func (q *blocksQueue) onDataReceivedEvent(ctx context.Context) eventHandlerFn {
 
 // onReadyToSendEvent is an event called to allow epochs with available blocks to send them downstream.
 func (q *blocksQueue) onReadyToSendEvent(ctx context.Context) eventHandlerFn {
-	return func(m *stateMachine, in interface{}) (stateID, error) {
+	return func(m *stateMachine, in any) (stateID, error) {
 		if ctx.Err() != nil {
 			return m.state, ctx.Err()
 		}
@@ -393,7 +394,7 @@ func (q *blocksQueue) onReadyToSendEvent(ctx context.Context) eventHandlerFn {
 // onProcessSkippedEvent is an event triggered on skipped machines, allowing handlers to
 // extend lookahead window, in case where progress is not possible otherwise.
 func (q *blocksQueue) onProcessSkippedEvent(ctx context.Context) eventHandlerFn {
-	return func(m *stateMachine, in interface{}) (stateID, error) {
+	return func(m *stateMachine, in any) (stateID, error) {
 		if ctx.Err() != nil {
 			return m.state, ctx.Err()
 		}
@@ -452,7 +453,7 @@ func (q *blocksQueue) onProcessSkippedEvent(ctx context.Context) eventHandlerFn 
 // onCheckStaleEvent is an event that allows to mark stale epochs,
 // so that they can be re-processed.
 func (*blocksQueue) onCheckStaleEvent(ctx context.Context) eventHandlerFn {
-	return func(m *stateMachine, in interface{}) (stateID, error) {
+	return func(m *stateMachine, in any) (stateID, error) {
 		if ctx.Err() != nil {
 			return m.state, ctx.Err()
 		}
@@ -467,4 +468,13 @@ func (*blocksQueue) onCheckStaleEvent(ctx context.Context) eventHandlerFn {
 
 		return stateSkipped, nil
 	}
+}
+
+func (q *blocksQueue) downscorePeer(peerID peer.ID, reason string) {
+	newScore := q.blocksFetcher.p2p.Peers().Scorers().BadResponsesScorer().Increment(peerID)
+	log.WithFields(logrus.Fields{
+		"peerID":   peerID,
+		"reason":   reason,
+		"newScore": newScore,
+	}).Debug("Downscore peer")
 }

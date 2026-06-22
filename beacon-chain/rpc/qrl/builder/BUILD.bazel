@@ -1,0 +1,47 @@
+load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "builder",
+    srcs = [
+        "handlers.go",
+        "server.go",
+        "structs.go",
+    ],
+    importpath = "github.com/theQRL/qrysm/beacon-chain/rpc/qrl/builder",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//beacon-chain/blockchain",
+        "//beacon-chain/core/helpers",
+        "//beacon-chain/core/transition",
+        "//beacon-chain/rpc/lookup",
+        "//config/params",
+        "//consensus-types/primitives",
+        "//network/http",
+        "//proto/engine/v1:engine",
+        "@com_github_gorilla_mux//:mux",
+        "@com_github_pkg_errors//:errors",
+        "@com_github_theqrl_go_qrl//common/hexutil",
+    ],
+)
+
+go_test(
+    name = "builder_test",
+    srcs = ["handlers_test.go"],
+    embed = [":builder"],
+    deps = [
+        "//beacon-chain/blockchain/testing",
+        "//beacon-chain/rpc/testutil",
+        "//beacon-chain/state",
+        "//config/params",
+        "//consensus-types/primitives",
+        "//crypto/ml_dsa_87",
+        "//network/http",
+        "//proto/qrysm/v1alpha1",
+        "//testing/assert",
+        "//testing/require",
+        "//testing/util",
+        "//time/slots",
+        "@com_github_gorilla_mux//:mux",
+        "@com_github_theqrl_go_qrl//common/hexutil",
+    ],
+)

@@ -15,13 +15,13 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/crypto/rand"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // RandaoReveal returns a signature of the requested epoch using the beacon proposer private key.
-func RandaoReveal(beaconState state.ReadOnlyBeaconState, epoch primitives.Epoch, privKeys []dilithium.DilithiumKey) ([]byte, error) {
+func RandaoReveal(beaconState state.ReadOnlyBeaconState, epoch primitives.Epoch, privKeys []ml_dsa_87.MLDSA87Key) ([]byte, error) {
 	// We fetch the proposer's index as that is whom the RANDAO will be verified against.
 	proposerIdx, err := helpers.BeaconProposerIndex(context.Background(), beaconState)
 	if err != nil {
@@ -38,16 +38,16 @@ func RandaoReveal(beaconState state.ReadOnlyBeaconState, epoch primitives.Epoch,
 // BlockSignature calculates the post-state root of the block and returns the signature.
 func BlockSignature(
 	bState state.BeaconState,
-	block interface{},
-	privKeys []dilithium.DilithiumKey,
-) (dilithium.Signature, error) {
+	block any,
+	privKeys []ml_dsa_87.MLDSA87Key,
+) (ml_dsa_87.Signature, error) {
 	var wsb interfaces.ReadOnlySignedBeaconBlock
 	var err error
 	// copy the state since we need to process slots
 	bState = bState.Copy()
 	switch b := block.(type) {
-	case *zondpb.BeaconBlockCapella:
-		wsb, err = blocks.NewSignedBeaconBlock(&zondpb.SignedBeaconBlockCapella{Block: b})
+	case *qrysmpb.BeaconBlockZond:
+		wsb, err = blocks.NewSignedBeaconBlock(&qrysmpb.SignedBeaconBlockZond{Block: b})
 	default:
 		return nil, errors.New("unsupported block type")
 	}
@@ -60,7 +60,7 @@ func BlockSignature(
 	}
 
 	switch b := block.(type) {
-	case *zondpb.BeaconBlockCapella:
+	case *qrysmpb.BeaconBlockZond:
 		b.StateRoot = s[:]
 	}
 
@@ -68,7 +68,7 @@ func BlockSignature(
 	// function deterministic on beacon state slot.
 	var blockSlot primitives.Slot
 	switch b := block.(type) {
-	case *zondpb.BeaconBlockCapella:
+	case *qrysmpb.BeaconBlockZond:
 		blockSlot = b.Slot
 	}
 
@@ -85,7 +85,7 @@ func BlockSignature(
 
 	var blockRoot [32]byte
 	switch b := block.(type) {
-	case *zondpb.BeaconBlockCapella:
+	case *qrysmpb.BeaconBlockZond:
 		blockRoot, err = signing.ComputeSigningRoot(b, domain)
 	}
 	if err != nil {

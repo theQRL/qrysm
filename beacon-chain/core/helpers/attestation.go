@@ -9,7 +9,7 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/crypto/hash"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	qrysmTime "github.com/theQRL/qrysm/time"
 	"github.com/theQRL/qrysm/time/slots"
 )
@@ -21,7 +21,7 @@ var (
 // ValidateNilAttestation checks if any composite field of input attestation is nil.
 // Access to these nil fields will result in run time panic,
 // it is recommended to run these checks as first line of defense.
-func ValidateNilAttestation(attestation *zondpb.Attestation) error {
+func ValidateNilAttestation(attestation *qrysmpb.Attestation) error {
 	if attestation == nil {
 		return errors.New("attestation can't be nil")
 	}
@@ -42,7 +42,7 @@ func ValidateNilAttestation(attestation *zondpb.Attestation) error {
 
 // ValidateSlotTargetEpoch checks if attestation data's epoch matches target checkpoint's epoch.
 // It is recommended to run `ValidateNilAttestation` first to ensure `data.Target` can't be nil.
-func ValidateSlotTargetEpoch(data *zondpb.AttestationData) error {
+func ValidateSlotTargetEpoch(data *qrysmpb.AttestationData) error {
 	if slots.ToEpoch(data.Slot) != data.Target.Epoch {
 		return fmt.Errorf("slot %d does not match target epoch %d", data.Slot, data.Target.Epoch)
 	}
@@ -71,7 +71,7 @@ func IsAggregator(committeeCount uint64, slotSig []byte) (bool, error) {
 
 // IsAggregated returns true if the attestation is an aggregated attestation,
 // false otherwise.
-func IsAggregated(attestation *zondpb.Attestation) bool {
+func IsAggregated(attestation *qrysmpb.Attestation) bool {
 	return attestation.AggregationBits.Count() > 1
 }
 
@@ -90,7 +90,7 @@ func IsAggregated(attestation *zondpb.Attestation) bool {
 //	committees_since_epoch_start = committees_per_slot * slots_since_epoch_start
 //
 //	return uint64((committees_since_epoch_start + committee_index) % ATTESTATION_SUBNET_COUNT)
-func ComputeSubnetForAttestation(activeValCount uint64, att *zondpb.Attestation) uint64 {
+func ComputeSubnetForAttestation(activeValCount uint64, att *qrysmpb.Attestation) uint64 {
 	return ComputeSubnetFromCommitteeAndSlot(activeValCount, att.Data.CommitteeIndex, att.Data.Slot)
 }
 
@@ -180,7 +180,7 @@ func ValidateAttestationTime(attSlot primitives.Slot, genesisTime time.Time, clo
 
 // VerifyCheckpointEpoch is within current epoch and previous epoch
 // with respect to current time. Returns true if it's within, false if it's not.
-func VerifyCheckpointEpoch(c *zondpb.Checkpoint, genesis time.Time) bool {
+func VerifyCheckpointEpoch(c *qrysmpb.Checkpoint, genesis time.Time) bool {
 	now := uint64(qrysmTime.Now().Unix())
 	genesisTime := uint64(genesis.Unix())
 	currentSlot := primitives.Slot((now - genesisTime) / params.BeaconConfig().SecondsPerSlot)

@@ -8,7 +8,7 @@ import (
 	"github.com/golang/snappy"
 	"github.com/pkg/errors"
 	ssz "github.com/prysmaticlabs/fastssz"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/qrysm/beacon-chain/db/filters"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/container/slice"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 	"github.com/theQRL/qrysm/time/slots"
 	bolt "go.etcd.io/bbolt"
@@ -53,7 +53,7 @@ func (s *Store) Block(ctx context.Context, blockRoot [32]byte) (interfaces.ReadO
 // at the time the chain was started, used to initialize the database and chain
 // without syncing from genesis.
 func (s *Store) OriginCheckpointBlockRoot(ctx context.Context) ([32]byte, error) {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.OriginCheckpointBlockRoot")
+	_, span := trace.StartSpan(ctx, "BeaconDB.OriginCheckpointBlockRoot")
 	defer span.End()
 
 	var root [32]byte
@@ -70,9 +70,24 @@ func (s *Store) OriginCheckpointBlockRoot(ctx context.Context) ([32]byte, error)
 	return root, err
 }
 
+// HeadBlockRoot returns the latest canonical block root in the QRL Beacon Chain.
+func (s *Store) HeadBlockRoot() ([32]byte, error) {
+	var root [32]byte
+	err := s.db.View(func(tx *bolt.Tx) error {
+		bkt := tx.Bucket(blocksBucket)
+		headRoot := bkt.Get(headBlockRootKey)
+		if len(headRoot) == 0 {
+			return errors.New("no head block root found")
+		}
+		copy(root[:], headRoot)
+		return nil
+	})
+	return root, err
+}
+
 // BackfillBlockRoot keeps track of the highest block available before the OriginCheckpointBlockRoot
 func (s *Store) BackfillBlockRoot(ctx context.Context) ([32]byte, error) {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.BackfillBlockRoot")
+	_, span := trace.StartSpan(ctx, "BeaconDB.BackfillBlockRoot")
 	defer span.End()
 
 	var root [32]byte
@@ -89,7 +104,7 @@ func (s *Store) BackfillBlockRoot(ctx context.Context) ([32]byte, error) {
 	return root, err
 }
 
-// HeadBlock returns the latest canonical block in the Zond Beacon Chain.
+// HeadBlock returns the latest canonical block in the QRL Beacon Chain.
 func (s *Store) HeadBlock(ctx context.Context) (interfaces.ReadOnlySignedBeaconBlock, error) {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.HeadBlock")
 	defer span.End()
@@ -126,7 +141,7 @@ func (s *Store) Blocks(ctx context.Context, f *filters.QueryFilter) ([]interface
 			return err
 		}
 
-		for i := 0; i < len(keys); i++ {
+		for i := range keys {
 			encoded := bkt.Get(keys[i])
 			blk, err := unmarshalBlock(ctx, encoded)
 			if err != nil {
@@ -155,7 +170,7 @@ func (s *Store) BlockRoots(ctx context.Context, f *filters.QueryFilter) ([][32]b
 			return err
 		}
 
-		for i := 0; i < len(keys); i++ {
+		for i := range keys {
 			blockRoots = append(blockRoots, bytesutil.ToBytes32(keys[i]))
 		}
 		return nil
@@ -168,7 +183,7 @@ func (s *Store) BlockRoots(ctx context.Context, f *filters.QueryFilter) ([][32]b
 
 // HasBlock checks if a block by root exists in the db.
 func (s *Store) HasBlock(ctx context.Context, blockRoot [32]byte) bool {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.HasBlock")
+	_, span := trace.StartSpan(ctx, "BeaconDB.HasBlock")
 	defer span.End()
 	if v, ok := s.blockCache.Get(string(blockRoot[:])); v != nil && ok {
 		return true
@@ -179,7 +194,7 @@ func (s *Store) HasBlock(ctx context.Context, blockRoot [32]byte) bool {
 		exists = bkt.Get(blockRoot[:]) != nil
 		return nil
 	}); err != nil { // This view never returns an error, but we'll handle anyway for sanity.
-		panic(err)
+		panic(err) // lint:nopanic
 	}
 	return exists
 }
@@ -246,10 +261,36 @@ func (s *Store) DeleteBlock(ctx context.Context, root [32]byte) error {
 			return ErrDeleteJustifiedAndFinalized
 		}
 
-		if err := tx.Bucket(blocksBucket).Delete(root[:]); err != nil {
+		// Look up the block to find its slot and parent root for index cleanup.
+		enc := tx.Bucket(blocksBucket).Get(root[:])
+		if enc == nil {
+			// Block not found, nothing to delete.
+			return nil
+		}
+		blk, err := unmarshalBlock(ctx, enc)
+		if err != nil {
 			return err
 		}
-		if err := tx.Bucket(blockParentRootIndicesBucket).Delete(root[:]); err != nil {
+
+		// Clean up slot->root index entry.
+		slotKey := bytesutil.SlotToBytesBigEndian(blk.Block().Slot())
+		slotIndices := map[string][]byte{
+			string(blockSlotIndicesBucket): slotKey,
+		}
+		if err := deleteValueForIndices(ctx, slotIndices, root[:], tx); err != nil {
+			return err
+		}
+
+		// Clean up parent root->child root index entry.
+		parentRoot := blk.Block().ParentRoot()
+		parentIndices := map[string][]byte{
+			string(blockParentRootIndicesBucket): parentRoot[:],
+		}
+		if err := deleteValueForIndices(ctx, parentIndices, root[:], tx); err != nil {
+			return err
+		}
+
+		if err := tx.Bucket(blocksBucket).Delete(root[:]); err != nil {
 			return err
 		}
 		s.blockCache.Del(string(root[:]))
@@ -379,7 +420,7 @@ func (s *Store) GenesisBlock(ctx context.Context) (interfaces.ReadOnlySignedBeac
 }
 
 func (s *Store) GenesisBlockRoot(ctx context.Context) ([32]byte, error) {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.GenesisBlockRoot")
+	_, span := trace.StartSpan(ctx, "BeaconDB.GenesisBlockRoot")
 	defer span.End()
 	var root [32]byte
 	err := s.db.View(func(tx *bolt.Tx) error {
@@ -396,7 +437,7 @@ func (s *Store) GenesisBlockRoot(ctx context.Context) ([32]byte, error) {
 
 // SaveGenesisBlockRoot to the db.
 func (s *Store) SaveGenesisBlockRoot(ctx context.Context, blockRoot [32]byte) error {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.SaveGenesisBlockRoot")
+	_, span := trace.StartSpan(ctx, "BeaconDB.SaveGenesisBlockRoot")
 	defer span.End()
 	return s.db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(blocksBucket)
@@ -409,7 +450,7 @@ func (s *Store) SaveGenesisBlockRoot(ctx context.Context, blockRoot [32]byte) er
 // This value is used by a running beacon chain node to locate the state at the beginning
 // of the chain history, in places where genesis would typically be used.
 func (s *Store) SaveOriginCheckpointBlockRoot(ctx context.Context, blockRoot [32]byte) error {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.SaveOriginCheckpointBlockRoot")
+	_, span := trace.StartSpan(ctx, "BeaconDB.SaveOriginCheckpointBlockRoot")
 	defer span.End()
 	return s.db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(blocksBucket)
@@ -420,7 +461,7 @@ func (s *Store) SaveOriginCheckpointBlockRoot(ctx context.Context, blockRoot [32
 // SaveBackfillBlockRoot is used to keep track of the most recently backfilled block root when
 // the node was initialized via checkpoint sync.
 func (s *Store) SaveBackfillBlockRoot(ctx context.Context, blockRoot [32]byte) error {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.SaveBackfillBlockRoot")
+	_, span := trace.StartSpan(ctx, "BeaconDB.SaveBackfillBlockRoot")
 	defer span.End()
 	return s.db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(blocksBucket)
@@ -495,22 +536,24 @@ func (s *Store) FeeRecipientByValidatorID(ctx context.Context, id primitives.Val
 	var addr []byte
 	err := s.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(feeRecipientBucket)
-		addr = bkt.Get(bytesutil.Uint64ToBytesBigEndian(uint64(id)))
+		stored := bkt.Get(bytesutil.Uint64ToBytesBigEndian(uint64(id)))
+		if len(stored) > 0 {
+			addr = bytesutil.SafeCopyBytes(stored)
+			return nil
+		}
 		// IF the fee recipient is not found in the standard fee recipient bucket, then
 		// check the registration bucket. The fee recipient may be there.
 		// This is to resolve imcompatility until we fully migrate to the registration bucket.
-		if addr == nil {
-			bkt = tx.Bucket(registrationBucket)
-			enc := bkt.Get(bytesutil.Uint64ToBytesBigEndian(uint64(id)))
-			if enc == nil {
-				return errors.Wrapf(ErrNotFoundFeeRecipient, "validator id %d", id)
-			}
-			reg := &zondpb.ValidatorRegistrationV1{}
-			if err := decode(ctx, enc, reg); err != nil {
-				return err
-			}
-			addr = reg.FeeRecipient
+		bkt = tx.Bucket(registrationBucket)
+		enc := bkt.Get(bytesutil.Uint64ToBytesBigEndian(uint64(id)))
+		if enc == nil {
+			return errors.Wrapf(ErrNotFoundFeeRecipient, "validator id %d", id)
 		}
+		reg := &qrysmpb.ValidatorRegistrationV1{}
+		if err := decode(ctx, enc, reg); err != nil {
+			return err
+		}
+		addr = bytesutil.SafeCopyBytes(reg.FeeRecipient)
 		return nil
 	})
 	return common.BytesToAddress(addr), err
@@ -519,7 +562,7 @@ func (s *Store) FeeRecipientByValidatorID(ctx context.Context, id primitives.Val
 // SaveFeeRecipientsByValidatorIDs saves the fee recipients for validator ids.
 // Error is returned if `ids` and `recipients` are not the same length.
 func (s *Store) SaveFeeRecipientsByValidatorIDs(ctx context.Context, ids []primitives.ValidatorIndex, feeRecipients []common.Address) error {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.SaveFeeRecipientByValidatorID")
+	_, span := trace.StartSpan(ctx, "BeaconDB.SaveFeeRecipientByValidatorID")
 	defer span.End()
 
 	if len(ids) != len(feeRecipients) {
@@ -539,10 +582,10 @@ func (s *Store) SaveFeeRecipientsByValidatorIDs(ctx context.Context, ids []primi
 
 // RegistrationByValidatorID returns the validator registration object for a validator id.
 // `ErrNotFoundFeeRecipient` is returned if the validator id is not found.
-func (s *Store) RegistrationByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (*zondpb.ValidatorRegistrationV1, error) {
+func (s *Store) RegistrationByValidatorID(ctx context.Context, id primitives.ValidatorIndex) (*qrysmpb.ValidatorRegistrationV1, error) {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.RegistrationByValidatorID")
 	defer span.End()
-	reg := &zondpb.ValidatorRegistrationV1{}
+	reg := &qrysmpb.ValidatorRegistrationV1{}
 	err := s.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(registrationBucket)
 		enc := bkt.Get(bytesutil.Uint64ToBytesBigEndian(uint64(id)))
@@ -556,7 +599,7 @@ func (s *Store) RegistrationByValidatorID(ctx context.Context, id primitives.Val
 
 // SaveRegistrationsByValidatorIDs saves the validator registrations for validator ids.
 // Error is returned if `ids` and `registrations` are not the same length.
-func (s *Store) SaveRegistrationsByValidatorIDs(ctx context.Context, ids []primitives.ValidatorIndex, regs []*zondpb.ValidatorRegistrationV1) error {
+func (s *Store) SaveRegistrationsByValidatorIDs(ctx context.Context, ids []primitives.ValidatorIndex, regs []*qrysmpb.ValidatorRegistrationV1) error {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.SaveRegistrationsByValidatorIDs")
 	defer span.End()
 
@@ -642,9 +685,9 @@ func blockRootsByFilter(ctx context.Context, tx *bolt.Tx, f *filters.QueryFilter
 func blockRootsBySlotRange(
 	ctx context.Context,
 	bkt *bolt.Bucket,
-	startSlotEncoded, endSlotEncoded, startEpochEncoded, endEpochEncoded, slotStepEncoded interface{},
+	startSlotEncoded, endSlotEncoded, startEpochEncoded, endEpochEncoded, slotStepEncoded any,
 ) ([][]byte, error) {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.blockRootsBySlotRange")
+	_, span := trace.StartSpan(ctx, "BeaconDB.blockRootsBySlotRange")
 	defer span.End()
 
 	// Return nothing when all slot parameters are missing
@@ -709,7 +752,7 @@ func blockRootsBySlotRange(
 
 // blockRootsBySlot retrieves the block roots by slot
 func blockRootsBySlot(ctx context.Context, tx *bolt.Tx, slot primitives.Slot) ([][32]byte, error) {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.blockRootsBySlot")
+	_, span := trace.StartSpan(ctx, "BeaconDB.blockRootsBySlot")
 	defer span.End()
 
 	bkt := tx.Bucket(blockSlotIndicesBucket)
@@ -730,7 +773,7 @@ func blockRootsBySlot(ctx context.Context, tx *bolt.Tx, slot primitives.Slot) ([
 // a map of bolt DB index buckets corresponding to each particular key for indices for
 // data, such as (shard indices bucket -> shard 5).
 func createBlockIndicesFromBlock(ctx context.Context, block interfaces.ReadOnlyBeaconBlock) map[string][]byte {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.createBlockIndicesFromBlock")
+	_, span := trace.StartSpan(ctx, "BeaconDB.createBlockIndicesFromBlock")
 	defer span.End()
 	indicesByBucket := make(map[string][]byte)
 	// Every index has a unique bucket for fast, binary-search
@@ -758,7 +801,7 @@ func createBlockIndicesFromBlock(ctx context.Context, block interfaces.ReadOnlyB
 // objects. If a certain filter criterion does not apply to
 // blocks, an appropriate error is returned.
 func createBlockIndicesFromFilters(ctx context.Context, f *filters.QueryFilter) (map[string][]byte, error) {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.createBlockIndicesFromFilters")
+	_, span := trace.StartSpan(ctx, "BeaconDB.createBlockIndicesFromFilters")
 	defer span.End()
 	indicesByBucket := make(map[string][]byte)
 	for k, v := range f.Filters() {
@@ -792,15 +835,15 @@ func unmarshalBlock(_ context.Context, enc []byte) (interfaces.ReadOnlySignedBea
 	}
 	var rawBlock ssz.Unmarshaler
 	switch {
-	case hasCapellaKey(enc):
-		rawBlock = &zondpb.SignedBeaconBlockCapella{}
-		if err := rawBlock.UnmarshalSSZ(enc[len(capellaKey):]); err != nil {
-			return nil, errors.Wrap(err, "could not unmarshal Capella block")
+	case hasZondKey(enc):
+		rawBlock = &qrysmpb.SignedBeaconBlockZond{}
+		if err := rawBlock.UnmarshalSSZ(enc[len(zondKey):]); err != nil {
+			return nil, errors.Wrap(err, "could not unmarshal Zond block")
 		}
-	case hasCapellaBlindKey(enc):
-		rawBlock = &zondpb.SignedBlindedBeaconBlockCapella{}
-		if err := rawBlock.UnmarshalSSZ(enc[len(capellaBlindKey):]); err != nil {
-			return nil, errors.Wrap(err, "could not unmarshal blinded Capella block")
+	case hasZondBlindKey(enc):
+		rawBlock = &qrysmpb.SignedBlindedBeaconBlockZond{}
+		if err := rawBlock.UnmarshalSSZ(enc[len(zondBlindKey):]); err != nil {
+			return nil, errors.Wrap(err, "could not unmarshal blinded Zond block")
 		}
 	default:
 	}
@@ -833,8 +876,8 @@ func marshalBlockFull(
 		return nil, err
 	}
 	switch blk.Version() {
-	case version.Capella:
-		return snappy.Encode(nil, append(capellaKey, encodedBlock...)), nil
+	case version.Zond:
+		return snappy.Encode(nil, append(zondKey, encodedBlock...)), nil
 	default:
 		return nil, errors.New("unknown block version")
 	}
@@ -861,8 +904,8 @@ func marshalBlockBlinded(
 		return nil, errors.Wrap(err, "could not marshal blinded block")
 	}
 	switch blk.Version() {
-	case version.Capella:
-		return snappy.Encode(nil, append(capellaBlindKey, encodedBlock...)), nil
+	case version.Zond:
+		return snappy.Encode(nil, append(zondBlindKey, encodedBlock...)), nil
 	default:
 		return nil, fmt.Errorf("unsupported block version: %v", blk.Version())
 	}

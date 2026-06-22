@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "block",
     srcs = [
         "events.go",
         "notifier.go",
@@ -9,7 +9,7 @@ go_library(
     importpath = "github.com/theQRL/qrysm/beacon-chain/core/feed/block",
     visibility = ["//beacon-chain:__subpackages__"],
     deps = [
-        "//async/event:go_default_library",
-        "//consensus-types/interfaces:go_default_library",
+        "//async/event",
+        "//consensus-types/interfaces",
     ],
 )

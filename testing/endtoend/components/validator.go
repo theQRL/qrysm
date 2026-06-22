@@ -13,8 +13,8 @@ import (
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	cmdshared "github.com/theQRL/qrysm/cmd"
 	"github.com/theQRL/qrysm/cmd/validator/flags"
 	"github.com/theQRL/qrysm/config/features"
@@ -28,7 +28,7 @@ import (
 	e2etypes "github.com/theQRL/qrysm/testing/endtoend/types"
 )
 
-const DefaultFeeRecipientAddress = "Z099FB65722e7b2455043bfebF6177f1D2E9738d9"
+const DefaultFeeRecipientAddress = "Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000099FB65722e7b2455043bfebF6177f1D2E9738d9"
 
 var _ e2etypes.ComponentRunner = (*ValidatorNode)(nil)
 var _ e2etypes.ComponentRunner = (*ValidatorNodeSet)(nil)
@@ -62,7 +62,7 @@ func (s *ValidatorNodeSet) Start(ctx context.Context) error {
 	validatorsPerNode := validatorNum / beaconNodeNum
 	// Create validator nodes.
 	nodes := make([]e2etypes.ComponentRunner, qrysmBeaconNodeNum)
-	for i := 0; i < qrysmBeaconNodeNum; i++ {
+	for i := range qrysmBeaconNodeNum {
 		nodes[i] = NewValidatorNode(s.config, validatorsPerNode, i, validatorsPerNode*i)
 	}
 	s.nodes = nodes
@@ -222,7 +222,7 @@ func (v *ValidatorNode) Start(ctx context.Context) error {
 		return err
 	}
 	args := []string{
-		fmt.Sprintf("--%s=%s/zond-val-%d", cmdshared.DataDirFlag.Name, e2e.TestParams.TestPath, index),
+		fmt.Sprintf("--%s=%s/qrl-val-%d", cmdshared.DataDirFlag.Name, e2e.TestParams.TestPath, index),
 		fmt.Sprintf("--%s=%s", cmdshared.LogFileName.Name, file.Name()),
 		fmt.Sprintf("--%s=%s", flags.GraffitiFileFlag.Name, gFile),
 		fmt.Sprintf("--%s=%d", flags.MonitoringPortFlag.Name, e2e.TestParams.Ports.ValidatorMetricsPort+index),

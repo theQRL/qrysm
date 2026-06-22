@@ -10,8 +10,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	logTest "github.com/sirupsen/logrus/hooks/test"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/rpc"
 	"github.com/theQRL/qrysm/crypto/rand"
 	pb "github.com/theQRL/qrysm/proto/engine/v1"
 	"github.com/theQRL/qrysm/testing/require"
@@ -46,8 +46,7 @@ func TestProxy(t *testing.T) {
 		require.LogsContain(t, hook, "Could not forward request to destination server")
 	})
 	t.Run("properly proxies request/response", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := t.Context()
 
 		wantDestinationResponse := &pb.ForkchoiceState{
 			HeadBlockHash:      []byte("foo"),
@@ -86,8 +85,7 @@ func TestProxy(t *testing.T) {
 
 func TestProxy_CustomInterceptors(t *testing.T) {
 	t.Run("only intercepts engine API methods", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := t.Context()
 
 		type syncingResponse struct {
 			Syncing bool `json:"syncing"`
@@ -111,12 +109,12 @@ func TestProxy_CustomInterceptors(t *testing.T) {
 		}()
 		time.Sleep(time.Millisecond * 100)
 
-		method := "zond_syncing"
+		method := "qrl_syncing"
 
 		// RPC method to intercept.
 		proxy.AddRequestInterceptor(
 			method,
-			func() interface{} {
+			func() any {
 				return &syncingResponse{Syncing: false}
 			}, // Custom response.
 			func() bool {
@@ -138,8 +136,7 @@ func TestProxy_CustomInterceptors(t *testing.T) {
 		require.DeepEqual(t, wantDestinationResponse, proxyResult)
 	})
 	t.Run("only intercepts if trigger function returns true", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := t.Context()
 
 		type engineResponse struct {
 			BlockHash common.Hash `json:"blockHash"`
@@ -166,7 +163,7 @@ func TestProxy_CustomInterceptors(t *testing.T) {
 		method := "engine_newPayloadV2"
 
 		// RPC method to intercept.
-		wantInterceptedResponse := func() interface{} {
+		wantInterceptedResponse := func() any {
 			return &engineResponse{BlockHash: common.BytesToHash([]byte("bar"))}
 		}
 		conditional := false
@@ -206,8 +203,7 @@ func TestProxy_CustomInterceptors(t *testing.T) {
 		require.DeepEqual(t, wantInterceptedResponse(), proxyResult)
 	})
 	t.Run("triggers interceptor response correctly", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := t.Context()
 
 		type engineResponse struct {
 			BlockHash common.Hash `json:"blockHash"`
@@ -234,7 +230,7 @@ func TestProxy_CustomInterceptors(t *testing.T) {
 		method := "engine_newPayloadV2"
 
 		// RPC method to intercept.
-		wantInterceptedResponse := func() interface{} {
+		wantInterceptedResponse := func() any {
 			return &engineResponse{BlockHash: common.BytesToHash([]byte("bar"))}
 		}
 		proxy.AddRequestInterceptor(
@@ -282,7 +278,7 @@ func Test_isEngineAPICall(t *testing.T) {
 		{
 			name: "non-engine method",
 			args: &jsonRPCObject{
-				Method: "zond_syncing",
+				Method: "qrl_syncing",
 				ID:     1,
 				Result: false,
 			},
@@ -300,13 +296,13 @@ func Test_isEngineAPICall(t *testing.T) {
 	}
 }
 
-func destinationServerSetup(t *testing.T, response interface{}) *httptest.Server {
+func destinationServerSetup(t *testing.T, response any) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		defer func() {
 			require.NoError(t, r.Body.Close())
 		}()
-		resp := map[string]interface{}{
+		resp := map[string]any{
 			"jsonrpc": "2.0",
 			"id":      1,
 			"result":  response,

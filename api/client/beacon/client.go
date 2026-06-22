@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
 	"path"
 	"regexp"
 	"sort"
@@ -14,33 +12,31 @@ import (
 	"text/template"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/api/client"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/shared"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/network/forks"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
-	v1 "github.com/theQRL/qrysm/proto/zond/v1"
+	qrlpb "github.com/theQRL/qrysm/proto/qrl/v1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 const (
-	getSignedBlockPath             = "/zond/v1/beacon/blocks"
-	getBlockRootPath               = "/zond/v1/beacon/blocks/{{.Id}}/root"
-	getForkForStatePath            = "/zond/v1/beacon/states/{{.Id}}/fork"
-	getWeakSubjectivityPath        = "/zond/v1/beacon/weak_subjectivity"
-	getForkSchedulePath            = "/zond/v1/config/fork_schedule"
-	getConfigSpecPath              = "/zond/v1/config/spec"
-	getStatePath                   = "/zond/v1/debug/beacon/states"
-	getNodeVersionPath             = "/zond/v1/node/version"
-	changeDilithiumtoExecutionPath = "/zond/v1/beacon/pool/dilithium_to_execution_changes"
+	getSignedBlockPath      = "/qrl/v1/beacon/blocks"
+	getBlockRootPath        = "/qrl/v1/beacon/blocks/{{.Id}}/root"
+	getForkForStatePath     = "/qrl/v1/beacon/states/{{.Id}}/fork"
+	getWeakSubjectivityPath = "/qrl/v1/beacon/weak_subjectivity"
+	getForkSchedulePath     = "/qrl/v1/config/fork_schedule"
+	getConfigSpecPath       = "/qrl/v1/config/spec"
+	getStatePath            = "/qrl/v1/debug/beacon/states"
+	getNodeVersionPath      = "/qrl/v1/node/version"
 )
 
-// StateOrBlockId represents the block_id / state_id parameters that several of the Zond Beacon API methods accept.
+// StateOrBlockId represents the block_id / state_id parameters that several of the QRL Beacon API methods accept.
 // StateOrBlockId constants are defined for named identifiers, and helper methods are provided
-// for slot and root identifiers. Example text from the Zond Beacon Node API documentation:
+// for slot and root identifiers. Example text from the QRL Beacon Node API documentation:
 //
 // "Block identifier can be one of: "head" (canonical head in node's view), "genesis", "finalized",
 // <slot>, <hex encoded blockRoot with 0x prefix>."
@@ -71,7 +67,7 @@ func idTemplate(ts string) func(StateOrBlockId) string {
 		b := bytes.NewBuffer(nil)
 		err := t.Execute(b, struct{ Id string }{Id: string(id)})
 		if err != nil {
-			panic(fmt.Sprintf("invalid idTemplate: %s", ts))
+			panic(fmt.Sprintf("invalid idTemplate: %s", ts)) // lint:nopanic
 		}
 		return b.String()
 	}
@@ -85,7 +81,7 @@ func renderGetBlockPath(id StateOrBlockId) string {
 	return path.Join(getSignedBlockPath, string(id))
 }
 
-// Client provides a collection of helper methods for calling the Zond Beacon Node API endpoints.
+// Client provides a collection of helper methods for calling the QRL Beacon Node API endpoints.
 type Client struct {
 	*client.Client
 }
@@ -132,7 +128,7 @@ func (c *Client) GetBlockRoot(ctx context.Context, blockId StateOrBlockId) ([32]
 	}
 	rs, err := hexutil.Decode(jsonr.Data.Root)
 	if err != nil {
-		return [32]byte{}, errors.Wrap(err, fmt.Sprintf("error decoding hex-encoded value %s", jsonr.Data.Root))
+		return [32]byte{}, errors.Wrapf(err, "error decoding hex-encoded value %s", jsonr.Data.Root)
 	}
 	return bytesutil.ToBytes32(rs), nil
 }
@@ -143,7 +139,7 @@ var getForkTpl = idTemplate(getForkForStatePath)
 // Block identifier can be one of: "head" (canonical head in node's view), "genesis", "finalized",
 // <slot>, <hex encoded blockRoot with 0x prefix>. Variables of type StateOrBlockId are exported by this package
 // for the named identifiers.
-func (c *Client) GetFork(ctx context.Context, stateId StateOrBlockId) (*zondpb.Fork, error) {
+func (c *Client) GetFork(ctx context.Context, stateId StateOrBlockId) (*qrysmpb.Fork, error) {
 	body, err := c.Get(ctx, getForkTpl(stateId))
 	if err != nil {
 		return nil, errors.Wrapf(err, "error requesting fork by state id = %s", stateId)
@@ -171,18 +167,18 @@ func (c *Client) GetForkSchedule(ctx context.Context) (forks.OrderedSchedule, er
 	}
 	ofs, err := fsr.OrderedForkSchedule()
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("problem unmarshaling %s response", getForkSchedulePath))
+		return nil, errors.Wrapf(err, "problem unmarshaling %s response", getForkSchedulePath)
 	}
 	return ofs, nil
 }
 
 // GetConfigSpec retrieve the current configs of the network used by the beacon node.
-func (c *Client) GetConfigSpec(ctx context.Context) (*v1.SpecResponse, error) {
+func (c *Client) GetConfigSpec(ctx context.Context) (*qrlpb.SpecResponse, error) {
 	body, err := c.Get(ctx, getConfigSpecPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting configSpecPath")
 	}
-	fsr := &v1.SpecResponse{}
+	fsr := &qrlpb.SpecResponse{}
 	err = json.Unmarshal(body, fsr)
 	if err != nil {
 		return nil, err
@@ -281,60 +277,6 @@ func (c *Client) GetWeakSubjectivity(ctx context.Context) (*WeakSubjectivityData
 	}, nil
 }
 
-// SubmitChangeDilithiumtoExecution calls a beacon API endpoint to set the withdrawal addresses based on the given signed messages.
-// If the API responds with something other than OK there will be failure messages associated to the corresponding request message.
-func (c *Client) SubmitChangeDilithiumtoExecution(ctx context.Context, request []*apimiddleware.SignedDilithiumToExecutionChangeJson) error {
-	u := c.BaseURL().ResolveReference(&url.URL{Path: changeDilithiumtoExecutionPath})
-	body, err := json.Marshal(request)
-	if err != nil {
-		return errors.Wrap(err, "failed to marshal JSON")
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), bytes.NewBuffer(body))
-	if err != nil {
-		return errors.Wrap(err, "invalid format, failed to create new POST request object")
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := c.Do(req)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		err = resp.Body.Close()
-	}()
-	if resp.StatusCode != http.StatusOK {
-		decoder := json.NewDecoder(resp.Body)
-		decoder.DisallowUnknownFields()
-		errorJson := &apimiddleware.IndexedVerificationFailureErrorJson{}
-		if err := decoder.Decode(errorJson); err != nil {
-			return errors.Wrapf(err, "failed to decode error JSON for %s", resp.Request.URL)
-		}
-		for _, failure := range errorJson.Failures {
-			w := request[failure.Index].Message
-			log.WithFields(log.Fields{
-				"validator_index":    w.ValidatorIndex,
-				"withdrawal_address": w.ToExecutionAddress,
-			}).Error(failure.Message)
-		}
-		return errors.Errorf("POST error %d: %s", errorJson.Code, errorJson.Message)
-	}
-	return nil
-}
-
-// GetDilithiumtoExecutionChanges gets all the set withdrawal messages in the node's operation pool.
-// Returns a struct representation of json response.
-func (c *Client) GetDilithiumtoExecutionChanges(ctx context.Context) (*apimiddleware.DilithiumToExecutionChangesPoolResponseJson, error) {
-	body, err := c.Get(ctx, changeDilithiumtoExecutionPath)
-	if err != nil {
-		return nil, err
-	}
-	poolResponse := &apimiddleware.DilithiumToExecutionChangesPoolResponseJson{}
-	err = json.Unmarshal(body, poolResponse)
-	if err != nil {
-		return nil, err
-	}
-	return poolResponse, nil
-}
-
 type forkScheduleResponse struct {
 	Data []shared.Fork
 }
@@ -342,7 +284,7 @@ type forkScheduleResponse struct {
 func (fsr *forkScheduleResponse) OrderedForkSchedule() (forks.OrderedSchedule, error) {
 	ofs := make(forks.OrderedSchedule, 0)
 	for _, d := range fsr.Data {
-		epoch, err := strconv.Atoi(d.Epoch)
+		epoch, err := strconv.ParseUint(d.Epoch, 10, 64)
 		if err != nil {
 			return nil, err
 		}
@@ -356,7 +298,7 @@ func (fsr *forkScheduleResponse) OrderedForkSchedule() (forks.OrderedSchedule, e
 		version := bytesutil.ToBytes4(vSlice)
 		ofs = append(ofs, forks.ForkScheduleEntry{
 			Version: version,
-			Epoch:   primitives.Epoch(uint64(epoch)),
+			Epoch:   primitives.Epoch(epoch),
 		})
 	}
 	sort.Sort(ofs)

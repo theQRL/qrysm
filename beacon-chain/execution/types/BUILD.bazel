@@ -1,23 +1,23 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
-    srcs = ["eth1_types.go"],
+    name = "types",
+    srcs = ["execution_types.go"],
     importpath = "github.com/theQRL/qrysm/beacon-chain/execution/types",
     visibility = ["//beacon-chain:__subpackages__"],
     deps = [
-        "//encoding/bytesutil:go_default_library",
-        "@com_github_theqrl_go_zond//common:go_default_library",
-        "@com_github_theqrl_go_zond//common/hexutil:go_default_library",
+        "//encoding/bytesutil",
+        "@com_github_theqrl_go_qrl//common",
+        "@com_github_theqrl_go_qrl//common/hexutil",
     ],
 )
 
 go_test(
-    name = "go_default_test",
-    srcs = ["eth1_types_test.go"],
-    embed = [":go_default_library"],
+    name = "types_test",
+    srcs = ["execution_types_test.go"],
+    embed = [":types"],
     deps = [
-        "//testing/assert:go_default_library",
-        "@com_github_theqrl_go_zond//common:go_default_library",
+        "//testing/assert",
+        "@com_github_theqrl_go_qrl//common",
     ],
 )

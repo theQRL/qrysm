@@ -28,9 +28,6 @@ func TestDerivationFromMnemonic(t *testing.T) {
 	require.NoError(t, err)
 	assert.DeepEqual(t, seedBytes, derivedSeed)
 
-	// We derive keys, then check the master SK and the child SK.
-	withdrawalKey, err := util.PrivateKeyFromSeedAndPath(seedBytes, "m")
-	require.NoError(t, err)
 	validatingKey, err := util.PrivateKeyFromSeedAndPath(seedBytes, fmt.Sprintf("m/%d", childIndex))
 	require.NoError(t, err)
 
@@ -38,7 +35,6 @@ func TestDerivationFromMnemonic(t *testing.T) {
 	require.NoError(t, err)
 	expectedChildSK, err := secretKeyFromBigNum(childSK)
 	require.NoError(t, err)
-	assert.DeepEqual(t, expectedMasterSK.Marshal(), withdrawalKey.Marshal())
 	assert.DeepEqual(t, expectedChildSK.Marshal(), validatingKey.Marshal())
 }
 

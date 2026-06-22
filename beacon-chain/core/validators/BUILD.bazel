@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "validators",
     srcs = ["validator.go"],
     importpath = "github.com/theQRL/qrysm/beacon-chain/core/validators",
     visibility = [
@@ -10,31 +10,31 @@ go_library(
         "//testing/spectest:__subpackages__",
     ],
     deps = [
-        "//beacon-chain/core/helpers:go_default_library",
-        "//beacon-chain/core/time:go_default_library",
-        "//beacon-chain/state:go_default_library",
-        "//config/params:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "//time/slots:go_default_library",
-        "@com_github_pkg_errors//:go_default_library",
+        "//beacon-chain/core/helpers",
+        "//beacon-chain/core/time",
+        "//beacon-chain/state",
+        "//config/params",
+        "//consensus-types/primitives",
+        "//proto/qrysm/v1alpha1",
+        "//time/slots",
+        "@com_github_pkg_errors//:errors",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "validators_test",
     size = "small",
     srcs = ["validator_test.go"],
-    embed = [":go_default_library"],
+    embed = [":validators"],
     deps = [
-        "//beacon-chain/core/helpers:go_default_library",
-        "//beacon-chain/core/time:go_default_library",
-        "//beacon-chain/state/state-native:go_default_library",
-        "//config/params:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "//runtime/version:go_default_library",
-        "//testing/assert:go_default_library",
-        "//testing/require:go_default_library",
+        "//beacon-chain/core/helpers",
+        "//beacon-chain/core/time",
+        "//beacon-chain/state/state-native",
+        "//config/params",
+        "//consensus-types/primitives",
+        "//proto/qrysm/v1alpha1",
+        "//runtime/version",
+        "//testing/assert",
+        "//testing/require",
     ],
 )

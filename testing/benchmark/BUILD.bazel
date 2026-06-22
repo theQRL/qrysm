@@ -1,22 +1,22 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "benchmark",
     srcs = ["pregen.go"],
     data = ["//testing/benchmark/benchmark_files:benchmark_data"],
     importpath = "github.com/theQRL/qrysm/testing/benchmark",
     visibility = ["//visibility:public"],
     deps = [
-        "//beacon-chain/state:go_default_library",
-        "//beacon-chain/state/state-native:go_default_library",
-        "//config/params:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
+        "//beacon-chain/state",
+        "//beacon-chain/state/state-native",
+        "//config/params",
+        "//proto/qrysm/v1alpha1",
         "@io_bazel_rules_go//go/tools/bazel:go_default_library",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "benchmark_test",
     srcs = ["pregen_test.go"],
-    embed = [":go_default_library"],
+    embed = [":benchmark"],
 )

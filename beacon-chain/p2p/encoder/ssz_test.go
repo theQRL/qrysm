@@ -11,7 +11,7 @@ import (
 	gogo "github.com/gogo/protobuf/proto"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
 	"github.com/theQRL/qrysm/config/params"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
@@ -26,23 +26,34 @@ func TestSszNetworkEncoder_RoundTrip(t *testing.T) {
 
 func TestSszNetworkEncoder_FailsSnappyLength(t *testing.T) {
 	e := &encoder.SszNetworkEncoder{}
-	att := &zondpb.Fork{}
+	att := &qrysmpb.Fork{}
 	data := make([]byte, 32)
 	binary.PutUvarint(data, encoder.MaxGossipSize+32)
 	err := e.DecodeGossip(data, att)
 	require.ErrorContains(t, "snappy message exceeds max size", err)
 }
 
+func TestSszNetworkEncoder_DecodeGossip_RejectsOversizedCompressedFrame(t *testing.T) {
+	e := &encoder.SszNetworkEncoder{}
+	att := &qrysmpb.Fork{}
+	// Any byte slice longer than the worst-case snappy-encoded bound for a
+	// payload of MaxGossipSize must be rejected up-front, before snappy
+	// header parsing runs.
+	data := make([]byte, encoder.MaxGossipCompressedSize+1)
+	err := e.DecodeGossip(data, att)
+	require.ErrorContains(t, "exceeds max compressed size", err)
+}
+
 func testRoundTripWithLength(t *testing.T, e *encoder.SszNetworkEncoder) {
 	buf := new(bytes.Buffer)
-	msg := &zondpb.Fork{
+	msg := &qrysmpb.Fork{
 		PreviousVersion: []byte("fooo"),
 		CurrentVersion:  []byte("barr"),
 		Epoch:           9001,
 	}
 	_, err := e.EncodeWithMaxLength(buf, msg)
 	require.NoError(t, err)
-	decoded := &zondpb.Fork{}
+	decoded := &qrysmpb.Fork{}
 	require.NoError(t, e.DecodeWithMaxLength(buf, decoded))
 	if !proto.Equal(decoded, msg) {
 		t.Logf("decoded=%+v\n", decoded)
@@ -52,14 +63,14 @@ func testRoundTripWithLength(t *testing.T, e *encoder.SszNetworkEncoder) {
 
 func testRoundTripWithGossip(t *testing.T, e *encoder.SszNetworkEncoder) {
 	buf := new(bytes.Buffer)
-	msg := &zondpb.Fork{
+	msg := &qrysmpb.Fork{
 		PreviousVersion: []byte("fooo"),
 		CurrentVersion:  []byte("barr"),
 		Epoch:           9001,
 	}
 	_, err := e.EncodeGossip(buf, msg)
 	require.NoError(t, err)
-	decoded := &zondpb.Fork{}
+	decoded := &qrysmpb.Fork{}
 	require.NoError(t, e.DecodeGossip(buf.Bytes(), decoded))
 	if !proto.Equal(decoded, msg) {
 		t.Logf("decoded=%+v\n", decoded)
@@ -69,7 +80,7 @@ func testRoundTripWithGossip(t *testing.T, e *encoder.SszNetworkEncoder) {
 
 func TestSszNetworkEncoder_EncodeWithMaxLength(t *testing.T) {
 	buf := new(bytes.Buffer)
-	msg := &zondpb.Fork{
+	msg := &qrysmpb.Fork{
 		PreviousVersion: []byte("fooo"),
 		CurrentVersion:  []byte("barr"),
 		Epoch:           9001,
@@ -86,7 +97,7 @@ func TestSszNetworkEncoder_EncodeWithMaxLength(t *testing.T) {
 
 func TestSszNetworkEncoder_DecodeWithMaxLength(t *testing.T) {
 	buf := new(bytes.Buffer)
-	msg := &zondpb.Fork{
+	msg := &qrysmpb.Fork{
 		PreviousVersion: []byte("fooo"),
 		CurrentVersion:  []byte("barr"),
 		Epoch:           4242,
@@ -99,7 +110,7 @@ func TestSszNetworkEncoder_DecodeWithMaxLength(t *testing.T) {
 	params.OverrideBeaconNetworkConfig(c)
 	_, err := e.EncodeGossip(buf, msg)
 	require.NoError(t, err)
-	decoded := &zondpb.Fork{}
+	decoded := &qrysmpb.Fork{}
 	err = e.DecodeWithMaxLength(buf, decoded)
 	wanted := fmt.Sprintf("goes over the provided max limit of %d", maxChunkSize)
 	assert.ErrorContains(t, wanted, err)
@@ -107,7 +118,7 @@ func TestSszNetworkEncoder_DecodeWithMaxLength(t *testing.T) {
 
 func TestSszNetworkEncoder_DecodeWithMultipleFrames(t *testing.T) {
 	buf := new(bytes.Buffer)
-	st, _ := util.DeterministicGenesisStateCapella(t, 100)
+	st, _ := util.DeterministicGenesisStateZond(t, 100)
 	e := &encoder.SszNetworkEncoder{}
 	params.SetupTestConfigCleanup(t)
 	c := params.BeaconNetworkConfig()
@@ -115,13 +126,13 @@ func TestSszNetworkEncoder_DecodeWithMultipleFrames(t *testing.T) {
 	maxChunkSize := uint64(1 << 22)
 	encoder.MaxChunkSize = maxChunkSize
 	params.OverrideBeaconNetworkConfig(c)
-	_, err := e.EncodeWithMaxLength(buf, st.ToProtoUnsafe().(*zondpb.BeaconStateCapella))
+	_, err := e.EncodeWithMaxLength(buf, st.ToProtoUnsafe().(*qrysmpb.BeaconStateZond))
 	require.NoError(t, err)
 	// Max snappy block size
 	if buf.Len() <= 76490 {
 		t.Errorf("buffer smaller than expected, wanted > %d but got %d", 76490, buf.Len())
 	}
-	decoded := new(zondpb.BeaconStateCapella)
+	decoded := new(qrysmpb.BeaconStateZond)
 	err = e.DecodeWithMaxLength(buf, decoded)
 	assert.NoError(t, err)
 }
@@ -144,7 +155,7 @@ func TestSszNetworkEncoder_MaxInt64(t *testing.T) {
 func TestSszNetworkEncoder_DecodeWithBadSnappyStream(t *testing.T) {
 	st := newBadSnappyStream()
 	e := &encoder.SszNetworkEncoder{}
-	decoded := new(zondpb.Fork)
+	decoded := new(qrysmpb.Fork)
 	err := e.DecodeWithMaxLength(st, decoded)
 	assert.ErrorContains(t, io.EOF.Error(), err)
 }

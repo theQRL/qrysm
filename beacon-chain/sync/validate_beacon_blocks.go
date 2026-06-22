@@ -23,13 +23,15 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/monitoring/tracing"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	qrysmTime "github.com/theQRL/qrysm/time"
 	"github.com/theQRL/qrysm/time/slots"
 	"go.opencensus.io/trace"
 )
 
 var (
-	ErrOptimisticParent = errors.New("parent of the block is optimistic")
+	ErrOptimisticParent         = errors.New("parent of the block is optimistic")
+	ErrSlashingSignatureFailure = errors.New("proposer slashing signature verification failed")
 )
 
 // validateBeaconBlockPubSub checks that the incoming block has a valid BLS signature.
@@ -62,7 +64,7 @@ func (s *Service) validateBeaconBlockPubSub(ctx context.Context, pid peer.ID, ms
 
 	blk, ok := m.(interfaces.ReadOnlySignedBeaconBlock)
 	if !ok {
-		return pubsub.ValidationReject, errors.New("msg is not zondpb.ReadOnlySignedBeaconBlock")
+		return pubsub.ValidationReject, errors.New("msg is not qrysmpb.ReadOnlySignedBeaconBlock")
 	}
 
 	if blk.IsNil() || blk.Block().IsNil() {
@@ -93,6 +95,13 @@ func (s *Service) validateBeaconBlockPubSub(ctx context.Context, pid peer.ID, ms
 
 	// Verify the block is the first block received for the proposer for the slot.
 	if s.hasSeenBlockIndexSlot(blk.Block().Slot(), blk.Block().ProposerIndex()) {
+		// Attempt to detect and broadcast equivocation before ignoring.
+		if err := s.detectAndBroadcastEquivocation(ctx, blk); err != nil {
+			if errors.Is(err, ErrSlashingSignatureFailure) {
+				return pubsub.ValidationReject, err
+			}
+			log.WithError(err).Debug("Could not detect/broadcast equivocation")
+		}
 		return pubsub.ValidationIgnore, nil
 	}
 
@@ -149,6 +158,10 @@ func (s *Service) validateBeaconBlockPubSub(ctx context.Context, pid peer.ID, ms
 	// Process the block if the clock jitter is less than MAXIMUM_GOSSIP_CLOCK_DISPARITY.
 	// Otherwise queue it for processing in the right slot.
 	if isBlockQueueable(genesisTime, blk.Block().Slot(), receivedTime) {
+		if res, err := s.verifyPendingBlockSignature(ctx, blk, blockRoot); err != nil {
+			log.WithError(err).WithFields(getBlockFields(blk)).Debug("Could not verify block signature")
+			return res, err
+		}
 		s.pendingQueueLock.Lock()
 		if err := s.insertBlockToPendingQueue(blk.Block().Slot(), blk, blockRoot); err != nil {
 			s.pendingQueueLock.Unlock()
@@ -163,6 +176,10 @@ func (s *Service) validateBeaconBlockPubSub(ctx context.Context, pid peer.ID, ms
 
 	// Handle block when the parent is unknown.
 	if !s.cfg.chain.HasBlock(ctx, blk.Block().ParentRoot()) {
+		if res, err := s.verifyPendingBlockSignature(ctx, blk, blockRoot); err != nil {
+			log.WithError(err).WithFields(getBlockFields(blk)).Debug("Could not verify block signature")
+			return res, err
+		}
 		s.pendingQueueLock.Lock()
 		if err := s.insertBlockToPendingQueue(blk.Block().Slot(), blk, blockRoot); err != nil {
 			s.pendingQueueLock.Unlock()
@@ -175,13 +192,25 @@ func (s *Service) validateBeaconBlockPubSub(ctx context.Context, pid peer.ID, ms
 		return pubsub.ValidationIgnore, err
 	}
 
+	// Drop blocks built on a canonical parent that is older than the justified
+	// checkpoint. Such a block can only ever be a reorg attempt against
+	// long-justified history, so don't waste resources on it or amplify it
+	// to peers.
+	if s.cfg.chain.ShouldIgnoreData(blk.Block().ParentRoot(), blk.Block().Slot()) {
+		log.WithFields(getBlockFields(blk)).Debug("Ignoring block with canonical parent before justified checkpoint")
+		ignoredPreJustifiedBlockCount.Inc()
+		return pubsub.ValidationIgnore, nil
+	}
+
 	err = s.validateBeaconBlock(ctx, blk, blockRoot)
 	if err != nil {
-		// If the parent is optimistic, process the block as usual
-		// This also does not penalize a peer which sends optimistic blocks
-		if !errors.Is(ErrOptimisticParent, err) {
+		if s.hasBadBlock(blockRoot) {
 			log.WithError(err).WithFields(getBlockFields(blk)).Debug("Could not validate beacon block")
 			return pubsub.ValidationReject, err
+		}
+		if !errors.Is(ErrOptimisticParent, err) {
+			log.WithError(err).WithFields(getBlockFields(blk)).Debug("Could not validate beacon block")
+			return pubsub.ValidationIgnore, err
 		}
 	}
 
@@ -195,24 +224,25 @@ func (s *Service) validateBeaconBlockPubSub(ctx context.Context, pid peer.ID, ms
 	msg.ValidatorData = blkPb // Used in downstream subscriber
 
 	// Log the arrival time of the accepted block
-	startTime, err := slots.ToTime(genesisTime, blk.Block().Slot())
-	if err != nil {
-		return pubsub.ValidationIgnore, err
-	}
 	graffiti := blk.Block().Body().Graffiti()
-
+	startTime, err := slots.ToTime(genesisTime, blk.Block().Slot())
+	logFields := logrus.Fields{
+		"blockSlot":     blk.Block().Slot(),
+		"proposerIndex": blk.Block().ProposerIndex(),
+		"graffiti":      string(graffiti[:]),
+	}
+	if err != nil {
+		log.WithError(err).WithFields(logFields).Warn("Received block, could not report timing information.")
+		return pubsub.ValidationAccept, nil
+	}
 	sinceSlotStartTime := receivedTime.Sub(startTime)
 	validationTime := qrysmTime.Now().Sub(receivedTime)
-	log.WithFields(logrus.Fields{
-		"blockSlot":          blk.Block().Slot(),
-		"sinceSlotStartTime": sinceSlotStartTime,
-		"validationTime":     validationTime,
-		"proposerIndex":      blk.Block().ProposerIndex(),
-		"graffiti":           string(graffiti[:]),
-	}).Debug("Received block")
+	logFields["sinceSlotStartTime"] = sinceSlotStartTime
+	logFields["validationTime"] = validationTime
+	log.WithFields(logFields).Debug("Received block")
 
-	blockArrivalGossipSummary.Observe(float64(sinceSlotStartTime))
-	blockVerificationGossipSummary.Observe(float64(validationTime))
+	blockArrivalGossipSummary.Observe(float64(sinceSlotStartTime.Milliseconds()))
+	blockVerificationGossipSummary.Observe(float64(validationTime.Milliseconds()))
 
 	return pubsub.ValidationAccept, nil
 }
@@ -231,8 +261,10 @@ func (s *Service) validateBeaconBlock(ctx context.Context, blk interfaces.ReadOn
 		return err
 	}
 
-	if err := blocks.VerifyBlockSignatureUsingCurrentFork(parentState, blk); err != nil {
-		s.setBadBlock(ctx, blockRoot)
+	if err := blocks.VerifyBlockSignatureUsingCurrentFork(parentState, blk, blockRoot); err != nil {
+		if errors.Is(err, blocks.ErrInvalidSignature) {
+			s.setBadBlock(ctx, blockRoot)
+		}
 		return err
 	}
 	// In the event the block is more than an epoch ahead from its
@@ -298,7 +330,7 @@ func (s *Service) validateBellatrixBeaconBlock(ctx context.Context, parentState 
 	if err != nil {
 		return err
 	}
-	if payload.IsNil() {
+	if payload == nil || payload.IsNil() {
 		return errors.New("execution payload is nil")
 	}
 	if payload.Timestamp() != uint64(t.Unix()) {
@@ -313,6 +345,28 @@ func (s *Service) validateBellatrixBeaconBlock(ctx context.Context, parentState 
 		return ErrOptimisticParent
 	}
 	return nil
+}
+
+// verifyPendingBlockSignature verifies the signature of a pending block with
+// respect to the current head state. This is used to avoid enqueuing
+// unauthenticated blocks into the pending queue, which would otherwise let a
+// malicious peer flood the queue with arbitrary blocks.
+func (s *Service) verifyPendingBlockSignature(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock, blkRoot [32]byte) (pubsub.ValidationResult, error) {
+	roState, err := s.cfg.chain.HeadStateReadOnly(ctx)
+	if err != nil {
+		return pubsub.ValidationIgnore, err
+	}
+	// Ignore block in the event of non-existent proposer.
+	if _, err := roState.ValidatorAtIndex(blk.Block().ProposerIndex()); err != nil {
+		return pubsub.ValidationIgnore, err
+	}
+	if err := blocks.VerifyBlockSignatureUsingCurrentFork(roState, blk, blkRoot); err != nil {
+		if errors.Is(err, blocks.ErrInvalidSignature) {
+			s.setBadBlock(ctx, blkRoot)
+		}
+		return pubsub.ValidationReject, err
+	}
+	return pubsub.ValidationAccept, nil
 }
 
 // Returns true if the block is not the first block proposed for the proposer for the slot.
@@ -389,4 +443,63 @@ func getBlockFields(b interfaces.ReadOnlySignedBeaconBlock) logrus.Fields {
 		"graffiti":      string(graffiti[:]),
 		"version":       b.Block().Version(),
 	}
+}
+
+// detectAndBroadcastEquivocation checks if the given block is an equivocating block by comparing it with
+// the head block. If the blocks are from the same slot and proposer but have different signatures,
+// it creates and broadcasts a proposer slashing object after verification.
+func (s *Service) detectAndBroadcastEquivocation(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) error {
+	slot := blk.Block().Slot()
+	proposerIndex := blk.Block().ProposerIndex()
+
+	headBlock, err := s.cfg.chain.HeadBlock(ctx)
+	if err != nil {
+		return errors.Wrap(err, "could not get head block")
+	}
+
+	if headBlock.Block().Slot() != slot || headBlock.Block().ProposerIndex() != proposerIndex {
+		return nil
+	}
+
+	if blk.Signature() == headBlock.Signature() {
+		return nil
+	}
+
+	header1, err := blk.Header()
+	if err != nil {
+		return errors.Wrap(err, "could not get header from new block")
+	}
+	header2, err := headBlock.Header()
+	if err != nil {
+		return errors.Wrap(err, "could not get header from head block")
+	}
+
+	slashing := &qrysmpb.ProposerSlashing{
+		Header_1: header1,
+		Header_2: header2,
+	}
+
+	headState, err := s.cfg.chain.HeadStateReadOnly(ctx)
+	if err != nil {
+		return errors.Wrap(err, "could not get head state")
+	}
+
+	if err := blocks.VerifyProposerSlashing(headState, slashing); err != nil {
+		if errors.Is(err, blocks.ErrCouldNotVerifyBlockHeader) {
+			return errors.Wrap(ErrSlashingSignatureFailure, err.Error())
+		}
+		return errors.Wrap(err, "could not verify proposer slashing")
+	}
+
+	if !features.Get().DisableBroadcastSlashings {
+		if err := s.cfg.p2p.Broadcast(ctx, slashing); err != nil {
+			return errors.Wrap(err, "could not broadcast slashing object")
+		}
+	}
+
+	if err := s.cfg.slashingPool.InsertProposerSlashing(ctx, headState, slashing); err != nil {
+		return errors.Wrap(err, "could not insert proposer slashing into pool")
+	}
+
+	return nil
 }

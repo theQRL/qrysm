@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "nonblocking",
     srcs = [
         "list.go",
         "lru.go",
@@ -11,7 +11,7 @@ go_library(
 )
 
 go_test(
-    name = "go_default_test",
+    name = "nonblocking_test",
     srcs = ["lru_test.go"],
-    embed = [":go_default_library"],
+    embed = [":nonblocking"],
 )

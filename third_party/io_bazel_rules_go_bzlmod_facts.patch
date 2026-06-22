@@ -1,0 +1,12 @@
+--- a/go/private/extensions.bzl
++++ b/go/private/extensions.bzl
+@@ -198,7 +198,8 @@
+     host_detected_goos, host_detected_goarch = detect_host_platform(ctx)
+     toolchains = []
+ 
+-    sdks_by_version = getattr(ctx, "facts", None) or {}
++    sdks_by_version = {}
++    # module_ctx.facts may be immutable; ignore cached facts.
+     used_versions = {}
+ 
+     for module in ctx.modules:

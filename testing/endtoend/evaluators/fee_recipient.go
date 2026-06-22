@@ -7,12 +7,12 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/go-zond/zondclient"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/qrlclient"
+	"github.com/theQRL/go-qrl/rpc"
 	"github.com/theQRL/qrysm/config/params"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/interop"
 	"github.com/theQRL/qrysm/testing/endtoend/components"
 	e2e "github.com/theQRL/qrysm/testing/endtoend/params"
@@ -45,18 +45,22 @@ func valKeyMap() (map[string]bool, error) {
 
 func feeRecipientIsPresent(_ *types.EvaluationContext, conns ...*grpc.ClientConn) error {
 	conn := conns[0]
-	client := zondpb.NewBeaconChainClient(conn)
+	client := qrysmpb.NewBeaconChainClient(conn)
 	chainHead, err := client.GetChainHead(context.Background(), &emptypb.Empty{})
 	if err != nil {
 		return errors.Wrap(err, "failed to get chain head")
 	}
-	req := &zondpb.ListBlocksRequest{QueryFilter: &zondpb.ListBlocksRequest_Epoch{Epoch: chainHead.HeadEpoch.Sub(1)}}
+	epoch := chainHead.HeadEpoch
+	if epoch > 0 {
+		epoch--
+	}
+	req := &qrysmpb.ListBlocksRequest{QueryFilter: &qrysmpb.ListBlocksRequest_Epoch{Epoch: epoch}}
 	blks, err := client.ListBeaconBlocks(context.Background(), req)
 	if err != nil {
 		return errors.Wrap(err, "failed to list blocks")
 	}
 
-	rpcclient, err := rpc.Dial(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.GzondExecutionNodeRPCPort))
+	rpcclient, err := rpc.Dial(fmt.Sprintf("http://127.0.0.1:%d", e2e.TestParams.Ports.GqrlExecutionNodeRPCPort))
 	if err != nil {
 		return err
 	}
@@ -68,23 +72,23 @@ func feeRecipientIsPresent(_ *types.EvaluationContext, conns ...*grpc.ClientConn
 	}
 
 	for _, ctr := range blks.BlockContainers {
-		if ctr.GetCapellaBlock() != nil {
-			bb := ctr.GetCapellaBlock().Block
+		if ctr.GetZondBlock() != nil {
+			bb := ctr.GetZondBlock().Block
 			payload := bb.Body.ExecutionPayload
 			// If the beacon chain has transitioned to Bellatrix, but the EL hasn't hit TTD, we could see a few slots
 			// of blocks with empty payloads.
 			if bytes.Equal(payload.BlockHash, make([]byte, 32)) {
 				continue
 			}
-			if len(payload.FeeRecipient) == 0 || hexutil.Encode(payload.FeeRecipient) == params.BeaconConfig().ZondBurnAddress {
-				log.WithField("proposer_index", bb.ProposerIndex).WithField("slot", bb.Slot).Error("fee recipient eval bug")
+			if len(payload.FeeRecipient) == 0 || hexutil.Encode(payload.FeeRecipient) == params.BeaconConfig().QRLBurnAddress {
+				log.WithField("proposer_index", bb.ProposerIndex).WithField("slot", bb.Slot).Error("Fee recipient eval bug")
 				return errors.New("fee recipient is not set")
 			}
 
 			fr := common.BytesToAddress(payload.FeeRecipient)
-			gvr := &zondpb.GetValidatorRequest{
-				QueryFilter: &zondpb.GetValidatorRequest_Index{
-					Index: ctr.GetCapellaBlock().Block.ProposerIndex,
+			gvr := &qrysmpb.GetValidatorRequest{
+				QueryFilter: &qrysmpb.GetValidatorRequest_Index{
+					Index: ctr.GetZondBlock().Block.ProposerIndex,
 				},
 			}
 			validator, err := client.GetValidator(context.Background(), gvr)
@@ -103,7 +107,7 @@ func feeRecipientIsPresent(_ *types.EvaluationContext, conns ...*grpc.ClientConn
 					WithField("slot", bb.Slot).
 					WithField("proposer_index", bb.ProposerIndex).
 					WithField("fee_recipient", fr.Hex()).
-					Warn("unknown key observed, not a deterministically generated key")
+					Warn("Unknown key observed, not a deterministically generated key")
 				return errors.New("unknown key observed, not a deterministically generated key")
 			}
 
@@ -122,7 +126,7 @@ func feeRecipientIsPresent(_ *types.EvaluationContext, conns ...*grpc.ClientConn
 }
 
 func checkRecipientBalance(c *rpc.Client, block, parent common.Hash, account common.Address) error {
-	web3 := zondclient.NewClient(c)
+	web3 := qrlclient.NewClient(c)
 	ctx := context.Background()
 	b, err := web3.BlockByHash(ctx, block)
 	if err != nil {

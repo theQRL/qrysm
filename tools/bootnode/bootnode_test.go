@@ -10,8 +10,8 @@ import (
 
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/go-zond/p2p/discover"
-	"github.com/theQRL/go-zond/p2p/enode"
+	"github.com/theQRL/go-qrl/p2p/discover"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 	ecdsaqrysm "github.com/theQRL/qrysm/crypto/ecdsa"
 	"github.com/theQRL/qrysm/network"
 	_ "github.com/theQRL/qrysm/runtime/maxprocs"
@@ -37,9 +37,9 @@ func TestBootnode_OK(t *testing.T) {
 	defer listener.Close()
 
 	cfg.PrivateKey = extractPrivateKey()
-	bootNode, err := enode.Parse(enode.ValidSchemes, listener.Self().String())
+	bootNode, err := qnode.Parse(qnode.ValidSchemes, listener.Self().String())
 	require.NoError(t, err)
-	cfg.Bootnodes = []*enode.Node{bootNode}
+	cfg.Bootnodes = []*qnode.Node{bootNode}
 	listener2 := createListener(ipAddr, 4001, cfg)
 	defer listener2.Close()
 

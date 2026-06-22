@@ -143,7 +143,7 @@ func goodBlockRoot(root [32]byte) func(ctx context.Context) ([32]byte, error) {
 }
 
 func setupTestBlock(slot primitives.Slot) (interfaces.ReadOnlySignedBeaconBlock, error) {
-	bRaw := util.NewBeaconBlockCapella()
+	bRaw := util.NewBeaconBlockZond()
 	b, err := blocks.NewSignedBeaconBlock(bRaw)
 	if err != nil {
 		return nil, err

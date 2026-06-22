@@ -10,7 +10,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state/state-native/types"
 	"github.com/theQRL/qrysm/beacon-chain/state/stateutil"
 	pmath "github.com/theQRL/qrysm/math"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 // ProofFromMerkleLayers creates a proof starting at the leaf index of the state Merkle layers.
@@ -45,7 +45,7 @@ func (f *FieldTrie) validateIndices(idxs []uint64) error {
 	return nil
 }
 
-func validateElements(field types.FieldIndex, fieldInfo types.DataType, elements interface{}, length uint64) error {
+func validateElements(field types.FieldIndex, fieldInfo types.DataType, elements any, length uint64) error {
 	if fieldInfo == types.CompressedArray {
 		comLength, err := field.ElemsInChunk()
 		if err != nil {
@@ -61,7 +61,7 @@ func validateElements(field types.FieldIndex, fieldInfo types.DataType, elements
 }
 
 // fieldConverters converts the corresponding field and the provided elements to the appropriate roots.
-func fieldConverters(field types.FieldIndex, indices []uint64, elements interface{}, convertAll bool) ([][32]byte, error) {
+func fieldConverters(field types.FieldIndex, indices []uint64, elements any, convertAll bool) ([][32]byte, error) {
 	switch field {
 	case types.BlockRoots:
 		return convert32ByteArrays[customtypes.BlockRoots](indices, elements, convertAll)
@@ -69,8 +69,8 @@ func fieldConverters(field types.FieldIndex, indices []uint64, elements interfac
 		return convert32ByteArrays[customtypes.StateRoots](indices, elements, convertAll)
 	case types.RandaoMixes:
 		return convert32ByteArrays[customtypes.RandaoMixes](indices, elements, convertAll)
-	case types.Eth1DataVotes:
-		return convertEth1DataVotes(indices, elements, convertAll)
+	case types.ExecutionDataVotes:
+		return convertExecutionDataVotes(indices, elements, convertAll)
 	case types.Validators:
 		return convertValidators(indices, elements, convertAll)
 	case types.Balances:
@@ -80,7 +80,7 @@ func fieldConverters(field types.FieldIndex, indices []uint64, elements interfac
 	}
 }
 
-func convert32ByteArrays[T ~[][32]byte](indices []uint64, elements interface{}, convertAll bool) ([][32]byte, error) {
+func convert32ByteArrays[T ~[][32]byte](indices []uint64, elements any, convertAll bool) ([][32]byte, error) {
 	val, ok := elements.(T)
 	if !ok {
 		var t T
@@ -89,23 +89,23 @@ func convert32ByteArrays[T ~[][32]byte](indices []uint64, elements interface{}, 
 	return handle32ByteArrays(val, indices, convertAll)
 }
 
-func convertEth1DataVotes(indices []uint64, elements interface{}, convertAll bool) ([][32]byte, error) {
-	val, ok := elements.([]*zondpb.Eth1Data)
+func convertExecutionDataVotes(indices []uint64, elements any, convertAll bool) ([][32]byte, error) {
+	val, ok := elements.([]*qrysmpb.ExecutionData)
 	if !ok {
-		return nil, errors.Errorf("Wanted type of %T but got %T", []*zondpb.Eth1Data{}, elements)
+		return nil, errors.Errorf("Wanted type of %T but got %T", []*qrysmpb.ExecutionData{}, elements)
 	}
-	return handleEth1DataSlice(val, indices, convertAll)
+	return handleExecutionDataSlice(val, indices, convertAll)
 }
 
-func convertValidators(indices []uint64, elements interface{}, convertAll bool) ([][32]byte, error) {
-	val, ok := elements.([]*zondpb.Validator)
+func convertValidators(indices []uint64, elements any, convertAll bool) ([][32]byte, error) {
+	val, ok := elements.([]*qrysmpb.Validator)
 	if !ok {
-		return nil, errors.Errorf("Wanted type of %T but got %T", []*zondpb.Validator{}, elements)
+		return nil, errors.Errorf("Wanted type of %T but got %T", []*qrysmpb.Validator{}, elements)
 	}
 	return handleValidatorSlice(val, indices, convertAll)
 }
 
-func convertBalances(indices []uint64, elements interface{}, convertAll bool) ([][32]byte, error) {
+func convertBalances(indices []uint64, elements any, convertAll bool) ([][32]byte, error) {
 	val, ok := elements.([]uint64)
 	if !ok {
 		return nil, errors.Errorf("Wanted type of %T but got %T", []uint64{}, elements)
@@ -141,13 +141,13 @@ func handle32ByteArrays(val [][32]byte, indices []uint64, convertAll bool) ([][3
 }
 
 // handleValidatorSlice returns the validator indices in a slice of root format.
-func handleValidatorSlice(val []*zondpb.Validator, indices []uint64, convertAll bool) ([][32]byte, error) {
+func handleValidatorSlice(val []*qrysmpb.Validator, indices []uint64, convertAll bool) ([][32]byte, error) {
 	length := len(indices)
 	if convertAll {
 		return stateutil.OptimizedValidatorRoots(val)
 	}
 	roots := make([][32]byte, 0, length)
-	rootCreator := func(input *zondpb.Validator) error {
+	rootCreator := func(input *qrysmpb.Validator) error {
 		newRoot, err := stateutil.ValidatorRootWithHasher(input)
 		if err != nil {
 			return err
@@ -169,15 +169,15 @@ func handleValidatorSlice(val []*zondpb.Validator, indices []uint64, convertAll 
 	return roots, nil
 }
 
-// handleEth1DataSlice processes a list of eth1data and indices into the appropriate roots.
-func handleEth1DataSlice(val []*zondpb.Eth1Data, indices []uint64, convertAll bool) ([][32]byte, error) {
+// handleExecutionDataSlice processes a list of executiondata and indices into the appropriate roots.
+func handleExecutionDataSlice(val []*qrysmpb.ExecutionData, indices []uint64, convertAll bool) ([][32]byte, error) {
 	length := len(indices)
 	if convertAll {
 		length = len(val)
 	}
 	roots := make([][32]byte, 0, length)
-	rootCreator := func(input *zondpb.Eth1Data) error {
-		newRoot, err := stateutil.Eth1DataRootWithHasher(input)
+	rootCreator := func(input *qrysmpb.ExecutionData) error {
+		newRoot, err := stateutil.ExecutionDataRootWithHasher(input)
 		if err != nil {
 			return err
 		}
@@ -196,7 +196,7 @@ func handleEth1DataSlice(val []*zondpb.Eth1Data, indices []uint64, convertAll bo
 	if len(val) > 0 {
 		for _, idx := range indices {
 			if idx > uint64(len(val))-1 {
-				return nil, fmt.Errorf("index %d greater than number of items in eth1 data slice %d", idx, len(val))
+				return nil, fmt.Errorf("index %d greater than number of items in execution data slice %d", idx, len(val))
 			}
 			err := rootCreator(val[idx])
 			if err != nil {
@@ -208,13 +208,13 @@ func handleEth1DataSlice(val []*zondpb.Eth1Data, indices []uint64, convertAll bo
 }
 
 // handlePendingAttestationSlice returns the root of a slice of pending attestations.
-func handlePendingAttestationSlice(val []*zondpb.PendingAttestation, indices []uint64, convertAll bool) ([][32]byte, error) {
+func handlePendingAttestationSlice(val []*qrysmpb.PendingAttestation, indices []uint64, convertAll bool) ([][32]byte, error) {
 	length := len(indices)
 	if convertAll {
 		length = len(val)
 	}
 	roots := make([][32]byte, 0, length)
-	rootCreator := func(input *zondpb.PendingAttestation) error {
+	rootCreator := func(input *qrysmpb.PendingAttestation) error {
 		newRoot, err := stateutil.PendingAttRootWithHasher(input)
 		if err != nil {
 			return err

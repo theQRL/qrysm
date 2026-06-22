@@ -8,8 +8,7 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┗┛━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // SPDX-License-Identifier: CC0-1.0
-// TODO(now.youtrack.cloud/issue/TQ-34)
-pragma hyperion ^0.8.22;
+pragma hyperion >0.1.0;
 
 // This interface is designed to be compatible with the Vyper version.
 /// @notice This is the Ethereum 2.0 deposit contract interface.
@@ -25,9 +24,9 @@ interface IDepositContract {
     );
 
     /// @notice Submit a Phase 0 DepositData object.
-    /// @param pubkey A Dilithium public key.
+    /// @param pubkey A ML-DSA-87 public key.
     /// @param withdrawal_credentials Commitment to a public key for withdrawals.
-    /// @param signature A Dilithium signature.
+    /// @param signature A ML-DSA-87 signature.
     /// @param deposit_data_root The SHA-256 hash of the SSZ-encoded DepositData object.
     /// Used as a protection against malformed input.
     function deposit(
@@ -106,13 +105,13 @@ contract DepositContract is IDepositContract, ERC165 {
     ) override external payable {
         // Extended ABI length checks since dynamic types are used.
         require(pubkey.length == 2592, "DepositContract: invalid pubkey length");
-        require(withdrawal_credentials.length == 32, "DepositContract: invalid withdrawal_credentials length");
-        require(signature.length == 4595, "DepositContract: invalid signature length");
+        require(withdrawal_credentials.length == 64, "DepositContract: invalid withdrawal_credentials length");
+        require(signature.length == 4627, "DepositContract: invalid signature length");
 
         // Check deposit amount
-        require(msg.value >= 1 ether, "DepositContract: deposit value too low");
-        require(msg.value % 1 gwei == 0, "DepositContract: deposit value not multiple of gwei");
-        uint deposit_amount = msg.value / 1 gwei;
+        require(msg.value >= 1 quanta, "DepositContract: deposit value too low");
+        require(msg.value % 1 shor == 0, "DepositContract: deposit value not multiple of shor");
+        uint deposit_amount = msg.value / 1 shor;
         require(deposit_amount <= type(uint64).max, "DepositContract: deposit value too high");
 
         // Emit `DepositEvent` log

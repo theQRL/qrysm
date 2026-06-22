@@ -44,7 +44,7 @@ func WriteSsz(w http.ResponseWriter, respSsz []byte, fileName string) {
 	w.Header().Set("Content-Type", octetStreamMediaType)
 	w.Header().Set("Content-Disposition", "attachment; filename="+fileName)
 	if _, err := io.Copy(w, io.NopCloser(bytes.NewReader(respSsz))); err != nil {
-		log.WithError(err).Error("could not write response message")
+		log.WithError(err).Error("Could not write response message")
 	}
 }
 

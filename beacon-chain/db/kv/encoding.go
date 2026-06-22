@@ -7,13 +7,13 @@ import (
 
 	"github.com/golang/snappy"
 	fastssz "github.com/prysmaticlabs/fastssz"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/proto"
 )
 
 func decode(ctx context.Context, data []byte, dst proto.Message) error {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.decode")
+	_, span := trace.StartSpan(ctx, "BeaconDB.decode")
 	defer span.End()
 
 	data, err := snappy.Decode(nil, data)
@@ -27,7 +27,7 @@ func decode(ctx context.Context, data []byte, dst proto.Message) error {
 }
 
 func encode(ctx context.Context, msg proto.Message) ([]byte, error) {
-	ctx, span := trace.StartSpan(ctx, "BeaconDB.encode")
+	_, span := trace.StartSpan(ctx, "BeaconDB.encode")
 	defer span.End()
 
 	if msg == nil || reflect.ValueOf(msg).IsNil() {
@@ -50,21 +50,21 @@ func encode(ctx context.Context, msg proto.Message) ([]byte, error) {
 }
 
 // isSSZStorageFormat returns true if the object type should be saved in SSZ encoded format.
-func isSSZStorageFormat(obj interface{}) bool {
+func isSSZStorageFormat(obj any) bool {
 	switch obj.(type) {
-	case *zondpb.SignedAggregateAttestationAndProof:
+	case *qrysmpb.SignedAggregateAttestationAndProof:
 		return true
-	case *zondpb.Attestation:
+	case *qrysmpb.Attestation:
 		return true
-	case *zondpb.Deposit:
+	case *qrysmpb.Deposit:
 		return true
-	case *zondpb.AttesterSlashing:
+	case *qrysmpb.AttesterSlashing:
 		return true
-	case *zondpb.ProposerSlashing:
+	case *qrysmpb.ProposerSlashing:
 		return true
-	case *zondpb.VoluntaryExit:
+	case *qrysmpb.VoluntaryExit:
 		return true
-	case *zondpb.ValidatorRegistrationV1:
+	case *qrysmpb.ValidatorRegistrationV1:
 		return true
 	default:
 		return false

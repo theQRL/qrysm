@@ -6,21 +6,21 @@ import (
 	"testing"
 
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 )
 
 func TestLocalKeymanager_ExtractKeystores(t *testing.T) {
-	dilithiumKeysCache = make(map[[field_params.DilithiumPubkeyLength]byte]dilithium.DilithiumKey)
+	mlDSA87KeysCache = make(map[[field_params.MLDSA87PubkeyLength]byte]ml_dsa_87.MLDSA87Key)
 	dr := &Keymanager{}
-	validatingKeys := make([]dilithium.DilithiumKey, 10)
-	for i := 0; i < len(validatingKeys); i++ {
-		secretKey, err := dilithium.RandKey()
+	validatingKeys := make([]ml_dsa_87.MLDSA87Key, 10)
+	for i := range validatingKeys {
+		secretKey, err := ml_dsa_87.RandKey()
 		require.NoError(t, err)
 		validatingKeys[i] = secretKey
-		dilithiumKeysCache[bytesutil.ToBytes2592(secretKey.PublicKey().Marshal())] = secretKey
+		mlDSA87KeysCache[bytesutil.ToBytes2592(secretKey.PublicKey().Marshal())] = secretKey
 	}
 	ctx := context.Background()
 	password := "password"
@@ -33,7 +33,7 @@ func TestLocalKeymanager_ExtractKeystores(t *testing.T) {
 	// We attempt to extract a few indices.
 	keystores, err = dr.ExtractKeystores(
 		ctx,
-		[]dilithium.PublicKey{
+		[]ml_dsa_87.PublicKey{
 			validatingKeys[3].PublicKey(),
 			validatingKeys[5].PublicKey(),
 			validatingKeys[7].PublicKey(),

@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "version",
     srcs = [
         "fork.go",
         "metrics.go",
@@ -16,14 +16,14 @@ go_library(
         "gitTag": "{STABLE_GIT_TAG}",
     },
     deps = [
-        "@com_github_pkg_errors//:go_default_library",
-        "@com_github_prometheus_client_golang//prometheus:go_default_library",
-        "@com_github_prometheus_client_golang//prometheus/promauto:go_default_library",
+        "@com_github_pkg_errors//:errors",
+        "@com_github_prometheus_client_golang//prometheus",
+        "@com_github_prometheus_client_golang//prometheus/promauto",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "version_test",
     srcs = ["fork_test.go"],
-    embed = [":go_default_library"],
+    embed = [":version"],
 )

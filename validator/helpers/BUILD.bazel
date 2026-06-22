@@ -1,11 +1,9 @@
 load("@qrysm//tools/go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "helpers",
     srcs = ["node_connection.go"],
     importpath = "github.com/theQRL/qrysm/validator/helpers",
     visibility = ["//visibility:public"],
-    deps = [
-        "@org_golang_google_grpc//:go_default_library",
-    ],
+    deps = ["@org_golang_google_grpc//:go_default_library"],
 )

@@ -21,18 +21,18 @@ import (
 func Test_IsExecutionBlock(t *testing.T) {
 	tests := []struct {
 		name    string
-		payload *enginev1.ExecutionPayloadCapella
+		payload *enginev1.ExecutionPayloadZond
 		want    bool
 	}{
 		{
 			name:    "empty payload",
-			payload: emptyPayloadCapella(),
+			payload: emptyPayloadZond(),
 			want:    false,
 		},
 		{
 			name: "non-empty payload",
-			payload: func() *enginev1.ExecutionPayloadCapella {
-				p := emptyPayloadCapella()
+			payload: func() *enginev1.ExecutionPayloadZond {
+				p := emptyPayloadZond()
 				p.ParentHash = bytesutil.PadTo([]byte{'a'}, fieldparams.RootLength)
 				return p
 			}(),
@@ -41,7 +41,7 @@ func Test_IsExecutionBlock(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			blk := util.NewBeaconBlockCapella()
+			blk := util.NewBeaconBlockZond()
 			blk.Block.Body.ExecutionPayload = tt.payload
 			wrappedBlock, err := consensusblocks.NewBeaconBlock(blk.Block)
 			require.NoError(t, err)
@@ -52,9 +52,9 @@ func Test_IsExecutionBlock(t *testing.T) {
 	}
 }
 
-func Test_IsExecutionBlockCapella(t *testing.T) {
-	blk := util.NewBeaconBlockCapella()
-	blk.Block.Body.ExecutionPayload = emptyPayloadCapella()
+func Test_IsExecutionBlockZond(t *testing.T) {
+	blk := util.NewBeaconBlockZond()
+	blk.Block.Body.ExecutionPayload = emptyPayloadZond()
 	wrappedBlock, err := consensusblocks.NewBeaconBlock(blk.Block)
 	require.NoError(t, err)
 	got, err := blocks.IsExecutionBlock(wrappedBlock.Body())
@@ -65,16 +65,16 @@ func Test_IsExecutionBlockCapella(t *testing.T) {
 func Test_IsExecutionEnabled(t *testing.T) {
 	tests := []struct {
 		name        string
-		payload     *enginev1.ExecutionPayloadCapella
+		payload     *enginev1.ExecutionPayloadZond
 		header      interfaces.ExecutionData
 		useAltairSt bool
 		want        bool
 	}{
 		{
 			name:    "use older than bellatrix state",
-			payload: emptyPayloadCapella(),
+			payload: emptyPayloadZond(),
 			header: func() interfaces.ExecutionData {
-				h, err := emptyPayloadHeaderCapella()
+				h, err := emptyPayloadHeaderZond()
 				require.NoError(t, err)
 				return h
 			}(),
@@ -83,9 +83,9 @@ func Test_IsExecutionEnabled(t *testing.T) {
 		},
 		{
 			name:    "empty header, empty payload",
-			payload: emptyPayloadCapella(),
+			payload: emptyPayloadZond(),
 			header: func() interfaces.ExecutionData {
-				h, err := emptyPayloadHeaderCapella()
+				h, err := emptyPayloadHeaderZond()
 				require.NoError(t, err)
 				return h
 			}(),
@@ -93,11 +93,11 @@ func Test_IsExecutionEnabled(t *testing.T) {
 		},
 		{
 			name:    "non-empty header, empty payload",
-			payload: emptyPayloadCapella(),
+			payload: emptyPayloadZond(),
 			header: func() interfaces.ExecutionData {
-				h, err := emptyPayloadHeaderCapella()
+				h, err := emptyPayloadHeaderZond()
 				require.NoError(t, err)
-				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderCapella)
+				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderZond)
 				require.Equal(t, true, ok)
 				p.ParentHash = bytesutil.PadTo([]byte{'a'}, fieldparams.RootLength)
 				return h
@@ -107,12 +107,12 @@ func Test_IsExecutionEnabled(t *testing.T) {
 		{
 			name: "empty header, non-empty payload",
 			header: func() interfaces.ExecutionData {
-				h, err := emptyPayloadHeaderCapella()
+				h, err := emptyPayloadHeaderZond()
 				require.NoError(t, err)
 				return h
 			}(),
-			payload: func() *enginev1.ExecutionPayloadCapella {
-				p := emptyPayloadCapella()
+			payload: func() *enginev1.ExecutionPayloadZond {
+				p := emptyPayloadZond()
 				p.Timestamp = 1
 				return p
 			}(),
@@ -121,15 +121,15 @@ func Test_IsExecutionEnabled(t *testing.T) {
 		{
 			name: "non-empty header, non-empty payload",
 			header: func() interfaces.ExecutionData {
-				h, err := emptyPayloadHeaderCapella()
+				h, err := emptyPayloadHeaderZond()
 				require.NoError(t, err)
-				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderCapella)
+				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderZond)
 				require.Equal(t, true, ok)
 				p.ParentHash = bytesutil.PadTo([]byte{'a'}, fieldparams.RootLength)
 				return h
 			}(),
-			payload: func() *enginev1.ExecutionPayloadCapella {
-				p := emptyPayloadCapella()
+			payload: func() *enginev1.ExecutionPayloadZond {
+				p := emptyPayloadZond()
 				p.Timestamp = 1
 				return p
 			}(),
@@ -138,14 +138,14 @@ func Test_IsExecutionEnabled(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			st, _ := util.DeterministicGenesisStateCapella(t, 1)
+			st, _ := util.DeterministicGenesisStateZond(t, 1)
 			require.NoError(t, st.SetLatestExecutionPayloadHeader(tt.header))
-			blk := util.NewBeaconBlockCapella()
+			blk := util.NewBeaconBlockZond()
 			blk.Block.Body.ExecutionPayload = tt.payload
 			body, err := consensusblocks.NewBeaconBlockBody(blk.Block.Body)
 			require.NoError(t, err)
 			if tt.useAltairSt {
-				st, _ = util.DeterministicGenesisStateCapella(t, 1)
+				st, _ = util.DeterministicGenesisStateZond(t, 1)
 			}
 			got, err := blocks.IsExecutionEnabled(st, body)
 			require.NoError(t, err)
@@ -159,15 +159,15 @@ func Test_IsExecutionEnabled(t *testing.T) {
 func Test_IsExecutionEnabledUsingHeader(t *testing.T) {
 	tests := []struct {
 		name    string
-		payload *enginev1.ExecutionPayloadCapella
+		payload *enginev1.ExecutionPayloadZond
 		header  interfaces.ExecutionData
 		want    bool
 	}{
 		{
 			name:    "empty header, empty payload",
-			payload: emptyPayloadCapella(),
+			payload: emptyPayloadZond(),
 			header: func() interfaces.ExecutionData {
-				h, err := emptyPayloadHeaderCapella()
+				h, err := emptyPayloadHeaderZond()
 				require.NoError(t, err)
 				return h
 			}(),
@@ -175,11 +175,11 @@ func Test_IsExecutionEnabledUsingHeader(t *testing.T) {
 		},
 		{
 			name:    "non-empty header, empty payload",
-			payload: emptyPayloadCapella(),
+			payload: emptyPayloadZond(),
 			header: func() interfaces.ExecutionData {
-				h, err := emptyPayloadHeaderCapella()
+				h, err := emptyPayloadHeaderZond()
 				require.NoError(t, err)
-				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderCapella)
+				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderZond)
 				require.Equal(t, true, ok)
 				p.ParentHash = bytesutil.PadTo([]byte{'a'}, fieldparams.RootLength)
 				return h
@@ -189,12 +189,12 @@ func Test_IsExecutionEnabledUsingHeader(t *testing.T) {
 		{
 			name: "empty header, non-empty payload",
 			header: func() interfaces.ExecutionData {
-				h, err := emptyPayloadHeaderCapella()
+				h, err := emptyPayloadHeaderZond()
 				require.NoError(t, err)
 				return h
 			}(),
-			payload: func() *enginev1.ExecutionPayloadCapella {
-				p := emptyPayloadCapella()
+			payload: func() *enginev1.ExecutionPayloadZond {
+				p := emptyPayloadZond()
 				p.Timestamp = 1
 				return p
 			}(),
@@ -203,15 +203,15 @@ func Test_IsExecutionEnabledUsingHeader(t *testing.T) {
 		{
 			name: "non-empty header, non-empty payload",
 			header: func() interfaces.ExecutionData {
-				h, err := emptyPayloadHeaderCapella()
+				h, err := emptyPayloadHeaderZond()
 				require.NoError(t, err)
-				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderCapella)
+				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderZond)
 				require.Equal(t, true, ok)
 				p.ParentHash = bytesutil.PadTo([]byte{'a'}, fieldparams.RootLength)
 				return h
 			}(),
-			payload: func() *enginev1.ExecutionPayloadCapella {
-				p := emptyPayloadCapella()
+			payload: func() *enginev1.ExecutionPayloadZond {
+				p := emptyPayloadZond()
 				p.Timestamp = 1
 				return p
 			}(),
@@ -220,7 +220,7 @@ func Test_IsExecutionEnabledUsingHeader(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			blk := util.NewBeaconBlockCapella()
+			blk := util.NewBeaconBlockZond()
 			blk.Block.Body.ExecutionPayload = tt.payload
 			body, err := consensusblocks.NewBeaconBlockBody(blk.Block.Body)
 			require.NoError(t, err)
@@ -234,20 +234,20 @@ func Test_IsExecutionEnabledUsingHeader(t *testing.T) {
 }
 
 func Test_ValidatePayload(t *testing.T) {
-	st, _ := util.DeterministicGenesisStateCapella(t, 1)
+	st, _ := util.DeterministicGenesisStateZond(t, 1)
 	random, err := helpers.RandaoMix(st, time.CurrentEpoch(st))
 	require.NoError(t, err)
 	ts, err := slots.ToTime(st.GenesisTime(), st.Slot())
 	require.NoError(t, err)
 	tests := []struct {
 		name    string
-		payload *enginev1.ExecutionPayloadCapella
+		payload *enginev1.ExecutionPayloadZond
 		err     error
 	}{
 		{
 			name: "validate passes",
-			payload: func() *enginev1.ExecutionPayloadCapella {
-				h := emptyPayloadCapella()
+			payload: func() *enginev1.ExecutionPayloadZond {
+				h := emptyPayloadZond()
 				h.PrevRandao = random
 				h.Timestamp = uint64(ts.Unix())
 				return h
@@ -255,13 +255,13 @@ func Test_ValidatePayload(t *testing.T) {
 		},
 		{
 			name:    "incorrect prev randao",
-			payload: emptyPayloadCapella(),
+			payload: emptyPayloadZond(),
 			err:     blocks.ErrInvalidPayloadPrevRandao,
 		},
 		{
 			name: "incorrect timestamp",
-			payload: func() *enginev1.ExecutionPayloadCapella {
-				h := emptyPayloadCapella()
+			payload: func() *enginev1.ExecutionPayloadZond {
+				h := emptyPayloadZond()
 				h.PrevRandao = random
 				h.Timestamp = 1
 				return h
@@ -271,7 +271,7 @@ func Test_ValidatePayload(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappedPayload, err := consensusblocks.WrappedExecutionPayloadCapella(tt.payload, 0)
+			wrappedPayload, err := consensusblocks.WrappedExecutionPayloadZond(tt.payload, 0)
 			require.NoError(t, err)
 			err = blocks.ValidatePayload(st, wrappedPayload)
 			if err != nil {
@@ -284,20 +284,20 @@ func Test_ValidatePayload(t *testing.T) {
 }
 
 func Test_ProcessPayload(t *testing.T) {
-	st, _ := util.DeterministicGenesisStateCapella(t, 1)
+	st, _ := util.DeterministicGenesisStateZond(t, 1)
 	random, err := helpers.RandaoMix(st, time.CurrentEpoch(st))
 	require.NoError(t, err)
 	ts, err := slots.ToTime(st.GenesisTime(), st.Slot())
 	require.NoError(t, err)
 	tests := []struct {
 		name    string
-		payload *enginev1.ExecutionPayloadCapella
+		payload *enginev1.ExecutionPayloadZond
 		err     error
 	}{
 		{
 			name: "process passes",
-			payload: func() *enginev1.ExecutionPayloadCapella {
-				h := emptyPayloadCapella()
+			payload: func() *enginev1.ExecutionPayloadZond {
+				h := emptyPayloadZond()
 				h.PrevRandao = random
 				h.Timestamp = uint64(ts.Unix())
 				return h
@@ -305,13 +305,13 @@ func Test_ProcessPayload(t *testing.T) {
 		},
 		{
 			name:    "incorrect prev randao",
-			payload: emptyPayloadCapella(),
+			payload: emptyPayloadZond(),
 			err:     blocks.ErrInvalidPayloadPrevRandao,
 		},
 		{
 			name: "incorrect timestamp",
-			payload: func() *enginev1.ExecutionPayloadCapella {
-				h := emptyPayloadCapella()
+			payload: func() *enginev1.ExecutionPayloadZond {
+				h := emptyPayloadZond()
 				h.PrevRandao = random
 				h.Timestamp = 1
 				return h
@@ -321,18 +321,18 @@ func Test_ProcessPayload(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappedPayload, err := consensusblocks.WrappedExecutionPayloadCapella(tt.payload, 0)
+			wrappedPayload, err := consensusblocks.WrappedExecutionPayloadZond(tt.payload, 0)
 			require.NoError(t, err)
 			st, err := blocks.ProcessPayload(st, wrappedPayload)
 			if err != nil {
 				require.Equal(t, tt.err.Error(), err.Error())
 			} else {
 				require.Equal(t, tt.err, err)
-				want, err := consensusblocks.PayloadToHeaderCapella(wrappedPayload)
+				want, err := consensusblocks.PayloadToHeaderZond(wrappedPayload)
 				require.Equal(t, tt.err, err)
 				h, err := st.LatestExecutionPayloadHeader()
 				require.NoError(t, err)
-				got, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderCapella)
+				got, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderZond)
 				require.Equal(t, true, ok)
 				require.DeepSSZEqual(t, want, got)
 			}
@@ -340,28 +340,28 @@ func Test_ProcessPayload(t *testing.T) {
 	}
 }
 
-func Test_ProcessPayloadCapella(t *testing.T) {
-	st, _ := util.DeterministicGenesisStateCapella(t, 1)
-	header, err := emptyPayloadHeaderCapella()
+func Test_ProcessPayloadZond(t *testing.T) {
+	st, _ := util.DeterministicGenesisStateZond(t, 1)
+	header, err := emptyPayloadHeaderZond()
 	require.NoError(t, err)
 	require.NoError(t, st.SetLatestExecutionPayloadHeader(header))
-	payload := emptyPayloadCapella()
+	payload := emptyPayloadZond()
 	random, err := helpers.RandaoMix(st, time.CurrentEpoch(st))
 	require.NoError(t, err)
 	payload.PrevRandao = random
-	wrapped, err := consensusblocks.WrappedExecutionPayloadCapella(payload, 0)
+	wrapped, err := consensusblocks.WrappedExecutionPayloadZond(payload, 0)
 	require.NoError(t, err)
 	_, err = blocks.ProcessPayload(st, wrapped)
 	require.NoError(t, err)
 }
 
 func Test_ProcessPayloadHeader(t *testing.T) {
-	st, _ := util.DeterministicGenesisStateCapella(t, 1)
+	st, _ := util.DeterministicGenesisStateZond(t, 1)
 	random, err := helpers.RandaoMix(st, time.CurrentEpoch(st))
 	require.NoError(t, err)
 	ts, err := slots.ToTime(st.GenesisTime(), st.Slot())
 	require.NoError(t, err)
-	wrappedHeader, err := consensusblocks.WrappedExecutionPayloadHeaderCapella(&enginev1.ExecutionPayloadHeaderCapella{BlockHash: []byte{'a'}}, 0)
+	wrappedHeader, err := consensusblocks.WrappedExecutionPayloadHeaderZond(&enginev1.ExecutionPayloadHeaderZond{BlockHash: []byte{'a'}}, 0)
 	require.NoError(t, err)
 	require.NoError(t, st.SetLatestExecutionPayloadHeader(wrappedHeader))
 	wdRoot, err := hex.DecodeString("792930bbd5baac43bcc798ee49aa8185ef76bb3b44ba62b91d86ae569e4bb535")
@@ -374,9 +374,9 @@ func Test_ProcessPayloadHeader(t *testing.T) {
 		{
 			name: "process passes",
 			header: func() interfaces.ExecutionData {
-				h, err := emptyPayloadHeaderCapella()
+				h, err := emptyPayloadHeaderZond()
 				require.NoError(t, err)
-				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderCapella)
+				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderZond)
 				require.Equal(t, true, ok)
 				p.ParentHash = []byte{'a'}
 				p.PrevRandao = random
@@ -388,9 +388,9 @@ func Test_ProcessPayloadHeader(t *testing.T) {
 		{
 			name: "incorrect prev randao",
 			header: func() interfaces.ExecutionData {
-				h, err := emptyPayloadHeaderCapella()
+				h, err := emptyPayloadHeaderZond()
 				require.NoError(t, err)
-				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderCapella)
+				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderZond)
 				require.Equal(t, true, ok)
 				p.WithdrawalsRoot = wdRoot
 				return h
@@ -400,9 +400,9 @@ func Test_ProcessPayloadHeader(t *testing.T) {
 		{
 			name: "incorrect timestamp",
 			header: func() interfaces.ExecutionData {
-				h, err := emptyPayloadHeaderCapella()
+				h, err := emptyPayloadHeaderZond()
 				require.NoError(t, err)
-				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderCapella)
+				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderZond)
 				require.Equal(t, true, ok)
 				p.PrevRandao = random
 				p.Timestamp = 1
@@ -419,11 +419,11 @@ func Test_ProcessPayloadHeader(t *testing.T) {
 				require.Equal(t, tt.err.Error(), err.Error())
 			} else {
 				require.Equal(t, tt.err, err)
-				want, ok := tt.header.Proto().(*enginev1.ExecutionPayloadHeaderCapella)
+				want, ok := tt.header.Proto().(*enginev1.ExecutionPayloadHeaderZond)
 				require.Equal(t, true, ok)
 				h, err := st.LatestExecutionPayloadHeader()
 				require.NoError(t, err)
-				got, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderCapella)
+				got, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderZond)
 				require.Equal(t, true, ok)
 				require.DeepSSZEqual(t, want, got)
 			}
@@ -432,7 +432,7 @@ func Test_ProcessPayloadHeader(t *testing.T) {
 }
 
 func Test_ValidatePayloadHeader(t *testing.T) {
-	st, _ := util.DeterministicGenesisStateCapella(t, 1)
+	st, _ := util.DeterministicGenesisStateZond(t, 1)
 	random, err := helpers.RandaoMix(st, time.CurrentEpoch(st))
 	require.NoError(t, err)
 	ts, err := slots.ToTime(st.GenesisTime(), st.Slot())
@@ -445,9 +445,9 @@ func Test_ValidatePayloadHeader(t *testing.T) {
 		{
 			name: "process passes",
 			header: func() interfaces.ExecutionData {
-				h, err := emptyPayloadHeaderCapella()
+				h, err := emptyPayloadHeaderZond()
 				require.NoError(t, err)
-				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderCapella)
+				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderZond)
 				require.Equal(t, true, ok)
 				p.PrevRandao = random
 				p.Timestamp = uint64(ts.Unix())
@@ -457,7 +457,7 @@ func Test_ValidatePayloadHeader(t *testing.T) {
 		{
 			name: "incorrect prev randao",
 			header: func() interfaces.ExecutionData {
-				h, err := emptyPayloadHeaderCapella()
+				h, err := emptyPayloadHeaderZond()
 				require.NoError(t, err)
 				return h
 			}(),
@@ -466,9 +466,9 @@ func Test_ValidatePayloadHeader(t *testing.T) {
 		{
 			name: "incorrect timestamp",
 			header: func() interfaces.ExecutionData {
-				h, err := emptyPayloadHeaderCapella()
+				h, err := emptyPayloadHeaderZond()
 				require.NoError(t, err)
-				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderCapella)
+				p, ok := h.Proto().(*enginev1.ExecutionPayloadHeaderZond)
 				require.Equal(t, true, ok)
 				p.PrevRandao = random
 				p.Timestamp = 1
@@ -486,10 +486,10 @@ func Test_ValidatePayloadHeader(t *testing.T) {
 }
 
 func Test_PayloadToHeader(t *testing.T) {
-	p := emptyPayloadCapella()
-	wrappedPayload, err := consensusblocks.WrappedExecutionPayloadCapella(p, 0)
+	p := emptyPayloadZond()
+	wrappedPayload, err := consensusblocks.WrappedExecutionPayloadZond(p, 0)
 	require.NoError(t, err)
-	h, err := consensusblocks.PayloadToHeaderCapella(wrappedPayload)
+	h, err := consensusblocks.PayloadToHeaderZond(wrappedPayload)
 	require.NoError(t, err)
 	txRoot, err := ssz.TransactionsRoot(p.Transactions)
 	require.NoError(t, err)
@@ -526,8 +526,8 @@ func Test_PayloadToHeader(t *testing.T) {
 	require.Equal(t, h.Timestamp, uint64(0))
 }
 
-func emptyPayloadHeaderCapella() (interfaces.ExecutionData, error) {
-	return consensusblocks.WrappedExecutionPayloadHeaderCapella(&enginev1.ExecutionPayloadHeaderCapella{
+func emptyPayloadHeaderZond() (interfaces.ExecutionData, error) {
+	return consensusblocks.WrappedExecutionPayloadHeaderZond(&enginev1.ExecutionPayloadHeaderZond{
 		ParentHash:       make([]byte, fieldparams.RootLength),
 		FeeRecipient:     make([]byte, fieldparams.FeeRecipientLength),
 		StateRoot:        make([]byte, fieldparams.RootLength),
@@ -542,8 +542,8 @@ func emptyPayloadHeaderCapella() (interfaces.ExecutionData, error) {
 	}, 0)
 }
 
-func emptyPayloadCapella() *enginev1.ExecutionPayloadCapella {
-	return &enginev1.ExecutionPayloadCapella{
+func emptyPayloadZond() *enginev1.ExecutionPayloadZond {
+	return &enginev1.ExecutionPayloadZond{
 		ParentHash:    make([]byte, fieldparams.RootLength),
 		FeeRecipient:  make([]byte, fieldparams.FeeRecipientLength),
 		StateRoot:     make([]byte, fieldparams.RootLength),

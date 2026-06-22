@@ -1,7 +1,7 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "types",
     srcs = [
         "object_mapping.go",
         "rpc_errors.go",
@@ -17,31 +17,31 @@ go_library(
         "//validator/client:__pkg__",
     ],
     deps = [
-        "//config/params:go_default_library",
-        "//consensus-types/blocks:go_default_library",
-        "//consensus-types/interfaces:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//consensus-types/wrapper:go_default_library",
-        "//encoding/bytesutil:go_default_library",
-        "//proto/qrysm/v1alpha1:go_default_library",
-        "//proto/qrysm/v1alpha1/metadata:go_default_library",
-        "@com_github_pkg_errors//:go_default_library",
-        "@com_github_prysmaticlabs_fastssz//:go_default_library",
+        "//config/params",
+        "//consensus-types/blocks",
+        "//consensus-types/interfaces",
+        "//consensus-types/primitives",
+        "//consensus-types/wrapper",
+        "//encoding/bytesutil",
+        "//proto/qrysm/v1alpha1",
+        "//proto/qrysm/v1alpha1/metadata",
+        "@com_github_pkg_errors//:errors",
+        "@com_github_prysmaticlabs_fastssz//:fastssz",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "types_test",
     srcs = [
         "object_mapping_test.go",
         "types_test.go",
     ],
-    embed = [":go_default_library"],
+    embed = [":types"],
     deps = [
-        "//config/params:go_default_library",
-        "//consensus-types/primitives:go_default_library",
-        "//encoding/bytesutil:go_default_library",
-        "//testing/assert:go_default_library",
-        "//testing/require:go_default_library",
+        "//config/params",
+        "//consensus-types/primitives",
+        "//encoding/bytesutil",
+        "//testing/assert",
+        "//testing/require",
     ],
 )

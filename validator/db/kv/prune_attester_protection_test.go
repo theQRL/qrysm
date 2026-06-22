@@ -14,8 +14,8 @@ import (
 )
 
 func TestPruneAttestations_NoPruning(t *testing.T) {
-	pubKey := [field_params.DilithiumPubkeyLength]byte{1}
-	validatorDB := setupDB(t, [][field_params.DilithiumPubkeyLength]byte{pubKey})
+	pubKey := [field_params.MLDSA87PubkeyLength]byte{1}
+	validatorDB := setupDB(t, [][field_params.MLDSA87PubkeyLength]byte{pubKey})
 
 	// Write attesting history for every single epoch
 	// since genesis to a specified number of epochs.
@@ -41,9 +41,9 @@ func TestPruneAttestations_NoPruning(t *testing.T) {
 
 func TestPruneAttestations_OK(t *testing.T) {
 	numKeys := uint64(64)
-	pks := make([][field_params.DilithiumPubkeyLength]byte, 0, numKeys)
-	for i := uint64(0); i < numKeys; i++ {
-		pks = append(pks, bytesutil.ToBytes2592(bytesutil.ToBytes(i, 2592)))
+	pks := make([][field_params.MLDSA87PubkeyLength]byte, 0, numKeys)
+	for i := range numKeys {
+		pks = append(pks, bytesutil.ToBytes2592(bytesutil.ToBytes(i, field_params.MLDSA87PubkeyLength)))
 	}
 	validatorDB := setupDB(t, pks)
 
@@ -90,8 +90,8 @@ func TestPruneAttestations_OK(t *testing.T) {
 
 func BenchmarkPruneAttestations(b *testing.B) {
 	numKeys := uint64(8)
-	pks := make([][field_params.DilithiumPubkeyLength]byte, 0, numKeys)
-	for i := uint64(0); i < numKeys; i++ {
+	pks := make([][field_params.MLDSA87PubkeyLength]byte, 0, numKeys)
+	for i := range numKeys {
 		pks = append(pks, bytesutil.ToBytes2592(bytesutil.ToBytes(i, 2592)))
 	}
 	validatorDB := setupDB(b, pks)
@@ -100,8 +100,7 @@ func BenchmarkPruneAttestations(b *testing.B) {
 	// since genesis to SLASHING_PROTECTION_PRUNING_EPOCHS * 20.
 	numEpochs := params.BeaconConfig().SlashingProtectionPruningEpochs * 20
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		b.StopTimer()
 		for _, pk := range pks {
 			require.NoError(b, setupAttestationsForEveryEpoch(validatorDB, pk, numEpochs))
@@ -114,7 +113,7 @@ func BenchmarkPruneAttestations(b *testing.B) {
 
 // Saves attesting history for every (source, target = source + 1) pairs since genesis
 // up to a given number of epochs for a validator public key.
-func setupAttestationsForEveryEpoch(validatorDB *Store, pubKey [field_params.DilithiumPubkeyLength]byte,
+func setupAttestationsForEveryEpoch(validatorDB *Store, pubKey [field_params.MLDSA87PubkeyLength]byte,
 	numEpochs primitives.Epoch) error {
 	return validatorDB.update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(pubKeysBucket)
@@ -130,7 +129,7 @@ func setupAttestationsForEveryEpoch(validatorDB *Store, pubKey [field_params.Dil
 		if err != nil {
 			return err
 		}
-		for sourceEpoch := primitives.Epoch(0); sourceEpoch < numEpochs; sourceEpoch++ {
+		for sourceEpoch := range numEpochs {
 			targetEpoch := sourceEpoch + 1
 			targetEpochBytes := bytesutil.EpochToBytesBigEndian(targetEpoch)
 			sourceEpochBytes := bytesutil.EpochToBytesBigEndian(sourceEpoch)
@@ -154,7 +153,7 @@ func setupAttestationsForEveryEpoch(validatorDB *Store, pubKey [field_params.Dil
 func checkAttestingHistoryAfterPruning(
 	t testing.TB,
 	validatorDB *Store,
-	pubKey [field_params.DilithiumPubkeyLength]byte,
+	pubKey [field_params.MLDSA87PubkeyLength]byte,
 	startEpoch,
 	numEpochs primitives.Epoch,
 	shouldBePruned bool,

@@ -7,15 +7,15 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
 
-func validAttesterSlashingForValIdx(t *testing.T, beaconState state.BeaconState, privs []dilithium.DilithiumKey, valIdx ...uint64) *zondpb.AttesterSlashing {
-	var slashings []*zondpb.AttesterSlashing
+func validAttesterSlashingForValIdx(t *testing.T, beaconState state.BeaconState, privs []ml_dsa_87.MLDSA87Key, valIdx ...uint64) *qrysmpb.AttesterSlashing {
+	var slashings []*qrysmpb.AttesterSlashing
 	for _, idx := range valIdx {
 		slashing, err := util.GenerateAttesterSlashingForValidator(beaconState, privs[idx], primitives.ValidatorIndex(idx))
 		require.NoError(t, err)
@@ -29,13 +29,13 @@ func validAttesterSlashingForValIdx(t *testing.T, beaconState state.BeaconState,
 		allSigs1 = append(allSigs1, sigs1...)
 		allSigs2 = append(allSigs2, sigs2...)
 	}
-	aggSlashing := &zondpb.AttesterSlashing{
-		Attestation_1: &zondpb.IndexedAttestation{
+	aggSlashing := &qrysmpb.AttesterSlashing{
+		Attestation_1: &qrysmpb.IndexedAttestation{
 			AttestingIndices: valIdx,
 			Data:             slashings[0].Attestation_1.Data,
 			Signatures:       allSigs1,
 		},
-		Attestation_2: &zondpb.IndexedAttestation{
+		Attestation_2: &qrysmpb.IndexedAttestation{
 			AttestingIndices: valIdx,
 			Data:             slashings[0].Attestation_2.Data,
 			Signatures:       allSigs2,
@@ -44,10 +44,10 @@ func validAttesterSlashingForValIdx(t *testing.T, beaconState state.BeaconState,
 	return aggSlashing
 }
 
-func attesterSlashingForValIdx(valIdx ...uint64) *zondpb.AttesterSlashing {
-	return &zondpb.AttesterSlashing{
-		Attestation_1: &zondpb.IndexedAttestation{AttestingIndices: valIdx},
-		Attestation_2: &zondpb.IndexedAttestation{AttestingIndices: valIdx},
+func attesterSlashingForValIdx(valIdx ...uint64) *qrysmpb.AttesterSlashing {
+	return &qrysmpb.AttesterSlashing{
+		Attestation_1: &qrysmpb.IndexedAttestation{AttestingIndices: valIdx},
+		Attestation_2: &qrysmpb.IndexedAttestation{AttestingIndices: valIdx},
 	}
 }
 
@@ -65,13 +65,13 @@ func TestPool_InsertAttesterSlashing(t *testing.T) {
 		wantErr  []bool
 	}
 	type args struct {
-		slashings []*zondpb.AttesterSlashing
+		slashings []*qrysmpb.AttesterSlashing
 	}
 
-	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 64)
+	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 64)
 	pendingSlashings := make([]*PendingAttesterSlashing, 20)
-	slashings := make([]*zondpb.AttesterSlashing, 20)
-	for i := 0; i < len(pendingSlashings); i++ {
+	slashings := make([]*qrysmpb.AttesterSlashing, 20)
+	for i := range pendingSlashings {
 		sl, err := util.GenerateAttesterSlashingForValidator(beaconState, privKeys[i], primitives.ValidatorIndex(i))
 		require.NoError(t, err)
 		pendingSlashings[i] = &PendingAttesterSlashing{
@@ -228,7 +228,7 @@ func TestPool_InsertAttesterSlashing(t *testing.T) {
 				wantErr:  []bool{false, false, false, true},
 			},
 			args: args{
-				slashings: []*zondpb.AttesterSlashing{
+				slashings: []*qrysmpb.AttesterSlashing{
 					aggSlashing1,
 					aggSlashing2,
 					aggSlashing3,
@@ -293,10 +293,10 @@ func TestPool_InsertAttesterSlashing_SigFailsVerify_ClearPool(t *testing.T) {
 	conf := params.BeaconConfig()
 	conf.MaxAttesterSlashings = 2
 	params.OverrideBeaconConfig(conf)
-	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 64)
+	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 64)
 	pendingSlashings := make([]*PendingAttesterSlashing, 2)
-	slashings := make([]*zondpb.AttesterSlashing, 2)
-	for i := 0; i < 2; i++ {
+	slashings := make([]*qrysmpb.AttesterSlashing, 2)
+	for i := range 2 {
 		sl, err := util.GenerateAttesterSlashingForValidator(beaconState, privKeys[i], primitives.ValidatorIndex(i))
 		require.NoError(t, err)
 		pendingSlashings[i] = &PendingAttesterSlashing{
@@ -325,7 +325,7 @@ func TestPool_MarkIncludedAttesterSlashing(t *testing.T) {
 		included map[primitives.ValidatorIndex]bool
 	}
 	type args struct {
-		slashing *zondpb.AttesterSlashing
+		slashing *qrysmpb.AttesterSlashing
 	}
 	tests := []struct {
 		name   string
@@ -447,10 +447,10 @@ func TestPool_PendingAttesterSlashings(t *testing.T) {
 		all     bool
 	}
 	params.SetupTestConfigCleanup(t)
-	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 64)
+	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 64)
 	pendingSlashings := make([]*PendingAttesterSlashing, 20)
-	slashings := make([]*zondpb.AttesterSlashing, 20)
-	for i := 0; i < len(pendingSlashings); i++ {
+	slashings := make([]*qrysmpb.AttesterSlashing, 20)
+	for i := range pendingSlashings {
 		sl, err := util.GenerateAttesterSlashingForValidator(beaconState, privKeys[i], primitives.ValidatorIndex(i))
 		require.NoError(t, err)
 		pendingSlashings[i] = &PendingAttesterSlashing{
@@ -462,14 +462,14 @@ func TestPool_PendingAttesterSlashings(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		want   []*zondpb.AttesterSlashing
+		want   []*qrysmpb.AttesterSlashing
 	}{
 		{
 			name: "Empty list",
 			fields: fields{
 				pending: []*PendingAttesterSlashing{},
 			},
-			want: []*zondpb.AttesterSlashing{},
+			want: []*qrysmpb.AttesterSlashing{},
 		},
 		{
 			name: "All pending",
@@ -513,7 +513,7 @@ func TestPool_PendingAttesterSlashings_Slashed(t *testing.T) {
 	conf := params.BeaconConfig()
 	conf.MaxAttesterSlashings = 2
 	params.OverrideBeaconConfig(conf)
-	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 64)
+	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 64)
 	val, err := beaconState.ValidatorAtIndex(0)
 	require.NoError(t, err)
 	val.Slashed = true
@@ -524,8 +524,8 @@ func TestPool_PendingAttesterSlashings_Slashed(t *testing.T) {
 	require.NoError(t, beaconState.UpdateValidatorAtIndex(5, val))
 	pendingSlashings := make([]*PendingAttesterSlashing, 20)
 	pendingSlashings2 := make([]*PendingAttesterSlashing, 20)
-	slashings := make([]*zondpb.AttesterSlashing, 20)
-	for i := 0; i < len(pendingSlashings); i++ {
+	slashings := make([]*qrysmpb.AttesterSlashing, 20)
+	for i := range pendingSlashings {
 		sl, err := util.GenerateAttesterSlashingForValidator(beaconState, privKeys[i], primitives.ValidatorIndex(i))
 		require.NoError(t, err)
 		pendingSlashings[i] = &PendingAttesterSlashing{
@@ -542,7 +542,7 @@ func TestPool_PendingAttesterSlashings_Slashed(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		want   []*zondpb.AttesterSlashing
+		want   []*qrysmpb.AttesterSlashing
 	}{
 		{
 			name: "One item",
@@ -580,10 +580,10 @@ func TestPool_PendingAttesterSlashings_NoDuplicates(t *testing.T) {
 	conf := params.BeaconConfig()
 	conf.MaxAttesterSlashings = 2
 	params.OverrideBeaconConfig(conf)
-	beaconState, privKeys := util.DeterministicGenesisStateCapella(t, 64)
+	beaconState, privKeys := util.DeterministicGenesisStateZond(t, 64)
 	pendingSlashings := make([]*PendingAttesterSlashing, 3)
-	slashings := make([]*zondpb.AttesterSlashing, 3)
-	for i := 0; i < 2; i++ {
+	slashings := make([]*qrysmpb.AttesterSlashing, 3)
+	for i := range 2 {
 		sl, err := util.GenerateAttesterSlashingForValidator(beaconState, privKeys[i], primitives.ValidatorIndex(i))
 		require.NoError(t, err)
 		pendingSlashings[i] = &PendingAttesterSlashing{

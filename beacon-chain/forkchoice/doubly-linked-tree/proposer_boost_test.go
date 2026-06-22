@@ -28,7 +28,7 @@ func TestForkChoice_BoostProposerRoot_PreventsExAnteAttack(t *testing.T) {
 	jEpoch, fEpoch := primitives.Epoch(0), primitives.Epoch(0)
 	zeroHash := params.BeaconConfig().ZeroHash
 	balances := make([]uint64, 64) // 64 active validators.
-	for i := 0; i < len(balances); i++ {
+	for i := range balances {
 		balances[i] = 10
 	}
 	t.Run("back-propagates boost score to ancestors after proposer boosting", func(t *testing.T) {
@@ -479,28 +479,28 @@ func TestForkChoice_missingProposerBoostRoots(t *testing.T) {
 	ctx := context.Background()
 	f := setup(1, 1)
 	balances := make([]uint64, 64) // 64 active validators.
-	for i := 0; i < len(balances); i++ {
+	for i := range balances {
 		balances[i] = 10
 	}
 	f.justifiedBalances = balances
 	driftGenesisTime(f, 1, 0)
-	st, root, err := prepareForkchoiceState(ctx, 1, [32]byte{'r'}, [32]byte{}, [32]byte{}, 1, 1)
+	st, blk, err := prepareForkchoiceState(ctx, 1, [32]byte{'r'}, [32]byte{}, [32]byte{}, 1, 1)
 	require.NoError(t, err)
-	require.NoError(t, f.InsertNode(ctx, st, root))
+	require.NoError(t, f.InsertNode(ctx, st, blk))
 
 	f.store.previousProposerBoostRoot = [32]byte{'p'}
 	headRoot, err := f.Head(ctx)
 	require.NoError(t, err)
-	require.Equal(t, root, headRoot)
+	require.Equal(t, blk.Root(), headRoot)
 	require.Equal(t, [32]byte{'r'}, f.store.proposerBoostRoot)
 
 	f.store.proposerBoostRoot = [32]byte{'p'}
 	driftGenesisTime(f, 3, 0)
-	st, root, err = prepareForkchoiceState(ctx, 2, [32]byte{'a'}, [32]byte{'r'}, [32]byte{}, 1, 1)
+	st, blk, err = prepareForkchoiceState(ctx, 2, [32]byte{'a'}, [32]byte{'r'}, [32]byte{}, 1, 1)
 	require.NoError(t, err)
-	require.NoError(t, f.InsertNode(ctx, st, root))
+	require.NoError(t, f.InsertNode(ctx, st, blk))
 	headRoot, err = f.Head(ctx)
 	require.NoError(t, err)
-	require.Equal(t, root, headRoot)
+	require.Equal(t, blk.Root(), headRoot)
 	require.Equal(t, [32]byte{'p'}, f.store.proposerBoostRoot)
 }

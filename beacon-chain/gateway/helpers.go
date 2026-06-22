@@ -4,31 +4,30 @@ import (
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/theQRL/qrysm/api/gateway"
 	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
-	zondpbalpha "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
-	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	qrlpbservice "github.com/theQRL/qrysm/proto/qrl/service"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // MuxConfig contains configuration that should be used when registering the beacon node in the gateway.
 type MuxConfig struct {
-	Handler      gateway.MuxHandler
-	ZondPbMux    *gateway.PbMux
-	V1AlphaPbMux *gateway.PbMux
+	QRLPbMux   *gateway.PbMux
+	QrysmPbMux *gateway.PbMux
 }
 
 // DefaultConfig returns a fully configured MuxConfig with standard gateway behavior.
 func DefaultConfig(enableDebugRPCEndpoints bool, httpModules string) MuxConfig {
-	var v1AlphaPbHandler, zondPbHandler *gateway.PbMux
+	var qrysmPbHandler, qrlPbHandler *gateway.PbMux
 	if flags.EnableHTTPQrysmAPI(httpModules) {
-		v1AlphaRegistrations := []gateway.PbHandlerRegistration{
-			zondpbalpha.RegisterNodeHandler,
-			zondpbalpha.RegisterBeaconChainHandler,
-			zondpbalpha.RegisterBeaconNodeValidatorHandler,
+		qrysmRegistrations := []gateway.PbHandlerRegistration{
+			qrysmpb.RegisterNodeHandler,
+			qrysmpb.RegisterBeaconChainHandler,
+			qrysmpb.RegisterBeaconNodeValidatorHandler,
 		}
 		if enableDebugRPCEndpoints {
-			v1AlphaRegistrations = append(v1AlphaRegistrations, zondpbalpha.RegisterDebugHandler)
+			qrysmRegistrations = append(qrysmRegistrations, qrysmpb.RegisterDebugHandler)
 		}
-		v1AlphaMux := gwruntime.NewServeMux(
+		qrysmMux := gwruntime.NewServeMux(
 			gwruntime.WithMarshalerOption(gwruntime.MIMEWildcard, &gwruntime.HTTPBodyMarshaler{
 				Marshaler: &gwruntime.JSONPb{
 					MarshalOptions: protojson.MarshalOptions{
@@ -43,23 +42,23 @@ func DefaultConfig(enableDebugRPCEndpoints bool, httpModules string) MuxConfig {
 				"text/event-stream", &gwruntime.EventSourceJSONPb{},
 			),
 		)
-		v1AlphaPbHandler = &gateway.PbMux{
-			Registrations: v1AlphaRegistrations,
-			Patterns:      []string{"/zond/v1alpha1/", "/zond/v1alpha2/"},
-			Mux:           v1AlphaMux,
+		qrysmPbHandler = &gateway.PbMux{
+			Registrations: qrysmRegistrations,
+			Patterns:      []string{"/qrl/v1alpha1/", "/qrl/v1alpha2/"},
+			Mux:           qrysmMux,
 		}
 	}
-	if flags.EnableHTTPZondAPI(httpModules) {
-		ethRegistrations := []gateway.PbHandlerRegistration{
-			zondpbservice.RegisterBeaconNodeHandler,
-			zondpbservice.RegisterBeaconChainHandler,
-			zondpbservice.RegisterBeaconValidatorHandler,
-			zondpbservice.RegisterEventsHandler,
+	if flags.EnableHTTPQRLAPI(httpModules) {
+		qrlRegistrations := []gateway.PbHandlerRegistration{
+			qrlpbservice.RegisterBeaconNodeHandler,
+			qrlpbservice.RegisterBeaconChainHandler,
+			qrlpbservice.RegisterBeaconValidatorHandler,
+			qrlpbservice.RegisterEventsHandler,
 		}
 		if enableDebugRPCEndpoints {
-			ethRegistrations = append(ethRegistrations, zondpbservice.RegisterBeaconDebugHandler)
+			qrlRegistrations = append(qrlRegistrations, qrlpbservice.RegisterBeaconDebugHandler)
 		}
-		ethMux := gwruntime.NewServeMux(
+		qrlMux := gwruntime.NewServeMux(
 			gwruntime.WithMarshalerOption(gwruntime.MIMEWildcard, &gwruntime.HTTPBodyMarshaler{
 				Marshaler: &gwruntime.JSONPb{
 					MarshalOptions: protojson.MarshalOptions{
@@ -72,15 +71,15 @@ func DefaultConfig(enableDebugRPCEndpoints bool, httpModules string) MuxConfig {
 				},
 			}),
 		)
-		zondPbHandler = &gateway.PbMux{
-			Registrations: ethRegistrations,
-			Patterns:      []string{"/internal/zond/v1/"},
-			Mux:           ethMux,
+		qrlPbHandler = &gateway.PbMux{
+			Registrations: qrlRegistrations,
+			Patterns:      []string{"/internal/qrl/v1/"},
+			Mux:           qrlMux,
 		}
 	}
 
 	return MuxConfig{
-		ZondPbMux:    zondPbHandler,
-		V1AlphaPbMux: v1AlphaPbHandler,
+		QRLPbMux:   qrlPbHandler,
+		QrysmPbMux: qrysmPbHandler,
 	}
 }

@@ -22,15 +22,11 @@ func MinimalSpecConfig() *BeaconChainConfig {
 	minimalConfig.GenesisDelay = 300 // 5 minutes
 	minimalConfig.TargetAggregatorsPerCommittee = 16
 
-	// Gwei values
+	// Shor values
 	minimalConfig.MinDepositAmount = 1e9
 	minimalConfig.MaxEffectiveBalance = 40000e9
 	minimalConfig.EjectionBalance = 20000e9
 	minimalConfig.EffectiveBalanceIncrement = 1e9
-
-	// Initial values
-	minimalConfig.DilithiumWithdrawalPrefixByte = byte(0)   // TODO (cyyber): Change it to 1 & check if we should add XMSSWithdrawalPrefixByte
-	minimalConfig.ZondAddressWithdrawalPrefixByte = byte(1) // TODO (cyyber): Change it to 0
 
 	// Time parameters
 	minimalConfig.SecondsPerSlot = 6
@@ -39,13 +35,13 @@ func MinimalSpecConfig() *BeaconChainConfig {
 	minimalConfig.SqrRootSlotsPerEpoch = 2
 	minimalConfig.MinSeedLookahead = 1
 	minimalConfig.MaxSeedLookahead = 4
-	minimalConfig.EpochsPerEth1VotingPeriod = 4
+	minimalConfig.EpochsPerExecutionVotingPeriod = 4
 	minimalConfig.SlotsPerHistoricalRoot = 64
 	minimalConfig.MinValidatorWithdrawabilityDelay = 256
 	minimalConfig.ShardCommitteePeriod = 64
 	minimalConfig.MinEpochsToInactivityPenalty = 4
-	minimalConfig.Eth1FollowDistance = 16
-	minimalConfig.SecondsPerETH1Block = 60
+	minimalConfig.ExecutionFollowDistance = 16
+	minimalConfig.SecondsPerExecutionBlock = 60
 
 	// State vector lengths
 	minimalConfig.EpochsPerHistoricalVector = 64
@@ -83,10 +79,10 @@ func MinimalSpecConfig() *BeaconChainConfig {
 	minimalConfig.InactivityScoreBias = 4
 	minimalConfig.EpochsPerSyncCommitteePeriod = 8
 
-	// Zond execution layer parameters.
+	// QRL execution layer parameters.
 	minimalConfig.DepositChainID = 5
 	minimalConfig.DepositNetworkID = 5
-	minimalConfig.DepositContractAddress = "Z1234567890123456789012345678901234567890"
+	minimalConfig.DepositContractAddress = "Q12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678"
 
 	minimalConfig.ConfigName = MinimalName
 	minimalConfig.PresetBase = "minimal"

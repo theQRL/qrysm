@@ -70,7 +70,7 @@ func TestService_CanSubscribe(t *testing.T) {
 		},
 		{
 			name:  "topic not in gossip mapping",
-			topic: fmt.Sprintf("/eth2/%x/foobar", digest) + validProtocolSuffix,
+			topic: fmt.Sprintf("/consensus/%x/foobar", digest) + validProtocolSuffix,
 			want:  false,
 		},
 		{
@@ -87,7 +87,7 @@ func TestService_CanSubscribe(t *testing.T) {
 
 	// Ensure all gossip topic mappings pass validation.
 	for _, topic := range AllTopics() {
-		formatting := []interface{}{digest}
+		formatting := []any{digest}
 
 		// Special case for attestation subnets which have a second formatting placeholder.
 		if topic == AttestationSubnetTopicFormat || topic == SyncCommitteeSubnetTopicFormat {

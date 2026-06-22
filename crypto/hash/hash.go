@@ -19,7 +19,7 @@ import (
 // or has nil objects within lists.
 var ErrNilProto = errors.New("cannot hash a nil protobuf message")
 
-var sha256Pool = sync.Pool{New: func() interface{} {
+var sha256Pool = sync.Pool{New: func() any {
 	return sha256.New()
 }}
 
@@ -75,13 +75,13 @@ func CustomSHA256Hasher() func([]byte) [32]byte {
 	}
 }
 
-var keccak256Pool = sync.Pool{New: func() interface{} {
+var keccak256Pool = sync.Pool{New: func() any {
 	return sha3.NewLegacyKeccak256()
 }}
 
-// HashKeccak256 defines a function which returns the Keccak-256/SHA3
+// Keccak256 defines a function which returns the Keccak-256/SHA3
 // hash of the data passed in.
-func HashKeccak256(data []byte) [32]byte {
+func Keccak256(data []byte) [32]byte {
 	var b [32]byte
 
 	h, ok := keccak256Pool.Get().(hash.Hash)
@@ -102,8 +102,8 @@ func HashKeccak256(data []byte) [32]byte {
 	return b
 }
 
-// HashProto hashes a protocol buffer message using sha256.
-func HashProto(msg proto.Message) (result [32]byte, err error) {
+// Proto hashes a protocol buffer message using sha256.
+func Proto(msg proto.Message) (result [32]byte, err error) {
 	if msg == nil || reflect.ValueOf(msg).IsNil() {
 		return [32]byte{}, ErrNilProto
 	}

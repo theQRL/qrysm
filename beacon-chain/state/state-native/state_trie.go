@@ -3,7 +3,7 @@ package state_native
 import (
 	"context"
 	"runtime"
-	"sort"
+	"slices"
 
 	"github.com/pkg/errors"
 	"github.com/theQRL/qrysm/beacon-chain/state"
@@ -17,13 +17,13 @@ import (
 	"github.com/theQRL/qrysm/container/slice"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"github.com/theQRL/qrysm/encoding/ssz"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/runtime/version"
 	"go.opencensus.io/trace"
 	"google.golang.org/protobuf/proto"
 )
 
-var capellaFields = []types.FieldIndex{
+var zondFields = []types.FieldIndex{
 	types.GenesisTime,
 	types.GenesisValidatorsRoot,
 	types.Slot,
@@ -32,9 +32,9 @@ var capellaFields = []types.FieldIndex{
 	types.BlockRoots,
 	types.StateRoots,
 	types.HistoricalRoots,
-	types.Eth1Data,
-	types.Eth1DataVotes,
-	types.Eth1DepositIndex,
+	types.ExecutionData,
+	types.ExecutionDataVotes,
+	types.ExecutionDepositIndex,
 	types.Validators,
 	types.Balances,
 	types.RandaoMixes,
@@ -48,25 +48,25 @@ var capellaFields = []types.FieldIndex{
 	types.InactivityScores,
 	types.CurrentSyncCommittee,
 	types.NextSyncCommittee,
-	types.LatestExecutionPayloadHeaderCapella,
+	types.LatestExecutionPayloadHeaderZond,
 	types.NextWithdrawalIndex,
 	types.NextWithdrawalValidatorIndex,
 	types.HistoricalSummaries,
 }
 
 const (
-	capellaSharedFieldRefCount                  = 14
-	experimentalStateCapellaSharedFieldRefCount = 8
+	zondSharedFieldRefCount                  = 14
+	experimentalStateZondSharedFieldRefCount = 8
 )
 
-// InitializeFromProtoCapella the beacon state from a protobuf representation.
-func InitializeFromProtoCapella(st *zondpb.BeaconStateCapella) (state.BeaconState, error) {
-	return InitializeFromProtoUnsafeCapella(proto.Clone(st).(*zondpb.BeaconStateCapella))
+// InitializeFromProtoZond the beacon state from a protobuf representation.
+func InitializeFromProtoZond(st *qrysmpb.BeaconStateZond) (state.BeaconState, error) {
+	return InitializeFromProtoUnsafeZond(proto.Clone(st).(*qrysmpb.BeaconStateZond))
 }
 
-// InitializeFromProtoUnsafeCapella directly uses the beacon state protobuf fields
+// InitializeFromProtoUnsafeZond directly uses the beacon state protobuf fields
 // and sets them as fields of the BeaconState type.
-func InitializeFromProtoUnsafeCapella(st *zondpb.BeaconStateCapella) (state.BeaconState, error) {
+func InitializeFromProtoUnsafeZond(st *qrysmpb.BeaconStateZond) (state.BeaconState, error) {
 	if st == nil {
 		return nil, errors.New("received nil state")
 	}
@@ -76,31 +76,31 @@ func InitializeFromProtoUnsafeCapella(st *zondpb.BeaconStateCapella) (state.Beac
 		hRoots[i] = bytesutil.ToBytes32(r)
 	}
 
-	fieldCount := params.BeaconConfig().BeaconStateCapellaFieldCount
+	fieldCount := params.BeaconConfig().BeaconStateZondFieldCount
 	b := &BeaconState{
-		version:                             version.Capella,
-		genesisTime:                         st.GenesisTime,
-		genesisValidatorsRoot:               bytesutil.ToBytes32(st.GenesisValidatorsRoot),
-		slot:                                st.Slot,
-		fork:                                st.Fork,
-		latestBlockHeader:                   st.LatestBlockHeader,
-		historicalRoots:                     hRoots,
-		eth1Data:                            st.Eth1Data,
-		eth1DataVotes:                       st.Eth1DataVotes,
-		eth1DepositIndex:                    st.Eth1DepositIndex,
-		slashings:                           st.Slashings,
-		previousEpochParticipation:          st.PreviousEpochParticipation,
-		currentEpochParticipation:           st.CurrentEpochParticipation,
-		justificationBits:                   st.JustificationBits,
-		previousJustifiedCheckpoint:         st.PreviousJustifiedCheckpoint,
-		currentJustifiedCheckpoint:          st.CurrentJustifiedCheckpoint,
-		finalizedCheckpoint:                 st.FinalizedCheckpoint,
-		currentSyncCommittee:                st.CurrentSyncCommittee,
-		nextSyncCommittee:                   st.NextSyncCommittee,
-		latestExecutionPayloadHeaderCapella: st.LatestExecutionPayloadHeader,
-		nextWithdrawalIndex:                 st.NextWithdrawalIndex,
-		nextWithdrawalValidatorIndex:        st.NextWithdrawalValidatorIndex,
-		historicalSummaries:                 st.HistoricalSummaries,
+		version:                          version.Zond,
+		genesisTime:                      st.GenesisTime,
+		genesisValidatorsRoot:            bytesutil.ToBytes32(st.GenesisValidatorsRoot),
+		slot:                             st.Slot,
+		fork:                             st.Fork,
+		latestBlockHeader:                st.LatestBlockHeader,
+		historicalRoots:                  hRoots,
+		executionData:                    st.ExecutionData,
+		executionDataVotes:               st.ExecutionDataVotes,
+		executionDepositIndex:            st.ExecutionDepositIndex,
+		slashings:                        st.Slashings,
+		previousEpochParticipation:       st.PreviousEpochParticipation,
+		currentEpochParticipation:        st.CurrentEpochParticipation,
+		justificationBits:                st.JustificationBits,
+		previousJustifiedCheckpoint:      st.PreviousJustifiedCheckpoint,
+		currentJustifiedCheckpoint:       st.CurrentJustifiedCheckpoint,
+		finalizedCheckpoint:              st.FinalizedCheckpoint,
+		currentSyncCommittee:             st.CurrentSyncCommittee,
+		nextSyncCommittee:                st.NextSyncCommittee,
+		latestExecutionPayloadHeaderZond: st.LatestExecutionPayloadHeader,
+		nextWithdrawalIndex:              st.NextWithdrawalIndex,
+		nextWithdrawalValidatorIndex:     st.NextWithdrawalValidatorIndex,
+		historicalSummaries:              st.HistoricalSummaries,
 
 		id: types.Enumerator.Inc(),
 
@@ -118,7 +118,7 @@ func InitializeFromProtoUnsafeCapella(st *zondpb.BeaconStateCapella) (state.Beac
 		b.balancesMultiValue = NewMultiValueBalances(st.Balances)
 		b.validatorsMultiValue = NewMultiValueValidators(st.Validators)
 		b.inactivityScoresMultiValue = NewMultiValueInactivityScores(st.InactivityScores)
-		b.sharedFieldReferences = make(map[types.FieldIndex]*stateutil.Reference, experimentalStateCapellaSharedFieldRefCount)
+		b.sharedFieldReferences = make(map[types.FieldIndex]*stateutil.Reference, experimentalStateZondSharedFieldRefCount)
 	} else {
 		bRoots := make([][32]byte, fieldparams.BlockRootsLength)
 		for i, r := range st.BlockRoots {
@@ -142,10 +142,10 @@ func InitializeFromProtoUnsafeCapella(st *zondpb.BeaconStateCapella) (state.Beac
 		b.validators = st.Validators
 		b.inactivityScores = st.InactivityScores
 
-		b.sharedFieldReferences = make(map[types.FieldIndex]*stateutil.Reference, capellaSharedFieldRefCount)
+		b.sharedFieldReferences = make(map[types.FieldIndex]*stateutil.Reference, zondSharedFieldRefCount)
 	}
 
-	for _, f := range capellaFields {
+	for _, f := range zondFields {
 		b.dirtyFields[f] = true
 		b.rebuildTrie[f] = true
 		b.dirtyIndices[f] = []uint64{}
@@ -158,12 +158,12 @@ func InitializeFromProtoUnsafeCapella(st *zondpb.BeaconStateCapella) (state.Beac
 
 	// Initialize field reference tracking for shared data.
 	b.sharedFieldReferences[types.HistoricalRoots] = stateutil.NewRef(1)
-	b.sharedFieldReferences[types.Eth1DataVotes] = stateutil.NewRef(1)
+	b.sharedFieldReferences[types.ExecutionDataVotes] = stateutil.NewRef(1)
 	b.sharedFieldReferences[types.Slashings] = stateutil.NewRef(1)
 	b.sharedFieldReferences[types.PreviousEpochParticipationBits] = stateutil.NewRef(1)
 	b.sharedFieldReferences[types.CurrentEpochParticipationBits] = stateutil.NewRef(1)
-	b.sharedFieldReferences[types.LatestExecutionPayloadHeaderCapella] = stateutil.NewRef(1) // New in Capella.
-	b.sharedFieldReferences[types.HistoricalSummaries] = stateutil.NewRef(1)                 // New in Capella.
+	b.sharedFieldReferences[types.LatestExecutionPayloadHeaderZond] = stateutil.NewRef(1) // New in Zond.
+	b.sharedFieldReferences[types.HistoricalSummaries] = stateutil.NewRef(1)              // New in Zond.
 	if !features.Get().EnableExperimentalState {
 		b.sharedFieldReferences[types.BlockRoots] = stateutil.NewRef(1)
 		b.sharedFieldReferences[types.StateRoots] = stateutil.NewRef(1)
@@ -186,8 +186,8 @@ func (b *BeaconState) Copy() state.BeaconState {
 
 	var fieldCount int
 	switch b.version {
-	case version.Capella:
-		fieldCount = params.BeaconConfig().BeaconStateCapellaFieldCount
+	case version.Zond:
+		fieldCount = params.BeaconConfig().BeaconStateZondFieldCount
 	}
 
 	dst := &BeaconState{
@@ -196,7 +196,7 @@ func (b *BeaconState) Copy() state.BeaconState {
 		// Primitive types, safe to copy.
 		genesisTime:                  b.genesisTime,
 		slot:                         b.slot,
-		eth1DepositIndex:             b.eth1DepositIndex,
+		executionDepositIndex:        b.executionDepositIndex,
 		nextWithdrawalIndex:          b.nextWithdrawalIndex,
 		nextWithdrawalValidatorIndex: b.nextWithdrawalValidatorIndex,
 
@@ -207,7 +207,7 @@ func (b *BeaconState) Copy() state.BeaconState {
 		stateRootsMultiValue:  b.stateRootsMultiValue,
 		randaoMixes:           b.randaoMixes,
 		randaoMixesMultiValue: b.randaoMixesMultiValue,
-		eth1DataVotes:         b.eth1DataVotes,
+		executionDataVotes:    b.executionDataVotes,
 		slashings:             b.slashings,
 
 		// Large arrays, increases over time.
@@ -223,17 +223,17 @@ func (b *BeaconState) Copy() state.BeaconState {
 		inactivityScoresMultiValue: b.inactivityScoresMultiValue,
 
 		// Everything else, too small to be concerned about, constant size.
-		genesisValidatorsRoot:               b.genesisValidatorsRoot,
-		justificationBits:                   b.justificationBitsVal(),
-		fork:                                b.forkVal(),
-		latestBlockHeader:                   b.latestBlockHeaderVal(),
-		eth1Data:                            b.eth1DataVal(),
-		previousJustifiedCheckpoint:         b.previousJustifiedCheckpointVal(),
-		currentJustifiedCheckpoint:          b.currentJustifiedCheckpointVal(),
-		finalizedCheckpoint:                 b.finalizedCheckpointVal(),
-		currentSyncCommittee:                b.currentSyncCommitteeVal(),
-		nextSyncCommittee:                   b.nextSyncCommitteeVal(),
-		latestExecutionPayloadHeaderCapella: b.latestExecutionPayloadHeaderCapellaVal(),
+		genesisValidatorsRoot:            b.genesisValidatorsRoot,
+		justificationBits:                b.justificationBitsVal(),
+		fork:                             b.forkVal(),
+		latestBlockHeader:                b.latestBlockHeaderVal(),
+		executionData:                    b.executionDataVal(),
+		previousJustifiedCheckpoint:      b.previousJustifiedCheckpointVal(),
+		currentJustifiedCheckpoint:       b.currentJustifiedCheckpointVal(),
+		finalizedCheckpoint:              b.finalizedCheckpointVal(),
+		currentSyncCommittee:             b.currentSyncCommitteeVal(),
+		nextSyncCommittee:                b.nextSyncCommitteeVal(),
+		latestExecutionPayloadHeaderZond: b.latestExecutionPayloadHeaderZondVal(),
 
 		id: types.Enumerator.Inc(),
 
@@ -257,13 +257,13 @@ func (b *BeaconState) Copy() state.BeaconState {
 
 	if features.Get().EnableExperimentalState {
 		switch b.version {
-		case version.Capella:
-			dst.sharedFieldReferences = make(map[types.FieldIndex]*stateutil.Reference, experimentalStateCapellaSharedFieldRefCount)
+		case version.Zond:
+			dst.sharedFieldReferences = make(map[types.FieldIndex]*stateutil.Reference, experimentalStateZondSharedFieldRefCount)
 		}
 	} else {
 		switch b.version {
-		case version.Capella:
-			dst.sharedFieldReferences = make(map[types.FieldIndex]*stateutil.Reference, capellaSharedFieldRefCount)
+		case version.Zond:
+			dst.sharedFieldReferences = make(map[types.FieldIndex]*stateutil.Reference, zondSharedFieldRefCount)
 		}
 	}
 
@@ -346,8 +346,8 @@ func (b *BeaconState) initializeMerkleLayers(ctx context.Context) error {
 	layers := stateutil.Merkleize(fieldRoots)
 	b.merkleLayers = layers
 	switch b.version {
-	case version.Capella:
-		b.dirtyFields = make(map[types.FieldIndex]bool, params.BeaconConfig().BeaconStateCapellaFieldCount)
+	case version.Zond:
+		b.dirtyFields = make(map[types.FieldIndex]bool, params.BeaconConfig().BeaconStateZondFieldCount)
 	}
 
 	return nil
@@ -408,8 +408,8 @@ func (b *BeaconState) rootSelector(ctx context.Context, field types.FieldIndex) 
 		return b.genesisValidatorsRoot, nil
 	case types.Slot:
 		return ssz.Uint64Root(uint64(b.slot)), nil
-	case types.Eth1DepositIndex:
-		return ssz.Uint64Root(b.eth1DepositIndex), nil
+	case types.ExecutionDepositIndex:
+		return ssz.Uint64Root(b.executionDepositIndex), nil
 	case types.Fork:
 		return ssz.ForkRoot(b.fork)
 	case types.LatestBlockHeader:
@@ -424,14 +424,14 @@ func (b *BeaconState) rootSelector(ctx context.Context, field types.FieldIndex) 
 			hRoots[i] = b.historicalRoots[i][:]
 		}
 		return ssz.ByteArrayRootWithLimit(hRoots, fieldparams.HistoricalRootsLength)
-	case types.Eth1Data:
-		return stateutil.Eth1Root(b.eth1Data)
-	case types.Eth1DataVotes:
+	case types.ExecutionData:
+		return stateutil.ExecutionRoot(b.executionData)
+	case types.ExecutionDataVotes:
 		if b.rebuildTrie[field] {
 			err := b.resetFieldTrie(
 				field,
-				b.eth1DataVotes,
-				params.BeaconConfig().Eth1DataVotesLength(),
+				b.executionDataVotes,
+				params.BeaconConfig().ExecutionDataVotesLength(),
 			)
 			if err != nil {
 				return [32]byte{}, err
@@ -439,7 +439,7 @@ func (b *BeaconState) rootSelector(ctx context.Context, field types.FieldIndex) 
 			delete(b.rebuildTrie, field)
 			return b.stateFieldLeaves[field].TrieRoot()
 		}
-		return b.recomputeFieldTrie(field, b.eth1DataVotes)
+		return b.recomputeFieldTrie(field, b.executionDataVotes)
 	case types.Validators:
 		return b.validatorsRootSelector(field)
 	case types.Balances:
@@ -470,8 +470,8 @@ func (b *BeaconState) rootSelector(ctx context.Context, field types.FieldIndex) 
 		return stateutil.SyncCommitteeRoot(b.currentSyncCommittee)
 	case types.NextSyncCommittee:
 		return stateutil.SyncCommitteeRoot(b.nextSyncCommittee)
-	case types.LatestExecutionPayloadHeaderCapella:
-		return b.latestExecutionPayloadHeaderCapella.HashTreeRoot()
+	case types.LatestExecutionPayloadHeaderZond:
+		return b.latestExecutionPayloadHeaderZond.HashTreeRoot()
 	case types.NextWithdrawalIndex:
 		return ssz.Uint64Root(b.nextWithdrawalIndex), nil
 	case types.NextWithdrawalValidatorIndex:
@@ -502,7 +502,7 @@ func (b *BeaconState) CopyAllTries() {
 	}
 }
 
-func (b *BeaconState) recomputeFieldTrie(index types.FieldIndex, elements interface{}) ([32]byte, error) {
+func (b *BeaconState) recomputeFieldTrie(index types.FieldIndex, elements any) ([32]byte, error) {
 	fTrie := b.stateFieldLeaves[index]
 	fTrieMutex := fTrie.RWMutex
 	// We can't lock the trie directly because the trie's variable gets reassigned,
@@ -522,8 +522,15 @@ func (b *BeaconState) recomputeFieldTrie(index types.FieldIndex, elements interf
 	}
 
 	if fTrie.FieldReference().Refs() > 1 {
+		var newTrie *fieldtrie.FieldTrie
+		// We copy (not transfer) the validators trie because regenerating it
+		// in the event of late blocks is expensive on mainnet-sized state.
+		if index == types.Validators {
+			newTrie = fTrie.CopyTrie()
+		} else {
+			newTrie = fTrie.TransferTrie()
+		}
 		fTrie.FieldReference().MinusRef()
-		newTrie := fTrie.TransferTrie()
 		b.stateFieldLeaves[index] = newTrie
 		fTrie = newTrie
 	}
@@ -532,9 +539,7 @@ func (b *BeaconState) recomputeFieldTrie(index types.FieldIndex, elements interf
 	// remove duplicate indexes
 	b.dirtyIndices[index] = slice.SetUint64(b.dirtyIndices[index])
 	// sort indexes again
-	sort.Slice(b.dirtyIndices[index], func(i int, j int) bool {
-		return b.dirtyIndices[index][i] < b.dirtyIndices[index][j]
-	})
+	slices.Sort(b.dirtyIndices[index])
 	root, err := fTrie.RecomputeTrie(b.dirtyIndices[index], elements)
 	if err != nil {
 		return [32]byte{}, err
@@ -543,7 +548,7 @@ func (b *BeaconState) recomputeFieldTrie(index types.FieldIndex, elements interf
 	return root, nil
 }
 
-func (b *BeaconState) resetFieldTrie(index types.FieldIndex, elements interface{}, length uint64) error {
+func (b *BeaconState) resetFieldTrie(index types.FieldIndex, elements any, length uint64) error {
 	fTrie, err := fieldtrie.NewFieldTrie(index, fieldMap[index], elements, length)
 	if err != nil {
 		return err

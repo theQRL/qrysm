@@ -8,8 +8,7 @@ import (
 	"github.com/pkg/errors"
 	ssz "github.com/prysmaticlabs/fastssz"
 	"github.com/theQRL/qrysm/beacon-chain/p2p"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
-	"google.golang.org/protobuf/proto"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
 var errNilPubsubMessage = errors.New("nil pubsub message")
@@ -32,18 +31,20 @@ func (s *Service) decodePubsubMessage(msg *pubsub.Message) (ssz.Unmarshaler, err
 	// Specially handle subnet messages.
 	switch {
 	case strings.Contains(topic, p2p.GossipAttestationMessage):
-		topic = p2p.GossipTypeMapping[reflect.TypeOf(&zondpb.Attestation{})]
+		topic = p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.Attestation]()]
 		// Given that both sync message related subnets have the same message name, we have to
 		// differentiate them below.
 	case strings.Contains(topic, p2p.GossipSyncCommitteeMessage) && !strings.Contains(topic, p2p.SyncContributionAndProofSubnetTopicFormat):
-		topic = p2p.GossipTypeMapping[reflect.TypeOf(&zondpb.SyncCommitteeMessage{})]
+		topic = p2p.GossipTypeMapping[reflect.TypeFor[*qrysmpb.SyncCommitteeMessage]()]
 	}
 
 	base := p2p.GossipTopicMappings(topic)
 	if base == nil {
 		return nil, p2p.ErrMessageNotMapped
 	}
-	m, ok := proto.Clone(base).(ssz.Unmarshaler)
+	// GossipTopicMappings already returns a freshly-allocated empty message,
+	// so there is no need to proto.Clone it on every received gossip message.
+	m, ok := base.(ssz.Unmarshaler)
 	if !ok {
 		return nil, errors.Errorf("message of %T does not support marshaller interface", base)
 	}

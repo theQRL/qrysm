@@ -10,8 +10,8 @@ import (
 	pubsubpb "github.com/libp2p/go-libp2p-pubsub/pb"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/pkg/errors"
+	"github.com/theQRL/qrysm/beacon-chain/p2p/encoder"
 	"github.com/theQRL/qrysm/cmd/beacon-chain/flags"
-	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	pbrpc "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
@@ -43,7 +43,7 @@ var errInvalidTopic = errors.New("invalid topic format")
 const digestLength = 4
 
 // Specifies the prefix for any pubsub topic.
-const gossipTopicPrefix = "/eth2/"
+const gossipTopicPrefix = "/consensus/"
 
 // JoinTopic will join PubSub topic, if not already joined.
 func (s *Service) JoinTopic(topic string, opts ...pubsub.TopicOpt) (*pubsub.Topic, error) {
@@ -140,7 +140,10 @@ func (s *Service) pubsubOptions() []pubsub.Option {
 		}),
 		pubsub.WithSubscriptionFilter(s),
 		pubsub.WithPeerOutboundQueueSize(pubsubQueueSize),
-		pubsub.WithMaxMessageSize(int(params.BeaconNetworkConfig().GossipMaxSize)),
+		// gossipsub WithMaxMessageSize inspects compressed wire bytes; pass the
+		// worst-case snappy-encoded bound for a payload of GossipMaxSize so we
+		// don't drop legitimate (incompressible) messages at the wire layer.
+		pubsub.WithMaxMessageSize(encoder.MaxGossipCompressedSize),
 		pubsub.WithValidateQueueSize(pubsubQueueSize),
 		pubsub.WithPeerScore(peerScoringParams()),
 		pubsub.WithPeerScoreInspect(s.peerInspector, time.Minute),
@@ -155,6 +158,7 @@ func pubsubGossipParam() pubsub.GossipSubParams {
 	gParams := pubsub.DefaultGossipSubParams()
 	gParams.Dlo = gossipSubDlo
 	gParams.D = gossipSubD
+	gParams.Dhi = gossipSubDhi
 	gParams.HeartbeatInterval = gossipSubHeartbeatInterval
 	gParams.HistoryLength = gossipSubMcacheLen
 	gParams.HistoryGossip = gossipSubMcacheGossip
@@ -183,7 +187,7 @@ func convertTopicScores(topicMap map[string]*pubsub.TopicScoreSnapshot) map[stri
 }
 
 // ExtractGossipDigest extracts the relevant fork digest from the gossip topic.
-// Topics are in the form of /eth2/{fork-digest}/{topic} and this method extracts the
+// Topics are in the form of /consensus/{fork-digest}/{topic} and this method extracts the
 // fork digest from the topic string to a 4 byte array.
 func ExtractGossipDigest(topic string) ([4]byte, error) {
 	// Ensure the topic prefix is correct.

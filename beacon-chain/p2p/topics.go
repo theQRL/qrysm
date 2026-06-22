@@ -2,7 +2,7 @@ package p2p
 
 const (
 	// GossipProtocolAndDigest represents the protocol and fork digest prefix in a gossip topic.
-	GossipProtocolAndDigest = "/eth2/%x/"
+	GossipProtocolAndDigest = "/consensus/%x/"
 
 	// Message Types
 	//
@@ -26,8 +26,6 @@ const (
 	GossipAggregateAndProofMessage = "beacon_aggregate_and_proof"
 	// GossipContributionAndProofMessage is the name for the sync contribution and proof message type.
 	GossipContributionAndProofMessage = "sync_committee_contribution_and_proof"
-	// GossipDilithiumToExecutionChangeMessage is the name for the dilithium to execution change message type.
-	GossipDilithiumToExecutionChangeMessage = "dilithium_to_execution_change"
 	// Topic Formats
 	//
 	// AttestationSubnetTopicFormat is the topic format for the attestation subnet.
@@ -46,6 +44,4 @@ const (
 	AggregateAndProofSubnetTopicFormat = GossipProtocolAndDigest + GossipAggregateAndProofMessage
 	// SyncContributionAndProofSubnetTopicFormat is the topic format for the sync aggregate and proof subnet.
 	SyncContributionAndProofSubnetTopicFormat = GossipProtocolAndDigest + GossipContributionAndProofMessage
-	// DilithiumToExecutionChangeSubnetTopicFormat is the topic format for the dilithium to execution change subnet.
-	DilithiumToExecutionChangeSubnetTopicFormat = GossipProtocolAndDigest + GossipDilithiumToExecutionChangeMessage
 )

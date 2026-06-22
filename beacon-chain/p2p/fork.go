@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theQRL/go-zond/p2p/enode"
-	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/network/forks"
 	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
@@ -16,8 +16,8 @@ import (
 	"github.com/theQRL/qrysm/time/slots"
 )
 
-// ENR key used for Zond consensus-related fork data.
-var eth2ENRKey = params.BeaconNetworkConfig().ETH2Key
+// QNR key used for QRL consensus-related fork data.
+var consensusQNRKey = params.BeaconNetworkConfig().ConsensusKey
 
 // ForkDigest returns the current fork digest of
 // the node according to the local clock.
@@ -28,64 +28,64 @@ func (s *Service) currentForkDigest() ([4]byte, error) {
 	return forks.CreateForkDigest(s.genesisTime, s.genesisValidatorsRoot)
 }
 
-// Compares fork ENRs between an incoming peer's record and our node's
+// Compares fork QNRs between an incoming peer's record and our node's
 // local record values for current and next fork version/epoch.
-func (s *Service) compareForkENR(record *enr.Record) error {
+func (s *Service) compareForkQNR(record *qnr.Record) error {
 	currentRecord := s.dv5Listener.LocalNode().Node().Record()
-	peerForkENR, err := forkEntry(record)
+	peerForkQNR, err := forkEntry(record)
 	if err != nil {
 		return err
 	}
-	currentForkENR, err := forkEntry(currentRecord)
+	currentForkQNR, err := forkEntry(currentRecord)
 	if err != nil {
 		return err
 	}
-	enrString, err := SerializeENR(record)
+	qnrString, err := SerializeQNR(record)
 	if err != nil {
 		return err
 	}
 	// Clients SHOULD connect to peers with current_fork_digest, next_fork_version,
 	// and next_fork_epoch that match local values.
-	if !bytes.Equal(peerForkENR.CurrentForkDigest, currentForkENR.CurrentForkDigest) {
+	if !bytes.Equal(peerForkQNR.CurrentForkDigest, currentForkQNR.CurrentForkDigest) {
 		return fmt.Errorf(
-			"fork digest of peer with ENR %s: %v, does not match local value: %v",
-			enrString,
-			peerForkENR.CurrentForkDigest,
-			currentForkENR.CurrentForkDigest,
+			"fork digest of peer with QNR %s: %v, does not match local value: %v",
+			qnrString,
+			peerForkQNR.CurrentForkDigest,
+			currentForkQNR.CurrentForkDigest,
 		)
 	}
 	// Clients MAY connect to peers with the same current_fork_version but a
-	// different next_fork_version/next_fork_epoch. Unless ENRForkID is manually
+	// different next_fork_version/next_fork_epoch. Unless QNRForkID is manually
 	// updated to matching prior to the earlier next_fork_epoch of the two clients,
 	// these type of connecting clients will be unable to successfully interact
 	// starting at the earlier next_fork_epoch.
-	if peerForkENR.NextForkEpoch != currentForkENR.NextForkEpoch {
+	if peerForkQNR.NextForkEpoch != currentForkQNR.NextForkEpoch {
 		log.WithFields(logrus.Fields{
-			"peerNextForkEpoch":    peerForkENR.NextForkEpoch,
-			"currentNextForkEpoch": currentForkENR.NextForkEpoch,
-			"peerENR":              enrString,
+			"peerNextForkEpoch":    peerForkQNR.NextForkEpoch,
+			"currentNextForkEpoch": currentForkQNR.NextForkEpoch,
+			"peerQNR":              qnrString,
 		}).Trace("Peer matches fork digest but has different next fork epoch")
 	}
-	if !bytes.Equal(peerForkENR.NextForkVersion, currentForkENR.NextForkVersion) {
+	if !bytes.Equal(peerForkQNR.NextForkVersion, currentForkQNR.NextForkVersion) {
 		log.WithFields(logrus.Fields{
-			"peerNextForkVersion":    peerForkENR.NextForkVersion,
-			"currentNextForkVersion": currentForkENR.NextForkVersion,
-			"peerENR":                enrString,
+			"peerNextForkVersion":    peerForkQNR.NextForkVersion,
+			"currentNextForkVersion": currentForkQNR.NextForkVersion,
+			"peerQNR":                qnrString,
 		}).Trace("Peer matches fork digest but has different next fork version")
 	}
 	return nil
 }
 
-// Adds a fork entry as an ENR record under the Zond consensus EnrKey for
-// the local node. The fork entry is an ssz-encoded enrForkID type
+// Adds a fork entry as an QNR record under the QRL consensus QnrKey for
+// the local node. The fork entry is an ssz-encoded qnrForkID type
 // which takes into account the current fork version from the current
 // epoch to create a fork digest, the next fork version,
 // and the next fork epoch.
 func addForkEntry(
-	node *enode.LocalNode,
+	node *qnode.LocalNode,
 	genesisTime time.Time,
 	genesisValidatorsRoot []byte,
-) (*enode.LocalNode, error) {
+) (*qnode.LocalNode, error) {
 	digest, err := forks.CreateForkDigest(genesisTime, genesisValidatorsRoot)
 	if err != nil {
 		return nil, err
@@ -99,30 +99,30 @@ func addForkEntry(
 	if err != nil {
 		return nil, err
 	}
-	enrForkID := &pb.ENRForkID{
+	qnrForkID := &pb.QNRForkID{
 		CurrentForkDigest: digest[:],
 		NextForkVersion:   nextForkVersion[:],
 		NextForkEpoch:     nextForkEpoch,
 	}
-	enc, err := enrForkID.MarshalSSZ()
+	enc, err := qnrForkID.MarshalSSZ()
 	if err != nil {
 		return nil, err
 	}
-	forkEntry := enr.WithEntry(eth2ENRKey, enc)
+	forkEntry := qnr.WithEntry(consensusQNRKey, enc)
 	node.Set(forkEntry)
 	return node, nil
 }
 
-// Retrieves an enrForkID from an ENR record by key lookup
-// under the Ethereum consensus EnrKey
-func forkEntry(record *enr.Record) (*pb.ENRForkID, error) {
+// Retrieves an qnrForkID from an QNR record by key lookup
+// under the QRL consensus QnrKey
+func forkEntry(record *qnr.Record) (*pb.QNRForkID, error) {
 	sszEncodedForkEntry := make([]byte, 16)
-	entry := enr.WithEntry(eth2ENRKey, &sszEncodedForkEntry)
+	entry := qnr.WithEntry(consensusQNRKey, &sszEncodedForkEntry)
 	err := record.Load(entry)
 	if err != nil {
 		return nil, err
 	}
-	forkEntry := &pb.ENRForkID{}
+	forkEntry := &pb.QNRForkID{}
 	if err := forkEntry.UnmarshalSSZ(sszEncodedForkEntry); err != nil {
 		return nil, err
 	}

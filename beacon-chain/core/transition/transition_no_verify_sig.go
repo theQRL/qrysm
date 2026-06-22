@@ -13,14 +13,14 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	"github.com/theQRL/qrysm/consensus-types/blocks"
 	"github.com/theQRL/qrysm/consensus-types/interfaces"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/monitoring/tracing"
 	"github.com/theQRL/qrysm/runtime/version"
 	"go.opencensus.io/trace"
 )
 
 // ExecuteStateTransitionNoVerifyAnySig defines the procedure for a state transition function.
-// This does not validate any Dilithium signatures of attestations, block proposer signature, randao signature,
+// This does not validate any ML-DSA-87 signatures of attestations, block proposer signature, randao signature,
 // it is used for performing a state transition as quickly as possible. This function also returns a signature
 // set of all signatures not verified, so that they can be stored and verified later.
 //
@@ -45,7 +45,7 @@ func ExecuteStateTransitionNoVerifyAnySig(
 	ctx context.Context,
 	st state.BeaconState,
 	signed interfaces.ReadOnlySignedBeaconBlock,
-) (*dilithium.SignatureBatch, state.BeaconState, error) {
+) (*ml_dsa_87.SignatureBatch, state.BeaconState, error) {
 	if ctx.Err() != nil {
 		return nil, nil, ctx.Err()
 	}
@@ -87,11 +87,11 @@ func ExecuteStateTransitionNoVerifyAnySig(
 }
 
 // CalculateStateRoot defines the procedure for a state transition function.
-// This does not validate any Dilithium signatures in a block, it is used for calculating the
+// This does not validate any ML-DSA-87 signatures in a block, it is used for calculating the
 // state root of the state for the block proposer to use.
 // This does not modify state.
 //
-// WARNING: This method does not validate any Dilithium signatures (i.e. calling `state_transition()` with `validate_result=False`).
+// WARNING: This method does not validate any ML-DSA-87 signatures (i.e. calling `state_transition()` with `validate_result=False`).
 // This is used for proposer to compute state root before proposing a new block, and this does not modify state.
 //
 // Spec pseudocode definition:
@@ -156,13 +156,13 @@ func CalculateStateRoot(
 //	def process_block(state: BeaconState, block: ReadOnlyBeaconBlock) -> None:
 //	  process_block_header(state, block)
 //	  process_randao(state, block.body)
-//	  process_eth1_data(state, block.body)
+//	  process_execution_data(state, block.body)
 //	  process_operations(state, block.body)
 func ProcessBlockNoVerifyAnySig(
 	ctx context.Context,
 	st state.BeaconState,
 	signed interfaces.ReadOnlySignedBeaconBlock,
-) (*dilithium.SignatureBatch, state.BeaconState, error) {
+) (*ml_dsa_87.SignatureBatch, state.BeaconState, error) {
 	ctx, span := trace.StartSpan(ctx, "core.state.ProcessBlockNoVerifyAnySig")
 	defer span.End()
 	if err := blocks.BeaconBlockIsNil(signed); err != nil {
@@ -197,18 +197,8 @@ func ProcessBlockNoVerifyAnySig(
 	}
 
 	// Merge beacon block, randao and attestations signatures into a set.
-	set := dilithium.NewSet()
+	set := ml_dsa_87.NewSet()
 	set.Join(bSet).Join(rSet).Join(aSet)
-
-	changes, err := signed.Block().Body().DilithiumToExecutionChanges()
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "could not get DilithiumToExecutionChanges")
-	}
-	cSet, err := b.DilithiumChangesSignatureBatch(st, changes)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "could not get DilithiumToExecutionChanges signatures")
-	}
-	set.Join(cSet)
 
 	return set, st, nil
 }
@@ -223,7 +213,7 @@ func ProcessBlockNoVerifyAnySig(
 //
 //	def process_operations(state: BeaconState, body: ReadOnlyBeaconBlockBody) -> None:
 //	  # Verify that outstanding deposits are processed up to the maximum number of deposits
-//	  assert len(body.deposits) == min(MAX_DEPOSITS, state.eth1_data.deposit_count - state.eth1_deposit_index)
+//	  assert len(body.deposits) == min(MAX_DEPOSITS, state.execution_data.deposit_count - state.execution_deposit_index)
 //
 //	  def for_ops(operations: Sequence[Any], fn: Callable[[BeaconState, Any], None]) -> None:
 //	      for operation in operations:
@@ -250,7 +240,7 @@ func ProcessOperationsNoVerifyAttsSigs(
 
 	var err error
 	switch signedBeaconBlock.Version() {
-	case version.Capella:
+	case version.Zond:
 		state, err = altairOperations(ctx, state, signedBeaconBlock)
 		if err != nil {
 			return nil, err
@@ -272,7 +262,7 @@ func ProcessOperationsNoVerifyAttsSigs(
 //	if is_execution_enabled(state, block.body):
 //	    process_execution_payload(state, block.body.execution_payload, EXECUTION_ENGINE)  # [New in Bellatrix]
 //	process_randao(state, block.body)
-//	process_eth1_data(state, block.body)
+//	process_execution_data(state, block.body)
 //	process_operations(state, block.body)
 //	process_sync_aggregate(state, block.body.sync_aggregate)
 func ProcessBlockForStateRoot(
@@ -325,10 +315,10 @@ func ProcessBlockForStateRoot(
 		return nil, errors.Wrap(err, "could not verify and process randao")
 	}
 
-	state, err = b.ProcessEth1DataInBlock(ctx, state, signed.Block().Body().Eth1Data())
+	state, err = b.ProcessExecutionDataInBlock(ctx, state, signed.Block().Body().ExecutionData())
 	if err != nil {
 		tracing.AnnotateError(span, err)
-		return nil, errors.Wrap(err, "could not process eth1 data")
+		return nil, errors.Wrap(err, "could not process execution data")
 	}
 
 	state, err = ProcessOperationsNoVerifyAttsSigs(ctx, state, signed)
@@ -373,5 +363,5 @@ func altairOperations(
 	if err != nil {
 		return nil, errors.Wrap(err, "could not process voluntary exits")
 	}
-	return b.ProcessDilithiumToExecutionChanges(st, signedBeaconBlock)
+	return st, nil
 }

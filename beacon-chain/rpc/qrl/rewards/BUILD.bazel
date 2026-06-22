@@ -1,0 +1,58 @@
+load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "rewards",
+    srcs = [
+        "handlers.go",
+        "server.go",
+        "structs.go",
+    ],
+    importpath = "github.com/theQRL/qrysm/beacon-chain/rpc/qrl/rewards",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//beacon-chain/blockchain",
+        "//beacon-chain/core/altair",
+        "//beacon-chain/core/blocks",
+        "//beacon-chain/core/epoch/precompute",
+        "//beacon-chain/core/validators",
+        "//beacon-chain/rpc/lookup",
+        "//beacon-chain/rpc/qrl/shared",
+        "//beacon-chain/state",
+        "//beacon-chain/state/stategen",
+        "//config/fieldparams",
+        "//config/params",
+        "//consensus-types/primitives",
+        "//encoding/bytesutil",
+        "//network/http",
+        "//time/slots",
+        "@com_github_wealdtech_go_bytesutil//:go-bytesutil",
+    ],
+)
+
+go_test(
+    name = "rewards_test",
+    srcs = ["handlers_test.go"],
+    embed = [":rewards"],
+    deps = [
+        "//beacon-chain/blockchain/testing",
+        "//beacon-chain/core/altair",
+        "//beacon-chain/core/helpers",
+        "//beacon-chain/core/signing",
+        "//beacon-chain/rpc/testutil",
+        "//beacon-chain/state",
+        "//beacon-chain/state/stategen/mock",
+        "//config/fieldparams",
+        "//config/params",
+        "//consensus-types/blocks",
+        "//consensus-types/interfaces",
+        "//consensus-types/primitives",
+        "//crypto/ml_dsa_87",
+        "//encoding/bytesutil",
+        "//network/http",
+        "//proto/qrysm/v1alpha1",
+        "//testing/assert",
+        "//testing/require",
+        "//testing/util",
+        "@com_github_theqrl_go_bitfield//:go-bitfield",
+    ],
+)

@@ -16,7 +16,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/sync/backfill"
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
 	"go.opencensus.io/trace"
 )
@@ -153,7 +153,7 @@ func (s *State) Resume(ctx context.Context, fState state.BeaconState) (state.Bea
 				return ctx.Err()
 			}
 			pub := val.PublicKey()
-			_, err := dilithium.PublicKeyFromBytes(pub[:])
+			_, err := ml_dsa_87.PublicKeyFromBytes(pub[:])
 			return err
 		}); err != nil {
 			log.WithError(err).Error("Failed to populate pubkey cache")

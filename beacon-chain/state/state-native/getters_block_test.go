@@ -5,41 +5,41 @@ import (
 
 	"github.com/theQRL/qrysm/beacon-chain/state"
 	testtmpl "github.com/theQRL/qrysm/beacon-chain/state/testing"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
-func TestBeaconState_LatestBlockHeader_Capella(t *testing.T) {
+func TestBeaconState_LatestBlockHeader_Zond(t *testing.T) {
 	testtmpl.VerifyBeaconStateLatestBlockHeader(
 		t,
 		func() (state.BeaconState, error) {
-			return InitializeFromProtoCapella(&zondpb.BeaconStateCapella{})
+			return InitializeFromProtoZond(&qrysmpb.BeaconStateZond{})
 		},
-		func(BH *zondpb.BeaconBlockHeader) (state.BeaconState, error) {
-			return InitializeFromProtoCapella(&zondpb.BeaconStateCapella{LatestBlockHeader: BH})
+		func(BH *qrysmpb.BeaconBlockHeader) (state.BeaconState, error) {
+			return InitializeFromProtoZond(&qrysmpb.BeaconStateZond{LatestBlockHeader: BH})
 		},
 	)
 }
 
-func TestBeaconState_BlockRoots_Capella(t *testing.T) {
+func TestBeaconState_BlockRoots_Zond(t *testing.T) {
 	testtmpl.VerifyBeaconStateBlockRootsNative(
 		t,
 		func() (state.BeaconState, error) {
-			return InitializeFromProtoCapella(&zondpb.BeaconStateCapella{})
+			return InitializeFromProtoZond(&qrysmpb.BeaconStateZond{})
 		},
 		func(BR [][]byte) (state.BeaconState, error) {
-			return InitializeFromProtoCapella(&zondpb.BeaconStateCapella{BlockRoots: BR})
+			return InitializeFromProtoZond(&qrysmpb.BeaconStateZond{BlockRoots: BR})
 		},
 	)
 }
 
-func TestBeaconState_BlockRootAtIndex_Capella(t *testing.T) {
+func TestBeaconState_BlockRootAtIndex_Zond(t *testing.T) {
 	testtmpl.VerifyBeaconStateBlockRootAtIndexNative(
 		t,
 		func() (state.BeaconState, error) {
-			return InitializeFromProtoCapella(&zondpb.BeaconStateCapella{})
+			return InitializeFromProtoZond(&qrysmpb.BeaconStateZond{})
 		},
 		func(BR [][]byte) (state.BeaconState, error) {
-			return InitializeFromProtoCapella(&zondpb.BeaconStateCapella{BlockRoots: BR})
+			return InitializeFromProtoZond(&qrysmpb.BeaconStateZond{BlockRoots: BR})
 		},
 	)
 }

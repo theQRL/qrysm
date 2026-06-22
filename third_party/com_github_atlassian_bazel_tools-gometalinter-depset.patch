@@ -1,0 +1,28 @@
+--- a/gometalinter/def.bzl
++++ b/gometalinter/def.bzl
+@@ -1,8 +1,14 @@
+ load("@bazel_skylib//lib:shell.bzl", "shell")
+ load("@bazel_skylib//lib:paths.bzl", "paths")
+ load("@io_bazel_rules_go//go:def.bzl", "GoSDK")
+ 
++def _as_depset(value):
++    if type(value) == "depset":
++        return value
++    return depset(value)
++
+ def _gometalinter_impl(ctx):
+     args = []
+     if ctx.attr.config:
+@@ -25,10 +31,10 @@ def _gometalinter_impl(ctx):
+         output = out_file,
+         substitutions = substitutions,
+         is_executable = True,
+     )
+     transitive_depsets = [
+-        depset(sdk.srcs),
+-        depset(sdk.tools),
++        _as_depset(sdk.srcs),
++        _as_depset(sdk.tools),
+     ]
+     default_runfiles = ctx.attr._gometalinter[DefaultInfo].default_runfiles
+     if default_runfiles != None:

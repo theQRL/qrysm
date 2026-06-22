@@ -82,7 +82,7 @@ var blockedBuckets = [][]byte{
 }
 
 // Store defines an implementation of the Qrysm Database interface
-// using BoltDB as the underlying persistent kv-store for Zond Beacon Nodes.
+// using BoltDB as the underlying persistent kv-store for QRL Beacon Nodes.
 type Store struct {
 	db                  *bolt.DB
 	databasePath        string
@@ -108,7 +108,7 @@ var Buckets = [][]byte{
 	voluntaryExitsBucket,
 	chainMetadataBucket,
 	checkpointBucket,
-	powchainBucket,
+	executionChainBucket,
 	stateSummaryBucket,
 	stateValidatorsBucket,
 	// Indices buckets.
@@ -209,6 +209,11 @@ func (s *Store) ClearDB() error {
 		return nil
 	}
 	prometheus.Unregister(createBoltCollector(s.db))
+	// Close the bolt DB before removing the underlying file so we don't
+	// race an unmap with file deletion (matters on Windows; defensive on Linux).
+	if err := s.db.Close(); err != nil {
+		return errors.Wrap(err, "could not close database before clear")
+	}
 	if err := os.Remove(path.Join(s.databasePath, DatabaseFileName)); err != nil {
 		return errors.Wrap(err, "could not remove database file")
 	}

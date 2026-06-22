@@ -11,9 +11,9 @@ import (
 
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpbservice "github.com/theQRL/qrysm/proto/zond/service"
+	qrlpbservice "github.com/theQRL/qrysm/proto/qrl/service"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/validator/accounts/iface"
@@ -55,7 +55,7 @@ func TestImportAccounts_NoPassword(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(resp))
-	require.Equal(t, resp[0].Status, zondpbservice.ImportedKeystoreStatus_ERROR)
+	require.Equal(t, resp[0].Status, qrlpbservice.ImportedKeystoreStatus_ERROR)
 }
 
 /*
@@ -130,7 +130,7 @@ func Test_importPrivateKeyAsAccount(t *testing.T) {
 
 	// We create a new private key and save it to a file on disk.
 	// We create a new seed and save it to a file on disk.
-	var seed [field_params.DilithiumSeedLength]uint8
+	var seed [field_params.MLDSA87SeedLength]uint8
 	_, err := rand.Read(seed[:])
 	require.NoError(t, err)
 	seedHex := fmt.Sprintf("%x", seed)
@@ -138,7 +138,7 @@ func Test_importPrivateKeyAsAccount(t *testing.T) {
 		t,
 		os.WriteFile(privKeyFileName, []byte(seedHex), params.BeaconIoConfig().ReadWritePermissions),
 	)
-	privKey, err := dilithium.SecretKeyFromSeed(seed[:])
+	privKey, err := ml_dsa_87.SecretKeyFromSeed(seed[:])
 	require.NoError(t, err)
 
 	// We instantiate a new wallet from a cli context.

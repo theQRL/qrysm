@@ -8,12 +8,12 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/qrysm/beacon-chain/rpc/apimiddleware"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/beacon"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/shared"
-	"github.com/theQRL/qrysm/beacon-chain/rpc/zond/validator"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/beacon"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/shared"
+	"github.com/theQRL/qrysm/beacon-chain/rpc/qrl/validator"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/validator/client/beacon-api/mock"
@@ -47,8 +47,8 @@ func TestCheckDoppelGanger_Nominal(t *testing.T) {
 
 	testCases := []struct {
 		name                        string
-		doppelGangerInput           *zondpb.DoppelGangerRequest
-		doppelGangerExpectedOutput  *zondpb.DoppelGangerResponse
+		doppelGangerInput           *qrysmpb.DoppelGangerRequest
+		doppelGangerExpectedOutput  *qrysmpb.DoppelGangerResponse
 		getSyncingOutput            *apimiddleware.SyncingResponseJson
 		getHeadersOutput            *beacon.GetBlockHeadersResponse
 		getStateValidatorsInterface *struct {
@@ -64,32 +64,32 @@ func TestCheckDoppelGanger_Nominal(t *testing.T) {
 		{
 			name:              "nil input",
 			doppelGangerInput: nil,
-			doppelGangerExpectedOutput: &zondpb.DoppelGangerResponse{
-				Responses: []*zondpb.DoppelGangerResponse_ValidatorResponse{},
+			doppelGangerExpectedOutput: &qrysmpb.DoppelGangerResponse{
+				Responses: []*qrysmpb.DoppelGangerResponse_ValidatorResponse{},
 			},
 		},
 		{
 			name: "nil validator requests",
-			doppelGangerInput: &zondpb.DoppelGangerRequest{
+			doppelGangerInput: &qrysmpb.DoppelGangerRequest{
 				ValidatorRequests: nil,
 			},
-			doppelGangerExpectedOutput: &zondpb.DoppelGangerResponse{
-				Responses: []*zondpb.DoppelGangerResponse_ValidatorResponse{},
+			doppelGangerExpectedOutput: &qrysmpb.DoppelGangerResponse{
+				Responses: []*qrysmpb.DoppelGangerResponse_ValidatorResponse{},
 			},
 		},
 		{
 			name: "empty validator requests",
-			doppelGangerInput: &zondpb.DoppelGangerRequest{
-				ValidatorRequests: []*zondpb.DoppelGangerRequest_ValidatorRequest{},
+			doppelGangerInput: &qrysmpb.DoppelGangerRequest{
+				ValidatorRequests: []*qrysmpb.DoppelGangerRequest_ValidatorRequest{},
 			},
-			doppelGangerExpectedOutput: &zondpb.DoppelGangerResponse{
-				Responses: []*zondpb.DoppelGangerResponse_ValidatorResponse{},
+			doppelGangerExpectedOutput: &qrysmpb.DoppelGangerResponse{
+				Responses: []*qrysmpb.DoppelGangerResponse_ValidatorResponse{},
 			},
 		},
 		{
 			name: "all validators are recent",
-			doppelGangerInput: &zondpb.DoppelGangerRequest{
-				ValidatorRequests: []*zondpb.DoppelGangerRequest_ValidatorRequest{
+			doppelGangerInput: &qrysmpb.DoppelGangerRequest{
+				ValidatorRequests: []*qrysmpb.DoppelGangerRequest_ValidatorRequest{
 					{PublicKey: pubKey1, Epoch: 2},
 					{PublicKey: pubKey2, Epoch: 2},
 					{PublicKey: pubKey3, Epoch: 2},
@@ -98,8 +98,8 @@ func TestCheckDoppelGanger_Nominal(t *testing.T) {
 					{PublicKey: pubKey6, Epoch: 2},
 				},
 			},
-			doppelGangerExpectedOutput: &zondpb.DoppelGangerResponse{
-				Responses: []*zondpb.DoppelGangerResponse_ValidatorResponse{
+			doppelGangerExpectedOutput: &qrysmpb.DoppelGangerResponse{
+				Responses: []*qrysmpb.DoppelGangerResponse_ValidatorResponse{
 					{PublicKey: pubKey1, DuplicateExists: false},
 					{PublicKey: pubKey2, DuplicateExists: false},
 					{PublicKey: pubKey3, DuplicateExists: false},
@@ -127,8 +127,8 @@ func TestCheckDoppelGanger_Nominal(t *testing.T) {
 		},
 		{
 			name: "some validators are recent, some not, some duplicates",
-			doppelGangerInput: &zondpb.DoppelGangerRequest{
-				ValidatorRequests: []*zondpb.DoppelGangerRequest_ValidatorRequest{
+			doppelGangerInput: &qrysmpb.DoppelGangerRequest{
+				ValidatorRequests: []*qrysmpb.DoppelGangerRequest_ValidatorRequest{
 					{PublicKey: pubKey1, Epoch: 99}, // recent
 					{PublicKey: pubKey2, Epoch: 80}, // not recent - duplicate on previous epoch
 					{PublicKey: pubKey3, Epoch: 80}, // not recent - duplicate on current epoch
@@ -137,8 +137,8 @@ func TestCheckDoppelGanger_Nominal(t *testing.T) {
 					{PublicKey: pubKey6, Epoch: 80}, // not recent - not duplicate
 				},
 			},
-			doppelGangerExpectedOutput: &zondpb.DoppelGangerResponse{
-				Responses: []*zondpb.DoppelGangerResponse_ValidatorResponse{
+			doppelGangerExpectedOutput: &qrysmpb.DoppelGangerResponse{
+				Responses: []*qrysmpb.DoppelGangerResponse_ValidatorResponse{
 					{PublicKey: pubKey1, DuplicateExists: false}, // recent
 					{PublicKey: pubKey2, DuplicateExists: true},  // not recent - duplicate on previous epoch
 					{PublicKey: pubKey3, DuplicateExists: true},  // not recent - duplicate on current epoch
@@ -192,7 +192,7 @@ func TestCheckDoppelGanger_Nominal(t *testing.T) {
 				output             *validator.GetLivenessResponse
 			}{
 				{
-					inputUrl: "/zond/v1/validator/liveness/99", // previous epoch
+					inputUrl: "/qrl/v1/validator/liveness/99", // previous epoch
 					inputStringIndexes: []string{
 						// No "11111" since corresponding validator is recent
 						"22222", // not recent - duplicate on previous epoch
@@ -213,7 +213,7 @@ func TestCheckDoppelGanger_Nominal(t *testing.T) {
 					},
 				},
 				{
-					inputUrl: "/zond/v1/validator/liveness/100", // current epoch
+					inputUrl: "/qrl/v1/validator/liveness/100", // current epoch
 					inputStringIndexes: []string{
 						// No "11111" since corresponding validator is recent
 						"22222", // not recent - duplicate on previous epoch
@@ -336,7 +336,7 @@ func TestCheckDoppelGanger_Errors(t *testing.T) {
 	pubKey, err := hexutil.Decode(stringPubKey)
 	require.NoError(t, err)
 
-	standardInputValidatorRequests := []*zondpb.DoppelGangerRequest_ValidatorRequest{
+	standardInputValidatorRequests := []*qrysmpb.DoppelGangerRequest_ValidatorRequest{
 		{
 			PublicKey: pubKey,
 			Epoch:     1,
@@ -382,7 +382,7 @@ func TestCheckDoppelGanger_Errors(t *testing.T) {
 	testCases := []struct {
 		name                        string
 		expectedErrorMessage        string
-		inputValidatorRequests      []*zondpb.DoppelGangerRequest_ValidatorRequest
+		inputValidatorRequests      []*qrysmpb.DoppelGangerRequest_ValidatorRequest
 		getSyncingOutput            *apimiddleware.SyncingResponseJson
 		getSyncingError             error
 		getHeadersOutput            *beacon.GetBlockHeadersResponse
@@ -402,7 +402,7 @@ func TestCheckDoppelGanger_Errors(t *testing.T) {
 		{
 			name:                   "nil validatorRequest",
 			expectedErrorMessage:   "validator request is nil",
-			inputValidatorRequests: []*zondpb.DoppelGangerRequest_ValidatorRequest{nil},
+			inputValidatorRequests: []*qrysmpb.DoppelGangerRequest_ValidatorRequest{nil},
 		},
 		{
 			name:                   "isSyncing on error",
@@ -506,7 +506,7 @@ func TestCheckDoppelGanger_Errors(t *testing.T) {
 				err                error
 			}{
 				{
-					inputUrl:           "/zond/v1/validator/liveness/30",
+					inputUrl:           "/qrl/v1/validator/liveness/30",
 					inputStringIndexes: []string{"42"},
 					output:             &validator.GetLivenessResponse{},
 					err:                errors.New("custom error"),
@@ -527,7 +527,7 @@ func TestCheckDoppelGanger_Errors(t *testing.T) {
 				err                error
 			}{
 				{
-					inputUrl:           "/zond/v1/validator/liveness/30",
+					inputUrl:           "/qrl/v1/validator/liveness/30",
 					inputStringIndexes: []string{"42"},
 					output: &validator.GetLivenessResponse{
 						Data: []*validator.ValidatorLiveness{nil},
@@ -549,14 +549,14 @@ func TestCheckDoppelGanger_Errors(t *testing.T) {
 				err                error
 			}{
 				{
-					inputUrl:           "/zond/v1/validator/liveness/30",
+					inputUrl:           "/qrl/v1/validator/liveness/30",
 					inputStringIndexes: []string{"42"},
 					output: &validator.GetLivenessResponse{
 						Data: []*validator.ValidatorLiveness{},
 					},
 				},
 				{
-					inputUrl:           "/zond/v1/validator/liveness/31",
+					inputUrl:           "/qrl/v1/validator/liveness/31",
 					inputStringIndexes: []string{"42"},
 					output:             &validator.GetLivenessResponse{},
 					err:                errors.New("custom error"),
@@ -577,14 +577,14 @@ func TestCheckDoppelGanger_Errors(t *testing.T) {
 				err                error
 			}{
 				{
-					inputUrl:           "/zond/v1/validator/liveness/30",
+					inputUrl:           "/qrl/v1/validator/liveness/30",
 					inputStringIndexes: []string{"42"},
 					output: &validator.GetLivenessResponse{
 						Data: []*validator.ValidatorLiveness{},
 					},
 				},
 				{
-					inputUrl:           "/zond/v1/validator/liveness/31",
+					inputUrl:           "/qrl/v1/validator/liveness/31",
 					inputStringIndexes: []string{"42"},
 					output: &validator.GetLivenessResponse{
 						Data: []*validator.ValidatorLiveness{},
@@ -606,7 +606,7 @@ func TestCheckDoppelGanger_Errors(t *testing.T) {
 				err                error
 			}{
 				{
-					inputUrl:           "/zond/v1/validator/liveness/30",
+					inputUrl:           "/qrl/v1/validator/liveness/30",
 					inputStringIndexes: []string{"42"},
 					output: &validator.GetLivenessResponse{
 						Data: []*validator.ValidatorLiveness{
@@ -617,7 +617,7 @@ func TestCheckDoppelGanger_Errors(t *testing.T) {
 					},
 				},
 				{
-					inputUrl:           "/zond/v1/validator/liveness/31",
+					inputUrl:           "/qrl/v1/validator/liveness/31",
 					inputStringIndexes: []string{"42"},
 					output: &validator.GetLivenessResponse{
 						Data: []*validator.ValidatorLiveness{},
@@ -712,7 +712,7 @@ func TestCheckDoppelGanger_Errors(t *testing.T) {
 
 			_, err := validatorClient.CheckDoppelGanger(
 				context.Background(),
-				&zondpb.DoppelGangerRequest{
+				&qrysmpb.DoppelGangerRequest{
 					ValidatorRequests: testCase.inputValidatorRequests,
 				},
 			)

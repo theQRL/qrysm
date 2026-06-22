@@ -14,15 +14,13 @@ import (
 	"github.com/theQRL/qrysm/config/params"
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/container/trie"
-	"github.com/theQRL/qrysm/crypto/dilithium"
+	"github.com/theQRL/qrysm/crypto/ml_dsa_87"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
 )
-
-const pubKeyErr = "could not convert bytes to public key"
 
 func TestDepositContractAddress_EmptyAddress(t *testing.T) {
 	params.SetupTestConfigCleanup(t)
@@ -62,17 +60,17 @@ func TestProcessDeposit_OK(t *testing.T) {
 		WithHttpEndpoint(endpoint),
 		WithDatabase(beaconDB),
 	)
-	require.NoError(t, err, "Unable to setup web3 ETH1.0 chain service")
+	require.NoError(t, err, "Unable to setup web3 execution chain service")
 
 	web3Service = setDefaultMocks(web3Service)
 
 	deposits, _, err := util.DeterministicDepositsAndKeys(1)
 	require.NoError(t, err)
 
-	eth1Data, err := util.DeterministicEth1Data(len(deposits))
+	executionData, err := util.DeterministicExecutionData(len(deposits))
 	require.NoError(t, err)
 
-	err = web3Service.processDeposit(context.Background(), eth1Data, deposits[0])
+	err = web3Service.processDeposit(context.Background(), executionData, deposits[0])
 	require.NoError(t, err, "could not process deposit")
 
 	valcount, err := helpers.ActiveValidatorCount(context.Background(), web3Service.preGenesisState, 0)
@@ -91,18 +89,18 @@ func TestProcessDeposit_InvalidMerkleBranch(t *testing.T) {
 		WithHttpEndpoint(endpoint),
 		WithDatabase(beaconDB),
 	)
-	require.NoError(t, err, "unable to setup web3 ETH1.0 chain service")
+	require.NoError(t, err, "unable to setup web3 execution chain service")
 	web3Service = setDefaultMocks(web3Service)
 
 	deposits, _, err := util.DeterministicDepositsAndKeys(1)
 	require.NoError(t, err)
 
-	eth1Data, err := util.DeterministicEth1Data(len(deposits))
+	executionData, err := util.DeterministicExecutionData(len(deposits))
 	require.NoError(t, err)
 
 	deposits[0].Proof = [][]byte{{'f', 'a', 'k', 'e'}}
 
-	err = web3Service.processDeposit(context.Background(), eth1Data, deposits[0])
+	err = web3Service.processDeposit(context.Background(), executionData, deposits[0])
 	require.NotNil(t, err, "No errors, when an error was expected")
 
 	want := "deposit merkle branch of deposit root did not verify for root"
@@ -122,7 +120,7 @@ func TestProcessDeposit_UnableToVerify(t *testing.T) {
 		WithHttpEndpoint(endpoint),
 		WithDatabase(beaconDB),
 	)
-	require.NoError(t, err, "unable to setup web3 ETH1.0 chain service")
+	require.NoError(t, err, "unable to setup web3 execution chain service")
 	web3Service = setDefaultMocks(web3Service)
 
 	deposits, keys, err := util.DeterministicDepositsAndKeys(1)
@@ -134,14 +132,14 @@ func TestProcessDeposit_UnableToVerify(t *testing.T) {
 	require.NoError(t, err)
 	root, err := generatedTrie.HashTreeRoot()
 	require.NoError(t, err)
-	eth1Data := &zondpb.Eth1Data{
+	executionData := &qrysmpb.ExecutionData{
 		DepositCount: 1,
 		DepositRoot:  root[:],
 	}
 	proof, err := generatedTrie.MerkleProof(0)
 	require.NoError(t, err)
 	deposits[0].Proof = proof
-	err = web3Service.processDeposit(context.Background(), eth1Data, deposits[0])
+	err = web3Service.processDeposit(context.Background(), executionData, deposits[0])
 	require.NoError(t, err)
 	want := "signature did not verify"
 
@@ -160,19 +158,19 @@ func TestProcessDeposit_IncompleteDeposit(t *testing.T) {
 		WithHttpEndpoint(endpoint),
 		WithDatabase(beaconDB),
 	)
-	require.NoError(t, err, "unable to setup web3 ETH1.0 chain service")
+	require.NoError(t, err, "unable to setup web3 execution chain service")
 	web3Service = setDefaultMocks(web3Service)
-	require.NoError(t, web3Service.preGenesisState.SetValidators([]*zondpb.Validator{}))
+	require.NoError(t, web3Service.preGenesisState.SetValidators([]*qrysmpb.Validator{}))
 
-	deposit := &zondpb.Deposit{
-		Data: &zondpb.Deposit_Data{
+	deposit := &qrysmpb.Deposit{
+		Data: &qrysmpb.Deposit_Data{
 			Amount:                params.BeaconConfig().EffectiveBalanceIncrement, // incomplete deposit
-			WithdrawalCredentials: bytesutil.PadTo([]byte("testing"), 32),
-			Signature:             bytesutil.PadTo([]byte("test"), field_params.DilithiumSignatureLength),
+			WithdrawalCredentials: bytesutil.PadTo([]byte("testing"), field_params.WithdrawalCredentialsLength),
+			Signature:             bytesutil.PadTo([]byte("test"), field_params.MLDSA87SignatureLength),
 		},
 	}
 
-	priv, err := dilithium.RandKey()
+	priv, err := ml_dsa_87.RandKey()
 	require.NoError(t, err)
 	deposit.Data.PublicKey = priv.PublicKey().Marshal()
 	d, err := signing.ComputeDomain(params.BeaconConfig().DomainDeposit, nil, nil)
@@ -187,7 +185,7 @@ func TestProcessDeposit_IncompleteDeposit(t *testing.T) {
 	require.NoError(t, err)
 	root, err := generatedTrie.HashTreeRoot()
 	require.NoError(t, err)
-	eth1Data := &zondpb.Eth1Data{
+	executionData := &qrysmpb.ExecutionData{
 		DepositCount: 1,
 		DepositRoot:  root[:],
 	}
@@ -204,12 +202,12 @@ func TestProcessDeposit_IncompleteDeposit(t *testing.T) {
 
 		trieRoot, err := generatedTrie.HashTreeRoot()
 		require.NoError(t, err)
-		eth1Data.DepositRoot = trieRoot[:]
-		eth1Data.DepositCount = uint64(i + 1)
+		executionData.DepositRoot = trieRoot[:]
+		executionData.DepositCount = uint64(i + 1)
 
 		deposit.Proof, err = generatedTrie.MerkleProof(i)
 		require.NoError(t, err)
-		err = web3Service.processDeposit(context.Background(), eth1Data, deposit)
+		err = web3Service.processDeposit(context.Background(), executionData, deposit)
 		require.NoError(t, err, fmt.Sprintf("Could not process deposit at %d", i))
 
 		valcount, err := helpers.ActiveValidatorCount(context.Background(), web3Service.preGenesisState, 0)
@@ -229,17 +227,17 @@ func TestProcessDeposit_AllDepositedSuccessfully(t *testing.T) {
 		WithHttpEndpoint(endpoint),
 		WithDatabase(beaconDB),
 	)
-	require.NoError(t, err, "unable to setup web3 ETH1.0 chain service")
+	require.NoError(t, err, "unable to setup web3 execution chain service")
 	web3Service = setDefaultMocks(web3Service)
 
 	deposits, keys, err := util.DeterministicDepositsAndKeys(10)
 	require.NoError(t, err)
-	eth1Data, err := util.DeterministicEth1Data(len(deposits))
+	executionData, err := util.DeterministicExecutionData(len(deposits))
 	require.NoError(t, err)
 
 	for i := range keys {
-		eth1Data.DepositCount = uint64(i + 1)
-		err = web3Service.processDeposit(context.Background(), eth1Data, deposits[i])
+		executionData.DepositCount = uint64(i + 1)
+		err = web3Service.processDeposit(context.Background(), executionData, deposits[i])
 		require.NoError(t, err, fmt.Sprintf("Could not process deposit at %d", i))
 
 		valCount, err := helpers.ActiveValidatorCount(context.Background(), web3Service.preGenesisState, 0)

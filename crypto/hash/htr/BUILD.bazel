@@ -1,17 +1,17 @@
 load("@qrysm//tools/go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "htr",
     srcs = ["hashtree.go"],
     importpath = "github.com/theQRL/qrysm/crypto/hash/htr",
     visibility = ["//visibility:public"],
-    deps = ["@com_github_prysmaticlabs_gohashtree//:go_default_library"],
+    deps = ["@com_github_prysmaticlabs_gohashtree//:gohashtree"],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "htr_test",
     size = "small",
     srcs = ["hashtree_test.go"],
-    embed = [":go_default_library"],
-    deps = ["//testing/require:go_default_library"],
+    embed = [":htr"],
+    deps = ["//testing/require"],
 )

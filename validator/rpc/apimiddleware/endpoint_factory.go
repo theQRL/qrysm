@@ -16,11 +16,11 @@ func (f *ValidatorEndpointFactory) IsNil() bool {
 // Paths is a collection of all valid validator API paths.
 func (*ValidatorEndpointFactory) Paths() []string {
 	return []string{
-		"/zond/v1/keystores",
-		// "/zond/v1/remotekeys",
-		"/zond/v1/validator/{pubkey}/feerecipient",
-		"/zond/v1/validator/{pubkey}/gas_limit",
-		"/zond/v1/validator/{pubkey}/voluntary_exit",
+		"/qrl/v1/keystores",
+		// "/qrl/v1/remotekeys",
+		"/qrl/v1/validator/{pubkey}/feerecipient",
+		"/qrl/v1/validator/{pubkey}/gas_limit",
+		"/qrl/v1/validator/{pubkey}/voluntary_exit",
 	}
 }
 
@@ -28,27 +28,27 @@ func (*ValidatorEndpointFactory) Paths() []string {
 func (*ValidatorEndpointFactory) Create(path string) (*apimiddleware.Endpoint, error) {
 	endpoint := apimiddleware.DefaultEndpoint()
 	switch path {
-	case "/zond/v1/keystores":
+	case "/qrl/v1/keystores":
 		endpoint.GetResponse = &ListKeystoresResponseJson{}
 		endpoint.PostRequest = &ImportKeystoresRequestJson{}
 		endpoint.PostResponse = &ImportKeystoresResponseJson{}
 		endpoint.DeleteRequest = &DeleteKeystoresRequestJson{}
 		endpoint.DeleteResponse = &DeleteKeystoresResponseJson{}
-	// case "/zond/v1/remotekeys":
+	// case "/qrl/v1/remotekeys":
 	// 	endpoint.GetResponse = &ListRemoteKeysResponseJson{}
 	// 	endpoint.PostRequest = &ImportRemoteKeysRequestJson{}
 	// 	endpoint.PostResponse = &ImportRemoteKeysResponseJson{}
 	// 	endpoint.DeleteRequest = &DeleteRemoteKeysRequestJson{}
 	// 	endpoint.DeleteResponse = &DeleteRemoteKeysResponseJson{}
-	case "/zond/v1/validator/{pubkey}/feerecipient":
+	case "/qrl/v1/validator/{pubkey}/feerecipient":
 		endpoint.GetResponse = &GetFeeRecipientByPubkeyResponseJson{}
 		endpoint.PostRequest = &SetFeeRecipientByPubkeyRequestJson{}
 		endpoint.DeleteRequest = &DeleteFeeRecipientByPubkeyRequestJson{}
-	case "/zond/v1/validator/{pubkey}/gas_limit":
+	case "/qrl/v1/validator/{pubkey}/gas_limit":
 		endpoint.GetResponse = &GetGasLimitResponseJson{}
 		endpoint.PostRequest = &SetGasLimitRequestJson{}
 		endpoint.DeleteRequest = &DeleteGasLimitRequestJson{}
-	case "/zond/v1/validator/{pubkey}/voluntary_exit":
+	case "/qrl/v1/validator/{pubkey}/voluntary_exit":
 		endpoint.PostRequest = &SetVoluntaryExitRequestJson{}
 		endpoint.PostResponse = &SetVoluntaryExitResponseJson{}
 		endpoint.Hooks = apimiddleware.HookCollection{

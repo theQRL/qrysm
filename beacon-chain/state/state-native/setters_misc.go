@@ -8,7 +8,7 @@ import (
 	"github.com/theQRL/qrysm/consensus-types/primitives"
 	"github.com/theQRL/qrysm/crypto/hash"
 	"github.com/theQRL/qrysm/encoding/bytesutil"
-	zondpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
+	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -20,7 +20,7 @@ import (
 // fields except for the following below.
 // 1) BlockRoots
 // 2) StateRoots
-// 3) Eth1DataVotes
+// 3) ExecutionDataVotes
 // 4) RandaoMixes
 // 5) HistoricalRoots
 // 6) CurrentEpochAttestations
@@ -74,11 +74,11 @@ func (b *BeaconState) SetSlot(val primitives.Slot) error {
 }
 
 // SetFork version for the beacon chain.
-func (b *BeaconState) SetFork(val *zondpb.Fork) error {
+func (b *BeaconState) SetFork(val *qrysmpb.Fork) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
-	fk, ok := proto.Clone(val).(*zondpb.Fork)
+	fk, ok := proto.Clone(val).(*qrysmpb.Fork)
 	if !ok {
 		return errors.New("proto.Clone did not return a fork proto")
 	}
@@ -107,13 +107,13 @@ func (b *BeaconState) SetHistoricalRoots(val [][]byte) error {
 
 // AppendHistoricalSummaries for the beacon state. Appends the new value
 // to the end of list.
-func (b *BeaconState) AppendHistoricalSummaries(summary *zondpb.HistoricalSummary) error {
+func (b *BeaconState) AppendHistoricalSummaries(summary *qrysmpb.HistoricalSummary) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
 	summaries := b.historicalSummaries
 	if b.sharedFieldReferences[types.HistoricalSummaries].Refs() > 1 {
-		summaries = make([]*zondpb.HistoricalSummary, 0, len(b.historicalSummaries)+1)
+		summaries = make([]*qrysmpb.HistoricalSummary, 0, len(b.historicalSummaries)+1)
 		summaries = append(summaries, b.historicalSummaries...)
 		b.sharedFieldReferences[types.HistoricalSummaries].MinusRef()
 		b.sharedFieldReferences[types.HistoricalSummaries] = stateutil.NewRef(1)

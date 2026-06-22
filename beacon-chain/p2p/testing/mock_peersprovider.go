@@ -8,9 +8,9 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	ma "github.com/multiformats/go-multiaddr"
 	log "github.com/sirupsen/logrus"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/p2p/enode"
-	"github.com/theQRL/go-zond/p2p/enr"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers"
 	"github.com/theQRL/qrysm/beacon-chain/p2p/peers/scorers"
 	pb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
@@ -58,7 +58,7 @@ func (m *MockPeersProvider) Peers() *peers.Status {
 		if err != nil {
 			log.WithError(err).Debug("Cannot decode")
 		}
-		m.peers.Add(createENR(), id0, ma0, network.DirInbound)
+		m.peers.Add(createQNR(), id0, ma0, network.DirInbound)
 		m.peers.SetConnectionState(id0, peers.PeerConnected)
 		m.peers.SetChainState(id0, &pb.Status{FinalizedEpoch: 10})
 		id1, err := peer.Decode("16Uiu2HAm4HgJ9N1o222xK61o7LSgToYWoAy1wNTJRkh9gLZapVAy")
@@ -69,22 +69,22 @@ func (m *MockPeersProvider) Peers() *peers.Status {
 		if err != nil {
 			log.WithError(err).Debug("Cannot decode")
 		}
-		m.peers.Add(createENR(), id1, ma1, network.DirOutbound)
+		m.peers.Add(createQNR(), id1, ma1, network.DirOutbound)
 		m.peers.SetConnectionState(id1, peers.PeerConnected)
 		m.peers.SetChainState(id1, &pb.Status{FinalizedEpoch: 11})
 	}
 	return m.peers
 }
 
-func createENR() *enr.Record {
+func createQNR() *qnr.Record {
 	key, err := crypto.GenerateKey()
 	if err != nil {
 		log.Error(err)
 	}
-	db, err := enode.OpenDB("")
+	db, err := qnode.OpenDB("")
 	if err != nil {
-		log.Error("could not open node's peer database")
+		log.Error("Could not open node's peer database")
 	}
-	lNode := enode.NewLocalNode(db, key)
+	lNode := qnode.NewLocalNode(db, key)
 	return lNode.Node().Record()
 }

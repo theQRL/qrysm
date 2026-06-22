@@ -1,4 +1,4 @@
-// This code was adapted from https://github.com/theQRL/go-zond/blob/master/cmd/gzond/usage.go
+// This code was adapted from https://github.com/theQRL/go-qrl/blob/master/cmd/gqrl/usage.go
 package main
 
 import (
@@ -84,8 +84,6 @@ var appHelpFlagGroups = []flagGroup{
 			debug.PProfAddrFlag,
 			debug.PProfPortFlag,
 			debug.MemProfileRateFlag,
-			debug.CPUProfileFlag,
-			debug.TraceFlag,
 			debug.BlockProfileRateFlag,
 			debug.MutexProfileFractionFlag,
 		},
@@ -93,7 +91,7 @@ var appHelpFlagGroups = []flagGroup{
 	{
 		Name: "beacon-chain",
 		Flags: []cli.Flag{
-			flags.InteropMockEth1DataVotesFlag,
+			flags.InteropMockExecutionDataVotesFlag,
 			flags.DepositContractFlag,
 			flags.ContractDeploymentBlock,
 			flags.RPCHost,
@@ -118,8 +116,9 @@ var appHelpFlagGroups = []flagGroup{
 			flags.ChainID,
 			flags.NetworkID,
 			flags.WeakSubjectivityCheckpoint,
-			flags.Eth1HeaderReqLimit,
+			flags.ExecutionHeaderReqLimit,
 			flags.MinPeersPerSubnet,
+			flags.MaxConcurrentDials,
 			flags.MevRelayEndpoint,
 			flags.MaxBuilderEpochMissedSlots,
 			flags.MaxBuilderConsecutiveMissedSlots,
@@ -148,7 +147,6 @@ var appHelpFlagGroups = []flagGroup{
 			cmd.P2PMaxPeers,
 			cmd.P2PPrivKey,
 			cmd.P2PStaticID,
-			cmd.P2PMetadata,
 			cmd.P2PAllowList,
 			cmd.P2PDenyList,
 			cmd.StaticPeers,
@@ -181,12 +179,12 @@ func init() {
 	cli.AppHelpTemplate = appHelpTemplate
 
 	type helpData struct {
-		App        interface{}
+		App        any
 		FlagGroups []flagGroup
 	}
 
 	originalHelpPrinter := cli.HelpPrinter
-	cli.HelpPrinter = func(w io.Writer, tmpl string, data interface{}) {
+	cli.HelpPrinter = func(w io.Writer, tmpl string, data any) {
 		if tmpl == appHelpTemplate {
 			for _, group := range appHelpFlagGroups {
 				sort.Sort(cli.FlagsByName(group.Flags))
