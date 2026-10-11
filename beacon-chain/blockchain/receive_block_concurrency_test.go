@@ -57,8 +57,8 @@ func TestReceiveBlock_OverlappingBatchImport(t *testing.T) {
 	for _, tc := range []struct {
 		name       string
 		response   error
-		failWrites bool
 		batchEnd   int
+		failWrites bool
 		cancelled  bool
 	}{
 		{name: "SYNCING", response: execution.ErrAcceptedSyncingPayloadStatus, batchEnd: 4},

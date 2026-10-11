@@ -672,6 +672,12 @@ func (s *Service) savePostStateInfo(ctx context.Context, r [32]byte, b interface
 		// Do not use parent context in the event it deadlined.
 		ctx = trace.NewContext(context.Background(), span)
 		log.Warnf("Rolling back insertion of block with root %#x", r)
+		// The state save fills the hot or epoch-boundary cache before it writes
+		// to the database, so a failure can leave the state cached for a block
+		// that is about to be deleted; drop it, as rollbackBlock does.
+		if cacheErr := s.cfg.StateGen.DeleteStateFromCaches(ctx, r); cacheErr != nil {
+			log.WithError(cacheErr).Errorf("Could not delete state from caches with block root %#x", r)
+		}
 		if deleteErr := s.cfg.BeaconDB.DeleteBlock(ctx, r); deleteErr != nil {
 			log.WithError(deleteErr).Errorf("Could not delete block with block root %#x", r)
 		}

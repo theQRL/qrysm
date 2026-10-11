@@ -153,14 +153,22 @@ func (s *State) MigrateToCold(ctx context.Context, fRoot [32]byte) error {
 		return errors.Wrap(err, "could not save the state migration cursor")
 	}
 
-	// Update finalized info in memory.
+	// Update finalized info in memory. The slot is the migration cursor and
+	// advances whatever the caches hold: left behind, the next migration would
+	// redo the whole range, and an older queued migration (above the stale
+	// cursor) would run and record its lower slot. The finalized root and state
+	// are replaced together, when the state is at hand.
+	var fState state.BeaconState
 	fInfo, ok, err := s.epochBoundaryStateCache.getByBlockRoot(fRoot)
 	if err != nil {
 		return err
 	}
 	if ok {
-		s.SaveFinalizedState(fSlot, fRoot, fInfo.state)
+		fState = fInfo.state
+	} else if cached := s.hotStateCache.getWithoutCopy(fRoot); cached != nil && !cached.IsNil() {
+		fState = cached
 	}
+	s.advanceFinalizedInfo(fSlot, fRoot, fState)
 
 	return nil
 }

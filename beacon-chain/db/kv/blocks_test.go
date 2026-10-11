@@ -2,9 +2,11 @@ package kv
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/dgraph-io/ristretto"
 	"github.com/pkg/errors"
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/qrysm/beacon-chain/db/filters"
@@ -18,6 +20,7 @@ import (
 	"github.com/theQRL/qrysm/testing/assert"
 	"github.com/theQRL/qrysm/testing/require"
 	"github.com/theQRL/qrysm/testing/util"
+	bolt "go.etcd.io/bbolt"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -67,6 +70,13 @@ func TestStore_SaveBackfillBlockRoot(t *testing.T) {
 }
 
 func TestStore_SaveBlock_NoDuplicates(t *testing.T) {
+	// A cache too small for a block: every lookup goes to the database. The
+	// size is a package variable read by every store created afterwards, so it
+	// is restored (it used to be left at 256 bytes, which silently disabled the
+	// block cache for the rest of the package: the library discards items
+	// larger than the cache without reporting them).
+	originalBlockCacheSize := BlockCacheSize
+	t.Cleanup(func() { BlockCacheSize = originalBlockCacheSize })
 	BlockCacheSize = 1
 	slot := primitives.Slot(20)
 	ctx := context.Background()
@@ -95,8 +105,6 @@ func TestStore_SaveBlock_NoDuplicates(t *testing.T) {
 			assert.Equal(t, 1, len(retrieved))
 		})
 	}
-	// We reset the block cache size.
-	BlockCacheSize = 256
 }
 
 func TestStore_BlocksCRUD(t *testing.T) {
@@ -941,4 +949,141 @@ func TestDeleteBlock_RemovesStateAndSummary(t *testing.T) {
 	has, _, err := db.BlockRootsBySlot(ctx, 7)
 	require.NoError(t, err)
 	require.Equal(t, false, has)
+}
+
+// pauseMarker is a cache value whose cost callback blocks the cache's apply
+// goroutine until released, and reports when the goroutine reached it. Queued
+// ahead of an insert, it pins that goroutine at a chosen point of the set
+// buffer, which makes the race between a queued insert and a later delete
+// deterministic.
+type pauseMarker struct {
+	entered chan struct{}
+	release chan struct{}
+	once    *sync.Once
+}
+
+// pausableBlockCache is a block cache with the store's sizing whose apply
+// goroutine honours pauseMarker values (cost 0 routes a value to the callback).
+func pausableBlockCache(t *testing.T) *ristretto.Cache {
+	cache, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: 1000,
+		MaxCost:     128 << 20, // the store's default; not the package variable, which another test shrinks
+		BufferItems: 64,
+		Metrics:     true,
+		Cost: func(v interface{}) int64 {
+			if m, ok := v.(pauseMarker); ok {
+				m.once.Do(func() { close(m.entered) })
+				<-m.release
+			}
+			return 1
+		},
+	})
+	require.NoError(t, err)
+	return cache
+}
+
+// newPause queues a pause marker and returns its release function and the
+// channel closed once the apply goroutine is blocked at it.
+func newPause(t *testing.T, cache *ristretto.Cache, key string) (release func(), entered <-chan struct{}) {
+	m := pauseMarker{entered: make(chan struct{}), release: make(chan struct{}), once: &sync.Once{}}
+	require.Equal(t, true, cache.Set(key, m, 0), "the pause marker must be queued")
+	var once sync.Once
+	release = func() { once.Do(func() { close(m.release) }) }
+	t.Cleanup(release)
+	return release, m.entered
+}
+
+// awaitPause fails the test when the apply goroutine does not reach the pause.
+func awaitPause(t *testing.T, entered <-chan struct{}, name string) {
+	select {
+	case <-entered:
+	case <-time.After(10 * time.Second):
+		t.Fatalf("the cache's apply goroutine did not reach the pause %q", name)
+	}
+}
+
+// The cache applies inserts from a buffer in the background. A block deleted
+// while the insert queued by its save is still unapplied is served by the
+// cache after DeleteBlock returned, until the delete the cache queued behind
+// the insert lands. In that window the database must still be what counts:
+// HasBlock reports the block gone and a re-save writes it instead of being
+// skipped as already stored. The apply goroutine is pinned before the insert
+// and again between the insert and the delete, so the window is held open
+// deterministically.
+func TestDeleteBlock_DatabaseDecidesWhileTheCacheServesTheDeletedBlock(t *testing.T) {
+	ctx := context.Background()
+	db := setupDB(t)
+	db.blockCache = pausableBlockCache(t)
+	onDisk := func(root [32]byte) bool {
+		var exists bool
+		require.NoError(t, db.db.View(func(tx *bolt.Tx) error {
+			exists = tx.Bucket(blocksBucket).Get(root[:]) != nil
+			return nil
+		}))
+		return exists
+	}
+	b := util.NewBeaconBlockZond()
+	b.Block.Slot = 7
+	wsb, err := blocks.NewSignedBeaconBlock(b)
+	require.NoError(t, err)
+	root, err := wsb.Block().HashTreeRoot()
+	require.NoError(t, err)
+
+	releaseFirst, firstEntered := newPause(t, db.blockCache, "pause-before-insert")
+	awaitPause(t, firstEntered, "pause-before-insert") // the apply goroutine is pinned
+	require.NoError(t, db.SaveBlock(ctx, wsb))         // the insert queues behind the pin
+	releaseSecond, secondEntered := newPause(t, db.blockCache, "pause-after-insert")
+	require.NoError(t, db.DeleteBlock(ctx, root)) // removal misses the unapplied insert; delete queued behind the second pause
+	require.Equal(t, false, onDisk(root))
+
+	// Let the queued insert land; the apply goroutine then stops at the second
+	// pause, with the cache serving the deleted block.
+	releaseFirst()
+	awaitPause(t, secondEntered, "pause-after-insert")
+	v, ok := db.blockCache.Get(string(root[:]))
+	if !(ok && v != nil) {
+		t.Logf("cache metrics: %s", db.blockCache.Metrics.String())
+	}
+	require.Equal(t, true, ok && v != nil, "the queued insert was not applied")
+
+	require.Equal(t, false, db.HasBlock(ctx, root), "HasBlock must follow the database, not the cache")
+	require.NoError(t, db.SaveBlock(ctx, wsb))
+	require.Equal(t, true, onDisk(root), "the re-save must reach the database despite the cache hit")
+
+	// Once the queued delete and the re-save's set land, the store serves the
+	// block from the database. (The cache itself may miss: the re-save's set
+	// found the stale entry and became an in-place update, which the queued
+	// delete then removed; a miss falls through to the database.)
+	releaseSecond()
+	db.blockCache.Wait()
+	require.Equal(t, true, db.HasBlock(ctx, root))
+	stored, err := db.Block(ctx, root)
+	require.NoError(t, err)
+	require.NoError(t, blocks.BeaconBlockIsNil(stored))
+	storedRoot, err := stored.Block().HashTreeRoot()
+	require.NoError(t, err)
+	require.Equal(t, root, storedRoot)
+}
+
+// A cache entry without a stored block (the cache is filled asynchronously)
+// must not make SaveBlock skip the write.
+func TestSaveBlock_CacheHitWithoutStoredBlockWrites(t *testing.T) {
+	ctx := context.Background()
+	db := setupDB(t)
+	b := util.NewBeaconBlockZond()
+	b.Block.Slot = 7
+	wsb, err := blocks.NewSignedBeaconBlock(b)
+	require.NoError(t, err)
+	root, err := wsb.Block().HashTreeRoot()
+	require.NoError(t, err)
+	db.blockCache.Set(string(root[:]), wsb, 1)
+	db.blockCache.Wait()
+
+	require.NoError(t, db.SaveBlock(ctx, wsb))
+	var exists bool
+	require.NoError(t, db.db.View(func(tx *bolt.Tx) error {
+		exists = tx.Bucket(blocksBucket).Get(root[:]) != nil
+		return nil
+	}))
+	require.Equal(t, true, exists)
 }

@@ -23,7 +23,8 @@ const backupsDirectoryName = "backups"
 // finalized checkpoint whose block and state were written after the keys were
 // listed, and such a backup cannot start a node. The snapshot is written to a
 // temporary file, synced to disk and only then renamed to its final name, so a
-// file with the final name is always complete.
+// file with the final name is always complete; the directory is synced after the
+// rename, so a completed backup survives a crash right after it is reported.
 func (s *Store) Backup(ctx context.Context, outputDir string, permissionOverride bool) error {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB.Backup")
 	defer span.End()
@@ -81,6 +82,11 @@ func (s *Store) Backup(ctx context.Context, outputDir string, permissionOverride
 	}
 	if err := os.Rename(tmpPath, backupPath); err != nil {
 		return errors.Wrap(err, "could not move backup database into place")
+	}
+	// The rename is durable only once the directory is: a crash right after
+	// this returns would otherwise leave the backup under its temporary name.
+	if err := file.SyncDir(backupsDir); err != nil {
+		return errors.Wrap(err, "could not sync the backups directory")
 	}
 	return nil
 }

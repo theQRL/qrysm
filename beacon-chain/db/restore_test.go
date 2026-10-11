@@ -450,3 +450,23 @@ func TestRestore_SymlinkedDatabaseIsRestoredAtItsTarget(t *testing.T) {
 	require.Equal(t, primitives.Slot(5000), headSlot(t, realDir), "the restore must land at the link's target")
 	require.Equal(t, primitives.Slot(5000), headSlot(t, dbDir))
 }
+
+// The copy is a bolt snapshot taken under the source's shared lock: a source
+// that a node has open is refused instead of being copied while it changes,
+// and the snapshot opens as a database with the source's content.
+func TestSnapshotDatabase(t *testing.T) {
+	ctx := context.Background()
+	srcDir := t.TempDir()
+	source := newDatabaseWithHead(t, srcDir, 77)
+
+	// A node has the source open.
+	node, err := kv.NewKVStore(ctx, srcDir)
+	require.NoError(t, err)
+	require.ErrorContains(t, "in use", snapshotDatabase(source, path.Join(t.TempDir(), "copy.db")))
+	require.NoError(t, node.Close())
+
+	dstDir := path.Join(t.TempDir(), kv.BeaconNodeDbDirName)
+	require.NoError(t, os.MkdirAll(dstDir, 0700))
+	require.NoError(t, snapshotDatabase(source, path.Join(dstDir, kv.DatabaseFileName)))
+	require.Equal(t, primitives.Slot(77), headSlot(t, dstDir))
+}

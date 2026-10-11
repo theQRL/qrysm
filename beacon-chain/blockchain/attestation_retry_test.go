@@ -77,7 +77,7 @@ func testAttestationProcessingRetry(t *testing.T, included bool) {
 			b, bState := emptyBranchBlock(t, f, f.states[2], 6, 'b')
 			aRoot, bRoot := a.Root(), b.Root()
 			if bytes.Compare(aRoot[:], bRoot[:]) > 0 {
-				a, b, aState, bState = b, a, bState, aState
+				a, b, aState = b, a, bState
 			}
 			atts, err := util.GenerateAttestations(aState.Copy(), f.keys, 1, 7, false)
 			require.NoError(t, err)

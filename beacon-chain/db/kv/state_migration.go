@@ -36,11 +36,17 @@ func (s *Store) StateMigrationCursor(ctx context.Context) (primitives.Slot, bool
 }
 
 // SaveStateMigrationCursor records the slot up to which the cold state
-// migration completed.
+// migration completed. The cursor never moves back: migrations run in the
+// background and complete in any order, and an older one finishing after a
+// newer one must not undo the recorded progress.
 func (s *Store) SaveStateMigrationCursor(ctx context.Context, slot primitives.Slot) error {
 	_, span := trace.StartSpan(ctx, "BeaconDB.SaveStateMigrationCursor")
 	defer span.End()
 	return s.db.Update(func(tx *bolt.Tx) error {
-		return tx.Bucket(chainMetadataBucket).Put(stateMigrationCursorKey, bytesutil.SlotToBytesBigEndian(slot))
+		bkt := tx.Bucket(chainMetadataBucket)
+		if v := bkt.Get(stateMigrationCursorKey); len(v) == 8 && bytesutil.BytesToSlotBigEndian(v) >= slot {
+			return nil
+		}
+		return bkt.Put(stateMigrationCursorKey, bytesutil.SlotToBytesBigEndian(slot))
 	})
 }

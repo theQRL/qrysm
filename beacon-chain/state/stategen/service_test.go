@@ -340,6 +340,7 @@ func TestResume_NoRecordedCursorOnCheckpointSyncedNode(t *testing.T) {
 	// Finality moves to slot 9: the archived slot 8 is served by the origin's state.
 	fRoot, _ := saveFinalizedBlock(t, ctx, beaconDB, base, 9, originRoot)
 	require.NoError(t, service.MigrateToCold(ctx, fRoot))
+	assert.Equal(t, primitives.Slot(9), service.finalizedInfo.slot, "the in-memory cursor advances without a cache entry")
 	cursor, found, err := beaconDB.StateMigrationCursor(ctx)
 	require.NoError(t, err)
 	require.Equal(t, true, found)

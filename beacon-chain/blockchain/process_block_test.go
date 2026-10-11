@@ -26,6 +26,7 @@ import (
 	doublylinkedtree "github.com/theQRL/qrysm/beacon-chain/forkchoice/doubly-linked-tree"
 	forkchoicetypes "github.com/theQRL/qrysm/beacon-chain/forkchoice/types"
 	"github.com/theQRL/qrysm/beacon-chain/state"
+	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
 	"github.com/theQRL/qrysm/config/features"
 	field_params "github.com/theQRL/qrysm/config/fieldparams"
 	"github.com/theQRL/qrysm/config/params"
@@ -1872,14 +1873,6 @@ func Test_postBlockProcess_EventSending(t *testing.T) {
 	})
 }
 
-// Helper function to simulate the block being on time or delayed for proposer
-// boost. It alters the genesisTime tracked by the store.
-func driftGenesisTime(s *Service, slot, delay int64) {
-	offset := slot*int64(params.BeaconConfig().SecondsPerSlot) - delay
-	s.SetGenesisTime(time.Unix(time.Now().Unix()-offset, 0))
-	s.cfg.ForkChoiceStore.SetGenesisTime(uint64(s.genesisTime.Unix()))
-}
-
 // TestLateBlockTasks_ForkchoiceWriteLock is a regression test for
 // lateBlockTasks calling notifyForkchoiceUpdate — which mutates forkchoice
 // (SetOptimisticToValid) — while holding only the forkchoice read lock. Under
@@ -2124,4 +2117,49 @@ func TestPostBlockProcess_RetainedHeadOptimism(t *testing.T) {
 			require.Equal(t, tt.optimistic, optimistic, "cached head must reflect validation of descendants")
 		})
 	}
+}
+
+// stateSaveFailingDB passes everything through to the real database except
+// state saves, which fail once failing is set, the way a database error does.
+type stateSaveFailingDB struct {
+	db.HeadAccessDatabase
+	failing atomic.Bool
+}
+
+func (d *stateSaveFailingDB) SaveState(ctx context.Context, st state.ReadOnlyBeaconState, root [32]byte) error {
+	if d.failing.Load() {
+		return errors.New("disk full")
+	}
+	return d.HeadAccessDatabase.SaveState(ctx, st, root)
+}
+
+// A failed state save rolls the block back. A state the state manager already
+// holds in its caches for that root (an earlier import attempt stored it) must
+// go with the block: a cached state for a deleted block would be served to
+// direct lookups of that root.
+func TestSavePostStateInfo_FailedStateSaveClearsCaches(t *testing.T) {
+	s, tr := minimalTestService(t)
+	failingDB := &stateSaveFailingDB{HeadAccessDatabase: tr.db}
+	sg := stategen.New(failingDB, tr.fcs)
+	s.cfg.BeaconDB, s.cfg.StateGen = failingDB, sg
+
+	// A block and state at a hot-state spill slot: with the spill enabled the
+	// state save writes the state to the database, which is where it fails.
+	st, _ := util.DeterministicGenesisStateZond(t, 8)
+	require.NoError(t, st.SetSlot(128))
+	b := util.NewBeaconBlockZond()
+	b.Block.Slot = 128
+	wsb, err := consensusblocks.NewSignedBeaconBlock(b)
+	require.NoError(t, err)
+	root, err := wsb.Block().HashTreeRoot()
+	require.NoError(t, err)
+	sg.EnableSaveHotStateToDB(tr.ctx)
+	require.NoError(t, sg.SaveState(tr.ctx, root, st)) // the earlier attempt: cached
+	require.Equal(t, true, sg.StateByRootIfCached(root) != nil)
+
+	failingDB.failing.Store(true)
+	require.ErrorContains(t, "disk full", s.savePostStateInfo(tr.ctx, root, wsb, st))
+
+	require.Equal(t, false, tr.db.HasBlock(tr.ctx, root), "the block must be rolled back")
+	require.Equal(t, true, sg.StateByRootIfCached(root) == nil, "no state may stay cached for the rolled-back block")
 }

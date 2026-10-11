@@ -36,7 +36,7 @@ func TestService_ReceiveBlockBatch_PrefixAttestations(t *testing.T) {
 			b, bState := signedBatchSlashingBlock(t, f, pre, 13, 'b', nil)
 			aRoot, bRoot := a.Root(), b.Root()
 			if bytes.Compare(aRoot[:], bRoot[:]) > 0 {
-				a, b, aState, bState = b, a, bState, aState
+				a, b, aState = b, a, bState
 			}
 			branch := []blocks.ROBlock{a}
 			var fullWeight, retainedWeight uint64

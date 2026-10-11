@@ -24,6 +24,8 @@ var errOriginBlockMismatch = errors.New("checkpoint block does not match the che
 
 // errOriginOnSyncedDatabase is returned when a checkpoint import is attempted on a
 // database that already holds finalized chain data beyond genesis.
+var errOriginGenesisMismatch = errors.New("checkpoint state does not belong to this chain: its genesis validators root or genesis time differs from the local genesis")
+
 var errOriginOnSyncedDatabase = errors.New("checkpoint sync requires a database without finalized chain data; clear the database to sync from a checkpoint")
 
 // verifyOriginBlockMatchesState checks that the checkpoint block is the block the
@@ -118,6 +120,22 @@ func (s *Store) SaveOrigin(ctx context.Context, serState, serBlock []byte) error
 	}
 	if err := helpers.ValidateCheckpointActiveValidatorCount(state); err != nil {
 		return errors.Wrap(err, "invalid checkpoint state")
+	}
+	// The fork version only says which config the state was produced under. The
+	// genesis validators root and the genesis time identify the chain, and a
+	// checkpoint from another chain with the same config would otherwise be
+	// installed as the trusted anchor.
+	gs, err := s.GenesisState(ctx)
+	if err != nil {
+		return errors.Wrap(err, "could not load the genesis state")
+	}
+	if gs == nil || gs.IsNil() {
+		return errors.New("genesis state not found: genesis must be provided for checkpoint sync")
+	}
+	if !bytes.Equal(state.GenesisValidatorsRoot(), gs.GenesisValidatorsRoot()) || state.GenesisTime() != gs.GenesisTime() {
+		return errors.Wrapf(errOriginGenesisMismatch,
+			"checkpoint genesis validators root %#x and time %d, local genesis validators root %#x and time %d",
+			state.GenesisValidatorsRoot(), state.GenesisTime(), gs.GenesisValidatorsRoot(), gs.GenesisTime())
 	}
 
 	wblk, err := cf.UnmarshalBeaconBlock(serBlock)

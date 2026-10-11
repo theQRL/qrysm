@@ -3,6 +3,7 @@ package blockchain
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/theQRL/qrysm/async/event"
 	"github.com/theQRL/qrysm/beacon-chain/cache/depositcache"
@@ -17,6 +18,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/p2p"
 	"github.com/theQRL/qrysm/beacon-chain/startup"
 	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
+	"github.com/theQRL/qrysm/config/params"
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 	"github.com/theQRL/qrysm/testing/require"
 	"google.golang.org/protobuf/proto"
@@ -108,4 +110,12 @@ func minimalTestService(t *testing.T, opts ...Option) (*Service, *testServiceReq
 
 	require.NoError(t, err)
 	return s, req
+}
+
+// Helper function to simulate the block being on time or delayed for proposer
+// boost. It alters the genesisTime tracked by the store.
+func driftGenesisTime(s *Service, slot, delay int64) {
+	offset := slot*int64(params.BeaconConfig().SecondsPerSlot) - delay
+	s.SetGenesisTime(time.Unix(time.Now().Unix()-offset, 0))
+	s.cfg.ForkChoiceStore.SetGenesisTime(uint64(s.genesisTime.Unix()))
 }

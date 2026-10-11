@@ -185,9 +185,8 @@ func (s *Store) BlockRoots(ctx context.Context, f *filters.QueryFilter) ([][32]b
 func (s *Store) HasBlock(ctx context.Context, blockRoot [32]byte) bool {
 	_, span := trace.StartSpan(ctx, "BeaconDB.HasBlock")
 	defer span.End()
-	if v, ok := s.blockCache.Get(string(blockRoot[:])); v != nil && ok {
-		return true
-	}
+	// The database decides: the cache is filled in the background and can
+	// still hold a block that DeleteBlock has removed (see there).
 	exists := false
 	if err := s.db.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(blocksBucket)
@@ -320,6 +319,15 @@ func (s *Store) DeleteBlock(ctx context.Context, root [32]byte) error {
 	// Caches are updated once the deletion is durable. A cached summary that
 	// was never flushed must survive a refused deletion.
 	s.stateSummaryCache.delete(root)
+	// The cache applies inserts from a buffer in the background. The insert
+	// queued by the save of this block may not have been applied yet, in which
+	// case this removal misses it and the delete the cache queues behind it
+	// only lands later; until then Block serves a copy of a block the database
+	// no longer holds. That is why the cache is only a read hint: HasBlock and
+	// SaveBlock decide on the database. (Draining the cache buffer here is not
+	// an option: the library synchronises the drain with a WaitGroup shared
+	// with its background goroutine, which is fatal inside a testing/synctest
+	// bubble.)
 	s.blockCache.Del(string(root[:]))
 	return nil
 }
@@ -333,7 +341,18 @@ func (s *Store) SaveBlock(ctx context.Context, signed interfaces.ReadOnlySignedB
 		return err
 	}
 	if v, ok := s.blockCache.Get(string(blockRoot[:])); v != nil && ok {
-		return nil
+		// The cache is filled asynchronously; only the database says whether the
+		// block is stored, so a cache hit is confirmed before the save is skipped.
+		stored := false
+		if err := s.db.View(func(tx *bolt.Tx) error {
+			stored = tx.Bucket(blocksBucket).Get(blockRoot[:]) != nil
+			return nil
+		}); err != nil {
+			return err
+		}
+		if stored {
+			return nil
+		}
 	}
 	return s.SaveBlocks(ctx, []interfaces.ReadOnlySignedBeaconBlock{signed})
 }

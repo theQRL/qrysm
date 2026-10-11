@@ -273,6 +273,21 @@ func (s *State) migrationLowerBound(ctx context.Context) (primitives.Slot, error
 	return blk.Block().Slot(), nil
 }
 
+// advanceFinalizedInfo moves the migration cursor to fSlot, never back, and
+// records fRoot and fState as the finalized state when fState is given.
+func (s *State) advanceFinalizedInfo(fSlot primitives.Slot, fRoot [32]byte, fState state.BeaconState) {
+	s.finalizedInfo.lock.Lock()
+	defer s.finalizedInfo.lock.Unlock()
+	if fSlot < s.finalizedInfo.slot {
+		return
+	}
+	s.finalizedInfo.slot = fSlot
+	if fState != nil && !fState.IsNil() {
+		s.finalizedInfo.root = fRoot
+		s.finalizedInfo.state = fState.Copy()
+	}
+}
+
 // SaveFinalizedState saves the finalized slot, root and state into memory to be used by state gen service.
 // This used for migration at the correct start slot and used for hot state play back to ensure
 // lower bound to start is always at the last finalized state.

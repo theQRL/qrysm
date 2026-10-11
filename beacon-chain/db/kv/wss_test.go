@@ -56,6 +56,9 @@ func TestSaveOrigin(t *testing.T) {
 
 	cst, err := util.NewBeaconStateZond()
 	require.NoError(t, err)
+	// The checkpoint belongs to the chain of the embedded genesis.
+	require.NoError(t, cst.SetGenesisValidatorsRoot(st.GenesisValidatorsRoot()))
+	require.NoError(t, cst.SetGenesisTime(st.GenesisTime()))
 	cb := util.NewBeaconBlockZond()
 	alignLatestBlockHeader(t, cst, cb)
 	csb, err := cst.MarshalSSZ()
@@ -365,3 +368,56 @@ func TestSaveOrigin_RejectsDatabaseWithFinalizedHistory(t *testing.T) {
 // Two backups for the same head may run at the same time. Each must write its
 // own temporary file, so that neither renames the other's unfinished copy into
 // place, and the published file must be complete.
+
+// A checkpoint whose genesis validators root or genesis time differs from the
+// local genesis comes from another chain and must not become the trusted
+// anchor, whatever its fork version says.
+func TestSaveOrigin_RejectsDifferentGenesisIdentity(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	if fieldparams.Preset == "minimal" {
+		cfg := params.MinimalSpecConfig().Copy()
+		cfg.ConfigName = params.MainnetTestName
+		params.FillTestVersions(cfg, 128)
+		require.NoError(t, params.SetActive(cfg))
+	}
+	ctx := context.Background()
+	for _, tc := range []struct {
+		name   string
+		mutate func(st state.BeaconState) error
+	}{
+		{name: "genesis validators root", mutate: func(st state.BeaconState) error {
+			return st.SetGenesisValidatorsRoot(bytesutil.PadTo([]byte("other chain"), 32))
+		}},
+		{name: "genesis time", mutate: func(st state.BeaconState) error {
+			return st.SetGenesisTime(st.GenesisTime() + 1)
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			db := setupDB(t)
+			require.NoError(t, db.SaveGenesisData(ctx, genesisStateWithValidatorCounts(t, 1, 0)))
+			genesisRoot, err := db.GenesisBlockRoot(ctx)
+			require.NoError(t, err)
+
+			cst := genesisStateWithValidatorCounts(t, 1, 0)
+			require.NoError(t, cst.SetSlot(5))
+			require.NoError(t, tc.mutate(cst))
+			cb := util.NewBeaconBlockZond()
+			cb.Block.Slot = 5
+			cb.Block.ParentRoot = genesisRoot[:]
+			alignLatestBlockHeader(t, cst, cb)
+			scb, err := blocks.NewSignedBeaconBlock(cb)
+			require.NoError(t, err)
+			cbb, err := scb.MarshalSSZ()
+			require.NoError(t, err)
+			csb, err := cst.MarshalSSZ()
+			require.NoError(t, err)
+
+			require.ErrorIs(t, db.SaveOrigin(ctx, csb, cbb), errOriginGenesisMismatch)
+			_, err = db.OriginCheckpointBlockRoot(ctx)
+			require.ErrorIs(t, err, ErrNotFoundOriginBlockRoot, "nothing may be persisted")
+			blockRoot, err := scb.Block().HashTreeRoot()
+			require.NoError(t, err)
+			require.Equal(t, false, db.HasBlock(ctx, blockRoot))
+		})
+	}
+}

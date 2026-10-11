@@ -2,7 +2,6 @@ package db
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -330,34 +329,28 @@ func waitOutLockWaiters() {
 
 // syncDirectory makes a directory's entries durable; a variable so a test can
 // make it fail.
-var syncDirectory = syncDir
-
-// syncDir makes the directory's entries (a rename or a removal) durable.
-func syncDir(dir string) (err error) {
-	d, err := os.Open(dir) // #nosec G304
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if closeErr := d.Close(); closeErr != nil && err == nil {
-			err = closeErr
-		}
-	}()
-	return d.Sync()
-}
+var syncDirectory = file.SyncDir
 
 // copyDatabaseFile copies the backup into the temporary file; a variable so a
 // test can make the copy fail.
-var copyDatabaseFile = copyFileSync
+var copyDatabaseFile = snapshotDatabase
 
-// copyFileSync copies src to dst and syncs dst to disk before returning.
-func copyFileSync(src, dst string) (err error) {
-	in, err := os.Open(src) // #nosec G304
+// snapshotDatabase writes a consistent snapshot of the source database to dst.
+// The source is opened read-only, which holds its shared lock for the whole
+// copy: a beacon node cannot open and change it meanwhile (a raw copy of a
+// database being written to mixes pages of different transactions), and a
+// source a node already has open is refused. The snapshot is written by bolt
+// from one read transaction, and synced.
+func snapshotDatabase(src, dst string) (err error) {
+	db, err := bolt.Open(src, params.BeaconIoConfig().ReadWritePermissions, &bolt.Options{Timeout: time.Second, ReadOnly: true})
 	if err != nil {
-		return err
+		if errors.Is(err, bolt.ErrTimeout) {
+			return errors.New("the source database is in use by another process")
+		}
+		return errors.Wrap(err, "could not open the restore source")
 	}
 	defer func() {
-		if closeErr := in.Close(); closeErr != nil && err == nil {
+		if closeErr := db.Close(); closeErr != nil && err == nil {
 			err = closeErr
 		}
 	}()
@@ -370,8 +363,11 @@ func copyFileSync(src, dst string) (err error) {
 			err = closeErr
 		}
 	}()
-	if _, err = io.Copy(out, in); err != nil {
+	if err := db.View(func(tx *bolt.Tx) error {
+		_, err := tx.WriteTo(out)
 		return err
+	}); err != nil {
+		return errors.Wrap(err, "could not write the database snapshot")
 	}
 	return out.Sync()
 }

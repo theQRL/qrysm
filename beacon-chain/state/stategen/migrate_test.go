@@ -534,3 +534,34 @@ func TestMigrateToCold_RemovesEveryHotStateEntryOfArchivedRoot(t *testing.T) {
 	require.Equal(t, true, found)
 	require.Equal(t, primitives.Slot(2), cursor)
 }
+
+// Migrations run in the background and complete in any order. The in-memory
+// cursor advances even when the finalized state is in no cache, so an older
+// migration finishing later is a no-op instead of redoing the range and moving
+// the recorded cursor back.
+func TestMigrateToCold_OlderMigrationDoesNotRegressProgress(t *testing.T) {
+	ctx := context.Background()
+	beaconDB := testDB.SetupDB(t)
+	service := New(beaconDB, doublylinkedtree.New())
+	service.slotsPerArchivedPoint = 4
+
+	base, _ := util.DeterministicGenesisStateZond(t, 8)
+	genesisRoot := [32]byte{'g'}
+	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, genesisRoot))
+	require.NoError(t, beaconDB.SaveState(ctx, base, genesisRoot))
+	older, _ := saveFinalizedBlock(t, ctx, beaconDB, base, 8, genesisRoot)
+	newer, _ := saveFinalizedBlock(t, ctx, beaconDB, base, 12, older)
+
+	require.NoError(t, service.MigrateToCold(ctx, newer))
+	require.Equal(t, primitives.Slot(12), service.finalizedInfo.slot, "the cursor must advance without a boundary cache entry")
+	cursor, _, err := beaconDB.StateMigrationCursor(ctx)
+	require.NoError(t, err)
+	require.Equal(t, primitives.Slot(12), cursor)
+
+	// The older migration, queued before the newer one, completes afterwards.
+	require.NoError(t, service.MigrateToCold(ctx, older))
+	require.Equal(t, primitives.Slot(12), service.finalizedInfo.slot)
+	cursor, _, err = beaconDB.StateMigrationCursor(ctx)
+	require.NoError(t, err)
+	require.Equal(t, primitives.Slot(12), cursor, "an older migration must not move the recorded cursor back")
+}
