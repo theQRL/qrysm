@@ -163,6 +163,9 @@ func (s *Store) SaveStates(ctx context.Context, states []state.ReadOnlyBeaconSta
 	if err := s.db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(stateBucket)
 		for i, rt := range blockRoots {
+			if err := s.removeStaleSlotIndex(ctx, tx, rt, states[i].Slot()); err != nil {
+				return err
+			}
 			indicesByBucket := createStateIndicesFromStateSlot(ctx, states[i].Slot())
 			if err := updateValueForIndices(ctx, indicesByBucket, rt[:], tx); err != nil {
 				return errors.Wrap(err, "could not update DB indices")
@@ -253,6 +256,9 @@ func (s *Store) saveStatesEfficientInternal(ctx context.Context, tx *bolt.Tx, bl
 	bucket := tx.Bucket(stateBucket)
 	valIdxBkt := tx.Bucket(blockRootValidatorHashesBucket)
 	for i, rt := range blockRoots {
+		if err := s.removeStaleSlotIndex(ctx, tx, rt, states[i].Slot()); err != nil {
+			return nil, err
+		}
 		indicesByBucket := createStateIndicesFromStateSlot(ctx, states[i].Slot())
 		if err := updateValueForIndices(ctx, indicesByBucket, rt[:], tx); err != nil {
 			return nil, errors.Wrap(err, "could not update DB indices")
@@ -680,22 +686,64 @@ func (s *Store) HighestSlotStatesBelow(ctx context.Context, slot primitives.Slot
 		return nil, err
 	}
 
-	var st state.ReadOnlyBeaconState
-	var err error
+	// A slot holds one root per state saved at it (forks); return every one of
+	// them, not the first in the packed list.
+	states := make([]state.ReadOnlyBeaconState, 0, 1)
 	if best != nil {
-		st, err = s.State(ctx, bytesutil.ToBytes32(best))
+		roots, err := splitRoots(best)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "corrupt value in state slot index")
+		}
+		for _, root := range roots {
+			st, err := s.State(ctx, root)
+			if err != nil {
+				return nil, err
+			}
+			if st != nil && !st.IsNil() {
+				states = append(states, st)
+			}
 		}
 	}
-	if st == nil || st.IsNil() {
-		st, err = s.GenesisState(ctx)
+	if len(states) == 0 {
+		st, err := s.GenesisState(ctx)
 		if err != nil {
 			return nil, err
 		}
+		states = append(states, st)
 	}
 
-	return []state.ReadOnlyBeaconState{st}, nil
+	return states, nil
+}
+
+// removeStaleSlotIndex removes root from the slot-index entry of a state saved
+// earlier under the same root at another slot, when the state summary records
+// that slot. A root maps to one post-state slot, so no path the node takes
+// replaces a state at a different slot; the guard keeps the index free of an
+// entry that no state backs, which the dirty-state cleanup would otherwise
+// follow to delete the live state by root.
+func (s *Store) removeStaleSlotIndex(ctx context.Context, tx *bolt.Tx, root [32]byte, slot primitives.Slot) error {
+	if tx.Bucket(stateBucket).Get(root[:]) == nil {
+		return nil
+	}
+	var previous primitives.Slot
+	if cached := s.stateSummaryCache.get(root); cached != nil {
+		previous = cached.Slot
+	} else if enc := tx.Bucket(stateSummaryBucket).Get(root[:]); len(enc) > 0 {
+		summary := &qrysmpb.StateSummary{}
+		if err := decode(ctx, enc, summary); err != nil {
+			return errors.Wrap(err, "could not decode the state summary of a replaced state")
+		}
+		previous = summary.Slot
+	} else {
+		return nil
+	}
+	if previous == slot {
+		return nil
+	}
+	if err := deleteValueForIndices(ctx, createStateIndicesFromStateSlot(ctx, previous), root[:], tx); err != nil {
+		return errors.Wrap(err, "could not remove the stale slot index of a replaced state")
+	}
+	return nil
 }
 
 // createStateIndicesFromStateSlot takes in a state slot and returns
@@ -734,6 +782,12 @@ func createStateIndicesFromStateSlot(ctx context.Context, slot primitives.Slot) 
 func (s *Store) CleanUpDirtyStates(ctx context.Context, slotsPerArchivedPoint primitives.Slot) error {
 	ctx, span := trace.StartSpan(ctx, "BeaconDB. CleanUpDirtyStates")
 	defer span.End()
+
+	// The interval divides slots below; refuse zero instead of panicking in
+	// the goroutine that runs this at startup.
+	if slotsPerArchivedPoint == 0 {
+		return errors.New("slots per archived point must be positive")
+	}
 
 	f, err := s.FinalizedCheckpoint(ctx)
 	if err != nil {

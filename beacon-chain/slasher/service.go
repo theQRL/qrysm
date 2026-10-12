@@ -13,6 +13,7 @@ import (
 	"github.com/theQRL/qrysm/beacon-chain/blockchain"
 	statefeed "github.com/theQRL/qrysm/beacon-chain/core/feed/state"
 	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/beacon-chain/db/slasherkv"
 	"github.com/theQRL/qrysm/beacon-chain/operations/slashings"
 	"github.com/theQRL/qrysm/beacon-chain/startup"
 	"github.com/theQRL/qrysm/beacon-chain/state/stategen"
@@ -62,6 +63,12 @@ type Service struct {
 	// lastEpochWrittenPersisted is the epoch at which latestEpochWrittenForValidator
 	// was last flushed to disk by the attestation processing routine.
 	lastEpochWrittenPersisted primitives.Epoch
+	// maxChunksPerFlush bounds the span chunks saved in one call, which the
+	// store commits in one transaction with their epoch markers.
+	maxChunksPerFlush int
+	// attestationRetries counts, per signing root, how often an attestation
+	// whose spans could not be saved was queued again.
+	attestationRetries map[[32]byte]uint8
 	// proposalRetries counts, per header signing root, how often a conflicting
 	// proposal whose signature could not be checked was queued again.
 	proposalRetries map[[32]byte]uint8
@@ -81,6 +88,7 @@ func New(ctx context.Context, srvCfg *ServiceConfig) (*Service, error) {
 		ctx:                            ctx,
 		cancel:                         cancel,
 		latestEpochWrittenForValidator: make(map[primitives.ValidatorIndex]primitives.Epoch),
+		maxChunksPerFlush:              slasherkv.ChunkSaveBatchSize,
 	}, nil
 }
 

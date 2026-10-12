@@ -515,3 +515,17 @@ func TestConfigureInterop(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigureSlotsPerArchivedPoint_RejectsNonPositive(t *testing.T) {
+	params.SetupTestConfigCleanup(t)
+	for _, value := range []int{0, -1} {
+		app := cli.App{}
+		set := flag.NewFlagSet("test", 0)
+		set.Int(flags.SlotsPerArchivedPoint.Name, 0, "")
+		require.NoError(t, set.Set(flags.SlotsPerArchivedPoint.Name, strconv.Itoa(value)))
+		cliCtx := cli.NewContext(&app, set, nil)
+
+		require.ErrorContains(t, "must be a positive number of slots", configureSlotsPerArchivedPoint(cliCtx))
+		assert.Equal(t, params.MainnetConfig().SlotsPerArchivedPoint, params.BeaconConfig().SlotsPerArchivedPoint, "the configured interval must be untouched")
+	}
+}

@@ -112,8 +112,16 @@ func (s *Service) processQueuedAttestations(ctx context.Context, slotTicker <-ch
 			// previously saved batches rather than the current one.
 			slashings, err := s.checkSlashableAttestations(ctx, currentEpoch, validAtts)
 			if err != nil {
-				log.WithError(err).Error("Could not check slashable attestations")
-				continue
+				// The spans of this pass did not reach the disk. The slashings
+				// found so far are still processed below, and the attestations
+				// go back on the queue so that their spans are written once the
+				// store recovers; the records saved during the pass make a
+				// retry find no double vote, which is why the slashings cannot
+				// wait for it.
+				log.WithError(err).Error("Could not check slashable attestations; queuing the attestations again")
+				s.requeueAttestations(validAtts)
+			} else {
+				s.forgetAttestationRetries(validAtts)
 			}
 
 			// Process attester slashings by verifying their signatures, submitting

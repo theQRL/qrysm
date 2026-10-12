@@ -411,6 +411,22 @@ func TestStore_Blocks_FiltersCorrectly(t *testing.T) {
 						SetEndSlot(8),
 					expectedNumBlocks: 1,
 				},
+				{
+					// A slot filter that no block satisfies must not fall back
+					// to the parent-root matches alone (slots 5 and 6).
+					filter: filters.NewFilter().
+						SetParentRoot(bytesutil.PadTo([]byte("parent2"), 32)).
+						SetStartSlot(20).
+						SetEndSlot(20),
+					expectedNumBlocks: 0,
+				},
+				{
+					filter: filters.NewFilter().
+						SetParentRoot(bytesutil.PadTo([]byte("parent2"), 32)).
+						SetStartSlot(6).
+						SetEndSlot(6),
+					expectedNumBlocks: 1,
+				},
 			}
 			for _, tt2 := range tests {
 				retrievedBlocks, _, err := db.Blocks(ctx, tt2.filter)

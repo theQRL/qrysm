@@ -33,6 +33,12 @@ const (
 	batchSize = 10_000
 )
 
+// ChunkSaveBatchSize is the number of span chunks SaveSlasherChunksAndEpochs
+// writes in one transaction. A save of at most this many chunks is a single
+// transaction, which commits the chunks and their epoch markers together; the
+// detector sizes its flushes by it.
+const ChunkSaveBatchSize = batchSize
+
 // LastEpochWrittenForValidators given a list of validator indices returns the latest
 // epoch we have recorded the validators writing data for.
 func (s *Store) LastEpochWrittenForValidators(
@@ -321,8 +327,7 @@ func (s *Store) LoadSlasherChunks(
 
 	encodedKind := ssz.MarshalUint8(make([]byte, 0), uint8(kind))
 	for _, diskKey := range diskKeys {
-		encodedKey := append(encodedKind, diskKey...)
-		encodedKeys = append(encodedKeys, encodedKey)
+		encodedKeys = append(encodedKeys, chunkDiskKey(encodedKind, diskKey))
 	}
 
 	for start := 0; start < keysCount; start += batchSize {
@@ -364,36 +369,110 @@ func (s *Store) SaveSlasherChunks(
 	_, span := trace.StartSpan(ctx, "BeaconDB.SaveSlasherChunks")
 	defer span.End()
 
+	encodedKeys, encodedChunks, err := encodeSlasherChunks(kind, chunkKeys, chunks)
+	if err != nil {
+		return err
+	}
+	return s.saveEncodedSlasherChunks(encodedKeys, encodedChunks, nil, nil)
+}
+
+// SaveSlasherChunksAndEpochs saves min and max span chunks together with the
+// latest epoch written for the validators they belong to. Up to
+// ChunkSaveBatchSize chunks are written in one transaction with the epochs;
+// a larger save is split into batches, with the epochs in the last one.
+// Chunks on disk whose epoch marker still points before them would have the
+// next start reset those spans to the neutral element, erasing the votes they
+// record, so callers keep a save within one batch (the detector does) and a
+// failure before the last batch is treated as if nothing had been written:
+// the detector then reverts its in-memory markers.
+func (s *Store) SaveSlasherChunksAndEpochs(
+	ctx context.Context,
+	minChunkKeys [][]byte, minChunks [][]uint16,
+	maxChunkKeys [][]byte, maxChunks [][]uint16,
+	epochByValidator map[primitives.ValidatorIndex]primitives.Epoch,
+) error {
+	_, span := trace.StartSpan(ctx, "BeaconDB.SaveSlasherChunksAndEpochs")
+	defer span.End()
+
+	encodedKeys, encodedChunks, err := encodeSlasherChunks(slashertypes.MinSpan, minChunkKeys, minChunks)
+	if err != nil {
+		return err
+	}
+	maxKeys, maxEncoded, err := encodeSlasherChunks(slashertypes.MaxSpan, maxChunkKeys, maxChunks)
+	if err != nil {
+		return err
+	}
+	encodedKeys = append(encodedKeys, maxKeys...)
+	encodedChunks = append(encodedChunks, maxEncoded...)
+
+	encodedIndices := make([][]byte, 0, len(epochByValidator))
+	encodedEpochs := make([][]byte, 0, len(epochByValidator))
+	for valIdx, epoch := range epochByValidator {
+		encodedEpoch, err := epoch.MarshalSSZ()
+		if err != nil {
+			return err
+		}
+		encodedIndices = append(encodedIndices, encodeValidatorIndex(valIdx))
+		encodedEpochs = append(encodedEpochs, encodedEpoch)
+	}
+	if len(encodedKeys) == 0 && len(encodedIndices) == 0 {
+		return nil
+	}
+	return s.saveEncodedSlasherChunks(encodedKeys, encodedChunks, encodedIndices, encodedEpochs)
+}
+
+// encodeSlasherChunks encodes chunk keys and chunks of one kind for storage.
+func encodeSlasherChunks(kind slashertypes.ChunkKind, chunkKeys [][]byte, chunks [][]uint16) ([][]byte, [][]byte, error) {
 	if len(chunkKeys) != len(chunks) {
-		return fmt.Errorf(
+		return nil, nil, fmt.Errorf(
 			"cannot save slasher chunks, got %d keys and %d chunks",
 			len(chunkKeys), len(chunks),
 		)
 	}
-
 	chunksCount := len(chunks)
 	encodedKind := ssz.MarshalUint8(make([]byte, 0), uint8(kind))
-
 	encodedKeys := make([][]byte, chunksCount)
 	encodedChunks := make([][]byte, chunksCount)
 	for i := 0; i < chunksCount; i++ {
-		encodedKeys[i] = append(encodedKind, chunkKeys[i]...)
+		encodedKeys[i] = chunkDiskKey(encodedKind, chunkKeys[i])
 		encodedChunk, err := encodeSlasherChunk(chunks[i])
 		if err != nil {
-			return errors.Wrapf(err, "failed to encode slasher chunk for key %v", chunkKeys[i])
+			return nil, nil, errors.Wrapf(err, "failed to encode slasher chunk for key %v", chunkKeys[i])
 		}
 		encodedChunks[i] = encodedChunk
 	}
+	return encodedKeys, encodedChunks, nil
+}
 
-	for start := 0; start < chunksCount; start += batchSize {
-		stop := min(start+batchSize, chunksCount)
-		encodedKeysBatch := encodedKeys[start:stop]
-		encodedChunksBatch := encodedChunks[start:stop]
+// chunkDiskKey prefixes a chunk key with its kind in a fresh allocation. An
+// append onto the shared prefix would reuse its spare capacity for every key
+// short enough to fit, leaving all of them aliased to the last one written.
+func chunkDiskKey(encodedKind, chunkKey []byte) []byte {
+	key := make([]byte, 0, len(encodedKind)+len(chunkKey))
+	key = append(key, encodedKind...)
+	return append(key, chunkKey...)
+}
 
+// saveEncodedSlasherChunks writes encoded chunks in transaction-sized batches
+// and the encoded epoch markers, if any, in the last of those transactions.
+func (s *Store) saveEncodedSlasherChunks(encodedKeys, encodedChunks, encodedIndices, encodedEpochs [][]byte) error {
+	total := len(encodedKeys)
+	for start := 0; ; start += batchSize {
+		stop := min(start+batchSize, total)
+		last := stop == total
 		if err := s.db.Update(func(tx *bolt.Tx) error {
 			bkt := tx.Bucket(slasherChunksBucket)
-			for i := range encodedKeysBatch {
-				if err := bkt.Put(encodedKeysBatch[i], encodedChunksBatch[i]); err != nil {
+			for i := start; i < stop; i++ {
+				if err := bkt.Put(encodedKeys[i], encodedChunks[i]); err != nil {
+					return err
+				}
+			}
+			if !last {
+				return nil
+			}
+			epochsBkt := tx.Bucket(attestedEpochsByValidator)
+			for i := range encodedIndices {
+				if err := epochsBkt.Put(encodedIndices[i], encodedEpochs[i]); err != nil {
 					return err
 				}
 			}
@@ -401,9 +480,10 @@ func (s *Store) SaveSlasherChunks(
 		}); err != nil {
 			return errors.Wrap(err, "failed to save slasher chunks")
 		}
+		if last {
+			return nil
+		}
 	}
-
-	return nil
 }
 
 // CheckDoubleBlockProposals takes in a list of proposals and for each,

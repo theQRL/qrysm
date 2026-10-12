@@ -565,3 +565,19 @@ func TestMigrateToCold_OlderMigrationDoesNotRegressProgress(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, primitives.Slot(12), cursor, "an older migration must not move the recorded cursor back")
 }
+
+// A zero archive interval must be refused instead of dividing by zero in the
+// background migration goroutine.
+func TestMigrateToCold_ZeroIntervalIsAnError(t *testing.T) {
+	ctx := context.Background()
+	beaconDB := testDB.SetupDB(t)
+	service := New(beaconDB, doublylinkedtree.New())
+	service.slotsPerArchivedPoint = 0
+	base, _ := util.DeterministicGenesisStateZond(t, 8)
+	genesisRoot := [32]byte{'g'}
+	require.NoError(t, beaconDB.SaveGenesisBlockRoot(ctx, genesisRoot))
+	require.NoError(t, beaconDB.SaveState(ctx, base, genesisRoot))
+	fRoot, _ := saveFinalizedBlock(t, ctx, beaconDB, base, 8, genesisRoot)
+
+	require.ErrorContains(t, "must be positive", service.MigrateToCold(ctx, fRoot))
+}

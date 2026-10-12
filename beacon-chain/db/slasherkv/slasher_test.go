@@ -3,6 +3,7 @@ package slasherkv
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	"math/rand"
 	"reflect"
 	"sort"
@@ -735,4 +736,38 @@ func TestSaveAttestationRecords_UnionAboveCommitteeSizeKeepsIncoming(t *testing.
 	record, err := db.AttestationRecordForValidator(ctx, primitives.ValidatorIndex(max+10), 3)
 	require.NoError(t, err)
 	require.DeepEqual(t, []uint64{max + 10}, record.IndexedAttestation.AttestingIndices)
+}
+
+// Chunks and epoch markers are saved together: a save within the batch size
+// is one transaction, and a larger one still lands its markers with its last
+// batch of chunks.
+func TestSaveSlasherChunksAndEpochs(t *testing.T) {
+	ctx := context.Background()
+	beaconDB := setupDB(t)
+	for _, count := range []int{3, ChunkSaveBatchSize + 5} {
+		minKeys, maxKeys := make([][]byte, 0, count), make([][]byte, 0, count)
+		minChunks, maxChunks := make([][]uint16, 0, count), make([][]uint16, 0, count)
+		for i := 0; i < count; i++ {
+			minKeys = append(minKeys, []byte(fmt.Sprintf("min-%d-%d", count, i)))
+			maxKeys = append(maxKeys, []byte(fmt.Sprintf("max-%d-%d", count, i)))
+			minChunks = append(minChunks, []uint16{uint16(i), 1})
+			maxChunks = append(maxChunks, []uint16{uint16(i), 2})
+		}
+		epochs := map[primitives.ValidatorIndex]primitives.Epoch{1: primitives.Epoch(count), 2: primitives.Epoch(count + 1)}
+		require.NoError(t, beaconDB.SaveSlasherChunksAndEpochs(ctx, minKeys, minChunks, maxKeys, maxChunks, epochs))
+
+		loadedMin, existsMin, err := beaconDB.LoadSlasherChunks(ctx, slashertypes.MinSpan, minKeys)
+		require.NoError(t, err)
+		loadedMax, existsMax, err := beaconDB.LoadSlasherChunks(ctx, slashertypes.MaxSpan, maxKeys)
+		require.NoError(t, err)
+		for i := 0; i < count; i++ {
+			require.Equal(t, true, existsMin[i] && existsMax[i])
+			require.DeepEqual(t, minChunks[i], loadedMin[i])
+			require.DeepEqual(t, maxChunks[i], loadedMax[i])
+		}
+		written, err := beaconDB.LastEpochWrittenForValidators(ctx, []primitives.ValidatorIndex{1, 2})
+		require.NoError(t, err)
+		require.Equal(t, primitives.Epoch(count), written[0].Epoch)
+		require.Equal(t, primitives.Epoch(count+1), written[1].Epoch)
+	}
 }

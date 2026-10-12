@@ -6,10 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	logTest "github.com/sirupsen/logrus/hooks/test"
 	mock "github.com/theQRL/qrysm/beacon-chain/blockchain/testing"
 	"github.com/theQRL/qrysm/beacon-chain/core/signing"
 	"github.com/theQRL/qrysm/beacon-chain/db"
+	"github.com/theQRL/qrysm/beacon-chain/db/slasherkv"
 	dbtest "github.com/theQRL/qrysm/beacon-chain/db/testing"
 	slashingsmock "github.com/theQRL/qrysm/beacon-chain/operations/slashings/mock"
 	slashertypes "github.com/theQRL/qrysm/beacon-chain/slasher/types"
@@ -980,4 +982,306 @@ func createAttestationWrapper(t testing.TB, source, target primitives.Epoch, ind
 		},
 		SigningRoot: signRoot,
 	}
+}
+
+// The span chunks and the latest epoch written per validator must reach disk
+// together. The markers used to be flushed once per epoch, so a validator
+// whose chunk was first processed later in an epoch had its chunks on disk
+// ahead of its marker; the next start then reset those spans to the neutral
+// element from the stale marker on, and a persisted vote no longer detected
+// the vote that surrounded it.
+func TestService_PersistedSpansDetectSurroundAfterRestart(t *testing.T) {
+	ctx := context.Background()
+	slasherDB := dbtest.SetupSlasherDB(t)
+	beaconState, err := util.NewBeaconStateZond()
+	require.NoError(t, err)
+	mockChain := &mock.ChainService{State: beaconState}
+	newService := func() *Service {
+		s, err := New(ctx, &ServiceConfig{
+			Database:                slasherDB,
+			StateNotifier:           &mock.MockStateNotifier{},
+			HeadStateFetcher:        mockChain,
+			AttestationStateFetcher: mockChain,
+			SlashingPoolInserter:    &slashingsmock.PoolMock{},
+			ClockWaiter:             startup.NewClockSynchronizer(),
+		})
+		require.NoError(t, err)
+		return s
+	}
+
+	// Epoch 3, after that epoch's once-per-epoch marker flush: the (2, 3)
+	// vote is processed and its chunks written.
+	s := newService()
+	slashings, err := s.checkSlashableAttestations(ctx, 3, []*slashertypes.IndexedAttestationWrapper{
+		createAttestationWrapper(t, 2, 3, []uint64{0}, []byte("a")),
+	})
+	require.NoError(t, err)
+	require.Equal(t, 0, len(slashings))
+
+	// Restart: a fresh service reads the markers from the database, as Start does.
+	restarted := newService()
+	epochs, err := slasherDB.LastEpochWrittenForValidators(ctx, []primitives.ValidatorIndex{0})
+	require.NoError(t, err)
+	for _, e := range epochs {
+		restarted.latestEpochWrittenForValidator[e.ValidatorIndex] = e.Epoch
+	}
+	require.Equal(t, primitives.Epoch(3), restarted.latestEpochWrittenForValidator[0], "the marker must reach disk with the chunks")
+
+	slashings, err = restarted.checkSlashableAttestations(ctx, 4, []*slashertypes.IndexedAttestationWrapper{
+		createAttestationWrapper(t, 1, 4, []uint64{0}, []byte("b")),
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(slashings), "the surrounding vote must be detected after the restart")
+}
+
+// progressSaveFailingDB fails the combined chunk-and-marker save while armed.
+type progressSaveFailingDB struct {
+	db.SlasherDatabase
+	fail bool
+}
+
+func (d *progressSaveFailingDB) SaveSlasherChunksAndEpochs(
+	ctx context.Context,
+	minChunkKeys [][]byte, minChunks [][]uint16,
+	maxChunkKeys [][]byte, maxChunks [][]uint16,
+	epochByValidator map[primitives.ValidatorIndex]primitives.Epoch,
+) error {
+	if d.fail {
+		return errors.New("disk full")
+	}
+	return d.SlasherDatabase.SaveSlasherChunksAndEpochs(ctx, minChunkKeys, minChunks, maxChunkKeys, maxChunks, epochByValidator)
+}
+
+// A failed save of chunks and markers wrote nothing; the in-memory markers
+// must not claim the progress, or the next pass would skip the neutralisation
+// the disk still needs and the attestations of the failed pass would be
+// checked against spans that were never written.
+func TestService_FailedProgressSaveLeavesEpochMarkersUntouched(t *testing.T) {
+	ctx := context.Background()
+	failing := &progressSaveFailingDB{SlasherDatabase: dbtest.SetupSlasherDB(t)}
+	s := newDetectorForTest(t, failing)
+	s.latestEpochWrittenForValidator[0] = 1
+
+	failing.fail = true
+	_, err := s.checkSlashableAttestations(ctx, 3, []*slashertypes.IndexedAttestationWrapper{
+		createAttestationWrapper(t, 2, 3, []uint64{0}, []byte("a")),
+	})
+	require.ErrorContains(t, "disk full", err)
+	require.Equal(t, primitives.Epoch(1), s.latestEpochWrittenForValidator[0], "the marker must be untouched after a failed save")
+	_, ok := s.latestEpochWrittenForValidator[1]
+	require.Equal(t, false, ok, "a validator without a marker before the pass must have none after the failed save")
+
+	failing.fail = false
+	_, err = s.checkSlashableAttestations(ctx, 3, []*slashertypes.IndexedAttestationWrapper{
+		createAttestationWrapper(t, 2, 3, []uint64{0}, []byte("a")),
+	})
+	require.NoError(t, err)
+	require.Equal(t, primitives.Epoch(3), s.latestEpochWrittenForValidator[0])
+}
+
+// newDetectorForTest builds a service around the given slasher database.
+func newDetectorForTest(t *testing.T, database db.SlasherDatabase) *Service {
+	beaconState, err := util.NewBeaconStateZond()
+	require.NoError(t, err)
+	mockChain := &mock.ChainService{State: beaconState}
+	s, err := New(context.Background(), &ServiceConfig{
+		Database:                database,
+		StateNotifier:           &mock.MockStateNotifier{},
+		HeadStateFetcher:        mockChain,
+		AttestationStateFetcher: mockChain,
+		SlashingPoolInserter:    &slashingsmock.PoolMock{},
+		ClockWaiter:             startup.NewClockSynchronizer(),
+	})
+	require.NoError(t, err)
+	return s
+}
+
+// recordingSlasherDB records the size of every chunk-and-marker save.
+type recordingSlasherDB struct {
+	db.SlasherDatabase
+	saves []int
+}
+
+func (d *recordingSlasherDB) SaveSlasherChunksAndEpochs(
+	ctx context.Context,
+	minChunkKeys [][]byte, minChunks [][]uint16,
+	maxChunkKeys [][]byte, maxChunks [][]uint16,
+	epochByValidator map[primitives.ValidatorIndex]primitives.Epoch,
+) error {
+	d.saves = append(d.saves, len(minChunkKeys)+len(maxChunkKeys))
+	return d.SlasherDatabase.SaveSlasherChunksAndEpochs(ctx, minChunkKeys, minChunks, maxChunkKeys, maxChunks, epochByValidator)
+}
+
+// A flush must never hold more chunks than the store commits in one
+// transaction: a group that would take the accumulation past the bound is
+// saved after the groups before it, so no save is split and no crash window
+// opens before the epoch markers commit.
+func TestService_FlushNeverExceedsTheTransactionBound(t *testing.T) {
+	ctx := context.Background()
+	recording := &recordingSlasherDB{SlasherDatabase: dbtest.SetupSlasherDB(t)}
+	s := newDetectorForTest(t, recording)
+	// Every validator group of one attestation touches two chunks (min and
+	// max); a bound of 3 forces a flush before every second group.
+	s.maxChunksPerFlush = 3
+	validatorChunkSize := uint64(s.params.validatorChunkSize)
+	atts := make([]*slashertypes.IndexedAttestationWrapper, 0, 5)
+	for i := uint64(0); i < 5; i++ {
+		atts = append(atts, createAttestationWrapper(t, 1, 2, []uint64{i * validatorChunkSize}, []byte{byte(i)}))
+	}
+
+	_, err := s.checkSlashableAttestations(ctx, 2, atts)
+	require.NoError(t, err)
+
+	total := 0
+	for _, size := range recording.saves {
+		require.Equal(t, true, size <= s.maxChunksPerFlush, "a save of %d chunks exceeds the bound of %d", size, s.maxChunksPerFlush)
+		total += size
+	}
+	require.Equal(t, 10, total, "every chunk must be saved exactly once")
+	for i := uint64(0); i < 5; i++ {
+		require.Equal(t, primitives.Epoch(2), s.latestEpochWrittenForValidator[primitives.ValidatorIndex(i*validatorChunkSize)])
+	}
+}
+
+// chunkLoadFailingDB fails the chunk load of the given call.
+type chunkLoadFailingDB struct {
+	db.SlasherDatabase
+	calls, failOn int
+}
+
+func (d *chunkLoadFailingDB) LoadSlasherChunks(
+	ctx context.Context, kind slashertypes.ChunkKind, diskKeys [][]byte,
+) ([][]uint16, []bool, error) {
+	d.calls++
+	if d.calls == d.failOn {
+		return nil, nil, errors.New("read failed")
+	}
+	return d.SlasherDatabase.LoadSlasherChunks(ctx, kind, diskKeys)
+}
+
+// A detection error in a later group must leave the markers of the earlier,
+// unflushed groups where they were: nothing of this pass reached the disk,
+// and the next once-per-epoch flush would otherwise persist markers for
+// spans that were never written.
+func TestService_DetectionErrorLeavesEpochMarkersUntouched(t *testing.T) {
+	ctx := context.Background()
+	failing := &chunkLoadFailingDB{SlasherDatabase: dbtest.SetupSlasherDB(t), failOn: 3}
+	s := newDetectorForTest(t, failing)
+	validatorChunkSize := uint64(s.params.validatorChunkSize)
+	// Two groups; each loads its min and max chunk, so the third load is the
+	// second group's.
+	atts := []*slashertypes.IndexedAttestationWrapper{
+		createAttestationWrapper(t, 1, 2, []uint64{0}, []byte("a")),
+		createAttestationWrapper(t, 1, 2, []uint64{validatorChunkSize}, []byte("b")),
+	}
+
+	_, err := s.checkSlashableAttestations(ctx, 2, atts)
+	require.ErrorContains(t, "read failed", err)
+	require.Equal(t, 0, len(s.latestEpochWrittenForValidator), "no marker may advance when the pass failed before its flush")
+}
+
+// A double vote found in a pass whose span save then fails must still be
+// reported: the pass has already replaced the older conflicting record with
+// the newer vote, so a retry no longer finds the double vote.
+func TestService_FailedProgressSaveStillReturnsDetectedSlashings(t *testing.T) {
+	ctx := context.Background()
+	failing := &progressSaveFailingDB{SlasherDatabase: dbtest.SetupSlasherDB(t)}
+	s := newDetectorForTest(t, failing)
+
+	first := createAttestationWrapper(t, 2, 3, []uint64{0}, []byte("a"))
+	slashings, err := s.checkSlashableAttestations(ctx, 3, []*slashertypes.IndexedAttestationWrapper{first})
+	require.NoError(t, err)
+	require.Equal(t, 0, len(slashings))
+
+	failing.fail = true
+	conflicting := createAttestationWrapper(t, 2, 3, []uint64{0}, []byte("b"))
+	slashings, err = s.checkSlashableAttestations(ctx, 3, []*slashertypes.IndexedAttestationWrapper{conflicting})
+	require.ErrorContains(t, "disk full", err)
+	require.Equal(t, 1, len(slashings), "the double vote found before the failed save must be reported")
+
+	// The retry, as the queue would do it, finds no double vote any more (the
+	// record now holds the conflicting vote itself) but writes its spans. The
+	// same holds across a restart: the slashing reported above is the one that
+	// counts, nothing on disk can re-detect it.
+	failing.fail = false
+	slashings, err = s.checkSlashableAttestations(ctx, 3, []*slashertypes.IndexedAttestationWrapper{conflicting})
+	require.NoError(t, err)
+	require.Equal(t, 0, len(slashings))
+	require.Equal(t, primitives.Epoch(3), s.latestEpochWrittenForValidator[0])
+
+	path := failing.SlasherDatabase.DatabasePath()
+	require.NoError(t, failing.SlasherDatabase.Close())
+	reopened, err := slasherkv.NewKVStore(ctx, path)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, reopened.Close()) }()
+	restarted := newDetectorForTest(t, reopened)
+	epochs, err := reopened.LastEpochWrittenForValidators(ctx, []primitives.ValidatorIndex{0})
+	require.NoError(t, err)
+	restarted.latestEpochWrittenForValidator[0] = epochs[0].Epoch
+	require.Equal(t, primitives.Epoch(3), restarted.latestEpochWrittenForValidator[0], "the retry's spans must have reached disk")
+	slashings, err = restarted.checkSlashableAttestations(ctx, 3, []*slashertypes.IndexedAttestationWrapper{conflicting})
+	require.NoError(t, err)
+	require.Equal(t, 0, len(slashings))
+	record, err := reopened.AttestationRecordForValidator(ctx, 0, 3)
+	require.NoError(t, err)
+	require.Equal(t, conflicting.SigningRoot, record.SigningRoot, "the record holds the conflicting vote, which is why only the failed pass could report it")
+}
+
+// The attestations of a pass whose spans could not be saved go back on the
+// queue, so their spans are written once the store recovers, a bounded
+// number of times.
+func Test_processQueuedAttestations_RequeuesOnSaveFailure(t *testing.T) {
+	hook := logTest.NewGlobal()
+	defer hook.Reset()
+	failing := &progressSaveFailingDB{SlasherDatabase: dbtest.SetupSlasherDB(t)}
+	s := newDetectorForTest(t, failing)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	currentSlotChan := make(chan primitives.Slot)
+	s.wg.Add(1)
+	go s.processQueuedAttestations(ctx, currentSlotChan)
+	tick := func() {
+		slot, err := slots.EpochStart(3)
+		require.NoError(t, err)
+		currentSlotChan <- slot
+	}
+	waitFor := func(condition func() bool, what string) {
+		deadline := time.Now().Add(10 * time.Second)
+		for !condition() {
+			if time.Now().After(deadline) {
+				t.Fatal(what)
+			}
+			time.Sleep(5 * time.Millisecond)
+		}
+	}
+
+	att := createAttestationWrapper(t, 2, 3, []uint64{0}, []byte("a"))
+	failing.fail = true
+	s.attsQueue.push(att)
+	tick()
+	waitFor(func() bool { return s.attsQueue.size() == 1 }, "the attestation was not queued again after the failed save")
+	require.LogsContain(t, hook, "queuing the attestations again")
+
+	failing.fail = false
+	tick()
+	waitFor(func() bool { return s.attsQueue.size() == 0 && s.latestEpochWrittenForValidator[0] == 3 }, "the retried attestation was not processed")
+	require.Equal(t, 0, len(s.attestationRetries), "retry counts must be cleared once the spans are saved")
+
+	cancel()
+	s.wg.Wait()
+}
+
+// Beyond the retry bound an attestation is dropped rather than queued forever.
+func TestService_RequeueAttestationsIsBounded(t *testing.T) {
+	s := newDetectorForTest(t, dbtest.SetupSlasherDB(t))
+	att := createAttestationWrapper(t, 2, 3, []uint64{0}, []byte("a"))
+	for i := 0; i < maxAttestationRetries; i++ {
+		s.requeueAttestations([]*slashertypes.IndexedAttestationWrapper{att})
+		require.Equal(t, i+1, s.attsQueue.size())
+	}
+	s.requeueAttestations([]*slashertypes.IndexedAttestationWrapper{att})
+	require.Equal(t, maxAttestationRetries, s.attsQueue.size(), "the attestation must be dropped beyond the bound")
+	_, tracked := s.attestationRetries[att.SigningRoot]
+	require.Equal(t, false, tracked)
 }

@@ -27,6 +27,12 @@ func (s *State) MigrateToCold(ctx context.Context, fRoot [32]byte) error {
 	s.migrationLock.Lock()
 	defer s.migrationLock.Unlock()
 
+	// The interval divides slots below; a zero interval would be a division
+	// by zero in a background goroutine, which has no recovery.
+	if s.slotsPerArchivedPoint == 0 {
+		return errors.New("slots per archived point must be positive")
+	}
+
 	s.finalizedInfo.lock.RLock()
 	oldFSlot := s.finalizedInfo.slot
 	s.finalizedInfo.lock.RUnlock()

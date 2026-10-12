@@ -714,7 +714,7 @@ func blockRootsByFilter(ctx context.Context, tx *bolt.Tx, f *filters.QueryFilter
 
 	// We retrieve block roots that match a filter criteria of slot ranges, if specified.
 	filtersMap := f.Filters()
-	rootsBySlotRange, err := blockRootsBySlotRange(
+	rootsBySlotRange, slotFiltered, err := blockRootsBySlotRange(
 		ctx,
 		tx.Bucket(blockSlotIndicesBucket),
 		filtersMap[filters.StartSlot],
@@ -737,16 +737,18 @@ func blockRootsByFilter(ctx context.Context, tx *bolt.Tx, f *filters.QueryFilter
 	}
 	keys := rootsBySlotRange
 	if len(indices) > 0 {
-		// If we have found indices that meet the filter criteria, and there are also
-		// block roots that meet the slot range filter criteria, we find the intersection
-		// between these two sets of roots.
-		if len(rootsBySlotRange) > 0 {
+		if slotFiltered {
+			// A slot filter that no block satisfies is an empty intersection,
+			// not an absent filter: the other filters' matches alone would
+			// return blocks outside the requested slots.
+			if len(rootsBySlotRange) == 0 {
+				return [][]byte{}, nil
+			}
 			joined := append([][][]byte{keys}, indices...)
 			keys = slice.IntersectionByteSlices(joined...)
 		} else {
-			// If we have found indices that meet the filter criteria, but there are no block roots
-			// that meet the slot range filter criteria, we find the intersection
-			// of the regular filter indices.
+			// No slot filter: the result is the intersection of the other
+			// filters' matches.
 			keys = slice.IntersectionByteSlices(indices...)
 		}
 	}
@@ -757,17 +759,19 @@ func blockRootsByFilter(ctx context.Context, tx *bolt.Tx, f *filters.QueryFilter
 // blockRootsBySlotRange looks into a boltDB bucket and performs a binary search
 // range scan using sorted left-padded byte keys using a start slot and an end slot.
 // However, if step is one, the implemented logic won’t skip half of the slots in the range.
+// The second result reports whether a slot filter was given at all, so that a
+// filter matching no block is told apart from no filter.
 func blockRootsBySlotRange(
 	ctx context.Context,
 	bkt *bolt.Bucket,
 	startSlotEncoded, endSlotEncoded, startEpochEncoded, endEpochEncoded, slotStepEncoded any,
-) ([][]byte, error) {
+) ([][]byte, bool, error) {
 	_, span := trace.StartSpan(ctx, "BeaconDB.blockRootsBySlotRange")
 	defer span.End()
 
 	// Return nothing when all slot parameters are missing
 	if startSlotEncoded == nil && endSlotEncoded == nil && startEpochEncoded == nil && endEpochEncoded == nil {
-		return [][]byte{}, nil
+		return [][]byte{}, false, nil
 	}
 
 	var startSlot, endSlot primitives.Slot
@@ -788,11 +792,11 @@ func blockRootsBySlotRange(
 	if startEpochOk && endEpochOk {
 		startSlot, err = slots.EpochStart(startEpoch)
 		if err != nil {
-			return nil, err
+			return nil, true, err
 		}
 		endSlot, err = slots.EpochStart(endEpoch)
 		if err != nil {
-			return nil, err
+			return nil, true, err
 		}
 		endSlot = endSlot + params.BeaconConfig().SlotsPerEpoch - 1
 	}
@@ -803,7 +807,7 @@ func blockRootsBySlotRange(
 		return key != nil && bytes.Compare(key, max) <= 0
 	}
 	if endSlot < startSlot {
-		return nil, errInvalidSlotRange
+		return nil, true, errInvalidSlotRange
 	}
 	// Preallocate for the expected number of slots, but bound it: the range can
 	// span the whole chain (the finalized index rebuild after a checkpoint
@@ -822,7 +826,7 @@ func blockRootsBySlotRange(
 			}
 		}
 		if len(v)%32 != 0 {
-			return nil, errors.Wrapf(errMisalignedRootList, "corrupt value in block slot index for key %#x len=%d", k, len(v))
+			return nil, true, errors.Wrapf(errMisalignedRootList, "corrupt value in block slot index for key %#x len=%d", k, len(v))
 		}
 		numOfRoots := len(v) / 32
 		splitRoots := make([][]byte, 0, numOfRoots)
@@ -831,7 +835,7 @@ func blockRootsBySlotRange(
 		}
 		roots = append(roots, splitRoots...)
 	}
-	return roots, nil
+	return roots, true, nil
 }
 
 // maxRootsPreallocation caps the up-front allocation of a slot range query.

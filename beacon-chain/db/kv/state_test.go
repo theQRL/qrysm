@@ -1065,3 +1065,61 @@ func TestGenesisState_NoNestedReadTransaction(t *testing.T) {
 // An interrupted validator-schema migration followed by a restart without the
 // flag used to serve the already migrated states without validators. The
 // migration now resumes whenever migrated states exist, flag or not.
+
+// Several states can be saved at one slot (a fork). The highest-slot lookup
+// must return all of them, not the first root of the slot's packed list.
+func TestStore_HighestSlotStatesBelow_ReturnsEveryStateAtTheSlot(t *testing.T) {
+	ctx := context.Background()
+	db := setupDB(t)
+	for _, root := range [][32]byte{{'a'}, {'b'}} {
+		st, err := util.NewBeaconStateZond()
+		require.NoError(t, err)
+		require.NoError(t, st.SetSlot(10))
+		require.NoError(t, st.SetGenesisValidatorsRoot(root[:])) // tell the two states apart
+		require.NoError(t, db.SaveState(ctx, st, root))
+	}
+	highest, err := db.HighestSlotStatesBelow(ctx, 11)
+	require.NoError(t, err)
+	require.Equal(t, 2, len(highest), "both states at slot 10 must be returned")
+	require.NotEqual(t, highest[0].GenesisValidatorsRoot()[0], highest[1].GenesisValidatorsRoot()[0])
+}
+
+// A state saved again under the same root at another slot must not leave its
+// old slot-index entry behind: the dirty-state cleanup follows index entries
+// and deletes by root, so a stale entry would take the live state with it.
+func TestStore_SaveState_ReplacedAtAnotherSlotMovesTheSlotIndex(t *testing.T) {
+	ctx := context.Background()
+	db := setupDB(t)
+	root := [32]byte{'r'}
+	st, err := util.NewBeaconStateZond()
+	require.NoError(t, err)
+	require.NoError(t, st.SetSlot(10))
+	require.NoError(t, db.SaveStateSummary(ctx, &qrysmpb.StateSummary{Slot: 10, Root: root[:]}))
+	require.NoError(t, db.SaveState(ctx, st, root))
+
+	replacement := st.Copy()
+	require.NoError(t, replacement.SetSlot(12))
+	require.NoError(t, db.SaveState(ctx, replacement, root))
+
+	indexed := func(slot primitives.Slot) [][32]byte {
+		var roots [][32]byte
+		require.NoError(t, db.db.View(func(tx *bolt.Tx) error {
+			v := tx.Bucket(stateSlotIndicesBucket).Get(bytesutil.SlotToBytesBigEndian(slot))
+			if len(v) == 0 {
+				return nil
+			}
+			var err error
+			roots, err = splitRoots(v)
+			return err
+		}))
+		return roots
+	}
+	require.Equal(t, 0, len(indexed(10)), "the old slot must no longer index the root")
+	require.DeepEqual(t, [][32]byte{root}, indexed(12))
+}
+
+// A zero archive interval must be refused instead of dividing by zero.
+func TestStore_CleanUpDirtyStates_ZeroIntervalIsAnError(t *testing.T) {
+	db := setupDB(t)
+	require.ErrorContains(t, "must be positive", db.CleanUpDirtyStates(context.Background(), 0))
+}

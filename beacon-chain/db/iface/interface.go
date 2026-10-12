@@ -142,6 +142,12 @@ type SlasherDatabase interface {
 	SaveSlasherChunks(
 		ctx context.Context, kind slashertypes.ChunkKind, chunkKeys [][]byte, chunks [][]uint16,
 	) error
+	SaveSlasherChunksAndEpochs(
+		ctx context.Context,
+		minChunkKeys [][]byte, minChunks [][]uint16,
+		maxChunkKeys [][]byte, maxChunks [][]uint16,
+		epochByValidator map[primitives.ValidatorIndex]primitives.Epoch,
+	) error
 	SaveBlockProposals(
 		ctx context.Context, proposal []*slashertypes.SignedBlockHeaderWrapper,
 	) error
