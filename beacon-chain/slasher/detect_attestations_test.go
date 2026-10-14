@@ -1285,3 +1285,31 @@ func TestService_RequeueAttestationsIsBounded(t *testing.T) {
 	_, tracked := s.attestationRetries[att.SigningRoot]
 	require.Equal(t, false, tracked)
 }
+
+// A span-loading failure during the group loop must not discard the double
+// votes found before it either: the records saved in between have replaced
+// the older conflicting record, so a retry finds nothing.
+func TestService_ChunkLoadFailureStillReturnsDetectedSlashings(t *testing.T) {
+	ctx := context.Background()
+	failing := &chunkLoadFailingDB{SlasherDatabase: dbtest.SetupSlasherDB(t)}
+	s := newDetectorForTest(t, failing)
+
+	first := createAttestationWrapper(t, 2, 3, []uint64{0}, []byte("a"))
+	slashings, err := s.checkSlashableAttestations(ctx, 3, []*slashertypes.IndexedAttestationWrapper{first})
+	require.NoError(t, err)
+	require.Equal(t, 0, len(slashings))
+
+	// The next chunk load, the first of the conflicting vote's group, fails.
+	failing.failOn = failing.calls + 1
+	conflicting := createAttestationWrapper(t, 2, 3, []uint64{0}, []byte("b"))
+	slashings, err = s.checkSlashableAttestations(ctx, 3, []*slashertypes.IndexedAttestationWrapper{conflicting})
+	require.ErrorContains(t, "read failed", err)
+	require.Equal(t, 1, len(slashings), "the double vote found before the failed load must be reported")
+	require.Equal(t, primitives.Epoch(3), s.latestEpochWrittenForValidator[0], "the marker reflects the committed first pass only")
+
+	// A retry no longer finds the double vote: the record holds the
+	// conflicting vote itself.
+	slashings, err = s.checkSlashableAttestations(ctx, 3, []*slashertypes.IndexedAttestationWrapper{conflicting})
+	require.NoError(t, err)
+	require.Equal(t, 0, len(slashings))
+}

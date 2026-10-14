@@ -89,7 +89,11 @@ func (s *Service) checkSlashableAttestations(
 			currentEpoch:        currentEpoch,
 		}, batch)
 		if err != nil {
-			return nil, err
+			// The double votes found above, and the surround votes of the
+			// groups before this one, are returned with the error for the same
+			// reason as on a failed save: the records saved above have replaced
+			// the older conflicting records, so a retry cannot find them.
+			return slashings, err
 		}
 		for root, slashing := range attSlashings {
 			slashings[root] = slashing
