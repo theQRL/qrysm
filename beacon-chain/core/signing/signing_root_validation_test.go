@@ -99,9 +99,9 @@ func TestSigningRoot_Verification(t *testing.T) {
 	clear(zeroT1[32:])
 	changedDomain := bytes.Clone(domain)
 	changedDomain[0] ^= 1
-	changedHeader := *header
+	changedHeader := qrysmpb.CopyBeaconBlockHeader(header)
 	changedHeader.Slot++
-	malformedHeader := *header
+	malformedHeader := qrysmpb.CopyBeaconBlockHeader(header)
 	malformedHeader.ParentRoot = nil
 	for _, tc := range []struct {
 		name      string
@@ -112,7 +112,7 @@ func TestSigningRoot_Verification(t *testing.T) {
 		valid     bool
 	}{
 		{"valid", header, pubkey, signature, domain, true},
-		{"changed_message", &changedHeader, pubkey, signature, domain, false},
+		{"changed_message", changedHeader, pubkey, signature, domain, false},
 		{"changed_domain", header, pubkey, signature, changedDomain, false},
 		{"changed_public_key", header, changedPubkey, signature, domain, false},
 		{"changed_signature", header, pubkey, changedSignature, domain, false},
@@ -128,7 +128,7 @@ func TestSigningRoot_Verification(t *testing.T) {
 		{"nil_domain", header, pubkey, signature, nil, false},
 		{"four_byte_domain", header, pubkey, signature, domain[:4], false},
 		{"long_domain", header, pubkey, signature, append(bytes.Clone(domain), 0), false},
-		{"malformed_object", &malformedHeader, pubkey, signature, domain, false},
+		{"malformed_object", malformedHeader, pubkey, signature, domain, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			for name, verify := range map[string]func() error{

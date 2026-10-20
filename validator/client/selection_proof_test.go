@@ -152,7 +152,7 @@ func TestSubmitAggregateAndProof_ReusesCachedSelectionProof(t *testing.T) {
 			submitted = req.SlotSignature
 			return &qrysmpb.AggregateSelectionResponse{AggregateAndProof: &qrysmpb.AggregateAttestationAndProof{
 				AggregatorIndex: 2,
-				Aggregate:       util.HydrateAttestation(&qrysmpb.Attestation{AggregationBits: make([]byte, 1)}),
+				Aggregate:       util.HydrateAttestation(&qrysmpb.Attestation{AggregationBits: bitfield.NewBitlist(1)}),
 				SelectionProof:  req.SlotSignature,
 			}}, nil
 		})

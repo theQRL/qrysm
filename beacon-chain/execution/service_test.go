@@ -381,7 +381,7 @@ func TestInitExecutionService_ConcurrentGenesisInfo(t *testing.T) {
 	require.NoError(t, err)
 	s, err := NewService(context.Background(), WithDatabase(dbutil.SetupDB(t)), WithDepositCache(deposits))
 	require.NoError(t, err)
-	defer s.Stop()
+	defer func() { require.NoError(t, s.Stop()) }()
 	defer s.executionHeadTicker.Stop()
 	s.chainStartData.ExecutionData.BlockHash = bytesutil.PadTo([]byte{1}, 32)
 	s.rpcClient = &connectionHealthClient{header: &types.HeaderInfo{Number: big.NewInt(1), Time: 100, Hash: common.Hash{1}}}

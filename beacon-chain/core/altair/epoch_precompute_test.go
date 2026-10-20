@@ -358,12 +358,12 @@ func TestProcessRewardsAndPenaltiesPrecompute_RewardOrder(t *testing.T) {
 
 	for _, tt := range []struct {
 		name            string
-		flags           byte
 		balance         uint64
 		inactivityScore uint64
+		want            uint64
+		flags           byte
 		slashed         bool
 		leak            bool
-		want            uint64
 	}{
 		{name: "target_only_zero_balance", flags: target, want: targetDelta},
 		{name: "target_only_one_shor", flags: target, balance: 1, want: targetDelta},

@@ -32,7 +32,7 @@ func TestPool_RecoverSlashing(t *testing.T) {
 				p := NewPool()
 				// An unrelated inclusion marker must survive recovery.
 				p.included[1] = true
-				var recover func() error
+				var recoverSlashing func() error
 				var pending func() int
 				if kind == "proposer" {
 					proof, err := util.GenerateProposerSlashingForValidator(st, keys[0], 0)
@@ -43,7 +43,7 @@ func TestPool_RecoverSlashing(t *testing.T) {
 					if status == "bad signature" {
 						proof.Header_1.Signature[0] ^= 1
 					}
-					recover = func() error { return p.RecoverProposerSlashing(ctx, st, proof) }
+					recoverSlashing = func() error { return p.RecoverProposerSlashing(ctx, st, proof) }
 					pending = func() int { return len(p.PendingProposerSlashings(ctx, st, true)) }
 				} else {
 					proof, err := util.GenerateAttesterSlashingForValidator(st, keys[0], 0)
@@ -54,7 +54,7 @@ func TestPool_RecoverSlashing(t *testing.T) {
 					if status == "bad signature" {
 						proof.Attestation_1.Signatures[0][0] ^= 1
 					}
-					recover = func() error { return p.RecoverAttesterSlashing(ctx, st, proof) }
+					recoverSlashing = func() error { return p.RecoverAttesterSlashing(ctx, st, proof) }
 					pending = func() int { return len(p.PendingAttesterSlashings(ctx, st, true)) }
 				}
 				v, err := st.ValidatorAtIndex(0)
@@ -66,12 +66,12 @@ func TestPool_RecoverSlashing(t *testing.T) {
 				}
 				require.NoError(t, st.UpdateValidatorAtIndex(0, v))
 				if status == "slashable" {
-					require.NoError(t, recover())
-					require.NoError(t, recover(), "recovery retries must be idempotent")
+					require.NoError(t, recoverSlashing())
+					require.NoError(t, recoverSlashing(), "recovery retries must be idempotent")
 					require.Equal(t, 1, pending())
 					require.Equal(t, false, p.included[0])
 				} else {
-					require.NotNil(t, recover())
+					require.NotNil(t, recoverSlashing())
 					require.Equal(t, 0, pending())
 					require.Equal(t, true, p.included[0])
 				}

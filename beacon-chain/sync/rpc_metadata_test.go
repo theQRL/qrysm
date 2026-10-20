@@ -36,7 +36,7 @@ func TestMetaDataRPCHandler_ReceivesMetadata(t *testing.T) {
 	p1.LocalMetadata = wrapper.WrappedMetadataV1(&pb.MetaDataV1{
 		SeqNumber: 2,
 		Attnets:   bitfield[:],
-		Syncnets:  []byte{'A'},
+		Syncnets:  []byte{0x01},
 	})
 
 	// Set up a head state in the database with data we expect.
@@ -93,7 +93,7 @@ func TestMetadataRPCHandler_SendsMetadata(t *testing.T) {
 	p2.LocalMetadata = wrapper.WrappedMetadataV1(&pb.MetaDataV1{
 		SeqNumber: 2,
 		Attnets:   bitfield[:],
-		Syncnets:  []byte{'A'},
+		Syncnets:  []byte{0x01},
 	})
 
 	// Set up a head state in the database with data we expect.

@@ -12,20 +12,23 @@ concurrency:
 
 jobs:
   test:
-    # Five partitions of //... so wall clock divides and no runner holds
+    # Six partitions of //... so wall clock divides and no runner holds
     # more than a slice of the memory-hungry beacon-chain tests. The chain
     # simulations get a runner to themselves: next to any other test they
-    # exhaust 16 GB. Each partition keeps its own disk cache; the patterns
-    # are disjoint and together cover //... exactly.
+    # exhaust 16 GB. The other blockchain tests get one too, away from the
+    # core tests, for the same reason. Each partition keeps its own disk
+    # cache; the patterns are disjoint and together cover //... exactly.
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: simulation
             targets: //beacon-chain/blockchain:simulation_test
-          - name: beacon-core
+          - name: blockchain
             targets: >-
               //beacon-chain/blockchain/... -//beacon-chain/blockchain:simulation_test
+          - name: beacon-core
+            targets: >-
               //beacon-chain/core/... //beacon-chain/state/... //beacon-chain/sync/...
           - name: beacon-rest
             targets: >-

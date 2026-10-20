@@ -83,15 +83,15 @@ func TestActiveValidatorCapacity_CommitteeScaling(t *testing.T) {
 					bits.SetBitAt(0, true)
 					att := util.HydrateAttestation(&qrysmpb.Attestation{AggregationBits: bits})
 					encoded, err := att.MarshalSSZ()
-					require.NoError(t, err)
-					decoded := new(qrysmpb.Attestation)
-					err = decoded.UnmarshalSSZ(encoded)
 					if wantMembers > fieldparams.MaxValidatorsPerCommittee {
 						require.ErrorContains(t, "too many bits", err)
-					} else {
-						require.NoError(t, err)
-						require.DeepEqual(t, att, decoded)
+						return
 					}
+					require.NoError(t, err)
+
+					decoded := new(qrysmpb.Attestation)
+					require.NoError(t, decoded.UnmarshalSSZ(encoded))
+					require.DeepEqual(t, att, decoded)
 				})
 			}
 		})
