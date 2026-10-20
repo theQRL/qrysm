@@ -93,7 +93,6 @@ var appHelpFlagGroups = []flagGroup{
 		Flags: []cli.Flag{
 			flags.InteropMockExecutionDataVotesFlag,
 			flags.DepositContractFlag,
-			flags.ContractDeploymentBlock,
 			flags.RPCHost,
 			flags.RPCPort,
 			flags.CertFlag,

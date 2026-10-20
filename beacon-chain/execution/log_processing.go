@@ -230,13 +230,6 @@ func (s *Service) processPastLogs(ctx context.Context) error {
 	s.latestExecutionDataLock.RLock()
 	currentBlockNum := s.latestExecutionData.LastRequestedBlock
 	s.latestExecutionDataLock.RUnlock()
-	deploymentBlock := params.BeaconNetworkConfig().ContractDeploymentBlock
-	// Start from the deployment block if our last requested block
-	// is behind it. This is as the deposit logs can only start from the
-	// block of the deployment of the deposit contract.
-	if deploymentBlock > currentBlockNum {
-		currentBlockNum = deploymentBlock
-	}
 	// Verify the deposit contract is available before scanning logs.
 	rawLogCount, err := s.depositContractCaller.GetDepositCount(&bind.CallOpts{Context: ctx})
 	if err != nil {

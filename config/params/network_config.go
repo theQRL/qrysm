@@ -27,8 +27,7 @@ type NetworkConfig struct {
 	MinimumPeersInSubnetSearch uint64 // Deprecated: unused. Nothing in qrysm reads this value. Upstream prysm used it as the enode.ReadNodes batch size in FindPeersWithSubnet, but that search was rewritten to bound itself by batch size and context (upstream PR #14669); the per-subnet peer target is now the --minimum-peers-per-subnet flag.
 
 	// Chain Network Config
-	ContractDeploymentBlock uint64   // ContractDeploymentBlock is the execution block in which the deposit contract is deployed.
-	BootstrapNodes          []string // BootstrapNodes are the addresses of the bootnodes.
+	BootstrapNodes []string // BootstrapNodes are the addresses of the bootnodes.
 }
 
 var networkConfig = mainnetNetworkConfig

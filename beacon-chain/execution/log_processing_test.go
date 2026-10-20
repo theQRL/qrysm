@@ -198,35 +198,26 @@ func TestProcessPastLogs_SmallBatches(t *testing.T) {
 	beaconConfig.ExecutionFollowDistance = 0
 	params.OverrideBeaconConfig(beaconConfig)
 	for _, limit := range []uint64{1, 2} {
-		for _, deployment := range []uint64{0, 2, 3} {
-			t.Run(fmt.Sprintf("limit=%d/deployment=%d", limit, deployment), func(t *testing.T) {
-				networkConfig := params.BeaconNetworkConfig().Copy()
-				networkConfig.ContractDeploymentBlock = deployment
-				params.OverrideBeaconNetworkConfig(networkConfig)
-				contractABI, err := abi.JSON(strings.NewReader(contracts.DepositContractABI))
-				require.NoError(t, err)
-				encoded, err := contractABI.Methods["get_deposit_count"].Outputs.Pack(bytesutil.Bytes8(0))
-				require.NoError(t, err)
-				backend := &depositCountBackend{result: encoded}
-				caller, err := contracts.NewDepositContractCaller(common.Address{}, backend)
-				require.NoError(t, err)
-				filter := &limitedLogFilter{limit: limit}
-				s := &Service{
-					cfg:                 &config{beaconDB: testDB.SetupDB(t), executionHeaderReqLimit: 2},
-					latestExecutionData: &qrysmpb.LatestExecutionData{BlockHeight: 3, BlockTime: 100},
-					chainStartData:      &qrysmpb.ChainStartData{}, headerCache: newHeaderCache(),
-					depositContractCaller: caller, httpLogger: filter, lastReceivedMerkleIndex: -1,
-				}
-				require.NoError(t, s.headerCache.AddHeader(&types.HeaderInfo{Number: big.NewInt(3), Time: 100, Hash: common.Hash{3}}))
-				require.NoError(t, s.processPastLogs(context.Background()))
-				var want []uint64
-				for height := deployment; height <= 3; height++ {
-					want = append(want, height)
-				}
-				require.DeepEqual(t, want, filter.processed)
-				require.Equal(t, uint64(3), s.latestExecutionData.LastRequestedBlock)
-			})
-		}
+		t.Run(fmt.Sprintf("limit=%d", limit), func(t *testing.T) {
+			contractABI, err := abi.JSON(strings.NewReader(contracts.DepositContractABI))
+			require.NoError(t, err)
+			encoded, err := contractABI.Methods["get_deposit_count"].Outputs.Pack(bytesutil.Bytes8(0))
+			require.NoError(t, err)
+			backend := &depositCountBackend{result: encoded}
+			caller, err := contracts.NewDepositContractCaller(common.Address{}, backend)
+			require.NoError(t, err)
+			filter := &limitedLogFilter{limit: limit}
+			s := &Service{
+				cfg:                 &config{beaconDB: testDB.SetupDB(t), executionHeaderReqLimit: 2},
+				latestExecutionData: &qrysmpb.LatestExecutionData{BlockHeight: 3, BlockTime: 100},
+				chainStartData:      &qrysmpb.ChainStartData{}, headerCache: newHeaderCache(),
+				depositContractCaller: caller, httpLogger: filter, lastReceivedMerkleIndex: -1,
+			}
+			require.NoError(t, s.headerCache.AddHeader(&types.HeaderInfo{Number: big.NewInt(3), Time: 100, Hash: common.Hash{3}}))
+			require.NoError(t, s.processPastLogs(context.Background()))
+			require.DeepEqual(t, []uint64{0, 1, 2, 3}, filter.processed)
+			require.Equal(t, uint64(3), s.latestExecutionData.LastRequestedBlock)
+		})
 	}
 }
 

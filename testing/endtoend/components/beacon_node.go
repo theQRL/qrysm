@@ -258,7 +258,6 @@ func (node *BeaconNode) Start(ctx context.Context) error {
 		fmt.Sprintf("--%s=%d", cmdshared.P2PMaxPeers.Name, expectedNumOfPeers),
 		fmt.Sprintf("--%s=%d", flags.MonitoringPortFlag.Name, e2e.TestParams.Ports.QrysmBeaconNodeMetricsPort+index),
 		fmt.Sprintf("--%s=%d", flags.GRPCGatewayPort.Name, e2e.TestParams.Ports.QrysmBeaconNodeGatewayPort+index),
-		fmt.Sprintf("--%s=%d", flags.ContractDeploymentBlock.Name, 0),
 		fmt.Sprintf("--%s=%d", flags.MinPeersPerSubnet.Name, 0),
 		fmt.Sprintf("--%s=%d", cmdshared.RPCMaxPageSizeFlag.Name, params.BeaconConfig().MinGenesisActiveValidatorCount),
 		fmt.Sprintf("--%s=%s", cmdshared.BootstrapNode.Name, qnr),

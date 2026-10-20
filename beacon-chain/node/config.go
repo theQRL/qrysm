@@ -152,11 +152,6 @@ func configureNetwork(cliCtx *cli.Context) {
 		c.BootstrapNodes = cliCtx.StringSlice(cmd.BootstrapNode.Name)
 		params.OverrideBeaconNetworkConfig(c)
 	}
-	if cliCtx.IsSet(flags.ContractDeploymentBlock.Name) {
-		networkCfg := params.BeaconNetworkConfig()
-		networkCfg.ContractDeploymentBlock = uint64(cliCtx.Int(flags.ContractDeploymentBlock.Name))
-		params.OverrideBeaconNetworkConfig(networkCfg)
-	}
 }
 
 func configureInteropConfig(cliCtx *cli.Context) error {
