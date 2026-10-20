@@ -65,7 +65,6 @@ go_test(
         "accounts_import_test.go",
         "accounts_list_test.go",
     ],
-    data = glob(["testdata/**"]),
     embed = [":accounts"],
     deps = [
         "//beacon-chain/rpc/apimiddleware",

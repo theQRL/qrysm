@@ -17,10 +17,20 @@
 package ops
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
+	"math/big"
+	"slices"
 	"strings"
 	"testing"
 
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/params"
 )
 
 // TestSanity checks the npops and npushes against the
@@ -58,64 +68,81 @@ func TestSanity(t *testing.T) {
 	}
 }
 
-// This check can only be executed if the go-ethereum codebase
-// is refactored a bit, to make the following public.
-//
-//	func LookupInstructionSet(fork string) func() JumpTable
-//	func (op *operation) Stack() (int, int)
-//	func (op *operation) Valid() bool
-
 func TestForkOpcodes(t *testing.T) {
 	testForkOpcodes(t, "Zond")
 }
+
 func testForkOpcodes(t *testing.T, fork string) {
-	var (
-		f  *Fork
-		jt vm.JumpTable
-	)
-	if f = LookupFork(fork); f == nil {
+	f := LookupFork(fork)
+	if f == nil {
 		t.Fatalf("fork missing %v", fork)
 	}
-	rules := LookupRules(fork)
-
-	if _jt, err := vm.LookupInstructionSet(rules); err != nil {
-		t.Fatalf("error lookup up jumptable in geth: %v", err)
-	} else {
-		jt = _jt
+	config, err := LookupChainConfig(fork)
+	if err != nil {
+		t.Fatal(err)
 	}
-	for op, gethOp := range jt {
-		if !gethOp.HasCost() {
-			continue
+	db := rawdb.NewMemoryDatabase()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Error(err)
 		}
-		found := false
-		for _, ourOp := range f.ValidOpcodes {
-			if int(ourOp) == op {
-				found = true
-			}
-		}
-		if !found {
-			t.Fatalf("missing operation %#x %v in fork %v", op, vm.OpCode(op), fork)
+	})
+	statedb, err := state.New(types.EmptyRootHash, state.NewDatabase(db), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Consume all gas while preparing the stack. The interpreter checks stack
+	// bounds before charging the tested opcode. Most opcodes then run out of
+	// gas; zero-cost halting opcodes can complete.
+	runOpcode := func(op OpCode, stackSize int) error {
+		code := append(bytes.Repeat([]byte{byte(vm.PUSH0)}, stackSize), byte(op))
+		caller := vm.AccountRef(common.Address{})
+		contract := vm.NewContract(caller, caller, new(big.Int), uint64(stackSize)*vm.GasQuickStep)
+		contract.Code = code
+		qrvm := vm.NewQRVM(vm.BlockContext{}, vm.TxContext{}, statedb, config, vm.Config{})
+		_, err := qrvm.Interpreter().Run(contract, nil, false)
+		return err
+	}
+	checkAccepted := func(t *testing.T, op OpCode, stackSize int) {
+		t.Helper()
+		err := runOpcode(op, stackSize)
+		if err != nil && !errors.Is(err, vm.ErrOutOfGas) && !errors.Is(err, vm.ErrExecutionReverted) {
+			t.Fatalf("opcode rejected with %d stack items: %v", stackSize, err)
 		}
 	}
-	for _, ourOp := range f.ValidOpcodes {
-		gethOp := vm.OpCode(ourOp)
-		{
-			exp, got := gethOp.String(), ourOp.String()
-			if exp != got {
-				t.Errorf("op got %v expected %v", got, exp)
-			}
-		}
-		gotPops := len(ourOp.Pops())
-		geth_instr := jt[gethOp]
-		min, max := geth_instr.Stack()
 
-		if gotPops != min {
-			t.Errorf("op %v pops wrong, us: %d, geth: %d", ourOp.String(), gotPops, min)
-		}
-		havePush := len(ourOp.Pushes())
-		wantPush := 1024 - max + min
-		if havePush != wantPush {
-			t.Errorf("op %v push wrong, us: %d, geth: %d", ourOp.String(), havePush, wantPush)
-		}
+	for i := range 256 {
+		op := OpCode(i)
+		t.Run(fmt.Sprintf("%02x_%s", i, op), func(t *testing.T) {
+			pops, pushes := len(op.Pops()), len(op.Pushes())
+			if !slices.Contains(f.ValidOpcodes, op) || op == INVALID {
+				var invalid *vm.ErrInvalidOpCode
+				if err := runOpcode(op, pops); !errors.As(err, &invalid) {
+					t.Fatalf("expected invalid opcode, got %v", err)
+				}
+				return
+			}
+			if name := vm.OpCode(op).String(); name != op.String() {
+				t.Fatalf("opcode name %q differs from VM name %q", op, name)
+			}
+
+			checkAccepted(t, op, pops)
+			if pops > 0 {
+				var underflow *vm.ErrStackUnderflow
+				if err := runOpcode(op, pops-1); !errors.As(err, &underflow) {
+					t.Fatalf("expected underflow with %d stack items, got %v", pops-1, err)
+				}
+			}
+
+			maxStack := min(int(params.StackLimit), int(params.StackLimit)+pops-pushes)
+			checkAccepted(t, op, maxStack)
+			if maxStack < int(params.StackLimit) {
+				var overflow *vm.ErrStackOverflow
+				if err := runOpcode(op, maxStack+1); !errors.As(err, &overflow) {
+					t.Fatalf("expected overflow with %d stack items, got %v", maxStack+1, err)
+				}
+			}
+		})
 	}
 }

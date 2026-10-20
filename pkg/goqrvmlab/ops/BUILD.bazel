@@ -19,5 +19,12 @@ go_test(
     name = "ops_test",
     srcs = ["operations_test.go"],
     embed = [":ops"],
-    deps = ["@com_github_theqrl_go_qrl//core/vm"],
+    deps = [
+        "@com_github_theqrl_go_qrl//common",
+        "@com_github_theqrl_go_qrl//core/rawdb",
+        "@com_github_theqrl_go_qrl//core/state",
+        "@com_github_theqrl_go_qrl//core/types",
+        "@com_github_theqrl_go_qrl//core/vm",
+        "@com_github_theqrl_go_qrl//params",
+    ],
 )

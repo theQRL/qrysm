@@ -81,16 +81,6 @@ func LookupFork(fork string) *Fork {
 	return nil
 }
 
-func LookupRules(fork string) params.Rules {
-	switch fork {
-	case "Zond":
-		return params.Rules{}
-	default:
-		panic(fmt.Sprintf("Unsupported: %v", fork))
-
-	}
-}
-
 // LookupChainConfig returns the params.ChainConfig for a given fork.
 func LookupChainConfig(fork string) (*params.ChainConfig, error) {
 	var zond = &params.ChainConfig{
