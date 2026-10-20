@@ -273,7 +273,7 @@ func buildGenesisBeaconStateZond(genesisTime uint64, preState state.BeaconState,
 	return state_native.InitializeFromProtoZond(st)
 }
 
-// processPreGenesisDeposits processes a deposit for the beacon state Altair before chain start.
+// processPreGenesisDeposits processes a deposit for the beacon state before chain start.
 func processPreGenesisDeposits(
 	ctx context.Context,
 	beaconState state.BeaconState,

@@ -67,9 +67,7 @@ func setupWalletCtx(
 	set.String(flags.BackupPublicKeysFlag.Name, cfg.backupPublicKeys, "")
 	set.String(flags.WalletPasswordFileFlag.Name, cfg.walletPasswordFile, "")
 	set.String(flags.AccountPasswordFileFlag.Name, cfg.accountPasswordFile, "")
-	// set.Int64(flags.NumAccountsFlag.Name, cfg.numAccounts, "")
 	set.Bool(flags.SkipDepositConfirmationFlag.Name, cfg.skipDepositConfirm, "")
-	// set.Bool(flags.SkipMnemonic25thWordCheckFlag.Name, true, "")
 	set.Bool(flags.ExitAllFlag.Name, cfg.exitAll, "")
 	set.String(flags.GrpcHeadersFlag.Name, cfg.grpcHeaders, "")
 
@@ -78,7 +76,6 @@ func setupWalletCtx(
 		assert.NoError(tb, set.Set(flags.ImportPrivateKeyFileFlag.Name, cfg.privateKeyFile))
 	}
 	assert.NoError(tb, set.Set(flags.WalletDirFlag.Name, cfg.walletDir))
-	// assert.NoError(tb, set.Set(flags.SkipMnemonic25thWordCheckFlag.Name, "true"))
 	assert.NoError(tb, set.Set(flags.KeysDirFlag.Name, cfg.keysDir))
 	assert.NoError(tb, set.Set(flags.KeymanagerKindFlag.Name, cfg.keymanagerKind.String()))
 	assert.NoError(tb, set.Set(flags.DeletePublicKeysFlag.Name, cfg.deletePublicKeys))
@@ -88,7 +85,6 @@ func setupWalletCtx(
 	assert.NoError(tb, set.Set(flags.BackupPasswordFile.Name, cfg.backupPasswordFile))
 	assert.NoError(tb, set.Set(flags.WalletPasswordFileFlag.Name, cfg.walletPasswordFile))
 	assert.NoError(tb, set.Set(flags.AccountPasswordFileFlag.Name, cfg.accountPasswordFile))
-	// assert.NoError(tb, set.Set(flags.NumAccountsFlag.Name, strconv.Itoa(int(cfg.numAccounts))))
 	assert.NoError(tb, set.Set(flags.SkipDepositConfirmationFlag.Name, strconv.FormatBool(cfg.skipDepositConfirm)))
 	assert.NoError(tb, set.Set(flags.ExitAllFlag.Name, strconv.FormatBool(cfg.exitAll)))
 	assert.NoError(tb, set.Set(flags.GrpcHeadersFlag.Name, cfg.grpcHeaders))
@@ -313,143 +309,3 @@ func TestListAccounts_LocalKeymanager(t *testing.T) {
 		fmt.Sprintf("\n%#x: %d\n", pubKeys[2][0:4], 2)
 	require.Equal(t, expectedStdout, string(out))
 }
-
-/*
-func TestListAccounts_DerivedKeymanager(t *testing.T) {
-	walletDir, passwordsDir, passwordFilePath := setupWalletAndPasswordsDir(t)
-	cliCtx := setupWalletCtx(t, &testWalletConfig{
-		walletDir:          walletDir,
-		passwordsDir:       passwordsDir,
-		keymanagerKind:     keymanager.Derived,
-		walletPasswordFile: passwordFilePath,
-	})
-	opts := []Option{
-		WithWalletDir(walletDir),
-		WithKeymanagerType(keymanager.Derived),
-		WithWalletPassword("Passwordz0320$"),
-	}
-	acc, err := NewCLIManager(opts...)
-	require.NoError(t, err)
-	w, err := acc.WalletCreate(cliCtx.Context)
-	require.NoError(t, err)
-
-	km, err := derived.NewKeymanager(
-		cliCtx.Context,
-		&derived.SetupConfig{
-			Wallet:           w,
-			ListenForChanges: false,
-		},
-	)
-	require.NoError(t, err)
-
-	numAccounts := 5
-	err = km.RecoverAccountsFromMnemonic(cliCtx.Context, constant.TestMnemonic, derived.DefaultMnemonicLanguage, "", numAccounts)
-	require.NoError(t, err)
-
-	rescueStdout := os.Stdout
-	r, writer, err := os.Pipe()
-	require.NoError(t, err)
-	os.Stdout = writer
-
-	// We call the list local keymanager accounts function.
-	require.NoError(t, km.ListKeymanagerAccounts(cliCtx.Context,
-		keymanager.ListKeymanagerAccountConfig{ShowPrivateKeys: true}))
-
-	require.NoError(t, writer.Close())
-	out, err := io.ReadAll(r)
-	require.NoError(t, err)
-	os.Stdout = rescueStdout
-
-	// Get stdout content and split to lines
-	newLine := fmt.Sprintln()
-	lines := strings.Split(string(out), newLine)
-
-	// Expected output example:
-
-		(keymanager kind) derived, (HD) hierarchical-deterministic
-		(derivation format) m / purpose / coin_type / account_index / validating_key
-		Showing 2 validator accounts
-
-		Account 0 | uniquely-sunny-tarpon
-		[derivation path] m/12381/3600/0/0
-		[validating public key] 0xa7292d8f8d1c1f3d42cacefd2fc4cd3b82651be37c1eb790bbd294a874829f4b7e1c167345dcc1966cc844132b38097e
-		[validating private key] 0x590707187dae64b42b8d36a95f3d7e11313ddd8b8d871b09e478e08c9bc8740b
-		[derivation path] m/12381/3600/0/0/0
-
-		======================Execution Deposit Transaction Data=====================
-
-		0x22895118000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000001205a9e92992d6a97ad113d217fa35cbe0659c662afe913ffd3a3ba61d7473be5630000000000000000000000000000000000000000000000000000000000000030a7292d8f8d1c1f3d42cacefd2fc4cd3b82651be37c1eb790bbd294a874829f4b7e1c167345dcc1966cc844132b38097e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020003b8f70706c37fb0b8dcbd95340889bad7d7f29121ea895052a8b216de95e480000000000000000000000000000000000000000000000000000000000000060b6727242b055448defbf54292c65e30ae28ca3aef8a07c8fe674abc0ca42a324be2e7592d3e45bba84ca364d7fe1f0ce073bf8b3692246395aa127cdbf93c64ae9ca48f85cb4b1e519f6821998181de1c7465b2bdcae4ddd0dbc2d02a56219d9
-
-		===================================================================
-
-		Account 1 | usually-obliging-pelican
-		[derivation path] m/12381/3600/1/0
-		[validating public key] 0x8447f878b701dad4dfa5a884cebc4745b0e8f21340dc56c840826537764dcc54e2e68f80b8d4e5737180212a26211891
-		[validating private key] 0x2cd5b1cddc9d96e50a16bea05d0953447655e3dd59fa1bfefad467c73d6c164a
-		[derivation path] m/12381/3600/1/0/0
-
-		======================Execution Deposit Transaction Data=====================
-
-		0x22895118000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000001200a0b9079c33cc40d602a50f5c51f6db30b0f959fc6f58048d6d43319fea6c09000000000000000000000000000000000000000000000000000000000000000308447f878b701dad4dfa5a884cebc4745b0e8f21340dc56c840826537764dcc54e2e68f80b8d4e5737180212a2621189100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000d6ac42bde23388e7428c1247364347c027c3507e461d68b851d506c60364cf0000000000000000000000000000000000000000000000000000000000000060801a2d432595164d7d88ae1695618db511d1507108573b8471098536b2b5a23f6711235f0a9c6fa65ac26cbd0f2d97e013e0c72ab6b5cff406c48d99ec0a2439aa9faa4557d20bb210d451519101616fa20b1ff2c67fae561cdff160fbc7dc98
-
-		===================================================================
-
-
-
-
-	// Expected output format definition
-	const prologLength = 3
-	const accountLength = 6
-	const epilogLength = 1
-	const nameOffset = 1
-	const keyOffset = 2
-	const validatingPrivateKeyOffset = 3
-
-	// Require the output has correct number of lines
-	lineCount := prologLength + accountLength*numAccounts + epilogLength
-	require.Equal(t, lineCount, len(lines))
-
-	// Assert the keymanager kind is printed on the first line.
-	kindString := w.KeymanagerKind().String()
-	kindFound := strings.Contains(lines[0], kindString)
-	assert.Equal(t, true, kindFound, "Keymanager Kind %s not found on the first line", kindString)
-
-	// Get account names and require the correct count
-	accountNames, err := km.ValidatingAccountNames(cliCtx.Context)
-	require.NoError(t, err)
-	require.Equal(t, numAccounts, len(accountNames))
-
-	// Assert that account names are printed on the correct lines
-	for i, accountName := range accountNames {
-		lineNumber := prologLength + accountLength*i + nameOffset
-		accountNameFound := strings.Contains(lines[lineNumber], accountName)
-		assert.Equal(t, true, accountNameFound, "Account Name %s not found on line number %d", accountName, lineNumber)
-	}
-
-	// Get public keys and require the correct count
-	pubKeys, err := km.FetchValidatingPublicKeys(cliCtx.Context)
-	require.NoError(t, err)
-	require.Equal(t, numAccounts, len(pubKeys))
-
-	// Assert that public keys are printed on the correct lines
-	for i, key := range pubKeys {
-		lineNumber := prologLength + accountLength*i + keyOffset
-		keyString := fmt.Sprintf("%#x", key)
-		keyFound := strings.Contains(lines[lineNumber], keyString)
-		assert.Equal(t, true, keyFound, "Public Key %s not found on line number %d", keyString, lineNumber)
-	}
-
-	// Get validating private keys and require the correct count
-	validatingPrivKeys, err := km.FetchValidatingSeeds(cliCtx.Context)
-	require.NoError(t, err)
-	require.Equal(t, numAccounts, len(pubKeys))
-
-	// Assert that validating private keys are printed on the correct lines
-	for i, key := range validatingPrivKeys {
-		lineNumber := prologLength + accountLength*i + validatingPrivateKeyOffset
-		keyString := fmt.Sprintf("%#x", key)
-		keyFound := strings.Contains(lines[lineNumber], keyString)
-		assert.Equal(t, true, keyFound, "Validating Private Key %s not found on line number %d", keyString, lineNumber)
-	}
-}
-*/

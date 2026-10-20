@@ -145,7 +145,7 @@ func BatchVerifyDepositsSignatures(ctx context.Context, deposits []*qrysmpb.Depo
 //	    )
 //	    domain = compute_domain(DOMAIN_DEPOSIT)  # Fork-agnostic domain since deposits are valid across forks
 //	    signing_root = compute_signing_root(deposit_message, domain)
-//	    if not bls.Verify(pubkey, signing_root, deposit.data.signature):
+//	    if not ml_dsa_87.Verify(pubkey, signing_root, deposit.data.signature):
 //	        return
 //
 //	    # Add validator and balance entries

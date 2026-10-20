@@ -70,7 +70,7 @@ message AttesterSlashing {
     IndexedAttestation attestation_2 = 2;
 }
 
-// Deposit into the Ethereum consensus from the QRL deposit contract.
+// Deposit into the QRL consensus from the QRL deposit contract.
 message Deposit {
     // DepositData that is encoded into a deposit signature.
     message Data {

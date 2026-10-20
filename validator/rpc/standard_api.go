@@ -58,11 +58,6 @@ func (s *Server) ListKeystores(
 		keystoreResponse[i] = &qrlpbservice.ListKeystoresResponse_Keystore{
 			ValidatingPubkey: pubKeys[i][:],
 		}
-		/*
-			if s.wallet.KeymanagerKind() == keymanager.Derived {
-				keystoreResponse[i].DerivationPath = fmt.Sprintf(derived.ValidatingKeyDerivationPathTemplate, i)
-			}
-		*/
 	}
 	return &qrlpbservice.ListKeystoresResponse{
 		Data: keystoreResponse,

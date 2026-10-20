@@ -3,8 +3,7 @@ package slashings
 import qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 
 // IsSurround checks if an attestation, a, is surrounding
-// another one, b, based on the Ethereum slashing conditions specified
-// by @protolambda https://github.com/protolambda/eth2-surround#definition.
+// another one, b, based on the Casper FFG surround-vote slashing condition.
 //
 //	s: source
 //	t: target

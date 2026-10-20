@@ -43,12 +43,12 @@ message Validator {
     bool slashed = 4;
 
     // Epoch when the validator became eligible for activation. This field may
-    // be zero if the validator was present in the Ethereum proof of stake genesis. This
+    // be zero if the validator was present in the QRL proof of stake genesis. This
     // field is FAR_FUTURE_EPOCH if the validator has not been activated.
     uint64 activation_eligibility_epoch = 5 [(theqrl.qrl.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
 
     // Epoch when the validator was activated. This field may be zero if the
-    // validator was present in the Ethereum proof of stake genesis. This field is
+    // validator was present in the QRL proof of stake genesis. This field is
     // FAR_FUTURE_EPOCH if the validator has not been activated.
     uint64 activation_epoch = 6 [(theqrl.qrl.ext.cast_type) = "github.com/theQRL/qrysm/consensus-types/primitives.Epoch"];
 

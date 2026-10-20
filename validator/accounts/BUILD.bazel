@@ -15,7 +15,6 @@ go_library(
         "doc.go",
         "log.go",
         "wallet_create.go",
-        "wallet_recover.go",
     ],
     importpath = "github.com/theQRL/qrysm/validator/accounts",
     visibility = [
@@ -65,8 +64,6 @@ go_test(
         "accounts_exit_test.go",
         "accounts_import_test.go",
         "accounts_list_test.go",
-        "wallet_recover_fuzz_test.go",
-        "wallet_recover_test.go",
     ],
     data = glob(["testdata/**"]),
     embed = [":accounts"],

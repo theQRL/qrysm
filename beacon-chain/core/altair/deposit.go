@@ -10,7 +10,7 @@ import (
 	qrysmpb "github.com/theQRL/qrysm/proto/qrysm/v1alpha1"
 )
 
-// ProcessDeposits processes validator deposits for beacon state Altair.
+// ProcessDeposits processes validator deposits for the beacon state.
 func ProcessDeposits(
 	ctx context.Context,
 	beaconState state.BeaconState,
@@ -33,7 +33,7 @@ func ProcessDeposits(
 	return beaconState, nil
 }
 
-// ProcessDeposit processes validator deposit for beacon state Altair.
+// ProcessDeposit processes a validator deposit for the beacon state.
 func ProcessDeposit(beaconState state.BeaconState, deposit *qrysmpb.Deposit, verifySignature bool) (state.BeaconState, error) {
 	beaconState, isNewValidator, err := blocks.ProcessDeposit(beaconState, deposit, verifySignature)
 	if err != nil {

@@ -77,7 +77,7 @@ func GqrlTestnetGenesis(genesisTime uint64, cfg *clparams.BeaconChainConfig) *co
 		// NOTE(rgeraldes24): required by the genesis generation on the beacon node side
 		// during the e2e tests
 		ExtraData: make([]byte, 32),
-		GasLimit:  params.MaxGasLimit, // shift 1 back from the max, just in case
+		GasLimit:  params.MaxGasLimit,
 		Mixhash:   common.HexToHash(defaultMixhash),
 		Coinbase:  defaultCoinbase,
 		Alloc: core.GenesisAlloc{

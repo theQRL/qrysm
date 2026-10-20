@@ -18,9 +18,7 @@ import (
 
 // NewCLIManager allows for managing validator accounts via CLI commands.
 func NewCLIManager(opts ...Option) (*AccountsCLIManager, error) {
-	acc := &AccountsCLIManager{
-		// mnemonicLanguage: derived.DefaultMnemonicLanguage,
-	}
+	acc := &AccountsCLIManager{}
 	for _, opt := range opts {
 		if err := opt(acc); err != nil {
 			return nil, err

@@ -108,15 +108,13 @@ type Keystore struct {
 	Path        string         `json:"path"`
 }
 
-// Kind defines an enum for either local, derived, or remote-signing
-// keystores for Qrysm wallets.
+// Kind defines an enum for either local or remote-signing keystores for
+// Qrysm wallets.
 type Kind int
 
 const (
 	// Local keymanager defines an on-disk, encrypted keystore-capable store.
 	Local Kind = iota
-	// Derived keymanager using a hierarchical-deterministic algorithm.
-	// Derived
 	// Web3Signer keymanager capable of signing data using a remote signer called Web3Signer.
 	// Web3Signer
 )
@@ -128,8 +126,6 @@ const IncorrectPasswordErrMsg = "failed to decrypt and authenticate ciphertext: 
 // String marshals a keymanager kind to a string value.
 func (k Kind) String() string {
 	switch k {
-	// case Derived:
-	// 	return "derived"
 	case Local:
 		// TODO(#10181) need a safe way to migrate away from using direct.
 		// function is used for directory creation, dangerous to change which may result in multiple directories.
@@ -146,8 +142,6 @@ func (k Kind) String() string {
 // ParseKind from a raw string, returning a keymanager kind.
 func ParseKind(k string) (Kind, error) {
 	switch strings.ToLower(k) {
-	// case "derived":
-	// 	return Derived, nil
 	case "direct", "imported", "local":
 		return Local, nil
 	// case "web3signer":

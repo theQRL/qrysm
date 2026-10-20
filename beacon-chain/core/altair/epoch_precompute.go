@@ -283,7 +283,6 @@ func AttestationsDelta(beaconState state.BeaconState, bal *precompute.Balance, v
 	baseRewardMultiplier := increment * factor / math.CachedSquareRoot(bal.ActiveCurrentEpoch)
 	leak := helpers.IsInInactivityLeak(prevEpoch, finalizedEpoch)
 
-	// Modified in Altair and Bellatrix.
 	bias := cfg.InactivityScoreBias
 	inactivityPenaltyQuotient, err := beaconState.InactivityPenaltyQuotient()
 	if err != nil {

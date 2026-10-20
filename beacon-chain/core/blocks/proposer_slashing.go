@@ -45,7 +45,7 @@ type slashValidatorFunc func(ctx context.Context, st state.BeaconState, vid prim
 //	 for signed_header in (proposer_slashing.signed_header_1, proposer_slashing.signed_header_2):
 //	     domain = get_domain(state, DOMAIN_BEACON_PROPOSER, compute_epoch_at_slot(signed_header.message.slot))
 //	     signing_root = compute_signing_root(signed_header.message, domain)
-//	     assert bls.Verify(proposer.pubkey, signing_root, signed_header.signature)
+//	     assert ml_dsa_87.Verify(proposer.pubkey, signing_root, signed_header.signature)
 //
 //	 slash_validator(state, header_1.proposer_index)
 func ProcessProposerSlashings(
