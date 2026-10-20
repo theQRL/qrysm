@@ -951,8 +951,8 @@ github.com/tenntenn/modver v1.0.1/go.mod h1:bePIyQPb7UeioSRkw3Q0XeMhYZSMx9B8ePqg
 github.com/tenntenn/text/transform v0.0.0-20200319021203-7eef512accb3/go.mod h1:ON8b8w4BN/kE1EOhwT0o+d62W65a6aPw1nouo9LMgyY=
 github.com/theQRL/go-bitfield v0.0.0-20231204084259-f3b877be8f63 h1:cU1QlEDDZ3zI6uya2Bbz+ldjvy+j6yhTmDtLkipDvz4=
 github.com/theQRL/go-bitfield v0.0.0-20231204084259-f3b877be8f63/go.mod h1:Xm3tb2axH6IT4miFd3hKIeD877Y6aA9Hxf2jOYtfTIk=
-github.com/theQRL/go-qrl v0.0.0-20261020122726-084f26fd8144 h1:7OLLvSFiZP340RJJSa4SqFjWLZDro23N+lQWuED315Q=
-github.com/theQRL/go-qrl v0.0.0-20261020122726-084f26fd8144/go.mod h1:c4FI7fxmIQ4S6uexw0DEkO/+3hQ/BOgo5nQcLiAbwTY=
+github.com/theQRL/go-qrl v0.0.0-20261020143425-f3864c46b3f9 h1:5VrQ3jFAE3WCYIupyiLUr0P9WnuKdQKuWalHObstcso=
+github.com/theQRL/go-qrl v0.0.0-20261020143425-f3864c46b3f9/go.mod h1:c4FI7fxmIQ4S6uexw0DEkO/+3hQ/BOgo5nQcLiAbwTY=
 github.com/theQRL/go-qrllib v0.11.0 h1:WogcKH+gjQsWGWI8+/EtcIMU24UWPHi6xt4nm+rXNU8=
 github.com/theQRL/go-qrllib v0.11.0/go.mod h1:cJalbgwzfscRXz7gqwPmmeC2wxB/QJh631N1dpihXuI=
 github.com/theQRL/grpc-gateway/v2 v2.0.0-20250214142603-49067762c97f h1:hEgl/ykBvqXdxoQc3mFuh59ju8ylNMVwDyAaiRHdLBY=
